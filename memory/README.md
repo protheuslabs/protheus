@@ -18,5 +18,13 @@ This logic will work for any OpenClaw agent, even if model weights/sessions swit
 
 **If switching LLMs breaks this flow, alert the human and request intervention!**
 
+## Heartbeat Tracking
+
+Track periodic checks in `heartbeat-state.json`:
+- Last email check
+- Last calendar check  
+- Last weather check
+- Last Moltbook interaction
+
 ---
 (Keep this README as the ground truth for Moltbook context-free credential loading.)
