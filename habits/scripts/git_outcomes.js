@@ -1,298 +1,257 @@
 #!/usr/bin/env node
 /**
- * git_outcomes.js v1.0
- * Deterministic "semi-auto outcomes" from git commits → proposal_queue outcomes JSONL.
+ * habits/scripts/git_outcomes.js — deterministic git→outcome bridge
  *
- * Goal:
- * - Remove manual `proposal_queue.js outcome ...` for common "shipped" cases.
- * - Preserve eye attribution deterministically via commit message tokens.
+ * Purpose:
+ * - Close the loop automatically by recording shipped outcomes when commits
+ *   explicitly reference proposals.
  *
- * Conventions (commit subject or body, but we parse subject by default):
- * - eye:<eye_id> (required for attribution; can appear multiple times)
- * - proposal:<proposal_id> (optional; can appear multiple times)
- * - outcome:shipped|reverted|no_change (optional; default shipped)
+ * Design rules:
+ * - Deterministic: no LLM, no heuristics from diffs.
+ * - Trust only explicit commit tags in the commit message body:
+ *     proposal:<ID>
+ *   Example:
+ *     proposal:EYE-31c2031a0f27833c
  *
- * Output:
- * - Appends outcome events into: state/queue/decisions/YYYY-MM-DD.jsonl
- * - Idempotent: will not re-add identical outcome events.
+ * Commands:
+ *   node habits/scripts/git_outcomes.js run [YYYY-MM-DD]
  *
- * Usage:
- * node habits/scripts/git_outcomes.js run [YYYY-MM-DD] [--repo=PATH] [--branch=main] [--outcome=shipped]
- * node habits/scripts/git_outcomes.js dry-run [YYYY-MM-DD] [--repo=PATH] [--branch=main] [--outcome=shipped]
- * node habits/scripts/git_outcomes.js help
+ * State:
+ *   - Cursor: state/git/outcomes_cursor.json
+ *   - Log: state/git/outcomes/YYYY-MM-DD.jsonl
  *
- * Notes:
- * - We intentionally keep `evidence_ref` strictly machine-parseable as ONLY "eye:<id>".
- * - Commit SHA / subject are stored in separate fields (evidence_commit, evidence_subject).
- * - If no proposal:<id> token exists, we generate a stable proposal_id = "GIT-<sha8>".
+ * Behavior:
+ *   - Scans commits since cursor (or last N commits if no cursor).
+ *   - For each unique proposal:<ID> tag found, records:
+ *       proposal_queue.js outcome <ID> shipped "commit:<sha>"
+ *   - Advances cursor to the latest scanned commit.
  */
 
-const fs = require('fs');
-const path = require('path');
-const { execSync } = require('child_process');
+const fs = require("fs");
+const path = require("path");
+const { spawnSync } = require("child_process");
 
-// Repo/workspace root defaults to current working directory
-function repoRoot(p) {
-  return p ? path.resolve(p) : process.cwd();
+function repoRoot() {
+  return path.resolve(__dirname, "..", "..");
 }
 
-function getTodayUTC() {
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function todayOr(dateStr) {
+  if (dateStr && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
   return new Date().toISOString().slice(0, 10);
 }
 
-function ensureDir(dir) {
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+function ensureDir(p) {
+  fs.mkdirSync(p, { recursive: true });
 }
 
-function readJsonlSafe(filePath) {
-  const out = [];
+function readJson(filePath, fallback) {
   try {
-    if (!fs.existsSync(filePath)) return out;
-    const raw = fs.readFileSync(filePath, 'utf8');
-    const lines = raw.split('\n').filter(Boolean);
-    for (const line of lines) {
-      try { out.push(JSON.parse(line)); } catch (_) { /* ignore */ }
-    }
-  } catch (_) {
-    // ignore
+    if (!fs.existsSync(filePath)) return fallback;
+    return JSON.parse(fs.readFileSync(filePath, "utf8"));
+  } catch {
+    return fallback;
   }
-  return out;
 }
 
-function stableKeyForOutcomeEvent(e) {
-  // Deterministic key for idempotence (do not include ts)
-  const p = String(e.proposal_id ?? '');
-  const o = String(e.outcome ?? '');
-  const r = String(e.evidence_ref ?? '');
-  const c = String(e.evidence_commit ?? '');
-  return `${p}||${o}||${r}||${c}`;
+function writeJson(filePath, obj) {
+  ensureDir(path.dirname(filePath));
+  fs.writeFileSync(filePath, JSON.stringify(obj, null, 2));
 }
 
-function extractTokens(text) {
-  // Parse tokens like: eye:moltbook_feed, proposal:EYE-abc..., outcome:shipped
-  // We allow punctuation around tokens; stop at whitespace.
-  const t = String(text || '');
-  const eyes = [];
-  const proposals = [];
-  let outcome = null;
+function appendJsonl(filePath, obj) {
+  ensureDir(path.dirname(filePath));
+  fs.appendFileSync(filePath, JSON.stringify(obj) + "\n");
+}
 
-  const re = /\b(eye|proposal|outcome):([A-Za-z0-9_\-\.]+)\b/g;
+function runGit(args) {
+  const r = spawnSync("git", args, { cwd: repoRoot(), encoding: "utf8" });
+  if (r.status !== 0) {
+    const msg = (r.stderr || r.stdout || "").trim();
+    throw new Error(`git failed: ${args.join(" ")}${msg ? ` :: ${msg}` : ""}`);
+  }
+  return (r.stdout || "").trim();
+}
+
+function runNode(args) {
+  const r = spawnSync("node", args, { cwd: repoRoot(), encoding: "utf8" });
+  return {
+    status: r.status || 0,
+    stdout: (r.stdout || "").toString(),
+    stderr: (r.stderr || "").toString()
+  };
+}
+
+function parseProposalTags(commitBody) {
+  // Accept uppercase/lowercase letters, digits, dashes/underscores.
+  // Example: proposal:EYE-abcdef1234567890
+  const re = /(?:^|\s)proposal:([A-Za-z0-9_-]+)\b/gm;
+  const ids = [];
   let m;
-  while ((m = re.exec(t)) !== null) {
-    const k = m[1];
-    const v = m[2];
-    if (k === 'eye') eyes.push(v);
-    if (k === 'proposal') proposals.push(v);
-    if (k === 'outcome') outcome = v;
+  while ((m = re.exec(commitBody)) !== null) {
+    const id = String(m[1] || "").trim();
+    if (id) ids.push(id);
   }
-  return { eyes, proposals, outcome };
+  return ids;
 }
 
-function parseGitLogLines(raw) {
-  // Expected format: "<sha>\t<subject>"
-  const commits = [];
-  const lines = String(raw || '').split('\n').filter(Boolean);
-  for (const line of lines) {
-    const parts = line.split('\t');
-    if (parts.length < 2) continue;
-    const sha = parts[0].trim();
-    const subject = parts.slice(1).join('\t').trim();
-    if (!sha || !subject) continue;
-    commits.push({ sha, subject });
-  }
-  return commits;
-}
-
-function gitLogForDate({ repo, branch, dateStr }) {
-  const date = dateStr || getTodayUTC();
-  // Use ISO-like boundaries; deterministic for that date in UTC
-  const since = `${date}T00:00:00Z`;
-  const until = `${date}T23:59:59Z`;
-
-  // Format: sha<TAB>subject
-  const cmd = [
-    'git',
-    '-C', repo,
-    'log',
-    branch || 'HEAD',
-    `--since=${since}`,
-    `--until=${until}`,
-    '--pretty=format:%H%x09%s'
-  ];
-
-  try {
-    return execSync(cmd.join(' '), { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
-  } catch (e) {
-    // If repo has no commits in range, git exits 0 with empty output.
-    // But some setups may throw; treat as empty.
-    return '';
-  }
-}
-
-function buildOutcomeEventsFromCommits({ commits, defaultOutcome, dateStr }) {
-  const date = dateStr || getTodayUTC();
-  const events = [];
-
-  for (const c of commits) {
-    const toks = extractTokens(c.subject);
-    const eyeIds = toks.eyes;
-    if (!eyeIds || eyeIds.length === 0) continue; // Only record outcomes when we have attribution
-
-    const outcome = toks.outcome || defaultOutcome || 'shipped';
-    const proposalIds = toks.proposals && toks.proposals.length ? toks.proposals : [`GIT-${c.sha.slice(0, 8)}`];
-
-    for (const eyeId of eyeIds) {
-      for (const proposalId of proposalIds) {
-        events.push({
-          ts: new Date().toISOString(),
-          type: 'outcome',
-          date,
-          proposal_id: proposalId,
-          outcome,
-          // IMPORTANT: machine-parseable first token ONLY
-          evidence_ref: `eye:${eyeId}`,
-          // Extra evidence fields (safe, deterministic data)
-          evidence_commit: c.sha,
-          evidence_subject: c.subject
-        });
-      }
-    }
-  }
-
-  return events;
-}
-
-function appendOutcomesIdempotent({ repo, dateStr, newEvents, dryRun }) {
-  const date = dateStr || getTodayUTC();
-  const decisionsDir = path.join(repo, 'state', 'queue', 'decisions');
-  ensureDir(decisionsDir);
-  const decisionsPath = path.join(decisionsDir, `${date}.jsonl`);
-
-  const existing = readJsonlSafe(decisionsPath).filter(e => e && e.type === 'outcome');
-  const seen = new Set(existing.map(stableKeyForOutcomeEvent));
-
-  const toAdd = [];
-  for (const e of newEvents) {
-    const key = stableKeyForOutcomeEvent(e);
-    if (seen.has(key)) continue;
-    seen.add(key);
-    toAdd.push(e);
-  }
-
-  if (!dryRun && toAdd.length > 0) {
-    const chunk = toAdd.map(e => JSON.stringify(e)).join('\n') + '\n';
-    fs.appendFileSync(decisionsPath, chunk);
-  }
-
-  return { decisionsPath, added: toAdd.length, skipped: newEvents.length - toAdd.length };
-}
-
-function parseArgs() {
-  const args = process.argv.slice(2);
-  const cmd = args[0] || 'help';
-  const opts = {};
-  const positional = [];
-
-  for (const a of args.slice(1)) {
-    if (a.startsWith('--repo=')) opts.repo = a.slice(7);
-    else if (a.startsWith('--branch=')) opts.branch = a.slice(9);
-    else if (a.startsWith('--outcome=')) opts.outcome = a.slice(10);
-    else if (!a.startsWith('--')) positional.push(a);
-  }
-
-  return { cmd, opts, positional };
-}
-
-function printHelp() {
-  console.log('git_outcomes.js v1.0 — auto outcomes from git commits');
-  console.log('');
-  console.log('Usage:');
-  console.log('  node habits/scripts/git_outcomes.js run [YYYY-MM-DD] [--repo=PATH] [--branch=main] [--outcome=shipped]');
-  console.log('  node habits/scripts/git_outcomes.js dry-run [YYYY-MM-DD] [--repo=PATH] [--branch=main] [--outcome=shipped]');
-  console.log('');
-  console.log('Commit tokens (in subject):');
-  console.log('  eye:<eye_id>            required (can repeat)');
-  console.log('  proposal:<proposal_id>   optional (can repeat)');
-  console.log('  outcome:shipped|reverted|no_change  optional');
-  console.log('');
-  console.log('Writes: state/queue/decisions/YYYY-MM-DD.jsonl (type="outcome")');
-}
-
-function run({ dateStr, repo, branch, outcome, dryRun }) {
-  const root = repoRoot(repo);
-  const date = dateStr || getTodayUTC();
-  const defaultOutcome = outcome || 'shipped';
-
-  console.log('═══════════════════════════════════════════════════════════');
-  console.log(`GIT OUTCOMES - ${dryRun ? 'DRY RUN' : 'RUN'}`);
-  console.log('═══════════════════════════════════════════════════════════');
-  console.log(`Repo: ${root}`);
-  console.log(`Date: ${date}`);
-  console.log(`Branch: ${branch || 'HEAD'}`);
-  console.log(`Default outcome: ${defaultOutcome}`);
-  console.log('');
-
-  const raw = gitLogForDate({ repo: root, branch, dateStr: date });
-  const commits = parseGitLogLines(raw);
-
-  const events = buildOutcomeEventsFromCommits({
-    commits,
-    defaultOutcome,
-    dateStr: date
-  });
-
-  const res = appendOutcomesIdempotent({
-    repo: root,
-    dateStr: date,
-    newEvents: events,
-    dryRun: !!dryRun
-  });
-
-  // Simple summary
-  const commitsWithEyes = commits.filter(c => extractTokens(c.subject).eyes.length > 0).length;
-  console.log(`Commits scanned: ${commits.length}`);
-  console.log(`Commits with eye:<id>: ${commitsWithEyes}`);
-  console.log(`Outcome events built: ${events.length}`);
-  console.log(`Added: ${res.added} Skipped (idempotent): ${res.skipped}`);
-  console.log(`Decisions file: ${res.decisionsPath}`);
-  console.log('═══════════════════════════════════════════════════════════');
-
-  return res;
+function unique(arr) {
+  return Array.from(new Set(arr));
 }
 
 function main() {
-  const { cmd, opts, positional } = parseArgs();
-  const dateStr = positional[0] || null;
+  const cmd = process.argv[2];
+  const dateStr = todayOr(process.argv[3]);
 
-  if (!cmd || cmd === 'help' || cmd === '--help' || cmd === '-h') {
-    printHelp();
-    return;
+  if (!cmd || cmd !== "run") {
+    console.error("Usage:");
+    console.error("  node habits/scripts/git_outcomes.js run [YYYY-MM-DD]");
+    process.exit(2);
   }
 
-  if (cmd === 'run') {
-    run({ dateStr, repo: opts.repo, branch: opts.branch, outcome: opts.outcome, dryRun: false });
-    return;
+  const root = repoRoot();
+  const stateDir = path.join(root, "state", "git");
+  const cursorPath = path.join(stateDir, "outcomes_cursor.json");
+  const logPath = path.join(stateDir, "outcomes", `${dateStr}.jsonl`);
+
+  const cursor = readJson(cursorPath, { last_sha: null, updated_at: null });
+  const lastSha = cursor && cursor.last_sha ? String(cursor.last_sha) : null;
+
+  // Determine commit range:
+  //   - If we have a cursor sha: scan cursor..HEAD (excluding cursor)
+  //   - Else: scan last 200 commits (reverse order for determinism)
+  let shas = [];
+  try {
+    if (lastSha) {
+      const out = runGit(["rev-list", "--reverse", `${lastSha}..HEAD`]);
+      shas = out ? out.split("\n").filter(Boolean) : [];
+    } else {
+      const out = runGit(["rev-list", "--reverse", "--max-count=200", "HEAD"]);
+      shas = out ? out.split("\n").filter(Boolean) : [];
+    }
+  } catch (e) {
+    appendJsonl(logPath, {
+      ts: nowIso(),
+      type: "git_outcomes_error",
+      date: dateStr,
+      error: String(e.message || e).slice(0, 240)
+    });
+    console.error(String(e.message || e));
+    process.exit(1);
   }
 
-  if (cmd === 'dry-run') {
-    run({ dateStr, repo: opts.repo, branch: opts.branch, outcome: opts.outcome, dryRun: true });
-    return;
+  appendJsonl(logPath, {
+    ts: nowIso(),
+    type: "git_outcomes_started",
+    date: dateStr,
+    cursor_last_sha: lastSha,
+    commits_scanned: shas.length
+  });
+
+  // Collect tags
+  const found = []; // { sha, id }
+  for (const sha of shas) {
+    let body = "";
+    try {
+      body = runGit(["show", "-s", "--format=%B", sha]);
+    } catch (e) {
+      appendJsonl(logPath, {
+        ts: nowIso(),
+        type: "git_outcomes_commit_read_failed",
+        date: dateStr,
+        sha,
+        error: String(e.message || e).slice(0, 240)
+      });
+      continue;
+    }
+
+    const ids = parseProposalTags(body);
+    for (const id of ids) {
+      found.push({ sha, id });
+    }
   }
 
-  console.error(`Unknown command: ${cmd}`);
-  printHelp();
-  process.exit(1);
+  const uniquePairs = unique(found.map(x => `${x.id}@@${x.sha}`))
+    .map(k => {
+      const [id, sha] = k.split("@@");
+      return { id, sha };
+    });
+
+  // Record outcomes
+  let recorded = 0;
+  let skipped = 0;
+  for (const { id, sha } of uniquePairs) {
+    const evidence = `commit:${sha}`;
+    const res = runNode([
+      "habits/scripts/proposal_queue.js",
+      "outcome",
+      id,
+      "shipped",
+      evidence
+    ]);
+
+    if (res.status === 0) {
+      recorded++;
+      appendJsonl(logPath, {
+        ts: nowIso(),
+        type: "git_outcomes_recorded",
+        date: dateStr,
+        proposal_id: id,
+        outcome: "shipped",
+        evidence_ref: evidence
+      });
+      continue;
+    }
+
+    // If outcome already exists or proposal missing, don't fail the run.
+    const err = `${res.stderr} ${res.stdout}`.toLowerCase();
+    const benign =
+      err.includes("already") ||
+      err.includes("exists") ||
+      err.includes("no change") ||
+      err.includes("unknown proposal") ||
+      err.includes("not found");
+
+    skipped++;
+    appendJsonl(logPath, {
+      ts: nowIso(),
+      type: "git_outcomes_skipped",
+      date: dateStr,
+      proposal_id: id,
+      evidence_ref: evidence,
+      reason: benign ? "benign_error" : "nonzero_exit",
+      status: res.status
+    });
+
+    if (!benign) {
+      // Surface the failure, but keep deterministic behavior: exit nonzero.
+      console.error(`git_outcomes: failed to record outcome for ${id} (${evidence})`);
+      process.stderr.write(res.stderr || "");
+      process.stdout.write(res.stdout || "");
+      process.exit(1);
+    }
+  }
+
+  // Advance cursor to the latest scanned commit (even if no proposal tags)
+  const newCursorSha = shas.length ? shas[shas.length - 1] : lastSha;
+  writeJson(cursorPath, { last_sha: newCursorSha, updated_at: nowIso() });
+
+  appendJsonl(logPath, {
+    ts: nowIso(),
+    type: "git_outcomes_ok",
+    date: dateStr,
+    tags_found: found.length,
+    outcomes_recorded: recorded,
+    outcomes_skipped: skipped,
+    cursor_new_sha: newCursorSha
+  });
+
+  console.log(
+    `git_outcomes: scanned=${shas.length} tags=${found.length} recorded=${recorded} skipped=${skipped} cursor=${newCursorSha || "null"}`
+  );
 }
 
-// Exports for tests
-module.exports = {
-  extractTokens,
-  parseGitLogLines,
-  buildOutcomeEventsFromCommits,
-  stableKeyForOutcomeEvent,
-  appendOutcomesIdempotent
-};
-
-if (require.main === module) {
-  main();
-}
+main();

@@ -1,23 +1,27 @@
 #!/usr/bin/env node
 /**
- * habits/scripts/spine_daily.js — habit wrapper for daily spine run
- * Reflex convenience wrapper (changeable by lower tiers).
+ * habits/scripts/spine_daily.js — tier-friendly wrapper for spine daily
+ *
+ * Purpose:
+ * - Provide an easy "habit/reflex" entrypoint
+ * - Let higher-tier infra do the orchestration
  */
 
 const { spawnSync } = require("child_process");
 
-function run(args) {
-  const r = spawnSync("node", args, { stdio: "inherit", env: process.env });
-  process.exit(r.status || 0);
+function run(cmd, args, env = {}) {
+  const r = spawnSync(cmd, args, { stdio: "inherit", env: { ...process.env, ...env } });
+  if (r.status !== 0) process.exit(r.status || 1);
 }
 
-// Wrapper defaults:
+const date = process.argv[2];
+const maxEyesArg = process.argv.find(a => a.startsWith("--max-eyes="));
+
+// Wrappers run with infra clearance (tier 3) by default
 if (!process.env.CLEARANCE) process.env.CLEARANCE = "3";
 
-const dateStr = process.argv[2]; // optional YYYY-MM-DD
-const maxEyesArg = process.argv.find(a => a.startsWith("--max-eyes="));
 const args = ["systems/spine/spine.js", "daily"];
-if (dateStr) args.push(dateStr);
+if (date) args.push(date);
 if (maxEyesArg) args.push(maxEyesArg);
 
-run(args);
+run("node", args);
