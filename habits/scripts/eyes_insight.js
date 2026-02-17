@@ -115,16 +115,14 @@ function scoreItem(item) {
 }
 
 function buildProposalFromItem(item) {
-  // Prefer eye_id (external_eyes emits eye_id). Fall back to source for forward/back compat.
-  const source =
-    normalizeText(item.eye_id) ||
-    normalizeText(item.source) ||
-    'unknown_eye';
+  const source = normalizeText(item.eye_id) || 'unknown_eye';
   const url = normalizeText(item.url);
   const title = normalizeText(item.title) || 'External item';
   const topics = Array.isArray(item.topics) ? item.topics : [];
   const preview = normalizeText(item.content_preview);
-  const h = sha16(`${source}:${url}:${title}`);
+  // Stable ID: use eye_id + item_hash (external_eyes already computes this)
+  // Titles can change; item_hash is already a sha256(url) or content hash
+  const h = sha16(`${source}:${item.item_hash || url}`);
 
   // Proposal ID is deterministic per item hash (stable across runs)
   const id = `EYE-${h}`;
