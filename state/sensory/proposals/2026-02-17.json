@@ -1,0 +1,228 @@
+[
+  {
+    "id": "P001",
+    "title": "Stabilize high-churn files: file0.js, file1.js, file2.js, file3.js, file4.js, ...",
+    "type": "refactor",
+    "evidence": [
+      {
+        "source": "anomaly",
+        "path": "state/sensory/anomalies/2026-02-17.json",
+        "match": "high_churn: File 'file0.js' modified across 4 days (high churn detected)"
+      },
+      {
+        "source": "anomaly",
+        "path": "state/sensory/anomalies/2026-02-17.json",
+        "match": "high_churn: File 'file1.js' modified across 4 days (high churn detected)"
+      },
+      {
+        "source": "anomaly",
+        "path": "state/sensory/anomalies/2026-02-17.json",
+        "match": "high_churn: File 'file2.js' modified across 4 days (high churn detected)"
+      },
+      {
+        "source": "anomaly",
+        "path": "state/sensory/anomalies/2026-02-17.json",
+        "match": "high_churn: File 'file3.js' modified across 4 days (high churn detected)"
+      },
+      {
+        "source": "anomaly",
+        "path": "state/sensory/anomalies/2026-02-17.json",
+        "match": "high_churn: File 'file4.js' modified across 4 days (high churn detected)"
+      },
+      {
+        "source": "anomaly",
+        "path": "state/sensory/anomalies/2026-02-17.json",
+        "match": "high_churn: File 'file5.js' modified across 4 days (high churn detected)"
+      },
+      {
+        "source": "anomaly",
+        "path": "state/sensory/anomalies/2026-02-17.json",
+        "match": "high_churn: File 'file6.js' modified across 4 days (high churn detected)"
+      },
+      {
+        "source": "anomaly",
+        "path": "state/sensory/anomalies/2026-02-17.json",
+        "match": "high_churn: File 'file7.js' modified across 4 days (high churn detected)"
+      },
+      {
+        "source": "anomaly",
+        "path": "state/sensory/anomalies/2026-02-17.json",
+        "match": "high_churn: File 'file8.js' modified across 4 days (high churn detected)"
+      },
+      {
+        "source": "anomaly",
+        "path": "state/sensory/anomalies/2026-02-17.json",
+        "match": "high_churn: File 'file9.js' modified across 4 days (high churn detected)"
+      }
+    ],
+    "expected_impact": "medium",
+    "risk": "medium",
+    "validation": [
+      "Add regression tests for churn files",
+      "Refactor to reduce surface area",
+      "Document why these files change frequently",
+      "Expect high_churn anomalies to decrease"
+    ],
+    "suggested_next_command": "npm test -- files with highest churn"
+  },
+  {
+    "id": "EYE-776a013ef7faf917",
+    "type": "external_intel",
+    "title": "[Eyes:unknown_eye] [STUB] X/Twitter Trends item 1",
+    "evidence": [
+      {
+        "source": "eyes_raw",
+        "path": "state/sensory/eyes/raw/YYYY-MM-DD.jsonl",
+        "match": "[STUB] X/Twitter Trends item 1 | https://api.twitter.com/item/0",
+        "evidence_ref": "eye:unknown_eye"
+      }
+    ],
+    "expected_impact": "low",
+    "risk": "medium",
+    "validation": [
+      "Verify relevance to current goals",
+      "Check source link and summarize in 1 sentence",
+      "If actionable, convert into a concrete task"
+    ],
+    "suggested_next_command": "open \"https://api.twitter.com/item/0\"",
+    "meta": {
+      "source_eye": "unknown_eye",
+      "url": "https://api.twitter.com/item/0",
+      "topics": [
+        "ai_agents",
+        "llm",
+        "automation"
+      ],
+      "score": 40,
+      "preview": ""
+    }
+  },
+  {
+    "id": "EYE-4480e7dcae8826fa",
+    "type": "external_intel",
+    "title": "[Eyes:unknown_eye] [STUB] X/Twitter Trends item 2",
+    "evidence": [
+      {
+        "source": "eyes_raw",
+        "path": "state/sensory/eyes/raw/YYYY-MM-DD.jsonl",
+        "match": "[STUB] X/Twitter Trends item 2 | https://api.twitter.com/item/1",
+        "evidence_ref": "eye:unknown_eye"
+      }
+    ],
+    "expected_impact": "low",
+    "risk": "medium",
+    "validation": [
+      "Verify relevance to current goals",
+      "Check source link and summarize in 1 sentence",
+      "If actionable, convert into a concrete task"
+    ],
+    "suggested_next_command": "open \"https://api.twitter.com/item/1\"",
+    "meta": {
+      "source_eye": "unknown_eye",
+      "url": "https://api.twitter.com/item/1",
+      "topics": [
+        "ai_agents",
+        "llm",
+        "automation"
+      ],
+      "score": 40,
+      "preview": ""
+    }
+  },
+  {
+    "id": "EYE-9e5ae1e78ead9d43",
+    "type": "external_intel",
+    "title": "[Eyes:unknown_eye] [STUB] X/Twitter Trends item 3",
+    "evidence": [
+      {
+        "source": "eyes_raw",
+        "path": "state/sensory/eyes/raw/YYYY-MM-DD.jsonl",
+        "match": "[STUB] X/Twitter Trends item 3 | https://api.twitter.com/item/2",
+        "evidence_ref": "eye:unknown_eye"
+      }
+    ],
+    "expected_impact": "low",
+    "risk": "medium",
+    "validation": [
+      "Verify relevance to current goals",
+      "Check source link and summarize in 1 sentence",
+      "If actionable, convert into a concrete task"
+    ],
+    "suggested_next_command": "open \"https://api.twitter.com/item/2\"",
+    "meta": {
+      "source_eye": "unknown_eye",
+      "url": "https://api.twitter.com/item/2",
+      "topics": [
+        "ai_agents",
+        "llm",
+        "automation"
+      ],
+      "score": 40,
+      "preview": ""
+    }
+  },
+  {
+    "id": "EYE-0ec67010b50d20a5",
+    "type": "external_intel",
+    "title": "[Eyes:unknown_eye] [STUB] Moltbook Community Feed item 1",
+    "evidence": [
+      {
+        "source": "eyes_raw",
+        "path": "state/sensory/eyes/raw/YYYY-MM-DD.jsonl",
+        "match": "[STUB] Moltbook Community Feed item 1 | https://www.moltbook.com/item/0",
+        "evidence_ref": "eye:unknown_eye"
+      }
+    ],
+    "expected_impact": "low",
+    "risk": "medium",
+    "validation": [
+      "Verify relevance to current goals",
+      "Check source link and summarize in 1 sentence",
+      "If actionable, convert into a concrete task"
+    ],
+    "suggested_next_command": "open \"https://www.moltbook.com/item/0\"",
+    "meta": {
+      "source_eye": "unknown_eye",
+      "url": "https://www.moltbook.com/item/0",
+      "topics": [
+        "agent_innovation",
+        "skills",
+        "patterns"
+      ],
+      "score": 40,
+      "preview": ""
+    }
+  },
+  {
+    "id": "EYE-d0a0582d2645a0b5",
+    "type": "external_intel",
+    "title": "[Eyes:unknown_eye] [STUB] Moltbook Community Feed item 2",
+    "evidence": [
+      {
+        "source": "eyes_raw",
+        "path": "state/sensory/eyes/raw/YYYY-MM-DD.jsonl",
+        "match": "[STUB] Moltbook Community Feed item 2 | https://www.moltbook.com/item/1",
+        "evidence_ref": "eye:unknown_eye"
+      }
+    ],
+    "expected_impact": "low",
+    "risk": "medium",
+    "validation": [
+      "Verify relevance to current goals",
+      "Check source link and summarize in 1 sentence",
+      "If actionable, convert into a concrete task"
+    ],
+    "suggested_next_command": "open \"https://www.moltbook.com/item/1\"",
+    "meta": {
+      "source_eye": "unknown_eye",
+      "url": "https://www.moltbook.com/item/1",
+      "topics": [
+        "agent_innovation",
+        "skills",
+        "patterns"
+      ],
+      "score": 40,
+      "preview": ""
+    }
+  }
+]

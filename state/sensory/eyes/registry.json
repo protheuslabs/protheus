@@ -1,0 +1,108 @@
+{
+  "version": "1.0",
+  "last_updated": "2026-02-17T15:24:24.635Z",
+  "eyes": [
+    {
+      "id": "x_trends",
+      "name": "X/Twitter Trends",
+      "status": "probation",
+      "cadence_hours": 24,
+      "allowed_domains": [
+        "api.twitter.com",
+        "api.x.com",
+        "moltbook.com"
+      ],
+      "budgets": {
+        "max_items": 10,
+        "max_seconds": 30,
+        "max_bytes": 1048576,
+        "max_requests": 3
+      },
+      "parser_type": "stub",
+      "topics": [
+        "ai_agents",
+        "llm",
+        "automation"
+      ],
+      "last_run": "2026-02-17T08:17:37.868Z",
+      "last_success": "2026-02-17T08:17:37.868Z",
+      "error_rate": 0,
+      "score_ema": 62,
+      "notes": "News feed for AI agent community - in probation for 14 days",
+      "run_count": 1,
+      "total_items": 3,
+      "total_errors": 0,
+      "outcomes_window_days": 14,
+      "outcomes_total": 0,
+      "outcomes_delta": 0
+    },
+    {
+      "id": "moltbook_feed",
+      "name": "Moltbook Community Feed",
+      "status": "active",
+      "cadence_hours": 2,
+      "allowed_domains": [
+        "www.moltbook.com",
+        "api.moltbook.com"
+      ],
+      "budgets": {
+        "max_items": 20,
+        "max_seconds": 15,
+        "max_bytes": 524288,
+        "max_requests": 2
+      },
+      "parser_type": "stub",
+      "topics": [
+        "agent_innovation",
+        "skills",
+        "patterns"
+      ],
+      "last_run": "2026-02-17T15:23:18.977Z",
+      "last_success": "2026-02-17T15:23:18.977Z",
+      "error_rate": 0,
+      "score_ema": 81.5,
+      "notes": "Moltbook posts - currently active and performing well",
+      "run_count": 2,
+      "total_items": 6,
+      "total_errors": 0,
+      "outcomes_window_days": 14,
+      "outcomes_total": 2,
+      "outcomes_delta": 2,
+      "outcomes_shipped": 1,
+      "outcomes_reverted": 0,
+      "outcomes_no_change": 1,
+      "outcomes_points": 4
+    },
+    {
+      "id": "google_trends",
+      "name": "Google Trends (stub)",
+      "status": "dormant",
+      "cadence_hours": 168,
+      "allowed_domains": [
+        "trends.google.com"
+      ],
+      "budgets": {
+        "max_items": 5,
+        "max_seconds": 20,
+        "max_bytes": 262144,
+        "max_requests": 1
+      },
+      "parser_type": "stub",
+      "topics": [
+        "ai_interest",
+        "agent_tools"
+      ],
+      "last_run": "2026-02-17T08:17:37.870Z",
+      "last_success": "2026-02-17T08:17:37.870Z",
+      "error_rate": 0,
+      "score_ema": 44.5,
+      "notes": "Low signal - moved to dormant after 30 days low performance",
+      "run_count": 1,
+      "total_items": 3,
+      "total_errors": 0,
+      "outcomes_window_days": 14,
+      "outcomes_total": 0,
+      "outcomes_delta": 0
+    }
+  ]
+}
