@@ -1,0 +1,158 @@
+{
+  "version": 1,
+  "routing": {
+    "default_slot": "master",
+    "spawn_model_allowlist": [
+      "ollama/kimi-k2.5:cloud",
+      "ollama/qwen3:4b",
+      "ollama/gemma3:4b",
+      "ollama/smallthinker",
+      "gpt-oss:120b-cloud",
+      "qwen3-coder:480b-cloud",
+      "qwen3-v1:235b-cloud",
+      "minmax-m2-cloud",
+      "glm-4.6-cloud"
+    ],
+    "risk_buckets": {
+      "low": {
+        "description": "Pure reasoning, formatting, summaries, non-destructive reads, no trust changes, no cron changes, no writes outside allowlist."
+      },
+      "medium": {
+        "description": "Non-critical code edits, routine creation under habits/routines, doc edits, safe refactors, internal scripts that do not alter trust registries."
+      },
+      "high": {
+        "description": "Anything touching trust registries, governance files, routing config, cron scheduler ops, permission gates, execution wrappers, or system-wide defaults."
+      }
+    },
+    "complexity_buckets": {
+      "low": {
+        "signals": ["single-file edit", "small patch", "simple parsing", "minor config change"]
+      },
+      "medium": {
+        "signals": ["multi-file edits", "new script/module", "non-trivial logic", "new schema/contract"]
+      },
+      "high": {
+        "signals": ["architecture changes", "new router", "security-sensitive refactors", "migration logic", "cross-module invariants"]
+      }
+    },
+    "intent_to_risk_overrides": [
+      {
+        "if_any": ["trusted_skills.json", "trusted_habits.json", "trust_add", "hash pin", "governance", "doctor.js", "run_habit.js", "agent_slots.json", "agent_routing_rules.json"],
+        "set_risk": "high"
+      },
+      {
+        "if_any": ["openclaw cron", "cron add", "cron remove", "cron swap", "scheduler"],
+        "set_risk": "high"
+      },
+      {
+        "if_any": ["habits/routines", "propose_habit", "habit_gc", "habit_list"],
+        "set_risk": "medium"
+      }
+    ],
+    "slot_selection": [
+      {
+        "when": { "risk": "high", "complexity": "high" },
+        "use_slot": "master",
+        "prefer_model": "deepseek-v3:1:671b-cloud",
+        "fallback_slot": "master"
+      },
+      {
+        "when": { "risk": "high", "complexity": ["low", "medium"] },
+        "use_slot": "master",
+        "prefer_model": "kimi-k2.5:cloud",
+        "fallback_slot": "master"
+      },
+      {
+        "when": { "risk": "medium", "complexity": "high" },
+        "use_slot": "agent",
+        "prefer_model": "qwen3-coder:480b-cloud",
+        "fallback_slot": "master"
+      },
+      {
+        "when": { "risk": "medium", "complexity": ["low", "medium"] },
+        "use_slot": "coder",
+        "prefer_model": "qwen3-coder:480b-cloud",
+        "fallback_slot": "agent"
+      },
+      {
+        "when": { "risk": "low", "complexity": ["low", "medium"] },
+        "use_slot": "grunt",
+        "prefer_model": "ollama/smallthinker",
+        "fallback_slot": "fallback"
+      },
+      {
+        "when": { "risk": "low", "complexity": "high" },
+        "use_slot": "agent",
+        "prefer_model": "minmax-m2-cloud",
+        "fallback_slot": "master"
+      }
+    ],
+    "handoff_triggers": {
+      "force_handoff_if_any": [
+        { "reason": "model_missing_permissions", "signal": "PERMISSION_DENIED" },
+        { "reason": "token_caps_hit", "signal": "CAP_EXCEEDED" },
+        { "reason": "tool_required_unavailable", "signal": "MISSING_TOOL" },
+        { "reason": "repeated_failures", "signal": "CONSECUTIVE_ERRORS>=2" }
+      ],
+      "tier_3_max_turns": 3
+    },
+    "handoff_packet": {
+      "directory": "memory/handoff",
+      "filename_format": "YYYY-MM-DD__{from_slot}_to_{to_slot}__{topic_slug}.md",
+      "required_fields": [
+        "ts",
+        "from_slot",
+        "to_slot",
+        "models_tried",
+        "task_summary",
+        "current_state",
+        "constraints",
+        "next_actions",
+        "risks",
+        "files_touched",
+        "commands_run",
+        "rollback_plan"
+      ],
+      "template": [
+        "TS: {ts}",
+        "FROM: {from_slot} ({from_model})",
+        "TO: {to_slot} ({to_model})",
+        "MODELS_TRIED: {models_tried}",
+        "",
+        "TASK_SUMMARY:",
+        "{task_summary}",
+        "",
+        "CURRENT_STATE:",
+        "{current_state}",
+        "",
+        "CONSTRAINTS:",
+        "{constraints}",
+        "",
+        "FILES_TOUCHED:",
+        "{files_touched}",
+        "",
+        "COMMANDS_RUN:",
+        "{commands_run}",
+        "",
+        "RISKS:",
+        "{risks}",
+        "",
+        "NEXT_ACTIONS:",
+        "{next_actions}",
+        "",
+        "ROLLBACK_PLAN:",
+        "{rollback_plan}"
+      ]
+    },
+    "multi_model_guardrails": {
+      "enabled": true,
+      "require_second_opinion_for_risk": "high",
+      "second_opinion_slot": "master",
+      "second_opinion_prefer_model": "gpt-oss:120b",
+      "what_counts_as_second_opinion": [
+        "A brief written approval that the planned changes obey Governance v1.0 and do not widen permissions.",
+        "If disagreement: escalate to deepseek-v3:1:671b-cloud for tie-break."
+      ]
+    }
+  }
+}
