@@ -22,7 +22,28 @@
  */
 
 const { spawnSync } = require("child_process");
+const fs = require("fs");
 const path = require("path");
+
+// Ledger paths
+const SPINE_STATE_DIR = path.join(__dirname, "..", "..", "state", "spine");
+const SPINE_RUNS_DIR = path.join(SPINE_STATE_DIR, "runs");
+
+function ensureSpineDirs() {
+  if (!fs.existsSync(SPINE_RUNS_DIR)) {
+    fs.mkdirSync(SPINE_RUNS_DIR, { recursive: true });
+  }
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function writeLedger(dateStr, event) {
+  ensureSpineDirs();
+  const ledgerPath = path.join(SPINE_RUNS_DIR, `${dateStr}.jsonl`);
+  fs.appendFileSync(ledgerPath, JSON.stringify(event) + "\n");
+}
 
 function arg(name) {
   const pref = `--${name}=`;
@@ -72,6 +93,16 @@ function main() {
   // Clearance gate
   guard(invoked);
 
+  // Ledger: spine run started
+  writeLedger(dateStr, {
+    ts: nowIso(),
+    type: "spine_run_started",
+    mode,
+    date: dateStr,
+    max_eyes: maxEyes,
+    files_touched: invoked
+  });
+
   // EYES PIPELINE (always included in both modes)
   const runArgs = ["habits/scripts/external_eyes.js", "run"];
   if (maxEyes) runArgs.push(`--max-eyes=${maxEyes}`);
@@ -91,6 +122,14 @@ function main() {
     //   - digest render
     // but spine remains orchestration only.
   }
+
+  // Ledger: spine run completed
+  writeLedger(dateStr, {
+    ts: nowIso(),
+    type: "spine_run_ok",
+    mode,
+    date: dateStr
+  });
 
   console.log(`\n✅ spine complete (${mode}) for ${dateStr}`);
 }
