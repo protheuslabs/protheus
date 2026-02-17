@@ -509,13 +509,16 @@ function score(dateStr) {
     // Include yield lightly (outcome-weighted sensing):
     // - yield_rate contributes up to +20 points when yield approaches 1.0
     // - but typical yields are low, so this mostly helps distinguish "signal that converts"
+    // - confidence = min(1, proposed / 20) to avoid high bonuses on small samples
     const y = yieldSignals[eyeId] ? yieldSignals[eyeId].yield_rate : 0;
+    const proposed = yieldSignals[eyeId] ? yieldSignals[eyeId].proposed_total : 0;
+    const confidence = Math.min(1, proposed / 20);
     const rawScore = (
       noveltyRate * 30 +      // 30% novelty
       signalRate * 40 +         // 40% signal
       (1 - errorRate) * 20 +   // 20% reliability
       Math.min(proposalYield * 10, 10) +  // 10% proposal yield
-      Math.min(y * 20, 20)    // outcome yield bonus (max +20)
+      Math.min(y * 20, 20) * confidence    // outcome yield bonus (max +20), confidence-weighted
     );
     
     // Update EMA
@@ -553,7 +556,8 @@ function score(dateStr) {
       yield_window_days: YIELD_WINDOW_DAYS,
       proposed_total: yieldSignals[eyeId] ? yieldSignals[eyeId].proposed_total : 0,
       shipped_total: yieldSignals[eyeId] ? yieldSignals[eyeId].shipped_total : 0,
-      yield_rate: parseFloat((yieldSignals[eyeId] ? yieldSignals[eyeId].yield_rate : 0).toFixed(3))
+      yield_rate: parseFloat((yieldSignals[eyeId] ? yieldSignals[eyeId].yield_rate : 0).toFixed(3)),
+      yield_confidence: parseFloat(confidence.toFixed(3))
     };
     
     console.log(`📊 ${eyeId}:`);
@@ -562,7 +566,7 @@ function score(dateStr) {
     console.log(`   Cost: ${totalDuration}ms, ${totalRequests} reqs, ${totalBytes} bytes`);
     console.log(`   Score: raw=${rawScore.toFixed(1)}, EMA=${oldEma.toFixed(1)} → ${newEma.toFixed(1)}`);
     if (yieldSignals[eyeId]) {
-      console.log(`   Yield(14d): proposed=${yieldSignals[eyeId].proposed_total}, shipped=${yieldSignals[eyeId].shipped_total}, rate=${(yieldSignals[eyeId].yield_rate*100).toFixed(1)}%`);
+      console.log(`   Yield(14d): proposed=${yieldSignals[eyeId].proposed_total}, shipped=${yieldSignals[eyeId].shipped_total}, rate=${(yieldSignals[eyeId].yield_rate*100).toFixed(1)}%, conf=${(confidence*100).toFixed(0)}%`);
     }
     console.log('');
   }
