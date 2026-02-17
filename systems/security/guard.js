@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * systems/security/guard.js — deterministic clearance gate
+ * systems/security/guard.js — deterministic clearance gate (machine-readable)
  *
  * Purpose:
  * - Enforce "harder to change infrastructure, easier to change habits"
@@ -14,13 +14,9 @@
  *   BREAK_GLASS=1 (optional override; requires APPROVAL_NOTE)
  *   APPROVAL_NOTE="..." (required if BREAK_GLASS=1)
  *
- * Behavior:
- * - If any file is in a protected zone and caller clearance is too low -> exit(1)
- * - If BREAK_GLASS=1 and APPROVAL_NOTE is present -> allow but log the event
- *
- * Notes:
- * - This guard is intentionally simple. It's meant to be reliable and deterministic.
- * - It doesn't try to infer intent; it just checks paths.
+ * Output:
+ *   - stdout: single JSON line (ok / blocked / break_glass)
+ *   - stderr: human readable warnings/errors
  */
 
 const fs = require("fs");
@@ -53,24 +49,16 @@ function rel(p) {
 }
 
 function loadPolicy() {
-  // You can later move this into config/security_policy.json if desired.
-  // For now: hardcoded, deterministic, no IO dependencies.
+  // Hardcoded + deterministic. No external IO dependencies.
   return {
     version: "1.0",
-    // Minimum clearance required to *touch* (execute/modify) these zones.
-    // (We treat running orchestration scripts as "touching" infrastructure.)
     zones: [
       { prefix: "systems/", min_clearance: 3, label: "infrastructure" },
       { prefix: "config/", min_clearance: 3, label: "configuration" },
       { prefix: "memory/", min_clearance: 3, label: "memory_tools" },
-      // Habits are intended to be easy to change.
       { prefix: "habits/", min_clearance: 2, label: "habits_reflexes" },
-      // State is writable by lower tiers; it's data, not code.
       { prefix: "state/", min_clearance: 1, label: "state_data" }
     ],
-    // Explicitly protected files (even if outside systems/)
-    // These require clearance 4 - the highest tier
-    // NOTE: guard.js is NOT here; it's systems/ (clearance 3) so it can be called
     protected_files: [
       // e.g., "config/secrets.json", "config/root_keys.pem"
     ]
@@ -78,14 +66,12 @@ function loadPolicy() {
 }
 
 function matchZone(policy, fileRel) {
-  // Exact protected file match wins.
   if (policy.protected_files.includes(fileRel)) {
     return { prefix: fileRel, min_clearance: 4, label: "protected_core" };
   }
   for (const z of policy.zones) {
     if (fileRel.startsWith(z.prefix)) return z;
   }
-  // Default: treat unknown as infra-ish to be safe.
   return { prefix: "(default)", min_clearance: 3, label: "default_protect" };
 }
 
@@ -101,6 +87,10 @@ function logBreakGlass(entry) {
   }
 }
 
+function emitJson(obj) {
+  process.stdout.write(JSON.stringify(obj) + "\n");
+}
+
 function main() {
   const filesArg = parseArg("files");
   const files = (filesArg ? filesArg.split(",") : [])
@@ -109,16 +99,17 @@ function main() {
     .map(rel);
 
   if (!files.length) {
-    console.error("guard: missing --files=...");
+    process.stderr.write("guard: missing --files=...\n");
+    emitJson({ ok: false, blocked: true, reason: "missing_files", ts: nowIso() });
     process.exit(2);
   }
 
   const policy = loadPolicy();
   const clearance = asInt(process.env.CLEARANCE, 2);
   const breakGlass = String(process.env.BREAK_GLASS || "") === "1";
-  const approvalNote = String(process.env.APPROVAL_NOTE || "").trim();
+  let approvalNote = String(process.env.APPROVAL_NOTE || "").trim();
+  if (approvalNote.length > 240) approvalNote = approvalNote.slice(0, 240);
 
-  // Determine highest required clearance across all files.
   let required = 0;
   const reasons = [];
   for (const f of files) {
@@ -128,9 +119,7 @@ function main() {
   }
 
   if (clearance >= required) {
-    // Emit machine-readable OK for callers that want to record runs.
-    // (stdout-only, deterministic)
-    process.stdout.write(JSON.stringify({
+    emitJson({
       ok: true,
       break_glass: false,
       ts: nowIso(),
@@ -138,30 +127,37 @@ function main() {
       required,
       files,
       policy_version: policy.version
-    }) + "\n");
+    });
     return;
   }
 
-  // Break glass path
   if (breakGlass) {
     if (!approvalNote) {
-      console.error("guard: BREAK_GLASS=1 requires APPROVAL_NOTE");
+      process.stderr.write("guard: BREAK_GLASS=1 requires APPROVAL_NOTE\n");
+      emitJson({
+        ok: false,
+        blocked: true,
+        break_glass: true,
+        ts: nowIso(),
+        clearance,
+        required,
+        files,
+        policy_version: policy.version,
+        reasons
+      });
       process.exit(1);
     }
-    // Keep approval notes bounded so logs don't bloat.
-    const boundedNote = approvalNote.slice(0, 240);
     logBreakGlass({
       ts: nowIso(),
       clearance,
       required,
-      approval_note: boundedNote,
+      approval_note: approvalNote,
       files,
       reasons,
       policy_version: policy.version
     });
-    // Emit machine-readable OK for callers + human warning.
-    console.warn(`guard: BREAK_GLASS allowed (clearance=${clearance}, required=${required})`);
-    process.stdout.write(JSON.stringify({
+    process.stderr.write(`guard: BREAK_GLASS allowed (clearance=${clearance}, required=${required})\n`);
+    emitJson({
       ok: true,
       break_glass: true,
       ts: nowIso(),
@@ -169,18 +165,30 @@ function main() {
       required,
       files,
       policy_version: policy.version
-    }) + "\n");
+    });
     return;
   }
 
-  console.error("guard: BLOCKED");
-  console.error(`  clearance=${clearance}, required=${required}`);
-  console.error("  files:");
+  process.stderr.write("guard: BLOCKED\n");
+  process.stderr.write(`  clearance=${clearance}, required=${required}\n`);
+  process.stderr.write("  files:\n");
   for (const r of reasons) {
-    console.error(`    - ${r.file} (zone=${r.zone}, min_clearance=${r.min_clearance})`);
+    process.stderr.write(`    - ${r.file} (zone=${r.zone}, min_clearance=${r.min_clearance})\n`);
   }
-  console.error("  To override (not recommended):");
-  console.error('    BREAK_GLASS=1 APPROVAL_NOTE="why" CLEARANCE=<your_level> node ...');
+  process.stderr.write("  To override (not recommended):\n");
+  process.stderr.write('    BREAK_GLASS=1 APPROVAL_NOTE="why" CLEARANCE=<your_level> node ...\n');
+
+  emitJson({
+    ok: false,
+    blocked: true,
+    break_glass: false,
+    ts: nowIso(),
+    clearance,
+    required,
+    files,
+    policy_version: policy.version,
+    reasons
+  });
   process.exit(1);
 }
 

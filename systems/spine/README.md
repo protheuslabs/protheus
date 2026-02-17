@@ -1,47 +1,34 @@
 # Spine
 
-Spine is the orchestration layer: it connects other layers and runs them in order.
+**Spine = plumbing/orchestration only.**
 
-## What Spine Does
-- Sequences deterministic scripts (eyes, scoring, queue ingest, etc.)
-- Calls `systems/security/guard.js` before touching protected code paths
-- Sets CLEARANCE=3 (infrastructure tier) by default
+It sequences layer scripts in a deterministic order and runs a single clearance gate:
 
-## What Spine Does Not Do
-- No policies (those live in `systems/security/`)
-- No scoring logic (lives in each layer)
-- No LLM prompting (keep hot paths deterministic)
+- `systems/security/guard.js` is the choke point (clearance tiers)
+- `systems/spine/spine.js` orchestrates calls (no scoring, no prompting, no habit logic)
+- `habits/scripts/spine_*.js` are convenience wrappers ("reflexes")
 
-## Usage
+## Commands
 
-Run via habit wrapper (recommended):
+Run eyes pipeline:
+
 ```bash
-node habits/scripts/spine_eyes.js 2026-02-17 --max-eyes=3
-node habits/scripts/spine_daily.js 2026-02-17
+node systems/spine/spine.js eyes [YYYY-MM-DD] [--max-eyes=N]
 ```
 
-Or invoke spine directly (requires clearance):
+Run daily pipeline (currently same as eyes, reserved for expansion):
+
 ```bash
-CLEARANCE=3 node systems/spine/spine.js eyes 2026-02-17 --max-eyes=3
-CLEARANCE=3 node systems/spine/spine.js daily 2026-02-17
+node systems/spine/spine.js daily [YYYY-MM-DD] [--max-eyes=N]
 ```
 
-## Architecture
+## Clearance defaults
 
-```
-habits/scripts/spine_*.js   (tier 2 - habits, easy to change)
-    ↓
-systems/spine/spine.js      (tier 3 - infrastructure, harder to change)
-    ↓
-systems/security/guard.js   (tier 3 - permission gate)
-    ↓
-habits/scripts/*            (tier 2 - habit implementations)
-```
+- Spine defaults to `CLEARANCE=3` if unset.
+- Habits wrappers default to `CLEARANCE=3` (because they invoke spine).
 
-## Break glass
+Override (not recommended):
+
 ```bash
-BREAK_GLASS=1 APPROVAL_NOTE="emergency hotfix" CLEARANCE=2 node systems/spine/spine.js eyes 2026-02-17
+BREAK_GLASS=1 APPROVAL_NOTE="why" CLEARANCE=2 node systems/spine/spine.js eyes
 ```
-
-This logs an entry to:
-`state/security/break_glass.jsonl`

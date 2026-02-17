@@ -5,45 +5,17 @@
  * Spine responsibilities:
  * - Sequence layers in a deterministic order
  * - Call systems/security/guard.js as the choke point
- * - Emit one run record (optional future upgrade) — not policy, not scoring
+ * - Emit a minimal run ledger (observability only)
  *
  * What spine is NOT:
- * - Not the place for habits
+ * - Not the place for habits logic
  * - Not the place for scoring logic
  * - Not the place for LLM prompting
- *
- * Usage:
- *   node systems/spine/spine.js eyes [YYYY-MM-DD] [--max-eyes=N]
- *   node systems/spine/spine.js daily [YYYY-MM-DD] [--max-eyes=N]
- *
- * Env:
- *   CLEARANCE=1|2|3|4 (default: 3 here, because spine is infra)
- *   BREAK_GLASS=1, APPROVAL_NOTE="..." (optional)
  */
 
 const { spawnSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
-
-// Ledger paths
-const SPINE_STATE_DIR = path.join(__dirname, "..", "..", "state", "spine");
-const SPINE_RUNS_DIR = path.join(SPINE_STATE_DIR, "runs");
-
-function ensureSpineDirs() {
-  if (!fs.existsSync(SPINE_RUNS_DIR)) {
-    fs.mkdirSync(SPINE_RUNS_DIR, { recursive: true });
-  }
-}
-
-function nowIso() {
-  return new Date().toISOString();
-}
-
-function writeLedger(dateStr, event) {
-  ensureSpineDirs();
-  const ledgerPath = path.join(SPINE_RUNS_DIR, `${dateStr}.jsonl`);
-  fs.appendFileSync(ledgerPath, JSON.stringify(event) + "\n");
-}
 
 function arg(name) {
   const pref = `--${name}=`;
@@ -56,13 +28,32 @@ function todayOr(dateStr) {
   return new Date().toISOString().slice(0, 10);
 }
 
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function repoRoot() {
+  return path.resolve(__dirname, "..", "..");
+}
+
+function appendLedger(dateStr, evt) {
+  try {
+    const root = repoRoot();
+    const dir = path.join(root, "state", "spine", "runs");
+    fs.mkdirSync(dir, { recursive: true });
+    const fp = path.join(dir, `${dateStr}.jsonl`);
+    fs.appendFileSync(fp, JSON.stringify(evt) + "\n");
+  } catch {
+    // Observability must never block orchestration.
+  }
+}
+
 function run(cmd, args, opts = {}) {
   const r = spawnSync(cmd, args, { stdio: "inherit", ...opts });
   if (r.status !== 0) process.exit(r.status || 1);
 }
 
 function guard(files) {
-  // guard expects repo-relative paths
   run("node", ["systems/security/guard.js", `--files=${files.join(",")}`]);
 }
 
@@ -81,7 +72,6 @@ function main() {
     process.exit(2);
   }
 
-  // Declare what we will touch (guarded)
   const invoked = [
     "systems/spine/spine.js",
     "systems/security/guard.js",
@@ -90,18 +80,18 @@ function main() {
     "habits/scripts/sensory_queue.js"
   ];
 
-  // Clearance gate
-  guard(invoked);
-
-  // Ledger: spine run started
-  writeLedger(dateStr, {
+  // Ledger: started
+  appendLedger(dateStr, {
     ts: nowIso(),
     type: "spine_run_started",
     mode,
     date: dateStr,
-    max_eyes: maxEyes,
+    max_eyes: maxEyes || null,
     files_touched: invoked
   });
+
+  // Clearance gate
+  guard(invoked);
 
   // EYES PIPELINE (always included in both modes)
   const runArgs = ["habits/scripts/external_eyes.js", "run"];
@@ -115,23 +105,17 @@ function main() {
   run("node", ["habits/scripts/sensory_queue.js", "ingest", dateStr]);
   run("node", ["habits/scripts/sensory_queue.js", "list", `--date=${dateStr}`]);
 
-  if (mode === "daily") {
-    // daily mode is where you expand to other layers later:
-    //   - dopamine engine run
-    //   - anomaly scan
-    //   - digest render
-    // but spine remains orchestration only.
-  }
+  // daily mode: reserved for expansion (dopamine, digest, outcomes, etc.)
 
-  // Ledger: spine run completed
-  writeLedger(dateStr, {
+  // Ledger: ok
+  appendLedger(dateStr, {
     ts: nowIso(),
     type: "spine_run_ok",
     mode,
     date: dateStr
   });
 
-  console.log(`\n✅ spine complete (${mode}) for ${dateStr}`);
+  console.log(` ✅ spine complete (${mode}) for ${dateStr}`);
 }
 
 main();

@@ -1,19 +1,23 @@
 #!/usr/bin/env node
 /**
- * habits/scripts/spine_daily.js — habit/reflex wrapper
- *
- * Habits are easy to change (tier-2).
- * They invoke protected infrastructure (spine) without embedding policy.
- *
- * Usage:
- *   node habits/scripts/spine_daily.js [YYYY-MM-DD] [--max-eyes=N]
- *
- * Note: spine sets its own CLEARANCE=3 (infra). We don't override it here.
+ * habits/scripts/spine_daily.js — habit wrapper for daily spine run
+ * Reflex convenience wrapper (changeable by lower tiers).
  */
 
 const { spawnSync } = require("child_process");
 
-// Do NOT set CLEARANCE here - spine manages its own clearance
-const args = process.argv.slice(2);
-const r = spawnSync("node", ["systems/spine/spine.js", "daily", ...args], { stdio: "inherit" });
-process.exit(r.status || 0);
+function run(args) {
+  const r = spawnSync("node", args, { stdio: "inherit", env: process.env });
+  process.exit(r.status || 0);
+}
+
+// Wrapper defaults:
+if (!process.env.CLEARANCE) process.env.CLEARANCE = "3";
+
+const dateStr = process.argv[2]; // optional YYYY-MM-DD
+const maxEyesArg = process.argv.find(a => a.startsWith("--max-eyes="));
+const args = ["systems/spine/spine.js", "daily"];
+if (dateStr) args.push(dateStr);
+if (maxEyesArg) args.push(maxEyesArg);
+
+run(args);
