@@ -14,20 +14,34 @@
  */
 
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
 
 // Paths
-const CONFIG_PATH = path.join(__dirname, '..', '..', 'config', 'external_eyes.json');
-// Allow test overrides without changing default layout
-const STATE_DIR = process.env.EYES_STATE_DIR || path.join(__dirname, '..', '..', 'state', 'sensory', 'eyes');
+const WORKSPACE_DIR = path.join(__dirname, '..', '..');
+const CONFIG_PATH = path.join(WORKSPACE_DIR, 'config', 'external_eyes.json');
+
+// Allow overrides (tests / multi-workspace)
+const STATE_DIR = process.env.EYES_STATE_DIR
+  ? path.resolve(process.env.EYES_STATE_DIR)
+  : path.join(WORKSPACE_DIR, 'state', 'sensory', 'eyes');
+
 const RAW_DIR = path.join(STATE_DIR, 'raw');
 const METRICS_DIR = path.join(STATE_DIR, 'metrics');
 const PROPOSALS_DIR = path.join(STATE_DIR, 'proposals');
 const REGISTRY_PATH = path.join(STATE_DIR, 'registry.json');
-// Proposal Queue (Outcome tracking) paths
-const QUEUE_DIR = process.env.EYES_QUEUE_DIR || path.join(__dirname, '..', '..', 'state', 'queue');
-const QUEUE_DECISIONS_DIR = path.join(QUEUE_DIR, 'decisions');
+
+// Sensory proposals (from eyes_insight.js)
+const SENSORY_PROPOSALS_DIR = process.env.EYES_SENSORY_PROPOSALS_DIR
+  ? path.resolve(process.env.EYES_SENSORY_PROPOSALS_DIR)
+  : path.join(WORKSPACE_DIR, 'state', 'sensory', 'proposals');
+
+// Proposal queue decisions (outcomes live here)
+const QUEUE_DIR = process.env.EYES_QUEUE_DIR
+  ? path.resolve(process.env.EYES_QUEUE_DIR)
+  : path.join(WORKSPACE_DIR, 'state', 'queue');
+const DECISIONS_DIR = path.join(QUEUE_DIR, 'decisions');
 
 // Ensure directories exist
 function ensureDirs() {
@@ -95,6 +109,16 @@ function isDomainAllowed(eye, url) {
     return false;
   }
 }
+
+function safeReadJson(filePath, fallback = null) {
+  try {
+    if (!fs.existsSync(filePath)) return fallback;
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch {
+    return fallback;
+  }
+}
+
 function safeReadJsonl(filePath) {
   const events = [];
   try {
@@ -114,6 +138,68 @@ function safeReadJsonl(filePath) {
   return events;
 }
 
+function dateToMs(d) {
+  return new Date(d + 'T00:00:00.000Z').getTime();
+}
+
+function datesInWindow(windowDays, nowDateStr) {
+  const out = [];
+  const nowMs = dateToMs(nowDateStr);
+  for (let i = 0; i < windowDays; i++) {
+    const ms = nowMs - (i * 24 * 60 * 60 * 1000);
+    const iso = new Date(ms).toISOString().slice(0, 10);
+    out.push(iso);
+  }
+  return out;
+}
+
+// Yield signals:
+// proposed_total: # proposals in state/sensory/proposals for this eye in window
+// shipped_total: # outcomes shipped in state/queue/decisions with evidence_ref "eye:<id>"
+// yield_rate: shipped_total / proposed_total (0 if none)
+function computeYieldSignals(windowDays, nowDateStr) {
+  const windowDates = datesInWindow(windowDays, nowDateStr);
+  const proposedByEye = {};
+  const shippedByEye = {};
+
+  // Proposed counts
+  for (const d of windowDates) {
+    const fp = path.join(SENSORY_PROPOSALS_DIR, `${d}.json`);
+    const arr = safeReadJson(fp, []);
+    if (!Array.isArray(arr)) continue;
+    for (const p of arr) {
+      const eye = (p && p.meta && p.meta.source_eye) ? String(p.meta.source_eye) : null;
+      if (!eye) continue;
+      proposedByEye[eye] = (proposedByEye[eye] || 0) + 1;
+    }
+  }
+
+  // Shipped counts
+  for (const d of windowDates) {
+    const fp = path.join(DECISIONS_DIR, `${d}.jsonl`);
+    const evts = safeReadJsonl(fp);
+    for (const e of evts) {
+      if (!e || e.type !== 'outcome') continue;
+      if (String(e.outcome) !== 'shipped') continue;
+      const ref = String(e.evidence_ref || '');
+      const m = ref.match(/\beye:([^\s]+)/);
+      const eye = m ? m[1] : null;
+      if (!eye) continue;
+      shippedByEye[eye] = (shippedByEye[eye] || 0) + 1;
+    }
+  }
+
+  const eyes = new Set([...Object.keys(proposedByEye), ...Object.keys(shippedByEye)]);
+  const out = {};
+  for (const eye of eyes) {
+    const proposed = proposedByEye[eye] || 0;
+    const shipped = shippedByEye[eye] || 0;
+    const yieldRate = proposed > 0 ? shipped / proposed : 0;
+    out[eye] = { proposed_total: proposed, shipped_total: shipped, yield_rate: yieldRate };
+  }
+  return out;
+}
+
 /**
  * Read proposal_queue outcome events and attribute them to eyes.
  * We attribute only when evidence_ref includes "eye:<id>".
@@ -128,13 +214,13 @@ function safeReadJsonl(filePath) {
 function computeOutcomeSignals(windowDays, nowDateStr) {
   const results = {}; // eyeId -> { shipped, no_change, reverted, total, points, avg_points, delta }
   const now = new Date(nowDateStr);
-  if (!fs.existsSync(QUEUE_DECISIONS_DIR)) return results;
+  if (!fs.existsSync(DECISIONS_DIR)) return results;
 
   for (let i = windowDays - 1; i >= 0; i--) {
     const d = new Date(now);
     d.setDate(d.getDate() - i);
     const dateStr = d.toISOString().slice(0, 10);
-    const filePath = path.join(QUEUE_DECISIONS_DIR, `${dateStr}.jsonl`);
+    const filePath = path.join(DECISIONS_DIR, `${dateStr}.jsonl`);
     const events = safeReadJsonl(filePath);
 
     for (const ev of events) {
@@ -391,6 +477,9 @@ function score(dateStr) {
   const metrics = {};
   const config = loadConfig();
   
+  const YIELD_WINDOW_DAYS = 14;
+  const yieldSignals = computeYieldSignals(YIELD_WINDOW_DAYS, date);
+  
   for (const [eyeId, data] of Object.entries(byEye)) {
     const eyeConfig = config.eyes.find(e => e.id === eyeId);
     if (!eyeConfig) continue;
@@ -417,11 +506,16 @@ function score(dateStr) {
     const errorRate = totalRuns > 0 ? errorCount / totalRuns : 0;
     
     // Composite score
+    // Include yield lightly (outcome-weighted sensing):
+    // - yield_rate contributes up to +20 points when yield approaches 1.0
+    // - but typical yields are low, so this mostly helps distinguish "signal that converts"
+    const y = yieldSignals[eyeId] ? yieldSignals[eyeId].yield_rate : 0;
     const rawScore = (
       noveltyRate * 30 +      // 30% novelty
       signalRate * 40 +         // 40% signal
       (1 - errorRate) * 20 +   // 20% reliability
-      Math.min(proposalYield * 10, 10)  // 10% proposal yield
+      Math.min(proposalYield * 10, 10) +  // 10% proposal yield
+      Math.min(y * 20, 20)    // outcome yield bonus (max +20)
     );
     
     // Update EMA
@@ -453,7 +547,13 @@ function score(dateStr) {
       // Score
       raw_score: parseFloat(rawScore.toFixed(1)),
       score_ema: parseFloat(newEma.toFixed(1)),
-      score_ema_previous: parseFloat(oldEma.toFixed(1))
+      score_ema_previous: parseFloat(oldEma.toFixed(1)),
+
+      // Outcome yield signals (windowed)
+      yield_window_days: YIELD_WINDOW_DAYS,
+      proposed_total: yieldSignals[eyeId] ? yieldSignals[eyeId].proposed_total : 0,
+      shipped_total: yieldSignals[eyeId] ? yieldSignals[eyeId].shipped_total : 0,
+      yield_rate: parseFloat((yieldSignals[eyeId] ? yieldSignals[eyeId].yield_rate : 0).toFixed(3))
     };
     
     console.log(`📊 ${eyeId}:`);
@@ -461,6 +561,9 @@ function score(dateStr) {
     console.log(`   Rates: novelty=${(noveltyRate*100).toFixed(0)}%, signal=${(signalRate*100).toFixed(0)}%, error=${(errorRate*100).toFixed(0)}%`);
     console.log(`   Cost: ${totalDuration}ms, ${totalRequests} reqs, ${totalBytes} bytes`);
     console.log(`   Score: raw=${rawScore.toFixed(1)}, EMA=${oldEma.toFixed(1)} → ${newEma.toFixed(1)}`);
+    if (yieldSignals[eyeId]) {
+      console.log(`   Yield(14d): proposed=${yieldSignals[eyeId].proposed_total}, shipped=${yieldSignals[eyeId].shipped_total}, rate=${(yieldSignals[eyeId].yield_rate*100).toFixed(1)}%`);
+    }
     console.log('');
   }
   
@@ -488,6 +591,9 @@ function evolve(dateStr) {
   const config = loadConfig();
   
   const OUTCOME_WINDOW_DAYS = 14; // deterministic window for outcomes
+  // Compute once per evolve (do NOT recompute per eye)
+  const outcomeSignals = computeOutcomeSignals(OUTCOME_WINDOW_DAYS, date);
+  const yieldSignals = computeYieldSignals(OUTCOME_WINDOW_DAYS, date);
 
   console.log('═══════════════════════════════════════════════════════════');
   console.log('   EXTERNAL EYES - EVOLUTION');
@@ -505,10 +611,16 @@ function evolve(dateStr) {
     
     // Update EMA in registry
     regEye.score_ema = m.score_ema;
-    
+
+    // Store yield observability (derived)
+    const ys = yieldSignals[eyeId] || { proposed_total: 0, shipped_total: 0, yield_rate: 0 };
+    regEye.yield_window_days = OUTCOME_WINDOW_DAYS;
+    regEye.proposed_total = ys.proposed_total;
+    regEye.shipped_total = ys.shipped_total;
+    regEye.yield_rate = parseFloat((ys.yield_rate || 0).toFixed(3));
+
     // Outcome-based adjustment (closed-loop attribution)
     // This uses proposal_queue outcomes tagged with evidence_ref "eye:<id>"
-    const outcomeSignals = computeOutcomeSignals(OUTCOME_WINDOW_DAYS, date);
     if (outcomeSignals[eyeId] && outcomeSignals[eyeId].total > 0) {
       const sig = outcomeSignals[eyeId];
       // Apply small deterministic bump/penalty to score_ema
@@ -527,19 +639,33 @@ function evolve(dateStr) {
       regEye.outcomes_total = regEye.outcomes_total ?? 0;
       regEye.outcomes_delta = 0;
     }
-    
+
     const oldCadence = eyeConfig.cadence_hours;
     const oldStatus = eyeConfig.status;
     let newCadence = oldCadence;
     let newStatus = oldStatus;
     let reason = '';
-    
+
+    // Backlog approximation: proposed_total - shipped_total (windowed)
+    // Not perfect (doesn't count rejects/done), but enough to prevent runaway cadence decreases.
+    const backlogEst = Math.max(0, (ys.proposed_total || 0) - (ys.shipped_total || 0));
+    const BACKLOG_THROTTLE = config.scoring.backlog_throttle || 20;
+
+    // Yield thresholds
+    const YIELD_LOW = config.scoring.yield_threshold_low || 0.10; // 10%
+    const YIELD_MIN_PROPOSED = config.scoring.yield_min_proposed || 10; // only enforce once we have data
+
     // Evolution rules
     // 1. If score_ema < 20 for 30 days => dormant
     if (m.score_ema < config.scoring.score_threshold_dormant && regEye.run_count > 30) {
       newStatus = 'dormant';
       newCadence = Math.min(168, config.scoring.cadence_max_hours);
       reason = 'Score < 20 for >30 days';
+    }
+    // 1b. If yield is low (outcome-weighted) and we have enough volume, slow the eye down
+    else if ((ys.proposed_total || 0) >= YIELD_MIN_PROPOSED && (ys.yield_rate || 0) < YIELD_LOW) {
+      newCadence = Math.min(oldCadence * 2, config.scoring.cadence_max_hours);
+      reason = `Low yield (${(ys.yield_rate*100).toFixed(1)}% < ${(YIELD_LOW*100).toFixed(0)}%) over ${OUTCOME_WINDOW_DAYS}d`;
     }
     // 2. If score_ema < 30 for 14 days => cadence *= 2
     else if (m.score_ema < config.scoring.score_threshold_low && m.raw_score < 30) {
@@ -548,8 +674,14 @@ function evolve(dateStr) {
     }
     // 3. If score_ema > 70 for 14 days => cadence /= 2
     else if (m.score_ema > config.scoring.score_threshold_high && m.raw_score > 70) {
-      newCadence = Math.max(oldCadence / 2, config.scoring.cadence_min_hours);
-      reason = 'Score > 70 for >14 days';
+      // Only speed up if backlog is healthy
+      if (backlogEst >= BACKLOG_THROTTLE) {
+        newCadence = oldCadence; // hold steady
+        reason = `High score but backlogEst=${backlogEst} >= ${BACKLOG_THROTTLE} (hold cadence)`;
+      } else {
+        newCadence = Math.max(oldCadence / 2, config.scoring.cadence_min_hours);
+        reason = 'Score > 70 for >14 days';
+      }
     }
     
     // Apply changes
@@ -774,8 +906,9 @@ module.exports = {
   isDomainAllowed,
   computeHash,
   computeOutcomeSignals,
+  ensureDirs,
   safeReadJsonl,
-  ensureDirs
+  computeYieldSignals
 };
 
 // Run if called directly
