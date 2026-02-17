@@ -1,7 +1,46 @@
 {
   "version": "1.0",
-  "last_updated": "2026-02-17T15:24:24.635Z",
+  "last_updated": "2026-02-17T23:45:26.399Z",
   "eyes": [
+    {
+      "id": "hn_frontpage",
+      "name": "Hacker News Front Page",
+      "status": "probation",
+      "cadence_hours": 6,
+      "allowed_domains": [
+        "news.ycombinator.com",
+        "news.ycombinator.com"
+      ],
+      "budgets": {
+        "max_items": 15,
+        "max_seconds": 30,
+        "max_bytes": 1048576,
+        "max_requests": 2
+      },
+      "parser_type": "stub",
+      "topics": [
+        "startups",
+        "ai_agents",
+        "llm",
+        "programming",
+        "system_design"
+      ],
+      "last_run": null,
+      "last_success": null,
+      "error_rate": 0,
+      "score_ema": 50,
+      "notes": "Hacker News front page - monitoring for startup/tech/agent relevance",
+      "run_count": 0,
+      "total_items": 0,
+      "total_errors": 0,
+      "outcomes_window_days": 14,
+      "outcomes_total": 0,
+      "outcomes_delta": 0,
+      "yield_window_days": 14,
+      "proposed_total": 0,
+      "shipped_total": 0,
+      "yield_rate": 0
+    },
     {
       "id": "x_trends",
       "name": "X/Twitter Trends",
@@ -34,7 +73,11 @@
       "total_errors": 0,
       "outcomes_window_days": 14,
       "outcomes_total": 0,
-      "outcomes_delta": 0
+      "outcomes_delta": 0,
+      "yield_window_days": 14,
+      "proposed_total": 3,
+      "shipped_total": 0,
+      "yield_rate": 0
     },
     {
       "id": "moltbook_feed",
@@ -57,21 +100,25 @@
         "skills",
         "patterns"
       ],
-      "last_run": "2026-02-17T15:23:18.977Z",
-      "last_success": "2026-02-17T15:23:18.977Z",
+      "last_run": "2026-02-17T22:34:54.121Z",
+      "last_success": "2026-02-17T22:34:54.121Z",
       "error_rate": 0,
-      "score_ema": 81.5,
+      "score_ema": 82.43333333333332,
       "notes": "Moltbook posts - currently active and performing well",
-      "run_count": 2,
-      "total_items": 6,
+      "run_count": 3,
+      "total_items": 9,
       "total_errors": 0,
       "outcomes_window_days": 14,
-      "outcomes_total": 2,
-      "outcomes_delta": 2,
-      "outcomes_shipped": 1,
+      "outcomes_total": 3,
+      "outcomes_delta": 2.3333333333333335,
+      "outcomes_shipped": 2,
       "outcomes_reverted": 0,
       "outcomes_no_change": 1,
-      "outcomes_points": 4
+      "outcomes_points": 7,
+      "yield_window_days": 14,
+      "proposed_total": 2,
+      "shipped_total": 2,
+      "yield_rate": 1
     },
     {
       "id": "google_trends",
@@ -102,7 +149,11 @@
       "total_errors": 0,
       "outcomes_window_days": 14,
       "outcomes_total": 0,
-      "outcomes_delta": 0
+      "outcomes_delta": 0,
+      "yield_window_days": 14,
+      "proposed_total": 0,
+      "shipped_total": 0,
+      "yield_rate": 0
     }
   ]
 }
