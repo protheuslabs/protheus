@@ -128,6 +128,17 @@ function main() {
   }
 
   if (clearance >= required) {
+    // Emit machine-readable OK for callers that want to record runs.
+    // (stdout-only, deterministic)
+    process.stdout.write(JSON.stringify({
+      ok: true,
+      break_glass: false,
+      ts: nowIso(),
+      clearance,
+      required,
+      files,
+      policy_version: policy.version
+    }) + "\n");
     return;
   }
 
@@ -137,16 +148,28 @@ function main() {
       console.error("guard: BREAK_GLASS=1 requires APPROVAL_NOTE");
       process.exit(1);
     }
+    // Keep approval notes bounded so logs don't bloat.
+    const boundedNote = approvalNote.slice(0, 240);
     logBreakGlass({
       ts: nowIso(),
       clearance,
       required,
-      approval_note: approvalNote,
+      approval_note: boundedNote,
       files,
       reasons,
       policy_version: policy.version
     });
+    // Emit machine-readable OK for callers + human warning.
     console.warn(`guard: BREAK_GLASS allowed (clearance=${clearance}, required=${required})`);
+    process.stdout.write(JSON.stringify({
+      ok: true,
+      break_glass: true,
+      ts: nowIso(),
+      clearance,
+      required,
+      files,
+      policy_version: policy.version
+    }) + "\n");
     return;
   }
 
