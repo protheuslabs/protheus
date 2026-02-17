@@ -35,6 +35,31 @@ function repoRoot() {
   return path.resolve(__dirname, "..", "..");
 }
 
+function existsRel(relPath) {
+  const p = path.join(repoRoot(), relPath);
+  return fs.existsSync(p);
+}
+
+function assertProposalQueueInterface() {
+  const rel = "habits/scripts/proposal_queue.js";
+  if (!existsRel(rel)) {
+    throw new Error(`git_outcomes: missing dependency: ${rel}`);
+  }
+  // Interface check: ensure "outcome" command exists.
+  // We avoid parsing code; we just ask the script to help/usage.
+  const r = spawnSync("node", [rel, "--help"], { cwd: repoRoot(), encoding: "utf8" });
+  const out = `${r.stdout || ""} ${r.stderr || ""}`;
+  if (r.status !== 0 && out.trim().length === 0) {
+    throw new Error(`git_outcomes: dependency check failed running: node ${rel} --help`);
+  }
+  if (!out.toLowerCase().includes("outcome")) {
+    throw new Error(
+      `git_outcomes: dependency interface mismatch: "${rel}" does not advertise an "outcome" command. ` +
+      `Update git_outcomes.js or restore proposal_queue.js interface.`
+    );
+  }
+}
+
 function nowIso() {
   return new Date().toISOString();
 }
@@ -102,15 +127,28 @@ function unique(arr) {
   return Array.from(new Set(arr));
 }
 
+function usage() {
+  console.log("Usage:");
+  console.log("  node habits/scripts/git_outcomes.js run [YYYY-MM-DD]");
+}
+
 function main() {
   const cmd = process.argv[2];
   const dateStr = todayOr(process.argv[3]);
 
-  if (!cmd || cmd !== "run") {
-    console.error("Usage:");
-    console.error("  node habits/scripts/git_outcomes.js run [YYYY-MM-DD]");
+  if (!cmd || cmd === "--help" || cmd === "-h") {
+    usage();
+    process.exit(0);
+  }
+
+  if (cmd !== "run") {
+    usage();
+    console.error(`git_outcomes: unknown command: ${cmd}`);
     process.exit(2);
   }
+
+  // Safety check: fail loudly if proposal_queue.js moved or changed.
+  assertProposalQueueInterface();
 
   const root = repoRoot();
   const stateDir = path.join(root, "state", "git");
