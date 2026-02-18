@@ -141,6 +141,23 @@ function run() {
   );
   ok('relevance + directive fit are written to proposal meta');
 
+  assert.ok(
+    one.meta && Number.isFinite(Number(one.meta.actionability_score)),
+    'meta.actionability_score must be numeric'
+  );
+  assert.ok(
+    one.meta && typeof one.meta.actionability_pass === 'boolean',
+    'meta.actionability_pass must be boolean'
+  );
+  ok('actionability score+pass are written to proposal meta');
+
+  assert.ok(
+    typeof one.suggested_next_command === 'string'
+      && one.suggested_next_command.startsWith('node systems/routing/route_execute.js --task='),
+    'suggested_next_command should be route_execute dry-run command'
+  );
+  ok('suggested_next_command is actionable (not browser-open only)');
+
   // Verify deterministic dedupe by url worked (only one proposal per URL)
   const urls = new Set();
   for (const p of eyeProps) {

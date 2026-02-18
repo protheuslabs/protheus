@@ -41,6 +41,7 @@ const EYES_STATE_REGISTRY_PATH = path.join(__dirname, '..', '..', 'state', 'sens
 
 const SENSORY_MIN_RELEVANCE_SCORE = Number(process.env.SENSORY_MIN_RELEVANCE_SCORE || 42);
 const SENSORY_MIN_DIRECTIVE_FIT = Number(process.env.SENSORY_MIN_DIRECTIVE_FIT || 25);
+const SENSORY_MIN_ACTIONABILITY_SCORE = Number(process.env.SENSORY_MIN_ACTIONABILITY_SCORE || 45);
 const SENSORY_MIN_EYE_SCORE_EMA = Number(process.env.SENSORY_MIN_EYE_SCORE_EMA || 40);
 const SENSORY_DISALLOWED_PARSER_TYPES = new Set(
   String(process.env.SENSORY_DISALLOWED_PARSER_TYPES || 'stub')
@@ -64,6 +65,16 @@ const CAPABILITY_MARKERS = new Set([
   'ai', 'llm', 'agent', 'agents', 'automation', 'autonomous', 'productivity', 'devtools', 'infra', 'security',
   'orchestration', 'routing', 'latency', 'throughput', 'benchmark', 'optimization', 'startup'
 ]);
+const ACTION_VERB_RE = /\b(build|implement|ship|deploy|automate|optimize|test|measure|reduce|increase|create|launch)\b/i;
+const NOISE_MARKERS = [
+  'rumor',
+  'speculation',
+  'wishlist',
+  'top 10',
+  'roundup',
+  'viral',
+  'drama'
+];
 
 function ensureDirs() {
   [EYES_RAW_DIR, PROPOSALS_DIR].forEach((dir) => {
@@ -422,7 +433,70 @@ function assessItemRelevance(item, eye, directiveProfile) {
   };
 }
 
-function buildProposalFromItem(item, analysis) {
+function assessItemActionability(item, analysis) {
+  const title = normalizeText(item.title);
+  const preview = normalizeText(item.content_preview);
+  const url = normalizeText(item.url);
+  const topics = Array.isArray(item.topics) ? item.topics : [];
+  const relevance = Number(analysis && analysis.relevance_score);
+  const directiveFitPass = analysis && analysis.directive_fit_pass === true;
+  const reasons = [];
+
+  let score = 0;
+  if (directiveFitPass) score += 18;
+  else reasons.push('directive_fit_not_passed');
+
+  if (Number.isFinite(relevance)) score += clamp(Math.round((relevance - 30) * 0.5), 0, 35);
+
+  if (ACTION_VERB_RE.test(title) || ACTION_VERB_RE.test(preview)) score += 16;
+  else reasons.push('no_action_verb');
+
+  if (topics.length >= 2) score += 8;
+  else if (topics.length >= 1) score += 4;
+
+  if (url.startsWith('https://')) score += 8;
+  else if (url.startsWith('http://')) score += 4;
+  else reasons.push('missing_source_url');
+
+  const haystack = `${title.toLowerCase()} ${preview.toLowerCase()}`;
+  const noiseHits = NOISE_MARKERS.filter(m => haystack.includes(m)).length;
+  if (noiseHits > 0) {
+    score -= noiseHits * 10;
+    reasons.push('noise_marker');
+  }
+
+  const finalScore = clamp(score, 0, 100);
+  const pass = finalScore >= SENSORY_MIN_ACTIONABILITY_SCORE;
+  if (!pass) reasons.push('below_min_actionability');
+
+  return {
+    pass,
+    actionability_score: finalScore,
+    reasons
+  };
+}
+
+function normalizeTaskText(s, maxLen = 160) {
+  return normalizeText(s)
+    .replace(/["`]/g, '')
+    .replace(/\s+/g, ' ')
+    .slice(0, maxLen);
+}
+
+function buildSuggestedNextCommand(item, analysis) {
+  const title = normalizeTaskText(item.title || 'external intel', 90);
+  const url = normalizeTaskText(item.url || '', 120);
+  const topics = Array.isArray(item.topics)
+    ? item.topics.map(t => normalizeTaskText(t, 20)).filter(Boolean).slice(0, 2)
+    : [];
+  const focus = topics.length ? ` Focus topics: ${topics.join(', ')}.` : '';
+  const source = url ? ` Source: ${url}.` : '';
+  const task = `Extract one implementable step from external intel: ${title}.${focus}${source}`.trim().slice(0, 220);
+  const tokensEst = Number(analysis && analysis.relevance_score) >= 70 ? 1100 : 700;
+  return `node systems/routing/route_execute.js --task="${task}" --tokens_est=${tokensEst} --repeats_14d=3 --errors_30d=0 --dry-run`;
+}
+
+function buildProposalFromItem(item, analysis, actionability) {
   // Prefer explicit eye_id from external_eyes raw events (stable attribution key)
   const eyeId = normalizeText(item.eye_id) || normalizeText(item.source) || 'unknown_eye';
   const url = normalizeText(item.url);
@@ -434,6 +508,7 @@ function buildProposalFromItem(item, analysis) {
   const signalTier = qualityTier(itemScore);
   const relevanceScore = Number(analysis && analysis.relevance_score);
   const directiveFitScore = Number(analysis && analysis.directive_fit_score);
+  const actionabilityScore = Number(actionability && actionability.actionability_score);
 
   // Stable key:
   // - If item_hash exists, use it (best)
@@ -462,14 +537,18 @@ function buildProposalFromItem(item, analysis) {
         evidence_item_hash: itemHash || null
       }
     ],
-    expected_impact: itemScore >= 60 ? 'medium' : 'low',
-    risk: itemScore >= 80 ? 'low' : 'medium',
+    expected_impact: (Number.isFinite(relevanceScore) && relevanceScore >= 75 && Number.isFinite(actionabilityScore) && actionabilityScore >= 70)
+      ? 'high'
+      : itemScore >= 60 ? 'medium' : 'low',
+    risk: (analysis && analysis.directive_fit_pass === true && Number.isFinite(actionabilityScore) && actionabilityScore >= 60)
+      ? 'low'
+      : 'medium',
     validation: [
-      'Verify relevance to current goals',
-      'Check source link and summarize in 1 sentence',
-      'If actionable, convert into a concrete task'
+      'Extract one concrete build/change task from source',
+      'Define measurable success check (artifact/log/test)',
+      'Route a dry-run execution plan and verify gate outcome'
     ],
-    suggested_next_command: `open "${url}"`,
+    suggested_next_command: buildSuggestedNextCommand(item, analysis),
     meta: {
       source_eye: eyeId,
       url,
@@ -485,6 +564,9 @@ function buildProposalFromItem(item, analysis) {
       directive_fit_positive: analysis ? analysis.directive_fit_positive.slice(0, 5) : [],
       directive_fit_negative: analysis ? analysis.directive_fit_negative.slice(0, 5) : [],
       relevance_reasons: analysis ? analysis.reasons.slice(0, 5) : [],
+      actionability_score: Number.isFinite(actionabilityScore) ? actionabilityScore : null,
+      actionability_pass: actionability ? actionability.pass === true : null,
+      actionability_reasons: actionability ? actionability.reasons.slice(0, 5) : [],
       preview: preview.slice(0, 200)
     }
   };
@@ -505,7 +587,10 @@ function hydrateExisting(existingProposal, incomingProposal) {
     'directive_fit_pass',
     'directive_fit_positive',
     'directive_fit_negative',
-    'relevance_reasons'
+    'relevance_reasons',
+    'actionability_score',
+    'actionability_pass',
+    'actionability_reasons'
   ];
 
   let touched = false;
@@ -567,7 +652,8 @@ function generateEyeProposals(dateStr, maxCount = 5) {
     const eyeId = normalizeText(item.eye_id) || normalizeText(item.source) || 'unknown_eye';
     const eye = eyesMap.get(eyeId) || null;
     const analysis = assessItemRelevance(item, eye, directiveProfile);
-    return { item, eyeId, analysis };
+    const actionability = assessItemActionability(item, analysis);
+    return { item, eyeId, analysis, actionability };
   });
 
   // Deduplicate by URL hash to avoid spamming same link
@@ -581,15 +667,17 @@ function generateEyeProposals(dateStr, maxCount = 5) {
     if (!prev) {
       byUrl.set(key, entry);
     } else {
-      // keep the higher relevance one deterministically
-      if (entry.analysis.relevance_score > prev.analysis.relevance_score) byUrl.set(key, entry);
+      // keep the higher relevance/actionability one deterministically
+      const scoreCur = (Number(entry.analysis.relevance_score) * 0.7) + (Number(entry.actionability.actionability_score) * 0.3);
+      const scorePrev = (Number(prev.analysis.relevance_score) * 0.7) + (Number(prev.actionability.actionability_score) * 0.3);
+      if (scoreCur > scorePrev) byUrl.set(key, entry);
     }
   }
 
   const deduped = Array.from(byUrl.values());
   deduped.sort((a, b) => {
-    const sa = Number(a.analysis.relevance_score);
-    const sb = Number(b.analysis.relevance_score);
+    const sa = (Number(a.analysis.relevance_score) * 0.7) + (Number(a.actionability.actionability_score) * 0.3);
+    const sb = (Number(b.analysis.relevance_score) * 0.7) + (Number(b.actionability.actionability_score) * 0.3);
     if (sb !== sa) return sb - sa;
     // stable tie-breakers
     const ua = normalizeText(a.item.url);
@@ -597,9 +685,9 @@ function generateEyeProposals(dateStr, maxCount = 5) {
     return ua.localeCompare(ub);
   });
 
-  const rejected = deduped.filter(x => !x.analysis.pass);
-  const accepted = deduped.filter(x => x.analysis.pass);
-  const proposals = accepted.slice(0, maxCount).map(x => buildProposalFromItem(x.item, x.analysis));
+  const rejected = deduped.filter(x => !(x.analysis.pass && x.actionability.pass));
+  const accepted = deduped.filter(x => x.analysis.pass && x.actionability.pass);
+  const proposals = accepted.slice(0, maxCount).map(x => buildProposalFromItem(x.item, x.analysis, x.actionability));
   return {
     rawPath,
     proposals,
@@ -614,7 +702,8 @@ function generateEyeProposals(dateStr, maxCount = 5) {
       eye_id: x.eyeId,
       title: normalizeText(x.item.title).slice(0, 80),
       relevance_score: x.analysis.relevance_score,
-      reasons: x.analysis.reasons.slice(0, 3)
+      actionability_score: x.actionability.actionability_score,
+      reasons: [...x.analysis.reasons, ...x.actionability.reasons].slice(0, 4)
     }))
   };
 }
@@ -701,6 +790,7 @@ module.exports = {
   scoreItem,
   assessDirectiveFitItem,
   assessItemRelevance,
+  assessItemActionability,
   buildProposalFromItem,
   generateEyeProposals,
   mergeIntoDailyProposals,
