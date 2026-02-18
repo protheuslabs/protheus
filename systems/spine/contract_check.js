@@ -113,6 +113,12 @@ function main() {
     ["autonomy_controller.js", "run", "status"]
   );
 
+  // improvement_controller.js manages bounded trial + rollback for self-improvements.
+  checkScript(
+    "systems/autonomy/improvement_controller.js",
+    ["improvement_controller.js", "start", "evaluate", "status"]
+  );
+
   // route_execute.js is called by autonomy_controller run path.
   checkScript(
     "systems/routing/route_execute.js",
