@@ -1622,11 +1622,12 @@ function runRouteExecute(task, tokensEst, repeats14d = 1, errors30d = 0, dryRun 
 }
 
 function makeTaskFromProposal(p) {
-  const eye = sourceEyeRef(p);
+  const proposalId = String((p && p.id) || 'unknown');
+  const proposalType = String((p && p.type) || 'task').replace(/[^a-z0-9_-]/gi, '').toLowerCase();
   const title = String(p.title || '')
     .replace(/\[Eyes:[^\]]+\]\s*/g, '')
     .slice(0, 140);
-  return `Process external intel from ${eye}: ${title}`;
+  return `Execute bounded proposal ${proposalId} (${proposalType}): ${title}`;
 }
 
 function writeExperiment(dateStr, card) {
@@ -2359,7 +2360,7 @@ function runCmd(dateStr) {
     proposal_id: p.id,
     proposal_date: proposalDate,
     title: p.title || '',
-    hypothesis: `Executing one bounded action for ${p.id} improves conversion signal without policy violations.`,
+    hypothesis: `Executing one bounded action for ${p.id} improves measurable progress without policy violations.`,
     success_metric: 'Executable route decision with non-error exit and tracked outcome.',
     token_budget_est: estTokens,
     route_tokens_est: routeTokensEst,
