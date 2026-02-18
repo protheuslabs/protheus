@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 /**
  * Compatibility wrapper.
- * Moved to: systems/security/directive_gate.js
+ * Moved to: systems/routing/route_execute.js
  */
 
 const path = require('path');
 const { spawnSync } = require('child_process');
 
-const target = path.resolve(__dirname, '..', '..', 'systems', 'security', 'directive_gate.js');
+const target = path.resolve(__dirname, '..', '..', 'systems', 'routing', 'route_execute.js');
 
 if (require.main === module) {
   const r = spawnSync(process.execPath, [target, ...process.argv.slice(2)], {
