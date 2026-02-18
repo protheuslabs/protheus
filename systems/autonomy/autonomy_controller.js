@@ -19,6 +19,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { spawnSync } = require('child_process');
 const { loadActiveDirectives } = require('../../lib/directive_resolver.js');
 
@@ -37,6 +38,7 @@ const AUTONOMY_DIR = path.join(REPO_ROOT, 'state', 'autonomy');
 const RUNS_DIR = path.join(AUTONOMY_DIR, 'runs');
 const EXPERIMENTS_DIR = path.join(AUTONOMY_DIR, 'experiments');
 const DAILY_BUDGET_DIR = path.join(AUTONOMY_DIR, 'daily_budget');
+const RECEIPTS_DIR = path.join(AUTONOMY_DIR, 'receipts');
 const COOLDOWNS_PATH = path.join(AUTONOMY_DIR, 'cooldowns.json');
 const CALIBRATION_PATH = path.join(AUTONOMY_DIR, 'calibration.json');
 
@@ -98,7 +100,7 @@ function ensureDir(dir) {
 }
 
 function ensureState() {
-  [AUTONOMY_DIR, RUNS_DIR, EXPERIMENTS_DIR, DAILY_BUDGET_DIR].forEach(ensureDir);
+  [AUTONOMY_DIR, RUNS_DIR, EXPERIMENTS_DIR, DAILY_BUDGET_DIR, RECEIPTS_DIR].forEach(ensureDir);
 }
 
 function nowIso() {
@@ -1621,6 +1623,49 @@ function runRouteExecute(task, tokensEst, repeats14d = 1, errors30d = 0, dryRun 
   };
 }
 
+function shortText(v, max = 220) {
+  const s = String(v || '');
+  return s.length <= max ? s : `${s.slice(0, max)}...`;
+}
+
+function hashObj(v) {
+  try {
+    return crypto.createHash('sha256').update(JSON.stringify(v)).digest('hex');
+  } catch {
+    return null;
+  }
+}
+
+function compactCmdResult(res) {
+  if (!res) return null;
+  return {
+    ok: !!res.ok,
+    code: Number(res.code || 0),
+    skipped: !!res.skipped,
+    stdout: shortText(res.stdout || '', 200),
+    stderr: shortText(res.stderr || '', 200)
+  };
+}
+
+function verifyExecutionReceipt(execRes, dod, outcomeRes) {
+  const checks = [
+    { name: 'route_execute_ok', pass: !!(execRes && execRes.ok === true) },
+    { name: 'dod_passed', pass: !!(dod && dod.passed === true) },
+    { name: 'queue_outcome_logged', pass: !!(outcomeRes && outcomeRes.ok === true) }
+  ];
+  let outcome = 'shipped';
+  if (!checks[0].pass || !checks[2].pass) outcome = 'reverted';
+  else if (!checks[1].pass) outcome = 'no_change';
+  const failed = checks.filter(c => !c.pass).map(c => c.name);
+  return {
+    checks,
+    failed,
+    passed: failed.length === 0,
+    outcome,
+    primary_failure: failed.length ? failed[0] : null
+  };
+}
+
 function makeTaskFromProposal(p) {
   const proposalId = String((p && p.id) || 'unknown');
   const proposalType = String((p && p.type) || 'task').replace(/[^a-z0-9_-]/gi, '').toLowerCase();
@@ -1636,6 +1681,10 @@ function writeExperiment(dateStr, card) {
 
 function writeRun(dateStr, evt) {
   appendJsonl(path.join(RUNS_DIR, `${dateStr}.jsonl`), evt);
+}
+
+function writeReceipt(dateStr, receipt) {
+  appendJsonl(path.join(RECEIPTS_DIR, `${dateStr}.jsonl`), receipt);
 }
 
 function candidatePool(dateStr) {
@@ -2304,6 +2353,7 @@ function runCmd(dateStr) {
   const errors30d = countEyeOutcomesInWindow(decisionEvents, eyeRef, 'reverted', proposalDate, 30);
   const routeTokensEst = repeats14d >= 3 ? Math.max(estTokens, AUTONOMY_MIN_ROUTE_TOKENS) : estTokens;
   const task = makeTaskFromProposal(p);
+  const receiptId = `auto_${Date.now()}_${String(p.id).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 48)}`;
 
   const preflight = runRouteExecute(task, routeTokensEst, repeats14d, errors30d, true);
   const preSummary = preflight.summary || null;
@@ -2327,6 +2377,7 @@ function runCmd(dateStr) {
       ts: nowIso(),
       type: 'autonomy_run',
       result: 'init_gate_blocked_route',
+      receipt_id: receiptId,
       proposal_id: p.id,
       proposal_date: proposalDate,
       score: Number(pick.score.toFixed(3)),
@@ -2337,9 +2388,34 @@ function runCmd(dateStr) {
       errors_30d: errors30d,
       dopamine
     });
+    writeReceipt(dateStr, {
+      ts: nowIso(),
+      type: 'autonomy_action_receipt',
+      receipt_id: receiptId,
+      proposal_id: p.id,
+      proposal_date: proposalDate,
+      verdict: 'fail',
+      intent: {
+        task_hash: hashObj({ task }),
+        route_tokens_est: routeTokensEst,
+        repeats_14d: repeats14d,
+        errors_30d: errors30d
+      },
+      execution: {
+        preflight: compactCmdResult(preflight)
+      },
+      verification: {
+        checks: [{ name: 'preflight_executable', pass: false }],
+        failed: ['preflight_executable'],
+        passed: false,
+        outcome: 'reverted',
+        primary_failure: blockReason
+      }
+    });
     process.stdout.write(JSON.stringify({
       ok: true,
       result: 'init_gate_blocked_route',
+      receipt_id: receiptId,
       proposal_id: p.id,
       route_block_reason: blockReason,
       route_summary: preSummary,
@@ -2350,13 +2426,64 @@ function runCmd(dateStr) {
     return;
   }
 
-  if (pick.status !== 'accepted') {
-    runProposalQueue('accept', p.id, 'auto:autonomy_controller selected');
+  const acceptRes = pick.status !== 'accepted'
+    ? runProposalQueue('accept', p.id, 'auto:autonomy_controller selected')
+    : { ok: true, code: 0, stdout: 'already_accepted', stderr: '', skipped: true };
+
+  if (!acceptRes.ok) {
+    const reason = `auto:init_gate accept_failed cooldown_${AUTONOMY_ROUTE_BLOCK_COOLDOWN_HOURS}h`;
+    setCooldown(p.id, AUTONOMY_ROUTE_BLOCK_COOLDOWN_HOURS, reason);
+    writeRun(dateStr, {
+      ts: nowIso(),
+      type: 'autonomy_run',
+      result: 'init_gate_accept_failed',
+      receipt_id: receiptId,
+      proposal_id: p.id,
+      proposal_date: proposalDate,
+      score: Number(pick.score.toFixed(3)),
+      accept_result: compactCmdResult(acceptRes),
+      repeats_14d: repeats14d,
+      errors_30d: errors30d
+    });
+    writeReceipt(dateStr, {
+      ts: nowIso(),
+      type: 'autonomy_action_receipt',
+      receipt_id: receiptId,
+      proposal_id: p.id,
+      proposal_date: proposalDate,
+      verdict: 'fail',
+      intent: {
+        task_hash: hashObj({ task }),
+        route_tokens_est: routeTokensEst,
+        repeats_14d: repeats14d,
+        errors_30d: errors30d
+      },
+      execution: {
+        preflight: compactCmdResult(preflight),
+        accept: compactCmdResult(acceptRes)
+      },
+      verification: {
+        checks: [{ name: 'queue_accept_logged', pass: false }],
+        failed: ['queue_accept_logged'],
+        passed: false,
+        outcome: 'reverted',
+        primary_failure: 'queue_accept_logged'
+      }
+    });
+    process.stdout.write(JSON.stringify({
+      ok: true,
+      result: 'init_gate_accept_failed',
+      receipt_id: receiptId,
+      proposal_id: p.id,
+      ts: nowIso()
+    }) + '\n');
+    return;
   }
 
   const experiment = {
     ts: nowIso(),
     type: 'experiment_card',
+    receipt_id: receiptId,
     proposal_id: p.id,
     proposal_date: proposalDate,
     title: p.title || '',
@@ -2419,13 +2546,67 @@ function runCmd(dateStr) {
     outcomeNote = `auto:autonomy dod_pass:${dod.class}`;
   }
 
-  const evidence = `${eyeRef} ${outcomeNote}`.slice(0, 220);
-  runProposalQueue('outcome', p.id, outcome, evidence);
+  let evidence = `${eyeRef} receipt:${receiptId} ${outcomeNote}`.slice(0, 220);
+  let outcomeRes = runProposalQueue('outcome', p.id, outcome, evidence);
+  let outcomeRecoveryAttempted = false;
+  if (!outcomeRes.ok && outcome !== 'reverted') {
+    outcomeRecoveryAttempted = true;
+    outcome = 'reverted';
+    outcomeNote = 'auto:autonomy verify_outcome_retry_reverted';
+    evidence = `${eyeRef} receipt:${receiptId} ${outcomeNote}`.slice(0, 220);
+    outcomeRes = runProposalQueue('outcome', p.id, outcome, evidence);
+  }
+
+  const verification = verifyExecutionReceipt(execRes, dod, outcomeRes);
+  outcome = verification.outcome;
+  let cooldownAppliedHours = 0;
+  if (!verification.passed) {
+    cooldownAppliedHours = outcome === 'reverted'
+      ? REVERT_COOLDOWN_HOURS
+      : AUTONOMY_ROUTE_BLOCK_COOLDOWN_HOURS;
+    const reason = `auto:verify ${verification.primary_failure || 'unknown'} cooldown_${cooldownAppliedHours}h`;
+    setCooldown(p.id, cooldownAppliedHours, reason);
+    if (!outcomeRes.ok) {
+      runProposalQueue('park', p.id, reason);
+    }
+  }
+
+  writeReceipt(dateStr, {
+    ts: nowIso(),
+    type: 'autonomy_action_receipt',
+    receipt_id: receiptId,
+    proposal_id: p.id,
+    proposal_date: proposalDate,
+    verdict: verification.passed ? 'pass' : 'fail',
+    intent: {
+      task_hash: hashObj({ task }),
+      route_tokens_est: routeTokensEst,
+      repeats_14d: repeats14d,
+      errors_30d: errors30d
+    },
+    execution: {
+      preflight: compactCmdResult(preflight),
+      accept: compactCmdResult(acceptRes),
+      execute: compactCmdResult(execRes),
+      outcome: compactCmdResult(outcomeRes),
+      outcome_retry_attempted: outcomeRecoveryAttempted
+    },
+    verification: {
+      ...verification,
+      dod: {
+        passed: !!dod.passed,
+        class: dod.class || null,
+        reason: dod.reason || null
+      },
+      cooldown_applied_hours: cooldownAppliedHours
+    }
+  });
 
   writeRun(dateStr, {
     ts: nowIso(),
     type: 'autonomy_run',
     result: 'executed',
+    receipt_id: receiptId,
     proposal_id: p.id,
     proposal_date: proposalDate,
     score: Number(pick.score.toFixed(3)),
@@ -2450,8 +2631,10 @@ function runCmd(dateStr) {
     thresholds,
     route_summary: summary,
     dod,
+    verification,
     exec_ok: execRes.ok,
     exec_code: execRes.code,
+    outcome_write_ok: !!outcomeRes.ok,
     outcome,
     evidence
   });
@@ -2459,6 +2642,7 @@ function runCmd(dateStr) {
   process.stdout.write(JSON.stringify({
     ok: true,
     result: 'executed',
+    receipt_id: receiptId,
     proposal_id: p.id,
     proposal_date: proposalDate,
     est_tokens: estTokens,
@@ -2480,6 +2664,8 @@ function runCmd(dateStr) {
     explore_used_before: selection.explore_used,
     explore_quota: selection.explore_quota,
     dod,
+    verification,
+    outcome_write_ok: !!outcomeRes.ok,
     route_summary: summary,
     ts: nowIso()
   }) + '\n');

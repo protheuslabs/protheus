@@ -144,6 +144,24 @@ function main() {
     ["decision", "gate_decision"]
   );
 
+  // habit_crystallizer.js is the habits-layer routine scaffolder used by route_task propose path.
+  checkScript(
+    "habits/scripts/habit_crystallizer.js",
+    ["habit_crystallizer.js", "--from", "tokens_est", "repeats_14d"]
+  );
+
+  // install_skill_safe.js enforces skill install quarantine + trust pin workflow.
+  checkScript(
+    "habits/scripts/install_skill_safe.js",
+    ["install_skill_safe.js", "--spec", "--dry-run", "--approve"]
+  );
+
+  // skill_quarantine.js provides deterministic inspect/verify/hash checks.
+  checkScript(
+    "systems/security/skill_quarantine.js",
+    ["skill_quarantine.js", "inspect", "verify", "hash-tree"]
+  );
+
   console.log("contract_check: OK");
 }
 

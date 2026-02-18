@@ -24,6 +24,7 @@ const { evaluateTask, logGateDecision } = require('../security/directive_gate.js
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const REGISTRY_PATH = path.join(REPO_ROOT, 'habits', 'registry.json');
+const TRUSTED_HABITS_PATH = path.join(REPO_ROOT, 'config', 'trusted_habits.json');
 
 function normalizeIntent(text) {
   if (!text) return '';
@@ -55,14 +56,54 @@ function loadRegistry() {
   return JSON.parse(fs.readFileSync(REGISTRY_PATH, 'utf8'));
 }
 
-function pickBestMatch(habits, intentKey) {
+function loadTrustedHabits() {
+  if (!fs.existsSync(TRUSTED_HABITS_PATH)) return { trusted_files: {} };
+  try {
+    const parsed = JSON.parse(fs.readFileSync(TRUSTED_HABITS_PATH, 'utf8'));
+    if (!parsed || typeof parsed !== 'object') return { trusted_files: {} };
+    if (!parsed.trusted_files || typeof parsed.trusted_files !== 'object') parsed.trusted_files = {};
+    return parsed;
+  } catch {
+    return { trusted_files: {} };
+  }
+}
+
+function requiredInputKeys(habit) {
+  if (!habit || !habit.inputs_schema || !Array.isArray(habit.inputs_schema.required)) return [];
+  return habit.inputs_schema.required
+    .map(x => String(x || '').trim())
+    .filter(Boolean);
+}
+
+function isTrustedEntrypoint(habit, trusted) {
+  const entry = habit && habit.entrypoint ? String(habit.entrypoint) : '';
+  if (!entry) return false;
+  const resolved = path.resolve(REPO_ROOT, entry);
+  const map = trusted && trusted.trusted_files ? trusted.trusted_files : {};
+  return !!map[resolved];
+}
+
+function pickBestMatch(habits, intentKey, skipHabitId = '') {
   // Exact match on id
-  let exact = habits.find(h => h.id === intentKey);
+  let exact = habits.find(h => h.id === intentKey && h.id !== skipHabitId);
   if (exact) return exact;
   // Heuristic: if the task contains the habit id token
-  const tokenMatch = habits.find(h => intentKey.includes(h.id));
+  const tokenMatch = habits.find(h => h.id !== skipHabitId && intentKey.includes(h.id));
   if (tokenMatch) return tokenMatch;
   return null;
+}
+
+function makeRunInputs(task, intentKey) {
+  return {
+    task: String(task || '').slice(0, 1000),
+    intent_key: String(intentKey || '').slice(0, 120),
+    source: 'route_task',
+    ts: new Date().toISOString()
+  };
+}
+
+function jsonArg(obj) {
+  return JSON.stringify(obj || {});
 }
 
 function estimateComplexity(tokensEst, task, match, anyTrigger) {
@@ -96,6 +137,7 @@ function main() {
   const tokensEst = parseInt(getArg('--tokens_est', '0'), 10) || 0;
   const repeats14d = parseInt(getArg('--repeats_14d', '0'), 10) || 0;
   const errors30d = parseInt(getArg('--errors_30d', '0'), 10) || 0;
+  const skipHabitId = getArg('--skip_habit_id', '') || getArg('--skip-habit-id', '');
   
   // v1.1: Evaluate task through directive gate
   const gateResult = evaluateTask(task);
@@ -124,7 +166,8 @@ function main() {
   const intentKey = normalizeIntent(task);
   const registry = loadRegistry();
   const habits = registry.habits || [];
-  const match = pickBestMatch(habits, intentKey);
+  const trusted = loadTrustedHabits();
+  const match = pickBestMatch(habits, intentKey, skipHabitId);
   
   // A/B/C triggers per Governance v1.0
   const triggerA = repeats14d >= 3 && tokensEst >= 500;
@@ -179,12 +222,48 @@ function main() {
   
   // 1) If it matches an ACTIVE habit → RUN it.
   if (match && (match.governance && match.governance.state === 'active' || match.status === 'active')) {
-    const runArgs = ['habits/scripts/run_habit.js', '--id', match.id, '--json', '{}'];
+    const req = requiredInputKeys(match);
+    if (req.length > 0) {
+      const out = {
+        decision: 'MANUAL',
+        suggested_habit_id: match.id,
+        reason: `Matched active habit requires explicit inputs: ${req.join(', ')}`,
+        required_inputs: req,
+        executor: null,
+        which_met: whichMet,
+        thresholds: thresholds,
+        gate_decision: gateResult.decision,
+        gate_risk: gateResult.risk,
+        route: routeMeta
+      };
+      console.log(JSON.stringify(out, null, 2));
+      process.exit(0);
+    }
+
+    if (!isTrustedEntrypoint(match, trusted)) {
+      const out = {
+        decision: 'MANUAL',
+        suggested_habit_id: match.id,
+        reason: `Matched active habit is not trusted: ${match.entrypoint}`,
+        executor: null,
+        which_met: whichMet,
+        thresholds: thresholds,
+        gate_decision: gateResult.decision,
+        gate_risk: gateResult.risk,
+        route: routeMeta
+      };
+      console.log(JSON.stringify(out, null, 2));
+      process.exit(0);
+    }
+
+    const inputs = makeRunInputs(task, intentKey);
+    const inputsArg = jsonArg(inputs);
+    const runArgs = ['habits/scripts/run_habit.js', '--id', match.id, '--json', inputsArg];
     const out = {
       decision: 'RUN_HABIT',
       suggested_habit_id: match.id,
       reason: `Matched active habit: ${match.id}`,
-      run_command: `node habits/scripts/run_habit.js --id ${match.id} --json '{}'`,
+      run_command: `node habits/scripts/run_habit.js --id ${match.id} --json '${inputsArg.replace(/'/g, "'\\''")}'`,
       executor: { cmd: 'node', args: runArgs },
       which_met: whichMet,
       thresholds: thresholds,
@@ -198,12 +277,48 @@ function main() {
   
   // 2) If it matches a CANDIDATE habit → recommend running it (testing)
   if (match && (match.governance && match.governance.state === 'candidate' || match.status === 'candidate')) {
-    const runArgs = ['habits/scripts/run_habit.js', '--id', match.id, '--json', '{}'];
+    const req = requiredInputKeys(match);
+    if (req.length > 0) {
+      const out = {
+        decision: 'MANUAL',
+        suggested_habit_id: match.id,
+        reason: `Matched candidate habit requires explicit inputs: ${req.join(', ')}`,
+        required_inputs: req,
+        executor: null,
+        which_met: whichMet,
+        thresholds: thresholds,
+        gate_decision: gateResult.decision,
+        gate_risk: gateResult.risk,
+        route: routeMeta
+      };
+      console.log(JSON.stringify(out, null, 2));
+      process.exit(0);
+    }
+
+    if (!isTrustedEntrypoint(match, trusted)) {
+      const out = {
+        decision: 'MANUAL',
+        suggested_habit_id: match.id,
+        reason: `Matched candidate habit is not trusted yet: ${match.entrypoint}`,
+        executor: null,
+        which_met: whichMet,
+        thresholds: thresholds,
+        gate_decision: gateResult.decision,
+        gate_risk: gateResult.risk,
+        route: routeMeta
+      };
+      console.log(JSON.stringify(out, null, 2));
+      process.exit(0);
+    }
+
+    const inputs = makeRunInputs(task, intentKey);
+    const inputsArg = jsonArg(inputs);
+    const runArgs = ['habits/scripts/run_habit.js', '--id', match.id, '--json', inputsArg];
     const out = {
       decision: 'RUN_CANDIDATE_FOR_VERIFICATION',
       suggested_habit_id: match.id,
       reason: `Matched candidate habit: ${match.id}. Run to accumulate successes before promotion.`,
-      run_command: `node habits/scripts/run_habit.js --id ${match.id} --json '{}'`,
+      run_command: `node habits/scripts/run_habit.js --id ${match.id} --json '${inputsArg.replace(/'/g, "'\\''")}'`,
       executor: { cmd: 'node', args: runArgs },
       which_met: whichMet,
       thresholds: thresholds,
@@ -218,17 +333,22 @@ function main() {
   // 3) If no match exists, but triggers say "worth it" → PROPOSE.
   if (!match && anyTrigger) {
     const escapedTask = task.replace(/"/g, '\\"');
+    const crystallizerPath = path.join(REPO_ROOT, 'habits', 'scripts', 'habit_crystallizer.js');
+    const proposeScript = fs.existsSync(crystallizerPath)
+      ? 'habits/scripts/habit_crystallizer.js'
+      : 'habits/scripts/propose_habit.js';
     const proposeArgs = [
-      'habits/scripts/propose_habit.js',
+      proposeScript,
       '--from', task,
       '--tokens_est', String(tokensEst),
       '--repeats_14d', String(repeats14d),
-      '--errors_30d', String(errors30d)
+      '--errors_30d', String(errors30d),
+      '--intent_key', intentKey
     ];
     const out = {
       decision: 'PROPOSE_HABIT',
       reason: `No matching habit. Triggers met: ${whichMet.join(',')}`,
-      propose_command: `node habits/scripts/propose_habit.js --from "${escapedTask}" --tokens_est ${tokensEst} --repeats_14d ${repeats14d} --errors_30d ${errors30d}`,
+      propose_command: `node ${proposeScript} --from "${escapedTask}" --tokens_est ${tokensEst} --repeats_14d ${repeats14d} --errors_30d ${errors30d} --intent_key "${intentKey}"`,
       executor: { cmd: 'node', args: proposeArgs },
       which_met: whichMet,
       thresholds: thresholds,

@@ -37,3 +37,6 @@ state/autonomy/cooldowns.json
 state/autonomy/calibration.json
 state/autonomy/improvements/*.json
 state/autonomy/improvements/*.jsonl
+state/autonomy/receipts/*.jsonl
+state/habits/receipts/*.jsonl
+state/security/skill_quarantine/install_receipts/*.jsonl

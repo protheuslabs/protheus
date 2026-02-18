@@ -29,10 +29,59 @@ const TRUSTED_HABITS_PATH = '/Users/jay/.openclaw/workspace/config/trusted_habit
 const RUNS_LOG = '/Users/jay/.openclaw/workspace/habits/logs/habit_runs.ndjson';
 const ERRORS_LOG = '/Users/jay/.openclaw/workspace/habits/logs/habit_errors.ndjson';
 const SNIPPET_DIR = '/Users/jay/.openclaw/workspace/memory';
+const RECEIPTS_DIR = '/Users/jay/.openclaw/workspace/state/habits/receipts';
 
 function computeHash(filepath) {
   const content = fs.readFileSync(filepath, 'utf8');
   return crypto.createHash('sha256').update(content).digest('hex');
+}
+
+function computeHashBytes(filepath) {
+  const content = fs.readFileSync(filepath);
+  return crypto.createHash('sha256').update(content).digest('hex');
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function truncate(s, max = 220) {
+  const txt = String(s || '');
+  return txt.length <= max ? txt : `${txt.slice(0, max)}...`;
+}
+
+function hashJson(v) {
+  try {
+    return crypto.createHash('sha256').update(JSON.stringify(v)).digest('hex');
+  } catch {
+    return null;
+  }
+}
+
+function writeReceipt(record) {
+  const ts = String(record && record.ts || nowIso());
+  const day = /^\d{4}-\d{2}-\d{2}/.test(ts) ? ts.slice(0, 10) : nowIso().slice(0, 10);
+  const fp = path.join(RECEIPTS_DIR, `${day}.jsonl`);
+  fs.mkdirSync(path.dirname(fp), { recursive: true });
+  fs.appendFileSync(fp, JSON.stringify(record) + '\n', 'utf8');
+}
+
+function verifyPostconditions(result, actions) {
+  const writes = (actions || []).filter(a => a && a.type === 'write_file');
+  const execs = (actions || []).filter(a => a && a.type === 'exec');
+  const checks = [
+    { name: 'result_status_success', pass: !!(result && result.status === 'success') },
+    { name: 'write_postconditions', pass: writes.every(w => w.status === 'ok' && w.verified === true) },
+    { name: 'exec_postconditions', pass: execs.every(e => e.status === 'ok') }
+  ];
+  const failed = checks.filter(c => !c.pass).map(c => c.name);
+  return {
+    checks,
+    failed,
+    passed: failed.length === 0,
+    write_count: writes.length,
+    exec_count: execs.length
+  };
 }
 
 function loadRegistry() {
@@ -323,7 +372,7 @@ function verifyHabitOrThrow(habitId, habit, trusted) {
   return { ok: true, hash: currentHash };
 }
 
-function createContext(habit, workspaceRoot) {
+function createContext(habit, workspaceRoot, actionLog) {
   const permissions = habit.permissions || {};
   
   return {
@@ -353,6 +402,7 @@ function createContext(habit, workspaceRoot) {
     },
     
     safeWriteFile: (filePath, contents) => {
+      const started = Date.now();
       const resolved = path.resolve(filePath);
       const allowlist = permissions.write_paths_allowlist || [];
       
@@ -368,11 +418,38 @@ function createContext(habit, workspaceRoot) {
       if (!allowed) {
         throw new Error(`PERMISSION_DENIED: Write to ${resolved} not in allowlist`);
       }
-      
-      fs.writeFileSync(resolved, contents, 'utf8');
+
+      const beforeExists = fs.existsSync(resolved);
+      const beforeHash = beforeExists ? computeHashBytes(resolved) : null;
+      const payload = Buffer.isBuffer(contents) ? contents : Buffer.from(String(contents), 'utf8');
+      const expectedHash = crypto.createHash('sha256').update(payload).digest('hex');
+
+      fs.writeFileSync(resolved, payload);
+
+      const afterExists = fs.existsSync(resolved);
+      const afterHash = afterExists ? computeHashBytes(resolved) : null;
+      const verified = afterExists && afterHash === expectedHash;
+      actionLog.push({
+        ts: nowIso(),
+        type: 'write_file',
+        path: resolved,
+        status: 'ok',
+        duration_ms: Date.now() - started,
+        before_exists: beforeExists,
+        before_hash: beforeHash,
+        after_hash: afterHash,
+        expected_hash: expectedHash,
+        bytes_written: payload.length,
+        verified
+      });
+
+      if (!verified) {
+        throw new Error(`POSTCONDITION_FAILED: write hash mismatch for ${resolved}`);
+      }
     },
     
     safeExec: (cmd) => {
+      const started = Date.now();
       const allowlist = permissions.exec_allowlist || [];
       
       let allowed = false;
@@ -395,8 +472,30 @@ function createContext(habit, workspaceRoot) {
           }
         }
       }
-      
-      return execSync(cmd, { encoding: 'utf8', timeout: 30000 });
+
+      try {
+        const out = execSync(cmd, { encoding: 'utf8', timeout: 30000 });
+        actionLog.push({
+          ts: nowIso(),
+          type: 'exec',
+          cmd: String(cmd),
+          status: 'ok',
+          duration_ms: Date.now() - started,
+          output_len: String(out || '').length,
+          output_hash: hashJson(String(out || ''))
+        });
+        return out;
+      } catch (err) {
+        actionLog.push({
+          ts: nowIso(),
+          type: 'exec',
+          cmd: String(cmd),
+          status: 'error',
+          duration_ms: Date.now() - started,
+          error: truncate(err && err.message ? err.message : String(err))
+        });
+        throw err;
+      }
     }
   };
 }
@@ -465,6 +564,21 @@ async function main() {
   
   const gov = habit.governance || {};
   const govState = gov.state || 'active';
+  const runId = `habit_${Date.now()}_${habitId}`;
+  const startedIso = nowIso();
+  const actionLog = [];
+  const baseReceipt = {
+    ts: startedIso,
+    type: 'habit_action_receipt',
+    run_id: runId,
+    habit_id: habitId,
+    state_at_start: govState,
+    entrypoint: habit.entrypoint,
+    intent: {
+      input_keys: Object.keys(inputs || {}).sort(),
+      inputs_hash: hashJson(inputs)
+    }
+  };
   
   // Check state restrictions
   if (govState === 'candidate') {
@@ -533,12 +647,29 @@ async function main() {
       fs.writeFileSync(REGISTRY_PATH, JSON.stringify(registry, null, 2) + '\n', 'utf8');
       console.error('\n⚠️  DEMOTED: active → disabled (hash mismatch)');
     }
-    
+
+    writeReceipt({
+      ...baseReceipt,
+      completed_ts: nowIso(),
+      duration_ms: Date.now() - new Date(startedIso).getTime(),
+      execution: {
+        trust_verified: false,
+        actions: []
+      },
+      verification: {
+        checks: [{ name: 'trust_verified', pass: false }],
+        failed: ['trust_verified'],
+        passed: false
+      },
+      verdict: 'blocked',
+      error: truncate(err && err.message ? err.message : String(err))
+    });
+
     process.exit(1);
   }
   
   const workspaceRoot = '/Users/jay/.openclaw/workspace';
-  const ctx = createContext(habit, workspaceRoot);
+  const ctx = createContext(habit, workspaceRoot, actionLog);
   
   console.log(`Running habit: ${habitId} [state: ${govState}]`);
   console.log(`Inputs: ${JSON.stringify(inputs)}`);
@@ -553,6 +684,10 @@ async function main() {
     result = await habitModule.run(inputs, ctx);
     
     const duration = Date.now() - startTime;
+    const verification = verifyPostconditions(result, actionLog);
+    if (!verification.passed) {
+      throw new Error(`POSTCONDITION_FAILED: ${verification.failed.join(', ')}`);
+    }
     const outcomeScore = computeOutcomeScore(result, habit);
     const deltaValue = computeDeltaValue(duration, habit.metrics?.baseline);
     const outcomeUnit = deltaValue !== null ? 'ms_saved' : null;
@@ -614,6 +749,22 @@ async function main() {
       console.log(`⏳ Promotion pending: ${promo.reason}`);
     }
     console.log('Result:', JSON.stringify(result, null, 2));
+
+    writeReceipt({
+      ...baseReceipt,
+      completed_ts: nowIso(),
+      duration_ms: duration,
+      execution: {
+        trust_verified: true,
+        actions: actionLog
+      },
+      verification: verification,
+      verdict: 'pass',
+      result_status: String(result && result.status || 'unknown'),
+      outcome_score: outcomeScore,
+      delta_value: deltaValue,
+      outcome_unit: outcomeUnit
+    });
     
   } catch (err) {
     error = err;
@@ -658,6 +809,25 @@ async function main() {
       intent_key: habit.name || habit.id,
       error: err.message,
       stack: err.stack
+    });
+
+    writeReceipt({
+      ...baseReceipt,
+      completed_ts: nowIso(),
+      duration_ms: duration,
+      execution: {
+        trust_verified: true,
+        actions: actionLog
+      },
+      verification: {
+        checks: [
+          { name: 'result_or_postcondition', pass: false }
+        ],
+        failed: ['result_or_postcondition'],
+        passed: false
+      },
+      verdict: 'fail',
+      error: truncate(err && err.message ? err.message : String(err))
     });
     
     console.error('');

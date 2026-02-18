@@ -1,0 +1,77 @@
+{
+  "version": "1.0",
+  "install_root": "/Users/jay/.openclaw/workspace/skills",
+  "receipt_dir": "/Users/jay/.openclaw/workspace/state/security/skill_quarantine/install_receipts",
+  "allowed_spec_prefixes": [
+    "github:",
+    "local:",
+    "file:",
+    "https://",
+    "git+https://"
+  ],
+  "blocked_substrings": [
+    "..",
+    ";",
+    "&&",
+    "||",
+    "`",
+    "$(",
+    ">",
+    "<"
+  ],
+  "install_command": [
+    "npx",
+    "molthub",
+    "install"
+  ],
+  "manifest_candidates": [
+    "skill.json",
+    "manifest.json",
+    "SKILL.md",
+    "README.md"
+  ],
+  "scan_extensions": [
+    ".js",
+    ".mjs",
+    ".cjs",
+    ".ts",
+    ".sh",
+    ".py",
+    ".json",
+    ".md"
+  ],
+  "trust_file_extensions": [
+    ".js",
+    ".mjs",
+    ".cjs",
+    ".ts",
+    ".sh",
+    ".py"
+  ],
+  "risky_permission_markers": [
+    "\"network\": \"allow\"",
+    "network: allow",
+    "\"network\": true",
+    "\"filesystem\": \"unrestricted\"",
+    "\"filesystem\": \"write_all\"",
+    "\"exec\": true",
+    "child_process",
+    "exec(",
+    "execSync(",
+    "spawn(",
+    "spawnSync(",
+    "curl ",
+    "wget ",
+    "api key",
+    "token",
+    "secret",
+    "credential",
+    "rm -rf"
+  ],
+  "approval_required": {
+    "unknown_manifest": true,
+    "risky_markers": true
+  },
+  "max_scan_files": 200,
+  "max_scan_bytes": 262144
+}

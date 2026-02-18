@@ -8,7 +8,7 @@
  * - If route.selected_model is present, inject it into execution env automatically
  *
  * Usage:
- *   node systems/routing/route_execute.js --task "..." [--tokens_est N] [--repeats_14d N] [--errors_30d N] [--dry-run]
+ *   node systems/routing/route_execute.js --task "..." [--tokens_est N] [--repeats_14d N] [--errors_30d N] [--skip-habit-id ID] [--dry-run]
  *
  * Notes:
  * - ROUTER_ENABLED=1 enables route_task model selection.
@@ -32,14 +32,14 @@ function hasFlag(name) {
 
 function usage() {
   console.log('Usage:');
-  console.log('  node systems/routing/route_execute.js --task "..." [--tokens_est N] [--repeats_14d N] [--errors_30d N] [--dry-run]');
+  console.log('  node systems/routing/route_execute.js --task "..." [--tokens_est N] [--repeats_14d N] [--errors_30d N] [--skip-habit-id ID] [--dry-run]');
 }
 
 function repoRoot() {
   return path.resolve(__dirname, '..', '..');
 }
 
-function runRouteTask({ task, tokensEst, repeats14d, errors30d }) {
+function runRouteTask({ task, tokensEst, repeats14d, errors30d, skipHabitId }) {
   const script = path.join(repoRoot(), 'systems', 'routing', 'route_task.js');
   const args = [
     script,
@@ -48,6 +48,7 @@ function runRouteTask({ task, tokensEst, repeats14d, errors30d }) {
     '--repeats_14d', String(repeats14d),
     '--errors_30d', String(errors30d)
   ];
+  if (skipHabitId) args.push('--skip_habit_id', String(skipHabitId));
   const r = spawnSync('node', args, {
     cwd: repoRoot(),
     encoding: 'utf8',
@@ -90,6 +91,7 @@ function main() {
   const tokensEst = Number(getArg('--tokens_est', '0')) || 0;
   const repeats14d = Number(getArg('--repeats_14d', '0')) || 0;
   const errors30d = Number(getArg('--errors_30d', '0')) || 0;
+  const skipHabitId = getArg('--skip-habit-id', '') || getArg('--skip_habit_id', '');
   const dryRun = hasFlag('--dry-run');
 
   if (!task) {
@@ -97,7 +99,7 @@ function main() {
     process.exit(2);
   }
 
-  const routed = runRouteTask({ task, tokensEst, repeats14d, errors30d });
+  const routed = runRouteTask({ task, tokensEst, repeats14d, errors30d, skipHabitId });
   if (routed.stderr) process.stderr.write(routed.stderr);
   if (!routed.stdout) {
     console.error('route_execute: route_task returned no stdout');
