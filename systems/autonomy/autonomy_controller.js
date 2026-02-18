@@ -65,7 +65,11 @@ const AUTONOMY_MIN_SENSORY_SIGNAL_SCORE = Number(process.env.AUTONOMY_MIN_SENSOR
 const AUTONOMY_MIN_SENSORY_RELEVANCE_SCORE = Number(process.env.AUTONOMY_MIN_SENSORY_RELEVANCE_SCORE || 42);
 const AUTONOMY_MIN_DIRECTIVE_FIT = Number(process.env.AUTONOMY_MIN_DIRECTIVE_FIT || 40);
 const AUTONOMY_MIN_ACTIONABILITY_SCORE = Number(process.env.AUTONOMY_MIN_ACTIONABILITY_SCORE || 45);
+const AUTONOMY_MIN_COMPOSITE_ELIGIBILITY = Number(process.env.AUTONOMY_MIN_COMPOSITE_ELIGIBILITY || 62);
 const AUTONOMY_MIN_EYE_SCORE_EMA = Number(process.env.AUTONOMY_MIN_EYE_SCORE_EMA || 45);
+const AUTONOMY_MAX_PROPOSAL_FILE_AGE_HOURS = Number(process.env.AUTONOMY_MAX_PROPOSAL_FILE_AGE_HOURS || 48);
+const AUTONOMY_REPEAT_EXHAUSTED_LIMIT = Number(process.env.AUTONOMY_REPEAT_EXHAUSTED_LIMIT || 3);
+const AUTONOMY_REPEAT_EXHAUSTED_COOLDOWN_MINUTES = Number(process.env.AUTONOMY_REPEAT_EXHAUSTED_COOLDOWN_MINUTES || 90);
 const AUTONOMY_EXPLORE_FRACTION = Number(process.env.AUTONOMY_EXPLORE_FRACTION || 0.25);
 const AUTONOMY_EXPLORE_EVERY_N = Number(process.env.AUTONOMY_EXPLORE_EVERY_N || 3);
 const AUTONOMY_EXPLORE_MIN_ELIGIBLE = Number(process.env.AUTONOMY_EXPLORE_MIN_ELIGIBLE || 3);
@@ -317,10 +321,13 @@ function isNoProgressRun(evt) {
   return evt.result === 'init_gate_stub'
     || evt.result === 'init_gate_low_score'
     || evt.result === 'init_gate_blocked_route'
+    || evt.result === 'stop_repeat_gate_stale_signal'
     || evt.result === 'stop_init_gate_quality_exhausted'
     || evt.result === 'stop_init_gate_directive_fit_exhausted'
     || evt.result === 'stop_init_gate_actionability_exhausted'
+    || evt.result === 'stop_init_gate_composite_exhausted'
     || evt.result === 'stop_repeat_gate_candidate_exhausted'
+    || evt.result === 'stop_repeat_gate_exhaustion_cooldown'
     || evt.result === 'stop_repeat_gate_no_progress'
     || evt.result === 'stop_repeat_gate_dopamine';
 }
@@ -343,14 +350,40 @@ function isAttemptRunEvent(evt) {
     || evt.result === 'init_gate_stub'
     || evt.result === 'init_gate_low_score'
     || evt.result === 'init_gate_blocked_route'
+    || evt.result === 'stop_repeat_gate_stale_signal'
     || evt.result === 'stop_init_gate_quality_exhausted'
     || evt.result === 'stop_init_gate_directive_fit_exhausted'
     || evt.result === 'stop_init_gate_actionability_exhausted'
+    || evt.result === 'stop_init_gate_composite_exhausted'
+    || evt.result === 'stop_repeat_gate_exhaustion_cooldown'
     || evt.result === 'stop_repeat_gate_candidate_exhausted';
 }
 
 function attemptEvents(events) {
   return events.filter(isAttemptRunEvent);
+}
+
+function isGateExhaustedAttempt(evt) {
+  if (!evt || evt.type !== 'autonomy_run') return false;
+  return evt.result === 'stop_repeat_gate_stale_signal'
+    || evt.result === 'init_gate_blocked_route'
+    || evt.result === 'stop_init_gate_quality_exhausted'
+    || evt.result === 'stop_init_gate_directive_fit_exhausted'
+    || evt.result === 'stop_init_gate_actionability_exhausted'
+    || evt.result === 'stop_init_gate_composite_exhausted'
+    || evt.result === 'stop_repeat_gate_candidate_exhausted';
+}
+
+function consecutiveGateExhaustedAttempts(events) {
+  let count = 0;
+  for (let i = events.length - 1; i >= 0; i--) {
+    const e = events[i];
+    if (!e || e.type !== 'autonomy_run') continue;
+    if (!isAttemptRunEvent(e)) continue;
+    if (!isGateExhaustedAttempt(e)) break;
+    count++;
+  }
+  return count;
 }
 
 function minutesSinceTs(ts) {
@@ -1364,6 +1397,14 @@ function assessActionability(p, directiveFit, thresholds) {
   };
 }
 
+function compositeEligibilityScore(qualityScore, directiveFitScore, actionabilityScore) {
+  const q = clampNumber(Number(qualityScore || 0), 0, 100);
+  const d = clampNumber(Number(directiveFitScore || 0), 0, 100);
+  const a = clampNumber(Number(actionabilityScore || 0), 0, 100);
+  const weighted = (q * 0.42) + (d * 0.26) + (a * 0.32);
+  return clampNumber(Math.round(weighted), 0, 100);
+}
+
 function countEyeProposalsInWindow(eyeId, endDateStr, days) {
   if (!eyeId) return 0;
   let count = 0;
@@ -1568,6 +1609,7 @@ function statusCmd(dateStr) {
   const lastAttempt = attempts.length ? attempts[attempts.length - 1] : null;
   const lastAttemptMinutesAgo = lastAttempt ? minutesSinceTs(lastAttempt.ts) : null;
   const noProgressStreak = consecutiveNoProgressRuns(runs);
+  const gateExhaustionStreak = consecutiveGateExhaustedAttempts(attempts);
   const shippedToday = shippedCount(runs);
   const exploreUsed = executedRuns.filter(e => e.selection_mode === 'explore').length;
   const exploitUsed = executedRuns.filter(e => e.selection_mode === 'exploit').length;
@@ -1583,6 +1625,9 @@ function statusCmd(dateStr) {
     repeat_gate: {
       no_progress_streak: noProgressStreak,
       no_progress_limit: AUTONOMY_REPEAT_NO_PROGRESS_LIMIT,
+      gate_exhaustion_streak: gateExhaustionStreak,
+      gate_exhaustion_limit: AUTONOMY_REPEAT_EXHAUSTED_LIMIT,
+      gate_exhaustion_cooldown_minutes: AUTONOMY_REPEAT_EXHAUSTED_COOLDOWN_MINUTES,
       shipped_today: shippedToday,
       attempts_today: attemptsToday,
       max_runs_per_day: AUTONOMY_MAX_RUNS_PER_DAY,
@@ -1603,7 +1648,9 @@ function statusCmd(dateStr) {
       min_sensory_relevance_score: thresholds.min_sensory_relevance_score,
       min_directive_fit: thresholds.min_directive_fit,
       min_actionability_score: thresholds.min_actionability_score,
+      min_composite_eligibility: AUTONOMY_MIN_COMPOSITE_ELIGIBILITY,
       min_eye_score_ema: thresholds.min_eye_score_ema,
+      max_proposal_file_age_hours: AUTONOMY_MAX_PROPOSAL_FILE_AGE_HOURS,
       disallowed_parser_types: Array.from(AUTONOMY_DISALLOWED_PARSER_TYPES),
       active_directive_ids: directiveProfile.active_directive_ids,
       directive_profile_available: directiveProfile.available === true,
@@ -1634,6 +1681,7 @@ function statusCmd(dateStr) {
       const q = assessSignalQuality(x.proposal, eyesMap, thresholds, calibrationProfile);
       const dfit = assessDirectiveFit(x.proposal, directiveProfile, thresholds);
       const act = assessActionability(x.proposal, dfit, thresholds);
+      const composite = compositeEligibilityScore(q.score, dfit.score, act.score);
       return {
         id: x.proposal.id,
         title: x.proposal.title,
@@ -1656,7 +1704,9 @@ function statusCmd(dateStr) {
         directive_fit_negative: dfit.matched_negative.slice(0, 3),
         actionability_score: act.score,
         actionability_pass: act.pass,
-        actionability_reasons: act.reasons.slice(0, 3)
+        actionability_reasons: act.reasons.slice(0, 3),
+        composite_eligibility_score: composite,
+        composite_eligibility_pass: composite >= AUTONOMY_MIN_COMPOSITE_ELIGIBILITY
       };
     })
   };
@@ -1681,6 +1731,27 @@ function runCmd(dateStr) {
     return;
   }
 
+  const proposalAgeHours = ageHours(proposalDate);
+  if (AUTONOMY_MAX_PROPOSAL_FILE_AGE_HOURS > 0 && proposalAgeHours > AUTONOMY_MAX_PROPOSAL_FILE_AGE_HOURS) {
+    writeRun(dateStr, {
+      ts: nowIso(),
+      type: 'autonomy_run',
+      result: 'stop_repeat_gate_stale_signal',
+      proposal_date: proposalDate,
+      proposal_age_hours: Number(proposalAgeHours.toFixed(2)),
+      max_proposal_file_age_hours: AUTONOMY_MAX_PROPOSAL_FILE_AGE_HOURS
+    });
+    process.stdout.write(JSON.stringify({
+      ok: true,
+      result: 'stop_repeat_gate_stale_signal',
+      proposal_date: proposalDate,
+      proposal_age_hours: Number(proposalAgeHours.toFixed(2)),
+      max_proposal_file_age_hours: AUTONOMY_MAX_PROPOSAL_FILE_AGE_HOURS,
+      ts: nowIso()
+    }) + '\n');
+    return;
+  }
+
   const pool = candidatePool(proposalDate);
   if (!pool.length) {
     writeRun(dateStr, { ts: nowIso(), type: 'autonomy_run', result: 'no_candidates', proposal_date: proposalDate });
@@ -1694,6 +1765,7 @@ function runCmd(dateStr) {
   const lastAttempt = priorAttempts.length ? priorAttempts[priorAttempts.length - 1] : null;
   const lastAttemptMinutesAgo = lastAttempt ? minutesSinceTs(lastAttempt.ts) : null;
   const noProgressStreak = consecutiveNoProgressRuns(priorRuns);
+  const gateExhaustionStreak = consecutiveGateExhaustedAttempts(priorAttempts);
   const shippedToday = shippedCount(priorRuns);
   const dopamine = loadDopamineSnapshot(dateStr);
   const decisionEvents = allDecisionEvents();
@@ -1742,6 +1814,34 @@ function runCmd(dateStr) {
     return;
   }
 
+  if (
+    AUTONOMY_REPEAT_EXHAUSTED_LIMIT > 0
+    && AUTONOMY_REPEAT_EXHAUSTED_COOLDOWN_MINUTES > 0
+    && gateExhaustionStreak >= AUTONOMY_REPEAT_EXHAUSTED_LIMIT
+    && lastAttemptMinutesAgo != null
+    && lastAttemptMinutesAgo < AUTONOMY_REPEAT_EXHAUSTED_COOLDOWN_MINUTES
+  ) {
+    writeRun(dateStr, {
+      ts: nowIso(),
+      type: 'autonomy_run',
+      result: 'stop_repeat_gate_exhaustion_cooldown',
+      gate_exhaustion_streak: gateExhaustionStreak,
+      gate_exhaustion_limit: AUTONOMY_REPEAT_EXHAUSTED_LIMIT,
+      last_attempt_minutes_ago: Number(lastAttemptMinutesAgo.toFixed(2)),
+      cooldown_minutes: AUTONOMY_REPEAT_EXHAUSTED_COOLDOWN_MINUTES
+    });
+    process.stdout.write(JSON.stringify({
+      ok: true,
+      result: 'stop_repeat_gate_exhaustion_cooldown',
+      gate_exhaustion_streak: gateExhaustionStreak,
+      gate_exhaustion_limit: AUTONOMY_REPEAT_EXHAUSTED_LIMIT,
+      last_attempt_minutes_ago: Number(lastAttemptMinutesAgo.toFixed(2)),
+      cooldown_minutes: AUTONOMY_REPEAT_EXHAUSTED_COOLDOWN_MINUTES,
+      ts: nowIso()
+    }) + '\n');
+    return;
+  }
+
   if (AUTONOMY_REPEAT_NO_PROGRESS_LIMIT > 0 && noProgressStreak >= AUTONOMY_REPEAT_NO_PROGRESS_LIMIT) {
     writeRun(dateStr, {
       ts: nowIso(),
@@ -1783,10 +1883,11 @@ function runCmd(dateStr) {
   let pick = null;
   let selection = { mode: 'exploit', index: 0, explore_used: 0, explore_quota: exploreQuotaForDay(), exploit_used: 0 };
   const eligible = [];
-  const skipStats = { eye_no_progress: 0, low_quality: 0, low_directive_fit: 0, low_actionability: 0 };
+  const skipStats = { eye_no_progress: 0, low_quality: 0, low_directive_fit: 0, low_actionability: 0, low_composite: 0 };
   let sampleLowQuality = null;
   let sampleLowDirectiveFit = null;
   let sampleLowActionability = null;
+  let sampleLowComposite = null;
   for (const cand of pool) {
     const q = assessSignalQuality(cand.proposal, eyesMap, thresholds, calibrationProfile);
     if (!q.pass) {
@@ -1830,6 +1931,22 @@ function runCmd(dateStr) {
       continue;
     }
 
+    const compositeScore = compositeEligibilityScore(q.score, dfit.score, actionability.score);
+    if (compositeScore < AUTONOMY_MIN_COMPOSITE_ELIGIBILITY) {
+      skipStats.low_composite += 1;
+      if (!sampleLowComposite) {
+        sampleLowComposite = {
+          proposal_id: cand.proposal.id,
+          score: compositeScore,
+          min_score: AUTONOMY_MIN_COMPOSITE_ELIGIBILITY,
+          quality_score: q.score,
+          directive_fit_score: dfit.score,
+          actionability_score: actionability.score
+        };
+      }
+      continue;
+    }
+
     const eyeRefCand = sourceEyeRef(cand.proposal);
     const eyeNoProgress24h = countEyeOutcomesInLastHours(decisionEvents, eyeRefCand, 'no_change', 24);
     if (AUTONOMY_MAX_EYE_NO_PROGRESS_24H > 0 && eyeNoProgress24h >= AUTONOMY_MAX_EYE_NO_PROGRESS_24H) {
@@ -1841,6 +1958,7 @@ function runCmd(dateStr) {
       quality: q,
       directive_fit: dfit,
       actionability,
+      composite_score: compositeScore,
       eye_no_progress_24h: eyeNoProgress24h
     });
   }
@@ -1856,6 +1974,7 @@ function runCmd(dateStr) {
       && skipStats.eye_no_progress === 0
       && skipStats.low_directive_fit === 0
       && skipStats.low_actionability === 0
+      && skipStats.low_composite === 0
     ) {
       writeRun(dateStr, {
         ts: nowIso(),
@@ -1881,6 +2000,7 @@ function runCmd(dateStr) {
       && skipStats.eye_no_progress === 0
       && skipStats.low_quality === 0
       && skipStats.low_actionability === 0
+      && skipStats.low_composite === 0
     ) {
       writeRun(dateStr, {
         ts: nowIso(),
@@ -1908,6 +2028,7 @@ function runCmd(dateStr) {
       && skipStats.eye_no_progress === 0
       && skipStats.low_quality === 0
       && skipStats.low_directive_fit === 0
+      && skipStats.low_composite === 0
     ) {
       writeRun(dateStr, {
         ts: nowIso(),
@@ -1928,30 +2049,60 @@ function runCmd(dateStr) {
       return;
     }
 
+    if (
+      skipStats.low_composite > 0
+      && skipStats.eye_no_progress === 0
+      && skipStats.low_quality === 0
+      && skipStats.low_directive_fit === 0
+      && skipStats.low_actionability === 0
+    ) {
+      writeRun(dateStr, {
+        ts: nowIso(),
+        type: 'autonomy_run',
+        result: 'stop_init_gate_composite_exhausted',
+        min_composite_eligibility: AUTONOMY_MIN_COMPOSITE_ELIGIBILITY,
+        skipped_low_composite: skipStats.low_composite,
+        sample_low_composite: sampleLowComposite
+      });
+      process.stdout.write(JSON.stringify({
+        ok: true,
+        result: 'stop_init_gate_composite_exhausted',
+        min_composite_eligibility: AUTONOMY_MIN_COMPOSITE_ELIGIBILITY,
+        skipped_low_composite: skipStats.low_composite,
+        sample_low_composite: sampleLowComposite,
+        ts: nowIso()
+      }) + '\n');
+      return;
+    }
+
     writeRun(dateStr, {
       ts: nowIso(),
       type: 'autonomy_run',
       result: 'stop_repeat_gate_candidate_exhausted',
-      reason: `all_candidates_exhausted quality_or_directive_fit_or_actionability_or_eye_no_progress`,
+      reason: `all_candidates_exhausted quality_or_directive_fit_or_actionability_or_composite_or_eye_no_progress`,
       skipped_eye_no_progress: skipStats.eye_no_progress,
       skipped_low_quality: skipStats.low_quality,
       skipped_low_directive_fit: skipStats.low_directive_fit,
       skipped_low_actionability: skipStats.low_actionability,
+      skipped_low_composite: skipStats.low_composite,
       sample_low_quality: sampleLowQuality,
       sample_low_directive_fit: sampleLowDirectiveFit,
-      sample_low_actionability: sampleLowActionability
+      sample_low_actionability: sampleLowActionability,
+      sample_low_composite: sampleLowComposite
     });
     process.stdout.write(JSON.stringify({
       ok: true,
       result: 'stop_repeat_gate_candidate_exhausted',
-      reason: `all_candidates_exhausted quality_or_directive_fit_or_actionability_or_eye_no_progress`,
+      reason: `all_candidates_exhausted quality_or_directive_fit_or_actionability_or_composite_or_eye_no_progress`,
       skipped_eye_no_progress: skipStats.eye_no_progress,
       skipped_low_quality: skipStats.low_quality,
       skipped_low_directive_fit: skipStats.low_directive_fit,
       skipped_low_actionability: skipStats.low_actionability,
+      skipped_low_composite: skipStats.low_composite,
       sample_low_quality: sampleLowQuality,
       sample_low_directive_fit: sampleLowDirectiveFit,
       sample_low_actionability: sampleLowActionability,
+      sample_low_composite: sampleLowComposite,
       ts: nowIso()
     }) + '\n');
     return;
@@ -2117,6 +2268,11 @@ function runCmd(dateStr) {
     signal_quality: pick.quality,
     directive_fit: pick.directive_fit,
     actionability: pick.actionability,
+    composite: {
+      score: pick.composite_score,
+      min_score: AUTONOMY_MIN_COMPOSITE_ELIGIBILITY,
+      pass: pick.composite_score >= AUTONOMY_MIN_COMPOSITE_ELIGIBILITY
+    },
     selection_mode: selection.mode,
     selection_index: selection.index,
     thresholds,
@@ -2180,6 +2336,11 @@ function runCmd(dateStr) {
     signal_quality: pick.quality,
     directive_fit: pick.directive_fit,
     actionability: pick.actionability,
+    composite: {
+      score: pick.composite_score,
+      min_score: AUTONOMY_MIN_COMPOSITE_ELIGIBILITY,
+      pass: pick.composite_score >= AUTONOMY_MIN_COMPOSITE_ELIGIBILITY
+    },
     selection_mode: selection.mode,
     selection_index: selection.index,
     explore_used_before: selection.explore_used,
@@ -2207,6 +2368,11 @@ function runCmd(dateStr) {
     signal_quality: pick.quality,
     directive_fit: pick.directive_fit,
     actionability: pick.actionability,
+    composite: {
+      score: pick.composite_score,
+      min_score: AUTONOMY_MIN_COMPOSITE_ELIGIBILITY,
+      pass: pick.composite_score >= AUTONOMY_MIN_COMPOSITE_ELIGIBILITY
+    },
     selection_mode: selection.mode,
     selection_index: selection.index,
     explore_used_before: selection.explore_used,
