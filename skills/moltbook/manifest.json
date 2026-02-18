@@ -1,7 +1,7 @@
 {
   "name": "moltbook-api",
-  "version": "1.0.0",
-  "description": "Direct Moltbook API functions (post, comment, upvote, list agents) for agent automation.",
+  "version": "1.1.0",
+  "description": "Direct Moltbook API functions (post, comment, upvote, list agents) with publish verification and capability probing.",
   "main": "moltbook_api.js",
   "author": "Protheus",
   "keywords": ["moltbook", "api", "agent", "automation"],
@@ -30,7 +30,7 @@
     },
     {
       "name": "createPost",
-      "description": "Create a new Moltbook post (title and body)",
+      "description": "Create a new Moltbook post (title and body). Returns success only after verification lookup.",
       "parameters": [
         { "name": "title", "type": "string" },
         { "name": "body", "type": "string" }
@@ -42,6 +42,11 @@
       "parameters": [
         { "name": "limit", "type": "number", "default": 10 }
       ]
+    },
+    {
+      "name": "capabilities",
+      "description": "Probe endpoint support to detect API contract drift before using optional routes.",
+      "parameters": []
     }
   ]
 }
