@@ -107,10 +107,16 @@ function main() {
     ["git_outcomes.js", "run"]
   );
 
-  // improvement_lane.js orchestrates propose->trial->evaluate loops from habits layer.
+  // improvement_lane.js is a habits compatibility wrapper.
   checkScript(
     "habits/scripts/improvement_lane.js",
-    ["improvement_lane.js", "propose", "start-next", "evaluate-open"]
+    ["propose", "start-next", "evaluate-open"]
+  );
+
+  // improvement_orchestrator.js owns guarded improvement lane orchestration.
+  checkScript(
+    "systems/autonomy/improvement_orchestrator.js",
+    ["improvement_orchestrator.js", "propose", "start-next", "evaluate-open"]
   );
 
   // autonomy_controller.js is optional by flag, but contract should remain valid.
