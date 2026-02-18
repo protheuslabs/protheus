@@ -107,6 +107,12 @@ function main() {
     ["git_outcomes.js", "run"]
   );
 
+  // improvement_lane.js orchestrates propose->trial->evaluate loops from habits layer.
+  checkScript(
+    "habits/scripts/improvement_lane.js",
+    ["improvement_lane.js", "propose", "start-next", "evaluate-open"]
+  );
+
   // autonomy_controller.js is optional by flag, but contract should remain valid.
   checkScript(
     "systems/autonomy/autonomy_controller.js",
