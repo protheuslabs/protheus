@@ -4,7 +4,7 @@
  *
  * NOTE (spine/queue_gc dependency):
  * - queue_gc.js calls:
- *     node habits/scripts/proposal_queue.js outcome <ID> rejected "<reason>"
+ *     node habits/scripts/proposal_queue.js reject <ID> "<reason>"
  * - If you ever change the CLI surface, update queue_gc.js accordingly.
  *
  * Goal:

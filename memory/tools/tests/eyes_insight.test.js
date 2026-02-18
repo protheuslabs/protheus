@@ -54,11 +54,11 @@ function run() {
       ts: `${date}T01:00:00Z`,
       type: 'external_item',
       item: {
-        source: 'moltbook_feed',
+        eye_id: 'hn_frontpage',
         url: 'https://moltbook.example/item/1',
-        title: 'Real signal: agent tool pattern emerging',
-        topics: ['agent_innovation'],
-        content_preview: 'This post describes a concrete agent pattern with steps and failure modes.',
+        title: 'Automated income system pattern for engineering teams',
+        topics: ['automation', 'income', 'systems'],
+        content_preview: 'Concrete implementation notes for scalable automated systems with measurable revenue outcomes.',
         collected_at: `${date}T01:00:00Z`
       }
     },
@@ -66,7 +66,7 @@ function run() {
       ts: `${date}T01:00:01Z`,
       type: 'external_item',
       item: {
-        source: 'moltbook_feed',
+        eye_id: 'hn_frontpage',
         url: 'https://moltbook.example/item/1',
         title: 'Duplicate link, worse title',
         topics: [],
@@ -120,6 +120,26 @@ function run() {
   const ref = one.evidence[0] && one.evidence[0].evidence_ref;
   assert.ok(typeof ref === 'string' && ref.startsWith('eye:'), 'evidence_ref must start with eye:');
   ok('evidence_ref includes eye:<id>');
+
+  assert.ok(
+    one.meta && Number.isFinite(Number(one.meta.signal_quality_score)),
+    'meta.signal_quality_score must be numeric'
+  );
+  assert.ok(
+    one.meta && ['high', 'medium', 'low'].includes(String(one.meta.signal_quality_tier)),
+    'meta.signal_quality_tier must be high|medium|low'
+  );
+  ok('signal quality score+tier are written to proposal meta');
+
+  assert.ok(
+    one.meta && Number.isFinite(Number(one.meta.relevance_score)),
+    'meta.relevance_score must be numeric'
+  );
+  assert.ok(
+    one.meta && Number.isFinite(Number(one.meta.directive_fit_score)),
+    'meta.directive_fit_score must be numeric'
+  );
+  ok('relevance + directive fit are written to proposal meta');
 
   // Verify deterministic dedupe by url worked (only one proposal per URL)
   const urls = new Set();

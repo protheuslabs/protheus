@@ -5,9 +5,9 @@ This repository is an agent-operations workspace: orchestration, governed habits
 ## Architecture Map
 
 - `systems/`  
-  Infrastructure layer. Contains the orchestration spine and security choke point.
+  Infrastructure/control-plane layer. Contains spine, security, routing, and autonomy controllers.
 - `habits/`  
-  Deterministic routines with lifecycle governance (`candidate -> active -> disabled -> archived`).
+  Dynamic semi-permanent routines with lifecycle governance (`candidate -> active -> disabled -> archived`).
 - `skills/`  
   Task-specific skill packs and scripts.
 - `config/`  

@@ -18,7 +18,7 @@
  *   QUEUE_DIR=state/queue (optional override)
  *
  * Notes:
- * - Calls proposal_queue.js to record "rejected" outcomes (so everything is attributed & logged).
+ * - Calls proposal_queue.js reject command (decision event, deterministic).
  * - If we cannot parse timestamps, TTL rule is skipped for that item.
  */
 
@@ -132,7 +132,7 @@ function isLowImpact(p) {
 
 function rejectProposal(repo, proposalId, reason) {
   const script = path.join(repo, "habits", "scripts", "proposal_queue.js");
-  const r = spawnSync("node", [script, "outcome", proposalId, "rejected", reason], { stdio: "inherit" });
+  const r = spawnSync("node", [script, "reject", proposalId, reason], { stdio: "inherit" });
   if (r.status !== 0) process.exit(r.status || 1);
 }
 
@@ -243,7 +243,7 @@ function main() {
   ttlReject.sort(oldestFirst);
   capReject.sort(oldestFirst);
 
-  // Record outcomes via proposal_queue.js (so it lands in decisions log)
+  // Record deterministic reject decisions via proposal_queue.js.
   for (const it of ttlReject) {
     const reason = `auto:queue_gc ttl>${ttlHours}h eye:${it.eye}`;
     rejectProposal(repo, it.id, reason);

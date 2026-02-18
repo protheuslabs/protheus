@@ -25,3 +25,13 @@ state/sensory/eyes/raw/*.jsonl
 state/sensory/eyes/evolution.jsonl
 state/sensory/anomalies/*.json
 state/sensory/digests/*.md
+
+# Router/autonomy runtime caches (generated)
+state/routing/model_health.json
+state/routing/banned_models.json
+state/routing/routing_decisions.jsonl
+state/autonomy/daily_budget/*.json
+state/autonomy/experiments/*.jsonl
+state/autonomy/runs/*.jsonl
+state/autonomy/cooldowns.json
+state/autonomy/calibration.json

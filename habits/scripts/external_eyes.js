@@ -91,6 +91,34 @@ function clamp(n, lo, hi) {
   return Math.max(lo, Math.min(hi, n));
 }
 
+function asPositiveNumber(v, fallback) {
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+}
+
+function asFiniteNumber(v, fallback) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+// Runtime authority is registry first, with config as immutable defaults.
+function effectiveEye(eyeConfig, registryEye) {
+  return {
+    ...eyeConfig,
+    status: (registryEye && typeof registryEye.status === 'string' && registryEye.status.trim())
+      ? registryEye.status
+      : eyeConfig.status,
+    cadence_hours: asPositiveNumber(
+      registryEye ? registryEye.cadence_hours : undefined,
+      asPositiveNumber(eyeConfig.cadence_hours, 24)
+    ),
+    score_ema: asFiniteNumber(
+      registryEye ? registryEye.score_ema : undefined,
+      asFiniteNumber(eyeConfig.score_ema, 50)
+    )
+  };
+}
+
 // Get today's date string
 function getToday() {
   return new Date().toISOString().slice(0, 10);
@@ -330,22 +358,33 @@ async function run(opts = {}) {
   let eyesRun = [];
   
   for (const eyeConfig of config.eyes) {
+    let registryEye = registry.eyes.find(e => e.id === eyeConfig.id);
+    if (!registryEye) {
+      registryEye = {
+        ...eyeConfig,
+        run_count: 0,
+        total_items: 0,
+        total_errors: 0
+      };
+      registry.eyes.push(registryEye);
+    }
+    const runtimeEye = effectiveEye(eyeConfig, registryEye);
+
     if (specificEye && eyeConfig.id !== specificEye) continue;
     if (runCount >= maxEyes) break;
     
     // Check status
-    if (eyeConfig.status === 'retired') {
+    if (runtimeEye.status === 'retired') {
       console.log(`⏭️  Skipping ${eyeConfig.id}: retired`);
       continue;
     }
     
     // Check cadence
-    const registryEye = registry.eyes.find(e => e.id === eyeConfig.id);
     const lastRun = registryEye?.last_run ? new Date(registryEye.last_run) : null;
     const hoursSinceLastRun = lastRun ? (Date.now() - lastRun) / (1000 * 60 * 60) : Infinity;
     
-    if (hoursSinceLastRun < eyeConfig.cadence_hours) {
-      console.log(`⏭️  Skipping ${eyeConfig.id}: cadence (${Math.round(hoursSinceLastRun)}h < ${eyeConfig.cadence_hours}h)`);
+    if (hoursSinceLastRun < runtimeEye.cadence_hours) {
+      console.log(`⏭️  Skipping ${eyeConfig.id}: cadence (${Math.round(hoursSinceLastRun)}h < ${runtimeEye.cadence_hours}h)`);
       continue;
     }
     
@@ -359,7 +398,7 @@ async function run(opts = {}) {
       eye_id: eyeConfig.id,
       eye_name: eyeConfig.name,
       budget: eyeConfig.budgets,
-      status: eyeConfig.status
+      status: runtimeEye.status
     };
     appendRawLog(today, startEvent);
     
@@ -394,11 +433,10 @@ async function run(opts = {}) {
         });
         
         // Update registry
-        const regEye = registry.eyes.find(e => e.id === eyeConfig.id);
-        regEye.last_run = new Date().toISOString();
-        regEye.last_success = new Date().toISOString();
-        regEye.run_count++;
-        regEye.total_items += result.items.length;
+        registryEye.last_run = new Date().toISOString();
+        registryEye.last_success = new Date().toISOString();
+        registryEye.run_count++;
+        registryEye.total_items += result.items.length;
         
         eyesRun.push({
           id: eyeConfig.id,
@@ -418,10 +456,10 @@ async function run(opts = {}) {
         error: err.message.slice(0, 200)
       });
       
-      const regEye = registry.eyes.find(e => e.id === eyeConfig.id);
-      regEye.last_run = new Date().toISOString();
-      regEye.total_errors++;
-      regEye.error_rate = regEye.total_errors / regEye.run_count;
+      registryEye.last_run = new Date().toISOString();
+      registryEye.total_errors++;
+      const runs = Math.max(1, Number(registryEye.run_count || 0));
+      registryEye.error_rate = registryEye.total_errors / runs;
       
       console.log(`   ❌ Failed: ${err.message}`);
     }
@@ -495,13 +533,16 @@ function score(dateStr) {
   // Compute metrics per eye
   const metrics = {};
   const config = loadConfig();
+  const registry = loadRegistry();
   
   const YIELD_WINDOW_DAYS = 14;
   const yieldSignals = computeYieldSignals(YIELD_WINDOW_DAYS, date);
   
   for (const [eyeId, data] of Object.entries(byEye)) {
     const eyeConfig = config.eyes.find(e => e.id === eyeId);
+    const regEye = registry.eyes.find(e => e.id === eyeId);
     if (!eyeConfig) continue;
+    const runtimeEye = effectiveEye(eyeConfig, regEye);
     
     const items = data.items;
     const uniqueItems = new Set(items.map(i => i.item_hash)).size;
@@ -542,13 +583,13 @@ function score(dateStr) {
     
     // Update EMA
     const alpha = config.scoring.ema_alpha || 0.3;
-    const oldEma = eyeConfig.score_ema || 50;
+    const oldEma = runtimeEye.score_ema;
     const newEma = alpha * rawScore + (1 - alpha) * oldEma;
     
     metrics[eyeId] = {
       date,
       eye_id: eyeId,
-      eye_name: eyeConfig.name,
+      eye_name: runtimeEye.name,
       
       // Count metrics
       total_items: items.length,
@@ -628,9 +669,19 @@ function evolve(dateStr) {
   for (const eyeId in metrics) {
     const m = metrics[eyeId];
     const eyeConfig = config.eyes.find(e => e.id === eyeId);
-    const regEye = registry.eyes.find(e => e.id === eyeId);
+    if (!eyeConfig) continue;
     
-    if (!eyeConfig || !regEye) continue;
+    let regEye = registry.eyes.find(e => e.id === eyeId);
+    if (!regEye) {
+      regEye = {
+        ...eyeConfig,
+        run_count: 0,
+        total_items: 0,
+        total_errors: 0
+      };
+      registry.eyes.push(regEye);
+    }
+    const runtimeEye = effectiveEye(eyeConfig, regEye);
     
     // Update EMA in registry
     regEye.score_ema = m.score_ema;
@@ -663,8 +714,8 @@ function evolve(dateStr) {
       regEye.outcomes_delta = 0;
     }
 
-    const oldCadence = eyeConfig.cadence_hours;
-    const oldStatus = eyeConfig.status;
+    const oldCadence = runtimeEye.cadence_hours;
+    const oldStatus = runtimeEye.status;
     let newCadence = oldCadence;
     let newStatus = oldStatus;
     let reason = '';
@@ -709,9 +760,6 @@ function evolve(dateStr) {
     
     // Apply changes
     if (newCadence !== oldCadence || newStatus !== oldStatus) {
-      eyeConfig.cadence_hours = Math.round(newCadence);
-      eyeConfig.status = newStatus;
-      
       regEye.cadence_hours = Math.round(newCadence);
       regEye.status = newStatus;
       
@@ -767,17 +815,18 @@ function list() {
   
   config.eyes.forEach(eye => {
     const reg = registry.eyes.find(e => e.id === eye.id);
+    const runtimeEye = effectiveEye(eye, reg);
     const statusEmoji = {
       active: '✅',
       probation: '🔍',
       dormant: '💤',
       retired: '⏹️'
-    }[eye.status] || '⚪';
+    }[runtimeEye.status] || '⚪';
     
-    console.log(`${statusEmoji} ${eye.id} (${eye.status})`);
+    console.log(`${statusEmoji} ${eye.id} (${runtimeEye.status})`);
     console.log(`   Name: ${eye.name}`);
-    console.log(`   Cadence: ${eye.cadence_hours}h`);
-    console.log(`   Score EMA: ${eye.score_ema.toFixed(1)}`);
+    console.log(`   Cadence: ${runtimeEye.cadence_hours}h`);
+    console.log(`   Score EMA: ${runtimeEye.score_ema.toFixed(1)}`);
     console.log(`   Topics: ${eye.topics?.join(', ') || 'none'}`);
     console.log(`   Runs: ${reg?.run_count || 0}, Items: ${reg?.total_items || 0}`);
     console.log(`   Budget: ${eye.budgets?.max_items || 'N/A'} items, ${eye.budgets?.max_seconds || 'N/A'}s`);

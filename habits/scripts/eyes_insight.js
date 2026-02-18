@@ -30,11 +30,40 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { loadActiveDirectives } = require('../../lib/directive_resolver.js');
 
 const testDir = process.env.SENSORY_TEST_DIR;
 const SENSORY_DIR = testDir || path.join(__dirname, '..', '..', 'state', 'sensory');
 const EYES_RAW_DIR = path.join(SENSORY_DIR, 'eyes', 'raw');
 const PROPOSALS_DIR = path.join(SENSORY_DIR, 'proposals');
+const EYES_CONFIG_PATH = path.join(__dirname, '..', '..', 'config', 'external_eyes.json');
+const EYES_STATE_REGISTRY_PATH = path.join(__dirname, '..', '..', 'state', 'sensory', 'eyes', 'registry.json');
+
+const SENSORY_MIN_RELEVANCE_SCORE = Number(process.env.SENSORY_MIN_RELEVANCE_SCORE || 42);
+const SENSORY_MIN_DIRECTIVE_FIT = Number(process.env.SENSORY_MIN_DIRECTIVE_FIT || 25);
+const SENSORY_MIN_EYE_SCORE_EMA = Number(process.env.SENSORY_MIN_EYE_SCORE_EMA || 40);
+const SENSORY_DISALLOWED_PARSER_TYPES = new Set(
+  String(process.env.SENSORY_DISALLOWED_PARSER_TYPES || 'stub')
+    .split(',')
+    .map(s => s.trim().toLowerCase())
+    .filter(Boolean)
+);
+
+const FIT_STOPWORDS = new Set([
+  'the', 'and', 'for', 'with', 'from', 'into', 'through', 'that', 'this', 'those', 'these', 'your', 'you',
+  'their', 'our', 'are', 'was', 'were', 'been', 'being', 'have', 'has', 'had', 'will', 'would', 'should',
+  'could', 'must', 'can', 'not', 'all', 'any', 'only', 'each', 'per', 'but', 'its', 'it', 'as', 'at', 'on',
+  'to', 'in', 'of', 'or', 'an', 'a', 'by'
+]);
+const BUSINESS_MARKERS = new Set([
+  'income', 'revenue', 'wealth', 'billionaire', 'venture', 'ventures', 'business', 'market', 'growth',
+  'scalable', 'scale', 'automation', 'automated', 'system', 'systems', 'efficiency', 'monetize', 'profit',
+  'equity', 'compounding', 'asset', 'assets', 'cashflow', 'recurring', 'leverage'
+]);
+const CAPABILITY_MARKERS = new Set([
+  'ai', 'llm', 'agent', 'agents', 'automation', 'autonomous', 'productivity', 'devtools', 'infra', 'security',
+  'orchestration', 'routing', 'latency', 'throughput', 'benchmark', 'optimization', 'startup'
+]);
 
 function ensureDirs() {
   [EYES_RAW_DIR, PROPOSALS_DIR].forEach((dir) => {
@@ -78,6 +107,23 @@ function loadExistingProposals(dateStr) {
   }
 }
 
+function clamp(n, min, max) {
+  const x = Number(n);
+  if (!Number.isFinite(x)) return min;
+  if (x < min) return min;
+  if (x > max) return max;
+  return x;
+}
+
+function readJsonSafe(filePath, fallback) {
+  try {
+    if (!fs.existsSync(filePath)) return fallback;
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch (_) {
+    return fallback;
+  }
+}
+
 function saveProposalsArray(dateStr, proposals) {
   ensureDirs();
   const p = path.join(PROPOSALS_DIR, `${dateStr}.json`);
@@ -87,6 +133,131 @@ function saveProposalsArray(dateStr, proposals) {
 
 function normalizeText(s) {
   return String(s || '').trim();
+}
+
+function normalizeFitText(s) {
+  return normalizeText(s)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
+function tokenizeFitText(s) {
+  const norm = normalizeFitText(s);
+  if (!norm) return [];
+  return norm
+    .split(' ')
+    .filter(t => t.length >= 3)
+    .filter(t => !FIT_STOPWORDS.has(t))
+    .filter(t => !/^\d+$/.test(t));
+}
+
+function toStem(token) {
+  const t = normalizeText(token);
+  if (t.length <= 5) return t;
+  return t.slice(0, 5);
+}
+
+function asStringArray(v) {
+  if (Array.isArray(v)) return v.map(x => normalizeText(x)).filter(Boolean);
+  if (typeof v === 'string') {
+    const s = normalizeText(v);
+    return s ? [s] : [];
+  }
+  return [];
+}
+
+function uniqSorted(arr) {
+  return Array.from(new Set(arr)).sort();
+}
+
+function loadEyesMap() {
+  const out = new Map();
+  const cfg = readJsonSafe(EYES_CONFIG_PATH, {});
+  const state = readJsonSafe(EYES_STATE_REGISTRY_PATH, {});
+  const cfgEyes = Array.isArray(cfg && cfg.eyes) ? cfg.eyes : [];
+  const stateEyes = Array.isArray(state && state.eyes) ? state.eyes : [];
+
+  for (const e of cfgEyes) {
+    if (!e || !e.id) continue;
+    out.set(String(e.id), { ...e });
+  }
+  for (const e of stateEyes) {
+    if (!e || !e.id) continue;
+    const id = String(e.id);
+    out.set(id, { ...(out.get(id) || {}), ...e });
+  }
+  return out;
+}
+
+function loadDirectiveFitProfile() {
+  let directives = [];
+  try {
+    directives = loadActiveDirectives({ allowMissing: true });
+  } catch (_) {
+    return {
+      available: false,
+      active_directive_ids: [],
+      positive_phrases: [],
+      negative_phrases: [],
+      positive_tokens: [],
+      negative_tokens: []
+    };
+  }
+
+  const strategic = directives.filter((d) => {
+    const id = normalizeText(d && d.id);
+    if (/^T0[_-]/i.test(id) || /^T0$/i.test(id)) return false;
+    const entryTier = Number(d && d.tier);
+    const metaTier = Number(d && d.data && d.data.metadata && d.data.metadata.tier);
+    const tier = Number.isFinite(entryTier) ? entryTier : metaTier;
+    return Number.isFinite(tier) ? tier >= 1 : true;
+  });
+  const positivePhrases = [];
+  const negativePhrases = [];
+  const activeIds = [];
+
+  for (const d of strategic) {
+    const data = d && d.data ? d.data : {};
+    const meta = data && data.metadata ? data.metadata : {};
+    const intent = data && data.intent ? data.intent : {};
+    const scope = data && data.scope ? data.scope : {};
+    const success = data && data.success_metrics ? data.success_metrics : {};
+    activeIds.push(normalizeText(d.id || meta.id));
+
+    positivePhrases.push(...asStringArray(meta.description));
+    positivePhrases.push(...asStringArray(intent.primary));
+    positivePhrases.push(...asStringArray(scope.included));
+    positivePhrases.push(...asStringArray(success.leading));
+    positivePhrases.push(...asStringArray(success.lagging));
+
+    negativePhrases.push(...asStringArray(scope.excluded));
+  }
+
+  const posPhrasesNorm = uniqSorted(positivePhrases.map(normalizeFitText).filter(x => x.length >= 4));
+  const negPhrasesNorm = uniqSorted(negativePhrases.map(normalizeFitText).filter(x => x.length >= 4));
+  const posTokenSet = new Set();
+  const negTokenSet = new Set();
+
+  for (const p of posPhrasesNorm) {
+    for (const t of tokenizeFitText(p)) posTokenSet.add(t);
+  }
+  for (const p of negPhrasesNorm) {
+    for (const t of tokenizeFitText(p)) negTokenSet.add(t);
+  }
+  for (const t of posTokenSet) {
+    if (negTokenSet.has(t)) negTokenSet.delete(t);
+  }
+
+  return {
+    available: activeIds.length > 0 && posTokenSet.size > 0,
+    active_directive_ids: uniqSorted(activeIds.filter(Boolean)),
+    positive_phrases: posPhrasesNorm,
+    negative_phrases: negPhrasesNorm,
+    positive_tokens: uniqSorted(Array.from(posTokenSet)),
+    negative_tokens: uniqSorted(Array.from(negTokenSet))
+  };
 }
 
 // Simple deterministic "usefulness" heuristics
@@ -114,13 +285,155 @@ function scoreItem(item) {
   return score;
 }
 
-function buildProposalFromItem(item) {
+function qualityTier(score) {
+  const s = Number(score);
+  if (!Number.isFinite(s)) return 'unknown';
+  if (s >= 75) return 'high';
+  if (s >= 50) return 'medium';
+  return 'low';
+}
+
+function tokenHits(tokens, directiveTokens) {
+  const tokenSet = new Set(tokens);
+  const stemSet = new Set(tokens.map(toStem));
+  const hits = [];
+  for (const tok of directiveTokens) {
+    if (tokenSet.has(tok)) {
+      hits.push(tok);
+      continue;
+    }
+    const stem = toStem(tok);
+    if (stem && stemSet.has(stem)) hits.push(tok);
+  }
+  return hits;
+}
+
+function assessDirectiveFitItem(item, profile) {
+  if (!profile || profile.available !== true) {
+    return {
+      pass: true,
+      score: 100,
+      matched_positive: [],
+      matched_negative: [],
+      reasons: ['directive_profile_unavailable']
+    };
+  }
+
+  const text = normalizeFitText([
+    normalizeText(item.title),
+    normalizeText(item.url),
+    normalizeText(item.content_preview)
+  ].join(' '));
+  const tokens = tokenizeFitText(text);
+  const businessHits = tokens.filter(t => BUSINESS_MARKERS.has(t) || BUSINESS_MARKERS.has(toStem(t)));
+  const capabilityHits = tokens.filter(t => CAPABILITY_MARKERS.has(t) || CAPABILITY_MARKERS.has(toStem(t)));
+  const markerHits = uniqSorted([...businessHits, ...capabilityHits]);
+  const posPhraseHits = profile.positive_phrases.filter(ph => text.includes(ph));
+  const negPhraseHits = profile.negative_phrases.filter(ph => text.includes(ph));
+  const posTokenHits = tokenHits(tokens, profile.positive_tokens);
+  const negTokenHits = tokenHits(tokens, profile.negative_tokens);
+
+  let score = 30;
+  score += posPhraseHits.length * 18;
+  score += Math.min(30, posTokenHits.length * 5);
+  score += Math.min(12, markerHits.length * 4);
+  score -= negPhraseHits.length * 20;
+  score -= Math.min(24, negTokenHits.length * 6);
+
+  const finalScore = clamp(Math.round(score), 0, 100);
+  const reasons = [];
+  const hasPositive = posPhraseHits.length > 0 || posTokenHits.length > 0;
+  const hasBusiness = businessHits.length > 0;
+  const hasCapability = capabilityHits.length >= 2;
+  const hasMarker = hasBusiness || hasCapability;
+  if (!hasPositive) reasons.push('no_directive_alignment');
+  if (!hasMarker) reasons.push('no_business_marker');
+  if (negPhraseHits.length > 0 || negTokenHits.length > 0) reasons.push('matches_excluded_scope');
+  const pass = hasMarker && finalScore >= SENSORY_MIN_DIRECTIVE_FIT;
+  if (!pass) reasons.push('below_min_directive_fit');
+
+  return {
+    pass,
+    score: finalScore,
+    matched_positive: uniqSorted([...posPhraseHits, ...posTokenHits, ...markerHits]).slice(0, 5),
+    matched_negative: uniqSorted([...negPhraseHits, ...negTokenHits]).slice(0, 5),
+    reasons
+  };
+}
+
+function assessItemRelevance(item, eye, directiveProfile) {
+  const itemScore = scoreItem(item);
+  const directiveFit = assessDirectiveFitItem(item, directiveProfile);
+  const title = normalizeText(item.title);
+  let score = Math.round((itemScore * 0.55) + (directiveFit.score * 0.45));
+  const reasons = [];
+  let hardBlock = false;
+
+  if (/\[stub\]/i.test(title)) {
+    hardBlock = true;
+    reasons.push('stub_title');
+  }
+
+  if (eye) {
+    const parserType = normalizeText(eye.parser_type).toLowerCase();
+    const status = normalizeText(eye.status).toLowerCase();
+    const eyeScoreEma = Number(eye.score_ema);
+
+    if (parserType && SENSORY_DISALLOWED_PARSER_TYPES.has(parserType)) {
+      hardBlock = true;
+      reasons.push(`parser_disallowed:${parserType}`);
+    }
+    if (status === 'dormant') {
+      hardBlock = true;
+      reasons.push('eye_dormant');
+    } else if (status === 'probation') {
+      score -= 10;
+      reasons.push('eye_probation');
+    }
+    if (Number.isFinite(eyeScoreEma) && eyeScoreEma < SENSORY_MIN_EYE_SCORE_EMA) {
+      score -= 8;
+      reasons.push('eye_score_ema_low');
+    }
+  } else {
+    reasons.push('eye_unknown');
+  }
+
+  if (!directiveFit.pass && itemScore < 70) {
+    reasons.push('directive_fit_low');
+  }
+
+  const finalScore = clamp(score, 0, 100);
+  const pass = !hardBlock
+    && finalScore >= SENSORY_MIN_RELEVANCE_SCORE
+    && (directiveFit.pass || itemScore >= 70);
+  if (!pass && finalScore < SENSORY_MIN_RELEVANCE_SCORE) reasons.push('below_min_relevance');
+
+  return {
+    pass,
+    relevance_score: finalScore,
+    relevance_tier: qualityTier(finalScore),
+    signal_quality_score: itemScore,
+    signal_quality_tier: qualityTier(itemScore),
+    directive_fit_score: directiveFit.score,
+    directive_fit_pass: directiveFit.pass,
+    directive_fit_positive: directiveFit.matched_positive,
+    directive_fit_negative: directiveFit.matched_negative,
+    reasons
+  };
+}
+
+function buildProposalFromItem(item, analysis) {
   // Prefer explicit eye_id from external_eyes raw events (stable attribution key)
   const eyeId = normalizeText(item.eye_id) || normalizeText(item.source) || 'unknown_eye';
   const url = normalizeText(item.url);
   const title = normalizeText(item.title) || 'External item';
   const topics = Array.isArray(item.topics) ? item.topics : [];
   const preview = normalizeText(item.content_preview);
+  const signalScore = Number(analysis && analysis.signal_quality_score);
+  const itemScore = Number.isFinite(signalScore) ? signalScore : scoreItem(item);
+  const signalTier = qualityTier(itemScore);
+  const relevanceScore = Number(analysis && analysis.relevance_score);
+  const directiveFitScore = Number(analysis && analysis.directive_fit_score);
 
   // Stable key:
   // - If item_hash exists, use it (best)
@@ -149,8 +462,8 @@ function buildProposalFromItem(item) {
         evidence_item_hash: itemHash || null
       }
     ],
-    expected_impact: scoreItem(item) >= 60 ? 'medium' : 'low',
-    risk: scoreItem(item) >= 80 ? 'low' : 'medium',
+    expected_impact: itemScore >= 60 ? 'medium' : 'low',
+    risk: itemScore >= 80 ? 'low' : 'medium',
     validation: [
       'Verify relevance to current goals',
       'Check source link and summarize in 1 sentence',
@@ -161,70 +474,159 @@ function buildProposalFromItem(item) {
       source_eye: eyeId,
       url,
       topics,
-      score: scoreItem(item),
+      // `score` is retained for compatibility with existing consumers.
+      score: itemScore,
+      signal_quality_score: itemScore,
+      signal_quality_tier: signalTier,
+      relevance_score: Number.isFinite(relevanceScore) ? relevanceScore : itemScore,
+      relevance_tier: qualityTier(Number.isFinite(relevanceScore) ? relevanceScore : itemScore),
+      directive_fit_score: Number.isFinite(directiveFitScore) ? directiveFitScore : null,
+      directive_fit_pass: analysis ? analysis.directive_fit_pass === true : null,
+      directive_fit_positive: analysis ? analysis.directive_fit_positive.slice(0, 5) : [],
+      directive_fit_negative: analysis ? analysis.directive_fit_negative.slice(0, 5) : [],
+      relevance_reasons: analysis ? analysis.reasons.slice(0, 5) : [],
       preview: preview.slice(0, 200)
     }
   };
 }
 
-function dedupeById(existing, incoming) {
-  const seen = new Set(existing.map(p => p && p.id).filter(Boolean));
-  const out = [];
+function hydrateExisting(existingProposal, incomingProposal) {
+  const e = existingProposal && typeof existingProposal === 'object' ? existingProposal : {};
+  const i = incomingProposal && typeof incomingProposal === 'object' ? incomingProposal : {};
+  const eMeta = e.meta && typeof e.meta === 'object' ? e.meta : {};
+  const iMeta = i.meta && typeof i.meta === 'object' ? i.meta : {};
+
+  const fields = [
+    'signal_quality_score',
+    'signal_quality_tier',
+    'relevance_score',
+    'relevance_tier',
+    'directive_fit_score',
+    'directive_fit_pass',
+    'directive_fit_positive',
+    'directive_fit_negative',
+    'relevance_reasons'
+  ];
+
+  let touched = false;
+  const nextMeta = { ...eMeta };
+  for (const key of fields) {
+    const hasExisting = eMeta[key] != null && !(Array.isArray(eMeta[key]) && eMeta[key].length === 0);
+    const hasIncoming = iMeta[key] != null;
+    if (!hasExisting && hasIncoming) {
+      nextMeta[key] = iMeta[key];
+      touched = true;
+    }
+  }
+  if (!touched) return { proposal: e, touched: false };
+  return { proposal: { ...e, meta: nextMeta }, touched: true };
+}
+
+function mergeById(existing, incoming) {
+  const index = new Map();
+  const merged = existing.map((p, idx) => {
+    const id = p && p.id ? String(p.id) : '';
+    if (id) index.set(id, idx);
+    return p;
+  });
+
+  let added = 0;
+  let hydrated = 0;
   for (const p of incoming) {
     if (!p || !p.id) continue;
-    if (seen.has(p.id)) continue;
-    seen.add(p.id);
-    out.push(p);
+    const id = String(p.id);
+    if (!index.has(id)) {
+      merged.push(p);
+      index.set(id, merged.length - 1);
+      added += 1;
+      continue;
+    }
+    const idx = index.get(id);
+    const res = hydrateExisting(merged[idx], p);
+    if (res.touched) {
+      merged[idx] = res.proposal;
+      hydrated += 1;
+    }
   }
-  return out;
+  return { merged, added, hydrated };
 }
 
 function generateEyeProposals(dateStr, maxCount = 5) {
   ensureDirs();
   const rawPath = path.join(EYES_RAW_DIR, `${dateStr}.jsonl`);
   const events = readJsonlSafe(rawPath);
+  const directiveProfile = loadDirectiveFitProfile();
+  const eyesMap = loadEyesMap();
 
   const items = events
     .filter(e => e && e.type === 'external_item')
     .map(e => e.item || e)
     .filter(i => i && typeof i === 'object');
 
+  const analyses = items.map((item) => {
+    const eyeId = normalizeText(item.eye_id) || normalizeText(item.source) || 'unknown_eye';
+    const eye = eyesMap.get(eyeId) || null;
+    const analysis = assessItemRelevance(item, eye, directiveProfile);
+    return { item, eyeId, analysis };
+  });
+
   // Deduplicate by URL hash to avoid spamming same link
   const byUrl = new Map();
-  for (const item of items) {
+  for (const entry of analyses) {
+    const item = entry.item;
     const url = normalizeText(item.url);
     if (!url) continue;
     const key = sha16(url);
     const prev = byUrl.get(key);
     if (!prev) {
-      byUrl.set(key, item);
+      byUrl.set(key, entry);
     } else {
-      // keep the higher scored one deterministically
-      if (scoreItem(item) > scoreItem(prev)) byUrl.set(key, item);
+      // keep the higher relevance one deterministically
+      if (entry.analysis.relevance_score > prev.analysis.relevance_score) byUrl.set(key, entry);
     }
   }
 
   const deduped = Array.from(byUrl.values());
   deduped.sort((a, b) => {
-    const sa = scoreItem(a);
-    const sb = scoreItem(b);
+    const sa = Number(a.analysis.relevance_score);
+    const sb = Number(b.analysis.relevance_score);
     if (sb !== sa) return sb - sa;
     // stable tie-breakers
-    const ua = normalizeText(a.url);
-    const ub = normalizeText(b.url);
+    const ua = normalizeText(a.item.url);
+    const ub = normalizeText(b.item.url);
     return ua.localeCompare(ub);
   });
 
-  const proposals = deduped.slice(0, maxCount).map(buildProposalFromItem);
-  return { rawPath, proposals };
+  const rejected = deduped.filter(x => !x.analysis.pass);
+  const accepted = deduped.filter(x => x.analysis.pass);
+  const proposals = accepted.slice(0, maxCount).map(x => buildProposalFromItem(x.item, x.analysis));
+  return {
+    rawPath,
+    proposals,
+    stats: {
+      total_items: items.length,
+      deduped_items: deduped.length,
+      accepted_items: accepted.length,
+      rejected_items: rejected.length,
+      directive_profile_available: directiveProfile.available === true
+    },
+    rejected_samples: rejected.slice(0, 5).map((x) => ({
+      eye_id: x.eyeId,
+      title: normalizeText(x.item.title).slice(0, 80),
+      relevance_score: x.analysis.relevance_score,
+      reasons: x.analysis.reasons.slice(0, 3)
+    }))
+  };
 }
 
 function mergeIntoDailyProposals(dateStr, maxCount = 5) {
   const { proposals: existing, path: proposalsPath } = loadExistingProposals(dateStr);
-  const { proposals: newOnes, rawPath } = generateEyeProposals(dateStr, maxCount);
+  const generated = generateEyeProposals(dateStr, maxCount);
+  const newOnes = generated.proposals;
+  const rawPath = generated.rawPath;
 
-  const toAdd = dedupeById(existing, newOnes);
-  const merged = existing.concat(toAdd);
+  const mergedRes = mergeById(existing, newOnes);
+  const merged = mergedRes.merged;
 
   const savedPath = saveProposalsArray(dateStr, merged);
   return {
@@ -233,8 +635,11 @@ function mergeIntoDailyProposals(dateStr, maxCount = 5) {
     eyes_raw: rawPath,
     proposals_path: savedPath,
     existing_count: existing.length,
-    added_count: toAdd.length,
-    total_count: merged.length
+    added_count: mergedRes.added,
+    hydrated_count: mergedRes.hydrated,
+    total_count: merged.length,
+    generated_stats: generated.stats,
+    rejected_samples: generated.rejected_samples
   };
 }
 
@@ -274,7 +679,12 @@ function main() {
     console.log(`Proposals: ${res.proposals_path}`);
     console.log(`Existing: ${res.existing_count}`);
     console.log(`Added: ${res.added_count}`);
+    console.log(`Hydrated: ${res.hydrated_count || 0}`);
     console.log(`Total: ${res.total_count}`);
+    if (res.generated_stats) {
+      console.log(`Accepted (this run): ${res.generated_stats.accepted_items}/${res.generated_stats.deduped_items}`);
+      console.log(`Rejected (this run): ${res.generated_stats.rejected_items}`);
+    }
     console.log('═══════════════════════════════════════════════════════════');
     process.exit(0);
   }
@@ -289,6 +699,8 @@ if (require.main === module) {
 
 module.exports = {
   scoreItem,
+  assessDirectiveFitItem,
+  assessItemRelevance,
   buildProposalFromItem,
   generateEyeProposals,
   mergeIntoDailyProposals,
