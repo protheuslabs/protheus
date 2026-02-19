@@ -122,13 +122,67 @@ function main() {
   // autonomy_controller.js is optional by flag, but contract should remain valid.
   checkScript(
     "systems/autonomy/autonomy_controller.js",
-    ["autonomy_controller.js", "run", "status"]
+    ["autonomy_controller.js", "run", "evidence", "status"]
+  );
+
+  // proposal_enricher.js normalizes proposal meta/admission prior to autonomy selection.
+  checkScript(
+    "systems/autonomy/proposal_enricher.js",
+    ["proposal_enricher.js", "run"]
+  );
+
+  // receipt_summary.js reports deterministic run/receipt pass-fail scorecards.
+  checkScript(
+    "systems/autonomy/receipt_summary.js",
+    ["receipt_summary.js", "run", "--days"]
+  );
+
+  // strategy_doctor.js validates/prints active strategy profile and effective policy.
+  checkScript(
+    "systems/autonomy/strategy_doctor.js",
+    ["strategy_doctor.js", "--strict", "--id"]
+  );
+
+  // strategy_readiness.js reports score_only->execute readiness using deterministic checks.
+  checkScript(
+    "systems/autonomy/strategy_readiness.js",
+    ["strategy_readiness.js", "run", "--days", "--strict"]
+  );
+
+  // strategy_mode.js manages status/recommend/set with readiness and approval note safeguards.
+  checkScript(
+    "systems/autonomy/strategy_mode.js",
+    ["strategy_mode.js", "status", "recommend", "set", "--mode", "--approval-note", "--approver-id", "--second-approver-id", "--second-approval-note"]
+  );
+
+  // strategy_execute_guard.js auto-reverts execute mode on repeated readiness failure.
+  checkScript(
+    "systems/autonomy/strategy_execute_guard.js",
+    ["strategy_execute_guard.js", "run", "status", "--days"]
+  );
+
+  // emergency_stop.js provides one-command kill-switch for autonomy/routing/actuation.
+  checkScript(
+    "systems/security/emergency_stop.js",
+    ["emergency_stop.js", "status", "engage", "release", "--approval-note"]
   );
 
   // improvement_controller.js manages bounded trial + rollback for self-improvements.
   checkScript(
     "systems/autonomy/improvement_controller.js",
     ["improvement_controller.js", "start", "evaluate", "status"]
+  );
+
+  // model_catalog_loop.js manages built-in model catalog propose/trial/report/apply capability.
+  checkScript(
+    "systems/autonomy/model_catalog_loop.js",
+    ["model_catalog_loop.js", "propose", "trial", "report", "review", "approve", "reject", "apply"]
+  );
+
+  // model_catalog_rollback.js restores latest routing snapshot under elevated clearance.
+  checkScript(
+    "systems/autonomy/model_catalog_rollback.js",
+    ["model_catalog_rollback.js", "latest", "approval-note"]
   );
 
   // route_execute.js is called by autonomy_controller run path.
@@ -160,6 +214,24 @@ function main() {
   checkScript(
     "systems/security/skill_quarantine.js",
     ["skill_quarantine.js", "inspect", "verify", "hash-tree"]
+  );
+
+  // integrity_kernel.js enforces tamper-evident hashes for security/directive policy files.
+  checkScript(
+    "systems/security/integrity_kernel.js",
+    ["integrity_kernel.js", "run", "seal", "--approval-note"]
+  );
+
+  // architecture_guard.js audits specialization leakage in systems layer.
+  checkScript(
+    "systems/security/architecture_guard.js",
+    ["architecture_guard.js", "run", "--strict"]
+  );
+
+  // state_backup.js provides optional external runtime-state backup and snapshot listing.
+  checkScript(
+    "systems/ops/state_backup.js",
+    ["state_backup.js", "run", "list", "--dest", "--profile"]
   );
 
   console.log("contract_check: OK");
