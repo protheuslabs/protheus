@@ -22,6 +22,20 @@ const path = require('path');
 const crypto = require('crypto');
 const { spawnSync } = require('child_process');
 const { loadActiveDirectives } = require('../../lib/directive_resolver.js');
+const { writeContractReceipt } = require('../../lib/action_receipts.js');
+const { isEmergencyStopEngaged } = require('../../lib/emergency_stop.js');
+const {
+  loadActiveStrategy,
+  applyThresholdOverrides,
+  effectiveAllowedRisks,
+  strategyExecutionMode,
+  strategyBudgetCaps,
+  strategyExplorationPolicy,
+  strategyRankingWeights,
+  strategyAllowsProposalType,
+  strategyMaxRiskPerAction,
+  strategyDuplicateWindowHours
+} = require('../../lib/strategy_resolver.js');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const PROPOSALS_DIR = path.join(REPO_ROOT, 'state', 'sensory', 'proposals');
@@ -33,6 +47,13 @@ const HABIT_RUNS_LOG_PATH = path.join(REPO_ROOT, 'habits', 'logs', 'habit_runs.n
 const HABIT_ERRORS_LOG_PATH = path.join(REPO_ROOT, 'habits', 'logs', 'habit_errors.ndjson');
 const EYES_CONFIG_PATH = path.join(REPO_ROOT, 'config', 'external_eyes.json');
 const EYES_STATE_REGISTRY_PATH = path.join(REPO_ROOT, 'state', 'sensory', 'eyes', 'registry.json');
+const MODEL_CATALOG_LOOP_SCRIPT = path.join(REPO_ROOT, 'systems', 'autonomy', 'model_catalog_loop.js');
+const PROPOSAL_ENRICHER_SCRIPT = path.join(REPO_ROOT, 'systems', 'autonomy', 'proposal_enricher.js');
+const STRATEGY_READINESS_SCRIPT = path.join(REPO_ROOT, 'systems', 'autonomy', 'strategy_readiness.js');
+const ACTUATION_EXECUTOR_SCRIPT = path.join(REPO_ROOT, 'systems', 'actuation', 'actuation_executor.js');
+const MODEL_CATALOG_AUDIT_PATH = path.join(REPO_ROOT, 'state', 'routing', 'model_catalog_audit.jsonl');
+const MODEL_CATALOG_PROPOSALS_DIR = path.join(REPO_ROOT, 'state', 'routing', 'model_catalog_proposals');
+const MODEL_CATALOG_TRIALS_DIR = path.join(REPO_ROOT, 'state', 'routing', 'model_catalog_trials');
 
 const AUTONOMY_DIR = path.join(REPO_ROOT, 'state', 'autonomy');
 const RUNS_DIR = path.join(AUTONOMY_DIR, 'runs');
@@ -62,6 +83,15 @@ const AUTONOMY_DOD_MIN_ENTRY_DELTA = Number(process.env.AUTONOMY_DOD_MIN_ENTRY_D
 const AUTONOMY_DOD_MIN_REVENUE_DELTA = Number(process.env.AUTONOMY_DOD_MIN_REVENUE_DELTA || 1);
 const AUTONOMY_DOD_MIN_HABIT_OUTCOME_SCORE = Number(process.env.AUTONOMY_DOD_MIN_HABIT_OUTCOME_SCORE || 0.7);
 const AUTONOMY_DOD_EXEC_WINDOW_SLOP_MS = Number(process.env.AUTONOMY_DOD_EXEC_WINDOW_SLOP_MS || 30000);
+const AUTONOMY_ONLY_OPEN_PROPOSALS = String(process.env.AUTONOMY_ONLY_OPEN_PROPOSALS || '1') !== '0';
+const AUTONOMY_ALLOWED_RISKS = new Set(
+  String(process.env.AUTONOMY_ALLOWED_RISKS || 'low')
+    .split(',')
+    .map(s => String(s || '').trim().toLowerCase())
+    .filter(Boolean)
+);
+const AUTONOMY_POSTCHECK_CONTRACT = String(process.env.AUTONOMY_POSTCHECK_CONTRACT || '1') !== '0';
+const AUTONOMY_POSTCHECK_ADAPTER_TESTS = String(process.env.AUTONOMY_POSTCHECK_ADAPTER_TESTS || '1') !== '0';
 const AUTONOMY_MIN_SIGNAL_QUALITY = Number(process.env.AUTONOMY_MIN_SIGNAL_QUALITY || 58);
 const AUTONOMY_MIN_SENSORY_SIGNAL_SCORE = Number(process.env.AUTONOMY_MIN_SENSORY_SIGNAL_SCORE || 45);
 const AUTONOMY_MIN_SENSORY_RELEVANCE_SCORE = Number(process.env.AUTONOMY_MIN_SENSORY_RELEVANCE_SCORE || 42);
@@ -81,6 +111,10 @@ const AUTONOMY_CALIBRATION_MIN_EXECUTED = Number(process.env.AUTONOMY_CALIBRATIO
 const AUTONOMY_CALIBRATION_MAX_DELTA = Number(process.env.AUTONOMY_CALIBRATION_MAX_DELTA || 10);
 const AUTONOMY_SCORECARD_WINDOW_DAYS = Number(process.env.AUTONOMY_SCORECARD_WINDOW_DAYS || 7);
 const AUTONOMY_SCORECARD_MIN_ATTEMPTS = Number(process.env.AUTONOMY_SCORECARD_MIN_ATTEMPTS || 3);
+const AUTONOMY_MODEL_CATALOG_ENABLED = String(process.env.AUTONOMY_MODEL_CATALOG_ENABLED || '1') !== '0';
+const AUTONOMY_MODEL_CATALOG_INTERVAL_DAYS = Number(process.env.AUTONOMY_MODEL_CATALOG_INTERVAL_DAYS || 7);
+const AUTONOMY_MODEL_CATALOG_SOURCE = String(process.env.AUTONOMY_MODEL_CATALOG_SOURCE || 'local');
+const AUTONOMY_REQUIRE_READINESS_FOR_EXECUTE = String(process.env.AUTONOMY_REQUIRE_READINESS_FOR_EXECUTE || '1') !== '0';
 const AUTONOMY_DISALLOWED_PARSER_TYPES = new Set(
   String(process.env.AUTONOMY_DISALLOWED_PARSER_TYPES || 'stub')
     .split(',')
@@ -94,6 +128,36 @@ const DIRECTIVE_FIT_STOPWORDS = new Set([
   'to', 'in', 'of', 'or', 'an', 'a', 'by'
 ]);
 const ACTION_VERB_RE = /\b(build|implement|fix|add|create|generate|optimize|refactor|automate|ship|deploy|test|measure|instrument|reduce|increase)\b/i;
+const TOOL_CAPABILITY_TOKENS = [
+  'web_fetch', 'web_search', 'browser', 'exec', 'read', 'write', 'edit',
+  'cron', 'sessions_spawn', 'sessions_send', 'message', 'gmail', 'gog', 'bird'
+];
+let STRATEGY_CACHE = undefined;
+
+function strategyProfile() {
+  if (STRATEGY_CACHE !== undefined) return STRATEGY_CACHE;
+  STRATEGY_CACHE = loadActiveStrategy({ allowMissing: true });
+  return STRATEGY_CACHE;
+}
+
+function effectiveStrategyBudget() {
+  return strategyBudgetCaps(strategyProfile(), {
+    daily_runs_cap: AUTONOMY_MAX_RUNS_PER_DAY,
+    daily_token_cap: DAILY_TOKEN_CAP
+  });
+}
+
+function effectiveStrategyExecutionMode() {
+  return strategyExecutionMode(strategyProfile(), 'execute');
+}
+
+function effectiveStrategyExploration() {
+  return strategyExplorationPolicy(strategyProfile(), {
+    fraction: AUTONOMY_EXPLORE_FRACTION,
+    every_n: AUTONOMY_EXPLORE_EVERY_N,
+    min_eligible: AUTONOMY_EXPLORE_MIN_ELIGIBLE
+  });
+}
 
 function ensureDir(dir) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -251,12 +315,64 @@ function estimateTokens(p) {
   return 300;
 }
 
+function normalizeSpaces(s) {
+  return String(s == null ? '' : s).replace(/\s+/g, ' ').trim();
+}
+
+function proposalTextBlob(p) {
+  const parts = [
+    p && p.title,
+    p && p.summary,
+    p && p.suggested_next_command,
+    p && p.suggested_command,
+    p && p.notes
+  ];
+  if (p && Array.isArray(p.evidence)) {
+    for (const ev of p.evidence) {
+      if (!ev || typeof ev !== 'object') continue;
+      parts.push(ev.evidence_ref, ev.path, ev.title);
+    }
+  }
+  return normalizeSpaces(parts.filter(Boolean).join(' | ')).toLowerCase();
+}
+
+function detectEyesTerminologyDriftInPool(pool) {
+  const warnings = [];
+  const seen = new Set();
+  for (const item of (pool || [])) {
+    const p = item && item.proposal;
+    if (!p) continue;
+    const blob = proposalTextBlob(p);
+    if (!/\beye\b|\beyes\b/.test(blob)) continue;
+
+    const matchedTools = TOOL_CAPABILITY_TOKENS.filter(t => blob.includes(t));
+    if (!matchedTools.length) continue;
+
+    const key = `${p.id || 'unknown'}:${matchedTools.join(',')}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    warnings.push({
+      proposal_id: p.id || null,
+      reason: 'tools_labeled_as_eyes',
+      matched_tools: matchedTools.slice(0, 5),
+      sample: normalizeSpaces(String(p.title || '')).slice(0, 140)
+    });
+  }
+  return warnings.slice(0, 5);
+}
+
 function sourceEyeRef(p) {
   const metaEye = p && p.meta && typeof p.meta.source_eye === 'string' ? p.meta.source_eye.trim() : '';
   if (metaEye) return `eye:${metaEye}`;
   const evRef = p && Array.isArray(p.evidence) && p.evidence.length ? String((p.evidence[0] || {}).evidence_ref || '') : '';
   if (evRef.startsWith('eye:')) return evRef;
   return 'eye:unknown_eye';
+}
+
+function normalizedRisk(v) {
+  const r = String(v || '').trim().toLowerCase();
+  if (r === 'high' || r === 'medium' || r === 'low') return r;
+  return 'low';
 }
 
 function parseIsoTs(ts) {
@@ -304,7 +420,14 @@ function dailyBudgetPath(dateStr) {
 }
 
 function loadDailyBudget(dateStr) {
-  return loadJson(dailyBudgetPath(dateStr), { date: dateStr, token_cap: DAILY_TOKEN_CAP, used_est: 0 });
+  const caps = effectiveStrategyBudget();
+  const defaultCap = Number.isFinite(Number(caps.daily_token_cap)) ? Number(caps.daily_token_cap) : DAILY_TOKEN_CAP;
+  const loaded = loadJson(dailyBudgetPath(dateStr), { date: dateStr, token_cap: defaultCap, used_est: 0 });
+  const out = loaded && typeof loaded === 'object' ? { ...loaded } : { date: dateStr, token_cap: defaultCap, used_est: 0 };
+  out.date = String(out.date || dateStr);
+  out.used_est = Number.isFinite(Number(out.used_est)) ? Number(out.used_est) : 0;
+  out.token_cap = defaultCap;
+  return out;
 }
 
 function saveDailyBudget(b) {
@@ -325,6 +448,7 @@ function isNoProgressRun(evt) {
   return evt.result === 'init_gate_stub'
     || evt.result === 'init_gate_low_score'
     || evt.result === 'init_gate_blocked_route'
+    || evt.result === 'stop_repeat_gate_capability_cap'
     || evt.result === 'stop_repeat_gate_stale_signal'
     || evt.result === 'stop_init_gate_quality_exhausted'
     || evt.result === 'stop_init_gate_directive_fit_exhausted'
@@ -354,6 +478,7 @@ function isAttemptRunEvent(evt) {
     || evt.result === 'init_gate_stub'
     || evt.result === 'init_gate_low_score'
     || evt.result === 'init_gate_blocked_route'
+    || evt.result === 'stop_repeat_gate_capability_cap'
     || evt.result === 'stop_repeat_gate_stale_signal'
     || evt.result === 'stop_init_gate_quality_exhausted'
     || evt.result === 'stop_init_gate_directive_fit_exhausted'
@@ -370,6 +495,7 @@ function attemptEvents(events) {
 function isGateExhaustedAttempt(evt) {
   if (!evt || evt.type !== 'autonomy_run') return false;
   return evt.result === 'stop_repeat_gate_stale_signal'
+    || evt.result === 'stop_repeat_gate_capability_cap'
     || evt.result === 'init_gate_blocked_route'
     || evt.result === 'stop_init_gate_quality_exhausted'
     || evt.result === 'stop_init_gate_directive_fit_exhausted'
@@ -450,6 +576,8 @@ function scorecardCmd(dateStr) {
   const reverted = executed.filter(e => String(e.outcome || '') === 'reverted');
   const noChange = executed.filter(e => String(e.outcome || '') === 'no_change');
   const noProgress = attempts.filter(isNoProgressRun);
+  const modelCatalogRuns = events.filter(e => e && e.type === 'autonomy_model_catalog_run');
+  const modelCatalogHandoffs = events.filter(e => e && e.type === 'autonomy_model_catalog_handoff');
   const stopCounts = sortedCounts(
     tallyByResult(events.filter(e => e && e.type === 'autonomy_run' && String(e.result || '').startsWith('stop_')))
   );
@@ -505,7 +633,13 @@ function scorecardCmd(dateStr) {
     top_init_gates: initGateCounts.slice(0, 10),
     top_repeat_gates: repeatGateCounts.slice(0, 10),
     dominant_bottleneck: stopCounts.length ? stopCounts[0] : null,
-    recommendation
+    recommendation,
+    model_catalog: {
+      runs: modelCatalogRuns.length,
+      proposals_ok: modelCatalogRuns.filter(e => e.step === 'propose' && e.result === 'ok').length,
+      trials_ok: modelCatalogRuns.filter(e => e.step === 'trial' && e.result === 'ok').length,
+      apply_pending: modelCatalogHandoffs.filter(e => e.result === 'apply_pending').length
+    }
   };
 
   process.stdout.write(JSON.stringify(out, null, 2) + '\n');
@@ -747,6 +881,32 @@ function evaluateDoD({ summary, execRes, beforeEvidence, afterEvidence, execWind
     };
   }
 
+  if (decision === 'ACTUATE') {
+    const verified = !!(summary && summary.verified === true);
+    if (verified) {
+      return {
+        passed: true,
+        class: 'actuation_verified',
+        reason: `adapter_${String(summary.adapter || 'unknown')}_verified`,
+        diff
+      };
+    }
+    if (hasImpactSignal) {
+      return {
+        passed: true,
+        class: 'actuation_with_impact_signal',
+        reason: `adapter_${String(summary && summary.adapter || 'unknown')}_impact_signal`,
+        diff
+      };
+    }
+    return {
+      passed: false,
+      class: 'actuation_unverified',
+      reason: `adapter_${String(summary && summary.adapter || 'unknown')}_unverified`,
+      diff
+    };
+  }
+
   if (decision === 'MANUAL' || decision === 'DENY') {
     return {
       passed: false,
@@ -781,7 +941,7 @@ function sourceEyeId(p) {
 }
 
 function baseThresholds() {
-  return {
+  const base = {
     min_signal_quality: AUTONOMY_MIN_SIGNAL_QUALITY,
     min_sensory_signal_score: AUTONOMY_MIN_SENSORY_SIGNAL_SCORE,
     min_sensory_relevance_score: AUTONOMY_MIN_SENSORY_RELEVANCE_SCORE,
@@ -789,6 +949,11 @@ function baseThresholds() {
     min_actionability_score: AUTONOMY_MIN_ACTIONABILITY_SCORE,
     min_eye_score_ema: AUTONOMY_MIN_EYE_SCORE_EMA
   };
+  return applyThresholdOverrides(base, strategyProfile());
+}
+
+function effectiveAllowedRisksSet() {
+  return effectiveAllowedRisks(AUTONOMY_ALLOWED_RISKS, strategyProfile());
 }
 
 function clampThreshold(name, n) {
@@ -1582,6 +1747,225 @@ function proposalScore(p, overlayEnt, dateStr) {
   );
 }
 
+function proposalRemediationDepth(p) {
+  const meta = p && p.meta && typeof p.meta === 'object' ? p.meta : {};
+  const raw = Number(meta.remediation_depth);
+  if (Number.isFinite(raw) && raw >= 0) return Math.round(raw);
+  const trigger = String(meta.trigger || '').toLowerCase();
+  if (trigger === 'consecutive_failures' || trigger === 'multi_eye_transport_failure') return 1;
+  return 0;
+}
+
+function proposalDedupKey(p) {
+  const type = String(p && p.type || 'unknown').toLowerCase();
+  const eye = sourceEyeId(p);
+  const meta = p && p.meta && typeof p.meta === 'object' ? p.meta : {};
+  const remediationKind = String(meta.remediation_kind || '').toLowerCase();
+  if (type.includes('remediation')) return `${type}|${eye}|${remediationKind || 'none'}`;
+  return `${type}|${eye}|${String(p && p.id || 'unknown')}`;
+}
+
+function proposalRiskScore(p) {
+  const meta = p && p.meta && typeof p.meta === 'object' ? p.meta : {};
+  const explicit = Number(meta.risk_score);
+  if (Number.isFinite(explicit)) return clampNumber(Math.round(explicit), 0, 100);
+  const risk = normalizedRisk(p && p.risk);
+  if (risk === 'high') return 90;
+  if (risk === 'medium') return 60;
+  return 25;
+}
+
+function recentProposalKeyCounts(dateStr, hours) {
+  const out = new Map();
+  const h = Number(hours || 0);
+  if (!Number.isFinite(h) || h <= 0) return out;
+  const cutoffMs = Date.now() - (h * 60 * 60 * 1000);
+  const days = Math.max(1, Math.ceil(h / 24) + 1);
+  for (const d of dateWindow(dateStr, days)) {
+    const rows = readRuns(d);
+    for (const evt of rows) {
+      if (!evt || evt.type !== 'autonomy_run') continue;
+      const key = String(evt.proposal_key || '').trim();
+      if (!key) continue;
+      const t = parseIsoTs(evt.ts);
+      if (!t || t.getTime() < cutoffMs) continue;
+      const result = String(evt.result || '');
+      if (
+        result !== 'executed'
+        && result !== 'score_only_preview'
+        && result !== 'stop_repeat_gate_circuit_breaker'
+        && !isAttemptRunEvent(evt)
+      ) continue;
+      out.set(key, Number(out.get(key) || 0) + 1);
+    }
+  }
+  return out;
+}
+
+function strategyAdmissionDecision(p, strategy, opts = {}) {
+  const type = String(p && p.type || '').toLowerCase();
+  if (!strategyAllowsProposalType(strategy, type)) {
+    return { allow: false, reason: 'strategy_type_filtered' };
+  }
+  const maxRisk = strategyMaxRiskPerAction(strategy, null);
+  if (maxRisk != null) {
+    const riskScore = proposalRiskScore(p);
+    if (riskScore > maxRisk) {
+      return { allow: false, reason: 'strategy_risk_cap_exceeded', risk_score: riskScore, max_risk_per_action: maxRisk };
+    }
+  }
+  const maxDepth = strategy
+    && strategy.admission_policy
+    && Number.isFinite(Number(strategy.admission_policy.max_remediation_depth))
+      ? Number(strategy.admission_policy.max_remediation_depth)
+      : null;
+  if (Number.isFinite(maxDepth) && type.includes('remediation')) {
+    const depth = proposalRemediationDepth(p);
+    if (depth > maxDepth) return { allow: false, reason: 'strategy_remediation_depth_exceeded' };
+  }
+  const dedupKey = String(opts.dedup_key || '').trim();
+  const keyCounts = opts.recent_key_counts instanceof Map ? opts.recent_key_counts : null;
+  const duplicateWindowHours = strategyDuplicateWindowHours(strategy, 24);
+  if (dedupKey && keyCounts) {
+    const seen = Number(keyCounts.get(dedupKey) || 0);
+    if (seen > 0) {
+      return {
+        allow: false,
+        reason: 'strategy_duplicate_window',
+        duplicate_window_hours: duplicateWindowHours,
+        recent_count: seen
+      };
+    }
+  }
+  return { allow: true, reason: null };
+}
+
+function capabilityDescriptor(p, actuationSpec) {
+  if (actuationSpec && actuationSpec.kind) {
+    const kind = String(actuationSpec.kind).trim().toLowerCase();
+    return {
+      key: kind ? `actuation:${kind}` : 'actuation:unknown',
+      aliases: ['actuation']
+    };
+  }
+  const type = String(p && p.type || 'unknown').trim().toLowerCase() || 'unknown';
+  return {
+    key: `proposal:${type}`,
+    aliases: ['proposal']
+  };
+}
+
+function capabilityCap(strategyBudget, descriptor) {
+  const caps = strategyBudget && strategyBudget.per_capability_caps && typeof strategyBudget.per_capability_caps === 'object'
+    ? strategyBudget.per_capability_caps
+    : {};
+  const keys = [descriptor && descriptor.key ? descriptor.key : null]
+    .concat(Array.isArray(descriptor && descriptor.aliases) ? descriptor.aliases : [])
+    .filter(Boolean);
+  for (const k of keys) {
+    if (!Object.prototype.hasOwnProperty.call(caps, k)) continue;
+    const v = Number(caps[k]);
+    if (Number.isFinite(v) && v >= 0) return Math.round(v);
+  }
+  return null;
+}
+
+function capabilityAttemptCountForDate(dateStr, descriptor) {
+  const keys = new Set(
+    [descriptor && descriptor.key ? descriptor.key : null]
+      .concat(Array.isArray(descriptor && descriptor.aliases) ? descriptor.aliases : [])
+      .filter(Boolean)
+      .map(x => String(x).toLowerCase())
+  );
+  if (!keys.size) return 0;
+  const events = readRuns(dateStr);
+  let count = 0;
+  for (const evt of events) {
+    if (!evt || evt.type !== 'autonomy_run') continue;
+    if (!isAttemptRunEvent(evt)) continue;
+    const k = String(evt.capability_key || '').toLowerCase();
+    if (!k) continue;
+    if (keys.has(k)) count++;
+  }
+  return count;
+}
+
+function expectedValueScore(p) {
+  const meta = p && p.meta && typeof p.meta === 'object' ? p.meta : {};
+  const direct = Number(meta.expected_value_score);
+  if (Number.isFinite(direct)) return clampNumber(Math.round(direct), 0, 100);
+  const usd = Number(meta.expected_value_usd);
+  if (Number.isFinite(usd) && usd > 0) {
+    // Log-scale bucket: $1->$100 maps roughly 20->80, capped.
+    const score = Math.log10(Math.max(1, usd)) * 30;
+    return clampNumber(Math.round(score), 0, 100);
+  }
+  return impactWeight(p) * 20;
+}
+
+function timeToValueScore(p) {
+  const meta = p && p.meta && typeof p.meta === 'object' ? p.meta : {};
+  const hours = Number(meta.time_to_cash_hours);
+  if (Number.isFinite(hours) && hours >= 0) {
+    const score = 100 - (Math.min(168, hours) / 168) * 100;
+    return clampNumber(Math.round(score), 0, 100);
+  }
+  const impact = String(p && p.expected_impact || '').toLowerCase();
+  if (impact === 'high') return 40;
+  if (impact === 'medium') return 55;
+  return 70;
+}
+
+function strategyRankForCandidate(cand, strategy) {
+  const p = cand && cand.proposal ? cand.proposal : {};
+  const weights = strategyRankingWeights(strategy);
+  const components = {
+    composite: clampNumber(Number(cand && cand.composite_score || 0), 0, 100),
+    actionability: clampNumber(Number(cand && cand.actionability && cand.actionability.score || 0), 0, 100),
+    directive_fit: clampNumber(Number(cand && cand.directive_fit && cand.directive_fit.score || 0), 0, 100),
+    signal_quality: clampNumber(Number(cand && cand.quality && cand.quality.score || 0), 0, 100),
+    expected_value: expectedValueScore(p),
+    risk_penalty: riskPenalty(p) * 50,
+    time_to_value: timeToValueScore(p)
+  };
+  const raw = (
+    Number(weights.composite || 0) * components.composite
+    + Number(weights.actionability || 0) * components.actionability
+    + Number(weights.directive_fit || 0) * components.directive_fit
+    + Number(weights.signal_quality || 0) * components.signal_quality
+    + Number(weights.expected_value || 0) * components.expected_value
+    - Number(weights.risk_penalty || 0) * components.risk_penalty
+    + Number(weights.time_to_value || 0) * components.time_to_value
+  );
+  return {
+    score: Number(raw.toFixed(3)),
+    components,
+    weights
+  };
+}
+
+function strategyCircuitCooldownHours(p, strategy) {
+  const stopPolicy = strategy && strategy.stop_policy && typeof strategy.stop_policy === 'object'
+    ? strategy.stop_policy
+    : {};
+  const breakers = stopPolicy.circuit_breakers && typeof stopPolicy.circuit_breakers === 'object'
+    ? stopPolicy.circuit_breakers
+    : {};
+  const meta = p && p.meta && typeof p.meta === 'object' ? p.meta : {};
+  const err = String(meta.last_error_code || meta.last_error || '').toLowerCase();
+  if (!err) return 0;
+  if (err.includes('429') || err.includes('rate_limit')) {
+    return Number(breakers.http_429_cooldown_hours || 0);
+  }
+  if (/5\d\d/.test(err) || err.includes('5xx') || err.includes('server_error')) {
+    return Number(breakers.http_5xx_cooldown_hours || 0);
+  }
+  if (err.includes('dns') || err.includes('enotfound') || err.includes('unreachable')) {
+    return Number(breakers.dns_error_cooldown_hours || 0);
+  }
+  return 0;
+}
+
 function runProposalQueue(cmd, id, reasonOrEvidence, maybeEvidence) {
   const script = path.join(REPO_ROOT, 'habits', 'scripts', 'proposal_queue.js');
   const args = [script, cmd, id];
@@ -1606,7 +1990,11 @@ function runRouteExecute(task, tokensEst, repeats14d = 1, errors30d = 0, dryRun 
     '--errors_30d', String(errors30d)
   ];
   if (dryRun) args.push('--dry-run');
-  const env = { ...process.env, ROUTER_ENABLED: process.env.ROUTER_ENABLED || '1' };
+  const env = {
+    ...process.env,
+    ROUTER_ENABLED: process.env.ROUTER_ENABLED || '1',
+    ROUTER_REQUIRED: process.env.ROUTER_REQUIRED || '1'
+  };
   const r = spawnSync('node', args, { cwd: REPO_ROOT, encoding: 'utf8', env });
   const stdout = (r.stdout || '').trim();
   const firstJson = stdout.split('\n').find(line => line.startsWith('{') && line.endsWith('}'));
@@ -1620,6 +2008,125 @@ function runRouteExecute(task, tokensEst, repeats14d = 1, errors30d = 0, dryRun 
     stdout,
     stderr: (r.stderr || '').trim(),
     summary
+  };
+}
+
+function parseActuationSpec(p) {
+  const meta = p && p.meta && typeof p.meta === 'object' ? p.meta : {};
+  const actuation = meta && meta.actuation && typeof meta.actuation === 'object' ? meta.actuation : null;
+  if (!actuation) return null;
+  const kind = String(actuation.kind || '').trim();
+  if (!kind) return null;
+  const params = actuation.params && typeof actuation.params === 'object' ? actuation.params : {};
+  return { kind, params };
+}
+
+function runActuationExecute(spec, dryRun = false) {
+  const args = [
+    ACTUATION_EXECUTOR_SCRIPT,
+    'run',
+    `--kind=${spec.kind}`,
+    `--params=${JSON.stringify(spec.params || {})}`
+  ];
+  if (dryRun) args.push('--dry-run');
+  const r = spawnSync('node', args, { cwd: REPO_ROOT, encoding: 'utf8' });
+  const stdout = (r.stdout || '').trim();
+  const firstJson = stdout.split('\n').find(line => line.startsWith('{') && line.endsWith('}'));
+  let payload = null;
+  if (firstJson) {
+    try { payload = JSON.parse(firstJson); } catch {}
+  }
+  return {
+    ok: r.status === 0,
+    code: r.status || 0,
+    stdout,
+    stderr: (r.stderr || '').trim(),
+    summary: payload && payload.summary ? payload.summary : null
+  };
+}
+
+function runNodeScript(relPath, args = []) {
+  const script = path.join(REPO_ROOT, relPath);
+  const r = spawnSync('node', [script, ...args], { cwd: REPO_ROOT, encoding: 'utf8' });
+  return {
+    ok: r.status === 0,
+    code: r.status || 0,
+    stdout: (r.stdout || '').trim(),
+    stderr: (r.stderr || '').trim()
+  };
+}
+
+function parseFirstJsonLine(text) {
+  const lines = String(text || '').split('\n').map(l => l.trim()).filter(Boolean);
+  for (const line of lines) {
+    if (!line.startsWith('{') || !line.endsWith('}')) continue;
+    try { return JSON.parse(line); } catch {}
+  }
+  return null;
+}
+
+function runProposalEnricher(dateStr, dryRun = false) {
+  const args = ['run', dateStr];
+  if (dryRun) args.push('--dry-run');
+  const r = spawnSync('node', [PROPOSAL_ENRICHER_SCRIPT, ...args], { cwd: REPO_ROOT, encoding: 'utf8' });
+  const stdout = (r.stdout || '').trim();
+  return {
+    ok: r.status === 0,
+    code: r.status || 0,
+    stdout,
+    stderr: (r.stderr || '').trim(),
+    payload: parseFirstJsonLine(stdout)
+  };
+}
+
+function runStrategyReadiness(dateStr, strategyId, days = null) {
+  const args = ['run', dateStr];
+  if (strategyId) args.push(`--id=${strategyId}`);
+  if (Number.isFinite(Number(days)) && Number(days) > 0) args.push(`--days=${Math.round(Number(days))}`);
+  const r = spawnSync('node', [STRATEGY_READINESS_SCRIPT, ...args], { cwd: REPO_ROOT, encoding: 'utf8' });
+  const stdout = (r.stdout || '').trim();
+  return {
+    ok: r.status === 0,
+    code: r.status || 0,
+    stdout,
+    stderr: (r.stderr || '').trim(),
+    payload: parseFirstJsonLine(stdout)
+  };
+}
+
+function runPostconditions(actuationSpec) {
+  const checks = [];
+  if (AUTONOMY_POSTCHECK_CONTRACT) {
+    const c = runNodeScript(path.join('systems', 'spine', 'contract_check.js'));
+    checks.push({
+      name: 'contract_check',
+      pass: !!c.ok,
+      code: c.code,
+      stdout: shortText(c.stdout, 160),
+      stderr: shortText(c.stderr, 160)
+    });
+  }
+
+  if (
+    AUTONOMY_POSTCHECK_ADAPTER_TESTS
+    && actuationSpec
+    && String(actuationSpec.kind || '') === 'moltbook_publish'
+  ) {
+    const t = runNodeScript(path.join('memory', 'tools', 'tests', 'moltbook_publish_guard.test.js'));
+    checks.push({
+      name: 'adapter_test:moltbook_publish_guard',
+      pass: !!t.ok,
+      code: t.code,
+      stdout: shortText(t.stdout, 160),
+      stderr: shortText(t.stderr, 160)
+    });
+  }
+
+  const failed = checks.filter(c => c.pass !== true).map(c => c.name);
+  return {
+    checks,
+    failed,
+    passed: failed.length === 0
   };
 }
 
@@ -1647,15 +2154,18 @@ function compactCmdResult(res) {
   };
 }
 
-function verifyExecutionReceipt(execRes, dod, outcomeRes) {
+function verifyExecutionReceipt(execRes, dod, outcomeRes, postconditions) {
+  const decision = String(execRes && execRes.summary && execRes.summary.decision || '');
+  const execCheckName = decision === 'ACTUATE' ? 'actuation_execute_ok' : 'route_execute_ok';
   const checks = [
-    { name: 'route_execute_ok', pass: !!(execRes && execRes.ok === true) },
+    { name: execCheckName, pass: !!(execRes && execRes.ok === true) },
+    { name: 'postconditions_ok', pass: !!(postconditions && postconditions.passed === true) },
     { name: 'dod_passed', pass: !!(dod && dod.passed === true) },
     { name: 'queue_outcome_logged', pass: !!(outcomeRes && outcomeRes.ok === true) }
   ];
   let outcome = 'shipped';
-  if (!checks[0].pass || !checks[2].pass) outcome = 'reverted';
-  else if (!checks[1].pass) outcome = 'no_change';
+  if (!checks[0].pass || !checks[1].pass || !checks[3].pass) outcome = 'reverted';
+  else if (!checks[2].pass) outcome = 'no_change';
   const failed = checks.filter(c => !c.pass).map(c => c.name);
   return {
     checks,
@@ -1684,24 +2194,165 @@ function writeRun(dateStr, evt) {
 }
 
 function writeReceipt(dateStr, receipt) {
-  appendJsonl(path.join(RECEIPTS_DIR, `${dateStr}.jsonl`), receipt);
+  const filePath = path.join(RECEIPTS_DIR, `${dateStr}.jsonl`);
+  const verified =
+    String(receipt && receipt.verdict || '').toLowerCase() === 'pass'
+    && !!(receipt && receipt.verification && receipt.verification.passed === true);
+  writeContractReceipt(filePath, receipt, { attempted: true, verified });
+}
+
+function runModelCatalogLoop(cmd, extraArgs = []) {
+  const args = [MODEL_CATALOG_LOOP_SCRIPT, cmd, ...extraArgs];
+  const r = spawnSync('node', args, { cwd: REPO_ROOT, encoding: 'utf8' });
+  const stdout = String(r.stdout || '').trim();
+  const firstJson = stdout.split('\n').find(line => line.startsWith('{') && line.endsWith('}'));
+  let payload = null;
+  if (firstJson) {
+    try { payload = JSON.parse(firstJson); } catch {}
+  }
+  return {
+    ok: r.status === 0,
+    code: r.status || 0,
+    stdout,
+    stderr: String(r.stderr || '').trim(),
+    payload
+  };
+}
+
+function modelCatalogStatusSnapshot() {
+  const audits = readJsonl(MODEL_CATALOG_AUDIT_PATH);
+  const applied = new Set(audits.filter(e => e && e.type === 'apply_success' && e.id).map(e => String(e.id)));
+  const proposals = fs.existsSync(MODEL_CATALOG_PROPOSALS_DIR)
+    ? fs.readdirSync(MODEL_CATALOG_PROPOSALS_DIR).filter(f => f.endsWith('.json'))
+    : [];
+  let pendingApply = 0;
+  let latestProposalId = null;
+  let latestProposalTs = null;
+  for (const f of proposals) {
+    const id = f.replace(/\.json$/, '');
+    const trialPath = path.join(MODEL_CATALOG_TRIALS_DIR, `${id}.json`);
+    const trial = loadJson(trialPath, null);
+    if (!trial) continue;
+    const passed = Array.isArray(trial.passed_models) ? trial.passed_models.length : 0;
+    if (passed > 0 && !applied.has(id)) pendingApply++;
+    if (!latestProposalId || id > latestProposalId) {
+      latestProposalId = id;
+      latestProposalTs = String(trial.ts || '').slice(0, 25) || null;
+    }
+  }
+  const lastProposalEvt = [...audits].reverse().find(e => e && e.type === 'proposal_created') || null;
+  return {
+    enabled: AUTONOMY_MODEL_CATALOG_ENABLED,
+    interval_days: AUTONOMY_MODEL_CATALOG_INTERVAL_DAYS,
+    source: AUTONOMY_MODEL_CATALOG_SOURCE,
+    pending_apply: pendingApply,
+    last_proposal_id: lastProposalEvt ? String(lastProposalEvt.id || '') : latestProposalId,
+    last_proposal_ts: lastProposalEvt ? String(lastProposalEvt.ts || '') : latestProposalTs
+  };
+}
+
+function shouldRunModelCatalogLoop() {
+  if (!AUTONOMY_MODEL_CATALOG_ENABLED) return { run: false, reason: 'disabled' };
+  const audits = readJsonl(MODEL_CATALOG_AUDIT_PATH);
+  const lastProposal = [...audits].reverse().find(e => e && e.type === 'proposal_created');
+  if (!lastProposal || !lastProposal.ts) return { run: true, reason: 'no_prior_proposal' };
+  const lastMs = Date.parse(String(lastProposal.ts));
+  if (!Number.isFinite(lastMs)) return { run: true, reason: 'invalid_last_timestamp' };
+  const ageDays = (Date.now() - lastMs) / (24 * 60 * 60 * 1000);
+  if (ageDays >= AUTONOMY_MODEL_CATALOG_INTERVAL_DAYS) {
+    return { run: true, reason: `interval_elapsed_${ageDays.toFixed(2)}d` };
+  }
+  return { run: false, reason: `interval_not_elapsed_${ageDays.toFixed(2)}d` };
+}
+
+function maybeRunModelCatalogLoop(dateStr) {
+  const gate = shouldRunModelCatalogLoop();
+  if (!gate.run) {
+    writeRun(dateStr, {
+      ts: nowIso(),
+      type: 'autonomy_model_catalog_run',
+      result: 'skipped',
+      reason: gate.reason
+    });
+    return;
+  }
+
+  const propose = runModelCatalogLoop('propose', [`--source=${AUTONOMY_MODEL_CATALOG_SOURCE}`]);
+  const proposalId = propose.payload && propose.payload.id ? String(propose.payload.id) : null;
+
+  writeRun(dateStr, {
+    ts: nowIso(),
+    type: 'autonomy_model_catalog_run',
+    step: 'propose',
+    result: propose.ok ? 'ok' : 'failed',
+    reason: gate.reason,
+    proposal_id: proposalId,
+    additions: propose.payload && Number(propose.payload.additions || 0),
+    code: propose.code
+  });
+
+  if (!propose.ok || !proposalId) return;
+
+  const trial = runModelCatalogLoop('trial', [`--id=${proposalId}`]);
+  const passed = trial.payload ? Number(trial.payload.passed || 0) : 0;
+  const failed = trial.payload ? Number(trial.payload.failed || 0) : 0;
+  writeRun(dateStr, {
+    ts: nowIso(),
+    type: 'autonomy_model_catalog_run',
+    step: 'trial',
+    result: trial.ok ? 'ok' : 'failed',
+    proposal_id: proposalId,
+    passed_models: passed,
+    failed_models: failed,
+    code: trial.code
+  });
+
+  if (trial.ok && passed > 0) {
+    writeRun(dateStr, {
+      ts: nowIso(),
+      type: 'autonomy_model_catalog_handoff',
+      result: 'apply_pending',
+      proposal_id: proposalId,
+      passed_models: passed,
+      required_clearance: 3,
+      required_command: `node systems/autonomy/model_catalog_loop.js apply --id=${proposalId} --approval-note="<reason>"`
+    });
+  }
 }
 
 function candidatePool(dateStr) {
   const proposals = loadProposalsForDate(dateStr);
   const overlay = buildOverlay(allDecisionEvents());
+  const strategy = strategyProfile();
+  const allowedRisks = effectiveAllowedRisksSet();
+  const duplicateWindowHours = strategyDuplicateWindowHours(strategy, 24);
+  const recentKeyCounts = recentProposalKeyCounts(dateStr, duplicateWindowHours);
+  const seenDedup = new Set();
   const pool = [];
   for (const p of proposals) {
     if (!p || !p.id) continue;
     const ov = overlay.get(p.id) || null;
     const status = proposalStatus(ov);
     if (status === 'rejected' || status === 'parked') continue;
+    if (AUTONOMY_ONLY_OPEN_PROPOSALS && status !== 'pending') continue;
+    const dedupKey = proposalDedupKey(p);
+    const admission = strategyAdmissionDecision(p, strategy, {
+      dedup_key: dedupKey,
+      recent_key_counts: recentKeyCounts
+    });
+    if (!admission.allow) continue;
+    const risk = normalizedRisk(p.risk);
+    if (allowedRisks.size > 0 && !allowedRisks.has(risk)) continue;
     if (cooldownActive(p.id)) continue;
+    if (seenDedup.has(dedupKey)) continue;
+    seenDedup.add(dedupKey);
     pool.push({
       proposal: p,
       overlay: ov,
       status,
-      score: proposalScore(p, ov, dateStr)
+      score: proposalScore(p, ov, dateStr),
+      dedup_key: dedupKey,
+      admission
     });
   }
   pool.sort((a, b) => {
@@ -1712,8 +2363,11 @@ function candidatePool(dateStr) {
 }
 
 function exploreQuotaForDay() {
-  const frac = clampNumber(AUTONOMY_EXPLORE_FRACTION, 0.05, 0.5);
-  return Math.max(1, Math.floor(Math.max(1, AUTONOMY_MAX_RUNS_PER_DAY) * frac));
+  const caps = effectiveStrategyBudget();
+  const exp = effectiveStrategyExploration();
+  const maxRuns = Number.isFinite(Number(caps.daily_runs_cap)) ? Number(caps.daily_runs_cap) : AUTONOMY_MAX_RUNS_PER_DAY;
+  const frac = clampNumber(exp.fraction, 0.05, 0.8);
+  return Math.max(1, Math.floor(Math.max(1, maxRuns) * frac));
 }
 
 function chooseSelectionMode(eligible, priorRuns) {
@@ -1721,8 +2375,9 @@ function chooseSelectionMode(eligible, priorRuns) {
   const executedCount = executed.length;
   const exploreUsed = executed.filter(e => e.selection_mode === 'explore').length;
   const quota = exploreQuotaForDay();
-  const everyN = Math.max(1, AUTONOMY_EXPLORE_EVERY_N);
-  const minEligible = Math.max(2, AUTONOMY_EXPLORE_MIN_ELIGIBLE);
+  const exp = effectiveStrategyExploration();
+  const everyN = Math.max(1, Number(exp.every_n || AUTONOMY_EXPLORE_EVERY_N));
+  const minEligible = Math.max(2, Number(exp.min_eligible || AUTONOMY_EXPLORE_MIN_ELIGIBLE));
 
   let mode = 'exploit';
   let idx = 0;
@@ -1751,6 +2406,11 @@ function statusCmd(dateStr) {
   const budget = loadDailyBudget(dateStr);
   const eyesMap = loadEyesMap();
   const directiveProfile = loadDirectiveFitProfile();
+  const strategy = strategyProfile();
+  const strategyBudget = effectiveStrategyBudget();
+  const strategyExplore = effectiveStrategyExploration();
+  const executionMode = effectiveStrategyExecutionMode();
+  const allowedRisks = effectiveAllowedRisksSet();
   const calibrationProfile = computeCalibrationProfile(dateStr, false);
   const thresholds = calibrationProfile.effective_thresholds || baseThresholds();
   const runs = runsSinceReset(readRuns(dateStr));
@@ -1764,7 +2424,10 @@ function statusCmd(dateStr) {
   const shippedToday = shippedCount(runs);
   const exploreUsed = executedRuns.filter(e => e.selection_mode === 'explore').length;
   const exploitUsed = executedRuns.filter(e => e.selection_mode === 'exploit').length;
-  const exploreQuota = Math.max(1, Math.floor(Math.max(1, AUTONOMY_MAX_RUNS_PER_DAY) * clampNumber(AUTONOMY_EXPLORE_FRACTION, 0.05, 0.5)));
+  const maxRunsPerDay = Number.isFinite(Number(strategyBudget.daily_runs_cap))
+    ? Number(strategyBudget.daily_runs_cap)
+    : AUTONOMY_MAX_RUNS_PER_DAY;
+  const exploreQuota = Math.max(1, Math.floor(Math.max(1, maxRunsPerDay) * clampNumber(strategyExplore.fraction, 0.05, 0.8)));
   const dopamine = loadDopamineSnapshot(dateStr);
   const out = {
     ts: nowIso(),
@@ -1781,7 +2444,7 @@ function statusCmd(dateStr) {
       gate_exhaustion_cooldown_minutes: AUTONOMY_REPEAT_EXHAUSTED_COOLDOWN_MINUTES,
       shipped_today: shippedToday,
       attempts_today: attemptsToday,
-      max_runs_per_day: AUTONOMY_MAX_RUNS_PER_DAY,
+      max_runs_per_day: maxRunsPerDay,
       min_minutes_between_runs: AUTONOMY_MIN_MINUTES_BETWEEN_RUNS,
       last_attempt_minutes_ago: lastAttemptMinutesAgo == null ? null : Number(lastAttemptMinutesAgo.toFixed(2)),
       max_eye_no_progress_24h: AUTONOMY_MAX_EYE_NO_PROGRESS_24H,
@@ -1793,6 +2456,10 @@ function statusCmd(dateStr) {
     init_gate: {
       min_proposal_score: AUTONOMY_MIN_PROPOSAL_SCORE,
       skip_stub: AUTONOMY_SKIP_STUB,
+      only_open_proposals: AUTONOMY_ONLY_OPEN_PROPOSALS,
+      allowed_risks: Array.from(allowedRisks),
+      postcheck_contract: AUTONOMY_POSTCHECK_CONTRACT,
+      postcheck_adapter_tests: AUTONOMY_POSTCHECK_ADAPTER_TESTS,
       route_block_cooldown_hours: AUTONOMY_ROUTE_BLOCK_COOLDOWN_HOURS,
       min_signal_quality: thresholds.min_signal_quality,
       min_sensory_signal_score: thresholds.min_sensory_signal_score,
@@ -1815,10 +2482,34 @@ function statusCmd(dateStr) {
       top_eye_biases: calibrationProfile.top_eye_biases || [],
       top_topic_biases: calibrationProfile.top_topic_biases || []
     },
+    strategy_profile: strategy
+      ? {
+          id: strategy.id,
+          name: strategy.name,
+          status: strategy.status,
+          file: path.relative(REPO_ROOT, strategy.file).replace(/\\/g, '/'),
+          execution_mode: executionMode,
+          allowed_risks: Array.isArray(strategy.risk_policy && strategy.risk_policy.allowed_risks)
+            ? strategy.risk_policy.allowed_risks
+            : [],
+          threshold_overrides: strategy.threshold_overrides || {},
+          validation: strategy.validation || { strict_ok: true, errors: [], warnings: [] }
+        }
+      : null,
     strategy: {
-      explore_fraction: clampNumber(AUTONOMY_EXPLORE_FRACTION, 0.05, 0.5),
-      explore_every_n: Math.max(1, AUTONOMY_EXPLORE_EVERY_N),
-      explore_min_eligible: Math.max(2, AUTONOMY_EXPLORE_MIN_ELIGIBLE)
+      execution_mode: executionMode,
+      require_readiness_for_execute: AUTONOMY_REQUIRE_READINESS_FOR_EXECUTE,
+      daily_runs_cap: maxRunsPerDay,
+      daily_token_cap: budget.token_cap,
+      max_tokens_per_action: Number.isFinite(Number(strategyBudget.max_tokens_per_action))
+        ? Number(strategyBudget.max_tokens_per_action)
+        : null,
+      per_capability_caps: strategyBudget && strategyBudget.per_capability_caps
+        ? strategyBudget.per_capability_caps
+        : {},
+      explore_fraction: clampNumber(strategyExplore.fraction, 0.05, 0.8),
+      explore_every_n: Math.max(1, Number(strategyExplore.every_n || AUTONOMY_EXPLORE_EVERY_N)),
+      explore_min_eligible: Math.max(2, Number(strategyExplore.min_eligible || AUTONOMY_EXPLORE_MIN_ELIGIBLE))
     },
     dod_gate: {
       allow_propose_shipped: AUTONOMY_DOD_ALLOW_PROPOSE_SHIPPED,
@@ -1828,6 +2519,12 @@ function statusCmd(dateStr) {
       min_habit_outcome_score: AUTONOMY_DOD_MIN_HABIT_OUTCOME_SCORE,
       exec_window_slop_ms: AUTONOMY_DOD_EXEC_WINDOW_SLOP_MS
     },
+    terminology_guard: {
+      eyes_definition: 'passive_signal_sources_only',
+      tools_are_not_eyes: true,
+      warnings: detectEyesTerminologyDriftInPool(pool)
+    },
+    model_catalog: modelCatalogStatusSnapshot(),
     candidates: pool.slice(0, 5).map(x => {
       const q = assessSignalQuality(x.proposal, eyesMap, thresholds, calibrationProfile);
       const dfit = assessDirectiveFit(x.proposal, directiveProfile, thresholds);
@@ -1875,6 +2572,91 @@ function runCmd(dateStr) {
     return;
   }
 
+  const emergency = isEmergencyStopEngaged('autonomy');
+  if (emergency.engaged) {
+    writeRun(dateStr, {
+      ts: nowIso(),
+      type: 'autonomy_run',
+      result: 'stop_emergency_stop',
+      scope: 'autonomy',
+      stop_state: emergency.state || null
+    });
+    process.stdout.write(JSON.stringify({
+      ok: true,
+      result: 'stop_emergency_stop',
+      scope: 'autonomy',
+      stop_state: emergency.state || null,
+      ts: nowIso()
+    }) + '\n');
+    return;
+  }
+
+  const strategy = strategyProfile();
+  const strategyBudget = effectiveStrategyBudget();
+  const executionMode = effectiveStrategyExecutionMode();
+  if (
+    String(process.env.AUTONOMY_STRATEGY_STRICT || '') === '1'
+    && strategy
+    && strategy.validation
+    && strategy.validation.strict_ok === false
+  ) {
+    writeRun(dateStr, {
+      ts: nowIso(),
+      type: 'autonomy_run',
+      result: 'stop_init_gate_strategy_invalid',
+      strategy_id: strategy.id,
+      errors: strategy.validation.errors || []
+    });
+    process.stdout.write(JSON.stringify({
+      ok: true,
+      result: 'stop_init_gate_strategy_invalid',
+      strategy_id: strategy.id,
+      errors: strategy.validation.errors || [],
+      ts: nowIso()
+    }) + '\n');
+    return;
+  }
+
+  if (
+    AUTONOMY_REQUIRE_READINESS_FOR_EXECUTE
+    && strategy
+    && executionMode === 'execute'
+  ) {
+    const minDays = strategy
+      && strategy.promotion_policy
+      && Number.isFinite(Number(strategy.promotion_policy.min_days))
+        ? Number(strategy.promotion_policy.min_days)
+        : null;
+    const readiness = runStrategyReadiness(dateStr, strategy.id, minDays);
+    const readinessPayload = readiness.payload && typeof readiness.payload === 'object' ? readiness.payload : null;
+    const ready = !!(readiness.ok && readinessPayload && readinessPayload.ok === true && readinessPayload.readiness && readinessPayload.readiness.ready_for_execute === true);
+    if (!ready) {
+      writeRun(dateStr, {
+        ts: nowIso(),
+        type: 'autonomy_run',
+        result: 'stop_init_gate_readiness',
+        strategy_id: strategy.id,
+        execution_mode: executionMode,
+        readiness_code: readiness.code,
+        readiness: readinessPayload && readinessPayload.readiness ? readinessPayload.readiness : null,
+        readiness_error: !readiness.ok ? shortText(readiness.stderr || readiness.stdout || `readiness_exit_${readiness.code}`, 180) : null
+      });
+      process.stdout.write(JSON.stringify({
+        ok: true,
+        result: 'stop_init_gate_readiness',
+        strategy_id: strategy.id,
+        execution_mode: executionMode,
+        readiness: readinessPayload && readinessPayload.readiness ? readinessPayload.readiness : null,
+        ts: nowIso()
+      }) + '\n');
+      return;
+    }
+  }
+
+  maybeRunModelCatalogLoop(dateStr);
+  const modelCatalogSnapshot = modelCatalogStatusSnapshot();
+  process.stderr.write(`AUTONOMY_SUMMARY model_catalog_apply_pending=${Number(modelCatalogSnapshot.pending_apply || 0)}\n`);
+
   const proposalDate = latestProposalDate(dateStr);
   if (!proposalDate) {
     writeRun(dateStr, { ts: nowIso(), type: 'autonomy_run', result: 'no_proposals' });
@@ -1903,11 +2685,57 @@ function runCmd(dateStr) {
     return;
   }
 
+  const enrichRes = runProposalEnricher(proposalDate, false);
+  const enrichPayload = enrichRes.payload && typeof enrichRes.payload === 'object' ? enrichRes.payload : null;
+  if (!enrichRes.ok || !enrichPayload || enrichPayload.ok !== true) {
+    writeRun(dateStr, {
+      ts: nowIso(),
+      type: 'autonomy_run',
+      result: 'init_gate_enricher_failed',
+      proposal_date: proposalDate,
+      enricher_code: enrichRes.code,
+      enricher_stdout: shortText(enrichRes.stdout || '', 180),
+      enricher_stderr: shortText(enrichRes.stderr || '', 180)
+    });
+    process.stdout.write(JSON.stringify({
+      ok: true,
+      result: 'init_gate_enricher_failed',
+      proposal_date: proposalDate,
+      enricher_code: enrichRes.code,
+      ts: nowIso()
+    }) + '\n');
+    return;
+  }
+  const admissionSummary = enrichPayload.admission && typeof enrichPayload.admission === 'object'
+    ? enrichPayload.admission
+    : { total: 0, eligible: 0, blocked: 0, blocked_by_reason: {} };
+
   const pool = candidatePool(proposalDate);
   if (!pool.length) {
-    writeRun(dateStr, { ts: nowIso(), type: 'autonomy_run', result: 'no_candidates', proposal_date: proposalDate });
-    process.stdout.write(JSON.stringify({ ok: true, result: 'no_candidates', proposal_date: proposalDate, ts: nowIso() }) + '\n');
+    writeRun(dateStr, {
+      ts: nowIso(),
+      type: 'autonomy_run',
+      result: 'no_candidates',
+      proposal_date: proposalDate,
+      admission: admissionSummary
+    });
+    process.stdout.write(JSON.stringify({
+      ok: true,
+      result: 'no_candidates',
+      proposal_date: proposalDate,
+      admission: admissionSummary,
+      ts: nowIso()
+    }) + '\n');
     return;
+  }
+  const terminologyWarnings = detectEyesTerminologyDriftInPool(pool);
+  if (terminologyWarnings.length) {
+    writeRun(dateStr, {
+      ts: nowIso(),
+      type: 'autonomy_terminology_warning',
+      reason: 'tools_labeled_as_eyes',
+      warnings: terminologyWarnings
+    });
   }
 
   const priorRuns = runsSinceReset(readRuns(dateStr));
@@ -1918,6 +2746,9 @@ function runCmd(dateStr) {
   const noProgressStreak = consecutiveNoProgressRuns(priorRuns);
   const gateExhaustionStreak = consecutiveGateExhaustedAttempts(priorAttempts);
   const shippedToday = shippedCount(priorRuns);
+  const maxRunsPerDay = Number.isFinite(Number(strategyBudget.daily_runs_cap))
+    ? Number(strategyBudget.daily_runs_cap)
+    : AUTONOMY_MAX_RUNS_PER_DAY;
   const dopamine = loadDopamineSnapshot(dateStr);
   const decisionEvents = allDecisionEvents();
   const eyesMap = loadEyesMap();
@@ -1925,19 +2756,19 @@ function runCmd(dateStr) {
   const calibrationProfile = computeCalibrationProfile(dateStr, true);
   const thresholds = calibrationProfile.effective_thresholds || baseThresholds();
 
-  if (AUTONOMY_MAX_RUNS_PER_DAY > 0 && attemptsToday >= AUTONOMY_MAX_RUNS_PER_DAY) {
+  if (maxRunsPerDay > 0 && attemptsToday >= maxRunsPerDay) {
     writeRun(dateStr, {
       ts: nowIso(),
       type: 'autonomy_run',
       result: 'stop_repeat_gate_daily_cap',
       attempts_today: attemptsToday,
-      max_runs_per_day: AUTONOMY_MAX_RUNS_PER_DAY
+      max_runs_per_day: maxRunsPerDay
     });
     process.stdout.write(JSON.stringify({
       ok: true,
       result: 'stop_repeat_gate_daily_cap',
       attempts_today: attemptsToday,
-      max_runs_per_day: AUTONOMY_MAX_RUNS_PER_DAY,
+      max_runs_per_day: maxRunsPerDay,
       ts: nowIso()
     }) + '\n');
     return;
@@ -2115,6 +2946,16 @@ function runCmd(dateStr) {
   }
 
   if (eligible.length > 0) {
+    for (const cand of eligible) {
+      cand.strategy_rank = strategyRankForCandidate(cand, strategy);
+    }
+    eligible.sort((a, b) => {
+      const sa = Number(a.strategy_rank && a.strategy_rank.score || 0);
+      const sb = Number(b.strategy_rank && b.strategy_rank.score || 0);
+      if (sb !== sa) return sb - sa;
+      if (b.score !== a.score) return b.score - a.score;
+      return String(a.proposal.id).localeCompare(String(b.proposal.id));
+    });
     selection = chooseSelectionMode(eligible, priorRuns);
     pick = eligible[selection.index] || eligible[0];
   }
@@ -2261,15 +3102,95 @@ function runCmd(dateStr) {
 
   const p = pick.proposal;
   const ov = pick.overlay || { outcomes: { no_change: 0, reverted: 0 } };
+  const actuationSpec = parseActuationSpec(p);
+  const capability = capabilityDescriptor(p, actuationSpec);
+  const capabilityKey = String(capability && capability.key ? capability.key : 'unknown');
+  const capabilityLimit = capabilityCap(strategyBudget, capability);
+  const capabilityAttemptsToday = capabilityAttemptCountForDate(dateStr, capability);
   const noChangeCount = ov.outcomes?.no_change || 0;
   const revertedCount = ov.outcomes?.reverted || 0;
+  const circuitCooldownHours = strategyCircuitCooldownHours(p, strategy);
+
+  if (circuitCooldownHours > 0) {
+    const reason = `auto:circuit_breaker cooldown_${circuitCooldownHours}h`;
+    setCooldown(p.id, circuitCooldownHours, reason);
+    writeRun(dateStr, {
+      ts: nowIso(),
+      type: 'autonomy_run',
+      result: 'stop_repeat_gate_circuit_breaker',
+      proposal_id: p.id,
+      strategy_id: strategy ? strategy.id : null,
+      cooldown_hours: circuitCooldownHours,
+      error_code: String((p.meta && (p.meta.last_error_code || p.meta.last_error)) || ''),
+      proposal_key: proposalDedupKey(p),
+      capability_key: capabilityKey
+    });
+    process.stdout.write(JSON.stringify({
+      ok: true,
+      result: 'stop_repeat_gate_circuit_breaker',
+      proposal_id: p.id,
+      strategy_id: strategy ? strategy.id : null,
+      cooldown_hours: circuitCooldownHours,
+      ts: nowIso()
+    }) + '\n');
+    return;
+  }
+
+  if (executionMode === 'score_only') {
+    writeRun(dateStr, {
+      ts: nowIso(),
+      type: 'autonomy_run',
+      result: 'score_only_preview',
+      strategy_id: strategy ? strategy.id : null,
+      execution_mode: executionMode,
+      proposal_id: p.id,
+      proposal_date: proposalDate,
+      proposal_type: String(p.type || ''),
+      source_eye: sourceEyeId(p),
+      proposal_key: proposalDedupKey(p),
+      capability_key: capabilityKey,
+      score: Number(pick.score.toFixed(3)),
+      strategy_rank: pick.strategy_rank || null,
+      selection_mode: selection.mode,
+      selection_index: selection.index,
+      admission: admissionSummary
+    });
+    process.stdout.write(JSON.stringify({
+      ok: true,
+      result: 'score_only_preview',
+      strategy_id: strategy ? strategy.id : null,
+      execution_mode: executionMode,
+      proposal_id: p.id,
+      proposal_date: proposalDate,
+      score: Number(pick.score.toFixed(3)),
+      strategy_rank: pick.strategy_rank || null,
+      selection_mode: selection.mode,
+      selection_index: selection.index,
+      admission: admissionSummary,
+      ts: nowIso()
+    }) + '\n');
+    return;
+  }
 
   if (noChangeCount >= NO_CHANGE_LIMIT) {
     const reason = `auto:autonomy no_change>=${NO_CHANGE_LIMIT} cooldown_${NO_CHANGE_COOLDOWN_HOURS}h`;
     runProposalQueue('park', p.id, reason);
     setCooldown(p.id, NO_CHANGE_COOLDOWN_HOURS, reason);
-    writeRun(dateStr, { ts: nowIso(), type: 'autonomy_run', result: 'stop_no_change', proposal_id: p.id, no_change: noChangeCount });
-    process.stdout.write(JSON.stringify({ ok: true, result: 'stop_no_change', proposal_id: p.id, ts: nowIso() }) + '\n');
+    writeRun(dateStr, {
+      ts: nowIso(),
+      type: 'autonomy_run',
+      result: 'stop_no_change',
+      proposal_id: p.id,
+      capability_key: capabilityKey,
+      no_change: noChangeCount
+    });
+    process.stdout.write(JSON.stringify({
+      ok: true,
+      result: 'stop_no_change',
+      proposal_id: p.id,
+      capability_key: capabilityKey,
+      ts: nowIso()
+    }) + '\n');
     return;
   }
 
@@ -2277,8 +3198,21 @@ function runCmd(dateStr) {
     const reason = `auto:autonomy reverted>=1 cooldown_${REVERT_COOLDOWN_HOURS}h`;
     runProposalQueue('park', p.id, reason);
     setCooldown(p.id, REVERT_COOLDOWN_HOURS, reason);
-    writeRun(dateStr, { ts: nowIso(), type: 'autonomy_run', result: 'stop_reverted', proposal_id: p.id, reverted: revertedCount });
-    process.stdout.write(JSON.stringify({ ok: true, result: 'stop_reverted', proposal_id: p.id, ts: nowIso() }) + '\n');
+    writeRun(dateStr, {
+      ts: nowIso(),
+      type: 'autonomy_run',
+      result: 'stop_reverted',
+      proposal_id: p.id,
+      capability_key: capabilityKey,
+      reverted: revertedCount
+    });
+    process.stdout.write(JSON.stringify({
+      ok: true,
+      result: 'stop_reverted',
+      proposal_id: p.id,
+      capability_key: capabilityKey,
+      ts: nowIso()
+    }) + '\n');
     return;
   }
 
@@ -2290,12 +3224,14 @@ function runCmd(dateStr) {
       type: 'autonomy_run',
       result: 'init_gate_stub',
       proposal_id: p.id,
+      capability_key: capabilityKey,
       score: Number(pick.score.toFixed(3))
     });
     process.stdout.write(JSON.stringify({
       ok: true,
       result: 'init_gate_stub',
       proposal_id: p.id,
+      capability_key: capabilityKey,
       score: Number(pick.score.toFixed(3)),
       ts: nowIso()
     }) + '\n');
@@ -2310,6 +3246,7 @@ function runCmd(dateStr) {
       type: 'autonomy_run',
       result: 'init_gate_low_score',
       proposal_id: p.id,
+      capability_key: capabilityKey,
       score: Number(pick.score.toFixed(3)),
       min_score: AUTONOMY_MIN_PROPOSAL_SCORE
     });
@@ -2317,6 +3254,7 @@ function runCmd(dateStr) {
       ok: true,
       result: 'init_gate_low_score',
       proposal_id: p.id,
+      capability_key: capabilityKey,
       score: Number(pick.score.toFixed(3)),
       min_score: AUTONOMY_MIN_PROPOSAL_SCORE,
       ts: nowIso()
@@ -2332,6 +3270,7 @@ function runCmd(dateStr) {
       type: 'autonomy_run',
       result: 'skip_budget_cap',
       proposal_id: p.id,
+      capability_key: capabilityKey,
       used_est: budget.used_est,
       token_cap: budget.token_cap,
       est_tokens: estTokens
@@ -2340,6 +3279,7 @@ function runCmd(dateStr) {
       ok: true,
       result: 'skip_budget_cap',
       proposal_id: p.id,
+      capability_key: capabilityKey,
       used_est: budget.used_est,
       token_cap: budget.token_cap,
       est_tokens: estTokens,
@@ -2352,10 +3292,84 @@ function runCmd(dateStr) {
   const repeats14d = Math.max(1, countEyeProposalsInWindow(eyeId, proposalDate, 14));
   const errors30d = countEyeOutcomesInWindow(decisionEvents, eyeRef, 'reverted', proposalDate, 30);
   const routeTokensEst = repeats14d >= 3 ? Math.max(estTokens, AUTONOMY_MIN_ROUTE_TOKENS) : estTokens;
+  const maxTokensPerAction = Number.isFinite(Number(strategyBudget.max_tokens_per_action))
+    ? Number(strategyBudget.max_tokens_per_action)
+    : null;
+  if (maxTokensPerAction != null && routeTokensEst > maxTokensPerAction) {
+    writeRun(dateStr, {
+      ts: nowIso(),
+      type: 'autonomy_run',
+      result: 'stop_init_gate_per_action_token_cap',
+      proposal_id: p.id,
+      capability_key: capabilityKey,
+      est_tokens: estTokens,
+      route_tokens_est: routeTokensEst,
+      max_tokens_per_action: maxTokensPerAction
+    });
+    process.stdout.write(JSON.stringify({
+      ok: true,
+      result: 'stop_init_gate_per_action_token_cap',
+      proposal_id: p.id,
+      capability_key: capabilityKey,
+      est_tokens: estTokens,
+      route_tokens_est: routeTokensEst,
+      max_tokens_per_action: maxTokensPerAction,
+      ts: nowIso()
+    }) + '\n');
+    return;
+  }
+  if (capabilityLimit != null && capabilityAttemptsToday >= capabilityLimit) {
+    writeRun(dateStr, {
+      ts: nowIso(),
+      type: 'autonomy_run',
+      result: 'stop_repeat_gate_capability_cap',
+      proposal_id: p.id,
+      capability_key: capabilityKey,
+      capability_attempts_today: capabilityAttemptsToday,
+      capability_daily_cap: capabilityLimit
+    });
+    process.stdout.write(JSON.stringify({
+      ok: true,
+      result: 'stop_repeat_gate_capability_cap',
+      proposal_id: p.id,
+      capability_key: capabilityKey,
+      capability_attempts_today: capabilityAttemptsToday,
+      capability_daily_cap: capabilityLimit,
+      ts: nowIso()
+    }) + '\n');
+    return;
+  }
+
+  const finalAdmission = strategyAdmissionDecision(p, strategy, {
+    dedup_key: proposalDedupKey(p),
+    recent_key_counts: recentProposalKeyCounts(dateStr, strategyDuplicateWindowHours(strategy, 24))
+  });
+  if (!finalAdmission.allow) {
+    writeRun(dateStr, {
+      ts: nowIso(),
+      type: 'autonomy_run',
+      result: 'stop_init_gate_strategy_recheck',
+      proposal_id: p.id,
+      capability_key: capabilityKey,
+      admission_reason: finalAdmission.reason || 'unknown'
+    });
+    process.stdout.write(JSON.stringify({
+      ok: true,
+      result: 'stop_init_gate_strategy_recheck',
+      proposal_id: p.id,
+      capability_key: capabilityKey,
+      admission_reason: finalAdmission.reason || 'unknown',
+      ts: nowIso()
+    }) + '\n');
+    return;
+  }
+
   const task = makeTaskFromProposal(p);
   const receiptId = `auto_${Date.now()}_${String(p.id).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 48)}`;
 
-  const preflight = runRouteExecute(task, routeTokensEst, repeats14d, errors30d, true);
+  const preflight = actuationSpec
+    ? runActuationExecute(actuationSpec, true)
+    : runRouteExecute(task, routeTokensEst, repeats14d, errors30d, true);
   const preSummary = preflight.summary || null;
   const preBlocked = !preflight.ok
     || !preSummary
@@ -2365,7 +3379,7 @@ function runCmd(dateStr) {
 
   if (preBlocked) {
     const blockReason = !preflight.ok
-      ? `route_exit_${preflight.code}`
+      ? `${actuationSpec ? 'actuation' : 'route'}_exit_${preflight.code}`
       : (preSummary && preSummary.gate_decision === 'MANUAL')
         ? 'gate_manual'
         : (preSummary && preSummary.gate_decision === 'DENY')
@@ -2380,6 +3394,7 @@ function runCmd(dateStr) {
       receipt_id: receiptId,
       proposal_id: p.id,
       proposal_date: proposalDate,
+      capability_key: capabilityKey,
       score: Number(pick.score.toFixed(3)),
       route_summary: preSummary,
       route_code: preflight.code,
@@ -2397,6 +3412,7 @@ function runCmd(dateStr) {
       verdict: 'fail',
       intent: {
         task_hash: hashObj({ task }),
+        actuation: actuationSpec ? { kind: actuationSpec.kind } : null,
         route_tokens_est: routeTokensEst,
         repeats_14d: repeats14d,
         errors_30d: errors30d
@@ -2417,6 +3433,7 @@ function runCmd(dateStr) {
       result: 'init_gate_blocked_route',
       receipt_id: receiptId,
       proposal_id: p.id,
+      capability_key: capabilityKey,
       route_block_reason: blockReason,
       route_summary: preSummary,
       repeats_14d: repeats14d,
@@ -2440,6 +3457,7 @@ function runCmd(dateStr) {
       receipt_id: receiptId,
       proposal_id: p.id,
       proposal_date: proposalDate,
+      capability_key: capabilityKey,
       score: Number(pick.score.toFixed(3)),
       accept_result: compactCmdResult(acceptRes),
       repeats_14d: repeats14d,
@@ -2454,6 +3472,7 @@ function runCmd(dateStr) {
       verdict: 'fail',
       intent: {
         task_hash: hashObj({ task }),
+        actuation: actuationSpec ? { kind: actuationSpec.kind } : null,
         route_tokens_est: routeTokensEst,
         repeats_14d: repeats14d,
         errors_30d: errors30d
@@ -2475,6 +3494,7 @@ function runCmd(dateStr) {
       result: 'init_gate_accept_failed',
       receipt_id: receiptId,
       proposal_id: p.id,
+      capability_key: capabilityKey,
       ts: nowIso()
     }) + '\n');
     return;
@@ -2484,6 +3504,8 @@ function runCmd(dateStr) {
     ts: nowIso(),
     type: 'experiment_card',
     receipt_id: receiptId,
+    strategy_id: strategy ? strategy.id : null,
+    execution_mode: executionMode,
     proposal_id: p.id,
     proposal_date: proposalDate,
     title: p.title || '',
@@ -2504,9 +3526,11 @@ function runCmd(dateStr) {
     },
     selection_mode: selection.mode,
     selection_index: selection.index,
+    strategy_rank: pick.strategy_rank || null,
     thresholds,
     calibration_metrics: calibrationProfile.metrics,
     route_preflight: preSummary,
+    actuation: actuationSpec ? { kind: actuationSpec.kind } : null,
     stop_conditions: [
       `daily_token_cap=${budget.token_cap}`,
       `no_change_limit=${NO_CHANGE_LIMIT}`,
@@ -2519,13 +3543,16 @@ function runCmd(dateStr) {
 
   const beforeEvidence = loadDoDEvidenceSnapshot(dateStr);
   const execStartMs = Date.now();
-  const execRes = runRouteExecute(task, routeTokensEst, repeats14d, errors30d, false);
+  const execRes = actuationSpec
+    ? runActuationExecute(actuationSpec, false)
+    : runRouteExecute(task, routeTokensEst, repeats14d, errors30d, false);
   const execEndMs = Date.now();
   const afterEvidence = loadDoDEvidenceSnapshot(dateStr);
   budget.used_est += estTokens;
   saveDailyBudget(budget);
 
   const summary = execRes.summary || {};
+  const postconditions = runPostconditions(actuationSpec);
   const dod = evaluateDoD({
     summary,
     execRes,
@@ -2541,23 +3568,27 @@ function runCmd(dateStr) {
   if (!execRes.ok) {
     outcome = 'reverted';
     outcomeNote = `auto:autonomy exec_failed code=${execRes.code}`;
+  } else if (postconditions.passed !== true) {
+    const failName = Array.isArray(postconditions.failed) && postconditions.failed.length ? postconditions.failed[0] : 'postconditions';
+    outcome = 'reverted';
+    outcomeNote = `auto:autonomy postcheck_fail:${failName}`;
   } else if (dod.passed === true) {
     outcome = 'shipped';
     outcomeNote = `auto:autonomy dod_pass:${dod.class}`;
   }
 
-  let evidence = `${eyeRef} receipt:${receiptId} ${outcomeNote}`.slice(0, 220);
+  let evidence = `proposal:${p.id} ${eyeRef} receipt:${receiptId} ${outcomeNote}`.slice(0, 220);
   let outcomeRes = runProposalQueue('outcome', p.id, outcome, evidence);
   let outcomeRecoveryAttempted = false;
   if (!outcomeRes.ok && outcome !== 'reverted') {
     outcomeRecoveryAttempted = true;
     outcome = 'reverted';
     outcomeNote = 'auto:autonomy verify_outcome_retry_reverted';
-    evidence = `${eyeRef} receipt:${receiptId} ${outcomeNote}`.slice(0, 220);
+    evidence = `proposal:${p.id} ${eyeRef} receipt:${receiptId} ${outcomeNote}`.slice(0, 220);
     outcomeRes = runProposalQueue('outcome', p.id, outcome, evidence);
   }
 
-  const verification = verifyExecutionReceipt(execRes, dod, outcomeRes);
+  const verification = verifyExecutionReceipt(execRes, dod, outcomeRes, postconditions);
   outcome = verification.outcome;
   let cooldownAppliedHours = 0;
   if (!verification.passed) {
@@ -2580,6 +3611,7 @@ function runCmd(dateStr) {
     verdict: verification.passed ? 'pass' : 'fail',
     intent: {
       task_hash: hashObj({ task }),
+      actuation: actuationSpec ? { kind: actuationSpec.kind } : null,
       route_tokens_est: routeTokensEst,
       repeats_14d: repeats14d,
       errors_30d: errors30d
@@ -2589,7 +3621,8 @@ function runCmd(dateStr) {
       accept: compactCmdResult(acceptRes),
       execute: compactCmdResult(execRes),
       outcome: compactCmdResult(outcomeRes),
-      outcome_retry_attempted: outcomeRecoveryAttempted
+      outcome_retry_attempted: outcomeRecoveryAttempted,
+      postconditions
     },
     verification: {
       ...verification,
@@ -2607,8 +3640,14 @@ function runCmd(dateStr) {
     type: 'autonomy_run',
     result: 'executed',
     receipt_id: receiptId,
+    strategy_id: strategy ? strategy.id : null,
+    execution_mode: executionMode,
     proposal_id: p.id,
+    capability_key: capabilityKey,
     proposal_date: proposalDate,
+    proposal_type: String(p.type || ''),
+    source_eye: sourceEyeId(p),
+    proposal_key: proposalDedupKey(p),
     score: Number(pick.score.toFixed(3)),
     est_tokens: estTokens,
     route_tokens_est: routeTokensEst,
@@ -2626,11 +3665,14 @@ function runCmd(dateStr) {
     },
     selection_mode: selection.mode,
     selection_index: selection.index,
+    strategy_rank: pick.strategy_rank || null,
     explore_used_before: selection.explore_used,
     explore_quota: selection.explore_quota,
     thresholds,
     route_summary: summary,
+    admission: admissionSummary,
     dod,
+    postconditions,
     verification,
     exec_ok: execRes.ok,
     exec_code: execRes.code,
@@ -2643,7 +3685,10 @@ function runCmd(dateStr) {
     ok: true,
     result: 'executed',
     receipt_id: receiptId,
+    strategy_id: strategy ? strategy.id : null,
+    execution_mode: executionMode,
     proposal_id: p.id,
+    capability_key: capabilityKey,
     proposal_date: proposalDate,
     est_tokens: estTokens,
     route_tokens_est: routeTokensEst,
@@ -2661,12 +3706,17 @@ function runCmd(dateStr) {
     },
     selection_mode: selection.mode,
     selection_index: selection.index,
+    strategy_rank: pick.strategy_rank || null,
     explore_used_before: selection.explore_used,
     explore_quota: selection.explore_quota,
     dod,
+    postconditions,
     verification,
     outcome_write_ok: !!outcomeRes.ok,
     route_summary: summary,
+    admission: admissionSummary,
+    model_catalog_apply_pending: Number(modelCatalogSnapshot.pending_apply || 0),
+    terminology_warnings: terminologyWarnings,
     ts: nowIso()
   }) + '\n');
 }

@@ -1,0 +1,33 @@
+{
+  "version": "1.0",
+  "target_roots": [
+    "systems/security",
+    "config/directives"
+  ],
+  "target_extensions": [
+    ".js",
+    ".yaml",
+    ".yml"
+  ],
+  "protected_files": [
+    "lib/directive_resolver.js"
+  ],
+  "exclude_paths": [],
+  "hashes": {
+    "config/directives/ACTIVE.yaml": "8fc63b734d79f72aefe4058a959b345df685a4ecfe1afd8e0503a9c63d601818",
+    "config/directives/T0_invariants.yaml": "e9d185792805e205794b3d7ea81cb6562891fef1873cbb6f65cbef73f41276f9",
+    "config/directives/T1_generational_wealth_v1.yaml": "def757e86e8136c75766e35098414c8b8ca7b1f75707c4c9c3f474b35da78107",
+    "config/directives/T1_make_jay_billionaire_v1.yaml": "e9a9082270763dc429b1b032c7f7c606c4a47e7cc252a3f501ac1ef975c7deb0",
+    "config/directives/T1_northstars.yaml": "dbababba9f2dc49b0d24ada4a1a70117cdafe0767ba2ec4a69ec7f80c1721610",
+    "lib/directive_resolver.js": "a6e4c72a24ae95418a35f24c6be282b31ce85ec5194919a6f5f0b9297046d718",
+    "systems/security/architecture_guard.js": "7c8f1a8dcc61e3cffc73283a3325cb3cab5d679981a8f169a49cedbe4ffa7c41",
+    "systems/security/directive_gate.js": "c4b76b960a7bc68c568d1f7d0e953224666aa7311b81c814a89a1395aaa5ca1c",
+    "systems/security/emergency_stop.js": "1fac350b1bd90017cf6a5db2eb25522a4ff4bbca39114772852a404be242bf13",
+    "systems/security/guard.js": "e965d5b14c6d39440c40cad5cd26b5b7c838b442fdb048462f7a56ddbe90eae1",
+    "systems/security/integrity_kernel.js": "bfecd33bc3539f0894cbca905730894aa706bb8db6140e5681b9a059bed7ec1f",
+    "systems/security/skill_quarantine.js": "4fd57a207a558a0fc079a2ce2477100bb9e5d0aec15b6a4bcbd7a7ae71963947"
+  },
+  "sealed_at": "2026-02-19T10:35:42.499Z",
+  "sealed_by": "jay",
+  "last_approval_note": "ROI hardening reseal after emergency stop addition"
+}

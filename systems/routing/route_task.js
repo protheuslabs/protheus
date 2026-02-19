@@ -21,6 +21,7 @@ const path = require('path');
 
 // v1.1: Import directive gate for T0/T1 enforcement
 const { evaluateTask, logGateDecision } = require('../security/directive_gate.js');
+const { isEmergencyStopEngaged } = require('../../lib/emergency_stop.js');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const REGISTRY_PATH = path.join(REPO_ROOT, 'habits', 'registry.json');
@@ -118,12 +119,12 @@ function shouldUseRouter() {
   return String(process.env.ROUTER_ENABLED || '').trim() === '1';
 }
 
-function tryRouteModel({ gateRisk, complexity, intent, task }) {
+function tryRouteModel({ gateRisk, complexity, intent, task, mode, forceModel }) {
   try {
     // Lazy require keeps route_task resilient if router file is missing.
     const { routeDecision } = require('../../systems/routing/model_router.js');
     const risk = gateRisk || 'medium';
-    return routeDecision({ risk, complexity, intent, task });
+    return routeDecision({ risk, complexity, intent, task, mode, forceModel });
   } catch (err) {
     return {
       type: 'route_error',
@@ -138,6 +139,33 @@ function main() {
   const repeats14d = parseInt(getArg('--repeats_14d', '0'), 10) || 0;
   const errors30d = parseInt(getArg('--errors_30d', '0'), 10) || 0;
   const skipHabitId = getArg('--skip_habit_id', '') || getArg('--skip-habit-id', '');
+  const mode = getArg('--mode', process.env.AGENT_MODE || 'normal');
+  const forceModel = getArg('--force_model', process.env.ROUTER_FORCE_MODEL || '');
+
+  const emergency = isEmergencyStopEngaged('routing');
+  if (emergency.engaged) {
+    const out = {
+      decision: 'MANUAL',
+      reason: 'routing emergency stop engaged',
+      gate_decision: 'DENY',
+      gate_risk: 'high',
+      gate_reasons: ['emergency_stop_engaged'],
+      gate_event: null,
+      which_met: [],
+      thresholds: {
+        A: { repeats_14d_min: 3, tokens_min: 500, met: false },
+        B: { tokens_min: 2000, met: false },
+        C: { errors_30d_min: 2, met: false }
+      },
+      route: {
+        type: 'route_blocked',
+        reason: 'emergency_stop_engaged'
+      },
+      emergency_stop: emergency.state || null
+    };
+    console.log(JSON.stringify(out, null, 2));
+    process.exit(0);
+  }
   
   // v1.1: Evaluate task through directive gate
   const gateResult = evaluateTask(task);
@@ -183,7 +211,9 @@ function main() {
         gateRisk: gateResult.risk,
         complexity,
         intent,
-        task
+        task,
+        mode,
+        forceModel
       })
     : null;
   
