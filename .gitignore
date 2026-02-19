@@ -4,6 +4,7 @@ node_modules/
 .DS_Store
 .env
 .env.local
+config/moltbook/credentials.json
 *.tmp
 *.swp
 *~
@@ -13,6 +14,7 @@ logs/tool_raw/
 tmp/
 memory/_snapshots/
 memory/*.backup.*
+memory/tools/tests/temp_*/
 habits/scripts/*.bak.*
 
 # Generated state streams/snapshots
