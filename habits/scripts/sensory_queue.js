@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * sensory_queue.js - Sensory Layer v1.2.1 (PROPOSAL QUEUE)
+ * sensory_queue.js - Sensory Layer v1.2.2 (PROPOSAL QUEUE)
  * 
  * Proposal lifecycle logging + dispositions.
  * Reads ONLY proposals JSON, NEVER raw JSONL.
@@ -19,6 +19,12 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+
+const SENSORY_QUEUE_MIN_SIGNAL_SCORE = Number(process.env.SENSORY_QUEUE_MIN_SIGNAL_SCORE || 40);
+const SENSORY_QUEUE_MIN_RELEVANCE_SCORE = Number(process.env.SENSORY_QUEUE_MIN_RELEVANCE_SCORE || 42);
+const SENSORY_QUEUE_MIN_DIRECTIVE_FIT_SCORE = Number(process.env.SENSORY_QUEUE_MIN_DIRECTIVE_FIT_SCORE || 25);
+const SENSORY_QUEUE_MIN_ACTIONABILITY_SCORE = Number(process.env.SENSORY_QUEUE_MIN_ACTIONABILITY_SCORE || 45);
+const SENSORY_QUEUE_MIN_COMPOSITE_SCORE = Number(process.env.SENSORY_QUEUE_MIN_COMPOSITE_SCORE || 62);
 
 // Paths - can be overridden for testing
 let SENSORY_DIR = path.join(__dirname, '..', '..', 'state', 'sensory');
@@ -74,15 +80,88 @@ function loadEvents() {
 }
 
 // Get generated hashes to check for duplicates
-function getGeneratedHashes() {
+function getLoggedHashesByType(types = []) {
+  const wanted = new Set(Array.isArray(types) ? types.map(t => String(t)) : []);
+  if (!wanted.size) return new Set();
   const events = loadEvents();
   const hashes = new Set();
   for (const event of events) {
-    if (event.type === 'proposal_generated' && event.proposal_hash) {
+    if (wanted.has(String(event.type || '')) && event.proposal_hash) {
       hashes.add(event.proposal_hash);
     }
   }
   return hashes;
+}
+
+function numOrNull(v) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+function metaHasQualitySignals(meta) {
+  if (!meta || typeof meta !== 'object') return false;
+  const keys = [
+    'signal_quality_score',
+    'relevance_score',
+    'directive_fit_score',
+    'actionability_score',
+    'composite_eligibility_score',
+    'admission_preview',
+    'composite_eligibility_pass',
+    'actionability_pass'
+  ];
+  return keys.some((k) => Object.prototype.hasOwnProperty.call(meta, k));
+}
+
+function normalizeBlockedReason(admissionPreview) {
+  const blocked = admissionPreview && Array.isArray(admissionPreview.blocked_by)
+    ? admissionPreview.blocked_by
+    : [];
+  return blocked.length ? String(blocked[0] || 'admission_blocked') : 'admission_blocked';
+}
+
+function evaluateQueueQualityGate(proposal) {
+  const meta = proposal && proposal.meta && typeof proposal.meta === 'object' ? proposal.meta : null;
+  if (!metaHasQualitySignals(meta)) {
+    return { allow: true, reason: null, gated: false };
+  }
+
+  const admission = meta && meta.admission_preview && typeof meta.admission_preview === 'object'
+    ? meta.admission_preview
+    : null;
+  if (admission && admission.eligible === false) {
+    return { allow: false, reason: normalizeBlockedReason(admission), gated: true };
+  }
+
+  if (meta.actionability_pass === false) {
+    return { allow: false, reason: 'actionability_low', gated: true };
+  }
+  if (meta.composite_eligibility_pass === false) {
+    return { allow: false, reason: 'composite_low', gated: true };
+  }
+
+  const signal = numOrNull(meta.signal_quality_score);
+  if (signal != null && signal < SENSORY_QUEUE_MIN_SIGNAL_SCORE) {
+    return { allow: false, reason: 'signal_quality_low', gated: true };
+  }
+  const relevance = numOrNull(meta.relevance_score);
+  if (relevance != null && relevance < SENSORY_QUEUE_MIN_RELEVANCE_SCORE) {
+    return { allow: false, reason: 'relevance_low', gated: true };
+  }
+  const directiveFit = numOrNull(meta.directive_fit_score);
+  if (directiveFit != null && directiveFit < SENSORY_QUEUE_MIN_DIRECTIVE_FIT_SCORE) {
+    return { allow: false, reason: 'directive_fit_low', gated: true };
+  }
+  const actionability = numOrNull(meta.actionability_score);
+  if (actionability != null && actionability < SENSORY_QUEUE_MIN_ACTIONABILITY_SCORE) {
+    return { allow: false, reason: 'actionability_low', gated: true };
+  }
+  const composite = numOrNull(meta.composite_eligibility_score);
+  if (composite != null && composite < SENSORY_QUEUE_MIN_COMPOSITE_SCORE) {
+    return { allow: false, reason: 'composite_low', gated: true };
+  }
+
+  return { allow: true, reason: null, gated: true };
 }
 
 // Get current status of a proposal by hash or id
@@ -180,16 +259,46 @@ function ingest(dateStr) {
     return { ok: true, ingested: 0, skipped: 0 };
   }
   
-  const existingHashes = getGeneratedHashes();
+  const existingGeneratedHashes = getLoggedHashesByType(['proposal_generated']);
+  const existingFilteredHashes = getLoggedHashesByType(['proposal_filtered']);
   let ingested = 0;
   let duplicates = 0;
+  let filtered = 0;
+  let filteredDuplicates = 0;
+  const filteredByReason = {};
   
   for (const proposal of proposals) {
     const hash = computeProposalHash(proposal);
     
     // Idempotency: skip if already generated
-    if (existingHashes.has(hash)) {
+    if (existingGeneratedHashes.has(hash)) {
       duplicates++;
+      continue;
+    }
+
+    const gate = evaluateQueueQualityGate(proposal);
+    if (!gate.allow) {
+      if (existingFilteredHashes.has(hash)) {
+        filteredDuplicates++;
+        continue;
+      }
+      const reason = String(gate.reason || 'filtered');
+      const filterEvent = {
+        ts: new Date().toISOString(),
+        type: 'proposal_filtered',
+        date,
+        proposal_id: proposal.id || 'UNKNOWN',
+        title: proposal.title || 'Untitled',
+        proposal_hash: hash,
+        status_after: 'filtered',
+        filter_reason: reason,
+        quality_gate: 'ingest_v1',
+        source: 'sensory_queue'
+      };
+      appendEvent(filterEvent);
+      existingFilteredHashes.add(hash);
+      filtered++;
+      filteredByReason[reason] = Number(filteredByReason[reason] || 0) + 1;
       continue;
     }
     
@@ -205,12 +314,16 @@ function ingest(dateStr) {
     };
     
     appendEvent(event);
-    existingHashes.add(hash); // Prevent duplicates in same run
+    existingGeneratedHashes.add(hash); // Prevent duplicates in same run
     ingested++;
   }
   
-  console.log(`Ingested ${ingested} proposals for ${date} (${duplicates} duplicates skipped)`);
-  return { ingested, duplicates };
+  const filteredReasons = Object.keys(filteredByReason).sort().map((k) => `${k}:${filteredByReason[k]}`).join(',');
+  const filteredMsg = filtered > 0 ? `, ${filtered} filtered` : '';
+  const filterDupMsg = filteredDuplicates > 0 ? `, ${filteredDuplicates} filter-duplicates` : '';
+  const reasonMsg = filteredReasons ? ` reasons=${filteredReasons}` : '';
+  console.log(`Ingested ${ingested} proposals for ${date} (${duplicates} duplicates skipped${filteredMsg}${filterDupMsg})${reasonMsg}`);
+  return { ingested, duplicates, filtered, filtered_duplicates: filteredDuplicates, filtered_by_reason: filteredByReason };
 }
 
 // LIST: Show proposals with optional filtering
@@ -633,6 +746,7 @@ module.exports = {
   done,
   snooze,
   stats,
+  evaluateQueueQualityGate,
   computeProposalHash,
   getProposalStatus,
   loadEvents,

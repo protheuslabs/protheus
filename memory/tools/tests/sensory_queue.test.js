@@ -135,7 +135,61 @@ test('ingest is idempotent (run twice, same count)', () => {
   cleanup();
 });
 
-// Test 3: accept changes derived status to accepted
+// Test 3: ingest filters low-quality scored proposals at queue boundary
+test('ingest filters low-quality scored proposals and logs proposal_filtered', () => {
+  setup();
+
+  const testDate = '2026-02-17';
+  const proposals = [
+    {
+      id: 'P001',
+      title: 'High quality proposal',
+      type: 'external_intel',
+      meta: {
+        signal_quality_score: 72,
+        relevance_score: 74,
+        directive_fit_score: 52,
+        actionability_score: 69,
+        composite_eligibility_score: 70,
+        actionability_pass: true,
+        composite_eligibility_pass: true
+      }
+    },
+    {
+      id: 'P002',
+      title: 'Low quality proposal',
+      type: 'external_intel',
+      meta: {
+        signal_quality_score: 18,
+        relevance_score: 22,
+        directive_fit_score: 10,
+        actionability_score: 20,
+        composite_eligibility_score: 26,
+        actionability_pass: false,
+        composite_eligibility_pass: false
+      }
+    }
+  ];
+
+  createTestProposals(testDate, proposals);
+  queue.QUEUE_LOG = QUEUE_LOG;
+
+  const result = queue.ingest(testDate);
+  assert.strictEqual(result.ingested, 1, 'Should ingest only 1 quality proposal');
+  assert.strictEqual(result.filtered, 1, 'Should filter 1 low-quality proposal');
+  assert.ok(result.filtered_by_reason.actionability_low >= 1 || result.filtered_by_reason.composite_low >= 1);
+
+  const events = queue.loadEvents();
+  const generated = events.filter(e => e.type === 'proposal_generated');
+  const filtered = events.filter(e => e.type === 'proposal_filtered');
+  assert.strictEqual(generated.length, 1, 'Should keep one generated event');
+  assert.strictEqual(filtered.length, 1, 'Should emit one filtered event');
+  assert.strictEqual(filtered[0].proposal_id, 'P002');
+
+  cleanup();
+});
+
+// Test 4: accept changes derived status to accepted
 test('accept changes derived status to accepted', () => {
   setup();
   
@@ -167,7 +221,7 @@ test('accept changes derived status to accepted', () => {
   cleanup();
 });
 
-// Test 4: reject requires reason and sets rejected
+// Test 5: reject requires reason and sets rejected
 test('reject requires reason and sets rejected', () => {
   setup();
   
@@ -200,7 +254,7 @@ test('reject requires reason and sets rejected', () => {
   cleanup();
 });
 
-// Test 5: snooze requires until date and list hides snoozed unless requested
+// Test 6: snooze requires until date and list hides snoozed unless requested
 test('snooze requires until date and list hides snoozed unless requested', () => {
   setup();
   
@@ -243,7 +297,7 @@ test('snooze requires until date and list hides snoozed unless requested', () =>
   cleanup();
 });
 
-// Test 6: stats returns counts by status and top recurring
+// Test 7: stats returns counts by status and top recurring
 test('stats returns counts by status and top recurring', () => {
   setup();
   
@@ -296,7 +350,7 @@ test('stats returns counts by status and top recurring', () => {
   cleanup();
 });
 
-// Test 7: done marks proposal as completed
+// Test 8: done marks proposal as completed
 test('done marks proposal as completed', () => {
   setup();
   
@@ -329,7 +383,7 @@ test('done marks proposal as completed', () => {
   cleanup();
 });
 
-// Test 8: verify snoozed proposals appear as open when snooze expires
+// Test 9: verify snoozed proposals appear as open when snooze expires
 test('snoozed proposals appear as open when snooze expires', () => {
   setup();
   
@@ -363,15 +417,16 @@ if (failed) {
   process.exit(1);
 }
 
-console.log('   ✅ ALL SENSORY QUEUE TESTS PASS (8/8)');
+console.log('   ✅ ALL SENSORY QUEUE TESTS PASS (9/9)');
 console.log('═══════════════════════════════════════════════════════════');
 console.log('\n📋 Coverage:');
 console.log('   1. ✅ ingest creates proposal_generated entries');
 console.log('   2. ✅ ingest is idempotent');
-console.log('   3. ✅ accept changes status to accepted');
-console.log('   4. ✅ reject requires reason and sets rejected');
-console.log('   5. ✅ snooze requires until date');
-console.log('   6. ✅ stats returns counts and recurring');
-console.log('   7. ✅ done marks proposal as completed');
-console.log('   8. ✅ expired snooze appears as open');
+console.log('   3. ✅ queue quality gate filters low-quality scored proposals');
+console.log('   4. ✅ accept changes status to accepted');
+console.log('   5. ✅ reject requires reason and sets rejected');
+console.log('   6. ✅ snooze requires until date');
+console.log('   7. ✅ stats returns counts and recurring');
+console.log('   8. ✅ done marks proposal as completed');
+console.log('   9. ✅ expired snooze appears as open');
 console.log('\n🎯 Sensory Queue v1.2.1 Ready - NO raw JSONL, NO LLM, append-only');
