@@ -52,19 +52,39 @@ const MODEL_CATALOG_LOOP_SCRIPT = path.join(REPO_ROOT, 'systems', 'autonomy', 'm
 const PROPOSAL_ENRICHER_SCRIPT = path.join(REPO_ROOT, 'systems', 'autonomy', 'proposal_enricher.js');
 const STRATEGY_READINESS_SCRIPT = path.join(REPO_ROOT, 'systems', 'autonomy', 'strategy_readiness.js');
 const ACTUATION_EXECUTOR_SCRIPT = path.join(REPO_ROOT, 'systems', 'actuation', 'actuation_executor.js');
-const MODEL_CATALOG_AUDIT_PATH = path.join(REPO_ROOT, 'state', 'routing', 'model_catalog_audit.jsonl');
+const MODEL_CATALOG_AUDIT_PATH = process.env.AUTONOMY_MODEL_CATALOG_AUDIT_PATH
+  ? path.resolve(process.env.AUTONOMY_MODEL_CATALOG_AUDIT_PATH)
+  : path.join(REPO_ROOT, 'state', 'routing', 'model_catalog_audit.jsonl');
 const MODEL_CATALOG_PROPOSALS_DIR = path.join(REPO_ROOT, 'state', 'routing', 'model_catalog_proposals');
 const MODEL_CATALOG_TRIALS_DIR = path.join(REPO_ROOT, 'state', 'routing', 'model_catalog_trials');
-const MODEL_CATALOG_CANARY_PATH = path.join(REPO_ROOT, 'state', 'routing', 'model_catalog_canary.json');
-const MODEL_CATALOG_ROLLBACK_SCRIPT = path.join(REPO_ROOT, 'systems', 'autonomy', 'model_catalog_rollback.js');
+const MODEL_CATALOG_CANARY_PATH = process.env.AUTONOMY_MODEL_CATALOG_CANARY_PATH
+  ? path.resolve(process.env.AUTONOMY_MODEL_CATALOG_CANARY_PATH)
+  : path.join(REPO_ROOT, 'state', 'routing', 'model_catalog_canary.json');
+const MODEL_CATALOG_ROLLBACK_SCRIPT = process.env.AUTONOMY_MODEL_CATALOG_ROLLBACK_SCRIPT
+  ? path.resolve(process.env.AUTONOMY_MODEL_CATALOG_ROLLBACK_SCRIPT)
+  : path.join(REPO_ROOT, 'systems', 'autonomy', 'model_catalog_rollback.js');
 
-const AUTONOMY_DIR = path.join(REPO_ROOT, 'state', 'autonomy');
-const RUNS_DIR = path.join(AUTONOMY_DIR, 'runs');
-const EXPERIMENTS_DIR = path.join(AUTONOMY_DIR, 'experiments');
-const DAILY_BUDGET_DIR = path.join(AUTONOMY_DIR, 'daily_budget');
-const RECEIPTS_DIR = path.join(AUTONOMY_DIR, 'receipts');
-const COOLDOWNS_PATH = path.join(AUTONOMY_DIR, 'cooldowns.json');
-const CALIBRATION_PATH = path.join(AUTONOMY_DIR, 'calibration.json');
+const AUTONOMY_DIR = process.env.AUTONOMY_STATE_DIR
+  ? path.resolve(process.env.AUTONOMY_STATE_DIR)
+  : path.join(REPO_ROOT, 'state', 'autonomy');
+const RUNS_DIR = process.env.AUTONOMY_RUNS_DIR
+  ? path.resolve(process.env.AUTONOMY_RUNS_DIR)
+  : path.join(AUTONOMY_DIR, 'runs');
+const EXPERIMENTS_DIR = process.env.AUTONOMY_EXPERIMENTS_DIR
+  ? path.resolve(process.env.AUTONOMY_EXPERIMENTS_DIR)
+  : path.join(AUTONOMY_DIR, 'experiments');
+const DAILY_BUDGET_DIR = process.env.AUTONOMY_DAILY_BUDGET_DIR
+  ? path.resolve(process.env.AUTONOMY_DAILY_BUDGET_DIR)
+  : path.join(AUTONOMY_DIR, 'daily_budget');
+const RECEIPTS_DIR = process.env.AUTONOMY_RECEIPTS_DIR
+  ? path.resolve(process.env.AUTONOMY_RECEIPTS_DIR)
+  : path.join(AUTONOMY_DIR, 'receipts');
+const COOLDOWNS_PATH = process.env.AUTONOMY_COOLDOWNS_PATH
+  ? path.resolve(process.env.AUTONOMY_COOLDOWNS_PATH)
+  : path.join(AUTONOMY_DIR, 'cooldowns.json');
+const CALIBRATION_PATH = process.env.AUTONOMY_CALIBRATION_PATH
+  ? path.resolve(process.env.AUTONOMY_CALIBRATION_PATH)
+  : path.join(AUTONOMY_DIR, 'calibration.json');
 
 const DAILY_TOKEN_CAP = Number(process.env.AUTONOMY_DAILY_TOKEN_CAP || 4000);
 const NO_CHANGE_LIMIT = Number(process.env.AUTONOMY_NO_CHANGE_LIMIT || 2);
@@ -4340,5 +4360,8 @@ module.exports = {
   candidatePool,
   evaluateDoD,
   diffDoDEvidence,
-  computeCalibrationDeltas
+  computeCalibrationDeltas,
+  startModelCatalogCanary,
+  evaluateModelCatalogCanary,
+  readModelCatalogCanary
 };
