@@ -1,0 +1,94 @@
+#!/usr/bin/env node
+/**
+ * Stable CI test runner.
+ * - Runs deterministic contract + test checks.
+ * - Excludes known stateful smoke tests unless explicitly requested.
+ */
+
+const fs = require('fs');
+const path = require('path');
+const { spawnSync } = require('child_process');
+
+const ROOT = path.resolve(__dirname, '..', '..', '..');
+const TEST_DIR = path.join(ROOT, 'memory', 'tools', 'tests');
+const INCLUDE_STATEFUL = process.argv.includes('--include-stateful');
+
+const DEFAULT_EXCLUDES = new Set([
+  'enforcement.smoke.test.js',
+  'skill_gate.smoke.test.js'
+]);
+
+function listTests() {
+  const files = fs.readdirSync(TEST_DIR)
+    .filter((f) => f.endsWith('.test.js'))
+    .sort();
+  if (INCLUDE_STATEFUL) return files;
+  return files.filter((f) => !DEFAULT_EXCLUDES.has(f));
+}
+
+function runNode(args) {
+  const r = spawnSync(process.execPath, args, {
+    cwd: ROOT,
+    encoding: 'utf8',
+    env: process.env
+  });
+  return {
+    ok: r.status === 0,
+    status: r.status,
+    stdout: r.stdout || '',
+    stderr: r.stderr || ''
+  };
+}
+
+function printOutput(prefix, text) {
+  const trimmed = String(text || '').trim();
+  if (!trimmed) return;
+  const lines = trimmed.split('\n').slice(0, 120);
+  for (const line of lines) {
+    console.log(`${prefix}${line}`);
+  }
+}
+
+function main() {
+  console.log('=== CI SUITE: contract_check ===');
+  const contract = runNode(['systems/spine/contract_check.js']);
+  printOutput('  ', contract.stdout);
+  printOutput('  ', contract.stderr);
+  if (!contract.ok) {
+    console.error(`contract_check failed (exit ${contract.status})`);
+    process.exit(contract.status || 1);
+  }
+
+  console.log('=== CI SUITE: integrity_kernel ===');
+  const integrity = runNode(['systems/security/integrity_kernel.js', 'run']);
+  printOutput('  ', integrity.stdout);
+  printOutput('  ', integrity.stderr);
+  if (!integrity.ok) {
+    console.error(`integrity_kernel failed (exit ${integrity.status})`);
+    process.exit(integrity.status || 1);
+  }
+
+  const tests = listTests();
+  let failed = 0;
+  let passed = 0;
+
+  console.log(`=== CI SUITE: tests (${tests.length}) ===`);
+  for (const file of tests) {
+    const rel = path.join('memory', 'tools', 'tests', file);
+    console.log(`-> ${rel}`);
+    const res = runNode([rel]);
+    if (res.ok) {
+      passed += 1;
+      continue;
+    }
+    failed += 1;
+    console.error(`FAIL: ${rel} (exit ${res.status})`);
+    printOutput('  ', res.stdout);
+    printOutput('  ', res.stderr);
+  }
+
+  console.log(`=== CI RESULT: passed=${passed} failed=${failed} ===`);
+  if (failed > 0) process.exit(1);
+}
+
+main();
