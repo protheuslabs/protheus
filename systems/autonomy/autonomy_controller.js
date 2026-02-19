@@ -151,6 +151,10 @@ const AUTONOMY_MODEL_CATALOG_CANARY_MAX_ROUTE_BLOCK_RATE = Number(process.env.AU
 const AUTONOMY_MODEL_CATALOG_CANARY_ROLLBACK_NOTE = String(process.env.AUTONOMY_MODEL_CATALOG_CANARY_ROLLBACK_NOTE || 'auto rollback: model catalog canary failed');
 const AUTONOMY_MODEL_CATALOG_CANARY_ROLLBACK_BREAK_GLASS = String(process.env.AUTONOMY_MODEL_CATALOG_CANARY_ROLLBACK_BREAK_GLASS || '0') === '1';
 const AUTONOMY_REQUIRE_READINESS_FOR_EXECUTE = String(process.env.AUTONOMY_REQUIRE_READINESS_FOR_EXECUTE || '1') !== '0';
+const AUTONOMY_HARD_MAX_DAILY_RUNS_CAP = Number(process.env.AUTONOMY_HARD_MAX_DAILY_RUNS_CAP || 20);
+const AUTONOMY_HARD_MAX_DAILY_TOKEN_CAP = Number(process.env.AUTONOMY_HARD_MAX_DAILY_TOKEN_CAP || 12000);
+const AUTONOMY_HARD_MAX_TOKENS_PER_ACTION = Number(process.env.AUTONOMY_HARD_MAX_TOKENS_PER_ACTION || 4000);
+const AUTONOMY_HARD_MAX_RISK_PER_ACTION = Number(process.env.AUTONOMY_HARD_MAX_RISK_PER_ACTION || 70);
 const AUTONOMY_CANARY_DAILY_EXEC_LIMIT = Number(process.env.AUTONOMY_CANARY_DAILY_EXEC_LIMIT || 1);
 const AUTONOMY_SCORE_ONLY_EVIDENCE = String(process.env.AUTONOMY_SCORE_ONLY_EVIDENCE || '1') !== '0';
 const AUTONOMY_DISALLOWED_PARSER_TYPES = new Set(
@@ -179,10 +183,30 @@ function strategyProfile() {
 }
 
 function effectiveStrategyBudget() {
-  return strategyBudgetCaps(strategyProfile(), {
+  const caps = strategyBudgetCaps(strategyProfile(), {
     daily_runs_cap: AUTONOMY_MAX_RUNS_PER_DAY,
     daily_token_cap: DAILY_TOKEN_CAP
   });
+  const hardRuns = Number.isFinite(Number(AUTONOMY_HARD_MAX_DAILY_RUNS_CAP)) && Number(AUTONOMY_HARD_MAX_DAILY_RUNS_CAP) > 0
+    ? Number(AUTONOMY_HARD_MAX_DAILY_RUNS_CAP)
+    : null;
+  const hardTokens = Number.isFinite(Number(AUTONOMY_HARD_MAX_DAILY_TOKEN_CAP)) && Number(AUTONOMY_HARD_MAX_DAILY_TOKEN_CAP) > 0
+    ? Number(AUTONOMY_HARD_MAX_DAILY_TOKEN_CAP)
+    : null;
+  const hardPerAction = Number.isFinite(Number(AUTONOMY_HARD_MAX_TOKENS_PER_ACTION)) && Number(AUTONOMY_HARD_MAX_TOKENS_PER_ACTION) > 0
+    ? Number(AUTONOMY_HARD_MAX_TOKENS_PER_ACTION)
+    : null;
+  const out = { ...caps };
+  if (hardRuns != null && Number.isFinite(Number(out.daily_runs_cap))) {
+    out.daily_runs_cap = Math.min(Number(out.daily_runs_cap), hardRuns);
+  }
+  if (hardTokens != null && Number.isFinite(Number(out.daily_token_cap))) {
+    out.daily_token_cap = Math.min(Number(out.daily_token_cap), hardTokens);
+  }
+  if (hardPerAction != null && Number.isFinite(Number(out.max_tokens_per_action))) {
+    out.max_tokens_per_action = Math.min(Number(out.max_tokens_per_action), hardPerAction);
+  }
+  return out;
 }
 
 function effectiveStrategyExecutionMode() {
@@ -1901,11 +1925,25 @@ function strategyAdmissionDecision(p, strategy, opts = {}) {
   if (!strategyAllowsProposalType(strategy, type)) {
     return { allow: false, reason: 'strategy_type_filtered' };
   }
-  const maxRisk = strategyMaxRiskPerAction(strategy, null);
+  const strategyMax = strategyMaxRiskPerAction(strategy, null);
+  const hardMax = Number.isFinite(Number(AUTONOMY_HARD_MAX_RISK_PER_ACTION)) && Number(AUTONOMY_HARD_MAX_RISK_PER_ACTION) >= 0
+    ? Number(AUTONOMY_HARD_MAX_RISK_PER_ACTION)
+    : null;
+  let maxRisk = strategyMax;
+  if (hardMax != null) {
+    maxRisk = maxRisk == null ? hardMax : Math.min(maxRisk, hardMax);
+  }
   if (maxRisk != null) {
     const riskScore = proposalRiskScore(p);
     if (riskScore > maxRisk) {
-      return { allow: false, reason: 'strategy_risk_cap_exceeded', risk_score: riskScore, max_risk_per_action: maxRisk };
+      return {
+        allow: false,
+        reason: 'strategy_risk_cap_exceeded',
+        risk_score: riskScore,
+        max_risk_per_action: maxRisk,
+        strategy_max_risk_per_action: strategyMax,
+        hard_max_risk_per_action: hardMax
+      };
     }
   }
   const maxDepth = strategy
