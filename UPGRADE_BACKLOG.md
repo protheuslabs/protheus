@@ -13,9 +13,10 @@ Status legend:
 | ID | Status | Upgrade | Why | Exit Criteria |
 |---|---|---|---|---|
 | BL-001 | done | External temp-data backup pipeline (outside git) | Preserve high-churn runtime/state data without repo noise | `systems/ops/state_backup.js` + `config/state_backup_policy.json`, optional daily spine hook (`STATE_BACKUP_ENABLED=1`), retention policy encoded |
-| BL-002 | todo | Skill quarantine enforcement in all install paths | Prevent unreviewed skill install bypasses | All skill installs routed through `install_skill_safe.js` or equivalent gate |
+| BL-002 | done | Skill quarantine enforcement in all install paths | Prevent unreviewed skill install bypasses | Strict enforcer scans `systems/`, `habits/`, `skills/`, and `memory/tools/` (tests excluded), blocks direct installer patterns (shell + spawn/exec forms), and requires wrapper + quarantine structure to pass |
 | BL-003 | done | Autonomy receipt dashboard/summary | Make pass/fail verification visible without raw log digging | Daily summary command/report shows receipt pass rate + top failure reasons |
 | BL-013 | todo | AGI security/governance hardening pack | Prevent capability-overhang failures as model capability increases | Dual-control approval for strategy mode escalation + non-bypass budget/risk caps + immutable policy/kernel verification + one-command emergency stop path tested |
+| BL-017 | todo | Autonomous skill-add with necessity justification gate | Allow Protheus to add skills safely only when operationally justified | Skill add path requires structured justification (`problem`, `repeat_frequency`, `expected_time_or_token_savings`, `risk_class`, `why existing habits/skills are insufficient`); novelty-only reasons rejected; install still passes quarantine + policy checks + audit receipt |
 
 ## P1
 
@@ -29,6 +30,8 @@ Status legend:
 | BL-011 | todo | Swarm verification mode for deep-thinker | Multi-agent cross-check for high-stakes reasoning once swarm capability exists | Deep-thinker can run parallel model checks with quorum/consensus policy and bounded token budget |
 | BL-012 | done | Strategy profile layer + architecture genericity guard | Keep specialization out of `systems/` while enabling adaptive policy | `config/strategies/` active profile loaded by autonomy gates; architecture guard available in audit/strict modes; initial rollout uses `execution_policy.mode=score_only` |
 | BL-014 | todo | Phased TypeScript migration for `systems/` + `lib/` | Reduce contract drift and runtime breakage in high-permanence layers without rewriting architecture | `tsconfig` added; `systems/` + `lib/` run type-check clean in CI (`--noEmit`); migration done file-by-file with compatibility wrappers and zero behavior regressions |
+| BL-015 | todo | Optional reflex sub-layer under habits (fast micro-routines) | Improve adaptation latency for frequent tiny tasks without promoting permanent system changes | Add `habits/reflexes/` runtime path and tiny-model executor; reflex generation/degradation mirrors habit promotion/decay rules; router can prefer reflex before habit when confidence and latency budget are met |
+| BL-016 | todo | Cross-device active-state continuity layer | Preserve in-flight autonomy/routing context when switching active shell/device without split-brain | Add `systems/continuity/` with lease-based active writer election, checkpoint + delta replay state transfer, takeover on lease expiry, and secret-safe payload policy (no raw creds in continuity artifacts) |
 
 ## P2
 
