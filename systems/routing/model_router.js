@@ -1756,19 +1756,80 @@ function listRunFilesWithinDays(days) {
 }
 
 function makeOutcomeBucket() {
-  return { attempts: 0, pass: 0, fail: 0, shipped: 0, reverted: 0, no_change: 0 };
+  return {
+    attempts: 0,
+    pass: 0,
+    fail: 0,
+    shipped: 0,
+    reverted: 0,
+    no_change: 0,
+    actual_token_samples: 0,
+    total_tokens_actual: 0,
+    total_tokens_est: 0,
+    total_tokens_effective: 0
+  };
+}
+
+function outcomeSnapshotFromEvent(event) {
+  const evt = event && typeof event === "object" ? event : {};
+  const result = String(evt.result || "");
+  const verification = evt.verification && typeof evt.verification === "object" ? evt.verification : null;
+
+  let passed = false;
+  if (verification && typeof verification.passed === "boolean") {
+    passed = verification.passed === true;
+  } else if (result === "executed") {
+    passed = String(evt.outcome || "") === "shipped";
+  }
+
+  let outcome = String(evt.outcome || "");
+  if (!outcome) {
+    if (result === "executed") outcome = passed ? "shipped" : "no_change";
+    else if (result === "init_gate_blocked_route") outcome = "reverted";
+  }
+
+  const usage = evt.token_usage && typeof evt.token_usage === "object" ? evt.token_usage : {};
+  const actual = Number(usage.actual_total_tokens);
+  const est = Number(
+    usage.estimated_tokens != null
+      ? usage.estimated_tokens
+      : (evt.route_tokens_est != null ? evt.route_tokens_est : 0)
+  );
+  const effectiveRaw = Number(
+    usage.effective_tokens != null
+      ? usage.effective_tokens
+      : (Number.isFinite(actual) && actual > 0 ? actual : est)
+  );
+
+  return {
+    passed,
+    outcome,
+    actual_tokens: Number.isFinite(actual) && actual > 0 ? actual : null,
+    est_tokens: Number.isFinite(est) && est > 0 ? est : null,
+    effective_tokens: Number.isFinite(effectiveRaw) && effectiveRaw > 0 ? effectiveRaw : null
+  };
 }
 
 function addOutcomeToBucket(bucket, event) {
   const s = bucket || makeOutcomeBucket();
+  const snap = outcomeSnapshotFromEvent(event);
   s.attempts += 1;
-  const passed = !!(event.verification && event.verification.passed === true);
-  if (passed) s.pass += 1;
+  if (snap.passed) s.pass += 1;
   else s.fail += 1;
-  const outcome = String(event.outcome || "");
+  const outcome = String(snap.outcome || "");
   if (outcome === "shipped") s.shipped += 1;
   if (outcome === "reverted") s.reverted += 1;
   if (outcome === "no_change") s.no_change += 1;
+  if (Number.isFinite(Number(snap.actual_tokens))) {
+    s.actual_token_samples += 1;
+    s.total_tokens_actual += Number(snap.actual_tokens);
+  }
+  if (Number.isFinite(Number(snap.est_tokens))) {
+    s.total_tokens_est += Number(snap.est_tokens);
+  }
+  if (Number.isFinite(Number(snap.effective_tokens))) {
+    s.total_tokens_effective += Number(snap.effective_tokens);
+  }
   return s;
 }
 
@@ -1779,13 +1840,30 @@ function deriveOutcomeBucket(bucket) {
   const shippedRate = s.shipped / attempts;
   const revertedRate = s.reverted / attempts;
   const noChangeRate = s.no_change / attempts;
-  const rawScore = (passRate * 50) + (shippedRate * 35) - (revertedRate * 20) - (noChangeRate * 10);
+  const effectiveTokens = Number(s.total_tokens_effective || 0);
+  const shippedPer1k = effectiveTokens > 0 ? (Number(s.shipped || 0) * 1000) / effectiveTokens : 0;
+  const failPer1k = effectiveTokens > 0 ? (Number(s.fail || 0) * 1000) / effectiveTokens : 0;
+  const efficiencyRaw = effectiveTokens > 0
+    ? (shippedPer1k * 8) - (failPer1k * 3)
+    : 0;
+  const efficiencyScore = Math.max(-10, Math.min(10, efficiencyRaw));
+  const rawScore = (passRate * 50) + (shippedRate * 35) - (revertedRate * 20) - (noChangeRate * 10) + efficiencyScore;
   return {
     ...s,
     pass_rate: Number(passRate.toFixed(3)),
     shipped_rate: Number(shippedRate.toFixed(3)),
     reverted_rate: Number(revertedRate.toFixed(3)),
     no_change_rate: Number(noChangeRate.toFixed(3)),
+    avg_tokens_effective: effectiveTokens > 0 ? Number((effectiveTokens / attempts).toFixed(1)) : null,
+    avg_tokens_actual: Number(s.actual_token_samples || 0) > 0
+      ? Number((Number(s.total_tokens_actual || 0) / Number(s.actual_token_samples || 1)).toFixed(1))
+      : null,
+    token_coverage_ratio: attempts > 0
+      ? Number((Number(s.actual_token_samples || 0) / attempts).toFixed(3))
+      : 0,
+    shipped_per_1k_tokens: effectiveTokens > 0 ? Number(shippedPer1k.toFixed(3)) : null,
+    fail_per_1k_tokens: effectiveTokens > 0 ? Number(failPer1k.toFixed(3)) : null,
+    efficiency_score: Number(efficiencyScore.toFixed(2)),
     score: Number(rawScore.toFixed(2))
   };
 }
@@ -1834,7 +1912,9 @@ function modelOutcomeStats(days = OUTCOME_WINDOW_DAYS) {
   for (const fp of files) {
     const events = readJsonl(fp);
     for (const e of events) {
-      if (!e || e.type !== "autonomy_run" || e.result !== "executed") continue;
+      if (!e || e.type !== "autonomy_run") continue;
+      const runResult = String(e.result || "");
+      if (runResult !== "executed" && runResult !== "init_gate_blocked_route") continue;
       const model = e?.route_summary?.selected_model;
       if (!model) continue;
       stats[model] = addOutcomeToBucket(stats[model], e);

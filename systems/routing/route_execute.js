@@ -84,6 +84,56 @@ function parseJson(text) {
   }
 }
 
+function toNumberOrNull(v) {
+  const n = Number(v);
+  return Number.isFinite(n) && n >= 0 ? n : null;
+}
+
+function normalizeTokenUsage(raw, source = 'unknown') {
+  if (!raw || typeof raw !== 'object') return null;
+  const prompt = toNumberOrNull(raw.prompt_tokens != null ? raw.prompt_tokens : raw.input_tokens);
+  const completion = toNumberOrNull(raw.completion_tokens != null ? raw.completion_tokens : raw.output_tokens);
+  const totalDirect = toNumberOrNull(raw.total_tokens != null ? raw.total_tokens : raw.tokens_used);
+  const total = totalDirect != null
+    ? totalDirect
+    : (prompt != null || completion != null ? Number((prompt || 0) + (completion || 0)) : null);
+  if (total == null && prompt == null && completion == null) return null;
+  return {
+    prompt_tokens: prompt,
+    completion_tokens: completion,
+    total_tokens: total,
+    source
+  };
+}
+
+function extractTokenUsageFromObject(obj, source = 'object') {
+  if (!obj || typeof obj !== 'object') return null;
+  const direct = normalizeTokenUsage(obj, source);
+  if (direct) return direct;
+  if (obj.usage && typeof obj.usage === 'object') {
+    const nested = normalizeTokenUsage(obj.usage, `${source}.usage`);
+    if (nested) return nested;
+  }
+  if (obj.token_usage && typeof obj.token_usage === 'object') {
+    const nested = normalizeTokenUsage(obj.token_usage, `${source}.token_usage`);
+    if (nested) return nested;
+  }
+  return null;
+}
+
+function extractTokenUsageFromText(text, source = 'text') {
+  const lines = String(text || '').split('\n').map(l => l.trim()).filter(Boolean);
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const line = lines[i];
+    if (!line.startsWith('{') || !line.endsWith('}')) continue;
+    const parsed = parseJson(line);
+    if (!parsed) continue;
+    const usage = extractTokenUsageFromObject(parsed, `${source}.line_json`);
+    if (usage) return usage;
+  }
+  return null;
+}
+
 function modelEnv(baseEnv, modelId) {
   if (!modelId) return baseEnv;
   return {
@@ -242,6 +292,8 @@ function main() {
     mode: out?.route?.mode || mode,
     deep_thinker: out?.route?.deep_thinker || null,
     escalation_chain: Array.isArray(out?.route?.escalation_chain) ? out.route.escalation_chain : [],
+    route_budget: out?.route?.budget || null,
+    cost_estimate: out?.route?.cost_estimate || null,
     budget_enforcement: budgetEnforcement || null,
     budget_blocked: budgetBlocked,
     needs_manual_review: budgetBlocked,
@@ -367,11 +419,30 @@ function main() {
   }
 
   const env = modelEnv(process.env, selectedModel);
+  const execStartedMs = Date.now();
   const child = spawnSync(execSpec.cmd, execSpec.args, {
     cwd: repoRoot(),
-    stdio: 'inherit',
+    encoding: 'utf8',
     env
   });
+  const execDurationMs = Math.max(0, Date.now() - execStartedMs);
+  const childStdout = String(child.stdout || '');
+  const childStderr = String(child.stderr || '');
+  if (childStdout) process.stdout.write(childStdout);
+  if (childStderr) process.stderr.write(childStderr);
+
+  const usageFromStdout = extractTokenUsageFromText(childStdout, 'stdout');
+  const usageFromStderr = extractTokenUsageFromText(childStderr, 'stderr');
+  const tokenUsage = usageFromStdout || usageFromStderr || null;
+  process.stdout.write(JSON.stringify({
+    type: 'route_execute_metrics',
+    execution_metrics: {
+      exit_code: child.status || 0,
+      duration_ms: execDurationMs,
+      token_usage: tokenUsage,
+      token_usage_available: !!tokenUsage
+    }
+  }) + '\n');
 
   if (summary.mode === 'deep-thinker') {
     writeDeepThinkerReceipt({

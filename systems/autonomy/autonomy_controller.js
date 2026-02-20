@@ -2682,17 +2682,28 @@ function runRouteExecute(task, tokensEst, repeats14d = 1, errors30d = 0, dryRun 
   };
   const r = spawnSync('node', args, { cwd: REPO_ROOT, encoding: 'utf8', env });
   const stdout = (r.stdout || '').trim();
-  const firstJson = stdout.split('\n').find(line => line.startsWith('{') && line.endsWith('}'));
+  const jsonLines = stdout
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line.startsWith('{') && line.endsWith('}'));
+  const firstJson = jsonLines[0] || null;
+  const parsedJson = jsonLines.map(line => {
+    try { return JSON.parse(line); } catch { return null; }
+  }).filter(Boolean);
   let summary = null;
   if (firstJson) {
     try { summary = JSON.parse(firstJson); } catch {}
   }
+  const metricsLine = parsedJson.find(obj => obj && obj.type === 'route_execute_metrics' && obj.execution_metrics);
   return {
     ok: r.status === 0,
     code: r.status || 0,
     stdout,
     stderr: (r.stderr || '').trim(),
-    summary
+    summary,
+    execution_metrics: metricsLine && metricsLine.execution_metrics && typeof metricsLine.execution_metrics === 'object'
+      ? metricsLine.execution_metrics
+      : null
   };
 }
 
@@ -2926,6 +2937,71 @@ function runPostconditions(actuationSpec) {
 function shortText(v, max = 220) {
   const s = String(v || '');
   return s.length <= max ? s : `${s.slice(0, max)}...`;
+}
+
+function numberOrNull(v) {
+  const n = Number(v);
+  return Number.isFinite(n) && n >= 0 ? n : null;
+}
+
+function normalizeTokenUsageShape(raw, source = 'unknown') {
+  if (!raw || typeof raw !== 'object') return null;
+  const prompt = numberOrNull(raw.prompt_tokens != null ? raw.prompt_tokens : raw.input_tokens);
+  const completion = numberOrNull(raw.completion_tokens != null ? raw.completion_tokens : raw.output_tokens);
+  const totalDirect = numberOrNull(raw.total_tokens != null ? raw.total_tokens : raw.tokens_used);
+  const total = totalDirect != null
+    ? totalDirect
+    : (prompt != null || completion != null ? Number((prompt || 0) + (completion || 0)) : null);
+  if (total == null && prompt == null && completion == null) return null;
+  return {
+    prompt_tokens: prompt,
+    completion_tokens: completion,
+    total_tokens: total,
+    source: String(source || 'unknown')
+  };
+}
+
+function computeExecutionTokenUsage(summary, executionMetrics, routeTokensEst, fallbackEstTokens) {
+  const routeSummary = summary && typeof summary === 'object' ? summary : {};
+  const cost = routeSummary.cost_estimate && typeof routeSummary.cost_estimate === 'object'
+    ? routeSummary.cost_estimate
+    : {};
+  const routeBudget = routeSummary.route_budget && typeof routeSummary.route_budget === 'object'
+    ? routeSummary.route_budget
+    : {};
+
+  const estSelected = numberOrNull(cost.selected_model_tokens_est)
+    ?? numberOrNull(routeBudget.request_tokens_est)
+    ?? numberOrNull(routeTokensEst)
+    ?? numberOrNull(fallbackEstTokens)
+    ?? 0;
+
+  const metricsUsage = normalizeTokenUsageShape(
+    executionMetrics && executionMetrics.token_usage && typeof executionMetrics.token_usage === 'object'
+      ? executionMetrics.token_usage
+      : null,
+    'route_execute_metrics'
+  );
+
+  const actualTotal = metricsUsage && numberOrNull(metricsUsage.total_tokens) != null
+    ? Number(metricsUsage.total_tokens)
+    : null;
+
+  const effectiveTokens = actualTotal != null
+    ? actualTotal
+    : estSelected;
+
+  return {
+    available: actualTotal != null,
+    source: actualTotal != null
+      ? String(metricsUsage.source || 'route_execute_metrics')
+      : 'estimated_fallback',
+    actual_prompt_tokens: metricsUsage ? numberOrNull(metricsUsage.prompt_tokens) : null,
+    actual_completion_tokens: metricsUsage ? numberOrNull(metricsUsage.completion_tokens) : null,
+    actual_total_tokens: actualTotal,
+    estimated_tokens: estSelected,
+    effective_tokens: effectiveTokens
+  };
 }
 
 function hashObj(v) {
@@ -4870,6 +4946,7 @@ function runCmd(dateStr, opts = {}) {
     || preSummary.executable !== true
     || preSummary.gate_decision === 'MANUAL'
     || preSummary.gate_decision === 'DENY';
+  const preTokenUsage = computeExecutionTokenUsage(preSummary, preflight.execution_metrics, routeTokensEst, estTokens);
 
   if (preBlocked) {
     const blockReason = !preflight.ok
@@ -4893,6 +4970,7 @@ function runCmd(dateStr, opts = {}) {
       directive_pulse: directivePulse,
       score: Number(pick.score.toFixed(3)),
       route_summary: preSummary,
+      token_usage: preTokenUsage,
       route_code: preflight.code,
       route_block_reason: blockReason,
       repeats_14d: repeats14d,
@@ -4914,7 +4992,8 @@ function runCmd(dateStr, opts = {}) {
         errors_30d: errors30d
       },
       execution: {
-        preflight: compactCmdResult(preflight)
+        preflight: compactCmdResult(preflight),
+        token_usage: preTokenUsage
       },
       verification: {
         checks: [{ name: 'preflight_executable', pass: false }],
@@ -4934,6 +5013,7 @@ function runCmd(dateStr, opts = {}) {
       directive_pulse: directivePulse,
       route_block_reason: blockReason,
       route_summary: preSummary,
+      token_usage: preTokenUsage,
       repeats_14d: repeats14d,
       errors_30d: errors30d,
       ts: nowIso()
@@ -4959,6 +5039,7 @@ function runCmd(dateStr, opts = {}) {
       directive_pulse: directivePulse,
       score: Number(pick.score.toFixed(3)),
       accept_result: compactCmdResult(acceptRes),
+      token_usage: preTokenUsage,
       repeats_14d: repeats14d,
       errors_30d: errors30d
     });
@@ -4984,7 +5065,8 @@ function runCmd(dateStr, opts = {}) {
       },
       execution: {
         preflight: compactCmdResult(preflight),
-        accept: compactCmdResult(acceptRes)
+        accept: compactCmdResult(acceptRes),
+        token_usage: preTokenUsage
       },
       verification: {
         checks: [{ name: 'queue_accept_logged', pass: false }],
@@ -5001,6 +5083,7 @@ function runCmd(dateStr, opts = {}) {
       proposal_id: p.id,
       capability_key: capabilityKey,
       directive_pulse: directivePulse,
+      token_usage: preTokenUsage,
       ts: nowIso()
     }) + '\n');
     return;
@@ -5061,7 +5144,8 @@ function runCmd(dateStr, opts = {}) {
       : runRouteExecute(task, routeTokensEst, repeats14d, errors30d, false);
   const execEndMs = Date.now();
   const afterEvidence = loadDoDEvidenceSnapshot(dateStr);
-  budget.used_est += estTokens;
+  const execTokenUsage = computeExecutionTokenUsage(execRes.summary || null, execRes.execution_metrics || null, routeTokensEst, estTokens);
+  budget.used_est += Number(execTokenUsage.effective_tokens || estTokens || 0);
   saveDailyBudget(budget);
 
   const summary = execRes.summary || {};
@@ -5135,14 +5219,15 @@ function runCmd(dateStr, opts = {}) {
       repeats_14d: repeats14d,
       errors_30d: errors30d
     },
-    execution: {
-      preflight: compactCmdResult(preflight),
-      accept: compactCmdResult(acceptRes),
-      execute: compactCmdResult(execRes),
-      outcome: compactCmdResult(outcomeRes),
-      outcome_retry_attempted: outcomeRecoveryAttempted,
-      postconditions
-    },
+      execution: {
+        preflight: compactCmdResult(preflight),
+        accept: compactCmdResult(acceptRes),
+        execute: compactCmdResult(execRes),
+        outcome: compactCmdResult(outcomeRes),
+        token_usage: execTokenUsage,
+        outcome_retry_attempted: outcomeRecoveryAttempted,
+        postconditions
+      },
     verification: {
       ...verification,
       dod: {
@@ -5172,6 +5257,7 @@ function runCmd(dateStr, opts = {}) {
     strategy_rank_adjusted: Number(pick.strategy_rank_adjusted || (pick.strategy_rank && pick.strategy_rank.score) || 0),
     est_tokens: estTokens,
     route_tokens_est: routeTokensEst,
+    token_usage: execTokenUsage,
     repeats_14d: repeats14d,
     errors_30d: errors30d,
     used_est_after: budget.used_est,
@@ -5216,6 +5302,7 @@ function runCmd(dateStr, opts = {}) {
     strategy_rank_adjusted: Number(pick.strategy_rank_adjusted || (pick.strategy_rank && pick.strategy_rank.score) || 0),
     est_tokens: estTokens,
     route_tokens_est: routeTokensEst,
+    token_usage: execTokenUsage,
     repeats_14d: repeats14d,
     errors_30d: errors30d,
     used_est_after: budget.used_est,
