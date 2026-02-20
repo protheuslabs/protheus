@@ -409,6 +409,67 @@ test('snoozed proposals appear as open when snooze expires', () => {
   cleanup();
 });
 
+// Test 10: heuristic gate filters stub/unknown-eye proposals even without score metadata
+test('ingest filters stub and unknown-eye proposals via static queue gate', () => {
+  setup();
+
+  const testDate = '2026-02-18';
+  const proposals = [
+    { id: 'P001', title: '[STUB] Placeholder item', type: 'external_intel', meta: { source_eye: 'hn_frontpage' } },
+    { id: 'P002', title: 'Unknown eye item', type: 'external_intel', meta: { source_eye: 'unknown_eye' } },
+    { id: 'P003', title: 'Valid source item', type: 'external_intel', meta: { source_eye: 'hn_frontpage' } }
+  ];
+
+  createTestProposals(testDate, proposals);
+  queue.QUEUE_LOG = QUEUE_LOG;
+
+  const result = queue.ingest(testDate);
+  assert.strictEqual(result.ingested, 1, 'Should ingest only valid non-stub known-eye proposal');
+  assert.strictEqual(result.filtered, 2, 'Should filter stub + unknown-eye proposals');
+  assert.ok(result.filtered_by_reason.stub_title >= 1, 'Expected stub_title filter reason');
+  assert.ok(result.filtered_by_reason.unknown_eye >= 1, 'Expected unknown_eye filter reason');
+
+  const events = queue.loadEvents();
+  const generated = events.filter(e => e.type === 'proposal_generated');
+  const filtered = events.filter(e => e.type === 'proposal_filtered');
+
+  assert.strictEqual(generated.length, 1, 'Should have one generated event');
+  assert.strictEqual(filtered.length, 2, 'Should have two filtered events');
+  assert.ok(filtered.every(e => e.status_after === 'filtered'));
+
+  cleanup();
+});
+
+// Test 11: id-based dedupe blocks re-ingest when payload/hash changes
+test('ingest deduplicates by proposal_id even when content hash changes', () => {
+  setup();
+
+  const testDate = '2026-02-19';
+  const v1 = [
+    { id: 'P777', title: 'Stable proposal id', type: 'external_intel', meta: { source_eye: 'hn_frontpage', preview: 'v1' } }
+  ];
+  createTestProposals(testDate, v1);
+  queue.QUEUE_LOG = QUEUE_LOG;
+
+  const first = queue.ingest(testDate);
+  assert.strictEqual(first.ingested, 1, 'First ingest should add proposal');
+
+  const v2 = [
+    { id: 'P777', title: 'Stable proposal id', type: 'external_intel', meta: { source_eye: 'hn_frontpage', preview: 'v2 changed payload' } }
+  ];
+  createTestProposals(testDate, v2);
+
+  const second = queue.ingest(testDate);
+  assert.strictEqual(second.ingested, 0, 'Second ingest should not add duplicate proposal id');
+  assert.strictEqual(second.duplicates, 1, 'Second ingest should report duplicate by id');
+
+  const events = queue.loadEvents();
+  const generated = events.filter(e => e.type === 'proposal_generated' && e.proposal_id === 'P777');
+  assert.strictEqual(generated.length, 1, 'Only one generated event should exist for stable proposal id');
+
+  cleanup();
+});
+
 // Summary
 console.log('\n═══════════════════════════════════════════════════════════');
 if (failed) {
@@ -417,7 +478,7 @@ if (failed) {
   process.exit(1);
 }
 
-console.log('   ✅ ALL SENSORY QUEUE TESTS PASS (9/9)');
+console.log('   ✅ ALL SENSORY QUEUE TESTS PASS (11/11)');
 console.log('═══════════════════════════════════════════════════════════');
 console.log('\n📋 Coverage:');
 console.log('   1. ✅ ingest creates proposal_generated entries');
@@ -429,4 +490,6 @@ console.log('   6. ✅ snooze requires until date');
 console.log('   7. ✅ stats returns counts and recurring');
 console.log('   8. ✅ done marks proposal as completed');
 console.log('   9. ✅ expired snooze appears as open');
+console.log('  10. ✅ static queue gate filters stub + unknown-eye proposals');
+console.log('  11. ✅ id-based dedupe prevents duplicate re-ingest with changed payload');
 console.log('\n🎯 Sensory Queue v1.2.1 Ready - NO raw JSONL, NO LLM, append-only');

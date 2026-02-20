@@ -32,6 +32,7 @@ Status legend:
 | BL-014 | todo | Phased TypeScript migration for `systems/` + `lib/` | Reduce contract drift and runtime breakage in high-permanence layers without rewriting architecture | `tsconfig` added; `systems/` + `lib/` run type-check clean in CI (`--noEmit`); migration done file-by-file with compatibility wrappers and zero behavior regressions |
 | BL-015 | todo | Optional reflex sub-layer under habits (fast micro-routines) | Improve adaptation latency for frequent tiny tasks without promoting permanent system changes | Add `habits/reflexes/` runtime path and tiny-model executor; reflex generation/degradation mirrors habit promotion/decay rules; router can prefer reflex before habit when confidence and latency budget are met |
 | BL-016 | todo | Cross-device active-state continuity layer | Preserve in-flight autonomy/routing context when switching active shell/device without split-brain | Add `systems/continuity/` with lease-based active writer election, checkpoint + delta replay state transfer, takeover on lease expiry, and secret-safe payload policy (no raw creds in continuity artifacts) |
+| BL-018 | done | Proposal admission + queue hygiene hardening | Reduce duplicate/stub/unknown-eye noise before autonomy selection | `sensory_queue` dedupes by `proposal_id`, static gate filters stub/unknown-eye eye-attributed proposals, lifecycle status normalized (`filtered` instead of `unknown`), and tests cover quality + dedupe behavior |
 
 ## P2
 

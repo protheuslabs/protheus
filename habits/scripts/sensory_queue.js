@@ -25,6 +25,8 @@ const SENSORY_QUEUE_MIN_RELEVANCE_SCORE = Number(process.env.SENSORY_QUEUE_MIN_R
 const SENSORY_QUEUE_MIN_DIRECTIVE_FIT_SCORE = Number(process.env.SENSORY_QUEUE_MIN_DIRECTIVE_FIT_SCORE || 25);
 const SENSORY_QUEUE_MIN_ACTIONABILITY_SCORE = Number(process.env.SENSORY_QUEUE_MIN_ACTIONABILITY_SCORE || 45);
 const SENSORY_QUEUE_MIN_COMPOSITE_SCORE = Number(process.env.SENSORY_QUEUE_MIN_COMPOSITE_SCORE || 62);
+const SENSORY_QUEUE_DISALLOW_STUB_TITLE = String(process.env.SENSORY_QUEUE_DISALLOW_STUB_TITLE || '1') !== '0';
+const SENSORY_QUEUE_DISALLOW_UNKNOWN_EYE = String(process.env.SENSORY_QUEUE_DISALLOW_UNKNOWN_EYE || '1') !== '0';
 
 // Paths - can be overridden for testing
 let SENSORY_DIR = path.join(__dirname, '..', '..', 'state', 'sensory');
@@ -93,6 +95,72 @@ function getLoggedHashesByType(types = []) {
   return hashes;
 }
 
+function getLoggedProposalIdsByType(types = []) {
+  const wanted = new Set(Array.isArray(types) ? types.map(t => String(t)) : []);
+  if (!wanted.size) return new Set();
+  const events = loadEvents();
+  const ids = new Set();
+  for (const event of events) {
+    const id = String(event && event.proposal_id || '').trim();
+    if (!id || id === 'UNKNOWN') continue;
+    if (wanted.has(String(event.type || ''))) ids.add(id);
+  }
+  return ids;
+}
+
+function normalizeProposalId(proposal) {
+  const raw = String(proposal && proposal.id || '').trim();
+  return raw || null;
+}
+
+function extractProposalEyeId(proposal) {
+  const meta = proposal && proposal.meta && typeof proposal.meta === 'object' ? proposal.meta : null;
+  const fromMeta = String(meta && meta.source_eye || '').trim();
+  if (fromMeta) return fromMeta;
+  const evidence = Array.isArray(proposal && proposal.evidence) ? proposal.evidence : [];
+  for (const ev of evidence) {
+    const ref = String(ev && ev.evidence_ref || '').trim();
+    const m = ref.match(/^eye:([a-z0-9_.:-]+)$/i);
+    if (m && m[1]) return String(m[1]);
+  }
+  return '';
+}
+
+function isEyeDerivedProposal(proposal) {
+  const type = String(proposal && proposal.type || '').toLowerCase();
+  const id = String(proposal && proposal.id || '').toUpperCase();
+  if (type === 'external_intel') return true;
+  if (id.startsWith('EYE-')) return true;
+  const eyeId = extractProposalEyeId(proposal);
+  return !!String(eyeId || '').trim();
+}
+
+function hasExplicitEyeAttribution(proposal) {
+  const id = String(proposal && proposal.id || '').toUpperCase();
+  if (id.startsWith('EYE-')) return true;
+  const eyeId = String(extractProposalEyeId(proposal) || '').trim();
+  return !!eyeId;
+}
+
+function evaluateStaticQueueGate(proposal) {
+  const title = String(proposal && proposal.title || '');
+  if (SENSORY_QUEUE_DISALLOW_STUB_TITLE && /\[stub\]/i.test(title)) {
+    return { allow: false, reason: 'stub_title', gated: true };
+  }
+
+  const eyeId = String(extractProposalEyeId(proposal) || '').trim().toLowerCase();
+  if (
+    SENSORY_QUEUE_DISALLOW_UNKNOWN_EYE &&
+    isEyeDerivedProposal(proposal) &&
+    hasExplicitEyeAttribution(proposal) &&
+    (!eyeId || eyeId === 'unknown_eye' || eyeId === 'unknown')
+  ) {
+    return { allow: false, reason: 'unknown_eye', gated: true };
+  }
+
+  return { allow: true, reason: null, gated: false };
+}
+
 function numOrNull(v) {
   const n = Number(v);
   return Number.isFinite(n) ? n : null;
@@ -121,6 +189,9 @@ function normalizeBlockedReason(admissionPreview) {
 }
 
 function evaluateQueueQualityGate(proposal) {
+  const staticGate = evaluateStaticQueueGate(proposal);
+  if (!staticGate.allow) return staticGate;
+
   const meta = proposal && proposal.meta && typeof proposal.meta === 'object' ? proposal.meta : null;
   if (!metaHasQualitySignals(meta)) {
     return { allow: true, reason: null, gated: false };
@@ -162,6 +233,13 @@ function evaluateQueueQualityGate(proposal) {
   }
 
   return { allow: true, reason: null, gated: true };
+}
+
+function proposalEventKey(event) {
+  const id = String(event && event.proposal_id || '').trim();
+  if (id && id !== 'UNKNOWN') return `id:${id}`;
+  const hash = String(event && event.proposal_hash || '').trim();
+  return hash ? `hash:${hash}` : '';
 }
 
 // Get current status of a proposal by hash or id
@@ -261,6 +339,9 @@ function ingest(dateStr) {
   
   const existingGeneratedHashes = getLoggedHashesByType(['proposal_generated']);
   const existingFilteredHashes = getLoggedHashesByType(['proposal_filtered']);
+  const existingGeneratedIds = getLoggedProposalIdsByType(['proposal_generated']);
+  const existingFilteredIds = getLoggedProposalIdsByType(['proposal_filtered']);
+  const seenRunGeneratedIds = new Set();
   let ingested = 0;
   let duplicates = 0;
   let filtered = 0;
@@ -268,7 +349,16 @@ function ingest(dateStr) {
   const filteredByReason = {};
   
   for (const proposal of proposals) {
+    const proposalId = normalizeProposalId(proposal) || 'UNKNOWN';
     const hash = computeProposalHash(proposal);
+
+    if (
+      proposalId !== 'UNKNOWN' &&
+      (existingGeneratedIds.has(proposalId) || seenRunGeneratedIds.has(proposalId))
+    ) {
+      duplicates++;
+      continue;
+    }
     
     // Idempotency: skip if already generated
     if (existingGeneratedHashes.has(hash)) {
@@ -278,6 +368,10 @@ function ingest(dateStr) {
 
     const gate = evaluateQueueQualityGate(proposal);
     if (!gate.allow) {
+      if (proposalId !== 'UNKNOWN' && existingFilteredIds.has(proposalId)) {
+        filteredDuplicates++;
+        continue;
+      }
       if (existingFilteredHashes.has(hash)) {
         filteredDuplicates++;
         continue;
@@ -287,7 +381,7 @@ function ingest(dateStr) {
         ts: new Date().toISOString(),
         type: 'proposal_filtered',
         date,
-        proposal_id: proposal.id || 'UNKNOWN',
+        proposal_id: proposalId,
         title: proposal.title || 'Untitled',
         proposal_hash: hash,
         status_after: 'filtered',
@@ -297,6 +391,7 @@ function ingest(dateStr) {
       };
       appendEvent(filterEvent);
       existingFilteredHashes.add(hash);
+      if (proposalId !== 'UNKNOWN') existingFilteredIds.add(proposalId);
       filtered++;
       filteredByReason[reason] = Number(filteredByReason[reason] || 0) + 1;
       continue;
@@ -306,7 +401,7 @@ function ingest(dateStr) {
       ts: new Date().toISOString(),
       type: 'proposal_generated',
       date: date,
-      proposal_id: proposal.id || 'UNKNOWN',
+      proposal_id: proposalId,
       title: proposal.title || 'Untitled',
       proposal_hash: hash,
       status_after: 'open',
@@ -315,6 +410,10 @@ function ingest(dateStr) {
     
     appendEvent(event);
     existingGeneratedHashes.add(hash); // Prevent duplicates in same run
+    if (proposalId !== 'UNKNOWN') {
+      existingGeneratedIds.add(proposalId);
+      seenRunGeneratedIds.add(proposalId);
+    }
     ingested++;
   }
   
@@ -337,10 +436,12 @@ function list(opts = {}) {
   events.sort((a, b) => new Date(a.ts) - new Date(b.ts));
   
   for (const event of events) {
-    const hash = event.proposal_hash;
-    if (!proposals.has(hash)) {
-      proposals.set(hash, {
-        hash,
+    const key = proposalEventKey(event);
+    if (!key) continue;
+    if (!proposals.has(key)) {
+      proposals.set(key, {
+        key,
+        hash: event.proposal_hash || null,
         id: event.proposal_id,
         title: event.title,
         date: event.date,
@@ -348,11 +449,15 @@ function list(opts = {}) {
       });
     }
     
-    const p = proposals.get(hash);
+    const p = proposals.get(key);
     
     switch (event.type) {
       case 'proposal_generated':
         p.status = 'open';
+        break;
+      case 'proposal_filtered':
+        p.status = 'filtered';
+        p.reason = event.filter_reason || event.reason || null;
         break;
       case 'proposal_accepted':
         p.status = 'accepted';
@@ -411,7 +516,8 @@ function list(opts = {}) {
     const noteStr = p.note ? ` [note: ${p.note.slice(0, 30)}...]` : '';
     const reasonStr = p.reason ? ` [reason: ${p.reason.slice(0, 30)}...]` : '';
     const snoozeStr = p.snooze_until ? ` [snoozed until ${p.snooze_until}]` : '';
-    console.log(`   [${p.status.toUpperCase()}] ${p.id}: ${p.title.slice(0, 50)}${p.title.length > 50 ? '...' : ''}${snoozeStr}${reasonStr}${noteStr}`);
+    const status = (p.status || 'unknown').toUpperCase();
+    console.log(`   [${status}] ${p.id}: ${p.title.slice(0, 50)}${p.title.length > 50 ? '...' : ''}${snoozeStr}${reasonStr}${noteStr}`);
   });
   
   if (results.length === 0) {
@@ -575,20 +681,23 @@ function stats(opts = {}) {
   const proposals = new Map();
   
   for (const event of filteredEvents) {
-    const hash = event.proposal_hash;
-    if (!proposals.has(hash)) {
-      proposals.set(hash, {
-        hash,
+    const key = proposalEventKey(event);
+    if (!key) continue;
+    if (!proposals.has(key)) {
+      proposals.set(key, {
+        key,
+        hash: event.proposal_hash || null,
         id: event.proposal_id,
         title: event.title,
         date: event.date
       });
     }
     
-    const p = proposals.get(hash);
+    const p = proposals.get(key);
     
     switch (event.type) {
       case 'proposal_generated': p.status = 'open'; break;
+      case 'proposal_filtered': p.status = 'filtered'; break;
       case 'proposal_accepted': p.status = 'accepted'; break;
       case 'proposal_rejected': p.status = 'rejected'; break;
       case 'proposal_done': p.status = 'done'; break;
@@ -602,7 +711,7 @@ function stats(opts = {}) {
   }
   
   // Count by status
-  const counts = { open: 0, accepted: 0, rejected: 0, done: 0, snoozed: 0 };
+  const counts = { open: 0, accepted: 0, rejected: 0, done: 0, snoozed: 0, filtered: 0 };
   for (const p of proposals.values()) {
     counts[p.status] = (counts[p.status] || 0) + 1;
   }
