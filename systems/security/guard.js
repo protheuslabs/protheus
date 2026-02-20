@@ -15,6 +15,8 @@
  *   APPROVAL_NOTE="..." (required if BREAK_GLASS=1)
  *   REQUEST_SOURCE=local|slack|... (optional; remote sources default to proposal-only)
  *   REQUEST_ACTION=apply|propose|dry_run|audit (optional; default: apply)
+ *   REQUEST_TS / REQUEST_NONCE / REQUEST_SIG (optional; required for remote direct apply)
+ *   REQUEST_GATE_SECRET (required for verifying remote direct signatures)
  *   REMOTE_DIRECT_OVERRIDE=1 (required for remote direct apply)
  *   APPROVER_ID / SECOND_APPROVER_ID + SECOND_APPROVAL_NOTE (required for remote direct apply)
  *
@@ -29,6 +31,9 @@ const {
   verifyIntegrity,
   appendIntegrityEvent
 } = require("../../lib/security_integrity.js");
+const {
+  verifySignedEnvelopeFromEnv
+} = require("../../lib/request_envelope.js");
 
 function parseArg(name) {
   const pref = `--${name}=`;
@@ -79,6 +84,8 @@ function loadPolicy() {
       proposal_actions: ["propose", "proposal", "dry_run", "audit"],
       require_break_glass_for_direct: true,
       require_dual_approval_for_direct: true,
+      require_signed_envelope_for_remote_direct: true,
+      envelope_max_skew_sec: 900,
       min_approval_note_chars: 12
     }
   };
@@ -128,6 +135,8 @@ function evaluateRemoteRequestGate(policy, ctx) {
   const minChars = Math.max(8, Number(gate.min_approval_note_chars || 12));
   const requireBreakGlass = gate.require_break_glass_for_direct !== false;
   const requireDual = gate.require_dual_approval_for_direct !== false;
+  const requireSignature = gate.require_signed_envelope_for_remote_direct !== false;
+  const maxSkewSec = Math.max(30, Number(gate.envelope_max_skew_sec || 900));
 
   const result = {
     enabled: true,
@@ -138,6 +147,9 @@ function evaluateRemoteRequestGate(policy, ctx) {
     allowed: true,
     reason: isRemote ? "proposal_only_remote" : "local_source",
     missing: [],
+    signature_required: false,
+    signature_valid: null,
+    signature_reason: null,
     min_approval_note_chars: minChars
   };
 
@@ -165,6 +177,20 @@ function evaluateRemoteRequestGate(policy, ctx) {
     }
     if (String(ctx.second_approver_id || "").trim().length < 2) {
       result.missing.push("second_approver_id");
+    }
+  }
+  if (requireSignature) {
+    result.signature_required = true;
+    const sigCheck = verifySignedEnvelopeFromEnv({
+      env: ctx.env || process.env,
+      files: Array.isArray(ctx.files) ? ctx.files : [],
+      secret: String(ctx.request_gate_secret || "").trim(),
+      maxSkewSec
+    });
+    result.signature_valid = sigCheck.ok === true;
+    result.signature_reason = sigCheck.reason || null;
+    if (!sigCheck.ok) {
+      result.missing.push("request_signature");
     }
   }
 
@@ -269,7 +295,10 @@ function main() {
     approver_id: approverId,
     second_approval_note: secondApprovalNote,
     second_approver_id: secondApproverId,
-    remote_direct_override: remoteDirectOverride
+    remote_direct_override: remoteDirectOverride,
+    request_gate_secret: String(process.env.REQUEST_GATE_SECRET || "").trim(),
+    files,
+    env: process.env
   });
 
   if (remoteGate.is_remote) {

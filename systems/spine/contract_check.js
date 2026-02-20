@@ -240,6 +240,12 @@ function main() {
     ["architecture_guard.js", "run", "--strict"]
   );
 
+  // request_ingress.js stamps source/action and signed envelopes for guarded command ingress.
+  checkScript(
+    "systems/security/request_ingress.js",
+    ["request_ingress.js", "run", "print-env", "--source", "--action"]
+  );
+
   // state_backup.js provides optional external runtime-state backup and snapshot listing.
   checkScript(
     "systems/ops/state_backup.js",

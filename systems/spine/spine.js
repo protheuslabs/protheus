@@ -25,6 +25,7 @@ const { spawnSync } = require("child_process");
 const path = require("path");
 const fs = require("fs");
 const { isEmergencyStopEngaged } = require("../../lib/emergency_stop.js");
+const { stampGuardEnv } = require("../../lib/request_envelope.js");
 
 function arg(name) {
   const pref = `--${name}=`;
@@ -66,7 +67,10 @@ function runJson(cmd, args, opts = {}) {
 
 function guard(files) {
   // guard expects repo-relative paths
-  run("node", ["systems/security/guard.js", `--files=${files.join(",")}`]);
+  const source = String(process.env.REQUEST_SOURCE || "local").trim() || "local";
+  const action = String(process.env.REQUEST_ACTION || "apply").trim() || "apply";
+  const env = stampGuardEnv({ ...process.env }, { source, action, files });
+  run("node", ["systems/security/guard.js", `--files=${files.join(",")}`], { env });
 }
 
 function nowIso() {
