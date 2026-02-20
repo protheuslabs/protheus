@@ -10,10 +10,10 @@
  * - Keep new eyes probationary by default so atrophy/evolution can prune naturally.
  *
  * Usage:
- *   node habits/scripts/eyes_intake.js create --name="..." --parser=hn_rss --directive=T1_make_jay_billionaire_v1 [--domains=foo.com,bar.com]
- *   node habits/scripts/eyes_intake.js validate --directive=T1_make_jay_billionaire_v1
- *   node habits/scripts/eyes_intake.js list-directives
- *   node habits/scripts/eyes_intake.js --help
+ *   node systems/sensory/eyes_intake.js create --name="..." --parser=hn_rss --directive=T1_make_jay_billionaire_v1 [--domains=foo.com,bar.com]
+ *   node systems/sensory/eyes_intake.js validate --directive=T1_make_jay_billionaire_v1
+ *   node systems/sensory/eyes_intake.js list-directives
+ *   node systems/sensory/eyes_intake.js --help
  */
 
 const fs = require('fs');
@@ -60,14 +60,14 @@ const DEFAULT_DOMAINS = {
 
 function usage() {
   console.log('Usage:');
-  console.log('  node habits/scripts/eyes_intake.js create --name="..." --parser=<parser_type> --directive=<directive_id> [--domains=d1,d2]');
+  console.log('  node systems/sensory/eyes_intake.js create --name="..." --parser=<parser_type> --directive=<directive_id> [--domains=d1,d2]');
   console.log('    Optional:');
   console.log('      --id=<eye_id> --topics=t1,t2 --notes="..." --status=probation|active --cadence=6');
   console.log('      --max-items=10 --max-seconds=15 --max-bytes=524288 --max-requests=1');
   console.log('      --parser-options=\'{"owner":"x","repo":"y"}\'');
-  console.log('  node habits/scripts/eyes_intake.js validate --directive=<directive_id>');
-  console.log('  node habits/scripts/eyes_intake.js list-directives');
-  console.log('  node habits/scripts/eyes_intake.js --help');
+  console.log('  node systems/sensory/eyes_intake.js validate --directive=<directive_id>');
+  console.log('  node systems/sensory/eyes_intake.js list-directives');
+  console.log('  node systems/sensory/eyes_intake.js --help');
 }
 
 function parseArgs(argv) {
