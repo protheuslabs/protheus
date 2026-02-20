@@ -34,7 +34,9 @@ const DEFAULTS = {
   minMultiplier: 0.2,
   maxMultiplier: 2.8,
   maxChangeRatio: 0.35,
-  minChangeRatio: 0.05
+  minChangeRatio: 0.05,
+  effectiveWeightCap: 0.35,
+  effectiveStepScale: 0.5
 };
 
 function nowIso() {
@@ -200,13 +202,47 @@ function fallbackMultiplierForModel(model, cfg) {
 function parseTokenUsage(ev) {
   const tu = ev && ev.token_usage && typeof ev.token_usage === 'object' ? ev.token_usage : null;
   if (!tu) return null;
-  const actualAvailable = tu.actual_available === true || toNum(tu.actual_tokens, 0) > 0;
-  const actualTokens = toNum(tu.actual_tokens, null);
-  if (!actualAvailable || !(Number.isFinite(actualTokens) && actualTokens > 0)) return null;
+  const actualTokens = toNum(
+    tu.actual_total_tokens != null ? tu.actual_total_tokens : tu.actual_tokens,
+    null
+  );
+  const effectiveTokens = toNum(
+    tu.effective_tokens != null ? tu.effective_tokens : actualTokens,
+    null
+  );
+  const estimatedTokens = toNum(tu.estimated_tokens, null);
+  const sourceKind = String(tu.source_kind || '').toLowerCase();
+  const source = String(tu.source || '').toLowerCase();
+  const actualAvailable = tu.actual_available === true || sourceKind === 'actual' || (Number.isFinite(actualTokens) && actualTokens > 0 && source.indexOf('estimated') === -1 && source.indexOf('heuristic') === -1);
+  const approxAvailable = tu.approximate_available === true || sourceKind === 'approximate' || source.indexOf('heuristic') !== -1;
+  if (!(Number.isFinite(effectiveTokens) && effectiveTokens > 0)) return null;
   return {
-    actual_tokens: actualTokens,
-    effective_tokens: toNum(tu.effective_tokens, actualTokens)
+    actual_tokens: actualAvailable && Number.isFinite(actualTokens) && actualTokens > 0 ? actualTokens : null,
+    effective_tokens: effectiveTokens,
+    estimated_tokens: estimatedTokens,
+    sample_kind: actualAvailable ? 'actual' : (approxAvailable ? 'approximate' : 'estimated')
   };
+}
+
+function summaryFromRunEvent(ev) {
+  if (!ev || typeof ev !== 'object') return null;
+  const route = ev.route_summary && typeof ev.route_summary === 'object' ? ev.route_summary : null;
+  if (route) return route;
+  const preview = ev.preview_summary && typeof ev.preview_summary === 'object' ? ev.preview_summary : null;
+  if (preview) return preview;
+  return null;
+}
+
+function routeEstimateFromSummary(summary) {
+  if (!summary || typeof summary !== 'object') return null;
+  const cost = summary.cost_estimate && typeof summary.cost_estimate === 'object' ? summary.cost_estimate : null;
+  const budget = summary.route_budget && typeof summary.route_budget === 'object' ? summary.route_budget : null;
+  return toNum(
+    cost && cost.selected_model_tokens_est != null
+      ? cost.selected_model_tokens_est
+      : (budget ? budget.request_tokens_est : null),
+    null
+  );
 }
 
 function collectTelemetry(days) {
@@ -230,6 +266,9 @@ function collectTelemetry(days) {
           actual_samples: 0,
           actual_tokens_total: 0,
           estimated_tokens_for_actual_samples: 0,
+          effective_samples: 0,
+          effective_tokens_total: 0,
+          estimated_tokens_for_effective_samples: 0,
           days_seen: new Set()
         };
       }
@@ -247,13 +286,19 @@ function collectTelemetry(days) {
     for (const ev of events) {
       if (!ev || typeof ev !== 'object') continue;
       if (String(ev.type || '') !== 'autonomy_run') continue;
-      const summary = ev.route_summary && typeof ev.route_summary === 'object' ? ev.route_summary : {};
+      const summary = summaryFromRunEvent(ev) || {};
       const model = normalizeModel(summary.selected_model);
       if (!model) continue;
-      const routeEst = toNum(summary?.cost_estimate?.selected_model_tokens_est, null);
+      const routeEst = routeEstimateFromSummary(summary);
       const tokenUsage = parseTokenUsage(ev);
       if (!tokenUsage) continue;
-      if (!(Number.isFinite(routeEst) && routeEst > 0)) continue;
+      const estFromUsage = Number.isFinite(toNum(tokenUsage.estimated_tokens, null))
+        ? toNum(tokenUsage.estimated_tokens, null)
+        : null;
+      const sampleEst = Number.isFinite(routeEst) && routeEst > 0
+        ? routeEst
+        : estFromUsage;
+      if (!(Number.isFinite(sampleEst) && sampleEst > 0)) continue;
 
       if (!byModel[model]) {
         byModel[model] = {
@@ -264,13 +309,21 @@ function collectTelemetry(days) {
           actual_samples: 0,
           actual_tokens_total: 0,
           estimated_tokens_for_actual_samples: 0,
+          effective_samples: 0,
+          effective_tokens_total: 0,
+          estimated_tokens_for_effective_samples: 0,
           days_seen: new Set()
         };
       }
       const rec = byModel[model];
-      rec.actual_samples += 1;
-      rec.actual_tokens_total += tokenUsage.actual_tokens;
-      rec.estimated_tokens_for_actual_samples += routeEst;
+      rec.effective_samples += 1;
+      rec.effective_tokens_total += tokenUsage.effective_tokens;
+      rec.estimated_tokens_for_effective_samples += sampleEst;
+      if (Number.isFinite(toNum(tokenUsage.actual_tokens, null)) && toNum(tokenUsage.actual_tokens, null) > 0) {
+        rec.actual_samples += 1;
+        rec.actual_tokens_total += tokenUsage.actual_tokens;
+        rec.estimated_tokens_for_actual_samples += sampleEst;
+      }
       rec.days_seen.add(f.date);
     }
   }
@@ -278,6 +331,7 @@ function collectTelemetry(days) {
   const models = {};
   let requestsTotal = 0;
   let actualSamplesTotal = 0;
+  let effectiveSamplesTotal = 0;
   for (const [model, rec] of Object.entries(byModel)) {
     const out = {
       model,
@@ -287,14 +341,21 @@ function collectTelemetry(days) {
       actual_samples: Math.round(rec.actual_samples),
       actual_tokens_total: Math.round(rec.actual_tokens_total),
       estimated_tokens_for_actual_samples: Math.round(rec.estimated_tokens_for_actual_samples),
+      effective_samples: Math.round(rec.effective_samples),
+      effective_tokens_total: Math.round(rec.effective_tokens_total),
+      estimated_tokens_for_effective_samples: Math.round(rec.estimated_tokens_for_effective_samples),
       days_seen: Array.from(rec.days_seen).sort()
     };
     out.actual_to_est_ratio = out.estimated_tokens_for_actual_samples > 0
       ? Number((out.actual_tokens_total / out.estimated_tokens_for_actual_samples).toFixed(4))
       : null;
+    out.effective_to_est_ratio = out.estimated_tokens_for_effective_samples > 0
+      ? Number((out.effective_tokens_total / out.estimated_tokens_for_effective_samples).toFixed(4))
+      : null;
     models[model] = out;
     requestsTotal += out.requests;
     actualSamplesTotal += out.actual_samples;
+    effectiveSamplesTotal += out.effective_samples;
   }
 
   return {
@@ -306,6 +367,7 @@ function collectTelemetry(days) {
     days_seen: Array.from(daysSeen).sort(),
     requests_total: requestsTotal,
     actual_samples_total: actualSamplesTotal,
+    effective_samples_total: effectiveSamplesTotal,
     models
   };
 }
@@ -319,7 +381,9 @@ function calibrationOptions(args) {
     minMultiplier: clamp(toNum(args['min-multiplier'], DEFAULTS.minMultiplier), 0.05, 10),
     maxMultiplier: clamp(toNum(args['max-multiplier'], DEFAULTS.maxMultiplier), 0.1, 12),
     maxChangeRatio: clamp(toNum(args['max-change-ratio'], DEFAULTS.maxChangeRatio), 0.05, 0.9),
-    minChangeRatio: clamp(toNum(args['min-change-ratio'], DEFAULTS.minChangeRatio), 0.001, 0.5)
+    minChangeRatio: clamp(toNum(args['min-change-ratio'], DEFAULTS.minChangeRatio), 0.001, 0.5),
+    effectiveWeightCap: clamp(toNum(args['effective-weight-cap'], DEFAULTS.effectiveWeightCap), 0.05, 0.7),
+    effectiveStepScale: clamp(toNum(args['effective-step-scale'], DEFAULTS.effectiveStepScale), 0.1, 1)
   };
 }
 
@@ -342,6 +406,9 @@ function computeRecommendations(cfg, telemetry, opts) {
     const actualSamples = Math.max(0, toNum(t.actual_samples, 0));
     const actualTokens = Math.max(0, toNum(t.actual_tokens_total, 0));
     const estForActual = Math.max(0, toNum(t.estimated_tokens_for_actual_samples, 0));
+    const effectiveSamples = Math.max(0, toNum(t.effective_samples, 0));
+    const effectiveTokens = Math.max(0, toNum(t.effective_tokens_total, 0));
+    const estForEffective = Math.max(0, toNum(t.estimated_tokens_for_effective_samples, 0));
 
     let status = 'insufficient_samples';
     let proposed = current;
@@ -349,9 +416,11 @@ function computeRecommendations(cfg, telemetry, opts) {
     let observedRatio = null;
     let sampleWeight = 0;
     let wouldApply = false;
+    let source = 'none';
 
     if (actualSamples >= opts.minSamples && requests >= opts.minRequests && estForActual > 0) {
       observedRatio = actualTokens / estForActual;
+      source = 'actual';
       const raw = current * observedRatio;
       sampleWeight = clamp(actualSamples / opts.fullSamples, 0, 1);
       let blended = current + ((raw - current) * sampleWeight);
@@ -364,6 +433,21 @@ function computeRecommendations(cfg, telemetry, opts) {
       wouldApply = changeRatio >= opts.minChangeRatio;
       status = wouldApply ? 'change' : 'stable';
       reason = wouldApply ? 'actual_drift' : 'drift_below_min_change_ratio';
+    } else if (effectiveSamples >= opts.minSamples && requests >= opts.minRequests && estForEffective > 0) {
+      observedRatio = effectiveTokens / estForEffective;
+      source = 'effective';
+      const raw = current * observedRatio;
+      sampleWeight = clamp((effectiveSamples / opts.fullSamples) * opts.effectiveWeightCap, 0, opts.effectiveWeightCap);
+      let blended = current + ((raw - current) * sampleWeight);
+      const stepLower = current * (1 - (opts.maxChangeRatio * opts.effectiveStepScale));
+      const stepUpper = current * (1 + (opts.maxChangeRatio * opts.effectiveStepScale));
+      blended = clamp(blended, opts.minMultiplier, opts.maxMultiplier);
+      blended = clamp(blended, Math.max(opts.minMultiplier, stepLower), Math.min(opts.maxMultiplier, stepUpper));
+      proposed = round3(blended);
+      const changeRatio = current > 0 ? Math.abs((proposed - current) / current) : 0;
+      wouldApply = changeRatio >= opts.minChangeRatio;
+      status = wouldApply ? 'change' : 'stable';
+      reason = wouldApply ? 'effective_drift_low_confidence' : 'effective_drift_below_min_change_ratio';
     }
 
     if (status === 'change') changed++;
@@ -376,8 +460,12 @@ function computeRecommendations(cfg, telemetry, opts) {
       actual_samples: actualSamples,
       actual_tokens_total: Math.round(actualTokens),
       estimated_tokens_for_actual_samples: Math.round(estForActual),
+      effective_samples: effectiveSamples,
+      effective_tokens_total: Math.round(effectiveTokens),
+      estimated_tokens_for_effective_samples: Math.round(estForEffective),
       observed_ratio: observedRatio == null ? null : Number(observedRatio.toFixed(4)),
       sample_weight: Number(sampleWeight.toFixed(4)),
+      source,
       status,
       reason,
       apply: wouldApply
@@ -614,4 +702,3 @@ module.exports = {
   buildPlan,
   calibrationOptions
 };
-

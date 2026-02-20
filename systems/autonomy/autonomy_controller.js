@@ -4610,6 +4610,7 @@ function runCmd(dateStr, opts = {}) {
     let previewReceiptId = null;
     let previewVerification = null;
     let previewSummary = null;
+    let previewTokenUsage = null;
     let previewMode = shadowOnly ? 'shadow_only' : 'score_only';
     const shouldCaptureEvidence = shadowOnly || AUTONOMY_SCORE_ONLY_EVIDENCE;
 
@@ -4648,6 +4649,7 @@ function runCmd(dateStr, opts = {}) {
         primary_failure: primaryFailure
       };
       previewSummary = preSummary;
+      previewTokenUsage = computeExecutionTokenUsage(preSummary, previewRes.execution_metrics, routeTokensEst, estTokens);
       writeReceipt(dateStr, {
         ts: nowIso(),
         type: 'autonomy_action_receipt',
@@ -4671,7 +4673,8 @@ function runCmd(dateStr, opts = {}) {
           errors_30d: errors30d
         },
         execution: {
-          preview: compactCmdResult(previewRes)
+          preview: compactCmdResult(previewRes),
+          token_usage: previewTokenUsage
         },
         verification: previewVerification
       });
@@ -4700,7 +4703,8 @@ function runCmd(dateStr, opts = {}) {
       preview_mode: previewMode,
       preview_receipt_id: previewReceiptId,
       preview_verification: previewVerification,
-      preview_summary: previewSummary
+      preview_summary: previewSummary,
+      token_usage: previewTokenUsage
     });
     process.stdout.write(JSON.stringify({
       ok: true,
@@ -4721,6 +4725,7 @@ function runCmd(dateStr, opts = {}) {
       preview_receipt_id: previewReceiptId,
       preview_verification: previewVerification,
       preview_summary: previewSummary,
+      token_usage: previewTokenUsage,
       ts: nowIso()
     }) + '\n');
     return;

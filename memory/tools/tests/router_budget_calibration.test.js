@@ -86,11 +86,27 @@ function buildFixtureRoot() {
       },
       token_usage: {
         actual_available: true,
-        actual_tokens: 63,
+        actual_total_tokens: 63,
         effective_tokens: 63
       }
     });
   }
+  runRows.push({
+    ts: `${day}T09:00:00.000Z`,
+    type: 'autonomy_run',
+    result: 'score_only_evidence',
+    preview_summary: {
+      selected_model: 'ollama/qwen3:4b',
+      cost_estimate: { selected_model_tokens_est: 84 }
+    },
+    token_usage: {
+      source: 'estimated_fallback',
+      source_kind: 'estimated',
+      actual_available: false,
+      estimated_tokens: 84,
+      effective_tokens: 84
+    }
+  });
   writeJsonl(path.join(runsDir, `${day}.jsonl`), runRows);
 
   return {
@@ -120,6 +136,7 @@ function main() {
   assert.strictEqual(report.status, 0, `run failed: ${report.stderr}`);
   const reportJson = parseJsonOut(report, 'run');
   assert.strictEqual(reportJson.ok, true);
+  assert.ok(Number(reportJson.telemetry && reportJson.telemetry.effective_samples_total || 0) >= 13, 'expected effective sample coverage');
   assert.ok(Number(reportJson.changed_models || 0) >= 1, 'expected at least one changed model recommendation');
   const row = (reportJson.recommendations || []).find((x) => x.model === 'ollama/qwen3:4b');
   assert.ok(row, 'missing qwen recommendation row');
@@ -153,4 +170,3 @@ function main() {
 }
 
 main();
-
