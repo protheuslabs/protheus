@@ -22,7 +22,7 @@ Status legend:
 
 | ID | Status | Upgrade | Why | Exit Criteria |
 |---|---|---|---|---|
-| BL-004 | todo | Policy for tracked vs ignored state streams | Keep audit logs intentional and reduce accidental tracking drift | One doc defines tracked state classes and `.gitignore` alignment |
+| BL-004 | done | Policy for tracked vs ignored state streams | Keep audit logs intentional and reduce accidental tracking drift | One doc defines tracked state classes and `.gitignore` alignment |
 | BL-005 | done | Habit promotion quality hardening | Prevent no-op scaffolds from promoting without real value | Promotion checks include measured savings/effect threshold |
 | BL-006 | todo | Automated stale-state cleanup helper | Reduce local churn from old generated artifacts | Non-destructive cleanup command with dry-run and allowlist |
 | BL-009 | todo | Hardware-aware local model planner | Keep local routing aligned with actual machine capacity | Router can detect CPU/RAM/VRAM class, recommend/update eligible local models, and log changes before activation |

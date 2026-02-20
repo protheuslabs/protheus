@@ -27,6 +27,9 @@ This repository is an agent-operations workspace: orchestration, governed habits
 # Validate script CLI contracts used by spine
 node systems/spine/contract_check.js
 
+# Stable CI test suite (contract + deterministic tests)
+npm run test:ci
+
 # Validate habit governance + trust gates
 node habits/scripts/doctor.js
 
@@ -50,6 +53,9 @@ STATE_BACKUP_ENABLED=1 node systems/spine/spine.js daily [YYYY-MM-DD]
 
 # Optional: disable daily local probe-all refresh (enabled by default)
 SPINE_ROUTER_PROBE_ALL=0 node systems/spine/spine.js daily [YYYY-MM-DD]
+
+# Optional: increase/decrease score-only evidence attempts per daily run (default 2, max 6)
+AUTONOMY_EVIDENCE_RUNS=3 node systems/spine/spine.js daily [YYYY-MM-DD]
 
 # Manual state backup snapshots (outside git workspace)
 node systems/ops/state_backup.js run --dry-run
@@ -128,5 +134,6 @@ Guardrail: `apply` is elevated only (`CLEARANCE>=3`) and must pass `systems/secu
 ## Git Hygiene
 
 `.gitignore` now excludes high-churn runtime artifacts (raw sensory streams, run ledgers, daily state dumps, tool raw logs, backups, temp files) so source-level diffs stay reviewable.
+State tracking policy is documented in `/Users/jay/.openclaw/workspace/docs/STATE_STREAM_POLICY.md`.
 
 Future upgrade ideas are tracked in `/Users/jay/.openclaw/workspace/UPGRADE_BACKLOG.md`.
