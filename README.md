@@ -139,6 +139,10 @@ Model catalog maintenance is a built-in autonomy capability via:
 
 Guardrail: `apply` is elevated only (`CLEARANCE>=3`) and must pass `systems/security/guard.js` with an approval note.
 
+## Routing Variant Policy
+
+`config/agent_routing_rules.json` now supports `routing.model_variant_policy` to route base models to `:thinking` variants only for high-tier reasoning tasks (tier/role/outcome-gated), then auto-return to base via `post_task_return_model` in route decisions.
+
 ## Git Hygiene
 
 `.gitignore` now excludes high-churn runtime artifacts (raw sensory streams, run ledgers, daily state dumps, tool raw logs, backups, temp files) so source-level diffs stay reviewable.
