@@ -22,6 +22,7 @@
     "lib/directive_resolver.js": "9e78016ee4d5443a103b94d619b327d9390b69ababa5ffc73be0ff7b98f6e192",
     "systems/security/architecture_guard.js": "7c8f1a8dcc61e3cffc73283a3325cb3cab5d679981a8f169a49cedbe4ffa7c41",
     "systems/security/directive_gate.js": "c4b76b960a7bc68c568d1f7d0e953224666aa7311b81c814a89a1395aaa5ca1c",
+    "systems/security/directive_intake.js": "6f8169c477e99d8755b1c2f0de447a45af4c336497eb183196f7c77a5acf9ab6",
     "systems/security/emergency_stop.js": "1fac350b1bd90017cf6a5db2eb25522a4ff4bbca39114772852a404be242bf13",
     "systems/security/guard.js": "7360c951bc5749a500199ac2c66d85aaf1fed1655db631c4fe5a5ea07d0a6aa1",
     "systems/security/integrity_kernel.js": "bfecd33bc3539f0894cbca905730894aa706bb8db6140e5681b9a059bed7ec1f",
@@ -29,7 +30,7 @@
     "systems/security/skill_install_enforcer.js": "f97f0310cc2f8d88fbe79fc8430ef6341de87dbe3ada0de2742bd8f6ff035925",
     "systems/security/skill_quarantine.js": "4fd57a207a558a0fc079a2ce2477100bb9e5d0aec15b6a4bcbd7a7ae71963947"
   },
-  "sealed_at": "2026-02-20T04:31:12.950Z",
+  "sealed_at": "2026-02-20T05:23:56.215Z",
   "sealed_by": "jay",
-  "last_approval_note": "directive: require SMART-lite fields for Tier 1 directives"
+  "last_approval_note": "security: add interactive tier1 directive intake gate"
 }

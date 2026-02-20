@@ -246,6 +246,12 @@ function main() {
     ["request_ingress.js", "run", "print-env", "--source", "--action"]
   );
 
+  // directive_intake.js enforces SMART-lite scope/specificity before writing Tier 1 directives.
+  checkScript(
+    "systems/security/directive_intake.js",
+    ["directive_intake.js", "new", "validate", "--id", "--file"]
+  );
+
   // state_backup.js provides optional external runtime-state backup and snapshot listing.
   checkScript(
     "systems/ops/state_backup.js",

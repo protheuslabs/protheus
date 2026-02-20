@@ -112,6 +112,10 @@ node systems/security/architecture_guard.js run --strict
 node systems/security/integrity_kernel.js run
 node systems/security/integrity_kernel.js seal --approval-note="..."
 
+# Tier 1 directive intake (interactive SMART-lite guard before write)
+node systems/security/directive_intake.js new --id=T1_example_v1 --interactive
+node systems/security/directive_intake.js validate --file=config/directives/T1_example_v1.yaml
+
 # Emergency kill-switch (autonomy/routing/actuation)
 node systems/security/emergency_stop.js status
 node systems/security/emergency_stop.js engage --scope=all --approval-note="..."
