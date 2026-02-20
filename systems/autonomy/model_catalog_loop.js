@@ -18,6 +18,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const { beginChange, completeChange, recoverIfInterrupted, writeAtomicJson } = require('./self_change_failsafe');
+const { stampGuardEnv } = require('../../lib/request_envelope.js');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const ROUTING_CONFIG = path.join(REPO_ROOT, 'config', 'agent_routing_rules.json');
@@ -190,12 +191,15 @@ function runDoctorForModel(model) {
 
 function runGuard(files, approvalNote, breakGlass) {
   const rels = files.map(p => path.relative(REPO_ROOT, p).replace(/\\/g, '/'));
-  const env = {
+  let env = {
     ...process.env,
     CLEARANCE: process.env.CLEARANCE || '2',
     APPROVAL_NOTE: approvalNote || '',
     BREAK_GLASS: breakGlass ? '1' : '0'
   };
+  const source = String(env.REQUEST_SOURCE || 'local').trim() || 'local';
+  const action = String(env.REQUEST_ACTION || 'apply').trim() || 'apply';
+  env = stampGuardEnv(env, { source, action, files: rels });
   const r = spawnSync('node', [GUARD_SCRIPT, `--files=${rels.join(',')}`], { cwd: REPO_ROOT, encoding: 'utf8', env });
   const line = String(r.stdout || '').split('\n').find(x => x.trim().startsWith('{')) || '{}';
   const payload = readJsonFromText(line);
