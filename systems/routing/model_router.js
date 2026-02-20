@@ -10,6 +10,7 @@
  */
 
 const fs = require("fs");
+const os = require("os");
 const path = require("path");
 const crypto = require("crypto");
 const { spawnSync } = require("child_process");
@@ -25,6 +26,7 @@ const BANS_PATH = path.join(STATE_DIR, "banned_models.json");
 const DECISIONS_LOG = path.join(STATE_DIR, "routing_decisions.jsonl");
 const ROUTE_STATE_PATH = path.join(STATE_DIR, "route_state.json");
 const OUTCOME_STATS_PATH = path.join(STATE_DIR, "model_outcomes.json");
+const HARDWARE_PLAN_PATH = path.join(STATE_DIR, "hardware_plan.json");
 const ROUTER_BUDGET_DIR = process.env.ROUTER_BUDGET_DIR || path.join(REPO_ROOT, "state", "autonomy", "daily_budget");
 const ROUTER_BUDGET_TODAY = process.env.ROUTER_BUDGET_TODAY || "";
 const ROUTER_SPEND_DIR = process.env.ROUTER_SPEND_DIR || path.join(STATE_DIR, "spend");
@@ -128,6 +130,369 @@ function writeJsonAtomic(p, obj) {
   const tmp = `${p}.tmp.${process.pid}.${Date.now()}`;
   fs.writeFileSync(tmp, JSON.stringify(obj, null, 2));
   fs.renameSync(tmp, p);
+}
+
+function hardwarePlannerPolicyFromConfig(cfg) {
+  const raw = cfg && cfg.routing && cfg.routing.local_hardware_planner && typeof cfg.routing.local_hardware_planner === "object"
+    ? cfg.routing.local_hardware_planner
+    : {};
+  const classThresholdsRaw = Array.isArray(raw.class_thresholds) && raw.class_thresholds.length
+    ? raw.class_thresholds
+    : [
+        { id: "tiny", max_ram_gb: 8, max_cpu_threads: 4 },
+        { id: "small", max_ram_gb: 16, max_cpu_threads: 8 },
+        { id: "medium", max_ram_gb: 32, max_cpu_threads: 16 },
+        { id: "large", max_ram_gb: 64, max_cpu_threads: 32 },
+        { id: "xlarge" }
+      ];
+  const classThresholds = classThresholdsRaw.map((entry, idx) => {
+    const id = normalizeKey(entry && entry.id || `class_${idx + 1}`) || `class_${idx + 1}`;
+    return {
+      id,
+      max_ram_gb: Number(entry && entry.max_ram_gb),
+      max_cpu_threads: Number(entry && entry.max_cpu_threads),
+      max_vram_gb: Number(entry && entry.max_vram_gb)
+    };
+  });
+  const defaultLocalReqs = {
+    "ollama/smallthinker": {
+      min_hardware_class: "tiny",
+      min_ram_gb: 4,
+      min_cpu_threads: 2
+    },
+    "ollama/qwen3:4b": {
+      min_hardware_class: "small",
+      min_ram_gb: 8,
+      min_cpu_threads: 4
+    },
+    "ollama/gemma3:4b": {
+      min_hardware_class: "small",
+      min_ram_gb: 8,
+      min_cpu_threads: 4
+    }
+  };
+  const localReqs = raw.local_model_requirements && typeof raw.local_model_requirements === "object"
+    ? raw.local_model_requirements
+    : defaultLocalReqs;
+
+  return {
+    enabled: toBool(raw.enabled, true),
+    activate_recommended_locals: toBool(raw.activate_recommended_locals, true),
+    class_thresholds: classThresholds,
+    local_model_requirements: localReqs
+  };
+}
+
+function envNumber(keys, fallback = null) {
+  for (const k of keys) {
+    const raw = process.env[k];
+    if (raw == null || String(raw).trim() === "") continue;
+    const n = Number(raw);
+    if (Number.isFinite(n)) return n;
+  }
+  return fallback;
+}
+
+function detectHardwareProfile() {
+  const cpuThreads = (() => {
+    try {
+      const cpus = os.cpus();
+      if (Array.isArray(cpus) && cpus.length) return cpus.length;
+    } catch {}
+    return null;
+  })();
+  const ramGb = (() => {
+    try {
+      const total = Number(os.totalmem() || 0);
+      if (Number.isFinite(total) && total > 0) {
+        return Number((total / (1024 * 1024 * 1024)).toFixed(2));
+      }
+    } catch {}
+    return null;
+  })();
+
+  const base = {
+    detected_at: nowIso(),
+    source: "os",
+    platform: String(os.platform ? os.platform() : ""),
+    arch: String(os.arch ? os.arch() : ""),
+    cpu_threads: cpuThreads,
+    ram_gb: ramGb,
+    gpu_vram_gb: null
+  };
+
+  const overrideJsonRaw = String(process.env.ROUTER_HW_PROFILE_JSON || "").trim();
+  if (overrideJsonRaw) {
+    try {
+      const parsed = JSON.parse(overrideJsonRaw);
+      if (parsed && typeof parsed === "object") {
+        if (Number.isFinite(Number(parsed.cpu_threads))) base.cpu_threads = Number(parsed.cpu_threads);
+        if (Number.isFinite(Number(parsed.ram_gb))) base.ram_gb = Number(parsed.ram_gb);
+        if (Number.isFinite(Number(parsed.gpu_vram_gb))) base.gpu_vram_gb = Number(parsed.gpu_vram_gb);
+        if (parsed.platform) base.platform = String(parsed.platform);
+        if (parsed.arch) base.arch = String(parsed.arch);
+        base.source = "env_json_override";
+      }
+    } catch {}
+  }
+
+  const envVram = envNumber(["ROUTER_GPU_VRAM_GB", "ROUTER_VRAM_GB"], null);
+  if (Number.isFinite(Number(envVram))) {
+    base.gpu_vram_gb = Number(envVram);
+    if (base.source === "os") base.source = "env_override";
+  }
+  const envCpu = envNumber(["ROUTER_CPU_THREADS"], null);
+  if (Number.isFinite(Number(envCpu))) {
+    base.cpu_threads = Number(envCpu);
+    if (base.source === "os") base.source = "env_override";
+  }
+  const envRam = envNumber(["ROUTER_RAM_GB"], null);
+  if (Number.isFinite(Number(envRam))) {
+    base.ram_gb = Number(envRam);
+    if (base.source === "os") base.source = "env_override";
+  }
+
+  return base;
+}
+
+function metricFitsMax(value, maxValue) {
+  if (!Number.isFinite(Number(maxValue))) return true;
+  if (!Number.isFinite(Number(value))) return false;
+  return Number(value) <= Number(maxValue);
+}
+
+function classifyHardwareClass(profile, thresholds) {
+  const ordered = Array.isArray(thresholds) ? thresholds : [];
+  if (!ordered.length) return "unknown";
+  for (const t of ordered) {
+    const ok = metricFitsMax(profile.ram_gb, t.max_ram_gb)
+      && metricFitsMax(profile.cpu_threads, t.max_cpu_threads)
+      && metricFitsMax(profile.gpu_vram_gb, t.max_vram_gb);
+    if (ok) return normalizeKey(t.id || "") || "unknown";
+  }
+  const last = ordered[ordered.length - 1];
+  return normalizeKey(last && last.id || "") || "unknown";
+}
+
+function hardwareClassRankMap(thresholds) {
+  const out = {};
+  const ordered = Array.isArray(thresholds) ? thresholds : [];
+  for (let i = 0; i < ordered.length; i++) {
+    const id = normalizeKey(ordered[i] && ordered[i].id || "");
+    if (!id) continue;
+    out[id] = i;
+  }
+  return out;
+}
+
+function hardwareClassAtLeast(currentClass, minClass, rankMap) {
+  const cur = normalizeKey(currentClass || "");
+  const min = normalizeKey(minClass || "");
+  if (!min) return true;
+  if (!cur) return false;
+  if (Object.prototype.hasOwnProperty.call(rankMap || {}, cur) && Object.prototype.hasOwnProperty.call(rankMap || {}, min)) {
+    return Number(rankMap[cur]) >= Number(rankMap[min]);
+  }
+  return cur === min;
+}
+
+function localModelRequirementFor(modelId, policy) {
+  const reqs = policy && policy.local_model_requirements && typeof policy.local_model_requirements === "object"
+    ? policy.local_model_requirements
+    : {};
+  for (const k of localAliasSet(modelId)) {
+    if (reqs[k] && typeof reqs[k] === "object") return reqs[k];
+  }
+  return null;
+}
+
+function evaluateLocalModelHardwareEligibility(modelId, profile, policy, rankMap) {
+  const req = localModelRequirementFor(modelId, policy);
+  if (!req) {
+    return { eligible: true, reasons: [], requirement: null };
+  }
+
+  const reasons = [];
+  const minClass = normalizeKey(req.min_hardware_class || "");
+  if (minClass && !hardwareClassAtLeast(profile.hardware_class, minClass, rankMap)) {
+    reasons.push(`hardware_class_below_min:${minClass}`);
+  }
+  const minRam = Number(req.min_ram_gb);
+  if (Number.isFinite(minRam)) {
+    if (!Number.isFinite(Number(profile.ram_gb)) || Number(profile.ram_gb) < minRam) {
+      reasons.push(`ram_below_min:${minRam}`);
+    }
+  }
+  const minCpu = Number(req.min_cpu_threads);
+  if (Number.isFinite(minCpu)) {
+    if (!Number.isFinite(Number(profile.cpu_threads)) || Number(profile.cpu_threads) < minCpu) {
+      reasons.push(`cpu_below_min:${minCpu}`);
+    }
+  }
+  const minVram = Number(req.min_vram_gb);
+  if (Number.isFinite(minVram)) {
+    if (!Number.isFinite(Number(profile.gpu_vram_gb)) || Number(profile.gpu_vram_gb) < minVram) {
+      reasons.push(`vram_below_min:${minVram}`);
+    }
+  }
+
+  return {
+    eligible: reasons.length === 0,
+    reasons,
+    requirement: {
+      min_hardware_class: minClass || null,
+      min_ram_gb: Number.isFinite(minRam) ? minRam : null,
+      min_cpu_threads: Number.isFinite(minCpu) ? minCpu : null,
+      min_vram_gb: Number.isFinite(minVram) ? minVram : null
+    }
+  };
+}
+
+function buildHardwarePlan(cfg, allowlist) {
+  const policy = hardwarePlannerPolicyFromConfig(cfg);
+  const forcedClass = normalizeKey(process.env.ROUTER_HW_CLASS || "");
+  const profile = detectHardwareProfile();
+  const thresholds = policy.class_thresholds || [];
+  const rankMap = hardwareClassRankMap(thresholds);
+  const inferredClass = classifyHardwareClass(profile, thresholds);
+  profile.hardware_class = forcedClass || inferredClass || "unknown";
+  profile.hardware_class_source = forcedClass ? "env_forced" : "inferred";
+
+  const locals = (Array.isArray(allowlist) ? allowlist : [])
+    .filter((m) => isLocalOllamaModel(m))
+    .sort((a, b) => String(a).localeCompare(String(b)));
+  const evaluations = [];
+  for (const model of locals) {
+    const ev = evaluateLocalModelHardwareEligibility(model, profile, policy, rankMap);
+    evaluations.push({
+      model,
+      eligible: ev.eligible,
+      reasons: ev.reasons.slice(0),
+      requirement: ev.requirement
+    });
+  }
+  const eligibleLocals = evaluations.filter((e) => e.eligible).map((e) => e.model);
+  const blockedLocals = evaluations.filter((e) => !e.eligible);
+  const effectiveLocals = policy.enabled && policy.activate_recommended_locals
+    ? eligibleLocals.slice(0)
+    : locals.slice(0);
+
+  return {
+    enabled: policy.enabled === true,
+    activate_recommended_locals: policy.activate_recommended_locals === true,
+    thresholds: thresholds.map((t) => ({
+      id: normalizeKey(t.id || ""),
+      max_ram_gb: Number.isFinite(Number(t.max_ram_gb)) ? Number(t.max_ram_gb) : null,
+      max_cpu_threads: Number.isFinite(Number(t.max_cpu_threads)) ? Number(t.max_cpu_threads) : null,
+      max_vram_gb: Number.isFinite(Number(t.max_vram_gb)) ? Number(t.max_vram_gb) : null
+    })),
+    profile,
+    local_models_total: locals.length,
+    eligible_local_models: eligibleLocals,
+    blocked_local_models: blockedLocals,
+    effective_local_models: effectiveLocals
+  };
+}
+
+function hardwarePlanHash(plan) {
+  const payload = {
+    enabled: !!(plan && plan.enabled),
+    activate_recommended_locals: !!(plan && plan.activate_recommended_locals),
+    hardware_class: String(plan && plan.profile && plan.profile.hardware_class || ""),
+    cpu_threads: Number(plan && plan.profile && plan.profile.cpu_threads || 0),
+    ram_gb: Number(plan && plan.profile && plan.profile.ram_gb || 0),
+    gpu_vram_gb: Number(plan && plan.profile && plan.profile.gpu_vram_gb || 0),
+    effective_local_models: Array.isArray(plan && plan.effective_local_models) ? plan.effective_local_models.slice(0).sort() : [],
+    blocked_local_models: Array.isArray(plan && plan.blocked_local_models)
+      ? plan.blocked_local_models.map((x) => ({
+          model: String(x && x.model || ""),
+          reasons: Array.isArray(x && x.reasons) ? x.reasons.slice(0).sort() : []
+        })).sort((a, b) => a.model.localeCompare(b.model))
+      : []
+  };
+  return crypto.createHash("sha1").update(JSON.stringify(payload)).digest("hex").slice(0, 16);
+}
+
+function applyHardwarePlanState(plan) {
+  const prev = loadJson(HARDWARE_PLAN_PATH, {});
+  const prevHash = String(prev && prev.plan_hash || "");
+  const nextHash = hardwarePlanHash(plan);
+  const payload = {
+    ...plan,
+    plan_hash: nextHash,
+    updated_at: nowIso()
+  };
+  saveJson(HARDWARE_PLAN_PATH, payload);
+  if (prevHash !== nextHash) {
+    appendJsonl(DECISIONS_LOG, {
+      ts: nowIso(),
+      type: "hardware_plan_updated",
+      previous_hash: prevHash || null,
+      new_hash: nextHash,
+      hardware_class: String(plan && plan.profile && plan.profile.hardware_class || ""),
+      effective_local_models: Array.isArray(plan && plan.effective_local_models) ? plan.effective_local_models.slice(0) : []
+    });
+  }
+  return payload;
+}
+
+function resolveHardwarePlan(cfg, allowlist) {
+  const built = buildHardwarePlan(cfg, allowlist);
+  return applyHardwarePlanState(built);
+}
+
+function localHardwareFilterEnabled(plan) {
+  return !!(plan && plan.enabled === true && plan.activate_recommended_locals === true);
+}
+
+function effectiveLocalModelSet(plan) {
+  const set = new Set();
+  const arr = Array.isArray(plan && plan.effective_local_models) ? plan.effective_local_models : [];
+  for (const model of arr) {
+    const key = String(model || "").trim();
+    if (!key) continue;
+    set.add(key);
+  }
+  return set;
+}
+
+function blockedLocalReasonMap(plan) {
+  const out = {};
+  const arr = Array.isArray(plan && plan.blocked_local_models) ? plan.blocked_local_models : [];
+  for (const item of arr) {
+    const model = String(item && item.model || "").trim();
+    if (!model) continue;
+    out[model] = Array.isArray(item && item.reasons) ? item.reasons.slice(0) : [];
+  }
+  return out;
+}
+
+function hardwarePlanSummary(plan) {
+  return {
+    enabled: !!(plan && plan.enabled === true),
+    active_filter: localHardwareFilterEnabled(plan),
+    hardware_class: String(plan && plan.profile && plan.profile.hardware_class || ""),
+    hardware_class_source: String(plan && plan.profile && plan.profile.hardware_class_source || ""),
+    profile_source: String(plan && plan.profile && plan.profile.source || ""),
+    cpu_threads: Number.isFinite(Number(plan && plan.profile && plan.profile.cpu_threads))
+      ? Number(plan.profile.cpu_threads)
+      : null,
+    ram_gb: Number.isFinite(Number(plan && plan.profile && plan.profile.ram_gb))
+      ? Number(plan.profile.ram_gb)
+      : null,
+    gpu_vram_gb: Number.isFinite(Number(plan && plan.profile && plan.profile.gpu_vram_gb))
+      ? Number(plan.profile.gpu_vram_gb)
+      : null,
+    local_models_total: Number(plan && plan.local_models_total || 0),
+    effective_local_models: Array.isArray(plan && plan.effective_local_models) ? plan.effective_local_models.slice(0) : [],
+    blocked_local_models: Array.isArray(plan && plan.blocked_local_models)
+      ? plan.blocked_local_models.map((item) => ({
+          model: String(item && item.model || ""),
+          reasons: Array.isArray(item && item.reasons) ? item.reasons.slice(0) : []
+        }))
+      : [],
+    plan_hash: String(plan && plan.plan_hash || "")
+  };
 }
 
 function normalizeRuntimeScope(v) {
@@ -1446,6 +1811,14 @@ function saveRouteState(s) {
 function routeDecision({ risk, complexity, intent, task, mode, forceModel, capability, tokensEst }) {
   const cfg = readConfig();
   const allowlist = modelsFromAllowlist(cfg);
+  const hardwarePlan = resolveHardwarePlan(cfg, allowlist);
+  const hardwareFilterActive = localHardwareFilterEnabled(hardwarePlan);
+  const eligibleLocals = effectiveLocalModelSet(hardwarePlan);
+  const localModelAllowed = (modelId) => {
+    if (!isLocalOllamaModel(modelId)) return true;
+    if (!hardwareFilterActive) return true;
+    return eligibleLocals.has(String(modelId || ""));
+  };
   const requestedRisk = String(risk || "medium");
   const requestedComplexity = String(complexity || "medium");
   const adjusted = applyModeAdjustments(mode, {
@@ -1490,6 +1863,7 @@ function routeDecision({ risk, complexity, intent, task, mode, forceModel, capab
 
   for (const m of candidates) {
     tried.push(m);
+    if (!localModelAllowed(m)) continue;
     if (isBanned(m)) continue;
     if (isLocalOllamaModel(m)) {
       const h = health(m, false, { forRouting: true });
@@ -1561,12 +1935,13 @@ function routeDecision({ risk, complexity, intent, task, mode, forceModel, capab
     }
   }
 
-  if (!selected && rulePick.prefer_model && !isBanned(rulePick.prefer_model)) {
+  if (!selected && rulePick.prefer_model && !isBanned(rulePick.prefer_model) && localModelAllowed(rulePick.prefer_model)) {
     selected = rulePick.prefer_model;
     reason = "fallback_prefer_model";
   }
   if (!selected) {
     for (const m of allowlist) {
+      if (!localModelAllowed(m)) continue;
       if (!isBanned(m)) {
         selected = m;
         reason = "last_ditch_allowlist";
@@ -1634,6 +2009,7 @@ function routeDecision({ risk, complexity, intent, task, mode, forceModel, capab
       selected_model_tokens_est: selectedModelTokensEst,
       selected_model_multiplier: selectedRank ? selectedRank.token_multiplier : null
     },
+    hardware_plan: hardwarePlanSummary(hardwarePlan),
     tried: tried.slice(0, 64),
     escalation_chain: ranked.slice(0, 4).map(x => x.model),
     candidate_scores: ranked.slice(0, 6)
@@ -1685,6 +2061,15 @@ function routeDecision({ risk, complexity, intent, task, mode, forceModel, capab
 function doctorReport({ risk, complexity, intent, task, capability, includeModels }) {
   const cfg = readConfig();
   const allowlist = modelsFromAllowlist(cfg);
+  const hardwarePlan = resolveHardwarePlan(cfg, allowlist);
+  const hardwareFilterActive = localHardwareFilterEnabled(hardwarePlan);
+  const eligibleLocals = effectiveLocalModelSet(hardwarePlan);
+  const blockedReasons = blockedLocalReasonMap(hardwarePlan);
+  const localModelAllowed = (modelId) => {
+    if (!isLocalOllamaModel(modelId)) return true;
+    if (!hardwareFilterActive) return true;
+    return eligibleLocals.has(String(modelId || ""));
+  };
   const explicit = Array.isArray(includeModels)
     ? includeModels.map(m => String(m || "").trim()).filter(Boolean)
     : [];
@@ -1718,6 +2103,12 @@ function doctorReport({ risk, complexity, intent, task, capability, includeModel
     }
 
     if (item.local) {
+      if (!localModelAllowed(model)) {
+        item.eligible = false;
+        item.reasons.push("local_hardware_ineligible");
+        const hwReasons = blockedReasons[model] || [];
+        if (hwReasons.length) item.reasons.push(...hwReasons.map((r) => `hardware:${r}`));
+      }
       const h = health(model, false, { forRouting: true });
       localHealth[model] = h;
       item.local_health = {
@@ -1800,6 +2191,7 @@ function doctorReport({ risk, complexity, intent, task, capability, includeModel
       t1_local_max_latency_ms_default: T1_LOCAL_MAX_LATENCY_MS,
       t1_local_max_latency_ms_selected: localBestLatencyMax,
       t1_local_min_outcome_score: T1_LOCAL_MIN_OUTCOME_SCORE,
+      hardware_plan: hardwarePlanSummary(hardwarePlan),
       budget: {
         enabled: budgetState.enabled === true,
         available: budgetState.available === true,
@@ -1821,6 +2213,15 @@ function doctorReport({ risk, complexity, intent, task, capability, includeModel
 function cacheSummaryReport({ risk, complexity, intent, task, capability, forRouting }) {
   const cfg = readConfig();
   const allowlist = modelsFromAllowlist(cfg);
+  const hardwarePlan = resolveHardwarePlan(cfg, allowlist);
+  const hardwareFilterActive = localHardwareFilterEnabled(hardwarePlan);
+  const eligibleLocals = effectiveLocalModelSet(hardwarePlan);
+  const blockedReasons = blockedLocalReasonMap(hardwarePlan);
+  const localModelAllowed = (modelId) => {
+    if (!isLocalOllamaModel(modelId)) return true;
+    if (!hardwareFilterActive) return true;
+    return eligibleLocals.has(String(modelId || ""));
+  };
   const role = inferRole(intent, task);
   const capabilityKey = normalizeCapabilityKey(capability || inferCapability(intent, task, role));
   const tier = inferTier(risk, complexity);
@@ -1851,6 +2252,12 @@ function cacheSummaryReport({ risk, complexity, intent, task, capability, forRou
       eligible = false;
       reasons.push("banned");
     }
+    if (!localModelAllowed(model)) {
+      eligible = false;
+      reasons.push("local_hardware_ineligible");
+      const hwReasons = blockedReasons[model] || [];
+      if (hwReasons.length) reasons.push(...hwReasons.map((r) => `hardware:${r}`));
+    }
     if (!rec) {
       eligible = false;
       reasons.push("missing_health");
@@ -1873,6 +2280,7 @@ function cacheSummaryReport({ risk, complexity, intent, task, capability, forRou
       source_runtime: sourceRuntime,
       stale,
       eligible,
+      hardware_allowed: localModelAllowed(model),
       available: availability === true ? true : (availability === false ? false : null),
       probe_blocked: !!(rec && rec.probe_blocked === true),
       timeout: !!(rec && rec.timeout === true),
@@ -1961,6 +2369,7 @@ function cacheSummaryReport({ risk, complexity, intent, task, capability, forRou
       token_cap: budgetState.token_cap,
       used_est: budgetState.used_est
     },
+    hardware_plan: hardwarePlanSummary(hardwarePlan),
     top_failures: topFailures,
     results: rows
   };
@@ -2049,6 +2458,17 @@ function cmdCacheSummary() {
   printJson(cacheSummaryReport({ risk, complexity, intent, task, capability, forRouting }));
 }
 
+function cmdHardwarePlan() {
+  const cfg = readConfig();
+  const allowlist = modelsFromAllowlist(cfg);
+  const plan = resolveHardwarePlan(cfg, allowlist);
+  printJson({
+    ts: nowIso(),
+    type: "hardware_plan",
+    ...plan
+  });
+}
+
 function main() {
   const cmd = process.argv[2] || "";
   if (cmd === "route") return cmdRoute();
@@ -2059,6 +2479,7 @@ function main() {
   if (cmd === "stats") return cmdStats();
   if (cmd === "doctor") return cmdDoctor();
   if (cmd === "cache-summary") return cmdCacheSummary();
+  if (cmd === "hardware-plan") return cmdHardwarePlan();
 
   console.log("Usage:");
   console.log("  node systems/routing/model_router.js route --risk=low|medium|high --complexity=low|medium|high [--intent=..] [--task=..] [--tokens_est=N] [--capability=..] [--mode=normal|narrative|creative|hyper-creative|deep-thinker]");
@@ -2069,6 +2490,7 @@ function main() {
   console.log("  node systems/routing/model_router.js stats");
   console.log("  node systems/routing/model_router.js doctor --risk=low|medium|high --complexity=low|medium|high [--intent=..] [--task=..] [--capability=..] [--candidate=<model>]");
   console.log("  node systems/routing/model_router.js cache-summary [--for-routing=1|0] [--risk=low|medium|high] [--complexity=low|medium|high] [--intent=..] [--task=..] [--capability=..]");
+  console.log("  node systems/routing/model_router.js hardware-plan");
 }
 
 if (require.main === module) main();
@@ -2082,5 +2504,6 @@ module.exports = {
   inferRole,
   inferTier,
   modelOutcomeStats,
-  cacheSummaryReport
+  cacheSummaryReport,
+  resolveHardwarePlan
 };

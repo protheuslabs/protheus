@@ -54,6 +54,9 @@ STATE_BACKUP_ENABLED=1 node systems/spine/spine.js daily [YYYY-MM-DD]
 # Optional: disable daily local probe-all refresh (enabled by default)
 SPINE_ROUTER_PROBE_ALL=0 node systems/spine/spine.js daily [YYYY-MM-DD]
 
+# Routing hardware planner snapshot (local eligibility by CPU/RAM/VRAM class)
+node systems/routing/model_router.js hardware-plan
+
 # Optional: increase/decrease score-only evidence attempts per daily run (default 2, max 6)
 AUTONOMY_EVIDENCE_RUNS=3 node systems/spine/spine.js daily [YYYY-MM-DD]
 
