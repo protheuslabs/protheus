@@ -161,6 +161,12 @@ function main() {
     ["strategy_execute_guard.js", "run", "status", "--days"]
   );
 
+  // strategy_mode_governor.js applies deterministic score_only/canary/execute transitions.
+  checkScript(
+    "systems/autonomy/strategy_mode_governor.js",
+    ["strategy_mode_governor.js", "run", "status", "--days"]
+  );
+
   // emergency_stop.js provides one-command kill-switch for autonomy/routing/actuation.
   checkScript(
     "systems/security/emergency_stop.js",
@@ -216,6 +222,12 @@ function main() {
     ["skill_quarantine.js", "inspect", "verify", "hash-tree"]
   );
 
+  // skill_install_enforcer.js blocks direct installer bypasses outside safe wrapper.
+  checkScript(
+    "systems/security/skill_install_enforcer.js",
+    ["skill_install_enforcer.js", "run", "--strict"]
+  );
+
   // integrity_kernel.js enforces tamper-evident hashes for security/directive policy files.
   checkScript(
     "systems/security/integrity_kernel.js",
@@ -232,6 +244,12 @@ function main() {
   checkScript(
     "systems/ops/state_backup.js",
     ["state_backup.js", "run", "list", "--dest", "--profile"]
+  );
+
+  // state_cleanup.js provides non-destructive stale runtime-state cleanup with allowlisted policy rules.
+  checkScript(
+    "systems/ops/state_cleanup.js",
+    ["state_cleanup.js", "run", "profiles", "--apply", "--dry-run"]
   );
 
   console.log("contract_check: OK");

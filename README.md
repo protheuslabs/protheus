@@ -62,6 +62,11 @@ node systems/ops/state_backup.js run --dry-run
 node systems/ops/state_backup.js run --dest=/tmp/protheus-state-backup
 node systems/ops/state_backup.js list [--limit=10]
 
+# Non-destructive stale runtime-state cleanup (dry-run by default)
+node systems/ops/state_cleanup.js run
+node systems/ops/state_cleanup.js run --apply --max-delete=200
+node systems/ops/state_cleanup.js profiles
+
 # Heartbeat-safe trigger (throttled, idempotent)
 node systems/spine/heartbeat_trigger.js run [--mode=daily|eyes] [--min-hours=N] [--max-eyes=N]
 

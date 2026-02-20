@@ -1,0 +1,67 @@
+{
+  "version": "1.0",
+  "default_profile": "runtime_churn",
+  "profiles": {
+    "runtime_churn": {
+      "description": "Cleanup policy for stale generated runtime-state artifacts.",
+      "max_delete_per_run": 200,
+      "rules": [
+        {
+          "path": "state/autonomy/runs",
+          "max_age_hours": 336,
+          "suffixes": [".jsonl"]
+        },
+        {
+          "path": "state/autonomy/experiments",
+          "max_age_hours": 336,
+          "suffixes": [".jsonl"]
+        },
+        {
+          "path": "state/autonomy/receipts",
+          "max_age_hours": 336,
+          "suffixes": [".jsonl"]
+        },
+        {
+          "path": "state/autonomy/daily_budget",
+          "max_age_hours": 336,
+          "suffixes": [".json"]
+        },
+        {
+          "path": "state/actuation/receipts",
+          "max_age_hours": 720,
+          "suffixes": [".jsonl"]
+        },
+        {
+          "path": "state/sensory/receipts",
+          "max_age_hours": 336,
+          "suffixes": [".jsonl"]
+        },
+        {
+          "path": "state/routing/model_health/host",
+          "max_age_hours": 336,
+          "suffixes": [".json"]
+        },
+        {
+          "path": "state/routing/deep_thinker_receipts",
+          "max_age_hours": 720,
+          "suffixes": [".jsonl"]
+        },
+        {
+          "path": "state/routing/model_catalog_handoffs",
+          "max_age_hours": 720,
+          "suffixes": [".json"]
+        },
+        {
+          "path": "state/routing/model_catalog_proposals",
+          "max_age_hours": 720,
+          "suffixes": [".json"]
+        },
+        {
+          "path": "state/routing/model_catalog_trials",
+          "max_age_hours": 720,
+          "suffixes": [".json"]
+        }
+      ]
+    }
+  }
+}
