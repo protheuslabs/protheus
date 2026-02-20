@@ -203,6 +203,12 @@ function main() {
     ["route_execute.js", "--task"]
   );
 
+  // router_budget_calibration.js calibrates routing token multipliers with rollback support.
+  checkScript(
+    "systems/routing/router_budget_calibration.js",
+    ["router_budget_calibration.js", "run", "apply", "rollback"]
+  );
+
   // route_task.js is the decision contract consumed by route_execute.
   checkUsage(
     "systems/routing/route_task.js",
@@ -246,6 +252,12 @@ function main() {
     ["architecture_guard.js", "run", "--strict"]
   );
 
+  // habit_hygiene_guard.js prevents arbitrary routine dumps in habits layer.
+  checkScript(
+    "systems/security/habit_hygiene_guard.js",
+    ["habit_hygiene_guard.js", "run", "--strict"]
+  );
+
   // request_ingress.js stamps source/action and signed envelopes for guarded command ingress.
   checkScript(
     "systems/security/request_ingress.js",
@@ -268,6 +280,30 @@ function main() {
   checkScript(
     "systems/ops/state_cleanup.js",
     ["state_cleanup.js", "run", "profiles", "--apply", "--dry-run"]
+  );
+
+  // spawn_broker.js is centralized spawn allocation/budget control for module cell pools.
+  checkScript(
+    "systems/spawn/spawn_broker.js",
+    ["spawn_broker.js", "status", "request", "release", "--module", "--requested_cells"]
+  );
+
+  // reflex_dispatcher.js manages hardware-capped low-risk reflex cell pool + worker dispatch.
+  checkScript(
+    "systems/reflex/reflex_dispatcher.js",
+    ["reflex_dispatcher.js", "status", "plan", "run", "--demand"]
+  );
+
+  // reflex_worker.js executes one bounded reflex task through router route_class=reflex.
+  checkScript(
+    "systems/reflex/reflex_worker.js",
+    ["reflex_worker.js", "once", "--task"]
+  );
+
+  // strategy_learner.js grades strategies from outcomes (theory/trial/validated/scaled).
+  checkScript(
+    "systems/strategy/strategy_learner.js",
+    ["strategy_learner.js", "run", "status", "--days"]
   );
 
   console.log("contract_check: OK");

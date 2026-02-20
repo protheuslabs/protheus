@@ -453,6 +453,7 @@ function main() {
     "systems/routing/route_execute.js",
     "systems/routing/route_task.js",
     "systems/routing/model_router.js",
+    "systems/routing/router_budget_calibration.js",
     "habits/scripts/queue_gc.js",
     "habits/scripts/proposal_queue.js",
     "config/security_integrity_policy.json"
@@ -981,7 +982,73 @@ function main() {
     // 3) sensory digest + anomalies
     run("node", ["habits/scripts/sensory_digest.js", "daily", dateStr]);
 
-    // 4) optional external state backup (outside git workspace)
+    // 4) routing budget calibration report/apply from recent telemetry.
+    if (String(process.env.SPINE_ROUTER_BUDGET_CALIBRATION || "1") !== "0") {
+      const calibrationArgs = [
+        "systems/routing/router_budget_calibration.js",
+        "run",
+        `--days=${Math.max(1, Number(process.env.SPINE_ROUTER_BUDGET_CALIBRATION_DAYS || 7) || 7)}`
+      ];
+      if (String(process.env.SPINE_ROUTER_BUDGET_CALIBRATION_APPLY || "") === "1") {
+        calibrationArgs.push("--apply=1");
+      }
+      const approvalNote = String(process.env.SPINE_ROUTER_BUDGET_CALIBRATION_APPROVAL_NOTE || "").trim();
+      if (approvalNote) {
+        calibrationArgs.push(`--approval-note=${approvalNote}`);
+      }
+      if (String(process.env.SPINE_ROUTER_BUDGET_CALIBRATION_BREAK_GLASS || "") === "1") {
+        calibrationArgs.push("--break-glass=1");
+      }
+
+      const calibration = runJson("node", calibrationArgs);
+      const payload = calibration.payload && typeof calibration.payload === "object" ? calibration.payload : null;
+      const applyResult = payload && payload.apply_result && typeof payload.apply_result === "object"
+        ? payload.apply_result
+        : null;
+      const changed = payload ? Number(payload.changed_models || 0) : null;
+      const applied = applyResult ? Number(applyResult.applied || 0) : 0;
+      const strict = String(process.env.SPINE_ROUTER_BUDGET_CALIBRATION_STRICT || "0") === "1";
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_router_budget_calibration",
+        mode,
+        date: dateStr,
+        ok: calibration.ok && !!payload,
+        changed_models: changed,
+        applied_models: applied,
+        days: payload && payload.options ? Number(payload.options.days || 0) : null,
+        actual_samples_total: payload && payload.telemetry ? Number(payload.telemetry.actual_samples_total || 0) : null,
+        requests_total: payload && payload.telemetry ? Number(payload.telemetry.requests_total || 0) : null,
+        reason: (!calibration.ok || !payload)
+          ? String(calibration.stderr || calibration.stdout || `router_budget_calibration_exit_${calibration.code}`).slice(0, 180)
+          : null
+      });
+      if (!calibration.ok || !payload) {
+        const reason = String(calibration.stderr || calibration.stdout || "unknown").slice(0, 120);
+        console.log(` router_budget_calibration unavailable reason=${reason}`);
+        if (strict) process.exit(calibration.code || 1);
+      } else if (applyResult && applyResult.ok === false) {
+        const reason = String(applyResult.error || "apply_failed").slice(0, 120);
+        console.log(` router_budget_calibration apply_fail reason=${reason}`);
+        if (strict) process.exit(applyResult.code || 1);
+      } else {
+        const modeMsg = String(process.env.SPINE_ROUTER_BUDGET_CALIBRATION_APPLY || "") === "1" ? "apply" : "report";
+        console.log(` router_budget_calibration mode=${modeMsg} changed=${changed == null ? "n/a" : changed} applied=${applied}`);
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_router_budget_calibration_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "SPINE_ROUTER_BUDGET_CALIBRATION",
+        flag_value: String(process.env.SPINE_ROUTER_BUDGET_CALIBRATION || "")
+      });
+      console.log(" router_budget_calibration skipped reason=feature_flag_disabled flag=SPINE_ROUTER_BUDGET_CALIBRATION");
+    }
+
+    // 5) optional external state backup (outside git workspace)
     if (String(process.env.STATE_BACKUP_ENABLED || "") === "1") {
       const backupArgs = ["systems/ops/state_backup.js", "run", `--date=${dateStr}`];
       if (String(process.env.STATE_BACKUP_DEST || "").trim()) {
