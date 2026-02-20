@@ -14,7 +14,7 @@ function writeJson(filePath, obj) {
 
 function run() {
   const repoRoot = path.resolve(__dirname, '..', '..', '..');
-  const scriptPath = path.join(repoRoot, 'habits', 'scripts', 'eyes_intake.js');
+  const scriptPath = path.join(repoRoot, 'systems', 'sensory', 'eyes_intake.js');
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'eyes-intake-test-'));
   const configPath = path.join(tmp, 'external_eyes.json');
   const registryPath = path.join(tmp, 'registry.json');

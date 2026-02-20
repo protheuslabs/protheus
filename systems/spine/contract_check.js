@@ -76,9 +76,9 @@ function main() {
     ["external_eyes.js", "run", "score", "evolve", "list"]
   );
 
-  // eyes_intake.js should enforce directive-linked eye creation in habits layer.
+  // eyes_intake.js should enforce directive-linked eye creation in sensory layer.
   checkScript(
-    "habits/scripts/eyes_intake.js",
+    "systems/sensory/eyes_intake.js",
     ["eyes_intake.js", "create", "validate", "list-directives"]
   );
 
