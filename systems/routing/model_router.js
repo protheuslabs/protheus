@@ -154,26 +154,9 @@ function hardwarePlannerPolicyFromConfig(cfg) {
       max_vram_gb: Number(entry && entry.max_vram_gb)
     };
   });
-  const defaultLocalReqs = {
-    "ollama/smallthinker": {
-      min_hardware_class: "tiny",
-      min_ram_gb: 4,
-      min_cpu_threads: 2
-    },
-    "ollama/qwen3:4b": {
-      min_hardware_class: "small",
-      min_ram_gb: 8,
-      min_cpu_threads: 4
-    },
-    "ollama/gemma3:4b": {
-      min_hardware_class: "small",
-      min_ram_gb: 8,
-      min_cpu_threads: 4
-    }
-  };
   const localReqs = raw.local_model_requirements && typeof raw.local_model_requirements === "object"
     ? raw.local_model_requirements
-    : defaultLocalReqs;
+    : {};
 
   return {
     enabled: toBool(raw.enabled, true),
@@ -1437,6 +1420,197 @@ function localAliasSet(modelId) {
   return Array.from(set);
 }
 
+function modelVariantPolicyFromConfig(cfg) {
+  const raw = cfg && cfg.routing && cfg.routing.model_variant_policy && typeof cfg.routing.model_variant_policy === "object"
+    ? cfg.routing.model_variant_policy
+    : {};
+  const roles = Array.isArray(raw.roles) ? raw.roles.map((r) => normalizeKey(r)).filter(Boolean) : ["logic", "planning"];
+  const variants = raw.variants && typeof raw.variants === "object"
+    ? raw.variants
+    : { "ollama/kimi-k2.5:cloud": "ollama/kimi-k2.5:thinking" };
+  return {
+    enabled: toBool(raw.enabled, true),
+    min_tier: toBoundedNumber(raw.min_tier, 3, 1, 3),
+    roles,
+    require_outcome_score_gain: toBool(raw.require_outcome_score_gain, true),
+    min_outcome_score_delta: toBoundedNumber(raw.min_outcome_score_delta, 2, -50, 50),
+    max_negative_score_delta: toBoundedNumber(raw.max_negative_score_delta, -8, -100, 100),
+    auto_return_to_base: toBool(raw.auto_return_to_base, true),
+    variants
+  };
+}
+
+function variantRoleAllowed(role, policy) {
+  const roles = Array.isArray(policy && policy.roles) ? policy.roles : [];
+  if (!roles.length) return true;
+  return roles.includes(normalizeKey(role || ""));
+}
+
+function variantTargetForBase(baseModel, policy) {
+  const map = policy && policy.variants && typeof policy.variants === "object" ? policy.variants : {};
+  for (const key of localAliasSet(baseModel)) {
+    if (!map[key]) continue;
+    const target = String(map[key] || "").trim();
+    if (target) return target;
+  }
+  return "";
+}
+
+function maybeApplyVariantSelection({
+  cfg,
+  selectedModel,
+  allowlist,
+  tier,
+  role,
+  capability,
+  outcomeStats,
+  localHealth,
+  localModelAllowed
+}) {
+  const policy = modelVariantPolicyFromConfig(cfg);
+  const summaryBase = {
+    enabled: policy.enabled === true,
+    applied: false,
+    base_model: String(selectedModel || ""),
+    variant_model: null,
+    reason: "not_considered",
+    min_tier: Number(policy.min_tier || 3),
+    roles: Array.isArray(policy.roles) ? policy.roles.slice(0) : [],
+    require_outcome_score_gain: policy.require_outcome_score_gain === true,
+    min_outcome_score_delta: Number(policy.min_outcome_score_delta || 0),
+    score_delta: null,
+    auto_return_to_base: policy.auto_return_to_base === true
+  };
+
+  if (!policy.enabled) {
+    return {
+      selected_model: selectedModel,
+      base_model: selectedModel,
+      summary: { ...summaryBase, reason: "disabled" }
+    };
+  }
+  if (!selectedModel) {
+    return {
+      selected_model: selectedModel,
+      base_model: selectedModel,
+      summary: { ...summaryBase, reason: "no_base_model" }
+    };
+  }
+  if (Number(tier) < Number(policy.min_tier || 3)) {
+    return {
+      selected_model: selectedModel,
+      base_model: selectedModel,
+      summary: { ...summaryBase, reason: "tier_not_eligible" }
+    };
+  }
+  if (!variantRoleAllowed(role, policy)) {
+    return {
+      selected_model: selectedModel,
+      base_model: selectedModel,
+      summary: { ...summaryBase, reason: "role_not_eligible" }
+    };
+  }
+
+  const variantModel = variantTargetForBase(selectedModel, policy);
+  if (!variantModel || normalizeKey(variantModel) === normalizeKey(selectedModel)) {
+    return {
+      selected_model: selectedModel,
+      base_model: selectedModel,
+      summary: { ...summaryBase, reason: "no_variant_mapping" }
+    };
+  }
+  if (!Array.isArray(allowlist) || !allowlist.includes(variantModel)) {
+    return {
+      selected_model: selectedModel,
+      base_model: selectedModel,
+      summary: { ...summaryBase, variant_model: variantModel, reason: "variant_not_in_allowlist" }
+    };
+  }
+  if (isBanned(variantModel)) {
+    return {
+      selected_model: selectedModel,
+      base_model: selectedModel,
+      summary: { ...summaryBase, variant_model: variantModel, reason: "variant_banned" }
+    };
+  }
+  if (typeof localModelAllowed === "function" && !localModelAllowed(variantModel)) {
+    return {
+      selected_model: selectedModel,
+      base_model: selectedModel,
+      summary: { ...summaryBase, variant_model: variantModel, reason: "variant_hardware_ineligible" }
+    };
+  }
+
+  if (isLocalOllamaModel(variantModel)) {
+    const h = health(variantModel, false, { forRouting: true });
+    if (localHealth && typeof localHealth === "object") localHealth[variantModel] = h;
+    if (h.banned === true) {
+      return {
+        selected_model: selectedModel,
+        base_model: selectedModel,
+        summary: { ...summaryBase, variant_model: variantModel, reason: "variant_local_banned" }
+      };
+    }
+    const probeBlocked = h && h.probe_blocked === true;
+    if (!probeBlocked) {
+      if (h.available !== true) {
+        return {
+          selected_model: selectedModel,
+          base_model: selectedModel,
+          summary: { ...summaryBase, variant_model: variantModel, reason: "variant_local_unavailable" }
+        };
+      }
+      if (h.follows_instructions === false && h.timeout !== true) {
+        return {
+          selected_model: selectedModel,
+          base_model: selectedModel,
+          summary: { ...summaryBase, variant_model: variantModel, reason: "variant_local_instruction_fail" }
+        };
+      }
+    }
+  }
+
+  const baseScore = outcomeScoreForModel(selectedModel, outcomeStats, { capability, role });
+  const variantScore = outcomeScoreForModel(variantModel, outcomeStats, { capability, role });
+  const scoreDelta = Number((variantScore - baseScore).toFixed(2));
+  if (scoreDelta < Number(policy.max_negative_score_delta || -8)) {
+    return {
+      selected_model: selectedModel,
+      base_model: selectedModel,
+      summary: {
+        ...summaryBase,
+        variant_model: variantModel,
+        score_delta: scoreDelta,
+        reason: "variant_outcome_too_negative"
+      }
+    };
+  }
+  if (policy.require_outcome_score_gain === true && scoreDelta < Number(policy.min_outcome_score_delta || 0)) {
+    return {
+      selected_model: selectedModel,
+      base_model: selectedModel,
+      summary: {
+        ...summaryBase,
+        variant_model: variantModel,
+        score_delta: scoreDelta,
+        reason: "variant_outcome_gain_not_met"
+      }
+    };
+  }
+
+  return {
+    selected_model: variantModel,
+    base_model: selectedModel,
+    summary: {
+      ...summaryBase,
+      applied: true,
+      variant_model: variantModel,
+      score_delta: scoreDelta,
+      reason: "variant_applied"
+    }
+  };
+}
+
 function modelProfilesFromConfig(cfg) {
   const profiles = cfg?.routing?.model_profiles;
   if (profiles && typeof profiles === "object") return profiles;
@@ -1950,11 +2124,42 @@ function routeDecision({ risk, complexity, intent, task, mode, forceModel, capab
     }
   }
 
+  const variantPick = maybeApplyVariantSelection({
+    cfg,
+    selectedModel: selected,
+    allowlist,
+    tier,
+    role,
+    capability: capabilityKey,
+    outcomeStats,
+    localHealth,
+    localModelAllowed
+  });
+  if (variantPick.summary && variantPick.summary.applied === true && variantPick.selected_model) {
+    selected = variantPick.selected_model;
+    reason = `${reason}|${variantPick.summary.reason}`;
+    if (!tried.includes(selected)) tried.push(selected);
+  }
+
   const state = getRouteState();
   const prev = state.last_selected_model || null;
   const modelChanged = !!(selected && prev && selected !== prev);
 
-  const selectedRank = selected ? (ranked.find(x => x.model === selected) || null) : null;
+  let selectedRank = selected ? (ranked.find(x => x.model === selected) || null) : null;
+  if (!selectedRank && selected) {
+    selectedRank = rankCandidate(selected, {
+      preferModel: rulePick.prefer_model,
+      role,
+      capability: capabilityKey,
+      tier,
+      profiles,
+      outcomeStats,
+      localHealth,
+      budgetState,
+      budgetProjected,
+      requestTokens: requestTokensEst
+    });
+  }
   const selectedModelTokensEst = selectedRank && Number.isFinite(Number(selectedRank.model_tokens_est))
     ? Number(selectedRank.model_tokens_est)
     : null;
@@ -2009,6 +2214,10 @@ function routeDecision({ risk, complexity, intent, task, mode, forceModel, capab
       selected_model_tokens_est: selectedModelTokensEst,
       selected_model_multiplier: selectedRank ? selectedRank.token_multiplier : null
     },
+    variant_routing: variantPick.summary,
+    post_task_return_model: variantPick.summary && variantPick.summary.applied === true && variantPick.summary.auto_return_to_base === true
+      ? String(variantPick.base_model || "")
+      : null,
     hardware_plan: hardwarePlanSummary(hardwarePlan),
     tried: tried.slice(0, 64),
     escalation_chain: ranked.slice(0, 4).map(x => x.model),
@@ -2185,6 +2394,7 @@ function doctorReport({ risk, complexity, intent, task, capability, includeModel
       slot: rulePick.slot || null,
       prefer_model: rulePick.prefer_model || null,
       fallback_slot: rulePick.fallback_slot || null,
+      variant_policy: modelVariantPolicyFromConfig(cfg),
       allowlist_count: allowlist.length,
       explicit_candidate_count: explicit.length,
       t1_local_first: T1_LOCAL_FIRST,
@@ -2340,6 +2550,7 @@ function cacheSummaryReport({ risk, complexity, intent, task, capability, forRou
     type: "cache_summary",
     for_routing: !!forRouting,
     current_runtime: currentRuntime,
+    variant_policy: modelVariantPolicyFromConfig(cfg),
     role,
     capability: capabilityKey,
     source_runtime_order: Array.isArray(cacheState.order) ? cacheState.order.slice(0, 4) : [],
