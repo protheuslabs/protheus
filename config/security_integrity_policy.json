@@ -19,7 +19,7 @@
     "config/directives/T1_generational_wealth_v1.yaml": "def757e86e8136c75766e35098414c8b8ca7b1f75707c4c9c3f474b35da78107",
     "config/directives/T1_make_jay_billionaire_v1.yaml": "e9a9082270763dc429b1b032c7f7c606c4a47e7cc252a3f501ac1ef975c7deb0",
     "config/directives/T1_northstars.yaml": "dbababba9f2dc49b0d24ada4a1a70117cdafe0767ba2ec4a69ec7f80c1721610",
-    "lib/directive_resolver.js": "a6e4c72a24ae95418a35f24c6be282b31ce85ec5194919a6f5f0b9297046d718",
+    "lib/directive_resolver.js": "9e78016ee4d5443a103b94d619b327d9390b69ababa5ffc73be0ff7b98f6e192",
     "systems/security/architecture_guard.js": "7c8f1a8dcc61e3cffc73283a3325cb3cab5d679981a8f169a49cedbe4ffa7c41",
     "systems/security/directive_gate.js": "c4b76b960a7bc68c568d1f7d0e953224666aa7311b81c814a89a1395aaa5ca1c",
     "systems/security/emergency_stop.js": "1fac350b1bd90017cf6a5db2eb25522a4ff4bbca39114772852a404be242bf13",
@@ -29,7 +29,7 @@
     "systems/security/skill_install_enforcer.js": "f97f0310cc2f8d88fbe79fc8430ef6341de87dbe3ada0de2742bd8f6ff035925",
     "systems/security/skill_quarantine.js": "4fd57a207a558a0fc079a2ce2477100bb9e5d0aec15b6a4bcbd7a7ae71963947"
   },
-  "sealed_at": "2026-02-20T04:26:46.568Z",
+  "sealed_at": "2026-02-20T04:31:12.950Z",
   "sealed_by": "jay",
-  "last_approval_note": "security: add key-id + replay nonce guard for remote direct apply"
+  "last_approval_note": "directive: require SMART-lite fields for Tier 1 directives"
 }
