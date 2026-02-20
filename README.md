@@ -125,6 +125,12 @@ node systems/security/emergency_stop.js release --approval-note="..."
 - `CLEARANCE=3`: infrastructure/config/memory tooling (`systems/`, `config/`, `memory/`, default).
 - `CLEARANCE=4`: explicitly protected core files (if declared in guard policy).
 
+## Remote Request Gate
+
+`systems/security/guard.js` supports source-aware gating:
+- Remote sources (for example `REQUEST_SOURCE=slack`) are proposal-only by default.
+- Direct apply from remote requires `REMOTE_DIRECT_OVERRIDE=1`, `BREAK_GLASS=1`, `APPROVER_ID`, `APPROVAL_NOTE`, `SECOND_APPROVER_ID`, and `SECOND_APPROVAL_NOTE`.
+
 ## Automation Policy
 
 - See `docs/AUTOMATION_POLICY.md` for the explicit auto vs gated vs operator-approved contract.

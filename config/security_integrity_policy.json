@@ -23,11 +23,12 @@
     "systems/security/architecture_guard.js": "7c8f1a8dcc61e3cffc73283a3325cb3cab5d679981a8f169a49cedbe4ffa7c41",
     "systems/security/directive_gate.js": "c4b76b960a7bc68c568d1f7d0e953224666aa7311b81c814a89a1395aaa5ca1c",
     "systems/security/emergency_stop.js": "1fac350b1bd90017cf6a5db2eb25522a4ff4bbca39114772852a404be242bf13",
-    "systems/security/guard.js": "e965d5b14c6d39440c40cad5cd26b5b7c838b442fdb048462f7a56ddbe90eae1",
+    "systems/security/guard.js": "cfef98128257e7a075d957236674d8f649d6156c9824586f3ed79ffc9a696987",
     "systems/security/integrity_kernel.js": "bfecd33bc3539f0894cbca905730894aa706bb8db6140e5681b9a059bed7ec1f",
-    "systems/security/skill_quarantine.js": "4fd57a207a558a0fc079a2ce2477100bb9e5d0aec15b6a4bcbd7a7ae71963947"
+    "systems/security/skill_quarantine.js": "4fd57a207a558a0fc079a2ce2477100bb9e5d0aec15b6a4bcbd7a7ae71963947",
+    "systems/security/skill_install_enforcer.js": "f97f0310cc2f8d88fbe79fc8430ef6341de87dbe3ada0de2742bd8f6ff035925"
   },
-  "sealed_at": "2026-02-19T10:35:42.499Z",
+  "sealed_at": "2026-02-20T03:53:00.000Z",
   "sealed_by": "jay",
-  "last_approval_note": "ROI hardening reseal after emergency stop addition"
+  "last_approval_note": "Added remote-source proposal-only gate to guard.js"
 }
