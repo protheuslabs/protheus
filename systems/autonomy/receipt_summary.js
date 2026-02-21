@@ -199,6 +199,33 @@ function summarizeAutonomyReceipts(rows) {
   const fail = receipts.filter(r => String(r.verdict || '').toLowerCase() === 'fail').length;
   const verified = receipts.filter(r => !!(r.receipt_contract && r.receipt_contract.verified === true)).length;
   const failure = tallyBy(receipts.filter(r => String(r.verdict || '').toLowerCase() === 'fail'), autonomyPrimaryFailure);
+  let criteriaReceipts = 0;
+  let criteriaRequiredReceipts = 0;
+  let criteriaReceiptPass = 0;
+  let criteriaRowsTotal = 0;
+  let criteriaRowsEvaluated = 0;
+  let criteriaRowsPassed = 0;
+  let criteriaRowsFailed = 0;
+  let criteriaRowsUnknown = 0;
+
+  for (const rec of receipts) {
+    const verification = rec && rec.verification && typeof rec.verification === 'object'
+      ? rec.verification
+      : null;
+    const criteria = verification && verification.success_criteria && typeof verification.success_criteria === 'object'
+      ? verification.success_criteria
+      : null;
+    if (!criteria) continue;
+    criteriaReceipts += 1;
+    if (criteria.required === true) criteriaRequiredReceipts += 1;
+    if (criteria.passed === true) criteriaReceiptPass += 1;
+    criteriaRowsTotal += Number(criteria.total_count || 0);
+    criteriaRowsEvaluated += Number(criteria.evaluated_count || 0);
+    criteriaRowsPassed += Number(criteria.passed_count || 0);
+    criteriaRowsFailed += Number(criteria.failed_count || 0);
+    criteriaRowsUnknown += Number(criteria.unknown_count || 0);
+  }
+
   return {
     total: receipts.length,
     skipped_not_attempted: allReceipts.length - receipts.length,
@@ -206,7 +233,22 @@ function summarizeAutonomyReceipts(rows) {
     fail,
     verified,
     verified_rate: receipts.length ? Number((verified / receipts.length).toFixed(3)) : null,
-    top_failure_reasons: sortedTally(failure)
+    top_failure_reasons: sortedTally(failure),
+    success_criteria_receipts: criteriaReceipts,
+    success_criteria_required_receipts: criteriaRequiredReceipts,
+    success_criteria_receipt_pass: criteriaReceiptPass,
+    success_criteria_receipt_pass_rate: criteriaReceipts ? Number((criteriaReceiptPass / criteriaReceipts).toFixed(3)) : null,
+    success_criteria_required_pass_rate: criteriaRequiredReceipts
+      ? Number((criteriaReceiptPass / criteriaRequiredReceipts).toFixed(3))
+      : null,
+    success_criteria_rows_total: criteriaRowsTotal,
+    success_criteria_rows_evaluated: criteriaRowsEvaluated,
+    success_criteria_rows_passed: criteriaRowsPassed,
+    success_criteria_rows_failed: criteriaRowsFailed,
+    success_criteria_rows_unknown: criteriaRowsUnknown,
+    success_criteria_row_pass_rate: criteriaRowsEvaluated
+      ? Number((criteriaRowsPassed / criteriaRowsEvaluated).toFixed(3))
+      : null
   };
 }
 
@@ -292,6 +334,8 @@ function summarizeForDate(dateStr, days) {
         attempted,
         verified,
         verified_rate: attempted ? Number((verified / attempted).toFixed(3)) : null,
+        success_criteria_receipt_pass_rate: autonomyReceipts.success_criteria_receipt_pass_rate,
+        success_criteria_required_pass_rate: autonomyReceipts.success_criteria_required_pass_rate,
         top_failure_reasons: mergeTallies(
           autonomyReceipts.top_failure_reasons,
           actuationReceipts.top_failure_reasons

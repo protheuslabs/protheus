@@ -106,7 +106,21 @@ function run() {
       receipt_id: 'r1',
       verdict: 'pass',
       receipt_contract: { attempted: true, verified: true },
-      verification: { passed: true, outcome: 'shipped' }
+      verification: {
+        passed: true,
+        outcome: 'shipped',
+        success_criteria: {
+          required: true,
+          min_count: 1,
+          total_count: 2,
+          evaluated_count: 2,
+          passed_count: 2,
+          failed_count: 0,
+          unknown_count: 0,
+          pass_rate: 1,
+          passed: true
+        }
+      }
     },
     {
       ts: `${date}T11:05:00.000Z`,
@@ -114,7 +128,21 @@ function run() {
       receipt_id: 'r2',
       verdict: 'fail',
       receipt_contract: { attempted: true, verified: false },
-      verification: { passed: false, outcome: 'no_change' }
+      verification: {
+        passed: false,
+        outcome: 'no_change',
+        success_criteria: {
+          required: true,
+          min_count: 1,
+          total_count: 2,
+          evaluated_count: 2,
+          passed_count: 1,
+          failed_count: 1,
+          unknown_count: 0,
+          pass_rate: 0.5,
+          passed: false
+        }
+      }
     }
   ]);
 
@@ -147,6 +175,7 @@ function run() {
   assert.ok(Number.isFinite(Number(out.realized_outcome_score)), 'realized_outcome_score should be numeric');
   assert.strictEqual(Number(out.proposal_filter_policy.min_success_criteria_count), 2, 'low verified rate should tighten criteria count');
   assert.strictEqual(Number(out.focus_policy.min_focus_score_delta), 3, 'directive-fit blocked dominance should tighten focus');
+  assert.ok(Number(out.metrics.receipts.success_criteria_receipt_pass_rate) <= 0.6, 'criteria pass rate should be reflected in receipt metrics');
   assert.ok(fs.existsSync(path.join(outDir, 'outcome_fitness.json')), 'latest outcome fitness must persist');
   assert.ok(fs.existsSync(path.join(outDir, 'outcome_fitness', `${date}.json`)), 'history outcome fitness must persist');
 

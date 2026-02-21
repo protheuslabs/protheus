@@ -38,6 +38,7 @@ const MODE_GOVERNOR_CANARY_MIN_ATTEMPTED = Number(process.env.AUTONOMY_MODE_GOVE
 const MODE_GOVERNOR_CANARY_MIN_VERIFIED_RATE = Number(process.env.AUTONOMY_MODE_GOVERNOR_CANARY_MIN_VERIFIED_RATE || 0.75);
 const MODE_GOVERNOR_CANARY_MAX_FAIL_RATE = Number(process.env.AUTONOMY_MODE_GOVERNOR_CANARY_MAX_FAIL_RATE || 0.25);
 const MODE_GOVERNOR_CANARY_MIN_SHIPPED = Number(process.env.AUTONOMY_MODE_GOVERNOR_CANARY_MIN_SHIPPED || 1);
+const MODE_GOVERNOR_CANARY_MIN_SUCCESS_CRITERIA_PASS_RATE = Number(process.env.AUTONOMY_MODE_GOVERNOR_CANARY_MIN_SUCCESS_CRITERIA_PASS_RATE || 0.6);
 
 function usage() {
   console.log('Usage:');
@@ -133,7 +134,8 @@ function governorPolicy() {
     canary_min_attempted: Math.max(0, Number(MODE_GOVERNOR_CANARY_MIN_ATTEMPTED || 0)),
     canary_min_verified_rate: Math.max(0, Math.min(1, Number(MODE_GOVERNOR_CANARY_MIN_VERIFIED_RATE || 0))),
     canary_max_fail_rate: Math.max(0, Math.min(1, Number(MODE_GOVERNOR_CANARY_MAX_FAIL_RATE || 1))),
-    canary_min_shipped: Math.max(0, Number(MODE_GOVERNOR_CANARY_MIN_SHIPPED || 0))
+    canary_min_shipped: Math.max(0, Number(MODE_GOVERNOR_CANARY_MIN_SHIPPED || 0)),
+    canary_min_success_criteria_pass_rate: Math.max(0, Math.min(1, Number(MODE_GOVERNOR_CANARY_MIN_SUCCESS_CRITERIA_PASS_RATE || 0)))
   };
 }
 
@@ -172,6 +174,8 @@ function canaryMetrics(summary, policy) {
   const verifiedRate = Number(summary?.receipts?.combined?.verified_rate || 0);
   const autonomyFail = Number(summary?.receipts?.autonomy?.fail || 0);
   const actuationFail = Number(summary?.receipts?.actuation?.failed || 0);
+  const criteriaReceipts = Number(summary?.receipts?.autonomy?.success_criteria_receipts || 0);
+  const criteriaPassRate = Number(summary?.receipts?.autonomy?.success_criteria_receipt_pass_rate || 0);
   const failCount = autonomyFail + actuationFail;
   const failRate = attempted > 0 ? failCount / attempted : 1;
   const shipped = Number(summary?.runs?.executed_outcomes?.shipped || 0);
@@ -199,6 +203,12 @@ function canaryMetrics(summary, policy) {
       pass: shipped >= policy.canary_min_shipped,
       value: shipped,
       target: `>=${policy.canary_min_shipped}`
+    },
+    {
+      name: 'success_criteria_pass_rate',
+      pass: criteriaReceipts <= 0 || criteriaPassRate >= policy.canary_min_success_criteria_pass_rate,
+      value: criteriaReceipts <= 0 ? null : Number(criteriaPassRate.toFixed(3)),
+      target: criteriaReceipts <= 0 ? 'n/a(no_data)' : `>=${policy.canary_min_success_criteria_pass_rate}`
     }
   ];
   const failed = checks.filter(c => c.pass !== true).map(c => c.name);
@@ -210,7 +220,9 @@ function canaryMetrics(summary, policy) {
       attempted,
       verified_rate: Number(verifiedRate.toFixed(3)),
       fail_rate: Number(failRate.toFixed(3)),
-      shipped
+      shipped,
+      success_criteria_receipts: criteriaReceipts,
+      success_criteria_pass_rate: criteriaReceipts <= 0 ? null : Number(criteriaPassRate.toFixed(3))
     }
   };
 }
