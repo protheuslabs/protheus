@@ -1,0 +1,8 @@
+{
+  "version": "1.0",
+  "updated_ts": "2026-02-21T05:24:18.655Z",
+  "pointers": {
+    "adaptive_sensory_eyes_focus_triggers-json|a6412z9ke35y7ildm5fl37iu|adaptive/sensory/eyes/focus_triggers.json|": "21f87db082902dbf",
+    "adaptive_eye|emlvt5o091dnf6brwbaosq59|adaptive/sensory/eyes/catalog.json|test_eye_1771647463840": "b52c8b0869f02940"
+  }
+}

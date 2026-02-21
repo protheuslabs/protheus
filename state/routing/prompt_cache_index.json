@@ -1,0 +1,219 @@
+{
+  "schema_version": 1,
+  "entries": {
+    "22f730d5401892e262decb5be79e942b504f7873": {
+      "hits_total": 70,
+      "timestamps_ms": [
+        1771641799633,
+        1771642184483,
+        1771642920910,
+        1771645622482,
+        1771645672952,
+        1771646521117,
+        1771647466230,
+        1771648259039,
+        1771648344394,
+        1771648698475,
+        1771650002013,
+        1771650561775
+      ],
+      "first_seen_ms": 1771577031735,
+      "last_seen_ms": 1771650561775,
+      "last_seen": "2026-02-21T05:09:21.775Z",
+      "role": "chat",
+      "capability": "role:chat"
+    },
+    "862910f40cd4fa159afec6c5c1e4d806172ab166": {
+      "hits_total": 1,
+      "timestamps_ms": [
+        1771577044963
+      ],
+      "first_seen_ms": 1771577044963,
+      "last_seen_ms": 1771577044963,
+      "last_seen": "2026-02-20T08:44:04.963Z",
+      "role": "chat",
+      "capability": "role:chat"
+    },
+    "21e8200c63dd5833ac7b804eacb21410610d14af": {
+      "hits_total": 2,
+      "timestamps_ms": [
+        1771577791842,
+        1771577791953
+      ],
+      "first_seen_ms": 1771577791842,
+      "last_seen_ms": 1771577791953,
+      "last_seen": "2026-02-20T08:56:31.953Z",
+      "role": "tools",
+      "capability": "tool_use"
+    },
+    "9e5a09b8d4410ff2db7a51ddceb98dfe982e0480": {
+      "hits_total": 2,
+      "timestamps_ms": [
+        1771578643045,
+        1771578643186
+      ],
+      "first_seen_ms": 1771578643045,
+      "last_seen_ms": 1771578643186,
+      "last_seen": "2026-02-20T09:10:43.186Z",
+      "role": "general",
+      "capability": "role:general"
+    },
+    "1d4cadf0b1317d1a5ac3e8c665a3ed7505686b58": {
+      "hits_total": 2,
+      "timestamps_ms": [
+        1771578648579,
+        1771578664752
+      ],
+      "first_seen_ms": 1771578648579,
+      "last_seen_ms": 1771578664752,
+      "last_seen": "2026-02-20T09:11:04.752Z",
+      "role": "general",
+      "capability": "role:general"
+    },
+    "865fe28b3bb31b1e445ed16eba5b29ee2a00020b": {
+      "hits_total": 1,
+      "timestamps_ms": [
+        1771578668751
+      ],
+      "first_seen_ms": 1771578668751,
+      "last_seen_ms": 1771578668751,
+      "last_seen": "2026-02-20T09:11:08.751Z",
+      "role": "general",
+      "capability": "role:general"
+    },
+    "53e86484422b8c91afd3bf1f2cfe0587093a788b": {
+      "hits_total": 1,
+      "timestamps_ms": [
+        1771578673403
+      ],
+      "first_seen_ms": 1771578673403,
+      "last_seen_ms": 1771578673403,
+      "last_seen": "2026-02-20T09:11:13.403Z",
+      "role": "general",
+      "capability": "role:general"
+    },
+    "116b754daab3cc5cd4d1ff9c20ce6413cf426145": {
+      "hits_total": 3,
+      "timestamps_ms": [
+        1771586085058,
+        1771586085096,
+        1771586104739
+      ],
+      "first_seen_ms": 1771586085058,
+      "last_seen_ms": 1771586104739,
+      "last_seen": "2026-02-20T11:15:04.739Z",
+      "role": "chat",
+      "capability": "role:chat"
+    },
+    "1d8a93ded017c8d9fc02f6f325b4c8e150e36058": {
+      "hits_total": 3,
+      "timestamps_ms": [
+        1771617713274
+      ],
+      "first_seen_ms": 1771606677309,
+      "last_seen_ms": 1771617713274,
+      "last_seen": "2026-02-20T20:01:53.274Z",
+      "role": "general",
+      "capability": "role:general"
+    },
+    "8c032ac687b0152ddbd26264a5d43848434c0514": {
+      "hits_total": 1,
+      "timestamps_ms": [
+        1771615582035
+      ],
+      "first_seen_ms": 1771615582035,
+      "last_seen_ms": 1771615582035,
+      "last_seen": "2026-02-20T19:26:22.035Z",
+      "role": "chat",
+      "capability": "role:chat"
+    },
+    "41f1651574c8626988ca086d82cd5caabd7f410f": {
+      "hits_total": 4,
+      "timestamps_ms": [
+        1771617469110,
+        1771617731446,
+        1771619580893,
+        1771619581045
+      ],
+      "first_seen_ms": 1771617469110,
+      "last_seen_ms": 1771619581045,
+      "last_seen": "2026-02-20T20:33:01.045Z",
+      "role": "tools",
+      "capability": "tool_use"
+    },
+    "ad561d3436ca70f008e4b1aaa2ef6e904daad20b": {
+      "hits_total": 1,
+      "timestamps_ms": [
+        1771627332972
+      ],
+      "first_seen_ms": 1771627332972,
+      "last_seen_ms": 1771627332972,
+      "last_seen": "2026-02-20T22:42:12.972Z",
+      "role": "general",
+      "capability": "role:general"
+    },
+    "651e3b3c19f0d42c372081983fd50d30605b5f95": {
+      "hits_total": 3,
+      "timestamps_ms": [
+        1771627649498,
+        1771628338635,
+        1771628338999
+      ],
+      "first_seen_ms": 1771627649498,
+      "last_seen_ms": 1771628338999,
+      "last_seen": "2026-02-20T22:58:58.999Z",
+      "role": "general",
+      "capability": "role:general"
+    },
+    "a1ecf124cace34a868f874352b727e52d5b0ad1f": {
+      "hits_total": 2,
+      "timestamps_ms": [
+        1771628824549,
+        1771628824776
+      ],
+      "first_seen_ms": 1771628824549,
+      "last_seen_ms": 1771628824776,
+      "last_seen": "2026-02-20T23:07:04.776Z",
+      "role": "general",
+      "capability": "role:general"
+    },
+    "422fc55106196080abe494f84d20d66e12bbc36d": {
+      "hits_total": 3,
+      "timestamps_ms": [
+        1771639785351,
+        1771639791780,
+        1771639808448
+      ],
+      "first_seen_ms": 1771639785351,
+      "last_seen_ms": 1771639808448,
+      "last_seen": "2026-02-21T02:10:08.448Z",
+      "role": "coding",
+      "capability": "planning"
+    },
+    "2e243ffcdb150dfedc795870284fd05b64a06c54": {
+      "hits_total": 2,
+      "timestamps_ms": [
+        1771651422852,
+        1771651423846
+      ],
+      "first_seen_ms": 1771651422852,
+      "last_seen_ms": 1771651423846,
+      "last_seen": "2026-02-21T05:23:43.846Z",
+      "role": "tools",
+      "capability": "tool_use"
+    },
+    "257042388fa052376738760614d64c6a442ae779": {
+      "hits_total": 2,
+      "timestamps_ms": [
+        1771651460507,
+        1771651460916
+      ],
+      "first_seen_ms": 1771651460507,
+      "last_seen_ms": 1771651460916,
+      "last_seen": "2026-02-21T05:24:20.916Z",
+      "role": "coding",
+      "capability": "role:coding"
+    }
+  },
+  "updated_at": "2026-02-21T05:24:20.916Z"
+}

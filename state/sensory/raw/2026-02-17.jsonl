@@ -1,6 +1,20 @@
-{"ts":"2026-02-17T05:40:39.760Z","type":"digest_generated","date":"2026-02-17","digest_exists":true,"source":"sensory_digest"}
-{"ts":"2026-02-17T05:40:50.017Z","type":"git_dirty","repo_root":"/Users/jay/.openclaw/workspace","branch":"main","changed_count":62,"source":"git"}
-{"ts":"2026-02-17T05:40:50.074Z","type":"git_dirty","repo_root":"/Users/jay/projects","branch":"master","changed_count":11,"source":"git"}
-{"ts":"2026-02-17T05:40:50.178Z","type":"git_dirty","repo_root":"/Users/jay/Documents/Protheus","branch":"main","changed_count":50,"source":"git"}
-{"ts":"2026-02-17T05:40:50.265Z","type":"git_dirty","repo_root":"/Users/jay/Documents/Project management","branch":"main","changed_count":50,"source":"git"}
-{"ts":"2026-02-17T05:40:50.319Z","type":"digest_generated","date":"2026-02-17","digest_exists":true,"source":"sensory_digest"}
+{"ts":"2026-02-17T12:00:00.000Z","type":"file_change","root":"/test/workspace","path":"file0.js","ext":"js","bytes":1000,"mtime":"2026-02-17","source":"fs_scan"}
+{"ts":"2026-02-17T12:01:00.000Z","type":"file_change","root":"/test/workspace","path":"file1.js","ext":"js","bytes":1000,"mtime":"2026-02-17","source":"fs_scan"}
+{"ts":"2026-02-17T12:02:00.000Z","type":"file_change","root":"/test/workspace","path":"file2.js","ext":"js","bytes":1000,"mtime":"2026-02-17","source":"fs_scan"}
+{"ts":"2026-02-17T12:03:00.000Z","type":"file_change","root":"/test/workspace","path":"file3.js","ext":"js","bytes":1000,"mtime":"2026-02-17","source":"fs_scan"}
+{"ts":"2026-02-17T12:04:00.000Z","type":"file_change","root":"/test/workspace","path":"file4.js","ext":"js","bytes":1000,"mtime":"2026-02-17","source":"fs_scan"}
+{"ts":"2026-02-17T12:05:00.000Z","type":"file_change","root":"/test/workspace","path":"file5.js","ext":"js","bytes":1000,"mtime":"2026-02-17","source":"fs_scan"}
+{"ts":"2026-02-17T12:06:00.000Z","type":"file_change","root":"/test/workspace","path":"file6.js","ext":"js","bytes":1000,"mtime":"2026-02-17","source":"fs_scan"}
+{"ts":"2026-02-17T12:07:00.000Z","type":"file_change","root":"/test/workspace","path":"file7.js","ext":"js","bytes":1000,"mtime":"2026-02-17","source":"fs_scan"}
+{"ts":"2026-02-17T12:08:00.000Z","type":"file_change","root":"/test/workspace","path":"file8.js","ext":"js","bytes":1000,"mtime":"2026-02-17","source":"fs_scan"}
+{"ts":"2026-02-17T12:09:00.000Z","type":"file_change","root":"/test/workspace","path":"file9.js","ext":"js","bytes":1000,"mtime":"2026-02-17","source":"fs_scan"}
+{"ts":"2026-02-17T12:10:00.000Z","type":"file_change","root":"/test/workspace","path":"file10.js","ext":"js","bytes":1000,"mtime":"2026-02-17","source":"fs_scan"}
+{"ts":"2026-02-17T12:11:00.000Z","type":"file_change","root":"/test/workspace","path":"file11.js","ext":"js","bytes":1000,"mtime":"2026-02-17","source":"fs_scan"}
+{"ts":"2026-02-17T12:12:00.000Z","type":"file_change","root":"/test/workspace","path":"file12.js","ext":"js","bytes":1000,"mtime":"2026-02-17","source":"fs_scan"}
+{"ts":"2026-02-17T12:13:00.000Z","type":"file_change","root":"/test/workspace","path":"file13.js","ext":"js","bytes":1000,"mtime":"2026-02-17","source":"fs_scan"}
+{"ts":"2026-02-17T12:14:00.000Z","type":"file_change","root":"/test/workspace","path":"file14.js","ext":"js","bytes":1000,"mtime":"2026-02-17","source":"fs_scan"}
+{"ts":"2026-02-17T12:15:00.000Z","type":"file_change","root":"/test/workspace","path":"file15.js","ext":"js","bytes":1000,"mtime":"2026-02-17","source":"fs_scan"}
+{"ts":"2026-02-17T12:16:00.000Z","type":"file_change","root":"/test/workspace","path":"file16.js","ext":"js","bytes":1000,"mtime":"2026-02-17","source":"fs_scan"}
+{"ts":"2026-02-17T12:17:00.000Z","type":"file_change","root":"/test/workspace","path":"file17.js","ext":"js","bytes":1000,"mtime":"2026-02-17","source":"fs_scan"}
+{"ts":"2026-02-17T12:18:00.000Z","type":"file_change","root":"/test/workspace","path":"file18.js","ext":"js","bytes":1000,"mtime":"2026-02-17","source":"fs_scan"}
+{"ts":"2026-02-17T12:19:00.000Z","type":"file_change","root":"/test/workspace","path":"file19.js","ext":"js","bytes":1000,"mtime":"2026-02-17","source":"fs_scan"}

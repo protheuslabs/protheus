@@ -1,347 +1,71 @@
-# TAGS_INDEX
-# Generated: 2026-02-15 19:18:00 MST
-
-## `accountability`
-- `weekly-goals`
-
-## `ai`
-- `multi-agent-pivot`
-- `x-swarm-reply`
-
-## `architecture`
-- `multi-agent-pivot`
-
-## `archive`
-- `habit-state-archive-2026-02-14`
-- `habit-state-archive-ref`
-
-## `automation`
-- `habit-governance-v1`
-
-## `backlog`
-- `weekly-07-backlog`
-
-## `backup`
-- `agent-portability-spec`
-- `portability-playbook`
-
-## `biography`
-- `jay-profile`
-
-## `bird`
-- `x-browse-1`
-- `x-browse-1-log`
-- `x-browse-10pm`
-- `x-browse-10pm-log`
-- `x-engagement`
-- `x-swarm-reply`
-
-## `calibration`
-- `feedback-binary`
-
-## `capabilities`
-- `mode-restrictions`
-- `self-model-spec`
-
-## `changelog`
-- `system-changelog`
-
-## `comms`
-- `feedback-binary`
-
-## `compound`
-- `weekly-07-atoms`
-- `weekly-07-backlog`
-- `weekly-07-experiment`
-- `weekly-07-moltstack`
-- `weekly-compound-2026-07`
-
-## `connectivity`
-- `bridge-templates`
-- `graph-bridge-policy`
-
-## `content`
-- `content-atom`
-- `weekly-07-moltstack`
-
-## `conversion`
-- `conversion-cta`
-
-## `creative`
-- `creative-mode-spec`
-- `hyper-creative-mode-spec`
-
-## `cron`
-- `moltstack-v1`
-- `x-browse-1`
-- `x-browse-1-log`
-- `x-browse-10pm`
-- `x-browse-10pm-log`
-- `x-engagement`
-
-## `curation`
-- `signal-collection`
-
-## `decisions`
-- `decision-journal-policy`
-
-## `distribution`
-- `audience-loop`
-
-## `experiment`
-- `weekly-07-experiment`
-
-## `findings`
-- `x-browse-10pm`
-
-## `funnel`
-- `audience-loop`
-- `conversion-cta`
-
-## `gating`
-- `mode-restrictions`
-
-## `git`
-- `workspace-cleanup`
-
-## `governance`
-- `habit-governance-v1`
-- `test-noise-quarantine`
-
-## `graph`
-- `graph-bridge-policy`
-
-## `growth`
-- `audience-loop`
-
-## `habit`
-- `habit-state-archive-2026-02-14`
-- `habit-state-run_memory_rebuild_and_validate-1771128418560`
-
-## `habits`
-- `habit-governance-v1`
-
-## `heartbeat`
-- `moltbook-engage`
-
-## `income`
-- `moltstack-reg`
-- `moltstack-v1`
-
-## `index`
-- `weekly-compound-2026-07`
-
-## `infrastructure`
-- `habit-governance-v1`
-
-## `insights`
-- `weekly-07-atoms`
-- `x-browse-1`
-
-## `intelligence`
-- `signal-collection`
-
-## `learning`
-- `decision-journal-policy`
-
-## `lessons`
-- `execution-lessons`
-
-## `log`
-- `habit-state-archive-2026-02-14`
-- `habit-state-archive-ref`
-- `habit-state-run_memory_rebuild_and_validate-1771128418560`
-- `rebuild-validate-1771127215487`
-- `rebuild-validate-1771128020203`
-- `rebuild-validate-1771128401716`
-- `x-browse-1-log`
-- `x-browse-10pm-log`
-
-## `maintenance`
-- `bloat-safeguards`
-
-## `memory`
-- `capture-policy`
-- `context-compression`
-- `node-format-policy`
-- `pin-policy`
-- `query-mode-toggle`
-- `retrieval-rails`
-- `snippet-index-policy`
-- `tagging-policy`
-
-## `model`
-- `model-bootstrap`
-- `self-model-spec`
-
-## `modes`
-- `creative-mode-spec`
-- `hyper-creative-mode-spec`
-- `query-mode-toggle`
-
-## `moltbook`
-- `moltbook-engage`
-- `moltbook-first-engagement`
-
-## `moltstack`
-- `weekly-07-moltstack`
-
-## `onboarding`
-- `moltbook-first-engagement`
-
-## `ops`
-- `habit-state-archive-2026-02-14`
-- `habit-state-archive-ref`
-- `habit-state-run_memory_rebuild_and_validate-1771128418560`
-- `rebuild-validate-1771127215487`
-- `rebuild-validate-1771128020203`
-- `rebuild-validate-1771128401716`
-
-## `optimization`
-- `context-compression`
-
-## `platform`
-- `moltstack-reg`
-
-## `policy`
-- `bloat-safeguards`
-- `capture-policy`
-- `decision-journal-policy`
-- `habit-governance-v1`
-- `test-noise-quarantine`
-- `x-output-contract`
-
-## `portability`
-- `agent-portability-spec`
-- `portability-playbook`
-
-## `profile`
-- `jay-profile`
-
-## `projects`
-- `project-registry`
-
-## `protocol`
-- `agent-portability-spec`
-- `creative-mode-spec`
-- `graph-bridge-policy`
-- `hyper-creative-mode-spec`
-- `mode-restrictions`
-- `moltstack-comment-fix`
-- `node-format-policy`
-- `pin-policy`
-- `portability-playbook`
-- `query-mode-toggle`
-- `retrieval-rails`
-- `skill-supply-chain-gate`
-- `snippet-index-policy`
-- `system-changelog`
-- `tagging-policy`
-
-## `publishing`
-- `approval-override`
-
-## `rails`
-- `retrieval-rails`
-
-## `rebuild`
-- `rebuild-validate-1771127215487`
-- `rebuild-validate-1771128020203`
-- `rebuild-validate-1771128401716`
-
-## `reference`
-- `habit-state-archive-ref`
-
-## `registry`
-- `project-registry`
-- `topic-registry`
-
-## `research`
-- `weekly-07-experiment`
-
-## `review`
-- `weekly-goals`
-
-## `security`
-- `skill-supply-chain-gate`
-
-## `setup`
-- `model-bootstrap`
-
-## `social`
-- `moltbook-engage`
-- `moltbook-first-engagement`
-- `x-browse-1`
-- `x-browse-10pm`
-- `x-browse-10pm-log`
-- `x-engagement`
-- `x-swarm-reply`
-
-## `state`
-- `habit-state-run_memory_rebuild_and_validate-1771128418560`
-
-## `system`
-- `agent-portability-spec`
-- `bloat-safeguards`
-- `bridge-templates`
-- `capture-policy`
-- `decision-journal-policy`
-- `model-bootstrap`
-- `node-format-policy`
-- `pin-policy`
-- `portability-playbook`
-- `project-registry`
-- `retrieval-rails`
-- `self-model-spec`
-- `skill-supply-chain-gate`
-- `snippet-index-policy`
-- `system-changelog`
-- `tagging-policy`
-- `test-noise-quarantine`
-- `topic-registry`
-- `workspace-cleanup`
-
-## `tasks`
-- `weekly-07-backlog`
-
-## `templates`
-- `bridge-templates`
-
-## `test`
-- `moltstack-v1`
-- `x-engagement`
-
-## `topics`
-- `topic-registry`
-
-## `validation`
-- `rebuild-validate-1771127215487`
-- `rebuild-validate-1771128020203`
-- `rebuild-validate-1771128401716`
-
-## `violation`
-- `moltstack-comment-fix`
-
-## `weekly`
-- `weekly-07-atoms`
-- `weekly-07-backlog`
-- `weekly-07-experiment`
-- `weekly-07-moltstack`
-- `weekly-compound-2026-07`
-
-## `workflow`
-- `approval-override`
-- `content-atom`
-- `execution-lessons`
-- `x-output-contract`
-
-## `x-atoms`
-- `weekly-07-atoms`
-
-## `x-browse`
-- `x-browse-1`
-- `x-browse-1-log`
-
-## `x-engagement`
-- `x-output-contract`
-
+# TAGS_INDEX.md
+# Last regenerated: 2026-02-21
+
+#accountability → weekly-goals
+#ai → x-swarm-reply, multi-agent-pivot, eye-medium_com-7d719655, eye-medium_com-45a399e3
+#architecture → multi-agent-pivot
+#backup → agent-portability-spec, portability-playbook
+#biography → jay-profile
+#bird → x-swarm-reply, x-engagement, x-browse-10pm, x-browse-10pm-log, x-browse-1, x-browse-1-log
+#calibration → feedback-binary
+#capabilities → self-model-spec, mode-restrictions
+#changelog → system-changelog
+#comms → feedback-binary
+#compound → weekly-compound-2026-07
+#connectivity → graph-bridge-policy, bridge-templates
+#content → content-atom
+#conversion → conversion-cta
+#creative → creative-mode-spec, hyper-creative-mode-spec
+#cron → moltstack-v1, x-engagement, x-browse-10pm, x-browse-10pm-log, x-browse-1, x-browse-1-log
+#curation → signal-collection
+#decisions → decision-journal-policy
+#distribution → audience-loop
+#eyes → eye-upwork_gigs-324be047, eye-medium_com-7d719655, eye-medium_com-45a399e3, eye-upwork_gigs-35909358, eye-upwork_gigs-2a650d28
+#findings → x-browse-10pm
+#freelance → eye-upwork_gigs-324be047, eye-upwork_gigs-35909358, eye-upwork_gigs-2a650d28
+#funnel → audience-loop, conversion-cta
+#gating → mode-restrictions
+#governance → test-noise-quarantine
+#graph → graph-bridge-policy
+#growth → audience-loop
+#heartbeat → moltbook-engage
+#income → moltstack-v1, moltstack-reg
+#index → weekly-compound-2026-07
+#insights → x-browse-1
+#intelligence → signal-collection
+#learning → decision-journal-policy
+#log → x-browse-10pm-log, x-browse-1-log
+#maintenance → bloat-safeguards
+#medium_com → eye-medium_com-7d719655, eye-medium_com-45a399e3
+#memory → context-compression, query-mode-toggle, node-format-policy, snippet-index-policy, tagging-policy, pin-policy, capture-policy, retrieval-rails
+#memory-bridge → eye-upwork_gigs-324be047, eye-medium_com-7d719655, eye-medium_com-45a399e3, eye-upwork_gigs-35909358, eye-upwork_gigs-2a650d28
+#model → model-bootstrap, self-model-spec
+#modes → query-mode-toggle, creative-mode-spec, hyper-creative-mode-spec
+#moltbook → moltbook-first-engagement, moltbook-engage
+#onboarding → moltbook-first-engagement
+#optimization → context-compression
+#platform → moltstack-reg
+#policy → test-noise-quarantine, bloat-safeguards, capture-policy, x-output-contract, decision-journal-policy
+#portability → agent-portability-spec, portability-playbook
+#profile → jay-profile
+#projects → project-registry
+#protocol → mode-restrictions, query-mode-toggle, graph-bridge-policy, creative-mode-spec, node-format-policy, snippet-index-policy, tagging-policy, pin-policy, hyper-creative-mode-spec, agent-portability-spec, retrieval-rails, system-changelog, portability-playbook, skill-supply-chain-gate
+#publishing → approval-override
+#rails → retrieval-rails
+#registry → project-registry, topic-registry
+#revenue → eye-upwork_gigs-324be047, eye-upwork_gigs-35909358, eye-upwork_gigs-2a650d28
+#review → weekly-goals
+#security → skill-supply-chain-gate
+#sensory → eye-upwork_gigs-324be047, eye-medium_com-7d719655, eye-medium_com-45a399e3, eye-upwork_gigs-35909358, eye-upwork_gigs-2a650d28
+#setup → model-bootstrap
+#social → moltbook-first-engagement, moltbook-engage, x-swarm-reply, x-engagement, x-browse-10pm, x-browse-10pm-log, x-browse-1
+#startups → eye-medium_com-7d719655, eye-medium_com-45a399e3
+#system → model-bootstrap, self-model-spec, project-registry, test-noise-quarantine, bridge-templates, bloat-safeguards, node-format-policy, snippet-index-policy, tagging-policy, topic-registry, pin-policy, capture-policy, agent-portability-spec, retrieval-rails, system-changelog, portability-playbook, decision-journal-policy, skill-supply-chain-gate
+#templates → bridge-templates
+#test → moltstack-v1, x-engagement
+#topics → topic-registry
+#upwork_gigs → eye-upwork_gigs-324be047, eye-upwork_gigs-35909358, eye-upwork_gigs-2a650d28
+#weekly → weekly-compound-2026-07
+#workflow → approval-override, content-atom, x-output-contract
+#x-browse → x-browse-1, x-browse-1-log
+#x-engagement → x-output-contract

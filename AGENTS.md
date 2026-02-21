@@ -277,3 +277,22 @@ edges_to: [x-engagement, multi-agent-pivot]
 
 **Critical**: When reading memory, grep/load ONLY the node matching your query, skip unrelated sections.
 <<<<<<< YOURS
+
+## User Directives & Preferences
+
+### "Watch" → Create Eye Rule
+When Jay says **"watch [something]"** in an info-related context, this is a directive to create an External Eye for that source.
+
+**Examples:**
+- "watch Ollama for new models" → Create `ollama_search` eye (done 2026-02-19)
+- "watch that GitHub repo" → Create collector + eye for repo releases/commits
+- "watch HN for AI agent posts" → Configure hn_frontpage eye with agent-specific topics
+
+**Implementation:**
+1. Determine the source type (RSS, API, scrape, GitHub, etc.)
+2. Create collector in `systems/sensory/eyes_collectors/` (never in `habits/scripts/eyes_collectors/`)
+3. Wire up parser dispatch in `habits/scripts/external_eyes.js`
+4. Add the eye through controller only:
+   `node systems/sensory/eyes_intake.js create --name="..." --parser=<parser_type> --directive=<active_directive_id> [--domains=d1,d2]`
+5. Test with `node habits/scripts/external_eyes.js run --eye=<id>`
+6. Report eye creation + test results

@@ -1,0 +1,10 @@
+{
+  "version": "1.0",
+  "adapters": {
+    "moltbook_publish": {
+      "module": "skills/moltbook/actuation_adapter.js",
+      "description": "Guarded Moltbook post publication with verification receipts."
+    }
+  }
+}
+

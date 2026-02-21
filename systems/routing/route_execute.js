@@ -84,6 +84,32 @@ function parseJson(text) {
   }
 }
 
+function normalizeIntent(text) {
+  if (!text) return '';
+  return String(text)
+    .toLowerCase()
+    .replace(/\b\d{4}-\d{2}-\d{2}\b/g, '')
+    .replace(/\b[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\b/g, '')
+    .replace(/["'][^"']*["']/g, '<str>')
+    .replace(/[^a-z0-9_\s-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .split(/\s+/)
+    .slice(0, 12)
+    .join('_');
+}
+
+function parseJsonObjects(text) {
+  const out = [];
+  const lines = String(text || '').split('\n').map((l) => l.trim()).filter(Boolean);
+  for (const line of lines) {
+    if (!line.startsWith('{') || !line.endsWith('}')) continue;
+    const obj = parseJson(line);
+    if (obj && typeof obj === 'object') out.push(obj);
+  }
+  return out;
+}
+
 function toNumberOrNull(v) {
   const n = Number(v);
   return Number.isFinite(n) && n >= 0 ? n : null;
@@ -147,6 +173,17 @@ function modelEnv(baseEnv, modelId) {
 
 function isExecutableDecision(d) {
   return d === 'RUN_HABIT' || d === 'RUN_CANDIDATE_FOR_VERIFICATION' || d === 'PROPOSE_HABIT';
+}
+
+function isAutoHabitFlow(out) {
+  if (!out || typeof out !== 'object') return false;
+  if (out.auto_habit_flow === true) return true;
+  const execSpec = out.executor;
+  if (!execSpec || !Array.isArray(execSpec.args)) return false;
+  return execSpec.args.some((a) => {
+    const s = String(a || '');
+    return s.includes('habits/scripts/habit_crystallizer.js') || s.includes('habits/scripts/propose_habit.js');
+  });
 }
 
 function executorSig(out) {
@@ -273,12 +310,17 @@ function main() {
     : null;
   const budgetBlocked = !!(budgetEnforcement && budgetEnforcement.blocked === true);
   const execSpec = out.executor;
+  const autoHabitFlow = isAutoHabitFlow(out);
+  const summaryDecision = out.decision;
   const canExec = isExecutableDecision(out.decision) && execSpec && execSpec.cmd && Array.isArray(execSpec.args);
   const routerMissingModel = routerRequired && canExec && !selectedModel;
 
   const summary = {
-    decision: out.decision,
-    reason: out.reason,
+    decision: summaryDecision,
+    route_decision_raw: out.decision,
+    reason: autoHabitFlow
+      ? `Auto-crystallize candidate habit and run verification. ${String(out.reason || '').slice(0, 180)}`
+      : out.reason,
     suggested_habit_id: out.suggested_habit_id || null,
     gate_decision: out.gate_decision || null,
     gate_risk: out.gate_risk || null,
@@ -299,6 +341,7 @@ function main() {
     needs_manual_review: budgetBlocked,
     router_required: routerRequired,
     router_missing_model: routerMissingModel,
+    auto_habit_flow: autoHabitFlow,
     executable: !!canExec && !budgetBlocked,
     dry_run: !!dryRun
   };
@@ -401,7 +444,23 @@ function main() {
   }
 
   if (dryRun) {
-    process.stdout.write(JSON.stringify({ exec: { cmd: execSpec.cmd, args: execSpec.args } }) + '\n');
+    if (autoHabitFlow) {
+      const habitId = String(summary.suggested_habit_id || '').trim() || null;
+      const inputs = {
+        task: String(task || '').slice(0, 1000),
+        intent_key: String(normalizeIntent(task) || '').slice(0, 120),
+        source: 'route_execute_auto_habit',
+        ts: nowIso()
+      };
+      process.stdout.write(JSON.stringify({
+        exec: { cmd: execSpec.cmd, args: execSpec.args },
+        exec_followup: habitId
+          ? { cmd: 'node', args: ['habits/scripts/run_habit.js', '--id', habitId, '--json', JSON.stringify(inputs)] }
+          : null
+      }) + '\n');
+    } else {
+      process.stdout.write(JSON.stringify({ exec: { cmd: execSpec.cmd, args: execSpec.args } }) + '\n');
+    }
     if (summary.mode === 'deep-thinker') {
       writeDeepThinkerReceipt({
         ts: nowIso(),
@@ -416,6 +475,86 @@ function main() {
       });
     }
     process.exit(0);
+  }
+
+  if (autoHabitFlow) {
+    const env = modelEnv(process.env, selectedModel);
+    const execStartedMs = Date.now();
+    const crystallizeChild = spawnSync(execSpec.cmd, execSpec.args, {
+      cwd: repoRoot(),
+      encoding: 'utf8',
+      env
+    });
+    const crystallizeStdout = String(crystallizeChild.stdout || '');
+    const crystallizeStderr = String(crystallizeChild.stderr || '');
+    if (crystallizeStdout) process.stdout.write(crystallizeStdout);
+    if (crystallizeStderr) process.stderr.write(crystallizeStderr);
+
+    let finalExitCode = crystallizeChild.status || 0;
+    const crystalObjects = parseJsonObjects(crystallizeStdout);
+    const crystalSummary = crystalObjects.length ? crystalObjects[crystalObjects.length - 1] : null;
+    const crystallizedHabitId = String(
+      (crystalSummary && crystalSummary.habit_id) || summary.suggested_habit_id || ''
+    ).trim();
+    if (crystallizedHabitId) summary.suggested_habit_id = crystallizedHabitId;
+
+    let habitRun = null;
+    if (finalExitCode === 0 && crystallizedHabitId) {
+      const habitInputs = {
+        task: String(task || '').slice(0, 1000),
+        intent_key: String(normalizeIntent(task) || '').slice(0, 120),
+        source: 'route_execute_auto_habit',
+        ts: nowIso()
+      };
+      const runArgs = ['habits/scripts/run_habit.js', '--id', crystallizedHabitId, '--json', JSON.stringify(habitInputs)];
+      const runChild = spawnSync('node', runArgs, {
+        cwd: repoRoot(),
+        encoding: 'utf8',
+        env
+      });
+      const runStdout = String(runChild.stdout || '');
+      const runStderr = String(runChild.stderr || '');
+      if (runStdout) process.stdout.write(runStdout);
+      if (runStderr) process.stderr.write(runStderr);
+      finalExitCode = runChild.status || 0;
+      habitRun = {
+        attempted: true,
+        habit_id: crystallizedHabitId,
+        exit_code: finalExitCode
+      };
+    }
+
+    process.stdout.write(JSON.stringify({
+      type: 'route_execute_metrics',
+      execution_metrics: {
+        exit_code: finalExitCode,
+        duration_ms: Math.max(0, Date.now() - execStartedMs),
+        token_usage: null,
+        token_usage_available: false
+      },
+      auto_habit_flow: {
+        crystallizer_decision: crystalSummary && crystalSummary.decision ? String(crystalSummary.decision) : null,
+        habit_id: crystallizedHabitId || null,
+        habit_run: habitRun
+      }
+    }) + '\n');
+
+    if (summary.mode === 'deep-thinker') {
+      writeDeepThinkerReceipt({
+        ts: nowIso(),
+        type: 'deep_thinker_receipt',
+        task: String(task).slice(0, 200),
+        mode: summary.mode,
+        primary_model: summary.selected_model,
+        secondary_model: summary?.deep_thinker?.secondary_model || null,
+        agreed: !(summary.deep_thinker_passes && summary.deep_thinker_passes.disagreement_reason),
+        disagreement_reason: summary.deep_thinker_passes ? summary.deep_thinker_passes.disagreement_reason : null,
+        final_decision: finalExitCode === 0 ? 'executed' : 'exec_failed',
+        exit_code: finalExitCode
+      });
+    }
+
+    process.exit(finalExitCode);
   }
 
   const env = modelEnv(process.env, selectedModel);

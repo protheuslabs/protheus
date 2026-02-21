@@ -30,6 +30,8 @@ const HARDWARE_PLAN_PATH = path.join(STATE_DIR, "hardware_plan.json");
 const ROUTER_BUDGET_DIR = process.env.ROUTER_BUDGET_DIR || path.join(REPO_ROOT, "state", "autonomy", "daily_budget");
 const ROUTER_BUDGET_TODAY = process.env.ROUTER_BUDGET_TODAY || "";
 const ROUTER_SPEND_DIR = process.env.ROUTER_SPEND_DIR || path.join(STATE_DIR, "spend");
+const EYES_REGISTRY_PATH = path.join(REPO_ROOT, "state", "sensory", "eyes", "registry.json");
+const PROMPT_CACHE_INDEX_PATH = path.join(STATE_DIR, "prompt_cache_index.json");
 
 const PROBE_TTL_MS = Number(process.env.ROUTER_PROBE_TTL_MS || 30 * 60 * 1000);
 const PROBE_TIMEOUT_MS = Number(process.env.ROUTER_PROBE_TIMEOUT_MS || 15000);
@@ -43,6 +45,8 @@ const HOST_CACHE_MAX_STALE_MS = Number(process.env.ROUTER_HOST_CACHE_MAX_STALE_M
 const PROBE_ACCEPT_OK_TOKEN = String(process.env.ROUTER_PROBE_ACCEPT_OK_TOKEN || "1") !== "0";
 const ROUTER_MIN_REQUEST_TOKENS = Number(process.env.ROUTER_MIN_REQUEST_TOKENS || 120);
 const ROUTER_MAX_REQUEST_TOKENS = Number(process.env.ROUTER_MAX_REQUEST_TOKENS || 12000);
+
+let EYES_SIGNAL_CACHE = { ts_ms: 0, path: "", payload: null };
 
 const GENERIC_MARKERS = [
   "as an ai", "i'm an ai", "i cannot", "i can't access", "i don't have access",
@@ -776,17 +780,20 @@ function communicationFastPathPolicy(cfg) {
   };
 }
 
-function detectCommunicationFastPath({ cfg, risk, complexity, intent, task, mode }) {
+function detectCommunicationFastPath({ cfg, risk, complexity, intent, task, mode, allowGenericMedium }) {
   const policy = communicationFastPathPolicy(cfg);
+  const allowBypass = allowGenericMedium === true;
   if (!policy.enabled) return { matched: false, reason: "disabled", policy };
 
   const m = normalizeKey(mode || "normal");
   if (m === "deep-thinker" || m === "deep_thinker" || m === "hyper-creative" || m === "hyper_creative") {
     return { matched: false, reason: "mode_disallowed", policy };
   }
-  if (normalizeKey(risk) !== "low") return { matched: false, reason: "risk_not_low", policy };
-  const cx = normalizeKey(complexity || "medium");
-  if (!(cx === "low" || cx === "medium")) return { matched: false, reason: "complexity_not_eligible", policy };
+  if (!allowBypass) {
+    if (normalizeKey(risk) !== "low") return { matched: false, reason: "risk_not_low", policy };
+    const cx = normalizeKey(complexity || "medium");
+    if (!(cx === "low" || cx === "medium")) return { matched: false, reason: "complexity_not_eligible", policy };
+  }
 
   const rawText = String(task || intent || "");
   const newlineCount = (rawText.match(/\n/g) || []).length;
@@ -838,6 +845,100 @@ function detectCommunicationFastPath({ cfg, risk, complexity, intent, task, mode
     fallback_slot: policy.fallback_slot,
     skip_outcome_scan: policy.skip_outcome_scan
   };
+}
+
+function fallbackClassificationPolicy(cfg) {
+  const src = cfg?.routing?.fallback_classification_policy;
+  const policy = src && typeof src === "object" ? src : {};
+  return {
+    enabled: toBool(policy.enabled, true),
+    only_when_medium_medium: toBool(policy.only_when_medium_medium, true),
+    prefer_chat_fast_path: toBool(policy.prefer_chat_fast_path, true),
+    low_chars_max: toBoundedNumber(policy.low_chars_max, 220, 32, 600),
+    low_newlines_max: toBoundedNumber(policy.low_newlines_max, 1, 0, 6),
+    high_chars_min: toBoundedNumber(policy.high_chars_min, 1200, 240, 12000),
+    high_newlines_min: toBoundedNumber(policy.high_newlines_min, 8, 1, 80),
+    high_tokens_min: toBoundedNumber(policy.high_tokens_min, 2200, 200, 30000)
+  };
+}
+
+function fallbackRouteClassification({ cfg, requestedRisk, requestedComplexity, intent, task, mode, role, tokensEst, classPolicy }) {
+  const policy = fallbackClassificationPolicy(cfg);
+  const fallback = {
+    enabled: policy.enabled === true,
+    applied: false,
+    reason: "disabled",
+    risk: normalizeRiskLevel(requestedRisk),
+    complexity: normalizeComplexityLevel(requestedComplexity),
+    role: normalizeKey(role || "general") || "general"
+  };
+  if (!policy.enabled) return fallback;
+  if (classPolicy && (classPolicy.force_risk || classPolicy.force_complexity || classPolicy.force_role)) {
+    return { ...fallback, reason: "route_class_forced" };
+  }
+
+  const baseRisk = normalizeRiskLevel(requestedRisk);
+  const baseComplexity = normalizeComplexityLevel(requestedComplexity);
+  if (policy.only_when_medium_medium && !(baseRisk === "medium" && baseComplexity === "medium")) {
+    return { ...fallback, reason: "not_generic_medium" };
+  }
+
+  const inferredRole = normalizeKey(role || inferRole(intent, task) || "general") || "general";
+  const rawText = `${String(intent || "")} ${String(task || "")}`.trim();
+  const charCount = rawText.length;
+  const newlineCount = (String(task || "").match(/\n/g) || []).length;
+  const codeLike = /```|[`{}[\]<>$;=]|(^|\s)--?[a-z0-9][a-z0-9_-]*\b|(^|\s)(node|npm|pnpm|yarn|git|curl|python|bash|zsh|ollama)\b/i.test(rawText);
+  const tokenCount = Number(tokensEst);
+
+  if (policy.prefer_chat_fast_path) {
+    const candidate = detectCommunicationFastPath({
+      cfg,
+      risk: baseRisk,
+      complexity: baseComplexity,
+      intent,
+      task,
+      mode,
+      allowGenericMedium: true
+    });
+    if (candidate.matched) {
+      return {
+        ...fallback,
+        applied: true,
+        reason: "generic_medium_fast_path",
+        risk: "low",
+        complexity: "low",
+        role: "chat"
+      };
+    }
+  }
+
+  if (
+    (Number.isFinite(tokenCount) && tokenCount >= Number(policy.high_tokens_min))
+    || charCount >= Number(policy.high_chars_min)
+    || newlineCount >= Number(policy.high_newlines_min)
+  ) {
+    return {
+      ...fallback,
+      applied: true,
+      reason: "generic_medium_complexity_escalation",
+      risk: "medium",
+      complexity: "high",
+      role: inferredRole === "chat" ? "general" : inferredRole
+    };
+  }
+
+  if (!codeLike && charCount <= Number(policy.low_chars_max) && newlineCount <= Number(policy.low_newlines_max) && (inferredRole === "chat" || inferredRole === "general")) {
+    return {
+      ...fallback,
+      applied: true,
+      reason: "generic_medium_short_text",
+      risk: "low",
+      complexity: "low",
+      role: "chat"
+    };
+  }
+
+  return { ...fallback, reason: "no_override" };
 }
 
 function normalizeRiskLevel(v) {
@@ -1062,6 +1163,227 @@ function projectBudgetState(budgetState, requestTokens) {
     projected_ratio: Number(projectedRatio.toFixed(4)),
     projected_pressure: projectedPressure
   };
+}
+
+function eyesSignalPolicy(cfg) {
+  const src = cfg?.routing?.eyes_signal_policy;
+  const policy = src && typeof src === "object" ? src : {};
+  const pathRaw = String(policy.registry_path || EYES_REGISTRY_PATH);
+  return {
+    enabled: toBool(policy.enabled, true),
+    registry_path: path.isAbsolute(pathRaw) ? pathRaw : path.resolve(REPO_ROOT, pathRaw),
+    ttl_ms: toBoundedNumber(policy.ttl_ms, 2 * 60 * 1000, 15 * 1000, 60 * 60 * 1000),
+    min_non_stub_eyes: toBoundedNumber(policy.min_non_stub_eyes, 2, 1, 50),
+    degraded_error_rate: toBoundedNumber(policy.degraded_error_rate, 0.45, 0.05, 1),
+    degraded_fail_ratio: toBoundedNumber(policy.degraded_fail_ratio, 0.5, 0.1, 1),
+    local_bonus_degraded: toBoundedNumber(policy.local_bonus_degraded, 4, 0, 40),
+    cloud_penalty_degraded: toBoundedNumber(policy.cloud_penalty_degraded, 3, 0, 40),
+    high_signal_score_ema: toBoundedNumber(policy.high_signal_score_ema, 72, 1, 100),
+    high_signal_ratio_min: toBoundedNumber(policy.high_signal_ratio_min, 0.5, 0.1, 1),
+    cloud_anchor_bonus_high_signal: toBoundedNumber(policy.cloud_anchor_bonus_high_signal, 1, 0, 20)
+  };
+}
+
+function eyesRoutingSignal(cfg) {
+  const policy = eyesSignalPolicy(cfg);
+  const base = {
+    enabled: policy.enabled === true,
+    source: "registry",
+    registry_path: policy.registry_path,
+    available: false,
+    network_degraded: false,
+    signal_rich: false,
+    non_stub_total: 0,
+    failing_count: 0,
+    fail_ratio: null,
+    high_signal_count: 0,
+    high_signal_ratio: null,
+    local_bonus_degraded: Number(policy.local_bonus_degraded || 0),
+    cloud_penalty_degraded: Number(policy.cloud_penalty_degraded || 0),
+    cloud_anchor_bonus_high_signal: Number(policy.cloud_anchor_bonus_high_signal || 0),
+    reason: "disabled"
+  };
+  if (!policy.enabled) return base;
+  const nowMs = Date.now();
+  if (
+    EYES_SIGNAL_CACHE.payload
+    && EYES_SIGNAL_CACHE.path === policy.registry_path
+    && (nowMs - Number(EYES_SIGNAL_CACHE.ts_ms || 0)) <= Number(policy.ttl_ms || 0)
+  ) {
+    return EYES_SIGNAL_CACHE.payload;
+  }
+  const raw = loadJson(policy.registry_path, null);
+  if (!raw || typeof raw !== "object") {
+    const out = { ...base, reason: "registry_missing" };
+    EYES_SIGNAL_CACHE = { ts_ms: nowMs, path: policy.registry_path, payload: out };
+    return out;
+  }
+  const eyes = Array.isArray(raw.eyes) ? raw.eyes : [];
+  const nonStub = eyes.filter((eye) => normalizeKey(eye && eye.parser_type || "") !== "stub");
+  const failing = nonStub.filter((eye) => {
+    const errorRate = Number(eye && eye.error_rate || 0);
+    const failures = Number(eye && eye.consecutive_failures || 0);
+    const status = normalizeKey(eye && eye.status || "");
+    return (
+      (Number.isFinite(errorRate) && errorRate >= Number(policy.degraded_error_rate || 0.45))
+      || failures >= 2
+      || status === "probation"
+      || status === "failing"
+    );
+  });
+  const highSignal = nonStub.filter((eye) => {
+    const ema = Number(eye && eye.score_ema || 0);
+    const errorRate = Number(eye && eye.error_rate || 0);
+    return Number.isFinite(ema) && ema >= Number(policy.high_signal_score_ema || 72) && (!Number.isFinite(errorRate) || errorRate < 0.25);
+  });
+  const total = nonStub.length;
+  const failRatio = total > 0 ? failing.length / total : 0;
+  const highRatio = total > 0 ? highSignal.length / total : 0;
+  const networkDegraded = total >= Number(policy.min_non_stub_eyes || 2) && failRatio >= Number(policy.degraded_fail_ratio || 0.5);
+  const signalRich = total >= Number(policy.min_non_stub_eyes || 2) && highRatio >= Number(policy.high_signal_ratio_min || 0.5);
+  const out = {
+    ...base,
+    available: true,
+    network_degraded: networkDegraded,
+    signal_rich: signalRich,
+    non_stub_total: total,
+    failing_count: failing.length,
+    fail_ratio: Number(failRatio.toFixed(4)),
+    high_signal_count: highSignal.length,
+    high_signal_ratio: Number(highRatio.toFixed(4)),
+    reason: "ok"
+  };
+  EYES_SIGNAL_CACHE = { ts_ms: nowMs, path: policy.registry_path, payload: out };
+  return out;
+}
+
+function promptCachePolicy(cfg) {
+  const src = cfg?.routing?.prompt_cache_policy;
+  const policy = src && typeof src === "object" ? src : {};
+  const pathRaw = String(policy.index_path || PROMPT_CACHE_INDEX_PATH);
+  return {
+    enabled: toBool(policy.enabled, true),
+    index_path: path.isAbsolute(pathRaw) ? pathRaw : path.resolve(REPO_ROOT, pathRaw),
+    window_minutes: toBoundedNumber(policy.window_minutes, 180, 15, 24 * 60),
+    min_hits: toBoundedNumber(policy.min_hits, 2, 1, 20),
+    max_entries: toBoundedNumber(policy.max_entries, 900, 64, 10000),
+    max_timestamps_per_key: toBoundedNumber(policy.max_timestamps_per_key, 32, 2, 256),
+    cache_friendly_bonus: toBoundedNumber(policy.cache_friendly_bonus, 2, 0, 40),
+    cloud_anchor_extra_bonus: toBoundedNumber(policy.cloud_anchor_extra_bonus, 1, 0, 20),
+    non_friendly_cloud_penalty: toBoundedNumber(policy.non_friendly_cloud_penalty, 0, 0, 20),
+    eligible_classes: Array.isArray(policy.eligible_classes)
+      ? policy.eligible_classes.map((x) => normalizeKey(x)).filter(Boolean)
+      : ["cloud_anchor", "cloud_specialist"]
+  };
+}
+
+function normalizePromptForCache(s) {
+  return String(s || "")
+    .toLowerCase()
+    .replace(/\b\d{4}-\d{2}-\d{2}\b/g, "<date>")
+    .replace(/\b[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\b/g, "<uuid>")
+    .replace(/\d+/g, "<num>")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 1200);
+}
+
+function promptCacheKey({ intent, task, capability, role }) {
+  const base = [
+    normalizeCapabilityKey(capability || ""),
+    normalizeKey(role || ""),
+    normalizePromptForCache(intent || ""),
+    normalizePromptForCache(task || "")
+  ].join("|");
+  return crypto.createHash("sha1").update(base).digest("hex");
+}
+
+function loadPromptCacheIndex(policy) {
+  const raw = loadJson(policy.index_path, null);
+  if (!raw || typeof raw !== "object") return { schema_version: 1, entries: {}, updated_at: null };
+  const entries = raw.entries && typeof raw.entries === "object" ? raw.entries : {};
+  return { schema_version: 1, entries, updated_at: raw.updated_at || null };
+}
+
+function isPromptCacheFriendlyModel(modelId, profileClass, policy, cfg) {
+  const src = cfg?.routing?.prompt_cache_policy;
+  const explicit = src && Array.isArray(src.cache_friendly_models) ? src.cache_friendly_models.map(String) : [];
+  if (explicit.some((m) => normalizeKey(m) === normalizeKey(modelId))) return true;
+  if (!isCloudModel(modelId)) return false;
+  const cls = normalizeKey(profileClass || "");
+  return policy.eligible_classes.includes(cls);
+}
+
+function promptCacheSignal(cfg, { intent, task, capability, role }) {
+  const policy = promptCachePolicy(cfg);
+  const base = {
+    enabled: policy.enabled === true,
+    key: null,
+    eligible: false,
+    hits_recent: 0,
+    min_hits: Number(policy.min_hits || 2),
+    window_minutes: Number(policy.window_minutes || 180),
+    reason: "disabled",
+    policy
+  };
+  if (!policy.enabled) return base;
+  const key = promptCacheKey({ intent, task, capability, role });
+  const state = loadPromptCacheIndex(policy);
+  const entry = state.entries[key] && typeof state.entries[key] === "object" ? state.entries[key] : {};
+  const nowMs = Date.now();
+  const windowMs = Number(policy.window_minutes || 180) * 60 * 1000;
+  const stamps = Array.isArray(entry.timestamps_ms)
+    ? entry.timestamps_ms.map((x) => Number(x)).filter((x) => Number.isFinite(x) && (nowMs - x) <= windowMs)
+    : [];
+  const hitsRecent = stamps.length;
+  return {
+    ...base,
+    key,
+    eligible: hitsRecent >= Number(policy.min_hits || 2),
+    hits_recent: hitsRecent,
+    reason: "ok",
+    _state: state
+  };
+}
+
+function writePromptCacheSignal(signal, { capability, role }) {
+  if (!signal || signal.enabled !== true || !signal.key || !signal.policy) return;
+  const policy = signal.policy;
+  const state = signal._state && typeof signal._state === "object"
+    ? signal._state
+    : loadPromptCacheIndex(policy);
+  if (!state.entries || typeof state.entries !== "object") state.entries = {};
+  const key = String(signal.key);
+  const nowMs = Date.now();
+  const windowMs = Number(policy.window_minutes || 180) * 60 * 1000;
+  const maxStamps = Number(policy.max_timestamps_per_key || 32);
+  const maxEntries = Number(policy.max_entries || 900);
+  const entry = state.entries[key] && typeof state.entries[key] === "object"
+    ? state.entries[key]
+    : { hits_total: 0, timestamps_ms: [], first_seen_ms: nowMs };
+  const prior = Array.isArray(entry.timestamps_ms) ? entry.timestamps_ms : [];
+  const kept = prior
+    .map((x) => Number(x))
+    .filter((x) => Number.isFinite(x) && (nowMs - x) <= windowMs)
+    .slice(-Math.max(1, maxStamps - 1));
+  kept.push(nowMs);
+  entry.timestamps_ms = kept;
+  entry.hits_total = Number(entry.hits_total || 0) + 1;
+  entry.last_seen_ms = nowMs;
+  entry.last_seen = new Date(nowMs).toISOString();
+  entry.role = normalizeKey(role || "") || null;
+  entry.capability = normalizeCapabilityKey(capability || "") || null;
+  state.entries[key] = entry;
+
+  const pairs = Object.entries(state.entries);
+  if (pairs.length > maxEntries) {
+    pairs
+      .sort((a, b) => Number((b[1] && b[1].last_seen_ms) || 0) - Number((a[1] && a[1].last_seen_ms) || 0))
+      .slice(maxEntries)
+      .forEach(([k]) => { delete state.entries[k]; });
+  }
+  state.updated_at = nowIso();
+  writeJsonAtomic(policy.index_path, state);
 }
 
 function routerSpendPathForDate(dateStr) {
@@ -2019,7 +2341,11 @@ function rankCandidate(modelId, ctx) {
     localHealth,
     budgetState,
     budgetProjected,
-    requestTokens
+    requestTokens,
+    eyesSignal,
+    promptCache,
+    cfg,
+    anchorModel
   } = ctx;
 
   const profile = modelProfileFor(modelId, profiles);
@@ -2063,6 +2389,28 @@ function rankCandidate(modelId, ctx) {
   if (Number(tier) >= 3 && isCloudModel(modelId)) {
     score += 4;
     reasons.push("cloud_t3");
+  }
+
+  if (eyesSignal && eyesSignal.enabled === true && eyesSignal.available === true) {
+    if (eyesSignal.network_degraded === true) {
+      const localBonus = Number(eyesSignal.local_bonus_degraded || 0);
+      const cloudPenalty = Number(eyesSignal.cloud_penalty_degraded || 0);
+      if (isLocalOllamaModel(modelId) && localBonus > 0) {
+        score += localBonus;
+        reasons.push("eyes_network_degraded_local_bonus");
+      }
+      if (isCloudModel(modelId) && cloudPenalty > 0) {
+        score -= cloudPenalty;
+        reasons.push("eyes_network_degraded_cloud_penalty");
+      }
+    }
+    if (eyesSignal.signal_rich === true && isCloudModel(modelId)) {
+      const anchorBonus = Number(eyesSignal.cloud_anchor_bonus_high_signal || 0);
+      if (anchorBonus > 0 && normalizeKey(modelId) === normalizeKey(anchorModel || "")) {
+        score += anchorBonus;
+        reasons.push("eyes_signal_rich_anchor_bonus");
+      }
+    }
   }
 
   const modelCost = estimateModelRequestTokens(
@@ -2131,6 +2479,36 @@ function rankCandidate(modelId, ctx) {
     }
   }
 
+  let promptCacheEligibleModel = false;
+  if (promptCache && promptCache.enabled === true) {
+    promptCacheEligibleModel = isPromptCacheFriendlyModel(
+      modelId,
+      profileClass,
+      promptCache.policy || {},
+      cfg || {}
+    );
+    if (promptCache.eligible === true) {
+      if (promptCacheEligibleModel) {
+        const bonus = Number(promptCache.policy && promptCache.policy.cache_friendly_bonus || 0);
+        const anchorExtra = Number(promptCache.policy && promptCache.policy.cloud_anchor_extra_bonus || 0);
+        if (bonus > 0) {
+          score += bonus;
+          reasons.push("prompt_cache_friendly_bonus");
+        }
+        if (isCloudModel(modelId) && normalizeKey(modelId) === normalizeKey(anchorModel || "") && anchorExtra > 0) {
+          score += anchorExtra;
+          reasons.push("prompt_cache_anchor_bonus");
+        }
+      } else if (isCloudModel(modelId)) {
+        const penalty = Number(promptCache.policy && promptCache.policy.non_friendly_cloud_penalty || 0);
+        if (penalty > 0) {
+          score -= penalty;
+          reasons.push("prompt_cache_nonfriendly_cloud_penalty");
+        }
+      }
+    }
+  }
+
   return {
     model: modelId,
     score: Number(score.toFixed(2)),
@@ -2138,7 +2516,8 @@ function rankCandidate(modelId, ctx) {
     outcome_detail: outcomeDetail,
     model_tokens_est: modelCost.tokens_est,
     token_multiplier: modelCost.multiplier,
-    token_multiplier_source: modelCost.source
+    token_multiplier_source: modelCost.source,
+    prompt_cache_friendly: promptCacheEligibleModel
   };
 }
 
@@ -2251,6 +2630,26 @@ function routeDecision({ risk, complexity, intent, task, mode, forceModel, capab
     complexity: requestedComplexity,
     role: requestedRole
   });
+  let requestTokensEst = estimateRequestTokens(tokensEst, intent, task);
+  if (classPolicy.max_tokens_est != null && Number.isFinite(Number(classPolicy.max_tokens_est))) {
+    requestTokensEst = Math.min(requestTokensEst, Number(classPolicy.max_tokens_est));
+  }
+  const fallbackClass = fallbackRouteClassification({
+    cfg,
+    requestedRisk,
+    requestedComplexity,
+    intent,
+    task,
+    mode: adjusted.mode,
+    role: adjusted.role,
+    tokensEst: requestTokensEst,
+    classPolicy
+  });
+  if (fallbackClass.applied === true) {
+    adjusted.risk = fallbackClass.risk;
+    adjusted.complexity = fallbackClass.complexity;
+    adjusted.role = fallbackClass.role;
+  }
   if (classPolicy.force_risk) adjusted.risk = classPolicy.force_risk;
   if (classPolicy.force_complexity) adjusted.complexity = classPolicy.force_complexity;
   if (classPolicy.force_role) adjusted.role = classPolicy.force_role;
@@ -2285,11 +2684,14 @@ function routeDecision({ risk, complexity, intent, task, mode, forceModel, capab
   const capabilityKey = normalizeCapabilityKey(capability || inferCapability(intent, task, role));
   const tier = inferTier(risk, complexity);
   const budgetState = routerBudgetState(cfg);
-  let requestTokensEst = estimateRequestTokens(tokensEst, intent, task);
-  if (classPolicy.max_tokens_est != null && Number.isFinite(Number(classPolicy.max_tokens_est))) {
-    requestTokensEst = Math.min(requestTokensEst, Number(classPolicy.max_tokens_est));
-  }
   const budgetProjected = projectBudgetState(budgetState, requestTokensEst);
+  const eyesSignal = eyesRoutingSignal(cfg);
+  const promptCache = promptCacheSignal(cfg, {
+    intent,
+    task,
+    capability: capabilityKey,
+    role
+  });
 
   const candidates = [];
   if (rulePick.prefer_model) candidates.push(rulePick.prefer_model);
@@ -2332,7 +2734,11 @@ function routeDecision({ risk, complexity, intent, task, mode, forceModel, capab
       localHealth,
       budgetState,
       budgetProjected,
-      requestTokens: requestTokensEst
+      requestTokens: requestTokensEst,
+      eyesSignal,
+      promptCache,
+      cfg,
+      anchorModel
     }))
     .sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
@@ -2444,7 +2850,11 @@ function routeDecision({ risk, complexity, intent, task, mode, forceModel, capab
       localHealth,
       budgetState,
       budgetProjected,
-      requestTokens: requestTokensEst
+      requestTokens: requestTokensEst,
+      eyesSignal,
+      promptCache,
+      cfg,
+      anchorModel
     });
   }
   const selectedModelTokensEst = selectedRank && Number.isFinite(Number(selectedRank.model_tokens_est))
@@ -2476,6 +2886,13 @@ function routeDecision({ risk, complexity, intent, task, mode, forceModel, capab
     tier1_local_first: T1_LOCAL_FIRST && Number(tier) === 1,
     tier1_escalation_reason: tier1EscalationReason,
     route_class: classPolicy.id,
+    classification: {
+      fallback_enabled: fallbackClass.enabled === true,
+      fallback_applied: fallbackClass.applied === true,
+      fallback_reason: fallbackClass.reason || null,
+      requested_risk: requestedRisk,
+      requested_complexity: requestedComplexity
+    },
     route_class_policy: {
       force_risk: classPolicy.force_risk || null,
       force_complexity: classPolicy.force_complexity || null,
@@ -2509,6 +2926,23 @@ function routeDecision({ risk, complexity, intent, task, mode, forceModel, capab
       reason: budgetEnforcement.reason || null,
       blocked: budgetEnforcement.blocked === true,
       from_model: budgetEnforcement.from_model || null
+    },
+    eyes_signal: {
+      enabled: eyesSignal.enabled === true,
+      available: eyesSignal.available === true,
+      network_degraded: eyesSignal.network_degraded === true,
+      signal_rich: eyesSignal.signal_rich === true,
+      non_stub_total: eyesSignal.non_stub_total,
+      fail_ratio: eyesSignal.fail_ratio,
+      high_signal_ratio: eyesSignal.high_signal_ratio,
+      reason: eyesSignal.reason || null
+    },
+    prompt_cache: {
+      enabled: promptCache.enabled === true,
+      eligible: promptCache.eligible === true,
+      hits_recent: promptCache.hits_recent,
+      min_hits: promptCache.min_hits,
+      window_minutes: promptCache.window_minutes
     },
     cost_estimate: {
       request_tokens_est: requestTokensEst,
@@ -2566,6 +3000,9 @@ function routeDecision({ risk, complexity, intent, task, mode, forceModel, capab
       });
     } catch {}
   }
+  try {
+    writePromptCacheSignal(promptCache, { capability: capabilityKey, role });
+  } catch {}
 
   return decision;
 }

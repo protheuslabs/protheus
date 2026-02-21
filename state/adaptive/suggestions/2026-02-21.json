@@ -1,0 +1,131 @@
+[
+  {
+    "id": "ADPszn6p06kxxfzncsw710o",
+    "uid": "s1t633a1atdmiejaue7f2raj",
+    "type": "adaptive_memory_candidate",
+    "status": "proposed",
+    "date": "2026-02-21",
+    "title": "Consider adaptive memory for theme: revenue",
+    "theme_tag": "revenue",
+    "relation_count": 10,
+    "evidence_uids": [
+      "1b32fa4730ebe0abd2bd9e96",
+      "6d66b070aa579a66c4e23a11",
+      "05e90454ab4c6768ddcd32d6",
+      "fba8c00d1c3afd48ce2adfbf",
+      "663aa56a0a1b900a9e080759"
+    ],
+    "recommended_layer": "sensory",
+    "suggested_controller": "systems/sensory/eyes_intake.js",
+    "suggested_action": "Evaluate whether a new adaptive eye or adaptive strategy artifact is warranted for theme 'revenue'."
+  },
+  {
+    "id": "ADPsj8amlw4dmbec7gl5bhp",
+    "uid": "s2xjah1yfgmxnpu4w1nl6y73",
+    "type": "adaptive_memory_candidate",
+    "status": "proposed",
+    "date": "2026-02-21",
+    "title": "Consider adaptive memory for theme: cross_signal_engine",
+    "theme_tag": "cross_signal_engine",
+    "relation_count": 6,
+    "evidence_uids": [
+      "d4ab9be19410ba4cd4c67cdc",
+      "b4568a0a3d9d6ec5e72f1590",
+      "6649dc675763c09291fd8fc5",
+      "5b68718d1f4c88498dfdd2d8"
+    ],
+    "recommended_layer": "sensory",
+    "suggested_controller": "systems/sensory/eyes_intake.js",
+    "suggested_action": "Evaluate whether a new adaptive eye or adaptive strategy artifact is warranted for theme 'cross_signal_engine'."
+  },
+  {
+    "id": "ADPs1wp9h7awl142kdxiw9r",
+    "uid": "s3zy24uisf4qftwms3gy39s2",
+    "type": "adaptive_memory_candidate",
+    "status": "proposed",
+    "date": "2026-02-21",
+    "title": "Consider adaptive memory for theme: ai",
+    "theme_tag": "ai",
+    "relation_count": 3,
+    "evidence_uids": [
+      "6d66b070aa579a66c4e23a11",
+      "05e90454ab4c6768ddcd32d6",
+      "67dd3baf1fa01ef9d55010cc"
+    ],
+    "recommended_layer": "sensory",
+    "suggested_controller": "systems/sensory/eyes_intake.js",
+    "suggested_action": "Evaluate whether a new adaptive eye or adaptive strategy artifact is warranted for theme 'ai'."
+  },
+  {
+    "id": "ADPs3odt77f2d7q5cih0qyw",
+    "uid": "s3tw7e3ugpf1v3shcp2dmr8c",
+    "type": "adaptive_memory_candidate",
+    "status": "proposed",
+    "date": "2026-02-21",
+    "title": "Consider adaptive memory for theme: freelance",
+    "theme_tag": "freelance",
+    "relation_count": 3,
+    "evidence_uids": [
+      "1b32fa4730ebe0abd2bd9e96",
+      "fba8c00d1c3afd48ce2adfbf",
+      "663aa56a0a1b900a9e080759"
+    ],
+    "recommended_layer": "sensory",
+    "suggested_controller": "systems/sensory/eyes_intake.js",
+    "suggested_action": "Evaluate whether a new adaptive eye or adaptive strategy artifact is warranted for theme 'freelance'."
+  },
+  {
+    "id": "ADPs19r0qlwrdv1hcjo2eub",
+    "uid": "s3z3lqsjfgrryd592d1tho9i",
+    "type": "adaptive_memory_candidate",
+    "status": "proposed",
+    "date": "2026-02-21",
+    "title": "Consider adaptive memory for theme: gigs",
+    "theme_tag": "gigs",
+    "relation_count": 3,
+    "evidence_uids": [
+      "1b32fa4730ebe0abd2bd9e96",
+      "fba8c00d1c3afd48ce2adfbf",
+      "663aa56a0a1b900a9e080759"
+    ],
+    "recommended_layer": "sensory",
+    "suggested_controller": "systems/sensory/eyes_intake.js",
+    "suggested_action": "Evaluate whether a new adaptive eye or adaptive strategy artifact is warranted for theme 'gigs'."
+  },
+  {
+    "id": "ADPs686jf6isx39neg162jx",
+    "uid": "s68ps4ygktd7lsdjlv3zi2p4",
+    "type": "adaptive_memory_candidate",
+    "status": "proposed",
+    "date": "2026-02-21",
+    "title": "Consider adaptive memory for theme: startups",
+    "theme_tag": "startups",
+    "relation_count": 3,
+    "evidence_uids": [
+      "6d66b070aa579a66c4e23a11",
+      "05e90454ab4c6768ddcd32d6",
+      "67dd3baf1fa01ef9d55010cc"
+    ],
+    "recommended_layer": "sensory",
+    "suggested_controller": "systems/sensory/eyes_intake.js",
+    "suggested_action": "Evaluate whether a new adaptive eye or adaptive strategy artifact is warranted for theme 'startups'."
+  },
+  {
+    "id": "ADPs2f14seotz7183nppryy",
+    "uid": "s52jtkys2nf7cyy270azin0w",
+    "type": "adaptive_memory_candidate",
+    "status": "proposed",
+    "date": "2026-02-21",
+    "title": "Consider adaptive memory for theme: upwork_gigs",
+    "theme_tag": "upwork_gigs",
+    "relation_count": 3,
+    "evidence_uids": [
+      "1b32fa4730ebe0abd2bd9e96",
+      "fba8c00d1c3afd48ce2adfbf",
+      "663aa56a0a1b900a9e080759"
+    ],
+    "recommended_layer": "sensory",
+    "suggested_controller": "systems/sensory/eyes_intake.js",
+    "suggested_action": "Evaluate whether a new adaptive eye or adaptive strategy artifact is warranted for theme 'upwork_gigs'."
+  }
+]

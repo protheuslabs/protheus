@@ -32,6 +32,7 @@
     "creative": "tier2_build",
     "hyper-creative": "tier2_build",
     "narrative": "tier2_build",
+    "deep-thinker": "tier1_governance",
     "governance_override": "tier1_governance",
     "index_rebuild": "tier3_grunt"
   },

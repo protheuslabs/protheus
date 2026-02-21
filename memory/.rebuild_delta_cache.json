@@ -1,0 +1,699 @@
+{
+  "version": 1,
+  "files": {
+    "2026-02-06.md": {
+      "sha1": "770c07448c913cfd708eeb730d57e95c273ac1e5",
+      "parsed": {
+        "records": [
+          {
+            "node_id": "jay-profile",
+            "tags": [
+              "profile",
+              "biography"
+            ],
+            "file": "2026-02-06.md",
+            "date": "2026-02-06",
+            "token_estimate": 72,
+            "summary": "Name: Jay"
+          }
+        ],
+        "format_violations": []
+      }
+    },
+    "2026-02-08.md": {
+      "sha1": "87148c0b72f1bf0c0f0c39ea642fb026d15d8421",
+      "parsed": {
+        "records": [
+          {
+            "node_id": "moltbook-first-engagement",
+            "tags": [
+              "social",
+              "moltbook",
+              "onboarding"
+            ],
+            "file": "2026-02-08.md",
+            "date": "2026-02-08",
+            "token_estimate": 69,
+            "summary": "Logged in as Protheus"
+          },
+          {
+            "node_id": "model-bootstrap",
+            "tags": [
+              "system",
+              "model",
+              "setup"
+            ],
+            "file": "2026-02-08.md",
+            "date": "2026-02-08",
+            "token_estimate": 184,
+            "summary": "Confirmed running kimi-k2.5 via Ollama"
+          }
+        ],
+        "format_violations": []
+      }
+    },
+    "2026-02-12.md": {
+      "sha1": "4bb5f7241aafc8720bc1b0b425d3be112a01fbcc",
+      "parsed": {
+        "records": [
+          {
+            "node_id": "moltbook-engage",
+            "tags": [
+              "social",
+              "heartbeat",
+              "moltbook"
+            ],
+            "file": "2026-02-12.md",
+            "date": "2026-02-12",
+            "token_estimate": 69,
+            "summary": "Upvoted: Ronin (3201), ProductClawd (3), YoungZeke (1008)"
+          },
+          {
+            "node_id": "x-swarm-reply",
+            "tags": [
+              "social",
+              "bird",
+              "ai"
+            ],
+            "file": "2026-02-12.md",
+            "date": "2026-02-12",
+            "token_estimate": 63,
+            "summary": "Replied to @ApplyWiseAi on Claude swarm mode"
+          },
+          {
+            "node_id": "signal-collection",
+            "tags": [
+              "intelligence",
+              "curation"
+            ],
+            "file": "2026-02-12.md",
+            "date": "2026-02-12",
+            "token_estimate": 100,
+            "summary": "AI: Ex-OpenAI superhuman timeline (late 2027), ClawserBot br"
+          },
+          {
+            "node_id": "context-compression",
+            "tags": [
+              "memory",
+              "optimization"
+            ],
+            "file": "2026-02-12.md",
+            "date": "2026-02-12",
+            "token_estimate": 48,
+            "summary": "XiaoZhuang post on memory management/context compression"
+          },
+          {
+            "node_id": "weekly-goals",
+            "tags": [
+              "review",
+              "accountability"
+            ],
+            "file": "2026-02-12.md",
+            "date": "2026-02-12",
+            "token_estimate": 48,
+            "summary": "Sundays @ 6:00 PM MT: Ask weekly goals for 5-year plan"
+          }
+        ],
+        "format_violations": []
+      }
+    },
+    "2026-02-13.md": {
+      "sha1": "171d28aeb465a5174c5488885c37b5c0307d0b1c",
+      "parsed": {
+        "records": [
+          {
+            "node_id": "moltstack-v1",
+            "tags": [
+              "income",
+              "cron",
+              "test"
+            ],
+            "file": "2026-02-13.md",
+            "date": "2026-02-13",
+            "token_estimate": 57,
+            "summary": "Created publication at moltstack.net/@the-protheus-codex"
+          },
+          {
+            "node_id": "x-engagement",
+            "tags": [
+              "social",
+              "bird",
+              "cron",
+              "test"
+            ],
+            "file": "2026-02-13.md",
+            "date": "2026-02-13",
+            "token_estimate": 51,
+            "summary": "10AM cron: browsed X for AI/physics/travel/coral"
+          },
+          {
+            "node_id": "feedback-binary",
+            "tags": [
+              "comms",
+              "calibration"
+            ],
+            "file": "2026-02-13.md",
+            "date": "2026-02-13",
+            "token_estimate": 36,
+            "summary": "Rule: \"good job\" = TRUE → continue trajectory"
+          },
+          {
+            "node_id": "approval-override",
+            "tags": [
+              "workflow",
+              "publishing"
+            ],
+            "file": "2026-02-13.md",
+            "date": "2026-02-13",
+            "token_estimate": 35,
+            "summary": "MoltStack: no approval required"
+          },
+          {
+            "node_id": "multi-agent-pivot",
+            "tags": [
+              "architecture",
+              "ai"
+            ],
+            "file": "2026-02-13.md",
+            "date": "2026-02-13",
+            "token_estimate": 39,
+            "summary": "Thesis: Q3 2026 serious apps use multi-agent orchestration"
+          },
+          {
+            "node_id": "moltstack-reg",
+            "tags": [
+              "income",
+              "platform"
+            ],
+            "file": "2026-02-13.md",
+            "date": "2026-02-13",
+            "token_estimate": 37,
+            "summary": "Posted to YoungZeke's MoltStack thread"
+          },
+          {
+            "node_id": "self-model-spec",
+            "tags": [
+              "system",
+              "model",
+              "capabilities"
+            ],
+            "file": "2026-02-13.md",
+            "date": "2026-02-13",
+            "token_estimate": 39,
+            "summary": "model_name: ollama/kimi-k2.5:cloud"
+          },
+          {
+            "node_id": "mode-restrictions",
+            "tags": [
+              "protocol",
+              "capabilities",
+              "gating"
+            ],
+            "file": "2026-02-13.md",
+            "date": "2026-02-13",
+            "token_estimate": 100,
+            "summary": "first ±3 lines, max 3 reads default (+3 on \"expand\")"
+          },
+          {
+            "node_id": "query-mode-toggle",
+            "tags": [
+              "protocol",
+              "memory",
+              "modes"
+            ],
+            "file": "2026-02-13.md",
+            "date": "2026-02-13",
+            "token_estimate": 124,
+            "summary": "Read at most 2 PINs (±3 lines) + at most 3 SNIPs (±3 lines)"
+          },
+          {
+            "node_id": "graph-bridge-policy",
+            "tags": [
+              "protocol",
+              "graph",
+              "connectivity"
+            ],
+            "file": "2026-02-13.md",
+            "date": "2026-02-13",
+            "token_estimate": 72,
+            "summary": "Do NOT auto-create to force connectivity. Use bridge-templat"
+          },
+          {
+            "node_id": "creative-mode-spec",
+            "tags": [
+              "protocol",
+              "creative",
+              "modes"
+            ],
+            "file": "2026-02-13.md",
+            "date": "2026-02-13",
+            "token_estimate": 139,
+            "summary": "SCAMPER (improving/modifying existing system)"
+          },
+          {
+            "node_id": "project-registry",
+            "tags": [
+              "system",
+              "registry",
+              "projects"
+            ],
+            "file": "2026-02-13.md",
+            "date": "2026-02-13",
+            "token_estimate": 92,
+            "summary": "core:"
+          },
+          {
+            "node_id": "test-noise-quarantine",
+            "tags": [
+              "system",
+              "policy",
+              "governance"
+            ],
+            "file": "2026-02-13.md",
+            "date": "2026-02-13",
+            "token_estimate": 68,
+            "summary": "X/MoltStack engagement = #test Ops/Logs unless explicitly pr"
+          },
+          {
+            "node_id": "bridge-templates",
+            "tags": [
+              "system",
+              "templates",
+              "connectivity"
+            ],
+            "file": "2026-02-13.md",
+            "date": "2026-02-13",
+            "token_estimate": 116,
+            "summary": "bridge-loop: circular feedback system; fields: source, sink,"
+          },
+          {
+            "node_id": "bloat-safeguards",
+            "tags": [
+              "system",
+              "policy",
+              "maintenance"
+            ],
+            "file": "2026-02-13.md",
+            "date": "2026-02-13",
+            "token_estimate": 55,
+            "summary": "Default cap: 200 tokens; control-plane: 200; metrics: 250"
+          },
+          {
+            "node_id": "node-format-policy",
+            "tags": [
+              "system",
+              "protocol",
+              "memory"
+            ],
+            "file": "2026-02-13.md",
+            "date": "2026-02-13",
+            "token_estimate": 104,
+            "summary": "JOT: @jot #tag1 #tag2 <one line> — append-only, unindexed"
+          },
+          {
+            "node_id": "audience-loop",
+            "tags": [
+              "growth",
+              "distribution",
+              "funnel"
+            ],
+            "file": "2026-02-13.md",
+            "date": "2026-02-13",
+            "token_estimate": 47,
+            "summary": "Capture X engagement → warm → MoltStack depth"
+          },
+          {
+            "node_id": "content-atom",
+            "tags": [
+              "content",
+              "workflow"
+            ],
+            "file": "2026-02-13.md",
+            "date": "2026-02-13",
+            "token_estimate": 52,
+            "summary": "Single content unit → multi-platform distribution"
+          },
+          {
+            "node_id": "conversion-cta",
+            "tags": [
+              "conversion",
+              "funnel"
+            ],
+            "file": "2026-02-13.md",
+            "date": "2026-02-13",
+            "token_estimate": 51,
+            "summary": "Hard ask at end of MoltStack posts"
+          },
+          {
+            "node_id": "snippet-index-policy",
+            "tags": [
+              "system",
+              "protocol",
+              "memory"
+            ],
+            "file": "2026-02-13.md",
+            "date": "2026-02-13",
+            "token_estimate": 97,
+            "summary": "Read at most 2 PINs (±3 lines)"
+          },
+          {
+            "node_id": "tagging-policy",
+            "tags": [
+              "system",
+              "protocol",
+              "memory"
+            ],
+            "file": "2026-02-13.md",
+            "date": "2026-02-13",
+            "token_estimate": 108,
+            "summary": "JOT: max 2 tags | SNIP: max 5 tags | PIN: max 10 tags (only "
+          },
+          {
+            "node_id": "topic-registry",
+            "tags": [
+              "system",
+              "registry",
+              "topics"
+            ],
+            "file": "2026-02-13.md",
+            "date": "2026-02-13",
+            "token_estimate": 77,
+            "summary": "Topics curated: only create on explicit mint or 3+ recurrenc"
+          },
+          {
+            "node_id": "pin-policy",
+            "tags": [
+              "system",
+              "protocol",
+              "memory"
+            ],
+            "file": "2026-02-13.md",
+            "date": "2026-02-13",
+            "token_estimate": 139,
+            "summary": "MEMORY (PIN) rules:"
+          },
+          {
+            "node_id": "hyper-creative-mode-spec",
+            "tags": [
+              "protocol",
+              "creative",
+              "modes"
+            ],
+            "file": "2026-02-13.md",
+            "date": "2026-02-13",
+            "token_estimate": 140,
+            "summary": "CREATIVE (lenses + distance + eval):"
+          },
+          {
+            "node_id": "capture-policy",
+            "tags": [
+              "system",
+              "policy",
+              "memory"
+            ],
+            "file": "2026-02-13.md",
+            "date": "2026-02-13",
+            "token_estimate": 156,
+            "summary": "Weekly caps: SNIP max 30/week, PIN max 3/week. Warning at 20"
+          },
+          {
+            "node_id": "agent-portability-spec",
+            "tags": [
+              "system",
+              "protocol",
+              "portability",
+              "backup"
+            ],
+            "file": "2026-02-13.md",
+            "date": "2026-02-13",
+            "token_estimate": 120,
+            "summary": "year run goal: survive across machines + models."
+          },
+          {
+            "node_id": "x-browse-10pm",
+            "tags": [
+              "social",
+              "bird",
+              "cron",
+              "findings"
+            ],
+            "file": "2026-02-13.md",
+            "date": "2026-02-13",
+            "token_estimate": 104,
+            "summary": "Feb 13, 2026. 5 standout posts found, 2 reply attempts block"
+          },
+          {
+            "node_id": "x-browse-10pm-log",
+            "tags": [
+              "social",
+              "bird",
+              "cron",
+              "log"
+            ],
+            "file": "2026-02-13.md",
+            "date": "2026-02-13",
+            "token_estimate": 105,
+            "summary": "Feb 13, 2026 10PM."
+          },
+          {
+            "node_id": "retrieval-rails",
+            "tags": [
+              "system",
+              "protocol",
+              "memory",
+              "rails"
+            ],
+            "file": "2026-02-13.md",
+            "date": "2026-02-13",
+            "token_estimate": 147,
+            "summary": "Retrieval order: TAGS_INDEX.md → MEMORY_INDEX.md → snippets "
+          },
+          {
+            "node_id": "system-changelog",
+            "tags": [
+              "system",
+              "protocol",
+              "changelog"
+            ],
+            "file": "2026-02-13.md",
+            "date": "2026-02-13",
+            "token_estimate": 87,
+            "summary": "2026-02-13 | whitelist + archive exclusion | prevent non-dai"
+          },
+          {
+            "node_id": "portability-playbook",
+            "tags": [
+              "system",
+              "protocol",
+              "portability",
+              "backup"
+            ],
+            "file": "2026-02-13.md",
+            "date": "2026-02-13",
+            "token_estimate": 105,
+            "summary": "tar czf memory-backup-$(date +%Y%m%d).tar.gz memory/"
+          }
+        ],
+        "format_violations": []
+      }
+    },
+    "2026-02-14.md": {
+      "sha1": "de8a79ffcfd1deb7c4045660695ee5bab1088c1e",
+      "parsed": {
+        "records": [
+          {
+            "node_id": "x-browse-1",
+            "tags": [
+              "bird",
+              "x-browse",
+              "cron",
+              "social",
+              "insights"
+            ],
+            "file": "2026-02-14.md",
+            "date": "2026-02-14",
+            "token_estimate": 117,
+            "summary": "Startup defensibility: shifting from model access to relatio"
+          },
+          {
+            "node_id": "x-browse-1-log",
+            "tags": [
+              "bird",
+              "x-browse",
+              "cron",
+              "log"
+            ],
+            "file": "2026-02-14.md",
+            "date": "2026-02-14",
+            "token_estimate": 133,
+            "summary": "agent economics)."
+          },
+          {
+            "node_id": "x-output-contract",
+            "tags": [
+              "policy",
+              "x-engagement",
+              "workflow"
+            ],
+            "file": "2026-02-14.md",
+            "date": "2026-02-14",
+            "token_estimate": 136,
+            "summary": "run output (Ops/Logs only):"
+          },
+          {
+            "node_id": "decision-journal-policy",
+            "tags": [
+              "system",
+              "policy",
+              "decisions",
+              "learning"
+            ],
+            "file": "2026-02-14.md",
+            "date": "2026-02-14",
+            "token_estimate": 100,
+            "summary": "MM-DD domain:<agent-system|projects|marketing|sales|security"
+          },
+          {
+            "node_id": "skill-supply-chain-gate",
+            "tags": [
+              "system",
+              "security",
+              "protocol"
+            ],
+            "file": "2026-02-14.md",
+            "date": "2026-02-14",
+            "token_estimate": 139,
+            "summary": "Chain Security Gate — Feb 14, 2026."
+          },
+          {
+            "node_id": "weekly-compound-2026-07",
+            "tags": [
+              "weekly",
+              "compound",
+              "index"
+            ],
+            "file": "2026-02-14.md",
+            "date": "2026-02-14",
+            "token_estimate": 772,
+            "summary": "*Child Nodes:**"
+          }
+        ],
+        "format_violations": [
+          {
+            "file": "2026-02-14.md",
+            "node_id": "habit-state-archive-ref",
+            "reasons": "H1 mismatch: \"Habit\" != \"habit-state-archive-ref\""
+          }
+        ]
+      }
+    },
+    "2026-02-16.md": {
+      "sha1": "dbc72700b5b12592edda12786ed47647c52b4797",
+      "parsed": {
+        "records": [],
+        "format_violations": [
+          {
+            "file": "2026-02-16.md",
+            "node_id": "learnings-ingest-2026-02-16",
+            "reasons": "H1 mismatch: \"Community\" != \"learnings-ingest-2026-02-16\""
+          }
+        ]
+      }
+    },
+    "2026-02-20.md": {
+      "sha1": "228a5d8450ec44d4219a3325f7c0815e389a012d",
+      "parsed": {
+        "records": [
+          {
+            "node_id": "eye-upwork_gigs-324be047",
+            "uid": "1b32fa4730ebe0abd2bd9e96",
+            "tags": [
+              "eyes",
+              "sensory",
+              "upwork_gigs",
+              "memory-bridge",
+              "revenue",
+              "freelance"
+            ],
+            "file": "2026-02-20.md",
+            "date": "2026-02-20",
+            "token_estimate": 185,
+            "summary": "Source eye: upwork_gigs"
+          },
+          {
+            "node_id": "eye-medium_com-7d719655",
+            "uid": "6d66b070aa579a66c4e23a11",
+            "tags": [
+              "eyes",
+              "sensory",
+              "medium_com",
+              "memory-bridge",
+              "ai",
+              "startups"
+            ],
+            "file": "2026-02-20.md",
+            "date": "2026-02-20",
+            "token_estimate": 236,
+            "summary": "Source eye: medium_com"
+          },
+          {
+            "node_id": "eye-medium_com-45a399e3",
+            "uid": "05e90454ab4c6768ddcd32d6",
+            "tags": [
+              "eyes",
+              "sensory",
+              "medium_com",
+              "memory-bridge",
+              "ai",
+              "startups"
+            ],
+            "file": "2026-02-20.md",
+            "date": "2026-02-20",
+            "token_estimate": 236,
+            "summary": "Source eye: medium_com"
+          },
+          {
+            "node_id": "eye-upwork_gigs-35909358",
+            "uid": "fba8c00d1c3afd48ce2adfbf",
+            "tags": [
+              "eyes",
+              "sensory",
+              "upwork_gigs",
+              "memory-bridge",
+              "revenue",
+              "freelance"
+            ],
+            "file": "2026-02-20.md",
+            "date": "2026-02-20",
+            "token_estimate": 179,
+            "summary": "Source eye: upwork_gigs"
+          },
+          {
+            "node_id": "eye-upwork_gigs-2a650d28",
+            "uid": "663aa56a0a1b900a9e080759",
+            "tags": [
+              "eyes",
+              "sensory",
+              "upwork_gigs",
+              "memory-bridge",
+              "revenue",
+              "freelance"
+            ],
+            "file": "2026-02-20.md",
+            "date": "2026-02-20",
+            "token_estimate": 187,
+            "summary": "Source eye: upwork_gigs"
+          }
+        ],
+        "format_violations": [
+          {
+            "file": "2026-02-20.md",
+            "node_id": "moltstack-post-2026-02-20",
+            "reasons": "H1 mismatch: \"MoltStack\" != \"moltstack-post-2026-02-20\""
+          }
+        ]
+      }
+    }
+  },
+  "updated_at": "2026-02-21T01:36:23.214Z"
+}

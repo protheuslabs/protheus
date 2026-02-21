@@ -1,0 +1,364 @@
+{
+  "ts": "2026-02-21T00:16:58.247Z",
+  "count": 20,
+  "items": [
+    {
+      "collected_at": "2026-02-21T00:16:58.245Z",
+      "eye_id": "ollama_search",
+      "id": "fc2564373c44e8b0",
+      "title": "qwen3.5",
+      "description": "The Qwen3.5 series 397B-A17B native vision-language model is built on a hybrid architecture that integrates a linear attention mechanism with a sparse mixture-of-experts model, achieving higher inference efficiency.",
+      "url": "https://ollama.com/library/qwen3.5",
+      "tags": [
+        "vision",
+        "qwen"
+      ],
+      "topics": [
+        "ai",
+        "llm",
+        "local_models",
+        "vision"
+      ],
+      "bytes": 4055
+    },
+    {
+      "collected_at": "2026-02-21T00:16:58.246Z",
+      "eye_id": "ollama_search",
+      "id": "c082fe70afba82bb",
+      "title": "glm-5",
+      "description": "A strong reasoning and agentic model from Z.ai with 744B total parameters (40B active), built for complex systems engineering and long-horizon tasks.",
+      "url": "https://ollama.com/library/glm-5",
+      "tags": [],
+      "topics": [
+        "ai",
+        "llm",
+        "local_models",
+        "agents",
+        "large_models"
+      ],
+      "bytes": 4055
+    },
+    {
+      "collected_at": "2026-02-21T00:16:58.246Z",
+      "eye_id": "ollama_search",
+      "id": "3820dc1dbd2cf1c9",
+      "title": "minimax-m2.5",
+      "description": "MiniMax-M2.5 is a state-of-the-art large language model designed for real-world productivity and coding tasks.",
+      "url": "https://ollama.com/library/minimax-m2.5",
+      "tags": [],
+      "topics": [
+        "ai",
+        "llm",
+        "local_models",
+        "edge"
+      ],
+      "bytes": 4055
+    },
+    {
+      "collected_at": "2026-02-21T00:16:58.247Z",
+      "eye_id": "ollama_search",
+      "id": "e9538f05f30e4ef4",
+      "title": "qwen3-coder-next",
+      "description": "Qwen3-Coder-Next is a coding-focused language model from Alibaba&#39;s Qwen team, optimized for agentic coding workflows and local development.",
+      "url": "https://ollama.com/library/qwen3-coder-next",
+      "tags": [
+        "code",
+        "qwen"
+      ],
+      "topics": [
+        "ai",
+        "llm",
+        "local_models",
+        "code",
+        "agents"
+      ],
+      "bytes": 4055
+    },
+    {
+      "collected_at": "2026-02-21T00:16:58.247Z",
+      "eye_id": "ollama_search",
+      "id": "dcd2c39594da0be3",
+      "title": "glm-ocr",
+      "description": "GLM-OCR is a multimodal OCR model for complex document understanding, built on the GLM-V encoder–decoder architecture.",
+      "url": "https://ollama.com/library/glm-ocr",
+      "tags": [
+        "multimodal"
+      ],
+      "topics": [
+        "ai",
+        "llm",
+        "local_models",
+        "vision",
+        "code"
+      ],
+      "bytes": 4055
+    },
+    {
+      "collected_at": "2026-02-21T00:16:58.247Z",
+      "eye_id": "ollama_search",
+      "id": "5843e921881e3938",
+      "title": "kimi-k2.5",
+      "description": "Kimi K2.5 is an open-source, native multimodal agentic model that seamlessly integrates vision and language understanding with advanced agentic capabilities, instant and thinking modes, as well as conversational and agentic paradigms.",
+      "url": "https://ollama.com/library/kimi-k2.5",
+      "tags": [
+        "multimodal"
+      ],
+      "topics": [
+        "ai",
+        "llm",
+        "local_models",
+        "vision",
+        "agents"
+      ],
+      "bytes": 4055
+    },
+    {
+      "collected_at": "2026-02-21T00:16:58.247Z",
+      "eye_id": "ollama_search",
+      "id": "2c29f015a20a4fc2",
+      "title": "lfm2.5-thinking",
+      "description": "LFM2.5 is a new family of hybrid models designed for on-device deployment.",
+      "url": "https://ollama.com/library/lfm2.5-thinking",
+      "tags": [
+        "tools"
+      ],
+      "topics": [
+        "ai",
+        "llm",
+        "local_models"
+      ],
+      "bytes": 4055
+    },
+    {
+      "collected_at": "2026-02-21T00:16:58.247Z",
+      "eye_id": "ollama_search",
+      "id": "1b27e4e89ddae667",
+      "title": "glm-4.7-flash",
+      "description": "As the strongest model in the 30B class, GLM-4.7-Flash offers a new option for lightweight deployment that balances performance and efficiency.",
+      "url": "https://ollama.com/library/glm-4.7-flash",
+      "tags": [
+        "tools"
+      ],
+      "topics": [
+        "ai",
+        "llm",
+        "local_models",
+        "edge",
+        "large_models"
+      ],
+      "bytes": 4055
+    },
+    {
+      "collected_at": "2026-02-21T00:16:58.247Z",
+      "eye_id": "ollama_search",
+      "id": "db1ef96897eee355",
+      "title": "translategemma",
+      "description": "A new collection of open translation models built on Gemma 3, helping people communicate across 55 languages.",
+      "url": "https://ollama.com/library/translategemma",
+      "tags": [
+        "vision",
+        "gemma"
+      ],
+      "topics": [
+        "ai",
+        "llm",
+        "local_models"
+      ],
+      "bytes": 4055
+    },
+    {
+      "collected_at": "2026-02-21T00:16:58.247Z",
+      "eye_id": "ollama_search",
+      "id": "6fb6ea4b65496637",
+      "title": "glm-4.7",
+      "description": "Advancing the Coding Capability",
+      "url": "https://ollama.com/library/glm-4.7",
+      "tags": [],
+      "topics": [
+        "ai",
+        "llm",
+        "local_models"
+      ],
+      "bytes": 4055
+    },
+    {
+      "collected_at": "2026-02-21T00:16:58.247Z",
+      "eye_id": "ollama_search",
+      "id": "103f3f4ea699cb1f",
+      "title": "minimax-m2.1",
+      "description": "Exceptional multilingual capabilities to elevate code engineering",
+      "url": "https://ollama.com/library/minimax-m2.1",
+      "tags": [
+        "code"
+      ],
+      "topics": [
+        "ai",
+        "llm",
+        "local_models",
+        "code",
+        "edge"
+      ],
+      "bytes": 4055
+    },
+    {
+      "collected_at": "2026-02-21T00:16:58.247Z",
+      "eye_id": "ollama_search",
+      "id": "0d2a1f98e89ff5fe",
+      "title": "gemini-3-flash-preview",
+      "description": "Gemini 3 Flash offers frontier intelligence built for speed at a fraction of the cost.",
+      "url": "https://ollama.com/library/gemini-3-flash-preview",
+      "tags": [],
+      "topics": [
+        "ai",
+        "llm",
+        "local_models",
+        "edge"
+      ],
+      "bytes": 4055
+    },
+    {
+      "collected_at": "2026-02-21T00:16:58.247Z",
+      "eye_id": "ollama_search",
+      "id": "c07659a91082b8ef",
+      "title": "nemotron-3-nano",
+      "description": "Nemotron 3 Nano - A new Standard for Efficient, Open, and Intelligent Agentic Models",
+      "url": "https://ollama.com/library/nemotron-3-nano",
+      "tags": [
+        "tools"
+      ],
+      "topics": [
+        "ai",
+        "llm",
+        "local_models",
+        "agents"
+      ],
+      "bytes": 4055
+    },
+    {
+      "collected_at": "2026-02-21T00:16:58.247Z",
+      "eye_id": "ollama_search",
+      "id": "7951c310466c9ca1",
+      "title": "functiongemma",
+      "description": "FunctionGemma is a specialized version of Google&#39;s Gemma 3 270M model fine-tuned explicitly for function calling.",
+      "url": "https://ollama.com/library/functiongemma",
+      "tags": [
+        "tools",
+        "gemma",
+        "fine-tuned"
+      ],
+      "topics": [
+        "ai",
+        "llm",
+        "local_models"
+      ],
+      "bytes": 4055
+    },
+    {
+      "collected_at": "2026-02-21T00:16:58.247Z",
+      "eye_id": "ollama_search",
+      "id": "fd0c5932036b0dec",
+      "title": "olmo-3.1",
+      "description": "Olmo is a series of Open language models designed to enable the science of language models. These models are pre-trained on the Dolma 3 dataset and post-trained on the Dolci datasets.",
+      "url": "https://ollama.com/library/olmo-3.1",
+      "tags": [
+        "tools"
+      ],
+      "topics": [
+        "ai",
+        "llm",
+        "local_models"
+      ],
+      "bytes": 4055
+    },
+    {
+      "collected_at": "2026-02-21T00:16:58.247Z",
+      "eye_id": "ollama_search",
+      "id": "8102f3df9b2d53d1",
+      "title": "olmo-3",
+      "description": "Olmo is a series of Open language models designed to enable the science of language models. These models are pre-trained on the Dolma 3 dataset and post-trained on the Dolci datasets.",
+      "url": "https://ollama.com/library/olmo-3",
+      "tags": [],
+      "topics": [
+        "ai",
+        "llm",
+        "local_models"
+      ],
+      "bytes": 4055
+    },
+    {
+      "collected_at": "2026-02-21T00:16:58.247Z",
+      "eye_id": "ollama_search",
+      "id": "3ea0ae2d89a9bb67",
+      "title": "nomic-embed-text-v2-moe",
+      "description": "nomic-embed-text-v2-moe is a multilingual MoE text embedding model that excels at multilingual retrieval.",
+      "url": "https://ollama.com/library/nomic-embed-text-v2-moe",
+      "tags": [
+        "embedding"
+      ],
+      "topics": [
+        "ai",
+        "llm",
+        "local_models",
+        "embeddings"
+      ],
+      "bytes": 4055
+    },
+    {
+      "collected_at": "2026-02-21T00:16:58.247Z",
+      "eye_id": "ollama_search",
+      "id": "fa718da4d960b056",
+      "title": "devstral-small-2",
+      "description": "24B model that excels at using tools to explore codebases, editing multiple files and power software engineering agents.",
+      "url": "https://ollama.com/library/devstral-small-2",
+      "tags": [
+        "tools"
+      ],
+      "topics": [
+        "ai",
+        "llm",
+        "local_models",
+        "code",
+        "agents",
+        "edge"
+      ],
+      "bytes": 4055
+    },
+    {
+      "collected_at": "2026-02-21T00:16:58.247Z",
+      "eye_id": "ollama_search",
+      "id": "8225197dfe1a0263",
+      "title": "rnj-1",
+      "description": "Rnj-1 is a family of 8B parameter open-weight, dense models trained from scratch by Essential AI, optimized for code and STEM with capabilities on par with SOTA open-weight models.",
+      "url": "https://ollama.com/library/rnj-1",
+      "tags": [
+        "8b",
+        "code"
+      ],
+      "topics": [
+        "ai",
+        "llm",
+        "local_models",
+        "code"
+      ],
+      "bytes": 4055
+    },
+    {
+      "collected_at": "2026-02-21T00:16:58.247Z",
+      "eye_id": "ollama_search",
+      "id": "c34a2f7c093c4ca2",
+      "title": "deepseek-v3.2",
+      "description": "DeepSeek-V3.2, a model that harmonizes high computational efficiency with superior reasoning and agent performance.",
+      "url": "https://ollama.com/library/deepseek-v3.2",
+      "tags": [
+        "deepseek"
+      ],
+      "topics": [
+        "ai",
+        "llm",
+        "local_models",
+        "agents"
+      ],
+      "bytes": 4055
+    }
+  ]
+}

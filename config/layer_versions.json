@@ -97,7 +97,7 @@
         "QUEUE v1.2.1: Proposal lifecycle logging (ingest, accept, reject, done, snooze)",
         "QUEUE v1.2.1: state/sensory/queue_log.jsonl (append-only)",
         "QUEUE v1.2.1: Recurring proposal detection (same title across 2+ days)",
-        "EXTERNAL EYES v1.3.0: Config at config/external_eyes.json",
+        "EXTERNAL EYES v1.3.0: Config at adaptive/sensory/eyes/catalog.json",
         "EXTERNAL EYES v1.3.0: Run/score/evolve commands",
         "EXTERNAL EYES v1.3.0: Domain allowlisting + budget enforcement",
         "EXTERNAL EYES v1.3.0: Score EMA tracking with cadence evolution",

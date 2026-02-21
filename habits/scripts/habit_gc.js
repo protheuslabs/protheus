@@ -14,11 +14,25 @@
 
 const fs = require('fs');
 const path = require('path');
+const {
+  defaultRegistry,
+  readRegistryWithUids,
+  writeRegistryWithUids
+} = require('./habit_uid_store.js');
 
-const REGISTRY_PATH = '/Users/jay/.openclaw/workspace/habits/registry.json';
-const ROUTINES_DIR = '/Users/jay/.openclaw/workspace/habits/routines';
-const ARCHIVE_DIR = '/Users/jay/.openclaw/workspace/habits/_archive';
-const SNIPPET_DIR = '/Users/jay/.openclaw/workspace/memory';
+const REPO_ROOT = path.resolve(__dirname, '..', '..');
+const REGISTRY_PATH = process.env.HABIT_GC_REGISTRY_PATH
+  ? path.resolve(process.env.HABIT_GC_REGISTRY_PATH)
+  : path.join(REPO_ROOT, 'habits', 'registry.json');
+const ROUTINES_DIR = process.env.HABIT_GC_ROUTINES_DIR
+  ? path.resolve(process.env.HABIT_GC_ROUTINES_DIR)
+  : path.join(REPO_ROOT, 'habits', 'routines');
+const ARCHIVE_DIR = process.env.HABIT_GC_ARCHIVE_DIR
+  ? path.resolve(process.env.HABIT_GC_ARCHIVE_DIR)
+  : path.join(REPO_ROOT, 'habits', '_archive');
+const SNIPPET_DIR = process.env.HABIT_GC_SNIPPET_DIR
+  ? path.resolve(process.env.HABIT_GC_SNIPPET_DIR)
+  : path.join(REPO_ROOT, 'memory');
 
 function normalizeDateToDenver(isoString) {
   if (!isoString) return null;
@@ -35,6 +49,10 @@ function normalizeDateToDenver(isoString) {
 
 function getTodayDenver() {
   return normalizeDateToDenver(new Date().toISOString());
+}
+
+function nowIso() {
+  return new Date().toISOString();
 }
 
 function writeStateChangeSnip(data) {
@@ -109,13 +127,14 @@ function main() {
   console.log('  4. ACTIVE habits require explicit "archive habit <id>" command');
   console.log('');
   
-  const registry = JSON.parse(fs.readFileSync(REGISTRY_PATH, 'utf8'));
+  const registry = readRegistryWithUids(REGISTRY_PATH, defaultRegistry(), true);
   const { max_active, gc, habits } = registry;
   
   const now = new Date();
   const msPerDay = 24 * 60 * 60 * 1000;
   
   let toArchive = [];
+  let toDemote = [];
   let activeCount = 0;
   let candidateCount = 0;
   let disabledCount = 0;
@@ -136,6 +155,22 @@ function main() {
       disabledCount++;
     }
     
+    const lastUsed = habit.last_used_at ? new Date(habit.last_used_at) : null;
+    const daysInactive = lastUsed ? (now - lastUsed) / msPerDay : Infinity;
+
+    if (state === 'active' && !gov.pinned) {
+      const shouldDemoteForStale =
+        daysInactive > gc.inactive_days && Number(habit.uses_30d || 0) < gc.min_uses_30d;
+      if (shouldDemoteForStale) {
+        toDemote.push({
+          habit,
+          daysInactive: Math.round(daysInactive),
+          reason: `GC_DEMOTE_STALE_ACTIVE: inactive ${Math.round(daysInactive)}d > ${gc.inactive_days}d AND uses_30d=${habit.uses_30d} < ${gc.min_uses_30d}`
+        });
+        continue;
+      }
+    }
+
     const eligibility = isEligibleForArchive(habit, gc, now, msPerDay);
     
     if (eligibility.eligible) {
@@ -192,11 +227,12 @@ function main() {
   // Report
   console.log(`State counts:`);
   console.log(`  Active: ${activeCount} | Candidate: ${candidateCount} | Disabled: ${disabledCount}`);
+  console.log(`  Demote-eligible active: ${toDemote.length}`);
   console.log(`  Archive-eligible: ${toArchive.length}`);
   console.log(`  Max active limit: ${max_active}`);
   console.log('');
   
-  if (toArchive.length === 0) {
+  if (toArchive.length === 0 && toDemote.length === 0) {
     console.log('✅ No habits to archive. All within thresholds.');
     if (capTriggered) {
       console.log('⚠️  BUT: Hard cap triggered with no eligible for archive!');
@@ -208,8 +244,24 @@ function main() {
   // Sort by last_used (oldest first for predictable archival)
   toArchive.sort((a, b) => a.daysInactive - b.daysInactive);
   
-  console.log(`Habits to archive: ${toArchive.length}`);
-  console.log('');
+  if (toDemote.length > 0) {
+    console.log(`Habits to demote (active -> disabled): ${toDemote.length}`);
+    console.log('');
+    for (const { habit, daysInactive, reason } of toDemote) {
+      console.log(`  • ${habit.id}`);
+      console.log(`    Name: ${habit.name}`);
+      console.log(`    State: active`);
+      console.log(`    Inactive: ${daysInactive}d`);
+      console.log(`    Uses 30d: ${habit.uses_30d}`);
+      console.log(`    Reason: ${reason}`);
+      console.log('');
+    }
+  }
+
+  if (toArchive.length > 0) {
+    console.log(`Habits to archive: ${toArchive.length}`);
+    console.log('');
+  }
   
   for (const { habit, daysInactive, eligibility } of toArchive) {
     const gov = habit.governance || {};
@@ -242,9 +294,37 @@ function main() {
     return;
   }
   
-  // Execute archiving
+  // Execute demotions first (active -> disabled), then archive pass.
   console.log('APPLYING archives...');
   console.log('');
+
+  for (const { habit, daysInactive, reason } of toDemote) {
+    const gov = habit.governance || {};
+    const oldState = gov.state || habit.status || 'active';
+    if (!habit.governance) habit.governance = {};
+    habit.governance.state = 'disabled';
+    habit.governance.consecutive_errors = Number(habit.governance.consecutive_errors || 0);
+    if (!habit.governance.demote || typeof habit.governance.demote !== 'object') {
+      habit.governance.demote = { max_consecutive_errors: 2, min_outcome_score: 0.4, cooldown_minutes: 1440 };
+    } else if (!Number.isFinite(Number(habit.governance.demote.cooldown_minutes))) {
+      habit.governance.demote.cooldown_minutes = 1440;
+    }
+    habit.status = 'disabled';
+    habit.disabled_at = nowIso();
+    habit.disabled_reason = reason;
+
+    writeStateChangeSnip({
+      habit_id: habit.id,
+      previous_state: oldState,
+      new_state: 'disabled',
+      reason,
+      uses_30d: habit.uses_30d,
+      last_used_days: daysInactive,
+      pinned: gov.pinned || false,
+      safety_notes: ['Auto-demoted by GC atrophy', 'Not archived in same pass']
+    });
+    console.log(`  📴 Demoted stale active habit: ${habit.id}`);
+  }
   
   if (!fs.existsSync(ARCHIVE_DIR)) {
     fs.mkdirSync(ARCHIVE_DIR, { recursive: true });
@@ -285,10 +365,10 @@ function main() {
     console.log(`  ✅ Archived: ${habit.id}`);
   }
   
-  fs.writeFileSync(REGISTRY_PATH, JSON.stringify(registry, null, 2) + '\n', 'utf8');
+  writeRegistryWithUids(REGISTRY_PATH, registry);
   
   console.log('');
-  console.log(`✅ GC complete. Archived ${toArchive.length} habits.`);
+  console.log(`✅ GC complete. Demoted ${toDemote.length}, archived ${toArchive.length} habits.`);
   console.log('Trust records preserved in trusted_habits.json.');
   console.log('Routines moved to habits/_archive/');
 }

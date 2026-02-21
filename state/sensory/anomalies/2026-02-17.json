@@ -2,83 +2,90 @@
   "date": "2026-02-17",
   "anomalies": [
     {
+      "type": "file_change_spike",
+      "severity": "high",
+      "message": "File change volume (250) exceeds threshold (avg: 20.0, cap: 200)",
+      "value": 250,
+      "threshold": 200
+    },
+    {
       "type": "high_churn",
       "severity": "medium",
-      "message": "File 'file0.js' modified across 4 days (high churn detected)",
+      "message": "File 'file0.js' modified across 7 days (high churn detected)",
       "path": "file0.js",
-      "days": 4
+      "days": 7
     },
     {
       "type": "high_churn",
       "severity": "medium",
-      "message": "File 'file1.js' modified across 4 days (high churn detected)",
+      "message": "File 'file1.js' modified across 7 days (high churn detected)",
       "path": "file1.js",
-      "days": 4
+      "days": 7
     },
     {
       "type": "high_churn",
       "severity": "medium",
-      "message": "File 'file2.js' modified across 4 days (high churn detected)",
+      "message": "File 'file2.js' modified across 7 days (high churn detected)",
       "path": "file2.js",
-      "days": 4
+      "days": 7
     },
     {
       "type": "high_churn",
       "severity": "medium",
-      "message": "File 'file3.js' modified across 4 days (high churn detected)",
+      "message": "File 'file3.js' modified across 7 days (high churn detected)",
       "path": "file3.js",
-      "days": 4
+      "days": 7
     },
     {
       "type": "high_churn",
       "severity": "medium",
-      "message": "File 'file4.js' modified across 4 days (high churn detected)",
+      "message": "File 'file4.js' modified across 7 days (high churn detected)",
       "path": "file4.js",
-      "days": 4
+      "days": 7
     },
     {
       "type": "high_churn",
       "severity": "medium",
-      "message": "File 'file5.js' modified across 4 days (high churn detected)",
+      "message": "File 'file5.js' modified across 7 days (high churn detected)",
       "path": "file5.js",
-      "days": 4
+      "days": 7
     },
     {
       "type": "high_churn",
       "severity": "medium",
-      "message": "File 'file6.js' modified across 4 days (high churn detected)",
+      "message": "File 'file6.js' modified across 7 days (high churn detected)",
       "path": "file6.js",
-      "days": 4
+      "days": 7
     },
     {
       "type": "high_churn",
       "severity": "medium",
-      "message": "File 'file7.js' modified across 4 days (high churn detected)",
+      "message": "File 'file7.js' modified across 7 days (high churn detected)",
       "path": "file7.js",
-      "days": 4
+      "days": 7
     },
     {
       "type": "high_churn",
       "severity": "medium",
-      "message": "File 'file8.js' modified across 4 days (high churn detected)",
+      "message": "File 'file8.js' modified across 7 days (high churn detected)",
       "path": "file8.js",
-      "days": 4
+      "days": 7
     },
     {
       "type": "high_churn",
       "severity": "medium",
-      "message": "File 'file9.js' modified across 4 days (high churn detected)",
+      "message": "File 'file9.js' modified across 7 days (high churn detected)",
       "path": "file9.js",
-      "days": 4
+      "days": 7
     }
   ],
   "metrics": {
-    "file_changes": 0,
-    "git_dirty_events": 4,
-    "git_dirty_changed_count_max": 62,
-    "git_dirty_changed_count_avg": 43,
-    "git_dirty_changed_count_last": 50,
+    "file_changes": 250,
+    "git_dirty_events": 0,
+    "git_dirty_changed_count_max": 0,
+    "git_dirty_changed_count_avg": 0,
+    "git_dirty_changed_count_last": 0,
     "aqs": 50,
-    "signal_ratio": 0.67
+    "signal_ratio": 1
   }
 }

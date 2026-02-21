@@ -16,6 +16,7 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const { beginChange, completeChange, recoverIfInterrupted, writeAtomicJson } = require('./self_change_failsafe');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const AUTONOMY_CONTROLLER_PATH = path.join(REPO_ROOT, 'systems', 'autonomy', 'autonomy_controller.js');
@@ -23,6 +24,7 @@ const AUTONOMY_CONTROLLER_PATH = path.join(REPO_ROOT, 'systems', 'autonomy', 'au
 const IMPROVEMENT_DIR = path.join(REPO_ROOT, 'state', 'autonomy', 'improvements');
 const TRIALS_PATH = path.join(IMPROVEMENT_DIR, 'trials.json');
 const EVENTS_PATH = path.join(IMPROVEMENT_DIR, 'events.jsonl');
+const REVERT_TX_PATH = path.join(IMPROVEMENT_DIR, 'revert_tx.json');
 
 const DEFAULT_TRIAL_DAYS = Number(process.env.IMPROVEMENT_DEFAULT_TRIAL_DAYS || 3);
 const DEFAULT_SCORECARD_DAYS = Number(process.env.IMPROVEMENT_SCORECARD_DAYS || 7);
@@ -76,6 +78,28 @@ function saveJson(filePath, obj) {
 function appendJsonl(filePath, obj) {
   ensureDir(path.dirname(filePath));
   fs.appendFileSync(filePath, JSON.stringify(obj) + '\n');
+}
+
+function markRevertTx(payload) {
+  saveJson(REVERT_TX_PATH, {
+    active: true,
+    ts: nowIso(),
+    ...payload
+  });
+}
+
+function clearRevertTx(extra = {}) {
+  saveJson(REVERT_TX_PATH, {
+    active: false,
+    cleared_ts: nowIso(),
+    ...extra
+  });
+}
+
+function loadRevertTx() {
+  const tx = loadJson(REVERT_TX_PATH, null);
+  if (!tx || typeof tx !== 'object') return null;
+  return tx;
 }
 
 function optValue(name, fallback = null) {
@@ -138,7 +162,29 @@ function trialsStore() {
 }
 
 function saveTrialsStore(store) {
-  saveJson(TRIALS_PATH, store);
+  const snapshot = `${TRIALS_PATH}.bak-${Date.now()}`;
+  if (fs.existsSync(TRIALS_PATH)) fs.copyFileSync(TRIALS_PATH, snapshot);
+  else fs.writeFileSync(snapshot, JSON.stringify({ trials: [] }, null, 2) + '\n', 'utf8');
+  const changeId = `improvement_trials:${Date.now()}`;
+  beginChange({
+    id: changeId,
+    kind: 'improvement_trials_write',
+    target_path: TRIALS_PATH,
+    snapshot_path: fs.existsSync(snapshot) ? snapshot : TRIALS_PATH,
+    note: 'save_trials_store'
+  });
+  try {
+    writeAtomicJson(TRIALS_PATH, store);
+    completeChange(changeId, { file: 'trials.json' });
+  } catch (err) {
+    try {
+      if (fs.existsSync(snapshot)) fs.copyFileSync(snapshot, TRIALS_PATH);
+      completeChange(changeId, { file: 'trials.json', reverted: true, reason: 'write_error' });
+    } catch {}
+    throw err;
+  } finally {
+    try { if (fs.existsSync(snapshot)) fs.unlinkSync(snapshot); } catch {}
+  }
 }
 
 function addDays(dateStr, plusDays) {
@@ -226,16 +272,21 @@ function evaluateMetrics(base, cur, thresholds) {
 }
 
 function gitRevert(commit) {
+  markRevertTx({ commit, phase: 'preflight' });
   const status = runGit(['status', '--porcelain']);
   if (status.status !== 0) {
+    clearRevertTx({ commit, result: 'status_failed' });
     return { ok: false, reason: 'git_status_failed', detail: String(status.stderr || '').trim() };
   }
   if (String(status.stdout || '').trim()) {
+    clearRevertTx({ commit, result: 'working_tree_dirty' });
     return { ok: false, reason: 'working_tree_dirty' };
   }
 
+  markRevertTx({ commit, phase: 'revert_running' });
   const rev = runGit(['revert', '--no-edit', commit]);
   if (rev.status !== 0) {
+    clearRevertTx({ commit, result: 'revert_failed' });
     return {
       ok: false,
       reason: 'git_revert_failed',
@@ -243,10 +294,53 @@ function gitRevert(commit) {
     };
   }
   const head = runGit(['rev-parse', '--short', 'HEAD']);
+  clearRevertTx({ commit, result: head.status === 0 ? 'reverted' : 'reverted_unknown_head' });
   return {
     ok: head.status === 0,
     reason: head.status === 0 ? 'reverted' : 'reverted_unknown_head',
     revert_commit: String(head.stdout || '').trim() || null
+  };
+}
+
+function recoverInterruptedRevert() {
+  const tx = loadRevertTx();
+  if (!tx || tx.active !== true) return { recovered: false, reason: 'no_active_revert_tx' };
+
+  const abort = runGit(['revert', '--abort']);
+  if (abort.status === 0) {
+    clearRevertTx({ recovered: true, result: 'revert_abort_ok', commit: tx.commit || null });
+    appendJsonl(EVENTS_PATH, {
+      ts: nowIso(),
+      type: 'improvement_revert_recovered',
+      method: 'git_revert_abort',
+      commit: tx.commit || null
+    });
+    return { recovered: true, method: 'git_revert_abort', commit: tx.commit || null };
+  }
+
+  const errText = String(abort.stderr || abort.stdout || '').toLowerCase();
+  if (errText.includes('no revert in progress') || errText.includes('revert is not possible')) {
+    clearRevertTx({ recovered: true, result: 'no_revert_in_progress', commit: tx.commit || null });
+    appendJsonl(EVENTS_PATH, {
+      ts: nowIso(),
+      type: 'improvement_revert_recovered',
+      method: 'no_revert_in_progress',
+      commit: tx.commit || null
+    });
+    return { recovered: true, method: 'no_revert_in_progress', commit: tx.commit || null };
+  }
+
+  appendJsonl(EVENTS_PATH, {
+    ts: nowIso(),
+    type: 'improvement_revert_recovery_failed',
+    commit: tx.commit || null,
+    detail: String(abort.stderr || abort.stdout || '').trim().slice(0, 400)
+  });
+  return {
+    recovered: false,
+    reason: 'revert_abort_failed',
+    detail: String(abort.stderr || abort.stdout || '').trim().slice(0, 400),
+    commit: tx.commit || null
   };
 }
 
@@ -477,6 +571,9 @@ function usage() {
 
 function main() {
   ensureState();
+  // Startup recovery: revert any interrupted transactional self-change before proceeding.
+  recoverIfInterrupted();
+  recoverInterruptedRevert();
   const cmd = process.argv[2] || '';
   const dateStr = isDateStr(process.argv[3]) ? process.argv[3] : todayStr();
 
@@ -499,4 +596,3 @@ module.exports = {
   elapsedDaysInclusive,
   addDays
 };
-

@@ -31,18 +31,25 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { loadActiveDirectives } = require('../../lib/directive_resolver.js');
+const { resolveCatalogPath } = require('../../lib/eyes_catalog.js');
 
 const testDir = process.env.SENSORY_TEST_DIR;
 const SENSORY_DIR = testDir || path.join(__dirname, '..', '..', 'state', 'sensory');
 const EYES_RAW_DIR = path.join(SENSORY_DIR, 'eyes', 'raw');
 const PROPOSALS_DIR = path.join(SENSORY_DIR, 'proposals');
-const EYES_CONFIG_PATH = path.join(__dirname, '..', '..', 'config', 'external_eyes.json');
+const ANOMALIES_DIR = path.join(SENSORY_DIR, 'anomalies');
+const RECEIPTS_DIR = path.join(SENSORY_DIR, 'receipts');
+const CROSS_SIGNAL_HYPOTHESES_DIR = path.join(SENSORY_DIR, 'cross_signal', 'hypotheses');
+const EYES_CONFIG_PATH = resolveCatalogPath(path.join(__dirname, '..', '..'));
 const EYES_STATE_REGISTRY_PATH = path.join(__dirname, '..', '..', 'state', 'sensory', 'eyes', 'registry.json');
 
 const SENSORY_MIN_RELEVANCE_SCORE = Number(process.env.SENSORY_MIN_RELEVANCE_SCORE || 42);
 const SENSORY_MIN_DIRECTIVE_FIT = Number(process.env.SENSORY_MIN_DIRECTIVE_FIT || 25);
 const SENSORY_MIN_ACTIONABILITY_SCORE = Number(process.env.SENSORY_MIN_ACTIONABILITY_SCORE || 45);
 const SENSORY_MIN_EYE_SCORE_EMA = Number(process.env.SENSORY_MIN_EYE_SCORE_EMA || 40);
+const SENSORY_CROSS_SIGNAL_MIN_CONFIDENCE = Number(process.env.SENSORY_CROSS_SIGNAL_MIN_CONFIDENCE || 62);
+const SENSORY_CROSS_SIGNAL_MIN_SUPPORT_EYES = Number(process.env.SENSORY_CROSS_SIGNAL_MIN_SUPPORT_EYES || 2);
+const SENSORY_CROSS_SIGNAL_MAX_PROPOSALS = Number(process.env.SENSORY_CROSS_SIGNAL_MAX_PROPOSALS || 3);
 const SENSORY_DISALLOWED_PARSER_TYPES = new Set(
   String(process.env.SENSORY_DISALLOWED_PARSER_TYPES || 'stub')
     .split(',')
@@ -65,7 +72,19 @@ const CAPABILITY_MARKERS = new Set([
   'ai', 'llm', 'agent', 'agents', 'automation', 'autonomous', 'productivity', 'devtools', 'infra', 'security',
   'orchestration', 'routing', 'latency', 'throughput', 'benchmark', 'optimization', 'startup'
 ]);
-const ACTION_VERB_RE = /\b(build|implement|ship|deploy|automate|optimize|test|measure|reduce|increase|create|launch)\b/i;
+const ACTION_VERB_RE = /\b(build|implement|ship|deploy|automate|optimize|test|measure|reduce|increase|create|launch|enforce|remediate)\b/i;
+const META_COORDINATION_RE = /\b(review|prioritize|triage|health\s*check|high\s*leverage)\b/i;
+const CONCRETE_CHANGE_RE = /\b(file|script|collector|parser|endpoint|model|config|test|hook|queue|ledger|registry|adapter|workflow|commit|tag|routing|transport|fallback|sensor|retry|dns|network|probe)\b/i;
+const MEASURABLE_OUTCOME_RE = /\b(\d+|threshold|target|baseline|delta|rate|ratio|latency|error|count|coverage|artifact|log|test|commit|tag|id)\b/i;
+const OPPORTUNITY_MARKER_RE = /\b(opportunity|freelance|job|jobs|hiring|contract|contractor|gig|client|rfp|request for proposal|seeking|looking for)\b/i;
+const EXPLAINER_TITLE_RE = /^(why|what|how)\b/i;
+const LOCAL_SIGNAL_KIND_RE = /\/signals\/\d{4}-\d{2}-\d{2}\/([^/?#]+)/i;
+const LOCAL_FALLBACK_ALLOWED_KINDS = new Set(
+  String(process.env.SENSORY_LOCAL_FALLBACK_ALLOWED_KINDS || 'infra_outage')
+    .split(',')
+    .map(s => s.trim().toLowerCase())
+    .filter(Boolean)
+);
 const NOISE_MARKERS = [
   'rumor',
   'speculation',
@@ -77,7 +96,7 @@ const NOISE_MARKERS = [
 ];
 
 function ensureDirs() {
-  [EYES_RAW_DIR, PROPOSALS_DIR].forEach((dir) => {
+  [EYES_RAW_DIR, PROPOSALS_DIR, ANOMALIES_DIR, RECEIPTS_DIR, CROSS_SIGNAL_HYPOTHESES_DIR].forEach((dir) => {
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   });
 }
@@ -118,6 +137,19 @@ function loadExistingProposals(dateStr) {
   }
 }
 
+function loadCrossSignalHypotheses(dateStr) {
+  const p = path.join(CROSS_SIGNAL_HYPOTHESES_DIR, `${dateStr}.json`);
+  if (!fs.existsSync(p)) return { path: p, hypotheses: [] };
+  try {
+    const raw = JSON.parse(fs.readFileSync(p, 'utf8'));
+    if (Array.isArray(raw)) return { path: p, hypotheses: raw };
+    if (raw && Array.isArray(raw.hypotheses)) return { path: p, hypotheses: raw.hypotheses };
+    return { path: p, hypotheses: [] };
+  } catch (_) {
+    return { path: p, hypotheses: [] };
+  }
+}
+
 function clamp(n, min, max) {
   const x = Number(n);
   if (!Number.isFinite(x)) return min;
@@ -135,6 +167,17 @@ function readJsonSafe(filePath, fallback) {
   }
 }
 
+function appendJsonl(filePath, obj) {
+  ensureDirs();
+  fs.appendFileSync(filePath, JSON.stringify(obj) + '\n', 'utf8');
+}
+
+function sortedObject(obj) {
+  const out = {};
+  for (const k of Object.keys(obj || {}).sort()) out[k] = obj[k];
+  return out;
+}
+
 function saveProposalsArray(dateStr, proposals) {
   ensureDirs();
   const p = path.join(PROPOSALS_DIR, `${dateStr}.json`);
@@ -144,6 +187,19 @@ function saveProposalsArray(dateStr, proposals) {
 
 function normalizeText(s) {
   return String(s || '').trim();
+}
+
+function extractLocalSignalKind(url) {
+  const u = normalizeText(url).toLowerCase();
+  const m = u.match(LOCAL_SIGNAL_KIND_RE);
+  return m ? normalizeText(m[1]).toLowerCase() : '';
+}
+
+function itemTimestampMs(item) {
+  const raw = normalizeText((item && item.collected_at) || (item && item.ts) || '');
+  if (!raw) return 0;
+  const ms = Date.parse(raw);
+  return Number.isFinite(ms) ? ms : 0;
 }
 
 function normalizeFitText(s) {
@@ -330,10 +386,12 @@ function assessDirectiveFitItem(item, profile) {
     };
   }
 
+  const topicsBlob = Array.isArray(item && item.topics) ? item.topics.map(t => normalizeText(t)).join(' ') : '';
   const text = normalizeFitText([
     normalizeText(item.title),
     normalizeText(item.url),
-    normalizeText(item.content_preview)
+    normalizeText(item.content_preview),
+    topicsBlob
   ].join(' '));
   const tokens = tokenizeFitText(text);
   const businessHits = tokens.filter(t => BUSINESS_MARKERS.has(t) || BUSINESS_MARKERS.has(toStem(t)));
@@ -375,7 +433,16 @@ function assessDirectiveFitItem(item, profile) {
 function assessItemRelevance(item, eye, directiveProfile) {
   const itemScore = scoreItem(item);
   const directiveFit = assessDirectiveFitItem(item, directiveProfile);
+  const eyeId = normalizeText(item.eye_id) || normalizeText(eye && eye.id) || normalizeText(item.source) || 'unknown_eye';
   const title = normalizeText(item.title);
+  const preview = normalizeText(item.content_preview);
+  const topics = Array.isArray(item.topics) ? item.topics : [];
+  const hasBusinessTopic = topics.some((t) => {
+    const v = normalizeText(t).toLowerCase();
+    return BUSINESS_MARKERS.has(v) || BUSINESS_MARKERS.has(toStem(v));
+  });
+  const opportunityHint = OPPORTUNITY_MARKER_RE.test(`${title.toLowerCase()} ${preview.toLowerCase()}`);
+  const signalKind = extractLocalSignalKind(item.url);
   let score = Math.round((itemScore * 0.55) + (directiveFit.score * 0.45));
   const reasons = [];
   let hardBlock = false;
@@ -384,6 +451,17 @@ function assessItemRelevance(item, eye, directiveProfile) {
     hardBlock = true;
     reasons.push('stub_title');
   }
+
+  if (eyeId === 'local_state_fallback' && LOCAL_FALLBACK_ALLOWED_KINDS.size > 0 && !LOCAL_FALLBACK_ALLOWED_KINDS.has(signalKind)) {
+    hardBlock = true;
+    reasons.push(`local_fallback_kind_blocked:${signalKind || 'unknown'}`);
+  }
+
+  if (eyeId !== 'local_state_fallback' && directiveFit.pass !== true) {
+    score = Math.round((itemScore * 0.75) + (directiveFit.score * 0.25));
+  }
+  if (eyeId !== 'local_state_fallback' && hasBusinessTopic) score += 6;
+  if (eyeId !== 'local_state_fallback' && opportunityHint) score += 10;
 
   if (eye) {
     const parserType = normalizeText(eye.parser_type).toLowerCase();
@@ -398,7 +476,7 @@ function assessItemRelevance(item, eye, directiveProfile) {
       hardBlock = true;
       reasons.push('eye_dormant');
     } else if (status === 'probation') {
-      score -= 10;
+      score -= (eyeId === 'local_state_fallback' ? 10 : 4);
       reasons.push('eye_probation');
     }
     if (Number.isFinite(eyeScoreEma) && eyeScoreEma < SENSORY_MIN_EYE_SCORE_EMA) {
@@ -414,10 +492,12 @@ function assessItemRelevance(item, eye, directiveProfile) {
   }
 
   const finalScore = clamp(score, 0, 100);
+  const relevanceGate = directiveFit.pass || itemScore >= 70 || (hasBusinessTopic && itemScore >= 55);
   const pass = !hardBlock
     && finalScore >= SENSORY_MIN_RELEVANCE_SCORE
-    && (directiveFit.pass || itemScore >= 70);
+    && relevanceGate;
   if (!pass && finalScore < SENSORY_MIN_RELEVANCE_SCORE) reasons.push('below_min_relevance');
+  if (!pass && !relevanceGate) reasons.push('relevance_gate_not_satisfied');
 
   return {
     pass,
@@ -437,9 +517,19 @@ function assessItemActionability(item, analysis) {
   const title = normalizeText(item.title);
   const preview = normalizeText(item.content_preview);
   const url = normalizeText(item.url);
+  const signalKind = extractLocalSignalKind(url);
+  const isInternalSignal = url.startsWith('https://local.workspace/');
   const topics = Array.isArray(item.topics) ? item.topics : [];
+  const hasBusinessTopic = topics.some((t) => {
+    const v = normalizeText(t).toLowerCase();
+    return BUSINESS_MARKERS.has(v) || BUSINESS_MARKERS.has(toStem(v));
+  });
   const relevance = Number(analysis && analysis.relevance_score);
   const directiveFitPass = analysis && analysis.directive_fit_pass === true;
+  const haystack = `${title.toLowerCase()} ${preview.toLowerCase()}`;
+  const hasOpportunity = OPPORTUNITY_MARKER_RE.test(haystack);
+  const hasConcreteChange = CONCRETE_CHANGE_RE.test(haystack);
+  const hasMeasurableOutcome = MEASURABLE_OUTCOME_RE.test(haystack);
   const reasons = [];
 
   let score = 0;
@@ -448,8 +538,19 @@ function assessItemActionability(item, analysis) {
 
   if (Number.isFinite(relevance)) score += clamp(Math.round((relevance - 30) * 0.5), 0, 35);
 
-  if (ACTION_VERB_RE.test(title) || ACTION_VERB_RE.test(preview)) score += 16;
-  else reasons.push('no_action_verb');
+  const hasActionVerb = ACTION_VERB_RE.test(title) || ACTION_VERB_RE.test(preview);
+  if (hasActionVerb) {
+    score += 16;
+  } else if (!isInternalSignal && (hasOpportunity || (Number.isFinite(relevance) && relevance >= 65 && hasBusinessTopic))) {
+    score += 8;
+    reasons.push(hasOpportunity ? 'external_opportunity_signal' : 'external_action_inferred');
+  } else {
+    reasons.push('no_action_verb');
+  }
+
+  if (!isInternalSignal && hasOpportunity) {
+    score += 10;
+  }
 
   if (topics.length >= 2) score += 8;
   else if (topics.length >= 1) score += 4;
@@ -457,16 +558,46 @@ function assessItemActionability(item, analysis) {
   if (url.startsWith('https://')) score += 8;
   else if (url.startsWith('http://')) score += 4;
   else reasons.push('missing_source_url');
-
-  const haystack = `${title.toLowerCase()} ${preview.toLowerCase()}`;
   const noiseHits = NOISE_MARKERS.filter(m => haystack.includes(m)).length;
   if (noiseHits > 0) {
     score -= noiseHits * 10;
     reasons.push('noise_marker');
   }
 
+  if (/\bno\s+[a-z0-9_\s:-]{1,60}\s+detected\b/i.test(haystack) && !/\b\d+\b/.test(haystack)) {
+    score -= 12;
+    reasons.push('ungrounded_detection_alert');
+  }
+
+  if (META_COORDINATION_RE.test(haystack) && !CONCRETE_CHANGE_RE.test(haystack)) {
+    score -= 24;
+    reasons.push('meta_coordination_without_concrete_change');
+  }
+
+  if (!isInternalSignal && !hasActionVerb && !hasOpportunity && !hasConcreteChange) {
+    score -= 20;
+    reasons.push('generic_non_actionable_item');
+  }
+  if (!isInternalSignal && EXPLAINER_TITLE_RE.test(title.toLowerCase()) && !hasActionVerb && !hasOpportunity) {
+    score -= 12;
+    reasons.push('explainer_without_execution_path');
+  }
+
+  if (isInternalSignal && !hasConcreteChange) {
+    score -= 20;
+    reasons.push('internal_missing_concrete_change');
+  }
+  if (isInternalSignal && !hasMeasurableOutcome) {
+    score -= 20;
+    reasons.push('internal_missing_measurable_outcome');
+  }
+  if (isInternalSignal && signalKind && signalKind !== 'infra_outage') {
+    reasons.push(`internal_signal_kind:${signalKind}`);
+  }
+
   const finalScore = clamp(score, 0, 100);
-  const pass = finalScore >= SENSORY_MIN_ACTIONABILITY_SCORE;
+  const internalQualityPass = !isInternalSignal || (hasConcreteChange && hasMeasurableOutcome);
+  const pass = finalScore >= SENSORY_MIN_ACTIONABILITY_SCORE && internalQualityPass;
   if (!pass) reasons.push('below_min_actionability');
 
   return {
@@ -483,17 +614,98 @@ function normalizeTaskText(s, maxLen = 160) {
     .slice(0, maxLen);
 }
 
-function buildSuggestedNextCommand(item, analysis) {
-  const title = normalizeTaskText(item.title || 'external intel', 90);
-  const url = normalizeTaskText(item.url || '', 120);
-  const topics = Array.isArray(item.topics)
-    ? item.topics.map(t => normalizeTaskText(t, 20)).filter(Boolean).slice(0, 2)
+function proposalExecutionShape(item, analysis) {
+  const title = normalizeTaskText(item && item.title ? item.title : 'external signal', 90);
+  const preview = normalizeTaskText(item && item.content_preview ? item.content_preview : '', 180);
+  const url = normalizeTaskText(item && item.url ? item.url : '', 120);
+  const topics = Array.isArray(item && item.topics)
+    ? item.topics.map(t => normalizeTaskText(t, 20)).filter(Boolean).slice(0, 3)
     : [];
-  const focus = topics.length ? ` Focus topics: ${topics.join(', ')}.` : '';
-  const source = url ? ` Source: ${url}.` : '';
-  const task = `Extract one implementable step from external intel: ${title}.${focus}${source}`.trim().slice(0, 220);
-  const tokensEst = Number(analysis && analysis.relevance_score) >= 70 ? 1100 : 700;
-  return `node systems/routing/route_execute.js --task="${task}" --tokens_est=${tokensEst} --repeats_14d=3 --errors_30d=0 --dry-run`;
+  const signalKind = extractLocalSignalKind(url);
+  const isInternalSignal = url.startsWith('https://local.workspace/');
+  const textBlob = `${title.toLowerCase()} ${preview.toLowerCase()} ${topics.join(' ').toLowerCase()}`;
+  const hasOpportunity = OPPORTUNITY_MARKER_RE.test(textBlob);
+  const tokensEst = Number(analysis && analysis.relevance_score) >= 70 ? 1100 : 800;
+  return { title, url, topics, signalKind, isInternalSignal, hasOpportunity, tokensEst };
+}
+
+function buildValidationPlan(item, analysis) {
+  const shape = proposalExecutionShape(item, analysis);
+  if (shape.isInternalSignal) {
+    const target = shape.signalKind || 'collector';
+    return [
+      `Implement deterministic remediation for ${target} in repository code`,
+      'Run measurable verification (artifact/log/test) and record result',
+      'Prepare rollback note and route a dry-run gate check'
+    ];
+  }
+  if (shape.hasOpportunity) {
+    return [
+      'Build one targeted offer/proposal draft tied to the source opportunity',
+      'Define measurable outreach KPI (reply/interview count) with 7-day target',
+      'Route dry-run execution plan and verify first executable step'
+    ];
+  }
+  return [
+    'Build one concrete change task tied to source signal',
+    'Define measurable success metric (artifact/log/test) before execution',
+    'Route dry-run execution plan and verify gate outcome'
+  ];
+}
+
+function buildSuggestedNextCommand(item, analysis) {
+  const shape = proposalExecutionShape(item, analysis);
+  const topics = shape.topics.length ? ` Focus topics: ${shape.topics.join(', ')}.` : '';
+  const source = shape.url ? ` Source: ${shape.url}.` : '';
+  let task = '';
+  if (shape.isInternalSignal) {
+    const target = shape.signalKind || 'collector';
+    task = `Implement deterministic remediation for ${target}: ${shape.title}. Define patch scope, verification command, and rollback step.${source}`;
+  } else if (shape.hasOpportunity) {
+    task = `Build one concrete revenue capture plan for opportunity: ${shape.title}. Produce deliverable outline, 7-day metric, and first execution step.${topics}${source}`;
+  } else {
+    task = `Build one concrete experiment from external signal: ${shape.title}. Define executable change, measurable metric, and rollback criteria.${topics}${source}`;
+  }
+  const trimmedTask = normalizeTaskText(task, 220);
+  return `node systems/routing/route_execute.js --task="${trimmedTask}" --tokens_est=${shape.tokensEst} --repeats_14d=3 --errors_30d=0 --dry-run`;
+}
+
+function buildActionSpec(item, analysis) {
+  const shape = proposalExecutionShape(item, analysis);
+  const verify = buildValidationPlan(item, analysis);
+  const nextCommand = buildSuggestedNextCommand(item, analysis);
+
+  if (shape.isInternalSignal) {
+    const target = shape.signalKind || 'collector';
+    return {
+      version: 1,
+      objective: `Restore deterministic ${target} collector reliability with verifiable checks`,
+      target: `collector:${target}`,
+      next_command: nextCommand,
+      verify,
+      rollback: 'Revert scoped collector changes and restore last known stable behavior'
+    };
+  }
+
+  if (shape.hasOpportunity) {
+    return {
+      version: 1,
+      objective: 'Convert detected opportunity signal into one executable revenue capture step',
+      target: shape.url ? `opportunity:${shape.url}` : `opportunity:${shape.title}`,
+      next_command: nextCommand,
+      verify,
+      rollback: 'Cancel opportunity execution plan and keep only observation artifacts'
+    };
+  }
+
+  return {
+    version: 1,
+    objective: 'Run one scoped experiment from external signal with measurable outcome',
+    target: shape.url ? `signal:${shape.url}` : `signal:${shape.title}`,
+    next_command: nextCommand,
+    verify,
+    rollback: 'Revert experiment changes and retain baseline behavior'
+  };
 }
 
 function buildProposalFromItem(item, analysis, actionability) {
@@ -503,6 +715,8 @@ function buildProposalFromItem(item, analysis, actionability) {
   const title = normalizeText(item.title) || 'External item';
   const topics = Array.isArray(item.topics) ? item.topics : [];
   const preview = normalizeText(item.content_preview);
+  const hasOpportunityTopic = topics.some((t) => /\b(revenue|freelance|gig|market|startup|business|income|sales|leads?)\b/i.test(String(t || '')));
+  const hasOpportunity = OPPORTUNITY_MARKER_RE.test(`${title.toLowerCase()} ${preview.toLowerCase()}`) || hasOpportunityTopic;
   const signalScore = Number(analysis && analysis.signal_quality_score);
   const itemScore = Number.isFinite(signalScore) ? signalScore : scoreItem(item);
   const signalTier = qualityTier(itemScore);
@@ -519,12 +733,13 @@ function buildProposalFromItem(item, analysis, actionability) {
   const h = sha16(`${eyeId}:${stableKey}`);
 
   // Proposal ID is deterministic and stable across runs & minor content changes
-  const id = `EYE-${h}`;
+  const id = `PRP-${h}`;
+  const actionSpec = buildActionSpec(item, analysis);
 
   return {
     id,
     type: 'external_intel',
-    title: `[Eyes:${eyeId}] ${title}`.slice(0, 120),
+    title: title.slice(0, 120),
     evidence: [
       {
         source: 'eyes_raw',
@@ -539,16 +754,15 @@ function buildProposalFromItem(item, analysis, actionability) {
     ],
     expected_impact: (Number.isFinite(relevanceScore) && relevanceScore >= 75 && Number.isFinite(actionabilityScore) && actionabilityScore >= 70)
       ? 'high'
-      : itemScore >= 60 ? 'medium' : 'low',
-    risk: (analysis && analysis.directive_fit_pass === true && Number.isFinite(actionabilityScore) && actionabilityScore >= 60)
+      : (itemScore >= 60 || (hasOpportunity && Number.isFinite(actionabilityScore) && actionabilityScore >= 50 && Number.isFinite(directiveFitScore) && directiveFitScore >= 40))
+        ? 'medium'
+        : 'low',
+    risk: (analysis && analysis.directive_fit_pass === true && Number.isFinite(actionabilityScore) && actionabilityScore >= 55)
       ? 'low'
       : 'medium',
-    validation: [
-      'Extract one concrete build/change task from source',
-      'Define measurable success check (artifact/log/test)',
-      'Route a dry-run execution plan and verify gate outcome'
-    ],
-    suggested_next_command: buildSuggestedNextCommand(item, analysis),
+    validation: actionSpec.verify,
+    suggested_next_command: actionSpec.next_command,
+    action_spec: actionSpec,
     meta: {
       source_eye: eyeId,
       url,
@@ -567,8 +781,180 @@ function buildProposalFromItem(item, analysis, actionability) {
       actionability_score: Number.isFinite(actionabilityScore) ? actionabilityScore : null,
       actionability_pass: actionability ? actionability.pass === true : null,
       actionability_reasons: actionability ? actionability.reasons.slice(0, 5) : [],
-      preview: preview.slice(0, 200)
+      action_spec_version: Number(actionSpec.version || 1),
+      action_spec_target: normalizeText(actionSpec.target),
+      preview: preview.slice(0, 200),
+      ...(hasOpportunity ? { expected_value_score: 58, time_to_cash_hours: 48 } : {})
     }
+  };
+}
+
+function makeCrossSignalItem(hypothesis, dateStr) {
+  const topic = normalizeText(hypothesis && hypothesis.topic);
+  const type = normalizeText(hypothesis && hypothesis.type) || 'cross_signal';
+  const summary = normalizeText(hypothesis && hypothesis.summary) || `Cross-signal hypothesis on ${topic || 'unknown topic'}`;
+  const supportEyes = Number(hypothesis && hypothesis.support_eyes || 0);
+  const supportEvents = Number(hypothesis && hypothesis.support_events || 0);
+  const trend = normalizeText(hypothesis && hypothesis.trend_direction);
+  const title = `[Cross-Signal] ${summary}`.slice(0, 120);
+  const preview = `type=${type}; topic=${topic || 'n/a'}; support_eyes=${supportEyes}; support_events=${supportEvents}; trend=${trend || 'flat'}`;
+  const topics = uniqSorted([
+    'cross_signal',
+    type,
+    topic
+  ]);
+  return {
+    eye_id: 'cross_signal_engine',
+    source: 'cross_signal_engine',
+    url: `https://local.workspace/signals/${dateStr}/cross_signal`,
+    title,
+    topics,
+    content_preview: preview
+  };
+}
+
+function assessCrossSignalActionability(hypothesis, directiveFitPass) {
+  const confidence = Number(hypothesis && hypothesis.confidence || 0);
+  const supportEyes = Number(hypothesis && hypothesis.support_eyes || 0);
+  const supportEvents = Number(hypothesis && hypothesis.support_events || 0);
+  const trend = normalizeText(hypothesis && hypothesis.trend_direction).toLowerCase();
+  const type = normalizeText(hypothesis && hypothesis.type).toLowerCase();
+  const reasons = [];
+
+  let score = 0;
+  score += clamp(Math.round(confidence * 0.55), 0, 55);
+  score += clamp(supportEyes * 8, 0, 24);
+  score += clamp(supportEvents * 2, 0, 16);
+  if (trend === 'up') score += 6;
+  if (type === 'lead_lag') score += 5;
+  if (directiveFitPass === true) score += 8;
+
+  if (confidence < SENSORY_CROSS_SIGNAL_MIN_CONFIDENCE) reasons.push('cross_signal_confidence_low');
+  if (supportEyes < SENSORY_CROSS_SIGNAL_MIN_SUPPORT_EYES) reasons.push('cross_signal_support_low');
+  if (directiveFitPass !== true) reasons.push('directive_fit_low');
+
+  const finalScore = clamp(score, 0, 100);
+  const pass = finalScore >= SENSORY_MIN_ACTIONABILITY_SCORE
+    && confidence >= SENSORY_CROSS_SIGNAL_MIN_CONFIDENCE
+    && supportEyes >= SENSORY_CROSS_SIGNAL_MIN_SUPPORT_EYES
+    && directiveFitPass === true;
+  if (!pass) reasons.push('below_min_actionability');
+  return { pass, score: finalScore, reasons };
+}
+
+function buildCrossSignalProposal(hypothesis, dateStr, directiveFit, actionability) {
+  const id = `CSG-${sha16(`${normalizeText(hypothesis && hypothesis.id)}|${dateStr}`)}`;
+  const summary = normalizeText(hypothesis && hypothesis.summary) || 'Cross-signal hypothesis';
+  const confidence = Number(hypothesis && hypothesis.confidence || 0);
+  const supportEyes = Number(hypothesis && hypothesis.support_eyes || 0);
+  const supportEvents = Number(hypothesis && hypothesis.support_events || 0);
+  const topic = normalizeText(hypothesis && hypothesis.topic);
+  const type = normalizeText(hypothesis && hypothesis.type) || 'cross_signal';
+  const task = normalizeTaskText(
+    `Evaluate cross-signal hypothesis "${summary}". Determine one concrete experiment with measurable success criteria and rollback plan.`,
+    220
+  );
+  const suggestedNextCommand = `node systems/routing/route_execute.js --task="${task}" --tokens_est=900 --repeats_14d=2 --errors_30d=0 --dry-run`;
+  const actionSpec = {
+    version: 1,
+    objective: 'Validate cross-signal hypothesis via one executable experiment',
+    target: `cross_signal:${normalizeText(hypothesis && hypothesis.id) || 'unknown'}`,
+    next_command: suggestedNextCommand,
+    verify: [
+      'Generate one concrete experiment tied to hypothesis evidence',
+      'Define measurable success metric and time-bound target',
+      'Route dry-run execution plan and verify gate output'
+    ],
+    rollback: 'Cancel hypothesis execution plan and preserve prior strategy baseline'
+  };
+
+  return {
+    id,
+    type: 'cross_signal_opportunity',
+    title: `[Cross-Signal] ${summary}`.slice(0, 120),
+    evidence: [
+      {
+        source: 'cross_signal',
+        path: `state/sensory/cross_signal/hypotheses/${dateStr}.json`,
+        match: `${type}:${topic || 'unknown'}`.slice(0, 120),
+        evidence_ref: `cross_signal:${normalizeText(hypothesis && hypothesis.id) || 'unknown'}`,
+        evidence_url: null,
+        evidence_item_hash: null
+      }
+    ],
+    expected_impact: confidence >= 80 ? 'high' : 'medium',
+    risk: 'low',
+    validation: actionSpec.verify,
+    suggested_next_command: actionSpec.next_command,
+    action_spec: actionSpec,
+    meta: {
+      source_eye: 'cross_signal_engine',
+      hypothesis_id: normalizeText(hypothesis && hypothesis.id),
+      hypothesis_type: type,
+      topic,
+      confidence,
+      support_eyes: supportEyes,
+      support_events: supportEvents,
+      trend_direction: normalizeText(hypothesis && hypothesis.trend_direction) || null,
+      directive_fit_score: Number(directiveFit && directiveFit.score || 0),
+      directive_fit_pass: directiveFit && directiveFit.pass === true,
+      directive_fit_positive: directiveFit ? directiveFit.matched_positive.slice(0, 5) : [],
+      directive_fit_negative: directiveFit ? directiveFit.matched_negative.slice(0, 5) : [],
+      actionability_score: Number(actionability && actionability.score || 0),
+      actionability_pass: actionability && actionability.pass === true,
+      actionability_reasons: actionability ? actionability.reasons.slice(0, 5) : [],
+      action_spec_version: Number(actionSpec.version || 1),
+      action_spec_target: normalizeText(actionSpec.target)
+    }
+  };
+}
+
+function generateCrossSignalProposals(dateStr, maxCount = SENSORY_CROSS_SIGNAL_MAX_PROPOSALS) {
+  const loaded = loadCrossSignalHypotheses(dateStr);
+  const hypotheses = Array.isArray(loaded.hypotheses) ? loaded.hypotheses : [];
+  const directiveProfile = loadDirectiveFitProfile();
+  const accepted = [];
+  const rejectedReasonCounts = {};
+
+  for (const h of hypotheses) {
+    if (!h || typeof h !== 'object') continue;
+    const item = makeCrossSignalItem(h, dateStr);
+    const directiveFit = assessDirectiveFitItem(item, directiveProfile);
+    const actionability = assessCrossSignalActionability(h, directiveFit.pass === true);
+    if (!(directiveFit.pass === true && actionability.pass === true)) {
+      const reasons = [...(directiveFit.reasons || []), ...(actionability.reasons || [])];
+      for (const r of reasons) {
+        const key = normalizeText(r) || 'unknown_reason';
+        rejectedReasonCounts[key] = (rejectedReasonCounts[key] || 0) + 1;
+      }
+      continue;
+    }
+    accepted.push({
+      hypothesis: h,
+      directiveFit,
+      actionability,
+      proposal: buildCrossSignalProposal(h, dateStr, directiveFit, actionability)
+    });
+  }
+
+  accepted.sort((a, b) => {
+    const sa = (Number(a.hypothesis.confidence || 0) * 0.6) + (Number(a.actionability.score || 0) * 0.4);
+    const sb = (Number(b.hypothesis.confidence || 0) * 0.6) + (Number(b.actionability.score || 0) * 0.4);
+    if (sb !== sa) return sb - sa;
+    return String(a.proposal.id || '').localeCompare(String(b.proposal.id || ''));
+  });
+
+  const capped = accepted.slice(0, Math.max(0, Number(maxCount || SENSORY_CROSS_SIGNAL_MAX_PROPOSALS)));
+  return {
+    hypotheses_path: loaded.path,
+    proposals: capped.map((x) => x.proposal),
+    stats: {
+      total_hypotheses: hypotheses.length,
+      accepted_hypotheses: accepted.length,
+      emitted_proposals: capped.length,
+      rejected_hypotheses: Math.max(0, hypotheses.length - accepted.length)
+    },
+    rejected_reason_counts: sortedObject(rejectedReasonCounts)
   };
 }
 
@@ -590,21 +976,40 @@ function hydrateExisting(existingProposal, incomingProposal) {
     'relevance_reasons',
     'actionability_score',
     'actionability_pass',
-    'actionability_reasons'
+    'actionability_reasons',
+    'action_spec_version',
+    'action_spec_target'
   ];
 
   let touched = false;
   const nextMeta = { ...eMeta };
   for (const key of fields) {
-    const hasExisting = eMeta[key] != null && !(Array.isArray(eMeta[key]) && eMeta[key].length === 0);
     const hasIncoming = iMeta[key] != null;
-    if (!hasExisting && hasIncoming) {
+    if (hasIncoming && JSON.stringify(nextMeta[key]) !== JSON.stringify(iMeta[key])) {
       nextMeta[key] = iMeta[key];
       touched = true;
     }
   }
+
+  const nextProposal = { ...e, meta: nextMeta };
+  const refreshFields = ['title', 'suggested_next_command', 'expected_impact', 'risk', 'action_spec'];
+  for (const key of refreshFields) {
+    const incomingVal = i[key];
+    if (incomingVal == null) continue;
+    if (JSON.stringify(nextProposal[key]) !== JSON.stringify(incomingVal)) {
+      nextProposal[key] = incomingVal;
+      touched = true;
+    }
+  }
+  if (Array.isArray(i.validation) && i.validation.length > 0) {
+    const existingValidation = Array.isArray(nextProposal.validation) ? nextProposal.validation : [];
+    if (JSON.stringify(existingValidation) !== JSON.stringify(i.validation)) {
+      nextProposal.validation = i.validation;
+      touched = true;
+    }
+  }
   if (!touched) return { proposal: e, touched: false };
-  return { proposal: { ...e, meta: nextMeta }, touched: true };
+  return { proposal: nextProposal, touched: true };
 }
 
 function mergeById(existing, incoming) {
@@ -667,7 +1072,15 @@ function generateEyeProposals(dateStr, maxCount = 5) {
     if (!prev) {
       byUrl.set(key, entry);
     } else {
-      // keep the higher relevance/actionability one deterministically
+      // Prefer fresher observations for the same URL so evolving local signals stay current.
+      const tsCur = itemTimestampMs(entry.item);
+      const tsPrev = itemTimestampMs(prev.item);
+      if (tsCur !== tsPrev) {
+        if (tsCur > tsPrev) byUrl.set(key, entry);
+        continue;
+      }
+
+      // If timestamps tie/absent, keep the higher relevance/actionability one deterministically.
       const scoreCur = (Number(entry.analysis.relevance_score) * 0.7) + (Number(entry.actionability.actionability_score) * 0.3);
       const scorePrev = (Number(prev.analysis.relevance_score) * 0.7) + (Number(prev.actionability.actionability_score) * 0.3);
       if (scoreCur > scorePrev) byUrl.set(key, entry);
@@ -687,6 +1100,14 @@ function generateEyeProposals(dateStr, maxCount = 5) {
 
   const rejected = deduped.filter(x => !(x.analysis.pass && x.actionability.pass));
   const accepted = deduped.filter(x => x.analysis.pass && x.actionability.pass);
+  const rejectedReasonCounts = {};
+  for (const x of rejected) {
+    const reasons = Array.from(new Set([...(x.analysis.reasons || []), ...(x.actionability.reasons || [])]));
+    for (const r of reasons) {
+      const key = normalizeText(r) || 'unknown_reason';
+      rejectedReasonCounts[key] = (rejectedReasonCounts[key] || 0) + 1;
+    }
+  }
   const proposals = accepted.slice(0, maxCount).map(x => buildProposalFromItem(x.item, x.analysis, x.actionability));
   return {
     rawPath,
@@ -698,6 +1119,7 @@ function generateEyeProposals(dateStr, maxCount = 5) {
       rejected_items: rejected.length,
       directive_profile_available: directiveProfile.available === true
     },
+    rejected_reason_counts: sortedObject(rejectedReasonCounts),
     rejected_samples: rejected.slice(0, 5).map((x) => ({
       eye_id: x.eyeId,
       title: normalizeText(x.item.title).slice(0, 80),
@@ -708,27 +1130,115 @@ function generateEyeProposals(dateStr, maxCount = 5) {
   };
 }
 
+function maybeWriteNoActionableSignalReceipt(dateStr, generated) {
+  const stats = generated && generated.stats ? generated.stats : {};
+  const noActionable = Number(stats.deduped_items || 0) > 0
+    && Number(stats.accepted_items || 0) === 0
+    && Number(stats.rejected_items || 0) === Number(stats.deduped_items || 0);
+  if (!noActionable) return null;
+
+  const reasonCounts = sortedObject(generated.rejected_reason_counts || {});
+  const eventKey = sha16([
+    'no_actionable_signal',
+    dateStr,
+    Number(stats.deduped_items || 0),
+    JSON.stringify(reasonCounts)
+  ].join('|'));
+
+  const receiptPath = path.join(RECEIPTS_DIR, `${dateStr}.jsonl`);
+  const existing = readJsonlSafe(receiptPath);
+  if (existing.some(e => e && e.event_key === eventKey)) {
+    return {
+      emitted: false,
+      reason: 'duplicate',
+      event_key: eventKey,
+      receipt_path: receiptPath,
+      anomaly_path: path.join(ANOMALIES_DIR, `${dateStr}.eyes_insight.json`)
+    };
+  }
+
+  const event = {
+    ts: new Date().toISOString(),
+    type: 'no_actionable_signal',
+    source: 'eyes_insight',
+    date: dateStr,
+    event_key: eventKey,
+    candidate_items: Number(stats.deduped_items || 0),
+    accepted_items: Number(stats.accepted_items || 0),
+    rejected_items: Number(stats.rejected_items || 0),
+    rejected_reason_counts: reasonCounts
+  };
+
+  appendJsonl(receiptPath, event);
+
+  const anomalyPath = path.join(ANOMALIES_DIR, `${dateStr}.eyes_insight.json`);
+  fs.writeFileSync(anomalyPath, JSON.stringify({
+    date: dateStr,
+    anomalies: [
+      {
+        type: 'no_actionable_signal',
+        severity: 'medium',
+        message: `eyes_insight rejected all ${event.candidate_items} candidates`,
+        candidate_items: event.candidate_items,
+        rejected_reason_counts: reasonCounts
+      }
+    ],
+    source: 'eyes_insight',
+    receipt_event_key: eventKey
+  }, null, 2));
+
+  return {
+    emitted: true,
+    event_key: eventKey,
+    receipt_path: receiptPath,
+    anomaly_path: anomalyPath
+  };
+}
+
 function mergeIntoDailyProposals(dateStr, maxCount = 5) {
   const { proposals: existing, path: proposalsPath } = loadExistingProposals(dateStr);
-  const generated = generateEyeProposals(dateStr, maxCount);
-  const newOnes = generated.proposals;
-  const rawPath = generated.rawPath;
+  const generatedEye = generateEyeProposals(dateStr, maxCount);
+  const generatedCross = generateCrossSignalProposals(
+    dateStr,
+    Math.max(0, Math.min(Number(SENSORY_CROSS_SIGNAL_MAX_PROPOSALS || 0), Number(maxCount || 0)))
+  );
+  const newOnes = [...generatedEye.proposals, ...generatedCross.proposals];
+  const rawPath = generatedEye.rawPath;
 
   const mergedRes = mergeById(existing, newOnes);
   const merged = mergedRes.merged;
+  const combinedReasons = { ...(generatedEye.rejected_reason_counts || {}) };
+  for (const [k, v] of Object.entries(generatedCross.rejected_reason_counts || {})) {
+    combinedReasons[k] = Number(combinedReasons[k] || 0) + Number(v || 0);
+  }
+  const combinedGenerated = {
+    stats: {
+      total_items: Number(generatedEye.stats && generatedEye.stats.total_items || 0),
+      deduped_items: Number(generatedEye.stats && generatedEye.stats.deduped_items || 0) + Number(generatedCross.stats && generatedCross.stats.total_hypotheses || 0),
+      accepted_items: Number(generatedEye.stats && generatedEye.stats.accepted_items || 0) + Number(generatedCross.stats && generatedCross.stats.emitted_proposals || 0),
+      rejected_items: Number(generatedEye.stats && generatedEye.stats.rejected_items || 0) + Number(generatedCross.stats && generatedCross.stats.rejected_hypotheses || 0),
+      directive_profile_available: generatedEye.stats && generatedEye.stats.directive_profile_available === true
+    },
+    rejected_reason_counts: sortedObject(combinedReasons)
+  };
+  const noActionableSignal = maybeWriteNoActionableSignalReceipt(dateStr, combinedGenerated);
 
   const savedPath = saveProposalsArray(dateStr, merged);
   return {
     ok: true,
     date: dateStr,
     eyes_raw: rawPath,
+    cross_signal_hypotheses: generatedCross.hypotheses_path,
     proposals_path: savedPath,
     existing_count: existing.length,
     added_count: mergedRes.added,
     hydrated_count: mergedRes.hydrated,
     total_count: merged.length,
-    generated_stats: generated.stats,
-    rejected_samples: generated.rejected_samples
+    generated_stats: combinedGenerated.stats,
+    generated_eye_stats: generatedEye.stats,
+    generated_cross_signal_stats: generatedCross.stats,
+    no_actionable_signal: noActionableSignal,
+    rejected_samples: generatedEye.rejected_samples
   };
 }
 
@@ -765,6 +1275,7 @@ function main() {
     console.log('═══════════════════════════════════════════════════════════');
     console.log(`Date: ${res.date}`);
     console.log(`Eyes raw: ${res.eyes_raw}`);
+    console.log(`Cross-signal: ${res.cross_signal_hypotheses}`);
     console.log(`Proposals: ${res.proposals_path}`);
     console.log(`Existing: ${res.existing_count}`);
     console.log(`Added: ${res.added_count}`);
@@ -773,6 +1284,13 @@ function main() {
     if (res.generated_stats) {
       console.log(`Accepted (this run): ${res.generated_stats.accepted_items}/${res.generated_stats.deduped_items}`);
       console.log(`Rejected (this run): ${res.generated_stats.rejected_items}`);
+    }
+    if (res.generated_cross_signal_stats) {
+      console.log(`Cross-signal emitted: ${res.generated_cross_signal_stats.emitted_proposals}/${res.generated_cross_signal_stats.total_hypotheses}`);
+    }
+    if (res.no_actionable_signal && res.no_actionable_signal.emitted) {
+      console.log(`Anomaly receipt: ${res.no_actionable_signal.receipt_path}`);
+      console.log(`Anomaly snapshot: ${res.no_actionable_signal.anomaly_path}`);
     }
     console.log('═══════════════════════════════════════════════════════════');
     process.exit(0);
@@ -791,10 +1309,14 @@ module.exports = {
   assessDirectiveFitItem,
   assessItemRelevance,
   assessItemActionability,
+  buildActionSpec,
   buildProposalFromItem,
+  buildCrossSignalProposal,
   generateEyeProposals,
+  generateCrossSignalProposals,
   mergeIntoDailyProposals,
   loadExistingProposals,
+  loadCrossSignalHypotheses,
   saveProposalsArray,
   readJsonlSafe
 };

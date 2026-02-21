@@ -1,0 +1,11 @@
+{
+  "version": "1.0",
+  "updated_ts": "2026-02-21T05:30:56.796Z",
+  "last_idle_ts": "2026-02-21T05:09:44.117Z",
+  "last_rem_ts": "2026-02-21T05:09:44.976Z",
+  "idle_runs": 3,
+  "rem_runs": 1,
+  "idle_runs_since_rem": 0,
+  "last_idle_model": null,
+  "last_rem_model": null
+}

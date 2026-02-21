@@ -1,0 +1,414 @@
+{
+  "version": "1.0",
+  "updated_ts": "2026-02-21T05:24:22.200Z",
+  "candidates": {
+    "automation": {
+      "id": "CRL-CSQF3C54H2JZADWK",
+      "uid": "cl3ndrxvkjrisn1g2kk7u0g7",
+      "token": "automation",
+      "status": "proposed",
+      "created_ts": "2026-02-21T05:23:48.613Z",
+      "updated_ts": "2026-02-21T05:24:22.200Z",
+      "usefulness": {
+        "useful": false,
+        "gate_occurrences": false,
+        "gate_signal": true,
+        "gate_memory": true
+      },
+      "occurrences_window": 1,
+      "avg_score_window": 43,
+      "max_score_window": 43,
+      "older_refs_window": 0,
+      "row_refs_window": 6,
+      "observed_dates": [
+        "2026-02-21"
+      ],
+      "latest_date": "2026-02-21",
+      "latest_score": 43,
+      "refs": [
+        "memory/2026-02-20.md#eye-upwork_gigs-324be047",
+        "memory/2026-02-20.md#eye-medium_com-7d719655",
+        "memory/2026-02-20.md#eye-medium_com-45a399e3",
+        "memory/2026-02-21.md#eye-cross_signal_engine-9889f6c6",
+        "memory/2026-02-21.md#eye-upwork_gigs-6d8c02db"
+      ],
+      "source_types": [
+        "memory_dream"
+      ],
+      "source_counts": {
+        "memory_dream": 1
+      },
+      "promoted_ts": null,
+      "promoted_node_id": null,
+      "promoted_uid": null,
+      "promoted_memory_file": null
+    },
+    "revenue": {
+      "id": "CRL-C4AHT4UMCQBCP7JZ",
+      "uid": "cl2e6l20dbsfrege2jpq0pl3",
+      "token": "revenue",
+      "status": "proposed",
+      "created_ts": "2026-02-21T05:23:48.613Z",
+      "updated_ts": "2026-02-21T05:24:22.200Z",
+      "usefulness": {
+        "useful": false,
+        "gate_occurrences": false,
+        "gate_signal": true,
+        "gate_memory": true
+      },
+      "occurrences_window": 1,
+      "avg_score_window": 48,
+      "max_score_window": 48,
+      "older_refs_window": 0,
+      "row_refs_window": 8,
+      "observed_dates": [
+        "2026-02-21"
+      ],
+      "latest_date": "2026-02-21",
+      "latest_score": 48,
+      "refs": [
+        "memory/2026-02-20.md#eye-upwork_gigs-324be047",
+        "memory/2026-02-20.md#eye-medium_com-7d719655",
+        "memory/2026-02-20.md#eye-medium_com-45a399e3",
+        "memory/2026-02-20.md#eye-upwork_gigs-35909358",
+        "memory/2026-02-20.md#eye-upwork_gigs-2a650d28",
+        "memory/2026-02-21.md#eye-upwork_gigs-506727c5",
+        "memory/2026-02-21.md#eye-upwork_gigs-6d8c02db"
+      ],
+      "source_types": [
+        "memory_dream"
+      ],
+      "source_counts": {
+        "memory_dream": 1
+      },
+      "promoted_ts": null,
+      "promoted_node_id": null,
+      "promoted_uid": null,
+      "promoted_memory_file": null
+    },
+    "ai": {
+      "id": "CRL-CFZA22HKDWPGKN7Y",
+      "uid": "cl5svix5chgvnygk50fyihk0",
+      "token": "ai",
+      "status": "proposed",
+      "created_ts": "2026-02-21T05:23:48.613Z",
+      "updated_ts": "2026-02-21T05:23:48.613Z",
+      "usefulness": {
+        "useful": false,
+        "gate_occurrences": false,
+        "gate_signal": true,
+        "gate_memory": true
+      },
+      "occurrences_window": 1,
+      "avg_score_window": 28,
+      "max_score_window": 28,
+      "older_refs_window": 2,
+      "row_refs_window": 4,
+      "observed_dates": [
+        "2026-02-21"
+      ],
+      "latest_date": "2026-02-21",
+      "latest_score": 28,
+      "refs": [
+        "2026-02-12.md#x-swarm-reply",
+        "2026-02-13.md#multi-agent-pivot",
+        "memory/2026-02-20.md#eye-medium_com-7d719655",
+        "memory/2026-02-20.md#eye-medium_com-45a399e3",
+        "memory/2026-02-21.md#eye-hn_frontpage-af0784cc"
+      ],
+      "source_types": [
+        "memory_dream"
+      ],
+      "source_counts": {
+        "memory_dream": 1
+      },
+      "promoted_ts": null,
+      "promoted_node_id": null,
+      "promoted_uid": null,
+      "promoted_memory_file": null
+    },
+    "startups": {
+      "id": "CRL-C463RKGKETMYK206",
+      "uid": "cl3mx8dh5c71tcwbfipvins7",
+      "token": "startups",
+      "status": "proposed",
+      "created_ts": "2026-02-21T05:23:48.613Z",
+      "updated_ts": "2026-02-21T05:23:48.613Z",
+      "usefulness": {
+        "useful": false,
+        "gate_occurrences": false,
+        "gate_signal": true,
+        "gate_memory": true
+      },
+      "occurrences_window": 1,
+      "avg_score_window": 28,
+      "max_score_window": 28,
+      "older_refs_window": 0,
+      "row_refs_window": 4,
+      "observed_dates": [
+        "2026-02-21"
+      ],
+      "latest_date": "2026-02-21",
+      "latest_score": 28,
+      "refs": [
+        "memory/2026-02-20.md#eye-medium_com-7d719655",
+        "memory/2026-02-20.md#eye-medium_com-45a399e3",
+        "memory/2026-02-21.md#eye-hn_frontpage-af0784cc"
+      ],
+      "source_types": [
+        "memory_dream"
+      ],
+      "source_counts": {
+        "memory_dream": 1
+      },
+      "promoted_ts": null,
+      "promoted_node_id": null,
+      "promoted_uid": null,
+      "promoted_memory_file": null
+    },
+    "cross-signal": {
+      "id": "CRL-C41QRSJWJGCY7R7S",
+      "uid": "cl1lbstj3pq03hsjaka1hbgv",
+      "token": "cross-signal",
+      "status": "proposed",
+      "created_ts": "2026-02-21T05:23:48.614Z",
+      "updated_ts": "2026-02-21T05:24:22.200Z",
+      "usefulness": {
+        "useful": false,
+        "gate_occurrences": false,
+        "gate_signal": true,
+        "gate_memory": true
+      },
+      "occurrences_window": 1,
+      "avg_score_window": 30,
+      "max_score_window": 30,
+      "older_refs_window": 0,
+      "row_refs_window": 5,
+      "observed_dates": [
+        "2026-02-21"
+      ],
+      "latest_date": "2026-02-21",
+      "latest_score": 30,
+      "refs": [
+        "memory/2026-02-21.md#eye-cross_signal_engine-436f62fe",
+        "memory/2026-02-21.md#eye-cross_signal_engine-adf49100",
+        "memory/2026-02-21.md#eye-cross_signal_engine-9889f6c6",
+        "memory/2026-02-21.md#eye-cross_signal_engine-634f903f",
+        "memory/2026-02-21.md#eye-cross_signal_engine-32283de6"
+      ],
+      "source_types": [
+        "memory_dream"
+      ],
+      "source_counts": {
+        "memory_dream": 1
+      },
+      "promoted_ts": null,
+      "promoted_node_id": null,
+      "promoted_uid": null,
+      "promoted_memory_file": null
+    },
+    "topic": {
+      "id": "CRL-C43AQQ1ENHD7AICV",
+      "uid": "cl5d9ofwzi47ldaiqm121ksx",
+      "token": "topic",
+      "status": "proposed",
+      "created_ts": "2026-02-21T05:23:48.614Z",
+      "updated_ts": "2026-02-21T05:23:48.614Z",
+      "usefulness": {
+        "useful": false,
+        "gate_occurrences": false,
+        "gate_signal": true,
+        "gate_memory": true
+      },
+      "occurrences_window": 1,
+      "avg_score_window": 25,
+      "max_score_window": 25,
+      "older_refs_window": 1,
+      "row_refs_window": 4,
+      "observed_dates": [
+        "2026-02-21"
+      ],
+      "latest_date": "2026-02-21",
+      "latest_score": 25,
+      "refs": [
+        "2026-02-13.md#topic-registry",
+        "memory/2026-02-21.md#eye-cross_signal_engine-436f62fe",
+        "memory/2026-02-21.md#eye-cross_signal_engine-adf49100",
+        "memory/2026-02-21.md#eye-cross_signal_engine-9889f6c6",
+        "memory/2026-02-21.md#eye-cross_signal_engine-634f903f"
+      ],
+      "source_types": [
+        "memory_dream"
+      ],
+      "source_counts": {
+        "memory_dream": 1
+      },
+      "promoted_ts": null,
+      "promoted_node_id": null,
+      "promoted_uid": null,
+      "promoted_memory_file": null
+    },
+    "generate_one_bounded_strategy_hypothesis": {
+      "id": "CRL-C4VS0EPSX8L3V69N",
+      "uid": "cl48rf5dkuvm9mvb76bp0mew",
+      "token": "generate_one_bounded_strategy_hypothesis",
+      "status": "proposed",
+      "created_ts": "2026-02-21T05:23:48.614Z",
+      "updated_ts": "2026-02-21T05:24:22.200Z",
+      "usefulness": {
+        "useful": false,
+        "gate_occurrences": false,
+        "gate_signal": true,
+        "gate_memory": true
+      },
+      "occurrences_window": 1,
+      "avg_score_window": 14.333,
+      "max_score_window": 15,
+      "older_refs_window": 0,
+      "row_refs_window": 3,
+      "observed_dates": [
+        "2026-02-21"
+      ],
+      "latest_date": "2026-02-21",
+      "latest_score": 14,
+      "refs": [
+        "state/routing/routing_decisions.jsonl#L230",
+        "state/routing/routing_decisions.jsonl#L232",
+        "state/routing/routing_decisions.jsonl#L233"
+      ],
+      "source_types": [
+        "hyper_creative_mode"
+      ],
+      "source_counts": {
+        "hyper_creative_mode": 3
+      },
+      "promoted_ts": null,
+      "promoted_node_id": null,
+      "promoted_uid": null,
+      "promoted_memory_file": null
+    },
+    "freelance": {
+      "id": "CRL-C5D8SNIEV0G0A7H7",
+      "uid": "cl2npm3z4i1jg92bkrofhcm4",
+      "token": "freelance",
+      "status": "proposed",
+      "created_ts": "2026-02-21T05:24:22.200Z",
+      "updated_ts": "2026-02-21T05:24:22.200Z",
+      "usefulness": {
+        "useful": false,
+        "gate_occurrences": false,
+        "gate_signal": true,
+        "gate_memory": true
+      },
+      "occurrences_window": 1,
+      "avg_score_window": 30,
+      "max_score_window": 30,
+      "older_refs_window": 0,
+      "row_refs_window": 5,
+      "observed_dates": [
+        "2026-02-21"
+      ],
+      "latest_date": "2026-02-21",
+      "latest_score": 30,
+      "refs": [
+        "memory/2026-02-20.md#eye-upwork_gigs-324be047",
+        "memory/2026-02-20.md#eye-upwork_gigs-35909358",
+        "memory/2026-02-20.md#eye-upwork_gigs-2a650d28",
+        "memory/2026-02-21.md#eye-upwork_gigs-506727c5",
+        "memory/2026-02-21.md#eye-upwork_gigs-6d8c02db"
+      ],
+      "source_types": [
+        "memory_dream"
+      ],
+      "source_counts": {
+        "memory_dream": 1
+      },
+      "promoted_ts": null,
+      "promoted_node_id": null,
+      "promoted_uid": null,
+      "promoted_memory_file": null
+    },
+    "gigs": {
+      "id": "CRL-C5GJYGZM17TK52TP",
+      "uid": "cl2822xzaj7w3b3k7dc5xhgi",
+      "token": "gigs",
+      "status": "proposed",
+      "created_ts": "2026-02-21T05:24:22.200Z",
+      "updated_ts": "2026-02-21T05:24:22.200Z",
+      "usefulness": {
+        "useful": false,
+        "gate_occurrences": false,
+        "gate_signal": true,
+        "gate_memory": true
+      },
+      "occurrences_window": 1,
+      "avg_score_window": 30,
+      "max_score_window": 30,
+      "older_refs_window": 0,
+      "row_refs_window": 5,
+      "observed_dates": [
+        "2026-02-21"
+      ],
+      "latest_date": "2026-02-21",
+      "latest_score": 30,
+      "refs": [
+        "memory/2026-02-20.md#eye-upwork_gigs-324be047",
+        "memory/2026-02-20.md#eye-upwork_gigs-35909358",
+        "memory/2026-02-20.md#eye-upwork_gigs-2a650d28",
+        "memory/2026-02-21.md#eye-upwork_gigs-506727c5",
+        "memory/2026-02-21.md#eye-upwork_gigs-6d8c02db"
+      ],
+      "source_types": [
+        "memory_dream"
+      ],
+      "source_counts": {
+        "memory_dream": 1
+      },
+      "promoted_ts": null,
+      "promoted_node_id": null,
+      "promoted_uid": null,
+      "promoted_memory_file": null
+    },
+    "opportunity": {
+      "id": "CRL-C1EX3YYAPCLOF20G",
+      "uid": "cl2nznjn8s6a54utd0s2jt2u",
+      "token": "opportunity",
+      "status": "proposed",
+      "created_ts": "2026-02-21T05:24:22.200Z",
+      "updated_ts": "2026-02-21T05:24:22.200Z",
+      "usefulness": {
+        "useful": false,
+        "gate_occurrences": false,
+        "gate_signal": true,
+        "gate_memory": true
+      },
+      "occurrences_window": 1,
+      "avg_score_window": 30,
+      "max_score_window": 30,
+      "older_refs_window": 0,
+      "row_refs_window": 5,
+      "observed_dates": [
+        "2026-02-21"
+      ],
+      "latest_date": "2026-02-21",
+      "latest_score": 30,
+      "refs": [
+        "memory/2026-02-20.md#eye-upwork_gigs-324be047",
+        "memory/2026-02-20.md#eye-upwork_gigs-35909358",
+        "memory/2026-02-20.md#eye-upwork_gigs-2a650d28",
+        "memory/2026-02-21.md#eye-upwork_gigs-506727c5",
+        "memory/2026-02-21.md#eye-upwork_gigs-6d8c02db"
+      ],
+      "source_types": [
+        "memory_dream"
+      ],
+      "source_counts": {
+        "memory_dream": 1
+      },
+      "promoted_ts": null,
+      "promoted_node_id": null,
+      "promoted_uid": null,
+      "promoted_memory_file": null
+    }
+  }
+}

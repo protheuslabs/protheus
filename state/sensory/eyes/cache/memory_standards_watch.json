@@ -1,0 +1,216 @@
+{
+  "ts": "2026-02-21T00:16:59.308Z",
+  "count": 15,
+  "items": [
+    {
+      "collected_at": "2026-02-21T00:16:59.307Z",
+      "id": "60ef6cf5e1e94d79",
+      "url": "https://f-droid.org/2026/02/20/twif.html",
+      "title": "Keep Android Open",
+      "topics": [
+        "standards",
+        "memory",
+        "portability",
+        "agent_protocol",
+        "ietf"
+      ],
+      "bytes": 121
+    },
+    {
+      "collected_at": "2026-02-21T00:16:59.307Z",
+      "id": "20e9927a4e21258f",
+      "url": "https://words.filippo.io/dependabot/",
+      "title": "Turn Dependabot Off",
+      "topics": [
+        "standards",
+        "memory",
+        "portability",
+        "agent_protocol",
+        "ietf"
+      ],
+      "bytes": 119
+    },
+    {
+      "collected_at": "2026-02-21T00:16:59.307Z",
+      "id": "9dd6813906a2cf73",
+      "url": "https://dixken.de/blog/i-found-a-vulnerability-they-found-a-lawyer",
+      "title": "I found a Vulnerability. They found a Lawyer",
+      "topics": [
+        "standards",
+        "memory",
+        "portability",
+        "agent_protocol",
+        "ietf"
+      ],
+      "bytes": 174
+    },
+    {
+      "collected_at": "2026-02-21T00:16:59.307Z",
+      "id": "9afb8da0d18896bc",
+      "url": "https://pilk.website/3/facebook-is-absolutely-cooked",
+      "title": "Facebook is cooked",
+      "topics": [
+        "standards",
+        "memory",
+        "portability",
+        "agent_protocol",
+        "ietf"
+      ],
+      "bytes": 134
+    },
+    {
+      "collected_at": "2026-02-21T00:16:59.307Z",
+      "id": "3a3a3d8df7d9b1e9",
+      "url": "https://github.com/ggml-org/llama.cpp/discussions/19759",
+      "title": "Ggml.ai joins Hugging Face to ensure the long-term progress of Local AI",
+      "topics": [
+        "standards",
+        "memory",
+        "portability",
+        "agent_protocol",
+        "ietf"
+      ],
+      "bytes": 190
+    },
+    {
+      "collected_at": "2026-02-21T00:16:59.308Z",
+      "id": "eca0efaa4f18763d",
+      "url": "https://worldwideweb.cern.ch",
+      "title": "CERN rebuilt the original browser from 1989",
+      "topics": [
+        "standards",
+        "memory",
+        "portability",
+        "agent_protocol",
+        "ietf"
+      ],
+      "bytes": 135
+    },
+    {
+      "collected_at": "2026-02-21T00:16:59.308Z",
+      "id": "4347869e7623d394",
+      "url": "https://arstechnica.com/tech-policy/2026/02/wikipedia-bans-archive-today-after-site-executed-ddos-and-altered-web-captures/",
+      "title": "Wikipedia deprecates Archive.today, starts removing archive links",
+      "topics": [
+        "standards",
+        "memory",
+        "portability",
+        "agent_protocol",
+        "ietf"
+      ],
+      "bytes": 252
+    },
+    {
+      "collected_at": "2026-02-21T00:16:59.308Z",
+      "id": "75dca4031b8227ab",
+      "url": "https://kevinak.se/blog/be-wary-of-bluesky",
+      "title": "Be Wary of Bluesky",
+      "topics": [
+        "standards",
+        "memory",
+        "portability",
+        "agent_protocol",
+        "ietf"
+      ],
+      "bytes": 124
+    },
+    {
+      "collected_at": "2026-02-21T00:16:59.308Z",
+      "id": "f82a4ecef8e9710f",
+      "url": "https://openscan.eu/pages/scan-gallery",
+      "title": "OpenScan",
+      "topics": [
+        "standards",
+        "memory",
+        "portability",
+        "agent_protocol",
+        "ietf"
+      ],
+      "bytes": 110
+    },
+    {
+      "collected_at": "2026-02-21T00:16:59.308Z",
+      "id": "cd0b95b34233581b",
+      "url": "https://mines.fyi/",
+      "title": "Show HN: Mines.fyi – all the mines in the US in a leaflet visualization",
+      "topics": [
+        "standards",
+        "memory",
+        "portability",
+        "agent_protocol",
+        "ietf"
+      ],
+      "bytes": 153
+    },
+    {
+      "collected_at": "2026-02-21T00:16:59.308Z",
+      "id": "854f01522949fc9b",
+      "url": "https://twitter.com/peterjliu/status/2024901585806225723",
+      "title": "Uncovering insiders and alpha on Polymarket with AI",
+      "topics": [
+        "standards",
+        "memory",
+        "portability",
+        "agent_protocol",
+        "ietf"
+      ],
+      "bytes": 171
+    },
+    {
+      "collected_at": "2026-02-21T00:16:59.308Z",
+      "id": "094e55fc76df315d",
+      "url": "https://juno-labs.com/blogs/every-company-building-your-ai-assistant-is-an-ad-company",
+      "title": "Every company building your AI assistant is now an ad company",
+      "topics": [
+        "standards",
+        "memory",
+        "portability",
+        "agent_protocol",
+        "ietf"
+      ],
+      "bytes": 210
+    },
+    {
+      "collected_at": "2026-02-21T00:16:59.308Z",
+      "id": "510229a0ddbeb48c",
+      "url": "https://www.neuroai.science/p/blue-light-filters-dont-work",
+      "title": "Blue light filters don&#x27;t work – controlling total luminance is a better bet",
+      "topics": [
+        "standards",
+        "memory",
+        "portability",
+        "agent_protocol",
+        "ietf"
+      ],
+      "bytes": 202
+    },
+    {
+      "collected_at": "2026-02-21T00:16:59.308Z",
+      "id": "640e444df4f26845",
+      "url": "https://www.bbc.com/news/live/c0l9r67drg7t",
+      "title": "Trump&#x27;s global tariffs struck down by US Supreme Court",
+      "topics": [
+        "standards",
+        "memory",
+        "portability",
+        "agent_protocol",
+        "ietf"
+      ],
+      "bytes": 165
+    },
+    {
+      "collected_at": "2026-02-21T00:16:59.308Z",
+      "id": "3a5426f8d891c6e8",
+      "url": "https://macleans.ca/society/elton-mcdonald-and-the-incredible-true-story-behind-the-toronto-mystery-tunnel/",
+      "title": "The true story behind the Toronto mystery tunnel",
+      "topics": [
+        "standards",
+        "memory",
+        "portability",
+        "agent_protocol",
+        "ietf"
+      ],
+      "bytes": 219
+    }
+  ]
+}

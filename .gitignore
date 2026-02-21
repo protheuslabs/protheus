@@ -55,6 +55,9 @@ state/autonomy/improvements/*.json
 state/autonomy/improvements/*.jsonl
 state/autonomy/habit_crystallizer/*.jsonl
 state/autonomy/receipts/*.jsonl
+state/adaptive/reflex/*.json
+state/adaptive/reflex/*.jsonl
+state/adaptive/strategy/scorecards/*.json
 state/actuation/receipts/*.jsonl
 state/aie/events/*.jsonl
 state/sensory/receipts/*.jsonl

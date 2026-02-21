@@ -12,7 +12,7 @@
  * Usage:
  *   node systems/autonomy/strategy_mode.js status [--id=<strategy_id>]
  *   node systems/autonomy/strategy_mode.js recommend [YYYY-MM-DD] [--days=N] [--id=<strategy_id>] [--strict]
- *   node systems/autonomy/strategy_mode.js set --mode=score_only|execute [--id=<strategy_id>] --approval-note="..."
+ *   node systems/autonomy/strategy_mode.js set --mode=score_only|canary_execute|execute [--id=<strategy_id>] --approval-note="..."
  *      [--approver-id=<id> --second-approver-id=<id> --second-approval-note="..."]
  *      [--date=YYYY-MM-DD] [--days=N] [--strict] [--force=1]
  *   node systems/autonomy/strategy_mode.js --help
@@ -31,11 +31,15 @@ const AUDIT_LOG_PATH = process.env.AUTONOMY_STRATEGY_MODE_LOG
 const REQUIRE_DUAL_APPROVER_FOR_EXECUTE = String(process.env.AUTONOMY_REQUIRE_DUAL_APPROVER_FOR_EXECUTE || '1') !== '0';
 const MODE_CHANGE_MIN_HOURS = Number(process.env.AUTONOMY_STRATEGY_MODE_MIN_HOURS_BETWEEN_CHANGES || 6);
 
+function isExecuteMode(mode) {
+  return mode === 'execute' || mode === 'canary_execute';
+}
+
 function usage() {
   console.log('Usage:');
   console.log('  node systems/autonomy/strategy_mode.js status [--id=<strategy_id>]');
   console.log('  node systems/autonomy/strategy_mode.js recommend [YYYY-MM-DD] [--days=N] [--id=<strategy_id>] [--strict]');
-  console.log('  node systems/autonomy/strategy_mode.js set --mode=score_only|execute [--id=<strategy_id>] --approval-note="..."');
+  console.log('  node systems/autonomy/strategy_mode.js set --mode=score_only|canary_execute|execute [--id=<strategy_id>] --approval-note="..."');
   console.log('    [--approver-id=<id> --second-approver-id=<id> --second-approval-note="..."]');
   console.log('    [--date=YYYY-MM-DD] [--days=N] [--strict] [--force=1]');
   console.log('  node systems/autonomy/strategy_mode.js --help');
@@ -210,11 +214,11 @@ function cmdRecommend(args) {
 
 function cmdSet(args) {
   const mode = String(args.mode || '').trim().toLowerCase();
-  if (mode !== 'score_only' && mode !== 'execute') {
+  if (mode !== 'score_only' && mode !== 'canary_execute' && mode !== 'execute') {
     process.stdout.write(JSON.stringify({
       ok: false,
       ts: nowIso(),
-      error: 'invalid --mode (expected score_only|execute)'
+      error: 'invalid --mode (expected score_only|canary_execute|execute)'
     }) + '\n');
     process.exit(2);
   }
@@ -252,7 +256,7 @@ function cmdSet(args) {
   const secondApproverId = String(args['second-approver-id'] || args.second_approver_id || '').trim();
   const secondApprovalNote = String(args['second-approval-note'] || args.second_approval_note || '').trim();
 
-  if (mode === 'execute' && REQUIRE_DUAL_APPROVER_FOR_EXECUTE) {
+  if (isExecuteMode(mode) && REQUIRE_DUAL_APPROVER_FOR_EXECUTE) {
     if (!approverId || !secondApproverId) {
       process.stdout.write(JSON.stringify({
         ok: false,
@@ -289,7 +293,7 @@ function cmdSet(args) {
     }
   }
 
-  if (mode === 'execute' && !force && Number.isFinite(MODE_CHANGE_MIN_HOURS) && MODE_CHANGE_MIN_HOURS > 0) {
+  if (isExecuteMode(mode) && !force && Number.isFinite(MODE_CHANGE_MIN_HOURS) && MODE_CHANGE_MIN_HOURS > 0) {
     const last = lastModeChangeEvent(strategy.id);
     if (last && last.ts) {
       const ts = new Date(String(last.ts));
@@ -317,7 +321,7 @@ function cmdSet(args) {
     }
   }
 
-  if (mode === 'execute' && !force) {
+  if (isExecuteMode(mode) && !force) {
 
     const rep = runReadiness({
       date,

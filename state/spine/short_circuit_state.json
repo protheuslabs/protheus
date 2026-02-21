@@ -1,0 +1,14 @@
+{
+  "entries": {
+    "daily:2026-02-20": {
+      "ts": "2026-02-20T21:20:42.516Z",
+      "fingerprint": "a5950f861d54e37b06879495b5d8ebf52b9d7500",
+      "ttl_minutes": 45
+    },
+    "daily:2026-02-21": {
+      "ts": "2026-02-21T05:24:20.036Z",
+      "fingerprint": "3539941d72fd093046b48ca58c3bbefffa4b0694",
+      "ttl_minutes": 45
+    }
+  }
+}

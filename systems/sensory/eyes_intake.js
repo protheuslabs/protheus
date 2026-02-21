@@ -20,15 +20,16 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const { loadActiveDirectives } = require('../../lib/directive_resolver.js');
+const { resolveCatalogPath, ensureCatalog, setCatalog } = require('../../lib/eyes_catalog.js');
+const { randomUid } = require('../../lib/uid.js');
 
 const WORKSPACE_DIR = path.join(__dirname, '..', '..');
-const CONFIG_PATH = process.env.EYES_INTAKE_CONFIG_PATH
-  ? path.resolve(process.env.EYES_INTAKE_CONFIG_PATH)
-  : path.join(WORKSPACE_DIR, 'config', 'external_eyes.json');
+const CONFIG_PATH = resolveCatalogPath(WORKSPACE_DIR);
 const REGISTRY_PATH = process.env.EYES_INTAKE_REGISTRY_PATH
   ? path.resolve(process.env.EYES_INTAKE_REGISTRY_PATH)
   : path.join(WORKSPACE_DIR, 'state', 'sensory', 'eyes', 'registry.json');
 const GUARD_PATH = path.join(WORKSPACE_DIR, 'systems', 'security', 'guard.js');
+const WORKSPACE_DUMP_GUARD_PATH = path.join(WORKSPACE_DIR, 'systems', 'security', 'workspace_dump_guard.js');
 
 const SUPPORTED_PARSERS = new Set([
   'hn_rss',
@@ -158,8 +159,28 @@ function checkDirectiveOrExit(directiveId) {
 
 function ensureGuardOrExit() {
   if (String(process.env.EYES_INTAKE_SKIP_GUARD || '') === '1') return;
-  const files = ['config/external_eyes.json', 'state/sensory/eyes/registry.json'].join(',');
+  const catalogRel = path.relative(WORKSPACE_DIR, path.resolve(CONFIG_PATH)).replace(/\\/g, '/');
+  const guardedFiles = ['state/sensory/eyes/registry.json'];
+  if (catalogRel && !catalogRel.startsWith('../')) {
+    guardedFiles.unshift(catalogRel);
+  }
+  const files = guardedFiles.join(',');
   const r = spawnSync(process.execPath, [GUARD_PATH, `--files=${files}`], {
+    cwd: WORKSPACE_DIR,
+    encoding: 'utf8',
+    env: process.env
+  });
+  if (r.status === 0) return;
+  const stderr = String(r.stderr || '').trim();
+  const stdout = String(r.stdout || '').trim();
+  if (stderr) process.stderr.write(`${stderr}\n`);
+  if (stdout) process.stderr.write(`${stdout}\n`);
+  process.exit(r.status == null ? 1 : r.status);
+}
+
+function ensureDumpHygieneOrExit() {
+  if (String(process.env.EYES_INTAKE_SKIP_GUARD || '') === '1') return;
+  const r = spawnSync(process.execPath, [WORKSPACE_DUMP_GUARD_PATH, 'run', '--strict'], {
     cwd: WORKSPACE_DIR,
     encoding: 'utf8',
     env: process.env
@@ -221,9 +242,9 @@ function createEye(args) {
     process.exit(2);
   }
 
-  const config = readJson(CONFIG_PATH, null);
+  const config = ensureCatalog(CONFIG_PATH);
   if (!config || !Array.isArray(config.eyes)) {
-    console.error(`eyes_intake: invalid config file ${CONFIG_PATH}`);
+    console.error(`eyes_intake: invalid eyes catalog ${CONFIG_PATH}`);
     process.exit(1);
   }
   if (config.eyes.some((e) => String((e && e.id) || '') === eyeId)) {
@@ -238,6 +259,7 @@ function createEye(args) {
   const allowedDomains = domains.length ? domains : (DEFAULT_DOMAINS[parserType] || ['example.com']);
   const topics = asList(args.topics);
   const eye = {
+    uid: randomUid({ prefix: 'e', length: 24 }),
     id: eyeId,
     name,
     status: String(args.status || 'probation'),
@@ -251,16 +273,23 @@ function createEye(args) {
     last_success: null,
     error_rate: 0.0,
     score_ema: 50.0,
-    notes: String(args.notes || '').trim() || `Generated via eyes_intake for ${directiveRef}`
+    notes: String(args.notes || '').trim() || `Generated via eyes_intake for ${directiveRef}`,
+    created_ts: new Date().toISOString(),
+    updated_ts: new Date().toISOString()
   };
   if (parserOptions && Object.keys(parserOptions).length) {
     eye.parser_options = parserOptions;
   }
 
   ensureGuardOrExit();
+  ensureDumpHygieneOrExit();
 
   config.eyes.push(eye);
-  writeJson(CONFIG_PATH, config);
+  setCatalog(CONFIG_PATH, config, {
+    source: 'systems/sensory/eyes_intake.js',
+    reason: 'create_eye',
+    actor: process.env.USER || 'unknown'
+  });
 
   const registry = readJson(REGISTRY_PATH, { version: '1.0', last_updated: new Date().toISOString(), eyes: [] });
   if (!Array.isArray(registry.eyes)) registry.eyes = [];

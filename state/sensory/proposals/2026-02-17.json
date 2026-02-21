@@ -30,7 +30,9 @@
         "automation"
       ],
       "score": 40,
-      "preview": ""
+      "preview": "",
+      "signal_quality_score": 40,
+      "signal_quality_tier": "low"
     }
   },
   {
@@ -64,7 +66,9 @@
         "automation"
       ],
       "score": 40,
-      "preview": ""
+      "preview": "",
+      "signal_quality_score": 40,
+      "signal_quality_tier": "low"
     }
   },
   {
@@ -98,7 +102,9 @@
         "automation"
       ],
       "score": 40,
-      "preview": ""
+      "preview": "",
+      "signal_quality_score": 40,
+      "signal_quality_tier": "low"
     }
   },
   {
@@ -132,7 +138,9 @@
         "patterns"
       ],
       "score": 40,
-      "preview": ""
+      "preview": "",
+      "signal_quality_score": 40,
+      "signal_quality_tier": "low"
     }
   },
   {
@@ -166,7 +174,9 @@
         "patterns"
       ],
       "score": 40,
-      "preview": ""
+      "preview": "",
+      "signal_quality_score": 40,
+      "signal_quality_tier": "low"
     }
   }
 ]

@@ -28,7 +28,7 @@ Repo root: ~/.openclaw/workspace
 ### Habits (tier 2 / “easy to change reflex layer”)
 - habits/scripts/external_eyes.js
   - run/score/evolve/list/propose
-  - eyes config: config/external_eyes.json
+  - eyes config: adaptive/sensory/eyes/catalog.json
   - state:
     - state/sensory/eyes/raw/YYYY-MM-DD.jsonl
     - state/sensory/eyes/metrics/YYYY-MM-DD.json
@@ -73,7 +73,7 @@ Repo root: ~/.openclaw/workspace
 
 ### HN eye collector
 - reverted to RSS collector:
-  - config/external_eyes.json uses parser_type "hn_rss"
+  - adaptive/sensory/eyes/catalog.json uses parser_type "hn_rss"
   - allowed_domains include news.ycombinator.com and hnrss.org
 - commit mentioned: b3fc070
 

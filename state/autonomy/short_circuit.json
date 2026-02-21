@@ -1,0 +1,24 @@
+{
+  "entries": {
+    "evidence:2026-02-20": {
+      "ts": "2026-02-20T22:47:29.289Z",
+      "fingerprint": "65e96a6ce6895919439af3c0f9ff4f8422a0a3bc",
+      "ttl_minutes": 30
+    },
+    "run:2026-02-20": {
+      "ts": "2026-02-20T23:07:45.227Z",
+      "fingerprint": "39554650aa4c0c29331efffcb1b9a3aae21d1b48",
+      "ttl_minutes": 30
+    },
+    "run:2026-02-21": {
+      "ts": "2026-02-20T23:07:04.317Z",
+      "fingerprint": "0a2b586cb9012f7e0d292022b3f4ddff3a2e8e10",
+      "ttl_minutes": 30
+    },
+    "evidence:2026-02-21": {
+      "ts": "2026-02-21T05:24:20.759Z",
+      "fingerprint": "072383b5ec627b7668e9de8739ed72c99bfdd58b",
+      "ttl_minutes": 30
+    }
+  }
+}

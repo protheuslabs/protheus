@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * route_task.js v1.2 - Directive Gate + Optional Model Router Integration
- * Decide: MANUAL vs RUN_HABIT vs PROPOSE_HABIT with T0/T1 tiered directive enforcement
+ * Decide: MANUAL vs RUN_HABIT vs RUN_CANDIDATE_FOR_VERIFICATION with T0/T1 tiered directive enforcement
  *
  * v1.2:
  * - Retains existing decision behavior
@@ -101,6 +101,15 @@ function makeRunInputs(task, intentKey) {
     source: 'route_task',
     ts: new Date().toISOString()
   };
+}
+
+function predictHabitId(intentKey, task) {
+  const base = String(intentKey || normalizeIntent(task) || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9_]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 48);
+  return base || 'habit';
 }
 
 function jsonArg(obj) {
@@ -405,25 +414,32 @@ function main() {
     process.exit(0);
   }
   
-  // 3) If no match exists, but triggers say "worth it" → PROPOSE.
+  // 3) If no match exists, but triggers say "worth it" → auto-crystallize candidate + verify run.
   if (!match && anyTrigger) {
     const escapedTask = task.replace(/"/g, '\\"');
     const crystallizerPath = path.join(REPO_ROOT, 'habits', 'scripts', 'habit_crystallizer.js');
     const proposeScript = fs.existsSync(crystallizerPath)
       ? 'habits/scripts/habit_crystallizer.js'
       : 'habits/scripts/propose_habit.js';
+    const autoTrust = String(process.env.ROUTE_TASK_AUTO_TRUST_CANDIDATE || '1') !== '0';
+    const predictedHabitId = predictHabitId(intentKey, task);
     const proposeArgs = [
       proposeScript,
       '--from', task,
       '--tokens_est', String(tokensEst),
       '--repeats_14d', String(repeats14d),
       '--errors_30d', String(errors30d),
-      '--intent_key', intentKey
+      '--intent_key', intentKey,
+      '--auto_trust', autoTrust ? '1' : '0'
     ];
+    const crystallizeCommand = `node ${proposeScript} --from "${escapedTask}" --tokens_est ${tokensEst} --repeats_14d ${repeats14d} --errors_30d ${errors30d} --intent_key "${intentKey}" --auto_trust ${autoTrust ? 1 : 0}`;
     const out = {
-      decision: 'PROPOSE_HABIT',
-      reason: `No matching habit. Triggers met: ${whichMet.join(',')}`,
-      propose_command: `node ${proposeScript} --from "${escapedTask}" --tokens_est ${tokensEst} --repeats_14d ${repeats14d} --errors_30d ${errors30d} --intent_key "${intentKey}"`,
+      decision: 'RUN_CANDIDATE_FOR_VERIFICATION',
+      reason: `No matching habit. Triggers met: ${whichMet.join(',')}. Auto-crystallize candidate and verify.`,
+      suggested_habit_id: predictedHabitId,
+      auto_habit_flow: true,
+      crystallize_command: crystallizeCommand,
+      propose_command: crystallizeCommand,
       executor: { cmd: 'node', args: proposeArgs },
       which_met: whichMet,
       thresholds: thresholds,

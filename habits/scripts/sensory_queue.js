@@ -181,6 +181,69 @@ function metaHasQualitySignals(meta) {
   return keys.some((k) => Object.prototype.hasOwnProperty.call(meta, k));
 }
 
+function extractActionSpec(proposal) {
+  const direct = proposal && proposal.action_spec;
+  if (direct && typeof direct === 'object' && !Array.isArray(direct)) return direct;
+  const meta = proposal && proposal.meta && typeof proposal.meta === 'object' ? proposal.meta : null;
+  const nested = meta && meta.action_spec;
+  if (nested && typeof nested === 'object' && !Array.isArray(nested)) return nested;
+  return null;
+}
+
+function requiresActionSpecContract(proposal) {
+  if (!proposal || typeof proposal !== 'object') return false;
+  const meta = proposal.meta && typeof proposal.meta === 'object' ? proposal.meta : null;
+  const hasQualitySignals = metaHasQualitySignals(meta);
+  const hasSuggestedCommand = !!String(proposal.suggested_next_command || '').trim();
+  const hasValidation = Array.isArray(proposal.validation) && proposal.validation.length > 0;
+  const id = String(proposal.id || '').trim().toUpperCase();
+  const hasInsightPrefix = /^((PRP|EYE|CSG)-)/.test(id);
+  return hasQualitySignals || hasSuggestedCommand || hasValidation || hasInsightPrefix;
+}
+
+function validateActionSpec(spec) {
+  if (!spec || typeof spec !== 'object' || Array.isArray(spec)) {
+    return { ok: false, errors: ['not_object'] };
+  }
+  const errors = [];
+  const objective = String(spec.objective || '').trim();
+  const target = String(spec.target || '').trim();
+  const nextCommand = String(spec.next_command || '').trim();
+  const rollback = String(spec.rollback || '').trim();
+  const verify = Array.isArray(spec.verify) ? spec.verify : [];
+
+  if (!objective || objective.length < 12) errors.push('objective_missing_or_short');
+  if (!target || target.length < 3) errors.push('target_missing_or_short');
+  if (!nextCommand || nextCommand.length < 8) errors.push('next_command_missing_or_short');
+  if (!rollback || rollback.length < 12) errors.push('rollback_missing_or_short');
+  if (!verify.length) errors.push('verify_missing');
+  if (verify.length && verify.some((v) => String(v || '').trim().length < 8)) {
+    errors.push('verify_item_short');
+  }
+
+  return { ok: errors.length === 0, errors };
+}
+
+function evaluateActionSpecGate(proposal) {
+  if (!requiresActionSpecContract(proposal)) {
+    return { allow: true, reason: null, gated: false };
+  }
+  const spec = extractActionSpec(proposal);
+  if (!spec) {
+    return { allow: false, reason: 'action_spec_missing', gated: true };
+  }
+  const validated = validateActionSpec(spec);
+  if (!validated.ok) {
+    return {
+      allow: false,
+      reason: 'action_spec_invalid',
+      gated: true,
+      details: validated.errors.slice(0, 6)
+    };
+  }
+  return { allow: true, reason: null, gated: true };
+}
+
 function normalizeBlockedReason(admissionPreview) {
   const blocked = admissionPreview && Array.isArray(admissionPreview.blocked_by)
     ? admissionPreview.blocked_by
@@ -191,6 +254,9 @@ function normalizeBlockedReason(admissionPreview) {
 function evaluateQueueQualityGate(proposal) {
   const staticGate = evaluateStaticQueueGate(proposal);
   if (!staticGate.allow) return staticGate;
+
+  const actionSpecGate = evaluateActionSpecGate(proposal);
+  if (!actionSpecGate.allow) return actionSpecGate;
 
   const meta = proposal && proposal.meta && typeof proposal.meta === 'object' ? proposal.meta : null;
   if (!metaHasQualitySignals(meta)) {
@@ -389,6 +455,9 @@ function ingest(dateStr) {
         quality_gate: 'ingest_v1',
         source: 'sensory_queue'
       };
+      if (Array.isArray(gate.details) && gate.details.length > 0) {
+        filterEvent.filter_details = gate.details.slice(0, 6);
+      }
       appendEvent(filterEvent);
       existingFilteredHashes.add(hash);
       if (proposalId !== 'UNKNOWN') existingFilteredIds.add(proposalId);
@@ -856,6 +925,7 @@ module.exports = {
   snooze,
   stats,
   evaluateQueueQualityGate,
+  evaluateActionSpecGate,
   computeProposalHash,
   getProposalStatus,
   loadEvents,

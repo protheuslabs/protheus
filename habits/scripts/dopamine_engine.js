@@ -556,7 +556,8 @@ function autocap(mode = 'git') {
       const repoRoot = execSync('git rev-parse --show-toplevel', {
         cwd: process.cwd(),
         encoding: 'utf8',
-        timeout: 5000
+        timeout: 5000,
+        stdio: ['pipe', 'pipe', 'ignore']
       }).trim();
       
       // Recursion guard: Skip if in state/ directory
@@ -568,28 +569,32 @@ function autocap(mode = 'git') {
       const commitHash = execSync('git rev-parse --short HEAD', {
         cwd: repoRoot,
         encoding: 'utf8',
-        timeout: 5000
+        timeout: 5000,
+        stdio: ['pipe', 'pipe', 'ignore']
       }).trim();
       
       // Get commit message
       const commitMsg = execSync('git log -1 --pretty=%s', {
         cwd: repoRoot,
         encoding: 'utf8',
-        timeout: 5000
+        timeout: 5000,
+        stdio: ['pipe', 'pipe', 'ignore']
       }).trim();
       
       // Get current branch
       const branch = execSync('git rev-parse --abbrev-ref HEAD', {
         cwd: repoRoot,
         encoding: 'utf8',
-        timeout: 5000
+        timeout: 5000,
+        stdio: ['pipe', 'pipe', 'ignore']
       }).trim();
       
       // Get changed files from this commit only
       const changedFilesOutput = execSync('git diff-tree --no-commit-id --name-only -r HEAD', {
         cwd: repoRoot,
         encoding: 'utf8',
-        timeout: 5000
+        timeout: 5000,
+        stdio: ['pipe', 'pipe', 'ignore']
       }).trim();
       
       const changedFiles = changedFilesOutput ? changedFilesOutput.split('\n').filter(f => f.length > 0) : [];
@@ -609,10 +614,11 @@ function autocap(mode = 'git') {
       // Get remote URL (optional)
       let remoteUrl = '';
       try {
-        remoteUrl = execSync('git remote get-url origin', {
+        remoteUrl = execSync('git remote get-url origin 2>/dev/null', {
           cwd: repoRoot,
           encoding: 'utf8',
-          timeout: 5000
+          timeout: 5000,
+          stdio: ['pipe', 'pipe', 'ignore']
         }).trim();
       } catch (e) {
         // No remote configured

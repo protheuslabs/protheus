@@ -1,4 +1,8 @@
 {
+  "scripts": {
+    "test:ci": "node memory/tools/tests/run_ci_suite.js",
+    "test:ci:stateful": "node memory/tools/tests/run_ci_suite.js --include-stateful"
+  },
   "devDependencies": {
     "ws": "^8.19.0"
   }

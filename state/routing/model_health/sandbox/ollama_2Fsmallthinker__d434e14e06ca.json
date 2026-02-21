@@ -1,0 +1,14 @@
+{
+  "model": "ollama/smallthinker",
+  "available": null,
+  "skipped": true,
+  "probe_blocked": true,
+  "latency_ms": 15,
+  "probe_timeout_ms": 18000,
+  "max_latency_ms": 14000,
+  "reason": "env_probe_blocked",
+  "stderr": "Error: Head \"http://127.0.0.1:11434/\": dial tcp 127.0.0.1:11434: connect: operation not permitted",
+  "ts": "2026-02-21T05:24:20.883Z",
+  "checked_ms": 1771651460883,
+  "runtime_scope": "sandbox"
+}
