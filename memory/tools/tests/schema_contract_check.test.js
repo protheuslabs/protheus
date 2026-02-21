@@ -8,7 +8,7 @@ function run() {
   const out = checker.runCheck();
   assert.strictEqual(out.ok, true, 'schema contract check should pass');
   assert.ok(Array.isArray(out.checks), 'checks should exist');
-  assert.ok(out.checks.length >= 3, 'expected at least three schema checks');
+  assert.ok(out.checks.length >= 4, 'expected at least four schema checks');
   assert.strictEqual(Number(out.failure_count || 0), 0, 'no schema failures expected');
   console.log('schema_contract_check.test.js: OK');
 }

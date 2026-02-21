@@ -13,6 +13,7 @@
  */
 
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const {
   normalizeAutonomyReceiptForWrite
@@ -23,6 +24,11 @@ const { defaultFocusState } = require('../adaptive/sensory/eyes/focus_trigger_st
 const { defaultHabitState } = require('../adaptive/habits/habit_store.js');
 const { defaultReflexState } = require('../adaptive/reflex/reflex_store.js');
 const { defaultStrategyState } = require('../adaptive/strategy/strategy_store.js');
+const {
+  loadSystemBudgetState,
+  recordSystemBudgetUsage,
+  writeSystemBudgetDecision
+} = require('../budget/system_budget.js');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const CONTRACTS_DIR = path.join(ROOT, 'config', 'contracts');
@@ -212,11 +218,80 @@ function validateAdaptiveStoreContract() {
   return { name: 'adaptive_store', ok: failures.length === 0, failures };
 }
 
+function sampleSystemBudgetArtifacts() {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'schema-budget-'));
+  try {
+    const stateDir = path.join(tempRoot, 'state');
+    const eventsPath = path.join(tempRoot, 'events.jsonl');
+    const day = '2026-02-21';
+    const opts = {
+      state_dir: stateDir,
+      events_path: eventsPath,
+      allow_strategy: false,
+      daily_token_cap: 1000
+    };
+    loadSystemBudgetState(day, opts);
+    recordSystemBudgetUsage({
+      date: day,
+      tokens_est: 120,
+      module: 'schema_checker',
+      capability: 'budget_record'
+    }, opts);
+    writeSystemBudgetDecision({
+      date: day,
+      module: 'schema_checker',
+      capability: 'budget_decision',
+      request_tokens_est: 250,
+      decision: 'allow',
+      reason: 'schema_contract_sample'
+    }, opts);
+
+    const statePath = path.join(stateDir, `${day}.json`);
+    const state = readJson(statePath);
+    const rows = fs.existsSync(eventsPath)
+      ? fs.readFileSync(eventsPath, 'utf8').trim().split('\n').filter(Boolean).map((line) => JSON.parse(line))
+      : [];
+    const record = rows.find((row) => String(row.type || '') === 'system_budget_record') || {};
+    const decision = rows.find((row) => String(row.type || '') === 'system_budget_decision') || {};
+    return { state, record, decision };
+  } finally {
+    fs.rmSync(tempRoot, { recursive: true, force: true });
+  }
+}
+
+function validateSystemBudgetContract() {
+  const fp = path.join(CONTRACTS_DIR, 'system_budget.schema.json');
+  const raw = validateContractFile(fp);
+  if (!raw.ok) return { name: 'system_budget', ok: false, failures: raw.failures };
+  const spec = raw.doc && isObject(raw.doc) ? raw.doc : {};
+  const stateRequired = spec.state && Array.isArray(spec.state.required_paths) ? spec.state.required_paths : [];
+  const eventSpecs = spec.events && isObject(spec.events) ? spec.events : {};
+  const artifacts = sampleSystemBudgetArtifacts();
+  const failures = [];
+  if (!stateRequired.length) failures.push('system_budget:required_paths_missing:state');
+  failures.push(...validateRequiredPaths('system_budget:state', stateRequired, artifacts.state));
+  for (const [eventType, eventSpec] of Object.entries(eventSpecs)) {
+    const required = eventSpec && Array.isArray(eventSpec.required_paths) ? eventSpec.required_paths : [];
+    if (!required.length) {
+      failures.push(`system_budget:required_paths_missing:${eventType}`);
+      continue;
+    }
+    const sample = eventType === 'system_budget_record'
+      ? artifacts.record
+      : eventType === 'system_budget_decision'
+        ? artifacts.decision
+        : {};
+    failures.push(...validateRequiredPaths(`system_budget:${eventType}`, required, sample));
+  }
+  return { name: 'system_budget', ok: failures.length === 0, failures };
+}
+
 function runCheck() {
   const checks = [
     validateAutonomyReceiptContract(),
     validateProposalAdmissionContract(),
-    validateAdaptiveStoreContract()
+    validateAdaptiveStoreContract(),
+    validateSystemBudgetContract()
   ];
   const failures = checks.flatMap((c) => c.failures || []);
   return {
@@ -255,5 +330,6 @@ module.exports = {
   runCheck,
   hasPath,
   sampleAutonomyReceipt,
-  sampleEnrichedProposal
+  sampleEnrichedProposal,
+  sampleSystemBudgetArtifacts
 };

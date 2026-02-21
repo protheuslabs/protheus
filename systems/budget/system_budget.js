@@ -14,6 +14,7 @@
  *   node systems/budget/system_budget.js project [YYYY-MM-DD] --request_tokens_est=N
  *   node systems/budget/system_budget.js record [YYYY-MM-DD] --tokens_est=N [--module=name] [--capability=name]
  *   node systems/budget/system_budget.js decision [YYYY-MM-DD] --module=name --capability=name --request_tokens_est=N --decision=allow|degrade|deny [--reason=...]
+ *   node systems/budget/system_budget.js migrate [YYYY-MM-DD]
  *   node systems/budget/system_budget.js --help
  */
 
@@ -29,6 +30,15 @@ const DEFAULT_STATE_DIR = process.env.SYSTEM_BUDGET_STATE_DIR
 const DEFAULT_EVENTS_PATH = process.env.SYSTEM_BUDGET_EVENTS_PATH
   ? path.resolve(process.env.SYSTEM_BUDGET_EVENTS_PATH)
   : path.join(REPO_ROOT, 'state', 'autonomy', 'budget_events.jsonl');
+const SYSTEM_BUDGET_STATE_SCHEMA = Object.freeze({
+  schema_id: 'system_budget_state',
+  schema_version: '1.0.0'
+});
+const SYSTEM_BUDGET_EVENT_SCHEMA = Object.freeze({
+  schema_id: 'system_budget_event',
+  schema_version: '1.0.0'
+});
+const LEGACY_STATE_SCHEMA_VERSION = '0.0.0';
 
 function nowIso() {
   return new Date().toISOString();
@@ -93,6 +103,7 @@ function usage() {
   console.log('  node systems/budget/system_budget.js project [YYYY-MM-DD] --request_tokens_est=N');
   console.log('  node systems/budget/system_budget.js record [YYYY-MM-DD] --tokens_est=N [--module=name] [--capability=name]');
   console.log('  node systems/budget/system_budget.js decision [YYYY-MM-DD] --module=name --capability=name --request_tokens_est=N --decision=allow|degrade|deny [--reason=...]');
+  console.log('  node systems/budget/system_budget.js migrate [YYYY-MM-DD]');
   console.log('  node systems/budget/system_budget.js --help');
 }
 
@@ -128,6 +139,41 @@ function normalizeByModule(raw) {
     };
   }
   return out;
+}
+
+function hasStateContract(raw) {
+  return !!raw
+    && typeof raw === 'object'
+    && String(raw.schema_id || '') === SYSTEM_BUDGET_STATE_SCHEMA.schema_id
+    && String(raw.schema_version || '') === SYSTEM_BUDGET_STATE_SCHEMA.schema_version;
+}
+
+function toStateContractPayload(raw, opts = {}) {
+  const src = raw && typeof raw === 'object' ? raw : {};
+  const date = normalizeDate(opts.date || src.date);
+  const fallbackCap = toPositiveInt(
+    opts.fallback_token_cap,
+    toPositiveInt(src.token_cap, 0)
+  );
+  return {
+    schema_id: SYSTEM_BUDGET_STATE_SCHEMA.schema_id,
+    schema_version: SYSTEM_BUDGET_STATE_SCHEMA.schema_version,
+    date,
+    token_cap: toPositiveInt(src.token_cap, fallbackCap),
+    used_est: Number.isFinite(Number(src.used_est)) && Number(src.used_est) >= 0 ? Number(src.used_est) : 0,
+    by_module: normalizeByModule(src.by_module),
+    updated_at: src.updated_at ? String(src.updated_at) : nowIso()
+  };
+}
+
+function withEventContract(type, payload = {}) {
+  return {
+    schema_id: SYSTEM_BUDGET_EVENT_SCHEMA.schema_id,
+    schema_version: SYSTEM_BUDGET_EVENT_SCHEMA.schema_version,
+    type: String(type || payload.type || 'system_budget_event'),
+    ts: nowIso(),
+    ...(payload && typeof payload === 'object' ? payload : {})
+  };
 }
 
 function effectiveStrategyBudget(opts = {}) {
@@ -174,15 +220,20 @@ function effectiveStrategyBudget(opts = {}) {
 function loadSystemBudgetState(dateStr, opts = {}) {
   const day = normalizeDate(dateStr);
   const fp = dailyPath(day, opts);
+  const fileExists = fs.existsSync(fp);
   const raw = readJson(fp, {}) || {};
   const strategy = effectiveStrategyBudget(opts);
   const enforcedCap = toPositiveInt(strategy.caps.daily_token_cap, toPositiveInt(raw.token_cap, 0));
-  return {
+  const normalized = toStateContractPayload(raw, {
     date: day,
-    token_cap: enforcedCap,
-    used_est: Number.isFinite(Number(raw.used_est)) && Number(raw.used_est) >= 0 ? Number(raw.used_est) : 0,
-    by_module: normalizeByModule(raw.by_module),
-    updated_at: raw.updated_at ? String(raw.updated_at) : null,
+    fallback_token_cap: enforcedCap
+  });
+  normalized.token_cap = enforcedCap;
+  if (fileExists && !hasStateContract(raw)) {
+    writeJsonAtomic(fp, normalized);
+  }
+  return {
+    ...normalized,
     strategy_id: strategy.strategy_id || null,
     strategy_budget: strategy.caps,
     path: fp,
@@ -205,8 +256,65 @@ function saveSystemBudgetState(state, opts = {}) {
     by_module: normalizeByModule(state && state.by_module ? state.by_module : previous.by_module),
     updated_at: nowIso()
   };
-  writeJsonAtomic(fp, merged);
-  return merged;
+  const normalized = {
+    ...merged,
+    ...toStateContractPayload(merged, {
+      date: day,
+      fallback_token_cap: toPositiveInt(merged.token_cap, 0)
+    }),
+    updated_at: nowIso()
+  };
+  writeJsonAtomic(fp, normalized);
+  return normalized;
+}
+
+function migrateSystemBudgetState(dateStr, opts = {}) {
+  const day = normalizeDate(dateStr);
+  const fp = dailyPath(day, opts);
+  if (!fs.existsSync(fp)) {
+    return { date: day, path: fp, migrated: false, reason: 'missing' };
+  }
+  const raw = readJson(fp, null);
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    return { date: day, path: fp, migrated: false, reason: 'invalid_json' };
+  }
+  if (hasStateContract(raw)) {
+    return { date: day, path: fp, migrated: false, reason: 'already_contract' };
+  }
+  const strategy = effectiveStrategyBudget(opts);
+  const normalized = toStateContractPayload(raw, {
+    date: day,
+    fallback_token_cap: toPositiveInt(strategy.caps.daily_token_cap, toPositiveInt(raw.token_cap, 0))
+  });
+  writeJsonAtomic(fp, normalized);
+  return {
+    date: day,
+    path: fp,
+    migrated: true,
+    from_schema_version: String(raw.schema_version || LEGACY_STATE_SCHEMA_VERSION),
+    to_schema_version: SYSTEM_BUDGET_STATE_SCHEMA.schema_version
+  };
+}
+
+function migrateAllSystemBudgetStates(opts = {}) {
+  const stateDir = resolveStateDir(opts);
+  ensureDir(stateDir);
+  const files = fs.readdirSync(stateDir)
+    .filter((name) => /^\d{4}-\d{2}-\d{2}\.json$/.test(name))
+    .sort();
+  const results = [];
+  for (const name of files) {
+    const date = name.slice(0, 10);
+    results.push(migrateSystemBudgetState(date, opts));
+  }
+  return {
+    state_dir: stateDir,
+    scanned_count: files.length,
+    migrated_count: results.filter((r) => r.migrated === true).length,
+    already_count: results.filter((r) => r.reason === 'already_contract').length,
+    invalid_count: results.filter((r) => r.reason === 'invalid_json').length,
+    results
+  };
 }
 
 function projectSystemBudget(state, requestTokens, opts = {}) {
@@ -262,9 +370,7 @@ function recordSystemBudgetUsage(input, opts = {}) {
     used_est: Number(state.used_est || 0) + tokens,
     by_module: byModule
   }, opts);
-  appendJsonl(resolveEventsPath(opts), {
-    ts: nowIso(),
-    type: 'system_budget_record',
+  const row = withEventContract('system_budget_record', {
     date,
     module: moduleName,
     capability,
@@ -273,6 +379,7 @@ function recordSystemBudgetUsage(input, opts = {}) {
     token_cap: next.token_cap,
     strategy_id: next.strategy_id || null
   });
+  appendJsonl(resolveEventsPath(opts), row);
   return next;
 }
 
@@ -300,9 +407,7 @@ function writeSystemBudgetDecision(input, opts = {}) {
     soft_ratio: opts.soft_ratio,
     hard_ratio: opts.hard_ratio
   });
-  const row = {
-    ts: nowIso(),
-    type: 'system_budget_decision',
+  const row = withEventContract('system_budget_decision', {
     date: payload.date,
     module: payload.module,
     capability: payload.capability,
@@ -315,7 +420,7 @@ function writeSystemBudgetDecision(input, opts = {}) {
     projected_ratio: projection.projected_ratio,
     projected_pressure: projection.projected_pressure,
     strategy_id: state.strategy_id || null
-  };
+  });
   appendJsonl(resolveEventsPath(opts), row);
   return row;
 }
@@ -403,6 +508,25 @@ function cmdDecision(args) {
   }, null, 2) + '\n');
 }
 
+function cmdMigrate(args) {
+  const dateArg = String(args._[1] || '').trim();
+  const opts = {
+    state_dir: args['state-dir'] || args.state_dir,
+    daily_token_cap: args.daily_token_cap
+  };
+  const out = dateArg
+    ? {
+      target_date: normalizeDate(dateArg),
+      result: migrateSystemBudgetState(dateArg, opts)
+    }
+    : migrateAllSystemBudgetStates(opts);
+  process.stdout.write(JSON.stringify({
+    ok: true,
+    ts: nowIso(),
+    ...out
+  }, null, 2) + '\n');
+}
+
 function main() {
   const args = parseArgs(process.argv.slice(2));
   const cmd = String(args._[0] || '').trim().toLowerCase();
@@ -414,6 +538,7 @@ function main() {
   if (cmd === 'project') return cmdProject(args);
   if (cmd === 'record') return cmdRecord(args);
   if (cmd === 'decision') return cmdDecision(args);
+  if (cmd === 'migrate') return cmdMigrate(args);
   usage();
   process.exit(2);
 }
@@ -426,9 +551,17 @@ module.exports = {
   GLOBAL_BUDGET_DEFAULT_DIR,
   DEFAULT_STATE_DIR,
   DEFAULT_EVENTS_PATH,
+  SYSTEM_BUDGET_STATE_SCHEMA,
+  SYSTEM_BUDGET_EVENT_SCHEMA,
+  LEGACY_STATE_SCHEMA_VERSION,
   effectiveStrategyBudget,
+  hasStateContract,
+  toStateContractPayload,
+  withEventContract,
   loadSystemBudgetState,
   saveSystemBudgetState,
+  migrateSystemBudgetState,
+  migrateAllSystemBudgetStates,
   projectSystemBudget,
   recordSystemBudgetUsage,
   writeSystemBudgetDecision,

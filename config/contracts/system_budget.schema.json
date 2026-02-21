@@ -1,0 +1,47 @@
+{
+  "schema_id": "system_budget",
+  "schema_version": "1.0.0",
+  "description": "Canonical minimum contract for system budget daily state and budget event rows.",
+  "root_type": "object",
+  "state": {
+    "required_paths": [
+      "schema_id",
+      "schema_version",
+      "date",
+      "token_cap",
+      "used_est",
+      "by_module",
+      "updated_at"
+    ]
+  },
+  "events": {
+    "system_budget_record": {
+      "required_paths": [
+        "schema_id",
+        "schema_version",
+        "type",
+        "ts",
+        "date",
+        "module",
+        "tokens_est",
+        "used_est_after",
+        "token_cap"
+      ]
+    },
+    "system_budget_decision": {
+      "required_paths": [
+        "schema_id",
+        "schema_version",
+        "type",
+        "ts",
+        "date",
+        "module",
+        "decision",
+        "request_tokens_est",
+        "used_est_before",
+        "token_cap",
+        "projected_pressure"
+      ]
+    }
+  }
+}
