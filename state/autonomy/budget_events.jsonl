@@ -1,2 +1,0 @@
-{"ts":"2026-02-21T07:54:24.124Z","type":"system_budget_record","date":"2026-02-21","module":"reflex","capability":"spawn","tokens_est":180,"used_est_after":180,"token_cap":4000,"strategy_id":"default_general"}
-{"ts":"2026-02-21T07:54:37.192Z","type":"system_budget_record","date":"2026-02-21","module":"reflex","capability":"spawn","tokens_est":180,"used_est_after":180,"token_cap":1000,"strategy_id":null}
