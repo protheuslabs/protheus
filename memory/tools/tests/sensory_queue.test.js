@@ -1,10 +1,10 @@
 /**
- * sensory_queue.test.js - Sensory Layer v1.2.1 Proposal Queue Tests
+ * sensory_queue.test.js - Sensory Layer v1.2.3 Proposal Queue Tests
  * 
  * Tests proposal lifecycle: ingest, accept, reject, done, snooze, stats
  * Truthful tests: exit 1 on failure
  * 
- * v1.2.1: Proposal queue + dispositions (NO auto-execution)
+ * v1.2.3: Proposal queue + dispositions + execution-worthiness admission gate (NO auto-execution)
  */
 
 const assert = require('assert');
@@ -65,7 +65,7 @@ function createTestProposals(dateStr, proposals) {
 }
 
 console.log('═══════════════════════════════════════════════════════════');
-console.log('   SENSORY QUEUE v1.2.1 TESTS');
+console.log('   SENSORY QUEUE v1.2.3 TESTS');
 console.log('   Proposal lifecycle: ingest, accept, reject, done, snooze, stats');
 console.log('   Truthful PASS/FAIL - exit 1 on failure');
 console.log('═══════════════════════════════════════════════════════════');
@@ -486,6 +486,101 @@ test('ingest deduplicates by proposal_id even when content hash changes', () => 
   cleanup();
 });
 
+// Test 12: execution-worthiness gate blocks vague/meta proposals
+test('ingest filters low execution-worthiness proposals and logs reason', () => {
+  setup();
+
+  const testDate = '2026-02-20';
+  const proposals = [
+    {
+      id: 'P012',
+      title: 'Review automation health',
+      type: 'external_intel',
+      action_spec: {
+        version: 1,
+        objective: 'Review automation reliability posture',
+        target: 'automation_health',
+        next_command: 'echo run queue review',
+        verify: ['verify output text'],
+        rollback: 'undo recent action state'
+      },
+      meta: {
+        signal_quality_score: 74,
+        relevance_score: 76,
+        directive_fit_score: 56,
+        actionability_score: 66,
+        composite_eligibility_score: 72,
+        actionability_pass: true,
+        composite_eligibility_pass: true
+      }
+    }
+  ];
+
+  createTestProposals(testDate, proposals);
+  queue.QUEUE_LOG = QUEUE_LOG;
+
+  const result = queue.ingest(testDate);
+  assert.strictEqual(result.ingested, 0, 'Low execution-worthiness proposal should be blocked');
+  assert.strictEqual(result.filtered, 1, 'Proposal should be filtered');
+  assert.strictEqual(result.filtered_by_reason.execution_worthiness_low, 1, 'Expected execution_worthiness_low reason');
+
+  const events = queue.loadEvents();
+  const filtered = events.filter(e => e.type === 'proposal_filtered');
+  assert.strictEqual(filtered.length, 1, 'Should emit one filtered event');
+  assert.strictEqual(filtered[0].filter_reason, 'execution_worthiness_low');
+  assert.ok(Number(filtered[0].execution_worthiness_score || 0) < Number(filtered[0].execution_worthiness_threshold || 0));
+
+  cleanup();
+});
+
+// Test 13: execution-worthiness gate allows concrete executable proposals
+test('ingest keeps high execution-worthiness proposals with audit score', () => {
+  setup();
+
+  const testDate = '2026-02-20';
+  const proposals = [
+    {
+      id: 'P013',
+      title: 'Stabilize collector failure loop',
+      type: 'external_intel',
+      action_spec: {
+        version: 1,
+        objective: 'Reduce collector fetch failure rate below 5% within 24 hours using deterministic fallback sequencing',
+        target: 'collector:hn_frontpage',
+        next_command: 'node systems/routing/route_execute.js --task=\"Diagnose collector failure and apply deterministic fallback\" --dry-run',
+        verify: [
+          'Error rate is <= 5% across two consecutive runs',
+          'Receipt shows collector fallback path verified with pass status'
+        ],
+        rollback: 'Revert collector config and restore prior baseline snapshot if verification fails'
+      },
+      meta: {
+        signal_quality_score: 80,
+        relevance_score: 82,
+        directive_fit_score: 61,
+        actionability_score: 74,
+        composite_eligibility_score: 79,
+        actionability_pass: true,
+        composite_eligibility_pass: true
+      }
+    }
+  ];
+
+  createTestProposals(testDate, proposals);
+  queue.QUEUE_LOG = QUEUE_LOG;
+
+  const result = queue.ingest(testDate);
+  assert.strictEqual(result.ingested, 1, 'High execution-worthiness proposal should pass');
+  assert.strictEqual(result.filtered || 0, 0, 'No filtering expected');
+
+  const events = queue.loadEvents();
+  const generated = events.filter(e => e.type === 'proposal_generated');
+  assert.strictEqual(generated.length, 1, 'Should emit one generated event');
+  assert.ok(Number(generated[0].execution_worthiness_score || 0) >= Number(generated[0].execution_worthiness_threshold || 0));
+
+  cleanup();
+});
+
 // Summary
 console.log('\n═══════════════════════════════════════════════════════════');
 if (failed) {
@@ -494,7 +589,7 @@ if (failed) {
   process.exit(1);
 }
 
-console.log('   ✅ ALL SENSORY QUEUE TESTS PASS (11/11)');
+console.log('   ✅ ALL SENSORY QUEUE TESTS PASS (13/13)');
 console.log('═══════════════════════════════════════════════════════════');
 console.log('\n📋 Coverage:');
 console.log('   1. ✅ ingest creates proposal_generated entries');
@@ -508,4 +603,6 @@ console.log('   8. ✅ done marks proposal as completed');
 console.log('   9. ✅ expired snooze appears as open');
 console.log('  10. ✅ static queue gate filters stub + unknown-eye proposals');
 console.log('  11. ✅ id-based dedupe prevents duplicate re-ingest with changed payload');
-console.log('\n🎯 Sensory Queue v1.2.1 Ready - NO raw JSONL, NO LLM, append-only');
+console.log('  12. ✅ execution-worthiness gate blocks vague/meta proposals');
+console.log('  13. ✅ execution-worthiness gate keeps concrete executable proposals');
+console.log('\n🎯 Sensory Queue v1.2.3 Ready - NO raw JSONL, NO LLM, append-only');

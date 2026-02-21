@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * sensory_queue.js - Sensory Layer v1.2.2 (PROPOSAL QUEUE)
+ * sensory_queue.js - Sensory Layer v1.2.3 (PROPOSAL QUEUE)
  * 
  * Proposal lifecycle logging + dispositions.
  * Reads ONLY proposals JSON, NEVER raw JSONL.
@@ -25,8 +25,15 @@ const SENSORY_QUEUE_MIN_RELEVANCE_SCORE = Number(process.env.SENSORY_QUEUE_MIN_R
 const SENSORY_QUEUE_MIN_DIRECTIVE_FIT_SCORE = Number(process.env.SENSORY_QUEUE_MIN_DIRECTIVE_FIT_SCORE || 25);
 const SENSORY_QUEUE_MIN_ACTIONABILITY_SCORE = Number(process.env.SENSORY_QUEUE_MIN_ACTIONABILITY_SCORE || 45);
 const SENSORY_QUEUE_MIN_COMPOSITE_SCORE = Number(process.env.SENSORY_QUEUE_MIN_COMPOSITE_SCORE || 62);
+const SENSORY_QUEUE_MIN_EXECUTION_WORTHINESS_SCORE = Number(process.env.SENSORY_QUEUE_MIN_EXECUTION_WORTHINESS_SCORE || 62);
 const SENSORY_QUEUE_DISALLOW_STUB_TITLE = String(process.env.SENSORY_QUEUE_DISALLOW_STUB_TITLE || '1') !== '0';
 const SENSORY_QUEUE_DISALLOW_UNKNOWN_EYE = String(process.env.SENSORY_QUEUE_DISALLOW_UNKNOWN_EYE || '1') !== '0';
+const EXECUTION_ACTION_RE = /\b(fix|stabilize|reduce|increase|ship|deliver|implement|optimi[sz]e|triage|repair|harden|verify|measure|enforce|prevent)\b/i;
+const EXECUTION_METRIC_RE = /(\d+(\.\d+)?\s*(%|ms|s|sec|seconds|min|minutes|h|hr|hours|day|days|week|weeks|tokens?))|([<>]=?)|\b(pass|fail|rate|latency|error|count|budget|receipt|verified?)\b/i;
+const EXECUTION_COMMAND_RE = /^(node|npm|npx|pnpm|yarn|python|python3|bash|sh|curl|git|make|uv)\b/i;
+const EXECUTION_COMMAND_PLACEHOLDER_RE = /(\.\.\.|<[^>]+>|\bTODO\b|\bTBD\b)/i;
+const ROLLBACK_VERB_RE = /\b(revert|rollback|restore|undo|remove|reset|disable)\b/i;
+const ROLLBACK_SCOPE_RE = /\b(file|config|state|policy|baseline|commit|snapshot|registry|queue|route|collector)\b/i;
 
 // Paths - can be overridden for testing
 let SENSORY_DIR = path.join(__dirname, '..', '..', 'state', 'sensory');
@@ -224,6 +231,156 @@ function validateActionSpec(spec) {
   return { ok: errors.length === 0, errors };
 }
 
+function clampScore(n, min, max) {
+  return Math.max(min, Math.min(max, Number(n) || 0));
+}
+
+function extractExecutionContract(proposal) {
+  const spec = extractActionSpec(proposal) || {};
+  const objective = String(spec.objective || proposal && proposal.title || '').trim();
+  const target = String(spec.target || '').trim();
+  const nextCommand = String(spec.next_command || proposal && proposal.suggested_next_command || '').trim();
+  let verify = Array.isArray(spec.verify) ? spec.verify.slice() : [];
+  if (!verify.length && Array.isArray(proposal && proposal.validation)) {
+    verify = proposal.validation.slice();
+  }
+  verify = verify.map((v) => String(v || '').trim()).filter(Boolean);
+  const rollback = String(spec.rollback || '').trim();
+  const applies = requiresActionSpecContract(proposal)
+    || !!nextCommand
+    || verify.length > 0
+    || !!target
+    || !!rollback;
+  return {
+    applies,
+    objective,
+    target,
+    next_command: nextCommand,
+    verify,
+    rollback
+  };
+}
+
+function scoreObjectiveClarity(contract) {
+  const objective = String(contract && contract.objective || '');
+  const target = String(contract && contract.target || '');
+  const verifyText = Array.isArray(contract && contract.verify) ? contract.verify.join(' ') : '';
+  let score = 0;
+  if (objective.length >= 20) score += 8;
+  if (objective.length >= 40) score += 4;
+  if (target.length >= 3) score += 5;
+  if (EXECUTION_ACTION_RE.test(objective)) score += 4;
+  if (EXECUTION_METRIC_RE.test(`${objective} ${verifyText}`)) score += 4;
+  return clampScore(score, 0, 25);
+}
+
+function scoreCommandConcreteness(contract) {
+  const command = String(contract && contract.next_command || '');
+  let score = 0;
+  if (command.length >= 12) score += 8;
+  if (command.length >= 32) score += 4;
+  if (EXECUTION_COMMAND_RE.test(command)) score += 7;
+  if (/(--[a-z0-9_-]+=)|\b(node|python)\s+\S+/i.test(command)) score += 4;
+  if (/(systems\/|habits\/|state\/|config\/|\.js\b|\.sh\b|\.py\b)/i.test(command)) score += 2;
+  if (EXECUTION_COMMAND_PLACEHOLDER_RE.test(command)) score -= 8;
+  return clampScore(score, 0, 25);
+}
+
+function scoreVerificationStrength(contract) {
+  const verify = Array.isArray(contract && contract.verify) ? contract.verify : [];
+  let score = 0;
+  if (verify.length >= 1) score += 6;
+  if (verify.length >= 2) score += 4;
+  if (verify.length >= 3) score += 2;
+  let detailed = 0;
+  let measurable = 0;
+  for (const itemRaw of verify) {
+    const item = String(itemRaw || '').trim();
+    if (item.length >= 16) detailed++;
+    if (EXECUTION_METRIC_RE.test(item)) measurable++;
+  }
+  score += Math.min(6, detailed * 2);
+  score += Math.min(7, measurable * 3);
+  return clampScore(score, 0, 25);
+}
+
+function scoreRollbackQuality(contract) {
+  const rollback = String(contract && contract.rollback || '');
+  let score = 0;
+  if (rollback.length >= 14) score += 8;
+  if (rollback.length >= 40) score += 4;
+  if (ROLLBACK_VERB_RE.test(rollback)) score += 8;
+  if (ROLLBACK_SCOPE_RE.test(rollback)) score += 5;
+  return clampScore(score, 0, 25);
+}
+
+function computeExecutionWorthiness(proposal) {
+  const contract = extractExecutionContract(proposal);
+  const threshold = SENSORY_QUEUE_MIN_EXECUTION_WORTHINESS_SCORE;
+  if (!contract.applies) {
+    return {
+      applies: false,
+      threshold,
+      total: null,
+      components: null
+    };
+  }
+  const components = {
+    objective_clarity: scoreObjectiveClarity(contract),
+    command_concreteness: scoreCommandConcreteness(contract),
+    verification_strength: scoreVerificationStrength(contract),
+    rollback_quality: scoreRollbackQuality(contract)
+  };
+  const total = clampScore(
+    components.objective_clarity
+      + components.command_concreteness
+      + components.verification_strength
+      + components.rollback_quality,
+    0,
+    100
+  );
+  return {
+    applies: true,
+    threshold,
+    total,
+    components
+  };
+}
+
+function evaluateExecutionWorthinessGate(proposal) {
+  const worthiness = computeExecutionWorthiness(proposal);
+  if (!worthiness.applies) {
+    return {
+      allow: true,
+      reason: null,
+      gated: false,
+      execution_worthiness: worthiness
+    };
+  }
+  if (Number(worthiness.total || 0) < Number(worthiness.threshold || 0)) {
+    return {
+      allow: false,
+      reason: 'execution_worthiness_low',
+      gated: true,
+      execution_worthiness: worthiness,
+      details: [
+        `score=${worthiness.total}`,
+        `threshold=${worthiness.threshold}`,
+        `objective=${worthiness.components.objective_clarity}`,
+        `command=${worthiness.components.command_concreteness}`,
+        `verify=${worthiness.components.verification_strength}`,
+        `rollback=${worthiness.components.rollback_quality}`
+      ]
+    };
+  }
+  return {
+    allow: true,
+    reason: null,
+    gated: true,
+    execution_worthiness: worthiness
+  };
+}
+
 function evaluateActionSpecGate(proposal) {
   if (!requiresActionSpecContract(proposal)) {
     return { allow: true, reason: null, gated: false };
@@ -258,9 +415,17 @@ function evaluateQueueQualityGate(proposal) {
   const actionSpecGate = evaluateActionSpecGate(proposal);
   if (!actionSpecGate.allow) return actionSpecGate;
 
+  const executionWorthinessGate = evaluateExecutionWorthinessGate(proposal);
+  if (!executionWorthinessGate.allow) return executionWorthinessGate;
+
   const meta = proposal && proposal.meta && typeof proposal.meta === 'object' ? proposal.meta : null;
   if (!metaHasQualitySignals(meta)) {
-    return { allow: true, reason: null, gated: false };
+    return {
+      allow: true,
+      reason: null,
+      gated: !!(executionWorthinessGate.execution_worthiness && executionWorthinessGate.execution_worthiness.applies),
+      execution_worthiness: executionWorthinessGate.execution_worthiness
+    };
   }
 
   const admission = meta && meta.admission_preview && typeof meta.admission_preview === 'object'
@@ -298,7 +463,12 @@ function evaluateQueueQualityGate(proposal) {
     return { allow: false, reason: 'composite_low', gated: true };
   }
 
-  return { allow: true, reason: null, gated: true };
+  return {
+    allow: true,
+    reason: null,
+    gated: true,
+    execution_worthiness: executionWorthinessGate.execution_worthiness
+  };
 }
 
 function proposalEventKey(event) {
@@ -455,6 +625,11 @@ function ingest(dateStr) {
         quality_gate: 'ingest_v1',
         source: 'sensory_queue'
       };
+      if (gate.execution_worthiness && gate.execution_worthiness.applies) {
+        filterEvent.execution_worthiness_score = gate.execution_worthiness.total;
+        filterEvent.execution_worthiness_threshold = gate.execution_worthiness.threshold;
+        filterEvent.execution_worthiness_components = gate.execution_worthiness.components;
+      }
       if (Array.isArray(gate.details) && gate.details.length > 0) {
         filterEvent.filter_details = gate.details.slice(0, 6);
       }
@@ -476,6 +651,11 @@ function ingest(dateStr) {
       status_after: 'open',
       source: 'sensory_queue'
     };
+    if (gate.execution_worthiness && gate.execution_worthiness.applies) {
+      event.execution_worthiness_score = gate.execution_worthiness.total;
+      event.execution_worthiness_threshold = gate.execution_worthiness.threshold;
+      event.execution_worthiness_components = gate.execution_worthiness.components;
+    }
     
     appendEvent(event);
     existingGeneratedHashes.add(hash); // Prevent duplicates in same run
@@ -926,6 +1106,8 @@ module.exports = {
   stats,
   evaluateQueueQualityGate,
   evaluateActionSpecGate,
+  evaluateExecutionWorthinessGate,
+  computeExecutionWorthiness,
   computeProposalHash,
   getProposalStatus,
   loadEvents,
