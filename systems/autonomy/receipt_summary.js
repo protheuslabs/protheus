@@ -13,6 +13,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { successCriteriaFromReceipt } = require('../../lib/autonomy_receipt_schema.js');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const AUTONOMY_RUNS_DIR = process.env.AUTONOMY_SUMMARY_RUNS_DIR
@@ -314,6 +315,7 @@ function summarizeAutonomyReceipts(rows) {
   let previewReceipts = 0;
   let previewCriteriaReceipts = 0;
   let previewCriteriaPass = 0;
+  let criteriaSynthesizedReceipts = 0;
   const byObjective = {};
 
   for (const rec of receipts) {
@@ -336,13 +338,9 @@ function summarizeAutonomyReceipts(rows) {
       if (String(rec.verdict || '').toLowerCase() === 'pass') bucket.pass += 1;
       else if (String(rec.verdict || '').toLowerCase() === 'fail') bucket.fail += 1;
     }
-    const verification = rec && rec.verification && typeof rec.verification === 'object'
-      ? rec.verification
-      : null;
-    const criteria = verification && verification.success_criteria && typeof verification.success_criteria === 'object'
-      ? verification.success_criteria
-      : null;
+    const criteria = successCriteriaFromReceipt(rec);
     if (!criteria) continue;
+    if (criteria.synthesized === true) criteriaSynthesizedReceipts += 1;
     criteriaReceipts += 1;
     if (criteria.required === true) criteriaRequiredReceipts += 1;
     if (criteria.passed === true) criteriaReceiptPass += 1;
@@ -411,6 +409,7 @@ function summarizeAutonomyReceipts(rows) {
     success_criteria_preview_pass_rate: previewCriteriaReceipts
       ? Number((previewCriteriaPass / previewCriteriaReceipts).toFixed(3))
       : null,
+    success_criteria_synthesized_receipts: criteriaSynthesizedReceipts,
     by_objective: byObjectiveSorted
   };
 }

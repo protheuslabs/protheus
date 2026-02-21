@@ -45,6 +45,12 @@ state/routing/model_catalog_proposals/*.json
 state/routing/model_catalog_trials/*.json
 state/routing/deep_thinker_receipts/*.jsonl
 state/routing/spend/*.json
+state/routing/hardware_plan.json
+state/routing/llm_gateway_calls.jsonl
+state/routing/model_health/sandbox/*.json
+state/routing/prompt_cache_index.json
+state/spawn/allocations.json
+state/spawn/events.jsonl
 state/autonomy/daily_budget/*.json
 state/autonomy/experiments/*.jsonl
 state/autonomy/runs/*.jsonl
