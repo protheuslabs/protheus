@@ -195,6 +195,14 @@ function main() {
     ["receipt_summary.js", "run", "--days"]
   );
 
+  // health_status.js reports daily/weekly autonomy SLOs and alert receipts.
+  // It intentionally runs status on no-arg, so validate help contract only.
+  checkUsage(
+    "systems/autonomy/health_status.js",
+    ["--help"],
+    ["health_status.js", "--window", "--days", "--alerts"]
+  );
+
   // pipeline_spc_gate.js enforces process-control limits for escalation safety.
   checkScript(
     "systems/autonomy/pipeline_spc_gate.js",

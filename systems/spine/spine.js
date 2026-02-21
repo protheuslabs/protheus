@@ -769,6 +769,7 @@ function main() {
     "systems/autonomy/strategy_readiness.js",
     "systems/autonomy/strategy_execute_guard.js",
     "systems/autonomy/strategy_mode_governor.js",
+    "systems/autonomy/health_status.js",
     "systems/actuation/actuation_executor.js",
     "systems/actuation/bridge_from_proposals.js",
     "systems/ops/state_backup.js",
@@ -1909,6 +1910,71 @@ function main() {
         flag_value: String(process.env.SPINE_BUDGET_HEALTH_ENABLED || "")
       });
       console.log(" budget_health skipped reason=feature_flag_disabled flag=SPINE_BUDGET_HEALTH_ENABLED");
+    }
+
+    // 4c) autonomy ops health SLO report + thresholded alerts (daily + rolling weekly).
+    if (String(process.env.SPINE_AUTONOMY_HEALTH_ENABLED || "1") !== "0") {
+      const strict = String(process.env.SPINE_AUTONOMY_HEALTH_STRICT || "0") === "1";
+      const weeklyDays = Math.max(2, Number(process.env.SPINE_AUTONOMY_HEALTH_WEEKLY_DAYS || 7) || 7);
+      const healthRuns = [
+        { label: "daily", args: ["--window=daily", "--days=1"] },
+        { label: "weekly", args: ["--window=weekly", `--days=${weeklyDays}`] }
+      ];
+      for (const runCfg of healthRuns) {
+        const health = runJson("node", ["systems/autonomy/health_status.js", dateStr, ...runCfg.args]);
+        const payload = health.payload && typeof health.payload === "object" ? health.payload : null;
+        const slo = payload && payload.slo && typeof payload.slo === "object" ? payload.slo : {};
+        const critical = Number(slo.critical_count || 0);
+        const warns = Number(slo.warn_count || 0);
+        appendLedger(dateStr, {
+          ts: nowIso(),
+          type: "spine_autonomy_health",
+          mode,
+          date: dateStr,
+          window: runCfg.label,
+          ok: health.ok && !!payload,
+          slo_ok: payload ? slo.ok === true : null,
+          slo_level: payload ? String(slo.level || "unknown") : null,
+          warn_count: warns,
+          critical_count: critical,
+          failed_checks: payload && Array.isArray(slo.failed_checks) ? slo.failed_checks : [],
+          alerts_generated: payload && payload.alerts ? Number(payload.alerts.generated || 0) : null,
+          alerts_written: payload && payload.alerts ? Number(payload.alerts.written || 0) : null,
+          alert_path: payload && payload.alerts ? payload.alerts.path || null : null,
+          report_path: payload && payload.report ? payload.report.path || null : null,
+          reason: (!health.ok || !payload)
+            ? String(health.stderr || health.stdout || `autonomy_health_exit_${health.code}`).slice(0, 180)
+            : null
+        });
+        if (!health.ok || !payload) {
+          const reason = String(health.stderr || health.stdout || "unknown").slice(0, 120);
+          console.log(` autonomy_health ${runCfg.label} unavailable reason=${reason}`);
+          if (strict) process.exit(health.code || 1);
+          continue;
+        }
+        console.log(
+          ` autonomy_health ${runCfg.label}` +
+          ` level=${String(slo.level || "ok")}` +
+          ` warn=${warns}` +
+          ` critical=${critical}` +
+          ` alerts_written=${Number(payload.alerts && payload.alerts.written || 0)}`
+        );
+        if (strict && critical > 0) {
+          console.error(` autonomy_health ${runCfg.label} FAIL critical=${critical}`);
+          process.exit(1);
+        }
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_autonomy_health_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "SPINE_AUTONOMY_HEALTH_ENABLED",
+        flag_value: String(process.env.SPINE_AUTONOMY_HEALTH_ENABLED || "")
+      });
+      console.log(" autonomy_health skipped reason=feature_flag_disabled flag=SPINE_AUTONOMY_HEALTH_ENABLED");
     }
 
     // 5) optional external state backup (outside git workspace)
