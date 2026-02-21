@@ -1,0 +1,53 @@
+{
+  "schema_id": "adaptive_store",
+  "schema_version": "1.0.0",
+  "description": "Canonical minimum contracts for adaptive-layer store defaults.",
+  "root_type": "object",
+  "stores": {
+    "eyes_catalog": {
+      "required_paths": [
+        "version",
+        "eyes",
+        "global_limits.max_concurrent_runs",
+        "scoring.ema_alpha"
+      ]
+    },
+    "focus_state": {
+      "required_paths": [
+        "version",
+        "policy.min_focus_score",
+        "policy.dynamic_focus_gate_enabled",
+        "triggers",
+        "eye_lenses",
+        "stats.focused_items_total"
+      ]
+    },
+    "habit_state": {
+      "required_paths": [
+        "version",
+        "policy.generation_min_repeats",
+        "policy.max_active_routines",
+        "routines",
+        "metrics.total_created"
+      ]
+    },
+    "reflex_state": {
+      "required_paths": [
+        "version",
+        "policy.min_cells",
+        "policy.max_cells",
+        "routines",
+        "metrics.total_created"
+      ]
+    },
+    "strategy_state": {
+      "required_paths": [
+        "version",
+        "policy.max_profiles",
+        "profiles",
+        "intake_queue",
+        "metrics.total_profiles_created"
+      ]
+    }
+  }
+}

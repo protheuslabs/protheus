@@ -29,6 +29,9 @@ This repository is an agent-operations workspace: orchestration, governed habits
 # Validate script CLI contracts used by spine
 node systems/spine/contract_check.js
 
+# Validate versioned runtime schema contracts (receipt/proposal/adaptive)
+node systems/security/schema_contract_check.js run
+
 # Stable CI test suite (contract + deterministic tests)
 npm run test:ci
 
@@ -163,6 +166,7 @@ node systems/security/emergency_stop.js release --approval-note="..."
 ## Automation Policy
 
 - See `docs/AUTOMATION_POLICY.md` for the explicit auto vs gated vs operator-approved contract.
+- See `docs/ARCHITECTURE_OWNERSHIP.md` for ownership boundaries and canonical adaptive mutation channels.
 
 ## Autonomy Capability Note
 

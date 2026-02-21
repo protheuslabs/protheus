@@ -48,6 +48,8 @@ Status legend:
 | BL-031 | todo | Network egress choke point for autonomous actions | Reduce exfiltration/abuse blast radius by forcing all outbound actions through a policy gate | All autonomous external calls route through one egress gateway with allowlisted domains/methods, per-scope rate caps, and deny/audit receipts |
 | BL-032 | todo | Signed startup attestation + integrity check at run boot | Detect tampering before autonomy loops execute | Boot path emits signed attestation over critical policy/config hashes; autonomy refuses execute/canary when attestation fails or is stale |
 | BL-033 | todo | Quorum validator for high-tier self-modification proposals | Add independent cross-check before risky self-edits are applied | High-tier mutation proposals require deterministic second-pass validator agreement before admission; disagreement blocks with explainable receipt |
+| BL-034 | todo | Operator runbook for incidents + rollback drills | Reduce time-to-recover and remove tribal-knowledge dependency during failures | `docs/OPERATOR_RUNBOOK.md` covers top incident classes (routing degraded, schema drift, sensory starvation, autonomy stall), step-by-step remediation, rollback commands, and expected receipts/logs for verification |
+| BL-035 | todo | Required-Checks branch protection policy | Prevent contract/security regressions from merging without gates | Branch policy requires passing `npm run test:ci`, `contract_check`, `schema_contract_check`, and adaptive guard strict checks before merge; owner review required for `systems/` and `config/` changes |
 
 ## P2
 

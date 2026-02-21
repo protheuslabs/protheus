@@ -90,6 +90,15 @@ function main() {
     process.exit(adaptiveBoundary.status || 1);
   }
 
+  console.log('=== CI SUITE: schema_contract_check ===');
+  const schemaContract = runNode(['systems/security/schema_contract_check.js', 'run']);
+  printOutput('  ', schemaContract.stdout);
+  printOutput('  ', schemaContract.stderr);
+  if (!schemaContract.ok) {
+    console.error(`schema_contract_check failed (exit ${schemaContract.status})`);
+    process.exit(schemaContract.status || 1);
+  }
+
   const tests = listTests();
   let failed = 0;
   let passed = 0;
