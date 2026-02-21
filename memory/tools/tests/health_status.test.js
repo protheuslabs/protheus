@@ -109,6 +109,18 @@ function main() {
     ok: true,
     readiness: { current_mode: 'canary_execute', ready_for_execute: true, failed_checks: [] }
   });
+  writeStubScript(path.join(stubsDir, 'strategy_mode_governor.js'), {
+    ok: true,
+    strategy: { mode: 'execute' },
+    canary: {
+      metrics: {
+        require_quality_lock_for_execute: true,
+        quality_lock_active: false,
+        quality_lock_stable_window_streak: 0
+      }
+    },
+    policy: { canary_require_quality_lock_for_execute: true }
+  });
   writeStubScript(path.join(stubsDir, 'architecture_guard.js'), { ok: true });
   writeStubScript(path.join(stubsDir, 'model_router.js'), {
     ok: true,
@@ -139,6 +151,7 @@ function main() {
     AUTONOMY_HEALTH_RECEIPT_SUMMARY_SCRIPT: path.join(stubsDir, 'receipt_summary.js'),
     AUTONOMY_HEALTH_STRATEGY_DOCTOR_SCRIPT: path.join(stubsDir, 'strategy_doctor.js'),
     AUTONOMY_HEALTH_STRATEGY_READINESS_SCRIPT: path.join(stubsDir, 'strategy_readiness.js'),
+    AUTONOMY_HEALTH_STRATEGY_MODE_GOVERNOR_SCRIPT: path.join(stubsDir, 'strategy_mode_governor.js'),
     AUTONOMY_HEALTH_ARCH_GUARD_SCRIPT: path.join(stubsDir, 'architecture_guard.js'),
     AUTONOMY_HEALTH_MODEL_ROUTER_SCRIPT: path.join(stubsDir, 'model_router.js'),
     AUTONOMY_HEALTH_PIPELINE_SPC_SCRIPT: path.join(stubsDir, 'pipeline_spc_gate.js'),
@@ -164,6 +177,7 @@ function main() {
   assert.ok(first.slo.failed_checks.includes('loop_stall'));
   assert.ok(first.slo.failed_checks.includes('drift'));
   assert.ok(first.slo.failed_checks.includes('routing_degraded'));
+  assert.ok(first.slo.failed_checks.includes('execute_quality_lock_invariant'));
   assert.strictEqual(first.slo.failed_checks.includes('integrity'), false, 'integrity should pass in fixture');
   assert.ok(first.report && first.report.written === true && fs.existsSync(first.report.path), 'report should be written');
   assert.ok(first.alerts && fs.existsSync(first.alerts.path), 'alerts file should exist');

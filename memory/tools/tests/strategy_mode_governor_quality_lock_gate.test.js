@@ -135,6 +135,29 @@ function run() {
   after = readJson(strategyPath);
   assert.strictEqual(after.execution_policy.mode, 'execute');
 
+  writeJson(outcomePolicyPath, {
+    version: '1.0',
+    ts: `${date}T03:00:00.000Z`,
+    strategy_policy: {
+      promotion_policy_audit: {
+        quality_lock: {
+          active: false,
+          stable_window_streak: 0
+        }
+      }
+    }
+  });
+
+  r = runScript(repoRoot, ['run', date, '--days=1'], env);
+  assert.strictEqual(r.status, 0, `governor run after quality lock loss should pass: ${r.stderr}`);
+  out = parseJson(r.stdout);
+  assert.strictEqual(out.result, 'mode_changed');
+  assert.strictEqual(out.from_mode, 'execute');
+  assert.strictEqual(out.to_mode, 'canary_execute');
+  assert.strictEqual(out.reason, 'quality_lock_inactive_demote_canary');
+  after = readJson(strategyPath);
+  assert.strictEqual(after.execution_policy.mode, 'canary_execute');
+
   console.log('strategy_mode_governor_quality_lock_gate.test.js: OK');
 }
 
@@ -144,4 +167,3 @@ try {
   console.error(`strategy_mode_governor_quality_lock_gate.test.js: FAIL: ${err.message}`);
   process.exit(1);
 }
-

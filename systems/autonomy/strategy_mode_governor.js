@@ -490,11 +490,15 @@ function computeStreakUpdate(currentMode, readiness, canary, policy, spc, prevSt
   const spcReady = spcAllowsEscalation(spc, policy);
   const previewReady = !canary || canary.preview_ready_for_canary !== false;
   const executeReady = !!(canary && canary.ready_for_execute === true);
+  const executeQualityLockRequired = mode === 'execute' && policy && policy.canary_require_quality_lock_for_execute === true;
+  const executeQualityLockActive = !!(canary && canary.metrics && canary.metrics.quality_lock_active === true);
   const prev = prevStreak && typeof prevStreak === 'object' ? prevStreak : {};
   let escalateReady = false;
   if (mode === 'score_only') escalateReady = rs.ready_for_canary && previewReady && spcReady;
   else if (mode === 'canary_execute') escalateReady = rs.ready_for_execute && executeReady && spcReady;
-  const demoteNotReady = mode === 'execute' ? !rs.ready_for_execute : !rs.ready_for_canary;
+  const demoteNotReady = mode === 'execute'
+    ? (!rs.ready_for_execute || (executeQualityLockRequired && !executeQualityLockActive))
+    : !rs.ready_for_canary;
   return {
     escalate_ready_streak: escalateReady ? Math.max(0, Number(prev.escalate_ready_streak || 0)) + 1 : 0,
     demote_not_ready_streak: demoteNotReady ? Math.max(0, Number(prev.demote_not_ready_streak || 0)) + 1 : 0,
@@ -543,10 +547,15 @@ function decideTransition(currentMode, readiness, canary, policy, spc, streak) {
   }
 
   if (mode === 'execute') {
-    if (policy.demote_not_ready && !rs.ready_for_execute && demoteReady) {
+    const qualityLockRequired = policy && policy.canary_require_quality_lock_for_execute === true;
+    const qualityLockActive = !!(canary && canary.metrics && canary.metrics.quality_lock_active === true);
+    const needsDemotion = !rs.ready_for_execute || (qualityLockRequired && !qualityLockActive);
+    if (policy.demote_not_ready && needsDemotion && demoteReady) {
       return {
         to_mode: 'canary_execute',
-        reason: 'readiness_fail_demote_canary',
+        reason: !rs.ready_for_execute
+          ? 'readiness_fail_demote_canary'
+          : 'quality_lock_inactive_demote_canary',
         cooldown_exempt: true,
         streaks: { demote_not_ready_streak: demoteStreak, required: Number(policy && policy.min_demote_streak || 1) }
       };

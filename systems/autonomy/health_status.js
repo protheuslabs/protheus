@@ -21,6 +21,9 @@ const STRATEGY_DOCTOR = process.env.AUTONOMY_HEALTH_STRATEGY_DOCTOR_SCRIPT
 const STRATEGY_READINESS = process.env.AUTONOMY_HEALTH_STRATEGY_READINESS_SCRIPT
   ? path.resolve(process.env.AUTONOMY_HEALTH_STRATEGY_READINESS_SCRIPT)
   : path.join(ROOT, 'systems', 'autonomy', 'strategy_readiness.js');
+const STRATEGY_MODE_GOVERNOR = process.env.AUTONOMY_HEALTH_STRATEGY_MODE_GOVERNOR_SCRIPT
+  ? path.resolve(process.env.AUTONOMY_HEALTH_STRATEGY_MODE_GOVERNOR_SCRIPT)
+  : path.join(ROOT, 'systems', 'autonomy', 'strategy_mode_governor.js');
 const ARCHITECTURE_GUARD = process.env.AUTONOMY_HEALTH_ARCH_GUARD_SCRIPT
   ? path.resolve(process.env.AUTONOMY_HEALTH_ARCH_GUARD_SCRIPT)
   : path.join(ROOT, 'systems', 'security', 'architecture_guard.js');
@@ -640,6 +643,136 @@ function assessIntegrity(integrityResult) {
   };
 }
 
+function assessCriteriaQualityGate(strategyReadinessResult, receiptSummaryResult) {
+  const readinessPayload = strategyReadinessResult && strategyReadinessResult.payload && typeof strategyReadinessResult.payload === 'object'
+    ? strategyReadinessResult.payload
+    : {};
+  const readiness = readinessPayload && readinessPayload.readiness && typeof readinessPayload.readiness === 'object'
+    ? readinessPayload.readiness
+    : {};
+  const metrics = readiness && readiness.metrics && typeof readiness.metrics === 'object'
+    ? readiness.metrics
+    : {};
+  const receiptPayload = receiptSummaryResult && receiptSummaryResult.payload && typeof receiptSummaryResult.payload === 'object'
+    ? receiptSummaryResult.payload
+    : {};
+  const autonomyReceipts = receiptPayload && receiptPayload.receipts && receiptPayload.receipts.autonomy && typeof receiptPayload.receipts.autonomy === 'object'
+    ? receiptPayload.receipts.autonomy
+    : {};
+
+  const source = String(metrics.success_criteria_source || 'unknown');
+  const fallbackRetired = metrics.success_criteria_fallback_retired === true;
+  const qualityReceipts = Number(metrics.success_criteria_quality_receipts || autonomyReceipts.success_criteria_quality_receipts || 0);
+  const legacyReceipts = Number(metrics.success_criteria_legacy_receipts || autonomyReceipts.success_criteria_receipts || 0);
+  const disableFallbackAt = Number(metrics.disable_legacy_fallback_after_quality_receipts || 10);
+  const maxInsufficientRate = Number(metrics.max_success_criteria_quality_insufficient_rate || 0.4);
+  const insufficientRateRaw = Number(metrics.success_criteria_quality_insufficient_rate);
+  const insufficientRate = Number.isFinite(insufficientRateRaw)
+    ? insufficientRateRaw
+    : Number(autonomyReceipts.success_criteria_quality_insufficient_rate || 0);
+  const failedChecks = Array.isArray(readiness.failed_checks) ? readiness.failed_checks : [];
+  const insufficientFail = failedChecks.includes('success_criteria_quality_insufficient_rate');
+  const fallbackStale = source === 'legacy_fallback' && qualityReceipts >= disableFallbackAt;
+
+  let ok = true;
+  let level = 'ok';
+  let reason = 'criteria_quality_gate_ok';
+  if (insufficientFail || insufficientRate > maxInsufficientRate) {
+    ok = false;
+    level = 'critical';
+    reason = 'criteria_quality_insufficient_rate_high';
+  } else if (fallbackStale || (!fallbackRetired && source === 'legacy_fallback' && qualityReceipts > 0)) {
+    ok = false;
+    level = 'warn';
+    reason = fallbackStale ? 'criteria_quality_fallback_retirement_due' : 'criteria_quality_fallback_active';
+  }
+
+  return {
+    name: 'criteria_quality_gate',
+    ok,
+    level,
+    reason,
+    metrics: {
+      source,
+      fallback_retired: fallbackRetired,
+      quality_receipts: qualityReceipts,
+      legacy_receipts: legacyReceipts,
+      quality_insufficient_rate: Number(insufficientRate.toFixed(3)),
+      readiness_failed_checks: failedChecks.slice(0, 6)
+    },
+    thresholds: {
+      disable_legacy_fallback_after_quality_receipts: disableFallbackAt,
+      max_success_criteria_quality_insufficient_rate: maxInsufficientRate
+    }
+  };
+}
+
+function assessExecuteQualityLockInvariant(governorStatusResult, strategyReadinessResult) {
+  const governorPayload = governorStatusResult && governorStatusResult.payload && typeof governorStatusResult.payload === 'object'
+    ? governorStatusResult.payload
+    : {};
+  const readinessPayload = strategyReadinessResult && strategyReadinessResult.payload && typeof strategyReadinessResult.payload === 'object'
+    ? strategyReadinessResult.payload
+    : {};
+  const readiness = readinessPayload && readinessPayload.readiness && typeof readinessPayload.readiness === 'object'
+    ? readinessPayload.readiness
+    : {};
+  const governorStrategy = governorPayload && governorPayload.strategy && typeof governorPayload.strategy === 'object'
+    ? governorPayload.strategy
+    : {};
+  const governorCanary = governorPayload && governorPayload.canary && typeof governorPayload.canary === 'object'
+    ? governorPayload.canary
+    : {};
+  const governorMetrics = governorCanary && governorCanary.metrics && typeof governorCanary.metrics === 'object'
+    ? governorCanary.metrics
+    : {};
+  const governorPolicy = governorPayload && governorPayload.policy && typeof governorPayload.policy === 'object'
+    ? governorPayload.policy
+    : {};
+
+  const mode = String(governorStrategy.mode || readiness.current_mode || 'unknown');
+  const requireLock = governorMetrics.require_quality_lock_for_execute === true
+    || governorPolicy.canary_require_quality_lock_for_execute === true;
+  const qualityLockActive = governorMetrics.quality_lock_active === true;
+  const stableWindowStreak = Number(governorMetrics.quality_lock_stable_window_streak || 0);
+
+  let ok = true;
+  let level = 'ok';
+  let reason = 'execute_quality_lock_invariant_ok';
+
+  if (mode === 'execute') {
+    if (!(governorStatusResult && governorStatusResult.ok)) {
+      ok = false;
+      level = 'critical';
+      reason = 'execute_quality_lock_unverifiable';
+    } else if (requireLock && !qualityLockActive) {
+      ok = false;
+      level = 'critical';
+      reason = 'execute_quality_lock_inactive';
+    } else if (!requireLock) {
+      ok = false;
+      level = 'warn';
+      reason = 'execute_quality_lock_check_disabled';
+    }
+  }
+
+  return {
+    name: 'execute_quality_lock_invariant',
+    ok,
+    level,
+    reason,
+    metrics: {
+      mode,
+      require_lock: requireLock,
+      quality_lock_active: qualityLockActive,
+      stable_window_streak: stableWindowStreak
+    },
+    thresholds: {
+      required_mode: 'execute'
+    }
+  };
+}
+
 function summarizeSlo(checksMap) {
   const checks = Object.values(checksMap || {});
   const warns = checks.filter((c) => c && c.level === 'warn');
@@ -766,6 +899,7 @@ function main() {
   const receiptSummary = runJson(RECEIPT_SUMMARY, ['run', dateStr, `--days=${Math.max(1, windowCfg.days)}`]);
   const strategyDoctor = runJson(STRATEGY_DOCTOR, ['run']);
   const strategyReadiness = runJson(STRATEGY_READINESS, ['run', dateStr]);
+  const strategyModeGovernor = runJson(STRATEGY_MODE_GOVERNOR, ['status', dateStr, `--days=${Math.max(1, windowCfg.days)}`]);
   const architecture = runJson(ARCHITECTURE_GUARD, ['run']);
   const router = runJson(MODEL_ROUTER, ['doctor', '--risk=low', '--complexity=low', '--intent=autonomy_health', '--task=health']);
   const spc = runJson(PIPELINE_SPC_GATE, [
@@ -802,6 +936,8 @@ function main() {
     loop_stall: assessLoopStall(now, runEvents),
     drift: assessDrift(spc),
     routing_degraded: assessRoutingDegraded(routing),
+    criteria_quality_gate: assessCriteriaQualityGate(strategyReadiness, receiptSummary),
+    execute_quality_lock_invariant: assessExecuteQualityLockInvariant(strategyModeGovernor, strategyReadiness),
     integrity: assessIntegrity(integrity)
   };
   const slo = summarizeSlo(checks);
@@ -819,6 +955,10 @@ function main() {
     autonomy: autonomy.payload || { ok: false, error: autonomy.stderr || `status_exit_${autonomy.code}` },
     strategy: strategyDoctor.payload || { ok: false, error: strategyDoctor.stderr || `strategy_doctor_exit_${strategyDoctor.code}` },
     strategy_readiness: strategyReadiness.payload || { ok: false, error: strategyReadiness.stderr || `strategy_readiness_exit_${strategyReadiness.code}` },
+    strategy_mode_governor: strategyModeGovernor.payload || {
+      ok: false,
+      error: strategyModeGovernor.stderr || `strategy_mode_governor_exit_${strategyModeGovernor.code}`
+    },
     autonomy_receipts: receiptSummary.payload || { ok: false, error: receiptSummary.stderr || `receipt_summary_exit_${receiptSummary.code}` },
     architecture_guard: architecture.payload || { ok: false, error: architecture.stderr || `architecture_guard_exit_${architecture.code}` },
     pipeline_spc: spc.payload || { ok: false, error: spc.stderr || `pipeline_spc_exit_${spc.code}` },
@@ -879,6 +1019,8 @@ module.exports = {
   assessLoopStall,
   assessDrift,
   assessRoutingDegraded,
+  assessCriteriaQualityGate,
+  assessExecuteQualityLockInvariant,
   assessIntegrity,
   makeAlertRows
 };
