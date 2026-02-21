@@ -145,6 +145,14 @@ test('ingest filters low-quality scored proposals and logs proposal_filtered', (
       id: 'P001',
       title: 'High quality proposal',
       type: 'external_intel',
+      action_spec: {
+        version: 1,
+        objective: 'Ship one measurable routing cost optimization change this week',
+        target: 'workflow:routing_cost',
+        next_command: 'node systems/routing/route_execute.js --task="Optimize routing spend with measurable verification" --dry-run',
+        verify: ['Record before/after token burn metric in receipt'],
+        rollback: 'Revert routing policy changes and restore prior baseline'
+      },
       meta: {
         signal_quality_score: 72,
         relevance_score: 74,
@@ -159,6 +167,14 @@ test('ingest filters low-quality scored proposals and logs proposal_filtered', (
       id: 'P002',
       title: 'Low quality proposal',
       type: 'external_intel',
+      action_spec: {
+        version: 1,
+        objective: 'Run one scoped low-value experiment for queue gating test',
+        target: 'workflow:test_low_quality',
+        next_command: 'node systems/routing/route_execute.js --task="Run low quality test" --dry-run',
+        verify: ['Record result event for low quality gate path'],
+        rollback: 'Remove test-only experiment changes and keep baseline'
+      },
       meta: {
         signal_quality_score: 18,
         relevance_score: 22,

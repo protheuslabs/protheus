@@ -21,11 +21,14 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const { beginChange, completeChange, recoverIfInterrupted, writeAtomicJson } = require('./self_change_failsafe');
+const { loadActiveStrategy, strategyGenerationMode } = require('../../lib/strategy_resolver.js');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const SELF_PATH = path.join(REPO_ROOT, 'systems', 'autonomy', 'improvement_orchestrator.js');
 const AUTONOMY_CONTROLLER = path.join(REPO_ROOT, 'systems', 'autonomy', 'autonomy_controller.js');
 const IMPROVEMENT_CONTROLLER = path.join(REPO_ROOT, 'systems', 'autonomy', 'improvement_controller.js');
+const ROUTE_TASK = path.join(REPO_ROOT, 'systems', 'routing', 'route_task.js');
 
 const IMPROVEMENT_DIR = path.join(REPO_ROOT, 'state', 'autonomy', 'improvements');
 const LANE_QUEUE_PATH = path.join(IMPROVEMENT_DIR, 'lane_queue.json');
@@ -33,6 +36,7 @@ const LANE_EVENTS_PATH = path.join(IMPROVEMENT_DIR, 'lane_events.jsonl');
 
 const DEFAULT_SCORECARD_DAYS = Number(process.env.IMPROVEMENT_LANE_SCORECARD_DAYS || 7);
 const DEFAULT_TRIAL_DAYS = Number(process.env.IMPROVEMENT_LANE_TRIAL_DAYS || 3);
+const FALLBACK_STRATEGY_GENERATION_MODE = String(process.env.STRATEGY_GENERATION_MODE || 'hyper-creative');
 
 function nowIso() {
   return new Date().toISOString();
@@ -128,6 +132,49 @@ function runNodeJsonStrict(absScript, args) {
   return res.json;
 }
 
+function effectiveStrategyGenerationMode() {
+  let strategy = null;
+  try {
+    strategy = loadActiveStrategy({ allowMissing: true });
+  } catch {
+    strategy = null;
+  }
+  return strategyGenerationMode(strategy, FALLBACK_STRATEGY_GENERATION_MODE);
+}
+
+function strategyGenerationTask(bottleneck, recommendation) {
+  const b = String(bottleneck || 'unknown').trim() || 'unknown';
+  const rec = String(recommendation || 'none').trim() || 'none';
+  return `Generate one bounded strategy hypothesis for bottleneck=${b}. Recommendation=${rec}. Include measurable success criteria.`;
+}
+
+function generationRoutePreview(task, mode) {
+  const res = runNodeJsonLoose(ROUTE_TASK, [
+    '--task', task,
+    '--tokens_est', '220',
+    '--repeats_14d', '0',
+    '--errors_30d', '0',
+    '--mode', mode
+  ]);
+  if (!res.ok || !res.json) {
+    return {
+      ok: false,
+      mode,
+      error: String(res.stderr || res.stdout || `exit_${res.code}`).slice(0, 240)
+    };
+  }
+  const out = res.json;
+  return {
+    ok: true,
+    mode,
+    route_decision: out.decision || null,
+    gate_decision: out.gate_decision || null,
+    selected_model: out.selected_model || null,
+    route_tier: out.route_tier == null ? null : Number(out.route_tier),
+    route_role: out.route_role || null
+  };
+}
+
 function runGit(args) {
   return spawnSync('git', args, { cwd: REPO_ROOT, encoding: 'utf8' });
 }
@@ -183,7 +230,29 @@ function queueStore() {
 }
 
 function saveQueueStore(store) {
-  saveJson(LANE_QUEUE_PATH, store);
+  const snapshot = `${LANE_QUEUE_PATH}.bak-${Date.now()}`;
+  if (fs.existsSync(LANE_QUEUE_PATH)) fs.copyFileSync(LANE_QUEUE_PATH, snapshot);
+  else fs.writeFileSync(snapshot, JSON.stringify({ items: [] }, null, 2) + '\n', 'utf8');
+  const changeId = `improvement_lane_queue:${Date.now()}`;
+  beginChange({
+    id: changeId,
+    kind: 'improvement_lane_queue_write',
+    target_path: LANE_QUEUE_PATH,
+    snapshot_path: snapshot,
+    note: 'save_lane_queue'
+  });
+  try {
+    writeAtomicJson(LANE_QUEUE_PATH, store);
+    completeChange(changeId, { file: 'lane_queue.json' });
+  } catch (err) {
+    try {
+      if (fs.existsSync(snapshot)) fs.copyFileSync(snapshot, LANE_QUEUE_PATH);
+      completeChange(changeId, { file: 'lane_queue.json', reverted: true, reason: 'write_error' });
+    } catch {}
+    throw err;
+  } finally {
+    try { if (fs.existsSync(snapshot)) fs.unlinkSync(snapshot); } catch {}
+  }
 }
 
 function nextLaneId(store) {
@@ -293,6 +362,9 @@ function proposeCmd(dateStr) {
   }
 
   const plan = planForBottleneck(bottleneck, sc.recommendation);
+  const generationMode = effectiveStrategyGenerationMode();
+  const generationTaskSeed = strategyGenerationTask(bottleneck, sc.recommendation);
+  const generationRoute = generationRoutePreview(generationTaskSeed, generationMode);
   const item = {
     id: nextLaneId(store),
     created_ts: nowIso(),
@@ -310,6 +382,11 @@ function proposeCmd(dateStr) {
       recommendation: sc.recommendation,
       sample_size: sc.sample_size,
       kpis: sc.kpis
+    },
+    generation: {
+      mode: generationMode,
+      task_seed: generationTaskSeed,
+      route: generationRoute
     },
     commit: null,
     trial_id: null,
@@ -654,6 +731,8 @@ function usage() {
 
 function main() {
   ensureState();
+  // Startup recovery: revert any interrupted transactional self-change before proceeding.
+  recoverIfInterrupted();
   const cmd = process.argv[2] || '';
   const dateStr = isDateStr(process.argv[3]) ? process.argv[3] : todayStr();
 

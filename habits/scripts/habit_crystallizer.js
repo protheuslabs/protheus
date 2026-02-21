@@ -19,6 +19,11 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const {
+  defaultRegistry,
+  readRegistryWithUids,
+  writeRegistryWithUids
+} = require('./habit_uid_store.js');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const ROUTINES_DIR = path.join(REPO_ROOT, 'habits', 'routines');
@@ -126,18 +131,6 @@ function evaluateTriggers(tokensEst, repeats14d, errors30d) {
   };
 }
 
-function defaultRegistry() {
-  return {
-    version: 1.5,
-    max_active: 25,
-    gc: {
-      inactive_days: 30,
-      min_uses_30d: 1
-    },
-    habits: []
-  };
-}
-
 function routineTemplate(habitId, description) {
   const safeId = JSON.stringify(String(habitId));
   const safeDesc = JSON.stringify(String(description || ''));
@@ -175,6 +168,9 @@ function addHabit(registry, params) {
   const now = nowIso();
   const habitId = params.habit_id;
   const entrypoint = `habits/routines/${habitId}.js`;
+  const triggerMetrics = params.trigger_metrics && typeof params.trigger_metrics === 'object'
+    ? params.trigger_metrics
+    : {};
   const record = {
     id: habitId,
     name: params.name,
@@ -239,6 +235,20 @@ function addHabit(registry, params) {
         avg_tokens_est_30d: null,
         error_rate_30d: null,
         window_runs: []
+      }
+    },
+    provenance: {
+      source: 'repeat_trigger',
+      created_by: 'habit_crystallizer',
+      created_at: now,
+      intent_key: String(params.intent_key || ''),
+      trigger_metrics: {
+        repeats_14d: Number.isFinite(Number(triggerMetrics.repeats_14d)) ? Number(triggerMetrics.repeats_14d) : null,
+        tokens_est: Number.isFinite(Number(triggerMetrics.tokens_est)) ? Number(triggerMetrics.tokens_est) : null,
+        errors_30d: Number.isFinite(Number(triggerMetrics.errors_30d)) ? Number(triggerMetrics.errors_30d) : null,
+        which_met: Array.isArray(triggerMetrics.which_met)
+          ? triggerMetrics.which_met.map((x) => String(x))
+          : []
       }
     }
   };
@@ -313,7 +323,7 @@ function main() {
     process.exit(0);
   }
 
-  const registry = loadJson(REGISTRY_PATH, defaultRegistry()) || defaultRegistry();
+  const registry = readRegistryWithUids(REGISTRY_PATH, defaultRegistry(), true);
   if (!Array.isArray(registry.habits)) registry.habits = [];
 
   const existing = registry.habits.find(h => String(h && h.id) === habitId);
@@ -341,9 +351,16 @@ function main() {
     habit_id: habitId,
     name: from.slice(0, 80),
     description: `Auto-crystallized from repeated task: ${from.slice(0, 160)}`,
-    estimated_tokens_saved: Math.max(0, Math.round(tokensEst * 0.5))
+    estimated_tokens_saved: Math.max(0, Math.round(tokensEst * 0.5)),
+    intent_key: intentKey,
+    trigger_metrics: {
+      repeats_14d: repeats14d,
+      tokens_est: tokensEst,
+      errors_30d: errors30d,
+      which_met: triggers.which_met
+    }
   });
-  saveJson(REGISTRY_PATH, registry);
+  writeRegistryWithUids(REGISTRY_PATH, registry);
 
   const trust = autoTrustRoutine(routinePathAbs, autoTrustEnabled);
   const out = {

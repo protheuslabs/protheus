@@ -4,6 +4,8 @@ const crypto = require('crypto');
 
 const memoryDir = process.env.MEMORY_DIR || '/Users/jay/.openclaw/workspace/memory';
 const whitelistRegex = /^\d{4}-\d{2}-\d{2}\.md$/;
+const UID_PATTERN = /^[A-Za-z0-9]+$/;
+const UID_ENFORCE_SINCE = normalizeDate(process.env.MEMORY_UID_ENFORCE_SINCE || '2026-02-22');
 
 const TOKEN_CAPS = {
   default: 200,
@@ -22,6 +24,16 @@ const DELTA_CACHE_PATH = path.join(memoryDir, '.rebuild_delta_cache.json');
 
 function sha1Text(content) {
   return crypto.createHash('sha1').update(String(content || '')).digest('hex');
+}
+
+function normalizeDate(v) {
+  const s = String(v || '').trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : '2026-02-22';
+}
+
+function requiresUid(nodeDate) {
+  const d = normalizeDate(nodeDate);
+  return d >= UID_ENFORCE_SINCE;
 }
 
 function loadDeltaCache() {
@@ -371,6 +383,7 @@ console.log('Whitelisted daily files:', dailyFiles);
 const allNodes = [];
 const allTags = new Map();
 const seenNodes = new Set();
+const seenUids = new Set();
 const formatViolations = [];
 const bloatWarnings = [];
 const registryWarnings = []; // NEW: For tag/registry mismatches
@@ -402,6 +415,7 @@ function getBaselineCategory(node) {
 function validateNode(chunk, file, expectedDate) {
   const violations = [];
   let nodeId = '(undetectable)';
+  let uid = null;
 
   const frontmatterMatch = chunk.match(/---\s*\n([\s\S]*?)\n---/);
   if (!frontmatterMatch) {
@@ -412,6 +426,7 @@ function validateNode(chunk, file, expectedDate) {
   const fm = frontmatterMatch[1];
 
   const dateMatch = fm.match(/date:\s*(\d{4}-\d{2}-\d{2})/);
+  const nodeDate = dateMatch ? dateMatch[1] : expectedDate;
   if (!dateMatch) {
     violations.push('missing date in frontmatter');
   } else if (dateMatch[1] !== expectedDate) {
@@ -430,6 +445,18 @@ function validateNode(chunk, file, expectedDate) {
     violations.push('missing tags array in frontmatter');
   }
 
+  const uidMatch = fm.match(/uid:\s*(\S+)/);
+  if (!uidMatch) {
+    if (requiresUid(nodeDate)) {
+      violations.push(`missing uid in frontmatter (required since ${UID_ENFORCE_SINCE})`);
+    }
+  } else {
+    uid = String(uidMatch[1] || '').trim();
+    if (!UID_PATTERN.test(uid)) {
+      violations.push(`uid not alphanumeric: ${uid}`);
+    }
+  }
+
   const h1Match = chunk.match(/\n#\s*(\S+)/);
   if (!h1Match) {
     violations.push('missing H1 title line');
@@ -440,6 +467,7 @@ function validateNode(chunk, file, expectedDate) {
   return {
     valid: violations.length === 0,
     nodeId,
+    uid,
     violations,
     date: dateMatch ? dateMatch[1] : null,
     tags: tagsMatch ? tagsMatch[1].split(',').map(t => t.trim()).filter(t => t) : [],
@@ -466,7 +494,7 @@ function parseDailyFileRecords(file, content, expectedDate) {
       continue;
     }
 
-    const { nodeId, tags, body } = validation;
+    const { nodeId, uid, tags, body } = validation;
     const tokenEstimate = estimateTokens(trimmed);
     const firstBullet = body.match(/[-*]\s*(.+?)(?=\n|$)/);
     const firstLine = body.split('\n')[0];
@@ -476,6 +504,7 @@ function parseDailyFileRecords(file, content, expectedDate) {
 
     records.push({
       node_id: nodeId,
+      uid: uid || null,
       tags,
       file,
       date: expectedDate,
@@ -528,6 +557,18 @@ for (const file of dailyFiles) {
     if (!nodeId) continue;
     if (seenNodes.has(nodeId)) continue;
     seenNodes.add(nodeId);
+    const uid = String(rec && rec.uid || '').trim();
+    if (uid) {
+      if (seenUids.has(uid)) {
+        formatViolations.push({
+          file: String(rec && rec.file || file),
+          node_id: nodeId,
+          reasons: `duplicate uid: ${uid}`
+        });
+        continue;
+      }
+      seenUids.add(uid);
+    }
 
     const tags = Array.isArray(rec.tags) ? rec.tags.map(t => String(t || '').trim()).filter(Boolean) : [];
     const inActiveCore = projectRegistry['active-core'].includes(nodeId);
@@ -562,6 +603,7 @@ for (const file of dailyFiles) {
 
     allNodes.push({
       node_id: nodeId,
+      uid: uid || null,
       tags,
       file: rec.file || file,
       summary: String(rec.summary || 'Node content'),
@@ -669,29 +711,29 @@ let memIndex = `# MEMORY_INDEX.md
 # Whitelist: YYYY-MM-DD.md top-level; parsed by "<!-- NODE -->" separators
 
 ## Projects
-| node_id | tags | file | summary |
-|---------|------|------|---------|
-${projects.map(n => `| ${n.node_id} | ${n.tags.map(t => '#'+t).join(' ')} | ${n.file} | ${n.summary} |`).join('\n') || '| | | | |'}
+| node_id | uid | tags | file | summary |
+|---------|-----|------|------|---------|
+${projects.map(n => `| ${n.node_id} | ${n.uid || ''} | ${n.tags.map(t => '#'+t).join(' ')} | ${n.file} | ${n.summary} |`).join('\n') || '| | | | | |'}
 
 ## Rules
-| node_id | tags | file | summary |
-|---------|------|------|---------|
-${rules.map(n => `| ${n.node_id} | ${n.tags.map(t => '#'+t).join(' ')} | ${n.file} | ${n.summary} |`).join('\n') || '| | | | |'}
+| node_id | uid | tags | file | summary |
+|---------|-----|------|------|---------|
+${rules.map(n => `| ${n.node_id} | ${n.uid || ''} | ${n.tags.map(t => '#'+t).join(' ')} | ${n.file} | ${n.summary} |`).join('\n') || '| | | | | |'}
 
 ## Concepts
-| node_id | tags | file | summary |
-|---------|------|------|---------|
-${concepts.map(n => `| ${n.node_id} | ${n.tags.map(t => '#'+t).join(' ')} | ${n.file} | ${n.summary} |`).join('\n') || '| | | | |'}
+| node_id | uid | tags | file | summary |
+|---------|-----|------|------|---------|
+${concepts.map(n => `| ${n.node_id} | ${n.uid || ''} | ${n.tags.map(t => '#'+t).join(' ')} | ${n.file} | ${n.summary} |`).join('\n') || '| | | | | |'}
 
 ## System
-| node_id | tags | file | summary |
-|---------|------|------|---------|
-${systems.map(n => `| ${n.node_id} | ${n.tags.map(t => '#'+t).join(' ')} | ${n.file} | ${n.summary} |`).join('\n') || '| | | | |'}
+| node_id | uid | tags | file | summary |
+|---------|-----|------|------|---------|
+${systems.map(n => `| ${n.node_id} | ${n.uid || ''} | ${n.tags.map(t => '#'+t).join(' ')} | ${n.file} | ${n.summary} |`).join('\n') || '| | | | | |'}
 
 ## Ops/Logs
-| node_id | tags | file | summary |
-|---------|------|------|---------|
-${ops.map(n => `| ${n.node_id} | ${n.tags.map(t => '#'+t).join(' ')} | ${n.file} | ${n.summary} |`).join('\n') || '| | | | |'}
+| node_id | uid | tags | file | summary |
+|---------|-----|------|------|---------|
+${ops.map(n => `| ${n.node_id} | ${n.uid || ''} | ${n.tags.map(t => '#'+t).join(' ')} | ${n.file} | ${n.summary} |`).join('\n') || '| | | | | |'}
 `;
 
 fs.writeFileSync(path.join(memoryDir, 'MEMORY_INDEX.md'), memIndex);

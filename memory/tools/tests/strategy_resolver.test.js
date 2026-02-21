@@ -26,8 +26,9 @@ function run() {
     id: 'default_general',
     status: 'active',
     objective: { primary: 'test objective' },
+    generation_policy: { mode: 'hyper-creative' },
     risk_policy: { allowed_risks: ['low'] },
-    execution_policy: { mode: 'score_only' },
+    execution_policy: { mode: 'canary_execute', canary_daily_exec_limit: 2 },
     ranking_weights: {
       composite: 0.4,
       actionability: 0.2,
@@ -72,7 +73,7 @@ function run() {
   const active = resolver.loadActiveStrategy({ dir: strategyDir });
   assert.ok(active, 'active strategy expected');
   assert.strictEqual(active.id, 'default_general');
-  assert.strictEqual(active.execution_policy.mode, 'score_only');
+  assert.strictEqual(active.execution_policy.mode, 'canary_execute');
   assert.strictEqual(active.validation.strict_ok, true);
 
   const requested = resolver.loadActiveStrategy({ dir: strategyDir, id: 'archived_profile' });
@@ -90,7 +91,9 @@ function run() {
   assert.strictEqual(thresholds.min_directive_fit, 40);
 
   const mode = resolver.strategyExecutionMode(active, 'execute');
-  assert.strictEqual(mode, 'score_only');
+  assert.strictEqual(mode, 'canary_execute');
+  assert.strictEqual(resolver.strategyGenerationMode(active, 'normal'), 'hyper-creative');
+  assert.strictEqual(resolver.strategyCanaryDailyExecLimit(active, 1), 2);
 
   const promotion = resolver.strategyPromotionPolicy(active, { min_attempted: 10 });
   assert.strictEqual(promotion.min_days, 7);

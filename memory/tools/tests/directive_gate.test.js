@@ -6,6 +6,7 @@
  */
 
 const assert = require('assert');
+const path = require('path');
 const { 
   evaluateTask, 
   isAllowlistedPath, 
@@ -13,6 +14,8 @@ const {
   HIGH_RISK_PATTERNS,
   DENY_PATTERNS 
 } = require('../../../habits/scripts/directive_gate.js');
+
+const WORKSPACE_ROOT = path.resolve(__dirname, '..', '..', '..');
 
 let failed = false;
 
@@ -141,7 +144,7 @@ test('revenue detection: process payment => MANUAL', () => {
 // Test 10: Helper functions
 test('isAllowlistedPath: workspace paths allowed', () => {
   assert.strictEqual(
-    isAllowlistedPath('/Users/jay/.openclaw/workspace/habits/test.js'),
+    isAllowlistedPath(path.join(WORKSPACE_ROOT, 'habits', 'test.js')),
     true
   );
 });

@@ -63,6 +63,12 @@
         "pinned": false,
         "consecutive_errors": 0
       },
+      "provenance": {
+        "source": "migration",
+        "created_by": "manual",
+        "created_at": "2026-02-14T20:30:00Z",
+        "intent_key": "rebuild_validate_memory"
+      },
       "metrics": {
         "baseline": {
           "avg_duration_ms": null,
@@ -86,7 +92,8 @@
             }
           ]
         }
-      }
+      },
+      "uid": "h4ls0hhcou20ya8vei7gk893"
     },
     {
       "id": "safe_cron_swap",
@@ -160,6 +167,12 @@
         "pinned": false,
         "consecutive_errors": 0
       },
+      "provenance": {
+        "source": "manual_proposal",
+        "created_by": "propose_habit",
+        "created_at": "2026-02-14T20:51:00Z",
+        "intent_key": "safe_cron_swap"
+      },
       "metrics": {
         "baseline": {
           "avg_duration_ms": null,
@@ -172,7 +185,648 @@
           "error_rate_30d": null,
           "window_runs": []
         }
-      }
+      },
+      "uid": "hophyzy9cuz3j0wjcwe1mvlx"
+    },
+    {
+      "id": "execute_bounded_proposal_eye_edb4c560e0b6aef6__e",
+      "name": "Execute bounded proposal EYE-edb4c560e0b6aef6 (external_intel): Optimize automat",
+      "description": "Auto-crystallized from repeated task: Execute bounded proposal EYE-edb4c560e0b6aef6 (external_intel): Optimize automation system growth: 2 open proposals require deterministic triage",
+      "created_at": "2026-02-20T08:56:31.983Z",
+      "last_used_at": null,
+      "uses_30d": 0,
+      "lifetime_uses": 0,
+      "success_rate": 0,
+      "avg_tokens_in": null,
+      "avg_tokens_out": null,
+      "estimated_tokens_saved": 250,
+      "rollback_plan": "Revert generated routine + registry entry in one commit.",
+      "test_plan": "Run node habits/scripts/run_habit.js --id execute_bounded_proposal_eye_edb4c560e0b6aef6__e --json '{}' and verify stable output.",
+      "idempotent": true,
+      "inputs_schema": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "task": {
+            "type": "string",
+            "description": "Source task text"
+          },
+          "intent_key": {
+            "type": "string",
+            "description": "Normalized intent key"
+          },
+          "source": {
+            "type": "string",
+            "description": "Route source marker"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Optional free-form notes"
+          }
+        }
+      },
+      "entrypoint": "habits/routines/execute_bounded_proposal_eye_edb4c560e0b6aef6__e.js",
+      "permissions": {
+        "network": "deny",
+        "write_paths_allowlist": [
+          "habits/logs/*"
+        ],
+        "exec_allowlist": []
+      },
+      "status": "candidate",
+      "outcome": {
+        "last_outcome_score": null,
+        "last_delta_value": null,
+        "outcome_unit": null
+      },
+      "governance": {
+        "state": "candidate",
+        "promote": {
+          "min_success_runs": 3,
+          "min_outcome_score": 0.7,
+          "min_effect_value": 1,
+          "effect_units_allowlist": [
+            "ms_saved",
+            "tokens_saved",
+            "reported_delta"
+          ]
+        },
+        "demote": {
+          "max_consecutive_errors": 2,
+          "min_outcome_score": 0.4,
+          "cooldown_minutes": 1440
+        },
+        "pinned": false,
+        "consecutive_errors": 0
+      },
+      "metrics": {
+        "baseline": {
+          "avg_duration_ms": null,
+          "avg_tokens_est": null,
+          "avg_error_rate": null
+        },
+        "rolling": {
+          "avg_duration_ms_30d": null,
+          "avg_tokens_est_30d": null,
+          "error_rate_30d": null,
+          "window_runs": []
+        }
+      },
+      "provenance": {
+        "source": "repeat_trigger",
+        "created_by": "habit_crystallizer",
+        "created_at": "2026-02-20T08:56:31.983Z",
+        "intent_key": "execute_bounded_proposal_eye-edb4c560e0b6aef6_(external_intel):_optimize_automation_system_growth:_2_open_proposals",
+        "trigger_metrics": {
+          "repeats_14d": 7,
+          "tokens_est": 500,
+          "errors_30d": 0,
+          "which_met": [
+            "A"
+          ]
+        }
+      },
+      "uid": "h1phsl1p6do2wqlowr2q349e"
+    },
+    {
+      "id": "auto_canary_deterministic_habit_crystallization_",
+      "name": "auto canary deterministic habit crystallization live run alpha beta",
+      "description": "Auto-crystallized from repeated task: auto canary deterministic habit crystallization live run alpha beta",
+      "created_at": "2026-02-20T09:10:48.609Z",
+      "last_used_at": "2026-02-20T09:11:08.787Z",
+      "uses_30d": 3,
+      "lifetime_uses": 3,
+      "success_rate": 0.75,
+      "avg_tokens_in": null,
+      "avg_tokens_out": null,
+      "estimated_tokens_saved": 350,
+      "rollback_plan": "Revert generated routine + registry entry in one commit.",
+      "test_plan": "Run node habits/scripts/run_habit.js --id auto_canary_deterministic_habit_crystallization_ --json '{}' and verify stable output.",
+      "idempotent": true,
+      "inputs_schema": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "task": {
+            "type": "string",
+            "description": "Source task text"
+          },
+          "intent_key": {
+            "type": "string",
+            "description": "Normalized intent key"
+          },
+          "source": {
+            "type": "string",
+            "description": "Route source marker"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Optional free-form notes"
+          }
+        }
+      },
+      "entrypoint": "habits/routines/auto_canary_deterministic_habit_crystallization_.js",
+      "permissions": {
+        "network": "deny",
+        "write_paths_allowlist": [
+          "habits/logs/*"
+        ],
+        "exec_allowlist": []
+      },
+      "status": "candidate",
+      "outcome": {
+        "last_outcome_score": 1,
+        "last_delta_value": null,
+        "outcome_unit": null
+      },
+      "governance": {
+        "state": "candidate",
+        "promote": {
+          "min_success_runs": 3,
+          "min_outcome_score": 0.7,
+          "min_effect_value": 1,
+          "effect_units_allowlist": [
+            "ms_saved",
+            "tokens_saved",
+            "reported_delta"
+          ]
+        },
+        "demote": {
+          "max_consecutive_errors": 2,
+          "min_outcome_score": 0.4,
+          "cooldown_minutes": 1440
+        },
+        "pinned": false,
+        "consecutive_errors": 0
+      },
+      "metrics": {
+        "baseline": {
+          "avg_duration_ms": null,
+          "avg_tokens_est": null,
+          "avg_error_rate": null
+        },
+        "rolling": {
+          "avg_duration_ms_30d": 1,
+          "avg_tokens_est_30d": null,
+          "error_rate_30d": 0,
+          "window_runs": [
+            {
+              "duration_ms": 1,
+              "success": true,
+              "ts": 1771578648651
+            },
+            {
+              "duration_ms": 1,
+              "success": true,
+              "ts": 1771578664788
+            },
+            {
+              "duration_ms": 1,
+              "success": true,
+              "ts": 1771578668787
+            }
+          ]
+        }
+      },
+      "provenance": {
+        "source": "repeat_trigger",
+        "created_by": "habit_crystallizer",
+        "created_at": "2026-02-20T09:10:48.609Z",
+        "intent_key": "auto_canary_deterministic_habit_crystallization_live_run_alpha_beta",
+        "trigger_metrics": {
+          "repeats_14d": 3,
+          "tokens_est": 700,
+          "errors_30d": 0,
+          "which_met": [
+            "A"
+          ]
+        }
+      },
+      "uid": "hayg64zdb3lswl4ab307uoti"
+    },
+    {
+      "id": "zeta_muon_sigma_habit_crystallization_fresh_rout",
+      "name": "zeta muon sigma habit crystallization fresh routine task",
+      "description": "Auto-crystallized from repeated task: zeta muon sigma habit crystallization fresh routine task",
+      "created_at": "2026-02-20T09:11:13.441Z",
+      "last_used_at": "2026-02-20T09:11:13.482Z",
+      "uses_30d": 1,
+      "lifetime_uses": 1,
+      "success_rate": 0.5,
+      "avg_tokens_in": null,
+      "avg_tokens_out": null,
+      "estimated_tokens_saved": 350,
+      "rollback_plan": "Revert generated routine + registry entry in one commit.",
+      "test_plan": "Run node habits/scripts/run_habit.js --id zeta_muon_sigma_habit_crystallization_fresh_rout --json '{}' and verify stable output.",
+      "idempotent": true,
+      "inputs_schema": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "task": {
+            "type": "string",
+            "description": "Source task text"
+          },
+          "intent_key": {
+            "type": "string",
+            "description": "Normalized intent key"
+          },
+          "source": {
+            "type": "string",
+            "description": "Route source marker"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Optional free-form notes"
+          }
+        }
+      },
+      "entrypoint": "habits/routines/zeta_muon_sigma_habit_crystallization_fresh_rout.js",
+      "permissions": {
+        "network": "deny",
+        "write_paths_allowlist": [
+          "habits/logs/*"
+        ],
+        "exec_allowlist": []
+      },
+      "status": "candidate",
+      "outcome": {
+        "last_outcome_score": 1,
+        "last_delta_value": null,
+        "outcome_unit": null
+      },
+      "governance": {
+        "state": "candidate",
+        "promote": {
+          "min_success_runs": 3,
+          "min_outcome_score": 0.7,
+          "min_effect_value": 1,
+          "effect_units_allowlist": [
+            "ms_saved",
+            "tokens_saved",
+            "reported_delta"
+          ]
+        },
+        "demote": {
+          "max_consecutive_errors": 2,
+          "min_outcome_score": 0.4,
+          "cooldown_minutes": 1440
+        },
+        "pinned": false,
+        "consecutive_errors": 0
+      },
+      "metrics": {
+        "baseline": {
+          "avg_duration_ms": null,
+          "avg_tokens_est": null,
+          "avg_error_rate": null
+        },
+        "rolling": {
+          "avg_duration_ms_30d": 1,
+          "avg_tokens_est_30d": null,
+          "error_rate_30d": 0,
+          "window_runs": [
+            {
+              "duration_ms": 1,
+              "success": true,
+              "ts": 1771578673482
+            }
+          ]
+        }
+      },
+      "provenance": {
+        "source": "repeat_trigger",
+        "created_by": "habit_crystallizer",
+        "created_at": "2026-02-20T09:11:13.441Z",
+        "intent_key": "zeta_muon_sigma_habit_crystallization_fresh_routine_task",
+        "trigger_metrics": {
+          "repeats_14d": 3,
+          "tokens_est": 700,
+          "errors_30d": 0,
+          "which_met": [
+            "A"
+          ]
+        }
+      },
+      "uid": "h5dtork1si5c24mvdguryl3y"
+    },
+    {
+      "id": "execute_bounded_proposal_prp_b422f9b8183ba4d0__e",
+      "name": "Execute bounded proposal PRP-b422f9b8183ba4d0 (external_intel): AI Automation Sp",
+      "description": "Auto-crystallized from repeated task: Execute bounded proposal PRP-b422f9b8183ba4d0 (external_intel): AI Automation Specialist - Workflow Optimization — Freelance Opportunity",
+      "created_at": "2026-02-20T20:33:01.074Z",
+      "last_used_at": "2026-02-20T20:33:01.112Z",
+      "uses_30d": 1,
+      "lifetime_uses": 1,
+      "success_rate": 0.5,
+      "avg_tokens_in": null,
+      "avg_tokens_out": null,
+      "estimated_tokens_saved": 400,
+      "rollback_plan": "Revert generated routine + registry entry in one commit.",
+      "test_plan": "Run node habits/scripts/run_habit.js --id execute_bounded_proposal_prp_b422f9b8183ba4d0__e --json '{}' and verify stable output.",
+      "idempotent": true,
+      "inputs_schema": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "task": {
+            "type": "string",
+            "description": "Source task text"
+          },
+          "intent_key": {
+            "type": "string",
+            "description": "Normalized intent key"
+          },
+          "source": {
+            "type": "string",
+            "description": "Route source marker"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Optional free-form notes"
+          }
+        }
+      },
+      "entrypoint": "habits/routines/execute_bounded_proposal_prp_b422f9b8183ba4d0__e.js",
+      "permissions": {
+        "network": "deny",
+        "write_paths_allowlist": [
+          "habits/logs/*"
+        ],
+        "exec_allowlist": []
+      },
+      "status": "candidate",
+      "outcome": {
+        "last_outcome_score": 1,
+        "last_delta_value": null,
+        "outcome_unit": null
+      },
+      "governance": {
+        "state": "candidate",
+        "promote": {
+          "min_success_runs": 3,
+          "min_outcome_score": 0.7,
+          "min_effect_value": 1,
+          "effect_units_allowlist": [
+            "ms_saved",
+            "tokens_saved",
+            "reported_delta"
+          ]
+        },
+        "demote": {
+          "max_consecutive_errors": 2,
+          "min_outcome_score": 0.4,
+          "cooldown_minutes": 1440
+        },
+        "pinned": false,
+        "consecutive_errors": 0
+      },
+      "metrics": {
+        "baseline": {
+          "avg_duration_ms": null,
+          "avg_tokens_est": null,
+          "avg_error_rate": null
+        },
+        "rolling": {
+          "avg_duration_ms_30d": 0,
+          "avg_tokens_est_30d": null,
+          "error_rate_30d": 0,
+          "window_runs": [
+            {
+              "duration_ms": 0,
+              "success": true,
+              "ts": 1771619581112
+            }
+          ]
+        }
+      },
+      "provenance": {
+        "source": "repeat_trigger",
+        "created_by": "habit_crystallizer",
+        "created_at": "2026-02-20T20:33:01.074Z",
+        "intent_key": "execute_bounded_proposal_prp-b422f9b8183ba4d0_(external_intel):_ai_automation_specialist_-_workflow_optimization_—",
+        "trigger_metrics": {
+          "repeats_14d": 3,
+          "tokens_est": 800,
+          "errors_30d": 0,
+          "which_met": [
+            "A"
+          ]
+        }
+      },
+      "uid": "h9dkpnuj0zpdwjkh75pf9rzu"
+    },
+    {
+      "id": "execute_bounded_proposal_prp_9eca862955cf4462__e",
+      "name": "Execute bounded proposal PRP-9eca862955cf4462 (external_intel): I Was Losing Job",
+      "description": "Auto-crystallized from repeated task: Execute bounded proposal PRP-9eca862955cf4462 (external_intel): I Was Losing Jobs to Faster Contractors — So I Built an AI That Writes Proposals in 60 Seconds",
+      "created_at": "2026-02-20T22:58:59.205Z",
+      "last_used_at": "2026-02-20T22:58:59.301Z",
+      "uses_30d": 1,
+      "lifetime_uses": 1,
+      "success_rate": 0.5,
+      "avg_tokens_in": null,
+      "avg_tokens_out": null,
+      "estimated_tokens_saved": 400,
+      "rollback_plan": "Revert generated routine + registry entry in one commit.",
+      "test_plan": "Run node habits/scripts/run_habit.js --id execute_bounded_proposal_prp_9eca862955cf4462__e --json '{}' and verify stable output.",
+      "idempotent": true,
+      "inputs_schema": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "task": {
+            "type": "string",
+            "description": "Source task text"
+          },
+          "intent_key": {
+            "type": "string",
+            "description": "Normalized intent key"
+          },
+          "source": {
+            "type": "string",
+            "description": "Route source marker"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Optional free-form notes"
+          }
+        }
+      },
+      "entrypoint": "habits/routines/execute_bounded_proposal_prp_9eca862955cf4462__e.js",
+      "permissions": {
+        "network": "deny",
+        "write_paths_allowlist": [
+          "habits/logs/*"
+        ],
+        "exec_allowlist": []
+      },
+      "status": "candidate",
+      "outcome": {
+        "last_outcome_score": 1,
+        "last_delta_value": null,
+        "outcome_unit": null
+      },
+      "governance": {
+        "state": "candidate",
+        "promote": {
+          "min_success_runs": 3,
+          "min_outcome_score": 0.7,
+          "min_effect_value": 1,
+          "effect_units_allowlist": [
+            "ms_saved",
+            "tokens_saved",
+            "reported_delta"
+          ]
+        },
+        "demote": {
+          "max_consecutive_errors": 2,
+          "min_outcome_score": 0.4,
+          "cooldown_minutes": 1440
+        },
+        "pinned": false,
+        "consecutive_errors": 0
+      },
+      "metrics": {
+        "baseline": {
+          "avg_duration_ms": null,
+          "avg_tokens_est": null,
+          "avg_error_rate": null
+        },
+        "rolling": {
+          "avg_duration_ms_30d": 2,
+          "avg_tokens_est_30d": null,
+          "error_rate_30d": 0,
+          "window_runs": [
+            {
+              "duration_ms": 2,
+              "success": true,
+              "ts": 1771628339301
+            }
+          ]
+        }
+      },
+      "provenance": {
+        "source": "repeat_trigger",
+        "created_by": "habit_crystallizer",
+        "created_at": "2026-02-20T22:58:59.205Z",
+        "intent_key": "execute_bounded_proposal_prp-9eca862955cf4462_(external_intel):_i_was_losing_jobs_to_faster_contractors",
+        "trigger_metrics": {
+          "repeats_14d": 4,
+          "tokens_est": 800,
+          "errors_30d": 0,
+          "which_met": [
+            "A"
+          ]
+        }
+      },
+      "uid": "h1tsggm52ww8iypmf39isoxa"
+    },
+    {
+      "id": "execute_bounded_proposal_prp_d97b20e8b824f700__e",
+      "name": "Execute bounded proposal PRP-d97b20e8b824f700 (external_intel): I Was Losing Job",
+      "description": "Auto-crystallized from repeated task: Execute bounded proposal PRP-d97b20e8b824f700 (external_intel): I Was Losing Jobs to Faster Contractors — So I Built an AI That Writes Proposals in 60 Seconds",
+      "created_at": "2026-02-20T23:07:04.817Z",
+      "last_used_at": "2026-02-20T23:07:04.861Z",
+      "uses_30d": 1,
+      "lifetime_uses": 1,
+      "success_rate": 0.5,
+      "avg_tokens_in": null,
+      "avg_tokens_out": null,
+      "estimated_tokens_saved": 400,
+      "rollback_plan": "Revert generated routine + registry entry in one commit.",
+      "test_plan": "Run node habits/scripts/run_habit.js --id execute_bounded_proposal_prp_d97b20e8b824f700__e --json '{}' and verify stable output.",
+      "idempotent": true,
+      "inputs_schema": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "task": {
+            "type": "string",
+            "description": "Source task text"
+          },
+          "intent_key": {
+            "type": "string",
+            "description": "Normalized intent key"
+          },
+          "source": {
+            "type": "string",
+            "description": "Route source marker"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Optional free-form notes"
+          }
+        }
+      },
+      "entrypoint": "habits/routines/execute_bounded_proposal_prp_d97b20e8b824f700__e.js",
+      "permissions": {
+        "network": "deny",
+        "write_paths_allowlist": [
+          "habits/logs/*"
+        ],
+        "exec_allowlist": []
+      },
+      "status": "candidate",
+      "outcome": {
+        "last_outcome_score": 1,
+        "last_delta_value": null,
+        "outcome_unit": null
+      },
+      "governance": {
+        "state": "candidate",
+        "promote": {
+          "min_success_runs": 3,
+          "min_outcome_score": 0.7,
+          "min_effect_value": 1,
+          "effect_units_allowlist": [
+            "ms_saved",
+            "tokens_saved",
+            "reported_delta"
+          ]
+        },
+        "demote": {
+          "max_consecutive_errors": 2,
+          "min_outcome_score": 0.4,
+          "cooldown_minutes": 1440
+        },
+        "pinned": false,
+        "consecutive_errors": 0
+      },
+      "metrics": {
+        "baseline": {
+          "avg_duration_ms": null,
+          "avg_tokens_est": null,
+          "avg_error_rate": null
+        },
+        "rolling": {
+          "avg_duration_ms_30d": 1,
+          "avg_tokens_est_30d": null,
+          "error_rate_30d": 0,
+          "window_runs": [
+            {
+              "duration_ms": 1,
+              "success": true,
+              "ts": 1771628824861
+            }
+          ]
+        }
+      },
+      "provenance": {
+        "source": "repeat_trigger",
+        "created_by": "habit_crystallizer",
+        "created_at": "2026-02-20T23:07:04.817Z",
+        "intent_key": "execute_bounded_proposal_prp-d97b20e8b824f700_(external_intel):_i_was_losing_jobs_to_faster_contractors",
+        "trigger_metrics": {
+          "repeats_14d": 4,
+          "tokens_est": 800,
+          "errors_30d": 0,
+          "which_met": [
+            "A"
+          ]
+        }
+      },
+      "uid": "h3jrxtvj9drqio4037s5k5pd"
     }
   ]
 }

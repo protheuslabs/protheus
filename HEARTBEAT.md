@@ -1,5 +1,8 @@
 # HEARTBEAT.md
 
-# Keep this file empty (or with only comments) to skip heartbeat API calls.
+Run deterministic spine trigger:
 
-# Add tasks below when you want the agent to check something periodically.
+1. Execute:
+`cd ~/.openclaw/workspace && node systems/spine/heartbeat_trigger.js run --mode=daily --min-hours=4 --max-eyes=3`
+2. If result is `skipped_recent_run`, do nothing else.
+3. If triggered, report one-line status from spine output.

@@ -4,6 +4,8 @@ This repository is an agent-operations workspace: orchestration, governed habits
 
 ## Architecture Map
 
+- `adaptive/`
+  Adaptive policy layer (`reflex/`, `habits/`, `strategy/`) for evidence-driven tuning and lifecycle rules.
 - `systems/`  
   Infrastructure/control-plane layer. Contains spine, security, routing, and autonomy controllers.
 - `habits/`  
@@ -60,6 +62,19 @@ SPINE_ROUTER_PROBE_ALL=0 node systems/spine/spine.js daily [YYYY-MM-DD]
 # Routing hardware planner snapshot (local eligibility by CPU/RAM/VRAM class)
 node systems/routing/model_router.js hardware-plan
 
+# Spawn broker (central hardware-budgeted module allocation)
+node systems/spawn/spawn_broker.js status --module=reflex
+node systems/spawn/spawn_broker.js request --module=reflex --requested_cells=2 --apply=1
+
+# Reflex dispatcher (demand planner + spawn-broker request + low-risk micro routing)
+node systems/reflex/reflex_dispatcher.js status
+node systems/reflex/reflex_dispatcher.js plan --demand=4 --headroom=0.8 --apply=1
+node systems/reflex/reflex_dispatcher.js run --task="..." --intent="..." --tokens_est=220 --demand=2
+
+# Strategy learner scorecards (theory -> trial -> validated -> scaled)
+node systems/strategy/strategy_learner.js run [YYYY-MM-DD] --days=14
+node systems/strategy/strategy_learner.js status latest
+
 # Optional: increase/decrease score-only evidence attempts per daily run (default 2, max 6)
 AUTONOMY_EVIDENCE_RUNS=3 node systems/spine/spine.js daily [YYYY-MM-DD]
 
@@ -110,6 +125,10 @@ node systems/autonomy/strategy_mode.js set --mode=execute --approval-note="..." 
 # Architecture guard (audit by default, strict for CI/gates)
 node systems/security/architecture_guard.js run
 node systems/security/architecture_guard.js run --strict
+
+# Habit hygiene guard (prevents orphan/non-provenance routine dumps)
+node systems/security/habit_hygiene_guard.js run
+node systems/security/habit_hygiene_guard.js run --strict
 
 # Integrity kernel (tamper-evident hashes for security/directive policy)
 node systems/security/integrity_kernel.js run

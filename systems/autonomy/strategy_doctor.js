@@ -10,7 +10,8 @@ const {
   strategyExplorationPolicy,
   strategyPromotionPolicy,
   strategyMaxRiskPerAction,
-  strategyDuplicateWindowHours
+  strategyDuplicateWindowHours,
+  strategyCanaryDailyExecLimit
 } = require('../../lib/strategy_resolver.js');
 
 function usage() {
@@ -74,6 +75,7 @@ function main() {
           status: active.status,
           file: path.relative(path.resolve(__dirname, '..', '..'), active.file).replace(/\\/g, '/'),
           execution_mode: strategyExecutionMode(active, 'execute'),
+          canary_daily_exec_limit: strategyCanaryDailyExecLimit(active, null),
           risk_policy: {
             allowed_risks: Array.isArray(active.risk_policy && active.risk_policy.allowed_risks)
               ? active.risk_policy.allowed_risks

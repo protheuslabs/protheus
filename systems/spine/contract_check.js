@@ -82,6 +82,17 @@ function main() {
     ["eyes_intake.js", "create", "validate", "list-directives"]
   );
 
+  // adaptive_layer_guard.js enforces channelized writes for adaptive-layer files.
+  checkScript(
+    "systems/sensory/adaptive_layer_guard.js",
+    ["adaptive_layer_guard.js", "run", "--strict"]
+  );
+  checkUsage(
+    "systems/sensory/adaptive_layer_guard.js",
+    ["run", "--strict"],
+    ['"ok": true']
+  );
+
   // eyes_insight.js should advertise run + date usage
   checkScript(
     "habits/scripts/eyes_insight.js",
@@ -128,7 +139,13 @@ function main() {
   // autonomy_controller.js is optional by flag, but contract should remain valid.
   checkScript(
     "systems/autonomy/autonomy_controller.js",
-    ["autonomy_controller.js", "run", "evidence", "status"]
+    ["autonomy_controller.js", "run", "evidence", "readiness", "status"]
+  );
+
+  // canary_scheduler.js gates execution on readiness and always emits scheduler receipts.
+  checkScript(
+    "systems/autonomy/canary_scheduler.js",
+    ["canary_scheduler.js", "run", "status"]
   );
 
   // proposal_enricher.js normalizes proposal meta/admission prior to autonomy selection.
@@ -203,6 +220,36 @@ function main() {
     ["route_execute.js", "--task"]
   );
 
+  // eyes_memory_bridge.js wires enriched sensory proposals into memory nodes + pointer logs.
+  checkScript(
+    "systems/memory/eyes_memory_bridge.js",
+    ["eyes_memory_bridge.js", "run", "status"]
+  );
+
+  // memory_dream.js synthesizes recent memory pointers into deterministic dream sheets.
+  checkScript(
+    "systems/memory/memory_dream.js",
+    ["memory_dream.js", "run", "status"]
+  );
+
+  // idle_dream_cycle.js runs local-LLM idle dreaming + REM quantization passes.
+  checkScript(
+    "systems/memory/idle_dream_cycle.js",
+    ["idle_dream_cycle.js", "run", "status", "--rem-only=1"]
+  );
+
+  // uid_connections.js crystallizes uid graph links and adaptive-memory suggestions.
+  checkScript(
+    "systems/memory/uid_connections.js",
+    ["uid_connections.js", "build", "status"]
+  );
+
+  // creative_links.js promotes useful dream links into first-class memory nodes.
+  checkScript(
+    "systems/memory/creative_links.js",
+    ["creative_links.js", "run", "status"]
+  );
+
   // router_budget_calibration.js calibrates routing token multipliers with rollback support.
   checkScript(
     "systems/routing/router_budget_calibration.js",
@@ -257,6 +304,22 @@ function main() {
     "systems/security/habit_hygiene_guard.js",
     ["habit_hygiene_guard.js", "run", "--strict"]
   );
+  checkUsage(
+    "systems/security/habit_hygiene_guard.js",
+    ["run", "--strict"],
+    ['"ok": true']
+  );
+
+  // workspace_dump_guard.js prevents source/code dumps in data layers and misplaced collectors.
+  checkScript(
+    "systems/security/workspace_dump_guard.js",
+    ["workspace_dump_guard.js", "run", "--strict"]
+  );
+  checkUsage(
+    "systems/security/workspace_dump_guard.js",
+    ["run", "--strict"],
+    ['"ok": true']
+  );
 
   // request_ingress.js stamps source/action and signed envelopes for guarded command ingress.
   checkScript(
@@ -276,6 +339,12 @@ function main() {
     ["state_backup.js", "run", "list", "--dest", "--profile"]
   );
 
+  // openclaw_backup_retention.js keeps recent OpenClaw config backups and archives older files.
+  checkScript(
+    "systems/ops/openclaw_backup_retention.js",
+    ["openclaw_backup_retention.js", "run", "status", "--root", "--keep"]
+  );
+
   // state_cleanup.js provides non-destructive stale runtime-state cleanup with allowlisted policy rules.
   checkScript(
     "systems/ops/state_cleanup.js",
@@ -291,7 +360,21 @@ function main() {
   // reflex_dispatcher.js manages hardware-capped low-risk reflex cell pool + worker dispatch.
   checkScript(
     "systems/reflex/reflex_dispatcher.js",
-    ["reflex_dispatcher.js", "status", "plan", "run", "--demand"]
+    [
+      "reflex_dispatcher.js",
+      "status",
+      "plan",
+      "run",
+      "routine-list",
+      "routine-create",
+      "routine-run",
+      "routine-enable",
+      "routine-disable",
+      "routine-dispose",
+      "--demand",
+      "--id",
+      "--task"
+    ]
   );
 
   // reflex_worker.js executes one bounded reflex task through router route_class=reflex.

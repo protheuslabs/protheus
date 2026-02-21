@@ -1,0 +1,27 @@
+{
+  "version": "1.0",
+  "target_roots": [
+    "systems"
+  ],
+  "file_extensions": [
+    ".js"
+  ],
+  "exclude_paths": [
+    "systems/security/architecture_guard.js"
+  ],
+  "banned_tokens": [
+    "moltbook",
+    "moltstack",
+    "twitter",
+    "api.x.com",
+    "hnrss.org",
+    "/api/v1/",
+    "submolt",
+    "gmail",
+    "bird"
+  ],
+  "allow_paths": [
+    "systems/autonomy/autonomy_controller.js",
+    "systems/spine/spine.js"
+  ]
+}

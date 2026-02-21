@@ -16,15 +16,21 @@
     "fitness_metric": "verified_progress_rate",
     "target_window_days": 14
   },
+  "generation_policy": {
+    "mode": "hyper-creative"
+  },
   "risk_policy": {
     "allowed_risks": [
-      "low"
+      "low",
+      "medium"
     ],
-    "max_risk_per_action": 35
+    "max_risk_per_action": 65
   },
   "admission_policy": {
     "allowed_types": [],
-    "blocked_types": [],
+    "blocked_types": [
+      "human_escalation"
+    ],
     "max_remediation_depth": 2,
     "duplicate_window_hours": 24
   },
@@ -40,6 +46,12 @@
     "daily_runs_cap": 4,
     "daily_token_cap": 4000,
     "max_tokens_per_action": 1600,
+    "token_cost_per_1k": 0.003,
+    "daily_usd_cap": 3.5,
+    "per_action_avg_usd_cap": 1.0,
+    "monthly_usd_allocation": 60,
+    "monthly_credits_floor_pct": 0.15,
+    "min_projected_tokens_for_burn_check": 800,
     "per_capability_caps": {
       "proposal": 3,
       "proposal:collector_remediation": 2,
@@ -74,7 +86,7 @@
     "min_shipped": 1
   },
   "execution_policy": {
-    "mode": "score_only"
+    "mode": "canary_execute"
   },
   "threshold_overrides": {}
 }

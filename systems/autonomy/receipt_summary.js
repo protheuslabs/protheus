@@ -140,7 +140,10 @@ function mergeTallies(...objs) {
 function summarizeRuns(rows) {
   const runs = (rows || []).filter(r => r && r.type === 'autonomy_run');
   const executed = runs.filter(r => String(r.result || '') === 'executed');
-  const previews = runs.filter(r => String(r.result || '') === 'score_only_preview');
+  const previews = runs.filter(r => {
+    const res = String(r.result || '');
+    return res === 'score_only_preview' || res === 'score_only_evidence';
+  });
   const stop = runs.filter(r => String(r.result || '').startsWith('stop_'));
   const initGate = runs.filter(r => {
     const res = String(r.result || '');
@@ -182,14 +185,23 @@ function autonomyPrimaryFailure(rec) {
   return '';
 }
 
+function isAttemptedReceipt(rec) {
+  if (!rec || typeof rec !== 'object') return false;
+  const contract = rec.receipt_contract;
+  if (!contract || typeof contract !== 'object') return true;
+  return contract.attempted !== false;
+}
+
 function summarizeAutonomyReceipts(rows) {
-  const receipts = (rows || []).filter(r => r && r.type === 'autonomy_action_receipt');
+  const allReceipts = (rows || []).filter(r => r && r.type === 'autonomy_action_receipt');
+  const receipts = allReceipts.filter(isAttemptedReceipt);
   const pass = receipts.filter(r => String(r.verdict || '').toLowerCase() === 'pass').length;
   const fail = receipts.filter(r => String(r.verdict || '').toLowerCase() === 'fail').length;
   const verified = receipts.filter(r => !!(r.receipt_contract && r.receipt_contract.verified === true)).length;
   const failure = tallyBy(receipts.filter(r => String(r.verdict || '').toLowerCase() === 'fail'), autonomyPrimaryFailure);
   return {
     total: receipts.length,
+    skipped_not_attempted: allReceipts.length - receipts.length,
     pass,
     fail,
     verified,
@@ -208,7 +220,8 @@ function actuationFailureReason(rec) {
 }
 
 function summarizeActuationReceipts(rows) {
-  const receipts = rows || [];
+  const allReceipts = rows || [];
+  const receipts = allReceipts.filter(isAttemptedReceipt);
   const ok = receipts.filter(r => r && r.ok === true).length;
   const failed = receipts.filter(r => r && r.ok !== true).length;
   const verified = receipts.filter(r => !!(r && r.receipt_contract && r.receipt_contract.verified === true)).length;
@@ -231,6 +244,7 @@ function summarizeActuationReceipts(rows) {
   );
   return {
     total: receipts.length,
+    skipped_not_attempted: allReceipts.length - receipts.length,
     ok,
     failed,
     verified,

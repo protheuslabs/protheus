@@ -62,11 +62,28 @@ function run() {
 
   r = runScript(repoRoot, [
     'set',
-    '--mode=execute',
+    '--mode=canary_execute',
     '--approval-note=approved for promotion',
     '--approver-id=owner',
     '--second-approver-id=operator',
     '--second-approval-note=second approval for promotion',
+    '--force=1'
+  ], env);
+  assert.strictEqual(r.status, 0, `set canary execute should pass: ${r.stderr}`);
+  out = parseJson(r.stdout);
+  assert.strictEqual(out.result, 'mode_changed');
+  assert.strictEqual(out.to_mode, 'canary_execute');
+
+  let after = readJson(strategyPath);
+  assert.strictEqual(after.execution_policy.mode, 'canary_execute');
+
+  r = runScript(repoRoot, [
+    'set',
+    '--mode=execute',
+    '--approval-note=approved for full execute mode',
+    '--approver-id=owner',
+    '--second-approver-id=operator',
+    '--second-approval-note=second approval for full execute mode',
     '--force=1'
   ], env);
   assert.strictEqual(r.status, 0, `set execute should pass: ${r.stderr}`);
@@ -74,7 +91,7 @@ function run() {
   assert.strictEqual(out.result, 'mode_changed');
   assert.strictEqual(out.to_mode, 'execute');
 
-  let after = readJson(strategyPath);
+  after = readJson(strategyPath);
   assert.strictEqual(after.execution_policy.mode, 'execute');
 
   r = runScript(repoRoot, ['set', '--mode=score_only', '--approval-note=rollback to safe mode'], env);

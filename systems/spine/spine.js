@@ -446,6 +446,12 @@ function main() {
     "systems/actuation/actuation_executor.js",
     "systems/actuation/bridge_from_proposals.js",
     "systems/ops/state_backup.js",
+    "systems/ops/openclaw_backup_retention.js",
+    "systems/memory/eyes_memory_bridge.js",
+    "systems/memory/memory_dream.js",
+    "systems/memory/uid_connections.js",
+    "systems/memory/creative_links.js",
+    "systems/sensory/cross_signal_engine.js",
     "config/actuation_adapters.json",
     "config/state_backup_policy.json",
     "skills/moltbook/actuation_adapter.js",
@@ -633,6 +639,7 @@ function main() {
 
   run("node", ["habits/scripts/external_eyes.js", "score", dateStr]);
   run("node", ["habits/scripts/external_eyes.js", "evolve", dateStr]);
+  run("node", ["systems/sensory/cross_signal_engine.js", "run", dateStr]);
   const collectorHealth = collectorHealthSummary();
   appendLedger(dateStr, {
     ts: nowIso(),
@@ -668,6 +675,33 @@ function main() {
       console.error(` proposal_enricher FAIL code=${enrich.code} reason=${String(enrich.stderr || enrich.stdout || "unknown").slice(0, 140)}`);
       process.exit(enrich.code || 1);
     }
+    const eyesMemoryBridge = runJson("node", ["systems/memory/eyes_memory_bridge.js", "run", dateStr]);
+    const bridgePayload = eyesMemoryBridge.payload && typeof eyesMemoryBridge.payload === "object"
+      ? eyesMemoryBridge.payload
+      : null;
+    appendLedger(dateStr, {
+      ts: nowIso(),
+      type: "spine_eyes_memory_bridge",
+      mode,
+      date: dateStr,
+      ok: eyesMemoryBridge.ok && !!bridgePayload && bridgePayload.ok === true,
+      created_nodes: bridgePayload ? Number(bridgePayload.created_nodes || 0) : null,
+      selected: bridgePayload ? Number(bridgePayload.selected || 0) : null,
+      eligible_candidates: bridgePayload ? Number(bridgePayload.eligible_candidates || 0) : null,
+      pointers_file: bridgePayload ? bridgePayload.pointers_file || null : null,
+      reason: (!eyesMemoryBridge.ok || !bridgePayload || bridgePayload.ok !== true)
+        ? String(eyesMemoryBridge.stderr || eyesMemoryBridge.stdout || `eyes_memory_bridge_exit_${eyesMemoryBridge.code}`).slice(0, 180)
+        : null
+    });
+    if (!eyesMemoryBridge.ok || !bridgePayload || bridgePayload.ok !== true) {
+      console.error(` eyes_memory_bridge FAIL code=${eyesMemoryBridge.code} reason=${String(eyesMemoryBridge.stderr || eyesMemoryBridge.stdout || "unknown").slice(0, 140)}`);
+      process.exit(eyesMemoryBridge.code || 1);
+    }
+    console.log(
+      ` eyes_memory_bridge nodes=${Number(bridgePayload.created_nodes || 0)}` +
+      ` selected=${Number(bridgePayload.selected || 0)}` +
+      ` eligible=${Number(bridgePayload.eligible_candidates || 0)}`
+    );
     const admission = enrichPayload.admission && typeof enrichPayload.admission === "object"
       ? enrichPayload.admission
       : { total: 0, eligible: 0, blocked: 0, blocked_by_reason: {} };
@@ -757,8 +791,100 @@ function main() {
 
   if (mode === "daily") {
     if (String(process.env.AUTONOMY_ENABLED || "") === "1") {
-      // Bounded autonomy loop (WIP=1) behind feature flag.
-      run("node", ["systems/autonomy/autonomy_controller.js", "run", dateStr]);
+      const scheduler = runJson("node", ["systems/autonomy/canary_scheduler.js", "run", dateStr]);
+      const schedulerPayload = scheduler.payload && typeof scheduler.payload === "object"
+        ? scheduler.payload
+        : null;
+      const readinessPayload = schedulerPayload && schedulerPayload.readiness && typeof schedulerPayload.readiness === "object"
+        ? schedulerPayload.readiness
+        : null;
+      const blockers = readinessPayload && Array.isArray(readinessPayload.blockers)
+        ? readinessPayload.blockers
+        : [];
+      const topBlocker = blockers.length ? blockers[0] : null;
+      const readinessOk = !!(readinessPayload && readinessPayload.ok === true);
+      const schedulerQuality = schedulerPayload && schedulerPayload.scheduler_quality && typeof schedulerPayload.scheduler_quality === "object"
+        ? schedulerPayload.scheduler_quality
+        : null;
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_autonomy_readiness",
+        mode,
+        date: dateStr,
+        ok: readinessOk,
+        can_run: readinessPayload ? readinessPayload.can_run === true : null,
+        next_runnable_at: readinessPayload ? readinessPayload.next_runnable_at || null : null,
+        manual_action_required: readinessPayload ? readinessPayload.manual_action_required === true : null,
+        blocker_count: blockers.length,
+        scheduler_attempted: schedulerQuality ? schedulerQuality.attempted === true : null,
+        scheduler_verified: schedulerQuality ? schedulerQuality.verified === true : null,
+        scheduler_fail_reason: schedulerQuality && schedulerQuality.fail_reason
+          ? String(schedulerQuality.fail_reason).slice(0, 120)
+          : null,
+        top_blocker: topBlocker ? {
+          code: topBlocker.code || null,
+          detail: String(topBlocker.detail || "").slice(0, 160),
+          retryable: topBlocker.retryable !== false,
+          next_at: topBlocker.next_at || null
+        } : null,
+        reason: !readinessOk
+          ? String(
+              (schedulerPayload && schedulerPayload.error)
+              || scheduler.stderr
+              || scheduler.stdout
+              || `canary_scheduler_exit_${scheduler.code}`
+            ).slice(0, 180)
+          : null
+      });
+      if (!scheduler.ok || !schedulerPayload) {
+        console.log(` autonomy_scheduler unavailable reason=${String(scheduler.stderr || scheduler.stdout || "unknown").slice(0, 120)} fallback=run`);
+        run("node", ["systems/autonomy/autonomy_controller.js", "run", dateStr]);
+      } else if (String(schedulerPayload.result || "") === "skipped_blocked") {
+        appendLedger(dateStr, {
+          ts: nowIso(),
+          type: "spine_autonomy_skipped",
+          mode,
+          date: dateStr,
+          reason: "readiness_blocked",
+          blocker_count: blockers.length,
+          top_blocker: topBlocker ? topBlocker.code || null : null,
+          next_runnable_at: readinessPayload.next_runnable_at || null
+        });
+        console.log(
+          ` autonomy_skipped reason=readiness_blocked` +
+          ` blocker=${topBlocker ? String(topBlocker.code || "unknown") : "none"}` +
+          ` next=${String(readinessPayload && readinessPayload.next_runnable_at || "n/a")}`
+        );
+        if (schedulerQuality) {
+          console.log(
+            ` autonomy_scheduler_quality attempted=${schedulerQuality.attempted === true}` +
+            ` verified=${schedulerQuality.verified === true}` +
+            ` fail=${String(schedulerQuality.fail_reason || "none")}`
+          );
+        }
+      } else {
+        const runPayload = schedulerPayload.run && schedulerPayload.run.payload && typeof schedulerPayload.run.payload === "object"
+          ? schedulerPayload.run.payload
+          : null;
+        const proposalId = runPayload && runPayload.proposal_id
+          ? String(runPayload.proposal_id)
+          : "none";
+        const receiptId = runPayload && runPayload.receipt_id
+          ? String(runPayload.receipt_id)
+          : String(schedulerPayload.scheduler_receipt_id || "none");
+        console.log(
+          ` autonomy_scheduler result=${String(schedulerPayload.result || "unknown")}` +
+          ` proposal=${proposalId}` +
+          ` receipt=${receiptId}`
+        );
+        if (schedulerQuality) {
+          console.log(
+            ` autonomy_scheduler_quality attempted=${schedulerQuality.attempted === true}` +
+            ` verified=${schedulerQuality.verified === true}` +
+            ` fail=${String(schedulerQuality.fail_reason || "none")}`
+          );
+        }
+      }
     } else {
       appendLedger(dateStr, {
         ts: nowIso(),
@@ -982,6 +1108,169 @@ function main() {
     // 3) sensory digest + anomalies
     run("node", ["habits/scripts/sensory_digest.js", "daily", dateStr]);
 
+    // 3b) deterministic memory "dream" synthesis from recent eyes-memory pointers.
+    if (String(process.env.MEMORY_DREAM_ENABLED || "1") !== "0") {
+      const dream = runJson("node", ["systems/memory/memory_dream.js", "run", dateStr]);
+      const dreamPayload = dream.payload && typeof dream.payload === "object"
+        ? dream.payload
+        : null;
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_memory_dream",
+        mode,
+        date: dateStr,
+        ok: dream.ok && !!dreamPayload && dreamPayload.ok === true,
+        pointer_rows: dreamPayload ? Number(dreamPayload.pointer_rows || 0) : null,
+        themes: dreamPayload ? Number(dreamPayload.themes || 0) : null,
+        markdown_path: dreamPayload ? dreamPayload.markdown_path || null : null,
+        json_path: dreamPayload ? dreamPayload.json_path || null : null,
+        reason: (!dream.ok || !dreamPayload || dreamPayload.ok !== true)
+          ? String(dream.stderr || dream.stdout || `memory_dream_exit_${dream.code}`).slice(0, 180)
+          : null
+      });
+      if (dream.ok && dreamPayload && dreamPayload.ok === true) {
+        console.log(` memory_dream themes=${Number(dreamPayload.themes || 0)} pointers=${Number(dreamPayload.pointer_rows || 0)}`);
+      } else {
+        console.log(` memory_dream unavailable reason=${String(dream.stderr || dream.stdout || "unknown").slice(0, 120)}`);
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_memory_dream_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "MEMORY_DREAM_ENABLED",
+        flag_value: String(process.env.MEMORY_DREAM_ENABLED || "")
+      });
+      console.log(" memory_dream skipped reason=feature_flag_disabled flag=MEMORY_DREAM_ENABLED");
+    }
+
+    // 3b.1) idle/REM dream cycle for passive consolidation.
+    if (String(process.env.IDLE_DREAM_CYCLE_ENABLED || "1") !== "0") {
+      const idleCycle = runJson("node", ["systems/memory/idle_dream_cycle.js", "run", dateStr]);
+      const idlePayload = idleCycle.payload && typeof idleCycle.payload === "object"
+        ? idleCycle.payload
+        : null;
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_idle_dream_cycle",
+        mode,
+        date: dateStr,
+        ok: idleCycle.ok && !!idlePayload && idlePayload.ok === true,
+        idle_skipped: idlePayload && idlePayload.idle ? !!idlePayload.idle.skipped : null,
+        idle_reason: idlePayload && idlePayload.idle ? idlePayload.idle.reason || null : null,
+        rem_skipped: idlePayload && idlePayload.rem ? !!idlePayload.rem.skipped : null,
+        rem_reason: idlePayload && idlePayload.rem ? idlePayload.rem.reason || null : null,
+        rem_quantized_count: idlePayload && idlePayload.rem ? Number(idlePayload.rem.quantized_count || 0) : null,
+        reason: (!idleCycle.ok || !idlePayload || idlePayload.ok !== true)
+          ? String(idleCycle.stderr || idleCycle.stdout || `idle_dream_cycle_exit_${idleCycle.code}`).slice(0, 180)
+          : null
+      });
+      if (idleCycle.ok && idlePayload && idlePayload.ok === true) {
+        console.log(
+          ` idle_dream_cycle idle=${idlePayload.idle && idlePayload.idle.skipped ? "skip" : "run"}` +
+          ` rem=${idlePayload.rem && idlePayload.rem.skipped ? "skip" : "run"}`
+        );
+      } else {
+        console.log(` idle_dream_cycle unavailable reason=${String(idleCycle.stderr || idleCycle.stdout || "unknown").slice(0, 120)}`);
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_idle_dream_cycle_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "IDLE_DREAM_CYCLE_ENABLED",
+        flag_value: String(process.env.IDLE_DREAM_CYCLE_ENABLED || "")
+      });
+      console.log(" idle_dream_cycle skipped reason=feature_flag_disabled flag=IDLE_DREAM_CYCLE_ENABLED");
+    }
+
+    // 3c) crystallize uid graph connections and adaptive-memory candidates from pointer activity.
+    if (String(process.env.UID_CONNECTIONS_ENABLED || "1") !== "0") {
+      const links = runJson("node", ["systems/memory/uid_connections.js", "build", dateStr]);
+      const linksPayload = links.payload && typeof links.payload === "object"
+        ? links.payload
+        : null;
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_uid_connections",
+        mode,
+        date: dateStr,
+        ok: links.ok && !!linksPayload && linksPayload.ok === true,
+        pointers_considered: linksPayload ? Number(linksPayload.pointers_considered || 0) : null,
+        new_connections: linksPayload ? Number(linksPayload.new_connections || 0) : null,
+        new_adaptive_suggestions: linksPayload ? Number(linksPayload.new_adaptive_suggestions || 0) : null,
+        adaptive_suggestions_file: linksPayload ? linksPayload.adaptive_suggestions_file || null : null,
+        reason: (!links.ok || !linksPayload || linksPayload.ok !== true)
+          ? String(links.stderr || links.stdout || `uid_connections_exit_${links.code}`).slice(0, 180)
+          : null
+      });
+      if (links.ok && linksPayload && linksPayload.ok === true) {
+        console.log(
+          ` uid_connections links=${Number(linksPayload.new_connections || 0)}` +
+          ` suggestions=${Number(linksPayload.new_adaptive_suggestions || 0)}` +
+          ` pointers=${Number(linksPayload.pointers_considered || 0)}`
+        );
+      } else {
+        console.log(` uid_connections unavailable reason=${String(links.stderr || links.stdout || "unknown").slice(0, 120)}`);
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_uid_connections_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "UID_CONNECTIONS_ENABLED",
+        flag_value: String(process.env.UID_CONNECTIONS_ENABLED || "")
+      });
+      console.log(" uid_connections skipped reason=feature_flag_disabled flag=UID_CONNECTIONS_ENABLED");
+    }
+
+    // 3d) promote useful dream links into first-class creative memory nodes.
+    if (String(process.env.CREATIVE_LINKS_ENABLED || "1") !== "0") {
+      const creativeLinks = runJson("node", ["systems/memory/creative_links.js", "run", dateStr]);
+      const payload = creativeLinks.payload && typeof creativeLinks.payload === "object"
+        ? creativeLinks.payload
+        : null;
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_creative_links",
+        mode,
+        date: dateStr,
+        ok: creativeLinks.ok && !!payload && payload.ok === true,
+        themes_considered: payload ? Number(payload.themes_considered || 0) : null,
+        candidates_total: payload ? Number(payload.candidates_total || 0) : null,
+        promoted_count: payload ? Number(payload.promoted_count || 0) : null,
+        reason: (!creativeLinks.ok || !payload || payload.ok !== true)
+          ? String(creativeLinks.stderr || creativeLinks.stdout || `creative_links_exit_${creativeLinks.code}`).slice(0, 180)
+          : null
+      });
+      if (creativeLinks.ok && payload && payload.ok === true) {
+        console.log(
+          ` creative_links promoted=${Number(payload.promoted_count || 0)}` +
+          ` candidates=${Number(payload.candidates_total || 0)}` +
+          ` themes=${Number(payload.themes_considered || 0)}`
+        );
+      } else {
+        console.log(` creative_links unavailable reason=${String(creativeLinks.stderr || creativeLinks.stdout || "unknown").slice(0, 120)}`);
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_creative_links_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "CREATIVE_LINKS_ENABLED",
+        flag_value: String(process.env.CREATIVE_LINKS_ENABLED || "")
+      });
+      console.log(" creative_links skipped reason=feature_flag_disabled flag=CREATIVE_LINKS_ENABLED");
+    }
+
     // 4) routing budget calibration report/apply from recent telemetry.
     if (String(process.env.SPINE_ROUTER_BUDGET_CALIBRATION || "1") !== "0") {
       const calibrationArgs = [
@@ -1090,6 +1379,61 @@ function main() {
         flag_value: String(process.env.STATE_BACKUP_ENABLED || "")
       });
       console.log(" state_backup skipped reason=feature_flag_disabled flag=STATE_BACKUP_ENABLED");
+    }
+
+    // 6) external OpenClaw config backup retention (keep recent backups + archive older).
+    if (String(process.env.SPINE_OPENCLAW_BACKUP_RETENTION || "1") !== "0") {
+      const retentionArgs = ["systems/ops/openclaw_backup_retention.js", "run"];
+      if (String(process.env.OPENCLAW_BACKUP_ROOT || "").trim()) {
+        retentionArgs.push(`--root=${String(process.env.OPENCLAW_BACKUP_ROOT).trim()}`);
+      }
+      if (String(process.env.OPENCLAW_BACKUP_KEEP || "").trim()) {
+        retentionArgs.push(`--keep=${String(process.env.OPENCLAW_BACKUP_KEEP).trim()}`);
+      }
+      if (String(process.env.OPENCLAW_BACKUP_DRY_RUN || "") === "1") {
+        retentionArgs.push("--dry-run");
+      }
+      const retention = runJson("node", retentionArgs);
+      const retentionPayload = retention.payload && typeof retention.payload === "object" ? retention.payload : null;
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_openclaw_backup_retention",
+        mode,
+        date: dateStr,
+        ok: retention.ok && !!retentionPayload && retentionPayload.ok === true,
+        dry_run: retentionPayload ? retentionPayload.dry_run === true : null,
+        root: retentionPayload ? retentionPayload.root || null : null,
+        keep_count: retentionPayload ? Number(retentionPayload.keep_count || 0) : null,
+        total_backups: retentionPayload ? Number(retentionPayload.total_backups || 0) : null,
+        retained_count: retentionPayload ? Number(retentionPayload.retained_count || 0) : null,
+        archive_count: retentionPayload ? Number(retentionPayload.archive_count || 0) : null,
+        moved_count: retentionPayload ? Number(retentionPayload.moved_count || 0) : null,
+        archive_dir: retentionPayload ? retentionPayload.archive_dir || null : null,
+        reason: (!retention.ok || !retentionPayload || retentionPayload.ok !== true)
+          ? String(retention.stderr || retention.stdout || `openclaw_backup_retention_exit_${retention.code}`).slice(0, 180)
+          : null
+      });
+      if (retention.ok && retentionPayload && retentionPayload.ok === true) {
+        console.log(
+          ` openclaw_backup_retention ok` +
+          ` moved=${Number(retentionPayload.moved_count || 0)}` +
+          ` kept=${Number(retentionPayload.retained_count || 0)}` +
+          ` total=${Number(retentionPayload.total_backups || 0)}`
+        );
+      } else {
+        console.log(` openclaw_backup_retention unavailable reason=${String(retention.stderr || retention.stdout || "unknown").slice(0, 120)}`);
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_openclaw_backup_retention_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "SPINE_OPENCLAW_BACKUP_RETENTION",
+        flag_value: String(process.env.SPINE_OPENCLAW_BACKUP_RETENTION || "")
+      });
+      console.log(" openclaw_backup_retention skipped reason=feature_flag_disabled flag=SPINE_OPENCLAW_BACKUP_RETENTION");
     }
   }
 

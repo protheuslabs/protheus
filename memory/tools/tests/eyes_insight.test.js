@@ -5,6 +5,7 @@
  */
 
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const assert = require('assert');
 
@@ -36,10 +37,10 @@ function run() {
   banner('EYES INSIGHT TESTS Eyes → Proposals deterministic merge Truthful PASS/FAIL - exit 1 on failure');
 
   // isolated sensory dir
-  const tmp = path.join(__dirname, 'temp_eyes_insight');
-  if (fs.existsSync(tmp)) fs.rmSync(tmp, { recursive: true, force: true });
-  mkDir(tmp);
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'eyes-insight-test-'));
   process.env.SENSORY_TEST_DIR = tmp;
+  process.env.SENSORY_MIN_DIRECTIVE_FIT = '0';
+  process.env.SENSORY_MIN_ACTIONABILITY_SCORE = '40';
 
   const scriptPath = path.join(__dirname, '..', '..', '..', 'habits', 'scripts', 'eyes_insight.js');
   const eyes = require(scriptPath);
@@ -47,19 +48,20 @@ function run() {
   const date = '2026-02-17';
   const eyesRaw = path.join(tmp, 'eyes', 'raw', `${date}.jsonl`);
   const proposalsPath = path.join(tmp, 'proposals', `${date}.json`);
+  const crossSignalPath = path.join(tmp, 'cross_signal', 'hypotheses', `${date}.json`);
 
   // Seed raw external_item events (with duplication by URL)
   const events = [
     {
-      ts: `${date}T01:00:00Z`,
+      ts: `${date}T01:00:02Z`,
       type: 'external_item',
       item: {
         eye_id: 'hn_frontpage',
         url: 'https://moltbook.example/item/1',
-        title: 'Automated income system pattern for engineering teams',
+        title: 'Build automated income system for engineering teams',
         topics: ['automation', 'income', 'systems'],
-        content_preview: 'Concrete implementation notes for scalable automated systems with measurable revenue outcomes.',
-        collected_at: `${date}T01:00:00Z`
+        content_preview: 'Implement a measurable revenue workflow: automate weekly lead intake, score opportunities, and ship changes with metrics.',
+        collected_at: `${date}T01:00:02Z`
       }
     },
     {
@@ -88,6 +90,24 @@ function run() {
     }
   ];
   writeJsonl(eyesRaw, events);
+  fs.mkdirSync(path.dirname(crossSignalPath), { recursive: true });
+  fs.writeFileSync(crossSignalPath, JSON.stringify({
+    ts: `${date}T02:00:00Z`,
+    type: 'cross_signal_hypotheses',
+    date,
+    hypotheses: [
+      {
+        id: 'HYP-test-convergence',
+        type: 'convergence',
+        topic: 'automation',
+        summary: 'Automation topic converging across 3 eyes',
+        confidence: 88,
+        support_eyes: 3,
+        support_events: 11,
+        trend_direction: 'up'
+      }
+    ]
+  }, null, 2), 'utf8');
 
   // Seed an existing proposals file (array)
   mkDir(path.dirname(proposalsPath));
@@ -110,9 +130,19 @@ function run() {
   assert.ok(merged.length >= 2, 'expected at least 2 proposals after merge');
   ok('merge adds proposals');
 
-  const eyeProps = merged.filter(p => String(p.id || '').startsWith('EYE-'));
-  assert.ok(eyeProps.length >= 1, 'expected at least 1 EYE-* proposal');
-  ok('generated EYE-* proposal ids');
+  const eyeProps = merged.filter(p => /^(EYE|PRP)-/.test(String(p.id || '')));
+  assert.ok(eyeProps.length >= 1, 'expected at least 1 eye-derived proposal id (EYE-* or PRP-*)');
+  ok('generated eye-derived proposal ids');
+
+  const crossProps = merged.filter(p => /^CSG-/.test(String(p.id || '')));
+  assert.ok(crossProps.length >= 1, 'expected at least 1 cross-signal proposal id (CSG-*)');
+  assert.strictEqual(String(crossProps[0].type), 'cross_signal_opportunity');
+  assert.ok(
+    Array.isArray(crossProps[0].evidence)
+      && String((crossProps[0].evidence[0] || {}).evidence_ref || '').startsWith('cross_signal:'),
+    'cross-signal proposal should include evidence_ref cross_signal:<id>'
+  );
+  ok('cross-signal hypotheses generate cross_signal_opportunity proposals');
 
   // Verify evidence_ref contains eye:<id>
   const one = eyeProps[0];
@@ -158,6 +188,15 @@ function run() {
   );
   ok('suggested_next_command is actionable (not browser-open only)');
 
+  assert.ok(one.action_spec && typeof one.action_spec === 'object', 'action_spec should exist');
+  assert.ok(typeof one.action_spec.next_command === 'string' && one.action_spec.next_command.length > 0);
+  assert.ok(Array.isArray(one.action_spec.verify) && one.action_spec.verify.length >= 1);
+  ok('action_spec contract is generated for eye proposals');
+
+  assert.ok(crossProps[0].action_spec && typeof crossProps[0].action_spec === 'object');
+  assert.ok(typeof crossProps[0].action_spec.next_command === 'string' && crossProps[0].action_spec.next_command.length > 0);
+  ok('action_spec contract is generated for cross-signal proposals');
+
   // Verify deterministic dedupe by url worked (only one proposal per URL)
   const urls = new Set();
   for (const p of eyeProps) {
@@ -188,6 +227,8 @@ function run() {
   const merged2 = readJson(proposalsPath2);
   assert.ok(Array.isArray(merged2), 'wrapper should be rewritten as array output');
   ok('wrapper input is tolerated and output normalized to array');
+
+  fs.rmSync(tmp, { recursive: true, force: true });
 
   banner('✅ ALL EYES INSIGHT TESTS PASS');
 }

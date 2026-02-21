@@ -122,7 +122,9 @@ function evaluateReadiness(strategy, summary, policy, requestedDays) {
   const ready = failed.length === 0;
   const recommendedMode = mode === 'execute'
     ? 'execute'
-    : (ready ? 'execute_candidate' : 'score_only');
+    : (mode === 'canary_execute'
+      ? (ready ? 'canary_execute' : 'score_only')
+      : (ready ? 'execute_candidate' : 'score_only'));
 
   return {
     current_mode: mode,

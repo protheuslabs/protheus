@@ -14,6 +14,36 @@
       "approved_by": "jay",
       "approved_at": "2026-02-14",
       "note": "Safe cron swap - atomic job replacement with verification gates (CANDIDATE until proven)"
+    },
+    "/Users/jay/.openclaw/workspace/habits/routines/auto_canary_deterministic_habit_crystallization_.js": {
+      "sha256": "7573c489f20128b390a43b206ce92db2ed04da1e06dd2b9a302da3079c28ba75",
+      "approved_by": "habit_crystallizer",
+      "approved_at": "2026-02-20",
+      "note": "Auto-trusted deterministic scaffold"
+    },
+    "/Users/jay/.openclaw/workspace/habits/routines/zeta_muon_sigma_habit_crystallization_fresh_rout.js": {
+      "sha256": "dc4f914047561ef7699045f66207c3486e649b55c467b4a0d96e31838e074a2e",
+      "approved_by": "habit_crystallizer",
+      "approved_at": "2026-02-20",
+      "note": "Auto-trusted deterministic scaffold"
+    },
+    "/Users/jay/.openclaw/workspace/habits/routines/execute_bounded_proposal_prp_b422f9b8183ba4d0__e.js": {
+      "sha256": "746831a180daa130a191fbdb287c98f8d41595e272978539421a4afe10728699",
+      "approved_by": "habit_crystallizer",
+      "approved_at": "2026-02-20",
+      "note": "Auto-trusted deterministic scaffold"
+    },
+    "/Users/jay/.openclaw/workspace/habits/routines/execute_bounded_proposal_prp_9eca862955cf4462__e.js": {
+      "sha256": "b8248cab47fca28e3282d399caf98dbb8d3138fcf368fad0683c881f078cdfa6",
+      "approved_by": "habit_crystallizer",
+      "approved_at": "2026-02-20",
+      "note": "Auto-trusted deterministic scaffold"
+    },
+    "/Users/jay/.openclaw/workspace/habits/routines/execute_bounded_proposal_prp_d97b20e8b824f700__e.js": {
+      "sha256": "4007456d339d051c3ebc28bcc39b7b9a1080348efd38c2fd1468cafe5dd8d421",
+      "approved_by": "habit_crystallizer",
+      "approved_at": "2026-02-20",
+      "note": "Auto-trusted deterministic scaffold"
     }
   },
   "break_glass": {

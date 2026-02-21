@@ -288,11 +288,11 @@
       "approved_at": "2026-02-17",
       "note": "v1.0 - 14 tests, truthful PASS/FAIL, exit code 1 on failure"
     },
-    "/Users/jay/.openclaw/workspace/config/external_eyes.json": {
-      "sha256": "dc72e9a7619dfb0dfc6012e060ea4abdf57d2e75a8ddbb6f2a9c85c7d5938438",
+    "/Users/jay/.openclaw/workspace/adaptive/sensory/eyes/catalog.json": {
+      "sha256": "fd971b285c8dba78978782f9b41449255b1235ded64235871d7d30d507551e29",
       "approved_by": "jay",
-      "approved_at": "2026-02-17",
-      "note": "v1.0 - External Eyes config with 3 eyes: x_trends, moltbook_feed, google_trends"
+      "approved_at": "2026-02-20",
+      "note": "v1.1 - External Eyes catalog moved to adaptive/sensory/eyes/catalog.json"
     },
     "/Users/jay/.openclaw/workspace/habits/scripts/external_eyes.js": {
       "sha256": "944c7c74a59774b869ef8fa0de2cf7933069fd394f07d07ad3346dd14b1f6fde",

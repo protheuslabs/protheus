@@ -25,6 +25,10 @@ const path = require('path');
 const crypto = require('crypto');
 const { execSync } = require('child_process');
 const { writeContractReceipt } = require('../../lib/action_receipts');
+const {
+  readRegistryWithUids,
+  writeRegistryWithUids
+} = require('./habit_uid_store.js');
 
 const REGISTRY_PATH = '/Users/jay/.openclaw/workspace/habits/registry.json';
 const TRUSTED_HABITS_PATH = '/Users/jay/.openclaw/workspace/config/trusted_habits.json';
@@ -89,7 +93,7 @@ function verifyPostconditions(result, actions) {
 }
 
 function loadRegistry() {
-  return JSON.parse(fs.readFileSync(REGISTRY_PATH, 'utf8'));
+  return readRegistryWithUids(REGISTRY_PATH, { version: 1.5, habits: [] }, true);
 }
 
 function loadTrustedHabits() {
@@ -673,7 +677,7 @@ async function main() {
         safety_notes: ['Automatic demotion due to supply-chain safety', 'Requires manual review and re-trust']
       });
       
-      fs.writeFileSync(REGISTRY_PATH, JSON.stringify(registry, null, 2) + '\n', 'utf8');
+      writeRegistryWithUids(REGISTRY_PATH, registry);
       console.error('\n⚠️  DEMOTED: active → disabled (hash mismatch)');
     }
 
@@ -770,7 +774,7 @@ async function main() {
       console.log(`\n🎉 PROMOTED: ${habitId} candidate → active`);
     }
     
-    fs.writeFileSync(REGISTRY_PATH, JSON.stringify(registry, null, 2) + '\n', 'utf8');
+    writeRegistryWithUids(REGISTRY_PATH, registry);
     
     ctx.logRun({
       status: 'success',
@@ -841,7 +845,7 @@ async function main() {
       console.log(`\n⚠️  DEMOTED: ${habitId} ${oldState} → disabled (${demotion.reason}, cooldown: ${demotion.cooldown || 1440}min)`);
     }
     
-    fs.writeFileSync(REGISTRY_PATH, JSON.stringify(registry, null, 2) + '\n', 'utf8');
+    writeRegistryWithUids(REGISTRY_PATH, registry);
     
     logError({
       ts: new Date().toISOString(),

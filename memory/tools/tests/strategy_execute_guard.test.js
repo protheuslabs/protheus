@@ -60,7 +60,7 @@ function run() {
       max_stop_ratio: 1,
       min_shipped: 0
     },
-    execution_policy: { mode: 'execute' }
+    execution_policy: { mode: 'canary_execute' }
   });
 
   const env = {
@@ -84,7 +84,7 @@ function run() {
   assert.strictEqual(r.status, 0, `second run should auto-revert: ${r.stderr}`);
   out = parseJson(r.stdout);
   assert.strictEqual(out.result, 'auto_reverted_to_score_only', `expected auto-revert, got ${String(out.result)}`);
-  assert.strictEqual(out.from_mode, 'execute');
+  assert.strictEqual(out.from_mode, 'canary_execute');
   assert.strictEqual(out.to_mode, 'score_only');
 
   const after = readJson(strategyPath);

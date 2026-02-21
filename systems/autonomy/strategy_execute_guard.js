@@ -4,8 +4,8 @@
 /**
  * strategy_execute_guard.js
  *
- * Auto-reverts strategy execution mode from execute -> score_only when readiness
- * remains failing for consecutive runs.
+ * Auto-reverts strategy execution mode from execute-family -> score_only when
+ * readiness remains failing for consecutive runs.
  *
  * Usage:
  *   node systems/autonomy/strategy_execute_guard.js run [YYYY-MM-DD] [--days=N] [--id=<strategy_id>] [--strict]
@@ -27,6 +27,10 @@ const MODE_AUDIT_LOG_PATH = process.env.AUTONOMY_STRATEGY_MODE_LOG
   ? path.resolve(process.env.AUTONOMY_STRATEGY_MODE_LOG)
   : path.join(REPO_ROOT, 'state', 'autonomy', 'strategy_mode_changes.jsonl');
 const MAX_CONSEC_NOT_READY = Number(process.env.AUTONOMY_EXECUTE_GUARD_MAX_CONSEC || 2);
+
+function isExecuteMode(mode) {
+  return mode === 'execute' || mode === 'canary_execute';
+}
 
 function usage() {
   console.log('Usage:');
@@ -153,7 +157,7 @@ function cmdRun(args) {
     ? state.by_strategy[strategy.id]
     : { consecutive_not_ready: 0 };
 
-  if (mode !== 'execute') {
+  if (!isExecuteMode(mode)) {
     const next = {
       consecutive_not_ready: 0,
       last_result: 'mode_not_execute',
@@ -229,7 +233,7 @@ function cmdRun(args) {
     type: 'strategy_mode_auto_revert',
     strategy_id: strategy.id,
     file: path.relative(REPO_ROOT, strategy.file).replace(/\\/g, '/'),
-    from_mode: 'execute',
+    from_mode: mode,
     to_mode: 'score_only',
     reason: 'execute_guard_not_ready_consecutive',
     consecutive_not_ready: consecutive,

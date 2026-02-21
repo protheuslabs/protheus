@@ -2,6 +2,7 @@
   "version": 1,
   "routing": {
     "default_slot": "master",
+    "default_anchor_model": "ollama/kimi-k2.5:cloud",
     "spawn_model_allowlist": [
       "ollama/kimi-k2.5:cloud",
       "ollama/qwen3:4b",
@@ -13,6 +14,139 @@
       "minmax-m2-cloud",
       "glm-4.6-cloud"
     ],
+    "model_profiles": {
+      "ollama/smallthinker": {
+        "tiers": [1],
+        "roles": ["chat", "planning", "general", "reflex"],
+        "class": "cheap_local"
+      },
+      "ollama/qwen3:4b": {
+        "tiers": [1, 2],
+        "roles": ["coding", "tools", "logic", "general", "reflex"],
+        "class": "cheap_local"
+      },
+      "ollama/gemma3:4b": {
+        "tiers": [1, 2],
+        "roles": ["chat", "planning", "general", "reflex"],
+        "class": "cheap_local"
+      },
+      "ollama/kimi-k2.5:cloud": {
+        "tiers": [2, 3],
+        "roles": ["planning", "logic", "chat", "general"],
+        "class": "cloud_anchor"
+      },
+      "qwen3-coder:480b-cloud": {
+        "tiers": [2, 3],
+        "roles": ["coding", "tools", "logic"],
+        "class": "cloud_specialist"
+      },
+      "gpt-oss:120b-cloud": {
+        "tiers": [2, 3],
+        "roles": ["planning", "logic", "coding", "general"],
+        "class": "cloud_specialist"
+      }
+    },
+    "local_probe_policy": {
+      "default": {
+        "timeout_ms": 15000,
+        "max_latency_ms": 9000,
+        "accept_ok_token": true
+      },
+      "models": {
+        "ollama/qwen3:4b": {
+          "timeout_ms": 16000,
+          "max_latency_ms": 15000
+        },
+        "ollama/smallthinker": {
+          "timeout_ms": 18000,
+          "max_latency_ms": 14000
+        },
+        "ollama/gemma3:4b": {
+          "timeout_ms": 20000,
+          "max_latency_ms": 18000
+        }
+      }
+    },
+    "local_hardware_planner": {
+      "enabled": true,
+      "activate_recommended_locals": true,
+      "class_thresholds": [
+        { "id": "tiny", "max_ram_gb": 8, "max_cpu_threads": 4 },
+        { "id": "small", "max_ram_gb": 16, "max_cpu_threads": 8 },
+        { "id": "medium", "max_ram_gb": 32, "max_cpu_threads": 16 },
+        { "id": "large", "max_ram_gb": 64, "max_cpu_threads": 32 },
+        { "id": "xlarge" }
+      ],
+      "local_model_requirements": {
+        "ollama/smallthinker": {
+          "min_hardware_class": "tiny",
+          "min_ram_gb": 4,
+          "min_cpu_threads": 2
+        },
+        "ollama/qwen3:4b": {
+          "min_hardware_class": "small",
+          "min_ram_gb": 8,
+          "min_cpu_threads": 4
+        },
+        "ollama/gemma3:4b": {
+          "min_hardware_class": "small",
+          "min_ram_gb": 8,
+          "min_cpu_threads": 4
+        }
+      }
+    },
+    "communication_fast_path": {
+      "enabled": true,
+      "match_mode": "heuristic",
+      "max_chars": 48,
+      "max_words": 8,
+      "max_newlines": 0,
+      "disallow_regexes": [
+        "https?:\\/\\/",
+        "(^|\\s)--?[a-z0-9][a-z0-9_-]*\\b",
+        "\\b(node|npm|pnpm|yarn|git|curl|python|bash|zsh|ollama)\\b",
+        "[`{}\\[\\]<>$;=]",
+        "(^|\\s)(~\\/|\\.\\.?\\/|\\/users\\/|[a-z]:\\\\)"
+      ],
+      "slot": "grunt",
+      "prefer_model": "ollama/smallthinker",
+      "fallback_slot": "fallback",
+      "skip_outcome_scan": true
+    },
+    "route_classes": {
+      "reflex": {
+        "force_risk": "low",
+        "force_complexity": "low",
+        "force_role": "reflex",
+        "prefer_slot": "grunt",
+        "prefer_model": "ollama/smallthinker",
+        "fallback_slot": "fallback",
+        "disable_fast_path": true,
+        "max_tokens_est": 420
+      }
+    },
+    "router_budget_policy": {
+      "enabled": true,
+      "state_dir": "state/autonomy/daily_budget",
+      "soft_ratio": 0.75,
+      "hard_ratio": 0.92,
+      "cloud_penalty_soft": 4,
+      "cloud_penalty_hard": 10,
+      "cheap_local_bonus_soft": 3,
+      "cheap_local_bonus_hard": 7
+    },
+    "model_variant_policy": {
+      "enabled": true,
+      "min_tier": 3,
+      "roles": ["logic", "planning"],
+      "require_outcome_score_gain": true,
+      "min_outcome_score_delta": 2,
+      "max_negative_score_delta": -8,
+      "auto_return_to_base": true,
+      "variants": {
+        "ollama/kimi-k2.5:cloud": "ollama/kimi-k2.5:thinking"
+      }
+    },
     "risk_buckets": {
       "low": {
         "description": "Pure reasoning, formatting, summaries, non-destructive reads, no trust changes, no cron changes, no writes outside allowlist."

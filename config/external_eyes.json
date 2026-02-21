@@ -8,6 +8,12 @@
       "status": "active",
       "cadence_hours": 6,
       "allowed_domains": ["news.ycombinator.com", "hnrss.org"],
+      "feed_url": "https://news.ycombinator.com/rss",
+      "feed_candidates": [
+        "https://news.ycombinator.com/rss",
+        "https://hnrss.org/frontpage",
+        "https://hnrss.org/newest"
+      ],
       "budgets": {
         "max_items": 20,
         "max_seconds": 10,
@@ -24,23 +30,23 @@
     },
     {
       "id": "x_trends",
-      "name": "X/Twitter Trends",
-      "status": "probation",
-      "cadence_hours": 24,
-      "allowed_domains": ["api.twitter.com", "api.x.com", "moltbook.com"],
+      "name": "X/Twitter Search",
+      "status": "active",
+      "cadence_hours": 6,
+      "allowed_domains": ["x.com", "twitter.com"],
       "budgets": {
-        "max_items": 10,
+        "max_items": 15,
         "max_seconds": 30,
         "max_bytes": 1048576,
         "max_requests": 3
       },
-      "parser_type": "stub",
-      "topics": ["ai_agents", "llm", "automation"],
+      "parser_type": "bird_x",
+      "topics": ["ai_agents", "llm", "automation", "agent_community", "business"],
       "last_run": null,
       "last_success": null,
       "error_rate": 0.0,
       "score_ema": 50.0,
-      "notes": "News feed for AI agent community - in probation for 14 days"
+      "notes": "X/Twitter search via bird CLI - monitoring for AI/agent community signal"
     },
     {
       "id": "moltbook_feed",
@@ -54,7 +60,7 @@
         "max_bytes": 524288,
         "max_requests": 2
       },
-      "parser_type": "stub",
+      "parser_type": "moltbook_hot",
       "topics": ["agent_innovation", "skills", "patterns"],
       "last_run": null,
       "last_success": null,
@@ -63,24 +69,201 @@
       "notes": "Moltbook posts - currently active and performing well"
     },
     {
-      "id": "google_trends",
-      "name": "Google Trends (stub)",
-      "status": "dormant",
-      "cadence_hours": 168,
-      "allowed_domains": ["trends.google.com"],
+      "id": "local_state_fallback",
+      "name": "Local State Fallback",
+      "status": "active",
+      "cadence_hours": 2,
+      "allowed_domains": ["local.workspace"],
       "budgets": {
-        "max_items": 5,
-        "max_seconds": 20,
+        "max_items": 4,
+        "max_seconds": 2,
         "max_bytes": 262144,
-        "max_requests": 1
+        "max_requests": 0
       },
-      "parser_type": "stub",
-      "topics": ["ai_interest", "agent_tools"],
+      "parser_type": "local_state_digest",
+      "topics": ["automation", "system", "growth", "infra", "reliability"],
       "last_run": null,
       "last_success": null,
       "error_rate": 0.0,
-      "score_ema": 25.0,
-      "notes": "Low signal - moved to dormant after 30 days low performance"
+      "score_ema": 65.0,
+      "notes": "Offline-safe deterministic eye built from local workspace state artifacts"
+    },
+    {
+      "id": "ollama_search",
+      "name": "Ollama Newest Models",
+      "status": "active",
+      "cadence_hours": 8,
+      "allowed_domains": ["ollama.com", "www.ollama.com"],
+      "feed_url": "https://ollama.com/search?o=newest",
+      "budgets": {
+        "max_items": 15,
+        "max_seconds": 15,
+        "max_bytes": 1048576,
+        "max_requests": 1
+      },
+      "parser_type": "ollama_search",
+      "topics": ["ai", "llm", "local_models", "agents", "edge_ai"],
+      "last_run": null,
+      "last_success": null,
+      "error_rate": 0.0,
+      "score_ema": 50.0,
+      "notes": "Ollama newest models - track local LLM releases and capabilities"
+    },
+    {
+      "id": "google_trends",
+      "name": "Google Trends (Commercial Demand)",
+      "status": "active",
+      "cadence_hours": 6,
+      "allowed_domains": ["trends.google.com", "trends.google.com"],
+      "budgets": {
+        "max_items": 10,
+        "max_seconds": 15,
+        "max_bytes": 524288,
+        "max_requests": 1
+      },
+      "parser_type": "google_trends",
+      "topics": ["market_demand", "commercial_intent", "trends", "saas", "ai", "automation"],
+      "last_run": null,
+      "last_success": null,
+      "error_rate": 0.0,
+      "score_ema": 50.0,
+      "notes": "Commercial demand signals from trending searches - reactivated with real collector"
+    },
+    {
+      "id": "stock_market",
+      "name": "Stock Market Monitor",
+      "status": "active",
+      "cadence_hours": 4,
+      "allowed_domains": ["finance.yahoo.com", "query1.finance.yahoo.com"],
+      "budgets": {
+        "max_items": 10,
+        "max_seconds": 15,
+        "max_bytes": 524288,
+        "max_requests": 1
+      },
+      "parser_type": "stock_market",
+      "topics": ["finance", "market", "investing", "economy"],
+      "last_run": null,
+      "last_success": null,
+      "error_rate": 0.0,
+      "score_ema": 50.0,
+      "notes": "Stock market indices and movers - financial intelligence for investment decisions"
+    },
+    {
+      "id": "upwork_gigs",
+      "name": "Upwork Freelance Gigs",
+      "status": "active",
+      "cadence_hours": 4,
+      "allowed_domains": ["www.upwork.com", "upwork.com"],
+      "budgets": {
+        "max_items": 8,
+        "max_seconds": 12,
+        "max_bytes": 524288,
+        "max_requests": 1
+      },
+      "parser_type": "upwork_gigs",
+      "topics": ["revenue", "freelance", "gigs", "ai", "automation", "nocode"],
+      "last_run": null,
+      "last_success": null,
+      "error_rate": 0.0,
+      "score_ema": 50.0,
+      "notes": "High-value freelance gigs from Upwork - AI, automation, no-code opportunities"
+    },
+    {
+      "id": "producthunt_launches",
+      "name": "ProductHunt Affiliate Launches",
+      "status": "active",
+      "cadence_hours": 6,
+      "allowed_domains": ["www.producthunt.com", "api.producthunt.com"],
+      "budgets": {
+        "max_items": 10,
+        "max_seconds": 15,
+        "max_bytes": 524288,
+        "max_requests": 1
+      },
+      "parser_type": "producthunt_launches",
+      "topics": ["revenue", "affiliate", "product_launches", "saas", "partnerships"],
+      "last_run": null,
+      "last_success": null,
+      "error_rate": 0.0,
+      "score_ema": 55.0,
+      "notes": "ProductHunt launches with affiliate/partnership potential - B2B SaaS focus"
+    },
+    {
+      "id": "window_shoppr_repo",
+      "name": "Window Shoppr Repo Watch",
+      "status": "active",
+      "cadence_hours": 2,
+      "allowed_domains": ["api.github.com", "github.com"],
+      "budgets": {
+        "max_items": 5,
+        "max_seconds": 10,
+        "max_bytes": 262144,
+        "max_requests": 3
+      },
+      "parser_type": "github_repo",
+      "parser_options": {
+        "owner": "jakerslam",
+        "repo": "window_shoppr"
+      },
+      "topics": ["revenue", "affiliate", "product", "window_shoppr", "agent_integration"],
+      "last_run": null,
+      "last_success": null,
+      "error_rate": 0.0,
+      "score_ema": 55.0,
+      "notes": "Watching window_shoppr repo for releases, agent API updates, and product ingestion changes - revenue project"
+    },
+    {
+      "id": "medium_com",
+      "name": "Medium AI & Startup Stories",
+      "status": "active",
+      "cadence_hours": 6,
+      "allowed_domains": ["medium.com", "www.medium.com", "medium.com"],
+      "budgets": {
+        "max_items": 15,
+        "max_seconds": 15,
+        "max_bytes": 524288,
+        "max_requests": 5
+      },
+      "parser_type": "medium_rss",
+      "parser_options": {
+        "tags": [
+          "artificial-intelligence",
+          "machine-learning",
+          "startups",
+          "entrepreneurship",
+          "saastartups",
+          "business-strategy",
+          "automation"
+        ]
+      },
+      "topics": ["ai", "startups", "business", "automation", "revenue", "growth", "engineering"],
+      "last_run": null,
+      "last_success": null,
+      "error_rate": 0.0,
+      "score_ema": 50.0,
+      "notes": "Medium RSS feeds for AI, startup, and entrepreneurship content aligned with T1 northstar"
+    },
+    {
+      "id": "moltstack_discover",
+      "name": "MoltStack Discover Feed",
+      "status": "active",
+      "cadence_hours": 4,
+      "allowed_domains": ["moltstack.net"],
+      "feed_url": "https://moltstack.net/discover",
+      "budgets": {
+        "max_items": 20,
+        "max_seconds": 15,
+        "max_bytes": 524288,
+        "max_requests": 1
+      },
+      "parser_type": "moltstack_discover",
+      "topics": ["agent_publishing", "ai_agents", "agent_community", "automation", "patterns"],
+      "last_run": null,
+      "last_success": null,
+      "error_rate": 0.0,
+      "score_ema": 55.0,
+      "notes": "MoltStack discover feed - agent publishing platform with posts from Protheus Codex and other agent publications"
     }
   ],
   "global_limits": {

@@ -7,8 +7,10 @@
 const fs = require('fs');
 const path = require('path');
 
-const memoryDir = '/Users/jay/.openclaw/workspace/memory';
+const memoryDir = process.env.MEMORY_DIR || '/Users/jay/.openclaw/workspace/memory';
 const whitelistRegex = /^\d{4}-\d{2}-\d{2}\.md$/;
+const UID_PATTERN = /^[A-Za-z0-9]+$/;
+const UID_ENFORCE_SINCE = normalizeDate(process.env.MEMORY_UID_ENFORCE_SINCE || '2026-02-22');
 
 const errors = [];
 const filesScanned = [];
@@ -16,6 +18,16 @@ let totalNodes = 0;
 
 function reportError(file, nodeId, reason) {
   errors.push({ file, node_id: nodeId || '(unknown)', reason });
+}
+
+function normalizeDate(v) {
+  const s = String(v || '').trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : '2026-02-22';
+}
+
+function requiresUid(nodeDate) {
+  const d = normalizeDate(nodeDate);
+  return d >= UID_ENFORCE_SINCE;
 }
 
 // Get all whitelisted files
@@ -29,6 +41,7 @@ console.log('╚═════════════════════�
 console.log(`Scanning ${dailyFiles.length} whitelisted files...\n`);
 
 const seenNodeIds = new Set();
+const seenUids = new Set();
 
 for (const file of dailyFiles) {
   const filePath = path.join(memoryDir, file);
@@ -60,6 +73,8 @@ for (const file of dailyFiles) {
 
     // Check node_id exists
     const nodeIdMatch = fm.match(/node_id:\s*(\S+)/);
+    const dateMatch = fm.match(/date:\s*(\d{4}-\d{2}-\d{2})/);
+    const nodeDate = dateMatch ? dateMatch[1] : file.replace('.md', '');
     if (!nodeIdMatch) {
       reportError(file, null, `NODE_${idx + 1}_MISSING_NODE_ID`);
       continue;
@@ -76,6 +91,24 @@ for (const file of dailyFiles) {
       reportError(file, nodeId, 'DUPLICATE_NODE_ID');
     } else {
       seenNodeIds.add(nodeId);
+    }
+
+    // Enforce immutable alphanumeric uid for forward nodes (legacy before cutoff is allowed).
+    const uidMatch = fm.match(/uid:\s*(\S+)/);
+    const uidRequired = requiresUid(nodeDate);
+    if (!uidMatch) {
+      if (uidRequired) {
+        reportError(file, nodeId, `NODE_${idx + 1}_MISSING_UID_REQUIRED`);
+      }
+    } else {
+      const uid = String(uidMatch[1] || '').trim();
+      if (!UID_PATTERN.test(uid)) {
+        reportError(file, nodeId, `UID_NOT_ALPHANUM"${uid}"`);
+      } else if (seenUids.has(uid)) {
+        reportError(file, nodeId, 'DUPLICATE_UID');
+      } else {
+        seenUids.add(uid);
+      }
     }
 
     // Check tags exists and is parseable
@@ -119,6 +152,8 @@ for (const file of dailyFiles) {
 console.log(`FILES SCANNED: ${filesScanned.length}`);
 console.log(`NODES FOUND: ${totalNodes}`);
 console.log(`UNIQUE NODE IDs: ${seenNodeIds.size}`);
+console.log(`UNIQUE UIDs: ${seenUids.size}`);
+console.log(`UID ENFORCE SINCE: ${UID_ENFORCE_SINCE}`);
 console.log();
 
 if (errors.length > 0) {
@@ -143,6 +178,7 @@ if (errors.length > 0) {
   console.log('- All files whitelisted and parseable');
   console.log('- All nodes have valid YAML frontmatter');
   console.log('- All node_ids unique and kebab-case');
+  console.log('- All required uids present and alphanumeric');
   console.log('- All tags well-formed');
   console.log('- All titles present');
   console.log();
