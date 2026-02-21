@@ -106,7 +106,13 @@ function run() {
   assert.strictEqual(r.status, 0, `expected second run: ${r.stderr}`);
   out = parseJson(r.stdout);
   assert.strictEqual(out.pass, false, 'spc gate should fail with missing success criteria telemetry');
-  assert.ok(Array.isArray(out.failed_checks) && out.failed_checks.includes('success_criteria_receipts'));
+  assert.ok(
+    Array.isArray(out.failed_checks)
+    && (
+      out.failed_checks.includes('success_criteria_receipts')
+      || out.failed_checks.includes('success_criteria_pass_rate')
+    )
+  );
 
   console.log('pipeline_spc_gate.test.js: OK');
 }

@@ -27,6 +27,11 @@ const { isEmergencyStopEngaged } = require('../../lib/emergency_stop.js');
 const { compactCommandOutput } = require('../../lib/command_output_compactor.js');
 const { loadOutcomeFitnessPolicy } = require('../../lib/outcome_fitness.js');
 const { evaluateSuccessCriteria } = require('../../lib/success_criteria_verifier.js');
+const {
+  toSuccessCriteriaRecord,
+  withSuccessCriteriaVerification,
+  normalizeAutonomyReceiptForWrite
+} = require('../../lib/autonomy_receipt_schema.js');
 const { resolveCatalogPath } = require('../../lib/eyes_catalog.js');
 const { evaluatePipelineSpcGate } = require('./pipeline_spc_gate.js');
 const {
@@ -4089,65 +4094,6 @@ function compactCmdResult(res) {
   };
 }
 
-function toSuccessCriteriaRecord(criteria, fallback = {}) {
-  const src = criteria && typeof criteria === 'object' ? criteria : {};
-  const requiredFallback = fallback && fallback.required === true;
-  const minCountFallback = Number.isFinite(Number(fallback && fallback.min_count))
-    ? Number(fallback.min_count)
-    : 0;
-  return {
-    required: src.required === true || requiredFallback,
-    min_count: Number.isFinite(Number(src.min_count)) ? Number(src.min_count) : minCountFallback,
-    total_count: Number(src.total_count || 0),
-    evaluated_count: Number(src.evaluated_count || 0),
-    passed_count: Number(src.passed_count || 0),
-    failed_count: Number(src.failed_count || 0),
-    unknown_count: Number(src.unknown_count || 0),
-    pass_rate: Number.isFinite(Number(src.pass_rate)) ? Number(src.pass_rate) : null,
-    passed: src.passed === true,
-    primary_failure: src.primary_failure ? String(src.primary_failure) : null,
-    checks: Array.isArray(src.checks) ? src.checks.slice(0, 12) : []
-  };
-}
-
-function withSuccessCriteriaVerification(baseVerification, successCriteria, options = {}) {
-  const base = baseVerification && typeof baseVerification === 'object'
-    ? { ...baseVerification }
-    : {};
-  const criteria = toSuccessCriteriaRecord(successCriteria, options.fallback || {});
-  const criteriaPass = criteria.required ? criteria.passed === true : true;
-  const checks = Array.isArray(base.checks) ? base.checks.map((row) => ({ ...row })) : [];
-  const existingIdx = checks.findIndex((row) => row && row.name === 'success_criteria_met');
-  if (existingIdx >= 0) checks[existingIdx] = { name: 'success_criteria_met', pass: criteriaPass };
-  else checks.push({ name: 'success_criteria_met', pass: criteriaPass });
-  const failedSet = new Set(
-    (Array.isArray(base.failed) ? base.failed : [])
-      .map((name) => String(name || '').trim())
-      .filter(Boolean)
-  );
-  if (criteriaPass) failedSet.delete('success_criteria_met');
-  else failedSet.add('success_criteria_met');
-  const failed = Array.from(failedSet);
-  const passed = failed.length === 0;
-  let outcome = String(base.outcome || '').trim();
-  if (!outcome) outcome = passed ? 'shipped' : 'no_change';
-  if (!criteriaPass && options.enforceNoChangeOnFailure === true && outcome === 'shipped') {
-    outcome = 'no_change';
-  }
-  const primaryFailure = !criteriaPass
-    ? (criteria.primary_failure || String(base.primary_failure || 'success_criteria_failed'))
-    : (base.primary_failure || null);
-  return {
-    ...base,
-    checks,
-    failed,
-    passed,
-    outcome,
-    primary_failure: primaryFailure,
-    success_criteria: criteria
-  };
-}
-
 function verifyExecutionReceipt(execRes, dod, outcomeRes, postconditions, successCriteria) {
   const decision = String(execRes && execRes.summary && execRes.summary.decision || '');
   const execCheckName = decision === 'ACTUATE'
@@ -4201,10 +4147,11 @@ function writeRun(dateStr, evt) {
 
 function writeReceipt(dateStr, receipt) {
   const filePath = path.join(RECEIPTS_DIR, `${dateStr}.jsonl`);
+  const normalized = normalizeAutonomyReceiptForWrite(receipt);
   const verified =
-    String(receipt && receipt.verdict || '').toLowerCase() === 'pass'
-    && !!(receipt && receipt.verification && receipt.verification.passed === true);
-  writeContractReceipt(filePath, receipt, { attempted: true, verified });
+    String(normalized && normalized.verdict || '').toLowerCase() === 'pass'
+    && !!(normalized && normalized.verification && normalized.verification.passed === true);
+  writeContractReceipt(filePath, normalized, { attempted: true, verified });
 }
 
 function effectiveTier1Policy(executionMode) {
@@ -7414,7 +7361,11 @@ function runCmd(dateStr, opts = {}) {
           score_only: true,
           route_tokens_est: routeTokensEst,
           repeats_14d: repeats14d,
-          errors_30d: errors30d
+          errors_30d: errors30d,
+          success_criteria_policy: {
+            required: criteriaPolicy.required === true,
+            min_count: Number(criteriaPolicy.min_count || 0)
+          }
         },
         execution: {
           preview: compactCmdResult(previewRes),
@@ -7877,7 +7828,11 @@ function runCmd(dateStr, opts = {}) {
         actuation: actuationSpec ? { kind: actuationSpec.kind } : null,
         route_tokens_est: routeTokensEst,
         repeats_14d: repeats14d,
-        errors_30d: errors30d
+        errors_30d: errors30d,
+        success_criteria_policy: {
+          required: preflightCriteriaPolicy.required === true,
+          min_count: Number(preflightCriteriaPolicy.min_count || 0)
+        }
       },
       execution: {
         preflight: compactCmdResult(preflight),
@@ -7975,7 +7930,11 @@ function runCmd(dateStr, opts = {}) {
           : null,
         route_tokens_est: routeTokensEst,
         repeats_14d: repeats14d,
-        errors_30d: errors30d
+        errors_30d: errors30d,
+        success_criteria_policy: {
+          required: acceptCriteriaPolicy.required === true,
+          min_count: Number(acceptCriteriaPolicy.min_count || 0)
+        }
       },
       execution: {
         preflight: compactCmdResult(preflight),
@@ -8196,7 +8155,11 @@ function runCmd(dateStr, opts = {}) {
         : null,
       route_tokens_est: routeTokensEst,
       repeats_14d: repeats14d,
-      errors_30d: errors30d
+      errors_30d: errors30d,
+      success_criteria_policy: {
+        required: criteriaPolicy.required === true,
+        min_count: Number(criteriaPolicy.min_count || 0)
+      }
     },
       execution: {
         preflight: compactCmdResult(preflight),

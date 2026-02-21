@@ -72,6 +72,24 @@ function main() {
     process.exit(integrity.status || 1);
   }
 
+  console.log('=== CI SUITE: adaptive_layer_guard (strict) ===');
+  const adaptiveGuard = runNode(['systems/sensory/adaptive_layer_guard.js', 'run', '--strict']);
+  printOutput('  ', adaptiveGuard.stdout);
+  printOutput('  ', adaptiveGuard.stderr);
+  if (!adaptiveGuard.ok) {
+    console.error(`adaptive_layer_guard failed (exit ${adaptiveGuard.status})`);
+    process.exit(adaptiveGuard.status || 1);
+  }
+
+  console.log('=== CI SUITE: adaptive_layer_boundary ===');
+  const adaptiveBoundary = runNode(['memory/tools/tests/adaptive_layer_boundary_guards.test.js']);
+  printOutput('  ', adaptiveBoundary.stdout);
+  printOutput('  ', adaptiveBoundary.stderr);
+  if (!adaptiveBoundary.ok) {
+    console.error(`adaptive_layer_boundary_guards failed (exit ${adaptiveBoundary.status})`);
+    process.exit(adaptiveBoundary.status || 1);
+  }
+
   const tests = listTests();
   let failed = 0;
   let passed = 0;
