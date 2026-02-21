@@ -17,6 +17,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { spawnSync } = require('child_process');
 const {
   loadActiveStrategy,
   strategyExecutionMode,
@@ -24,26 +25,40 @@ const {
 } = require('../../lib/strategy_resolver.js');
 const { summarizeForDate } = require('./receipt_summary.js');
 const { evaluateReadiness } = require('./strategy_readiness.js');
+const { evaluatePipelineSpcGate } = require('./pipeline_spc_gate.js');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
+const POLICY_ROOT_SCRIPT = path.join(REPO_ROOT, 'systems', 'security', 'policy_rootd.js');
 const MODE_AUDIT_LOG_PATH = process.env.AUTONOMY_STRATEGY_MODE_LOG
   ? path.resolve(process.env.AUTONOMY_STRATEGY_MODE_LOG)
   : path.join(REPO_ROOT, 'state', 'autonomy', 'strategy_mode_changes.jsonl');
+const MODE_GOVERNOR_STATE_PATH = process.env.AUTONOMY_STRATEGY_MODE_GOVERNOR_STATE
+  ? path.resolve(process.env.AUTONOMY_STRATEGY_MODE_GOVERNOR_STATE)
+  : path.join(REPO_ROOT, 'state', 'autonomy', 'strategy_mode_governor_state.json');
 const MODE_GOVERNOR_MIN_HOURS_BETWEEN_CHANGES = Number(process.env.AUTONOMY_MODE_GOVERNOR_MIN_HOURS_BETWEEN_CHANGES || 6);
 const MODE_GOVERNOR_PROMOTE_CANARY = String(process.env.AUTONOMY_MODE_GOVERNOR_PROMOTE_CANARY || '1') !== '0';
 const MODE_GOVERNOR_PROMOTE_EXECUTE = String(process.env.AUTONOMY_MODE_GOVERNOR_PROMOTE_EXECUTE || '0') === '1';
 const MODE_GOVERNOR_ALLOW_AUTO_ESCALATION = String(process.env.AUTONOMY_MODE_GOVERNOR_ALLOW_AUTO_ESCALATION || '0') === '1';
+const MODE_GOVERNOR_REQUIRE_POLICY_ROOT = String(process.env.AUTONOMY_MODE_GOVERNOR_REQUIRE_POLICY_ROOT || '1') !== '0';
 const MODE_GOVERNOR_DEMOTE_NOT_READY = String(process.env.AUTONOMY_MODE_GOVERNOR_DEMOTE_NOT_READY || '1') !== '0';
 const MODE_GOVERNOR_CANARY_MIN_ATTEMPTED = Number(process.env.AUTONOMY_MODE_GOVERNOR_CANARY_MIN_ATTEMPTED || 3);
 const MODE_GOVERNOR_CANARY_MIN_VERIFIED_RATE = Number(process.env.AUTONOMY_MODE_GOVERNOR_CANARY_MIN_VERIFIED_RATE || 0.75);
 const MODE_GOVERNOR_CANARY_MAX_FAIL_RATE = Number(process.env.AUTONOMY_MODE_GOVERNOR_CANARY_MAX_FAIL_RATE || 0.25);
 const MODE_GOVERNOR_CANARY_MIN_SHIPPED = Number(process.env.AUTONOMY_MODE_GOVERNOR_CANARY_MIN_SHIPPED || 1);
+const MODE_GOVERNOR_CANARY_MIN_SUCCESS_CRITERIA_RECEIPTS = Number(process.env.AUTONOMY_MODE_GOVERNOR_CANARY_MIN_SUCCESS_CRITERIA_RECEIPTS || 1);
 const MODE_GOVERNOR_CANARY_MIN_SUCCESS_CRITERIA_PASS_RATE = Number(process.env.AUTONOMY_MODE_GOVERNOR_CANARY_MIN_SUCCESS_CRITERIA_PASS_RATE || 0.6);
+const MODE_GOVERNOR_CANARY_MIN_PREVIEW_SUCCESS_CRITERIA_RECEIPTS = Number(process.env.AUTONOMY_MODE_GOVERNOR_CANARY_MIN_PREVIEW_SUCCESS_CRITERIA_RECEIPTS || 1);
 const MODE_GOVERNOR_CANARY_MIN_PREVIEW_SUCCESS_CRITERIA_PASS_RATE = Number(process.env.AUTONOMY_MODE_GOVERNOR_CANARY_MIN_PREVIEW_SUCCESS_CRITERIA_PASS_RATE || 0.55);
+const MODE_GOVERNOR_REQUIRE_SPC = String(process.env.AUTONOMY_MODE_GOVERNOR_REQUIRE_SPC || '1') !== '0';
+const MODE_GOVERNOR_SPC_BASELINE_DAYS = Number(process.env.AUTONOMY_MODE_GOVERNOR_SPC_BASELINE_DAYS || 21);
+const MODE_GOVERNOR_SPC_BASELINE_MIN_DAYS = Number(process.env.AUTONOMY_MODE_GOVERNOR_SPC_BASELINE_MIN_DAYS || 7);
+const MODE_GOVERNOR_SPC_SIGMA = Number(process.env.AUTONOMY_MODE_GOVERNOR_SPC_SIGMA || 3);
+const MODE_GOVERNOR_MIN_ESCALATE_STREAK = Number(process.env.AUTONOMY_MODE_GOVERNOR_MIN_ESCALATE_STREAK || 2);
+const MODE_GOVERNOR_MIN_DEMOTE_STREAK = Number(process.env.AUTONOMY_MODE_GOVERNOR_MIN_DEMOTE_STREAK || 1);
 
 function usage() {
   console.log('Usage:');
-  console.log('  node systems/autonomy/strategy_mode_governor.js run [YYYY-MM-DD] [--days=N] [--id=<strategy_id>] [--strict] [--dry-run]');
+  console.log('  node systems/autonomy/strategy_mode_governor.js run [YYYY-MM-DD] [--days=N] [--id=<strategy_id>] [--strict] [--dry-run] [--lease-token=<token>]');
   console.log('  node systems/autonomy/strategy_mode_governor.js status [YYYY-MM-DD] [--days=N] [--id=<strategy_id>] [--strict]');
   console.log('  node systems/autonomy/strategy_mode_governor.js --help');
 }
@@ -118,6 +133,33 @@ function readJsonl(filePath) {
   }
 }
 
+function loadGovernorState() {
+  const raw = readJsonSafe(MODE_GOVERNOR_STATE_PATH, {});
+  const byStrategy = raw && raw.by_strategy && typeof raw.by_strategy === 'object'
+    ? raw.by_strategy
+    : {};
+  return {
+    version: '1.0',
+    by_strategy: byStrategy
+  };
+}
+
+function saveGovernorState(state) {
+  const next = state && typeof state === 'object' ? state : { version: '1.0', by_strategy: {} };
+  writeJsonAtomic(MODE_GOVERNOR_STATE_PATH, next);
+}
+
+function strategyStreak(state, strategyId) {
+  const root = state && typeof state === 'object' ? state : {};
+  const by = root.by_strategy && typeof root.by_strategy === 'object' ? root.by_strategy : {};
+  const row = by[strategyId] && typeof by[strategyId] === 'object' ? by[strategyId] : {};
+  return {
+    escalate_ready_streak: Math.max(0, Number(row.escalate_ready_streak || 0)),
+    demote_not_ready_streak: Math.max(0, Number(row.demote_not_ready_streak || 0)),
+    last_eval_ts: row.last_eval_ts ? String(row.last_eval_ts) : null
+  };
+}
+
 function loadStrategy(args) {
   return loadActiveStrategy({
     allowMissing: false,
@@ -131,13 +173,22 @@ function governorPolicy() {
     min_hours_between_changes: Math.max(0, Number.isFinite(MODE_GOVERNOR_MIN_HOURS_BETWEEN_CHANGES) ? MODE_GOVERNOR_MIN_HOURS_BETWEEN_CHANGES : 0),
     promote_canary: MODE_GOVERNOR_PROMOTE_CANARY,
     promote_execute: MODE_GOVERNOR_PROMOTE_EXECUTE,
+    require_policy_root: MODE_GOVERNOR_REQUIRE_POLICY_ROOT,
     demote_not_ready: MODE_GOVERNOR_DEMOTE_NOT_READY,
     canary_min_attempted: Math.max(0, Number(MODE_GOVERNOR_CANARY_MIN_ATTEMPTED || 0)),
     canary_min_verified_rate: Math.max(0, Math.min(1, Number(MODE_GOVERNOR_CANARY_MIN_VERIFIED_RATE || 0))),
     canary_max_fail_rate: Math.max(0, Math.min(1, Number(MODE_GOVERNOR_CANARY_MAX_FAIL_RATE || 1))),
     canary_min_shipped: Math.max(0, Number(MODE_GOVERNOR_CANARY_MIN_SHIPPED || 0)),
+    canary_min_success_criteria_receipts: Math.max(0, Number(MODE_GOVERNOR_CANARY_MIN_SUCCESS_CRITERIA_RECEIPTS || 0)),
     canary_min_success_criteria_pass_rate: Math.max(0, Math.min(1, Number(MODE_GOVERNOR_CANARY_MIN_SUCCESS_CRITERIA_PASS_RATE || 0))),
-    canary_min_preview_success_criteria_pass_rate: Math.max(0, Math.min(1, Number(MODE_GOVERNOR_CANARY_MIN_PREVIEW_SUCCESS_CRITERIA_PASS_RATE || 0)))
+    canary_min_preview_success_criteria_receipts: Math.max(0, Number(MODE_GOVERNOR_CANARY_MIN_PREVIEW_SUCCESS_CRITERIA_RECEIPTS || 0)),
+    canary_min_preview_success_criteria_pass_rate: Math.max(0, Math.min(1, Number(MODE_GOVERNOR_CANARY_MIN_PREVIEW_SUCCESS_CRITERIA_PASS_RATE || 0))),
+    require_spc: MODE_GOVERNOR_REQUIRE_SPC,
+    spc_baseline_days: Math.max(3, Number(MODE_GOVERNOR_SPC_BASELINE_DAYS || 21)),
+    spc_baseline_min_days: Math.max(1, Number(MODE_GOVERNOR_SPC_BASELINE_MIN_DAYS || 7)),
+    spc_sigma: Math.max(0.1, Number(MODE_GOVERNOR_SPC_SIGMA || 3)),
+    min_escalate_streak: Math.max(1, Number(MODE_GOVERNOR_MIN_ESCALATE_STREAK || 1)),
+    min_demote_streak: Math.max(1, Number(MODE_GOVERNOR_MIN_DEMOTE_STREAK || 1))
   };
 }
 
@@ -209,22 +260,45 @@ function canaryMetrics(summary, policy) {
       target: `>=${policy.canary_min_shipped}`
     },
     {
+      name: 'success_criteria_receipts',
+      pass: criteriaReceipts >= policy.canary_min_success_criteria_receipts,
+      value: criteriaReceipts,
+      target: `>=${policy.canary_min_success_criteria_receipts}`
+    },
+    {
       name: 'success_criteria_pass_rate',
-      pass: criteriaReceipts <= 0 || criteriaPassRate >= policy.canary_min_success_criteria_pass_rate,
-      value: criteriaReceipts <= 0 ? null : Number(criteriaPassRate.toFixed(3)),
-      target: criteriaReceipts <= 0 ? 'n/a(no_data)' : `>=${policy.canary_min_success_criteria_pass_rate}`
+      pass: criteriaReceipts >= policy.canary_min_success_criteria_receipts
+        && criteriaPassRate >= policy.canary_min_success_criteria_pass_rate,
+      value: criteriaReceipts >= policy.canary_min_success_criteria_receipts
+        ? Number(criteriaPassRate.toFixed(3))
+        : null,
+      target: criteriaReceipts >= policy.canary_min_success_criteria_receipts
+        ? `>=${policy.canary_min_success_criteria_pass_rate}`
+        : `requires_receipts>=${policy.canary_min_success_criteria_receipts}`
+    },
+    {
+      name: 'preview_success_criteria_receipts',
+      pass: previewCriteriaReceipts >= policy.canary_min_preview_success_criteria_receipts,
+      value: previewCriteriaReceipts,
+      target: `>=${policy.canary_min_preview_success_criteria_receipts}`
     },
     {
       name: 'preview_success_criteria_pass_rate',
-      pass: previewCriteriaReceipts <= 0 || previewCriteriaPassRate >= policy.canary_min_preview_success_criteria_pass_rate,
-      value: previewCriteriaReceipts <= 0 ? null : Number(previewCriteriaPassRate.toFixed(3)),
-      target: previewCriteriaReceipts <= 0 ? 'n/a(no_preview_data)' : `>=${policy.canary_min_preview_success_criteria_pass_rate}`
+      pass: previewCriteriaReceipts >= policy.canary_min_preview_success_criteria_receipts
+        && previewCriteriaPassRate >= policy.canary_min_preview_success_criteria_pass_rate,
+      value: previewCriteriaReceipts >= policy.canary_min_preview_success_criteria_receipts
+        ? Number(previewCriteriaPassRate.toFixed(3))
+        : null,
+      target: previewCriteriaReceipts >= policy.canary_min_preview_success_criteria_receipts
+        ? `>=${policy.canary_min_preview_success_criteria_pass_rate}`
+        : `requires_preview_receipts>=${policy.canary_min_preview_success_criteria_receipts}`
     }
   ];
   const failed = checks.filter(c => c.pass !== true).map(c => c.name);
   return {
     ready_for_execute: failed.length === 0,
-    preview_ready_for_canary: previewCriteriaReceipts <= 0 || previewCriteriaPassRate >= policy.canary_min_preview_success_criteria_pass_rate,
+    preview_ready_for_canary: previewCriteriaReceipts >= policy.canary_min_preview_success_criteria_receipts
+      && previewCriteriaPassRate >= policy.canary_min_preview_success_criteria_pass_rate,
     failed_checks: failed,
     checks,
     metrics: {
@@ -233,10 +307,45 @@ function canaryMetrics(summary, policy) {
       fail_rate: Number(failRate.toFixed(3)),
       shipped,
       success_criteria_receipts: criteriaReceipts,
-      success_criteria_pass_rate: criteriaReceipts <= 0 ? null : Number(criteriaPassRate.toFixed(3)),
+      min_success_criteria_receipts: policy.canary_min_success_criteria_receipts,
+      success_criteria_pass_rate: criteriaReceipts >= policy.canary_min_success_criteria_receipts
+        ? Number(criteriaPassRate.toFixed(3))
+        : null,
       preview_success_criteria_receipts: previewCriteriaReceipts,
-      preview_success_criteria_pass_rate: previewCriteriaReceipts <= 0 ? null : Number(previewCriteriaPassRate.toFixed(3))
+      min_preview_success_criteria_receipts: policy.canary_min_preview_success_criteria_receipts,
+      preview_success_criteria_pass_rate: previewCriteriaReceipts >= policy.canary_min_preview_success_criteria_receipts
+        ? Number(previewCriteriaPassRate.toFixed(3))
+        : null
     }
+  };
+}
+
+function runPolicyRootAuthorize({ scope, target, leaseToken, approvalNote, source }) {
+  const args = [
+    POLICY_ROOT_SCRIPT,
+    'authorize',
+    `--scope=${String(scope || '').trim()}`,
+    `--target=${String(target || '').trim()}`,
+    `--approval-note=${String(approvalNote || '').trim()}`
+  ];
+  if (leaseToken) args.push(`--lease-token=${String(leaseToken).trim()}`);
+  if (source) args.push(`--source=${String(source).trim()}`);
+  const r = spawnSync('node', args, {
+    cwd: REPO_ROOT,
+    encoding: 'utf8'
+  });
+  const stdout = String(r.stdout || '').trim();
+  const stderr = String(r.stderr || '').trim();
+  let payload = null;
+  if (stdout) {
+    try { payload = JSON.parse(stdout); } catch {}
+  }
+  return {
+    ok: r.status === 0 && payload && payload.ok === true && payload.decision === 'ALLOW',
+    code: Number(r.status || 0),
+    payload,
+    stderr,
+    stdout
   };
 }
 
@@ -254,45 +363,76 @@ function isEscalation(fromMode, toMode) {
   return fromRank >= 0 && toRank >= 0 && toRank > fromRank;
 }
 
-function decideTransition(currentMode, readiness, canary, policy) {
+function spcAllowsEscalation(spc, policy) {
+  if (!policy || policy.require_spc !== true) return true;
+  return !!(spc && spc.pass === true && spc.hold_escalation !== true);
+}
+
+function computeStreakUpdate(currentMode, readiness, canary, policy, spc, prevStreak) {
   const mode = String(currentMode || '');
   const ready = !!(readiness && readiness.ready_for_execute === true);
+  const spcReady = spcAllowsEscalation(spc, policy);
+  const previewReady = !canary || canary.preview_ready_for_canary !== false;
+  const executeReady = !!(canary && canary.ready_for_execute === true);
+  const prev = prevStreak && typeof prevStreak === 'object' ? prevStreak : {};
+  let escalateReady = false;
+  if (mode === 'score_only') escalateReady = ready && previewReady && spcReady;
+  else if (mode === 'canary_execute') escalateReady = ready && executeReady && spcReady;
+  const demoteNotReady = !ready;
+  return {
+    escalate_ready_streak: escalateReady ? Math.max(0, Number(prev.escalate_ready_streak || 0)) + 1 : 0,
+    demote_not_ready_streak: demoteNotReady ? Math.max(0, Number(prev.demote_not_ready_streak || 0)) + 1 : 0,
+    last_eval_ts: nowIso()
+  };
+}
+
+function decideTransition(currentMode, readiness, canary, policy, spc, streak) {
+  const mode = String(currentMode || '');
+  const ready = !!(readiness && readiness.ready_for_execute === true);
+  const escalateStreak = Math.max(0, Number(streak && streak.escalate_ready_streak || 0));
+  const demoteStreak = Math.max(0, Number(streak && streak.demote_not_ready_streak || 0));
+  const escalateReady = escalateStreak >= Number(policy && policy.min_escalate_streak || 1);
+  const demoteReady = demoteStreak >= Number(policy && policy.min_demote_streak || 1);
   if (mode === 'score_only') {
     if (!policy.promote_canary) return null;
-    if (ready && canary && canary.preview_ready_for_canary !== false) {
+    if (ready && canary && canary.preview_ready_for_canary !== false && spcAllowsEscalation(spc, policy) && escalateReady) {
       return {
         to_mode: 'canary_execute',
         reason: 'readiness_pass_promote_canary',
-        cooldown_exempt: false
+        cooldown_exempt: false,
+        streaks: { escalate_ready_streak: escalateStreak, required: Number(policy && policy.min_escalate_streak || 1) }
       };
     }
     return null;
   }
 
   if (mode === 'canary_execute') {
-    if (policy.demote_not_ready && !ready) {
+    if (policy.demote_not_ready && !ready && demoteReady) {
       return {
         to_mode: 'score_only',
         reason: 'readiness_fail_demote_score_only',
-        cooldown_exempt: true
+        cooldown_exempt: true,
+        streaks: { demote_not_ready_streak: demoteStreak, required: Number(policy && policy.min_demote_streak || 1) }
       };
     }
-    if (policy.promote_execute && ready && canary && canary.ready_for_execute === true) {
+    if (policy.promote_execute && ready && canary && canary.ready_for_execute === true && spcAllowsEscalation(spc, policy) && escalateReady) {
       return {
         to_mode: 'execute',
         reason: 'canary_metrics_pass_promote_execute',
-        cooldown_exempt: false
+        cooldown_exempt: false,
+        streaks: { escalate_ready_streak: escalateStreak, required: Number(policy && policy.min_escalate_streak || 1) }
       };
     }
     return null;
   }
 
   if (mode === 'execute') {
-    if (policy.demote_not_ready && !ready) {
+    if (policy.demote_not_ready && !ready && demoteReady) {
       return {
         to_mode: 'canary_execute',
         reason: 'readiness_fail_demote_canary',
-        cooldown_exempt: true
+        cooldown_exempt: true,
+        streaks: { demote_not_ready_streak: demoteStreak, required: Number(policy && policy.min_demote_streak || 1) }
       };
     }
   }
@@ -309,22 +449,53 @@ function applyMode(strategy, toMode) {
   writeJsonAtomic(strategy.file, next);
 }
 
-function buildStatus(dateStr, days, strategy, policy) {
+function buildStatus(dateStr, days, strategy, policy, prevStreak) {
   const promotion = strategyPromotionPolicy(strategy, {});
   const windowDays = Math.max(Number(promotion.min_days || 7), clampInt(days, 1, 30, Number(promotion.min_days || 7)));
   const summary = summarizeForDate(dateStr, windowDays);
   const readiness = evaluateReadiness(strategy, summary, promotion, windowDays);
   const mode = strategyExecutionMode(strategy, 'execute');
   const canary = canaryMetrics(summary, policy);
+  const spc = policy.require_spc
+    ? evaluatePipelineSpcGate(dateStr, {
+      days: windowDays,
+      baseline_days: policy.spc_baseline_days,
+      baseline_min_days: policy.spc_baseline_min_days,
+      sigma: policy.spc_sigma
+    })
+    : null;
+  const nextStreak = computeStreakUpdate(mode, readiness, canary, policy, spc, prevStreak);
   const last = lastModeChangeEvent(strategy.id);
   const cooldown = cooldownState(last, policy.min_hours_between_changes);
-  const transition = decideTransition(mode, readiness, canary, policy);
+  const transition = decideTransition(mode, readiness, canary, policy, spc, nextStreak);
   const transitionBlockReason = (
     mode === 'score_only'
     && !!(readiness && readiness.ready_for_execute === true)
     && canary
     && canary.preview_ready_for_canary === false
-  ) ? 'preview_success_criteria_below_min' : null;
+  ) ? 'preview_success_criteria_below_min'
+    : (
+      ((mode === 'score_only' || mode === 'canary_execute')
+      && !!(readiness && readiness.ready_for_execute === true)
+      && canary
+      && ((mode !== 'score_only') || canary.preview_ready_for_canary !== false)
+      && policy.require_spc
+      && spc
+      && spc.hold_escalation === true)
+        ? 'spc_gate_failed'
+        : null
+    );
+  const streakBlockReason = !transition && (mode === 'score_only' || mode === 'canary_execute')
+    && Number(nextStreak.escalate_ready_streak || 0) > 0
+    && Number(nextStreak.escalate_ready_streak || 0) < Number(policy.min_escalate_streak || 1)
+      ? 'hysteresis_wait_escalate_streak'
+      : (
+        !transition && mode !== 'score_only'
+        && Number(nextStreak.demote_not_ready_streak || 0) > 0
+        && Number(nextStreak.demote_not_ready_streak || 0) < Number(policy.min_demote_streak || 1)
+          ? 'hysteresis_wait_demote_streak'
+          : null
+      );
   return {
     date: dateStr,
     days: windowDays,
@@ -333,6 +504,8 @@ function buildStatus(dateStr, days, strategy, policy) {
     summary,
     readiness,
     canary,
+    spc,
+    streak: nextStreak,
     current_mode: mode,
     last_mode_change: last ? {
       ts: String(last.ts || ''),
@@ -342,7 +515,7 @@ function buildStatus(dateStr, days, strategy, policy) {
     } : null,
     cooldown,
     transition,
-    transition_block_reason: transitionBlockReason
+    transition_block_reason: transitionBlockReason || streakBlockReason
   };
 }
 
@@ -350,7 +523,9 @@ function cmdStatus(args) {
   const dateStr = isDateStr(args._[1]) ? String(args._[1]) : todayStr();
   const strategy = loadStrategy(args);
   const policy = governorPolicy();
-  const status = buildStatus(dateStr, args.days, strategy, policy);
+  const state = loadGovernorState();
+  const prevStreak = strategyStreak(state, strategy.id);
+  const status = buildStatus(dateStr, args.days, strategy, policy, prevStreak);
   process.stdout.write(JSON.stringify({
     ok: true,
     ts: nowIso(),
@@ -363,6 +538,8 @@ function cmdStatus(args) {
     },
     readiness: status.readiness,
     canary: status.canary,
+    spc: status.spc,
+    streak: status.streak,
     policy: status.policy,
     cooldown: status.cooldown,
     transition: status.transition
@@ -372,9 +549,18 @@ function cmdStatus(args) {
 function cmdRun(args) {
   const dateStr = isDateStr(args._[1]) ? String(args._[1]) : todayStr();
   const dryRun = args['dry-run'] === true || args.dry_run === true;
+  const leaseToken = String(args['lease-token'] || args.lease_token || process.env.CAPABILITY_LEASE_TOKEN || '').trim();
   const strategy = loadStrategy(args);
   const policy = governorPolicy();
-  const status = buildStatus(dateStr, args.days, strategy, policy);
+  const state = loadGovernorState();
+  const prevStreak = strategyStreak(state, strategy.id);
+  const status = buildStatus(dateStr, args.days, strategy, policy, prevStreak);
+  state.by_strategy = state.by_strategy && typeof state.by_strategy === 'object' ? state.by_strategy : {};
+  state.by_strategy[strategy.id] = {
+    ...status.streak,
+    updated_at: nowIso()
+  };
+  saveGovernorState(state);
   const fromMode = status.current_mode;
   const transition = status.transition;
 
@@ -387,7 +573,9 @@ function cmdRun(args) {
       mode: fromMode,
       reason: status.transition_block_reason || 'no_transition_rule_triggered',
       readiness: status.readiness,
-      canary: status.canary
+      canary: status.canary,
+      spc: status.spc,
+      streak: status.streak
     }, null, 2) + '\n');
     return;
   }
@@ -402,7 +590,9 @@ function cmdRun(args) {
       from_mode: fromMode,
       to_mode: transition.to_mode,
       reason: transition.reason,
-      cooldown
+      cooldown,
+      spc: status.spc,
+      streak: status.streak
     }, null, 2) + '\n');
     return;
   }
@@ -417,7 +607,9 @@ function cmdRun(args) {
       to_mode: transition.to_mode,
       reason: transition.reason,
       readiness: status.readiness,
-      canary: status.canary
+      canary: status.canary,
+      spc: status.spc,
+      streak: status.streak
     }, null, 2) + '\n');
     return;
   }
@@ -434,7 +626,9 @@ function cmdRun(args) {
       required_command: `node systems/autonomy/strategy_mode.js set --mode=${transition.to_mode} --approval-note="<reason>" --approver-id=<id> --second-approver-id=<id> --second-approval-note="<reason>"`,
       governor_policy: policy,
       readiness: status.readiness,
-      canary: status.canary
+      canary: status.canary,
+      spc: status.spc,
+      streak: status.streak
     };
     appendJsonl(MODE_AUDIT_LOG_PATH, evt);
     process.stdout.write(JSON.stringify({
@@ -444,6 +638,42 @@ function cmdRun(args) {
       ...evt
     }, null, 2) + '\n');
     return;
+  }
+
+  if (isEscalation(fromMode, transition.to_mode) && MODE_GOVERNOR_REQUIRE_POLICY_ROOT) {
+    const pr = runPolicyRootAuthorize({
+      scope: 'strategy_mode_escalation',
+      target: strategy.id,
+      leaseToken,
+      approvalNote: `governor_auto_escalation ${fromMode}->${transition.to_mode}`,
+      source: 'strategy_mode_governor'
+    });
+    if (!pr.ok) {
+      const evt = {
+        ts: nowIso(),
+        type: 'strategy_mode_auto_blocked',
+        strategy_id: strategy.id,
+        file: path.relative(REPO_ROOT, strategy.file).replace(/\\/g, '/'),
+        from_mode: fromMode,
+        to_mode: transition.to_mode,
+        reason: 'policy_root_denied',
+        detail: pr.stderr || pr.stdout || `policy_root_exit_${pr.code}`,
+        policy_root: pr.payload || null,
+        governor_policy: policy,
+        readiness: status.readiness,
+        canary: status.canary,
+        spc: status.spc,
+        streak: status.streak
+      };
+      appendJsonl(MODE_AUDIT_LOG_PATH, evt);
+      process.stdout.write(JSON.stringify({
+        ok: true,
+        ts: nowIso(),
+        result: 'blocked_policy_root',
+        ...evt
+      }, null, 2) + '\n');
+      return;
+    }
   }
 
   applyMode(strategy, transition.to_mode);
@@ -458,9 +688,19 @@ function cmdRun(args) {
     cooldown_exempt: transition.cooldown_exempt === true,
     governor_policy: policy,
     readiness: status.readiness,
-    canary: status.canary
+    canary: status.canary,
+    spc: status.spc,
+    streak: status.streak
   };
   appendJsonl(MODE_AUDIT_LOG_PATH, evt);
+
+  state.by_strategy[strategy.id] = {
+    escalate_ready_streak: 0,
+    demote_not_ready_streak: 0,
+    last_eval_ts: nowIso(),
+    updated_at: nowIso()
+  };
+  saveGovernorState(state);
 
   process.stdout.write(JSON.stringify({
     ok: true,

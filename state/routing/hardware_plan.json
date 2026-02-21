@@ -34,7 +34,7 @@
     }
   ],
   "profile": {
-    "detected_at": "2026-02-21T05:24:20.856Z",
+    "detected_at": "2026-02-21T09:28:17.492Z",
     "source": "os",
     "platform": "darwin",
     "arch": "arm64",
@@ -57,5 +57,5 @@
     "ollama/smallthinker"
   ],
   "plan_hash": "770f0c1720fc69c5",
-  "updated_at": "2026-02-21T05:24:20.865Z"
+  "updated_at": "2026-02-21T09:28:17.503Z"
 }

@@ -28,7 +28,11 @@ const DIRECT_WRITE_PATTERNS = [
   /\bfs\.(?:writeFileSync|appendFileSync|renameSync|rmSync|unlinkSync)\s*\(\s*CATALOG_PATH\b/,
   /\bfs\.(?:writeFileSync|appendFileSync|renameSync|rmSync|unlinkSync)\s*\(\s*catalogPath\b/,
   /\bfs\.(?:writeFileSync|appendFileSync|renameSync|rmSync|unlinkSync)\s*\(\s*resolveCatalogPath\(/,
-  /\bsetCatalog\s*\([^)]*['"]adaptive\/sensory\/eyes\/catalog\.json['"]/
+  /\bsetCatalog\s*\([^)]*['"]adaptive\/sensory\/eyes\/catalog\.json['"]/,
+  /\bfs\.(?:writeFileSync|appendFileSync|renameSync|rmSync|unlinkSync|mkdirSync|rmdirSync)\s*\([^)]*adaptive\/strategy\/registry\.json/i,
+  /\bfs\.(?:writeFileSync|appendFileSync|renameSync|rmSync|unlinkSync|mkdirSync|rmdirSync)\s*\([^)]*adaptive\/strategy\//i,
+  /\bfs\.(?:writeFileSync|appendFileSync|renameSync|rmSync|unlinkSync)\s*\(\s*STORE_ABS_PATH\b/,
+  /\bfs\.(?:writeFileSync|appendFileSync|renameSync|rmSync|unlinkSync)\s*\(\s*DEFAULT_ABS_PATH\b/
 ];
 
 function usage() {
@@ -103,6 +107,7 @@ function loadPolicy(policyPath) {
     allow_paths: [
       'systems/adaptive/core/layer_store.js',
       'systems/adaptive/sensory/eyes/catalog_store.js',
+      'systems/adaptive/strategy/strategy_store.js',
       'lib/eyes_catalog.js'
     ]
   };

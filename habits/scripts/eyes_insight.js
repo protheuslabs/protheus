@@ -56,6 +56,7 @@ const SENSORY_DISALLOWED_PARSER_TYPES = new Set(
     .map(s => s.trim().toLowerCase())
     .filter(Boolean)
 );
+const DIRECTIVE_OBJECTIVE_ID_RE = /^T[0-9]_[A-Za-z0-9_]+$/;
 
 const FIT_STOPWORDS = new Set([
   'the', 'and', 'for', 'with', 'from', 'into', 'through', 'that', 'this', 'those', 'these', 'your', 'you',
@@ -324,6 +325,137 @@ function loadDirectiveFitProfile() {
     negative_phrases: negPhrasesNorm,
     positive_tokens: uniqSorted(Array.from(posTokenSet)),
     negative_tokens: uniqSorted(Array.from(negTokenSet))
+  };
+}
+
+function sanitizeDirectiveObjectiveId(v) {
+  const id = normalizeText(v);
+  if (!id) return '';
+  if (!DIRECTIVE_OBJECTIVE_ID_RE.test(id)) return '';
+  return id;
+}
+
+function activeDirectiveObjectiveIds(profile) {
+  const ids = Array.isArray(profile && profile.active_directive_ids)
+    ? profile.active_directive_ids
+    : [];
+  const out = [];
+  const seen = new Set();
+  for (const id of ids) {
+    const clean = sanitizeDirectiveObjectiveId(id);
+    if (!clean || seen.has(clean)) continue;
+    seen.add(clean);
+    out.push(clean);
+  }
+  out.sort();
+  return out;
+}
+
+function loadDirectiveObjectiveCatalog() {
+  let directives = [];
+  try {
+    directives = loadActiveDirectives({ allowMissing: true, allowWeakTier1: true });
+  } catch (_) {
+    return [];
+  }
+
+  const out = [];
+  const seen = new Set();
+  for (const d of directives) {
+    const data = d && d.data ? d.data : {};
+    const meta = data && data.metadata ? data.metadata : {};
+    const id = sanitizeDirectiveObjectiveId(d && d.id ? d.id : meta.id);
+    if (!id || seen.has(id)) continue;
+    if (/^T0[_-]/i.test(id) || /^T0$/i.test(id)) continue;
+    const tierRaw = Number(d && d.tier);
+    const metaTierRaw = Number(meta && meta.tier);
+    const tier = Number.isFinite(tierRaw) ? tierRaw : (Number.isFinite(metaTierRaw) ? metaTierRaw : 99);
+    if (Number.isFinite(tier) && tier < 1) continue;
+    const intent = data && data.intent ? data.intent : {};
+    const scope = data && data.scope ? data.scope : {};
+    const success = data && data.success_metrics ? data.success_metrics : {};
+    const objectiveText = [
+      ...asStringArray(meta.description),
+      ...asStringArray(intent.primary),
+      ...asStringArray(scope.included),
+      ...asStringArray(success.leading),
+      ...asStringArray(success.lagging)
+    ].join(' ');
+    const tokens = uniqSorted(tokenizeFitText(objectiveText));
+    out.push({ id, tier, tokens });
+    seen.add(id);
+  }
+
+  out.sort((a, b) => {
+    if (a.tier !== b.tier) return a.tier - b.tier;
+    return String(a.id || '').localeCompare(String(b.id || ''));
+  });
+  return out;
+}
+
+function resolveObjectiveBindingForItem(item, objectiveCatalog, fallbackObjectiveIds = []) {
+  const catalog = Array.isArray(objectiveCatalog) ? objectiveCatalog : [];
+  const fallbackIds = Array.isArray(fallbackObjectiveIds) ? fallbackObjectiveIds.map(sanitizeDirectiveObjectiveId).filter(Boolean) : [];
+  const activeIds = [];
+  const activeSeen = new Set();
+  for (const row of catalog) {
+    const id = sanitizeDirectiveObjectiveId(row && row.id);
+    if (!id || activeSeen.has(id)) continue;
+    activeSeen.add(id);
+    activeIds.push(id);
+  }
+  for (const id of fallbackIds) {
+    if (activeSeen.has(id)) continue;
+    activeSeen.add(id);
+    activeIds.push(id);
+  }
+  if (activeIds.length === 0) {
+    return {
+      objective_id: '',
+      directive_objective_id: '',
+      binding_source: 'none',
+      binding_score: 0,
+      matched_tokens: [],
+      active_objectives: []
+    };
+  }
+
+  const title = normalizeText(item && item.title);
+  const preview = normalizeText(item && item.content_preview);
+  const url = normalizeText(item && item.url);
+  const topics = Array.isArray(item && item.topics) ? item.topics.map((t) => normalizeText(t)).join(' ') : '';
+  const itemTokens = tokenizeFitText(`${title} ${preview} ${url} ${topics}`);
+
+  let best = null;
+  for (const row of catalog) {
+    const id = sanitizeDirectiveObjectiveId(row && row.id);
+    if (!id) continue;
+    const hits = tokenHits(itemTokens, Array.isArray(row && row.tokens) ? row.tokens : []);
+    const score = hits.length;
+    if (!best || score > best.score || (score === best.score && Number(row.tier || 99) < Number(best.tier || 99)) || (score === best.score && Number(row.tier || 99) === Number(best.tier || 99) && id.localeCompare(best.id) < 0)) {
+      best = { id, tier: Number(row && row.tier || 99), score, hits: uniqSorted(hits).slice(0, 5) };
+    }
+  }
+
+  if (!best || best.score <= 0) {
+    const fallbackId = activeIds[0];
+    return {
+      objective_id: fallbackId,
+      directive_objective_id: fallbackId,
+      binding_source: 'default_first_active_objective',
+      binding_score: 0,
+      matched_tokens: [],
+      active_objectives: activeIds.slice(0, 8)
+    };
+  }
+
+  return {
+    objective_id: best.id,
+    directive_objective_id: best.id,
+    binding_source: 'directive_token_overlap',
+    binding_score: best.score,
+    matched_tokens: best.hits,
+    active_objectives: activeIds.slice(0, 8)
   };
 }
 
@@ -653,7 +785,7 @@ function buildValidationPlan(item, analysis) {
   ];
 }
 
-function buildSuggestedNextCommand(item, analysis) {
+function buildSuggestedNextCommand(item, analysis, objectiveId) {
   const shape = proposalExecutionShape(item, analysis);
   const topics = shape.topics.length ? ` Focus topics: ${shape.topics.join(', ')}.` : '';
   const source = shape.url ? ` Source: ${shape.url}.` : '';
@@ -667,7 +799,9 @@ function buildSuggestedNextCommand(item, analysis) {
     task = `Build one concrete experiment from external signal: ${shape.title}. Define executable change, measurable metric, and rollback criteria.${topics}${source}`;
   }
   const trimmedTask = normalizeTaskText(task, 220);
-  return `node systems/routing/route_execute.js --task="${trimmedTask}" --tokens_est=${shape.tokensEst} --repeats_14d=3 --errors_30d=0 --dry-run`;
+  const cleanObjectiveId = sanitizeDirectiveObjectiveId(objectiveId);
+  const objectiveArg = cleanObjectiveId ? ` --id=${cleanObjectiveId}` : '';
+  return `node systems/routing/route_execute.js --task="${trimmedTask}" --tokens_est=${shape.tokensEst} --repeats_14d=3 --errors_30d=0 --dry-run${objectiveArg}`;
 }
 
 function buildSuccessCriteria(item, analysis) {
@@ -714,15 +848,16 @@ function buildSuccessCriteria(item, analysis) {
   ];
 }
 
-function buildActionSpec(item, analysis) {
+function buildActionSpec(item, analysis, objectiveBinding) {
   const shape = proposalExecutionShape(item, analysis);
+  const objectiveId = sanitizeDirectiveObjectiveId(objectiveBinding && objectiveBinding.objective_id);
   const verify = buildValidationPlan(item, analysis);
   const successCriteria = buildSuccessCriteria(item, analysis);
-  const nextCommand = buildSuggestedNextCommand(item, analysis);
+  const nextCommand = buildSuggestedNextCommand(item, analysis, objectiveId);
 
   if (shape.isInternalSignal) {
     const target = shape.signalKind || 'collector';
-    return {
+    const spec = {
       version: 1,
       objective: `Restore deterministic ${target} collector reliability with verifiable checks`,
       target: `collector:${target}`,
@@ -731,10 +866,12 @@ function buildActionSpec(item, analysis) {
       success_criteria: successCriteria,
       rollback: 'Revert scoped collector changes and restore last known stable behavior'
     };
+    if (objectiveId) spec.objective_id = objectiveId;
+    return spec;
   }
 
   if (shape.hasOpportunity) {
-    return {
+    const spec = {
       version: 1,
       objective: 'Convert detected opportunity signal into one executable revenue capture step',
       target: shape.url ? `opportunity:${shape.url}` : `opportunity:${shape.title}`,
@@ -743,9 +880,11 @@ function buildActionSpec(item, analysis) {
       success_criteria: successCriteria,
       rollback: 'Cancel opportunity execution plan and keep only observation artifacts'
     };
+    if (objectiveId) spec.objective_id = objectiveId;
+    return spec;
   }
 
-  return {
+  const spec = {
     version: 1,
     objective: 'Run one scoped experiment from external signal with measurable outcome',
     target: shape.url ? `signal:${shape.url}` : `signal:${shape.title}`,
@@ -754,9 +893,11 @@ function buildActionSpec(item, analysis) {
     success_criteria: successCriteria,
     rollback: 'Revert experiment changes and retain baseline behavior'
   };
+  if (objectiveId) spec.objective_id = objectiveId;
+  return spec;
 }
 
-function buildProposalFromItem(item, analysis, actionability) {
+function buildProposalFromItem(item, analysis, actionability, objectiveBinding) {
   // Prefer explicit eye_id from external_eyes raw events (stable attribution key)
   const eyeId = normalizeText(item.eye_id) || normalizeText(item.source) || 'unknown_eye';
   const url = normalizeText(item.url);
@@ -782,7 +923,11 @@ function buildProposalFromItem(item, analysis, actionability) {
 
   // Proposal ID is deterministic and stable across runs & minor content changes
   const id = `PRP-${h}`;
-  const actionSpec = buildActionSpec(item, analysis);
+  const objectiveId = sanitizeDirectiveObjectiveId(
+    (objectiveBinding && objectiveBinding.objective_id)
+    || (objectiveBinding && objectiveBinding.directive_objective_id)
+  );
+  const actionSpec = buildActionSpec(item, analysis, objectiveBinding);
 
   return {
     id,
@@ -829,6 +974,18 @@ function buildProposalFromItem(item, analysis, actionability) {
       actionability_score: Number.isFinite(actionabilityScore) ? actionabilityScore : null,
       actionability_pass: actionability ? actionability.pass === true : null,
       actionability_reasons: actionability ? actionability.reasons.slice(0, 5) : [],
+      objective_id: objectiveId || null,
+      directive_objective_id: objectiveId || null,
+      objective_binding_source: normalizeText(objectiveBinding && objectiveBinding.binding_source) || null,
+      objective_binding_score: Number.isFinite(Number(objectiveBinding && objectiveBinding.binding_score))
+        ? Number(objectiveBinding.binding_score)
+        : null,
+      objective_binding_tokens: Array.isArray(objectiveBinding && objectiveBinding.matched_tokens)
+        ? objectiveBinding.matched_tokens.slice(0, 5)
+        : [],
+      active_directive_objectives: Array.isArray(objectiveBinding && objectiveBinding.active_objectives)
+        ? objectiveBinding.active_objectives.slice(0, 8)
+        : [],
       action_spec_version: Number(actionSpec.version || 1),
       action_spec_target: normalizeText(actionSpec.target),
       preview: preview.slice(0, 200),
@@ -890,7 +1047,7 @@ function assessCrossSignalActionability(hypothesis, directiveFitPass) {
   return { pass, score: finalScore, reasons };
 }
 
-function buildCrossSignalProposal(hypothesis, dateStr, directiveFit, actionability) {
+function buildCrossSignalProposal(hypothesis, dateStr, directiveFit, actionability, objectiveBinding) {
   const id = `CSG-${sha16(`${normalizeText(hypothesis && hypothesis.id)}|${dateStr}`)}`;
   const summary = normalizeText(hypothesis && hypothesis.summary) || 'Cross-signal hypothesis';
   const confidence = Number(hypothesis && hypothesis.confidence || 0);
@@ -898,11 +1055,16 @@ function buildCrossSignalProposal(hypothesis, dateStr, directiveFit, actionabili
   const supportEvents = Number(hypothesis && hypothesis.support_events || 0);
   const topic = normalizeText(hypothesis && hypothesis.topic);
   const type = normalizeText(hypothesis && hypothesis.type) || 'cross_signal';
+  const objectiveId = sanitizeDirectiveObjectiveId(
+    (objectiveBinding && objectiveBinding.objective_id)
+    || (objectiveBinding && objectiveBinding.directive_objective_id)
+  );
   const task = normalizeTaskText(
     `Evaluate cross-signal hypothesis "${summary}". Determine one concrete experiment with measurable success criteria and rollback plan.`,
     220
   );
-  const suggestedNextCommand = `node systems/routing/route_execute.js --task="${task}" --tokens_est=900 --repeats_14d=2 --errors_30d=0 --dry-run`;
+  const objectiveArg = objectiveId ? ` --id=${objectiveId}` : '';
+  const suggestedNextCommand = `node systems/routing/route_execute.js --task="${task}" --tokens_est=900 --repeats_14d=2 --errors_30d=0 --dry-run${objectiveArg}`;
   const actionSpec = {
     version: 1,
     objective: 'Validate cross-signal hypothesis via one executable experiment',
@@ -927,6 +1089,7 @@ function buildCrossSignalProposal(hypothesis, dateStr, directiveFit, actionabili
     ],
     rollback: 'Cancel hypothesis execution plan and preserve prior strategy baseline'
   };
+  if (objectiveId) actionSpec.objective_id = objectiveId;
 
   return {
     id,
@@ -963,6 +1126,18 @@ function buildCrossSignalProposal(hypothesis, dateStr, directiveFit, actionabili
       actionability_score: Number(actionability && actionability.score || 0),
       actionability_pass: actionability && actionability.pass === true,
       actionability_reasons: actionability ? actionability.reasons.slice(0, 5) : [],
+      objective_id: objectiveId || null,
+      directive_objective_id: objectiveId || null,
+      objective_binding_source: normalizeText(objectiveBinding && objectiveBinding.binding_source) || null,
+      objective_binding_score: Number.isFinite(Number(objectiveBinding && objectiveBinding.binding_score))
+        ? Number(objectiveBinding.binding_score)
+        : null,
+      objective_binding_tokens: Array.isArray(objectiveBinding && objectiveBinding.matched_tokens)
+        ? objectiveBinding.matched_tokens.slice(0, 5)
+        : [],
+      active_directive_objectives: Array.isArray(objectiveBinding && objectiveBinding.active_objectives)
+        ? objectiveBinding.active_objectives.slice(0, 8)
+        : [],
       action_spec_version: Number(actionSpec.version || 1),
       action_spec_target: normalizeText(actionSpec.target)
     }
@@ -973,6 +1148,8 @@ function generateCrossSignalProposals(dateStr, maxCount = SENSORY_CROSS_SIGNAL_M
   const loaded = loadCrossSignalHypotheses(dateStr);
   const hypotheses = Array.isArray(loaded.hypotheses) ? loaded.hypotheses : [];
   const directiveProfile = loadDirectiveFitProfile();
+  const directiveObjectiveCatalog = loadDirectiveObjectiveCatalog();
+  const fallbackObjectiveIds = activeDirectiveObjectiveIds(directiveProfile);
   const accepted = [];
   const rejectedReasonCounts = {};
 
@@ -980,6 +1157,7 @@ function generateCrossSignalProposals(dateStr, maxCount = SENSORY_CROSS_SIGNAL_M
     if (!h || typeof h !== 'object') continue;
     const item = makeCrossSignalItem(h, dateStr);
     const directiveFit = assessDirectiveFitItem(item, directiveProfile);
+    const objectiveBinding = resolveObjectiveBindingForItem(item, directiveObjectiveCatalog, fallbackObjectiveIds);
     const actionability = assessCrossSignalActionability(h, directiveFit.pass === true);
     if (!(directiveFit.pass === true && actionability.pass === true)) {
       const reasons = [...(directiveFit.reasons || []), ...(actionability.reasons || [])];
@@ -993,7 +1171,7 @@ function generateCrossSignalProposals(dateStr, maxCount = SENSORY_CROSS_SIGNAL_M
       hypothesis: h,
       directiveFit,
       actionability,
-      proposal: buildCrossSignalProposal(h, dateStr, directiveFit, actionability)
+      proposal: buildCrossSignalProposal(h, dateStr, directiveFit, actionability, objectiveBinding)
     });
   }
 
@@ -1037,6 +1215,12 @@ function hydrateExisting(existingProposal, incomingProposal) {
     'actionability_score',
     'actionability_pass',
     'actionability_reasons',
+    'objective_id',
+    'directive_objective_id',
+    'objective_binding_source',
+    'objective_binding_score',
+    'objective_binding_tokens',
+    'active_directive_objectives',
     'action_spec_version',
     'action_spec_target'
   ];
@@ -1106,6 +1290,8 @@ function generateEyeProposals(dateStr, maxCount = 5) {
   const rawPath = path.join(EYES_RAW_DIR, `${dateStr}.jsonl`);
   const events = readJsonlSafe(rawPath);
   const directiveProfile = loadDirectiveFitProfile();
+  const directiveObjectiveCatalog = loadDirectiveObjectiveCatalog();
+  const fallbackObjectiveIds = activeDirectiveObjectiveIds(directiveProfile);
   const eyesMap = loadEyesMap();
 
   const items = events
@@ -1118,7 +1304,8 @@ function generateEyeProposals(dateStr, maxCount = 5) {
     const eye = eyesMap.get(eyeId) || null;
     const analysis = assessItemRelevance(item, eye, directiveProfile);
     const actionability = assessItemActionability(item, analysis);
-    return { item, eyeId, analysis, actionability };
+    const objectiveBinding = resolveObjectiveBindingForItem(item, directiveObjectiveCatalog, fallbackObjectiveIds);
+    return { item, eyeId, analysis, actionability, objectiveBinding };
   });
 
   // Deduplicate by URL hash to avoid spamming same link
@@ -1168,7 +1355,7 @@ function generateEyeProposals(dateStr, maxCount = 5) {
       rejectedReasonCounts[key] = (rejectedReasonCounts[key] || 0) + 1;
     }
   }
-  const proposals = accepted.slice(0, maxCount).map(x => buildProposalFromItem(x.item, x.analysis, x.actionability));
+  const proposals = accepted.slice(0, maxCount).map(x => buildProposalFromItem(x.item, x.analysis, x.actionability, x.objectiveBinding));
   return {
     rawPath,
     proposals,

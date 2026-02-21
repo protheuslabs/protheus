@@ -15,6 +15,7 @@
   "allow_paths": [
     "systems/adaptive/core/layer_store.js",
     "systems/adaptive/sensory/eyes/catalog_store.js",
+    "systems/adaptive/strategy/strategy_store.js",
     "lib/eyes_catalog.js"
   ]
 }

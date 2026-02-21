@@ -22,17 +22,38 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const { loadActiveStrategy, strategyExecutionMode } = require('../../lib/strategy_resolver.js');
+const { evaluatePipelineSpcGate } = require('./pipeline_spc_gate.js');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const READINESS_SCRIPT = path.join(REPO_ROOT, 'systems', 'autonomy', 'strategy_readiness.js');
+const POLICY_ROOT_SCRIPT = path.join(REPO_ROOT, 'systems', 'security', 'policy_rootd.js');
 const AUDIT_LOG_PATH = process.env.AUTONOMY_STRATEGY_MODE_LOG
   ? path.resolve(process.env.AUTONOMY_STRATEGY_MODE_LOG)
   : path.join(REPO_ROOT, 'state', 'autonomy', 'strategy_mode_changes.jsonl');
 const REQUIRE_DUAL_APPROVER_FOR_EXECUTE = String(process.env.AUTONOMY_REQUIRE_DUAL_APPROVER_FOR_EXECUTE || '1') !== '0';
 const MODE_CHANGE_MIN_HOURS = Number(process.env.AUTONOMY_STRATEGY_MODE_MIN_HOURS_BETWEEN_CHANGES || 6);
+const STRATEGY_MODE_REQUIRE_POLICY_ROOT = String(process.env.AUTONOMY_STRATEGY_MODE_REQUIRE_POLICY_ROOT || '1') !== '0';
+const STRATEGY_MODE_REQUIRE_SPC = String(process.env.AUTONOMY_STRATEGY_MODE_REQUIRE_SPC || '1') !== '0';
+const STRATEGY_MODE_SPC_BASELINE_DAYS = Number(process.env.AUTONOMY_STRATEGY_MODE_SPC_BASELINE_DAYS || 21);
+const STRATEGY_MODE_SPC_BASELINE_MIN_DAYS = Number(process.env.AUTONOMY_STRATEGY_MODE_SPC_BASELINE_MIN_DAYS || 7);
+const STRATEGY_MODE_SPC_SIGMA = Number(process.env.AUTONOMY_STRATEGY_MODE_SPC_SIGMA || 3);
 
 function isExecuteMode(mode) {
   return mode === 'execute' || mode === 'canary_execute';
+}
+
+function modeRank(mode) {
+  const m = String(mode || '');
+  if (m === 'score_only') return 0;
+  if (m === 'canary_execute') return 1;
+  if (m === 'execute') return 2;
+  return -1;
+}
+
+function isEscalation(fromMode, toMode) {
+  const fromRank = modeRank(fromMode);
+  const toRank = modeRank(toMode);
+  return fromRank >= 0 && toRank >= 0 && toRank > fromRank;
 }
 
 function usage() {
@@ -41,7 +62,7 @@ function usage() {
   console.log('  node systems/autonomy/strategy_mode.js recommend [YYYY-MM-DD] [--days=N] [--id=<strategy_id>] [--strict]');
   console.log('  node systems/autonomy/strategy_mode.js set --mode=score_only|canary_execute|execute [--id=<strategy_id>] --approval-note="..."');
   console.log('    [--approver-id=<id> --second-approver-id=<id> --second-approval-note="..."]');
-  console.log('    [--date=YYYY-MM-DD] [--days=N] [--strict] [--force=1]');
+  console.log('    [--date=YYYY-MM-DD] [--days=N] [--strict] [--force=1] [--lease-token=<token>]');
   console.log('  node systems/autonomy/strategy_mode.js --help');
 }
 
@@ -124,6 +145,35 @@ function runReadiness({ date, days, id, strict }) {
     code: r.status || 0,
     payload,
     stderr: String(r.stderr || '').trim(),
+    stdout
+  };
+}
+
+function runPolicyRootAuthorize({ scope, target, leaseToken, approvalNote, source }) {
+  const args = [
+    POLICY_ROOT_SCRIPT,
+    'authorize',
+    `--scope=${String(scope || '').trim()}`,
+    `--target=${String(target || '').trim()}`,
+    `--approval-note=${String(approvalNote || '').trim()}`
+  ];
+  if (leaseToken) args.push(`--lease-token=${String(leaseToken).trim()}`);
+  if (source) args.push(`--source=${String(source).trim()}`);
+  const r = spawnSync('node', args, {
+    cwd: REPO_ROOT,
+    encoding: 'utf8'
+  });
+  const stdout = String(r.stdout || '').trim();
+  const stderr = String(r.stderr || '').trim();
+  let payload = null;
+  if (stdout) {
+    try { payload = JSON.parse(stdout); } catch {}
+  }
+  return {
+    ok: r.status === 0 && payload && payload.ok === true && payload.decision === 'ALLOW',
+    code: Number(r.status || 0),
+    payload,
+    stderr,
     stdout
   };
 }
@@ -251,10 +301,14 @@ function cmdSet(args) {
   const date = isDateStr(args.date) ? String(args.date) : todayStr();
   const days = args.days != null ? Number(args.days) : undefined;
   const changeReason = String(args.reason || '').trim().slice(0, 180);
+  const leaseToken = String(args['lease-token'] || args.lease_token || process.env.CAPABILITY_LEASE_TOKEN || '').trim();
   let readiness = null;
+  let spc = null;
+  let policyRoot = null;
   const approverId = String(args['approver-id'] || args.approver_id || '').trim();
   const secondApproverId = String(args['second-approver-id'] || args.second_approver_id || '').trim();
   const secondApprovalNote = String(args['second-approval-note'] || args.second_approval_note || '').trim();
+  const escalation = isEscalation(priorMode, mode);
 
   if (isExecuteMode(mode) && REQUIRE_DUAL_APPROVER_FOR_EXECUTE) {
     if (!approverId || !secondApproverId) {
@@ -321,6 +375,27 @@ function cmdSet(args) {
     }
   }
 
+  if (escalation && STRATEGY_MODE_REQUIRE_POLICY_ROOT) {
+    const pr = runPolicyRootAuthorize({
+      scope: 'strategy_mode_escalation',
+      target: strategy.id,
+      leaseToken,
+      approvalNote,
+      source: 'strategy_mode_set'
+    });
+    policyRoot = pr.payload || null;
+    if (!pr.ok) {
+      process.stdout.write(JSON.stringify({
+        ok: false,
+        ts: nowIso(),
+        error: 'policy_root_denied',
+        detail: pr.stderr || pr.stdout || `policy_root_exit_${pr.code}`,
+        policy_root: pr.payload || null
+      }) + '\n');
+      process.exit(1);
+    }
+  }
+
   if (isExecuteMode(mode) && !force) {
 
     const rep = runReadiness({
@@ -348,6 +423,23 @@ function cmdSet(args) {
       }) + '\n');
       process.exit(1);
     }
+    if (STRATEGY_MODE_REQUIRE_SPC) {
+      spc = evaluatePipelineSpcGate(date, {
+        days: Number.isFinite(Number(days)) && Number(days) > 0 ? Number(days) : Number((readiness.summary_window && readiness.summary_window.days) || 7),
+        baseline_days: STRATEGY_MODE_SPC_BASELINE_DAYS,
+        baseline_min_days: STRATEGY_MODE_SPC_BASELINE_MIN_DAYS,
+        sigma: STRATEGY_MODE_SPC_SIGMA
+      });
+      if (!spc || spc.pass !== true || spc.hold_escalation === true) {
+        process.stdout.write(JSON.stringify({
+          ok: false,
+          ts: nowIso(),
+          error: 'spc_gate_failed',
+          spc
+        }) + '\n');
+        process.exit(1);
+      }
+    }
   }
 
   const raw = readJsonSafe(strategy.file, {});
@@ -372,7 +464,9 @@ function cmdSet(args) {
     second_approver_id: secondApproverId || null,
     second_approval_note: secondApprovalNote ? secondApprovalNote.slice(0, 240) : null,
     dual_approval_required: REQUIRE_DUAL_APPROVER_FOR_EXECUTE,
-    readiness: readiness && readiness.readiness ? readiness.readiness : null
+    readiness: readiness && readiness.readiness ? readiness.readiness : null,
+    spc,
+    policy_root: policyRoot
   };
   appendJsonl(AUDIT_LOG_PATH, evt);
 

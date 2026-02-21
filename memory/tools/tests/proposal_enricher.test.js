@@ -116,6 +116,17 @@ function run() {
         suggested_next_command: 'node systems/routing/route_execute.js --task="Improve automation growth reliability with deterministic checks" --dry-run'
       },
       {
+        id: 'PMISSING',
+        type: 'collector_remediation',
+        title: '[Collector] Restore parser coverage after repeated fetch errors',
+        expected_impact: 'medium',
+        risk: 'low',
+        evidence: [{ evidence_ref: 'eye:local_state_fallback', match: 'collector failed repeatedly' }],
+        validation: ['Implement deterministic collector fix', 'Record proposal outcome'],
+        meta: objectiveId ? { directive_objective_id: objectiveId } : undefined,
+        suggested_next_command: 'node systems/routing/route_execute.js --task=\"Restore parser coverage with deterministic collector diagnostics\" --dry-run'
+      },
+      {
         id: 'PHIGH',
         type: 'external_intel',
         title: 'High risk discretionary action',
@@ -131,17 +142,19 @@ function run() {
     const script = require('../../../systems/autonomy/proposal_enricher.js');
     const out = script.runForDate(date, false);
     assert.strictEqual(out.ok, true, 'runForDate should return ok');
-    assert.strictEqual(out.total, 2, 'should process all proposals');
+    assert.strictEqual(out.total, 3, 'should process all proposals');
     assert.ok(Number(out.changed) >= 1, 'should enrich at least one proposal');
     assert.ok(out.admission && typeof out.admission === 'object', 'should return admission summary');
+    assert.ok(out.objective_binding && typeof out.objective_binding === 'object', 'should return objective binding summary');
 
     const enriched = readJson(proposalsPath);
     assert.ok(Array.isArray(enriched), 'output file should remain array');
-    assert.strictEqual(enriched.length, 2, 'proposal count should be preserved');
+    assert.strictEqual(enriched.length, 3, 'proposal count should be preserved');
 
     const low = enriched.find(p => p.id === 'PLOW');
+    const missing = enriched.find(p => p.id === 'PMISSING');
     const high = enriched.find(p => p.id === 'PHIGH');
-    assert.ok(low && high, 'both proposals should exist');
+    assert.ok(low && missing && high, 'all proposals should exist');
 
     assert.ok(typeof low.summary === 'string' && low.summary.length > 20, 'normalizer should add summary');
     assert.ok(typeof low.notes === 'string' && low.notes.length > 20, 'normalizer should add notes');
@@ -158,6 +171,12 @@ function run() {
     assert.ok(low.meta && Number.isFinite(Number(low.meta.composite_eligibility_score)), 'low proposal has composite score');
     assert.ok(Array.isArray(low.meta.directive_fit_positive) && low.meta.directive_fit_positive.length >= 1, 'normalizer should produce directive-fit positives');
     assert.ok(low.meta && low.meta.admission_preview && low.meta.admission_preview.eligible === true, 'low-risk OPEN proposal should be eligible');
+    assert.ok(missing.meta && missing.meta.admission_preview && missing.meta.admission_preview.eligible === false, 'missing success criteria should be blocked');
+    assert.ok(
+      Array.isArray(missing.meta.admission_preview.blocked_by)
+        && missing.meta.admission_preview.blocked_by.includes('success_criteria_missing'),
+      'missing success criteria should include success_criteria_missing blocker'
+    );
     assert.ok(
       !objectiveId || (low.meta && low.meta.objective_binding_required === true),
       'executable proposal should require objective binding when objectives exist'
@@ -181,6 +200,10 @@ function run() {
       out.admission.blocked_by_reason && Number(out.admission.blocked_by_reason.risk_not_allowed || 0) >= 1,
       'summary should aggregate blocked_by_reason'
     );
+    assert.ok(Number(out.objective_binding.required || 0) >= 1, 'summary should report objective binding required count');
+    assert.strictEqual(Number(out.objective_binding.missing_required || 0), 0, 'summary should report zero missing required objective bindings');
+    assert.strictEqual(Number(out.objective_binding.invalid_required || 0), 0, 'summary should report zero invalid required objective bindings');
+    assert.ok(Number(out.objective_binding.source_meta_required || 0) >= 1, 'summary should report meta-sourced required objective bindings');
 
     banner('✅ PROPOSAL ENRICHER TESTS PASS');
   } finally {

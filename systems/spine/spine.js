@@ -137,6 +137,330 @@ function modelCatalogPendingCount() {
   return pending;
 }
 
+function previousDateStr(dateStr) {
+  const d = new Date(`${String(dateStr || "").slice(0, 10)}T00:00:00.000Z`);
+  if (Number.isNaN(d.getTime())) return null;
+  d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
+function budgetEventsPath() {
+  return path.join(repoRoot(), "state", "autonomy", "budget_events.jsonl");
+}
+
+function topModuleFromBudgetEvents(dateStr) {
+  const rows = readJsonl(budgetEventsPath());
+  const sums = new Map();
+  for (const row of rows) {
+    if (!row || row.type !== "system_budget_record") continue;
+    if (String(row.date || "") !== String(dateStr || "")) continue;
+    const moduleName = String(row.module || "").trim() || "unknown";
+    const tokens = Number(row.tokens_est || 0);
+    if (!Number.isFinite(tokens) || tokens <= 0) continue;
+    sums.set(moduleName, Number(sums.get(moduleName) || 0) + tokens);
+  }
+  let best = null;
+  for (const [name, used] of sums.entries()) {
+    if (!best || used > best.used_est) best = { module: name, used_est: used };
+  }
+  return best;
+}
+
+function parseBudgetStatusPayload(payload) {
+  if (!payload || typeof payload !== "object") return null;
+  const state = payload.state && typeof payload.state === "object" ? payload.state : null;
+  const projection = payload.projection && typeof payload.projection === "object" ? payload.projection : {};
+  if (!state) return null;
+  const cap = Number(state.token_cap || 0);
+  const used = Number(state.used_est || 0);
+  const ratio = Number.isFinite(cap) && cap > 0 && Number.isFinite(used)
+    ? Number((used / cap).toFixed(4))
+    : null;
+  const byModule = state.by_module && typeof state.by_module === "object" ? state.by_module : {};
+  let topModule = null;
+  for (const [name, ent] of Object.entries(byModule)) {
+    const usedEst = Number(ent && ent.used_est || 0);
+    if (!Number.isFinite(usedEst) || usedEst < 0) continue;
+    if (!topModule || usedEst > topModule.used_est) {
+      topModule = { module: String(name || "unknown"), used_est: usedEst };
+    }
+  }
+  return {
+    token_cap: Number.isFinite(cap) ? cap : null,
+    used_est: Number.isFinite(used) ? used : null,
+    ratio,
+    pressure: String(projection.pressure || "none"),
+    projected_pressure: String(projection.projected_pressure || projection.pressure || "none"),
+    strategy_id: state.strategy_id ? String(state.strategy_id) : null,
+    top_module: topModule
+  };
+}
+
+function budgetHealthSummary(dateStr) {
+  const current = runJson("node", ["systems/budget/system_budget.js", "status", dateStr]);
+  const currentParsed = parseBudgetStatusPayload(current.payload);
+  if (!current.ok || !currentParsed) {
+    return {
+      ok: false,
+      reason: String(current.stderr || current.stdout || `system_budget_status_exit_${current.code}`).slice(0, 160)
+    };
+  }
+
+  const prevDay = previousDateStr(dateStr);
+  let prevPressure = null;
+  if (prevDay) {
+    const prev = runJson("node", ["systems/budget/system_budget.js", "status", prevDay]);
+    const prevParsed = parseBudgetStatusPayload(prev.payload);
+    if (prev.ok && prevParsed) prevPressure = prevParsed.pressure;
+  }
+
+  let topModule = currentParsed.top_module;
+  let topModuleSource = "daily_state";
+  if (!topModule || Number(topModule.used_est || 0) <= 0) {
+    const fromEvents = topModuleFromBudgetEvents(dateStr);
+    if (fromEvents) {
+      topModule = fromEvents;
+      topModuleSource = "budget_events";
+    } else {
+      topModuleSource = "none";
+    }
+  }
+
+  const currentPressure = String(currentParsed.pressure || "none");
+  return {
+    ok: true,
+    token_cap: currentParsed.token_cap,
+    used_est: currentParsed.used_est,
+    ratio: currentParsed.ratio,
+    burn_pct: currentParsed.ratio == null ? null : Number((Number(currentParsed.ratio) * 100).toFixed(2)),
+    pressure: currentPressure,
+    projected_pressure: currentParsed.projected_pressure,
+    previous_pressure: prevPressure,
+    pressure_transition: prevPressure == null ? null : `${String(prevPressure)}->${currentPressure}`,
+    strategy_id: currentParsed.strategy_id,
+    top_module: topModule ? topModule.module : null,
+    top_module_used_est: topModule ? Number(topModule.used_est || 0) : null,
+    top_module_source: topModuleSource
+  };
+}
+
+function budgetGuardStatePath() {
+  return path.join(repoRoot(), "state", "spine", "budget_guard_state.json");
+}
+
+function readBudgetGuardState() {
+  try {
+    const fp = budgetGuardStatePath();
+    if (!fs.existsSync(fp)) {
+      return {
+        consecutive_hard: 0,
+        soft_run_counter: 0,
+        paused_until_ms: 0,
+        paused_until: null,
+        last_pressure: null,
+        last_action: null,
+        last_reason: null,
+        last_updated: null
+      };
+    }
+    const raw = JSON.parse(fs.readFileSync(fp, "utf8"));
+    if (!raw || typeof raw !== "object") throw new Error("invalid_state");
+    return {
+      consecutive_hard: Number.isFinite(Number(raw.consecutive_hard)) ? Math.max(0, Math.floor(Number(raw.consecutive_hard))) : 0,
+      soft_run_counter: Number.isFinite(Number(raw.soft_run_counter)) ? Math.max(0, Math.floor(Number(raw.soft_run_counter))) : 0,
+      paused_until_ms: Number.isFinite(Number(raw.paused_until_ms)) ? Math.max(0, Number(raw.paused_until_ms)) : 0,
+      paused_until: raw.paused_until ? String(raw.paused_until) : null,
+      last_pressure: raw.last_pressure ? String(raw.last_pressure) : null,
+      last_action: raw.last_action ? String(raw.last_action) : null,
+      last_reason: raw.last_reason ? String(raw.last_reason) : null,
+      last_updated: raw.last_updated ? String(raw.last_updated) : null
+    };
+  } catch {
+    return {
+      consecutive_hard: 0,
+      soft_run_counter: 0,
+      paused_until_ms: 0,
+      paused_until: null,
+      last_pressure: null,
+      last_action: null,
+      last_reason: null,
+      last_updated: null
+    };
+  }
+}
+
+function writeBudgetGuardState(state) {
+  try {
+    const fp = budgetGuardStatePath();
+    fs.mkdirSync(path.dirname(fp), { recursive: true });
+    fs.writeFileSync(fp, JSON.stringify(state, null, 2));
+  } catch {
+    // fail-open: budget guard should never crash spine
+  }
+}
+
+function budgetGuardSuggestionPath(dateStr) {
+  const dir = path.join(repoRoot(), "state", "autonomy", "budget_guard_suggestions");
+  fs.mkdirSync(dir, { recursive: true });
+  return path.join(dir, `${dateStr}.json`);
+}
+
+function writeBudgetGuardSuggestion(dateStr, suggestion) {
+  try {
+    const fp = budgetGuardSuggestionPath(dateStr);
+    let raw = [];
+    if (fs.existsSync(fp)) {
+      try {
+        raw = JSON.parse(fs.readFileSync(fp, "utf8"));
+      } catch {
+        raw = [];
+      }
+    }
+    const rows = Array.isArray(raw) ? raw : [];
+    if (!rows.some((x) => x && String(x.id || "") === String(suggestion.id || ""))) {
+      rows.push(suggestion);
+    }
+    fs.writeFileSync(fp, JSON.stringify(rows, null, 2));
+    return fp;
+  } catch {
+    return null;
+  }
+}
+
+function evaluateBudgetGuard(dateStr, budgetHealth) {
+  if (!budgetHealth || budgetHealth.ok !== true) {
+    return {
+      enabled: true,
+      ok: false,
+      action: "allow",
+      reason: "budget_health_unavailable",
+      pressure: "none",
+      projected_pressure: "none",
+      suggestion_written: false,
+      suggestion_path: null
+    };
+  }
+
+  const hardRepeatThresholdRaw = Number(process.env.SPINE_BUDGET_GUARD_HARD_REPEAT_THRESHOLD || 2);
+  const hardRepeatThreshold = Number.isFinite(hardRepeatThresholdRaw)
+    ? Math.max(1, Math.min(10, Math.round(hardRepeatThresholdRaw)))
+    : 2;
+  const hardPauseMinutesRaw = Number(process.env.SPINE_BUDGET_GUARD_HARD_PAUSE_MINUTES || 360);
+  const hardPauseMinutes = Number.isFinite(hardPauseMinutesRaw)
+    ? Math.max(15, Math.min(24 * 60, Math.round(hardPauseMinutesRaw)))
+    : 360;
+  const softEveryRunsRaw = Number(process.env.SPINE_BUDGET_GUARD_SOFT_THROTTLE_EVERY_RUNS || 2);
+  const softEveryRuns = Number.isFinite(softEveryRunsRaw)
+    ? Math.max(2, Math.min(10, Math.round(softEveryRunsRaw)))
+    : 2;
+
+  const nowMs = Date.now();
+  const pressure = String(budgetHealth.pressure || "none");
+  const projectedPressure = String(budgetHealth.projected_pressure || pressure || "none");
+  const state = readBudgetGuardState();
+
+  let consecutiveHard = pressure === "hard"
+    ? Number(state.consecutive_hard || 0) + 1
+    : 0;
+  let softRunCounter = pressure === "soft"
+    ? Number(state.soft_run_counter || 0) + 1
+    : 0;
+  let pausedUntilMs = Number(state.paused_until_ms || 0);
+
+  let action = "allow";
+  let reason = "no_pressure";
+  const pauseActive = Number.isFinite(pausedUntilMs) && pausedUntilMs > nowMs;
+
+  if (pressure === "hard" && consecutiveHard >= hardRepeatThreshold) {
+    pausedUntilMs = Math.max(pausedUntilMs, nowMs + (hardPauseMinutes * 60 * 1000));
+    action = "pause";
+    reason = "repeated_hard_pressure";
+  } else if (pauseActive) {
+    action = "pause";
+    reason = "hard_pause_cooldown_active";
+  } else if (pressure === "soft") {
+    const cycleIdx = (softRunCounter - 1) % softEveryRuns;
+    if (cycleIdx === 0) {
+      action = "allow";
+      reason = "soft_pressure_allow_window";
+    } else {
+      action = "throttle";
+      reason = "soft_pressure_throttle_window";
+    }
+  } else if (pressure === "hard") {
+    action = "allow";
+    reason = "hard_pressure_below_repeat_threshold";
+  }
+
+  const pausedUntilIso = pausedUntilMs > nowMs ? new Date(pausedUntilMs).toISOString() : null;
+  const nextState = {
+    consecutive_hard: consecutiveHard,
+    soft_run_counter: softRunCounter,
+    paused_until_ms: pausedUntilMs > nowMs ? pausedUntilMs : 0,
+    paused_until: pausedUntilIso,
+    last_pressure: pressure,
+    last_action: action,
+    last_reason: reason,
+    last_updated: nowIso()
+  };
+  writeBudgetGuardState(nextState);
+
+  let suggestionPath = null;
+  let suggestionWritten = false;
+  if (action === "pause" || action === "throttle") {
+    const hash = crypto.createHash("sha1")
+      .update(`${dateStr}|${pressure}|${action}|${reason}|${Number(budgetHealth.token_cap || 0)}|${Number(budgetHealth.used_est || 0)}`)
+      .digest("hex")
+      .slice(0, 16);
+    const suggestion = {
+      id: `BGS-${hash}`,
+      date: dateStr,
+      ts: nowIso(),
+      type: "strategy_budget_adjustment_suggestion",
+      source: "spine_budget_guard",
+      status: "proposed",
+      pressure,
+      projected_pressure: projectedPressure,
+      action,
+      reason,
+      token_cap: Number(budgetHealth.token_cap || 0),
+      used_est: Number(budgetHealth.used_est || 0),
+      burn_pct: budgetHealth.burn_pct == null ? null : Number(budgetHealth.burn_pct),
+      top_module: budgetHealth.top_module || null,
+      suggested_adjustments: action === "pause"
+        ? [
+            "Temporarily reduce strategy budget_policy.daily_token_cap by 10-20% for the next cycle.",
+            "Increase local-first routing pressure controls under hard budget states before cloud fallback.",
+            "Reduce autonomous execution frequency until pressure returns to soft/none."
+          ]
+        : [
+            "Reduce autonomous execution frequency while budget pressure remains soft.",
+            "Tighten per-action token estimates for non-critical runs to preserve headroom.",
+            "Prioritize lower-cost route classes for repetitive low-risk work until pressure clears."
+          ]
+    };
+    suggestionPath = writeBudgetGuardSuggestion(dateStr, suggestion);
+    suggestionWritten = !!suggestionPath;
+  }
+
+  return {
+    enabled: true,
+    ok: true,
+    action,
+    reason,
+    pressure,
+    projected_pressure: projectedPressure,
+    hard_repeat_threshold: hardRepeatThreshold,
+    hard_pause_minutes: hardPauseMinutes,
+    soft_throttle_every_runs: softEveryRuns,
+    consecutive_hard: consecutiveHard,
+    soft_run_counter: softRunCounter,
+    paused_until: pausedUntilIso,
+    suggestion_written: suggestionWritten,
+    suggestion_path: suggestionPath
+  };
+}
+
 function routingCacheSummary() {
   const rep = runJson("node", [
     "systems/routing/model_router.js",
@@ -399,6 +723,8 @@ function main() {
   const maxEyes = arg("max-eyes");
   let signalGateOk = null;
   let signalSloOk = null;
+  let budgetHealth = null;
+  let budgetGuard = null;
 
   // spine is infra: default clearance 3 if not explicitly set
   if (!process.env.CLEARANCE) process.env.CLEARANCE = "3";
@@ -460,6 +786,7 @@ function main() {
     "systems/routing/route_task.js",
     "systems/routing/model_router.js",
     "systems/routing/router_budget_calibration.js",
+    "systems/budget/system_budget.js",
     "habits/scripts/queue_gc.js",
     "habits/scripts/proposal_queue.js",
     "config/security_integrity_policy.json"
@@ -490,6 +817,32 @@ function main() {
       process.exit(skillInstallEnforcer.code || 1);
     }
     console.log(` skill_install_enforcer ok violations=${Number(enforcerPayload.violation_count || 0)}`);
+
+    const llmGatewayGuard = runJson("node", ["systems/security/llm_gateway_guard.js", "run", "--strict"]);
+    const llmGatewayPayload = llmGatewayGuard.payload && typeof llmGatewayGuard.payload === "object"
+      ? llmGatewayGuard.payload
+      : null;
+    appendLedger(dateStr, {
+      ts: nowIso(),
+      type: "spine_llm_gateway_guard",
+      mode,
+      date: dateStr,
+      ok: llmGatewayGuard.ok && !!llmGatewayPayload && llmGatewayPayload.ok === true,
+      checked_files: llmGatewayPayload ? Number(llmGatewayPayload.checked_files || 0) : null,
+      violation_count: llmGatewayPayload ? Number(llmGatewayPayload.violation_count || 0) : null,
+      violation_counts: llmGatewayPayload ? llmGatewayPayload.violation_counts || {} : {},
+      reason: (!llmGatewayGuard.ok || !llmGatewayPayload)
+        ? String(llmGatewayGuard.stderr || llmGatewayGuard.stdout || `llm_gateway_guard_exit_${llmGatewayGuard.code}`).slice(0, 180)
+        : null
+    });
+    if (!llmGatewayGuard.ok || !llmGatewayPayload || llmGatewayPayload.ok !== true) {
+      console.error(` llm_gateway_guard FAIL violations=${llmGatewayPayload ? Number(llmGatewayPayload.violation_count || 0) : "unknown"}`);
+      process.exit(llmGatewayGuard.code || 1);
+    }
+    console.log(
+      ` llm_gateway_guard ok checked=${Number(llmGatewayPayload.checked_files || 0)}` +
+      ` violations=${Number(llmGatewayPayload.violation_count || 0)}`
+    );
 
     const integrityPolicy = String(process.env.SPINE_INTEGRITY_POLICY || "config/security_integrity_policy.json").trim();
     const integrityStrict = String(process.env.SPINE_INTEGRITY_STRICT || "1") !== "0";
@@ -705,7 +1058,21 @@ function main() {
     const admission = enrichPayload.admission && typeof enrichPayload.admission === "object"
       ? enrichPayload.admission
       : { total: 0, eligible: 0, blocked: 0, blocked_by_reason: {} };
+    const objectiveBinding = enrichPayload.objective_binding && typeof enrichPayload.objective_binding === "object"
+      ? enrichPayload.objective_binding
+      : {
+          total: 0,
+          required: 0,
+          valid_required: 0,
+          missing_required: 0,
+          invalid_required: 0,
+          source_meta_required: 0,
+          source_fallback_required: 0,
+          source_counts: {}
+        };
     const topBlockedReason = Object.entries(admission.blocked_by_reason || {})
+      .sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0))[0] || null;
+    const topBindingSource = Object.entries(objectiveBinding.source_counts || {})
       .sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0))[0] || null;
     appendLedger(dateStr, {
       ts: nowIso(),
@@ -719,8 +1086,41 @@ function main() {
       blocked_by_reason: admission.blocked_by_reason || {},
       top_blocked_reason: topBlockedReason ? { reason: topBlockedReason[0], count: Number(topBlockedReason[1] || 0) } : null
     });
+    appendLedger(dateStr, {
+      ts: nowIso(),
+      type: "spine_objective_binding",
+      mode,
+      date: dateStr,
+      required: Number(objectiveBinding.required || 0),
+      valid_required: Number(objectiveBinding.valid_required || 0),
+      missing_required: Number(objectiveBinding.missing_required || 0),
+      invalid_required: Number(objectiveBinding.invalid_required || 0),
+      source_meta_required: Number(objectiveBinding.source_meta_required || 0),
+      source_fallback_required: Number(objectiveBinding.source_fallback_required || 0),
+      top_source: topBindingSource ? { source: topBindingSource[0], count: Number(topBindingSource[1] || 0) } : null,
+      ok: Number(objectiveBinding.missing_required || 0) === 0 && Number(objectiveBinding.invalid_required || 0) === 0
+    });
     const topBlockedMsg = topBlockedReason ? ` top_blocked=${topBlockedReason[0]}:${Number(topBlockedReason[1] || 0)}` : "";
     console.log(` proposal_admission eligible=${Number(admission.eligible || 0)}/${Number(admission.total || 0)} blocked=${Number(admission.blocked || 0)}${topBlockedMsg}`);
+    const requiredBindings = Number(objectiveBinding.required || 0);
+    const fallbackBindings = Number(objectiveBinding.source_fallback_required || 0);
+    const topSourceMsg = topBindingSource ? ` top_source=${topBindingSource[0]}:${Number(topBindingSource[1] || 0)}` : "";
+    console.log(
+      ` objective_binding valid=${Number(objectiveBinding.valid_required || 0)}/${requiredBindings}` +
+      ` missing=${Number(objectiveBinding.missing_required || 0)}` +
+      ` invalid=${Number(objectiveBinding.invalid_required || 0)}` +
+      ` fallback=${fallbackBindings}${topSourceMsg}`
+    );
+    if (
+      String(process.env.SPINE_OBJECTIVE_BINDING_REQUIRE_META_SOURCE || "0") === "1"
+      && requiredBindings > 0
+      && fallbackBindings > 0
+    ) {
+      console.error(
+        ` objective_binding FAIL reason=fallback_source_present required=${requiredBindings} fallback=${fallbackBindings}`
+      );
+      process.exit(1);
+    }
   } else {
     console.log(" signal_gate SKIP reason=no_real_external_items");
   }
@@ -790,7 +1190,68 @@ function main() {
   }
 
   if (mode === "daily") {
-    if (String(process.env.AUTONOMY_ENABLED || "") === "1") {
+    if (String(process.env.SPINE_BUDGET_GUARD_ENABLED || "1") !== "0") {
+      if (!budgetHealth) budgetHealth = budgetHealthSummary(dateStr);
+      budgetGuard = evaluateBudgetGuard(dateStr, budgetHealth);
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_budget_guard",
+        mode,
+        date: dateStr,
+        ok: budgetGuard.ok === true,
+        action: budgetGuard.action || "allow",
+        reason: budgetGuard.reason || null,
+        pressure: budgetGuard.pressure || null,
+        projected_pressure: budgetGuard.projected_pressure || null,
+        hard_repeat_threshold: Number(budgetGuard.hard_repeat_threshold || 0),
+        hard_pause_minutes: Number(budgetGuard.hard_pause_minutes || 0),
+        soft_throttle_every_runs: Number(budgetGuard.soft_throttle_every_runs || 0),
+        consecutive_hard: Number(budgetGuard.consecutive_hard || 0),
+        soft_run_counter: Number(budgetGuard.soft_run_counter || 0),
+        paused_until: budgetGuard.paused_until || null,
+        suggestion_written: budgetGuard.suggestion_written === true,
+        suggestion_path: budgetGuard.suggestion_path || null
+      });
+      console.log(
+        ` budget_guard action=${budgetGuard.action || "allow"}` +
+        ` reason=${budgetGuard.reason || "none"}` +
+        ` pressure=${budgetGuard.pressure || "none"}` +
+        ` projected=${budgetGuard.projected_pressure || "none"}`
+      );
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_budget_guard_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "SPINE_BUDGET_GUARD_ENABLED",
+        flag_value: String(process.env.SPINE_BUDGET_GUARD_ENABLED || "")
+      });
+      console.log(" budget_guard skipped reason=feature_flag_disabled flag=SPINE_BUDGET_GUARD_ENABLED");
+    }
+
+    const budgetGuardBlocksAutonomy = !!(budgetGuard && (budgetGuard.action === "throttle" || budgetGuard.action === "pause"));
+    if (String(process.env.AUTONOMY_ENABLED || "") === "1" && budgetGuardBlocksAutonomy) {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_autonomy_skipped",
+        mode,
+        date: dateStr,
+        reason: `budget_guard_${String(budgetGuard.action || "unknown")}`,
+        budget_guard_action: budgetGuard.action || null,
+        budget_guard_reason: budgetGuard.reason || null,
+        budget_pressure: budgetGuard.pressure || null,
+        budget_projected_pressure: budgetGuard.projected_pressure || null,
+        paused_until: budgetGuard.paused_until || null
+      });
+      console.log(
+        ` autonomy_skipped reason=budget_guard_${String(budgetGuard.action || "unknown")}` +
+        ` pressure=${String(budgetGuard.pressure || "none")}` +
+        ` projected=${String(budgetGuard.projected_pressure || "none")}` +
+        ` until=${String(budgetGuard.paused_until || "n/a")}`
+      );
+    } else if (String(process.env.AUTONOMY_ENABLED || "") === "1") {
       const scheduler = runJson("node", ["systems/autonomy/canary_scheduler.js", "run", dateStr]);
       const schedulerPayload = scheduler.payload && typeof scheduler.payload === "object"
         ? scheduler.payload
@@ -1401,6 +1862,53 @@ function main() {
         flag_value: String(process.env.SPINE_ROUTER_BUDGET_CALIBRATION || "")
       });
       console.log(" router_budget_calibration skipped reason=feature_flag_disabled flag=SPINE_ROUTER_BUDGET_CALIBRATION");
+    }
+
+    // 4b) system budget health summary (burn + pressure transition + top module spend).
+    if (String(process.env.SPINE_BUDGET_HEALTH_ENABLED || "1") !== "0") {
+      if (!budgetHealth) budgetHealth = budgetHealthSummary(dateStr);
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_budget_health",
+        mode,
+        date: dateStr,
+        ok: budgetHealth.ok === true,
+        token_cap: budgetHealth.token_cap,
+        used_est: budgetHealth.used_est,
+        ratio: budgetHealth.ratio,
+        burn_pct: budgetHealth.burn_pct,
+        pressure: budgetHealth.pressure || null,
+        projected_pressure: budgetHealth.projected_pressure || null,
+        previous_pressure: budgetHealth.previous_pressure || null,
+        pressure_transition: budgetHealth.pressure_transition || null,
+        strategy_id: budgetHealth.strategy_id || null,
+        top_module: budgetHealth.top_module || null,
+        top_module_used_est: budgetHealth.top_module_used_est,
+        top_module_source: budgetHealth.top_module_source || null,
+        reason: budgetHealth.ok === true ? null : String(budgetHealth.reason || "budget_health_unavailable").slice(0, 180)
+      });
+      if (budgetHealth.ok === true) {
+        console.log(
+          ` budget_health used=${Number(budgetHealth.used_est || 0)}/${Number(budgetHealth.token_cap || 0)}` +
+          ` burn=${budgetHealth.burn_pct == null ? "n/a" : `${budgetHealth.burn_pct}%`}` +
+          ` pressure=${budgetHealth.pressure || "none"}` +
+          ` transition=${budgetHealth.pressure_transition || "n/a"}` +
+          ` top_module=${budgetHealth.top_module || "none"}:${Number(budgetHealth.top_module_used_est || 0)}`
+        );
+      } else {
+        console.log(` budget_health unavailable reason=${String(budgetHealth.reason || "unknown").slice(0, 120)}`);
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_budget_health_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "SPINE_BUDGET_HEALTH_ENABLED",
+        flag_value: String(process.env.SPINE_BUDGET_HEALTH_ENABLED || "")
+      });
+      console.log(" budget_health skipped reason=feature_flag_disabled flag=SPINE_BUDGET_HEALTH_ENABLED");
     }
 
     // 5) optional external state backup (outside git workspace)

@@ -3,12 +3,12 @@
   "available": null,
   "skipped": true,
   "probe_blocked": true,
-  "latency_ms": 12,
+  "latency_ms": 14,
   "probe_timeout_ms": 20000,
   "max_latency_ms": 18000,
   "reason": "env_probe_blocked",
   "stderr": "Error: Head \"http://127.0.0.1:11434/\": dial tcp 127.0.0.1:11434: connect: operation not permitted",
-  "ts": "2026-02-21T05:24:20.910Z",
-  "checked_ms": 1771651460910,
+  "ts": "2026-02-21T09:28:17.646Z",
+  "checked_ms": 1771666097646,
   "runtime_scope": "sandbox"
 }

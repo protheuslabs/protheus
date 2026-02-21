@@ -1,8 +1,18 @@
 {
   "version": "1.0",
-  "updated_ts": "2026-02-21T05:24:18.655Z",
+  "updated_ts": "2026-02-21T09:28:15.798Z",
   "pointers": {
     "adaptive_sensory_eyes_focus_triggers-json|a6412z9ke35y7ildm5fl37iu|adaptive/sensory/eyes/focus_triggers.json|": "21f87db082902dbf",
-    "adaptive_eye|emlvt5o091dnf6brwbaosq59|adaptive/sensory/eyes/catalog.json|test_eye_1771647463840": "b52c8b0869f02940"
+    "adaptive_eye|emlvt5o091dnf6brwbaosq59|adaptive/sensory/eyes/catalog.json|test_eye_1771647463840": "b52c8b0869f02940",
+    "adaptive_eye|emlvwvn0k167hbvxct5k1i94|adaptive/sensory/eyes/catalog.json|test_eye_1771653714463": "19d7ab334e295f07",
+    "adaptive_eye|emlvwxwy810t2au1ml4tac0w|adaptive/sensory/eyes/catalog.json|test_eye_1771653820644": "16ec12e7841e3cd8",
+    "adaptive_eye|emlvxb1hw1hgxn49tlbqjzdr|adaptive/sensory/eyes/catalog.json|test_eye_1771654433068": "83fc233a914d4420",
+    "adaptive_eye|emlvxcpii16l1xrg5wouxa0r|adaptive/sensory/eyes/catalog.json|test_eye_1771654510846": "93c22af6c91d0de5",
+    "adaptive_eye|emlvxqasw12ncbxjl1szo24j|adaptive/sensory/eyes/catalog.json|test_eye_1771655144966": "b033cc82068212f2",
+    "adaptive_eye|emlvyd64gt8dr2szjzild64j|adaptive/sensory/eyes/catalog.json|test_eye_1771656211986": "91ec0d6db5ed47ae",
+    "adaptive_eye|emlvz4chb1hm6yuurfcqk7ez|adaptive/sensory/eyes/catalog.json|test_eye_1771657479944": "95cce65507456a7f",
+    "adaptive_eye|emlvz5em81kdd67zcpw2off6|adaptive/sensory/eyes/catalog.json|test_eye_1771657529359": "178dbafd367fc561",
+    "adaptive_strategy_registry-json|a63ncem8mqrjr64kzgeeg4tw|adaptive/strategy/registry.json|": "18a52944e24809f1",
+    "adaptive_strategy___strategy_controller_t|a4yc4cn1ksb3hy1224l5on8h|adaptive/strategy/__strategy_controller_test_registry.json|": "3b9802ad1a7f0b0f"
   }
 }

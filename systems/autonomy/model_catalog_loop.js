@@ -19,6 +19,7 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 const { beginChange, completeChange, recoverIfInterrupted, writeAtomicJson } = require('./self_change_failsafe');
 const { stampGuardEnv } = require('../../lib/request_envelope.js');
+const { listLocalOllamaModels } = require('../routing/llm_gateway.js');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const ROUTING_CONFIG = path.join(REPO_ROOT, 'config', 'agent_routing_rules.json');
@@ -88,15 +89,16 @@ function loadRoutingConfig() {
 }
 
 function localOllamaModels() {
-  const r = spawnSync('ollama', ['list'], { cwd: REPO_ROOT, encoding: 'utf8', timeout: 12000 });
-  if (r.status !== 0) return [];
-  const lines = String(r.stdout || '').split('\n').map(x => x.trim()).filter(Boolean);
-  const out = [];
-  for (let i = 1; i < lines.length; i++) {
-    const m = lines[i].split(/\s+/)[0];
-    if (!m || m.toLowerCase() === 'name') continue;
-    out.push(`ollama/${m}`);
-  }
+  const listed = listLocalOllamaModels({
+    timeoutMs: 12000,
+    cwd: REPO_ROOT,
+    source: 'model_catalog_loop'
+  });
+  if (!listed.ok) return [];
+  const out = (listed.models || [])
+    .map((m) => String(m || '').trim())
+    .filter(Boolean)
+    .map((m) => `ollama/${m}`);
   return Array.from(new Set(out));
 }
 

@@ -8,6 +8,7 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..', '..', '..');
 const EYES_INSIGHT_PATH = path.join(ROOT, 'habits', 'scripts', 'eyes_insight.js');
 const SENSORY_QUEUE_PATH = path.join(ROOT, 'habits', 'scripts', 'sensory_queue.js');
+const PROPOSAL_ENRICHER_PATH = path.join(ROOT, 'systems', 'autonomy', 'proposal_enricher.js');
 
 function writeJsonl(filePath, records) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
@@ -43,12 +44,34 @@ async function main() {
   process.env.SENSORY_QUEUE_TEST_DIR = tmpRoot;
   process.env.SENSORY_MIN_DIRECTIVE_FIT = '0';
   process.env.SENSORY_MIN_ACTIONABILITY_SCORE = '40';
+  process.env.PROPOSAL_ENRICHER_EYES_REGISTRY = path.join(sensoryDir, 'eyes', 'registry.json');
+  process.env.AUTONOMY_ALLOWED_RISKS = 'low,medium';
+  process.env.AUTONOMY_MIN_SENSORY_SIGNAL_SCORE = '35';
+  process.env.AUTONOMY_MIN_SENSORY_RELEVANCE_SCORE = '35';
+  process.env.AUTONOMY_MIN_DIRECTIVE_FIT = '20';
+  process.env.AUTONOMY_MIN_ACTIONABILITY_SCORE = '35';
+  process.env.AUTONOMY_MIN_COMPOSITE_ELIGIBILITY = '45';
 
   clearModule(EYES_INSIGHT_PATH);
   clearModule(SENSORY_QUEUE_PATH);
+  clearModule(PROPOSAL_ENRICHER_PATH);
 
   const eyesInsight = require(EYES_INSIGHT_PATH);
   const sensoryQueue = require(SENSORY_QUEUE_PATH);
+  const proposalEnricher = require(PROPOSAL_ENRICHER_PATH);
+
+  fs.mkdirSync(path.dirname(process.env.PROPOSAL_ENRICHER_EYES_REGISTRY), { recursive: true });
+  fs.writeFileSync(process.env.PROPOSAL_ENRICHER_EYES_REGISTRY, JSON.stringify({
+    version: '1.0',
+    eyes: [
+      {
+        id: 'hn_frontpage',
+        status: 'active',
+        parser_type: 'hn_rss',
+        score_ema: 78
+      }
+    ]
+  }, null, 2), 'utf8');
 
   const rawPath = path.join(sensoryDir, 'eyes', 'raw', `${date}.jsonl`);
   writeJsonl(rawPath, [
@@ -80,6 +103,26 @@ async function main() {
   assert.ok(first.meta && first.meta.actionability_pass === true);
   assert.ok(first.action_spec && typeof first.action_spec === 'object');
   assert.ok(typeof first.action_spec.next_command === 'string' && first.action_spec.next_command.length > 0);
+  assert.ok(typeof first.meta.directive_objective_id === 'string' && /^T[0-9]_/.test(first.meta.directive_objective_id), 'eyes_insight should bind directive objective');
+
+  const enrich = proposalEnricher.runForDate(date, false);
+  assert.strictEqual(enrich.ok, true, 'proposal_enricher should run successfully');
+  assert.ok(enrich.objective_binding && typeof enrich.objective_binding === 'object', 'proposal_enricher should report objective binding summary');
+  assert.strictEqual(Number(enrich.objective_binding.missing_required || 0), 0, 'objective binding summary missing_required should be zero');
+  assert.strictEqual(Number(enrich.objective_binding.invalid_required || 0), 0, 'objective binding summary invalid_required should be zero');
+  assert.ok(Number(enrich.objective_binding.source_meta_required || 0) >= 1, 'objective binding summary should report meta-sourced required bindings');
+
+  const enriched = readJson(proposalsPath);
+  const enrichedFirst = enriched.find((p) => String(p.id) === String(first.id));
+  assert.ok(enrichedFirst, 'enriched proposal should exist');
+  assert.ok(enrichedFirst.meta && enrichedFirst.meta.objective_binding_required === true, 'objective binding should be required');
+  assert.ok(enrichedFirst.meta && enrichedFirst.meta.objective_binding_valid === true, 'objective binding should be valid');
+  assert.strictEqual(String(enrichedFirst.meta.objective_binding_source || ''), 'meta.objective_id', 'objective binding should come from source meta, not fallback');
+  const blocked = Array.isArray(enrichedFirst.meta && enrichedFirst.meta.admission_preview && enrichedFirst.meta.admission_preview.blocked_by)
+    ? enrichedFirst.meta.admission_preview.blocked_by
+    : [];
+  assert.ok(!blocked.includes('objective_binding_missing'), 'admission should not fail objective binding missing');
+  assert.ok(!blocked.includes('objective_binding_invalid'), 'admission should not fail objective binding invalid');
 
   const ingested = sensoryQueue.ingest(date);
   assert.ok(Number(ingested.ingested || 0) >= 1, `expected queue ingest >=1, got ${JSON.stringify(ingested)}`);

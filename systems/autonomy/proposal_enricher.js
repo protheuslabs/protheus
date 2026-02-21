@@ -176,6 +176,18 @@ function uniq(arr) {
   return Array.from(new Set(arr));
 }
 
+function parseLowerList(value) {
+  if (Array.isArray(value)) {
+    return value
+      .map(v => String(v || '').trim().toLowerCase())
+      .filter(Boolean);
+  }
+  return String(value || '')
+    .split(',')
+    .map(v => String(v || '').trim().toLowerCase())
+    .filter(Boolean);
+}
+
 function tier(score) {
   const s = Number(score);
   if (!Number.isFinite(s)) return 'unknown';
@@ -562,7 +574,24 @@ function successCriteriaRequirement(outcomePolicy) {
     : {};
   const required = src.require_success_criteria !== false;
   const minCount = clamp(src.min_success_criteria_count, 0, 5, 1);
-  return { required, min_count: minCount };
+  const fromPolicy = parseLowerList(
+    src.success_criteria_exempt_types
+      || src.success_criteria_exempt_proposal_types
+      || src.exempt_success_criteria_types
+      || []
+  );
+  const fromEnv = parseLowerList(process.env.AUTONOMY_SUCCESS_CRITERIA_EXEMPT_TYPES || '');
+  const exemptTypes = uniq([...fromPolicy, ...fromEnv]);
+  return { required, min_count: minCount, exempt_types: exemptTypes };
+}
+
+function isSuccessCriteriaExemptProposal(type, criteriaPolicy) {
+  const proposalType = normalizeText(type).toLowerCase();
+  if (!proposalType) return false;
+  const exemptTypes = Array.isArray(criteriaPolicy && criteriaPolicy.exempt_types)
+    ? criteriaPolicy.exempt_types
+    : [];
+  return exemptTypes.includes(proposalType);
 }
 
 function inferArchetypeHints(text) {
@@ -779,6 +808,7 @@ function assessDirectiveFit(proposal, profile) {
 
 function assessActionability(proposal, directiveFitScore, relevanceScore, outcomePolicy) {
   const p = proposal || {};
+  const proposalType = normalizeText(p.type).toLowerCase();
   const risk = normalizedRisk(p.risk);
   const title = normalizeText(p.title).replace(/^\[[^\]]+\]\s*/g, '');
   const nextCmd = normalizeText(p.suggested_next_command);
@@ -801,6 +831,7 @@ function assessActionability(proposal, directiveFitScore, relevanceScore, outcom
   const measurableCriteriaCount = criteriaRows.filter((row) => row.measurable === true).length;
   const criteriaPolicy = successCriteriaRequirement(outcomePolicy);
   const isExecutableProposal = !!(nextCmd || (p.action_spec && typeof p.action_spec === 'object'));
+  const criteriaExempt = isExecutableProposal && isSuccessCriteriaExemptProposal(proposalType, criteriaPolicy);
 
   let score = 14;
   const reasons = [];
@@ -834,7 +865,7 @@ function assessActionability(proposal, directiveFitScore, relevanceScore, outcom
   score += clamp(Math.round((Number(directiveFitScore || 0) - 30) * 0.25), 0, 16);
   if (hasOpportunity) score += 10;
 
-  if (isExecutableProposal && criteriaPolicy.required) {
+  if (isExecutableProposal && criteriaPolicy.required && !criteriaExempt) {
     if (measurableCriteriaCount >= criteriaPolicy.min_count) {
       score += Math.min(14, 8 + (measurableCriteriaCount * 2));
     } else {
@@ -871,6 +902,8 @@ function assessActionability(proposal, directiveFitScore, relevanceScore, outcom
     reasons: uniq(reasons),
     success_criteria: {
       required: isExecutableProposal && criteriaPolicy.required,
+      requirement_applied: isExecutableProposal && criteriaPolicy.required && !criteriaExempt,
+      exempt_type: criteriaExempt,
       min_count: criteriaPolicy.min_count,
       measurable_count: measurableCriteriaCount,
       total_count: criteriaRows.length
@@ -903,10 +936,11 @@ function admission(meta, eye, risk, t, proposal, strategy, outcomePolicy) {
   const hasConcreteTarget = CONCRETE_TARGET_RE.test(blob);
   const isMetaCoordination = META_COORDINATION_RE.test(blob);
   const criteriaPolicy = successCriteriaRequirement(outcomePolicy);
+  const criteriaExempt = isSuccessCriteriaExemptProposal(type, criteriaPolicy);
   const criteriaRequired = criteriaPolicy.required && !!(
     normalizeText(proposal && proposal.suggested_next_command)
     || (proposal && proposal.action_spec && typeof proposal.action_spec === 'object')
-  );
+  ) && !criteriaExempt;
   if (criteriaRequired) {
     const measured = Number(meta && meta.success_criteria_measurable_count || 0);
     if (measured < criteriaPolicy.min_count) reasons.push('success_criteria_missing');
@@ -998,6 +1032,8 @@ function enrichOne(proposal, ctx) {
     actionability_pass: a.score >= t.min_actionability_score,
     actionability_reasons: a.reasons.slice(0, 6),
     success_criteria_required: a.success_criteria && a.success_criteria.required === true,
+    success_criteria_requirement_applied: a.success_criteria && a.success_criteria.requirement_applied === true,
+    success_criteria_exempt_type: a.success_criteria && a.success_criteria.exempt_type === true,
     success_criteria_min_count: a.success_criteria ? Number(a.success_criteria.min_count || 0) : 0,
     success_criteria_measurable_count: a.success_criteria ? Number(a.success_criteria.measurable_count || 0) : 0,
     success_criteria_total_count: a.success_criteria ? Number(a.success_criteria.total_count || 0) : 0,
@@ -1046,6 +1082,50 @@ function summarizeAdmissions(results) {
   };
 }
 
+function summarizeObjectiveBinding(results) {
+  const out = {
+    total: 0,
+    required: 0,
+    valid_required: 0,
+    missing_required: 0,
+    invalid_required: 0,
+    source_meta_required: 0,
+    source_fallback_required: 0,
+    source_counts: {}
+  };
+  const metaSources = new Set([
+    'meta.objective_id',
+    'meta.directive_objective_id',
+    'action_spec.objective_id',
+    'meta.action_spec.objective_id'
+  ]);
+  for (const row of results) {
+    const proposal = row && row.proposal && typeof row.proposal === 'object' ? row.proposal : {};
+    const meta = proposal.meta && typeof proposal.meta === 'object' ? proposal.meta : {};
+    out.total += 1;
+
+    const required = meta.objective_binding_required === true;
+    const source = normalizeText(meta.objective_binding_source);
+    if (source) out.source_counts[source] = Number(out.source_counts[source] || 0) + 1;
+    if (!required) continue;
+
+    out.required += 1;
+    const objectiveId = normalizeText(meta.objective_id || meta.directive_objective_id);
+    const valid = meta.objective_binding_valid !== false && !!objectiveId;
+    if (!objectiveId) out.missing_required += 1;
+    else if (!valid) out.invalid_required += 1;
+    else out.valid_required += 1;
+
+    if (source && metaSources.has(source)) out.source_meta_required += 1;
+    else out.source_fallback_required += 1;
+  }
+  out.source_counts = Object.fromEntries(
+    Object.entries(out.source_counts).sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0) || a[0].localeCompare(b[0]))
+  );
+  out.ok = out.missing_required === 0 && out.invalid_required === 0;
+  return out;
+}
+
 function parseDateOrToday(v) {
   return v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : todayStr();
 }
@@ -1087,6 +1167,7 @@ function runForDate(dateStr, dryRun = false) {
   }
 
   const admissionSummary = summarizeAdmissions(out);
+  const objectiveBindingSummary = summarizeObjectiveBinding(out);
   return {
     ok: true,
     result: dryRun ? 'dry_run' : 'enriched',
@@ -1112,7 +1193,8 @@ function runForDate(dateStr, dryRun = false) {
         }
       : null,
     thresholds: ctx.thresholds,
-    admission: admissionSummary
+    admission: admissionSummary,
+    objective_binding: objectiveBindingSummary
   };
 }
 
@@ -1138,5 +1220,6 @@ if (require.main === module) main();
 module.exports = {
   runForDate,
   enrichOne,
-  summarizeAdmissions
+  summarizeAdmissions,
+  summarizeObjectiveBinding
 };

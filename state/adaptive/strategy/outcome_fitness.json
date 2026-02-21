@@ -1,0 +1,88 @@
+{
+  "version": "1.0",
+  "ts": "2026-02-21T06:01:39.341Z",
+  "window": {
+    "end_date": "2026-02-21",
+    "start_date": "2026-02-08",
+    "days": 14,
+    "dates": [
+      "2026-02-08",
+      "2026-02-09",
+      "2026-02-10",
+      "2026-02-11",
+      "2026-02-12",
+      "2026-02-13",
+      "2026-02-14",
+      "2026-02-15",
+      "2026-02-16",
+      "2026-02-17",
+      "2026-02-18",
+      "2026-02-19",
+      "2026-02-20",
+      "2026-02-21"
+    ]
+  },
+  "metrics": {
+    "runs": {
+      "total_runs": 82,
+      "attempted": 77,
+      "executed": 10,
+      "shipped": 4,
+      "no_change": 6,
+      "reverted": 0,
+      "stopped": 40,
+      "shipped_rate": 0.4,
+      "no_change_rate": 0.6,
+      "reverted_rate": 0,
+      "stop_ratio": 0.5195
+    },
+    "receipts": {
+      "total": 31,
+      "attempted": 27,
+      "verified": 26,
+      "pass": 26,
+      "fail": 1,
+      "verification_passed": 26,
+      "outcome_shipped": 26,
+      "verified_rate": 0.963,
+      "pass_rate": 0.963,
+      "verification_pass_rate": 0.963,
+      "fail_rate": 0.037,
+      "receipt_shipped_rate": 0.963
+    },
+    "admission": {
+      "blocked_total": 14,
+      "blocked_by_reason": {
+        "actionability_low": 6,
+        "composite_low": 6,
+        "success_criteria_missing": 5,
+        "risk_not_allowed": 3
+      }
+    }
+  },
+  "realized_outcome_score": 71.34,
+  "strategy_policy": {
+    "strategy_id": "default_general",
+    "threshold_overrides": {
+      "min_directive_fit": 40,
+      "min_actionability_score": 44,
+      "min_composite_eligibility": 61
+    },
+    "ranking_weights_override": {
+      "composite": 0.35,
+      "actionability": 0.2,
+      "directive_fit": 0.16,
+      "signal_quality": 0.13,
+      "expected_value": 0.1,
+      "time_to_value": 0.02,
+      "risk_penalty": 0.04
+    }
+  },
+  "focus_policy": {
+    "min_focus_score_delta": 2
+  },
+  "proposal_filter_policy": {
+    "require_success_criteria": true,
+    "min_success_criteria_count": 1
+  }
+}

@@ -56,6 +56,8 @@ function run() {
       min_days: 1,
       min_attempted: 1,
       min_verified_rate: 0,
+      min_objective_coverage: 0,
+      max_objective_no_progress_rate: 1,
       max_reverted_rate: 1,
       max_stop_ratio: 1,
       min_shipped: 0

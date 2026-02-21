@@ -28,6 +28,7 @@ const { compactCommandOutput } = require('../../lib/command_output_compactor.js'
 const { loadOutcomeFitnessPolicy } = require('../../lib/outcome_fitness.js');
 const { evaluateSuccessCriteria } = require('../../lib/success_criteria_verifier.js');
 const { resolveCatalogPath } = require('../../lib/eyes_catalog.js');
+const { evaluatePipelineSpcGate } = require('./pipeline_spc_gate.js');
 const {
   loadActiveStrategy,
   applyThresholdOverrides,
@@ -46,6 +47,10 @@ const {
   classifyAndRecordException,
   summarizeExceptionMemory
 } = require('./tier1_governance.js');
+const {
+  loadSystemBudgetState,
+  saveSystemBudgetState
+} = require('../budget/system_budget.js');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const PROPOSALS_DIR = path.join(REPO_ROOT, 'state', 'sensory', 'proposals');
@@ -76,6 +81,9 @@ const MODEL_CATALOG_ROLLBACK_SCRIPT = process.env.AUTONOMY_MODEL_CATALOG_ROLLBAC
 const AUTONOMY_DIR = process.env.AUTONOMY_STATE_DIR
   ? path.resolve(process.env.AUTONOMY_STATE_DIR)
   : path.join(REPO_ROOT, 'state', 'autonomy');
+const AUTONOMY_RUN_LOCK_PATH = process.env.AUTONOMY_RUN_LOCK_PATH
+  ? path.resolve(process.env.AUTONOMY_RUN_LOCK_PATH)
+  : path.join(AUTONOMY_DIR, 'run.lock');
 const RUNS_DIR = process.env.AUTONOMY_RUNS_DIR
   ? path.resolve(process.env.AUTONOMY_RUNS_DIR)
   : path.join(AUTONOMY_DIR, 'runs');
@@ -180,6 +188,11 @@ const AUTONOMY_MODEL_CATALOG_CANARY_MAX_ROUTE_BLOCK_RATE = Number(process.env.AU
 const AUTONOMY_MODEL_CATALOG_CANARY_ROLLBACK_NOTE = String(process.env.AUTONOMY_MODEL_CATALOG_CANARY_ROLLBACK_NOTE || 'auto rollback: model catalog canary failed');
 const AUTONOMY_MODEL_CATALOG_CANARY_ROLLBACK_BREAK_GLASS = String(process.env.AUTONOMY_MODEL_CATALOG_CANARY_ROLLBACK_BREAK_GLASS || '0') === '1';
 const AUTONOMY_REQUIRE_READINESS_FOR_EXECUTE = String(process.env.AUTONOMY_REQUIRE_READINESS_FOR_EXECUTE || '1') !== '0';
+const AUTONOMY_REQUIRE_SPC_FOR_EXECUTE = String(process.env.AUTONOMY_REQUIRE_SPC_FOR_EXECUTE || '1') !== '0';
+const AUTONOMY_SPC_BASELINE_DAYS = Number(process.env.AUTONOMY_SPC_BASELINE_DAYS || 21);
+const AUTONOMY_SPC_BASELINE_MIN_DAYS = Number(process.env.AUTONOMY_SPC_BASELINE_MIN_DAYS || 7);
+const AUTONOMY_SPC_SIGMA = Number(process.env.AUTONOMY_SPC_SIGMA || 3);
+const AUTONOMY_RUN_LOCK_STALE_MINUTES = Number(process.env.AUTONOMY_RUN_LOCK_STALE_MINUTES || 90);
 const AUTONOMY_HARD_MAX_DAILY_RUNS_CAP = Number(process.env.AUTONOMY_HARD_MAX_DAILY_RUNS_CAP || 20);
 const AUTONOMY_HARD_MAX_DAILY_TOKEN_CAP = Number(process.env.AUTONOMY_HARD_MAX_DAILY_TOKEN_CAP || 12000);
 const AUTONOMY_HARD_MAX_TOKENS_PER_ACTION = Number(process.env.AUTONOMY_HARD_MAX_TOKENS_PER_ACTION || 4000);
@@ -840,6 +853,18 @@ function normalizeSpaces(s) {
   return String(s == null ? '' : s).replace(/\s+/g, ' ').trim();
 }
 
+function parseLowerList(value) {
+  if (Array.isArray(value)) {
+    return value
+      .map(v => String(v || '').trim().toLowerCase())
+      .filter(Boolean);
+  }
+  return String(value || '')
+    .split(',')
+    .map(v => String(v || '').trim().toLowerCase())
+    .filter(Boolean);
+}
+
 function proposalTextBlob(p) {
   const parts = [
     p && p.title,
@@ -961,8 +986,11 @@ function dailyBudgetPath(dateStr) {
 function loadDailyBudget(dateStr) {
   const caps = effectiveStrategyBudget();
   const defaultCap = Number.isFinite(Number(caps.daily_token_cap)) ? Number(caps.daily_token_cap) : DAILY_TOKEN_CAP;
-  const loaded = loadJson(dailyBudgetPath(dateStr), { date: dateStr, token_cap: defaultCap, used_est: 0 });
-  const out = loaded && typeof loaded === 'object' ? { ...loaded } : { date: dateStr, token_cap: defaultCap, used_est: 0 };
+  const out = loadSystemBudgetState(dateStr, {
+    state_dir: DAILY_BUDGET_DIR,
+    allow_strategy: false,
+    daily_token_cap: defaultCap
+  });
   out.date = String(out.date || dateStr);
   out.used_est = Number.isFinite(Number(out.used_est)) ? Number(out.used_est) : 0;
   out.token_cap = defaultCap;
@@ -970,7 +998,14 @@ function loadDailyBudget(dateStr) {
 }
 
 function saveDailyBudget(b) {
-  saveJson(dailyBudgetPath(b.date), b);
+  const dateStr = String((b && b.date) || nowIso().slice(0, 10));
+  saveSystemBudgetState({
+    ...(b && typeof b === 'object' ? b : {}),
+    date: dateStr
+  }, {
+    state_dir: DAILY_BUDGET_DIR,
+    allow_strategy: false
+  });
 }
 
 function runsPathFor(dateStr) {
@@ -2968,9 +3003,32 @@ function successCriteriaRequirement() {
   const src = policy && policy.proposal_filter_policy && typeof policy.proposal_filter_policy === 'object'
     ? policy.proposal_filter_policy
     : {};
+  const fromPolicy = parseLowerList(
+    src.success_criteria_exempt_types
+      || src.success_criteria_exempt_proposal_types
+      || src.exempt_success_criteria_types
+      || []
+  );
+  const fromEnv = parseLowerList(process.env.AUTONOMY_SUCCESS_CRITERIA_EXEMPT_TYPES || '');
+  const exemptTypes = Array.from(new Set([...fromPolicy, ...fromEnv]));
   return {
     required: src.require_success_criteria !== false,
-    min_count: clampNumber(src.min_success_criteria_count, 0, 5, 1)
+    min_count: clampNumber(src.min_success_criteria_count, 0, 5, 1),
+    exempt_types: exemptTypes
+  };
+}
+
+function successCriteriaPolicyForProposal(proposal) {
+  const base = successCriteriaRequirement();
+  const proposalType = normalizeSpaces(proposal && proposal.type || '').toLowerCase();
+  const exempt = proposalType
+    && Array.isArray(base.exempt_types)
+    && base.exempt_types.includes(proposalType);
+  return {
+    required: base.required !== false && !exempt,
+    min_count: Number(base.min_count || 0),
+    exempt_types: Array.isArray(base.exempt_types) ? base.exempt_types : [],
+    exempt_type: !!exempt
   };
 }
 
@@ -3005,8 +3063,9 @@ function assessActionability(p, directiveFit, thresholds) {
   const genericRouteTask = GENERIC_ROUTE_TASK_RE.test(nextCmd);
   const criteriaRows = parseSuccessCriteriaRows(p);
   const measurableCriteriaCount = criteriaRows.filter((row) => row.measurable === true).length;
-  const criteriaPolicy = successCriteriaRequirement();
+  const criteriaPolicy = successCriteriaPolicyForProposal(p);
   const isExecutableProposal = !!(nextCmd || (p && p.action_spec && typeof p.action_spec === 'object'));
+  const criteriaRequirementApplied = isExecutableProposal && criteriaPolicy.required;
   const reasons = [];
   let score = 0;
   let hardBlock = false;
@@ -3050,12 +3109,13 @@ function assessActionability(p, directiveFit, thresholds) {
   if (Number.isFinite(relevance)) score += (relevance - 45) * 0.3;
   if (Number.isFinite(fitScore)) score += (fitScore - 35) * 0.25;
 
-  if (isExecutableProposal && criteriaPolicy.required) {
+  if (criteriaRequirementApplied) {
     if (measurableCriteriaCount >= criteriaPolicy.min_count) {
       score += Math.min(14, 8 + (measurableCriteriaCount * 2));
     } else {
       score -= 22;
       reasons.push('success_criteria_missing');
+      hardBlock = true;
     }
   } else if (measurableCriteriaCount > 0) {
     score += Math.min(8, measurableCriteriaCount * 2);
@@ -3100,7 +3160,8 @@ function assessActionability(p, directiveFit, thresholds) {
     score: finalScore,
     reasons,
     success_criteria: {
-      required: isExecutableProposal && criteriaPolicy.required,
+      required: criteriaRequirementApplied,
+      exempt_type: criteriaPolicy.exempt_type === true,
       min_count: criteriaPolicy.min_count,
       measurable_count: measurableCriteriaCount,
       total_count: criteriaRows.length
@@ -4028,6 +4089,65 @@ function compactCmdResult(res) {
   };
 }
 
+function toSuccessCriteriaRecord(criteria, fallback = {}) {
+  const src = criteria && typeof criteria === 'object' ? criteria : {};
+  const requiredFallback = fallback && fallback.required === true;
+  const minCountFallback = Number.isFinite(Number(fallback && fallback.min_count))
+    ? Number(fallback.min_count)
+    : 0;
+  return {
+    required: src.required === true || requiredFallback,
+    min_count: Number.isFinite(Number(src.min_count)) ? Number(src.min_count) : minCountFallback,
+    total_count: Number(src.total_count || 0),
+    evaluated_count: Number(src.evaluated_count || 0),
+    passed_count: Number(src.passed_count || 0),
+    failed_count: Number(src.failed_count || 0),
+    unknown_count: Number(src.unknown_count || 0),
+    pass_rate: Number.isFinite(Number(src.pass_rate)) ? Number(src.pass_rate) : null,
+    passed: src.passed === true,
+    primary_failure: src.primary_failure ? String(src.primary_failure) : null,
+    checks: Array.isArray(src.checks) ? src.checks.slice(0, 12) : []
+  };
+}
+
+function withSuccessCriteriaVerification(baseVerification, successCriteria, options = {}) {
+  const base = baseVerification && typeof baseVerification === 'object'
+    ? { ...baseVerification }
+    : {};
+  const criteria = toSuccessCriteriaRecord(successCriteria, options.fallback || {});
+  const criteriaPass = criteria.required ? criteria.passed === true : true;
+  const checks = Array.isArray(base.checks) ? base.checks.map((row) => ({ ...row })) : [];
+  const existingIdx = checks.findIndex((row) => row && row.name === 'success_criteria_met');
+  if (existingIdx >= 0) checks[existingIdx] = { name: 'success_criteria_met', pass: criteriaPass };
+  else checks.push({ name: 'success_criteria_met', pass: criteriaPass });
+  const failedSet = new Set(
+    (Array.isArray(base.failed) ? base.failed : [])
+      .map((name) => String(name || '').trim())
+      .filter(Boolean)
+  );
+  if (criteriaPass) failedSet.delete('success_criteria_met');
+  else failedSet.add('success_criteria_met');
+  const failed = Array.from(failedSet);
+  const passed = failed.length === 0;
+  let outcome = String(base.outcome || '').trim();
+  if (!outcome) outcome = passed ? 'shipped' : 'no_change';
+  if (!criteriaPass && options.enforceNoChangeOnFailure === true && outcome === 'shipped') {
+    outcome = 'no_change';
+  }
+  const primaryFailure = !criteriaPass
+    ? (criteria.primary_failure || String(base.primary_failure || 'success_criteria_failed'))
+    : (base.primary_failure || null);
+  return {
+    ...base,
+    checks,
+    failed,
+    passed,
+    outcome,
+    primary_failure: primaryFailure,
+    success_criteria: criteria
+  };
+}
+
 function verifyExecutionReceipt(execRes, dod, outcomeRes, postconditions, successCriteria) {
   const decision = String(execRes && execRes.summary && execRes.summary.decision || '');
   const execCheckName = decision === 'ACTUATE'
@@ -4035,21 +4155,7 @@ function verifyExecutionReceipt(execRes, dod, outcomeRes, postconditions, succes
     : decision === 'DIRECTIVE_VALIDATE'
       ? 'directive_validate_ok'
       : 'route_execute_ok';
-  const criteria = successCriteria && typeof successCriteria === 'object'
-    ? successCriteria
-    : {
-      required: false,
-      min_count: 0,
-      total_count: 0,
-      evaluated_count: 0,
-      passed_count: 0,
-      failed_count: 0,
-      unknown_count: 0,
-      pass_rate: null,
-      passed: true,
-      primary_failure: null,
-      checks: []
-    };
+  const criteria = toSuccessCriteriaRecord(successCriteria, { required: false, min_count: 0 });
   const criteriaRequired = criteria.required === true;
   const criteriaPass = criteriaRequired ? criteria.passed === true : true;
   const checks = [
@@ -4063,7 +4169,7 @@ function verifyExecutionReceipt(execRes, dod, outcomeRes, postconditions, succes
   if (!checks[0].pass || !checks[1].pass || !checks[4].pass) outcome = 'reverted';
   else if (!checks[2].pass || !checks[3].pass) outcome = 'no_change';
   const failed = checks.filter(c => !c.pass).map(c => c.name);
-  return {
+  return withSuccessCriteriaVerification({
     checks,
     failed,
     passed: failed.length === 0,
@@ -4072,21 +4178,8 @@ function verifyExecutionReceipt(execRes, dod, outcomeRes, postconditions, succes
       ? (failed[0] === 'success_criteria_met' && criteria.primary_failure
         ? String(criteria.primary_failure)
         : failed[0])
-      : null,
-    success_criteria: {
-      required: criteriaRequired,
-      min_count: Number(criteria.min_count || 0),
-      total_count: Number(criteria.total_count || 0),
-      evaluated_count: Number(criteria.evaluated_count || 0),
-      passed_count: Number(criteria.passed_count || 0),
-      failed_count: Number(criteria.failed_count || 0),
-      unknown_count: Number(criteria.unknown_count || 0),
-      pass_rate: Number.isFinite(Number(criteria.pass_rate)) ? Number(criteria.pass_rate) : null,
-      passed: criteria.passed === true,
-      primary_failure: criteria.primary_failure ? String(criteria.primary_failure) : null,
-      checks: Array.isArray(criteria.checks) ? criteria.checks.slice(0, 12) : []
-    }
-  };
+      : null
+  }, criteria);
 }
 
 function makeTaskFromProposal(p) {
@@ -5649,6 +5742,44 @@ function runCmd(dateStr, opts = {}) {
         strategy_id: strategy.id,
         execution_mode: executionMode,
         readiness: readinessPayload && readinessPayload.readiness ? readinessPayload.readiness : null,
+        ts: nowIso()
+      }) + '\n');
+      return;
+    }
+  }
+
+  if (
+    AUTONOMY_REQUIRE_SPC_FOR_EXECUTE
+    && strategy
+    && isExecuteMode(executionMode)
+  ) {
+    const minDays = strategy
+      && strategy.promotion_policy
+      && Number.isFinite(Number(strategy.promotion_policy.min_days))
+        ? Number(strategy.promotion_policy.min_days)
+        : 7;
+    const spc = evaluatePipelineSpcGate(dateStr, {
+      days: Math.max(1, minDays),
+      baseline_days: AUTONOMY_SPC_BASELINE_DAYS,
+      baseline_min_days: AUTONOMY_SPC_BASELINE_MIN_DAYS,
+      sigma: AUTONOMY_SPC_SIGMA
+    });
+    if (!spc || spc.pass !== true || spc.hold_escalation === true) {
+      writeRun(dateStr, {
+        ts: nowIso(),
+        type: 'autonomy_run',
+        result: 'stop_init_gate_spc',
+        strategy_id: strategy.id,
+        execution_mode: executionMode,
+        spc_failed_checks: spc && Array.isArray(spc.failed_checks) ? spc.failed_checks : [],
+        spc_control_source: spc && spc.control ? spc.control.source || null : null
+      });
+      process.stdout.write(JSON.stringify({
+        ok: true,
+        result: 'stop_init_gate_spc',
+        strategy_id: strategy.id,
+        execution_mode: executionMode,
+        spc,
         ts: nowIso()
       }) + '\n');
       return;
@@ -7239,7 +7370,7 @@ function runCmd(dateStr, opts = {}) {
       };
       previewSummary = preSummary;
       previewTokenUsage = computeExecutionTokenUsage(preSummary, previewRes.execution_metrics, routeTokensEst, estTokens);
-      const criteriaPolicy = successCriteriaRequirement();
+      const criteriaPolicy = successCriteriaPolicyForProposal(p);
       const previewSuccessCriteria = evaluateSuccessCriteria(
         p,
         {
@@ -7258,25 +7389,10 @@ function runCmd(dateStr, opts = {}) {
           min_count: criteriaPolicy.min_count
         }
       );
-      previewVerification.success_criteria = previewSuccessCriteria;
-      if (previewSuccessCriteria.passed === false && previewVerification.passed === true) {
-        previewVerification.passed = false;
-        previewVerification.outcome = 'no_change';
-        previewVerification.primary_failure = previewSuccessCriteria.primary_failure || 'success_criteria_failed';
-        previewVerification.failed = Array.from(new Set([...(previewVerification.failed || []), 'success_criteria_met']));
-        previewVerification.checks = Array.isArray(previewVerification.checks)
-          ? previewVerification.checks
-          : [];
-        previewVerification.checks.push({ name: 'success_criteria_met', pass: false });
-      } else if (previewSuccessCriteria.passed === false) {
-        previewVerification.failed = Array.from(new Set([...(previewVerification.failed || []), 'success_criteria_met']));
-        previewVerification.checks = Array.isArray(previewVerification.checks)
-          ? previewVerification.checks
-          : [];
-        previewVerification.checks.push({ name: 'success_criteria_met', pass: false });
-      } else if (previewSuccessCriteria.passed === true) {
-        previewVerification.checks.push({ name: 'success_criteria_met', pass: true });
-      }
+      previewVerification = withSuccessCriteriaVerification(previewVerification, previewSuccessCriteria, {
+        fallback: { required: criteriaPolicy.required, min_count: criteriaPolicy.min_count },
+        enforceNoChangeOnFailure: true
+      });
       writeReceipt(dateStr, {
         ts: nowIso(),
         type: 'autonomy_action_receipt',
@@ -7720,6 +7836,34 @@ function runCmd(dateStr, opts = {}) {
       errors_30d: errors30d,
       dopamine
     });
+    const preflightCriteriaPolicy = successCriteriaPolicyForProposal(p);
+    const preflightSuccessCriteria = evaluateSuccessCriteria(
+      p,
+      {
+        phase: 'preflight_blocked',
+        outcome: 'reverted',
+        exec_ok: false,
+        dod_passed: false,
+        postconditions_ok: false,
+        queue_outcome_logged: false,
+        duration_ms: Number(preflight && preflight.execution_metrics && preflight.execution_metrics.duration_ms || 0),
+        token_usage: preTokenUsage,
+        dod_diff: {}
+      },
+      {
+        required: preflightCriteriaPolicy.required,
+        min_count: preflightCriteriaPolicy.min_count
+      }
+    );
+    const preflightVerification = withSuccessCriteriaVerification({
+      checks: [{ name: 'preflight_executable', pass: false }],
+      failed: ['preflight_executable'],
+      passed: false,
+      outcome: 'reverted',
+      primary_failure: blockReason
+    }, preflightSuccessCriteria, {
+      fallback: { required: preflightCriteriaPolicy.required, min_count: preflightCriteriaPolicy.min_count }
+    });
     writeReceipt(dateStr, {
       ts: nowIso(),
       type: 'autonomy_action_receipt',
@@ -7739,13 +7883,7 @@ function runCmd(dateStr, opts = {}) {
         preflight: compactCmdResult(preflight),
         token_usage: preTokenUsage
       },
-      verification: {
-        checks: [{ name: 'preflight_executable', pass: false }],
-        failed: ['preflight_executable'],
-        passed: false,
-        outcome: 'reverted',
-        primary_failure: blockReason
-      }
+      verification: preflightVerification
     });
     process.stdout.write(JSON.stringify({
       ok: true,
@@ -7790,6 +7928,34 @@ function runCmd(dateStr, opts = {}) {
       repeats_14d: repeats14d,
       errors_30d: errors30d
     });
+    const acceptCriteriaPolicy = successCriteriaPolicyForProposal(p);
+    const acceptSuccessCriteria = evaluateSuccessCriteria(
+      p,
+      {
+        phase: 'accept_failed',
+        outcome: 'reverted',
+        exec_ok: false,
+        dod_passed: false,
+        postconditions_ok: false,
+        queue_outcome_logged: false,
+        duration_ms: Number(preflight && preflight.execution_metrics && preflight.execution_metrics.duration_ms || 0),
+        token_usage: preTokenUsage,
+        dod_diff: {}
+      },
+      {
+        required: acceptCriteriaPolicy.required,
+        min_count: acceptCriteriaPolicy.min_count
+      }
+    );
+    const acceptVerification = withSuccessCriteriaVerification({
+      checks: [{ name: 'queue_accept_logged', pass: false }],
+      failed: ['queue_accept_logged'],
+      passed: false,
+      outcome: 'reverted',
+      primary_failure: 'queue_accept_logged'
+    }, acceptSuccessCriteria, {
+      fallback: { required: acceptCriteriaPolicy.required, min_count: acceptCriteriaPolicy.min_count }
+    });
     writeReceipt(dateStr, {
       ts: nowIso(),
       type: 'autonomy_action_receipt',
@@ -7816,13 +7982,7 @@ function runCmd(dateStr, opts = {}) {
         accept: compactCmdResult(acceptRes),
         token_usage: preTokenUsage
       },
-      verification: {
-        checks: [{ name: 'queue_accept_logged', pass: false }],
-        failed: ['queue_accept_logged'],
-        passed: false,
-        outcome: 'reverted',
-        primary_failure: 'queue_accept_logged'
-      }
+      verification: acceptVerification
     });
     process.stdout.write(JSON.stringify({
       ok: true,
@@ -7942,7 +8102,7 @@ function runCmd(dateStr, opts = {}) {
     outcomeRes = runProposalQueue('outcome', p.id, outcome, evidence);
   }
 
-  const criteriaPolicy = successCriteriaRequirement();
+  const criteriaPolicy = successCriteriaPolicyForProposal(p);
   const successCriteria = evaluateSuccessCriteria(
     p,
     {
@@ -8216,6 +8376,67 @@ function resetCmd(dateStr) {
   process.stdout.write(JSON.stringify(out) + '\n');
 }
 
+function readRunLockState() {
+  try {
+    if (!fs.existsSync(AUTONOMY_RUN_LOCK_PATH)) return null;
+    return JSON.parse(fs.readFileSync(AUTONOMY_RUN_LOCK_PATH, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+function lockAgeMinutes(lock) {
+  const ts = Date.parse(String(lock && lock.ts || ''));
+  if (!Number.isFinite(ts)) return null;
+  return Math.max(0, (Date.now() - ts) / (60 * 1000));
+}
+
+function acquireAutonomyRunLock(meta) {
+  const payload = {
+    ts: nowIso(),
+    pid: process.pid,
+    mode: meta && meta.mode ? String(meta.mode) : 'run',
+    date: meta && meta.date ? String(meta.date) : null
+  };
+  const staleMinutes = Number(AUTONOMY_RUN_LOCK_STALE_MINUTES || 0);
+  fs.mkdirSync(path.dirname(AUTONOMY_RUN_LOCK_PATH), { recursive: true });
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const fd = fs.openSync(AUTONOMY_RUN_LOCK_PATH, 'wx');
+      fs.writeFileSync(fd, JSON.stringify(payload, null, 2), 'utf8');
+      fs.closeSync(fd);
+      return { ok: true, lock: payload };
+    } catch (err) {
+      if (!err || err.code !== 'EEXIST') {
+        return { ok: false, code: 'lock_error', detail: String(err && err.message || err || 'lock_error') };
+      }
+      const existing = readRunLockState();
+      const ageMinutes = lockAgeMinutes(existing);
+      const stale = Number.isFinite(ageMinutes) && staleMinutes > 0 && ageMinutes > staleMinutes;
+      if (stale) {
+        try {
+          fs.unlinkSync(AUTONOMY_RUN_LOCK_PATH);
+          continue;
+        } catch {}
+      }
+      return {
+        ok: false,
+        code: 'lock_held',
+        detail: 'another_autonomy_run_in_progress',
+        lock: existing || null,
+        age_minutes: ageMinutes
+      };
+    }
+  }
+  return { ok: false, code: 'lock_unavailable', detail: 'unable_to_acquire_lock' };
+}
+
+function releaseAutonomyRunLock() {
+  try {
+    if (fs.existsSync(AUTONOMY_RUN_LOCK_PATH)) fs.unlinkSync(AUTONOMY_RUN_LOCK_PATH);
+  } catch {}
+}
+
 function usage() {
   console.log('Usage:');
   console.log('  node systems/autonomy/autonomy_controller.js run [YYYY-MM-DD]');
@@ -8241,8 +8462,30 @@ function main() {
 
   if (cmd === 'status') return statusCmd(dateStr);
   if (cmd === 'readiness') return readinessCmd(dateStr);
-  if (cmd === 'run') return runCmd(dateStr);
-  if (cmd === 'evidence') return runCmd(dateStr, { shadowOnly: true });
+  if (cmd === 'run' || cmd === 'evidence') {
+    const shadowOnly = cmd === 'evidence';
+    const lockRes = acquireAutonomyRunLock({
+      mode: shadowOnly ? 'evidence' : 'run',
+      date: dateStr
+    });
+    if (!lockRes.ok) {
+      process.stdout.write(JSON.stringify({
+        ok: true,
+        result: 'stop_init_gate_run_lock',
+        lock_code: lockRes.code,
+        lock_detail: lockRes.detail || null,
+        lock: lockRes.lock || null,
+        lock_age_minutes: Number.isFinite(Number(lockRes.age_minutes)) ? Number(lockRes.age_minutes.toFixed(3)) : null,
+        ts: nowIso()
+      }) + '\n');
+      return;
+    }
+    try {
+      return runCmd(dateStr, { shadowOnly });
+    } finally {
+      releaseAutonomyRunLock();
+    }
+  }
   if (cmd === 'scorecard') return scorecardCmd(dateStr);
   if (cmd === 'reset') return resetCmd(dateStr);
   if (cmd === 'issue-canary-override') return issueHumanCanaryOverrideCmd(dateStr);

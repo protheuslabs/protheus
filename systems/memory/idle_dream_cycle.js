@@ -19,6 +19,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const { stableUid } = require('../../lib/uid.js');
+const { listLocalOllamaModels, runLocalOllamaPrompt, stripAnsi } = require('../routing/llm_gateway.js');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const DREAMS_DIR = process.env.IDLE_DREAM_DREAMS_DIR
@@ -290,27 +291,16 @@ function extractJsonObject(text) {
   return null;
 }
 
-function stripAnsi(v) {
-  return String(v || '')
-    .replace(/\x1B\[[0-9;?]*[ -/]*[@-~]/g, '')
-    .replace(/[\u2800-\u28ff]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
 function listLocalModels() {
   const fake = String(process.env.IDLE_DREAM_FAKE_MODELS || '').trim();
   if (fake) return parseCsvOrder(fake).map(normalizeModelName).filter(Boolean);
-  const r = spawnSync('ollama', ['list'], { encoding: 'utf8', timeout: 5000 });
-  if (r.status !== 0) return [];
-  const lines = String(r.stdout || '').split(/\r?\n/).filter(Boolean);
-  const out = [];
-  for (const line of lines.slice(1)) {
-    const first = String(line || '').trim().split(/\s+/)[0];
-    const clean = normalizeModelName(first);
-    if (clean) out.push(clean);
-  }
-  return Array.from(new Set(out));
+  const listed = listLocalOllamaModels({
+    timeoutMs: 5000,
+    cwd: REPO_ROOT,
+    source: 'idle_dream_cycle'
+  });
+  if (!listed.ok) return [];
+  return Array.from(new Set((listed.models || []).map(normalizeModelName).filter(Boolean)));
 }
 
 function pickModel(order, available) {
@@ -323,43 +313,21 @@ function pickModel(order, available) {
   return list.length ? list[0] : null;
 }
 
-function isUnknownFlagError(text) {
-  return /\b(unknown flag|unknown shorthand|unknown option|unknown command|flag provided but not defined|invalid option)\b/i
-    .test(String(text || ''));
-}
-
-function runOllamaRun(model, prompt, timeoutMs, extraArgs = []) {
-  const args = ['run', model, ...extraArgs, prompt];
-  const r = spawnSync('ollama', args, {
-    encoding: 'utf8',
-    timeout: timeoutMs
-  });
-  const errorText = r.error ? String(r.error) : '';
-  return {
-    ok: r.status === 0,
-    stdout: stripAnsi(r.stdout || ''),
-    stderr: stripAnsi(r.stderr || ''),
-    code: r.status == null ? 1 : r.status,
-    signal: r.signal || null,
-    timed_out: /\bETIMEDOUT\b/i.test(errorText),
-    error: errorText || null
-  };
-}
-
 function runLocalModel(model, prompt, timeoutMs, phase) {
   const fakeIdle = String(process.env.IDLE_DREAM_FAKE_IDLE_JSON || '').trim();
   const fakeRem = String(process.env.IDLE_DREAM_FAKE_REM_JSON || '').trim();
   if (phase === 'idle' && fakeIdle) return { ok: true, stdout: fakeIdle, stderr: '', code: 0 };
   if (phase === 'rem' && fakeRem) return { ok: true, stdout: fakeRem, stderr: '', code: 0 };
   if (!model) return { ok: false, stdout: '', stderr: 'no_local_model_selected', code: 2 };
-  const primary = runOllamaRun(model, prompt, timeoutMs, ['--hidethinking', '--nowordwrap']);
-  if (primary.ok) return primary;
-  if (isUnknownFlagError(primary.stderr) || isUnknownFlagError(primary.error)) {
-    const fallback = runOllamaRun(model, prompt, timeoutMs, []);
-    if (fallback.ok) return fallback;
-    return { ...fallback, flag_fallback_attempted: true };
-  }
-  return primary;
+  return runLocalOllamaPrompt({
+    model,
+    prompt,
+    timeoutMs,
+    phase,
+    source: 'idle_dream_cycle',
+    cwd: REPO_ROOT,
+    allowFlagFallback: true
+  });
 }
 
 function spawnModuleName(phase) {

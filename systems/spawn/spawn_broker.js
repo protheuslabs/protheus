@@ -21,6 +21,12 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const {
+  loadSystemBudgetState,
+  saveSystemBudgetState,
+  projectSystemBudget,
+  recordSystemBudgetUsage
+} = require('../budget/system_budget.js');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const POLICY_PATH = process.env.SPAWN_POLICY_PATH
@@ -218,24 +224,25 @@ function tokenBudgetStatePathForDate(day) {
 }
 
 function loadTokenBudgetState(day) {
-  const fp = tokenBudgetStatePathForDate(day);
-  const raw = readJson(fp, null);
-  if (!raw || typeof raw !== 'object') {
-    return {
-      date: path.basename(fp, '.json'),
-      used_est: 0,
-      by_module: {}
-    };
-  }
-  if (!raw.by_module || typeof raw.by_module !== 'object') raw.by_module = {};
-  raw.date = String(raw.date || path.basename(fp, '.json'));
-  raw.used_est = Number.isFinite(Number(raw.used_est)) ? Number(raw.used_est) : 0;
-  return raw;
+  const state = loadSystemBudgetState(day, {
+    state_dir: TOKEN_BUDGET_DIR
+  });
+  return {
+    date: String(state.date || budgetDateStr()),
+    token_cap: Number.isFinite(Number(state.token_cap)) ? Number(state.token_cap) : null,
+    used_est: Number.isFinite(Number(state.used_est)) ? Number(state.used_est) : 0,
+    by_module: state.by_module && typeof state.by_module === 'object' ? state.by_module : {}
+  };
 }
 
 function saveTokenBudgetState(state) {
-  const day = state && state.date ? String(state.date) : budgetDateStr();
-  writeJsonAtomic(tokenBudgetStatePathForDate(day), state || { date: day, used_est: 0, by_module: {} });
+  saveSystemBudgetState({
+    ...(state && typeof state === 'object' ? state : {}),
+    date: state && state.date ? String(state.date) : budgetDateStr()
+  }, {
+    state_dir: TOKEN_BUDGET_DIR,
+    allow_strategy: false
+  });
 }
 
 function moduleTokenCaps(policy, moduleName) {
@@ -269,6 +276,11 @@ function evaluateTokenBudget(policy, state, moduleName, requestedTokens, request
   const moduleCap = Number(caps.daily_token_cap || 0);
   const perRequestCap = Number(caps.per_request_token_cap || 0);
 
+  const projection = projectSystemBudget(state, requestedTokens, {
+    soft_ratio: tokenPolicy.soft_ratio,
+    hard_ratio: tokenPolicy.hard_ratio
+  });
+
   const out = {
     enabled: tokenPolicy.enabled === true,
     date: String(state.date || budgetDateStr()),
@@ -283,7 +295,10 @@ function evaluateTokenBudget(policy, state, moduleName, requestedTokens, request
     action: 'none',
     allow: true,
     reason: null,
-    suggested_cells: requestedCells
+    suggested_cells: requestedCells,
+    global_token_cap: Number.isFinite(Number(state.token_cap)) ? Number(state.token_cap) : null,
+    projected_global_ratio: projection.projected_ratio,
+    projected_global_pressure: projection.projected_pressure
   };
 
   if (!out.enabled || requestedTokens <= 0) return out;
@@ -308,6 +323,16 @@ function evaluateTokenBudget(policy, state, moduleName, requestedTokens, request
     out.reason = 'module_daily_token_cap_exceeded';
     out.suggested_cells = 0;
     return out;
+  }
+
+  if (projection.projected_pressure === 'hard') {
+    out.action = 'degrade';
+    out.reason = 'hard_global_budget_pressure';
+    out.suggested_cells = Math.max(0, Math.min(requestedCells, 1));
+  } else if (projection.projected_pressure === 'soft' && requestedCells > 1) {
+    out.action = 'degrade';
+    out.reason = 'soft_global_budget_pressure';
+    out.suggested_cells = Math.max(1, requestedCells - 1);
   }
 
   if (out.pressure === 'hard') {
@@ -608,21 +633,14 @@ function cmdRequest(args) {
     });
 
     if (tokenBudget.enabled && requestedTokens > 0 && tokenBudget.allow) {
-      const next = {
-        ...tokenBudgetState,
+      recordSystemBudgetUsage({
         date: String(tokenBudgetState.date || budgetDateStr()),
-        used_est: Number(tokenBudgetState.used_est || 0) + requestedTokens,
-        by_module: {
-          ...(tokenBudgetState.by_module || {}),
-          [moduleName]: {
-            used_est: Number(
-              (tokenBudgetState.by_module && tokenBudgetState.by_module[moduleName] && tokenBudgetState.by_module[moduleName].used_est) || 0
-            ) + requestedTokens
-          }
-        },
-        updated_at: nowIso()
-      };
-      saveTokenBudgetState(next);
+        tokens_est: requestedTokens,
+        module: moduleName,
+        capability: 'spawn'
+      }, {
+        state_dir: TOKEN_BUDGET_DIR
+      });
     }
   }
 

@@ -54,6 +54,8 @@ function run() {
       min_days: 1,
       min_attempted: 3,
       min_verified_rate: 0.5,
+      min_objective_coverage: 0,
+      max_objective_no_progress_rate: 1,
       max_reverted_rate: 0.5,
       max_stop_ratio: 0.9,
       min_shipped: 1
@@ -96,7 +98,9 @@ function run() {
     AUTONOMY_SUMMARY_RUNS_DIR: runsDir,
     AUTONOMY_SUMMARY_RECEIPTS_DIR: autoReceiptsDir,
     ACTUATION_SUMMARY_RECEIPTS_DIR: actReceiptsDir,
+    AUTONOMY_STRATEGY_MODE_GOVERNOR_STATE: path.join(tmpRoot, 'strategy_mode_governor_state.json'),
     AUTONOMY_MODE_GOVERNOR_MIN_HOURS_BETWEEN_CHANGES: '0',
+    AUTONOMY_MODE_GOVERNOR_MIN_ESCALATE_STREAK: '1',
     AUTONOMY_MODE_GOVERNOR_ALLOW_AUTO_ESCALATION: '1',
     AUTONOMY_MODE_GOVERNOR_CANARY_MIN_PREVIEW_SUCCESS_CRITERIA_PASS_RATE: '0.6'
   };

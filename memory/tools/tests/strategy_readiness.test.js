@@ -56,6 +56,8 @@ function run() {
       min_days: 7,
       min_attempted: 6,
       min_verified_rate: 0.5,
+      min_success_criteria_receipts: 2,
+      min_success_criteria_pass_rate: 0.5,
       max_reverted_rate: 0.4,
       max_stop_ratio: 0.8,
       min_shipped: 1
@@ -64,13 +66,23 @@ function run() {
 
   const date = '2026-02-19';
   writeJsonl(path.join(runsDir, `${date}.jsonl`), [
-    { ts: '2026-02-19T01:00:00.000Z', type: 'autonomy_run', result: 'executed', outcome: 'shipped' },
-    { ts: '2026-02-19T01:10:00.000Z', type: 'autonomy_run', result: 'executed', outcome: 'no_change' },
-    { ts: '2026-02-19T01:20:00.000Z', type: 'autonomy_run', result: 'stop_repeat_gate_interval' }
+    { ts: '2026-02-19T01:00:00.000Z', type: 'autonomy_run', result: 'executed', outcome: 'shipped', objective_id: 'T1_objA' },
+    { ts: '2026-02-19T01:10:00.000Z', type: 'autonomy_run', result: 'executed', outcome: 'no_change', objective_id: 'T1_objA' },
+    { ts: '2026-02-19T01:20:00.000Z', type: 'autonomy_run', result: 'stop_repeat_gate_interval', objective_id: 'T1_objA' }
   ]);
   writeJsonl(path.join(autoReceiptsDir, `${date}.jsonl`), [
-    { type: 'autonomy_action_receipt', verdict: 'pass', receipt_contract: { verified: true } },
-    { type: 'autonomy_action_receipt', verdict: 'fail', receipt_contract: { verified: false } }
+    {
+      type: 'autonomy_action_receipt',
+      verdict: 'pass',
+      verification: { success_criteria: { required: true, passed: true } },
+      receipt_contract: { verified: true }
+    },
+    {
+      type: 'autonomy_action_receipt',
+      verdict: 'fail',
+      verification: { success_criteria: { required: true, passed: true } },
+      receipt_contract: { verified: false }
+    }
   ]);
   writeJsonl(path.join(actReceiptsDir, `${date}.jsonl`), [
     { adapter: 'demo', ok: true, receipt_contract: { verified: true } }
@@ -104,6 +116,8 @@ function run() {
       min_days: 7,
       min_attempted: 3,
       min_verified_rate: 0.5,
+      min_success_criteria_receipts: 2,
+      min_success_criteria_pass_rate: 0.5,
       max_reverted_rate: 0.5,
       max_stop_ratio: 0.9,
       min_shipped: 1

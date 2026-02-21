@@ -49,7 +49,8 @@ function run() {
   const env = {
     ...process.env,
     AUTONOMY_STRATEGY_DIR: strategyDir,
-    AUTONOMY_STRATEGY_MODE_LOG: logPath
+    AUTONOMY_STRATEGY_MODE_LOG: logPath,
+    AUTONOMY_STRATEGY_MODE_REQUIRE_POLICY_ROOT: '0'
   };
 
   let r = runScript(repoRoot, ['status'], env);

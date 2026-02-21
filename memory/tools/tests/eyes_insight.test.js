@@ -193,9 +193,20 @@ function run() {
   assert.ok(Array.isArray(one.action_spec.verify) && one.action_spec.verify.length >= 1);
   ok('action_spec contract is generated for eye proposals');
 
+  assert.ok(typeof one.meta.directive_objective_id === 'string' && /^T[0-9]_/.test(one.meta.directive_objective_id), 'meta.directive_objective_id should be bound');
+  assert.strictEqual(one.meta.objective_id, one.meta.directive_objective_id, 'meta.objective_id should mirror directive_objective_id');
+  assert.strictEqual(one.action_spec.objective_id, one.meta.directive_objective_id, 'action_spec.objective_id should match meta.directive_objective_id');
+  assert.ok(one.suggested_next_command.includes(`--id=${one.meta.directive_objective_id}`), 'suggested_next_command should carry --id=<objective_id>');
+  ok('eye proposal objective binding is present in meta/action_spec/command');
+
   assert.ok(crossProps[0].action_spec && typeof crossProps[0].action_spec === 'object');
   assert.ok(typeof crossProps[0].action_spec.next_command === 'string' && crossProps[0].action_spec.next_command.length > 0);
   ok('action_spec contract is generated for cross-signal proposals');
+
+  assert.ok(typeof crossProps[0].meta.directive_objective_id === 'string' && /^T[0-9]_/.test(crossProps[0].meta.directive_objective_id), 'cross-signal meta.directive_objective_id should be bound');
+  assert.strictEqual(crossProps[0].action_spec.objective_id, crossProps[0].meta.directive_objective_id, 'cross-signal action_spec.objective_id should match meta.directive_objective_id');
+  assert.ok(crossProps[0].suggested_next_command.includes(`--id=${crossProps[0].meta.directive_objective_id}`), 'cross-signal suggested_next_command should carry --id=<objective_id>');
+  ok('cross-signal proposal objective binding is present in meta/action_spec/command');
 
   // Verify deterministic dedupe by url worked (only one proposal per URL)
   const urls = new Set();

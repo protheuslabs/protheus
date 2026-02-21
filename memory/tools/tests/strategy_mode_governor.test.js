@@ -60,6 +60,10 @@ function run() {
       min_days: 1,
       min_attempted: 3,
       min_verified_rate: 0.5,
+      min_success_criteria_receipts: 1,
+      min_success_criteria_pass_rate: 0.5,
+      min_objective_coverage: 0,
+      max_objective_no_progress_rate: 1,
       max_reverted_rate: 0.5,
       max_stop_ratio: 0.9,
       min_shipped: 1
@@ -73,9 +77,31 @@ function run() {
     { ts: `${date}T01:10:00.000Z`, type: 'autonomy_run', result: 'executed', outcome: 'no_change', execution_mode: 'score_only' }
   ]);
   writeJsonl(path.join(autoReceiptsDir, `${date}.jsonl`), [
-    { type: 'autonomy_action_receipt', verdict: 'pass', receipt_contract: { verified: true } },
-    { type: 'autonomy_action_receipt', verdict: 'pass', receipt_contract: { verified: true } },
-    { type: 'autonomy_action_receipt', verdict: 'pass', receipt_contract: { verified: true } }
+    {
+      type: 'autonomy_action_receipt',
+      verdict: 'pass',
+      verification: { success_criteria: { required: true, passed: true } },
+      receipt_contract: { verified: true }
+    },
+    {
+      type: 'autonomy_action_receipt',
+      verdict: 'pass',
+      verification: { success_criteria: { required: true, passed: true } },
+      receipt_contract: { verified: true }
+    },
+    {
+      type: 'autonomy_action_receipt',
+      verdict: 'pass',
+      verification: { success_criteria: { required: true, passed: true } },
+      receipt_contract: { verified: true }
+    },
+    {
+      type: 'autonomy_action_receipt',
+      verdict: 'pass',
+      intent: { score_only: true },
+      verification: { success_criteria: { required: true, passed: true } },
+      receipt_contract: { verified: true }
+    }
   ]);
   writeJsonl(path.join(actReceiptsDir, `${date}.jsonl`), []);
 
@@ -86,8 +112,11 @@ function run() {
     AUTONOMY_SUMMARY_RECEIPTS_DIR: autoReceiptsDir,
     ACTUATION_SUMMARY_RECEIPTS_DIR: actReceiptsDir,
     AUTONOMY_STRATEGY_MODE_LOG: modeLogPath,
+    AUTONOMY_STRATEGY_MODE_GOVERNOR_STATE: path.join(tmpRoot, 'strategy_mode_governor_state.json'),
     AUTONOMY_MODE_GOVERNOR_MIN_HOURS_BETWEEN_CHANGES: '0',
+    AUTONOMY_MODE_GOVERNOR_MIN_ESCALATE_STREAK: '1',
     AUTONOMY_MODE_GOVERNOR_PROMOTE_EXECUTE: '1',
+    AUTONOMY_MODE_GOVERNOR_REQUIRE_POLICY_ROOT: '0',
     AUTONOMY_MODE_GOVERNOR_CANARY_MIN_ATTEMPTED: '2',
     AUTONOMY_MODE_GOVERNOR_CANARY_MIN_VERIFIED_RATE: '0.5',
     AUTONOMY_MODE_GOVERNOR_CANARY_MAX_FAIL_RATE: '0.5',
@@ -130,7 +159,12 @@ function run() {
 
   // readiness failure -> demote execute -> canary_execute
   writeJsonl(path.join(autoReceiptsDir, `${date}.jsonl`), [
-    { type: 'autonomy_action_receipt', verdict: 'pass', receipt_contract: { verified: true } }
+    {
+      type: 'autonomy_action_receipt',
+      verdict: 'pass',
+      verification: { success_criteria: { required: true, passed: true } },
+      receipt_contract: { verified: true }
+    }
   ]);
   r = runScript(repoRoot, ['run', date, '--days=1'], envAllowEscalation);
   assert.strictEqual(r.status, 0, `governor run (demote not ready) should pass: ${r.stderr}`);

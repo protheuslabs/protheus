@@ -127,5 +127,60 @@
     "recommended_layer": "sensory",
     "suggested_controller": "systems/sensory/eyes_intake.js",
     "suggested_action": "Evaluate whether a new adaptive eye or adaptive strategy artifact is warranted for theme 'upwork_gigs'."
+  },
+  {
+    "id": "ADPs4p43ywb1hsgpctav4le",
+    "uid": "s1q1asm9d4ai5knbonuv47za",
+    "type": "adaptive_memory_candidate",
+    "status": "proposed",
+    "date": "2026-02-21",
+    "title": "Consider adaptive memory for theme: fallback",
+    "theme_tag": "fallback",
+    "relation_count": 5,
+    "evidence_uids": [
+      "ff0a83eeb5bef6ba24c00b8a",
+      "7b3cd3bcde0ef0253cebab6b",
+      "6abcdac47fe5d00c5f7c687c",
+      "93b59c20097397e026d75e5b"
+    ],
+    "recommended_layer": "sensory",
+    "suggested_controller": "systems/sensory/eyes_intake.js",
+    "suggested_action": "Evaluate whether a new adaptive eye or adaptive strategy artifact is warranted for theme 'fallback'."
+  },
+  {
+    "id": "ADPs5ka0pjy0mgoyk20hpi9",
+    "uid": "s1qy10kbfsoahktbgbdc3kor",
+    "type": "adaptive_memory_candidate",
+    "status": "proposed",
+    "date": "2026-02-21",
+    "title": "Consider adaptive memory for theme: gig",
+    "theme_tag": "gig",
+    "relation_count": 2,
+    "evidence_uids": [
+      "ff0a83eeb5bef6ba24c00b8a",
+      "7b3cd3bcde0ef0253cebab6b",
+      "93b59c20097397e026d75e5b"
+    ],
+    "recommended_layer": "sensory",
+    "suggested_controller": "systems/sensory/eyes_intake.js",
+    "suggested_action": "Evaluate whether a new adaptive eye or adaptive strategy artifact is warranted for theme 'gig'."
+  },
+  {
+    "id": "ADPs2uzk9r4t8yjtu7a9k5k",
+    "uid": "s2yzqhersrg57v97q8aahbu4",
+    "type": "adaptive_memory_candidate",
+    "status": "proposed",
+    "date": "2026-02-21",
+    "title": "Consider adaptive memory for theme: high-value",
+    "theme_tag": "high-value",
+    "relation_count": 2,
+    "evidence_uids": [
+      "ff0a83eeb5bef6ba24c00b8a",
+      "7b3cd3bcde0ef0253cebab6b",
+      "93b59c20097397e026d75e5b"
+    ],
+    "recommended_layer": "sensory",
+    "suggested_controller": "systems/sensory/eyes_intake.js",
+    "suggested_action": "Evaluate whether a new adaptive eye or adaptive strategy artifact is warranted for theme 'high-value'."
   }
 ]

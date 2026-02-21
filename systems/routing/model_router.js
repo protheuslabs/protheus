@@ -14,6 +14,10 @@ const os = require("os");
 const path = require("path");
 const crypto = require("crypto");
 const { spawnSync } = require("child_process");
+const {
+  loadSystemBudgetState,
+  projectSystemBudget
+} = require("../budget/system_budget.js");
 
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
 const CONFIG_PATH = process.env.ROUTER_CONFIG_PATH || path.join(REPO_ROOT, "config", "agent_routing_rules.json");
@@ -1043,13 +1047,14 @@ function routerBudgetState(cfg) {
   };
   if (!policy.enabled) return out;
 
-  const fp = path.join(policy.state_dir, `${budgetDateStr()}.json`);
-  out.path = fp;
-  const raw = loadJson(fp, null);
-  if (!raw || typeof raw !== "object") return out;
+  const budgetState = loadSystemBudgetState(budgetDateStr(), {
+    state_dir: policy.state_dir
+  });
+  out.path = budgetState && budgetState.path ? String(budgetState.path) : path.join(policy.state_dir, `${budgetDateStr()}.json`);
+  if (!budgetState || budgetState.available !== true) return out;
 
-  const cap = Number(raw.token_cap || 0);
-  const used = Number(raw.used_est || 0);
+  const cap = Number(budgetState.token_cap || 0);
+  const used = Number(budgetState.used_est || 0);
   if (!(Number.isFinite(cap) && cap > 0) || !Number.isFinite(used)) return out;
 
   const ratio = Math.max(0, used / cap);
@@ -1063,7 +1068,8 @@ function routerBudgetState(cfg) {
     pressure,
     ratio: Number(ratio.toFixed(4)),
     token_cap: cap,
-    used_est: used
+    used_est: used,
+    strategy_id: budgetState.strategy_id || null
   };
 }
 
@@ -1139,29 +1145,20 @@ function projectBudgetState(budgetState, requestTokens) {
       projected_pressure: budgetState && budgetState.pressure ? budgetState.pressure : "none"
     };
   }
-  const cap = Number(budgetState.token_cap || 0);
-  const used = Number(budgetState.used_est || 0);
-  if (!(Number.isFinite(cap) && cap > 0) || !Number.isFinite(used)) {
-    return {
-      ...budgetState,
-      request_tokens_est: safeReq,
-      projected_used_est: null,
-      projected_ratio: null,
-      projected_pressure: budgetState.pressure || "none"
-    };
-  }
-  const projectedUsed = used + safeReq;
-  const projectedRatio = Math.max(0, projectedUsed / cap);
   const policy = budgetState.policy || {};
-  let projectedPressure = "none";
-  if (projectedRatio >= Number(policy.hard_ratio || 0.92)) projectedPressure = "hard";
-  else if (projectedRatio >= Number(policy.soft_ratio || 0.75)) projectedPressure = "soft";
+  const projected = projectSystemBudget({
+    token_cap: budgetState.token_cap,
+    used_est: budgetState.used_est
+  }, safeReq, {
+    soft_ratio: Number(policy.soft_ratio || 0.75),
+    hard_ratio: Number(policy.hard_ratio || 0.92)
+  });
   return {
     ...budgetState,
     request_tokens_est: safeReq,
-    projected_used_est: projectedUsed,
-    projected_ratio: Number(projectedRatio.toFixed(4)),
-    projected_pressure: projectedPressure
+    projected_used_est: projected.projected_used_est,
+    projected_ratio: projected.projected_ratio,
+    projected_pressure: projected.projected_pressure || budgetState.pressure || "none"
   };
 }
 

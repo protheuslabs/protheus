@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "updated_ts": "2026-02-21T05:24:22.200Z",
+  "updated_ts": "2026-02-21T06:01:40.483Z",
   "candidates": {
     "automation": {
       "id": "CRL-CSQF3C54H2JZADWK",
@@ -8,7 +8,7 @@
       "token": "automation",
       "status": "proposed",
       "created_ts": "2026-02-21T05:23:48.613Z",
-      "updated_ts": "2026-02-21T05:24:22.200Z",
+      "updated_ts": "2026-02-21T06:01:40.483Z",
       "usefulness": {
         "useful": false,
         "gate_occurrences": false,
@@ -49,7 +49,7 @@
       "token": "revenue",
       "status": "proposed",
       "created_ts": "2026-02-21T05:23:48.613Z",
-      "updated_ts": "2026-02-21T05:24:22.200Z",
+      "updated_ts": "2026-02-21T06:01:40.483Z",
       "usefulness": {
         "useful": false,
         "gate_occurrences": false,
@@ -57,15 +57,15 @@
         "gate_memory": true
       },
       "occurrences_window": 1,
-      "avg_score_window": 48,
-      "max_score_window": 48,
+      "avg_score_window": 63,
+      "max_score_window": 63,
       "older_refs_window": 0,
       "row_refs_window": 8,
       "observed_dates": [
         "2026-02-21"
       ],
       "latest_date": "2026-02-21",
-      "latest_score": 48,
+      "latest_score": 63,
       "refs": [
         "memory/2026-02-20.md#eye-upwork_gigs-324be047",
         "memory/2026-02-20.md#eye-medium_com-7d719655",
@@ -172,7 +172,7 @@
       "token": "cross-signal",
       "status": "proposed",
       "created_ts": "2026-02-21T05:23:48.614Z",
-      "updated_ts": "2026-02-21T05:24:22.200Z",
+      "updated_ts": "2026-02-21T06:01:40.483Z",
       "usefulness": {
         "useful": false,
         "gate_occurrences": false,
@@ -180,21 +180,22 @@
         "gate_memory": true
       },
       "occurrences_window": 1,
-      "avg_score_window": 30,
-      "max_score_window": 30,
+      "avg_score_window": 35,
+      "max_score_window": 35,
       "older_refs_window": 0,
-      "row_refs_window": 5,
+      "row_refs_window": 6,
       "observed_dates": [
         "2026-02-21"
       ],
       "latest_date": "2026-02-21",
-      "latest_score": 30,
+      "latest_score": 35,
       "refs": [
         "memory/2026-02-21.md#eye-cross_signal_engine-436f62fe",
         "memory/2026-02-21.md#eye-cross_signal_engine-adf49100",
         "memory/2026-02-21.md#eye-cross_signal_engine-9889f6c6",
         "memory/2026-02-21.md#eye-cross_signal_engine-634f903f",
-        "memory/2026-02-21.md#eye-cross_signal_engine-32283de6"
+        "memory/2026-02-21.md#eye-cross_signal_engine-32283de6",
+        "memory/2026-02-21.md#eye-cross_signal_engine-63ca57fc"
       ],
       "source_types": [
         "memory_dream"
@@ -254,7 +255,7 @@
       "token": "generate_one_bounded_strategy_hypothesis",
       "status": "proposed",
       "created_ts": "2026-02-21T05:23:48.614Z",
-      "updated_ts": "2026-02-21T05:24:22.200Z",
+      "updated_ts": "2026-02-21T06:01:40.483Z",
       "usefulness": {
         "useful": false,
         "gate_occurrences": false,
@@ -293,7 +294,7 @@
       "token": "freelance",
       "status": "proposed",
       "created_ts": "2026-02-21T05:24:22.200Z",
-      "updated_ts": "2026-02-21T05:24:22.200Z",
+      "updated_ts": "2026-02-21T06:01:40.483Z",
       "usefulness": {
         "useful": false,
         "gate_occurrences": false,
@@ -301,21 +302,22 @@
         "gate_memory": true
       },
       "occurrences_window": 1,
-      "avg_score_window": 30,
-      "max_score_window": 30,
+      "avg_score_window": 35,
+      "max_score_window": 35,
       "older_refs_window": 0,
-      "row_refs_window": 5,
+      "row_refs_window": 6,
       "observed_dates": [
         "2026-02-21"
       ],
       "latest_date": "2026-02-21",
-      "latest_score": 30,
+      "latest_score": 35,
       "refs": [
         "memory/2026-02-20.md#eye-upwork_gigs-324be047",
         "memory/2026-02-20.md#eye-upwork_gigs-35909358",
         "memory/2026-02-20.md#eye-upwork_gigs-2a650d28",
         "memory/2026-02-21.md#eye-upwork_gigs-506727c5",
-        "memory/2026-02-21.md#eye-upwork_gigs-6d8c02db"
+        "memory/2026-02-21.md#eye-upwork_gigs-6d8c02db",
+        "memory/2026-02-21.md#eye-upwork_gigs-f0bd4d91"
       ],
       "source_types": [
         "memory_dream"
@@ -334,7 +336,7 @@
       "token": "gigs",
       "status": "proposed",
       "created_ts": "2026-02-21T05:24:22.200Z",
-      "updated_ts": "2026-02-21T05:24:22.200Z",
+      "updated_ts": "2026-02-21T06:01:40.483Z",
       "usefulness": {
         "useful": false,
         "gate_occurrences": false,
@@ -342,21 +344,22 @@
         "gate_memory": true
       },
       "occurrences_window": 1,
-      "avg_score_window": 30,
-      "max_score_window": 30,
+      "avg_score_window": 35,
+      "max_score_window": 35,
       "older_refs_window": 0,
-      "row_refs_window": 5,
+      "row_refs_window": 6,
       "observed_dates": [
         "2026-02-21"
       ],
       "latest_date": "2026-02-21",
-      "latest_score": 30,
+      "latest_score": 35,
       "refs": [
         "memory/2026-02-20.md#eye-upwork_gigs-324be047",
         "memory/2026-02-20.md#eye-upwork_gigs-35909358",
         "memory/2026-02-20.md#eye-upwork_gigs-2a650d28",
         "memory/2026-02-21.md#eye-upwork_gigs-506727c5",
-        "memory/2026-02-21.md#eye-upwork_gigs-6d8c02db"
+        "memory/2026-02-21.md#eye-upwork_gigs-6d8c02db",
+        "memory/2026-02-21.md#eye-upwork_gigs-f0bd4d91"
       ],
       "source_types": [
         "memory_dream"
@@ -375,7 +378,7 @@
       "token": "opportunity",
       "status": "proposed",
       "created_ts": "2026-02-21T05:24:22.200Z",
-      "updated_ts": "2026-02-21T05:24:22.200Z",
+      "updated_ts": "2026-02-21T06:01:40.483Z",
       "usefulness": {
         "useful": false,
         "gate_occurrences": false,
@@ -383,21 +386,23 @@
         "gate_memory": true
       },
       "occurrences_window": 1,
-      "avg_score_window": 30,
-      "max_score_window": 30,
+      "avg_score_window": 45,
+      "max_score_window": 45,
       "older_refs_window": 0,
-      "row_refs_window": 5,
+      "row_refs_window": 7,
       "observed_dates": [
         "2026-02-21"
       ],
       "latest_date": "2026-02-21",
-      "latest_score": 30,
+      "latest_score": 45,
       "refs": [
         "memory/2026-02-20.md#eye-upwork_gigs-324be047",
         "memory/2026-02-20.md#eye-upwork_gigs-35909358",
         "memory/2026-02-20.md#eye-upwork_gigs-2a650d28",
         "memory/2026-02-21.md#eye-upwork_gigs-506727c5",
-        "memory/2026-02-21.md#eye-upwork_gigs-6d8c02db"
+        "memory/2026-02-21.md#eye-upwork_gigs-6d8c02db",
+        "memory/2026-02-21.md#eye-upwork_gigs-f0bd4d91",
+        "memory/2026-02-21.md#eye-producthunt_launches-98601457"
       ],
       "source_types": [
         "memory_dream"

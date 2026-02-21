@@ -195,6 +195,12 @@ function main() {
     ["receipt_summary.js", "run", "--days"]
   );
 
+  // pipeline_spc_gate.js enforces process-control limits for escalation safety.
+  checkScript(
+    "systems/autonomy/pipeline_spc_gate.js",
+    ["pipeline_spc_gate.js", "run", "--days", "--baseline-days", "--sigma"]
+  );
+
   // strategy_doctor.js validates/prints active strategy profile and effective policy.
   checkScript(
     "systems/autonomy/strategy_doctor.js",
@@ -253,6 +259,12 @@ function main() {
   checkScript(
     "systems/routing/route_execute.js",
     ["route_execute.js", "--task"]
+  );
+
+  // system_budget.js centralizes strategy-allocated caps + system enforcement + usage recording.
+  checkScript(
+    "systems/budget/system_budget.js",
+    ["system_budget.js", "status", "project", "record", "--request_tokens_est"]
   );
 
   // eyes_memory_bridge.js wires enriched sensory proposals into memory nodes + pointer logs.
@@ -356,6 +368,29 @@ function main() {
     ['"ok": true']
   );
 
+  // llm_gateway_guard.js prevents direct runtime LLM-provider calls outside routing gateway files.
+  checkScript(
+    "systems/security/llm_gateway_guard.js",
+    ["llm_gateway_guard.js", "run", "--strict"]
+  );
+  checkUsage(
+    "systems/security/llm_gateway_guard.js",
+    ["run", "--strict"],
+    ['"ok": true']
+  );
+
+  // capability_lease.js issues/verifies single-use scoped lease tokens for high-tier mutations.
+  checkScript(
+    "systems/security/capability_lease.js",
+    ["capability_lease.js", "issue", "verify", "consume", "--scope"]
+  );
+
+  // policy_rootd.js authorizes sensitive scope mutations via out-of-process policy root.
+  checkScript(
+    "systems/security/policy_rootd.js",
+    ["policy_rootd.js", "authorize", "status", "--scope"]
+  );
+
   // request_ingress.js stamps source/action and signed envelopes for guarded command ingress.
   checkScript(
     "systems/security/request_ingress.js",
@@ -422,6 +457,27 @@ function main() {
   checkScript(
     "systems/strategy/strategy_learner.js",
     ["strategy_learner.js", "run", "status", "--days"]
+  );
+
+  // strategy_controller.js manages adaptive strategy queue/intake/materialization via channelized store mutations.
+  checkScript(
+    "systems/strategy/strategy_controller.js",
+    [
+      "strategy_controller.js",
+      "status",
+      "get",
+      "intake",
+      "collect",
+      "queue",
+      "materialize",
+      "set-profile",
+      "mutate-profile",
+      "touch-use",
+      "sync-usage",
+      "gc",
+      "restore",
+      "--approval-note"
+    ]
   );
 
   // outcome_fitness_loop.js derives adaptive policy updates from realized run/receipt outcomes.

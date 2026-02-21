@@ -67,6 +67,9 @@ function evaluateReadiness(strategy, summary, policy, requestedDays) {
   const receipts = summary && summary.receipts && summary.receipts.combined ? summary.receipts.combined : {};
   const autonomyReceipts = summary && summary.receipts && summary.receipts.autonomy ? summary.receipts.autonomy : {};
   const executedOutcomes = runs.executed_outcomes || {};
+  const objectiveScorecard = runs.objective_scorecard && typeof runs.objective_scorecard === 'object'
+    ? runs.objective_scorecard
+    : {};
   const executed = Number(runs.executed || 0);
   const shipped = Number(executedOutcomes.shipped || 0);
   const reverted = Number(executedOutcomes.reverted || 0);
@@ -76,7 +79,18 @@ function evaluateReadiness(strategy, summary, policy, requestedDays) {
   const verifiedRate = Number(receipts.verified_rate || 0);
   const criteriaReceipts = Number(autonomyReceipts.success_criteria_receipts || 0);
   const criteriaPassRate = Number(autonomyReceipts.success_criteria_receipt_pass_rate || 0);
+  const minCriteriaReceipts = Number(policy.min_success_criteria_receipts || 0);
   const minCriteriaPassRate = Number(policy.min_success_criteria_pass_rate || 0.6);
+  const minObjectiveCoverage = Number(policy.min_objective_coverage || 0);
+  const maxObjectiveNoProgressRate = Number(policy.max_objective_no_progress_rate || 1);
+  const objectiveRows = Object.values(objectiveScorecard);
+  const objectiveAttempts = objectiveRows.reduce((acc, row) => acc + Number(row && row.attempts || 0), 0);
+  const objectiveNoProgress = objectiveRows.reduce(
+    (acc, row) => acc + Number(row && row.no_change || 0) + Number(row && row.reverted || 0),
+    0
+  );
+  const objectiveCoverage = safeRate(objectiveAttempts, attempted);
+  const objectiveNoProgressRate = safeRate(objectiveNoProgress, objectiveAttempts);
   const revertedRate = safeRate(reverted, executed);
   const stopRatio = safeRate(stopped, totalRuns);
   const policyDays = Number(policy.min_days || 7);
@@ -120,10 +134,30 @@ function evaluateReadiness(strategy, summary, policy, requestedDays) {
       target: `>=${Number(policy.min_shipped || 0)}`
     },
     {
+      name: 'success_criteria_receipts',
+      pass: criteriaReceipts >= minCriteriaReceipts,
+      value: criteriaReceipts,
+      target: `>=${minCriteriaReceipts}`
+    },
+    {
       name: 'success_criteria_pass_rate',
-      pass: criteriaReceipts <= 0 || criteriaPassRate >= minCriteriaPassRate,
-      value: criteriaReceipts <= 0 ? null : criteriaPassRate,
-      target: criteriaReceipts <= 0 ? 'n/a(no_data)' : `>=${minCriteriaPassRate}`
+      pass: criteriaReceipts >= minCriteriaReceipts && criteriaPassRate >= minCriteriaPassRate,
+      value: criteriaReceipts >= minCriteriaReceipts ? criteriaPassRate : null,
+      target: criteriaReceipts >= minCriteriaReceipts ? `>=${minCriteriaPassRate}` : `requires_receipts>=${minCriteriaReceipts}`
+    },
+    {
+      name: 'objective_coverage',
+      pass: objectiveCoverage >= minObjectiveCoverage,
+      value: objectiveCoverage,
+      target: `>=${minObjectiveCoverage}`
+    },
+    {
+      name: 'objective_no_progress_rate',
+      pass: objectiveAttempts > 0
+        ? objectiveNoProgressRate <= maxObjectiveNoProgressRate
+        : minObjectiveCoverage <= 0,
+      value: objectiveAttempts > 0 ? objectiveNoProgressRate : null,
+      target: objectiveAttempts > 0 ? `<=${maxObjectiveNoProgressRate}` : 'n/a(no_objective_attempts)'
     }
   ];
 
@@ -146,7 +180,13 @@ function evaluateReadiness(strategy, summary, policy, requestedDays) {
       attempted,
       verified_rate: verifiedRate,
       success_criteria_receipts: criteriaReceipts,
-      success_criteria_pass_rate: criteriaReceipts <= 0 ? null : criteriaPassRate,
+      min_success_criteria_receipts: minCriteriaReceipts,
+      success_criteria_pass_rate: criteriaReceipts >= minCriteriaReceipts ? criteriaPassRate : null,
+      objective_attempts: objectiveAttempts,
+      objective_coverage: objectiveCoverage,
+      min_objective_coverage: minObjectiveCoverage,
+      objective_no_progress_rate: objectiveAttempts > 0 ? objectiveNoProgressRate : null,
+      max_objective_no_progress_rate: maxObjectiveNoProgressRate,
       executed,
       shipped,
       reverted,

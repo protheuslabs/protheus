@@ -101,6 +101,8 @@ function run() {
   const promotion = resolver.strategyPromotionPolicy(active, { min_attempted: 10 });
   assert.strictEqual(promotion.min_days, 7);
   assert.strictEqual(promotion.min_attempted, 12);
+  assert.strictEqual(promotion.min_success_criteria_receipts, 2);
+  assert.strictEqual(promotion.min_objective_coverage, 0.25);
   assert.strictEqual(promotion.min_shipped, 1);
 
   const riskCap = resolver.strategyMaxRiskPerAction(active, 50);
