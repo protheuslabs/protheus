@@ -39,6 +39,7 @@ function run() {
   const eyesRegistryPath = path.join(sensoryDir, 'eyes', 'registry.json');
   const eyesConfigBefore = fs.existsSync(eyesConfigPath) ? fs.readFileSync(eyesConfigPath, 'utf8') : null;
   const outcomePolicyBefore = process.env.OUTCOME_FITNESS_POLICY_PATH;
+  const outcomePolicyPath = path.join(tmpRoot, 'outcome_fitness.json');
   const objectiveId = (() => {
     try {
       const directives = loadActiveDirectives({ allowMissing: true });
@@ -61,7 +62,17 @@ function run() {
     process.env.AUTONOMY_MIN_DIRECTIVE_FIT = '20';
     process.env.AUTONOMY_MIN_ACTIONABILITY_SCORE = '35';
     process.env.AUTONOMY_MIN_COMPOSITE_ELIGIBILITY = '45';
-    process.env.OUTCOME_FITNESS_POLICY_PATH = path.join(tmpRoot, 'no_outcome_policy.json');
+    fs.writeFileSync(outcomePolicyPath, JSON.stringify({
+      strategy_policy: {
+        proposal_type_threshold_offsets: {
+          collector_remediation: {
+            min_actionability_score: 4,
+            min_directive_fit: 2
+          }
+        }
+      }
+    }, null, 2));
+    process.env.OUTCOME_FITNESS_POLICY_PATH = outcomePolicyPath;
 
     fs.mkdirSync(path.dirname(eyesConfigPath), { recursive: true });
     fs.writeFileSync(eyesConfigPath, JSON.stringify({
@@ -169,6 +180,15 @@ function run() {
     assert.ok(low.meta && Number.isFinite(Number(low.meta.directive_fit_score)), 'low proposal has directive fit score');
     assert.ok(low.meta && Number.isFinite(Number(low.meta.actionability_score)), 'low proposal has actionability score');
     assert.ok(low.meta && Number.isFinite(Number(low.meta.composite_eligibility_score)), 'low proposal has composite score');
+    assert.strictEqual(
+      Number(low.meta && low.meta.type_threshold_offsets && low.meta.type_threshold_offsets.min_actionability_score || 0),
+      4,
+      'per-type threshold offset should be attached to meta'
+    );
+    assert.ok(
+      low.meta && low.meta.type_thresholds_applied && Number.isFinite(Number(low.meta.type_thresholds_applied.min_actionability_score)),
+      'type-adjusted thresholds should be attached to meta'
+    );
     assert.ok(Array.isArray(low.meta.directive_fit_positive) && low.meta.directive_fit_positive.length >= 1, 'normalizer should produce directive-fit positives');
     assert.ok(low.meta && low.meta.admission_preview && low.meta.admission_preview.eligible === true, 'low-risk OPEN proposal should be eligible');
     assert.ok(missing.meta && missing.meta.admission_preview && missing.meta.admission_preview.eligible === false, 'missing success criteria should be blocked');

@@ -25,7 +25,10 @@ const { loadActiveDirectives } = require('../../lib/directive_resolver.js');
 const { writeContractReceipt } = require('../../lib/action_receipts.js');
 const { isEmergencyStopEngaged } = require('../../lib/emergency_stop.js');
 const { compactCommandOutput } = require('../../lib/command_output_compactor.js');
-const { loadOutcomeFitnessPolicy } = require('../../lib/outcome_fitness.js');
+const {
+  loadOutcomeFitnessPolicy,
+  proposalTypeThresholdOffsetsFor
+} = require('../../lib/outcome_fitness.js');
 const { evaluateSuccessCriteria } = require('../../lib/success_criteria_verifier.js');
 const {
   toSuccessCriteriaRecord,
@@ -1736,6 +1739,25 @@ function appliedThresholds(base, deltas) {
     min_directive_fit: clampThreshold('min_directive_fit', b.min_directive_fit + Number(d.min_directive_fit || 0)),
     min_actionability_score: clampThreshold('min_actionability_score', b.min_actionability_score + Number(d.min_actionability_score || 0)),
     min_eye_score_ema: clampThreshold('min_eye_score_ema', b.min_eye_score_ema + Number(d.min_eye_score_ema || 0))
+  };
+}
+
+function thresholdsForProposalType(baseThresholdsObj, proposalType, policy) {
+  const base = baseThresholdsObj && typeof baseThresholdsObj === 'object'
+    ? baseThresholdsObj
+    : baseThresholds();
+  const offsets = proposalTypeThresholdOffsetsFor(policy || outcomeFitnessPolicy(), proposalType);
+  const next = { ...base };
+  for (const [key, deltaRaw] of Object.entries(offsets || {})) {
+    if (!Object.prototype.hasOwnProperty.call(base, key)) continue;
+    const baseVal = Number(base[key]);
+    if (!Number.isFinite(baseVal)) continue;
+    const delta = Number(deltaRaw || 0);
+    next[key] = clampThreshold(key, baseVal + delta);
+  }
+  return {
+    thresholds: next,
+    offsets
   };
 }
 
@@ -5259,9 +5281,12 @@ function statusCmd(dateStr) {
     },
     model_catalog: modelCatalogStatusSnapshot(),
     candidates: pool.slice(0, 5).map(x => {
-      const q = assessSignalQuality(x.proposal, eyesMap, thresholds, calibrationProfile);
-      const dfit = assessDirectiveFit(x.proposal, directiveProfile, thresholds);
-      const act = assessActionability(x.proposal, dfit, thresholds);
+      const candidateType = String(x && x.proposal && x.proposal.type || '');
+      const typeThresholdPack = thresholdsForProposalType(thresholds, candidateType, outcomeFitnessPolicy());
+      const candidateThresholds = typeThresholdPack.thresholds;
+      const q = assessSignalQuality(x.proposal, eyesMap, candidateThresholds, calibrationProfile);
+      const dfit = assessDirectiveFit(x.proposal, directiveProfile, candidateThresholds);
+      const act = assessActionability(x.proposal, dfit, candidateThresholds);
       const valueSignal = assessValueSignal(x.proposal, act, dfit);
       const composite = compositeEligibilityScore(q.score, dfit.score, act.score);
       const candidateRisk = normalizedRisk(x.proposal && x.proposal.risk);
@@ -5309,6 +5334,8 @@ function statusCmd(dateStr) {
         composite_eligibility_score: composite,
         composite_eligibility_min_score: compositeMin,
         composite_eligibility_base_min_score: AUTONOMY_MIN_COMPOSITE_ELIGIBILITY,
+        type_threshold_offsets: typeThresholdPack.offsets,
+        type_thresholds_applied: candidateThresholds,
         composite_eligibility_pass: composite >= compositeMin,
         directive_pulse: {
           pass: pulse.pass,
@@ -6117,6 +6144,7 @@ function runCmd(dateStr, opts = {}) {
   let sampleMediumPolicyBlocked = null;
   let sampleMediumDailyCap = null;
   let sampleDirectivePulseCooldown = null;
+  const fitnessPolicy = outcomeFitnessPolicy();
   const candidateAuditLimit = clampNumber(Math.round(AUTONOMY_CANDIDATE_AUDIT_MAX_ROWS), 5, 200);
   const candidateRejectedByGate = {};
   const candidateAuditRows = [];
@@ -6174,8 +6202,10 @@ function runCmd(dateStr, opts = {}) {
   for (const cand of pool) {
     const proposalId = String(cand && cand.proposal && cand.proposal.id || '');
     const proposalType = String(cand && cand.proposal && cand.proposal.type || '');
+    const typeThresholdPack = thresholdsForProposalType(thresholds, proposalType, fitnessPolicy);
+    const gateThresholds = typeThresholdPack.thresholds;
     const risk = normalizedRisk(cand.proposal && cand.proposal.risk);
-    const q = assessSignalQuality(cand.proposal, eyesMap, thresholds, calibrationProfile);
+    const q = assessSignalQuality(cand.proposal, eyesMap, gateThresholds, calibrationProfile);
     if (!q.pass) {
       skipStats.low_quality += 1;
       bumpCount(candidateRejectedByGate, 'signal_quality');
@@ -6192,10 +6222,11 @@ function runCmd(dateStr, opts = {}) {
           sensory_relevance: q.sensory_relevance_score
         },
         thresholds: {
-          min_signal_quality: thresholds.min_signal_quality,
-          min_sensory_signal_score: thresholds.min_sensory_signal_score,
-          min_sensory_relevance_score: thresholds.min_sensory_relevance_score
+          min_signal_quality: gateThresholds.min_signal_quality,
+          min_sensory_signal_score: gateThresholds.min_sensory_signal_score,
+          min_sensory_relevance_score: gateThresholds.min_sensory_relevance_score
         },
+        type_threshold_offsets: typeThresholdPack.offsets,
         reasons: q.reasons.slice(0, 3)
       });
       if (!sampleLowQuality) {
@@ -6209,7 +6240,7 @@ function runCmd(dateStr, opts = {}) {
       continue;
     }
 
-    const dfit = assessDirectiveFit(cand.proposal, directiveProfile, thresholds);
+    const dfit = assessDirectiveFit(cand.proposal, directiveProfile, gateThresholds);
     if (!dfit.pass) {
       skipStats.low_directive_fit += 1;
       bumpCount(candidateRejectedByGate, 'directive_fit');
@@ -6221,7 +6252,8 @@ function runCmd(dateStr, opts = {}) {
         gate: 'directive_fit',
         score: Number(cand.score || 0),
         scores: { directive_fit: dfit.score },
-        thresholds: { min_directive_fit: thresholds.min_directive_fit },
+        thresholds: { min_directive_fit: gateThresholds.min_directive_fit },
+        type_threshold_offsets: typeThresholdPack.offsets,
         reasons: dfit.reasons.slice(0, 3)
       });
       if (!sampleLowDirectiveFit) {
@@ -6236,7 +6268,7 @@ function runCmd(dateStr, opts = {}) {
       continue;
     }
 
-    const actionability = assessActionability(cand.proposal, dfit, thresholds);
+    const actionability = assessActionability(cand.proposal, dfit, gateThresholds);
     if (!actionability.pass) {
       skipStats.low_actionability += 1;
       bumpCount(candidateRejectedByGate, 'actionability');
@@ -6252,9 +6284,10 @@ function runCmd(dateStr, opts = {}) {
           actionability: actionability.score
         },
         thresholds: {
-          min_directive_fit: thresholds.min_directive_fit,
-          min_actionability_score: thresholds.min_actionability_score
+          min_directive_fit: gateThresholds.min_directive_fit,
+          min_actionability_score: gateThresholds.min_actionability_score
         },
+        type_threshold_offsets: typeThresholdPack.offsets,
         reasons: actionability.reasons.slice(0, 3)
       });
       if (!sampleLowActionability) {
@@ -6398,7 +6431,7 @@ function runCmd(dateStr, opts = {}) {
       continue;
     }
 
-    const mediumGate = mediumRiskGateDecision(cand.proposal, dfit.score, actionability.score, compositeScore, thresholds);
+    const mediumGate = mediumRiskGateDecision(cand.proposal, dfit.score, actionability.score, compositeScore, gateThresholds);
     if (!mediumGate.pass) {
       skipStats.medium_risk_guard += 1;
       bumpCount(candidateRejectedByGate, 'medium_risk_guard');
@@ -6415,6 +6448,7 @@ function runCmd(dateStr, opts = {}) {
           actionability: actionability.score
         },
         thresholds: mediumGate.required || null,
+        type_threshold_offsets: typeThresholdPack.offsets,
         reasons: mediumGate.reasons.slice(0, 3)
       });
       if (!sampleMediumRiskGuard) {
@@ -6608,13 +6642,14 @@ function runCmd(dateStr, opts = {}) {
         composite: compositeScore
       },
       thresholds: {
-        min_signal_quality: thresholds.min_signal_quality,
-        min_directive_fit: thresholds.min_directive_fit,
-        min_actionability_score: thresholds.min_actionability_score,
+        min_signal_quality: gateThresholds.min_signal_quality,
+        min_directive_fit: gateThresholds.min_directive_fit,
+        min_actionability_score: gateThresholds.min_actionability_score,
         min_value_signal_score: valueSignal.min_score,
         min_composite_eligibility: compositeMin,
         min_composite_eligibility_base: AUTONOMY_MIN_COMPOSITE_ELIGIBILITY
       },
+      type_threshold_offsets: typeThresholdPack.offsets,
       directive_pulse: {
         score: pulse.score,
         objective_id: pulse.objective_id || null,
@@ -6721,11 +6756,14 @@ function runCmd(dateStr, opts = {}) {
 
   if (!pick && shadowOnly && pool.length > 0) {
     const fallback = pool[0];
+    const fallbackType = String(fallback && fallback.proposal && fallback.proposal.type || '');
+    const fallbackThresholdPack = thresholdsForProposalType(thresholds, fallbackType, fitnessPolicy);
+    const fallbackThresholds = fallbackThresholdPack.thresholds;
     const fallbackRisk = normalizedRisk(fallback.proposal && fallback.proposal.risk);
     const fallbackObjectiveBinding = resolveObjectiveBinding(fallback.proposal, directivePulseCtx);
-    const q = assessSignalQuality(fallback.proposal, eyesMap, thresholds, calibrationProfile);
-    const dfit = assessDirectiveFit(fallback.proposal, directiveProfile, thresholds);
-    const actionability = assessActionability(fallback.proposal, dfit, thresholds);
+    const q = assessSignalQuality(fallback.proposal, eyesMap, fallbackThresholds, calibrationProfile);
+    const dfit = assessDirectiveFit(fallback.proposal, directiveProfile, fallbackThresholds);
+    const actionability = assessActionability(fallback.proposal, dfit, fallbackThresholds);
     const valueSignal = assessValueSignal(fallback.proposal, actionability, dfit);
     const compositeScore = compositeEligibilityScore(q.score, dfit.score, actionability.score);
     const compositeMin = compositeEligibilityMin(fallbackRisk, executionMode);
@@ -6765,6 +6803,8 @@ function runCmd(dateStr, opts = {}) {
       eye_no_progress_24h: countEyeOutcomesInLastHours(decisionEvents, sourceEyeRef(fallback.proposal), 'no_change', 24),
       objective_binding: fallbackObjectiveBinding,
       directive_pulse: pulse,
+      type_threshold_offsets: fallbackThresholdPack.offsets,
+      type_thresholds_applied: fallbackThresholds,
       strategy_rank: fallbackStrategyRank,
       strategy_rank_adjusted: fallbackAdjusted.adjusted,
       strategy_rank_bonus: fallbackAdjusted.bonus

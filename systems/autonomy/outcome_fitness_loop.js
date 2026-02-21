@@ -41,6 +41,9 @@ const OUT_DIR = process.env.OUTCOME_FITNESS_OUT_DIR
   : path.join(REPO_ROOT, 'state', 'adaptive', 'strategy');
 const LATEST_PATH = path.join(OUT_DIR, 'outcome_fitness.json');
 const HISTORY_DIR = path.join(OUT_DIR, 'outcome_fitness');
+const RECEIPTS_PATH = path.join(OUT_DIR, 'receipts.jsonl');
+const TYPE_MIN_OUTCOME_SAMPLES = clampInt(process.env.OUTCOME_FITNESS_TYPE_MIN_OUTCOME_SAMPLES, 2, 30, 3);
+const TYPE_OFFSET_LIMIT = clampInt(process.env.OUTCOME_FITNESS_TYPE_OFFSET_LIMIT, 1, 12, 4);
 
 function nowIso() { return new Date().toISOString(); }
 function todayStr() { return new Date().toISOString().slice(0, 10); }
@@ -103,6 +106,11 @@ function writeJsonAtomic(filePath, obj) {
   fs.renameSync(tmp, filePath);
 }
 
+function appendJsonl(filePath, obj) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.appendFileSync(filePath, `${JSON.stringify(obj)}\n`, 'utf8');
+}
+
 function readJsonl(filePath) {
   if (!fs.existsSync(filePath)) return [];
   return fs.readFileSync(filePath, 'utf8')
@@ -132,6 +140,16 @@ function rate(num, den) {
   const d = Number(den || 0);
   if (!Number.isFinite(n) || !Number.isFinite(d) || d <= 0) return 0;
   return Number((n / d).toFixed(4));
+}
+
+function normalizeProposalType(v) {
+  const key = String(v || '').trim().toLowerCase();
+  if (!key) return 'unknown';
+  return key
+    .replace(/[^a-z0-9_.:-]+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 64) || 'unknown';
 }
 
 function loadActiveStrategyProfile() {
@@ -175,6 +193,58 @@ function summarizeRuns(dates) {
   out.reverted_rate = rate(out.reverted, out.executed);
   out.stop_ratio = rate(out.stopped, out.attempted);
   return { metrics: out, receipt_to_strategy: receiptToStrategy };
+}
+
+function summarizeTypeOutcomes(dates) {
+  const byType = {};
+  for (const dateStr of dates) {
+    const rows = readJsonl(path.join(RUNS_DIR, `${dateStr}.jsonl`));
+    for (const row of rows) {
+      if (!row || row.type !== 'autonomy_run') continue;
+      const proposalType = normalizeProposalType(row.proposal_type);
+      const rec = byType[proposalType] || {
+        proposal_type: proposalType,
+        attempted: 0,
+        executed: 0,
+        shipped: 0,
+        no_change: 0,
+        reverted: 0,
+        stopped: 0,
+        outcome_samples: 0
+      };
+      const result = String(row.result || '');
+      const outcome = String(row.outcome || '');
+      if (result !== 'no_candidates') rec.attempted += 1;
+      if (result === 'executed') rec.executed += 1;
+      if (result.startsWith('stop_')) rec.stopped += 1;
+      if (outcome === 'shipped' || outcome === 'no_change' || outcome === 'reverted') {
+        rec.outcome_samples += 1;
+        if (outcome === 'shipped') rec.shipped += 1;
+        if (outcome === 'no_change') rec.no_change += 1;
+        if (outcome === 'reverted') rec.reverted += 1;
+      }
+      byType[proposalType] = rec;
+    }
+  }
+
+  const rows = Object.values(byType)
+    .map((row) => ({
+      ...row,
+      shipped_rate: rate(row.shipped, row.outcome_samples),
+      no_change_rate: rate(row.no_change, row.outcome_samples),
+      reverted_rate: rate(row.reverted, row.outcome_samples),
+      stop_ratio: rate(row.stopped, row.attempted)
+    }))
+    .sort((a, b) => {
+      const sa = Number(b.outcome_samples || 0) - Number(a.outcome_samples || 0);
+      if (sa !== 0) return sa;
+      return String(a.proposal_type).localeCompare(String(b.proposal_type));
+    });
+
+  return {
+    min_outcome_samples: TYPE_MIN_OUTCOME_SAMPLES,
+    rows
+  };
 }
 
 function summarizeReceipts(dates) {
@@ -308,6 +378,70 @@ function deriveThresholdOverrides(base, runMetrics, receiptMetrics, blocks) {
   };
 }
 
+function deriveTypeThresholdOffsets(typeSummary) {
+  const rows = typeSummary && Array.isArray(typeSummary.rows) ? typeSummary.rows : [];
+  const offsets = {};
+  const audit = {};
+  for (const row of rows) {
+    const sample = Number(row.outcome_samples || 0);
+    if (sample < TYPE_MIN_OUTCOME_SAMPLES) continue;
+
+    const shippedRate = Number(row.shipped_rate || 0);
+    const noChangeRate = Number(row.no_change_rate || 0);
+    const revertedRate = Number(row.reverted_rate || 0);
+
+    const delta = {
+      min_directive_fit: 0,
+      min_actionability_score: 0,
+      min_composite_eligibility: 0
+    };
+    const reasons = [];
+
+    if (revertedRate >= 0.2 || (noChangeRate >= 0.65 && shippedRate <= 0.2)) {
+      delta.min_actionability_score += 2;
+      delta.min_composite_eligibility += 2;
+      delta.min_directive_fit += 1;
+      reasons.push('tighten_for_reverted_or_high_no_change');
+    } else if (shippedRate >= 0.55 && noChangeRate <= 0.3 && revertedRate <= 0.1) {
+      delta.min_actionability_score -= 1;
+      delta.min_composite_eligibility -= 1;
+      reasons.push('loosen_for_consistent_shipping');
+    }
+
+    if (noChangeRate >= 0.5) {
+      delta.min_composite_eligibility += 1;
+      reasons.push('tighten_composite_for_no_change');
+    }
+    if (noChangeRate >= 0.6) {
+      delta.min_actionability_score += 1;
+      reasons.push('tighten_actionability_for_no_change');
+    }
+    if (shippedRate >= 0.6 && noChangeRate <= 0.25) {
+      delta.min_directive_fit -= 1;
+      reasons.push('loosen_directive_for_high_shipping');
+    }
+
+    const bounded = {
+      min_directive_fit: clampInt(delta.min_directive_fit, -TYPE_OFFSET_LIMIT, TYPE_OFFSET_LIMIT, 0),
+      min_actionability_score: clampInt(delta.min_actionability_score, -TYPE_OFFSET_LIMIT, TYPE_OFFSET_LIMIT, 0),
+      min_composite_eligibility: clampInt(delta.min_composite_eligibility, -TYPE_OFFSET_LIMIT, TYPE_OFFSET_LIMIT, 0)
+    };
+
+    const hasDelta = Object.values(bounded).some((v) => Number(v || 0) !== 0);
+    if (!hasDelta) continue;
+    offsets[row.proposal_type] = bounded;
+    audit[row.proposal_type] = {
+      sample,
+      shipped_rate: shippedRate,
+      no_change_rate: noChangeRate,
+      reverted_rate: revertedRate,
+      reasons
+    };
+  }
+
+  return { offsets, audit };
+}
+
 function deriveRankingWeightOverride(baseWeights, runMetrics, receiptMetrics) {
   const w = {
     composite: Number(baseWeights.composite || 0),
@@ -410,12 +544,14 @@ function buildPayload(dateStr, days) {
     : {};
 
   const runSummary = summarizeRuns(dates);
+  const typeSummary = summarizeTypeOutcomes(dates);
   const receiptMetrics = summarizeReceipts(dates);
   const blockSummary = summarizeProposalBlocks(dates);
   const runMetrics = runSummary.metrics;
   const realizedScore = computeRealizedOutcomeScore(runMetrics, receiptMetrics);
 
   const thresholdOverrides = deriveThresholdOverrides(baseThresholds, runMetrics, receiptMetrics, blockSummary);
+  const typeCalibration = deriveTypeThresholdOffsets(typeSummary);
   const rankingWeights = deriveRankingWeightOverride(baseWeights, runMetrics, receiptMetrics);
   const focusDelta = deriveFocusDelta(runMetrics, blockSummary);
   const minCriteriaCount = (
@@ -439,12 +575,15 @@ function buildPayload(dateStr, days) {
     metrics: {
       runs: runMetrics,
       receipts: receiptMetrics,
-      admission: blockSummary
+      admission: blockSummary,
+      proposal_type_outcomes: typeSummary
     },
     realized_outcome_score: realizedScore,
     strategy_policy: {
       strategy_id: strategyId || null,
       threshold_overrides: thresholdOverrides,
+      proposal_type_threshold_offsets: typeCalibration.offsets,
+      proposal_type_calibration_audit: typeCalibration.audit,
       ranking_weights_override: rankingWeights
     },
     focus_policy: {
@@ -464,9 +603,35 @@ function runCmd(args) {
   const payload = buildPayload(dateStr, days);
   const historyPath = path.join(HISTORY_DIR, `${dateStr}.json`);
 
+  const prevPayload = readJson(LATEST_PATH, null);
   if (apply) {
     writeJsonAtomic(LATEST_PATH, payload);
     writeJsonAtomic(historyPath, payload);
+    const prevOffsets = prevPayload
+      && prevPayload.strategy_policy
+      && prevPayload.strategy_policy.proposal_type_threshold_offsets
+      && typeof prevPayload.strategy_policy.proposal_type_threshold_offsets === 'object'
+        ? prevPayload.strategy_policy.proposal_type_threshold_offsets
+        : {};
+    const nextOffsets = payload
+      && payload.strategy_policy
+      && payload.strategy_policy.proposal_type_threshold_offsets
+      && typeof payload.strategy_policy.proposal_type_threshold_offsets === 'object'
+        ? payload.strategy_policy.proposal_type_threshold_offsets
+        : {};
+    const changed = JSON.stringify(prevOffsets) !== JSON.stringify(nextOffsets);
+    if (changed) {
+      appendJsonl(RECEIPTS_PATH, {
+        ts: nowIso(),
+        type: 'proposal_type_threshold_calibration',
+        date: dateStr,
+        window_days: days,
+        changed: true,
+        previous_offsets: prevOffsets,
+        next_offsets: nextOffsets,
+        calibration_audit: payload.strategy_policy.proposal_type_calibration_audit || {}
+      });
+    }
   }
 
   process.stdout.write(JSON.stringify({

@@ -45,6 +45,7 @@ function run() {
   const receiptsDir = path.join(tmpRoot, 'state', 'autonomy', 'receipts');
   const proposalsDir = path.join(tmpRoot, 'state', 'sensory', 'proposals');
   const outDir = path.join(tmpRoot, 'state', 'adaptive', 'strategy');
+  const receiptAuditPath = path.join(outDir, 'receipts.jsonl');
   mkDir(strategyDir);
   mkDir(runsDir);
   mkDir(receiptsDir);
@@ -80,6 +81,7 @@ function run() {
       type: 'autonomy_run',
       result: 'executed',
       outcome: 'shipped',
+      proposal_type: 'external_intel',
       strategy_id: 'default_general',
       receipt_id: 'r1'
     },
@@ -88,8 +90,18 @@ function run() {
       type: 'autonomy_run',
       result: 'executed',
       outcome: 'no_change',
+      proposal_type: 'external_intel',
       strategy_id: 'default_general',
       receipt_id: 'r2'
+    },
+    {
+      ts: `${date}T11:30:00.000Z`,
+      type: 'autonomy_run',
+      result: 'executed',
+      outcome: 'no_change',
+      proposal_type: 'external_intel',
+      strategy_id: 'default_general',
+      receipt_id: 'r3'
     },
     {
       ts: `${date}T12:00:00.000Z`,
@@ -143,6 +155,28 @@ function run() {
           passed: false
         }
       }
+    },
+    {
+      ts: `${date}T11:35:00.000Z`,
+      type: 'autonomy_action_receipt',
+      receipt_id: 'r3',
+      verdict: 'fail',
+      receipt_contract: { attempted: true, verified: false },
+      verification: {
+        passed: false,
+        outcome: 'no_change',
+        success_criteria: {
+          required: true,
+          min_count: 1,
+          total_count: 2,
+          evaluated_count: 2,
+          passed_count: 1,
+          failed_count: 1,
+          unknown_count: 0,
+          pass_rate: 0.5,
+          passed: false
+        }
+      }
     }
   ]);
 
@@ -176,8 +210,18 @@ function run() {
   assert.strictEqual(Number(out.proposal_filter_policy.min_success_criteria_count), 2, 'low verified rate should tighten criteria count');
   assert.strictEqual(Number(out.focus_policy.min_focus_score_delta), 3, 'directive-fit blocked dominance should tighten focus');
   assert.ok(Number(out.metrics.receipts.success_criteria_receipt_pass_rate) <= 0.6, 'criteria pass rate should be reflected in receipt metrics');
+  assert.ok(out.strategy_policy && out.strategy_policy.proposal_type_threshold_offsets, 'type threshold offsets should be present');
+  assert.ok(
+    Number(
+      out.strategy_policy.proposal_type_threshold_offsets.external_intel
+        && out.strategy_policy.proposal_type_threshold_offsets.external_intel.min_actionability_score
+        || 0
+    ) > 0,
+    'external_intel should tighten actionability threshold under high no_change rate'
+  );
   assert.ok(fs.existsSync(path.join(outDir, 'outcome_fitness.json')), 'latest outcome fitness must persist');
   assert.ok(fs.existsSync(path.join(outDir, 'outcome_fitness', `${date}.json`)), 'history outcome fitness must persist');
+  assert.ok(fs.existsSync(receiptAuditPath), 'calibration receipt audit should persist when offsets change');
 
   r = runScript(repoRoot, ['status', 'latest'], env);
   assert.strictEqual(r.status, 0, `status latest should pass: ${r.stderr}`);

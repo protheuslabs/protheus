@@ -24,7 +24,10 @@ const {
   effectiveAllowedRisks,
   strategyAllowsProposalType
 } = require('../../lib/strategy_resolver.js');
-const { loadOutcomeFitnessPolicy } = require('../../lib/outcome_fitness.js');
+const {
+  loadOutcomeFitnessPolicy,
+  proposalTypeThresholdOffsetsFor
+} = require('../../lib/outcome_fitness.js');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const SENSORY_DIR = process.env.SENSORY_TEST_DIR
@@ -113,6 +116,41 @@ function thresholds() {
     min_eye_score_ema: Number(process.env.AUTONOMY_MIN_EYE_SCORE_EMA || 45)
   };
   return applyThresholdOverrides(base, strategyProfile());
+}
+
+function applyTypeThresholds(baseThresholds, proposalType, outcomePolicy) {
+  const base = baseThresholds && typeof baseThresholds === 'object' ? baseThresholds : thresholds();
+  const offsets = proposalTypeThresholdOffsetsFor(outcomePolicy, proposalType);
+  const keys = [
+    'min_signal_quality',
+    'min_sensory_signal_score',
+    'min_sensory_relevance_score',
+    'min_directive_fit',
+    'min_actionability_score',
+    'min_composite_eligibility',
+    'min_eye_score_ema'
+  ];
+  const limits = {
+    min_signal_quality: [30, 95],
+    min_sensory_signal_score: [20, 95],
+    min_sensory_relevance_score: [20, 95],
+    min_directive_fit: [20, 95],
+    min_actionability_score: [20, 95],
+    min_composite_eligibility: [35, 95],
+    min_eye_score_ema: [20, 95]
+  };
+  const next = { ...base };
+  for (const key of keys) {
+    const baseVal = Number(base[key]);
+    if (!Number.isFinite(baseVal)) continue;
+    const delta = Number(offsets[key] || 0);
+    const [lo, hi] = limits[key] || [0, 100];
+    next[key] = clamp(Math.round(baseVal + delta), lo, hi);
+  }
+  return {
+    thresholds: next,
+    offsets
+  };
 }
 
 function effectiveAllowedRisksSet() {
@@ -764,7 +802,7 @@ function tokenHits(tokens, tokenSet) {
   return out;
 }
 
-function assessDirectiveFit(proposal, profile) {
+function assessDirectiveFit(proposal, profile, t) {
   if (!profile || profile.available !== true) {
     return {
       score: 100,
@@ -797,9 +835,10 @@ function assessDirectiveFit(proposal, profile) {
   if (negPhraseHits.length > 0 || negTokenHits.length > 0) reasons.push('matches_excluded_scope');
 
   const finalScore = clamp(Math.round(score), 0, 100);
+  const minDirectiveFit = Number((t && t.min_directive_fit) || thresholds().min_directive_fit);
   return {
     score: finalScore,
-    pass: finalScore >= thresholds().min_directive_fit,
+    pass: finalScore >= minDirectiveFit,
     matched_positive: uniq([...posPhraseHits, ...posTokenHits, ...strategyHits]).slice(0, 5),
     matched_negative: uniq([...negPhraseHits, ...negTokenHits]).slice(0, 5),
     reasons: uniq(reasons)
@@ -984,11 +1023,13 @@ function enrichOne(proposal, ctx) {
   const srcEye = sourceEyeId(p);
   const eye = ctx.eyes.get(srcEye) || null;
   const risk = normalizedRisk(p.risk);
-  const t = ctx.thresholds;
+  const proposalType = normalizeText(p.type).toLowerCase();
+  const typeThresholds = applyTypeThresholds(ctx.thresholds, proposalType, ctx.outcomePolicy);
+  const t = typeThresholds.thresholds;
   const objectiveBinding = resolveObjectiveBinding(p, ctx.directiveObjectiveIds);
 
   const q = assessQuality(p, eye, t);
-  const d = assessDirectiveFit(p, ctx.directiveProfile);
+  const d = assessDirectiveFit(p, ctx.directiveProfile, t);
   const relevance = clamp(Math.round((q.score * 0.55) + (d.score * 0.45)), 0, 100);
   const a = assessActionability(p, d.score, relevance, ctx.outcomePolicy);
   const comp = compositeScore(q.score, d.score, a.score);
@@ -1039,6 +1080,8 @@ function enrichOne(proposal, ctx) {
     success_criteria_total_count: a.success_criteria ? Number(a.success_criteria.total_count || 0) : 0,
     composite_eligibility_score: comp,
     composite_eligibility_pass: comp >= t.min_composite_eligibility,
+    type_threshold_offsets: typeThresholds.offsets,
+    type_thresholds_applied: t,
     admission_preview: {
       eligible: admit.eligible,
       blocked_by: admit.blocked_by.slice(0, 6)
