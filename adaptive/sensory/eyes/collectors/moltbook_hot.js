@@ -1,5 +1,5 @@
 /**
- * systems/sensory/eyes_collectors/moltbook_hot.js
+ * adaptive/sensory/eyes/collectors/moltbook_hot.js
  *
  * Deterministic Moltbook hot feed collector.
  * - Uses skill API wrapper for schema safety
@@ -8,8 +8,8 @@
  */
 
 const crypto = require('crypto');
-const { moltbook_getHotPosts } = require('../../../skills/moltbook/moltbook_api');
-const { issueSecretHandle, loadSecretById } = require('../../../lib/secret_broker');
+const { moltbook_getHotPosts } = require('../../../../skills/moltbook/moltbook_api');
+const { issueSecretHandle, loadSecretById } = require('../../../../lib/secret_broker');
 const { classifyCollectorError, makeCollectorError } = require('./collector_errors');
 const { loadCollectorCache, saveCollectorCache } = require('./cache_store');
 
@@ -25,7 +25,7 @@ function issueMoltbookApiHandle() {
   const res = issueSecretHandle({
     secret_id: 'moltbook_api_key',
     scope: 'sensory.collector.moltbook_hot',
-    caller: 'systems/sensory/eyes_collectors/moltbook_hot',
+    caller: 'adaptive/sensory/eyes/collectors/moltbook_hot',
     ttl_sec: 300,
     reason: 'collector_fetch'
   });
@@ -111,7 +111,7 @@ async function collectMoltbookHot(eyeConfig, budgets) {
     payload = await moltbook_getHotPosts(maxItems, {
       apiKeyHandle,
       scope: 'sensory.collector.moltbook_hot',
-      caller: 'systems/sensory/eyes_collectors/moltbook_hot'
+      caller: 'adaptive/sensory/eyes/collectors/moltbook_hot'
     });
   } catch (err) {
     const c = classifyCollectorError(err);

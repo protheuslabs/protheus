@@ -25,25 +25,14 @@ const { randomUid } = require('../../lib/uid.js');
 
 const WORKSPACE_DIR = path.join(__dirname, '..', '..');
 const CONFIG_PATH = resolveCatalogPath(WORKSPACE_DIR);
+const ADAPTIVE_COLLECTOR_DIR = process.env.ADAPTIVE_EYES_COLLECTOR_DIR
+  ? path.resolve(process.env.ADAPTIVE_EYES_COLLECTOR_DIR)
+  : path.join(WORKSPACE_DIR, 'adaptive', 'sensory', 'eyes', 'collectors');
 const REGISTRY_PATH = process.env.EYES_INTAKE_REGISTRY_PATH
   ? path.resolve(process.env.EYES_INTAKE_REGISTRY_PATH)
   : path.join(WORKSPACE_DIR, 'state', 'sensory', 'eyes', 'registry.json');
 const GUARD_PATH = path.join(WORKSPACE_DIR, 'systems', 'security', 'guard.js');
 const WORKSPACE_DUMP_GUARD_PATH = path.join(WORKSPACE_DIR, 'systems', 'security', 'workspace_dump_guard.js');
-
-const SUPPORTED_PARSERS = new Set([
-  'hn_rss',
-  'moltbook_hot',
-  'local_state_digest',
-  'ollama_search',
-  'bird_x',
-  'stock_market',
-  'google_trends',
-  'github_repo',
-  'upwork_gigs',
-  'producthunt_launches',
-  'stub'
-]);
 
 const DEFAULT_DOMAINS = {
   hn_rss: ['news.ycombinator.com', 'hnrss.org'],
@@ -69,6 +58,27 @@ function usage() {
   console.log('  node systems/sensory/eyes_intake.js validate --directive=<directive_id>');
   console.log('  node systems/sensory/eyes_intake.js list-directives');
   console.log('  node systems/sensory/eyes_intake.js --help');
+}
+
+function adaptiveCollectorPath(parserType) {
+  const key = String(parserType || '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+  if (!key) return '';
+  return path.join(ADAPTIVE_COLLECTOR_DIR, `${key}.js`);
+}
+
+function supportedParserTypes() {
+  const out = new Set(['stub']);
+  try {
+    if (fs.existsSync(ADAPTIVE_COLLECTOR_DIR)) {
+      for (const f of fs.readdirSync(ADAPTIVE_COLLECTOR_DIR)) {
+        if (!String(f).endsWith('.js')) continue;
+        out.add(String(f).replace(/\.js$/i, '').trim().toLowerCase());
+      }
+    }
+  } catch {
+    // Ignore directory read errors.
+  }
+  return out;
 }
 
 function parseArgs(argv) {
@@ -231,8 +241,12 @@ function createEye(args) {
     console.error('eyes_intake: missing --name');
     process.exit(2);
   }
-  if (!SUPPORTED_PARSERS.has(parserType)) {
+  const supportedParsers = supportedParserTypes();
+  if (!supportedParsers.has(parserType)) {
+    const modulePath = adaptiveCollectorPath(parserType);
     console.error(`eyes_intake: unsupported parser '${parserType}'`);
+    console.error(`eyes_intake: add adaptive collector module at ${modulePath}`);
+    console.error(`eyes_intake: available parsers=${Array.from(supportedParsers).sort((a, b) => a.localeCompare(b)).join(',')}`);
     process.exit(2);
   }
 

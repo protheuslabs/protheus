@@ -1,5 +1,5 @@
 /**
- * systems/sensory/eyes_collectors/github_repo.js
+ * adaptive/sensory/eyes/collectors/github_repo.js
  *
  * GitHub repo eye - watches repos for releases, commits, issues, activity.
  * - Fetches latest release, recent commits, open issues
@@ -10,7 +10,7 @@
 const crypto = require("crypto");
 const { classifyCollectorError, httpStatusToCode, makeCollectorError } = require("./collector_errors");
 const { loadCollectorCache, saveCollectorCache } = require("./cache_store");
-const { egressFetchText, EgressGatewayError } = require("../../../lib/egress_gateway");
+const { egressFetchText, EgressGatewayError } = require("../../../../lib/egress_gateway");
 
 function sha16(s) {
   return crypto.createHash("sha256").update(String(s)).digest("hex").slice(0, 16);
@@ -32,7 +32,7 @@ function fetchJson(url, timeoutMs = 15000) {
         }
       }, {
         scope: "sensory.collector.github_repo",
-        caller: "systems/sensory/eyes_collectors/github_repo",
+        caller: "adaptive/sensory/eyes/collectors/github_repo",
         runtime_allowlist: [host],
         timeout_ms: timeoutMs,
         meta: { collector: "github_repo" }

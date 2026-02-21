@@ -1,5 +1,5 @@
 /**
- * systems/sensory/eyes_collectors/bird_x.js
+ * adaptive/sensory/eyes/collectors/bird_x.js
  *
  * Deterministic X/Twitter collector using bird CLI.
  * - Searches X for agent/AI related posts

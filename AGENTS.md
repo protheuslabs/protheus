@@ -290,8 +290,8 @@ When Jay says **"watch [something]"** in an info-related context, this is a dire
 
 **Implementation:**
 1. Determine the source type (RSS, API, scrape, GitHub, etc.)
-2. Create collector in `systems/sensory/eyes_collectors/` (never in `habits/scripts/eyes_collectors/`)
-3. Wire up parser dispatch in `habits/scripts/external_eyes.js`
+2. Create collector in `adaptive/sensory/eyes/collectors/` (never in `habits/scripts/eyes_collectors/`)
+3. Keep `systems/` generic only. Do not add source-specific collector code outside adaptive layer.
 4. Add the eye through controller only:
    `node systems/sensory/eyes_intake.js create --name="..." --parser=<parser_type> --directive=<active_directive_id> [--domains=d1,d2]`
 5. Test with `node habits/scripts/external_eyes.js run --eye=<id>`

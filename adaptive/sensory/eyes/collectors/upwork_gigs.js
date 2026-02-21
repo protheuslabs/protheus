@@ -1,5 +1,5 @@
 /**
- * systems/sensory/eyes_collectors/upwork_gigs.js
+ * adaptive/sensory/eyes/collectors/upwork_gigs.js
  *
  * Upwork gigs eye - monitors freelance job postings for high-value opportunities.
  * - Fetches Upwork RSS feed for specific keywords
@@ -11,7 +11,7 @@
 const crypto = require("crypto");
 const { classifyCollectorError, httpStatusToCode, makeCollectorError } = require("./collector_errors");
 const { loadCollectorCache, saveCollectorCache } = require("./cache_store");
-const { egressFetchText, EgressGatewayError } = require("../../../lib/egress_gateway");
+const { egressFetchText, EgressGatewayError } = require("../../../../lib/egress_gateway");
 
 function sha16(s) {
   return crypto.createHash("sha256").update(String(s)).digest("hex").slice(0, 16);
@@ -34,7 +34,7 @@ function fetchXml(url, timeoutMs = 15000) {
         }
       }, {
         scope: "sensory.collector.upwork_gigs",
-        caller: "systems/sensory/eyes_collectors/upwork_gigs",
+        caller: "adaptive/sensory/eyes/collectors/upwork_gigs",
         runtime_allowlist: [host],
         timeout_ms: timeoutMs,
         meta: { collector: "upwork_gigs" }

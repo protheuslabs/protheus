@@ -1,5 +1,5 @@
 /**
- * systems/sensory/eyes_collectors/ollama_search.js
+ * adaptive/sensory/eyes/collectors/ollama_search.js
  *
  * Deterministic Ollama search collector.
  * - Fetches ollama.com/search?o=newest
@@ -10,7 +10,7 @@
 const crypto = require("crypto");
 const { classifyCollectorError, httpStatusToCode, makeCollectorError } = require("./collector_errors");
 const { loadCollectorCache, saveCollectorCache } = require("./cache_store");
-const { egressFetchText, EgressGatewayError } = require("../../../lib/egress_gateway");
+const { egressFetchText, EgressGatewayError } = require("../../../../lib/egress_gateway");
 
 function sha16(s) {
   return crypto.createHash("sha256").update(String(s)).digest("hex").slice(0, 16);
@@ -34,7 +34,7 @@ function fetchText(url, timeoutMs = 10000) {
         }
       }, {
         scope: "sensory.collector.ollama_search",
-        caller: "systems/sensory/eyes_collectors/ollama_search",
+        caller: "adaptive/sensory/eyes/collectors/ollama_search",
         runtime_allowlist: [host],
         timeout_ms: timeoutMs,
         meta: { collector: "ollama_search" }

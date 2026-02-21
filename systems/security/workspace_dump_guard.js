@@ -23,6 +23,9 @@ const ADAPTIVE_ROOT = path.join(REPO_ROOT, 'adaptive');
 const MEMORY_ROOT = path.join(REPO_ROOT, 'memory');
 const MEMORY_TOOLS_ROOT = path.join(MEMORY_ROOT, 'tools');
 const FORBIDDEN_EYES_COLLECTORS_ROOT = path.join(REPO_ROOT, 'habits', 'scripts', 'eyes_collectors');
+const ALLOWED_ADAPTIVE_SOURCE_ROOTS = [
+  path.join(REPO_ROOT, 'adaptive', 'sensory', 'eyes', 'collectors')
+];
 
 function usage() {
   console.log('Usage:');
@@ -77,6 +80,8 @@ function evaluate() {
 
   for (const abs of walkFiles(ADAPTIVE_ROOT, [])) {
     if (!hasSourceExt(abs)) continue;
+    const allowed = ALLOWED_ADAPTIVE_SOURCE_ROOTS.some((root) => isSubpath(abs, root));
+    if (allowed) continue;
     violations.push({
       type: 'adaptive_source_file_forbidden',
       file: rel(abs)
@@ -114,6 +119,7 @@ function evaluate() {
     ok: violations.length === 0,
     checked: {
       adaptive_root: rel(ADAPTIVE_ROOT),
+      allowed_adaptive_source_roots: ALLOWED_ADAPTIVE_SOURCE_ROOTS.map(rel),
       memory_root: rel(MEMORY_ROOT),
       forbidden_eyes_collectors_root: rel(FORBIDDEN_EYES_COLLECTORS_ROOT)
     },

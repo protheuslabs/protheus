@@ -1,5 +1,5 @@
 /**
- * systems/sensory/eyes_collectors/google_trends.js
+ * adaptive/sensory/eyes/collectors/google_trends.js
  *
  * Google Trends eye - tracks trending searches and commercial demand signals.
  * - Scrapes Google Trends daily trending searches page
@@ -11,7 +11,7 @@
 const crypto = require("crypto");
 const { classifyCollectorError, httpStatusToCode, makeCollectorError } = require("./collector_errors");
 const { loadCollectorCache, saveCollectorCache } = require("./cache_store");
-const { egressFetchText, EgressGatewayError } = require("../../../lib/egress_gateway");
+const { egressFetchText, EgressGatewayError } = require("../../../../lib/egress_gateway");
 
 function sha16(s) {
   return crypto.createHash("sha256").update(String(s)).digest("hex").slice(0, 16);
@@ -38,7 +38,7 @@ function fetchHtml(url, timeoutMs = 15000) {
         }
       }, {
         scope: "sensory.collector.google_trends",
-        caller: "systems/sensory/eyes_collectors/google_trends",
+        caller: "adaptive/sensory/eyes/collectors/google_trends",
         runtime_allowlist: [host],
         timeout_ms: timeoutMs,
         meta: { collector: "google_trends" }

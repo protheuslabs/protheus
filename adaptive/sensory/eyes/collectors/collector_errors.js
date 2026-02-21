@@ -1,5 +1,5 @@
 /**
- * systems/sensory/eyes_collectors/collector_errors.js
+ * adaptive/sensory/eyes/collectors/collector_errors.js
  *
  * Shared deterministic error typing for eye collectors.
  */

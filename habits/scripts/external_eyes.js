@@ -19,19 +19,8 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
-const { collectHnRss, preflightHnRss } = require('../../systems/sensory/eyes_collectors/hn_rss');
-const { collectMoltbookHot, preflightMoltbookHot } = require('../../systems/sensory/eyes_collectors/moltbook_hot');
-const { collectLocalStateDigest, preflightLocalStateDigest } = require('../../systems/sensory/eyes_collectors/local_state_digest');
-const { collectOllamaSearchNewest, preflightOllamaSearch } = require('../../systems/sensory/eyes_collectors/ollama_search');
-const { collectBirdX, preflightBirdX } = require('../../systems/sensory/eyes_collectors/bird_x');
-const { run: runStockMarket } = require('../../systems/sensory/eyes_collectors/stock_market');
-const { run: runGoogleTrends } = require('../../systems/sensory/eyes_collectors/google_trends');
-const { run: runGithubRepo } = require('../../systems/sensory/eyes_collectors/github_repo');
-const { run: runUpworkGigs } = require('../../systems/sensory/eyes_collectors/upwork_gigs');
-const { run: runProductHunt } = require('../../systems/sensory/eyes_collectors/producthunt_launches');
-const { collectMediumRss, preflightMediumRss } = require('../../systems/sensory/eyes_collectors/medium_rss');
-const { collectMoltstackDiscover, preflightMoltstackDiscover } = require('../../systems/sensory/eyes_collectors/moltstack_discover');
-const { classifyCollectorError, isTransportFailureCode } = require('../../systems/sensory/eyes_collectors/collector_errors');
+const { collectWithDriver, preflightWithDriver } = require('../../systems/sensory/collector_driver.js');
+const { classifyCollectorError, isTransportFailureCode } = require('../../adaptive/sensory/eyes/collectors/collector_errors');
 const {
   maybeRefreshFocusTriggers,
   evaluateFocusForEye
@@ -948,162 +937,23 @@ function appendRawLog(dateStr, event) {
  * - No LLM calls inside collectors
  */
 async function collectEye(eyeConfig) {
-  const budgets = eyeConfig.budgets || {};
-
-  // Parser selection
-  if (eyeConfig.parser_type === 'hn_rss') {
-    const r = await collectHnRss(eyeConfig, budgets);
-    return r;
+  if (String(eyeConfig && eyeConfig.parser_type || '').toLowerCase() === 'stub') {
+    return stubCollect(eyeConfig, eyeConfig.budgets || {});
   }
-  if (eyeConfig.parser_type === 'moltbook_hot') {
-    const r = await collectMoltbookHot(eyeConfig, budgets);
-    return r;
-  }
-  if (eyeConfig.parser_type === 'local_state_digest') {
-    const r = await collectLocalStateDigest(eyeConfig, budgets);
-    return r;
-  }
-  if (eyeConfig.parser_type === 'ollama_search') {
-    const r = await collectOllamaSearchNewest(budgets);
-    return r;
-  }
-  if (eyeConfig.parser_type === 'bird_x') {
-    const r = await collectBirdX(budgets);
-    return r;
-  }
-  if (eyeConfig.parser_type === 'stock_market') {
-    const r = await runStockMarket({ 
-      maxItems: budgets.max_items || 10, 
-      minHours: 0, 
-      force: true 
-    });
-    // Return in standard format expected by external_eyes.js
-    return {
-      ok: r.ok,
-      success: r.success,
-      items: r.items || [],
-      bytes: r.bytes,
-      duration_ms: r.duration_ms,
-      requests: r.requests,
-      error: r.error
-    };
-  }
-  if (eyeConfig.parser_type === 'google_trends') {
-    const r = await runGoogleTrends({ 
-      maxItems: budgets.max_items || 10, 
-      minHours: 0, 
-      force: true 
-    });
-    // Return in standard format expected by external_eyes.js
-    return {
-      ok: r.ok,
-      success: r.success,
-      items: r.items || [],
-      bytes: r.bytes,
-      duration_ms: r.duration_ms,
-      requests: r.requests,
-      error: r.error
-    };
-  }
-  if (eyeConfig.parser_type === 'github_repo') {
-    const opts = eyeConfig.parser_options || {};
-    const r = await runGithubRepo({ 
-      owner: opts.owner,
-      repo: opts.repo,
-      maxItems: budgets.max_items || 5, 
-      minHours: 0, 
-      force: true 
-    });
-    // Return in standard format expected by external_eyes.js
-    return {
-      ok: r.ok,
-      success: r.success,
-      items: r.items || [],
-      bytes: r.bytes,
-      duration_ms: r.duration_ms,
-      requests: r.requests,
-      error: r.error
-    };
-  }
-  if (eyeConfig.parser_type === 'upwork_gigs') {
-    const r = await runUpworkGigs({ 
-      maxItems: budgets.max_items || 8, 
-      minHours: 0, 
-      force: true 
-    });
-    // Return in standard format expected by external_eyes.js
-    return {
-      ok: r.ok,
-      success: r.success,
-      items: r.items || [],
-      bytes: r.bytes,
-      duration_ms: r.duration_ms,
-      requests: r.requests,
-      error: r.error
-    };
-  }
-  if (eyeConfig.parser_type === 'producthunt_launches') {
-    const r = await runProductHunt({ 
-      maxItems: budgets.max_items || 10, 
-      minHours: 0, 
-      force: true 
-    });
-    // Return in standard format expected by external_eyes.js
-    return {
-      ok: r.ok,
-      success: r.success,
-      items: r.items || [],
-      bytes: r.bytes,
-      duration_ms: r.duration_ms,
-      requests: r.requests,
-      error: r.error
-    };
-  }
-  if (eyeConfig.parser_type === 'medium_rss') {
-    const r = await collectMediumRss(eyeConfig, budgets);
-    return r;
-  }
-  if (eyeConfig.parser_type === 'moltstack_discover') {
-    const r = await collectMoltstackDiscover(eyeConfig, budgets);
-    return r;
-  }
-
-  // Fallback: existing stub
-  return stubCollect(eyeConfig, budgets);
+  const out = await collectWithDriver(eyeConfig);
+  if (out && out.success === true) return out;
+  return {
+    success: false,
+    items: [],
+    duration_ms: Number(out && out.duration_ms) || 0,
+    requests: Number(out && out.requests) || 0,
+    bytes: Number(out && out.bytes) || 0,
+    error: out && out.error ? out.error : 'collector_failed'
+  };
 }
 
 function staticPreflightEye(eyeConfig) {
-  const budgets = eyeConfig.budgets || {};
-  const parserType = String(eyeConfig.parser_type || '').toLowerCase();
-  if (parserType === 'hn_rss') return preflightHnRss(eyeConfig, budgets);
-  if (parserType === 'moltbook_hot') return preflightMoltbookHot(eyeConfig, budgets);
-  if (parserType === 'local_state_digest') return preflightLocalStateDigest(eyeConfig, budgets);
-  if (parserType === 'ollama_search') return preflightOllamaSearch();
-  if (parserType === 'bird_x') return preflightBirdX();
-  if (parserType === 'stock_market' || parserType === 'google_trends' || parserType === 'github_repo' || parserType === 'upwork_gigs' || parserType === 'producthunt_launches') {
-    return {
-      ok: true,
-      parser_type: parserType,
-      checks: [{ name: 'collector_supported', ok: true }],
-      failures: []
-    };
-  }
-  if (parserType === 'medium_rss') return preflightMediumRss(eyeConfig, budgets);
-  if (parserType === 'moltstack_discover') return preflightMoltstackDiscover(eyeConfig, budgets);
-  if (parserType === 'stub') {
-    return {
-      ok: true,
-      parser_type: parserType,
-      checks: [{ name: 'stub_source', ok: true }],
-      failures: []
-    };
-  }
-  return {
-    ok: false,
-    parser_type: parserType || 'unknown',
-    checks: [],
-    failures: [{ code: 'unknown_parser', message: `Unsupported parser_type: ${parserType || '(missing)'}` }]
-  };
+  return preflightWithDriver(eyeConfig);
 }
 
 async function preflight(opts = {}) {

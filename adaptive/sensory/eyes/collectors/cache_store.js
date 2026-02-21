@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 
-const ROOT = path.resolve(__dirname, "..", "..", "..");
+const ROOT = path.resolve(__dirname, "..", "..", "..", "..");
 const CACHE_DIR = process.env.EYES_COLLECTOR_CACHE_DIR
   ? path.resolve(process.env.EYES_COLLECTOR_CACHE_DIR)
   : path.join(ROOT, "state", "sensory", "eyes", "cache");

@@ -1,5 +1,5 @@
 /**
- * systems/sensory/eyes_collectors/producthunt_launches.js
+ * adaptive/sensory/eyes/collectors/producthunt_launches.js
  *
  * ProductHunt launches eye - monitors new products for affiliate/partnership opportunities.
  * - Fetches ProductHunt GraphQL API for recent posts
@@ -11,7 +11,7 @@
 const crypto = require("crypto");
 const { classifyCollectorError, httpStatusToCode, makeCollectorError } = require("./collector_errors");
 const { loadCollectorCache, saveCollectorCache } = require("./cache_store");
-const { egressFetchText, EgressGatewayError } = require("../../../lib/egress_gateway");
+const { egressFetchText, EgressGatewayError } = require("../../../../lib/egress_gateway");
 
 function sha16(s) {
   return crypto.createHash("sha256").update(String(s)).digest("hex").slice(0, 16);
@@ -36,7 +36,7 @@ function fetchGraphQL(query, variables = {}, timeoutMs = 15000) {
         body: payload
       }, {
         scope: "sensory.collector.producthunt_launches",
-        caller: "systems/sensory/eyes_collectors/producthunt_launches",
+        caller: "adaptive/sensory/eyes/collectors/producthunt_launches",
         runtime_allowlist: ["www.producthunt.com"],
         timeout_ms: timeoutMs,
         meta: { collector: "producthunt_launches" }

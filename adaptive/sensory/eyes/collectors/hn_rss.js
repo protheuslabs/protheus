@@ -1,5 +1,5 @@
 /**
- * systems/sensory/eyes_collectors/hn_rss.js
+ * adaptive/sensory/eyes/collectors/hn_rss.js
  *
  * Deterministic HN RSS collector.
  * - Fetches RSS feed via hnrss.org (stable + simple)
@@ -10,7 +10,7 @@
 const crypto = require("crypto");
 const { classifyCollectorError, httpStatusToCode, makeCollectorError } = require("./collector_errors");
 const { loadCollectorCache, saveCollectorCache } = require("./cache_store");
-const { egressFetchText, EgressGatewayError } = require("../../../lib/egress_gateway");
+const { egressFetchText, EgressGatewayError } = require("../../../../lib/egress_gateway");
 
 function sha16(s) {
   return crypto.createHash("sha256").update(String(s)).digest("hex").slice(0, 16);
@@ -29,7 +29,7 @@ function fetchText(url, timeoutMs = 8000) {
         headers: { "User-Agent": "openclaw-eyes/1.0" }
       }, {
         scope: "sensory.collector.hn_rss",
-        caller: "systems/sensory/eyes_collectors/hn_rss",
+        caller: "adaptive/sensory/eyes/collectors/hn_rss",
         runtime_allowlist: [host],
         timeout_ms: timeoutMs,
         meta: { collector: "hn_rss" }

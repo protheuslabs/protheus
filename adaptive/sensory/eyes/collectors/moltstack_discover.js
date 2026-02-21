@@ -1,5 +1,5 @@
 /**
- * systems/sensory/eyes_collectors/moltstack_discover.js
+ * adaptive/sensory/eyes/collectors/moltstack_discover.js
  *
  * Deterministic MoltStack Discover feed collector.
  * - Fetches https://moltstack.net/api/posts for latest posts
@@ -14,7 +14,7 @@ const {
   makeCollectorError,
 } = require("./collector_errors");
 const { loadCollectorCache, saveCollectorCache } = require("./cache_store");
-const { egressFetchText, EgressGatewayError } = require("../../../lib/egress_gateway");
+const { egressFetchText, EgressGatewayError } = require("../../../../lib/egress_gateway");
 
 function sha16(s) {
   return crypto.createHash("sha256").update(String(s)).digest("hex").slice(0, 16);
@@ -36,7 +36,7 @@ function fetchJson(url, timeoutMs = 10000) {
         },
       }, {
         scope: "sensory.collector.moltstack_discover",
-        caller: "systems/sensory/eyes_collectors/moltstack_discover",
+        caller: "adaptive/sensory/eyes/collectors/moltstack_discover",
         runtime_allowlist: [host],
         timeout_ms: timeoutMs,
         meta: { collector: "moltstack_discover" }

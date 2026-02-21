@@ -1,5 +1,5 @@
 /**
- * systems/sensory/eyes_collectors/local_state_digest.js
+ * adaptive/sensory/eyes/collectors/local_state_digest.js
  *
  * Deterministic offline-safe collector.
  * Reads local state artifacts only (no network) and emits actionable signal items.
@@ -9,7 +9,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const WORKSPACE_DIR = path.join(__dirname, '..', '..', '..');
+const WORKSPACE_DIR = path.join(__dirname, '..', '..', '..', '..');
 const STATE_DIR = path.join(WORKSPACE_DIR, 'state');
 const SENSORY_PROPOSALS_DIR = path.join(STATE_DIR, 'sensory', 'proposals');
 const QUEUE_DECISIONS_DIR = path.join(STATE_DIR, 'queue', 'decisions');
