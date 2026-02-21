@@ -37,6 +37,7 @@ function run() {
   const eyesConfigPath = path.join(repoRoot, 'adaptive', 'sensory', 'eyes', 'catalog.json');
   const eyesRegistryPath = path.join(sensoryDir, 'eyes', 'registry.json');
   const eyesConfigBefore = fs.existsSync(eyesConfigPath) ? fs.readFileSync(eyesConfigPath, 'utf8') : null;
+  const outcomePolicyBefore = process.env.OUTCOME_FITNESS_POLICY_PATH;
 
   try {
     process.env.SENSORY_TEST_DIR = sensoryDir;
@@ -47,6 +48,7 @@ function run() {
     process.env.AUTONOMY_MIN_DIRECTIVE_FIT = '20';
     process.env.AUTONOMY_MIN_ACTIONABILITY_SCORE = '35';
     process.env.AUTONOMY_MIN_COMPOSITE_ELIGIBILITY = '45';
+    process.env.OUTCOME_FITNESS_POLICY_PATH = path.join(tmpRoot, 'no_outcome_policy.json');
 
     fs.mkdirSync(path.dirname(eyesConfigPath), { recursive: true });
     fs.writeFileSync(eyesConfigPath, JSON.stringify({
@@ -83,7 +85,7 @@ function run() {
         evidence: [{ evidence_ref: 'eye:local_state_fallback', match: 'collector failed twice' }],
         validation: [
           'Implement deterministic fix',
-          'Run contract check',
+          'Define measurable error-rate target and 24h verification window',
           'Record proposal outcome'
         ],
         suggested_next_command: 'node systems/routing/route_execute.js --task="Improve automation growth reliability with deterministic checks" --dry-run'
@@ -152,6 +154,8 @@ function run() {
     } else {
       fs.writeFileSync(eyesConfigPath, eyesConfigBefore, 'utf8');
     }
+    if (outcomePolicyBefore == null) delete process.env.OUTCOME_FITNESS_POLICY_PATH;
+    else process.env.OUTCOME_FITNESS_POLICY_PATH = outcomePolicyBefore;
   }
 }
 

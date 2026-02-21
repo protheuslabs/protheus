@@ -27,10 +27,14 @@ function listTests() {
 }
 
 function runNode(args) {
+  const env = { ...process.env };
+  if (!env.OUTCOME_FITNESS_POLICY_PATH) {
+    env.OUTCOME_FITNESS_POLICY_PATH = path.join(TEST_DIR, '__no_outcome_policy__.json');
+  }
   const r = spawnSync(process.execPath, args, {
     cwd: ROOT,
     encoding: 'utf8',
-    env: process.env
+    env
   });
   return {
     ok: r.status === 0,

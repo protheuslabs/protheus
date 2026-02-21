@@ -25,6 +25,7 @@ const { loadActiveDirectives } = require('../../lib/directive_resolver.js');
 const { writeContractReceipt } = require('../../lib/action_receipts.js');
 const { isEmergencyStopEngaged } = require('../../lib/emergency_stop.js');
 const { compactCommandOutput } = require('../../lib/command_output_compactor.js');
+const { loadOutcomeFitnessPolicy } = require('../../lib/outcome_fitness.js');
 const { resolveCatalogPath } = require('../../lib/eyes_catalog.js');
 const {
   loadActiveStrategy,
@@ -260,6 +261,8 @@ const CONCRETE_TARGET_RE = /\b(file|script|collector|parser|endpoint|model|confi
 const EXPLAINER_TITLE_RE = /^(why|what|how)\b/i;
 const GENERIC_VALIDATION_RE = /\b(extract one concrete build\/change task from source|define measurable success check|route a dry-run execution plan)\b/i;
 const GENERIC_ROUTE_TASK_RE = /--task=\"Extract one implementable step from external intel:/i;
+const SUCCESS_METRIC_RE = /\b(metric|kpi|target|rate|count|latency|error|uptime|throughput|conversion|artifact|receipt|coverage|reply|interview|pass|fail|delta|percent|%|run|runs|check|checks|items_collected)\b/i;
+const SUCCESS_TIMEBOUND_RE = /\b(\d+\s*(h|hr|hour|hours|d|day|days|w|week|weeks|min|mins|minute|minutes)|daily|weekly|monthly|quarterly)\b/i;
 const TOOL_CAPABILITY_TOKENS = [
   'web_fetch', 'web_search', 'browser', 'exec', 'read', 'write', 'edit',
   'cron', 'sessions_spawn', 'sessions_send', 'message', 'gmail', 'gog', 'bird'
@@ -272,11 +275,18 @@ const AUTONOMY_DEPRIORITIZED_SOURCE_EYES = new Set(
     .filter(Boolean)
 );
 let STRATEGY_CACHE = undefined;
+let OUTCOME_FITNESS_POLICY_CACHE = undefined;
 
 function strategyProfile() {
   if (STRATEGY_CACHE !== undefined) return STRATEGY_CACHE;
   STRATEGY_CACHE = loadActiveStrategy({ allowMissing: true });
   return STRATEGY_CACHE;
+}
+
+function outcomeFitnessPolicy() {
+  if (OUTCOME_FITNESS_POLICY_CACHE !== undefined) return OUTCOME_FITNESS_POLICY_CACHE;
+  OUTCOME_FITNESS_POLICY_CACHE = loadOutcomeFitnessPolicy(REPO_ROOT);
+  return OUTCOME_FITNESS_POLICY_CACHE;
 }
 
 function effectiveStrategyBudget() {
@@ -2840,6 +2850,71 @@ function assessSignalQuality(p, eyesMap, thresholds, calibrationProfile) {
   };
 }
 
+function parseSuccessCriteriaRows(p) {
+  const proposal = p && typeof p === 'object' ? p : {};
+  const actionSpec = proposal.action_spec && typeof proposal.action_spec === 'object' ? proposal.action_spec : {};
+  const actionRows = Array.isArray(actionSpec.success_criteria) ? actionSpec.success_criteria : [];
+  const verifyRows = Array.isArray(actionSpec.verify) ? actionSpec.verify : [];
+  const validationRows = Array.isArray(proposal.validation) ? proposal.validation : [];
+  const rows = [];
+
+  const pushText = (text, source) => {
+    const clean = normalizeSpaces(text);
+    if (!clean) return;
+    const metricMatch = clean.match(SUCCESS_METRIC_RE);
+    rows.push({
+      source,
+      metric: metricMatch ? String(metricMatch[1] || '').toLowerCase() : '',
+      target: clean.slice(0, 140),
+      measurable: SUCCESS_METRIC_RE.test(clean) && (SUCCESS_TIMEBOUND_RE.test(clean) || /\d/.test(clean))
+    });
+  };
+
+  for (const row of actionRows) {
+    if (!row) continue;
+    if (typeof row === 'string') {
+      pushText(row, 'action_spec.success_criteria');
+      continue;
+    }
+    if (typeof row === 'object') {
+      const metric = normalizeSpaces(row.metric || row.name || '');
+      const target = normalizeSpaces(row.target || row.threshold || row.description || row.goal || '');
+      const horizon = normalizeSpaces(row.horizon || row.window || row.by || '');
+      const merged = normalizeSpaces([metric, target, horizon].filter(Boolean).join(' | '));
+      if (!merged) continue;
+      rows.push({
+        source: 'action_spec.success_criteria',
+        metric: metric.toLowerCase(),
+        target: merged.slice(0, 140),
+        measurable: SUCCESS_METRIC_RE.test(merged) && (SUCCESS_TIMEBOUND_RE.test(merged) || /\d/.test(merged))
+      });
+    }
+  }
+  for (const row of verifyRows) pushText(row, 'action_spec.verify');
+  for (const row of validationRows) pushText(row, 'validation');
+
+  const dedupe = new Set();
+  const out = [];
+  for (const row of rows) {
+    const key = `${row.metric}|${row.target}`.toLowerCase();
+    if (dedupe.has(key)) continue;
+    dedupe.add(key);
+    out.push(row);
+  }
+  return out;
+}
+
+function successCriteriaRequirement() {
+  const policy = outcomeFitnessPolicy();
+  const src = policy && policy.proposal_filter_policy && typeof policy.proposal_filter_policy === 'object'
+    ? policy.proposal_filter_policy
+    : {};
+  return {
+    required: src.require_success_criteria !== false,
+    min_count: clampNumber(src.min_success_criteria_count, 0, 5, 1)
+  };
+}
+
 function assessActionability(p, directiveFit, thresholds) {
   const minActionability = Number((thresholds && thresholds.min_actionability_score) || AUTONOMY_MIN_ACTIONABILITY_SCORE);
   const title = String((p && p.title) || '');
@@ -2869,6 +2944,10 @@ function assessActionability(p, directiveFit, thresholds) {
   const isMetaCoordination = META_COORDINATION_RE.test(concreteBlob);
   const isExplainer = EXPLAINER_TITLE_RE.test(String(title || '').toLowerCase());
   const genericRouteTask = GENERIC_ROUTE_TASK_RE.test(nextCmd);
+  const criteriaRows = parseSuccessCriteriaRows(p);
+  const measurableCriteriaCount = criteriaRows.filter((row) => row.measurable === true).length;
+  const criteriaPolicy = successCriteriaRequirement();
+  const isExecutableProposal = !!(nextCmd || (p && p.action_spec && typeof p.action_spec === 'object'));
   const reasons = [];
   let score = 0;
   let hardBlock = false;
@@ -2912,6 +2991,17 @@ function assessActionability(p, directiveFit, thresholds) {
   if (Number.isFinite(relevance)) score += (relevance - 45) * 0.3;
   if (Number.isFinite(fitScore)) score += (fitScore - 35) * 0.25;
 
+  if (isExecutableProposal && criteriaPolicy.required) {
+    if (measurableCriteriaCount >= criteriaPolicy.min_count) {
+      score += Math.min(14, 8 + (measurableCriteriaCount * 2));
+    } else {
+      score -= 22;
+      reasons.push('success_criteria_missing');
+    }
+  } else if (measurableCriteriaCount > 0) {
+    score += Math.min(8, measurableCriteriaCount * 2);
+  }
+
   if (!hasActionVerb && !hasOpportunity && !hasConcreteTarget) {
     score -= 20;
     reasons.push('missing_concrete_target');
@@ -2949,7 +3039,13 @@ function assessActionability(p, directiveFit, thresholds) {
   return {
     pass,
     score: finalScore,
-    reasons
+    reasons,
+    success_criteria: {
+      required: isExecutableProposal && criteriaPolicy.required,
+      min_count: criteriaPolicy.min_count,
+      measurable_count: measurableCriteriaCount,
+      total_count: criteriaRows.length
+    }
   };
 }
 
@@ -4901,6 +4997,9 @@ function statusCmd(dateStr) {
         actionability_score: act.score,
         actionability_pass: act.pass,
         actionability_reasons: act.reasons.slice(0, 3),
+        success_criteria_required: !!(act.success_criteria && act.success_criteria.required),
+        success_criteria_min_count: Number(act.success_criteria && act.success_criteria.min_count || 0),
+        success_criteria_measurable_count: Number(act.success_criteria && act.success_criteria.measurable_count || 0),
         value_signal_score: valueSignal.score,
         value_signal_min_score: valueSignal.min_score,
         value_signal_pass: valueSignal.pass,

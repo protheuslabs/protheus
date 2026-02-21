@@ -57,10 +57,27 @@ function run() {
         expected_impact: 'medium',
         risk: 'low',
         validation: [
-          'Define one measurable output metric',
+          'Define one measurable output metric with 24h target',
           'Run dry-run route and capture receipt'
         ],
         suggested_next_command: 'node systems/routing/route_execute.js --task="Implement one bounded compounding automation step" --tokens_est=700 --dry-run',
+        action_spec: {
+          version: 1,
+          target: 'signal:pulse-sel-t1',
+          next_command: 'node systems/routing/route_execute.js --task="Implement one bounded compounding automation step" --tokens_est=700 --dry-run',
+          verify: [
+            'Define one measurable output metric with 24h target',
+            'Run dry-run route and capture receipt'
+          ],
+          success_criteria: [
+            {
+              metric: 'artifact_count',
+              target: '>=1 artifact produced',
+              horizon: '24h'
+            }
+          ],
+          rollback: 'Revert bounded automation change'
+        },
         evidence: [
           { evidence_ref: 'eye:local_state_fallback', evidence_url: 'https://local.workspace/signal/pulse-sel-t1' }
         ],
@@ -80,9 +97,27 @@ function run() {
         expected_impact: 'low',
         risk: 'low',
         validation: [
+          'Define measurable reliability metric and 48h threshold',
           'Route dry-run'
         ],
         suggested_next_command: 'node systems/routing/route_execute.js --task="Improve reliability logging" --tokens_est=500 --dry-run',
+        action_spec: {
+          version: 1,
+          target: 'signal:pulse-sel-alt',
+          next_command: 'node systems/routing/route_execute.js --task="Improve reliability logging" --tokens_est=500 --dry-run',
+          verify: [
+            'Define measurable reliability metric and 48h threshold',
+            'Route dry-run'
+          ],
+          success_criteria: [
+            {
+              metric: 'error_rate',
+              target: 'error rate reduced versus baseline',
+              horizon: '48h'
+            }
+          ],
+          rollback: 'Revert logging changes'
+        },
         evidence: [
           { evidence_ref: 'eye:local_state_fallback', evidence_url: 'https://local.workspace/signal/pulse-sel-alt' }
         ],

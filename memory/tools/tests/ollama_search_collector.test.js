@@ -7,8 +7,8 @@ const path = require('path');
 const { EventEmitter } = require('events');
 
 const ROOT = path.resolve(__dirname, '..', '..', '..');
-const COLLECTOR_PATH = path.join(ROOT, 'habits', 'scripts', 'eyes_collectors', 'ollama_search.js');
-const CACHE_STORE_PATH = path.join(ROOT, 'habits', 'scripts', 'eyes_collectors', 'cache_store.js');
+const COLLECTOR_PATH = path.join(ROOT, 'systems', 'sensory', 'eyes_collectors', 'ollama_search.js');
+const CACHE_STORE_PATH = path.join(ROOT, 'systems', 'sensory', 'eyes_collectors', 'cache_store.js');
 
 let failed = false;
 

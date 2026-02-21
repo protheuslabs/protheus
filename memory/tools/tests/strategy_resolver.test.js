@@ -15,6 +15,7 @@ function writeJson(filePath, obj) {
 }
 
 function run() {
+  const outcomePolicyBefore = process.env.OUTCOME_FITNESS_POLICY_PATH;
   const tmpRoot = path.join(__dirname, 'temp_strategy_resolver');
   if (fs.existsSync(tmpRoot)) fs.rmSync(tmpRoot, { recursive: true, force: true });
   mkDir(tmpRoot);
@@ -62,6 +63,8 @@ function run() {
       min_shipped: 2
     }
   });
+
+  process.env.OUTCOME_FITNESS_POLICY_PATH = path.join(tmpRoot, 'no_outcome_policy.json');
 
   const resolver = require('../../../lib/strategy_resolver.js');
   const listed = resolver.listStrategies({ dir: strategyDir });
@@ -132,6 +135,8 @@ function run() {
   );
 
   console.log('strategy_resolver.test.js: OK');
+  if (outcomePolicyBefore == null) delete process.env.OUTCOME_FITNESS_POLICY_PATH;
+  else process.env.OUTCOME_FITNESS_POLICY_PATH = outcomePolicyBefore;
 }
 
 try {

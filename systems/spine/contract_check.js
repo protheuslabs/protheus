@@ -389,6 +389,12 @@ function main() {
     ["strategy_learner.js", "run", "status", "--days"]
   );
 
+  // outcome_fitness_loop.js derives adaptive policy updates from realized run/receipt outcomes.
+  checkScript(
+    "systems/autonomy/outcome_fitness_loop.js",
+    ["outcome_fitness_loop.js", "run", "status", "--days", "--apply"]
+  );
+
   console.log("contract_check: OK");
 }
 
