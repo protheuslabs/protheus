@@ -35,6 +35,10 @@ node systems/security/schema_contract_check.js run
 # Stable CI test suite (contract + deterministic tests)
 npm run test:ci
 
+# Local non-bypass merge guard (runs required checks)
+npm run guard:merge
+npm run guard:merge:fast
+
 # Validate habit governance + trust gates
 node habits/scripts/doctor.js
 
@@ -168,6 +172,7 @@ node systems/security/emergency_stop.js release --approval-note="..."
 - See `docs/AUTOMATION_POLICY.md` for the explicit auto vs gated vs operator-approved contract.
 - See `docs/ARCHITECTURE_OWNERSHIP.md` for ownership boundaries and canonical adaptive mutation channels.
 - See `docs/OPERATOR_RUNBOOK.md` for incident response and rollback drill procedures.
+- See `docs/BRANCH_PROTECTION_POLICY.md` for required branch settings and check gates.
 
 ## Autonomy Capability Note
 

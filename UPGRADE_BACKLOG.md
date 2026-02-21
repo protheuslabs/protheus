@@ -49,7 +49,7 @@ Status legend:
 | BL-032 | todo | Signed startup attestation + integrity check at run boot | Detect tampering before autonomy loops execute | Boot path emits signed attestation over critical policy/config hashes; autonomy refuses execute/canary when attestation fails or is stale |
 | BL-033 | todo | Quorum validator for high-tier self-modification proposals | Add independent cross-check before risky self-edits are applied | High-tier mutation proposals require deterministic second-pass validator agreement before admission; disagreement blocks with explainable receipt |
 | BL-034 | done | Operator runbook for incidents + rollback drills | Reduce time-to-recover and remove tribal-knowledge dependency during failures | Implemented in `docs/OPERATOR_RUNBOOK.md` with top incident classes (routing degraded, schema drift, sensory starvation, autonomy stall), deterministic remediation, rollback drill, and verification artifacts |
-| BL-035 | todo | Required-Checks branch protection policy | Prevent contract/security regressions from merging without gates | Branch policy requires passing `npm run test:ci`, `contract_check`, `schema_contract_check`, and adaptive guard strict checks before merge; owner review required for `systems/` and `config/` changes |
+| BL-035 | done | Required-Checks branch protection policy | Prevent contract/security regressions from merging without gates | Implemented `.github/CODEOWNERS`, `.github/workflows/required-checks.yml`, `docs/BRANCH_PROTECTION_POLICY.md`, and local `npm run guard:merge` gates requiring `test:ci`, `contract_check`, `schema_contract_check`, and adaptive guard strict checks |
 
 ## P2
 

@@ -1,0 +1,7 @@
+# Core ownership for guarded infrastructure surfaces.
+
+/systems/ @jakerslam
+/config/ @jakerslam
+/lib/ @jakerslam
+/adaptive/ @jakerslam
+/.github/workflows/ @jakerslam
