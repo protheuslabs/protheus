@@ -35,6 +35,12 @@ async function run() {
         domains: [],
         require_runtime_allowlist: true,
         rate_caps: { per_hour: 10, per_day: 10 }
+      },
+      'sensory.collector.dynamic': {
+        methods: ['GET', 'POST'],
+        domains: [],
+        require_runtime_allowlist: true,
+        rate_caps: { per_hour: 10, per_day: 10 }
       }
     }
   });
@@ -108,6 +114,17 @@ async function run() {
     now_ms: Date.parse('2026-02-21T12:01:01.000Z')
   });
   assert.strictEqual(runtimeAllowed.allow, true, 'runtime allowlist should allow');
+
+  const dynamicCollectorFallback = gw.authorizeEgress({
+    scope: 'sensory.collector.new_parser_type',
+    url: 'https://example.org/new-source',
+    method: 'GET',
+    caller: 'egress_test',
+    runtime_allowlist: ['example.org'],
+    apply: false,
+    now_ms: Date.parse('2026-02-21T12:01:02.000Z')
+  });
+  assert.strictEqual(dynamicCollectorFallback.allow, true, 'collector dynamic fallback should allow with runtime allowlist');
 
   let deniedErr = null;
   try {
