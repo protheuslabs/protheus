@@ -670,9 +670,54 @@ function buildSuggestedNextCommand(item, analysis) {
   return `node systems/routing/route_execute.js --task="${trimmedTask}" --tokens_est=${shape.tokensEst} --repeats_14d=3 --errors_30d=0 --dry-run`;
 }
 
+function buildSuccessCriteria(item, analysis) {
+  const shape = proposalExecutionShape(item, analysis);
+  if (shape.isInternalSignal) {
+    return [
+      {
+        metric: 'collector_success_runs',
+        target: '>=1 eye_run_ok with items_collected>0 within next 2 runs',
+        horizon: '2 runs'
+      },
+      {
+        metric: 'collector_failure_streak',
+        target: 'consecutive_failures resets to 0',
+        horizon: '24h'
+      }
+    ];
+  }
+  if (shape.hasOpportunity) {
+    return [
+      {
+        metric: 'outreach_artifact',
+        target: '1 concrete offer/proposal draft generated',
+        horizon: '24h'
+      },
+      {
+        metric: 'reply_or_interview_count',
+        target: '>=1 reply/interview signal against the draft',
+        horizon: '7d'
+      }
+    ];
+  }
+  return [
+    {
+      metric: 'experiment_artifact',
+      target: '1 executable change/plan artifact produced',
+      horizon: '24h'
+    },
+    {
+      metric: 'verification_checks_passed',
+      target: 'all verification checks pass with receipt evidence',
+      horizon: '48h'
+    }
+  ];
+}
+
 function buildActionSpec(item, analysis) {
   const shape = proposalExecutionShape(item, analysis);
   const verify = buildValidationPlan(item, analysis);
+  const successCriteria = buildSuccessCriteria(item, analysis);
   const nextCommand = buildSuggestedNextCommand(item, analysis);
 
   if (shape.isInternalSignal) {
@@ -683,6 +728,7 @@ function buildActionSpec(item, analysis) {
       target: `collector:${target}`,
       next_command: nextCommand,
       verify,
+      success_criteria: successCriteria,
       rollback: 'Revert scoped collector changes and restore last known stable behavior'
     };
   }
@@ -694,6 +740,7 @@ function buildActionSpec(item, analysis) {
       target: shape.url ? `opportunity:${shape.url}` : `opportunity:${shape.title}`,
       next_command: nextCommand,
       verify,
+      success_criteria: successCriteria,
       rollback: 'Cancel opportunity execution plan and keep only observation artifacts'
     };
   }
@@ -704,6 +751,7 @@ function buildActionSpec(item, analysis) {
     target: shape.url ? `signal:${shape.url}` : `signal:${shape.title}`,
     next_command: nextCommand,
     verify,
+    success_criteria: successCriteria,
     rollback: 'Revert experiment changes and retain baseline behavior'
   };
 }
@@ -864,6 +912,18 @@ function buildCrossSignalProposal(hypothesis, dateStr, directiveFit, actionabili
       'Generate one concrete experiment tied to hypothesis evidence',
       'Define measurable success metric and time-bound target',
       'Route dry-run execution plan and verify gate output'
+    ],
+    success_criteria: [
+      {
+        metric: 'experiment_artifact',
+        target: '1 hypothesis-tied experiment artifact generated',
+        horizon: '24h'
+      },
+      {
+        metric: 'hypothesis_signal_lift',
+        target: 'observable trend/support improvement from baseline',
+        horizon: '7d'
+      }
     ],
     rollback: 'Cancel hypothesis execution plan and preserve prior strategy baseline'
   };

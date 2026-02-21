@@ -1098,6 +1098,72 @@ function main() {
       console.log(` strategy_mode_governor unavailable reason=${String(strategyGovernor.stderr || strategyGovernor.stdout || "unknown").slice(0, 120)}`);
     }
 
+    // 0) realized-outcome feedback loop -> adaptive policy updates for strategy/focus/proposal filters.
+    if (String(process.env.SPINE_OUTCOME_FITNESS_ENABLED || "1") !== "0") {
+      const fitnessArgs = [
+        "systems/autonomy/outcome_fitness_loop.js",
+        "run",
+        dateStr,
+        `--days=${Math.max(1, Number(process.env.SPINE_OUTCOME_FITNESS_DAYS || 14) || 14)}`
+      ];
+      if (String(process.env.SPINE_OUTCOME_FITNESS_APPLY || "1") !== "0") {
+        fitnessArgs.push("--apply=1");
+      } else {
+        fitnessArgs.push("--apply=0");
+      }
+      const fitness = runJson("node", fitnessArgs);
+      const fitnessPayload = fitness.payload && typeof fitness.payload === "object"
+        ? fitness.payload
+        : null;
+      const strict = String(process.env.SPINE_OUTCOME_FITNESS_STRICT || "0") === "1";
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_outcome_fitness",
+        mode,
+        date: dateStr,
+        ok: fitness.ok && !!fitnessPayload && fitnessPayload.ok === true,
+        applied: fitnessPayload ? fitnessPayload.applied === true : null,
+        realized_outcome_score: fitnessPayload ? Number(fitnessPayload.realized_outcome_score || 0) : null,
+        shipped_rate: fitnessPayload && fitnessPayload.metrics && fitnessPayload.metrics.runs
+          ? Number(fitnessPayload.metrics.runs.shipped_rate || 0)
+          : null,
+        verified_rate: fitnessPayload && fitnessPayload.metrics && fitnessPayload.metrics.receipts
+          ? Number(fitnessPayload.metrics.receipts.verified_rate || 0)
+          : null,
+        focus_delta: fitnessPayload && fitnessPayload.focus_policy
+          ? Number(fitnessPayload.focus_policy.min_focus_score_delta || 0)
+          : null,
+        min_success_criteria_count: fitnessPayload && fitnessPayload.proposal_filter_policy
+          ? Number(fitnessPayload.proposal_filter_policy.min_success_criteria_count || 0)
+          : null,
+        reason: (!fitness.ok || !fitnessPayload)
+          ? String(fitness.stderr || fitness.stdout || `outcome_fitness_exit_${fitness.code}`).slice(0, 180)
+          : null
+      });
+      if (!fitness.ok || !fitnessPayload) {
+        const reason = String(fitness.stderr || fitness.stdout || "unknown").slice(0, 120);
+        console.log(` outcome_fitness unavailable reason=${reason}`);
+        if (strict) process.exit(fitness.code || 1);
+      } else {
+        console.log(
+          ` outcome_fitness score=${Number(fitnessPayload.realized_outcome_score || 0)}` +
+          ` shipped_rate=${Number(fitnessPayload.metrics && fitnessPayload.metrics.runs ? fitnessPayload.metrics.runs.shipped_rate || 0 : 0)}` +
+          ` verified_rate=${Number(fitnessPayload.metrics && fitnessPayload.metrics.receipts ? fitnessPayload.metrics.receipts.verified_rate || 0 : 0)}`
+        );
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_outcome_fitness_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "SPINE_OUTCOME_FITNESS_ENABLED",
+        flag_value: String(process.env.SPINE_OUTCOME_FITNESS_ENABLED || "")
+      });
+      console.log(" outcome_fitness skipped reason=feature_flag_disabled flag=SPINE_OUTCOME_FITNESS_ENABLED");
+    }
+
     // DAILY MODE (orchestration only)
     // 1) auto-record shipped outcomes from git tags
     run("node", ["habits/scripts/git_outcomes.js", "run", dateStr]);

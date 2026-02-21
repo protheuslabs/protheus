@@ -20,6 +20,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { loadActiveDirectives } = require('../../lib/directive_resolver.js');
 const { loadActiveStrategy } = require('../../lib/strategy_resolver.js');
+const { loadOutcomeFitnessPolicy } = require('../../lib/outcome_fitness.js');
 const { ensureCatalog } = require('../../lib/eyes_catalog.js');
 const {
   ensureFocusState,
@@ -829,8 +830,14 @@ function countRecentFocusInWindow(recentMap, windowHours, nowMs = Date.now()) {
   return count;
 }
 
-function resolveMinFocusScore(policy, recentMap, nowMs = Date.now()) {
-  const base = clamp(policy && policy.min_focus_score, 1, 100, 58);
+function resolveMinFocusScore(policy, recentMap, nowMs = Date.now(), outcomePolicy = null) {
+  const fitnessDelta = Number(
+    outcomePolicy
+      && outcomePolicy.focus_policy
+      && outcomePolicy.focus_policy.min_focus_score_delta
+  ) || 0;
+  const baseRaw = clamp(policy && policy.min_focus_score, 1, 100, 58);
+  const base = clamp(baseRaw + fitnessDelta, 1, 100, baseRaw);
   const enabled = policy && policy.dynamic_focus_gate_enabled === false ? false : true;
   const windowHours = clamp(policy && policy.dynamic_focus_window_hours, 1, 72, 6);
   const targetPerWindow = clamp(policy && policy.dynamic_focus_target_per_window, 0, 500, 8);
@@ -850,6 +857,7 @@ function resolveMinFocusScore(policy, recentMap, nowMs = Date.now()) {
   }
   return {
     enabled,
+    fitness_delta: fitnessDelta,
     base,
     effective,
     delta,
@@ -941,7 +949,8 @@ async function evaluateFocusForEye(opts = {}) {
     reason: 'evaluate_focus'
   });
   const policy = state.policy || {};
-  const gate = resolveMinFocusScore(policy, state.recent_focus_items);
+  const outcomePolicy = loadOutcomeFitnessPolicy(REPO_ROOT);
+  const gate = resolveMinFocusScore(policy, state.recent_focus_items, Date.now(), outcomePolicy);
   const minScore = gate.effective;
   const perEyeCap = clamp(
     opts.maxFocusPerEye != null ? opts.maxFocusPerEye : policy.max_focus_items_per_eye,
@@ -1117,7 +1126,8 @@ function focusStatus() {
     source: 'systems/sensory/focus_controller.js',
     reason: 'status'
   });
-  const gate = resolveMinFocusScore(state.policy || {}, state.recent_focus_items || {});
+  const outcomePolicy = loadOutcomeFitnessPolicy(REPO_ROOT);
+  const gate = resolveMinFocusScore(state.policy || {}, state.recent_focus_items || {}, Date.now(), outcomePolicy);
   const triggerRows = Array.isArray(state.triggers) ? state.triggers : [];
   const lensRows = state.eye_lenses && typeof state.eye_lenses === 'object' ? Object.values(state.eye_lenses) : [];
   return {
