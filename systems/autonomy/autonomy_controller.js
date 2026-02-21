@@ -214,6 +214,8 @@ const AUTONOMY_DIRECTIVE_PULSE_RANK_BONUS = Number(process.env.AUTONOMY_DIRECTIV
 const AUTONOMY_DIRECTIVE_PULSE_ESCALATE_AFTER = Number(process.env.AUTONOMY_DIRECTIVE_PULSE_ESCALATE_AFTER || 2);
 const AUTONOMY_DIRECTIVE_PULSE_ESCALATE_WINDOW_HOURS = Number(process.env.AUTONOMY_DIRECTIVE_PULSE_ESCALATE_WINDOW_HOURS || 24);
 const AUTONOMY_DIRECTIVE_PULSE_RESERVATION_HARD = String(process.env.AUTONOMY_DIRECTIVE_PULSE_RESERVATION_HARD || '0') === '1';
+const AUTONOMY_OBJECTIVE_BINDING_REQUIRED = String(process.env.AUTONOMY_OBJECTIVE_BINDING_REQUIRED || '1') !== '0';
+const AUTONOMY_OBJECTIVE_ALLOCATION_RANK_BONUS = Number(process.env.AUTONOMY_OBJECTIVE_ALLOCATION_RANK_BONUS || 0.25);
 const AUTONOMY_TIER1_GOVERNANCE_ENABLED = String(process.env.AUTONOMY_TIER1_GOVERNANCE_ENABLED || '1') !== '0';
 const AUTONOMY_TIER1_TOKEN_COST_PER_1K = Number(process.env.AUTONOMY_TIER1_TOKEN_COST_PER_1K || 0);
 const AUTONOMY_TIER1_DAILY_USD_CAP = Number(process.env.AUTONOMY_TIER1_DAILY_USD_CAP || 0);
@@ -2332,13 +2334,14 @@ function pulseTierCoverageBonus(tier, pulseCtx) {
   return Math.min(18, deficit * 6);
 }
 
-function assessDirectivePulse(p, directiveFitScore, compositeScore, overlay, pulseCtx) {
+function assessDirectivePulse(p, directiveFitScore, compositeScore, overlay, pulseCtx, preferredObjectiveId = null) {
   if (!pulseCtx || pulseCtx.enabled !== true || pulseCtx.available !== true) {
     return {
       pass: true,
       score: 0,
       objective_id: null,
       tier: null,
+      objective_allocation_score: 0,
       reasons: ['directive_pulse_unavailable']
     };
   }
@@ -2349,22 +2352,45 @@ function assessDirectivePulse(p, directiveFitScore, compositeScore, overlay, pul
   const tokenSet = new Set(tokens);
   const stemSet = new Set(tokens.map(toStem));
 
-  let best = null;
-  for (const obj of objectives) {
+  const objectiveStatsById = pulseCtx.objective_stats instanceof Map ? pulseCtx.objective_stats : new Map();
+  const scoreObjective = (obj) => {
     const phraseHits = (obj.phrases || []).filter(ph => text.includes(ph));
     const tokenHits = directiveTokenHits(tokenSet, stemSet, obj.tokens || []);
     const align = clampNumber(Math.round((phraseHits.length * 20) + (Math.min(6, tokenHits.length) * 8)), 0, 100);
-    if (!best || align > best.alignment || (align === best.alignment && Number(obj.tier || 9) < Number(best.objective.tier || 9))) {
-      best = {
-        objective: obj,
-        alignment: align,
-        phrase_hits: phraseHits,
-        token_hits: tokenHits
+    return {
+      objective: obj,
+      alignment: align,
+      phrase_hits: phraseHits,
+      token_hits: tokenHits
+    };
+  };
+
+  const preferredId = sanitizeDirectiveObjectiveId(preferredObjectiveId || '');
+  let best = null;
+  if (preferredId) {
+    const preferred = objectives.find((obj) => String(obj && obj.id || '') === preferredId);
+    if (!preferred) {
+      return {
+        pass: false,
+        score: 0,
+        objective_id: preferredId,
+        tier: null,
+        objective_allocation_score: 0,
+        reasons: ['objective_binding_invalid'],
+        matched_positive: []
       };
+    }
+    best = scoreObjective(preferred);
+  } else {
+    for (const obj of objectives) {
+      const scored = scoreObjective(obj);
+      if (!best || scored.alignment > best.alignment || (scored.alignment === best.alignment && Number(obj.tier || 9) < Number(best.objective.tier || 9))) {
+        best = scored;
+      }
     }
   }
 
-  if (!best || best.alignment <= 0) {
+  if (!best) {
     const weak = clampNumber(Math.round((Number(directiveFitScore || 0) * 0.35) + (Number(compositeScore || 0) * 0.15)), 0, 40);
     return {
       pass: true,
@@ -2372,6 +2398,25 @@ function assessDirectivePulse(p, directiveFitScore, compositeScore, overlay, pul
       objective_id: null,
       tier: null,
       alignment: 0,
+      objective_allocation_score: 0,
+      urgency: 1,
+      evidence_gap_multiplier: 1,
+      retry_penalty: 0,
+      coverage_bonus: 0,
+      reasons: ['no_objective_match'],
+      matched_positive: []
+    };
+  }
+
+  if (best.alignment <= 0 && !preferredId) {
+    const weak = clampNumber(Math.round((Number(directiveFitScore || 0) * 0.35) + (Number(compositeScore || 0) * 0.15)), 0, 40);
+    return {
+      pass: true,
+      score: weak,
+      objective_id: null,
+      tier: null,
+      alignment: 0,
+      objective_allocation_score: 0,
       urgency: 1,
       evidence_gap_multiplier: 1,
       retry_penalty: 0,
@@ -2382,7 +2427,7 @@ function assessDirectivePulse(p, directiveFitScore, compositeScore, overlay, pul
   }
 
   const obj = best.objective;
-  const stats = pulseCtx.objective_stats instanceof Map ? pulseCtx.objective_stats.get(obj.id) : null;
+  const stats = objectiveStatsById.get(obj.id) || null;
   if (pulseObjectiveCooldownActive(stats, pulseCtx)) {
     return {
       pass: false,
@@ -2390,6 +2435,7 @@ function assessDirectivePulse(p, directiveFitScore, compositeScore, overlay, pul
       objective_id: obj.id,
       tier: obj.tier,
       alignment: best.alignment,
+      objective_allocation_score: 0,
       reasons: ['objective_cooldown_active'],
       cooldown: {
         no_progress_streak: Number(stats && stats.no_progress_streak || 0),
@@ -2420,8 +2466,19 @@ function assessDirectivePulse(p, directiveFitScore, compositeScore, overlay, pul
   const proposalNoChange = Number(overlay && overlay.outcomes && overlay.outcomes.no_change || 0);
   const proposalReverted = Number(overlay && overlay.outcomes && overlay.outcomes.reverted || 0);
   const objectiveNoProgress = Number(stats && stats.no_progress_streak || 0);
+  const objectiveReverted = Number(stats && stats.reverted || 0);
   const retryPenalty = Math.min(45, (proposalNoChange * 6) + (proposalReverted * 10) + (objectiveNoProgress * 8));
   const coverageBonus = pulseTierCoverageBonus(obj.tier, pulseCtx);
+  const allocationRaw = (
+    (directiveTierWeight(obj.tier) * 22)
+    + (coverageBonus * 2)
+    + ((1 - clampNumber(shippedRate, 0, 1)) * 28)
+    + (Math.max(0, urgency - 1) * 15)
+    + (attempts === 0 ? 12 : 0)
+    - (objectiveNoProgress * 12)
+    - (objectiveReverted * 6)
+  );
+  const objectiveAllocationScore = clampNumber(Math.round(allocationRaw), 0, 100);
 
   const base = (
     (best.alignment * 0.55)
@@ -2437,6 +2494,7 @@ function assessDirectivePulse(p, directiveFitScore, compositeScore, overlay, pul
     objective_id: obj.id,
     tier: obj.tier,
     alignment: best.alignment,
+    objective_allocation_score: objectiveAllocationScore,
     urgency: Number(urgency.toFixed(3)),
     evidence_gap_multiplier: Number(evidenceGapMultiplier.toFixed(3)),
     retry_penalty: Number(retryPenalty.toFixed(3)),
@@ -3405,6 +3463,35 @@ function strategyRankForCandidate(cand, strategy) {
   };
 }
 
+function strategyRankAdjustedForCandidate(cand, executionMode) {
+  const base = Number(cand && cand.strategy_rank && cand.strategy_rank.score || 0);
+  const pulseScore = clampNumber(Number(cand && cand.directive_pulse && cand.directive_pulse.score || 0), 0, 100);
+  const pulseWeight = clampNumber(Number(AUTONOMY_DIRECTIVE_PULSE_RANK_BONUS || 0), 0, 1);
+  const objectiveAllocation = clampNumber(
+    Number(cand && cand.directive_pulse && cand.directive_pulse.objective_allocation_score || 0),
+    0,
+    100
+  );
+  const baseObjectiveWeight = clampNumber(Number(AUTONOMY_OBJECTIVE_ALLOCATION_RANK_BONUS || 0), 0, 1);
+  const objectiveWeight = executionMode === 'canary_execute'
+    ? baseObjectiveWeight
+    : Number((baseObjectiveWeight * 0.35).toFixed(3));
+  const pulseBonus = pulseWeight * pulseScore;
+  const objectiveBonus = objectiveWeight * objectiveAllocation;
+  const total = Number((pulseBonus + objectiveBonus).toFixed(3));
+  const adjusted = Number((base + total).toFixed(3));
+  return {
+    adjusted,
+    bonus: {
+      pulse_weight: pulseWeight,
+      pulse_score: pulseScore,
+      objective_weight: objectiveWeight,
+      objective_allocation_score: objectiveAllocation,
+      total
+    }
+  };
+}
+
 function strategyCircuitCooldownHours(p, strategy) {
   const stopPolicy = strategy && strategy.stop_policy && typeof strategy.stop_policy === 'object'
     ? strategy.stop_policy
@@ -3550,6 +3637,135 @@ function parseActuationSpec(p) {
   if (!kind) return null;
   const params = actuation.params && typeof actuation.params === 'object' ? actuation.params : {};
   return { kind, params };
+}
+
+function objectiveIdsFromPulseContext(pulseCtx) {
+  const set = new Set();
+  const objectives = pulseCtx && Array.isArray(pulseCtx.objectives)
+    ? pulseCtx.objectives
+    : [];
+  for (const row of objectives) {
+    const id = String(row && row.id || '').trim();
+    if (!id) continue;
+    set.add(id);
+  }
+  return set;
+}
+
+function parseObjectiveIdFromEvidenceRefs(proposal, objectiveSet) {
+  const evidence = Array.isArray(proposal && proposal.evidence) ? proposal.evidence : [];
+  for (const row of evidence) {
+    const ref = normalizeSpaces(row && row.evidence_ref);
+    if (!ref) continue;
+    const pulseMatch = ref.match(/directive_pulse\/([A-Za-z0-9_]+)/i);
+    const directMatch = ref.match(/\bdirective:([A-Za-z0-9_]+)/i);
+    const fallbackMatch = ref.match(/\b(T[0-9]_[A-Za-z0-9_]+)\b/);
+    const raw = normalizeSpaces(
+      (pulseMatch && pulseMatch[1])
+      || (directMatch && directMatch[1])
+      || (fallbackMatch && fallbackMatch[1])
+    );
+    const id = sanitizeDirectiveObjectiveId(raw);
+    if (!id) continue;
+    if (objectiveSet.size > 0 && !objectiveSet.has(id)) return { objective_id: id, source: 'evidence_ref', valid: false };
+    return { objective_id: id, source: 'evidence_ref', valid: true };
+  }
+  return null;
+}
+
+function parseObjectiveIdFromCommand(proposal, objectiveSet) {
+  const cmd = normalizeSpaces(proposal && proposal.suggested_next_command);
+  if (!cmd) return null;
+  const match = cmd.match(/(?:^|\s)--id=(?:"([^"]+)"|'([^']+)'|([^\s]+))/);
+  const raw = normalizeSpaces(match && (match[1] || match[2] || match[3]));
+  const id = sanitizeDirectiveObjectiveId(raw);
+  if (!id) return null;
+  if (objectiveSet.size > 0 && !objectiveSet.has(id)) return { objective_id: id, source: 'suggested_next_command', valid: false };
+  return { objective_id: id, source: 'suggested_next_command', valid: true };
+}
+
+function resolveObjectiveBinding(p, pulseCtx) {
+  const proposal = p && typeof p === 'object' ? p : {};
+  const meta = proposal.meta && typeof proposal.meta === 'object' ? proposal.meta : {};
+  const actionSpec = proposal.action_spec && typeof proposal.action_spec === 'object' ? proposal.action_spec : {};
+  const nextCmd = normalizeSpaces(proposal.suggested_next_command);
+  const executable = !!(nextCmd || (proposal.action_spec && typeof proposal.action_spec === 'object'));
+  const objectiveSet = objectiveIdsFromPulseContext(pulseCtx);
+  const required = AUTONOMY_OBJECTIVE_BINDING_REQUIRED && executable && objectiveSet.size > 0;
+
+  const directCandidates = [
+    { source: 'meta.objective_id', value: meta.objective_id },
+    { source: 'meta.directive_objective_id', value: meta.directive_objective_id },
+    { source: 'action_spec.objective_id', value: actionSpec.objective_id },
+    {
+      source: 'meta.action_spec.objective_id',
+      value: meta.action_spec && typeof meta.action_spec === 'object' ? meta.action_spec.objective_id : ''
+    }
+  ];
+
+  let chosen = null;
+  for (const row of directCandidates) {
+    const id = sanitizeDirectiveObjectiveId(row && row.value);
+    if (!id) continue;
+    if (objectiveSet.size > 0 && !objectiveSet.has(id)) {
+      chosen = { objective_id: id, source: row.source, valid: false };
+      break;
+    }
+    chosen = { objective_id: id, source: row.source, valid: true };
+    break;
+  }
+
+  if (!chosen) {
+    const ev = parseObjectiveIdFromEvidenceRefs(proposal, objectiveSet);
+    if (ev) chosen = ev;
+  }
+  if (!chosen) {
+    const cmd = parseObjectiveIdFromCommand(proposal, objectiveSet);
+    if (cmd) chosen = cmd;
+  }
+  if (!chosen && objectiveSet.size === 1) {
+    const [only] = Array.from(objectiveSet);
+    chosen = { objective_id: only, source: 'single_active_objective', valid: true };
+  }
+
+  const objectiveId = String(chosen && chosen.objective_id || '').trim();
+  const inObjectiveSet = objectiveId ? objectiveSet.has(objectiveId) : false;
+  const valid = objectiveId
+    ? (objectiveSet.size === 0 ? true : (chosen.valid !== false && inObjectiveSet))
+    : !required;
+
+  const reasons = [];
+  if (required && !objectiveId) reasons.push('objective_binding_missing');
+  if (required && objectiveId && !valid) reasons.push('objective_binding_invalid');
+
+  return {
+    pass: reasons.length === 0,
+    required,
+    objective_id: objectiveId || null,
+    source: chosen ? String(chosen.source || '') : null,
+    valid,
+    reasons,
+    objectives_available: objectiveSet.size
+  };
+}
+
+function objectiveIdForExecution(p, directivePulse, directiveClarification, objectiveBinding) {
+  const proposal = p && typeof p === 'object' ? p : {};
+  const meta = proposal.meta && typeof proposal.meta === 'object' ? proposal.meta : {};
+  const actionSpec = proposal.action_spec && typeof proposal.action_spec === 'object' ? proposal.action_spec : {};
+  const candidates = [
+    objectiveBinding && objectiveBinding.objective_id,
+    directivePulse && directivePulse.objective_id,
+    directiveClarification && directiveClarification.objective_id,
+    meta.objective_id,
+    meta.directive_objective_id,
+    actionSpec.objective_id
+  ];
+  for (const row of candidates) {
+    const id = sanitizeDirectiveObjectiveId(row);
+    if (id) return id;
+  }
+  return null;
 }
 
 function runActuationExecute(spec, dryRun = false) {
@@ -5009,7 +5225,15 @@ function statusCmd(dateStr) {
       const composite = compositeEligibilityScore(q.score, dfit.score, act.score);
       const candidateRisk = normalizedRisk(x.proposal && x.proposal.risk);
       const compositeMin = compositeEligibilityMin(candidateRisk, executionMode);
-      const pulse = assessDirectivePulse(x.proposal, dfit.score, composite, x.overlay, directivePulseCtx);
+      const objectiveBinding = resolveObjectiveBinding(x.proposal, directivePulseCtx);
+      const pulse = assessDirectivePulse(
+        x.proposal,
+        dfit.score,
+        composite,
+        x.overlay,
+        directivePulseCtx,
+        objectiveBinding.objective_id
+      );
       return {
         id: x.proposal.id,
         title: x.proposal.title,
@@ -5050,7 +5274,15 @@ function statusCmd(dateStr) {
           score: pulse.score,
           objective_id: pulse.objective_id || null,
           tier: pulse.tier == null ? null : pulse.tier,
+          objective_allocation_score: Number(pulse.objective_allocation_score || 0),
           reasons: Array.isArray(pulse.reasons) ? pulse.reasons.slice(0, 3) : []
+        },
+        objective_binding: {
+          pass: objectiveBinding.pass === true,
+          required: objectiveBinding.required === true,
+          objective_id: objectiveBinding.objective_id || null,
+          source: objectiveBinding.source || null,
+          reasons: Array.isArray(objectiveBinding.reasons) ? objectiveBinding.reasons.slice(0, 3) : []
         }
       };
     })
@@ -5786,6 +6018,7 @@ function runCmd(dateStr, opts = {}) {
     low_quality: 0,
     low_directive_fit: 0,
     low_actionability: 0,
+    objective_binding: 0,
     low_value_signal: 0,
     low_composite: 0,
     capability_cooldown: 0,
@@ -5797,6 +6030,7 @@ function runCmd(dateStr, opts = {}) {
   let sampleLowQuality = null;
   let sampleLowDirectiveFit = null;
   let sampleLowActionability = null;
+  let sampleObjectiveBinding = null;
   let sampleLowValueSignal = null;
   let sampleLowComposite = null;
   let sampleCapabilityCooldown = null;
@@ -5827,7 +6061,11 @@ function runCmd(dateStr, opts = {}) {
       cooldown_hours: AUTONOMY_LANE_NO_CHANGE_COOLDOWN_HOURS
     },
     medium_risk_lane: mediumRiskThresholds(thresholds),
-    medium_canary_daily_exec_limit: mediumCanaryDailyExecLimit
+    medium_canary_daily_exec_limit: mediumCanaryDailyExecLimit,
+    objective_binding: {
+      required: AUTONOMY_OBJECTIVE_BINDING_REQUIRED,
+      objective_allocation_rank_bonus: AUTONOMY_OBJECTIVE_ALLOCATION_RANK_BONUS
+    }
   };
   const candidateAuditPolicyHash = hashObj(candidateAuditPolicy);
   const pushCandidateAudit = (row) => {
@@ -5945,6 +6183,38 @@ function runCmd(dateStr, opts = {}) {
           proposal_id: cand.proposal.id,
           score: actionability.score,
           reasons: actionability.reasons.slice(0, 3)
+        };
+      }
+      continue;
+    }
+
+    const objectiveBinding = resolveObjectiveBinding(cand.proposal, directivePulseCtx);
+    if (!objectiveBinding.pass) {
+      skipStats.objective_binding += 1;
+      bumpCount(candidateRejectedByGate, 'objective_binding');
+      pushCandidateAudit({
+        proposal_id: proposalId,
+        proposal_type: proposalType,
+        risk,
+        pass: false,
+        gate: 'objective_binding',
+        score: Number(cand.score || 0),
+        objective_binding: {
+          required: objectiveBinding.required === true,
+          objective_id: objectiveBinding.objective_id,
+          source: objectiveBinding.source,
+          objectives_available: objectiveBinding.objectives_available
+        },
+        reasons: Array.isArray(objectiveBinding.reasons) ? objectiveBinding.reasons.slice(0, 3) : []
+      });
+      if (!sampleObjectiveBinding) {
+        sampleObjectiveBinding = {
+          proposal_id: cand.proposal.id,
+          objective_id: objectiveBinding.objective_id || null,
+          source: objectiveBinding.source || null,
+          required: objectiveBinding.required === true,
+          objectives_available: objectiveBinding.objectives_available,
+          reasons: Array.isArray(objectiveBinding.reasons) ? objectiveBinding.reasons.slice(0, 3) : []
         };
       }
       continue;
@@ -6160,7 +6430,14 @@ function runCmd(dateStr, opts = {}) {
       continue;
     }
 
-    const pulse = assessDirectivePulse(cand.proposal, dfit.score, compositeScore, cand.overlay, directivePulseCtx);
+    const pulse = assessDirectivePulse(
+      cand.proposal,
+      dfit.score,
+      compositeScore,
+      cand.overlay,
+      directivePulseCtx,
+      objectiveBinding.objective_id
+    );
     if (!pulse.pass) {
       skipStats.directive_pulse_cooldown += 1;
       bumpCount(candidateRejectedByGate, 'directive_pulse');
@@ -6184,6 +6461,45 @@ function runCmd(dateStr, opts = {}) {
       continue;
     }
 
+    if (
+      objectiveBinding.required === true
+      && objectiveBinding.objective_id
+      && pulse.objective_id
+      && String(objectiveBinding.objective_id) !== String(pulse.objective_id)
+    ) {
+      skipStats.objective_binding += 1;
+      bumpCount(candidateRejectedByGate, 'objective_binding');
+      pushCandidateAudit({
+        proposal_id: proposalId,
+        proposal_type: proposalType,
+        risk,
+        pass: false,
+        gate: 'objective_binding',
+        score: Number(cand.score || 0),
+        objective_binding: {
+          required: true,
+          objective_id: objectiveBinding.objective_id,
+          source: objectiveBinding.source
+        },
+        directive_pulse: {
+          objective_id: pulse.objective_id || null,
+          tier: pulse.tier == null ? null : pulse.tier
+        },
+        reasons: ['objective_binding_mismatch']
+      });
+      if (!sampleObjectiveBinding) {
+        sampleObjectiveBinding = {
+          proposal_id: cand.proposal.id,
+          objective_id: objectiveBinding.objective_id || null,
+          source: objectiveBinding.source || null,
+          required: true,
+          objectives_available: objectiveBinding.objectives_available,
+          reasons: ['objective_binding_mismatch']
+        };
+      }
+      continue;
+    }
+
     eligible.push({
       ...cand,
       quality: q,
@@ -6195,6 +6511,7 @@ function runCmd(dateStr, opts = {}) {
       risk,
       capability_key: capKeyCand,
       eye_no_progress_24h: eyeNoProgress24h,
+      objective_binding: objectiveBinding,
       directive_pulse: pulse
     });
     pushCandidateAudit({
@@ -6222,7 +6539,13 @@ function runCmd(dateStr, opts = {}) {
       directive_pulse: {
         score: pulse.score,
         objective_id: pulse.objective_id || null,
-        tier: pulse.tier == null ? null : pulse.tier
+        tier: pulse.tier == null ? null : pulse.tier,
+        objective_allocation_score: Number(pulse.objective_allocation_score || 0)
+      },
+      objective_binding: {
+        required: objectiveBinding.required === true,
+        objective_id: objectiveBinding.objective_id || null,
+        source: objectiveBinding.source || null
       }
     });
   }
@@ -6269,10 +6592,9 @@ function runCmd(dateStr, opts = {}) {
   if (eligible.length > 0) {
     for (const cand of eligible) {
       cand.strategy_rank = strategyRankForCandidate(cand, strategy);
-      cand.strategy_rank_adjusted = Number((
-        Number(cand.strategy_rank && cand.strategy_rank.score || 0)
-        + (clampNumber(Number(AUTONOMY_DIRECTIVE_PULSE_RANK_BONUS || 0), 0, 1) * Number(cand.directive_pulse && cand.directive_pulse.score || 0))
-      ).toFixed(3));
+      const adjusted = strategyRankAdjustedForCandidate(cand, executionMode);
+      cand.strategy_rank_adjusted = adjusted.adjusted;
+      cand.strategy_rank_bonus = adjusted.bonus;
     }
     eligible.sort((a, b) => {
       const sa = Number(a.strategy_rank_adjusted != null ? a.strategy_rank_adjusted : (a.strategy_rank && a.strategy_rank.score || 0));
@@ -6321,14 +6643,36 @@ function runCmd(dateStr, opts = {}) {
   if (!pick && shadowOnly && pool.length > 0) {
     const fallback = pool[0];
     const fallbackRisk = normalizedRisk(fallback.proposal && fallback.proposal.risk);
+    const fallbackObjectiveBinding = resolveObjectiveBinding(fallback.proposal, directivePulseCtx);
     const q = assessSignalQuality(fallback.proposal, eyesMap, thresholds, calibrationProfile);
     const dfit = assessDirectiveFit(fallback.proposal, directiveProfile, thresholds);
     const actionability = assessActionability(fallback.proposal, dfit, thresholds);
     const valueSignal = assessValueSignal(fallback.proposal, actionability, dfit);
     const compositeScore = compositeEligibilityScore(q.score, dfit.score, actionability.score);
     const compositeMin = compositeEligibilityMin(fallbackRisk, executionMode);
-    const pulse = assessDirectivePulse(fallback.proposal, dfit.score, compositeScore, fallback.overlay, directivePulseCtx);
+    const pulse = assessDirectivePulse(
+      fallback.proposal,
+      dfit.score,
+      compositeScore,
+      fallback.overlay,
+      directivePulseCtx,
+      fallbackObjectiveBinding.objective_id
+    );
     const fallbackCapKey = String(capabilityDescriptor(fallback.proposal, parseActuationSpec(fallback.proposal)).key || '').toLowerCase();
+    const fallbackStrategyRank = strategyRankForCandidate({
+      ...fallback,
+      quality: q,
+      directive_fit: dfit,
+      actionability,
+      composite_score: compositeScore,
+      composite_min_score: compositeMin,
+      risk: fallbackRisk
+    }, strategy);
+    const fallbackAdjusted = strategyRankAdjustedForCandidate({
+      ...fallback,
+      directive_pulse: pulse,
+      strategy_rank: fallbackStrategyRank
+    }, executionMode);
     pick = {
       ...fallback,
       quality: q,
@@ -6340,28 +6684,11 @@ function runCmd(dateStr, opts = {}) {
       risk: fallbackRisk,
       capability_key: fallbackCapKey,
       eye_no_progress_24h: countEyeOutcomesInLastHours(decisionEvents, sourceEyeRef(fallback.proposal), 'no_change', 24),
+      objective_binding: fallbackObjectiveBinding,
       directive_pulse: pulse,
-      strategy_rank: strategyRankForCandidate({
-        ...fallback,
-        quality: q,
-        directive_fit: dfit,
-        actionability,
-        composite_score: compositeScore,
-        composite_min_score: compositeMin,
-        risk: fallbackRisk
-      }, strategy),
-      strategy_rank_adjusted: Number((
-        Number(strategyRankForCandidate({
-          ...fallback,
-          quality: q,
-          directive_fit: dfit,
-          actionability,
-          composite_score: compositeScore,
-          composite_min_score: compositeMin,
-          risk: fallbackRisk
-        }, strategy).score || 0)
-        + (clampNumber(Number(AUTONOMY_DIRECTIVE_PULSE_RANK_BONUS || 0), 0, 1) * Number(pulse.score || 0))
-      ).toFixed(3))
+      strategy_rank: fallbackStrategyRank,
+      strategy_rank_adjusted: fallbackAdjusted.adjusted,
+      strategy_rank_bonus: fallbackAdjusted.bonus
     };
     selection = {
       mode: 'shadow_fallback',
@@ -6391,6 +6718,7 @@ function runCmd(dateStr, opts = {}) {
       && skipStats.medium_risk_guard === 0
       && skipStats.medium_policy_blocked === 0
       && skipStats.directive_pulse_cooldown === 0
+      && skipStats.objective_binding === 0
     ) {
       writeRun(dateStr, {
         ts: nowIso(),
@@ -6425,6 +6753,7 @@ function runCmd(dateStr, opts = {}) {
       && skipStats.medium_risk_guard === 0
       && skipStats.medium_daily_cap === 0
       && skipStats.directive_pulse_cooldown === 0
+      && skipStats.objective_binding === 0
     ) {
       writeRun(dateStr, {
         ts: nowIso(),
@@ -6457,6 +6786,7 @@ function runCmd(dateStr, opts = {}) {
       && skipStats.medium_policy_blocked === 0
       && skipStats.medium_daily_cap === 0
       && skipStats.directive_pulse_cooldown === 0
+      && skipStats.objective_binding === 0
     ) {
       writeRun(dateStr, {
         ts: nowIso(),
@@ -6487,6 +6817,7 @@ function runCmd(dateStr, opts = {}) {
       && skipStats.medium_risk_guard === 0
       && skipStats.medium_policy_blocked === 0
       && skipStats.medium_daily_cap === 0
+      && skipStats.objective_binding === 0
     ) {
       const objectiveId = String(
         sampleDirectivePulseCooldown && sampleDirectivePulseCooldown.objective_id
@@ -6533,6 +6864,37 @@ function runCmd(dateStr, opts = {}) {
     }
 
     if (
+      skipStats.objective_binding > 0
+      && skipStats.eye_no_progress === 0
+      && skipStats.low_quality === 0
+      && skipStats.low_directive_fit === 0
+      && skipStats.low_actionability === 0
+      && skipStats.low_value_signal === 0
+      && skipStats.low_composite === 0
+      && skipStats.capability_cooldown === 0
+      && skipStats.medium_risk_guard === 0
+      && skipStats.medium_policy_blocked === 0
+      && skipStats.medium_daily_cap === 0
+      && skipStats.directive_pulse_cooldown === 0
+    ) {
+      writeRun(dateStr, {
+        ts: nowIso(),
+        type: 'autonomy_run',
+        result: 'stop_init_gate_objective_binding_exhausted',
+        skipped_objective_binding: skipStats.objective_binding,
+        sample_objective_binding: sampleObjectiveBinding
+      });
+      process.stdout.write(JSON.stringify({
+        ok: true,
+        result: 'stop_init_gate_objective_binding_exhausted',
+        skipped_objective_binding: skipStats.objective_binding,
+        sample_objective_binding: sampleObjectiveBinding,
+        ts: nowIso()
+      }) + '\n');
+      return;
+    }
+
+    if (
       skipStats.low_quality > 0
       && skipStats.eye_no_progress === 0
       && skipStats.low_directive_fit === 0
@@ -6540,6 +6902,7 @@ function runCmd(dateStr, opts = {}) {
       && skipStats.low_value_signal === 0
       && skipStats.low_composite === 0
       && skipStats.capability_cooldown === 0
+      && skipStats.objective_binding === 0
     ) {
       writeRun(dateStr, {
         ts: nowIso(),
@@ -6568,6 +6931,7 @@ function runCmd(dateStr, opts = {}) {
       && skipStats.low_value_signal === 0
       && skipStats.low_composite === 0
       && skipStats.capability_cooldown === 0
+      && skipStats.objective_binding === 0
     ) {
       writeRun(dateStr, {
         ts: nowIso(),
@@ -6598,6 +6962,7 @@ function runCmd(dateStr, opts = {}) {
       && skipStats.low_value_signal === 0
       && skipStats.low_composite === 0
       && skipStats.capability_cooldown === 0
+      && skipStats.objective_binding === 0
     ) {
       writeRun(dateStr, {
         ts: nowIso(),
@@ -6630,6 +6995,7 @@ function runCmd(dateStr, opts = {}) {
       && skipStats.medium_policy_blocked === 0
       && skipStats.medium_daily_cap === 0
       && skipStats.directive_pulse_cooldown === 0
+      && skipStats.objective_binding === 0
     ) {
       writeRun(dateStr, {
         ts: nowIso(),
@@ -6664,6 +7030,7 @@ function runCmd(dateStr, opts = {}) {
       && skipStats.medium_policy_blocked === 0
       && skipStats.medium_daily_cap === 0
       && skipStats.directive_pulse_cooldown === 0
+      && skipStats.objective_binding === 0
     ) {
       writeRun(dateStr, {
         ts: nowIso(),
@@ -6690,6 +7057,7 @@ function runCmd(dateStr, opts = {}) {
       && skipStats.low_actionability === 0
       && skipStats.low_value_signal === 0
       && skipStats.capability_cooldown === 0
+      && skipStats.objective_binding === 0
     ) {
       writeRun(dateStr, {
         ts: nowIso(),
@@ -6720,11 +7088,12 @@ function runCmd(dateStr, opts = {}) {
       ts: nowIso(),
       type: 'autonomy_run',
       result: 'stop_repeat_gate_candidate_exhausted',
-      reason: `all_candidates_exhausted quality_or_directive_fit_or_actionability_or_value_or_composite_or_capability_cooldown_or_medium_risk_or_eye_no_progress_or_directive_pulse`,
+      reason: `all_candidates_exhausted quality_or_directive_fit_or_actionability_or_objective_binding_or_value_or_composite_or_capability_cooldown_or_medium_risk_or_eye_no_progress_or_directive_pulse`,
       skipped_eye_no_progress: skipStats.eye_no_progress,
       skipped_low_quality: skipStats.low_quality,
       skipped_low_directive_fit: skipStats.low_directive_fit,
       skipped_low_actionability: skipStats.low_actionability,
+      skipped_objective_binding: skipStats.objective_binding,
       skipped_low_value_signal: skipStats.low_value_signal,
       skipped_low_composite: skipStats.low_composite,
       skipped_capability_cooldown: skipStats.capability_cooldown,
@@ -6735,6 +7104,7 @@ function runCmd(dateStr, opts = {}) {
       sample_low_quality: sampleLowQuality,
       sample_low_directive_fit: sampleLowDirectiveFit,
       sample_low_actionability: sampleLowActionability,
+      sample_objective_binding: sampleObjectiveBinding,
       sample_low_value_signal: sampleLowValueSignal,
       sample_low_composite: sampleLowComposite,
       sample_capability_cooldown: sampleCapabilityCooldown,
@@ -6746,11 +7116,12 @@ function runCmd(dateStr, opts = {}) {
     process.stdout.write(JSON.stringify({
       ok: true,
       result: 'stop_repeat_gate_candidate_exhausted',
-      reason: `all_candidates_exhausted quality_or_directive_fit_or_actionability_or_value_or_composite_or_capability_cooldown_or_medium_risk_or_eye_no_progress_or_directive_pulse`,
+      reason: `all_candidates_exhausted quality_or_directive_fit_or_actionability_or_objective_binding_or_value_or_composite_or_capability_cooldown_or_medium_risk_or_eye_no_progress_or_directive_pulse`,
       skipped_eye_no_progress: skipStats.eye_no_progress,
       skipped_low_quality: skipStats.low_quality,
       skipped_low_directive_fit: skipStats.low_directive_fit,
       skipped_low_actionability: skipStats.low_actionability,
+      skipped_objective_binding: skipStats.objective_binding,
       skipped_low_value_signal: skipStats.low_value_signal,
       skipped_low_composite: skipStats.low_composite,
       skipped_capability_cooldown: skipStats.capability_cooldown,
@@ -6761,6 +7132,7 @@ function runCmd(dateStr, opts = {}) {
       sample_low_quality: sampleLowQuality,
       sample_low_directive_fit: sampleLowDirectiveFit,
       sample_low_actionability: sampleLowActionability,
+      sample_objective_binding: sampleObjectiveBinding,
       sample_low_value_signal: sampleLowValueSignal,
       sample_low_composite: sampleLowComposite,
       sample_capability_cooldown: sampleCapabilityCooldown,
@@ -6793,6 +7165,8 @@ function runCmd(dateStr, opts = {}) {
   const revertedCount = ov.outcomes?.reverted || 0;
   const circuitCooldownHours = strategyCircuitCooldownHours(p, strategy);
   const directivePulse = pick.directive_pulse || null;
+  const objectiveBinding = pick.objective_binding || resolveObjectiveBinding(p, directivePulseCtx);
+  const executionObjectiveId = objectiveIdForExecution(p, directivePulse, directiveClarification, objectiveBinding);
 
   if (circuitCooldownHours > 0) {
     const reason = `auto:circuit_breaker cooldown_${circuitCooldownHours}h`;
@@ -6912,6 +7286,7 @@ function runCmd(dateStr, opts = {}) {
         verdict: previewVerification.passed ? 'pass' : 'fail',
         intent: {
           task_hash: hashObj({ task: makeTaskFromProposal(p) }),
+          objective_id: executionObjectiveId || null,
           actuation: actuationSpec ? { kind: actuationSpec.kind } : null,
           directive_validation: directiveClarification
             ? {
@@ -6940,6 +7315,7 @@ function runCmd(dateStr, opts = {}) {
       strategy_id: strategy ? strategy.id : null,
       execution_mode: executionMode,
       proposal_id: p.id,
+      objective_id: executionObjectiveId || null,
       proposal_date: proposalDate,
       proposal_type: String(p.type || ''),
       risk: proposalRisk,
@@ -6950,6 +7326,7 @@ function runCmd(dateStr, opts = {}) {
       strategy_rank: pick.strategy_rank || null,
       strategy_rank_adjusted: Number(pick.strategy_rank_adjusted || (pick.strategy_rank && pick.strategy_rank.score) || 0),
       value_signal: pick.value_signal || null,
+      objective_binding: objectiveBinding,
       directive_pulse: directivePulse,
       selection_mode: selection.mode,
       selection_index: selection.index,
@@ -6967,12 +7344,14 @@ function runCmd(dateStr, opts = {}) {
       strategy_id: strategy ? strategy.id : null,
       execution_mode: executionMode,
       proposal_id: p.id,
+      objective_id: executionObjectiveId || null,
       proposal_date: proposalDate,
       risk: proposalRisk,
       score: Number(pick.score.toFixed(3)),
       strategy_rank: pick.strategy_rank || null,
       strategy_rank_adjusted: Number(pick.strategy_rank_adjusted || (pick.strategy_rank && pick.strategy_rank.score) || 0),
       value_signal: pick.value_signal || null,
+      objective_binding: objectiveBinding,
       directive_pulse: directivePulse,
       selection_mode: selection.mode,
       selection_index: selection.index,
@@ -7326,6 +7705,7 @@ function runCmd(dateStr, opts = {}) {
       result: 'init_gate_blocked_route',
       receipt_id: receiptId,
       proposal_id: p.id,
+      objective_id: executionObjectiveId || null,
       proposal_date: proposalDate,
       capability_key: capabilityKey,
       execution_target: executionTarget,
@@ -7349,6 +7729,7 @@ function runCmd(dateStr, opts = {}) {
       verdict: 'fail',
       intent: {
         task_hash: hashObj({ task }),
+        objective_id: executionObjectiveId || null,
         actuation: actuationSpec ? { kind: actuationSpec.kind } : null,
         route_tokens_est: routeTokensEst,
         repeats_14d: repeats14d,
@@ -7371,6 +7752,7 @@ function runCmd(dateStr, opts = {}) {
       result: 'init_gate_blocked_route',
       receipt_id: receiptId,
       proposal_id: p.id,
+      objective_id: executionObjectiveId || null,
       capability_key: capabilityKey,
       execution_target: executionTarget,
       directive_pulse: directivePulse,
@@ -7398,6 +7780,7 @@ function runCmd(dateStr, opts = {}) {
       result: 'init_gate_accept_failed',
       receipt_id: receiptId,
       proposal_id: p.id,
+      objective_id: executionObjectiveId || null,
       proposal_date: proposalDate,
       capability_key: capabilityKey,
       directive_pulse: directivePulse,
@@ -7416,6 +7799,7 @@ function runCmd(dateStr, opts = {}) {
       verdict: 'fail',
       intent: {
         task_hash: hashObj({ task }),
+        objective_id: executionObjectiveId || null,
         actuation: actuationSpec ? { kind: actuationSpec.kind } : null,
         directive_validation: directiveClarification
           ? {
@@ -7445,6 +7829,7 @@ function runCmd(dateStr, opts = {}) {
       result: 'init_gate_accept_failed',
       receipt_id: receiptId,
       proposal_id: p.id,
+      objective_id: executionObjectiveId || null,
       capability_key: capabilityKey,
       directive_pulse: directivePulse,
       token_usage: preTokenUsage,
@@ -7460,6 +7845,7 @@ function runCmd(dateStr, opts = {}) {
     strategy_id: strategy ? strategy.id : null,
     execution_mode: executionMode,
     proposal_id: p.id,
+    objective_id: executionObjectiveId || null,
     proposal_date: proposalDate,
     title: p.title || '',
     hypothesis: `Executing one bounded action for ${p.id} improves measurable progress without policy violations.`,
@@ -7473,6 +7859,7 @@ function runCmd(dateStr, opts = {}) {
     directive_fit: pick.directive_fit,
     actionability: pick.actionability,
     value_signal: pick.value_signal || null,
+    objective_binding: objectiveBinding,
     directive_pulse: directivePulse,
     composite: {
       score: pick.composite_score,
@@ -7483,6 +7870,7 @@ function runCmd(dateStr, opts = {}) {
     selection_mode: selection.mode,
     selection_index: selection.index,
     strategy_rank: pick.strategy_rank || null,
+    strategy_rank_bonus: pick.strategy_rank_bonus || null,
     strategy_rank_adjusted: Number(pick.strategy_rank_adjusted || (pick.strategy_rank && pick.strategy_rank.score) || 0),
     thresholds,
     calibration_metrics: calibrationProfile.metrics,
@@ -7638,6 +8026,7 @@ function runCmd(dateStr, opts = {}) {
     verdict: verification.passed ? 'pass' : 'fail',
     intent: {
       task_hash: hashObj({ task }),
+      objective_id: executionObjectiveId || null,
       actuation: actuationSpec ? { kind: actuationSpec.kind } : null,
       directive_validation: directiveClarification
         ? {
@@ -7677,6 +8066,7 @@ function runCmd(dateStr, opts = {}) {
     strategy_id: strategy ? strategy.id : null,
     execution_mode: executionMode,
     proposal_id: p.id,
+    objective_id: executionObjectiveId || null,
     capability_key: capabilityKey,
     execution_target: executionTarget,
     proposal_date: proposalDate,
@@ -7697,6 +8087,7 @@ function runCmd(dateStr, opts = {}) {
     directive_fit: pick.directive_fit,
     actionability: pick.actionability,
     value_signal: pick.value_signal || null,
+    objective_binding: objectiveBinding,
     directive_pulse: directivePulse,
     composite: {
       score: pick.composite_score,
@@ -7707,6 +8098,7 @@ function runCmd(dateStr, opts = {}) {
     selection_mode: selection.mode,
     selection_index: selection.index,
     strategy_rank: pick.strategy_rank || null,
+    strategy_rank_bonus: pick.strategy_rank_bonus || null,
     explore_used_before: selection.explore_used,
     explore_quota: selection.explore_quota,
     thresholds,
@@ -7730,6 +8122,7 @@ function runCmd(dateStr, opts = {}) {
     strategy_id: strategy ? strategy.id : null,
     execution_mode: executionMode,
     proposal_id: p.id,
+    objective_id: executionObjectiveId || null,
     capability_key: capabilityKey,
     execution_target: executionTarget,
     proposal_date: proposalDate,
@@ -7746,6 +8139,7 @@ function runCmd(dateStr, opts = {}) {
     directive_fit: pick.directive_fit,
     actionability: pick.actionability,
     value_signal: pick.value_signal || null,
+    objective_binding: objectiveBinding,
     directive_pulse: directivePulse,
     composite: {
       score: pick.composite_score,
@@ -7756,6 +8150,7 @@ function runCmd(dateStr, opts = {}) {
     selection_mode: selection.mode,
     selection_index: selection.index,
     strategy_rank: pick.strategy_rank || null,
+    strategy_rank_bonus: pick.strategy_rank_bonus || null,
     explore_used_before: selection.explore_used,
     explore_quota: selection.explore_quota,
     dod,

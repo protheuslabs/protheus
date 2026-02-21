@@ -29,10 +29,36 @@ function run() {
 
   const date = '2026-02-19';
   writeJsonl(path.join(runsDir, `${date}.jsonl`), [
-    { ts: '2026-02-19T05:00:00.000Z', type: 'autonomy_run', result: 'executed', outcome: 'shipped', strategy_id: 's1', execution_mode: 'execute' },
-    { ts: '2026-02-19T05:05:00.000Z', type: 'autonomy_run', result: 'executed', outcome: 'no_change', strategy_id: 's1', execution_mode: 'execute' },
-    { ts: '2026-02-19T05:07:00.000Z', type: 'autonomy_run', result: 'score_only_preview', strategy_id: 's1', execution_mode: 'score_only' },
-    { ts: '2026-02-19T05:10:00.000Z', type: 'autonomy_run', result: 'stop_repeat_gate_no_progress', strategy_id: 's1', execution_mode: 'execute' },
+    {
+      ts: '2026-02-19T05:00:00.000Z',
+      type: 'autonomy_run',
+      result: 'executed',
+      outcome: 'shipped',
+      strategy_id: 's1',
+      execution_mode: 'execute',
+      objective_id: 'T1_objA',
+      directive_pulse: { objective_id: 'T1_objA', score: 80, objective_allocation_score: 70 }
+    },
+    {
+      ts: '2026-02-19T05:05:00.000Z',
+      type: 'autonomy_run',
+      result: 'executed',
+      outcome: 'no_change',
+      strategy_id: 's1',
+      execution_mode: 'execute',
+      objective_id: 'T1_objA',
+      directive_pulse: { objective_id: 'T1_objA', score: 60, objective_allocation_score: 50 }
+    },
+    {
+      ts: '2026-02-19T05:07:00.000Z',
+      type: 'autonomy_run',
+      result: 'score_only_preview',
+      strategy_id: 's1',
+      execution_mode: 'score_only',
+      objective_id: 'T2_objB',
+      directive_pulse: { objective_id: 'T2_objB', score: 55, objective_allocation_score: 65 }
+    },
+    { ts: '2026-02-19T05:10:00.000Z', type: 'autonomy_run', result: 'stop_repeat_gate_no_progress', strategy_id: 's1', execution_mode: 'execute', objective_id: 'T2_objB' },
     { ts: '2026-02-19T05:12:00.000Z', type: 'autonomy_run', result: 'stop_init_gate_quality_exhausted', strategy_id: 's2', execution_mode: 'execute' }
   ]);
 
@@ -41,7 +67,7 @@ function run() {
       ts: '2026-02-19T05:00:01.000Z',
       type: 'autonomy_action_receipt',
       verdict: 'pass',
-      intent: { score_only: true },
+      intent: { score_only: true, objective_id: 'T1_objA' },
       verification: {
         passed: true,
         failed: [],
@@ -64,6 +90,7 @@ function run() {
       ts: '2026-02-19T05:05:01.000Z',
       type: 'autonomy_action_receipt',
       verdict: 'fail',
+      intent: { objective_id: 'T1_objA' },
       verification: {
         passed: false,
         failed: ['postconditions_ok'],
@@ -127,6 +154,13 @@ function run() {
   assert.strictEqual(Number(out.runs.by_strategy.s2 || 0), 1);
   assert.strictEqual(Number(out.runs.by_execution_mode.execute || 0), 4);
   assert.strictEqual(Number(out.runs.by_execution_mode.score_only || 0), 1);
+  assert.strictEqual(Number(out.runs.objective_scorecard.T1_objA.attempts || 0), 2);
+  assert.strictEqual(Number(out.runs.objective_scorecard.T1_objA.executed || 0), 2);
+  assert.strictEqual(Number(out.runs.objective_scorecard.T1_objA.shipped || 0), 1);
+  assert.strictEqual(Number(out.runs.objective_scorecard.T1_objA.no_change || 0), 1);
+  assert.strictEqual(out.runs.objective_scorecard.T1_objA.pulse_score_avg, 70);
+  assert.strictEqual(out.runs.objective_scorecard.T1_objA.objective_allocation_score_avg, 60);
+  assert.strictEqual(Number(out.runs.objective_scorecard.T2_objB.attempts || 0), 2);
 
   assert.strictEqual(out.receipts.autonomy.total, 2);
   assert.strictEqual(out.receipts.autonomy.skipped_not_attempted, 0);
@@ -142,6 +176,9 @@ function run() {
   assert.strictEqual(out.receipts.autonomy.success_criteria_preview_receipts, 1);
   assert.strictEqual(out.receipts.autonomy.success_criteria_preview_pass, 1);
   assert.strictEqual(out.receipts.autonomy.success_criteria_preview_pass_rate, 1);
+  assert.strictEqual(Number(out.receipts.autonomy.by_objective.T1_objA.total || 0), 2);
+  assert.strictEqual(out.receipts.autonomy.by_objective.T1_objA.pass_rate, 0.5);
+  assert.strictEqual(out.receipts.autonomy.by_objective.T1_objA.success_criteria_pass_rate, 0.5);
 
   assert.strictEqual(out.receipts.actuation.total, 2);
   assert.strictEqual(out.receipts.actuation.skipped_not_attempted, 1);

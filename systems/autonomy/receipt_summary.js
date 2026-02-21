@@ -137,6 +137,27 @@ function mergeTallies(...objs) {
   return sortedTally(out);
 }
 
+function objectiveIdFromRun(run) {
+  if (!run || typeof run !== 'object') return '';
+  const direct = String(run.objective_id || '').trim();
+  if (direct) return direct;
+  const pulse = run.directive_pulse && typeof run.directive_pulse === 'object'
+    ? run.directive_pulse
+    : null;
+  return String(pulse && pulse.objective_id || '').trim();
+}
+
+function objectiveIdFromReceipt(rec) {
+  if (!rec || typeof rec !== 'object') return '';
+  const intent = rec.intent && typeof rec.intent === 'object' ? rec.intent : {};
+  const direct = String(intent.objective_id || '').trim();
+  if (direct) return direct;
+  const directiveValidation = intent.directive_validation && typeof intent.directive_validation === 'object'
+    ? intent.directive_validation
+    : null;
+  return String(directiveValidation && directiveValidation.objective_id || '').trim();
+}
+
 function summarizeRuns(rows) {
   const runs = (rows || []).filter(r => r && r.type === 'autonomy_run');
   const executed = runs.filter(r => String(r.result || '') === 'executed');
@@ -154,6 +175,88 @@ function summarizeRuns(rows) {
   const results = tallyBy(runs, r => String(r.result || 'unknown'));
   const byStrategy = tallyBy(runs, r => String(r.strategy_id || '').trim());
   const byMode = tallyBy(runs, r => String(r.execution_mode || '').trim());
+  const objectiveScorecard = {};
+  for (const run of runs) {
+    const objectiveId = objectiveIdFromRun(run);
+    if (!objectiveId) continue;
+    if (!objectiveScorecard[objectiveId]) {
+      objectiveScorecard[objectiveId] = {
+        attempts: 0,
+        executed: 0,
+        previews: 0,
+        stopped: 0,
+        shipped: 0,
+        no_change: 0,
+        reverted: 0,
+        pulse_score_avg: null,
+        objective_allocation_score_avg: null,
+        latest_result: null,
+        latest_ts: null
+      };
+    }
+    const row = objectiveScorecard[objectiveId];
+    row.attempts += 1;
+    const result = String(run.result || '');
+    if (result === 'executed') {
+      row.executed += 1;
+      const outcome = String(run.outcome || '');
+      if (outcome === 'shipped') row.shipped += 1;
+      else if (outcome === 'no_change') row.no_change += 1;
+      else if (outcome === 'reverted') row.reverted += 1;
+    } else if (result === 'score_only_preview' || result === 'score_only_evidence') {
+      row.previews += 1;
+    } else if (result.startsWith('stop_') || result.startsWith('init_gate_')) {
+      row.stopped += 1;
+    }
+    if (!row._pulse_score_total) row._pulse_score_total = 0;
+    if (!row._pulse_score_samples) row._pulse_score_samples = 0;
+    if (!row._allocation_total) row._allocation_total = 0;
+    if (!row._allocation_samples) row._allocation_samples = 0;
+    const pulse = run.directive_pulse && typeof run.directive_pulse === 'object'
+      ? run.directive_pulse
+      : null;
+    const pulseScore = Number(pulse && pulse.score);
+    if (Number.isFinite(pulseScore)) {
+      row._pulse_score_total += pulseScore;
+      row._pulse_score_samples += 1;
+    }
+    const allocationScore = Number(pulse && pulse.objective_allocation_score);
+    if (Number.isFinite(allocationScore)) {
+      row._allocation_total += allocationScore;
+      row._allocation_samples += 1;
+    }
+    row.latest_result = result || row.latest_result;
+    row.latest_ts = String(run.ts || row.latest_ts || '') || row.latest_ts;
+  }
+  const objectiveScorecardSorted = Object.fromEntries(
+    Object.entries(objectiveScorecard)
+      .map(([objectiveId, row]) => {
+        const pulseSamples = Number(row._pulse_score_samples || 0);
+        const allocationSamples = Number(row._allocation_samples || 0);
+        const clean = {
+          attempts: Number(row.attempts || 0),
+          executed: Number(row.executed || 0),
+          previews: Number(row.previews || 0),
+          stopped: Number(row.stopped || 0),
+          shipped: Number(row.shipped || 0),
+          no_change: Number(row.no_change || 0),
+          reverted: Number(row.reverted || 0),
+          ship_rate: row.executed > 0 ? Number((row.shipped / row.executed).toFixed(3)) : null,
+          no_progress_rate: row.executed > 0 ? Number(((row.no_change + row.reverted) / row.executed).toFixed(3)) : null,
+          pulse_score_avg: pulseSamples > 0 ? Number((row._pulse_score_total / pulseSamples).toFixed(3)) : null,
+          objective_allocation_score_avg: allocationSamples > 0 ? Number((row._allocation_total / allocationSamples).toFixed(3)) : null,
+          latest_result: row.latest_result || null,
+          latest_ts: row.latest_ts || null
+        };
+        return [objectiveId, clean];
+      })
+      .sort((a, b) => {
+        const at = Number(a[1] && a[1].attempts || 0);
+        const bt = Number(b[1] && b[1].attempts || 0);
+        if (bt !== at) return bt - at;
+        return String(a[0]).localeCompare(String(b[0]));
+      })
+  );
   const total = runs.length;
   const stopped = stop.length;
 
@@ -167,6 +270,7 @@ function summarizeRuns(rows) {
     executed_outcomes: sortedTally(outcomes),
     by_strategy: sortedTally(byStrategy),
     by_execution_mode: sortedTally(byMode),
+    objective_scorecard: objectiveScorecardSorted,
     stop_reasons: sortedTally(tallyBy(stop, r => String(r.result || 'unknown'))),
     init_gate_reasons: sortedTally(tallyBy(initGate, r => String(r.result || 'unknown'))),
     repeat_gate_reasons: sortedTally(tallyBy(repeatGate, r => String(r.result || 'unknown'))),
@@ -210,11 +314,28 @@ function summarizeAutonomyReceipts(rows) {
   let previewReceipts = 0;
   let previewCriteriaReceipts = 0;
   let previewCriteriaPass = 0;
+  const byObjective = {};
 
   for (const rec of receipts) {
     const intent = rec && rec.intent && typeof rec.intent === 'object' ? rec.intent : {};
     const isPreview = intent.score_only === true;
     if (isPreview) previewReceipts += 1;
+    const objectiveId = objectiveIdFromReceipt(rec);
+    if (objectiveId) {
+      if (!byObjective[objectiveId]) {
+        byObjective[objectiveId] = {
+          total: 0,
+          pass: 0,
+          fail: 0,
+          success_criteria_receipts: 0,
+          success_criteria_pass: 0
+        };
+      }
+      const bucket = byObjective[objectiveId];
+      bucket.total += 1;
+      if (String(rec.verdict || '').toLowerCase() === 'pass') bucket.pass += 1;
+      else if (String(rec.verdict || '').toLowerCase() === 'fail') bucket.fail += 1;
+    }
     const verification = rec && rec.verification && typeof rec.verification === 'object'
       ? rec.verification
       : null;
@@ -234,7 +355,32 @@ function summarizeAutonomyReceipts(rows) {
     criteriaRowsPassed += Number(criteria.passed_count || 0);
     criteriaRowsFailed += Number(criteria.failed_count || 0);
     criteriaRowsUnknown += Number(criteria.unknown_count || 0);
+    if (objectiveId) {
+      const bucket = byObjective[objectiveId];
+      bucket.success_criteria_receipts += 1;
+      if (criteria.passed === true) bucket.success_criteria_pass += 1;
+    }
   }
+
+  const byObjectiveSorted = Object.fromEntries(
+    Object.entries(byObjective)
+      .map(([id, row]) => [id, {
+        total: Number(row.total || 0),
+        pass: Number(row.pass || 0),
+        fail: Number(row.fail || 0),
+        pass_rate: row.total > 0 ? Number((row.pass / row.total).toFixed(3)) : null,
+        success_criteria_receipts: Number(row.success_criteria_receipts || 0),
+        success_criteria_pass_rate: row.success_criteria_receipts > 0
+          ? Number((row.success_criteria_pass / row.success_criteria_receipts).toFixed(3))
+          : null
+      }])
+      .sort((a, b) => {
+        const at = Number(a[1] && a[1].total || 0);
+        const bt = Number(b[1] && b[1].total || 0);
+        if (bt !== at) return bt - at;
+        return String(a[0]).localeCompare(String(b[0]));
+      })
+  );
 
   return {
     total: receipts.length,
@@ -264,7 +410,8 @@ function summarizeAutonomyReceipts(rows) {
     success_criteria_preview_pass: previewCriteriaPass,
     success_criteria_preview_pass_rate: previewCriteriaReceipts
       ? Number((previewCriteriaPass / previewCriteriaReceipts).toFixed(3))
-      : null
+      : null,
+    by_objective: byObjectiveSorted
   };
 }
 

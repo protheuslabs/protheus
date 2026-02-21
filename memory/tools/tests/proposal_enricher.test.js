@@ -4,6 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
+const { loadActiveDirectives } = require('../../../lib/directive_resolver.js');
 
 function banner(title) {
   console.log('═══════════════════════════════════════════════════════════');
@@ -38,6 +39,18 @@ function run() {
   const eyesRegistryPath = path.join(sensoryDir, 'eyes', 'registry.json');
   const eyesConfigBefore = fs.existsSync(eyesConfigPath) ? fs.readFileSync(eyesConfigPath, 'utf8') : null;
   const outcomePolicyBefore = process.env.OUTCOME_FITNESS_POLICY_PATH;
+  const objectiveId = (() => {
+    try {
+      const directives = loadActiveDirectives({ allowMissing: true });
+      for (const row of directives) {
+        const id = String((row && row.id) || (row && row.data && row.data.metadata && row.data.metadata.id) || '').trim();
+        if (/^T[0-9]_[A-Za-z0-9_]+$/.test(id)) return id;
+      }
+    } catch {
+      // ignore
+    }
+    return '';
+  })();
 
   try {
     process.env.SENSORY_TEST_DIR = sensoryDir;
@@ -88,6 +101,18 @@ function run() {
           'Define measurable error-rate target and 24h verification window',
           'Record proposal outcome'
         ],
+        action_spec: objectiveId
+          ? {
+              version: 1,
+              objective_id: objectiveId,
+              target: 'eye:local_state_fallback',
+              next_command: 'node systems/routing/route_execute.js --task="Improve automation growth reliability with deterministic checks" --dry-run',
+              verify: ['record outcome'],
+              success_criteria: [{ metric: 'artifact_count', target: '>=1 artifact', horizon: '24h' }],
+              rollback: 'revert bounded remediation'
+            }
+          : undefined,
+        meta: objectiveId ? { directive_objective_id: objectiveId } : undefined,
         suggested_next_command: 'node systems/routing/route_execute.js --task="Improve automation growth reliability with deterministic checks" --dry-run'
       },
       {
@@ -98,6 +123,7 @@ function run() {
         risk: 'high',
         evidence: [{ evidence_ref: 'eye:local_state_fallback', match: 'high risk source' }],
         validation: ['Review manually'],
+        meta: objectiveId ? { directive_objective_id: objectiveId } : undefined,
         suggested_next_command: 'node systems/routing/route_execute.js --task="Explore discretionary high risk option" --dry-run'
       }
     ], null, 2));
@@ -132,6 +158,15 @@ function run() {
     assert.ok(low.meta && Number.isFinite(Number(low.meta.composite_eligibility_score)), 'low proposal has composite score');
     assert.ok(Array.isArray(low.meta.directive_fit_positive) && low.meta.directive_fit_positive.length >= 1, 'normalizer should produce directive-fit positives');
     assert.ok(low.meta && low.meta.admission_preview && low.meta.admission_preview.eligible === true, 'low-risk OPEN proposal should be eligible');
+    assert.ok(
+      !objectiveId || (low.meta && low.meta.objective_binding_required === true),
+      'executable proposal should require objective binding when objectives exist'
+    );
+    assert.ok(low.meta && low.meta.objective_binding_valid !== false, 'low-risk proposal should have valid objective binding');
+    if (objectiveId) {
+      assert.strictEqual(low.meta.directive_objective_id, objectiveId, 'objective binding should retain directive objective id');
+      assert.strictEqual(low.meta.objective_id, objectiveId, 'objective_id should be normalized');
+    }
 
     assert.ok(high.meta && high.meta.admission_preview && high.meta.admission_preview.eligible === false, 'high-risk proposal should be blocked');
     assert.ok(

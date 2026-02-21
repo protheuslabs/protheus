@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
 const { spawnSync } = require('child_process');
+const { loadActiveDirectives } = require('../../../lib/directive_resolver.js');
 
 function mkDir(dirPath) {
   if (!fs.existsSync(dirPath)) fs.mkdirSync(dirPath, { recursive: true });
@@ -48,6 +49,30 @@ function run() {
   const backupBody = backupExists ? fs.readFileSync(proposalsPath, 'utf8') : null;
 
   try {
+    const directiveRows = (() => {
+      try {
+        const directives = loadActiveDirectives({ allowMissing: true });
+        return directives
+          .map((d) => {
+            const data = d && d.data && typeof d.data === 'object' ? d.data : {};
+            const meta = data.metadata && typeof data.metadata === 'object' ? data.metadata : {};
+            const id = String(meta.id || d.id || '').trim();
+            const tier = Number.isFinite(Number(d && d.tier))
+              ? Number(d.tier)
+              : Number(meta.tier);
+            if (!id || /^T0(?:_|$)/i.test(id)) return null;
+            if (!Number.isFinite(tier)) return null;
+            return { id, tier };
+          })
+          .filter(Boolean)
+          .sort((a, b) => a.tier - b.tier || String(a.id).localeCompare(String(b.id)));
+      } catch {
+        return [];
+      }
+    })();
+    const primaryObjective = directiveRows.find((r) => r.tier <= 1) || directiveRows[0] || { id: 'T1_make_jay_billionaire_v1', tier: 1 };
+    const secondaryObjective = directiveRows.find((r) => r.tier >= 2) || primaryObjective;
+
     writeJson(proposalsPath, [
       {
         id: 'PULSE-SEL-T1',
@@ -63,6 +88,7 @@ function run() {
         suggested_next_command: 'node systems/routing/route_execute.js --task="Implement one bounded compounding automation step" --tokens_est=700 --dry-run',
         action_spec: {
           version: 1,
+          objective_id: primaryObjective.id,
           target: 'signal:pulse-sel-t1',
           next_command: 'node systems/routing/route_execute.js --task="Implement one bounded compounding automation step" --tokens_est=700 --dry-run',
           verify: [
@@ -83,6 +109,7 @@ function run() {
         ],
         meta: {
           source_eye: 'local_state_fallback',
+          directive_objective_id: primaryObjective.id,
           relevance_score: 75,
           relevance_tier: 'high',
           signal_quality_score: 80,
@@ -103,6 +130,7 @@ function run() {
         suggested_next_command: 'node systems/routing/route_execute.js --task="Improve reliability logging" --tokens_est=500 --dry-run',
         action_spec: {
           version: 1,
+          objective_id: secondaryObjective.id,
           target: 'signal:pulse-sel-alt',
           next_command: 'node systems/routing/route_execute.js --task="Improve reliability logging" --tokens_est=500 --dry-run',
           verify: [
@@ -123,6 +151,7 @@ function run() {
         ],
         meta: {
           source_eye: 'local_state_fallback',
+          directive_objective_id: secondaryObjective.id,
           relevance_score: 70,
           relevance_tier: 'medium',
           signal_quality_score: 72,
@@ -161,7 +190,8 @@ function run() {
     assert.strictEqual(out.result, 'score_only_evidence');
     assert.strictEqual(out.selection_mode, 'directive_reservation');
     assert.ok(out.directive_pulse && out.directive_pulse.objective_id, 'expected directive pulse objective');
-    assert.strictEqual(Number(out.directive_pulse.tier), 1, 'expected tier-1 reservation candidate');
+    assert.strictEqual(String(out.directive_pulse.objective_id), String(primaryObjective.id), 'expected objective-bound reservation candidate');
+    assert.strictEqual(Number(out.directive_pulse.tier), Number(primaryObjective.tier), 'expected reserved objective tier');
 
     console.log('directive_pulse_selection.integration.test.js: OK');
   } finally {

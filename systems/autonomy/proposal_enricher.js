@@ -53,6 +53,7 @@ const GENERIC_VALIDATION_RE = /\b(extract one concrete build\/change task from s
 const GENERIC_ROUTE_TASK_RE = /--task=\"Extract one implementable step from external intel:/i;
 const SUCCESS_METRIC_RE = /\b(metric|kpi|target|rate|count|latency|error|uptime|throughput|conversion|artifact|receipt|coverage|reply|interview|pass|fail|delta|percent|%|run|runs|check|checks|items_collected)\b/i;
 const SUCCESS_TIMEBOUND_RE = /\b(\d+\s*(h|hr|hour|hours|d|day|days|w|week|weeks|min|mins|minute|minutes)|daily|weekly|monthly|quarterly)\b/i;
+const DIRECTIVE_OBJECTIVE_ID_RE = /^T[0-9]_[A-Za-z0-9_]+$/;
 const ARCHETYPE_RULES = [
   {
     key: 'reliability',
@@ -92,6 +93,7 @@ const ALLOWED_RISKS = new Set(
     .map(s => String(s || '').trim().toLowerCase())
     .filter(Boolean)
 );
+const AUTONOMY_OBJECTIVE_BINDING_REQUIRED = String(process.env.AUTONOMY_OBJECTIVE_BINDING_REQUIRED || '1') !== '0';
 let STRATEGY_CACHE = undefined;
 
 function strategyProfile() {
@@ -339,6 +341,134 @@ function sourceEyeId(proposal) {
     }
   }
   return 'unknown_eye';
+}
+
+function sanitizeDirectiveObjectiveId(v) {
+  const id = normalizeText(v);
+  if (!id) return '';
+  if (!DIRECTIVE_OBJECTIVE_ID_RE.test(id)) return '';
+  return id;
+}
+
+function activeDirectiveObjectiveIds(profile) {
+  const ids = Array.isArray(profile && profile.active_directive_ids)
+    ? profile.active_directive_ids
+    : [];
+  const out = [];
+  const seen = new Set();
+  for (const id of ids) {
+    const clean = sanitizeDirectiveObjectiveId(id);
+    if (!clean || seen.has(clean)) continue;
+    seen.add(clean);
+    out.push(clean);
+  }
+  out.sort();
+  return out;
+}
+
+function parseObjectiveIdFromEvidence(proposal, objectiveSet) {
+  const evidence = Array.isArray(proposal && proposal.evidence) ? proposal.evidence : [];
+  for (const row of evidence) {
+    const ref = normalizeText(row && row.evidence_ref);
+    if (!ref) continue;
+    const pulseMatch = ref.match(/directive_pulse\/([A-Za-z0-9_]+)/i);
+    const directiveMatch = ref.match(/\bdirective:([A-Za-z0-9_]+)/i);
+    const fallbackMatch = ref.match(/\b(T[0-9]_[A-Za-z0-9_]+)\b/);
+    const raw = normalizeText(
+      (pulseMatch && pulseMatch[1])
+      || (directiveMatch && directiveMatch[1])
+      || (fallbackMatch && fallbackMatch[1])
+    );
+    const id = sanitizeDirectiveObjectiveId(raw);
+    if (!id) continue;
+    if (objectiveSet.size > 0 && !objectiveSet.has(id)) continue;
+    return { objective_id: id, source: 'evidence_ref' };
+  }
+  return null;
+}
+
+function parseObjectiveIdFromCommand(proposal, objectiveSet) {
+  const cmd = normalizeText(proposal && proposal.suggested_next_command);
+  if (!cmd) return null;
+  const match = cmd.match(/(?:^|\s)--id=(?:"([^"]+)"|'([^']+)'|([^\s]+))/);
+  const raw = normalizeText(match && (match[1] || match[2] || match[3]));
+  const id = sanitizeDirectiveObjectiveId(raw);
+  if (!id) return null;
+  if (objectiveSet.size > 0 && !objectiveSet.has(id)) return null;
+  return { objective_id: id, source: 'suggested_next_command' };
+}
+
+function isExecutableProposal(proposal) {
+  const nextCmd = normalizeText(proposal && proposal.suggested_next_command);
+  const actionSpec = proposal && proposal.action_spec && typeof proposal.action_spec === 'object'
+    ? proposal.action_spec
+    : null;
+  return !!(nextCmd || actionSpec);
+}
+
+function resolveObjectiveBinding(proposal, directiveObjectiveIds) {
+  const p = proposal && typeof proposal === 'object' ? proposal : {};
+  const meta = p.meta && typeof p.meta === 'object' ? p.meta : {};
+  const actionSpec = p.action_spec && typeof p.action_spec === 'object' ? p.action_spec : {};
+  const objectiveSet = new Set(Array.isArray(directiveObjectiveIds) ? directiveObjectiveIds : []);
+  const executable = isExecutableProposal(p);
+  const required = AUTONOMY_OBJECTIVE_BINDING_REQUIRED && executable && objectiveSet.size > 0;
+
+  const directCandidates = [
+    { source: 'meta.objective_id', value: meta.objective_id },
+    { source: 'meta.directive_objective_id', value: meta.directive_objective_id },
+    { source: 'action_spec.objective_id', value: actionSpec.objective_id },
+    {
+      source: 'meta.action_spec.objective_id',
+      value: meta.action_spec && typeof meta.action_spec === 'object' ? meta.action_spec.objective_id : ''
+    }
+  ];
+
+  let chosen = null;
+  for (const row of directCandidates) {
+    const id = sanitizeDirectiveObjectiveId(row && row.value);
+    if (!id) continue;
+    if (objectiveSet.size > 0 && !objectiveSet.has(id)) {
+      chosen = { objective_id: id, source: row.source, valid: false };
+      break;
+    }
+    chosen = { objective_id: id, source: row.source, valid: true };
+    break;
+  }
+
+  if (!chosen) {
+    const ev = parseObjectiveIdFromEvidence(p, objectiveSet);
+    if (ev) chosen = { ...ev, valid: true };
+  }
+  if (!chosen) {
+    const cmd = parseObjectiveIdFromCommand(p, objectiveSet);
+    if (cmd) chosen = { ...cmd, valid: true };
+  }
+  if (!chosen && objectiveSet.size === 1) {
+    const [only] = Array.from(objectiveSet);
+    chosen = { objective_id: only, source: 'single_active_objective', valid: true };
+  }
+
+  const objectiveId = chosen ? String(chosen.objective_id || '') : '';
+  const inObjectiveSet = objectiveId && objectiveSet.has(objectiveId);
+  const bindingValid = objectiveId
+    ? (objectiveSet.size === 0 ? true : (chosen.valid !== false && inObjectiveSet))
+    : !required;
+
+  let reason = 'not_required';
+  if (required && !objectiveId) reason = 'missing_objective_binding';
+  else if (required && !bindingValid) reason = 'invalid_objective_binding';
+  else if (objectiveId && bindingValid) reason = 'objective_bound';
+
+  return {
+    objective_id: objectiveId || '',
+    directive_objective_id: objectiveId || '',
+    binding_required: required,
+    binding_valid: bindingValid,
+    binding_source: chosen ? String(chosen.source || '') : '',
+    reason,
+    active_objectives: Array.from(objectiveSet).slice(0, 8)
+  };
 }
 
 function actionVerbFromText(text) {
@@ -800,6 +930,11 @@ function admission(meta, eye, risk, t, proposal, strategy, outcomePolicy) {
   if (Number(meta.directive_fit_score) < t.min_directive_fit) reasons.push('directive_fit_low');
   if (Number(meta.actionability_score) < t.min_actionability_score) reasons.push('actionability_low');
   if (Number(meta.composite_eligibility_score) < t.min_composite_eligibility) reasons.push('composite_low');
+  if (meta && meta.objective_binding_required === true) {
+    const objectiveId = normalizeText(meta.objective_id || meta.directive_objective_id);
+    if (!objectiveId) reasons.push('objective_binding_missing');
+    else if (meta.objective_binding_valid === false) reasons.push('objective_binding_invalid');
+  }
   if (isMetaCoordination && !hasConcreteTarget) reasons.push('meta_proposal_non_actionable');
   if (/\bproposals?\b/.test(blob) && !hasConcreteTarget && !hasOpportunity) reasons.push('proposal_recursion_non_actionable');
 
@@ -816,6 +951,7 @@ function enrichOne(proposal, ctx) {
   const eye = ctx.eyes.get(srcEye) || null;
   const risk = normalizedRisk(p.risk);
   const t = ctx.thresholds;
+  const objectiveBinding = resolveObjectiveBinding(p, ctx.directiveObjectiveIds);
 
   const q = assessQuality(p, eye, t);
   const d = assessDirectiveFit(p, ctx.directiveProfile);
@@ -830,7 +966,11 @@ function enrichOne(proposal, ctx) {
     actionability_score: a.score,
     composite_eligibility_score: comp,
     success_criteria_measurable_count: a.success_criteria ? Number(a.success_criteria.measurable_count || 0) : 0,
-    success_criteria_total_count: a.success_criteria ? Number(a.success_criteria.total_count || 0) : 0
+    success_criteria_total_count: a.success_criteria ? Number(a.success_criteria.total_count || 0) : 0,
+    objective_id: objectiveBinding.objective_id || '',
+    directive_objective_id: objectiveBinding.directive_objective_id || '',
+    objective_binding_required: objectiveBinding.binding_required === true,
+    objective_binding_valid: objectiveBinding.binding_valid !== false
   }, eye, risk, t, p, strategy, ctx.outcomePolicy);
 
   const prevMeta = raw.meta && typeof raw.meta === 'object' ? raw.meta : {};
@@ -838,6 +978,13 @@ function enrichOne(proposal, ctx) {
     ...prevMeta,
     ...(p.meta && typeof p.meta === 'object' ? p.meta : {}),
     source_eye: srcEye,
+    objective_id: objectiveBinding.objective_id || null,
+    directive_objective_id: objectiveBinding.directive_objective_id || null,
+    objective_binding_required: objectiveBinding.binding_required === true,
+    objective_binding_valid: objectiveBinding.binding_valid !== false,
+    objective_binding_source: objectiveBinding.binding_source || null,
+    objective_binding_reason: objectiveBinding.reason || null,
+    active_directive_objectives: objectiveBinding.active_objectives,
     signal_quality_score: q.score,
     signal_quality_tier: tier(q.score),
     relevance_score: relevance,
@@ -861,7 +1008,7 @@ function enrichOne(proposal, ctx) {
       blocked_by: admit.blocked_by.slice(0, 6)
     },
     enriched_at: nowIso(),
-    enrichment_version: '1.1'
+    enrichment_version: '1.2'
   };
 
   const next = {
@@ -916,9 +1063,11 @@ function runForDate(dateStr, dryRun = false) {
     };
   }
 
+  const directiveProfile = loadDirectiveProfile();
   const ctx = {
     eyes: loadEyesMap(),
-    directiveProfile: loadDirectiveProfile(),
+    directiveProfile,
+    directiveObjectiveIds: activeDirectiveObjectiveIds(directiveProfile),
     strategy: strategyProfile(),
     thresholds: thresholds(),
     outcomePolicy: loadOutcomeFitnessPolicy(ROOT)
