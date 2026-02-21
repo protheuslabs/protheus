@@ -65,6 +65,7 @@ function safeRate(num, den) {
 function evaluateReadiness(strategy, summary, policy, requestedDays) {
   const runs = summary && summary.runs ? summary.runs : {};
   const receipts = summary && summary.receipts && summary.receipts.combined ? summary.receipts.combined : {};
+  const autonomyReceipts = summary && summary.receipts && summary.receipts.autonomy ? summary.receipts.autonomy : {};
   const executedOutcomes = runs.executed_outcomes || {};
   const executed = Number(runs.executed || 0);
   const shipped = Number(executedOutcomes.shipped || 0);
@@ -73,6 +74,9 @@ function evaluateReadiness(strategy, summary, policy, requestedDays) {
   const totalRuns = Number(runs.total || 0);
   const attempted = Number(receipts.attempted || 0);
   const verifiedRate = Number(receipts.verified_rate || 0);
+  const criteriaReceipts = Number(autonomyReceipts.success_criteria_receipts || 0);
+  const criteriaPassRate = Number(autonomyReceipts.success_criteria_receipt_pass_rate || 0);
+  const minCriteriaPassRate = Number(policy.min_success_criteria_pass_rate || 0.6);
   const revertedRate = safeRate(reverted, executed);
   const stopRatio = safeRate(stopped, totalRuns);
   const policyDays = Number(policy.min_days || 7);
@@ -114,6 +118,12 @@ function evaluateReadiness(strategy, summary, policy, requestedDays) {
       pass: shipped >= Number(policy.min_shipped || 0),
       value: shipped,
       target: `>=${Number(policy.min_shipped || 0)}`
+    },
+    {
+      name: 'success_criteria_pass_rate',
+      pass: criteriaReceipts <= 0 || criteriaPassRate >= minCriteriaPassRate,
+      value: criteriaReceipts <= 0 ? null : criteriaPassRate,
+      target: criteriaReceipts <= 0 ? 'n/a(no_data)' : `>=${minCriteriaPassRate}`
     }
   ];
 
@@ -135,6 +145,8 @@ function evaluateReadiness(strategy, summary, policy, requestedDays) {
     metrics: {
       attempted,
       verified_rate: verifiedRate,
+      success_criteria_receipts: criteriaReceipts,
+      success_criteria_pass_rate: criteriaReceipts <= 0 ? null : criteriaPassRate,
       executed,
       shipped,
       reverted,

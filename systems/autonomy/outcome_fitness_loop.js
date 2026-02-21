@@ -185,7 +185,15 @@ function summarizeReceipts(dates) {
     pass: 0,
     fail: 0,
     verification_passed: 0,
-    outcome_shipped: 0
+    outcome_shipped: 0,
+    success_criteria_receipts: 0,
+    success_criteria_required_receipts: 0,
+    success_criteria_receipt_pass: 0,
+    success_criteria_rows_total: 0,
+    success_criteria_rows_evaluated: 0,
+    success_criteria_rows_passed: 0,
+    success_criteria_rows_failed: 0,
+    success_criteria_rows_unknown: 0
   };
   for (const dateStr of dates) {
     const rows = readJsonl(path.join(RECEIPTS_DIR, `${dateStr}.jsonl`));
@@ -207,6 +215,19 @@ function summarizeReceipts(dates) {
         : {};
       if (verification.passed === true) out.verification_passed += 1;
       if (String(verification.outcome || '').toLowerCase() === 'shipped') out.outcome_shipped += 1;
+      const criteria = verification.success_criteria && typeof verification.success_criteria === 'object'
+        ? verification.success_criteria
+        : null;
+      if (criteria) {
+        out.success_criteria_receipts += 1;
+        if (criteria.required === true) out.success_criteria_required_receipts += 1;
+        if (criteria.passed === true) out.success_criteria_receipt_pass += 1;
+        out.success_criteria_rows_total += Number(criteria.total_count || 0);
+        out.success_criteria_rows_evaluated += Number(criteria.evaluated_count || 0);
+        out.success_criteria_rows_passed += Number(criteria.passed_count || 0);
+        out.success_criteria_rows_failed += Number(criteria.failed_count || 0);
+        out.success_criteria_rows_unknown += Number(criteria.unknown_count || 0);
+      }
     }
   }
   out.verified_rate = rate(out.verified, out.attempted);
@@ -214,6 +235,9 @@ function summarizeReceipts(dates) {
   out.verification_pass_rate = rate(out.verification_passed, out.attempted);
   out.fail_rate = rate(out.fail, out.attempted);
   out.receipt_shipped_rate = rate(out.outcome_shipped, out.attempted);
+  out.success_criteria_receipt_pass_rate = rate(out.success_criteria_receipt_pass, out.success_criteria_receipts);
+  out.success_criteria_required_pass_rate = rate(out.success_criteria_receipt_pass, out.success_criteria_required_receipts);
+  out.success_criteria_row_pass_rate = rate(out.success_criteria_rows_passed, out.success_criteria_rows_evaluated);
   return out;
 }
 
@@ -258,7 +282,9 @@ function deriveThresholdOverrides(base, runMetrics, receiptMetrics, blocks) {
   const directiveShare = Number(blocked.directive_fit_low || 0) / blockedTotal;
   const compositeShare = Number(blocked.composite_low || 0) / blockedTotal;
 
-  const tighten = runMetrics.reverted_rate >= 0.25 || receiptMetrics.fail_rate >= 0.35;
+  const criteriaWeak = Number(receiptMetrics.success_criteria_receipts || 0) >= 2
+    && Number(receiptMetrics.success_criteria_receipt_pass_rate || 0) < 0.6;
+  const tighten = runMetrics.reverted_rate >= 0.25 || receiptMetrics.fail_rate >= 0.35 || criteriaWeak;
   const loosen = !tighten && (runMetrics.executed < 3 || runMetrics.shipped_rate < 0.2);
 
   if (tighten) {
@@ -310,6 +336,14 @@ function deriveRankingWeightOverride(baseWeights, runMetrics, receiptMetrics) {
     w.signal_quality -= 0.03;
     w.composite -= 0.02;
   }
+  if (
+    Number(receiptMetrics.success_criteria_receipts || 0) >= 2
+    && Number(receiptMetrics.success_criteria_receipt_pass_rate || 0) < 0.65
+  ) {
+    w.actionability += 0.03;
+    w.expected_value -= 0.02;
+    w.composite -= 0.01;
+  }
   if (runMetrics.shipped_rate > 0.4 && runMetrics.reverted_rate < 0.1) {
     w.expected_value += 0.03;
     w.time_to_value += 0.02;
@@ -343,11 +377,15 @@ function deriveFocusDelta(runMetrics, blocks) {
 }
 
 function computeRealizedOutcomeScore(runMetrics, receiptMetrics) {
+  const criteriaRate = Number(receiptMetrics.success_criteria_receipt_pass_rate || 0) > 0
+    ? Number(receiptMetrics.success_criteria_receipt_pass_rate || 0)
+    : Number(receiptMetrics.verification_pass_rate || 0);
   const score = (
-    (Number(runMetrics.shipped_rate || 0) * 45)
-    + (Number(receiptMetrics.verified_rate || 0) * 25)
+    (Number(runMetrics.shipped_rate || 0) * 40)
+    + (Number(receiptMetrics.verified_rate || 0) * 20)
     + (Number(receiptMetrics.verification_pass_rate || 0) * 20)
-    + ((1 - Number(runMetrics.reverted_rate || 0)) * 10)
+    + (criteriaRate * 15)
+    + ((1 - Number(runMetrics.reverted_rate || 0)) * 5)
   );
   return Number(clampNumber(score, 0, 100, 0).toFixed(2));
 }
@@ -380,7 +418,14 @@ function buildPayload(dateStr, days) {
   const thresholdOverrides = deriveThresholdOverrides(baseThresholds, runMetrics, receiptMetrics, blockSummary);
   const rankingWeights = deriveRankingWeightOverride(baseWeights, runMetrics, receiptMetrics);
   const focusDelta = deriveFocusDelta(runMetrics, blockSummary);
-  const minCriteriaCount = receiptMetrics.verified_rate < 0.65 || receiptMetrics.fail_rate > 0.3 ? 2 : 1;
+  const minCriteriaCount = (
+    receiptMetrics.verified_rate < 0.65
+    || receiptMetrics.fail_rate > 0.3
+    || (
+      Number(receiptMetrics.success_criteria_receipts || 0) >= 2
+      && Number(receiptMetrics.success_criteria_receipt_pass_rate || 0) < 0.65
+    )
+  ) ? 2 : 1;
 
   return {
     version: '1.0',

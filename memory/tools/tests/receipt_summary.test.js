@@ -41,14 +41,45 @@ function run() {
       ts: '2026-02-19T05:00:01.000Z',
       type: 'autonomy_action_receipt',
       verdict: 'pass',
-      verification: { passed: true, failed: [], primary_failure: null },
+      verification: {
+        passed: true,
+        failed: [],
+        primary_failure: null,
+        success_criteria: {
+          required: true,
+          min_count: 1,
+          total_count: 2,
+          evaluated_count: 2,
+          passed_count: 2,
+          failed_count: 0,
+          unknown_count: 0,
+          pass_rate: 1,
+          passed: true
+        }
+      },
       receipt_contract: { version: '1.0', attempted: true, verified: true, recorded: true }
     },
     {
       ts: '2026-02-19T05:05:01.000Z',
       type: 'autonomy_action_receipt',
       verdict: 'fail',
-      verification: { passed: false, failed: ['postconditions_ok'], primary_failure: 'postconditions_ok' },
+      verification: {
+        passed: false,
+        failed: ['postconditions_ok'],
+        primary_failure: 'postconditions_ok',
+        success_criteria: {
+          required: true,
+          min_count: 1,
+          total_count: 2,
+          evaluated_count: 2,
+          passed_count: 1,
+          failed_count: 1,
+          unknown_count: 0,
+          pass_rate: 0.5,
+          passed: false,
+          primary_failure: 'success_criteria_failed:requires_shipped_outcome'
+        }
+      },
       receipt_contract: { version: '1.0', attempted: true, verified: false, recorded: true }
     }
   ]);
@@ -101,6 +132,11 @@ function run() {
   assert.strictEqual(out.receipts.autonomy.pass, 1);
   assert.strictEqual(out.receipts.autonomy.fail, 1);
   assert.strictEqual(Number(out.receipts.autonomy.top_failure_reasons.postconditions_ok || 0), 1);
+  assert.strictEqual(out.receipts.autonomy.success_criteria_receipts, 2);
+  assert.strictEqual(out.receipts.autonomy.success_criteria_required_receipts, 2);
+  assert.strictEqual(out.receipts.autonomy.success_criteria_receipt_pass, 1);
+  assert.strictEqual(out.receipts.autonomy.success_criteria_receipt_pass_rate, 0.5);
+  assert.strictEqual(out.receipts.autonomy.success_criteria_row_pass_rate, 0.75);
 
   assert.strictEqual(out.receipts.actuation.total, 2);
   assert.strictEqual(out.receipts.actuation.skipped_not_attempted, 1);
@@ -111,6 +147,7 @@ function run() {
   assert.strictEqual(out.receipts.combined.attempted, 4);
   assert.strictEqual(out.receipts.combined.verified, 2);
   assert.strictEqual(out.receipts.combined.verified_rate, 0.5);
+  assert.strictEqual(out.receipts.combined.success_criteria_receipt_pass_rate, 0.5);
   assert.strictEqual(Number(out.receipts.combined.top_failure_reasons.postconditions_ok || 0), 1);
   assert.strictEqual(Number(out.receipts.combined.top_failure_reasons.HTTP_429 || 0), 1);
 

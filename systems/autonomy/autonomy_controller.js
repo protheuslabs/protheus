@@ -26,6 +26,7 @@ const { writeContractReceipt } = require('../../lib/action_receipts.js');
 const { isEmergencyStopEngaged } = require('../../lib/emergency_stop.js');
 const { compactCommandOutput } = require('../../lib/command_output_compactor.js');
 const { loadOutcomeFitnessPolicy } = require('../../lib/outcome_fitness.js');
+const { evaluateSuccessCriteria } = require('../../lib/success_criteria_verifier.js');
 const { resolveCatalogPath } = require('../../lib/eyes_catalog.js');
 const {
   loadActiveStrategy,
@@ -3811,29 +3812,64 @@ function compactCmdResult(res) {
   };
 }
 
-function verifyExecutionReceipt(execRes, dod, outcomeRes, postconditions) {
+function verifyExecutionReceipt(execRes, dod, outcomeRes, postconditions, successCriteria) {
   const decision = String(execRes && execRes.summary && execRes.summary.decision || '');
   const execCheckName = decision === 'ACTUATE'
     ? 'actuation_execute_ok'
     : decision === 'DIRECTIVE_VALIDATE'
       ? 'directive_validate_ok'
       : 'route_execute_ok';
+  const criteria = successCriteria && typeof successCriteria === 'object'
+    ? successCriteria
+    : {
+      required: false,
+      min_count: 0,
+      total_count: 0,
+      evaluated_count: 0,
+      passed_count: 0,
+      failed_count: 0,
+      unknown_count: 0,
+      pass_rate: null,
+      passed: true,
+      primary_failure: null,
+      checks: []
+    };
+  const criteriaRequired = criteria.required === true;
+  const criteriaPass = criteriaRequired ? criteria.passed === true : true;
   const checks = [
     { name: execCheckName, pass: !!(execRes && execRes.ok === true) },
     { name: 'postconditions_ok', pass: !!(postconditions && postconditions.passed === true) },
     { name: 'dod_passed', pass: !!(dod && dod.passed === true) },
+    { name: 'success_criteria_met', pass: criteriaPass },
     { name: 'queue_outcome_logged', pass: !!(outcomeRes && outcomeRes.ok === true) }
   ];
   let outcome = 'shipped';
-  if (!checks[0].pass || !checks[1].pass || !checks[3].pass) outcome = 'reverted';
-  else if (!checks[2].pass) outcome = 'no_change';
+  if (!checks[0].pass || !checks[1].pass || !checks[4].pass) outcome = 'reverted';
+  else if (!checks[2].pass || !checks[3].pass) outcome = 'no_change';
   const failed = checks.filter(c => !c.pass).map(c => c.name);
   return {
     checks,
     failed,
     passed: failed.length === 0,
     outcome,
-    primary_failure: failed.length ? failed[0] : null
+    primary_failure: failed.length
+      ? (failed[0] === 'success_criteria_met' && criteria.primary_failure
+        ? String(criteria.primary_failure)
+        : failed[0])
+      : null,
+    success_criteria: {
+      required: criteriaRequired,
+      min_count: Number(criteria.min_count || 0),
+      total_count: Number(criteria.total_count || 0),
+      evaluated_count: Number(criteria.evaluated_count || 0),
+      passed_count: Number(criteria.passed_count || 0),
+      failed_count: Number(criteria.failed_count || 0),
+      unknown_count: Number(criteria.unknown_count || 0),
+      pass_rate: Number.isFinite(Number(criteria.pass_rate)) ? Number(criteria.pass_rate) : null,
+      passed: criteria.passed === true,
+      primary_failure: criteria.primary_failure ? String(criteria.primary_failure) : null,
+      checks: Array.isArray(criteria.checks) ? criteria.checks.slice(0, 12) : []
+    }
   };
 }
 
@@ -7480,7 +7516,26 @@ function runCmd(dateStr, opts = {}) {
     outcomeRes = runProposalQueue('outcome', p.id, outcome, evidence);
   }
 
-  const verification = verifyExecutionReceipt(execRes, dod, outcomeRes, postconditions);
+  const criteriaPolicy = successCriteriaRequirement();
+  const successCriteria = evaluateSuccessCriteria(
+    p,
+    {
+      outcome,
+      exec_ok: execRes && execRes.ok === true,
+      dod_passed: dod && dod.passed === true,
+      postconditions_ok: postconditions && postconditions.passed === true,
+      queue_outcome_logged: outcomeRes && outcomeRes.ok === true,
+      duration_ms: Math.max(0, Number(execEndMs || 0) - Number(execStartMs || 0)),
+      token_usage: execTokenUsage,
+      dod_diff: dod && dod.diff && typeof dod.diff === 'object' ? dod.diff : {}
+    },
+    {
+      required: criteriaPolicy.required,
+      min_count: criteriaPolicy.min_count
+    }
+  );
+
+  const verification = verifyExecutionReceipt(execRes, dod, outcomeRes, postconditions, successCriteria);
   const verifyException = verification.passed
     ? null
     : trackTier1Exception(
