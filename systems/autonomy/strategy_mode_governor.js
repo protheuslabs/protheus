@@ -23,6 +23,7 @@ const {
   strategyExecutionMode,
   strategyPromotionPolicy
 } = require('../../lib/strategy_resolver.js');
+const { loadOutcomeFitnessPolicy } = require('../../lib/outcome_fitness.js');
 const { summarizeForDate } = require('./receipt_summary.js');
 const { evaluateReadiness } = require('./strategy_readiness.js');
 const { evaluatePipelineSpcGate } = require('./pipeline_spc_gate.js');
@@ -47,8 +48,24 @@ const MODE_GOVERNOR_CANARY_MAX_FAIL_RATE = Number(process.env.AUTONOMY_MODE_GOVE
 const MODE_GOVERNOR_CANARY_MIN_SHIPPED = Number(process.env.AUTONOMY_MODE_GOVERNOR_CANARY_MIN_SHIPPED || 1);
 const MODE_GOVERNOR_CANARY_MIN_SUCCESS_CRITERIA_RECEIPTS = Number(process.env.AUTONOMY_MODE_GOVERNOR_CANARY_MIN_SUCCESS_CRITERIA_RECEIPTS || 1);
 const MODE_GOVERNOR_CANARY_MIN_SUCCESS_CRITERIA_PASS_RATE = Number(process.env.AUTONOMY_MODE_GOVERNOR_CANARY_MIN_SUCCESS_CRITERIA_PASS_RATE || 0.6);
+const MODE_GOVERNOR_CANARY_DISABLE_LEGACY_FALLBACK_AFTER_QUALITY_RECEIPTS = Number(
+  process.env.AUTONOMY_MODE_GOVERNOR_CANARY_DISABLE_LEGACY_FALLBACK_AFTER_QUALITY_RECEIPTS || 10
+);
+const MODE_GOVERNOR_CANARY_MAX_SUCCESS_CRITERIA_QUALITY_INSUFFICIENT_RATE = Number(
+  process.env.AUTONOMY_MODE_GOVERNOR_CANARY_MAX_SUCCESS_CRITERIA_QUALITY_INSUFFICIENT_RATE || 0.4
+);
 const MODE_GOVERNOR_CANARY_MIN_PREVIEW_SUCCESS_CRITERIA_RECEIPTS = Number(process.env.AUTONOMY_MODE_GOVERNOR_CANARY_MIN_PREVIEW_SUCCESS_CRITERIA_RECEIPTS || 1);
 const MODE_GOVERNOR_CANARY_MIN_PREVIEW_SUCCESS_CRITERIA_PASS_RATE = Number(process.env.AUTONOMY_MODE_GOVERNOR_CANARY_MIN_PREVIEW_SUCCESS_CRITERIA_PASS_RATE || 0.55);
+const MODE_GOVERNOR_REQUIRE_QUALITY_LOCK_FOR_EXECUTE = String(
+  process.env.AUTONOMY_MODE_GOVERNOR_REQUIRE_QUALITY_LOCK_FOR_EXECUTE || '1'
+) !== '0';
+const MODE_GOVERNOR_CANARY_RELAX_ENABLED = String(process.env.AUTONOMY_CANARY_RELAX_ENABLED || '1') !== '0';
+const MODE_GOVERNOR_CANARY_RELAX_READINESS_CHECKS = new Set(
+  String(process.env.AUTONOMY_CANARY_RELAX_READINESS_CHECKS || 'success_criteria_pass_rate')
+    .split(',')
+    .map((v) => String(v || '').trim())
+    .filter(Boolean)
+);
 const MODE_GOVERNOR_REQUIRE_SPC = String(process.env.AUTONOMY_MODE_GOVERNOR_REQUIRE_SPC || '1') !== '0';
 const MODE_GOVERNOR_SPC_BASELINE_DAYS = Number(process.env.AUTONOMY_MODE_GOVERNOR_SPC_BASELINE_DAYS || 21);
 const MODE_GOVERNOR_SPC_BASELINE_MIN_DAYS = Number(process.env.AUTONOMY_MODE_GOVERNOR_SPC_BASELINE_MIN_DAYS || 7);
@@ -75,6 +92,37 @@ function parseArgs(argv) {
     else out[arg.slice(2, eq)] = arg.slice(eq + 1);
   }
   return out;
+}
+
+function canaryFailedChecksAllowed(failedChecks) {
+  const failed = Array.isArray(failedChecks)
+    ? failedChecks.map((v) => String(v || '').trim()).filter(Boolean)
+    : [];
+  if (!failed.length || MODE_GOVERNOR_CANARY_RELAX_READINESS_CHECKS.size === 0) return false;
+  for (const check of failed) {
+    if (!MODE_GOVERNOR_CANARY_RELAX_READINESS_CHECKS.has(check)) return false;
+  }
+  return true;
+}
+
+function readinessState(mode, readiness) {
+  const strictReady = !!(readiness && readiness.ready_for_execute === true);
+  const failedChecks = Array.isArray(readiness && readiness.failed_checks)
+    ? readiness.failed_checks
+    : [];
+  const canaryRelaxed = MODE_GOVERNOR_CANARY_RELAX_ENABLED
+    && canaryFailedChecksAllowed(failedChecks);
+  const readyForCanary = strictReady || canaryRelaxed;
+  const readyForExecute = strictReady;
+  const effectiveReady = mode === 'execute' ? readyForExecute : readyForCanary;
+  return {
+    strict_ready: strictReady,
+    canary_relaxed: canaryRelaxed,
+    ready_for_canary: readyForCanary,
+    ready_for_execute: readyForExecute,
+    effective_ready: effectiveReady,
+    failed_checks: failedChecks
+  };
 }
 
 function nowIso() {
@@ -181,8 +229,17 @@ function governorPolicy() {
     canary_min_shipped: Math.max(0, Number(MODE_GOVERNOR_CANARY_MIN_SHIPPED || 0)),
     canary_min_success_criteria_receipts: Math.max(0, Number(MODE_GOVERNOR_CANARY_MIN_SUCCESS_CRITERIA_RECEIPTS || 0)),
     canary_min_success_criteria_pass_rate: Math.max(0, Math.min(1, Number(MODE_GOVERNOR_CANARY_MIN_SUCCESS_CRITERIA_PASS_RATE || 0))),
+    canary_disable_legacy_fallback_after_quality_receipts: Math.max(
+      0,
+      Number(MODE_GOVERNOR_CANARY_DISABLE_LEGACY_FALLBACK_AFTER_QUALITY_RECEIPTS || 0)
+    ),
+    canary_max_success_criteria_quality_insufficient_rate: Math.max(
+      0,
+      Math.min(1, Number(MODE_GOVERNOR_CANARY_MAX_SUCCESS_CRITERIA_QUALITY_INSUFFICIENT_RATE || 1))
+    ),
     canary_min_preview_success_criteria_receipts: Math.max(0, Number(MODE_GOVERNOR_CANARY_MIN_PREVIEW_SUCCESS_CRITERIA_RECEIPTS || 0)),
     canary_min_preview_success_criteria_pass_rate: Math.max(0, Math.min(1, Number(MODE_GOVERNOR_CANARY_MIN_PREVIEW_SUCCESS_CRITERIA_PASS_RATE || 0))),
+    canary_require_quality_lock_for_execute: MODE_GOVERNOR_REQUIRE_QUALITY_LOCK_FOR_EXECUTE,
     require_spc: MODE_GOVERNOR_REQUIRE_SPC,
     spc_baseline_days: Math.max(3, Number(MODE_GOVERNOR_SPC_BASELINE_DAYS || 21)),
     spc_baseline_min_days: Math.max(1, Number(MODE_GOVERNOR_SPC_BASELINE_MIN_DAYS || 7)),
@@ -222,18 +279,44 @@ function cooldownState(last, minHours) {
   return out;
 }
 
-function canaryMetrics(summary, policy) {
+function canaryMetrics(summary, policy, qualityLock) {
   const attempted = Number(summary?.receipts?.combined?.attempted || 0);
   const verifiedRate = Number(summary?.receipts?.combined?.verified_rate || 0);
   const autonomyFail = Number(summary?.receipts?.autonomy?.fail || 0);
   const actuationFail = Number(summary?.receipts?.actuation?.failed || 0);
-  const criteriaReceipts = Number(summary?.receipts?.autonomy?.success_criteria_receipts || 0);
-  const criteriaPassRate = Number(summary?.receipts?.autonomy?.success_criteria_receipt_pass_rate || 0);
-  const previewCriteriaReceipts = Number(summary?.receipts?.autonomy?.success_criteria_preview_receipts || 0);
-  const previewCriteriaPassRate = Number(summary?.receipts?.autonomy?.success_criteria_preview_pass_rate || 0);
+  const criteriaQualityReceipts = Number(summary?.receipts?.autonomy?.success_criteria_quality_receipts || 0);
+  const criteriaQualityPassRate = Number(summary?.receipts?.autonomy?.success_criteria_quality_receipt_pass_rate || 0);
+  const criteriaLegacyReceipts = Number(summary?.receipts?.autonomy?.success_criteria_receipts || 0);
+  const criteriaLegacyPassRate = Number(summary?.receipts?.autonomy?.success_criteria_receipt_pass_rate || 0);
+  const criteriaQualityInsufficientReceipts = Number(
+    summary?.receipts?.autonomy?.success_criteria_quality_filtered_receipts
+    || summary?.receipts?.autonomy?.success_criteria_quality_insufficient_receipts
+    || 0
+  );
+  const criteriaQualityInsufficientRateRaw = Number(summary?.receipts?.autonomy?.success_criteria_quality_insufficient_rate);
+  const criteriaQualityInsufficientRate = Number.isFinite(criteriaQualityInsufficientRateRaw)
+    ? criteriaQualityInsufficientRateRaw
+    : (criteriaLegacyReceipts > 0 ? (criteriaQualityInsufficientReceipts / criteriaLegacyReceipts) : 0);
+  const previewQualityCriteriaReceipts = Number(summary?.receipts?.autonomy?.success_criteria_quality_preview_receipts || 0);
+  const previewQualityCriteriaPassRate = Number(summary?.receipts?.autonomy?.success_criteria_quality_preview_pass_rate || 0);
+  const previewLegacyCriteriaReceipts = Number(summary?.receipts?.autonomy?.success_criteria_preview_receipts || 0);
+  const previewLegacyCriteriaPassRate = Number(summary?.receipts?.autonomy?.success_criteria_preview_pass_rate || 0);
+  const forceQualityCriteria = criteriaQualityReceipts >= policy.canary_disable_legacy_fallback_after_quality_receipts;
+  const useQualityCriteria = forceQualityCriteria || criteriaQualityReceipts >= policy.canary_min_success_criteria_receipts;
+  const criteriaReceipts = useQualityCriteria ? criteriaQualityReceipts : criteriaLegacyReceipts;
+  const criteriaPassRate = useQualityCriteria ? criteriaQualityPassRate : criteriaLegacyPassRate;
+  const useQualityPreviewCriteria = previewQualityCriteriaReceipts >= policy.canary_min_preview_success_criteria_receipts;
+  const previewCriteriaReceipts = useQualityPreviewCriteria ? previewQualityCriteriaReceipts : previewLegacyCriteriaReceipts;
+  const previewCriteriaPassRate = useQualityPreviewCriteria ? previewQualityCriteriaPassRate : previewLegacyCriteriaPassRate;
+  const criteriaSource = useQualityCriteria
+    ? (forceQualityCriteria ? 'quality_forced' : 'quality')
+    : 'legacy_fallback';
+  const previewCriteriaSource = useQualityPreviewCriteria ? 'quality' : 'legacy_fallback';
   const failCount = autonomyFail + actuationFail;
   const failRate = attempted > 0 ? failCount / attempted : 1;
   const shipped = Number(summary?.runs?.executed_outcomes?.shipped || 0);
+  const qualityLockState = qualityLock && typeof qualityLock === 'object' ? qualityLock : {};
+  const qualityLockActive = qualityLockState.active === true;
   const checks = [
     {
       name: 'attempted',
@@ -277,6 +360,24 @@ function canaryMetrics(summary, policy) {
         : `requires_receipts>=${policy.canary_min_success_criteria_receipts}`
     },
     {
+      name: 'success_criteria_quality_insufficient_rate',
+      pass: useQualityCriteria
+        ? criteriaQualityInsufficientRate <= policy.canary_max_success_criteria_quality_insufficient_rate
+        : true,
+      value: useQualityCriteria
+        ? Number(criteriaQualityInsufficientRate.toFixed(3))
+        : null,
+      target: useQualityCriteria
+        ? `<=${policy.canary_max_success_criteria_quality_insufficient_rate}`
+        : 'n/a(legacy_fallback)'
+    },
+    {
+      name: 'quality_lock_active',
+      pass: policy.canary_require_quality_lock_for_execute !== true || qualityLockActive,
+      value: policy.canary_require_quality_lock_for_execute === true ? qualityLockActive : null,
+      target: policy.canary_require_quality_lock_for_execute === true ? 'true' : 'n/a(disabled)'
+    },
+    {
       name: 'preview_success_criteria_receipts',
       pass: previewCriteriaReceipts >= policy.canary_min_preview_success_criteria_receipts,
       value: previewCriteriaReceipts,
@@ -307,15 +408,30 @@ function canaryMetrics(summary, policy) {
       fail_rate: Number(failRate.toFixed(3)),
       shipped,
       success_criteria_receipts: criteriaReceipts,
+      success_criteria_source: criteriaSource,
+      success_criteria_fallback_retired: forceQualityCriteria,
+      success_criteria_quality_receipts: criteriaQualityReceipts,
+      success_criteria_legacy_receipts: criteriaLegacyReceipts,
+      success_criteria_quality_insufficient_receipts: criteriaQualityInsufficientReceipts,
+      success_criteria_quality_insufficient_rate: Number(criteriaQualityInsufficientRate.toFixed(3)),
       min_success_criteria_receipts: policy.canary_min_success_criteria_receipts,
+      disable_legacy_fallback_after_quality_receipts: policy.canary_disable_legacy_fallback_after_quality_receipts,
+      max_success_criteria_quality_insufficient_rate: policy.canary_max_success_criteria_quality_insufficient_rate,
       success_criteria_pass_rate: criteriaReceipts >= policy.canary_min_success_criteria_receipts
         ? Number(criteriaPassRate.toFixed(3))
         : null,
       preview_success_criteria_receipts: previewCriteriaReceipts,
+      preview_success_criteria_source: previewCriteriaSource,
+      preview_success_criteria_quality_receipts: previewQualityCriteriaReceipts,
+      preview_success_criteria_legacy_receipts: previewLegacyCriteriaReceipts,
       min_preview_success_criteria_receipts: policy.canary_min_preview_success_criteria_receipts,
       preview_success_criteria_pass_rate: previewCriteriaReceipts >= policy.canary_min_preview_success_criteria_receipts
         ? Number(previewCriteriaPassRate.toFixed(3))
-        : null
+        : null,
+      quality_lock_active: qualityLockActive,
+      require_quality_lock_for_execute: policy.canary_require_quality_lock_for_execute === true,
+      quality_lock_stable_window_streak: Number(qualityLockState.stable_window_streak || 0),
+      quality_lock_path: qualityLockState.path ? String(qualityLockState.path) : null
     }
   };
 }
@@ -370,15 +486,15 @@ function spcAllowsEscalation(spc, policy) {
 
 function computeStreakUpdate(currentMode, readiness, canary, policy, spc, prevStreak) {
   const mode = String(currentMode || '');
-  const ready = !!(readiness && readiness.ready_for_execute === true);
+  const rs = readinessState(mode, readiness);
   const spcReady = spcAllowsEscalation(spc, policy);
   const previewReady = !canary || canary.preview_ready_for_canary !== false;
   const executeReady = !!(canary && canary.ready_for_execute === true);
   const prev = prevStreak && typeof prevStreak === 'object' ? prevStreak : {};
   let escalateReady = false;
-  if (mode === 'score_only') escalateReady = ready && previewReady && spcReady;
-  else if (mode === 'canary_execute') escalateReady = ready && executeReady && spcReady;
-  const demoteNotReady = !ready;
+  if (mode === 'score_only') escalateReady = rs.ready_for_canary && previewReady && spcReady;
+  else if (mode === 'canary_execute') escalateReady = rs.ready_for_execute && executeReady && spcReady;
+  const demoteNotReady = mode === 'execute' ? !rs.ready_for_execute : !rs.ready_for_canary;
   return {
     escalate_ready_streak: escalateReady ? Math.max(0, Number(prev.escalate_ready_streak || 0)) + 1 : 0,
     demote_not_ready_streak: demoteNotReady ? Math.max(0, Number(prev.demote_not_ready_streak || 0)) + 1 : 0,
@@ -388,14 +504,14 @@ function computeStreakUpdate(currentMode, readiness, canary, policy, spc, prevSt
 
 function decideTransition(currentMode, readiness, canary, policy, spc, streak) {
   const mode = String(currentMode || '');
-  const ready = !!(readiness && readiness.ready_for_execute === true);
+  const rs = readinessState(mode, readiness);
   const escalateStreak = Math.max(0, Number(streak && streak.escalate_ready_streak || 0));
   const demoteStreak = Math.max(0, Number(streak && streak.demote_not_ready_streak || 0));
   const escalateReady = escalateStreak >= Number(policy && policy.min_escalate_streak || 1);
   const demoteReady = demoteStreak >= Number(policy && policy.min_demote_streak || 1);
   if (mode === 'score_only') {
     if (!policy.promote_canary) return null;
-    if (ready && canary && canary.preview_ready_for_canary !== false && spcAllowsEscalation(spc, policy) && escalateReady) {
+    if (rs.ready_for_canary && canary && canary.preview_ready_for_canary !== false && spcAllowsEscalation(spc, policy) && escalateReady) {
       return {
         to_mode: 'canary_execute',
         reason: 'readiness_pass_promote_canary',
@@ -407,7 +523,7 @@ function decideTransition(currentMode, readiness, canary, policy, spc, streak) {
   }
 
   if (mode === 'canary_execute') {
-    if (policy.demote_not_ready && !ready && demoteReady) {
+    if (policy.demote_not_ready && !rs.ready_for_canary && demoteReady) {
       return {
         to_mode: 'score_only',
         reason: 'readiness_fail_demote_score_only',
@@ -415,7 +531,7 @@ function decideTransition(currentMode, readiness, canary, policy, spc, streak) {
         streaks: { demote_not_ready_streak: demoteStreak, required: Number(policy && policy.min_demote_streak || 1) }
       };
     }
-    if (policy.promote_execute && ready && canary && canary.ready_for_execute === true && spcAllowsEscalation(spc, policy) && escalateReady) {
+    if (policy.promote_execute && rs.ready_for_execute && canary && canary.ready_for_execute === true && spcAllowsEscalation(spc, policy) && escalateReady) {
       return {
         to_mode: 'execute',
         reason: 'canary_metrics_pass_promote_execute',
@@ -427,7 +543,7 @@ function decideTransition(currentMode, readiness, canary, policy, spc, streak) {
   }
 
   if (mode === 'execute') {
-    if (policy.demote_not_ready && !ready && demoteReady) {
+    if (policy.demote_not_ready && !rs.ready_for_execute && demoteReady) {
       return {
         to_mode: 'canary_execute',
         reason: 'readiness_fail_demote_canary',
@@ -451,35 +567,56 @@ function applyMode(strategy, toMode) {
 
 function buildStatus(dateStr, days, strategy, policy, prevStreak) {
   const promotion = strategyPromotionPolicy(strategy, {});
+  const effectivePolicy = {
+    ...policy,
+    canary_disable_legacy_fallback_after_quality_receipts: Number.isFinite(Number(promotion.disable_legacy_fallback_after_quality_receipts))
+      ? Number(promotion.disable_legacy_fallback_after_quality_receipts)
+      : Number(policy.canary_disable_legacy_fallback_after_quality_receipts || 10),
+    canary_max_success_criteria_quality_insufficient_rate: Number.isFinite(Number(promotion.max_success_criteria_quality_insufficient_rate))
+      ? Number(promotion.max_success_criteria_quality_insufficient_rate)
+      : Number(policy.canary_max_success_criteria_quality_insufficient_rate || 0.4)
+  };
   const windowDays = Math.max(Number(promotion.min_days || 7), clampInt(days, 1, 30, Number(promotion.min_days || 7)));
   const summary = summarizeForDate(dateStr, windowDays);
+  const outcomePolicy = loadOutcomeFitnessPolicy(REPO_ROOT);
+  const qualityLock = {
+    path: outcomePolicy && outcomePolicy.path ? outcomePolicy.path : null,
+    ...(outcomePolicy
+      && outcomePolicy.strategy_policy
+      && outcomePolicy.strategy_policy.promotion_policy_audit
+      && outcomePolicy.strategy_policy.promotion_policy_audit.quality_lock
+      && typeof outcomePolicy.strategy_policy.promotion_policy_audit.quality_lock === 'object'
+      ? outcomePolicy.strategy_policy.promotion_policy_audit.quality_lock
+      : {})
+  };
   const readiness = evaluateReadiness(strategy, summary, promotion, windowDays);
   const mode = strategyExecutionMode(strategy, 'execute');
-  const canary = canaryMetrics(summary, policy);
-  const spc = policy.require_spc
+  const canary = canaryMetrics(summary, effectivePolicy, qualityLock);
+  const spc = effectivePolicy.require_spc
     ? evaluatePipelineSpcGate(dateStr, {
       days: windowDays,
-      baseline_days: policy.spc_baseline_days,
-      baseline_min_days: policy.spc_baseline_min_days,
-      sigma: policy.spc_sigma
+      baseline_days: effectivePolicy.spc_baseline_days,
+      baseline_min_days: effectivePolicy.spc_baseline_min_days,
+      sigma: effectivePolicy.spc_sigma
     })
     : null;
-  const nextStreak = computeStreakUpdate(mode, readiness, canary, policy, spc, prevStreak);
+  const nextStreak = computeStreakUpdate(mode, readiness, canary, effectivePolicy, spc, prevStreak);
   const last = lastModeChangeEvent(strategy.id);
-  const cooldown = cooldownState(last, policy.min_hours_between_changes);
-  const transition = decideTransition(mode, readiness, canary, policy, spc, nextStreak);
+  const cooldown = cooldownState(last, effectivePolicy.min_hours_between_changes);
+  const transition = decideTransition(mode, readiness, canary, effectivePolicy, spc, nextStreak);
+  const readinessEval = readinessState(mode, readiness);
   const transitionBlockReason = (
     mode === 'score_only'
-    && !!(readiness && readiness.ready_for_execute === true)
+    && readinessEval.ready_for_canary === true
     && canary
     && canary.preview_ready_for_canary === false
   ) ? 'preview_success_criteria_below_min'
     : (
       ((mode === 'score_only' || mode === 'canary_execute')
-      && !!(readiness && readiness.ready_for_execute === true)
+      && ((mode === 'canary_execute' ? readinessEval.ready_for_execute : readinessEval.ready_for_canary) === true)
       && canary
       && ((mode !== 'score_only') || canary.preview_ready_for_canary !== false)
-      && policy.require_spc
+      && effectivePolicy.require_spc
       && spc
       && spc.hold_escalation === true)
         ? 'spc_gate_failed'
@@ -487,12 +624,12 @@ function buildStatus(dateStr, days, strategy, policy, prevStreak) {
     );
   const streakBlockReason = !transition && (mode === 'score_only' || mode === 'canary_execute')
     && Number(nextStreak.escalate_ready_streak || 0) > 0
-    && Number(nextStreak.escalate_ready_streak || 0) < Number(policy.min_escalate_streak || 1)
+    && Number(nextStreak.escalate_ready_streak || 0) < Number(effectivePolicy.min_escalate_streak || 1)
       ? 'hysteresis_wait_escalate_streak'
       : (
         !transition && mode !== 'score_only'
         && Number(nextStreak.demote_not_ready_streak || 0) > 0
-        && Number(nextStreak.demote_not_ready_streak || 0) < Number(policy.min_demote_streak || 1)
+        && Number(nextStreak.demote_not_ready_streak || 0) < Number(effectivePolicy.min_demote_streak || 1)
           ? 'hysteresis_wait_demote_streak'
           : null
       );
@@ -500,9 +637,10 @@ function buildStatus(dateStr, days, strategy, policy, prevStreak) {
     date: dateStr,
     days: windowDays,
     strategy,
-    policy,
+    policy: effectivePolicy,
     summary,
     readiness,
+    readiness_effective: readinessEval,
     canary,
     spc,
     streak: nextStreak,
