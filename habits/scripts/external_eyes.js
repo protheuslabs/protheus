@@ -404,6 +404,32 @@ function emitInfrastructureOutageAnomaly(dateStr, outageInfo) {
 }
 
 function buildInfrastructureOutageProposal(dateStr, outageInfo) {
+  const nextCommand = 'node systems/routing/route_execute.js --task="Diagnose shared transport outage affecting multiple non-stub eyes; verify DNS/network/auth path and apply minimal deterministic fix." --tokens_est=1200 --repeats_14d=2 --errors_30d=1 --dry-run';
+  const validation = [
+    'At least one non-stub eye emits eye_run_ok with items_collected > 0',
+    'Outage mode exits automatically on first successful non-stub run',
+    'No new auto-park penalties applied during outage mode'
+  ];
+  const actionSpec = {
+    version: 1,
+    objective: 'Restore shared external-eye transport reliability with verifiable recovery checks',
+    target: 'infrastructure:external_eyes_transport',
+    next_command: nextCommand,
+    verify: validation,
+    success_criteria: [
+      {
+        metric: 'collector_success_runs',
+        target: '>=1 non-stub eye_run_ok with items_collected>0',
+        horizon: 'next run'
+      },
+      {
+        metric: 'outage_mode_state',
+        target: 'infrastructure outage mode deactivates automatically',
+        horizon: '24h'
+      }
+    ],
+    rollback: 'Revert transport-path changes and restore last known stable collector behavior'
+  };
   const sinceSeed = (outageInfo.state && outageInfo.state.since) ? String(outageInfo.state.since).slice(0, 13) : String(dateStr);
   const idSeed = `infrastructure_outage:${sinceSeed}`;
   return {
@@ -430,19 +456,18 @@ function buildInfrastructureOutageProposal(dateStr, outageInfo) {
     ],
     expected_impact: 'high',
     risk: 'low',
-    validation: [
-      'At least one non-stub eye emits eye_run_ok with items_collected > 0',
-      'Outage mode exits automatically on first successful non-stub run',
-      'No new auto-park penalties applied during outage mode'
-    ],
-    suggested_next_command: 'node systems/routing/route_execute.js --task="Diagnose shared transport outage affecting multiple non-stub eyes; verify DNS/network/auth path and apply minimal deterministic fix." --tokens_est=1200 --repeats_14d=2 --errors_30d=1 --dry-run',
+    validation,
+    suggested_next_command: nextCommand,
+    action_spec: actionSpec,
     meta: {
       remediation_kind: 'infrastructure_transport_outage',
       trigger: 'multi_eye_transport_failure',
       failed_transport_eyes: Number(outageInfo.failed_transport_eyes || 0),
       window_hours: Number(outageInfo.window_hours || 6),
       min_eyes: Number(outageInfo.min_eyes || 2),
-      outage_since: outageInfo.state && outageInfo.state.since ? outageInfo.state.since : null
+      outage_since: outageInfo.state && outageInfo.state.since ? outageInfo.state.since : null,
+      action_spec_version: Number(actionSpec.version || 1),
+      action_spec_target: String(actionSpec.target || '')
     }
   };
 }
@@ -640,6 +665,32 @@ function buildCollectorRemediationProposal(eyeConfig, registryEye, threshold) {
   const eyeId = String(eyeConfig.id || 'unknown_eye');
   const parserType = String((registryEye && registryEye.parser_type) || eyeConfig.parser_type || 'unknown');
   const lastErrorCode = String((registryEye && registryEye.last_error_code) || 'collector_error');
+  const nextCommand = `node systems/routing/route_execute.js --task="Diagnose repeated collector fetch failures for eye ${eyeId}; implement minimal deterministic fix; preserve sensing-only behavior." --tokens_est=900 --repeats_14d=2 --errors_30d=1 --dry-run`;
+  const validation = [
+    'Collector run returns eye_run_ok with at least one item',
+    'Two consecutive runs complete without eye_run_failed',
+    'Collector path remains deterministic and sensing-only'
+  ];
+  const actionSpec = {
+    version: 1,
+    objective: `Stabilize collector ${eyeId} with bounded deterministic remediation`,
+    target: `collector:${eyeId}`,
+    next_command: nextCommand,
+    verify: validation,
+    success_criteria: [
+      {
+        metric: 'collector_success_runs',
+        target: '>=1 eye_run_ok with items_collected>0',
+        horizon: 'next 2 runs'
+      },
+      {
+        metric: 'collector_failure_streak',
+        target: 'consecutive_failures resets to 0',
+        horizon: '24h'
+      }
+    ],
+    rollback: `Revert collector remediation for ${eyeId} and restore prior stable config`
+  };
   return {
     id: `COLLECTOR-${computeHash(`collector_remediation:${eyeId}`)}`,
     type: 'collector_remediation',
@@ -656,19 +707,18 @@ function buildCollectorRemediationProposal(eyeConfig, registryEye, threshold) {
     ],
     expected_impact: 'medium',
     risk: 'low',
-    validation: [
-      'Collector run returns eye_run_ok with at least one item',
-      'Two consecutive runs complete without eye_run_failed',
-      'Collector path remains deterministic and sensing-only'
-    ],
-    suggested_next_command: `node systems/routing/route_execute.js --task="Diagnose repeated collector fetch failures for eye ${eyeId}; implement minimal deterministic fix; preserve sensing-only behavior." --tokens_est=900 --repeats_14d=2 --errors_30d=1 --dry-run`,
+    validation,
+    suggested_next_command: nextCommand,
+    action_spec: actionSpec,
     meta: {
       source_eye: eyeId,
       remediation_kind: 'collector_fetch_failure',
       trigger: 'consecutive_failures',
       threshold: Number(threshold),
       parser_type: parserType,
-      last_error_code: lastErrorCode
+      last_error_code: lastErrorCode,
+      action_spec_version: Number(actionSpec.version || 1),
+      action_spec_target: String(actionSpec.target || '')
     }
   };
 }

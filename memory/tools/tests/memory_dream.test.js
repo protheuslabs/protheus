@@ -19,9 +19,11 @@ function run() {
   const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'memory-dream-'));
   const pointersDir = path.join(tmpRoot, 'state', 'memory', 'eyes_pointers');
   const dreamsDir = path.join(tmpRoot, 'state', 'memory', 'dreams');
+  const adaptivePointersPath = path.join(tmpRoot, 'state', 'memory', 'adaptive_pointers.jsonl');
   const memoryIndexPath = path.join(tmpRoot, 'memory', 'MEMORY_INDEX.md');
   const ledgerPath = path.join(dreamsDir, 'dream_runs.jsonl');
   const dateStr = '2026-02-21';
+  writeJsonl(adaptivePointersPath, []);
 
   writeJsonl(path.join(pointersDir, '2026-02-20.jsonl'), [
     {
@@ -68,7 +70,8 @@ function run() {
     MEMORY_DREAM_POINTERS_DIR: pointersDir,
     MEMORY_DREAM_OUTPUT_DIR: dreamsDir,
     MEMORY_DREAM_LEDGER_PATH: ledgerPath,
-    MEMORY_DREAM_MEMORY_INDEX_PATH: memoryIndexPath
+    MEMORY_DREAM_MEMORY_INDEX_PATH: memoryIndexPath,
+    MEMORY_DREAM_ADAPTIVE_POINTERS_PATH: adaptivePointersPath
   };
 
   const runRes = spawnSync(process.execPath, [scriptPath, 'run', dateStr, '--days=2', '--top=5'], {

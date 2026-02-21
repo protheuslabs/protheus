@@ -16,6 +16,7 @@
 
 const { spawnSync } = require("child_process");
 const path = require("path");
+const fs = require("fs");
 
 function repoRoot() {
   return path.resolve(__dirname, "..", "..");
@@ -66,6 +67,26 @@ function checkScript(relPath, requiredTokens) {
   checkUsage(relPath, [], requiredTokens);
 }
 
+function checkSourceContains(relPath, requiredTokens) {
+  const root = repoRoot();
+  const abs = path.join(root, relPath);
+  let text = "";
+  try {
+    text = fs.readFileSync(abs, "utf8");
+  } catch (err) {
+    console.error("contract_check: FAILED");
+    console.error(` script: ${relPath}`);
+    console.error(` read_error: ${String(err && err.message ? err.message : err)}`);
+    process.exit(1);
+  }
+  const missing = missingTokens(text, requiredTokens);
+  if (missing.length === 0) return;
+  console.error("contract_check: FAILED");
+  console.error(` script: ${relPath}`);
+  console.error(` missing source tokens: ${missing.join(", ")}`);
+  process.exit(1);
+}
+
 function main() {
   // Keep this list small and only for scripts that are hard-coupled by spine.
   // If you rename commands/flags in any of these, update tokens here.
@@ -74,6 +95,10 @@ function main() {
   checkScript(
     "habits/scripts/external_eyes.js",
     ["external_eyes.js", "run", "score", "evolve", "list"]
+  );
+  checkSourceContains(
+    "habits/scripts/external_eyes.js",
+    ["buildCollectorRemediationProposal", "action_spec", "success_criteria"]
   );
 
   // eyes_intake.js should enforce directive-linked eye creation in sensory layer.
@@ -152,6 +177,16 @@ function main() {
   checkScript(
     "systems/autonomy/proposal_enricher.js",
     ["proposal_enricher.js", "run"]
+  );
+
+  // bridge_from_proposals.js must normalize legacy proposals into executable action_spec with success criteria.
+  checkScript(
+    "systems/actuation/bridge_from_proposals.js",
+    ["bridge_from_proposals.js", "run", "--dry-run"]
+  );
+  checkSourceContains(
+    "systems/actuation/bridge_from_proposals.js",
+    ["normalizeActionSpec", "success_criteria", "requiresActionSpecContract"]
   );
 
   // receipt_summary.js reports deterministic run/receipt pass-fail scorecards.
