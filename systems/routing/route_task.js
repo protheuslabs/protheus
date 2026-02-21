@@ -153,6 +153,7 @@ function compactRouteMeta(routeMeta) {
     slot: routeMeta.slot || null,
     mode: routeMeta.mode || null,
     route_class: routeMeta.route_class || null,
+    task_type: routeMeta.task_type || null,
     escalation_chain: Array.isArray(routeMeta.escalation_chain) ? routeMeta.escalation_chain.slice(0, 3) : [],
     budget: routeMeta.budget && typeof routeMeta.budget === 'object'
       ? {

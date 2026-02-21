@@ -737,11 +737,35 @@ function inferCapability(intent, task, role) {
   return r ? `role:${r}` : "general";
 }
 
+function capabilityFamilyKey(capability) {
+  const cap = normalizeCapabilityKey(capability || "");
+  if (!cap) return "";
+  const parts = cap.split(":").filter(Boolean);
+  if (!parts.length) return "";
+  if (parts[0] === "proposal") {
+    if (parts[1]) return `proposal_${parts[1]}`;
+    return "proposal";
+  }
+  if (parts.length >= 2) return `${parts[0]}_${parts[1]}`;
+  return parts[0];
+}
+
+function taskTypeKeyFromRoute({ routeClass, capability, role }) {
+  const routeClassKey = normalizeKey(routeClass || "");
+  if (routeClassKey && routeClassKey !== "default") return `class:${routeClassKey}`;
+  const capabilityFamily = capabilityFamilyKey(capability || "");
+  if (capabilityFamily) return `cap:${capabilityFamily}`;
+  const roleKey = normalizeKey(role || "");
+  if (roleKey) return `role:${roleKey}`;
+  return "general";
+}
+
 function loadOutcomeStatsCached() {
   const cached = loadJson(OUTCOME_STATS_PATH, null);
   if (cached && typeof cached === "object" && cached.models && typeof cached.models === "object") {
     if (!cached.by_capability || typeof cached.by_capability !== "object") cached.by_capability = {};
     if (!cached.by_role || typeof cached.by_role !== "object") cached.by_role = {};
+    if (!cached.by_task_type || typeof cached.by_task_type !== "object") cached.by_task_type = {};
     return cached;
   }
   return {
@@ -750,7 +774,8 @@ function loadOutcomeStatsCached() {
     cached_only: true,
     models: {},
     by_capability: {},
-    by_role: {}
+    by_role: {},
+    by_task_type: {}
   };
 }
 
@@ -1015,6 +1040,7 @@ function routerBudgetPolicy(cfg) {
   return {
     enabled: toBool(policy.enabled, true),
     state_dir: stateDir,
+    allow_strategy_override: toBool(policy.allow_strategy_override, true),
     soft_ratio: toBoundedNumber(policy.soft_ratio, 0.75, 0.2, 0.98),
     hard_ratio: toBoundedNumber(policy.hard_ratio, 0.92, 0.3, 0.995),
     enforce_hard_cap: toBool(policy.enforce_hard_cap, true),
@@ -1048,7 +1074,8 @@ function routerBudgetState(cfg) {
   if (!policy.enabled) return out;
 
   const budgetState = loadSystemBudgetState(budgetDateStr(), {
-    state_dir: policy.state_dir
+    state_dir: policy.state_dir,
+    allow_strategy: policy.allow_strategy_override === true
   });
   out.path = budgetState && budgetState.path ? String(budgetState.path) : path.join(policy.state_dir, `${budgetDateStr()}.json`);
   if (!budgetState || budgetState.available !== true) return out;
@@ -1894,6 +1921,7 @@ function maybeApplyVariantSelection({
   tier,
   role,
   capability,
+  taskType,
   outcomeStats,
   localHealth,
   localModelAllowed
@@ -2001,8 +2029,8 @@ function maybeApplyVariantSelection({
     }
   }
 
-  const baseScore = outcomeScoreForModel(selectedModel, outcomeStats, { capability, role });
-  const variantScore = outcomeScoreForModel(variantModel, outcomeStats, { capability, role });
+  const baseScore = outcomeScoreForModel(selectedModel, outcomeStats, { capability, taskType, role });
+  const variantScore = outcomeScoreForModel(variantModel, outcomeStats, { capability, taskType, role });
   const scoreDelta = Number((variantScore - baseScore).toFixed(2));
   if (scoreDelta < Number(policy.max_negative_score_delta || -8)) {
     return {
@@ -2223,11 +2251,46 @@ function eventCapabilityKey(evt) {
   return role ? `role:${role}` : "";
 }
 
+function eventTaskTypeKey(evt) {
+  const explicit = normalizeKey(
+    evt?.task_type_key
+    || evt?.route_summary?.task_type_key
+    || evt?.route_summary?.task_type
+    || ""
+  );
+  if (explicit) return explicit;
+
+  const routeClass = normalizeKey(evt?.route_summary?.route_class || evt?.route_class || "");
+  if (routeClass && routeClass !== "default") return `class:${routeClass}`;
+
+  const capabilityFamily = capabilityFamilyKey(eventCapabilityKey(evt));
+  if (capabilityFamily) return `cap:${capabilityFamily}`;
+
+  const executionTarget = normalizeKey(
+    evt?.execution_target
+    || evt?.route_summary?.execution_target
+    || ""
+  );
+  const proposalType = normalizeKey(
+    evt?.proposal_type
+    || evt?.route_summary?.proposal_type
+    || ""
+  );
+  if (executionTarget && proposalType) return `${executionTarget}:${proposalType}`;
+  if (proposalType) return `proposal:${proposalType}`;
+
+  if (executionTarget) return executionTarget;
+
+  const role = eventRoleKey(evt);
+  return role ? `role:${role}` : "";
+}
+
 function modelOutcomeStats(days = OUTCOME_WINDOW_DAYS) {
   const files = listRunFilesWithinDays(days);
   const stats = {};
   const byCapability = {};
   const byRole = {};
+  const byTaskType = {};
   for (const fp of files) {
     const events = readJsonl(fp);
     for (const e of events) {
@@ -2249,6 +2312,12 @@ function modelOutcomeStats(days = OUTCOME_WINDOW_DAYS) {
         byRole[model] = byRole[model] || {};
         byRole[model][role] = addOutcomeToBucket(byRole[model][role], e);
       }
+
+      const taskType = eventTaskTypeKey(e);
+      if (taskType) {
+        byTaskType[model] = byTaskType[model] || {};
+        byTaskType[model][taskType] = addOutcomeToBucket(byTaskType[model][taskType], e);
+      }
     }
   }
 
@@ -2262,7 +2331,8 @@ function modelOutcomeStats(days = OUTCOME_WINDOW_DAYS) {
     window_days: days,
     models: derived,
     by_capability: deriveNestedOutcomeBuckets(byCapability),
-    by_role: deriveNestedOutcomeBuckets(byRole)
+    by_role: deriveNestedOutcomeBuckets(byRole),
+    by_task_type: deriveNestedOutcomeBuckets(byTaskType)
   };
   saveJson(OUTCOME_STATS_PATH, payload);
   return payload;
@@ -2285,12 +2355,14 @@ function findScopedModelOutcomeEntry(map, modelId, key) {
 
 function outcomeScoreDetailForModel(modelId, statsPayload, ctx = {}) {
   if (!statsPayload || typeof statsPayload !== "object") {
-    return { score: 0, sources: [], global_score: null, capability_score: null, role_score: null };
+    return { score: 0, sources: [], global_score: null, capability_score: null, task_type_score: null, role_score: null };
   }
   const capability = normalizeCapabilityKey(ctx.capability || "");
+  const taskType = normalizeKey(ctx.taskType || "");
   const role = normalizeKey(ctx.role || "");
   const global = findModelOutcomeEntry(statsPayload.models, modelId);
   const scopedCapability = capability ? findScopedModelOutcomeEntry(statsPayload.by_capability, modelId, capability) : null;
+  const scopedTaskType = taskType ? findScopedModelOutcomeEntry(statsPayload.by_task_type, modelId, taskType) : null;
   const scopedRole = role ? findScopedModelOutcomeEntry(statsPayload.by_role, modelId, role) : null;
 
   let score = 0;
@@ -2307,6 +2379,12 @@ function outcomeScoreDetailForModel(modelId, statsPayload, ctx = {}) {
     hasScore = true;
     sources.push("capability");
   }
+  if (scopedTaskType && Number(scopedTaskType.attempts || 0) >= MIN_ATTEMPTS_FOR_OUTCOME_WEIGHT) {
+    const taskTypeScore = Number(scopedTaskType.score || 0);
+    score = hasScore ? ((score * 0.25) + (taskTypeScore * 0.75)) : taskTypeScore;
+    hasScore = true;
+    sources.push("task_type");
+  }
   if (scopedRole && Number(scopedRole.attempts || 0) >= MIN_ATTEMPTS_FOR_OUTCOME_WEIGHT) {
     const roleScore = Number(scopedRole.score || 0);
     score = hasScore ? ((score * 0.7) + (roleScore * 0.3)) : roleScore;
@@ -2318,6 +2396,7 @@ function outcomeScoreDetailForModel(modelId, statsPayload, ctx = {}) {
     sources,
     global_score: global && Number(global.attempts || 0) >= MIN_ATTEMPTS_FOR_OUTCOME_WEIGHT ? Number(global.score || 0) : null,
     capability_score: scopedCapability && Number(scopedCapability.attempts || 0) >= MIN_ATTEMPTS_FOR_OUTCOME_WEIGHT ? Number(scopedCapability.score || 0) : null,
+    task_type_score: scopedTaskType && Number(scopedTaskType.attempts || 0) >= MIN_ATTEMPTS_FOR_OUTCOME_WEIGHT ? Number(scopedTaskType.score || 0) : null,
     role_score: scopedRole && Number(scopedRole.attempts || 0) >= MIN_ATTEMPTS_FOR_OUTCOME_WEIGHT ? Number(scopedRole.score || 0) : null
   };
 }
@@ -2332,6 +2411,7 @@ function rankCandidate(modelId, ctx) {
     preferModel,
     role,
     capability,
+    taskType,
     tier,
     profiles,
     outcomeStats,
@@ -2428,11 +2508,12 @@ function rankCandidate(modelId, ctx) {
     }
   }
 
-  const outcomeDetail = outcomeScoreDetailForModel(modelId, outcomeStats, { capability, role });
+  const outcomeDetail = outcomeScoreDetailForModel(modelId, outcomeStats, { capability, taskType, role });
   const outcomeScore = Number(outcomeDetail.score || 0);
   score += Math.max(-20, Math.min(20, outcomeScore / 3));
   if (outcomeScore !== 0) {
-    if (outcomeDetail.sources.includes("capability")) reasons.push("outcome_weighted_capability");
+    if (outcomeDetail.sources.includes("task_type")) reasons.push("outcome_weighted_task_type");
+    else if (outcomeDetail.sources.includes("capability")) reasons.push("outcome_weighted_capability");
     else if (outcomeDetail.sources.includes("role")) reasons.push("outcome_weighted_role");
     else reasons.push("outcome_weighted");
   }
@@ -2679,6 +2760,11 @@ function routeDecision({ risk, complexity, intent, task, mode, forceModel, capab
   const anchorModel = String(cfg?.routing?.default_anchor_model || "ollama/kimi-k2.5:cloud");
   const role = effectiveFastPath.matched ? "chat" : (normalizeKey(adjusted.role || requestedRole) || "general");
   const capabilityKey = normalizeCapabilityKey(capability || inferCapability(intent, task, role));
+  const taskTypeKey = taskTypeKeyFromRoute({
+    routeClass: classPolicy.id,
+    capability: capabilityKey,
+    role
+  });
   const tier = inferTier(risk, complexity);
   const budgetState = routerBudgetState(cfg);
   const budgetProjected = projectBudgetState(budgetState, requestTokensEst);
@@ -2725,6 +2811,7 @@ function routeDecision({ risk, complexity, intent, task, mode, forceModel, capab
       preferModel: rulePick.prefer_model,
       role,
       capability: capabilityKey,
+      taskType: taskTypeKey,
       tier,
       profiles,
       outcomeStats,
@@ -2750,6 +2837,7 @@ function routeDecision({ risk, complexity, intent, task, mode, forceModel, capab
     const maxLatencyMs = localBest ? resolveLocalProbePolicy(localBest).max_latency_ms : T1_LOCAL_MAX_LATENCY_MS;
     const esc = shouldEscalateFromTier1Local(localBest, localHealth, outcomeStats, maxLatencyMs, {
       capability: capabilityKey,
+      taskType: taskTypeKey,
       role
     });
     if (!esc.escalate && localBest) {
@@ -2798,6 +2886,7 @@ function routeDecision({ risk, complexity, intent, task, mode, forceModel, capab
     tier,
     role,
     capability: capabilityKey,
+    taskType: taskTypeKey,
     outcomeStats,
     localHealth,
     localModelAllowed
@@ -2841,6 +2930,7 @@ function routeDecision({ risk, complexity, intent, task, mode, forceModel, capab
       preferModel: rulePick.prefer_model,
       role,
       capability: capabilityKey,
+      taskType: taskTypeKey,
       tier,
       profiles,
       outcomeStats,
@@ -2869,6 +2959,7 @@ function routeDecision({ risk, complexity, intent, task, mode, forceModel, capab
     tier,
     role,
     capability: capabilityKey,
+    task_type: taskTypeKey,
     slot: rulePick.slot || null,
     fallback_slot: rulePick.fallback_slot || null,
     anchor_model: anchorModel,
@@ -3023,6 +3114,11 @@ function doctorReport({ risk, complexity, intent, task, capability, includeModel
   const rulePick = pickFromSlotSelection(cfg, risk, complexity);
   const role = inferRole(intent, task);
   const capabilityKey = normalizeCapabilityKey(capability || inferCapability(intent, task, role));
+  const taskTypeKey = taskTypeKeyFromRoute({
+    routeClass: "default",
+    capability: capabilityKey,
+    role
+  });
   const tier = inferTier(risk, complexity);
   const profiles = modelProfilesFromConfig(cfg);
   const outcomeStats = modelOutcomeStats(OUTCOME_WINDOW_DAYS);
@@ -3038,7 +3134,7 @@ function doctorReport({ risk, complexity, intent, task, capability, includeModel
       cloud: isCloudModel(model),
       reasons: [],
       profile: modelProfileFor(model, profiles) || null,
-      outcome_score: outcomeScoreForModel(model, outcomeStats, { capability: capabilityKey, role }),
+      outcome_score: outcomeScoreForModel(model, outcomeStats, { capability: capabilityKey, taskType: taskTypeKey, role }),
       eligible: true
     };
 
@@ -3088,6 +3184,7 @@ function doctorReport({ risk, complexity, intent, task, capability, includeModel
       preferModel: rulePick.prefer_model,
       role,
       capability: capabilityKey,
+      taskType: taskTypeKey,
       tier,
       profiles,
       outcomeStats,
@@ -3111,6 +3208,7 @@ function doctorReport({ risk, complexity, intent, task, capability, includeModel
   const tier1Esc = (T1_LOCAL_FIRST && Number(tier) === 1)
     ? shouldEscalateFromTier1Local(localBest, localHealth, outcomeStats, localBestLatencyMax, {
         capability: capabilityKey,
+        taskType: taskTypeKey,
         role
       })
     : { escalate: false, reason: null };
@@ -3125,7 +3223,8 @@ function doctorReport({ risk, complexity, intent, task, capability, includeModel
       task: String(task || "").slice(0, 200),
       tier,
       role,
-      capability: capabilityKey
+      capability: capabilityKey,
+      task_type: taskTypeKey
     },
     policy: {
       slot: rulePick.slot || null,
@@ -3171,6 +3270,11 @@ function cacheSummaryReport({ risk, complexity, intent, task, capability, forRou
   };
   const role = inferRole(intent, task);
   const capabilityKey = normalizeCapabilityKey(capability || inferCapability(intent, task, role));
+  const taskTypeKey = taskTypeKeyFromRoute({
+    routeClass: "default",
+    capability: capabilityKey,
+    role
+  });
   const tier = inferTier(risk, complexity);
   const rulePick = pickFromSlotSelection(cfg, risk, complexity);
   const profiles = modelProfilesFromConfig(cfg);
@@ -3257,6 +3361,7 @@ function cacheSummaryReport({ risk, complexity, intent, task, capability, forRou
       preferModel: rulePick.prefer_model,
       role,
       capability: capabilityKey,
+      taskType: taskTypeKey,
       tier,
       profiles,
       outcomeStats,
@@ -3273,6 +3378,7 @@ function cacheSummaryReport({ risk, complexity, intent, task, capability, forRou
   const tier1Esc = (T1_LOCAL_FIRST && Number(tier) === 1)
     ? shouldEscalateFromTier1Local(localBest, localHealth, outcomeStats, localBestLatencyMax, {
         capability: capabilityKey,
+        taskType: taskTypeKey,
         role
       })
     : { escalate: false, reason: null };
@@ -3290,6 +3396,7 @@ function cacheSummaryReport({ risk, complexity, intent, task, capability, forRou
     variant_policy: modelVariantPolicyFromConfig(cfg),
     role,
     capability: capabilityKey,
+    task_type: taskTypeKey,
     source_runtime_order: Array.isArray(cacheState.order) ? cacheState.order.slice(0, 4) : [],
     source_runtime_counts: runtimeCounts,
     total: rows.length,

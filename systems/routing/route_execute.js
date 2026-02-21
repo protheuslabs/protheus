@@ -331,6 +331,8 @@ function main() {
     model_changed: out?.route?.model_changed === true,
     route_role: out?.route?.role || null,
     route_tier: out?.route?.tier || null,
+    route_class: out?.route?.route_class || null,
+    task_type: out?.route?.task_type || null,
     mode: out?.route?.mode || mode,
     deep_thinker: out?.route?.deep_thinker || null,
     escalation_chain: Array.isArray(out?.route?.escalation_chain) ? out.route.escalation_chain : [],

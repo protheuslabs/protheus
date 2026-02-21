@@ -242,6 +242,128 @@ function runCaseOutcomeContext(repoRoot, root) {
   assert.strictEqual(out.other.selected_model, 'ollama/smallthinker', 'capability-specific success should keep smallthinker for other capability');
 }
 
+function runCaseTaskTypeOutcomeContext(repoRoot, root) {
+  const cfgPath = path.join(root, 'config', 'agent_routing_rules.json');
+  const adaptersPath = path.join(root, 'config', 'model_adapters.json');
+  const stateDir = path.join(root, 'state', 'routing');
+  const runsDir = path.join(root, 'state', 'autonomy', 'runs');
+  const budgetDir = path.join(root, 'state', 'autonomy', 'daily_budget');
+  mkDir(runsDir);
+  mkDir(budgetDir);
+
+  writeJson(cfgPath, {
+    version: 1,
+    routing: {
+      default_anchor_model: 'ollama/kimi-k2.5:cloud',
+      spawn_model_allowlist: ['ollama/smallthinker', 'ollama/qwen3:4b'],
+      model_profiles: {
+        'ollama/smallthinker': { tiers: [1, 2], roles: ['general'], class: 'cheap_local' },
+        'ollama/qwen3:4b': { tiers: [1, 2], roles: ['general'], class: 'cheap_local' }
+      },
+      communication_fast_path: { enabled: false },
+      router_budget_policy: { enabled: false },
+      slot_selection: [
+        {
+          when: { risk: 'medium', complexity: ['low', 'medium'] },
+          use_slot: 'agent',
+          fallback_slot: 'master'
+        }
+      ],
+      local_probe_policy: {
+        default: { timeout_ms: 8000, max_latency_ms: 8000, accept_ok_token: true }
+      }
+    }
+  });
+  writeJson(adaptersPath, { mode_routing: {} });
+  writeHealthSnapshot(stateDir, {
+    'ollama/smallthinker': { available: true, follows_instructions: true, latency_ms: 1100 },
+    'ollama/qwen3:4b': { available: true, follows_instructions: true, latency_ms: 1100 }
+  });
+
+  const day = todayStr();
+  const runFile = path.join(runsDir, `${day}.jsonl`);
+  const rows = [];
+  for (let i = 0; i < 6; i++) {
+    rows.push({
+      ts: `${day}T09:${String(i).padStart(2, '0')}:00.000Z`,
+      type: 'autonomy_run',
+      result: 'executed',
+      execution_target: 'route',
+      proposal_type: 'external_intel',
+      capability_key: 'proposal:external_intel',
+      route_summary: { selected_model: 'ollama/smallthinker', route_role: 'general', route_class: 'default' },
+      verification: { passed: true },
+      outcome: 'shipped'
+    });
+    rows.push({
+      ts: `${day}T10:${String(i).padStart(2, '0')}:00.000Z`,
+      type: 'autonomy_run',
+      result: 'executed',
+      execution_target: 'route',
+      proposal_type: 'external_intel',
+      capability_key: 'proposal:external_intel',
+      route_summary: { selected_model: 'ollama/qwen3:4b', route_role: 'general', route_class: 'default' },
+      verification: { passed: false },
+      outcome: 'no_change'
+    });
+  }
+  for (let i = 0; i < 6; i++) {
+    rows.push({
+      ts: `${day}T11:${String(i).padStart(2, '0')}:00.000Z`,
+      type: 'autonomy_run',
+      result: 'executed',
+      execution_target: 'route',
+      proposal_type: 'external_intel',
+      capability_key: 'proposal:external_intel',
+      route_summary: { selected_model: 'ollama/smallthinker', route_role: 'general', route_class: 'focus' },
+      verification: { passed: false },
+      outcome: 'no_change'
+    });
+    rows.push({
+      ts: `${day}T12:${String(i).padStart(2, '0')}:00.000Z`,
+      type: 'autonomy_run',
+      result: 'executed',
+      execution_target: 'route',
+      proposal_type: 'external_intel',
+      capability_key: 'proposal:external_intel',
+      route_summary: { selected_model: 'ollama/qwen3:4b', route_role: 'general', route_class: 'focus' },
+      verification: { passed: true },
+      outcome: 'shipped'
+    });
+  }
+  writeJsonl(runFile, rows);
+
+  const env = makeEnv({}, cfgPath, adaptersPath, stateDir, runsDir, budgetDir, day);
+  const r = runEval(repoRoot, `
+    const router = require('./systems/routing/model_router.js');
+    const focus = router.routeDecision({
+      risk: 'medium',
+      complexity: 'medium',
+      intent: 'analyze external intel',
+      task: 'analyze external intel',
+      capability: 'proposal:external_intel',
+      routeClass: 'focus',
+      mode: 'normal'
+    });
+    const base = router.routeDecision({
+      risk: 'medium',
+      complexity: 'medium',
+      intent: 'analyze external intel',
+      task: 'analyze external intel',
+      capability: 'proposal:external_intel',
+      routeClass: 'default',
+      mode: 'normal'
+    });
+    process.stdout.write(JSON.stringify({ focus, base }));
+  `, env);
+  assert.strictEqual(r.status, 0, `task-type outcome eval failed: ${r.stderr}`);
+  const out = JSON.parse(String(r.stdout || '{}'));
+  assert.strictEqual(out.focus.task_type, 'class:focus', 'route class should produce deterministic task_type');
+  assert.strictEqual(out.base.task_type, 'cap:proposal_external_intel', 'default route should derive capability-family task_type');
+  assert.strictEqual(out.focus.selected_model, 'ollama/qwen3:4b', 'task-type success should lift qwen for focus tasks');
+  assert.strictEqual(out.base.selected_model, 'ollama/smallthinker', 'default task-type should keep smallthinker');
+}
+
 function runCaseBudgetPressure(repoRoot, root) {
   const cfgPath = path.join(root, 'config', 'agent_routing_rules.json');
   const adaptersPath = path.join(root, 'config', 'model_adapters.json');
@@ -270,6 +392,7 @@ function runCaseBudgetPressure(repoRoot, root) {
       communication_fast_path: { enabled: false },
       router_budget_policy: {
         enabled: true,
+        allow_strategy_override: false,
         state_dir: budgetDir,
         soft_ratio: 0.5,
         hard_ratio: 0.8,
@@ -296,7 +419,7 @@ function runCaseBudgetPressure(repoRoot, root) {
     'ollama/smallthinker': { available: true, follows_instructions: true, latency_ms: 1300 }
   });
 
-  const env = makeEnv({}, cfgPath, adaptersPath, stateDir, runsDir, budgetDir, day);
+  const env = makeEnv({ SYSTEM_BUDGET_DEFAULT_DAILY_TOKEN_CAP: '100' }, cfgPath, adaptersPath, stateDir, runsDir, budgetDir, day);
   const r = runEval(repoRoot, `
     const router = require('./systems/routing/model_router.js');
     const d = router.routeDecision({
@@ -342,6 +465,7 @@ function runCaseProjectedBudgetFromRequest(repoRoot, root) {
       communication_fast_path: { enabled: false },
       router_budget_policy: {
         enabled: true,
+        allow_strategy_override: false,
         state_dir: budgetDir,
         soft_ratio: 0.75,
         hard_ratio: 0.9,
@@ -368,7 +492,7 @@ function runCaseProjectedBudgetFromRequest(repoRoot, root) {
     'ollama/smallthinker': { available: true, follows_instructions: true, latency_ms: 1300 }
   });
 
-  const env = makeEnv({}, cfgPath, adaptersPath, stateDir, runsDir, budgetDir, day);
+  const env = makeEnv({ SYSTEM_BUDGET_DEFAULT_DAILY_TOKEN_CAP: '1000' }, cfgPath, adaptersPath, stateDir, runsDir, budgetDir, day);
   const r = runEval(repoRoot, `
     const router = require('./systems/routing/model_router.js');
     const d = router.routeDecision({
@@ -615,6 +739,7 @@ function run() {
 
   runCaseFastPath(repoRoot, path.join(tmpRoot, 'fast_path'));
   runCaseOutcomeContext(repoRoot, path.join(tmpRoot, 'outcome_context'));
+  runCaseTaskTypeOutcomeContext(repoRoot, path.join(tmpRoot, 'task_type_outcome_context'));
   runCaseBudgetPressure(repoRoot, path.join(tmpRoot, 'budget_pressure'));
   runCaseProjectedBudgetFromRequest(repoRoot, path.join(tmpRoot, 'projected_budget'));
   runCaseFallbackClassification(repoRoot, path.join(tmpRoot, 'fallback_classification'));
