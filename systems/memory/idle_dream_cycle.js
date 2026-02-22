@@ -79,8 +79,8 @@ const WINDOW_DAYS = clampInt(process.env.IDLE_DREAM_WINDOW_DAYS || 3, 1, 14);
 const MAX_SEEDS = clampInt(process.env.IDLE_DREAM_MAX_SEEDS || 10, 2, 30);
 const MAX_IDLE_LINKS = clampInt(process.env.IDLE_DREAM_MAX_LINKS || 6, 1, 20);
 const MAX_REM_LINKS = clampInt(process.env.IDLE_DREAM_REM_MAX_LINKS || 8, 1, 24);
-const LLM_TIMEOUT_MS = clampInt(process.env.IDLE_DREAM_TIMEOUT_MS || 25000, 5000, 120000);
-const REM_TIMEOUT_MS = clampInt(process.env.IDLE_DREAM_REM_TIMEOUT_MS || 30000, 5000, 150000);
+const LLM_TIMEOUT_MS = clampInt(process.env.IDLE_DREAM_TIMEOUT_MS || 25000, 5000, 10 * 60 * 1000);
+const REM_TIMEOUT_MS = clampInt(process.env.IDLE_DREAM_REM_TIMEOUT_MS || 30000, 5000, 10 * 60 * 1000);
 const MAX_ROUTING_ROWS = clampInt(process.env.IDLE_DREAM_MAX_ROUTING_ROWS || 5000, 100, 50000);
 const IDLE_REQUEST_TOKENS_EST = clampInt(process.env.IDLE_DREAM_IDLE_TOKENS_EST || 220, 50, 20000);
 const REM_REQUEST_TOKENS_EST_LOCAL = clampInt(process.env.IDLE_DREAM_REM_TOKENS_EST_LOCAL || 320, 50, 20000);
@@ -88,7 +88,16 @@ const REM_REQUEST_TOKENS_EST_DETERMINISTIC = clampInt(process.env.IDLE_DREAM_REM
 const MEMORY_DREAM_BOOTSTRAP_TIMEOUT_MS = clampInt(process.env.IDLE_DREAM_BOOTSTRAP_TIMEOUT_MS || 25000, 5000, 120000);
 const MODEL_COOLDOWN_BASE_MS = clampInt(process.env.IDLE_DREAM_MODEL_COOLDOWN_MS || 45 * 60 * 1000, 60 * 1000, 6 * 60 * 60 * 1000);
 const MODEL_COOLDOWN_MAX_MS = clampInt(process.env.IDLE_DREAM_MODEL_COOLDOWN_MAX_MS || 6 * 60 * 60 * 1000, MODEL_COOLDOWN_BASE_MS, 24 * 60 * 60 * 1000);
+const MODEL_TIMEOUT_COOLDOWN_BASE_MS = clampInt(
+  process.env.IDLE_DREAM_TIMEOUT_COOLDOWN_MS || 15 * 60 * 1000,
+  60 * 1000,
+  MODEL_COOLDOWN_BASE_MS
+);
 const MODEL_HEALTH_MAX = clampInt(process.env.IDLE_DREAM_MODEL_HEALTH_MAX || 32, 4, 128);
+const MODEL_MAX_ATTEMPTS = clampInt(process.env.IDLE_DREAM_MODEL_MAX_ATTEMPTS || 2, 1, 3);
+const MODEL_MAX_MODELS_PER_PASS = clampInt(process.env.IDLE_DREAM_MAX_MODELS_PER_PASS || 4, 1, 12);
+const MODEL_RETRY_TIMEOUT_PCT = clampInt(process.env.IDLE_DREAM_MODEL_RETRY_TIMEOUT_PCT || 175, 100, 500);
+const CLOUD_MODEL_TIMEOUT_PCT = clampInt(process.env.IDLE_DREAM_CLOUD_TIMEOUT_PCT || 170, 100, 600);
 
 const IDLE_MODEL_ORDER = parseCsvOrder(
   process.env.IDLE_DREAM_MODEL_ORDER
@@ -364,7 +373,10 @@ function modelOnFailure(state, model, phase, llm) {
   const key = normalizeModelName(model);
   const prev = modelHealthEntry(state, key) || {};
   const failureStreak = clampInt(Number(prev.failure_streak || 0) + 1, 1, 12);
-  const cooldownMs = Math.min(MODEL_COOLDOWN_MAX_MS, MODEL_COOLDOWN_BASE_MS * failureStreak);
+  const baseCooldownMs = llm && llm.timed_out === true
+    ? MODEL_TIMEOUT_COOLDOWN_BASE_MS
+    : MODEL_COOLDOWN_BASE_MS;
+  const cooldownMs = Math.min(MODEL_COOLDOWN_MAX_MS, baseCooldownMs * failureStreak);
   const cooldownUntil = new Date(Date.now() + cooldownMs).toISOString();
   const reason = llm && llm.timed_out === true
     ? 'timeout'
@@ -469,12 +481,70 @@ function pickModel(order, available, state) {
   return { model: null, skipped_models: skipped };
 }
 
+function isCloudDreamModel(model) {
+  const m = normalizeModelName(model);
+  if (!m) return false;
+  return m.includes(':cloud') || m.endsWith('-cloud') || m.includes('/cloud');
+}
+
+function timeoutForModelAttempt(baseTimeoutMs, model, attemptNumber) {
+  let timeoutMs = clampInt(baseTimeoutMs || 25000, 5000, 10 * 60 * 1000);
+  if (isCloudDreamModel(model)) {
+    timeoutMs = Math.round(timeoutMs * (CLOUD_MODEL_TIMEOUT_PCT / 100));
+  }
+  if (Number(attemptNumber || 1) > 1) {
+    timeoutMs = Math.round(timeoutMs * (MODEL_RETRY_TIMEOUT_PCT / 100));
+  }
+  return clampInt(timeoutMs, 5000, 10 * 60 * 1000);
+}
+
+function shouldRetryModelFailure(llm) {
+  if (!llm || llm.ok === true) return false;
+  if (llm.timed_out === true) return true;
+  const blob = `${String(llm.error || '')} ${String(llm.stderr || '')}`.toLowerCase();
+  return /\b(etimedout|timeout|timed out|temporar|try again|service unavailable|gateway timeout|connection reset|econnreset|econnrefused|http_5\d\d)\b/.test(blob);
+}
+
+function runModelWithRetries(model, prompt, baseTimeoutMs, phase) {
+  const attempts = [];
+  let last = null;
+  for (let attempt = 1; attempt <= MODEL_MAX_ATTEMPTS; attempt++) {
+    const timeoutMs = timeoutForModelAttempt(baseTimeoutMs, model, attempt);
+    const llm = runLocalModel(model, prompt, timeoutMs, phase);
+    last = llm;
+    attempts.push({
+      attempt,
+      timeout_ms: timeoutMs,
+      ok: llm.ok === true,
+      code: Number(llm.code != null ? llm.code : 1),
+      signal: llm.signal || null,
+      timed_out: llm.timed_out === true,
+      error: llm.error || null,
+      stderr_tail: String(llm.stderr || '').slice(-180)
+    });
+    if (llm.ok) {
+      return { ok: true, llm, attempts };
+    }
+    if (attempt >= MODEL_MAX_ATTEMPTS || !shouldRetryModelFailure(llm)) break;
+  }
+  return { ok: false, llm: last || { ok: false, code: 1, timed_out: false, signal: null, error: 'llm_failed', stderr: '' }, attempts };
+}
+
 function runLocalModel(model, prompt, timeoutMs, phase) {
   const fakeIdle = String(process.env.IDLE_DREAM_FAKE_IDLE_JSON || '').trim();
   const fakeRem = String(process.env.IDLE_DREAM_FAKE_REM_JSON || '').trim();
   const fakeFailures = parseCsvOrder(process.env.IDLE_DREAM_FAKE_MODEL_FAILURES || '')
-    .map((row) => String(row || '').split(':'))
-    .map((parts) => ({ model: normalizeModelName(parts[0]), reason: String(parts[1] || 'error').trim().toLowerCase() }))
+    .map((row) => {
+      const raw = String(row || '').trim();
+      const splitAt = raw.lastIndexOf(':');
+      if (splitAt <= 0) {
+        return { model: normalizeModelName(raw), reason: 'error' };
+      }
+      return {
+        model: normalizeModelName(raw.slice(0, splitAt)),
+        reason: String(raw.slice(splitAt + 1) || 'error').trim().toLowerCase()
+      };
+    })
     .filter((row) => !!row.model);
   const forced = fakeFailures.find((row) => row.model === normalizeModelName(model));
   if (forced && forced.reason === 'timeout') {
@@ -1040,8 +1110,7 @@ function runIdlePass(dateStr, state, force) {
 
   const availableModels = listLocalModels();
   const pick = pickModel(IDLE_MODEL_ORDER, availableModels, state);
-  const model = pick.model;
-  if (!model) {
+  if (!pick.model) {
     return {
       ok: false,
       skipped: true,
@@ -1058,7 +1127,7 @@ function runIdlePass(dateStr, state, force) {
       ok: true,
       skipped: true,
       reason: String(lease.reason || 'spawn_budget_denied'),
-      model,
+      model: pick.model,
       spawn_budget: lease
     };
   }
@@ -1066,53 +1135,69 @@ function runIdlePass(dateStr, state, force) {
   const prompt = buildIdlePrompt(seeds, dateStr);
   let release = null;
   try {
-    const llm = runLocalModel(model, prompt, LLM_TIMEOUT_MS, 'idle');
-    if (!llm.ok) {
-      const health = modelOnFailure(state, model, 'idle', llm);
-      const links = normalizeIdleLinks(null, seeds);
-      const row = writeIdleRow(dateStr, null, seeds, links, {
-        strategy: 'deterministic_fallback',
-        reason: 'local_model_idle_failed',
-        failed_model: model,
-        code: llm.code,
-        signal: llm.signal || null,
-        timed_out: llm.timed_out === true,
-        error: llm.error || null,
-        stderr: String(llm.stderr || '').slice(-240)
-      });
-      return {
-        ok: true,
-        skipped: false,
-        degraded: true,
-        reason: 'deterministic_idle_fallback',
-        failed_model: model,
-        fallback_model: null,
-        cooldown_until_ts: health && health.cooldown_until_ts || null,
-        code: llm.code,
-        signal: llm.signal || null,
-        timed_out: llm.timed_out === true,
-        error: llm.error || null,
-        stderr: String(llm.stderr || '').slice(-240),
-        seed_count: seeds.length,
-        link_count: links.length,
-        row_uid: row.uid
+    const attemptedModels = [];
+    let selectedModel = pick.model;
+    while (selectedModel && attemptedModels.length < MODEL_MAX_MODELS_PER_PASS) {
+      if (attemptedModels.some((it) => it.model === selectedModel)) break;
+      const attempt = runModelWithRetries(selectedModel, prompt, LLM_TIMEOUT_MS, 'idle');
+      const attemptRow = {
+        model: selectedModel,
+        attempts: Array.isArray(attempt.attempts) ? attempt.attempts : []
       };
+      attemptedModels.push(attemptRow);
+      if (attempt.ok && attempt.llm && attempt.llm.ok === true) {
+        const parsed = extractJsonObject(attempt.llm.stdout);
+        const links = normalizeIdleLinks(parsed, seeds);
+        const row = writeIdleRow(dateStr, selectedModel, seeds, links, parsed);
+        modelOnSuccess(state, selectedModel, 'idle');
+        return {
+          ok: true,
+          skipped: false,
+          model: selectedModel,
+          seed_count: seeds.length,
+          link_count: links.length,
+          row_uid: row.uid,
+          attempted_models: attemptedModels,
+          spawn_budget: {
+            module: lease.module,
+            granted_cells: lease.granted_cells
+          }
+        };
+      }
+      const llm = attempt && attempt.llm ? attempt.llm : {};
+      const health = modelOnFailure(state, selectedModel, 'idle', llm);
+      attemptRow.cooldown_until_ts = health && health.cooldown_until_ts || null;
+      attemptRow.failure_reason = health && health.last_failure_reason || null;
+      const nextPick = pickModel(IDLE_MODEL_ORDER, availableModels, state);
+      selectedModel = nextPick.model;
     }
-    const parsed = extractJsonObject(llm.stdout);
-    const links = normalizeIdleLinks(parsed, seeds);
-    const row = writeIdleRow(dateStr, model, seeds, links, parsed);
-    modelOnSuccess(state, model, 'idle');
+    const lastAttempt = attemptedModels.length > 0 ? attemptedModels[attemptedModels.length - 1] : null;
+    const lastTry = lastAttempt && Array.isArray(lastAttempt.attempts) && lastAttempt.attempts.length > 0
+      ? lastAttempt.attempts[lastAttempt.attempts.length - 1]
+      : {};
+    const links = normalizeIdleLinks(null, seeds);
+    const row = writeIdleRow(dateStr, null, seeds, links, {
+      strategy: 'deterministic_fallback',
+      reason: 'all_model_attempts_failed',
+      attempted_models: attemptedModels
+    });
     return {
       ok: true,
       skipped: false,
-      model,
+      degraded: true,
+      reason: 'deterministic_idle_fallback',
+      failed_model: lastAttempt ? lastAttempt.model : null,
+      fallback_model: null,
+      cooldown_until_ts: lastAttempt && lastAttempt.cooldown_until_ts || null,
+      code: Number(lastTry && lastTry.code != null ? lastTry.code : 1),
+      signal: lastTry && lastTry.signal || null,
+      timed_out: lastTry && lastTry.timed_out === true,
+      error: lastTry && lastTry.error || null,
+      stderr: String(lastTry && lastTry.stderr_tail || '').slice(-240),
+      attempted_models: attemptedModels,
       seed_count: seeds.length,
       link_count: links.length,
-      row_uid: row.uid,
-      spawn_budget: {
-        module: lease.module,
-        granted_cells: lease.granted_cells
-      }
+      row_uid: row.uid
     };
   } finally {
     release = releaseSpawnLease(lease, 'idle');
@@ -1194,8 +1279,7 @@ function runRemPass(dateStr, state, force) {
 
     const availableModels = listLocalModels();
     const pick = pickModel(REM_MODEL_ORDER, availableModels, state);
-    const model = pick.model;
-    if (!model) {
+    if (!pick.model) {
       return {
         ok: false,
         skipped: true,
@@ -1206,55 +1290,71 @@ function runRemPass(dateStr, state, force) {
       };
     }
     const prompt = buildRemPrompt(materialRows, dateStr);
-    const llm = runLocalModel(model, prompt, REM_TIMEOUT_MS, 'rem');
-    if (!llm.ok) {
-      const health = modelOnFailure(state, model, 'rem', llm);
-      const quantized = fallbackQuantized(materialRows);
-      const rem = writeRemResult(dateStr, null, materialRows, quantized, {
-        strategy: 'deterministic_fallback',
-        reason: 'local_model_rem_failed',
-        failed_model: model,
-        code: llm.code,
-        signal: llm.signal || null,
-        timed_out: llm.timed_out === true,
-        error: llm.error || null,
-        stderr: String(llm.stderr || '').slice(-240)
-      });
-      return {
-        ok: true,
-        skipped: false,
-        degraded: true,
-        reason: 'deterministic_rem_fallback',
-        strategy,
-        failed_model: model,
-        cooldown_until_ts: health && health.cooldown_until_ts || null,
-        model: null,
-        code: llm.code,
-        signal: llm.signal || null,
-        timed_out: llm.timed_out === true,
-        error: llm.error || null,
-        stderr: String(llm.stderr || '').slice(-240),
-        source_idle_rows: materialRows.length,
-        quantized_count: quantized.length,
-        rem_uid: rem.uid
+    const attemptedModels = [];
+    let selectedModel = pick.model;
+    while (selectedModel && attemptedModels.length < MODEL_MAX_MODELS_PER_PASS) {
+      if (attemptedModels.some((it) => it.model === selectedModel)) break;
+      const attempt = runModelWithRetries(selectedModel, prompt, REM_TIMEOUT_MS, 'rem');
+      const attemptRow = {
+        model: selectedModel,
+        attempts: Array.isArray(attempt.attempts) ? attempt.attempts : []
       };
+      attemptedModels.push(attemptRow);
+      if (attempt.ok && attempt.llm && attempt.llm.ok === true) {
+        const parsed = extractJsonObject(attempt.llm.stdout);
+        const quantized = normalizeQuantized(parsed, materialRows);
+        const rem = writeRemResult(dateStr, selectedModel, materialRows, quantized, parsed);
+        modelOnSuccess(state, selectedModel, 'rem');
+        return {
+          ok: true,
+          skipped: false,
+          strategy,
+          model: selectedModel,
+          source_idle_rows: materialRows.length,
+          quantized_count: quantized.length,
+          rem_uid: rem.uid,
+          attempted_models: attemptedModels,
+          spawn_budget: {
+            module: lease.module,
+            granted_cells: lease.granted_cells
+          }
+        };
+      }
+      const llm = attempt && attempt.llm ? attempt.llm : {};
+      const health = modelOnFailure(state, selectedModel, 'rem', llm);
+      attemptRow.cooldown_until_ts = health && health.cooldown_until_ts || null;
+      attemptRow.failure_reason = health && health.last_failure_reason || null;
+      const nextPick = pickModel(REM_MODEL_ORDER, availableModels, state);
+      selectedModel = nextPick.model;
     }
-    const parsed = extractJsonObject(llm.stdout);
-    const quantized = normalizeQuantized(parsed, materialRows);
-    const rem = writeRemResult(dateStr, model, materialRows, quantized, parsed);
-    modelOnSuccess(state, model, 'rem');
+    const lastAttempt = attemptedModels.length > 0 ? attemptedModels[attemptedModels.length - 1] : null;
+    const lastTry = lastAttempt && Array.isArray(lastAttempt.attempts) && lastAttempt.attempts.length > 0
+      ? lastAttempt.attempts[lastAttempt.attempts.length - 1]
+      : {};
+    const quantized = fallbackQuantized(materialRows);
+    const rem = writeRemResult(dateStr, null, materialRows, quantized, {
+      strategy: 'deterministic_fallback',
+      reason: 'all_model_attempts_failed',
+      attempted_models: attemptedModels
+    });
     return {
       ok: true,
       skipped: false,
+      degraded: true,
+      reason: 'deterministic_rem_fallback',
       strategy,
-      model,
+      failed_model: lastAttempt ? lastAttempt.model : null,
+      cooldown_until_ts: lastAttempt && lastAttempt.cooldown_until_ts || null,
+      model: null,
+      code: Number(lastTry && lastTry.code != null ? lastTry.code : 1),
+      signal: lastTry && lastTry.signal || null,
+      timed_out: lastTry && lastTry.timed_out === true,
+      error: lastTry && lastTry.error || null,
+      stderr: String(lastTry && lastTry.stderr_tail || '').slice(-240),
+      attempted_models: attemptedModels,
       source_idle_rows: materialRows.length,
       quantized_count: quantized.length,
-      rem_uid: rem.uid,
-      spawn_budget: {
-        module: lease.module,
-        granted_cells: lease.granted_cells
-      }
+      rem_uid: rem.uid
     };
   } finally {
     release = releaseSpawnLease(lease, 'rem');
