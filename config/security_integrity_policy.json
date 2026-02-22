@@ -42,7 +42,7 @@
     "systems/security/llm_gateway_guard.js": "00e62885ea05343d277b29af22e5f8d436b0146633f978a336c5ecc57dde9bdb",
     "systems/security/merge_guard.js": "047c78dba33e4ca69fb72f9eeebe48411144cb76d9fca9755621631923189653",
     "systems/security/policy_rootd.js": "bbd04839468ccbadff8f1b9b5be1f55ac829cacaed8b8a391b3302770d54fdfb",
-    "systems/security/repo_hygiene_guard.js": "5e2d5cc92741df20d5021ae40c0d790ff6dd468aa39115e9fe5be4bb0067c4f4",
+    "systems/security/repo_hygiene_guard.js": "b08801c2688f86496c30d28f960489795c399971dc23115cf47fedee7d90003a",
     "systems/security/request_ingress.js": "1441b58e26f8f3824384db41cbaa469cb4b1a98f915b21893bf26085dcf80399",
     "systems/security/schema_contract_check.js": "f1ad7d22bfefdffb16bdefce8c69498dc18781ee2c388b34d97854e4803abbe6",
     "systems/security/secret_broker.js": "b3d723f77c3485ab8eee1deed26e8a97d16d7c170174836963ddb8edccf425a0",
@@ -52,7 +52,7 @@
     "systems/security/workspace_dump_guard.js": "fa94a0e44f65203cae3fc1c6dc8c20ce0199710d3be6867e1b7821eb825859c3",
     "systems/sensory/adaptive_layer_guard.js": "9fdf1f12e9e6d9eb0ebd1e1af536ea0fd1e96ffe963f35a39840ce7e2252ddbd"
   },
-  "sealed_at": "2026-02-22T07:45:20.184Z",
+  "sealed_at": "2026-02-22T16:28:34.043Z",
   "sealed_by": "jay",
-  "last_approval_note": "reason for reseal"
+  "last_approval_note": "sync hash after repo_hygiene_guard update"
 }

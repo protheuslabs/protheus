@@ -1274,9 +1274,12 @@ function main() {
     if (String(process.env.SPINE_STARTUP_ATTESTATION_ENABLED || "1") !== "0") {
       const verifyArgs = ["systems/security/startup_attestation.js", "verify"];
       const strictVerify = String(process.env.SPINE_STARTUP_ATTESTATION_STRICT || "0") === "1";
+      const autoIssueEnabled = String(process.env.SPINE_STARTUP_ATTESTATION_AUTO_ISSUE || "1") !== "0";
+      const autoIssueReasons = new Set(["attestation_missing_or_invalid", "attestation_stale"]);
+      const hasAttestationKey = String(process.env.STARTUP_ATTESTATION_KEY || "").trim().length > 0;
       if (strictVerify) verifyArgs.push("--strict");
-      const att = runJson("node", verifyArgs);
-      const attPayload = att.payload && typeof att.payload === "object" ? att.payload : null;
+      let att = runJson("node", verifyArgs);
+      let attPayload = att.payload && typeof att.payload === "object" ? att.payload : null;
       startupAttestation = {
         checked: true,
         ok: att.ok && !!attPayload && attPayload.ok === true,
@@ -1285,6 +1288,51 @@ function main() {
           ? String((attPayload && attPayload.reason) || att.stderr || att.stdout || `startup_attestation_exit_${att.code}`).slice(0, 180)
           : null
       };
+      const reasonBeforeIssue = startupAttestation.reason;
+      let autoIssueAttempted = false;
+      let autoIssueOk = false;
+      if (startupAttestation.ok !== true && autoIssueEnabled && hasAttestationKey) {
+        const normalizedReason = String(startupAttestation.reason || "").trim().toLowerCase();
+        if (autoIssueReasons.has(normalizedReason)) {
+          autoIssueAttempted = true;
+          const issueArgs = ["systems/security/startup_attestation.js", "issue"];
+          const ttlRaw = Number(process.env.SPINE_STARTUP_ATTESTATION_TTL_HOURS || "");
+          if (Number.isFinite(ttlRaw) && ttlRaw > 0) issueArgs.push(`--ttl-hours=${Math.min(ttlRaw, 240)}`);
+          const issue = runJson("node", issueArgs);
+          const issuePayload = issue.payload && typeof issue.payload === "object" ? issue.payload : null;
+          autoIssueOk = issue.ok && !!issuePayload && issuePayload.ok === true;
+          appendLedger(dateStr, {
+            ts: nowIso(),
+            type: "spine_startup_attestation_issue",
+            mode,
+            date: dateStr,
+            ok: autoIssueOk,
+            reason: autoIssueOk
+              ? "issued"
+              : String((issuePayload && issuePayload.reason) || issue.stderr || issue.stdout || `startup_attestation_issue_exit_${issue.code}`).slice(0, 180)
+          });
+          if (autoIssueOk) {
+            att = runJson("node", verifyArgs);
+            attPayload = att.payload && typeof att.payload === "object" ? att.payload : null;
+            startupAttestation = {
+              checked: true,
+              ok: att.ok && !!attPayload && attPayload.ok === true,
+              required: String(process.env.SPINE_STARTUP_ATTESTATION_REQUIRED || "0") === "1",
+              reason: (!att.ok || !attPayload || attPayload.ok !== true)
+                ? String((attPayload && attPayload.reason) || att.stderr || att.stdout || `startup_attestation_exit_${att.code}`).slice(0, 180)
+                : null
+            };
+          }
+        }
+      } else if (startupAttestation.ok !== true && autoIssueEnabled && !hasAttestationKey) {
+        appendLedger(dateStr, {
+          ts: nowIso(),
+          type: "spine_startup_attestation_issue_skipped",
+          mode,
+          date: dateStr,
+          reason: "attestation_key_missing"
+        });
+      }
       appendLedger(dateStr, {
         ts: nowIso(),
         type: "spine_startup_attestation",
@@ -1292,10 +1340,17 @@ function main() {
         date: dateStr,
         ok: startupAttestation.ok,
         required: startupAttestation.required,
-        reason: startupAttestation.reason
+        reason: startupAttestation.reason,
+        auto_issue_attempted: autoIssueAttempted,
+        auto_issue_ok: autoIssueAttempted ? autoIssueOk : null,
+        reason_before_issue: autoIssueAttempted ? reasonBeforeIssue : null
       });
       if (startupAttestation.ok) {
-        console.log(" startup_attestation ok");
+        if (autoIssueAttempted && autoIssueOk) {
+          console.log(` startup_attestation ok (auto-issued from ${String(reasonBeforeIssue || "unknown").slice(0, 120)})`);
+        } else {
+          console.log(" startup_attestation ok");
+        }
       } else {
         console.log(` startup_attestation unavailable reason=${String(startupAttestation.reason || "unknown").slice(0, 120)}`);
       }
