@@ -48,11 +48,11 @@
     "systems/security/secret_broker.js": "b3d723f77c3485ab8eee1deed26e8a97d16d7c170174836963ddb8edccf425a0",
     "systems/security/skill_install_enforcer.js": "f97f0310cc2f8d88fbe79fc8430ef6341de87dbe3ada0de2742bd8f6ff035925",
     "systems/security/skill_quarantine.js": "4fd57a207a558a0fc079a2ce2477100bb9e5d0aec15b6a4bcbd7a7ae71963947",
-    "systems/security/startup_attestation.js": "7fc00d891b6e7f54c392c161ed9f98ca7ec8bbcf1c8b52c94f4df7dcbb8d00c3",
+    "systems/security/startup_attestation.js": "1915618dbe23e1f600986f3545ee1525bf67f0d84fe09258601b56fdead08e0d",
     "systems/security/workspace_dump_guard.js": "fa94a0e44f65203cae3fc1c6dc8c20ce0199710d3be6867e1b7821eb825859c3",
     "systems/sensory/adaptive_layer_guard.js": "9fdf1f12e9e6d9eb0ebd1e1af536ea0fd1e96ffe963f35a39840ce7e2252ddbd"
   },
-  "sealed_at": "2026-02-22T16:28:34.043Z",
+  "sealed_at": "2026-02-22T16:33:34.437Z",
   "sealed_by": "jay",
-  "last_approval_note": "sync hash after repo_hygiene_guard update"
+  "last_approval_note": "sync startup_attestation key fallback patch"
 }
