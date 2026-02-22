@@ -43,18 +43,21 @@
     "risk_penalty": 0.04
   },
   "budget_policy": {
-    "daily_runs_cap": 4,
-    "daily_token_cap": 4000,
-    "max_tokens_per_action": 1600,
+    "daily_runs_cap": 6,
+    "daily_token_cap": 6000,
+    "max_tokens_per_action": 2200,
     "token_cost_per_1k": 0.003,
-    "daily_usd_cap": 3.5,
-    "per_action_avg_usd_cap": 1,
-    "monthly_usd_allocation": 60,
+    "daily_usd_cap": 5.25,
+    "per_action_avg_usd_cap": 1.25,
+    "monthly_usd_allocation": 90,
     "monthly_credits_floor_pct": 0.15,
     "min_projected_tokens_for_burn_check": 800,
     "per_capability_caps": {
       "proposal": 3,
       "proposal:collector_remediation": 2,
+      "proposal:collector_preflight_remediation": 2,
+      "proposal:pain_signal_escalation": 1,
+      "proposal:pain_adaptive_candidate": 1,
       "proposal:infrastructure_outage": 1,
       "proposal:external_intel": 2,
       "actuation": 2,
@@ -86,7 +89,7 @@
     "min_shipped": 1
   },
   "execution_policy": {
-    "mode": "score_only"
+    "mode": "execute"
   },
   "threshold_overrides": {}
 }
