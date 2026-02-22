@@ -107,6 +107,7 @@ const MODEL_RETRY_TIMEOUT_PCT = clampInt(process.env.IDLE_DREAM_MODEL_RETRY_TIME
 const CLOUD_MODEL_TIMEOUT_PCT = clampInt(process.env.IDLE_DREAM_CLOUD_TIMEOUT_PCT || 170, 100, 600);
 const MODEL_PREFLIGHT_ENABLED = String(process.env.IDLE_DREAM_MODEL_PREFLIGHT_ENABLED || '1').trim() !== '0';
 const MODEL_PREFLIGHT_TIMEOUT_MS = clampInt(process.env.IDLE_DREAM_MODEL_PREFLIGHT_TIMEOUT_MS || 6000, 1000, 60000);
+const MODEL_PREFLIGHT_CACHE_TTL_MS = clampInt(process.env.IDLE_DREAM_MODEL_PREFLIGHT_CACHE_TTL_MS || 15 * 60 * 1000, 60 * 1000, 6 * 60 * 60 * 1000);
 const MODEL_PREFLIGHT_PROMPT = 'Return exactly: OK';
 
 const IDLE_MODEL_ORDER = parseCsvOrder(
@@ -377,11 +378,59 @@ function pruneModelHealth(state) {
   state.model_health = Object.fromEntries(keep.map((it) => [it.model, it.row]));
 }
 
+function modelPreflightCache(state, model) {
+  const entry = modelHealthEntry(state, model);
+  const until = String(entry && entry.preflight_ok_until_ts || '');
+  const untilMs = Date.parse(until);
+  if (!Number.isFinite(untilMs) || untilMs <= Date.now()) {
+    return { hit: false, until_ts: null };
+  }
+  return {
+    hit: true,
+    until_ts: until,
+    ttl_ms: Number(entry && entry.preflight_ttl_ms || 0),
+    phase: entry && entry.preflight_ok_phase ? String(entry.preflight_ok_phase) : null
+  };
+}
+
+function modelOnPreflightSuccess(state, model, phase) {
+  if (!state || !model) return null;
+  if (!state.model_health || typeof state.model_health !== 'object') state.model_health = {};
+  const key = normalizeModelName(model);
+  const prev = modelHealthEntry(state, key) || {};
+  const phaseKey = String(phase || '').trim().toLowerCase() || null;
+  const now = nowIso();
+  const untilTs = new Date(Date.now() + MODEL_PREFLIGHT_CACHE_TTL_MS).toISOString();
+  const next = {
+    ...prev,
+    model: key,
+    last_event_ts: now,
+    preflight_ok_ts: now,
+    preflight_ok_until_ts: untilTs,
+    preflight_ok_phase: phaseKey,
+    preflight_ttl_ms: MODEL_PREFLIGHT_CACHE_TTL_MS
+  };
+  state.model_health[key] = next;
+  pruneModelHealth(state);
+  appendJsonl(LEDGER_PATH, {
+    ts: now,
+    type: 'idle_dream_model_preflight_cache_set',
+    phase: phaseKey,
+    model: key,
+    ttl_ms: MODEL_PREFLIGHT_CACHE_TTL_MS,
+    until_ts: untilTs
+  });
+  return next;
+}
+
 function modelOnFailure(state, model, phase, llm) {
   if (!state || !model) return null;
   if (!state.model_health || typeof state.model_health !== 'object') state.model_health = {};
   const key = normalizeModelName(model);
   const prev = modelHealthEntry(state, key) || {};
+  const cachedUntil = String(prev.preflight_ok_until_ts || '');
+  const cachedUntilMs = Date.parse(cachedUntil);
+  const hadPreflightCache = Number.isFinite(cachedUntilMs) && cachedUntilMs > Date.now();
   const providerUnavailable = isProviderUnavailableFailure(llm);
   const failureStreak = providerUnavailable
     ? 1
@@ -412,10 +461,23 @@ function modelOnFailure(state, model, phase, llm) {
     failure_streak: failureStreak,
     success_streak: 0,
     cooldown_ms: cooldownMs,
-    cooldown_until_ts: cooldownUntil
+    cooldown_until_ts: cooldownUntil,
+    preflight_ok_ts: null,
+    preflight_ok_until_ts: null,
+    preflight_ok_phase: null,
+    preflight_ttl_ms: 0
   };
   state.model_health[key] = next;
   pruneModelHealth(state);
+  if (hadPreflightCache) {
+    appendJsonl(LEDGER_PATH, {
+      ts: nowIso(),
+      type: 'idle_dream_model_preflight_cache_cleared',
+      phase: next.last_phase,
+      model: key,
+      reason
+    });
+  }
   appendJsonl(LEDGER_PATH, {
     ts: nowIso(),
     type: 'idle_dream_model_cooldown_set',
@@ -553,13 +615,36 @@ function runModelWithRetries(model, prompt, baseTimeoutMs, phase) {
   return { ok: false, llm: last || { ok: false, code: 1, timed_out: false, signal: null, error: 'llm_failed', stderr: '' }, attempts };
 }
 
-function runModelPreflight(model, phase) {
+function runModelPreflight(state, model, phase) {
   if (!MODEL_PREFLIGHT_ENABLED) {
     return {
       ok: true,
       skipped: true,
       reason: 'disabled',
+      cache_hit: false,
+      cache_until_ts: null,
       timeout_ms: MODEL_PREFLIGHT_TIMEOUT_MS,
+      llm: null
+    };
+  }
+  const phaseKey = String(phase || '').trim().toLowerCase() || null;
+  const cache = modelPreflightCache(state, model);
+  if (cache.hit) {
+    appendJsonl(LEDGER_PATH, {
+      ts: nowIso(),
+      type: 'idle_dream_model_preflight',
+      phase: phaseKey,
+      model: normalizeModelName(model),
+      result: 'cache_hit',
+      cache_until_ts: cache.until_ts || null
+    });
+    return {
+      ok: true,
+      skipped: true,
+      reason: 'cache_hit',
+      cache_hit: true,
+      cache_until_ts: cache.until_ts || null,
+      timeout_ms: 0,
       llm: null
     };
   }
@@ -567,10 +652,21 @@ function runModelPreflight(model, phase) {
   const stdout = String(stripAnsi(llm && llm.stdout || '')).trim().toUpperCase();
   const ok = llm && llm.ok === true && /\bOK\b/.test(stdout);
   if (ok) {
+    const cached = modelOnPreflightSuccess(state, model, phase);
+    appendJsonl(LEDGER_PATH, {
+      ts: nowIso(),
+      type: 'idle_dream_model_preflight',
+      phase: phaseKey,
+      model: normalizeModelName(model),
+      result: 'ok',
+      timeout_ms: MODEL_PREFLIGHT_TIMEOUT_MS
+    });
     return {
       ok: true,
       skipped: false,
       reason: 'ok',
+      cache_hit: false,
+      cache_until_ts: cached && cached.preflight_ok_until_ts ? String(cached.preflight_ok_until_ts) : null,
       timeout_ms: MODEL_PREFLIGHT_TIMEOUT_MS,
       llm
     };
@@ -580,10 +676,23 @@ function runModelPreflight(model, phase) {
     : llm && llm.timed_out === true
       ? 'timeout'
       : 'preflight_failed';
+  appendJsonl(LEDGER_PATH, {
+    ts: nowIso(),
+    type: 'idle_dream_model_preflight',
+    phase: phaseKey,
+    model: normalizeModelName(model),
+    result: 'failed',
+    reason,
+    timeout_ms: MODEL_PREFLIGHT_TIMEOUT_MS,
+    code: Number(llm && llm.code != null ? llm.code : 1),
+    timed_out: llm && llm.timed_out === true
+  });
   return {
     ok: false,
     skipped: false,
     reason,
+    cache_hit: false,
+    cache_until_ts: null,
     timeout_ms: MODEL_PREFLIGHT_TIMEOUT_MS,
     llm
   };
@@ -1210,12 +1319,14 @@ function runIdlePass(dateStr, state, force) {
         attempts: []
       };
       attemptedModels.push(attemptRow);
-      const preflight = runModelPreflight(selectedModel, 'idle');
+      const preflight = runModelPreflight(state, selectedModel, 'idle');
       attemptRow.preflight = {
         enabled: MODEL_PREFLIGHT_ENABLED,
         ok: preflight.ok === true,
         skipped: preflight.skipped === true,
         reason: preflight.reason || null,
+        cache_hit: preflight.cache_hit === true,
+        cache_until_ts: preflight.cache_until_ts || null,
         timeout_ms: Number(preflight.timeout_ms || MODEL_PREFLIGHT_TIMEOUT_MS),
         code: preflight.llm && preflight.llm.code != null ? Number(preflight.llm.code) : null,
         signal: preflight.llm && preflight.llm.signal || null,
@@ -1411,12 +1522,14 @@ function runRemPass(dateStr, state, force) {
         attempts: []
       };
       attemptedModels.push(attemptRow);
-      const preflight = runModelPreflight(selectedModel, 'rem');
+      const preflight = runModelPreflight(state, selectedModel, 'rem');
       attemptRow.preflight = {
         enabled: MODEL_PREFLIGHT_ENABLED,
         ok: preflight.ok === true,
         skipped: preflight.skipped === true,
         reason: preflight.reason || null,
+        cache_hit: preflight.cache_hit === true,
+        cache_until_ts: preflight.cache_until_ts || null,
         timeout_ms: Number(preflight.timeout_ms || MODEL_PREFLIGHT_TIMEOUT_MS),
         code: preflight.llm && preflight.llm.code != null ? Number(preflight.llm.code) : null,
         signal: preflight.llm && preflight.llm.signal || null,
