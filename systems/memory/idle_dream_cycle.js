@@ -93,6 +93,11 @@ const MODEL_TIMEOUT_COOLDOWN_BASE_MS = clampInt(
   60 * 1000,
   MODEL_COOLDOWN_BASE_MS
 );
+const MODEL_PROVIDER_COOLDOWN_BASE_MS = clampInt(
+  process.env.IDLE_DREAM_PROVIDER_COOLDOWN_MS || 5 * 60 * 1000,
+  60 * 1000,
+  MODEL_TIMEOUT_COOLDOWN_BASE_MS
+);
 const MODEL_HEALTH_MAX = clampInt(process.env.IDLE_DREAM_MODEL_HEALTH_MAX || 32, 4, 128);
 const MODEL_MAX_ATTEMPTS = clampInt(process.env.IDLE_DREAM_MODEL_MAX_ATTEMPTS || 2, 1, 3);
 const MODEL_MAX_MODELS_PER_PASS = clampInt(process.env.IDLE_DREAM_MAX_MODELS_PER_PASS || 4, 1, 12);
@@ -372,17 +377,24 @@ function modelOnFailure(state, model, phase, llm) {
   if (!state.model_health || typeof state.model_health !== 'object') state.model_health = {};
   const key = normalizeModelName(model);
   const prev = modelHealthEntry(state, key) || {};
-  const failureStreak = clampInt(Number(prev.failure_streak || 0) + 1, 1, 12);
-  const baseCooldownMs = llm && llm.timed_out === true
-    ? MODEL_TIMEOUT_COOLDOWN_BASE_MS
-    : MODEL_COOLDOWN_BASE_MS;
+  const providerUnavailable = isProviderUnavailableFailure(llm);
+  const failureStreak = providerUnavailable
+    ? 1
+    : clampInt(Number(prev.failure_streak || 0) + 1, 1, 12);
+  const baseCooldownMs = providerUnavailable
+    ? MODEL_PROVIDER_COOLDOWN_BASE_MS
+    : (llm && llm.timed_out === true
+      ? MODEL_TIMEOUT_COOLDOWN_BASE_MS
+      : MODEL_COOLDOWN_BASE_MS);
   const cooldownMs = Math.min(MODEL_COOLDOWN_MAX_MS, baseCooldownMs * failureStreak);
   const cooldownUntil = new Date(Date.now() + cooldownMs).toISOString();
-  const reason = llm && llm.timed_out === true
-    ? 'timeout'
-    : llm && llm.error
-      ? 'runtime_error'
-      : `exit_${Number(llm && llm.code != null ? llm.code : 1)}`;
+  const reason = providerUnavailable
+    ? 'provider_unavailable'
+    : (llm && llm.timed_out === true
+      ? 'timeout'
+      : llm && llm.error
+        ? 'runtime_error'
+        : `exit_${Number(llm && llm.code != null ? llm.code : 1)}`);
   const next = {
     ...prev,
     model: key,
@@ -500,9 +512,15 @@ function timeoutForModelAttempt(baseTimeoutMs, model, attemptNumber) {
 
 function shouldRetryModelFailure(llm) {
   if (!llm || llm.ok === true) return false;
+  if (isProviderUnavailableFailure(llm)) return false;
   if (llm.timed_out === true) return true;
   const blob = `${String(llm.error || '')} ${String(llm.stderr || '')}`.toLowerCase();
   return /\b(etimedout|timeout|timed out|temporar|try again|service unavailable|gateway timeout|connection reset|econnreset|econnrefused|http_5\d\d)\b/.test(blob);
+}
+
+function isProviderUnavailableFailure(llm) {
+  const blob = `${String(llm && llm.error || '')} ${String(llm && llm.stderr || '')}`.toLowerCase();
+  return /\b(operation not permitted|connection refused|dial tcp|connect:|127\.0\.0\.1:11434|failed to connect|no such host|econnrefused|ehostunreach|enotfound|network is unreachable)\b/.test(blob);
 }
 
 function runModelWithRetries(model, prompt, baseTimeoutMs, phase) {
@@ -1168,6 +1186,7 @@ function runIdlePass(dateStr, state, force) {
       const health = modelOnFailure(state, selectedModel, 'idle', llm);
       attemptRow.cooldown_until_ts = health && health.cooldown_until_ts || null;
       attemptRow.failure_reason = health && health.last_failure_reason || null;
+      if (health && health.last_failure_reason === 'provider_unavailable') break;
       const nextPick = pickModel(IDLE_MODEL_ORDER, availableModels, state);
       selectedModel = nextPick.model;
     }
@@ -1324,6 +1343,7 @@ function runRemPass(dateStr, state, force) {
       const health = modelOnFailure(state, selectedModel, 'rem', llm);
       attemptRow.cooldown_until_ts = health && health.cooldown_until_ts || null;
       attemptRow.failure_reason = health && health.last_failure_reason || null;
+      if (health && health.last_failure_reason === 'provider_unavailable') break;
       const nextPick = pickModel(REM_MODEL_ORDER, availableModels, state);
       selectedModel = nextPick.model;
     }
