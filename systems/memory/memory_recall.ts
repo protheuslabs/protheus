@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// @ts-nocheck
 'use strict';
 
 const fs = require('fs');
@@ -42,7 +41,7 @@ function usage() {
 }
 
 function parseArgs(argv) {
-  const out = { _: [] };
+  const out = { _: [] } as Record<string, any>;
   for (let i = 0; i < argv.length; i++) {
     const a = String(argv[i] || '');
     if (!a.startsWith('--')) {
@@ -174,7 +173,7 @@ function parseIndexFile(filePath) {
       continue;
     }
     if (!headers) continue;
-    const row = {};
+    const row: Record<string, any> = {};
     for (let i = 0; i < headers.length; i++) row[headers[i]] = cleanCell(cells[i] || '');
     const nodeId = normalizeNodeId(row.node_id);
     const fileRef = normalizeFileRef(row.file);
@@ -723,3 +722,4 @@ module.exports = {
   normalizeNodeId,
   normalizeUid
 };
+export {};

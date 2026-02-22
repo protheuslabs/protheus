@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// @ts-nocheck
 'use strict';
 
 /**
@@ -60,7 +59,7 @@ function usage() {
 }
 
 function parseArgs(argv) {
-  const out = { _: [] };
+  const out = { _: [] } as Record<string, any>;
   for (let i = 0; i < argv.length; i++) {
     const a = String(argv[i] || '');
     if (!a.startsWith('--')) {
@@ -658,7 +657,7 @@ function runCmd(dateStr, days, top, maxPromotions) {
 
 function statusCmd(dateStr) {
   const registry = loadRegistry();
-  const all = Object.values(registry.candidates || {});
+  const all = Object.values(registry.candidates || {}) as Array<Record<string, any>>;
   const promotedToday = all.filter((c) => String(c && c.promoted_ts || '').slice(0, 10) === dateStr);
   return {
     ok: true,
@@ -713,3 +712,4 @@ module.exports = {
   runCmd,
   statusCmd
 };
+export {};

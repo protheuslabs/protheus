@@ -1,4 +1,3 @@
-// @ts-nocheck
 'use strict';
 
 const fs = require('fs');
@@ -210,11 +209,12 @@ function appendAdaptivePointerRows(rows) {
 }
 
 function projectAdaptivePointers(relPath, obj, op, meta = {}) {
+  const m = (meta && typeof meta === 'object' ? meta : {}) as Record<string, any>;
   const ts = nowIso();
   const pathRef = `adaptive/${String(relPath || '').replace(/\\/g, '/')}`;
-  const actor = String(meta.actor || process.env.USER || 'unknown').slice(0, 80);
-  const source = String(meta.source || '').slice(0, 120);
-  const reason = String(meta.reason || '').slice(0, 160);
+  const actor = String(m.actor || process.env.USER || 'unknown').slice(0, 80);
+  const source = String(m.source || '').slice(0, 120);
+  const reason = String(m.reason || '').slice(0, 160);
   const rows = [];
 
   if (String(relPath) === 'sensory/eyes/catalog.json' && obj && Array.isArray(obj.eyes)) {
@@ -341,6 +341,7 @@ function atomicWriteJson(absPath, obj) {
 }
 
 function setJson(targetPath, obj, meta = {}) {
+  const m = (meta && typeof meta === 'object' ? meta : {}) as Record<string, any>;
   const { abs, rel } = resolveAdaptivePath(targetPath);
   return withSingleWriter(abs, (lock) => {
     atomicWriteJson(abs, obj);
@@ -348,18 +349,19 @@ function setJson(targetPath, obj, meta = {}) {
       ts: nowIso(),
       op: 'set',
       rel_path: rel,
-      actor: String(meta.actor || process.env.USER || 'unknown').slice(0, 80),
-      source: String(meta.source || '').slice(0, 120),
-      reason: String(meta.reason || 'unspecified').slice(0, 160),
+      actor: String(m.actor || process.env.USER || 'unknown').slice(0, 80),
+      source: String(m.source || '').slice(0, 120),
+      reason: String(m.reason || 'unspecified').slice(0, 160),
       lock_wait_ms: Number(lock && lock.waited_ms || 0),
       value_hash: hash16(JSON.stringify(obj))
     });
-    emitAdaptivePointers(rel, obj, 'set', meta);
+    emitAdaptivePointers(rel, obj, 'set', m);
     return obj;
   });
 }
 
 function ensureJson(targetPath, defaultValue, meta = {}) {
+  const m = (meta && typeof meta === 'object' ? meta : {}) as Record<string, any>;
   const { abs, rel } = resolveAdaptivePath(targetPath);
   return withSingleWriter(abs, (lock) => {
     if (fs.existsSync(abs)) {
@@ -375,18 +377,19 @@ function ensureJson(targetPath, defaultValue, meta = {}) {
       ts: nowIso(),
       op: 'ensure',
       rel_path: rel,
-      actor: String(meta.actor || process.env.USER || 'unknown').slice(0, 80),
-      source: String(meta.source || '').slice(0, 120),
-      reason: String(meta.reason || 'ensure_default').slice(0, 160),
+      actor: String(m.actor || process.env.USER || 'unknown').slice(0, 80),
+      source: String(m.source || '').slice(0, 120),
+      reason: String(m.reason || 'ensure_default').slice(0, 160),
       lock_wait_ms: Number(lock && lock.waited_ms || 0),
       value_hash: hash16(JSON.stringify(next))
     });
-    emitAdaptivePointers(rel, next, 'ensure', meta);
+    emitAdaptivePointers(rel, next, 'ensure', m);
     return next;
   });
 }
 
 function mutateJson(targetPath, mutator, meta = {}) {
+  const m = (meta && typeof meta === 'object' ? meta : {}) as Record<string, any>;
   if (typeof mutator !== 'function') {
     throw new Error('adaptive_store: mutator must be function');
   }
@@ -403,18 +406,19 @@ function mutateJson(targetPath, mutator, meta = {}) {
       ts: nowIso(),
       op: 'set',
       rel_path: rel,
-      actor: String(meta.actor || process.env.USER || 'unknown').slice(0, 80),
-      source: String(meta.source || '').slice(0, 120),
-      reason: String(meta.reason || 'mutate').slice(0, 160),
+      actor: String(m.actor || process.env.USER || 'unknown').slice(0, 80),
+      source: String(m.source || '').slice(0, 120),
+      reason: String(m.reason || 'mutate').slice(0, 160),
       lock_wait_ms: Number(lock && lock.waited_ms || 0),
       value_hash: hash16(JSON.stringify(mutated))
     });
-    emitAdaptivePointers(rel, mutated, 'set', meta);
+    emitAdaptivePointers(rel, mutated, 'set', m);
     return mutated;
   });
 }
 
 function deletePath(targetPath, meta = {}) {
+  const m = (meta && typeof meta === 'object' ? meta : {}) as Record<string, any>;
   const { abs, rel } = resolveAdaptivePath(targetPath);
   if (fs.existsSync(abs)) {
     fs.rmSync(abs, { force: true });
@@ -423,11 +427,11 @@ function deletePath(targetPath, meta = {}) {
     ts: nowIso(),
     op: 'delete',
     rel_path: rel,
-    actor: String(meta.actor || process.env.USER || 'unknown').slice(0, 80),
-    source: String(meta.source || '').slice(0, 120),
-    reason: String(meta.reason || 'delete').slice(0, 160)
+    actor: String(m.actor || process.env.USER || 'unknown').slice(0, 80),
+    source: String(m.source || '').slice(0, 120),
+    reason: String(m.reason || 'delete').slice(0, 160)
   });
-  emitAdaptivePointers(rel, { uid: stableUid(`adaptive_blob|${rel}|v1`, { prefix: 'a', length: 24 }) }, 'delete', meta);
+  emitAdaptivePointers(rel, { uid: stableUid(`adaptive_blob|${rel}|v1`, { prefix: 'a', length: 24 }) }, 'delete', m);
 }
 
 module.exports = {
