@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// @ts-nocheck
 'use strict';
+export {};
 
 /**
  * systems/reflex/reflex_dispatcher.js
@@ -23,6 +23,8 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const { stableUid, randomUid, isAlnum } = require('../../lib/uid.js');
+
+type AnyObj = Record<string, any>;
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const POLICY_PATH = process.env.REFLEX_POLICY_PATH
@@ -94,8 +96,8 @@ function appendJsonl(p, obj) {
   fs.appendFileSync(p, JSON.stringify(row) + '\n', 'utf8');
 }
 
-function parseArgs(argv) {
-  const out = { _: [] };
+function parseArgs(argv: string[]): AnyObj {
+  const out: AnyObj = { _: [] };
   for (const arg of argv) {
     if (!arg.startsWith('--')) {
       out._.push(arg);
@@ -284,14 +286,15 @@ function normalizeRoutineRecord(id, raw, policy) {
   };
 }
 
-function loadRoutinesRegistry(policy, options = {}) {
+function loadRoutinesRegistry(policy, options: AnyObj = {}) {
   const persist = options && options.persist === true;
   const raw = readJson(ROUTINES_PATH, null);
   if (!raw || typeof raw !== 'object') return defaultRoutinesRegistry();
   const routinesIn = raw.routines && typeof raw.routines === 'object' ? raw.routines : {};
-  const routines = {};
+  const routines: AnyObj = {};
   let changed = false;
-  for (const [k, v] of Object.entries(routinesIn)) {
+  for (const [k, vRaw] of Object.entries(routinesIn as AnyObj)) {
+    const v: AnyObj = (vRaw as AnyObj) || {};
     const rec = normalizeRoutineRecord(k, v, policy);
     if (!rec || !rec.id) {
       changed = true;
@@ -319,9 +322,13 @@ function saveRoutinesRegistry(registry) {
 }
 
 function routinesSummary(registry) {
-  const rows = Object.values(registry && registry.routines && typeof registry.routines === 'object' ? registry.routines : {});
-  const enabled = rows.filter((r) => r && r.status === 'enabled').length;
-  const disabled = rows.filter((r) => r && r.status === 'disabled').length;
+  const rows: AnyObj[] = Object.values(
+    registry && registry.routines && typeof registry.routines === 'object'
+      ? (registry.routines as AnyObj)
+      : {}
+  );
+  const enabled = rows.filter((r: AnyObj) => r && r.status === 'enabled').length;
+  const disabled = rows.filter((r: AnyObj) => r && r.status === 'disabled').length;
   return {
     total: rows.length,
     enabled,
@@ -618,7 +625,7 @@ function runWorker(policy, args) {
   return out;
 }
 
-function dispatchRun(policy, state, args, context = {}) {
+function dispatchRun(policy, state, args, context: AnyObj = {}) {
   const input = computeDemandInput(args);
   const spawnStatus = spawnBrokerStatus();
   const bounds = spawnCapacityBounds(policy, spawnStatus.payload || {});
@@ -638,7 +645,7 @@ function dispatchRun(policy, state, args, context = {}) {
   const planApplied = { ...plan, spawn_allocation: allocation.payload };
   const nextState = applyState(policy, state, planApplied);
   const worker = runWorker(policy, args);
-  const out = {
+  const out: AnyObj = {
     ok: spawnStatus.ok && worker.ok,
     ts: nowIso(),
     pool: {
@@ -657,7 +664,7 @@ function dispatchRun(policy, state, args, context = {}) {
   return out;
 }
 
-function cmdStatus() {
+function cmdStatus(_args: AnyObj = {}) {
   const policy = loadPolicy();
   const uidSync = ensureAdaptiveUids(policy);
   const state = loadState(policy);
@@ -737,9 +744,10 @@ function cmdRoutineList(args) {
   const registry = loadRoutinesRegistry(policy, { persist: true });
   const requestedId = normalizeRoutineId(args.id || '');
   const includeAll = toBool(args.all, true);
-  let rows = Object.values(registry.routines || {}).sort((a, b) => String(a.id).localeCompare(String(b.id)));
-  if (!includeAll) rows = rows.filter((r) => r.status === 'enabled');
-  if (requestedId) rows = rows.filter((r) => r.id === requestedId);
+  let rows: AnyObj[] = Object.values((registry.routines as AnyObj) || {})
+    .sort((a: AnyObj, b: AnyObj) => String(a.id).localeCompare(String(b.id)));
+  if (!includeAll) rows = rows.filter((r: AnyObj) => r.status === 'enabled');
+  if (requestedId) rows = rows.filter((r: AnyObj) => r.id === requestedId);
   process.stdout.write(JSON.stringify({
     ok: true,
     ts: nowIso(),
@@ -920,7 +928,7 @@ function cmdRoutineRun(args) {
       : rec.tokens_est
   };
   const state = loadState(policy);
-  const out = dispatchRun(policy, state, runArgs, { routine_id: id });
+  const out: AnyObj = dispatchRun(policy, state, runArgs, { routine_id: id });
   rec.use_count = Math.max(0, Math.round(Number(rec.use_count || 0) || 0)) + 1;
   rec.last_run_at = nowIso();
   rec.updated_at = rec.last_run_at;
