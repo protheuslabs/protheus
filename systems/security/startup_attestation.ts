@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// @ts-nocheck
 'use strict';
 
 /**
@@ -51,7 +50,7 @@ function usage() {
  * @returns {Record<string, any> & { _: string[] }}
  */
 function parseArgs(argv) {
-  const out = { _: [] };
+  const out = { _: [] } as Record<string, any>;
   for (const arg of argv) {
     if (!arg.startsWith('--')) {
       out._.push(arg);
@@ -325,3 +324,4 @@ if (require.main === module) {
     process.exit(1);
   }
 }
+export {};
