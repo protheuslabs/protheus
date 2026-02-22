@@ -113,6 +113,51 @@ function run() {
   assert.strictEqual(replyUnknown.evaluated, false, 'reply/interview row should stay unknown without explicit signal');
   assert.strictEqual(replyUnknown.reason, 'reply_or_interview_count_unavailable');
 
+  const contractBlocked = evaluateSuccessCriteria(
+    opportunityProposal,
+    {
+      capability_key: 'proposal:collector_remediation',
+      outcome: 'shipped',
+      exec_ok: true,
+      dod_passed: true,
+      postconditions_ok: true,
+      queue_outcome_logged: true,
+      dod_diff: { artifacts_delta: 1 },
+      metric_values: { reply_or_interview_count: 2 }
+    },
+    { required: true, min_count: 1 }
+  );
+  assert.strictEqual(contractBlocked.passed, false, 'proposal remediation lane should reject outreach-only criteria');
+  assert.ok(
+    /metric_not_allowed_for_capability|insufficient_supported_metrics/.test(String(contractBlocked.primary_failure || '')),
+    'contract block should fail on capability contract or supported-metric minimum'
+  );
+  assert.ok(
+    Number(contractBlocked.contract && contractBlocked.contract.not_allowed_count || 0) >= 1,
+    'contract should track at least one capability-metric violation'
+  );
+
+  const contractAllowed = evaluateSuccessCriteria(
+    opportunityProposal,
+    {
+      capability_key: 'actuation:moltbook_publish',
+      outcome: 'shipped',
+      exec_ok: true,
+      dod_passed: true,
+      postconditions_ok: true,
+      queue_outcome_logged: true,
+      dod_diff: { artifacts_delta: 1 },
+      metric_values: { reply_or_interview_count: 2 }
+    },
+    { required: true, min_count: 1 }
+  );
+  assert.strictEqual(contractAllowed.passed, true, 'actuation lane should allow outreach criteria');
+  assert.strictEqual(
+    Number(contractAllowed.contract && contractAllowed.contract.not_allowed_count || 0),
+    0,
+    'actuation lane should have zero capability-metric violations'
+  );
+
   console.log('success_criteria_verifier.test.js: OK');
 }
 
