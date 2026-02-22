@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// @ts-nocheck
 'use strict';
 
 /**
@@ -32,7 +31,7 @@ function usage() {
 }
 
 function parseArgs(argv) {
-  const out = { _: [] };
+  const out = { _: [] } as Record<string, any>;
   for (const arg of argv) {
     if (!arg.startsWith('--')) {
       out._.push(arg);
@@ -198,7 +197,11 @@ function summarize(outcomes, proposals) {
       fail_rate: failRate,
       no_change_rate: noChangeRate,
       score,
-      source_eyes: Object.fromEntries(Object.entries(row.source_eyes).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])))
+      source_eyes: Object.fromEntries(
+        Object.entries(row.source_eyes).sort(
+          (a, b) => Number(b[1] || 0) - Number(a[1] || 0) || a[0].localeCompare(b[0])
+        )
+      )
     };
   }).sort((a, b) => b.score - a.score || b.total - a.total || a.proposal_type.localeCompare(b.proposal_type));
 
@@ -248,7 +251,7 @@ function cmdRun(args) {
   const outcomes = loadOutcomeRows(dates);
   const summary = summarize(outcomes, proposals);
 
-  const out = {
+  const out: Record<string, any> = {
     ok: true,
     type: 'weekly_strategy_synthesis',
     ts: nowIso(),
@@ -291,3 +294,4 @@ if (require.main === module) {
     process.exit(1);
   }
 }
+export {};

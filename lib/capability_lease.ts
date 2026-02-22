@@ -1,4 +1,3 @@
-// @ts-nocheck
 'use strict';
 
 const fs = require('fs');
@@ -143,16 +142,17 @@ function unpackToken(token) {
 }
 
 function issueLease(opts = {}) {
+  const o = (opts && typeof opts === 'object' ? opts : {}) as Record<string, any>;
   const keyRes = requireLeaseKey();
   if (!keyRes.ok) return keyRes;
   const key = keyRes.key;
 
-  const scope = normalizeText(opts.scope || '', 180);
+  const scope = normalizeText(o.scope || '', 180);
   if (!scope) return { ok: false, error: 'scope_required' };
-  const target = normalizeText(opts.target || '', 240) || null;
-  const issuedBy = normalizeText(opts.issued_by || 'unknown', 120);
-  const reason = normalizeText(opts.reason || '', 240) || null;
-  const ttlSec = clampInt(opts.ttl_sec, LEASE_MIN_TTL_SEC, LEASE_MAX_TTL_SEC, LEASE_DEFAULT_TTL_SEC);
+  const target = normalizeText(o.target || '', 240) || null;
+  const issuedBy = normalizeText(o.issued_by || 'unknown', 120);
+  const reason = normalizeText(o.reason || '', 240) || null;
+  const ttlSec = clampInt(o.ttl_sec, LEASE_MIN_TTL_SEC, LEASE_MAX_TTL_SEC, LEASE_DEFAULT_TTL_SEC);
   const now = nowMs();
   const exp = now + (ttlSec * 1000);
   const payload = {
@@ -201,6 +201,7 @@ function issueLease(opts = {}) {
 }
 
 function verifyLease(token, opts = {}) {
+  const o = (opts && typeof opts === 'object' ? opts : {}) as Record<string, any>;
   const keyRes = requireLeaseKey();
   if (!keyRes.ok) return keyRes;
   const key = keyRes.key;
@@ -224,11 +225,11 @@ function verifyLease(token, opts = {}) {
     return { ok: false, error: 'lease_expired', lease_id: id, expires_at: payload.expires_at || null };
   }
 
-  const wantScope = normalizeText(opts.scope || '', 180);
+  const wantScope = normalizeText(o.scope || '', 180);
   if (wantScope && scope !== wantScope) {
     return { ok: false, error: 'scope_mismatch', lease_scope: scope, required_scope: wantScope, lease_id: id };
   }
-  const wantTarget = normalizeText(opts.target || '', 240) || null;
+  const wantTarget = normalizeText(o.target || '', 240) || null;
   if (wantTarget && target && target !== wantTarget) {
     return { ok: false, error: 'target_mismatch', lease_target: target, required_target: wantTarget, lease_id: id };
   }
@@ -241,10 +242,10 @@ function verifyLease(token, opts = {}) {
     return { ok: false, error: 'lease_unknown', lease_id: id };
   }
 
-  if (opts.consume === true) {
+  if (o.consume === true) {
     state.consumed[id] = {
       ts: nowIso(),
-      reason: normalizeText(opts.consume_reason || 'consumed', 180) || 'consumed'
+      reason: normalizeText(o.consume_reason || 'consumed', 180) || 'consumed'
     };
     saveLeaseState(state);
     audit({
@@ -262,7 +263,7 @@ function verifyLease(token, opts = {}) {
     scope,
     target,
     expires_at: payload.expires_at || null,
-    consumed: opts.consume === true
+    consumed: o.consume === true
   };
 }
 
@@ -273,3 +274,4 @@ module.exports = {
   LEASE_STATE_PATH,
   LEASE_AUDIT_PATH
 };
+export {};

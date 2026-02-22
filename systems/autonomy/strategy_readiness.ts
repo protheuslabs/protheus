@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// @ts-nocheck
 'use strict';
 
 /**
@@ -27,7 +26,7 @@ function usage() {
 }
 
 function parseArgs(argv) {
-  const out = { _: [] };
+  const out = { _: [] } as Record<string, any>;
   for (const arg of argv) {
     if (!arg.startsWith('--')) {
       out._.push(arg);
@@ -64,6 +63,7 @@ function safeRate(num, den) {
 }
 
 function evaluateReadiness(strategy, summary, policy, requestedDays) {
+  const pol = (policy && typeof policy === 'object' ? policy : {}) as Record<string, any>;
   const runs = summary && summary.runs ? summary.runs : {};
   const receipts = summary && summary.receipts && summary.receipts.combined ? summary.receipts.combined : {};
   const autonomyReceipts = summary && summary.receipts && summary.receipts.autonomy ? summary.receipts.autonomy : {};
@@ -91,16 +91,16 @@ function evaluateReadiness(strategy, summary, policy, requestedDays) {
   const criteriaQualityInsufficientRate = Number.isFinite(criteriaQualityInsufficientRateRaw)
     ? criteriaQualityInsufficientRateRaw
     : safeRate(criteriaQualityInsufficientReceipts, criteriaLegacyReceipts);
-  const minCriteriaReceipts = Number(policy.min_success_criteria_receipts || 0);
-  const minCriteriaPassRate = Number(policy.min_success_criteria_pass_rate || 0.6);
+  const minCriteriaReceipts = Number(pol.min_success_criteria_receipts || 0);
+  const minCriteriaPassRate = Number(pol.min_success_criteria_pass_rate || 0.6);
   const disableLegacyFallbackAfterQualityReceipts = Number(
-    policy.disable_legacy_fallback_after_quality_receipts != null
-      ? policy.disable_legacy_fallback_after_quality_receipts
+    pol.disable_legacy_fallback_after_quality_receipts != null
+      ? pol.disable_legacy_fallback_after_quality_receipts
       : 10
   );
   const maxQualityInsufficientRate = Number(
-    policy.max_success_criteria_quality_insufficient_rate != null
-      ? policy.max_success_criteria_quality_insufficient_rate
+    pol.max_success_criteria_quality_insufficient_rate != null
+      ? pol.max_success_criteria_quality_insufficient_rate
       : 0.4
   );
   const forceQualityCriteria = criteriaQualityReceipts >= Math.max(0, disableLegacyFallbackAfterQualityReceipts);
@@ -110,9 +110,9 @@ function evaluateReadiness(strategy, summary, policy, requestedDays) {
   const criteriaSource = useQualityCriteria
     ? (forceQualityCriteria ? 'quality_forced' : 'quality')
     : 'legacy_fallback';
-  const minObjectiveCoverage = Number(policy.min_objective_coverage || 0);
-  const maxObjectiveNoProgressRate = Number(policy.max_objective_no_progress_rate || 1);
-  const objectiveRows = Object.values(objectiveScorecard);
+  const minObjectiveCoverage = Number(pol.min_objective_coverage || 0);
+  const maxObjectiveNoProgressRate = Number(pol.max_objective_no_progress_rate || 1);
+  const objectiveRows = Object.values(objectiveScorecard as Record<string, any>) as Array<Record<string, any>>;
   const objectiveAttempts = objectiveRows.reduce((acc, row) => acc + Number(row && row.attempts || 0), 0);
   const objectiveNoProgress = objectiveRows.reduce(
     (acc, row) => acc + Number(row && row.no_change || 0) + Number(row && row.reverted || 0),
@@ -122,7 +122,7 @@ function evaluateReadiness(strategy, summary, policy, requestedDays) {
   const objectiveNoProgressRate = safeRate(objectiveNoProgress, objectiveAttempts);
   const revertedRate = safeRate(reverted, executed);
   const stopRatio = safeRate(stopped, totalRuns);
-  const policyDays = Number(policy.min_days || 7);
+  const policyDays = Number(pol.min_days || 7);
   const usedDays = Number(summary && summary.window && summary.window.days || requestedDays || 0);
 
   const checks = [
@@ -306,3 +306,4 @@ if (require.main === module) {
 module.exports = {
   evaluateReadiness
 };
+export {};

@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// @ts-nocheck
 'use strict';
 
 /**
@@ -39,7 +38,7 @@ function usage() {
 }
 
 function parseArgs(argv) {
-  const out = { _: [] };
+  const out = { _: [] } as Record<string, any>;
   for (const arg of argv) {
     if (!arg.startsWith('--')) {
       out._.push(arg);
@@ -176,11 +175,12 @@ function minControlLimit(st, sigma, staticLimit) {
 }
 
 function evaluatePipelineSpcGate(dateStr, options = {}) {
+  const opts = (options && typeof options === 'object' ? options : {}) as Record<string, any>;
   const endDate = isDateStr(dateStr) ? String(dateStr) : todayStr();
-  const days = clampInt(options.days, 1, 30, 1);
-  const baselineDays = clampInt(options.baseline_days, 3, 90, SPC_BASELINE_DAYS);
-  const baselineMinDays = clampInt(options.baseline_min_days, 1, baselineDays, SPC_BASELINE_MIN_DAYS);
-  const sigma = Number.isFinite(Number(options.sigma)) ? Number(options.sigma) : SPC_SIGMA;
+  const days = clampInt(opts.days, 1, 30, 1);
+  const baselineDays = clampInt(opts.baseline_days, 3, 90, SPC_BASELINE_DAYS);
+  const baselineMinDays = clampInt(opts.baseline_min_days, 1, baselineDays, SPC_BASELINE_MIN_DAYS);
+  const sigma = Number.isFinite(Number(opts.sigma)) ? Number(opts.sigma) : SPC_SIGMA;
 
   const current = metricForDate(endDate, days);
   const baselineEnd = shiftDate(endDate, -1);
@@ -330,3 +330,4 @@ if (require.main === module) {
 module.exports = {
   evaluatePipelineSpcGate
 };
+export {};

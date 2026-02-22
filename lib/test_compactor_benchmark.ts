@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// @ts-nocheck
 /**
  * Tool Response Compactor - BENCHMARK TEST
  * 
@@ -260,3 +259,4 @@ fs.writeFileSync(
 console.log(`\n✅ All results saved. Final status: ${finalResults.allPassed ? 'PASS' : 'FAIL'}`);
   process.exit(finalResults.allPassed ? 0 : 1);
 })();
+export {};
