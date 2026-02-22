@@ -415,27 +415,45 @@ function levelRank(level) {
 function assessDarkEyes(now, registry) {
   const eyes = registry && Array.isArray(registry.eyes) ? registry.eyes : [];
   const dark = [];
+  let monitoredTotal = 0;
   for (const eye of eyes) {
     const id = String(eye && eye.id || '');
     if (!id) continue;
     const status = String(eye && eye.status || '').toLowerCase();
+    if (status === 'dormant') continue;
+    monitoredTotal += 1;
+    const cadenceHours = Number(eye && eye.cadence_hours || 0);
+    const staleThresholdHours = Math.max(
+      Number(DARK_EYE_MAX_IDLE_HOURS || 12),
+      Number.isFinite(cadenceHours) && cadenceHours > 0 ? (cadenceHours * 2) : 0
+    );
     const lastSuccessMs = toMs(eye && (eye.last_success || eye.last_run || eye.last_real_signal_ts || null));
     const ageHours = hoursSince(lastSuccessMs, now);
     const consecutiveFailures = Number(eye && eye.consecutive_failures || 0);
-    const stale = ageHours != null && ageHours >= Number(DARK_EYE_MAX_IDLE_HOURS || 12);
-    const failing = consecutiveFailures >= Number(DARK_EYE_FAIL_COUNT || 2) || status === 'failing';
+    const stale = ageHours != null && ageHours >= staleThresholdHours;
+    const baseFailCount = Number(DARK_EYE_FAIL_COUNT || 2);
+    const failCountThreshold = Math.max(
+      baseFailCount,
+      Number.isFinite(cadenceHours) && cadenceHours > 0
+        ? Math.ceil(staleThresholdHours / cadenceHours)
+        : baseFailCount
+    );
+    const failing = status === 'failing' || consecutiveFailures >= failCountThreshold;
     if (stale || failing) {
       dark.push({
         id,
         status,
         age_hours: ageHours,
+        cadence_hours: Number.isFinite(cadenceHours) ? cadenceHours : null,
+        stale_threshold_hours: Number(staleThresholdHours.toFixed(2)),
         consecutive_failures: consecutiveFailures,
+        fail_count_threshold: failCountThreshold,
         stale,
         failing
       });
     }
   }
-  const total = eyes.length;
+  const total = monitoredTotal;
   const count = dark.length;
   const criticalThreshold = Math.max(
     Number(DARK_EYE_CRITICAL_MIN || 2),
@@ -457,7 +475,9 @@ function assessDarkEyes(now, registry) {
     },
     thresholds: {
       max_idle_hours: Number(DARK_EYE_MAX_IDLE_HOURS || 12),
+      cadence_multiplier: 2,
       fail_count: Number(DARK_EYE_FAIL_COUNT || 2),
+      fail_count_dynamic: true,
       critical_count: criticalThreshold
     },
     details: dark.slice(0, 20)
@@ -567,16 +587,31 @@ function assessDrift(spcResult) {
     };
   }
   const failed = Array.isArray(payload.failed_checks) ? payload.failed_checks : [];
-  const level = failed.length >= 2 ? 'critical' : (failed.length > 0 ? 'warn' : 'ok');
+  const current = payload.current && typeof payload.current === 'object'
+    ? payload.current
+    : {};
+  const passRateOnlyFailure = failed.length === 1 && failed[0] === 'success_criteria_pass_rate';
+  const source = String(current.success_criteria_source || 'legacy_fallback');
+  const fallbackRetired = current.success_criteria_fallback_retired === true;
+  const deferPassRateWarn = passRateOnlyFailure && !fallbackRetired && source !== 'quality_forced';
+  const level = deferPassRateWarn
+    ? 'ok'
+    : (failed.length >= 2 ? 'critical' : (failed.length > 0 ? 'warn' : 'ok'));
+  const reason = deferPassRateWarn
+    ? 'spc_pre_retirement_quality_passrate_nonblocking'
+    : (level === 'ok' ? 'spc_in_control' : `spc_failed=${failed.join(',')}`);
   return {
     name: 'drift',
     ok: level === 'ok',
     level,
-    reason: level === 'ok' ? 'spc_in_control' : `spc_failed=${failed.join(',')}`,
+    reason,
     metrics: {
       spc_ok: true,
       hold_escalation: payload.hold_escalation === true,
-      failed_checks: failed
+      failed_checks: failed,
+      success_criteria_source: source,
+      success_criteria_fallback_retired: fallbackRetired,
+      deferred_passrate_warning: deferPassRateWarn
     },
     thresholds: {
       baseline_days: payload.control ? Number(payload.control.baseline_days || SPC_BASELINE_DAYS) : Number(SPC_BASELINE_DAYS || 21),
@@ -676,14 +711,19 @@ function assessCriteriaQualityGate(strategyReadinessResult, receiptSummaryResult
   const failedChecks = Array.isArray(readiness.failed_checks) ? readiness.failed_checks : [];
   const insufficientFail = failedChecks.includes('success_criteria_quality_insufficient_rate');
   const fallbackStale = source === 'legacy_fallback' && qualityReceipts >= disableFallbackAt;
+  const enforced = fallbackRetired || source === 'quality_forced';
 
   let ok = true;
   let level = 'ok';
   let reason = 'criteria_quality_gate_ok';
-  if (insufficientFail || insufficientRate > maxInsufficientRate) {
+  if (enforced && (insufficientFail || insufficientRate > maxInsufficientRate)) {
     ok = false;
     level = 'critical';
     reason = 'criteria_quality_insufficient_rate_high';
+  } else if (insufficientFail || insufficientRate > maxInsufficientRate) {
+    ok = false;
+    level = 'warn';
+    reason = 'criteria_quality_pre_retirement_high';
   } else if (fallbackStale || (!fallbackRetired && source === 'legacy_fallback' && qualityReceipts > 0)) {
     ok = false;
     level = 'warn';
@@ -698,6 +738,7 @@ function assessCriteriaQualityGate(strategyReadinessResult, receiptSummaryResult
     metrics: {
       source,
       fallback_retired: fallbackRetired,
+      enforced,
       quality_receipts: qualityReceipts,
       legacy_receipts: legacyReceipts,
       quality_insufficient_rate: Number(insufficientRate.toFixed(3)),

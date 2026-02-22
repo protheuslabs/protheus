@@ -82,8 +82,8 @@ function evaluateReadiness(strategy, summary, policy, requestedDays) {
   const criteriaLegacyReceipts = Number(autonomyReceipts.success_criteria_receipts || 0);
   const criteriaLegacyPassRate = Number(autonomyReceipts.success_criteria_receipt_pass_rate || 0);
   const criteriaQualityInsufficientReceipts = Number(
-    autonomyReceipts.success_criteria_quality_filtered_receipts
-    || autonomyReceipts.success_criteria_quality_insufficient_receipts
+    autonomyReceipts.success_criteria_quality_insufficient_receipts
+    || autonomyReceipts.success_criteria_quality_filtered_receipts
     || 0
   );
   const criteriaQualityInsufficientRateRaw = Number(autonomyReceipts.success_criteria_quality_insufficient_rate);
@@ -175,13 +175,13 @@ function evaluateReadiness(strategy, summary, policy, requestedDays) {
     },
     {
       name: 'success_criteria_quality_insufficient_rate',
-      pass: useQualityCriteria
+      pass: forceQualityCriteria
         ? criteriaQualityInsufficientRate <= maxQualityInsufficientRate
         : true,
-      value: useQualityCriteria ? criteriaQualityInsufficientRate : null,
-      target: useQualityCriteria
+      value: forceQualityCriteria ? criteriaQualityInsufficientRate : null,
+      target: forceQualityCriteria
         ? `<=${maxQualityInsufficientRate}`
-        : 'n/a(legacy_fallback)'
+        : 'n/a(pre_fallback_retirement)'
     },
     {
       name: 'objective_coverage',

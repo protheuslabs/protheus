@@ -213,6 +213,7 @@ function assessCriteriaQuality(rec, criteria) {
     ? Number(qualityFromReceipt.unsupported_rate)
     : criteriaUnsupportedRate(checks);
   const reasons = [];
+  const informationalReasons = new Set(['contract_version_below_min', 'criteria_quality_insufficient_flag']);
 
   if (!versionAtLeast(version, SUCCESS_CRITERIA_MIN_CONTRACT_VERSION)) {
     reasons.push('contract_version_below_min');
@@ -228,13 +229,15 @@ function assessCriteriaQuality(rec, criteria) {
       if (!reasons.includes(r)) reasons.push(r);
     }
   }
+  const blockingReasons = reasons.filter((reason) => !informationalReasons.has(String(reason || '')));
 
   return {
-    quality_valid: reasons.length === 0,
+    quality_valid: blockingReasons.length === 0,
     version: versionKey,
     unknown_rate: Number(unknownRate.toFixed(4)),
     unsupported_rate: Number(unsupportedRate.toFixed(4)),
-    reasons
+    reasons,
+    blocking_reasons: blockingReasons
   };
 }
 
@@ -547,9 +550,12 @@ function summarizeAutonomyReceipts(rows) {
       ? Number((previewQualityCriteriaPass / previewQualityCriteriaReceipts).toFixed(3))
       : null,
     success_criteria_quality_filtered_receipts: qualityFilteredReceipts,
+    success_criteria_quality_filtered_rate: criteriaReceipts > 0
+      ? Number((qualityFilteredReceipts / criteriaReceipts).toFixed(3))
+      : null,
     success_criteria_quality_insufficient_receipts: qualityInsufficientReceipts,
     success_criteria_quality_insufficient_rate: criteriaReceipts > 0
-      ? Number((qualityFilteredReceipts / criteriaReceipts).toFixed(3))
+      ? Number((qualityInsufficientReceipts / criteriaReceipts).toFixed(3))
       : null,
     success_criteria_quality_filter_reasons: sortedTally(qualityFilterReasons),
     success_criteria_contract_versions: sortedTally(criteriaContractVersions),

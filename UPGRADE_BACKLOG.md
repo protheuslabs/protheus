@@ -17,6 +17,11 @@ Status legend:
 | BL-003 | done | Autonomy receipt dashboard/summary | Make pass/fail verification visible without raw log digging | Daily summary command/report shows receipt pass rate + top failure reasons |
 | BL-013 | done | AGI security/governance hardening pack | Prevent capability-overhang failures as model capability increases | Dual-control approval for strategy mode escalation + non-bypass budget/risk caps + immutable policy/kernel verification + one-command emergency stop path tested |
 | BL-017 | done | Autonomous skill-add with necessity justification gate | Allow Protheus to add skills safely only when operationally justified | `install_skill_safe.js` enforces necessity scoring for `--autonomous=1` installs using policy-defined structured justification (`problem`, `repeat_frequency`, `expected_time_or_token_savings`, `risk_class`, `why_existing_habits_or_skills_insufficient`); novelty-only reasons are blocked with receipts |
+| BL-036 | todo | Strategic alignment oracle (weekly) | Keep unattended autonomy optimizing for T1 outcomes instead of infrastructure churn | Weekly scorer writes `alignment_score` from weighted rubric (revenue potential, compounding value, risk reduction, learning velocity), emits escalation after two consecutive low-score weeks, and links each score to receipts/proposals |
+| BL-037 | todo | Exception novelty classifier + recovery policy | Prevent retry spirals and route genuinely new failures to human review quickly | Classifier labels exceptions as known/novel with signature memory, known errors follow deterministic recovery playbooks, novel errors trigger human escalation + temporary guard cooldown, and outcomes feed back into exception memory |
+| BL-038 | todo | Global cost governor + autopause guardrails | Enforce hard resource boundaries across autonomy/reflex/focus/dream paths | Unified daily/monthly budget policies apply to all adaptive executors, burn-rate spike and low-credit thresholds trigger automatic pause/degrade actions, and every block/allow decision is audit-logged with reason |
+| BL-039 | done | Dream-to-upstream signal bridge | Ensure dream outputs influence proposal/admission/ranking instead of remaining passive artifacts | Proposal enrichment/autonomy ranking ingest dream tokens/themes (bounded influence + audit fields), and runs emit measurable dream-hit attribution in proposal metadata |
+| BL-040 | done | Adaptive dream-model failover + cooldown memory | Prevent repeated `smallthinker` timeout loops and keep dream cycle resilient | Idle/REM model selection records per-model timeout/error history, applies cooldown/backoff, auto-fails over to alternate local models, and logs fallback reasons deterministically |
 
 ## P1
 
@@ -50,6 +55,9 @@ Status legend:
 | BL-033 | done | Quorum validator for high-tier self-modification proposals | Add independent cross-check before risky self-edits are applied | High-tier mutation proposals require deterministic second-pass validator agreement before admission; disagreement blocks with explainable receipt |
 | BL-034 | done | Operator runbook for incidents + rollback drills | Reduce time-to-recover and remove tribal-knowledge dependency during failures | Implemented in `docs/OPERATOR_RUNBOOK.md` with top incident classes (routing degraded, schema drift, sensory starvation, autonomy stall), deterministic remediation, rollback drill, and verification artifacts |
 | BL-035 | done | Required-Checks branch protection policy | Prevent contract/security regressions from merging without gates | Implemented `.github/CODEOWNERS`, `.github/workflows/required-checks.yml`, `docs/BRANCH_PROTECTION_POLICY.md`, and local `npm run guard:merge` gates requiring `test:ci`, `contract_check`, `schema_contract_check`, and adaptive guard strict checks |
+| BL-041 | doing | Batch execution lane for low-urgency LLM work | Capture major token-cost reductions on deferable workloads without hurting latency-critical tasks | Add queueable batch adapter path for low-urgency tasks with deterministic SLA/expiry rules, per-task receipts, and measured token-cost delta vs non-batch baseline |
+| BL-042 | todo | Prompt/result cache with TTL + invalidation policy | Reduce repeated LLM spend on near-identical requests while preserving correctness | Router/execution cache stores normalized prompt fingerprints with TTL + source invalidation hooks; cache-hit telemetry and stale-guard checks are logged and auditable |
+| BL-043 | todo | Parallel eyes execution with budget-aware concurrency | Improve sensory throughput without budget/network spikes | Spine/eyes runner supports bounded parallel collectors, honors global budget + egress limits, and records per-run concurrency, request counts, and degradation events |
 
 ## P2
 
@@ -57,6 +65,16 @@ Status legend:
 |---|---|---|---|---|
 | BL-007 | done | Backup integrity checks | Catch silent backup corruption | Scheduled hash verification and alert on mismatch |
 | BL-008 | done | Repo hygiene CI check for generated artifacts | Prevent noisy files slipping into PRs | CI fails if generated paths are staged unexpectedly |
+
+## V2
+
+| ID | Status | Upgrade | Why | Exit Criteria |
+|---|---|---|---|---|
+| V2-001 | todo | Full repo TypeScript conversion (`.js` -> `.ts`) | Improve long-term maintainability and refactor safety once V1 critical-path typing is stable | Execute staged conversion waves across remaining directories, preserve runtime/contract parity, and pass full typecheck + contract + integration checks without `@ts-nocheck` |
+| V2-002 | todo | Explore polyglot service modules behind strict contracts | Enable targeted non-TS modules only where ROI is proven (ecosystem/security/hot path) without creating architecture drift | Publish module contract spec (stdin/stdout JSON + receipt parity), ship one pilot module with benchmark + rollback path, and pass contract + integration tests with no control-plane changes outside adapters |
+| V2-003 | todo | Dist runtime cutover + legacy paired JS retirement | Remove long-term TS/JS dual-maintenance cost without breaking runtime contracts | Runtime entrypoints and contract checks execute from deterministic `dist/` build output, paired in-tree compatibility JS removed after parity verification + rollback plan |
+| V2-006 | todo | Task-type outcome learning upgrade | Improve model/tool routing quality using empirical task success patterns | Routing/ranking consumes rolling success matrix by task type and capability (not just availability), fallback chains auto-adjust after repeated failures, and offline report shows measurable uplift vs baseline policy |
+| V2-007 | todo | Self-experimentation framework with promotion gates | Let system improve methods safely via evidence-based trials | A/B harness compares incumbent vs candidate workflows on matched tasks, promotion requires statistically meaningful improvement + safety parity, and failed experiments auto-revert with receipts and summary reports |
 
 ## Notes
 

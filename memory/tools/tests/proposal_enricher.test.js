@@ -37,8 +37,11 @@ function run() {
   const repoRoot = path.resolve(__dirname, '..', '..', '..');
   const eyesConfigPath = path.join(repoRoot, 'adaptive', 'sensory', 'eyes', 'catalog.json');
   const eyesRegistryPath = path.join(sensoryDir, 'eyes', 'registry.json');
+  const dreamsDir = path.join(tmpRoot, 'state', 'memory', 'dreams');
   const eyesConfigBefore = fs.existsSync(eyesConfigPath) ? fs.readFileSync(eyesConfigPath, 'utf8') : null;
   const outcomePolicyBefore = process.env.OUTCOME_FITNESS_POLICY_PATH;
+  const dreamsDirBefore = process.env.PROPOSAL_ENRICHER_DREAMS_DIR;
+  const dreamBonusCapBefore = process.env.AUTONOMY_DREAM_DIRECTIVE_BONUS_CAP;
   const outcomePolicyPath = path.join(tmpRoot, 'outcome_fitness.json');
   const objectiveId = (() => {
     try {
@@ -62,6 +65,8 @@ function run() {
     process.env.AUTONOMY_MIN_DIRECTIVE_FIT = '20';
     process.env.AUTONOMY_MIN_ACTIONABILITY_SCORE = '35';
     process.env.AUTONOMY_MIN_COMPOSITE_ELIGIBILITY = '45';
+    process.env.AUTONOMY_DREAM_DIRECTIVE_BONUS_CAP = '6';
+    process.env.PROPOSAL_ENRICHER_DREAMS_DIR = dreamsDir;
     fs.writeFileSync(outcomePolicyPath, JSON.stringify({
       strategy_policy: {
         proposal_type_threshold_offsets: {
@@ -96,6 +101,25 @@ function run() {
           parser_type: 'local_state_digest',
           score_ema: 68
         }
+      ]
+    }, null, 2));
+    mkDir(dreamsDir);
+    mkDir(path.join(dreamsDir, 'rem'));
+    fs.writeFileSync(path.join(dreamsDir, `${date}.json`), JSON.stringify({
+      ts: `${date}T00:00:00.000Z`,
+      date,
+      themes: [
+        { token: 'automation', score: 91 },
+        { token: 'reliability', score: 85 }
+      ]
+    }, null, 2));
+    fs.writeFileSync(path.join(dreamsDir, 'rem', `${date}.json`), JSON.stringify({
+      ts: `${date}T00:00:00.000Z`,
+      type: 'rem_quantized',
+      date,
+      quantized: [
+        { token: 'automation', weight: 24 },
+        { token: 'collector', weight: 12 }
       ]
     }, null, 2));
 
@@ -157,6 +181,9 @@ function run() {
     assert.ok(Number(out.changed) >= 1, 'should enrich at least one proposal');
     assert.ok(out.admission && typeof out.admission === 'object', 'should return admission summary');
     assert.ok(out.objective_binding && typeof out.objective_binding === 'object', 'should return objective binding summary');
+    assert.ok(out.dream_alignment && typeof out.dream_alignment === 'object', 'should return dream alignment summary');
+    assert.strictEqual(out.dream_alignment.available, true, 'dream alignment should be available when dream inputs exist');
+    assert.ok(Number(out.dream_alignment.tokens_loaded || 0) >= 2, 'dream alignment should load dream tokens');
 
     const enriched = readJson(proposalsPath);
     assert.ok(Array.isArray(enriched), 'output file should remain array');
@@ -178,6 +205,12 @@ function run() {
     assert.ok(low.meta && Number.isFinite(Number(low.meta.signal_quality_score)), 'low proposal has signal score');
     assert.ok(low.meta && Number.isFinite(Number(low.meta.relevance_score)), 'low proposal has relevance score');
     assert.ok(low.meta && Number.isFinite(Number(low.meta.directive_fit_score)), 'low proposal has directive fit score');
+    assert.ok(Number(low.meta.directive_fit_score || 0) >= Number(low.meta.directive_fit_base_score || 0), 'dream bonus should not reduce directive fit');
+    assert.ok(Number(low.meta.dream_alignment_bonus || 0) >= 1, 'low proposal should receive bounded dream bonus');
+    assert.ok(
+      Array.isArray(low.meta.dream_alignment_tokens) && low.meta.dream_alignment_tokens.includes('automation'),
+      'dream alignment should record matching token evidence'
+    );
     assert.ok(low.meta && Number.isFinite(Number(low.meta.actionability_score)), 'low proposal has actionability score');
     assert.ok(low.meta && Number.isFinite(Number(low.meta.composite_eligibility_score)), 'low proposal has composite score');
     assert.strictEqual(
@@ -308,6 +341,7 @@ function run() {
     assert.strictEqual(Number(out.objective_binding.missing_required || 0), 0, 'summary should report zero missing required objective bindings');
     assert.strictEqual(Number(out.objective_binding.invalid_required || 0), 0, 'summary should report zero invalid required objective bindings');
     assert.ok(Number(out.objective_binding.source_meta_required || 0) >= 1, 'summary should report meta-sourced required objective bindings');
+    assert.ok(Number(out.dream_alignment.proposals_with_bonus || 0) >= 1, 'dream summary should report proposals with bonus');
 
     banner('✅ PROPOSAL ENRICHER TESTS PASS');
   } finally {
@@ -318,6 +352,10 @@ function run() {
     }
     if (outcomePolicyBefore == null) delete process.env.OUTCOME_FITNESS_POLICY_PATH;
     else process.env.OUTCOME_FITNESS_POLICY_PATH = outcomePolicyBefore;
+    if (dreamsDirBefore == null) delete process.env.PROPOSAL_ENRICHER_DREAMS_DIR;
+    else process.env.PROPOSAL_ENRICHER_DREAMS_DIR = dreamsDirBefore;
+    if (dreamBonusCapBefore == null) delete process.env.AUTONOMY_DREAM_DIRECTIVE_BONUS_CAP;
+    else process.env.AUTONOMY_DREAM_DIRECTIVE_BONUS_CAP = dreamBonusCapBefore;
   }
 }
 
