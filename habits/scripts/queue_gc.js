@@ -15,10 +15,10 @@
  *   node habits/scripts/queue_gc.js run [YYYY-MM-DD] [--cap-per-eye=N] [--ttl-hours=N]
  *
  * Env:
- *   QUEUE_DIR=state/queue (optional override)
+ *   QUEUE_DIR=state/queue (legacy optional override)
  *
  * Notes:
- * - Calls proposal_queue.js reject command (decision event, deterministic).
+ * - Calls sensory_queue.js reject command (decision event, deterministic).
  * - If we cannot parse timestamps, TTL rule is skipped for that item.
  */
 
@@ -38,8 +38,9 @@ function todayOr(dateStr) {
 }
 
 function asInt(x, dflt) {
+  if (x == null || String(x).trim() === "") return dflt;
   const n = Number(x);
-  return Number.isFinite(n) ? n : dflt;
+  return Number.isFinite(n) ? Math.floor(n) : dflt;
 }
 
 function repoRoot() {
@@ -54,6 +55,112 @@ function readJsonl(filePath) {
     const l = line.trim();
     if (!l) continue;
     try { out.push(JSON.parse(l)); } catch {}
+  }
+  return out;
+}
+
+function readJsonSafe(filePath, fallback) {
+  try {
+    return JSON.parse(fs.readFileSync(filePath, "utf8"));
+  } catch {
+    return fallback;
+  }
+}
+
+function resolveSensoryQueueLogPath(repo) {
+  const testDir = String(process.env.SENSORY_QUEUE_TEST_DIR || "").trim();
+  if (testDir) {
+    return path.join(testDir, "state", "sensory", "queue_log.jsonl");
+  }
+  const override = String(process.env.QUEUE_GC_QUEUE_LOG || "").trim();
+  if (override) {
+    return path.isAbsolute(override) ? override : path.join(repo, override);
+  }
+  return path.join(repo, "state", "sensory", "queue_log.jsonl");
+}
+
+function loadSensoryQueueStatus(repo) {
+  const queueLog = resolveSensoryQueueLogPath(repo);
+  const rows = readJsonl(queueLog)
+    .filter((row) => row && typeof row === 'object')
+    .sort((a, b) => new Date(String(a.ts || 0)) - new Date(String(b.ts || 0)));
+  const statusById = new Map();
+  for (const row of rows) {
+    const id = String(row && row.proposal_id || '').trim();
+    if (!id || id === 'UNKNOWN') continue;
+    const t = String(row && row.type || '').trim().toLowerCase();
+    if (t === 'proposal_generated') {
+      statusById.set(id, 'open');
+      continue;
+    }
+    if (t === 'proposal_filtered') { statusById.set(id, 'filtered'); continue; }
+    if (t === 'proposal_accepted') { statusById.set(id, 'accepted'); continue; }
+    if (t === 'proposal_rejected') { statusById.set(id, 'rejected'); continue; }
+    if (t === 'proposal_done') { statusById.set(id, 'done'); continue; }
+    if (t === 'proposal_snoozed') {
+      const until = String(row && row.snooze_until || '').trim();
+      if (until && new Date(until) > new Date()) statusById.set(id, 'snoozed');
+      else statusById.set(id, 'open');
+    }
+  }
+  return statusById;
+}
+
+function loadBudgetPressure(repo, dateStr) {
+  const tuningEnabled = String(process.env.QUEUE_GC_BUDGET_TUNING_ENABLED || "1") !== "0";
+  if (!tuningEnabled) return { pressure: "none", source: "disabled" };
+
+  const override = String(process.env.QUEUE_GC_BUDGET_PRESSURE || "").trim().toLowerCase();
+  if (override === "none" || override === "soft" || override === "hard") {
+    return { pressure: override, source: "env_override" };
+  }
+
+  const autopausePath = path.join(repo, "state", "autonomy", "budget_autopause.json");
+  const autopause = readJsonSafe(autopausePath, null);
+  if (autopause && autopause.active === true) {
+    const until = String(autopause.until || "").trim();
+    const untilMs = Date.parse(until);
+    if (!Number.isFinite(untilMs) || untilMs > Date.now()) {
+      return { pressure: "hard", source: "autopause" };
+    }
+  }
+
+  try {
+    const status = spawnSync(
+      "node",
+      ["systems/budget/system_budget.js", "status", dateStr, "--request_tokens_est=0"],
+      { cwd: repo, encoding: "utf8" }
+    );
+    if (status.status === 0) {
+      const payload = JSON.parse(String(status.stdout || "{}"));
+      const p = String(payload && payload.projection && payload.projection.pressure || "")
+        .trim()
+        .toLowerCase();
+      if (p === "none" || p === "soft" || p === "hard") {
+        return { pressure: p, source: "system_budget_status" };
+      }
+    }
+  } catch {
+    // Keep deterministic fallback.
+  }
+  return { pressure: "none", source: "fallback" };
+}
+
+function tuneGcByBudget(base, pressure) {
+  const out = {
+    capPerEye: Number(base.capPerEye || 10),
+    capPerType: Number(base.capPerType || 25),
+    ttlHours: Number(base.ttlHours || 48),
+    pressure: pressure || "none"
+  };
+  if (pressure === "hard") {
+    out.capPerEye = Math.max(1, asInt(process.env.QUEUE_GC_HARD_CAP_PER_EYE, Math.floor(out.capPerEye * 0.5)));
+    out.capPerType = Math.max(1, asInt(process.env.QUEUE_GC_HARD_CAP_PER_TYPE, Math.floor(out.capPerType * 0.6)));
+    out.ttlHours = Math.max(1, asInt(process.env.QUEUE_GC_HARD_TTL_HOURS, Math.floor(out.ttlHours * 0.5)));
+  } else if (pressure === "soft") {
+    out.capPerEye = Math.max(1, asInt(process.env.QUEUE_GC_SOFT_CAP_PER_EYE, Math.floor(out.capPerEye * 0.8)));
+    out.capPerType = Math.max(1, asInt(process.env.QUEUE_GC_SOFT_CAP_PER_TYPE, Math.floor(out.capPerType * 0.85)));
+    out.ttlHours = Math.max(1, asInt(process.env.QUEUE_GC_SOFT_TTL_HOURS, Math.floor(out.ttlHours * 0.8)));
   }
   return out;
 }
@@ -130,38 +237,104 @@ function isLowImpact(p) {
   return v === "low" || v === "";
 }
 
+function extractProposalType(p) {
+  const direct = (p && p.type) ? String(p.type).trim().toLowerCase() : "";
+  if (direct) return direct;
+  const alt = (p && p.proposal_type) ? String(p.proposal_type).trim().toLowerCase() : "";
+  if (alt) return alt;
+  return "unknown";
+}
+
+function normalizeDedupText(v) {
+  return String(v == null ? "" : v)
+    .toLowerCase()
+    .replace(/\[[^\]]+\]/g, " ")
+    .replace(/["'`]/g, "")
+    .replace(/\b\d+(\.\d+)?\b/g, "#")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 200);
+}
+
+function proposalTopicHint(p) {
+  const title = String(p && p.title || "");
+  const match = title.match(/topic\s+"([^"]+)"/i);
+  if (!match) return "";
+  return normalizeDedupText(match[1]);
+}
+
+function proposalDedupKey(it) {
+  const p = it && it.raw && typeof it.raw === "object" ? it.raw : {};
+  const type = String(it && it.type || "unknown").trim().toLowerCase() || "unknown";
+  const eye = String(it && it.eye || "unknown_eye").trim().toLowerCase() || "unknown_eye";
+  const titleNorm = normalizeDedupText(p.title || "");
+  if (type === "cross_signal_opportunity") {
+    const topic = proposalTopicHint(p) || titleNorm;
+    const dir = /\bdiverging\b/i.test(String(p.title || ""))
+      ? "diverging"
+      : (/\bconverging\b/i.test(String(p.title || "")) ? "converging" : "unknown");
+    return `${type}|${topic}|${dir}`;
+  }
+  if (type.startsWith("pain") || type.includes("escalation")) {
+    const code = normalizeDedupText(p && p.meta && p.meta.pain_code);
+    const source = normalizeDedupText(p && p.meta && p.meta.source_eye);
+    return `${type}|${source || eye}|${code}|${titleNorm}`;
+  }
+  return `${type}|${eye}|${titleNorm}`;
+}
+
+function isEscalationType(type) {
+  const t = String(type || "").trim().toLowerCase();
+  if (!t) return false;
+  return t.includes("escalation") || t.startsWith("pain");
+}
+
 function rejectProposal(repo, proposalId, reason) {
-  const script = path.join(repo, "habits", "scripts", "proposal_queue.js");
-  const r = spawnSync("node", [script, "reject", proposalId, reason], { stdio: "inherit" });
+  const script = path.join(repo, "habits", "scripts", "sensory_queue.js");
+  const r = spawnSync("node", [script, "reject", proposalId, `--reason=${reason}`], { stdio: "inherit" });
   if (r.status !== 0) process.exit(r.status || 1);
 }
 
 function main() {
   const mode = process.argv[2];
   const dateStr = todayOr(process.argv[3]);
-  const capPerEye = asInt(arg("cap-per-eye"), 10);
-  const ttlHours = asInt(arg("ttl-hours"), 48);
+  const baseCapPerEye = Math.max(1, asInt(arg("cap-per-eye"), 10));
+  const baseCapPerType = Math.max(1, asInt(arg("cap-per-type"), Number(process.env.QUEUE_GC_CAP_PER_TYPE || 25)));
+  const baseTtlHours = Math.max(1, asInt(arg("ttl-hours"), 48));
+  const escalationTtlHours = Math.max(
+    1,
+    asInt(arg("escalation-ttl-hours"), Number(process.env.QUEUE_GC_ESCALATION_TTL_HOURS || 16))
+  );
 
   if (!mode || mode === "--help" || mode === "-h") {
     console.log("Usage:");
-    console.log("  node habits/scripts/queue_gc.js run [YYYY-MM-DD] [--cap-per-eye=N] [--ttl-hours=N]");
+    console.log("  node habits/scripts/queue_gc.js run [YYYY-MM-DD] [--cap-per-eye=N] [--cap-per-type=N] [--ttl-hours=N]");
     process.exit(0);
   }
 
   if (mode !== "run") {
     console.error("Usage:");
-    console.error("  node habits/scripts/queue_gc.js run [YYYY-MM-DD] [--cap-per-eye=N] [--ttl-hours=N]");
+    console.error("  node habits/scripts/queue_gc.js run [YYYY-MM-DD] [--cap-per-eye=N] [--cap-per-type=N] [--ttl-hours=N]");
     process.exit(2);
   }
 
   const repo = repoRoot();
+  const budgetPressure = loadBudgetPressure(repo, dateStr);
+  const tuned = tuneGcByBudget(
+    { capPerEye: baseCapPerEye, capPerType: baseCapPerType, ttlHours: baseTtlHours },
+    budgetPressure.pressure
+  );
+  const capPerEye = tuned.capPerEye;
+  const capPerType = tuned.capPerType;
+  const ttlHours = tuned.ttlHours;
   const queueDir = path.join(repo, process.env.QUEUE_DIR || path.join("state", "queue"));
 
-  // Try a few plausible storage locations (keep this resilient).
+  // Try storage locations in priority order (legacy queue + active sensory proposals).
   const proposalsPath = findFirstExisting([
     path.join(queueDir, "proposals.jsonl"),
     path.join(queueDir, "proposals", `${dateStr}.jsonl`),
-    path.join(queueDir, "proposals", `${dateStr}.json`)
+    path.join(queueDir, "proposals", `${dateStr}.json`),
+    path.join(repo, "state", "sensory", "proposals", `${dateStr}.json`)
   ]);
 
   if (!proposalsPath) {
@@ -172,6 +345,7 @@ function main() {
   const proposals = proposalsPath.endsWith(".json")
     ? JSON.parse(fs.readFileSync(proposalsPath, "utf8"))
     : readJsonl(proposalsPath);
+  const queueStatusById = loadSensoryQueueStatus(repo);
 
   // Normalize and index OPEN proposals.
   const open = [];
@@ -181,9 +355,12 @@ function main() {
     if (st !== "open") continue;
     const id = (p.id || "").toString().trim();
     if (!id) continue;
+    const queueStatus = String(queueStatusById.get(id) || '').toLowerCase();
+    if (queueStatus && queueStatus !== 'open') continue;
     open.push({
       id,
       eye: extractEyeId(p),
+      type: extractProposalType(p),
       ts: parseTs(p),
       lowImpact: isLowImpact(p),
       raw: p
@@ -206,9 +383,44 @@ function main() {
   const ttlRejectIds = new Set(ttlReject.map(x => x.id));
   const remaining = open.filter(x => !ttlRejectIds.has(x.id));
 
-  // Group remaining by eye
+  // 2) Dedup reject (keep newest by semantic key)
+  const dedupReject = [];
+  const dedupEnabled = String(process.env.QUEUE_GC_DEDUP_ENABLED || "1") !== "0";
+  const dedupSeen = new Set();
+  if (dedupEnabled) {
+    const newestFirst = remaining.slice().sort((a, b) => {
+      const at = a.ts ? a.ts.getTime() : Number.MAX_SAFE_INTEGER;
+      const bt = b.ts ? b.ts.getTime() : Number.MAX_SAFE_INTEGER;
+      return bt - at;
+    });
+    for (const it of newestFirst) {
+      const key = proposalDedupKey(it);
+      if (!key || key.endsWith("|")) continue;
+      if (dedupSeen.has(key)) {
+        dedupReject.push(it);
+        continue;
+      }
+      dedupSeen.add(key);
+    }
+  }
+
+  const dedupRejectIds = new Set(dedupReject.map((x) => x.id));
+  const remainingAfterDedup = remaining.filter((x) => !dedupRejectIds.has(x.id));
+
+  // 3) Escalation TTL reject (prevents stale pain/escalation churn)
+  const escalationReject = [];
+  for (const it of remainingAfterDedup) {
+    if (!isEscalationType(it.type)) continue;
+    if (!it.ts) continue;
+    const ageHours = (now.getTime() - it.ts.getTime()) / (1000 * 60 * 60);
+    if (ageHours > escalationTtlHours) escalationReject.push(it);
+  }
+  const escalationRejectIds = new Set(escalationReject.map((x) => x.id));
+  const remainingForCaps = remainingAfterDedup.filter((x) => !escalationRejectIds.has(x.id));
+
+  // 4) Group remaining by eye
   const byEye = new Map(); // eye -> items
-  for (const it of remaining) {
+  for (const it of remainingForCaps) {
     if (!byEye.has(it.eye)) byEye.set(it.eye, []);
     byEye.get(it.eye).push(it);
   }
@@ -226,13 +438,38 @@ function main() {
     capReject.push(...overflow);
   }
 
-  const toReject = [...ttlReject, ...capReject];
+  // 5) Per-type cap reject (oldest first), after TTL + dedup + escalation + per-eye rejections are selected
+  const preSelectedIds = new Set([...ttlReject, ...dedupReject, ...escalationReject, ...capReject].map((it) => it.id));
+  const remainingForType = open.filter((it) => !preSelectedIds.has(it.id));
+  const byType = new Map();
+  for (const it of remainingForType) {
+    const key = String(it.type || "unknown").trim().toLowerCase() || "unknown";
+    if (!byType.has(key)) byType.set(key, []);
+    byType.get(key).push(it);
+  }
+  const typeCapReject = [];
+  for (const [type, items] of byType.entries()) {
+    items.sort((a, b) => {
+      const at = a.ts ? a.ts.getTime() : Number.MAX_SAFE_INTEGER;
+      const bt = b.ts ? b.ts.getTime() : Number.MAX_SAFE_INTEGER;
+      return bt - at;
+    });
+    if (items.length <= capPerType) continue;
+    const overflow = items.slice(capPerType);
+    typeCapReject.push(...overflow);
+  }
+
+  const toReject = [...ttlReject, ...dedupReject, ...escalationReject, ...capReject, ...typeCapReject];
   if (!toReject.length) {
-    console.log(`queue_gc: no actions (OPEN=${open.length}, cap_per_eye=${capPerEye}, ttl_hours=${ttlHours})`);
+    console.log(
+      `queue_gc: no actions (OPEN=${open.length}, cap_per_eye=${capPerEye}, cap_per_type=${capPerType}, ttl_hours=${ttlHours}, escalation_ttl_hours=${escalationTtlHours}, budget_pressure=${budgetPressure.pressure}, pressure_source=${budgetPressure.source})`
+    );
     process.exit(0);
   }
 
-  console.log(`queue_gc: rejecting ${toReject.length} proposals (OPEN=${open.length})`);
+  console.log(
+    `queue_gc: rejecting ${toReject.length} proposals (OPEN=${open.length}, dedup=${dedupReject.length}, escalation_ttl=${escalationReject.length}, type_cap=${typeCapReject.length}, budget_pressure=${budgetPressure.pressure}, pressure_source=${budgetPressure.source})`
+  );
 
   // Deterministic order: TTL rejects first (oldest first), then cap rejects (oldest first)
   function oldestFirst(a, b) {
@@ -241,15 +478,30 @@ function main() {
     return at - bt;
   }
   ttlReject.sort(oldestFirst);
+  dedupReject.sort(oldestFirst);
+  escalationReject.sort(oldestFirst);
   capReject.sort(oldestFirst);
+  typeCapReject.sort(oldestFirst);
 
   // Record deterministic reject decisions via proposal_queue.js.
   for (const it of ttlReject) {
     const reason = `auto:queue_gc ttl>${ttlHours}h eye:${it.eye}`;
     rejectProposal(repo, it.id, reason);
   }
+  for (const it of dedupReject) {
+    const reason = `auto:queue_gc dedup type:${it.type}`;
+    rejectProposal(repo, it.id, reason);
+  }
+  for (const it of escalationReject) {
+    const reason = `auto:queue_gc escalation_ttl>${escalationTtlHours}h type:${it.type}`;
+    rejectProposal(repo, it.id, reason);
+  }
   for (const it of capReject) {
     const reason = `auto:queue_gc cap>${capPerEye} eye:${it.eye}`;
+    rejectProposal(repo, it.id, reason);
+  }
+  for (const it of typeCapReject) {
+    const reason = `auto:queue_gc type_cap>${capPerType} type:${it.type}`;
     rejectProposal(repo, it.id, reason);
   }
 

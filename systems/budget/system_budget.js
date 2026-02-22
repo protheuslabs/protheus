@@ -218,25 +218,32 @@ function withEventContract(type, payload = {}) {
 
 function normalizeAutopauseState(raw, opts = {}) {
   const nowMs = Date.now();
+  const tsNow = nowIso();
   const src = raw && typeof raw === 'object' ? raw : {};
   const untilMsRaw = Number(src.until_ms != null ? src.until_ms : 0);
   const untilMs = Number.isFinite(untilMsRaw) && untilMsRaw > nowMs ? Math.round(untilMsRaw) : 0;
-  const active = src.active === true && untilMs > nowMs;
+  let active = src.active === true && untilMs > nowMs;
   const defaultSource = String(opts.default_source || src.source || 'system_budget').trim() || 'system_budget';
+  const source = String(src.source || defaultSource).trim() || defaultSource;
+  const pressure = src.pressure ? String(src.pressure).trim().toLowerCase() : null;
+  const recoveredSpinePause = active && source === 'spine_budget_guard' && pressure === 'none';
+  if (recoveredSpinePause) active = false;
   return {
     schema_id: SYSTEM_BUDGET_AUTOPAUSE_SCHEMA.schema_id,
     schema_version: SYSTEM_BUDGET_AUTOPAUSE_SCHEMA.schema_version,
     active,
     set_ts: src.set_ts ? String(src.set_ts) : null,
-    source: active ? String(src.source || defaultSource).trim() || defaultSource : String(src.source || defaultSource).trim() || defaultSource,
+    source,
     reason: src.reason ? String(src.reason).trim().slice(0, 200) : null,
-    pressure: src.pressure ? String(src.pressure).trim().toLowerCase() : null,
+    pressure,
     date: src.date ? normalizeDate(src.date) : null,
     until_ms: active ? untilMs : 0,
     until: active ? new Date(untilMs).toISOString() : null,
-    cleared_ts: src.cleared_ts ? String(src.cleared_ts) : null,
-    clear_reason: src.clear_reason ? String(src.clear_reason).trim().slice(0, 200) : null,
-    updated_at: nowIso()
+    cleared_ts: recoveredSpinePause ? tsNow : (src.cleared_ts ? String(src.cleared_ts) : null),
+    clear_reason: recoveredSpinePause
+      ? 'auto_clear_recovered_pressure'
+      : (src.clear_reason ? String(src.clear_reason).trim().slice(0, 200) : null),
+    updated_at: tsNow
   };
 }
 

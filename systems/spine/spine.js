@@ -33,6 +33,10 @@ const {
   clearSystemBudgetAutopause,
   loadSystemBudgetAutopauseState
 } = require("../budget/system_budget.js");
+const { emitPainSignal } = require("../autonomy/pain_signal.js");
+const { computeEvidenceRunPlan } = require("./evidence_run_plan.js");
+
+let ACTIVE_SPINE_CONTEXT = { mode: null, date: null };
 
 function arg(name) {
   const pref = `--${name}=`;
@@ -47,7 +51,40 @@ function todayOr(dateStr) {
 
 function run(cmd, args, opts = {}) {
   const r = spawnSync(cmd, args, { stdio: "inherit", ...opts });
-  if (r.status !== 0) process.exit(r.status || 1);
+  if (r.status !== 0) {
+    try {
+      const mode = String(ACTIVE_SPINE_CONTEXT.mode || "unknown");
+      const dateStr = todayOr(ACTIVE_SPINE_CONTEXT.date || null);
+      const arg0 = String(args && args[0] || cmd || "command");
+      emitPainSignal({
+        ts: nowIso(),
+        source: "spine",
+        subsystem: "orchestration",
+        code: `command_failed:${path.basename(arg0).replace(/[^a-zA-Z0-9._-]/g, "_")}`,
+        summary: `Spine command failed (${arg0})`,
+        details: `mode=${mode} date=${dateStr} exit_code=${Number(r.status || 1)}`,
+        severity: "high",
+        risk: "high",
+        proposal_type: "spine_escalation",
+        suggested_next_command: `node systems/spine/spine.js ${mode === "daily" ? "daily" : "eyes"} ${dateStr}`,
+        window_hours: Number(process.env.SPINE_PAIN_WINDOW_HOURS || 12),
+        escalate_after: Number(process.env.SPINE_PAIN_ESCALATE_AFTER || 1),
+        cooldown_hours: Number(process.env.SPINE_PAIN_COOLDOWN_HOURS || 2),
+        signature_extra: `${mode}:${dateStr}:${arg0}`,
+        evidence: [
+          {
+            source: "spine_run",
+            path: `state/spine/runs/${dateStr}.jsonl`,
+            match: `command_failed:${arg0}`.slice(0, 120),
+            evidence_ref: `spine:${mode}:${dateStr}`
+          }
+        ]
+      });
+    } catch {
+      // pain signal must never block exit
+    }
+    process.exit(r.status || 1);
+  }
 }
 
 function runJson(cmd, args, opts = {}) {
@@ -116,12 +153,71 @@ function appendLedger(dateStr, evt) {
   }
 }
 
+function emitSpinePainSignal(mode, dateStr, code, summary, details, options = {}) {
+  try {
+    emitPainSignal({
+      ts: nowIso(),
+      source: "spine",
+      subsystem: "orchestration",
+      code: String(code || "spine_failure").slice(0, 96),
+      summary: String(summary || "Spine failure").slice(0, 240),
+      details: String(details || "").slice(0, 900),
+      severity: String(options.severity || "high"),
+      risk: String(options.risk || "high"),
+      proposal_type: "spine_escalation",
+      suggested_next_command: `node systems/spine/spine.js ${mode === "daily" ? "daily" : "eyes"} ${dateStr}`,
+      window_hours: Number(process.env.SPINE_PAIN_WINDOW_HOURS || 12),
+      escalate_after: Number(process.env.SPINE_PAIN_ESCALATE_AFTER || 1),
+      cooldown_hours: Number(process.env.SPINE_PAIN_COOLDOWN_HOURS || 2),
+      signature_extra: String(options.signature_extra || `${mode}:${dateStr}`),
+      evidence: [
+        {
+          source: "spine_run",
+          path: `state/spine/runs/${dateStr}.jsonl`,
+          match: String(code || "spine_failure").slice(0, 120),
+          evidence_ref: `spine:${mode}:${dateStr}`
+        }
+      ]
+    });
+  } catch {
+    // pain signal must never block spine
+  }
+}
+
 function readJsonl(filePath) {
   if (!fs.existsSync(filePath)) return [];
   const lines = fs.readFileSync(filePath, "utf8").split("\n").filter(Boolean);
   const out = [];
   for (const line of lines) {
     try { out.push(JSON.parse(line)); } catch {}
+  }
+  return out;
+}
+
+function readJson(filePath, fallback) {
+  try {
+    if (!fs.existsSync(filePath)) return fallback;
+    const parsed = JSON.parse(fs.readFileSync(filePath, "utf8"));
+    return parsed == null ? fallback : parsed;
+  } catch {
+    return fallback;
+  }
+}
+
+function proposalTypeMapForDate(dateStr) {
+  const fp = path.join(repoRoot(), "state", "sensory", "proposals", `${String(dateStr || "").slice(0, 10)}.json`);
+  const raw = readJson(fp, []);
+  const list = Array.isArray(raw)
+    ? raw
+    : (raw && Array.isArray(raw.proposals) ? raw.proposals : []);
+  const out = {};
+  for (const row of list) {
+    if (!row || typeof row !== "object") continue;
+    const id = String(row.id || "").trim();
+    if (!id) continue;
+    const t = String(row.type || "").trim().toLowerCase();
+    if (!t) continue;
+    out[id] = t;
   }
   return out;
 }
@@ -384,7 +480,12 @@ function evaluateBudgetGuard(dateStr, budgetHealth) {
   let reason = "no_pressure";
   const pauseActive = Number.isFinite(pausedUntilMs) && pausedUntilMs > nowMs;
 
-  if (pressure === "hard" && consecutiveHard >= hardRepeatThreshold) {
+  if (pressure === "none" && projectedPressure === "none" && pauseActive) {
+    pausedUntilMs = 0;
+    consecutiveHard = 0;
+    action = "allow";
+    reason = "hard_pause_recovered";
+  } else if (pressure === "hard" && consecutiveHard >= hardRepeatThreshold) {
     pausedUntilMs = Math.max(pausedUntilMs, nowMs + (hardPauseMinutes * 60 * 1000));
     action = "pause";
     reason = "repeated_hard_pressure";
@@ -754,6 +855,7 @@ function shouldShortCircuitDaily(mode, dateStr) {
 function main() {
   const mode = process.argv[2];
   const dateStr = todayOr(process.argv[3]);
+  ACTIVE_SPINE_CONTEXT = { mode, date: dateStr };
   const maxEyes = arg("max-eyes");
   let signalGateOk = null;
   let signalSloOk = null;
@@ -801,6 +903,11 @@ function main() {
     "habits/scripts/sensory_digest.js",
     "systems/autonomy/autonomy_controller.js",
     "systems/autonomy/proposal_enricher.js",
+    "systems/autonomy/pain_signal.js",
+    "systems/autonomy/pain_adaptive_router.js",
+    "systems/autonomy/adaptive_crystallizer.js",
+    "systems/adaptive/reflex/reflex_runtime_sync.js",
+    "systems/adaptive/habits/habit_runtime_sync.js",
     "systems/autonomy/strategy_readiness.js",
     "systems/autonomy/strategy_execute_guard.js",
     "systems/autonomy/strategy_mode_governor.js",
@@ -811,6 +918,7 @@ function main() {
     "systems/ops/backup_integrity_check.js",
     "systems/ops/openclaw_backup_retention.js",
     "systems/memory/eyes_memory_bridge.js",
+    "systems/memory/failure_memory_bridge.js",
     "systems/memory/memory_dream.js",
     "systems/memory/uid_connections.js",
     "systems/memory/creative_links.js",
@@ -853,6 +961,14 @@ function main() {
     });
     if (!skillInstallEnforcer.ok || !enforcerPayload || enforcerPayload.ok !== true) {
       console.error(` skill_install_enforcer FAIL violations=${enforcerPayload ? Number(enforcerPayload.violation_count || 0) : "unknown"}`);
+      emitSpinePainSignal(
+        mode,
+        dateStr,
+        "skill_install_enforcer_failed",
+        "Skill install enforcer blocked spine run",
+        String(skillInstallEnforcer.stderr || skillInstallEnforcer.stdout || "skill_install_enforcer_failed"),
+        { signature_extra: String(enforcerPayload ? enforcerPayload.violation_count : "unknown") }
+      );
       process.exit(skillInstallEnforcer.code || 1);
     }
     console.log(` skill_install_enforcer ok violations=${Number(enforcerPayload.violation_count || 0)}`);
@@ -876,6 +992,14 @@ function main() {
     });
     if (!llmGatewayGuard.ok || !llmGatewayPayload || llmGatewayPayload.ok !== true) {
       console.error(` llm_gateway_guard FAIL violations=${llmGatewayPayload ? Number(llmGatewayPayload.violation_count || 0) : "unknown"}`);
+      emitSpinePainSignal(
+        mode,
+        dateStr,
+        "llm_gateway_guard_failed",
+        "LLM gateway guard blocked spine run",
+        String(llmGatewayGuard.stderr || llmGatewayGuard.stdout || "llm_gateway_guard_failed"),
+        { signature_extra: String(llmGatewayPayload ? llmGatewayPayload.violation_count : "unknown") }
+      );
       process.exit(llmGatewayGuard.code || 1);
     }
     console.log(
@@ -913,6 +1037,14 @@ function main() {
         : String(integrityKernel.stderr || integrityKernel.stdout || "unknown").slice(0, 120);
       if (integrityStrict) {
         console.error(` integrity_kernel FAIL violations=${reason}`);
+        emitSpinePainSignal(
+          mode,
+          dateStr,
+          "integrity_kernel_failed",
+          "Integrity kernel blocked spine run",
+          String(reason || "integrity_violation"),
+          { signature_extra: String(reason || "integrity") }
+        );
         process.exit(integrityKernel.code || 1);
       }
       console.log(` integrity_kernel WARN violations=${reason}`);
@@ -1046,8 +1178,145 @@ function main() {
     console.log(` collector_health unavailable reason=${String(collectorHealth.reason || "unknown").slice(0, 120)}`);
   }
 
+  const painAdaptiveRouter = runJson("node", ["systems/autonomy/pain_adaptive_router.js", "run", dateStr]);
+  const painAdaptivePayload = painAdaptiveRouter.payload && typeof painAdaptiveRouter.payload === "object"
+    ? painAdaptiveRouter.payload
+    : null;
+  const painAdaptiveRouted = painAdaptivePayload ? Number(painAdaptivePayload.routed || 0) : 0;
+  appendLedger(dateStr, {
+    ts: nowIso(),
+    type: "spine_pain_adaptive_router",
+    mode,
+    date: dateStr,
+    ok: painAdaptiveRouter.ok && !!painAdaptivePayload && painAdaptivePayload.ok === true,
+    scanned: painAdaptivePayload ? Number(painAdaptivePayload.scanned || 0) : null,
+    routed: painAdaptivePayload ? Number(painAdaptivePayload.routed || 0) : null,
+    routed_reflex: painAdaptivePayload ? Number(painAdaptivePayload.routed_reflex || 0) : null,
+    routed_habit: painAdaptivePayload ? Number(painAdaptivePayload.routed_habit || 0) : null,
+    skipped: painAdaptivePayload ? Number(painAdaptivePayload.skipped || 0) : null,
+    reason: (!painAdaptiveRouter.ok || !painAdaptivePayload)
+      ? String(painAdaptiveRouter.stderr || painAdaptiveRouter.stdout || `pain_adaptive_router_exit_${painAdaptiveRouter.code}`).slice(0, 180)
+      : null
+  });
+  if (painAdaptiveRouter.ok && painAdaptivePayload && painAdaptivePayload.ok === true) {
+    console.log(
+      ` pain_adaptive_router routed=${Number(painAdaptivePayload.routed || 0)}` +
+      ` reflex=${Number(painAdaptivePayload.routed_reflex || 0)}` +
+      ` habit=${Number(painAdaptivePayload.routed_habit || 0)}`
+    );
+  } else {
+    console.log(` pain_adaptive_router unavailable reason=${String(painAdaptiveRouter.stderr || painAdaptiveRouter.stdout || "unknown").slice(0, 120)}`);
+  }
+
+  const reflexRuntimeSync = runJson("node", ["systems/adaptive/reflex/reflex_runtime_sync.js", "run"]);
+  const reflexRuntimePayload = reflexRuntimeSync.payload && typeof reflexRuntimeSync.payload === "object"
+    ? reflexRuntimeSync.payload
+    : null;
+  appendLedger(dateStr, {
+    ts: nowIso(),
+    type: "spine_reflex_runtime_sync",
+    mode,
+    date: dateStr,
+    ok: reflexRuntimeSync.ok && !!reflexRuntimePayload && reflexRuntimePayload.ok === true,
+    changed: reflexRuntimePayload ? reflexRuntimePayload.changed === true : null,
+    created: reflexRuntimePayload ? Number(reflexRuntimePayload.created || 0) : null,
+    updated: reflexRuntimePayload ? Number(reflexRuntimePayload.updated || 0) : null,
+    disabled: reflexRuntimePayload ? Number(reflexRuntimePayload.disabled || 0) : null,
+    managed_routines: reflexRuntimePayload ? Number(reflexRuntimePayload.managed_routines || 0) : null,
+    reason: (!reflexRuntimeSync.ok || !reflexRuntimePayload)
+      ? String(reflexRuntimeSync.stderr || reflexRuntimeSync.stdout || `reflex_runtime_sync_exit_${reflexRuntimeSync.code}`).slice(0, 180)
+      : null
+  });
+  if (reflexRuntimeSync.ok && reflexRuntimePayload && reflexRuntimePayload.ok === true) {
+    console.log(
+      ` reflex_runtime_sync changed=${reflexRuntimePayload.changed === true ? 1 : 0}` +
+      ` created=${Number(reflexRuntimePayload.created || 0)}` +
+      ` updated=${Number(reflexRuntimePayload.updated || 0)}`
+    );
+  } else {
+    console.log(` reflex_runtime_sync unavailable reason=${String(reflexRuntimeSync.stderr || reflexRuntimeSync.stdout || "unknown").slice(0, 120)}`);
+    emitSpinePainSignal(
+      mode,
+      dateStr,
+      "reflex_runtime_sync_failed",
+      "Adaptive reflex runtime sync failed during spine run",
+      String(reflexRuntimeSync.stderr || reflexRuntimeSync.stdout || "reflex_runtime_sync_failed"),
+      { severity: "medium", risk: "medium" }
+    );
+  }
+
+  const habitRuntimeSync = runJson("node", ["systems/adaptive/habits/habit_runtime_sync.js", "run"]);
+  const habitRuntimePayload = habitRuntimeSync.payload && typeof habitRuntimeSync.payload === "object"
+    ? habitRuntimeSync.payload
+    : null;
+  appendLedger(dateStr, {
+    ts: nowIso(),
+    type: "spine_habit_runtime_sync",
+    mode,
+    date: dateStr,
+    ok: habitRuntimeSync.ok && !!habitRuntimePayload && habitRuntimePayload.ok === true,
+    changed: habitRuntimePayload ? habitRuntimePayload.changed === true : null,
+    created: habitRuntimePayload ? Number(habitRuntimePayload.created || 0) : null,
+    updated: habitRuntimePayload ? Number(habitRuntimePayload.updated || 0) : null,
+    disabled: habitRuntimePayload ? Number(habitRuntimePayload.disabled || 0) : null,
+    managed_habits: habitRuntimePayload ? Number(habitRuntimePayload.managed_habits || 0) : null,
+    reason: (!habitRuntimeSync.ok || !habitRuntimePayload)
+      ? String(habitRuntimeSync.stderr || habitRuntimeSync.stdout || `habit_runtime_sync_exit_${habitRuntimeSync.code}`).slice(0, 180)
+      : null
+  });
+  if (habitRuntimeSync.ok && habitRuntimePayload && habitRuntimePayload.ok === true) {
+    console.log(
+      ` habit_runtime_sync changed=${habitRuntimePayload.changed === true ? 1 : 0}` +
+      ` created=${Number(habitRuntimePayload.created || 0)}` +
+      ` updated=${Number(habitRuntimePayload.updated || 0)}`
+    );
+  } else {
+    console.log(` habit_runtime_sync unavailable reason=${String(habitRuntimeSync.stderr || habitRuntimeSync.stdout || "unknown").slice(0, 120)}`);
+    emitSpinePainSignal(
+      mode,
+      dateStr,
+      "habit_runtime_sync_failed",
+      "Adaptive habit runtime sync failed during spine run",
+      String(habitRuntimeSync.stderr || habitRuntimeSync.stdout || "habit_runtime_sync_failed"),
+      { severity: "medium", risk: "medium" }
+    );
+  }
+
+  const adaptiveCrystallizer = runJson("node", ["systems/autonomy/adaptive_crystallizer.js", "run", dateStr]);
+  const adaptiveCrystallizerPayload = adaptiveCrystallizer.payload && typeof adaptiveCrystallizer.payload === "object"
+    ? adaptiveCrystallizer.payload
+    : null;
+  const adaptiveCrystallizerEmitted = adaptiveCrystallizerPayload
+    ? Number(adaptiveCrystallizerPayload.emitted || 0)
+    : 0;
+  appendLedger(dateStr, {
+    ts: nowIso(),
+    type: "spine_adaptive_crystallizer",
+    mode,
+    date: dateStr,
+    ok: adaptiveCrystallizer.ok && !!adaptiveCrystallizerPayload && adaptiveCrystallizerPayload.ok === true,
+    considered: adaptiveCrystallizerPayload ? Number(adaptiveCrystallizerPayload.considered || 0) : null,
+    emitted: adaptiveCrystallizerPayload ? Number(adaptiveCrystallizerPayload.emitted || 0) : null,
+    emitted_habit: adaptiveCrystallizerPayload ? Number(adaptiveCrystallizerPayload.emitted_habit || 0) : null,
+    emitted_reflex: adaptiveCrystallizerPayload ? Number(adaptiveCrystallizerPayload.emitted_reflex || 0) : null,
+    skipped: adaptiveCrystallizerPayload ? Number(adaptiveCrystallizerPayload.skipped || 0) : null,
+    reason: (!adaptiveCrystallizer.ok || !adaptiveCrystallizerPayload)
+      ? String(adaptiveCrystallizer.stderr || adaptiveCrystallizer.stdout || `adaptive_crystallizer_exit_${adaptiveCrystallizer.code}`).slice(0, 180)
+      : null
+  });
+  if (adaptiveCrystallizer.ok && adaptiveCrystallizerPayload && adaptiveCrystallizerPayload.ok === true) {
+    console.log(
+      ` adaptive_crystallizer emitted=${Number(adaptiveCrystallizerPayload.emitted || 0)}` +
+      ` habit=${Number(adaptiveCrystallizerPayload.emitted_habit || 0)}` +
+      ` reflex=${Number(adaptiveCrystallizerPayload.emitted_reflex || 0)}`
+    );
+  } else {
+    console.log(` adaptive_crystallizer unavailable reason=${String(adaptiveCrystallizer.stderr || adaptiveCrystallizer.stdout || "unknown").slice(0, 120)}`);
+  }
+
   const realItems = realExternalItemsToday(dateStr);
   signalGateOk = realItems > 0;
+  const proposalPipelineAllowed = signalGateOk || painAdaptiveRouted > 0 || adaptiveCrystallizerEmitted > 0;
   appendLedger(dateStr, {
     ts: nowIso(),
     type: "spine_signal_gate",
@@ -1055,16 +1324,69 @@ function main() {
     date: dateStr,
     ok: signalGateOk,
     real_external_items: realItems,
-    threshold: 1
+    threshold: 1,
+    pain_adaptive_routed: painAdaptiveRouted,
+    adaptive_crystallizer_emitted: adaptiveCrystallizerEmitted,
+    proposal_pipeline_allowed: proposalPipelineAllowed
   });
-  if (signalGateOk) {
-    run("node", ["habits/scripts/eyes_insight.js", "run", dateStr]);
+  const failureMemoryBridge = runJson("node", ["systems/memory/failure_memory_bridge.js", "run", dateStr]);
+  const failureBridgePayload = failureMemoryBridge.payload && typeof failureMemoryBridge.payload === "object"
+    ? failureMemoryBridge.payload
+    : null;
+  appendLedger(dateStr, {
+    ts: nowIso(),
+    type: "spine_failure_memory_bridge",
+    mode,
+    date: dateStr,
+    ok: failureMemoryBridge.ok && !!failureBridgePayload && failureBridgePayload.ok === true,
+    candidates: failureBridgePayload ? Number(failureBridgePayload.candidates || 0) : null,
+    selected: failureBridgePayload ? Number(failureBridgePayload.selected || 0) : null,
+    created_nodes: failureBridgePayload ? Number(failureBridgePayload.created_nodes || 0) : null,
+    revisit_pointers: failureBridgePayload ? Number(failureBridgePayload.revisit_pointers || 0) : null,
+    pointers_file: failureBridgePayload ? failureBridgePayload.pointers_file || null : null,
+    reason: (!failureMemoryBridge.ok || !failureBridgePayload || failureBridgePayload.ok !== true)
+      ? String(failureMemoryBridge.stderr || failureMemoryBridge.stdout || `failure_memory_bridge_exit_${failureMemoryBridge.code}`).slice(0, 180)
+      : null
+  });
+  if (!failureMemoryBridge.ok || !failureBridgePayload || failureBridgePayload.ok !== true) {
+    console.error(` failure_memory_bridge FAIL code=${failureMemoryBridge.code} reason=${String(failureMemoryBridge.stderr || failureMemoryBridge.stdout || "unknown").slice(0, 140)}`);
+    emitSpinePainSignal(
+      mode,
+      dateStr,
+      "failure_memory_bridge_failed",
+      "Failure memory bridge failed during spine run",
+      String(failureMemoryBridge.stderr || failureMemoryBridge.stdout || "failure_memory_bridge_failed"),
+      { signature_extra: String(failureMemoryBridge.code || 1) }
+    );
+    process.exit(failureMemoryBridge.code || 1);
+  }
+  console.log(
+    ` failure_memory_bridge selected=${Number(failureBridgePayload.selected || 0)}` +
+    ` created=${Number(failureBridgePayload.created_nodes || 0)}` +
+    ` revisit=${Number(failureBridgePayload.revisit_pointers || 0)}`
+  );
+  if (proposalPipelineAllowed) {
+    if (signalGateOk) {
+      run("node", ["habits/scripts/eyes_insight.js", "run", dateStr]);
+    } else if (painAdaptiveRouted > 0) {
+      console.log(` signal_gate SOFT_BYPASS reason=pain_adaptive_routed count=${painAdaptiveRouted}`);
+    } else {
+      console.log(` signal_gate SOFT_BYPASS reason=adaptive_crystallizer_emitted count=${adaptiveCrystallizerEmitted}`);
+    }
     run("node", ["habits/scripts/sensory_queue.js", "ingest", dateStr]);
     run("node", ["systems/actuation/bridge_from_proposals.js", "run", dateStr]);
     const enrich = runJson("node", ["systems/autonomy/proposal_enricher.js", "run", dateStr]);
     const enrichPayload = enrich.payload && typeof enrich.payload === "object" ? enrich.payload : null;
     if (!enrich.ok || !enrichPayload || enrichPayload.ok !== true) {
       console.error(` proposal_enricher FAIL code=${enrich.code} reason=${String(enrich.stderr || enrich.stdout || "unknown").slice(0, 140)}`);
+      emitSpinePainSignal(
+        mode,
+        dateStr,
+        "proposal_enricher_failed",
+        "Proposal enricher failed during spine run",
+        String(enrich.stderr || enrich.stdout || "proposal_enricher_failed"),
+        { signature_extra: String(enrich.code || 1) }
+      );
       process.exit(enrich.code || 1);
     }
     const eyesMemoryBridge = runJson("node", ["systems/memory/eyes_memory_bridge.js", "run", dateStr]);
@@ -1087,6 +1409,14 @@ function main() {
     });
     if (!eyesMemoryBridge.ok || !bridgePayload || bridgePayload.ok !== true) {
       console.error(` eyes_memory_bridge FAIL code=${eyesMemoryBridge.code} reason=${String(eyesMemoryBridge.stderr || eyesMemoryBridge.stdout || "unknown").slice(0, 140)}`);
+      emitSpinePainSignal(
+        mode,
+        dateStr,
+        "eyes_memory_bridge_failed",
+        "Eyes memory bridge failed during spine run",
+        String(eyesMemoryBridge.stderr || eyesMemoryBridge.stdout || "eyes_memory_bridge_failed"),
+        { signature_extra: String(eyesMemoryBridge.code || 1) }
+      );
       process.exit(eyesMemoryBridge.code || 1);
     }
     console.log(
@@ -1158,10 +1488,18 @@ function main() {
       console.error(
         ` objective_binding FAIL reason=fallback_source_present required=${requiredBindings} fallback=${fallbackBindings}`
       );
+      emitSpinePainSignal(
+        mode,
+        dateStr,
+        "objective_binding_fallback_source_present",
+        "Objective binding meta-source requirement failed",
+        `required=${requiredBindings} fallback=${fallbackBindings}`,
+        { severity: "medium", risk: "medium", signature_extra: `${requiredBindings}:${fallbackBindings}` }
+      );
       process.exit(1);
     }
   } else {
-    console.log(" signal_gate SKIP reason=no_real_external_items");
+    console.log(" signal_gate SKIP reason=no_real_external_items_and_no_pain_routes");
   }
   if (mode === "daily") {
     const slo = runJson("node", ["habits/scripts/external_eyes.js", "slo", dateStr]);
@@ -1193,6 +1531,76 @@ function main() {
     // Backpressure + auto-triage (deterministic). Keeps queue from growing without bound.
     // Defaults: cap_per_eye=10, ttl_hours=48 (low-impact only)
     run("node", ["habits/scripts/queue_gc.js", "run", dateStr]);
+    // Sweep removes stale/filtered-noise rows so autonomy scoring stays focused.
+    run("node", ["habits/scripts/sensory_queue.js", "sweep", dateStr]);
+    // Compact queue log churn so repeated terminal events do not bloat queue state.
+    const queueCompact = runJson("node", ["systems/ops/queue_log_compact.js", "run", "--apply=1"]);
+    const compactPayload = (queueCompact.payload && typeof queueCompact.payload === "object") ? queueCompact.payload : null;
+    appendLedger(dateStr, {
+      ts: nowIso(),
+      type: "spine_queue_compaction",
+      mode,
+      date: dateStr,
+      ok: queueCompact.ok,
+      action: compactPayload ? compactPayload.action : null,
+      removed_lines: compactPayload ? Number(compactPayload.removed_lines || 0) : 0,
+      skip_reason: compactPayload ? compactPayload.skip_reason || null : null,
+      exit_code: Number(queueCompact.code || 0)
+    });
+    if (!queueCompact.ok) {
+      console.log(` queue_compaction WARN exit=${Number(queueCompact.code || 1)}`);
+    }
+
+    if (String(process.env.SPINE_QUEUE_HYGIENE_SUMMARY_ENABLED || "1") !== "0") {
+      const hygieneDays = Math.max(2, Number(process.env.SPINE_QUEUE_HYGIENE_SUMMARY_DAYS || 7) || 7);
+      const hygieneIntervalDays = Math.max(1, Number(process.env.SPINE_QUEUE_HYGIENE_SUMMARY_INTERVAL_DAYS || 7) || 7);
+      const hygieneStaleOpenHours = Math.max(1, Number(process.env.SPINE_QUEUE_HYGIENE_STALE_OPEN_HOURS || 96) || 96);
+      const hygiene = runJson("node", [
+        "systems/ops/queue_hygiene_summary.js",
+        "run",
+        dateStr,
+        `--days=${hygieneDays}`,
+        `--interval-days=${hygieneIntervalDays}`,
+        `--stale-open-hours=${hygieneStaleOpenHours}`
+      ]);
+      const hygienePayload = hygiene.payload && typeof hygiene.payload === "object" ? hygiene.payload : null;
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_queue_hygiene_summary",
+        mode,
+        date: dateStr,
+        ok: hygiene.ok && !!hygienePayload && hygienePayload.ok === true,
+        result: hygienePayload ? String(hygienePayload.result || "") : null,
+        output_file: hygienePayload ? hygienePayload.output_file || null : null,
+        totals: hygienePayload && hygienePayload.totals && typeof hygienePayload.totals === "object"
+          ? hygienePayload.totals
+          : null,
+        reason: (!hygiene.ok || !hygienePayload || hygienePayload.ok !== true)
+          ? String(hygiene.stderr || hygiene.stdout || `queue_hygiene_summary_exit_${hygiene.code}`).slice(0, 180)
+          : null
+      });
+      if (hygiene.ok && hygienePayload && hygienePayload.ok === true) {
+        const result = String(hygienePayload.result || "");
+        if (result === "skip_recent_run") {
+          console.log(` queue_hygiene_summary skipped age_hours=${Number(hygienePayload.age_hours || 0).toFixed(2)} interval_days=${Number(hygienePayload.interval_days || hygieneIntervalDays)}`);
+        } else {
+          console.log(` queue_hygiene_summary ok output=${String(hygienePayload.output_file || "n/a")}`);
+        }
+      } else {
+        console.log(` queue_hygiene_summary WARN reason=${String(hygiene.stderr || hygiene.stdout || "unknown").slice(0, 120)}`);
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_queue_hygiene_summary_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "SPINE_QUEUE_HYGIENE_SUMMARY_ENABLED",
+        flag_value: String(process.env.SPINE_QUEUE_HYGIENE_SUMMARY_ENABLED || "")
+      });
+      console.log(" queue_hygiene_summary skipped reason=feature_flag_disabled flag=SPINE_QUEUE_HYGIENE_SUMMARY_ENABLED");
+    }
   }
 
   // Always list after ingest (+ optional GC) so you see final queue state.
@@ -1275,11 +1683,17 @@ function main() {
       const verifyArgs = ["systems/security/startup_attestation.js", "verify"];
       const strictVerify = String(process.env.SPINE_STARTUP_ATTESTATION_STRICT || "0") === "1";
       const autoIssueEnabled = String(process.env.SPINE_STARTUP_ATTESTATION_AUTO_ISSUE || "1") !== "0";
-      const autoIssueReasons = new Set(["attestation_missing_or_invalid", "attestation_stale"]);
-      const hasAttestationKey = String(process.env.STARTUP_ATTESTATION_KEY || "").trim().length > 0;
+      const autoIssueReasons = new Set([
+        "attestation_missing_or_invalid",
+        "attestation_stale",
+        "critical_hash_drift"
+      ]);
       if (strictVerify) verifyArgs.push("--strict");
       let att = runJson("node", verifyArgs);
       let attPayload = att.payload && typeof att.payload === "object" ? att.payload : null;
+      const keyMissingReasons = new Set(["attestation_key_missing"]);
+      let keyAvailable = true;
+      let keyWarningReason = null;
       startupAttestation = {
         checked: true,
         ok: att.ok && !!attPayload && attPayload.ok === true,
@@ -1288,10 +1702,25 @@ function main() {
           ? String((attPayload && attPayload.reason) || att.stderr || att.stdout || `startup_attestation_exit_${att.code}`).slice(0, 180)
           : null
       };
+      if (!startupAttestation.ok) {
+        const normalizedInitialReason = String(startupAttestation.reason || "").trim().toLowerCase();
+        if (keyMissingReasons.has(normalizedInitialReason)) {
+          keyAvailable = false;
+          keyWarningReason = normalizedInitialReason;
+          appendLedger(dateStr, {
+            ts: nowIso(),
+            type: "spine_startup_attestation_key_warning",
+            mode,
+            date: dateStr,
+            reason: normalizedInitialReason
+          });
+          console.log(` startup_attestation key_warning reason=${normalizedInitialReason}`);
+        }
+      }
       const reasonBeforeIssue = startupAttestation.reason;
       let autoIssueAttempted = false;
       let autoIssueOk = false;
-      if (startupAttestation.ok !== true && autoIssueEnabled && hasAttestationKey) {
+      if (startupAttestation.ok !== true && autoIssueEnabled) {
         const normalizedReason = String(startupAttestation.reason || "").trim().toLowerCase();
         if (autoIssueReasons.has(normalizedReason)) {
           autoIssueAttempted = true;
@@ -1322,16 +1751,18 @@ function main() {
                 ? String((attPayload && attPayload.reason) || att.stderr || att.stdout || `startup_attestation_exit_${att.code}`).slice(0, 180)
                 : null
             };
+            if (startupAttestation.ok === true) {
+              keyAvailable = true;
+              keyWarningReason = null;
+            } else {
+              const normalizedRetryReason = String(startupAttestation.reason || "").trim().toLowerCase();
+              if (keyMissingReasons.has(normalizedRetryReason)) {
+                keyAvailable = false;
+                keyWarningReason = normalizedRetryReason;
+              }
+            }
           }
         }
-      } else if (startupAttestation.ok !== true && autoIssueEnabled && !hasAttestationKey) {
-        appendLedger(dateStr, {
-          ts: nowIso(),
-          type: "spine_startup_attestation_issue_skipped",
-          mode,
-          date: dateStr,
-          reason: "attestation_key_missing"
-        });
       }
       appendLedger(dateStr, {
         ts: nowIso(),
@@ -1341,6 +1772,8 @@ function main() {
         ok: startupAttestation.ok,
         required: startupAttestation.required,
         reason: startupAttestation.reason,
+        key_available: keyAvailable === true,
+        key_warning_reason: keyWarningReason,
         auto_issue_attempted: autoIssueAttempted,
         auto_issue_ok: autoIssueAttempted ? autoIssueOk : null,
         reason_before_issue: autoIssueAttempted ? reasonBeforeIssue : null
@@ -1508,9 +1941,16 @@ function main() {
       // Shadow evidence loop: dry-run/preflight verification receipts only (no execution side effects).
       // Default 2 attempts/day to build readiness signal while execution is disabled.
       const evidenceRunsRaw = Number(process.env.AUTONOMY_EVIDENCE_RUNS || 2);
-      const evidenceRuns = Number.isFinite(evidenceRunsRaw)
-        ? Math.max(0, Math.min(6, Math.floor(evidenceRunsRaw)))
-        : 2;
+      const evidencePlan = computeEvidenceRunPlan(
+        evidenceRunsRaw,
+        budgetGuard && budgetGuard.pressure,
+        budgetGuard && budgetGuard.projected_pressure
+      );
+      const evidenceRunsConfigured = Number(evidencePlan.configured_runs || 0);
+      const budgetPressure = String(evidencePlan.budget_pressure || 'none');
+      const projectedPressure = String(evidencePlan.projected_pressure || 'none');
+      const pressureThrottle = evidencePlan.pressure_throttle === true;
+      const evidenceRuns = Number(evidencePlan.evidence_runs || 0);
       let evidenceOkCount = 0;
       if (evidenceRuns <= 0) {
         appendLedger(dateStr, {
@@ -1518,39 +1958,114 @@ function main() {
           type: "spine_autonomy_evidence_skipped",
           mode,
           date: dateStr,
-          reason: "feature_flag_disabled",
+          reason: pressureThrottle ? "budget_pressure_throttle" : "feature_flag_disabled",
           flag: "AUTONOMY_EVIDENCE_RUNS",
-          flag_value: String(process.env.AUTONOMY_EVIDENCE_RUNS || "")
+          flag_value: String(process.env.AUTONOMY_EVIDENCE_RUNS || ""),
+          budget_pressure: budgetPressure || null,
+          projected_pressure: projectedPressure || null
         });
-        console.log(" autonomy_evidence skipped reason=feature_flag_disabled flag=AUTONOMY_EVIDENCE_RUNS");
+        if (pressureThrottle) {
+          console.log(
+            ` autonomy_evidence skipped reason=budget_pressure_throttle` +
+            ` pressure=${budgetPressure || "none"} projected=${projectedPressure || "none"}`
+          );
+        } else {
+          console.log(" autonomy_evidence skipped reason=feature_flag_disabled flag=AUTONOMY_EVIDENCE_RUNS");
+        }
       } else {
-        for (let i = 0; i < evidenceRuns; i++) {
+        if (pressureThrottle && evidenceRuns < evidenceRunsConfigured) {
+          console.log(
+            ` autonomy_evidence throttled runs=${evidenceRuns}/${evidenceRunsConfigured}` +
+            ` pressure=${budgetPressure || "none"} projected=${projectedPressure || "none"}`
+          );
+        }
+        const evidenceTypeCapRaw = Number(process.env.SPINE_AUTONOMY_EVIDENCE_MAX_PER_TYPE || 1);
+        const evidenceTypeCap = Number.isFinite(evidenceTypeCapRaw)
+          ? Math.max(0, Math.min(6, Math.floor(evidenceTypeCapRaw)))
+          : 1;
+        const extraAttemptsRaw = Number(process.env.SPINE_AUTONOMY_EVIDENCE_EXTRA_ATTEMPTS || (evidenceRuns * 2));
+        const extraAttempts = Number.isFinite(extraAttemptsRaw)
+          ? Math.max(0, Math.min(18, Math.floor(extraAttemptsRaw)))
+          : Math.max(0, Math.min(18, evidenceRuns * 2));
+        const maxAttempts = evidenceRuns + extraAttempts;
+        const typeCounts = {};
+        const proposalTypeMap = proposalTypeMapForDate(dateStr);
+        let acceptedAttempts = 0;
+        let rawAttempts = 0;
+        let typeCapSkips = 0;
+        while (acceptedAttempts < evidenceRuns && rawAttempts < maxAttempts) {
+          rawAttempts += 1;
           const evidence = runJson("node", ["systems/autonomy/autonomy_controller.js", "evidence", dateStr]);
           const evPayload = evidence.payload && typeof evidence.payload === "object" ? evidence.payload : null;
+          const proposalId = evPayload ? String(evPayload.proposal_id || "") : "";
+          const payloadType = evPayload ? String(evPayload.proposal_type || "").trim().toLowerCase() : "";
+          const proposalType = payloadType || (proposalId ? String(proposalTypeMap[proposalId] || "") : "");
+          const typeCount = proposalType ? Number(typeCounts[proposalType] || 0) : 0;
+          const overTypeCap = evidenceTypeCap > 0 && proposalType && typeCount >= evidenceTypeCap;
+          if (overTypeCap) {
+            typeCapSkips += 1;
+            appendLedger(dateStr, {
+              ts: nowIso(),
+              type: "spine_autonomy_evidence_skipped_type_cap",
+              mode,
+              date: dateStr,
+              raw_attempt_index: rawAttempts,
+              attempts_total: maxAttempts,
+              accepted_attempts: acceptedAttempts,
+              evidence_runs_target: evidenceRuns,
+              proposal_id: proposalId || null,
+              proposal_type: proposalType,
+              type_count: typeCount,
+              type_cap: evidenceTypeCap,
+              result: evPayload ? evPayload.result || null : null
+            });
+            console.log(
+              ` autonomy_evidence attempt=${rawAttempts}/${maxAttempts}` +
+              ` skipped=type_cap type=${proposalType}` +
+              ` count=${typeCount}` +
+              ` cap=${evidenceTypeCap}`
+            );
+            continue;
+          }
+          acceptedAttempts += 1;
           const ok = evidence.ok && !!evPayload;
           if (ok) evidenceOkCount++;
+          if (proposalType) typeCounts[proposalType] = typeCount + 1;
           appendLedger(dateStr, {
             ts: nowIso(),
             type: "spine_autonomy_evidence",
             mode,
             date: dateStr,
-            attempt_index: i + 1,
+            attempt_index: acceptedAttempts,
             attempts_total: evidenceRuns,
+            raw_attempt_index: rawAttempts,
+            raw_attempts_total: maxAttempts,
             ok,
             result: evPayload ? evPayload.result || null : null,
             proposal_id: evPayload ? evPayload.proposal_id || null : null,
+            proposal_type: proposalType || null,
             preview_receipt_id: evPayload ? evPayload.preview_receipt_id || null : null,
             reason: !evidence.ok
               ? String(evidence.stderr || evidence.stdout || `autonomy_evidence_exit_${evidence.code}`).slice(0, 180)
               : null
           });
           if (ok) {
-            console.log(` autonomy_evidence attempt=${i + 1}/${evidenceRuns} result=${evPayload.result || "unknown"} receipt=${evPayload.preview_receipt_id || "none"}`);
+            console.log(
+              ` autonomy_evidence attempt=${acceptedAttempts}/${evidenceRuns}` +
+              ` raw=${rawAttempts}/${maxAttempts}` +
+              ` type=${proposalType || "unknown"}` +
+              ` result=${evPayload.result || "unknown"}` +
+              ` receipt=${evPayload.preview_receipt_id || "none"}`
+            );
           } else {
-            console.log(` autonomy_evidence attempt=${i + 1}/${evidenceRuns} unavailable reason=${String(evidence.stderr || evidence.stdout || "unknown").slice(0, 120)}`);
+            console.log(` autonomy_evidence attempt=${acceptedAttempts}/${evidenceRuns} raw=${rawAttempts}/${maxAttempts} unavailable reason=${String(evidence.stderr || evidence.stdout || "unknown").slice(0, 120)}`);
           }
         }
-        console.log(` autonomy_evidence summary ok=${evidenceOkCount}/${evidenceRuns}`);
+        console.log(
+          ` autonomy_evidence summary ok=${evidenceOkCount}/${evidenceRuns}` +
+          ` raw_attempts=${rawAttempts}/${maxAttempts}` +
+          ` type_cap_skips=${typeCapSkips}`
+        );
       }
     }
 
@@ -1751,7 +2266,17 @@ function main() {
       if (!fitness.ok || !fitnessPayload) {
         const reason = String(fitness.stderr || fitness.stdout || "unknown").slice(0, 120);
         console.log(` outcome_fitness unavailable reason=${reason}`);
-        if (strict) process.exit(fitness.code || 1);
+        if (strict) {
+          emitSpinePainSignal(
+            mode,
+            dateStr,
+            "outcome_fitness_failed",
+            "Outcome fitness loop failed in strict mode",
+            reason,
+            { severity: "medium", risk: "medium", signature_extra: String(fitness.code || 1) }
+          );
+          process.exit(fitness.code || 1);
+        }
       } else {
         console.log(
           ` outcome_fitness score=${Number(fitnessPayload.realized_outcome_score || 0)}` +
@@ -2065,11 +2590,31 @@ function main() {
       if (!calibration.ok || !payload) {
         const reason = String(calibration.stderr || calibration.stdout || "unknown").slice(0, 120);
         console.log(` router_budget_calibration unavailable reason=${reason}`);
-        if (strict) process.exit(calibration.code || 1);
+        if (strict) {
+          emitSpinePainSignal(
+            mode,
+            dateStr,
+            "router_budget_calibration_failed",
+            "Router budget calibration failed in strict mode",
+            reason,
+            { severity: "medium", risk: "medium", signature_extra: String(calibration.code || 1) }
+          );
+          process.exit(calibration.code || 1);
+        }
       } else if (applyResult && applyResult.ok === false) {
         const reason = String(applyResult.error || "apply_failed").slice(0, 120);
         console.log(` router_budget_calibration apply_fail reason=${reason}`);
-        if (strict) process.exit(applyResult.code || 1);
+        if (strict) {
+          emitSpinePainSignal(
+            mode,
+            dateStr,
+            "router_budget_calibration_apply_failed",
+            "Router budget calibration apply step failed in strict mode",
+            reason,
+            { severity: "medium", risk: "medium", signature_extra: String(applyResult.code || 1) }
+          );
+          process.exit(applyResult.code || 1);
+        }
       } else {
         const modeMsg = String(process.env.SPINE_ROUTER_BUDGET_CALIBRATION_APPLY || "") === "1" ? "apply" : "report";
         console.log(` router_budget_calibration mode=${modeMsg} changed=${changed == null ? "n/a" : changed} applied=${applied}`);
@@ -2171,7 +2716,17 @@ function main() {
         if (!health.ok || !payload) {
           const reason = String(health.stderr || health.stdout || "unknown").slice(0, 120);
           console.log(` autonomy_health ${runCfg.label} unavailable reason=${reason}`);
-          if (strict) process.exit(health.code || 1);
+          if (strict) {
+            emitSpinePainSignal(
+              mode,
+              dateStr,
+              `autonomy_health_${runCfg.label}_failed`,
+              `Autonomy health check (${runCfg.label}) failed in strict mode`,
+              reason,
+              { severity: "medium", risk: "medium", signature_extra: String(health.code || 1) }
+            );
+            process.exit(health.code || 1);
+          }
           continue;
         }
         console.log(
@@ -2183,6 +2738,14 @@ function main() {
         );
         if (strict && critical > 0) {
           console.error(` autonomy_health ${runCfg.label} FAIL critical=${critical}`);
+          emitSpinePainSignal(
+            mode,
+            dateStr,
+            `autonomy_health_${runCfg.label}_critical`,
+            `Autonomy health check (${runCfg.label}) reported critical issues`,
+            `critical=${critical} warns=${warns}`,
+            { severity: "high", risk: "high", signature_extra: `${runCfg.label}:${critical}` }
+          );
           process.exit(1);
         }
       }
@@ -2237,7 +2800,17 @@ function main() {
       if (!oracle.ok || !payload) {
         const reason = String(oracle.stderr || oracle.stdout || "unknown").slice(0, 120);
         console.log(` alignment_oracle unavailable reason=${reason}`);
-        if (strict) process.exit(oracle.code || 1);
+        if (strict) {
+          emitSpinePainSignal(
+            mode,
+            dateStr,
+            "alignment_oracle_failed",
+            "Alignment oracle failed in strict mode",
+            reason,
+            { severity: "medium", risk: "medium", signature_extra: String(oracle.code || 1) }
+          );
+          process.exit(oracle.code || 1);
+        }
       } else {
         console.log(
           ` alignment_oracle score=${Number(payload.alignment_score || 0)}` +
@@ -2381,7 +2954,17 @@ function main() {
         );
       } else {
         console.log(` backup_integrity unavailable reason=${String(backupIntegrity.stderr || backupIntegrity.stdout || "unknown").slice(0, 120)}`);
-        if (strict) process.exit(backupIntegrity.code || 1);
+        if (strict) {
+          emitSpinePainSignal(
+            mode,
+            dateStr,
+            "backup_integrity_failed",
+            "Backup integrity check failed in strict mode",
+            String(backupIntegrity.stderr || backupIntegrity.stdout || "backup_integrity_failed").slice(0, 180),
+            { severity: "high", risk: "high", signature_extra: String(backupIntegrity.code || 1) }
+          );
+          process.exit(backupIntegrity.code || 1);
+        }
       }
     } else {
       appendLedger(dateStr, {

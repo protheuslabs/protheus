@@ -32,6 +32,7 @@ const {
 const { loadSystemBudgetState } = require('../../systems/budget/system_budget.js');
 const { analyzeTemporalPatterns } = require('../../systems/sensory/temporal_patterns.js');
 const { resolveCatalogPath, ensureCatalog } = require('../../lib/eyes_catalog.js');
+const { emitPainSignal } = require('../../systems/autonomy/pain_signal.js');
 
 // Paths
 const WORKSPACE_DIR = path.join(__dirname, '..', '..');
@@ -307,6 +308,52 @@ function asFiniteNumber(v, fallback) {
   return Number.isFinite(n) ? n : fallback;
 }
 
+function eyeExecutionOrder(eyes, registry, opts = {}) {
+  const registryMap = new Map((registry && Array.isArray(registry.eyes) ? registry.eyes : []).map((e) => [String(e && e.id || ''), e]));
+  const specificEye = String(opts.specificEye || '').trim();
+  const forceEyeId = String(opts.forceEyeId || '').trim();
+  const nowMs = Date.now();
+  const rows = [];
+  for (const eye of (Array.isArray(eyes) ? eyes : [])) {
+    if (!eye || !eye.id) continue;
+    if (specificEye && eye.id !== specificEye) continue;
+    const reg = registryMap.get(String(eye.id)) || {};
+    const runtime = effectiveEye(eye, reg);
+    const status = String(runtime.status || eye.status || '').toLowerCase();
+    const cadence = Math.max(1, asPositiveNumber(runtime.cadence_hours, asPositiveNumber(eye.cadence_hours, 24)));
+    const lastRunMs = Date.parse(String(reg.last_run || ''));
+    const hoursSinceLastRun = Number.isFinite(lastRunMs)
+      ? Math.max(0, (nowMs - lastRunMs) / (1000 * 60 * 60))
+      : 1e6;
+    const staleAnchor = reg.last_real_signal_ts || reg.last_success || reg.last_run;
+    const staleMs = Date.parse(String(staleAnchor || ''));
+    const staleHours = Number.isFinite(staleMs)
+      ? Math.max(0, (nowMs - staleMs) / (1000 * 60 * 60))
+      : hoursSinceLastRun;
+    const overdueRatio = hoursSinceLastRun / cadence;
+    const staleRatio = staleHours / cadence;
+    const statusWeight = status === 'active' ? 1.5 : status === 'probation' ? 0.8 : status === 'dormant' ? -0.5 : status === 'retired' ? -1.5 : 0;
+    const forcedBoost = forceEyeId && String(eye.id) === forceEyeId ? 1000 : 0;
+    const score = Number(runtime.score_ema || eye.score_ema || 50);
+    const priority = forcedBoost + (overdueRatio * 4) + Math.min(6, staleRatio * 2) + statusWeight + (score / 200);
+    rows.push({
+      eye,
+      priority,
+      overdue_ratio: overdueRatio,
+      stale_ratio: staleRatio,
+      score
+    });
+  }
+  rows.sort((a, b) => {
+    if (Number(b.priority || 0) !== Number(a.priority || 0)) return Number(b.priority || 0) - Number(a.priority || 0);
+    if (Number(b.overdue_ratio || 0) !== Number(a.overdue_ratio || 0)) return Number(b.overdue_ratio || 0) - Number(a.overdue_ratio || 0);
+    if (Number(b.stale_ratio || 0) !== Number(a.stale_ratio || 0)) return Number(b.stale_ratio || 0) - Number(a.stale_ratio || 0);
+    if (Number(b.score || 0) !== Number(a.score || 0)) return Number(b.score || 0) - Number(a.score || 0);
+    return String(a.eye.id || '').localeCompare(String(b.eye.id || ''));
+  });
+  return rows.map((r) => r.eye);
+}
+
 // Runtime authority is registry first, with config as immutable defaults.
 function effectiveEye(eyeConfig, registryEye) {
   return {
@@ -419,6 +466,79 @@ function saveProposalsForDate(filePath, proposals, container) {
     return;
   }
   fs.writeFileSync(filePath, JSON.stringify(proposals, null, 2));
+}
+
+function proposalPreflightEyeRefs(proposal) {
+  const refs = new Set();
+  const p = proposal && typeof proposal === 'object' ? proposal : {};
+  const evidence = Array.isArray(p.evidence) ? p.evidence : [];
+  for (const row of evidence) {
+    const ref = String(row && row.evidence_ref || '').trim();
+    if (ref.startsWith('eye_preflight:')) {
+      const eyeId = ref.slice('eye_preflight:'.length).trim();
+      if (eyeId) refs.add(eyeId);
+    }
+    const match = String(row && row.match || '').trim();
+    const m = match.match(/preflight:([a-z0-9:_-]+)/i);
+    if (m && m[1]) refs.add(String(m[1]).trim());
+  }
+  const textBlob = [
+    p.title,
+    p.summary,
+    p.details,
+    p.suggested_next_command
+  ].map((v) => String(v || '')).join(' ');
+  const patterns = [
+    /collector preflight failed for\s+([a-z0-9:_-]+)/ig,
+    /\bpreflight:([a-z0-9:_-]+)/ig
+  ];
+  for (const re of patterns) {
+    let m;
+    while ((m = re.exec(textBlob)) !== null) {
+      const eyeId = String(m[1] || '').trim();
+      if (eyeId) refs.add(eyeId);
+    }
+  }
+  return Array.from(refs);
+}
+
+function resolveCollectorPreflightPainProposals(healthyEyeIds, reason) {
+  const healthy = new Set(Array.isArray(healthyEyeIds) ? healthyEyeIds.map((x) => String(x || '').trim()).filter(Boolean) : []);
+  if (healthy.size === 0) return { resolved: 0, files: 0 };
+  if (!fs.existsSync(SENSORY_PROPOSALS_DIR)) return { resolved: 0, files: 0 };
+  const files = fs.readdirSync(SENSORY_PROPOSALS_DIR)
+    .filter((f) => /^\d{4}-\d{2}-\d{2}\.json$/.test(f))
+    .sort();
+  let resolved = 0;
+  let touched = 0;
+  for (const f of files) {
+    const filePath = path.join(SENSORY_PROPOSALS_DIR, f);
+    const { container, proposals } = loadProposalsForDate(String(f).replace(/\.json$/, ''));
+    if (!Array.isArray(proposals) || proposals.length === 0) continue;
+    let changed = false;
+    const next = proposals.map((p) => {
+      if (!p || typeof p !== 'object') return p;
+      const status = String(p.status || 'open').toLowerCase();
+      if (status === 'resolved' || status === 'done' || status === 'closed') return p;
+      const eyeRefs = proposalPreflightEyeRefs(p);
+      if (eyeRefs.length === 0) return p;
+      const matchedHealthy = eyeRefs.some((id) => healthy.has(String(id || '').trim()));
+      if (!matchedHealthy) return p;
+      changed = true;
+      resolved += 1;
+      return {
+        ...p,
+        status: 'resolved',
+        resolved_at: new Date().toISOString(),
+        resolution_reason: String(reason || 'collector_preflight_recovered').slice(0, 120)
+      };
+    });
+    if (changed) {
+      touched += 1;
+      saveProposalsForDate(filePath, next, container);
+    }
+  }
+  return { resolved, files: touched };
 }
 
 function normalizeFailure(errLike) {
@@ -550,6 +670,168 @@ function updateOutageMode(config, registry, opts = {}) {
     success_eye_ids: evalWindow.success_eyes,
     state
   };
+}
+
+function collectRegistryDarkCandidates(config, registry, opts = {}) {
+  const nowMs = Number.isFinite(Number(opts.nowMs)) ? Number(opts.nowMs) : Date.now();
+  const minSilenceHours = Math.max(2, Number(opts.minSilenceHours || process.env.EYES_SELF_HEAL_MIN_SILENCE_HOURS || 8));
+  const cadenceMultiplier = Math.max(1, Number(opts.cadenceMultiplier || process.env.EYES_SELF_HEAL_CADENCE_MULTIPLIER || 2));
+  const failThreshold = Math.max(1, Number(opts.failThreshold || process.env.EYES_SELF_HEAL_FAIL_THRESHOLD || 1));
+  const noSignalThreshold = Math.max(1, Number(opts.noSignalThreshold || process.env.EYES_SELF_HEAL_NO_SIGNAL_THRESHOLD || 2));
+  const noRecoveryAttemptsThreshold = Math.max(
+    1,
+    Number(opts.noRecoveryAttemptsThreshold || process.env.EYES_SELF_HEAL_NO_RECOVERY_ATTEMPTS_THRESHOLD || 2)
+  );
+  const eyes = Array.isArray(config && config.eyes) ? config.eyes : [];
+  const regEyes = Array.isArray(registry && registry.eyes) ? registry.eyes : [];
+  const regMap = new Map(regEyes.map((e) => [String(e && e.id || ''), e]));
+
+  function hoursSinceAt(ts) {
+    const ms = Date.parse(String(ts || ''));
+    if (!Number.isFinite(ms)) return null;
+    return Math.max(0, (nowMs - ms) / (1000 * 60 * 60));
+  }
+
+  const out = [];
+  for (const eye of eyes) {
+    const eyeId = String(eye && eye.id || '').trim();
+    if (!eyeId) continue;
+    const reg = regMap.get(eyeId) || {};
+    const runtimeEye = effectiveEye(eye, reg);
+    const parserType = String(runtimeEye.parser_type || eye.parser_type || '').toLowerCase();
+    const status = String(runtimeEye.status || eye.status || '').toLowerCase();
+    if (parserType === 'stub' || status === 'retired' || status === 'dormant') continue;
+
+    const cadenceHours = Math.max(1, Number(runtimeEye.cadence_hours || eye.cadence_hours || 24));
+    const expectedSilenceHours = Math.max(minSilenceHours, cadenceHours * cadenceMultiplier);
+    const lastSignalTs = reg.last_real_signal_ts || reg.last_success || reg.last_run || null;
+    const lastSignalHours = hoursSinceAt(lastSignalTs);
+    const lastErrorTs = reg.last_error_ts || reg.last_run || null;
+    const lastErrorHours = hoursSinceAt(lastErrorTs);
+    const recentFailure = Number.isFinite(lastErrorHours) && Number(lastErrorHours) <= expectedSilenceHours;
+    const staleEnough = Number.isFinite(lastSignalHours) && Number(lastSignalHours) >= expectedSilenceHours;
+    const consecutiveFailures = Number(reg.consecutive_failures || 0);
+    const noSignalRuns = Number(reg.consecutive_no_signal_runs || 0);
+    const selfHealAttempts = Number(reg.self_heal_attempts || 0);
+    const selfHealRecoveries = Number(reg.self_heal_recoveries || 0);
+
+    let reason = null;
+    if (staleEnough && consecutiveFailures >= failThreshold) reason = 'stale_failures';
+    else if (staleEnough && noSignalRuns >= noSignalThreshold) reason = 'stale_no_signal_runs';
+    else if (staleEnough && selfHealAttempts >= noRecoveryAttemptsThreshold && selfHealRecoveries <= 0) reason = 'stale_self_heal_no_recovery';
+    else if (consecutiveFailures >= failThreshold && recentFailure) reason = 'fresh_failures';
+    if (!reason) continue;
+
+    const staleRatio = Number.isFinite(lastSignalHours)
+      ? Number(lastSignalHours) / Math.max(1, expectedSilenceHours)
+      : 0;
+    const priority = Number((staleRatio * 2) + (consecutiveFailures * 3) + (noSignalRuns * 2)).toFixed(3);
+    out.push({
+      eye_id: eyeId,
+      dark_reason: reason,
+      source: 'registry_fallback',
+      status,
+      expected_silence_hours: Number(expectedSilenceHours.toFixed(2)),
+      last_signal_hours: Number.isFinite(lastSignalHours) ? Number(lastSignalHours.toFixed(2)) : null,
+      last_error_hours: Number.isFinite(lastErrorHours) ? Number(lastErrorHours.toFixed(2)) : null,
+      consecutive_failures: consecutiveFailures,
+      consecutive_no_signal_runs: noSignalRuns,
+      self_heal_attempts: selfHealAttempts,
+      self_heal_recoveries: selfHealRecoveries,
+      baseline_avg_real_items: null,
+      priority
+    });
+  }
+
+  out.sort((a, b) => {
+    if (Number(b.priority || 0) !== Number(a.priority || 0)) return Number(b.priority || 0) - Number(a.priority || 0);
+    if (Number(b.consecutive_failures || 0) !== Number(a.consecutive_failures || 0)) return Number(b.consecutive_failures || 0) - Number(a.consecutive_failures || 0);
+    if (Number(b.consecutive_no_signal_runs || 0) !== Number(a.consecutive_no_signal_runs || 0)) return Number(b.consecutive_no_signal_runs || 0) - Number(a.consecutive_no_signal_runs || 0);
+    return String(a.eye_id || '').localeCompare(String(b.eye_id || ''));
+  });
+  return out;
+}
+
+function mergeSelfHealCandidates(temporalCandidates, registryCandidates) {
+  const out = [];
+  const seen = new Set();
+  const push = (cand, source) => {
+    if (!cand || typeof cand !== 'object') return;
+    const eyeId = String(cand.eye_id || '').trim();
+    if (!eyeId || seen.has(eyeId)) return;
+    seen.add(eyeId);
+    out.push({
+      ...cand,
+      eye_id: eyeId,
+      source: String(cand.source || source || 'unknown')
+    });
+  };
+  for (const cand of (Array.isArray(temporalCandidates) ? temporalCandidates : [])) {
+    push(cand, 'temporal_patterns');
+  }
+  for (const cand of (Array.isArray(registryCandidates) ? registryCandidates : [])) {
+    push(cand, 'registry_fallback');
+  }
+  return out;
+}
+
+function selfHealReasonWeight(reason) {
+  const r = String(reason || '').trim().toLowerCase();
+  if (r === 'stale_self_heal_no_recovery') return 18;
+  if (r === 'stale_failures') return 14;
+  if (r === 'fresh_failures') return 12;
+  if (r === 'stale_no_signal_runs') return 8;
+  return 0;
+}
+
+function selfHealPriority(cand) {
+  const base = Number(cand && cand.priority || 0);
+  const lastSignal = Number(cand && cand.last_signal_hours || 0);
+  const failures = Number(cand && cand.consecutive_failures || 0);
+  const noSignalRuns = Number(cand && cand.consecutive_no_signal_runs || 0);
+  return base
+    + selfHealReasonWeight(cand && cand.dark_reason)
+    + (String(cand && cand.status || '').toLowerCase() === 'active' ? 4 : 0)
+    + (String(cand && cand.status || '').toLowerCase() === 'probation' ? 2 : 0)
+    + Math.min(24, Math.max(0, lastSignal) / 3)
+    + (Math.max(0, failures) * 2)
+    + Math.min(8, Math.max(0, noSignalRuns));
+}
+
+function isCriticalSelfHealCandidate(cand) {
+  const reason = String(cand && cand.dark_reason || '').trim().toLowerCase();
+  if (reason === 'stale_failures' || reason === 'stale_self_heal_no_recovery' || reason === 'fresh_failures') return true;
+  return Number(cand && cand.consecutive_failures || 0) >= 2;
+}
+
+function rankSelfHealCandidates(candidates) {
+  const byEye = new Map();
+  for (const cand of (Array.isArray(candidates) ? candidates : [])) {
+    if (!cand || typeof cand !== 'object') continue;
+    const eyeId = String(cand.eye_id || '').trim();
+    if (!eyeId) continue;
+    const score = Number(selfHealPriority(cand));
+    const prev = byEye.get(eyeId);
+    if (!prev || score > prev._score) {
+      byEye.set(eyeId, { ...cand, eye_id: eyeId, _score: score });
+    }
+  }
+  const rows = Array.from(byEye.values());
+  rows.sort((a, b) => {
+    if (Number(b._score || 0) !== Number(a._score || 0)) return Number(b._score || 0) - Number(a._score || 0);
+    const aSig = Number(a.last_signal_hours || 0);
+    const bSig = Number(b.last_signal_hours || 0);
+    if (bSig !== aSig) return bSig - aSig;
+    const aFail = Number(a.consecutive_failures || 0);
+    const bFail = Number(b.consecutive_failures || 0);
+    if (bFail !== aFail) return bFail - aFail;
+    return String(a.eye_id || '').localeCompare(String(b.eye_id || ''));
+  });
+  return rows.map((row) => {
+    const out = { ...row };
+    delete out._score;
+    return out;
+  });
 }
 
 function emitInfrastructureOutageAnomaly(dateStr, outageInfo) {
@@ -1110,6 +1392,29 @@ function emitCollectorRemediationProposals(dateStr, config, registry) {
       threshold: Number(escalationThreshold),
       cooldown_hours: Number(escalationCooldownHours)
     });
+    emitPainSignal({
+      ts: new Date().toISOString(),
+      source: 'external_eyes',
+      subsystem: 'sensory',
+      code: `collector_escalation:${String(top.code || 'collector_error')}`,
+      summary: `Persistent collector failure for ${String(eyeConfig.id || '')} exceeded threshold`,
+      details: String(reg.last_error || '').slice(0, 320),
+      severity: 'medium',
+      risk: 'medium',
+      window_hours: Math.max(6, Number(escalationCooldownHours || 24)),
+      escalate_after: Math.max(1, Number(escalationThreshold || 3)),
+      cooldown_hours: Math.max(1, Number(escalationCooldownHours || 24)),
+      create_proposal: false,
+      signature_extra: `${String(eyeConfig.id || '')}:${String(top.code || '')}:${String(reg.parser_type || eyeConfig.parser_type || '')}`,
+      evidence: [
+        {
+          source: 'eyes_raw',
+          path: `state/sensory/eyes/raw/${dateStr}.jsonl`,
+          match: `eye_run_failed | ${String(eyeConfig.id || '')} | ${String(top.code || '')}`.slice(0, 120),
+          evidence_ref: `eye:${String(eyeConfig.id || '')}`
+        }
+      ]
+    });
   }
 
   if (added > 0 || escalated > 0) {
@@ -1344,7 +1649,7 @@ async function preflight(opts = {}) {
       eye_id: String(eyeConfig.id || ''),
       parser_type: parserType,
       status,
-      runnable: status !== 'retired' && parserType !== 'stub',
+      runnable: status !== 'retired' && status !== 'dormant' && parserType !== 'stub',
       ok: !!staticRep.ok,
       checks: Array.isArray(staticRep.checks) ? staticRep.checks : [],
       failures: Array.isArray(staticRep.failures) ? staticRep.failures : []
@@ -1370,6 +1675,51 @@ async function preflight(opts = {}) {
     failure_code_counts: failureCodeCounts,
     report
   };
+  if (failingRunnable.length === 0) {
+    const healthyEyeIds = report
+      .filter((r) => r && r.ok === true)
+      .map((r) => String(r.eye_id || '').trim())
+      .filter(Boolean);
+    const resolved = resolveCollectorPreflightPainProposals(
+      healthyEyeIds,
+      `collector_preflight_recovered:${getToday()}`
+    );
+    payload.preflight_resolved_proposals = Number(resolved.resolved || 0);
+    payload.preflight_resolved_files = Number(resolved.files || 0);
+  }
+  let preflightPainSignals = 0;
+  for (const row of failingRunnable) {
+    const failures = Array.isArray(row.failures) ? row.failures : [];
+    const firstFailure = failures[0] && typeof failures[0] === 'object' ? failures[0] : {};
+    const code = String(firstFailure.code || 'collector_preflight_failed').toLowerCase();
+    const message = String(firstFailure.message || 'collector preflight failed');
+    const emitted = emitPainSignal({
+      ts: new Date().toISOString(),
+      source: 'external_eyes',
+      subsystem: 'sensory',
+      code: `collector_preflight:${code}`,
+      summary: `Collector preflight failed for ${String(row.eye_id || '')}`,
+      details: `${String(row.eye_id || '')} parser=${String(row.parser_type || '')} message=${message}`.slice(0, 320),
+      severity: 'medium',
+      risk: 'medium',
+      proposal_type: 'collector_preflight_remediation',
+      window_hours: Math.max(6, Number(process.env.EYES_PREFLIGHT_PAIN_WINDOW_HOURS || 24)),
+      escalate_after: Math.max(1, Number(process.env.EYES_PREFLIGHT_PAIN_ESCALATE_AFTER || 2)),
+      cooldown_hours: Math.max(1, Number(process.env.EYES_PREFLIGHT_PAIN_COOLDOWN_HOURS || 12)),
+      create_proposal: String(process.env.EYES_PREFLIGHT_PAIN_CREATE_PROPOSAL || '1') !== '0',
+      signature_extra: `${String(row.eye_id || '')}:${String(row.parser_type || '')}:${code}`,
+      evidence: [
+        {
+          source: 'collector_preflight',
+          path: `state/sensory/eyes/raw/${getToday()}.jsonl`,
+          match: `preflight:${String(row.eye_id || '')}:${code}`.slice(0, 120),
+          evidence_ref: `eye_preflight:${String(row.eye_id || '')}`
+        }
+      ]
+    });
+    if (emitted && emitted.ok === true) preflightPainSignals += 1;
+  }
+  payload.preflight_pain_signals = preflightPainSignals;
   process.stdout.write(JSON.stringify(payload) + '\n');
   return payload;
 }
@@ -1577,12 +1927,17 @@ async function run(opts = {}) {
         // Update registry
         registryEye.last_run = new Date().toISOString();
         registryEye.last_success = new Date().toISOString();
+        registryEye.last_healthy_signal_ts = new Date().toISOString();
         registryEye.total_runs = Number(registryEye.total_runs || 0) + 1;
         registryEye.run_count++;
         registryEye.total_items += result.items.length;
         registryEye.consecutive_failures = 0;
+        const emptySuccessSignal = runtimeEye.empty_success_is_signal === true || eyeConfig.empty_success_is_signal === true;
         if (parserType !== 'stub') {
           if (realSignalItems > 0) {
+            registryEye.consecutive_no_signal_runs = 0;
+            registryEye.last_real_signal_ts = new Date().toISOString();
+          } else if (emptySuccessSignal && emittedItems.length === 0 && Number(result.requests || 0) > 0) {
             registryEye.consecutive_no_signal_runs = 0;
             registryEye.last_real_signal_ts = new Date().toISOString();
           } else {
@@ -1707,7 +2062,8 @@ async function run(opts = {}) {
     }
   }
   
-  for (const eyeConfig of config.eyes) {
+  const orderedEyes = eyeExecutionOrder(config.eyes || [], registry, { specificEye, forceEyeId });
+  for (const eyeConfig of orderedEyes) {
     let registryEye = registry.eyes.find(e => e.id === eyeConfig.id);
     if (!registryEye) {
       registryEye = {
@@ -1723,7 +2079,8 @@ async function run(opts = {}) {
     const runtimeEye = effectiveEye(eyeConfig, registryEye);
     const parserType = String(runtimeEye.parser_type || eyeConfig.parser_type || '').toLowerCase();
     const isForced = forceEyeId && eyeConfig.id === forceEyeId;
-    const probationStaleHours = Math.max(12, Number(process.env.EYES_PROBATION_STALE_HOURS || 24));
+    const dormantAutoWake = String(process.env.EYES_DORMANT_AUTO_WAKE || '0').trim() === '1';
+    const probationStaleHours = Math.max(12, Number(process.env.EYES_PROBATION_STALE_HOURS || 12));
     const probationDormantFailures = Math.max(2, Number(process.env.EYES_PROBATION_DORMANT_FAILURES || 2));
     const probationDormantCooldownHours = Math.max(
       1,
@@ -1771,6 +2128,10 @@ async function run(opts = {}) {
       console.log(`⏭️  Skipping ${eyeConfig.id}: retired`);
       continue;
     }
+    if (!isForced && runtimeEye.status === 'dormant' && !dormantAutoWake) {
+      console.log(`⏭️  Skipping ${eyeConfig.id}: dormant`);
+      continue;
+    }
 
     // Cooldown gate after repeated failures (auto-park).
     if (!isForced && registryEye.cooldown_until) {
@@ -1782,7 +2143,13 @@ async function run(opts = {}) {
       }
       // Cooldown expired: clear marker and move to probation for controlled retry.
       registryEye.cooldown_until = null;
-      if (registryEye.status === 'dormant') registryEye.status = 'probation';
+      if (registryEye.status === 'dormant') {
+        if (dormantAutoWake) registryEye.status = 'probation';
+        else {
+          console.log(`⏭️  Skipping ${eyeConfig.id}: dormant`);
+          continue;
+        }
+      }
     }
     
     // Check cadence
@@ -1908,14 +2275,49 @@ async function run(opts = {}) {
     candidates: []
   };
 
-  if (selfHealEnabled && temporalReport && Array.isArray(temporalReport.dark_candidates)) {
+  if (selfHealEnabled) {
     const maxHeal = Math.max(0, Number(process.env.EYES_SELF_HEAL_MAX_PER_RUN || 2));
+    const criticalReserve = Math.max(0, Number(process.env.EYES_SELF_HEAL_CRITICAL_MIN_PER_RUN || 1));
     const healCooldownHours = Math.max(1, Number(process.env.EYES_SELF_HEAL_COOLDOWN_HOURS || 4));
+    const healFailDormantHours = Math.max(1, Number(process.env.EYES_SELF_HEAL_FAIL_DORMANT_HOURS || 24));
     const retryCadenceHours = Math.max(1, Number(process.env.EYES_RETRY_CADENCE_HOURS || 6));
     const nowMs = Date.now();
+    const temporalCandidates = temporalReport && Array.isArray(temporalReport.dark_candidates)
+      ? temporalReport.dark_candidates
+      : [];
+    const registryFallbackCandidates = collectRegistryDarkCandidates(config, registry, { nowMs });
+    const healCandidates = rankSelfHealCandidates(
+      mergeSelfHealCandidates(temporalCandidates, registryFallbackCandidates)
+    );
+    if (healCandidates.length > 0) {
+      console.log(
+        `🩺 Self-heal candidates: total=${healCandidates.length}` +
+        ` temporal=${temporalCandidates.length}` +
+        ` registry=${registryFallbackCandidates.length}`
+      );
+    }
 
-    for (const cand of temporalReport.dark_candidates) {
-      if (selfHealStats.attempted >= maxHeal) break;
+    const prioritized = [];
+    const seenForRun = new Set();
+    for (const cand of healCandidates) {
+      if (isCriticalSelfHealCandidate(cand)) {
+        const eyeId = String(cand && cand.eye_id || '').trim();
+        if (!eyeId || seenForRun.has(eyeId)) continue;
+        seenForRun.add(eyeId);
+        prioritized.push(cand);
+      }
+      if (prioritized.length >= criticalReserve) break;
+    }
+    for (const cand of healCandidates) {
+      const eyeId = String(cand && cand.eye_id || '').trim();
+      if (!eyeId || seenForRun.has(eyeId)) continue;
+      seenForRun.add(eyeId);
+      prioritized.push(cand);
+    }
+    const effectiveMaxHeal = Math.max(maxHeal, Math.min(criticalReserve, prioritized.length));
+
+    for (const cand of prioritized) {
+      if (selfHealStats.attempted >= effectiveMaxHeal) break;
       const eyeId = String(cand && cand.eye_id || '');
       if (!eyeId) continue;
       if (specificEye && specificEye !== eyeId) continue;
@@ -1923,6 +2325,7 @@ async function run(opts = {}) {
       const latestRegistry = loadRegistry();
       const regEye = (latestRegistry.eyes || []).find((e) => e && e.id === eyeId);
       if (!regEye) continue;
+      if (String(regEye.status || '').toLowerCase() === 'dormant' && !specificEye) continue;
       const cooldownUntil = Date.parse(String(regEye.self_heal_cooldown_until || ''));
       if (Number.isFinite(cooldownUntil) && nowMs < cooldownUntil) continue;
 
@@ -1932,12 +2335,13 @@ async function run(opts = {}) {
         ts: new Date().toISOString(),
         type: 'eye_self_heal_triggered',
         eye_id: eyeId,
-        reason: 'went_dark',
+        reason: String(cand.dark_reason || 'went_dark'),
+        candidate_source: String(cand.source || 'unknown'),
         expected_silence_hours: Number(cand.expected_silence_hours || 0),
         last_signal_hours: Number(cand.last_signal_hours || 0),
         baseline_avg_real_items: Number(cand.baseline_avg_real_items || 0)
       });
-      console.log(`🩺 Self-heal probe: ${eyeId}`);
+      console.log(`🩺 Self-heal probe: ${eyeId} source=${String(cand.source || 'unknown')} reason=${String(cand.dark_reason || 'went_dark')}`);
 
       const healRes = await run({
         eye: eyeId,
@@ -1958,8 +2362,14 @@ async function run(opts = {}) {
         postEye.last_self_heal_result = recovered ? 'recovered' : 'no_recovery';
         postEye.self_heal_cooldown_until = new Date(Date.now() + (healCooldownHours * 60 * 60 * 1000)).toISOString();
         if (!recovered) {
-          postEye.status = 'probation';
-          postEye.cadence_hours = Math.min(Number(postEye.cadence_hours || retryCadenceHours), retryCadenceHours);
+          const criticalFail = isCriticalSelfHealCandidate(cand) && Number(postEye.consecutive_failures || 0) >= 2;
+          if (criticalFail) {
+            postEye.status = 'dormant';
+            postEye.cooldown_until = new Date(Date.now() + (healFailDormantHours * 60 * 60 * 1000)).toISOString();
+          } else {
+            postEye.status = 'probation';
+            postEye.cadence_hours = Math.min(Number(postEye.cadence_hours || retryCadenceHours), retryCadenceHours);
+          }
         }
         saveRegistry(postRegistry);
       }
@@ -2871,7 +3281,9 @@ module.exports = {
   ensureDirs,
   safeReadJsonl,
   computeYieldSignals,
-  resolveInfrastructureOutageProposals
+  resolveInfrastructureOutageProposals,
+  collectRegistryDarkCandidates,
+  mergeSelfHealCandidates
 };
 
 // Run if called directly

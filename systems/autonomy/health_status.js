@@ -36,6 +36,9 @@ const PIPELINE_SPC_GATE = process.env.AUTONOMY_HEALTH_PIPELINE_SPC_SCRIPT
 const INTEGRITY_KERNEL = process.env.AUTONOMY_HEALTH_INTEGRITY_KERNEL_SCRIPT
   ? path.resolve(process.env.AUTONOMY_HEALTH_INTEGRITY_KERNEL_SCRIPT)
   : path.join(ROOT, 'systems', 'security', 'integrity_kernel.js');
+const STARTUP_ATTESTATION = process.env.AUTONOMY_HEALTH_STARTUP_ATTESTATION_SCRIPT
+  ? path.resolve(process.env.AUTONOMY_HEALTH_STARTUP_ATTESTATION_SCRIPT)
+  : path.join(ROOT, 'systems', 'security', 'startup_attestation.js');
 const INTEGRITY_POLICY = process.env.AUTONOMY_HEALTH_INTEGRITY_POLICY_PATH
   ? path.resolve(process.env.AUTONOMY_HEALTH_INTEGRITY_POLICY_PATH)
   : path.join(ROOT, 'config', 'security_integrity_policy.json');
@@ -49,6 +52,9 @@ const SPINE_HEALTH_PATH = process.env.AUTONOMY_HEALTH_SPINE_HEALTH_PATH
 const ROUTING_MODEL_HEALTH_PATH = process.env.AUTONOMY_HEALTH_ROUTING_MODEL_HEALTH_PATH
   ? path.resolve(process.env.AUTONOMY_HEALTH_ROUTING_MODEL_HEALTH_PATH)
   : path.join(ROOT, 'state', 'routing', 'model_health.json');
+const ROUTING_DECISIONS_LOG_PATH = process.env.AUTONOMY_HEALTH_ROUTING_DECISIONS_PATH
+  ? path.resolve(process.env.AUTONOMY_HEALTH_ROUTING_DECISIONS_PATH)
+  : path.join(ROOT, 'state', 'routing', 'routing_decisions.jsonl');
 const AUTONOMY_COOLDOWNS = process.env.AUTONOMY_HEALTH_COOLDOWNS_PATH
   ? path.resolve(process.env.AUTONOMY_HEALTH_COOLDOWNS_PATH)
   : path.join(ROOT, 'state', 'autonomy', 'cooldowns.json');
@@ -76,6 +82,9 @@ const SYSTEM_BUDGET_EVENTS_PATH = process.env.AUTONOMY_HEALTH_SYSTEM_BUDGET_EVEN
 const SYSTEM_BUDGET_AUTOPAUSE_PATH = process.env.AUTONOMY_HEALTH_SYSTEM_BUDGET_AUTOPAUSE_PATH
   ? path.resolve(process.env.AUTONOMY_HEALTH_SYSTEM_BUDGET_AUTOPAUSE_PATH)
   : path.join(ROOT, 'state', 'autonomy', 'budget_autopause.json');
+const STARTUP_ATTESTATION_AUDIT_PATH = process.env.AUTONOMY_HEALTH_STARTUP_ATTESTATION_AUDIT_PATH
+  ? path.resolve(process.env.AUTONOMY_HEALTH_STARTUP_ATTESTATION_AUDIT_PATH)
+  : path.join(ROOT, 'state', 'security', 'startup_attestation_audit.jsonl');
 
 const NOW_ISO_OVERRIDE = String(process.env.AUTONOMY_HEALTH_NOW_ISO || '').trim();
 const SKIP_COMMANDS = String(process.env.AUTONOMY_HEALTH_SKIP_COMMANDS || '0') === '1';
@@ -89,6 +98,10 @@ const STARVATION_MIN_ELIGIBLE = Number(process.env.AUTONOMY_HEALTH_STARVATION_MI
 const STARVATION_WARN_HOURS = Number(process.env.AUTONOMY_HEALTH_STARVATION_WARN_HOURS || 18);
 const STARVATION_CRITICAL_HOURS = Number(process.env.AUTONOMY_HEALTH_STARVATION_CRITICAL_HOURS || 36);
 const STARVATION_CRITICAL_ELIGIBLE = Number(process.env.AUTONOMY_HEALTH_STARVATION_CRITICAL_ELIGIBLE || 6);
+const QUEUE_BACKLOG_WARN_OPEN = Number(process.env.AUTONOMY_HEALTH_QUEUE_BACKLOG_WARN_OPEN || 40);
+const QUEUE_BACKLOG_CRITICAL_OPEN = Number(process.env.AUTONOMY_HEALTH_QUEUE_BACKLOG_CRITICAL_OPEN || 80);
+const QUEUE_BACKLOG_WARN_AGE_HOURS = Number(process.env.AUTONOMY_HEALTH_QUEUE_BACKLOG_WARN_AGE_HOURS || 24);
+const QUEUE_BACKLOG_CRITICAL_AGE_HOURS = Number(process.env.AUTONOMY_HEALTH_QUEUE_BACKLOG_CRITICAL_AGE_HOURS || 72);
 
 const LOOP_STALL_WARN_HOURS = Number(process.env.AUTONOMY_HEALTH_LOOP_STALL_WARN_HOURS || 8);
 const LOOP_STALL_CRITICAL_HOURS = Number(process.env.AUTONOMY_HEALTH_LOOP_STALL_CRITICAL_HOURS || 24);
@@ -98,6 +111,18 @@ const ROUTING_DOWN_CRITICAL = Number(process.env.AUTONOMY_HEALTH_ROUTING_DOWN_CR
 const BUDGET_DEGRADE_WARN_COUNT = Number(process.env.AUTONOMY_HEALTH_BUDGET_DEGRADE_WARN_COUNT || 3);
 const ROUTE_ATTESTATION_WARN = Number(process.env.AUTONOMY_HEALTH_ROUTE_ATTESTATION_WARN || 1);
 const ROUTE_ATTESTATION_CRITICAL = Number(process.env.AUTONOMY_HEALTH_ROUTE_ATTESTATION_CRITICAL || 3);
+const ROUTING_RECOVERY_WARN_HOURS = Number(process.env.AUTONOMY_HEALTH_ROUTING_RECOVERY_WARN_HOURS || 24);
+const ROUTING_RECOVERY_CRITICAL_HOURS = Number(process.env.AUTONOMY_HEALTH_ROUTING_RECOVERY_CRITICAL_HOURS || 72);
+const STARTUP_ATTESTATION_WARN_HOURS = Number(process.env.AUTONOMY_HEALTH_STARTUP_ATTESTATION_WARN_HOURS || 12);
+const STARTUP_ATTESTATION_CRITICAL_HOURS = Number(process.env.AUTONOMY_HEALTH_STARTUP_ATTESTATION_CRITICAL_HOURS || 36);
+const STARTUP_ATTESTATION_AUTO_ISSUE = String(process.env.AUTONOMY_HEALTH_STARTUP_ATTESTATION_AUTO_ISSUE || '1') !== '0';
+const STARTUP_ATTESTATION_AUTO_ISSUE_REASONS = new Set(
+  String(process.env.AUTONOMY_HEALTH_STARTUP_ATTESTATION_AUTO_ISSUE_REASONS || 'attestation_missing_or_invalid,attestation_stale,critical_hash_drift')
+    .split(',')
+    .map((v) => String(v || '').trim().toLowerCase())
+    .filter(Boolean)
+);
+const EXECUTE_LOCK_AUTO_DEMOTE = String(process.env.AUTONOMY_HEALTH_EXECUTE_LOCK_AUTO_DEMOTE || '1') !== '0';
 
 const SPC_BASELINE_DAYS = Number(process.env.AUTONOMY_HEALTH_SPC_BASELINE_DAYS || 21);
 const SPC_SIGMA = Number(process.env.AUTONOMY_HEALTH_SPC_SIGMA || 3);
@@ -199,6 +224,108 @@ function runJson(script, args) {
     }
   }
   return { ok: r.status === 0, code: r.status || 0, payload, stderr: String(r.stderr || '').trim() };
+}
+
+function normalizeReasonToken(v) {
+  return String(v || '').trim().toLowerCase();
+}
+
+function verifyStartupAttestationWithAutoIssue() {
+  let verify = runJson(STARTUP_ATTESTATION, ['verify']);
+  let verifyPayload = verify && verify.payload && typeof verify.payload === 'object' ? verify.payload : null;
+  const beforeReason = normalizeReasonToken(verifyPayload && verifyPayload.reason);
+  const out = {
+    attempted: false,
+    issue_ok: null,
+    verify_ok_before: verify.ok && !!verifyPayload && verifyPayload.ok === true,
+    verify_ok_after: null,
+    reason_before: beforeReason || null,
+    reason_after: null
+  };
+  if (!STARTUP_ATTESTATION_AUTO_ISSUE) {
+    out.reason_after = out.reason_before;
+    out.verify_ok_after = out.verify_ok_before;
+    return { verify, auto_issue: out };
+  }
+  if (out.verify_ok_before || !STARTUP_ATTESTATION_AUTO_ISSUE_REASONS.has(beforeReason)) {
+    out.reason_after = out.reason_before;
+    out.verify_ok_after = out.verify_ok_before;
+    return { verify, auto_issue: out };
+  }
+  out.attempted = true;
+  const issue = runJson(STARTUP_ATTESTATION, ['issue']);
+  const issuePayload = issue && issue.payload && typeof issue.payload === 'object' ? issue.payload : null;
+  out.issue_ok = issue.ok && !!issuePayload && issuePayload.ok === true;
+  if (out.issue_ok) {
+    verify = runJson(STARTUP_ATTESTATION, ['verify']);
+    verifyPayload = verify && verify.payload && typeof verify.payload === 'object' ? verify.payload : null;
+  }
+  const afterReason = normalizeReasonToken(verifyPayload && verifyPayload.reason);
+  out.reason_after = afterReason || null;
+  out.verify_ok_after = verify.ok && !!verifyPayload && verifyPayload.ok === true;
+  return { verify, auto_issue: out };
+}
+
+function shouldAutoDemoteExecuteFromGovernor(statusResult) {
+  if (!(statusResult && statusResult.ok)) return false;
+  const payload = statusResult.payload && typeof statusResult.payload === 'object'
+    ? statusResult.payload
+    : {};
+  const strategy = payload && payload.strategy && typeof payload.strategy === 'object'
+    ? payload.strategy
+    : {};
+  const canary = payload && payload.canary && typeof payload.canary === 'object'
+    ? payload.canary
+    : {};
+  const metrics = canary && canary.metrics && typeof canary.metrics === 'object'
+    ? canary.metrics
+    : {};
+  const policy = payload && payload.policy && typeof payload.policy === 'object'
+    ? payload.policy
+    : {};
+  const transition = payload && payload.transition && typeof payload.transition === 'object'
+    ? payload.transition
+    : {};
+  const mode = String(strategy.mode || '');
+  const requireLock = metrics.require_quality_lock_for_execute === true
+    || policy.canary_require_quality_lock_for_execute === true;
+  const qualityLockActive = metrics.quality_lock_active === true;
+  const transitionTo = String(transition.to_mode || '');
+  const transitionReason = String(transition.reason || '');
+  return mode === 'execute'
+    && requireLock
+    && !qualityLockActive
+    && transitionTo === 'canary_execute'
+    && transitionReason === 'quality_lock_inactive_demote_canary';
+}
+
+function runStrategyGovernorWithAutoDemotion(dateStr, days) {
+  const boundedDays = Math.max(1, Number(days || 1));
+  const statusArgs = ['status', dateStr, `--days=${boundedDays}`];
+  let status = runJson(STRATEGY_MODE_GOVERNOR, statusArgs);
+  const out = {
+    attempted: false,
+    run_ok: null,
+    run_result: null,
+    from_mode: null,
+    to_mode: null,
+    reason: null
+  };
+  if (!EXECUTE_LOCK_AUTO_DEMOTE || !shouldAutoDemoteExecuteFromGovernor(status)) {
+    return { status, auto_demotion: out };
+  }
+  out.attempted = true;
+  const run = runJson(STRATEGY_MODE_GOVERNOR, ['run', dateStr, `--days=${boundedDays}`]);
+  const runPayload = run && run.payload && typeof run.payload === 'object'
+    ? run.payload
+    : null;
+  out.run_ok = run.ok && !!runPayload && runPayload.ok === true;
+  out.run_result = runPayload && runPayload.result ? String(runPayload.result) : null;
+  out.from_mode = runPayload && runPayload.from_mode ? String(runPayload.from_mode) : null;
+  out.to_mode = runPayload && runPayload.to_mode ? String(runPayload.to_mode) : null;
+  out.reason = runPayload && runPayload.reason ? String(runPayload.reason) : null;
+  status = runJson(STRATEGY_MODE_GOVERNOR, statusArgs);
+  return { status, auto_demotion: out };
 }
 
 function parseJsonWithRecovery(rawText) {
@@ -439,6 +566,91 @@ function routingDoctorRuntimeSummary(payload) {
   };
 }
 
+function topReasonCounts(mapObj, limit = 5) {
+  const entries = Object.entries(mapObj || {})
+    .map(([reason, count]) => ({ reason: String(reason || ''), count: Number(count || 0) }))
+    .filter((row) => row.reason && row.count > 0)
+    .sort((a, b) => (b.count - a.count) || a.reason.localeCompare(b.reason));
+  return entries.slice(0, Math.max(1, Number(limit || 5)));
+}
+
+function routingRecoveryPulseSummary(dateSet, now) {
+  const rows = readJsonl(ROUTING_DECISIONS_LOG_PATH)
+    .filter((row) => row && typeof row === 'object')
+    .filter((row) => String(row.type || '') === 'local_health_warmup_pulse');
+  const datesAllowed = new Set(Array.isArray(dateSet) ? dateSet.map((d) => String(d || '')) : []);
+  const scoped = rows.filter((row) => {
+    const ts = String(row.ts || '');
+    const day = ts.slice(0, 10);
+    return datesAllowed.size > 0 ? datesAllowed.has(day) : true;
+  });
+  const reasonCounts = {};
+  let warmedTotal = 0;
+  let recoveredTotal = 0;
+  let skippedInterval = 0;
+  const recoveredModels = new Set();
+  let lastTs = null;
+  for (const row of scoped) {
+    const reason = String(row.reason || row.skipped_reason || 'unknown');
+    reasonCounts[reason] = Number(reasonCounts[reason] || 0) + 1;
+    warmedTotal += Number(row.warmed_count || 0);
+    recoveredTotal += Number(row.recovered_count || 0);
+    if (String(row.skipped_reason || '') === 'interval_not_elapsed') skippedInterval += 1;
+    const models = Array.isArray(row.recovered_models) ? row.recovered_models : [];
+    for (const model of models) {
+      const id = String(model || '').trim();
+      if (id) recoveredModels.add(id);
+    }
+    const tsMs = toMs(row.ts);
+    if (Number.isFinite(tsMs) && (!lastTs || tsMs > lastTs)) lastTs = tsMs;
+  }
+  return {
+    path: ROUTING_DECISIONS_LOG_PATH,
+    pulse_events: scoped.length,
+    warmed_total: warmedTotal,
+    recovered_total: recoveredTotal,
+    recovered_models: Array.from(recoveredModels).sort(),
+    skipped_interval_count: skippedInterval,
+    top_reasons: topReasonCounts(reasonCounts, 6),
+    last_pulse_ts: lastTs ? new Date(lastTs).toISOString() : null,
+    last_pulse_age_hours: lastTs ? hoursSince(lastTs, now) : null
+  };
+}
+
+function startupAttestationTelemetrySummary(dateSet, now) {
+  const rows = readJsonl(STARTUP_ATTESTATION_AUDIT_PATH)
+    .filter((row) => row && typeof row === 'object')
+    .filter((row) => String(row.type || '') === 'startup_attestation_verify');
+  const datesAllowed = new Set(Array.isArray(dateSet) ? dateSet.map((d) => String(d || '')) : []);
+  const scoped = rows.filter((row) => {
+    const ts = String(row.ts || '');
+    const day = ts.slice(0, 10);
+    return datesAllowed.size > 0 ? datesAllowed.has(day) : true;
+  });
+  let okCount = 0;
+  let failCount = 0;
+  let lastTs = null;
+  const reasonCounts = {};
+  for (const row of scoped) {
+    const ok = row.ok === true;
+    if (ok) okCount += 1;
+    else failCount += 1;
+    const reason = String(row.reason || '').trim() || 'unknown';
+    reasonCounts[reason] = Number(reasonCounts[reason] || 0) + 1;
+    const tsMs = toMs(row.ts);
+    if (Number.isFinite(tsMs) && (!lastTs || tsMs > lastTs)) lastTs = tsMs;
+  }
+  return {
+    path: STARTUP_ATTESTATION_AUDIT_PATH,
+    verify_events: scoped.length,
+    verify_ok_count: okCount,
+    verify_fail_count: failCount,
+    last_verify_ts: lastTs ? new Date(lastTs).toISOString() : null,
+    last_verify_age_hours: lastTs ? hoursSince(lastTs, now) : null,
+    top_reasons: topReasonCounts(reasonCounts, 6)
+  };
+}
+
 function levelRank(level) {
   if (level === 'critical') return 3;
   if (level === 'warn') return 2;
@@ -455,6 +667,10 @@ function assessDarkEyes(now, registry) {
     if (!id) continue;
     const status = String(eye && eye.status || '').toLowerCase();
     if (status === 'dormant') continue;
+    const cooldownUntilMs = toMs(eye && eye.cooldown_until || null);
+    if (cooldownUntilMs != null && cooldownUntilMs > now) continue;
+    const selfHealCooldownUntilMs = toMs(eye && eye.self_heal_cooldown_until || null);
+    if (selfHealCooldownUntilMs != null && selfHealCooldownUntilMs > now) continue;
     monitoredTotal += 1;
     const cadenceHours = Number(eye && eye.cadence_hours || 0);
     const staleThresholdHours = Math.max(
@@ -465,6 +681,8 @@ function assessDarkEyes(now, registry) {
     const ageHours = hoursSince(lastSuccessMs, now);
     const consecutiveFailures = Number(eye && eye.consecutive_failures || 0);
     const stale = ageHours != null && ageHours >= staleThresholdHours;
+    const lastErrorMs = toMs(eye && (eye.last_error_ts || eye.last_run || null));
+    const lastErrorAgeHours = hoursSince(lastErrorMs, now);
     const baseFailCount = Number(DARK_EYE_FAIL_COUNT || 2);
     const failCountThreshold = Math.max(
       baseFailCount,
@@ -472,7 +690,9 @@ function assessDarkEyes(now, registry) {
         ? Math.ceil(staleThresholdHours / cadenceHours)
         : baseFailCount
     );
-    const failing = status === 'failing' || consecutiveFailures >= failCountThreshold;
+    const recentFailure = lastErrorAgeHours != null && lastErrorAgeHours <= staleThresholdHours;
+    const failing = status === 'failing'
+      || (consecutiveFailures >= failCountThreshold && (stale || recentFailure));
     if (stale || failing) {
       dark.push({
         id,
@@ -483,7 +703,9 @@ function assessDarkEyes(now, registry) {
         consecutive_failures: consecutiveFailures,
         fail_count_threshold: failCountThreshold,
         stale,
-        failing
+        failing,
+        failure_recent: recentFailure,
+        last_error_age_hours: lastErrorAgeHours
       });
     }
   }
@@ -518,7 +740,7 @@ function assessDarkEyes(now, registry) {
   };
 }
 
-function assessProposalStarvation(now, proposalRows, queueEvents, runEvents) {
+function assessProposalStarvation(now, proposalRows, queueEvents, runEvents, autonomyEnabled = true) {
   const eligible = proposalRows.filter((row) => {
     const p = row && row.proposal && typeof row.proposal === 'object' ? row.proposal : {};
     const meta = p.meta && typeof p.meta === 'object' ? p.meta : {};
@@ -540,6 +762,28 @@ function assessProposalStarvation(now, proposalRows, queueEvents, runEvents) {
     .reduce((m, x) => (m == null || x > m ? x : m), null);
   const ageHours = hoursSince(lastProgress, now);
   const eligibleCount = eligible.length;
+  if (!autonomyEnabled) {
+    return {
+      name: 'proposal_starvation',
+      ok: true,
+      level: 'ok',
+      reason: 'autonomy_disabled_manual_mode',
+      metrics: {
+        eligible_count: eligibleCount,
+        queue_accept_count: acceptedEvents.length,
+        queue_outcome_count: outcomeEvents.length,
+        run_executed_count: runEvents.filter((e) => String(e.result || '') === 'executed').length,
+        last_progress_ts: lastProgress ? new Date(lastProgress).toISOString() : null,
+        hours_since_progress: ageHours
+      },
+      thresholds: {
+        min_eligible: Number(STARVATION_MIN_ELIGIBLE || 3),
+        warn_hours: Number(STARVATION_WARN_HOURS || 18),
+        critical_hours: Number(STARVATION_CRITICAL_HOURS || 36),
+        critical_eligible: Number(STARVATION_CRITICAL_ELIGIBLE || 6)
+      }
+    };
+  }
   const warn = eligibleCount >= Number(STARVATION_MIN_ELIGIBLE || 3)
     && (ageHours == null || ageHours >= Number(STARVATION_WARN_HOURS || 18));
   const critical = eligibleCount >= Number(STARVATION_CRITICAL_ELIGIBLE || 6)
@@ -565,6 +809,136 @@ function assessProposalStarvation(now, proposalRows, queueEvents, runEvents) {
       warn_hours: Number(STARVATION_WARN_HOURS || 18),
       critical_hours: Number(STARVATION_CRITICAL_HOURS || 36),
       critical_eligible: Number(STARVATION_CRITICAL_ELIGIBLE || 6)
+    }
+  };
+}
+
+function isTerminalQueueDecision(decision) {
+  const d = String(decision || '').trim().toLowerCase();
+  return d === 'reject'
+    || d === 'rejected'
+    || d === 'done'
+    || d === 'filtered'
+    || d === 'superseded'
+    || d === 'archive'
+    || d === 'archived'
+    || d === 'drop'
+    || d === 'dropped'
+    || d === 'closed';
+}
+
+function proposalTimestamp(row) {
+  const p = row && row.proposal && typeof row.proposal === 'object' ? row.proposal : {};
+  return toMs(p.ts || p.updated_at || p.created_at || p.collected_at || `${String(row && row.date || '')}T00:00:00.000Z`);
+}
+
+function assessQueueBacklog(now, proposalRows, queueEvents, windowDays = 1, autonomyEnabled = true) {
+  const latestById = new Map();
+  for (const row of proposalRows || []) {
+    const p = row && row.proposal && typeof row.proposal === 'object' ? row.proposal : {};
+    const id = String(p.id || '').trim();
+    if (!id) continue;
+    const ts = proposalTimestamp(row) || 0;
+    const prev = latestById.get(id);
+    const prevTs = prev ? Number(prev.ts || 0) : 0;
+    if (!prev || ts >= prevTs) latestById.set(id, { row, ts });
+  }
+
+  const queueState = new Map();
+  let decisions = 0;
+  let outcomes = 0;
+  for (const ev of queueEvents || []) {
+    if (!ev || typeof ev !== 'object') continue;
+    const id = String(ev.proposal_id || ev.id || '').trim();
+    if (!id) continue;
+    if (String(ev.type || '') === 'decision') {
+      decisions += 1;
+      const decision = String(ev.decision || '').trim().toLowerCase();
+      if (isTerminalQueueDecision(decision)) queueState.set(id, { terminal: true, decision });
+      else if (decision === 'accept' || decision === 'admit' || decision === 'queued') queueState.set(id, { terminal: false, decision });
+    } else if (String(ev.type || '') === 'outcome') {
+      outcomes += 1;
+    }
+  }
+
+  const activeRows = [];
+  for (const [id, entry] of latestById.entries()) {
+    const p = entry && entry.row && entry.row.proposal && typeof entry.row.proposal === 'object'
+      ? entry.row.proposal
+      : {};
+    const explicitStatus = String(p.status || '').trim().toLowerCase();
+    const queue = queueState.get(id);
+    const terminal = (queue && queue.terminal === true)
+      || ['rejected', 'reject', 'done', 'filtered', 'superseded', 'archived', 'closed', 'dropped'].includes(explicitStatus);
+    if (terminal) continue;
+    activeRows.push({ id, ts: Number(entry.ts || 0), proposal: p });
+  }
+
+  const openAges = activeRows
+    .map((row) => hoursSince(row.ts, now))
+    .filter((n) => Number.isFinite(Number(n)))
+    .map((n) => Number(n));
+
+  const openCount = activeRows.length;
+  const warnAged = openAges.filter((n) => n >= Number(QUEUE_BACKLOG_WARN_AGE_HOURS || 24)).length;
+  const criticalAged = openAges.filter((n) => n >= Number(QUEUE_BACKLOG_CRITICAL_AGE_HOURS || 72)).length;
+  const oldestHours = openAges.length ? Number(Math.max(...openAges).toFixed(3)) : null;
+  const queueProgress = decisions + outcomes;
+  const progressPerDay = Number((queueProgress / Math.max(1, Number(windowDays || 1))).toFixed(3));
+
+  if (!autonomyEnabled) {
+    return {
+      name: 'queue_backlog',
+      ok: true,
+      level: 'ok',
+      reason: 'autonomy_disabled_manual_mode',
+      metrics: {
+        open_count: openCount,
+        unique_proposals: latestById.size,
+        queue_progress_events: queueProgress,
+        queue_progress_per_day: progressPerDay,
+        aged_open_warn_count: warnAged,
+        aged_open_critical_count: criticalAged,
+        oldest_open_hours: oldestHours
+      },
+      thresholds: {
+        warn_open: Number(QUEUE_BACKLOG_WARN_OPEN || 40),
+        critical_open: Number(QUEUE_BACKLOG_CRITICAL_OPEN || 80),
+        warn_age_hours: Number(QUEUE_BACKLOG_WARN_AGE_HOURS || 24),
+        critical_age_hours: Number(QUEUE_BACKLOG_CRITICAL_AGE_HOURS || 72)
+      }
+    };
+  }
+
+  const critical = openCount >= Number(QUEUE_BACKLOG_CRITICAL_OPEN || 80)
+    || criticalAged > 0;
+  const warn = !critical && (
+    openCount >= Number(QUEUE_BACKLOG_WARN_OPEN || 40)
+    || warnAged > 0
+  );
+  const level = critical ? 'critical' : (warn ? 'warn' : 'ok');
+
+  return {
+    name: 'queue_backlog',
+    ok: level === 'ok',
+    level,
+    reason: level === 'ok'
+      ? 'queue_backlog_within_slo'
+      : `open=${openCount} aged_warn=${warnAged} aged_critical=${criticalAged}`,
+    metrics: {
+      open_count: openCount,
+      unique_proposals: latestById.size,
+      queue_progress_events: queueProgress,
+      queue_progress_per_day: progressPerDay,
+      aged_open_warn_count: warnAged,
+      aged_open_critical_count: criticalAged,
+      oldest_open_hours: oldestHours
+    },
+    thresholds: {
+      warn_open: Number(QUEUE_BACKLOG_WARN_OPEN || 40),
+      critical_open: Number(QUEUE_BACKLOG_CRITICAL_OPEN || 80),
+      warn_age_hours: Number(QUEUE_BACKLOG_WARN_AGE_HOURS || 24),
+      critical_age_hours: Number(QUEUE_BACKLOG_CRITICAL_AGE_HOURS || 72)
     }
   };
 }
@@ -662,13 +1036,21 @@ function assessRoutingDegraded(routing) {
   const runtime = routing && routing.doctor_runtime && typeof routing.doctor_runtime === 'object'
     ? routing.doctor_runtime
     : {};
+  const doctorReason = String(doctor.reason || '').trim().toLowerCase();
+  const localEligible = Number(runtime.local_eligible_models || 0);
+  const softEscalate = (
+    doctor.escalate === true
+    && downConsecutive <= 0
+    && localEligible > 0
+    && (doctorReason === 'local_latency_slow' || doctorReason === 'local_latency_moderate')
+  );
   let level = 'ok';
   if (downConsecutive >= Number(ROUTING_DOWN_CRITICAL || 3)) {
     level = 'critical';
   } else if (
     downConsecutive >= Number(ROUTING_DOWN_WARN || 1)
-    || doctor.escalate === true
-    || Number(runtime.local_eligible_models || 0) <= 0
+    || (doctor.escalate === true && !softEscalate)
+    || localEligible <= 0
   ) {
     level = 'warn';
   }
@@ -677,20 +1059,71 @@ function assessRoutingDegraded(routing) {
     ok: level === 'ok',
     level,
     reason: level === 'ok'
-      ? 'local_routing_healthy'
+      ? (softEscalate ? 'local_routing_healthy_soft_latency_escalation' : 'local_routing_healthy')
       : `down_consecutive=${downConsecutive} escalate=${doctor.escalate === true}`,
     metrics: {
       spine_local_down_consecutive: downConsecutive,
       doctor_escalate: doctor.escalate === true,
-      doctor_reason: doctor.reason || null,
+      doctor_reason: doctorReason || null,
       local_total_models: Number(runtime.total_local_models || 0),
-      local_eligible_models: Number(runtime.local_eligible_models || 0),
+      local_eligible_models: localEligible,
       stale_local_records: Number(runtime.stale_local_records || 0)
     },
     thresholds: {
       warn_down_consecutive: Number(ROUTING_DOWN_WARN || 1),
       critical_down_consecutive: Number(ROUTING_DOWN_CRITICAL || 3),
       min_local_eligible_models: 1
+    }
+  };
+}
+
+function assessRoutingRecoveryPulse(routing) {
+  const pulse = routing && routing.recovery_pulse && typeof routing.recovery_pulse === 'object'
+    ? routing.recovery_pulse
+    : {};
+  const runtime = routing && routing.doctor_runtime && typeof routing.doctor_runtime === 'object'
+    ? routing.doctor_runtime
+    : {};
+  const localTotal = Number(runtime.total_local_models || 0);
+  const pulseEvents = Number(pulse.pulse_events || 0);
+  const ageHours = Number(pulse.last_pulse_age_hours);
+  const recoveredTotal = Number(pulse.recovered_total || 0);
+  const eligible = Number(runtime.local_eligible_models || 0);
+
+  let level = 'ok';
+  let reason = 'routing_recovery_pulse_healthy';
+  if (localTotal > 0 && pulseEvents <= 0) {
+    level = 'warn';
+    reason = 'routing_recovery_pulse_missing';
+  } else if (localTotal > 0 && Number.isFinite(ageHours) && ageHours >= Number(ROUTING_RECOVERY_CRITICAL_HOURS || 72)) {
+    level = 'critical';
+    reason = 'routing_recovery_pulse_stale_critical';
+  } else if (localTotal > 0 && Number.isFinite(ageHours) && ageHours >= Number(ROUTING_RECOVERY_WARN_HOURS || 24)) {
+    level = 'warn';
+    reason = 'routing_recovery_pulse_stale_warn';
+  } else if (localTotal > 0 && eligible <= 0 && recoveredTotal <= 0) {
+    level = 'warn';
+    reason = 'routing_recovery_no_local_recovery';
+  }
+
+  return {
+    name: 'routing_recovery_pulse',
+    ok: level === 'ok',
+    level,
+    reason,
+    metrics: {
+      local_total_models: localTotal,
+      local_eligible_models: eligible,
+      pulse_events: pulseEvents,
+      warmed_total: Number(pulse.warmed_total || 0),
+      recovered_total: recoveredTotal,
+      skipped_interval_count: Number(pulse.skipped_interval_count || 0),
+      last_pulse_ts: pulse.last_pulse_ts || null,
+      last_pulse_age_hours: Number.isFinite(ageHours) ? ageHours : null
+    },
+    thresholds: {
+      warn_age_hours: Number(ROUTING_RECOVERY_WARN_HOURS || 24),
+      critical_age_hours: Number(ROUTING_RECOVERY_CRITICAL_HOURS || 72)
     }
   };
 }
@@ -721,17 +1154,29 @@ function assessBudgetGuard(now, dateSet) {
 
   const autopauseRaw = readJson(SYSTEM_BUDGET_AUTOPAUSE_PATH, null);
   const untilMs = Number(autopauseRaw && autopauseRaw.until_ms || 0);
-  const active = !!(autopauseRaw && autopauseRaw.active === true && Number.isFinite(untilMs) && untilMs > Number(now || Date.now()));
+  const rawActive = !!(autopauseRaw && autopauseRaw.active === true && Number.isFinite(untilMs) && untilMs > Number(now || Date.now()));
+  const autopauseSource = autopauseRaw && autopauseRaw.source ? String(autopauseRaw.source) : null;
+  const autopausePressure = autopauseRaw && autopauseRaw.pressure
+    ? String(autopauseRaw.pressure).trim().toLowerCase()
+    : null;
+  const staleRecoveredPause = rawActive
+    && autopauseSource === 'spine_budget_guard'
+    && autopausePressure === 'none';
+  const active = rawActive && !staleRecoveredPause;
+  const autonomyEnabled = String(process.env.AUTONOMY_ENABLED || '0') === '1';
   const lastDecisionTs = lastTs(decisions, () => true);
 
   let level = 'ok';
   let reason = 'budget_guard_healthy';
-  if (active) {
-    level = 'critical';
-    reason = 'budget_autopause_active';
-  } else if (denies.length > 0) {
+  if (staleRecoveredPause) {
     level = 'warn';
-    reason = 'budget_guard_denies_present';
+    reason = 'budget_autopause_stale_recovered_pressure';
+  } else if (active) {
+    level = autonomyEnabled ? 'critical' : 'warn';
+    reason = autonomyEnabled ? 'budget_autopause_active' : 'budget_autopause_active_preview_only';
+  } else if (denies.length > 0) {
+    level = autonomyEnabled ? 'warn' : 'ok';
+    reason = autonomyEnabled ? 'budget_guard_denies_present' : 'budget_guard_denies_preview_only';
   } else if (degrades.length >= Number(BUDGET_DEGRADE_WARN_COUNT || 3)) {
     level = 'warn';
     reason = 'budget_guard_degrade_pressure';
@@ -744,9 +1189,12 @@ function assessBudgetGuard(now, dateSet) {
     reason,
     metrics: {
       autopause_active: active,
-      autopause_source: autopauseRaw && autopauseRaw.source ? String(autopauseRaw.source) : null,
+      autopause_source: autopauseSource,
+      autopause_pressure: autopausePressure,
+      autopause_stale_recovered_pressure: staleRecoveredPause,
       autopause_reason: autopauseRaw && autopauseRaw.reason ? String(autopauseRaw.reason) : null,
       autopause_until: active ? new Date(untilMs).toISOString() : null,
+      autonomy_enabled: autonomyEnabled,
       decision_allow_count: allows.length,
       decision_degrade_count: degrades.length,
       decision_deny_count: denies.length,
@@ -823,6 +1271,59 @@ function assessIntegrity(integrityResult) {
       violation_counts: payload && payload.violation_counts ? payload.violation_counts : {}
     },
     thresholds: {}
+  };
+}
+
+function assessStartupAttestation(verifyResult, telemetry) {
+  const payload = verifyResult && verifyResult.payload && typeof verifyResult.payload === 'object'
+    ? verifyResult.payload
+    : {};
+  const verifyOk = !!(verifyResult && verifyResult.ok && payload && payload.ok === true);
+  const reason = String(payload && payload.reason || '').trim() || null;
+  const ageHours = Number(telemetry && telemetry.last_verify_age_hours);
+  const failCount = Number(telemetry && telemetry.verify_fail_count || 0);
+  const okCount = Number(telemetry && telemetry.verify_ok_count || 0);
+  const keyMissing = reason === 'attestation_key_missing';
+
+  let level = 'ok';
+  let checkReason = 'startup_attestation_verified';
+  if (verifyOk !== true && !keyMissing) {
+    level = 'critical';
+    checkReason = reason ? `startup_attestation_verify_failed:${reason}` : 'startup_attestation_verify_failed';
+  } else if (verifyOk !== true && keyMissing) {
+    level = 'warn';
+    checkReason = 'startup_attestation_key_missing';
+  } else if (Number.isFinite(ageHours) && ageHours >= Number(STARTUP_ATTESTATION_CRITICAL_HOURS || 36)) {
+    level = 'critical';
+    checkReason = 'startup_attestation_verify_stale_critical';
+  } else if (Number.isFinite(ageHours) && ageHours >= Number(STARTUP_ATTESTATION_WARN_HOURS || 12)) {
+    level = 'warn';
+    checkReason = 'startup_attestation_verify_stale_warn';
+  } else if (failCount > 0 && okCount <= 0) {
+    level = 'warn';
+    checkReason = 'startup_attestation_recent_failures';
+  }
+
+  return {
+    name: 'startup_attestation',
+    ok: level === 'ok',
+    level,
+    reason: checkReason,
+    metrics: {
+      verify_ok: verifyOk,
+      verify_reason: reason,
+      expires_at: payload && payload.expires_at ? String(payload.expires_at) : null,
+      verify_events: Number(telemetry && telemetry.verify_events || 0),
+      verify_fail_count: failCount,
+      verify_ok_count: Number(telemetry && telemetry.verify_ok_count || 0),
+      last_verify_ts: telemetry && telemetry.last_verify_ts ? String(telemetry.last_verify_ts) : null,
+      last_verify_age_hours: Number.isFinite(ageHours) ? ageHours : null,
+      top_reasons: telemetry && Array.isArray(telemetry.top_reasons) ? telemetry.top_reasons.slice(0, 5) : []
+    },
+    thresholds: {
+      warn_age_hours: Number(STARTUP_ATTESTATION_WARN_HOURS || 12),
+      critical_age_hours: Number(STARTUP_ATTESTATION_CRITICAL_HOURS || 36)
+    }
   };
 }
 
@@ -924,6 +1425,12 @@ function assessExecuteQualityLockInvariant(governorStatusResult, strategyReadine
     || governorPolicy.canary_require_quality_lock_for_execute === true;
   const qualityLockActive = governorMetrics.quality_lock_active === true;
   const stableWindowStreak = Number(governorMetrics.quality_lock_stable_window_streak || 0);
+  const transition = governorPayload && governorPayload.transition && typeof governorPayload.transition === 'object'
+    ? governorPayload.transition
+    : {};
+  const demotionPending = mode === 'execute'
+    && String(transition.to_mode || '') === 'canary_execute'
+    && String(transition.reason || '') === 'quality_lock_inactive_demote_canary';
 
   let ok = true;
   let level = 'ok';
@@ -936,8 +1443,10 @@ function assessExecuteQualityLockInvariant(governorStatusResult, strategyReadine
       reason = 'execute_quality_lock_unverifiable';
     } else if (requireLock && !qualityLockActive) {
       ok = false;
-      level = 'critical';
-      reason = 'execute_quality_lock_inactive';
+      level = demotionPending ? 'warn' : 'critical';
+      reason = demotionPending
+        ? 'execute_quality_lock_auto_demotion_pending'
+        : 'execute_quality_lock_inactive';
     } else if (!requireLock) {
       ok = false;
       level = 'warn';
@@ -954,7 +1463,10 @@ function assessExecuteQualityLockInvariant(governorStatusResult, strategyReadine
       mode,
       require_lock: requireLock,
       quality_lock_active: qualityLockActive,
-      stable_window_streak: stableWindowStreak
+      stable_window_streak: stableWindowStreak,
+      demotion_pending: demotionPending,
+      transition_to_mode: transition && transition.to_mode ? String(transition.to_mode) : null,
+      transition_reason: transition && transition.reason ? String(transition.reason) : null
     },
     thresholds: {
       required_mode: 'execute'
@@ -1088,7 +1600,8 @@ function main() {
   const receiptSummary = runJson(RECEIPT_SUMMARY, ['run', dateStr, `--days=${Math.max(1, windowCfg.days)}`]);
   const strategyDoctor = runJson(STRATEGY_DOCTOR, ['run']);
   const strategyReadiness = runJson(STRATEGY_READINESS, ['run', dateStr]);
-  const strategyModeGovernor = runJson(STRATEGY_MODE_GOVERNOR, ['status', dateStr, `--days=${Math.max(1, windowCfg.days)}`]);
+  const strategyModeGovernorState = runStrategyGovernorWithAutoDemotion(dateStr, windowCfg.days);
+  const strategyModeGovernor = strategyModeGovernorState.status;
   const architecture = runJson(ARCHITECTURE_GUARD, ['run']);
   const router = runJson(MODEL_ROUTER, ['doctor', '--risk=low', '--complexity=low', '--intent=autonomy_health', '--task=health']);
   const spc = runJson(PIPELINE_SPC_GATE, [
@@ -1099,9 +1612,13 @@ function main() {
     `--sigma=${Number(SPC_SIGMA || 3)}`
   ]);
   const integrity = runJson(INTEGRITY_KERNEL, ['status', `--policy=${INTEGRITY_POLICY}`]);
+  const startupAttestationState = verifyStartupAttestationWithAutoIssue();
+  const startupAttestation = startupAttestationState.verify;
 
   const routingHealth = routingHealthCacheSummary();
   const routingDoctorRuntime = routingDoctorRuntimeSummary(router.payload || null);
+  const routingRecovery = routingRecoveryPulseSummary(dates, now);
+  const startupAttestationTelemetry = startupAttestationTelemetrySummary(dates, now);
   const spineHealth = readJson(SPINE_HEALTH_PATH, { consecutive_full_local_down: 0, last_preflight: null });
   const cooldowns = readJson(AUTONOMY_COOLDOWNS, {});
   const actuation = actuationReceiptSummary(dateStr);
@@ -1116,17 +1633,33 @@ function main() {
     doctor_ok: router.ok,
     doctor_summary: router.payload && router.payload.tier1_local_decision ? router.payload.tier1_local_decision : null,
     doctor_runtime: routingDoctorRuntime,
+    recovery_pulse: routingRecovery,
     health_cache: routingHealth
   };
 
   const checks = {
     dark_eyes: assessDarkEyes(now, registry),
-    proposal_starvation: assessProposalStarvation(now, proposalRows, queueEvents, runEvents),
+    queue_backlog: assessQueueBacklog(
+      now,
+      proposalRows,
+      queueEvents,
+      windowCfg.days,
+      !!(autonomy.payload && autonomy.payload.autonomy_enabled === true)
+    ),
+    proposal_starvation: assessProposalStarvation(
+      now,
+      proposalRows,
+      queueEvents,
+      runEvents,
+      !!(autonomy.payload && autonomy.payload.autonomy_enabled === true)
+    ),
     loop_stall: assessLoopStall(now, runEvents),
     drift: assessDrift(spc),
     routing_degraded: assessRoutingDegraded(routing),
+    routing_recovery_pulse: assessRoutingRecoveryPulse(routing),
     budget_guard: assessBudgetGuard(now, dates),
     route_attestation: assessRouteAttestation(receiptSummary),
+    startup_attestation: assessStartupAttestation(startupAttestation, startupAttestationTelemetry),
     criteria_quality_gate: assessCriteriaQualityGate(strategyReadiness, receiptSummary),
     execute_quality_lock_invariant: assessExecuteQualityLockInvariant(strategyModeGovernor, strategyReadiness),
     integrity: assessIntegrity(integrity)
@@ -1150,6 +1683,13 @@ function main() {
       ok: false,
       error: strategyModeGovernor.stderr || `strategy_mode_governor_exit_${strategyModeGovernor.code}`
     },
+    strategy_mode_governor_auto_demotion: strategyModeGovernorState.auto_demotion,
+    startup_attestation: startupAttestation.payload || {
+      ok: false,
+      error: startupAttestation.stderr || `startup_attestation_exit_${startupAttestation.code}`
+    },
+    startup_attestation_auto_issue: startupAttestationState.auto_issue,
+    startup_attestation_telemetry: startupAttestationTelemetry,
     autonomy_receipts: receiptSummary.payload || { ok: false, error: receiptSummary.stderr || `receipt_summary_exit_${receiptSummary.code}` },
     architecture_guard: architecture.payload || { ok: false, error: architecture.stderr || `architecture_guard_exit_${architecture.code}` },
     pipeline_spc: spc.payload || { ok: false, error: spc.stderr || `pipeline_spc_exit_${spc.code}` },
