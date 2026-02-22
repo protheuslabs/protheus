@@ -1,16 +1,29 @@
-// @ts-nocheck
 'use strict';
 
 const http = require('http');
 const https = require('https');
-const { URL } = require('url');
+const { URL: NodeURL } = require('url');
 const adaptive = require('../../../adaptive/sensory/eyes/collectors/ollama_search.js');
 
-function fetchViaNodeGet(url, options = {}) {
+type FetchLikeResponse = {
+  ok: boolean;
+  status: number;
+  headers: Record<string, unknown>;
+  text: () => Promise<string>;
+};
+
+type FetchLikeOptions = {
+  timeout?: number;
+  method?: string;
+  headers?: Record<string, string>;
+  signal?: { addEventListener?: (name: string, fn: () => void, opts?: { once?: boolean }) => void };
+};
+
+function fetchViaNodeGet(url: unknown, options: FetchLikeOptions = {}): Promise<FetchLikeResponse> {
   return new Promise((resolve, reject) => {
-    let parsed;
+    let parsed: InstanceType<typeof NodeURL>;
     try {
-      parsed = new URL(String(url));
+      parsed = new NodeURL(String(url));
     } catch (err) {
       reject(err);
       return;
@@ -22,10 +35,10 @@ function fetchViaNodeGet(url, options = {}) {
       method: String(options.method || 'GET').toUpperCase(),
       headers: options.headers || {}
     }, (res) => {
-      const chunks = [];
-      res.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
+      const chunks: unknown[] = [];
+      res.on('data', (chunk: unknown) => chunks.push(chunk));
       res.on('end', () => {
-        const body = Buffer.concat(chunks).toString('utf8');
+        const body = Buffer.concat(chunks.map((chunk) => Buffer.from(chunk as any))).toString('utf8');
         resolve({
           ok: Number(res.statusCode || 0) >= 200 && Number(res.statusCode || 0) < 300,
           status: Number(res.statusCode || 0),
@@ -49,17 +62,18 @@ function fetchViaNodeGet(url, options = {}) {
   });
 }
 
-async function withLegacyFetch(fn) {
-  const originalFetch = global.fetch;
-  global.fetch = (url, options) => fetchViaNodeGet(url, options);
+async function withLegacyFetch(fn: () => Promise<unknown>): Promise<unknown> {
+  const g = globalThis as unknown as { fetch?: (url: unknown, options?: FetchLikeOptions) => Promise<FetchLikeResponse> };
+  const originalFetch = g.fetch;
+  g.fetch = (url: unknown, options?: FetchLikeOptions) => fetchViaNodeGet(url, options || {});
   try {
     return await fn();
   } finally {
-    global.fetch = originalFetch;
+    g.fetch = originalFetch;
   }
 }
 
-async function collectOllamaSearchNewest(options = {}) {
+async function collectOllamaSearchNewest(options: Record<string, unknown> = {}) {
   return withLegacyFetch(() => adaptive.collectOllamaSearchNewest(options));
 }
 
@@ -72,3 +86,4 @@ module.exports = {
   collectOllamaSearchNewest,
   preflightOllamaSearch
 };
+export {};

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tool Response Compactor - System Integration
  * 
@@ -7,6 +6,7 @@
  */
 
 const { compactToolResponse } = require('./tool_response_compactor.js');
+declare function execAsync(cmd: string): Promise<string>;
 
 /**
  * Wraps any tool output through the compactor
@@ -41,3 +41,4 @@ module.exports = {
 // 1. Import this module in your tool wrapper
 // 2. Call processToolOutput(toolName, rawResult) before returning to context
 // 3. All outputs >1200 chars or >40 lines will be compacted automatically
+export {};

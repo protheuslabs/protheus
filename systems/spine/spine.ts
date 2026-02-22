@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// @ts-nocheck
 /**
  * systems/spine/spine.js — orchestration spine (plumbing only)
  *
@@ -180,7 +179,8 @@ function parseBudgetStatusPayload(payload) {
   const byModule = state.by_module && typeof state.by_module === "object" ? state.by_module : {};
   let topModule = null;
   for (const [name, ent] of Object.entries(byModule)) {
-    const usedEst = Number(ent && ent.used_est || 0);
+    const entAny = ent as { used_est?: unknown } | null;
+    const usedEst = Number((entAny && entAny.used_est) || 0);
     if (!Number.isFinite(usedEst) || usedEst < 0) continue;
     if (!topModule || usedEst > topModule.used_est) {
       topModule = { module: String(name || "unknown"), used_est: usedEst };
@@ -2308,3 +2308,4 @@ function main() {
 }
 
 main();
+export {};

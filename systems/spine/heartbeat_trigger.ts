@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// @ts-nocheck
 'use strict';
 
 /**
@@ -145,3 +144,4 @@ function main() {
 }
 
 main();
+export {};
