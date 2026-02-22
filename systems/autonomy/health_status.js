@@ -70,6 +70,12 @@ const ALERTS_DIR = process.env.AUTONOMY_HEALTH_ALERTS_DIR
 const REPORTS_DIR = process.env.AUTONOMY_HEALTH_REPORTS_DIR
   ? path.resolve(process.env.AUTONOMY_HEALTH_REPORTS_DIR)
   : path.join(ROOT, 'state', 'autonomy', 'health_reports');
+const SYSTEM_BUDGET_EVENTS_PATH = process.env.AUTONOMY_HEALTH_SYSTEM_BUDGET_EVENTS_PATH
+  ? path.resolve(process.env.AUTONOMY_HEALTH_SYSTEM_BUDGET_EVENTS_PATH)
+  : path.join(ROOT, 'state', 'autonomy', 'budget_events.jsonl');
+const SYSTEM_BUDGET_AUTOPAUSE_PATH = process.env.AUTONOMY_HEALTH_SYSTEM_BUDGET_AUTOPAUSE_PATH
+  ? path.resolve(process.env.AUTONOMY_HEALTH_SYSTEM_BUDGET_AUTOPAUSE_PATH)
+  : path.join(ROOT, 'state', 'autonomy', 'budget_autopause.json');
 
 const NOW_ISO_OVERRIDE = String(process.env.AUTONOMY_HEALTH_NOW_ISO || '').trim();
 const SKIP_COMMANDS = String(process.env.AUTONOMY_HEALTH_SKIP_COMMANDS || '0') === '1';
@@ -89,6 +95,7 @@ const LOOP_STALL_CRITICAL_HOURS = Number(process.env.AUTONOMY_HEALTH_LOOP_STALL_
 
 const ROUTING_DOWN_WARN = Number(process.env.AUTONOMY_HEALTH_ROUTING_DOWN_WARN || 1);
 const ROUTING_DOWN_CRITICAL = Number(process.env.AUTONOMY_HEALTH_ROUTING_DOWN_CRITICAL || 3);
+const BUDGET_DEGRADE_WARN_COUNT = Number(process.env.AUTONOMY_HEALTH_BUDGET_DEGRADE_WARN_COUNT || 3);
 
 const SPC_BASELINE_DAYS = Number(process.env.AUTONOMY_HEALTH_SPC_BASELINE_DAYS || 21);
 const SPC_SIGMA = Number(process.env.AUTONOMY_HEALTH_SPC_SIGMA || 3);
@@ -658,6 +665,71 @@ function assessRoutingDegraded(routing) {
   };
 }
 
+function assessBudgetGuard(now, dateSet) {
+  const events = readJsonl(SYSTEM_BUDGET_EVENTS_PATH);
+  const allowedDates = new Set(Array.isArray(dateSet) ? dateSet.map((d) => String(d || '')) : []);
+  const scoped = events.filter((row) => {
+    const evt = row && typeof row === 'object' ? row : {};
+    const evtDate = String(evt.date || '').trim();
+    if (evtDate && allowedDates.size > 0) return allowedDates.has(evtDate);
+    const tsDay = String(evt.ts || '').slice(0, 10);
+    return tsDay && allowedDates.size > 0 ? allowedDates.has(tsDay) : true;
+  });
+  const decisions = scoped.filter((row) => String(row && row.type || '') === 'system_budget_decision');
+  const denies = decisions.filter((row) => String(row && row.decision || '') === 'deny');
+  const degrades = decisions.filter((row) => String(row && row.decision || '') === 'degrade');
+  const allows = decisions.filter((row) => String(row && row.decision || '') === 'allow');
+  const reasonCounts = {};
+  for (const row of denies) {
+    const reason = String(row && row.reason || '').trim() || 'unknown';
+    reasonCounts[reason] = Number(reasonCounts[reason] || 0) + 1;
+  }
+  const topDenyReasons = Object.entries(reasonCounts)
+    .map(([reason, count]) => ({ reason, count: Number(count || 0) }))
+    .sort((a, b) => (b.count - a.count) || a.reason.localeCompare(b.reason))
+    .slice(0, 5);
+
+  const autopauseRaw = readJson(SYSTEM_BUDGET_AUTOPAUSE_PATH, null);
+  const untilMs = Number(autopauseRaw && autopauseRaw.until_ms || 0);
+  const active = !!(autopauseRaw && autopauseRaw.active === true && Number.isFinite(untilMs) && untilMs > Number(now || Date.now()));
+  const lastDecisionTs = lastTs(decisions, () => true);
+
+  let level = 'ok';
+  let reason = 'budget_guard_healthy';
+  if (active) {
+    level = 'critical';
+    reason = 'budget_autopause_active';
+  } else if (denies.length > 0) {
+    level = 'warn';
+    reason = 'budget_guard_denies_present';
+  } else if (degrades.length >= Number(BUDGET_DEGRADE_WARN_COUNT || 3)) {
+    level = 'warn';
+    reason = 'budget_guard_degrade_pressure';
+  }
+
+  return {
+    name: 'budget_guard',
+    ok: level === 'ok',
+    level,
+    reason,
+    metrics: {
+      autopause_active: active,
+      autopause_source: autopauseRaw && autopauseRaw.source ? String(autopauseRaw.source) : null,
+      autopause_reason: autopauseRaw && autopauseRaw.reason ? String(autopauseRaw.reason) : null,
+      autopause_until: active ? new Date(untilMs).toISOString() : null,
+      decision_allow_count: allows.length,
+      decision_degrade_count: degrades.length,
+      decision_deny_count: denies.length,
+      decision_total: decisions.length,
+      top_deny_reasons: topDenyReasons,
+      last_decision_ts: lastDecisionTs ? new Date(lastDecisionTs).toISOString() : null
+    },
+    thresholds: {
+      degrade_warn_count: Number(BUDGET_DEGRADE_WARN_COUNT || 3)
+    }
+  };
+}
+
 function assessIntegrity(integrityResult) {
   const payload = integrityResult && integrityResult.payload && typeof integrityResult.payload === 'object'
     ? integrityResult.payload
@@ -977,6 +1049,7 @@ function main() {
     loop_stall: assessLoopStall(now, runEvents),
     drift: assessDrift(spc),
     routing_degraded: assessRoutingDegraded(routing),
+    budget_guard: assessBudgetGuard(now, dates),
     criteria_quality_gate: assessCriteriaQualityGate(strategyReadiness, receiptSummary),
     execute_quality_lock_invariant: assessExecuteQualityLockInvariant(strategyModeGovernor, strategyReadiness),
     integrity: assessIntegrity(integrity)
@@ -1006,7 +1079,10 @@ function main() {
     integrity_kernel: integrity.payload || { ok: false, error: integrity.stderr || `integrity_kernel_exit_${integrity.code}` },
     actuation,
     gates: {
-      cooldown_count: Object.keys(cooldowns || {}).length
+      cooldown_count: Object.keys(cooldowns || {}).length,
+      budget_autopause_active: checks.budget_guard && checks.budget_guard.metrics
+        ? checks.budget_guard.metrics.autopause_active === true
+        : false
     },
     observed: {
       proposal_rows: proposalRows.length,
@@ -1060,6 +1136,7 @@ module.exports = {
   assessLoopStall,
   assessDrift,
   assessRoutingDegraded,
+  assessBudgetGuard,
   assessCriteriaQualityGate,
   assessExecuteQualityLockInvariant,
   assessIntegrity,

@@ -55,6 +55,8 @@ function main() {
   const runsDir = path.join(stateDir, 'autonomy', 'runs');
   const alertsDir = path.join(stateDir, 'autonomy', 'health_alerts');
   const reportsDir = path.join(stateDir, 'autonomy', 'health_reports');
+  const budgetEventsPath = path.join(stateDir, 'autonomy', 'budget_events.jsonl');
+  const budgetAutopausePath = path.join(stateDir, 'autonomy', 'budget_autopause.json');
 
   writeJson(path.join(sensoryDir, 'eyes', 'registry.json'), {
     eyes: [
@@ -101,6 +103,19 @@ function main() {
 
   writeJson(path.join(stateDir, 'autonomy', 'cooldowns.json'), {});
   writeJsonl(path.join(stateDir, 'actuation', 'receipts', `${date}.jsonl`), []);
+  writeJsonl(budgetEventsPath, []);
+  writeJson(budgetAutopausePath, {
+    schema_id: 'system_budget_autopause',
+    schema_version: '1.0.0',
+    active: false,
+    source: 'health_status_test',
+    reason: null,
+    pressure: null,
+    date: null,
+    until_ms: 0,
+    until: null,
+    updated_at: nowIso
+  });
 
   writeStubScript(path.join(stubsDir, 'autonomy_controller.js'), { ok: true, status: 'idle' });
   writeStubScript(path.join(stubsDir, 'receipt_summary.js'), { ok: true, runs: { total: 0, latest_event_ts: '2026-02-20T08:00:00.000Z' } });
@@ -164,6 +179,8 @@ function main() {
     AUTONOMY_HEALTH_ROUTING_MODEL_HEALTH_PATH: path.join(stateDir, 'routing', 'model_health.json'),
     AUTONOMY_HEALTH_COOLDOWNS_PATH: path.join(stateDir, 'autonomy', 'cooldowns.json'),
     AUTONOMY_HEALTH_ACTUATION_RECEIPTS_DIR: path.join(stateDir, 'actuation', 'receipts'),
+    AUTONOMY_HEALTH_SYSTEM_BUDGET_EVENTS_PATH: budgetEventsPath,
+    AUTONOMY_HEALTH_SYSTEM_BUDGET_AUTOPAUSE_PATH: budgetAutopausePath,
     AUTONOMY_HEALTH_ALERTS_DIR: alertsDir,
     AUTONOMY_HEALTH_REPORTS_DIR: reportsDir
   };
@@ -178,7 +195,9 @@ function main() {
   assert.ok(first.slo.failed_checks.includes('drift'));
   assert.ok(first.slo.failed_checks.includes('routing_degraded'));
   assert.ok(first.slo.failed_checks.includes('execute_quality_lock_invariant'));
+  assert.strictEqual(first.slo.failed_checks.includes('budget_guard'), false, 'budget guard should pass in fixture');
   assert.strictEqual(first.slo.failed_checks.includes('integrity'), false, 'integrity should pass in fixture');
+  assert.strictEqual(Boolean(first.gates && first.gates.budget_autopause_active), false, 'budget autopause gate should be false in fixture');
   assert.ok(first.report && first.report.written === true && fs.existsSync(first.report.path), 'report should be written');
   assert.ok(first.alerts && fs.existsSync(first.alerts.path), 'alerts file should exist');
   assert.ok(Number(first.alerts.written || 0) >= 5, 'first run should emit multiple alerts');
