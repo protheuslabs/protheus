@@ -42,6 +42,19 @@ function asStringArray(v) {
   return Array.from(new Set(v.map(x => String(x || '').trim()).filter(Boolean)));
 }
 
+function escapeRegExp(s) {
+  return String(s == null ? '' : s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function tokenRegex(token) {
+  const raw = String(token || '').trim().toLowerCase();
+  if (!raw) return null;
+  const escaped = escapeRegExp(raw);
+  // Word-like tokens should use boundaries to avoid substring false positives.
+  if (/^[a-z0-9_-]+$/i.test(raw)) return new RegExp(`\\b${escaped}\\b`, 'i');
+  return new RegExp(escaped, 'i');
+}
+
 function readJsonSafe(filePath, fallback) {
   try {
     if (!fs.existsSync(filePath)) return fallback;
@@ -51,6 +64,19 @@ function readJsonSafe(filePath, fallback) {
   }
 }
 
+function normalizeTokenOverrides(v) {
+  if (!v || typeof v !== 'object') return {};
+  const out = {};
+  for (const [k, arr] of Object.entries(v)) {
+    const rule = String(k || '').trim().replace(/\\/g, '/');
+    if (!rule) continue;
+    const tokens = asStringArray(arr).map(x => String(x || '').toLowerCase());
+    if (tokens.length <= 0) continue;
+    out[rule] = tokens;
+  }
+  return out;
+}
+
 function loadPolicy(policyPath) {
   const fallback = {
     version: '1.0-fallback',
@@ -58,7 +84,8 @@ function loadPolicy(policyPath) {
     file_extensions: ['.js'],
     exclude_paths: ['systems/security/architecture_guard.js'],
     banned_tokens: ['moltbook', 'moltstack', 'twitter', 'x.com', '/api/v1/'],
-    allow_paths: []
+    allow_paths: [],
+    allow_token_overrides: {}
   };
   const src = readJsonSafe(policyPath, {});
   return {
@@ -68,7 +95,8 @@ function loadPolicy(policyPath) {
     file_extensions: asStringArray(src.file_extensions || fallback.file_extensions).map(x => x.toLowerCase()),
     exclude_paths: asStringArray(src.exclude_paths || fallback.exclude_paths),
     banned_tokens: asStringArray(src.banned_tokens || fallback.banned_tokens).map(x => x.toLowerCase()),
-    allow_paths: asStringArray(src.allow_paths || fallback.allow_paths)
+    allow_paths: asStringArray(src.allow_paths || fallback.allow_paths),
+    allow_token_overrides: normalizeTokenOverrides(src.allow_token_overrides || fallback.allow_token_overrides)
   };
 }
 
@@ -115,6 +143,20 @@ function isAllowed(rel, policy) {
   return false;
 }
 
+function allowedTokensForPath(rel, policy) {
+  const out = new Set();
+  const overrides = policy && policy.allow_token_overrides && typeof policy.allow_token_overrides === 'object'
+    ? policy.allow_token_overrides
+    : {};
+  for (const [rule, tokens] of Object.entries(overrides)) {
+    if (!isPathMatch(rel, rule)) continue;
+    for (const token of asStringArray(tokens)) {
+      out.add(String(token || '').toLowerCase());
+    }
+  }
+  return out;
+}
+
 function scanPolicy(policy) {
   const files = [];
   for (const rootRel of policy.target_roots) {
@@ -130,17 +172,22 @@ function scanPolicy(policy) {
   files.sort((a, b) => relPath(a).localeCompare(relPath(b)));
 
   const violations = [];
+  const tokenMatchers = policy.banned_tokens
+    .map((token) => ({ token, rx: tokenRegex(token) }))
+    .filter((ent) => ent && ent.rx);
   for (const absFile of files) {
     const rel = relPath(absFile);
     const allowed = isAllowed(rel, policy);
     if (allowed) continue;
+    const allowTokens = allowedTokensForPath(rel, policy);
     const lines = fs.readFileSync(absFile, 'utf8').split('\n');
     for (let i = 0; i < lines.length; i++) {
       const line = String(lines[i] || '');
-      const lower = line.toLowerCase();
-      for (const token of policy.banned_tokens) {
+      for (const ent of tokenMatchers) {
+        const token = String(ent.token || '').toLowerCase();
         if (!token) continue;
-        if (!lower.includes(token)) continue;
+        if (allowTokens.has(token)) continue;
+        if (!ent.rx.test(line)) continue;
         violations.push({
           file: rel,
           line: i + 1,

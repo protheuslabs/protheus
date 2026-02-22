@@ -23,5 +23,22 @@
   "allow_paths": [
     "systems/autonomy/autonomy_controller.js",
     "systems/spine/spine.js"
-  ]
+  ],
+  "allow_token_overrides": {
+    "systems/security/guard.js": [
+      "moltbook"
+    ],
+    "systems/security/request_ingress.js": [
+      "moltbook"
+    ],
+    "systems/sensory/eyes_intake.js": [
+      "hnrss.org",
+      "moltbook",
+      "twitter",
+      "bird"
+    ],
+    "systems/sensory/eyes_collectors/bird_x.js": [
+      "bird"
+    ]
+  }
 }

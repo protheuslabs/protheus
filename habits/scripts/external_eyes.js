@@ -1077,9 +1077,48 @@ async function run(opts = {}) {
     const runtimeEye = effectiveEye(eyeConfig, registryEye);
     const parserType = String(runtimeEye.parser_type || eyeConfig.parser_type || '').toLowerCase();
     const isForced = forceEyeId && eyeConfig.id === forceEyeId;
+    const probationStaleHours = Math.max(12, Number(process.env.EYES_PROBATION_STALE_HOURS || 24));
+    const probationDormantFailures = Math.max(2, Number(process.env.EYES_PROBATION_DORMANT_FAILURES || 2));
+    const probationDormantCooldownHours = Math.max(
+      1,
+      Number(process.env.EYES_PROBATION_DORMANT_COOLDOWN_HOURS || process.env.EYES_FAIL_PARK_HOURS || 24)
+    );
+    const probationSelfHealAttempts = Math.max(1, Number(process.env.EYES_PROBATION_DORMANT_SELF_HEAL_ATTEMPTS || 2));
 
     if (specificEye && eyeConfig.id !== specificEye) continue;
     if (runCount >= maxEyes) break;
+
+    // Self-heal guard: stale probation eyes with repeated failures (or repeated no-recovery probes)
+    // are temporarily parked to avoid endless warn noise and churn.
+    if (!isForced && String(registryEye.status || runtimeEye.status || '').toLowerCase() === 'probation') {
+      const signalAgeHours = hoursSince(registryEye.last_success || registryEye.last_real_signal_ts || registryEye.last_run);
+      const staleProbation = Number.isFinite(signalAgeHours) && signalAgeHours >= probationStaleHours;
+      const consecutiveFailures = Number(registryEye.consecutive_failures || 0);
+      const selfHealAttempts = Number(registryEye.self_heal_attempts || 0);
+      const selfHealRecoveries = Number(registryEye.self_heal_recoveries || 0);
+      const repeatedNoRecovery = selfHealAttempts >= probationSelfHealAttempts && selfHealRecoveries <= 0;
+      if (staleProbation && (consecutiveFailures >= probationDormantFailures || repeatedNoRecovery)) {
+        registryEye.status = 'dormant';
+        registryEye.cooldown_until = new Date(Date.now() + (probationDormantCooldownHours * 60 * 60 * 1000)).toISOString();
+        const reason = consecutiveFailures >= probationDormantFailures
+          ? 'probation_stale_failures'
+          : 'probation_stale_no_recovery';
+        appendRawLog(today, {
+          ts: new Date().toISOString(),
+          type: 'eye_auto_dormant',
+          eye_id: eyeConfig.id,
+          reason,
+          stale_hours: Number(signalAgeHours.toFixed(2)),
+          consecutive_failures: consecutiveFailures,
+          self_heal_attempts: selfHealAttempts,
+          self_heal_recoveries: selfHealRecoveries,
+          cooldown_hours: probationDormantCooldownHours
+        });
+        console.log(
+          `   ⚠️  Auto-dormant: ${eyeConfig.id} reason=${reason} stale_h=${signalAgeHours.toFixed(1)} cooldown=${probationDormantCooldownHours}h`
+        );
+      }
+    }
     
     // Check status
     if (runtimeEye.status === 'retired') {

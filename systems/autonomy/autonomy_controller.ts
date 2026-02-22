@@ -157,6 +157,7 @@ const AUTONOMY_DOD_MIN_REVENUE_DELTA = Number(process.env.AUTONOMY_DOD_MIN_REVEN
 const AUTONOMY_DOD_MIN_HABIT_OUTCOME_SCORE = Number(process.env.AUTONOMY_DOD_MIN_HABIT_OUTCOME_SCORE || 0.7);
 const AUTONOMY_DOD_EXEC_WINDOW_SLOP_MS = Number(process.env.AUTONOMY_DOD_EXEC_WINDOW_SLOP_MS || 30000);
 const AUTONOMY_ONLY_OPEN_PROPOSALS = String(process.env.AUTONOMY_ONLY_OPEN_PROPOSALS || '1') !== '0';
+const AUTONOMY_QUEUE_UNDERFLOW_BACKFILL_MAX = Math.max(0, Number(process.env.AUTONOMY_QUEUE_UNDERFLOW_BACKFILL_MAX || 1));
 const AUTONOMY_ALLOWED_RISKS = new Set(
   String(process.env.AUTONOMY_ALLOWED_RISKS || 'low')
     .split(',')
@@ -302,8 +303,8 @@ const AUTONOMY_CANARY_RELAX_SPC_CHECKS = new Set(
   parseLowerList(process.env.AUTONOMY_CANARY_RELAX_SPC_CHECKS || 'success_criteria_pass_rate')
 );
 const TOOL_CAPABILITY_TOKENS = [
-  'web_fetch', 'web_search', 'browser', 'exec', 'read', 'write', 'edit',
-  'cron', 'sessions_spawn', 'sessions_send', 'message', 'gmail', 'gog', 'bird'
+  'web_fetch', 'web_search', 'browser', 'exec',
+  'cron', 'sessions_spawn', 'sessions_send', 'gmail', 'gog', 'bird_x'
 ];
 const AUTONOMY_PREFER_NON_FALLBACK_ELIGIBLE = String(process.env.AUTONOMY_PREFER_NON_FALLBACK_ELIGIBLE || '1') !== '0';
 const AUTONOMY_DEPRIORITIZED_SOURCE_EYES = new Set(
@@ -916,6 +917,22 @@ function proposalTextBlob(p) {
   return normalizeSpaces(parts.filter(Boolean).join(' | ')).toLowerCase();
 }
 
+function escapeRegExp(s) {
+  return String(s == null ? '' : s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function toolTokenMentioned(blob, token) {
+  const text = String(blob || '');
+  const tok = String(token || '').trim().toLowerCase();
+  if (!text || !tok) return false;
+  const exact = new RegExp(`\\b${escapeRegExp(tok)}\\b`);
+  if (exact.test(text)) return true;
+  if (tok === 'bird_x') {
+    return /\bbird[\s_-]*x\b/.test(text);
+  }
+  return false;
+}
+
 function detectEyesTerminologyDriftInPool(pool) {
   const warnings = [];
   const seen = new Set();
@@ -925,7 +942,7 @@ function detectEyesTerminologyDriftInPool(pool) {
     const blob = proposalTextBlob(p);
     if (!/\beye\b|\beyes\b/.test(blob)) continue;
 
-    const matchedTools = TOOL_CAPABILITY_TOKENS.filter(t => blob.includes(t));
+    const matchedTools = TOOL_CAPABILITY_TOKENS.filter(t => toolTokenMentioned(blob, t));
     if (!matchedTools.length) continue;
 
     const key = `${p.id || 'unknown'}:${matchedTools.join(',')}`;
@@ -3349,6 +3366,20 @@ function proposalStatus(overlayEnt) {
   return 'pending';
 }
 
+function proposalOutcomeStatus(overlayEnt) {
+  if (!overlayEnt || !overlayEnt.outcome) return null;
+  const out = String(overlayEnt.outcome || '').trim().toLowerCase();
+  if (!out) return null;
+  return out;
+}
+
+function canQueueUnderflowBackfill(status, overlayEnt) {
+  if (AUTONOMY_QUEUE_UNDERFLOW_BACKFILL_MAX <= 0) return false;
+  if (String(status || '') !== 'accepted') return false;
+  const out = proposalOutcomeStatus(overlayEnt);
+  return !out;
+}
+
 function proposalScore(p, overlayEnt, dateStr) {
   const agePenalty = ageHours(dateStr) / 24 * 0.6;
   const stubPenalty = isStubProposal(p) ? 2.5 : 0;
@@ -5241,12 +5272,16 @@ function candidatePool(dateStr) {
   const recentKeyCounts = recentProposalKeyCounts(dateStr, duplicateWindowHours);
   const seenDedup = new Set();
   const pool = [];
+  const backfillPool = [];
   for (const p of proposals) {
     if (!p || !p.id) continue;
     const ov = overlay.get(p.id) || null;
     const status = proposalStatus(ov);
     if (status === 'rejected' || status === 'parked') continue;
-    if (AUTONOMY_ONLY_OPEN_PROPOSALS && status !== 'pending') continue;
+    const allowUnderflowBackfill = AUTONOMY_ONLY_OPEN_PROPOSALS
+      && status !== 'pending'
+      && canQueueUnderflowBackfill(status, ov);
+    if (AUTONOMY_ONLY_OPEN_PROPOSALS && status !== 'pending' && !allowUnderflowBackfill) continue;
     const dedupKey = proposalDedupKey(p);
     const admission = strategyAdmissionDecision(p, strategy, {
       dedup_key: dedupKey,
@@ -5258,20 +5293,34 @@ function candidatePool(dateStr) {
     if (cooldownActive(p.id)) continue;
     if (seenDedup.has(dedupKey)) continue;
     seenDedup.add(dedupKey);
-    pool.push({
+    const row = {
       proposal: p,
       overlay: ov,
       status,
       score: proposalScore(p, ov, dateStr),
       dedup_key: dedupKey,
       admission
-    });
+    };
+    if (allowUnderflowBackfill) {
+      backfillPool.push({
+        ...row,
+        queue_underflow_backfill: true
+      });
+      continue;
+    }
+    pool.push(row);
   }
   pool.sort((a, b) => {
     if (b.score !== a.score) return b.score - a.score;
     return String(a.proposal.id).localeCompare(String(b.proposal.id));
   });
-  return pool;
+  if (pool.length > 0) return pool;
+  if (backfillPool.length <= 0) return backfillPool;
+  backfillPool.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    return String(a.proposal.id).localeCompare(String(b.proposal.id));
+  });
+  return backfillPool.slice(0, AUTONOMY_QUEUE_UNDERFLOW_BACKFILL_MAX);
 }
 
 function exploreQuotaForDay() {
@@ -6465,6 +6514,10 @@ function runCmd(dateStr, opts: AnyObj = {}) {
     objective_binding: {
       required: AUTONOMY_OBJECTIVE_BINDING_REQUIRED,
       objective_allocation_rank_bonus: AUTONOMY_OBJECTIVE_ALLOCATION_RANK_BONUS
+    },
+    queue_underflow_backfill: {
+      enabled: AUTONOMY_QUEUE_UNDERFLOW_BACKFILL_MAX > 0,
+      max_candidates: AUTONOMY_QUEUE_UNDERFLOW_BACKFILL_MAX
     }
   };
   const candidateAuditPolicyHash = hashObj(candidateAuditPolicy);
@@ -6924,6 +6977,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       proposal_id: proposalId,
       proposal_type: proposalType,
       risk,
+      queue_underflow_backfill: cand.queue_underflow_backfill === true,
       pass: true,
       gate: 'eligible',
       score: Number(cand.score || 0),
@@ -7044,6 +7098,12 @@ function runCmd(dateStr, opts: AnyObj = {}) {
     } else {
       selection = chooseSelectionMode(eligible, priorRuns);
       pick = eligible[selection.index] || eligible[0];
+    }
+    if (pick && pick.queue_underflow_backfill === true) {
+      selection = {
+        ...selection,
+        mode: `queue_underflow_${String(selection && selection.mode || 'exploit')}`
+      };
     }
   }
 
