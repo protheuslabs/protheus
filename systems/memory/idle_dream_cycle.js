@@ -1893,7 +1893,18 @@ function runRemPass(dateStr, state, force) {
 function shouldEmitDreamPain(phase, result) {
   if (!result || typeof result !== 'object') return false;
   const reason = String(result.fallback_reason || result.reason || result.error || '').toLowerCase();
-  if (result.degraded === true) return true;
+  if (result.degraded === true) {
+    const fallbackOutput = Number(result.link_count || result.quantized_count || 0);
+    const localUnavailable = (
+      reason.includes('all_local_models_cooling_down')
+      || reason.includes('no_local_model_available')
+      || reason.includes('all_model_attempts_failed')
+      || reason.includes('preflight_failed')
+      || reason.includes('provider_unavailable')
+    );
+    if (localUnavailable && fallbackOutput > 0) return false;
+    return true;
+  }
   if (result.ok === false) return true;
   if (result.skipped === true) {
     if (
@@ -1908,12 +1919,54 @@ function shouldEmitDreamPain(phase, result) {
   return false;
 }
 
+function normalizeDreamPainReason(reasonRaw) {
+  const r = normalizeToken(String(reasonRaw || '').toLowerCase()) || 'dream_failure';
+  if (
+    r.includes('all_local_models_cooling_down')
+    || r.includes('no_local_model_available')
+    || r.includes('all_model_attempts_failed')
+    || r.includes('preflight_failed')
+    || r.includes('provider_unavailable')
+  ) return 'local_model_unavailable';
+  if (r.includes('timeout')) return 'model_timeout';
+  return r;
+}
+
+function resolveDreamPainProposals(dateStr, phase, resolutionReason) {
+  const filePath = path.join(REPO_ROOT, 'state', 'sensory', 'proposals', `${dateStr}.json`);
+  if (!fs.existsSync(filePath)) return 0;
+  const rows = readJsonSafe(filePath, []);
+  if (!Array.isArray(rows) || rows.length === 0) return 0;
+  let changed = false;
+  let resolved = 0;
+  const phasePrefix = `dream_${normalizeToken(phase) || 'phase'}:`;
+  const next = rows.map((p) => {
+    if (!p || typeof p !== 'object') return p;
+    if (String(p.type || '').trim().toLowerCase() !== 'dream_cycle_escalation') return p;
+    const status = String(p.status || '').trim().toLowerCase();
+    if (status === 'resolved' || status === 'done' || status === 'closed') return p;
+    const meta = p.meta && typeof p.meta === 'object' ? p.meta : {};
+    const code = normalizeToken(meta.pain_code || '');
+    if (code && !code.startsWith(phasePrefix)) return p;
+    changed = true;
+    resolved += 1;
+    return {
+      ...p,
+      status: 'resolved',
+      resolved_at: nowIso(),
+      resolution_reason: clean(resolutionReason || 'dream_cycle_fallback_success', 140)
+    };
+  });
+  if (changed) writeJson(filePath, next);
+  return resolved;
+}
+
 function emitDreamPainSignal(dateStr, phase, result) {
   if (!shouldEmitDreamPain(phase, result)) {
     return { emitted: false, reason: 'not_actionable' };
   }
   const reasonRaw = String(result.fallback_reason || result.reason || result.error || 'dream_failure').toLowerCase();
-  const reasonToken = normalizeToken(reasonRaw) || 'dream_failure';
+  const reasonToken = normalizeDreamPainReason(reasonRaw);
   const failedModel = normalizeText(result.failed_model || result.model || '');
   const code = `dream_${normalizeToken(phase) || 'phase'}:${reasonToken}`;
   const summary = `Dream ${phase} phase degraded or blocked (${reasonToken})`;
@@ -1940,7 +1993,7 @@ function emitDreamPainSignal(dateStr, phase, result) {
     window_hours: Number(process.env.IDLE_DREAM_PAIN_WINDOW_HOURS || 12),
     escalate_after: Number(process.env.IDLE_DREAM_PAIN_ESCALATE_AFTER || 2),
     cooldown_hours: Number(process.env.IDLE_DREAM_PAIN_COOLDOWN_HOURS || 6),
-    signature_extra: `${phase}|${failedModel}|${reasonToken}`,
+    signature_extra: `${phase}|${reasonToken}`,
     evidence: [
       {
         source: 'idle_dream_cycle',
@@ -1998,6 +2051,23 @@ function runCycle(dateStr, opts = {}) {
   }
   const idlePain = emitDreamPainSignal(dateStr, 'idle', idleResult);
   const remPain = emitDreamPainSignal(dateStr, 'rem', remResult);
+  const painResolution = { idle: 0, rem: 0 };
+  if (
+    idlePain && idlePain.emitted !== true
+    && idleResult && idleResult.ok === true
+    && idleResult.skipped !== true
+    && Number(idleResult.link_count || 0) > 0
+  ) {
+    painResolution.idle = resolveDreamPainProposals(dateStr, 'idle', 'dream_idle_fallback_success');
+  }
+  if (
+    remPain && remPain.emitted !== true
+    && remResult && remResult.ok === true
+    && remResult.skipped !== true
+    && Number(remResult.quantized_count || 0) > 0
+  ) {
+    painResolution.rem = resolveDreamPainProposals(dateStr, 'rem', 'dream_rem_fallback_success');
+  }
   saveState(state);
 
   const out = {
@@ -2012,6 +2082,7 @@ function runCycle(dateStr, opts = {}) {
       idle: idlePain,
       rem: remPain
     },
+    pain_resolution: painResolution,
     state: {
       last_idle_ts: state.last_idle_ts,
       last_rem_ts: state.last_rem_ts,
@@ -2035,6 +2106,8 @@ function runCycle(dateStr, opts = {}) {
     rem_ok: !!(remResult && remResult.ok),
     rem_skipped: !!(remResult && remResult.skipped),
     rem_reason: remResult ? remResult.reason || null : null,
+    pain_resolved_idle: Number(painResolution.idle || 0),
+    pain_resolved_rem: Number(painResolution.rem || 0),
     idle_runs_before: Number(before.idle_runs || 0),
     idle_runs_after: Number(state.idle_runs || 0),
     rem_runs_before: Number(before.rem_runs || 0),
