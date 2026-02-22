@@ -52,8 +52,13 @@ function run(cmd, args, opts = {}) {
 
 function runJson(cmd, args, opts = {}) {
   const r = spawnSync(cmd, args, { encoding: "utf8", ...opts });
+  const spawnError = r.error ? String(r.error && r.error.message ? r.error.message : r.error) : "";
+  const timedOut = /\bETIMEDOUT\b/i.test(spawnError);
   const rawOut = String(r.stdout || "").trim();
-  const rawErr = String(r.stderr || "").trim();
+  const rawErr = [String(r.stderr || "").trim(), timedOut ? "process_timeout" : "", spawnError]
+    .filter(Boolean)
+    .join("\n")
+    .trim();
   const compactStdout = compactCommandOutput(rawOut, `${path.basename(String(args && args[0] || cmd || "command"))}:stdout`);
   const compactStderr = compactCommandOutput(rawErr, `${path.basename(String(args && args[0] || cmd || "command"))}:stderr`);
   const out = compactStdout.text;
@@ -71,6 +76,9 @@ function runJson(cmd, args, opts = {}) {
     ok: r.status === 0,
     code: r.status == null ? 1 : r.status,
     payload,
+    signal: r.signal || null,
+    timed_out: timedOut,
+    error: spawnError || null,
     stdout: out,
     stderr: err,
     stdout_compacted: compactStdout.compacted === true,
@@ -1821,7 +1829,13 @@ function main() {
 
     // 3b.1) idle/REM dream cycle for passive consolidation.
     if (String(process.env.IDLE_DREAM_CYCLE_ENABLED || "1") !== "0") {
-      const idleCycle = runJson("node", ["systems/memory/idle_dream_cycle.js", "run", dateStr]);
+      const idleDreamCycleTimeoutMs = Math.max(5000, Math.min(
+        15 * 60 * 1000,
+        Number(process.env.SPINE_IDLE_DREAM_CYCLE_TIMEOUT_MS || 180000) || 180000
+      ));
+      const idleCycle = runJson("node", ["systems/memory/idle_dream_cycle.js", "run", dateStr], {
+        timeout: idleDreamCycleTimeoutMs
+      });
       const idlePayload = idleCycle.payload && typeof idleCycle.payload === "object"
         ? idleCycle.payload
         : null;
@@ -1836,8 +1850,14 @@ function main() {
         rem_skipped: idlePayload && idlePayload.rem ? !!idlePayload.rem.skipped : null,
         rem_reason: idlePayload && idlePayload.rem ? idlePayload.rem.reason || null : null,
         rem_quantized_count: idlePayload && idlePayload.rem ? Number(idlePayload.rem.quantized_count || 0) : null,
+        timeout_ms: idleDreamCycleTimeoutMs,
+        timed_out: idleCycle.timed_out === true,
         reason: (!idleCycle.ok || !idlePayload || idlePayload.ok !== true)
-          ? String(idleCycle.stderr || idleCycle.stdout || `idle_dream_cycle_exit_${idleCycle.code}`).slice(0, 180)
+          ? String(
+            idleCycle.stderr
+            || idleCycle.stdout
+            || (idleCycle.timed_out === true ? `idle_dream_cycle_timeout_${idleDreamCycleTimeoutMs}ms` : `idle_dream_cycle_exit_${idleCycle.code}`)
+          ).slice(0, 180)
           : null
       });
       if (idleCycle.ok && idlePayload && idlePayload.ok === true) {
@@ -1846,7 +1866,10 @@ function main() {
           ` rem=${idlePayload.rem && idlePayload.rem.skipped ? "skip" : "run"}`
         );
       } else {
-        console.log(` idle_dream_cycle unavailable reason=${String(idleCycle.stderr || idleCycle.stdout || "unknown").slice(0, 120)}`);
+        const why = idleCycle.timed_out === true
+          ? `timeout_${idleDreamCycleTimeoutMs}ms`
+          : String(idleCycle.stderr || idleCycle.stdout || "unknown").slice(0, 120);
+        console.log(` idle_dream_cycle unavailable reason=${why}`);
       }
     } else {
       appendLedger(dateStr, {

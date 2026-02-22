@@ -84,6 +84,8 @@ const MAX_IDLE_LINKS = clampInt(process.env.IDLE_DREAM_MAX_LINKS || 6, 1, 20);
 const MAX_REM_LINKS = clampInt(process.env.IDLE_DREAM_REM_MAX_LINKS || 8, 1, 24);
 const LLM_TIMEOUT_MS = clampInt(process.env.IDLE_DREAM_TIMEOUT_MS || 25000, 5000, 10 * 60 * 1000);
 const REM_TIMEOUT_MS = clampInt(process.env.IDLE_DREAM_REM_TIMEOUT_MS || 30000, 5000, 10 * 60 * 1000);
+const IDLE_PASS_MAX_MS = clampInt(process.env.IDLE_DREAM_IDLE_PASS_MAX_MS || 120000, 10000, 15 * 60 * 1000);
+const REM_PASS_MAX_MS = clampInt(process.env.IDLE_DREAM_REM_PASS_MAX_MS || 150000, 10000, 15 * 60 * 1000);
 const MAX_ROUTING_ROWS = clampInt(process.env.IDLE_DREAM_MAX_ROUTING_ROWS || 5000, 100, 50000);
 const IDLE_REQUEST_TOKENS_EST = clampInt(process.env.IDLE_DREAM_IDLE_TOKENS_EST || 220, 50, 20000);
 const REM_REQUEST_TOKENS_EST_LOCAL = clampInt(process.env.IDLE_DREAM_REM_TOKENS_EST_LOCAL || 320, 50, 20000);
@@ -1156,9 +1158,15 @@ function runIdlePass(dateStr, state, force) {
   const prompt = buildIdlePrompt(seeds, dateStr);
   let release = null;
   try {
+    const passStartedMs = Date.now();
+    let passBudgetExceeded = false;
     const attemptedModels = [];
     let selectedModel = pick.model;
     while (selectedModel && attemptedModels.length < MODEL_MAX_MODELS_PER_PASS) {
+      if (Date.now() - passStartedMs >= IDLE_PASS_MAX_MS) {
+        passBudgetExceeded = true;
+        break;
+      }
       if (attemptedModels.some((it) => it.model === selectedModel)) break;
       const attempt = runModelWithRetries(selectedModel, prompt, LLM_TIMEOUT_MS, 'idle');
       const attemptRow: AnyObj = {
@@ -1193,21 +1201,26 @@ function runIdlePass(dateStr, state, force) {
       const nextPick = pickModel(IDLE_MODEL_ORDER, availableModels, state);
       selectedModel = nextPick.model;
     }
+    const passElapsedMs = Date.now() - passStartedMs;
     const lastAttempt = attemptedModels.length > 0 ? attemptedModels[attemptedModels.length - 1] : null;
     const lastTry = lastAttempt && Array.isArray(lastAttempt.attempts) && lastAttempt.attempts.length > 0
       ? lastAttempt.attempts[lastAttempt.attempts.length - 1]
       : {};
+    const fallbackReason = passBudgetExceeded ? 'idle_pass_time_budget_exceeded' : 'all_model_attempts_failed';
     const links = normalizeIdleLinks(null, seeds);
     const row = writeIdleRow(dateStr, null, seeds, links, {
       strategy: 'deterministic_fallback',
-      reason: 'all_model_attempts_failed',
-      attempted_models: attemptedModels
+      reason: fallbackReason,
+      attempted_models: attemptedModels,
+      pass_elapsed_ms: passElapsedMs,
+      pass_budget_ms: IDLE_PASS_MAX_MS
     });
     return {
       ok: true,
       skipped: false,
       degraded: true,
       reason: 'deterministic_idle_fallback',
+      fallback_reason: fallbackReason,
       failed_model: lastAttempt ? lastAttempt.model : null,
       fallback_model: null,
       cooldown_until_ts: lastAttempt && lastAttempt.cooldown_until_ts || null,
@@ -1217,6 +1230,8 @@ function runIdlePass(dateStr, state, force) {
       error: lastTry && lastTry.error || null,
       stderr: String(lastTry && lastTry.stderr_tail || '').slice(-240),
       attempted_models: attemptedModels,
+      pass_elapsed_ms: passElapsedMs,
+      pass_budget_ms: IDLE_PASS_MAX_MS,
       seed_count: seeds.length,
       link_count: links.length,
       row_uid: row.uid
@@ -1312,9 +1327,15 @@ function runRemPass(dateStr, state, force) {
       };
     }
     const prompt = buildRemPrompt(materialRows, dateStr);
+    const passStartedMs = Date.now();
+    let passBudgetExceeded = false;
     const attemptedModels = [];
     let selectedModel = pick.model;
     while (selectedModel && attemptedModels.length < MODEL_MAX_MODELS_PER_PASS) {
+      if (Date.now() - passStartedMs >= REM_PASS_MAX_MS) {
+        passBudgetExceeded = true;
+        break;
+      }
       if (attemptedModels.some((it) => it.model === selectedModel)) break;
       const attempt = runModelWithRetries(selectedModel, prompt, REM_TIMEOUT_MS, 'rem');
       const attemptRow: AnyObj = {
@@ -1350,21 +1371,26 @@ function runRemPass(dateStr, state, force) {
       const nextPick = pickModel(REM_MODEL_ORDER, availableModels, state);
       selectedModel = nextPick.model;
     }
+    const passElapsedMs = Date.now() - passStartedMs;
     const lastAttempt = attemptedModels.length > 0 ? attemptedModels[attemptedModels.length - 1] : null;
     const lastTry = lastAttempt && Array.isArray(lastAttempt.attempts) && lastAttempt.attempts.length > 0
       ? lastAttempt.attempts[lastAttempt.attempts.length - 1]
       : {};
+    const fallbackReason = passBudgetExceeded ? 'rem_pass_time_budget_exceeded' : 'all_model_attempts_failed';
     const quantized = fallbackQuantized(materialRows);
     const rem = writeRemResult(dateStr, null, materialRows, quantized, {
       strategy: 'deterministic_fallback',
-      reason: 'all_model_attempts_failed',
-      attempted_models: attemptedModels
+      reason: fallbackReason,
+      attempted_models: attemptedModels,
+      pass_elapsed_ms: passElapsedMs,
+      pass_budget_ms: REM_PASS_MAX_MS
     });
     return {
       ok: true,
       skipped: false,
       degraded: true,
       reason: 'deterministic_rem_fallback',
+      fallback_reason: fallbackReason,
       strategy,
       failed_model: lastAttempt ? lastAttempt.model : null,
       cooldown_until_ts: lastAttempt && lastAttempt.cooldown_until_ts || null,
@@ -1375,6 +1401,8 @@ function runRemPass(dateStr, state, force) {
       error: lastTry && lastTry.error || null,
       stderr: String(lastTry && lastTry.stderr_tail || '').slice(-240),
       attempted_models: attemptedModels,
+      pass_elapsed_ms: passElapsedMs,
+      pass_budget_ms: REM_PASS_MAX_MS,
       source_idle_rows: materialRows.length,
       quantized_count: quantized.length,
       rem_uid: rem.uid
