@@ -157,13 +157,31 @@ function normalizedStatus(proposal, overlayEntry, sensoryEntry = null) {
       || explicit === 'shipped'
       || explicit === 'no_change'
       || explicit === 'reverted'
-    ) return 'accepted';
+    ) return 'closed';
   }
   if (sensoryEntry && sensoryEntry.status) {
     const sensoryStatus = String(sensoryEntry.status).trim().toLowerCase();
     if (sensoryStatus === 'rejected' || sensoryStatus === 'filtered') return 'rejected';
     if (sensoryStatus === 'accepted' || sensoryStatus === 'done') return 'accepted';
+    if (
+      sensoryStatus === 'closed'
+      || sensoryStatus === 'resolved'
+      || sensoryStatus === 'shipped'
+      || sensoryStatus === 'no_change'
+      || sensoryStatus === 'reverted'
+    ) return 'closed';
     if (sensoryStatus === 'parked' || sensoryStatus === 'snoozed') return 'parked';
+  }
+  if (overlayEntry && overlayEntry.outcome) {
+    const outcome = String(overlayEntry.outcome).trim().toLowerCase();
+    if (
+      outcome === 'shipped'
+      || outcome === 'no_change'
+      || outcome === 'reverted'
+      || outcome === 'done'
+      || outcome === 'resolved'
+      || outcome === 'closed'
+    ) return 'closed';
   }
   if (!overlayEntry || !overlayEntry.decision) return 'pending';
   if (overlayEntry.decision === 'accept') return 'accepted';
@@ -333,23 +351,38 @@ function metricsCmd(opts) {
 
   const total = enriched.length;
   const accepted = enriched.filter(p => p.__status === 'accepted').length;
+  const closed = enriched.filter(p => p.__status === 'closed').length;
   const rejected = enriched.filter(p => p.__status === 'rejected').length;
   const parked = enriched.filter(p => p.__status === 'parked').length;
   const pending = enriched.filter(p => p.__status === 'pending').length;
+  const acceptedOrClosed = accepted + closed;
 
-  // Outcomes among accepted
-  const acceptedWithOutcome = enriched.filter(p => p.__status === 'accepted' && p.__outcome);
-  const shipped = acceptedWithOutcome.filter(p => p.__outcome === 'shipped').length;
-  const reverted = acceptedWithOutcome.filter(p => p.__outcome === 'reverted').length;
-  const noChange = acceptedWithOutcome.filter(p => p.__outcome === 'no_change').length;
+  // Outcomes among accepted and closed proposals.
+  const acceptedWithOutcome = enriched.filter(
+    p => (p.__status === 'accepted' || p.__status === 'closed') && p.__outcome
+  );
+  const shipped = acceptedWithOutcome.filter(p => String(p.__outcome) === 'shipped').length;
+  const reverted = acceptedWithOutcome.filter(p => String(p.__outcome) === 'reverted').length;
+  const noChange = acceptedWithOutcome.filter(p => String(p.__outcome) === 'no_change').length;
 
-  const adoptionRate = total > 0 ? accepted / total : 0;
-  const outcomeRate = accepted > 0 ? acceptedWithOutcome.length / accepted : 0;
+  const adoptionRate = total > 0 ? acceptedOrClosed / total : 0;
+  const outcomeRate = acceptedOrClosed > 0 ? acceptedWithOutcome.length / acceptedOrClosed : 0;
   const revertRate = (shipped + reverted) > 0 ? reverted / (shipped + reverted) : 0;
 
   const metrics = {
     date: dateStr,
-    counts: { total, pending, accepted, rejected, parked, shipped, reverted, no_change: noChange },
+    counts: {
+      total,
+      pending,
+      accepted,
+      closed,
+      accepted_or_closed: acceptedOrClosed,
+      rejected,
+      parked,
+      shipped,
+      reverted,
+      no_change: noChange
+    },
     rates: {
       adoption_rate: parseFloat(adoptionRate.toFixed(3)),
       outcome_rate: parseFloat(outcomeRate.toFixed(3)),
@@ -362,9 +395,10 @@ function metricsCmd(opts) {
   const byType = {};
   for (const p of enriched) {
     const t = p.type || 'unknown';
-    if (!byType[t]) byType[t] = { total: 0, accepted: 0, shipped: 0, reverted: 0 };
+    if (!byType[t]) byType[t] = { total: 0, accepted: 0, closed: 0, shipped: 0, reverted: 0 };
     byType[t].total++;
     if (p.__status === 'accepted') byType[t].accepted++;
+    if (p.__status === 'closed') byType[t].closed++;
     if (p.__outcome === 'shipped') byType[t].shipped++;
     if (p.__outcome === 'reverted') byType[t].reverted++;
   }
@@ -380,6 +414,7 @@ function metricsCmd(opts) {
   console.log(`Total proposals: ${total}`);
   console.log(`  Pending:  ${pending}`);
   console.log(`  Accepted: ${accepted}`);
+  console.log(`  Closed:   ${closed}`);
   console.log(`  Rejected: ${rejected}`);
   console.log(`  Parked:   ${parked}`);
   console.log('');
@@ -416,7 +451,7 @@ function main() {
   if (!cmd || cmd === 'help' || cmd === '--help' || cmd === '-h') {
     console.log('proposal_queue.js v1.0 - Decision + Outcome Tracking');
     console.log('');
-    console.log('Commands:');
+  console.log('Commands:');
     console.log('  list [--date=YYYY-MM-DD] [--status=STATUS]');
     console.log('  accept <proposal_id> "<reason>"');
     console.log('  reject <proposal_id> "<reason>"');
@@ -424,8 +459,8 @@ function main() {
     console.log('  outcome <proposal_id> shipped|reverted|no_change "<evidence_ref>"');
     console.log('  metrics [--date=YYYY-MM-DD]');
     console.log('');
-    console.log('Status: pending|accepted|rejected|parked');
-    console.log('Outcomes tracked only for accepted proposals.');
+    console.log('Status: pending|accepted|closed|rejected|parked');
+    console.log('Outcomes tracked for accepted and closed proposals.');
     return;
   }
 
