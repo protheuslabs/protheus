@@ -24,11 +24,15 @@ const { spawnSync } = require('child_process');
 const {
   DEFAULT_STATE_DIR: GLOBAL_BUDGET_STATE_DIR,
   DEFAULT_EVENTS_PATH: GLOBAL_BUDGET_EVENTS_PATH,
+  DEFAULT_AUTOPAUSE_PATH: GLOBAL_BUDGET_AUTOPAUSE_PATH,
   loadSystemBudgetState,
   saveSystemBudgetState,
   projectSystemBudget,
   recordSystemBudgetUsage,
-  writeSystemBudgetDecision
+  writeSystemBudgetDecision,
+  loadSystemBudgetAutopauseState,
+  setSystemBudgetAutopause,
+  evaluateSystemBudgetGuard
 } = require('../budget/system_budget.js');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
@@ -46,6 +50,9 @@ const TOKEN_BUDGET_DIR = process.env.SPAWN_TOKEN_BUDGET_DIR
 const TOKEN_BUDGET_EVENTS_PATH = process.env.SPAWN_TOKEN_BUDGET_EVENTS_PATH
   ? path.resolve(process.env.SPAWN_TOKEN_BUDGET_EVENTS_PATH)
   : GLOBAL_BUDGET_EVENTS_PATH;
+const TOKEN_BUDGET_AUTOPAUSE_PATH = process.env.SPAWN_TOKEN_BUDGET_AUTOPAUSE_PATH
+  ? path.resolve(process.env.SPAWN_TOKEN_BUDGET_AUTOPAUSE_PATH)
+  : GLOBAL_BUDGET_AUTOPAUSE_PATH;
 const ROUTER_SCRIPT = process.env.SPAWN_ROUTER_SCRIPT
   ? path.resolve(process.env.SPAWN_ROUTER_SCRIPT)
   : path.join(REPO_ROOT, 'systems', 'routing', 'model_router.js');
@@ -558,6 +565,17 @@ function cmdStatus(args) {
   const limits = computeLimits(policy, state, moduleName, bounds);
   const tokenBudgetState = loadTokenBudgetState(args.date);
   const tokenBudget = evaluateTokenBudget(policy, tokenBudgetState, moduleName, 0, limits.module_current_cells);
+  const budgetAutopause = loadSystemBudgetAutopauseState({
+    autopause_path: TOKEN_BUDGET_AUTOPAUSE_PATH
+  });
+  const budgetGuard = evaluateSystemBudgetGuard({
+    date: String(tokenBudgetState.date || budgetDateStr()),
+    request_tokens_est: 0
+  }, {
+    state_dir: TOKEN_BUDGET_DIR,
+    events_path: TOKEN_BUDGET_EVENTS_PATH,
+    autopause_path: TOKEN_BUDGET_AUTOPAUSE_PATH
+  });
 
   process.stdout.write(JSON.stringify({
     ok: true,
@@ -571,6 +589,13 @@ function cmdStatus(args) {
     },
     limits,
     token_budget: tokenBudget,
+    budget_autopause: {
+      active: budgetAutopause.active === true,
+      source: budgetAutopause.source || null,
+      reason: budgetAutopause.reason || null,
+      until: budgetAutopause.until || null
+    },
+    budget_guard: budgetGuard,
     hardware_plan_ok: hw.ok,
     hardware_plan_error: hw.ok ? null : hw.error,
     hardware_bounds: bounds
@@ -595,6 +620,99 @@ function cmdRequest(args) {
   const bounds = hardwareBounds(policy, hw.payload || {});
   const limits = computeLimits(policy, state, moduleName, bounds);
   const tokenBudgetState = loadTokenBudgetState(args.date);
+  const budgetDate = String(tokenBudgetState.date || budgetDateStr());
+  const budgetAutopause = loadSystemBudgetAutopauseState({
+    autopause_path: TOKEN_BUDGET_AUTOPAUSE_PATH
+  });
+  const budgetGuard = evaluateSystemBudgetGuard({
+    date: budgetDate,
+    request_tokens_est: requestedTokens
+  }, {
+    state_dir: TOKEN_BUDGET_DIR,
+    events_path: TOKEN_BUDGET_EVENTS_PATH,
+    autopause_path: TOKEN_BUDGET_AUTOPAUSE_PATH
+  });
+
+  if (budgetAutopause.active === true || budgetGuard.hard_stop === true) {
+    const reason = budgetAutopause.active === true
+      ? 'budget_autopause_active'
+      : String((budgetGuard.hard_stop_reasons && budgetGuard.hard_stop_reasons[0]) || 'budget_guard_hard_stop');
+
+    writeSystemBudgetDecision({
+      date: budgetDate,
+      module: moduleName,
+      capability: 'spawn',
+      request_tokens_est: requestedTokens,
+      decision: 'deny',
+      reason
+    }, {
+      state_dir: TOKEN_BUDGET_DIR,
+      events_path: TOKEN_BUDGET_EVENTS_PATH,
+      soft_ratio: policy.token_budget.soft_ratio,
+      hard_ratio: policy.token_budget.hard_ratio
+    });
+
+    if (budgetAutopause.active !== true && budgetGuard.hard_stop === true) {
+      setSystemBudgetAutopause({
+        source: 'spawn_broker',
+        reason,
+        pressure: 'hard',
+        date: budgetDate,
+        minutes: 60
+      }, {
+        autopause_path: TOKEN_BUDGET_AUTOPAUSE_PATH
+      });
+    }
+
+    appendJsonl(EVENTS_PATH, {
+      ts: nowIso(),
+      type: 'spawn_request_blocked_budget',
+      module: moduleName,
+      requested_cells: requestedCells,
+      requested_tokens_est: requestedTokens,
+      reason,
+      budget_autopause: {
+        active: budgetAutopause.active === true,
+        source: budgetAutopause.source || null,
+        until: budgetAutopause.until || null
+      },
+      budget_guard: budgetGuard,
+      limits,
+      hardware_bounds: bounds
+    });
+
+    process.stdout.write(JSON.stringify({
+      ok: true,
+      ts: nowIso(),
+      module: moduleName,
+      apply,
+      requested_cells: requestedCells,
+      granted_cells: 0,
+      requested_tokens_est: requestedTokens,
+      reason: reason || null,
+      blocked_by_budget: true,
+      lease_expires_at: null,
+      limits,
+      token_budget: {
+        enabled: true,
+        allow: false,
+        action: 'escalate',
+        reason
+      },
+      budget_autopause: {
+        active: budgetAutopause.active === true,
+        source: budgetAutopause.source || null,
+        reason: budgetAutopause.reason || null,
+        until: budgetAutopause.until || null
+      },
+      budget_guard: budgetGuard,
+      hardware_plan_ok: hw.ok,
+      hardware_plan_error: hw.ok ? null : hw.error,
+      hardware_bounds: bounds
+    }, null, 2) + '\n');
+    return;
+  }
+
   const tokenBudget = evaluateTokenBudget(policy, tokenBudgetState, moduleName, requestedTokens, requestedCells);
   const budgetRequestedCells = tokenBudget.action === 'degrade'
     ? Math.max(0, Math.min(requestedCells, Number(tokenBudget.suggested_cells || requestedCells)))
