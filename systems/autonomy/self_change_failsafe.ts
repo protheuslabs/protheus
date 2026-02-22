@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// @ts-nocheck
 'use strict';
 
 const fs = require('fs');
@@ -147,4 +146,4 @@ module.exports = {
   recoverIfInterrupted,
   writeAtomicJson
 };
-
+export {};
