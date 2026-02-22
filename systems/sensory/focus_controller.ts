@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// @ts-nocheck
 'use strict';
+export {};
 
 /**
  * focus_controller.js
@@ -36,6 +36,8 @@ const {
   ensureFocusState,
   mutateFocusState
 } = require('../adaptive/sensory/eyes/focus_trigger_store.js');
+
+type AnyObj = Record<string, any>;
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const SENSORY_DIR = process.env.FOCUS_SENSORY_DIR
@@ -82,8 +84,8 @@ function usage() {
   console.log('  node systems/sensory/focus_controller.js --help');
 }
 
-function parseArgs(argv) {
-  const out = { _: [] };
+function parseArgs(argv: string[]): AnyObj {
+  const out: AnyObj = { _: [] };
   for (const arg of argv) {
     if (!arg.startsWith('--')) {
       out._.push(arg);
@@ -651,7 +653,7 @@ function maybeRefreshEyeLenses(dateStr, force = false) {
   };
 }
 
-function maybeRefreshFocusTriggers(opts = {}) {
+function maybeRefreshFocusTriggers(opts: AnyObj = {}) {
   const dateStr = /^\d{4}-\d{2}-\d{2}$/.test(String(opts.dateStr || ''))
     ? String(opts.dateStr)
     : todayStr();
@@ -1043,7 +1045,7 @@ function evaluateFocusBudget(dateStr, selectedCount) {
   };
 }
 
-async function evaluateFocusForEye(opts = {}) {
+async function evaluateFocusForEye(opts: AnyObj = {}) {
   const eye = opts.eye && typeof opts.eye === 'object' ? opts.eye : {};
   const eyeId = String(eye.id || '');
   const eyeKey = normalizeKey(eyeId);
@@ -1200,7 +1202,7 @@ async function evaluateFocusForEye(opts = {}) {
           recent[row.fingerprint] = ts;
           for (const hit of row.hits) {
             const key = `token:${hit}`;
-            const trig = triggerMap.get(key);
+            const trig = triggerMap.get(key) as AnyObj;
             if (!trig) continue;
             trig.hit_count = Number(trig.hit_count || 0) + 1;
             trig.last_hit_ts = ts;
@@ -1209,11 +1211,15 @@ async function evaluateFocusForEye(opts = {}) {
           }
           if (lens) {
             lens.focus_hits_total = Number(lens.focus_hits_total || 0) + 1;
-            for (const term of (Array.isArray(row.lens_hits) ? row.lens_hits : [])) {
+            for (const rawTerm of (Array.isArray(row.lens_hits) ? row.lens_hits : [])) {
+              const term = String(rawTerm || '');
+              if (!term) continue;
               const prev = Number(lens.term_weights && lens.term_weights[term] || lensMinWeight);
               lens.term_weights[term] = clamp(prev + lensStepUp, lensMinWeight, lensMaxWeight, lensMinWeight);
             }
-            for (const term of (Array.isArray(row.lens_exclude_hits) ? row.lens_exclude_hits : [])) {
+            for (const rawTerm of (Array.isArray(row.lens_exclude_hits) ? row.lens_exclude_hits : [])) {
+              const term = String(rawTerm || '');
+              if (!term) continue;
               const prev = Number(lens.term_weights && lens.term_weights[term] || lensMinWeight);
               lens.term_weights[term] = clamp(prev - lensStepDown, lensMinWeight, lensMaxWeight, lensMinWeight);
             }
@@ -1265,7 +1271,9 @@ function focusStatus() {
   const outcomePolicy = loadOutcomeFitnessPolicy(REPO_ROOT);
   const gate = resolveMinFocusScore(state.policy || {}, state.recent_focus_items || {}, Date.now(), outcomePolicy);
   const triggerRows = Array.isArray(state.triggers) ? state.triggers : [];
-  const lensRows = state.eye_lenses && typeof state.eye_lenses === 'object' ? Object.values(state.eye_lenses) : [];
+  const lensRows: AnyObj[] = state.eye_lenses && typeof state.eye_lenses === 'object'
+    ? Object.values(state.eye_lenses as AnyObj)
+    : [];
   return {
     ok: true,
     ts: nowIso(),
@@ -1289,9 +1297,9 @@ function focusStatus() {
     lens_source_summary: state.last_lens_refresh_sources || {},
     top_lenses: lensRows
       .slice()
-      .sort((a, b) => Number(b.focus_hits_total || 0) - Number(a.focus_hits_total || 0))
+      .sort((a: AnyObj, b: AnyObj) => Number(b.focus_hits_total || 0) - Number(a.focus_hits_total || 0))
       .slice(0, 8)
-      .map((l) => ({
+      .map((l: AnyObj) => ({
         eye_id: String(l.eye_id || ''),
         focus_hits_total: Number(l.focus_hits_total || 0),
         update_count: Number(l.update_count || 0),
