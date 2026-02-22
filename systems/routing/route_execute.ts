@@ -65,10 +65,13 @@ function repoRoot() {
   return path.resolve(__dirname, '..', '..');
 }
 
+const ROUTE_TASK_SCRIPT = process.env.ROUTE_EXECUTE_ROUTE_TASK_SCRIPT
+  ? path.resolve(process.env.ROUTE_EXECUTE_ROUTE_TASK_SCRIPT)
+  : path.join(repoRoot(), 'systems', 'routing', 'route_task.js');
+
 function runRouteTask({ task, tokensEst, repeats14d, errors30d, skipHabitId, mode, forceModel = null }) {
-  const script = path.join(repoRoot(), 'systems', 'routing', 'route_task.js');
   const args = [
-    script,
+    ROUTE_TASK_SCRIPT,
     '--task', task,
     '--tokens_est', String(tokensEst),
     '--repeats_14d', String(repeats14d),
@@ -281,6 +284,71 @@ function extractTokenUsageFromText(text, source = 'text') {
     if (usage) return usage;
   }
   return null;
+}
+
+function collectModelCandidatesFromValue(value, outSet) {
+  const set = outSet instanceof Set ? outSet : new Set();
+  if (value == null) return set;
+  if (Array.isArray(value)) {
+    for (const item of value) collectModelCandidatesFromValue(item, set);
+    return set;
+  }
+  if (typeof value === 'object') {
+    const obj: Record<string, any> = value as Record<string, any>;
+    const directKeys = [
+      'selected_model',
+      'model',
+      'model_id',
+      'resolved_model',
+      'routed_model',
+      'ROUTED_MODEL'
+    ];
+    for (const key of directKeys) {
+      const raw = String(obj[key] == null ? '' : obj[key]).trim();
+      if (raw) set.add(raw);
+    }
+    const nested = [obj.route, obj.summary, obj.execution_metrics, obj.route_model_attestation];
+    for (const child of nested) collectModelCandidatesFromValue(child, set);
+    return set;
+  }
+  const raw = String(value || '').trim();
+  if (raw && /[a-z0-9]/i.test(raw) && (raw.includes('/') || raw.includes(':'))) set.add(raw);
+  return set;
+}
+
+function extractObservedModels(stdout, stderr) {
+  const seen = new Set();
+  const rows = [...parseJsonObjects(stdout), ...parseJsonObjects(stderr)];
+  for (const row of rows) collectModelCandidatesFromValue(row, seen);
+  return Array.from(seen).slice(0, 12);
+}
+
+function verifyRouteModelAttestation(expectedModel, stdout, stderr) {
+  const expected = String(expectedModel || '').trim();
+  const observedModels = extractObservedModels(stdout, stderr);
+  if (!expected) {
+    return {
+      enabled: true,
+      status: 'no_expected_model',
+      expected_model: null,
+      observed_models: observedModels
+    };
+  }
+  if (!observedModels.length) {
+    return {
+      enabled: true,
+      status: 'unobserved',
+      expected_model: expected,
+      observed_models: []
+    };
+  }
+  const verified = observedModels.includes(expected);
+  return {
+    enabled: true,
+    status: verified ? 'verified' : 'mismatch',
+    expected_model: expected,
+    observed_models: observedModels
+  };
 }
 
 function modelEnv(baseEnv, modelId) {
@@ -716,7 +784,9 @@ function main() {
       habitRun = {
         attempted: true,
         habit_id: crystallizedHabitId,
-        exit_code: finalExitCode
+        exit_code: finalExitCode,
+        stdout: runStdout,
+        stderr: runStderr
       };
     }
 
@@ -726,7 +796,12 @@ function main() {
         exit_code: finalExitCode,
         duration_ms: Math.max(0, Date.now() - execStartedMs),
         token_usage: null,
-        token_usage_available: false
+        token_usage_available: false,
+        route_model_attestation: verifyRouteModelAttestation(
+          selectedModel,
+          `${crystallizeStdout}\n${habitRun ? String(habitRun.stdout || '') : ''}`,
+          `${crystallizeStderr}\n${habitRun ? String(habitRun.stderr || '') : ''}`
+        )
       },
       auto_habit_flow: {
         crystallizer_decision: crystalSummary && crystalSummary.decision ? String(crystalSummary.decision) : null,
@@ -769,13 +844,15 @@ function main() {
   const usageFromStdout = extractTokenUsageFromText(childStdout, 'stdout');
   const usageFromStderr = extractTokenUsageFromText(childStderr, 'stderr');
   const tokenUsage = usageFromStdout || usageFromStderr || null;
+  const routeModelAttestation = verifyRouteModelAttestation(selectedModel, childStdout, childStderr);
   process.stdout.write(JSON.stringify({
     type: 'route_execute_metrics',
     execution_metrics: {
       exit_code: child.status || 0,
       duration_ms: execDurationMs,
       token_usage: tokenUsage,
-      token_usage_available: !!tokenUsage
+      token_usage_available: !!tokenUsage,
+      route_model_attestation: routeModelAttestation
     }
   }) + '\n');
 
