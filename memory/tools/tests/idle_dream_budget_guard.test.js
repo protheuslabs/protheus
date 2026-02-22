@@ -31,6 +31,9 @@ function run() {
   const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'idle-dream-budget-'));
   const dreamsDir = path.join(tmpRoot, 'state', 'memory', 'dreams');
   const routingPath = path.join(tmpRoot, 'state', 'routing', 'routing_decisions.jsonl');
+  const autopausePath = path.join(tmpRoot, 'state', 'budget_autopause.json');
+  const budgetDir = path.join(tmpRoot, 'state', 'budget');
+  const budgetEventsPath = path.join(tmpRoot, 'state', 'budget_events.jsonl');
   const brokerStub = path.join(tmpRoot, 'spawn_broker_stub.js');
 
   mkDir(dreamsDir);
@@ -49,6 +52,18 @@ function run() {
   });
 
   fs.writeFileSync(routingPath, '', 'utf8');
+  writeJson(autopausePath, {
+    schema_id: 'system_budget_autopause',
+    schema_version: '1.0.0',
+    active: false,
+    source: 'idle_dream_budget_guard_test',
+    reason: null,
+    pressure: null,
+    date: null,
+    until_ms: 0,
+    until: null,
+    updated_at: new Date().toISOString()
+  });
 
   writeText(
     brokerStub,
@@ -84,6 +99,9 @@ process.exit(2);
     IDLE_DREAM_ROUTING_DECISIONS_PATH: routingPath,
     IDLE_DREAM_SPAWN_BROKER_SCRIPT: brokerStub,
     IDLE_DREAM_SPAWN_BUDGET_ENABLED: '1',
+    IDLE_DREAM_BUDGET_STATE_DIR: budgetDir,
+    IDLE_DREAM_BUDGET_EVENTS_PATH: budgetEventsPath,
+    IDLE_DREAM_BUDGET_AUTOPAUSE_PATH: autopausePath,
     IDLE_DREAM_FAKE_MODELS: 'smallthinker',
     IDLE_DREAM_FAKE_IDLE_JSON: JSON.stringify({
       dream_links: [{ token: 'memory-graph-bridge', hint: 'bridge', confidence: 3, refs: [] }]
@@ -113,6 +131,29 @@ process.exit(2);
   assert.ok(out.idle && out.idle.skipped === false, 'idle should run when budget granted');
   assert.ok(out.idle.spawn_budget && out.idle.spawn_budget.module, 'idle should report spawn budget lease');
 
+  writeJson(autopausePath, {
+    schema_id: 'system_budget_autopause',
+    schema_version: '1.0.0',
+    active: true,
+    source: 'idle_dream_budget_guard_test',
+    reason: 'test_pause',
+    pressure: 'hard',
+    date: '2026-02-21',
+    until_ms: Date.now() + (15 * 60 * 1000),
+    until: new Date(Date.now() + (15 * 60 * 1000)).toISOString(),
+    updated_at: new Date().toISOString()
+  });
+  r = spawnSync('node', [script, 'run', '2026-02-21', '--force=1'], {
+    cwd: repoRoot,
+    encoding: 'utf8',
+    env: { ...baseEnv, TEST_SPAWN_GRANT: '1' }
+  });
+  assert.strictEqual(r.status, 0, `run should pass on autopause path: ${r.stderr}`);
+  out = parseJson(r.stdout);
+  assert.ok(out && out.ok === true, 'expected ok=true');
+  assert.ok(out.idle && out.idle.skipped === true, 'idle should be skipped when autopause active');
+  assert.strictEqual(out.idle.reason, 'budget_autopause_active', 'idle skip reason should be autopause');
+
   console.log('idle_dream_budget_guard.test.js: OK');
 }
 
@@ -122,4 +163,3 @@ try {
   console.error(`idle_dream_budget_guard.test.js: FAIL: ${err.message}`);
   process.exit(1);
 }
-

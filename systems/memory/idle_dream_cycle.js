@@ -21,6 +21,15 @@ const { spawnSync } = require('child_process');
 const { stableUid } = require('../../lib/uid.js');
 const { listLocalOllamaModels, runLocalOllamaPrompt, stripAnsi } = require('../routing/llm_gateway.js');
 const { enforceMutationProvenance, recordMutationAudit } = require('../../lib/mutation_provenance.js');
+const {
+  DEFAULT_STATE_DIR: GLOBAL_BUDGET_STATE_DIR,
+  DEFAULT_EVENTS_PATH: GLOBAL_BUDGET_EVENTS_PATH,
+  DEFAULT_AUTOPAUSE_PATH: GLOBAL_BUDGET_AUTOPAUSE_PATH,
+  writeSystemBudgetDecision,
+  loadSystemBudgetAutopauseState,
+  setSystemBudgetAutopause,
+  evaluateSystemBudgetGuard
+} = require('../budget/system_budget.js');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const SCRIPT_SOURCE = 'systems/memory/idle_dream_cycle.js';
@@ -52,6 +61,16 @@ const SPAWN_BUDGET_ENABLED = String(process.env.IDLE_DREAM_SPAWN_BUDGET_ENABLED 
 const BOOTSTRAP_MEMORY_DREAM_ENABLED = String(process.env.IDLE_DREAM_BOOTSTRAP_MEMORY_DREAM || '1').trim() !== '0';
 const SPAWN_MODULE_BASE = normalizeToken(process.env.IDLE_DREAM_SPAWN_MODULE || 'dreaming') || 'dreaming';
 const SPAWN_LEASE_SEC = clampInt(process.env.IDLE_DREAM_SPAWN_LEASE_SEC || 120, 15, 3600);
+const DREAM_BUDGET_MODULE = normalizeToken(process.env.IDLE_DREAM_BUDGET_MODULE || 'dream_cycle') || 'dream_cycle';
+const DREAM_BUDGET_STATE_DIR = process.env.IDLE_DREAM_BUDGET_STATE_DIR
+  ? path.resolve(String(process.env.IDLE_DREAM_BUDGET_STATE_DIR))
+  : GLOBAL_BUDGET_STATE_DIR;
+const DREAM_BUDGET_EVENTS_PATH = process.env.IDLE_DREAM_BUDGET_EVENTS_PATH
+  ? path.resolve(String(process.env.IDLE_DREAM_BUDGET_EVENTS_PATH))
+  : GLOBAL_BUDGET_EVENTS_PATH;
+const DREAM_BUDGET_AUTOPAUSE_PATH = process.env.IDLE_DREAM_BUDGET_AUTOPAUSE_PATH
+  ? path.resolve(String(process.env.IDLE_DREAM_BUDGET_AUTOPAUSE_PATH))
+  : GLOBAL_BUDGET_AUTOPAUSE_PATH;
 
 const IDLE_MIN_MINUTES = clampInt(process.env.IDLE_DREAM_MIN_IDLE_MINUTES || 45, 5, 24 * 60);
 const REM_MIN_MINUTES = clampInt(process.env.IDLE_DREAM_REM_MIN_MINUTES || 180, 30, 7 * 24 * 60);
@@ -563,6 +582,91 @@ function releaseSpawnLease(lease, phase) {
   return { ok: true, skipped: false };
 }
 
+function assessDreamBudget(dateStr, phase, requestedTokens) {
+  const capability = `dream_${normalizeToken(phase || 'idle') || 'idle'}`;
+  const requestTokens = Math.max(0, Math.round(Number(requestedTokens || 0)));
+  const autopause = loadSystemBudgetAutopauseState({
+    autopause_path: DREAM_BUDGET_AUTOPAUSE_PATH
+  });
+  if (autopause.active === true) {
+    writeSystemBudgetDecision({
+      date: dateStr,
+      module: DREAM_BUDGET_MODULE,
+      capability,
+      request_tokens_est: requestTokens,
+      decision: 'deny',
+      reason: 'budget_autopause_active'
+    }, {
+      state_dir: DREAM_BUDGET_STATE_DIR,
+      events_path: DREAM_BUDGET_EVENTS_PATH
+    });
+    return {
+      allow: false,
+      reason: 'budget_autopause_active',
+      guard: null,
+      autopause: {
+        active: true,
+        source: autopause.source || null,
+        reason: autopause.reason || null,
+        until: autopause.until || null
+      }
+    };
+  }
+  const guard = evaluateSystemBudgetGuard({
+    date: dateStr,
+    request_tokens_est: requestTokens
+  }, {
+    state_dir: DREAM_BUDGET_STATE_DIR,
+    events_path: DREAM_BUDGET_EVENTS_PATH,
+    autopause_path: DREAM_BUDGET_AUTOPAUSE_PATH
+  });
+  if (guard.hard_stop === true) {
+    const hardReason = String((guard.hard_stop_reasons && guard.hard_stop_reasons[0]) || 'budget_guard_hard_stop');
+    writeSystemBudgetDecision({
+      date: dateStr,
+      module: DREAM_BUDGET_MODULE,
+      capability,
+      request_tokens_est: requestTokens,
+      decision: 'deny',
+      reason: hardReason
+    }, {
+      state_dir: DREAM_BUDGET_STATE_DIR,
+      events_path: DREAM_BUDGET_EVENTS_PATH
+    });
+    setSystemBudgetAutopause({
+      source: 'idle_dream_cycle',
+      reason: hardReason,
+      pressure: 'hard',
+      date: dateStr,
+      minutes: 60
+    }, {
+      autopause_path: DREAM_BUDGET_AUTOPAUSE_PATH
+    });
+    return {
+      allow: false,
+      reason: hardReason,
+      guard,
+      autopause: {
+        active: false,
+        source: autopause.source || null,
+        reason: autopause.reason || null,
+        until: autopause.until || null
+      }
+    };
+  }
+  return {
+    allow: true,
+    reason: null,
+    guard,
+    autopause: {
+      active: false,
+      source: autopause.source || null,
+      reason: autopause.reason || null,
+      until: autopause.until || null
+    }
+  };
+}
+
 function runMemoryDreamBootstrap(dateStr) {
   if (!BOOTSTRAP_MEMORY_DREAM_ENABLED) {
     return { ok: false, skipped: true, reason: 'memory_dream_bootstrap_disabled' };
@@ -901,6 +1005,17 @@ function runIdlePass(dateStr, state, force) {
     return { ok: true, skipped: true, reason: idleGate.reason, gate: idleGate };
   }
 
+  const budgetGate = assessDreamBudget(dateStr, 'idle', IDLE_REQUEST_TOKENS_EST);
+  if (!budgetGate.allow) {
+    return {
+      ok: true,
+      skipped: true,
+      reason: String(budgetGate.reason || 'budget_guard_deny'),
+      budget_guard: budgetGate.guard || null,
+      budget_autopause: budgetGate.autopause || null
+    };
+  }
+
   let seeds = buildIdleSeedSet(dateStr);
   let bootstrap = null;
   if (seeds.length === 0) {
@@ -1032,6 +1147,17 @@ function runRemPass(dateStr, state, force) {
   const requestedTokens = strategy === 'local'
     ? REM_REQUEST_TOKENS_EST_LOCAL
     : REM_REQUEST_TOKENS_EST_DETERMINISTIC;
+  const budgetGate = assessDreamBudget(dateStr, 'rem', requestedTokens);
+  if (!budgetGate.allow) {
+    return {
+      ok: true,
+      skipped: true,
+      reason: String(budgetGate.reason || 'budget_guard_deny'),
+      strategy,
+      budget_guard: budgetGate.guard || null,
+      budget_autopause: budgetGate.autopause || null
+    };
+  }
   const lease = requestSpawnLease('rem', requestedTokens);
   if (!lease.ok) {
     return {
