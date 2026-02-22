@@ -32,7 +32,9 @@ const SKIP_DIRS = new Set([
 ]);
 const ALLOWED_OLLAMA_SPAWN = new Set([
   'systems/routing/model_router.js',
-  'systems/routing/llm_gateway.js'
+  'systems/routing/model_router.ts',
+  'systems/routing/llm_gateway.js',
+  'systems/routing/llm_gateway.ts'
 ]);
 
 const RULES = [
@@ -217,4 +219,3 @@ if (require.main === module) {
 module.exports = {
   evaluate
 };
-
