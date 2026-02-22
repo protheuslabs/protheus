@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// @ts-nocheck
 /**
  * route_execute.js — route_task executor with optional model routing consumption
  *
@@ -42,7 +41,7 @@ function repoRoot() {
   return path.resolve(__dirname, '..', '..');
 }
 
-function runRouteTask({ task, tokensEst, repeats14d, errors30d, skipHabitId, mode, forceModel }) {
+function runRouteTask({ task, tokensEst, repeats14d, errors30d, skipHabitId, mode, forceModel = null }) {
   const script = path.join(repoRoot(), 'systems', 'routing', 'route_task.js');
   const args = [
     script,
@@ -272,7 +271,7 @@ function main() {
 
   const emergency = isEmergencyStopEngaged('routing');
   if (emergency.engaged) {
-    const summary = {
+    const summary: Record<string, any> = {
       decision: 'MANUAL',
       reason: 'emergency_stop_engaged',
       gate_decision: 'DENY',
@@ -316,7 +315,7 @@ function main() {
   const canExec = isExecutableDecision(out.decision) && execSpec && execSpec.cmd && Array.isArray(execSpec.args);
   const routerMissingModel = routerRequired && canExec && !selectedModel;
 
-  const summary = {
+  const summary: Record<string, any> = {
     decision: summaryDecision,
     route_decision_raw: out.decision,
     reason: autoHabitFlow
@@ -671,3 +670,4 @@ function main() {
 
 if (require.main === module) main();
 module.exports = { runRouteTask, modelEnv };
+export {};
