@@ -47,6 +47,10 @@ const DREAMS_DIR = process.env.PROPOSAL_ENRICHER_DREAMS_DIR
 const DREAMS_REM_DIR = path.join(DREAMS_DIR, 'rem');
 const DREAM_SIGNAL_MAX_TOKENS = clamp(Number(process.env.PROPOSAL_ENRICHER_DREAM_MAX_TOKENS || 24), 8, 64);
 const DREAM_DIRECTIVE_BONUS_CAP = clamp(Number(process.env.AUTONOMY_DREAM_DIRECTIVE_BONUS_CAP || 6), 0, 12);
+const DREAM_REM_RUN_FILE_LIMIT = clamp(Number(process.env.PROPOSAL_ENRICHER_DREAM_REM_RUN_FILE_LIMIT || 3), 0, 12);
+const DREAM_REM_SYNTHESIS_WEIGHT_SCALE = clamp(Number(process.env.PROPOSAL_ENRICHER_DREAM_REM_SYNTHESIS_WEIGHT_SCALE || 0.5), 0.25, 1);
+const DREAM_REM_BONUS_CAP = clamp(Number(process.env.AUTONOMY_DREAM_REM_BONUS_CAP || 2), 0, 4);
+const DREAM_MAX_SOURCE_UIDS = clamp(Number(process.env.PROPOSAL_ENRICHER_DREAM_MAX_SOURCE_UIDS || 24), 8, 128);
 
 const FIT_STOPWORDS = new Set([
   'the', 'and', 'for', 'with', 'from', 'into', 'through', 'that', 'this', 'those', 'these', 'your', 'you',
@@ -287,13 +291,30 @@ function ingestDreamToken(tokenMap, token, rawWeight, source) {
   }
 }
 
+function listRemRunFiles(dateStr) {
+  if (DREAM_REM_RUN_FILE_LIMIT <= 0) return [];
+  try {
+    if (!fs.existsSync(DREAMS_REM_DIR)) return [];
+    const prefix = `${dateStr}__`;
+    return fs.readdirSync(DREAMS_REM_DIR)
+      .filter((name) => name.startsWith(prefix) && name.endsWith('.json'))
+      .sort()
+      .slice(-DREAM_REM_RUN_FILE_LIMIT)
+      .map((name) => path.join(DREAMS_REM_DIR, name));
+  } catch {
+    return [];
+  }
+}
+
 function loadDreamSignals(dateStr) {
   const dreamPath = path.join(DREAMS_DIR, `${dateStr}.json`);
   const remPath = path.join(DREAMS_REM_DIR, `${dateStr}.json`);
   const dreamRaw = readJsonSafe(dreamPath, null);
   const remRaw = readJsonSafe(remPath, null);
+  const remRunPaths = listRemRunFiles(dateStr);
   const tokenMap = new Map();
-  const sourceCounts = { theme: 0, rem: 0 };
+  const sourceCounts = { theme: 0, rem_daily: 0, rem_run: 0, rem_synthesis: 0 };
+  const sourceUidSet = new Set();
 
   const themes = dreamRaw && Array.isArray(dreamRaw.themes) ? dreamRaw.themes : [];
   for (const row of themes) {
@@ -305,14 +326,35 @@ function loadDreamSignals(dateStr) {
     ingestDreamToken(tokenMap, token, weight, 'theme');
   }
 
-  const quantized = remRaw && Array.isArray(remRaw.quantized) ? remRaw.quantized : [];
-  for (const row of quantized) {
-    const token = normalizeText(row && row.token);
-    if (!token) continue;
-    sourceCounts.rem += 1;
-    const rawWeight = Number(row && row.weight || 0);
-    const weight = clamp(Math.round(rawWeight / 8), 1, 4);
-    ingestDreamToken(tokenMap, token, weight, 'rem');
+  const ingestQuantizedRows = (rows, sourceKey, includeSynthesis) => {
+    const quantizedRows = Array.isArray(rows) ? rows : [];
+    for (const row of quantizedRows) {
+      const token = normalizeText(row && row.token);
+      if (!token) continue;
+      sourceCounts[sourceKey] = Number(sourceCounts[sourceKey] || 0) + 1;
+      const rawWeight = Number(row && row.weight || 0);
+      const weight = clamp(Math.round(rawWeight / 8), 1, 4);
+      ingestDreamToken(tokenMap, token, weight, sourceKey);
+      if (includeSynthesis === true) {
+        const synthesis = normalizeText(row && row.synthesis);
+        if (synthesis) {
+          sourceCounts.rem_synthesis += 1;
+          const synthesisWeight = clamp(Math.round(weight * DREAM_REM_SYNTHESIS_WEIGHT_SCALE), 1, 4);
+          ingestDreamToken(tokenMap, synthesis, synthesisWeight, 'rem_synthesis');
+        }
+      }
+      const sourceUids = Array.isArray(row && row.source_uids) ? row.source_uids : [];
+      for (const uid of sourceUids) {
+        const clean = normalizeText(uid).toLowerCase();
+        if (clean) sourceUidSet.add(clean);
+      }
+    }
+  };
+
+  ingestQuantizedRows(remRaw && remRaw.quantized, 'rem_daily', true);
+  for (const fp of remRunPaths) {
+    const one = readJsonSafe(fp, null);
+    ingestQuantizedRows(one && one.quantized, 'rem_run', true);
   }
 
   const tokens = Array.from(tokenMap.values())
@@ -329,10 +371,15 @@ function loadDreamSignals(dateStr) {
     available: tokens.length > 0,
     total_weight: tokens.reduce((sum, row) => sum + Number(row.weight || 0), 0),
     tokens,
-    source_counts: sourceCounts,
+    source_counts: {
+      ...sourceCounts,
+      rem: Number(sourceCounts.rem_daily || 0) + Number(sourceCounts.rem_run || 0)
+    },
+    source_uids: Array.from(sourceUidSet).sort().slice(0, DREAM_MAX_SOURCE_UIDS),
     files: {
       themes: fs.existsSync(dreamPath),
-      rem: fs.existsSync(remPath)
+      rem: fs.existsSync(remPath),
+      rem_runs: remRunPaths.map((fp) => path.basename(fp))
     }
   };
 }
@@ -1069,8 +1116,11 @@ function assessDreamAlignment(proposal, dreamSignals) {
       score: 0,
       directive_bonus: 0,
       hit_weight: 0,
+      rem_hit_weight: 0,
+      rem_bonus: 0,
       matched_tokens: [],
       matched_sources: [],
+      matched_source_uids: [],
       reasons: ['dream_signals_unavailable']
     };
   }
@@ -1081,8 +1131,11 @@ function assessDreamAlignment(proposal, dreamSignals) {
       score: 0,
       directive_bonus: 0,
       hit_weight: 0,
+      rem_hit_weight: 0,
+      rem_bonus: 0,
       matched_tokens: [],
       matched_sources: [],
+      matched_source_uids: [],
       reasons: ['proposal_tokens_empty']
     };
   }
@@ -1090,6 +1143,7 @@ function assessDreamAlignment(proposal, dreamSignals) {
   const set = new Set(proposalTokens);
   const stems = new Set(proposalTokens.map(toStem));
   let hitWeight = 0;
+  let remHitWeight = 0;
   const matchedTokens = [];
   const sourceSet = new Set();
   for (const row of rows) {
@@ -1100,24 +1154,45 @@ function assessDreamAlignment(proposal, dreamSignals) {
     hitWeight += weight;
     matchedTokens.push(token);
     const src = Array.isArray(row && row.sources) ? row.sources : [];
-    for (const one of src) sourceSet.add(String(one || '').trim().toLowerCase());
+    let remMatched = false;
+    for (const one of src) {
+      const sourceTag = String(one || '').trim().toLowerCase();
+      if (!sourceTag) continue;
+      sourceSet.add(sourceTag);
+      if (sourceTag.startsWith('rem')) remMatched = true;
+    }
+    if (remMatched) remHitWeight += weight;
   }
 
   const totalWeight = clamp(Number(source.total_weight || 0), 1, 9999);
   const score = hitWeight > 0
     ? clamp(Math.round((hitWeight / totalWeight) * 100), 0, 100)
     : 0;
-  const bonus = hitWeight > 0
+  const baseBonus = hitWeight > 0
     ? clamp(Math.round(hitWeight / 3), 0, DREAM_DIRECTIVE_BONUS_CAP)
     : 0;
+  const remBonus = remHitWeight > 0
+    ? clamp(Math.round(remHitWeight / 6), 0, DREAM_REM_BONUS_CAP)
+    : 0;
+  const bonus = clamp(baseBonus + remBonus, 0, DREAM_DIRECTIVE_BONUS_CAP);
+  const sourceUids = Array.isArray(source.source_uids)
+    ? source.source_uids.map((uid) => normalizeText(uid).toLowerCase()).filter(Boolean)
+    : [];
+  const reasons = [];
+  if (baseBonus > 0) reasons.push('dream_alignment_bonus_applied');
+  else reasons.push('dream_alignment_no_bonus');
+  if (remBonus > 0) reasons.push('dream_rem_bonus_applied');
   return {
     available: true,
     score,
     directive_bonus: bonus,
     hit_weight: hitWeight,
+    rem_hit_weight: remHitWeight,
+    rem_bonus: remBonus,
     matched_tokens: uniq(matchedTokens).slice(0, 6),
     matched_sources: Array.from(sourceSet).filter(Boolean).sort(),
-    reasons: bonus > 0 ? ['dream_alignment_bonus_applied'] : ['dream_alignment_no_bonus']
+    matched_source_uids: hitWeight > 0 ? uniq(sourceUids).slice(0, 8) : [],
+    reasons: uniq(reasons)
   };
 }
 
@@ -1398,8 +1473,11 @@ function enrichOne(proposal, ctx) {
     dream_alignment_score: dream.score,
     dream_alignment_hit_weight: dream.hit_weight,
     dream_alignment_bonus: dream.directive_bonus,
+    dream_alignment_rem_hit_weight: dream.rem_hit_weight,
+    dream_alignment_rem_bonus: dream.rem_bonus,
     dream_alignment_tokens: dream.matched_tokens,
     dream_alignment_sources: dream.matched_sources,
+    dream_alignment_source_uids: dream.matched_source_uids,
     dream_alignment_reasons: dream.reasons,
     relevance_reasons: uniq([...q.reasons, ...d.reasons, ...dream.reasons]).slice(0, 10),
     actionability_score: a.score,
@@ -1466,6 +1544,7 @@ function summarizeDreamAlignment(results, dreamSignals) {
   let proposalsWithHits = 0;
   let proposalsWithBonus = 0;
   let bonusTotal = 0;
+  let remBonusTotal = 0;
   for (const row of results) {
     const proposal = row && row.proposal && typeof row.proposal === 'object' ? row.proposal : {};
     const meta = proposal && proposal.meta && typeof proposal.meta === 'object' ? proposal.meta : {};
@@ -1474,6 +1553,7 @@ function summarizeDreamAlignment(results, dreamSignals) {
       proposalsWithBonus += 1;
       bonusTotal += bonus;
     }
+    remBonusTotal += Number(meta.dream_alignment_rem_bonus || 0);
     const tokens = Array.isArray(meta.dream_alignment_tokens) ? meta.dream_alignment_tokens : [];
     if (tokens.length > 0) proposalsWithHits += 1;
     for (const tok of tokens) {
@@ -1488,10 +1568,12 @@ function summarizeDreamAlignment(results, dreamSignals) {
     available: source.available === true,
     tokens_loaded: tokensLoaded,
     source_counts: source.source_counts || { theme: 0, rem: 0 },
-    files: source.files || { themes: false, rem: false },
+    source_uid_count: Array.isArray(source.source_uids) ? source.source_uids.length : 0,
+    files: source.files || { themes: false, rem: false, rem_runs: [] },
     proposals_with_hits: proposalsWithHits,
     proposals_with_bonus: proposalsWithBonus,
     bonus_total: bonusTotal,
+    rem_bonus_total: remBonusTotal,
     top_hit_tokens: Object.entries(tokenHits)
       .sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0) || String(a[0]).localeCompare(String(b[0])))
       .slice(0, 6)
