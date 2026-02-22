@@ -173,7 +173,8 @@ function findFirstExisting(paths) {
 function normalizeStatus(p) {
   const s = (p.status || p.state || "").toString().trim().toLowerCase();
   if (!s) return "open";
-  if (s === "open") return "open";
+  if (s === "open" || s === "pending" || s === "admitted" || s === "queued") return "open";
+  if (s === "parked" || s === "snoozed") return "parked";
   if (s === "rejected" || s === "reject") return "rejected";
   if (s === "shipped") return "shipped";
   if (s === "no_change" || s === "nochange") return "no_change";
@@ -311,6 +312,10 @@ function main() {
     1,
     asInt(arg("escalation-ttl-hours"), Number(process.env.QUEUE_GC_ESCALATION_TTL_HOURS || 16))
   );
+  const crossSignalTtlHours = Math.max(
+    1,
+    asInt(arg("cross-signal-ttl-hours"), Number(process.env.QUEUE_GC_CROSS_SIGNAL_TTL_HOURS || 24))
+  );
 
   if (!mode || mode === "--help" || mode === "-h") {
     console.log("Usage:");
@@ -337,10 +342,10 @@ function main() {
 
   // Try storage locations in priority order (legacy queue + active sensory proposals).
   const proposalsPath = findFirstExisting([
+    path.join(repo, "state", "sensory", "proposals", `${dateStr}.json`),
     path.join(queueDir, "proposals.jsonl"),
     path.join(queueDir, "proposals", `${dateStr}.jsonl`),
-    path.join(queueDir, "proposals", `${dateStr}.json`),
-    path.join(repo, "state", "sensory", "proposals", `${dateStr}.json`)
+    path.join(queueDir, "proposals", `${dateStr}.json`)
   ]);
 
   if (!proposalsPath) {
@@ -424,9 +429,21 @@ function main() {
   const escalationRejectIds = new Set(escalationReject.map((x) => x.id));
   const remainingForCaps = remainingAfterDedup.filter((x) => !escalationRejectIds.has(x.id));
 
-  // 4) Group remaining by eye
+  // 4) Cross-signal TTL reject (these opportunities decay quickly)
+  const crossSignalReject = [];
+  const afterEscalation = remainingForCaps;
+  for (const it of afterEscalation) {
+    if (String(it.type || '').trim().toLowerCase() !== 'cross_signal_opportunity') continue;
+    if (!it.ts) continue;
+    const ageHours = (now.getTime() - it.ts.getTime()) / (1000 * 60 * 60);
+    if (ageHours > crossSignalTtlHours) crossSignalReject.push(it);
+  }
+  const crossSignalRejectIds = new Set(crossSignalReject.map((x) => x.id));
+  const remainingForEyeCaps = afterEscalation.filter((x) => !crossSignalRejectIds.has(x.id));
+
+  // 5) Group remaining by eye
   const byEye = new Map(); // eye -> items
-  for (const it of remainingForCaps) {
+  for (const it of remainingForEyeCaps) {
     if (!byEye.has(it.eye)) byEye.set(it.eye, []);
     byEye.get(it.eye).push(it);
   }
@@ -444,8 +461,8 @@ function main() {
     capReject.push(...overflow);
   }
 
-  // 5) Per-type cap reject (oldest first), after TTL + dedup + escalation + per-eye rejections are selected
-  const preSelectedIds = new Set([...ttlReject, ...dedupReject, ...escalationReject, ...capReject].map((it) => it.id));
+  // 6) Per-type cap reject (oldest first), after TTL + dedup + escalation + cross-signal + per-eye rejections are selected
+  const preSelectedIds = new Set([...ttlReject, ...dedupReject, ...escalationReject, ...crossSignalReject, ...capReject].map((it) => it.id));
   const remainingForType = open.filter((it) => !preSelectedIds.has(it.id));
   const byType = new Map();
   for (const it of remainingForType) {
@@ -465,16 +482,16 @@ function main() {
     typeCapReject.push(...overflow);
   }
 
-  const toReject = [...ttlReject, ...dedupReject, ...escalationReject, ...capReject, ...typeCapReject];
+  const toReject = [...ttlReject, ...dedupReject, ...escalationReject, ...crossSignalReject, ...capReject, ...typeCapReject];
   if (!toReject.length) {
     console.log(
-      `queue_gc: no actions (OPEN=${open.length}, cap_per_eye=${capPerEye}, cap_per_type=${capPerType}, ttl_hours=${ttlHours}, escalation_ttl_hours=${escalationTtlHours}, budget_pressure=${budgetPressure.pressure}, pressure_source=${budgetPressure.source})`
+      `queue_gc: no actions (OPEN=${open.length}, cap_per_eye=${capPerEye}, cap_per_type=${capPerType}, ttl_hours=${ttlHours}, escalation_ttl_hours=${escalationTtlHours}, cross_signal_ttl_hours=${crossSignalTtlHours}, budget_pressure=${budgetPressure.pressure}, pressure_source=${budgetPressure.source})`
     );
     process.exit(0);
   }
 
   console.log(
-    `queue_gc: rejecting ${toReject.length} proposals (OPEN=${open.length}, dedup=${dedupReject.length}, escalation_ttl=${escalationReject.length}, type_cap=${typeCapReject.length}, budget_pressure=${budgetPressure.pressure}, pressure_source=${budgetPressure.source})`
+    `queue_gc: rejecting ${toReject.length} proposals (OPEN=${open.length}, dedup=${dedupReject.length}, escalation_ttl=${escalationReject.length}, cross_signal_ttl=${crossSignalReject.length}, type_cap=${typeCapReject.length}, budget_pressure=${budgetPressure.pressure}, pressure_source=${budgetPressure.source})`
   );
 
   // Deterministic order: TTL rejects first (oldest first), then cap rejects (oldest first)
@@ -486,6 +503,7 @@ function main() {
   ttlReject.sort(oldestFirst);
   dedupReject.sort(oldestFirst);
   escalationReject.sort(oldestFirst);
+  crossSignalReject.sort(oldestFirst);
   capReject.sort(oldestFirst);
   typeCapReject.sort(oldestFirst);
 
@@ -500,6 +518,10 @@ function main() {
   }
   for (const it of escalationReject) {
     const reason = `auto:queue_gc escalation_ttl>${escalationTtlHours}h type:${it.type}`;
+    rejectProposal(repo, it.id, reason);
+  }
+  for (const it of crossSignalReject) {
+    const reason = `auto:queue_gc cross_signal_ttl>${crossSignalTtlHours}h type:${it.type}`;
     rejectProposal(repo, it.id, reason);
   }
   for (const it of capReject) {

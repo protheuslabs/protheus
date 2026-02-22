@@ -51,6 +51,9 @@ const SENSORY_MIN_EYE_SCORE_EMA = Number(process.env.SENSORY_MIN_EYE_SCORE_EMA |
 const SENSORY_CROSS_SIGNAL_MIN_CONFIDENCE = Number(process.env.SENSORY_CROSS_SIGNAL_MIN_CONFIDENCE || 62);
 const SENSORY_CROSS_SIGNAL_MIN_SUPPORT_EYES = Number(process.env.SENSORY_CROSS_SIGNAL_MIN_SUPPORT_EYES || 2);
 const SENSORY_CROSS_SIGNAL_MAX_PROPOSALS = Number(process.env.SENSORY_CROSS_SIGNAL_MAX_PROPOSALS || 3);
+const SENSORY_CROSS_SIGNAL_STALE_HOURS = Number(process.env.SENSORY_CROSS_SIGNAL_STALE_HOURS || 36);
+const SENSORY_CROSS_SIGNAL_STALE_PENALTY = Number(process.env.SENSORY_CROSS_SIGNAL_STALE_PENALTY || 18);
+const SENSORY_CROSS_SIGNAL_MAX_STALE_HOURS = Number(process.env.SENSORY_CROSS_SIGNAL_MAX_STALE_HOURS || 120);
 const SENSORY_DISALLOWED_PARSER_TYPES = new Set(
   String(process.env.SENSORY_DISALLOWED_PARSER_TYPES || 'stub')
     .split(',')
@@ -672,6 +675,18 @@ function assessItemActionability(item, analysis) {
   if (Number.isFinite(relevance)) score += clamp(Math.round((relevance - 30) * 0.5), 0, 35);
 
   const hasActionVerb = ACTION_VERB_RE.test(title) || ACTION_VERB_RE.test(preview);
+  const metaCoordinationOnly = META_COORDINATION_RE.test(haystack)
+    && !hasActionVerb
+    && !hasOpportunity
+    && !hasConcreteChange
+    && !hasMeasurableOutcome;
+  if (metaCoordinationOnly) {
+    return {
+      pass: false,
+      actionability_score: 0,
+      reasons: ['meta_coordination_preblocked', 'below_min_actionability']
+    };
+  }
   if (hasActionVerb) {
     score += 16;
   } else if (!isInternalSignal && (hasOpportunity || (Number.isFinite(relevance) && relevance >= 65 && hasBusinessTopic))) {
@@ -1023,7 +1038,36 @@ function makeCrossSignalItem(hypothesis, dateStr) {
   };
 }
 
-function assessCrossSignalActionability(hypothesis, directiveFitPass) {
+function hypothesisLatestEvidenceMs(hypothesis) {
+  const evidence = Array.isArray(hypothesis && hypothesis.evidence) ? hypothesis.evidence : [];
+  const candidates = [];
+  for (const ev of evidence) {
+    candidates.push(normalizeText(ev && ev.last_ts));
+    candidates.push(normalizeText(ev && ev.first_seen_ts));
+    candidates.push(normalizeText(ev && ev.first_ts));
+  }
+  candidates.push(normalizeText(hypothesis && hypothesis.last_seen_ts));
+  candidates.push(normalizeText(hypothesis && hypothesis.ts));
+
+  let latest = 0;
+  for (const raw of candidates) {
+    if (!raw) continue;
+    const ms = Date.parse(raw);
+    if (Number.isFinite(ms) && ms > latest) latest = ms;
+  }
+  return latest;
+}
+
+function crossSignalStalenessHours(hypothesis, dateStr) {
+  const latestMs = hypothesisLatestEvidenceMs(hypothesis);
+  if (!latestMs) return null;
+  const refMs = Date.parse(`${dateStr}T23:59:59.999Z`);
+  const nowMs = Number.isFinite(refMs) ? refMs : Date.now();
+  const delta = Math.max(0, nowMs - latestMs);
+  return Math.round((delta / (1000 * 60 * 60)) * 10) / 10;
+}
+
+function assessCrossSignalActionability(hypothesis, directiveFitPass, staleHours = null) {
   const confidence = Number(hypothesis && hypothesis.confidence || 0);
   const supportEyes = Number(hypothesis && hypothesis.support_eyes || 0);
   const supportEvents = Number(hypothesis && hypothesis.support_events || 0);
@@ -1038,32 +1082,42 @@ function assessCrossSignalActionability(hypothesis, directiveFitPass) {
   if (trend === 'up') score += 6;
   if (type === 'lead_lag') score += 5;
   if (directiveFitPass === true) score += 8;
+  if (Number.isFinite(staleHours) && staleHours >= SENSORY_CROSS_SIGNAL_STALE_HOURS) {
+    score -= SENSORY_CROSS_SIGNAL_STALE_PENALTY;
+    reasons.push(`cross_signal_stale:${Math.round(staleHours)}h`);
+  }
 
   if (confidence < SENSORY_CROSS_SIGNAL_MIN_CONFIDENCE) reasons.push('cross_signal_confidence_low');
   if (supportEyes < SENSORY_CROSS_SIGNAL_MIN_SUPPORT_EYES) reasons.push('cross_signal_support_low');
   if (directiveFitPass !== true) reasons.push('directive_fit_low');
+  if (Number.isFinite(staleHours) && staleHours >= SENSORY_CROSS_SIGNAL_MAX_STALE_HOURS) {
+    reasons.push('cross_signal_stale_hard_block');
+  }
 
   const finalScore = clamp(score, 0, 100);
+  const stalePass = !(Number.isFinite(staleHours) && staleHours >= SENSORY_CROSS_SIGNAL_MAX_STALE_HOURS);
   const pass = finalScore >= SENSORY_MIN_ACTIONABILITY_SCORE
     && confidence >= SENSORY_CROSS_SIGNAL_MIN_CONFIDENCE
     && supportEyes >= SENSORY_CROSS_SIGNAL_MIN_SUPPORT_EYES
-    && directiveFitPass === true;
+    && directiveFitPass === true
+    && stalePass;
   if (!pass) reasons.push('below_min_actionability');
-  return { pass, score: finalScore, reasons };
+  return { pass, score: finalScore, reasons, stale_hours: Number.isFinite(staleHours) ? staleHours : null };
 }
 
-function buildCrossSignalProposal(hypothesis, dateStr, directiveFit, actionability, objectiveBinding) {
-  const id = `CSG-${sha16(`${normalizeText(hypothesis && hypothesis.id)}|${dateStr}`)}`;
-  const summary = normalizeText(hypothesis && hypothesis.summary) || 'Cross-signal hypothesis';
-  const confidence = Number(hypothesis && hypothesis.confidence || 0);
-  const supportEyes = Number(hypothesis && hypothesis.support_eyes || 0);
-  const supportEvents = Number(hypothesis && hypothesis.support_events || 0);
+function buildCrossSignalProposal(hypothesis, dateStr, directiveFit, actionability, objectiveBinding, staleHours = null) {
   const topic = normalizeText(hypothesis && hypothesis.topic);
   const type = normalizeText(hypothesis && hypothesis.type) || 'cross_signal';
   const objectiveId = sanitizeDirectiveObjectiveId(
     (objectiveBinding && objectiveBinding.objective_id)
     || (objectiveBinding && objectiveBinding.directive_objective_id)
   );
+  const stableIdSeed = `${type}|${normalizeText(topic).toLowerCase() || 'unknown'}|${objectiveId || 'none'}|${dateStr}`;
+  const id = `CSG-${sha16(stableIdSeed)}`;
+  const summary = normalizeText(hypothesis && hypothesis.summary) || 'Cross-signal hypothesis';
+  const confidence = Number(hypothesis && hypothesis.confidence || 0);
+  const supportEyes = Number(hypothesis && hypothesis.support_eyes || 0);
+  const supportEvents = Number(hypothesis && hypothesis.support_events || 0);
   const task = normalizeTaskText(
     `Evaluate cross-signal hypothesis "${summary}". Determine one concrete experiment with measurable success criteria and rollback plan.`,
     220
@@ -1074,14 +1128,19 @@ function buildCrossSignalProposal(hypothesis, dateStr, directiveFit, actionabili
     compileSuccessCriteriaRows(
       [
         {
-          metric: 'experiment_artifact',
-          target: '1 hypothesis-tied experiment artifact generated',
+          metric: 'artifact_count',
+          target: '>=1 artifact generated from hypothesis experiment',
           horizon: '24h'
         },
         {
-          metric: 'hypothesis_signal_lift',
-          target: 'observable trend/support improvement from baseline',
-          horizon: '7d'
+          metric: 'execution_success',
+          target: 'execution success',
+          horizon: 'next run'
+        },
+        {
+          metric: 'queue_outcome_logged',
+          target: 'queue outcome logged',
+          horizon: 'next run'
         }
       ],
       { source: 'action_spec.success_criteria' }
@@ -1090,7 +1149,7 @@ function buildCrossSignalProposal(hypothesis, dateStr, directiveFit, actionabili
   const actionSpec = {
     version: 1,
     objective: 'Validate cross-signal hypothesis via one executable experiment',
-    target: `cross_signal:${normalizeText(hypothesis && hypothesis.id) || 'unknown'}`,
+    target: `cross_signal:${type}:${normalizeText(topic).toLowerCase() || 'unknown'}`,
     next_command: suggestedNextCommand,
     verify: [
       'Generate one concrete experiment tied to hypothesis evidence',
@@ -1137,6 +1196,7 @@ function buildCrossSignalProposal(hypothesis, dateStr, directiveFit, actionabili
       actionability_score: Number(actionability && actionability.score || 0),
       actionability_pass: actionability && actionability.pass === true,
       actionability_reasons: actionability ? actionability.reasons.slice(0, 5) : [],
+      stale_hours: Number.isFinite(staleHours) ? staleHours : null,
       objective_id: objectiveId || null,
       directive_objective_id: objectiveId || null,
       objective_binding_source: normalizeText(objectiveBinding && objectiveBinding.binding_source) || null,
@@ -1169,7 +1229,8 @@ function generateCrossSignalProposals(dateStr, maxCount = SENSORY_CROSS_SIGNAL_M
     const item = makeCrossSignalItem(h, dateStr);
     const directiveFit = assessDirectiveFitItem(item, directiveProfile);
     const objectiveBinding = resolveObjectiveBindingForItem(item, directiveObjectiveCatalog, fallbackObjectiveIds);
-    const actionability = assessCrossSignalActionability(h, directiveFit.pass === true);
+    const staleHours = crossSignalStalenessHours(h, dateStr);
+    const actionability = assessCrossSignalActionability(h, directiveFit.pass === true, staleHours);
     if (!(directiveFit.pass === true && actionability.pass === true)) {
       const reasons = [...(directiveFit.reasons || []), ...(actionability.reasons || [])];
       for (const r of reasons) {
@@ -1182,7 +1243,7 @@ function generateCrossSignalProposals(dateStr, maxCount = SENSORY_CROSS_SIGNAL_M
       hypothesis: h,
       directiveFit,
       actionability,
-      proposal: buildCrossSignalProposal(h, dateStr, directiveFit, actionability, objectiveBinding)
+      proposal: buildCrossSignalProposal(h, dateStr, directiveFit, actionability, objectiveBinding, staleHours)
     });
   }
 
@@ -1205,6 +1266,134 @@ function generateCrossSignalProposals(dateStr, maxCount = SENSORY_CROSS_SIGNAL_M
     },
     rejected_reason_counts: sortedObject(rejectedReasonCounts)
   };
+}
+
+function primaryProposalTopic(proposal) {
+  function normalizeTopicKey(v) {
+    let topic = normalizeText(v).toLowerCase();
+    if (!topic) return '';
+    if (topic.endsWith('ies') && topic.length > 5) topic = `${topic.slice(0, -3)}y`;
+    else if (topic.endsWith('es') && topic.length > 4 && !topic.endsWith('ses')) topic = topic.slice(0, -2);
+    else if (topic.endsWith('s') && topic.length > 4 && !topic.endsWith('ss')) topic = topic.slice(0, -1);
+    return topic;
+  }
+  const meta = proposal && proposal.meta && typeof proposal.meta === 'object' ? proposal.meta : {};
+  const topic = normalizeTopicKey(meta.topic);
+  if (topic) return topic;
+  const topics = Array.isArray(meta.topics) ? meta.topics.map((t) => normalizeTopicKey(t)).filter(Boolean) : [];
+  if (topics.length) return topics[0];
+  return '';
+}
+
+function proposalLineageKey(proposal) {
+  if (!proposal || typeof proposal !== 'object') return '';
+  const id = normalizeText(proposal.id);
+  if (!id) return '';
+  const type = normalizeText(proposal.type).toLowerCase();
+  if (!type) return '';
+  const meta = proposal.meta && typeof proposal.meta === 'object' ? proposal.meta : {};
+  const sourceEye = normalizeText(meta.source_eye).toLowerCase();
+  const objectiveId = sanitizeDirectiveObjectiveId(
+    normalizeText(meta.directive_objective_id)
+    || normalizeText(meta.objective_id)
+    || normalizeText(proposal.action_spec && proposal.action_spec.objective_id)
+  );
+  const target = normalizeText(
+    (proposal.action_spec && proposal.action_spec.target)
+    || meta.action_spec_target
+  ).toLowerCase();
+  const topic = primaryProposalTopic(proposal);
+  const anchor = target || topic;
+  if (!sourceEye && !anchor) return '';
+  return [type, sourceEye || 'unknown', objectiveId || 'none', anchor || 'none'].join('|');
+}
+
+function buildLineageIndex(existing) {
+  const out = new Map();
+  for (const proposal of existing) {
+    if (!proposal || typeof proposal !== 'object') continue;
+    const id = normalizeText(proposal.id);
+    if (!id) continue;
+    const key = proposalLineageKey(proposal);
+    if (!key) continue;
+    out.set(key, id);
+  }
+  return out;
+}
+
+function applyLineageMarkers(incoming, lineageIndex) {
+  return incoming.map((proposal) => {
+    if (!proposal || typeof proposal !== 'object') return proposal;
+    const id = normalizeText(proposal.id);
+    if (!id) return proposal;
+    const key = proposalLineageKey(proposal);
+    if (!key) return proposal;
+    const supersedesId = normalizeText(lineageIndex.get(key));
+    if (!supersedesId || supersedesId === id) return proposal;
+    const meta = proposal.meta && typeof proposal.meta === 'object' ? proposal.meta : {};
+    if (
+      normalizeText(proposal.supersedes_id) === supersedesId &&
+      normalizeText(meta.supersedes_id) === supersedesId
+    ) {
+      return proposal;
+    }
+    return {
+      ...proposal,
+      supersedes_id: supersedesId,
+      meta: {
+        ...meta,
+        supersedes_id: supersedesId,
+        lineage_key: key
+      }
+    };
+  });
+}
+
+function objectiveTopicDedupeKey(proposal) {
+  if (!proposal || typeof proposal !== 'object') return '';
+  const meta = proposal.meta && typeof proposal.meta === 'object' ? proposal.meta : {};
+  const objectiveId = sanitizeDirectiveObjectiveId(
+    normalizeText(meta.directive_objective_id)
+    || normalizeText(meta.objective_id)
+    || normalizeText(proposal.action_spec && proposal.action_spec.objective_id)
+  );
+  const topic = primaryProposalTopic(proposal);
+  if (!objectiveId || !topic) return '';
+  const type = normalizeText(proposal.type).toLowerCase() || 'unknown';
+  return `${objectiveId}|${topic}|${type}`;
+}
+
+function proposalPriorityScore(proposal) {
+  const meta = proposal && proposal.meta && typeof proposal.meta === 'object' ? proposal.meta : {};
+  const relevance = Number(meta.relevance_score || 0);
+  const actionability = Number(meta.actionability_score || 0);
+  const directiveFit = Number(meta.directive_fit_score || 0);
+  return (relevance * 0.45) + (actionability * 0.4) + (directiveFit * 0.15);
+}
+
+function dedupeByObjectiveTopic(proposals) {
+  const out = [];
+  const index = new Map();
+  let deduped = 0;
+  for (const proposal of proposals) {
+    if (!proposal || typeof proposal !== 'object') continue;
+    const key = objectiveTopicDedupeKey(proposal);
+    if (!key) {
+      out.push(proposal);
+      continue;
+    }
+    const existingIdx = index.get(key);
+    if (existingIdx == null) {
+      index.set(key, out.length);
+      out.push(proposal);
+      continue;
+    }
+    const prev = out[existingIdx];
+    const keepCurrent = proposalPriorityScore(proposal) > proposalPriorityScore(prev);
+    if (keepCurrent) out[existingIdx] = proposal;
+    deduped += 1;
+  }
+  return { proposals: out, deduped };
 }
 
 function hydrateExisting(existingProposal, incomingProposal) {
@@ -1233,7 +1422,9 @@ function hydrateExisting(existingProposal, incomingProposal) {
     'objective_binding_tokens',
     'active_directive_objectives',
     'action_spec_version',
-    'action_spec_target'
+    'action_spec_target',
+    'supersedes_id',
+    'lineage_key'
   ];
 
   let touched = false;
@@ -1460,7 +1651,13 @@ function mergeIntoDailyProposals(dateStr, maxCount = 5) {
     dateStr,
     Math.max(0, Math.min(Number(SENSORY_CROSS_SIGNAL_MAX_PROPOSALS || 0), Number(maxCount || 0)))
   );
-  const newOnes = [...generatedEye.proposals, ...generatedCross.proposals];
+  const lineageIndex = buildLineageIndex(existing);
+  const newOnesLineage = applyLineageMarkers(
+    [...generatedEye.proposals, ...generatedCross.proposals],
+    lineageIndex
+  );
+  const objectiveTopicDedup = dedupeByObjectiveTopic(newOnesLineage);
+  const newOnes = objectiveTopicDedup.proposals;
   const rawPath = generatedEye.rawPath;
 
   const mergedRes = mergeById(existing, newOnes);
@@ -1495,6 +1692,7 @@ function mergeIntoDailyProposals(dateStr, maxCount = 5) {
     generated_stats: combinedGenerated.stats,
     generated_eye_stats: generatedEye.stats,
     generated_cross_signal_stats: generatedCross.stats,
+    objective_topic_deduped: Number(objectiveTopicDedup.deduped || 0),
     no_actionable_signal: noActionableSignal,
     rejected_samples: generatedEye.rejected_samples
   };

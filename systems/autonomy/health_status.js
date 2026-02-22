@@ -98,6 +98,8 @@ const STARVATION_MIN_ELIGIBLE = Number(process.env.AUTONOMY_HEALTH_STARVATION_MI
 const STARVATION_WARN_HOURS = Number(process.env.AUTONOMY_HEALTH_STARVATION_WARN_HOURS || 18);
 const STARVATION_CRITICAL_HOURS = Number(process.env.AUTONOMY_HEALTH_STARVATION_CRITICAL_HOURS || 36);
 const STARVATION_CRITICAL_ELIGIBLE = Number(process.env.AUTONOMY_HEALTH_STARVATION_CRITICAL_ELIGIBLE || 6);
+const STARVATION_PREVIEW_WARN_ELIGIBLE = Number(process.env.AUTONOMY_HEALTH_STARVATION_PREVIEW_WARN_ELIGIBLE || STARVATION_MIN_ELIGIBLE);
+const STARVATION_PREVIEW_WARN_HOURS = Number(process.env.AUTONOMY_HEALTH_STARVATION_PREVIEW_WARN_HOURS || STARVATION_WARN_HOURS);
 const QUEUE_BACKLOG_WARN_OPEN = Number(process.env.AUTONOMY_HEALTH_QUEUE_BACKLOG_WARN_OPEN || 40);
 const QUEUE_BACKLOG_CRITICAL_OPEN = Number(process.env.AUTONOMY_HEALTH_QUEUE_BACKLOG_CRITICAL_OPEN || 80);
 const QUEUE_BACKLOG_DIVERGENCE_WARN = Number(process.env.AUTONOMY_HEALTH_QUEUE_BACKLOG_DIVERGENCE_WARN || 12);
@@ -765,11 +767,14 @@ function assessProposalStarvation(now, proposalRows, queueEvents, runEvents, aut
   const ageHours = hoursSince(lastProgress, now);
   const eligibleCount = eligible.length;
   if (!autonomyEnabled) {
+    const previewWarn = eligibleCount >= Number(STARVATION_PREVIEW_WARN_ELIGIBLE || STARVATION_MIN_ELIGIBLE || 3)
+      && (ageHours == null || ageHours >= Number(STARVATION_PREVIEW_WARN_HOURS || STARVATION_WARN_HOURS || 18));
+    const level = previewWarn ? 'warn' : 'ok';
     return {
       name: 'proposal_starvation',
-      ok: true,
-      level: 'ok',
-      reason: 'autonomy_disabled_manual_mode',
+      ok: level === 'ok',
+      level,
+      reason: previewWarn ? 'autonomy_disabled_starvation_preview' : 'autonomy_disabled_manual_mode',
       metrics: {
         eligible_count: eligibleCount,
         queue_accept_count: acceptedEvents.length,
@@ -780,6 +785,8 @@ function assessProposalStarvation(now, proposalRows, queueEvents, runEvents, aut
       },
       thresholds: {
         min_eligible: Number(STARVATION_MIN_ELIGIBLE || 3),
+        preview_warn_eligible: Number(STARVATION_PREVIEW_WARN_ELIGIBLE || STARVATION_MIN_ELIGIBLE || 3),
+        preview_warn_hours: Number(STARVATION_PREVIEW_WARN_HOURS || STARVATION_WARN_HOURS || 18),
         warn_hours: Number(STARVATION_WARN_HOURS || 18),
         critical_hours: Number(STARVATION_CRITICAL_HOURS || 36),
         critical_eligible: Number(STARVATION_CRITICAL_ELIGIBLE || 6)

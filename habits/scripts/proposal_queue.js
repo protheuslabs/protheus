@@ -157,8 +157,6 @@ function buildSensoryOverlay(events, dateStr) {
     if (!e || typeof e !== 'object') continue;
     const id = String(e.proposal_id || e.id || '').trim();
     if (!id || id === 'UNKNOWN') continue;
-    const day = String(e.ts || '').slice(0, 10);
-    if (dateStr && day && day !== dateStr) continue;
     const t = String(e.type || '').trim().toLowerCase();
     if (!t) continue;
     let status = null;

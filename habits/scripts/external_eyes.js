@@ -2402,11 +2402,14 @@ function pickCanaryEye(config, registry) {
   const RETRY_WINDOW_HOURS = Number(process.env.EYES_RETRY_WINDOW_HOURS || 24);
   const candidates = [];
   for (const eyeConfig of (config.eyes || [])) {
+    const reg = (registry.eyes || []).find(e => e && e.id === eyeConfig.id) || {};
+    const runtimeEye = effectiveEye(eyeConfig, reg);
     const parserType = String(eyeConfig.parser_type || '').toLowerCase();
     if (parserType === 'stub') continue;
-    const status = String(eyeConfig.status || '').toLowerCase();
+    // Plain canary should validate collectors that are expected to emit real items.
+    if (runtimeEye.empty_success_is_signal === true) continue;
+    const status = String(runtimeEye.status || eyeConfig.status || '').toLowerCase();
     if (status === 'retired') continue;
-    const reg = (registry.eyes || []).find(e => e && e.id === eyeConfig.id) || {};
     const recentFailure = hasRecentTransportFailure(reg, RETRY_WINDOW_HOURS);
     const lastSuccessHours = hoursSince(reg.last_success);
     const cooldownHours = cooldownHoursRemaining(reg.cooldown_until);
