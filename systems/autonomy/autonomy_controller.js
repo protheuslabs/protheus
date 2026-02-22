@@ -170,6 +170,7 @@ const AUTONOMY_ALLOWED_RISKS = new Set(
 );
 const AUTONOMY_POSTCHECK_CONTRACT = String(process.env.AUTONOMY_POSTCHECK_CONTRACT || '1') !== '0';
 const AUTONOMY_POSTCHECK_ADAPTER_TESTS = String(process.env.AUTONOMY_POSTCHECK_ADAPTER_TESTS || '1') !== '0';
+const AUTONOMY_POSTCHECK_EXTERNAL_VERIFY = String(process.env.AUTONOMY_POSTCHECK_EXTERNAL_VERIFY || '1') !== '0';
 const AUTONOMY_MIN_SIGNAL_QUALITY = Number(process.env.AUTONOMY_MIN_SIGNAL_QUALITY || 58);
 const AUTONOMY_MIN_SENSORY_SIGNAL_SCORE = Number(process.env.AUTONOMY_MIN_SENSORY_SIGNAL_SCORE || 45);
 const AUTONOMY_MIN_SENSORY_RELEVANCE_SCORE = Number(process.env.AUTONOMY_MIN_SENSORY_RELEVANCE_SCORE || 42);
@@ -4068,7 +4069,7 @@ function runStrategyReadiness(dateStr, strategyId, days = null) {
   };
 }
 
-function runPostconditions(actuationSpec) {
+function runPostconditions(actuationSpec, execRes = null) {
   const checks = [];
   if (AUTONOMY_POSTCHECK_CONTRACT) {
     const c = runNodeScript(path.join('systems', 'spine', 'contract_check.js'));
@@ -4094,6 +4095,22 @@ function runPostconditions(actuationSpec) {
       stdout: shortText(t.stdout, 160),
       stderr: shortText(t.stderr, 160)
     });
+  }
+
+  if (AUTONOMY_POSTCHECK_EXTERNAL_VERIFY && actuationSpec) {
+    const summary = execRes && execRes.summary && typeof execRes.summary === 'object'
+      ? execRes.summary
+      : {};
+    const isDryRun = summary.dry_run === true;
+    if (!isDryRun) {
+      checks.push({
+        name: 'actuation_verified',
+        pass: summary.verified === true,
+        code: summary.verified === true ? 0 : 1,
+        stdout: summary.verified === true ? 'verified:true' : 'verified:false',
+        stderr: summary.verified === true ? '' : 'actuation_summary_not_verified'
+      });
+    }
   }
 
   const failed = checks.filter(c => c.pass !== true).map(c => c.name);
@@ -8530,7 +8547,7 @@ function runCmd(dateStr, opts = {}) {
   budget.token_cap = Number(recordedBudget.token_cap || budget.token_cap || 0);
 
   const summary = execRes.summary || {};
-  const postconditions = runPostconditions(actuationSpec);
+  const postconditions = runPostconditions(actuationSpec, execRes);
   const dod = evaluateDoD({
     summary,
     execRes,
@@ -9069,5 +9086,6 @@ module.exports = {
   assessDirectivePulse,
   startModelCatalogCanary,
   evaluateModelCatalogCanary,
-  readModelCatalogCanary
+  readModelCatalogCanary,
+  runPostconditions
 };
