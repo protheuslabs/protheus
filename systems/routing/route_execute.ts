@@ -19,6 +19,30 @@ const { spawnSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const { isEmergencyStopEngaged } = require('../../lib/emergency_stop.js');
+const {
+  GLOBAL_BUDGET_DEFAULT_DIR,
+  DEFAULT_EVENTS_PATH,
+  DEFAULT_AUTOPAUSE_PATH,
+  evaluateSystemBudgetGuard,
+  loadSystemBudgetAutopauseState,
+  writeSystemBudgetDecision,
+  setSystemBudgetAutopause
+} = require('../budget/system_budget.js');
+
+const ROUTE_EXECUTE_BUDGET_ENABLED = !['0', 'false', 'no', 'off'].includes(
+  String(process.env.ROUTE_EXECUTE_BUDGET_ENABLED || '1').trim().toLowerCase()
+);
+const ROUTE_EXECUTE_BUDGET_MODULE = String(process.env.ROUTE_EXECUTE_BUDGET_MODULE || 'route_execute').trim() || 'route_execute';
+const ROUTE_EXECUTE_BUDGET_STATE_DIR = process.env.ROUTE_EXECUTE_BUDGET_STATE_DIR
+  ? path.resolve(process.env.ROUTE_EXECUTE_BUDGET_STATE_DIR)
+  : GLOBAL_BUDGET_DEFAULT_DIR;
+const ROUTE_EXECUTE_BUDGET_EVENTS_PATH = process.env.ROUTE_EXECUTE_BUDGET_EVENTS_PATH
+  ? path.resolve(process.env.ROUTE_EXECUTE_BUDGET_EVENTS_PATH)
+  : DEFAULT_EVENTS_PATH;
+const ROUTE_EXECUTE_BUDGET_AUTOPAUSE_PATH = process.env.ROUTE_EXECUTE_BUDGET_AUTOPAUSE_PATH
+  ? path.resolve(process.env.ROUTE_EXECUTE_BUDGET_AUTOPAUSE_PATH)
+  : DEFAULT_AUTOPAUSE_PATH;
+const ROUTE_EXECUTE_DEFAULT_TOKENS_EST = Number(process.env.ROUTE_EXECUTE_DEFAULT_TOKENS_EST || 260);
 
 function getArg(name, def = null) {
   const args = process.argv.slice(2);
@@ -113,6 +137,105 @@ function parseJsonObjects(text) {
 function toNumberOrNull(v) {
   const n = Number(v);
   return Number.isFinite(n) && n >= 0 ? n : null;
+}
+
+function evaluateRouteExecuteBudgetGate(tokensEst, decision) {
+  const requestTokens = Number.isFinite(Number(tokensEst)) && Number(tokensEst) > 0
+    ? Math.max(1, Math.min(12000, Math.round(Number(tokensEst))))
+    : Math.max(1, Math.min(12000, Math.round(Number(ROUTE_EXECUTE_DEFAULT_TOKENS_EST || 260))));
+  if (!ROUTE_EXECUTE_BUDGET_ENABLED) {
+    return {
+      enabled: false,
+      blocked: false,
+      reason: 'budget_disabled',
+      request_tokens_est: requestTokens,
+      autopause: null,
+      guard: null
+    };
+  }
+
+  const date = nowIso().slice(0, 10);
+  const capability = `route_execute:${String(decision || 'unknown').slice(0, 80)}`;
+  const opts = {
+    state_dir: ROUTE_EXECUTE_BUDGET_STATE_DIR,
+    events_path: ROUTE_EXECUTE_BUDGET_EVENTS_PATH,
+    autopause_path: ROUTE_EXECUTE_BUDGET_AUTOPAUSE_PATH
+  };
+  const autopause = loadSystemBudgetAutopauseState(opts);
+  if (autopause.active === true) {
+    writeSystemBudgetDecision({
+      date,
+      module: ROUTE_EXECUTE_BUDGET_MODULE,
+      capability,
+      request_tokens_est: requestTokens,
+      decision: 'deny',
+      reason: 'budget_autopause_active'
+    }, opts);
+    return {
+      enabled: true,
+      blocked: true,
+      reason: 'budget_autopause_active',
+      request_tokens_est: requestTokens,
+      autopause: {
+        active: true,
+        source: autopause.source || null,
+        reason: autopause.reason || null,
+        until: autopause.until || null
+      },
+      guard: null
+    };
+  }
+
+  const guard = evaluateSystemBudgetGuard({
+    date,
+    request_tokens_est: requestTokens,
+    attempts_today: 1
+  }, opts);
+  if (guard.hard_stop === true) {
+    const hardReason = String((guard.hard_stop_reasons && guard.hard_stop_reasons[0]) || 'budget_guard_hard_stop');
+    writeSystemBudgetDecision({
+      date,
+      module: ROUTE_EXECUTE_BUDGET_MODULE,
+      capability,
+      request_tokens_est: requestTokens,
+      decision: 'deny',
+      reason: hardReason
+    }, opts);
+    const nextAutopause = setSystemBudgetAutopause({
+      source: 'route_execute',
+      reason: hardReason,
+      pressure: 'hard',
+      date,
+      minutes: 60
+    }, opts);
+    return {
+      enabled: true,
+      blocked: true,
+      reason: hardReason,
+      request_tokens_est: requestTokens,
+      autopause: {
+        active: nextAutopause.active === true,
+        source: nextAutopause.source || null,
+        reason: nextAutopause.reason || null,
+        until: nextAutopause.until || null
+      },
+      guard
+    };
+  }
+
+  return {
+    enabled: true,
+    blocked: false,
+    reason: null,
+    request_tokens_est: requestTokens,
+    autopause: {
+      active: false,
+      source: autopause.source || null,
+      reason: autopause.reason || null,
+      until: autopause.until || null
+    },
+    guard
+  };
 }
 
 function normalizeTokenUsage(raw, source = 'unknown') {
@@ -308,7 +431,9 @@ function main() {
   const budgetEnforcement = out?.route?.budget_enforcement && typeof out.route.budget_enforcement === 'object'
     ? out.route.budget_enforcement
     : null;
-  const budgetBlocked = !!(budgetEnforcement && budgetEnforcement.blocked === true);
+  const routeBudgetBlocked = !!(budgetEnforcement && budgetEnforcement.blocked === true);
+  const globalBudgetGuard = evaluateRouteExecuteBudgetGate(tokensEst, out.decision);
+  const budgetBlocked = routeBudgetBlocked || globalBudgetGuard.blocked === true;
   const execSpec = out.executor;
   const autoHabitFlow = isAutoHabitFlow(out);
   const summaryDecision = out.decision;
@@ -339,7 +464,11 @@ function main() {
     route_budget: out?.route?.budget || null,
     cost_estimate: out?.route?.cost_estimate || null,
     budget_enforcement: budgetEnforcement || null,
+    budget_global_guard: globalBudgetGuard,
     budget_blocked: budgetBlocked,
+    budget_block_reason: routeBudgetBlocked
+      ? String(budgetEnforcement && budgetEnforcement.reason || 'route_budget_blocked')
+      : String(globalBudgetGuard.reason || ''),
     needs_manual_review: budgetBlocked,
     router_required: routerRequired,
     router_missing_model: routerMissingModel,
@@ -348,7 +477,7 @@ function main() {
     dry_run: !!dryRun
   };
 
-  if (summary.mode === 'deep-thinker' && summary.deep_thinker && summary.deep_thinker.enabled === true) {
+  if (!budgetBlocked && summary.mode === 'deep-thinker' && summary.deep_thinker && summary.deep_thinker.enabled === true) {
     const declaredSwarm = Array.isArray(summary.deep_thinker.swarm_models)
       ? summary.deep_thinker.swarm_models.map((m) => String(m || '').trim()).filter(Boolean)
       : [];
