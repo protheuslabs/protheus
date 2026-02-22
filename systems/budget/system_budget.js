@@ -12,6 +12,7 @@
  * Usage:
  *   node systems/budget/system_budget.js status [YYYY-MM-DD]
  *   node systems/budget/system_budget.js project [YYYY-MM-DD] --request_tokens_est=N
+ *   node systems/budget/system_budget.js guard [YYYY-MM-DD] --request_tokens_est=N [--attempts_today=N]
  *   node systems/budget/system_budget.js record [YYYY-MM-DD] --tokens_est=N [--module=name] [--capability=name]
  *   node systems/budget/system_budget.js decision [YYYY-MM-DD] --module=name --capability=name --request_tokens_est=N --decision=allow|degrade|deny [--reason=...]
  *   node systems/budget/system_budget.js migrate [YYYY-MM-DD]
@@ -108,6 +109,7 @@ function usage() {
   console.log('Usage:');
   console.log('  node systems/budget/system_budget.js status [YYYY-MM-DD]');
   console.log('  node systems/budget/system_budget.js project [YYYY-MM-DD] --request_tokens_est=N');
+  console.log('  node systems/budget/system_budget.js guard [YYYY-MM-DD] --request_tokens_est=N [--attempts_today=N]');
   console.log('  node systems/budget/system_budget.js record [YYYY-MM-DD] --tokens_est=N [--module=name] [--capability=name]');
   console.log('  node systems/budget/system_budget.js decision [YYYY-MM-DD] --module=name --capability=name --request_tokens_est=N --decision=allow|degrade|deny [--reason=...]');
   console.log('  node systems/budget/system_budget.js autopause status');
@@ -121,6 +123,20 @@ function normalizeDate(v) {
   const raw = String(v || '').trim();
   if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
   return nowIso().slice(0, 10);
+}
+
+function shiftDate(dateStr, deltaDays) {
+  const base = new Date(`${normalizeDate(dateStr)}T00:00:00.000Z`);
+  if (!Number.isFinite(base.getTime())) return normalizeDate(dateStr);
+  base.setUTCDate(base.getUTCDate() + Number(deltaDays || 0));
+  return base.toISOString().slice(0, 10);
+}
+
+function dateWindow(endDateStr, days) {
+  const out = [];
+  const n = Math.max(1, Math.round(Number(days || 1)));
+  for (let i = n - 1; i >= 0; i -= 1) out.push(shiftDate(endDateStr, -i));
+  return out;
 }
 
 function resolveStateDir(opts = {}) {
@@ -140,6 +156,15 @@ function resolveAutopausePath(opts = {}) {
 
 function dailyPath(dateStr, opts = {}) {
   return path.join(resolveStateDir(opts), `${normalizeDate(dateStr)}.json`);
+}
+
+function readDailyUsedEstimate(dateStr, opts = {}) {
+  const fp = dailyPath(dateStr, opts);
+  if (!fs.existsSync(fp)) return 0;
+  const raw = readJson(fp, null);
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return 0;
+  const used = Number(raw.used_est);
+  return Number.isFinite(used) && used >= 0 ? used : 0;
 }
 
 function normalizeByModule(raw) {
@@ -526,6 +551,116 @@ function writeSystemBudgetDecision(input, opts = {}) {
   return row;
 }
 
+function sumMonthTokens(dateStr, opts = {}) {
+  const targetMonth = normalizeDate(dateStr).slice(0, 7);
+  const stateDir = resolveStateDir(opts);
+  if (!fs.existsSync(stateDir)) return 0;
+  const names = fs.readdirSync(stateDir).filter((name) => /^\d{4}-\d{2}-\d{2}\.json$/.test(name));
+  let sum = 0;
+  for (const name of names) {
+    if (!String(name).startsWith(targetMonth)) continue;
+    const used = readDailyUsedEstimate(name.slice(0, 10), opts);
+    sum += Number(used || 0);
+  }
+  return Number(sum.toFixed(2));
+}
+
+function evaluateSystemBudgetGuard(input = {}, opts = {}) {
+  const date = normalizeDate(input.date);
+  const requestTokens = toPositiveInt(input.request_tokens_est != null ? input.request_tokens_est : input.tokens_est, 0);
+  const attemptsToday = toPositiveInt(input.attempts_today, 0);
+  const state = loadSystemBudgetState(date, opts);
+  const strategy = state && typeof state.strategy_budget === 'object' ? state.strategy_budget : {};
+
+  const burnRateMultiplier = clamp(
+    opts.burn_rate_multiplier != null ? opts.burn_rate_multiplier : process.env.SYSTEM_BUDGET_BURN_RATE_MULTIPLIER,
+    1,
+    10,
+    1.5
+  );
+  const minDaysForBurnBaseline = toPositiveInt(
+    opts.min_days_for_burn_baseline != null ? opts.min_days_for_burn_baseline : process.env.SYSTEM_BUDGET_BURN_BASELINE_DAYS,
+    3
+  );
+  const minProjectedTokensForBurnCheck = toPositiveInt(
+    strategy.min_projected_tokens_for_burn_check,
+    800
+  );
+
+  const todayTokens = Number(state.used_est || 0);
+  const projectedTodayTokens = todayTokens + requestTokens;
+  const prior7Dates = dateWindow(shiftDate(date, -1), 7);
+  const prior7Tokens = prior7Dates.map((d) => Number(readDailyUsedEstimate(d, opts) || 0));
+  const prior7NonZeroDays = prior7Tokens.filter((n) => n > 0).length;
+  const avgPrior7Tokens = prior7Tokens.length
+    ? (prior7Tokens.reduce((s, n) => s + n, 0) / prior7Tokens.length)
+    : 0;
+  const burnRateRatio = avgPrior7Tokens > 0 ? projectedTodayTokens / avgPrior7Tokens : null;
+  const burnRateExceeded = prior7NonZeroDays >= minDaysForBurnBaseline
+    && avgPrior7Tokens > 0
+    && projectedTodayTokens >= minProjectedTokensForBurnCheck
+    && projectedTodayTokens > (avgPrior7Tokens * burnRateMultiplier);
+
+  const tokenCostPer1k = Math.max(0, Number(strategy.token_cost_per_1k || 0));
+  const usdFromTokens = (tokens) => tokenCostPer1k > 0 ? (Number(tokens || 0) / 1000) * tokenCostPer1k : null;
+  const dailyUsdCap = Math.max(0, Number(strategy.daily_usd_cap || 0));
+  const perActionAvgUsdCap = Math.max(0, Number(strategy.per_action_avg_usd_cap || 0));
+  const monthlyUsdAllocation = Math.max(0, Number(strategy.monthly_usd_allocation || 0));
+  const monthlyCreditsFloorPct = clamp(Number(strategy.monthly_credits_floor_pct || 0.2), 0, 0.95, 0.2);
+
+  const todayUsd = usdFromTokens(todayTokens);
+  const projectedTodayUsd = usdFromTokens(projectedTodayTokens);
+  const projectedActionAvgUsd = projectedTodayUsd == null
+    ? null
+    : projectedTodayUsd / Math.max(1, attemptsToday + 1);
+  const monthTokensSpent = sumMonthTokens(date, opts);
+  const projectedMonthTokens = monthTokensSpent + requestTokens;
+  const monthUsdSpent = usdFromTokens(projectedMonthTokens);
+  const monthRemainingPct = monthlyUsdAllocation > 0 && monthUsdSpent != null
+    ? clamp(1 - (monthUsdSpent / monthlyUsdAllocation), 0, 1, 0)
+    : null;
+
+  const hardStopReasons = [];
+  if (burnRateExceeded) hardStopReasons.push('burn_rate_exceeded');
+  if (projectedTodayUsd != null && dailyUsdCap > 0 && projectedTodayUsd > dailyUsdCap) {
+    hardStopReasons.push('daily_usd_cap_exceeded');
+  }
+  if (projectedActionAvgUsd != null && perActionAvgUsdCap > 0 && projectedActionAvgUsd > perActionAvgUsdCap) {
+    hardStopReasons.push('per_action_avg_usd_exceeded');
+  }
+  if (monthRemainingPct != null && monthRemainingPct < monthlyCreditsFloorPct) {
+    hardStopReasons.push('monthly_credits_floor_breached');
+  }
+
+  return {
+    enabled: true,
+    allow: hardStopReasons.length === 0,
+    decision: hardStopReasons.length === 0 ? 'allow' : 'deny',
+    hard_stop: hardStopReasons.length > 0,
+    hard_stop_reasons: hardStopReasons,
+    burn_rate_exceeded: burnRateExceeded,
+    burn_rate_ratio: burnRateRatio == null ? null : Number(burnRateRatio.toFixed(3)),
+    burn_rate_multiplier: burnRateMultiplier,
+    min_projected_tokens_for_burn_check: minProjectedTokensForBurnCheck,
+    prior7_nonzero_days: prior7NonZeroDays,
+    avg_prior7_tokens: Number(avgPrior7Tokens.toFixed(2)),
+    today_tokens: Number(todayTokens.toFixed(2)),
+    projected_today_tokens: Number(projectedTodayTokens.toFixed(2)),
+    token_cost_per_1k: tokenCostPer1k || null,
+    daily_usd_cap: dailyUsdCap || null,
+    per_action_avg_usd_cap: perActionAvgUsdCap || null,
+    monthly_usd_allocation: monthlyUsdAllocation || null,
+    monthly_credits_floor_pct: monthlyCreditsFloorPct,
+    today_usd: todayUsd == null ? null : Number(todayUsd.toFixed(4)),
+    projected_today_usd: projectedTodayUsd == null ? null : Number(projectedTodayUsd.toFixed(4)),
+    projected_action_avg_usd: projectedActionAvgUsd == null ? null : Number(projectedActionAvgUsd.toFixed(4)),
+    month_tokens_spent: Number(monthTokensSpent.toFixed(2)),
+    projected_month_tokens: Number(projectedMonthTokens.toFixed(2)),
+    month_usd_spent: monthUsdSpent == null ? null : Number(monthUsdSpent.toFixed(4)),
+    month_remaining_pct: monthRemainingPct == null ? null : Number(monthRemainingPct.toFixed(3))
+  };
+}
+
 function cmdStatus(args) {
   const date = normalizeDate(args._[1]);
   const state = loadSystemBudgetState(date, { state_dir: args['state-dir'] || args.state_dir });
@@ -558,6 +693,43 @@ function cmdProject(args) {
     ...projection,
     token_cap: state.token_cap,
     used_est: state.used_est
+  }, null, 2) + '\n');
+}
+
+function cmdGuard(args) {
+  const date = normalizeDate(args._[1]);
+  const opts = {
+    state_dir: args['state-dir'] || args.state_dir,
+    events_path: args['events-path'] || args.events_path,
+    autopause_path: args['autopause-path'] || args.autopause_path,
+    burn_rate_multiplier: args.burn_rate_multiplier,
+    min_days_for_burn_baseline: args.min_days_for_burn_baseline
+  };
+  const requestTokens = toPositiveInt(
+    args.request_tokens_est != null ? args.request_tokens_est : args.tokens_est,
+    0
+  );
+  const attemptsToday = toPositiveInt(args.attempts_today, 0);
+  const guard = evaluateSystemBudgetGuard({
+    date,
+    request_tokens_est: requestTokens,
+    attempts_today: attemptsToday
+  }, opts);
+  const autopause = loadSystemBudgetAutopauseState(opts);
+  process.stdout.write(JSON.stringify({
+    ok: true,
+    ts: nowIso(),
+    date,
+    request_tokens_est: requestTokens,
+    attempts_today: attemptsToday,
+    allow: autopause.active === true ? false : guard.allow === true,
+    autopause: {
+      active: autopause.active === true,
+      source: autopause.source || null,
+      reason: autopause.reason || null,
+      until: autopause.until || null
+    },
+    guard
   }, null, 2) + '\n');
 }
 
@@ -674,6 +846,7 @@ function main() {
   }
   if (cmd === 'status') return cmdStatus(args);
   if (cmd === 'project') return cmdProject(args);
+  if (cmd === 'guard') return cmdGuard(args);
   if (cmd === 'record') return cmdRecord(args);
   if (cmd === 'decision') return cmdDecision(args);
   if (cmd === 'autopause') return cmdAutopause(args);
@@ -706,6 +879,7 @@ module.exports = {
   projectSystemBudget,
   recordSystemBudgetUsage,
   writeSystemBudgetDecision,
+  evaluateSystemBudgetGuard,
   resolveAutopausePath,
   normalizeAutopauseState,
   loadSystemBudgetAutopauseState,
