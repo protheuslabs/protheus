@@ -120,6 +120,9 @@ const COOLDOWNS_PATH = process.env.AUTONOMY_COOLDOWNS_PATH
 const CALIBRATION_PATH = process.env.AUTONOMY_CALIBRATION_PATH
   ? path.resolve(process.env.AUTONOMY_CALIBRATION_PATH)
   : path.join(AUTONOMY_DIR, 'calibration.json');
+const SUCCESS_CRITERIA_PATTERN_STATE_PATH = process.env.AUTONOMY_SUCCESS_CRITERIA_PATTERN_STATE_PATH
+  ? path.resolve(process.env.AUTONOMY_SUCCESS_CRITERIA_PATTERN_STATE_PATH)
+  : path.join(AUTONOMY_DIR, 'success_criteria_pattern_memory.json');
 const SHORT_CIRCUIT_PATH = process.env.AUTONOMY_SHORT_CIRCUIT_PATH
   ? path.resolve(process.env.AUTONOMY_SHORT_CIRCUIT_PATH)
   : path.join(AUTONOMY_DIR, 'short_circuit.json');
@@ -236,6 +239,12 @@ const AUTONOMY_LANE_NO_CHANGE_LIMIT = Number(process.env.AUTONOMY_LANE_NO_CHANGE
 const AUTONOMY_LANE_NO_CHANGE_COOLDOWN_HOURS = Number(process.env.AUTONOMY_LANE_NO_CHANGE_COOLDOWN_HOURS || 24);
 const AUTONOMY_CANDIDATE_AUDIT_MAX_ROWS = Number(process.env.AUTONOMY_CANDIDATE_AUDIT_MAX_ROWS || 25);
 const AUTONOMY_SCORE_ONLY_EVIDENCE = String(process.env.AUTONOMY_SCORE_ONLY_EVIDENCE || '1') !== '0';
+const AUTONOMY_PREEXEC_CRITERIA_GATE_ENABLED = String(process.env.AUTONOMY_PREEXEC_CRITERIA_GATE_ENABLED || '1') !== '0';
+const AUTONOMY_PREEXEC_CRITERIA_COOLDOWN_HOURS = Math.max(1, Number(process.env.AUTONOMY_PREEXEC_CRITERIA_COOLDOWN_HOURS || AUTONOMY_ROUTE_BLOCK_COOLDOWN_HOURS));
+const AUTONOMY_CRITERIA_PATTERN_WINDOW_DAYS = Math.max(1, Number(process.env.AUTONOMY_CRITERIA_PATTERN_WINDOW_DAYS || 14));
+const AUTONOMY_CRITERIA_PATTERN_FAIL_THRESHOLD = Math.max(1, Number(process.env.AUTONOMY_CRITERIA_PATTERN_FAIL_THRESHOLD || 2));
+const AUTONOMY_CRITERIA_PATTERN_PENALTY_PER_HIT = Math.max(1, Number(process.env.AUTONOMY_CRITERIA_PATTERN_PENALTY_PER_HIT || 6));
+const AUTONOMY_CRITERIA_PATTERN_MAX_PENALTY = Math.max(4, Number(process.env.AUTONOMY_CRITERIA_PATTERN_MAX_PENALTY || 24));
 const HUMAN_CANARY_OVERRIDE_REQUIRE_TTY = String(process.env.HUMAN_CANARY_OVERRIDE_REQUIRE_TTY || '1') !== '0';
 const HUMAN_CANARY_OVERRIDE_DEFAULT_TTL_MINUTES = Number(process.env.HUMAN_CANARY_OVERRIDE_DEFAULT_TTL_MINUTES || 20);
 const HUMAN_CANARY_OVERRIDE_MAX_TTL_MINUTES = Number(process.env.HUMAN_CANARY_OVERRIDE_MAX_TTL_MINUTES || 120);
@@ -429,6 +438,52 @@ function loadJson(filePath, fallback) {
 function saveJson(filePath, obj) {
   ensureDir(path.dirname(filePath));
   fs.writeFileSync(filePath, JSON.stringify(obj, null, 2));
+}
+
+function defaultCriteriaPatternMemory() {
+  return {
+    version: '1.0',
+    updated_at: null,
+    patterns: {}
+  };
+}
+
+function loadCriteriaPatternMemory() {
+  const raw = loadJson(SUCCESS_CRITERIA_PATTERN_STATE_PATH, null);
+  const base = defaultCriteriaPatternMemory();
+  if (!raw || typeof raw !== 'object') return base;
+  const patterns = raw.patterns && typeof raw.patterns === 'object' ? raw.patterns : {};
+  const normalized = {};
+  for (const [key, value] of Object.entries(patterns)) {
+    const k = normalizeSpaces(key).toLowerCase();
+    if (!k) continue;
+    const row = value && typeof value === 'object' ? value as AnyObj : {};
+    normalized[k] = {
+      failures: Math.max(0, Number(row.failures || 0)),
+      passes: Math.max(0, Number(row.passes || 0)),
+      last_failure_ts: row.last_failure_ts ? String(row.last_failure_ts) : null,
+      last_pass_ts: row.last_pass_ts ? String(row.last_pass_ts) : null
+    };
+  }
+  return {
+    version: '1.0',
+    updated_at: raw.updated_at ? String(raw.updated_at) : null,
+    patterns: normalized
+  };
+}
+
+function saveCriteriaPatternMemory(memory) {
+  const src = memory && typeof memory === 'object' ? memory : defaultCriteriaPatternMemory();
+  const patterns = src.patterns && typeof src.patterns === 'object' ? src.patterns : {};
+  saveJson(SUCCESS_CRITERIA_PATTERN_STATE_PATH, {
+    version: '1.0',
+    updated_at: nowIso(),
+    patterns
+  });
+}
+
+function normalizeCriteriaMetric(v) {
+  return normalizeSpaces(v).toLowerCase().replace(/[\s-]+/g, '_');
 }
 
 function deleteFileIfExists(filePath) {
@@ -3099,6 +3154,116 @@ function parseSuccessCriteriaRows(p) {
   return out;
 }
 
+function criteriaPatternKeysForProposal(p, capabilityKeyHint = '') {
+  const proposal = p && typeof p === 'object' ? p : {};
+  const capKey = normalizeSpaces(capabilityKeyHint).toLowerCase()
+    || String((capabilityDescriptor(proposal, parseActuationSpec(proposal)) || {}).key || '').toLowerCase()
+    || 'unknown';
+  const rows = parseSuccessCriteriaRows(proposal);
+  const keys = [];
+  for (const row of rows) {
+    const metric = normalizeCriteriaMetric(row && row.metric);
+    if (!metric) continue;
+    keys.push(`${capKey}|${metric}`);
+  }
+  return Array.from(new Set(keys)).sort();
+}
+
+function criteriaPatternPenaltyForProposal(p, capabilityKeyHint = '') {
+  const keys = criteriaPatternKeysForProposal(p, capabilityKeyHint);
+  if (!keys.length) {
+    return {
+      penalty: 0,
+      hit_patterns: [],
+      threshold: AUTONOMY_CRITERIA_PATTERN_FAIL_THRESHOLD
+    };
+  }
+  const memory = loadCriteriaPatternMemory();
+  const patterns = memory.patterns && typeof memory.patterns === 'object' ? memory.patterns : {};
+  let penalty = 0;
+  const hits = [];
+  const windowMs = AUTONOMY_CRITERIA_PATTERN_WINDOW_DAYS * 24 * 3600 * 1000;
+  const now = Date.now();
+  for (const key of keys) {
+    const row = patterns[key] && typeof patterns[key] === 'object' ? patterns[key] : null;
+    if (!row) continue;
+    const failTs = Date.parse(String(row.last_failure_ts || ''));
+    if (Number.isFinite(failTs) && windowMs > 0 && (now - failTs) > windowMs) continue;
+    const failures = Math.max(0, Number(row.failures || 0));
+    const passes = Math.max(0, Number(row.passes || 0));
+    const effectiveFailures = Math.max(0, failures - Math.floor(passes * 0.5));
+    if (effectiveFailures < AUTONOMY_CRITERIA_PATTERN_FAIL_THRESHOLD) continue;
+    const over = effectiveFailures - AUTONOMY_CRITERIA_PATTERN_FAIL_THRESHOLD + 1;
+    const rowPenalty = over * AUTONOMY_CRITERIA_PATTERN_PENALTY_PER_HIT;
+    penalty += rowPenalty;
+    hits.push({
+      key,
+      failures,
+      passes,
+      effective_failures: effectiveFailures,
+      penalty: rowPenalty
+    });
+  }
+  return {
+    penalty: Math.min(AUTONOMY_CRITERIA_PATTERN_MAX_PENALTY, Math.max(0, Math.round(penalty))),
+    hit_patterns: hits.slice(0, 4),
+    threshold: AUTONOMY_CRITERIA_PATTERN_FAIL_THRESHOLD
+  };
+}
+
+function recordCriteriaPatternOutcome(p, capabilityKeyHint, criteria) {
+  const src = criteria && typeof criteria === 'object' ? criteria : {};
+  const checks = Array.isArray(src.checks) ? src.checks : [];
+  if (!checks.length) return;
+  const capKey = normalizeSpaces(capabilityKeyHint).toLowerCase()
+    || String((capabilityDescriptor(p, parseActuationSpec(p)) || {}).key || '').toLowerCase()
+    || 'unknown';
+  const memory = loadCriteriaPatternMemory();
+  const patterns = memory.patterns && typeof memory.patterns === 'object'
+    ? memory.patterns
+    : {};
+  const touched = new Set();
+  for (const check of checks) {
+    const metric = normalizeCriteriaMetric(check && check.metric);
+    if (!metric) continue;
+    const key = `${capKey}|${metric}`;
+    const row = patterns[key] && typeof patterns[key] === 'object'
+      ? patterns[key]
+      : { failures: 0, passes: 0, last_failure_ts: null, last_pass_ts: null };
+    if (check.pass === false) {
+      row.failures = Math.max(0, Number(row.failures || 0)) + 1;
+      row.last_failure_ts = nowIso();
+    } else if (check.pass === true) {
+      row.passes = Math.max(0, Number(row.passes || 0)) + 1;
+      row.last_pass_ts = nowIso();
+    } else {
+      continue;
+    }
+    patterns[key] = row;
+    touched.add(key);
+  }
+  if (!touched.size) return;
+  const windowMs = AUTONOMY_CRITERIA_PATTERN_WINDOW_DAYS * 24 * 3600 * 1000;
+  const now = Date.now();
+  for (const [key, row] of Object.entries(patterns)) {
+    const r = row && typeof row === 'object' ? row : {};
+    const failTs = Date.parse(String(r.last_failure_ts || ''));
+    const passTs = Date.parse(String(r.last_pass_ts || ''));
+    const latestTs = Number.isFinite(failTs) && Number.isFinite(passTs)
+      ? Math.max(failTs, passTs)
+      : (Number.isFinite(failTs) ? failTs : (Number.isFinite(passTs) ? passTs : null));
+    if (latestTs == null) continue;
+    if (windowMs > 0 && (now - latestTs) > windowMs) {
+      delete patterns[key];
+    }
+  }
+  saveCriteriaPatternMemory({
+    version: '1.0',
+    updated_at: nowIso(),
+    patterns
+  });
+}
+
 function successCriteriaRequirement() {
   const policy = outcomeFitnessPolicy();
   const src = policy && policy.proposal_filter_policy && typeof policy.proposal_filter_policy === 'object'
@@ -3167,6 +3332,8 @@ function assessActionability(p, directiveFit, thresholds) {
   const criteriaRows = parseSuccessCriteriaRows(p);
   const measurableCriteriaCount = criteriaRows.filter((row) => row.measurable === true).length;
   const criteriaPolicy = successCriteriaPolicyForProposal(p);
+  const capabilityKey = String((capabilityDescriptor(p, parseActuationSpec(p)) || {}).key || '').toLowerCase();
+  const criteriaPatternPenalty = criteriaPatternPenaltyForProposal(p, capabilityKey);
   const isExecutableProposal = !!(nextCmd || (p && p.action_spec && typeof p.action_spec === 'object'));
   const criteriaRequirementApplied = isExecutableProposal && criteriaPolicy.required;
   const reasons = [];
@@ -3254,6 +3421,11 @@ function assessActionability(p, directiveFit, thresholds) {
     reasons.push('non_actionable_meta_item');
   }
 
+  if (criteriaPatternPenalty.penalty > 0) {
+    score -= criteriaPatternPenalty.penalty;
+    reasons.push('criteria_pattern_penalty');
+  }
+
   const finalScore = clampNumber(Math.round(score), 0, 100);
   const pass = !hardBlock && finalScore >= minActionability;
   if (!pass && finalScore < minActionability) reasons.push('below_min_actionability');
@@ -3267,7 +3439,9 @@ function assessActionability(p, directiveFit, thresholds) {
       exempt_type: criteriaPolicy.exempt_type === true,
       min_count: criteriaPolicy.min_count,
       measurable_count: measurableCriteriaCount,
-      total_count: criteriaRows.length
+      total_count: criteriaRows.length,
+      pattern_penalty: criteriaPatternPenalty.penalty,
+      pattern_hits: criteriaPatternPenalty.hit_patterns
     }
   };
 }
@@ -4302,7 +4476,10 @@ function assessSuccessCriteriaQuality(criteria) {
     : (checks.length > 0
       ? (checks.filter((row) => !(row && row.evaluated === true)).length / checks.length)
       : 1);
-  const unsupportedCount = checks.filter((row) => String(row && row.reason || '') === 'unsupported_metric').length;
+  const unsupportedCount = checks.filter((row) => {
+    const reason = String(row && row.reason || '');
+    return reason === 'unsupported_metric' || reason === 'metric_not_allowed_for_capability';
+  }).length;
   const unsupportedRate = checks.length > 0 ? (unsupportedCount / checks.length) : 0;
   const synthesized = src.synthesized === true;
   const reasons = [];
@@ -4318,6 +4495,36 @@ function assessSuccessCriteriaQuality(criteria) {
     unsupported_count: unsupportedCount,
     unsupported_rate: Number(unsupportedRate.toFixed(4)),
     synthesized
+  };
+}
+
+function preExecCriteriaGateDecision(criteria, policy) {
+  const src = criteria && typeof criteria === 'object' ? criteria : {};
+  const cfg = policy && typeof policy === 'object' ? policy : {};
+  const minCount = Math.max(0, Number(src.min_count != null ? src.min_count : cfg.min_count || 0));
+  const totalCount = Math.max(0, Number(src.total_count || 0));
+  const unsupportedCount = Math.max(
+    0,
+    Number(src.contract_not_allowed_count || 0) + Number(src.unsupported_count || 0)
+  );
+  const supportedCount = Math.max(
+    0,
+    Number(src.structurally_supported_count != null ? src.structurally_supported_count : (totalCount - unsupportedCount))
+  );
+  const contract = src.contract && typeof src.contract === 'object' ? src.contract : {};
+  const violationCount = Math.max(0, Number(contract.violation_count || 0));
+  const reasons = [];
+  if (totalCount < minCount) reasons.push('criteria_count_below_min');
+  if (violationCount > 0) reasons.push('criteria_contract_violation');
+  if (supportedCount < minCount) reasons.push('criteria_supported_count_below_min');
+  return {
+    pass: reasons.length === 0,
+    reasons,
+    min_count: minCount,
+    total_count: totalCount,
+    supported_count: supportedCount,
+    unsupported_count: unsupportedCount,
+    contract_violation_count: violationCount
   };
 }
 
@@ -7790,6 +7997,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
         p,
         {
           phase: 'preview',
+          capability_key: capabilityKey,
           outcome: previewVerification.outcome,
           exec_ok: previewRes && previewRes.ok === true,
           dod_passed: previewVerification.passed === true,
@@ -7802,7 +8010,8 @@ function runCmd(dateStr, opts: AnyObj = {}) {
         },
         {
           required: criteriaPolicy.required,
-          min_count: criteriaPolicy.min_count
+          min_count: criteriaPolicy.min_count,
+          capability_key: capabilityKey
         }
       );
       previewVerification = withSuccessCriteriaVerification(previewVerification, previewSuccessCriteria, {
@@ -8323,6 +8532,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       p,
       {
         phase: 'preflight_blocked',
+        capability_key: capabilityKey,
         outcome: 'reverted',
         exec_ok: false,
         dod_passed: false,
@@ -8335,7 +8545,8 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       },
       {
         required: preflightCriteriaPolicy.required,
-        min_count: preflightCriteriaPolicy.min_count
+        min_count: preflightCriteriaPolicy.min_count,
+        capability_key: capabilityKey
       }
     );
     const preflightVerificationBase = withSuccessCriteriaVerification({
@@ -8393,6 +8604,114 @@ function runCmd(dateStr, opts: AnyObj = {}) {
     return;
   }
 
+  const preExecCriteriaPolicy = successCriteriaPolicyForProposal(p);
+  const preExecMetricValues = extractSuccessCriteriaMetricValues(p, {
+    exec_summary: preSummary,
+    execution_metrics: preflight && preflight.execution_metrics,
+    exec_details: preflight && preflight.details,
+    exec_stdout: preflight && preflight.stdout,
+    dod_diff: {}
+  });
+  const preExecSuccessCriteria = evaluateSuccessCriteria(
+    p,
+    {
+      phase: 'pre_exec_gate',
+      capability_key: capabilityKey,
+      outcome: 'no_change',
+      exec_ok: true,
+      dod_passed: false,
+      postconditions_ok: true,
+      queue_outcome_logged: false,
+      duration_ms: Number(preflight && preflight.execution_metrics && preflight.execution_metrics.duration_ms || 0),
+      token_usage: preTokenUsage,
+      dod_diff: {},
+      metric_values: preExecMetricValues || {}
+    },
+    {
+      required: preExecCriteriaPolicy.required,
+      min_count: preExecCriteriaPolicy.min_count,
+      capability_key: capabilityKey,
+      enforce_contract: true,
+      enforce_min_supported: true
+    }
+  );
+  const preExecCriteriaGate = preExecCriteriaGateDecision(preExecSuccessCriteria, preExecCriteriaPolicy);
+  if (AUTONOMY_PREEXEC_CRITERIA_GATE_ENABLED && !preExecCriteriaGate.pass) {
+    recordCriteriaPatternOutcome(p, capabilityKey, preExecSuccessCriteria);
+    const gateReason = String(preExecCriteriaGate.reasons && preExecCriteriaGate.reasons[0] || 'criteria_gate_failed');
+    const reason = `auto:init_gate ${gateReason} cooldown_${AUTONOMY_PREEXEC_CRITERIA_COOLDOWN_HOURS}h`;
+    setCooldown(p.id, AUTONOMY_PREEXEC_CRITERIA_COOLDOWN_HOURS, reason);
+    writeRun(dateStr, {
+      ts: nowIso(),
+      type: 'autonomy_run',
+      result: 'init_gate_blocked_success_criteria',
+      receipt_id: receiptId,
+      proposal_id: p.id,
+      objective_id: executionObjectiveId || null,
+      proposal_date: proposalDate,
+      capability_key: capabilityKey,
+      execution_target: executionTarget,
+      directive_pulse: directivePulse,
+      score: Number(pick.score.toFixed(3)),
+      route_summary: preSummary,
+      token_usage: preTokenUsage,
+      criteria_gate: preExecCriteriaGate,
+      repeats_14d: repeats14d,
+      errors_30d: errors30d
+    });
+    const preExecVerificationBase = withSuccessCriteriaVerification({
+      checks: [{ name: 'pre_exec_criteria_gate', pass: false }],
+      failed: ['pre_exec_criteria_gate'],
+      passed: false,
+      outcome: 'reverted',
+      primary_failure: gateReason
+    }, preExecSuccessCriteria, {
+      fallback: { required: preExecCriteriaPolicy.required, min_count: preExecCriteriaPolicy.min_count }
+    });
+    const preExecVerification = withSuccessCriteriaQualityAudit(preExecVerificationBase);
+    writeReceipt(dateStr, {
+      ts: nowIso(),
+      type: 'autonomy_action_receipt',
+      receipt_id: receiptId,
+      proposal_id: p.id,
+      proposal_date: proposalDate,
+      verdict: 'fail',
+      intent: {
+        task_hash: hashObj({ task }),
+        objective_id: executionObjectiveId || null,
+        actuation: actuationSpec ? { kind: actuationSpec.kind } : null,
+        route_tokens_est: routeTokensEst,
+        repeats_14d: repeats14d,
+        errors_30d: errors30d,
+        success_criteria_policy: {
+          required: preExecCriteriaPolicy.required === true,
+          min_count: Number(preExecCriteriaPolicy.min_count || 0)
+        }
+      },
+      execution: {
+        preflight: compactCmdResult(preflight),
+        token_usage: preTokenUsage,
+        pre_exec_criteria_gate: preExecCriteriaGate
+      },
+      verification: preExecVerification
+    });
+    process.stdout.write(JSON.stringify({
+      ok: true,
+      result: 'init_gate_blocked_success_criteria',
+      receipt_id: receiptId,
+      proposal_id: p.id,
+      objective_id: executionObjectiveId || null,
+      capability_key: capabilityKey,
+      execution_target: executionTarget,
+      directive_pulse: directivePulse,
+      route_summary: preSummary,
+      token_usage: preTokenUsage,
+      criteria_gate: preExecCriteriaGate,
+      ts: nowIso()
+    }) + '\n');
+    return;
+  }
+
   const acceptRes = pick.status !== 'accepted'
     ? runProposalQueue('accept', p.id, 'auto:autonomy_controller selected')
     : { ok: true, code: 0, stdout: 'already_accepted', stderr: '', skipped: true };
@@ -8428,6 +8747,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       p,
       {
         phase: 'accept_failed',
+        capability_key: capabilityKey,
         outcome: 'reverted',
         exec_ok: false,
         dod_passed: false,
@@ -8440,7 +8760,8 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       },
       {
         required: acceptCriteriaPolicy.required,
-        min_count: acceptCriteriaPolicy.min_count
+        min_count: acceptCriteriaPolicy.min_count,
+        capability_key: capabilityKey
       }
     );
     const acceptVerificationBase = withSuccessCriteriaVerification({
@@ -8624,6 +8945,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
   const successCriteria = evaluateSuccessCriteria(
     p,
     {
+      capability_key: capabilityKey,
       outcome,
       exec_ok: execRes && execRes.ok === true,
       dod_passed: dod && dod.passed === true,
@@ -8636,11 +8958,13 @@ function runCmd(dateStr, opts: AnyObj = {}) {
     },
     {
       required: criteriaPolicy.required,
-      min_count: criteriaPolicy.min_count
+      min_count: criteriaPolicy.min_count,
+      capability_key: capabilityKey
     }
   );
 
   const verification = verifyExecutionReceipt(execRes, dod, outcomeRes, postconditions, successCriteria);
+  recordCriteriaPatternOutcome(p, capabilityKey, successCriteria);
   const verifyException = verification.passed
     ? null
     : trackTier1Exception(
