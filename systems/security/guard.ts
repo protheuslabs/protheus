@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// @ts-nocheck
 /**
  * systems/security/guard.js — deterministic clearance gate (machine-readable)
  *
@@ -538,3 +537,4 @@ function main() {
 }
 
 main();
+export {};

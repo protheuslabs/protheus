@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// @ts-nocheck
 /**
  * systems/routing/route_probe.js — quick local model health probe (deterministic)
  *
@@ -54,3 +53,4 @@ function main() {
 }
 
 main();
+export {};

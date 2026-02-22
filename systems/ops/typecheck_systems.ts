@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// @ts-nocheck
 'use strict';
 
 const fs = require('fs');
@@ -36,3 +35,4 @@ function main() {
 if (require.main === module) {
   main();
 }
+export {};

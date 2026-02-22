@@ -1,4 +1,3 @@
-// @ts-nocheck
 'use strict';
 
 const path = require('path');
@@ -22,3 +21,4 @@ module.exports = {
   collectBirdX,
   preflightBirdX
 };
+export {};

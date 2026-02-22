@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// @ts-nocheck
 /**
  * systems/spine/contract_check.js — deterministic interface validation
  *
@@ -559,3 +558,4 @@ function main() {
 }
 
 main();
+export {};
