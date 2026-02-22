@@ -91,12 +91,12 @@ const MEMORY_DREAM_BOOTSTRAP_TIMEOUT_MS = clampInt(process.env.IDLE_DREAM_BOOTST
 const MODEL_COOLDOWN_BASE_MS = clampInt(process.env.IDLE_DREAM_MODEL_COOLDOWN_MS || 45 * 60 * 1000, 60 * 1000, 6 * 60 * 60 * 1000);
 const MODEL_COOLDOWN_MAX_MS = clampInt(process.env.IDLE_DREAM_MODEL_COOLDOWN_MAX_MS || 6 * 60 * 60 * 1000, MODEL_COOLDOWN_BASE_MS, 24 * 60 * 60 * 1000);
 const MODEL_TIMEOUT_COOLDOWN_BASE_MS = clampInt(
-  process.env.IDLE_DREAM_TIMEOUT_COOLDOWN_MS || 15 * 60 * 1000,
+  process.env.IDLE_DREAM_TIMEOUT_COOLDOWN_MS || 3 * 60 * 1000,
   60 * 1000,
   MODEL_COOLDOWN_BASE_MS
 );
 const MODEL_PROVIDER_COOLDOWN_BASE_MS = clampInt(
-  process.env.IDLE_DREAM_PROVIDER_COOLDOWN_MS || 5 * 60 * 1000,
+  process.env.IDLE_DREAM_PROVIDER_COOLDOWN_MS || 2 * 60 * 1000,
   60 * 1000,
   MODEL_TIMEOUT_COOLDOWN_BASE_MS
 );
@@ -109,6 +109,9 @@ const MODEL_PREFLIGHT_ENABLED = String(process.env.IDLE_DREAM_MODEL_PREFLIGHT_EN
 const MODEL_PREFLIGHT_TIMEOUT_MS = clampInt(process.env.IDLE_DREAM_MODEL_PREFLIGHT_TIMEOUT_MS || 6000, 1000, 60000);
 const MODEL_PREFLIGHT_CACHE_TTL_MS = clampInt(process.env.IDLE_DREAM_MODEL_PREFLIGHT_CACHE_TTL_MS || 15 * 60 * 1000, 60 * 1000, 6 * 60 * 60 * 1000);
 const MODEL_PREFLIGHT_PROMPT = 'Return exactly: OK';
+const MODEL_PROBATION_ENABLED = String(process.env.IDLE_DREAM_MODEL_PROBATION_ENABLED || '1').trim() !== '0';
+const MODEL_PROBATION_FAILURE_STREAK = clampInt(process.env.IDLE_DREAM_MODEL_PROBATION_FAILURE_STREAK || 2, 2, 12);
+const MODEL_PROBATION_TTL_MS = clampInt(process.env.IDLE_DREAM_MODEL_PROBATION_TTL_MS || 45 * 60 * 1000, 60 * 1000, 12 * 60 * 60 * 1000);
 
 const IDLE_MODEL_ORDER = parseCsvOrder(
   process.env.IDLE_DREAM_MODEL_ORDER
@@ -449,6 +452,11 @@ function modelOnFailure(state, model, phase, llm) {
       : llm && llm.error
         ? 'runtime_error'
         : `exit_${Number(llm && llm.code != null ? llm.code : 1)}`);
+  const probationEnabled = MODEL_PROBATION_ENABLED === true;
+  const probationTriggered = probationEnabled && failureStreak >= MODEL_PROBATION_FAILURE_STREAK;
+  const probationUntil = probationTriggered
+    ? new Date(Date.now() + MODEL_PROBATION_TTL_MS).toISOString()
+    : null;
   const next = {
     ...prev,
     model: key,
@@ -462,6 +470,8 @@ function modelOnFailure(state, model, phase, llm) {
     success_streak: 0,
     cooldown_ms: cooldownMs,
     cooldown_until_ts: cooldownUntil,
+    probation_until_ts: probationUntil,
+    probation_reason: probationTriggered ? reason : null,
     preflight_ok_ts: null,
     preflight_ok_until_ts: null,
     preflight_ok_phase: null,
@@ -476,6 +486,27 @@ function modelOnFailure(state, model, phase, llm) {
       phase: next.last_phase,
       model: key,
       reason
+    });
+  }
+  if (probationTriggered !== true && prev && prev.probation_until_ts) {
+    appendJsonl(LEDGER_PATH, {
+      ts: nowIso(),
+      type: 'idle_dream_model_probation_cleared',
+      phase: next.last_phase,
+      model: key,
+      reason: 'below_failure_threshold'
+    });
+  }
+  if (probationTriggered) {
+    appendJsonl(LEDGER_PATH, {
+      ts: nowIso(),
+      type: 'idle_dream_model_probation_set',
+      phase: next.last_phase,
+      model: key,
+      reason,
+      failure_streak: failureStreak,
+      probation_until_ts: probationUntil,
+      probation_ttl_ms: MODEL_PROBATION_TTL_MS
     });
   }
   appendJsonl(LEDGER_PATH, {
@@ -497,6 +528,7 @@ function modelOnSuccess(state, model, phase) {
   const key = normalizeModelName(model);
   const prev = modelHealthEntry(state, key) || {};
   const hadCooldown = !!prev.cooldown_until_ts;
+  const hadProbation = !!prev.probation_until_ts;
   const next = {
     ...prev,
     model: key,
@@ -507,6 +539,8 @@ function modelOnSuccess(state, model, phase) {
     success_streak: clampInt(Number(prev.success_streak || 0) + 1, 1, 999),
     cooldown_ms: 0,
     cooldown_until_ts: null,
+    probation_until_ts: null,
+    probation_reason: null,
     timed_out: false
   };
   state.model_health[key] = next;
@@ -517,6 +551,15 @@ function modelOnSuccess(state, model, phase) {
       type: 'idle_dream_model_cooldown_cleared',
       phase: next.last_phase,
       model: key
+    });
+  }
+  if (hadProbation) {
+    appendJsonl(LEDGER_PATH, {
+      ts: nowIso(),
+      type: 'idle_dream_model_probation_cleared',
+      phase: next.last_phase,
+      model: key,
+      reason: 'success'
     });
   }
   return next;
@@ -530,6 +573,18 @@ function pickModel(order, available, state) {
     const clean = normalizeModelName(m);
     if (!normAvail.has(clean)) continue;
     const entry = modelHealthEntry(state, clean);
+    const probationUntilMs = Date.parse(String(entry && entry.probation_until_ts || ''));
+    if (Number.isFinite(probationUntilMs) && probationUntilMs > nowMs) {
+      skipped.push({
+        model: clean,
+        probation_until_ts: entry.probation_until_ts,
+        probation_reason: entry.probation_reason || null,
+        failure_streak: Number(entry.failure_streak || 0),
+        last_failure_reason: entry.last_failure_reason || null,
+        skipped_by: 'probation'
+      });
+      continue;
+    }
     const untilMs = Date.parse(String(entry && entry.cooldown_until_ts || ''));
     if (Number.isFinite(untilMs) && untilMs > nowMs) {
       skipped.push({
@@ -545,6 +600,18 @@ function pickModel(order, available, state) {
   const list = Array.from(normAvail).sort();
   for (const clean of list) {
     const entry = modelHealthEntry(state, clean);
+    const probationUntilMs = Date.parse(String(entry && entry.probation_until_ts || ''));
+    if (Number.isFinite(probationUntilMs) && probationUntilMs > nowMs) {
+      skipped.push({
+        model: clean,
+        probation_until_ts: entry.probation_until_ts,
+        probation_reason: entry.probation_reason || null,
+        failure_streak: Number(entry.failure_streak || 0),
+        last_failure_reason: entry.last_failure_reason || null,
+        skipped_by: 'probation'
+      });
+      continue;
+    }
     const untilMs = Date.parse(String(entry && entry.cooldown_until_ts || ''));
     if (Number.isFinite(untilMs) && untilMs > nowMs) {
       skipped.push({
