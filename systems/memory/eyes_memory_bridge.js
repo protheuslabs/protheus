@@ -16,6 +16,9 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { enforceMutationProvenance, recordMutationAudit } = require('../../lib/mutation_provenance.js');
+
+const SCRIPT_SOURCE = 'systems/memory/eyes_memory_bridge.js';
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const MEMORY_DIR = process.env.MEMORY_BRIDGE_MEMORY_DIR
@@ -344,6 +347,14 @@ function writePointers(dateStr, rows) {
 }
 
 function runBridge(dateStr, maxNodes) {
+  const provenance = enforceMutationProvenance('memory', {
+    source: SCRIPT_SOURCE,
+    reason: 'eyes_memory_bridge_run'
+  }, {
+    fallbackSource: SCRIPT_SOURCE,
+    defaultReason: 'eyes_memory_bridge_run',
+    context: `run:${dateStr}`
+  });
   const { filePath, proposals } = loadProposals(dateStr);
   const index = loadPointerIndex();
   const known = new Set(Object.keys(index.item_hashes || {}));
@@ -452,6 +463,28 @@ function runBridge(dateStr, maxNodes) {
     selected: result.selected,
     eligible_candidates: result.eligible_candidates,
     proposals_total: result.proposals_total
+  });
+
+  recordMutationAudit('memory', {
+    type: 'controller_run',
+    controller: SCRIPT_SOURCE,
+    operation: 'eyes_memory_bridge_run',
+    source: provenance.meta && provenance.meta.source || SCRIPT_SOURCE,
+    reason: provenance.meta && provenance.meta.reason || 'eyes_memory_bridge_run',
+    provenance_ok: provenance.ok === true,
+    provenance_violations: Array.isArray(provenance.violations) ? provenance.violations : [],
+    files_touched: [
+      result.memory_file,
+      result.pointers_file,
+      result.pointer_index,
+      path.relative(REPO_ROOT, LEDGER_PATH).replace(/\\/g, '/')
+    ].filter(Boolean),
+    metrics: {
+      proposals_total: result.proposals_total,
+      selected: result.selected,
+      created_nodes: result.created_nodes,
+      revisit_pointers: result.revisit_pointers
+    }
   });
 
   return result;

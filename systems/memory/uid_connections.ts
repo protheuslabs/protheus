@@ -16,6 +16,9 @@
 const fs = require('fs');
 const path = require('path');
 const { stableUid, isAlnum } = require('../../lib/uid.js');
+const { enforceMutationProvenance, recordMutationAudit } = require('../../lib/mutation_provenance.js');
+
+const SCRIPT_SOURCE = 'systems/memory/uid_connections.js';
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const EYES_POINTERS_DIR = process.env.UID_CONNECTIONS_EYES_POINTERS_DIR
@@ -340,11 +343,19 @@ function buildAdaptiveSuggestions(rows, connections, dateStr) {
 }
 
 function cmdBuild(dateStr, days, top) {
+  const provenance = enforceMutationProvenance('memory', {
+    source: SCRIPT_SOURCE,
+    reason: 'uid_connections_build'
+  }, {
+    fallbackSource: SCRIPT_SOURCE,
+    defaultReason: 'uid_connections_build',
+    context: `build:${dateStr}`
+  });
   const rows = loadPointerRows(dateStr, days, top);
   const connections = buildConnections(rows, dateStr);
   appendJsonl(CONNECTIONS_PATH, connections);
   const suggestions = buildAdaptiveSuggestions(rows, connections, dateStr);
-  return {
+  const out = {
     ok: true,
     type: 'uid_connections_build',
     date: dateStr,
@@ -354,6 +365,26 @@ function cmdBuild(dateStr, days, top) {
     new_adaptive_suggestions: suggestions.added,
     adaptive_suggestions_file: suggestions.file
   };
+  recordMutationAudit('memory', {
+    type: 'controller_run',
+    controller: SCRIPT_SOURCE,
+    operation: 'uid_connections_build',
+    source: provenance.meta && provenance.meta.source || SCRIPT_SOURCE,
+    reason: provenance.meta && provenance.meta.reason || 'uid_connections_build',
+    provenance_ok: provenance.ok === true,
+    provenance_violations: Array.isArray(provenance.violations) ? provenance.violations : [],
+    files_touched: [
+      path.relative(REPO_ROOT, CONNECTIONS_PATH).replace(/\\/g, '/'),
+      path.relative(REPO_ROOT, CONNECTION_INDEX_PATH).replace(/\\/g, '/'),
+      out.adaptive_suggestions_file
+    ].filter(Boolean),
+    metrics: {
+      pointers_considered: out.pointers_considered,
+      new_connections: out.new_connections,
+      new_adaptive_suggestions: out.new_adaptive_suggestions
+    }
+  });
+  return out;
 }
 
 function cmdStatus(dateStr) {

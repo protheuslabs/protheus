@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { stableUid, isAlnum } = require('../../../lib/uid.js');
+const { enforceMutationProvenance } = require('../../../lib/mutation_provenance.js');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..', '..');
 const ADAPTIVE_ROOT = path.join(REPO_ROOT, 'adaptive');
@@ -341,25 +342,39 @@ function atomicWriteJson(absPath, obj) {
 
 function setJson(targetPath, obj, meta = {}) {
   const { abs, rel } = resolveAdaptivePath(targetPath);
+  const provenance = enforceMutationProvenance('adaptive', meta, {
+    fallbackSource: 'systems/adaptive/core/layer_store.js',
+    defaultReason: 'adaptive_set',
+    context: `adaptive/${rel}`
+  });
+  const pmeta = provenance.meta || {};
   return withSingleWriter(abs, (lock) => {
     atomicWriteJson(abs, obj);
     appendMutationLog({
       ts: nowIso(),
       op: 'set',
       rel_path: rel,
-      actor: String(meta.actor || process.env.USER || 'unknown').slice(0, 80),
-      source: String(meta.source || '').slice(0, 120),
-      reason: String(meta.reason || 'unspecified').slice(0, 160),
+      actor: String(pmeta.actor || process.env.USER || 'unknown').slice(0, 80),
+      source: String(pmeta.source || '').slice(0, 120),
+      reason: String(pmeta.reason || 'unspecified').slice(0, 160),
+      provenance_ok: provenance.ok === true,
+      provenance_violations: Array.isArray(provenance.violations) ? provenance.violations : [],
       lock_wait_ms: Number(lock && lock.waited_ms || 0),
       value_hash: hash16(JSON.stringify(obj))
     });
-    emitAdaptivePointers(rel, obj, 'set', meta);
+    emitAdaptivePointers(rel, obj, 'set', pmeta);
     return obj;
   });
 }
 
 function ensureJson(targetPath, defaultValue, meta = {}) {
   const { abs, rel } = resolveAdaptivePath(targetPath);
+  const provenance = enforceMutationProvenance('adaptive', meta, {
+    fallbackSource: 'systems/adaptive/core/layer_store.js',
+    defaultReason: 'adaptive_ensure',
+    context: `adaptive/${rel}`
+  });
+  const pmeta = provenance.meta || {};
   return withSingleWriter(abs, (lock) => {
     if (fs.existsSync(abs)) {
       try {
@@ -374,13 +389,15 @@ function ensureJson(targetPath, defaultValue, meta = {}) {
       ts: nowIso(),
       op: 'ensure',
       rel_path: rel,
-      actor: String(meta.actor || process.env.USER || 'unknown').slice(0, 80),
-      source: String(meta.source || '').slice(0, 120),
-      reason: String(meta.reason || 'ensure_default').slice(0, 160),
+      actor: String(pmeta.actor || process.env.USER || 'unknown').slice(0, 80),
+      source: String(pmeta.source || '').slice(0, 120),
+      reason: String(pmeta.reason || 'ensure_default').slice(0, 160),
+      provenance_ok: provenance.ok === true,
+      provenance_violations: Array.isArray(provenance.violations) ? provenance.violations : [],
       lock_wait_ms: Number(lock && lock.waited_ms || 0),
       value_hash: hash16(JSON.stringify(next))
     });
-    emitAdaptivePointers(rel, next, 'ensure', meta);
+    emitAdaptivePointers(rel, next, 'ensure', pmeta);
     return next;
   });
 }
@@ -390,6 +407,12 @@ function mutateJson(targetPath, mutator, meta = {}) {
     throw new Error('adaptive_store: mutator must be function');
   }
   const { abs, rel } = resolveAdaptivePath(targetPath);
+  const provenance = enforceMutationProvenance('adaptive', meta, {
+    fallbackSource: 'systems/adaptive/core/layer_store.js',
+    defaultReason: 'adaptive_mutate',
+    context: `adaptive/${rel}`
+  });
+  const pmeta = provenance.meta || {};
   return withSingleWriter(abs, (lock) => {
     const current = readJson(targetPath, null);
     const base = current == null ? {} : cloneJsonSafe(current);
@@ -402,19 +425,27 @@ function mutateJson(targetPath, mutator, meta = {}) {
       ts: nowIso(),
       op: 'set',
       rel_path: rel,
-      actor: String(meta.actor || process.env.USER || 'unknown').slice(0, 80),
-      source: String(meta.source || '').slice(0, 120),
-      reason: String(meta.reason || 'mutate').slice(0, 160),
+      actor: String(pmeta.actor || process.env.USER || 'unknown').slice(0, 80),
+      source: String(pmeta.source || '').slice(0, 120),
+      reason: String(pmeta.reason || 'mutate').slice(0, 160),
+      provenance_ok: provenance.ok === true,
+      provenance_violations: Array.isArray(provenance.violations) ? provenance.violations : [],
       lock_wait_ms: Number(lock && lock.waited_ms || 0),
       value_hash: hash16(JSON.stringify(mutated))
     });
-    emitAdaptivePointers(rel, mutated, 'set', meta);
+    emitAdaptivePointers(rel, mutated, 'set', pmeta);
     return mutated;
   });
 }
 
 function deletePath(targetPath, meta = {}) {
   const { abs, rel } = resolveAdaptivePath(targetPath);
+  const provenance = enforceMutationProvenance('adaptive', meta, {
+    fallbackSource: 'systems/adaptive/core/layer_store.js',
+    defaultReason: 'adaptive_delete',
+    context: `adaptive/${rel}`
+  });
+  const pmeta = provenance.meta || {};
   if (fs.existsSync(abs)) {
     fs.rmSync(abs, { force: true });
   }
@@ -422,11 +453,13 @@ function deletePath(targetPath, meta = {}) {
     ts: nowIso(),
     op: 'delete',
     rel_path: rel,
-    actor: String(meta.actor || process.env.USER || 'unknown').slice(0, 80),
-    source: String(meta.source || '').slice(0, 120),
-    reason: String(meta.reason || 'delete').slice(0, 160)
+    actor: String(pmeta.actor || process.env.USER || 'unknown').slice(0, 80),
+    source: String(pmeta.source || '').slice(0, 120),
+    reason: String(pmeta.reason || 'delete').slice(0, 160),
+    provenance_ok: provenance.ok === true,
+    provenance_violations: Array.isArray(provenance.violations) ? provenance.violations : []
   });
-  emitAdaptivePointers(rel, { uid: stableUid(`adaptive_blob|${rel}|v1`, { prefix: 'a', length: 24 }) }, 'delete', meta);
+  emitAdaptivePointers(rel, { uid: stableUid(`adaptive_blob|${rel}|v1`, { prefix: 'a', length: 24 }) }, 'delete', pmeta);
 }
 
 module.exports = {

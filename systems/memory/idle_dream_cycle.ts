@@ -21,10 +21,12 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 const { stableUid } = require('../../lib/uid.js');
 const { listLocalOllamaModels, runLocalOllamaPrompt, stripAnsi } = require('../routing/llm_gateway.js');
+const { enforceMutationProvenance, recordMutationAudit } = require('../../lib/mutation_provenance.js');
 
 type AnyObj = Record<string, any>;
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
+const SCRIPT_SOURCE = 'systems/memory/idle_dream_cycle.js';
 const DREAMS_DIR = process.env.IDLE_DREAM_DREAMS_DIR
   ? path.resolve(String(process.env.IDLE_DREAM_DREAMS_DIR))
   : path.join(REPO_ROOT, 'state', 'memory', 'dreams');
@@ -1147,6 +1149,14 @@ function runRemPass(dateStr, state, force) {
 }
 
 function runCycle(dateStr, opts: AnyObj = {}) {
+  const provenance = enforceMutationProvenance('memory', {
+    source: SCRIPT_SOURCE,
+    reason: 'idle_dream_cycle_run'
+  }, {
+    fallbackSource: SCRIPT_SOURCE,
+    defaultReason: 'idle_dream_cycle_run',
+    context: `run:${dateStr}`
+  });
   const force = opts.force === true;
   const remOnly = opts.remOnly === true;
   const state = loadState();
@@ -1207,6 +1217,29 @@ function runCycle(dateStr, opts: AnyObj = {}) {
     idle_runs_after: Number(state.idle_runs || 0),
     rem_runs_before: Number(before.rem_runs || 0),
     rem_runs_after: Number(state.rem_runs || 0)
+  });
+  recordMutationAudit('memory', {
+    type: 'controller_run',
+    controller: SCRIPT_SOURCE,
+    operation: 'idle_dream_cycle_run',
+    source: provenance.meta && provenance.meta.source || SCRIPT_SOURCE,
+    reason: provenance.meta && provenance.meta.reason || 'idle_dream_cycle_run',
+    provenance_ok: provenance.ok === true,
+    provenance_violations: Array.isArray(provenance.violations) ? provenance.violations : [],
+    files_touched: [
+      path.relative(REPO_ROOT, STATE_PATH).replace(/\\/g, '/'),
+      path.relative(REPO_ROOT, LEDGER_PATH).replace(/\\/g, '/'),
+      path.relative(REPO_ROOT, path.join(IDLE_DIR, `${dateStr}.jsonl`)).replace(/\\/g, '/'),
+      path.relative(REPO_ROOT, path.join(REM_DIR, `${dateStr}.json`)).replace(/\\/g, '/')
+    ],
+    metrics: {
+      force,
+      rem_only: remOnly,
+      idle_ok: !!(idleResult && idleResult.ok),
+      idle_skipped: !!(idleResult && idleResult.skipped),
+      rem_ok: !!(remResult && remResult.ok),
+      rem_skipped: !!(remResult && remResult.skipped)
+    }
   });
   return out;
 }

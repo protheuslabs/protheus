@@ -15,6 +15,9 @@
 
 const fs = require('fs');
 const path = require('path');
+const { enforceMutationProvenance, recordMutationAudit } = require('../../lib/mutation_provenance.js');
+
+const SCRIPT_SOURCE = 'systems/memory/memory_dream.js';
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const POINTERS_DIR = process.env.MEMORY_DREAM_POINTERS_DIR
@@ -372,6 +375,14 @@ function renderDreamMarkdown(dateStr, days, rows, themes) {
 }
 
 function runDream(dateStr, days, top) {
+  const provenance = enforceMutationProvenance('memory', {
+    source: SCRIPT_SOURCE,
+    reason: 'memory_dream_run'
+  }, {
+    fallbackSource: SCRIPT_SOURCE,
+    defaultReason: 'memory_dream_run',
+    context: `run:${dateStr}`
+  });
   const dates = dateDaysBack(dateStr, days);
   const dateSet = new Set(dates);
   const rows = [];
@@ -433,6 +444,27 @@ function runDream(dateStr, days, top) {
     pointer_rows: rows.length,
     themes: themes.length,
     older_links_total: Number(enriched.older_links_total || 0)
+  });
+
+  recordMutationAudit('memory', {
+    type: 'controller_run',
+    controller: SCRIPT_SOURCE,
+    operation: 'memory_dream_run',
+    source: provenance.meta && provenance.meta.source || SCRIPT_SOURCE,
+    reason: provenance.meta && provenance.meta.reason || 'memory_dream_run',
+    provenance_ok: provenance.ok === true,
+    provenance_violations: Array.isArray(provenance.violations) ? provenance.violations : [],
+    files_touched: [
+      result.markdown_path,
+      result.json_path,
+      path.relative(REPO_ROOT, DREAM_LEDGER_PATH).replace(/\\/g, '/')
+    ].filter(Boolean),
+    metrics: {
+      days: result.days,
+      pointer_rows: result.pointer_rows,
+      themes: result.themes,
+      older_links_total: result.older_links_total
+    }
   });
 
   return result;

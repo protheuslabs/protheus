@@ -19,6 +19,9 @@
 const fs = require('fs');
 const path = require('path');
 const { stableUid } = require('../../lib/uid.js');
+const { enforceMutationProvenance, recordMutationAudit } = require('../../lib/mutation_provenance.js');
+
+const SCRIPT_SOURCE = 'systems/memory/creative_links.js';
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const DREAMS_DIR = process.env.CREATIVE_LINKS_DREAMS_DIR
@@ -598,6 +601,14 @@ function upsertCandidates(registry, evidenceRows) {
 }
 
 function runCmd(dateStr, days, top, maxPromotions) {
+  const provenance = enforceMutationProvenance('memory', {
+    source: SCRIPT_SOURCE,
+    reason: 'creative_links_run'
+  }, {
+    fallbackSource: SCRIPT_SOURCE,
+    defaultReason: 'creative_links_run',
+    context: `run:${dateStr}`
+  });
   const registry = loadRegistry();
   const evidence = collectThemes(dateStr, days, top);
   const candidates = upsertCandidates(registry, evidence);
@@ -651,6 +662,29 @@ function runCmd(dateStr, days, top, maxPromotions) {
     themes_considered: out.themes_considered,
     candidates_total: out.candidates_total,
     promoted_count: out.promoted_count
+  });
+  const touched = [
+    path.relative(REPO_ROOT, REGISTRY_PATH).replace(/\\/g, '/'),
+    path.relative(REPO_ROOT, LEDGER_PATH).replace(/\\/g, '/')
+  ];
+  for (const p of promotions) {
+    if (p && p.memory_file) touched.push(String(p.memory_file));
+  }
+  recordMutationAudit('memory', {
+    type: 'controller_run',
+    controller: SCRIPT_SOURCE,
+    operation: 'creative_links_run',
+    source: provenance.meta && provenance.meta.source || SCRIPT_SOURCE,
+    reason: provenance.meta && provenance.meta.reason || 'creative_links_run',
+    provenance_ok: provenance.ok === true,
+    provenance_violations: Array.isArray(provenance.violations) ? provenance.violations : [],
+    files_touched: Array.from(new Set(touched)).filter(Boolean),
+    metrics: {
+      themes_considered: out.themes_considered,
+      candidates_total: out.candidates_total,
+      promotable_count: out.promotable_count,
+      promoted_count: out.promoted_count
+    }
   });
   return out;
 }
