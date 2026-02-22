@@ -1,4 +1,4 @@
-import toolResponseCompactor = require('./tool_response_compactor.js');
+const toolResponseCompactor = require('./tool_response_compactor.js');
 const { compactToolResponse } = toolResponseCompactor as { compactToolResponse: (data: string, options?: { toolName?: string }) => any };
 
 function extractRawPathFromContent(content: unknown): string | null {
