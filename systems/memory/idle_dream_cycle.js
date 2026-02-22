@@ -105,6 +105,9 @@ const MODEL_MAX_ATTEMPTS = clampInt(process.env.IDLE_DREAM_MODEL_MAX_ATTEMPTS ||
 const MODEL_MAX_MODELS_PER_PASS = clampInt(process.env.IDLE_DREAM_MAX_MODELS_PER_PASS || 4, 1, 12);
 const MODEL_RETRY_TIMEOUT_PCT = clampInt(process.env.IDLE_DREAM_MODEL_RETRY_TIMEOUT_PCT || 175, 100, 500);
 const CLOUD_MODEL_TIMEOUT_PCT = clampInt(process.env.IDLE_DREAM_CLOUD_TIMEOUT_PCT || 170, 100, 600);
+const MODEL_PREFLIGHT_ENABLED = String(process.env.IDLE_DREAM_MODEL_PREFLIGHT_ENABLED || '1').trim() !== '0';
+const MODEL_PREFLIGHT_TIMEOUT_MS = clampInt(process.env.IDLE_DREAM_MODEL_PREFLIGHT_TIMEOUT_MS || 6000, 1000, 60000);
+const MODEL_PREFLIGHT_PROMPT = 'Return exactly: OK';
 
 const IDLE_MODEL_ORDER = parseCsvOrder(
   process.env.IDLE_DREAM_MODEL_ORDER
@@ -548,6 +551,42 @@ function runModelWithRetries(model, prompt, baseTimeoutMs, phase) {
     if (attempt >= MODEL_MAX_ATTEMPTS || !shouldRetryModelFailure(llm)) break;
   }
   return { ok: false, llm: last || { ok: false, code: 1, timed_out: false, signal: null, error: 'llm_failed', stderr: '' }, attempts };
+}
+
+function runModelPreflight(model, phase) {
+  if (!MODEL_PREFLIGHT_ENABLED) {
+    return {
+      ok: true,
+      skipped: true,
+      reason: 'disabled',
+      timeout_ms: MODEL_PREFLIGHT_TIMEOUT_MS,
+      llm: null
+    };
+  }
+  const llm = runLocalModel(model, MODEL_PREFLIGHT_PROMPT, MODEL_PREFLIGHT_TIMEOUT_MS, `${normalizeToken(phase || 'idle') || 'idle'}_preflight`);
+  const stdout = String(stripAnsi(llm && llm.stdout || '')).trim().toUpperCase();
+  const ok = llm && llm.ok === true && /\bOK\b/.test(stdout);
+  if (ok) {
+    return {
+      ok: true,
+      skipped: false,
+      reason: 'ok',
+      timeout_ms: MODEL_PREFLIGHT_TIMEOUT_MS,
+      llm
+    };
+  }
+  const reason = isProviderUnavailableFailure(llm)
+    ? 'provider_unavailable'
+    : llm && llm.timed_out === true
+      ? 'timeout'
+      : 'preflight_failed';
+  return {
+    ok: false,
+    skipped: false,
+    reason,
+    timeout_ms: MODEL_PREFLIGHT_TIMEOUT_MS,
+    llm
+  };
 }
 
 function runLocalModel(model, prompt, timeoutMs, phase) {
@@ -1165,12 +1204,44 @@ function runIdlePass(dateStr, state, force) {
         break;
       }
       if (attemptedModels.some((it) => it.model === selectedModel)) break;
-      const attempt = runModelWithRetries(selectedModel, prompt, LLM_TIMEOUT_MS, 'idle');
       const attemptRow = {
         model: selectedModel,
-        attempts: Array.isArray(attempt.attempts) ? attempt.attempts : []
+        preflight: null,
+        attempts: []
       };
       attemptedModels.push(attemptRow);
+      const preflight = runModelPreflight(selectedModel, 'idle');
+      attemptRow.preflight = {
+        enabled: MODEL_PREFLIGHT_ENABLED,
+        ok: preflight.ok === true,
+        skipped: preflight.skipped === true,
+        reason: preflight.reason || null,
+        timeout_ms: Number(preflight.timeout_ms || MODEL_PREFLIGHT_TIMEOUT_MS),
+        code: preflight.llm && preflight.llm.code != null ? Number(preflight.llm.code) : null,
+        signal: preflight.llm && preflight.llm.signal || null,
+        timed_out: preflight.llm && preflight.llm.timed_out === true,
+        error: preflight.llm && preflight.llm.error || null
+      };
+      if (!preflight.ok) {
+        const llm = preflight.llm || {
+          ok: false,
+          stdout: '',
+          stderr: preflight.reason || 'preflight_failed',
+          code: 1,
+          timed_out: false,
+          signal: null,
+          error: preflight.reason || 'preflight_failed'
+        };
+        const health = modelOnFailure(state, selectedModel, 'idle', llm);
+        attemptRow.cooldown_until_ts = health && health.cooldown_until_ts || null;
+        attemptRow.failure_reason = health && health.last_failure_reason || null;
+        if (health && health.last_failure_reason === 'provider_unavailable') break;
+        const nextPick = pickModel(IDLE_MODEL_ORDER, availableModels, state);
+        selectedModel = nextPick.model;
+        continue;
+      }
+      const attempt = runModelWithRetries(selectedModel, prompt, LLM_TIMEOUT_MS, 'idle');
+      attemptRow.attempts = Array.isArray(attempt.attempts) ? attempt.attempts : [];
       if (attempt.ok && attempt.llm && attempt.llm.ok === true) {
         const parsed = extractJsonObject(attempt.llm.stdout);
         const links = normalizeIdleLinks(parsed, seeds);
@@ -1334,12 +1405,44 @@ function runRemPass(dateStr, state, force) {
         break;
       }
       if (attemptedModels.some((it) => it.model === selectedModel)) break;
-      const attempt = runModelWithRetries(selectedModel, prompt, REM_TIMEOUT_MS, 'rem');
       const attemptRow = {
         model: selectedModel,
-        attempts: Array.isArray(attempt.attempts) ? attempt.attempts : []
+        preflight: null,
+        attempts: []
       };
       attemptedModels.push(attemptRow);
+      const preflight = runModelPreflight(selectedModel, 'rem');
+      attemptRow.preflight = {
+        enabled: MODEL_PREFLIGHT_ENABLED,
+        ok: preflight.ok === true,
+        skipped: preflight.skipped === true,
+        reason: preflight.reason || null,
+        timeout_ms: Number(preflight.timeout_ms || MODEL_PREFLIGHT_TIMEOUT_MS),
+        code: preflight.llm && preflight.llm.code != null ? Number(preflight.llm.code) : null,
+        signal: preflight.llm && preflight.llm.signal || null,
+        timed_out: preflight.llm && preflight.llm.timed_out === true,
+        error: preflight.llm && preflight.llm.error || null
+      };
+      if (!preflight.ok) {
+        const llm = preflight.llm || {
+          ok: false,
+          stdout: '',
+          stderr: preflight.reason || 'preflight_failed',
+          code: 1,
+          timed_out: false,
+          signal: null,
+          error: preflight.reason || 'preflight_failed'
+        };
+        const health = modelOnFailure(state, selectedModel, 'rem', llm);
+        attemptRow.cooldown_until_ts = health && health.cooldown_until_ts || null;
+        attemptRow.failure_reason = health && health.last_failure_reason || null;
+        if (health && health.last_failure_reason === 'provider_unavailable') break;
+        const nextPick = pickModel(REM_MODEL_ORDER, availableModels, state);
+        selectedModel = nextPick.model;
+        continue;
+      }
+      const attempt = runModelWithRetries(selectedModel, prompt, REM_TIMEOUT_MS, 'rem');
+      attemptRow.attempts = Array.isArray(attempt.attempts) ? attempt.attempts : [];
       if (attempt.ok && attempt.llm && attempt.llm.ok === true) {
         const parsed = extractJsonObject(attempt.llm.stdout);
         const quantized = normalizeQuantized(parsed, materialRows);
