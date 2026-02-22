@@ -118,6 +118,28 @@ function main() {
     ['"ok": true']
   );
 
+  // memory_layer_guard.js enforces channelized writes for memory/state-memory files.
+  checkScript(
+    "systems/memory/memory_layer_guard.js",
+    ["memory_layer_guard.js", "run", "--strict"]
+  );
+  checkUsage(
+    "systems/memory/memory_layer_guard.js",
+    ["run", "--strict"],
+    ['"ok": true']
+  );
+
+  // workspace_dump_guard.js blocks source dumps into memory/adaptive data roots.
+  checkScript(
+    "systems/security/workspace_dump_guard.js",
+    ["workspace_dump_guard.js", "run", "--strict"]
+  );
+  checkUsage(
+    "systems/security/workspace_dump_guard.js",
+    ["run", "--strict"],
+    ['"ok": true']
+  );
+
   // eyes_insight.js should advertise run + date usage
   checkScript(
     "habits/scripts/eyes_insight.js",
