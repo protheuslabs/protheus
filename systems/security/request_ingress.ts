@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// @ts-nocheck
 'use strict';
 
 /**
@@ -30,7 +29,7 @@ function usage() {
 }
 
 function parseArgs(argv) {
-  const out = { _: [], raw: Array.isArray(argv) ? argv.slice(0) : [] };
+  const out = { _: [], raw: Array.isArray(argv) ? argv.slice(0) : [] } as Record<string, any>;
   for (let i = 0; i < out.raw.length; i++) {
     const a = out.raw[i];
     if (a === '--') {
@@ -149,3 +148,4 @@ function main() {
 }
 
 main();
+export {};

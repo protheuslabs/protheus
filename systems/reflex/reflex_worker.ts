@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// @ts-nocheck
 'use strict';
 
 const path = require('path');
@@ -11,7 +10,7 @@ const ROUTER_SCRIPT = process.env.REFLEX_ROUTER_SCRIPT
   : path.join(REPO_ROOT, 'systems', 'routing', 'model_router.js');
 
 function parseArgs(argv) {
-  const out = { _: [] };
+  const out = { _: [] } as Record<string, any>;
   for (const arg of argv) {
     if (!arg.startsWith('--')) {
       out._.push(arg);
@@ -99,3 +98,4 @@ function main() {
 }
 
 main();
+export {};

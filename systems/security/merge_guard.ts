@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// @ts-nocheck
 'use strict';
 
 /**
@@ -24,7 +23,7 @@ function usage() {
 }
 
 function parseArgs(argv) {
-  const out = { _: [] };
+  const out = { _: [] } as Record<string, any>;
   for (const arg of argv) {
     if (!arg.startsWith('--')) {
       out._.push(arg);
@@ -54,11 +53,12 @@ function runCmd(name, command, args) {
 }
 
 function runGuard(opts = {}) {
+  const options = (opts && typeof opts === 'object' ? opts : {}) as Record<string, any>;
   const checks = [];
   checks.push(runCmd('contract_check', 'node', ['systems/spine/contract_check.js']));
   checks.push(runCmd('schema_contract_check', 'node', ['systems/security/schema_contract_check.js', 'run']));
   checks.push(runCmd('adaptive_layer_guard_strict', 'node', ['systems/sensory/adaptive_layer_guard.js', 'run', '--strict']));
-  if (!opts.skipTests) {
+  if (!options.skipTests) {
     checks.push(runCmd('test_ci', 'npm', ['run', 'test:ci']));
   }
   const failed = checks.filter((c) => !c.ok);
@@ -104,3 +104,4 @@ if (require.main === module) {
 module.exports = {
   runGuard
 };
+export {};

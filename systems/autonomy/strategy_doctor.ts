@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// @ts-nocheck
 'use strict';
 
 const path = require('path');
@@ -22,7 +21,7 @@ function usage() {
 }
 
 function parseArgs(argv) {
-  const out = { _: [] };
+  const out = { _: [] } as Record<string, any>;
   for (const arg of argv) {
     if (!arg.startsWith('--')) {
       out._.push(arg);
@@ -109,3 +108,4 @@ function main() {
 }
 
 main();
+export {};

@@ -1,4 +1,3 @@
-// @ts-nocheck
 'use strict';
 
 const path = require('path');
@@ -97,11 +96,12 @@ function readCatalog(filePath, fallback = null) {
 
 function ensureCatalog(filePath, meta = {}) {
   const abs = asCatalogPath(filePath);
+  const m = (meta && typeof meta === 'object' ? meta : {}) as Record<string, any>;
   return normalizeCatalog(
     ensureJson(abs, defaultCatalog, {
-      ...meta,
-      source: meta.source || 'systems/adaptive/sensory/eyes/catalog_store.js',
-      reason: meta.reason || 'ensure_catalog'
+      ...m,
+      source: m.source || 'systems/adaptive/sensory/eyes/catalog_store.js',
+      reason: m.reason || 'ensure_catalog'
     }),
     defaultCatalog()
   );
@@ -109,12 +109,13 @@ function ensureCatalog(filePath, meta = {}) {
 
 function setCatalog(filePath, nextCatalog, meta = {}) {
   const abs = asCatalogPath(filePath);
+  const m = (meta && typeof meta === 'object' ? meta : {}) as Record<string, any>;
   const normalized = normalizeCatalog(nextCatalog, defaultCatalog());
   return normalizeCatalog(
     setJson(abs, normalized, {
-      ...meta,
-      source: meta.source || 'systems/adaptive/sensory/eyes/catalog_store.js',
-      reason: meta.reason || 'set_catalog'
+      ...m,
+      source: m.source || 'systems/adaptive/sensory/eyes/catalog_store.js',
+      reason: m.reason || 'set_catalog'
     }),
     defaultCatalog()
   );
@@ -122,6 +123,7 @@ function setCatalog(filePath, nextCatalog, meta = {}) {
 
 function mutateCatalog(filePath, mutator, meta = {}) {
   const abs = asCatalogPath(filePath);
+  const m = (meta && typeof meta === 'object' ? meta : {}) as Record<string, any>;
   if (typeof mutator !== 'function') {
     throw new Error('catalog_store: mutator must be function');
   }
@@ -134,9 +136,9 @@ function mutateCatalog(filePath, mutator, meta = {}) {
         return normalizeCatalog(next, base);
       },
       {
-        ...meta,
-        source: meta.source || 'systems/adaptive/sensory/eyes/catalog_store.js',
-        reason: meta.reason || 'mutate_catalog'
+        ...m,
+        source: m.source || 'systems/adaptive/sensory/eyes/catalog_store.js',
+        reason: m.reason || 'mutate_catalog'
       }
     ),
     defaultCatalog()
