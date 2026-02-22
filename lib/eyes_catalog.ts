@@ -1,5 +1,5 @@
 import path from 'path';
-import catalogStore = require('../systems/adaptive/sensory/eyes/catalog_store.js');
+const catalogStore = require('../systems/adaptive/sensory/eyes/catalog_store.js');
 
 const {
   defaultCatalog,
