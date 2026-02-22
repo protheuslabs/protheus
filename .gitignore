@@ -5,9 +5,15 @@ node_modules/
 .env
 .env.local
 config/moltbook/credentials.json
+state/security/secret_broker_key.txt
 *.tmp
 *.swp
 *~
+
+# Local secrets channel (tracked scaffold only)
+secrets/*
+!secrets/README.md
+!secrets/.gitignore
 
 # Runtime/ops outputs (high churn, non-source artifacts)
 logs/tool_raw/

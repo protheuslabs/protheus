@@ -10,7 +10,15 @@
   "blocked_globs": [
     "memory/*.backup.*",
     "memory/tools/tests/temp_*/*",
-    "habits/scripts/*.bak.*"
+    "habits/scripts/*.bak.*",
+    "config/moltbook/credentials.json",
+    "state/security/secret_broker_key.txt",
+    "**/credentials.json",
+    "**/token.json",
+    "**/*.pem",
+    "**/*.p12",
+    "**/*.pfx",
+    "**/*.key"
   ],
   "allow_prefixes": [
     "state/security/break_glass.jsonl",

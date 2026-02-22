@@ -18,6 +18,8 @@ This repository is an agent-operations workspace: orchestration, governed habits
   Indexed memory graph and tooling for traversal/maintenance.
 - `state/`  
   Runtime outputs and ledgers (high churn).
+- `secrets/`
+  Repo-local scaffold only. Real secret material is expected outside git at `~/.config/protheus/secrets/`.
 - `lib/`  
   Shared utility modules.
 - `docs/` and `patches/`  
@@ -192,5 +194,6 @@ Guardrail: `apply` is elevated only (`CLEARANCE>=3`) and must pass `systems/secu
 
 `.gitignore` now excludes high-churn runtime artifacts (raw sensory streams, run ledgers, daily state dumps, tool raw logs, backups, temp files) so source-level diffs stay reviewable.
 State tracking policy is documented in `/Users/jay/.openclaw/workspace/docs/STATE_STREAM_POLICY.md`.
+Data-channel ownership/placement is documented in `/Users/jay/.openclaw/workspace/config/data_channels_policy.json`.
 
 Future upgrade ideas are tracked in `/Users/jay/.openclaw/workspace/UPGRADE_BACKLOG.md`.
