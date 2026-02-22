@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// @ts-nocheck
 'use strict';
+export {};
 
 /**
  * proposal_enricher.js
@@ -31,6 +31,8 @@ const {
 } = require('../../lib/outcome_fitness.js');
 const { compileProposalSuccessCriteria } = require('../../lib/success_criteria_compiler.js');
 const { evaluateProposalQuorum } = require('../../lib/quorum_validator.js');
+
+type AnyObj = Record<string, any>;
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const SENSORY_DIR = process.env.SENSORY_TEST_DIR
@@ -171,8 +173,8 @@ function usage() {
   console.log('  node systems/autonomy/proposal_enricher.js --help');
 }
 
-function parseArgs(argv) {
-  const out = { _: [] };
+function parseArgs(argv: string[]): AnyObj {
+  const out: AnyObj = { _: [] };
   for (const a of argv) {
     if (!a.startsWith('--')) { out._.push(a); continue; }
     const eq = a.indexOf('=');
@@ -585,7 +587,9 @@ function successCriteriaRequirement(outcomePolicy) {
     ? outcomePolicy.proposal_filter_policy
     : {};
   const required = src.require_success_criteria !== false;
-  const minCount = clamp(src.min_success_criteria_count, 0, 5, 1);
+  const minCount = Number.isFinite(Number(src.min_success_criteria_count))
+    ? clamp(src.min_success_criteria_count, 0, 5)
+    : 1;
   const fromPolicy = parseLowerList(
     src.success_criteria_exempt_types
       || src.success_criteria_exempt_proposal_types
@@ -1151,7 +1155,7 @@ function enrichOne(proposal, ctx) {
 function summarizeAdmissions(results) {
   let eligible = 0;
   let blocked = 0;
-  const blockedByReason = {};
+  const blockedByReason: AnyObj = {};
   for (const r of results) {
     const a = r && r.admission ? r.admission : { eligible: false, blocked_by: ['unknown'] };
     if (a.eligible) eligible += 1;
@@ -1165,12 +1169,15 @@ function summarizeAdmissions(results) {
     total: results.length,
     eligible,
     blocked,
-    blocked_by_reason: Object.fromEntries(Object.entries(blockedByReason).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])))
+    blocked_by_reason: Object.fromEntries(
+      Object.entries(blockedByReason as Record<string, number>)
+        .sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0) || String(a[0]).localeCompare(String(b[0])))
+    )
   };
 }
 
 function summarizeObjectiveBinding(results) {
-  const out = {
+  const out: AnyObj = {
     total: 0,
     required: 0,
     valid_required: 0,
@@ -1178,7 +1185,7 @@ function summarizeObjectiveBinding(results) {
     invalid_required: 0,
     source_meta_required: 0,
     source_fallback_required: 0,
-    source_counts: {}
+    source_counts: {} as AnyObj
   };
   const metaSources = new Set([
     'meta.objective_id',

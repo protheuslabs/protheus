@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// @ts-nocheck
 'use strict';
+export {};
 
 /**
  * systems/memory/idle_dream_cycle.js
@@ -21,6 +21,8 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 const { stableUid } = require('../../lib/uid.js');
 const { listLocalOllamaModels, runLocalOllamaPrompt, stripAnsi } = require('../routing/llm_gateway.js');
+
+type AnyObj = Record<string, any>;
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const DREAMS_DIR = process.env.IDLE_DREAM_DREAMS_DIR
@@ -92,8 +94,8 @@ function usage() {
   console.log('  env: IDLE_DREAM_SPAWN_BUDGET_ENABLED=1|0 (default: 1)');
 }
 
-function parseArgs(argv) {
-  const out = { _: [] };
+function parseArgs(argv: string[]): AnyObj {
+  const out: AnyObj = { _: [] };
   for (let i = 0; i < argv.length; i++) {
     const a = String(argv[i] || '');
     if (!a.startsWith('--')) {
@@ -127,7 +129,7 @@ function nowIso() {
   return new Date().toISOString();
 }
 
-function toDate(v) {
+function toDate(v?: any) {
   const s = String(v || '').trim();
   if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
   return new Date().toISOString().slice(0, 10);
@@ -982,12 +984,12 @@ function runRemPass(dateStr, state, force) {
   }
 }
 
-function runCycle(dateStr, opts = {}) {
+function runCycle(dateStr, opts: AnyObj = {}) {
   const force = opts.force === true;
   const remOnly = opts.remOnly === true;
   const state = loadState();
   const before = { ...state };
-  let idleResult = { ok: true, skipped: true, reason: 'rem_only' };
+  let idleResult: AnyObj = { ok: true, skipped: true, reason: 'rem_only' };
   if (!remOnly) {
     idleResult = runIdlePass(dateStr, state, force);
     if (idleResult.ok && !idleResult.skipped) {
