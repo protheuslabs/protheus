@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// @ts-nocheck
 'use strict';
+export {};
 
 /**
  * temporal_patterns.js
@@ -20,6 +20,8 @@ const fs = require('fs');
 const path = require('path');
 const { resolveCatalogPath } = require('../../lib/eyes_catalog.js');
 
+type AnyObj = Record<string, any>;
+
 const WORKSPACE_DIR = path.join(__dirname, '..', '..');
 
 function todayStr() {
@@ -33,8 +35,8 @@ function usage() {
   console.log('  node systems/sensory/temporal_patterns.js --help');
 }
 
-function parseArgs(argv) {
-  const out = { _: [] };
+function parseArgs(argv: string[]): AnyObj {
+  const out: AnyObj = { _: [] };
   for (const arg of argv) {
     if (!arg.startsWith('--')) {
       out._.push(arg);
@@ -109,7 +111,7 @@ function ensureDir(dirPath) {
   if (!fs.existsSync(dirPath)) fs.mkdirSync(dirPath, { recursive: true });
 }
 
-function resolvePaths(opts = {}) {
+function resolvePaths(opts: AnyObj = {}): AnyObj {
   const workspaceDir = opts.workspaceDir ? path.resolve(opts.workspaceDir) : WORKSPACE_DIR;
   const sensoryDir = opts.sensoryDir
     ? path.resolve(opts.sensoryDir)
@@ -186,7 +188,7 @@ function buildRuntimeEyeMap(paths) {
   return map;
 }
 
-function analyzeTemporalPatterns(opts = {}) {
+function analyzeTemporalPatterns(opts: AnyObj = {}): AnyObj {
   const paths = resolvePaths(opts);
   const dateStr = /^\d{4}-\d{2}-\d{2}$/.test(String(opts.dateStr || ''))
     ? String(opts.dateStr)
@@ -428,7 +430,7 @@ function analyzeTemporalPatterns(opts = {}) {
     }
   }
 
-  const report = {
+  const report: AnyObj = {
     ts: new Date().toISOString(),
     type: 'temporal_patterns',
     date: today,

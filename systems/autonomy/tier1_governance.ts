@@ -1,10 +1,12 @@
 #!/usr/bin/env node
-// @ts-nocheck
 'use strict';
+export {};
 
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+
+type AnyObj = Record<string, any>;
 
 function clampNumber(n, min, max) {
   const x = Number(n);
@@ -168,7 +170,7 @@ function monthPrefix(dateStr) {
   return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s.slice(0, 7) : '';
 }
 
-function evaluateCostGovernor(opts = {}) {
+function evaluateCostGovernor(opts: AnyObj = {}): AnyObj {
   const runsDir = opts.runsDir;
   const dateStr = dateArgOrToday(opts.dateStr);
   const estActionTokens = Math.max(0, Number(opts.estActionTokens || 0));
@@ -255,7 +257,7 @@ function evaluateCostGovernor(opts = {}) {
   };
 }
 
-function evaluateDrift(opts = {}) {
+function evaluateDrift(opts: AnyObj = {}): AnyObj {
   const runsDir = opts.runsDir;
   const dateStr = dateArgOrToday(opts.dateStr);
   const recentDays = Math.max(3, Number(opts.recentDays || 7));
@@ -389,7 +391,7 @@ function weeklyAlignmentScore(executedEvents, endDateStr) {
   };
 }
 
-function evaluateStrategicAlignment(opts = {}) {
+function evaluateStrategicAlignment(opts: AnyObj = {}): AnyObj {
   const runsDir = opts.runsDir;
   const dateStr = dateArgOrToday(opts.dateStr);
   const threshold = clampNumber(Number(opts.threshold || 60), 10, 95);
@@ -422,7 +424,7 @@ function normalizeErrorMessage(msg) {
     .slice(0, 220);
 }
 
-function classifyAndRecordException(opts = {}) {
+function classifyAndRecordException(opts: AnyObj = {}): AnyObj {
   const memoryPath = opts.memoryPath;
   const auditPath = opts.auditPath || null;
   const dateStr = dateArgOrToday(opts.dateStr);
@@ -487,10 +489,10 @@ function classifyAndRecordException(opts = {}) {
   };
 }
 
-function summarizeExceptionMemory(memoryPath, days = 7) {
+function summarizeExceptionMemory(memoryPath: string, days = 7): AnyObj {
   const raw = readJsonSafe(memoryPath, { signatures: {} });
   const sigs = raw && raw.signatures && typeof raw.signatures === 'object' ? raw.signatures : {};
-  const all = Object.values(sigs);
+  const all = Object.values(sigs as AnyObj) as AnyObj[];
   const cutoffMs = Date.now() - (Math.max(1, Number(days || 7)) * 24 * 60 * 60 * 1000);
   let novelRecent = 0;
   for (const ent of all) {
@@ -504,7 +506,7 @@ function summarizeExceptionMemory(memoryPath, days = 7) {
   };
 }
 
-function evaluateTier1Governance(opts = {}) {
+function evaluateTier1Governance(opts: AnyObj = {}): AnyObj {
   const runsDir = opts.runsDir;
   const dateStr = dateArgOrToday(opts.dateStr);
   const attemptsToday = Math.max(0, Number(opts.attemptsToday || 0));

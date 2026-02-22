@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// @ts-nocheck
 'use strict';
+export {};
 
 /**
  * systems/budget/system_budget.js
@@ -22,6 +22,8 @@
 const fs = require('fs');
 const path = require('path');
 const { loadActiveStrategy, strategyBudgetCaps } = require('../../lib/strategy_resolver.js');
+
+type AnyObj = Record<string, any>;
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const GLOBAL_BUDGET_DEFAULT_DIR = path.join(REPO_ROOT, 'state', 'autonomy', 'daily_budget');
@@ -84,8 +86,8 @@ function appendJsonl(filePath, payload) {
   fs.appendFileSync(filePath, `${JSON.stringify(payload)}\n`, 'utf8');
 }
 
-function parseArgs(argv) {
-  const out = { _: [] };
+function parseArgs(argv: string[]): AnyObj {
+  const out: AnyObj = { _: [] };
   for (const arg of argv) {
     if (!arg.startsWith('--')) {
       out._.push(arg);
@@ -114,27 +116,27 @@ function normalizeDate(v) {
   return nowIso().slice(0, 10);
 }
 
-function resolveStateDir(opts = {}) {
+function resolveStateDir(opts: AnyObj = {}): string {
   const raw = String(opts.state_dir || DEFAULT_STATE_DIR);
   return path.isAbsolute(raw) ? raw : path.resolve(REPO_ROOT, raw);
 }
 
-function resolveEventsPath(opts = {}) {
+function resolveEventsPath(opts: AnyObj = {}): string {
   const raw = String(opts.events_path || DEFAULT_EVENTS_PATH);
   return path.isAbsolute(raw) ? raw : path.resolve(REPO_ROOT, raw);
 }
 
-function dailyPath(dateStr, opts = {}) {
+function dailyPath(dateStr: string, opts: AnyObj = {}): string {
   return path.join(resolveStateDir(opts), `${normalizeDate(dateStr)}.json`);
 }
 
-function normalizeByModule(raw) {
+function normalizeByModule(raw: unknown): AnyObj {
   const src = raw && typeof raw === 'object' ? raw : {};
   const out = {};
   for (const [name, ent] of Object.entries(src)) {
     const key = String(name || '').trim();
     if (!key) continue;
-    const used = Number(ent && ent.used_est);
+    const used = Number((ent as AnyObj) && (ent as AnyObj).used_est);
     out[key] = {
       used_est: Number.isFinite(used) && used >= 0 ? used : 0
     };
@@ -149,7 +151,7 @@ function hasStateContract(raw) {
     && String(raw.schema_version || '') === SYSTEM_BUDGET_STATE_SCHEMA.schema_version;
 }
 
-function toStateContractPayload(raw, opts = {}) {
+function toStateContractPayload(raw: AnyObj, opts: AnyObj = {}): AnyObj {
   const src = raw && typeof raw === 'object' ? raw : {};
   const date = normalizeDate(opts.date || src.date);
   const fallbackCap = toPositiveInt(
@@ -167,7 +169,7 @@ function toStateContractPayload(raw, opts = {}) {
   };
 }
 
-function withEventContract(type, payload = {}) {
+function withEventContract(type: string, payload: AnyObj = {}): AnyObj {
   return {
     schema_id: SYSTEM_BUDGET_EVENT_SCHEMA.schema_id,
     schema_version: SYSTEM_BUDGET_EVENT_SCHEMA.schema_version,
@@ -177,7 +179,7 @@ function withEventContract(type, payload = {}) {
   };
 }
 
-function effectiveStrategyBudget(opts = {}) {
+function effectiveStrategyBudget(opts: AnyObj = {}): AnyObj {
   const defaults = {
     daily_token_cap: toPositiveInt(
       opts.daily_token_cap != null ? opts.daily_token_cap : process.env.SYSTEM_BUDGET_DEFAULT_DAILY_TOKEN_CAP,
@@ -218,7 +220,7 @@ function effectiveStrategyBudget(opts = {}) {
   };
 }
 
-function loadSystemBudgetState(dateStr, opts = {}) {
+function loadSystemBudgetState(dateStr: string, opts: AnyObj = {}): AnyObj {
   const day = normalizeDate(dateStr);
   const fp = dailyPath(day, opts);
   const fileExists = fs.existsSync(fp);
@@ -242,7 +244,7 @@ function loadSystemBudgetState(dateStr, opts = {}) {
   };
 }
 
-function saveSystemBudgetState(state, opts = {}) {
+function saveSystemBudgetState(state: AnyObj, opts: AnyObj = {}): AnyObj {
   const day = normalizeDate(state && state.date);
   const fp = dailyPath(day, opts);
   const previous = readJson(fp, {}) || {};
@@ -269,7 +271,7 @@ function saveSystemBudgetState(state, opts = {}) {
   return normalized;
 }
 
-function migrateSystemBudgetState(dateStr, opts = {}) {
+function migrateSystemBudgetState(dateStr: string, opts: AnyObj = {}): AnyObj {
   const day = normalizeDate(dateStr);
   const fp = dailyPath(day, opts);
   if (!fs.existsSync(fp)) {
@@ -297,7 +299,7 @@ function migrateSystemBudgetState(dateStr, opts = {}) {
   };
 }
 
-function migrateAllSystemBudgetStates(opts = {}) {
+function migrateAllSystemBudgetStates(opts: AnyObj = {}): AnyObj {
   const stateDir = resolveStateDir(opts);
   ensureDir(stateDir);
   const files = fs.readdirSync(stateDir)
@@ -318,7 +320,7 @@ function migrateAllSystemBudgetStates(opts = {}) {
   };
 }
 
-function projectSystemBudget(state, requestTokens, opts = {}) {
+function projectSystemBudget(state: AnyObj, requestTokens: unknown, opts: AnyObj = {}): AnyObj {
   const safeRequest = toPositiveInt(requestTokens, 0);
   const cap = Number(state && state.token_cap);
   const used = Number(state && state.used_est);
@@ -351,7 +353,7 @@ function projectSystemBudget(state, requestTokens, opts = {}) {
   };
 }
 
-function recordSystemBudgetUsage(input, opts = {}) {
+function recordSystemBudgetUsage(input: AnyObj, opts: AnyObj = {}): AnyObj {
   const date = normalizeDate(input && input.date);
   const moduleName = String(input && input.module || 'unknown').trim() || 'unknown';
   const capability = String(input && input.capability || '').trim() || null;
@@ -384,7 +386,7 @@ function recordSystemBudgetUsage(input, opts = {}) {
   return next;
 }
 
-function normalizeBudgetDecision(input = {}) {
+function normalizeBudgetDecision(input: AnyObj = {}): AnyObj {
   const decisionRaw = String(input.decision || '').trim().toLowerCase();
   const decision = ['allow', 'degrade', 'deny'].includes(decisionRaw) ? decisionRaw : 'allow';
   const requestTokens = toPositiveInt(input.request_tokens_est, 0);
@@ -401,7 +403,7 @@ function normalizeBudgetDecision(input = {}) {
   };
 }
 
-function writeSystemBudgetDecision(input, opts = {}) {
+function writeSystemBudgetDecision(input: AnyObj, opts: AnyObj = {}): AnyObj {
   const payload = normalizeBudgetDecision(input || {});
   const state = loadSystemBudgetState(payload.date, opts);
   const projection = projectSystemBudget(state, payload.request_tokens_est, {
@@ -426,7 +428,7 @@ function writeSystemBudgetDecision(input, opts = {}) {
   return row;
 }
 
-function cmdStatus(args) {
+function cmdStatus(args: AnyObj): void {
   const date = normalizeDate(args._[1]);
   const state = loadSystemBudgetState(date, { state_dir: args['state-dir'] || args.state_dir });
   const requestTokens = toPositiveInt(args.request_tokens_est, 0);
@@ -442,7 +444,7 @@ function cmdStatus(args) {
   }, null, 2) + '\n');
 }
 
-function cmdProject(args) {
+function cmdProject(args: AnyObj): void {
   const date = normalizeDate(args._[1]);
   const requestTokens = toPositiveInt(args.request_tokens_est, 0);
   const state = loadSystemBudgetState(date, { state_dir: args['state-dir'] || args.state_dir });
@@ -461,7 +463,7 @@ function cmdProject(args) {
   }, null, 2) + '\n');
 }
 
-function cmdRecord(args) {
+function cmdRecord(args: AnyObj): void {
   const date = normalizeDate(args._[1]);
   const tokens = toPositiveInt(args.tokens_est != null ? args.tokens_est : args.request_tokens_est, 0);
   const moduleName = String(args.module || 'unknown').trim() || 'unknown';
@@ -487,7 +489,7 @@ function cmdRecord(args) {
   }, null, 2) + '\n');
 }
 
-function cmdDecision(args) {
+function cmdDecision(args: AnyObj): void {
   const date = normalizeDate(args._[1]);
   const decision = writeSystemBudgetDecision({
     date,
@@ -509,7 +511,7 @@ function cmdDecision(args) {
   }, null, 2) + '\n');
 }
 
-function cmdMigrate(args) {
+function cmdMigrate(args: AnyObj): void {
   const dateArg = String(args._[1] || '').trim();
   const opts = {
     state_dir: args['state-dir'] || args.state_dir,

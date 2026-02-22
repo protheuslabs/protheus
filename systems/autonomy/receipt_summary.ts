@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// @ts-nocheck
 'use strict';
+export {};
 
 /**
  * receipt_summary.js
@@ -15,6 +15,8 @@
 const fs = require('fs');
 const path = require('path');
 const { successCriteriaFromReceipt } = require('../../lib/autonomy_receipt_schema.js');
+
+type AnyObj = Record<string, any>;
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const AUTONOMY_RUNS_DIR = process.env.AUTONOMY_SUMMARY_RUNS_DIR
@@ -52,8 +54,8 @@ function usage() {
   console.log('  node systems/autonomy/receipt_summary.js --help');
 }
 
-function parseArgs(argv) {
-  const out = { _: [] };
+function parseArgs(argv: string[]): AnyObj {
+  const out: AnyObj = { _: [] };
   for (const arg of argv) {
     if (!arg.startsWith('--')) {
       out._.push(arg);
@@ -131,10 +133,10 @@ function tallyBy(items, keyFn) {
   return out;
 }
 
-function sortedTally(obj) {
-  const entries = Object.entries(obj || {});
+function sortedTally(obj: AnyObj): AnyObj {
+  const entries = Object.entries(obj || {}) as Array<[string, any]>;
   entries.sort((a, b) => {
-    if (b[1] !== a[1]) return b[1] - a[1];
+    if (Number(b[1]) !== Number(a[1])) return Number(b[1]) - Number(a[1]);
     return String(a[0]).localeCompare(String(b[0]));
   });
   return Object.fromEntries(entries);
@@ -274,7 +276,7 @@ function summarizeRuns(rows) {
   const results = tallyBy(runs, r => String(r.result || 'unknown'));
   const byStrategy = tallyBy(runs, r => String(r.strategy_id || '').trim());
   const byMode = tallyBy(runs, r => String(r.execution_mode || '').trim());
-  const objectiveScorecard = {};
+  const objectiveScorecard: AnyObj = {};
   for (const run of runs) {
     const objectiveId = objectiveIdFromRun(run);
     if (!objectiveId) continue;
@@ -328,7 +330,7 @@ function summarizeRuns(rows) {
     row.latest_ts = String(run.ts || row.latest_ts || '') || row.latest_ts;
   }
   const objectiveScorecardSorted = Object.fromEntries(
-    Object.entries(objectiveScorecard)
+    (Object.entries(objectiveScorecard) as Array<[string, AnyObj]>)
       .map(([objectiveId, row]) => {
         const pulseSamples = Number(row._pulse_score_samples || 0);
         const allocationSamples = Number(row._allocation_samples || 0);
@@ -350,8 +352,8 @@ function summarizeRuns(rows) {
         return [objectiveId, clean];
       })
       .sort((a, b) => {
-        const at = Number(a[1] && a[1].attempts || 0);
-        const bt = Number(b[1] && b[1].attempts || 0);
+        const at = Number((a[1] as AnyObj) && (a[1] as AnyObj).attempts || 0);
+        const bt = Number((b[1] as AnyObj) && (b[1] as AnyObj).attempts || 0);
         if (bt !== at) return bt - at;
         return String(a[0]).localeCompare(String(b[0]));
       })
@@ -422,7 +424,7 @@ function summarizeAutonomyReceipts(rows) {
   let criteriaSynthesizedReceipts = 0;
   const qualityFilterReasons = {};
   const criteriaContractVersions = {};
-  const byObjective = {};
+  const byObjective: AnyObj = {};
 
   for (const rec of receipts) {
     const intent = rec && rec.intent && typeof rec.intent === 'object' ? rec.intent : {};
@@ -486,7 +488,7 @@ function summarizeAutonomyReceipts(rows) {
   }
 
   const byObjectiveSorted = Object.fromEntries(
-    Object.entries(byObjective)
+    (Object.entries(byObjective) as Array<[string, AnyObj]>)
       .map(([id, row]) => [id, {
         total: Number(row.total || 0),
         pass: Number(row.pass || 0),
@@ -498,8 +500,8 @@ function summarizeAutonomyReceipts(rows) {
           : null
       }])
       .sort((a, b) => {
-        const at = Number(a[1] && a[1].total || 0);
-        const bt = Number(b[1] && b[1].total || 0);
+        const at = Number((a[1] as AnyObj) && (a[1] as AnyObj).total || 0);
+        const bt = Number((b[1] as AnyObj) && (b[1] as AnyObj).total || 0);
         if (bt !== at) return bt - at;
         return String(a[0]).localeCompare(String(b[0]));
       })
@@ -576,7 +578,7 @@ function summarizeActuationReceipts(rows) {
   const ok = receipts.filter(r => r && r.ok === true).length;
   const failed = receipts.filter(r => r && r.ok !== true).length;
   const verified = receipts.filter(r => !!(r && r.receipt_contract && r.receipt_contract.verified === true)).length;
-  const byAdapter = {};
+  const byAdapter: AnyObj = {};
   for (const r of receipts) {
     const adapter = String((r && r.adapter) || 'unknown');
     if (!byAdapter[adapter]) byAdapter[adapter] = { total: 0, ok: 0, verified: 0 };
@@ -586,9 +588,9 @@ function summarizeActuationReceipts(rows) {
   }
   const failures = tallyBy(receipts.filter(r => r && r.ok !== true), actuationFailureReason);
   const byAdapterSorted = Object.fromEntries(
-    Object.entries(byAdapter).sort((a, b) => {
-      const bt = Number(b[1] && b[1].total || 0);
-      const at = Number(a[1] && a[1].total || 0);
+    (Object.entries(byAdapter) as Array<[string, AnyObj]>).sort((a, b) => {
+      const bt = Number((b[1] as AnyObj) && (b[1] as AnyObj).total || 0);
+      const at = Number((a[1] as AnyObj) && (a[1] as AnyObj).total || 0);
       if (bt !== at) return bt - at;
       return String(a[0]).localeCompare(String(b[0]));
     })
