@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// @ts-nocheck
 /**
  * systems/security/skill_quarantine.js
  *
@@ -330,4 +329,4 @@ module.exports = {
   verifyPath,
   treeHash
 };
-
+export {};
