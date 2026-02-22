@@ -13,6 +13,7 @@ const {
   recordSystemBudgetUsage,
   writeSystemBudgetDecision,
   migrateSystemBudgetState,
+  evaluateSystemBudgetGuard,
   loadSystemBudgetAutopauseState,
   setSystemBudgetAutopause,
   clearSystemBudgetAutopause
@@ -86,6 +87,56 @@ function main() {
     assert.strictEqual(String(last.type), 'system_budget_decision');
     assert.strictEqual(String(last.decision), 'degrade');
     assert.strictEqual(String(last.reason), 'focus_budget_pressure');
+
+    const priorDays = [
+      '2026-02-14',
+      '2026-02-15',
+      '2026-02-16',
+      '2026-02-17',
+      '2026-02-18',
+      '2026-02-19',
+      '2026-02-20'
+    ];
+    for (const d of priorDays) {
+      recordSystemBudgetUsage({
+        date: d,
+        tokens_est: 100,
+        module: 'baseline',
+        capability: 'sample'
+      }, {
+        state_dir: stateDir,
+        events_path: eventsPath,
+        allow_strategy: false,
+        daily_token_cap: 1000
+      });
+    }
+    const burnGuard = evaluateSystemBudgetGuard({
+      date: day,
+      request_tokens_est: 900
+    }, {
+      state_dir: stateDir,
+      allow_strategy: false,
+      daily_token_cap: 1000
+    });
+    assert.strictEqual(Boolean(burnGuard.hard_stop), true, 'burn-rate guard should hard stop');
+    assert.ok(Array.isArray(burnGuard.hard_stop_reasons) && burnGuard.hard_stop_reasons.includes('burn_rate_exceeded'));
+
+    const monthlyGuard = evaluateSystemBudgetGuard({
+      date: day,
+      request_tokens_est: 100
+    }, {
+      state_dir: stateDir,
+      allow_strategy: false,
+      daily_token_cap: 1000,
+      token_cost_per_1k: 10,
+      monthly_usd_allocation: 1,
+      monthly_credits_floor_pct: 0.2
+    });
+    assert.strictEqual(Boolean(monthlyGuard.hard_stop), true, 'monthly floor guard should hard stop');
+    assert.ok(
+      Array.isArray(monthlyGuard.hard_stop_reasons) && monthlyGuard.hard_stop_reasons.includes('monthly_credits_floor_breached'),
+      'monthly floor guard should report floor breach'
+    );
 
     const legacyDay = '2026-02-20';
     const legacyPath = path.join(stateDir, `${legacyDay}.json`);
