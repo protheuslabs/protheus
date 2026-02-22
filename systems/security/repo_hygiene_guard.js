@@ -22,7 +22,7 @@ const POLICY_PATH = process.env.REPO_HYGIENE_POLICY_PATH
 
 function usage() {
   console.log('Usage:');
-  console.log('  node systems/security/repo_hygiene_guard.js run [--strict] [--staged] [--base-ref=main] [--files=a,b,c] [--allow-ts-pair-drift]');
+  console.log('  node systems/security/repo_hygiene_guard.js run [--strict] [--staged] [--base-ref=main] [--files=a,b,c] [--allow-ts-pair-drift] [--allow-new-js-twins]');
 }
 
 function parseArgs(argv) {
@@ -65,13 +65,26 @@ function loadPolicy() {
   const blockedGlobs = Array.isArray(raw.blocked_globs) ? raw.blocked_globs.map(normalizePath).filter(Boolean) : [];
   const allowPrefixes = Array.isArray(raw.allow_prefixes) ? raw.allow_prefixes.map(normalizePath).filter(Boolean) : [];
   const allowGlobs = Array.isArray(raw.allow_globs) ? raw.allow_globs.map(normalizePath).filter(Boolean) : [];
+  const allowNewJsTwinExact = Array.isArray(raw.allow_new_js_twins)
+    ? raw.allow_new_js_twins.map(normalizePath).filter(Boolean)
+    : [];
+  const allowNewJsTwinPrefixes = Array.isArray(raw.allow_new_js_twin_prefixes)
+    ? raw.allow_new_js_twin_prefixes.map(normalizePath).filter(Boolean)
+    : [];
+  const allowNewJsTwinGlobs = Array.isArray(raw.allow_new_js_twin_globs)
+    ? raw.allow_new_js_twin_globs.map(normalizePath).filter(Boolean)
+    : [];
   return {
     blocked_prefixes: blockedPrefixes,
     blocked_globs: blockedGlobs,
     blocked_regex: blockedGlobs.map(globToRegex),
     allow_prefixes: allowPrefixes,
     allow_globs: allowGlobs,
-    allow_regex: allowGlobs.map(globToRegex)
+    allow_regex: allowGlobs.map(globToRegex),
+    allow_new_js_twin_exact: allowNewJsTwinExact,
+    allow_new_js_twin_prefixes: allowNewJsTwinPrefixes,
+    allow_new_js_twin_globs: allowNewJsTwinGlobs,
+    allow_new_js_twin_regex: allowNewJsTwinGlobs.map(globToRegex)
   };
 }
 
@@ -82,26 +95,50 @@ function runGit(args) {
 }
 
 function changedFiles(args) {
+  return changedFileRows(args).map((row) => row.file);
+}
+
+function normalizeStatus(code) {
+  const s = String(code || '').trim().toUpperCase();
+  if (!s) return 'M';
+  const first = s[0];
+  return /[ACDMRTUX?]/.test(first) ? first : 'M';
+}
+
+function parseNameStatusLines(lines) {
+  return (lines || []).map((line) => {
+    const parts = String(line || '').split('\t');
+    const status = normalizeStatus(parts[0]);
+    const file = normalizePath(parts[parts.length - 1]);
+    return { file, status };
+  }).filter((row) => !!row.file);
+}
+
+function changedFileRows(args) {
   const explicit = String(args.files || '').trim();
   if (explicit) {
-    return explicit.split(',').map(normalizePath).filter(Boolean);
+    return explicit
+      .split(',')
+      .map(normalizePath)
+      .filter(Boolean)
+      .map((file) => ({ file, status: 'M' }));
   }
 
   if (args.staged === true) {
-    return runGit(['diff', '--name-only', '--cached']);
+    return parseNameStatusLines(runGit(['diff', '--name-status', '--cached']));
   }
 
   const baseRef = String(args['base-ref'] || args.base_ref || process.env.GITHUB_BASE_REF || '').trim();
   if (baseRef) {
     const remoteRef = baseRef.startsWith('origin/') ? baseRef : `origin/${baseRef}`;
-    const rows = runGit(['diff', '--name-only', `${remoteRef}...HEAD`]);
+    const rows = parseNameStatusLines(runGit(['diff', '--name-status', `${remoteRef}...HEAD`]));
     if (rows.length) return rows;
   }
 
-  const recent = runGit(['diff', '--name-only', 'HEAD~1..HEAD']);
+  const recent = parseNameStatusLines(runGit(['diff', '--name-status', 'HEAD~1..HEAD']));
   if (recent.length) return recent;
 
-  return runGit(['diff', '--name-only', '--cached']);
+  return parseNameStatusLines(runGit(['diff', '--name-status', '--cached']));
 }
 
 function matchesPrefix(filePath, prefixes) {
@@ -164,13 +201,37 @@ function evaluateTsPairDrift(files, args) {
   return Array.from(new Set(out)).sort();
 }
 
+function evaluateNewJsTwinViolations(rows, policy, args) {
+  if (args['allow-new-js-twins'] === true || String(args.allow_new_js_twins || '').trim() === '1') return [];
+  const out = [];
+  for (const row of rows) {
+    const file = normalizePath(row && row.file);
+    const status = normalizeStatus(row && row.status);
+    if (!file || status !== 'A') continue;
+    if (!inTsPairScope(file)) continue;
+    if (!file.endsWith('.js')) continue;
+    const tsPair = tsPairPath(file);
+    if (!tsPair || !tsPair.endsWith('.ts')) continue;
+    const tsPairAbs = path.join(ROOT, tsPair);
+    if (!fs.existsSync(tsPairAbs)) continue;
+    const allowed = (policy.allow_new_js_twin_exact || []).includes(file)
+      || matchesPrefix(file, policy.allow_new_js_twin_prefixes || [])
+      || matchesRegex(file, policy.allow_new_js_twin_regex || []);
+    if (allowed) continue;
+    out.push(`${file}::new_js_twin_requires_allowlist:${tsPair}`);
+  }
+  return Array.from(new Set(out)).sort();
+}
+
 function cmdRun(args) {
   const policy = loadPolicy();
-  const files = changedFiles(args);
+  const rows = changedFileRows(args);
+  const files = rows.map((row) => row.file);
   const violations = evaluate(files, policy);
   const tsPairDrift = evaluateTsPairDrift(files, args);
+  const newJsTwins = evaluateNewJsTwinViolations(rows, policy, args);
   const strict = args.strict === true;
-  const total = violations.length + tsPairDrift.length;
+  const total = violations.length + tsPairDrift.length + newJsTwins.length;
   const out = {
     ok: total === 0,
     type: 'repo_hygiene_guard',
@@ -178,7 +239,8 @@ function cmdRun(args) {
     checked_files: files.length,
     violations: total,
     violating_files: violations,
-    ts_pair_drift_violations: tsPairDrift
+    ts_pair_drift_violations: tsPairDrift,
+    new_js_twin_violations: newJsTwins
   };
   process.stdout.write(JSON.stringify(out) + '\n');
   if (strict && total > 0) process.exit(1);

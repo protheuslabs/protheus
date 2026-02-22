@@ -24,5 +24,8 @@
     "state/security/break_glass.jsonl",
     "state/spine/runs/"
   ],
-  "allow_globs": []
+  "allow_globs": [],
+  "allow_new_js_twins": [],
+  "allow_new_js_twin_prefixes": [],
+  "allow_new_js_twin_globs": []
 }
