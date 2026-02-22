@@ -14,6 +14,7 @@
  */
 
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
 
@@ -29,6 +30,16 @@ const STATE_PATH = process.env.STARTUP_ATTESTATION_STATE_PATH
 const AUDIT_PATH = process.env.STARTUP_ATTESTATION_AUDIT_PATH
   ? path.resolve(process.env.STARTUP_ATTESTATION_AUDIT_PATH)
   : path.join(ROOT, 'state', 'security', 'startup_attestation_audit.jsonl');
+const DEFAULT_SECRETS_DIR = process.env.SECRET_BROKER_SECRETS_DIR
+  ? path.resolve(process.env.SECRET_BROKER_SECRETS_DIR)
+  : path.join(os.homedir(), '.config', 'protheus', 'secrets');
+const SECRET_FILE_CANDIDATES = [
+  process.env.STARTUP_ATTESTATION_KEY_PATH ? path.resolve(process.env.STARTUP_ATTESTATION_KEY_PATH) : '',
+  process.env.SECRET_BROKER_LOCAL_KEY_PATH ? path.resolve(process.env.SECRET_BROKER_LOCAL_KEY_PATH) : '',
+  path.join(DEFAULT_SECRETS_DIR, 'startup_attestation_key.txt'),
+  path.join(DEFAULT_SECRETS_DIR, 'secret_broker_key.txt'),
+  path.join(ROOT, 'state', 'security', 'secret_broker_key.txt')
+].filter(Boolean);
 
 /**
  * @typedef {{
@@ -87,6 +98,15 @@ function writeJsonAtomic(filePath, obj) {
   fs.renameSync(tmp, filePath);
 }
 
+function readTextSafe(filePath) {
+  try {
+    if (!fs.existsSync(filePath)) return '';
+    return String(fs.readFileSync(filePath, 'utf8') || '').trim();
+  } catch {
+    return '';
+  }
+}
+
 function appendJsonl(filePath, row) {
   ensureDir(path.dirname(filePath));
   fs.appendFileSync(filePath, JSON.stringify(row) + '\n', 'utf8');
@@ -122,7 +142,15 @@ function loadPolicy() {
 }
 
 function resolveSecret() {
-  return String(process.env.STARTUP_ATTESTATION_KEY || '').trim();
+  const envPrimary = String(process.env.STARTUP_ATTESTATION_KEY || '').trim();
+  if (envPrimary) return envPrimary;
+  const envShared = String(process.env.SECRET_BROKER_KEY || '').trim();
+  if (envShared) return envShared;
+  for (const fp of SECRET_FILE_CANDIDATES) {
+    const key = readTextSafe(fp);
+    if (key) return key;
+  }
+  return '';
 }
 
 function hashCriticalPaths(policy) {
