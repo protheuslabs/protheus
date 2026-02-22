@@ -58,6 +58,10 @@ const FIT_STOPWORDS = new Set([
 const ACTION_VERB_RE = /\b(build|implement|fix|add|create|generate|optimize|refactor|automate|ship|deploy|test|measure|instrument|reduce|increase|stabilize)\b/i;
 const OPPORTUNITY_MARKER_RE = /\b(opportunity|freelance|job|jobs|hiring|contract|contractor|gig|client|rfp|request for proposal|seeking|looking for)\b/i;
 const META_COORDINATION_RE = /\b(review|prioritize|triage|health\s*check|high\s*leverage)\b/i;
+const META_NOOP_INTENT_RE = /\b(review|prioritize|triage|health\s*check|status|report|assess|analy[sz]e|audit|investigate|monitor)\b/i;
+const SELF_REFERENTIAL_SCOPE_RE = /\b(proposals?|proposal_queue|queue|backlog|automation\s+health|system\s+health)\b/i;
+const CONCRETE_DELTA_RE = /\b(update|edit|patch|modify|create|add|remove|delete|migrate|wire|instrument|implement|set|configure|fix|ship|commit|write)\b/i;
+const META_MEASURABLE_MIN_COUNT = 2;
 const CONCRETE_TARGET_RE = /\b(file|script|collector|parser|endpoint|model|config|test|hook|queue|ledger|registry|adapter|workflow|routing|transport|fallback|sensor|retry|dns|network|probe|api|cache)\b/i;
 const EXPLAINER_TITLE_RE = /^(why|what|how)\b/i;
 const GENERIC_VALIDATION_RE = /\b(extract one concrete build\/change task from source|define measurable success check|route a dry-run execution plan)\b/i;
@@ -718,8 +722,9 @@ function hardenProposalSuccessCriteria(proposal, outcomePolicy) {
   const allowFallback = ACTION_VERB_RE.test(normalizeText(p.title))
     || OPPORTUNITY_MARKER_RE.test(textBlob)
     || CONCRETE_TARGET_RE.test(textBlob);
+  const allowHardening = allowFallback && !isMetaNoopCandidate(p, textBlob);
 
-  if (required && allowFallback && rowsOut.length < criteriaPolicy.min_count) {
+  if (required && allowHardening && rowsOut.length < criteriaPolicy.min_count) {
     for (const row of CRITERIA_HARDENING_ROWS) {
       if (rowsOut.length >= criteriaPolicy.min_count) break;
       const exists = rowsOut.some((it) => it.metric === row.metric);
@@ -912,6 +917,29 @@ function proposalTextBlob(proposal) {
   if (Array.isArray(meta.normalized_archetypes)) bits.push(meta.normalized_archetypes.join(' '));
   if (Array.isArray(meta.topics)) bits.push(meta.topics.join(' '));
   return normalizeFitText(bits.filter(Boolean).join(' '));
+}
+
+function hasConcreteDeltaSignal(proposal) {
+  const p = proposal || {};
+  const nextCmd = normalizeText(p.suggested_next_command);
+  const validation = Array.isArray(p.validation) ? p.validation.map((v) => normalizeText(v)).filter(Boolean) : [];
+  const actionSpecBlob = p.action_spec && typeof p.action_spec === 'object'
+    ? normalizeFitText(JSON.stringify(p.action_spec))
+    : '';
+  const blob = normalizeFitText([nextCmd, validation.join(' '), actionSpecBlob].join(' '));
+  if (!blob) return false;
+  return CONCRETE_DELTA_RE.test(blob) && CONCRETE_TARGET_RE.test(blob);
+}
+
+function isMetaNoopCandidate(proposal, blobHint) {
+  const p = proposal || {};
+  const title = normalizeText(p.title).replace(/^\[[^\]]+\]\s*/g, '');
+  const summary = normalizeText(p.summary);
+  const blob = normalizeFitText([blobHint || '', title, summary].join(' '));
+  if (!blob) return false;
+  const metaIntent = META_COORDINATION_RE.test(blob) || META_NOOP_INTENT_RE.test(blob);
+  const selfReferential = SELF_REFERENTIAL_SCOPE_RE.test(blob);
+  return metaIntent || selfReferential;
 }
 
 function assessQuality(proposal, eye, t) {
@@ -1112,6 +1140,8 @@ function assessActionability(proposal, directiveFitScore, relevanceScore, outcom
   const hasOpportunity = OPPORTUNITY_MARKER_RE.test(textBlob);
   const hasConcreteTarget = CONCRETE_TARGET_RE.test(textBlob);
   const isMetaCoordination = META_COORDINATION_RE.test(textBlob);
+  const isMetaNoop = isMetaNoopCandidate(p, textBlob);
+  const hasConcreteDelta = hasConcreteDeltaSignal(p);
   const isExplainer = EXPLAINER_TITLE_RE.test(title.toLowerCase());
   const genericRouteTask = GENERIC_ROUTE_TASK_RE.test(nextCmd);
   const criteriaRows = parseSuccessCriteriaRows(p);
@@ -1173,6 +1203,14 @@ function assessActionability(proposal, directiveFitScore, relevanceScore, outcom
     score -= 26;
     reasons.push('meta_coordination_without_concrete_target');
   }
+  if (isMetaNoop && !hasConcreteDelta) {
+    score -= 24;
+    reasons.push('meta_missing_concrete_delta');
+  }
+  if (isMetaNoop && weightedCriteriaCountValue < META_MEASURABLE_MIN_COUNT) {
+    score -= 16;
+    reasons.push('meta_missing_measurable_outcome');
+  }
   if (/\bproposals?\b/.test(textBlob) && !hasConcreteTarget && !hasOpportunity) {
     score -= 12;
     reasons.push('proposal_recursion_without_target');
@@ -1225,17 +1263,19 @@ function admission(meta, eye, risk, t, proposal, strategy, outcomePolicy) {
   const hasOpportunity = OPPORTUNITY_MARKER_RE.test(blob);
   const hasConcreteTarget = CONCRETE_TARGET_RE.test(blob);
   const isMetaCoordination = META_COORDINATION_RE.test(blob);
+  const isMetaNoop = isMetaNoopCandidate(proposal, blob);
+  const hasConcreteDelta = hasConcreteDeltaSignal(proposal);
   const criteriaPolicy = successCriteriaRequirement(outcomePolicy);
   const criteriaExempt = isSuccessCriteriaExemptProposal(type, criteriaPolicy);
+  const measuredCriteriaCount = Number(meta && meta.success_criteria_weighted_count != null
+    ? meta.success_criteria_weighted_count
+    : meta.success_criteria_measurable_count || 0);
   const criteriaRequired = criteriaPolicy.required && !!(
     normalizeText(proposal && proposal.suggested_next_command)
     || (proposal && proposal.action_spec && typeof proposal.action_spec === 'object')
   ) && !criteriaExempt;
   if (criteriaRequired) {
-    const measured = Number(meta && meta.success_criteria_weighted_count != null
-      ? meta.success_criteria_weighted_count
-      : meta.success_criteria_measurable_count || 0);
-    if (measured < criteriaPolicy.min_count) reasons.push('success_criteria_missing');
+    if (measuredCriteriaCount < criteriaPolicy.min_count) reasons.push('success_criteria_missing');
   }
   if (!strategyAllowsProposalType(strategy, type)) reasons.push('strategy_type_filtered');
   const maxDepth = strategy
@@ -1263,6 +1303,8 @@ function admission(meta, eye, risk, t, proposal, strategy, outcomePolicy) {
   }
   if (isMetaCoordination && !hasConcreteTarget) reasons.push('meta_proposal_non_actionable');
   if (/\bproposals?\b/.test(blob) && !hasConcreteTarget && !hasOpportunity) reasons.push('proposal_recursion_non_actionable');
+  if (isMetaNoop && !hasConcreteDelta) reasons.push('meta_missing_concrete_delta');
+  if (isMetaNoop && measuredCriteriaCount < META_MEASURABLE_MIN_COUNT) reasons.push('meta_missing_measurable_outcome');
 
   return {
     eligible: reasons.length === 0,

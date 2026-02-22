@@ -332,6 +332,45 @@ function run() {
       !((measurableRes.proposal.meta.admission_preview || {}).blocked_by || []).includes('success_criteria_missing'),
       'measurable structured criteria should not trigger success_criteria_missing blocker'
     );
+    const metaNoopRes = script.enrichOne({
+      id: 'PMETA_NOOP',
+      type: 'collector_remediation',
+      title: 'Review system automation health and prioritize one high leverage improvement',
+      risk: 'low',
+      evidence: [{ evidence_ref: 'eye:local_state_fallback', match: 'proposal backlog unchanged' }],
+      validation: ['Review proposal status and report findings'],
+      suggested_next_command: 'node systems/routing/route_execute.js --task=\"Review automation health and triage proposals\" --dry-run'
+    }, {
+      eyes: new Map(),
+      directiveProfile: { available: false, active_directive_ids: [] },
+      directiveObjectiveIds: ['T1_ALPHA_OBJECTIVE'],
+      strategy: null,
+      thresholds: {
+        min_signal_quality: 35,
+        min_sensory_signal_score: 35,
+        min_sensory_relevance_score: 35,
+        min_directive_fit: 20,
+        min_actionability_score: 35,
+        min_composite_eligibility: 45,
+        min_eye_score_ema: 35
+      },
+      outcomePolicy: {}
+    });
+    assert.ok(metaNoopRes && metaNoopRes.proposal && metaNoopRes.proposal.meta, 'meta-noop proposal should be enriched');
+    assert.strictEqual(
+      (metaNoopRes.proposal.meta.admission_preview || {}).eligible,
+      false,
+      'meta-noop proposal should be blocked'
+    );
+    const metaBlocked = (metaNoopRes.proposal.meta.admission_preview || {}).blocked_by || [];
+    assert.ok(
+      Array.isArray(metaBlocked) && metaBlocked.includes('meta_missing_concrete_delta'),
+      'meta-noop proposal should require a concrete delta'
+    );
+    assert.ok(
+      Array.isArray(metaBlocked) && metaBlocked.includes('meta_missing_measurable_outcome'),
+      'meta-noop proposal should require measurable outcome evidence'
+    );
 
     assert.ok(high.meta && high.meta.admission_preview && high.meta.admission_preview.eligible === false, 'high-risk proposal should be blocked');
     assert.ok(
