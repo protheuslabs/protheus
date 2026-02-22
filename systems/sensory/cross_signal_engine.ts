@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// @ts-nocheck
 'use strict';
 
 /**
@@ -58,7 +57,7 @@ function clamp(n, lo, hi, fallback) {
 }
 
 function parseArgs(argv) {
-  const out = { _: [] };
+  const out = { _: [] } as Record<string, any>;
   for (const arg of argv) {
     if (!arg.startsWith('--')) {
       out._.push(arg);
@@ -217,8 +216,9 @@ function dailyCounts(obs, dates) {
 }
 
 function analyze(opts = {}) {
-  const dateStr = /^\d{4}-\d{2}-\d{2}$/.test(String(opts.dateStr || '')) ? String(opts.dateStr) : todayStr();
-  const lookbackDays = clamp(opts.lookbackDays, 3, 30, 7);
+  const o = (opts && typeof opts === 'object' ? opts : {}) as Record<string, any>;
+  const dateStr = /^\d{4}-\d{2}-\d{2}$/.test(String(o.dateStr || '')) ? String(o.dateStr) : todayStr();
+  const lookbackDays = clamp(o.lookbackDays, 3, 30, 7);
   const dates = datesInWindow(lookbackDays, dateStr);
   const baselineDates = dates.slice(0, -1);
   const topicObs = collectObservations(dates);
@@ -416,3 +416,4 @@ module.exports = {
 if (require.main === module) {
   main();
 }
+export {};
