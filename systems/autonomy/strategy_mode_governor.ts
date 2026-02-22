@@ -24,6 +24,7 @@ const {
   strategyExecutionMode,
   strategyPromotionPolicy
 } = require('../../lib/strategy_resolver.js');
+const { queueForApproval, loadQueue } = require('../../lib/approval_gate.js');
 const { loadOutcomeFitnessPolicy } = require('../../lib/outcome_fitness.js');
 const { summarizeForDate } = require('./receipt_summary.js');
 const { evaluateReadiness } = require('./strategy_readiness.js');
@@ -79,6 +80,7 @@ const MODE_GOVERNOR_SPC_BASELINE_MIN_DAYS = Number(process.env.AUTONOMY_MODE_GOV
 const MODE_GOVERNOR_SPC_SIGMA = Number(process.env.AUTONOMY_MODE_GOVERNOR_SPC_SIGMA || 3);
 const MODE_GOVERNOR_MIN_ESCALATE_STREAK = Number(process.env.AUTONOMY_MODE_GOVERNOR_MIN_ESCALATE_STREAK || 2);
 const MODE_GOVERNOR_MIN_DEMOTE_STREAK = Number(process.env.AUTONOMY_MODE_GOVERNOR_MIN_DEMOTE_STREAK || 1);
+const MODE_GOVERNOR_QUEUE_DUAL_CONTROL = String(process.env.AUTONOMY_MODE_GOVERNOR_QUEUE_DUAL_CONTROL || '1') !== '0';
 
 function usage() {
   console.log('Usage:');
@@ -348,8 +350,8 @@ function canaryMetrics(summary, policy, qualityLock) {
   const criteriaLegacyReceipts = Number(summary?.receipts?.autonomy?.success_criteria_receipts || 0);
   const criteriaLegacyPassRate = Number(summary?.receipts?.autonomy?.success_criteria_receipt_pass_rate || 0);
   const criteriaQualityInsufficientReceipts = Number(
-    summary?.receipts?.autonomy?.success_criteria_quality_filtered_receipts
-    || summary?.receipts?.autonomy?.success_criteria_quality_insufficient_receipts
+    summary?.receipts?.autonomy?.success_criteria_quality_insufficient_receipts
+    || summary?.receipts?.autonomy?.success_criteria_quality_filtered_receipts
     || 0
   );
   const criteriaQualityInsufficientRateRaw = Number(summary?.receipts?.autonomy?.success_criteria_quality_insufficient_rate);
@@ -420,15 +422,15 @@ function canaryMetrics(summary, policy, qualityLock) {
     },
     {
       name: 'success_criteria_quality_insufficient_rate',
-      pass: useQualityCriteria
+      pass: forceQualityCriteria
         ? criteriaQualityInsufficientRate <= policy.canary_max_success_criteria_quality_insufficient_rate
         : true,
-      value: useQualityCriteria
+      value: forceQualityCriteria
         ? Number(criteriaQualityInsufficientRate.toFixed(3))
         : null,
-      target: useQualityCriteria
+      target: forceQualityCriteria
         ? `<=${policy.canary_max_success_criteria_quality_insufficient_rate}`
-        : 'n/a(legacy_fallback)'
+        : 'n/a(pre_fallback_retirement)'
     },
     {
       name: 'quality_lock_active',
@@ -521,6 +523,56 @@ function runPolicyRootAuthorize({ scope, target, leaseToken, approvalNote, sourc
     payload,
     stderr,
     stdout
+  };
+}
+
+function sanitizeToken(v) {
+  return String(v || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'unknown';
+}
+
+function dualControlActionId(strategyId, fromMode, toMode) {
+  const sid = sanitizeToken(strategyId).slice(0, 32);
+  const from = sanitizeToken(fromMode).slice(0, 16);
+  const to = sanitizeToken(toMode).slice(0, 16);
+  return `act_modegov_${sid}_${from}_to_${to}`;
+}
+
+function queueDualControlApprovalRequest({ strategy, fromMode, toMode, requiredCommand }) {
+  const actionId = dualControlActionId(strategy && strategy.id, fromMode, toMode);
+  if (!MODE_GOVERNOR_QUEUE_DUAL_CONTROL) {
+    return { queued: false, enabled: false, action_id: actionId };
+  }
+  let pendingEntry = null;
+  try {
+    const q = loadQueue();
+    const pending = q && Array.isArray(q.pending) ? q.pending : [];
+    pendingEntry = pending.find((e) => String(e && e.action_id || '') === actionId) || null;
+  } catch {}
+
+  if (pendingEntry) {
+    return {
+      queued: false,
+      deduped: true,
+      enabled: true,
+      action_id: actionId,
+      status: String(pendingEntry.status || 'PENDING')
+    };
+  }
+
+  const summary = `Promote strategy mode ${String(strategy && strategy.id || 'unknown')} from ${String(fromMode || 'unknown')} to ${String(toMode || 'unknown')}`;
+  const reason = `Dual-control required for strategy mode escalation. Run: ${String(requiredCommand || '').slice(0, 300)}`;
+  const queued = queueForApproval({
+    action_id: actionId,
+    directive_id: 'T0_invariants',
+    type: 'strategy_mode_escalation',
+    summary
+  }, reason);
+  return {
+    queued: true,
+    deduped: false,
+    enabled: true,
+    action_id: actionId,
+    status: String(queued && queued.status || 'PENDING')
   };
 }
 
@@ -867,6 +919,13 @@ function cmdRun(args) {
   }
 
   if (isEscalation(fromMode, transition.to_mode) && !MODE_GOVERNOR_ALLOW_AUTO_ESCALATION) {
+    const requiredCommand = `node systems/autonomy/strategy_mode.js set --mode=${transition.to_mode} --approval-note="<reason>" --approver-id=<id> --second-approver-id=<id> --second-approval-note="<reason>"`;
+    const approvalQueue = queueDualControlApprovalRequest({
+      strategy,
+      fromMode,
+      toMode: transition.to_mode,
+      requiredCommand
+    });
     const evt = {
       ts: nowIso(),
       type: 'strategy_mode_auto_blocked',
@@ -875,7 +934,8 @@ function cmdRun(args) {
       from_mode: fromMode,
       to_mode: transition.to_mode,
       reason: 'dual_control_required_for_escalation',
-      required_command: `node systems/autonomy/strategy_mode.js set --mode=${transition.to_mode} --approval-note="<reason>" --approver-id=<id> --second-approver-id=<id> --second-approval-note="<reason>"`,
+      required_command: requiredCommand,
+      approval_queue: approvalQueue,
       governor_policy: policy,
       readiness: status.readiness,
       canary: status.canary,
