@@ -827,6 +827,218 @@
         }
       },
       "uid": "h3jrxtvj9drqio4037s5k5pd"
+    },
+    {
+      "id": "execute_bounded_proposal_prp_28492a3aa16ac61f__e",
+      "name": "Execute bounded proposal PRP-28492a3aa16ac61f (external_intel): No-Code SaaS MVP",
+      "description": "Auto-crystallized from repeated task: Execute bounded proposal PRP-28492a3aa16ac61f (external_intel): No-Code SaaS MVP Builder — Freelance Opportunity",
+      "created_at": "2026-02-21T18:13:41.583Z",
+      "last_used_at": "2026-02-21T18:13:41.625Z",
+      "uses_30d": 1,
+      "lifetime_uses": 1,
+      "success_rate": 0.5,
+      "avg_tokens_in": null,
+      "avg_tokens_out": null,
+      "estimated_tokens_saved": 400,
+      "rollback_plan": "Revert generated routine + registry entry in one commit.",
+      "test_plan": "Run node habits/scripts/run_habit.js --id execute_bounded_proposal_prp_28492a3aa16ac61f__e --json '{}' and verify stable output.",
+      "idempotent": true,
+      "inputs_schema": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "task": {
+            "type": "string",
+            "description": "Source task text"
+          },
+          "intent_key": {
+            "type": "string",
+            "description": "Normalized intent key"
+          },
+          "source": {
+            "type": "string",
+            "description": "Route source marker"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Optional free-form notes"
+          }
+        }
+      },
+      "entrypoint": "habits/routines/execute_bounded_proposal_prp_28492a3aa16ac61f__e.js",
+      "permissions": {
+        "network": "deny",
+        "write_paths_allowlist": [
+          "habits/logs/*"
+        ],
+        "exec_allowlist": []
+      },
+      "status": "candidate",
+      "outcome": {
+        "last_outcome_score": 1,
+        "last_delta_value": null,
+        "outcome_unit": null
+      },
+      "governance": {
+        "state": "candidate",
+        "promote": {
+          "min_success_runs": 3,
+          "min_outcome_score": 0.7,
+          "min_effect_value": 1,
+          "effect_units_allowlist": [
+            "ms_saved",
+            "tokens_saved",
+            "reported_delta"
+          ]
+        },
+        "demote": {
+          "max_consecutive_errors": 2,
+          "min_outcome_score": 0.4,
+          "cooldown_minutes": 1440
+        },
+        "pinned": false,
+        "consecutive_errors": 0
+      },
+      "metrics": {
+        "baseline": {
+          "avg_duration_ms": null,
+          "avg_tokens_est": null,
+          "avg_error_rate": null
+        },
+        "rolling": {
+          "avg_duration_ms_30d": 1,
+          "avg_tokens_est_30d": null,
+          "error_rate_30d": 0,
+          "window_runs": [
+            {
+              "duration_ms": 1,
+              "success": true,
+              "ts": 1771697621625
+            }
+          ]
+        }
+      },
+      "provenance": {
+        "source": "repeat_trigger",
+        "created_by": "habit_crystallizer",
+        "created_at": "2026-02-21T18:13:41.583Z",
+        "intent_key": "execute_bounded_proposal_prp-28492a3aa16ac61f_(external_intel):_no-code_saas_mvp_builder_—_freelance_opportunity",
+        "trigger_metrics": {
+          "repeats_14d": 6,
+          "tokens_est": 800,
+          "errors_30d": 0,
+          "which_met": [
+            "A"
+          ]
+        }
+      },
+      "uid": "h4qhnc7wjpqfohwy489c734u"
+    },
+    {
+      "id": "execute_bounded_proposal_csg_3c7677ecc41e6fba__c",
+      "name": "Execute bounded proposal CSG-3c7677ecc41e6fba (cross_signal_opportunity): [Cross",
+      "description": "Auto-crystallized from repeated task: Execute bounded proposal CSG-3c7677ecc41e6fba (cross_signal_opportunity): [Cross-Signal] Topic \"automation\" converging across 4 eyes",
+      "created_at": "2026-02-21T18:50:49.439Z",
+      "last_used_at": "2026-02-21T18:50:49.534Z",
+      "uses_30d": 1,
+      "lifetime_uses": 1,
+      "success_rate": 0.5,
+      "avg_tokens_in": null,
+      "avg_tokens_out": null,
+      "estimated_tokens_saved": 700,
+      "rollback_plan": "Revert generated routine + registry entry in one commit.",
+      "test_plan": "Run node habits/scripts/run_habit.js --id execute_bounded_proposal_csg_3c7677ecc41e6fba__c --json '{}' and verify stable output.",
+      "idempotent": true,
+      "inputs_schema": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "task": {
+            "type": "string",
+            "description": "Source task text"
+          },
+          "intent_key": {
+            "type": "string",
+            "description": "Normalized intent key"
+          },
+          "source": {
+            "type": "string",
+            "description": "Route source marker"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Optional free-form notes"
+          }
+        }
+      },
+      "entrypoint": "habits/routines/execute_bounded_proposal_csg_3c7677ecc41e6fba__c.js",
+      "permissions": {
+        "network": "deny",
+        "write_paths_allowlist": [
+          "habits/logs/*"
+        ],
+        "exec_allowlist": []
+      },
+      "status": "candidate",
+      "outcome": {
+        "last_outcome_score": 1,
+        "last_delta_value": null,
+        "outcome_unit": null
+      },
+      "governance": {
+        "state": "candidate",
+        "promote": {
+          "min_success_runs": 3,
+          "min_outcome_score": 0.7,
+          "min_effect_value": 1,
+          "effect_units_allowlist": [
+            "ms_saved",
+            "tokens_saved",
+            "reported_delta"
+          ]
+        },
+        "demote": {
+          "max_consecutive_errors": 2,
+          "min_outcome_score": 0.4,
+          "cooldown_minutes": 1440
+        },
+        "pinned": false,
+        "consecutive_errors": 0
+      },
+      "metrics": {
+        "baseline": {
+          "avg_duration_ms": null,
+          "avg_tokens_est": null,
+          "avg_error_rate": null
+        },
+        "rolling": {
+          "avg_duration_ms_30d": 2,
+          "avg_tokens_est_30d": null,
+          "error_rate_30d": 0,
+          "window_runs": [
+            {
+              "duration_ms": 2,
+              "success": true,
+              "ts": 1771699849534
+            }
+          ]
+        }
+      },
+      "provenance": {
+        "source": "repeat_trigger",
+        "created_by": "habit_crystallizer",
+        "created_at": "2026-02-21T18:50:49.439Z",
+        "intent_key": "execute_bounded_proposal_csg-3c7677ecc41e6fba_(cross_signal_opportunity):_[cross-signal]_topic_<str>_converging_across_4_eyes",
+        "trigger_metrics": {
+          "repeats_14d": 11,
+          "tokens_est": 1400,
+          "errors_30d": 0,
+          "which_met": [
+            "A"
+          ]
+        }
+      },
+      "uid": "hwkq578tk525s43bsc156021"
     }
   ]
 }

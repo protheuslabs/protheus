@@ -1,0 +1,3 @@
+{"ts":"2026-02-21T21:45:44.957Z","type":"backup_integrity_check","ok":true,"strict":false,"checked_channels":2,"failed_channels":0,"failed_required_channels":0}
+{"ts":"2026-02-22T00:01:51.990Z","type":"backup_integrity_check","ok":true,"strict":false,"checked_channels":2,"failed_channels":0,"failed_required_channels":0}
+{"ts":"2026-02-22T05:53:04.496Z","type":"backup_integrity_check","ok":true,"strict":false,"checked_channels":2,"failed_channels":0,"failed_required_channels":0}

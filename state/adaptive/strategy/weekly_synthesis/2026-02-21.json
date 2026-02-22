@@ -1,0 +1,224 @@
+{
+  "ok": true,
+  "type": "weekly_strategy_synthesis",
+  "ts": "2026-02-21T21:45:42.771Z",
+  "date": "2026-02-21",
+  "days": 7,
+  "write": true,
+  "date_range": {
+    "from": "2026-02-15",
+    "to": "2026-02-21"
+  },
+  "summary": {
+    "totals": {
+      "outcomes": 15,
+      "proposal_types": 3,
+      "shipped": 8,
+      "no_change": 7,
+      "rejected": 0,
+      "failed": 0
+    },
+    "by_proposal_type": [
+      {
+        "proposal_type": "cross_signal_opportunity",
+        "total": 1,
+        "shipped": 1,
+        "no_change": 0,
+        "rejected": 0,
+        "failed": 0,
+        "other": 0,
+        "source_eyes": {
+          "cross_signal_engine": 1
+        },
+        "shipped_rate": 1,
+        "fail_rate": 0,
+        "no_change_rate": 0,
+        "score": 100
+      },
+      {
+        "proposal_type": "unknown",
+        "total": 3,
+        "shipped": 2,
+        "no_change": 1,
+        "rejected": 0,
+        "failed": 0,
+        "other": 0,
+        "source_eyes": {
+          "unknown_eye": 3
+        },
+        "shipped_rate": 0.667,
+        "fail_rate": 0,
+        "no_change_rate": 0.333,
+        "score": 60.04
+      },
+      {
+        "proposal_type": "external_intel",
+        "total": 11,
+        "shipped": 5,
+        "no_change": 6,
+        "rejected": 0,
+        "failed": 0,
+        "other": 0,
+        "source_eyes": {
+          "hn_frontpage": 5,
+          "medium_com": 2,
+          "upwork_gigs": 2,
+          "local_state_fallback": 1,
+          "x_trends": 1
+        },
+        "shipped_rate": 0.455,
+        "fail_rate": 0,
+        "no_change_rate": 0.545,
+        "score": 34.6
+      }
+    ],
+    "winners": [
+      {
+        "proposal_type": "unknown",
+        "total": 3,
+        "shipped": 2,
+        "no_change": 1,
+        "rejected": 0,
+        "failed": 0,
+        "other": 0,
+        "source_eyes": {
+          "unknown_eye": 3
+        },
+        "shipped_rate": 0.667,
+        "fail_rate": 0,
+        "no_change_rate": 0.333,
+        "score": 60.04
+      }
+    ],
+    "losers": [],
+    "recommended_weight_updates": [
+      {
+        "proposal_type": "unknown",
+        "delta": 0.1,
+        "reason": "high_ship_rate"
+      }
+    ],
+    "trace": [
+      {
+        "ts": "2026-02-17T15:24:12.124Z",
+        "proposal_id": "EYE-0ec67010b50d20a5",
+        "proposal_type": "unknown",
+        "outcome": "shipped",
+        "source_eye": "unknown_eye",
+        "evidence_ref": "eye:moltbook_feed commit:e90d713"
+      },
+      {
+        "ts": "2026-02-17T15:24:16.770Z",
+        "proposal_id": "EYE-d0a0582d2645a0b5",
+        "proposal_type": "unknown",
+        "outcome": "no_change",
+        "source_eye": "unknown_eye",
+        "evidence_ref": "eye:moltbook_feed note:interesting-but-defer"
+      },
+      {
+        "ts": "2026-02-17T19:22:40.921Z",
+        "proposal_id": "EYE-8f7a9b75291637f0",
+        "proposal_type": "unknown",
+        "outcome": "shipped",
+        "source_eye": "unknown_eye",
+        "evidence_ref": "eye:moltbook_feed commit:33e06f7"
+      },
+      {
+        "ts": "2026-02-18T07:19:20.941Z",
+        "proposal_id": "EYE-8e2312aaef07134e",
+        "proposal_type": "external_intel",
+        "outcome": "no_change",
+        "source_eye": "x_trends",
+        "evidence_ref": "eye:x_trends auto:autonomy manual"
+      },
+      {
+        "ts": "2026-02-18T07:19:26.487Z",
+        "proposal_id": "EYE-169f927379b8035b",
+        "proposal_type": "external_intel",
+        "outcome": "no_change",
+        "source_eye": "hn_frontpage",
+        "evidence_ref": "eye:hn_frontpage auto:autonomy manual"
+      },
+      {
+        "ts": "2026-02-18T07:56:42.291Z",
+        "proposal_id": "EYE-33cdb9639dd61b51",
+        "proposal_type": "external_intel",
+        "outcome": "shipped",
+        "source_eye": "hn_frontpage",
+        "evidence_ref": "eye:hn_frontpage auto:autonomy proposed_habit"
+      },
+      {
+        "ts": "2026-02-18T08:04:09.976Z",
+        "proposal_id": "EYE-33cdb9639dd61b51",
+        "proposal_type": "external_intel",
+        "outcome": "no_change",
+        "source_eye": "hn_frontpage",
+        "evidence_ref": "eye:hn_frontpage auto:autonomy dod_fail:propose_habit_not_counted_as_shipped"
+      },
+      {
+        "ts": "2026-02-18T08:13:36.291Z",
+        "proposal_id": "EYE-5db7d9e470de1df6",
+        "proposal_type": "external_intel",
+        "outcome": "no_change",
+        "source_eye": "hn_frontpage",
+        "evidence_ref": "eye:hn_frontpage auto:autonomy dod_fail:propose_habit_not_counted_as_shipped"
+      },
+      {
+        "ts": "2026-02-18T08:14:25.255Z",
+        "proposal_id": "EYE-8768e72dacc5855f",
+        "proposal_type": "external_intel",
+        "outcome": "no_change",
+        "source_eye": "hn_frontpage",
+        "evidence_ref": "eye:hn_frontpage auto:autonomy dod_fail:propose_habit_not_counted_as_shipped"
+      },
+      {
+        "ts": "2026-02-20T08:56:34.390Z",
+        "proposal_id": "EYE-edb4c560e0b6aef6",
+        "proposal_type": "external_intel",
+        "outcome": "no_change",
+        "source_eye": "local_state_fallback",
+        "evidence_ref": "proposal:EYE-edb4c560e0b6aef6 eye:local_state_fallback receipt:auto_1771577791759_EYE-edb4c560e0b6aef6 auto:autonomy dod_fail:propose_habit_not_counted_as_shipped"
+      },
+      {
+        "ts": "2026-02-20T20:33:03.903Z",
+        "proposal_id": "PRP-b422f9b8183ba4d0",
+        "proposal_type": "external_intel",
+        "outcome": "shipped",
+        "source_eye": "upwork_gigs",
+        "evidence_ref": "proposal:PRP-b422f9b8183ba4d0 eye:upwork_gigs receipt:auto_1771619580707_PRP-b422f9b8183ba4d0 auto:autonomy dod_pass:habit_log_verified"
+      },
+      {
+        "ts": "2026-02-20T22:59:02.304Z",
+        "proposal_id": "PRP-9eca862955cf4462",
+        "proposal_type": "external_intel",
+        "outcome": "shipped",
+        "source_eye": "medium_com",
+        "evidence_ref": "proposal:PRP-9eca862955cf4462 eye:medium_com receipt:auto_1771628338422_PRP-9eca862955cf4462 auto:autonomy dod_pass:habit_log_verified"
+      },
+      {
+        "ts": "2026-02-20T23:07:08.376Z",
+        "proposal_id": "PRP-d97b20e8b824f700",
+        "proposal_type": "external_intel",
+        "outcome": "shipped",
+        "source_eye": "medium_com",
+        "evidence_ref": "proposal:PRP-d97b20e8b824f700 eye:medium_com receipt:auto_1771628824347_PRP-d97b20e8b824f700 auto:autonomy dod_pass:habit_log_verified"
+      },
+      {
+        "ts": "2026-02-21T18:13:45.635Z",
+        "proposal_id": "PRP-28492a3aa16ac61f",
+        "proposal_type": "external_intel",
+        "outcome": "shipped",
+        "source_eye": "upwork_gigs",
+        "evidence_ref": "proposal:PRP-28492a3aa16ac61f eye:upwork_gigs receipt:auto_1771697621319_PRP-28492a3aa16ac61f auto:autonomy dod_pass:habit_log_verified"
+      },
+      {
+        "ts": "2026-02-21T18:51:02.354Z",
+        "proposal_id": "CSG-3c7677ecc41e6fba",
+        "proposal_type": "cross_signal_opportunity",
+        "outcome": "shipped",
+        "source_eye": "cross_signal_engine",
+        "evidence_ref": "proposal:CSG-3c7677ecc41e6fba eye:cross_signal_engine receipt:auto_1771699848911_CSG-3c7677ecc41e6fba auto:autonomy dod_pass:habit_log_verified"
+      }
+    ]
+  }
+}

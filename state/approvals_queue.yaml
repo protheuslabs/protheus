@@ -1,5 +1,26 @@
 # Approval Queue
-pending: []
+# Updated: 2026-02-22T06:10:16.061Z
+
+pending:
+  - action_id: act_mlx3uyb9_ae478541
+    timestamp: "2026-02-22T02:05:06.011Z"
+    directive_id: T0_invariants
+    type: change_credentials
+    summary: "Execute: echo \\\"API call with token moltbook_sk_TEST1234567890ABCDEF1234567890ABCDEF123456..."
+    reason: Action type 'change_credentials' requires approval per T0 invariants
+    status: PENDING
+    payload_pointer: act_mlx3uyb9_ae478541
+  - action_id: act_modegov_default_general_score_only_to_canary_execute
+    timestamp: "2026-02-22T06:10:16.061Z"
+    directive_id: T0_invariants
+    type: strategy_mode_escalation
+    summary: Promote strategy mode default_general from score_only to canary_execute
+    reason: "Dual-control required for strategy mode escalation. Run: node systems/autonomy/strategy_mode.js set --mode=canary_execute --approval-note=\"<reason>\" --approver-id=<id> --second-approver-id=<id> --second-approval-note=\"<reason>\""
+    status: PENDING
+    payload_pointer: act_modegov_default_general_score_only_to_canary_execute
+
 approved: []
+
 denied: []
+
 history: []

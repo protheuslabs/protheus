@@ -1,0 +1,70 @@
+{
+  "version": "1.0",
+  "per_hour": {
+    "2026-02-21T21": {
+      "total": 30,
+      "scopes": {
+        "sensory.collector.ollama_search": 10,
+        "sensory.collector.hn_rss": 6,
+        "sensory.collector.stock_market": 1,
+        "sensory.collector.moltbook_hot": 4,
+        "sensory.collector.upwork_gigs": 1,
+        "sensory.collector.github_repo": 2,
+        "sensory.collector.medium_rss": 5,
+        "sensory.collector.moltstack_discover": 1
+      }
+    },
+    "2026-02-22T00": {
+      "total": 21,
+      "scopes": {
+        "sensory.collector.ollama_search": 2,
+        "sensory.collector.hn_rss": 1,
+        "sensory.focus_fetch": 14,
+        "sensory.collector.moltbook_hot": 1,
+        "sensory.collector.moltstack_discover": 2,
+        "sensory.collector.upwork_gigs": 1
+      }
+    },
+    "2026-02-22T05": {
+      "total": 21,
+      "scopes": {
+        "sensory.collector.ollama_search": 1,
+        "sensory.collector.hn_rss": 6,
+        "sensory.collector.medium_rss": 5,
+        "sensory.collector.moltbook_hot": 4,
+        "sensory.focus_fetch": 2,
+        "sensory.collector.stock_market": 1,
+        "sensory.collector.github_repo": 2
+      }
+    }
+  },
+  "per_day": {
+    "2026-02-21": {
+      "total": 30,
+      "scopes": {
+        "sensory.collector.ollama_search": 10,
+        "sensory.collector.hn_rss": 6,
+        "sensory.collector.stock_market": 1,
+        "sensory.collector.moltbook_hot": 4,
+        "sensory.collector.upwork_gigs": 1,
+        "sensory.collector.github_repo": 2,
+        "sensory.collector.medium_rss": 5,
+        "sensory.collector.moltstack_discover": 1
+      }
+    },
+    "2026-02-22": {
+      "total": 42,
+      "scopes": {
+        "sensory.collector.ollama_search": 3,
+        "sensory.collector.hn_rss": 7,
+        "sensory.focus_fetch": 16,
+        "sensory.collector.moltbook_hot": 5,
+        "sensory.collector.moltstack_discover": 2,
+        "sensory.collector.upwork_gigs": 1,
+        "sensory.collector.medium_rss": 5,
+        "sensory.collector.stock_market": 1,
+        "sensory.collector.github_repo": 2
+      }
+    }
+  }
+}

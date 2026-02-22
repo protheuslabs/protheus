@@ -65,6 +65,9 @@ const IDLE_REQUEST_TOKENS_EST = clampInt(process.env.IDLE_DREAM_IDLE_TOKENS_EST 
 const REM_REQUEST_TOKENS_EST_LOCAL = clampInt(process.env.IDLE_DREAM_REM_TOKENS_EST_LOCAL || 320, 50, 20000);
 const REM_REQUEST_TOKENS_EST_DETERMINISTIC = clampInt(process.env.IDLE_DREAM_REM_TOKENS_EST_DETERMINISTIC || 80, 0, 20000);
 const MEMORY_DREAM_BOOTSTRAP_TIMEOUT_MS = clampInt(process.env.IDLE_DREAM_BOOTSTRAP_TIMEOUT_MS || 25000, 5000, 120000);
+const MODEL_COOLDOWN_BASE_MS = clampInt(process.env.IDLE_DREAM_MODEL_COOLDOWN_MS || 45 * 60 * 1000, 60 * 1000, 6 * 60 * 60 * 1000);
+const MODEL_COOLDOWN_MAX_MS = clampInt(process.env.IDLE_DREAM_MODEL_COOLDOWN_MAX_MS || 6 * 60 * 60 * 1000, MODEL_COOLDOWN_BASE_MS, 24 * 60 * 60 * 1000);
+const MODEL_HEALTH_MAX = clampInt(process.env.IDLE_DREAM_MODEL_HEALTH_MAX || 32, 4, 128);
 
 const IDLE_MODEL_ORDER = parseCsvOrder(
   process.env.IDLE_DREAM_MODEL_ORDER
@@ -241,9 +244,17 @@ function loadState() {
       rem_runs: 0,
       idle_runs_since_rem: 0,
       last_idle_model: null,
-      last_rem_model: null
+      last_rem_model: null,
+      model_health: {}
     };
   }
+  const modelHealth = base.model_health && typeof base.model_health === 'object'
+    ? Object.fromEntries(
+        Object.entries(base.model_health)
+          .map(([k, v]) => [normalizeModelName(k), v && typeof v === 'object' ? v : {}])
+          .filter(([k]) => !!k)
+      )
+    : {};
   return {
     version: '1.0',
     updated_ts: base.updated_ts || null,
@@ -253,7 +264,8 @@ function loadState() {
     rem_runs: Number(base.rem_runs || 0),
     idle_runs_since_rem: Number(base.idle_runs_since_rem || 0),
     last_idle_model: base.last_idle_model || null,
-    last_rem_model: base.last_rem_model || null
+    last_rem_model: base.last_rem_model || null,
+    model_health: modelHealth
   };
 }
 
@@ -303,19 +315,153 @@ function listLocalModels() {
   return Array.from(new Set((listed.models || []).map(normalizeModelName).filter(Boolean)));
 }
 
-function pickModel(order, available) {
+function modelHealthEntry(state, model) {
+  const health = state && state.model_health && typeof state.model_health === 'object'
+    ? state.model_health
+    : {};
+  const key = normalizeModelName(model);
+  const entry = key ? health[key] : null;
+  return entry && typeof entry === 'object' ? entry : null;
+}
+
+function pruneModelHealth(state) {
+  if (!state || !state.model_health || typeof state.model_health !== 'object') return;
+  const rows = Object.entries(state.model_health).map(([model, raw]) => {
+    const row = raw && typeof raw === 'object' ? raw : {};
+    const ts = Date.parse(String(row.last_event_ts || row.last_success_ts || row.last_failure_ts || ''));
+    return { model: normalizeModelName(model), row, ts: Number.isFinite(ts) ? ts : 0 };
+  }).filter((it) => !!it.model);
+  if (rows.length <= MODEL_HEALTH_MAX) return;
+  rows.sort((a, b) => Number(b.ts || 0) - Number(a.ts || 0) || String(a.model).localeCompare(String(b.model)));
+  const keep = rows.slice(0, MODEL_HEALTH_MAX);
+  state.model_health = Object.fromEntries(keep.map((it) => [it.model, it.row]));
+}
+
+function modelOnFailure(state, model, phase, llm) {
+  if (!state || !model) return null;
+  if (!state.model_health || typeof state.model_health !== 'object') state.model_health = {};
+  const key = normalizeModelName(model);
+  const prev = modelHealthEntry(state, key) || {};
+  const failureStreak = clampInt(Number(prev.failure_streak || 0) + 1, 1, 12);
+  const cooldownMs = Math.min(MODEL_COOLDOWN_MAX_MS, MODEL_COOLDOWN_BASE_MS * failureStreak);
+  const cooldownUntil = new Date(Date.now() + cooldownMs).toISOString();
+  const reason = llm && llm.timed_out === true
+    ? 'timeout'
+    : llm && llm.error
+      ? 'runtime_error'
+      : `exit_${Number(llm && llm.code != null ? llm.code : 1)}`;
+  const next = {
+    ...prev,
+    model: key,
+    last_phase: String(phase || '').trim().toLowerCase() || null,
+    last_failure_ts: nowIso(),
+    last_event_ts: nowIso(),
+    last_failure_reason: reason,
+    last_failure_code: Number(llm && llm.code != null ? llm.code : 1),
+    timed_out: llm && llm.timed_out === true,
+    failure_streak: failureStreak,
+    success_streak: 0,
+    cooldown_ms: cooldownMs,
+    cooldown_until_ts: cooldownUntil
+  };
+  state.model_health[key] = next;
+  pruneModelHealth(state);
+  appendJsonl(LEDGER_PATH, {
+    ts: nowIso(),
+    type: 'idle_dream_model_cooldown_set',
+    phase: next.last_phase,
+    model: key,
+    reason,
+    failure_streak: failureStreak,
+    cooldown_ms: cooldownMs,
+    cooldown_until_ts: cooldownUntil
+  });
+  return next;
+}
+
+function modelOnSuccess(state, model, phase) {
+  if (!state || !model) return null;
+  if (!state.model_health || typeof state.model_health !== 'object') state.model_health = {};
+  const key = normalizeModelName(model);
+  const prev = modelHealthEntry(state, key) || {};
+  const hadCooldown = !!prev.cooldown_until_ts;
+  const next = {
+    ...prev,
+    model: key,
+    last_phase: String(phase || '').trim().toLowerCase() || null,
+    last_success_ts: nowIso(),
+    last_event_ts: nowIso(),
+    failure_streak: 0,
+    success_streak: clampInt(Number(prev.success_streak || 0) + 1, 1, 999),
+    cooldown_ms: 0,
+    cooldown_until_ts: null,
+    timed_out: false
+  };
+  state.model_health[key] = next;
+  pruneModelHealth(state);
+  if (hadCooldown) {
+    appendJsonl(LEDGER_PATH, {
+      ts: nowIso(),
+      type: 'idle_dream_model_cooldown_cleared',
+      phase: next.last_phase,
+      model: key
+    });
+  }
+  return next;
+}
+
+function pickModel(order, available, state) {
   const normAvail = new Set((available || []).map(normalizeModelName));
+  const skipped = [];
+  const nowMs = Date.now();
   for (const m of order || []) {
     const clean = normalizeModelName(m);
-    if (normAvail.has(clean)) return clean;
+    if (!normAvail.has(clean)) continue;
+    const entry = modelHealthEntry(state, clean);
+    const untilMs = Date.parse(String(entry && entry.cooldown_until_ts || ''));
+    if (Number.isFinite(untilMs) && untilMs > nowMs) {
+      skipped.push({
+        model: clean,
+        cooldown_until_ts: entry.cooldown_until_ts,
+        failure_streak: Number(entry.failure_streak || 0),
+        last_failure_reason: entry.last_failure_reason || null
+      });
+      continue;
+    }
+    return { model: clean, skipped_models: skipped };
   }
   const list = Array.from(normAvail).sort();
-  return list.length ? list[0] : null;
+  for (const clean of list) {
+    const entry = modelHealthEntry(state, clean);
+    const untilMs = Date.parse(String(entry && entry.cooldown_until_ts || ''));
+    if (Number.isFinite(untilMs) && untilMs > nowMs) {
+      skipped.push({
+        model: clean,
+        cooldown_until_ts: entry.cooldown_until_ts,
+        failure_streak: Number(entry.failure_streak || 0),
+        last_failure_reason: entry.last_failure_reason || null
+      });
+      continue;
+    }
+    return { model: clean, skipped_models: skipped };
+  }
+  return { model: null, skipped_models: skipped };
 }
 
 function runLocalModel(model, prompt, timeoutMs, phase) {
   const fakeIdle = String(process.env.IDLE_DREAM_FAKE_IDLE_JSON || '').trim();
   const fakeRem = String(process.env.IDLE_DREAM_FAKE_REM_JSON || '').trim();
+  const fakeFailures = parseCsvOrder(process.env.IDLE_DREAM_FAKE_MODEL_FAILURES || '')
+    .map((row) => String(row || '').split(':'))
+    .map((parts) => ({ model: normalizeModelName(parts[0]), reason: String(parts[1] || 'error').trim().toLowerCase() }))
+    .filter((row) => !!row.model);
+  const forced = fakeFailures.find((row) => row.model === normalizeModelName(model));
+  if (forced && forced.reason === 'timeout') {
+    return { ok: false, stdout: '', stderr: 'forced_timeout', code: 124, timed_out: true, signal: 'SIGTERM', error: 'forced_timeout' };
+  }
+  if (forced) {
+    return { ok: false, stdout: '', stderr: `forced_${forced.reason}`, code: 1, timed_out: false, signal: null, error: `forced_${forced.reason}` };
+  }
   if (phase === 'idle' && fakeIdle) return { ok: true, stdout: fakeIdle, stderr: '', code: 0 };
   if (phase === 'rem' && fakeRem) return { ok: true, stdout: fakeRem, stderr: '', code: 0 };
   if (!model) return { ok: false, stdout: '', stderr: 'no_local_model_selected', code: 2 };
@@ -776,9 +922,17 @@ function runIdlePass(dateStr, state, force) {
   }
 
   const availableModels = listLocalModels();
-  const model = pickModel(IDLE_MODEL_ORDER, availableModels);
+  const pick = pickModel(IDLE_MODEL_ORDER, availableModels, state);
+  const model = pick.model;
   if (!model) {
-    return { ok: false, skipped: true, reason: 'no_local_model_available', seed_count: seeds.length, available_models: availableModels };
+    return {
+      ok: false,
+      skipped: true,
+      reason: pick.skipped_models.length > 0 ? 'all_local_models_cooling_down' : 'no_local_model_available',
+      seed_count: seeds.length,
+      available_models: availableModels,
+      cooling_models: pick.skipped_models
+    };
   }
 
   const lease = requestSpawnLease('idle', IDLE_REQUEST_TOKENS_EST);
@@ -797,6 +951,7 @@ function runIdlePass(dateStr, state, force) {
   try {
     const llm = runLocalModel(model, prompt, LLM_TIMEOUT_MS, 'idle');
     if (!llm.ok) {
+      const health = modelOnFailure(state, model, 'idle', llm);
       const links = normalizeIdleLinks(null, seeds);
       const row = writeIdleRow(dateStr, null, seeds, links, {
         strategy: 'deterministic_fallback',
@@ -815,6 +970,7 @@ function runIdlePass(dateStr, state, force) {
         reason: 'deterministic_idle_fallback',
         failed_model: model,
         fallback_model: null,
+        cooldown_until_ts: health && health.cooldown_until_ts || null,
         code: llm.code,
         signal: llm.signal || null,
         timed_out: llm.timed_out === true,
@@ -828,6 +984,7 @@ function runIdlePass(dateStr, state, force) {
     const parsed = extractJsonObject(llm.stdout);
     const links = normalizeIdleLinks(parsed, seeds);
     const row = writeIdleRow(dateStr, model, seeds, links, parsed);
+    modelOnSuccess(state, model, 'idle');
     return {
       ok: true,
       skipped: false,
@@ -908,19 +1065,22 @@ function runRemPass(dateStr, state, force) {
     }
 
     const availableModels = listLocalModels();
-    const model = pickModel(REM_MODEL_ORDER, availableModels);
+    const pick = pickModel(REM_MODEL_ORDER, availableModels, state);
+    const model = pick.model;
     if (!model) {
       return {
         ok: false,
         skipped: true,
-        reason: 'no_local_model_available_for_rem',
+        reason: pick.skipped_models.length > 0 ? 'all_local_models_cooling_down_for_rem' : 'no_local_model_available_for_rem',
         strategy,
-        available_models: availableModels
+        available_models: availableModels,
+        cooling_models: pick.skipped_models
       };
     }
     const prompt = buildRemPrompt(materialRows, dateStr);
     const llm = runLocalModel(model, prompt, REM_TIMEOUT_MS, 'rem');
     if (!llm.ok) {
+      const health = modelOnFailure(state, model, 'rem', llm);
       const quantized = fallbackQuantized(materialRows);
       const rem = writeRemResult(dateStr, null, materialRows, quantized, {
         strategy: 'deterministic_fallback',
@@ -939,6 +1099,7 @@ function runRemPass(dateStr, state, force) {
         reason: 'deterministic_rem_fallback',
         strategy,
         failed_model: model,
+        cooldown_until_ts: health && health.cooldown_until_ts || null,
         model: null,
         code: llm.code,
         signal: llm.signal || null,
@@ -953,6 +1114,7 @@ function runRemPass(dateStr, state, force) {
     const parsed = extractJsonObject(llm.stdout);
     const quantized = normalizeQuantized(parsed, materialRows);
     const rem = writeRemResult(dateStr, model, materialRows, quantized, parsed);
+    modelOnSuccess(state, model, 'rem');
     return {
       ok: true,
       skipped: false,
@@ -1022,7 +1184,8 @@ function runCycle(dateStr, opts = {}) {
       rem_runs: state.rem_runs,
       idle_runs_since_rem: state.idle_runs_since_rem,
       last_idle_model: state.last_idle_model,
-      last_rem_model: state.last_rem_model
+      last_rem_model: state.last_rem_model,
+      model_health: state.model_health || {}
     }
   };
   appendJsonl(LEDGER_PATH, {
@@ -1059,7 +1222,19 @@ function status() {
     today,
     idle_rows_today: idleRowsToday.length,
     rem_exists_today: !!remToday,
-    rem_quantized_today: remToday && Array.isArray(remToday.quantized) ? remToday.quantized.length : 0
+    rem_quantized_today: remToday && Array.isArray(remToday.quantized) ? remToday.quantized.length : 0,
+    active_model_cooldowns: Object.entries(state.model_health || {})
+      .map(([model, row]) => ({ model, row }))
+      .filter((it) => {
+        const ms = Date.parse(String(it.row && it.row.cooldown_until_ts || ''));
+        return Number.isFinite(ms) && ms > Date.now();
+      })
+      .map((it) => ({
+        model: it.model,
+        cooldown_until_ts: it.row.cooldown_until_ts || null,
+        failure_streak: Number(it.row.failure_streak || 0),
+        last_failure_reason: it.row.last_failure_reason || null
+      }))
   };
 }
 

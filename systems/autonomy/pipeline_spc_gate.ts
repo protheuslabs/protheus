@@ -27,6 +27,9 @@ const SPC_MAX_STOP_RATIO = Number(process.env.AUTONOMY_SPC_MAX_STOP_RATIO || 0.7
 const SPC_MAX_REVERTED_RATE = Number(process.env.AUTONOMY_SPC_MAX_REVERTED_RATE || 0.35);
 const SPC_MIN_SUCCESS_CRITERIA_RECEIPTS = Number(process.env.AUTONOMY_SPC_MIN_SUCCESS_CRITERIA_RECEIPTS || 2);
 const SPC_MIN_SUCCESS_CRITERIA_PASS_RATE = Number(process.env.AUTONOMY_SPC_MIN_SUCCESS_CRITERIA_PASS_RATE || 0.6);
+const SPC_DISABLE_LEGACY_FALLBACK_AFTER_QUALITY_RECEIPTS = Number(
+  process.env.AUTONOMY_SPC_DISABLE_LEGACY_FALLBACK_AFTER_QUALITY_RECEIPTS || 10
+);
 const SPC_BASELINE_DAYS = Number(process.env.AUTONOMY_SPC_BASELINE_DAYS || 21);
 const SPC_BASELINE_MIN_DAYS = Number(process.env.AUTONOMY_SPC_BASELINE_MIN_DAYS || 7);
 const SPC_SIGMA = Number(process.env.AUTONOMY_SPC_SIGMA || 3);
@@ -129,8 +132,20 @@ function metricForDate(dateStr, days) {
   const revertedRate = executed > 0
     ? Number((reverted / executed).toFixed(3))
     : 0;
-  const criteriaReceipts = Number(summary && summary.receipts && summary.receipts.autonomy && summary.receipts.autonomy.success_criteria_receipts || 0);
-  const criteriaPassRate = numOrNull(summary && summary.receipts && summary.receipts.autonomy && summary.receipts.autonomy.success_criteria_receipt_pass_rate);
+  const autonomyReceipts = summary && summary.receipts && summary.receipts.autonomy && typeof summary.receipts.autonomy === 'object'
+    ? summary.receipts.autonomy
+    : {};
+  const criteriaQualityReceipts = Number(autonomyReceipts.success_criteria_quality_receipts || 0);
+  const criteriaQualityPassRate = numOrNull(autonomyReceipts.success_criteria_quality_receipt_pass_rate);
+  const criteriaLegacyReceipts = Number(autonomyReceipts.success_criteria_receipts || 0);
+  const criteriaLegacyPassRate = numOrNull(autonomyReceipts.success_criteria_receipt_pass_rate);
+  const forceQualityCriteria = criteriaQualityReceipts >= Math.max(0, Number(SPC_DISABLE_LEGACY_FALLBACK_AFTER_QUALITY_RECEIPTS || 10));
+  const useQualityCriteria = forceQualityCriteria || criteriaQualityReceipts >= Number(SPC_MIN_SUCCESS_CRITERIA_RECEIPTS || 0);
+  const criteriaReceipts = useQualityCriteria ? criteriaQualityReceipts : criteriaLegacyReceipts;
+  const criteriaPassRate = useQualityCriteria ? criteriaQualityPassRate : criteriaLegacyPassRate;
+  const criteriaSource = useQualityCriteria
+    ? (forceQualityCriteria ? 'quality_forced' : 'quality')
+    : 'legacy_fallback';
   const admissions = countEligibleAdmissions(dateStr);
   const admissionEvidence = Number(admissions.eligible_admissions || 0) + attempted;
 
@@ -141,6 +156,10 @@ function metricForDate(dateStr, days) {
     reverted_rate: Number(revertedRate),
     success_criteria_receipts: criteriaReceipts,
     success_criteria_pass_rate: criteriaPassRate,
+    success_criteria_source: criteriaSource,
+    success_criteria_fallback_retired: forceQualityCriteria,
+    success_criteria_quality_receipts: criteriaQualityReceipts,
+    success_criteria_legacy_receipts: criteriaLegacyReceipts,
     eligible_admissions: Number(admissions.eligible_admissions || 0),
     proposals_scanned: Number(admissions.proposals_scanned || 0),
     admission_evidence: admissionEvidence
@@ -287,6 +306,7 @@ function evaluatePipelineSpcGate(dateStr, options = {}) {
       baseline_days: baselineDays,
       baseline_min_days: baselineMinDays,
       baseline_samples: attemptedStats ? Number(attemptedStats.n || 0) : 0,
+      disable_legacy_fallback_after_quality_receipts: Math.max(0, Number(SPC_DISABLE_LEGACY_FALLBACK_AFTER_QUALITY_RECEIPTS || 10)),
       limits,
       baselines: {
         attempted: attemptedStats,

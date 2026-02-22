@@ -22,7 +22,7 @@ const POLICY_PATH = process.env.REPO_HYGIENE_POLICY_PATH
 
 function usage() {
   console.log('Usage:');
-  console.log('  node systems/security/repo_hygiene_guard.js run [--strict] [--staged] [--base-ref=main] [--files=a,b,c]');
+  console.log('  node systems/security/repo_hygiene_guard.js run [--strict] [--staged] [--base-ref=main] [--files=a,b,c] [--allow-ts-pair-drift]');
 }
 
 function parseArgs(argv) {
@@ -137,21 +137,52 @@ function evaluate(files, policy) {
   return violations.sort();
 }
 
+function inTsPairScope(file) {
+  return file.startsWith('systems/') || file.startsWith('lib/');
+}
+
+function tsPairPath(file) {
+  if (file.endsWith('.js')) return file.slice(0, -3) + '.ts';
+  if (file.endsWith('.ts')) return file.slice(0, -3) + '.js';
+  return null;
+}
+
+function evaluateTsPairDrift(files, args) {
+  if (args['allow-ts-pair-drift'] === true || String(args.allow_ts_pair_drift || '').trim() === '1') return [];
+  const changed = new Set(files.map(normalizePath).filter(Boolean));
+  const out = [];
+  for (const raw of changed) {
+    const file = String(raw || '');
+    if (!inTsPairScope(file)) continue;
+    if (!(file.endsWith('.js') || file.endsWith('.ts'))) continue;
+    const pair = tsPairPath(file);
+    if (!pair) continue;
+    const pairAbs = path.join(ROOT, pair);
+    if (!fs.existsSync(pairAbs)) continue;
+    if (changed.has(pair)) continue;
+    out.push(`${file}::missing_pair_change:${pair}`);
+  }
+  return Array.from(new Set(out)).sort();
+}
+
 function cmdRun(args) {
   const policy = loadPolicy();
   const files = changedFiles(args);
   const violations = evaluate(files, policy);
+  const tsPairDrift = evaluateTsPairDrift(files, args);
   const strict = args.strict === true;
+  const total = violations.length + tsPairDrift.length;
   const out = {
-    ok: violations.length === 0,
+    ok: total === 0,
     type: 'repo_hygiene_guard',
     strict,
     checked_files: files.length,
-    violations: violations.length,
-    violating_files: violations
+    violations: total,
+    violating_files: violations,
+    ts_pair_drift_violations: tsPairDrift
   };
   process.stdout.write(JSON.stringify(out) + '\n');
-  if (strict && violations.length > 0) process.exit(1);
+  if (strict && total > 0) process.exit(1);
 }
 
 function main() {

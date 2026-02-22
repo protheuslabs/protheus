@@ -1,0 +1,23 @@
+[
+  {
+    "id": "BGS-01f42bdfc716d6c1",
+    "date": "2026-02-21",
+    "ts": "2026-02-21T21:45:42.083Z",
+    "type": "strategy_budget_adjustment_suggestion",
+    "source": "spine_budget_guard",
+    "status": "proposed",
+    "pressure": "hard",
+    "projected_pressure": "hard",
+    "action": "pause",
+    "reason": "repeated_hard_pressure",
+    "token_cap": 4000,
+    "used_est": 3980,
+    "burn_pct": 99.5,
+    "top_module": "sensory_focus",
+    "suggested_adjustments": [
+      "Temporarily reduce strategy budget_policy.daily_token_cap by 10-20% for the next cycle.",
+      "Increase local-first routing pressure controls under hard budget states before cloud fallback.",
+      "Reduce autonomous execution frequency until pressure returns to soft/none."
+    ]
+  }
+]

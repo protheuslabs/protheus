@@ -44,6 +44,12 @@ const EYES_CONFIG_PATH = resolveCatalogPath(ROOT);
 const EYES_REGISTRY_PATH = process.env.PROPOSAL_ENRICHER_EYES_REGISTRY
   ? path.resolve(process.env.PROPOSAL_ENRICHER_EYES_REGISTRY)
   : path.join(ROOT, 'state', 'sensory', 'eyes', 'registry.json');
+const DREAMS_DIR = process.env.PROPOSAL_ENRICHER_DREAMS_DIR
+  ? path.resolve(process.env.PROPOSAL_ENRICHER_DREAMS_DIR)
+  : path.join(ROOT, 'state', 'memory', 'dreams');
+const DREAMS_REM_DIR = path.join(DREAMS_DIR, 'rem');
+const DREAM_SIGNAL_MAX_TOKENS = clamp(Number(process.env.PROPOSAL_ENRICHER_DREAM_MAX_TOKENS || 24), 8, 64);
+const DREAM_DIRECTIVE_BONUS_CAP = clamp(Number(process.env.AUTONOMY_DREAM_DIRECTIVE_BONUS_CAP || 6), 0, 12);
 
 const FIT_STOPWORDS = new Set([
   'the', 'and', 'for', 'with', 'from', 'into', 'through', 'that', 'this', 'those', 'these', 'your', 'you',
@@ -248,6 +254,69 @@ function readJsonSafe(filePath, fallback) {
   } catch {
     return fallback;
   }
+}
+
+function ingestDreamToken(tokenMap, token, rawWeight, source) {
+  const toks = tokenizeFitText(token).slice(0, 2);
+  if (!toks.length) return;
+  const weight = clamp(Number(rawWeight || 0), 1, 8);
+  for (const tok of toks) {
+    if (!tok) continue;
+    const prev = tokenMap.get(tok) || { token: tok, weight: 0, sources: new Set() };
+    prev.weight = clamp(Number(prev.weight || 0) + weight, 1, 12);
+    prev.sources.add(String(source || 'unknown'));
+    tokenMap.set(tok, prev);
+  }
+}
+
+function loadDreamSignals(dateStr) {
+  const dreamPath = path.join(DREAMS_DIR, `${dateStr}.json`);
+  const remPath = path.join(DREAMS_REM_DIR, `${dateStr}.json`);
+  const dreamRaw = readJsonSafe(dreamPath, null);
+  const remRaw = readJsonSafe(remPath, null);
+  const tokenMap = new Map();
+  const sourceCounts: AnyObj = { theme: 0, rem: 0 };
+
+  const themes = dreamRaw && Array.isArray(dreamRaw.themes) ? dreamRaw.themes : [];
+  for (const row of themes) {
+    const token = normalizeText(row && row.token);
+    if (!token) continue;
+    sourceCounts.theme += 1;
+    const score = Number(row && row.score || 0);
+    const weight = clamp(Math.round(score / 25), 1, 4);
+    ingestDreamToken(tokenMap, token, weight, 'theme');
+  }
+
+  const quantized = remRaw && Array.isArray(remRaw.quantized) ? remRaw.quantized : [];
+  for (const row of quantized) {
+    const token = normalizeText(row && row.token);
+    if (!token) continue;
+    sourceCounts.rem += 1;
+    const rawWeight = Number(row && row.weight || 0);
+    const weight = clamp(Math.round(rawWeight / 8), 1, 4);
+    ingestDreamToken(tokenMap, token, weight, 'rem');
+  }
+
+  const tokens = Array.from(tokenMap.values())
+    .map((row) => ({
+      token: row.token,
+      weight: clamp(Number(row.weight || 0) + (row.sources.size > 1 ? 1 : 0), 1, 12),
+      sources: Array.from(row.sources).sort()
+    }))
+    .sort((a, b) => Number(b.weight || 0) - Number(a.weight || 0) || String(a.token).localeCompare(String(b.token)))
+    .slice(0, DREAM_SIGNAL_MAX_TOKENS);
+
+  return {
+    date: dateStr,
+    available: tokens.length > 0,
+    total_weight: tokens.reduce((sum, row) => sum + Number(row.weight || 0), 0),
+    tokens,
+    source_counts: sourceCounts,
+    files: {
+      themes: fs.existsSync(dreamPath),
+      rem: fs.existsSync(remPath)
+    }
+  };
 }
 
 function loadProposalsForDate(dateStr) {
@@ -855,6 +924,67 @@ function assessDirectiveFit(proposal, profile, t) {
   };
 }
 
+function assessDreamAlignment(proposal, dreamSignals) {
+  const source = dreamSignals && typeof dreamSignals === 'object' ? dreamSignals : {};
+  const rows = Array.isArray(source.tokens) ? source.tokens : [];
+  if (!rows.length) {
+    return {
+      available: false,
+      score: 0,
+      directive_bonus: 0,
+      hit_weight: 0,
+      matched_tokens: [],
+      matched_sources: [],
+      reasons: ['dream_signals_unavailable']
+    };
+  }
+  const proposalTokens = tokenizeFitText(proposalTextBlob(proposal));
+  if (!proposalTokens.length) {
+    return {
+      available: true,
+      score: 0,
+      directive_bonus: 0,
+      hit_weight: 0,
+      matched_tokens: [],
+      matched_sources: [],
+      reasons: ['proposal_tokens_empty']
+    };
+  }
+
+  const set = new Set(proposalTokens);
+  const stems = new Set(proposalTokens.map(toStem));
+  let hitWeight = 0;
+  const matchedTokens = [];
+  const sourceSet = new Set();
+  for (const row of rows) {
+    const token = normalizeText(row && row.token).toLowerCase();
+    if (!token) continue;
+    if (!set.has(token) && !stems.has(toStem(token))) continue;
+    const weight = clamp(Number(row && row.weight || 0), 1, 12);
+    hitWeight += weight;
+    matchedTokens.push(token);
+    const src = Array.isArray(row && row.sources) ? row.sources : [];
+    for (const one of src) sourceSet.add(String(one || '').trim().toLowerCase());
+  }
+
+  const totalWeight = clamp(Number(source.total_weight || 0), 1, 9999);
+  const score = hitWeight > 0
+    ? clamp(Math.round((hitWeight / totalWeight) * 100), 0, 100)
+    : 0;
+  const bonus = hitWeight > 0
+    ? clamp(Math.round(hitWeight / 3), 0, DREAM_DIRECTIVE_BONUS_CAP)
+    : 0;
+  return {
+    available: true,
+    score,
+    directive_bonus: bonus,
+    hit_weight: hitWeight,
+    matched_tokens: uniq(matchedTokens).slice(0, 6),
+    matched_sources: Array.from(sourceSet).filter(Boolean).sort(),
+    reasons: bonus > 0 ? ['dream_alignment_bonus_applied'] : ['dream_alignment_no_bonus']
+  };
+}
+
 function assessActionability(proposal, directiveFitScore, relevanceScore, outcomePolicy) {
   const p = proposal || {};
   const proposalType = normalizeText(p.type).toLowerCase();
@@ -1044,7 +1174,13 @@ function enrichOne(proposal, ctx) {
   const objectiveBinding = resolveObjectiveBinding(p, ctx.directiveObjectiveIds);
 
   const q = assessQuality(p, eye, t);
-  const d = assessDirectiveFit(p, ctx.directiveProfile, t);
+  const dream = assessDreamAlignment(p, ctx.dreamSignals);
+  const d0 = assessDirectiveFit(p, ctx.directiveProfile, t);
+  const d = {
+    ...d0,
+    base_score: d0.score,
+    score: clamp(Math.round(Number(d0.score || 0) + Number(dream.directive_bonus || 0)), 0, 100)
+  };
   const relevance = clamp(Math.round((q.score * 0.55) + (d.score * 0.45)), 0, 100);
   const a = assessActionability(p, d.score, relevance, ctx.outcomePolicy);
   const comp = compositeScore(q.score, d.score, a.score);
@@ -1053,6 +1189,7 @@ function enrichOne(proposal, ctx) {
     signal_quality_score: q.score,
     relevance_score: relevance,
     directive_fit_score: d.score,
+    directive_fit_base_score: d.base_score,
     actionability_score: a.score,
     composite_eligibility_score: comp,
     success_criteria_measurable_count: a.success_criteria ? Number(a.success_criteria.measurable_count || 0) : 0,
@@ -1095,10 +1232,18 @@ function enrichOne(proposal, ctx) {
     relevance_score: relevance,
     relevance_tier: tier(relevance),
     directive_fit_score: d.score,
+    directive_fit_base_score: d.base_score,
     directive_fit_pass: d.score >= t.min_directive_fit,
     directive_fit_positive: d.matched_positive,
     directive_fit_negative: d.matched_negative,
-    relevance_reasons: uniq([...q.reasons, ...d.reasons]).slice(0, 8),
+    dream_signal_available: dream.available === true,
+    dream_alignment_score: dream.score,
+    dream_alignment_hit_weight: dream.hit_weight,
+    dream_alignment_bonus: dream.directive_bonus,
+    dream_alignment_tokens: dream.matched_tokens,
+    dream_alignment_sources: dream.matched_sources,
+    dream_alignment_reasons: dream.reasons,
+    relevance_reasons: uniq([...q.reasons, ...d.reasons, ...dream.reasons]).slice(0, 10),
     actionability_score: a.score,
     actionability_pass: a.score >= t.min_actionability_score,
     actionability_reasons: a.reasons.slice(0, 6),
@@ -1124,7 +1269,7 @@ function enrichOne(proposal, ctx) {
       reason: quorum.reason || null
     },
     enriched_at: nowIso(),
-    enrichment_version: '1.2'
+    enrichment_version: '1.3'
   };
 
   const next = {
@@ -1149,6 +1294,44 @@ function enrichOne(proposal, ctx) {
     proposal: next,
     changed,
     admission: admit
+  };
+}
+
+function summarizeDreamAlignment(results, dreamSignals) {
+  const tokenHits: AnyObj = {};
+  let proposalsWithHits = 0;
+  let proposalsWithBonus = 0;
+  let bonusTotal = 0;
+  for (const row of results) {
+    const proposal = row && row.proposal && typeof row.proposal === 'object' ? row.proposal : {};
+    const meta = proposal && proposal.meta && typeof proposal.meta === 'object' ? proposal.meta : {};
+    const bonus = Number(meta.dream_alignment_bonus || 0);
+    if (bonus > 0) {
+      proposalsWithBonus += 1;
+      bonusTotal += bonus;
+    }
+    const tokens = Array.isArray(meta.dream_alignment_tokens) ? meta.dream_alignment_tokens : [];
+    if (tokens.length > 0) proposalsWithHits += 1;
+    for (const tok of tokens) {
+      const key = String(tok || '').trim().toLowerCase();
+      if (!key) continue;
+      tokenHits[key] = Number(tokenHits[key] || 0) + 1;
+    }
+  }
+  const source = dreamSignals && typeof dreamSignals === 'object' ? dreamSignals : {};
+  const tokensLoaded = Array.isArray(source.tokens) ? source.tokens.length : 0;
+  return {
+    available: source.available === true,
+    tokens_loaded: tokensLoaded,
+    source_counts: source.source_counts || { theme: 0, rem: 0 },
+    files: source.files || { themes: false, rem: false },
+    proposals_with_hits: proposalsWithHits,
+    proposals_with_bonus: proposalsWithBonus,
+    bonus_total: bonusTotal,
+    top_hit_tokens: Object.entries(tokenHits)
+      .sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0) || String(a[0]).localeCompare(String(b[0])))
+      .slice(0, 6)
+      .map(([token, count]) => ({ token, count }))
   };
 }
 
@@ -1238,13 +1421,15 @@ function runForDate(dateStr, dryRun = false) {
   }
 
   const directiveProfile = loadDirectiveProfile();
+  const dreamSignals = loadDreamSignals(dateStr);
   const ctx = {
     eyes: loadEyesMap(),
     directiveProfile,
     directiveObjectiveIds: activeDirectiveObjectiveIds(directiveProfile),
     strategy: strategyProfile(),
     thresholds: thresholds(),
-    outcomePolicy: loadOutcomeFitnessPolicy(ROOT)
+    outcomePolicy: loadOutcomeFitnessPolicy(ROOT),
+    dreamSignals
   };
 
   const out = [];
@@ -1262,6 +1447,7 @@ function runForDate(dateStr, dryRun = false) {
 
   const admissionSummary = summarizeAdmissions(out);
   const objectiveBindingSummary = summarizeObjectiveBinding(out);
+  const dreamAlignmentSummary = summarizeDreamAlignment(out, dreamSignals);
   return {
     ok: true,
     result: dryRun ? 'dry_run' : 'enriched',
@@ -1288,7 +1474,8 @@ function runForDate(dateStr, dryRun = false) {
       : null,
     thresholds: ctx.thresholds,
     admission: admissionSummary,
-    objective_binding: objectiveBindingSummary
+    objective_binding: objectiveBindingSummary,
+    dream_alignment: dreamAlignmentSummary
   };
 }
 

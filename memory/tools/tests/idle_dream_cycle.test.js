@@ -116,16 +116,53 @@ function run() {
   assert.ok(Number(state.idle_runs || 0) >= 1, 'state.idle_runs should increment');
   assert.ok(Number(state.rem_runs || 0) >= 1, 'state.rem_runs should increment');
 
+  const envFailure = {
+    ...env,
+    IDLE_DREAM_FAKE_MODEL_FAILURES: 'smallthinker:timeout'
+  };
+  r = spawnSync('node', [script, 'run', testDate, '--force=1'], {
+    cwd: repoRoot,
+    encoding: 'utf8',
+    env: envFailure
+  });
+  assert.strictEqual(r.status, 0, `failure run should pass: ${r.stderr}`);
+  out = parseJson(r.stdout);
+  assert.ok(out && out.ok === true, 'failure run expected ok=true');
+  assert.ok(out.idle && out.idle.degraded === true, 'failure run should degrade idle phase');
+  assert.strictEqual(out.idle.failed_model, 'smallthinker', 'failure run should mark failed model');
+  assert.ok(out.idle.cooldown_until_ts, 'failure run should emit cooldown timestamp');
+
+  const stateAfterFailure = JSON.parse(fs.readFileSync(statePath, 'utf8'));
+  assert.ok(stateAfterFailure.model_health && stateAfterFailure.model_health.smallthinker, 'state should track failed model health');
+  assert.ok(Number(stateAfterFailure.model_health.smallthinker.failure_streak || 0) >= 1, 'failed model should increment failure streak');
+  assert.ok(stateAfterFailure.model_health.smallthinker.cooldown_until_ts, 'failed model should have cooldown');
+
+  r = spawnSync('node', [script, 'run', testDate, '--force=1'], {
+    cwd: repoRoot,
+    encoding: 'utf8',
+    env: envFailure
+  });
+  assert.strictEqual(r.status, 0, `post-cooldown run should pass: ${r.stderr}`);
+  out = parseJson(r.stdout);
+  assert.ok(out && out.ok === true, 'post-cooldown run expected ok=true');
+  assert.ok(out.idle && out.idle.skipped === false, 'post-cooldown run should execute idle phase');
+  assert.strictEqual(out.idle.model, 'qwen3:4b', 'model picker should skip cooled model and fail over');
+
   r = spawnSync('node', [script, 'status'], {
     cwd: repoRoot,
     encoding: 'utf8',
-    env
+    env: envFailure
   });
   assert.strictEqual(r.status, 0, `status should pass: ${r.stderr}`);
   out = parseJson(r.stdout);
   assert.ok(out && out.ok === true, 'status expected ok=true');
   assert.ok(Number(out.idle_rows_today || 0) >= 1, 'status should report idle rows');
   assert.ok(out.rem_exists_today === true, 'status should report rem output');
+  assert.ok(
+    Array.isArray(out.active_model_cooldowns)
+      && out.active_model_cooldowns.some((row) => String(row && row.model || '') === 'smallthinker'),
+    'status should report active cooldown for failed model'
+  );
 
   console.log('idle_dream_cycle.test.js: OK');
 }

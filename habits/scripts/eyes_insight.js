@@ -32,6 +32,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { loadActiveDirectives } = require('../../lib/directive_resolver.js');
 const { resolveCatalogPath } = require('../../lib/eyes_catalog.js');
+const { compileSuccessCriteriaRows, toActionSpecRows } = require('../../lib/success_criteria_compiler.js');
 
 const testDir = process.env.SENSORY_TEST_DIR;
 const SENSORY_DIR = testDir || path.join(__dirname, '..', '..', 'state', 'sensory');
@@ -852,7 +853,11 @@ function buildActionSpec(item, analysis, objectiveBinding) {
   const shape = proposalExecutionShape(item, analysis);
   const objectiveId = sanitizeDirectiveObjectiveId(objectiveBinding && objectiveBinding.objective_id);
   const verify = buildValidationPlan(item, analysis);
-  const successCriteria = buildSuccessCriteria(item, analysis);
+  const successCriteria = toActionSpecRows(
+    compileSuccessCriteriaRows(buildSuccessCriteria(item, analysis), {
+      source: 'action_spec.success_criteria'
+    })
+  );
   const nextCommand = buildSuggestedNextCommand(item, analysis, objectiveId);
 
   if (shape.isInternalSignal) {
@@ -1065,6 +1070,23 @@ function buildCrossSignalProposal(hypothesis, dateStr, directiveFit, actionabili
   );
   const objectiveArg = objectiveId ? ` --id=${objectiveId}` : '';
   const suggestedNextCommand = `node systems/routing/route_execute.js --task="${task}" --tokens_est=900 --repeats_14d=2 --errors_30d=0 --dry-run${objectiveArg}`;
+  const compiledCriteria = toActionSpecRows(
+    compileSuccessCriteriaRows(
+      [
+        {
+          metric: 'experiment_artifact',
+          target: '1 hypothesis-tied experiment artifact generated',
+          horizon: '24h'
+        },
+        {
+          metric: 'hypothesis_signal_lift',
+          target: 'observable trend/support improvement from baseline',
+          horizon: '7d'
+        }
+      ],
+      { source: 'action_spec.success_criteria' }
+    )
+  );
   const actionSpec = {
     version: 1,
     objective: 'Validate cross-signal hypothesis via one executable experiment',
@@ -1075,18 +1097,7 @@ function buildCrossSignalProposal(hypothesis, dateStr, directiveFit, actionabili
       'Define measurable success metric and time-bound target',
       'Route dry-run execution plan and verify gate output'
     ],
-    success_criteria: [
-      {
-        metric: 'experiment_artifact',
-        target: '1 hypothesis-tied experiment artifact generated',
-        horizon: '24h'
-      },
-      {
-        metric: 'hypothesis_signal_lift',
-        target: 'observable trend/support improvement from baseline',
-        horizon: '7d'
-      }
-    ],
+    success_criteria: compiledCriteria,
     rollback: 'Cancel hypothesis execution plan and preserve prior strategy baseline'
   };
   if (objectiveId) actionSpec.objective_id = objectiveId;
