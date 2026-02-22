@@ -20,6 +20,7 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 const { stableUid } = require('../../lib/uid.js');
 const { listLocalOllamaModels, runLocalOllamaPrompt, stripAnsi } = require('../routing/llm_gateway.js');
+const { emitPainSignal } = require('../autonomy/pain_signal.js');
 const { enforceMutationProvenance, recordMutationAudit } = require('../../lib/mutation_provenance.js');
 const {
   DEFAULT_STATE_DIR: GLOBAL_BUDGET_STATE_DIR,
@@ -51,6 +52,9 @@ const LEDGER_PATH = process.env.IDLE_DREAM_LEDGER_PATH
 const ROUTING_DECISIONS_PATH = process.env.IDLE_DREAM_ROUTING_DECISIONS_PATH
   ? path.resolve(String(process.env.IDLE_DREAM_ROUTING_DECISIONS_PATH))
   : path.join(REPO_ROOT, 'state', 'routing', 'routing_decisions.jsonl');
+const FAILURE_POINTERS_DIR = process.env.IDLE_DREAM_FAILURE_POINTERS_DIR
+  ? path.resolve(String(process.env.IDLE_DREAM_FAILURE_POINTERS_DIR))
+  : path.join(REPO_ROOT, 'state', 'memory', 'failure_pointers');
 const MEMORY_DREAM_SCRIPT = process.env.IDLE_DREAM_MEMORY_DREAM_SCRIPT
   ? path.resolve(String(process.env.IDLE_DREAM_MEMORY_DREAM_SCRIPT))
   : path.join(REPO_ROOT, 'systems', 'memory', 'memory_dream.js');
@@ -77,6 +81,8 @@ const REM_MIN_MINUTES = clampInt(process.env.IDLE_DREAM_REM_MIN_MINUTES || 180, 
 const REM_MIN_IDLE_RUNS = clampInt(process.env.IDLE_DREAM_REM_MIN_IDLE_RUNS || 2, 1, 50);
 const WINDOW_DAYS = clampInt(process.env.IDLE_DREAM_WINDOW_DAYS || 3, 1, 14);
 const MAX_SEEDS = clampInt(process.env.IDLE_DREAM_MAX_SEEDS || 10, 2, 30);
+const FAILURE_SEED_SHARE = clampFloat(process.env.IDLE_DREAM_FAILURE_SEED_SHARE, 0, 0.9, 0.35);
+const FAILURE_SEED_MIN = clampInt(process.env.IDLE_DREAM_FAILURE_SEED_MIN || 1, 0, MAX_SEEDS);
 const MAX_IDLE_LINKS = clampInt(process.env.IDLE_DREAM_MAX_LINKS || 6, 1, 20);
 const MAX_REM_LINKS = clampInt(process.env.IDLE_DREAM_REM_MAX_LINKS || 8, 1, 24);
 const LLM_TIMEOUT_MS = clampInt(process.env.IDLE_DREAM_TIMEOUT_MS || 25000, 5000, 10 * 60 * 1000);
@@ -169,6 +175,12 @@ function clampInt(v, min, max) {
   return Math.max(min, Math.min(max, Math.round(n)));
 }
 
+function clampFloat(v, min, max, fallback) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(min, Math.min(max, n));
+}
+
 function nowIso() {
   return new Date().toISOString();
 }
@@ -192,6 +204,11 @@ function parseCsvOrder(v) {
     .split(',')
     .map((x) => String(x || '').trim())
     .filter(Boolean);
+}
+
+function normalizeText(v, fallback = '') {
+  const s = String(v == null ? '' : v).trim();
+  return s || fallback;
 }
 
 function ensureDir(dirPath) {
@@ -256,6 +273,15 @@ function normalizeModelName(v) {
   const raw = String(v || '').trim().replace(/^ollama\//, '').toLowerCase();
   if (raw.endsWith(':latest')) return raw.slice(0, -(':latest'.length));
   return raw;
+}
+
+function modelProviderKey(model) {
+  const m = normalizeModelName(model);
+  if (!m) return 'unknown';
+  if (m.includes(':cloud') || m.endsWith('-cloud') || m.includes('/cloud')) return 'cloud';
+  const slash = m.indexOf('/');
+  if (slash > 0) return m.slice(0, slash);
+  return 'ollama_local';
 }
 
 function normalizeToken(v) {
@@ -347,7 +373,36 @@ function extractJsonObject(text) {
   return null;
 }
 
-function listLocalModels() {
+function fallbackDreamModels(state) {
+  const seeded = [];
+  for (const m of [...IDLE_MODEL_ORDER, ...REM_MODEL_ORDER]) {
+    const clean = normalizeModelName(m);
+    if (clean) seeded.push(clean);
+  }
+  const health = state && state.model_health && typeof state.model_health === 'object'
+    ? state.model_health
+    : {};
+  const learned = Object.entries(health)
+    .map(([model, row]) => {
+      const entry = row && typeof row === 'object' ? row : {};
+      const successStreak = Number(entry.success_streak || 0);
+      const lastSuccessTs = String(entry.last_success_ts || '');
+      const lastEventTs = String(entry.last_event_ts || '');
+      const okSignal = successStreak > 0 || !!lastSuccessTs;
+      const ts = Date.parse(lastSuccessTs || lastEventTs || '');
+      return {
+        model: normalizeModelName(model),
+        okSignal,
+        ts: Number.isFinite(ts) ? ts : 0
+      };
+    })
+    .filter((it) => !!it.model && it.okSignal)
+    .sort((a, b) => Number(b.ts || 0) - Number(a.ts || 0))
+    .map((it) => it.model);
+  return Array.from(new Set([...seeded, ...learned])).filter(Boolean);
+}
+
+function listLocalModels(state = null) {
   const fake = String(process.env.IDLE_DREAM_FAKE_MODELS || '').trim();
   if (fake) return parseCsvOrder(fake).map(normalizeModelName).filter(Boolean);
   const listed = listLocalOllamaModels({
@@ -355,8 +410,20 @@ function listLocalModels() {
     cwd: REPO_ROOT,
     source: 'idle_dream_cycle'
   });
-  if (!listed.ok) return [];
-  return Array.from(new Set((listed.models || []).map(normalizeModelName).filter(Boolean)));
+  const listedModels = Array.from(new Set((listed.models || []).map(normalizeModelName).filter(Boolean)));
+  if (listed.ok && listedModels.length > 0) return listedModels;
+  const fallback = fallbackDreamModels(state);
+  if (fallback.length > 0) {
+    appendJsonl(LEDGER_PATH, {
+      ts: nowIso(),
+      type: 'idle_dream_model_list_fallback',
+      source: listed && listed.ok ? 'empty_model_list' : 'list_failed',
+      code: listed && listed.code != null ? Number(listed.code) : null,
+      fallback_count: fallback.length,
+      fallback_models: fallback.slice(0, 8)
+    });
+  }
+  return fallback;
 }
 
 function modelHealthEntry(state, model) {
@@ -625,6 +692,17 @@ function pickModel(order, available, state) {
     return { model: clean, skipped_models: skipped };
   }
   return { model: null, skipped_models: skipped };
+}
+
+function pickModelWithProviderExclusions(order, available, state, blockedProviders) {
+  const blocked = blockedProviders instanceof Set ? blockedProviders : new Set();
+  const basePool = Array.isArray(available) ? available : [];
+  let pool = basePool;
+  if (blocked.size > 0) {
+    const filtered = basePool.filter((m) => !blocked.has(modelProviderKey(m)));
+    if (filtered.length > 0) pool = filtered;
+  }
+  return pickModel(order, pool, state);
 }
 
 function isCloudDreamModel(model) {
@@ -1049,8 +1127,67 @@ function collectHyperSeeds(dateStr, days) {
   return out;
 }
 
+function collectFailureSeeds(dateStr, days) {
+  const dates = dateDaysBack(dateStr, days);
+  const rows = [];
+  for (const d of dates) {
+    const fp = path.join(FAILURE_POINTERS_DIR, `${d}.jsonl`);
+    rows.push(...readJsonl(fp, MAX_SEEDS * 50));
+  }
+  const byToken = new Map();
+  for (const row of rows) {
+    if (!row || typeof row !== 'object') continue;
+    const tier = clampInt(row.failure_tier == null ? 3 : row.failure_tier, 1, 3);
+    const topics = Array.isArray(row.topics) ? row.topics : [];
+    const topicTokens = topics.map((t) => normalizeToken(t)).filter(Boolean).slice(0, 8);
+    const fallbackTokens = tokenize(`${row.code || ''} ${row.title || ''}`).map((t) => normalizeToken(t)).filter(Boolean).slice(0, 6);
+    const tokens = Array.from(new Set([...topicTokens, ...fallbackTokens])).slice(0, 8);
+    const refs = [];
+    const file = String(row.memory_file || '').trim();
+    const node = String(row.node_id || '').trim();
+    if (file && node) refs.push(`${file.slice(0, 140)}#${node.slice(0, 80)}`);
+    const failureWindow = clampInt(Number(row.failure_count_window || 1), 1, 500);
+    const perTokenScore = Math.max(2, (4 - tier) * 6) + Math.min(24, failureWindow * 2);
+    for (const token of tokens) {
+      if (!byToken.has(token)) {
+        byToken.set(token, {
+          token,
+          score: 0,
+          tier_min: tier,
+          refs: [],
+          sources: new Set()
+        });
+      }
+      const ent = byToken.get(token);
+      ent.score += perTokenScore;
+      ent.tier_min = Math.min(Number(ent.tier_min || tier), tier);
+      ent.refs = Array.from(new Set([...ent.refs, ...refs])).slice(0, 4);
+      ent.sources.add('failure_memory');
+    }
+  }
+  return Array.from(byToken.values())
+    .map((e) => ({
+      token: e.token,
+      score: Number(e.score.toFixed(3)),
+      source: 'failure_memory',
+      sources: Array.from(e.sources),
+      refs: e.refs,
+      failure_tier_min: e.tier_min
+    }))
+    .sort((a, b) => {
+      if (a.failure_tier_min !== b.failure_tier_min) return a.failure_tier_min - b.failure_tier_min;
+      if (b.score !== a.score) return b.score - a.score;
+      return String(a.token).localeCompare(String(b.token));
+    })
+    .slice(0, MAX_SEEDS);
+}
+
 function buildIdleSeedSet(dateStr) {
-  const seeds = [...collectDreamSeeds(dateStr, WINDOW_DAYS), ...collectHyperSeeds(dateStr, WINDOW_DAYS)];
+  const seeds = [
+    ...collectDreamSeeds(dateStr, WINDOW_DAYS),
+    ...collectHyperSeeds(dateStr, WINDOW_DAYS),
+    ...collectFailureSeeds(dateStr, WINDOW_DAYS)
+  ];
   const byToken = new Map();
   for (const s of seeds) {
     const token = normalizeToken(s && s.token);
@@ -1065,24 +1202,60 @@ function buildIdleSeedSet(dateStr) {
     }
     const ent = byToken.get(token);
     ent.score += Number(s && s.score || 0);
-    ent.sources.add(String(s && s.source || 'unknown'));
+    const seedSources = Array.isArray(s && s.sources)
+      ? s.sources
+      : [s && s.source];
+    for (const src of seedSources) {
+      const srcName = String(src || '').trim() || 'unknown';
+      ent.sources.add(srcName);
+    }
     ent.refs = Array.from(new Set([...ent.refs, ...((s && s.refs) || [])])).slice(0, 4);
+    if (Number.isFinite(Number(s && s.failure_tier_min))) {
+      const tierVal = clampInt(Number(s.failure_tier_min || 3), 1, 3);
+      ent.failure_tier_min = Number.isFinite(Number(ent.failure_tier_min))
+        ? Math.min(Number(ent.failure_tier_min), tierVal)
+        : tierVal;
+    }
   }
-  return Array.from(byToken.values())
+  const ranked = Array.from(byToken.values())
     .map((e) => ({
       token: e.token,
       score: Number(e.score.toFixed(3)),
       sources: Array.from(e.sources).sort(),
-      refs: e.refs
+      refs: e.refs,
+      failure_tier_min: Number.isFinite(Number(e.failure_tier_min)) ? Number(e.failure_tier_min) : null
     }))
     .sort((a, b) => {
+      const aTier = Number.isFinite(Number(a.failure_tier_min)) ? Number(a.failure_tier_min) : 9;
+      const bTier = Number.isFinite(Number(b.failure_tier_min)) ? Number(b.failure_tier_min) : 9;
+      if (aTier !== bTier) return aTier - bTier;
       if (b.score !== a.score) return b.score - a.score;
       return String(a.token).localeCompare(String(b.token));
-    })
-    .slice(0, MAX_SEEDS);
+    });
+  const failureSeeds = ranked.filter((s) => Array.isArray(s.sources) && s.sources.includes('failure_memory'));
+  if (failureSeeds.length <= 0) return ranked.slice(0, MAX_SEEDS);
+  const quota = clampInt(
+    Math.round(MAX_SEEDS * FAILURE_SEED_SHARE),
+    Math.min(FAILURE_SEED_MIN, MAX_SEEDS),
+    MAX_SEEDS
+  );
+  const selected = [];
+  const used = new Set();
+  for (const s of failureSeeds.slice(0, quota)) {
+    selected.push(s);
+    used.add(s.token);
+  }
+  for (const s of ranked) {
+    if (selected.length >= MAX_SEEDS) break;
+    if (used.has(s.token)) continue;
+    selected.push(s);
+    used.add(s.token);
+  }
+  return selected.slice(0, MAX_SEEDS);
 }
 
 function buildIdlePrompt(seeds, dateStr) {
+  const failureSeedCount = seeds.filter((s) => Array.isArray(s && s.sources) && s.sources.includes('failure_memory')).length;
   const payload = seeds.map((s) => ({
     token: s.token,
     score: s.score,
@@ -1095,9 +1268,10 @@ function buildIdlePrompt(seeds, dateStr) {
     'Return ONLY valid JSON with this exact shape:',
     '{"dream_links":[{"token":"kebab-token","hint":"short hint","confidence":1,"refs":["memory/file.md#node"]}]}',
     `Rules: max ${MAX_IDLE_LINKS} links; token must be lowercase kebab; hint <= 120 chars; confidence integer 1..5; no markdown.`,
+    failureSeedCount > 0 ? `Rules: include at least 1 failure-avoidance link when failure-memory seeds are present (${failureSeedCount}).` : '',
     `Context date: ${dateStr}`,
     `Seeds JSON: ${JSON.stringify(payload)}`
-  ].join('\n');
+  ].filter(Boolean).join('\n');
 }
 
 function normalizeIdleLinks(parsed, seeds) {
@@ -1342,15 +1516,18 @@ function runIdlePass(dateStr, state, force) {
       } : null
     };
   }
+  const failureSeedCount = seeds.filter((s) => Array.isArray(s && s.sources) && s.sources.includes('failure_memory')).length;
 
-  const availableModels = listLocalModels();
-  const pick = pickModel(IDLE_MODEL_ORDER, availableModels, state);
+  const availableModels = listLocalModels(state);
+  const blockedProviders = new Set();
+  const pick = pickModelWithProviderExclusions(IDLE_MODEL_ORDER, availableModels, state, blockedProviders);
   if (!pick.model) {
     return {
       ok: false,
       skipped: true,
       reason: pick.skipped_models.length > 0 ? 'all_local_models_cooling_down' : 'no_local_model_available',
       seed_count: seeds.length,
+      failure_seed_count: failureSeedCount,
       available_models: availableModels,
       cooling_models: pick.skipped_models
     };
@@ -1413,8 +1590,10 @@ function runIdlePass(dateStr, state, force) {
         const health = modelOnFailure(state, selectedModel, 'idle', llm);
         attemptRow.cooldown_until_ts = health && health.cooldown_until_ts || null;
         attemptRow.failure_reason = health && health.last_failure_reason || null;
-        if (health && health.last_failure_reason === 'provider_unavailable') break;
-        const nextPick = pickModel(IDLE_MODEL_ORDER, availableModels, state);
+        if (health && health.last_failure_reason === 'provider_unavailable') {
+          blockedProviders.add(modelProviderKey(selectedModel));
+        }
+        const nextPick = pickModelWithProviderExclusions(IDLE_MODEL_ORDER, availableModels, state, blockedProviders);
         selectedModel = nextPick.model;
         continue;
       }
@@ -1430,6 +1609,7 @@ function runIdlePass(dateStr, state, force) {
           skipped: false,
           model: selectedModel,
           seed_count: seeds.length,
+          failure_seed_count: failureSeedCount,
           link_count: links.length,
           row_uid: row.uid,
           attempted_models: attemptedModels,
@@ -1443,8 +1623,10 @@ function runIdlePass(dateStr, state, force) {
       const health = modelOnFailure(state, selectedModel, 'idle', llm);
       attemptRow.cooldown_until_ts = health && health.cooldown_until_ts || null;
       attemptRow.failure_reason = health && health.last_failure_reason || null;
-      if (health && health.last_failure_reason === 'provider_unavailable') break;
-      const nextPick = pickModel(IDLE_MODEL_ORDER, availableModels, state);
+      if (health && health.last_failure_reason === 'provider_unavailable') {
+        blockedProviders.add(modelProviderKey(selectedModel));
+      }
+      const nextPick = pickModelWithProviderExclusions(IDLE_MODEL_ORDER, availableModels, state, blockedProviders);
       selectedModel = nextPick.model;
     }
     const passElapsedMs = Date.now() - passStartedMs;
@@ -1479,6 +1661,7 @@ function runIdlePass(dateStr, state, force) {
       pass_elapsed_ms: passElapsedMs,
       pass_budget_ms: IDLE_PASS_MAX_MS,
       seed_count: seeds.length,
+      failure_seed_count: failureSeedCount,
       link_count: links.length,
       row_uid: row.uid
     };
@@ -1560,8 +1743,9 @@ function runRemPass(dateStr, state, force) {
       };
     }
 
-    const availableModels = listLocalModels();
-    const pick = pickModel(REM_MODEL_ORDER, availableModels, state);
+    const availableModels = listLocalModels(state);
+    const blockedProviders = new Set();
+    const pick = pickModelWithProviderExclusions(REM_MODEL_ORDER, availableModels, state, blockedProviders);
     if (!pick.model) {
       return {
         ok: false,
@@ -1616,8 +1800,10 @@ function runRemPass(dateStr, state, force) {
         const health = modelOnFailure(state, selectedModel, 'rem', llm);
         attemptRow.cooldown_until_ts = health && health.cooldown_until_ts || null;
         attemptRow.failure_reason = health && health.last_failure_reason || null;
-        if (health && health.last_failure_reason === 'provider_unavailable') break;
-        const nextPick = pickModel(REM_MODEL_ORDER, availableModels, state);
+        if (health && health.last_failure_reason === 'provider_unavailable') {
+          blockedProviders.add(modelProviderKey(selectedModel));
+        }
+        const nextPick = pickModelWithProviderExclusions(REM_MODEL_ORDER, availableModels, state, blockedProviders);
         selectedModel = nextPick.model;
         continue;
       }
@@ -1647,8 +1833,10 @@ function runRemPass(dateStr, state, force) {
       const health = modelOnFailure(state, selectedModel, 'rem', llm);
       attemptRow.cooldown_until_ts = health && health.cooldown_until_ts || null;
       attemptRow.failure_reason = health && health.last_failure_reason || null;
-      if (health && health.last_failure_reason === 'provider_unavailable') break;
-      const nextPick = pickModel(REM_MODEL_ORDER, availableModels, state);
+      if (health && health.last_failure_reason === 'provider_unavailable') {
+        blockedProviders.add(modelProviderKey(selectedModel));
+      }
+      const nextPick = pickModelWithProviderExclusions(REM_MODEL_ORDER, availableModels, state, blockedProviders);
       selectedModel = nextPick.model;
     }
     const passElapsedMs = Date.now() - passStartedMs;
@@ -1702,6 +1890,80 @@ function runRemPass(dateStr, state, force) {
   }
 }
 
+function shouldEmitDreamPain(phase, result) {
+  if (!result || typeof result !== 'object') return false;
+  const reason = String(result.fallback_reason || result.reason || result.error || '').toLowerCase();
+  if (result.degraded === true) return true;
+  if (result.ok === false) return true;
+  if (result.skipped === true) {
+    if (
+      reason.includes('all_local_models_cooling_down')
+      || reason.includes('no_local_model_available')
+      || reason.includes('all_model_attempts_failed')
+      || reason.includes('preflight_failed')
+      || reason.includes('provider_unavailable')
+      || reason.includes('timeout')
+    ) return true;
+  }
+  return false;
+}
+
+function emitDreamPainSignal(dateStr, phase, result) {
+  if (!shouldEmitDreamPain(phase, result)) {
+    return { emitted: false, reason: 'not_actionable' };
+  }
+  const reasonRaw = String(result.fallback_reason || result.reason || result.error || 'dream_failure').toLowerCase();
+  const reasonToken = normalizeToken(reasonRaw) || 'dream_failure';
+  const failedModel = normalizeText(result.failed_model || result.model || '');
+  const code = `dream_${normalizeToken(phase) || 'phase'}:${reasonToken}`;
+  const summary = `Dream ${phase} phase degraded or blocked (${reasonToken})`;
+  const details = [
+    `ok=${result.ok === true}`,
+    `skipped=${result.skipped === true}`,
+    `degraded=${result.degraded === true}`,
+    `failed_model=${failedModel || 'none'}`,
+    `timed_out=${result.timed_out === true}`,
+    `cooldown_until=${normalizeText(result.cooldown_until_ts, 'none')}`
+  ].join(' ');
+  const suggestedNextCommand = `node systems/memory/idle_dream_cycle.js run ${dateStr} --force=1`;
+  const out = emitPainSignal({
+    ts: nowIso(),
+    source: 'idle_dream_cycle',
+    subsystem: 'memory',
+    code,
+    summary,
+    details: details.slice(0, 800),
+    severity: result.degraded === true ? 'medium' : 'high',
+    risk: 'medium',
+    proposal_type: 'dream_cycle_escalation',
+    suggested_next_command: suggestedNextCommand,
+    window_hours: Number(process.env.IDLE_DREAM_PAIN_WINDOW_HOURS || 12),
+    escalate_after: Number(process.env.IDLE_DREAM_PAIN_ESCALATE_AFTER || 2),
+    cooldown_hours: Number(process.env.IDLE_DREAM_PAIN_COOLDOWN_HOURS || 6),
+    signature_extra: `${phase}|${failedModel}|${reasonToken}`,
+    evidence: [
+      {
+        source: 'idle_dream_cycle',
+        path: path.relative(REPO_ROOT, LEDGER_PATH).replace(/\\/g, '/'),
+        match: `phase=${phase} reason=${reasonToken}`.slice(0, 120),
+        evidence_ref: `dream:${phase}:${reasonToken}`
+      }
+    ]
+  });
+  appendJsonl(LEDGER_PATH, {
+    ts: nowIso(),
+    type: 'idle_dream_pain_signal',
+    phase,
+    code,
+    summary,
+    reason: reasonToken,
+    escalation: out && out.escalation ? out.escalation : null
+  });
+  return out && out.escalation
+    ? { emitted: out.escalation.emitted === true, proposal_id: out.escalation.proposal_id || null, reason: out.escalation.reason || null }
+    : { emitted: false, reason: 'emit_failed' };
+}
+
 function runCycle(dateStr, opts = {}) {
   const provenance = enforceMutationProvenance('memory', {
     source: SCRIPT_SOURCE,
@@ -1734,6 +1996,8 @@ function runCycle(dateStr, opts = {}) {
     state.idle_runs_since_rem = 0;
     state.last_rem_model = remResult.model || null;
   }
+  const idlePain = emitDreamPainSignal(dateStr, 'idle', idleResult);
+  const remPain = emitDreamPainSignal(dateStr, 'rem', remResult);
   saveState(state);
 
   const out = {
@@ -1744,6 +2008,10 @@ function runCycle(dateStr, opts = {}) {
     rem_only: remOnly,
     idle: idleResult,
     rem: remResult,
+    pain_signals: {
+      idle: idlePain,
+      rem: remPain
+    },
     state: {
       last_idle_ts: state.last_idle_ts,
       last_rem_ts: state.last_rem_ts,

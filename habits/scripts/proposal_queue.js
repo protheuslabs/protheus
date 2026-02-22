@@ -36,6 +36,7 @@ const path = require('path');
 // Root assumptions (repo root = two levels up from habits/scripts)
 const REPO_ROOT = path.join(__dirname, '..', '..');
 const SENSORY_PROPOSALS_DIR = path.join(REPO_ROOT, 'state', 'sensory', 'proposals');
+const SENSORY_QUEUE_LOG = path.join(REPO_ROOT, 'state', 'sensory', 'queue_log.jsonl');
 
 const QUEUE_DIR = path.join(REPO_ROOT, 'state', 'queue');
 const DECISIONS_DIR = path.join(QUEUE_DIR, 'decisions');
@@ -136,12 +137,47 @@ function buildOverlay(events) {
   return byId;
 }
 
-function normalizedStatus(overlayEntry) {
+function normalizedStatus(overlayEntry, sensoryEntry = null) {
+  if (sensoryEntry && sensoryEntry.status) {
+    const sensoryStatus = String(sensoryEntry.status).trim().toLowerCase();
+    if (sensoryStatus === 'rejected' || sensoryStatus === 'filtered') return 'rejected';
+    if (sensoryStatus === 'accepted' || sensoryStatus === 'done') return 'accepted';
+    if (sensoryStatus === 'parked' || sensoryStatus === 'snoozed') return 'parked';
+  }
   if (!overlayEntry || !overlayEntry.decision) return 'pending';
   if (overlayEntry.decision === 'accept') return 'accepted';
   if (overlayEntry.decision === 'reject') return 'rejected';
   if (overlayEntry.decision === 'park') return 'parked';
   return 'pending';
+}
+
+function buildSensoryOverlay(events, dateStr) {
+  const byId = new Map();
+  for (const e of events) {
+    if (!e || typeof e !== 'object') continue;
+    const id = String(e.proposal_id || e.id || '').trim();
+    if (!id || id === 'UNKNOWN') continue;
+    const day = String(e.ts || '').slice(0, 10);
+    if (dateStr && day && day !== dateStr) continue;
+    const t = String(e.type || '').trim().toLowerCase();
+    if (!t) continue;
+    let status = null;
+    if (t === 'proposal_generated') status = 'pending';
+    else if (t === 'proposal_filtered' || t === 'proposal_rejected') status = 'rejected';
+    else if (t === 'proposal_accepted') status = 'accepted';
+    else if (t === 'proposal_done') status = 'done';
+    else if (t === 'proposal_snoozed') {
+      const untilMs = Date.parse(String(e.snooze_until || ''));
+      status = Number.isFinite(untilMs) && untilMs > Date.now() ? 'parked' : 'pending';
+    }
+    if (!status) continue;
+    byId.set(id, {
+      status,
+      ts: e.ts || null,
+      reason: e.reason || e.filter_reason || null
+    });
+  }
+  return byId;
 }
 
 function loadProposals(dateStr) {
@@ -175,11 +211,20 @@ function listCmd(opts) {
   const decisionsFile = decisionsPathFor(dateStr);
   const events = readJsonlEventsSafe(decisionsFile);
   const overlay = buildOverlay(events);
+  const sensoryOverlay = buildSensoryOverlay(readJsonlEventsSafe(SENSORY_QUEUE_LOG), dateStr);
 
   const enriched = proposals.map(p => {
     const ov = overlay.get(p.id) || null;
-    const status = normalizedStatus(ov);
-    return { ...p, __status: status, __decision: ov?.decision || null, __reason: ov?.reason || null, __outcome: ov?.outcome || null, __evidence_ref: ov?.evidence_ref || null };
+    const sensory = sensoryOverlay.get(String(p && p.id || '')) || null;
+    const status = normalizedStatus(ov, sensory);
+    return {
+      ...p,
+      __status: status,
+      __decision: ov?.decision || null,
+      __reason: ov?.reason || sensory?.reason || null,
+      __outcome: ov?.outcome || null,
+      __evidence_ref: ov?.evidence_ref || null
+    };
   });
 
   const filtered = desiredStatus ? enriched.filter(p => p.__status === desiredStatus) : enriched;
@@ -258,10 +303,12 @@ function metricsCmd(opts) {
   const decisionsFile = decisionsPathFor(dateStr);
   const events = readJsonlEventsSafe(decisionsFile);
   const overlay = buildOverlay(events);
+  const sensoryOverlay = buildSensoryOverlay(readJsonlEventsSafe(SENSORY_QUEUE_LOG), dateStr);
 
   const enriched = proposals.map(p => {
     const ov = overlay.get(p.id) || null;
-    const status = normalizedStatus(ov);
+    const sensory = sensoryOverlay.get(String(p && p.id || '')) || null;
+    const status = normalizedStatus(ov, sensory);
     return { ...p, __status: status, __outcome: ov?.outcome || null };
   });
 

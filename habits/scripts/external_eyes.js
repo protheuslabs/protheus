@@ -2442,6 +2442,7 @@ function statusRank(status) {
 
 function pickSignalCanaryEye(config, registry) {
   const STALE_SUCCESS_HOURS = Number(process.env.EYES_SIGNAL_STALE_SUCCESS_HOURS || 72);
+  const RETRY_WINDOW_HOURS = Number(process.env.EYES_SIGNAL_RETRY_WINDOW_HOURS || 8);
   const rows = [];
   for (const eyeConfig of (config.eyes || [])) {
     const parserType = String(eyeConfig.parser_type || '').toLowerCase();
@@ -2451,6 +2452,7 @@ function pickSignalCanaryEye(config, registry) {
     if (String(runtimeEye.status || '').toLowerCase() === 'retired') continue;
     const lastSuccessHours = hoursSince(reg.last_success);
     const cooldownHours = cooldownHoursRemaining(reg.cooldown_until);
+    const recentTransportFailure = hasRecentTransportFailure(reg, RETRY_WINDOW_HOURS);
     rows.push({
       id: String(eyeConfig.id),
       status: String(runtimeEye.status || ''),
@@ -2458,6 +2460,7 @@ function pickSignalCanaryEye(config, registry) {
       cooldownHours,
       scoreEma: Number(runtimeEye.score_ema || 0),
       consecutiveFailures: Number(reg.consecutive_failures || 0),
+      recentTransportFailure: recentTransportFailure ? 1 : 0,
       lastSuccessHours: Number.isFinite(lastSuccessHours) ? lastSuccessHours : null
     });
   }
@@ -2466,13 +2469,19 @@ function pickSignalCanaryEye(config, registry) {
   const preferred = rows.filter(r =>
     r.cooldownActive === 0
     && r.consecutiveFailures === 0
+    && r.recentTransportFailure === 0
     && statusRank(r.status) <= 1
     && (r.lastSuccessHours == null || r.lastSuccessHours <= STALE_SUCCESS_HOURS)
   );
-  const pool = preferred.length ? preferred : rows;
+  const transportStable = rows.filter((r) => r.recentTransportFailure === 0);
+  const localControl = rows.find((r) => r.id === 'local_state_fallback' && r.cooldownActive === 0 && r.consecutiveFailures === 0);
+  const pool = preferred.length
+    ? preferred
+    : (transportStable.length ? transportStable : (localControl ? [localControl] : rows));
   pool.sort((a, b) => {
     if (a.cooldownActive !== b.cooldownActive) return a.cooldownActive - b.cooldownActive;
     if (a.cooldownHours !== b.cooldownHours) return a.cooldownHours - b.cooldownHours;
+    if (a.recentTransportFailure !== b.recentTransportFailure) return a.recentTransportFailure - b.recentTransportFailure;
     if (statusRank(a.status) !== statusRank(b.status)) return statusRank(a.status) - statusRank(b.status);
     if (a.consecutiveFailures !== b.consecutiveFailures) return a.consecutiveFailures - b.consecutiveFailures;
     const aSuccess = Number.isFinite(a.lastSuccessHours) ? a.lastSuccessHours : 1e9;

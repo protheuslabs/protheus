@@ -290,9 +290,15 @@ function isEscalationType(type) {
 }
 
 function rejectProposal(repo, proposalId, reason) {
-  const script = path.join(repo, "habits", "scripts", "sensory_queue.js");
-  const r = spawnSync("node", [script, "reject", proposalId, `--reason=${reason}`], { stdio: "inherit" });
+  const sensoryScript = path.join(repo, "habits", "scripts", "sensory_queue.js");
+  const proposalScript = path.join(repo, "habits", "scripts", "proposal_queue.js");
+  const r = spawnSync("node", [sensoryScript, "reject", proposalId, `--reason=${reason}`], { stdio: "inherit" });
   if (r.status !== 0) process.exit(r.status || 1);
+  // Keep proposal_queue metrics consistent with sensory_queue terminal decisions.
+  const q = spawnSync("node", [proposalScript, "reject", proposalId, reason], { cwd: repo, encoding: "utf8" });
+  if (q.status !== 0) {
+    console.warn(`queue_gc: proposal_queue reject failed for ${proposalId} (continuing)`);
+  }
 }
 
 function main() {

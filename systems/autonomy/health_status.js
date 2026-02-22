@@ -100,6 +100,8 @@ const STARVATION_CRITICAL_HOURS = Number(process.env.AUTONOMY_HEALTH_STARVATION_
 const STARVATION_CRITICAL_ELIGIBLE = Number(process.env.AUTONOMY_HEALTH_STARVATION_CRITICAL_ELIGIBLE || 6);
 const QUEUE_BACKLOG_WARN_OPEN = Number(process.env.AUTONOMY_HEALTH_QUEUE_BACKLOG_WARN_OPEN || 40);
 const QUEUE_BACKLOG_CRITICAL_OPEN = Number(process.env.AUTONOMY_HEALTH_QUEUE_BACKLOG_CRITICAL_OPEN || 80);
+const QUEUE_BACKLOG_DIVERGENCE_WARN = Number(process.env.AUTONOMY_HEALTH_QUEUE_BACKLOG_DIVERGENCE_WARN || 12);
+const QUEUE_BACKLOG_DIVERGENCE_CRITICAL = Number(process.env.AUTONOMY_HEALTH_QUEUE_BACKLOG_DIVERGENCE_CRITICAL || 30);
 const QUEUE_BACKLOG_WARN_AGE_HOURS = Number(process.env.AUTONOMY_HEALTH_QUEUE_BACKLOG_WARN_AGE_HOURS || 24);
 const QUEUE_BACKLOG_CRITICAL_AGE_HOURS = Number(process.env.AUTONOMY_HEALTH_QUEUE_BACKLOG_CRITICAL_AGE_HOURS || 72);
 
@@ -880,6 +882,8 @@ function assessQueueBacklog(now, proposalRows, queueEvents, windowDays = 1, auto
     .map((n) => Number(n));
 
   const openCount = activeRows.length;
+  const rawOpenCount = latestById.size;
+  const contractDivergence = Math.max(0, rawOpenCount - openCount);
   const warnAged = openAges.filter((n) => n >= Number(QUEUE_BACKLOG_WARN_AGE_HOURS || 24)).length;
   const criticalAged = openAges.filter((n) => n >= Number(QUEUE_BACKLOG_CRITICAL_AGE_HOURS || 72)).length;
   const oldestHours = openAges.length ? Number(Math.max(...openAges).toFixed(3)) : null;
@@ -894,7 +898,8 @@ function assessQueueBacklog(now, proposalRows, queueEvents, windowDays = 1, auto
       reason: 'autonomy_disabled_manual_mode',
       metrics: {
         open_count: openCount,
-        unique_proposals: latestById.size,
+        unique_proposals: rawOpenCount,
+        queue_contract_divergence: contractDivergence,
         queue_progress_events: queueProgress,
         queue_progress_per_day: progressPerDay,
         aged_open_warn_count: warnAged,
@@ -904,6 +909,8 @@ function assessQueueBacklog(now, proposalRows, queueEvents, windowDays = 1, auto
       thresholds: {
         warn_open: Number(QUEUE_BACKLOG_WARN_OPEN || 40),
         critical_open: Number(QUEUE_BACKLOG_CRITICAL_OPEN || 80),
+        warn_divergence: Number(QUEUE_BACKLOG_DIVERGENCE_WARN || 12),
+        critical_divergence: Number(QUEUE_BACKLOG_DIVERGENCE_CRITICAL || 30),
         warn_age_hours: Number(QUEUE_BACKLOG_WARN_AGE_HOURS || 24),
         critical_age_hours: Number(QUEUE_BACKLOG_CRITICAL_AGE_HOURS || 72)
       }
@@ -911,10 +918,12 @@ function assessQueueBacklog(now, proposalRows, queueEvents, windowDays = 1, auto
   }
 
   const critical = openCount >= Number(QUEUE_BACKLOG_CRITICAL_OPEN || 80)
-    || criticalAged > 0;
+    || criticalAged > 0
+    || contractDivergence >= Number(QUEUE_BACKLOG_DIVERGENCE_CRITICAL || 30);
   const warn = !critical && (
     openCount >= Number(QUEUE_BACKLOG_WARN_OPEN || 40)
     || warnAged > 0
+    || contractDivergence >= Number(QUEUE_BACKLOG_DIVERGENCE_WARN || 12)
   );
   const level = critical ? 'critical' : (warn ? 'warn' : 'ok');
 
@@ -927,7 +936,8 @@ function assessQueueBacklog(now, proposalRows, queueEvents, windowDays = 1, auto
       : `open=${openCount} aged_warn=${warnAged} aged_critical=${criticalAged}`,
     metrics: {
       open_count: openCount,
-      unique_proposals: latestById.size,
+      unique_proposals: rawOpenCount,
+      queue_contract_divergence: contractDivergence,
       queue_progress_events: queueProgress,
       queue_progress_per_day: progressPerDay,
       aged_open_warn_count: warnAged,
@@ -937,6 +947,8 @@ function assessQueueBacklog(now, proposalRows, queueEvents, windowDays = 1, auto
     thresholds: {
       warn_open: Number(QUEUE_BACKLOG_WARN_OPEN || 40),
       critical_open: Number(QUEUE_BACKLOG_CRITICAL_OPEN || 80),
+      warn_divergence: Number(QUEUE_BACKLOG_DIVERGENCE_WARN || 12),
+      critical_divergence: Number(QUEUE_BACKLOG_DIVERGENCE_CRITICAL || 30),
       warn_age_hours: Number(QUEUE_BACKLOG_WARN_AGE_HOURS || 24),
       critical_age_hours: Number(QUEUE_BACKLOG_CRITICAL_AGE_HOURS || 72)
     }
