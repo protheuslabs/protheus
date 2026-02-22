@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// @ts-nocheck
 /**
  * directive_resolver.js - Tiered Directive Resolver
  * 
@@ -416,29 +415,32 @@ function parseYaml(text) {
  *     Default: false (throws hard error). Set env ALLOW_MISSING_DIRECTIVES=true to override.
  */
 function loadActiveDirectives(options = {}) {
+  const opts = (options && typeof options === 'object' ? options : {}) as Record<string, any>;
   // Allow env-based override for dev
   const forceAllowMissing = process.env.ALLOW_MISSING_DIRECTIVES === 'true';
   const forceAllowWeakTier1 = process.env.ALLOW_WEAK_T1_DIRECTIVES === 'true';
   const {
     allowMissing = forceAllowMissing || false,
     allowWeakTier1 = forceAllowWeakTier1 || false
-  } = options;
+  } = opts;
   
   if (!fs.existsSync(ACTIVE_FILE)) {
     throw new Error(`ACTIVE.yaml not found at ${ACTIVE_FILE}`);
   }
   
   const content = fs.readFileSync(ACTIVE_FILE, 'utf8');
-  const active = parseYaml(content);
+  const active = (parseYaml(content) || {}) as Record<string, any>;
+  const activeDirectives = Array.isArray(active.active_directives) ? active.active_directives : [];
   
-  if (!active.active_directives || !Array.isArray(active.active_directives)) {
+  if (!activeDirectives.length) {
     throw new Error(`ACTIVE.yaml missing active_directives array. Got: ${JSON.stringify(active)}`);
   }
   
   const loaded = [];
   const missing = [];
   
-  for (const entry of active.active_directives) {
+  for (const entryRaw of activeDirectives) {
+    const entry = (entryRaw && typeof entryRaw === 'object' ? entryRaw : {}) as Record<string, any>;
     if (entry.status !== 'active') continue;
     
     const fileName = entry.id.endsWith('.yaml') ? entry.id : `${entry.id}.yaml`;
@@ -474,11 +476,14 @@ function loadActiveDirectives(options = {}) {
         }
       }
     }
-    const directive = parseYaml(directiveContent);
+    const directive = (parseYaml(directiveContent) || {}) as Record<string, any>;
+    const metadata = (directive.metadata && typeof directive.metadata === 'object')
+      ? directive.metadata as Record<string, any>
+      : {};
     
     loaded.push({
       id: entry.id,
-      tier: entry.tier || directive.metadata?.tier || 99,
+      tier: entry.tier || metadata.tier || 99,
       status: entry.status,
       data: directive
     });
@@ -572,10 +577,11 @@ function validateAction(actionEnvelope) {
   const directives = loadActiveDirectives();
   const constraints = mergeConstraints(directives);
   
-  const result = {
+  const result: Record<string, any> = {
     allowed: true,
     requires_approval: false,
     blocked_reason: null,
+    approval_reason: null,
     effective_constraints: constraints,
     action_id: actionEnvelope.action_id,
     tier: actionEnvelope.tier || 2
@@ -706,3 +712,4 @@ module.exports = {
   DIRECTIVES_DIR,
   validateTier1DirectiveQuality
 };
+export {};
