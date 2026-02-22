@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// @ts-nocheck
 'use strict';
 
 /**
@@ -45,7 +44,7 @@ function usage() {
 }
 
 function parseArgs(argv) {
-  const out = { _: [] };
+  const out = { _: [] } as Record<string, any>;
   for (const arg of argv) {
     if (!arg.startsWith('--')) {
       out._.push(arg);
@@ -171,8 +170,9 @@ function aggregateForWindow(endDate, days) {
     }
   }
 
-  const summaries = Object.values(buckets)
-    .map((b) => {
+  const summaries = (Object.values(buckets) as Array<Record<string, any>>)
+    .map((bucket) => {
+      const b = (bucket && typeof bucket === 'object' ? bucket : {}) as Record<string, any>;
       const shippedRate = safeRate(b.shipped, b.executed);
       const revertedRate = safeRate(b.reverted, b.executed);
       const stopRatio = safeRate(b.stopped, b.attempted);
@@ -335,3 +335,4 @@ function main() {
 }
 
 main();
+export {};

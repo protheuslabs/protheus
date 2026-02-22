@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// @ts-nocheck
 'use strict';
 
 /**
@@ -102,10 +101,11 @@ function writeRunEvent(dateStr, evt) {
 }
 
 function writeSchedulerReceipt(dateStr, receipt, contract = {}) {
+  const c = (contract && typeof contract === 'object' ? contract : {}) as Record<string, any>;
   const filePath = path.join(RECEIPTS_DIR, `${dateStr}.jsonl`);
   return writeContractReceipt(filePath, receipt, {
-    attempted: contract.attempted === true,
-    verified: contract.verified === true
+    attempted: c.attempted === true,
+    verified: c.verified === true
   });
 }
 
@@ -153,7 +153,8 @@ function cmdStatus(dateStr) {
 
 function cmdRun(dateStr, opts = {}) {
   const ts = nowIso();
-  const runOnce = !!(opts && opts.runOnce === true);
+  const o = (opts && typeof opts === 'object' ? opts : {}) as Record<string, any>;
+  const runOnce = !!(o.runOnce === true);
   const runEnv = runOnce ? { AUTONOMY_ENABLED: '1' } : null;
   const requireStartupAttestation = String(process.env.AUTONOMY_REQUIRE_STARTUP_ATTESTATION || '0') === '1';
   if (requireStartupAttestation && !runOnce) {
@@ -380,3 +381,4 @@ function main() {
 if (require.main === module) {
   main();
 }
+export {};

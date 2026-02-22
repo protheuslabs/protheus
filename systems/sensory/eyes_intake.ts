@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// @ts-nocheck
 'use strict';
 
 /**
@@ -83,7 +82,7 @@ function supportedParserTypes() {
 }
 
 function parseArgs(argv) {
-  const out = { _: [] };
+  const out = { _: [] } as Record<string, any>;
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (!a.startsWith('--')) {
@@ -273,7 +272,7 @@ function createEye(args) {
   const domains = asList(args.domains);
   const allowedDomains = domains.length ? domains : (DEFAULT_DOMAINS[parserType] || ['example.com']);
   const topics = asList(args.topics);
-  const eye = {
+  const eye: Record<string, any> = {
     uid: randomUid({ prefix: 'e', length: 24 }),
     id: eyeId,
     name,
@@ -338,7 +337,7 @@ function validateDirective(args) {
 }
 
 function listDirectives() {
-  const active = Array.from(loadActiveDirectiveIds()).sort((a, b) => a.localeCompare(b));
+  const active = Array.from(loadActiveDirectiveIds()).sort((a, b) => String(a || '').localeCompare(String(b || '')));
   process.stdout.write(JSON.stringify({ ok: true, active_directives: active }, null, 2) + '\n');
 }
 
@@ -376,3 +375,4 @@ module.exports = {
   normalizeId,
   loadActiveDirectiveIds
 };
+export {};
