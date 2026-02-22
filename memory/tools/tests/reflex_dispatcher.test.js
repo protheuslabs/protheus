@@ -39,6 +39,9 @@ function run() {
   const spawnPolicyPath = path.join(tmpRoot, 'config', 'spawn_policy.json');
   const spawnStateDir = path.join(tmpRoot, 'state', 'spawn');
   const stateDir = path.join(tmpRoot, 'state', 'adaptive', 'reflex');
+  const budgetStateDir = path.join(tmpRoot, 'state', 'autonomy', 'daily_budget');
+  const budgetEventsPath = path.join(tmpRoot, 'state', 'autonomy', 'budget_events.jsonl');
+  const budgetAutopausePath = path.join(tmpRoot, 'state', 'autonomy', 'budget_autopause.json');
   const routerStub = path.join(tmpRoot, 'router_stub.js');
   const workerStub = path.join(tmpRoot, 'worker_stub.js');
 
@@ -118,7 +121,13 @@ function run() {
     REFLEX_WORKER_SCRIPT: workerStub,
     SPAWN_POLICY_PATH: spawnPolicyPath,
     SPAWN_STATE_DIR: spawnStateDir,
-    SPAWN_ROUTER_SCRIPT: routerStub
+    SPAWN_ROUTER_SCRIPT: routerStub,
+    SYSTEM_BUDGET_STATE_DIR: budgetStateDir,
+    SYSTEM_BUDGET_EVENTS_PATH: budgetEventsPath,
+    SYSTEM_BUDGET_AUTOPAUSE_PATH: budgetAutopausePath,
+    REFLEX_BUDGET_STATE_DIR: budgetStateDir,
+    REFLEX_BUDGET_EVENTS_PATH: budgetEventsPath,
+    REFLEX_BUDGET_AUTOPAUSE_PATH: budgetAutopausePath
   };
 
   let r = runScript(repoRoot, ['plan', '--demand=20', '--apply=1'], env);
@@ -140,6 +149,7 @@ function run() {
   out = parseJson(r.stdout);
   assert.strictEqual(out.ok, true);
   assert.strictEqual(out.worker.result.route.route_class, 'reflex');
+  assert.strictEqual(out.request_tokens_est, 220, 'run should report default token estimate');
 
   r = runScript(repoRoot, [
     'routine-create',
@@ -203,6 +213,30 @@ function run() {
   assert.strictEqual(out.ok, true);
   assert.strictEqual(out.result, 'disposed');
   assert.strictEqual(out.summary.total, 0);
+
+  writeJson(budgetAutopausePath, {
+    schema_id: 'system_budget_autopause',
+    schema_version: '1.0.0',
+    active: true,
+    set_ts: new Date().toISOString(),
+    source: 'reflex_dispatcher.test',
+    reason: 'manual_pause',
+    pressure: 'hard',
+    date: '2026-02-22',
+    until_ms: Date.now() + (60 * 60 * 1000),
+    until: new Date(Date.now() + (60 * 60 * 1000)).toISOString(),
+    cleared_ts: null,
+    clear_reason: null,
+    updated_at: new Date().toISOString()
+  });
+
+  r = runScript(repoRoot, ['run', '--task=should be blocked', '--intent=heartbeat'], env);
+  assert.strictEqual(r.status, 1, 'run should be denied while budget autopause is active');
+  out = parseJson(r.stdout);
+  assert.strictEqual(out.ok, false);
+  assert.strictEqual(out.error, 'budget_guard_deny');
+  assert.strictEqual(out.reason, 'budget_autopause_active');
+  assert.strictEqual(!!(out.budget_autopause && out.budget_autopause.active), true);
 
   console.log('reflex_dispatcher.test.js: OK');
 }

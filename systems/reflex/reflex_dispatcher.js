@@ -22,6 +22,15 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const { stableUid, randomUid, isAlnum } = require('../../lib/uid.js');
+const {
+  GLOBAL_BUDGET_DEFAULT_DIR,
+  DEFAULT_EVENTS_PATH,
+  DEFAULT_AUTOPAUSE_PATH,
+  evaluateSystemBudgetGuard,
+  writeSystemBudgetDecision,
+  loadSystemBudgetAutopauseState,
+  setSystemBudgetAutopause
+} = require('../budget/system_budget.js');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const POLICY_PATH = process.env.REFLEX_POLICY_PATH
@@ -42,6 +51,19 @@ const SPAWN_MODULE = String(process.env.REFLEX_SPAWN_MODULE || 'reflex').trim() 
 const WORKER_SCRIPT = process.env.REFLEX_WORKER_SCRIPT
   ? path.resolve(process.env.REFLEX_WORKER_SCRIPT)
   : path.join(REPO_ROOT, 'systems', 'reflex', 'reflex_worker.js');
+const REFLEX_BUDGET_ENABLED = !['0', 'false', 'no', 'off'].includes(
+  String(process.env.REFLEX_BUDGET_ENABLED || '1').trim().toLowerCase()
+);
+const REFLEX_BUDGET_MODULE = String(process.env.REFLEX_BUDGET_MODULE || 'reflex_dispatcher').trim() || 'reflex_dispatcher';
+const REFLEX_BUDGET_STATE_DIR = process.env.REFLEX_BUDGET_STATE_DIR
+  ? path.resolve(process.env.REFLEX_BUDGET_STATE_DIR)
+  : GLOBAL_BUDGET_DEFAULT_DIR;
+const REFLEX_BUDGET_EVENTS_PATH = process.env.REFLEX_BUDGET_EVENTS_PATH
+  ? path.resolve(process.env.REFLEX_BUDGET_EVENTS_PATH)
+  : DEFAULT_EVENTS_PATH;
+const REFLEX_BUDGET_AUTOPAUSE_PATH = process.env.REFLEX_BUDGET_AUTOPAUSE_PATH
+  ? path.resolve(process.env.REFLEX_BUDGET_AUTOPAUSE_PATH)
+  : DEFAULT_AUTOPAUSE_PATH;
 
 function nowIso() {
   return new Date().toISOString();
@@ -572,6 +594,135 @@ function applyState(policy, prevState, plan) {
   return next;
 }
 
+function estimateRunTokens(policy, args) {
+  const rawTokens = Number(args.tokens_est || args['tokens-est'] || policy.routing.default_tokens_est);
+  return Math.max(
+    50,
+    Math.min(
+      Number(policy.routing.max_tokens_est),
+      Math.round(rawTokens || policy.routing.default_tokens_est)
+    )
+  );
+}
+
+function assessReflexBudget(policy, args) {
+  const requestTokens = estimateRunTokens(policy, args);
+  if (!REFLEX_BUDGET_ENABLED) {
+    return {
+      enabled: false,
+      decision: 'allow',
+      reason: 'budget_disabled',
+      request_tokens_est: requestTokens,
+      budget_guard: null,
+      budget_autopause: null
+    };
+  }
+
+  const date = nowIso().slice(0, 10);
+  const budgetAutopause = loadSystemBudgetAutopauseState({
+    autopause_path: REFLEX_BUDGET_AUTOPAUSE_PATH
+  });
+  if (budgetAutopause.active === true) {
+    writeSystemBudgetDecision({
+      date,
+      module: REFLEX_BUDGET_MODULE,
+      capability: 'reflex_run',
+      request_tokens_est: requestTokens,
+      decision: 'deny',
+      reason: 'budget_autopause_active'
+    }, {
+      state_dir: REFLEX_BUDGET_STATE_DIR,
+      events_path: REFLEX_BUDGET_EVENTS_PATH
+    });
+    return {
+      enabled: true,
+      decision: 'deny',
+      reason: 'budget_autopause_active',
+      request_tokens_est: requestTokens,
+      budget_guard: null,
+      budget_autopause: {
+        active: true,
+        source: budgetAutopause.source || null,
+        reason: budgetAutopause.reason || null,
+        until: budgetAutopause.until || null
+      }
+    };
+  }
+
+  const budgetGuard = evaluateSystemBudgetGuard({
+    date,
+    request_tokens_est: requestTokens,
+    attempts_today: 1
+  }, {
+    state_dir: REFLEX_BUDGET_STATE_DIR,
+    events_path: REFLEX_BUDGET_EVENTS_PATH,
+    autopause_path: REFLEX_BUDGET_AUTOPAUSE_PATH
+  });
+  if (budgetGuard.hard_stop === true) {
+    const hardReason = String(
+      (budgetGuard.hard_stop_reasons && budgetGuard.hard_stop_reasons[0]) || 'budget_guard_hard_stop'
+    );
+    writeSystemBudgetDecision({
+      date,
+      module: REFLEX_BUDGET_MODULE,
+      capability: 'reflex_run',
+      request_tokens_est: requestTokens,
+      decision: 'deny',
+      reason: hardReason
+    }, {
+      state_dir: REFLEX_BUDGET_STATE_DIR,
+      events_path: REFLEX_BUDGET_EVENTS_PATH
+    });
+    const nextAutopause = setSystemBudgetAutopause({
+      source: 'reflex_dispatcher',
+      reason: hardReason,
+      pressure: 'hard',
+      date,
+      minutes: 60
+    }, {
+      autopause_path: REFLEX_BUDGET_AUTOPAUSE_PATH
+    });
+    return {
+      enabled: true,
+      decision: 'deny',
+      reason: hardReason,
+      request_tokens_est: requestTokens,
+      budget_guard: budgetGuard,
+      budget_autopause: {
+        active: nextAutopause.active === true,
+        source: nextAutopause.source || null,
+        reason: nextAutopause.reason || null,
+        until: nextAutopause.until || null
+      }
+    };
+  }
+
+  writeSystemBudgetDecision({
+    date,
+    module: REFLEX_BUDGET_MODULE,
+    capability: 'reflex_run',
+    request_tokens_est: requestTokens,
+    decision: 'allow',
+    reason: null
+  }, {
+    state_dir: REFLEX_BUDGET_STATE_DIR,
+    events_path: REFLEX_BUDGET_EVENTS_PATH
+  });
+  return {
+    enabled: true,
+    decision: 'allow',
+    reason: null,
+    request_tokens_est: requestTokens,
+    budget_guard: budgetGuard,
+    budget_autopause: {
+      active: false,
+      source: budgetAutopause.source || null,
+      reason: budgetAutopause.reason || null,
+      until: budgetAutopause.until || null
+    }
+  };
+}
+
 function runWorker(policy, args) {
   const task = String(args.task || '').trim();
   if (!task) {
@@ -579,8 +730,7 @@ function runWorker(policy, args) {
   }
 
   const intent = String(args.intent || 'reflex_dispatch').trim();
-  const rawTokens = Number(args.tokens_est || args['tokens-est'] || policy.routing.default_tokens_est);
-  const tokensEst = Math.max(50, Math.min(Number(policy.routing.max_tokens_est), Math.round(rawTokens || policy.routing.default_tokens_est)));
+  const tokensEst = estimateRunTokens(policy, args);
 
   const workerId = String(args['worker-id'] || args.worker_id || `cell-${Date.now()}`).trim();
   const execArgs = [
@@ -618,6 +768,29 @@ function runWorker(policy, args) {
 }
 
 function dispatchRun(policy, state, args, context = {}) {
+  const budgetGate = assessReflexBudget(policy, args);
+  if (budgetGate.decision === 'deny') {
+    appendJsonl(EVENTS_PATH, {
+      ts: nowIso(),
+      type: 'reflex_budget_deny',
+      reason: String(budgetGate.reason || 'budget_guard_deny').slice(0, 120),
+      request_tokens_est: Number(budgetGate.request_tokens_est || 0),
+      budget_guard: budgetGate.budget_guard || null,
+      budget_autopause: budgetGate.budget_autopause || null
+    });
+    const denied = {
+      ok: false,
+      ts: nowIso(),
+      error: 'budget_guard_deny',
+      reason: String(budgetGate.reason || 'budget_guard_deny'),
+      request_tokens_est: Number(budgetGate.request_tokens_est || 0),
+      budget_guard: budgetGate.budget_guard || null,
+      budget_autopause: budgetGate.budget_autopause || null
+    };
+    if (context && context.routine_id) denied.routine_id = String(context.routine_id);
+    return denied;
+  }
+
   const input = computeDemandInput(args);
   const spawnStatus = spawnBrokerStatus();
   const bounds = spawnCapacityBounds(policy, spawnStatus.payload || {});
@@ -648,6 +821,9 @@ function dispatchRun(policy, state, args, context = {}) {
       reason: plan.reason
     },
     worker,
+    request_tokens_est: Number(budgetGate.request_tokens_est || 0),
+    budget_guard: budgetGate.budget_guard || null,
+    budget_autopause: budgetGate.budget_autopause || null,
     hardware_bounds: bounds,
     spawn_status_ok: spawnStatus.ok,
     spawn_status_error: spawnStatus.ok ? null : spawnStatus.error
@@ -688,7 +864,24 @@ function cmdPlan(args) {
   const apply = String(args.apply || '0') === '1';
 
   let allocation = null;
+  let budgetGate = null;
   if (apply) {
+    budgetGate = assessReflexBudget(policy, args);
+    if (budgetGate.decision === 'deny') {
+      process.stdout.write(JSON.stringify({
+        ok: false,
+        ts: nowIso(),
+        error: 'budget_guard_deny',
+        reason: String(budgetGate.reason || 'budget_guard_deny'),
+        request_tokens_est: Number(budgetGate.request_tokens_est || 0),
+        plan,
+        spawn_status_ok: spawnStatus.ok,
+        spawn_status_error: spawnStatus.ok ? null : spawnStatus.error,
+        budget_guard: budgetGate.budget_guard || null,
+        budget_autopause: budgetGate.budget_autopause || null
+      }, null, 2) + '\n');
+      process.exit(1);
+    }
     allocation = spawnBrokerRequest(plan.next_cells, `reflex_${plan.reason}`, true);
     if (!allocation.ok) {
       process.stdout.write(JSON.stringify({
@@ -716,7 +909,10 @@ function cmdPlan(args) {
     plan: planApplied,
     next_state: nextState,
     spawn_status_ok: spawnStatus.ok,
-    spawn_status_error: spawnStatus.ok ? null : spawnStatus.error
+    spawn_status_error: spawnStatus.ok ? null : spawnStatus.error,
+    request_tokens_est: budgetGate ? Number(budgetGate.request_tokens_est || 0) : null,
+    budget_guard: budgetGate && budgetGate.budget_guard ? budgetGate.budget_guard : null,
+    budget_autopause: budgetGate && budgetGate.budget_autopause ? budgetGate.budget_autopause : null
   }, null, 2) + '\n');
   if (!spawnStatus.ok) process.exit(1);
 }
