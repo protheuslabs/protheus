@@ -1,0 +1,24 @@
+{
+  "version": "1.0",
+  "default_channels": ["state_backup", "blank_slate"],
+  "channels": {
+    "state_backup": {
+      "description": "Verify latest state backup snapshot manifest hashes.",
+      "destination_env": "STATE_BACKUP_DEST",
+      "destination_default": "~/.openclaw/backups/workspace-state",
+      "profile": "runtime_state",
+      "manifest_type": "state_backup_snapshot",
+      "max_files": 2000,
+      "required": false
+    },
+    "blank_slate": {
+      "description": "Verify latest blank-slate archive snapshot payload presence.",
+      "destination_env": "BLANK_SLATE_DEST",
+      "destination_default": "~/.openclaw/backups/workspace-blank-slate",
+      "profile": "adaptive_memory_blank_slate",
+      "manifest_type": "blank_slate_reset_snapshot",
+      "max_files": 4000,
+      "required": false
+    }
+  }
+}

@@ -104,6 +104,8 @@ function run() {
   assert.strictEqual(promotion.min_success_criteria_receipts, 2);
   assert.strictEqual(promotion.min_objective_coverage, 0.25);
   assert.strictEqual(promotion.min_shipped, 1);
+  assert.strictEqual(promotion.disable_legacy_fallback_after_quality_receipts, 10);
+  assert.strictEqual(promotion.max_success_criteria_quality_insufficient_rate, 0.4);
 
   const riskCap = resolver.strategyMaxRiskPerAction(active, 50);
   assert.strictEqual(riskCap, 50);
@@ -135,6 +137,22 @@ function run() {
     () => resolver.loadActiveStrategy({ dir: strategyDir, id: 'invalid_profile', strict: true }),
     /strategy_invalid:invalid_profile:/
   );
+
+  writeJson(path.join(tmpRoot, 'outcome_fitness.json'), {
+    version: '1.0',
+    ts: '2026-02-21T00:00:00.000Z',
+    strategy_policy: {
+      strategy_id: 'default_general',
+      promotion_policy_overrides: {
+        disable_legacy_fallback_after_quality_receipts: 14,
+        max_success_criteria_quality_insufficient_rate: 0.45
+      }
+    }
+  });
+  process.env.OUTCOME_FITNESS_POLICY_PATH = path.join(tmpRoot, 'outcome_fitness.json');
+  const overlayed = resolver.loadActiveStrategy({ dir: strategyDir, id: 'default_general' });
+  assert.strictEqual(overlayed.promotion_policy.disable_legacy_fallback_after_quality_receipts, 14);
+  assert.strictEqual(overlayed.promotion_policy.max_success_criteria_quality_insufficient_rate, 0.45);
 
   console.log('strategy_resolver.test.js: OK');
   if (outcomePolicyBefore == null) delete process.env.OUTCOME_FITNESS_POLICY_PATH;

@@ -63,6 +63,56 @@ function run() {
   assert.ok(fail.failed_count >= 1);
   assert.ok(String(fail.primary_failure || '').includes('success_criteria_'));
 
+  const opportunityProposal = {
+    id: 'P-SC-2',
+    type: 'opportunity_capture',
+    action_spec: {
+      success_criteria: [
+        { metric: 'outreach_artifact', target: '1 concrete offer/proposal draft generated', horizon: '24h' },
+        { metric: 'reply_or_interview_count', target: '>=1 reply/interview signal against the draft', horizon: '7d' }
+      ]
+    }
+  };
+  const opportunityPass = evaluateSuccessCriteria(
+    opportunityProposal,
+    {
+      outcome: 'shipped',
+      exec_ok: true,
+      dod_passed: true,
+      postconditions_ok: true,
+      queue_outcome_logged: true,
+      dod_diff: { artifacts_delta: 1 },
+      metric_values: { reply_or_interview_count: 2 }
+    },
+    { required: true, min_count: 1 }
+  );
+  assert.strictEqual(opportunityPass.passed, true);
+  assert.ok(
+    opportunityPass.checks.some((c) => c.reason === 'outreach_artifact_check' && c.pass === true),
+    'outreach_artifact should evaluate with artifact delta fallback'
+  );
+  assert.ok(
+    opportunityPass.checks.some((c) => c.reason === 'reply_or_interview_count_check' && c.pass === true),
+    'reply_or_interview_count should evaluate with metric_values input'
+  );
+
+  const opportunityUnknown = evaluateSuccessCriteria(
+    opportunityProposal,
+    {
+      outcome: 'shipped',
+      exec_ok: true,
+      dod_passed: true,
+      postconditions_ok: true,
+      queue_outcome_logged: true,
+      dod_diff: { artifacts_delta: 1 }
+    },
+    { required: true, min_count: 1 }
+  );
+  const replyUnknown = opportunityUnknown.checks.find((c) => c.metric === 'reply_or_interview_count');
+  assert.ok(replyUnknown, 'reply_or_interview_count row should exist');
+  assert.strictEqual(replyUnknown.evaluated, false, 'reply/interview row should stay unknown without explicit signal');
+  assert.strictEqual(replyUnknown.reason, 'reply_or_interview_count_unavailable');
+
   console.log('success_criteria_verifier.test.js: OK');
 }
 

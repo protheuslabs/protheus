@@ -26,6 +26,9 @@ const { isEmergencyStopEngaged } = require('../../lib/emergency_stop.js');
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const REGISTRY_PATH = path.join(REPO_ROOT, 'habits', 'registry.json');
 const TRUSTED_HABITS_PATH = path.join(REPO_ROOT, 'config', 'trusted_habits.json');
+const REFLEX_ROUTINES_PATH = process.env.REFLEX_ROUTINES_PATH
+  ? path.resolve(process.env.REFLEX_ROUTINES_PATH)
+  : path.join(REPO_ROOT, 'state', 'adaptive', 'reflex', 'routines.json');
 
 function normalizeIntent(text) {
   if (!text) return '';
@@ -69,6 +72,17 @@ function loadTrustedHabits() {
   }
 }
 
+function loadReflexRoutines() {
+  if (!fs.existsSync(REFLEX_ROUTINES_PATH)) return {};
+  try {
+    const parsed = JSON.parse(fs.readFileSync(REFLEX_ROUTINES_PATH, 'utf8'));
+    if (!parsed || typeof parsed !== 'object') return {};
+    return parsed.routines && typeof parsed.routines === 'object' ? parsed.routines : {};
+  } catch {
+    return {};
+  }
+}
+
 function requiredInputKeys(habit) {
   if (!habit || !habit.inputs_schema || !Array.isArray(habit.inputs_schema.required)) return [];
   return habit.inputs_schema.required
@@ -92,6 +106,23 @@ function pickBestMatch(habits, intentKey, skipHabitId = '') {
   const tokenMatch = habits.find(h => h.id !== skipHabitId && intentKey.includes(h.id));
   if (tokenMatch) return tokenMatch;
   return null;
+}
+
+function pickReflexMatch(routinesMap, intentKey, task) {
+  const rows = Object.values(routinesMap || {});
+  if (!rows.length) return null;
+  const direct = rows.find((r) => {
+    if (!r || String(r.status || '').toLowerCase() !== 'enabled') return false;
+    const id = String(r.id || '').trim().toLowerCase();
+    return id && (id === String(intentKey || '').toLowerCase() || String(intentKey || '').includes(id));
+  });
+  if (direct) return direct;
+  const text = String(task || '').toLowerCase();
+  return rows.find((r) => {
+    if (!r || String(r.status || '').toLowerCase() !== 'enabled') return false;
+    const tags = Array.isArray(r.tags) ? r.tags.map((t) => String(t || '').toLowerCase()) : [];
+    return tags.some((t) => t && text.includes(t));
+  }) || null;
 }
 
 function makeRunInputs(task, intentKey) {
@@ -271,6 +302,12 @@ function main() {
     })
     : null;
   const routeOut = compactRouteMeta(routeMeta);
+  const reflexPreferred = String(process.env.ROUTE_TASK_REFLEX_PREFERRED || '1') !== '0';
+  const reflexMaxTokens = Number(process.env.ROUTE_TASK_REFLEX_MAX_TOKENS || 420);
+  const reflexRoutines = loadReflexRoutines();
+  const reflexMatch = reflexPreferred && gateResult.risk === 'low' && tokensEst <= reflexMaxTokens
+    ? pickReflexMatch(reflexRoutines, intentKey, task)
+    : null;
   
   // Build triggers_met array
   const whichMet = [
@@ -305,6 +342,32 @@ function main() {
     process.exit(0);
   }
   
+  // 1) If it matches an ACTIVE habit → RUN it.
+  if (reflexMatch) {
+    const reflexId = String(reflexMatch.id || '').trim();
+    const runArgs = [
+      'systems/reflex/reflex_dispatcher.js',
+      'routine-run',
+      '--id', reflexId,
+      '--task', String(task || '').slice(0, 1000),
+      '--intent', intentKey,
+      '--tokens_est', String(tokensEst || 0)
+    ];
+    const out = {
+      decision: 'RUN_REFLEX',
+      suggested_reflex_id: reflexId,
+      reason: `Matched enabled reflex routine: ${reflexId}`,
+      executor: { cmd: 'node', args: runArgs },
+      which_met: whichMet,
+      thresholds: thresholds,
+      gate_decision: gateResult.decision,
+      gate_risk: gateResult.risk,
+      route: routeOut
+    };
+    console.log(JSON.stringify(out, null, 2));
+    process.exit(0);
+  }
+
   // 1) If it matches an ACTIVE habit → RUN it.
   if (match && (match.governance && match.governance.state === 'active' || match.status === 'active')) {
     const req = requiredInputKeys(match);

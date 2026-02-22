@@ -77,10 +77,38 @@ function evaluateReadiness(strategy, summary, policy, requestedDays) {
   const totalRuns = Number(runs.total || 0);
   const attempted = Number(receipts.attempted || 0);
   const verifiedRate = Number(receipts.verified_rate || 0);
-  const criteriaReceipts = Number(autonomyReceipts.success_criteria_receipts || 0);
-  const criteriaPassRate = Number(autonomyReceipts.success_criteria_receipt_pass_rate || 0);
+  const criteriaQualityReceipts = Number(autonomyReceipts.success_criteria_quality_receipts || 0);
+  const criteriaQualityPassRate = Number(autonomyReceipts.success_criteria_quality_receipt_pass_rate || 0);
+  const criteriaLegacyReceipts = Number(autonomyReceipts.success_criteria_receipts || 0);
+  const criteriaLegacyPassRate = Number(autonomyReceipts.success_criteria_receipt_pass_rate || 0);
+  const criteriaQualityInsufficientReceipts = Number(
+    autonomyReceipts.success_criteria_quality_filtered_receipts
+    || autonomyReceipts.success_criteria_quality_insufficient_receipts
+    || 0
+  );
+  const criteriaQualityInsufficientRateRaw = Number(autonomyReceipts.success_criteria_quality_insufficient_rate);
+  const criteriaQualityInsufficientRate = Number.isFinite(criteriaQualityInsufficientRateRaw)
+    ? criteriaQualityInsufficientRateRaw
+    : safeRate(criteriaQualityInsufficientReceipts, criteriaLegacyReceipts);
   const minCriteriaReceipts = Number(policy.min_success_criteria_receipts || 0);
   const minCriteriaPassRate = Number(policy.min_success_criteria_pass_rate || 0.6);
+  const disableLegacyFallbackAfterQualityReceipts = Number(
+    policy.disable_legacy_fallback_after_quality_receipts != null
+      ? policy.disable_legacy_fallback_after_quality_receipts
+      : 10
+  );
+  const maxQualityInsufficientRate = Number(
+    policy.max_success_criteria_quality_insufficient_rate != null
+      ? policy.max_success_criteria_quality_insufficient_rate
+      : 0.4
+  );
+  const forceQualityCriteria = criteriaQualityReceipts >= Math.max(0, disableLegacyFallbackAfterQualityReceipts);
+  const useQualityCriteria = forceQualityCriteria || criteriaQualityReceipts >= minCriteriaReceipts;
+  const criteriaReceipts = useQualityCriteria ? criteriaQualityReceipts : criteriaLegacyReceipts;
+  const criteriaPassRate = useQualityCriteria ? criteriaQualityPassRate : criteriaLegacyPassRate;
+  const criteriaSource = useQualityCriteria
+    ? (forceQualityCriteria ? 'quality_forced' : 'quality')
+    : 'legacy_fallback';
   const minObjectiveCoverage = Number(policy.min_objective_coverage || 0);
   const maxObjectiveNoProgressRate = Number(policy.max_objective_no_progress_rate || 1);
   const objectiveRows = Object.values(objectiveScorecard);
@@ -146,6 +174,16 @@ function evaluateReadiness(strategy, summary, policy, requestedDays) {
       target: criteriaReceipts >= minCriteriaReceipts ? `>=${minCriteriaPassRate}` : `requires_receipts>=${minCriteriaReceipts}`
     },
     {
+      name: 'success_criteria_quality_insufficient_rate',
+      pass: useQualityCriteria
+        ? criteriaQualityInsufficientRate <= maxQualityInsufficientRate
+        : true,
+      value: useQualityCriteria ? criteriaQualityInsufficientRate : null,
+      target: useQualityCriteria
+        ? `<=${maxQualityInsufficientRate}`
+        : 'n/a(legacy_fallback)'
+    },
+    {
       name: 'objective_coverage',
       pass: objectiveCoverage >= minObjectiveCoverage,
       value: objectiveCoverage,
@@ -180,7 +218,17 @@ function evaluateReadiness(strategy, summary, policy, requestedDays) {
       attempted,
       verified_rate: verifiedRate,
       success_criteria_receipts: criteriaReceipts,
+      success_criteria_source: criteriaSource,
+      success_criteria_fallback_retired: forceQualityCriteria,
+      success_criteria_quality_receipts: criteriaQualityReceipts,
+      success_criteria_legacy_receipts: criteriaLegacyReceipts,
+      success_criteria_quality_insufficient_receipts: criteriaQualityInsufficientReceipts,
+      success_criteria_quality_insufficient_rate: criteriaLegacyReceipts > 0
+        ? criteriaQualityInsufficientRate
+        : null,
       min_success_criteria_receipts: minCriteriaReceipts,
+      disable_legacy_fallback_after_quality_receipts: Math.max(0, disableLegacyFallbackAfterQualityReceipts),
+      max_success_criteria_quality_insufficient_rate: maxQualityInsufficientRate,
       success_criteria_pass_rate: criteriaReceipts >= minCriteriaReceipts ? criteriaPassRate : null,
       objective_attempts: objectiveAttempts,
       objective_coverage: objectiveCoverage,

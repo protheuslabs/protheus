@@ -429,6 +429,66 @@ function main() {
     ["state_cleanup.js", "run", "profiles", "--apply", "--dry-run"]
   );
 
+  // blank_slate_reset.js performs reversible archive-based adaptive+memory resets with rollback.
+  checkScript(
+    "systems/ops/blank_slate_reset.js",
+    ["blank_slate_reset.js", "run", "rollback", "list", "--confirm=RESET"]
+  );
+
+  // backup_integrity_check.js validates state backup + blank-slate snapshot integrity.
+  checkScript(
+    "systems/ops/backup_integrity_check.js",
+    ["backup_integrity_check.js", "run", "list", "--strict", "--channel"]
+  );
+
+  // startup_attestation.js signs/verifies critical boot hashes before autonomy execution.
+  checkScript(
+    "systems/security/startup_attestation.js",
+    ["startup_attestation.js", "issue", "verify", "status", "--ttl-hours"]
+  );
+
+  // repo_hygiene_guard.js blocks generated/runtime artifacts from merge diffs.
+  checkScript(
+    "systems/security/repo_hygiene_guard.js",
+    ["repo_hygiene_guard.js", "run", "--strict", "--base-ref"]
+  );
+
+  // quorum_validator.js performs deterministic second-pass agreement checks for high-tier proposals.
+  checkScript(
+    "systems/autonomy/quorum_validator.js",
+    ["quorum_validator.js", "check", "--proposal-file"]
+  );
+
+  // weekly_strategy_synthesis.js summarizes executed outcomes into strategy weight signals.
+  checkScript(
+    "systems/strategy/weekly_strategy_synthesis.js",
+    ["weekly_strategy_synthesis.js", "run", "--days", "--write"]
+  );
+
+  // ops_dashboard.js consolidates daily/weekly SLO failures for operator visibility.
+  checkScript(
+    "systems/autonomy/ops_dashboard.js",
+    ["ops_dashboard.js", "run", "--days"]
+  );
+
+  // reflex_habit_bridge.js promotes/degrades reflex micro-routines from active habit telemetry.
+  checkScript(
+    "habits/scripts/reflex_habit_bridge.js",
+    ["reflex_habit_bridge.js", "sync", "gc", "status", "--apply"]
+  );
+
+  // habit_cell_pool.js executes bounded habits in a spawn-broker-managed cell pool.
+  checkScript(
+    "systems/habits/habit_cell_pool.js",
+    ["habit_cell_pool.js", "status", "run", "--ids", "--max-workers"]
+  );
+
+  // active_state_bridge.js manages continuity lease + checkpoint/replay transfers.
+  checkScript(
+    "systems/continuity/active_state_bridge.js",
+    ["active_state_bridge.js", "acquire", "renew", "release", "checkpoint", "replay"]
+  );
+
   // spawn_broker.js is centralized spawn allocation/budget control for module cell pools.
   checkScript(
     "systems/spawn/spawn_broker.js",

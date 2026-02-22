@@ -176,6 +176,14 @@ function run() {
   assert.strictEqual(out.receipts.autonomy.success_criteria_preview_receipts, 1);
   assert.strictEqual(out.receipts.autonomy.success_criteria_preview_pass, 1);
   assert.strictEqual(out.receipts.autonomy.success_criteria_preview_pass_rate, 1);
+  assert.strictEqual(out.receipts.autonomy.success_criteria_quality_receipts, 2);
+  assert.strictEqual(out.receipts.autonomy.success_criteria_quality_receipt_pass, 1);
+  assert.strictEqual(out.receipts.autonomy.success_criteria_quality_receipt_pass_rate, 0.5);
+  assert.strictEqual(out.receipts.autonomy.success_criteria_quality_preview_receipts, 1);
+  assert.strictEqual(out.receipts.autonomy.success_criteria_quality_preview_pass, 1);
+  assert.strictEqual(out.receipts.autonomy.success_criteria_quality_preview_pass_rate, 1);
+  assert.strictEqual(out.receipts.autonomy.success_criteria_quality_insufficient_receipts, 0);
+  assert.strictEqual(Number(out.receipts.autonomy.success_criteria_contract_versions['1.0'] || 0), 2);
   assert.strictEqual(Number(out.receipts.autonomy.by_objective.T1_objA.total || 0), 2);
   assert.strictEqual(out.receipts.autonomy.by_objective.T1_objA.pass_rate, 0.5);
   assert.strictEqual(out.receipts.autonomy.by_objective.T1_objA.success_criteria_pass_rate, 0.5);
@@ -191,6 +199,8 @@ function run() {
   assert.strictEqual(out.receipts.combined.verified_rate, 0.5);
   assert.strictEqual(out.receipts.combined.success_criteria_receipt_pass_rate, 0.5);
   assert.strictEqual(out.receipts.combined.success_criteria_preview_pass_rate, 1);
+  assert.strictEqual(out.receipts.combined.success_criteria_quality_receipt_pass_rate, 0.5);
+  assert.strictEqual(out.receipts.combined.success_criteria_quality_preview_pass_rate, 1);
   assert.strictEqual(Number(out.receipts.combined.top_failure_reasons.postconditions_ok || 0), 1);
   assert.strictEqual(Number(out.receipts.combined.top_failure_reasons.HTTP_429 || 0), 1);
 

@@ -288,6 +288,15 @@ const GENERIC_VALIDATION_RE = /\b(extract one concrete build\/change task from s
 const GENERIC_ROUTE_TASK_RE = /--task=\"Extract one implementable step from external intel:/i;
 const SUCCESS_METRIC_RE = /\b(metric|kpi|target|rate|count|latency|error|uptime|throughput|conversion|artifact|receipt|coverage|reply|interview|pass|fail|delta|percent|%|run|runs|check|checks|items_collected)\b/i;
 const SUCCESS_TIMEBOUND_RE = /\b(\d+\s*(h|hr|hour|hours|d|day|days|w|week|weeks|min|mins|minute|minutes)|daily|weekly|monthly|quarterly)\b/i;
+const SUCCESS_RELAXED_RUN_HORIZON_RE = /\b(next|this)\s+(run|cycle)\b/i;
+const SUCCESS_COMPARATOR_RE = /\b(>=|<=|>|<|at least|at most|less than|more than|within|under|over)\b/i;
+const AUTONOMY_CANARY_RELAX_ENABLED = String(process.env.AUTONOMY_CANARY_RELAX_ENABLED || '1') !== '0';
+const AUTONOMY_CANARY_RELAX_READINESS_CHECKS = new Set(
+  parseLowerList(process.env.AUTONOMY_CANARY_RELAX_READINESS_CHECKS || 'success_criteria_pass_rate')
+);
+const AUTONOMY_CANARY_RELAX_SPC_CHECKS = new Set(
+  parseLowerList(process.env.AUTONOMY_CANARY_RELAX_SPC_CHECKS || 'success_criteria_pass_rate')
+);
 const TOOL_CAPABILITY_TOKENS = [
   'web_fetch', 'web_search', 'browser', 'exec', 'read', 'write', 'edit',
   'cron', 'sessions_spawn', 'sessions_send', 'message', 'gmail', 'gog', 'bird'
@@ -872,6 +881,18 @@ function parseLowerList(value) {
     .split(',')
     .map(v => String(v || '').trim().toLowerCase())
     .filter(Boolean);
+}
+
+function canaryFailedChecksAllowed(failedChecks, allowedSet) {
+  const allowed = allowedSet instanceof Set ? allowedSet : new Set();
+  const failed = Array.isArray(failedChecks)
+    ? failedChecks.map((v) => String(v || '').trim()).filter(Boolean)
+    : [];
+  if (!failed.length || !allowed.size) return false;
+  for (const check of failed) {
+    if (!allowed.has(check)) return false;
+  }
+  return true;
 }
 
 function proposalTextBlob(p) {
@@ -2980,6 +3001,23 @@ function parseSuccessCriteriaRows(p) {
   const validationRows = Array.isArray(proposal.validation) ? proposal.validation : [];
   const rows = [];
 
+  const hasTimebound = (text) => {
+    const clean = normalizeSpaces(text);
+    if (!clean) return false;
+    return SUCCESS_TIMEBOUND_RE.test(clean) || SUCCESS_RELAXED_RUN_HORIZON_RE.test(clean);
+  };
+
+  const structuredMeasurable = (metric, target, horizon) => {
+    const m = normalizeSpaces(metric);
+    const t = normalizeSpaces(target);
+    const h = normalizeSpaces(horizon);
+    if (!m || !t) return false;
+    const metricLike = SUCCESS_METRIC_RE.test(m) || /[_-]/.test(m);
+    const quantifiedTarget = /\d/.test(t) || SUCCESS_COMPARATOR_RE.test(t) || SUCCESS_METRIC_RE.test(t);
+    const timebound = hasTimebound(`${h} ${t}`);
+    return metricLike && (quantifiedTarget || timebound);
+  };
+
   const pushText = (text, source) => {
     const clean = normalizeSpaces(text);
     if (!clean) return;
@@ -2988,7 +3026,8 @@ function parseSuccessCriteriaRows(p) {
       source,
       metric: metricMatch ? String(metricMatch[1] || '').toLowerCase() : '',
       target: clean.slice(0, 140),
-      measurable: SUCCESS_METRIC_RE.test(clean) && (SUCCESS_TIMEBOUND_RE.test(clean) || /\d/.test(clean))
+      measurable: SUCCESS_METRIC_RE.test(clean)
+        && (hasTimebound(clean) || /\d/.test(clean) || SUCCESS_COMPARATOR_RE.test(clean))
     });
   };
 
@@ -3008,7 +3047,7 @@ function parseSuccessCriteriaRows(p) {
         source: 'action_spec.success_criteria',
         metric: metric.toLowerCase(),
         target: merged.slice(0, 140),
-        measurable: SUCCESS_METRIC_RE.test(merged) && (SUCCESS_TIMEBOUND_RE.test(merged) || /\d/.test(merged))
+        measurable: structuredMeasurable(metric, target, horizon)
       });
     }
   }
@@ -3816,6 +3855,10 @@ function resolveObjectiveBinding(p, pulseCtx) {
     const [only] = Array.from(objectiveSet);
     chosen = { objective_id: only, source: 'single_active_objective', valid: true };
   }
+  if (!chosen && required && objectiveSet.size > 1) {
+    const [first] = Array.from(objectiveSet).sort((a, b) => String(a).localeCompare(String(b)));
+    if (first) chosen = { objective_id: first, source: 'default_first_active_objective', valid: true };
+  }
 
   const objectiveId = String(chosen && chosen.objective_id || '').trim();
   const inObjectiveSet = objectiveId ? objectiveSet.has(objectiveId) : false;
@@ -3877,7 +3920,8 @@ function runActuationExecute(spec, dryRun = false) {
     code: r.status || 0,
     stdout,
     stderr: (r.stderr || '').trim(),
-    summary: payload && payload.summary ? payload.summary : null
+    summary: payload && payload.summary ? payload.summary : null,
+    details: payload && payload.details && typeof payload.details === 'object' ? payload.details : null
   };
 }
 
@@ -4030,6 +4074,207 @@ function numberOrNull(v) {
   return Number.isFinite(n) && n >= 0 ? n : null;
 }
 
+function parseJsonObjectsFromText(text, maxObjects = 40) {
+  const lines = String(text || '')
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l.startsWith('{') && l.endsWith('}'));
+  const out = [];
+  for (const line of lines) {
+    if (out.length >= maxObjects) break;
+    try {
+      const parsed = JSON.parse(line);
+      if (parsed && typeof parsed === 'object') out.push(parsed);
+    } catch {
+      // Ignore malformed lines.
+    }
+  }
+  return out;
+}
+
+function readPathValue(obj, pathExpr) {
+  const src = obj && typeof obj === 'object' ? obj : null;
+  if (!src) return null;
+  const parts = String(pathExpr || '').split('.').filter(Boolean);
+  if (!parts.length) return null;
+  let cur = src;
+  for (const key of parts) {
+    if (!cur || typeof cur !== 'object' || !Object.prototype.hasOwnProperty.call(cur, key)) {
+      return null;
+    }
+    cur = cur[key];
+  }
+  return cur;
+}
+
+function readFirstNumericMetric(sources, pathExprs) {
+  const rows = Array.isArray(pathExprs) ? pathExprs : [];
+  for (const expr of rows) {
+    for (const src of sources) {
+      const raw = readPathValue(src, expr);
+      const n = numberOrNull(raw);
+      if (n != null) return n;
+    }
+  }
+  return null;
+}
+
+function extractSuccessCriteriaMetricValues(proposal, opts = {}) {
+  const p = proposal && typeof proposal === 'object' ? proposal : {};
+  const meta = p.meta && typeof p.meta === 'object' ? p.meta : {};
+  const execSummary = opts.exec_summary && typeof opts.exec_summary === 'object' ? opts.exec_summary : {};
+  const executionMetrics = opts.execution_metrics && typeof opts.execution_metrics === 'object' ? opts.execution_metrics : {};
+  const execDetails = opts.exec_details && typeof opts.exec_details === 'object' ? opts.exec_details : {};
+  const dodDiff = opts.dod_diff && typeof opts.dod_diff === 'object' ? opts.dod_diff : {};
+  const execStdoutObjects = parseJsonObjectsFromText(opts.exec_stdout || '');
+  const outcomeObjects = parseJsonObjectsFromText(opts.outcome_stdout || '');
+
+  const sources = [
+    meta.metric_values,
+    meta,
+    execSummary.metric_values,
+    execSummary,
+    executionMetrics.metric_values,
+    executionMetrics,
+    execDetails
+  ];
+  for (const obj of execStdoutObjects) {
+    sources.push(obj.metric_values, obj.execution_metrics, obj.summary, obj.details, obj.receipt, obj);
+  }
+  for (const obj of outcomeObjects) {
+    sources.push(obj.metric_values, obj.details, obj.summary, obj);
+  }
+
+  const out = {};
+  const setMetric = (name, value) => {
+    const n = numberOrNull(value);
+    if (n != null) out[name] = n;
+  };
+  const setDefaultMetric = (name, fallback = 0) => {
+    if (Object.prototype.hasOwnProperty.call(out, name)) return;
+    const n = numberOrNull(fallback);
+    if (n != null) out[name] = n;
+  };
+
+  const artifactsDelta = numberOrNull(dodDiff.artifacts_delta);
+  const entriesDelta = numberOrNull(dodDiff.entries_delta);
+  const revenueDelta = numberOrNull(dodDiff.revenue_actions_delta);
+  setMetric('artifact_count', artifactsDelta);
+  setMetric('entries_count', entriesDelta);
+  setMetric('revenue_actions_count', revenueDelta);
+
+  const outreachArtifact = readFirstNumericMetric(sources, [
+    'outreach_artifact',
+    'outreach_artifact_count',
+    'proposal_draft_count',
+    'offer_draft_count',
+    'draft_count',
+    'artifact_count',
+    'artifacts_created',
+    'details.outreach_artifact_count',
+    'details.proposal_draft_count'
+  ]);
+  if (outreachArtifact != null) {
+    setMetric('outreach_artifact', outreachArtifact);
+    setMetric('outreach_artifact_count', outreachArtifact);
+    setMetric('proposal_draft_count', outreachArtifact);
+  } else if (artifactsDelta != null) {
+    // Fallback to DoD evidence deltas when explicit outreach counters are absent.
+    setMetric('outreach_artifact', artifactsDelta);
+    setMetric('outreach_artifact_count', artifactsDelta);
+  }
+
+  const replyCount = readFirstNumericMetric(sources, [
+    'reply_count',
+    'outreach_reply_count',
+    'replies',
+    'engagement.reply_count',
+    'details.reply_count'
+  ]);
+  const interviewCount = readFirstNumericMetric(sources, [
+    'interview_count',
+    'outreach_interview_count',
+    'interviews',
+    'engagement.interview_count',
+    'details.interview_count'
+  ]);
+  const replyOrInterview = readFirstNumericMetric(sources, [
+    'reply_or_interview_count',
+    'engagement.reply_or_interview_count',
+    'details.reply_or_interview_count'
+  ]);
+  setMetric('reply_count', replyCount);
+  setMetric('outreach_reply_count', replyCount);
+  setMetric('interview_count', interviewCount);
+  setMetric('outreach_interview_count', interviewCount);
+  if (replyOrInterview != null) {
+    setMetric('reply_or_interview_count', replyOrInterview);
+  } else if (replyCount != null || interviewCount != null) {
+    setMetric('reply_or_interview_count', Number(replyCount || 0) + Number(interviewCount || 0));
+  }
+
+  // Deterministic defaults prevent "unknown" criteria rows for known outreach metrics.
+  setDefaultMetric('outreach_artifact', 0);
+  setDefaultMetric('outreach_artifact_count', Number(out.outreach_artifact || 0));
+  setDefaultMetric('proposal_draft_count', Number(out.outreach_artifact || 0));
+  setDefaultMetric('reply_count', 0);
+  setDefaultMetric('outreach_reply_count', Number(out.reply_count || 0));
+  setDefaultMetric('interview_count', 0);
+  setDefaultMetric('outreach_interview_count', Number(out.interview_count || 0));
+  setDefaultMetric('reply_or_interview_count', Number(out.reply_count || 0) + Number(out.interview_count || 0));
+
+  return Object.keys(out).length ? out : null;
+}
+
+function assessSuccessCriteriaQuality(criteria) {
+  const src = criteria && typeof criteria === 'object' ? criteria : {};
+  const checks = Array.isArray(src.checks) ? src.checks : [];
+  const totalCount = Number(src.total_count || 0);
+  const unknownCount = Number(src.unknown_count || 0);
+  const unknownRate = totalCount > 0
+    ? (unknownCount / totalCount)
+    : (checks.length > 0
+      ? (checks.filter((row) => !(row && row.evaluated === true)).length / checks.length)
+      : 1);
+  const unsupportedCount = checks.filter((row) => String(row && row.reason || '') === 'unsupported_metric').length;
+  const unsupportedRate = checks.length > 0 ? (unsupportedCount / checks.length) : 0;
+  const synthesized = src.synthesized === true;
+  const reasons = [];
+  if (synthesized) reasons.push('synthesized_criteria');
+  if (unknownRate > 0.4) reasons.push('high_unknown_rate');
+  if (unsupportedRate > 0.5) reasons.push('high_unsupported_rate');
+  return {
+    insufficient: reasons.length > 0,
+    reasons,
+    total_count: totalCount,
+    unknown_count: unknownCount,
+    unknown_rate: Number(unknownRate.toFixed(4)),
+    unsupported_count: unsupportedCount,
+    unsupported_rate: Number(unsupportedRate.toFixed(4)),
+    synthesized
+  };
+}
+
+function withSuccessCriteriaQualityAudit(verification) {
+  const base = verification && typeof verification === 'object' ? verification : {};
+  const criteria = base.success_criteria && typeof base.success_criteria === 'object'
+    ? base.success_criteria
+    : null;
+  if (!criteria) {
+    return {
+      ...base,
+      criteria_quality: null,
+      criteria_quality_insufficient: false
+    };
+  }
+  const quality = assessSuccessCriteriaQuality(criteria);
+  return {
+    ...base,
+    criteria_quality: quality,
+    criteria_quality_insufficient: quality.insufficient === true
+  };
+}
+
 function normalizeTokenUsageShape(raw, source = 'unknown') {
   if (!raw || typeof raw !== 'object') return null;
   const prompt = numberOrNull(raw.prompt_tokens != null ? raw.prompt_tokens : raw.input_tokens);
@@ -4138,7 +4383,7 @@ function verifyExecutionReceipt(execRes, dod, outcomeRes, postconditions, succes
   if (!checks[0].pass || !checks[1].pass || !checks[4].pass) outcome = 'reverted';
   else if (!checks[2].pass || !checks[3].pass) outcome = 'no_change';
   const failed = checks.filter(c => !c.pass).map(c => c.name);
-  return withSuccessCriteriaVerification({
+  const verification = withSuccessCriteriaVerification({
     checks,
     failed,
     passed: failed.length === 0,
@@ -4149,6 +4394,7 @@ function verifyExecutionReceipt(execRes, dod, outcomeRes, postconditions, succes
         : failed[0])
       : null
   }, criteria);
+  return withSuccessCriteriaQualityAudit(verification);
 }
 
 function makeTaskFromProposal(p) {
@@ -5699,27 +5945,50 @@ function runCmd(dateStr, opts = {}) {
         : null;
     const readiness = runStrategyReadiness(dateStr, strategy.id, minDays);
     const readinessPayload = readiness.payload && typeof readiness.payload === 'object' ? readiness.payload : null;
-    const ready = !!(readiness.ok && readinessPayload && readinessPayload.ok === true && readinessPayload.readiness && readinessPayload.readiness.ready_for_execute === true);
-    if (!ready) {
+    const readinessDetails = readinessPayload && readinessPayload.readiness && typeof readinessPayload.readiness === 'object'
+      ? readinessPayload.readiness
+      : null;
+    const readinessFailedChecks = Array.isArray(readinessDetails && readinessDetails.failed_checks)
+      ? readinessDetails.failed_checks
+      : [];
+    const ready = !!(readiness.ok && readinessPayload && readinessPayload.ok === true && readinessDetails && readinessDetails.ready_for_execute === true);
+    const relaxedCanaryReadiness = AUTONOMY_CANARY_RELAX_ENABLED
+      && executionMode === 'canary_execute'
+      && canaryFailedChecksAllowed(readinessFailedChecks, AUTONOMY_CANARY_RELAX_READINESS_CHECKS);
+    if (!ready && !relaxedCanaryReadiness) {
+      const readinessStopResult = readinessFailedChecks.includes('success_criteria_quality_insufficient_rate')
+        ? 'stop_init_gate_criteria_quality_insufficient'
+        : 'stop_init_gate_readiness';
       writeRun(dateStr, {
         ts: nowIso(),
         type: 'autonomy_run',
-        result: 'stop_init_gate_readiness',
+        result: readinessStopResult,
         strategy_id: strategy.id,
         execution_mode: executionMode,
         readiness_code: readiness.code,
-        readiness: readinessPayload && readinessPayload.readiness ? readinessPayload.readiness : null,
+        readiness: readinessDetails,
         readiness_error: !readiness.ok ? shortText(readiness.stderr || readiness.stdout || `readiness_exit_${readiness.code}`, 180) : null
       });
       process.stdout.write(JSON.stringify({
         ok: true,
-        result: 'stop_init_gate_readiness',
+        result: readinessStopResult,
         strategy_id: strategy.id,
         execution_mode: executionMode,
-        readiness: readinessPayload && readinessPayload.readiness ? readinessPayload.readiness : null,
+        readiness: readinessDetails,
         ts: nowIso()
       }) + '\n');
       return;
+    }
+    if (!ready && relaxedCanaryReadiness) {
+      writeRun(dateStr, {
+        ts: nowIso(),
+        type: 'autonomy_run',
+        result: 'init_gate_canary_relaxed_readiness',
+        strategy_id: strategy.id,
+        execution_mode: executionMode,
+        readiness_failed_checks: readinessFailedChecks,
+        readiness_relaxed_checks: Array.from(AUTONOMY_CANARY_RELAX_READINESS_CHECKS)
+      });
     }
   }
 
@@ -5739,14 +6008,18 @@ function runCmd(dateStr, opts = {}) {
       baseline_min_days: AUTONOMY_SPC_BASELINE_MIN_DAYS,
       sigma: AUTONOMY_SPC_SIGMA
     });
-    if (!spc || spc.pass !== true || spc.hold_escalation === true) {
+    const spcFailedChecks = Array.isArray(spc && spc.failed_checks) ? spc.failed_checks : [];
+    const relaxedCanarySpc = AUTONOMY_CANARY_RELAX_ENABLED
+      && executionMode === 'canary_execute'
+      && canaryFailedChecksAllowed(spcFailedChecks, AUTONOMY_CANARY_RELAX_SPC_CHECKS);
+    if ((!spc || spc.pass !== true || spc.hold_escalation === true) && !relaxedCanarySpc) {
       writeRun(dateStr, {
         ts: nowIso(),
         type: 'autonomy_run',
         result: 'stop_init_gate_spc',
         strategy_id: strategy.id,
         execution_mode: executionMode,
-        spc_failed_checks: spc && Array.isArray(spc.failed_checks) ? spc.failed_checks : [],
+        spc_failed_checks: spcFailedChecks,
         spc_control_source: spc && spc.control ? spc.control.source || null : null
       });
       process.stdout.write(JSON.stringify({
@@ -5758,6 +6031,17 @@ function runCmd(dateStr, opts = {}) {
         ts: nowIso()
       }) + '\n');
       return;
+    }
+    if ((spc && (spc.pass !== true || spc.hold_escalation === true)) && relaxedCanarySpc) {
+      writeRun(dateStr, {
+        ts: nowIso(),
+        type: 'autonomy_run',
+        result: 'init_gate_canary_relaxed_spc',
+        strategy_id: strategy.id,
+        execution_mode: executionMode,
+        spc_failed_checks: spcFailedChecks,
+        spc_relaxed_checks: Array.from(AUTONOMY_CANARY_RELAX_SPC_CHECKS)
+      });
     }
   }
 
@@ -7359,6 +7643,13 @@ function runCmd(dateStr, opts = {}) {
       previewSummary = preSummary;
       previewTokenUsage = computeExecutionTokenUsage(preSummary, previewRes.execution_metrics, routeTokensEst, estTokens);
       const criteriaPolicy = successCriteriaPolicyForProposal(p);
+      const previewMetricValues = extractSuccessCriteriaMetricValues(p, {
+        exec_summary: preSummary,
+        execution_metrics: previewRes && previewRes.execution_metrics,
+        exec_details: previewRes && previewRes.details,
+        exec_stdout: previewRes && previewRes.stdout,
+        dod_diff: {}
+      });
       const previewSuccessCriteria = evaluateSuccessCriteria(
         p,
         {
@@ -7370,7 +7661,8 @@ function runCmd(dateStr, opts = {}) {
           queue_outcome_logged: true,
           duration_ms: Number(previewRes && previewRes.execution_metrics && previewRes.execution_metrics.duration_ms || 0),
           token_usage: previewTokenUsage,
-          dod_diff: {}
+          dod_diff: {},
+          metric_values: previewMetricValues || {}
         },
         {
           required: criteriaPolicy.required,
@@ -7381,6 +7673,7 @@ function runCmd(dateStr, opts = {}) {
         fallback: { required: criteriaPolicy.required, min_count: criteriaPolicy.min_count },
         enforceNoChangeOnFailure: true
       });
+      previewVerification = withSuccessCriteriaQualityAudit(previewVerification);
       writeReceipt(dateStr, {
         ts: nowIso(),
         type: 'autonomy_action_receipt',
@@ -7829,6 +8122,13 @@ function runCmd(dateStr, opts = {}) {
       dopamine
     });
     const preflightCriteriaPolicy = successCriteriaPolicyForProposal(p);
+    const preflightMetricValues = extractSuccessCriteriaMetricValues(p, {
+      exec_summary: preSummary,
+      execution_metrics: preflight && preflight.execution_metrics,
+      exec_details: preflight && preflight.details,
+      exec_stdout: preflight && preflight.stdout,
+      dod_diff: {}
+    });
     const preflightSuccessCriteria = evaluateSuccessCriteria(
       p,
       {
@@ -7840,14 +8140,15 @@ function runCmd(dateStr, opts = {}) {
         queue_outcome_logged: false,
         duration_ms: Number(preflight && preflight.execution_metrics && preflight.execution_metrics.duration_ms || 0),
         token_usage: preTokenUsage,
-        dod_diff: {}
+        dod_diff: {},
+        metric_values: preflightMetricValues || {}
       },
       {
         required: preflightCriteriaPolicy.required,
         min_count: preflightCriteriaPolicy.min_count
       }
     );
-    const preflightVerification = withSuccessCriteriaVerification({
+    const preflightVerificationBase = withSuccessCriteriaVerification({
       checks: [{ name: 'preflight_executable', pass: false }],
       failed: ['preflight_executable'],
       passed: false,
@@ -7856,6 +8157,7 @@ function runCmd(dateStr, opts = {}) {
     }, preflightSuccessCriteria, {
       fallback: { required: preflightCriteriaPolicy.required, min_count: preflightCriteriaPolicy.min_count }
     });
+    const preflightVerification = withSuccessCriteriaQualityAudit(preflightVerificationBase);
     writeReceipt(dateStr, {
       ts: nowIso(),
       type: 'autonomy_action_receipt',
@@ -7925,6 +8227,13 @@ function runCmd(dateStr, opts = {}) {
       errors_30d: errors30d
     });
     const acceptCriteriaPolicy = successCriteriaPolicyForProposal(p);
+    const acceptMetricValues = extractSuccessCriteriaMetricValues(p, {
+      exec_summary: preSummary,
+      execution_metrics: preflight && preflight.execution_metrics,
+      exec_details: preflight && preflight.details,
+      exec_stdout: preflight && preflight.stdout,
+      dod_diff: {}
+    });
     const acceptSuccessCriteria = evaluateSuccessCriteria(
       p,
       {
@@ -7936,14 +8245,15 @@ function runCmd(dateStr, opts = {}) {
         queue_outcome_logged: false,
         duration_ms: Number(preflight && preflight.execution_metrics && preflight.execution_metrics.duration_ms || 0),
         token_usage: preTokenUsage,
-        dod_diff: {}
+        dod_diff: {},
+        metric_values: acceptMetricValues || {}
       },
       {
         required: acceptCriteriaPolicy.required,
         min_count: acceptCriteriaPolicy.min_count
       }
     );
-    const acceptVerification = withSuccessCriteriaVerification({
+    const acceptVerificationBase = withSuccessCriteriaVerification({
       checks: [{ name: 'queue_accept_logged', pass: false }],
       failed: ['queue_accept_logged'],
       passed: false,
@@ -7952,6 +8262,7 @@ function runCmd(dateStr, opts = {}) {
     }, acceptSuccessCriteria, {
       fallback: { required: acceptCriteriaPolicy.required, min_count: acceptCriteriaPolicy.min_count }
     });
+    const acceptVerification = withSuccessCriteriaQualityAudit(acceptVerificationBase);
     writeReceipt(dateStr, {
       ts: nowIso(),
       type: 'autonomy_action_receipt',
@@ -8103,6 +8414,14 @@ function runCmd(dateStr, opts = {}) {
   }
 
   const criteriaPolicy = successCriteriaPolicyForProposal(p);
+  const successMetricValues = extractSuccessCriteriaMetricValues(p, {
+    exec_summary: execRes && execRes.summary,
+    execution_metrics: execRes && execRes.execution_metrics,
+    exec_details: execRes && execRes.details,
+    exec_stdout: execRes && execRes.stdout,
+    outcome_stdout: outcomeRes && outcomeRes.stdout,
+    dod_diff: dod && dod.diff && typeof dod.diff === 'object' ? dod.diff : {}
+  });
   const successCriteria = evaluateSuccessCriteria(
     p,
     {
@@ -8113,7 +8432,8 @@ function runCmd(dateStr, opts = {}) {
       queue_outcome_logged: outcomeRes && outcomeRes.ok === true,
       duration_ms: Math.max(0, Number(execEndMs || 0) - Number(execStartMs || 0)),
       token_usage: execTokenUsage,
-      dod_diff: dod && dod.diff && typeof dod.diff === 'object' ? dod.diff : {}
+      dod_diff: dod && dod.diff && typeof dod.diff === 'object' ? dod.diff : {},
+      metric_values: successMetricValues || {}
     },
     {
       required: criteriaPolicy.required,

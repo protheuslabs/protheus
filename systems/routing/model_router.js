@@ -3047,11 +3047,48 @@ function routeDecision({ risk, complexity, intent, task, mode, forceModel, capab
     candidate_scores: ranked.slice(0, 6)
   };
   if (adjusted.mode === "deep-thinker" || adjusted.mode === "deep_thinker") {
+    const deepCfg = cfg && cfg.routing && cfg.routing.deep_thinker_swarm && typeof cfg.routing.deep_thinker_swarm === "object"
+      ? cfg.routing.deep_thinker_swarm
+      : {};
+    const envSwarmEnabled = String(process.env.DEEP_THINKER_SWARM_ENABLED || "").trim();
+    const swarmEnabled = toBool(
+      deepCfg.enabled,
+      ["1", "true", "yes", "on"].includes(envSwarmEnabled.toLowerCase())
+    );
+    const rawMaxModels = Number(
+      process.env.DEEP_THINKER_SWARM_MAX_MODELS != null
+        ? process.env.DEEP_THINKER_SWARM_MAX_MODELS
+        : deepCfg.max_models
+    );
+    const maxModels = Number.isFinite(rawMaxModels)
+      ? Math.max(2, Math.min(6, Math.round(rawMaxModels)))
+      : 3;
+    const verificationModels = [];
+    for (const row of ranked) {
+      const modelId = String(row && row.model || "");
+      if (!modelId || verificationModels.includes(modelId)) continue;
+      verificationModels.push(modelId);
+      if (verificationModels.length >= maxModels) break;
+    }
+    if (selected && !verificationModels.includes(selected)) verificationModels.unshift(selected);
+    const boundedModels = verificationModels.slice(0, maxModels);
+    const defaultQuorum = Math.max(2, Math.ceil(boundedModels.length / 2));
+    const rawQuorum = Number(
+      process.env.DEEP_THINKER_SWARM_MIN_AGREEMENT != null
+        ? process.env.DEEP_THINKER_SWARM_MIN_AGREEMENT
+        : deepCfg.min_agreement
+    );
+    const quorumMinAgreement = Number.isFinite(rawQuorum)
+      ? Math.max(2, Math.min(boundedModels.length, Math.round(rawQuorum)))
+      : defaultQuorum;
     decision.deep_thinker = {
       enabled: true,
-      verification_passes: 2,
+      swarm_enabled: swarmEnabled === true,
+      verification_passes: swarmEnabled === true ? boundedModels.length : 2,
       primary_model: selected,
       secondary_model: ranked[1] ? ranked[1].model : null,
+      swarm_models: swarmEnabled === true ? boundedModels : [selected, ranked[1] ? ranked[1].model : null].filter(Boolean),
+      quorum_min_agreement: swarmEnabled === true ? quorumMinAgreement : 2,
       requires_model_diversity: true
     };
   }

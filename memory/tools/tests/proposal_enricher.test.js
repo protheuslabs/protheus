@@ -207,6 +207,90 @@ function run() {
       assert.strictEqual(low.meta.objective_id, objectiveId, 'objective_id should be normalized');
     }
 
+    const fallbackRes = script.enrichOne({
+      id: 'PFALLBACK',
+      type: 'external_intel',
+      title: 'Unbound executable proposal should default to first active objective',
+      risk: 'low',
+      evidence: [{ evidence_ref: 'eye:local_state_fallback' }],
+      suggested_next_command: 'node systems/routing/route_execute.js --task=\"Run one bounded execution\" --dry-run',
+      validation: ['Emit one artifact receipt with measurable outcome']
+    }, {
+      eyes: new Map(),
+      directiveProfile: { available: false, active_directive_ids: [] },
+      directiveObjectiveIds: ['T1_ALPHA_OBJECTIVE', 'T2_BETA_OBJECTIVE'],
+      strategy: null,
+      thresholds: {
+        min_signal_quality: 35,
+        min_sensory_signal_score: 35,
+        min_sensory_relevance_score: 35,
+        min_directive_fit: 20,
+        min_actionability_score: 35,
+        min_composite_eligibility: 45,
+        min_eye_score_ema: 35
+      },
+      outcomePolicy: {}
+    });
+    assert.ok(fallbackRes && fallbackRes.proposal && fallbackRes.proposal.meta, 'fallback enrichment should return proposal with meta');
+    assert.strictEqual(
+      fallbackRes.proposal.meta.objective_id,
+      'T1_ALPHA_OBJECTIVE',
+      'unbound executable should default to first active objective'
+    );
+    assert.strictEqual(
+      fallbackRes.proposal.meta.objective_binding_source,
+      'default_first_active_objective',
+      'fallback source should be recorded for audit'
+    );
+    assert.strictEqual(
+      fallbackRes.proposal.meta.objective_binding_valid,
+      true,
+      'default fallback objective binding should be marked valid'
+    );
+    const measurableRes = script.enrichOne({
+      id: 'PMEASURE',
+      type: 'cross_signal_opportunity',
+      title: '[Cross-Signal] Topic convergence with bounded execution',
+      risk: 'low',
+      evidence: [{ evidence_ref: 'cross_signal:HYP-1', match: 'topic convergence' }],
+      suggested_next_command: 'node systems/routing/route_execute.js --task=\"Validate one bounded experiment\" --dry-run',
+      action_spec: {
+        version: 1,
+        objective_id: 'T1_ALPHA_OBJECTIVE',
+        target: 'cross_signal:HYP-1',
+        verify: ['Generate one concrete experiment tied to hypothesis evidence'],
+        success_criteria: [
+          { metric: 'hypothesis_signal_lift', target: 'observable trend/support improvement from baseline', horizon: 'next run' }
+        ],
+        rollback: 'cancel plan'
+      },
+      validation: ['Generate one concrete experiment tied to hypothesis evidence']
+    }, {
+      eyes: new Map(),
+      directiveProfile: { available: false, active_directive_ids: [] },
+      directiveObjectiveIds: ['T1_ALPHA_OBJECTIVE', 'T2_BETA_OBJECTIVE'],
+      strategy: null,
+      thresholds: {
+        min_signal_quality: 35,
+        min_sensory_signal_score: 35,
+        min_sensory_relevance_score: 35,
+        min_directive_fit: 20,
+        min_actionability_score: 35,
+        min_composite_eligibility: 45,
+        min_eye_score_ema: 35
+      },
+      outcomePolicy: {}
+    });
+    assert.ok(measurableRes && measurableRes.proposal && measurableRes.proposal.meta, 'measurable enrichment should return proposal with meta');
+    assert.ok(
+      Number(measurableRes.proposal.meta.success_criteria_measurable_count || 0) >= 1,
+      'structured success criteria with next-run horizon should count as measurable'
+    );
+    assert.ok(
+      !((measurableRes.proposal.meta.admission_preview || {}).blocked_by || []).includes('success_criteria_missing'),
+      'measurable structured criteria should not trigger success_criteria_missing blocker'
+    );
+
     assert.ok(high.meta && high.meta.admission_preview && high.meta.admission_preview.eligible === false, 'high-risk proposal should be blocked');
     assert.ok(
       Array.isArray(high.meta.admission_preview.blocked_by)

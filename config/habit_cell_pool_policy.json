@@ -1,0 +1,9 @@
+{
+  "version": "1.0",
+  "enabled": false,
+  "default_max_workers": 2,
+  "max_workers": 4,
+  "spawn_module": "habits",
+  "request_tokens_per_habit": 240,
+  "lease_sec": 300
+}

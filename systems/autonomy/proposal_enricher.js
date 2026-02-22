@@ -28,6 +28,8 @@ const {
   loadOutcomeFitnessPolicy,
   proposalTypeThresholdOffsetsFor
 } = require('../../lib/outcome_fitness.js');
+const { compileProposalSuccessCriteria } = require('../../lib/success_criteria_compiler.js');
+const { evaluateProposalQuorum } = require('../../lib/quorum_validator.js');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const SENSORY_DIR = process.env.SENSORY_TEST_DIR
@@ -56,6 +58,8 @@ const GENERIC_VALIDATION_RE = /\b(extract one concrete build\/change task from s
 const GENERIC_ROUTE_TASK_RE = /--task=\"Extract one implementable step from external intel:/i;
 const SUCCESS_METRIC_RE = /\b(metric|kpi|target|rate|count|latency|error|uptime|throughput|conversion|artifact|receipt|coverage|reply|interview|pass|fail|delta|percent|%|run|runs|check|checks|items_collected)\b/i;
 const SUCCESS_TIMEBOUND_RE = /\b(\d+\s*(h|hr|hour|hours|d|day|days|w|week|weeks|min|mins|minute|minutes)|daily|weekly|monthly|quarterly)\b/i;
+const SUCCESS_RELAXED_RUN_HORIZON_RE = /\b(next|this)\s+(run|cycle)\b/i;
+const SUCCESS_COMPARATOR_RE = /\b(>=|<=|>|<|at least|at most|less than|more than|within|under|over)\b/i;
 const DIRECTIVE_OBJECTIVE_ID_RE = /^T[0-9]_[A-Za-z0-9_]+$/;
 const ARCHETYPE_RULES = [
   {
@@ -498,6 +502,10 @@ function resolveObjectiveBinding(proposal, directiveObjectiveIds) {
     const [only] = Array.from(objectiveSet);
     chosen = { objective_id: only, source: 'single_active_objective', valid: true };
   }
+  if (!chosen && required && objectiveSet.size > 1) {
+    const [first] = Array.from(objectiveSet).sort((a, b) => String(a).localeCompare(String(b)));
+    if (first) chosen = { objective_id: first, source: 'default_first_active_objective', valid: true };
+  }
 
   const objectiveId = chosen ? String(chosen.objective_id || '') : '';
   const inObjectiveSet = objectiveId && objectiveSet.has(objectiveId);
@@ -552,58 +560,23 @@ function normalizedValidationMetric(proposal) {
 }
 
 function parseSuccessCriteriaRows(proposal) {
-  const p = proposal && typeof proposal === 'object' ? proposal : {};
-  const actionSpec = p.action_spec && typeof p.action_spec === 'object' ? p.action_spec : {};
-  const actionRows = Array.isArray(actionSpec.success_criteria) ? actionSpec.success_criteria : [];
-  const verifyRows = Array.isArray(actionSpec.verify) ? actionSpec.verify : [];
-  const validationRows = Array.isArray(p.validation) ? p.validation : [];
-
-  const rows = [];
-  const pushText = (text, source) => {
-    const clean = normalizeText(text);
-    if (!clean) return;
-    const metricMatch = clean.match(SUCCESS_METRIC_RE);
-    const measurable = SUCCESS_METRIC_RE.test(clean) && (SUCCESS_TIMEBOUND_RE.test(clean) || /\d/.test(clean));
-    rows.push({
-      source,
-      metric: metricMatch ? String(metricMatch[1] || '').toLowerCase() : '',
-      target: clean.slice(0, 140),
-      measurable
-    });
-  };
-
-  for (const row of actionRows) {
-    if (!row) continue;
-    if (typeof row === 'string') {
-      pushText(row, 'action_spec.success_criteria');
-      continue;
-    }
-    if (typeof row === 'object') {
-      const metric = normalizeText(row.metric || row.name || '');
-      const target = normalizeText(row.target || row.threshold || row.description || row.goal || '');
-      const horizon = normalizeText(row.horizon || row.window || row.by || '');
-      const merged = normalizeText([metric, target, horizon].filter(Boolean).join(' | '));
-      if (!merged) continue;
-      rows.push({
-        source: 'action_spec.success_criteria',
-        metric: metric.toLowerCase(),
-        target: merged.slice(0, 140),
-        measurable: SUCCESS_METRIC_RE.test(merged) && (SUCCESS_TIMEBOUND_RE.test(merged) || /\d/.test(merged))
-      });
-    }
-  }
-  for (const row of verifyRows) pushText(row, 'action_spec.verify');
-  for (const row of validationRows) pushText(row, 'validation');
-
-  const dedupe = new Set();
-  const out = [];
-  for (const row of rows) {
-    const key = `${row.metric}|${row.target}`.toLowerCase();
-    if (dedupe.has(key)) continue;
-    dedupe.add(key);
-    out.push(row);
-  }
-  return out;
+  const rows = compileProposalSuccessCriteria(proposal, {
+    include_verify: true,
+    include_validation: false,
+    allow_fallback: false
+  });
+  return rows.map((row) => ({
+    source: String(row.source || ''),
+    metric: String(row.metric || '').toLowerCase(),
+    target: normalizeText(
+      [
+        String(row.metric || ''),
+        String(row.target || ''),
+        String(row.horizon || '')
+      ].filter(Boolean).join(' | ')
+    ).slice(0, 180),
+    measurable: row.measurable === true
+  }));
 }
 
 function successCriteriaRequirement(outcomePolicy) {
@@ -620,7 +593,18 @@ function successCriteriaRequirement(outcomePolicy) {
   );
   const fromEnv = parseLowerList(process.env.AUTONOMY_SUCCESS_CRITERIA_EXEMPT_TYPES || '');
   const exemptTypes = uniq([...fromPolicy, ...fromEnv]);
-  return { required, min_count: minCount, exempt_types: exemptTypes };
+  const rawWeights = src.success_criteria_metric_weights && typeof src.success_criteria_metric_weights === 'object'
+    ? src.success_criteria_metric_weights
+    : {};
+  const metricWeights = {};
+  for (const [key, value] of Object.entries(rawWeights)) {
+    const metric = normalizeText(key).toLowerCase();
+    if (!metric) continue;
+    const raw = Number(value);
+    if (!Number.isFinite(raw)) continue;
+    metricWeights[metric] = clamp(raw, 0.2, 2);
+  }
+  return { required, min_count: minCount, exempt_types: exemptTypes, metric_weights: metricWeights };
 }
 
 function isSuccessCriteriaExemptProposal(type, criteriaPolicy) {
@@ -630,6 +614,27 @@ function isSuccessCriteriaExemptProposal(type, criteriaPolicy) {
     ? criteriaPolicy.exempt_types
     : [];
   return exemptTypes.includes(proposalType);
+}
+
+function weightedCriteriaCount(rows, criteriaPolicy) {
+  const list = Array.isArray(rows) ? rows : [];
+  const weights = criteriaPolicy && criteriaPolicy.metric_weights && typeof criteriaPolicy.metric_weights === 'object'
+    ? criteriaPolicy.metric_weights
+    : {};
+  let measurableCount = 0;
+  let weightedCount = 0;
+  for (const row of list) {
+    if (!row || row.measurable !== true) continue;
+    measurableCount += 1;
+    const metric = normalizeText(row.metric).toLowerCase();
+    const hasMetricWeight = metric && Object.prototype.hasOwnProperty.call(weights, metric);
+    const w = hasMetricWeight ? clamp(Number(weights[metric]), 0.2, 2) : 1;
+    weightedCount += Number.isFinite(w) ? w : 1;
+  }
+  return {
+    measurable_count: measurableCount,
+    weighted_count: Number(weightedCount.toFixed(3))
+  };
 }
 
 function inferArchetypeHints(text) {
@@ -867,8 +872,10 @@ function assessActionability(proposal, directiveFitScore, relevanceScore, outcom
   const isExplainer = EXPLAINER_TITLE_RE.test(title.toLowerCase());
   const genericRouteTask = GENERIC_ROUTE_TASK_RE.test(nextCmd);
   const criteriaRows = parseSuccessCriteriaRows(p);
-  const measurableCriteriaCount = criteriaRows.filter((row) => row.measurable === true).length;
   const criteriaPolicy = successCriteriaRequirement(outcomePolicy);
+  const criteriaCounts = weightedCriteriaCount(criteriaRows, criteriaPolicy);
+  const measurableCriteriaCount = criteriaCounts.measurable_count;
+  const weightedCriteriaCountValue = criteriaCounts.weighted_count;
   const isExecutableProposal = !!(nextCmd || (p.action_spec && typeof p.action_spec === 'object'));
   const criteriaExempt = isExecutableProposal && isSuccessCriteriaExemptProposal(proposalType, criteriaPolicy);
 
@@ -905,8 +912,8 @@ function assessActionability(proposal, directiveFitScore, relevanceScore, outcom
   if (hasOpportunity) score += 10;
 
   if (isExecutableProposal && criteriaPolicy.required && !criteriaExempt) {
-    if (measurableCriteriaCount >= criteriaPolicy.min_count) {
-      score += Math.min(14, 8 + (measurableCriteriaCount * 2));
+    if (weightedCriteriaCountValue >= criteriaPolicy.min_count) {
+      score += Math.min(14, 8 + (Math.ceil(weightedCriteriaCountValue) * 2));
     } else {
       score -= 22;
       reasons.push('success_criteria_missing');
@@ -945,6 +952,7 @@ function assessActionability(proposal, directiveFitScore, relevanceScore, outcom
       exempt_type: criteriaExempt,
       min_count: criteriaPolicy.min_count,
       measurable_count: measurableCriteriaCount,
+      weighted_count: weightedCriteriaCountValue,
       total_count: criteriaRows.length
     }
   };
@@ -981,7 +989,9 @@ function admission(meta, eye, risk, t, proposal, strategy, outcomePolicy) {
     || (proposal && proposal.action_spec && typeof proposal.action_spec === 'object')
   ) && !criteriaExempt;
   if (criteriaRequired) {
-    const measured = Number(meta && meta.success_criteria_measurable_count || 0);
+    const measured = Number(meta && meta.success_criteria_weighted_count != null
+      ? meta.success_criteria_weighted_count
+      : meta.success_criteria_measurable_count || 0);
     if (measured < criteriaPolicy.min_count) reasons.push('success_criteria_missing');
   }
   if (!strategyAllowsProposalType(strategy, type)) reasons.push('strategy_type_filtered');
@@ -1041,12 +1051,27 @@ function enrichOne(proposal, ctx) {
     actionability_score: a.score,
     composite_eligibility_score: comp,
     success_criteria_measurable_count: a.success_criteria ? Number(a.success_criteria.measurable_count || 0) : 0,
+    success_criteria_weighted_count: a.success_criteria ? Number(a.success_criteria.weighted_count || 0) : 0,
     success_criteria_total_count: a.success_criteria ? Number(a.success_criteria.total_count || 0) : 0,
     objective_id: objectiveBinding.objective_id || '',
     directive_objective_id: objectiveBinding.directive_objective_id || '',
     objective_binding_required: objectiveBinding.binding_required === true,
     objective_binding_valid: objectiveBinding.binding_valid !== false
   }, eye, risk, t, p, strategy, ctx.outcomePolicy);
+  const quorum = evaluateProposalQuorum({
+    ...p,
+    risk,
+    meta: {
+      ...(p.meta && typeof p.meta === 'object' ? p.meta : {}),
+      objective_id: objectiveBinding.objective_id || '',
+      directive_objective_id: objectiveBinding.directive_objective_id || ''
+    }
+  });
+  if (quorum.requires_quorum === true && quorum.ok !== true) {
+    const tag = quorum.agreement === false ? 'quorum_disagreement' : 'quorum_denied';
+    if (!admit.blocked_by.includes(tag)) admit.blocked_by.push(tag);
+    admit.eligible = false;
+  }
 
   const prevMeta = raw.meta && typeof raw.meta === 'object' ? raw.meta : {};
   const nextMeta = {
@@ -1077,6 +1102,7 @@ function enrichOne(proposal, ctx) {
     success_criteria_exempt_type: a.success_criteria && a.success_criteria.exempt_type === true,
     success_criteria_min_count: a.success_criteria ? Number(a.success_criteria.min_count || 0) : 0,
     success_criteria_measurable_count: a.success_criteria ? Number(a.success_criteria.measurable_count || 0) : 0,
+    success_criteria_weighted_count: a.success_criteria ? Number(a.success_criteria.weighted_count || 0) : 0,
     success_criteria_total_count: a.success_criteria ? Number(a.success_criteria.total_count || 0) : 0,
     composite_eligibility_score: comp,
     composite_eligibility_pass: comp >= t.min_composite_eligibility,
@@ -1085,6 +1111,12 @@ function enrichOne(proposal, ctx) {
     admission_preview: {
       eligible: admit.eligible,
       blocked_by: admit.blocked_by.slice(0, 6)
+    },
+    quorum_validation: {
+      required: quorum.requires_quorum === true,
+      ok: quorum.ok === true,
+      agreement: quorum.agreement !== false,
+      reason: quorum.reason || null
     },
     enriched_at: nowIso(),
     enrichment_version: '1.2'
@@ -1095,8 +1127,19 @@ function enrichOne(proposal, ctx) {
     risk,
     meta: nextMeta
   };
+  if (objectiveBinding.objective_id) {
+    const prevSpec = p.action_spec && typeof p.action_spec === 'object' ? p.action_spec : null;
+    if (prevSpec && normalizeText(prevSpec.objective_id) !== normalizeText(objectiveBinding.objective_id)) {
+      next.action_spec = {
+        ...prevSpec,
+        objective_id: objectiveBinding.objective_id
+      };
+    }
+  }
 
-  const changed = JSON.stringify(prevMeta) !== JSON.stringify(nextMeta) || String(p.risk || '') !== risk;
+  const changed = JSON.stringify(prevMeta) !== JSON.stringify(nextMeta)
+    || String(p.risk || '') !== risk
+    || JSON.stringify(p.action_spec || null) !== JSON.stringify(next.action_spec || null);
   return {
     proposal: next,
     changed,
