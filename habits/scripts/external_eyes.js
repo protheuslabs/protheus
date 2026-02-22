@@ -289,6 +289,14 @@ function hoursSince(ts) {
   return (Date.now() - d.getTime()) / (1000 * 60 * 60);
 }
 
+function cooldownHoursRemaining(ts) {
+  const untilMs = Date.parse(String(ts || ''));
+  if (!Number.isFinite(untilMs)) return 0;
+  const msLeft = untilMs - Date.now();
+  if (msLeft <= 0) return 0;
+  return msLeft / (1000 * 60 * 60);
+}
+
 function asPositiveNumber(v, fallback) {
   const n = Number(v);
   return Number.isFinite(n) && n > 0 ? n : fallback;
@@ -892,11 +900,130 @@ function buildCollectorRemediationProposal(eyeConfig, registryEye, threshold) {
   };
 }
 
+function parseEscalationCodes(value, fallback = []) {
+  if (Array.isArray(value)) {
+    return value
+      .map(v => String(v || '').trim().toLowerCase())
+      .filter(Boolean);
+  }
+  const raw = String(value || '').trim();
+  if (!raw) return fallback.slice();
+  return raw
+    .split(',')
+    .map(v => String(v || '').trim().toLowerCase())
+    .filter(Boolean);
+}
+
+function topFailureCodeByHits(registryEye, allowSet) {
+  const map = registryEye && registryEye.failure_code_hits && typeof registryEye.failure_code_hits === 'object'
+    ? registryEye.failure_code_hits
+    : {};
+  let bestCode = '';
+  let bestHits = 0;
+  for (const [k, v] of Object.entries(map)) {
+    const code = String(k || '').trim().toLowerCase();
+    if (!code) continue;
+    if (allowSet && allowSet.size > 0 && !allowSet.has(code)) continue;
+    const hits = Number(v || 0);
+    if (!Number.isFinite(hits) || hits <= 0) continue;
+    if (hits > bestHits) {
+      bestHits = hits;
+      bestCode = code;
+    }
+  }
+  return { code: bestCode, hits: bestHits };
+}
+
+function buildCollectorEscalationProposal(eyeConfig, registryEye, failureCode, failureHits, threshold) {
+  const eyeId = String(eyeConfig.id || 'unknown_eye');
+  const parserType = String((registryEye && registryEye.parser_type) || eyeConfig.parser_type || 'unknown');
+  const recentFailure = String((registryEye && registryEye.last_error) || '').slice(0, 180);
+  const nextCommand = `node systems/routing/route_execute.js --task="Investigate persistent self-heal failure for eye ${eyeId} (code=${failureCode}); diagnose root cause and propose/implement bounded deterministic fix with rollback." --tokens_est=1200 --repeats_14d=3 --errors_30d=1 --dry-run`;
+  const validation = [
+    'Root cause is identified with one concrete remediation hypothesis',
+    'Eye returns eye_run_ok with items_collected > 0 within next 2 runs or explicitly transitions to paused/manual',
+    'No repeated failure loop for same code beyond threshold without new evidence'
+  ];
+  const actionSpec = {
+    version: 1,
+    objective: `Escalate persistent collector failure for ${eyeId} to higher-level diagnostic lane`,
+    target: `collector_escalation:${eyeId}:${failureCode}`,
+    next_command: nextCommand,
+    verify: validation,
+    success_criteria: [
+      {
+        metric: 'persistent_failure_loop',
+        target: `failure_code ${failureCode} no longer exceeds threshold ${Number(threshold)}`,
+        horizon: '24h'
+      },
+      {
+        metric: 'collector_recovery_or_pause',
+        target: 'collector recovers or enters explicit manual hold',
+        horizon: 'next run'
+      }
+    ],
+    rollback: `Revert escalation-driven changes for ${eyeId} and restore previous collector state`
+  };
+  return {
+    id: `ESCALATE-${computeHash(`collector_escalation:${eyeId}:${failureCode}`)}`,
+    type: 'collector_escalation',
+    title: `[Escalation] Persistent collector failure (${eyeId} / ${failureCode})`,
+    evidence: [
+      {
+        source: 'eyes_raw',
+        path: `state/sensory/eyes/raw/${getToday()}.jsonl`,
+        match: `eye_run_failed | ${eyeId} | ${failureCode}`.slice(0, 120),
+        evidence_ref: `eye:${eyeId}`,
+        evidence_url: null,
+        evidence_item_hash: null
+      }
+    ],
+    expected_impact: 'high',
+    risk: 'medium',
+    validation,
+    suggested_next_command: nextCommand,
+    action_spec: actionSpec,
+    meta: {
+      source_eye: eyeId,
+      remediation_kind: 'collector_escalation',
+      trigger: 'failure_code_hits_threshold',
+      failure_code: failureCode,
+      failure_hits: Number(failureHits || 0),
+      threshold: Number(threshold),
+      parser_type: parserType,
+      recent_failure: recentFailure || null,
+      action_spec_version: Number(actionSpec.version || 1),
+      action_spec_target: String(actionSpec.target || '')
+    }
+  };
+}
+
 function emitCollectorRemediationProposals(dateStr, config, registry) {
   const threshold = Number(process.env.EYES_FAILURE_REMEDIATION_THRESHOLD || 2);
-  if (!Number.isFinite(threshold) || threshold < 1) {
-    return { added: 0, skipped: 0 };
-  }
+  const remediationEnabled = Number.isFinite(threshold) && threshold >= 1;
+
+  const escalationThreshold = Math.max(
+    1,
+    Number(
+      process.env.EYES_FAILURE_ESCALATION_THRESHOLD
+      || (config && config.self_healing && config.self_healing.escalation && config.self_healing.escalation.failure_code_threshold)
+      || 3
+    )
+  );
+  const escalationCooldownHours = Math.max(
+    1,
+    Number(
+      process.env.EYES_FAILURE_ESCALATION_COOLDOWN_HOURS
+      || (config && config.self_healing && config.self_healing.escalation && config.self_healing.escalation.cooldown_hours)
+      || 24
+    )
+  );
+  const escalationCodes = parseEscalationCodes(
+    process.env.EYES_FAILURE_ESCALATION_CODES
+      || (config && config.self_healing && config.self_healing.escalation && config.self_healing.escalation.codes),
+    ['env_blocked', 'auth_missing', 'auth_unauthorized', 'auth_forbidden', 'endpoint_unsupported', 'collector_error']
+  );
+  const escalationCodeSet = new Set(escalationCodes);
 
   const { filePath, container, proposals } = loadProposalsForDate(dateStr);
   const existingById = new Set(
@@ -908,6 +1035,8 @@ function emitCollectorRemediationProposals(dateStr, config, registry) {
   const next = Array.isArray(proposals) ? [...proposals] : [];
   let added = 0;
   let skipped = 0;
+  let escalated = 0;
+  let escalationSkipped = 0;
 
   for (const eyeConfig of (config.eyes || [])) {
     const reg = (registry.eyes || []).find(e => e && e.id === eyeConfig.id);
@@ -916,11 +1045,12 @@ function emitCollectorRemediationProposals(dateStr, config, registry) {
     if (parserType === 'stub') continue;
     if (String(reg.status || eyeConfig.status || '').toLowerCase() === 'retired') continue;
 
-    const consecutiveFailures = Number(reg.consecutive_failures || 0);
-    if (consecutiveFailures < threshold) continue;
-    if (!isTransportFailure({ message: reg.last_error, code: reg.last_error_code }, reg.last_error_code)) continue;
+    if (remediationEnabled) {
+      const consecutiveFailures = Number(reg.consecutive_failures || 0);
+      if (consecutiveFailures < threshold) continue;
+      if (!isTransportFailure({ message: reg.last_error, code: reg.last_error_code }, reg.last_error_code)) continue;
 
-    const proposal = buildCollectorRemediationProposal(eyeConfig, reg, threshold);
+      const proposal = buildCollectorRemediationProposal(eyeConfig, reg, threshold);
     if (!proposal.id || existingById.has(proposal.id)) {
       skipped += 1;
       continue;
@@ -928,12 +1058,71 @@ function emitCollectorRemediationProposals(dateStr, config, registry) {
     next.push(proposal);
     existingById.add(proposal.id);
     added += 1;
+    appendRawLog(dateStr, {
+      ts: new Date().toISOString(),
+      type: 'collector_proposal_added',
+      proposal_type: 'collector_remediation',
+      eye_id: String(eyeConfig.id || ''),
+      trigger: 'consecutive_failures',
+      threshold: Number(threshold),
+      consecutive_failures: Number(reg.consecutive_failures || 0)
+    });
+  }
   }
 
-  if (added > 0) {
+  for (const eyeConfig of (config.eyes || [])) {
+    const reg = (registry.eyes || []).find(e => e && e.id === eyeConfig.id);
+    if (!reg) continue;
+    const parserType = String(reg.parser_type || eyeConfig.parser_type || '').toLowerCase();
+    if (parserType === 'stub') continue;
+    if (String(reg.status || eyeConfig.status || '').toLowerCase() === 'retired') continue;
+
+    const escalationCooldownLeft = cooldownHoursRemaining(reg.failure_escalation_cooldown_until);
+    if (escalationCooldownLeft > 0) {
+      escalationSkipped += 1;
+      continue;
+    }
+    const top = topFailureCodeByHits(reg, escalationCodeSet);
+    if (!top.code || top.hits < escalationThreshold) {
+      escalationSkipped += 1;
+      continue;
+    }
+    const escalationProposal = buildCollectorEscalationProposal(eyeConfig, reg, top.code, top.hits, escalationThreshold);
+    if (!escalationProposal.id || existingById.has(escalationProposal.id)) {
+      escalationSkipped += 1;
+      continue;
+    }
+    next.push(escalationProposal);
+    existingById.add(escalationProposal.id);
+    reg.failure_escalation_cooldown_until = new Date(Date.now() + (escalationCooldownHours * 60 * 60 * 1000)).toISOString();
+    reg.failure_escalation_last_ts = new Date().toISOString();
+    reg.failure_escalation_last_code = top.code;
+    reg.failure_escalation_last_hits = Number(top.hits || 0);
+    escalated += 1;
+    appendRawLog(dateStr, {
+      ts: new Date().toISOString(),
+      type: 'collector_proposal_added',
+      proposal_type: 'collector_escalation',
+      eye_id: String(eyeConfig.id || ''),
+      trigger: 'failure_code_hits_threshold',
+      failure_code: String(top.code || ''),
+      failure_hits: Number(top.hits || 0),
+      threshold: Number(escalationThreshold),
+      cooldown_hours: Number(escalationCooldownHours)
+    });
+  }
+
+  if (added > 0 || escalated > 0) {
     saveProposalsForDate(filePath, next, container);
   }
-  return { added, skipped, filePath };
+  return {
+    added: added + escalated,
+    added_remediation: added,
+    added_escalation: escalated,
+    skipped,
+    escalation_skipped: escalationSkipped,
+    filePath
+  };
 }
 
 function safeReadJsonl(filePath) {
@@ -1479,6 +1668,16 @@ async function run(opts = {}) {
       registryEye.last_error_code = c.code;
       registryEye.last_error_http_status = c.http_status;
       registryEye.last_error_ts = new Date().toISOString();
+      const failureCodeKey = String(c.code || 'collector_error').trim().toLowerCase();
+      if (failureCodeKey) {
+        if (!registryEye.failure_code_hits || typeof registryEye.failure_code_hits !== 'object') {
+          registryEye.failure_code_hits = {};
+        }
+        const prevHits = Number(registryEye.failure_code_hits[failureCodeKey] || 0);
+        registryEye.failure_code_hits[failureCodeKey] = Number.isFinite(prevHits) ? prevHits + 1 : 1;
+        registryEye.failure_code_hits_total = Number(registryEye.failure_code_hits_total || 0) + 1;
+        registryEye.failure_code_last_ts = registryEye.last_error_ts;
+      }
       if (!suppressErrorAccounting) {
         const runs = Math.max(1, Number(registryEye.total_runs || registryEye.run_count || 0));
         registryEye.error_rate = registryEye.total_errors / runs;
@@ -1656,7 +1855,11 @@ async function run(opts = {}) {
   } else {
     const remediation = emitCollectorRemediationProposals(today, config, registry);
     if (remediation.added > 0) {
-      console.log(`🛠️  Collector remediation proposals added: ${remediation.added}`);
+      console.log(
+        `🛠️  Collector proposals added: total=${remediation.added}` +
+        ` remediation=${Number(remediation.added_remediation || 0)}` +
+        ` escalation=${Number(remediation.added_escalation || 0)}`
+      );
     }
   }
   const starvedCheck = emitCollectorStarvedAnomaly(
@@ -1796,8 +1999,11 @@ function pickCanaryEye(config, registry) {
     const reg = (registry.eyes || []).find(e => e && e.id === eyeConfig.id) || {};
     const recentFailure = hasRecentTransportFailure(reg, RETRY_WINDOW_HOURS);
     const lastSuccessHours = hoursSince(reg.last_success);
+    const cooldownHours = cooldownHoursRemaining(reg.cooldown_until);
     candidates.push({
       id: eyeConfig.id,
+      cooldownActive: cooldownHours > 0 ? 1 : 0,
+      cooldownHours,
       recentFailure: recentFailure ? 1 : 0,
       consecutiveFailures: Number(reg.consecutive_failures || 0),
       lastSuccessHours: Number.isFinite(lastSuccessHours) ? lastSuccessHours : 1e9
@@ -1805,6 +2011,8 @@ function pickCanaryEye(config, registry) {
   }
   if (!candidates.length) return null;
   candidates.sort((a, b) => {
+    if (a.cooldownActive !== b.cooldownActive) return a.cooldownActive - b.cooldownActive;
+    if (a.cooldownHours !== b.cooldownHours) return a.cooldownHours - b.cooldownHours;
     if (b.recentFailure !== a.recentFailure) return b.recentFailure - a.recentFailure;
     if (b.consecutiveFailures !== a.consecutiveFailures) return b.consecutiveFailures - a.consecutiveFailures;
     if (b.lastSuccessHours !== a.lastSuccessHours) return b.lastSuccessHours - a.lastSuccessHours;
@@ -1832,9 +2040,12 @@ function pickSignalCanaryEye(config, registry) {
     const runtimeEye = effectiveEye(eyeConfig, reg);
     if (String(runtimeEye.status || '').toLowerCase() === 'retired') continue;
     const lastSuccessHours = hoursSince(reg.last_success);
+    const cooldownHours = cooldownHoursRemaining(reg.cooldown_until);
     rows.push({
       id: String(eyeConfig.id),
       status: String(runtimeEye.status || ''),
+      cooldownActive: cooldownHours > 0 ? 1 : 0,
+      cooldownHours,
       scoreEma: Number(runtimeEye.score_ema || 0),
       consecutiveFailures: Number(reg.consecutive_failures || 0),
       lastSuccessHours: Number.isFinite(lastSuccessHours) ? lastSuccessHours : null
@@ -1843,12 +2054,15 @@ function pickSignalCanaryEye(config, registry) {
   if (!rows.length) return null;
 
   const preferred = rows.filter(r =>
-    r.consecutiveFailures === 0
+    r.cooldownActive === 0
+    && r.consecutiveFailures === 0
     && statusRank(r.status) <= 1
     && (r.lastSuccessHours == null || r.lastSuccessHours <= STALE_SUCCESS_HOURS)
   );
   const pool = preferred.length ? preferred : rows;
   pool.sort((a, b) => {
+    if (a.cooldownActive !== b.cooldownActive) return a.cooldownActive - b.cooldownActive;
+    if (a.cooldownHours !== b.cooldownHours) return a.cooldownHours - b.cooldownHours;
     if (statusRank(a.status) !== statusRank(b.status)) return statusRank(a.status) - statusRank(b.status);
     if (a.consecutiveFailures !== b.consecutiveFailures) return a.consecutiveFailures - b.consecutiveFailures;
     const aSuccess = Number.isFinite(a.lastSuccessHours) ? a.lastSuccessHours : 1e9;

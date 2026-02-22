@@ -531,6 +531,71 @@
       }
     }
   ],
+  "self_healing": {
+    "escalation": {
+      "failure_code_threshold": 3,
+      "cooldown_hours": 24,
+      "codes": [
+        "env_blocked",
+        "auth_missing",
+        "auth_unauthorized",
+        "auth_forbidden",
+        "endpoint_unsupported",
+        "collector_error"
+      ]
+    },
+    "failure_code_policies": {
+      "env_blocked": {
+        "cooldown_hours": 24,
+        "set_status": "dormant",
+        "count_as_error": false,
+        "count_as_failure": false,
+        "reason": "environment_unavailable"
+      },
+      "auth_missing": {
+        "cooldown_hours": 24,
+        "set_status": "dormant",
+        "count_as_error": true,
+        "count_as_failure": false,
+        "reason": "credentials_missing"
+      },
+      "auth_unauthorized": {
+        "cooldown_hours": 24,
+        "set_status": "dormant",
+        "count_as_error": true,
+        "count_as_failure": false,
+        "reason": "credentials_rejected"
+      },
+      "auth_forbidden": {
+        "cooldown_hours": 24,
+        "set_status": "dormant",
+        "count_as_error": true,
+        "count_as_failure": false,
+        "reason": "access_forbidden"
+      },
+      "endpoint_unsupported": {
+        "cooldown_hours": 48,
+        "set_status": "dormant",
+        "count_as_error": true,
+        "count_as_failure": false,
+        "reason": "endpoint_unsupported"
+      },
+      "rate_limited": {
+        "cooldown_hours": 2,
+        "set_status": "probation",
+        "count_as_error": true,
+        "count_as_failure": false,
+        "reason": "rate_limited"
+      },
+      "collector_error": {
+        "cooldown_hours": 2,
+        "set_status": "probation",
+        "count_as_error": true,
+        "count_as_failure": true,
+        "reason": "unknown_collector_failure"
+      }
+    }
+  },
   "global_limits": {
     "max_concurrent_runs": 3,
     "global_max_requests_per_day": 50,
