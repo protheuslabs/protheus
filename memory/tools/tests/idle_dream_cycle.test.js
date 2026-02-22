@@ -30,13 +30,14 @@ function run() {
   const routingPath = path.join(tmpRoot, 'state', 'routing', 'routing_decisions.jsonl');
   const statePath = path.join(dreamsDir, 'idle_state.json');
   const ledgerPath = path.join(dreamsDir, 'idle_runs.jsonl');
+  const testDate = new Date().toISOString().slice(0, 10);
 
   mkDir(dreamsDir);
   mkDir(path.dirname(routingPath));
 
   writeJson(path.join(dreamsDir, '2026-02-21.json'), {
-    ts: '2026-02-21T12:00:00.000Z',
-    date: '2026-02-21',
+    ts: `${testDate}T12:00:00.000Z`,
+    date: testDate,
     themes: [
       {
         token: 'memory-graph',
@@ -58,7 +59,7 @@ function run() {
   fs.writeFileSync(
     routingPath,
     JSON.stringify({
-      ts: '2026-02-21T12:05:00.000Z',
+      ts: `${testDate}T12:05:00.000Z`,
       type: 'route',
       mode: 'hyper-creative',
       tier: 2,
@@ -93,7 +94,7 @@ function run() {
     IDLE_DREAM_REM_MIN_MINUTES: '1'
   };
 
-  let r = spawnSync('node', [script, 'run', '2026-02-21', '--force=1'], {
+  let r = spawnSync('node', [script, 'run', testDate, '--force=1'], {
     cwd: repoRoot,
     encoding: 'utf8',
     env
@@ -104,9 +105,9 @@ function run() {
   assert.ok(out.idle && out.idle.skipped === false, 'idle phase should run');
   assert.ok(out.rem && out.rem.skipped === false, 'rem phase should run');
 
-  const idleRows = fs.readFileSync(path.join(idleDir, '2026-02-21.jsonl'), 'utf8').trim().split(/\r?\n/);
+  const idleRows = fs.readFileSync(path.join(idleDir, `${testDate}.jsonl`), 'utf8').trim().split(/\r?\n/);
   assert.ok(idleRows.length >= 1, 'idle jsonl row should be written');
-  const remToday = JSON.parse(fs.readFileSync(path.join(remDir, '2026-02-21.json'), 'utf8'));
+  const remToday = JSON.parse(fs.readFileSync(path.join(remDir, `${testDate}.json`), 'utf8'));
   assert.ok(Array.isArray(remToday.quantized) && remToday.quantized.length >= 1, 'rem quantized output should exist');
 
   const state = JSON.parse(fs.readFileSync(statePath, 'utf8'));

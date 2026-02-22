@@ -25,6 +25,17 @@ const AUTONOMY_RECEIPTS_DIR = process.env.AUTONOMY_SUMMARY_RECEIPTS_DIR
 const ACTUATION_RECEIPTS_DIR = process.env.ACTUATION_SUMMARY_RECEIPTS_DIR
   ? path.resolve(process.env.ACTUATION_SUMMARY_RECEIPTS_DIR)
   : path.join(ROOT, 'state', 'actuation', 'receipts');
+const SUCCESS_CRITERIA_MIN_CONTRACT_VERSION = String(
+  process.env.AUTONOMY_SUCCESS_CRITERIA_MIN_CONTRACT_VERSION || '1.0'
+).trim() || '1.0';
+const SUCCESS_CRITERIA_MAX_UNKNOWN_RATE = Math.max(
+  0,
+  Math.min(1, Number(process.env.AUTONOMY_SUCCESS_CRITERIA_MAX_UNKNOWN_RATE || 0.4))
+);
+const SUCCESS_CRITERIA_MAX_UNSUPPORTED_RATE = Math.max(
+  0,
+  Math.min(1, Number(process.env.AUTONOMY_SUCCESS_CRITERIA_MAX_UNSUPPORTED_RATE || 0.5))
+);
 
 function nowIso() {
   return new Date().toISOString();
@@ -136,6 +147,92 @@ function mergeTallies(...objs) {
     }
   }
   return sortedTally(out);
+}
+
+function parseVersionParts(v) {
+  const m = String(v == null ? '' : v).trim().match(/^(\d+)(?:\.(\d+))?(?:\.(\d+))?/);
+  if (!m) return null;
+  return [
+    Number(m[1] || 0),
+    Number(m[2] || 0),
+    Number(m[3] || 0)
+  ];
+}
+
+function versionAtLeast(version, minVersion) {
+  const a = parseVersionParts(version);
+  const b = parseVersionParts(minVersion);
+  if (!a || !b) return false;
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    const av = Number(a[i] || 0);
+    const bv = Number(b[i] || 0);
+    if (av > bv) return true;
+    if (av < bv) return false;
+  }
+  return true;
+}
+
+function criteriaUnknownRate(criteria, checks) {
+  const totalCount = Number(criteria && criteria.total_count || 0);
+  const unknownCount = Number(criteria && criteria.unknown_count || 0);
+  if (totalCount > 0) return unknownCount / totalCount;
+  if (Array.isArray(checks) && checks.length > 0) {
+    const unknownChecks = checks.filter((row) => !(row && row.evaluated === true)).length;
+    return unknownChecks / checks.length;
+  }
+  const evaluatedCount = Number(criteria && criteria.evaluated_count || 0);
+  return evaluatedCount > 0 ? 0 : 1;
+}
+
+function criteriaUnsupportedRate(checks) {
+  if (!Array.isArray(checks) || checks.length <= 0) return 0;
+  const unsupported = checks.filter((row) => String(row && row.reason || '') === 'unsupported_metric').length;
+  return unsupported / checks.length;
+}
+
+function assessCriteriaQuality(rec, criteria) {
+  const contract = rec && rec.receipt_contract && typeof rec.receipt_contract === 'object'
+    ? rec.receipt_contract
+    : {};
+  const verification = rec && rec.verification && typeof rec.verification === 'object'
+    ? rec.verification
+    : {};
+  const qualityFromReceipt = verification.criteria_quality && typeof verification.criteria_quality === 'object'
+    ? verification.criteria_quality
+    : null;
+  const version = String(contract.version || '').trim();
+  const versionKey = version || 'missing';
+  const checks = Array.isArray(criteria && criteria.checks) ? criteria.checks : [];
+  const unknownRate = qualityFromReceipt && Number.isFinite(Number(qualityFromReceipt.unknown_rate))
+    ? Number(qualityFromReceipt.unknown_rate)
+    : criteriaUnknownRate(criteria, checks);
+  const unsupportedRate = qualityFromReceipt && Number.isFinite(Number(qualityFromReceipt.unsupported_rate))
+    ? Number(qualityFromReceipt.unsupported_rate)
+    : criteriaUnsupportedRate(checks);
+  const reasons = [];
+
+  if (!versionAtLeast(version, SUCCESS_CRITERIA_MIN_CONTRACT_VERSION)) {
+    reasons.push('contract_version_below_min');
+  }
+  if (criteria && criteria.synthesized === true) reasons.push('synthesized_criteria');
+  if (unknownRate > SUCCESS_CRITERIA_MAX_UNKNOWN_RATE) reasons.push('high_unknown_rate');
+  if (unsupportedRate > SUCCESS_CRITERIA_MAX_UNSUPPORTED_RATE) reasons.push('high_unsupported_rate');
+  if (verification.criteria_quality_insufficient === true) reasons.push('criteria_quality_insufficient_flag');
+  if (qualityFromReceipt && Array.isArray(qualityFromReceipt.reasons)) {
+    for (const reason of qualityFromReceipt.reasons) {
+      const r = String(reason || '').trim();
+      if (!r) continue;
+      if (!reasons.includes(r)) reasons.push(r);
+    }
+  }
+
+  return {
+    quality_valid: reasons.length === 0,
+    version: versionKey,
+    unknown_rate: Number(unknownRate.toFixed(4)),
+    unsupported_rate: Number(unsupportedRate.toFixed(4)),
+    reasons
+  };
 }
 
 function objectiveIdFromRun(run) {
@@ -315,7 +412,15 @@ function summarizeAutonomyReceipts(rows) {
   let previewReceipts = 0;
   let previewCriteriaReceipts = 0;
   let previewCriteriaPass = 0;
+  let qualityCriteriaReceipts = 0;
+  let qualityCriteriaPass = 0;
+  let previewQualityCriteriaReceipts = 0;
+  let previewQualityCriteriaPass = 0;
+  let qualityFilteredReceipts = 0;
+  let qualityInsufficientReceipts = 0;
   let criteriaSynthesizedReceipts = 0;
+  const qualityFilterReasons = {};
+  const criteriaContractVersions = {};
   const byObjective = {};
 
   for (const rec of receipts) {
@@ -340,6 +445,17 @@ function summarizeAutonomyReceipts(rows) {
     }
     const criteria = successCriteriaFromReceipt(rec);
     if (!criteria) continue;
+    const quality = assessCriteriaQuality(rec, criteria);
+    criteriaContractVersions[quality.version] = Number(criteriaContractVersions[quality.version] || 0) + 1;
+    if (quality.reasons.includes('criteria_quality_insufficient_flag')) {
+      qualityInsufficientReceipts += 1;
+    }
+    if (quality.quality_valid !== true) {
+      qualityFilteredReceipts += 1;
+      for (const reason of quality.reasons) {
+        qualityFilterReasons[reason] = Number(qualityFilterReasons[reason] || 0) + 1;
+      }
+    }
     if (criteria.synthesized === true) criteriaSynthesizedReceipts += 1;
     criteriaReceipts += 1;
     if (criteria.required === true) criteriaRequiredReceipts += 1;
@@ -347,6 +463,14 @@ function summarizeAutonomyReceipts(rows) {
     if (isPreview) {
       previewCriteriaReceipts += 1;
       if (criteria.passed === true) previewCriteriaPass += 1;
+    }
+    if (quality.quality_valid === true) {
+      qualityCriteriaReceipts += 1;
+      if (criteria.passed === true) qualityCriteriaPass += 1;
+      if (isPreview) {
+        previewQualityCriteriaReceipts += 1;
+        if (criteria.passed === true) previewQualityCriteriaPass += 1;
+      }
     }
     criteriaRowsTotal += Number(criteria.total_count || 0);
     criteriaRowsEvaluated += Number(criteria.evaluated_count || 0);
@@ -409,6 +533,28 @@ function summarizeAutonomyReceipts(rows) {
     success_criteria_preview_pass_rate: previewCriteriaReceipts
       ? Number((previewCriteriaPass / previewCriteriaReceipts).toFixed(3))
       : null,
+    success_criteria_quality_receipts: qualityCriteriaReceipts,
+    success_criteria_quality_receipt_pass: qualityCriteriaPass,
+    success_criteria_quality_receipt_pass_rate: qualityCriteriaReceipts
+      ? Number((qualityCriteriaPass / qualityCriteriaReceipts).toFixed(3))
+      : null,
+    success_criteria_quality_preview_receipts: previewQualityCriteriaReceipts,
+    success_criteria_quality_preview_pass: previewQualityCriteriaPass,
+    success_criteria_quality_preview_pass_rate: previewQualityCriteriaReceipts
+      ? Number((previewQualityCriteriaPass / previewQualityCriteriaReceipts).toFixed(3))
+      : null,
+    success_criteria_quality_filtered_receipts: qualityFilteredReceipts,
+    success_criteria_quality_insufficient_receipts: qualityInsufficientReceipts,
+    success_criteria_quality_insufficient_rate: criteriaReceipts > 0
+      ? Number((qualityFilteredReceipts / criteriaReceipts).toFixed(3))
+      : null,
+    success_criteria_quality_filter_reasons: sortedTally(qualityFilterReasons),
+    success_criteria_contract_versions: sortedTally(criteriaContractVersions),
+    success_criteria_quality_policy: {
+      min_contract_version: SUCCESS_CRITERIA_MIN_CONTRACT_VERSION,
+      max_unknown_rate: SUCCESS_CRITERIA_MAX_UNKNOWN_RATE,
+      max_unsupported_rate: SUCCESS_CRITERIA_MAX_UNSUPPORTED_RATE
+    },
     success_criteria_synthesized_receipts: criteriaSynthesizedReceipts,
     by_objective: byObjectiveSorted
   };
@@ -499,6 +645,8 @@ function summarizeForDate(dateStr, days) {
         success_criteria_receipt_pass_rate: autonomyReceipts.success_criteria_receipt_pass_rate,
         success_criteria_required_pass_rate: autonomyReceipts.success_criteria_required_pass_rate,
         success_criteria_preview_pass_rate: autonomyReceipts.success_criteria_preview_pass_rate,
+        success_criteria_quality_receipt_pass_rate: autonomyReceipts.success_criteria_quality_receipt_pass_rate,
+        success_criteria_quality_preview_pass_rate: autonomyReceipts.success_criteria_quality_preview_pass_rate,
         top_failure_reasons: mergeTallies(
           autonomyReceipts.top_failure_reasons,
           actuationReceipts.top_failure_reasons

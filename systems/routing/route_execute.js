@@ -172,7 +172,7 @@ function modelEnv(baseEnv, modelId) {
 }
 
 function isExecutableDecision(d) {
-  return d === 'RUN_HABIT' || d === 'RUN_CANDIDATE_FOR_VERIFICATION' || d === 'PROPOSE_HABIT';
+  return d === 'RUN_HABIT' || d === 'RUN_REFLEX' || d === 'RUN_CANDIDATE_FOR_VERIFICATION' || d === 'PROPOSE_HABIT';
 }
 
 function isAutoHabitFlow(out) {
@@ -349,11 +349,32 @@ function main() {
   };
 
   if (summary.mode === 'deep-thinker' && summary.deep_thinker && summary.deep_thinker.enabled === true) {
-    const secondaryModel = summary.deep_thinker.secondary_model || null;
-    let secondary = null;
-    let disagreement = null;
+    const declaredSwarm = Array.isArray(summary.deep_thinker.swarm_models)
+      ? summary.deep_thinker.swarm_models.map((m) => String(m || '').trim()).filter(Boolean)
+      : [];
+    const quorumMinAgreementRaw = Number(summary.deep_thinker.quorum_min_agreement || 2);
+    const verificationModels = declaredSwarm.length
+      ? declaredSwarm
+      : [summary.selected_model, summary.deep_thinker.secondary_model].filter(Boolean);
+    const secondaryModels = verificationModels.filter((m) => m && m !== summary.selected_model);
 
-    if (secondaryModel && secondaryModel !== summary.selected_model) {
+    const primarySig = JSON.stringify({
+      decision: out ? out.decision : null,
+      gate_decision: out ? (out.gate_decision || null) : null,
+      executor_sig: executorSig(out)
+    });
+    const passes = [{
+      model: summary.selected_model,
+      decision: out ? out.decision : null,
+      gate_decision: out ? (out.gate_decision || null) : null,
+      executor_sig: executorSig(out),
+      signature: primarySig,
+      ok: true,
+      error: null
+    }];
+
+    const routeFailures = [];
+    for (const modelId of secondaryModels) {
       const routedSecondary = runRouteTask({
         task,
         tokensEst,
@@ -361,29 +382,71 @@ function main() {
         errors30d,
         skipHabitId,
         mode,
-        forceModel: secondaryModel
+        forceModel: modelId
       });
       const parsedSecondary = parseRouteTaskOutput(routedSecondary);
       if (!parsedSecondary.ok) {
-        disagreement = 'secondary_route_failed';
-      } else {
-        secondary = parsedSecondary.out;
+        routeFailures.push({ model: modelId, error: parsedSecondary.error || 'secondary_route_failed' });
+        passes.push({
+          model: modelId,
+          decision: null,
+          gate_decision: null,
+          executor_sig: null,
+          signature: null,
+          ok: false,
+          error: parsedSecondary.error || 'secondary_route_failed'
+        });
+        continue;
       }
-    } else {
-      disagreement = 'secondary_model_missing_or_same';
+      const sec = parsedSecondary.out;
+      const sig = JSON.stringify({
+        decision: sec ? sec.decision : null,
+        gate_decision: sec ? (sec.gate_decision || null) : null,
+        executor_sig: executorSig(sec)
+      });
+      passes.push({
+        model: modelId,
+        decision: sec ? sec.decision : null,
+        gate_decision: sec ? (sec.gate_decision || null) : null,
+        executor_sig: executorSig(sec),
+        signature: sig,
+        ok: true,
+        error: null
+      });
     }
 
-    const consensus = evaluateDeepThinkerConsensus(out, secondary);
-    if (!disagreement && !consensus.agreed) {
-      disagreement = consensus.disagreement ? consensus.disagreement.reason : 'consensus_failed';
+    const counts = {};
+    for (const row of passes) {
+      if (!row || row.ok !== true || !row.signature) continue;
+      counts[row.signature] = Number(counts[row.signature] || 0) + 1;
+    }
+    const primaryAgreementCount = Number(counts[primarySig] || 0);
+    const quorumMinAgreement = Number.isFinite(quorumMinAgreementRaw)
+      ? Math.max(2, Math.min(passes.length, Math.round(quorumMinAgreementRaw)))
+      : 2;
+
+    let disagreement = null;
+    let disagreementClass = null;
+    if (!secondaryModels.length) {
+      disagreement = 'secondary_model_missing_or_same';
+      disagreementClass = 'execution';
+    } else if (routeFailures.length > 0) {
+      disagreement = 'secondary_route_failed';
+      disagreementClass = 'execution';
+    } else if (primaryAgreementCount < quorumMinAgreement) {
+      disagreement = 'quorum_not_met';
+      disagreementClass = 'policy';
     }
 
     summary.deep_thinker_passes = {
-      primary: { model: summary.selected_model, ...consensus.primary },
-      secondary: { model: secondary ? (secondary?.route?.selected_model || secondaryModel) : secondaryModel, ...consensus.secondary },
+      primary: passes[0],
+      secondaries: passes.slice(1),
+      verification_models: verificationModels,
+      quorum_min_agreement: quorumMinAgreement,
+      primary_agreement_count: primaryAgreementCount,
       agreed: !disagreement,
       disagreement_reason: disagreement,
-      disagreement_class: consensus.disagreement ? consensus.disagreement.class : null
+      disagreement_class: disagreementClass
     };
 
     if (disagreement) {
@@ -397,12 +460,14 @@ function main() {
         task: String(task).slice(0, 200),
         mode: summary.mode,
         primary_model: summary.selected_model,
-        secondary_model: secondaryModel,
-        primary_decision: consensus.primary.decision,
-        secondary_decision: consensus.secondary.decision,
+        secondary_model: summary.deep_thinker.secondary_model || null,
+        verification_models: verificationModels,
+        quorum_min_agreement: quorumMinAgreement,
+        primary_decision: passes[0].decision,
+        secondary_decision: passes.length > 1 ? passes[1].decision : null,
         agreed: false,
         disagreement_reason: disagreement,
-        disagreement_class: consensus.disagreement ? consensus.disagreement.class : null,
+        disagreement_class: disagreementClass,
         final_decision: 'manual_review'
       });
       process.exit(0);

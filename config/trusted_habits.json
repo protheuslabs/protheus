@@ -44,6 +44,18 @@
       "approved_by": "habit_crystallizer",
       "approved_at": "2026-02-20",
       "note": "Auto-trusted deterministic scaffold"
+    },
+    "/Users/jay/.openclaw/workspace/habits/routines/execute_bounded_proposal_prp_28492a3aa16ac61f__e.js": {
+      "sha256": "dae8b1fbd75a18591b35cd580116801fcf85cd0119c4c581489cb98a02322e5f",
+      "approved_by": "habit_crystallizer",
+      "approved_at": "2026-02-21",
+      "note": "Auto-trusted deterministic scaffold"
+    },
+    "/Users/jay/.openclaw/workspace/habits/routines/execute_bounded_proposal_csg_3c7677ecc41e6fba__c.js": {
+      "sha256": "9e890a1d528fad8b5b5c0e1cd2e163c8c9a0cd9caf3dde8e60d88f0643a86749",
+      "approved_by": "habit_crystallizer",
+      "approved_at": "2026-02-21",
+      "note": "Auto-trusted deterministic scaffold"
     }
   },
   "break_glass": {

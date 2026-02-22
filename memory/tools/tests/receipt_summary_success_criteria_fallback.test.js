@@ -39,7 +39,8 @@ function run() {
         passed: false,
         checks: [{ name: 'preview_executable', pass: false }],
         failed: ['preview_executable'],
-        primary_failure: 'preflight_not_executable'
+        primary_failure: 'preflight_not_executable',
+        criteria_quality_insufficient: true
       },
       receipt_contract: { version: '1.0', attempted: true, verified: false, recorded: true }
     },
@@ -80,6 +81,13 @@ function run() {
   assert.strictEqual(out.receipts.autonomy.success_criteria_preview_pass, 1);
   assert.strictEqual(out.receipts.autonomy.success_criteria_preview_pass_rate, 1);
   assert.strictEqual(out.receipts.autonomy.success_criteria_synthesized_receipts, 2);
+  assert.strictEqual(out.receipts.autonomy.success_criteria_quality_receipts, 0);
+  assert.strictEqual(out.receipts.autonomy.success_criteria_quality_receipt_pass_rate, null);
+  assert.strictEqual(out.receipts.autonomy.success_criteria_quality_filtered_receipts, 2);
+  assert.strictEqual(out.receipts.autonomy.success_criteria_quality_insufficient_receipts, 1);
+  assert.strictEqual(Number(out.receipts.autonomy.success_criteria_quality_filter_reasons.synthesized_criteria || 0), 2);
+  assert.strictEqual(Number(out.receipts.autonomy.success_criteria_quality_filter_reasons.high_unknown_rate || 0), 2);
+  assert.strictEqual(Number(out.receipts.autonomy.success_criteria_quality_filter_reasons.criteria_quality_insufficient_flag || 0), 1);
 
   console.log('receipt_summary_success_criteria_fallback.test.js: OK');
 }

@@ -32,6 +32,7 @@ const RECEIPTS_DIR = process.env.AUTONOMY_RECEIPTS_DIR
 function usage() {
   console.log('Usage:');
   console.log('  node systems/autonomy/canary_scheduler.js run [YYYY-MM-DD]');
+  console.log('  node systems/autonomy/canary_scheduler.js run-once [YYYY-MM-DD]');
   console.log('  node systems/autonomy/canary_scheduler.js status [YYYY-MM-DD]');
   console.log('  node systems/autonomy/canary_scheduler.js --help');
 }
@@ -68,8 +69,11 @@ function makeReceiptId(suffix) {
   return `scheduler_${tail}_${rand}`;
 }
 
-function runNodeJson(scriptPath, args = []) {
-  const r = spawnSync('node', [scriptPath, ...args], { cwd: ROOT, encoding: 'utf8' });
+function runNodeJson(scriptPath, args = [], envOverride = null) {
+  const env = envOverride && typeof envOverride === 'object'
+    ? { ...process.env, ...envOverride }
+    : process.env;
+  const r = spawnSync('node', [scriptPath, ...args], { cwd: ROOT, encoding: 'utf8', env });
   const stdout = String(r.stdout || '').trim();
   const stderr = String(r.stderr || '').trim();
   let payload = null;
@@ -146,15 +150,68 @@ function cmdStatus(dateStr) {
   }, null, 2) + '\n');
 }
 
-function cmdRun(dateStr) {
+function cmdRun(dateStr, opts = {}) {
   const ts = nowIso();
-  const readiness = runNodeJson('systems/autonomy/autonomy_controller.js', ['readiness', dateStr]);
+  const runOnce = !!(opts && opts.runOnce === true);
+  const runEnv = runOnce ? { AUTONOMY_ENABLED: '1' } : null;
+  const requireStartupAttestation = String(process.env.AUTONOMY_REQUIRE_STARTUP_ATTESTATION || '0') === '1';
+  if (requireStartupAttestation && !runOnce) {
+    const att = runNodeJson('systems/security/startup_attestation.js', ['verify', '--strict']);
+    const attPayload = att.payload && typeof att.payload === 'object' ? att.payload : null;
+    const attOk = att.ok && !!(attPayload && attPayload.ok === true);
+    if (!attOk) {
+      const failCode = 'startup_attestation_blocked';
+      const quality = schedulerQuality(false, false, failCode);
+      writeRunEvent(dateStr, {
+        ts,
+        type: 'autonomy_run',
+        result: 'stop_init_gate_startup_attestation',
+        scheduler: true,
+        scheduler_error: shortText(
+          (attPayload && attPayload.reason) || att.stderr || att.stdout || `startup_attestation_exit_${att.code}`,
+          180
+        )
+      });
+      const rec = writeSchedulerReceipt(
+        dateStr,
+        {
+          ...receiptBase(dateStr, null, failCode),
+          verdict: 'fail',
+          execution: {
+            scheduler: true,
+            startup_attestation_ok: false
+          },
+          verification: {
+            passed: false,
+            primary_failure: failCode,
+            failed: [failCode]
+          },
+          scheduler_quality: quality
+        },
+        { attempted: false, verified: false }
+      );
+      process.stdout.write(JSON.stringify({
+        ok: true,
+        ts,
+        date: dateStr,
+        result: failCode,
+        can_run: null,
+        readiness: null,
+        scheduler_receipt_id: rec.receipt_id,
+        scheduler_quality: quality,
+        error: shortText((attPayload && attPayload.reason) || att.stderr || att.stdout || `startup_attestation_exit_${att.code}`, 200)
+      }, null, 2) + '\n');
+      return;
+    }
+  }
+
+  const readiness = runNodeJson('systems/autonomy/autonomy_controller.js', ['readiness', dateStr], runEnv);
   const readinessPayload = readiness.payload && typeof readiness.payload === 'object'
     ? readiness.payload
     : null;
   const readinessOk = readiness.ok && !!(readinessPayload && readinessPayload.ok === true);
 
-  if (!readinessOk) {
+  if (!readinessOk && !runOnce) {
     const failCode = 'readiness_unavailable';
     const quality = schedulerQuality(false, false, failCode);
     writeRunEvent(dateStr, {
@@ -196,7 +253,7 @@ function cmdRun(dateStr) {
     return;
   }
 
-  if (readinessPayload.can_run !== true) {
+  if (!runOnce && readinessPayload.can_run !== true) {
     const blocker = firstBlocker(readinessPayload);
     const blockerCode = String(blocker && blocker.code || 'readiness_blocked');
     const quality = schedulerQuality(false, false, blockerCode);
@@ -245,7 +302,7 @@ function cmdRun(dateStr) {
     return;
   }
 
-  const runRep = runNodeJson('systems/autonomy/autonomy_controller.js', ['run', dateStr]);
+  const runRep = runNodeJson('systems/autonomy/autonomy_controller.js', ['run', dateStr], runEnv);
   const runPayload = runRep.payload && typeof runRep.payload === 'object' ? runRep.payload : null;
   const receiptFromRun = !!(runPayload && (runPayload.receipt_id || runPayload.preview_receipt_id));
   const runResult = String(runPayload && runPayload.result || (runRep.ok ? 'unknown' : `run_exit_${runRep.code}`));
@@ -290,6 +347,7 @@ function cmdRun(dateStr) {
     ok: true,
     ts,
     date: dateStr,
+    run_once: runOnce,
     result: String(runPayload && runPayload.result || (runRep.ok ? 'run_ok' : 'run_unavailable')),
     can_run: true,
     readiness: readinessPayload,
@@ -311,7 +369,8 @@ function main() {
     usage();
     process.exit(0);
   }
-  if (cmd === 'run') return cmdRun(dateStr);
+  if (cmd === 'run') return cmdRun(dateStr, { runOnce: false });
+  if (cmd === 'run-once') return cmdRun(dateStr, { runOnce: true });
   if (cmd === 'status') return cmdStatus(dateStr);
   usage();
   process.exit(2);

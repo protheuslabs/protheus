@@ -1,0 +1,14 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "promotion": {
+    "min_uses_30d": 3,
+    "max_avg_duration_ms": 2500,
+    "max_tokens_est": 420
+  },
+  "degradation": {
+    "disable_if_uses_30d_below": 1,
+    "disable_if_idle_days": 21,
+    "dispose_if_idle_days": 45
+  }
+}

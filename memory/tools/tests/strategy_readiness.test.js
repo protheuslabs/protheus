@@ -103,6 +103,7 @@ function run() {
   assert.strictEqual(out.readiness.ready_for_execute, false);
   assert.strictEqual(out.readiness.recommended_mode, 'score_only');
   assert.ok(out.readiness.failed_checks.includes('attempted'));
+  assert.strictEqual(out.readiness.metrics.success_criteria_source, 'legacy_fallback');
 
   // Case 2: ready after enough receipts and no harmful stop ratio/reverted rate.
   writeJson(path.join(strategyDir, 'default.json'), {
@@ -129,6 +130,72 @@ function run() {
   out = parseJson(r.stdout);
   assert.strictEqual(out.readiness.ready_for_execute, true);
   assert.strictEqual(out.readiness.recommended_mode, 'execute_candidate');
+  assert.strictEqual(out.readiness.metrics.success_criteria_source, 'legacy_fallback');
+
+  // Case 3: forced quality mode with high quality-insufficient rate should fail quality gate.
+  writeJson(path.join(strategyDir, 'default.json'), {
+    version: '1.0',
+    id: 'readiness_test',
+    status: 'active',
+    objective: { primary: 'test objective' },
+    risk_policy: { allowed_risks: ['low'] },
+    execution_policy: { mode: 'score_only' },
+    promotion_policy: {
+      min_days: 7,
+      min_attempted: 3,
+      min_verified_rate: 0.5,
+      min_success_criteria_receipts: 1,
+      min_success_criteria_pass_rate: 0.5,
+      disable_legacy_fallback_after_quality_receipts: 1,
+      max_success_criteria_quality_insufficient_rate: 0.3,
+      max_reverted_rate: 0.5,
+      max_stop_ratio: 0.9,
+      min_shipped: 1
+    }
+  });
+  writeJsonl(path.join(autoReceiptsDir, `${date}.jsonl`), [
+    {
+      type: 'autonomy_action_receipt',
+      verdict: 'pass',
+      verification: {
+        success_criteria: {
+          required: true,
+          passed: true,
+          total_count: 1,
+          evaluated_count: 1,
+          passed_count: 1,
+          failed_count: 0,
+          unknown_count: 0,
+          checks: [{ metric: 'artifact_count', evaluated: true, pass: true, reason: 'artifact_delta_check' }]
+        }
+      },
+      receipt_contract: { version: '1.0', attempted: true, verified: true }
+    },
+    {
+      type: 'autonomy_action_receipt',
+      verdict: 'pass',
+      verification: {
+        criteria_quality_insufficient: true,
+        success_criteria: {
+          required: true,
+          passed: true,
+          total_count: 1,
+          evaluated_count: 1,
+          passed_count: 1,
+          failed_count: 0,
+          unknown_count: 0,
+          checks: [{ metric: 'artifact_count', evaluated: true, pass: true, reason: 'artifact_delta_check' }]
+        }
+      },
+      receipt_contract: { version: '1.0', attempted: true, verified: true }
+    }
+  ]);
+  r = runScript(repoRoot, ['run', date, '--days=7'], baseEnv);
+  assert.strictEqual(r.status, 0, `expected exit 0: ${r.stderr}`);
+  out = parseJson(r.stdout);
+  assert.strictEqual(out.readiness.ready_for_execute, false);
+  assert.strictEqual(out.readiness.metrics.success_criteria_source, 'quality_forced');
+  assert.ok(out.readiness.failed_checks.includes('success_criteria_quality_insufficient_rate'));
 
   console.log('strategy_readiness.test.js: OK');
 }

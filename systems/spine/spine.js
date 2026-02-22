@@ -757,6 +757,7 @@ function main() {
     "systems/security/directive_gate.js",
     "systems/security/skill_install_enforcer.js",
     "systems/security/integrity_kernel.js",
+    "systems/security/startup_attestation.js",
     "habits/scripts/external_eyes.js",
     "habits/scripts/eyes_insight.js",
     "habits/scripts/sensory_queue.js",
@@ -773,12 +774,15 @@ function main() {
     "systems/actuation/actuation_executor.js",
     "systems/actuation/bridge_from_proposals.js",
     "systems/ops/state_backup.js",
+    "systems/ops/backup_integrity_check.js",
     "systems/ops/openclaw_backup_retention.js",
     "systems/memory/eyes_memory_bridge.js",
     "systems/memory/memory_dream.js",
     "systems/memory/uid_connections.js",
     "systems/memory/creative_links.js",
     "systems/sensory/cross_signal_engine.js",
+    "systems/strategy/weekly_strategy_synthesis.js",
+    "systems/autonomy/ops_dashboard.js",
     "config/actuation_adapters.json",
     "config/state_backup_policy.json",
     "skills/moltbook/actuation_adapter.js",
@@ -1232,8 +1236,61 @@ function main() {
       console.log(" budget_guard skipped reason=feature_flag_disabled flag=SPINE_BUDGET_GUARD_ENABLED");
     }
 
+    let startupAttestation = { checked: false, ok: true, required: false, reason: null };
+    if (String(process.env.SPINE_STARTUP_ATTESTATION_ENABLED || "1") !== "0") {
+      const verifyArgs = ["systems/security/startup_attestation.js", "verify"];
+      const strictVerify = String(process.env.SPINE_STARTUP_ATTESTATION_STRICT || "0") === "1";
+      if (strictVerify) verifyArgs.push("--strict");
+      const att = runJson("node", verifyArgs);
+      const attPayload = att.payload && typeof att.payload === "object" ? att.payload : null;
+      startupAttestation = {
+        checked: true,
+        ok: att.ok && !!attPayload && attPayload.ok === true,
+        required: String(process.env.SPINE_STARTUP_ATTESTATION_REQUIRED || "0") === "1",
+        reason: (!att.ok || !attPayload || attPayload.ok !== true)
+          ? String((attPayload && attPayload.reason) || att.stderr || att.stdout || `startup_attestation_exit_${att.code}`).slice(0, 180)
+          : null
+      };
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_startup_attestation",
+        mode,
+        date: dateStr,
+        ok: startupAttestation.ok,
+        required: startupAttestation.required,
+        reason: startupAttestation.reason
+      });
+      if (startupAttestation.ok) {
+        console.log(" startup_attestation ok");
+      } else {
+        console.log(` startup_attestation unavailable reason=${String(startupAttestation.reason || "unknown").slice(0, 120)}`);
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_startup_attestation_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "SPINE_STARTUP_ATTESTATION_ENABLED",
+        flag_value: String(process.env.SPINE_STARTUP_ATTESTATION_ENABLED || "")
+      });
+      console.log(" startup_attestation skipped reason=feature_flag_disabled flag=SPINE_STARTUP_ATTESTATION_ENABLED");
+    }
+
     const budgetGuardBlocksAutonomy = !!(budgetGuard && (budgetGuard.action === "throttle" || budgetGuard.action === "pause"));
-    if (String(process.env.AUTONOMY_ENABLED || "") === "1" && budgetGuardBlocksAutonomy) {
+    const startupAttestationBlocksAutonomy = startupAttestation.required === true && startupAttestation.ok !== true;
+    if (String(process.env.AUTONOMY_ENABLED || "") === "1" && startupAttestationBlocksAutonomy) {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_autonomy_skipped",
+        mode,
+        date: dateStr,
+        reason: "startup_attestation_blocked",
+        startup_attestation_reason: startupAttestation.reason || null
+      });
+      console.log(` autonomy_skipped reason=startup_attestation_blocked detail=${String(startupAttestation.reason || "unknown").slice(0, 120)}`);
+    } else if (String(process.env.AUTONOMY_ENABLED || "") === "1" && budgetGuardBlocksAutonomy) {
       appendLedger(dateStr, {
         ts: nowIso(),
         type: "spine_autonomy_skipped",
@@ -1626,6 +1683,67 @@ function main() {
       console.log(" outcome_fitness skipped reason=feature_flag_disabled flag=SPINE_OUTCOME_FITNESS_ENABLED");
     }
 
+    // 0b) weekly strategy synthesis from executed outcomes (rolling window).
+    if (String(process.env.SPINE_WEEKLY_STRATEGY_SYNTHESIS_ENABLED || "1") !== "0") {
+      const synthesisDays = Math.max(2, Number(process.env.SPINE_WEEKLY_STRATEGY_SYNTHESIS_DAYS || 7) || 7);
+      const synthesis = runJson("node", [
+        "systems/strategy/weekly_strategy_synthesis.js",
+        "run",
+        dateStr,
+        `--days=${synthesisDays}`,
+        "--write=1"
+      ]);
+      const synthesisPayload = synthesis.payload && typeof synthesis.payload === "object"
+        ? synthesis.payload
+        : null;
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_weekly_strategy_synthesis",
+        mode,
+        date: dateStr,
+        ok: synthesis.ok && !!synthesisPayload && synthesisPayload.ok === true,
+        days: synthesisPayload ? Number(synthesisPayload.days || 0) : synthesisDays,
+        outcomes: synthesisPayload && synthesisPayload.summary && synthesisPayload.summary.totals
+          ? Number(synthesisPayload.summary.totals.outcomes || 0)
+          : null,
+        proposal_types: synthesisPayload && synthesisPayload.summary && synthesisPayload.summary.totals
+          ? Number(synthesisPayload.summary.totals.proposal_types || 0)
+          : null,
+        winners: synthesisPayload && synthesisPayload.summary && Array.isArray(synthesisPayload.summary.winners)
+          ? Number(synthesisPayload.summary.winners.length || 0)
+          : null,
+        losers: synthesisPayload && synthesisPayload.summary && Array.isArray(synthesisPayload.summary.losers)
+          ? Number(synthesisPayload.summary.losers.length || 0)
+          : null,
+        output_file: synthesisPayload ? synthesisPayload.output_file || null : null,
+        reason: (!synthesis.ok || !synthesisPayload || synthesisPayload.ok !== true)
+          ? String(synthesis.stderr || synthesis.stdout || `weekly_strategy_synthesis_exit_${synthesis.code}`).slice(0, 180)
+          : null
+      });
+      if (synthesis.ok && synthesisPayload && synthesisPayload.ok === true) {
+        const totals = synthesisPayload.summary && synthesisPayload.summary.totals ? synthesisPayload.summary.totals : {};
+        console.log(
+          ` weekly_strategy_synthesis outcomes=${Number(totals.outcomes || 0)}` +
+          ` types=${Number(totals.proposal_types || 0)}` +
+          ` winners=${Number(synthesisPayload.summary && synthesisPayload.summary.winners ? synthesisPayload.summary.winners.length || 0 : 0)}` +
+          ` losers=${Number(synthesisPayload.summary && synthesisPayload.summary.losers ? synthesisPayload.summary.losers.length || 0 : 0)}`
+        );
+      } else {
+        console.log(` weekly_strategy_synthesis unavailable reason=${String(synthesis.stderr || synthesis.stdout || "unknown").slice(0, 120)}`);
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_weekly_strategy_synthesis_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "SPINE_WEEKLY_STRATEGY_SYNTHESIS_ENABLED",
+        flag_value: String(process.env.SPINE_WEEKLY_STRATEGY_SYNTHESIS_ENABLED || "")
+      });
+      console.log(" weekly_strategy_synthesis skipped reason=feature_flag_disabled flag=SPINE_WEEKLY_STRATEGY_SYNTHESIS_ENABLED");
+    }
+
     // DAILY MODE (orchestration only)
     // 1) auto-record shipped outcomes from git tags
     run("node", ["habits/scripts/git_outcomes.js", "run", dateStr]);
@@ -1977,6 +2095,55 @@ function main() {
       console.log(" autonomy_health skipped reason=feature_flag_disabled flag=SPINE_AUTONOMY_HEALTH_ENABLED");
     }
 
+    // 4d) ops dashboard summary over recent daily+weekly health reports.
+    if (String(process.env.SPINE_OPS_DASHBOARD_ENABLED || "1") !== "0") {
+      const dashboardDays = Math.max(2, Number(process.env.SPINE_OPS_DASHBOARD_DAYS || 7) || 7);
+      const dashboard = runJson("node", ["systems/autonomy/ops_dashboard.js", "run", dateStr, `--days=${dashboardDays}`]);
+      const payload = dashboard.payload && typeof dashboard.payload === "object" ? dashboard.payload : null;
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_ops_dashboard",
+        mode,
+        date: dateStr,
+        ok: dashboard.ok && !!payload && payload.ok === true,
+        reports: payload ? Number(payload.reports || 0) : null,
+        failed_checks: payload && payload.summary && payload.summary.totals
+          ? Number(payload.summary.totals.failed_checks || 0)
+          : null,
+        critical: payload && payload.summary && payload.summary.totals
+          ? Number(payload.summary.totals.critical || 0)
+          : null,
+        warnings: payload && payload.summary && payload.summary.totals
+          ? Number(payload.summary.totals.warnings || 0)
+          : null,
+        reason: (!dashboard.ok || !payload || payload.ok !== true)
+          ? String(dashboard.stderr || dashboard.stdout || `ops_dashboard_exit_${dashboard.code}`).slice(0, 180)
+          : null
+      });
+      if (dashboard.ok && payload && payload.ok === true) {
+        const totals = payload.summary && payload.summary.totals ? payload.summary.totals : {};
+        console.log(
+          ` ops_dashboard reports=${Number(payload.reports || 0)}` +
+          ` failed_checks=${Number(totals.failed_checks || 0)}` +
+          ` critical=${Number(totals.critical || 0)}` +
+          ` warnings=${Number(totals.warnings || 0)}`
+        );
+      } else {
+        console.log(` ops_dashboard unavailable reason=${String(dashboard.stderr || dashboard.stdout || "unknown").slice(0, 120)}`);
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_ops_dashboard_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "SPINE_OPS_DASHBOARD_ENABLED",
+        flag_value: String(process.env.SPINE_OPS_DASHBOARD_ENABLED || "")
+      });
+      console.log(" ops_dashboard skipped reason=feature_flag_disabled flag=SPINE_OPS_DASHBOARD_ENABLED");
+    }
+
     // 5) optional external state backup (outside git workspace)
     if (String(process.env.STATE_BACKUP_ENABLED || "") === "1") {
       const backupArgs = ["systems/ops/state_backup.js", "run", `--date=${dateStr}`];
@@ -2019,6 +2186,51 @@ function main() {
         flag_value: String(process.env.STATE_BACKUP_ENABLED || "")
       });
       console.log(" state_backup skipped reason=feature_flag_disabled flag=STATE_BACKUP_ENABLED");
+    }
+
+    // 5b) backup integrity verification (state backups + blank-slate archives).
+    if (String(process.env.STATE_BACKUP_INTEGRITY_ENABLED || "1") !== "0") {
+      const integrityArgs = ["systems/ops/backup_integrity_check.js", "run"];
+      const strict = String(process.env.STATE_BACKUP_INTEGRITY_STRICT || "0") === "1";
+      if (strict) integrityArgs.push("--strict");
+      const backupIntegrity = runJson("node", integrityArgs);
+      const integrityPayload = backupIntegrity.payload && typeof backupIntegrity.payload === "object"
+        ? backupIntegrity.payload
+        : null;
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_backup_integrity",
+        mode,
+        date: dateStr,
+        ok: backupIntegrity.ok && !!integrityPayload && integrityPayload.ok === true,
+        strict,
+        checked_channels: integrityPayload ? Number(integrityPayload.checked_channels || 0) : null,
+        failed_channels: integrityPayload ? Number(integrityPayload.failed_channels || 0) : null,
+        failed_required_channels: integrityPayload ? Number(integrityPayload.failed_required_channels || 0) : null,
+        reason: (!backupIntegrity.ok || !integrityPayload || integrityPayload.ok !== true)
+          ? String(backupIntegrity.stderr || backupIntegrity.stdout || `backup_integrity_exit_${backupIntegrity.code}`).slice(0, 180)
+          : null
+      });
+      if (backupIntegrity.ok && integrityPayload && integrityPayload.ok === true) {
+        console.log(
+          ` backup_integrity ok channels=${Number(integrityPayload.checked_channels || 0)}` +
+          ` failed=${Number(integrityPayload.failed_channels || 0)}`
+        );
+      } else {
+        console.log(` backup_integrity unavailable reason=${String(backupIntegrity.stderr || backupIntegrity.stdout || "unknown").slice(0, 120)}`);
+        if (strict) process.exit(backupIntegrity.code || 1);
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_backup_integrity_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "STATE_BACKUP_INTEGRITY_ENABLED",
+        flag_value: String(process.env.STATE_BACKUP_INTEGRITY_ENABLED || "")
+      });
+      console.log(" backup_integrity skipped reason=feature_flag_disabled flag=STATE_BACKUP_INTEGRITY_ENABLED");
     }
 
     // 6) external OpenClaw config backup retention (keep recent backups + archive older).

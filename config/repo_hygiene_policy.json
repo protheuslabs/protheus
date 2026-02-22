@@ -1,0 +1,20 @@
+{
+  "version": "1.0",
+  "blocked_prefixes": [
+    "memory/_snapshots/",
+    "logs/tool_raw/",
+    "tmp/",
+    "state/",
+    "habits/logs/"
+  ],
+  "blocked_globs": [
+    "memory/*.backup.*",
+    "memory/tools/tests/temp_*/*",
+    "habits/scripts/*.bak.*"
+  ],
+  "allow_prefixes": [
+    "state/security/break_glass.jsonl",
+    "state/spine/runs/"
+  ],
+  "allow_globs": []
+}

@@ -27,9 +27,27 @@ const MODE_AUDIT_LOG_PATH = process.env.AUTONOMY_STRATEGY_MODE_LOG
   ? path.resolve(process.env.AUTONOMY_STRATEGY_MODE_LOG)
   : path.join(REPO_ROOT, 'state', 'autonomy', 'strategy_mode_changes.jsonl');
 const MAX_CONSEC_NOT_READY = Number(process.env.AUTONOMY_EXECUTE_GUARD_MAX_CONSEC || 2);
+const AUTONOMY_CANARY_RELAX_ENABLED = String(process.env.AUTONOMY_CANARY_RELAX_ENABLED || '1') !== '0';
+const AUTONOMY_CANARY_RELAX_READINESS_CHECKS = new Set(
+  String(process.env.AUTONOMY_CANARY_RELAX_READINESS_CHECKS || 'success_criteria_pass_rate')
+    .split(',')
+    .map((v) => String(v || '').trim())
+    .filter(Boolean)
+);
 
 function isExecuteMode(mode) {
   return mode === 'execute' || mode === 'canary_execute';
+}
+
+function canaryFailedChecksAllowed(failedChecks) {
+  const failed = Array.isArray(failedChecks)
+    ? failedChecks.map((v) => String(v || '').trim()).filter(Boolean)
+    : [];
+  if (!failed.length || AUTONOMY_CANARY_RELAX_READINESS_CHECKS.size === 0) return false;
+  for (const check of failed) {
+    if (!AUTONOMY_CANARY_RELAX_READINESS_CHECKS.has(check)) return false;
+  }
+  return true;
 }
 
 function usage() {
@@ -193,15 +211,25 @@ function cmdRun(args) {
   }
 
   const ready = !!(rep.payload.readiness && rep.payload.readiness.ready_for_execute === true);
+  const readiness = rep.payload && rep.payload.readiness && typeof rep.payload.readiness === 'object'
+    ? rep.payload.readiness
+    : null;
+  const failedChecks = Array.isArray(readiness && readiness.failed_checks) ? readiness.failed_checks : [];
+  const relaxedCanaryReadiness = AUTONOMY_CANARY_RELAX_ENABLED
+    && mode === 'canary_execute'
+    && canaryFailedChecksAllowed(failedChecks);
+  const readyForGuard = ready || relaxedCanaryReadiness;
   let consecutive = Number(prior.consecutive_not_ready || 0);
-  if (ready) consecutive = 0;
+  if (readyForGuard) consecutive = 0;
   else consecutive += 1;
 
-  const shouldRevert = !ready && MAX_CONSEC_NOT_READY > 0 && consecutive >= MAX_CONSEC_NOT_READY;
+  const shouldRevert = !readyForGuard && MAX_CONSEC_NOT_READY > 0 && consecutive >= MAX_CONSEC_NOT_READY;
   state.by_strategy = state.by_strategy || {};
   state.by_strategy[strategy.id] = {
     consecutive_not_ready: consecutive,
-    last_result: shouldRevert ? 'auto_reverted_to_score_only' : (ready ? 'ready' : 'not_ready'),
+    last_result: shouldRevert
+      ? 'auto_reverted_to_score_only'
+      : (ready ? 'ready' : (relaxedCanaryReadiness ? 'canary_relaxed_ready' : 'not_ready')),
     updated_at: nowIso()
   };
 
@@ -210,11 +238,13 @@ function cmdRun(args) {
     process.stdout.write(JSON.stringify({
       ok: true,
       ts: nowIso(),
-      result: ready ? 'ready' : 'not_ready',
+      result: ready ? 'ready' : (relaxedCanaryReadiness ? 'canary_relaxed_ready' : 'not_ready'),
       strategy_id: strategy.id,
       consecutive_not_ready: consecutive,
       max_consecutive_not_ready: MAX_CONSEC_NOT_READY,
-      readiness: rep.payload.readiness || null
+      readiness: readiness,
+      readiness_relaxed: relaxedCanaryReadiness,
+      readiness_relaxed_checks: relaxedCanaryReadiness ? Array.from(AUTONOMY_CANARY_RELAX_READINESS_CHECKS) : []
     }, null, 2) + '\n');
     return;
   }
