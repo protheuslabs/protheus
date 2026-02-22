@@ -26,6 +26,15 @@ const crypto = require('crypto');
 const { execSync } = require('child_process');
 const { writeContractReceipt } = require('../../lib/action_receipts');
 const {
+  GLOBAL_BUDGET_DEFAULT_DIR,
+  DEFAULT_EVENTS_PATH,
+  DEFAULT_AUTOPAUSE_PATH,
+  evaluateSystemBudgetGuard,
+  loadSystemBudgetAutopauseState,
+  writeSystemBudgetDecision,
+  setSystemBudgetAutopause
+} = require('../../systems/budget/system_budget.js');
+const {
   readRegistryWithUids,
   writeRegistryWithUids
 } = require('./habit_uid_store.js');
@@ -36,6 +45,18 @@ const RUNS_LOG = '/Users/jay/.openclaw/workspace/habits/logs/habit_runs.ndjson';
 const ERRORS_LOG = '/Users/jay/.openclaw/workspace/habits/logs/habit_errors.ndjson';
 const SNIPPET_DIR = '/Users/jay/.openclaw/workspace/memory';
 const RECEIPTS_DIR = '/Users/jay/.openclaw/workspace/state/habits/receipts';
+const HABIT_BUDGET_ENABLED = !['0', 'false', 'no', 'off'].includes(String(process.env.HABIT_BUDGET_ENABLED || '1').trim().toLowerCase());
+const HABIT_BUDGET_MODULE = String(process.env.HABIT_BUDGET_MODULE || 'run_habit').trim() || 'run_habit';
+const HABIT_BUDGET_STATE_DIR = process.env.HABIT_BUDGET_STATE_DIR
+  ? path.resolve(process.env.HABIT_BUDGET_STATE_DIR)
+  : GLOBAL_BUDGET_DEFAULT_DIR;
+const HABIT_BUDGET_EVENTS_PATH = process.env.HABIT_BUDGET_EVENTS_PATH
+  ? path.resolve(process.env.HABIT_BUDGET_EVENTS_PATH)
+  : DEFAULT_EVENTS_PATH;
+const HABIT_BUDGET_AUTOPAUSE_PATH = process.env.HABIT_BUDGET_AUTOPAUSE_PATH
+  ? path.resolve(process.env.HABIT_BUDGET_AUTOPAUSE_PATH)
+  : DEFAULT_AUTOPAUSE_PATH;
+const HABIT_BUDGET_DEFAULT_TOKENS_EST = Number(process.env.HABIT_BUDGET_DEFAULT_TOKENS_EST || 240);
 
 function computeHash(filepath) {
   const content = fs.readFileSync(filepath, 'utf8');
@@ -54,6 +75,97 @@ function nowIso() {
 function truncate(s, max = 220) {
   const txt = String(s || '');
   return txt.length <= max ? txt : `${txt.slice(0, max)}...`;
+}
+
+function getArgValue(args, name, fallback = null) {
+  const i = args.indexOf(name);
+  if (i === -1) return fallback;
+  const v = args[i + 1];
+  return v === undefined ? fallback : v;
+}
+
+function parseRequestedTokens(args, inputs) {
+  const cliRaw = getArgValue(args, '--tokens_est', getArgValue(args, '--tokens-est', null));
+  const fromCli = Number(cliRaw);
+  if (Number.isFinite(fromCli) && fromCli > 0) return Math.max(1, Math.min(12000, Math.round(fromCli)));
+  const fromInputs = Number(inputs && (inputs.tokens_est || inputs.tokensEst || inputs.request_tokens_est));
+  if (Number.isFinite(fromInputs) && fromInputs > 0) return Math.max(1, Math.min(12000, Math.round(fromInputs)));
+  const fallback = Number(HABIT_BUDGET_DEFAULT_TOKENS_EST);
+  return Number.isFinite(fallback) && fallback > 0
+    ? Math.max(1, Math.min(12000, Math.round(fallback)))
+    : 240;
+}
+
+function evaluateHabitBudgetGate({ habitId, requestTokens }) {
+  if (!HABIT_BUDGET_ENABLED) {
+    return { allow: true, reason: null, request_tokens_est: requestTokens };
+  }
+  const date = nowIso().slice(0, 10);
+  const capability = `habit:${String(habitId || '').slice(0, 80) || 'unknown'}`;
+  const opts = {
+    state_dir: HABIT_BUDGET_STATE_DIR,
+    events_path: HABIT_BUDGET_EVENTS_PATH,
+    autopause_path: HABIT_BUDGET_AUTOPAUSE_PATH
+  };
+  const autopause = loadSystemBudgetAutopauseState(opts);
+  if (autopause.active === true) {
+    writeSystemBudgetDecision({
+      date,
+      module: HABIT_BUDGET_MODULE,
+      capability,
+      request_tokens_est: requestTokens,
+      decision: 'deny',
+      reason: 'budget_autopause_active'
+    }, opts);
+    return {
+      allow: false,
+      reason: 'budget_autopause_active',
+      request_tokens_est: requestTokens
+    };
+  }
+
+  const guard = evaluateSystemBudgetGuard({
+    date,
+    request_tokens_est: requestTokens,
+    attempts_today: 1
+  }, opts);
+  if (guard.hard_stop === true) {
+    const hardReason = String((guard.hard_stop_reasons && guard.hard_stop_reasons[0]) || 'budget_guard_hard_stop');
+    writeSystemBudgetDecision({
+      date,
+      module: HABIT_BUDGET_MODULE,
+      capability,
+      request_tokens_est: requestTokens,
+      decision: 'deny',
+      reason: hardReason
+    }, opts);
+    setSystemBudgetAutopause({
+      source: 'run_habit',
+      reason: hardReason,
+      pressure: 'hard',
+      date,
+      minutes: 60
+    }, opts);
+    return {
+      allow: false,
+      reason: hardReason,
+      request_tokens_est: requestTokens
+    };
+  }
+
+  writeSystemBudgetDecision({
+    date,
+    module: HABIT_BUDGET_MODULE,
+    capability,
+    request_tokens_est: requestTokens,
+    decision: 'allow',
+    reason: null
+  }, opts);
+  return {
+    allow: true,
+    reason: null,
+    request_tokens_est: requestTokens
+  };
 }
 
 function hashJson(v) {
@@ -571,7 +683,7 @@ async function main() {
   const idIndex = args.indexOf('--id');
   if (idIndex === -1 || !args[idIndex + 1]) {
     console.error('Usage: node run_habit.js --list');
-    console.error('       node run_habit.js --id <habit_id> --json \'<inputs>\' [--force]');
+    console.error('       node run_habit.js --id <habit_id> --json \'<inputs>\' [--force] [--tokens_est <n>]');
     process.exit(1);
   }
   
@@ -584,6 +696,16 @@ async function main() {
     inputs = JSON.parse(inputsJson);
   } catch (err) {
     console.error('ERROR: Invalid JSON inputs:', err.message);
+    process.exit(1);
+  }
+
+  const requestTokensEst = parseRequestedTokens(args, inputs);
+  const budgetGate = evaluateHabitBudgetGate({
+    habitId,
+    requestTokens: requestTokensEst
+  });
+  if (budgetGate.allow !== true) {
+    console.error(`ERROR: Habit execution blocked by budget guard: ${budgetGate.reason}`);
     process.exit(1);
   }
   
