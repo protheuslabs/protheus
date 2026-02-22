@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// @ts-nocheck
+'use strict';
+export {};
 /**
  * systems/routing/model_router.js — deterministic model routing v2 (builds on V1)
  *
@@ -19,6 +20,8 @@ const {
   loadSystemBudgetState,
   projectSystemBudget
 } = require("../budget/system_budget.js");
+
+type AnyObj = Record<string, any>;
 
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
 const CONFIG_PATH = process.env.ROUTER_CONFIG_PATH || path.join(REPO_ROOT, "config", "agent_routing_rules.json");
@@ -185,7 +188,7 @@ function envNumber(keys, fallback = null) {
   return fallback;
 }
 
-function detectHardwareProfile() {
+function detectHardwareProfile(): AnyObj {
   const cpuThreads = (() => {
     try {
       const cpus = os.cpus();
@@ -203,7 +206,7 @@ function detectHardwareProfile() {
     return null;
   })();
 
-  const base = {
+  const base: AnyObj = {
     detected_at: nowIso(),
     source: "os",
     platform: String(os.platform ? os.platform() : ""),
@@ -519,9 +522,10 @@ function looksLikeHealthRecord(v) {
 }
 
 function cleanHealthRecordMap(obj) {
-  const out = {};
+  const out: AnyObj = {};
   if (!obj || typeof obj !== "object" || Array.isArray(obj)) return out;
-  for (const [k, v] of Object.entries(obj)) {
+  for (const [k, vRaw] of Object.entries(obj as AnyObj)) {
+    const v: AnyObj = (vRaw as AnyObj) || {};
     if (!v || typeof v !== "object" || Array.isArray(v)) continue;
     const model = typeof v.model === "string" ? v.model : String(k);
     out[model] = { ...v, model };
@@ -530,7 +534,7 @@ function cleanHealthRecordMap(obj) {
 }
 
 function parseHealthSnapshot(raw) {
-  const out = { runtimes: {} };
+  const out: AnyObj = { runtimes: {} };
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
 
   if (Number(raw.schema_version || 0) >= 2 && raw.runtimes && typeof raw.runtimes === "object") {
@@ -810,7 +814,7 @@ function communicationFastPathPolicy(cfg) {
   };
 }
 
-function detectCommunicationFastPath({ cfg, risk, complexity, intent, task, mode, allowGenericMedium }) {
+function detectCommunicationFastPath({ cfg, risk, complexity, intent, task, mode, allowGenericMedium = false }: AnyObj) {
   const policy = communicationFastPathPolicy(cfg);
   const allowBypass = allowGenericMedium === true;
   if (!policy.enabled) return { matched: false, reason: "disabled", policy };
@@ -1400,7 +1404,7 @@ function writePromptCacheSignal(signal, { capability, role }) {
   entry.capability = normalizeCapabilityKey(capability || "") || null;
   state.entries[key] = entry;
 
-  const pairs = Object.entries(state.entries);
+  const pairs = Object.entries(state.entries as AnyObj) as [string, AnyObj][];
   if (pairs.length > maxEntries) {
     pairs
       .sort((a, b) => Number((b[1] && b[1].last_seen_ms) || 0) - Number((a[1] && a[1].last_seen_ms) || 0))
@@ -1453,7 +1457,7 @@ function buildHandoffPacket(decision) {
   const d = decision && typeof decision === "object" ? decision : {};
   const tier = Number(d.tier || 2);
   const role = normalizeKey(d.role || "");
-  const out = {
+  const out: AnyObj = {
     selected_model: d.selected_model || null,
     previous_model: d.previous_model || null,
     model_changed: d.model_changed === true,
@@ -1672,12 +1676,12 @@ function resolveLocalProbePolicy(modelId) {
     const cfg = readConfig();
     routing = cfg && cfg.routing && typeof cfg.routing === "object" ? cfg.routing : null;
   } catch {}
-  const lp = routing && routing.local_probe_policy && typeof routing.local_probe_policy === "object"
+  const lp: AnyObj = routing && routing.local_probe_policy && typeof routing.local_probe_policy === "object"
     ? routing.local_probe_policy
     : {};
-  const def = lp.default && typeof lp.default === "object" ? lp.default : {};
-  const models = lp.models && typeof lp.models === "object" ? lp.models : {};
-  let mdl = {};
+  const def: AnyObj = lp.default && typeof lp.default === "object" ? lp.default : {};
+  const models: AnyObj = lp.models && typeof lp.models === "object" ? lp.models : {};
+  let mdl: AnyObj = {};
   for (const k of localAliasSet(modelId)) {
     if (models[k] && typeof models[k] === "object") {
       mdl = { ...mdl, ...models[k] };
@@ -1795,7 +1799,7 @@ function getHealthCache(forRouting = false) {
   return { current_runtime: currentRuntime, runtimes, order, records, sources };
 }
 
-function health(modelId, force = false, opts = {}) {
+function health(modelId, force = false, opts: AnyObj = {}) {
   const forRouting = !!(opts && opts.forRouting === true);
   const cacheState = getHealthCache(forRouting);
   const currentRuntime = cacheState.current_runtime;
@@ -2354,7 +2358,7 @@ function findScopedModelOutcomeEntry(map, modelId, key) {
   return modelEntry[key] && typeof modelEntry[key] === "object" ? modelEntry[key] : null;
 }
 
-function outcomeScoreDetailForModel(modelId, statsPayload, ctx = {}) {
+function outcomeScoreDetailForModel(modelId, statsPayload, ctx: AnyObj = {}) {
   if (!statsPayload || typeof statsPayload !== "object") {
     return { score: 0, sources: [], global_score: null, capability_score: null, task_type_score: null, role_score: null };
   }
@@ -2689,7 +2693,7 @@ function saveRouteState(s) {
   saveJson(ROUTE_STATE_PATH, s || {});
 }
 
-function routeDecision({ risk, complexity, intent, task, mode, forceModel, capability, tokensEst, roleOverride, routeClass }) {
+function routeDecision({ risk, complexity, intent, task, mode, forceModel = "", capability, tokensEst, roleOverride, routeClass }: AnyObj) {
   const cfg = readConfig();
   const allowlist = modelsFromAllowlist(cfg);
   const hardwarePlan = resolveHardwarePlan(cfg, allowlist);
@@ -2738,10 +2742,11 @@ function routeDecision({ risk, complexity, intent, task, mode, forceModel, capab
     complexity: adjusted.complexity,
     intent,
     task,
-    mode: adjusted.mode
+    mode: adjusted.mode,
+    allowGenericMedium: false
   });
 
-  const effectiveFastPath = classPolicy.disable_fast_path === true
+  const effectiveFastPath: AnyObj = classPolicy.disable_fast_path === true
     ? { matched: false, reason: "route_class_fast_path_disabled" }
     : fastPath;
 
@@ -2781,7 +2786,7 @@ function routeDecision({ risk, complexity, intent, task, mode, forceModel, capab
   if (rulePick.prefer_model) candidates.push(rulePick.prefer_model);
   for (const m of allowlist) if (!candidates.includes(m)) candidates.push(m);
 
-  const localHealth = {};
+  const localHealth: AnyObj = {};
   const filtered = [];
   const tried = [];
 
@@ -2948,7 +2953,7 @@ function routeDecision({ risk, complexity, intent, task, mode, forceModel, capab
   const selectedModelTokensEst = selectedRank && Number.isFinite(Number(selectedRank.model_tokens_est))
     ? Number(selectedRank.model_tokens_est)
     : null;
-  const decision = {
+  const decision: AnyObj = {
     ts: nowIso(),
     type: "route",
     mode: adjusted.mode,
@@ -3161,11 +3166,11 @@ function doctorReport({ risk, complexity, intent, task, capability, includeModel
   const profiles = modelProfilesFromConfig(cfg);
   const outcomeStats = modelOutcomeStats(OUTCOME_WINDOW_DAYS);
   const budgetState = routerBudgetState(cfg);
-  const localHealth = {};
+  const localHealth: AnyObj = {};
 
-  const diagnostics = [];
+  const diagnostics: AnyObj[] = [];
   for (const model of candidates) {
-    const item = {
+    const item: AnyObj = {
       model,
       banned: false,
       local: isLocalOllamaModel(model),
@@ -3321,7 +3326,7 @@ function cacheSummaryReport({ risk, complexity, intent, task, capability, forRou
   const cacheState = getHealthCache(!!forRouting);
   const currentRuntime = cacheState.current_runtime || detectRuntimeScope();
   const runtimeCounts = {};
-  const localHealth = {};
+  const localHealth: AnyObj = {};
   const rows = [];
 
   for (const model of allowlist) {
