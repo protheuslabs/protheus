@@ -1,4 +1,3 @@
-// @ts-nocheck
 'use strict';
 
 const path = require('path');
@@ -220,30 +219,31 @@ function normalizeTermsArray(raw, maxCount = 16) {
 }
 
 function normalizeTermWeights(raw, includeTerms, maxWeight = 20) {
-  const src = raw && typeof raw === 'object' ? raw : {};
+  const src = (raw && typeof raw === 'object' ? raw : {}) as Record<string, any>;
   const allowed = new Set(includeTerms || []);
-  const out = {};
+  const out: Record<string, number> = {};
   for (const [k, v] of Object.entries(src)) {
     const term = normalizeKey(k);
     if (!term || !allowed.has(term)) continue;
     out[term] = clampNumber(v, 1, maxWeight, 1);
   }
   for (const term of allowed) {
-    if (!Object.prototype.hasOwnProperty.call(out, term)) out[term] = 1;
+    const key = String(term || '');
+    if (!Object.prototype.hasOwnProperty.call(out, key)) out[key] = 1;
   }
   return out;
 }
 
 function normalizeEyeLenses(raw, policy) {
-  const src = raw && typeof raw === 'object' ? raw : {};
+  const src = (raw && typeof raw === 'object' ? raw : {}) as Record<string, any>;
   const maxTerms = clampNumber(policy && policy.lens_max_terms, 4, 64, 16);
   const maxExclude = clampNumber(policy && policy.lens_max_exclude_terms, 0, 32, 6);
   const maxWeight = clampNumber(policy && policy.lens_max_weight, 1, 60, 20);
-  const out = {};
+  const out: Record<string, any> = {};
   for (const [eyeRaw, lensRaw] of Object.entries(src)) {
     const eyeId = normalizeKey(eyeRaw);
     if (!eyeId) continue;
-    const lens = lensRaw && typeof lensRaw === 'object' ? lensRaw : {};
+    const lens = (lensRaw && typeof lensRaw === 'object' ? lensRaw : {}) as Record<string, any>;
     const includeTerms = normalizeTermsArray(lens.include_terms, maxTerms);
     const excludeTerms = normalizeTermsArray(lens.exclude_terms, maxExclude)
       .filter((t) => !includeTerms.includes(t))
@@ -265,7 +265,7 @@ function normalizeEyeLenses(raw, policy) {
 
 function normalizeState(raw, fallback = null) {
   const base = defaultFocusState();
-  const src = raw && typeof raw === 'object' ? raw : fallback || base;
+  const src = (raw && typeof raw === 'object' ? raw : fallback || base) as Record<string, any>;
   const nowTs = nowIso();
   const policy = normalizePolicy(src.policy);
   const taken = new Set();
@@ -322,11 +322,12 @@ function readFocusState(filePath, fallback = null) {
 
 function ensureFocusState(filePath, meta = {}) {
   const abs = asStorePath(filePath);
+  const m = (meta && typeof meta === 'object' ? meta : {}) as Record<string, any>;
   return normalizeState(
     ensureJson(abs, defaultFocusState, {
-      ...meta,
-      source: meta.source || 'systems/adaptive/sensory/eyes/focus_trigger_store.js',
-      reason: meta.reason || 'ensure_focus_state'
+      ...m,
+      source: m.source || 'systems/adaptive/sensory/eyes/focus_trigger_store.js',
+      reason: m.reason || 'ensure_focus_state'
     }),
     defaultFocusState()
   );
@@ -334,12 +335,13 @@ function ensureFocusState(filePath, meta = {}) {
 
 function setFocusState(filePath, nextState, meta = {}) {
   const abs = asStorePath(filePath);
+  const m = (meta && typeof meta === 'object' ? meta : {}) as Record<string, any>;
   const normalized = normalizeState(nextState, defaultFocusState());
   return normalizeState(
     setJson(abs, normalized, {
-      ...meta,
-      source: meta.source || 'systems/adaptive/sensory/eyes/focus_trigger_store.js',
-      reason: meta.reason || 'set_focus_state'
+      ...m,
+      source: m.source || 'systems/adaptive/sensory/eyes/focus_trigger_store.js',
+      reason: m.reason || 'set_focus_state'
     }),
     defaultFocusState()
   );
@@ -347,6 +349,7 @@ function setFocusState(filePath, nextState, meta = {}) {
 
 function mutateFocusState(filePath, mutator, meta = {}) {
   const abs = asStorePath(filePath);
+  const m = (meta && typeof meta === 'object' ? meta : {}) as Record<string, any>;
   if (typeof mutator !== 'function') throw new Error('focus_trigger_store: mutator must be function');
   return normalizeState(
     mutateJson(
@@ -366,9 +369,9 @@ function mutateFocusState(filePath, mutator, meta = {}) {
         return normalizeState(next, base);
       },
       {
-        ...meta,
-        source: meta.source || 'systems/adaptive/sensory/eyes/focus_trigger_store.js',
-        reason: meta.reason || 'mutate_focus_state'
+        ...m,
+        source: m.source || 'systems/adaptive/sensory/eyes/focus_trigger_store.js',
+        reason: m.reason || 'mutate_focus_state'
       }
     ),
     defaultFocusState()
