@@ -55,7 +55,8 @@ const {
 const {
   evaluateTier1Governance,
   classifyAndRecordException,
-  summarizeExceptionMemory
+  summarizeExceptionMemory,
+  exceptionRecoveryDecision
 } = require('./tier1_governance.js');
 const {
   DEFAULT_STATE_DIR: GLOBAL_BUDGET_STATE_DIR,
@@ -133,6 +134,9 @@ const AUTONOMY_TIER1_EXCEPTION_MEMORY_PATH = process.env.AUTONOMY_TIER1_EXCEPTIO
 const AUTONOMY_TIER1_EXCEPTION_AUDIT_PATH = process.env.AUTONOMY_TIER1_EXCEPTION_AUDIT_PATH
   ? path.resolve(process.env.AUTONOMY_TIER1_EXCEPTION_AUDIT_PATH)
   : path.join(AUTONOMY_DIR, 'exception_events.jsonl');
+const AUTONOMY_TIER1_EXCEPTION_POLICY_PATH = process.env.AUTONOMY_TIER1_EXCEPTION_POLICY_PATH
+  ? path.resolve(process.env.AUTONOMY_TIER1_EXCEPTION_POLICY_PATH)
+  : path.join(REPO_ROOT, 'config', 'autonomy_exception_recovery_policy.json');
 
 const DAILY_TOKEN_CAP = Number(process.env.AUTONOMY_DAILY_TOKEN_CAP || 4000);
 const NO_CHANGE_LIMIT = Number(process.env.AUTONOMY_NO_CHANGE_LIMIT || 2);
@@ -4593,12 +4597,18 @@ function evaluateTier1GovernanceSnapshot(dateStr, attemptsToday, estActionTokens
 
 function compactTier1Exception(info) {
   if (!info || info.tracked !== true) return null;
+  const recovery = info.recovery && typeof info.recovery === 'object' ? info.recovery : null;
   return {
     novel: info.novel === true,
     stage: info.stage || null,
     error_code: info.error_code || null,
     signature: info.signature || null,
-    count: Number(info.count || 0)
+    count: Number(info.count || 0),
+    recovery_action: recovery ? String(recovery.action || '') : null,
+    recovery_cooldown_hours: recovery ? Number(recovery.cooldown_hours || 0) : null,
+    recovery_playbook: recovery ? String(recovery.playbook || '') : null,
+    recovery_reason: recovery ? String(recovery.reason || '') : null,
+    recovery_should_escalate: recovery ? recovery.should_escalate === true : null
   };
 }
 
@@ -4614,7 +4624,14 @@ function trackTier1Exception(dateStr, stage, errorCode, errorMessage, context = 
       errorMessage,
       context
     });
-    return compactTier1Exception(tracked);
+    const recovery = exceptionRecoveryDecision({
+      tracked,
+      policyPath: AUTONOMY_TIER1_EXCEPTION_POLICY_PATH
+    });
+    return compactTier1Exception({
+      ...tracked,
+      recovery
+    });
   } catch (err) {
     return {
       novel: false,

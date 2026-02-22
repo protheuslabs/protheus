@@ -5,6 +5,11 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
+const REPO_ROOT = path.resolve(__dirname, '..', '..');
+const DEFAULT_EXCEPTION_POLICY_PATH = process.env.AUTONOMY_EXCEPTION_POLICY_PATH
+  ? path.resolve(process.env.AUTONOMY_EXCEPTION_POLICY_PATH)
+  : path.join(REPO_ROOT, 'config', 'autonomy_exception_recovery_policy.json');
+
 function clampNumber(n, min, max) {
   const x = Number(n);
   if (!Number.isFinite(x)) return min;
@@ -503,6 +508,51 @@ function summarizeExceptionMemory(memoryPath, days = 7) {
   };
 }
 
+function normalizeRecoveryAction(v) {
+  const s = String(v || '').trim().toLowerCase();
+  if (s === 'escalate' || s === 'recover' || s === 'cooldown') return s;
+  return 'recover';
+}
+
+function exceptionRecoveryDecision(opts = {}) {
+  const tracked = opts.tracked && typeof opts.tracked === 'object' ? opts.tracked : {};
+  const policyPath = opts.policyPath ? path.resolve(String(opts.policyPath)) : DEFAULT_EXCEPTION_POLICY_PATH;
+  const fallbackPolicy = {
+    novel: { action: 'escalate', cooldown_hours: 12, playbook: 'novel_exception_escalation' },
+    known_default: { action: 'recover', cooldown_hours: 2, playbook: 'retry_with_backoff' },
+    code_overrides: {}
+  };
+  const policy = readJsonSafe(policyPath, fallbackPolicy);
+  const novelCfg = policy && policy.novel && typeof policy.novel === 'object' ? policy.novel : fallbackPolicy.novel;
+  const knownDefault = policy && policy.known_default && typeof policy.known_default === 'object'
+    ? policy.known_default
+    : fallbackPolicy.known_default;
+  const codeOverrides = policy && policy.code_overrides && typeof policy.code_overrides === 'object'
+    ? policy.code_overrides
+    : {};
+
+  const errorCode = String(tracked.error_code || 'unknown').trim();
+  const novel = tracked.novel === true;
+  let selected = novel ? novelCfg : (codeOverrides[errorCode] || knownDefault);
+  if (!selected || typeof selected !== 'object') selected = knownDefault;
+
+  const action = normalizeRecoveryAction(selected.action);
+  const cooldownHours = clampNumber(Number(selected.cooldown_hours || 0), 0, 168);
+  const playbook = normalizeText(selected.playbook || (novel ? 'novel_exception_escalation' : 'retry_with_backoff'));
+  const shouldEscalate = action === 'escalate' || (novel && action !== 'cooldown');
+
+  return {
+    action,
+    cooldown_hours: cooldownHours,
+    playbook,
+    reason: novel ? 'novel_exception' : (codeOverrides[errorCode] ? 'known_code_override' : 'known_default'),
+    should_escalate: shouldEscalate,
+    policy_path: policyPath,
+    novel,
+    error_code: errorCode
+  };
+}
+
 function evaluateTier1Governance(opts = {}) {
   const runsDir = opts.runsDir;
   const dateStr = dateArgOrToday(opts.dateStr);
@@ -562,5 +612,6 @@ module.exports = {
   evaluateStrategicAlignment,
   evaluateTier1Governance,
   classifyAndRecordException,
-  summarizeExceptionMemory
+  summarizeExceptionMemory,
+  exceptionRecoveryDecision
 };
