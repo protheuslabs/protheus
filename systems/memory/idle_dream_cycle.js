@@ -1939,22 +1939,27 @@ function resolveDreamPainProposals(dateStr, phase, resolutionReason) {
   if (!Array.isArray(rows) || rows.length === 0) return 0;
   let changed = false;
   let resolved = 0;
-  const phasePrefix = `dream_${normalizeToken(phase) || 'phase'}:`;
+  const phasePrefixRaw = `dream_${normalizeToken(phase) || 'phase'}:`;
+  const phasePrefixNorm = `dream_${normalizeToken(phase) || 'phase'}_`;
   const next = rows.map((p) => {
     if (!p || typeof p !== 'object') return p;
     if (String(p.type || '').trim().toLowerCase() !== 'dream_cycle_escalation') return p;
     const status = String(p.status || '').trim().toLowerCase();
     if (status === 'resolved' || status === 'done' || status === 'closed') return p;
     const meta = p.meta && typeof p.meta === 'object' ? p.meta : {};
-    const code = normalizeToken(meta.pain_code || '');
-    if (code && !code.startsWith(phasePrefix)) return p;
+    const codeRaw = String(meta.pain_code || '').trim().toLowerCase();
+    const codeNorm = normalizeToken(codeRaw);
+    if (codeRaw) {
+      const matchesPhase = codeRaw.startsWith(phasePrefixRaw) || codeNorm.startsWith(phasePrefixNorm);
+      if (!matchesPhase) return p;
+    }
     changed = true;
     resolved += 1;
     return {
       ...p,
       status: 'resolved',
       resolved_at: nowIso(),
-      resolution_reason: clean(resolutionReason || 'dream_cycle_fallback_success', 140)
+      resolution_reason: normalizeText(resolutionReason, 'dream_cycle_fallback_success').slice(0, 140)
     };
   });
   if (changed) writeJson(filePath, next);
