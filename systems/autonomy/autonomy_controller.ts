@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// @ts-nocheck
+'use strict';
+export {};
 /**
  * autonomy_controller.js — bounded autonomy loop v0
  *
@@ -61,6 +62,8 @@ const {
   loadSystemBudgetState,
   saveSystemBudgetState
 } = require('../budget/system_budget.js');
+
+type AnyObj = Record<string, any>;
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const PROPOSALS_DIR = path.join(REPO_ROOT, 'state', 'sensory', 'proposals');
@@ -1813,15 +1816,16 @@ function deriveEntityBias(buckets, minTotal) {
 
 function summarizeTopBiases(mapObj, limit = 8) {
   const out = [];
-  const entries = Object.entries(mapObj || {});
+  const entries = Object.entries((mapObj || {}) as AnyObj);
   for (const [key, val] of entries) {
+    const row = (val || {}) as AnyObj;
     out.push({
       key,
-      bias: Number(val && val.bias || 0),
-      total: Number(val && val.total || 0),
-      shipped: Number(val && val.shipped || 0),
-      no_change: Number(val && val.no_change || 0),
-      reverted: Number(val && val.reverted || 0)
+      bias: Number(row.bias || 0),
+      total: Number(row.total || 0),
+      shipped: Number(row.shipped || 0),
+      no_change: Number(row.no_change || 0),
+      reverted: Number(row.reverted || 0)
     });
   }
   out.sort((a, b) => {
@@ -1883,11 +1887,13 @@ function collectOutcomeStats(endDateStr, days) {
 
   const eyeBiases = {};
   const topicBiases = {};
-  for (const [eye, b] of Object.entries(byEye)) {
+  for (const [eye, bRaw] of Object.entries(byEye as AnyObj)) {
+    const b: AnyObj = (bRaw || {}) as AnyObj;
     const bias = deriveEntityBias(b, 3);
     if (bias !== 0) eyeBiases[eye] = { ...b, total: totalOutcomes(b), bias };
   }
-  for (const [topic, b] of Object.entries(byTopic)) {
+  for (const [topic, bRaw] of Object.entries(byTopic as AnyObj)) {
+    const b: AnyObj = (bRaw || {}) as AnyObj;
     const bias = deriveEntityBias(b, 4);
     if (bias !== 0) topicBiases[topic] = { ...b, total: totalOutcomes(b), bias };
   }
@@ -1899,7 +1905,7 @@ function collectOutcomeStats(endDateStr, days) {
   };
 }
 
-function computeCalibrationDeltas(input = {}) {
+function computeCalibrationDeltas(input: AnyObj = {}) {
   const zero = {
     min_signal_quality: 0,
     min_sensory_signal_score: 0,
@@ -3081,7 +3087,9 @@ function successCriteriaRequirement() {
   const exemptTypes = Array.from(new Set([...fromPolicy, ...fromEnv]));
   return {
     required: src.require_success_criteria !== false,
-    min_count: clampNumber(src.min_success_criteria_count, 0, 5, 1),
+    min_count: Number.isFinite(Number(src.min_success_criteria_count))
+      ? clampNumber(src.min_success_criteria_count, 0, 5)
+      : 1,
     exempt_types: exemptTypes
   };
 }
@@ -3411,7 +3419,7 @@ function recentProposalKeyCounts(dateStr, hours) {
   return out;
 }
 
-function strategyAdmissionDecision(p, strategy, opts = {}) {
+function strategyAdmissionDecision(p, strategy, opts: AnyObj = {}) {
   const type = String(p && p.type || '').toLowerCase();
   if (!strategyAllowsProposalType(strategy, type)) {
     return { allow: false, reason: 'strategy_type_filtered' };
@@ -3643,7 +3651,7 @@ function strategyCircuitCooldownHours(p, strategy) {
   return 0;
 }
 
-function runProposalQueue(cmd, id, reasonOrEvidence, maybeEvidence) {
+function runProposalQueue(cmd, id, reasonOrEvidence = '', maybeEvidence = '') {
   const script = path.join(REPO_ROOT, 'habits', 'scripts', 'proposal_queue.js');
   const args = [script, cmd, id];
   if (reasonOrEvidence != null) args.push(String(reasonOrEvidence));
@@ -4120,7 +4128,7 @@ function readFirstNumericMetric(sources, pathExprs) {
   return null;
 }
 
-function extractSuccessCriteriaMetricValues(proposal, opts = {}) {
+function extractSuccessCriteriaMetricValues(proposal, opts: AnyObj = {}) {
   const p = proposal && typeof proposal === 'object' ? proposal : {};
   const meta = p.meta && typeof p.meta === 'object' ? p.meta : {};
   const execSummary = opts.exec_summary && typeof opts.exec_summary === 'object' ? opts.exec_summary : {};
@@ -4146,7 +4154,7 @@ function extractSuccessCriteriaMetricValues(proposal, opts = {}) {
     sources.push(obj.metric_values, obj.details, obj.summary, obj);
   }
 
-  const out = {};
+  const out: AnyObj = {};
   const setMetric = (name, value) => {
     const n = numberOrNull(value);
     if (n != null) out[name] = n;
@@ -4459,7 +4467,7 @@ function coalesceNumeric(primary, fallback, nullFallback = null) {
   return nullFallback;
 }
 
-function evaluateTier1GovernanceSnapshot(dateStr, attemptsToday, estActionTokens = 0, opts = {}) {
+function evaluateTier1GovernanceSnapshot(dateStr, attemptsToday, estActionTokens = 0, opts: AnyObj = {}) {
   if (!AUTONOMY_TIER1_GOVERNANCE_ENABLED) {
     return {
       enabled: false,
@@ -4712,7 +4720,7 @@ function ensureNovelExceptionEscalationProposal(dateStr, escalation) {
   return { created: true, proposal_id: proposalId, date: dateStr, escalation_id: escId || null };
 }
 
-function emitNovelExceptionHumanEscalation(dateStr, data = {}) {
+function emitNovelExceptionHumanEscalation(dateStr, data: AnyObj = {}) {
   if (!data || data.novel !== true) return { created: false, reason: 'not_novel' };
   const signature = String(data.signature || '').trim();
   if (!signature) return { created: false, reason: 'missing_signature' };
@@ -4784,7 +4792,7 @@ function emitNovelExceptionHumanEscalation(dateStr, data = {}) {
   };
 }
 
-function maybeWriteNovelExceptionRun(dateStr, data = {}) {
+function maybeWriteNovelExceptionRun(dateStr, data: AnyObj = {}) {
   if (!data || data.novel !== true) return;
   writeRun(dateStr, {
     ts: nowIso(),
@@ -5318,7 +5326,7 @@ function statusCmd(dateStr) {
     ? effectiveStrategyCanaryExecLimit()
     : null;
   const allowedRisks = effectiveAllowedRisksSet();
-  const calibrationProfile = computeCalibrationProfile(dateStr, false);
+  const calibrationProfile: AnyObj = computeCalibrationProfile(dateStr, false);
   const thresholds = calibrationProfile.effective_thresholds || baseThresholds();
   const mediumLane = mediumRiskThresholds(thresholds);
   const runs = runsSinceReset(readRuns(dateStr));
@@ -5435,8 +5443,8 @@ function statusCmd(dateStr) {
       window_days: calibrationProfile.window_days,
       deltas: calibrationProfile.deltas,
       metrics: calibrationProfile.metrics,
-      top_eye_biases: calibrationProfile.top_eye_biases || [],
-      top_topic_biases: calibrationProfile.top_topic_biases || []
+      top_eye_biases: calibrationProfile.top_eye_biases || calibrationProfile.eye_biases || [],
+      top_topic_biases: calibrationProfile.top_topic_biases || calibrationProfile.topic_biases || []
     },
     tier1_governance: {
       enabled: tier1Governance.enabled === true,
@@ -5607,7 +5615,7 @@ function statusCmd(dateStr) {
 
 function readinessCmd(dateStr) {
   const blockers = [];
-  const addBlocker = (code, detail, opts = {}) => {
+  const addBlocker = (code, detail, opts: AnyObj = {}) => {
     blockers.push({
       code: String(code || 'unknown'),
       detail: String(detail || '').slice(0, 220),
@@ -5876,7 +5884,7 @@ function readinessCmd(dateStr) {
   process.stdout.write(JSON.stringify(out, null, 2) + '\n');
 }
 
-function runCmd(dateStr, opts = {}) {
+function runCmd(dateStr, opts: AnyObj = {}) {
   const shadowOnly = opts && opts.shadowOnly === true;
   if (!shadowOnly && String(process.env.AUTONOMY_ENABLED || '') !== '1') {
     process.stdout.write(JSON.stringify({
@@ -6214,7 +6222,7 @@ function runCmd(dateStr, opts = {}) {
   const decisionEvents = allDecisionEvents();
   const eyesMap = loadEyesMap();
   const directiveProfile = loadDirectiveFitProfile();
-  const calibrationProfile = computeCalibrationProfile(dateStr, true);
+  const calibrationProfile: AnyObj = computeCalibrationProfile(dateStr, true);
   const thresholds = calibrationProfile.effective_thresholds || baseThresholds();
   const directivePulseCtx = buildDirectivePulseContext(dateStr);
   const dailyCapOverride = consumeHumanCanaryDailyCapOverrideIfAllowed({
@@ -6402,7 +6410,7 @@ function runCmd(dateStr, opts = {}) {
   }
 
   let pick = null;
-  let selection = { mode: 'exploit', index: 0, explore_used: 0, explore_quota: exploreQuotaForDay(), exploit_used: 0 };
+  let selection: AnyObj = { mode: 'exploit', index: 0, explore_used: 0, explore_quota: exploreQuotaForDay(), exploit_used: 0 };
   const eligible = [];
   const skipStats = {
     eye_no_progress: 0,
@@ -7615,7 +7623,7 @@ function runCmd(dateStr, opts = {}) {
       const errors30d = countEyeOutcomesInWindow(decisionEvents, eyeRef, 'reverted', proposalDate, 30);
       const routeTokensEst = repeats14d >= 3 ? Math.max(estTokens, AUTONOMY_MIN_ROUTE_TOKENS) : estTokens;
       previewReceiptId = `preview_${Date.now()}_${String(p.id).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 48)}`;
-      const previewRes = directiveClarification
+      const previewRes: AnyObj = directiveClarification
         ? runDirectiveClarificationValidate(directiveClarification, true)
         : actuationSpec
           ? runActuationExecute(actuationSpec, true)
@@ -8056,7 +8064,7 @@ function runCmd(dateStr, opts = {}) {
   const task = makeTaskFromProposal(p);
   const receiptId = `auto_${Date.now()}_${String(p.id).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 48)}`;
 
-  const preflight = directiveClarification
+  const preflight: AnyObj = directiveClarification
     ? runDirectiveClarificationValidate(directiveClarification, true)
     : actuationSpec
       ? runActuationExecute(actuationSpec, true)
@@ -8366,7 +8374,7 @@ function runCmd(dateStr, opts = {}) {
 
   const beforeEvidence = loadDoDEvidenceSnapshot(dateStr);
   const execStartMs = Date.now();
-  const execRes = directiveClarification
+  const execRes: AnyObj = directiveClarification
     ? runDirectiveClarificationValidate(directiveClarification, false)
     : actuationSpec
       ? runActuationExecute(actuationSpec, false)
@@ -8664,7 +8672,7 @@ function resetCmd(dateStr) {
     process.exit(2);
   }
 
-  const out = {
+  const out: AnyObj = {
     ok: true,
     result: 'autonomy_reset',
     date: dateStr,
