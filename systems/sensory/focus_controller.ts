@@ -27,10 +27,14 @@ const { egressFetch, EgressGatewayError } = require('../../lib/egress_gateway.js
 const {
   DEFAULT_STATE_DIR: GLOBAL_BUDGET_STATE_DIR,
   DEFAULT_EVENTS_PATH: GLOBAL_BUDGET_EVENTS_PATH,
+  DEFAULT_AUTOPAUSE_PATH: GLOBAL_BUDGET_AUTOPAUSE_PATH,
   loadSystemBudgetState,
   projectSystemBudget,
   recordSystemBudgetUsage,
-  writeSystemBudgetDecision
+  writeSystemBudgetDecision,
+  loadSystemBudgetAutopauseState,
+  setSystemBudgetAutopause,
+  evaluateSystemBudgetGuard
 } = require('../budget/system_budget.js');
 const {
   ensureFocusState,
@@ -61,6 +65,9 @@ const FOCUS_BUDGET_STATE_DIR = process.env.FOCUS_BUDGET_STATE_DIR
 const FOCUS_BUDGET_EVENTS_PATH = process.env.FOCUS_BUDGET_EVENTS_PATH
   ? path.resolve(process.env.FOCUS_BUDGET_EVENTS_PATH)
   : GLOBAL_BUDGET_EVENTS_PATH;
+const FOCUS_BUDGET_AUTOPAUSE_PATH = process.env.FOCUS_BUDGET_AUTOPAUSE_PATH
+  ? path.resolve(process.env.FOCUS_BUDGET_AUTOPAUSE_PATH)
+  : GLOBAL_BUDGET_AUTOPAUSE_PATH;
 
 const TOKEN_STOPWORDS = new Set([
   'the', 'and', 'for', 'with', 'from', 'into', 'through', 'that', 'this', 'those', 'these', 'your', 'you',
@@ -989,10 +996,97 @@ function evaluateFocusBudget(dateStr, selectedCount) {
     };
   }
 
+  const requestTokens = requestedCount * tokensPerFetch;
+  const budgetAutopause = loadSystemBudgetAutopauseState({
+    autopause_path: FOCUS_BUDGET_AUTOPAUSE_PATH
+  });
+  if (budgetAutopause.active === true) {
+    writeSystemBudgetDecision({
+      date: dateStr,
+      module: FOCUS_BUDGET_MODULE,
+      capability: 'focus_fetch',
+      request_tokens_est: requestTokens,
+      decision: 'deny',
+      reason: 'budget_autopause_active'
+    }, {
+      state_dir: FOCUS_BUDGET_STATE_DIR,
+      events_path: FOCUS_BUDGET_EVENTS_PATH,
+      soft_ratio: 0.75,
+      hard_ratio: 0.92
+    });
+    return {
+      enabled: true,
+      decision: 'deny',
+      reason: 'budget_autopause_active',
+      requested_count: requestedCount,
+      allowed_count: 0,
+      request_tokens_est: requestTokens,
+      tokens_per_fetch: tokensPerFetch,
+      projection: null,
+      budget_autopause: {
+        active: true,
+        source: budgetAutopause.source || null,
+        reason: budgetAutopause.reason || null,
+        until: budgetAutopause.until || null
+      },
+      budget_guard: null
+    };
+  }
+
+  const budgetGuard = evaluateSystemBudgetGuard({
+    date: dateStr,
+    request_tokens_est: requestTokens
+  }, {
+    state_dir: FOCUS_BUDGET_STATE_DIR,
+    events_path: FOCUS_BUDGET_EVENTS_PATH,
+    autopause_path: FOCUS_BUDGET_AUTOPAUSE_PATH
+  });
+  if (budgetGuard.hard_stop === true) {
+    const hardReason = String((budgetGuard.hard_stop_reasons && budgetGuard.hard_stop_reasons[0]) || 'budget_guard_hard_stop');
+    writeSystemBudgetDecision({
+      date: dateStr,
+      module: FOCUS_BUDGET_MODULE,
+      capability: 'focus_fetch',
+      request_tokens_est: requestTokens,
+      decision: 'deny',
+      reason: hardReason
+    }, {
+      state_dir: FOCUS_BUDGET_STATE_DIR,
+      events_path: FOCUS_BUDGET_EVENTS_PATH,
+      soft_ratio: 0.75,
+      hard_ratio: 0.92
+    });
+    setSystemBudgetAutopause({
+      source: 'focus_controller',
+      reason: hardReason,
+      pressure: 'hard',
+      date: dateStr,
+      minutes: 60
+    }, {
+      autopause_path: FOCUS_BUDGET_AUTOPAUSE_PATH
+    });
+    return {
+      enabled: true,
+      decision: 'deny',
+      reason: hardReason,
+      requested_count: requestedCount,
+      allowed_count: 0,
+      request_tokens_est: requestTokens,
+      tokens_per_fetch: tokensPerFetch,
+      projection: null,
+      budget_autopause: {
+        active: false,
+        source: budgetAutopause.source || null,
+        reason: budgetAutopause.reason || null,
+        until: budgetAutopause.until || null
+      },
+      budget_guard: budgetGuard
+    };
+  }
+
   const state = loadSystemBudgetState(dateStr, {
     state_dir: FOCUS_BUDGET_STATE_DIR
   });
-  const requestTokens = requestedCount * tokensPerFetch;
   const projection = projectSystemBudget(state, requestTokens, {
     soft_ratio: 0.75,
     hard_ratio: 0.92
@@ -1038,6 +1132,13 @@ function evaluateFocusBudget(dateStr, selectedCount) {
     request_tokens_est: requestTokens,
     tokens_per_fetch: tokensPerFetch,
     projection,
+    budget_autopause: {
+      active: false,
+      source: budgetAutopause.source || null,
+      reason: budgetAutopause.reason || null,
+      until: budgetAutopause.until || null
+    },
+    budget_guard: budgetGuard,
     state: {
       token_cap: Number.isFinite(cap) ? cap : null,
       used_est: Number.isFinite(used) ? used : null
