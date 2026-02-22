@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// @ts-nocheck
 'use strict';
+export {};
 
 /**
  * systems/spawn/spawn_broker.js
@@ -31,6 +31,8 @@ const {
   recordSystemBudgetUsage,
   writeSystemBudgetDecision
 } = require('../budget/system_budget.js');
+
+type AnyObj = Record<string, any>;
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const POLICY_PATH = process.env.SPAWN_POLICY_PATH
@@ -96,8 +98,8 @@ function appendJsonl(p, obj) {
   fs.appendFileSync(p, `${JSON.stringify(obj)}\n`, 'utf8');
 }
 
-function parseArgs(argv) {
-  const out = { _: [] };
+function parseArgs(argv: string[]): AnyObj {
+  const out: AnyObj = { _: [] };
   for (const arg of argv) {
     if (!arg.startsWith('--')) {
       out._.push(arg);
@@ -145,23 +147,25 @@ function normalizeModuleName(v) {
   return name || 'reflex';
 }
 
-function parseQuotaModules(rawModules, defaultMax) {
+function parseQuotaModules(rawModules: AnyObj, defaultMax: number): AnyObj {
   if (!rawModules || typeof rawModules !== 'object') return {};
   const out = {};
   for (const [name, cfg] of Object.entries(rawModules)) {
-    const maxCells = clampNumber(cfg && cfg.max_cells, 0, 512, defaultMax);
+    const row = cfg && typeof cfg === 'object' ? (cfg as AnyObj) : {};
+    const maxCells = clampNumber(row.max_cells, 0, 512, defaultMax);
     out[String(name)] = { max_cells: Math.round(maxCells) };
   }
   return out;
 }
 
-function parseTokenBudgetModules(rawModules, defaultDailyCap, defaultPerRequestCap) {
+function parseTokenBudgetModules(rawModules: AnyObj, defaultDailyCap: number, defaultPerRequestCap: number): AnyObj {
   if (!rawModules || typeof rawModules !== 'object') return {};
   const out = {};
   for (const [name, cfg] of Object.entries(rawModules)) {
+    const row = cfg && typeof cfg === 'object' ? (cfg as AnyObj) : {};
     out[String(name)] = {
-      daily_token_cap: Math.round(clampNumber(cfg && cfg.daily_token_cap, 0, 100000000, defaultDailyCap)),
-      per_request_token_cap: Math.round(clampNumber(cfg && cfg.per_request_token_cap, 0, 10000000, defaultPerRequestCap))
+      daily_token_cap: Math.round(clampNumber(row.daily_token_cap, 0, 100000000, defaultDailyCap)),
+      per_request_token_cap: Math.round(clampNumber(row.per_request_token_cap, 0, 10000000, defaultPerRequestCap))
     };
   }
   return out;
@@ -403,7 +407,7 @@ function isExpired(isoTs) {
   return Date.now() > ms;
 }
 
-function pruneExpired(state) {
+function pruneExpired(state: AnyObj): AnyObj {
   let changed = false;
   const next = {
     version: 1,
@@ -411,11 +415,12 @@ function pruneExpired(state) {
     allocations: {}
   };
   for (const [name, ent] of Object.entries(state.allocations || {})) {
-    if (isExpired(ent.lease_expires_at)) {
+    const row = ent && typeof ent === 'object' ? (ent as AnyObj) : {};
+    if (isExpired(row.lease_expires_at)) {
       changed = true;
       continue;
     }
-    next.allocations[name] = ent;
+    next.allocations[name] = row;
   }
   return { state: next, changed };
 }
@@ -492,11 +497,12 @@ function cellsFor(state, moduleName) {
   return ent ? Math.max(0, Math.round(Number(ent.cells || 0))) : 0;
 }
 
-function sumAllocations(state, skipModule) {
+function sumAllocations(state: AnyObj, skipModule: string): number {
   let total = 0;
   for (const [name, ent] of Object.entries(state.allocations || {})) {
     if (skipModule && name === skipModule) continue;
-    total += Math.max(0, Math.round(Number(ent.cells || 0)));
+    const row = ent && typeof ent === 'object' ? (ent as AnyObj) : {};
+    total += Math.max(0, Math.round(Number(row.cells || 0)));
   }
   return total;
 }
@@ -523,14 +529,15 @@ function computeLimits(policy, state, moduleName, bounds) {
   };
 }
 
-function summarizeAllocations(state) {
+function summarizeAllocations(state: AnyObj): AnyObj {
   const out = {};
   for (const [name, ent] of Object.entries(state.allocations || {})) {
+    const row = ent && typeof ent === 'object' ? (ent as AnyObj) : {};
     out[name] = {
-      cells: Math.max(0, Math.round(Number(ent.cells || 0))),
-      ts: String(ent.ts || ''),
-      reason: String(ent.reason || ''),
-      lease_expires_at: ent.lease_expires_at || null
+      cells: Math.max(0, Math.round(Number(row.cells || 0))),
+      ts: String(row.ts || ''),
+      reason: String(row.reason || ''),
+      lease_expires_at: row.lease_expires_at || null
     };
   }
   return out;

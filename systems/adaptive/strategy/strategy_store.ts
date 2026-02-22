@@ -1,5 +1,5 @@
-// @ts-nocheck
 'use strict';
+export {};
 
 const path = require('path');
 const crypto = require('crypto');
@@ -11,6 +11,8 @@ const {
   setJson,
   mutateJson
 } = require('../core/layer_store.js');
+
+type AnyObj = Record<string, any>;
 
 const DEFAULT_REL_PATH = 'strategy/registry.json';
 const DEFAULT_ABS_PATH = path.join(ADAPTIVE_ROOT, DEFAULT_REL_PATH);
@@ -72,7 +74,7 @@ function normalizeAllowedRisks(raw) {
   return out.length ? out : ['low'];
 }
 
-function defaultStrategyDraft(seed = {}) {
+function defaultStrategyDraft(seed: AnyObj = {}): AnyObj {
   const id = normalizeKey(seed.id || seed.name || `strategy_${randomUid({ prefix: 's', length: 8 })}`, 40) || `strategy_${hash16(nowIso())}`;
   const name = cleanText(seed.name || id, 120) || id;
   const objectivePrimary = cleanText(
@@ -241,7 +243,7 @@ function queueDropReason(item, policy, nowMs) {
   return reasons;
 }
 
-function normalizeQueueItem(raw, nowTs) {
+function normalizeQueueItem(raw: AnyObj, nowTs: string): AnyObj {
   const src = raw && typeof raw === 'object' ? raw : {};
   const summary = cleanText(src.summary || src.text || src.payload || 'strategy intake', 220);
   const text = String(src.text || src.payload || '').trim().slice(0, 6000);
@@ -262,7 +264,7 @@ function normalizeQueueItem(raw, nowTs) {
   }));
   const statusRaw = String(src.status || 'queued').toLowerCase();
   const status = statusRaw === 'consumed' || statusRaw === 'dropped' ? statusRaw : 'queued';
-  const item = {
+  const item: AnyObj = {
     uid,
     fingerprint,
     source: cleanText(src.source || 'unknown', 80),
@@ -284,7 +286,7 @@ function normalizeQueueItem(raw, nowTs) {
   return item;
 }
 
-function normalizeProfile(raw, nowTs) {
+function normalizeProfile(raw: AnyObj, nowTs: string): AnyObj {
   const src = raw && typeof raw === 'object' ? raw : {};
   const draftSrc = src.draft && typeof src.draft === 'object' ? src.draft : src;
   const draft = defaultStrategyDraft(draftSrc);
@@ -352,7 +354,7 @@ function normalizeProfile(raw, nowTs) {
   };
 }
 
-function validateProfileInput(rawProfile, opts = {}) {
+function validateProfileInput(rawProfile: AnyObj, opts: AnyObj = {}): AnyObj {
   const normalized = normalizeProfile(rawProfile, nowIso());
   const errors = [];
   const allowElevatedMode = opts.allow_elevated_mode === true;
@@ -368,7 +370,7 @@ function validateProfileInput(rawProfile, opts = {}) {
   if (!allowElevatedMode && mode !== 'score_only') errors.push('execution_mode_requires_explicit_override');
   if (errors.length) {
     const err = new Error(`strategy_store: validation_failed:${errors.join(',')}`);
-    err.validation_errors = errors;
+    (err as AnyObj).validation_errors = errors;
     throw err;
   }
   return normalized;
@@ -499,7 +501,7 @@ function readStrategyState(filePath, fallback = null) {
   return normalizeState(readJson(abs, fallback), fallback || defaultStrategyState());
 }
 
-function ensureStrategyState(filePath, meta = {}) {
+function ensureStrategyState(filePath: string, meta: AnyObj = {}): AnyObj {
   const abs = asStorePath(filePath);
   return normalizeState(
     ensureJson(abs, defaultStrategyState, {
@@ -511,7 +513,7 @@ function ensureStrategyState(filePath, meta = {}) {
   );
 }
 
-function setStrategyState(filePath, nextState, meta = {}) {
+function setStrategyState(filePath: string, nextState: AnyObj, meta: AnyObj = {}): AnyObj {
   const abs = asStorePath(filePath);
   const normalized = normalizeState(nextState, defaultStrategyState());
   return normalizeState(
@@ -524,7 +526,7 @@ function setStrategyState(filePath, nextState, meta = {}) {
   );
 }
 
-function mutateStrategyState(filePath, mutator, meta = {}) {
+function mutateStrategyState(filePath: string, mutator: (state: AnyObj) => AnyObj, meta: AnyObj = {}): AnyObj {
   const abs = asStorePath(filePath);
   if (typeof mutator !== 'function') throw new Error('strategy_store: mutator must be function');
   return normalizeState(
@@ -551,7 +553,7 @@ function mutateStrategyState(filePath, mutator, meta = {}) {
   );
 }
 
-function upsertProfile(filePath, profileInput, meta = {}) {
+function upsertProfile(filePath: string, profileInput: AnyObj, meta: AnyObj = {}): AnyObj {
   let result = null;
   const next = mutateStrategyState(
     filePath,
@@ -604,7 +606,7 @@ function upsertProfile(filePath, profileInput, meta = {}) {
   return { state: next, ...(result || { action: 'none', profile: null }) };
 }
 
-function intakeSignal(filePath, intakeInput, meta = {}) {
+function intakeSignal(filePath: string, intakeInput: AnyObj, meta: AnyObj = {}): AnyObj {
   let result = null;
   const next = mutateStrategyState(
     filePath,
@@ -647,7 +649,7 @@ function intakeSignal(filePath, intakeInput, meta = {}) {
   return { state: next, ...(result || { action: 'none', queue_item: null }) };
 }
 
-function materializeFromQueue(filePath, queueUid, draftInput, meta = {}) {
+function materializeFromQueue(filePath: string, queueUid: string, draftInput: AnyObj, meta: AnyObj = {}): AnyObj {
   const qid = String(queueUid || '').trim();
   if (!qid) throw new Error('strategy_store: queue_uid_required');
   let result = null;
@@ -718,7 +720,7 @@ function materializeFromQueue(filePath, queueUid, draftInput, meta = {}) {
   return { state: next, ...(result || { action: 'none', profile: null, queue_item: null }) };
 }
 
-function touchProfileUsage(filePath, strategyId, ts, meta = {}) {
+function touchProfileUsage(filePath: string, strategyId: string, ts: string, meta: AnyObj = {}): AnyObj {
   const sid = normalizeKey(strategyId, 40);
   if (!sid) throw new Error('strategy_store: strategy_id_required');
   const touchTs = ts && Number.isFinite(Date.parse(ts)) ? new Date(ts).toISOString() : nowIso();
@@ -750,7 +752,7 @@ function touchProfileUsage(filePath, strategyId, ts, meta = {}) {
   return { state: next, ...(result || { profile: null }) };
 }
 
-function evaluateGcCandidates(state, opts = {}) {
+function evaluateGcCandidates(state: AnyObj, opts: AnyObj = {}): AnyObj {
   const policy = state && state.policy && typeof state.policy === 'object' ? state.policy : defaultStrategyState().policy;
   const nowMs = Date.now();
   const inactiveDays = clampNumber(opts.inactive_days, 1, 365, Number(policy.gc_inactive_days || 21));
@@ -761,7 +763,7 @@ function evaluateGcCandidates(state, opts = {}) {
   const profiles = Array.isArray(state && state.profiles) ? state.profiles : [];
   for (const p of profiles) {
     const profile = normalizeProfile(p, nowIso());
-    const usage = profile.usage || {};
+    const usage: AnyObj = profile.usage || {};
     const lastUsed = Number.isFinite(Date.parse(usage.last_used_ts || '')) ? Date.parse(usage.last_used_ts) : 0;
     const created = Number.isFinite(Date.parse(profile.created_ts || '')) ? Date.parse(profile.created_ts) : 0;
     const ageDays = lastUsed > 0 ? (nowMs - lastUsed) / (24 * 60 * 60 * 1000) : Number.POSITIVE_INFINITY;
@@ -800,7 +802,7 @@ function evaluateGcCandidates(state, opts = {}) {
   };
 }
 
-function gcProfiles(filePath, opts = {}, meta = {}) {
+function gcProfiles(filePath: string, opts: AnyObj = {}, meta: AnyObj = {}): AnyObj {
   const apply = opts && opts.apply === true;
   let gcSummary = null;
   const next = mutateStrategyState(

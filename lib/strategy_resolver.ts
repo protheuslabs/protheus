@@ -1,9 +1,11 @@
-// @ts-nocheck
 'use strict';
+export {};
 
 const fs = require('fs');
 const path = require('path');
 const { loadOutcomeFitnessPolicy } = require('./outcome_fitness.js');
+
+type AnyObj = Record<string, any>;
 
 const REPO_ROOT = path.resolve(__dirname, '..');
 const DEFAULT_STRATEGY_DIR = path.join(REPO_ROOT, 'config', 'strategies');
@@ -443,7 +445,7 @@ function normalizeStrategy(raw, filePath) {
   };
 }
 
-function listStrategies(options = {}) {
+function listStrategies(options: AnyObj = {}): AnyObj[] {
   const strategyDir = path.resolve(String(options.dir || process.env.AUTONOMY_STRATEGY_DIR || DEFAULT_STRATEGY_DIR));
   if (!fs.existsSync(strategyDir)) return [];
   const files = fs.readdirSync(strategyDir)
@@ -459,7 +461,7 @@ function listStrategies(options = {}) {
   return out.sort((a, b) => a.id.localeCompare(b.id));
 }
 
-function loadActiveStrategy(options = {}) {
+function loadActiveStrategy(options: AnyObj = {}): AnyObj | null {
   const allowMissing = options.allowMissing === true;
   const strict = options.strict === true || String(process.env.AUTONOMY_STRATEGY_STRICT || '') === '1';
   const requestedId = asString(options.id || process.env.AUTONOMY_STRATEGY_ID);
@@ -557,7 +559,7 @@ function strategyCanaryDailyExecLimit(strategy, fallback = null) {
   return null;
 }
 
-function strategyBudgetCaps(strategy, defaults = {}) {
+function strategyBudgetCaps(strategy: AnyObj, defaults: AnyObj = {}): AnyObj {
   const defaultRuns = Number(defaults.daily_runs_cap);
   const defaultTokens = Number(defaults.daily_token_cap);
   const defaultPerAction = Number(defaults.max_tokens_per_action);
@@ -638,7 +640,7 @@ function strategyBudgetCaps(strategy, defaults = {}) {
   };
 }
 
-function strategyExplorationPolicy(strategy, defaults = {}) {
+function strategyExplorationPolicy(strategy: AnyObj, defaults: AnyObj = {}): AnyObj {
   const base = {
     fraction: Number.isFinite(Number(defaults.fraction)) ? Number(defaults.fraction) : 0.25,
     every_n: Number.isFinite(Number(defaults.every_n)) ? Number(defaults.every_n) : 3,
