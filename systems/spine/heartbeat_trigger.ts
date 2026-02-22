@@ -19,6 +19,10 @@ const { spawnSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const RUNS_DIR = path.join(ROOT, 'state', 'spine', 'runs');
+const IDLE_DREAM_SKIP_TIMEOUT_MS = Math.max(5000, Math.min(
+  15 * 60 * 1000,
+  Number(process.env.SPINE_HEARTBEAT_IDLE_DREAM_TIMEOUT_MS || 120000) || 120000
+));
 
 function nowIso() { return new Date().toISOString(); }
 function todayStr() { return new Date().toISOString().slice(0, 10); }
@@ -63,9 +67,18 @@ function runSpine(mode, dateStr, maxEyes) {
 
 function runIdleDreamCycle(dateStr) {
   const args = [path.join('systems', 'memory', 'idle_dream_cycle.js'), 'run', dateStr];
-  const r = spawnSync('node', args, { cwd: ROOT, encoding: 'utf8' });
+  const r = spawnSync('node', args, {
+    cwd: ROOT,
+    encoding: 'utf8',
+    timeout: IDLE_DREAM_SKIP_TIMEOUT_MS
+  });
   const stdout = String(r.stdout || '').trim();
-  const stderr = String(r.stderr || '').trim();
+  const spawnError = r.error ? String(r.error && r.error.message ? r.error.message : r.error) : '';
+  const timedOut = /\bETIMEDOUT\b/i.test(spawnError);
+  const stderr = [String(r.stderr || '').trim(), timedOut ? 'process_timeout' : '', spawnError]
+    .filter(Boolean)
+    .join('\n')
+    .trim();
   let payload = null;
   if (stdout) {
     try { payload = JSON.parse(stdout); } catch {}
@@ -74,6 +87,7 @@ function runIdleDreamCycle(dateStr) {
     ok: r.status === 0 && !!payload && payload.ok === true,
     code: r.status == null ? 1 : r.status,
     payload,
+    timed_out: timedOut,
     stderr: stderr || null
   };
 }
@@ -110,8 +124,13 @@ function cmdRun() {
             ok: !!(idle && idle.ok),
             code: idle ? idle.code : null,
             result: idle && idle.payload ? idle.payload : null,
+            timeout_ms: IDLE_DREAM_SKIP_TIMEOUT_MS,
             reason: idle && !idle.ok
-              ? String(idle.stderr || (idle.payload && idle.payload.reason) || 'idle_dream_failed').slice(0, 180)
+              ? String(
+                idle.timed_out === true
+                  ? `idle_dream_timeout_${IDLE_DREAM_SKIP_TIMEOUT_MS}ms`
+                  : (idle.stderr || (idle.payload && idle.payload.reason) || 'idle_dream_failed')
+              ).slice(0, 180)
               : null
           }
         : { attempted: false, reason: 'feature_flag_disabled' },
