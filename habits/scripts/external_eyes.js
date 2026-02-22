@@ -2272,6 +2272,8 @@ async function run(opts = {}) {
     enabled: selfHealEnabled,
     attempted: 0,
     recovered: 0,
+    dormant_attempted: 0,
+    dormant_recovered: 0,
     candidates: []
   };
 
@@ -2281,7 +2283,10 @@ async function run(opts = {}) {
     const healCooldownHours = Math.max(1, Number(process.env.EYES_SELF_HEAL_COOLDOWN_HOURS || 4));
     const healFailDormantHours = Math.max(1, Number(process.env.EYES_SELF_HEAL_FAIL_DORMANT_HOURS || 24));
     const retryCadenceHours = Math.max(1, Number(process.env.EYES_RETRY_CADENCE_HOURS || 6));
+    const allowDormantSelfHeal = String(process.env.EYES_SELF_HEAL_ALLOW_DORMANT || '1').trim() !== '0';
+    const dormantMaxPerRun = Math.max(0, Number(process.env.EYES_SELF_HEAL_DORMANT_MAX_PER_RUN || 1));
     const nowMs = Date.now();
+    let dormantAttempts = 0;
     const temporalCandidates = temporalReport && Array.isArray(temporalReport.dark_candidates)
       ? temporalReport.dark_candidates
       : [];
@@ -2325,16 +2330,29 @@ async function run(opts = {}) {
       const latestRegistry = loadRegistry();
       const regEye = (latestRegistry.eyes || []).find((e) => e && e.id === eyeId);
       if (!regEye) continue;
-      if (String(regEye.status || '').toLowerCase() === 'dormant' && !specificEye) continue;
+      const regStatus = String(regEye.status || '').toLowerCase();
+      const dormantCandidate = regStatus === 'dormant';
+      if (dormantCandidate && !specificEye) {
+        if (!allowDormantSelfHeal) continue;
+        if (!isCriticalSelfHealCandidate(cand)) continue;
+        if (dormantAttempts >= dormantMaxPerRun) continue;
+        const wakeCooldownUntil = Date.parse(String(regEye.cooldown_until || ''));
+        if (Number.isFinite(wakeCooldownUntil) && nowMs < wakeCooldownUntil) continue;
+      }
       const cooldownUntil = Date.parse(String(regEye.self_heal_cooldown_until || ''));
       if (Number.isFinite(cooldownUntil) && nowMs < cooldownUntil) continue;
 
       selfHealStats.candidates.push(eyeId);
       selfHealStats.attempted += 1;
+      if (dormantCandidate) {
+        dormantAttempts += 1;
+        selfHealStats.dormant_attempted += 1;
+      }
       appendRawLog(today, {
         ts: new Date().toISOString(),
         type: 'eye_self_heal_triggered',
         eye_id: eyeId,
+        dormant_probe: dormantCandidate,
         reason: String(cand.dark_reason || 'went_dark'),
         candidate_source: String(cand.source || 'unknown'),
         expected_silence_hours: Number(cand.expected_silence_hours || 0),
@@ -2352,6 +2370,7 @@ async function run(opts = {}) {
       const recovered = Array.isArray(healRes.eyes)
         && healRes.eyes.some((r) => r && r.id === eyeId && Number(r.real_items || 0) > 0);
       if (recovered) selfHealStats.recovered += 1;
+      if (recovered && dormantCandidate) selfHealStats.dormant_recovered += 1;
 
       const postRegistry = loadRegistry();
       const postEye = (postRegistry.eyes || []).find((e) => e && e.id === eyeId);
@@ -2361,7 +2380,12 @@ async function run(opts = {}) {
         postEye.last_self_heal_ts = new Date().toISOString();
         postEye.last_self_heal_result = recovered ? 'recovered' : 'no_recovery';
         postEye.self_heal_cooldown_until = new Date(Date.now() + (healCooldownHours * 60 * 60 * 1000)).toISOString();
-        if (!recovered) {
+        if (recovered) {
+          postEye.status = 'active';
+          postEye.cooldown_until = null;
+          postEye.consecutive_failures = 0;
+          postEye.consecutive_no_signal_runs = 0;
+        } else {
           const criticalFail = isCriticalSelfHealCandidate(cand) && Number(postEye.consecutive_failures || 0) >= 2;
           if (criticalFail) {
             postEye.status = 'dormant';
@@ -2391,7 +2415,10 @@ async function run(opts = {}) {
   console.log(`🎯 Ran ${eyesRun.length}/${runCount} eyes eligible`);
   eyesRun.forEach(e => console.log(`   - ${e.id}: ${e.items} items (${Number(e.real_items || 0)} real, ${Number(e.focus || 0)} focus) in ${e.duration_ms}ms`));
   if (selfHealEnabled && selfHealStats.attempted > 0) {
-    console.log(`🩺 Self-heal: attempted=${selfHealStats.attempted}, recovered=${selfHealStats.recovered}`);
+    console.log(
+      `🩺 Self-heal: attempted=${selfHealStats.attempted}, recovered=${selfHealStats.recovered},` +
+      ` dormant_attempted=${selfHealStats.dormant_attempted}, dormant_recovered=${selfHealStats.dormant_recovered}`
+    );
   }
   console.log('═══════════════════════════════════════════════════════════');
   
