@@ -8917,6 +8917,7 @@ function releaseAutonomyRunLock() {
 function usage() {
   console.log('Usage:');
   console.log('  node systems/autonomy/autonomy_controller.js run [YYYY-MM-DD]');
+  console.log('  node systems/autonomy/autonomy_controller.js run-batch [YYYY-MM-DD] [--max=N]');
   console.log('  node systems/autonomy/autonomy_controller.js evidence [YYYY-MM-DD]');
   console.log('  node systems/autonomy/autonomy_controller.js readiness [YYYY-MM-DD]');
   console.log('  node systems/autonomy/autonomy_controller.js status [YYYY-MM-DD]');
@@ -8925,6 +8926,85 @@ function usage() {
   console.log('  node systems/autonomy/autonomy_controller.js issue-canary-override [YYYY-MM-DD] --nonce=<token> --approve=<phrase> [--ttl_minutes=N] [--note=...]');
   console.log('  node systems/autonomy/autonomy_controller.js canary-override-status');
   console.log('  node systems/autonomy/autonomy_controller.js revoke-canary-override [YYYY-MM-DD]');
+}
+
+function runChildAutonomy(dateStr) {
+  const child = spawnSync(process.execPath, [__filename, 'run', dateStr], {
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      AUTONOMY_BATCH_CHILD: '1'
+    }
+  });
+  const rawOut = String(child.stdout || '').trim();
+  let payload = null;
+  if (rawOut) {
+    const lines = rawOut.split('\n').map(x => String(x || '').trim()).filter(Boolean);
+    for (let i = lines.length - 1; i >= 0; i--) {
+      const line = lines[i];
+      if (!line.startsWith('{')) continue;
+      try {
+        payload = JSON.parse(line);
+        break;
+      } catch {}
+    }
+  }
+  return {
+    ok: child.status === 0,
+    code: child.status == null ? 1 : child.status,
+    payload,
+    stdout: rawOut,
+    stderr: String(child.stderr || '').trim()
+  };
+}
+
+function runBatchCmd(dateStr) {
+  const rawMax = Number(parseArg('max') || process.env.AUTONOMY_BATCH_MAX || 3);
+  const max = Number.isFinite(rawMax) ? Math.max(1, Math.min(10, Math.round(rawMax))) : 3;
+  const rows = [];
+  let executed = 0;
+  let stop = null;
+
+  for (let i = 0; i < max; i++) {
+    const child = runChildAutonomy(dateStr);
+    const payload = child.payload && typeof child.payload === 'object'
+      ? child.payload
+      : {
+          ok: child.ok,
+          result: child.ok ? 'unknown' : `child_exit_${child.code}`
+        };
+    const result = String(payload.result || (child.ok ? 'unknown' : `child_exit_${child.code}`));
+    rows.push({
+      idx: i + 1,
+      ok: child.ok,
+      code: child.code,
+      result,
+      proposal_id: payload.proposal_id || null,
+      receipt_id: payload.receipt_id || null,
+      ts: payload.ts || nowIso()
+    });
+    if (!child.ok) {
+      stop = `child_exit_${child.code}`;
+      break;
+    }
+    if (result === 'executed') {
+      executed += 1;
+      continue;
+    }
+    stop = result;
+    break;
+  }
+
+  process.stdout.write(JSON.stringify({
+    ok: true,
+    result: 'batch_complete',
+    date: dateStr,
+    max,
+    executed,
+    attempted: rows.length,
+    stop_reason: stop || null,
+    runs: rows
+  }) + '\n');
 }
 
 function main() {
@@ -8939,6 +9019,7 @@ function main() {
 
   if (cmd === 'status') return statusCmd(dateStr);
   if (cmd === 'readiness') return readinessCmd(dateStr);
+  if (cmd === 'run-batch') return runBatchCmd(dateStr);
   if (cmd === 'run' || cmd === 'evidence') {
     const shadowOnly = cmd === 'evidence';
     const lockRes = acquireAutonomyRunLock({
