@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// @ts-nocheck
 'use strict';
+export {};
 
 /**
  * strategy_mode_governor.js
@@ -28,6 +28,8 @@ const { loadOutcomeFitnessPolicy } = require('../../lib/outcome_fitness.js');
 const { summarizeForDate } = require('./receipt_summary.js');
 const { evaluateReadiness } = require('./strategy_readiness.js');
 const { evaluatePipelineSpcGate } = require('./pipeline_spc_gate.js');
+
+type AnyObj = Record<string, any>;
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const POLICY_ROOT_SCRIPT = path.join(REPO_ROOT, 'systems', 'security', 'policy_rootd.js');
@@ -85,8 +87,8 @@ function usage() {
   console.log('  node systems/autonomy/strategy_mode_governor.js --help');
 }
 
-function parseArgs(argv) {
-  const out = { _: [] };
+function parseArgs(argv: string[]): AnyObj {
+  const out: AnyObj = { _: [] };
   for (const arg of argv) {
     if (!arg.startsWith('--')) {
       out._.push(arg);
@@ -927,7 +929,7 @@ function cmdRun(args) {
   }
 
   applyMode(strategy, transition.to_mode);
-  const evt = {
+  const evt: AnyObj = {
     ts: nowIso(),
     type: 'strategy_mode_auto_change',
     strategy_id: strategy.id,

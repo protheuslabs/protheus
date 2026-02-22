@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// @ts-nocheck
 'use strict';
+export {};
 
 /**
  * strategy_controller.js
@@ -43,6 +43,8 @@ const {
   touchProfileUsage,
   gcProfiles
 } = require('../adaptive/strategy/strategy_store.js');
+
+type AnyObj = Record<string, any>;
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const RUNS_DIR = process.env.STRATEGY_CONTROLLER_RUNS_DIR
@@ -96,8 +98,8 @@ function usage() {
   console.log('  node systems/strategy/strategy_controller.js --help');
 }
 
-function parseArgs(argv) {
-  const out = { _: [] };
+function parseArgs(argv: string[]): AnyObj {
+  const out: AnyObj = { _: [] };
   for (const arg of argv) {
     if (!arg.startsWith('--')) {
       out._.push(arg);
@@ -224,7 +226,7 @@ function appendControllerAudit(event) {
   const payloadHash = sha256Hex(JSON.stringify(payloadNoIntegrity));
   const chainInput = `${String(prevHash || '')}|${payloadHash}|${seq}`;
   const hash = sha256Hex(chainInput);
-  const integrity = {
+  const integrity: AnyObj = {
     payload_hash: payloadHash,
     hash
   };
@@ -353,7 +355,7 @@ function enforceMutationGate(args, scope, target, source, opLabel) {
   const approvalNote = parseApproval(args);
   if (STRATEGY_CONTROLLER_REQUIRE_APPROVAL && approvalNote.length < STRATEGY_CONTROLLER_APPROVAL_MIN_LEN) {
     const err = new Error('approval_note_too_short');
-    err.details = { min_len: STRATEGY_CONTROLLER_APPROVAL_MIN_LEN };
+    (err as AnyObj).details = { min_len: STRATEGY_CONTROLLER_APPROVAL_MIN_LEN };
     throw err;
   }
   const leaseToken = cleanText(args['lease-token'] || args.lease_token || process.env.CAPABILITY_LEASE_TOKEN || '', 8192);
@@ -369,7 +371,7 @@ function enforceMutationGate(args, scope, target, source, opLabel) {
     policyRoot = pr.payload || null;
     if (!pr.ok) {
       const err = new Error('policy_root_denied');
-      err.details = {
+      (err as AnyObj).details = {
         detail: pr.stderr || pr.stdout || `policy_root_exit_${pr.code}`,
         policy_root: policyRoot
       };
@@ -608,7 +610,7 @@ function cmdGet(args) {
     return;
   }
 
-  const out = {
+  const out: AnyObj = {
     ok: true,
     ts: nowIso(),
     profiles: state.profiles.slice(0, limit)

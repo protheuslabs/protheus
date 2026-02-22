@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// @ts-nocheck
 'use strict';
+export {};
 
 /**
  * outcome_fitness_loop.js
@@ -23,6 +23,8 @@ const fs = require('fs');
 const path = require('path');
 const { listStrategies } = require('../../lib/strategy_resolver.js');
 const { normalizeRankingWeights } = require('../../lib/outcome_fitness.js');
+
+type AnyObj = Record<string, any>;
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const RUNS_DIR = process.env.OUTCOME_FITNESS_RUNS_DIR
@@ -62,8 +64,8 @@ function usage() {
   console.log('  node systems/autonomy/outcome_fitness_loop.js --help');
 }
 
-function parseArgs(argv) {
-  const out = { _: [] };
+function parseArgs(argv: string[]): AnyObj {
+  const out: AnyObj = { _: [] };
   for (const arg of argv) {
     if (!arg.startsWith('--')) {
       out._.push(arg);
@@ -177,7 +179,7 @@ function loadActiveStrategyProfile() {
 }
 
 function summarizeRuns(dates) {
-  const out = {
+  const out: AnyObj = {
     total_runs: 0,
     attempted: 0,
     executed: 0,
@@ -213,7 +215,7 @@ function summarizeRuns(dates) {
 }
 
 function summarizeTypeOutcomes(dates) {
-  const byType = {};
+  const byType: AnyObj = {};
   for (const dateStr of dates) {
     const rows = readJsonl(path.join(RUNS_DIR, `${dateStr}.jsonl`));
     for (const row of rows) {
@@ -244,18 +246,23 @@ function summarizeTypeOutcomes(dates) {
     }
   }
 
-  const rows = Object.values(byType)
-    .map((row) => ({
-      ...row,
-      shipped_rate: rate(row.shipped, row.outcome_samples),
-      no_change_rate: rate(row.no_change, row.outcome_samples),
-      reverted_rate: rate(row.reverted, row.outcome_samples),
-      stop_ratio: rate(row.stopped, row.attempted)
-    }))
+  const rows = (Object.values(byType) as AnyObj[])
+    .map((rawRow) => {
+      const row = rawRow && typeof rawRow === 'object' ? (rawRow as AnyObj) : {};
+      return {
+        ...row,
+        shipped_rate: rate(row.shipped, row.outcome_samples),
+        no_change_rate: rate(row.no_change, row.outcome_samples),
+        reverted_rate: rate(row.reverted, row.outcome_samples),
+        stop_ratio: rate(row.stopped, row.attempted)
+      };
+    })
     .sort((a, b) => {
-      const sa = Number(b.outcome_samples || 0) - Number(a.outcome_samples || 0);
+      const left = a && typeof a === 'object' ? (a as AnyObj) : {};
+      const right = b && typeof b === 'object' ? (b as AnyObj) : {};
+      const sa = Number(right.outcome_samples || 0) - Number(left.outcome_samples || 0);
       if (sa !== 0) return sa;
-      return String(a.proposal_type).localeCompare(String(b.proposal_type));
+      return String(left.proposal_type || '').localeCompare(String(right.proposal_type || ''));
     });
 
   return {
@@ -265,7 +272,7 @@ function summarizeTypeOutcomes(dates) {
 }
 
 function summarizeReceipts(dates) {
-  const out = {
+  const out: AnyObj = {
     total: 0,
     attempted: 0,
     verified: 0,
@@ -370,7 +377,7 @@ function summarizeReceipts(dates) {
   out.success_criteria_required_pass_rate = rate(out.success_criteria_receipt_pass, out.success_criteria_required_receipts);
   out.success_criteria_row_pass_rate = rate(out.success_criteria_rows_passed, out.success_criteria_rows_evaluated);
   out.success_criteria_metric_stats = Object.fromEntries(
-    Object.entries(out.success_criteria_metric_stats)
+    (Object.entries(out.success_criteria_metric_stats as AnyObj) as Array<[string, AnyObj]>)
       .map(([metric, stat]) => {
         const evaluated = Number(stat.evaluated || 0);
         const total = Number(stat.total || 0);
@@ -380,7 +387,7 @@ function summarizeReceipts(dates) {
           unknown_rate: total > 0 ? Number((Number(stat.unknown || 0) / total).toFixed(4)) : null
         }];
       })
-      .sort((a, b) => Number(b[1].total || 0) - Number(a[1].total || 0) || String(a[0]).localeCompare(String(b[0])))
+      .sort((a, b) => Number((b[1] as AnyObj).total || 0) - Number((a[1] as AnyObj).total || 0) || String(a[0]).localeCompare(String(b[0])))
   );
   return out;
 }
@@ -588,14 +595,15 @@ function deriveSuccessCriteriaMetricWeights(receiptMetrics) {
   const stats = receiptMetrics && receiptMetrics.success_criteria_metric_stats && typeof receiptMetrics.success_criteria_metric_stats === 'object'
     ? receiptMetrics.success_criteria_metric_stats
     : {};
-  const weights = {};
-  const audit = {};
-  for (const [metric, stat] of Object.entries(stats)) {
-    const total = Number(stat && stat.total || 0);
-    const evaluated = Number(stat && stat.evaluated || 0);
+  const weights: AnyObj = {};
+  const audit: AnyObj = {};
+  for (const [metric, stat] of Object.entries(stats as AnyObj)) {
+    const row = stat && typeof stat === 'object' ? (stat as AnyObj) : {};
+    const total = Number(row.total || 0);
+    const evaluated = Number(row.evaluated || 0);
     if (total < 2) continue;
-    const passRate = evaluated > 0 ? Number(stat.pass_rate || 0) : 0;
-    const unknownRate = total > 0 ? Number(stat.unknown_rate || 0) : 0;
+    const passRate = evaluated > 0 ? Number(row.pass_rate || 0) : 0;
+    const unknownRate = total > 0 ? Number(row.unknown_rate || 0) : 0;
     let weight = 1;
     const reasons = [];
 
@@ -730,11 +738,11 @@ function computeQualityLockState(realizedScore, receiptMetrics) {
 function derivePromotionPolicyOverrides(receiptMetrics, qualityLock) {
   const qualityReceipts = Number(receiptMetrics && receiptMetrics.success_criteria_quality_receipts || 0);
   const qualityInsufficientRate = Number(receiptMetrics && receiptMetrics.success_criteria_quality_insufficient_rate || 0);
-  const overrides = {
+  const overrides: AnyObj = {
     disable_legacy_fallback_after_quality_receipts: 10,
     max_success_criteria_quality_insufficient_rate: 0.4
   };
-  const audit = {
+  const audit: AnyObj = {
     quality_receipts: qualityReceipts,
     quality_insufficient_rate: qualityInsufficientRate,
     reasons: []
