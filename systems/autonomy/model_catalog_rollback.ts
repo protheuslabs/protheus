@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// @ts-nocheck
 'use strict';
 
 /**
@@ -23,7 +22,7 @@ const GUARD_SCRIPT = path.join(REPO_ROOT, 'systems', 'security', 'guard.js');
 
 function nowIso() { return new Date().toISOString(); }
 function parseArgs(argv) {
-  const out = { _: [] };
+  const out = { _: [] } as Record<string, any>;
   for (const a of argv) {
     if (!a.startsWith('--')) { out._.push(a); continue; }
     const i = a.indexOf('=');
@@ -119,3 +118,4 @@ function main() {
 }
 
 main();
+export {};
