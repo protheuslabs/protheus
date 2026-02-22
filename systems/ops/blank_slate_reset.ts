@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// @ts-nocheck
 'use strict';
 
 /**
@@ -35,7 +34,7 @@ function usage() {
 }
 
 function parseArgs(argv) {
-  const out = { _: [] };
+  const out = { _: [] } as Record<string, any>;
   for (const arg of argv) {
     if (!arg.startsWith('--')) {
       out._.push(arg);
@@ -179,8 +178,9 @@ function isExcluded(rel, profile) {
 }
 
 function compressParents(paths) {
-  const sorted = Array.from(new Set(paths)).sort((a, b) => a.length - b.length || a.localeCompare(b));
-  const out = [];
+  const sorted = Array.from(new Set(Array.isArray(paths) ? paths.map((p) => String(p || '')) : []))
+    .sort((a, b) => a.length - b.length || a.localeCompare(b));
+  const out: string[] = [];
   for (const p of sorted) {
     let covered = false;
     for (const parent of out) {
@@ -514,3 +514,4 @@ module.exports = {
   loadPolicy,
   collectTargets
 };
+export {};

@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// @ts-nocheck
 /**
  * route_task.js v1.2 - Directive Gate + Optional Model Router Integration
  * Decide: MANUAL vs RUN_HABIT vs RUN_CANDIDATE_FOR_VERIFICATION with T0/T1 tiered directive enforcement
@@ -110,7 +109,7 @@ function pickBestMatch(habits, intentKey, skipHabitId = '') {
 }
 
 function pickReflexMatch(routinesMap, intentKey, task) {
-  const rows = Object.values(routinesMap || {});
+  const rows = Object.values(routinesMap || {}) as Array<Record<string, any>>;
   if (!rows.length) return null;
   const direct = rows.find((r) => {
     if (!r || String(r.status || '').toLowerCase() !== 'enabled') return false;
@@ -536,3 +535,4 @@ function main() {
 
 if (require.main === module) main();
 module.exports = { normalizeIntent };
+export {};
