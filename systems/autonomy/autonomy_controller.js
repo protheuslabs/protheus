@@ -206,6 +206,10 @@ const AUTONOMY_POLICY_HOLD_COOLDOWN_HARD_MINUTES = Math.max(
   AUTONOMY_POLICY_HOLD_COOLDOWN_WARN_MINUTES,
   Number(process.env.AUTONOMY_POLICY_HOLD_COOLDOWN_HARD_MINUTES || Math.max(AUTONOMY_POLICY_HOLD_COOLDOWN_MINUTES * 4, 60))
 );
+const AUTONOMY_POLICY_HOLD_DAMPENER_ENABLED = String(process.env.AUTONOMY_POLICY_HOLD_DAMPENER_ENABLED || '1') !== '0';
+const AUTONOMY_POLICY_HOLD_DAMPENER_WINDOW_HOURS = Math.max(1, Number(process.env.AUTONOMY_POLICY_HOLD_DAMPENER_WINDOW_HOURS || 24));
+const AUTONOMY_POLICY_HOLD_DAMPENER_REPEAT_THRESHOLD = Math.max(2, Number(process.env.AUTONOMY_POLICY_HOLD_DAMPENER_REPEAT_THRESHOLD || 2));
+const AUTONOMY_POLICY_HOLD_DAMPENER_COOLDOWN_HOURS = Math.max(1, Number(process.env.AUTONOMY_POLICY_HOLD_DAMPENER_COOLDOWN_HOURS || 6));
 const AUTONOMY_UNCHANGED_SHORT_CIRCUIT_ENABLED = String(process.env.AUTONOMY_UNCHANGED_SHORT_CIRCUIT_ENABLED || '1') !== '0';
 const AUTONOMY_UNCHANGED_SHORT_CIRCUIT_MINUTES = Number(process.env.AUTONOMY_UNCHANGED_SHORT_CIRCUIT_MINUTES || 30);
 const AUTONOMY_CANDIDATE_EXHAUSTED_REFRESH_ENABLED = String(process.env.AUTONOMY_CANDIDATE_EXHAUSTED_REFRESH_ENABLED || '1') !== '0';
@@ -1740,6 +1744,55 @@ function policyHoldCooldownMinutesForPressure(baseMinutes, pressure) {
     cooldown = Math.max(cooldown, AUTONOMY_POLICY_HOLD_COOLDOWN_WARN_MINUTES);
   }
   return Math.max(0, Math.round(cooldown));
+}
+
+function policyHoldReasonFromEvent(evt) {
+  const row = evt && typeof evt === 'object' ? evt : {};
+  const explicit = normalizeSpaces(row.hold_reason || row.route_block_reason).toLowerCase();
+  if (explicit) return explicit;
+  const result = normalizeSpaces(row.result).toLowerCase();
+  if (result) return result;
+  return 'policy_hold_unknown';
+}
+
+function objectivePolicyHoldPattern(events, objectiveId, opts = {}) {
+  const oid = normalizeSpaces(objectiveId);
+  const windowHours = Math.max(1, Number(opts.window_hours || AUTONOMY_POLICY_HOLD_DAMPENER_WINDOW_HOURS || 24));
+  const repeatThreshold = Math.max(2, Number(opts.repeat_threshold || AUTONOMY_POLICY_HOLD_DAMPENER_REPEAT_THRESHOLD || 2));
+  const out = {
+    objective_id: oid || null,
+    window_hours: windowHours,
+    repeat_threshold: repeatThreshold,
+    total_holds: 0,
+    top_reason: null,
+    top_count: 0,
+    by_reason: {},
+    should_dampen: false
+  };
+  if (!oid) return out;
+  const rows = Array.isArray(events) ? events : [];
+  const cutoffMs = Date.now() - (windowHours * 3600000);
+  const counts = {};
+  for (const evt of rows) {
+    if (!evt || evt.type !== 'autonomy_run') continue;
+    if (!isPolicyHoldRunEvent(evt)) continue;
+    const evtObjectiveId = normalizeSpaces(evt.objective_id);
+    if (!evtObjectiveId || evtObjectiveId !== oid) continue;
+    const t = parseIsoTs(evt.ts);
+    if (t && t.getTime() < cutoffMs) continue;
+    const reason = policyHoldReasonFromEvent(evt);
+    counts[reason] = Number(counts[reason] || 0) + 1;
+    out.total_holds += 1;
+  }
+  out.by_reason = counts;
+  for (const [reason, countRaw] of Object.entries(counts)) {
+    const count = Number(countRaw || 0);
+    if (count <= out.top_count) continue;
+    out.top_reason = reason;
+    out.top_count = count;
+  }
+  out.should_dampen = out.top_count >= repeatThreshold;
+  return out;
 }
 
 function ageHours(dateStr) {
@@ -11172,6 +11225,47 @@ function runCmd(dateStr, opts = {}) {
     : null;
   const objectiveBinding = pick.objective_binding || resolveObjectiveBinding(p, directivePulseCtx);
   const executionObjectiveId = objectiveIdForExecution(p, directivePulse, directiveAction, objectiveBinding);
+  const policyHoldDampener = objectivePolicyHoldPattern(priorRuns, executionObjectiveId, {
+    window_hours: AUTONOMY_POLICY_HOLD_DAMPENER_WINDOW_HOURS,
+    repeat_threshold: AUTONOMY_POLICY_HOLD_DAMPENER_REPEAT_THRESHOLD
+  });
+
+  if (
+    !shadowOnly
+    && AUTONOMY_POLICY_HOLD_DAMPENER_ENABLED
+    && AUTONOMY_POLICY_HOLD_DAMPENER_COOLDOWN_HOURS > 0
+    && policyHoldDampener.should_dampen === true
+  ) {
+    const holdReason = String(policyHoldDampener.top_reason || 'policy_hold_unknown');
+    const reason = `auto:policy_hold_dampener ${holdReason} repeats_${policyHoldDampener.top_count}/${policyHoldDampener.repeat_threshold} cooldown_${AUTONOMY_POLICY_HOLD_DAMPENER_COOLDOWN_HOURS}h`;
+    runProposalQueue('park', p.id, reason);
+    setCooldown(p.id, AUTONOMY_POLICY_HOLD_DAMPENER_COOLDOWN_HOURS, reason);
+    writeRun(dateStr, {
+      ts: nowIso(),
+      type: 'autonomy_run',
+      result: 'stop_repeat_gate_policy_hold_dampener',
+      proposal_id: p.id,
+      objective_id: executionObjectiveId || null,
+      capability_key: capabilityKey,
+      hold_reason: holdReason,
+      policy_hold_dampener: policyHoldDampener,
+      cooldown_hours: AUTONOMY_POLICY_HOLD_DAMPENER_COOLDOWN_HOURS,
+      reason
+    });
+    process.stdout.write(JSON.stringify({
+      ok: true,
+      result: 'stop_repeat_gate_policy_hold_dampener',
+      proposal_id: p.id,
+      objective_id: executionObjectiveId || null,
+      capability_key: capabilityKey,
+      hold_reason: holdReason,
+      policy_hold_dampener: policyHoldDampener,
+      cooldown_hours: AUTONOMY_POLICY_HOLD_DAMPENER_COOLDOWN_HOURS,
+      reason,
+      ts: nowIso()
+    }) + '\n');
+    return;
+  }
 
   if (circuitCooldownHours > 0) {
     const reason = `auto:circuit_breaker cooldown_${circuitCooldownHours}h`;
