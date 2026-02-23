@@ -5653,6 +5653,33 @@ function objectiveIdsFromPulseContext(pulseCtx) {
   return set;
 }
 
+function policyHoldObjectiveContext(pulseCtx, candidateObjectiveIds = []) {
+  const set = new Set();
+  for (const raw of Array.isArray(candidateObjectiveIds) ? candidateObjectiveIds : []) {
+    const id = sanitizeDirectiveObjectiveId(raw);
+    if (!id) continue;
+    set.add(id);
+  }
+  if (set.size === 0) {
+    for (const raw of objectiveIdsFromPulseContext(pulseCtx)) {
+      const id = sanitizeDirectiveObjectiveId(raw);
+      if (!id) continue;
+      set.add(id);
+    }
+  }
+  const ids = Array.from(set);
+  const dominant = sanitizeDirectiveObjectiveId(pulseCtx && pulseCtx.dominant_objective_id);
+  const objectiveId = dominant || (ids.length > 0 ? ids[0] : '');
+  const out = {
+    objective_id: objectiveId || null,
+    objective_source: objectiveId
+      ? (dominant ? 'directive_pulse_dominant' : 'directive_pulse_pool')
+      : null
+  };
+  if (ids.length > 1) out.objective_ids = ids.slice(0, 8);
+  return out;
+}
+
 function parseObjectiveIdFromEvidenceRefs(proposal, objectiveSet) {
   const evidence = Array.isArray(proposal && proposal.evidence) ? proposal.evidence : [];
   for (const row of evidence) {
@@ -8930,6 +8957,7 @@ function runCmd(dateStr, opts = {}) {
     }) + '\n');
     return;
   }
+  const directivePulseCtx = buildDirectivePulseContext(dateStr);
 
   if (
     AUTONOMY_REQUIRE_READINESS_FOR_EXECUTE
@@ -9002,6 +9030,7 @@ function runCmd(dateStr, opts = {}) {
         );
       }
       const readinessRetryEnt = readinessRetryCooldownKeyId ? cooldownEntry(readinessRetryCooldownKeyId) : null;
+      const readinessObjectiveContext = policyHoldObjectiveContext(directivePulseCtx);
       writeRun(dateStr, {
         ts: nowIso(),
         type: 'autonomy_run',
@@ -9009,6 +9038,7 @@ function runCmd(dateStr, opts = {}) {
         policy_hold: true,
         hold_scope: 'readiness',
         hold_reason: readinessHoldReason,
+        ...readinessObjectiveContext,
         strategy_id: strategy.id,
         execution_mode: executionMode,
         readiness_retry_cooldown_hours: readinessRetryCooldownHours,
@@ -9024,6 +9054,7 @@ function runCmd(dateStr, opts = {}) {
         policy_hold: true,
         hold_scope: 'readiness',
         hold_reason: readinessHoldReason,
+        ...readinessObjectiveContext,
         strategy_id: strategy.id,
         execution_mode: executionMode,
         readiness_retry_cooldown_hours: readinessRetryCooldownHours,
@@ -9253,6 +9284,7 @@ function runCmd(dateStr, opts = {}) {
       AUTONOMY_UNCHANGED_SHORT_CIRCUIT_MINUTES
     );
     if (shortCircuit.hit) {
+      const unchangedObjectiveContext = policyHoldObjectiveContext(directivePulseCtx);
       writeRun(dateStr, {
         ts: nowIso(),
         type: 'autonomy_run',
@@ -9261,6 +9293,7 @@ function runCmd(dateStr, opts = {}) {
         policy_hold: true,
         hold_scope: 'capacity',
         hold_reason: 'unchanged_state_short_circuit',
+        ...unchangedObjectiveContext,
         key: shortCircuitKey,
         fingerprint,
         ttl_minutes: shortCircuit.ttl_minutes,
@@ -9273,6 +9306,7 @@ function runCmd(dateStr, opts = {}) {
         policy_hold: true,
         hold_scope: 'capacity',
         hold_reason: 'unchanged_state_short_circuit',
+        ...unchangedObjectiveContext,
         key: shortCircuitKey,
         ttl_minutes: shortCircuit.ttl_minutes,
         age_minutes: shortCircuit.age_minutes,
@@ -9330,7 +9364,6 @@ function runCmd(dateStr, opts = {}) {
   const directiveProfile = loadDirectiveFitProfile();
   const calibrationProfile = computeCalibrationProfile(dateStr, true);
   const thresholds = calibrationProfile.effective_thresholds || baseThresholds();
-  const directivePulseCtx = buildDirectivePulseContext(dateStr);
   const repeatGateAnchor = deriveRepeatGateAnchor(lastCapacityAttempt || lastAttempt);
   const objectiveRuntime = objectiveRuntimeSnapshot(dateStr);
   const poolObjectiveIds = Array.from(new Set(
@@ -9341,6 +9374,7 @@ function runCmd(dateStr, opts = {}) {
       })
       .filter(Boolean)
   ));
+  const noCandidateObjectiveContext = policyHoldObjectiveContext(directivePulseCtx, poolObjectiveIds);
   const dailyCapOverride = consumeHumanCanaryDailyCapOverrideIfAllowed({
     dateStr,
     executionMode,
@@ -9358,6 +9392,7 @@ function runCmd(dateStr, opts = {}) {
       policy_hold: true,
       hold_scope: 'capacity',
       hold_reason: 'daily_cap',
+      ...noCandidateObjectiveContext,
       attempts_today: attemptsTodayForCap,
       attempts_total: attemptsToday,
       max_runs_per_day: maxRunsPerDay,
@@ -9371,6 +9406,7 @@ function runCmd(dateStr, opts = {}) {
       policy_hold: true,
       hold_scope: 'capacity',
       hold_reason: 'daily_cap',
+      ...noCandidateObjectiveContext,
       attempts_today: attemptsTodayForCap,
       attempts_total: attemptsToday,
       max_runs_per_day: maxRunsPerDay,
@@ -9397,6 +9433,7 @@ function runCmd(dateStr, opts = {}) {
       policy_hold: true,
       hold_scope: 'capacity',
       hold_reason: 'canary_cap',
+      ...noCandidateObjectiveContext,
       execution_mode: executionMode,
       executed_today: executedToday,
       canary_daily_exec_limit: Number(canaryDailyExecLimit),
@@ -9409,6 +9446,7 @@ function runCmd(dateStr, opts = {}) {
       policy_hold: true,
       hold_scope: 'capacity',
       hold_reason: 'canary_cap',
+      ...noCandidateObjectiveContext,
       execution_mode: executionMode,
       executed_today: executedToday,
       canary_daily_exec_limit: Number(canaryDailyExecLimit),
@@ -9596,6 +9634,7 @@ function runCmd(dateStr, opts = {}) {
           legacy_result: 'stop_repeat_gate_human_escalation_pending',
           policy_hold: true,
           hold_scope: 'global',
+          ...noCandidateObjectiveContext,
           active_count: activeEscalations.length,
           hold_hours: Math.max(1, Number(AUTONOMY_HUMAN_ESCALATION_HOLD_HOURS || 6)),
           reconcile: escalationReconcile
@@ -9614,6 +9653,7 @@ function runCmd(dateStr, opts = {}) {
         legacy_result: 'stop_repeat_gate_human_escalation_pending',
         policy_hold: true,
         hold_scope: 'global',
+        ...noCandidateObjectiveContext,
         deduped,
         dedupe_window_minutes: dedupeWindowMinutes,
         active_count: activeEscalations.length,
@@ -10665,6 +10705,7 @@ function runCmd(dateStr, opts = {}) {
         type: 'autonomy_run',
         result: 'no_candidates_policy_directive_pulse_reservation',
         legacy_result: 'stop_repeat_gate_directive_pulse_tier_reservation',
+        ...noCandidateObjectiveContext,
         reserved_tier: tierReservation.tier,
         current_tier_attempts: tierReservation.current_tier_attempts,
         required_after_next: tierReservation.required_after_next,
@@ -10675,6 +10716,7 @@ function runCmd(dateStr, opts = {}) {
         ok: true,
         result: 'no_candidates_policy_directive_pulse_reservation',
         legacy_result: 'stop_repeat_gate_directive_pulse_tier_reservation',
+        ...noCandidateObjectiveContext,
         reserved_tier: tierReservation.tier,
         current_tier_attempts: tierReservation.current_tier_attempts,
         required_after_next: tierReservation.required_after_next,
@@ -12864,6 +12906,18 @@ function runCmd(dateStr, opts = {}) {
       risk: proposalRisk,
       capability_key: capabilityKey,
       execution_mode: executionMode,
+      objective_binding: {
+        required: objectiveBinding.required === true,
+        objective_id: objectiveBinding.objective_id || null,
+        source: objectiveBinding.source || null
+      },
+      directive_pulse: directivePulse
+        ? {
+            objective_id: directivePulse.objective_id || null,
+            tier: directivePulse.tier == null ? null : directivePulse.tier,
+            objective_allocation_score: Number(directivePulse.objective_allocation_score || 0)
+          }
+        : null,
       score: Number(pick.score.toFixed(3)),
       cooldown_hours: AUTONOMY_ROUTE_BLOCK_COOLDOWN_HOURS,
       execute_confidence_lane_cooldown_hours: confidenceLaneHours,
@@ -12889,6 +12943,18 @@ function runCmd(dateStr, opts = {}) {
       objective_id: executionObjectiveId || null,
       capability_key: capabilityKey,
       execution_mode: executionMode,
+      objective_binding: {
+        required: objectiveBinding.required === true,
+        objective_id: objectiveBinding.objective_id || null,
+        source: objectiveBinding.source || null
+      },
+      directive_pulse: directivePulse
+        ? {
+            objective_id: directivePulse.objective_id || null,
+            tier: directivePulse.tier == null ? null : directivePulse.tier,
+            objective_allocation_score: Number(directivePulse.objective_allocation_score || 0)
+          }
+        : null,
       cooldown_hours: AUTONOMY_ROUTE_BLOCK_COOLDOWN_HOURS,
       execute_confidence_lane_cooldown_hours: confidenceLaneHours,
       execute_confidence_cooldown_key: confidenceLaneKey || null,
