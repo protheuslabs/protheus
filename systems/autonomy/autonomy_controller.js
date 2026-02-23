@@ -130,6 +130,9 @@ const RECEIPTS_DIR = process.env.AUTONOMY_RECEIPTS_DIR
 const OUTCOME_FALLBACK_DIR = process.env.AUTONOMY_OUTCOME_FALLBACK_DIR
   ? path.resolve(process.env.AUTONOMY_OUTCOME_FALLBACK_DIR)
   : path.join(AUTONOMY_DIR, 'outcome_fallback');
+const NON_YIELD_LEDGER_PATH = process.env.AUTONOMY_NON_YIELD_LEDGER_PATH
+  ? path.resolve(process.env.AUTONOMY_NON_YIELD_LEDGER_PATH)
+  : path.join(AUTONOMY_DIR, 'non_yield_ledger.jsonl');
 const COOLDOWNS_PATH = process.env.AUTONOMY_COOLDOWNS_PATH
   ? path.resolve(process.env.AUTONOMY_COOLDOWNS_PATH)
   : path.join(AUTONOMY_DIR, 'cooldowns.json');
@@ -265,6 +268,7 @@ const AUTONOMY_MAX_PROPOSAL_FILE_AGE_HOURS = Number(process.env.AUTONOMY_MAX_PRO
 const AUTONOMY_REPEAT_EXHAUSTED_LIMIT = Number(process.env.AUTONOMY_REPEAT_EXHAUSTED_LIMIT || 3);
 const AUTONOMY_REPEAT_EXHAUSTED_COOLDOWN_MINUTES = Number(process.env.AUTONOMY_REPEAT_EXHAUSTED_COOLDOWN_MINUTES || 90);
 const AUTONOMY_BUDGET_AUTOPAUSE_MINUTES = Math.max(5, Number(process.env.AUTONOMY_BUDGET_AUTOPAUSE_MINUTES || 60));
+const AUTONOMY_NON_YIELD_LEDGER_ENABLED = String(process.env.AUTONOMY_NON_YIELD_LEDGER_ENABLED || '1') !== '0';
 const AUTONOMY_BUDGET_PACING_ENABLED = String(process.env.AUTONOMY_BUDGET_PACING_ENABLED || '1') !== '0';
 const AUTONOMY_BUDGET_PACING_MIN_REMAINING_RATIO = clampNumber(Number(process.env.AUTONOMY_BUDGET_PACING_MIN_REMAINING_RATIO || 0.2), 0, 1);
 const AUTONOMY_BUDGET_PACING_HIGH_TOKEN_THRESHOLD = Math.max(100, Number(process.env.AUTONOMY_BUDGET_PACING_HIGH_TOKEN_THRESHOLD || 900));
@@ -780,7 +784,7 @@ function ensureDir(dir) {
 }
 
 function ensureState() {
-  [AUTONOMY_DIR, RUNS_DIR, EXPERIMENTS_DIR, DAILY_BUDGET_DIR, RECEIPTS_DIR].forEach(ensureDir);
+  [AUTONOMY_DIR, RUNS_DIR, EXPERIMENTS_DIR, DAILY_BUDGET_DIR, RECEIPTS_DIR, OUTCOME_FALLBACK_DIR, path.dirname(NON_YIELD_LEDGER_PATH)].forEach(ensureDir);
 }
 
 function nowIso() {
@@ -6612,8 +6616,76 @@ function writeExperiment(dateStr, card) {
   appendJsonl(path.join(EXPERIMENTS_DIR, `${dateStr}.jsonl`), card);
 }
 
+function isSafetyStopRunEvent(evt) {
+  if (!evt || evt.type !== 'autonomy_run') return false;
+  const result = String(evt.result || '');
+  return result.includes('human_escalation')
+    || result.includes('tier1_governance')
+    || result.includes('medium_risk_guard')
+    || result.includes('capability_cooldown')
+    || result.includes('directive_pulse_tier_reservation');
+}
+
+function classifyNonYieldCategory(evt) {
+  if (!evt || evt.type !== 'autonomy_run') return null;
+  const result = String(evt.result || '');
+  if (!result || result === 'lock_busy' || result === 'stop_repeat_gate_interval') return null;
+  if (isPolicyHoldRunEvent(evt)) {
+    const reason = normalizeSpaces(evt.hold_reason || evt.route_block_reason || evt.result).toLowerCase();
+    if (result.includes('budget') || reason.includes('budget') || reason.includes('autopause')) return 'budget_hold';
+    return 'policy_hold';
+  }
+  if (isSafetyStopRunEvent(evt)) return 'safety_stop';
+  if (isNoProgressRun(evt)) return 'no_progress';
+  return null;
+}
+
+function nonYieldReasonFromRun(evt, category) {
+  const explicit = normalizeSpaces(evt && (evt.hold_reason || evt.route_block_reason || evt.reason)).toLowerCase();
+  if (explicit) return explicit;
+  const result = normalizeSpaces(evt && evt.result).toLowerCase();
+  const outcome = normalizeSpaces(evt && evt.outcome).toLowerCase();
+  if (category === 'no_progress' && result === 'executed') {
+    return outcome ? `executed_${outcome}` : 'executed_no_progress';
+  }
+  if (result) return result;
+  return `${String(category || 'non_yield').toLowerCase()}_unknown`;
+}
+
+function writeNonYieldLedger(dateStr, evt) {
+  if (AUTONOMY_NON_YIELD_LEDGER_ENABLED !== true) return;
+  if (!evt || evt.type !== 'autonomy_run') return;
+  const category = classifyNonYieldCategory(evt);
+  if (!category) return;
+  const objectiveId = runEventObjectiveId(evt);
+  const proposalId = runEventProposalId(evt);
+  const riskRaw = normalizeSpaces(evt.risk != null ? evt.risk : evt.proposal_risk);
+  const card = {
+    ts: nowIso(),
+    type: 'autonomy_non_yield',
+    source: 'autonomy_controller',
+    date: dateStr,
+    category,
+    reason: nonYieldReasonFromRun(evt, category),
+    result: String(evt.result || ''),
+    outcome: String(evt.outcome || ''),
+    policy_hold: isPolicyHoldRunEvent(evt),
+    attempt_like: isAttemptRunEvent(evt),
+    proposal_id: proposalId || null,
+    objective_id: objectiveId || null,
+    risk: riskRaw ? normalizedRisk(riskRaw) : null,
+    execution_mode: normalizeSpaces(evt.execution_mode || evt.mode) || null
+  };
+  try {
+    appendJsonl(NON_YIELD_LEDGER_PATH, card);
+  } catch {
+    // Non-yield capture is telemetry-only and must never alter autonomy execution behavior.
+  }
+}
+
 function writeRun(dateStr, evt) {
   appendJsonl(path.join(RUNS_DIR, `${dateStr}.jsonl`), evt);
+  writeNonYieldLedger(dateStr, evt);
 }
 
 function writeOutcomeFallback(dateStr, evt) {
