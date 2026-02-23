@@ -132,6 +132,7 @@ const EXECUTE_LOCK_AUTO_DEMOTE = String(process.env.AUTONOMY_HEALTH_EXECUTE_LOCK
 
 const SPC_BASELINE_DAYS = Number(process.env.AUTONOMY_HEALTH_SPC_BASELINE_DAYS || 21);
 const SPC_SIGMA = Number(process.env.AUTONOMY_HEALTH_SPC_SIGMA || 3);
+const SPC_STOP_RATIO_MIN_DENOM = Number(process.env.AUTONOMY_HEALTH_SPC_STOP_RATIO_MIN_DENOM || 4);
 
 function nowMs() {
   if (NOW_ISO_OVERRIDE) {
@@ -1132,16 +1133,36 @@ function assessDrift(spcResult, autonomyEnabled = true) {
   ]);
   const onlyOutcomeDataGap = failed.length > 0 && failed.every((id) => outcomeDependentChecks.has(String(id || '')));
   const passRateOnlyFailure = failed.length === 1 && failed[0] === 'success_criteria_pass_rate';
+  const stopRatioOnlyFailure = failed.length === 1 && failed[0] === 'stop_ratio';
   const source = String(current.success_criteria_source || 'legacy_fallback');
   const fallbackRetired = current.success_criteria_fallback_retired === true;
+  const attempted = Number(current.attempted || 0);
+  const admissionEvidence = Number(current.admission_evidence || 0);
+  const deferLowSampleOutcomeGap = onlyOutcomeDataGap
+    && attempted <= 0
+    && admissionEvidence >= 1;
+  const stopRatioSource = String(current.stop_ratio_source || 'all');
+  const stopRatioDenominator = Number(current.stop_ratio_denominator || 0);
+  const deferStopRatioLowSample = stopRatioOnlyFailure
+    && stopRatioSource === 'quality'
+    && stopRatioDenominator > 0
+    && stopRatioDenominator < Number(SPC_STOP_RATIO_MIN_DENOM || 4);
   const deferPassRateWarn = passRateOnlyFailure && !fallbackRetired && source !== 'quality_forced';
   const deferManualOutcomeGaps = !autonomyEnabled && onlyOutcomeDataGap;
-  const level = deferPassRateWarn
+  const level = deferLowSampleOutcomeGap
+    ? 'ok'
+    : deferStopRatioLowSample
+    ? 'ok'
+    : deferPassRateWarn
     ? 'ok'
     : deferManualOutcomeGaps
       ? 'ok'
       : (failed.length >= 2 ? 'critical' : (failed.length > 0 ? 'warn' : 'ok'));
-  const reason = deferPassRateWarn
+  const reason = deferLowSampleOutcomeGap
+    ? 'spc_low_sample_outcome_gap_nonblocking'
+    : deferStopRatioLowSample
+    ? 'spc_quality_stopratio_low_sample_nonblocking'
+    : deferPassRateWarn
     ? 'spc_pre_retirement_quality_passrate_nonblocking'
     : deferManualOutcomeGaps
       ? 'spc_preview_outcome_data_gap_manual_mode'
@@ -1158,12 +1179,19 @@ function assessDrift(spcResult, autonomyEnabled = true) {
       failed_checks: failed,
       success_criteria_source: source,
       success_criteria_fallback_retired: fallbackRetired,
+      stop_ratio_source: stopRatioSource,
+      stop_ratio_denominator: stopRatioDenominator,
+      attempted,
+      admission_evidence: admissionEvidence,
+      deferred_low_sample_outcome_gap: deferLowSampleOutcomeGap,
+      deferred_stopratio_low_sample: deferStopRatioLowSample,
       deferred_passrate_warning: deferPassRateWarn,
       deferred_manual_outcome_gap: deferManualOutcomeGaps
     },
     thresholds: {
       baseline_days: payload.control ? Number(payload.control.baseline_days || SPC_BASELINE_DAYS) : Number(SPC_BASELINE_DAYS || 21),
-      sigma: payload.control ? Number(payload.control.sigma || SPC_SIGMA) : Number(SPC_SIGMA || 3)
+      sigma: payload.control ? Number(payload.control.sigma || SPC_SIGMA) : Number(SPC_SIGMA || 3),
+      stop_ratio_min_denominator: Number(SPC_STOP_RATIO_MIN_DENOM || 4)
     }
   };
 }

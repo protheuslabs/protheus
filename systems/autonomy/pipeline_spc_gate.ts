@@ -128,7 +128,20 @@ function metricForDate(dateStr, days) {
   const attempted = Number(summary && summary.receipts && summary.receipts.combined && summary.receipts.combined.attempted || 0);
   const executed = Number(summary && summary.runs && summary.runs.executed || 0);
   const reverted = Number(summary && summary.runs && summary.runs.executed_outcomes && summary.runs.executed_outcomes.reverted || 0);
-  const stopRatio = numOrNull(summary && summary.runs && summary.runs.stop_ratio);
+  const stopRatioAll = numOrNull(
+    summary
+    && summary.runs
+    && (summary.runs.stop_ratio_all != null ? summary.runs.stop_ratio_all : summary.runs.stop_ratio)
+  );
+  const stopRatioQuality = numOrNull(summary && summary.runs && summary.runs.stop_ratio_quality);
+  const stopRatioSource = stopRatioQuality != null ? 'quality' : 'all';
+  const stopRatio = stopRatioQuality != null ? stopRatioQuality : stopRatioAll;
+  const stopRatioDenominator = Number(
+    summary
+    && summary.runs
+    && (summary.runs.stop_ratio_quality_denominator != null ? summary.runs.stop_ratio_quality_denominator : summary.runs.total)
+    || 0
+  );
   const revertedRate = executed > 0
     ? Number((reverted / executed).toFixed(3))
     : 0;
@@ -153,6 +166,8 @@ function metricForDate(dateStr, days) {
     date: dateStr,
     attempted,
     stop_ratio: stopRatio == null ? 0 : Number(stopRatio),
+    stop_ratio_source: stopRatioSource,
+    stop_ratio_denominator: stopRatioDenominator,
     reverted_rate: Number(revertedRate),
     success_criteria_receipts: criteriaReceipts,
     success_criteria_pass_rate: criteriaPassRate,
@@ -244,9 +259,13 @@ function evaluatePipelineSpcGate(dateStr, options = {}) {
   const checks = [
     {
       name: 'attempted',
-      pass: Number(current.attempted || 0) >= Number(limits.min_attempted || 0),
+      pass: Number(current.attempted || 0) >= Number(limits.min_attempted || 0)
+        || (
+          Number(current.admission_evidence || 0) >= 1
+          && Number(current.success_criteria_receipts || 0) >= 1
+        ),
       value: Number(current.attempted || 0),
-      target: `>=${Number(limits.min_attempted || 0)}`,
+      target: `>=${Number(limits.min_attempted || 0)} or evidence+criteria`,
       source: limitSource
     },
     {

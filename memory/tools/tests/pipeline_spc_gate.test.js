@@ -95,6 +95,8 @@ function run() {
   let out = parseJson(r.stdout);
   assert.strictEqual(out.pass, true, 'spc gate should pass for healthy data');
   assert.strictEqual(out.hold_escalation, false);
+  assert.strictEqual(String(out.current && out.current.stop_ratio_source || ''), 'quality');
+  assert.strictEqual(Number(out.current && out.current.stop_ratio_denominator || 0), 2);
 
   writeJsonl(path.join(autoReceiptsDir, `${date}.jsonl`), [
     { type: 'autonomy_action_receipt', verdict: 'pass', receipt_contract: { attempted: true, verified: true } },
@@ -113,6 +115,22 @@ function run() {
       || out.failed_checks.includes('success_criteria_pass_rate')
     )
   );
+
+  writeJsonl(path.join(autoReceiptsDir, `${date}.jsonl`), [
+    {
+      type: 'autonomy_action_receipt',
+      verdict: 'pass',
+      verification: { success_criteria: { required: true, passed: true } },
+      receipt_contract: { attempted: true, verified: true }
+    }
+  ]);
+
+  r = runScript(repoRoot, ['run', date, '--days=1', '--baseline-days=7', '--sigma=3'], env);
+  assert.strictEqual(r.status, 0, `expected low-sample run: ${r.stderr}`);
+  out = parseJson(r.stdout);
+  assert.strictEqual(out.pass, false, 'spc gate should still fail due insufficient criteria receipts');
+  assert.strictEqual(out.failed_checks.includes('attempted'), false, 'attempted should pass via evidence+criteria fallback');
+  assert.strictEqual(out.failed_checks.includes('success_criteria_receipts'), true, 'criteria receipt floor should still enforce quality');
 
   console.log('pipeline_spc_gate.test.js: OK');
 }

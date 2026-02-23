@@ -149,7 +149,13 @@ function run() {
   assert.strictEqual(Number(out.runs.executed_outcomes.shipped || 0), 1);
   assert.strictEqual(Number(out.runs.executed_outcomes.no_change || 0), 1);
   assert.strictEqual(Number(out.runs.stop_reasons.stop_repeat_gate_no_progress || 0), 1);
+  assert.strictEqual(Number(out.runs.quality_stop_reasons.stop_repeat_gate_no_progress || 0), 1);
   assert.strictEqual(Number(out.runs.init_gate_reasons.stop_init_gate_quality_exhausted || 0), 1);
+  assert.strictEqual(out.runs.stop_ratio, 0.4);
+  assert.strictEqual(out.runs.stop_ratio_all, 0.4);
+  assert.strictEqual(out.runs.stop_ratio_quality, 0.333);
+  assert.strictEqual(Number(out.runs.stop_ratio_quality_denominator || 0), 3);
+  assert.strictEqual(Number(out.runs.stop_ratio_non_actionable_events || 0), 2);
   assert.strictEqual(Number(out.runs.by_strategy.s1 || 0), 4);
   assert.strictEqual(Number(out.runs.by_strategy.s2 || 0), 1);
   assert.strictEqual(Number(out.runs.by_execution_mode.execute || 0), 4);

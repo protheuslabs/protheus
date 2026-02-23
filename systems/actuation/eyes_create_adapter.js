@@ -1,24 +1,14 @@
 #!/usr/bin/env node
 'use strict';
 
+const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const EYES_INTAKE_SCRIPT = path.join(ROOT, 'systems', 'sensory', 'eyes_intake.js');
-
-const DOMAIN_PARSER_HINTS = Object.freeze([
-  { re: /(^|\.)news\.ycombinator\.com$|(^|\.)hnrss\.org$/i, parser: 'hn_rss' },
-  { re: /(^|\.)moltbook\.com$|(^|\.)api\.moltbook\.com$/i, parser: 'moltbook_hot' },
-  { re: /(^|\.)x\.com$|(^|\.)twitter\.com$/i, parser: 'bird_x' },
-  { re: /(^|\.)ollama\.com$/i, parser: 'ollama_search' },
-  { re: /(^|\.)trends\.google\.com$/i, parser: 'google_trends' },
-  { re: /(^|\.)finance\.yahoo\.com$|(^|\.)query1\.finance\.yahoo\.com$/i, parser: 'stock_market' },
-  { re: /(^|\.)upwork\.com$/i, parser: 'upwork_gigs' },
-  { re: /(^|\.)producthunt\.com$|(^|\.)api\.producthunt\.com$/i, parser: 'producthunt_launches' },
-  { re: /(^|\.)medium\.com$/i, parser: 'medium_rss' },
-  { re: /(^|\.)local\.workspace$/i, parser: 'local_state_digest' }
-]);
+const PARSER_HINTS_PATH = path.join(ROOT, 'adaptive', 'sensory', 'eyes', 'parser_hints.json');
+let parserHintsCache = null;
 
 function normalizeText(v) {
   return String(v == null ? '' : v).trim();
@@ -33,6 +23,37 @@ function normalizeList(v) {
       .filter(Boolean);
   }
   return [];
+}
+
+function normalizeHost(v) {
+  return normalizeText(v).toLowerCase().replace(/[^a-z0-9.-]+/g, '');
+}
+
+function compileParserHints(raw) {
+  if (!Array.isArray(raw)) return [];
+  const out = [];
+  for (const row of raw) {
+    if (!row || typeof row !== 'object') continue;
+    const parser = normalizeText(row.parser).toLowerCase();
+    if (!parser) continue;
+    const suffixes = normalizeList(row.suffixes)
+      .map((s) => normalizeHost(s))
+      .filter(Boolean);
+    if (suffixes.length <= 0) continue;
+    out.push({ parser, suffixes });
+  }
+  return out;
+}
+
+function loadParserHints() {
+  if (parserHintsCache) return parserHintsCache;
+  try {
+    const raw = JSON.parse(fs.readFileSync(PARSER_HINTS_PATH, 'utf8'));
+    parserHintsCache = compileParserHints(raw);
+  } catch {
+    parserHintsCache = [];
+  }
+  return parserHintsCache;
 }
 
 function normalizeRef(v) {
@@ -59,10 +80,13 @@ function normalizeRefList(v, maxItems = 12) {
 }
 
 function inferParserType(domain) {
-  const d = normalizeText(domain).toLowerCase();
+  const d = normalizeHost(domain);
   if (!d) return 'stub';
-  for (const hint of DOMAIN_PARSER_HINTS) {
-    if (hint.re.test(d)) return hint.parser;
+  const hints = loadParserHints();
+  for (const hint of hints) {
+    for (const suffix of hint.suffixes) {
+      if (d === suffix || d.endsWith(`.${suffix}`)) return hint.parser;
+    }
   }
   return 'stub';
 }
