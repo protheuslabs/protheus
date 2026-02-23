@@ -275,6 +275,18 @@ function summarizeRuns(rows) {
     return res.startsWith('stop_init_gate_') || res.startsWith('init_gate_');
   });
   const repeatGate = runs.filter(r => String(r.result || '').startsWith('stop_repeat_gate_'));
+  const nonActionable = runs.filter(r => {
+    const res = String(r.result || '');
+    if (res === 'score_only_preview' || res === 'score_only_evidence') return true;
+    return res.startsWith('stop_init_gate_') || res.startsWith('init_gate_');
+  });
+  const qualityScopeRuns = runs.filter(r => {
+    const res = String(r.result || '');
+    if (res === 'score_only_preview' || res === 'score_only_evidence') return false;
+    if (res.startsWith('stop_init_gate_') || res.startsWith('init_gate_')) return false;
+    return true;
+  });
+  const qualityStop = qualityScopeRuns.filter(r => String(r.result || '').startsWith('stop_'));
   const outcomes = tallyBy(executed, r => String(r.outcome || 'unknown'));
   const results = tallyBy(runs, r => String(r.result || 'unknown'));
   const byStrategy = tallyBy(runs, r => String(r.strategy_id || '').trim());
@@ -363,19 +375,28 @@ function summarizeRuns(rows) {
   );
   const total = runs.length;
   const stopped = stop.length;
+  const qualityTotal = qualityScopeRuns.length;
+  const qualityStopped = qualityStop.length;
+  const stopRatioAll = total > 0 ? Number((stopped / total).toFixed(3)) : null;
+  const stopRatioQuality = qualityTotal > 0 ? Number((qualityStopped / qualityTotal).toFixed(3)) : null;
 
   return {
     total,
     executed: executed.length,
     score_only_previews: previews.length,
     stopped,
-    stop_ratio: total > 0 ? Number((stopped / total).toFixed(3)) : null,
+    stop_ratio: stopRatioAll,
+    stop_ratio_all: stopRatioAll,
+    stop_ratio_quality: stopRatioQuality,
+    stop_ratio_quality_denominator: qualityTotal,
+    stop_ratio_non_actionable_events: nonActionable.length,
     run_results: sortedTally(results),
     executed_outcomes: sortedTally(outcomes),
     by_strategy: sortedTally(byStrategy),
     by_execution_mode: sortedTally(byMode),
     objective_scorecard: objectiveScorecardSorted,
     stop_reasons: sortedTally(tallyBy(stop, r => String(r.result || 'unknown'))),
+    quality_stop_reasons: sortedTally(tallyBy(qualityStop, r => String(r.result || 'unknown'))),
     init_gate_reasons: sortedTally(tallyBy(initGate, r => String(r.result || 'unknown'))),
     repeat_gate_reasons: sortedTally(tallyBy(repeatGate, r => String(r.result || 'unknown'))),
     latest_event_ts: runs.length ? String(runs[runs.length - 1].ts || '') : null

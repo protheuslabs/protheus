@@ -1,0 +1,67 @@
+[
+  {
+    "parser": "hn_rss",
+    "suffixes": [
+      "news.ycombinator.com",
+      "hnrss.org"
+    ]
+  },
+  {
+    "parser": "moltbook_hot",
+    "suffixes": [
+      "moltbook.com",
+      "api.moltbook.com"
+    ]
+  },
+  {
+    "parser": "bird_x",
+    "suffixes": [
+      "x.com",
+      "twitter.com"
+    ]
+  },
+  {
+    "parser": "ollama_search",
+    "suffixes": [
+      "ollama.com"
+    ]
+  },
+  {
+    "parser": "google_trends",
+    "suffixes": [
+      "trends.google.com"
+    ]
+  },
+  {
+    "parser": "stock_market",
+    "suffixes": [
+      "finance.yahoo.com",
+      "query1.finance.yahoo.com"
+    ]
+  },
+  {
+    "parser": "upwork_gigs",
+    "suffixes": [
+      "upwork.com"
+    ]
+  },
+  {
+    "parser": "producthunt_launches",
+    "suffixes": [
+      "producthunt.com",
+      "api.producthunt.com"
+    ]
+  },
+  {
+    "parser": "medium_rss",
+    "suffixes": [
+      "medium.com"
+    ]
+  },
+  {
+    "parser": "local_state_digest",
+    "suffixes": [
+      "local.workspace"
+    ]
+  }
+]

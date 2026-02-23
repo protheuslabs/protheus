@@ -210,6 +210,22 @@ function main() {
   assert.strictEqual(Number(second.alerts.written || 0), 0, 'second run should dedupe existing alerts');
   assert.strictEqual(alertLinesSecond, alertLinesFirst, 'second run should not append duplicate alerts');
 
+  writeStubScript(path.join(stubsDir, 'pipeline_spc_gate.js'), {
+    ok: true,
+    pass: false,
+    hold_escalation: true,
+    failed_checks: ['stop_ratio'],
+    current: {
+      stop_ratio_source: 'quality',
+      stop_ratio_denominator: 1
+    },
+    control: { baseline_days: 21, sigma: 3 }
+  });
+  const third = runHealth(env, date);
+  assert.ok(third.slo && third.slo.checks && third.slo.checks.drift, 'drift check should exist');
+  assert.strictEqual(Boolean(third.slo.checks.drift.ok), true, 'low-sample quality stop ratio should be non-blocking');
+  assert.strictEqual(String(third.slo.checks.drift.reason || ''), 'spc_quality_stopratio_low_sample_nonblocking');
+
   console.log('health_status.test.js: OK');
 }
 
