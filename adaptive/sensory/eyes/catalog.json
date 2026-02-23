@@ -35,7 +35,10 @@
       "last_success": null,
       "error_rate": 0,
       "score_ema": 50,
-      "notes": "Hacker News front page - monitoring for startup/tech/agent relevance"
+      "notes": "Hacker News front page - monitoring for startup/tech/agent relevance",
+      "uid": "e103pp5unh6ya5lxxx3kn7wo",
+      "created_ts": "2026-02-23T09:58:30.856Z",
+      "updated_ts": "2026-02-23T10:02:11.311Z"
     },
     {
       "id": "x_trends",
@@ -64,7 +67,10 @@
       "last_success": null,
       "error_rate": 0,
       "score_ema": 50,
-      "notes": "X/Twitter search via bird CLI - monitoring for AI/agent community signal"
+      "notes": "X/Twitter search via bird CLI - monitoring for AI/agent community signal",
+      "uid": "e5mtfdktq8d0jvk0se62b28t",
+      "created_ts": "2026-02-23T09:58:30.856Z",
+      "updated_ts": "2026-02-23T10:02:11.311Z"
     },
     {
       "id": "moltbook_feed",
@@ -91,7 +97,10 @@
       "last_success": null,
       "error_rate": 0,
       "score_ema": 75,
-      "notes": "Moltbook posts - currently active and performing well"
+      "notes": "Moltbook posts - currently active and performing well",
+      "uid": "e1ywzppzlq9q525b36j33wn7",
+      "created_ts": "2026-02-23T09:58:30.856Z",
+      "updated_ts": "2026-02-23T10:02:11.311Z"
     },
     {
       "id": "local_state_fallback",
@@ -119,7 +128,10 @@
       "last_success": null,
       "error_rate": 0,
       "score_ema": 65,
-      "notes": "Offline-safe deterministic eye built from local workspace state artifacts"
+      "notes": "Offline-safe deterministic eye built from local workspace state artifacts",
+      "uid": "e3xbs05gqwa6sqlx2pzx4vmn",
+      "created_ts": "2026-02-23T09:58:30.856Z",
+      "updated_ts": "2026-02-23T10:02:11.311Z"
     },
     {
       "id": "ollama_search",
@@ -150,7 +162,10 @@
       "last_success": null,
       "error_rate": 0,
       "score_ema": 50,
-      "notes": "Ollama newest models - track local LLM releases and capabilities"
+      "notes": "Ollama newest models - track local LLM releases and capabilities",
+      "uid": "e1q02n66rdz8h902a6qpb8hx",
+      "created_ts": "2026-02-23T09:58:30.856Z",
+      "updated_ts": "2026-02-23T10:02:11.311Z"
     },
     {
       "id": "google_trends",
@@ -181,7 +196,10 @@
       "last_success": null,
       "error_rate": 0,
       "score_ema": 50,
-      "notes": "Commercial demand signals from trending searches - reactivated with real collector"
+      "notes": "Commercial demand signals from trending searches - reactivated with real collector",
+      "uid": "e26eamdg0ikn1g3ix8s55dk7",
+      "created_ts": "2026-02-23T09:58:30.856Z",
+      "updated_ts": "2026-02-23T10:02:11.311Z"
     },
     {
       "id": "stock_market",
@@ -209,7 +227,10 @@
       "last_success": null,
       "error_rate": 0,
       "score_ema": 50,
-      "notes": "Stock market indices and movers - financial intelligence for investment decisions"
+      "notes": "Stock market indices and movers - financial intelligence for investment decisions",
+      "uid": "e2cmgrt8vso969d57715lanv",
+      "created_ts": "2026-02-23T09:58:30.856Z",
+      "updated_ts": "2026-02-23T10:02:11.311Z"
     },
     {
       "id": "upwork_gigs",
@@ -240,7 +261,10 @@
       "last_success": null,
       "error_rate": 0,
       "score_ema": 50,
-      "notes": "High-value freelance gigs from Upwork - AI, automation, no-code opportunities"
+      "notes": "High-value freelance gigs from Upwork - AI, automation, no-code opportunities",
+      "uid": "erndwf3jrgxsz9lucumnb3v9",
+      "created_ts": "2026-02-23T09:58:30.856Z",
+      "updated_ts": "2026-02-23T10:02:11.311Z"
     },
     {
       "id": "producthunt_launches",
@@ -270,7 +294,10 @@
       "last_success": null,
       "error_rate": 0,
       "score_ema": 55,
-      "notes": "ProductHunt launches with affiliate/partnership potential - B2B SaaS focus"
+      "notes": "ProductHunt launches with affiliate/partnership potential - B2B SaaS focus",
+      "uid": "e1np523ykqm1o60x5c76edxu",
+      "created_ts": "2026-02-23T09:58:30.856Z",
+      "updated_ts": "2026-02-23T10:02:11.311Z"
     },
     {
       "id": "window_shoppr_repo",
@@ -304,7 +331,10 @@
       "last_success": null,
       "error_rate": 0,
       "score_ema": 55,
-      "notes": "Watching window_shoppr repo for releases, agent API updates, and product ingestion changes - revenue project"
+      "notes": "Watching window_shoppr repo for releases, agent API updates, and product ingestion changes - revenue project",
+      "uid": "e3imr50b909wx45bsxqs08u3",
+      "created_ts": "2026-02-23T09:58:30.856Z",
+      "updated_ts": "2026-02-23T10:02:11.311Z"
     },
     {
       "id": "medium_com",
@@ -347,7 +377,10 @@
       "last_success": null,
       "error_rate": 0,
       "score_ema": 50,
-      "notes": "Medium RSS feeds for AI, startup, and entrepreneurship content aligned with T1 northstar"
+      "notes": "Medium RSS feeds for AI, startup, and entrepreneurship content aligned with T1 northstar",
+      "uid": "e3inparrqs2dz86pf3t7x3ml",
+      "created_ts": "2026-02-23T09:58:30.856Z",
+      "updated_ts": "2026-02-23T10:02:11.311Z"
     },
     {
       "id": "moltstack_discover",
@@ -376,7 +409,10 @@
       "last_success": null,
       "error_rate": 0,
       "score_ema": 55,
-      "notes": "MoltStack discover feed - agent publishing platform with posts from Protheus Codex and other agent publications"
+      "notes": "MoltStack discover feed - agent publishing platform with posts from Protheus Codex and other agent publications",
+      "uid": "e1uputeduec8zmm7tez4vy8b",
+      "created_ts": "2026-02-23T09:58:30.856Z",
+      "updated_ts": "2026-02-23T10:02:11.311Z"
     },
     {
       "id": "memory_standards_watch",
@@ -419,7 +455,10 @@
           "interoperability"
         ],
         "min_score": 10
-      }
+      },
+      "uid": "efymq7lkqb4bj2rcl4yvlwj3",
+      "created_ts": "2026-02-23T09:58:30.856Z",
+      "updated_ts": "2026-02-23T10:02:11.311Z"
     },
     {
       "id": "moltbook_memory_signal",
@@ -452,7 +491,10 @@
       "parser_options": {
         "filter": "memory|context|amnesia|remember",
         "sort": "hot"
-      }
+      },
+      "uid": "e3bezmddt2ujy0ak7zxdvprf",
+      "created_ts": "2026-02-23T09:58:30.856Z",
+      "updated_ts": "2026-02-23T10:02:11.311Z"
     },
     {
       "id": "provider_memory_trends",
@@ -492,7 +534,10 @@
           "ChatGPT memory update"
         ],
         "geo": "US"
-      }
+      },
+      "uid": "e57zeemn9zzqc3js1w0i6i7u",
+      "created_ts": "2026-02-23T09:58:30.856Z",
+      "updated_ts": "2026-02-23T10:02:11.311Z"
     },
     {
       "id": "reddit_ai_automation",
@@ -534,7 +579,258 @@
           "https://www.reddit.com/r/passive_income/.rss"
         ],
         "min_upvotes": 10
-      }
+      },
+      "uid": "e5ali1wotbuh7618i9lspd4p",
+      "created_ts": "2026-02-23T09:58:30.856Z",
+      "updated_ts": "2026-02-23T10:02:11.311Z"
+    },
+    {
+      "uid": "emlz07mbts2x5y9ehvz41kum",
+      "id": "watch_trends_google_com",
+      "name": "Watch trends.google.com",
+      "status": "probation",
+      "cadence_hours": 12,
+      "allowed_domains": [
+        "trends.google.com"
+      ],
+      "budgets": {
+        "max_items": 10,
+        "max_seconds": 20,
+        "max_bytes": 524288,
+        "max_requests": 2
+      },
+      "parser_type": "google_trends",
+      "topics": [
+        "market_demand",
+        "trends",
+        "commercial",
+        "demand",
+        "fallback"
+      ],
+      "directive_ref": "T1_generational_wealth_v1",
+      "last_run": null,
+      "last_success": null,
+      "error_rate": 0,
+      "score_ema": 50,
+      "notes": "Auto-sprout candidate: domain seen 35 times across 2 eyes",
+      "created_ts": "2026-02-23T09:58:30.857Z",
+      "updated_ts": "2026-02-23T10:02:11.311Z",
+      "strategy_id": "default_general",
+      "campaign_ids": [
+        "objective_flow"
+      ]
+    },
+    {
+      "uid": "emlz084gj1d5yo5b64p3moa6",
+      "id": "watch_medium_com",
+      "name": "Watch medium.com",
+      "status": "probation",
+      "cadence_hours": 12,
+      "allowed_domains": [
+        "medium.com"
+      ],
+      "budgets": {
+        "max_items": 10,
+        "max_seconds": 20,
+        "max_bytes": 524288,
+        "max_requests": 2
+      },
+      "parser_type": "medium_rss",
+      "topics": [
+        "ai",
+        "startups",
+        "business",
+        "automation",
+        "revenue"
+      ],
+      "directive_ref": "T1_generational_wealth_v1",
+      "last_run": null,
+      "last_success": null,
+      "error_rate": 0,
+      "score_ema": 50,
+      "notes": "Auto-sprout candidate: domain seen 12 times across 1 eyes",
+      "created_ts": "2026-02-23T09:58:54.355Z",
+      "updated_ts": "2026-02-23T10:02:11.311Z",
+      "strategy_id": "default_general",
+      "campaign_ids": [
+        "objective_flow"
+      ]
+    },
+    {
+      "uid": "emlz08s5jtckcjzs88rrvp74",
+      "id": "proto_36c7ba62382ba23c",
+      "name": "Watch medium.com",
+      "status": "probation",
+      "cadence_hours": 24,
+      "allowed_domains": [
+        "medium.com"
+      ],
+      "budgets": {
+        "max_items": 10,
+        "max_seconds": 20,
+        "max_bytes": 524288,
+        "max_requests": 2
+      },
+      "parser_type": "medium_rss",
+      "topics": [
+        "ai",
+        "startups",
+        "business",
+        "automation",
+        "revenue"
+      ],
+      "directive_ref": "T1_generational_wealth_v1",
+      "last_run": null,
+      "last_success": null,
+      "error_rate": 0,
+      "score_ema": 50,
+      "notes": "Generated via eyes_intake for T1_generational_wealth_v1",
+      "created_ts": "2026-02-23T09:59:25.065Z",
+      "updated_ts": "2026-02-23T10:02:11.311Z",
+      "strategy_id": "default_general",
+      "campaign_ids": [
+        "objective_flow"
+      ]
+    },
+    {
+      "uid": "emlz09at6qnmv2kyjf8vd7e2",
+      "id": "proto_affc19cbf503b0d7",
+      "name": "Watch www.upwork.com",
+      "status": "probation",
+      "cadence_hours": 24,
+      "allowed_domains": [
+        "www.upwork.com"
+      ],
+      "budgets": {
+        "max_items": 10,
+        "max_seconds": 20,
+        "max_bytes": 524288,
+        "max_requests": 2
+      },
+      "parser_type": "upwork_gigs",
+      "topics": [
+        "revenue",
+        "freelance",
+        "gigs",
+        "high-value",
+        "gig"
+      ],
+      "directive_ref": "T1_generational_wealth_v1",
+      "last_run": null,
+      "last_success": null,
+      "error_rate": 0,
+      "score_ema": 50,
+      "notes": "Generated via eyes_intake for T1_generational_wealth_v1",
+      "created_ts": "2026-02-23T09:59:49.242Z",
+      "updated_ts": "2026-02-23T10:02:11.311Z",
+      "strategy_id": "default_general",
+      "campaign_ids": [
+        "objective_flow"
+      ]
+    },
+    {
+      "uid": "emlz09fd1t7kfq1c11nxfq6s",
+      "id": "proto_7ea4f111e8e34620",
+      "name": "Watch trends.google.com",
+      "status": "probation",
+      "cadence_hours": 24,
+      "allowed_domains": [
+        "trends.google.com"
+      ],
+      "budgets": {
+        "max_items": 10,
+        "max_seconds": 20,
+        "max_bytes": 524288,
+        "max_requests": 2
+      },
+      "parser_type": "google_trends",
+      "topics": [
+        "market_demand",
+        "trends",
+        "commercial",
+        "demand",
+        "fallback"
+      ],
+      "directive_ref": "T1_generational_wealth_v1",
+      "last_run": null,
+      "last_success": null,
+      "error_rate": 0,
+      "score_ema": 50,
+      "notes": "Generated via eyes_intake for T1_generational_wealth_v1",
+      "created_ts": "2026-02-23T09:59:55.142Z",
+      "updated_ts": "2026-02-23T10:02:11.311Z",
+      "strategy_id": "default_general",
+      "campaign_ids": [
+        "objective_flow"
+      ]
+    },
+    {
+      "uid": "emlz0ahqietuer14wh8s6gwg",
+      "id": "proto_8f57fcde11bdc4ad",
+      "name": "Watch www.moltbook.com",
+      "status": "probation",
+      "cadence_hours": 12,
+      "allowed_domains": [
+        "www.moltbook.com"
+      ],
+      "budgets": {
+        "max_items": 10,
+        "max_seconds": 20,
+        "max_bytes": 524288,
+        "max_requests": 2
+      },
+      "parser_type": "moltbook_hot",
+      "topics": [
+        "agent_innovation",
+        "skills",
+        "patterns"
+      ],
+      "directive_ref": "T1_generational_wealth_v1",
+      "last_run": null,
+      "last_success": null,
+      "error_rate": 0,
+      "score_ema": 50,
+      "notes": "Auto-sprout candidate: domain seen 80 times across 1 eyes",
+      "created_ts": "2026-02-23T10:00:44.874Z",
+      "updated_ts": "2026-02-23T10:02:11.311Z",
+      "strategy_id": "default_general",
+      "campaign_ids": [
+        "objective_flow"
+      ]
+    },
+    {
+      "uid": "emlz0cc8thurqyzm6k2ptpss",
+      "id": "proto_84fd25a1242fee41",
+      "name": "Watch finance.yahoo.com",
+      "status": "probation",
+      "cadence_hours": 12,
+      "allowed_domains": [
+        "finance.yahoo.com"
+      ],
+      "budgets": {
+        "max_items": 10,
+        "max_seconds": 20,
+        "max_bytes": 524288,
+        "max_requests": 2
+      },
+      "parser_type": "stock_market",
+      "topics": [
+        "finance",
+        "market",
+        "index"
+      ],
+      "directive_ref": "T1_generational_wealth_v1",
+      "last_run": null,
+      "last_success": null,
+      "error_rate": 0,
+      "score_ema": 50,
+      "notes": "Auto-sprout candidate: domain seen 20 times across 1 eyes",
+      "created_ts": "2026-02-23T10:02:11.070Z",
+      "updated_ts": "2026-02-23T10:02:11.311Z",
+      "strategy_id": "default_general",
+      "campaign_ids": [
+        "objective_flow"
+      ]
     }
   ],
   "self_healing": {

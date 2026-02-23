@@ -7,7 +7,8 @@
     "loop_stall",
     "drift",
     "budget_pressure",
-    "dream_degradation"
+    "dream_degradation",
+    "verification_pass_rate"
   ],
   "runbook": {
     "path": "docs/OPERATOR_RUNBOOK.md"
@@ -40,6 +41,11 @@
     },
     "dream_degradation": {
       "section": "Incident 6: Dream Degradation",
+      "severity": "warn"
+    },
+    "verification_pass_rate": {
+      "section": "Incident 8: Verification Pass-Rate Regression",
+      "health_check": "verification_pass_rate",
       "severity": "warn"
     }
   }

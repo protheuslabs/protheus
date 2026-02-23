@@ -77,6 +77,7 @@ const DREAM_BUDGET_EVENTS_PATH = process.env.IDLE_DREAM_BUDGET_EVENTS_PATH
 const DREAM_BUDGET_AUTOPAUSE_PATH = process.env.IDLE_DREAM_BUDGET_AUTOPAUSE_PATH
   ? path.resolve(String(process.env.IDLE_DREAM_BUDGET_AUTOPAUSE_PATH))
   : GLOBAL_BUDGET_AUTOPAUSE_PATH;
+const DREAM_BUDGET_PREVIEW_BYPASS = String(process.env.IDLE_DREAM_BUDGET_PREVIEW_BYPASS || '1').trim() !== '0';
 
 const IDLE_MIN_MINUTES = clampInt(process.env.IDLE_DREAM_MIN_IDLE_MINUTES || 45, 5, 24 * 60);
 const REM_MIN_MINUTES = clampInt(process.env.IDLE_DREAM_REM_MIN_MINUTES || 180, 30, 7 * 24 * 60);
@@ -87,8 +88,8 @@ const FAILURE_SEED_SHARE = clampFloat(process.env.IDLE_DREAM_FAILURE_SEED_SHARE,
 const FAILURE_SEED_MIN = clampInt(process.env.IDLE_DREAM_FAILURE_SEED_MIN || 1, 0, MAX_SEEDS);
 const MAX_IDLE_LINKS = clampInt(process.env.IDLE_DREAM_MAX_LINKS || 6, 1, 20);
 const MAX_REM_LINKS = clampInt(process.env.IDLE_DREAM_REM_MAX_LINKS || 8, 1, 24);
-const LLM_TIMEOUT_MS = clampInt(process.env.IDLE_DREAM_TIMEOUT_MS || 25000, 5000, 10 * 60 * 1000);
-const REM_TIMEOUT_MS = clampInt(process.env.IDLE_DREAM_REM_TIMEOUT_MS || 30000, 5000, 10 * 60 * 1000);
+const LLM_TIMEOUT_MS = clampInt(process.env.IDLE_DREAM_TIMEOUT_MS || 45000, 5000, 10 * 60 * 1000);
+const REM_TIMEOUT_MS = clampInt(process.env.IDLE_DREAM_REM_TIMEOUT_MS || 45000, 5000, 10 * 60 * 1000);
 const IDLE_PASS_MAX_MS = clampInt(process.env.IDLE_DREAM_IDLE_PASS_MAX_MS || 120000, 10000, 15 * 60 * 1000);
 const REM_PASS_MAX_MS = clampInt(process.env.IDLE_DREAM_REM_PASS_MAX_MS || 150000, 10000, 15 * 60 * 1000);
 const MAX_ROUTING_ROWS = clampInt(process.env.IDLE_DREAM_MAX_ROUTING_ROWS || 5000, 100, 50000);
@@ -115,7 +116,7 @@ const MODEL_RETRY_TIMEOUT_PCT = clampInt(process.env.IDLE_DREAM_MODEL_RETRY_TIME
 const CLOUD_MODEL_TIMEOUT_PCT = clampInt(process.env.IDLE_DREAM_CLOUD_TIMEOUT_PCT || 170, 100, 600);
 const MODEL_ATTEMPT_TIMEOUT_MAX_MS = clampInt(process.env.IDLE_DREAM_MODEL_ATTEMPT_MAX_MS || 90000, 5000, 10 * 60 * 1000);
 const MODEL_PREFLIGHT_ENABLED = String(process.env.IDLE_DREAM_MODEL_PREFLIGHT_ENABLED || '1').trim() !== '0';
-const MODEL_PREFLIGHT_TIMEOUT_MS = clampInt(process.env.IDLE_DREAM_MODEL_PREFLIGHT_TIMEOUT_MS || 6000, 1000, 60000);
+const MODEL_PREFLIGHT_TIMEOUT_MS = clampInt(process.env.IDLE_DREAM_MODEL_PREFLIGHT_TIMEOUT_MS || 12000, 1000, 60000);
 const MODEL_PREFLIGHT_CACHE_TTL_MS = clampInt(process.env.IDLE_DREAM_MODEL_PREFLIGHT_CACHE_TTL_MS || 15 * 60 * 1000, 60 * 1000, 6 * 60 * 60 * 1000);
 const MODEL_PREFLIGHT_PROMPT = 'Return exactly: OK';
 const MODEL_PROBATION_ENABLED = String(process.env.IDLE_DREAM_MODEL_PROBATION_ENABLED || '1').trim() !== '0';
@@ -124,7 +125,7 @@ const MODEL_PROBATION_TTL_MS = clampInt(process.env.IDLE_DREAM_MODEL_PROBATION_T
 
 const IDLE_MODEL_ORDER = parseCsvOrder(
   process.env.IDLE_DREAM_MODEL_ORDER
-  || 'smallthinker,qwen3:1.7b,qwen3:4b,gemma3:4b'
+  || 'qwen3:4b,gemma3:4b,qwen3:1.7b,smallthinker'
 );
 const REM_MODEL_ORDER = parseCsvOrder(
   process.env.IDLE_DREAM_REM_MODEL_ORDER
@@ -952,11 +953,25 @@ function requestSpawnLease(phase, requestTokensEst) {
     };
   }
   const moduleName = spawnModuleName(phase);
+  const autonomyEnabled = String(process.env.AUTONOMY_ENABLED || '').trim() === '1';
+  if (DREAM_BUDGET_PREVIEW_BYPASS && autonomyEnabled !== true) {
+    return {
+      ok: true,
+      skipped: true,
+      module: null,
+      granted_cells: 1,
+      reason: 'spawn_budget_preview_bypass'
+    };
+  }
+  const previewTokenBypass = DREAM_BUDGET_PREVIEW_BYPASS && autonomyEnabled !== true;
+  const requestedTokens = previewTokenBypass
+    ? 0
+    : Math.max(0, Math.round(Number(requestTokensEst || 0)));
   const req = spawnBrokerCall([
     'request',
     `--module=${moduleName}`,
     '--requested_cells=1',
-    `--request_tokens_est=${Math.max(0, Math.round(Number(requestTokensEst || 0)))}`,
+    `--request_tokens_est=${requestedTokens}`,
     `--reason=idle_dream_${normalizeToken(phase) || 'phase'}`,
     `--lease_sec=${SPAWN_LEASE_SEC}`,
     '--apply=1'
@@ -1009,10 +1024,18 @@ function releaseSpawnLease(lease, phase) {
 function assessDreamBudget(dateStr, phase, requestedTokens) {
   const capability = `dream_${normalizeToken(phase || 'idle') || 'idle'}`;
   const requestTokens = Math.max(0, Math.round(Number(requestedTokens || 0)));
+  const autonomyEnabled = String(process.env.AUTONOMY_ENABLED || '').trim() === '1';
   const autopause = loadSystemBudgetAutopauseState({
     autopause_path: DREAM_BUDGET_AUTOPAUSE_PATH
   });
-  if (autopause.active === true) {
+  const autopauseReason = String(autopause.reason || '').trim().toLowerCase();
+  const previewAutopauseBypass = (
+    DREAM_BUDGET_PREVIEW_BYPASS
+    && autonomyEnabled !== true
+    && autopause.active === true
+    && autopauseReason === 'burn_rate_exceeded'
+  );
+  if (autopause.active === true && !previewAutopauseBypass) {
     writeSystemBudgetDecision({
       date: dateStr,
       module: DREAM_BUDGET_MODULE,
@@ -1036,6 +1059,34 @@ function assessDreamBudget(dateStr, phase, requestedTokens) {
       }
     };
   }
+  if (previewAutopauseBypass) {
+    writeSystemBudgetDecision({
+      date: dateStr,
+      module: DREAM_BUDGET_MODULE,
+      capability,
+      request_tokens_est: requestTokens,
+      decision: 'defer',
+      reason: 'preview_bypass_burn_rate_autopause'
+    }, {
+      state_dir: DREAM_BUDGET_STATE_DIR,
+      events_path: DREAM_BUDGET_EVENTS_PATH
+    });
+    return {
+      allow: true,
+      reason: 'preview_bypass_burn_rate_autopause',
+      guard: {
+        hard_stop: false,
+        hard_stop_reasons: [],
+        preview_bypass: true
+      },
+      autopause: {
+        active: false,
+        source: autopause.source || null,
+        reason: autopause.reason || null,
+        until: autopause.until || null
+      }
+    };
+  }
   const guard = evaluateSystemBudgetGuard({
     date: dateStr,
     request_tokens_est: requestTokens
@@ -1044,8 +1095,41 @@ function assessDreamBudget(dateStr, phase, requestedTokens) {
     events_path: DREAM_BUDGET_EVENTS_PATH,
     autopause_path: DREAM_BUDGET_AUTOPAUSE_PATH
   });
+  const hardReason = String((guard.hard_stop_reasons && guard.hard_stop_reasons[0]) || 'budget_guard_hard_stop');
+  const previewBypass = (
+    DREAM_BUDGET_PREVIEW_BYPASS
+    && autonomyEnabled !== true
+    && guard.hard_stop === true
+    && hardReason === 'burn_rate_exceeded'
+  );
+  if (previewBypass) {
+    writeSystemBudgetDecision({
+      date: dateStr,
+      module: DREAM_BUDGET_MODULE,
+      capability,
+      request_tokens_est: requestTokens,
+      decision: 'defer',
+      reason: 'preview_bypass_burn_rate'
+    }, {
+      state_dir: DREAM_BUDGET_STATE_DIR,
+      events_path: DREAM_BUDGET_EVENTS_PATH
+    });
+    return {
+      allow: true,
+      reason: 'preview_bypass_burn_rate',
+      guard: {
+        ...guard,
+        preview_bypass: true
+      },
+      autopause: {
+        active: false,
+        source: autopause.source || null,
+        reason: autopause.reason || null,
+        until: autopause.until || null
+      }
+    };
+  }
   if (guard.hard_stop === true) {
-    const hardReason = String((guard.hard_stop_reasons && guard.hard_stop_reasons[0]) || 'budget_guard_hard_stop');
     writeSystemBudgetDecision({
       date: dateStr,
       module: DREAM_BUDGET_MODULE,
@@ -2007,9 +2091,14 @@ function runCycle(dateStr, opts: AnyObj = {}) {
     idle_ok: !!(idleResult && idleResult.ok),
     idle_skipped: !!(idleResult && idleResult.skipped),
     idle_reason: idleResult ? idleResult.reason || null : null,
+    idle_fallback_reason: idleResult ? idleResult.fallback_reason || null : null,
+    idle_provider_gate_reason: idleResult && idleResult.provider_gate
+      ? String(idleResult.provider_gate.reason || '')
+      : null,
     rem_ok: !!(remResult && remResult.ok),
     rem_skipped: !!(remResult && remResult.skipped),
     rem_reason: remResult ? remResult.reason || null : null,
+    rem_fallback_reason: remResult ? remResult.fallback_reason || null : null,
     idle_runs_before: Number(before.idle_runs || 0),
     idle_runs_after: Number(state.idle_runs || 0),
     rem_runs_before: Number(before.rem_runs || 0),

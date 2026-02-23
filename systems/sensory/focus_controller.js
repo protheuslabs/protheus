@@ -65,6 +65,7 @@ const FOCUS_BUDGET_EVENTS_PATH = process.env.FOCUS_BUDGET_EVENTS_PATH
 const FOCUS_BUDGET_AUTOPAUSE_PATH = process.env.FOCUS_BUDGET_AUTOPAUSE_PATH
   ? path.resolve(process.env.FOCUS_BUDGET_AUTOPAUSE_PATH)
   : GLOBAL_BUDGET_AUTOPAUSE_PATH;
+const FOCUS_BUDGET_PREVIEW_BYPASS_AUTOPAUSE = String(process.env.FOCUS_BUDGET_PREVIEW_BYPASS_AUTOPAUSE || '1') !== '0';
 
 const TOKEN_STOPWORDS = new Set([
   'the', 'and', 'for', 'with', 'from', 'into', 'through', 'that', 'this', 'those', 'these', 'your', 'you',
@@ -1097,6 +1098,7 @@ async function fetchFocusDetails(item, policy) {
 }
 
 function evaluateFocusBudget(dateStr, selectedCount) {
+  const autonomyEnabled = String(process.env.AUTONOMY_ENABLED || '0') === '1';
   const requestedCount = Math.max(0, Math.round(Number(selectedCount || 0)));
   const tokensPerFetch = Math.max(1, Math.round(Number(FOCUS_BUDGET_TOKENS_PER_FETCH || 35)));
   if (!FOCUS_BUDGET_ENABLED || requestedCount <= 0) {
@@ -1116,7 +1118,43 @@ function evaluateFocusBudget(dateStr, selectedCount) {
   const budgetAutopause = loadSystemBudgetAutopauseState({
     autopause_path: FOCUS_BUDGET_AUTOPAUSE_PATH
   });
+  const autopauseReason = String(budgetAutopause.reason || '').trim();
+  const previewBypassAutopause = !autonomyEnabled
+    && FOCUS_BUDGET_PREVIEW_BYPASS_AUTOPAUSE
+    && autopauseReason === 'burn_rate_exceeded';
   if (budgetAutopause.active === true) {
+    if (previewBypassAutopause) {
+      writeSystemBudgetDecision({
+        date: dateStr,
+        module: FOCUS_BUDGET_MODULE,
+        capability: 'focus_fetch',
+        request_tokens_est: requestTokens,
+        decision: 'allow',
+        reason: 'preview_bypass_burn_rate_autopause'
+      }, {
+        state_dir: FOCUS_BUDGET_STATE_DIR,
+        events_path: FOCUS_BUDGET_EVENTS_PATH,
+        soft_ratio: 0.75,
+        hard_ratio: 0.92
+      });
+      return {
+        enabled: true,
+        decision: 'allow',
+        reason: 'preview_bypass_burn_rate_autopause',
+        requested_count: requestedCount,
+        allowed_count: requestedCount,
+        request_tokens_est: requestTokens,
+        tokens_per_fetch: tokensPerFetch,
+        projection: null,
+        budget_autopause: {
+          active: true,
+          source: budgetAutopause.source || null,
+          reason: budgetAutopause.reason || null,
+          until: budgetAutopause.until || null
+        },
+        budget_guard: null
+      };
+    }
     writeSystemBudgetDecision({
       date: dateStr,
       module: FOCUS_BUDGET_MODULE,
@@ -1159,6 +1197,41 @@ function evaluateFocusBudget(dateStr, selectedCount) {
   });
   if (budgetGuard.hard_stop === true) {
     const hardReason = String((budgetGuard.hard_stop_reasons && budgetGuard.hard_stop_reasons[0]) || 'budget_guard_hard_stop');
+    const previewBypassHardStop = !autonomyEnabled
+      && FOCUS_BUDGET_PREVIEW_BYPASS_AUTOPAUSE
+      && hardReason === 'burn_rate_exceeded';
+    if (previewBypassHardStop) {
+      writeSystemBudgetDecision({
+        date: dateStr,
+        module: FOCUS_BUDGET_MODULE,
+        capability: 'focus_fetch',
+        request_tokens_est: requestTokens,
+        decision: 'allow',
+        reason: 'preview_bypass_burn_rate_hard_stop'
+      }, {
+        state_dir: FOCUS_BUDGET_STATE_DIR,
+        events_path: FOCUS_BUDGET_EVENTS_PATH,
+        soft_ratio: 0.75,
+        hard_ratio: 0.92
+      });
+      return {
+        enabled: true,
+        decision: 'allow',
+        reason: 'preview_bypass_burn_rate_hard_stop',
+        requested_count: requestedCount,
+        allowed_count: requestedCount,
+        request_tokens_est: requestTokens,
+        tokens_per_fetch: tokensPerFetch,
+        projection: null,
+        budget_autopause: {
+          active: false,
+          source: budgetAutopause.source || null,
+          reason: budgetAutopause.reason || null,
+          until: budgetAutopause.until || null
+        },
+        budget_guard: budgetGuard
+      };
+    }
     writeSystemBudgetDecision({
       date: dateStr,
       module: FOCUS_BUDGET_MODULE,

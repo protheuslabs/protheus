@@ -31,7 +31,9 @@
     "systems/adaptive/sensory/eyes/catalog_store.js": "c731fb9a0e3f1d8ef8813ad557b8fbb494724ada9f0bbca5785d74a57d8e97c0",
     "systems/security/architecture_guard.js": "5bf2d44483d7c84afa3cdff927fb2332961185e6fd78b2caddc1cc8322dc3d66",
     "systems/security/capability_lease.js": "5d2c441b9cf1a38a11947e5dde180966194fa4a3282839db5fc5c53fdaf3153e",
+    "systems/security/directive_compiler.js": "ce32cbdde5799654ea81cd83494904769f12c09b721914941b8366b5cd7a4da1",
     "systems/security/directive_gate.js": "c4b76b960a7bc68c568d1f7d0e953224666aa7311b81c814a89a1395aaa5ca1c",
+    "systems/security/directive_hierarchy_controller.js": "2296dfe991c651abab3d9847a76d28e89dc4ba3dd1a8037fef0900d29950cea5",
     "systems/security/directive_intake.js": "6f8169c477e99d8755b1c2f0de447a45af4c336497eb183196f7c77a5acf9ab6",
     "systems/security/egress_gateway.js": "138dcef50f0b2a57fddcee0000fb468044f1cfddf3552bc85b1e1d6e67273a82",
     "systems/security/emergency_stop.js": "1fac350b1bd90017cf6a5db2eb25522a4ff4bbca39114772852a404be242bf13",
@@ -52,7 +54,7 @@
     "systems/security/workspace_dump_guard.js": "fa94a0e44f65203cae3fc1c6dc8c20ce0199710d3be6867e1b7821eb825859c3",
     "systems/sensory/adaptive_layer_guard.js": "5443d35d5a28c918ec374f1d01b88edac9546233276bdc86e2a677543f52461a"
   },
-  "sealed_at": "2026-02-23T05:25:20.919Z",
+  "sealed_at": "2026-02-23T09:44:06.391Z",
   "sealed_by": "jay",
-  "last_approval_note": "apply v1 security hardening updates"
+  "last_approval_note": "seal new security files for autonomy readiness"
 }

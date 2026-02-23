@@ -243,6 +243,36 @@ Verification:
 2. New budget decisions are predominantly `allow`.
 3. Autopause no longer active.
 
+## Incident 8: Verification Pass-Rate Regression
+
+Symptoms:
+
+- `health_status` reports `verification_pass_rate` warn/critical
+- `receipt_summary` shows falling `receipts.combined.verified_rate`
+- repeated failure reasons in autonomy/actuation receipts (timeouts, rate limits, rollback-triggered failures)
+
+Diagnose:
+
+1. `node systems/autonomy/health_status.js [YYYY-MM-DD]`
+2. `node systems/autonomy/receipt_summary.js run [YYYY-MM-DD] --days=7`
+3. `node systems/autonomy/slo_runbook_check.js run [YYYY-MM-DD]`
+4. Inspect top reasons:
+`jq '.receipts.combined.top_failure_reasons' state/autonomy/health_reports/[YYYY-MM-DD].daily.json`
+
+Containment / Recovery:
+
+1. Keep execution bounded while quality recovers:
+`node systems/autonomy/strategy_mode.js set --mode=score_only --approval-note="verification pass-rate containment"`
+2. Prioritize failure-class remediation from top failure reasons (timeout/rate-limit/rollback).
+3. Re-run targeted integration tests for failing lane:
+`node memory/tools/tests/pipeline_handoffs.integration.test.js`
+
+Verification:
+
+1. `verification_pass_rate` check returns pass in `health_status`.
+2. `receipt_summary` verified-rate trend is stable or improving.
+3. Top failure-reason concentration drops over the last 7-day window.
+
 ## Rollback Drill (Weekly)
 
 Goal: verify rollback muscle memory and logging path.

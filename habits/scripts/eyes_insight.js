@@ -799,7 +799,7 @@ function buildValidationPlan(item, analysis) {
   }
   return [
     'Build one concrete change task tied to source signal',
-    'Define measurable success metric (artifact/log/test) before execution',
+    'Define measurable target count/rate and postcondition checks before execution',
     'Route dry-run execution plan and verify gate outcome'
   ];
 }
@@ -828,14 +828,19 @@ function buildSuccessCriteria(item, analysis) {
   if (shape.isInternalSignal) {
     return [
       {
-        metric: 'collector_success_runs',
-        target: '>=1 eye_run_ok with items_collected>0 within next 2 runs',
-        horizon: '2 runs'
+        metric: 'execution_success',
+        target: 'execution success',
+        horizon: 'next run'
       },
       {
-        metric: 'collector_failure_streak',
-        target: 'consecutive_failures resets to 0',
-        horizon: '24h'
+        metric: 'postconditions_ok',
+        target: 'postconditions pass',
+        horizon: 'next run'
+      },
+      {
+        metric: 'queue_outcome_logged',
+        target: 'outcome receipt logged',
+        horizon: 'next run'
       }
     ];
   }
@@ -855,14 +860,19 @@ function buildSuccessCriteria(item, analysis) {
   }
   return [
     {
-      metric: 'experiment_artifact',
-      target: '1 executable change/plan artifact produced',
-      horizon: '24h'
+      metric: 'execution_success',
+      target: 'execution success',
+      horizon: 'next run'
     },
     {
-      metric: 'verification_checks_passed',
-      target: 'all verification checks pass with receipt evidence',
-      horizon: '48h'
+      metric: 'postconditions_ok',
+      target: 'postconditions pass',
+      horizon: 'next run'
+    },
+    {
+      metric: 'queue_outcome_logged',
+      target: 'outcome receipt logged',
+      horizon: 'next run'
     }
   ];
 }
@@ -956,6 +966,8 @@ function buildProposalFromItem(item, analysis, actionability, objectiveBinding) 
     id,
     type: 'external_intel',
     title: title.slice(0, 120),
+    objective_id: objectiveId || null,
+    directive_objective_id: objectiveId || null,
     evidence: [
       {
         source: 'eyes_raw',
@@ -1011,6 +1023,7 @@ function buildProposalFromItem(item, analysis, actionability, objectiveBinding) 
         : [],
       action_spec_version: Number(actionSpec.version || 1),
       action_spec_target: normalizeText(actionSpec.target),
+      signal_theme: hasOpportunity ? 'opportunity' : 'general',
       preview: preview.slice(0, 200),
       ...(hasOpportunity ? { expected_value_score: 58, time_to_cash_hours: 48 } : {})
     }
@@ -1131,18 +1144,18 @@ function buildCrossSignalProposal(hypothesis, dateStr, directiveFit, actionabili
     compileSuccessCriteriaRows(
       [
         {
-          metric: 'artifact_count',
-          target: '>=1 artifact generated from hypothesis experiment',
-          horizon: '24h'
-        },
-        {
           metric: 'execution_success',
           target: 'execution success',
           horizon: 'next run'
         },
         {
+          metric: 'postconditions_ok',
+          target: 'postconditions pass',
+          horizon: 'next run'
+        },
+        {
           metric: 'queue_outcome_logged',
-          target: 'queue outcome logged',
+          target: 'outcome receipt logged',
           horizon: 'next run'
         }
       ],
@@ -1155,9 +1168,9 @@ function buildCrossSignalProposal(hypothesis, dateStr, directiveFit, actionabili
     target: `cross_signal:${type}:${normalizeText(topic).toLowerCase() || 'unknown'}`,
     next_command: suggestedNextCommand,
     verify: [
-      'Generate one concrete experiment tied to hypothesis evidence',
-      'Define measurable success metric and time-bound target',
-      'Route dry-run execution plan and verify gate output'
+      'Execute one scoped hypothesis validation step',
+      'Verify postconditions pass with a measurable target rate',
+      'Record queue outcome count for the hypothesis lane'
     ],
     success_criteria: compiledCriteria,
     rollback: 'Cancel hypothesis execution plan and preserve prior strategy baseline'
@@ -1168,6 +1181,8 @@ function buildCrossSignalProposal(hypothesis, dateStr, directiveFit, actionabili
     id,
     type: 'cross_signal_opportunity',
     title: `[Cross-Signal] ${summary}`.slice(0, 120),
+    objective_id: objectiveId || null,
+    directive_objective_id: objectiveId || null,
     evidence: [
       {
         source: 'cross_signal',

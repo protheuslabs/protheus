@@ -51,7 +51,8 @@ function runTest() {
     '## Incident 4: Autonomy Stall',
     '## Incident 5: Queue Backlog / Churn',
     '## Incident 6: Dream Degradation',
-    '## Incident 7: Budget Pressure / Autopause'
+    '## Incident 7: Budget Pressure / Autopause',
+    '## Incident 8: Verification Pass-Rate Regression'
   ].join('\n'));
 
   writeText(healthStub, `#!/usr/bin/env node
@@ -65,7 +66,8 @@ process.stdout.write(JSON.stringify({
       loop_stall: { status: 'ok' },
       drift: { status: 'ok' },
       budget_guard: { status: 'ok' },
-      dream_degradation: { status: 'ok' }
+      dream_degradation: { status: 'ok' },
+      verification_pass_rate: { status: 'ok' }
     }
   }
 }) + '\\n');
@@ -80,7 +82,8 @@ process.stdout.write(JSON.stringify({
       'loop_stall',
       'drift',
       'budget_pressure',
-      'dream_degradation'
+      'dream_degradation',
+      'verification_pass_rate'
     ],
     runbook: {
       path: path.relative(ROOT, runbookPath)
@@ -92,7 +95,8 @@ process.stdout.write(JSON.stringify({
       loop_stall: { section: 'Incident 4: Autonomy Stall' },
       drift: { section: 'Incident 4: Autonomy Stall' },
       budget_pressure: { section: 'Incident 7: Budget Pressure / Autopause', health_check: 'budget_guard' },
-      dream_degradation: { section: 'Incident 6: Dream Degradation' }
+      dream_degradation: { section: 'Incident 6: Dream Degradation' },
+      verification_pass_rate: { section: 'Incident 8: Verification Pass-Rate Regression' }
     }
   }, null, 2));
 

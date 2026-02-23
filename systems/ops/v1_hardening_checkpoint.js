@@ -15,6 +15,9 @@ const STATE_PATH = process.env.V1_HARDENING_CHECKPOINT_STATE_PATH
 const RUNS_DIR = path.join(REPO_ROOT, 'state', 'autonomy', 'runs');
 const HEALTH_REPORTS_DIR = path.join(REPO_ROOT, 'state', 'autonomy', 'health_reports');
 const QUEUE_HYGIENE_STATE_PATH = path.join(REPO_ROOT, 'state', 'ops', 'queue_hygiene_state.json');
+const SLO_RUNBOOK_CHECK_SCRIPT = process.env.V1_HARDENING_SLO_RUNBOOK_CHECK_SCRIPT
+  ? path.resolve(process.env.V1_HARDENING_SLO_RUNBOOK_CHECK_SCRIPT)
+  : path.join(REPO_ROOT, 'systems', 'autonomy', 'slo_runbook_check.js');
 
 function nowIso() {
   return new Date().toISOString();
@@ -121,6 +124,34 @@ function loadQueueHygieneSummary() {
   return readJson(outputFile, null);
 }
 
+function runSloRunbookCheck(dateStr) {
+  const cmd = spawnSync('node', [SLO_RUNBOOK_CHECK_SCRIPT, 'run', dateStr], {
+    cwd: REPO_ROOT,
+    encoding: 'utf8'
+  });
+  let payload = null;
+  const stdout = String(cmd.stdout || '').trim();
+  if (stdout) {
+    try {
+      payload = JSON.parse(stdout);
+    } catch {
+      const lines = stdout.split('\n').map((x) => x.trim()).filter(Boolean);
+      for (let i = lines.length - 1; i >= 0; i -= 1) {
+        try {
+          payload = JSON.parse(lines[i]);
+          break;
+        } catch {}
+      }
+    }
+  }
+  return {
+    ok: cmd.status === 0 && !!payload && payload.ok === true,
+    code: Number(cmd.status == null ? 1 : cmd.status),
+    payload,
+    stderr: String(cmd.stderr || '').trim()
+  };
+}
+
 function computeOutcomeWindow(dateStr, windowDays) {
   const dates = daysBack(dateStr, windowDays);
   let attempted = 0;
@@ -159,7 +190,7 @@ function bool(v) {
   return v === true;
 }
 
-function buildCriteria(health, queueHygiene, outcomes) {
+function buildCriteria(health, queueHygiene, outcomes, sloRunbookCheck) {
   const checks = health && health.slo && health.slo.checks && typeof health.slo.checks === 'object'
     ? health.slo.checks
     : {};
@@ -176,6 +207,17 @@ function buildCriteria(health, queueHygiene, outcomes) {
   const starvationReason = String(starvationCheck && starvationCheck.reason || '').trim().toLowerCase();
   const starvationPreviewOnly = starvationReason === 'autonomy_disabled_starvation_preview';
   const starvationPass = bool(starvationCheck && starvationCheck.ok) || starvationPreviewOnly;
+  const verificationPassRate = checks.verification_pass_rate && typeof checks.verification_pass_rate === 'object'
+    ? checks.verification_pass_rate
+    : null;
+  const verificationPassRateOk = bool(verificationPassRate && verificationPassRate.ok);
+  const verificationPassRateDetail = verificationPassRate
+    ? String(verificationPassRate.reason || '')
+    : 'missing';
+  const sloRunbookOk = !!(sloRunbookCheck && sloRunbookCheck.ok === true);
+  const sloRunbookDetail = sloRunbookCheck && sloRunbookCheck.payload
+    ? `missing_checks=${Number((sloRunbookCheck.payload.missing_checks || []).length)} missing_sections=${Number((sloRunbookCheck.payload.missing_runbook_sections || []).length)}`
+    : (sloRunbookCheck && sloRunbookCheck.stderr ? String(sloRunbookCheck.stderr).slice(0, 120) : 'missing');
 
   const criteria = [
     {
@@ -212,6 +254,18 @@ function buildCriteria(health, queueHygiene, outcomes) {
       weight: 2,
       pass: bool(checks.drift && checks.drift.ok),
       detail: checks.drift ? String(checks.drift.reason || '') : 'missing'
+    },
+    {
+      id: 'verification_pass_rate',
+      weight: 2,
+      pass: verificationPassRateOk,
+      detail: verificationPassRateDetail
+    },
+    {
+      id: 'slo_runbook_coverage',
+      weight: 2,
+      pass: sloRunbookOk,
+      detail: sloRunbookDetail
     },
     {
       id: 'budget_governor',
@@ -281,6 +335,12 @@ function recommendActions(criteria, health, outcomes) {
   }
   if (failed.has('drift_control')) {
     actions.push('Review drift report and lock unstable rules before next autonomous cycle.');
+  }
+  if (failed.has('verification_pass_rate')) {
+    actions.push('Investigate receipt failure reasons and recover verification pass-rate before re-enabling execute lane.');
+  }
+  if (failed.has('slo_runbook_coverage')) {
+    actions.push('Repair SLO/runbook mappings and ensure each required health check has an incident procedure.');
   }
   if (failed.has('execute_readiness')) {
     actions.push('Resolve readiness blockers and keep strategy mode in score_only until checks pass.');
@@ -383,8 +443,9 @@ function cmdRun(args) {
     return { ok: false, error: 'health_report_unavailable', date };
   }
   const queueHygiene = loadQueueHygieneSummary();
+  const sloRunbookCheck = runSloRunbookCheck(date);
   const outcomes = computeOutcomeWindow(date, windowDays);
-  const criteria = buildCriteria(health, queueHygiene, outcomes);
+  const criteria = buildCriteria(health, queueHygiene, outcomes, sloRunbookCheck);
   const score = scoreCriteria(criteria);
   const nextSteps = recommendActions(criteria, health, outcomes);
   const checkpoint = {
@@ -396,6 +457,10 @@ function cmdRun(args) {
     score,
     next_steps: nextSteps,
     health_report_ts: health.ts || null,
+    slo_runbook_check: sloRunbookCheck.payload || {
+      ok: false,
+      error: sloRunbookCheck.stderr || `slo_runbook_check_exit_${sloRunbookCheck.code}`
+    },
     queue_hygiene_summary_ts: queueHygiene && queueHygiene.ts ? String(queueHygiene.ts) : null
   };
 

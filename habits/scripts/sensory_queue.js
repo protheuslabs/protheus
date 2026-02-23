@@ -19,6 +19,12 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const {
+  compileDirectiveLineage,
+  evaluateDirectiveLineageCandidate,
+  extractObjectiveIdFromProposal,
+  normalizeDirectiveId
+} = require('../../systems/security/directive_compiler.js');
 
 const SENSORY_QUEUE_MIN_SIGNAL_SCORE = Number(process.env.SENSORY_QUEUE_MIN_SIGNAL_SCORE || 40);
 const SENSORY_QUEUE_MIN_RELEVANCE_SCORE = Number(process.env.SENSORY_QUEUE_MIN_RELEVANCE_SCORE || 42);
@@ -30,6 +36,14 @@ const SENSORY_QUEUE_DISALLOW_STUB_TITLE = String(process.env.SENSORY_QUEUE_DISAL
 const SENSORY_QUEUE_DISALLOW_UNKNOWN_EYE = String(process.env.SENSORY_QUEUE_DISALLOW_UNKNOWN_EYE || '1') !== '0';
 const SENSORY_QUEUE_ALLOW_TERMINAL_REOPEN = String(process.env.SENSORY_QUEUE_ALLOW_TERMINAL_REOPEN || '0') === '1';
 const SENSORY_QUEUE_STALE_OPEN_HOURS = Math.max(1, Number(process.env.SENSORY_QUEUE_STALE_OPEN_HOURS || 96));
+const SENSORY_QUEUE_LINEAGE_REQUIRED = String(process.env.SENSORY_QUEUE_LINEAGE_REQUIRED || '1') !== '0';
+const SENSORY_QUEUE_LINEAGE_REQUIRE_T1_ROOT = String(process.env.SENSORY_QUEUE_LINEAGE_REQUIRE_T1_ROOT || '1') !== '0';
+const SENSORY_QUEUE_LINEAGE_BLOCK_MISSING_OBJECTIVE = String(process.env.SENSORY_QUEUE_LINEAGE_BLOCK_MISSING_OBJECTIVE || '1') !== '0';
+const SENSORY_QUEUE_OBJECTIVE_AUTOFILL = String(process.env.SENSORY_QUEUE_OBJECTIVE_AUTOFILL || '1') !== '0';
+const SENSORY_QUEUE_DIRECTIVE_COMPILER_CACHE_TTL_MS = Math.max(
+  1000,
+  Number(process.env.SENSORY_QUEUE_DIRECTIVE_COMPILER_CACHE_TTL_MS || 30000)
+);
 const EXECUTION_ACTION_RE = /\b(fix|stabilize|reduce|increase|ship|deliver|implement|optimi[sz]e|triage|repair|harden|verify|measure|enforce|prevent)\b/i;
 const EXECUTION_METRIC_RE = /(\d+(\.\d+)?\s*(%|ms|s|sec|seconds|min|minutes|h|hr|hours|day|days|week|weeks|tokens?))|([<>]=?)|\b(pass|fail|rate|latency|error|count|budget|receipt|verified?)\b/i;
 const EXECUTION_COMMAND_RE = /^(node|npm|npx|pnpm|yarn|python|python3|bash|sh|curl|git|make|uv)\b/i;
@@ -41,6 +55,8 @@ const ROLLBACK_SCOPE_RE = /\b(file|config|state|policy|baseline|commit|snapshot|
 let SENSORY_DIR = path.join(__dirname, '..', '..', 'state', 'sensory');
 let PROPOSALS_DIR = path.join(SENSORY_DIR, 'proposals');
 let QUEUE_LOG = path.join(SENSORY_DIR, 'queue_log.jsonl');
+let directiveCompilerCache = null;
+let directiveCompilerCacheTs = 0;
 
 // Allow test override via env
 if (process.env.SENSORY_QUEUE_TEST_DIR) {
@@ -135,6 +151,182 @@ function getLatestProposalHashById(types = []) {
 function normalizeProposalId(proposal) {
   const raw = String(proposal && proposal.id || '').trim();
   return raw || null;
+}
+
+function normalizeText(v) {
+  return String(v == null ? '' : v).trim();
+}
+
+function parseObjectiveIdFromCommand(cmd) {
+  const text = normalizeText(cmd);
+  if (!text) return '';
+  const m = text.match(/(?:^|\s)--id=(?:"([^"]+)"|'([^']+)'|([^\s]+))/);
+  const raw = normalizeText(m && (m[1] || m[2] || m[3]));
+  return normalizeDirectiveId(raw) || '';
+}
+
+function parseObjectiveIdFromEvidence(proposal) {
+  const evidence = Array.isArray(proposal && proposal.evidence) ? proposal.evidence : [];
+  for (const row of evidence) {
+    const ref = normalizeText(row && row.evidence_ref);
+    if (!ref) continue;
+    const m = ref.match(/\b(T[0-9]_[A-Za-z0-9_]+)\b/);
+    const id = normalizeDirectiveId(m && m[1]);
+    if (id) return id;
+  }
+  return '';
+}
+
+function loadDirectiveCompilerCached() {
+  const now = Date.now();
+  if (directiveCompilerCache && (now - directiveCompilerCacheTs) <= SENSORY_QUEUE_DIRECTIVE_COMPILER_CACHE_TTL_MS) {
+    return directiveCompilerCache;
+  }
+  try {
+    directiveCompilerCache = compileDirectiveLineage();
+    directiveCompilerCacheTs = now;
+    return directiveCompilerCache;
+  } catch {
+    directiveCompilerCache = null;
+    directiveCompilerCacheTs = now;
+    return null;
+  }
+}
+
+function defaultObjectiveIdFromCompiler(compiler) {
+  const entries = Array.isArray(compiler && compiler.entries) ? compiler.entries : [];
+  if (!entries.length) return '';
+  const sorted = entries
+    .map((row) => ({
+      id: normalizeDirectiveId(row && row.id),
+      tier: Number(row && row.tier)
+    }))
+    .filter((row) => !!row.id)
+    .sort((a, b) => {
+      const at = Number.isFinite(a.tier) ? a.tier : 99;
+      const bt = Number.isFinite(b.tier) ? b.tier : 99;
+      if (at !== bt) return at - bt;
+      return String(a.id || '').localeCompare(String(b.id || ''));
+    });
+  for (const row of sorted) {
+    const lineage = evaluateDirectiveLineageCandidate(
+      { objective_id: row.id },
+      {
+        compiler,
+        require_t1_root: SENSORY_QUEUE_LINEAGE_REQUIRE_T1_ROOT,
+        block_missing_objective: true,
+        max_depth: 8
+      }
+    );
+    if (lineage && lineage.pass === true) return String(row.id || '');
+  }
+  return sorted.length ? String(sorted[0].id || '') : '';
+}
+
+function autofillProposalObjectiveContext(proposal, compiler) {
+  const p = proposal && typeof proposal === 'object' ? proposal : {};
+  const existing = extractObjectiveIdFromProposal(p);
+  if (existing) {
+    return {
+      proposal: p,
+      objective_id: existing,
+      changed: false,
+      source: 'existing'
+    };
+  }
+  if (!SENSORY_QUEUE_OBJECTIVE_AUTOFILL) {
+    return {
+      proposal: p,
+      objective_id: '',
+      changed: false,
+      source: 'disabled'
+    };
+  }
+  const meta = p.meta && typeof p.meta === 'object' ? p.meta : {};
+  const actionSpec = p.action_spec && typeof p.action_spec === 'object' ? p.action_spec : {};
+  const directCandidates = [
+    p.objective_id,
+    p.directive_objective_id,
+    meta.objective_id,
+    meta.directive_objective_id,
+    actionSpec.objective_id
+  ];
+  let candidate = '';
+  let source = '';
+  for (const raw of directCandidates) {
+    const id = normalizeDirectiveId(raw);
+    if (id) {
+      candidate = id;
+      source = 'direct';
+      break;
+    }
+  }
+  if (!candidate) {
+    const cmdId = parseObjectiveIdFromCommand(p.suggested_next_command);
+    if (cmdId) {
+      candidate = cmdId;
+      source = 'suggested_next_command';
+    }
+  }
+  if (!candidate) {
+    const evidenceId = parseObjectiveIdFromEvidence(p);
+    if (evidenceId) {
+      candidate = evidenceId;
+      source = 'evidence_ref';
+    }
+  }
+  if (!candidate) {
+    const fallback = defaultObjectiveIdFromCompiler(compiler);
+    if (fallback) {
+      candidate = fallback;
+      source = 'default_first_active_objective';
+    }
+  }
+  if (!candidate) {
+    return {
+      proposal: p,
+      objective_id: '',
+      changed: false,
+      source: 'unresolved'
+    };
+  }
+
+  const next = { ...p };
+  const nextMeta = meta && typeof meta === 'object' ? { ...meta } : {};
+  const nextActionSpec = actionSpec && typeof actionSpec === 'object' ? { ...actionSpec } : null;
+  let changed = false;
+  if (!normalizeDirectiveId(next.objective_id)) {
+    next.objective_id = candidate;
+    changed = true;
+  }
+  if (!normalizeDirectiveId(next.directive_objective_id)) {
+    next.directive_objective_id = candidate;
+    changed = true;
+  }
+  if (!normalizeDirectiveId(nextMeta.objective_id)) {
+    nextMeta.objective_id = candidate;
+    changed = true;
+  }
+  if (!normalizeDirectiveId(nextMeta.directive_objective_id)) {
+    nextMeta.directive_objective_id = candidate;
+    changed = true;
+  }
+  if (nextActionSpec && !normalizeDirectiveId(nextActionSpec.objective_id)) {
+    nextActionSpec.objective_id = candidate;
+    changed = true;
+  }
+  if (changed) {
+    nextMeta.objective_autofill_source = source;
+    nextMeta.objective_autofill_ts = new Date().toISOString();
+    next.meta = nextMeta;
+    if (nextActionSpec) next.action_spec = nextActionSpec;
+  }
+  return {
+    proposal: next,
+    objective_id: candidate,
+    changed,
+    source
+  };
 }
 
 function extractProposalEyeId(proposal) {
@@ -434,6 +626,61 @@ function evaluateActionSpecGate(proposal) {
   return { allow: true, reason: null, gated: true };
 }
 
+function proposalNeedsObjectiveLineage(proposal) {
+  if (!proposal || typeof proposal !== 'object') return false;
+  if (requiresActionSpecContract(proposal)) return true;
+  const suggested = normalizeText(proposal.suggested_next_command);
+  if (suggested.length >= 8) return true;
+  const actionSpec = extractActionSpec(proposal);
+  return !!(actionSpec && typeof actionSpec === 'object');
+}
+
+function evaluateObjectiveLineageGate(proposal, compiler) {
+  if (!SENSORY_QUEUE_LINEAGE_REQUIRED) {
+    return { allow: true, reason: null, gated: false };
+  }
+  if (!proposalNeedsObjectiveLineage(proposal)) {
+    return { allow: true, reason: null, gated: false };
+  }
+  if (!compiler || typeof compiler.resolveObjective !== 'function') {
+    return { allow: true, reason: null, gated: true };
+  }
+  const objectiveId = extractObjectiveIdFromProposal(proposal);
+  const lineage = evaluateDirectiveLineageCandidate(
+    { objective_id: objectiveId || '' },
+    {
+      compiler,
+      require_t1_root: SENSORY_QUEUE_LINEAGE_REQUIRE_T1_ROOT,
+      block_missing_objective: SENSORY_QUEUE_LINEAGE_BLOCK_MISSING_OBJECTIVE,
+      max_depth: 8
+    }
+  );
+  const compilerMeta = {
+    objective_id: objectiveId || null,
+    root_objective_id: lineage && lineage.root_objective_id ? lineage.root_objective_id : null,
+    lineage_path: Array.isArray(lineage && lineage.lineage_path) ? lineage.lineage_path.slice(0, 12) : [],
+    lineage_valid: !!(lineage && lineage.pass === true),
+    lineage_reason: lineage && lineage.reason ? String(lineage.reason) : null,
+    compiler_hash: normalizeText(compiler && compiler.hash) || null
+  };
+  if (!(lineage && lineage.pass === true)) {
+    const reason = normalizeText(lineage && lineage.reason) || 'objective_lineage_invalid';
+    return {
+      allow: false,
+      reason,
+      gated: true,
+      details: reason ? [reason] : [],
+      directive_compiler: compilerMeta
+    };
+  }
+  return {
+    allow: true,
+    reason: null,
+    gated: true,
+    directive_compiler: compilerMeta
+  };
+}
+
 function normalizeBlockedReason(admissionPreview) {
   const blocked = admissionPreview && Array.isArray(admissionPreview.blocked_by)
     ? admissionPreview.blocked_by
@@ -441,12 +688,15 @@ function normalizeBlockedReason(admissionPreview) {
   return blocked.length ? String(blocked[0] || 'admission_blocked') : 'admission_blocked';
 }
 
-function evaluateQueueQualityGate(proposal) {
+function evaluateQueueQualityGate(proposal, compiler = null) {
   const staticGate = evaluateStaticQueueGate(proposal);
   if (!staticGate.allow) return staticGate;
 
   const actionSpecGate = evaluateActionSpecGate(proposal);
   if (!actionSpecGate.allow) return actionSpecGate;
+
+  const lineageGate = evaluateObjectiveLineageGate(proposal, compiler || loadDirectiveCompilerCached());
+  if (!lineageGate.allow) return lineageGate;
 
   const executionWorthinessGate = evaluateExecutionWorthinessGate(proposal);
   if (!executionWorthinessGate.allow) return executionWorthinessGate;
@@ -457,7 +707,8 @@ function evaluateQueueQualityGate(proposal) {
       allow: true,
       reason: null,
       gated: !!(executionWorthinessGate.execution_worthiness && executionWorthinessGate.execution_worthiness.applies),
-      execution_worthiness: executionWorthinessGate.execution_worthiness
+      execution_worthiness: executionWorthinessGate.execution_worthiness,
+      directive_compiler: lineageGate.directive_compiler || null
     };
   }
 
@@ -465,42 +716,48 @@ function evaluateQueueQualityGate(proposal) {
     ? meta.admission_preview
     : null;
   if (admission && admission.eligible === false) {
-    return { allow: false, reason: normalizeBlockedReason(admission), gated: true };
+    return {
+      allow: false,
+      reason: normalizeBlockedReason(admission),
+      gated: true,
+      directive_compiler: lineageGate.directive_compiler || null
+    };
   }
 
   if (meta.actionability_pass === false) {
-    return { allow: false, reason: 'actionability_low', gated: true };
+    return { allow: false, reason: 'actionability_low', gated: true, directive_compiler: lineageGate.directive_compiler || null };
   }
   if (meta.composite_eligibility_pass === false) {
-    return { allow: false, reason: 'composite_low', gated: true };
+    return { allow: false, reason: 'composite_low', gated: true, directive_compiler: lineageGate.directive_compiler || null };
   }
 
   const signal = numOrNull(meta.signal_quality_score);
   if (signal != null && signal < SENSORY_QUEUE_MIN_SIGNAL_SCORE) {
-    return { allow: false, reason: 'signal_quality_low', gated: true };
+    return { allow: false, reason: 'signal_quality_low', gated: true, directive_compiler: lineageGate.directive_compiler || null };
   }
   const relevance = numOrNull(meta.relevance_score);
   if (relevance != null && relevance < SENSORY_QUEUE_MIN_RELEVANCE_SCORE) {
-    return { allow: false, reason: 'relevance_low', gated: true };
+    return { allow: false, reason: 'relevance_low', gated: true, directive_compiler: lineageGate.directive_compiler || null };
   }
   const directiveFit = numOrNull(meta.directive_fit_score);
   if (directiveFit != null && directiveFit < SENSORY_QUEUE_MIN_DIRECTIVE_FIT_SCORE) {
-    return { allow: false, reason: 'directive_fit_low', gated: true };
+    return { allow: false, reason: 'directive_fit_low', gated: true, directive_compiler: lineageGate.directive_compiler || null };
   }
   const actionability = numOrNull(meta.actionability_score);
   if (actionability != null && actionability < SENSORY_QUEUE_MIN_ACTIONABILITY_SCORE) {
-    return { allow: false, reason: 'actionability_low', gated: true };
+    return { allow: false, reason: 'actionability_low', gated: true, directive_compiler: lineageGate.directive_compiler || null };
   }
   const composite = numOrNull(meta.composite_eligibility_score);
   if (composite != null && composite < SENSORY_QUEUE_MIN_COMPOSITE_SCORE) {
-    return { allow: false, reason: 'composite_low', gated: true };
+    return { allow: false, reason: 'composite_low', gated: true, directive_compiler: lineageGate.directive_compiler || null };
   }
 
   return {
     allow: true,
     reason: null,
     gated: true,
-    execution_worthiness: executionWorthinessGate.execution_worthiness
+    execution_worthiness: executionWorthinessGate.execution_worthiness,
+    directive_compiler: lineageGate.directive_compiler || null
   };
 }
 
@@ -609,19 +866,21 @@ function ingest(dateStr) {
     return { ingested: 0, duplicates: 0 };
   }
   
-  let proposals;
+  let parsedRoot;
   try {
-    proposals = JSON.parse(fs.readFileSync(proposalsPath, 'utf8'));
+    parsedRoot = JSON.parse(fs.readFileSync(proposalsPath, 'utf8'));
   } catch (e) {
     console.error(`Failed to parse proposals JSON: ${e.message}`);
     return { ingested: 0, duplicates: 0, error: e.message };
   }
   
   // Normalize proposals format (handles array, wrapper object, or single object)
-  proposals = normalizeProposalsJson(proposals, proposalsPath);
+  const proposals = normalizeProposalsJson(parsedRoot, proposalsPath);
   if (!proposals.length) {
     return { ok: true, ingested: 0, skipped: 0 };
   }
+  const directiveCompiler = loadDirectiveCompilerCached();
+  let proposalsMutated = false;
   
   const existingGeneratedHashes = getLoggedHashesByType(['proposal_generated']);
   const existingFilteredHashes = getLoggedHashesByType(['proposal_filtered']);
@@ -636,10 +895,17 @@ function ingest(dateStr) {
   let filteredDuplicates = 0;
   const filteredByReason = {};
   
-  for (const proposal of proposals) {
+  for (let i = 0; i < proposals.length; i++) {
+    const originalProposal = proposals[i];
+    const autofill = autofillProposalObjectiveContext(originalProposal, directiveCompiler);
+    const proposal = autofill && autofill.proposal ? autofill.proposal : originalProposal;
+    if (autofill && autofill.changed) {
+      proposals[i] = proposal;
+      proposalsMutated = true;
+    }
     const proposalId = normalizeProposalId(proposal) || 'UNKNOWN';
     const hash = computeProposalHash(proposal);
-    const gate = evaluateQueueQualityGate(proposal);
+    const gate = evaluateQueueQualityGate(proposal, directiveCompiler);
 
     if (!gate.allow) {
       const current = getProposalStatus(hash, proposalId);
@@ -676,6 +942,15 @@ function ingest(dateStr) {
         filterEvent.execution_worthiness_score = gate.execution_worthiness.total;
         filterEvent.execution_worthiness_threshold = gate.execution_worthiness.threshold;
         filterEvent.execution_worthiness_components = gate.execution_worthiness.components;
+      }
+      if (gate.directive_compiler && typeof gate.directive_compiler === 'object') {
+        filterEvent.directive_compiler = gate.directive_compiler;
+      }
+      if (autofill && autofill.changed) {
+        filterEvent.objective_autofill = {
+          objective_id: normalizeText(autofill.objective_id) || null,
+          source: normalizeText(autofill.source) || 'autofill'
+        };
       }
       if (Array.isArray(gate.details) && gate.details.length > 0) {
         filterEvent.filter_details = gate.details.slice(0, 6);
@@ -729,6 +1004,15 @@ function ingest(dateStr) {
       event.execution_worthiness_threshold = gate.execution_worthiness.threshold;
       event.execution_worthiness_components = gate.execution_worthiness.components;
     }
+    if (gate.directive_compiler && typeof gate.directive_compiler === 'object') {
+      event.directive_compiler = gate.directive_compiler;
+    }
+    if (autofill && autofill.changed) {
+      event.objective_autofill = {
+        objective_id: normalizeText(autofill.objective_id) || null,
+        source: normalizeText(autofill.source) || 'autofill'
+      };
+    }
     
     appendEvent(event);
     existingGeneratedHashes.add(hash); // Prevent duplicates in same run
@@ -743,8 +1027,28 @@ function ingest(dateStr) {
   const filteredMsg = filtered > 0 ? `, ${filtered} filtered` : '';
   const filterDupMsg = filteredDuplicates > 0 ? `, ${filteredDuplicates} filter-duplicates` : '';
   const reasonMsg = filteredReasons ? ` reasons=${filteredReasons}` : '';
+  if (proposalsMutated) {
+    let nextRoot = parsedRoot;
+    if (Array.isArray(parsedRoot)) {
+      nextRoot = proposals;
+    } else if (parsedRoot && typeof parsedRoot === 'object' && Array.isArray(parsedRoot.proposals)) {
+      nextRoot = { ...parsedRoot, proposals };
+    } else if (parsedRoot && typeof parsedRoot === 'object') {
+      nextRoot = proposals[0] || parsedRoot;
+    } else {
+      nextRoot = proposals;
+    }
+    fs.writeFileSync(proposalsPath, JSON.stringify(nextRoot, null, 2), 'utf8');
+  }
   console.log(`Ingested ${ingested} proposals for ${date} (${duplicates} duplicates skipped${filteredMsg}${filterDupMsg})${reasonMsg}`);
-  return { ingested, duplicates, filtered, filtered_duplicates: filteredDuplicates, filtered_by_reason: filteredByReason };
+  return {
+    ingested,
+    duplicates,
+    filtered,
+    filtered_duplicates: filteredDuplicates,
+    filtered_by_reason: filteredByReason,
+    objective_autofilled: proposalsMutated
+  };
 }
 
 // LIST: Show proposals with optional filtering

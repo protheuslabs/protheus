@@ -4377,6 +4377,36 @@ function capabilityDescriptor(p, actuationSpec) {
     };
   }
   const type = String(p && p.type || 'unknown').trim().toLowerCase() || 'unknown';
+  const meta = p && p.meta && typeof p.meta === 'object' ? p.meta : {};
+  const title = String(p && p.title || '').toLowerCase();
+  const suggested = String(p && p.suggested_next_command || '').toLowerCase();
+  const target = String(
+    p
+    && p.action_spec
+    && typeof p.action_spec === 'object'
+    ? p.action_spec.target || ''
+    : ''
+  ).toLowerCase();
+  const opportunitySignal = (
+    type.includes('opportunity')
+    || Number.isFinite(Number(meta.expected_value_score))
+    || Number.isFinite(Number(meta.time_to_cash_hours))
+    || /\b(opportunity|outreach|lead|sales|bizdev|revenue|freelance|contract|gig)\b/.test(
+      [
+        title,
+        suggested,
+        target,
+        String(meta.signal_theme || ''),
+        String(meta.hypothesis_type || '')
+      ].join(' ')
+    )
+  );
+  if (opportunitySignal) {
+    return {
+      key: `proposal:${type}_opportunity`,
+      aliases: ['proposal', `proposal:${type}`, 'proposal:opportunity']
+    };
+  }
   return {
     key: `proposal:${type}`,
     aliases: ['proposal']

@@ -62,7 +62,8 @@ function main() {
     eyes: [
       { id: 'good_eye', status: 'active', last_success: '2026-02-21T19:30:00.000Z', consecutive_failures: 0 },
       { id: 'dark_eye', status: 'active', last_success: '2026-02-20T00:00:00.000Z', consecutive_failures: 0 },
-      { id: 'failing_eye', status: 'failing', last_success: '2026-02-21T17:00:00.000Z', consecutive_failures: 3 }
+      { id: 'failing_eye', status: 'failing', last_success: '2026-02-21T17:00:00.000Z', consecutive_failures: 3 },
+      { id: 'retired_eye', status: 'retired', last_success: '2026-02-19T00:00:00.000Z', consecutive_failures: 99 }
     ]
   });
 
@@ -118,7 +119,20 @@ function main() {
   });
 
   writeStubScript(path.join(stubsDir, 'autonomy_controller.js'), { ok: true, status: 'idle' });
-  writeStubScript(path.join(stubsDir, 'receipt_summary.js'), { ok: true, runs: { total: 0, latest_event_ts: '2026-02-20T08:00:00.000Z' } });
+  writeStubScript(path.join(stubsDir, 'receipt_summary.js'), {
+    ok: true,
+    runs: { total: 0, latest_event_ts: '2026-02-20T08:00:00.000Z' },
+    receipts: {
+      combined: {
+        attempted: 12,
+        verified: 10,
+        verified_rate: 0.833,
+        top_failure_reasons: {
+          timeout: 1
+        }
+      }
+    }
+  });
   writeStubScript(path.join(stubsDir, 'strategy_doctor.js'), { ok: true, strategy: { id: 'default_general' } });
   writeStubScript(path.join(stubsDir, 'strategy_readiness.js'), {
     ok: true,
@@ -195,6 +209,10 @@ function main() {
   assert.ok(first.slo.failed_checks.includes('drift'));
   assert.ok(first.slo.failed_checks.includes('routing_degraded'));
   assert.ok(first.slo.failed_checks.includes('execute_quality_lock_invariant'));
+  assert.ok(first.slo.checks.dark_eyes, 'dark_eyes check should exist');
+  assert.strictEqual(Number(first.slo.checks.dark_eyes.metrics.total_eyes || 0), 3, 'retired eyes should be excluded from dark-eye totals');
+  assert.ok(!String(first.slo.checks.dark_eyes.reason || '').includes('retired_eye'), 'retired eye should not be listed as dark');
+  assert.strictEqual(first.slo.failed_checks.includes('verification_pass_rate'), false, 'verification pass-rate should pass in fixture');
   assert.strictEqual(first.slo.failed_checks.includes('budget_guard'), false, 'budget guard should pass in fixture');
   assert.strictEqual(first.slo.failed_checks.includes('integrity'), false, 'integrity should pass in fixture');
   assert.strictEqual(Boolean(first.gates && first.gates.budget_autopause_active), false, 'budget autopause gate should be false in fixture');
@@ -225,6 +243,27 @@ function main() {
   assert.ok(third.slo && third.slo.checks && third.slo.checks.drift, 'drift check should exist');
   assert.strictEqual(Boolean(third.slo.checks.drift.ok), true, 'low-sample quality stop ratio should be non-blocking');
   assert.strictEqual(String(third.slo.checks.drift.reason || ''), 'spc_quality_stopratio_low_sample_nonblocking');
+
+  writeStubScript(path.join(stubsDir, 'autonomy_controller.js'), { ok: true, autonomy_enabled: true, status: 'execute' });
+  writeStubScript(path.join(stubsDir, 'receipt_summary.js'), {
+    ok: true,
+    runs: { total: 3, latest_event_ts: '2026-02-21T19:00:00.000Z' },
+    receipts: {
+      combined: {
+        attempted: 12,
+        verified: 4,
+        verified_rate: 0.333,
+        top_failure_reasons: {
+          simulated_timeout: 4,
+          simulated_rate_limited: 2
+        }
+      }
+    }
+  });
+  const fourth = runHealth(env, date);
+  assert.ok(fourth.slo && fourth.slo.checks && fourth.slo.checks.verification_pass_rate, 'verification pass-rate check should exist');
+  assert.strictEqual(Boolean(fourth.slo.checks.verification_pass_rate.ok), false, 'verification pass-rate should fail when rate is critical');
+  assert.strictEqual(String(fourth.slo.checks.verification_pass_rate.reason || ''), 'verification_pass_rate_critical');
 
   console.log('health_status.test.js: OK');
 }

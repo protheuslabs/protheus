@@ -549,6 +549,7 @@ function reconcileCmd(opts) {
   let filesUpdated = 0;
   let proposalsUpdated = 0;
   let progressEventsAdded = 0;
+  let triageLineageRejected = 0;
   const sample = [];
 
   for (const file of files) {
@@ -568,7 +569,19 @@ function reconcileCmd(opts) {
       }
       const ov = overlay.get(id) || null;
       const sensory = sensoryOverlay.get(id) || null;
-      const target = normalizedStatus(p, ov, sensory);
+      const compilerMeta = resolveDirectiveCompilerMeta(id, p);
+      let target = normalizedStatus(p, ov, sensory);
+      let lineageTriageReason = null;
+      if (
+        (target === 'pending' || target === 'open')
+        && compilerMeta
+        && compilerMeta.lineage_valid === false
+      ) {
+        target = 'rejected';
+        const rawReason = String(compilerMeta.lineage_reason || 'objective_lineage_invalid').trim().toLowerCase() || 'objective_lineage_invalid';
+        lineageTriageReason = `objective_lineage_${rawReason}`;
+        triageLineageRejected += 1;
+      }
       const desired = canonicalWritableStatus(target, ov, sensory);
       const current = String(p && (p.status || p.state) || '').trim().toLowerCase();
       if (current !== desired || String(p && p.state || '').trim().toLowerCase() !== desired) {
@@ -576,7 +589,7 @@ function reconcileCmd(opts) {
         p.status = desired;
         p.state = desired;
         p.queue_synced_ts = now;
-        p.queue_synced_reason = String((ov && ov.reason) || (sensory && sensory.reason) || `reconcile_${target}`);
+        p.queue_synced_reason = lineageTriageReason || String((ov && ov.reason) || (sensory && sensory.reason) || `reconcile_${target}`);
         p.queue_synced_source = 'proposal_queue_reconcile_v2';
         changedInFile += 1;
         proposalsUpdated += 1;
@@ -585,13 +598,13 @@ function reconcileCmd(opts) {
             file,
             proposal_id: id,
             from: current || null,
-            to: desired
+            to: desired,
+            lineage_triage: lineageTriageReason || null
           });
         }
         if (!dryRun) {
           const ovEntry = overlay.get(id) || null;
           if (!overlaySatisfiesStatus(ovEntry, desired)) {
-            const compilerMeta = resolveDirectiveCompilerMeta(id, p);
             const evt = synthQueueEventForStatus(
               id,
               desired,
@@ -600,6 +613,10 @@ function reconcileCmd(opts) {
               compilerMeta
             );
             if (evt) {
+              if (lineageTriageReason && evt.type === 'decision' && evt.decision === 'reject') {
+                evt.reason = `proposal_queue_lineage_triage_v1: ${lineageTriageReason}`;
+                evt.lineage_triage = true;
+              }
               const dateFromFile = String(file || '').replace(/\.json$/i, '').trim();
               const eventDate = /^\d{4}-\d{2}-\d{2}$/.test(dateFromFile) ? dateFromFile : todayStr();
               appendJsonl(decisionsPathFor(eventDate), evt);
@@ -625,6 +642,7 @@ function reconcileCmd(opts) {
     files_updated: filesUpdated,
     proposals_updated: proposalsUpdated,
     progress_events_added: progressEventsAdded,
+    triage_lineage_rejected: triageLineageRejected,
     dry_run: dryRun,
     sample_updates: sample
   };

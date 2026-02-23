@@ -12,6 +12,7 @@ const SENSORY_QUEUE_PATH = path.join(ROOT, 'habits', 'scripts', 'sensory_queue.j
 const PROPOSAL_ENRICHER_PATH = path.join(ROOT, 'systems', 'autonomy', 'proposal_enricher.js');
 const BRIDGE_SCRIPT_PATH = path.join(ROOT, 'systems', 'actuation', 'bridge_from_proposals.js');
 const ACTUATION_EXECUTOR_PATH = path.join(ROOT, 'systems', 'actuation', 'actuation_executor.js');
+const RECEIPT_SUMMARY_PATH = path.join(ROOT, 'systems', 'autonomy', 'receipt_summary.js');
 
 function writeJson(filePath, obj) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
@@ -71,6 +72,25 @@ async function main() {
   console.log('═══════════════════════════════════════════════════════════');
 
   const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'pipeline-handoff-'));
+  const adapterSandboxDir = fs.mkdtempSync(path.join(path.join(ROOT, 'tmp'), 'pipeline-handoff-adapter-'));
+  const adapterSandboxFile = path.join(adapterSandboxDir, 'unstable_adapter.js');
+  fs.writeFileSync(adapterSandboxFile, [
+    "'use strict';",
+    '',
+    "module.exports.execute = async function execute(ctx) {",
+    "  const params = ctx && ctx.params && typeof ctx.params === 'object' ? ctx.params : {};",
+    "  const mode = String(params.mode || '').trim().toLowerCase();",
+    "  if (mode === 'timeout') throw new Error('simulated_timeout');",
+    "  if (mode === 'rate_limit') throw new Error('simulated_rate_limited');",
+    "  if (mode === 'rollback') throw new Error('simulated_rollback_triggered');",
+    "  return {",
+    "    ok: true,",
+    "    code: 0,",
+    "    summary: { decision: 'ACTUATE', gate_decision: 'ALLOW', executable: true, verified: true }",
+    "  };",
+    "};",
+    ''
+  ].join('\n'), 'utf8');
   const sensoryDir = path.join(tmpRoot, 'state', 'sensory');
   const proposalsDir = path.join(sensoryDir, 'proposals');
   const date = '2026-02-19';
@@ -107,6 +127,10 @@ async function main() {
       moltbook_publish: {
         module: 'skills/moltbook/actuation_adapter.js',
         description: 'Guarded Moltbook post publication with verification receipts.'
+      },
+      test_chaos: {
+        module: path.relative(ROOT, adapterSandboxFile).replace(/\\/g, '/'),
+        description: 'Deterministic adapter for timeout/rate-limit/rollback failure-path testing.'
       }
     }
   });
@@ -245,6 +269,58 @@ async function main() {
   assert.ok(lastReceipt.receipt_contract && lastReceipt.receipt_contract.verified === false);
   assert.ok(lastReceipt.receipt_contract && lastReceipt.receipt_contract.recorded === true);
 
+  const failureModes = [
+    { mode: 'timeout', needle: 'simulated_timeout' },
+    { mode: 'rate_limit', needle: 'simulated_rate_limited' },
+    { mode: 'rollback', needle: 'simulated_rollback_triggered' }
+  ];
+  for (const row of failureModes) {
+    const failRun = runNode([
+      ACTUATION_EXECUTOR_PATH,
+      'run',
+      '--kind=test_chaos',
+      `--params=${JSON.stringify({ mode: row.mode })}`
+    ], env);
+    assert.notStrictEqual(failRun.status, 0, `expected non-zero exit for ${row.mode}`);
+    const failOut = parseLastJsonLine(failRun.stdout);
+    assert.ok(failOut && failOut.ok === false, `expected failure payload for ${row.mode}`);
+    const errText = String((failOut && failOut.error) || '');
+    assert.ok(errText.includes(row.needle), `failure payload missing ${row.needle}: ${errText}`);
+  }
+
+  const receiptsAfterFailures = readJsonl(receiptFile);
+  const chaosReceipts = receiptsAfterFailures.filter((r) => String(r && r.adapter || '') === 'test_chaos');
+  assert.strictEqual(chaosReceipts.length, 3, 'expected 3 chaos adapter receipts');
+  for (const row of chaosReceipts) {
+    assert.strictEqual(row.ok, false, 'chaos receipt should be failed');
+    assert.ok(row.receipt_contract && row.receipt_contract.attempted === true, 'chaos receipt should be attempted');
+    assert.ok(row.receipt_contract && row.receipt_contract.verified === false, 'chaos receipt should be unverified');
+  }
+
+  const summaryRun = runNode([
+    RECEIPT_SUMMARY_PATH,
+    'run',
+    new Date().toISOString().slice(0, 10),
+    '--days=1'
+  ], {
+    ...env,
+    AUTONOMY_SUMMARY_RECEIPTS_DIR: path.join(tmpRoot, 'state', 'autonomy', 'receipts'),
+    ACTUATION_SUMMARY_RECEIPTS_DIR: actuationReceiptsDir
+  });
+  assert.strictEqual(summaryRun.status, 0, `receipt summary failed: ${summaryRun.stderr || summaryRun.stdout}`);
+  const summaryOut = JSON.parse(String(summaryRun.stdout || '{}'));
+  assert.ok(summaryOut && summaryOut.ok === true, 'receipt summary payload should be ok');
+  const failureReasons = summaryOut
+    && summaryOut.receipts
+    && summaryOut.receipts.actuation
+    && summaryOut.receipts.actuation.top_failure_reasons
+    ? summaryOut.receipts.actuation.top_failure_reasons
+    : {};
+  assert.ok(Number(failureReasons.simulated_timeout || 0) >= 1, 'summary should include timeout failure reason');
+  assert.ok(Number(failureReasons.simulated_rate_limited || 0) >= 1, 'summary should include rate-limit failure reason');
+  assert.ok(Number(failureReasons.simulated_rollback_triggered || 0) >= 1, 'summary should include rollback failure reason');
+
+  fs.rmSync(adapterSandboxDir, { recursive: true, force: true });
   fs.rmSync(tmpRoot, { recursive: true, force: true });
   console.log('   ✅ handoffs verified: insight -> enrich -> bridge -> queue(generated/filtered) -> execute -> receipt');
 }

@@ -1404,10 +1404,12 @@ function evaluateRouterGlobalBudgetGate({ requestTokensEst, budgetPolicy, dryRun
       attempts_today: 1
     }, opts);
     const guardPressure = String(guard.projected_pressure || guard.pressure || "none").toLowerCase();
-    if (!dryRunMode && guard.hard_stop !== true && guardPressure !== "hard") {
+    if (guard.hard_stop !== true && guardPressure !== "hard") {
       autopause = clearSystemBudgetAutopause({
         source: "model_router",
-        reason: `auto_clear_guard_recovered:${guardPressure || "none"}`
+        reason: dryRunMode
+          ? `auto_clear_guard_recovered_dry_run:${guardPressure || "none"}`
+          : `auto_clear_guard_recovered:${guardPressure || "none"}`
       }, opts);
       writeSystemBudgetDecision({
         date,
@@ -1415,7 +1417,9 @@ function evaluateRouterGlobalBudgetGate({ requestTokensEst, budgetPolicy, dryRun
         capability: "route_decision",
         request_tokens_est: requestTokensEst,
         decision: "allow",
-        reason: "budget_autopause_auto_cleared"
+        reason: dryRunMode
+          ? "budget_autopause_auto_cleared_dry_run"
+          : "budget_autopause_auto_cleared"
       }, opts);
     }
   }
