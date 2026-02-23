@@ -193,6 +193,15 @@ const AUTONOMY_OPTIMIZATION_MIN_DELTA_PERCENT = clampNumber(Number(process.env.A
 const AUTONOMY_OPTIMIZATION_MIN_DELTA_PERCENT_HIGH_ACCURACY = clampNumber(Number(process.env.AUTONOMY_OPTIMIZATION_MIN_DELTA_PERCENT_HIGH_ACCURACY || 5), 1, 50);
 const AUTONOMY_OPTIMIZATION_HIGH_ACCURACY_MODE = String(process.env.AUTONOMY_OPTIMIZATION_HIGH_ACCURACY_MODE || '0') === '1';
 const AUTONOMY_OPTIMIZATION_REQUIRE_DELTA = String(process.env.AUTONOMY_OPTIMIZATION_REQUIRE_DELTA || '1') !== '0';
+const AUTONOMY_DOPAMINE_REQUIRE_VERIFIED_PROGRESS = String(process.env.AUTONOMY_DOPAMINE_REQUIRE_VERIFIED_PROGRESS || '1') !== '0';
+const AUTONOMY_UNLINKED_OPTIMIZATION_PENALTY = Math.max(0, Number(process.env.AUTONOMY_UNLINKED_OPTIMIZATION_PENALTY || 18));
+const AUTONOMY_UNLINKED_OPTIMIZATION_HARD_BLOCK_HIGH_RISK = String(process.env.AUTONOMY_UNLINKED_OPTIMIZATION_HARD_BLOCK_HIGH_RISK || '1') !== '0';
+const AUTONOMY_UNLINKED_OPTIMIZATION_EXEMPT_TYPES = new Set(
+  String(process.env.AUTONOMY_UNLINKED_OPTIMIZATION_EXEMPT_TYPES || 'directive_clarification,human_escalation')
+    .split(',')
+    .map((s) => String(s || '').trim().toLowerCase())
+    .filter(Boolean)
+);
 const AUTONOMY_MAX_PROPOSAL_FILE_AGE_HOURS = Number(process.env.AUTONOMY_MAX_PROPOSAL_FILE_AGE_HOURS || 48);
 const AUTONOMY_REPEAT_EXHAUSTED_LIMIT = Number(process.env.AUTONOMY_REPEAT_EXHAUSTED_LIMIT || 3);
 const AUTONOMY_REPEAT_EXHAUSTED_COOLDOWN_MINUTES = Number(process.env.AUTONOMY_REPEAT_EXHAUSTED_COOLDOWN_MINUTES || 90);
@@ -1082,6 +1091,79 @@ function isOptimizationIntentProposal(p) {
   return true;
 }
 
+function extractObjectiveIdToken(value) {
+  const text = normalizeSpaces(value);
+  if (!text) return null;
+  const direct = text.match(/^T[0-9]+_[A-Za-z0-9_]+$/);
+  if (direct) return direct[0];
+  const token = text.match(/\b(T[0-9]+_[A-Za-z0-9_]+)\b/);
+  return token ? token[1] : null;
+}
+
+function hasLinkedObjectiveEntry(entry) {
+  const e = entry && typeof entry === 'object' ? entry : {};
+  return !!(
+    extractObjectiveIdToken(e.objective_id)
+    || extractObjectiveIdToken(e.directive_objective_id)
+    || extractObjectiveIdToken(e.directive)
+  );
+}
+
+function isVerifiedEntryOutcome(entry) {
+  const e = entry && typeof entry === 'object' ? entry : {};
+  if (e.outcome_verified === true) return true;
+  const outcome = String(e.outcome || '').trim().toLowerCase();
+  return ['verified', 'verified_success', 'verified_pass', 'shipped', 'closed_won', 'won', 'paid', 'revenue_verified', 'pass'].includes(outcome);
+}
+
+function isVerifiedRevenueAction(action) {
+  const row = action && typeof action === 'object' ? action : {};
+  if (row.verified === true || row.outcome_verified === true) return true;
+  const status = String(row.status || '').trim().toLowerCase();
+  return ['verified', 'won', 'paid', 'closed_won', 'received'].includes(status);
+}
+
+function assessUnlinkedOptimizationAdmission(proposal, objectiveBinding, risk) {
+  const type = normalizeSpaces(proposal && proposal.type).toLowerCase();
+  if (!isOptimizationIntentProposal(proposal)) {
+    return {
+      applies: false,
+      linked: true,
+      penalty: 0,
+      block: false,
+      reason: null
+    };
+  }
+  if (AUTONOMY_UNLINKED_OPTIMIZATION_EXEMPT_TYPES.has(type)) {
+    return {
+      applies: true,
+      linked: true,
+      penalty: 0,
+      block: false,
+      reason: 'optimization_exempt_type'
+    };
+  }
+  const linked = !!(objectiveBinding && objectiveBinding.pass === true && objectiveBinding.objective_id && objectiveBinding.valid !== false);
+  if (linked) {
+    return {
+      applies: true,
+      linked: true,
+      penalty: 0,
+      block: false,
+      reason: null
+    };
+  }
+  const normalizedRiskVal = normalizedRisk(risk || (proposal && proposal.risk));
+  const highRiskBlock = AUTONOMY_UNLINKED_OPTIMIZATION_HARD_BLOCK_HIGH_RISK && normalizedRiskVal === 'high';
+  return {
+    applies: true,
+    linked: false,
+    penalty: AUTONOMY_UNLINKED_OPTIMIZATION_PENALTY,
+    block: highRiskBlock,
+    reason: highRiskBlock ? 'optimization_unlinked_objective_high_risk_block' : 'optimization_unlinked_objective_penalty'
+  };
+}
+
 function assessOptimizationGoodEnough(p, risk) {
   const applies = isOptimizationIntentProposal(p);
   const minDelta = optimizationMinDeltaPercent();
@@ -1640,11 +1722,24 @@ function loadDopamineSnapshot(dateStr) {
   const lastScore = Number(state && state.last_score != null ? state.last_score : 0);
   const avg7 = Number(state && state.rolling_7_day_avg != null ? state.rolling_7_day_avg : 0);
   const streakDays = Number(state && state.current_streak_days != null ? state.current_streak_days : 0);
+  const entries = Array.isArray(dayLog && dayLog.entries) ? dayLog.entries : [];
+  const revenueActions = Array.isArray(dayLog && dayLog.revenue_actions) ? dayLog.revenue_actions : [];
+  const verifiedObjectiveEntries = entries.filter((entry) => hasLinkedObjectiveEntry(entry) && isVerifiedEntryOutcome(entry)).length;
+  const linkedEntries = entries.filter((entry) => hasLinkedObjectiveEntry(entry)).length;
+  const unlinkedEntries = Math.max(0, entries.length - linkedEntries);
+  const verifiedRevenueActions = revenueActions.filter(isVerifiedRevenueAction).length;
   const dayArtifacts = Array.isArray(dayLog && dayLog.artifacts) ? dayLog.artifacts.length : 0;
   const dayEntries = Array.isArray(dayLog && dayLog.entries) ? dayLog.entries.length : 0;
   const daySwitches = Number(dayLog && dayLog.context_switches != null ? dayLog.context_switches : 0);
   const dayRevenueActions = Array.isArray(dayLog && dayLog.revenue_actions) ? dayLog.revenue_actions.length : 0;
-  const momentumOk = (lastScore >= AUTONOMY_MIN_DOPAMINE_LAST_SCORE) || (avg7 >= AUTONOMY_MIN_DOPAMINE_AVG7);
+  const baseMomentumOk = (lastScore >= AUTONOMY_MIN_DOPAMINE_LAST_SCORE) || (avg7 >= AUTONOMY_MIN_DOPAMINE_AVG7);
+  const verifiedProgressToday = verifiedObjectiveEntries > 0 || verifiedRevenueActions > 0;
+  const momentumOk = AUTONOMY_DOPAMINE_REQUIRE_VERIFIED_PROGRESS
+    ? (baseMomentumOk && (verifiedProgressToday || dayEntries === 0))
+    : baseMomentumOk;
+  const directivePainActive = AUTONOMY_DOPAMINE_REQUIRE_VERIFIED_PROGRESS
+    ? (dayEntries > 0 && !verifiedProgressToday)
+    : false;
 
   return {
     last_score: lastScore,
@@ -1654,6 +1749,12 @@ function loadDopamineSnapshot(dateStr) {
     day_entries: dayEntries,
     day_context_switches: daySwitches,
     day_revenue_actions: dayRevenueActions,
+    verified_objective_entries: verifiedObjectiveEntries,
+    verified_revenue_actions: verifiedRevenueActions,
+    linked_entries: linkedEntries,
+    unlinked_entries: unlinkedEntries,
+    verified_progress_today: verifiedProgressToday,
+    directive_pain_active: directivePainActive,
     momentum_ok: momentumOk
   };
 }
@@ -7375,7 +7476,50 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       continue;
     }
 
+    const optimizationLink = assessUnlinkedOptimizationAdmission(cand.proposal, objectiveBinding, risk);
+    if (optimizationLink.block) {
+      skipStats.objective_binding += 1;
+      bumpCount(candidateRejectedByGate, 'objective_binding');
+      pushCandidateAudit({
+        proposal_id: proposalId,
+        proposal_type: proposalType,
+        risk,
+        pass: false,
+        gate: 'objective_binding',
+        score: Number(cand.score || 0),
+        objective_binding: {
+          required: objectiveBinding.required === true,
+          objective_id: objectiveBinding.objective_id || null,
+          source: objectiveBinding.source || null,
+          objectives_available: objectiveBinding.objectives_available
+        },
+        optimization_link: optimizationLink,
+        reasons: [optimizationLink.reason || 'optimization_unlinked_objective_high_risk_block']
+      });
+      if (!sampleObjectiveBinding) {
+        sampleObjectiveBinding = {
+          proposal_id: cand.proposal.id,
+          objective_id: objectiveBinding.objective_id || null,
+          source: objectiveBinding.source || null,
+          required: objectiveBinding.required === true,
+          objectives_available: objectiveBinding.objectives_available,
+          reasons: [optimizationLink.reason || 'optimization_unlinked_objective_high_risk_block']
+        };
+      }
+      continue;
+    }
+
     const valueSignal = assessValueSignal(cand.proposal, actionability, dfit);
+    if (Number(optimizationLink.penalty || 0) > 0) {
+      valueSignal.score = clampNumber(
+        Math.round(Number(valueSignal.score || 0) - Number(optimizationLink.penalty || 0)),
+        0,
+        100
+      );
+      if (valueSignal.score < Number(valueSignal.min_score || 0)) valueSignal.pass = false;
+      if (!Array.isArray(valueSignal.reasons)) valueSignal.reasons = [];
+      valueSignal.reasons.push('optimization_unlinked_objective_penalty');
+    }
     if (!valueSignal.pass) {
       skipStats.low_value_signal += 1;
       bumpCount(candidateRejectedByGate, 'value_signal');
@@ -7398,6 +7542,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
           min_value_signal_score_base: AUTONOMY_MIN_VALUE_SIGNAL_SCORE,
           medium_risk_value_signal_bonus: AUTONOMY_MEDIUM_RISK_VALUE_SIGNAL_BONUS
         },
+        optimization_link: optimizationLink,
         reasons: valueSignal.reasons.slice(0, 3)
       });
       if (!sampleLowValueSignal) {
@@ -7405,6 +7550,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
           proposal_id: cand.proposal.id,
           score: valueSignal.score,
           min_score: valueSignal.min_score,
+          optimization_penalty: Number(optimizationLink.penalty || 0),
           reasons: valueSignal.reasons.slice(0, 3)
         };
       }
@@ -7436,7 +7582,12 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       continue;
     }
 
-    const compositeScore = compositeEligibilityScore(q.score, dfit.score, actionability.score);
+    const compositeScoreRaw = compositeEligibilityScore(q.score, dfit.score, actionability.score);
+    const compositeScore = clampNumber(
+      Math.round(Number(compositeScoreRaw || 0) - Number(optimizationLink.penalty || 0)),
+      0,
+      100
+    );
     const compositeMin = compositeEligibilityMin(risk, executionMode);
     if (compositeScore < compositeMin) {
       skipStats.low_composite += 1;
@@ -7458,12 +7609,15 @@ function runCmd(dateStr, opts: AnyObj = {}) {
           min_composite_eligibility: compositeMin,
           min_composite_eligibility_base: AUTONOMY_MIN_COMPOSITE_ELIGIBILITY
         },
+        optimization_link: optimizationLink,
         reasons: ['composite_below_threshold']
       });
       if (!sampleLowComposite) {
         sampleLowComposite = {
           proposal_id: cand.proposal.id,
           score: compositeScore,
+          raw_score: compositeScoreRaw,
+          optimization_penalty: Number(optimizationLink.penalty || 0),
           min_score: compositeMin,
           base_min_score: AUTONOMY_MIN_COMPOSITE_ELIGIBILITY,
           quality_score: q.score,
@@ -7668,6 +7822,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       capability_key: capKeyCand,
       eye_no_progress_24h: eyeNoProgress24h,
       objective_binding: objectiveBinding,
+      optimization_link: optimizationLink,
       directive_pulse: pulse
     });
     pushCandidateAudit({
