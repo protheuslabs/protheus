@@ -24,7 +24,7 @@ const POLICY_AUDIT_PATH = process.env.POLICY_ROOT_AUDIT_PATH
 const POLICY_VERSION = '1.0';
 const POLICY_REQUIRE_LEASE_SCOPES = String(
   process.env.POLICY_ROOT_REQUIRE_LEASE_SCOPES
-    || 'strategy_mode_escalation,strategy_profile_mutation,strategy_profile_gc_apply,strategy_profile_risk_escalation'
+    || 'strategy_mode_escalation,strategy_profile_mutation,strategy_profile_gc_apply,strategy_profile_risk_escalation,autonomy_self_change_apply'
 )
   .split(',')
   .map((s) => String(s || '').trim())

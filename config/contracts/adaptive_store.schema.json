@@ -5,6 +5,7 @@
   "root_type": "object",
   "stores": {
     "eyes_catalog": {
+      "expected_version": "1.0",
       "required_paths": [
         "version",
         "eyes",
@@ -13,6 +14,7 @@
       ]
     },
     "focus_state": {
+      "expected_version": "1.0",
       "required_paths": [
         "version",
         "policy.min_focus_score",
@@ -23,6 +25,7 @@
       ]
     },
     "habit_state": {
+      "expected_version": "1.0",
       "required_paths": [
         "version",
         "policy.generation_min_repeats",
@@ -32,6 +35,7 @@
       ]
     },
     "reflex_state": {
+      "expected_version": "1.0",
       "required_paths": [
         "version",
         "policy.min_cells",
@@ -41,6 +45,7 @@
       ]
     },
     "strategy_state": {
+      "expected_version": "1.0",
       "required_paths": [
         "version",
         "policy.max_profiles",

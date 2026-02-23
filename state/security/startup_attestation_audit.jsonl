@@ -149,3 +149,6 @@
 {"ts":"2026-02-23T04:49:10.762Z","type":"startup_attestation_verify","ok":true,"reason":"verified"}
 {"ts":"2026-02-23T04:50:37.361Z","type":"startup_attestation_verify","ok":true,"reason":"verified"}
 {"ts":"2026-02-23T04:50:37.740Z","type":"startup_attestation_verify","ok":true,"reason":"verified"}
+{"ts":"2026-02-23T05:25:21.024Z","type":"startup_attestation_issue","ok":true,"expires_at":"2026-02-24T05:25:21.003Z","hashes":9,"missing_paths":0}
+{"ts":"2026-02-23T05:25:49.491Z","type":"startup_attestation_verify","ok":true,"reason":"verified"}
+{"ts":"2026-02-23T05:25:49.891Z","type":"startup_attestation_verify","ok":true,"reason":"verified"}

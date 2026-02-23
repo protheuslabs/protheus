@@ -43,6 +43,17 @@ function run() {
   assert.strictEqual(out.reason, 'lease_token_required');
 
   r = spawnSync('node', [
+    policyCli,
+    'authorize',
+    '--scope=autonomy_self_change_apply',
+    '--target=commit:abc123',
+    '--approval-note=manual approval from test'
+  ], { cwd: repoRoot, encoding: 'utf8', env });
+  assert.notStrictEqual(r.status, 0, 'self-change scope should require lease token');
+  out = parseJson(r.stdout);
+  assert.strictEqual(out.reason, 'lease_token_required');
+
+  r = spawnSync('node', [
     leaseCli,
     'issue',
     '--scope=strategy_mode_escalation',

@@ -40,11 +40,11 @@
     "systems/security/integrity_kernel.js": "bfecd33bc3539f0894cbca905730894aa706bb8db6140e5681b9a059bed7ec1f",
     "systems/security/integrity_reseal.js": "940ece4eaae2ad71ee9436854863b9a30b3876a276fceca1cf09b78a34980549",
     "systems/security/llm_gateway_guard.js": "00e62885ea05343d277b29af22e5f8d436b0146633f978a336c5ecc57dde9bdb",
-    "systems/security/merge_guard.js": "047c78dba33e4ca69fb72f9eeebe48411144cb76d9fca9755621631923189653",
-    "systems/security/policy_rootd.js": "bbd04839468ccbadff8f1b9b5be1f55ac829cacaed8b8a391b3302770d54fdfb",
+    "systems/security/merge_guard.js": "f5158e426cff7bee461bf56e2ed1fdd9a83adc14b24609a50c2baa75ef14b2ce",
+    "systems/security/policy_rootd.js": "c77002bda2cd5ffdca2cd1ccabae13def67bec23db953f003a8db0696cf7f8d5",
     "systems/security/repo_hygiene_guard.js": "b08801c2688f86496c30d28f960489795c399971dc23115cf47fedee7d90003a",
     "systems/security/request_ingress.js": "1441b58e26f8f3824384db41cbaa469cb4b1a98f915b21893bf26085dcf80399",
-    "systems/security/schema_contract_check.js": "f1ad7d22bfefdffb16bdefce8c69498dc18781ee2c388b34d97854e4803abbe6",
+    "systems/security/schema_contract_check.js": "59187311d7750450b6f4c9e6e898c98d7160b95edff94683a96dce9695b6e2e2",
     "systems/security/secret_broker.js": "b3d723f77c3485ab8eee1deed26e8a97d16d7c170174836963ddb8edccf425a0",
     "systems/security/skill_install_enforcer.js": "f97f0310cc2f8d88fbe79fc8430ef6341de87dbe3ada0de2742bd8f6ff035925",
     "systems/security/skill_quarantine.js": "4fd57a207a558a0fc079a2ce2477100bb9e5d0aec15b6a4bcbd7a7ae71963947",
@@ -52,7 +52,7 @@
     "systems/security/workspace_dump_guard.js": "fa94a0e44f65203cae3fc1c6dc8c20ce0199710d3be6867e1b7821eb825859c3",
     "systems/sensory/adaptive_layer_guard.js": "5443d35d5a28c918ec374f1d01b88edac9546233276bdc86e2a677543f52461a"
   },
-  "sealed_at": "2026-02-23T04:48:43.930Z",
+  "sealed_at": "2026-02-23T05:25:20.919Z",
   "sealed_by": "jay",
-  "last_approval_note": "intentional security hardening + remote gate compatibility fixes"
+  "last_approval_note": "apply v1 security hardening updates"
 }

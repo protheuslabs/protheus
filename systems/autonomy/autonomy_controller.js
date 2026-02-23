@@ -10,7 +10,8 @@
  * - Log experiment cards + run events for auditability
  *
  * Feature flag:
- * - AUTONOMY_ENABLED=1 required for run command
+ * - AUTONOMY_ENABLED=1 required for normal execute mode
+ * - canary_execute may run with AUTONOMY_CANARY_ALLOW_WITH_FLAG_OFF=1
  *
  * Usage:
  *   node systems/autonomy/autonomy_controller.js run [YYYY-MM-DD]
@@ -350,11 +351,13 @@ const OPTIMIZATION_EXEMPT_RE = /\b(fail(?:ure)?|error|outage|broken|incident|sec
 const PERCENT_VALUE_RE = /(-?\d+(?:\.\d+)?)\s*%/g;
 const GENERIC_VALIDATION_RE = /\b(extract one concrete build\/change task from source|define measurable success check|route a dry-run execution plan)\b/i;
 const GENERIC_ROUTE_TASK_RE = /--task=\"Extract one implementable step from external intel:/i;
+const ROLLBACK_SIGNAL_RE = /\b(rollback|revert|undo|restore|fallback)\b/i;
 const SUCCESS_METRIC_RE = /\b(metric|kpi|target|rate|count|latency|error|uptime|throughput|conversion|artifact|receipt|coverage|reply|interview|pass|fail|delta|percent|%|run|runs|check|checks|items_collected)\b/i;
 const SUCCESS_TIMEBOUND_RE = /\b(\d+\s*(h|hr|hour|hours|d|day|days|w|week|weeks|min|mins|minute|minutes)|daily|weekly|monthly|quarterly)\b/i;
 const SUCCESS_RELAXED_RUN_HORIZON_RE = /\b(next|this)\s+(run|cycle)\b/i;
 const SUCCESS_COMPARATOR_RE = /\b(>=|<=|>|<|at least|at most|less than|more than|within|under|over)\b/i;
 const AUTONOMY_CANARY_RELAX_ENABLED = String(process.env.AUTONOMY_CANARY_RELAX_ENABLED || '1') !== '0';
+const AUTONOMY_CANARY_ALLOW_WITH_FLAG_OFF = String(process.env.AUTONOMY_CANARY_ALLOW_WITH_FLAG_OFF || '1') !== '0';
 const AUTONOMY_CANARY_RELAX_READINESS_CHECKS = new Set(
   parseLowerList(process.env.AUTONOMY_CANARY_RELAX_READINESS_CHECKS || 'success_criteria_pass_rate')
 );
@@ -432,6 +435,12 @@ function effectiveStrategyExploration() {
 
 function isExecuteMode(mode) {
   return mode === 'execute' || mode === 'canary_execute';
+}
+
+function executionAllowedByFeatureFlag(executionMode, shadowOnly = false) {
+  if (shadowOnly) return true;
+  if (String(process.env.AUTONOMY_ENABLED || '') === '1') return true;
+  return AUTONOMY_CANARY_ALLOW_WITH_FLAG_OFF && String(executionMode || '') === 'canary_execute';
 }
 
 function ensureDir(dir) {
@@ -1568,6 +1577,18 @@ function consecutiveNoProgressRuns(events) {
     if (!e || e.type !== 'autonomy_run') continue;
     if (e.result === 'executed' && e.outcome === 'shipped') break;
     if (!isNoProgressRun(e)) break;
+    count++;
+  }
+  return count;
+}
+
+function consecutiveExecutedNoProgressRuns(events) {
+  let count = 0;
+  for (let i = events.length - 1; i >= 0; i--) {
+    const e = events[i];
+    if (!e || e.type !== 'autonomy_run') continue;
+    if (e.result !== 'executed') continue;
+    if (e.outcome === 'shipped') break;
     count++;
   }
   return count;
@@ -3638,6 +3659,7 @@ function successCriteriaPolicyForProposal(proposal) {
 
 function assessActionability(p, directiveFit, thresholds) {
   const minActionability = Number((thresholds && thresholds.min_actionability_score) || AUTONOMY_MIN_ACTIONABILITY_SCORE);
+  const risk = normalizedRisk(p && p.risk);
   const title = String((p && p.title) || '');
   const impact = String((p && p.expected_impact) || '').toLowerCase();
   const validation = Array.isArray(p && p.validation)
@@ -3671,6 +3693,13 @@ function assessActionability(p, directiveFit, thresholds) {
   const capabilityKey = String((capabilityDescriptor(p, parseActuationSpec(p)) || {}).key || '').toLowerCase();
   const criteriaPatternPenalty = criteriaPatternPenaltyForProposal(p, capabilityKey);
   const isExecutableProposal = !!(nextCmd || (p && p.action_spec && typeof p.action_spec === 'object'));
+  const rollbackBlob = normalizeSpaces([
+    p && p.rollback_plan,
+    p && p.meta && p.meta.rollback_plan,
+    p && p.action_spec && p.action_spec.rollback_command,
+    specificValidation.join(' ')
+  ].join(' ')).toLowerCase();
+  const hasRollbackSignal = ROLLBACK_SIGNAL_RE.test(rollbackBlob) || ROLLBACK_SIGNAL_RE.test(concreteBlob);
   const criteriaRequirementApplied = isExecutableProposal && criteriaPolicy.required;
   const reasons = [];
   let score = 0;
@@ -3762,6 +3791,12 @@ function assessActionability(p, directiveFit, thresholds) {
     reasons.push('criteria_pattern_penalty');
   }
 
+  if (risk === 'medium' && isExecutableProposal && !hasRollbackSignal) {
+    score -= 28;
+    reasons.push('medium_risk_missing_rollback_path');
+    hardBlock = true;
+  }
+
   const finalScore = clampNumber(Math.round(score), 0, 100);
   const pass = !hardBlock && finalScore >= minActionability;
   if (!pass && finalScore < minActionability) reasons.push('below_min_actionability');
@@ -3771,6 +3806,7 @@ function assessActionability(p, directiveFit, thresholds) {
     score: finalScore,
     reasons,
     executable: isExecutableProposal,
+    rollback_signal: hasRollbackSignal,
     generic_next_command_template: genericRouteTask,
     success_criteria: {
       required: criteriaRequirementApplied,
@@ -5446,7 +5482,27 @@ function activeHumanEscalations(holdHours = AUTONOMY_HUMAN_ESCALATION_HOLD_HOURS
   const ttlMs = h * 60 * 60 * 1000;
   const out = [];
   const rows = readHumanEscalationEvents();
+  const latestById = new Map();
+  const anonymous = [];
   for (const row of rows) {
+    const id = String(row && row.escalation_id || '').trim();
+    if (!id) {
+      anonymous.push(row);
+      continue;
+    }
+    const prev = latestById.get(id);
+    if (!prev) {
+      latestById.set(id, row);
+      continue;
+    }
+    const prevMs = Date.parse(String(prev.ts || ''));
+    const curMs = Date.parse(String(row.ts || ''));
+    if (!Number.isFinite(prevMs) || (Number.isFinite(curMs) && curMs >= prevMs)) {
+      latestById.set(id, row);
+    }
+  }
+  const candidates = Array.from(latestById.values()).concat(anonymous);
+  for (const row of candidates) {
     const ts = parseIsoTs(row.ts);
     if (!ts) continue;
     const explicitExp = parseIsoTs(row.expires_at);
@@ -6226,6 +6282,7 @@ function statusCmd(dateStr) {
   const lastAttempt = attempts.length ? attempts[attempts.length - 1] : null;
   const lastAttemptMinutesAgo = lastAttempt ? minutesSinceTs(lastAttempt.ts) : null;
   const noProgressStreak = consecutiveNoProgressRuns(runs);
+  const executedNoProgressStreak = consecutiveExecutedNoProgressRuns(runs);
   const gateExhaustionStreak = consecutiveGateExhaustedAttempts(attempts);
   const shippedToday = shippedCount(runs);
   const exploreUsed = executedRuns.filter(e => e.selection_mode === 'explore').length;
@@ -6258,6 +6315,7 @@ function statusCmd(dateStr) {
     },
     repeat_gate: {
       no_progress_streak: noProgressStreak,
+      executed_no_progress_streak: executedNoProgressStreak,
       no_progress_limit: AUTONOMY_REPEAT_NO_PROGRESS_LIMIT,
       gate_exhaustion_streak: gateExhaustionStreak,
       gate_exhaustion_limit: AUTONOMY_REPEAT_EXHAUSTED_LIMIT,
@@ -6529,11 +6587,6 @@ function readinessCmd(dateStr) {
     });
   };
 
-  const autonomyEnabled = String(process.env.AUTONOMY_ENABLED || '') === '1';
-  if (!autonomyEnabled) {
-    addBlocker('feature_flag_disabled', 'AUTONOMY_ENABLED!=1', { retryable: false });
-  }
-
   const emergency = isEmergencyStopEngaged('autonomy');
   if (emergency.engaged) {
     addBlocker('emergency_stop', 'emergency stop engaged for autonomy scope', {
@@ -6551,6 +6604,17 @@ function readinessCmd(dateStr) {
   const canaryDailyExecLimit = executionMode === 'canary_execute'
     ? effectiveStrategyCanaryExecLimit()
     : null;
+  const autonomyEnabled = String(process.env.AUTONOMY_ENABLED || '') === '1';
+  if (!executionAllowedByFeatureFlag(executionMode, false)) {
+    addBlocker('feature_flag_disabled', 'AUTONOMY_ENABLED!=1', {
+      retryable: false,
+      meta: {
+        execution_mode: executionMode,
+        autonomy_enabled: autonomyEnabled,
+        canary_allow_with_flag_off: AUTONOMY_CANARY_ALLOW_WITH_FLAG_OFF
+      }
+    });
+  }
 
   if (
     String(process.env.AUTONOMY_STRATEGY_STRICT || '') === '1'
@@ -6599,6 +6663,7 @@ function readinessCmd(dateStr) {
   const executedToday = executedRuns.length;
   const shippedToday = shippedCount(runs);
   const noProgressStreak = consecutiveNoProgressRuns(runs);
+  const executedNoProgressStreak = consecutiveExecutedNoProgressRuns(runs);
   const gateExhaustionStreak = consecutiveGateExhaustedAttempts(attempts);
   const lastAttempt = attempts.length ? attempts[attempts.length - 1] : null;
   const lastAttemptMinutesAgo = lastAttempt ? minutesSinceTs(lastAttempt.ts) : null;
@@ -6695,18 +6760,27 @@ function readinessCmd(dateStr) {
     });
   }
 
-  if (AUTONOMY_REPEAT_NO_PROGRESS_LIMIT > 0 && noProgressStreak >= AUTONOMY_REPEAT_NO_PROGRESS_LIMIT) {
+  if (AUTONOMY_REPEAT_NO_PROGRESS_LIMIT > 0 && executedNoProgressStreak >= AUTONOMY_REPEAT_NO_PROGRESS_LIMIT) {
     addBlocker('no_progress_streak', 'no-progress streak cap reached', {
       retryable: false,
-      meta: { no_progress_streak: noProgressStreak, no_progress_limit: AUTONOMY_REPEAT_NO_PROGRESS_LIMIT, shipped_today: shippedToday }
+      meta: {
+        no_progress_streak: noProgressStreak,
+        executed_no_progress_streak: executedNoProgressStreak,
+        no_progress_limit: AUTONOMY_REPEAT_NO_PROGRESS_LIMIT,
+        shipped_today: shippedToday
+      }
     });
   }
 
   const dopamine = loadDopamineSnapshot(dateStr);
-  if (noProgressStreak > 0 && shippedToday === 0 && dopamine.momentum_ok !== true) {
+  if (executedNoProgressStreak > 0 && shippedToday === 0 && dopamine.momentum_ok !== true) {
     addBlocker('dopamine_momentum', 'dopamine momentum gate failed after no-progress streak', {
       retryable: false,
-      meta: { dopamine }
+      meta: {
+        no_progress_streak: noProgressStreak,
+        executed_no_progress_streak: executedNoProgressStreak,
+        dopamine
+      }
     });
   }
 
@@ -6790,11 +6864,18 @@ function readinessCmd(dateStr) {
 
 function runCmd(dateStr, opts = {}) {
   const shadowOnly = opts && opts.shadowOnly === true;
-  if (!shadowOnly && String(process.env.AUTONOMY_ENABLED || '') !== '1') {
+  const strategy = strategyProfile();
+  const strategyBudget = effectiveStrategyBudget();
+  const executionMode = shadowOnly ? 'score_only' : effectiveStrategyExecutionMode();
+  const autonomyEnabled = String(process.env.AUTONOMY_ENABLED || '') === '1';
+  if (!executionAllowedByFeatureFlag(executionMode, shadowOnly)) {
     process.stdout.write(JSON.stringify({
       ok: true,
       skipped: true,
       reason: 'AUTONOMY_ENABLED!=1',
+      execution_mode: executionMode,
+      autonomy_enabled: autonomyEnabled,
+      canary_allow_with_flag_off: AUTONOMY_CANARY_ALLOW_WITH_FLAG_OFF,
       ts: nowIso()
     }) + '\n');
     return;
@@ -6819,9 +6900,6 @@ function runCmd(dateStr, opts = {}) {
     return;
   }
 
-  const strategy = strategyProfile();
-  const strategyBudget = effectiveStrategyBudget();
-  const executionMode = shadowOnly ? 'score_only' : effectiveStrategyExecutionMode();
   const allowedRiskSet = effectiveAllowedRisksSet();
   if (
     String(process.env.AUTONOMY_STRATEGY_STRICT || '') === '1'
@@ -7111,6 +7189,7 @@ function runCmd(dateStr, opts = {}) {
   const lastAttempt = priorAttempts.length ? priorAttempts[priorAttempts.length - 1] : null;
   const lastAttemptMinutesAgo = lastAttempt ? minutesSinceTs(lastAttempt.ts) : null;
   const noProgressStreak = consecutiveNoProgressRuns(priorRuns);
+  const executedNoProgressStreak = consecutiveExecutedNoProgressRuns(priorRuns);
   const gateExhaustionStreak = consecutiveGateExhaustedAttempts(priorAttempts);
   const shippedToday = shippedCount(priorRuns);
   const maxRunsPerDay = Number.isFinite(Number(strategyBudget.daily_runs_cap))
@@ -7235,12 +7314,13 @@ function runCmd(dateStr, opts = {}) {
     return;
   }
 
-  if (!shadowOnly && AUTONOMY_REPEAT_NO_PROGRESS_LIMIT > 0 && noProgressStreak >= AUTONOMY_REPEAT_NO_PROGRESS_LIMIT) {
+  if (!shadowOnly && AUTONOMY_REPEAT_NO_PROGRESS_LIMIT > 0 && executedNoProgressStreak >= AUTONOMY_REPEAT_NO_PROGRESS_LIMIT) {
     writeRun(dateStr, {
       ts: nowIso(),
       type: 'autonomy_run',
       result: 'stop_repeat_gate_no_progress',
       no_progress_streak: noProgressStreak,
+      executed_no_progress_streak: executedNoProgressStreak,
       no_progress_limit: AUTONOMY_REPEAT_NO_PROGRESS_LIMIT,
       shipped_today: shippedToday
     });
@@ -7248,6 +7328,7 @@ function runCmd(dateStr, opts = {}) {
       ok: true,
       result: 'stop_repeat_gate_no_progress',
       no_progress_streak: noProgressStreak,
+      executed_no_progress_streak: executedNoProgressStreak,
       no_progress_limit: AUTONOMY_REPEAT_NO_PROGRESS_LIMIT,
       shipped_today: shippedToday,
       ts: nowIso()
@@ -7255,18 +7336,20 @@ function runCmd(dateStr, opts = {}) {
     return;
   }
 
-  if (!shadowOnly && noProgressStreak > 0 && shippedToday === 0 && dopamine.momentum_ok !== true) {
+  if (!shadowOnly && executedNoProgressStreak > 0 && shippedToday === 0 && dopamine.momentum_ok !== true) {
     writeRun(dateStr, {
       ts: nowIso(),
       type: 'autonomy_run',
       result: 'stop_repeat_gate_dopamine',
       no_progress_streak: noProgressStreak,
+      executed_no_progress_streak: executedNoProgressStreak,
       dopamine
     });
     process.stdout.write(JSON.stringify({
       ok: true,
       result: 'stop_repeat_gate_dopamine',
       no_progress_streak: noProgressStreak,
+      executed_no_progress_streak: executedNoProgressStreak,
       dopamine,
       ts: nowIso()
     }) + '\n');
@@ -10207,6 +10290,82 @@ function resetCmd(dateStr) {
   process.stdout.write(JSON.stringify(out) + '\n');
 }
 
+function resolveHumanEscalationCmd(dateStr) {
+  const escalationId = String(parseArg('id') || '').trim();
+  const allRaw = String(parseArg('all') || '').trim().toLowerCase();
+  const resolveAll = allRaw === '1' || allRaw === 'true' || allRaw === 'yes';
+  const note = String(parseArg('note') || '').slice(0, 200);
+  if (!resolveAll && !escalationId) {
+    process.stdout.write(JSON.stringify({
+      ok: false,
+      error: 'missing --id=<escalation_id> (or pass --all=1)',
+      ts: nowIso()
+    }) + '\n');
+    process.exit(2);
+  }
+
+  const active = activeHumanEscalations(AUTONOMY_HUMAN_ESCALATION_HOLD_HOURS);
+  const targets = resolveAll
+    ? active
+    : active.filter((row) => String(row && row.escalation_id || '') === escalationId);
+  if (!targets.length) {
+    process.stdout.write(JSON.stringify({
+      ok: true,
+      result: 'human_escalation_no_match',
+      requested_id: escalationId || null,
+      resolve_all: resolveAll,
+      active_count: active.length,
+      ts: nowIso()
+    }) + '\n');
+    return;
+  }
+
+  const ts = nowIso();
+  const resolved = [];
+  for (const row of targets) {
+    const evt = {
+      ts,
+      type: 'autonomy_human_escalation',
+      escalation_id: row.escalation_id || null,
+      status: 'resolved',
+      resolved_at: ts,
+      resolved_via: 'autonomy_controller',
+      resolution_note: note || null,
+      signature: row.signature || null,
+      stage: row.stage || null,
+      error_code: row.error_code || null,
+      proposal_id: row.proposal_id || null,
+      receipt_id: row.receipt_id || null,
+      gate: row.gate || null,
+      hold_hours: Math.max(1, Number(AUTONOMY_HUMAN_ESCALATION_HOLD_HOURS || 6)),
+      expires_at: row.expires_at || null,
+      requires_human_review: false
+    };
+    appendJsonl(AUTONOMY_HUMAN_ESCALATION_LOG_PATH, evt);
+    resolved.push({
+      escalation_id: evt.escalation_id,
+      signature: evt.signature,
+      stage: evt.stage,
+      error_code: evt.error_code
+    });
+  }
+
+  writeRun(dateStr, {
+    ts,
+    type: 'autonomy_human_escalation_resolved',
+    resolved_count: resolved.length,
+    escalation_ids: resolved.map(r => r.escalation_id).filter(Boolean).slice(0, 32),
+    note: note || null
+  });
+  process.stdout.write(JSON.stringify({
+    ok: true,
+    result: 'human_escalation_resolved',
+    resolved_count: resolved.length,
+    resolved,
+    ts
+  }) + '\n');
+}
+
 function readRunLockState() {
   try {
     if (!fs.existsSync(AUTONOMY_RUN_LOCK_PATH)) return null;
@@ -10308,6 +10467,7 @@ function usage() {
   console.log('  node systems/autonomy/autonomy_controller.js issue-canary-override [YYYY-MM-DD] --nonce=<token> --approve=<phrase> [--ttl_minutes=N] [--note=...]');
   console.log('  node systems/autonomy/autonomy_controller.js canary-override-status');
   console.log('  node systems/autonomy/autonomy_controller.js revoke-canary-override [YYYY-MM-DD]');
+  console.log('  node systems/autonomy/autonomy_controller.js resolve-human-escalation [YYYY-MM-DD] [--id=<escalation_id>|--all=1] [--note=...]');
 }
 
 function runChildAutonomy(dateStr) {
@@ -10432,6 +10592,7 @@ function main() {
   if (cmd === 'issue-canary-override') return issueHumanCanaryOverrideCmd(dateStr);
   if (cmd === 'canary-override-status') return humanCanaryOverrideStatusCmd();
   if (cmd === 'revoke-canary-override') return revokeHumanCanaryOverrideCmd(dateStr);
+  if (cmd === 'resolve-human-escalation') return resolveHumanEscalationCmd(dateStr);
 
   usage();
   process.exit(2);
@@ -10442,6 +10603,7 @@ module.exports = {
   buildOverlay,
   proposalStatus,
   proposalScore,
+  assessActionability,
   estimateTokens,
   candidatePool,
   evaluateDoD,

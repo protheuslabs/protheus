@@ -170,6 +170,15 @@ function validateRequiredPaths(schemaId, requiredPaths, sample) {
   return failures;
 }
 
+function validateExpectedVersion(schemaId, expectedVersion, sample) {
+  const expected = String(expectedVersion || '').trim();
+  if (!expected) return [`${schemaId}:expected_version_missing`];
+  const actual = String(sample && sample.version || '').trim();
+  if (!actual) return [`${schemaId}:version_missing`];
+  if (actual !== expected) return [`${schemaId}:version_mismatch:${actual}!=${expected}`];
+  return [];
+}
+
 function validateAutonomyReceiptContract() {
   const fp = path.join(CONTRACTS_DIR, 'autonomy_receipt.schema.json');
   const raw = validateContractFile(fp);
@@ -211,6 +220,8 @@ function validateAdaptiveStoreContract() {
       failures.push(`adaptive_store:missing_store_contract:${storeName}`);
       continue;
     }
+    const expectedVersion = String(storeSpec.expected_version || '').trim();
+    failures.push(...validateExpectedVersion(`adaptive_store:${storeName}`, expectedVersion, fixture));
     const required = Array.isArray(storeSpec.required_paths) ? storeSpec.required_paths : [];
     if (!required.length) failures.push(`adaptive_store:required_paths_missing:${storeName}`);
     failures.push(...validateRequiredPaths(`adaptive_store:${storeName}`, required, fixture));

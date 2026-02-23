@@ -61,6 +61,7 @@ function runGuard(opts = {}) {
   checks.push(runCmd('memory_layer_guard_strict', 'node', ['systems/memory/memory_layer_guard.js', 'run', '--strict']));
   checks.push(runCmd('workspace_dump_guard_strict', 'node', ['systems/security/workspace_dump_guard.js', 'run', '--strict']));
   checks.push(runCmd('repo_hygiene_guard_strict', 'node', ['systems/security/repo_hygiene_guard.js', 'run', '--strict']));
+  checks.push(runCmd('security_threat_pack', 'node', ['memory/tools/tests/security_threat_pack.test.js']));
   if (!opts.skipTests) {
     checks.push(runCmd('test_ci', 'npm', ['run', 'test:ci']));
   }

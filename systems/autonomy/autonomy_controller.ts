@@ -350,6 +350,7 @@ const OPTIMIZATION_EXEMPT_RE = /\b(fail(?:ure)?|error|outage|broken|incident|sec
 const PERCENT_VALUE_RE = /(-?\d+(?:\.\d+)?)\s*%/g;
 const GENERIC_VALIDATION_RE = /\b(extract one concrete build\/change task from source|define measurable success check|route a dry-run execution plan)\b/i;
 const GENERIC_ROUTE_TASK_RE = /--task=\"Extract one implementable step from external intel:/i;
+const ROLLBACK_SIGNAL_RE = /\b(rollback|revert|undo|restore|fallback)\b/i;
 const SUCCESS_METRIC_RE = /\b(metric|kpi|target|rate|count|latency|error|uptime|throughput|conversion|artifact|receipt|coverage|reply|interview|pass|fail|delta|percent|%|run|runs|check|checks|items_collected)\b/i;
 const SUCCESS_TIMEBOUND_RE = /\b(\d+\s*(h|hr|hour|hours|d|day|days|w|week|weeks|min|mins|minute|minutes)|daily|weekly|monthly|quarterly)\b/i;
 const SUCCESS_RELAXED_RUN_HORIZON_RE = /\b(next|this)\s+(run|cycle)\b/i;
@@ -3643,6 +3644,7 @@ function successCriteriaPolicyForProposal(proposal) {
 
 function assessActionability(p, directiveFit, thresholds) {
   const minActionability = Number((thresholds && thresholds.min_actionability_score) || AUTONOMY_MIN_ACTIONABILITY_SCORE);
+  const risk = normalizedRisk(p && p.risk);
   const title = String((p && p.title) || '');
   const impact = String((p && p.expected_impact) || '').toLowerCase();
   const validation = Array.isArray(p && p.validation)
@@ -3676,6 +3678,13 @@ function assessActionability(p, directiveFit, thresholds) {
   const capabilityKey = String((capabilityDescriptor(p, parseActuationSpec(p)) || {}).key || '').toLowerCase();
   const criteriaPatternPenalty = criteriaPatternPenaltyForProposal(p, capabilityKey);
   const isExecutableProposal = !!(nextCmd || (p && p.action_spec && typeof p.action_spec === 'object'));
+  const rollbackBlob = normalizeSpaces([
+    p && p.rollback_plan,
+    p && p.meta && p.meta.rollback_plan,
+    p && p.action_spec && p.action_spec.rollback_command,
+    specificValidation.join(' ')
+  ].join(' ')).toLowerCase();
+  const hasRollbackSignal = ROLLBACK_SIGNAL_RE.test(rollbackBlob) || ROLLBACK_SIGNAL_RE.test(concreteBlob);
   const criteriaRequirementApplied = isExecutableProposal && criteriaPolicy.required;
   const reasons = [];
   let score = 0;
@@ -3767,6 +3776,12 @@ function assessActionability(p, directiveFit, thresholds) {
     reasons.push('criteria_pattern_penalty');
   }
 
+  if (risk === 'medium' && isExecutableProposal && !hasRollbackSignal) {
+    score -= 28;
+    reasons.push('medium_risk_missing_rollback_path');
+    hardBlock = true;
+  }
+
   const finalScore = clampNumber(Math.round(score), 0, 100);
   const pass = !hardBlock && finalScore >= minActionability;
   if (!pass && finalScore < minActionability) reasons.push('below_min_actionability');
@@ -3776,6 +3791,7 @@ function assessActionability(p, directiveFit, thresholds) {
     score: finalScore,
     reasons,
     executable: isExecutableProposal,
+    rollback_signal: hasRollbackSignal,
     generic_next_command_template: genericRouteTask,
     success_criteria: {
       required: criteriaRequirementApplied,
@@ -10269,6 +10285,7 @@ module.exports = {
   buildOverlay,
   proposalStatus,
   proposalScore,
+  assessActionability,
   estimateTokens,
   candidatePool,
   evaluateDoD,

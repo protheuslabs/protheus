@@ -22,6 +22,7 @@ const { beginChange, completeChange, recoverIfInterrupted, writeAtomicJson } = r
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const AUTONOMY_CONTROLLER_PATH = path.join(REPO_ROOT, 'systems', 'autonomy', 'autonomy_controller.js');
+const POLICY_ROOT_SCRIPT = path.join(REPO_ROOT, 'systems', 'security', 'policy_rootd.js');
 
 const IMPROVEMENT_DIR = path.join(REPO_ROOT, 'state', 'autonomy', 'improvements');
 const TRIALS_PATH = path.join(IMPROVEMENT_DIR, 'trials.json');
@@ -39,6 +40,8 @@ const IMPROVEMENT_VERIFY_STEP_TIMEOUT_MS = Number(process.env.IMPROVEMENT_VERIFY
 const IMPROVEMENT_VERIFY_STDOUT_MAX = Number(process.env.IMPROVEMENT_VERIFY_STDOUT_MAX || 300);
 const IMPROVEMENT_VERIFY_STDERR_MAX = Number(process.env.IMPROVEMENT_VERIFY_STDERR_MAX || 300);
 const IMPROVEMENT_DEFAULT_VERIFY_STEPS = String(process.env.IMPROVEMENT_DEFAULT_VERIFY_STEPS || 'contract,schema');
+const IMPROVEMENT_REQUIRE_POLICY_ROOT = String(process.env.IMPROVEMENT_REQUIRE_POLICY_ROOT || '1') !== '0';
+const IMPROVEMENT_POLICY_ROOT_SCOPE = String(process.env.IMPROVEMENT_POLICY_ROOT_SCOPE || 'autonomy_self_change_apply').trim() || 'autonomy_self_change_apply';
 
 const VERIFY_STEP_LIBRARY = Object.freeze({
   contract: {
@@ -213,6 +216,78 @@ function runVerificationPlan(steps, opts = {}) {
     ok: results.length > 0 && results.every((row) => row.ok === true),
     steps: results,
     root_cause: rootCauseFromVerification(results)
+  };
+}
+
+function runPolicyRootAuthorize({ scope, target, leaseToken, approvalNote, source }) {
+  const args = [
+    POLICY_ROOT_SCRIPT,
+    'authorize',
+    `--scope=${String(scope || '').trim()}`,
+    `--target=${String(target || '').trim()}`,
+    `--approval-note=${String(approvalNote || '').trim()}`
+  ];
+  if (leaseToken) args.push(`--lease-token=${String(leaseToken).trim()}`);
+  if (source) args.push(`--source=${String(source).trim()}`);
+  const r = spawnSync(process.execPath, args, {
+    cwd: REPO_ROOT,
+    encoding: 'utf8'
+  });
+  const stdout = String(r.stdout || '').trim();
+  const stderr = String(r.stderr || '').trim();
+  let payload = null;
+  if (stdout) {
+    try { payload = JSON.parse(stdout); } catch {}
+  }
+  return {
+    ok: r.status === 0 && payload && payload.ok === true && payload.decision === 'ALLOW',
+    code: Number(r.status || 0),
+    payload,
+    stdout,
+    stderr
+  };
+}
+
+function policyRootDecision(input = {}, runner = runPolicyRootAuthorize) {
+  const required = IMPROVEMENT_REQUIRE_POLICY_ROOT === true;
+  const scope = compactText(input.scope || IMPROVEMENT_POLICY_ROOT_SCOPE, 120) || 'autonomy_self_change_apply';
+  const target = compactText(input.target || '', 240) || null;
+  const leaseToken = compactText(input.lease_token || input.leaseToken || '', 8192);
+  const approvalNote = compactText(input.approval_note || input.approvalNote || '', 320);
+  const source = compactText(input.source || 'improvement_controller:start-validated', 120);
+
+  if (!required) {
+    return {
+      required: false,
+      ok: true,
+      scope,
+      target,
+      reason: 'policy_root_disabled',
+      payload: null
+    };
+  }
+
+  const auth = runner({
+    scope,
+    target,
+    leaseToken,
+    approvalNote,
+    source
+  }) || {};
+  const payload = auth && auth.payload && typeof auth.payload === 'object'
+    ? auth.payload
+    : null;
+  const reason = payload && payload.reason
+    ? String(payload.reason)
+    : compactText(auth.stderr || auth.stdout || `policy_root_exit_${Number(auth.code || 1)}`, 180);
+  return {
+    required: true,
+    ok: auth.ok === true,
+    scope,
+    target,
+    lease_provided: leaseToken.length > 0,
+    reason,
+    payload
   };
 }
 
@@ -641,8 +716,23 @@ function startValidatedCmd(dateStr) {
   const scorecardDays = clampNumber(Number(optValue('scorecard-days', DEFAULT_SCORECARD_DAYS)), 1, 30);
   const autoRevert = optEnabled('auto-revert', true);
   const note = compactText(optValue('note', ''), 240);
+  const approvalNote = compactText(
+    optValue('approval-note', note || `approve start-validated ${commit}`),
+    320
+  ) || `approve start-validated ${commit}`;
+  const leaseToken = compactText(
+    optValue('lease-token', process.env.CAPABILITY_LEASE_TOKEN || ''),
+    8192
+  );
   const thresholds = trialThresholds();
   const verifySteps = verifyPlanFromCli();
+  const policyRoot = policyRootDecision({
+    scope: IMPROVEMENT_POLICY_ROOT_SCOPE,
+    target: `commit:${commit}`,
+    leaseToken,
+    approvalNote,
+    source: 'improvement_controller:start-validated'
+  });
 
   const phases = {
     plan: {
@@ -651,12 +741,22 @@ function startValidatedCmd(dateStr) {
       trial_days: trialDays,
       scorecard_days: scorecardDays,
       verify_steps: verifySteps.map((s) => s.id),
-      auto_revert: autoRevert
+      auto_revert: autoRevert,
+      policy_root_scope: policyRoot.scope
+    },
+    policy_root: {
+      required: policyRoot.required === true,
+      ok: policyRoot.ok === true,
+      scope: policyRoot.scope,
+      target: policyRoot.target,
+      reason: policyRoot.reason || null,
+      lease_provided: policyRoot.lease_provided === true
     },
     apply: {
       ok: false,
       commit_exists: true,
-      commit_on_head: false
+      commit_on_head: false,
+      skipped: false
     },
     verify: {
       ok: false,
@@ -669,20 +769,26 @@ function startValidatedCmd(dateStr) {
     }
   };
 
-  phases.apply.commit_on_head = isCommitOnHead(commit);
-  phases.apply.ok = phases.apply.commit_exists && phases.apply.commit_on_head;
-
   let rootCause = null;
-  if (!phases.apply.ok) {
-    rootCause = phases.apply.commit_on_head ? 'apply_failed' : 'apply_commit_not_on_head';
+  if (policyRoot.required && !policyRoot.ok) {
+    phases.apply.skipped = true;
+    phases.apply.ok = false;
+    rootCause = `policy_root_denied:${String(policyRoot.reason || 'denied')}`;
   } else {
-    const verify = runVerificationPlan(verifySteps);
-    phases.verify = {
-      ok: verify.ok,
-      skipped: false,
-      steps: verify.steps
-    };
-    if (!verify.ok) rootCause = verify.root_cause || 'verify_failed';
+    phases.apply.commit_on_head = isCommitOnHead(commit);
+    phases.apply.ok = phases.apply.commit_exists && phases.apply.commit_on_head;
+
+    if (!phases.apply.ok) {
+      rootCause = phases.apply.commit_on_head ? 'apply_failed' : 'apply_commit_not_on_head';
+    } else {
+      const verify = runVerificationPlan(verifySteps);
+      phases.verify = {
+        ok: verify.ok,
+        skipped: false,
+        steps: verify.steps
+      };
+      if (!verify.ok) rootCause = verify.root_cause || 'verify_failed';
+    }
   }
 
   let revertResult = null;
@@ -724,6 +830,12 @@ function startValidatedCmd(dateStr) {
     type: 'improvement_two_phase_executed',
     commit,
     ok: !rootCause,
+    policy_root: {
+      required: policyRoot.required === true,
+      ok: policyRoot.ok === true,
+      reason: policyRoot.reason || null,
+      scope: policyRoot.scope
+    },
     root_cause: rootCause,
     auto_revert: autoRevert,
     trial_id: trial ? trial.id : null,
@@ -747,6 +859,7 @@ function startValidatedCmd(dateStr) {
       result: 'start_validated_failed',
       commit,
       root_cause: rootCause,
+      policy_root: phases.policy_root,
       auto_revert: autoRevert,
       phases,
       revert: revertResult,
@@ -760,6 +873,7 @@ function startValidatedCmd(dateStr) {
     result: 'trial_started_validated',
     commit,
     trial,
+    policy_root: phases.policy_root,
     phases,
     ts: nowIso()
   }) + '\n');
@@ -944,5 +1058,7 @@ module.exports = {
   addDays,
   defaultVerifyPlan,
   runVerificationPlan,
-  rootCauseFromVerification
+  rootCauseFromVerification,
+  runPolicyRootAuthorize,
+  policyRootDecision
 };

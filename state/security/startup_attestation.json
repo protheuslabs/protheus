@@ -1,8 +1,8 @@
 {
   "type": "startup_attestation",
   "version": "1.0",
-  "ts": "2026-02-23T04:49:10.351Z",
-  "expires_at": "2026-02-24T04:49:10.353Z",
+  "ts": "2026-02-23T05:25:21.002Z",
+  "expires_at": "2026-02-24T05:25:21.003Z",
   "ttl_hours": 24,
   "policy_path": "config/startup_attestation_policy.json",
   "critical_hashes": [
@@ -13,8 +13,8 @@
     },
     {
       "path": "config/security_integrity_policy.json",
-      "sha256": "a1f585d8220f8c98629de005e2730b3b70e8e441b9ede18a3f409ed60718721f",
-      "size_bytes": 4224
+      "sha256": "eca5f539fb0e530ea740d5cbcc5c290e8362b3fee19a2b520d1e156e2a50c551",
+      "size_bytes": 4195
     },
     {
       "path": "config/strategies/default.json",
@@ -23,8 +23,8 @@
     },
     {
       "path": "systems/autonomy/autonomy_controller.js",
-      "sha256": "65c0e3794bd8ab8dfea0193a816467ddc17b0eb1614b05307cd2595b00233974",
-      "size_bytes": 409590
+      "sha256": "cd141a26e211ac88b485f2454ee9ac3bb2b66e0e3b55454701caf9260284f265",
+      "size_bytes": 415520
     },
     {
       "path": "systems/security/capability_lease.js",
@@ -43,8 +43,8 @@
     },
     {
       "path": "systems/security/policy_rootd.js",
-      "sha256": "bbd04839468ccbadff8f1b9b5be1f55ac829cacaed8b8a391b3302770d54fdfb",
-      "size_bytes": 5895
+      "sha256": "c77002bda2cd5ffdca2cd1ccabae13def67bec23db953f003a8db0696cf7f8d5",
+      "size_bytes": 5922
     },
     {
       "path": "systems/spine/spine.js",
@@ -53,5 +53,5 @@
     }
   ],
   "missing_paths": [],
-  "signature": "c780cbd7b7566023bd27a5d6f534793f5c701ca7acd218c1f4dc9890e696ce0a"
+  "signature": "31dbdf86d63e5aa25cc88c3cd767f2aa08e4807d8374c103cec2521d403b0abb"
 }

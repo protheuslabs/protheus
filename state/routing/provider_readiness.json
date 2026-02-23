@@ -1,19 +1,19 @@
 {
   "version": "1.0",
-  "updated_ts": "2026-02-23T04:50:18.464Z",
+  "updated_ts": "2026-02-23T05:25:36.854Z",
   "providers": {
     "ollama": {
       "provider": "ollama",
       "status": "down",
-      "last_check_ts": "2026-02-23T04:50:18.464Z",
+      "last_check_ts": "2026-02-23T05:25:36.854Z",
       "last_success_ts": "2026-02-23T04:31:17.393Z",
-      "last_failure_ts": "2026-02-23T04:50:18.464Z",
-      "last_latency_ms": 103,
+      "last_failure_ts": "2026-02-23T05:25:36.854Z",
+      "last_latency_ms": 104,
       "last_error": "env_blocked",
       "last_code": 1,
-      "failure_streak": 10,
+      "failure_streak": 13,
       "success_streak": 0,
-      "circuit_open_until_ts": "2026-02-23T04:51:03.358Z",
+      "circuit_open_until_ts": "2026-02-23T05:26:21.747Z",
       "circuit_reason": "env_blocked",
       "last_pain_ts": "2026-02-23T01:56:38.275Z"
     }
