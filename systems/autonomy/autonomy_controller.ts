@@ -1491,6 +1491,19 @@ function setCooldown(proposalId, hours, reason) {
   saveJson(COOLDOWNS_PATH, cooldowns);
 }
 
+function cooldownEntry(proposalId) {
+  const cooldowns = getCooldowns();
+  const ent = cooldowns[proposalId];
+  if (!ent) return null;
+  const untilMs = Number(ent.until_ms || 0);
+  if (!untilMs || Date.now() > untilMs) {
+    delete cooldowns[proposalId];
+    saveJson(COOLDOWNS_PATH, cooldowns);
+    return null;
+  }
+  return ent;
+}
+
 function cooldownActive(proposalId) {
   const cooldowns = getCooldowns();
   const ent = cooldowns[proposalId];
