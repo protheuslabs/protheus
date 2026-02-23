@@ -7,6 +7,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { spawnSync } = require('child_process');
 const { getStopState } = require('../../lib/emergency_stop.js');
+const { resolveCatalogPath } = require('../../lib/eyes_catalog.js');
 
 type AnyObj = Record<string, any>;
 
@@ -64,6 +65,7 @@ const AUTONOMY_COOLDOWNS = process.env.AUTONOMY_HEALTH_COOLDOWNS_PATH
 const EYES_REGISTRY_PATH = process.env.AUTONOMY_HEALTH_EYES_REGISTRY_PATH
   ? path.resolve(process.env.AUTONOMY_HEALTH_EYES_REGISTRY_PATH)
   : path.join(ROOT, 'state', 'sensory', 'eyes', 'registry.json');
+const EYES_CATALOG_PATH = resolveCatalogPath(ROOT);
 const PROPOSALS_DIR = process.env.AUTONOMY_HEALTH_PROPOSALS_DIR
   ? path.resolve(process.env.AUTONOMY_HEALTH_PROPOSALS_DIR)
   : path.join(ROOT, 'state', 'sensory', 'proposals');
@@ -410,6 +412,23 @@ function hoursSince(ts, now) {
   return Number(((Number(now) - Number(ts)) / 3600000).toFixed(3));
 }
 
+function buildEyeRuntimeMeta(catalog, registry) {
+  const map = new Map();
+  const catalogEyes = Array.isArray(catalog && catalog.eyes) ? catalog.eyes : [];
+  const registryEyes = Array.isArray(registry && registry.eyes) ? registry.eyes : [];
+  for (const eye of catalogEyes) {
+    const id = String(eye && eye.id || '').trim();
+    if (!id) continue;
+    map.set(id, { ...eye });
+  }
+  for (const eye of registryEyes) {
+    const id = String(eye && eye.id || '').trim();
+    if (!id) continue;
+    map.set(id, { ...(map.get(id) || {}), ...eye });
+  }
+  return map;
+}
+
 function lastTs(rows, predicate) {
   let best = null;
   for (const row of rows || []) {
@@ -665,14 +684,17 @@ function levelRank(level) {
   return 0;
 }
 
-function assessDarkEyes(now, registry) {
+function assessDarkEyes(now, registry, eyeMetaMap = null) {
   const eyes = registry && Array.isArray(registry.eyes) ? registry.eyes : [];
+  const metaMap = eyeMetaMap instanceof Map ? eyeMetaMap : new Map();
   const dark = [];
   let monitoredTotal = 0;
   for (const eye of eyes) {
     const id = String(eye && eye.id || '');
     if (!id) continue;
+    const runtime = metaMap.get(id) || eye || {};
     const status = String(eye && eye.status || '').toLowerCase();
+    const parserAllowsEmptySuccess = runtime.empty_success_is_signal === true;
     if (status === 'dormant') continue;
     const cooldownUntilMs = toMs(eye && eye.cooldown_until || null);
     if (cooldownUntilMs != null && cooldownUntilMs > now) continue;
@@ -698,12 +720,24 @@ function assessDarkEyes(now, registry) {
         : baseFailCount
     );
     const recentFailure = lastErrorAgeHours != null && lastErrorAgeHours <= staleThresholdHours;
-    const failing = status === 'failing'
-      || (consecutiveFailures >= failCountThreshold && (stale || recentFailure));
+    const explicitFailing = status === 'failing';
+    const failing = (
+      (explicitFailing && (parserAllowsEmptySuccess !== true || stale || recentFailure || consecutiveFailures >= failCountThreshold))
+      || (consecutiveFailures >= failCountThreshold && (stale || recentFailure))
+    );
+    const healthyEmptySignal = (
+      parserAllowsEmptySuccess === true
+      && stale !== true
+      && consecutiveFailures <= 0
+      && recentFailure !== true
+    );
+    if (healthyEmptySignal) continue;
     if (stale || failing) {
       dark.push({
         id,
         status,
+        parser_type: String(runtime && runtime.parser_type || '').toLowerCase() || null,
+        empty_success_is_signal: parserAllowsEmptySuccess === true,
         age_hours: ageHours,
         cadence_hours: Number.isFinite(cadenceHours) ? cadenceHours : null,
         stale_threshold_hours: Number(staleThresholdHours.toFixed(2)),
@@ -1675,6 +1709,8 @@ function main() {
   const cooldowns = readJson(AUTONOMY_COOLDOWNS, {});
   const actuation = actuationReceiptSummary(dateStr);
   const registry = readJson(EYES_REGISTRY_PATH, { eyes: [] });
+  const eyesCatalog = readJson(EYES_CATALOG_PATH, { eyes: [] });
+  const eyeMetaMap = buildEyeRuntimeMeta(eyesCatalog, registry);
   const proposalRows = readProposalRows(dates);
   const queueEvents = readQueueEvents(dates);
   const runEvents = readAutonomyRunEvents(dates);
@@ -1690,7 +1726,7 @@ function main() {
   };
 
   const checks = {
-    dark_eyes: assessDarkEyes(now, registry),
+    dark_eyes: assessDarkEyes(now, registry, eyeMetaMap),
     queue_backlog: assessQueueBacklog(
       now,
       proposalRows,
