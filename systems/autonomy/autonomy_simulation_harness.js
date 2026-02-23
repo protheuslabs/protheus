@@ -53,6 +53,7 @@ const SIM_LINEAGE_FILTER_CONTEXTLESS = String(process.env.AUTONOMY_SIM_LINEAGE_F
 const SIM_LINEAGE_ROLLING_CONTEXT = String(process.env.AUTONOMY_SIM_LINEAGE_ROLLING_CONTEXT || '0').trim() === '1';
 const SIM_EXTERNAL_INPUT_OVERRIDE = process.env.AUTONOMY_SIM_RUNS_DIR != null
   || process.env.AUTONOMY_SIM_PROPOSALS_DIR != null;
+const SIM_FILTER_LEGACY_UNBOUND_EYE_NO_CHANGE = String(process.env.AUTONOMY_SIM_FILTER_LEGACY_UNBOUND_EYE_NO_CHANGE || '1').trim() !== '0';
 
 function usage() {
   console.log('Usage:');
@@ -514,6 +515,23 @@ function resolveRunContext(evt, proposalIndex) {
   };
 }
 
+function isLegacyUnboundEyeNoChange(evt, ctx) {
+  if (!evt || evt.type !== 'autonomy_run') return false;
+  if (String(evt.result || '') !== 'executed') return false;
+  if (String(evt.outcome || '') === 'shipped') return false;
+  const proposalId = normalizeText((ctx && ctx.proposal_id) || proposalIdFromRun(evt));
+  if (!proposalId.startsWith('EYE-')) return false;
+  if (normalizeText(objectiveIdFromRun(evt))) return false;
+  const source = normalizeText(ctx && ctx.source);
+  if (source !== 'proposal_index' && source !== 'none') return false;
+  const routeSummary = evt.route_summary && typeof evt.route_summary === 'object'
+    ? evt.route_summary
+    : {};
+  const decision = String(routeSummary.decision || '').trim().toUpperCase();
+  const executable = routeSummary.executable === true;
+  return decision === 'MANUAL' || decision === 'PROPOSE_HABIT' || executable === false;
+}
+
 function applyDirectiveCompilerProjection(attempts, proposalIndex, directiveCompiler) {
   const accepted = [];
   const rejected = [];
@@ -578,6 +596,21 @@ function applyDirectiveCompilerProjection(attempts, proposalIndex, directiveComp
       };
       rejected.push({ evt, context: ctx, lineage: row });
       rejectedByReason[row.reason] = Number(rejectedByReason[row.reason] || 0) + 1;
+      continue;
+    }
+
+    if (SIM_FILTER_LEGACY_UNBOUND_EYE_NO_CHANGE && isLegacyUnboundEyeNoChange(evt, ctx)) {
+      skipped.push({
+        evt,
+        context: ctx,
+        lineage: {
+          pass: true,
+          reason: 'legacy_unbound_eye_no_change',
+          objective_id: null,
+          root_objective_id: null,
+          lineage_path: []
+        }
+      });
       continue;
     }
 
