@@ -302,6 +302,24 @@ function rejectProposal(repo, proposalId, reason) {
   }
 }
 
+function reconcileProposalStatuses(repo, dateStr) {
+  const proposalScript = path.join(repo, "habits", "scripts", "proposal_queue.js");
+  const r = spawnSync("node", [proposalScript, "reconcile", `--date=${dateStr}`], { cwd: repo, encoding: "utf8" });
+  if (r.status !== 0) {
+    console.warn("queue_gc: proposal_queue reconcile failed (continuing)");
+    const tail = String(r.stderr || "").trim().slice(-220);
+    if (tail) console.warn(`queue_gc: reconcile stderr=${tail}`);
+    return;
+  }
+  const payload = (() => {
+    try { return JSON.parse(String(r.stdout || "").trim()); } catch { return null; }
+  })();
+  if (!payload || typeof payload !== "object") return;
+  console.log(
+    `queue_gc: reconciled proposals files_updated=${Number(payload.files_updated || 0)} proposals_updated=${Number(payload.proposals_updated || 0)}`
+  );
+}
+
 function main() {
   const mode = process.argv[2];
   const dateStr = todayOr(process.argv[3]);
@@ -532,6 +550,9 @@ function main() {
     const reason = `auto:queue_gc type_cap>${capPerType} type:${it.type}`;
     rejectProposal(repo, it.id, reason);
   }
+
+  // Keep proposal source statuses synchronized with terminal queue decisions.
+  reconcileProposalStatuses(repo, dateStr);
 
   console.log("queue_gc: done");
 }
