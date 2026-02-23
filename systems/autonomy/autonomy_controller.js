@@ -10257,6 +10257,82 @@ function runCmd(dateStr, opts = {}) {
       continue;
     }
 
+    let executeConfidencePolicyCand = null;
+    if (!shadowOnly && isExecuteMode(executionMode)) {
+      executeConfidencePolicyCand = computeExecuteConfidencePolicy(
+        dateStr,
+        cand.proposal,
+        capKeyCand,
+        risk,
+        executionMode
+      );
+      const executeCompositeMargin = Math.max(
+        0,
+        Number(
+          executeConfidencePolicyCand
+          && executeConfidencePolicyCand.applied
+          && executeConfidencePolicyCand.applied.composite_margin
+          || AUTONOMY_EXECUTE_CONFIDENCE_MARGIN
+        )
+      );
+      const executeValueMargin = Math.max(
+        0,
+        Number(
+          executeConfidencePolicyCand
+          && executeConfidencePolicyCand.applied
+          && executeConfidencePolicyCand.applied.value_margin
+          || AUTONOMY_EXECUTE_MIN_VALUE_SIGNAL_BONUS
+        )
+      );
+      const executeCompositeMin = Math.max(0, Number(compositeMin || 0) + executeCompositeMargin);
+      const executeValueMin = Math.max(
+        0,
+        Number(AUTONOMY_MIN_VALUE_SIGNAL_SCORE || 0)
+          + executeValueMargin
+          + (risk === 'medium' ? Number(AUTONOMY_MEDIUM_RISK_VALUE_SIGNAL_BONUS || 0) : 0)
+      );
+      const executeCompositeScore = Number(compositeScore || 0);
+      const executeValueScore = Number(valueSignal.score || 0);
+      if (executeCompositeScore < executeCompositeMin || executeValueScore < executeValueMin) {
+        skipStats.low_value_signal += 1;
+        bumpCount(candidateRejectedByGate, 'execute_confidence_precheck');
+        const confidenceReasons = [];
+        if (executeCompositeScore < executeCompositeMin) confidenceReasons.push('composite_below_execute_confidence_min');
+        if (executeValueScore < executeValueMin) confidenceReasons.push('value_signal_below_execute_confidence_min');
+        pushCandidateAudit({
+          proposal_id: proposalId,
+          proposal_type: proposalType,
+          risk,
+          pass: false,
+          gate: 'execute_confidence_precheck',
+          score: Number(cand.score || 0),
+          scores: {
+            composite: executeCompositeScore,
+            value_signal: executeValueScore
+          },
+          thresholds: {
+            min_composite: executeCompositeMin,
+            min_value_signal: executeValueMin,
+            composite_margin: executeCompositeMargin,
+            value_margin: executeValueMargin
+          },
+          reasons: confidenceReasons,
+          execute_confidence_policy: executeConfidencePolicyCand
+        });
+        if (!sampleLowValueSignal) {
+          sampleLowValueSignal = {
+            proposal_id: cand.proposal.id,
+            score: executeValueScore,
+            min_score: executeValueMin,
+            composite_score: executeCompositeScore,
+            composite_min_score: executeCompositeMin,
+            reasons: confidenceReasons
+          };
+        }
+        continue;
+      }
+    }
+
     const mediumGate = mediumRiskGateDecision(cand.proposal, dfit.score, actionability.score, compositeScore, gateThresholds);
     if (!mediumGate.pass) {
       skipStats.medium_risk_guard += 1;
@@ -10535,7 +10611,8 @@ function runCmd(dateStr, opts = {}) {
       objective_binding: objectiveBinding,
       optimization_link: optimizationLink,
       directive_pulse: pulse,
-      objective_runtime: objectiveRuntimeDecision
+      objective_runtime: objectiveRuntimeDecision,
+      execute_confidence_policy: executeConfidencePolicyCand
     });
     pushCandidateAudit({
       proposal_id: proposalId,
@@ -12716,7 +12793,7 @@ function runCmd(dateStr, opts = {}) {
     return;
   }
 
-  const executeConfidencePolicy = computeExecuteConfidencePolicy(
+  const executeConfidencePolicy = pick.execute_confidence_policy || computeExecuteConfidencePolicy(
     dateStr,
     p,
     capabilityKey,
