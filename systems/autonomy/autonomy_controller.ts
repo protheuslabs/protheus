@@ -334,6 +334,29 @@ const AUTONOMY_SCORE_ONLY_REPEAT_COOLDOWN_HOURS = Math.max(
 const AUTONOMY_EVIDENCE_SAMPLE_WINDOW = Math.max(1, Number(process.env.AUTONOMY_EVIDENCE_SAMPLE_WINDOW || 5));
 const AUTONOMY_PREEXEC_CRITERIA_GATE_ENABLED = String(process.env.AUTONOMY_PREEXEC_CRITERIA_GATE_ENABLED || '1') !== '0';
 const AUTONOMY_PREEXEC_CRITERIA_COOLDOWN_HOURS = Math.max(1, Number(process.env.AUTONOMY_PREEXEC_CRITERIA_COOLDOWN_HOURS || AUTONOMY_ROUTE_BLOCK_COOLDOWN_HOURS));
+const AUTONOMY_EXECUTE_CONFIDENCE_MARGIN = Math.max(0, Number(process.env.AUTONOMY_EXECUTE_CONFIDENCE_MARGIN || 4));
+const AUTONOMY_EXECUTE_MIN_VALUE_SIGNAL_BONUS = Math.max(0, Number(process.env.AUTONOMY_EXECUTE_MIN_VALUE_SIGNAL_BONUS || 5));
+const AUTONOMY_EXECUTE_CONFIDENCE_ADAPTIVE_ENABLED = String(process.env.AUTONOMY_EXECUTE_CONFIDENCE_ADAPTIVE_ENABLED || '1') !== '0';
+const AUTONOMY_EXECUTE_CONFIDENCE_HISTORY_DAYS = Math.max(1, Number(process.env.AUTONOMY_EXECUTE_CONFIDENCE_HISTORY_DAYS || 7));
+const AUTONOMY_EXECUTE_CONFIDENCE_LOW_RISK_RELAX_COMPOSITE = Math.max(0, Number(process.env.AUTONOMY_EXECUTE_CONFIDENCE_LOW_RISK_RELAX_COMPOSITE || 2));
+const AUTONOMY_EXECUTE_CONFIDENCE_LOW_RISK_RELAX_VALUE = Math.max(0, Number(process.env.AUTONOMY_EXECUTE_CONFIDENCE_LOW_RISK_RELAX_VALUE || 4));
+const AUTONOMY_EXECUTE_CONFIDENCE_FALLBACK_RELAX_EVERY = Math.max(1, Number(process.env.AUTONOMY_EXECUTE_CONFIDENCE_FALLBACK_RELAX_EVERY || 3));
+const AUTONOMY_EXECUTE_CONFIDENCE_FALLBACK_RELAX_STEP = Math.max(0, Number(process.env.AUTONOMY_EXECUTE_CONFIDENCE_FALLBACK_RELAX_STEP || 1));
+const AUTONOMY_EXECUTE_CONFIDENCE_FALLBACK_RELAX_MAX = Math.max(0, Number(process.env.AUTONOMY_EXECUTE_CONFIDENCE_FALLBACK_RELAX_MAX || 3));
+const AUTONOMY_EXECUTE_CONFIDENCE_FALLBACK_RELAX_MIN_EXECUTED = Math.max(0, Number(process.env.AUTONOMY_EXECUTE_CONFIDENCE_FALLBACK_RELAX_MIN_EXECUTED || 2));
+const AUTONOMY_EXECUTE_CONFIDENCE_FALLBACK_RELAX_MIN_SHIPPED = Math.max(0, Number(process.env.AUTONOMY_EXECUTE_CONFIDENCE_FALLBACK_RELAX_MIN_SHIPPED || 1));
+const AUTONOMY_EXECUTE_CONFIDENCE_FALLBACK_RELAX_MIN_SHIP_RATE = clampNumber(
+  Number(process.env.AUTONOMY_EXECUTE_CONFIDENCE_FALLBACK_RELAX_MIN_SHIP_RATE || 0.5),
+  0,
+  1
+);
+const AUTONOMY_EXECUTE_CONFIDENCE_NO_CHANGE_TIGHTEN_MIN_EXECUTED = Math.max(1, Number(process.env.AUTONOMY_EXECUTE_CONFIDENCE_NO_CHANGE_TIGHTEN_MIN_EXECUTED || 3));
+const AUTONOMY_EXECUTE_CONFIDENCE_NO_CHANGE_TIGHTEN_THRESHOLD = clampNumber(Number(process.env.AUTONOMY_EXECUTE_CONFIDENCE_NO_CHANGE_TIGHTEN_THRESHOLD || 0.8), 0, 1);
+const AUTONOMY_EXECUTE_CONFIDENCE_NO_CHANGE_TIGHTEN_STEP = Math.max(0, Number(process.env.AUTONOMY_EXECUTE_CONFIDENCE_NO_CHANGE_TIGHTEN_STEP || 1));
+const AUTONOMY_EXECUTE_CONFIDENCE_LANE_COOLDOWN_HOURS = Math.max(
+  1,
+  Number(process.env.AUTONOMY_EXECUTE_CONFIDENCE_LANE_COOLDOWN_HOURS || AUTONOMY_ROUTE_BLOCK_COOLDOWN_HOURS)
+);
 const AUTONOMY_CRITERIA_PATTERN_WINDOW_DAYS = Math.max(1, Number(process.env.AUTONOMY_CRITERIA_PATTERN_WINDOW_DAYS || 14));
 const AUTONOMY_CRITERIA_PATTERN_FAIL_THRESHOLD = Math.max(1, Number(process.env.AUTONOMY_CRITERIA_PATTERN_FAIL_THRESHOLD || 2));
 const AUTONOMY_CRITERIA_PATTERN_PENALTY_PER_HIT = Math.max(1, Number(process.env.AUTONOMY_CRITERIA_PATTERN_PENALTY_PER_HIT || 6));
@@ -1607,12 +1630,34 @@ function capabilityCooldownActive(capabilityKey) {
   return cooldownActive(key);
 }
 
+function executeConfidenceCooldownKey(capabilityKey, objectiveId, proposalType) {
+  const objective = sanitizeDirectiveObjectiveId(objectiveId || '');
+  if (objective) {
+    return `exec_confidence:objective:${String(objective).toLowerCase().replace(/[^a-z0-9:_-]/g, '_')}`;
+  }
+  const capKey = String(capabilityKey || '').trim().toLowerCase();
+  if (capKey) {
+    return `exec_confidence:capability:${capKey.replace(/[^a-z0-9:_-]/g, '_')}`;
+  }
+  const type = String(proposalType || '').trim().toLowerCase();
+  if (type) {
+    return `exec_confidence:type:${type.replace(/[^a-z0-9:_-]/g, '_')}`;
+  }
+  return '';
+}
+
 function readinessRetryCooldownKey(strategyId, executionMode) {
   const sid = normalizeSpaces(strategyId).toLowerCase().replace(/[^a-z0-9:_-]/g, '_');
   if (!sid) return '';
   const mode = normalizeSpaces(executionMode).toLowerCase().replace(/[^a-z0-9:_-]/g, '_');
   if (!mode) return `readiness:strategy:${sid}`;
   return `readiness:strategy:${sid}:mode:${mode}`;
+}
+
+function executeConfidenceCooldownActive(capabilityKey, objectiveId, proposalType) {
+  const key = executeConfidenceCooldownKey(capabilityKey, objectiveId, proposalType);
+  if (!key) return false;
+  return cooldownActive(key);
 }
 
 function dailyBudgetPath(dateStr) {
@@ -4316,6 +4361,149 @@ function countEyeOutcomesInLastHours(events, eyeRef, outcome, hours) {
     count++;
   }
   return count;
+}
+
+function executeConfidenceHistoryMatch(evt, proposalType, capabilityKey) {
+  if (!evt || evt.type !== 'autonomy_run') return false;
+  const capKey = String(capabilityKey || '').trim().toLowerCase();
+  const evtCap = String(evt.capability_key || '').trim().toLowerCase();
+  if (capKey && evtCap) return evtCap === capKey;
+  const type = String(proposalType || '').trim().toLowerCase();
+  const evtType = String(evt.proposal_type || '').trim().toLowerCase();
+  if (type && evtType) return evtType === type;
+  return false;
+}
+
+function collectExecuteConfidenceHistory(dateStr, proposalType, capabilityKey, days = 7) {
+  const windowDays = clampNumber(Number(days || 7), 1, 30);
+  const out = {
+    window_days: windowDays,
+    proposal_type: String(proposalType || '').trim().toLowerCase() || null,
+    capability_key: String(capabilityKey || '').trim().toLowerCase() || null,
+    matched_events: 0,
+    confidence_fallback: 0,
+    route_blocked: 0,
+    executed: 0,
+    shipped: 0,
+    no_change: 0,
+    reverted: 0,
+    no_change_rate: 0,
+    reverted_rate: 0
+  };
+  for (const d of dateWindow(dateStr, windowDays)) {
+    for (const evt of readRuns(d)) {
+      if (!executeConfidenceHistoryMatch(evt, proposalType, capabilityKey)) continue;
+      out.matched_events += 1;
+      const result = String(evt.result || '').trim();
+      if (result === 'score_only_fallback_low_execution_confidence') {
+        out.confidence_fallback += 1;
+        continue;
+      }
+      if (result === 'score_only_fallback_route_block' || result === 'init_gate_blocked_route') {
+        out.route_blocked += 1;
+        continue;
+      }
+      if (result !== 'executed') continue;
+      out.executed += 1;
+      const outcome = String(evt.outcome || '').trim().toLowerCase();
+      if (outcome === 'shipped') out.shipped += 1;
+      else if (outcome === 'no_change') out.no_change += 1;
+      else if (outcome === 'reverted') out.reverted += 1;
+    }
+  }
+  if (out.executed > 0) {
+    out.no_change_rate = Number((out.no_change / out.executed).toFixed(3));
+    out.reverted_rate = Number((out.reverted / out.executed).toFixed(3));
+  }
+  return out;
+}
+
+function computeExecuteConfidencePolicy(dateStr, proposal, capabilityKey, proposalRisk, executionMode) {
+  const type = String(proposal && proposal.type || '').trim().toLowerCase();
+  const risk = normalizedRisk(proposalRisk);
+  const baseCompositeMargin = Math.max(0, Number(AUTONOMY_EXECUTE_CONFIDENCE_MARGIN || 0));
+  const baseValueMargin = Math.max(0, Number(AUTONOMY_EXECUTE_MIN_VALUE_SIGNAL_BONUS || 0));
+  let compositeMargin = baseCompositeMargin;
+  let valueMargin = baseValueMargin;
+  const reasons = [];
+  const history = collectExecuteConfidenceHistory(
+    dateStr,
+    type,
+    capabilityKey,
+    AUTONOMY_EXECUTE_CONFIDENCE_HISTORY_DAYS
+  );
+  if (
+    AUTONOMY_EXECUTE_CONFIDENCE_ADAPTIVE_ENABLED
+    && String(executionMode || '') === 'canary_execute'
+    && risk === 'low'
+  ) {
+    compositeMargin = Math.max(0, compositeMargin - AUTONOMY_EXECUTE_CONFIDENCE_LOW_RISK_RELAX_COMPOSITE);
+    valueMargin = Math.max(0, valueMargin - AUTONOMY_EXECUTE_CONFIDENCE_LOW_RISK_RELAX_VALUE);
+    reasons.push('low_risk_canary_relax');
+  }
+  if (
+    AUTONOMY_EXECUTE_CONFIDENCE_ADAPTIVE_ENABLED
+    && history.reverted === 0
+    && history.confidence_fallback >= AUTONOMY_EXECUTE_CONFIDENCE_FALLBACK_RELAX_EVERY
+  ) {
+    const shipRate = history.executed > 0
+      ? Number(history.shipped || 0) / Number(history.executed || 1)
+      : 0;
+    const relaxEligible = Number(history.executed || 0) >= AUTONOMY_EXECUTE_CONFIDENCE_FALLBACK_RELAX_MIN_EXECUTED
+      && Number(history.shipped || 0) >= AUTONOMY_EXECUTE_CONFIDENCE_FALLBACK_RELAX_MIN_SHIPPED
+      && shipRate >= AUTONOMY_EXECUTE_CONFIDENCE_FALLBACK_RELAX_MIN_SHIP_RATE;
+    if (relaxEligible) {
+      const relaxSteps = Math.floor(history.confidence_fallback / AUTONOMY_EXECUTE_CONFIDENCE_FALLBACK_RELAX_EVERY);
+      const relaxRaw = relaxSteps * AUTONOMY_EXECUTE_CONFIDENCE_FALLBACK_RELAX_STEP;
+      const relax = clampNumber(relaxRaw, 0, AUTONOMY_EXECUTE_CONFIDENCE_FALLBACK_RELAX_MAX);
+      if (relax > 0) {
+        compositeMargin = Math.max(0, compositeMargin - relax);
+        valueMargin = Math.max(0, valueMargin - relax);
+        reasons.push('fallback_churn_relax');
+      }
+    } else {
+      reasons.push('fallback_churn_relax_blocked_low_success');
+    }
+  }
+  if (
+    AUTONOMY_EXECUTE_CONFIDENCE_ADAPTIVE_ENABLED
+    && history.executed >= AUTONOMY_EXECUTE_CONFIDENCE_NO_CHANGE_TIGHTEN_MIN_EXECUTED
+    && history.no_change_rate >= AUTONOMY_EXECUTE_CONFIDENCE_NO_CHANGE_TIGHTEN_THRESHOLD
+  ) {
+    compositeMargin += AUTONOMY_EXECUTE_CONFIDENCE_NO_CHANGE_TIGHTEN_STEP;
+    valueMargin += AUTONOMY_EXECUTE_CONFIDENCE_NO_CHANGE_TIGHTEN_STEP;
+    reasons.push('high_no_change_tighten');
+  }
+  if (history.reverted > 0) {
+    compositeMargin = Math.max(compositeMargin, baseCompositeMargin);
+    valueMargin = Math.max(valueMargin, baseValueMargin);
+    reasons.push('reverted_restore_base');
+  }
+  return {
+    adaptive_enabled: AUTONOMY_EXECUTE_CONFIDENCE_ADAPTIVE_ENABLED,
+    proposal_type: type || null,
+    capability_key: String(capabilityKey || '').trim().toLowerCase() || null,
+    risk,
+    execution_mode: String(executionMode || ''),
+    base: {
+      composite_margin: baseCompositeMargin,
+      value_margin: baseValueMargin
+    },
+    applied: {
+      composite_margin: Math.max(0, Number(compositeMargin || 0)),
+      value_margin: Math.max(0, Number(valueMargin || 0))
+    },
+    history,
+    fallback_relax_eligibility: {
+      min_executed: AUTONOMY_EXECUTE_CONFIDENCE_FALLBACK_RELAX_MIN_EXECUTED,
+      min_shipped: AUTONOMY_EXECUTE_CONFIDENCE_FALLBACK_RELAX_MIN_SHIPPED,
+      min_ship_rate: AUTONOMY_EXECUTE_CONFIDENCE_FALLBACK_RELAX_MIN_SHIP_RATE,
+      ship_rate: history.executed > 0
+        ? Number((Number(history.shipped || 0) / Number(history.executed || 1)).toFixed(3))
+        : 0
+    },
+    reasons
+  };
 }
 
 function isRouteExecutionSampleEvent(evt) {
@@ -8721,6 +8909,36 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       continue;
     }
 
+    const executeConfidenceCooldownKeyCand = executeConfidenceCooldownKey(
+      capKeyCand,
+      objectiveBinding.objective_id,
+      proposalType
+    );
+    if (!shadowOnly && executeConfidenceCooldownKeyCand && cooldownActive(executeConfidenceCooldownKeyCand)) {
+      skipStats.capability_cooldown += 1;
+      bumpCount(candidateRejectedByGate, 'execute_confidence_cooldown');
+      pushCandidateAudit({
+        proposal_id: proposalId,
+        proposal_type: proposalType,
+        risk,
+        pass: false,
+        gate: 'execute_confidence_cooldown',
+        score: Number(cand.score || 0),
+        capability_key: capKeyCand || null,
+        execute_confidence_cooldown_key: executeConfidenceCooldownKeyCand,
+        reasons: ['execute_confidence_lane_cooldown_active']
+      });
+      if (!sampleCapabilityCooldown) {
+        sampleCapabilityCooldown = {
+          proposal_id: cand.proposal.id,
+          capability_key: capKeyCand || null,
+          reason: 'execute_confidence_lane_cooldown_active',
+          execute_confidence_cooldown_key: executeConfidenceCooldownKeyCand
+        };
+      }
+      continue;
+    }
+
     if (!shadowOnly && isExecuteMode(executionMode) && capKeyCand) {
       const routePrefilter = evaluateRouteBlockPrefilter(routeBlockPrefilterTelemetry, capKeyCand);
       if (!routePrefilter.pass && routePrefilter.applicable) {
@@ -8802,6 +9020,82 @@ function runCmd(dateStr, opts: AnyObj = {}) {
         };
       }
       continue;
+    }
+
+    let executeConfidencePolicyCand = null;
+    if (!shadowOnly && isExecuteMode(executionMode)) {
+      executeConfidencePolicyCand = computeExecuteConfidencePolicy(
+        dateStr,
+        cand.proposal,
+        capKeyCand,
+        risk,
+        executionMode
+      );
+      const executeCompositeMargin = Math.max(
+        0,
+        Number(
+          executeConfidencePolicyCand
+          && executeConfidencePolicyCand.applied
+          && executeConfidencePolicyCand.applied.composite_margin
+          || AUTONOMY_EXECUTE_CONFIDENCE_MARGIN
+        )
+      );
+      const executeValueMargin = Math.max(
+        0,
+        Number(
+          executeConfidencePolicyCand
+          && executeConfidencePolicyCand.applied
+          && executeConfidencePolicyCand.applied.value_margin
+          || AUTONOMY_EXECUTE_MIN_VALUE_SIGNAL_BONUS
+        )
+      );
+      const executeCompositeMin = Math.max(0, Number(compositeMin || 0) + executeCompositeMargin);
+      const executeValueMin = Math.max(
+        0,
+        Number(AUTONOMY_MIN_VALUE_SIGNAL_SCORE || 0)
+          + executeValueMargin
+          + (risk === 'medium' ? Number(AUTONOMY_MEDIUM_RISK_VALUE_SIGNAL_BONUS || 0) : 0)
+      );
+      const executeCompositeScore = Number(compositeScore || 0);
+      const executeValueScore = Number(valueSignal.score || 0);
+      if (executeCompositeScore < executeCompositeMin || executeValueScore < executeValueMin) {
+        skipStats.low_value_signal += 1;
+        bumpCount(candidateRejectedByGate, 'execute_confidence_precheck');
+        const confidenceReasons = [];
+        if (executeCompositeScore < executeCompositeMin) confidenceReasons.push('composite_below_execute_confidence_min');
+        if (executeValueScore < executeValueMin) confidenceReasons.push('value_signal_below_execute_confidence_min');
+        pushCandidateAudit({
+          proposal_id: proposalId,
+          proposal_type: proposalType,
+          risk,
+          pass: false,
+          gate: 'execute_confidence_precheck',
+          score: Number(cand.score || 0),
+          scores: {
+            composite: executeCompositeScore,
+            value_signal: executeValueScore
+          },
+          thresholds: {
+            min_composite: executeCompositeMin,
+            min_value_signal: executeValueMin,
+            composite_margin: executeCompositeMargin,
+            value_margin: executeValueMargin
+          },
+          reasons: confidenceReasons,
+          execute_confidence_policy: executeConfidencePolicyCand
+        });
+        if (!sampleLowValueSignal) {
+          sampleLowValueSignal = {
+            proposal_id: cand.proposal.id,
+            score: executeValueScore,
+            min_score: executeValueMin,
+            composite_score: executeCompositeScore,
+            composite_min_score: executeCompositeMin,
+            reasons: confidenceReasons
+          };
+        }
+        continue;
+      }
     }
 
     const mediumGate = mediumRiskGateDecision(cand.proposal, dfit.score, actionability.score, compositeScore, gateThresholds);
@@ -8999,6 +9293,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       eye_no_progress_24h: eyeNoProgress24h,
       objective_binding: objectiveBinding,
       optimization_link: optimizationLink,
+      execute_confidence_policy: executeConfidencePolicyCand,
       directive_pulse: pulse
     });
     pushCandidateAudit({
@@ -10738,6 +11033,145 @@ function runCmd(dateStr, opts: AnyObj = {}) {
     return;
   }
 
+  const executeConfidencePolicy = pick.execute_confidence_policy || computeExecuteConfidencePolicy(
+    dateStr,
+    p,
+    capabilityKey,
+    proposalRisk,
+    executionMode
+  );
+  const executeConfidenceCompositeMargin = Math.max(
+    0,
+    Number(
+      executeConfidencePolicy
+      && executeConfidencePolicy.applied
+      && executeConfidencePolicy.applied.composite_margin
+      || AUTONOMY_EXECUTE_CONFIDENCE_MARGIN
+    )
+  );
+  const executeConfidenceValueMargin = Math.max(
+    0,
+    Number(
+      executeConfidencePolicy
+      && executeConfidencePolicy.applied
+      && executeConfidencePolicy.applied.value_margin
+      || AUTONOMY_EXECUTE_MIN_VALUE_SIGNAL_BONUS
+    )
+  );
+  const executeConfidenceMinComposite = Math.max(0, Number(compositeMinScore || 0) + executeConfidenceCompositeMargin);
+  const executeConfidenceMinValue = Math.max(
+    0,
+    Number(AUTONOMY_MIN_VALUE_SIGNAL_SCORE || 0)
+      + executeConfidenceValueMargin
+      + (proposalRisk === 'medium' ? Number(AUTONOMY_MEDIUM_RISK_VALUE_SIGNAL_BONUS || 0) : 0)
+  );
+  const executeValueSignal = Number(pick && pick.value_signal ? pick.value_signal.score || 0 : 0);
+  if (
+    !shadowOnly
+    && isExecuteMode(executionMode)
+    && (
+      Number(pick && pick.composite_score || 0) < executeConfidenceMinComposite
+      || executeValueSignal < executeConfidenceMinValue
+    )
+  ) {
+    const confidenceHoldReason = `auto:execute_confidence_fallback cooldown_${AUTONOMY_ROUTE_BLOCK_COOLDOWN_HOURS}h`;
+    const confidenceLaneHours = Math.max(1, Number(AUTONOMY_EXECUTE_CONFIDENCE_LANE_COOLDOWN_HOURS || AUTONOMY_ROUTE_BLOCK_COOLDOWN_HOURS));
+    const confidenceLaneKey = executeConfidenceCooldownKey(
+      capabilityKey,
+      executionObjectiveId,
+      String(p.type || '')
+    );
+    setCooldown(p.id, AUTONOMY_ROUTE_BLOCK_COOLDOWN_HOURS, confidenceHoldReason);
+    if (confidenceLaneKey) {
+      setCooldown(
+        confidenceLaneKey,
+        confidenceLaneHours,
+        `${confidenceHoldReason} lane:${confidenceLaneKey}`
+      );
+    }
+    const confidenceCooldown = cooldownEntry(p.id);
+    const confidenceNextClearAt = confidenceCooldown ? (confidenceCooldown.until || null) : null;
+    writeRun(dateStr, {
+      ts: nowIso(),
+      type: 'autonomy_run',
+      result: 'score_only_fallback_low_execution_confidence',
+      policy_hold: true,
+      hold_scope: 'proposal',
+      proposal_id: p.id,
+      objective_id: executionObjectiveId || null,
+      proposal_date: proposalDate,
+      proposal_type: String(p.type || ''),
+      risk: proposalRisk,
+      capability_key: capabilityKey,
+      execution_mode: executionMode,
+      objective_binding: {
+        required: objectiveBinding.required === true,
+        objective_id: objectiveBinding.objective_id || null,
+        source: objectiveBinding.source || null
+      },
+      directive_pulse: directivePulse
+        ? {
+            objective_id: directivePulse.objective_id || null,
+            tier: directivePulse.tier == null ? null : directivePulse.tier,
+            objective_allocation_score: Number(directivePulse.objective_allocation_score || 0)
+          }
+        : null,
+      score: Number(pick.score.toFixed(3)),
+      cooldown_hours: AUTONOMY_ROUTE_BLOCK_COOLDOWN_HOURS,
+      execute_confidence_lane_cooldown_hours: confidenceLaneHours,
+      execute_confidence_cooldown_key: confidenceLaneKey || null,
+      next_clear_at: confidenceNextClearAt,
+      hold_reason: confidenceHoldReason,
+      confidence_gate: {
+        composite_score: Number(pick && pick.composite_score || 0),
+        composite_min_required: executeConfidenceMinComposite,
+        value_signal_score: executeValueSignal,
+        value_signal_min_required: executeConfidenceMinValue,
+        margin_composite: executeConfidenceCompositeMargin,
+        margin_value_signal: executeConfidenceValueMargin,
+        policy: executeConfidencePolicy
+      }
+    });
+    process.stdout.write(JSON.stringify({
+      ok: true,
+      result: 'score_only_fallback_low_execution_confidence',
+      policy_hold: true,
+      hold_scope: 'proposal',
+      proposal_id: p.id,
+      objective_id: executionObjectiveId || null,
+      capability_key: capabilityKey,
+      execution_mode: executionMode,
+      objective_binding: {
+        required: objectiveBinding.required === true,
+        objective_id: objectiveBinding.objective_id || null,
+        source: objectiveBinding.source || null
+      },
+      directive_pulse: directivePulse
+        ? {
+            objective_id: directivePulse.objective_id || null,
+            tier: directivePulse.tier == null ? null : directivePulse.tier,
+            objective_allocation_score: Number(directivePulse.objective_allocation_score || 0)
+          }
+        : null,
+      cooldown_hours: AUTONOMY_ROUTE_BLOCK_COOLDOWN_HOURS,
+      execute_confidence_lane_cooldown_hours: confidenceLaneHours,
+      execute_confidence_cooldown_key: confidenceLaneKey || null,
+      next_clear_at: confidenceNextClearAt,
+      hold_reason: confidenceHoldReason,
+      confidence_gate: {
+        composite_score: Number(pick && pick.composite_score || 0),
+        composite_min_required: executeConfidenceMinComposite,
+        value_signal_score: executeValueSignal,
+        value_signal_min_required: executeConfidenceMinValue,
+        margin_composite: executeConfidenceCompositeMargin,
+        margin_value_signal: executeConfidenceValueMargin,
+        policy: executeConfidencePolicy
+      },
+      ts: nowIso()
+    }) + '\n');
+    return;
+  }
+
   const acceptRes = pick.status !== 'accepted'
     ? runProposalQueue('accept', p.id, 'auto:autonomy_controller selected')
     : { ok: true, code: 0, stdout: 'already_accepted', stderr: '', skipped: true };
@@ -11795,6 +12229,8 @@ module.exports = {
   latestPolicyHoldRunEvent,
   policyHoldPressureSnapshot,
   policyHoldCooldownMinutesForPressure,
+  executeConfidenceCooldownKey,
+  executeConfidenceCooldownActive,
   startModelCatalogCanary,
   evaluateModelCatalogCanary,
   readModelCatalogCanary,
