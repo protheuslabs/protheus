@@ -10,6 +10,7 @@ const AUTONOMY_DIR = process.env.AUTONOMY_STATE_DIR
   ? path.resolve(process.env.AUTONOMY_STATE_DIR)
   : path.join(ROOT, 'state', 'autonomy');
 const CYCLE_REPORT_DIR = path.join(AUTONOMY_DIR, 'autophagy_cycle');
+const TRIAL_PATH = path.join(AUTONOMY_DIR, 'autophagy_trial.json');
 
 function usage() {
   console.log('Usage:');
@@ -60,6 +61,68 @@ function ensureDir(dirPath) {
   if (!fs.existsSync(dirPath)) fs.mkdirSync(dirPath, { recursive: true });
 }
 
+function parseDateMs(dateStr) {
+  const d = new Date(`${String(dateStr || '').trim()}T00:00:00.000Z`);
+  return Number.isFinite(d.getTime()) ? d.getTime() : null;
+}
+
+function dayDiff(fromDate, toDate) {
+  const fromMs = parseDateMs(fromDate);
+  const toMs = parseDateMs(toDate);
+  if (!Number.isFinite(fromMs) || !Number.isFinite(toMs)) return null;
+  return Math.floor((toMs - fromMs) / 86400000);
+}
+
+function loadTrialConfig() {
+  if (!fs.existsSync(TRIAL_PATH)) return null;
+  try {
+    const obj = JSON.parse(fs.readFileSync(TRIAL_PATH, 'utf8'));
+    return obj && typeof obj === 'object' ? obj : null;
+  } catch {
+    return null;
+  }
+}
+
+function trialSnapshotForDate(dateStr) {
+  const trial = loadTrialConfig();
+  if (!trial) return null;
+  const startDate = String(trial.start_date || '').trim();
+  const endDate = String(trial.end_date || '').trim();
+  const weeks = Math.max(1, Number(trial.duration_weeks || 8));
+  const status = String(trial.status || '').trim().toLowerCase() || 'active';
+  const elapsed = dayDiff(startDate, dateStr);
+  const remaining = dayDiff(dateStr, endDate);
+  const totalDays = Math.max(1, Math.round(weeks * 7));
+  const inWindow = elapsed != null && remaining != null && elapsed >= 0 && remaining >= 0;
+  const weekIndex = elapsed == null ? null : Math.max(1, Math.min(weeks, Math.floor(elapsed / 7) + 1));
+  const checkpoints = Array.isArray(trial.checkpoints_weeks)
+    ? trial.checkpoints_weeks.map((v) => Number(v)).filter((v) => Number.isFinite(v) && v >= 1 && v <= weeks)
+    : [2, 4, 6, 8].filter((v) => v <= weeks);
+  const dueCheckpoint = weekIndex != null && checkpoints.includes(weekIndex)
+    ? weekIndex
+    : null;
+
+  return {
+    id: trial.id || null,
+    name: trial.name || null,
+    status: status === 'active' && inWindow ? 'active' : status,
+    start_date: startDate || null,
+    end_date: endDate || null,
+    duration_weeks: weeks,
+    total_days: totalDays,
+    day_index: elapsed == null ? null : Math.max(0, elapsed + 1),
+    days_elapsed: elapsed == null ? null : Math.max(0, elapsed),
+    days_remaining: remaining == null ? null : Math.max(0, remaining),
+    week_index: weekIndex,
+    in_window: inWindow,
+    checkpoint_weeks: checkpoints,
+    checkpoint_due_week: dueCheckpoint,
+    success_criteria: trial.success_criteria && typeof trial.success_criteria === 'object'
+      ? trial.success_criteria
+      : null
+  };
+}
+
 function runJson(args, env = {}) {
   const res = spawnSync(process.execPath, args, {
     cwd: ROOT,
@@ -99,6 +162,7 @@ function runCycle(opts = {}) {
   const queueEnabled = opts.queue_enabled === true;
   const write = opts.write !== false;
   const artifactWrite = true;
+  const trial = trialSnapshotForDate(dateStr);
 
   const simulationCmd = ['systems/autonomy/autonomy_simulation_harness.js', 'run', dateStr, `--days=${days}`, `--write=${artifactWrite ? 1 : 0}`];
   const simulation = runJson(simulationCmd);
@@ -159,6 +223,7 @@ function runCycle(opts = {}) {
     end_date: dateStr,
     days,
     queue_enabled: queueEnabled,
+    trial,
     stages: {
       simulation: {
         verdict: simulation.payload && simulation.payload.verdict,
