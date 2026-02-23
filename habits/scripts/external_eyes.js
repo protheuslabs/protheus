@@ -4536,10 +4536,22 @@ function evolve(dateStr) {
   
   for (const eyeId in metrics) {
     const m = metrics[eyeId];
-    const eyeConfig = config.eyes.find(e => e.id === eyeId);
+    const configEyes = Array.isArray(config && config.eyes) ? config.eyes : [];
+    let regEye = registry.eyes.find(e => e.id === eyeId);
+    const eyeConfig = configEyes.find(e => e.id === eyeId) || (regEye ? {
+      id: regEye.id,
+      name: regEye.name || eyeId,
+      status: regEye.status || 'probation',
+      cadence_hours: Number.isFinite(Number(regEye.cadence_hours)) ? Number(regEye.cadence_hours) : 24,
+      parser_type: regEye.parser_type || 'stub',
+      allowed_domains: Array.isArray(regEye.allowed_domains) ? regEye.allowed_domains : [],
+      budgets: regEye.budgets && typeof regEye.budgets === 'object'
+        ? regEye.budgets
+        : { max_items: 5, max_seconds: 10, max_bytes: 1048576, max_requests: 2 },
+      topics: Array.isArray(regEye.topics) ? regEye.topics : []
+    } : null);
     if (!eyeConfig) continue;
     
-    let regEye = registry.eyes.find(e => e.id === eyeId);
     if (!regEye) {
       regEye = {
         ...eyeConfig,
