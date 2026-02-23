@@ -189,6 +189,10 @@ const AUTONOMY_MIN_DIRECTIVE_FIT = Number(process.env.AUTONOMY_MIN_DIRECTIVE_FIT
 const AUTONOMY_MIN_ACTIONABILITY_SCORE = Number(process.env.AUTONOMY_MIN_ACTIONABILITY_SCORE || 45);
 const AUTONOMY_MIN_COMPOSITE_ELIGIBILITY = Number(process.env.AUTONOMY_MIN_COMPOSITE_ELIGIBILITY || 62);
 const AUTONOMY_MIN_EYE_SCORE_EMA = Number(process.env.AUTONOMY_MIN_EYE_SCORE_EMA || 45);
+const AUTONOMY_OPTIMIZATION_MIN_DELTA_PERCENT = clampNumber(Number(process.env.AUTONOMY_OPTIMIZATION_MIN_DELTA_PERCENT || 10), 1, 50);
+const AUTONOMY_OPTIMIZATION_MIN_DELTA_PERCENT_HIGH_ACCURACY = clampNumber(Number(process.env.AUTONOMY_OPTIMIZATION_MIN_DELTA_PERCENT_HIGH_ACCURACY || 5), 1, 50);
+const AUTONOMY_OPTIMIZATION_HIGH_ACCURACY_MODE = String(process.env.AUTONOMY_OPTIMIZATION_HIGH_ACCURACY_MODE || '0') === '1';
+const AUTONOMY_OPTIMIZATION_REQUIRE_DELTA = String(process.env.AUTONOMY_OPTIMIZATION_REQUIRE_DELTA || '1') !== '0';
 const AUTONOMY_MAX_PROPOSAL_FILE_AGE_HOURS = Number(process.env.AUTONOMY_MAX_PROPOSAL_FILE_AGE_HOURS || 48);
 const AUTONOMY_REPEAT_EXHAUSTED_LIMIT = Number(process.env.AUTONOMY_REPEAT_EXHAUSTED_LIMIT || 3);
 const AUTONOMY_REPEAT_EXHAUSTED_COOLDOWN_MINUTES = Number(process.env.AUTONOMY_REPEAT_EXHAUSTED_COOLDOWN_MINUTES || 90);
@@ -329,6 +333,9 @@ const OPPORTUNITY_MARKER_RE = /\b(opportunity|freelance|job|jobs|hiring|contract
 const META_COORDINATION_RE = /\b(review|prioritize|triage|health\s*check|high\s*leverage)\b/i;
 const CONCRETE_TARGET_RE = /\b(file|script|collector|parser|endpoint|model|config|test|hook|queue|ledger|registry|adapter|workflow|routing|transport|fallback|sensor|retry|dns|network|probe|api|cache)\b/i;
 const EXPLAINER_TITLE_RE = /^(why|what|how)\b/i;
+const OPTIMIZATION_INTENT_RE = /\b(optimi[sz]e|optimization|improv(?:e|ement)|tune|polish|streamlin|efficien(?:cy|t)|latency|throughput|cost|token(?:s)?|performance)\b/i;
+const OPTIMIZATION_EXEMPT_RE = /\b(fail(?:ure)?|error|outage|broken|incident|security|integrity|violation|breach|timeout|rate\s*limit|dns|connection|recover|restore|rollback|revert|remediation)\b/i;
+const PERCENT_VALUE_RE = /(-?\d+(?:\.\d+)?)\s*%/g;
 const GENERIC_VALIDATION_RE = /\b(extract one concrete build\/change task from source|define measurable success check|route a dry-run execution plan)\b/i;
 const GENERIC_ROUTE_TASK_RE = /--task=\"Extract one implementable step from external intel:/i;
 const SUCCESS_METRIC_RE = /\b(metric|kpi|target|rate|count|latency|error|uptime|throughput|conversion|artifact|receipt|coverage|reply|interview|pass|fail|delta|percent|%|run|runs|check|checks|items_collected)\b/i;
@@ -1003,6 +1010,134 @@ function proposalTextBlob(p) {
   return normalizeSpaces(parts.filter(Boolean).join(' | ')).toLowerCase();
 }
 
+function optimizationMinDeltaPercent() {
+  if (AUTONOMY_OPTIMIZATION_HIGH_ACCURACY_MODE) return AUTONOMY_OPTIMIZATION_MIN_DELTA_PERCENT_HIGH_ACCURACY;
+  return AUTONOMY_OPTIMIZATION_MIN_DELTA_PERCENT;
+}
+
+function percentMentionsFromText(text) {
+  const blob = String(text || '');
+  if (!blob) return [];
+  const out = [];
+  const re = new RegExp(PERCENT_VALUE_RE.source, 'g');
+  let m;
+  while ((m = re.exec(blob)) !== null) {
+    const raw = Number(m[1]);
+    if (!Number.isFinite(raw) || raw <= 0) continue;
+    out.push(clampNumber(raw, 0, 100));
+  }
+  return out;
+}
+
+function inferOptimizationDeltaForProposal(p) {
+  const proposal = p || {};
+  const meta = proposal && proposal.meta && typeof proposal.meta === 'object' ? proposal.meta : {};
+  const directKeys = [
+    'optimization_delta_percent',
+    'expected_optimization_percent',
+    'expected_delta_percent',
+    'estimated_improvement_percent',
+    'target_improvement_percent',
+    'performance_gain_percent'
+  ];
+  for (const key of directKeys) {
+    const raw = Number(meta[key]);
+    if (!Number.isFinite(raw) || raw <= 0) continue;
+    return { delta_percent: clampNumber(raw, 0, 100), delta_source: `meta:${key}` };
+  }
+  const bits = [
+    proposal.title,
+    proposal.summary,
+    proposal.notes,
+    proposal.suggested_next_command,
+    proposal.suggested_command,
+    proposal && proposal.action_spec && typeof proposal.action_spec === 'object'
+      ? JSON.stringify(proposal.action_spec)
+      : '',
+    meta.normalized_expected_outcome,
+    meta.normalized_validation_metric
+  ];
+  if (Array.isArray(proposal.validation)) bits.push(proposal.validation.join(' '));
+  if (Array.isArray(proposal.success_criteria)) bits.push(JSON.stringify(proposal.success_criteria));
+  if (Array.isArray(meta.success_criteria)) bits.push(JSON.stringify(meta.success_criteria));
+  if (Array.isArray(meta.success_criteria_rows)) bits.push(JSON.stringify(meta.success_criteria_rows));
+  const pct = percentMentionsFromText(bits.filter(Boolean).join(' '));
+  if (pct.length > 0) {
+    return { delta_percent: Number(Math.max(...pct).toFixed(3)), delta_source: 'text:%' };
+  }
+  return { delta_percent: null, delta_source: null };
+}
+
+function isOptimizationIntentProposal(p) {
+  const proposal = p || {};
+  const type = normalizeSpaces(proposal.type).toLowerCase();
+  const blob = proposalTextBlob(proposal);
+  const hasIntent = OPTIMIZATION_INTENT_RE.test(type) || OPTIMIZATION_INTENT_RE.test(blob);
+  if (!hasIntent) return false;
+  const hasExemptSignals = OPTIMIZATION_EXEMPT_RE.test(type) || OPTIMIZATION_EXEMPT_RE.test(blob);
+  if (hasExemptSignals) return false;
+  if (OPPORTUNITY_MARKER_RE.test(blob)) return false;
+  return true;
+}
+
+function assessOptimizationGoodEnough(p, risk) {
+  const applies = isOptimizationIntentProposal(p);
+  const minDelta = optimizationMinDeltaPercent();
+  const requireDelta = AUTONOMY_OPTIMIZATION_REQUIRE_DELTA;
+  const normalizedRiskVal = normalizedRisk(risk || (p && p.risk));
+  if (!applies) {
+    return {
+      applies: false,
+      pass: true,
+      reason: null,
+      delta_percent: null,
+      delta_source: null,
+      min_delta_percent: minDelta,
+      require_delta: requireDelta,
+      mode: AUTONOMY_OPTIMIZATION_HIGH_ACCURACY_MODE ? 'high_accuracy' : 'default',
+      risk: normalizedRiskVal
+    };
+  }
+  const inferred = inferOptimizationDeltaForProposal(p);
+  if (inferred.delta_percent == null && requireDelta) {
+    return {
+      applies: true,
+      pass: false,
+      reason: 'optimization_delta_missing',
+      delta_percent: null,
+      delta_source: null,
+      min_delta_percent: minDelta,
+      require_delta: true,
+      mode: AUTONOMY_OPTIMIZATION_HIGH_ACCURACY_MODE ? 'high_accuracy' : 'default',
+      risk: normalizedRiskVal
+    };
+  }
+  if (Number.isFinite(Number(inferred.delta_percent)) && Number(inferred.delta_percent) < minDelta) {
+    return {
+      applies: true,
+      pass: false,
+      reason: 'optimization_good_enough',
+      delta_percent: Number(inferred.delta_percent),
+      delta_source: inferred.delta_source || null,
+      min_delta_percent: minDelta,
+      require_delta: requireDelta,
+      mode: AUTONOMY_OPTIMIZATION_HIGH_ACCURACY_MODE ? 'high_accuracy' : 'default',
+      risk: normalizedRiskVal
+    };
+  }
+  return {
+    applies: true,
+    pass: true,
+    reason: null,
+    delta_percent: Number.isFinite(Number(inferred.delta_percent)) ? Number(inferred.delta_percent) : null,
+    delta_source: inferred.delta_source || null,
+    min_delta_percent: minDelta,
+    require_delta: requireDelta,
+    mode: AUTONOMY_OPTIMIZATION_HIGH_ACCURACY_MODE ? 'high_accuracy' : 'default',
+    risk: normalizedRiskVal
+  };
+}
+
 function escapeRegExp(s) {
   return String(s == null ? '' : s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -1167,6 +1302,7 @@ function isNoProgressRun(evt) {
     || evt.result === 'stop_init_gate_quality_exhausted'
     || evt.result === 'stop_init_gate_directive_fit_exhausted'
     || evt.result === 'stop_init_gate_actionability_exhausted'
+    || evt.result === 'stop_init_gate_optimization_good_enough'
     || evt.result === 'stop_init_gate_value_signal_exhausted'
     || evt.result === 'stop_init_gate_tier1_governance'
     || evt.result === 'stop_init_gate_medium_risk_guard'
@@ -1208,6 +1344,7 @@ function isAttemptRunEvent(evt) {
     || evt.result === 'stop_init_gate_quality_exhausted'
     || evt.result === 'stop_init_gate_directive_fit_exhausted'
     || evt.result === 'stop_init_gate_actionability_exhausted'
+    || evt.result === 'stop_init_gate_optimization_good_enough'
     || evt.result === 'stop_init_gate_value_signal_exhausted'
     || evt.result === 'stop_init_gate_tier1_governance'
     || evt.result === 'stop_init_gate_composite_exhausted'
@@ -1292,6 +1429,7 @@ function isGateExhaustedAttempt(evt) {
     || evt.result === 'stop_init_gate_quality_exhausted'
     || evt.result === 'stop_init_gate_directive_fit_exhausted'
     || evt.result === 'stop_init_gate_actionability_exhausted'
+    || evt.result === 'stop_init_gate_optimization_good_enough'
     || evt.result === 'stop_init_gate_value_signal_exhausted'
     || evt.result === 'stop_init_gate_tier1_governance'
     || evt.result === 'stop_init_gate_medium_risk_guard'
@@ -5851,6 +5989,13 @@ function statusCmd(dateStr) {
       min_sensory_relevance_score: thresholds.min_sensory_relevance_score,
       min_directive_fit: thresholds.min_directive_fit,
       min_actionability_score: thresholds.min_actionability_score,
+      optimization_policy: {
+        high_accuracy_mode: AUTONOMY_OPTIMIZATION_HIGH_ACCURACY_MODE,
+        min_delta_percent: optimizationMinDeltaPercent(),
+        min_delta_percent_default: AUTONOMY_OPTIMIZATION_MIN_DELTA_PERCENT,
+        min_delta_percent_high_accuracy: AUTONOMY_OPTIMIZATION_MIN_DELTA_PERCENT_HIGH_ACCURACY,
+        require_explicit_delta: AUTONOMY_OPTIMIZATION_REQUIRE_DELTA
+      },
       min_value_signal_score: AUTONOMY_MIN_VALUE_SIGNAL_SCORE,
       medium_risk_value_signal_bonus: AUTONOMY_MEDIUM_RISK_VALUE_SIGNAL_BONUS,
       min_composite_eligibility: AUTONOMY_MIN_COMPOSITE_ELIGIBILITY,
@@ -6875,6 +7020,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
     low_quality: 0,
     low_directive_fit: 0,
     low_actionability: 0,
+    optimization_good_enough: 0,
     objective_binding: 0,
     low_value_signal: 0,
     low_composite: 0,
@@ -6887,6 +7033,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
   let sampleLowQuality = null;
   let sampleLowDirectiveFit = null;
   let sampleLowActionability = null;
+  let sampleOptimizationGoodEnough = null;
   let sampleObjectiveBinding = null;
   let sampleLowValueSignal = null;
   let sampleLowComposite = null;
@@ -6923,6 +7070,13 @@ function runCmd(dateStr, opts: AnyObj = {}) {
     objective_binding: {
       required: AUTONOMY_OBJECTIVE_BINDING_REQUIRED,
       objective_allocation_rank_bonus: AUTONOMY_OBJECTIVE_ALLOCATION_RANK_BONUS
+    },
+    optimization_policy: {
+      high_accuracy_mode: AUTONOMY_OPTIMIZATION_HIGH_ACCURACY_MODE,
+      min_delta_percent: optimizationMinDeltaPercent(),
+      min_delta_percent_default: AUTONOMY_OPTIMIZATION_MIN_DELTA_PERCENT,
+      min_delta_percent_high_accuracy: AUTONOMY_OPTIMIZATION_MIN_DELTA_PERCENT_HIGH_ACCURACY,
+      require_explicit_delta: AUTONOMY_OPTIMIZATION_REQUIRE_DELTA
     },
     queue_underflow_backfill: {
       enabled: AUTONOMY_QUEUE_UNDERFLOW_BACKFILL_MAX > 0,
@@ -7050,6 +7204,45 @@ function runCmd(dateStr, opts: AnyObj = {}) {
           proposal_id: cand.proposal.id,
           score: actionability.score,
           reasons: actionability.reasons.slice(0, 3)
+        };
+      }
+      continue;
+    }
+
+    const optimizationGate = assessOptimizationGoodEnough(cand.proposal, risk);
+    if (!optimizationGate.pass) {
+      skipStats.optimization_good_enough += 1;
+      bumpCount(candidateRejectedByGate, 'optimization_good_enough');
+      pushCandidateAudit({
+        proposal_id: proposalId,
+        proposal_type: proposalType,
+        risk,
+        pass: false,
+        gate: 'optimization_good_enough',
+        score: Number(cand.score || 0),
+        scores: {
+          optimization_delta_percent: optimizationGate.delta_percent
+        },
+        thresholds: {
+          min_optimization_delta_percent: optimizationGate.min_delta_percent,
+          require_explicit_delta: optimizationGate.require_delta === true
+        },
+        optimization: {
+          intent: optimizationGate.applies === true,
+          delta_source: optimizationGate.delta_source || null,
+          mode: optimizationGate.mode || 'default'
+        },
+        reasons: [optimizationGate.reason || 'optimization_good_enough']
+      });
+      if (!sampleOptimizationGoodEnough) {
+        sampleOptimizationGoodEnough = {
+          proposal_id: cand.proposal.id,
+          reason: optimizationGate.reason || 'optimization_good_enough',
+          delta_percent: optimizationGate.delta_percent,
+          min_delta_percent: optimizationGate.min_delta_percent,
+          require_delta: optimizationGate.require_delta === true,
+          delta_source: optimizationGate.delta_source || null,
+          mode: optimizationGate.mode || 'default'
         };
       }
       continue;
@@ -7599,6 +7792,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       && skipStats.low_quality === 0
       && skipStats.low_directive_fit === 0
       && skipStats.low_actionability === 0
+      && skipStats.optimization_good_enough === 0
       && skipStats.low_value_signal === 0
       && skipStats.low_composite === 0
       && skipStats.capability_cooldown === 0
@@ -7634,6 +7828,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       && skipStats.low_quality === 0
       && skipStats.low_directive_fit === 0
       && skipStats.low_actionability === 0
+      && skipStats.optimization_good_enough === 0
       && skipStats.low_value_signal === 0
       && skipStats.low_composite === 0
       && skipStats.capability_cooldown === 0
@@ -7667,6 +7862,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       && skipStats.low_quality === 0
       && skipStats.low_directive_fit === 0
       && skipStats.low_actionability === 0
+      && skipStats.optimization_good_enough === 0
       && skipStats.low_value_signal === 0
       && skipStats.low_composite === 0
       && skipStats.capability_cooldown === 0
@@ -7698,6 +7894,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       && skipStats.low_quality === 0
       && skipStats.low_directive_fit === 0
       && skipStats.low_actionability === 0
+      && skipStats.optimization_good_enough === 0
       && skipStats.low_value_signal === 0
       && skipStats.low_composite === 0
       && skipStats.capability_cooldown === 0
@@ -7756,6 +7953,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       && skipStats.low_quality === 0
       && skipStats.low_directive_fit === 0
       && skipStats.low_actionability === 0
+      && skipStats.optimization_good_enough === 0
       && skipStats.low_value_signal === 0
       && skipStats.low_composite === 0
       && skipStats.capability_cooldown === 0
@@ -7786,6 +7984,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       && skipStats.eye_no_progress === 0
       && skipStats.low_directive_fit === 0
       && skipStats.low_actionability === 0
+      && skipStats.optimization_good_enough === 0
       && skipStats.low_value_signal === 0
       && skipStats.low_composite === 0
       && skipStats.capability_cooldown === 0
@@ -7815,6 +8014,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       && skipStats.eye_no_progress === 0
       && skipStats.low_quality === 0
       && skipStats.low_actionability === 0
+      && skipStats.optimization_good_enough === 0
       && skipStats.low_value_signal === 0
       && skipStats.low_composite === 0
       && skipStats.capability_cooldown === 0
@@ -7846,6 +8046,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       && skipStats.eye_no_progress === 0
       && skipStats.low_quality === 0
       && skipStats.low_directive_fit === 0
+      && skipStats.optimization_good_enough === 0
       && skipStats.low_value_signal === 0
       && skipStats.low_composite === 0
       && skipStats.capability_cooldown === 0
@@ -7871,11 +8072,50 @@ function runCmd(dateStr, opts: AnyObj = {}) {
     }
 
     if (
+      skipStats.optimization_good_enough > 0
+      && skipStats.eye_no_progress === 0
+      && skipStats.low_quality === 0
+      && skipStats.low_directive_fit === 0
+      && skipStats.low_actionability === 0
+      && skipStats.low_value_signal === 0
+      && skipStats.low_composite === 0
+      && skipStats.capability_cooldown === 0
+      && skipStats.medium_risk_guard === 0
+      && skipStats.medium_policy_blocked === 0
+      && skipStats.medium_daily_cap === 0
+      && skipStats.directive_pulse_cooldown === 0
+      && skipStats.objective_binding === 0
+    ) {
+      writeRun(dateStr, {
+        ts: nowIso(),
+        type: 'autonomy_run',
+        result: 'stop_init_gate_optimization_good_enough',
+        min_optimization_delta_percent: optimizationMinDeltaPercent(),
+        optimization_high_accuracy_mode: AUTONOMY_OPTIMIZATION_HIGH_ACCURACY_MODE,
+        optimization_require_delta: AUTONOMY_OPTIMIZATION_REQUIRE_DELTA,
+        skipped_optimization_good_enough: skipStats.optimization_good_enough,
+        sample_optimization_good_enough: sampleOptimizationGoodEnough
+      });
+      process.stdout.write(JSON.stringify({
+        ok: true,
+        result: 'stop_init_gate_optimization_good_enough',
+        min_optimization_delta_percent: optimizationMinDeltaPercent(),
+        optimization_high_accuracy_mode: AUTONOMY_OPTIMIZATION_HIGH_ACCURACY_MODE,
+        optimization_require_delta: AUTONOMY_OPTIMIZATION_REQUIRE_DELTA,
+        skipped_optimization_good_enough: skipStats.optimization_good_enough,
+        sample_optimization_good_enough: sampleOptimizationGoodEnough,
+        ts: nowIso()
+      }) + '\n');
+      return;
+    }
+
+    if (
       skipStats.low_value_signal > 0
       && skipStats.eye_no_progress === 0
       && skipStats.low_quality === 0
       && skipStats.low_directive_fit === 0
       && skipStats.low_actionability === 0
+      && skipStats.optimization_good_enough === 0
       && skipStats.low_composite === 0
       && skipStats.capability_cooldown === 0
       && skipStats.medium_risk_guard === 0
@@ -7911,6 +8151,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       && skipStats.low_quality === 0
       && skipStats.low_directive_fit === 0
       && skipStats.low_actionability === 0
+      && skipStats.optimization_good_enough === 0
       && skipStats.low_value_signal === 0
       && skipStats.low_composite === 0
       && skipStats.medium_risk_guard === 0
@@ -7942,6 +8183,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       && skipStats.low_quality === 0
       && skipStats.low_directive_fit === 0
       && skipStats.low_actionability === 0
+      && skipStats.optimization_good_enough === 0
       && skipStats.low_value_signal === 0
       && skipStats.capability_cooldown === 0
       && skipStats.objective_binding === 0
@@ -7975,11 +8217,12 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       ts: nowIso(),
       type: 'autonomy_run',
       result: 'stop_repeat_gate_candidate_exhausted',
-      reason: `all_candidates_exhausted quality_or_directive_fit_or_actionability_or_objective_binding_or_value_or_composite_or_capability_cooldown_or_medium_risk_or_eye_no_progress_or_directive_pulse`,
+      reason: `all_candidates_exhausted quality_or_directive_fit_or_actionability_or_optimization_good_enough_or_objective_binding_or_value_or_composite_or_capability_cooldown_or_medium_risk_or_eye_no_progress_or_directive_pulse`,
       skipped_eye_no_progress: skipStats.eye_no_progress,
       skipped_low_quality: skipStats.low_quality,
       skipped_low_directive_fit: skipStats.low_directive_fit,
       skipped_low_actionability: skipStats.low_actionability,
+      skipped_optimization_good_enough: skipStats.optimization_good_enough,
       skipped_objective_binding: skipStats.objective_binding,
       skipped_low_value_signal: skipStats.low_value_signal,
       skipped_low_composite: skipStats.low_composite,
@@ -7991,6 +8234,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       sample_low_quality: sampleLowQuality,
       sample_low_directive_fit: sampleLowDirectiveFit,
       sample_low_actionability: sampleLowActionability,
+      sample_optimization_good_enough: sampleOptimizationGoodEnough,
       sample_objective_binding: sampleObjectiveBinding,
       sample_low_value_signal: sampleLowValueSignal,
       sample_low_composite: sampleLowComposite,
@@ -8003,11 +8247,12 @@ function runCmd(dateStr, opts: AnyObj = {}) {
     process.stdout.write(JSON.stringify({
       ok: true,
       result: 'stop_repeat_gate_candidate_exhausted',
-      reason: `all_candidates_exhausted quality_or_directive_fit_or_actionability_or_objective_binding_or_value_or_composite_or_capability_cooldown_or_medium_risk_or_eye_no_progress_or_directive_pulse`,
+      reason: `all_candidates_exhausted quality_or_directive_fit_or_actionability_or_optimization_good_enough_or_objective_binding_or_value_or_composite_or_capability_cooldown_or_medium_risk_or_eye_no_progress_or_directive_pulse`,
       skipped_eye_no_progress: skipStats.eye_no_progress,
       skipped_low_quality: skipStats.low_quality,
       skipped_low_directive_fit: skipStats.low_directive_fit,
       skipped_low_actionability: skipStats.low_actionability,
+      skipped_optimization_good_enough: skipStats.optimization_good_enough,
       skipped_objective_binding: skipStats.objective_binding,
       skipped_low_value_signal: skipStats.low_value_signal,
       skipped_low_composite: skipStats.low_composite,
@@ -8019,6 +8264,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       sample_low_quality: sampleLowQuality,
       sample_low_directive_fit: sampleLowDirectiveFit,
       sample_low_actionability: sampleLowActionability,
+      sample_optimization_good_enough: sampleOptimizationGoodEnough,
       sample_objective_binding: sampleObjectiveBinding,
       sample_low_value_signal: sampleLowValueSignal,
       sample_low_composite: sampleLowComposite,

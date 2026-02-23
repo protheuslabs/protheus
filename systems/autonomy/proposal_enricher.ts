@@ -77,6 +77,13 @@ const SUCCESS_METRIC_RE = /\b(metric|kpi|target|rate|count|latency|error|uptime|
 const SUCCESS_TIMEBOUND_RE = /\b(\d+\s*(h|hr|hour|hours|d|day|days|w|week|weeks|min|mins|minute|minutes)|daily|weekly|monthly|quarterly)\b/i;
 const SUCCESS_RELAXED_RUN_HORIZON_RE = /\b(next|this)\s+(run|cycle)\b/i;
 const SUCCESS_COMPARATOR_RE = /\b(>=|<=|>|<|at least|at most|less than|more than|within|under|over)\b/i;
+const OPTIMIZATION_INTENT_RE = /\b(optimi[sz]e|optimization|improv(?:e|ement)|tune|polish|streamlin|efficien(?:cy|t)|latency|throughput|cost|token(?:s)?|performance)\b/i;
+const OPTIMIZATION_EXEMPT_RE = /\b(fail(?:ure)?|error|outage|broken|incident|security|integrity|violation|breach|timeout|rate\s*limit|dns|connection|recover|restore|rollback|revert|remediation)\b/i;
+const PERCENT_VALUE_RE = /(-?\d+(?:\.\d+)?)\s*%/g;
+const AUTONOMY_OPTIMIZATION_MIN_DELTA_PERCENT = clamp(Number(process.env.AUTONOMY_OPTIMIZATION_MIN_DELTA_PERCENT || 10), 1, 50);
+const AUTONOMY_OPTIMIZATION_MIN_DELTA_PERCENT_HIGH_ACCURACY = clamp(Number(process.env.AUTONOMY_OPTIMIZATION_MIN_DELTA_PERCENT_HIGH_ACCURACY || 5), 1, 50);
+const AUTONOMY_OPTIMIZATION_HIGH_ACCURACY_MODE = String(process.env.AUTONOMY_OPTIMIZATION_HIGH_ACCURACY_MODE || '0') === '1';
+const AUTONOMY_OPTIMIZATION_REQUIRE_DELTA = String(process.env.AUTONOMY_OPTIMIZATION_REQUIRE_DELTA || '1') !== '0';
 const EVALUABLE_SUCCESS_METRICS = new Set([
   'execution_success',
   'postconditions_ok',
@@ -986,6 +993,133 @@ function hasConcreteDeltaSignal(proposal) {
   return CONCRETE_DELTA_RE.test(blob) && CONCRETE_TARGET_RE.test(blob);
 }
 
+function optimizationMinDeltaPercent() {
+  if (AUTONOMY_OPTIMIZATION_HIGH_ACCURACY_MODE) return AUTONOMY_OPTIMIZATION_MIN_DELTA_PERCENT_HIGH_ACCURACY;
+  return AUTONOMY_OPTIMIZATION_MIN_DELTA_PERCENT;
+}
+
+function percentMentionsFromText(text) {
+  const blob = String(text || '');
+  if (!blob) return [];
+  const out = [];
+  const re = new RegExp(PERCENT_VALUE_RE.source, 'g');
+  let m;
+  while ((m = re.exec(blob)) !== null) {
+    const raw = Number(m[1]);
+    if (!Number.isFinite(raw)) continue;
+    if (raw <= 0) continue;
+    out.push(clamp(raw, 0, 100));
+  }
+  return out;
+}
+
+function inferOptimizationDelta(proposal) {
+  const p = proposal || {};
+  const meta = p && p.meta && typeof p.meta === 'object' ? p.meta : {};
+  const directKeys = [
+    'optimization_delta_percent',
+    'expected_optimization_percent',
+    'expected_delta_percent',
+    'estimated_improvement_percent',
+    'target_improvement_percent',
+    'performance_gain_percent'
+  ];
+  for (const key of directKeys) {
+    const raw = Number(meta[key]);
+    if (!Number.isFinite(raw) || raw <= 0) continue;
+    return { delta_percent: clamp(raw, 0, 100), delta_source: `meta:${key}` };
+  }
+
+  const bits = [
+    p.title,
+    p.summary,
+    p.notes,
+    p.suggested_next_command,
+    p && p.action_spec && typeof p.action_spec === 'object' ? JSON.stringify(p.action_spec) : '',
+    meta.normalized_expected_outcome,
+    meta.normalized_validation_metric
+  ];
+  if (Array.isArray(p.validation)) bits.push(p.validation.join(' '));
+  if (Array.isArray(p.success_criteria)) bits.push(JSON.stringify(p.success_criteria));
+  if (Array.isArray(meta.success_criteria)) bits.push(JSON.stringify(meta.success_criteria));
+  if (Array.isArray(meta.success_criteria_rows)) bits.push(JSON.stringify(meta.success_criteria_rows));
+
+  const pct = percentMentionsFromText(bits.filter(Boolean).join(' '));
+  if (pct.length > 0) {
+    return { delta_percent: Number(Math.max(...pct).toFixed(3)), delta_source: 'text:%' };
+  }
+  return { delta_percent: null, delta_source: null };
+}
+
+function isOptimizationIntentProposal(proposal) {
+  const p = proposal || {};
+  const type = normalizeText(p.type).toLowerCase();
+  const blob = proposalTextBlob(p);
+  const hasIntent = OPTIMIZATION_INTENT_RE.test(type) || OPTIMIZATION_INTENT_RE.test(blob);
+  if (!hasIntent) return false;
+  const hasExemptSignals = OPTIMIZATION_EXEMPT_RE.test(type) || OPTIMIZATION_EXEMPT_RE.test(blob);
+  if (hasExemptSignals) return false;
+  if (OPPORTUNITY_MARKER_RE.test(blob)) return false;
+  return true;
+}
+
+function optimizationGateDecision(proposal, risk) {
+  const applies = isOptimizationIntentProposal(proposal);
+  const minDelta = optimizationMinDeltaPercent();
+  const requireDelta = AUTONOMY_OPTIMIZATION_REQUIRE_DELTA;
+  if (!applies) {
+    return {
+      applies: false,
+      pass: true,
+      reason: null,
+      delta_percent: null,
+      delta_source: null,
+      min_delta_percent: minDelta,
+      require_delta: requireDelta,
+      mode: AUTONOMY_OPTIMIZATION_HIGH_ACCURACY_MODE ? 'high_accuracy' : 'default',
+      risk: normalizeText(risk).toLowerCase() || 'low'
+    };
+  }
+  const inferred = inferOptimizationDelta(proposal);
+  if (inferred.delta_percent == null && requireDelta) {
+    return {
+      applies: true,
+      pass: false,
+      reason: 'optimization_delta_missing',
+      delta_percent: null,
+      delta_source: null,
+      min_delta_percent: minDelta,
+      require_delta: true,
+      mode: AUTONOMY_OPTIMIZATION_HIGH_ACCURACY_MODE ? 'high_accuracy' : 'default',
+      risk: normalizeText(risk).toLowerCase() || 'low'
+    };
+  }
+  if (Number.isFinite(Number(inferred.delta_percent)) && Number(inferred.delta_percent) < minDelta) {
+    return {
+      applies: true,
+      pass: false,
+      reason: 'optimization_good_enough',
+      delta_percent: Number(inferred.delta_percent),
+      delta_source: inferred.delta_source || null,
+      min_delta_percent: minDelta,
+      require_delta: requireDelta,
+      mode: AUTONOMY_OPTIMIZATION_HIGH_ACCURACY_MODE ? 'high_accuracy' : 'default',
+      risk: normalizeText(risk).toLowerCase() || 'low'
+    };
+  }
+  return {
+    applies: true,
+    pass: true,
+    reason: null,
+    delta_percent: Number.isFinite(Number(inferred.delta_percent)) ? Number(inferred.delta_percent) : null,
+    delta_source: inferred.delta_source || null,
+    min_delta_percent: minDelta,
+    require_delta: requireDelta,
+    mode: AUTONOMY_OPTIMIZATION_HIGH_ACCURACY_MODE ? 'high_accuracy' : 'default',
+    risk: normalizeText(risk).toLowerCase() || 'low'
+  };
+}
+
 function isMetaNoopCandidate(proposal, blobHint) {
   const p = proposal || {};
   const title = normalizeText(p.title).replace(/^\[[^\]]+\]\s*/g, '');
@@ -1338,7 +1472,7 @@ function proposalRemediationDepth(p) {
   return 0;
 }
 
-function admission(meta, eye, risk, t, proposal, strategy, outcomePolicy) {
+function admission(meta, eye, risk, t, proposal, strategy, outcomePolicy, optimizationGate) {
   const reasons = [];
   const allowedRisks = effectiveAllowedRisksSet();
   const type = normalizeText(proposal && proposal.type).toLowerCase();
@@ -1388,6 +1522,10 @@ function admission(meta, eye, risk, t, proposal, strategy, outcomePolicy) {
   if (/\bproposals?\b/.test(blob) && !hasConcreteTarget && !hasOpportunity) reasons.push('proposal_recursion_non_actionable');
   if (isMetaNoop && !hasConcreteDelta) reasons.push('meta_missing_concrete_delta');
   if (isMetaNoop && measuredCriteriaCount < META_MEASURABLE_MIN_COUNT) reasons.push('meta_missing_measurable_outcome');
+  const optGate = optimizationGate && typeof optimizationGate === 'object'
+    ? optimizationGate
+    : optimizationGateDecision(proposal, risk);
+  if (optGate.applies && !optGate.pass && optGate.reason) reasons.push(optGate.reason);
 
   return {
     eligible: reasons.length === 0,
@@ -1430,6 +1568,7 @@ function enrichOne(proposal, ctx) {
   const relevance = clamp(Math.round((q.score * 0.55) + (d.score * 0.45)), 0, 100);
   const a = assessActionability(p, d.score, relevance, ctx.outcomePolicy);
   const comp = compositeScore(q.score, d.score, a.score);
+  const optimizationGate = optimizationGateDecision(p, risk);
   const strategy = ctx.strategy || null;
   const admit = admission({
     signal_quality_score: q.score,
@@ -1451,7 +1590,7 @@ function enrichOne(proposal, ctx) {
     directive_objective_id: objectiveBinding.directive_objective_id || '',
     objective_binding_required: objectiveBinding.binding_required === true,
     objective_binding_valid: objectiveBinding.binding_valid !== false
-  }, eye, risk, t, p, strategy, ctx.outcomePolicy);
+  }, eye, risk, t, p, strategy, ctx.outcomePolicy, optimizationGate);
   const quorum = evaluateProposalQuorum({
     ...p,
     risk,
@@ -1512,6 +1651,15 @@ function enrichOne(proposal, ctx) {
     actionability_score: a.score,
     actionability_pass: a.score >= t.min_actionability_score,
     actionability_reasons: a.reasons.slice(0, 6),
+    optimization_intent: optimizationGate.applies === true,
+    optimization_delta_percent: Number.isFinite(Number(optimizationGate.delta_percent))
+      ? Number(optimizationGate.delta_percent)
+      : null,
+    optimization_delta_source: optimizationGate.delta_source || null,
+    optimization_min_delta_percent: Number(optimizationGate.min_delta_percent || optimizationMinDeltaPercent()),
+    optimization_require_delta: optimizationGate.require_delta === true,
+    optimization_gate_pass: optimizationGate.pass === true,
+    optimization_gate_reason: optimizationGate.reason || null,
     success_criteria_required: a.success_criteria && a.success_criteria.required === true,
     success_criteria_requirement_applied: a.success_criteria && a.success_criteria.requirement_applied === true,
     success_criteria_exempt_type: a.success_criteria && a.success_criteria.exempt_type === true,
@@ -1540,7 +1688,7 @@ function enrichOne(proposal, ctx) {
       reason: quorum.reason || null
     },
     enriched_at: nowIso(),
-    enrichment_version: '1.3'
+    enrichment_version: '1.4'
   };
 
   const next = {
