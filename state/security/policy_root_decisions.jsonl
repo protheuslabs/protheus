@@ -1,0 +1,2 @@
+{"ts":"2026-02-22T20:37:34.545Z","type":"policy_root_decision","policy_version":"1.0","ok":false,"decision":"DENY","reason":"lease_token_required","scope":"strategy_mode_escalation","target":"default_general","source":"strategy_mode_set"}
+{"ts":"2026-02-22T20:48:39.274Z","type":"policy_root_decision","policy_version":"1.0","ok":true,"decision":"ALLOW","reason":"lease_verified","lease_id":"lease_79468475a555660d","expires_at":"2026-02-22T21:03:39.165Z","scope":"strategy_mode_escalation","target":"default_general","source":"strategy_mode_set"}

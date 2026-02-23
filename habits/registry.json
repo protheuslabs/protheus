@@ -1039,6 +1039,381 @@
         }
       },
       "uid": "hwkq578tk525s43bsc156021"
+    },
+    {
+      "uid": "h52b041uijlnqxsuo8l7vvb8",
+      "id": "adaptive_candidate_proxy",
+      "name": "Adaptive Candidate Proxy",
+      "description": "Managed placeholder routine used by adaptive habit runtime sync.",
+      "created_at": "2026-02-22T18:05:11.345Z",
+      "last_used_at": null,
+      "uses_30d": 0,
+      "lifetime_uses": 0,
+      "success_rate": 0,
+      "avg_tokens_in": null,
+      "avg_tokens_out": null,
+      "estimated_tokens_saved": 0,
+      "rollback_plan": "Disable scaffold if adaptive runtime sync is removed.",
+      "test_plan": "Validate proxy routine remains no-op and hygiene guard passes.",
+      "idempotent": true,
+      "inputs_schema": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "notes": {
+            "type": "string",
+            "description": "Optional notes for adaptive candidate execution context"
+          }
+        }
+      },
+      "entrypoint": "habits/routines/adaptive_candidate_proxy.js",
+      "permissions": {
+        "network": "deny",
+        "write_paths_allowlist": [
+          "habits/logs/*"
+        ],
+        "exec_allowlist": []
+      },
+      "status": "disabled",
+      "outcome": {
+        "last_outcome_score": null,
+        "last_delta_value": null,
+        "outcome_unit": null
+      },
+      "governance": {
+        "state": "disabled",
+        "promote": {
+          "min_success_runs": 99,
+          "min_outcome_score": 0.95
+        },
+        "demote": {
+          "max_consecutive_errors": 1,
+          "min_outcome_score": 0.4,
+          "cooldown_minutes": 1440
+        },
+        "pinned": false,
+        "consecutive_errors": 0
+      },
+      "provenance": {
+        "source": "adaptive_habit_runtime_sync",
+        "created_by": "systems/adaptive/habits/habit_runtime_sync.js",
+        "created_at": "2026-02-22T18:05:11.345Z",
+        "intent_key": "adaptive_habit:proxy_scaffold",
+        "adaptive_uid": null
+      },
+      "metrics": {
+        "baseline": {
+          "avg_duration_ms": null,
+          "avg_tokens_est": null,
+          "avg_error_rate": null
+        },
+        "rolling": {
+          "avg_duration_ms_30d": null,
+          "avg_tokens_est_30d": null,
+          "error_rate_30d": null,
+          "window_runs": []
+        }
+      }
+    },
+    {
+      "uid": "h1uloqpwv586fu3qkjag0t7v",
+      "id": "pain_idle_dream_cycle_9fac4cbaf305",
+      "name": "Pain Habit idle_dream_cycle dream_idle:all_model_attempts_fa",
+      "description": "Dream idle phase degraded or blocked (all_model_attempts_failed)",
+      "created_at": "2026-02-22T22:03:29.590Z",
+      "last_used_at": null,
+      "uses_30d": 0,
+      "lifetime_uses": 0,
+      "success_rate": 0,
+      "avg_tokens_in": null,
+      "avg_tokens_out": null,
+      "estimated_tokens_saved": 0,
+      "rollback_plan": "Disable placeholder entry and remove adaptive binding if behavior diverges.",
+      "test_plan": "Validate proxy execution is no-op and adaptive bindings remain intact.",
+      "idempotent": true,
+      "inputs_schema": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "notes": {
+            "type": "string",
+            "description": "Optional notes for adaptive candidate execution context"
+          }
+        }
+      },
+      "entrypoint": "habits/routines/adaptive_candidate_proxy.js",
+      "permissions": {
+        "network": "deny",
+        "write_paths_allowlist": [
+          "habits/logs/*"
+        ],
+        "exec_allowlist": []
+      },
+      "status": "disabled",
+      "outcome": {
+        "last_outcome_score": null,
+        "last_delta_value": null,
+        "outcome_unit": null
+      },
+      "governance": {
+        "state": "disabled",
+        "promote": {
+          "min_success_runs": 99,
+          "min_outcome_score": 0.95
+        },
+        "demote": {
+          "max_consecutive_errors": 1,
+          "min_outcome_score": 0.4,
+          "cooldown_minutes": 1440
+        },
+        "pinned": false,
+        "consecutive_errors": 0
+      },
+      "provenance": {
+        "source": "adaptive_habit_runtime_sync",
+        "created_by": "systems/adaptive/habits/habit_runtime_sync.js",
+        "created_at": "2026-02-22T22:03:29.948Z",
+        "intent_key": "adaptive_habit:pain_idle_dream_cycle_9fac4cbaf305",
+        "adaptive_uid": "h1uloqpwv586fu3qkjag0t7v"
+      },
+      "metrics": {
+        "baseline": {
+          "avg_duration_ms": null,
+          "avg_tokens_est": null,
+          "avg_error_rate": null
+        },
+        "rolling": {
+          "avg_duration_ms_30d": null,
+          "avg_tokens_est_30d": null,
+          "error_rate_30d": null,
+          "window_runs": []
+        }
+      }
+    },
+    {
+      "uid": "h5g9sumex80d8i6knxw1aa28",
+      "id": "pain_external_eyes_0251f4298561",
+      "name": "Pain Habit external_eyes collector_preflight:collector_pr",
+      "description": "Collector preflight failed for ollama_search",
+      "created_at": "2026-02-23T00:00:13.902Z",
+      "last_used_at": null,
+      "uses_30d": 0,
+      "lifetime_uses": 0,
+      "success_rate": 0,
+      "avg_tokens_in": null,
+      "avg_tokens_out": null,
+      "estimated_tokens_saved": 0,
+      "rollback_plan": "Disable placeholder entry and remove adaptive binding if behavior diverges.",
+      "test_plan": "Validate proxy execution is no-op and adaptive bindings remain intact.",
+      "idempotent": true,
+      "inputs_schema": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "notes": {
+            "type": "string",
+            "description": "Optional notes for adaptive candidate execution context"
+          }
+        }
+      },
+      "entrypoint": "habits/routines/adaptive_candidate_proxy.js",
+      "permissions": {
+        "network": "deny",
+        "write_paths_allowlist": [
+          "habits/logs/*"
+        ],
+        "exec_allowlist": []
+      },
+      "status": "disabled",
+      "outcome": {
+        "last_outcome_score": null,
+        "last_delta_value": null,
+        "outcome_unit": null
+      },
+      "governance": {
+        "state": "disabled",
+        "promote": {
+          "min_success_runs": 99,
+          "min_outcome_score": 0.95
+        },
+        "demote": {
+          "max_consecutive_errors": 1,
+          "min_outcome_score": 0.4,
+          "cooldown_minutes": 1440
+        },
+        "pinned": false,
+        "consecutive_errors": 0
+      },
+      "provenance": {
+        "source": "adaptive_habit_runtime_sync",
+        "created_by": "systems/adaptive/habits/habit_runtime_sync.js",
+        "created_at": "2026-02-23T00:00:14.024Z",
+        "intent_key": "adaptive_habit:pain_external_eyes_0251f4298561",
+        "adaptive_uid": "h5g9sumex80d8i6knxw1aa28"
+      },
+      "metrics": {
+        "baseline": {
+          "avg_duration_ms": null,
+          "avg_tokens_est": null,
+          "avg_error_rate": null
+        },
+        "rolling": {
+          "avg_duration_ms_30d": null,
+          "avg_tokens_est_30d": null,
+          "error_rate_30d": null,
+          "window_runs": []
+        }
+      }
+    },
+    {
+      "uid": "h63c93y89php6m0vtx7bzmhz",
+      "id": "pain_external_eyes_4278015a179e",
+      "name": "Pain Habit external_eyes collector_preflight:collector_pr",
+      "description": "Collector preflight failed for x_trends",
+      "created_at": "2026-02-23T00:00:13.872Z",
+      "last_used_at": null,
+      "uses_30d": 0,
+      "lifetime_uses": 0,
+      "success_rate": 0,
+      "avg_tokens_in": null,
+      "avg_tokens_out": null,
+      "estimated_tokens_saved": 0,
+      "rollback_plan": "Disable placeholder entry and remove adaptive binding if behavior diverges.",
+      "test_plan": "Validate proxy execution is no-op and adaptive bindings remain intact.",
+      "idempotent": true,
+      "inputs_schema": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "notes": {
+            "type": "string",
+            "description": "Optional notes for adaptive candidate execution context"
+          }
+        }
+      },
+      "entrypoint": "habits/routines/adaptive_candidate_proxy.js",
+      "permissions": {
+        "network": "deny",
+        "write_paths_allowlist": [
+          "habits/logs/*"
+        ],
+        "exec_allowlist": []
+      },
+      "status": "disabled",
+      "outcome": {
+        "last_outcome_score": null,
+        "last_delta_value": null,
+        "outcome_unit": null
+      },
+      "governance": {
+        "state": "disabled",
+        "promote": {
+          "min_success_runs": 99,
+          "min_outcome_score": 0.95
+        },
+        "demote": {
+          "max_consecutive_errors": 1,
+          "min_outcome_score": 0.4,
+          "cooldown_minutes": 1440
+        },
+        "pinned": false,
+        "consecutive_errors": 0
+      },
+      "provenance": {
+        "source": "adaptive_habit_runtime_sync",
+        "created_by": "systems/adaptive/habits/habit_runtime_sync.js",
+        "created_at": "2026-02-23T00:00:14.024Z",
+        "intent_key": "adaptive_habit:pain_external_eyes_4278015a179e",
+        "adaptive_uid": "h63c93y89php6m0vtx7bzmhz"
+      },
+      "metrics": {
+        "baseline": {
+          "avg_duration_ms": null,
+          "avg_tokens_est": null,
+          "avg_error_rate": null
+        },
+        "rolling": {
+          "avg_duration_ms_30d": null,
+          "avg_tokens_est_30d": null,
+          "error_rate_30d": null,
+          "window_runs": []
+        }
+      }
+    },
+    {
+      "uid": "h3xhvd9zjg1blxys93gwgmwj",
+      "id": "pain_external_eyes_5f2d02fb9874",
+      "name": "Pain Habit external_eyes collector_preflight:domain_not_a",
+      "description": "Collector preflight failed for reddit_ai_automation",
+      "created_at": "2026-02-23T00:00:13.919Z",
+      "last_used_at": null,
+      "uses_30d": 0,
+      "lifetime_uses": 0,
+      "success_rate": 0,
+      "avg_tokens_in": null,
+      "avg_tokens_out": null,
+      "estimated_tokens_saved": 0,
+      "rollback_plan": "Disable placeholder entry and remove adaptive binding if behavior diverges.",
+      "test_plan": "Validate proxy execution is no-op and adaptive bindings remain intact.",
+      "idempotent": true,
+      "inputs_schema": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "notes": {
+            "type": "string",
+            "description": "Optional notes for adaptive candidate execution context"
+          }
+        }
+      },
+      "entrypoint": "habits/routines/adaptive_candidate_proxy.js",
+      "permissions": {
+        "network": "deny",
+        "write_paths_allowlist": [
+          "habits/logs/*"
+        ],
+        "exec_allowlist": []
+      },
+      "status": "disabled",
+      "outcome": {
+        "last_outcome_score": null,
+        "last_delta_value": null,
+        "outcome_unit": null
+      },
+      "governance": {
+        "state": "disabled",
+        "promote": {
+          "min_success_runs": 99,
+          "min_outcome_score": 0.95
+        },
+        "demote": {
+          "max_consecutive_errors": 1,
+          "min_outcome_score": 0.4,
+          "cooldown_minutes": 1440
+        },
+        "pinned": false,
+        "consecutive_errors": 0
+      },
+      "provenance": {
+        "source": "adaptive_habit_runtime_sync",
+        "created_by": "systems/adaptive/habits/habit_runtime_sync.js",
+        "created_at": "2026-02-23T00:00:14.024Z",
+        "intent_key": "adaptive_habit:pain_external_eyes_5f2d02fb9874",
+        "adaptive_uid": "h3xhvd9zjg1blxys93gwgmwj"
+      },
+      "metrics": {
+        "baseline": {
+          "avg_duration_ms": null,
+          "avg_tokens_est": null,
+          "avg_error_rate": null
+        },
+        "rolling": {
+          "avg_duration_ms_30d": null,
+          "avg_tokens_est_30d": null,
+          "error_rate_30d": null,
+          "window_runs": []
+        }
+      }
     }
   ]
 }

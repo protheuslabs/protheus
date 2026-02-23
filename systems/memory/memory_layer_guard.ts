@@ -97,6 +97,7 @@ function loadPolicy(policyPath) {
     exclude_paths: ['systems/memory/memory_layer_guard.js'],
     allow_paths: [
       'systems/memory/eyes_memory_bridge.js',
+      'systems/memory/failure_memory_bridge.js',
       'systems/memory/memory_dream.js',
       'systems/memory/idle_dream_cycle.js',
       'systems/memory/uid_connections.js',

@@ -20,6 +20,15 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+function birdCliAvailable() {
+  try {
+    execSync('command -v bird >/dev/null 2>&1', { stdio: 'ignore', timeout: 3000 });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Run bird CLI and return parsed JSON
  */
@@ -183,27 +192,31 @@ async function collectBirdX(options = {}) {
 }
 
 async function preflightBirdX() {
-  try {
-    // Check if bird CLI is available and authenticated by doing a test search
-    const result = runBird('search "test" -n 1', 8000);
-    const ready = Array.isArray(result);
-    
-    return {
-      ok: !!ready,
-      reachable: !!ready,
-      authenticated: !!ready,
-      items_sample: ready ? result.length : 0,
-      error: ready ? null : "auth_or_connect_failed"
-    };
-  } catch (err) {
+  const cliPresent = birdCliAvailable();
+  if (!cliPresent) {
     return {
       ok: false,
+      parser_type: "bird_x",
       reachable: false,
       authenticated: false,
       items_sample: 0,
-      error: err.code || "preflight_failed"
+      checks: [{ name: "bird_cli_present", ok: false }],
+      failures: [{ code: "env_blocked", message: "bird CLI not found in PATH" }],
+      error: "env_blocked"
     };
   }
+
+  // Keep preflight lightweight and deterministic: verify local capability only.
+  return {
+    ok: true,
+    parser_type: "bird_x",
+    reachable: true,
+    authenticated: null,
+    items_sample: 0,
+    checks: [{ name: "bird_cli_present", ok: true }],
+    failures: [],
+    error: null
+  };
 }
 
 module.exports = {

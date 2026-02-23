@@ -1,0 +1,92 @@
+{
+  "date": "2026-02-22",
+  "counts": {
+    "total": 45,
+    "pending": 4,
+    "accepted": 0,
+    "closed": 9,
+    "accepted_or_closed": 9,
+    "rejected": 32,
+    "parked": 0,
+    "shipped": 0,
+    "reverted": 0,
+    "no_change": 0
+  },
+  "rates": {
+    "adoption_rate": 0.2,
+    "outcome_rate": 0,
+    "revert_rate": 0
+  },
+  "by_type": {
+    "cross_signal_opportunity": {
+      "total": 21,
+      "accepted": 0,
+      "closed": 0,
+      "shipped": 0,
+      "reverted": 0
+    },
+    "external_intel": {
+      "total": 7,
+      "accepted": 0,
+      "closed": 0,
+      "shipped": 0,
+      "reverted": 0
+    },
+    "collector_preflight_remediation": {
+      "total": 3,
+      "accepted": 0,
+      "closed": 3,
+      "shipped": 0,
+      "reverted": 0
+    },
+    "pain_adaptive_candidate": {
+      "total": 5,
+      "accepted": 0,
+      "closed": 3,
+      "shipped": 0,
+      "reverted": 0
+    },
+    "pain_signal_escalation": {
+      "total": 1,
+      "accepted": 0,
+      "closed": 0,
+      "shipped": 0,
+      "reverted": 0
+    },
+    "spine_escalation": {
+      "total": 1,
+      "accepted": 0,
+      "closed": 0,
+      "shipped": 0,
+      "reverted": 0
+    },
+    "human_escalation": {
+      "total": 1,
+      "accepted": 0,
+      "closed": 0,
+      "shipped": 0,
+      "reverted": 0
+    },
+    "dream_cycle_escalation": {
+      "total": 3,
+      "accepted": 0,
+      "closed": 3,
+      "shipped": 0,
+      "reverted": 0
+    },
+    "collector_escalation": {
+      "total": 2,
+      "accepted": 0,
+      "closed": 0,
+      "shipped": 0,
+      "reverted": 0
+    },
+    "collector_remediation": {
+      "total": 1,
+      "accepted": 0,
+      "closed": 0,
+      "shipped": 0,
+      "reverted": 0
+    }
+  }
+}

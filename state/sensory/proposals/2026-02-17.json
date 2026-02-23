@@ -33,7 +33,11 @@
       "preview": "",
       "signal_quality_score": 40,
       "signal_quality_tier": "low"
-    }
+    },
+    "status": "rejected",
+    "queue_synced_ts": "2026-02-23T00:18:07.876Z",
+    "queue_synced_reason": "auto:autonomy_controller selected",
+    "queue_synced_source": "proposal_queue_reconcile_v1"
   },
   {
     "id": "EYE-7ae742be7c665c47",
@@ -69,7 +73,11 @@
       "preview": "",
       "signal_quality_score": 40,
       "signal_quality_tier": "low"
-    }
+    },
+    "status": "rejected",
+    "queue_synced_ts": "2026-02-23T00:18:07.876Z",
+    "queue_synced_reason": "stub_title",
+    "queue_synced_source": "proposal_queue_reconcile_v1"
   },
   {
     "id": "EYE-31c2031a0f27833c",
@@ -105,7 +113,11 @@
       "preview": "",
       "signal_quality_score": 40,
       "signal_quality_tier": "low"
-    }
+    },
+    "status": "rejected",
+    "queue_synced_ts": "2026-02-23T00:18:07.876Z",
+    "queue_synced_reason": "stub_title",
+    "queue_synced_source": "proposal_queue_reconcile_v1"
   },
   {
     "id": "EYE-65dd0c14c2efa337",
@@ -141,7 +153,11 @@
       "preview": "",
       "signal_quality_score": 40,
       "signal_quality_tier": "low"
-    }
+    },
+    "status": "rejected",
+    "queue_synced_ts": "2026-02-23T00:18:07.876Z",
+    "queue_synced_reason": "stub_title",
+    "queue_synced_source": "proposal_queue_reconcile_v1"
   },
   {
     "id": "EYE-3555923cbd1fe4df",
@@ -177,6 +193,10 @@
       "preview": "",
       "signal_quality_score": 40,
       "signal_quality_tier": "low"
-    }
+    },
+    "status": "rejected",
+    "queue_synced_ts": "2026-02-23T00:18:07.876Z",
+    "queue_synced_reason": "stub_title",
+    "queue_synced_source": "proposal_queue_reconcile_v1"
   }
 ]

@@ -65,6 +65,10 @@ const {
   loadSystemBudgetAutopauseState,
   setSystemBudgetAutopause
 } = require('../budget/system_budget.js');
+const {
+  startPainFocusSession,
+  stopPainFocusSession
+} = require('./pain_signal.js');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const PROPOSALS_DIR = path.join(REPO_ROOT, 'state', 'sensory', 'proposals');
@@ -235,6 +239,23 @@ const AUTONOMY_LANE_NO_CHANGE_LIMIT = Number(process.env.AUTONOMY_LANE_NO_CHANGE
 const AUTONOMY_LANE_NO_CHANGE_COOLDOWN_HOURS = Number(process.env.AUTONOMY_LANE_NO_CHANGE_COOLDOWN_HOURS || 24);
 const AUTONOMY_CANDIDATE_AUDIT_MAX_ROWS = Number(process.env.AUTONOMY_CANDIDATE_AUDIT_MAX_ROWS || 25);
 const AUTONOMY_SCORE_ONLY_EVIDENCE = String(process.env.AUTONOMY_SCORE_ONLY_EVIDENCE || '1') !== '0';
+const AUTONOMY_SCORE_ONLY_STRUCTURAL_COOLDOWN_HOURS = Math.max(
+  0,
+  Number(process.env.AUTONOMY_SCORE_ONLY_STRUCTURAL_COOLDOWN_HOURS || 24)
+);
+const AUTONOMY_SCORE_ONLY_REPEAT_PROPOSAL_LIMIT = Math.max(
+  1,
+  Number(process.env.AUTONOMY_SCORE_ONLY_REPEAT_PROPOSAL_LIMIT || 3)
+);
+const AUTONOMY_SCORE_ONLY_REPEAT_WINDOW_HOURS = Math.max(
+  1,
+  Number(process.env.AUTONOMY_SCORE_ONLY_REPEAT_WINDOW_HOURS || 24)
+);
+const AUTONOMY_SCORE_ONLY_REPEAT_COOLDOWN_HOURS = Math.max(
+  0,
+  Number(process.env.AUTONOMY_SCORE_ONLY_REPEAT_COOLDOWN_HOURS || 12)
+);
+const AUTONOMY_EVIDENCE_SAMPLE_WINDOW = Math.max(1, Number(process.env.AUTONOMY_EVIDENCE_SAMPLE_WINDOW || 5));
 const AUTONOMY_PREEXEC_CRITERIA_GATE_ENABLED = String(process.env.AUTONOMY_PREEXEC_CRITERIA_GATE_ENABLED || '1') !== '0';
 const AUTONOMY_PREEXEC_CRITERIA_COOLDOWN_HOURS = Math.max(1, Number(process.env.AUTONOMY_PREEXEC_CRITERIA_COOLDOWN_HOURS || AUTONOMY_ROUTE_BLOCK_COOLDOWN_HOURS));
 const AUTONOMY_CRITERIA_PATTERN_WINDOW_DAYS = Math.max(1, Number(process.env.AUTONOMY_CRITERIA_PATTERN_WINDOW_DAYS || 14));
@@ -1151,6 +1172,7 @@ function isNoProgressRun(evt) {
     || evt.result === 'stop_repeat_gate_capability_no_change_cooldown'
     || evt.result === 'stop_repeat_gate_medium_canary_cap'
     || evt.result === 'stop_repeat_gate_candidate_exhausted'
+    || evt.result === 'stop_repeat_gate_preview_churn_cooldown'
     || evt.result === 'stop_repeat_gate_exhaustion_cooldown'
     || evt.result === 'stop_repeat_gate_no_progress'
     || evt.result === 'stop_repeat_gate_dopamine';
@@ -1187,12 +1209,72 @@ function isAttemptRunEvent(evt) {
     || evt.result === 'stop_init_gate_composite_exhausted'
     || evt.result === 'stop_repeat_gate_capability_cooldown'
     || evt.result === 'stop_repeat_gate_capability_no_change_cooldown'
+    || evt.result === 'stop_repeat_gate_preview_churn_cooldown'
     || evt.result === 'stop_repeat_gate_exhaustion_cooldown'
     || evt.result === 'stop_repeat_gate_candidate_exhausted';
 }
 
 function attemptEvents(events) {
   return events.filter(isAttemptRunEvent);
+}
+
+function isScoreOnlyResult(result) {
+  const r = String(result || '');
+  return r === 'score_only_preview'
+    || r === 'score_only_evidence'
+    || r === 'stop_repeat_gate_preview_structural_cooldown'
+    || r === 'stop_repeat_gate_preview_churn_cooldown';
+}
+
+function isScoreOnlyFailureLikeEvent(evt) {
+  if (!evt || evt.type !== 'autonomy_run') return false;
+  if (!isScoreOnlyResult(evt.result)) return false;
+  if (evt.result === 'stop_repeat_gate_preview_structural_cooldown') return true;
+  if (evt.result === 'stop_repeat_gate_preview_churn_cooldown') return true;
+  const verification = evt.preview_verification && typeof evt.preview_verification === 'object'
+    ? evt.preview_verification
+    : null;
+  if (!verification) return false;
+  if (verification.passed === false) return true;
+  return String(verification.outcome || '') === 'no_change';
+}
+
+function scoreOnlyProposalChurn(priorRuns, proposalId, windowHours) {
+  const pid = String(proposalId || '').trim();
+  if (!pid) {
+    return {
+      count: 0,
+      streak: 0,
+      first_ts: null,
+      last_ts: null
+    };
+  }
+  const nowMs = Date.now();
+  const windowMs = Math.max(1, Number(windowHours || 1)) * 3600000;
+  const cutoffMs = nowMs - windowMs;
+  const matches = [];
+  for (const evt of priorRuns || []) {
+    if (!evt || evt.type !== 'autonomy_run') continue;
+    if (String(evt.proposal_id || '') !== pid) continue;
+    const t = parseIsoTs(evt.ts);
+    if (!t || t.getTime() < cutoffMs) continue;
+    if (!isScoreOnlyFailureLikeEvent(evt)) continue;
+    matches.push({ ts: t.getTime(), evt });
+  }
+  matches.sort((a, b) => a.ts - b.ts);
+  let streak = 0;
+  for (let i = matches.length - 1; i >= 0; i -= 1) {
+    const row = matches[i];
+    if (!row || !row.evt) continue;
+    if (!isScoreOnlyFailureLikeEvent(row.evt)) break;
+    streak += 1;
+  }
+  return {
+    count: matches.length,
+    streak,
+    first_ts: matches.length ? new Date(matches[0].ts).toISOString() : null,
+    last_ts: matches.length ? new Date(matches[matches.length - 1].ts).toISOString() : null
+  };
 }
 
 function isGateExhaustedAttempt(evt) {
@@ -1213,6 +1295,7 @@ function isGateExhaustedAttempt(evt) {
     || evt.result === 'stop_init_gate_composite_exhausted'
     || evt.result === 'stop_repeat_gate_capability_cooldown'
     || evt.result === 'stop_repeat_gate_capability_no_change_cooldown'
+    || evt.result === 'stop_repeat_gate_preview_churn_cooldown'
     || evt.result === 'stop_repeat_gate_medium_canary_cap'
     || evt.result === 'stop_repeat_gate_candidate_exhausted';
 }
@@ -4461,11 +4544,24 @@ function assessSuccessCriteriaQuality(criteria) {
   const src = criteria && typeof criteria === 'object' ? criteria : {};
   const checks = Array.isArray(src.checks) ? src.checks : [];
   const totalCount = Number(src.total_count || 0);
-  const unknownCount = Number(src.unknown_count || 0);
+  const unknownExemptReasons = new Set([
+    'artifact_delta_unavailable',
+    'entry_delta_unavailable',
+    'revenue_delta_unavailable',
+    'outreach_artifact_unavailable',
+    'reply_or_interview_count_unavailable'
+  ]);
+  const unknownExemptCount = checks.filter((row) => {
+    if (!row || row.evaluated === true) return false;
+    const reason = String(row.reason || '');
+    return unknownExemptReasons.has(reason);
+  }).length;
+  const unknownCountRaw = Number(src.unknown_count || 0);
+  const unknownCount = Math.max(0, unknownCountRaw - unknownExemptCount);
   const unknownRate = totalCount > 0
     ? (unknownCount / totalCount)
     : (checks.length > 0
-      ? (checks.filter((row) => !(row && row.evaluated === true)).length / checks.length)
+      ? (Math.max(0, checks.filter((row) => !(row && row.evaluated === true)).length - unknownExemptCount) / checks.length)
       : 1);
   const unsupportedCount = checks.filter((row) => {
     const reason = String(row && row.reason || '');
@@ -4481,12 +4577,30 @@ function assessSuccessCriteriaQuality(criteria) {
     insufficient: reasons.length > 0,
     reasons,
     total_count: totalCount,
+    unknown_count_raw: unknownCountRaw,
+    unknown_exempt_count: unknownExemptCount,
     unknown_count: unknownCount,
     unknown_rate: Number(unknownRate.toFixed(4)),
     unsupported_count: unsupportedCount,
     unsupported_rate: Number(unsupportedRate.toFixed(4)),
     synthesized
   };
+}
+
+function hasStructuralPreviewCriteriaFailure(verification) {
+  const src = verification && typeof verification === 'object' ? verification : {};
+  const primary = String(src.primary_failure || '').toLowerCase();
+  if (primary.includes('metric_not_allowed_for_capability')) return true;
+  if (primary.includes('insufficient_supported_metrics')) return true;
+  const criteria = src.success_criteria && typeof src.success_criteria === 'object'
+    ? src.success_criteria
+    : {};
+  const notAllowed = Math.max(0, Number(criteria.contract_not_allowed_count || 0));
+  const unsupported = Math.max(0, Number(criteria.unsupported_count || 0));
+  const total = Math.max(1, Number(criteria.total_count || 0));
+  if (notAllowed > 0) return true;
+  if (unsupported > 0 && (unsupported / total) >= 0.5) return true;
+  return false;
 }
 
 function preExecCriteriaGateDecision(criteria, policy) {
@@ -5615,6 +5729,27 @@ function chooseSelectionMode(eligible, priorRuns) {
     explore_used: exploreUsed,
     explore_quota: quota,
     exploit_used: executed.filter(e => e.selection_mode === 'exploit').length
+  };
+}
+
+function chooseEvidenceSelectionMode(eligible, priorRuns, modePrefix) {
+  const evidenceAttempts = (priorRuns || []).filter(e =>
+    e
+    && e.type === 'autonomy_run'
+    && (e.result === 'score_only_preview' || e.result === 'score_only_evidence')
+  );
+  const window = Math.max(1, Math.min(
+    Number(eligible && eligible.length || 0),
+    Math.max(1, Number(AUTONOMY_EVIDENCE_SAMPLE_WINDOW || 1))
+  ));
+  const cursor = window > 0 ? (evidenceAttempts.length % window) : 0;
+  const mode = `${String(modePrefix || 'evidence')}_sample`;
+  return {
+    mode,
+    index: cursor,
+    sample_window: window,
+    sample_cursor: cursor,
+    prior_evidence_attempts: evidenceAttempts.length
   };
 }
 
@@ -7337,13 +7472,17 @@ function runCmd(dateStr, opts = {}) {
       && nonFallbackEligible.length < eligible.length
       && isDeprioritizedSourceProposal(eligible[0] && eligible[0].proposal)
     ) {
-      const laneSelection = chooseSelectionMode(nonFallbackEligible, priorRuns);
+      const laneSelection = shadowOnly
+        ? chooseEvidenceSelectionMode(nonFallbackEligible, priorRuns, 'source_diversity')
+        : chooseSelectionMode(nonFallbackEligible, priorRuns);
       const lanePick = nonFallbackEligible[laneSelection.index] || nonFallbackEligible[0];
       const fullIdx = eligible.findIndex(c => String(c && c.proposal && c.proposal.id || '') === String(lanePick && lanePick.proposal && lanePick.proposal.id || ''));
       pick = lanePick;
       selection = {
         ...laneSelection,
-        mode: laneSelection.mode === 'explore' ? 'source_diversity_explore' : 'source_diversity_exploit',
+        mode: shadowOnly
+          ? laneSelection.mode
+          : (laneSelection.mode === 'explore' ? 'source_diversity_explore' : 'source_diversity_exploit'),
         index: fullIdx >= 0 ? fullIdx : 0
       };
     } else if (tierReservation && Number(tierReservation.candidate_count || 0) > 0) {
@@ -7361,7 +7500,9 @@ function runCmd(dateStr, opts = {}) {
         reservation: tierReservation
       };
     } else {
-      selection = chooseSelectionMode(eligible, priorRuns);
+      selection = shadowOnly
+        ? chooseEvidenceSelectionMode(eligible, priorRuns, 'evidence')
+        : chooseSelectionMode(eligible, priorRuns);
       pick = eligible[selection.index] || eligible[0];
     }
     if (pick && pick.queue_underflow_backfill === true) {
@@ -7938,6 +8079,47 @@ function runCmd(dateStr, opts = {}) {
     let previewSummary = null;
     let previewTokenUsage = null;
     let previewMode = shadowOnly ? 'shadow_only' : 'score_only';
+    const churn = scoreOnlyProposalChurn(priorRuns, p.id, AUTONOMY_SCORE_ONLY_REPEAT_WINDOW_HOURS);
+    if (
+      AUTONOMY_SCORE_ONLY_REPEAT_COOLDOWN_HOURS > 0
+      && Number(churn.count || 0) >= AUTONOMY_SCORE_ONLY_REPEAT_PROPOSAL_LIMIT
+    ) {
+      const reason = `auto:score_only_proposal_churn cooldown_${AUTONOMY_SCORE_ONLY_REPEAT_COOLDOWN_HOURS}h count_${churn.count}/${AUTONOMY_SCORE_ONLY_REPEAT_PROPOSAL_LIMIT}`;
+      runProposalQueue('park', p.id, reason);
+      setCooldown(p.id, AUTONOMY_SCORE_ONLY_REPEAT_COOLDOWN_HOURS, reason);
+      writeRun(dateStr, {
+        ts: nowIso(),
+        type: 'autonomy_run',
+        result: 'stop_repeat_gate_preview_churn_cooldown',
+        proposal_id: p.id,
+        objective_id: executionObjectiveId || null,
+        proposal_date: proposalDate,
+        proposal_type: String(p.type || ''),
+        risk: proposalRisk,
+        source_eye: sourceEyeId(p),
+        proposal_key: proposalDedupKey(p),
+        capability_key: capabilityKey,
+        score_only_churn: churn,
+        score_only_repeat_window_hours: AUTONOMY_SCORE_ONLY_REPEAT_WINDOW_HOURS,
+        score_only_repeat_limit: AUTONOMY_SCORE_ONLY_REPEAT_PROPOSAL_LIMIT,
+        cooldown_hours: AUTONOMY_SCORE_ONLY_REPEAT_COOLDOWN_HOURS,
+        reason
+      });
+      process.stdout.write(JSON.stringify({
+        ok: true,
+        result: 'stop_repeat_gate_preview_churn_cooldown',
+        proposal_id: p.id,
+        capability_key: capabilityKey,
+        churn_count: churn.count,
+        churn_streak: churn.streak,
+        score_only_repeat_window_hours: AUTONOMY_SCORE_ONLY_REPEAT_WINDOW_HOURS,
+        score_only_repeat_limit: AUTONOMY_SCORE_ONLY_REPEAT_PROPOSAL_LIMIT,
+        cooldown_hours: AUTONOMY_SCORE_ONLY_REPEAT_COOLDOWN_HOURS,
+        reason,
+        ts: nowIso()
+      }) + '\n');
+      return;
+    }
     const shouldCaptureEvidence = shadowOnly || AUTONOMY_SCORE_ONLY_EVIDENCE;
 
     if (shouldCaptureEvidence) {
@@ -7954,11 +8136,12 @@ function runCmd(dateStr, opts = {}) {
           ? runActuationExecute(actuationSpec, true)
           : runRouteExecute(makeTaskFromProposal(p), routeTokensEst, repeats14d, errors30d, true);
       const preSummary = previewRes.summary || null;
+      const preBudgetDeferred = !!(preSummary && preSummary.budget_deferred === true);
       const preBlocked = !previewRes.ok
         || !preSummary
-        || preSummary.executable !== true
-        || preSummary.gate_decision === 'MANUAL'
-        || preSummary.gate_decision === 'DENY';
+        || (!preBudgetDeferred && preSummary.executable !== true)
+        || (!preBudgetDeferred && preSummary.gate_decision === 'MANUAL')
+        || (!preBudgetDeferred && preSummary.gate_decision === 'DENY');
       const checks = [
         { name: 'preview_command_ok', pass: !!previewRes.ok },
         { name: 'preview_executable', pass: !preBlocked }
@@ -7971,8 +8154,8 @@ function runCmd(dateStr, opts = {}) {
         checks,
         failed,
         passed: failed.length === 0,
-        outcome: failed.length === 0 ? 'shipped' : 'no_change',
-        primary_failure: primaryFailure
+        outcome: preBudgetDeferred ? 'no_change' : (failed.length === 0 ? 'shipped' : 'no_change'),
+        primary_failure: preBudgetDeferred ? null : primaryFailure
       };
       previewSummary = preSummary;
       previewTokenUsage = computeExecutionTokenUsage(preSummary, previewRes.execution_metrics, routeTokensEst, estTokens);
@@ -8043,6 +8226,45 @@ function runCmd(dateStr, opts = {}) {
         },
         verification: previewVerification
       });
+      if (
+        previewVerification
+        && previewVerification.passed !== true
+        && hasStructuralPreviewCriteriaFailure(previewVerification)
+        && AUTONOMY_SCORE_ONLY_STRUCTURAL_COOLDOWN_HOURS > 0
+      ) {
+        const reason = `auto:score_only_structural_criteria cooldown_${AUTONOMY_SCORE_ONLY_STRUCTURAL_COOLDOWN_HOURS}h`;
+        runProposalQueue('park', p.id, reason);
+        setCooldown(p.id, AUTONOMY_SCORE_ONLY_STRUCTURAL_COOLDOWN_HOURS, reason);
+        writeRun(dateStr, {
+          ts: nowIso(),
+          type: 'autonomy_run',
+          result: 'stop_repeat_gate_preview_structural_cooldown',
+          proposal_id: p.id,
+          objective_id: executionObjectiveId || null,
+          proposal_date: proposalDate,
+          proposal_type: String(p.type || ''),
+          risk: proposalRisk,
+          source_eye: sourceEyeId(p),
+          proposal_key: proposalDedupKey(p),
+          capability_key: capabilityKey,
+          preview_mode: previewMode,
+          preview_receipt_id: previewReceiptId,
+          preview_verification: previewVerification,
+          cooldown_hours: AUTONOMY_SCORE_ONLY_STRUCTURAL_COOLDOWN_HOURS,
+          reason
+        });
+        process.stdout.write(JSON.stringify({
+          ok: true,
+          result: 'stop_repeat_gate_preview_structural_cooldown',
+          proposal_id: p.id,
+          capability_key: capabilityKey,
+          preview_receipt_id: previewReceiptId,
+          cooldown_hours: AUTONOMY_SCORE_ONLY_STRUCTURAL_COOLDOWN_HOURS,
+          reason,
+          ts: nowIso()
+        }) + '\n');
+        return;
+      }
     }
 
     writeRun(dateStr, {
@@ -8866,12 +9088,40 @@ function runCmd(dateStr, opts = {}) {
   writeExperiment(dateStr, experiment);
 
   const beforeEvidence = loadDoDEvidenceSnapshot(dateStr);
+  const painFocusTtlRaw = Number(process.env.AUTONOMY_PAIN_FOCUS_TTL_MINUTES || 30);
+  const painFocusTtlMinutes = Number.isFinite(painFocusTtlRaw)
+    ? Math.max(5, Math.min(180, Math.round(painFocusTtlRaw)))
+    : 30;
+  let painFocusSession = null;
+  try {
+    painFocusSession = startPainFocusSession({
+      source: 'autonomy_controller',
+      task: `execute:${String(p && p.id || 'unknown_proposal')}`,
+      reason: 'active_autonomy_execution',
+      ttl_minutes: painFocusTtlMinutes
+    });
+  } catch {
+    painFocusSession = null;
+  }
   const execStartMs = Date.now();
   const execRes = directiveClarification
     ? runDirectiveClarificationValidate(directiveClarification, false)
     : actuationSpec
       ? runActuationExecute(actuationSpec, false)
       : runRouteExecute(task, routeTokensEst, repeats14d, errors30d, false);
+  try {
+    const sid = painFocusSession && painFocusSession.session && painFocusSession.session.id
+      ? String(painFocusSession.session.id)
+      : '';
+    if (sid) {
+      stopPainFocusSession({
+        session_id: sid,
+        reason: 'execution_complete'
+      });
+    }
+  } catch {
+    // focus teardown should never block execution path
+  }
   const execEndMs = Date.now();
   const afterEvidence = loadDoDEvidenceSnapshot(dateStr);
   const execTokenUsage = computeExecutionTokenUsage(execRes.summary || null, execRes.execution_metrics || null, routeTokensEst, estTokens);
@@ -9424,6 +9674,7 @@ module.exports = {
   candidatePool,
   evaluateDoD,
   diffDoDEvidence,
+  hasStructuralPreviewCriteriaFailure,
   computeCalibrationDeltas,
   compileDirectivePulseObjectives,
   buildDirectivePulseContext,

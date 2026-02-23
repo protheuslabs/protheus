@@ -132,6 +132,9 @@ const ALLOWED_RISKS = new Set(
     .filter(Boolean)
 );
 const AUTONOMY_OBJECTIVE_BINDING_REQUIRED = String(process.env.AUTONOMY_OBJECTIVE_BINDING_REQUIRED || '1') !== '0';
+const CROSS_SIGNAL_NO_CHANGE_WINDOW_DAYS = Math.max(1, Math.min(30, Math.floor(Number(process.env.AUTONOMY_CROSS_SIGNAL_NO_CHANGE_WINDOW_DAYS || 7) || 7)));
+const CROSS_SIGNAL_NO_CHANGE_PENALTY_PER_HIT = Math.max(1, Math.min(12, Number(process.env.AUTONOMY_CROSS_SIGNAL_NO_CHANGE_PENALTY_PER_HIT || 3) || 3));
+const CROSS_SIGNAL_NO_CHANGE_MAX_PENALTY = Math.max(2, Math.min(40, Number(process.env.AUTONOMY_CROSS_SIGNAL_NO_CHANGE_MAX_PENALTY || 18) || 18));
 let STRATEGY_CACHE = undefined;
 
 function strategyProfile() {
@@ -1400,7 +1403,18 @@ function enrichOne(proposal, ctx) {
   const t = typeThresholds.thresholds;
   const objectiveBinding = resolveObjectiveBinding(p, ctx.directiveObjectiveIds);
 
-  const q = assessQuality(p, eye, t);
+  let q = assessQuality(p, eye, t);
+  const crossSignalDecay = crossSignalNoChangeDecay(p, ctx);
+  if (crossSignalDecay.applied) {
+    q = {
+      ...q,
+      score: clamp(Math.round(Number(q.score || 0) - Number(crossSignalDecay.penalty || 0)), 0, 100),
+      reasons: uniq([
+        ...(Array.isArray(q.reasons) ? q.reasons : []),
+        `cross_signal_no_change_decay:${Number(crossSignalDecay.count || 0)}`
+      ])
+    };
+  }
   const dream = assessDreamAlignment(p, ctx.dreamSignals);
   const d0 = assessDirectiveFit(p, ctx.directiveProfile, t);
   const d = {
@@ -1453,6 +1467,16 @@ function enrichOne(proposal, ctx) {
     ...prevMeta,
     ...(p.meta && typeof p.meta === 'object' ? p.meta : {}),
     source_eye: srcEye,
+    cross_signal_topic: crossSignalDecay.topic || null,
+    cross_signal_no_change_count: Number(crossSignalDecay.count || 0),
+    cross_signal_confidence_decay_penalty: Number(crossSignalDecay.penalty || 0),
+    cross_signal_confidence_decay_applied: crossSignalDecay.applied === true,
+    cross_signal_confidence_base: Number.isFinite(Number(prevMeta.confidence))
+      ? Number(prevMeta.confidence)
+      : null,
+    cross_signal_confidence_adjusted: Number.isFinite(Number(prevMeta.confidence))
+      ? clamp(Number(prevMeta.confidence) - Number(crossSignalDecay.penalty || 0), 0, 100)
+      : null,
     objective_id: objectiveBinding.objective_id || null,
     directive_objective_id: objectiveBinding.directive_objective_id || null,
     objective_binding_required: objectiveBinding.binding_required === true,
@@ -1650,6 +1674,83 @@ function parseDateOrToday(v) {
   return v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : todayStr();
 }
 
+function dateWindow(dateStr, days) {
+  const base = Date.parse(`${dateStr}T00:00:00.000Z`);
+  if (!Number.isFinite(base)) return [dateStr];
+  const out = [];
+  for (let i = 0; i < Math.max(1, Number(days || 1)); i++) {
+    const d = new Date(base);
+    d.setUTCDate(d.getUTCDate() - i);
+    out.push(d.toISOString().slice(0, 10));
+  }
+  return out;
+}
+
+function crossSignalTopicFromProposal(proposal) {
+  const meta = proposal && proposal.meta && typeof proposal.meta === 'object' ? proposal.meta : {};
+  const topic = normalizeText(meta.topic).toLowerCase();
+  return topic || '';
+}
+
+function loadCrossSignalNoChangeTopicCounts(dateStr) {
+  const days = dateWindow(dateStr, CROSS_SIGNAL_NO_CHANGE_WINDOW_DAYS);
+  const idToTopic = new Map();
+  for (const day of days) {
+    const loaded = loadProposalsForDate(day);
+    for (const proposal of loaded.proposals || []) {
+      if (!proposal || typeof proposal !== 'object') continue;
+      const id = normalizeText(proposal.id);
+      const type = normalizeText(proposal.type).toLowerCase();
+      if (!id || type !== 'cross_signal_opportunity') continue;
+      const topic = crossSignalTopicFromProposal(proposal);
+      if (topic) idToTopic.set(id, topic);
+    }
+  }
+
+  const counts = new Map();
+  for (const day of days) {
+    const runPath = path.join(ROOT, 'state', 'autonomy', 'runs', `${day}.jsonl`);
+    const rows = readJsonSafe(runPath, null);
+    const list = Array.isArray(rows) ? rows : [];
+    for (const row of list) {
+      if (!row || typeof row !== 'object') continue;
+      const type = normalizeText(row.proposal_type).toLowerCase();
+      const sourceEye = normalizeText(row.source_eye).toLowerCase();
+      if (!(type === 'cross_signal_opportunity' || sourceEye === 'cross_signal_engine')) continue;
+      const noChange = normalizeText(row.outcome).toLowerCase() === 'no_change'
+        || normalizeText(row.result).toLowerCase() === 'stop_no_change'
+        || normalizeText(row && row.preview_verification && row.preview_verification.outcome).toLowerCase() === 'no_change';
+      if (!noChange) continue;
+      const proposalId = normalizeText(row.proposal_id);
+      if (!proposalId) continue;
+      const topic = normalizeText(idToTopic.get(proposalId)).toLowerCase();
+      if (!topic) continue;
+      counts.set(topic, Number(counts.get(topic) || 0) + 1);
+    }
+  }
+
+  return {
+    window_days: CROSS_SIGNAL_NO_CHANGE_WINDOW_DAYS,
+    counts
+  };
+}
+
+function crossSignalNoChangeDecay(proposal, ctx) {
+  const type = normalizeText(proposal && proposal.type).toLowerCase();
+  if (type !== 'cross_signal_opportunity') {
+    return { applied: false, topic: '', count: 0, penalty: 0 };
+  }
+  const topic = crossSignalTopicFromProposal(proposal);
+  if (!topic) return { applied: false, topic: '', count: 0, penalty: 0 };
+  const map = ctx && ctx.cross_signal_no_change && ctx.cross_signal_no_change.counts
+    ? ctx.cross_signal_no_change.counts
+    : new Map();
+  const count = Number(map.get(topic) || 0);
+  if (count <= 0) return { applied: false, topic, count: 0, penalty: 0 };
+  const penalty = clamp(Math.round(count * CROSS_SIGNAL_NO_CHANGE_PENALTY_PER_HIT), 0, CROSS_SIGNAL_NO_CHANGE_MAX_PENALTY);
+  return { applied: penalty > 0, topic, count, penalty };
+}
+
 function runForDate(dateStr, dryRun = false) {
   const loaded = loadProposalsForDate(dateStr);
   if (!loaded.exists) {
@@ -1672,7 +1773,8 @@ function runForDate(dateStr, dryRun = false) {
     strategy: strategyProfile(),
     thresholds: thresholds(),
     outcomePolicy: loadOutcomeFitnessPolicy(ROOT),
-    dreamSignals
+    dreamSignals,
+    cross_signal_no_change: loadCrossSignalNoChangeTopicCounts(dateStr)
   };
 
   const out = [];
@@ -1719,6 +1821,14 @@ function runForDate(dateStr, dryRun = false) {
     admission: admissionSummary,
     objective_binding: objectiveBindingSummary,
     dream_alignment: dreamAlignmentSummary
+    ,
+    cross_signal_no_change: {
+      window_days: Number(ctx.cross_signal_no_change && ctx.cross_signal_no_change.window_days || CROSS_SIGNAL_NO_CHANGE_WINDOW_DAYS),
+      topics: Array.from((ctx.cross_signal_no_change && ctx.cross_signal_no_change.counts && ctx.cross_signal_no_change.counts.entries()) || [])
+        .sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0) || String(a[0]).localeCompare(String(b[0])))
+        .slice(0, 12)
+        .map(([topic, count]) => ({ topic, no_change_count: Number(count || 0) }))
+    }
   };
 }
 

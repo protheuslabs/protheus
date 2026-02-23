@@ -208,6 +208,26 @@ function run() {
   assert.ok(crossProps[0].suggested_next_command.includes(`--id=${crossProps[0].meta.directive_objective_id}`), 'cross-signal suggested_next_command should carry --id=<objective_id>');
   ok('cross-signal proposal objective binding is present in meta/action_spec/command');
 
+  const allowedCrossSignalMetrics = new Set([
+    'execution_success',
+    'postconditions_ok',
+    'queue_outcome_logged',
+    'artifact_count',
+    'entries_count',
+    'revenue_actions_count',
+    'token_usage',
+    'duration_ms'
+  ]);
+  const crossCriteria = Array.isArray(crossProps[0].action_spec && crossProps[0].action_spec.success_criteria)
+    ? crossProps[0].action_spec.success_criteria
+    : [];
+  assert.ok(crossCriteria.length >= 2, 'cross-signal success_criteria should include measurable contract rows');
+  for (const row of crossCriteria) {
+    const metric = String(row && row.metric || '').toLowerCase().replace(/[\s-]+/g, '_').trim();
+    assert.ok(allowedCrossSignalMetrics.has(metric), `cross-signal metric must be contract-supported: ${metric || 'missing'}`);
+  }
+  ok('cross-signal success criteria only use contract-supported metrics');
+
   // Verify deterministic dedupe by url worked (only one proposal per URL)
   const urls = new Set();
   for (const p of eyeProps) {

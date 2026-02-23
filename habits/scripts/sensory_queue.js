@@ -28,6 +28,8 @@ const SENSORY_QUEUE_MIN_COMPOSITE_SCORE = Number(process.env.SENSORY_QUEUE_MIN_C
 const SENSORY_QUEUE_MIN_EXECUTION_WORTHINESS_SCORE = Number(process.env.SENSORY_QUEUE_MIN_EXECUTION_WORTHINESS_SCORE || 62);
 const SENSORY_QUEUE_DISALLOW_STUB_TITLE = String(process.env.SENSORY_QUEUE_DISALLOW_STUB_TITLE || '1') !== '0';
 const SENSORY_QUEUE_DISALLOW_UNKNOWN_EYE = String(process.env.SENSORY_QUEUE_DISALLOW_UNKNOWN_EYE || '1') !== '0';
+const SENSORY_QUEUE_ALLOW_TERMINAL_REOPEN = String(process.env.SENSORY_QUEUE_ALLOW_TERMINAL_REOPEN || '0') === '1';
+const SENSORY_QUEUE_STALE_OPEN_HOURS = Math.max(1, Number(process.env.SENSORY_QUEUE_STALE_OPEN_HOURS || 96));
 const EXECUTION_ACTION_RE = /\b(fix|stabilize|reduce|increase|ship|deliver|implement|optimi[sz]e|triage|repair|harden|verify|measure|enforce|prevent)\b/i;
 const EXECUTION_METRIC_RE = /(\d+(\.\d+)?\s*(%|ms|s|sec|seconds|min|minutes|h|hr|hours|day|days|week|weeks|tokens?))|([<>]=?)|\b(pass|fail|rate|latency|error|count|budget|receipt|verified?)\b/i;
 const EXECUTION_COMMAND_RE = /^(node|npm|npx|pnpm|yarn|python|python3|bash|sh|curl|git|make|uv)\b/i;
@@ -115,6 +117,21 @@ function getLoggedProposalIdsByType(types = []) {
   return ids;
 }
 
+function getLatestProposalHashById(types = []) {
+  const wanted = new Set(Array.isArray(types) ? types.map(t => String(t)) : []);
+  if (!wanted.size) return new Map();
+  const events = loadEvents().sort((a, b) => new Date(a.ts) - new Date(b.ts));
+  const latest = new Map();
+  for (const event of events) {
+    const id = String(event && event.proposal_id || '').trim();
+    if (!id || id === 'UNKNOWN') continue;
+    if (!wanted.has(String(event.type || ''))) continue;
+    const hash = String(event.proposal_hash || '').trim();
+    if (hash) latest.set(id, hash);
+  }
+  return latest;
+}
+
 function normalizeProposalId(proposal) {
   const raw = String(proposal && proposal.id || '').trim();
   return raw || null;
@@ -131,6 +148,22 @@ function extractProposalEyeId(proposal) {
     if (m && m[1]) return String(m[1]);
   }
   return '';
+}
+
+function crossSignalSweepKeyFromTitle(titleRaw) {
+  const title = String(titleRaw || '');
+  if (!/^\[cross-signal\]/i.test(title)) return '';
+  const topicMatch = title.match(/topic\s+"([^"]+)"/i);
+  const topic = String(topicMatch && topicMatch[1] || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+  if (!topic) return '';
+  let family = 'generic';
+  if (/\bconverging\b/i.test(title)) family = 'converging';
+  else if (/\bdiverging\b/i.test(title)) family = 'diverging';
+  else if (/\bappears first\b/i.test(title) || /\bthen\b/i.test(title)) family = 'lead_lag';
+  return `${family}:${topic}`;
 }
 
 function isEyeDerivedProposal(proposal) {
@@ -478,6 +511,14 @@ function proposalEventKey(event) {
   return hash ? `hash:${hash}` : '';
 }
 
+function ageHoursFromTs(tsRaw) {
+  const tsMs = Date.parse(String(tsRaw || ''));
+  if (!Number.isFinite(tsMs)) return null;
+  const deltaMs = Date.now() - tsMs;
+  if (!Number.isFinite(deltaMs) || deltaMs < 0) return 0;
+  return Number((deltaMs / (1000 * 60 * 60)).toFixed(3));
+}
+
 // Get current status of a proposal by hash or id
 function getProposalStatus(proposalHash, proposalId) {
   const events = loadEvents();
@@ -515,6 +556,15 @@ function getProposalStatus(proposalHash, proposalId) {
   }
   
   return { status, snoozeUntil };
+}
+
+function getLatestRejectEvent(events, proposalId) {
+  const rows = Array.isArray(events) ? events : [];
+  const id = String(proposalId || '').trim();
+  if (!id) return null;
+  return rows
+    .filter((e) => e && e.type === 'proposal_rejected' && String(e.proposal_id || '') === id)
+    .sort((a, b) => new Date(b.ts) - new Date(a.ts))[0] || null;
 }
 
 /**
@@ -577,6 +627,8 @@ function ingest(dateStr) {
   const existingFilteredHashes = getLoggedHashesByType(['proposal_filtered']);
   const existingGeneratedIds = getLoggedProposalIdsByType(['proposal_generated']);
   const existingFilteredIds = getLoggedProposalIdsByType(['proposal_filtered']);
+  const latestGeneratedHashById = getLatestProposalHashById(['proposal_generated']);
+  const latestFilteredHashById = getLatestProposalHashById(['proposal_filtered']);
   const seenRunGeneratedIds = new Set();
   let ingested = 0;
   let duplicates = 0;
@@ -587,26 +639,21 @@ function ingest(dateStr) {
   for (const proposal of proposals) {
     const proposalId = normalizeProposalId(proposal) || 'UNKNOWN';
     const hash = computeProposalHash(proposal);
-
-    if (
-      proposalId !== 'UNKNOWN' &&
-      (existingGeneratedIds.has(proposalId) || seenRunGeneratedIds.has(proposalId))
-    ) {
-      duplicates++;
-      continue;
-    }
-    
-    // Idempotency: skip if already generated
-    if (existingGeneratedHashes.has(hash)) {
-      duplicates++;
-      continue;
-    }
-
     const gate = evaluateQueueQualityGate(proposal);
+
     if (!gate.allow) {
-      if (proposalId !== 'UNKNOWN' && existingFilteredIds.has(proposalId)) {
+      const current = getProposalStatus(hash, proposalId);
+      const currentStatus = String(current && current.status || 'open').toLowerCase();
+      if (currentStatus === 'filtered' || currentStatus === 'rejected' || currentStatus === 'done') {
         filteredDuplicates++;
         continue;
+      }
+      if (proposalId !== 'UNKNOWN' && existingFilteredIds.has(proposalId)) {
+        const latestHash = latestFilteredHashById.get(proposalId);
+        if (!latestHash || latestHash === hash) {
+          filteredDuplicates++;
+          continue;
+        }
       }
       if (existingFilteredHashes.has(hash)) {
         filteredDuplicates++;
@@ -638,6 +685,32 @@ function ingest(dateStr) {
       if (proposalId !== 'UNKNOWN') existingFilteredIds.add(proposalId);
       filtered++;
       filteredByReason[reason] = Number(filteredByReason[reason] || 0) + 1;
+      continue;
+    }
+
+    if (proposalId !== 'UNKNOWN' && !SENSORY_QUEUE_ALLOW_TERMINAL_REOPEN) {
+      const current = getProposalStatus('', proposalId);
+      const currentStatus = String(current && current.status || 'open').toLowerCase();
+      if (currentStatus === 'filtered' || currentStatus === 'rejected' || currentStatus === 'done') {
+        duplicates++;
+        continue;
+      }
+    }
+
+    if (
+      proposalId !== 'UNKNOWN' &&
+      (existingGeneratedIds.has(proposalId) || seenRunGeneratedIds.has(proposalId))
+    ) {
+      const latestHash = latestGeneratedHashById.get(proposalId);
+      if (!latestHash || latestHash === hash || seenRunGeneratedIds.has(proposalId)) {
+        duplicates++;
+        continue;
+      }
+    }
+    
+    // Idempotency: skip if already generated
+    if (existingGeneratedHashes.has(hash)) {
+      duplicates++;
       continue;
     }
     
@@ -703,6 +776,7 @@ function list(opts = {}) {
     switch (event.type) {
       case 'proposal_generated':
         p.status = 'open';
+        p.reason = null;
         break;
       case 'proposal_filtered':
         p.status = 'filtered';
@@ -822,6 +896,19 @@ function reject(proposalId, reason, note) {
   if (!generated) {
     console.error(`Proposal ${proposalId} not found`);
     return { success: false, error: 'Not found' };
+  }
+
+  const current = getProposalStatus(generated.proposal_hash, proposalId);
+  if (String(current && current.status || '').toLowerCase() === 'rejected') {
+    const priorReject = getLatestRejectEvent(events, proposalId);
+    const priorReason = String(priorReject && priorReject.reason || '').trim();
+    const nextReason = String(reason || '').trim();
+    const priorNote = String(priorReject && priorReject.note || '').trim();
+    const nextNote = String(note || '').trim();
+    if (priorReason === nextReason && priorNote === nextNote) {
+      console.log(`Reject no-op suppressed for ${proposalId}: unchanged reason/note`);
+      return { success: true, skipped: true, reason: 'no_op_reject_repeat' };
+    }
   }
   
   const event = {
@@ -1003,6 +1090,170 @@ function stats(opts = {}) {
   return { counts, total: proposals.size, recurring };
 }
 
+function loadSourceProposalStatusMap(days = null) {
+  const out = new Map();
+  if (!fs.existsSync(PROPOSALS_DIR)) return out;
+  const files = fs.readdirSync(PROPOSALS_DIR)
+    .filter((f) => /^\d{4}-\d{2}-\d{2}\.json$/.test(f))
+    .sort();
+  let cutoff = null;
+  if (days) {
+    cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - parseInt(days, 10));
+  }
+  for (const f of files) {
+    const day = f.replace(/\.json$/, '');
+    if (cutoff && new Date(`${day}T00:00:00Z`) < cutoff) continue;
+    const fp = path.join(PROPOSALS_DIR, f);
+    let parsed;
+    try {
+      parsed = JSON.parse(fs.readFileSync(fp, 'utf8'));
+    } catch {
+      continue;
+    }
+    const proposals = normalizeProposalsJson(parsed, fp);
+    for (const p of proposals) {
+      const id = normalizeProposalId(p);
+      if (!id || id === 'UNKNOWN') continue;
+      const status = String(p && p.status || 'open').toLowerCase();
+      out.set(id, status);
+    }
+  }
+  return out;
+}
+
+// SWEEP: apply deterministic cleanup filters to currently-open proposals.
+function sweep(opts = {}) {
+  const events = loadEvents();
+  const { days } = opts;
+  let scoped = events;
+  if (days) {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - parseInt(days, 10));
+    scoped = events.filter(e => new Date(e.ts) >= cutoff);
+  }
+
+  scoped.sort((a, b) => new Date(a.ts) - new Date(b.ts));
+  const proposals = new Map();
+  for (const event of scoped) {
+    const key = proposalEventKey(event);
+    if (!key) continue;
+    if (!proposals.has(key)) {
+      proposals.set(key, {
+        key,
+        hash: event.proposal_hash || null,
+        id: event.proposal_id,
+        title: event.title || 'Untitled',
+        date: event.date || getToday(),
+        status: 'open',
+        last_ts: String(event.ts || new Date().toISOString()),
+        cross_signal_key: crossSignalSweepKeyFromTitle(event.title || '')
+      });
+    }
+    const p = proposals.get(key);
+    p.last_ts = String(event.ts || p.last_ts || new Date().toISOString());
+    if (!p.cross_signal_key) p.cross_signal_key = crossSignalSweepKeyFromTitle(event.title || p.title || '');
+    switch (event.type) {
+      case 'proposal_generated': p.status = 'open'; break;
+      case 'proposal_filtered': p.status = 'filtered'; break;
+      case 'proposal_accepted': p.status = 'accepted'; break;
+      case 'proposal_rejected': p.status = 'rejected'; break;
+      case 'proposal_done': p.status = 'done'; break;
+      case 'proposal_snoozed':
+        p.status = 'snoozed';
+        if (event.snooze_until && new Date(event.snooze_until) < new Date()) p.status = 'open';
+        break;
+    }
+  }
+
+  const sourceStatuses = loadSourceProposalStatusMap(days);
+  let filtered = 0;
+  for (const p of proposals.values()) {
+    if (String(p.status || '') !== 'open') continue;
+    const sourceStatus = sourceStatuses.get(String(p.id || ''));
+    if (sourceStatus && sourceStatus !== 'open' && sourceStatus !== 'accepted' && sourceStatus !== 'snoozed') {
+      appendEvent({
+        ts: new Date().toISOString(),
+        type: 'proposal_filtered',
+        date: p.date || getToday(),
+        proposal_id: p.id || 'UNKNOWN',
+        title: p.title || 'Untitled',
+        proposal_hash: p.hash || null,
+        status_after: 'filtered',
+        filter_reason: `source_status_${sourceStatus}`,
+        quality_gate: 'sweep_v1',
+        source: 'sensory_queue'
+      });
+      filtered += 1;
+      continue;
+    }
+    const title = String(p.title || '');
+    const staleAgeHours = ageHoursFromTs(p.last_ts);
+    if (Number.isFinite(staleAgeHours) && staleAgeHours >= Number(SENSORY_QUEUE_STALE_OPEN_HOURS || 96)) {
+      appendEvent({
+        ts: new Date().toISOString(),
+        type: 'proposal_filtered',
+        date: p.date || getToday(),
+        proposal_id: p.id || 'UNKNOWN',
+        title: title || 'Untitled',
+        proposal_hash: p.hash || null,
+        status_after: 'filtered',
+        filter_reason: 'stale_open_age_sweep',
+        stale_age_hours: staleAgeHours,
+        stale_threshold_hours: Number(SENSORY_QUEUE_STALE_OPEN_HOURS || 96),
+        quality_gate: 'sweep_v3',
+        source: 'sensory_queue'
+      });
+      filtered += 1;
+      continue;
+    }
+    if (!/\[stub\]/i.test(title)) continue;
+    appendEvent({
+      ts: new Date().toISOString(),
+      type: 'proposal_filtered',
+      date: p.date || getToday(),
+      proposal_id: p.id || 'UNKNOWN',
+      title: title || 'Untitled',
+      proposal_hash: p.hash || null,
+      status_after: 'filtered',
+      filter_reason: 'stub_title_sweep',
+      quality_gate: 'sweep_v1',
+      source: 'sensory_queue'
+    });
+    filtered += 1;
+  }
+
+  // De-dupe open cross-signal proposals by family/topic and keep newest only.
+  const crossGroups = new Map();
+  for (const p of proposals.values()) {
+    if (String(p.status || '') !== 'open') continue;
+    if (!p.cross_signal_key) continue;
+    if (!crossGroups.has(p.cross_signal_key)) crossGroups.set(p.cross_signal_key, []);
+    crossGroups.get(p.cross_signal_key).push(p);
+  }
+  for (const rows of crossGroups.values()) {
+    rows.sort((a, b) => new Date(b.last_ts || 0) - new Date(a.last_ts || 0));
+    for (const stale of rows.slice(1)) {
+      appendEvent({
+        ts: new Date().toISOString(),
+        type: 'proposal_filtered',
+        date: stale.date || getToday(),
+        proposal_id: stale.id || 'UNKNOWN',
+        title: stale.title || 'Untitled',
+        proposal_hash: stale.hash || null,
+        status_after: 'filtered',
+        filter_reason: 'cross_signal_topic_duplicate_sweep',
+        quality_gate: 'sweep_v2',
+        source: 'sensory_queue'
+      });
+      filtered += 1;
+    }
+  }
+
+  console.log(`Sweep complete: filtered=${filtered} scope_days=${days || 'all'}`);
+  return { filtered };
+}
+
 // Get today's date string
 function getToday() {
   return new Date().toISOString().slice(0, 10);
@@ -1048,6 +1299,7 @@ function main() {
     console.log('  done <ID> [--note="..."]         Mark proposal done');
     console.log('  snooze <ID> --until=YYYY-MM-DD   Snooze proposal');
     console.log('  stats [--days=N]                 Show statistics');
+    console.log('  sweep [--days=N]                 Filter open stub proposals');
     return;
   }
   
@@ -1089,6 +1341,9 @@ function main() {
     case 'stats':
       stats({ days: opts.days });
       break;
+    case 'sweep':
+      sweep({ days: opts.days });
+      break;
     default:
       console.error(`Unknown command: ${cmd}`);
       process.exit(1);
@@ -1104,6 +1359,7 @@ module.exports = {
   done,
   snooze,
   stats,
+  sweep,
   evaluateQueueQualityGate,
   evaluateActionSpecGate,
   evaluateExecutionWorthinessGate,

@@ -138,6 +138,7 @@
         "max_requests": 1
       },
       "parser_type": "ollama_search",
+      "empty_success_is_signal": true,
       "topics": [
         "ai",
         "llm",
@@ -167,6 +168,7 @@
         "max_requests": 1
       },
       "parser_type": "google_trends",
+      "empty_success_is_signal": true,
       "topics": [
         "market_demand",
         "commercial_intent",
@@ -225,6 +227,7 @@
         "max_requests": 1
       },
       "parser_type": "upwork_gigs",
+      "empty_success_is_signal": true,
       "topics": [
         "revenue",
         "freelance",
@@ -255,6 +258,7 @@
         "max_requests": 1
       },
       "parser_type": "producthunt_launches",
+      "empty_success_is_signal": true,
       "topics": [
         "revenue",
         "affiliate",
@@ -284,6 +288,7 @@
         "max_requests": 3
       },
       "parser_type": "github_repo",
+      "empty_success_is_signal": true,
       "parser_options": {
         "owner": "jakerslam",
         "repo": "window_shoppr"
@@ -464,6 +469,7 @@
         "max_requests": 1
       },
       "parser_type": "google_trends",
+      "empty_success_is_signal": true,
       "topics": [
         "provider_memory",
         "openai_memory",

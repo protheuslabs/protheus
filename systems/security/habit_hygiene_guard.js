@@ -31,7 +31,8 @@ const FORBIDDEN_EYES_COLLECTORS_DIR = process.env.HABIT_HYGIENE_FORBIDDEN_EYES_C
 const ALLOWED_PROVENANCE_SOURCES = new Set([
   'repeat_trigger',
   'manual_proposal',
-  'migration'
+  'migration',
+  'adaptive_habit_runtime_sync'
 ]);
 
 function usage() {

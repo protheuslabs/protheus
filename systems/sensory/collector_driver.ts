@@ -120,6 +120,36 @@ function toNumber(v, fallback = 0) {
   return Number.isFinite(n) ? n : fallback;
 }
 
+function normalizePreflightResult(result, parserType) {
+  const raw = result && typeof result === 'object' ? result : {};
+  const checks = Array.isArray(raw.checks) ? [...raw.checks] : [];
+  if (!Array.isArray(raw.checks)) {
+    if (typeof raw.reachable === 'boolean') checks.push({ name: 'reachable', ok: raw.reachable });
+    if (typeof raw.authenticated === 'boolean') checks.push({ name: 'authenticated', ok: raw.authenticated });
+    if (Number.isFinite(Number(raw.items_sample))) checks.push({ name: 'items_sample', ok: Number(raw.items_sample) >= 0, value: Number(raw.items_sample) });
+  }
+
+  let failures = Array.isArray(raw.failures) ? [...raw.failures] : [];
+  const ok = raw.ok === true;
+  if (!ok && failures.length === 0) {
+    const code = String(raw.error_code || raw.code || raw.error || 'preflight_failed').trim().toLowerCase() || 'preflight_failed';
+    const message = String(raw.message || raw.error_message || raw.error || `preflight failed (${code})`).slice(0, 200);
+    const httpStatus = Number(raw.http_status);
+    failures = [{
+      code,
+      message,
+      ...(Number.isFinite(httpStatus) && httpStatus > 0 ? { http_status: httpStatus } : {})
+    }];
+  }
+
+  return {
+    ok,
+    parser_type: raw.parser_type || parserType,
+    checks,
+    failures
+  };
+}
+
 function normalizeCollectResult(result) {
   const raw = result && typeof result === 'object' ? result : {};
   const items = Array.isArray(raw.items) ? raw.items : [];
@@ -212,14 +242,7 @@ async function preflightWithDriver(eyeConfig) {
 
   try {
     const rep = await callPreflight(preflightFn, eyeConfig, budgets);
-    if (rep && typeof rep === 'object') {
-      return {
-        ok: rep.ok === true,
-        parser_type: rep.parser_type || parserType,
-        checks: Array.isArray(rep.checks) ? rep.checks : [],
-        failures: Array.isArray(rep.failures) ? rep.failures : []
-      };
-    }
+    if (rep && typeof rep === 'object') return normalizePreflightResult(rep, parserType);
   } catch (err) {
     return {
       ok: false,

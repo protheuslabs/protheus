@@ -112,6 +112,9 @@ function candidateFeedUrls(eyeConfig) {
     "https://hnrss.org/newest"
   ];
   const out = [];
+  const parserOptions = eyeConfig && eyeConfig.parser_options && typeof eyeConfig.parser_options === "object"
+    ? eyeConfig.parser_options
+    : {};
   if (eyeConfig?.feed_url) out.push(String(eyeConfig.feed_url));
   if (Array.isArray(eyeConfig?.feed_candidates)) {
     for (const u of eyeConfig.feed_candidates) {
@@ -119,8 +122,16 @@ function candidateFeedUrls(eyeConfig) {
       out.push(String(u));
     }
   }
-  for (const u of defaults) out.push(u);
-  return Array.from(new Set(out.filter(Boolean)));
+  if (parserOptions.feed_url) out.push(String(parserOptions.feed_url));
+  if (Array.isArray(parserOptions.feed_urls)) {
+    for (const u of parserOptions.feed_urls) {
+      if (!u) continue;
+      out.push(String(u));
+    }
+  }
+  const explicit = Array.from(new Set(out.filter(Boolean)));
+  if (explicit.length > 0) return explicit;
+  return Array.from(new Set(defaults));
 }
 
 function preflightHnRss(eyeConfig, budgets) {

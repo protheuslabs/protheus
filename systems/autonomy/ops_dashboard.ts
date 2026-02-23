@@ -18,6 +18,9 @@ const ROOT = path.resolve(__dirname, '..', '..');
 const REPORTS_DIR = process.env.AUTONOMY_HEALTH_REPORTS_DIR
   ? path.resolve(process.env.AUTONOMY_HEALTH_REPORTS_DIR)
   : path.join(ROOT, 'state', 'autonomy', 'health_reports');
+const SPINE_RUNS_DIR = process.env.AUTONOMY_OPS_SPINE_RUNS_DIR
+  ? path.resolve(process.env.AUTONOMY_OPS_SPINE_RUNS_DIR)
+  : path.join(ROOT, 'state', 'spine', 'runs');
 
 function usage() {
   console.log('Usage:');
@@ -71,6 +74,17 @@ function readJsonSafe(filePath, fallback) {
   }
 }
 
+function readJsonlSafe(filePath) {
+  if (!fs.existsSync(filePath)) return [];
+  return fs.readFileSync(filePath, 'utf8')
+    .split('\n')
+    .filter(Boolean)
+    .map((line) => {
+      try { return JSON.parse(line); } catch { return null; }
+    })
+    .filter(Boolean);
+}
+
 function norm(v) { return String(v == null ? '' : v).trim().toLowerCase(); }
 
 function summarize(rows) {
@@ -108,6 +122,66 @@ function summarize(rows) {
   return { totals, slo };
 }
 
+function summarizeDreams(dates) {
+  const reasonCounts = {};
+  let idleCycles = 0;
+  let idleFailures = 0;
+  let idleTimeouts = 0;
+  let idleSkipped = 0;
+  let remSkipped = 0;
+  let memoryDreamFailures = 0;
+  let lastFailureTs = null;
+
+  for (const d of dates) {
+    const fp = path.join(SPINE_RUNS_DIR, `${d}.jsonl`);
+    const rows = readJsonlSafe(fp);
+    for (const row of rows) {
+      const type = String(row && row.type || '');
+      if (type === 'spine_idle_dream_cycle') {
+        idleCycles += 1;
+        if (row && row.ok !== true) {
+          idleFailures += 1;
+          if (row.timed_out === true) idleTimeouts += 1;
+          const reason = String(row.reason || 'unknown');
+          reasonCounts[reason] = Number(reasonCounts[reason] || 0) + 1;
+          const ts = Date.parse(String(row.ts || ''));
+          if (Number.isFinite(ts) && (!lastFailureTs || ts > lastFailureTs)) lastFailureTs = ts;
+        }
+        if (row && row.idle_skipped === true) idleSkipped += 1;
+        if (row && row.rem_skipped === true) remSkipped += 1;
+      } else if (type === 'spine_idle_dream_cycle_skipped') {
+        idleSkipped += 1;
+        const reason = String(row.reason || 'idle_cycle_skipped');
+        reasonCounts[reason] = Number(reasonCounts[reason] || 0) + 1;
+      } else if (type === 'spine_memory_dream') {
+        if (row && row.ok !== true) {
+          memoryDreamFailures += 1;
+          const reason = String(row.reason || 'memory_dream_failed');
+          reasonCounts[reason] = Number(reasonCounts[reason] || 0) + 1;
+          const ts = Date.parse(String(row.ts || ''));
+          if (Number.isFinite(ts) && (!lastFailureTs || ts > lastFailureTs)) lastFailureTs = ts;
+        }
+      }
+    }
+  }
+
+  const topReasons = Object.entries(reasonCounts)
+    .map(([reason, count]) => ({ reason, count: Number(count || 0) }))
+    .sort((a, b) => (b.count - a.count) || a.reason.localeCompare(b.reason))
+    .slice(0, 8);
+
+  return {
+    idle_cycles: idleCycles,
+    idle_failures: idleFailures,
+    idle_timeouts: idleTimeouts,
+    idle_skipped: idleSkipped,
+    rem_skipped: remSkipped,
+    memory_dream_failures: memoryDreamFailures,
+    top_failure_reasons: topReasons,
+    last_failure_ts: lastFailureTs ? new Date(lastFailureTs).toISOString() : null
+  };
+}
+
 function cmdRun(args) {
   const date = isDateStr(args._[1]) ? String(args._[1]) : todayStr();
   const daysRaw = Number(args.days || 7);
@@ -124,6 +198,7 @@ function cmdRun(args) {
   }
 
   const summary = summarize(reports);
+  const dream = summarizeDreams(dates);
   process.stdout.write(JSON.stringify({
     ok: true,
     type: 'ops_dashboard',
@@ -131,7 +206,8 @@ function cmdRun(args) {
     date,
     days,
     reports: reports.length,
-    summary
+    summary,
+    dream
   }) + '\n');
 }
 

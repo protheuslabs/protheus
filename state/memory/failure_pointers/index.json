@@ -1,0 +1,156 @@
+{
+  "version": "1.0",
+  "updated_ts": "2026-02-23T00:01:31.906Z",
+  "item_hashes": {
+    "322525e41384fb34": {
+      "node_id": "failure-t1-322525e4",
+      "uid": "62acf7c5198209a5ff428152",
+      "memory_file": "memory/2026-02-22.md",
+      "date": "2026-02-22",
+      "failure_tier": 1,
+      "source": "spine",
+      "code": "command_failed:guard.js",
+      "ts": "2026-02-22T22:03:30.124Z"
+    },
+    "hesc_mly7oh28_975a1df8": {
+      "node_id": "failure-t1-hesc_mly",
+      "uid": "112c6b3db45637396deb4438",
+      "memory_file": "memory/2026-02-22.md",
+      "date": "2026-02-22",
+      "failure_tier": 1,
+      "source": "autonomy_human_escalation",
+      "code": "human_escalation:gate_manual",
+      "ts": "2026-02-22T22:03:30.125Z"
+    },
+    "54899cc83b4707fe": {
+      "node_id": "failure-t1-54899cc8",
+      "uid": "13baaf34dbf327650fe4fadc",
+      "memory_file": "memory/2026-02-22.md",
+      "date": "2026-02-22",
+      "failure_tier": 1,
+      "source": "idle_dream_cycle",
+      "code": "dream_idle:all_local_models_cooling_down",
+      "ts": "2026-02-22T22:03:30.126Z"
+    },
+    "32cfa051c7264d99": {
+      "node_id": "failure-t1-32cfa051",
+      "uid": "6ca9b683e44ac0aa8e1556ac",
+      "memory_file": "memory/2026-02-22.md",
+      "date": "2026-02-22",
+      "failure_tier": 1,
+      "source": "idle_dream_cycle",
+      "code": "dream_idle:no_local_model_available",
+      "ts": "2026-02-22T22:03:30.131Z"
+    },
+    "fcf9bfcbadb0fdf9": {
+      "node_id": "failure-t1-fcf9bfcb",
+      "uid": "691d9c811221c22122c8bbcd",
+      "memory_file": "memory/2026-02-22.md",
+      "date": "2026-02-22",
+      "failure_tier": 1,
+      "source": "test_suite",
+      "code": "security_integrity_probe",
+      "ts": "2026-02-22T22:08:22.562Z"
+    },
+    "0251f4298561f2e4": {
+      "node_id": "failure-t2-0251f429",
+      "uid": "4d1100b804f96351e44d7577",
+      "memory_file": "memory/2026-02-22.md",
+      "date": "2026-02-22",
+      "failure_tier": 2,
+      "source": "external_eyes",
+      "code": "collector_preflight:collector_preflight_failed",
+      "ts": "2026-02-22T22:08:22.563Z"
+    },
+    "4278015a179efcf9": {
+      "node_id": "failure-t2-4278015a",
+      "uid": "1d3d02aa450129454d489220",
+      "memory_file": "memory/2026-02-22.md",
+      "date": "2026-02-22",
+      "failure_tier": 2,
+      "source": "external_eyes",
+      "code": "collector_preflight:collector_preflight_failed",
+      "ts": "2026-02-22T22:08:22.564Z"
+    },
+    "5f2d02fb987446fd": {
+      "node_id": "failure-t2-5f2d02fb",
+      "uid": "5aa46b14041c667ac6703ba7",
+      "memory_file": "memory/2026-02-22.md",
+      "date": "2026-02-22",
+      "failure_tier": 2,
+      "source": "external_eyes",
+      "code": "collector_preflight:domain_not_allowlisted",
+      "ts": "2026-02-22T22:08:22.565Z"
+    },
+    "9fac4cbaf305d3d0": {
+      "node_id": "failure-t2-9fac4cba",
+      "uid": "63a6f8df3b0f2242c4193673",
+      "memory_file": "memory/2026-02-22.md",
+      "date": "2026-02-22",
+      "failure_tier": 2,
+      "source": "idle_dream_cycle",
+      "code": "dream_idle:all_model_attempts_failed",
+      "ts": "2026-02-22T22:14:17.824Z"
+    },
+    "acd86458b9ef71c0": {
+      "node_id": "failure-t2-acd86458",
+      "uid": "7e18347a9106ac3cda626933",
+      "memory_file": "memory/2026-02-22.md",
+      "date": "2026-02-22",
+      "failure_tier": 2,
+      "source": "idle_dream_cycle",
+      "code": "dream_idle:all_model_attempts_failed",
+      "ts": "2026-02-22T22:14:17.824Z"
+    },
+    "a2f77f0a0d4d9b52": {
+      "node_id": "failure-t2-a2f77f0a",
+      "uid": "0e91ae5fe9a3e392958965dc",
+      "memory_file": "memory/2026-02-22.md",
+      "date": "2026-02-22",
+      "failure_tier": 2,
+      "source": "idle_dream_cycle",
+      "code": "dream_idle:all_model_attempts_failed",
+      "ts": "2026-02-22T22:14:17.825Z"
+    },
+    "437d6645e6b1076a": {
+      "node_id": "failure-t2-437d6645",
+      "uid": "9670c53693db4d4fee1b29d2",
+      "memory_file": "memory/2026-02-22.md",
+      "date": "2026-02-22",
+      "failure_tier": 2,
+      "source": "idle_dream_cycle",
+      "code": "dream_idle:all_model_attempts_failed",
+      "ts": "2026-02-22T22:14:17.825Z"
+    },
+    "ed445d71f2fee5f7": {
+      "node_id": "failure-t1-ed445d71",
+      "uid": "7f819575356d9adafa5c3721",
+      "memory_file": "memory/2026-02-22.md",
+      "date": "2026-02-22",
+      "failure_tier": 1,
+      "source": "idle_dream_cycle",
+      "code": "dream_idle:local_model_unavailable",
+      "ts": "2026-02-23T00:00:38.350Z"
+    },
+    "32f42c233cd8487f": {
+      "node_id": "failure-t2-32f42c23",
+      "uid": "a10dc1ee8b6b88b02a697575",
+      "memory_file": "memory/2026-02-22.md",
+      "date": "2026-02-22",
+      "failure_tier": 2,
+      "source": "external_eyes",
+      "code": "collector_escalation:collector_error",
+      "ts": "2026-02-23T00:00:38.350Z"
+    },
+    "b10ebaae8b2834fb": {
+      "node_id": "failure-t2-b10ebaae",
+      "uid": "154c403205c85b0dc42ab03e",
+      "memory_file": "memory/2026-02-22.md",
+      "date": "2026-02-22",
+      "failure_tier": 2,
+      "source": "external_eyes",
+      "code": "collector_escalation:collector_error",
+      "ts": "2026-02-23T00:00:38.351Z"
+    }
+  }
+}

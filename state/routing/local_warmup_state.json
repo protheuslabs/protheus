@@ -1,0 +1,10 @@
+{
+  "last_warmup_ts": "2026-02-22T23:59:55.657Z",
+  "last_warmup_ms": 1771804795586,
+  "last_reason": "route_decision",
+  "last_models": [
+    "ollama/smallthinker",
+    "ollama/qwen3:4b"
+  ],
+  "last_recovered_models": []
+}

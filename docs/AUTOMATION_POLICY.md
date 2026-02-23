@@ -28,9 +28,11 @@ When `node systems/spine/spine.js eyes|daily` runs, these stages run determinist
 Daily mode additionally runs:
 
 1. `queue_gc run`
-2. `git_outcomes run`
-3. `dopamine_engine closeout`
-4. `sensory_digest daily`
+2. `sensory_queue sweep`
+3. `queue_log_compact run --apply=1`
+4. `git_outcomes run`
+5. `dopamine_engine closeout`
+6. `sensory_digest daily`
 
 Daily mode also forces one collector canary run:
 
@@ -76,3 +78,19 @@ These require explicit operator intent and/or elevated guard paths:
 - View collector reliability: `node habits/scripts/external_eyes.js doctor`
 - Force one collector probe run: `node habits/scripts/external_eyes.js canary`
 - Inspect queue: `node habits/scripts/sensory_queue.js list --date=YYYY-MM-DD`
+
+## Queue Hygiene Behavior
+
+- `queue_gc` now applies budget-aware cap tuning before rejecting overflow proposals.
+- Budget pressure source order:
+1. `QUEUE_GC_BUDGET_PRESSURE` override (`none|soft|hard`)
+2. active system budget autopause (`hard`)
+3. `systems/budget/system_budget.js status` projection pressure
+- Under pressure, GC tightens:
+1. `cap_per_eye`
+2. `cap_per_type`
+3. `ttl_hours`
+- `sensory_queue sweep` applies deterministic cleanup:
+1. cross-signal family/topic duplicate pruning
+2. stale-open rejection gate (`SENSORY_QUEUE_STALE_OPEN_HOURS`)
+3. no-op repeated reject suppression (same reason/note for already-rejected proposal)

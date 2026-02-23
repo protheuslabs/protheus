@@ -86,6 +86,85 @@
         "sensory.collector.hn_rss": 3,
         "sensory.collector.google_trends": 1
       }
+    },
+    "2026-02-22T17": {
+      "total": 12,
+      "scopes": {
+        "sensory.collector.ollama_search": 7,
+        "sensory.collector.moltbook_hot": 2,
+        "sensory.focus_fetch": 3
+      }
+    },
+    "2026-02-22T18": {
+      "total": 78,
+      "scopes": {
+        "sensory.collector.ollama_search": 19,
+        "sensory.collector.moltstack_discover": 1,
+        "sensory.collector.github_repo": 4,
+        "sensory.collector.medium_rss": 5,
+        "sensory.collector.upwork_gigs": 2,
+        "sensory.focus_fetch": 17,
+        "sensory.collector.google_trends": 5,
+        "sensory.collector.stock_market": 11,
+        "sensory.collector.moltbook_hot": 6,
+        "sensory.collector.hn_rss": 6,
+        "sensory.collector.producthunt_launches": 2
+      }
+    },
+    "2026-02-22T19": {
+      "total": 9,
+      "scopes": {
+        "sensory.collector.ollama_search": 2,
+        "sensory.collector.github_repo": 2,
+        "sensory.collector.moltbook_hot": 2,
+        "sensory.collector.upwork_gigs": 1,
+        "sensory.collector.stock_market": 1,
+        "sensory.collector.google_trends": 1
+      }
+    },
+    "2026-02-22T21": {
+      "total": 38,
+      "scopes": {
+        "sensory.collector.medium_rss": 10,
+        "sensory.collector.moltbook_hot": 2,
+        "sensory.collector.hn_rss": 11,
+        "sensory.focus_fetch": 8,
+        "sensory.collector.google_trends": 2,
+        "sensory.collector.github_repo": 2,
+        "sensory.collector.upwork_gigs": 1,
+        "sensory.collector.moltstack_discover": 1,
+        "sensory.collector.ollama_search": 1
+      }
+    },
+    "2026-02-22T22": {
+      "total": 26,
+      "scopes": {
+        "sensory.collector.ollama_search": 4,
+        "sensory.collector.moltbook_hot": 6,
+        "sensory.focus_fetch": 6,
+        "sensory.collector.hn_rss": 3,
+        "sensory.collector.producthunt_launches": 1,
+        "sensory.collector.stock_market": 4,
+        "sensory.collector.github_repo": 2
+      }
+    },
+    "2026-02-22T23": {
+      "total": 1,
+      "scopes": {
+        "sensory.collector.ollama_search": 1
+      }
+    },
+    "2026-02-23T00": {
+      "total": 25,
+      "scopes": {
+        "sensory.collector.ollama_search": 3,
+        "sensory.collector.upwork_gigs": 1,
+        "sensory.collector.google_trends": 2,
+        "sensory.focus_fetch": 12,
+        "sensory.collector.moltbook_hot": 3,
+        "sensory.collector.stock_market": 2,
+        "sensory.collector.github_repo": 2
+      }
     }
   },
   "per_day": {
@@ -103,19 +182,31 @@
       }
     },
     "2026-02-22": {
-      "total": 154,
+      "total": 318,
       "scopes": {
-        "sensory.collector.ollama_search": 17,
-        "sensory.collector.hn_rss": 13,
-        "sensory.focus_fetch": 66,
-        "sensory.collector.moltbook_hot": 12,
-        "sensory.collector.moltstack_discover": 3,
-        "sensory.collector.upwork_gigs": 5,
-        "sensory.collector.medium_rss": 15,
-        "sensory.collector.stock_market": 10,
-        "sensory.collector.github_repo": 8,
-        "sensory.collector.producthunt_launches": 3,
-        "sensory.collector.google_trends": 2
+        "sensory.collector.ollama_search": 51,
+        "sensory.collector.hn_rss": 33,
+        "sensory.focus_fetch": 100,
+        "sensory.collector.moltbook_hot": 30,
+        "sensory.collector.moltstack_discover": 5,
+        "sensory.collector.upwork_gigs": 9,
+        "sensory.collector.medium_rss": 30,
+        "sensory.collector.stock_market": 26,
+        "sensory.collector.github_repo": 18,
+        "sensory.collector.producthunt_launches": 6,
+        "sensory.collector.google_trends": 10
+      }
+    },
+    "2026-02-23": {
+      "total": 25,
+      "scopes": {
+        "sensory.collector.ollama_search": 3,
+        "sensory.collector.upwork_gigs": 1,
+        "sensory.collector.google_trends": 2,
+        "sensory.focus_fetch": 12,
+        "sensory.collector.moltbook_hot": 3,
+        "sensory.collector.stock_market": 2,
+        "sensory.collector.github_repo": 2
       }
     }
   }

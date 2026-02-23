@@ -17,6 +17,40 @@ function shortText(v: unknown, maxLen = 200): string {
   return String(v == null ? '' : v).replace(/\s+/g, ' ').trim().slice(0, maxLen);
 }
 
+function normalizeReasonToken(v: unknown): string {
+  const raw = shortText(v, 180).toLowerCase();
+  if (!raw) return '';
+  const compact = raw.replace(/[^a-z0-9:_-]+/g, '_').replace(/^_+|_+$/g, '');
+  if (!compact) return '';
+
+  if (/\bgate_manual\b/.test(compact)) return 'route_gate_manual';
+  if (/\bgate_deny\b/.test(compact)) return 'route_gate_deny';
+  if (/\bnot_executable\b/.test(compact)) return 'route_not_executable';
+  if (/\bpreflight_executable\b/.test(compact)) return 'preflight_not_executable';
+  if (/\bpre_exec_criteria_gate\b/.test(compact)) return 'pre_exec_criteria_gate_failed';
+  if (/\bqueue_accept_logged\b/.test(compact)) return 'queue_accept_not_logged';
+  if (/\bsuccess_criteria\b/.test(compact)) return 'success_criteria_failed';
+  if (/\bpostcheck_fail\b/.test(compact)) return 'postcheck_failed';
+  if (/\badapter_/.test(compact) && /\bunverified\b/.test(compact)) return 'actuation_unverified';
+  if (/\bactuation/.test(compact) && /\bexit_\d+\b/.test(compact)) return 'actuation_execution_failed';
+  if (/\broute/.test(compact) && /\bexit_\d+\b/.test(compact)) return 'route_execution_failed';
+  if (/\bexec_failed\b/.test(compact) || /\bcommand_failed\b/.test(compact)) return 'execution_failed';
+
+  return compact.slice(0, 80);
+}
+
+function normalizeReasonList(values: unknown[]): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const v of values || []) {
+    const token = normalizeReasonToken(v);
+    if (!token || seen.has(token)) continue;
+    seen.add(token);
+    out.push(token);
+  }
+  return out;
+}
+
 function clampCount(v: unknown): number {
   const n = Number(v);
   if (!Number.isFinite(n)) return 0;
@@ -157,14 +191,21 @@ function normalizeAutonomyReceiptForWrite(receipt: unknown) {
   else failedSet.add('success_criteria_met');
 
   const failed = Array.from(failedSet);
+  const primaryFailureRaw = !criteriaPass
+    ? shortText(String(criteria.primary_failure || verificationSrc.primary_failure || 'success_criteria_failed'), 180)
+    : (verificationSrc.primary_failure ? shortText(String(verificationSrc.primary_failure), 180) : null);
+  const reasonTaxonomy = normalizeReasonList([
+    ...failed,
+    primaryFailureRaw || ''
+  ]);
   const normalizedVerification = {
     ...verificationSrc,
     checks,
     failed,
     passed: failed.length === 0,
-    primary_failure: !criteriaPass
-      ? shortText(String(criteria.primary_failure || verificationSrc.primary_failure || 'success_criteria_failed'), 180)
-      : (verificationSrc.primary_failure ? shortText(String(verificationSrc.primary_failure), 180) : null),
+    primary_failure: primaryFailureRaw,
+    primary_failure_taxonomy: reasonTaxonomy.length ? reasonTaxonomy[0] : null,
+    failed_reason_taxonomy: reasonTaxonomy,
     success_criteria: criteria
   };
 

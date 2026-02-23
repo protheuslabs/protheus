@@ -1,8 +1,8 @@
 {
   "type": "startup_attestation",
   "version": "1.0",
-  "ts": "2026-02-22T16:33:49.240Z",
-  "expires_at": "2026-02-23T16:33:49.241Z",
+  "ts": "2026-02-22T22:08:23.596Z",
+  "expires_at": "2026-02-23T22:08:23.597Z",
   "ttl_hours": 24,
   "policy_path": "config/startup_attestation_policy.json",
   "critical_hashes": [
@@ -13,18 +13,18 @@
     },
     {
       "path": "config/security_integrity_policy.json",
-      "sha256": "cf8dfbf9553a1d75382a0d5819afcef4e9881f9f32378ef89ca3c3077b32636d",
-      "size_bytes": 4203
+      "sha256": "83c200c1c004b1416e46301a4f34a20b66748995f432e0e3e2ce955eb5a39c5e",
+      "size_bytes": 4219
     },
     {
       "path": "config/strategies/default.json",
-      "sha256": "8f9d5653c47cf6c361ffe8915c23cf0a9df73e183a5cd226c4a364fa2f960054",
-      "size_bytes": 2182
+      "sha256": "3747f6c037105c9037c2cd2940325a58b6a1b7257fa7592a27cb5fbfe4648e3b",
+      "size_bytes": 2332
     },
     {
       "path": "systems/autonomy/autonomy_controller.js",
-      "sha256": "3fbfcaefa880dafcd675414548b427e4352136438cd0d4bbb540195f4cffe31c",
-      "size_bytes": 365968
+      "sha256": "367b745b8fb10412bf5163afbd16919a707ff5d25338ac7fac75510c039f9ca6",
+      "size_bytes": 375960
     },
     {
       "path": "systems/security/capability_lease.js",
@@ -33,8 +33,8 @@
     },
     {
       "path": "systems/security/guard.js",
-      "sha256": "7360c951bc5749a500199ac2c66d85aaf1fed1655db631c4fe5a5ea07d0a6aa1",
-      "size_bytes": 18111
+      "sha256": "2b3c168b7392d82e7db2d02746ba87ebb220b8ef4a995d0701a3d08186c946c3",
+      "size_bytes": 21475
     },
     {
       "path": "systems/security/integrity_kernel.js",
@@ -48,10 +48,10 @@
     },
     {
       "path": "systems/spine/spine.js",
-      "sha256": "de0228992743f68104196425ada6e5b03068c2d568a6ddf4444743e6434ba29f",
-      "size_bytes": 110332
+      "sha256": "04a6a99222f195d5f4a2a286acffa7b4a9757a504701a00544e6a75ba8fe6079",
+      "size_bytes": 137742
     }
   ],
   "missing_paths": [],
-  "signature": "757d91e329fc051ed66a87859e891099f1c38bf3e9a9dc506df9f4dd0e345c7d"
+  "signature": "b1e00b3118093d806cee0f1ec8063ab17149b5cfcf02aced1daf854a1de281c8"
 }

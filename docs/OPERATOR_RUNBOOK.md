@@ -158,6 +158,36 @@ Verification:
 - `strategy_readiness` returns `ready_for_execute=true` before enabling execute/canary
 - receipt pass rates and success criteria pass rates trend up in `receipt_summary`
 
+## Incident 5: Queue Backlog / Churn
+
+Symptoms:
+
+- OPEN queue count grows daily
+- repeated reject noise in queue logs
+- stale proposals never resolve
+
+Diagnose:
+
+1. `node habits/scripts/sensory_queue.js stats --days=7`
+2. `node habits/scripts/sensory_queue.js list --status=open --days=7`
+3. `node systems/autonomy/health_status.js [YYYY-MM-DD]` (check queue backlog SLO + recovery pulse)
+
+Containment / Recovery:
+
+1. Run deterministic hygiene:
+`node habits/scripts/queue_gc.js run [YYYY-MM-DD]`
+`node habits/scripts/sensory_queue.js sweep [YYYY-MM-DD]`
+2. Force compact terminal churn:
+`node systems/ops/queue_log_compact.js run --apply=1`
+3. If backlog is budget-constrained, pin pressure explicitly for a run:
+`QUEUE_GC_BUDGET_PRESSURE=hard node habits/scripts/queue_gc.js run [YYYY-MM-DD]`
+
+Verification:
+
+1. queue open count trends down in `sensory_queue stats`
+2. no repeated reject spam for same id/reason in `state/sensory/queue_log.jsonl`
+3. `health_status` queue backlog check returns pass
+
 ## Rollback Drill (Weekly)
 
 Goal: verify rollback muscle memory and logging path.
@@ -183,4 +213,3 @@ Primary files to inspect per incident:
 - `state/autonomy/runs/YYYY-MM-DD.jsonl`
 - `state/autonomy/receipts/YYYY-MM-DD.jsonl`
 - `state/routing/routing_decisions.jsonl`
-

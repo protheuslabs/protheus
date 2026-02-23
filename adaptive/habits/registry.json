@@ -1,0 +1,76 @@
+{
+  "version": "1.0",
+  "policy": {
+    "generation_min_repeats": 3,
+    "max_active_routines": 128,
+    "gc_inactive_days": 30
+  },
+  "routines": [
+    {
+      "uid": "h5g9sumex80d8i6knxw1aa28",
+      "id": "pain_external_eyes_0251f4298561",
+      "name": "Pain Habit external_eyes collector_preflight:collector_pr",
+      "summary": "Collector preflight failed for ollama_search",
+      "routine_path": "habits/routines/pain_external_eyes_0251f4298561.js",
+      "status": "disabled",
+      "usage": {
+        "uses_total": 0,
+        "uses_30d": 0,
+        "last_used_ts": null
+      },
+      "created_ts": "2026-02-23T00:00:13.902Z",
+      "updated_ts": "2026-02-23T00:00:13.919Z"
+    },
+    {
+      "uid": "h63c93y89php6m0vtx7bzmhz",
+      "id": "pain_external_eyes_4278015a179e",
+      "name": "Pain Habit external_eyes collector_preflight:collector_pr",
+      "summary": "Collector preflight failed for x_trends",
+      "routine_path": "habits/routines/pain_external_eyes_4278015a179e.js",
+      "status": "disabled",
+      "usage": {
+        "uses_total": 0,
+        "uses_30d": 0,
+        "last_used_ts": null
+      },
+      "created_ts": "2026-02-23T00:00:13.872Z",
+      "updated_ts": "2026-02-23T00:00:13.919Z"
+    },
+    {
+      "uid": "h3xhvd9zjg1blxys93gwgmwj",
+      "id": "pain_external_eyes_5f2d02fb9874",
+      "name": "Pain Habit external_eyes collector_preflight:domain_not_a",
+      "summary": "Collector preflight failed for reddit_ai_automation",
+      "routine_path": "habits/routines/pain_external_eyes_5f2d02fb9874.js",
+      "status": "disabled",
+      "usage": {
+        "uses_total": 0,
+        "uses_30d": 0,
+        "last_used_ts": null
+      },
+      "created_ts": "2026-02-23T00:00:13.919Z",
+      "updated_ts": "2026-02-23T00:00:13.919Z"
+    },
+    {
+      "uid": "h1uloqpwv586fu3qkjag0t7v",
+      "id": "pain_idle_dream_cycle_9fac4cbaf305",
+      "name": "Pain Habit idle_dream_cycle dream_idle:all_model_attempts_fa",
+      "summary": "Dream idle phase degraded or blocked (all_model_attempts_failed)",
+      "routine_path": "habits/routines/pain_idle_dream_cycle_9fac4cbaf305.js",
+      "status": "disabled",
+      "usage": {
+        "uses_total": 0,
+        "uses_30d": 0,
+        "last_used_ts": null
+      },
+      "created_ts": "2026-02-22T22:03:29.590Z",
+      "updated_ts": "2026-02-23T00:00:13.919Z"
+    }
+  ],
+  "metrics": {
+    "total_created": 4,
+    "total_updated": 0,
+    "total_gc_deleted": 0,
+    "last_gc_ts": null
+  }
+}

@@ -267,20 +267,62 @@ function inferTopics(model) {
 }
 
 async function preflightOllamaSearch() {
+  const cacheRaw = loadCollectorCache("ollama_search");
+  const cachedItems = Array.isArray(cacheRaw && cacheRaw.items) ? cacheRaw.items : [];
   try {
-    const result = await collectOllamaSearchNewest({ timeoutMs: 5000 });
+    const searchUrl = "https://ollama.com/search?o=newest";
+    const { text, bytes } = await fetchText(searchUrl, 5000);
+    const hasModelSignals = (
+      /\/library\//i.test(text)
+      || /data-testid="model-card"/i.test(text)
+      || /ollama/i.test(text)
+    );
     return {
-      ok: result.ok,
-      reachable: result.ok,
-      items_sample: result.items?.length || 0,
-      error: result.error?.code || null
+      ok: hasModelSignals,
+      parser_type: "ollama_search",
+      reachable: true,
+      items_sample: hasModelSignals ? 1 : 0,
+      bytes: Number(bytes || 0),
+      checks: [
+        { name: "remote_probe", ok: true },
+        { name: "content_signals", ok: hasModelSignals }
+      ],
+      failures: hasModelSignals ? [] : [{ code: "parse_failed", message: "ollama_search content did not match expected signals" }],
+      error: hasModelSignals ? null : "content_unexpected"
     };
   } catch (err) {
+    const classified = classifyCollectorError(err);
+    if (cachedItems.length > 0) {
+      return {
+        ok: true,
+        parser_type: "ollama_search",
+        reachable: false,
+        cache_hit: true,
+        degraded: true,
+        items_sample: Math.min(5, cachedItems.length),
+        bytes: 0,
+        checks: [
+          { name: "remote_probe", ok: false, code: classified.code || "preflight_failed" },
+          { name: "cache_available", ok: true, value: cachedItems.length }
+        ],
+        failures: [],
+        error: null
+      };
+    }
     return {
       ok: false,
+      parser_type: "ollama_search",
       reachable: false,
       items_sample: 0,
-      error: err.code || "preflight_failed"
+      checks: [
+        { name: "remote_probe", ok: false, code: classified.code || "preflight_failed" },
+        { name: "cache_available", ok: false, value: 0 }
+      ],
+      failures: [{
+        code: classified.code || "preflight_failed",
+        message: String(classified.message || "ollama_search preflight failed").slice(0, 180)
+      }],
+      error: classified.code || "preflight_failed"
     };
   }
 }

@@ -18,6 +18,7 @@ function run() {
   const scriptPath = path.join(repoRoot, 'systems', 'memory', 'memory_dream.js');
   const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'memory-dream-'));
   const pointersDir = path.join(tmpRoot, 'state', 'memory', 'eyes_pointers');
+  const failurePointersDir = path.join(tmpRoot, 'state', 'memory', 'failure_pointers');
   const dreamsDir = path.join(tmpRoot, 'state', 'memory', 'dreams');
   const adaptivePointersPath = path.join(tmpRoot, 'state', 'memory', 'adaptive_pointers.jsonl');
   const memoryIndexPath = path.join(tmpRoot, 'memory', 'MEMORY_INDEX.md');
@@ -55,6 +56,19 @@ function run() {
     }
   ]);
 
+  writeJsonl(path.join(failurePointersDir, `${dateStr}.jsonl`), [
+    {
+      ts: `${dateStr}T12:10:00.000Z`,
+      failure_tier: 1,
+      item_hash: 'failhash1234abcd',
+      code: 'integrity_violation',
+      title: 'Integrity mismatch blocked spine',
+      node_id: 'failure-t1-failhash',
+      memory_file: `memory/${dateStr}.md`,
+      topics: ['failure', 'failure-tier-1', 'integrity']
+    }
+  ]);
+
   fs.mkdirSync(path.dirname(memoryIndexPath), { recursive: true });
   fs.writeFileSync(memoryIndexPath, [
     '# MEMORY_INDEX.md',
@@ -71,7 +85,8 @@ function run() {
     MEMORY_DREAM_OUTPUT_DIR: dreamsDir,
     MEMORY_DREAM_LEDGER_PATH: ledgerPath,
     MEMORY_DREAM_MEMORY_INDEX_PATH: memoryIndexPath,
-    MEMORY_DREAM_ADAPTIVE_POINTERS_PATH: adaptivePointersPath
+    MEMORY_DREAM_ADAPTIVE_POINTERS_PATH: adaptivePointersPath,
+    MEMORY_DREAM_FAILURE_POINTERS_DIR: failurePointersDir
   };
 
   const runRes = spawnSync(process.execPath, [scriptPath, 'run', dateStr, '--days=2', '--top=5'], {
@@ -83,6 +98,7 @@ function run() {
   const out = JSON.parse(String(runRes.stdout || '{}').trim());
   assert.strictEqual(out.ok, true);
   assert.ok(Number(out.pointer_rows || 0) >= 3);
+  assert.ok(Number(out.failure_pointer_rows || 0) >= 1);
   assert.ok(Number(out.themes || 0) >= 1);
 
   const mdPath = path.join(dreamsDir, `${dateStr}.md`);
@@ -92,6 +108,7 @@ function run() {
 
   const md = fs.readFileSync(mdPath, 'utf8');
   assert.ok(md.includes('# Memory Dream Sheet: 2026-02-21'));
+  assert.ok(md.includes('Failure pointers: 1'), 'dream markdown should report failure pointer inputs');
   assert.ok(md.includes('memory/2026-02-20.md#eye-hn-aaa11111') || md.includes('memory/2026-02-20.md#eye-molt-bbb22222'));
   assert.ok(md.includes('2026-02-10.md#routing-cache-design'), 'should include older-memory echo');
 
@@ -105,6 +122,7 @@ function run() {
   assert.strictEqual(status.ok, true);
   assert.strictEqual(status.exists, true);
   assert.ok(Number(status.themes || 0) >= 1);
+  assert.ok(Number(status.failure_pointer_rows || 0) >= 1);
   assert.ok(Number(status.older_links_total || 0) >= 1);
 
   console.log('memory_dream.test.js: OK');

@@ -1,0 +1,71 @@
+{
+  "ok": true,
+  "ts": "2026-02-23T00:01:19.864Z",
+  "date": "2026-02-22",
+  "queue_log_path": "/Users/jay/.openclaw/workspace/state/sensory/queue_log.jsonl",
+  "summary": {
+    "window": {
+      "start": "2026-02-15T23:59:59.999Z",
+      "end": "2026-02-22T23:59:59.999Z",
+      "days": 7
+    },
+    "totals": {
+      "events": 265,
+      "open": 21,
+      "stale_open": 0
+    },
+    "types": [
+      {
+        "key": "proposal_generated",
+        "count": 157
+      },
+      {
+        "key": "proposal_filtered",
+        "count": 85
+      },
+      {
+        "key": "proposal_rejected",
+        "count": 23
+      }
+    ],
+    "top_reject_reasons": [
+      {
+        "key": "auto:queue_gc cap>10 eye:cross_signal_engine",
+        "count": 11
+      },
+      {
+        "key": "meta proposal; lacks concrete actionable change",
+        "count": 3
+      },
+      {
+        "key": "auto:queue_gc escalation_ttl>16h type:collector_escalation",
+        "count": 2
+      },
+      {
+        "key": "superseded: id generation fix",
+        "count": 2
+      },
+      {
+        "key": "auto:queue_gc dedup type:dream_cycle_escalation",
+        "count": 1
+      },
+      {
+        "key": "auto:queue_gc dedup type:pain_adaptive_candidate",
+        "count": 1
+      },
+      {
+        "key": "superseded: id generation fix, new stable id eye-3555923cbd1fe4df",
+        "count": 1
+      },
+      {
+        "key": "superseded: id generation fix, new stable id eye-65dd0c14c2efa337",
+        "count": 1
+      },
+      {
+        "key": "superseded: id generation fix, new stable id eye-8e2312aaef07134e covers same url",
+        "count": 1
+      }
+    ],
+    "stale_open_hours": 96
+  }
+}

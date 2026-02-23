@@ -1,0 +1,547 @@
+{
+  "version": "1.0",
+  "updated_ts": "2026-02-23T00:22:54.232Z",
+  "signatures": {
+    "4278015a179efcf9": {
+      "source": "external_eyes",
+      "subsystem": "sensory",
+      "code": "collector_preflight:collector_preflight_failed",
+      "summary": "Collector preflight failed for x_trends",
+      "details": "x_trends parser=bird_x message=collector preflight failed",
+      "severity": "medium",
+      "risk": "medium",
+      "signature": "4278015a179efcf9",
+      "total_count": 9,
+      "events": [
+        {
+          "ts": "2026-02-22T17:47:18.253Z",
+          "code": "collector_preflight:collector_preflight_failed"
+        },
+        {
+          "ts": "2026-02-22T17:47:28.209Z",
+          "code": "collector_preflight:collector_preflight_failed"
+        },
+        {
+          "ts": "2026-02-22T17:47:28.385Z",
+          "code": "collector_preflight:collector_preflight_failed"
+        },
+        {
+          "ts": "2026-02-22T17:47:40.322Z",
+          "code": "collector_preflight:collector_preflight_failed"
+        },
+        {
+          "ts": "2026-02-22T17:50:07.680Z",
+          "code": "collector_preflight:collector_preflight_failed"
+        },
+        {
+          "ts": "2026-02-22T17:51:26.270Z",
+          "code": "collector_preflight:collector_preflight_failed"
+        },
+        {
+          "ts": "2026-02-22T17:53:32.294Z",
+          "code": "collector_preflight:collector_preflight_failed"
+        },
+        {
+          "ts": "2026-02-22T18:03:20.485Z",
+          "code": "collector_preflight:collector_preflight_failed"
+        },
+        {
+          "ts": "2026-02-22T18:04:14.655Z",
+          "code": "collector_preflight:collector_preflight_failed"
+        }
+      ],
+      "last_ts": "2026-02-22T18:04:14.655Z",
+      "last_summary": "Collector preflight failed for x_trends",
+      "last_details": "x_trends parser=bird_x message=collector preflight failed",
+      "cooldown_until_ts": "2026-02-23T05:47:28.210Z",
+      "last_escalation_ts": "2026-02-22T17:47:28.212Z",
+      "last_proposal_id": "PAIN-54ee381b21e8889f",
+      "defer_count": 0,
+      "last_defer_ts": null,
+      "last_defer_reason": null,
+      "last_focus_session_id": null
+    },
+    "0251f4298561f2e4": {
+      "source": "external_eyes",
+      "subsystem": "sensory",
+      "code": "collector_preflight:collector_preflight_failed",
+      "summary": "Collector preflight failed for ollama_search",
+      "details": "ollama_search parser=ollama_search message=collector preflight failed",
+      "severity": "medium",
+      "risk": "medium",
+      "signature": "0251f4298561f2e4",
+      "total_count": 9,
+      "events": [
+        {
+          "ts": "2026-02-22T17:47:18.254Z",
+          "code": "collector_preflight:collector_preflight_failed"
+        },
+        {
+          "ts": "2026-02-22T17:47:28.212Z",
+          "code": "collector_preflight:collector_preflight_failed"
+        },
+        {
+          "ts": "2026-02-22T17:47:28.386Z",
+          "code": "collector_preflight:collector_preflight_failed"
+        },
+        {
+          "ts": "2026-02-22T17:47:40.323Z",
+          "code": "collector_preflight:collector_preflight_failed"
+        },
+        {
+          "ts": "2026-02-22T17:50:07.684Z",
+          "code": "collector_preflight:collector_preflight_failed"
+        },
+        {
+          "ts": "2026-02-22T17:51:26.274Z",
+          "code": "collector_preflight:collector_preflight_failed"
+        },
+        {
+          "ts": "2026-02-22T17:53:32.298Z",
+          "code": "collector_preflight:collector_preflight_failed"
+        },
+        {
+          "ts": "2026-02-22T18:03:20.488Z",
+          "code": "collector_preflight:collector_preflight_failed"
+        },
+        {
+          "ts": "2026-02-22T18:04:14.657Z",
+          "code": "collector_preflight:collector_preflight_failed"
+        }
+      ],
+      "last_ts": "2026-02-22T18:04:14.657Z",
+      "last_summary": "Collector preflight failed for ollama_search",
+      "last_details": "ollama_search parser=ollama_search message=collector preflight failed",
+      "cooldown_until_ts": "2026-02-23T05:47:28.212Z",
+      "last_escalation_ts": "2026-02-22T17:47:28.214Z",
+      "last_proposal_id": "PAIN-40008f2e9050b524",
+      "defer_count": 0,
+      "last_defer_ts": null,
+      "last_defer_reason": null,
+      "last_focus_session_id": null
+    },
+    "5f2d02fb987446fd": {
+      "source": "external_eyes",
+      "subsystem": "sensory",
+      "code": "collector_preflight:domain_not_allowlisted",
+      "summary": "Collector preflight failed for reddit_ai_automation",
+      "details": "reddit_ai_automation parser=hn_rss message=Feed host not allowlisted: news.ycombinator.com",
+      "severity": "medium",
+      "risk": "medium",
+      "signature": "5f2d02fb987446fd",
+      "total_count": 7,
+      "events": [
+        {
+          "ts": "2026-02-22T17:47:18.254Z",
+          "code": "collector_preflight:domain_not_allowlisted"
+        },
+        {
+          "ts": "2026-02-22T17:47:28.214Z",
+          "code": "collector_preflight:domain_not_allowlisted"
+        },
+        {
+          "ts": "2026-02-22T17:47:28.387Z",
+          "code": "collector_preflight:domain_not_allowlisted"
+        },
+        {
+          "ts": "2026-02-22T17:47:40.323Z",
+          "code": "collector_preflight:domain_not_allowlisted"
+        },
+        {
+          "ts": "2026-02-22T17:50:07.686Z",
+          "code": "collector_preflight:domain_not_allowlisted"
+        },
+        {
+          "ts": "2026-02-22T17:51:26.277Z",
+          "code": "collector_preflight:domain_not_allowlisted"
+        },
+        {
+          "ts": "2026-02-22T17:53:32.300Z",
+          "code": "collector_preflight:domain_not_allowlisted"
+        }
+      ],
+      "last_ts": "2026-02-22T17:53:32.300Z",
+      "last_summary": "Collector preflight failed for reddit_ai_automation",
+      "last_details": "reddit_ai_automation parser=hn_rss message=Feed host not allowlisted: news.ycombinator.com",
+      "cooldown_until_ts": "2026-02-23T05:47:28.214Z",
+      "last_escalation_ts": "2026-02-22T17:47:28.217Z",
+      "last_proposal_id": "PAIN-63aa4ef174305712"
+    },
+    "5737f7067a1ec865": {
+      "source": "test_suite",
+      "subsystem": "test",
+      "code": "minor_test_signal",
+      "summary": "defer smoke test",
+      "details": "",
+      "severity": "low",
+      "risk": "low",
+      "signature": "5737f7067a1ec865",
+      "total_count": 1,
+      "events": [
+        {
+          "ts": "2026-02-22T18:00:57.966Z",
+          "code": "minor_test_signal"
+        }
+      ],
+      "last_ts": "2026-02-22T18:00:57.966Z",
+      "last_summary": "defer smoke test",
+      "last_details": null,
+      "cooldown_until_ts": null,
+      "last_escalation_ts": null,
+      "last_proposal_id": null,
+      "defer_count": 1,
+      "last_defer_ts": "2026-02-22T18:00:57.974Z",
+      "last_defer_reason": "focus_session_active",
+      "last_focus_session_id": "PFOCUS-bb9a8f0535f090de"
+    },
+    "fcf9bfcbadb0fdf9": {
+      "source": "test_suite",
+      "subsystem": "test",
+      "code": "security_integrity_probe",
+      "summary": "nodefer smoke test",
+      "details": "",
+      "severity": "high",
+      "risk": "high",
+      "signature": "fcf9bfcbadb0fdf9",
+      "total_count": 1,
+      "events": [
+        {
+          "ts": "2026-02-22T18:01:05.511Z",
+          "code": "security_integrity_probe"
+        }
+      ],
+      "last_ts": "2026-02-22T18:01:05.511Z",
+      "last_summary": "nodefer smoke test",
+      "last_details": null,
+      "cooldown_until_ts": "2026-02-22T19:01:05.511Z",
+      "last_escalation_ts": "2026-02-22T18:01:05.516Z",
+      "last_proposal_id": "PAIN-aa0f82dc54490212",
+      "defer_count": 0,
+      "last_defer_ts": null,
+      "last_defer_reason": null,
+      "last_focus_session_id": null
+    },
+    "322525e41384fb34": {
+      "source": "spine",
+      "subsystem": "orchestration",
+      "code": "command_failed:guard.js",
+      "summary": "Spine command failed (systems/security/guard.js)",
+      "details": "mode=daily date=2026-02-22 exit_code=1",
+      "severity": "high",
+      "risk": "high",
+      "signature": "322525e41384fb34",
+      "total_count": 4,
+      "events": [
+        {
+          "ts": "2026-02-22T18:08:44.310Z",
+          "code": "command_failed:guard.js"
+        },
+        {
+          "ts": "2026-02-22T18:14:35.283Z",
+          "code": "command_failed:guard.js"
+        },
+        {
+          "ts": "2026-02-22T19:29:25.216Z",
+          "code": "command_failed:guard.js"
+        },
+        {
+          "ts": "2026-02-22T19:37:55.695Z",
+          "code": "command_failed:guard.js"
+        }
+      ],
+      "last_ts": "2026-02-22T19:37:55.695Z",
+      "last_summary": "Spine command failed (systems/security/guard.js)",
+      "last_details": "mode=daily date=2026-02-22 exit_code=1",
+      "cooldown_until_ts": "2026-02-22T20:08:44.312Z",
+      "last_escalation_ts": "2026-02-22T18:08:44.316Z",
+      "last_proposal_id": "PAIN-ba1b1273ba9a7a2d",
+      "defer_count": 0,
+      "last_defer_ts": null,
+      "last_defer_reason": null,
+      "last_focus_session_id": null
+    },
+    "32cfa051c7264d99": {
+      "source": "idle_dream_cycle",
+      "subsystem": "memory",
+      "code": "dream_idle:no_local_model_available",
+      "summary": "Dream idle phase degraded or blocked (no_local_model_available)",
+      "details": "ok=false skipped=true degraded=false failed_model=none timed_out=false cooldown_until=none",
+      "severity": "high",
+      "risk": "medium",
+      "signature": "32cfa051c7264d99",
+      "total_count": 1,
+      "events": [
+        {
+          "ts": "2026-02-22T18:08:44.337Z",
+          "code": "dream_idle:no_local_model_available"
+        }
+      ],
+      "last_ts": "2026-02-22T18:08:44.337Z",
+      "last_summary": "Dream idle phase degraded or blocked (no_local_model_available)",
+      "last_details": "ok=false skipped=true degraded=false failed_model=none timed_out=false cooldown_until=none",
+      "cooldown_until_ts": null,
+      "last_escalation_ts": null,
+      "last_proposal_id": null,
+      "defer_count": 0,
+      "last_defer_ts": null,
+      "last_defer_reason": null,
+      "last_focus_session_id": null
+    },
+    "9fac4cbaf305d3d0": {
+      "source": "idle_dream_cycle",
+      "subsystem": "memory",
+      "code": "dream_idle:all_model_attempts_failed",
+      "summary": "Dream idle phase degraded or blocked (all_model_attempts_failed)",
+      "details": "ok=true skipped=false degraded=true failed_model=smallthinker timed_out=false cooldown_until=2026-02-22T22:10:25.749Z",
+      "severity": "medium",
+      "risk": "medium",
+      "signature": "9fac4cbaf305d3d0",
+      "total_count": 6,
+      "events": [
+        {
+          "ts": "2026-02-22T18:10:12.134Z",
+          "code": "dream_idle:all_model_attempts_failed"
+        },
+        {
+          "ts": "2026-02-22T21:04:42.550Z",
+          "code": "dream_idle:all_model_attempts_failed"
+        },
+        {
+          "ts": "2026-02-22T21:05:24.592Z",
+          "code": "dream_idle:all_model_attempts_failed"
+        },
+        {
+          "ts": "2026-02-22T21:06:05.713Z",
+          "code": "dream_idle:all_model_attempts_failed"
+        },
+        {
+          "ts": "2026-02-22T21:06:25.197Z",
+          "code": "dream_idle:all_model_attempts_failed"
+        },
+        {
+          "ts": "2026-02-22T22:08:25.781Z",
+          "code": "dream_idle:all_model_attempts_failed"
+        }
+      ],
+      "last_ts": "2026-02-22T22:08:25.781Z",
+      "last_summary": "Dream idle phase degraded or blocked (all_model_attempts_failed)",
+      "last_details": "ok=true skipped=false degraded=true failed_model=smallthinker timed_out=false cooldown_until=2026-02-22T22:10:25.749Z",
+      "cooldown_until_ts": "2026-02-23T03:04:42.550Z",
+      "last_escalation_ts": "2026-02-22T21:04:42.586Z",
+      "last_proposal_id": "PAIN-778c77095fb04bd3",
+      "defer_count": 0,
+      "last_defer_ts": null,
+      "last_defer_reason": null,
+      "last_focus_session_id": null
+    },
+    "acd86458b9ef71c0": {
+      "source": "idle_dream_cycle",
+      "subsystem": "memory",
+      "code": "dream_idle:all_model_attempts_failed",
+      "summary": "Dream idle phase degraded or blocked (all_model_attempts_failed)",
+      "details": "ok=true skipped=false degraded=true failed_model=qwen3:4b timed_out=false cooldown_until=2026-02-22T21:08:25.275Z",
+      "severity": "medium",
+      "risk": "medium",
+      "signature": "acd86458b9ef71c0",
+      "total_count": 3,
+      "events": [
+        {
+          "ts": "2026-02-22T21:05:24.879Z",
+          "code": "dream_idle:all_model_attempts_failed"
+        },
+        {
+          "ts": "2026-02-22T21:06:05.807Z",
+          "code": "dream_idle:all_model_attempts_failed"
+        },
+        {
+          "ts": "2026-02-22T21:06:25.278Z",
+          "code": "dream_idle:all_model_attempts_failed"
+        }
+      ],
+      "last_ts": "2026-02-22T21:06:25.278Z",
+      "last_summary": "Dream idle phase degraded or blocked (all_model_attempts_failed)",
+      "last_details": "ok=true skipped=false degraded=true failed_model=qwen3:4b timed_out=false cooldown_until=2026-02-22T21:08:25.275Z",
+      "cooldown_until_ts": "2026-02-23T03:06:05.808Z",
+      "last_escalation_ts": "2026-02-22T21:06:05.817Z",
+      "last_proposal_id": "PAIN-ab622214f9c188ff",
+      "defer_count": 0,
+      "last_defer_ts": null,
+      "last_defer_reason": null,
+      "last_focus_session_id": null
+    },
+    "54899cc83b4707fe": {
+      "source": "idle_dream_cycle",
+      "subsystem": "memory",
+      "code": "dream_idle:all_local_models_cooling_down",
+      "summary": "Dream idle phase degraded or blocked (all_local_models_cooling_down)",
+      "details": "ok=false skipped=true degraded=false failed_model=none timed_out=false cooldown_until=none",
+      "severity": "high",
+      "risk": "medium",
+      "signature": "54899cc83b4707fe",
+      "total_count": 2,
+      "events": [
+        {
+          "ts": "2026-02-22T21:06:05.882Z",
+          "code": "dream_idle:all_local_models_cooling_down"
+        },
+        {
+          "ts": "2026-02-22T21:06:25.365Z",
+          "code": "dream_idle:all_local_models_cooling_down"
+        }
+      ],
+      "last_ts": "2026-02-22T21:06:25.365Z",
+      "last_summary": "Dream idle phase degraded or blocked (all_local_models_cooling_down)",
+      "last_details": "ok=false skipped=true degraded=false failed_model=none timed_out=false cooldown_until=none",
+      "cooldown_until_ts": "2026-02-23T03:06:25.365Z",
+      "last_escalation_ts": "2026-02-22T21:06:25.373Z",
+      "last_proposal_id": "PAIN-9539e7ff6027ca2a",
+      "defer_count": 0,
+      "last_defer_ts": null,
+      "last_defer_reason": null,
+      "last_focus_session_id": null
+    },
+    "b10ebaae8b2834fb": {
+      "source": "external_eyes",
+      "subsystem": "sensory",
+      "code": "collector_escalation:collector_error",
+      "summary": "Persistent collector failure for medium_com exceeded threshold",
+      "details": "medium_rss_fetch_failed (https://medium.com/feed/tag/artificial-intelligence: collector_error:fetch failed for https://medium.com/feed/tag/artificial-intelligence | https://medium.com/feed/tag/machine",
+      "severity": "medium",
+      "risk": "medium",
+      "signature": "b10ebaae8b2834fb",
+      "total_count": 1,
+      "events": [
+        {
+          "ts": "2026-02-22T21:36:55.510Z",
+          "code": "collector_escalation:collector_error"
+        }
+      ],
+      "last_ts": "2026-02-22T21:36:55.510Z",
+      "last_summary": "Persistent collector failure for medium_com exceeded threshold",
+      "last_details": "medium_rss_fetch_failed (https://medium.com/feed/tag/artificial-intelligence: collector_error:fetch failed for https://medium.com/feed/tag/artificial-intelligence | https://medium.com/feed/tag/machine",
+      "cooldown_until_ts": null,
+      "last_escalation_ts": null,
+      "last_proposal_id": null,
+      "defer_count": 0,
+      "last_defer_ts": null,
+      "last_defer_reason": null,
+      "last_focus_session_id": null
+    },
+    "32f42c233cd8487f": {
+      "source": "external_eyes",
+      "subsystem": "sensory",
+      "code": "collector_escalation:collector_error",
+      "summary": "Persistent collector failure for memory_standards_watch exceeded threshold",
+      "details": "hn_rss_fetch_failed (https://news.ycombinator.com/rss: collector_error:fetch failed for https://news.ycombinator.com/rss | https://hnrss.org/frontpage: collector_error:fetch failed for https://hnrss.o",
+      "severity": "medium",
+      "risk": "medium",
+      "signature": "32f42c233cd8487f",
+      "total_count": 1,
+      "events": [
+        {
+          "ts": "2026-02-22T21:36:55.589Z",
+          "code": "collector_escalation:collector_error"
+        }
+      ],
+      "last_ts": "2026-02-22T21:36:55.589Z",
+      "last_summary": "Persistent collector failure for memory_standards_watch exceeded threshold",
+      "last_details": "hn_rss_fetch_failed (https://news.ycombinator.com/rss: collector_error:fetch failed for https://news.ycombinator.com/rss | https://hnrss.org/frontpage: collector_error:fetch failed for https://hnrss.o",
+      "cooldown_until_ts": null,
+      "last_escalation_ts": null,
+      "last_proposal_id": null,
+      "defer_count": 0,
+      "last_defer_ts": null,
+      "last_defer_reason": null,
+      "last_focus_session_id": null
+    },
+    "437d6645e6b1076a": {
+      "source": "idle_dream_cycle",
+      "subsystem": "memory",
+      "code": "dream_idle:all_model_attempts_failed",
+      "summary": "Dream idle phase degraded or blocked (all_model_attempts_failed)",
+      "details": "ok=true skipped=false degraded=true failed_model=qwen3:1.7b timed_out=false cooldown_until=2026-02-22T22:10:55.907Z",
+      "severity": "medium",
+      "risk": "medium",
+      "signature": "437d6645e6b1076a",
+      "total_count": 1,
+      "events": [
+        {
+          "ts": "2026-02-22T22:08:56.061Z",
+          "code": "dream_idle:all_model_attempts_failed"
+        }
+      ],
+      "last_ts": "2026-02-22T22:08:56.061Z",
+      "last_summary": "Dream idle phase degraded or blocked (all_model_attempts_failed)",
+      "last_details": "ok=true skipped=false degraded=true failed_model=qwen3:1.7b timed_out=false cooldown_until=2026-02-22T22:10:55.907Z",
+      "cooldown_until_ts": null,
+      "last_escalation_ts": null,
+      "last_proposal_id": null,
+      "defer_count": 0,
+      "last_defer_ts": null,
+      "last_defer_reason": null,
+      "last_focus_session_id": null
+    },
+    "a2f77f0a0d4d9b52": {
+      "source": "idle_dream_cycle",
+      "subsystem": "memory",
+      "code": "dream_idle:all_model_attempts_failed",
+      "summary": "Dream idle phase degraded or blocked (all_model_attempts_failed)",
+      "details": "ok=true skipped=false degraded=true failed_model=gemma3:4b timed_out=false cooldown_until=2026-02-22T22:15:20.836Z",
+      "severity": "medium",
+      "risk": "medium",
+      "signature": "a2f77f0a0d4d9b52",
+      "total_count": 1,
+      "events": [
+        {
+          "ts": "2026-02-22T22:13:21.085Z",
+          "code": "dream_idle:all_model_attempts_failed"
+        }
+      ],
+      "last_ts": "2026-02-22T22:13:21.085Z",
+      "last_summary": "Dream idle phase degraded or blocked (all_model_attempts_failed)",
+      "last_details": "ok=true skipped=false degraded=true failed_model=gemma3:4b timed_out=false cooldown_until=2026-02-22T22:15:20.836Z",
+      "cooldown_until_ts": null,
+      "last_escalation_ts": null,
+      "last_proposal_id": null,
+      "defer_count": 0,
+      "last_defer_ts": null,
+      "last_defer_reason": null,
+      "last_focus_session_id": null
+    },
+    "ed445d71f2fee5f7": {
+      "source": "idle_dream_cycle",
+      "subsystem": "memory",
+      "code": "dream_idle:local_model_unavailable",
+      "summary": "Dream idle phase degraded or blocked (local_model_unavailable)",
+      "details": "ok=false skipped=true degraded=false failed_model=none timed_out=false cooldown_until=none",
+      "severity": "high",
+      "risk": "medium",
+      "signature": "ed445d71f2fee5f7",
+      "total_count": 3,
+      "events": [
+        {
+          "ts": "2026-02-22T22:21:48.224Z",
+          "code": "dream_idle:local_model_unavailable"
+        },
+        {
+          "ts": "2026-02-23T00:00:59.336Z",
+          "code": "dream_idle:local_model_unavailable"
+        },
+        {
+          "ts": "2026-02-23T00:22:54.231Z",
+          "code": "dream_idle:local_model_unavailable"
+        }
+      ],
+      "last_ts": "2026-02-23T00:22:54.231Z",
+      "last_summary": "Dream idle phase degraded or blocked (local_model_unavailable)",
+      "last_details": "ok=false skipped=true degraded=false failed_model=none timed_out=false cooldown_until=none",
+      "cooldown_until_ts": "2026-02-23T06:00:59.336Z",
+      "last_escalation_ts": "2026-02-23T00:00:59.340Z",
+      "last_proposal_id": "PAIN-f6d9de1fe23c1b69",
+      "defer_count": 0,
+      "last_defer_ts": null,
+      "last_defer_reason": null,
+      "last_focus_session_id": null
+    }
+  }
+}

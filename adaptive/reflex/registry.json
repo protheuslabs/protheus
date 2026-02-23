@@ -1,0 +1,66 @@
+{
+  "version": "1.0",
+  "policy": {
+    "min_cells": 1,
+    "max_cells": 2,
+    "scale_up_queue_depth": 3,
+    "scale_down_idle_seconds": 60,
+    "routine_ttl_days": 14
+  },
+  "routines": [
+    {
+      "uid": "r2jbroi8ccpph9bgi9wd6dei",
+      "key": "pain_external_eyes_0251f4298561",
+      "name": "Pain Reflex external_eyes collector_preflight:collector_preflight_",
+      "trigger": "pain_signal:external_eyes:collector_preflight:collector_preflight_",
+      "action": "stabilize sensory via deterministic recovery playbook",
+      "status": "disabled",
+      "priority": 48,
+      "last_run_ts": null,
+      "created_ts": "2026-02-22T17:47:28.458Z",
+      "updated_ts": "2026-02-22T22:03:29.659Z"
+    },
+    {
+      "uid": "r46f1k9j1xqn6aamflt2r50r",
+      "key": "pain_external_eyes_4278015a179e",
+      "name": "Pain Reflex external_eyes collector_preflight:collector_preflight_",
+      "trigger": "pain_signal:external_eyes:collector_preflight:collector_preflight_",
+      "action": "stabilize sensory via deterministic recovery playbook",
+      "status": "disabled",
+      "priority": 48,
+      "last_run_ts": null,
+      "created_ts": "2026-02-22T17:47:28.431Z",
+      "updated_ts": "2026-02-22T22:03:29.659Z"
+    },
+    {
+      "uid": "r2bxo0a4pun89m7ayh05u3ls",
+      "key": "pain_external_eyes_5f2d02fb9874",
+      "name": "Pain Reflex external_eyes collector_preflight:domain_not_allowlist",
+      "trigger": "pain_signal:external_eyes:collector_preflight:domain_not_allowlist",
+      "action": "stabilize sensory via deterministic recovery playbook",
+      "status": "disabled",
+      "priority": 48,
+      "last_run_ts": null,
+      "created_ts": "2026-02-22T17:47:28.491Z",
+      "updated_ts": "2026-02-22T22:03:29.659Z"
+    },
+    {
+      "uid": "r1u7htzq4xcif7ntgj2mzkmu",
+      "key": "pain_idle_dream_cycle_acd86458b9ef",
+      "name": "Pain Reflex idle_dream_cycle dream_idle:all_model_attempts_failed",
+      "trigger": "pain_signal:idle_dream_cycle:dream_idle:all_model_attempts_failed",
+      "action": "stabilize memory via deterministic recovery playbook",
+      "status": "disabled",
+      "priority": 48,
+      "last_run_ts": null,
+      "created_ts": "2026-02-22T22:03:29.659Z",
+      "updated_ts": "2026-02-22T22:03:29.659Z"
+    }
+  ],
+  "metrics": {
+    "total_created": 4,
+    "total_updated": 0,
+    "total_gc_deleted": 0,
+    "last_gc_ts": null
+  }
+}

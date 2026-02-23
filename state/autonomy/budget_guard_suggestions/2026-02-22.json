@@ -19,5 +19,110 @@
       "Increase local-first routing pressure controls under hard budget states before cloud fallback.",
       "Reduce autonomous execution frequency until pressure returns to soft/none."
     ]
+  },
+  {
+    "id": "BGS-58cc514311249dcf",
+    "date": "2026-02-22",
+    "ts": "2026-02-22T18:25:11.101Z",
+    "type": "strategy_budget_adjustment_suggestion",
+    "source": "spine_budget_guard",
+    "status": "proposed",
+    "pressure": "soft",
+    "projected_pressure": "soft",
+    "action": "throttle",
+    "reason": "soft_pressure_throttle_window",
+    "token_cap": 4000,
+    "used_est": 3495,
+    "burn_pct": 87.38,
+    "top_module": "sensory_focus",
+    "suggested_adjustments": [
+      "Reduce autonomous execution frequency while budget pressure remains soft.",
+      "Tighten per-action token estimates for non-critical runs to preserve headroom.",
+      "Prioritize lower-cost route classes for repetitive low-risk work until pressure clears."
+    ]
+  },
+  {
+    "id": "BGS-1db73babf45e8341",
+    "date": "2026-02-22",
+    "ts": "2026-02-22T18:26:50.539Z",
+    "type": "strategy_budget_adjustment_suggestion",
+    "source": "spine_budget_guard",
+    "status": "proposed",
+    "pressure": "soft",
+    "projected_pressure": "soft",
+    "action": "throttle",
+    "reason": "soft_pressure_throttle_window",
+    "token_cap": 4000,
+    "used_est": 3635,
+    "burn_pct": 90.87,
+    "top_module": "sensory_focus",
+    "suggested_adjustments": [
+      "Reduce autonomous execution frequency while budget pressure remains soft.",
+      "Tighten per-action token estimates for non-critical runs to preserve headroom.",
+      "Prioritize lower-cost route classes for repetitive low-risk work until pressure clears."
+    ]
+  },
+  {
+    "id": "BGS-679c6827005c4547",
+    "date": "2026-02-22",
+    "ts": "2026-02-22T18:30:00.341Z",
+    "type": "strategy_budget_adjustment_suggestion",
+    "source": "spine_budget_guard",
+    "status": "proposed",
+    "pressure": "soft",
+    "projected_pressure": "soft",
+    "action": "throttle",
+    "reason": "soft_pressure_throttle_window",
+    "token_cap": 4000,
+    "used_est": 3670,
+    "burn_pct": 91.75,
+    "top_module": "sensory_focus",
+    "suggested_adjustments": [
+      "Reduce autonomous execution frequency while budget pressure remains soft.",
+      "Tighten per-action token estimates for non-critical runs to preserve headroom.",
+      "Prioritize lower-cost route classes for repetitive low-risk work until pressure clears."
+    ]
+  },
+  {
+    "id": "BGS-0fa1f243f833a1f6",
+    "date": "2026-02-22",
+    "ts": "2026-02-22T18:33:04.685Z",
+    "type": "strategy_budget_adjustment_suggestion",
+    "source": "spine_budget_guard",
+    "status": "proposed",
+    "pressure": "hard",
+    "projected_pressure": "hard",
+    "action": "pause",
+    "reason": "repeated_hard_pressure",
+    "token_cap": 4000,
+    "used_est": 3810,
+    "burn_pct": 95.25,
+    "top_module": "sensory_focus",
+    "suggested_adjustments": [
+      "Temporarily reduce strategy budget_policy.daily_token_cap by 10-20% for the next cycle.",
+      "Increase local-first routing pressure controls under hard budget states before cloud fallback.",
+      "Reduce autonomous execution frequency until pressure returns to soft/none."
+    ]
+  },
+  {
+    "id": "BGS-61aebc447f1bb69a",
+    "date": "2026-02-22",
+    "ts": "2026-02-22T22:03:31.421Z",
+    "type": "strategy_budget_adjustment_suggestion",
+    "source": "spine_budget_guard",
+    "status": "proposed",
+    "pressure": "none",
+    "projected_pressure": "none",
+    "action": "pause",
+    "reason": "hard_pause_cooldown_active",
+    "token_cap": 6000,
+    "used_est": 455,
+    "burn_pct": 7.58,
+    "top_module": "sensory_focus",
+    "suggested_adjustments": [
+      "Temporarily reduce strategy budget_policy.daily_token_cap by 10-20% for the next cycle.",
+      "Increase local-first routing pressure controls under hard budget states before cloud fallback.",
+      "Reduce autonomous execution frequency until pressure returns to soft/none."
+    ]
   }
 ]

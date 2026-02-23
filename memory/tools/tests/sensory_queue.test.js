@@ -581,6 +581,156 @@ test('ingest keeps high execution-worthiness proposals with audit score', () => 
   cleanup();
 });
 
+// Test 14: sweep de-dupes stale cross-signal proposals by family/topic while preserving other families
+test('sweep filters stale cross-signal duplicates by topic family', () => {
+  setup();
+
+  const testDate = '2026-02-21';
+  const proposals = [
+    { id: 'CSG-NEW', title: '[Cross-Signal] Topic "automation" converging across 5 eyes', type: 'cross_signal_opportunity', status: 'open' },
+    { id: 'CSG-OLD', title: '[Cross-Signal] Topic "automation" converging across 4 eyes', type: 'cross_signal_opportunity', status: 'open' },
+    { id: 'CSG-DIFF', title: '[Cross-Signal] Topic "automation" diverging across eyes (4 active, 1 absent today)', type: 'cross_signal_opportunity', status: 'open' }
+  ];
+  createTestProposals(testDate, proposals);
+  queue.QUEUE_LOG = QUEUE_LOG;
+
+  const events = [
+    {
+      ts: `${testDate}T01:00:00.000Z`,
+      type: 'proposal_generated',
+      date: testDate,
+      proposal_id: 'CSG-OLD',
+      proposal_hash: 'hash-old',
+      title: proposals[1].title,
+      status_after: 'open',
+      source: 'sensory_queue'
+    },
+    {
+      ts: `${testDate}T02:00:00.000Z`,
+      type: 'proposal_generated',
+      date: testDate,
+      proposal_id: 'CSG-NEW',
+      proposal_hash: 'hash-new',
+      title: proposals[0].title,
+      status_after: 'open',
+      source: 'sensory_queue'
+    },
+    {
+      ts: `${testDate}T03:00:00.000Z`,
+      type: 'proposal_generated',
+      date: testDate,
+      proposal_id: 'CSG-DIFF',
+      proposal_hash: 'hash-diff',
+      title: proposals[2].title,
+      status_after: 'open',
+      source: 'sensory_queue'
+    }
+  ];
+  fs.writeFileSync(QUEUE_LOG, events.map(e => JSON.stringify(e)).join('\n') + '\n', 'utf8');
+
+  const sweep = queue.sweep();
+  assert.ok(Number(sweep.filtered || 0) >= 1, 'Sweep should filter at least one stale duplicate');
+
+  const filtered = queue.loadEvents().filter(e => e.type === 'proposal_filtered');
+  const dedup = filtered.filter(e => e.filter_reason === 'cross_signal_topic_duplicate_sweep');
+  assert.strictEqual(dedup.length, 1, 'Should filter exactly one stale converging duplicate');
+  assert.strictEqual(dedup[0].proposal_id, 'CSG-OLD', 'Older converging duplicate should be filtered');
+
+  const diffFiltered = dedup.find(e => e.proposal_id === 'CSG-DIFF');
+  assert.strictEqual(diffFiltered, undefined, 'Different cross-signal family should not be filtered as duplicate');
+
+  cleanup();
+});
+
+// Test 15: terminal proposals should not be reopened by ingest when reopen guard is disabled
+test('ingest does not reopen rejected proposals when terminal-reopen guard is active', () => {
+  setup();
+
+  const testDate = '2026-02-22';
+  const proposals = [
+    { id: 'P900', title: 'Terminal reopen guard test', type: 'refactor', expected_impact: 'medium' }
+  ];
+  createTestProposals(testDate, proposals);
+  queue.QUEUE_LOG = QUEUE_LOG;
+
+  const first = queue.ingest(testDate);
+  assert.strictEqual(first.ingested, 1, 'First ingest should create proposal');
+
+  const rejected = queue.reject('P900', 'no longer needed');
+  assert.strictEqual(rejected.success, true, 'Reject should succeed');
+
+  const second = queue.ingest(testDate);
+  assert.strictEqual(second.ingested, 0, 'Second ingest should not reopen rejected proposal');
+  assert.strictEqual(second.duplicates, 1, 'Second ingest should count duplicate due terminal status');
+
+  const events = queue.loadEvents();
+  const generated = events.filter(e => e.type === 'proposal_generated' && e.proposal_id === 'P900');
+  const rejects = events.filter(e => e.type === 'proposal_rejected' && e.proposal_id === 'P900');
+  assert.strictEqual(generated.length, 1, 'Only one generated event should exist for terminal proposal');
+  assert.strictEqual(rejects.length, 1, 'Exactly one reject event should exist');
+
+  cleanup();
+});
+
+// Test 16: repeated reject with same reason/note is suppressed as no-op
+test('reject suppresses repeated no-op rejection events', () => {
+  setup();
+
+  const testDate = '2026-02-22';
+  const proposals = [{ id: 'P901', title: 'No-op reject suppression', type: 'refactor' }];
+  createTestProposals(testDate, proposals);
+  queue.QUEUE_LOG = QUEUE_LOG;
+
+  queue.ingest(testDate);
+  const first = queue.reject('P901', 'duplicate', 'same note');
+  assert.strictEqual(first.success, true, 'First reject should succeed');
+  const second = queue.reject('P901', 'duplicate', 'same note');
+  assert.strictEqual(second.success, true, 'Second reject should return success');
+  assert.strictEqual(second.skipped, true, 'Second reject should be suppressed as no-op');
+  assert.strictEqual(second.reason, 'no_op_reject_repeat');
+
+  const events = queue.loadEvents().filter(e => e.type === 'proposal_rejected' && e.proposal_id === 'P901');
+  assert.strictEqual(events.length, 1, 'No-op reject should not append another reject event');
+
+  cleanup();
+});
+
+// Test 17: sweep filters stale open proposals by age threshold
+test('sweep filters stale open proposals by age', () => {
+  setup();
+
+  const staleDate = '2020-01-01';
+  const proposals = [
+    { id: 'P-ST', title: 'Old open proposal', type: 'external_intel', status: 'open', expected_impact: 'medium' }
+  ];
+  createTestProposals(staleDate, proposals);
+  queue.QUEUE_LOG = QUEUE_LOG;
+
+  const events = [
+    {
+      ts: `${staleDate}T00:00:00.000Z`,
+      type: 'proposal_generated',
+      date: staleDate,
+      proposal_id: 'P-ST',
+      proposal_hash: 'hash-stale',
+      title: 'Old open proposal',
+      status_after: 'open',
+      source: 'sensory_queue'
+    }
+  ];
+  fs.writeFileSync(QUEUE_LOG, events.map(e => JSON.stringify(e)).join('\n') + '\n', 'utf8');
+
+  const sweep = queue.sweep();
+  assert.ok(Number(sweep.filtered || 0) >= 1, 'Sweep should filter stale open proposal');
+
+  const filtered = queue.loadEvents().filter(e => e.type === 'proposal_filtered');
+  const stale = filtered.find(e => e.proposal_id === 'P-ST' && e.filter_reason === 'stale_open_age_sweep');
+  assert.ok(stale, 'Expected stale_open_age_sweep filter event');
+  assert.ok(Number(stale.stale_age_hours || 0) >= Number(stale.stale_threshold_hours || 0));
+
+  cleanup();
+});
+
 // Summary
 console.log('\n═══════════════════════════════════════════════════════════');
 if (failed) {
@@ -589,7 +739,7 @@ if (failed) {
   process.exit(1);
 }
 
-console.log('   ✅ ALL SENSORY QUEUE TESTS PASS (13/13)');
+console.log('   ✅ ALL SENSORY QUEUE TESTS PASS (17/17)');
 console.log('═══════════════════════════════════════════════════════════');
 console.log('\n📋 Coverage:');
 console.log('   1. ✅ ingest creates proposal_generated entries');
@@ -605,4 +755,8 @@ console.log('  10. ✅ static queue gate filters stub + unknown-eye proposals');
 console.log('  11. ✅ id-based dedupe prevents duplicate re-ingest with changed payload');
 console.log('  12. ✅ execution-worthiness gate blocks vague/meta proposals');
 console.log('  13. ✅ execution-worthiness gate keeps concrete executable proposals');
+console.log('  14. ✅ sweep de-dupes stale cross-signal proposals by topic family');
+console.log('  15. ✅ terminal reopen guard blocks re-ingest after reject');
+console.log('  16. ✅ repeated no-op reject events are suppressed');
+console.log('  17. ✅ sweep filters stale open proposals by age');
 console.log('\n🎯 Sensory Queue v1.2.3 Ready - NO raw JSONL, NO LLM, append-only');

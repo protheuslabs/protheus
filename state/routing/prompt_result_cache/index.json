@@ -1,18 +1,5 @@
 {
   "version": 1,
-  "updated_at": "2026-02-22T15:06:05.626Z",
-  "entries": {
-    "07f810ed4767c2902385611f426bc26d5af6f24559ea042cae707b3f990ca454": {
-      "key": "07f810ed4767c2902385611f426bc26d5af6f24559ea042cae707b3f990ca454",
-      "model": "gemma3:4b",
-      "phase": "idle",
-      "source": "idle_dream_cycle",
-      "source_fingerprint": "",
-      "created_ms": 1771772765621,
-      "last_hit_ms": 1771772765621,
-      "hits": 0,
-      "ttl_ms": 1800000,
-      "expires_ms": 1771774565621
-    }
-  }
+  "updated_at": "2026-02-23T00:00:40.824Z",
+  "entries": {}
 }

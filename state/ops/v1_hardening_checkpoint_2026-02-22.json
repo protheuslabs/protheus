@@ -1,0 +1,82 @@
+{
+  "ok": true,
+  "generated_at": "2026-02-23T00:01:20.636Z",
+  "date": "2026-02-22",
+  "outcomes": {
+    "window_days": 14,
+    "attempted": 168,
+    "executed": 12,
+    "shipped": 6,
+    "no_change": 6,
+    "reverted": 0,
+    "shipped_rate": 0.5
+  },
+  "criteria": [
+    {
+      "id": "security_integrity",
+      "weight": 3,
+      "pass": true,
+      "detail": "integrity_kernel + architecture_guard"
+    },
+    {
+      "id": "startup_attestation",
+      "weight": 2,
+      "pass": true,
+      "detail": "startup_attestation_verified"
+    },
+    {
+      "id": "routing_health",
+      "weight": 2,
+      "pass": true,
+      "detail": "local_routing_healthy"
+    },
+    {
+      "id": "sensory_continuity",
+      "weight": 2,
+      "pass": false,
+      "detail": "dark_eyes + queue_backlog + proposal_starvation"
+    },
+    {
+      "id": "drift_control",
+      "weight": 2,
+      "pass": true,
+      "detail": "spc_in_control"
+    },
+    {
+      "id": "budget_governor",
+      "weight": 2,
+      "pass": true,
+      "detail": "budget_guard_clear"
+    },
+    {
+      "id": "execute_readiness",
+      "weight": 2,
+      "pass": true,
+      "detail": "ready_for_execute"
+    },
+    {
+      "id": "queue_hygiene",
+      "weight": 1,
+      "pass": true,
+      "detail": "open=21 stale_open=0"
+    },
+    {
+      "id": "outcome_throughput",
+      "weight": 2,
+      "pass": true,
+      "detail": "executed=12 shipped_rate=0.5"
+    }
+  ],
+  "score": {
+    "score": 0.889,
+    "pass": true,
+    "failed": [
+      "sensory_continuity"
+    ]
+  },
+  "next_steps": [
+    "Run queue hygiene + dark-eye remediation so proposal flow stays continuous."
+  ],
+  "health_report_ts": "2026-02-23T00:01:20.623Z",
+  "queue_hygiene_summary_ts": "2026-02-23T00:01:19.864Z"
+}

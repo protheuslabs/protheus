@@ -2,14 +2,14 @@
   "schema_id": "system_budget_autopause",
   "schema_version": "1.0.0",
   "active": false,
-  "set_ts": null,
-  "source": "system_budget",
-  "reason": null,
-  "pressure": null,
-  "date": null,
+  "set_ts": "2026-02-22T22:03:31.420Z",
+  "source": "spine_budget_guard",
+  "reason": "hard_pause_cooldown_active",
+  "pressure": "none",
+  "date": "2026-02-22",
   "until_ms": 0,
   "until": null,
-  "cleared_ts": null,
-  "clear_reason": null,
-  "updated_at": "2026-02-22T16:45:16.998Z"
+  "cleared_ts": "2026-02-22T22:08:14.049Z",
+  "clear_reason": "auto_clear_recovered_pressure",
+  "updated_at": "2026-02-23T00:24:34.111Z"
 }

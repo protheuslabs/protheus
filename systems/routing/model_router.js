@@ -35,6 +35,7 @@ const DECISIONS_LOG = path.join(STATE_DIR, "routing_decisions.jsonl");
 const ROUTE_STATE_PATH = path.join(STATE_DIR, "route_state.json");
 const OUTCOME_STATS_PATH = path.join(STATE_DIR, "model_outcomes.json");
 const HARDWARE_PLAN_PATH = path.join(STATE_DIR, "hardware_plan.json");
+const LOCAL_WARMUP_STATE_PATH = path.join(STATE_DIR, "local_warmup_state.json");
 const ROUTER_BUDGET_DIR = process.env.ROUTER_BUDGET_DIR || path.join(REPO_ROOT, "state", "autonomy", "daily_budget");
 const ROUTER_BUDGET_TODAY = process.env.ROUTER_BUDGET_TODAY || "";
 const ROUTER_BUDGET_EVENTS_PATH = process.env.ROUTER_BUDGET_EVENTS_PATH || path.join(REPO_ROOT, "state", "autonomy", "budget_events.jsonl");
@@ -56,6 +57,10 @@ const HOST_CACHE_MAX_STALE_MS = Number(process.env.ROUTER_HOST_CACHE_MAX_STALE_M
 const PROBE_ACCEPT_OK_TOKEN = String(process.env.ROUTER_PROBE_ACCEPT_OK_TOKEN || "1") !== "0";
 const ROUTER_MIN_REQUEST_TOKENS = Number(process.env.ROUTER_MIN_REQUEST_TOKENS || 120);
 const ROUTER_MAX_REQUEST_TOKENS = Number(process.env.ROUTER_MAX_REQUEST_TOKENS || 12000);
+const LOCAL_WARMUP_INTERVAL_MS = Number(process.env.ROUTER_LOCAL_WARMUP_INTERVAL_MS || 45 * 60 * 1000);
+const LOCAL_WARMUP_STALE_MS = Number(process.env.ROUTER_LOCAL_WARMUP_STALE_MS || Math.max(2 * 60 * 60 * 1000, PROBE_TTL_MS * 3));
+const LOCAL_WARMUP_MAX_PROBES = Number(process.env.ROUTER_LOCAL_WARMUP_MAX_PROBES || 2);
+const LOCAL_WARMUP_RECOVERY_ENABLED = String(process.env.ROUTER_LOCAL_WARMUP_RECOVERY_ENABLED || "1") !== "0";
 
 let EYES_SIGNAL_CACHE = { ts_ms: 0, path: "", payload: null };
 
@@ -505,6 +510,183 @@ function detectRuntimeScope() {
   if (forced) return forced;
   if (String(process.env.CODEX_SANDBOX || "") !== "") return "sandbox";
   return "host";
+}
+
+function loadLocalWarmupState() {
+  const raw = loadJson(LOCAL_WARMUP_STATE_PATH, null);
+  if (!raw || typeof raw !== "object") {
+    return {
+      last_warmup_ts: null,
+      last_warmup_ms: 0,
+      last_reason: null,
+      last_models: [],
+      last_recovered_models: []
+    };
+  }
+  return {
+    last_warmup_ts: raw.last_warmup_ts ? String(raw.last_warmup_ts) : null,
+    last_warmup_ms: Number(raw.last_warmup_ms || 0),
+    last_reason: raw.last_reason ? String(raw.last_reason) : null,
+    last_models: Array.isArray(raw.last_models) ? raw.last_models.map((x) => String(x || "")).filter(Boolean) : [],
+    last_recovered_models: Array.isArray(raw.last_recovered_models)
+      ? raw.last_recovered_models.map((x) => String(x || "")).filter(Boolean)
+      : []
+  };
+}
+
+function saveLocalWarmupState(state) {
+  writeJsonAtomic(LOCAL_WARMUP_STATE_PATH, {
+    last_warmup_ts: state && state.last_warmup_ts ? String(state.last_warmup_ts) : nowIso(),
+    last_warmup_ms: Number(state && state.last_warmup_ms || Date.now()),
+    last_reason: state && state.last_reason ? String(state.last_reason) : null,
+    last_models: Array.isArray(state && state.last_models) ? state.last_models.slice(0, 16) : [],
+    last_recovered_models: Array.isArray(state && state.last_recovered_models) ? state.last_recovered_models.slice(0, 16) : []
+  });
+}
+
+function localWarmupCandidates({ allowlist, localModelAllowed, staleMs, recoverUnavailable }) {
+  const out = [];
+  const nowMs = Date.now();
+  const cache = getHealthCache(true);
+  for (const modelId of Array.isArray(allowlist) ? allowlist : []) {
+    if (!isLocalOllamaModel(modelId)) continue;
+    if (typeof localModelAllowed === "function" && !localModelAllowed(modelId)) continue;
+    if (isBanned(modelId)) continue;
+    const rec = cache.records[modelId] && typeof cache.records[modelId] === "object" ? cache.records[modelId] : null;
+    const checkedMs = rec && Number.isFinite(Number(rec.checked_ms)) ? Number(rec.checked_ms) : null;
+    const ageMs = checkedMs == null ? Number.POSITIVE_INFINITY : Math.max(0, nowMs - checkedMs);
+    const stale = ageMs > Number(staleMs || LOCAL_WARMUP_STALE_MS);
+    const unavailable = !!(rec && rec.probe_blocked !== true && rec.available !== true);
+    const missing = !rec;
+    const needsProbe = stale || missing || (recoverUnavailable === true && unavailable);
+    if (!needsProbe) continue;
+    const priority = missing
+      ? 0
+      : (unavailable ? 1 : 2);
+    out.push({
+      model: modelId,
+      rec,
+      checked_ms: checkedMs,
+      age_ms: Number.isFinite(ageMs) ? ageMs : null,
+      stale,
+      unavailable,
+      missing,
+      priority
+    });
+  }
+  out.sort((a, b) => {
+    if (a.priority !== b.priority) return a.priority - b.priority;
+    const at = Number(a.age_ms || 0);
+    const bt = Number(b.age_ms || 0);
+    if (bt !== at) return bt - at;
+    return String(a.model).localeCompare(String(b.model));
+  });
+  return out;
+}
+
+function runPeriodicLocalWarmup({
+  allowlist,
+  localModelAllowed,
+  reason = "route_decision",
+  force = false,
+  maxProbes = LOCAL_WARMUP_MAX_PROBES
+}) {
+  const intervalMs = Math.max(0, Number(LOCAL_WARMUP_INTERVAL_MS || 0));
+  const staleMs = Math.max(PROBE_TTL_MS, Number(LOCAL_WARMUP_STALE_MS || PROBE_TTL_MS));
+  const probeLimit = Math.max(1, Math.min(6, Number(maxProbes || LOCAL_WARMUP_MAX_PROBES || 2)));
+  const state = loadLocalWarmupState();
+  const nowMs = Date.now();
+
+  if (!force && intervalMs > 0 && (nowMs - Number(state.last_warmup_ms || 0)) < intervalMs) {
+    return {
+      ran: false,
+      skipped_reason: "interval_not_elapsed",
+      interval_ms: intervalMs,
+      ms_until_next: Math.max(0, intervalMs - (nowMs - Number(state.last_warmup_ms || 0)))
+    };
+  }
+
+  const candidates = localWarmupCandidates({
+    allowlist,
+    localModelAllowed,
+    staleMs,
+    recoverUnavailable: LOCAL_WARMUP_RECOVERY_ENABLED === true
+  });
+  if (!candidates.length) {
+    const nextState = {
+      last_warmup_ts: nowIso(),
+      last_warmup_ms: nowMs,
+      last_reason: reason,
+      last_models: [],
+      last_recovered_models: []
+    };
+    saveLocalWarmupState(nextState);
+    appendJsonl(DECISIONS_LOG, {
+      ts: nowIso(),
+      type: "local_health_warmup_pulse",
+      reason,
+      ran: true,
+      warmed_count: 0,
+      candidate_count: 0,
+      recovered_count: 0,
+      skipped_reason: "no_candidates"
+    });
+    return {
+      ran: true,
+      warmed_count: 0,
+      candidate_count: 0,
+      recovered_count: 0
+    };
+  }
+
+  const selected = candidates.slice(0, probeLimit);
+  const results = [];
+  const recovered = [];
+  for (const cand of selected) {
+    const beforeAvailable = !!(cand.rec && cand.rec.available === true);
+    const after = health(cand.model, true, { forRouting: true });
+    const afterAvailable = !!(after && after.available === true);
+    if (!beforeAvailable && afterAvailable) recovered.push(cand.model);
+    results.push({
+      model: cand.model,
+      before_available: beforeAvailable,
+      after_available: afterAvailable,
+      before_reason: cand.rec && cand.rec.reason ? String(cand.rec.reason) : null,
+      after_reason: after && after.reason ? String(after.reason) : null,
+      probe_blocked: after && after.probe_blocked === true
+    });
+  }
+
+  const nextState = {
+    last_warmup_ts: nowIso(),
+    last_warmup_ms: nowMs,
+    last_reason: reason,
+    last_models: selected.map((x) => x.model),
+    last_recovered_models: recovered.slice(0, 16)
+  };
+  saveLocalWarmupState(nextState);
+  appendJsonl(DECISIONS_LOG, {
+    ts: nowIso(),
+    type: "local_health_warmup_pulse",
+    reason,
+    ran: true,
+    warmed_count: selected.length,
+    candidate_count: candidates.length,
+    recovered_count: recovered.length,
+    models: selected.map((x) => x.model),
+    recovered_models: recovered.slice(0, 8),
+    interval_ms: intervalMs,
+    stale_ms: staleMs
+  });
+  return {
+    ran: true,
+    warmed_count: selected.length,
+    candidate_count: candidates.length,
+    recovered_count: recovered.length,
+    models: selected.map((x) => x.model),
+    recovered_models: recovered,
+    results
+  };
 }
 
 function runtimePreferenceOrder(forRouting, currentRuntime) {
@@ -2641,10 +2823,30 @@ function rankCandidate(modelId, ctx) {
 
   if (isLocalOllamaModel(modelId)) {
     const h = localHealth[modelId] || null;
+    const probePolicy = resolveLocalProbePolicy(modelId);
+    const modelLatencyMax = Number.isFinite(Number(probePolicy.max_latency_ms))
+      ? Number(probePolicy.max_latency_ms)
+      : T1_LOCAL_MAX_LATENCY_MS;
     if (h && h.available === true && Number.isFinite(Number(h.latency_ms))) {
       const lat = Number(h.latency_ms);
-      if (lat <= 3500) score += 3;
-      else if (lat >= 10000) score -= 4;
+      const fastCutoff = Math.min(3500, Math.max(1000, Math.round(modelLatencyMax * 0.5)));
+      if (lat <= fastCutoff) {
+        score += 3;
+        reasons.push("local_latency_fast");
+      } else if (lat > Math.round(modelLatencyMax * 1.25)) {
+        score -= 12;
+        reasons.push("local_latency_critical");
+      } else if (lat > modelLatencyMax) {
+        score -= 8;
+        reasons.push("local_latency_over_budget");
+      } else if (lat >= 10000) {
+        score -= 4;
+        reasons.push("local_latency_slow");
+      }
+    }
+    if (h && h.timeout === true) {
+      score -= 10;
+      reasons.push("local_timeout_recent");
     }
   }
 
@@ -2790,6 +2992,15 @@ function routeDecision({ risk, complexity, intent, task, mode, forceModel, capab
     if (!hardwareFilterActive) return true;
     return eligibleLocals.has(String(modelId || ""));
   };
+  let localWarmup = null;
+  try {
+    localWarmup = runPeriodicLocalWarmup({
+      allowlist,
+      localModelAllowed,
+      reason: "route_decision",
+      force: false
+    });
+  } catch {}
   const classPolicy = routeClassPolicy(cfg, routeClass);
   const requestedRisk = normalizeRiskLevel(risk || "medium");
   const requestedComplexity = normalizeComplexityLevel(complexity || "medium");
@@ -3095,6 +3306,14 @@ function routeDecision({ risk, complexity, intent, task, mode, forceModel, capab
       max_tokens_est: classPolicy.max_tokens_est,
       disable_fast_path: classPolicy.disable_fast_path === true
     },
+    local_warmup: localWarmup && typeof localWarmup === "object"
+      ? {
+          ran: localWarmup.ran === true,
+          warmed_count: Number(localWarmup.warmed_count || 0),
+          recovered_count: Number(localWarmup.recovered_count || 0),
+          skipped_reason: localWarmup.skipped_reason || null
+        }
+      : null,
     fast_path: effectiveFastPath.matched
       ? {
           matched: true,
@@ -3678,6 +3897,39 @@ function cmdHardwarePlan() {
   });
 }
 
+function cmdWarmup() {
+  const cfg = readConfig();
+  const allowlist = modelsFromAllowlist(cfg);
+  const hardwarePlan = resolveHardwarePlan(cfg, allowlist);
+  const hardwareFilterActive = localHardwareFilterEnabled(hardwarePlan);
+  const eligibleLocals = effectiveLocalModelSet(hardwarePlan);
+  const localModelAllowed = (modelId) => {
+    if (!isLocalOllamaModel(modelId)) return true;
+    if (!hardwareFilterActive) return true;
+    return eligibleLocals.has(String(modelId || ""));
+  };
+  const force = parseBoolArg("force", false);
+  const maxProbesRaw = Number(parseArg("max-probes"));
+  const maxProbes = Number.isFinite(maxProbesRaw)
+    ? Math.max(1, Math.min(6, Math.round(maxProbesRaw)))
+    : LOCAL_WARMUP_MAX_PROBES;
+  const out = runPeriodicLocalWarmup({
+    allowlist,
+    localModelAllowed,
+    reason: force ? "cli_force" : "cli",
+    force,
+    maxProbes
+  });
+  printJson({
+    ok: true,
+    type: "local_health_warmup",
+    ts: nowIso(),
+    force,
+    max_probes: maxProbes,
+    ...out
+  });
+}
+
 function main() {
   const cmd = process.argv[2] || "";
   if (cmd === "route") return cmdRoute();
@@ -3689,6 +3941,7 @@ function main() {
   if (cmd === "doctor") return cmdDoctor();
   if (cmd === "cache-summary") return cmdCacheSummary();
   if (cmd === "hardware-plan") return cmdHardwarePlan();
+  if (cmd === "warmup") return cmdWarmup();
 
   console.log("Usage:");
   console.log("  node systems/routing/model_router.js route --risk=low|medium|high --complexity=low|medium|high [--intent=..] [--task=..] [--tokens_est=N] [--capability=..] [--mode=normal|narrative|creative|hyper-creative|deep-thinker] [--role=..] [--route_class=..]");
@@ -3700,6 +3953,7 @@ function main() {
   console.log("  node systems/routing/model_router.js doctor --risk=low|medium|high --complexity=low|medium|high [--intent=..] [--task=..] [--capability=..] [--candidate=<model>]");
   console.log("  node systems/routing/model_router.js cache-summary [--for-routing=1|0] [--risk=low|medium|high] [--complexity=low|medium|high] [--intent=..] [--task=..] [--capability=..]");
   console.log("  node systems/routing/model_router.js hardware-plan");
+  console.log("  node systems/routing/model_router.js warmup [--force=1] [--max-probes=N]");
 }
 
 if (require.main === module) main();
@@ -3714,5 +3968,6 @@ module.exports = {
   inferTier,
   modelOutcomeStats,
   cacheSummaryReport,
-  resolveHardwarePlan
+  resolveHardwarePlan,
+  runPeriodicLocalWarmup
 };

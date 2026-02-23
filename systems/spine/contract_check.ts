@@ -201,6 +201,28 @@ function main() {
     ["proposal_enricher.js", "run"]
   );
 
+  // pain_adaptive_router.js routes recurring pain into disabled reflex/habit candidates.
+  checkScript(
+    "systems/autonomy/pain_adaptive_router.js",
+    ["pain_adaptive_router.js", "run", "status"]
+  );
+
+  // adaptive_crystallizer.js proposes generic system-primitive candidates from stable adaptive routines.
+  checkScript(
+    "systems/autonomy/adaptive_crystallizer.js",
+    ["adaptive_crystallizer.js", "run", "status"]
+  );
+
+  // runtime sync controllers keep adaptive stores wired to concrete executors.
+  checkScript(
+    "systems/adaptive/reflex/reflex_runtime_sync.js",
+    ["reflex_runtime_sync.js", "run", "status"]
+  );
+  checkScript(
+    "systems/adaptive/habits/habit_runtime_sync.js",
+    ["habit_runtime_sync.js", "run", "status"]
+  );
+
   // bridge_from_proposals.js must normalize legacy proposals into executable action_spec with success criteria.
   checkScript(
     "systems/actuation/bridge_from_proposals.js",
@@ -301,6 +323,12 @@ function main() {
   checkScript(
     "systems/memory/eyes_memory_bridge.js",
     ["eyes_memory_bridge.js", "run", "status"]
+  );
+
+  // failure_memory_bridge.js persists runtime failures into memory nodes + pointer logs.
+  checkScript(
+    "systems/memory/failure_memory_bridge.js",
+    ["failure_memory_bridge.js", "run", "status"]
   );
 
   // memory_dream.js synthesizes recent memory pointers into deterministic dream sheets.

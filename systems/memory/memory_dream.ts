@@ -23,6 +23,9 @@ const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const POINTERS_DIR = process.env.MEMORY_DREAM_POINTERS_DIR
   ? path.resolve(String(process.env.MEMORY_DREAM_POINTERS_DIR))
   : path.join(REPO_ROOT, 'state', 'memory', 'eyes_pointers');
+const FAILURE_POINTERS_DIR = process.env.MEMORY_DREAM_FAILURE_POINTERS_DIR
+  ? path.resolve(String(process.env.MEMORY_DREAM_FAILURE_POINTERS_DIR))
+  : path.join(REPO_ROOT, 'state', 'memory', 'failure_pointers');
 const ADAPTIVE_POINTERS_PATH = process.env.MEMORY_DREAM_ADAPTIVE_POINTERS_PATH
   ? path.resolve(String(process.env.MEMORY_DREAM_ADAPTIVE_POINTERS_PATH))
   : path.join(REPO_ROOT, 'state', 'memory', 'adaptive_pointers.jsonl');
@@ -293,13 +296,22 @@ function themeRows(rows) {
           token: tok,
           rows: [],
           eye_ids: new Set(),
-          node_ids: new Set()
+          node_ids: new Set(),
+          failure_count: 0,
+          failure_tier_min: null
         });
       }
       const ent = themes.get(tok);
       ent.rows.push(row);
       if (row && row.eye_id) ent.eye_ids.add(String(row.eye_id));
       if (row && row.node_id) ent.node_ids.add(String(row.node_id));
+      const rowTier = Number(row && row.failure_tier);
+      if (Number.isFinite(rowTier) && rowTier >= 1) {
+        ent.failure_count += 1;
+        ent.failure_tier_min = ent.failure_tier_min == null
+          ? rowTier
+          : Math.min(Number(ent.failure_tier_min || 3), rowTier);
+      }
     }
   }
 
@@ -310,13 +322,18 @@ function themeRows(rows) {
     const nodeDiversity = ent.node_ids.size;
     if (occurrenceCount < 2) continue;
     if (eyeDiversity < 2 && occurrenceCount < 3) continue;
-    const score = occurrenceCount * 3 + eyeDiversity * 5 + nodeDiversity * 2;
+    const failureCount = Number(ent.failure_count || 0);
+    const failureTierMin = Number.isFinite(Number(ent.failure_tier_min)) ? Number(ent.failure_tier_min) : null;
+    const failureTierBoost = failureTierMin == null ? 0 : Math.max(0, (4 - Math.max(1, Math.min(3, failureTierMin))) * 4);
+    const score = occurrenceCount * 3 + eyeDiversity * 5 + nodeDiversity * 2 + failureCount * 3 + failureTierBoost;
     out.push({
       token: ent.token,
       score,
       occurrence_count: occurrenceCount,
       eye_diversity: eyeDiversity,
       node_diversity: nodeDiversity,
+      failure_count: failureCount,
+      failure_tier_min: failureTierMin,
       rows: ent.rows.slice(0, 8)
     });
   }
@@ -330,6 +347,7 @@ function themeRows(rows) {
 
 function renderDreamMarkdown(dateStr, days, rows, themes) {
   const uniqueEyes = Array.from(new Set(rows.map((r) => String(r.eye_id || '')).filter(Boolean))).sort();
+  const failureRows = rows.filter((r) => Number.isFinite(Number(r && r.failure_tier)));
   const lines = [
     `# Memory Dream Sheet: ${dateStr}`,
     '',
@@ -339,6 +357,7 @@ function renderDreamMarkdown(dateStr, days, rows, themes) {
     '',
     `- Pointer rows: ${rows.length}`,
     `- Distinct eyes: ${uniqueEyes.length}`,
+    `- Failure pointers: ${failureRows.length}`,
     `- Window: last ${days} day(s)`,
     ''
   ];
@@ -352,6 +371,9 @@ function renderDreamMarkdown(dateStr, days, rows, themes) {
   for (const t of themes) {
     lines.push(`### ${t.token}`);
     lines.push(`- Score: ${t.score} (occurrences=${t.occurrence_count}, eye_diversity=${t.eye_diversity})`);
+    if (Number(t.failure_count || 0) > 0) {
+      lines.push(`- Failure-linked: count=${Number(t.failure_count || 0)}, tier_min=${Number(t.failure_tier_min || 3)}`);
+    }
     lines.push('- Memory refs:');
     for (const r of t.rows.slice(0, 4)) {
       const file = String(r.memory_file || 'memory/unknown.md');
@@ -405,6 +427,31 @@ function runDream(dateStr, days, top) {
     })
     .filter((r) => r.pointer_date && dateSet.has(r.pointer_date));
   rows.push(...adaptiveRows);
+  const failureRows = [];
+  for (const d of dates) {
+    const fp = path.join(FAILURE_POINTERS_DIR, `${d}.jsonl`);
+    const parsed = safeReadJsonl(fp);
+    for (const r of parsed) {
+      const tierRaw = Number(r && (r.failure_tier != null ? r.failure_tier : r.tier));
+      const failureTier = Number.isFinite(tierRaw) ? Math.max(1, Math.min(3, Math.round(tierRaw))) : null;
+      const topics = Array.isArray(r && r.topics) ? r.topics : [];
+      failureRows.push({
+        pointer_date: d,
+        uid: r && r.uid ? String(r.uid) : null,
+        node_id: r && r.node_id ? String(r.node_id) : `failure-${String(r && r.item_hash || '').slice(0, 8)}`,
+        memory_file: r && r.memory_file ? String(r.memory_file) : 'memory/unknown.md',
+        eye_id: `failure_tier_${failureTier || 3}`,
+        title: r && r.title ? String(r.title) : 'Failure pointer',
+        topics: Array.from(new Set([
+          'failure',
+          failureTier ? `failure-tier-${failureTier}` : '',
+          ...topics.map((t) => String(t || ''))
+        ].filter(Boolean))),
+        failure_tier: failureTier
+      });
+    }
+  }
+  rows.push(...failureRows);
   const baseThemes = themeRows(rows).slice(0, top);
   const enriched = enrichThemesWithOlderMemory(baseThemes, rows, dates);
   const themes = enriched.themes;
@@ -420,6 +467,7 @@ function runDream(dateStr, days, top) {
     date: dateStr,
     days,
     pointer_rows: rows.length,
+    failure_pointer_rows: failureRows.length,
     older_links_total: enriched.older_links_total,
     themes
   }, null, 2) + '\n', 'utf8');
@@ -430,6 +478,7 @@ function runDream(dateStr, days, top) {
     date: dateStr,
     days,
     pointer_rows: rows.length,
+    failure_pointer_rows: failureRows.length,
     themes: themes.length,
     older_links_total: Number(enriched.older_links_total || 0),
     markdown_path: path.relative(REPO_ROOT, mdPath).replace(/\\/g, '/'),
@@ -442,6 +491,7 @@ function runDream(dateStr, days, top) {
     date: dateStr,
     days,
     pointer_rows: rows.length,
+    failure_pointer_rows: failureRows.length,
     themes: themes.length,
     older_links_total: Number(enriched.older_links_total || 0)
   });
@@ -462,6 +512,7 @@ function runDream(dateStr, days, top) {
     metrics: {
       days: result.days,
       pointer_rows: result.pointer_rows,
+      failure_pointer_rows: result.failure_pointer_rows,
       themes: result.themes,
       older_links_total: result.older_links_total
     }
@@ -483,6 +534,7 @@ function status(dateStr) {
     date: dateStr,
     exists: true,
     themes: Array.isArray(parsed.themes) ? parsed.themes.length : 0,
+    failure_pointer_rows: Number(parsed.failure_pointer_rows || 0),
     older_links_total: Number(parsed.older_links_total || 0),
     pointer_rows: Number(parsed.pointer_rows || 0),
     json_path: path.relative(REPO_ROOT, fp).replace(/\\/g, '/'),

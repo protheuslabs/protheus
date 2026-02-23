@@ -1,0 +1,6 @@
+{"ts":"2026-02-22T18:00:57.971Z","type":"pain_focus_session_started","session_id":"PFOCUS-bb9a8f0535f090de","ttl_minutes":5,"source":"codex","task":"unit_test_defer","reason":null}
+{"ts":"2026-02-22T18:00:58.056Z","type":"pain_focus_session_stopped","session_id":"PFOCUS-bb9a8f0535f090de","source":"codex","task":"unit_test_defer","stop_reason":"unit_test_complete"}
+{"ts":"2026-02-22T18:01:05.503Z","type":"pain_focus_session_started","session_id":"PFOCUS-5aa4040013557216","ttl_minutes":5,"source":"codex","task":"unit_test_nodefer","reason":null}
+{"ts":"2026-02-22T18:01:05.622Z","type":"pain_focus_session_stopped","session_id":"PFOCUS-5aa4040013557216","source":"codex","task":"unit_test_nodefer","stop_reason":"unit_test_complete"}
+{"ts":"2026-02-22T18:01:28.283Z","type":"pain_focus_session_started","session_id":"PFOCUS-4f0332681b8cff2b","ttl_minutes":5,"source":"codex","task":"smoke","reason":null}
+{"ts":"2026-02-22T18:01:28.286Z","type":"pain_focus_session_stopped","session_id":"PFOCUS-4f0332681b8cff2b","source":"codex","task":"smoke","stop_reason":"smoke"}

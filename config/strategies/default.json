@@ -89,7 +89,7 @@
     "min_shipped": 1
   },
   "execution_policy": {
-    "mode": "execute"
+    "mode": "canary_execute"
   },
   "threshold_overrides": {}
 }

@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "updated_at": "2026-02-22T20:39:48.319Z",
+  "signatures": {
+    "c018f43a4823473e521b1f522af7b93f416eedad": {
+      "signature": "c018f43a4823473e521b1f522af7b93f416eedad",
+      "stage": "preflight_route",
+      "error_code": "gate_manual",
+      "normalized_message": "gate: manual - high-risk: revenue/financial action detected router_switch: ollama/gemma#:#b -> ollama/kimi-k#.#:cloud (tier=# role=general)",
+      "first_seen": "2026-02-22T20:39:48.319Z",
+      "last_seen": "2026-02-22T20:39:48.319Z",
+      "count": 1
+    }
+  }
+}

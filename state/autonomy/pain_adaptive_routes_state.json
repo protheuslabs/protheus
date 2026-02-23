@@ -1,0 +1,71 @@
+{
+  "version": "1.0",
+  "updated_ts": "2026-02-23T00:00:38.008Z",
+  "routes": {
+    "4278015a179efcf9": {
+      "source": "external_eyes",
+      "subsystem": "sensory",
+      "code": "collector_preflight:collector_preflight_failed",
+      "last_layer": "habit",
+      "last_route_ts": "2026-02-23T00:00:13.895Z",
+      "cooldown_until_ts": "2026-02-23T06:00:13.895Z",
+      "last_reflex_count": 3,
+      "last_habit_count": 9,
+      "last_total_count": 9,
+      "last_candidate_id": "pain_external_eyes_4278015a179e",
+      "last_proposal_id": "PAINRT-838bb02f864669ee"
+    },
+    "0251f4298561f2e4": {
+      "source": "external_eyes",
+      "subsystem": "sensory",
+      "code": "collector_preflight:collector_preflight_failed",
+      "last_layer": "habit",
+      "last_route_ts": "2026-02-23T00:00:13.914Z",
+      "cooldown_until_ts": "2026-02-23T06:00:13.914Z",
+      "last_reflex_count": 3,
+      "last_habit_count": 9,
+      "last_total_count": 9,
+      "last_candidate_id": "pain_external_eyes_0251f4298561",
+      "last_proposal_id": "PAINRT-43f0e508cdd117b1"
+    },
+    "5f2d02fb987446fd": {
+      "source": "external_eyes",
+      "subsystem": "sensory",
+      "code": "collector_preflight:domain_not_allowlisted",
+      "last_layer": "habit",
+      "last_route_ts": "2026-02-23T00:00:13.931Z",
+      "cooldown_until_ts": "2026-02-23T06:00:13.931Z",
+      "last_reflex_count": 3,
+      "last_habit_count": 7,
+      "last_total_count": 7,
+      "last_candidate_id": "pain_external_eyes_5f2d02fb9874",
+      "last_proposal_id": "PAINRT-21c6d7381b499978"
+    },
+    "9fac4cbaf305d3d0": {
+      "source": "idle_dream_cycle",
+      "subsystem": "memory",
+      "code": "dream_idle:all_model_attempts_failed",
+      "last_layer": "habit",
+      "last_route_ts": "2026-02-22T22:03:29.622Z",
+      "cooldown_until_ts": "2026-02-23T04:03:29.622Z",
+      "last_reflex_count": 0,
+      "last_habit_count": 5,
+      "last_total_count": 5,
+      "last_candidate_id": "pain_idle_dream_cycle_9fac4cbaf305",
+      "last_proposal_id": "PAINRT-c0a6bd6164718919"
+    },
+    "acd86458b9ef71c0": {
+      "source": "idle_dream_cycle",
+      "subsystem": "memory",
+      "code": "dream_idle:all_model_attempts_failed",
+      "last_layer": "reflex",
+      "last_route_ts": "2026-02-22T22:03:29.683Z",
+      "cooldown_until_ts": "2026-02-23T04:03:29.683Z",
+      "last_reflex_count": 3,
+      "last_habit_count": 0,
+      "last_total_count": 3,
+      "last_candidate_id": "pain_idle_dream_cycle_acd86458b9ef",
+      "last_proposal_id": "PAINRT-05dac4e93f541ec3"
+    }
+  }
+}

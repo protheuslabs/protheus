@@ -207,7 +207,8 @@ function verifyRouteModelAttestation(expectedModel, stdout, stderr) {
   };
 }
 
-function evaluateRouteExecuteBudgetGate(tokensEst, decision) {
+function evaluateRouteExecuteBudgetGate(tokensEst, decision, opts = {}) {
+  const dryRun = !!(opts && opts.dry_run === true);
   const requestTokens = Number.isFinite(Number(tokensEst)) && Number(tokensEst) > 0
     ? Math.max(1, Math.min(12000, Math.round(Number(tokensEst))))
     : Math.max(1, Math.min(12000, Math.round(Number(ROUTE_EXECUTE_DEFAULT_TOKENS_EST || 260))));
@@ -216,6 +217,8 @@ function evaluateRouteExecuteBudgetGate(tokensEst, decision) {
       enabled: false,
       blocked: false,
       reason: 'budget_disabled',
+      deferred: false,
+      deferred_reason: null,
       request_tokens_est: requestTokens,
       autopause: null,
       guard: null
@@ -224,13 +227,30 @@ function evaluateRouteExecuteBudgetGate(tokensEst, decision) {
 
   const date = nowIso().slice(0, 10);
   const capability = `route_execute:${String(decision || 'unknown').slice(0, 80)}`;
-  const opts = {
+  const budgetOpts = {
     state_dir: ROUTE_EXECUTE_BUDGET_STATE_DIR,
     events_path: ROUTE_EXECUTE_BUDGET_EVENTS_PATH,
     autopause_path: ROUTE_EXECUTE_BUDGET_AUTOPAUSE_PATH
   };
-  const autopause = loadSystemBudgetAutopauseState(opts);
+  const autopause = loadSystemBudgetAutopauseState(budgetOpts);
   if (autopause.active === true) {
+    if (dryRun) {
+      return {
+        enabled: true,
+        blocked: false,
+        reason: 'budget_deferred_preview',
+        deferred: true,
+        deferred_reason: 'budget_autopause_active',
+        request_tokens_est: requestTokens,
+        autopause: {
+          active: true,
+          source: autopause.source || null,
+          reason: autopause.reason || null,
+          until: autopause.until || null
+        },
+        guard: null
+      };
+    }
     writeSystemBudgetDecision({
       date,
       module: ROUTE_EXECUTE_BUDGET_MODULE,
@@ -238,11 +258,13 @@ function evaluateRouteExecuteBudgetGate(tokensEst, decision) {
       request_tokens_est: requestTokens,
       decision: 'deny',
       reason: 'budget_autopause_active'
-    }, opts);
+    }, budgetOpts);
     return {
       enabled: true,
       blocked: true,
       reason: 'budget_autopause_active',
+      deferred: false,
+      deferred_reason: null,
       request_tokens_est: requestTokens,
       autopause: {
         active: true,
@@ -258,9 +280,26 @@ function evaluateRouteExecuteBudgetGate(tokensEst, decision) {
     date,
     request_tokens_est: requestTokens,
     attempts_today: 1
-  }, opts);
+  }, budgetOpts);
   if (guard.hard_stop === true) {
     const hardReason = String((guard.hard_stop_reasons && guard.hard_stop_reasons[0]) || 'budget_guard_hard_stop');
+    if (dryRun) {
+      return {
+        enabled: true,
+        blocked: false,
+        reason: 'budget_deferred_preview',
+        deferred: true,
+        deferred_reason: hardReason,
+        request_tokens_est: requestTokens,
+        autopause: {
+          active: autopause.active === true,
+          source: autopause.source || null,
+          reason: autopause.reason || null,
+          until: autopause.until || null
+        },
+        guard
+      };
+    }
     writeSystemBudgetDecision({
       date,
       module: ROUTE_EXECUTE_BUDGET_MODULE,
@@ -268,18 +307,20 @@ function evaluateRouteExecuteBudgetGate(tokensEst, decision) {
       request_tokens_est: requestTokens,
       decision: 'deny',
       reason: hardReason
-    }, opts);
+    }, budgetOpts);
     const nextAutopause = setSystemBudgetAutopause({
       source: 'route_execute',
       reason: hardReason,
       pressure: 'hard',
       date,
       minutes: 60
-    }, opts);
+    }, budgetOpts);
     return {
       enabled: true,
       blocked: true,
       reason: hardReason,
+      deferred: false,
+      deferred_reason: null,
       request_tokens_est: requestTokens,
       autopause: {
         active: nextAutopause.active === true,
@@ -295,6 +336,8 @@ function evaluateRouteExecuteBudgetGate(tokensEst, decision) {
     enabled: true,
     blocked: false,
     reason: null,
+    deferred: false,
+    deferred_reason: null,
     request_tokens_est: requestTokens,
     autopause: {
       active: false,
@@ -500,8 +543,17 @@ function main() {
     ? out.route.budget_enforcement
     : null;
   const routeBudgetBlocked = !!(budgetEnforcement && budgetEnforcement.blocked === true);
-  const globalBudgetGuard = evaluateRouteExecuteBudgetGate(tokensEst, out.decision);
-  const budgetBlocked = routeBudgetBlocked || globalBudgetGuard.blocked === true;
+  const globalBudgetGuard = evaluateRouteExecuteBudgetGate(tokensEst, out.decision, { dry_run: dryRun });
+  const budgetDeferred = !!(
+    dryRun
+    && (
+      routeBudgetBlocked
+      || globalBudgetGuard.deferred === true
+    )
+  );
+  const budgetBlocked = budgetDeferred
+    ? false
+    : (routeBudgetBlocked || globalBudgetGuard.blocked === true);
   const execSpec = out.executor;
   const autoHabitFlow = isAutoHabitFlow(out);
   const summaryDecision = out.decision;
@@ -533,11 +585,17 @@ function main() {
     cost_estimate: out?.route?.cost_estimate || null,
     budget_enforcement: budgetEnforcement || null,
     budget_global_guard: globalBudgetGuard,
+    budget_deferred: budgetDeferred,
+    budget_deferred_reason: budgetDeferred
+      ? (routeBudgetBlocked
+        ? String(budgetEnforcement && budgetEnforcement.reason || 'route_budget_blocked')
+        : String(globalBudgetGuard.deferred_reason || globalBudgetGuard.reason || 'budget_deferred_preview'))
+      : null,
     budget_blocked: budgetBlocked,
     budget_block_reason: routeBudgetBlocked
       ? String(budgetEnforcement && budgetEnforcement.reason || 'route_budget_blocked')
       : String(globalBudgetGuard.reason || ''),
-    needs_manual_review: budgetBlocked,
+    needs_manual_review: budgetBlocked && !budgetDeferred,
     router_required: routerRequired,
     router_missing_model: routerMissingModel,
     auto_habit_flow: autoHabitFlow,
