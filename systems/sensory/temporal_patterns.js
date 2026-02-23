@@ -143,6 +143,10 @@ function parserTypeForEvent(event, eyeMap) {
   return String(runtime.parser_type || '').trim().toLowerCase();
 }
 
+function emptySuccessIsSignal(runtimeEye) {
+  return !!(runtimeEye && runtimeEye.empty_success_is_signal === true);
+}
+
 function isNoiseExternalItem(event, eyeMap) {
   if (!event || event.type !== 'external_item') return true;
   const parserType = parserTypeForEvent(event, eyeMap);
@@ -305,6 +309,7 @@ function analyzeTemporalPatterns(opts = {}) {
     const runtime = eyeMap.get(eyeId) || {};
     const status = String(runtime.status || 'unknown').toLowerCase();
     const parserType = String(runtime.parser_type || '').toLowerCase();
+    const parserAllowsEmptySuccess = emptySuccessIsSignal(runtime);
     const cadenceHours = clamp(runtime.cadence_hours, 1, 168, 24);
 
     const perDay = dates.map((d) => dailyByEye.get(`${d}::${eyeId}`) || {
@@ -328,14 +333,24 @@ function analyzeTemporalPatterns(opts = {}) {
     const expectedSilenceHours = Math.max(darkMinSilenceHours, cadenceHours * darkCadenceMultiplier);
     const historicalItems = Number(runtime.total_items || 0);
     const historicalSignal = baselineAvgReal >= darkMinBaselineAvg || historicalItems >= darkMinHistoricalItems;
-    const noSignalRunStreak = Number(todayRow.run_ok || 0) >= darkMinNoSignalRuns && Number(todayRow.real_items || 0) === 0;
+    const noSignalRunStreak = (
+      parserAllowsEmptySuccess !== true
+      && Number(todayRow.run_ok || 0) >= darkMinNoSignalRuns
+      && Number(todayRow.real_items || 0) === 0
+    );
     const recentFailureNoSignal = Number(todayRow.failures || 0) >= 1 && Number(todayRow.real_items || 0) === 0;
     const silentLongEnough = Number.isFinite(lastSignalHours) && Number(lastSignalHours) >= expectedSilenceHours;
+    const healthyEmptyRun = (
+      parserAllowsEmptySuccess === true
+      && Number(todayRow.run_ok || 0) > 0
+      && Number(todayRow.failures || 0) === 0
+    );
     const darkCandidate = (
       parserType !== 'stub'
       && status !== 'retired'
       && historicalSignal
       && Number(todayRow.real_items || 0) === 0
+      && healthyEmptyRun !== true
       && (silentLongEnough || noSignalRunStreak || recentFailureNoSignal)
     );
     let darkReason = null;
@@ -348,6 +363,7 @@ function analyzeTemporalPatterns(opts = {}) {
     byEye.push({
       eye_id: eyeId,
       parser_type: parserType || null,
+      empty_success_is_signal: parserAllowsEmptySuccess === true,
       status,
       cadence_hours: cadenceHours,
       today_real_items: Number(todayRow.real_items || 0),

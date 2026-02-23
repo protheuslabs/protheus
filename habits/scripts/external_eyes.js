@@ -703,6 +703,7 @@ function collectRegistryDarkCandidates(config, registry, opts = {}) {
     const reg = regMap.get(eyeId) || {};
     const runtimeEye = effectiveEye(eye, reg);
     const parserType = String(runtimeEye.parser_type || eye.parser_type || '').toLowerCase();
+    const emptySuccessIsSignal = runtimeEye.empty_success_is_signal === true || eye.empty_success_is_signal === true;
     const status = String(runtimeEye.status || eye.status || '').toLowerCase();
     if (parserType === 'stub' || status === 'retired' || status === 'dormant') continue;
 
@@ -721,7 +722,7 @@ function collectRegistryDarkCandidates(config, registry, opts = {}) {
 
     let reason = null;
     if (staleEnough && consecutiveFailures >= failThreshold) reason = 'stale_failures';
-    else if (staleEnough && noSignalRuns >= noSignalThreshold) reason = 'stale_no_signal_runs';
+    else if (!emptySuccessIsSignal && staleEnough && noSignalRuns >= noSignalThreshold) reason = 'stale_no_signal_runs';
     else if (staleEnough && selfHealAttempts >= noRecoveryAttemptsThreshold && selfHealRecoveries <= 0) reason = 'stale_self_heal_no_recovery';
     else if (consecutiveFailures >= failThreshold && recentFailure) reason = 'fresh_failures';
     if (!reason) continue;
@@ -729,12 +730,14 @@ function collectRegistryDarkCandidates(config, registry, opts = {}) {
     const staleRatio = Number.isFinite(lastSignalHours)
       ? Number(lastSignalHours) / Math.max(1, expectedSilenceHours)
       : 0;
-    const priority = Number((staleRatio * 2) + (consecutiveFailures * 3) + (noSignalRuns * 2)).toFixed(3);
+    const noSignalWeight = emptySuccessIsSignal ? 0 : noSignalRuns;
+    const priority = Number((staleRatio * 2) + (consecutiveFailures * 3) + (noSignalWeight * 2)).toFixed(3);
     out.push({
       eye_id: eyeId,
       dark_reason: reason,
       source: 'registry_fallback',
       status,
+      empty_success_is_signal: emptySuccessIsSignal === true,
       expected_silence_hours: Number(expectedSilenceHours.toFixed(2)),
       last_signal_hours: Number.isFinite(lastSignalHours) ? Number(lastSignalHours.toFixed(2)) : null,
       last_error_hours: Number.isFinite(lastErrorHours) ? Number(lastErrorHours.toFixed(2)) : null,
@@ -3032,11 +3035,12 @@ function doctor() {
     const successRate = totalRuns > 0 ? (totalRuns - boundedErrors) / totalRuns : null;
     const lastSuccessHours = hoursSince(reg.last_success);
     const parserType = String(runtimeEye.parser_type || eye.parser_type || '').toLowerCase();
+    const emptySuccessIsSignal = runtimeEye.empty_success_is_signal === true || eye.empty_success_is_signal === true;
     const reasons = [];
     if (parserType === 'stub') reasons.push('stub_source');
     if (outage.active === true && parserType !== 'stub') reasons.push('infra_outage_active');
     if (Number(reg.consecutive_failures || 0) >= FAIL_PARK_THRESHOLD) reasons.push('consecutive_failures_high');
-    if (Number(reg.consecutive_no_signal_runs || 0) >= DARK_RUN_THRESHOLD) reasons.push('no_signal_streak_high');
+    if (!emptySuccessIsSignal && Number(reg.consecutive_no_signal_runs || 0) >= DARK_RUN_THRESHOLD) reasons.push('no_signal_streak_high');
     if (Number.isFinite(lastSuccessHours) && lastSuccessHours > STALE_SUCCESS_HOURS) reasons.push('last_success_stale');
     if (successRate != null && successRate < 0.5 && totalRuns >= 3) reasons.push('low_success_rate');
     const fallbackFailure = reg.last_error ? normalizeFailure({ message: reg.last_error }) : null;
@@ -3049,6 +3053,7 @@ function doctor() {
       eye_id: eye.id,
       status: runtimeEye.status,
       parser_type: parserType,
+      empty_success_is_signal: emptySuccessIsSignal === true,
       total_runs: totalRuns,
       total_errors: totalErrors,
       success_rate: successRate == null ? null : Number(successRate.toFixed(3)),
