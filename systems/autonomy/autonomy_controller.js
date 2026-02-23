@@ -127,6 +127,9 @@ const DAILY_BUDGET_DIR = process.env.AUTONOMY_DAILY_BUDGET_DIR
 const RECEIPTS_DIR = process.env.AUTONOMY_RECEIPTS_DIR
   ? path.resolve(process.env.AUTONOMY_RECEIPTS_DIR)
   : path.join(AUTONOMY_DIR, 'receipts');
+const OUTCOME_FALLBACK_DIR = process.env.AUTONOMY_OUTCOME_FALLBACK_DIR
+  ? path.resolve(process.env.AUTONOMY_OUTCOME_FALLBACK_DIR)
+  : path.join(AUTONOMY_DIR, 'outcome_fallback');
 const COOLDOWNS_PATH = process.env.AUTONOMY_COOLDOWNS_PATH
   ? path.resolve(process.env.AUTONOMY_COOLDOWNS_PATH)
   : path.join(AUTONOMY_DIR, 'cooldowns.json');
@@ -6539,6 +6542,10 @@ function writeExperiment(dateStr, card) {
 
 function writeRun(dateStr, evt) {
   appendJsonl(path.join(RUNS_DIR, `${dateStr}.jsonl`), evt);
+}
+
+function writeOutcomeFallback(dateStr, evt) {
+  appendJsonl(path.join(OUTCOME_FALLBACK_DIR, `${dateStr}.jsonl`), evt);
 }
 
 function writeReceipt(dateStr, receipt) {
@@ -13008,12 +13015,50 @@ function runCmd(dateStr, opts = {}) {
   let evidence = `proposal:${p.id} ${eyeRef} receipt:${receiptId} ${outcomeNote}`.slice(0, 220);
   let outcomeRes = runProposalQueue('outcome', p.id, outcome, evidence);
   let outcomeRecoveryAttempted = false;
-  if (!outcomeRes.ok && outcome !== 'reverted') {
+  let outcomeFallbackLogged = false;
+  let outcomeFallbackPath = null;
+  if (!outcomeRes.ok) {
     outcomeRecoveryAttempted = true;
-    outcome = 'reverted';
-    outcomeNote = 'auto:autonomy verify_outcome_retry_reverted';
-    evidence = `proposal:${p.id} ${eyeRef} receipt:${receiptId} ${outcomeNote}`.slice(0, 220);
-    outcomeRes = runProposalQueue('outcome', p.id, outcome, evidence);
+    const retryRes = runProposalQueue('outcome', p.id, outcome, evidence);
+    if (retryRes && retryRes.ok) {
+      outcomeRes = retryRes;
+    } else if (outcome === 'shipped') {
+      try {
+        outcomeFallbackPath = path.join(OUTCOME_FALLBACK_DIR, `${dateStr}.jsonl`);
+        writeOutcomeFallback(dateStr, {
+          ts: nowIso(),
+          type: 'autonomy_outcome_fallback',
+          proposal_id: p.id,
+          receipt_id: receiptId,
+          objective_id: executionObjectiveId || null,
+          capability_key: capabilityKey,
+          outcome,
+          evidence,
+          reason: 'queue_outcome_logging_failed'
+        });
+        outcomeFallbackLogged = true;
+        outcomeRes = {
+          ok: true,
+          code: 0,
+          stdout: 'outcome_fallback_logged',
+          stderr: retryRes && retryRes.stderr ? String(retryRes.stderr) : '',
+          fallback_logged: true,
+          fallback_path: outcomeFallbackPath
+        };
+      } catch {
+        outcome = 'reverted';
+        outcomeNote = 'auto:autonomy verify_outcome_retry_reverted';
+        evidence = `proposal:${p.id} ${eyeRef} receipt:${receiptId} ${outcomeNote}`.slice(0, 220);
+        outcomeRes = runProposalQueue('outcome', p.id, outcome, evidence);
+      }
+    } else if (outcome !== 'reverted') {
+      outcome = 'reverted';
+      outcomeNote = 'auto:autonomy verify_outcome_retry_reverted';
+      evidence = `proposal:${p.id} ${eyeRef} receipt:${receiptId} ${outcomeNote}`.slice(0, 220);
+      outcomeRes = runProposalQueue('outcome', p.id, outcome, evidence);
+    } else {
+      outcomeRes = retryRes;
+    }
   }
 
   const criteriaPolicy = successCriteriaPolicyForProposal(p);
@@ -13179,6 +13224,8 @@ function runCmd(dateStr, opts = {}) {
         outcome: compactCmdResult(outcomeRes),
         token_usage: execTokenUsage,
         outcome_retry_attempted: outcomeRecoveryAttempted,
+        outcome_fallback_logged: outcomeFallbackLogged,
+        outcome_fallback_path: outcomeFallbackPath,
         postconditions
       },
     verification: {
@@ -13264,6 +13311,8 @@ function runCmd(dateStr, opts = {}) {
     exec_ok: execRes.ok,
     exec_code: execRes.code,
     outcome_write_ok: !!outcomeRes.ok,
+    outcome_fallback_logged: outcomeFallbackLogged,
+    outcome_fallback_path: outcomeFallbackPath,
     outcome,
     evidence
   });
@@ -13317,6 +13366,8 @@ function runCmd(dateStr, opts = {}) {
     verification,
     exception_novelty: verifyException,
     outcome_write_ok: !!outcomeRes.ok,
+    outcome_fallback_logged: outcomeFallbackLogged,
+    outcome_fallback_path: outcomeFallbackPath,
     route_summary: summary,
     admission: admissionSummary,
     model_catalog_apply_pending: Number(modelCatalogSnapshot.pending_apply || 0),
