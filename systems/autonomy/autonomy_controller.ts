@@ -205,6 +205,7 @@ const AUTONOMY_POLICY_HOLD_DAMPENER_ENABLED = String(process.env.AUTONOMY_POLICY
 const AUTONOMY_POLICY_HOLD_DAMPENER_WINDOW_HOURS = Math.max(1, Number(process.env.AUTONOMY_POLICY_HOLD_DAMPENER_WINDOW_HOURS || 24));
 const AUTONOMY_POLICY_HOLD_DAMPENER_REPEAT_THRESHOLD = Math.max(2, Number(process.env.AUTONOMY_POLICY_HOLD_DAMPENER_REPEAT_THRESHOLD || 2));
 const AUTONOMY_POLICY_HOLD_DAMPENER_COOLDOWN_HOURS = Math.max(1, Number(process.env.AUTONOMY_POLICY_HOLD_DAMPENER_COOLDOWN_HOURS || 6));
+const AUTONOMY_READINESS_RETRY_COOLDOWN_HOURS = Math.max(0, Number(process.env.AUTONOMY_READINESS_RETRY_COOLDOWN_HOURS || 2));
 const AUTONOMY_UNCHANGED_SHORT_CIRCUIT_ENABLED = String(process.env.AUTONOMY_UNCHANGED_SHORT_CIRCUIT_ENABLED || '1') !== '0';
 const AUTONOMY_UNCHANGED_SHORT_CIRCUIT_MINUTES = Number(process.env.AUTONOMY_UNCHANGED_SHORT_CIRCUIT_MINUTES || 30);
 const AUTONOMY_MAX_EYE_NO_PROGRESS_24H = Number(process.env.AUTONOMY_MAX_EYE_NO_PROGRESS_24H || 2);
@@ -1604,6 +1605,14 @@ function capabilityCooldownActive(capabilityKey) {
   const key = capabilityCooldownKey(capabilityKey);
   if (!key) return false;
   return cooldownActive(key);
+}
+
+function readinessRetryCooldownKey(strategyId, executionMode) {
+  const sid = normalizeSpaces(strategyId).toLowerCase().replace(/[^a-z0-9:_-]/g, '_');
+  if (!sid) return '';
+  const mode = normalizeSpaces(executionMode).toLowerCase().replace(/[^a-z0-9:_-]/g, '_');
+  if (!mode) return `readiness:strategy:${sid}`;
+  return `readiness:strategy:${sid}:mode:${mode}`;
 }
 
 function dailyBudgetPath(dateStr) {
@@ -7642,6 +7651,39 @@ function runCmd(dateStr, opts: AnyObj = {}) {
     && strategy
     && isExecuteMode(executionMode)
   ) {
+    const readinessRetryCooldownKeyId = readinessRetryCooldownKey(strategy.id, executionMode);
+    if (
+      !shadowOnly
+      && AUTONOMY_READINESS_RETRY_COOLDOWN_HOURS > 0
+      && readinessRetryCooldownKeyId
+      && cooldownActive(readinessRetryCooldownKeyId)
+    ) {
+      const readinessRetryEnt = cooldownEntry(readinessRetryCooldownKeyId);
+      writeRun(dateStr, {
+        ts: nowIso(),
+        type: 'autonomy_run',
+        result: 'stop_repeat_gate_interval',
+        interval_scope: 'readiness_hold',
+        strategy_id: strategy.id,
+        execution_mode: executionMode,
+        readiness_retry_cooldown_hours: AUTONOMY_READINESS_RETRY_COOLDOWN_HOURS,
+        readiness_retry_cooldown_key: readinessRetryCooldownKeyId,
+        next_runnable_at: readinessRetryEnt ? (readinessRetryEnt.until || null) : null
+      });
+      process.stdout.write(JSON.stringify({
+        ok: true,
+        result: 'stop_repeat_gate_interval',
+        interval_scope: 'readiness_hold',
+        strategy_id: strategy.id,
+        execution_mode: executionMode,
+        readiness_retry_cooldown_hours: AUTONOMY_READINESS_RETRY_COOLDOWN_HOURS,
+        readiness_retry_cooldown_key: readinessRetryCooldownKeyId,
+        next_runnable_at: readinessRetryEnt ? (readinessRetryEnt.until || null) : null,
+        ts: nowIso()
+      }) + '\n');
+      return;
+    }
+
     const minDays = strategy
       && strategy.promotion_policy
       && Number.isFinite(Number(strategy.promotion_policy.min_days))
@@ -7666,6 +7708,15 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       const readinessHoldReason = readinessStopResult === 'stop_init_gate_criteria_quality_insufficient'
         ? 'success_criteria_quality_insufficient_rate'
         : 'strategy_readiness';
+      const readinessRetryCooldownHours = Math.max(0, Number(AUTONOMY_READINESS_RETRY_COOLDOWN_HOURS || 0));
+      if (!shadowOnly && readinessRetryCooldownHours > 0 && readinessRetryCooldownKeyId) {
+        setCooldown(
+          readinessRetryCooldownKeyId,
+          readinessRetryCooldownHours,
+          `auto:readiness_retry cooldown_${readinessRetryCooldownHours}h`
+        );
+      }
+      const readinessRetryEnt = readinessRetryCooldownKeyId ? cooldownEntry(readinessRetryCooldownKeyId) : null;
       writeRun(dateStr, {
         ts: nowIso(),
         type: 'autonomy_run',
@@ -7675,6 +7726,9 @@ function runCmd(dateStr, opts: AnyObj = {}) {
         hold_reason: readinessHoldReason,
         strategy_id: strategy.id,
         execution_mode: executionMode,
+        readiness_retry_cooldown_hours: readinessRetryCooldownHours,
+        readiness_retry_cooldown_key: readinessRetryCooldownKeyId || null,
+        next_runnable_at: readinessRetryEnt ? (readinessRetryEnt.until || null) : null,
         readiness_code: readiness.code,
         readiness: readinessDetails,
         readiness_error: !readiness.ok ? shortText(readiness.stderr || readiness.stdout || `readiness_exit_${readiness.code}`, 180) : null
@@ -7687,6 +7741,9 @@ function runCmd(dateStr, opts: AnyObj = {}) {
         hold_reason: readinessHoldReason,
         strategy_id: strategy.id,
         execution_mode: executionMode,
+        readiness_retry_cooldown_hours: readinessRetryCooldownHours,
+        readiness_retry_cooldown_key: readinessRetryCooldownKeyId || null,
+        next_runnable_at: readinessRetryEnt ? (readinessRetryEnt.until || null) : null,
         readiness: readinessDetails,
         ts: nowIso()
       }) + '\n');
