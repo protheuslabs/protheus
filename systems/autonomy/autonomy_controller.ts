@@ -5990,6 +5990,20 @@ function compactCmdResult(res) {
   };
 }
 
+function truthyFlag(v) {
+  if (v === true) return true;
+  if (v === false || v == null) return false;
+  const t = String(v).trim().toLowerCase();
+  return t === 'true' || t === '1' || t === 'yes';
+}
+
+function falseyFlag(v) {
+  if (v === false) return true;
+  if (v === true || v == null) return false;
+  const t = String(v).trim().toLowerCase();
+  return t === 'false' || t === '0' || t === 'no';
+}
+
 function routeExecutionPolicyHold(summary, executionTarget) {
   const target = String(executionTarget || '').trim().toLowerCase();
   const out = {
@@ -6002,17 +6016,29 @@ function routeExecutionPolicyHold(summary, executionTarget) {
   const s = summary && typeof summary === 'object' ? summary : {};
   const gateDecision = String(s.gate_decision || '').trim().toUpperCase();
   const routeDecision = String(s.route_decision_raw || s.decision || '').trim().toUpperCase();
-  const needsManualReview = s.needs_manual_review === true;
-  const executable = s.executable !== false;
-  const budgetBlocked = s.budget_blocked === true
-    || (s.budget_global_guard && s.budget_global_guard.blocked === true)
-    || (s.budget_enforcement && s.budget_enforcement.blocked === true);
+  const needsManualReview = truthyFlag(s.needs_manual_review);
+  const executable = !falseyFlag(s.executable);
   const budgetReason = normalizeSpaces(
     s.budget_block_reason
       || (s.budget_enforcement && s.budget_enforcement.reason)
       || (s.budget_global_guard && s.budget_global_guard.reason)
       || ''
   );
+  const routeReason = normalizeSpaces(
+    s.reason
+      || s.route_reason
+      || ''
+  );
+  const budgetSignalText = normalizeSpaces([budgetReason, routeReason].filter(Boolean).join(' ')).toLowerCase();
+  const budgetBlockedByReason = budgetSignalText.includes('burn_rate_exceeded')
+    || budgetSignalText.includes('budget_autopause')
+    || budgetSignalText.includes('budget guard blocked')
+    || budgetSignalText.includes('budget_deferred')
+    || budgetSignalText.includes('budget_blocked');
+  const budgetBlocked = truthyFlag(s.budget_blocked)
+    || truthyFlag(s.budget_global_guard && s.budget_global_guard.blocked)
+    || truthyFlag(s.budget_enforcement && s.budget_enforcement.blocked)
+    || budgetBlockedByReason;
   if (budgetBlocked) {
     const reason = budgetReason || 'budget_guard_blocked';
     return {
