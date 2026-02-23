@@ -253,6 +253,10 @@ const AUTONOMY_MAX_PROPOSAL_FILE_AGE_HOURS = Number(process.env.AUTONOMY_MAX_PRO
 const AUTONOMY_REPEAT_EXHAUSTED_LIMIT = Number(process.env.AUTONOMY_REPEAT_EXHAUSTED_LIMIT || 3);
 const AUTONOMY_REPEAT_EXHAUSTED_COOLDOWN_MINUTES = Number(process.env.AUTONOMY_REPEAT_EXHAUSTED_COOLDOWN_MINUTES || 90);
 const AUTONOMY_BUDGET_AUTOPAUSE_MINUTES = Math.max(5, Number(process.env.AUTONOMY_BUDGET_AUTOPAUSE_MINUTES || 60));
+const AUTONOMY_BUDGET_PACING_ENABLED = String(process.env.AUTONOMY_BUDGET_PACING_ENABLED || '1') !== '0';
+const AUTONOMY_BUDGET_PACING_MIN_REMAINING_RATIO = clampNumber(Number(process.env.AUTONOMY_BUDGET_PACING_MIN_REMAINING_RATIO || 0.2), 0, 1);
+const AUTONOMY_BUDGET_PACING_HIGH_TOKEN_THRESHOLD = Math.max(100, Number(process.env.AUTONOMY_BUDGET_PACING_HIGH_TOKEN_THRESHOLD || 900));
+const AUTONOMY_BUDGET_PACING_MIN_VALUE_SIGNAL = clampNumber(Number(process.env.AUTONOMY_BUDGET_PACING_MIN_VALUE_SIGNAL || 65), 0, 100);
 const AUTONOMY_EXPLORE_FRACTION = Number(process.env.AUTONOMY_EXPLORE_FRACTION || 0.25);
 const AUTONOMY_EXPLORE_EVERY_N = Number(process.env.AUTONOMY_EXPLORE_EVERY_N || 3);
 const AUTONOMY_EXPLORE_MIN_ELIGIBLE = Number(process.env.AUTONOMY_EXPLORE_MIN_ELIGIBLE || 3);
@@ -4671,6 +4675,74 @@ function valueDensityScore(expectedValue, estTokens) {
   return clampNumber(Math.round(score), 0, 100);
 }
 
+function budgetPacingSnapshot(dateStr) {
+  const budget = loadDailyBudget(dateStr);
+  const autopause = loadSystemBudgetAutopauseState();
+  const cap = Number(budget && budget.token_cap || 0);
+  const used = Number(budget && budget.used_est || 0);
+  const remaining = Math.max(0, cap - used);
+  const remainingRatio = cap > 0 ? clampNumber(remaining / cap, 0, 1) : 0;
+  const autopauseActive = !!(autopause && autopause.active === true && Number(autopause.until_ms || 0) > Date.now());
+  const pressure = normalizeSpaces(
+    (autopause && autopause.pressure)
+    || (budget && budget.pressure)
+    || ''
+  ).toLowerCase() || 'none';
+  const tight = autopauseActive
+    || pressure === 'hard'
+    || remainingRatio <= AUTONOMY_BUDGET_PACING_MIN_REMAINING_RATIO;
+  return {
+    token_cap: cap,
+    used_est: used,
+    remaining_tokens: remaining,
+    remaining_ratio: Number(remainingRatio.toFixed(4)),
+    pressure,
+    autopause_active: autopauseActive,
+    tight
+  };
+}
+
+function evaluateBudgetPacingGate(cand, valueSignal, risk, snapshot) {
+  const estTokens = estimateTokensForCandidate(cand, cand && cand.proposal);
+  const valueScore = clampNumber(Number(valueSignal && valueSignal.score || 0), 0, 100);
+  const snap = snapshot && typeof snapshot === 'object'
+    ? snapshot
+    : { tight: false, autopause_active: false, remaining_ratio: 1, pressure: 'none' };
+  const out = {
+    pass: true,
+    reason: null,
+    est_tokens: estTokens,
+    value_signal_score: valueScore,
+    remaining_ratio: Number(snap.remaining_ratio || 0),
+    autopause_active: snap.autopause_active === true,
+    pressure: String(snap.pressure || 'none'),
+    min_remaining_ratio: AUTONOMY_BUDGET_PACING_MIN_REMAINING_RATIO,
+    high_token_threshold: AUTONOMY_BUDGET_PACING_HIGH_TOKEN_THRESHOLD,
+    min_value_signal_score: AUTONOMY_BUDGET_PACING_MIN_VALUE_SIGNAL
+  };
+  if (AUTONOMY_BUDGET_PACING_ENABLED !== true) return out;
+  if (snap.tight !== true) return out;
+  const normalized = normalizedRisk(risk);
+  const highValueEscape = valueScore >= Math.max(AUTONOMY_BUDGET_PACING_MIN_VALUE_SIGNAL + 20, 85);
+  if (highValueEscape) return out;
+  if (snap.autopause_active === true && normalized !== 'low') {
+    out.pass = false;
+    out.reason = 'budget_pacing_autopause_risk_guard';
+    return out;
+  }
+  if (estTokens >= AUTONOMY_BUDGET_PACING_HIGH_TOKEN_THRESHOLD && valueScore < AUTONOMY_BUDGET_PACING_MIN_VALUE_SIGNAL) {
+    out.pass = false;
+    out.reason = 'budget_pacing_high_token_low_value';
+    return out;
+  }
+  if (Number(snap.remaining_ratio || 0) <= AUTONOMY_BUDGET_PACING_MIN_REMAINING_RATIO && valueScore < AUTONOMY_BUDGET_PACING_MIN_VALUE_SIGNAL) {
+    out.pass = false;
+    out.reason = 'budget_pacing_low_remaining_ratio';
+    return out;
+  }
+  return out;
+}
+
 function strategyRankForCandidate(cand, strategy) {
   const p = cand && cand.proposal ? cand.proposal : {};
   const weights = strategyRankingWeights(strategy);
@@ -8008,6 +8080,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
     optimization_good_enough: 0,
     objective_binding: 0,
     low_value_signal: 0,
+    budget_pacing: 0,
     low_composite: 0,
     capability_cooldown: 0,
     medium_risk_guard: 0,
@@ -8021,6 +8094,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
   let sampleOptimizationGoodEnough = null;
   let sampleObjectiveBinding = null;
   let sampleLowValueSignal = null;
+  let sampleBudgetPacing = null;
   let sampleLowComposite = null;
   let sampleCapabilityCooldown = null;
   let sampleMediumRiskGuard = null;
@@ -8074,6 +8148,12 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       min_delta_percent_high_accuracy: AUTONOMY_OPTIMIZATION_MIN_DELTA_PERCENT_HIGH_ACCURACY,
       require_explicit_delta: AUTONOMY_OPTIMIZATION_REQUIRE_DELTA
     },
+    budget_pacing: {
+      enabled: AUTONOMY_BUDGET_PACING_ENABLED,
+      min_remaining_ratio: AUTONOMY_BUDGET_PACING_MIN_REMAINING_RATIO,
+      high_token_threshold: AUTONOMY_BUDGET_PACING_HIGH_TOKEN_THRESHOLD,
+      min_value_signal_score: AUTONOMY_BUDGET_PACING_MIN_VALUE_SIGNAL
+    },
     campaign_scheduler: {
       enabled: Array.isArray(strategy && strategy.campaigns) && strategy.campaigns.length > 0
     },
@@ -8121,7 +8201,9 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       sample_events: 0,
       by_capability: {}
     };
+  const budgetPacingState = budgetPacingSnapshot(dateStr);
   candidateAuditPolicy.route_block_prefilter.sample_events = Number(routeBlockPrefilterTelemetry.sample_events || 0);
+  candidateAuditPolicy.budget_pacing.snapshot = budgetPacingState;
   for (const cand of pool) {
     const proposalId = String(cand && cand.proposal && cand.proposal.id || '');
     const proposalType = String(cand && cand.proposal && cand.proposal.type || '');
@@ -8410,6 +8492,39 @@ function runCmd(dateStr, opts: AnyObj = {}) {
         };
       }
       continue;
+    }
+
+    if (!shadowOnly && AUTONOMY_BUDGET_PACING_ENABLED && !executionQuotaDeficit) {
+      const budgetPacingGate = evaluateBudgetPacingGate(cand, valueSignal, risk, budgetPacingState);
+      if (!budgetPacingGate.pass) {
+        skipStats.budget_pacing += 1;
+        bumpCount(candidateRejectedByGate, 'budget_pacing');
+        pushCandidateAudit({
+          proposal_id: proposalId,
+          proposal_type: proposalType,
+          risk,
+          pass: false,
+          gate: 'budget_pacing',
+          score: Number(cand.score || 0),
+          scores: {
+            value_signal: Number(budgetPacingGate.value_signal_score || 0),
+            est_tokens: Number(budgetPacingGate.est_tokens || 0)
+          },
+          budget_pacing: budgetPacingGate,
+          reasons: [budgetPacingGate.reason || 'budget_pacing_blocked']
+        });
+        if (!sampleBudgetPacing) {
+          sampleBudgetPacing = {
+            proposal_id: cand.proposal.id,
+            reason: budgetPacingGate.reason || 'budget_pacing_blocked',
+            est_tokens: Number(budgetPacingGate.est_tokens || 0),
+            value_signal_score: Number(budgetPacingGate.value_signal_score || 0),
+            remaining_ratio: Number(budgetPacingGate.remaining_ratio || 0),
+            autopause_active: budgetPacingGate.autopause_active === true
+          };
+        }
+        continue;
+      }
     }
 
     const capDescriptorCand = capabilityDescriptor(cand.proposal, parseActuationSpec(cand.proposal));
@@ -9301,6 +9416,41 @@ function runCmd(dateStr, opts: AnyObj = {}) {
     }
 
     if (
+      skipStats.budget_pacing > 0
+      && skipStats.eye_no_progress === 0
+      && skipStats.low_quality === 0
+      && skipStats.low_directive_fit === 0
+      && skipStats.low_actionability === 0
+      && skipStats.optimization_good_enough === 0
+      && skipStats.low_value_signal === 0
+      && skipStats.low_composite === 0
+      && skipStats.capability_cooldown === 0
+      && skipStats.medium_risk_guard === 0
+      && skipStats.medium_policy_blocked === 0
+      && skipStats.medium_daily_cap === 0
+      && skipStats.directive_pulse_cooldown === 0
+      && skipStats.objective_binding === 0
+    ) {
+      writeRun(dateStr, {
+        ts: nowIso(),
+        type: 'autonomy_run',
+        result: 'stop_init_gate_budget_pacing',
+        skipped_budget_pacing: skipStats.budget_pacing,
+        sample_budget_pacing: sampleBudgetPacing,
+        budget_pacing: budgetPacingState
+      });
+      process.stdout.write(JSON.stringify({
+        ok: true,
+        result: 'stop_init_gate_budget_pacing',
+        skipped_budget_pacing: skipStats.budget_pacing,
+        sample_budget_pacing: sampleBudgetPacing,
+        budget_pacing: budgetPacingState,
+        ts: nowIso()
+      }) + '\n');
+      return;
+    }
+
+    if (
       skipStats.capability_cooldown > 0
       && skipStats.eye_no_progress === 0
       && skipStats.low_quality === 0
@@ -9372,7 +9522,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       ts: nowIso(),
       type: 'autonomy_run',
       result: 'stop_repeat_gate_candidate_exhausted',
-      reason: `all_candidates_exhausted quality_or_directive_fit_or_actionability_or_optimization_good_enough_or_objective_binding_or_value_or_composite_or_capability_cooldown_or_medium_risk_or_eye_no_progress_or_directive_pulse`,
+      reason: `all_candidates_exhausted quality_or_directive_fit_or_actionability_or_optimization_good_enough_or_objective_binding_or_value_or_budget_pacing_or_composite_or_capability_cooldown_or_medium_risk_or_eye_no_progress_or_directive_pulse`,
       skipped_eye_no_progress: skipStats.eye_no_progress,
       skipped_low_quality: skipStats.low_quality,
       skipped_low_directive_fit: skipStats.low_directive_fit,
@@ -9380,6 +9530,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       skipped_optimization_good_enough: skipStats.optimization_good_enough,
       skipped_objective_binding: skipStats.objective_binding,
       skipped_low_value_signal: skipStats.low_value_signal,
+      skipped_budget_pacing: skipStats.budget_pacing,
       skipped_low_composite: skipStats.low_composite,
       skipped_capability_cooldown: skipStats.capability_cooldown,
       skipped_medium_risk_guard: skipStats.medium_risk_guard,
@@ -9392,6 +9543,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       sample_optimization_good_enough: sampleOptimizationGoodEnough,
       sample_objective_binding: sampleObjectiveBinding,
       sample_low_value_signal: sampleLowValueSignal,
+      sample_budget_pacing: sampleBudgetPacing,
       sample_low_composite: sampleLowComposite,
       sample_capability_cooldown: sampleCapabilityCooldown,
       sample_medium_risk_guard: sampleMediumRiskGuard,
@@ -9402,7 +9554,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
     process.stdout.write(JSON.stringify({
       ok: true,
       result: 'stop_repeat_gate_candidate_exhausted',
-      reason: `all_candidates_exhausted quality_or_directive_fit_or_actionability_or_optimization_good_enough_or_objective_binding_or_value_or_composite_or_capability_cooldown_or_medium_risk_or_eye_no_progress_or_directive_pulse`,
+      reason: `all_candidates_exhausted quality_or_directive_fit_or_actionability_or_optimization_good_enough_or_objective_binding_or_value_or_budget_pacing_or_composite_or_capability_cooldown_or_medium_risk_or_eye_no_progress_or_directive_pulse`,
       skipped_eye_no_progress: skipStats.eye_no_progress,
       skipped_low_quality: skipStats.low_quality,
       skipped_low_directive_fit: skipStats.low_directive_fit,
@@ -9410,6 +9562,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       skipped_optimization_good_enough: skipStats.optimization_good_enough,
       skipped_objective_binding: skipStats.objective_binding,
       skipped_low_value_signal: skipStats.low_value_signal,
+      skipped_budget_pacing: skipStats.budget_pacing,
       skipped_low_composite: skipStats.low_composite,
       skipped_capability_cooldown: skipStats.capability_cooldown,
       skipped_medium_risk_guard: skipStats.medium_risk_guard,
@@ -9422,6 +9575,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       sample_optimization_good_enough: sampleOptimizationGoodEnough,
       sample_objective_binding: sampleObjectiveBinding,
       sample_low_value_signal: sampleLowValueSignal,
+      sample_budget_pacing: sampleBudgetPacing,
       sample_low_composite: sampleLowComposite,
       sample_capability_cooldown: sampleCapabilityCooldown,
       sample_medium_risk_guard: sampleMediumRiskGuard,
