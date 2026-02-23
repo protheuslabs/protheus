@@ -43,3 +43,10 @@
 {"ts":"2026-02-23T04:00:21.032Z","type":"provider_forced_status","provider":"ollama","source":"model_router_warmup","forced_status":"up","reason":"forced_up"}
 {"ts":"2026-02-23T04:00:21.039Z","type":"provider_forced_status","provider":"ollama","source":"model_router_route","forced_status":"up","reason":"forced_up"}
 {"ts":"2026-02-23T04:00:21.039Z","type":"provider_forced_status","provider":"ollama","source":"model_router_warmup","forced_status":"up","reason":"forced_up"}
+{"ts":"2026-02-23T04:27:57.917Z","type":"provider_down","provider":"ollama","source":"model_router_probe","reason":"env_blocked","code":1,"failure_streak":1,"circuit_open_until_ts":"2026-02-23T04:28:42.854Z","pain_emitted":false}
+{"ts":"2026-02-23T04:28:56.979Z","type":"provider_down","provider":"ollama","source":"model_router_route","reason":"env_blocked","code":1,"failure_streak":2,"circuit_open_until_ts":"2026-02-23T04:29:41.888Z","pain_emitted":false}
+{"ts":"2026-02-23T04:29:13.750Z","type":"provider_down","provider":"ollama","source":"idle_dream_cycle_idle","reason":"env_blocked","code":1,"failure_streak":3,"circuit_open_until_ts":"2026-02-23T04:29:58.653Z","pain_emitted":false}
+{"ts":"2026-02-23T04:29:13.916Z","type":"provider_down","provider":"ollama","source":"idle_dream_cycle_idle","reason":"env_blocked","code":1,"failure_streak":4,"circuit_open_until_ts":"2026-02-23T04:29:58.897Z","pain_emitted":false}
+{"ts":"2026-02-23T04:29:14.017Z","type":"provider_down","provider":"ollama","source":"idle_dream_cycle_idle","reason":"env_blocked","code":1,"failure_streak":5,"circuit_open_until_ts":"2026-02-23T04:29:59.002Z","pain_emitted":false}
+{"ts":"2026-02-23T04:30:09.729Z","type":"provider_recovered","provider":"ollama","source":"idle_dream_cycle_idle","latency_ms":164,"model_count":11}
+{"ts":"2026-02-23T04:31:17.393Z","type":"provider_ok","provider":"ollama","source":"idle_dream_cycle_run","latency_ms":177,"model_count":11}

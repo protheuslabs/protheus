@@ -1,5 +1,18 @@
 {
   "version": 1,
-  "updated_at": "2026-02-23T02:00:14.516Z",
-  "entries": {}
+  "updated_at": "2026-02-23T04:31:17.198Z",
+  "entries": {
+    "07264a9b891f11b14ed2d83d9fdb9cfbc8d20f87b9ef58b5aefc579678f35c9a": {
+      "key": "07264a9b891f11b14ed2d83d9fdb9cfbc8d20f87b9ef58b5aefc579678f35c9a",
+      "model": "deepseek-v3.1:671b-cloud",
+      "phase": "idle_preflight",
+      "source": "idle_dream_cycle",
+      "source_fingerprint": "",
+      "created_ms": 1771821034389,
+      "last_hit_ms": 1771821034389,
+      "hits": 0,
+      "ttl_ms": 1800000,
+      "expires_ms": 1771822834389
+    }
+  }
 }

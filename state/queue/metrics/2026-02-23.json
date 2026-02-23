@@ -1,19 +1,19 @@
 {
   "date": "2026-02-23",
   "counts": {
-    "total": 10,
-    "pending": 5,
+    "total": 14,
+    "pending": 7,
     "accepted": 0,
-    "closed": 3,
-    "accepted_or_closed": 3,
-    "rejected": 2,
+    "closed": 4,
+    "accepted_or_closed": 4,
+    "rejected": 3,
     "parked": 0,
     "shipped": 0,
     "reverted": 0,
     "no_change": 0
   },
   "rates": {
-    "adoption_rate": 0.3,
+    "adoption_rate": 0.286,
     "outcome_rate": 0,
     "revert_rate": 0
   },
@@ -33,20 +33,34 @@
       "reverted": 0
     },
     "external_intel": {
-      "total": 2,
-      "accepted": 0,
-      "closed": 0,
-      "shipped": 0,
-      "reverted": 0
-    },
-    "cross_signal_opportunity": {
       "total": 3,
       "accepted": 0,
       "closed": 0,
       "shipped": 0,
       "reverted": 0
     },
+    "cross_signal_opportunity": {
+      "total": 4,
+      "accepted": 0,
+      "closed": 0,
+      "shipped": 0,
+      "reverted": 0
+    },
     "dream_cycle_escalation": {
+      "total": 1,
+      "accepted": 0,
+      "closed": 1,
+      "shipped": 0,
+      "reverted": 0
+    },
+    "human_escalation": {
+      "total": 1,
+      "accepted": 0,
+      "closed": 0,
+      "shipped": 0,
+      "reverted": 0
+    },
+    "spine_escalation": {
       "total": 1,
       "accepted": 0,
       "closed": 0,

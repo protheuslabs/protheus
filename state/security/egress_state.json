@@ -193,6 +193,13 @@
       "scopes": {
         "sensory.collector.ollama_search": 1
       }
+    },
+    "2026-02-23T04": {
+      "total": 36,
+      "scopes": {
+        "sensory.collector.hn_rss": 32,
+        "sensory.collector.ollama_search": 4
+      }
     }
   },
   "per_day": {
@@ -226,15 +233,16 @@
       }
     },
     "2026-02-23": {
-      "total": 64,
+      "total": 100,
       "scopes": {
-        "sensory.collector.ollama_search": 15,
+        "sensory.collector.ollama_search": 19,
         "sensory.collector.upwork_gigs": 3,
         "sensory.collector.google_trends": 6,
         "sensory.focus_fetch": 23,
         "sensory.collector.moltbook_hot": 9,
         "sensory.collector.stock_market": 4,
-        "sensory.collector.github_repo": 4
+        "sensory.collector.github_repo": 4,
+        "sensory.collector.hn_rss": 32
       }
     }
   }

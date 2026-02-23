@@ -1,9 +1,9 @@
 # Approval Queue
-# Updated: 2026-02-23T02:29:19.290Z
+# Updated: 2026-02-23T04:29:25.502Z
 
 pending:
   - action_id: act_modegov_governor_test_score_only_to_canary_execute
-    timestamp: "2026-02-23T02:29:19.290Z"
+    timestamp: "2026-02-23T04:29:25.502Z"
     directive_id: T0_invariants
     type: strategy_mode_escalation
     summary: Promote strategy mode governor_test from score_only to canary_execute
