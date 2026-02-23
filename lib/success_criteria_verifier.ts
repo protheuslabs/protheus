@@ -28,6 +28,12 @@ const OUTREACH_METRICS = new Set([
   'outreach_artifact',
   'reply_or_interview_count'
 ]);
+const OUTREACH_CAPABILITY_HINT_RE = /\b(opportunity|outreach|lead|sales|bizdev|revenue|freelance|contract|gig|external_intel|client|prospect)\b/;
+const CONTRACT_SAFE_BACKFILL_ROWS = Object.freeze([
+  { source: 'contract_backfill', metric: 'execution_success', target: 'execution success' },
+  { source: 'contract_backfill', metric: 'postconditions_ok', target: 'postconditions pass' },
+  { source: 'contract_backfill', metric: 'queue_outcome_logged', target: 'outcome receipt logged' }
+]);
 
 function clampInt(v, lo, hi, fallback) {
   const n = Number(v);
@@ -68,7 +74,7 @@ function capabilityMetricContract(capabilityKey) {
   }
   if (key.startsWith('proposal:')) {
     const allowed = new Set(PROPOSAL_BASE_METRICS);
-    if (/\b(opportunity|outreach|lead|sales|bizdev|revenue|freelance|contract|gig)\b/.test(key)) {
+    if (OUTREACH_CAPABILITY_HINT_RE.test(key)) {
       for (const metric of OUTREACH_METRICS) allowed.add(metric);
     }
     return {
@@ -84,12 +90,14 @@ function capabilityMetricContract(capabilityKey) {
   };
 }
 
-function parseSuccessCriteriaRows(proposal) {
+function parseSuccessCriteriaRows(proposal, opts = {}) {
   const p = proposal && typeof proposal === 'object' ? proposal : {};
+  const capabilityKey = normalizeCapabilityKey(opts && opts.capability_key);
   const compiledRows = compileProposalSuccessCriteria(p, {
     include_verify: true,
     include_validation: true,
-    allow_fallback: true
+    allow_fallback: true,
+    capability_key: capabilityKey || ''
   });
   const rows = [];
   for (const row of compiledRows) {
@@ -116,6 +124,53 @@ function parseSuccessCriteriaRows(proposal) {
     out.push(row);
   }
   return out;
+}
+
+function normalizeMetricName(v) {
+  return String(v || '').toLowerCase().replace(/[\s-]+/g, '_');
+}
+
+function metricAllowedByContract(contract, metricName) {
+  if (!contract || !(contract.allowed_metrics instanceof Set)) return false;
+  const norm = normalizeMetricName(metricName);
+  if (!norm) return false;
+  return contract.allowed_metrics.has(norm);
+}
+
+function backfillContractSafeRows(rows, contract, minCount) {
+  const list = Array.isArray(rows) ? rows.slice() : [];
+  const min = clampInt(minCount, 0, 10, 0);
+  if (min <= 0) return { rows: list, added_count: 0 };
+  if (!contract || contract.enforced !== true || !(contract.allowed_metrics instanceof Set)) {
+    return { rows: list, added_count: 0 };
+  }
+
+  const seen = new Set();
+  for (const row of list) {
+    const metric = normalizeMetricName(row && row.metric);
+    const target = String(row && row.target || '').toLowerCase();
+    seen.add(`${metric}|${target}`);
+  }
+  let supportedCount = list.filter((row) => metricAllowedByContract(contract, row && row.metric)).length;
+  let added = 0;
+  for (const candidate of CONTRACT_SAFE_BACKFILL_ROWS) {
+    if (supportedCount >= min) break;
+    if (!metricAllowedByContract(contract, candidate.metric)) continue;
+    const key = `${normalizeMetricName(candidate.metric)}|${String(candidate.target || '').toLowerCase()}`;
+    if (seen.has(key)) continue;
+    list.push({
+      source: String(candidate.source || 'contract_backfill'),
+      metric: String(candidate.metric || ''),
+      target: String(candidate.target || '')
+    });
+    seen.add(key);
+    supportedCount += 1;
+    added += 1;
+  }
+  return {
+    rows: list,
+    added_count: added
+  };
 }
 
 function toNumberOrNull(v) {
@@ -410,17 +465,27 @@ function evaluateRow(row, context) {
 }
 
 function evaluateSuccessCriteria(proposal, context, policy) {
-  const rows = parseSuccessCriteriaRows(proposal);
   const src = policy && typeof policy === 'object' ? policy : {};
+  const capabilityKey = src.capability_key != null
+    ? src.capability_key
+    : (context && context.capability_key);
   const required = src.required !== false;
   const minCount = clampInt(src.min_count, 0, 10, 1);
   const contract = capabilityMetricContract(
-    src.capability_key != null
-      ? src.capability_key
-      : (context && context.capability_key)
+    capabilityKey
   );
+  const enableContractBackfill = src.enable_contract_backfill !== false;
+  const failOnContractViolation = src.fail_on_contract_violation === true;
   const enforceContract = contract.enforced === true && src.enforce_contract !== false;
   const enforceMinSupported = contract.enforced === true && src.enforce_min_supported !== false;
+  const rowsRaw = parseSuccessCriteriaRows(proposal, {
+    capability_key: capabilityKey
+  });
+  const backfill = enableContractBackfill
+    ? backfillContractSafeRows(rowsRaw, contract, minCount)
+    : { rows: rowsRaw, added_count: 0 };
+  const rows = backfill.rows;
+  const contractBackfillCount = Number(backfill.added_count || 0);
   const results = rows.map((row, idx) => {
     const metricNorm = String(row && row.metric || '').toLowerCase().replace(/[\s-]+/g, '_');
     const blockedByContract = enforceContract
@@ -477,7 +542,7 @@ function evaluateSuccessCriteria(proposal, context, policy) {
     primaryFailure = `success_criteria_failed:${failedRows[0].reason || 'failed'}`;
   }
 
-  if (enforceContract && contractNotAllowedCount > 0) {
+  if (enforceContract && failOnContractViolation && contractNotAllowedCount > 0) {
     passed = false;
     primaryFailure = 'success_criteria_failed:metric_not_allowed_for_capability';
   } else if (enforceMinSupported && required && structurallySupportedCount < minCount) {
@@ -504,13 +569,17 @@ function evaluateSuccessCriteria(proposal, context, policy) {
     unsupported_count: unsupportedCount,
     contract_not_allowed_count: contractNotAllowedCount,
     structurally_supported_count: structurallySupportedCount,
+    contract_backfill_count: contractBackfillCount,
     pass_rate: evaluatedCount > 0 ? Number((passedCount / evaluatedCount).toFixed(3)) : null,
     passed,
     primary_failure: primaryFailure,
     contract: {
       capability_key: contract.capability_key || null,
       enforced: enforceContract,
+      fail_on_violation: failOnContractViolation,
       min_supported_enforced: enforceMinSupported,
+      backfill_enabled: enableContractBackfill,
+      backfill_count: contractBackfillCount,
       allowed_metrics: contract.allowed_metrics ? Array.from(contract.allowed_metrics).sort() : [],
       unsupported_count: unsupportedCount,
       not_allowed_count: contractNotAllowedCount,

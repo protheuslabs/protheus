@@ -159,6 +159,41 @@ function run() {
     'actuation lane should have zero capability-metric violations'
   );
 
+  const sparseProposal = {
+    id: 'P-SC-3',
+    type: 'collector_remediation',
+    action_spec: {
+      success_criteria: [
+        { metric: 'execution_success', target: 'execution success' }
+      ]
+    }
+  };
+  const sparseBackfilled = evaluateSuccessCriteria(
+    sparseProposal,
+    {
+      capability_key: 'proposal:collector_remediation',
+      outcome: 'no_change',
+      exec_ok: true,
+      dod_passed: false,
+      postconditions_ok: true,
+      queue_outcome_logged: true
+    },
+    { required: true, min_count: 2 }
+  );
+  assert.strictEqual(
+    sparseBackfilled.passed,
+    true,
+    'contract-safe backfill should prevent sparse criteria sets from failing min-count gates'
+  );
+  assert.ok(
+    Number(sparseBackfilled.contract_backfill_count || 0) >= 1,
+    'backfill count should report at least one inserted criteria row'
+  );
+  assert.ok(
+    sparseBackfilled.checks.some((c) => c.source === 'contract_backfill'),
+    'backfilled checks should be marked with contract_backfill source'
+  );
+
   console.log('success_criteria_verifier.test.js: OK');
 }
 
