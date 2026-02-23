@@ -111,6 +111,7 @@ const MODEL_MAX_ATTEMPTS = clampInt(process.env.IDLE_DREAM_MODEL_MAX_ATTEMPTS ||
 const MODEL_MAX_MODELS_PER_PASS = clampInt(process.env.IDLE_DREAM_MAX_MODELS_PER_PASS || 4, 1, 12);
 const MODEL_RETRY_TIMEOUT_PCT = clampInt(process.env.IDLE_DREAM_MODEL_RETRY_TIMEOUT_PCT || 175, 100, 500);
 const CLOUD_MODEL_TIMEOUT_PCT = clampInt(process.env.IDLE_DREAM_CLOUD_TIMEOUT_PCT || 170, 100, 600);
+const MODEL_ATTEMPT_TIMEOUT_MAX_MS = clampInt(process.env.IDLE_DREAM_MODEL_ATTEMPT_MAX_MS || 90000, 5000, 10 * 60 * 1000);
 const MODEL_PREFLIGHT_ENABLED = String(process.env.IDLE_DREAM_MODEL_PREFLIGHT_ENABLED || '1').trim() !== '0';
 const MODEL_PREFLIGHT_TIMEOUT_MS = clampInt(process.env.IDLE_DREAM_MODEL_PREFLIGHT_TIMEOUT_MS || 6000, 1000, 60000);
 const MODEL_PREFLIGHT_CACHE_TTL_MS = clampInt(process.env.IDLE_DREAM_MODEL_PREFLIGHT_CACHE_TTL_MS || 15 * 60 * 1000, 60 * 1000, 6 * 60 * 60 * 1000);
@@ -719,6 +720,7 @@ function timeoutForModelAttempt(baseTimeoutMs, model, attemptNumber) {
   if (Number(attemptNumber || 1) > 1) {
     timeoutMs = Math.round(timeoutMs * (MODEL_RETRY_TIMEOUT_PCT / 100));
   }
+  timeoutMs = Math.min(timeoutMs, MODEL_ATTEMPT_TIMEOUT_MAX_MS);
   return clampInt(timeoutMs, 5000, 10 * 60 * 1000);
 }
 
@@ -735,16 +737,47 @@ function isProviderUnavailableFailure(llm) {
   return /\b(operation not permitted|connection refused|dial tcp|connect:|127\.0\.0\.1:11434|failed to connect|no such host|econnrefused|ehostunreach|enotfound|network is unreachable)\b/.test(blob);
 }
 
-function runModelWithRetries(model, prompt, baseTimeoutMs, phase) {
+function runModelWithRetries(model, prompt, baseTimeoutMs, phase, passDeadlineMs = null) {
   const attempts = [];
   let last = null;
   for (let attempt = 1; attempt <= MODEL_MAX_ATTEMPTS; attempt++) {
-    const timeoutMs = timeoutForModelAttempt(baseTimeoutMs, model, attempt);
+    let timeoutMs = timeoutForModelAttempt(baseTimeoutMs, model, attempt);
+    let remainingBudgetMs = null;
+    if (Number.isFinite(Number(passDeadlineMs))) {
+      remainingBudgetMs = Math.max(0, Number(passDeadlineMs) - Date.now());
+      const reserveMs = 1200;
+      if (remainingBudgetMs <= reserveMs) {
+        const exhausted = {
+          ok: false,
+          stdout: '',
+          stderr: 'pass_budget_exhausted',
+          code: 124,
+          timed_out: true,
+          signal: null,
+          error: 'pass_budget_exhausted'
+        };
+        last = exhausted;
+        attempts.push({
+          attempt,
+          timeout_ms: 0,
+          remaining_budget_ms: remainingBudgetMs,
+          ok: false,
+          code: 124,
+          signal: null,
+          timed_out: true,
+          error: 'pass_budget_exhausted',
+          stderr_tail: ''
+        });
+        break;
+      }
+      timeoutMs = Math.max(1000, Math.min(timeoutMs, remainingBudgetMs - reserveMs));
+    }
     const llm = runLocalModel(model, prompt, timeoutMs, phase);
     last = llm;
     attempts.push({
       attempt,
       timeout_ms: timeoutMs,
+      remaining_budget_ms: remainingBudgetMs,
       ok: llm.ok === true,
       code: Number(llm.code != null ? llm.code : 1),
       signal: llm.signal || null,
@@ -1548,6 +1581,7 @@ function runIdlePass(dateStr, state, force) {
   let release = null;
   try {
     const passStartedMs = Date.now();
+    const passDeadlineMs = passStartedMs + IDLE_PASS_MAX_MS;
     let passBudgetExceeded = false;
     const attemptedModels = [];
     let selectedModel = pick.model;
@@ -1597,7 +1631,7 @@ function runIdlePass(dateStr, state, force) {
         selectedModel = nextPick.model;
         continue;
       }
-      const attempt = runModelWithRetries(selectedModel, prompt, LLM_TIMEOUT_MS, 'idle');
+      const attempt = runModelWithRetries(selectedModel, prompt, LLM_TIMEOUT_MS, 'idle', passDeadlineMs);
       attemptRow.attempts = Array.isArray(attempt.attempts) ? attempt.attempts : [];
       if (attempt.ok && attempt.llm && attempt.llm.ok === true) {
         const parsed = extractJsonObject(attempt.llm.stdout);
@@ -1758,6 +1792,7 @@ function runRemPass(dateStr, state, force) {
     }
     const prompt = buildRemPrompt(materialRows, dateStr);
     const passStartedMs = Date.now();
+    const passDeadlineMs = passStartedMs + REM_PASS_MAX_MS;
     let passBudgetExceeded = false;
     const attemptedModels = [];
     let selectedModel = pick.model;
@@ -1807,7 +1842,7 @@ function runRemPass(dateStr, state, force) {
         selectedModel = nextPick.model;
         continue;
       }
-      const attempt = runModelWithRetries(selectedModel, prompt, REM_TIMEOUT_MS, 'rem');
+      const attempt = runModelWithRetries(selectedModel, prompt, REM_TIMEOUT_MS, 'rem', passDeadlineMs);
       attemptRow.attempts = Array.isArray(attempt.attempts) ? attempt.attempts : [];
       if (attempt.ok && attempt.llm && attempt.llm.ok === true) {
         const parsed = extractJsonObject(attempt.llm.stdout);
