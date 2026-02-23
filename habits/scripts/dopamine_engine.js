@@ -33,6 +33,9 @@ const crypto = require('crypto');
 const STATE_FILE = path.join(__dirname, '..', '..', 'state', 'dopamine_state.json');
 const DAILY_LOGS_DIR = path.join(__dirname, '..', '..', 'state', 'daily_logs');
 const ACHIEVEMENTS_FILE = path.join(__dirname, '..', '..', 'config', 'achievements_v1.json');
+const DOPAMINE_POLICY_FILE = path.join(__dirname, '..', '..', 'config', 'dopamine_policy_v2.json');
+const DOPAMINE_PAIN_STATE_FILE = path.join(__dirname, '..', '..', 'state', 'dopamine_pain_state.json');
+const DOPAMINE_PAIN_EVENTS_FILE = path.join(__dirname, '..', '..', 'state', 'dopamine_pain_events.jsonl');
 
 // High-leverage tags aligned with T1 directives
 const HIGH_LEVERAGE_TAGS = new Set([
@@ -40,11 +43,294 @@ const HIGH_LEVERAGE_TAGS = new Set([
   'compounding', 'system_building', 'revenue', 'growth', 'scaling'
 ]);
 
+const OBJECTIVE_ID_RE = /\b(T[0-9]+_[A-Za-z0-9_]+)\b/;
+const VERIFIED_OUTCOME_VALUES = new Set([
+  'verified',
+  'verified_success',
+  'verified_pass',
+  'shipped',
+  'closed_won',
+  'won',
+  'paid',
+  'revenue_verified',
+  'pass'
+]);
+const VERIFIED_REVENUE_STATUS = new Set(['verified', 'won', 'paid', 'closed_won', 'received']);
+const SELF_OPTIMIZATION_RE = /\b(optimi[sz]e|optimization|improv(?:e|ement)|tune|polish|streamlin|efficien(?:cy|t)|latency|throughput|cost|token(?:s)?|performance)\b/i;
+const SYSTEM_OPTIMIZATION_SCOPE_RE = /\b(system|autonomy|router|routing|collector|eye(?:s)?|pipeline|spine|queue|memory layer|dopamine)\b/i;
+
+const DEFAULT_DOPAMINE_POLICY = {
+  version: '2.0',
+  scoring: {
+    linked_verified_hl_multiplier: 1.5,
+    linked_unverified_hl_multiplier: 0.5,
+    unlinked_hl_multiplier: 0,
+    drift_penalty_multiplier: 1.2,
+    context_switch_penalty: 0.3,
+    streak_bonus_per_day: 0.5,
+    artifact_bonus_first: 3,
+    artifact_bonus_each: 1,
+    artifact_bonus_cap: 6,
+    revenue_verified_bonus: 4,
+    revenue_verified_cap: 3,
+    objective_verified_bonus: 3,
+    objective_verified_cap: 4,
+    unlinked_self_optimization_penalty: 8
+  },
+  pain: {
+    stall_days: 3,
+    unlinked_hl_ratio_threshold: 0.6,
+    unlinked_self_optimization_threshold: 1
+  }
+};
+
 // Ensure directories exist
 function ensureDirs() {
   if (!fs.existsSync(DAILY_LOGS_DIR)) {
     fs.mkdirSync(DAILY_LOGS_DIR, { recursive: true });
   }
+  const stateDir = path.join(__dirname, '..', '..', 'state');
+  if (!fs.existsSync(stateDir)) {
+    fs.mkdirSync(stateDir, { recursive: true });
+  }
+}
+
+function clampNumber(v, lo, hi, fallback = 0) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return fallback;
+  if (n < lo) return lo;
+  if (n > hi) return hi;
+  return n;
+}
+
+function normalizeText(v) {
+  return String(v == null ? '' : v).trim();
+}
+
+function normalizeLower(v) {
+  return normalizeText(v).toLowerCase();
+}
+
+function loadDopaminePolicy() {
+  try {
+    if (!fs.existsSync(DOPAMINE_POLICY_FILE)) {
+      return JSON.parse(JSON.stringify(DEFAULT_DOPAMINE_POLICY));
+    }
+    const raw = JSON.parse(fs.readFileSync(DOPAMINE_POLICY_FILE, 'utf8'));
+    return {
+      ...DEFAULT_DOPAMINE_POLICY,
+      ...(raw && typeof raw === 'object' ? raw : {}),
+      scoring: {
+        ...DEFAULT_DOPAMINE_POLICY.scoring,
+        ...((raw && raw.scoring && typeof raw.scoring === 'object') ? raw.scoring : {})
+      },
+      pain: {
+        ...DEFAULT_DOPAMINE_POLICY.pain,
+        ...((raw && raw.pain && typeof raw.pain === 'object') ? raw.pain : {})
+      }
+    };
+  } catch {
+    return JSON.parse(JSON.stringify(DEFAULT_DOPAMINE_POLICY));
+  }
+}
+
+function extractObjectiveId(value) {
+  const txt = normalizeText(value);
+  if (!txt) return null;
+  const direct = txt.match(/^T[0-9]+_[A-Za-z0-9_]+$/);
+  if (direct) return direct[0];
+  const token = txt.match(OBJECTIVE_ID_RE);
+  return token ? token[1] : null;
+}
+
+function entryObjectiveId(entry) {
+  const e = entry && typeof entry === 'object' ? entry : {};
+  return (
+    extractObjectiveId(e.objective_id)
+    || extractObjectiveId(e.directive_objective_id)
+    || extractObjectiveId(e.directive)
+  );
+}
+
+function outcomeVerifiedEntry(entry) {
+  const e = entry && typeof entry === 'object' ? entry : {};
+  if (e.outcome_verified === true) return true;
+  if (e.meta && typeof e.meta === 'object' && e.meta.outcome_verified === true) return true;
+  const outcome = normalizeLower(e.outcome);
+  if (outcome && VERIFIED_OUTCOME_VALUES.has(outcome)) return true;
+  return false;
+}
+
+function hasEntryArtifact(entry) {
+  const e = entry && typeof entry === 'object' ? entry : {};
+  const entryArtifacts = Array.isArray(e.artifacts) ? e.artifacts : [];
+  const legacy = (typeof e.artifact === 'string' && e.artifact.trim() !== '') ? 1 : 0;
+  return entryArtifacts.length + legacy > 0;
+}
+
+function isUnlinkedSelfOptimizationEntry(entry) {
+  const e = entry && typeof entry === 'object' ? entry : {};
+  const text = [
+    e.tag,
+    e.task_description,
+    e.note,
+    e.description,
+    e.outcome
+  ].map(normalizeText).filter(Boolean).join(' | ');
+  if (!text) return false;
+  return SELF_OPTIMIZATION_RE.test(text) && SYSTEM_OPTIMIZATION_SCOPE_RE.test(text);
+}
+
+function revenueActionVerified(action) {
+  const a = action && typeof action === 'object' ? action : {};
+  if (a.verified === true || a.outcome_verified === true) return true;
+  const status = normalizeLower(a.status);
+  if (status && VERIFIED_REVENUE_STATUS.has(status)) return true;
+  return false;
+}
+
+function readDailyLogSafe(dateStr) {
+  const fp = getDailyLogPath(dateStr);
+  if (!fs.existsSync(fp)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(fp, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+function parseDateStr(dateStr) {
+  const ms = Date.parse(`${String(dateStr)}T00:00:00.000Z`);
+  return Number.isFinite(ms) ? ms : null;
+}
+
+function shiftDate(dateStr, deltaDays) {
+  const ms = parseDateStr(dateStr);
+  if (!Number.isFinite(ms)) return null;
+  return new Date(ms + (deltaDays * 24 * 60 * 60 * 1000)).toISOString().slice(0, 10);
+}
+
+function summarizeDirectiveAlignment(dayLog) {
+  const log = dayLog && typeof dayLog === 'object' ? dayLog : {};
+  const entries = Array.isArray(log.entries) ? log.entries : [];
+  const dayArtifacts = Array.isArray(log.artifacts) ? log.artifacts : [];
+  const hasDayArtifacts = dayArtifacts.length > 0;
+
+  let linkedVerifiedHLMinutes = 0;
+  let linkedUnverifiedHLMinutes = 0;
+  let unlinkedHLMinutes = 0;
+  let verifiedObjectiveEntries = 0;
+  let linkedEntries = 0;
+  let unlinkedEntries = 0;
+  let unlinkedSelfOptimizationEntries = 0;
+  let highLeverageMinutesRaw = 0;
+
+  for (const entry of entries) {
+    const tag = normalizeLower(entry && entry.tag);
+    const minutes = Math.max(0, Number(entry && entry.minutes || 0));
+    const objectiveId = entryObjectiveId(entry);
+    const linked = !!objectiveId;
+    const verified = outcomeVerifiedEntry(entry);
+    const highLeverage = HIGH_LEVERAGE_TAGS.has(tag);
+    const hasProof = hasEntryArtifact(entry) || hasDayArtifacts;
+    const proofMultiplier = hasProof ? 1.0 : 0.8;
+
+    if (linked) linkedEntries += 1;
+    else unlinkedEntries += 1;
+
+    if (!linked && isUnlinkedSelfOptimizationEntry(entry)) {
+      unlinkedSelfOptimizationEntries += 1;
+    }
+
+    if (!highLeverage) continue;
+    highLeverageMinutesRaw += minutes;
+    if (linked && verified) {
+      linkedVerifiedHLMinutes += minutes * 1.5 * proofMultiplier;
+      verifiedObjectiveEntries += 1;
+    } else if (linked) {
+      linkedUnverifiedHLMinutes += minutes * 0.5 * proofMultiplier;
+    } else {
+      unlinkedHLMinutes += minutes;
+    }
+  }
+
+  const revenueActions = Array.isArray(log.revenue_actions) ? log.revenue_actions : [];
+  const revenueVerified = revenueActions.filter(revenueActionVerified);
+
+  const linkedHL = linkedVerifiedHLMinutes + linkedUnverifiedHLMinutes;
+  const unlinkedRatio = highLeverageMinutesRaw > 0
+    ? Number((unlinkedHLMinutes / highLeverageMinutesRaw).toFixed(3))
+    : 0;
+
+  return {
+    linked_entries: linkedEntries,
+    unlinked_entries: unlinkedEntries,
+    verified_objective_entries: verifiedObjectiveEntries,
+    linked_verified_hl_minutes: Number(linkedVerifiedHLMinutes.toFixed(3)),
+    linked_unverified_hl_minutes: Number(linkedUnverifiedHLMinutes.toFixed(3)),
+    linked_hl_minutes: Number(linkedHL.toFixed(3)),
+    unlinked_hl_minutes: Number(unlinkedHLMinutes.toFixed(3)),
+    unlinked_hl_ratio: unlinkedRatio,
+    unlinked_self_optimization_entries: unlinkedSelfOptimizationEntries,
+    revenue_actions_total: revenueActions.length,
+    revenue_actions_verified: revenueVerified.length,
+    high_leverage_minutes_raw: highLeverageMinutesRaw
+  };
+}
+
+function computeDirectivePain(dateStr, summary, policy) {
+  const painCfg = policy && policy.pain && typeof policy.pain === 'object'
+    ? policy.pain
+    : DEFAULT_DOPAMINE_POLICY.pain;
+  const stallDaysThreshold = Math.max(1, Number(painCfg.stall_days || 3));
+  const unlinkedRatioThreshold = clampNumber(Number(painCfg.unlinked_hl_ratio_threshold || 0.6), 0, 1, 0.6);
+  const selfOptThreshold = Math.max(1, Number(painCfg.unlinked_self_optimization_threshold || 1));
+
+  let stallDays = 0;
+  let cursor = dateStr;
+  for (let i = 0; i < 30; i++) {
+    const log = readDailyLogSafe(cursor);
+    if (!log) break;
+    const daySummary = summarizeDirectiveAlignment(log);
+    const hasProgress = Number(daySummary.verified_objective_entries || 0) > 0
+      || Number(daySummary.revenue_actions_verified || 0) > 0;
+    if (hasProgress) break;
+    stallDays += 1;
+    const prev = shiftDate(cursor, -1);
+    if (!prev) break;
+    cursor = prev;
+  }
+
+  const reasons = [];
+  if (stallDays >= stallDaysThreshold) reasons.push('directive_progress_stalled');
+  if (Number(summary.unlinked_hl_ratio || 0) >= unlinkedRatioThreshold) reasons.push('unlinked_high_leverage_dominant');
+  if (Number(summary.unlinked_self_optimization_entries || 0) >= selfOptThreshold) reasons.push('unlinked_self_optimization');
+
+  const active = reasons.length > 0;
+  return {
+    active,
+    reasons,
+    stall_days: stallDays,
+    thresholds: {
+      stall_days: stallDaysThreshold,
+      unlinked_hl_ratio_threshold: unlinkedRatioThreshold,
+      unlinked_self_optimization_threshold: selfOptThreshold
+    }
+  };
+}
+
+function writeDirectivePainState(dateStr, pain, summary) {
+  ensureDirs();
+  const row = {
+    ts: new Date().toISOString(),
+    date: String(dateStr),
+    active: pain && pain.active === true,
+    reasons: Array.isArray(pain && pain.reasons) ? pain.reasons : [],
+    stall_days: Number(pain && pain.stall_days || 0),
+    summary: summary || null
+  };
+  fs.writeFileSync(DOPAMINE_PAIN_STATE_FILE, JSON.stringify(row, null, 2) + '\n', 'utf8');
+  fs.appendFileSync(DOPAMINE_PAIN_EVENTS_FILE, JSON.stringify(row) + '\n', 'utf8');
 }
 
 /**
@@ -59,6 +345,9 @@ function loadState() {
     rolling_30_day_avg: 0,
     last_score: 0,
     highest_score: 0,
+    last_directive_pain_active: false,
+    last_verified_objective_entries: 0,
+    last_verified_revenue_actions: 0,
     unlocked_achievements: [],
     achievement_log: []
   };
@@ -147,100 +436,142 @@ function hashFile(filePath) {
 }
 
 /**
- * Calculate Strategic Dopamine Score for a day (v1.1.1 anti-gaming)
+ * Calculate Strategic Dopamine Score for a day (v2 directive-aligned, outcome-verified)
  */
 function calculateSDS(dayLog) {
-  let hlProvenMinutes = 0;      // 1.5x - entry has artifacts OR day has artifacts
-  let hlUnprovenMinutes = 0;    // 1.0x - no artifacts on entry or day
-  let driftMinutes = 0;
-  let contextSwitches = dayLog.context_switches || 0;
-  
-  // Separate concerns: entry-level proof vs total artifact count
-  const entryHasArtifact = [];   // boolean per entry (for gating)
-  let provenEntryCount = 0;      // entries with ANY proof (analytics only)
-  let totalArtifacts = 0;        // sum of ALL artifact objects (for bonuses)
-  
-  for (const entry of dayLog.entries) {
-    // Count artifacts in this entry
-    const entryArtifacts = Array.isArray(entry.artifacts) ? entry.artifacts : [];
-    const legacy = (typeof entry.artifact === 'string' && entry.artifact.trim() !== '') ? 1 : 0;
+  const log = dayLog && typeof dayLog === 'object' ? dayLog : { entries: [], artifacts: [], revenue_actions: [] };
+  const entries = Array.isArray(log.entries) ? log.entries : [];
+  const policy = loadDopaminePolicy();
+  const scoring = policy && policy.scoring && typeof policy.scoring === 'object'
+    ? policy.scoring
+    : DEFAULT_DOPAMINE_POLICY.scoring;
+
+  const linkedVerifiedMult = Number(scoring.linked_verified_hl_multiplier || 1.5);
+  const linkedUnverifiedMult = Number(scoring.linked_unverified_hl_multiplier || 0.5);
+  const unlinkedMult = Number(scoring.unlinked_hl_multiplier || 0);
+  const driftPenaltyMult = Number(scoring.drift_penalty_multiplier || 1.2);
+  const switchPenalty = Number(scoring.context_switch_penalty || 0.3);
+  const streakBonusPerDay = Number(scoring.streak_bonus_per_day || 0.5);
+  const revenueVerifiedBonus = Number(scoring.revenue_verified_bonus || 4);
+  const revenueVerifiedCap = Math.max(0, Math.round(Number(scoring.revenue_verified_cap || 3)));
+  const objectiveVerifiedBonus = Number(scoring.objective_verified_bonus || 3);
+  const objectiveVerifiedCap = Math.max(0, Math.round(Number(scoring.objective_verified_cap || 4)));
+  const unlinkedSelfOptPenalty = Number(scoring.unlinked_self_optimization_penalty || 8);
+
+  const entryHasArtifact = [];
+  let provenEntryCount = 0;
+  let totalArtifacts = 0;
+  for (const entry of entries) {
+    const entryArtifacts = Array.isArray(entry && entry.artifacts) ? entry.artifacts : [];
+    const legacy = (typeof entry && typeof entry.artifact === 'string' && entry.artifact.trim() !== '') ? 1 : 0;
     const artifactCount = entryArtifacts.length + legacy;
-    
-    // Track if entry has ANY proof (for gating multiplier)
     const hasArtifact = artifactCount > 0;
     entryHasArtifact.push(hasArtifact);
-    if (hasArtifact) provenEntryCount++;
-    
-    // Track TOTAL artifact objects (for bonus calculation)
+    if (hasArtifact) provenEntryCount += 1;
     totalArtifacts += artifactCount;
   }
-  
-  // Add day-level artifacts to total
-  const dayLevelArtifacts = dayLog.artifacts || [];
+  const dayLevelArtifacts = Array.isArray(log.artifacts) ? log.artifacts : [];
   totalArtifacts += dayLevelArtifacts.length;
   const hasDayArtifacts = dayLevelArtifacts.length > 0;
-  
-  // Calculate minutes with anti-gaming multiplier
-  for (let i = 0; i < dayLog.entries.length; i++) {
-    const entry = dayLog.entries[i];
-    const minutes = entry.minutes || 0;
-    const tag = entry.tag?.toLowerCase() || '';
-    
-    // Anti-gaming: 1.5x if entry OR day has artifacts
+
+  let linkedVerifiedHLMinutes = 0;
+  let linkedUnverifiedHLMinutes = 0;
+  let unlinkedHLMinutes = 0;
+  let driftMinutes = 0;
+  let unlinkedSelfOptimizationCount = 0;
+  let verifiedObjectiveEntryCount = 0;
+  let highLeverageRawMinutes = 0;
+
+  for (let i = 0; i < entries.length; i++) {
+    const entry = entries[i] || {};
+    const minutes = Math.max(0, Number(entry.minutes || 0));
+    const tag = normalizeLower(entry.tag);
+    const highLeverage = HIGH_LEVERAGE_TAGS.has(tag);
+    const linked = !!entryObjectiveId(entry);
+    const verified = outcomeVerifiedEntry(entry);
     const hasProof = entryHasArtifact[i] || hasDayArtifacts;
-    
-    if (HIGH_LEVERAGE_TAGS.has(tag)) {
-      if (hasProof) {
-        hlProvenMinutes += minutes * 1.5;
-      } else {
-        hlUnprovenMinutes += minutes; // 1.0x - no bonus without proof
-      }
+    const proofScale = hasProof ? 1 : 0.8;
+
+    if (!highLeverage) {
+      driftMinutes += minutes;
+      continue;
+    }
+    highLeverageRawMinutes += minutes;
+
+    if (linked && verified) {
+      linkedVerifiedHLMinutes += minutes * linkedVerifiedMult * proofScale;
+      verifiedObjectiveEntryCount += 1;
+    } else if (linked) {
+      linkedUnverifiedHLMinutes += minutes * linkedUnverifiedMult * proofScale;
     } else {
-      driftMinutes += minutes; // Drift always 1.0x
+      unlinkedHLMinutes += minutes * unlinkedMult;
+      if (isUnlinkedSelfOptimizationEntry(entry)) {
+        unlinkedSelfOptimizationCount += 1;
+      }
     }
   }
-  
-  // Revenue actions: structured, capped at 3 (+6 max)
-  const revenueActions = dayLog.revenue_actions || [];
-  const revenueCount = Math.min(revenueActions.length, 3);
-  const revenueBonus = revenueCount * 2;
-  
-  // Load state for streak
+
+  const revenueActions = Array.isArray(log.revenue_actions) ? log.revenue_actions : [];
+  const verifiedRevenueActions = revenueActions.filter(revenueActionVerified);
+  const revenueCount = Math.min(verifiedRevenueActions.length, revenueVerifiedCap);
+  const revenueBonus = revenueCount * revenueVerifiedBonus;
+
   const state = loadState();
-  const streakDays = state.current_streak_days || 0;
-  
-  // Artifact bonus: +3 first, +1 each additional (cap +6)
-  // Uses totalArtifacts (sum of objects), NOT provenEntryCount
+  const streakDays = Number(state.current_streak_days || 0);
+
   let artifactBonus = 0;
   if (totalArtifacts > 0) {
-    artifactBonus = 3 + Math.min(totalArtifacts - 1, 3) * 1; // +3 first, +1 up to 3 more = max 6
+    const first = Number(scoring.artifact_bonus_first || 3);
+    const each = Number(scoring.artifact_bonus_each || 1);
+    const cap = Math.max(0, Number(scoring.artifact_bonus_cap || 6));
+    artifactBonus = first + (Math.max(0, totalArtifacts - 1) * each);
+    artifactBonus = Math.min(cap, artifactBonus);
   }
-  
-  // Formula v1.1.1
+
+  const objectiveBonus = Math.min(verifiedObjectiveEntryCount, objectiveVerifiedCap) * objectiveVerifiedBonus;
+  const selfOptPenalty = unlinkedSelfOptimizationCount * unlinkedSelfOptPenalty;
+  const contextSwitches = Number(log.context_switches || 0);
+  const unlinkedRaw = Math.max(0, highLeverageRawMinutes - (linkedVerifiedHLMinutes + linkedUnverifiedHLMinutes));
+  const unlinkedRatio = highLeverageRawMinutes > 0 ? unlinkedRaw / highLeverageRawMinutes : 0;
+
   const sds = Math.round(
-    hlProvenMinutes +
-    hlUnprovenMinutes +
-    revenueBonus +
-    (streakDays * 0.5) -
-    (driftMinutes * 1.2) -
-    (contextSwitches * 0.3) +
-    artifactBonus
+    linkedVerifiedHLMinutes
+    + linkedUnverifiedHLMinutes
+    + revenueBonus
+    + objectiveBonus
+    + (streakDays * streakBonusPerDay)
+    - (driftMinutes * driftPenaltyMult)
+    - (contextSwitches * switchPenalty)
+    - selfOptPenalty
+    + artifactBonus
   );
-  
+
+  const directiveSummary = summarizeDirectiveAlignment(log);
+  const pain = computeDirectivePain(log.date || new Date().toISOString().slice(0, 10), directiveSummary, policy);
+
   return {
     sds,
-    high_leverage_minutes: Math.round(hlProvenMinutes + hlUnprovenMinutes),
-    hl_proven_minutes: Math.round(hlProvenMinutes),
-    hl_unproven_minutes: hlUnprovenMinutes,
-    drift_minutes: driftMinutes,
+    high_leverage_minutes: Math.round(linkedVerifiedHLMinutes + linkedUnverifiedHLMinutes + unlinkedHLMinutes),
+    hl_proven_minutes: Math.round(linkedVerifiedHLMinutes),
+    hl_unproven_minutes: Math.round(linkedUnverifiedHLMinutes),
+    hl_unlinked_minutes: Math.round(unlinkedHLMinutes),
+    drift_minutes: Math.round(driftMinutes),
     revenue_actions_count: revenueCount,
-    revenue_bonus: revenueBonus,
+    revenue_actions_verified_count: revenueCount,
+    revenue_actions_total_count: revenueActions.length,
+    revenue_bonus: Math.round(revenueBonus),
+    objective_bonus: Math.round(objectiveBonus),
     context_switches: contextSwitches,
     streak_days: streakDays,
     proven_entry_count: provenEntryCount,
+    verified_objective_entries: verifiedObjectiveEntryCount,
     artifact_count: totalArtifacts,
-    artifact_bonus: artifactBonus,
-    has_artifacts: totalArtifacts > 0
+    artifact_bonus: Math.round(artifactBonus),
+    has_artifacts: totalArtifacts > 0,
+    unlinked_self_optimization_count: unlinkedSelfOptimizationCount,
+    unlinked_high_leverage_ratio: Number(unlinkedRatio.toFixed(3)),
+    directive_summary: directiveSummary,
+    directive_pain: pain
   };
 }
 
@@ -352,9 +683,17 @@ function logArtifact({ type, ref, directive = 'T1_make_jay_billionaire_v1', comp
 function calculateDailyScore(date) {
   const dayLog = loadDailyLog(date);
   const result = calculateSDS(dayLog);
+  try {
+    writeDirectivePainState(dayLog.date || date, result.directive_pain, result.directive_summary);
+  } catch {
+    // Pain telemetry is non-blocking for score calculation.
+  }
   
   const state = loadState();
   state.last_score = result.sds;
+  state.last_directive_pain_active = result && result.directive_pain && result.directive_pain.active === true;
+  state.last_verified_objective_entries = Number(result && result.verified_objective_entries || 0);
+  state.last_verified_revenue_actions = Number(result && result.revenue_actions_verified_count || 0);
   
   if (result.sds > state.highest_score) {
     state.highest_score = result.sds;
@@ -834,10 +1173,14 @@ function closeout() {
   
   // ONE interpretation line
   let interpretation = '';
-  if (summary.sds <= 0) {
-    interpretation = "📉 You're in drift. Ship one proof tonight.";
+  if (summary.directive_pain && summary.directive_pain.active === true) {
+    interpretation = `🚨 Directive pain active: ${summary.directive_pain.reasons.join(', ')}`;
+  } else if (summary.sds <= 0) {
+    interpretation = "📉 You're in drift. Ship one directive-linked verified outcome.";
   } else if (summary.sds > 0 && !summary.has_artifacts) {
     interpretation = "📋 Good effort, but unproven. Add one artifact to lock in multiplier.";
+  } else if (Number(summary.revenue_actions_verified_count || 0) === 0) {
+    interpretation = "🧭 Momentum exists, but no verified revenue outcome yet.";
   } else {
     interpretation = "✅ Proven day. Maintain streak.";
   }
@@ -850,8 +1193,8 @@ function closeout() {
   let suggestion = '';
   if (!summary.has_artifacts) {
     suggestion = "→ Run: node habits/scripts/dopamine_engine.js log_artifact note \"what you shipped\"";
-  } else if (summary.revenue_actions_count < 1) {
-    suggestion = "→ Run: node habits/scripts/dopamine_engine.js revenue lead \"what revenue move you made\"";
+  } else if (Number(summary.revenue_actions_verified_count || 0) < 1) {
+    suggestion = "→ Run: node habits/scripts/dopamine_engine.js revenue lead \"what revenue move you made\" --verified";
   } else if (summary.context_switches > 3) {
     suggestion = "→ Tomorrow: 90m Deep Work block (no switches)";
   } else {
@@ -1179,6 +1522,11 @@ function getCurrentSDS() {
   const dayLog = loadDailyLog(today);
   const result = calculateSDS(dayLog);
   const state = loadState();
+  try {
+    writeDirectivePainState(today, result.directive_pain, result.directive_summary);
+  } catch {
+    // Non-blocking telemetry write.
+  }
   
   return {
     date: today,
@@ -1193,7 +1541,13 @@ function getCurrentSDS() {
     context_switches: result.context_switches,
     artifact_count: result.artifact_count,
     artifact_bonus: result.artifact_bonus,
-    has_artifacts: result.has_artifacts
+    has_artifacts: result.has_artifacts,
+    verified_objective_entries: result.verified_objective_entries,
+    revenue_actions_verified_count: result.revenue_actions_verified_count,
+    revenue_actions_total_count: result.revenue_actions_total_count,
+    unlinked_self_optimization_count: result.unlinked_self_optimization_count,
+    unlinked_high_leverage_ratio: result.unlinked_high_leverage_ratio,
+    directive_pain: result.directive_pain
   };
 }
 
@@ -1284,11 +1638,13 @@ if (require.main === module) {
     case 'revenue': {
       // Frictionless revenue action logging
       const kind = args[1];
-      const ref = args.slice(2).join(' ').trim() || null;
+      const verifiedFlag = args.includes('--verified');
+      const ref = args.filter((a, idx) => idx >= 2 && a !== '--verified').join(' ').trim() || null;
       
       if (!kind) {
         console.log('Usage: revenue <kind> [ref]');
         console.log('  kind: lead|proposal|invoice|close|launch');
+        console.log('  flags: --verified (counts toward SDS revenue bonus)');
         console.log('  ref: optional description/reference');
         break;
       }
@@ -1299,12 +1655,52 @@ if (require.main === module) {
       dayLog.revenue_actions.push({
         kind: kind,
         ref: ref,
+        verified: verifiedFlag,
+        status: verifiedFlag ? 'verified' : 'unverified',
         timestamp: new Date().toISOString()
       });
       
       saveDailyLog(dayLog);
-      console.log(`💰 Logged revenue action: ${kind}${ref ? ' - ' + ref : ''}`);
-      console.log(`   Total today: ${dayLog.revenue_actions.length} (cap enforced in scoring)`);
+      const verifiedCount = dayLog.revenue_actions.filter(revenueActionVerified).length;
+      console.log(`💰 Logged revenue action: ${kind}${ref ? ' - ' + ref : ''}${verifiedFlag ? ' [verified]' : ''}`);
+      console.log(`   Total today: ${dayLog.revenue_actions.length} | Verified: ${verifiedCount} (only verified actions score)`);
+      break;
+    }
+
+    case 'revenue_verify': {
+      const selector = normalizeText(args[1]);
+      const today = new Date().toISOString().slice(0, 10);
+      const dayLog = loadDailyLog(today);
+      const rows = Array.isArray(dayLog.revenue_actions) ? dayLog.revenue_actions : [];
+      if (!rows.length) {
+        console.log('No revenue actions logged today.');
+        break;
+      }
+      let targetIdx = -1;
+      if (/^\d+$/.test(selector)) {
+        targetIdx = clampNumber(Number(selector), 1, rows.length, rows.length) - 1;
+      } else if (selector) {
+        targetIdx = rows.findIndex((r) => normalizeLower(r && r.kind) === normalizeLower(selector));
+      } else {
+        targetIdx = rows.length - 1;
+      }
+      if (targetIdx < 0 || targetIdx >= rows.length) {
+        console.log('Usage: revenue_verify [index|kind]');
+        console.log(`Available actions: ${rows.map((r, i) => `#${i + 1}:${r.kind}`).join(', ')}`);
+        break;
+      }
+      rows[targetIdx] = {
+        ...(rows[targetIdx] || {}),
+        verified: true,
+        outcome_verified: true,
+        status: 'verified',
+        verified_at: new Date().toISOString()
+      };
+      dayLog.revenue_actions = rows;
+      saveDailyLog(dayLog);
+      const verifiedCount = rows.filter(revenueActionVerified).length;
+      console.log(`✅ Revenue action verified: #${targetIdx + 1} (${rows[targetIdx].kind || 'unknown'})`);
+      console.log(`   Verified today: ${verifiedCount}/${rows.length}`);
       break;
     }
     
@@ -1412,7 +1808,8 @@ if (require.main === module) {
       console.log('  update - Update streaks and averages');
       console.log('  closeout - Daily closeout (<10s, auto-captures git proofs)');
       console.log('  autocap [git|files] - Auto-capture proof artifacts');
-      console.log('  revenue <kind> [ref] - Log revenue action');
+      console.log('  revenue <kind> [ref] [--verified] - Log revenue action');
+      console.log('  revenue_verify [index|kind] - Mark revenue action verified (counts in SDS)');
       console.log('  switch - Tap to log context switch');
       console.log('  achieve - Show achievements');
       console.log('');

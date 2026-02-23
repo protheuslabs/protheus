@@ -110,6 +110,7 @@ function run() {
         meta: {
           source_eye: 'local_state_fallback',
           directive_objective_id: primaryObjective.id,
+          optimization_delta_percent: 18,
           relevance_score: 75,
           relevance_tier: 'high',
           signal_quality_score: 80,
@@ -152,6 +153,7 @@ function run() {
         meta: {
           source_eye: 'local_state_fallback',
           directive_objective_id: secondaryObjective.id,
+          optimization_delta_percent: 12,
           relevance_score: 70,
           relevance_tier: 'medium',
           signal_quality_score: 72,
@@ -179,6 +181,8 @@ function run() {
       ...process.env,
       AUTONOMY_STATE_DIR: autonomyDir,
       AUTONOMY_DIRECTIVE_PULSE_ENABLED: '1',
+      // Keep this test scoped to directive reservation logic, not dopamine progress gating.
+      AUTONOMY_DOPAMINE_REQUIRE_VERIFIED_PROGRESS: '0',
       AUTONOMY_DIRECTIVE_PULSE_T1_MIN_SHARE: '0.5',
       AUTONOMY_DIRECTIVE_PULSE_T2_MIN_SHARE: '0.25'
     };

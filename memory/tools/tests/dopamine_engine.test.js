@@ -69,8 +69,8 @@ function runTests() {
     
     const result = calculateSDS(dayLog);
     
-    // 90 minutes at 1.0x = 90 (no artifact bonus either)
-    assert.strictEqual(result.high_leverage_minutes, 90, 'Should be 90 at 1.0x');
+    // Linked but unverified work without artifacts is discounted in v2.
+    assert.strictEqual(result.high_leverage_minutes, 36, 'Should be 36 at linked-unverified discounted rate');
     assert.strictEqual(result.has_artifacts, false, 'Should show no artifacts');
     
     console.log(`   ✅ Anti-gaming works: ${result.high_leverage_minutes} min at neutral (no artifacts)`);
@@ -89,8 +89,8 @@ function runTests() {
     
     const result = calculateSDS(dayLog);
     
-    // 90 minutes at 1.5x = 135
-    assert.ok(result.high_leverage_minutes >= 135, `Should be >= 135 at 1.5x, got ${result.high_leverage_minutes}`);
+    // Linked but unverified work with proof remains discounted in v2.
+    assert.strictEqual(result.high_leverage_minutes, 45, `Should be 45 at linked-unverified rate, got ${result.high_leverage_minutes}`);
     assert.strictEqual(result.has_artifacts, true, 'Should show artifacts');
     assert.strictEqual(result.artifact_count, 2, 'Should count 2 artifacts');
     assert.strictEqual(result.artifact_bonus, 4, 'Should get +3 first +1 second = +4 bonus');
@@ -164,19 +164,19 @@ function runTests() {
     const dayLog = createTestLog('2026-02-16', [
       { minutes: 30, tag: 'automation', artifacts: [{ type: 'file', ref: 'test.js' }] }
     ], {
-      revenue_actions: [
-        { kind: 'lead', ref: '1' },
-        { kind: 'proposal', ref: '2' },
-        { kind: 'close', ref: '3' },
-        { kind: 'launch', ref: '4' } // 4th action should be ignored
-      ]
-    });
+	      revenue_actions: [
+	        { kind: 'lead', ref: '1', verified: true },
+	        { kind: 'proposal', ref: '2', verified: true },
+	        { kind: 'close', ref: '3', verified: true },
+	        { kind: 'launch', ref: '4', verified: true } // 4th action should be ignored
+	      ]
+	    });
     
     const result = calculateSDS(dayLog);
     
-    // Max 3 actions = +6 bonus
-    assert.strictEqual(result.revenue_actions_count, 3, 'Should cap at 3 actions');
-    assert.strictEqual(result.revenue_bonus, 6, 'Should cap at +6 bonus');
+	    // Max 3 verified actions = +12 bonus (4 each)
+	    assert.strictEqual(result.revenue_actions_count, 3, 'Should cap at 3 actions');
+	    assert.strictEqual(result.revenue_bonus, 12, 'Should cap at +12 bonus');
     
     console.log(`   ✅ Revenue bonus capped at +${result.revenue_bonus} for ${result.revenue_actions_count} actions`);
   } catch (err) {
@@ -196,8 +196,8 @@ function runTests() {
     
     const result = calculateSDS(dayLog);
     
-    // Both entries should get 1.5x because day has artifacts
-    assert.ok(result.high_leverage_minutes >= 85, `Should be ~90 at 1.5x, got ${result.high_leverage_minutes}`);
+	    // Day-level artifacts provide proof, but unverified linked work still uses the reduced multiplier.
+	    assert.strictEqual(result.high_leverage_minutes, 30, `Should be 30 at linked-unverified rate, got ${result.high_leverage_minutes}`);
     
     console.log(`   ✅ Day-level artifacts enable 1.5x: ${result.high_leverage_minutes} min`);
   } catch (err) {
@@ -211,16 +211,16 @@ function runTests() {
     const dayLog = createTestLog('2026-02-16', [
       { minutes: 30, tag: 'sales', artifacts: [{ type: 'file', ref: 'proposal.pdf' }] }
     ], {
-      revenue_actions: [
-        { kind: 'lead', ref: 'Acme Corp' },
-        { kind: 'proposal', ref: 'Acme-2026' }
-      ]
-    });
+	      revenue_actions: [
+	        { kind: 'lead', ref: 'Acme Corp', verified: true },
+	        { kind: 'proposal', ref: 'Acme-2026', verified: true }
+	      ]
+	    });
     
     const result = calculateSDS(dayLog);
     
-    assert.strictEqual(result.revenue_actions_count, 2, 'Should count 2 actions');
-    assert.strictEqual(result.revenue_bonus, 4, 'Should get +4 for 2 actions');
+	    assert.strictEqual(result.revenue_actions_count, 2, 'Should count 2 actions');
+	    assert.strictEqual(result.revenue_bonus, 8, 'Should get +8 for 2 verified actions');
     
     console.log(`   ✅ Structured revenue: ${result.revenue_actions_count} actions (+${result.revenue_bonus})`);
   } catch (err) {
@@ -354,7 +354,13 @@ function runTests() {
     
     assert.ok(output.includes('SDS:') || output.includes('Strategic Dopamine Score'), 
       'Closeout should print SDS summary');
-    assert.ok(output.includes('Proven day') || output.includes('drift') || output.includes('unproven'),
+    assert.ok(
+      output.includes('Proven day')
+      || output.includes('drift')
+      || output.includes('unproven')
+      || output.includes('Directive pain active')
+      || output.includes('Momentum exists')
+      || output.includes('Great execution'),
       'Closeout should print interpretation');
     
     console.log(`   ✅ Closeout prints summary & interpretation`);
@@ -631,7 +637,15 @@ function runTests() {
     
     // Verify closeout output contains expected elements
     assert.ok(output.includes('SDS:') || output.includes('Strategic Dopamine'), 'Closeout should show SDS');
-    assert.ok(output.includes('Proven day') || output.includes('Good effort') || output.includes('drift'), 'Closeout should show interpretation');
+    assert.ok(
+      output.includes('Proven day')
+      || output.includes('Good effort')
+      || output.includes('drift')
+      || output.includes('Directive pain active')
+      || output.includes('Momentum exists')
+      || output.includes('Great execution'),
+      'Closeout should show interpretation'
+    );
     
     console.log(`   ✅ closeout runs successfully (autocap auto-triggers before scoring)`);
   } catch (err) {
