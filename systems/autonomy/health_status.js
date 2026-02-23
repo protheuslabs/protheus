@@ -87,6 +87,9 @@ const SYSTEM_BUDGET_AUTOPAUSE_PATH = process.env.AUTONOMY_HEALTH_SYSTEM_BUDGET_A
 const STARTUP_ATTESTATION_AUDIT_PATH = process.env.AUTONOMY_HEALTH_STARTUP_ATTESTATION_AUDIT_PATH
   ? path.resolve(process.env.AUTONOMY_HEALTH_STARTUP_ATTESTATION_AUDIT_PATH)
   : path.join(ROOT, 'state', 'security', 'startup_attestation_audit.jsonl');
+const DREAM_IDLE_RUNS_PATH = process.env.AUTONOMY_HEALTH_DREAM_IDLE_RUNS_PATH
+  ? path.resolve(process.env.AUTONOMY_HEALTH_DREAM_IDLE_RUNS_PATH)
+  : path.join(ROOT, 'state', 'memory', 'dreams', 'idle_runs.jsonl');
 
 const NOW_ISO_OVERRIDE = String(process.env.AUTONOMY_HEALTH_NOW_ISO || '').trim();
 const SKIP_COMMANDS = String(process.env.AUTONOMY_HEALTH_SKIP_COMMANDS || '0') === '1';
@@ -102,6 +105,12 @@ const STARVATION_CRITICAL_HOURS = Number(process.env.AUTONOMY_HEALTH_STARVATION_
 const STARVATION_CRITICAL_ELIGIBLE = Number(process.env.AUTONOMY_HEALTH_STARVATION_CRITICAL_ELIGIBLE || 6);
 const STARVATION_PREVIEW_WARN_ELIGIBLE = Number(process.env.AUTONOMY_HEALTH_STARVATION_PREVIEW_WARN_ELIGIBLE || STARVATION_MIN_ELIGIBLE);
 const STARVATION_PREVIEW_WARN_HOURS = Number(process.env.AUTONOMY_HEALTH_STARVATION_PREVIEW_WARN_HOURS || STARVATION_WARN_HOURS);
+const STARVATION_MIN_DAILY_EXECUTIONS = Number(
+  process.env.AUTONOMY_HEALTH_STARVATION_MIN_DAILY_EXECUTIONS
+  || process.env.AUTONOMY_MIN_DAILY_EXECUTIONS
+  || 1
+);
+const STARVATION_QUOTA_GRACE_HOURS = Number(process.env.AUTONOMY_HEALTH_STARVATION_QUOTA_GRACE_HOURS || 8);
 const QUEUE_BACKLOG_WARN_OPEN = Number(process.env.AUTONOMY_HEALTH_QUEUE_BACKLOG_WARN_OPEN || 40);
 const QUEUE_BACKLOG_CRITICAL_OPEN = Number(process.env.AUTONOMY_HEALTH_QUEUE_BACKLOG_CRITICAL_OPEN || 80);
 const QUEUE_BACKLOG_DIVERGENCE_WARN = Number(process.env.AUTONOMY_HEALTH_QUEUE_BACKLOG_DIVERGENCE_WARN || 12);
@@ -114,6 +123,12 @@ const LOOP_STALL_CRITICAL_HOURS = Number(process.env.AUTONOMY_HEALTH_LOOP_STALL_
 
 const ROUTING_DOWN_WARN = Number(process.env.AUTONOMY_HEALTH_ROUTING_DOWN_WARN || 1);
 const ROUTING_DOWN_CRITICAL = Number(process.env.AUTONOMY_HEALTH_ROUTING_DOWN_CRITICAL || 3);
+const DREAM_DEGRADE_WARN_RATIO = Number(process.env.AUTONOMY_HEALTH_DREAM_DEGRADE_WARN_RATIO || 0.35);
+const DREAM_DEGRADE_CRITICAL_RATIO = Number(process.env.AUTONOMY_HEALTH_DREAM_DEGRADE_CRITICAL_RATIO || 0.75);
+const DREAM_FALLBACK_WARN_COUNT = Number(process.env.AUTONOMY_HEALTH_DREAM_FALLBACK_WARN_COUNT || 2);
+const DREAM_PREFLIGHT_FAIL_WARN_COUNT = Number(process.env.AUTONOMY_HEALTH_DREAM_PREFLIGHT_FAIL_WARN_COUNT || 3);
+const DREAM_MISSING_RUN_WARN_HOURS = Number(process.env.AUTONOMY_HEALTH_DREAM_MISSING_RUN_WARN_HOURS || 12);
+const DREAM_MISSING_RUN_CRITICAL_HOURS = Number(process.env.AUTONOMY_HEALTH_DREAM_MISSING_RUN_CRITICAL_HOURS || 24);
 const BUDGET_DEGRADE_WARN_COUNT = Number(process.env.AUTONOMY_HEALTH_BUDGET_DEGRADE_WARN_COUNT || 3);
 const ROUTE_ATTESTATION_WARN = Number(process.env.AUTONOMY_HEALTH_ROUTE_ATTESTATION_WARN || 1);
 const ROUTE_ATTESTATION_CRITICAL = Number(process.env.AUTONOMY_HEALTH_ROUTE_ATTESTATION_CRITICAL || 3);
@@ -469,6 +484,17 @@ function readAutonomyRunEvents(dates) {
     }
   }
   return rows;
+}
+
+function readIdleDreamEvents(dates) {
+  const allowedDates = new Set(Array.isArray(dates) ? dates.map((d) => String(d || '')) : []);
+  const rows = readJsonl(DREAM_IDLE_RUNS_PATH);
+  return rows.filter((row) => {
+    const evt = row && typeof row === 'object' ? row : {};
+    const day = String(evt.date || '').trim() || String(evt.ts || '').slice(0, 10);
+    if (!day) return false;
+    return allowedDates.size > 0 ? allowedDates.has(day) : true;
+  });
 }
 
 function isAttemptedReceipt(rec) {
@@ -832,6 +858,15 @@ function assessProposalStarvation(now, proposalRows, queueEvents, runEvents, aut
     .reduce((m, x) => (m == null || x > m ? x : m), null);
   const ageHours = hoursSince(lastProgress, now);
   const eligibleCount = eligible.length;
+  const executedCount = runEvents.filter((e) => String(e.result || '') === 'executed').length;
+  const quotaDeficit = Number(STARVATION_MIN_DAILY_EXECUTIONS || 0) > 0
+    && eligibleCount > 0
+    && executedCount < Number(STARVATION_MIN_DAILY_EXECUTIONS || 0);
+  const quotaGraceHours = Number.isFinite(Number(STARVATION_QUOTA_GRACE_HOURS))
+    ? Math.max(1, Number(STARVATION_QUOTA_GRACE_HOURS))
+    : 8;
+  const quotaWarn = quotaDeficit
+    && (ageHours == null || ageHours >= quotaGraceHours);
   if (!autonomyEnabled) {
     const previewWarn = eligibleCount >= Number(STARVATION_PREVIEW_WARN_ELIGIBLE || STARVATION_MIN_ELIGIBLE || 3)
       && (ageHours == null || ageHours >= Number(STARVATION_PREVIEW_WARN_HOURS || STARVATION_WARN_HOURS || 18));
@@ -845,7 +880,9 @@ function assessProposalStarvation(now, proposalRows, queueEvents, runEvents, aut
         eligible_count: eligibleCount,
         queue_accept_count: acceptedEvents.length,
         queue_outcome_count: outcomeEvents.length,
-        run_executed_count: runEvents.filter((e) => String(e.result || '') === 'executed').length,
+        run_executed_count: executedCount,
+        min_daily_executions: Number(STARVATION_MIN_DAILY_EXECUTIONS || 0),
+        execution_quota_deficit: quotaDeficit,
         last_progress_ts: lastProgress ? new Date(lastProgress).toISOString() : null,
         hours_since_progress: ageHours
       },
@@ -855,7 +892,9 @@ function assessProposalStarvation(now, proposalRows, queueEvents, runEvents, aut
         preview_warn_hours: Number(STARVATION_PREVIEW_WARN_HOURS || STARVATION_WARN_HOURS || 18),
         warn_hours: Number(STARVATION_WARN_HOURS || 18),
         critical_hours: Number(STARVATION_CRITICAL_HOURS || 36),
-        critical_eligible: Number(STARVATION_CRITICAL_ELIGIBLE || 6)
+        critical_eligible: Number(STARVATION_CRITICAL_ELIGIBLE || 6),
+        min_daily_executions: Number(STARVATION_MIN_DAILY_EXECUTIONS || 0),
+        quota_grace_hours: quotaGraceHours
       }
     };
   }
@@ -863,19 +902,25 @@ function assessProposalStarvation(now, proposalRows, queueEvents, runEvents, aut
     && (ageHours == null || ageHours >= Number(STARVATION_WARN_HOURS || 18));
   const critical = eligibleCount >= Number(STARVATION_CRITICAL_ELIGIBLE || 6)
     && (ageHours == null || ageHours >= Number(STARVATION_CRITICAL_HOURS || 36));
-  const level = critical ? 'critical' : (warn ? 'warn' : 'ok');
+  const level = critical ? 'critical' : ((warn || quotaWarn) ? 'warn' : 'ok');
   return {
     name: 'proposal_starvation',
     ok: level === 'ok',
     level,
-    reason: level === 'ok'
+    reason: critical
+      ? `eligible=${eligibleCount} age_hours=${ageHours == null ? 'none' : ageHours}`
+      : (quotaWarn
+        ? `daily_execution_quota_deficit executed=${executedCount} required=${Number(STARVATION_MIN_DAILY_EXECUTIONS || 0)}`
+        : (level === 'ok'
       ? 'eligible_proposals_have_recent_progress'
-      : `eligible=${eligibleCount} age_hours=${ageHours == null ? 'none' : ageHours}`,
+      : `eligible=${eligibleCount} age_hours=${ageHours == null ? 'none' : ageHours}`)),
     metrics: {
       eligible_count: eligibleCount,
       queue_accept_count: acceptedEvents.length,
       queue_outcome_count: outcomeEvents.length,
-      run_executed_count: runEvents.filter((e) => String(e.result || '') === 'executed').length,
+      run_executed_count: executedCount,
+      min_daily_executions: Number(STARVATION_MIN_DAILY_EXECUTIONS || 0),
+      execution_quota_deficit: quotaDeficit,
       last_progress_ts: lastProgress ? new Date(lastProgress).toISOString() : null,
       hours_since_progress: ageHours
     },
@@ -883,7 +928,9 @@ function assessProposalStarvation(now, proposalRows, queueEvents, runEvents, aut
       min_eligible: Number(STARVATION_MIN_ELIGIBLE || 3),
       warn_hours: Number(STARVATION_WARN_HOURS || 18),
       critical_hours: Number(STARVATION_CRITICAL_HOURS || 36),
-      critical_eligible: Number(STARVATION_CRITICAL_ELIGIBLE || 6)
+      critical_eligible: Number(STARVATION_CRITICAL_ELIGIBLE || 6),
+      min_daily_executions: Number(STARVATION_MIN_DAILY_EXECUTIONS || 0),
+      quota_grace_hours: quotaGraceHours
     }
   };
 }
@@ -1394,6 +1441,75 @@ function assessBudgetGuard(now, dateSet) {
   };
 }
 
+function assessDreamDegradation(now, dateSet, autonomyEnabled = true) {
+  const rows = readIdleDreamEvents(dateSet);
+  const cycleRuns = rows.filter((row) => String(row && row.type || '') === 'idle_dream_cycle_run');
+  const preflightFailed = rows.filter((row) => (
+    String(row && row.type || '') === 'idle_dream_model_preflight'
+    && String(row && row.result || '').toLowerCase() === 'failed'
+  ));
+  const degradedRuns = cycleRuns.filter((row) => {
+    const idleOk = row && row.idle_ok === true;
+    const idleReason = String(row && row.idle_reason || '').toLowerCase();
+    if (!idleOk) return true;
+    return idleReason.includes('fallback');
+  });
+  const fallbackRuns = cycleRuns.filter((row) => String(row && row.idle_reason || '').toLowerCase().includes('fallback'));
+  const cycleCount = cycleRuns.length;
+  const degradedCount = degradedRuns.length;
+  const degradedRatio = cycleCount > 0 ? Number((degradedCount / cycleCount).toFixed(3)) : 0;
+  const fallbackCount = fallbackRuns.length;
+  const preflightFailCount = preflightFailed.length;
+  const lastCycleTs = lastTs(cycleRuns, () => true);
+  const ageHours = hoursSince(lastCycleTs, now);
+
+  let level = 'ok';
+  let reason = 'dream_cycle_healthy';
+  if (cycleCount <= 0) {
+    level = autonomyEnabled ? 'critical' : 'warn';
+    reason = autonomyEnabled ? 'dream_cycle_missing' : 'dream_cycle_missing_preview_only';
+  } else if (Number.isFinite(ageHours) && ageHours >= Number(DREAM_MISSING_RUN_CRITICAL_HOURS || 24)) {
+    level = autonomyEnabled ? 'critical' : 'warn';
+    reason = autonomyEnabled ? 'dream_cycle_stale_critical' : 'dream_cycle_stale_preview_only';
+  } else if (degradedRatio >= Number(DREAM_DEGRADE_CRITICAL_RATIO || 0.75)) {
+    level = autonomyEnabled ? 'critical' : 'warn';
+    reason = autonomyEnabled ? 'dream_cycle_degraded_critical' : 'dream_cycle_degraded_preview_only';
+  } else if (
+    degradedRatio >= Number(DREAM_DEGRADE_WARN_RATIO || 0.35)
+    || fallbackCount >= Number(DREAM_FALLBACK_WARN_COUNT || 2)
+    || preflightFailCount >= Number(DREAM_PREFLIGHT_FAIL_WARN_COUNT || 3)
+    || (Number.isFinite(ageHours) && ageHours >= Number(DREAM_MISSING_RUN_WARN_HOURS || 12))
+  ) {
+    level = 'warn';
+    reason = 'dream_cycle_degraded_warn';
+  }
+
+  return {
+    name: 'dream_degradation',
+    ok: level === 'ok',
+    level,
+    reason,
+    metrics: {
+      autonomy_enabled: !!autonomyEnabled,
+      cycle_runs: cycleCount,
+      degraded_runs: degradedCount,
+      degraded_ratio: degradedRatio,
+      fallback_runs: fallbackCount,
+      preflight_failed_count: preflightFailCount,
+      last_cycle_ts: lastCycleTs ? new Date(lastCycleTs).toISOString() : null,
+      last_cycle_age_hours: Number.isFinite(ageHours) ? ageHours : null
+    },
+    thresholds: {
+      warn_degraded_ratio: Number(DREAM_DEGRADE_WARN_RATIO || 0.35),
+      critical_degraded_ratio: Number(DREAM_DEGRADE_CRITICAL_RATIO || 0.75),
+      warn_fallback_count: Number(DREAM_FALLBACK_WARN_COUNT || 2),
+      warn_preflight_failed_count: Number(DREAM_PREFLIGHT_FAIL_WARN_COUNT || 3),
+      warn_missing_run_hours: Number(DREAM_MISSING_RUN_WARN_HOURS || 12),
+      critical_missing_run_hours: Number(DREAM_MISSING_RUN_CRITICAL_HOURS || 24)
+    }
+  };
+}
+
 function assessRouteAttestation(receiptSummaryResult) {
   const payload = receiptSummaryResult && receiptSummaryResult.payload && typeof receiptSummaryResult.payload === 'object'
     ? receiptSummaryResult.payload
@@ -1833,6 +1949,7 @@ function main() {
 
   const checks = {
     dark_eyes: assessDarkEyes(now, registry, eyeMetaMap),
+    dream_degradation: assessDreamDegradation(now, dates, autonomyEnabled),
     queue_backlog: assessQueueBacklog(
       now,
       proposalRows,
@@ -1946,6 +2063,7 @@ module.exports = {
   assessProposalStarvation,
   assessLoopStall,
   assessDrift,
+  assessDreamDegradation,
   assessRoutingDegraded,
   assessBudgetGuard,
   assessRouteAttestation,

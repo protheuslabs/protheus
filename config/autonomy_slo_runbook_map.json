@@ -1,0 +1,46 @@
+{
+  "version": "1.0",
+  "required_checks": [
+    "proposal_starvation",
+    "queue_backlog",
+    "dark_eyes",
+    "loop_stall",
+    "drift",
+    "budget_pressure",
+    "dream_degradation"
+  ],
+  "runbook": {
+    "path": "docs/OPERATOR_RUNBOOK.md"
+  },
+  "mappings": {
+    "proposal_starvation": {
+      "section": "Incident 3: Sensory Starvation",
+      "severity": "warn"
+    },
+    "queue_backlog": {
+      "section": "Incident 5: Queue Backlog / Churn",
+      "severity": "warn"
+    },
+    "dark_eyes": {
+      "section": "Incident 3: Sensory Starvation",
+      "severity": "critical"
+    },
+    "loop_stall": {
+      "section": "Incident 4: Autonomy Stall",
+      "severity": "critical"
+    },
+    "drift": {
+      "section": "Incident 4: Autonomy Stall",
+      "severity": "warn"
+    },
+    "budget_pressure": {
+      "section": "Incident 7: Budget Pressure / Autopause",
+      "health_check": "budget_guard",
+      "severity": "warn"
+    },
+    "dream_degradation": {
+      "section": "Incident 6: Dream Degradation",
+      "severity": "warn"
+    }
+  }
+}

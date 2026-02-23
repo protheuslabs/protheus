@@ -188,6 +188,61 @@ Verification:
 2. no repeated reject spam for same id/reason in `state/sensory/queue_log.jsonl`
 3. `health_status` queue backlog check returns pass
 
+## Incident 6: Dream Degradation
+
+Symptoms:
+
+- `health_status` reports `dream_degradation` warn/critical
+- repeated idle/REM fallback usage with low synthesis quality
+- dream model cooldown churn (timeouts/rate limits)
+
+Diagnose:
+
+1. `node systems/autonomy/health_status.js [YYYY-MM-DD]`
+2. `node systems/memory/idle_dream_cycle.js status`
+3. `node systems/memory/idle_dream_cycle.js run [YYYY-MM-DD] --force=1`
+
+Containment / Recovery:
+
+1. If repeated cloud/local timeout loops occur, keep dream lane degraded until stable:
+`IDLE_DREAM_FORCE_DEGRADED=1 node systems/memory/idle_dream_cycle.js run [YYYY-MM-DD] --force=1`
+2. Reduce dream pressure during instability:
+`IDLE_DREAM_MAX_ITEMS=6 node systems/memory/idle_dream_cycle.js run [YYYY-MM-DD] --force=1`
+3. Restore normal lane after two stable cycles.
+
+Verification:
+
+1. `health_status` dream degradation returns pass.
+2. Dream outputs include non-fallback synthesis rows.
+3. Timeout/cooldown events no longer trend upward.
+
+## Incident 7: Budget Pressure / Autopause
+
+Symptoms:
+
+- `health_status` reports `budget_pressure` warn/critical
+- `budget_autopause_active=true` in health gates
+- execution lanes stop with budget/autopause gate reasons
+
+Diagnose:
+
+1. `node systems/autonomy/health_status.js [YYYY-MM-DD]`
+2. `node systems/budget/system_budget.js status`
+3. `node systems/budget/system_budget.js tail --limit=50`
+
+Containment / Recovery:
+
+1. Keep autonomy in score-only while pressure is unresolved:
+`node systems/autonomy/strategy_mode.js set --mode=score_only --approval-note="budget pressure containment"`
+2. Allow autopause window to expire or clear with approved operator action.
+3. Lower non-critical lane usage before re-enabling execute/canary.
+
+Verification:
+
+1. `budget_pressure` check returns pass in `health_status`.
+2. New budget decisions are predominantly `allow`.
+3. Autopause no longer active.
+
 ## Rollback Drill (Weekly)
 
 Goal: verify rollback muscle memory and logging path.

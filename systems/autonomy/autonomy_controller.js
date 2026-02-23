@@ -51,7 +51,10 @@ const {
   strategyDuplicateWindowHours,
   strategyCanaryDailyExecLimit
 } = require('../../lib/strategy_resolver.js');
-const { annotateCampaignPriority } = require('../../lib/strategy_campaign_scheduler.js');
+const {
+  annotateCampaignPriority,
+  buildCampaignDecompositionPlans
+} = require('../../lib/strategy_campaign_scheduler.js');
 const {
   evaluateTier1Governance,
   classifyAndRecordException,
@@ -159,6 +162,7 @@ const AUTONOMY_MIN_DOPAMINE_AVG7 = Number(process.env.AUTONOMY_MIN_DOPAMINE_AVG7
 const AUTONOMY_MIN_ROUTE_TOKENS = Number(process.env.AUTONOMY_MIN_ROUTE_TOKENS || 500);
 const AUTONOMY_SKIP_STUB = String(process.env.AUTONOMY_SKIP_STUB || '1') !== '0';
 const AUTONOMY_MAX_RUNS_PER_DAY = Number(process.env.AUTONOMY_MAX_RUNS_PER_DAY || 4);
+const AUTONOMY_MIN_DAILY_EXECUTIONS = Math.max(0, Number(process.env.AUTONOMY_MIN_DAILY_EXECUTIONS || 1));
 const AUTONOMY_MIN_MINUTES_BETWEEN_RUNS = Number(process.env.AUTONOMY_MIN_MINUTES_BETWEEN_RUNS || 15);
 const AUTONOMY_UNCHANGED_SHORT_CIRCUIT_ENABLED = String(process.env.AUTONOMY_UNCHANGED_SHORT_CIRCUIT_ENABLED || '1') !== '0';
 const AUTONOMY_UNCHANGED_SHORT_CIRCUIT_MINUTES = Number(process.env.AUTONOMY_UNCHANGED_SHORT_CIRCUIT_MINUTES || 30);
@@ -295,6 +299,7 @@ const AUTONOMY_DIRECTIVE_PULSE_ESCALATE_AFTER = Number(process.env.AUTONOMY_DIRE
 const AUTONOMY_DIRECTIVE_PULSE_ESCALATE_WINDOW_HOURS = Number(process.env.AUTONOMY_DIRECTIVE_PULSE_ESCALATE_WINDOW_HOURS || 24);
 const AUTONOMY_DIRECTIVE_PULSE_RESERVATION_HARD = String(process.env.AUTONOMY_DIRECTIVE_PULSE_RESERVATION_HARD || '0') === '1';
 const AUTONOMY_OBJECTIVE_BINDING_REQUIRED = String(process.env.AUTONOMY_OBJECTIVE_BINDING_REQUIRED || '1') !== '0';
+const AUTONOMY_EXECUTE_REQUIRE_T1 = String(process.env.AUTONOMY_EXECUTE_REQUIRE_T1 || '1') !== '0';
 const AUTONOMY_OBJECTIVE_ALLOCATION_RANK_BONUS = Number(process.env.AUTONOMY_OBJECTIVE_ALLOCATION_RANK_BONUS || 0.25);
 const AUTONOMY_OBJECTIVE_MIX_ENABLED = String(process.env.AUTONOMY_OBJECTIVE_MIX_ENABLED || '1') !== '0';
 const AUTONOMY_OBJECTIVE_MIX_WINDOW_DAYS = Math.max(1, Number(process.env.AUTONOMY_OBJECTIVE_MIX_WINDOW_DAYS || 7));
@@ -375,6 +380,11 @@ const AUTONOMY_DEPRIORITIZED_SOURCE_EYES = new Set(
     .map(s => s.trim().toLowerCase())
     .filter(Boolean)
 );
+const AUTONOMY_CAMPAIGN_DECOMPOSE_ENABLED = String(process.env.AUTONOMY_CAMPAIGN_DECOMPOSE_ENABLED || '1') !== '0';
+const AUTONOMY_CAMPAIGN_DECOMPOSE_MAX_PER_RUN = Math.max(0, Number(process.env.AUTONOMY_CAMPAIGN_DECOMPOSE_MAX_PER_RUN || 2));
+const AUTONOMY_CAMPAIGN_DECOMPOSE_MIN_OPEN_PER_TYPE = Math.max(1, Number(process.env.AUTONOMY_CAMPAIGN_DECOMPOSE_MIN_OPEN_PER_TYPE || 1));
+const AUTONOMY_CAMPAIGN_DECOMPOSE_DEFAULT_RISK = String(process.env.AUTONOMY_CAMPAIGN_DECOMPOSE_DEFAULT_RISK || 'low').trim().toLowerCase() || 'low';
+const AUTONOMY_CAMPAIGN_DECOMPOSE_DEFAULT_IMPACT = String(process.env.AUTONOMY_CAMPAIGN_DECOMPOSE_DEFAULT_IMPACT || 'medium').trim().toLowerCase() || 'medium';
 let STRATEGY_CACHE = undefined;
 let OUTCOME_FITNESS_POLICY_CACHE = undefined;
 
@@ -441,6 +451,30 @@ function executionAllowedByFeatureFlag(executionMode, shadowOnly = false) {
   if (shadowOnly) return true;
   if (String(process.env.AUTONOMY_ENABLED || '') === '1') return true;
   return AUTONOMY_CANARY_ALLOW_WITH_FLAG_OFF && String(executionMode || '') === 'canary_execute';
+}
+
+function isTier1ObjectiveId(objectiveId) {
+  const id = String(objectiveId || '').trim();
+  if (!id) return false;
+  return /^T1(?:\b|[_:-])/i.test(id);
+}
+
+function isTier1CandidateObjective(candidate) {
+  const c = candidate && typeof candidate === 'object' ? candidate : {};
+  const binding = c.objective_binding && typeof c.objective_binding === 'object' ? c.objective_binding : {};
+  const pulse = c.directive_pulse && typeof c.directive_pulse === 'object' ? c.directive_pulse : {};
+  const pulseTier = normalizeDirectiveTier(pulse.tier, 99);
+  if (pulseTier <= 1) return true;
+  if (isTier1ObjectiveId(binding.objective_id)) return true;
+  if (isTier1ObjectiveId(pulse.objective_id)) return true;
+  return false;
+}
+
+function needsExecutionQuota(executionMode, shadowOnly, executedToday) {
+  if (shadowOnly) return false;
+  if (!isExecuteMode(executionMode)) return false;
+  if (!Number.isFinite(Number(AUTONOMY_MIN_DAILY_EXECUTIONS)) || Number(AUTONOMY_MIN_DAILY_EXECUTIONS) <= 0) return false;
+  return Number(executedToday || 0) < Number(AUTONOMY_MIN_DAILY_EXECUTIONS);
 }
 
 function ensureDir(dir) {
@@ -6136,6 +6170,86 @@ function maybeRunModelCatalogLoop(dateStr) {
   }
 }
 
+function primaryDirectiveObjectiveId() {
+  let directives = [];
+  try {
+    directives = loadActiveDirectives({ allowMissing: true });
+  } catch {
+    return '';
+  }
+  const list = Array.isArray(directives) ? directives : [];
+  let best = null;
+  for (const row of list) {
+    if (!row || typeof row !== 'object') continue;
+    const data = row.data && typeof row.data === 'object' ? row.data : {};
+    const metadata = data.metadata && typeof data.metadata === 'object' ? data.metadata : {};
+    const objectiveId = String(row.id || metadata.id || '').trim();
+    if (!objectiveId) continue;
+    const tierRaw = Number.isFinite(Number(row.tier))
+      ? Number(row.tier)
+      : Number(metadata.tier);
+    const tier = Number.isFinite(tierRaw) ? normalizeDirectiveTier(tierRaw, 9) : 9;
+    if (!best || tier < best.tier || (tier === best.tier && objectiveId < best.id)) {
+      best = { id: objectiveId, tier };
+    }
+  }
+  return best ? best.id : '';
+}
+
+function applyCampaignDecompositionSeeds(dateStr, strategy, opts = {}) {
+  if (!AUTONOMY_CAMPAIGN_DECOMPOSE_ENABLED) {
+    return { ok: true, enabled: false, created: 0, proposal_ids: [] };
+  }
+  const proposals = loadProposalsForDate(dateStr);
+  if (!Array.isArray(proposals) || proposals.length <= 0) {
+    return { ok: true, enabled: true, created: 0, proposal_ids: [], reason: 'no_proposals' };
+  }
+  const defaultObjectiveId = primaryDirectiveObjectiveId();
+  const plan = buildCampaignDecompositionPlans(proposals, strategy, {
+    min_open_per_type: AUTONOMY_CAMPAIGN_DECOMPOSE_MIN_OPEN_PER_TYPE,
+    max_additions: AUTONOMY_CAMPAIGN_DECOMPOSE_MAX_PER_RUN,
+    default_objective_id: defaultObjectiveId,
+    default_risk: AUTONOMY_CAMPAIGN_DECOMPOSE_DEFAULT_RISK,
+    default_impact: AUTONOMY_CAMPAIGN_DECOMPOSE_DEFAULT_IMPACT
+  });
+  const additions = Array.isArray(plan && plan.additions) ? plan.additions : [];
+  if (additions.length <= 0) {
+    return {
+      ok: true,
+      enabled: true,
+      created: 0,
+      proposal_ids: [],
+      campaign_count: Number(plan && plan.campaign_count || 0),
+      min_open_per_type: Number(plan && plan.min_open_per_type || AUTONOMY_CAMPAIGN_DECOMPOSE_MIN_OPEN_PER_TYPE),
+      max_additions: Number(plan && plan.max_additions || AUTONOMY_CAMPAIGN_DECOMPOSE_MAX_PER_RUN)
+    };
+  }
+  const next = proposals.slice();
+  for (const row of additions) next.push(row);
+  saveJson(path.join(PROPOSALS_DIR, `${dateStr}.json`), next);
+  if (opts.logRun === true) {
+    writeRun(dateStr, {
+      ts: nowIso(),
+      type: 'autonomy_campaign_decomposition',
+      result: 'seeded',
+      campaign_count: Number(plan && plan.campaign_count || 0),
+      created: additions.length,
+      proposal_ids: additions.map((row) => String(row && row.id || '')).filter(Boolean).slice(0, 32),
+      min_open_per_type: Number(plan && plan.min_open_per_type || AUTONOMY_CAMPAIGN_DECOMPOSE_MIN_OPEN_PER_TYPE),
+      max_additions: Number(plan && plan.max_additions || AUTONOMY_CAMPAIGN_DECOMPOSE_MAX_PER_RUN)
+    });
+  }
+  return {
+    ok: true,
+    enabled: true,
+    created: additions.length,
+    proposal_ids: additions.map((row) => String(row && row.id || '')).filter(Boolean),
+    campaign_count: Number(plan && plan.campaign_count || 0),
+    min_open_per_type: Number(plan && plan.min_open_per_type || AUTONOMY_CAMPAIGN_DECOMPOSE_MIN_OPEN_PER_TYPE),
+    max_additions: Number(plan && plan.max_additions || AUTONOMY_CAMPAIGN_DECOMPOSE_MAX_PER_RUN)
+  };
+}
+
 function candidatePool(dateStr) {
   const proposals = loadProposalsForDate(dateStr);
   const overlay = buildOverlay(allDecisionEvents());
@@ -6667,6 +6781,8 @@ function readinessCmd(dateStr) {
   const gateExhaustionStreak = consecutiveGateExhaustedAttempts(attempts);
   const lastAttempt = attempts.length ? attempts[attempts.length - 1] : null;
   const lastAttemptMinutesAgo = lastAttempt ? minutesSinceTs(lastAttempt.ts) : null;
+  const executionQuotaDeficit = needsExecutionQuota(executionMode, false, executedToday);
+  const executionQuotaRemaining = Math.max(0, Number(AUTONOMY_MIN_DAILY_EXECUTIONS || 0) - Number(executedToday || 0));
   const tier1Governance = evaluateTier1GovernanceSnapshot(dateStr, attemptsToday, 0, {
     execution_mode: executionMode,
     strategy_budget: strategyBudget
@@ -6710,7 +6826,7 @@ function readinessCmd(dateStr) {
     });
   }
 
-  if (maxRunsPerDay > 0 && attemptsToday >= maxRunsPerDay) {
+  if (maxRunsPerDay > 0 && attemptsToday >= maxRunsPerDay && !executionQuotaDeficit) {
     addBlocker('daily_cap', 'daily run cap reached', {
       next_at: startOfNextUtcDay(dateStr),
       meta: { attempts_today: attemptsToday, max_runs_per_day: maxRunsPerDay }
@@ -6722,6 +6838,7 @@ function readinessCmd(dateStr) {
     && Number.isFinite(Number(canaryDailyExecLimit))
     && Number(canaryDailyExecLimit) > 0
     && executedToday >= Number(canaryDailyExecLimit)
+    && !executionQuotaDeficit
   ) {
     addBlocker('canary_cap', 'canary execute cap reached', {
       next_at: startOfNextUtcDay(dateStr),
@@ -6733,6 +6850,7 @@ function readinessCmd(dateStr) {
     AUTONOMY_MIN_MINUTES_BETWEEN_RUNS > 0
     && lastAttemptMinutesAgo != null
     && lastAttemptMinutesAgo < AUTONOMY_MIN_MINUTES_BETWEEN_RUNS
+    && !executionQuotaDeficit
   ) {
     addBlocker('interval', 'minimum interval between runs not elapsed', {
       next_at: isoAfterMinutes(AUTONOMY_MIN_MINUTES_BETWEEN_RUNS - lastAttemptMinutesAgo),
@@ -6786,6 +6904,11 @@ function readinessCmd(dateStr) {
 
   const proposalDate = latestProposalDate(dateStr);
   let pool = [];
+  let campaignDecomposition = {
+    enabled: AUTONOMY_CAMPAIGN_DECOMPOSE_ENABLED,
+    created: 0,
+    proposal_ids: []
+  };
   if (!proposalDate) {
     addBlocker('no_proposals', 'no proposal file available');
   } else {
@@ -6800,6 +6923,7 @@ function readinessCmd(dateStr) {
         }
       });
     }
+    campaignDecomposition = applyCampaignDecompositionSeeds(proposalDate, strategy, { logRun: false });
     pool = candidatePool(proposalDate);
     if (!pool.length) {
       addBlocker('no_candidates', 'no admissible proposal candidates after policy filters');
@@ -6853,10 +6977,20 @@ function readinessCmd(dateStr) {
     strategy_id: strategy ? strategy.id : null,
     attempts_today: attemptsToday,
     executed_today: executedToday,
+    execution_quota_deficit: executionQuotaDeficit,
+    execution_quota_remaining: executionQuotaRemaining,
     max_runs_per_day: maxRunsPerDay,
     canary_daily_exec_limit: canaryDailyExecLimit,
+    min_daily_executions: AUTONOMY_MIN_DAILY_EXECUTIONS,
     proposal_date: proposalDate || null,
     candidate_pool_size: Array.isArray(pool) ? pool.length : 0,
+    campaign_decomposition: {
+      enabled: campaignDecomposition && campaignDecomposition.enabled === true,
+      created: Number(campaignDecomposition && campaignDecomposition.created || 0),
+      proposal_ids: Array.isArray(campaignDecomposition && campaignDecomposition.proposal_ids)
+        ? campaignDecomposition.proposal_ids.slice(0, 16)
+        : []
+    },
     blockers
   };
   process.stdout.write(JSON.stringify(out, null, 2) + '\n');
@@ -7069,6 +7203,10 @@ function runCmd(dateStr, opts = {}) {
     return;
   }
 
+  const campaignDecomposition = applyCampaignDecompositionSeeds(proposalDate, strategy, {
+    logRun: !shadowOnly
+  });
+
   const proposalAgeHours = ageHours(proposalDate);
   if (AUTONOMY_MAX_PROPOSAL_FILE_AGE_HOURS > 0 && proposalAgeHours > AUTONOMY_MAX_PROPOSAL_FILE_AGE_HOURS) {
     writeRun(dateStr, {
@@ -7192,6 +7330,8 @@ function runCmd(dateStr, opts = {}) {
   const executedNoProgressStreak = consecutiveExecutedNoProgressRuns(priorRuns);
   const gateExhaustionStreak = consecutiveGateExhaustedAttempts(priorAttempts);
   const shippedToday = shippedCount(priorRuns);
+  const executionQuotaDeficit = needsExecutionQuota(executionMode, shadowOnly, executedToday);
+  const executionQuotaRemaining = Math.max(0, Number(AUTONOMY_MIN_DAILY_EXECUTIONS || 0) - Number(executedToday || 0));
   const maxRunsPerDay = Number.isFinite(Number(strategyBudget.daily_runs_cap))
     ? Number(strategyBudget.daily_runs_cap)
     : AUTONOMY_MAX_RUNS_PER_DAY;
@@ -7216,7 +7356,7 @@ function runCmd(dateStr, opts = {}) {
     shadowOnly
   });
 
-  if (!shadowOnly && maxRunsPerDay > 0 && attemptsToday >= maxRunsPerDay && dailyCapOverride.consumed !== true) {
+  if (!shadowOnly && maxRunsPerDay > 0 && attemptsToday >= maxRunsPerDay && dailyCapOverride.consumed !== true && !executionQuotaDeficit) {
     writeRun(dateStr, {
       ts: nowIso(),
       type: 'autonomy_run',
@@ -7240,6 +7380,7 @@ function runCmd(dateStr, opts = {}) {
     && Number.isFinite(Number(canaryDailyExecLimit))
     && Number(canaryDailyExecLimit) > 0
     && executedToday >= Number(canaryDailyExecLimit)
+    && !executionQuotaDeficit
   ) {
     writeRun(dateStr, {
       ts: nowIso(),
@@ -7266,6 +7407,7 @@ function runCmd(dateStr, opts = {}) {
     AUTONOMY_MIN_MINUTES_BETWEEN_RUNS > 0
     && lastAttemptMinutesAgo != null
     && lastAttemptMinutesAgo < AUTONOMY_MIN_MINUTES_BETWEEN_RUNS
+    && !executionQuotaDeficit
   ) {
     writeRun(dateStr, {
       ts: nowIso(),
@@ -7292,6 +7434,7 @@ function runCmd(dateStr, opts = {}) {
     && gateExhaustionStreak >= AUTONOMY_REPEAT_EXHAUSTED_LIMIT
     && lastAttemptMinutesAgo != null
     && lastAttemptMinutesAgo < AUTONOMY_REPEAT_EXHAUSTED_COOLDOWN_MINUTES
+    && !executionQuotaDeficit
   ) {
     writeRun(dateStr, {
       ts: nowIso(),
@@ -7413,7 +7556,8 @@ function runCmd(dateStr, opts = {}) {
     medium_risk_guard: 0,
     medium_policy_blocked: 0,
     medium_daily_cap: 0,
-    directive_pulse_cooldown: 0
+    directive_pulse_cooldown: 0,
+    t1_execute_required: 0
   };
   let sampleLowQuality = null;
   let sampleLowDirectiveFit = null;
@@ -7427,6 +7571,7 @@ function runCmd(dateStr, opts = {}) {
   let sampleMediumPolicyBlocked = null;
   let sampleMediumDailyCap = null;
   let sampleDirectivePulseCooldown = null;
+  let sampleT1ExecuteRequired = null;
   const fitnessPolicy = outcomeFitnessPolicy();
   const candidateAuditLimit = clampNumber(Math.round(AUTONOMY_CANDIDATE_AUDIT_MAX_ROWS), 5, 200);
   const candidateRejectedByGate = {};
@@ -7479,6 +7624,14 @@ function runCmd(dateStr, opts = {}) {
     queue_underflow_backfill: {
       enabled: AUTONOMY_QUEUE_UNDERFLOW_BACKFILL_MAX > 0,
       max_candidates: AUTONOMY_QUEUE_UNDERFLOW_BACKFILL_MAX
+    },
+    execution_quota: {
+      min_daily_executions: AUTONOMY_MIN_DAILY_EXECUTIONS,
+      deficit: executionQuotaDeficit,
+      remaining: executionQuotaRemaining
+    },
+    t1_execute_gate: {
+      enabled: AUTONOMY_EXECUTE_REQUIRE_T1 && isExecuteMode(executionMode)
     }
   };
   const candidateAuditPolicyHash = hashObj(candidateAuditPolicy);
@@ -8051,6 +8204,42 @@ function runCmd(dateStr, opts = {}) {
       continue;
     }
 
+    if (
+      !shadowOnly
+      && AUTONOMY_EXECUTE_REQUIRE_T1
+      && isExecuteMode(executionMode)
+      && !isTier1CandidateObjective({ objective_binding: objectiveBinding, directive_pulse: pulse })
+    ) {
+      skipStats.t1_execute_required += 1;
+      bumpCount(candidateRejectedByGate, 't1_execute_required');
+      pushCandidateAudit({
+        proposal_id: proposalId,
+        proposal_type: proposalType,
+        risk,
+        pass: false,
+        gate: 't1_execute_required',
+        score: Number(cand.score || 0),
+        objective_binding: {
+          objective_id: objectiveBinding.objective_id || null,
+          source: objectiveBinding.source || null
+        },
+        directive_pulse: {
+          objective_id: pulse.objective_id || null,
+          tier: pulse.tier == null ? null : pulse.tier
+        },
+        reasons: ['execute_mode_requires_t1_objective']
+      });
+      if (!sampleT1ExecuteRequired) {
+        sampleT1ExecuteRequired = {
+          proposal_id: cand.proposal.id,
+          objective_id: objectiveBinding.objective_id || pulse.objective_id || null,
+          tier: pulse.tier == null ? null : pulse.tier,
+          reason: 'execute_mode_requires_t1_objective'
+        };
+      }
+      continue;
+    }
+
     eligible.push({
       ...cand,
       quality: q,
@@ -8523,6 +8712,41 @@ function runCmd(dateStr, opts = {}) {
     }
 
     if (
+      skipStats.t1_execute_required > 0
+      && skipStats.eye_no_progress === 0
+      && skipStats.low_quality === 0
+      && skipStats.low_directive_fit === 0
+      && skipStats.low_actionability === 0
+      && skipStats.optimization_good_enough === 0
+      && skipStats.low_value_signal === 0
+      && skipStats.low_composite === 0
+      && skipStats.capability_cooldown === 0
+      && skipStats.medium_risk_guard === 0
+      && skipStats.medium_policy_blocked === 0
+      && skipStats.medium_daily_cap === 0
+      && skipStats.directive_pulse_cooldown === 0
+      && skipStats.objective_binding === 0
+    ) {
+      writeRun(dateStr, {
+        ts: nowIso(),
+        type: 'autonomy_run',
+        result: 'stop_init_gate_t1_objective_required',
+        execute_require_t1: AUTONOMY_EXECUTE_REQUIRE_T1,
+        skipped_t1_execute_required: skipStats.t1_execute_required,
+        sample_t1_execute_required: sampleT1ExecuteRequired
+      });
+      process.stdout.write(JSON.stringify({
+        ok: true,
+        result: 'stop_init_gate_t1_objective_required',
+        execute_require_t1: AUTONOMY_EXECUTE_REQUIRE_T1,
+        skipped_t1_execute_required: skipStats.t1_execute_required,
+        sample_t1_execute_required: sampleT1ExecuteRequired,
+        ts: nowIso()
+      }) + '\n');
+      return;
+    }
+
+    if (
       skipStats.low_quality > 0
       && skipStats.eye_no_progress === 0
       && skipStats.low_directive_fit === 0
@@ -8760,13 +8984,14 @@ function runCmd(dateStr, opts = {}) {
       ts: nowIso(),
       type: 'autonomy_run',
       result: 'stop_repeat_gate_candidate_exhausted',
-      reason: `all_candidates_exhausted quality_or_directive_fit_or_actionability_or_optimization_good_enough_or_objective_binding_or_value_or_composite_or_capability_cooldown_or_medium_risk_or_eye_no_progress_or_directive_pulse`,
+      reason: `all_candidates_exhausted quality_or_directive_fit_or_actionability_or_optimization_good_enough_or_objective_binding_or_t1_execute_or_value_or_composite_or_capability_cooldown_or_medium_risk_or_eye_no_progress_or_directive_pulse`,
       skipped_eye_no_progress: skipStats.eye_no_progress,
       skipped_low_quality: skipStats.low_quality,
       skipped_low_directive_fit: skipStats.low_directive_fit,
       skipped_low_actionability: skipStats.low_actionability,
       skipped_optimization_good_enough: skipStats.optimization_good_enough,
       skipped_objective_binding: skipStats.objective_binding,
+      skipped_t1_execute_required: skipStats.t1_execute_required,
       skipped_low_value_signal: skipStats.low_value_signal,
       skipped_low_composite: skipStats.low_composite,
       skipped_capability_cooldown: skipStats.capability_cooldown,
@@ -8779,6 +9004,7 @@ function runCmd(dateStr, opts = {}) {
       sample_low_actionability: sampleLowActionability,
       sample_optimization_good_enough: sampleOptimizationGoodEnough,
       sample_objective_binding: sampleObjectiveBinding,
+      sample_t1_execute_required: sampleT1ExecuteRequired,
       sample_low_value_signal: sampleLowValueSignal,
       sample_low_composite: sampleLowComposite,
       sample_capability_cooldown: sampleCapabilityCooldown,
@@ -8790,13 +9016,14 @@ function runCmd(dateStr, opts = {}) {
     process.stdout.write(JSON.stringify({
       ok: true,
       result: 'stop_repeat_gate_candidate_exhausted',
-      reason: `all_candidates_exhausted quality_or_directive_fit_or_actionability_or_optimization_good_enough_or_objective_binding_or_value_or_composite_or_capability_cooldown_or_medium_risk_or_eye_no_progress_or_directive_pulse`,
+      reason: `all_candidates_exhausted quality_or_directive_fit_or_actionability_or_optimization_good_enough_or_objective_binding_or_t1_execute_or_value_or_composite_or_capability_cooldown_or_medium_risk_or_eye_no_progress_or_directive_pulse`,
       skipped_eye_no_progress: skipStats.eye_no_progress,
       skipped_low_quality: skipStats.low_quality,
       skipped_low_directive_fit: skipStats.low_directive_fit,
       skipped_low_actionability: skipStats.low_actionability,
       skipped_optimization_good_enough: skipStats.optimization_good_enough,
       skipped_objective_binding: skipStats.objective_binding,
+      skipped_t1_execute_required: skipStats.t1_execute_required,
       skipped_low_value_signal: skipStats.low_value_signal,
       skipped_low_composite: skipStats.low_composite,
       skipped_capability_cooldown: skipStats.capability_cooldown,
@@ -8809,6 +9036,7 @@ function runCmd(dateStr, opts = {}) {
       sample_low_actionability: sampleLowActionability,
       sample_optimization_good_enough: sampleOptimizationGoodEnough,
       sample_objective_binding: sampleObjectiveBinding,
+      sample_t1_execute_required: sampleT1ExecuteRequired,
       sample_low_value_signal: sampleLowValueSignal,
       sample_low_composite: sampleLowComposite,
       sample_capability_cooldown: sampleCapabilityCooldown,
@@ -9880,6 +10108,10 @@ function runCmd(dateStr, opts = {}) {
     directive_pulse: directivePulse,
     campaign_match: campaignMatch,
     campaign_plan: campaignPlan,
+    campaign_decomposition: campaignDecomposition,
+    min_daily_executions: AUTONOMY_MIN_DAILY_EXECUTIONS,
+    execution_quota_deficit: executionQuotaDeficit,
+    execution_quota_remaining: executionQuotaRemaining,
     composite: {
       score: pick.composite_score,
       min_score: compositeMinScore,
@@ -10215,6 +10447,10 @@ function runCmd(dateStr, opts = {}) {
     value_signal: pick.value_signal || null,
     objective_binding: objectiveBinding,
     directive_pulse: directivePulse,
+    campaign_decomposition: campaignDecomposition,
+    min_daily_executions: AUTONOMY_MIN_DAILY_EXECUTIONS,
+    execution_quota_deficit: executionQuotaDeficit,
+    execution_quota_remaining: executionQuotaRemaining,
     composite: {
       score: pick.composite_score,
       min_score: compositeMinScore,

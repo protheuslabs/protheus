@@ -52,7 +52,10 @@ const {
   strategyDuplicateWindowHours,
   strategyCanaryDailyExecLimit
 } = require('../../lib/strategy_resolver.js');
-const { annotateCampaignPriority } = require('../../lib/strategy_campaign_scheduler.js');
+const {
+  annotateCampaignPriority,
+  buildCampaignDecompositionPlans
+} = require('../../lib/strategy_campaign_scheduler.js');
 const {
   evaluateTier1Governance,
   classifyAndRecordException,
@@ -162,6 +165,7 @@ const AUTONOMY_MIN_DOPAMINE_AVG7 = Number(process.env.AUTONOMY_MIN_DOPAMINE_AVG7
 const AUTONOMY_MIN_ROUTE_TOKENS = Number(process.env.AUTONOMY_MIN_ROUTE_TOKENS || 500);
 const AUTONOMY_SKIP_STUB = String(process.env.AUTONOMY_SKIP_STUB || '1') !== '0';
 const AUTONOMY_MAX_RUNS_PER_DAY = Number(process.env.AUTONOMY_MAX_RUNS_PER_DAY || 4);
+const AUTONOMY_MIN_DAILY_EXECUTIONS = Math.max(0, Number(process.env.AUTONOMY_MIN_DAILY_EXECUTIONS || 1));
 const AUTONOMY_MIN_MINUTES_BETWEEN_RUNS = Number(process.env.AUTONOMY_MIN_MINUTES_BETWEEN_RUNS || 15);
 const AUTONOMY_UNCHANGED_SHORT_CIRCUIT_ENABLED = String(process.env.AUTONOMY_UNCHANGED_SHORT_CIRCUIT_ENABLED || '1') !== '0';
 const AUTONOMY_UNCHANGED_SHORT_CIRCUIT_MINUTES = Number(process.env.AUTONOMY_UNCHANGED_SHORT_CIRCUIT_MINUTES || 30);
@@ -298,7 +302,12 @@ const AUTONOMY_DIRECTIVE_PULSE_ESCALATE_AFTER = Number(process.env.AUTONOMY_DIRE
 const AUTONOMY_DIRECTIVE_PULSE_ESCALATE_WINDOW_HOURS = Number(process.env.AUTONOMY_DIRECTIVE_PULSE_ESCALATE_WINDOW_HOURS || 24);
 const AUTONOMY_DIRECTIVE_PULSE_RESERVATION_HARD = String(process.env.AUTONOMY_DIRECTIVE_PULSE_RESERVATION_HARD || '0') === '1';
 const AUTONOMY_OBJECTIVE_BINDING_REQUIRED = String(process.env.AUTONOMY_OBJECTIVE_BINDING_REQUIRED || '1') !== '0';
+const AUTONOMY_EXECUTE_REQUIRE_T1 = String(process.env.AUTONOMY_EXECUTE_REQUIRE_T1 || '1') !== '0';
 const AUTONOMY_OBJECTIVE_ALLOCATION_RANK_BONUS = Number(process.env.AUTONOMY_OBJECTIVE_ALLOCATION_RANK_BONUS || 0.25);
+const AUTONOMY_OBJECTIVE_MIX_ENABLED = String(process.env.AUTONOMY_OBJECTIVE_MIX_ENABLED || '1') !== '0';
+const AUTONOMY_OBJECTIVE_MIX_WINDOW_DAYS = Math.max(1, Number(process.env.AUTONOMY_OBJECTIVE_MIX_WINDOW_DAYS || 7));
+const AUTONOMY_OBJECTIVE_MIX_MIN_EXECUTED = Math.max(1, Number(process.env.AUTONOMY_OBJECTIVE_MIX_MIN_EXECUTED || 4));
+const AUTONOMY_OBJECTIVE_MIX_MAX_SHARE = clampNumber(Number(process.env.AUTONOMY_OBJECTIVE_MIX_MAX_SHARE || 0.7), 0.4, 0.95);
 const AUTONOMY_TIER1_GOVERNANCE_ENABLED = String(process.env.AUTONOMY_TIER1_GOVERNANCE_ENABLED || '1') !== '0';
 const AUTONOMY_TIER1_TOKEN_COST_PER_1K = Number(process.env.AUTONOMY_TIER1_TOKEN_COST_PER_1K || 0);
 const AUTONOMY_TIER1_DAILY_USD_CAP = Number(process.env.AUTONOMY_TIER1_DAILY_USD_CAP || 0);
@@ -356,6 +365,7 @@ const SUCCESS_TIMEBOUND_RE = /\b(\d+\s*(h|hr|hour|hours|d|day|days|w|week|weeks|
 const SUCCESS_RELAXED_RUN_HORIZON_RE = /\b(next|this)\s+(run|cycle)\b/i;
 const SUCCESS_COMPARATOR_RE = /\b(>=|<=|>|<|at least|at most|less than|more than|within|under|over)\b/i;
 const AUTONOMY_CANARY_RELAX_ENABLED = String(process.env.AUTONOMY_CANARY_RELAX_ENABLED || '1') !== '0';
+const AUTONOMY_CANARY_ALLOW_WITH_FLAG_OFF = String(process.env.AUTONOMY_CANARY_ALLOW_WITH_FLAG_OFF || '1') !== '0';
 const AUTONOMY_CANARY_RELAX_READINESS_CHECKS = new Set(
   parseLowerList(process.env.AUTONOMY_CANARY_RELAX_READINESS_CHECKS || 'success_criteria_pass_rate')
 );
@@ -373,6 +383,11 @@ const AUTONOMY_DEPRIORITIZED_SOURCE_EYES = new Set(
     .map(s => s.trim().toLowerCase())
     .filter(Boolean)
 );
+const AUTONOMY_CAMPAIGN_DECOMPOSE_ENABLED = String(process.env.AUTONOMY_CAMPAIGN_DECOMPOSE_ENABLED || '1') !== '0';
+const AUTONOMY_CAMPAIGN_DECOMPOSE_MAX_PER_RUN = Math.max(0, Number(process.env.AUTONOMY_CAMPAIGN_DECOMPOSE_MAX_PER_RUN || 2));
+const AUTONOMY_CAMPAIGN_DECOMPOSE_MIN_OPEN_PER_TYPE = Math.max(1, Number(process.env.AUTONOMY_CAMPAIGN_DECOMPOSE_MIN_OPEN_PER_TYPE || 1));
+const AUTONOMY_CAMPAIGN_DECOMPOSE_DEFAULT_RISK = String(process.env.AUTONOMY_CAMPAIGN_DECOMPOSE_DEFAULT_RISK || 'low').trim().toLowerCase() || 'low';
+const AUTONOMY_CAMPAIGN_DECOMPOSE_DEFAULT_IMPACT = String(process.env.AUTONOMY_CAMPAIGN_DECOMPOSE_DEFAULT_IMPACT || 'medium').trim().toLowerCase() || 'medium';
 let STRATEGY_CACHE = undefined;
 let OUTCOME_FITNESS_POLICY_CACHE = undefined;
 
@@ -433,6 +448,36 @@ function effectiveStrategyExploration() {
 
 function isExecuteMode(mode) {
   return mode === 'execute' || mode === 'canary_execute';
+}
+
+function executionAllowedByFeatureFlag(executionMode, shadowOnly = false) {
+  if (shadowOnly) return true;
+  if (String(process.env.AUTONOMY_ENABLED || '') === '1') return true;
+  return AUTONOMY_CANARY_ALLOW_WITH_FLAG_OFF && String(executionMode || '') === 'canary_execute';
+}
+
+function isTier1ObjectiveId(objectiveId) {
+  const id = String(objectiveId || '').trim();
+  if (!id) return false;
+  return /^T1(?:\b|[_:-])/i.test(id);
+}
+
+function isTier1CandidateObjective(candidate) {
+  const c = candidate && typeof candidate === 'object' ? candidate : {};
+  const binding = c.objective_binding && typeof c.objective_binding === 'object' ? c.objective_binding : {};
+  const pulse = c.directive_pulse && typeof c.directive_pulse === 'object' ? c.directive_pulse : {};
+  const pulseTier = normalizeDirectiveTier(pulse.tier, 99);
+  if (pulseTier <= 1) return true;
+  if (isTier1ObjectiveId(binding.objective_id)) return true;
+  if (isTier1ObjectiveId(pulse.objective_id)) return true;
+  return false;
+}
+
+function needsExecutionQuota(executionMode, shadowOnly, executedToday) {
+  if (shadowOnly) return false;
+  if (!isExecuteMode(executionMode)) return false;
+  if (!Number.isFinite(Number(AUTONOMY_MIN_DAILY_EXECUTIONS)) || Number(AUTONOMY_MIN_DAILY_EXECUTIONS) <= 0) return false;
+  return Number(executedToday || 0) < Number(AUTONOMY_MIN_DAILY_EXECUTIONS);
 }
 
 function ensureDir(dir) {
@@ -6418,11 +6463,6 @@ function readinessCmd(dateStr) {
     });
   };
 
-  const autonomyEnabled = String(process.env.AUTONOMY_ENABLED || '') === '1';
-  if (!autonomyEnabled) {
-    addBlocker('feature_flag_disabled', 'AUTONOMY_ENABLED!=1', { retryable: false });
-  }
-
   const emergency = isEmergencyStopEngaged('autonomy');
   if (emergency.engaged) {
     addBlocker('emergency_stop', 'emergency stop engaged for autonomy scope', {
@@ -6440,6 +6480,16 @@ function readinessCmd(dateStr) {
   const canaryDailyExecLimit = executionMode === 'canary_execute'
     ? effectiveStrategyCanaryExecLimit()
     : null;
+  const autonomyEnabled = executionAllowedByFeatureFlag(executionMode, false);
+  if (!autonomyEnabled) {
+    addBlocker('feature_flag_disabled', 'AUTONOMY_ENABLED!=1', {
+      retryable: false,
+      meta: {
+        execution_mode: executionMode,
+        canary_allow_with_flag_off: AUTONOMY_CANARY_ALLOW_WITH_FLAG_OFF
+      }
+    });
+  }
 
   if (
     String(process.env.AUTONOMY_STRATEGY_STRICT || '') === '1'
@@ -6486,6 +6536,8 @@ function readinessCmd(dateStr) {
   const attemptsToday = attempts.length;
   const executedRuns = runs.filter(e => e && e.type === 'autonomy_run' && e.result === 'executed');
   const executedToday = executedRuns.length;
+  const executionQuotaDeficit = needsExecutionQuota(executionMode, false, executedToday);
+  const executionQuotaRemaining = Math.max(0, Number(AUTONOMY_MIN_DAILY_EXECUTIONS || 0) - Number(executedToday || 0));
   const shippedToday = shippedCount(runs);
   const noProgressStreak = consecutiveNoProgressRuns(runs);
   const gateExhaustionStreak = consecutiveGateExhaustedAttempts(attempts);
@@ -6534,7 +6586,7 @@ function readinessCmd(dateStr) {
     });
   }
 
-  if (maxRunsPerDay > 0 && attemptsToday >= maxRunsPerDay) {
+  if (!executionQuotaDeficit && maxRunsPerDay > 0 && attemptsToday >= maxRunsPerDay) {
     addBlocker('daily_cap', 'daily run cap reached', {
       next_at: startOfNextUtcDay(dateStr),
       meta: { attempts_today: attemptsToday, max_runs_per_day: maxRunsPerDay }
@@ -6546,6 +6598,7 @@ function readinessCmd(dateStr) {
     && Number.isFinite(Number(canaryDailyExecLimit))
     && Number(canaryDailyExecLimit) > 0
     && executedToday >= Number(canaryDailyExecLimit)
+    && !executionQuotaDeficit
   ) {
     addBlocker('canary_cap', 'canary execute cap reached', {
       next_at: startOfNextUtcDay(dateStr),
@@ -6557,6 +6610,7 @@ function readinessCmd(dateStr) {
     AUTONOMY_MIN_MINUTES_BETWEEN_RUNS > 0
     && lastAttemptMinutesAgo != null
     && lastAttemptMinutesAgo < AUTONOMY_MIN_MINUTES_BETWEEN_RUNS
+    && !executionQuotaDeficit
   ) {
     addBlocker('interval', 'minimum interval between runs not elapsed', {
       next_at: isoAfterMinutes(AUTONOMY_MIN_MINUTES_BETWEEN_RUNS - lastAttemptMinutesAgo),
@@ -6573,6 +6627,7 @@ function readinessCmd(dateStr) {
     && gateExhaustionStreak >= AUTONOMY_REPEAT_EXHAUSTED_LIMIT
     && lastAttemptMinutesAgo != null
     && lastAttemptMinutesAgo < AUTONOMY_REPEAT_EXHAUSTED_COOLDOWN_MINUTES
+    && !executionQuotaDeficit
   ) {
     addBlocker('exhaustion_cooldown', 'gate exhaustion cooldown active', {
       next_at: isoAfterMinutes(AUTONOMY_REPEAT_EXHAUSTED_COOLDOWN_MINUTES - lastAttemptMinutesAgo),
@@ -6668,6 +6723,9 @@ function readinessCmd(dateStr) {
     strategy_id: strategy ? strategy.id : null,
     attempts_today: attemptsToday,
     executed_today: executedToday,
+    min_daily_executions: AUTONOMY_MIN_DAILY_EXECUTIONS,
+    execution_quota_deficit: executionQuotaDeficit,
+    execution_quota_remaining: executionQuotaRemaining,
     max_runs_per_day: maxRunsPerDay,
     canary_daily_exec_limit: canaryDailyExecLimit,
     proposal_date: proposalDate || null,
@@ -6679,15 +6737,6 @@ function readinessCmd(dateStr) {
 
 function runCmd(dateStr, opts: AnyObj = {}) {
   const shadowOnly = opts && opts.shadowOnly === true;
-  if (!shadowOnly && String(process.env.AUTONOMY_ENABLED || '') !== '1') {
-    process.stdout.write(JSON.stringify({
-      ok: true,
-      skipped: true,
-      reason: 'AUTONOMY_ENABLED!=1',
-      ts: nowIso()
-    }) + '\n');
-    return;
-  }
 
   const emergency = isEmergencyStopEngaged('autonomy');
   if (emergency.engaged) {
@@ -6711,6 +6760,17 @@ function runCmd(dateStr, opts: AnyObj = {}) {
   const strategy = strategyProfile();
   const strategyBudget = effectiveStrategyBudget();
   const executionMode = shadowOnly ? 'score_only' : effectiveStrategyExecutionMode();
+  if (!executionAllowedByFeatureFlag(executionMode, shadowOnly)) {
+    process.stdout.write(JSON.stringify({
+      ok: true,
+      skipped: true,
+      reason: 'AUTONOMY_ENABLED!=1',
+      execution_mode: executionMode,
+      canary_allow_with_flag_off: AUTONOMY_CANARY_ALLOW_WITH_FLAG_OFF,
+      ts: nowIso()
+    }) + '\n');
+    return;
+  }
   const allowedRiskSet = effectiveAllowedRisksSet();
   if (
     String(process.env.AUTONOMY_STRATEGY_STRICT || '') === '1'
@@ -6996,6 +7056,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
   const priorAttempts = attemptEvents(priorRuns);
   const attemptsToday = priorAttempts.length;
   const executedToday = priorRuns.filter(e => e && e.type === 'autonomy_run' && e.result === 'executed').length;
+  const executionQuotaDeficit = needsExecutionQuota(executionMode, shadowOnly, executedToday);
   const mediumExecutedToday = executedCountByRisk(priorRuns, 'medium');
   const lastAttempt = priorAttempts.length ? priorAttempts[priorAttempts.length - 1] : null;
   const lastAttemptMinutesAgo = lastAttempt ? minutesSinceTs(lastAttempt.ts) : null;
@@ -7026,7 +7087,13 @@ function runCmd(dateStr, opts: AnyObj = {}) {
     shadowOnly
   });
 
-  if (!shadowOnly && maxRunsPerDay > 0 && attemptsToday >= maxRunsPerDay && dailyCapOverride.consumed !== true) {
+  if (
+    !shadowOnly
+    && !executionQuotaDeficit
+    && maxRunsPerDay > 0
+    && attemptsToday >= maxRunsPerDay
+    && dailyCapOverride.consumed !== true
+  ) {
     writeRun(dateStr, {
       ts: nowIso(),
       type: 'autonomy_run',
@@ -7050,6 +7117,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
     && Number.isFinite(Number(canaryDailyExecLimit))
     && Number(canaryDailyExecLimit) > 0
     && executedToday >= Number(canaryDailyExecLimit)
+    && !executionQuotaDeficit
   ) {
     writeRun(dateStr, {
       ts: nowIso(),
@@ -7076,6 +7144,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
     AUTONOMY_MIN_MINUTES_BETWEEN_RUNS > 0
     && lastAttemptMinutesAgo != null
     && lastAttemptMinutesAgo < AUTONOMY_MIN_MINUTES_BETWEEN_RUNS
+    && !executionQuotaDeficit
   ) {
     writeRun(dateStr, {
       ts: nowIso(),
@@ -7102,6 +7171,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
     && gateExhaustionStreak >= AUTONOMY_REPEAT_EXHAUSTED_LIMIT
     && lastAttemptMinutesAgo != null
     && lastAttemptMinutesAgo < AUTONOMY_REPEAT_EXHAUSTED_COOLDOWN_MINUTES
+    && !executionQuotaDeficit
   ) {
     writeRun(dateStr, {
       ts: nowIso(),

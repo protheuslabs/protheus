@@ -1,0 +1,10 @@
+{
+  "version": "1.0",
+  "default_channel": "state_backup",
+  "default_profile": "runtime_state",
+  "rto_target_minutes": 30,
+  "rpo_target_hours": 24,
+  "strict_default": true,
+  "max_history": 90
+}
+

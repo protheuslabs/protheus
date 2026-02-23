@@ -2246,9 +2246,12 @@ function main() {
       console.log(" startup_attestation skipped reason=feature_flag_disabled flag=SPINE_STARTUP_ATTESTATION_ENABLED");
     }
 
+    const autonomyEnabledFlag = String(process.env.AUTONOMY_ENABLED || "") === "1";
+    const canaryAllowWithFlagOff = String(process.env.AUTONOMY_CANARY_ALLOW_WITH_FLAG_OFF || "1") !== "0";
+    const autonomySchedulerEnabled = autonomyEnabledFlag || canaryAllowWithFlagOff;
     const budgetGuardBlocksAutonomy = !!(budgetGuard && (budgetGuard.action === "throttle" || budgetGuard.action === "pause"));
     const startupAttestationBlocksAutonomy = startupAttestation.required === true && startupAttestation.ok !== true;
-    if (String(process.env.AUTONOMY_ENABLED || "") === "1" && startupAttestationBlocksAutonomy) {
+    if (autonomySchedulerEnabled && startupAttestationBlocksAutonomy) {
       appendLedger(dateStr, {
         ts: nowIso(),
         type: "spine_autonomy_skipped",
@@ -2258,7 +2261,7 @@ function main() {
         startup_attestation_reason: startupAttestation.reason || null
       });
       console.log(` autonomy_skipped reason=startup_attestation_blocked detail=${String(startupAttestation.reason || "unknown").slice(0, 120)}`);
-    } else if (String(process.env.AUTONOMY_ENABLED || "") === "1" && budgetGuardBlocksAutonomy) {
+    } else if (autonomySchedulerEnabled && budgetGuardBlocksAutonomy) {
       appendLedger(dateStr, {
         ts: nowIso(),
         type: "spine_autonomy_skipped",
@@ -2277,7 +2280,7 @@ function main() {
         ` projected=${String(budgetGuard.projected_pressure || "none")}` +
         ` until=${String(budgetGuard.paused_until || "n/a")}`
       );
-    } else if (String(process.env.AUTONOMY_ENABLED || "") === "1") {
+    } else if (autonomySchedulerEnabled) {
       const scheduler = runJson("node", ["systems/autonomy/canary_scheduler.js", "run", dateStr]);
       const schedulerPayload = scheduler.payload && typeof scheduler.payload === "object"
         ? scheduler.payload
@@ -2380,7 +2383,8 @@ function main() {
         date: dateStr,
         reason: "feature_flag_disabled",
         flag: "AUTONOMY_ENABLED",
-        flag_value: String(process.env.AUTONOMY_ENABLED || "")
+        flag_value: String(process.env.AUTONOMY_ENABLED || ""),
+        canary_allow_with_flag_off: canaryAllowWithFlagOff
       });
       console.log(" autonomy_skipped reason=feature_flag_disabled flag=AUTONOMY_ENABLED");
 
@@ -2547,7 +2551,7 @@ function main() {
     }
 
     if (
-      String(process.env.AUTONOMY_ENABLED || "") === "1"
+      autonomySchedulerEnabled
       && strategyReadiness.ok
       && readinessObj
       && readinessObj.current_mode === "score_only"
