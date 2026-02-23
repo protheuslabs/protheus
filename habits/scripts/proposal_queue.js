@@ -91,6 +91,10 @@ function appendJsonl(p, obj) {
   fs.appendFileSync(p, JSON.stringify(obj) + '\n');
 }
 
+function writeJsonPretty(p, value) {
+  fs.writeFileSync(p, JSON.stringify(value, null, 2) + '\n');
+}
+
 // CLI arg parsing: --key=value
 function parseArgs(argv) {
   const out = { _: [] };
@@ -216,6 +220,154 @@ function buildSensoryOverlay(events, dateStr) {
     });
   }
   return byId;
+}
+
+function terminalStatusLabel(status, overlayEntry, sensoryEntry) {
+  if (status === 'rejected') {
+    const sensoryStatus = String(sensoryEntry && sensoryEntry.status || '').trim().toLowerCase();
+    if (sensoryStatus === 'filtered') return 'filtered';
+    return 'rejected';
+  }
+  const outcome = String(overlayEntry && overlayEntry.outcome || '').trim().toLowerCase();
+  if (outcome === 'shipped' || outcome === 'reverted' || outcome === 'no_change') return outcome;
+  const sensoryStatus = String(sensoryEntry && sensoryEntry.status || '').trim().toLowerCase();
+  if (sensoryStatus === 'shipped' || sensoryStatus === 'reverted' || sensoryStatus === 'no_change') return sensoryStatus;
+  if (sensoryStatus === 'done' || sensoryStatus === 'resolved') return 'done';
+  return 'closed';
+}
+
+function listProposalFiles(opts = {}) {
+  if (!fs.existsSync(SENSORY_PROPOSALS_DIR)) return [];
+  let files = fs.readdirSync(SENSORY_PROPOSALS_DIR)
+    .filter((f) => /^\d{4}-\d{2}-\d{2}\.json$/.test(f))
+    .sort();
+  if (opts.date && /^\d{4}-\d{2}-\d{2}$/.test(String(opts.date))) {
+    files = files.filter((f) => f === `${opts.date}.json`);
+  } else if (opts.days != null) {
+    const days = Math.max(1, Number(opts.days) || 1);
+    const cutoff = new Date();
+    cutoff.setUTCDate(cutoff.getUTCDate() - days + 1);
+    files = files.filter((f) => {
+      const day = f.slice(0, 10);
+      const ms = Date.parse(`${day}T00:00:00.000Z`);
+      return Number.isFinite(ms) && ms >= cutoff.getTime();
+    });
+  }
+  return files;
+}
+
+function readDecisionEventsAll() {
+  if (!fs.existsSync(DECISIONS_DIR)) return [];
+  const files = fs.readdirSync(DECISIONS_DIR)
+    .filter((f) => /^\d{4}-\d{2}-\d{2}\.jsonl$/.test(f))
+    .sort();
+  const out = [];
+  for (const f of files) {
+    out.push(...readJsonlEventsSafe(path.join(DECISIONS_DIR, f)));
+  }
+  return out;
+}
+
+function normalizeProposalsShape(raw) {
+  if (Array.isArray(raw)) {
+    return {
+      proposals: raw,
+      write(next) { return next; }
+    };
+  }
+  if (raw && Array.isArray(raw.proposals)) {
+    return {
+      proposals: raw.proposals,
+      write(next) { return { ...raw, proposals: next }; }
+    };
+  }
+  return null;
+}
+
+function reconcileCmd(opts) {
+  const dryRun = String(opts['dry-run'] || opts.dry_run || '0') === '1';
+  const files = listProposalFiles({
+    date: opts.date || null,
+    days: opts.all ? null : (opts.days || 30)
+  });
+  if (files.length === 0) {
+    console.log('No proposal files found to reconcile.');
+    return {
+      ok: true,
+      files_scanned: 0,
+      files_updated: 0,
+      proposals_updated: 0,
+      dry_run: dryRun
+    };
+  }
+
+  const overlay = buildOverlay(readDecisionEventsAll());
+  const sensoryOverlay = buildSensoryOverlay(readJsonlEventsSafe(SENSORY_QUEUE_LOG));
+  const now = new Date().toISOString();
+
+  let filesUpdated = 0;
+  let proposalsUpdated = 0;
+  const sample = [];
+
+  for (const file of files) {
+    const fp = path.join(SENSORY_PROPOSALS_DIR, file);
+    const raw = readJsonSafe(fp);
+    const shaped = normalizeProposalsShape(raw);
+    if (!shaped) continue;
+    const next = [];
+    let changedInFile = 0;
+
+    for (const proposal of shaped.proposals) {
+      const p = proposal && typeof proposal === 'object' ? { ...proposal } : proposal;
+      const id = String(p && p.id || '').trim();
+      if (!id) {
+        next.push(p);
+        continue;
+      }
+      const ov = overlay.get(id) || null;
+      const sensory = sensoryOverlay.get(id) || null;
+      const target = normalizedStatus(p, ov, sensory);
+      if (target === 'rejected' || target === 'closed') {
+        const desired = terminalStatusLabel(target, ov, sensory);
+        const current = String(p && (p.status || p.state) || '').trim().toLowerCase();
+        if (current !== desired) {
+          p.status = desired;
+          p.queue_synced_ts = now;
+          p.queue_synced_reason = String((ov && ov.reason) || (sensory && sensory.reason) || `reconcile_${target}`);
+          p.queue_synced_source = 'proposal_queue_reconcile_v1';
+          changedInFile += 1;
+          proposalsUpdated += 1;
+          if (sample.length < 20) {
+            sample.push({
+              file,
+              proposal_id: id,
+              from: current || null,
+              to: desired
+            });
+          }
+        }
+      }
+      next.push(p);
+    }
+
+    if (changedInFile > 0) {
+      filesUpdated += 1;
+      if (!dryRun) {
+        writeJsonPretty(fp, shaped.write(next));
+      }
+    }
+  }
+
+  const out = {
+    ok: true,
+    files_scanned: files.length,
+    files_updated: filesUpdated,
+    proposals_updated: proposalsUpdated,
+    dry_run: dryRun,
+    sample_updates: sample
+  };
+  console.log(JSON.stringify(out, null, 2));
+  return out;
 }
 
 function loadProposals(dateStr) {
@@ -459,6 +611,7 @@ function main() {
     console.log('  park   <proposal_id> "<reason>"');
     console.log('  outcome <proposal_id> shipped|reverted|no_change "<evidence_ref>"');
     console.log('  metrics [--date=YYYY-MM-DD]');
+    console.log('  reconcile [--days=N|--date=YYYY-MM-DD|--all=1] [--dry-run=1]');
     console.log('');
     console.log('Status: pending|accepted|closed|rejected|parked');
     console.log('Outcomes tracked for accepted and closed proposals.');
@@ -484,6 +637,9 @@ function main() {
     case 'metrics':
       metricsCmd(args);
       break;
+    case 'reconcile':
+      reconcileCmd(args);
+      break;
     case 'propose':
       proposeCmd(args);
       break;
@@ -502,6 +658,7 @@ module.exports = {
   normalizedStatus,
   listCmd,
   metricsCmd,
+  reconcileCmd,
   recordDecision,
   recordOutcome,
   parseArgs

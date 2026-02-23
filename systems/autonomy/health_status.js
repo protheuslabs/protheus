@@ -935,14 +935,29 @@ function assessQueueBacklog(now, proposalRows, queueEvents, windowDays = 1, auto
   }
 
   const activeRows = [];
+  let contractDivergence = 0;
+  let queueTerminalCount = 0;
+  let proposalTerminalCount = 0;
+  let queueTerminalWithoutProposalTerminal = 0;
+  let proposalTerminalWithQueueNonTerminal = 0;
   for (const [id, entry] of latestById.entries()) {
     const p = entry && entry.row && entry.row.proposal && typeof entry.row.proposal === 'object'
       ? entry.row.proposal
       : {};
     const explicitStatus = String(p.status || '').trim().toLowerCase();
+    const explicitTerminal = ['rejected', 'reject', 'done', 'filtered', 'superseded', 'archived', 'closed', 'dropped', 'shipped', 'reverted', 'no_change', 'resolved'].includes(explicitStatus);
     const queue = queueState.get(id);
-    const terminal = (queue && queue.terminal === true)
-      || ['rejected', 'reject', 'done', 'filtered', 'superseded', 'archived', 'closed', 'dropped'].includes(explicitStatus);
+    const queueTerminal = queue && queue.terminal === true;
+    if (queueTerminal) queueTerminalCount += 1;
+    if (explicitTerminal) proposalTerminalCount += 1;
+    if (queue && queueTerminal && !explicitTerminal) {
+      contractDivergence += 1;
+      queueTerminalWithoutProposalTerminal += 1;
+    } else if (queue && queueTerminal === false && explicitTerminal) {
+      contractDivergence += 1;
+      proposalTerminalWithQueueNonTerminal += 1;
+    }
+    const terminal = queueTerminal || explicitTerminal;
     if (terminal) continue;
     activeRows.push({ id, ts: Number(entry.ts || 0), proposal: p });
   }
@@ -954,7 +969,6 @@ function assessQueueBacklog(now, proposalRows, queueEvents, windowDays = 1, auto
 
   const openCount = activeRows.length;
   const rawOpenCount = latestById.size;
-  const contractDivergence = Math.max(0, rawOpenCount - openCount);
   const warnAged = openAges.filter((n) => n >= Number(QUEUE_BACKLOG_WARN_AGE_HOURS || 24)).length;
   const criticalAged = openAges.filter((n) => n >= Number(QUEUE_BACKLOG_CRITICAL_AGE_HOURS || 72)).length;
   const oldestHours = openAges.length ? Number(Math.max(...openAges).toFixed(3)) : null;
@@ -971,6 +985,10 @@ function assessQueueBacklog(now, proposalRows, queueEvents, windowDays = 1, auto
         open_count: openCount,
         unique_proposals: rawOpenCount,
         queue_contract_divergence: contractDivergence,
+        queue_terminal_count: queueTerminalCount,
+        proposal_terminal_count: proposalTerminalCount,
+        queue_terminal_without_proposal_terminal: queueTerminalWithoutProposalTerminal,
+        proposal_terminal_with_queue_non_terminal: proposalTerminalWithQueueNonTerminal,
         queue_progress_events: queueProgress,
         queue_progress_per_day: progressPerDay,
         aged_open_warn_count: warnAged,
@@ -1009,6 +1027,10 @@ function assessQueueBacklog(now, proposalRows, queueEvents, windowDays = 1, auto
       open_count: openCount,
       unique_proposals: rawOpenCount,
       queue_contract_divergence: contractDivergence,
+      queue_terminal_count: queueTerminalCount,
+      proposal_terminal_count: proposalTerminalCount,
+      queue_terminal_without_proposal_terminal: queueTerminalWithoutProposalTerminal,
+      proposal_terminal_with_queue_non_terminal: proposalTerminalWithQueueNonTerminal,
       queue_progress_events: queueProgress,
       queue_progress_per_day: progressPerDay,
       aged_open_warn_count: warnAged,
