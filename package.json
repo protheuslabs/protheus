@@ -5,6 +5,7 @@
     "typecheck:systems": "node systems/ops/typecheck_systems.js",
     "autophagy:baseline:capture": "node systems/autonomy/autophagy_baseline_guard.js capture",
     "autophagy:baseline:check": "node systems/autonomy/autophagy_baseline_guard.js check --strict",
+    "autophagy:harvest": "node systems/autonomy/non_yield_harvest.js run",
     "guard:merge": "node systems/security/merge_guard.js run",
     "guard:merge:fast": "node systems/security/merge_guard.js run --skip-tests",
     "integrity:check": "node systems/security/integrity_reseal.js check",
