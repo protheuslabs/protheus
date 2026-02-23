@@ -129,16 +129,28 @@ const ROUTING_DOWN_WARN = Number(process.env.AUTONOMY_HEALTH_ROUTING_DOWN_WARN |
 const ROUTING_DOWN_CRITICAL = Number(process.env.AUTONOMY_HEALTH_ROUTING_DOWN_CRITICAL || 3);
 const DREAM_DEGRADE_WARN_RATIO = Number(process.env.AUTONOMY_HEALTH_DREAM_DEGRADE_WARN_RATIO || 0.35);
 const DREAM_DEGRADE_CRITICAL_RATIO = Number(process.env.AUTONOMY_HEALTH_DREAM_DEGRADE_CRITICAL_RATIO || 0.75);
+const DREAM_DEGRADE_MIN_CYCLE_RUNS = Number(process.env.AUTONOMY_HEALTH_DREAM_DEGRADE_MIN_CYCLE_RUNS || 4);
 const DREAM_FALLBACK_WARN_COUNT = Number(process.env.AUTONOMY_HEALTH_DREAM_FALLBACK_WARN_COUNT || 2);
 const DREAM_PREFLIGHT_FAIL_WARN_COUNT = Number(process.env.AUTONOMY_HEALTH_DREAM_PREFLIGHT_FAIL_WARN_COUNT || 3);
 const DREAM_MISSING_RUN_WARN_HOURS = Number(process.env.AUTONOMY_HEALTH_DREAM_MISSING_RUN_WARN_HOURS || 12);
 const DREAM_MISSING_RUN_CRITICAL_HOURS = Number(process.env.AUTONOMY_HEALTH_DREAM_MISSING_RUN_CRITICAL_HOURS || 24);
 const BUDGET_DEGRADE_WARN_COUNT = Number(process.env.AUTONOMY_HEALTH_BUDGET_DEGRADE_WARN_COUNT || 3);
+const BUDGET_DENY_WARN_COUNT = Number(process.env.AUTONOMY_HEALTH_BUDGET_DENY_WARN_COUNT || 3);
+const BUDGET_DENY_WARN_RATE = Math.max(0, Math.min(1, Number(process.env.AUTONOMY_HEALTH_BUDGET_DENY_WARN_RATE || 0.35)));
+const BUDGET_DENY_WARN_MIN_DECISIONS = Number(process.env.AUTONOMY_HEALTH_BUDGET_DENY_WARN_MIN_DECISIONS || 5);
 const ROUTE_ATTESTATION_WARN = Number(process.env.AUTONOMY_HEALTH_ROUTE_ATTESTATION_WARN || 1);
 const ROUTE_ATTESTATION_CRITICAL = Number(process.env.AUTONOMY_HEALTH_ROUTE_ATTESTATION_CRITICAL || 3);
 const VERIFICATION_PASS_RATE_WARN = Number(process.env.AUTONOMY_HEALTH_VERIFICATION_PASS_RATE_WARN || 0.7);
 const VERIFICATION_PASS_RATE_CRITICAL = Number(process.env.AUTONOMY_HEALTH_VERIFICATION_PASS_RATE_CRITICAL || 0.5);
 const VERIFICATION_PASS_RATE_MIN_ATTEMPTED = Number(process.env.AUTONOMY_HEALTH_VERIFICATION_PASS_RATE_MIN_ATTEMPTED || 5);
+const VERIFICATION_PASS_RATE_WARN_MIN_ATTEMPTED = Number(
+  process.env.AUTONOMY_HEALTH_VERIFICATION_PASS_RATE_WARN_MIN_ATTEMPTED
+  || Math.max(VERIFICATION_PASS_RATE_MIN_ATTEMPTED, 12)
+);
+const VERIFICATION_PASS_RATE_CRITICAL_MIN_ATTEMPTED = Number(
+  process.env.AUTONOMY_HEALTH_VERIFICATION_PASS_RATE_CRITICAL_MIN_ATTEMPTED
+  || Math.max(VERIFICATION_PASS_RATE_WARN_MIN_ATTEMPTED, 20)
+);
 const ROUTING_RECOVERY_WARN_HOURS = Number(process.env.AUTONOMY_HEALTH_ROUTING_RECOVERY_WARN_HOURS || 24);
 const ROUTING_RECOVERY_CRITICAL_HOURS = Number(process.env.AUTONOMY_HEALTH_ROUTING_RECOVERY_CRITICAL_HOURS || 72);
 const STARTUP_ATTESTATION_WARN_HOURS = Number(process.env.AUTONOMY_HEALTH_STARTUP_ATTESTATION_WARN_HOURS || 12);
@@ -1418,6 +1430,10 @@ function assessBudgetGuard(now, dateSet) {
   const active = rawActive && !staleRecoveredPause;
   const autonomyEnabled = String(process.env.AUTONOMY_ENABLED || '0') === '1';
   const lastDecisionTs = lastTs(decisions, () => true);
+  const denyRate = decisions.length > 0 ? Number((denies.length / decisions.length).toFixed(3)) : 0;
+  const denyBurst = denies.length >= Number(BUDGET_DENY_WARN_COUNT || 3);
+  const denyPressure = decisions.length >= Number(BUDGET_DENY_WARN_MIN_DECISIONS || 5)
+    && denyRate >= Number(BUDGET_DENY_WARN_RATE || 0.35);
 
   let level = 'ok';
   let reason = 'budget_guard_healthy';
@@ -1427,9 +1443,11 @@ function assessBudgetGuard(now, dateSet) {
   } else if (active) {
     level = autonomyEnabled ? 'critical' : 'warn';
     reason = autonomyEnabled ? 'budget_autopause_active' : 'budget_autopause_active_preview_only';
-  } else if (denies.length > 0) {
+  } else if (denyBurst || denyPressure) {
     level = autonomyEnabled ? 'warn' : 'ok';
     reason = autonomyEnabled ? 'budget_guard_denies_present' : 'budget_guard_denies_preview_only';
+  } else if (denies.length > 0) {
+    reason = 'budget_guard_denies_low_signal';
   } else if (degrades.length >= Number(BUDGET_DEGRADE_WARN_COUNT || 3)) {
     level = 'warn';
     reason = 'budget_guard_degrade_pressure';
@@ -1452,11 +1470,15 @@ function assessBudgetGuard(now, dateSet) {
       decision_degrade_count: degrades.length,
       decision_deny_count: denies.length,
       decision_total: decisions.length,
+      decision_deny_rate: denyRate,
       top_deny_reasons: topDenyReasons,
       last_decision_ts: lastDecisionTs ? new Date(lastDecisionTs).toISOString() : null
     },
     thresholds: {
-      degrade_warn_count: Number(BUDGET_DEGRADE_WARN_COUNT || 3)
+      degrade_warn_count: Number(BUDGET_DEGRADE_WARN_COUNT || 3),
+      deny_warn_count: Number(BUDGET_DENY_WARN_COUNT || 3),
+      deny_warn_rate: Number(BUDGET_DENY_WARN_RATE || 0.35),
+      deny_warn_min_decisions: Number(BUDGET_DENY_WARN_MIN_DECISIONS || 5)
     }
   };
 }
@@ -1486,6 +1508,7 @@ function assessDreamDegradation(now, dateSet, autonomyEnabled = true) {
   const lastCycleTs = lastTs(cycleRuns, () => true);
   const ageHours = hoursSince(lastCycleTs, now);
   const countFallbackSignals = autonomyEnabled === true || previewStrict;
+  const degradationSampleReady = cycleCount >= Number(DREAM_DEGRADE_MIN_CYCLE_RUNS || 4);
 
   let level = 'ok';
   let reason = 'dream_cycle_healthy';
@@ -1495,13 +1518,13 @@ function assessDreamDegradation(now, dateSet, autonomyEnabled = true) {
   } else if (Number.isFinite(ageHours) && ageHours >= Number(DREAM_MISSING_RUN_CRITICAL_HOURS || 24)) {
     level = autonomyEnabled ? 'critical' : 'warn';
     reason = autonomyEnabled ? 'dream_cycle_stale_critical' : 'dream_cycle_stale_preview_only';
-  } else if (degradedRatio >= Number(DREAM_DEGRADE_CRITICAL_RATIO || 0.75)) {
+  } else if (degradationSampleReady && degradedRatio >= Number(DREAM_DEGRADE_CRITICAL_RATIO || 0.75)) {
     level = autonomyEnabled ? 'critical' : 'warn';
     reason = autonomyEnabled ? 'dream_cycle_degraded_critical' : 'dream_cycle_degraded_preview_only';
   } else if (
-    degradedRatio >= Number(DREAM_DEGRADE_WARN_RATIO || 0.35)
-    || (countFallbackSignals && fallbackCount >= Number(DREAM_FALLBACK_WARN_COUNT || 2))
-    || (countFallbackSignals && preflightFailCount >= Number(DREAM_PREFLIGHT_FAIL_WARN_COUNT || 3))
+    (degradationSampleReady && degradedRatio >= Number(DREAM_DEGRADE_WARN_RATIO || 0.35))
+    || (degradationSampleReady && countFallbackSignals && fallbackCount >= Number(DREAM_FALLBACK_WARN_COUNT || 2))
+    || (degradationSampleReady && countFallbackSignals && preflightFailCount >= Number(DREAM_PREFLIGHT_FAIL_WARN_COUNT || 3))
     || (Number.isFinite(ageHours) && ageHours >= Number(DREAM_MISSING_RUN_WARN_HOURS || 12))
   ) {
     level = 'warn';
@@ -1521,11 +1544,13 @@ function assessDreamDegradation(now, dateSet, autonomyEnabled = true) {
       fallback_runs: fallbackCount,
       preflight_failed_count: preflightFailCount,
       fallback_signal_considered: countFallbackSignals,
+      degradation_sample_ready: degradationSampleReady,
       preview_strict: previewStrict,
       last_cycle_ts: lastCycleTs ? new Date(lastCycleTs).toISOString() : null,
       last_cycle_age_hours: Number.isFinite(ageHours) ? ageHours : null
     },
     thresholds: {
+      min_cycle_runs_for_degradation: Number(DREAM_DEGRADE_MIN_CYCLE_RUNS || 4),
       warn_degraded_ratio: Number(DREAM_DEGRADE_WARN_RATIO || 0.35),
       critical_degraded_ratio: Number(DREAM_DEGRADE_CRITICAL_RATIO || 0.75),
       warn_fallback_count: Number(DREAM_FALLBACK_WARN_COUNT || 2),
@@ -1597,6 +1622,16 @@ function assessVerificationPassRate(receiptSummaryResult, autonomyEnabled = true
     verifiedRate = verified / attempted;
   }
   const hasSample = attempted >= Number(VERIFICATION_PASS_RATE_MIN_ATTEMPTED || 5);
+  const warnMinAttempted = Math.max(
+    Number(VERIFICATION_PASS_RATE_MIN_ATTEMPTED || 5),
+    Number(VERIFICATION_PASS_RATE_WARN_MIN_ATTEMPTED || 12)
+  );
+  const criticalMinAttempted = Math.max(
+    warnMinAttempted,
+    Number(VERIFICATION_PASS_RATE_CRITICAL_MIN_ATTEMPTED || 20)
+  );
+  const hasWarnSample = attempted >= warnMinAttempted;
+  const hasCriticalSample = attempted >= criticalMinAttempted;
   const topFailureReasons = combined.top_failure_reasons && typeof combined.top_failure_reasons === 'object'
     ? combined.top_failure_reasons
     : {};
@@ -1606,16 +1641,20 @@ function assessVerificationPassRate(receiptSummaryResult, autonomyEnabled = true
   if (!hasSample || !Number.isFinite(verifiedRate)) {
     reason = 'verification_pass_rate_low_sample_nonblocking';
   } else if (verifiedRate < Number(VERIFICATION_PASS_RATE_CRITICAL || 0.5)) {
-    if (autonomyEnabled === true) {
+    if (autonomyEnabled === true && hasCriticalSample) {
       level = 'critical';
       reason = 'verification_pass_rate_critical';
+    } else if (autonomyEnabled === true) {
+      reason = 'verification_pass_rate_low_sample_nonblocking';
     } else {
       reason = 'verification_pass_rate_preview_only';
     }
   } else if (verifiedRate < Number(VERIFICATION_PASS_RATE_WARN || 0.7)) {
-    if (autonomyEnabled === true) {
+    if (autonomyEnabled === true && hasWarnSample) {
       level = 'warn';
       reason = 'verification_pass_rate_warn';
+    } else if (autonomyEnabled === true) {
+      reason = 'verification_pass_rate_low_sample_nonblocking';
     } else {
       reason = 'verification_pass_rate_preview_only';
     }
@@ -1632,6 +1671,10 @@ function assessVerificationPassRate(receiptSummaryResult, autonomyEnabled = true
       verified_receipts: verified,
       verified_rate: Number.isFinite(verifiedRate) ? Number(verifiedRate.toFixed(3)) : null,
       min_attempted_required: Number(VERIFICATION_PASS_RATE_MIN_ATTEMPTED || 5),
+      warn_min_attempted_required: warnMinAttempted,
+      critical_min_attempted_required: criticalMinAttempted,
+      has_warn_sample: hasWarnSample,
+      has_critical_sample: hasCriticalSample,
       top_failure_reasons: Object.entries(topFailureReasons)
         .map(([k, v]) => ({ reason: String(k || ''), count: Number(v || 0) }))
         .sort((a, b) => (b.count - a.count) || a.reason.localeCompare(b.reason))
@@ -1640,7 +1683,9 @@ function assessVerificationPassRate(receiptSummaryResult, autonomyEnabled = true
     thresholds: {
       warn_rate: Number(VERIFICATION_PASS_RATE_WARN || 0.7),
       critical_rate: Number(VERIFICATION_PASS_RATE_CRITICAL || 0.5),
-      min_attempted: Number(VERIFICATION_PASS_RATE_MIN_ATTEMPTED || 5)
+      min_attempted: Number(VERIFICATION_PASS_RATE_MIN_ATTEMPTED || 5),
+      warn_min_attempted: warnMinAttempted,
+      critical_min_attempted: criticalMinAttempted
     }
   };
 }
