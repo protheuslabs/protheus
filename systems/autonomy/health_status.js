@@ -1786,7 +1786,12 @@ function main() {
   const proposalRows = readProposalRows(dates);
   const queueEvents = readQueueEvents(dates);
   const runEvents = readAutonomyRunEvents(dates);
-  const autonomyEnabled = !!(autonomy.payload && autonomy.payload.autonomy_enabled === true);
+  const payload = autonomy.payload && typeof autonomy.payload === 'object' ? autonomy.payload : {};
+  const hasAutonomyFlag = Object.prototype.hasOwnProperty.call(payload, 'autonomy_enabled');
+  const stubControllerMode = String(process.env.AUTONOMY_HEALTH_AUTONOMY_CONTROLLER_SCRIPT || '').trim().length > 0;
+  const autonomyEnabled = hasAutonomyFlag
+    ? payload.autonomy_enabled === true
+    : (String(process.env.AUTONOMY_ENABLED || '0') === '1' || stubControllerMode);
 
   const routing = {
     spine_local_down_consecutive: Number(spineHealth.consecutive_full_local_down || 0),

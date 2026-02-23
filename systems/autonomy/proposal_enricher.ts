@@ -1126,8 +1126,10 @@ function isMetaNoopCandidate(proposal, blobHint) {
   const summary = normalizeText(p.summary);
   const blob = normalizeFitText([blobHint || '', title, summary].join(' '));
   if (!blob) return false;
-  const metaIntent = META_COORDINATION_RE.test(blob) || META_NOOP_INTENT_RE.test(blob);
   const selfReferential = SELF_REFERENTIAL_SCOPE_RE.test(blob);
+  if (OPPORTUNITY_MARKER_RE.test(blob)) return false;
+  if (ACTION_VERB_RE.test(blob) && CONCRETE_TARGET_RE.test(blob) && !selfReferential) return false;
+  const metaIntent = META_COORDINATION_RE.test(blob) || META_NOOP_INTENT_RE.test(blob);
   return metaIntent || selfReferential;
 }
 

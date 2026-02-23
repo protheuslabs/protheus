@@ -876,6 +876,14 @@ function runModelPreflight(state, model, phase) {
 function runLocalModel(model, prompt, timeoutMs, phase) {
   const fakeIdle = String(process.env.IDLE_DREAM_FAKE_IDLE_JSON || '').trim();
   const fakeRem = String(process.env.IDLE_DREAM_FAKE_REM_JSON || '').trim();
+  const phaseKey = String(phase || '').trim().toLowerCase();
+  const isPreflightPhase = phaseKey.endsWith('_preflight');
+  const fakeHarnessActive = !!(
+    fakeIdle
+    || fakeRem
+    || String(process.env.IDLE_DREAM_FAKE_MODELS || '').trim()
+    || String(process.env.IDLE_DREAM_FAKE_MODEL_FAILURES || '').trim()
+  );
   const fakeFailures = parseCsvOrder(process.env.IDLE_DREAM_FAKE_MODEL_FAILURES || '')
     .map((row) => {
       const raw = String(row || '').trim();
@@ -890,14 +898,17 @@ function runLocalModel(model, prompt, timeoutMs, phase) {
     })
     .filter((row) => !!row.model);
   const forced = fakeFailures.find((row) => row.model === normalizeModelName(model));
-  if (forced && forced.reason === 'timeout') {
+  if (forced && !isPreflightPhase && forced.reason === 'timeout') {
     return { ok: false, stdout: '', stderr: 'forced_timeout', code: 124, timed_out: true, signal: 'SIGTERM', error: 'forced_timeout' };
   }
-  if (forced) {
+  if (forced && !isPreflightPhase) {
     return { ok: false, stdout: '', stderr: `forced_${forced.reason}`, code: 1, timed_out: false, signal: null, error: `forced_${forced.reason}` };
   }
-  if (phase === 'idle' && fakeIdle) return { ok: true, stdout: fakeIdle, stderr: '', code: 0 };
-  if (phase === 'rem' && fakeRem) return { ok: true, stdout: fakeRem, stderr: '', code: 0 };
+  if (isPreflightPhase && fakeHarnessActive) {
+    return { ok: true, stdout: 'OK', stderr: '', code: 0, timed_out: false, signal: null };
+  }
+  if (phaseKey === 'idle' && fakeIdle) return { ok: true, stdout: fakeIdle, stderr: '', code: 0 };
+  if (phaseKey === 'rem' && fakeRem) return { ok: true, stdout: fakeRem, stderr: '', code: 0 };
   if (!model) return { ok: false, stdout: '', stderr: 'no_local_model_selected', code: 2 };
   return runLocalOllamaPrompt({
     model,
@@ -1635,10 +1646,22 @@ function runIdlePass(dateStr, state, force) {
         const links = normalizeIdleLinks(parsed, seeds);
         const row = writeIdleRow(dateStr, selectedModel, seeds, links, parsed);
         modelOnSuccess(state, selectedModel, 'idle');
+        const priorFailure = attemptedModels
+          .slice(0, -1)
+          .reverse()
+          .find((entry) => {
+            if (!entry || typeof entry !== 'object') return false;
+            if (entry.failure_reason || entry.cooldown_until_ts) return true;
+            if (entry.preflight && entry.preflight.ok === false) return true;
+            if (Array.isArray(entry.attempts) && entry.attempts.some((row) => row && row.ok !== true)) return true;
+            return false;
+          }) || null;
         return {
           ok: true,
           skipped: false,
           model: selectedModel,
+          failed_model: priorFailure ? String(priorFailure.model || '') : null,
+          cooldown_until_ts: priorFailure ? priorFailure.cooldown_until_ts || null : null,
           seed_count: seeds.length,
           failure_seed_count: failureSeedCount,
           link_count: links.length,

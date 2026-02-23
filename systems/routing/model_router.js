@@ -2339,7 +2339,8 @@ function maybeApplyVariantSelection({
   taskType,
   outcomeStats,
   localHealth,
-  localModelAllowed
+  localModelAllowed,
+  profiles
 }) {
   const policy = modelVariantPolicyFromConfig(cfg);
   const summaryBase = {
@@ -2415,7 +2416,11 @@ function maybeApplyVariantSelection({
     };
   }
 
-  if (isLocalOllamaModel(variantModel)) {
+  const variantProfile = modelProfileFor(variantModel, profiles || {});
+  const variantClass = normalizeKey(variantProfile && variantProfile.class || "");
+  const variantIsLocalRuntime = isLocalOllamaModel(variantModel) && !variantClass.startsWith("cloud");
+
+  if (variantIsLocalRuntime) {
     const h = health(variantModel, false, { forRouting: true });
     if (localHealth && typeof localHealth === "object") localHealth[variantModel] = h;
     if (h.banned === true) {
@@ -2990,6 +2995,10 @@ function rankCandidate(modelId, ctx) {
       score -= 10;
       reasons.push("local_timeout_recent");
     }
+    if (h && h.probe_blocked === true) {
+      score -= 24;
+      reasons.push("local_probe_blocked_penalty");
+    }
   }
 
   let promptCacheEligibleModel = false;
@@ -3126,15 +3135,21 @@ function saveRouteState(s) {
 function routeDecision({ risk, complexity, intent, task, mode, forceModel, capability, tokensEst, roleOverride, routeClass }) {
   const cfg = readConfig();
   const allowlist = modelsFromAllowlist(cfg);
+  const profiles = modelProfilesFromConfig(cfg);
   const hardwarePlan = resolveHardwarePlan(cfg, allowlist);
   const hardwareFilterActive = localHardwareFilterEnabled(hardwarePlan);
   const eligibleLocals = effectiveLocalModelSet(hardwarePlan);
   const localProviderGate = evaluateLocalProviderGate("ollama/smallthinker", {
     source: "model_router_route"
   });
+  const isLocalRuntimeEligible = (modelId) => {
+    if (!isLocalOllamaModel(modelId)) return false;
+    const profile = modelProfileFor(modelId, profiles);
+    const cls = normalizeKey(profile && profile.class || "");
+    return !cls.startsWith("cloud");
+  };
   const localModelAllowed = (modelId) => {
-    if (!isLocalOllamaModel(modelId)) return true;
-    if (localProviderGate.applicable === true && localProviderGate.available !== true) return false;
+    if (!isLocalRuntimeEligible(modelId)) return true;
     if (!hardwareFilterActive) return true;
     return eligibleLocals.has(String(modelId || ""));
   };
@@ -3240,23 +3255,9 @@ function routeDecision({ risk, complexity, intent, task, mode, forceModel, capab
 
   for (const m of candidates) {
     tried.push(m);
-    if (isLocalOllamaModel(m) && localProviderGate.applicable === true && localProviderGate.available !== true) {
-      localHealth[m] = {
-        model: m,
-        available: false,
-        timeout: false,
-        banned: false,
-        reason: `provider_gate:${String(localProviderGate.reason || "provider_unavailable")}`,
-        provider_gate: true,
-        provider: localProviderGate.provider || "ollama",
-        circuit_open: localProviderGate.circuit_open === true,
-        circuit_open_until_ts: localProviderGate.circuit_open_until_ts || null
-      };
-      continue;
-    }
     if (!localModelAllowed(m)) continue;
     if (isBanned(m)) continue;
-    if (isLocalOllamaModel(m)) {
+    if (isLocalRuntimeEligible(m)) {
       const h = health(m, false, { forRouting: true });
       localHealth[m] = h;
       if (h.banned === true) continue;
@@ -3269,7 +3270,6 @@ function routeDecision({ risk, complexity, intent, task, mode, forceModel, capab
     filtered.push(m);
   }
 
-  const profiles = modelProfilesFromConfig(cfg);
   const outcomeStats = (fastPath.matched && fastPath.skip_outcome_scan)
     ? loadOutcomeStatsCached()
     : modelOutcomeStats(OUTCOME_WINDOW_DAYS);
@@ -3300,7 +3300,7 @@ function routeDecision({ risk, complexity, intent, task, mode, forceModel, capab
   let ranked = rankedAll;
   let tier1EscalationReason = null;
   if (T1_LOCAL_FIRST && Number(tier) === 1) {
-    const locals = rankedAll.filter(x => isLocalOllamaModel(x.model));
+    const locals = rankedAll.filter(x => isLocalRuntimeEligible(x.model));
     const localBest = pickTier1LocalCandidate(locals, localHealth);
     const maxLatencyMs = localBest ? resolveLocalProbePolicy(localBest).max_latency_ms : T1_LOCAL_MAX_LATENCY_MS;
     const esc = shouldEscalateFromTier1Local(localBest, localHealth, outcomeStats, maxLatencyMs, {
@@ -3357,7 +3357,8 @@ function routeDecision({ risk, complexity, intent, task, mode, forceModel, capab
     taskType: taskTypeKey,
     outcomeStats,
     localHealth,
-    localModelAllowed
+    localModelAllowed,
+    profiles
   });
   if (variantPick.summary && variantPick.summary.applied === true && variantPick.selected_model) {
     selected = variantPick.selected_model;

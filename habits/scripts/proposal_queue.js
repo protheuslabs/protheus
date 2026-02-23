@@ -348,6 +348,78 @@ function normalizeProposalsShape(raw) {
   return null;
 }
 
+function overlaySatisfiesStatus(overlayEntry, status) {
+  const target = String(status || '').trim().toLowerCase();
+  if (!overlayEntry || typeof overlayEntry !== 'object') {
+    return target === 'pending';
+  }
+  const decision = String(overlayEntry.decision || '').trim().toLowerCase();
+  const outcome = String(overlayEntry.outcome || '').trim().toLowerCase();
+  if (target === 'accepted') return decision === 'accept';
+  if (target === 'rejected') return decision === 'reject';
+  if (target === 'parked') return decision === 'park';
+  if (target === 'closed') return !!outcome;
+  if (target === 'pending') return !decision && !outcome;
+  return false;
+}
+
+function synthQueueEventForStatus(proposalId, status, fromStatus, sourceTag = 'proposal_queue_reconcile_v2') {
+  const id = String(proposalId || '').trim();
+  const target = String(status || '').trim().toLowerCase();
+  if (!id) return null;
+  const ts = new Date().toISOString();
+  const from = String(fromStatus || '').trim().toLowerCase() || null;
+  if (target === 'accepted') {
+    return {
+      ts,
+      type: 'decision',
+      proposal_id: id,
+      decision: 'accept',
+      reason: `${sourceTag}: sync accepted status`,
+      source: sourceTag,
+      from_status: from,
+      to_status: target
+    };
+  }
+  if (target === 'rejected') {
+    return {
+      ts,
+      type: 'decision',
+      proposal_id: id,
+      decision: 'reject',
+      reason: `${sourceTag}: sync rejected status`,
+      source: sourceTag,
+      from_status: from,
+      to_status: target
+    };
+  }
+  if (target === 'parked') {
+    return {
+      ts,
+      type: 'decision',
+      proposal_id: id,
+      decision: 'park',
+      reason: `${sourceTag}: sync parked status`,
+      source: sourceTag,
+      from_status: from,
+      to_status: target
+    };
+  }
+  if (target === 'closed') {
+    return {
+      ts,
+      type: 'outcome',
+      proposal_id: id,
+      outcome: 'no_change',
+      evidence_ref: `${sourceTag}:status_sync`,
+      source: sourceTag,
+      from_status: from,
+      to_status: target
+    };
+  }
+  return null;
+}
+
 function reconcileCmd(opts) {
   const dryRun = String(opts['dry-run'] || opts.dry_run || '0') === '1';
   const files = listProposalFiles({
@@ -371,6 +443,7 @@ function reconcileCmd(opts) {
 
   let filesUpdated = 0;
   let proposalsUpdated = 0;
+  let progressEventsAdded = 0;
   const sample = [];
 
   for (const file of files) {
@@ -410,6 +483,18 @@ function reconcileCmd(opts) {
             to: desired
           });
         }
+        if (!dryRun) {
+          const ovEntry = overlay.get(id) || null;
+          if (!overlaySatisfiesStatus(ovEntry, desired)) {
+            const evt = synthQueueEventForStatus(id, desired, current || null);
+            if (evt) {
+              const dateFromFile = String(file || '').replace(/\.json$/i, '').trim();
+              const eventDate = /^\d{4}-\d{2}-\d{2}$/.test(dateFromFile) ? dateFromFile : todayStr();
+              appendJsonl(decisionsPathFor(eventDate), evt);
+              progressEventsAdded += 1;
+            }
+          }
+        }
       }
       next.push(p);
     }
@@ -427,6 +512,7 @@ function reconcileCmd(opts) {
     files_scanned: files.length,
     files_updated: filesUpdated,
     proposals_updated: proposalsUpdated,
+    progress_events_added: progressEventsAdded,
     dry_run: dryRun,
     sample_updates: sample
   };
