@@ -132,6 +132,56 @@ function safeRate(num, den) {
   return n / d;
 }
 
+function buildChecks(input) {
+  const attempts = Number(input && input.attempts || 0);
+  const executed = Number(input && input.executed || 0);
+  const shipped = Number(input && input.shipped || 0);
+  const noProgress = Number(input && input.no_progress || 0);
+  const safetyStops = Number(input && input.safety_stops || 0);
+  const driftRate = safeRate(noProgress, attempts);
+  const yieldRate = safeRate(shipped, executed);
+  const safetyRate = safeRate(safetyStops, attempts);
+  return {
+    drift_rate: {
+      value: Number(driftRate.toFixed(3)),
+      warn: DRIFT_WARN,
+      fail: DRIFT_FAIL,
+      status: driftRate >= DRIFT_FAIL ? 'fail' : driftRate >= DRIFT_WARN ? 'warn' : 'pass'
+    },
+    yield_rate: {
+      value: Number(yieldRate.toFixed(3)),
+      warn: YIELD_WARN,
+      fail: YIELD_FAIL,
+      status: yieldRate <= YIELD_FAIL ? 'fail' : yieldRate <= YIELD_WARN ? 'warn' : 'pass'
+    },
+    safety_stop_rate: {
+      value: Number(safetyRate.toFixed(3)),
+      warn: SAFETY_WARN,
+      fail: SAFETY_FAIL,
+      status: safetyRate >= SAFETY_FAIL ? 'fail' : safetyRate >= SAFETY_WARN ? 'warn' : 'pass'
+    },
+    attempt_volume: {
+      value: attempts,
+      min: MIN_ATTEMPTS,
+      status: attempts < MIN_ATTEMPTS ? 'warn' : 'pass'
+    }
+  };
+}
+
+function verdictFromChecks(checks) {
+  const failing = Object.values(checks || {}).some((row) => row && row.status === 'fail');
+  if (failing) return 'fail';
+  const warning = Object.values(checks || {}).some((row) => row && row.status === 'warn');
+  return warning ? 'warn' : 'pass';
+}
+
+function worstVerdict(a, b) {
+  const rank = { pass: 0, warn: 1, fail: 2 };
+  const av = rank[String(a || 'pass')] ?? 0;
+  const bv = rank[String(b || 'pass')] ?? 0;
+  return av >= bv ? String(a || 'pass') : String(b || 'pass');
+}
+
 function isAttemptRun(evt) {
   if (!evt || evt.type !== 'autonomy_run') return false;
   const result = String(evt.result || '');
@@ -339,56 +389,39 @@ function computeSimulation(endDateStr, days) {
     objectiveCounts[id] = Number(objectiveCounts[id] || 0) + 1;
   }
 
-  const driftRate = safeRate(noProgress.length, attempts.length);
-  const yieldRate = safeRate(shipped.length, executed.length);
-  const safetyRate = safeRate(safetyStops.length, attempts.length);
-
   const queue = queueSnapshotForWindow(dates);
-
-  const checks = {
-    drift_rate: {
-      value: Number(driftRate.toFixed(3)),
-      warn: DRIFT_WARN,
-      fail: DRIFT_FAIL,
-      status: driftRate >= DRIFT_FAIL ? 'fail' : driftRate >= DRIFT_WARN ? 'warn' : 'pass'
-    },
-    yield_rate: {
-      value: Number(yieldRate.toFixed(3)),
-      warn: YIELD_WARN,
-      fail: YIELD_FAIL,
-      status: yieldRate <= YIELD_FAIL ? 'fail' : yieldRate <= YIELD_WARN ? 'warn' : 'pass'
-    },
-    safety_stop_rate: {
-      value: Number(safetyRate.toFixed(3)),
-      warn: SAFETY_WARN,
-      fail: SAFETY_FAIL,
-      status: safetyRate >= SAFETY_FAIL ? 'fail' : safetyRate >= SAFETY_WARN ? 'warn' : 'pass'
-    },
-    attempt_volume: {
-      value: attempts.length,
-      min: MIN_ATTEMPTS,
-      status: attempts.length < MIN_ATTEMPTS ? 'warn' : 'pass'
-    }
+  const baselineCounters = {
+    attempts: baselineAttempts.length,
+    executed: baselineExecuted.length,
+    shipped: baselineShipped.length,
+    no_progress: baselineNoProgress.length,
+    safety_stops: baselineSafetyStops.length
   };
-
-  const failingChecks = Object.entries(checks)
-    .filter(([, row]) => row && row.status === 'fail')
-    .map(([id]) => id);
-  const warningChecks = Object.entries(checks)
-    .filter(([, row]) => row && row.status === 'warn')
-    .map(([id]) => id);
-
-  const verdict = failingChecks.length > 0
-    ? 'fail'
-    : warningChecks.length > 0
-      ? 'warn'
-      : 'pass';
+  const effectiveCounters = {
+    attempts: attempts.length,
+    executed: executed.length,
+    shipped: shipped.length,
+    no_progress: noProgress.length,
+    safety_stops: safetyStops.length
+  };
+  const checksRaw = buildChecks(baselineCounters);
+  const checksEffective = buildChecks(effectiveCounters);
+  const verdictRaw = verdictFromChecks(checksRaw);
+  const verdictEffective = verdictFromChecks(checksEffective);
+  const integrity = {
+    mode: 'dual_track',
+    baseline_preserved: true,
+    effective_projection_present: true,
+    denominator_reduction_only: effectiveCounters.attempts < baselineCounters.attempts,
+    denominator_delta: baselineCounters.attempts - effectiveCounters.attempts
+  };
+  const verdict = worstVerdict(verdictRaw, verdictEffective);
 
   const recommendations = [];
-  if (checks.drift_rate.status !== 'pass') {
+  if (checksRaw.drift_rate.status !== 'pass' || checksEffective.drift_rate.status !== 'pass') {
     recommendations.push('Increase proposal quality floor or tighten objective binding for non-executable proposals.');
   }
-  if (checks.yield_rate.status !== 'pass') {
+  if (checksRaw.yield_rate.status !== 'pass' || checksEffective.yield_rate.status !== 'pass') {
     recommendations.push('Bias selection toward high-value, executable proposals and reduce medium-risk capacity until shipped rate recovers.');
   }
   if (queue.pending > 80 || queue.stale_pending_72h > 10) {
@@ -402,22 +435,21 @@ function computeSimulation(endDateStr, days) {
     end_date: endDateStr,
     days,
     verdict,
-    checks,
+    verdict_raw: verdictRaw,
+    verdict_effective: verdictEffective,
+    checks: checksRaw,
+    checks_effective: checksEffective,
+    metric_integrity: integrity,
     counters: {
       run_rows: runRows.length,
-      attempts: attempts.length,
-      executed: executed.length,
-      shipped: shipped.length,
-      no_progress: noProgress.length,
-      safety_stops: safetyStops.length
+      attempts: baselineCounters.attempts,
+      executed: baselineCounters.executed,
+      shipped: baselineCounters.shipped,
+      no_progress: baselineCounters.no_progress,
+      safety_stops: baselineCounters.safety_stops
     },
-    baseline_counters: {
-      attempts: baselineAttempts.length,
-      executed: baselineExecuted.length,
-      shipped: baselineShipped.length,
-      no_progress: baselineNoProgress.length,
-      safety_stops: baselineSafetyStops.length
-    },
+    baseline_counters: baselineCounters,
+    effective_counters: effectiveCounters,
     compiler_projection: {
       enabled: SIM_LINEAGE_REQUIRED === true,
       lineage_require_t1_root: SIM_LINEAGE_REQUIRE_T1_ROOT === true,
