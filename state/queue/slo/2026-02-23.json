@@ -1,0 +1,24 @@
+{
+  "ok": true,
+  "type": "proposal_queue_slo",
+  "ts": "2026-02-23T01:49:26.542Z",
+  "window_days": 14,
+  "thresholds": {
+    "max_pending": 80,
+    "max_age_hours": 72,
+    "drain_fraction": 0.25,
+    "max_actions": 25
+  },
+  "queue": {
+    "total_rows": 113,
+    "pending": 15,
+    "stale_pending": 0,
+    "overflow": 0
+  },
+  "breach": false,
+  "plan_count": 0,
+  "planned": [],
+  "applied_count": 0,
+  "applied": [],
+  "apply": false
+}

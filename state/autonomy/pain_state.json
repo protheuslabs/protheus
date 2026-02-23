@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "updated_ts": "2026-02-23T00:22:54.232Z",
+  "updated_ts": "2026-02-23T02:11:49.050Z",
   "signatures": {
     "4278015a179efcf9": {
       "source": "external_eyes",
@@ -538,6 +538,60 @@
       "cooldown_until_ts": "2026-02-23T06:00:59.336Z",
       "last_escalation_ts": "2026-02-23T00:00:59.340Z",
       "last_proposal_id": "PAIN-f6d9de1fe23c1b69",
+      "defer_count": 0,
+      "last_defer_ts": null,
+      "last_defer_reason": null,
+      "last_focus_session_id": null
+    },
+    "5ded14bc3908ca66": {
+      "source": "provider_readiness",
+      "subsystem": "routing",
+      "code": "provider_outage:ollama:env_blocked",
+      "summary": "Provider ollama unavailable",
+      "details": "reason=env_blocked code=1 latency_ms=60",
+      "severity": "low",
+      "risk": "low",
+      "signature": "5ded14bc3908ca66",
+      "total_count": 1,
+      "events": [
+        {
+          "ts": "2026-02-23T01:56:38.271Z",
+          "code": "provider_outage:ollama:env_blocked"
+        }
+      ],
+      "last_ts": "2026-02-23T01:56:38.271Z",
+      "last_summary": "Provider ollama unavailable",
+      "last_details": "reason=env_blocked code=1 latency_ms=60",
+      "cooldown_until_ts": null,
+      "last_escalation_ts": null,
+      "last_proposal_id": null,
+      "defer_count": 0,
+      "last_defer_ts": null,
+      "last_defer_reason": null,
+      "last_focus_session_id": null
+    },
+    "fe8ce8c02613e7ec": {
+      "source": "spine",
+      "subsystem": "orchestration",
+      "code": "provider_recovery_path_pulse_failed",
+      "summary": "Provider recovered but post-recovery path pulse failed",
+      "details": "provider=ollama pulse_reason=test_path_fail reflex_ok=0 dream_ok=0 warmup_ok=1",
+      "severity": "high",
+      "risk": "high",
+      "signature": "fe8ce8c02613e7ec",
+      "total_count": 1,
+      "events": [
+        {
+          "ts": "2026-02-23T02:11:49.039Z",
+          "code": "provider_recovery_path_pulse_failed"
+        }
+      ],
+      "last_ts": "2026-02-23T02:11:49.039Z",
+      "last_summary": "Provider recovered but post-recovery path pulse failed",
+      "last_details": "provider=ollama pulse_reason=test_path_fail reflex_ok=0 dream_ok=0 warmup_ok=1",
+      "cooldown_until_ts": "2026-02-23T04:11:49.041Z",
+      "last_escalation_ts": "2026-02-23T02:11:49.049Z",
+      "last_proposal_id": "PAIN-18cb0908b694282f",
       "defer_count": 0,
       "last_defer_ts": null,
       "last_defer_reason": null,

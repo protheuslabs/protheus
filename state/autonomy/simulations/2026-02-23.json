@@ -1,0 +1,55 @@
+{
+  "ok": true,
+  "type": "autonomy_simulation_harness",
+  "ts": "2026-02-23T02:14:26.622Z",
+  "end_date": "2026-02-23",
+  "days": 30,
+  "verdict": "pass",
+  "checks": {
+    "drift_rate": {
+      "value": 0.442,
+      "warn": 0.65,
+      "fail": 0.85,
+      "status": "pass"
+    },
+    "yield_rate": {
+      "value": 0.5,
+      "warn": 0.2,
+      "fail": 0.08,
+      "status": "pass"
+    },
+    "safety_stop_rate": {
+      "value": 0.037,
+      "warn": 0.25,
+      "fail": 0.45,
+      "status": "pass"
+    },
+    "attempt_volume": {
+      "value": 163,
+      "min": 5,
+      "status": "pass"
+    }
+  },
+  "counters": {
+    "run_rows": 170,
+    "attempts": 163,
+    "executed": 12,
+    "shipped": 6,
+    "no_progress": 72,
+    "safety_stops": 6
+  },
+  "queue": {
+    "total": 114,
+    "pending": 19,
+    "stale_pending_72h": 0
+  },
+  "objective_mix": {
+    "executed_total": 12,
+    "objective_count": 2,
+    "counts": {
+      "T1_generational_wealth_v1": 2,
+      "T1_make_jay_billionaire_v1": 4
+    }
+  },
+  "recommendations": []
+}

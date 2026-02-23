@@ -1,0 +1,9 @@
+{
+  "ts": "2026-02-23T02:11:49.051Z",
+  "last_provider": "ollama",
+  "last_available": true,
+  "last_reason": "test_forced_up",
+  "last_transition_ts": "2026-02-23T02:11:49.051Z",
+  "last_warmup_ts": "2026-02-23T02:11:49.051Z",
+  "last_warmup_ok": true
+}

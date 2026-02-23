@@ -1,6 +1,6 @@
 # V1 Hardening Checkpoint (2026-02-23)
 
-Generated: 2026-02-23T00:30:33.848Z
+Generated: 2026-02-23T01:12:12.069Z
 Window days: 14
 
 ## Score

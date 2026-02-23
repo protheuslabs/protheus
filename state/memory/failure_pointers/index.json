@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "updated_ts": "2026-02-23T00:27:46.977Z",
+  "updated_ts": "2026-02-23T02:11:50.011Z",
   "item_hashes": {
     "322525e41384fb34": {
       "node_id": "failure-t1-322525e4",
@@ -151,6 +151,36 @@
       "source": "external_eyes",
       "code": "collector_escalation:collector_error",
       "ts": "2026-02-23T00:00:38.351Z"
+    },
+    "hesc_mlyigztr_75675396": {
+      "node_id": "failure-t2-hesc_mly",
+      "uid": "589804898887de598a6593c8",
+      "memory_file": "memory/2026-02-23.md",
+      "date": "2026-02-23",
+      "failure_tier": 2,
+      "source": "autonomy_human_escalation",
+      "code": "human_escalation:not_executable",
+      "ts": "2026-02-23T02:04:34.864Z"
+    },
+    "5ded14bc3908ca66": {
+      "node_id": "failure-t3-5ded14bc",
+      "uid": "8ccb2b45c99a6da93758da25",
+      "memory_file": "memory/2026-02-23.md",
+      "date": "2026-02-23",
+      "failure_tier": 3,
+      "source": "provider_readiness",
+      "code": "provider_outage:ollama:env_blocked",
+      "ts": "2026-02-23T02:04:34.865Z"
+    },
+    "fe8ce8c02613e7ec": {
+      "node_id": "failure-t1-fe8ce8c0",
+      "uid": "173818e470c3bfb2772e5046",
+      "memory_file": "memory/2026-02-23.md",
+      "date": "2026-02-23",
+      "failure_tier": 1,
+      "source": "spine",
+      "code": "provider_recovery_path_pulse_failed",
+      "ts": "2026-02-23T02:11:50.010Z"
     }
   }
 }

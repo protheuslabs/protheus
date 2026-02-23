@@ -165,6 +165,28 @@
         "sensory.collector.stock_market": 3,
         "sensory.collector.github_repo": 2
       }
+    },
+    "2026-02-23T01": {
+      "total": 18,
+      "scopes": {
+        "sensory.collector.ollama_search": 1,
+        "sensory.collector.upwork_gigs": 1,
+        "sensory.collector.google_trends": 2,
+        "sensory.focus_fetch": 9,
+        "sensory.collector.moltbook_hot": 2,
+        "sensory.collector.stock_market": 1,
+        "sensory.collector.github_repo": 2
+      }
+    },
+    "2026-02-23T02": {
+      "total": 17,
+      "scopes": {
+        "sensory.collector.ollama_search": 9,
+        "sensory.collector.moltbook_hot": 4,
+        "sensory.collector.upwork_gigs": 1,
+        "sensory.collector.google_trends": 2,
+        "sensory.focus_fetch": 1
+      }
     }
   },
   "per_day": {
@@ -198,15 +220,15 @@
       }
     },
     "2026-02-23": {
-      "total": 28,
+      "total": 63,
       "scopes": {
-        "sensory.collector.ollama_search": 4,
-        "sensory.collector.upwork_gigs": 1,
-        "sensory.collector.google_trends": 2,
-        "sensory.focus_fetch": 13,
-        "sensory.collector.moltbook_hot": 3,
-        "sensory.collector.stock_market": 3,
-        "sensory.collector.github_repo": 2
+        "sensory.collector.ollama_search": 14,
+        "sensory.collector.upwork_gigs": 3,
+        "sensory.collector.google_trends": 6,
+        "sensory.focus_fetch": 23,
+        "sensory.collector.moltbook_hot": 9,
+        "sensory.collector.stock_market": 4,
+        "sensory.collector.github_repo": 4
       }
     }
   }

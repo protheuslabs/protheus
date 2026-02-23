@@ -286,10 +286,10 @@
       "status": "active",
       "weight": 73,
       "cooldown_minutes": 90,
-      "hit_count": 15,
-      "last_hit_ts": "2026-02-23T00:27:46.337Z",
+      "hit_count": 17,
+      "last_hit_ts": "2026-02-23T02:47:06.887Z",
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-23T00:27:46.337Z"
+      "updated_ts": "2026-02-23T02:47:06.887Z"
     },
     {
       "uid": "ft6aa3y5yefrv9skn68znwld",
@@ -320,10 +320,10 @@
       "status": "active",
       "weight": 72,
       "cooldown_minutes": 90,
-      "hit_count": 48,
-      "last_hit_ts": "2026-02-23T00:00:10.828Z",
+      "hit_count": 52,
+      "last_hit_ts": "2026-02-23T02:29:04.651Z",
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-23T00:00:10.828Z"
+      "updated_ts": "2026-02-23T02:29:04.651Z"
     },
     {
       "uid": "ft1fz2j83196slr4cvu2d7bw",
@@ -371,10 +371,10 @@
       "status": "active",
       "weight": 61,
       "cooldown_minutes": 90,
-      "hit_count": 44,
-      "last_hit_ts": "2026-02-23T00:00:10.828Z",
+      "hit_count": 48,
+      "last_hit_ts": "2026-02-23T02:29:04.651Z",
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-23T00:00:10.828Z"
+      "updated_ts": "2026-02-23T02:29:04.651Z"
     },
     {
       "uid": "ft2xwzwxngr50xa5g83ya04l",
@@ -405,10 +405,10 @@
       "status": "active",
       "weight": 51,
       "cooldown_minutes": 90,
-      "hit_count": 66,
-      "last_hit_ts": "2026-02-23T00:00:35.780Z",
+      "hit_count": 74,
+      "last_hit_ts": "2026-02-23T02:29:06.275Z",
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-23T00:00:35.780Z"
+      "updated_ts": "2026-02-23T02:29:06.275Z"
     },
     {
       "uid": "ft3ac4qec9byq5oul6smy408",
@@ -490,10 +490,10 @@
       "status": "active",
       "weight": 51,
       "cooldown_minutes": 90,
-      "hit_count": 30,
-      "last_hit_ts": "2026-02-23T00:00:10.828Z",
+      "hit_count": 34,
+      "last_hit_ts": "2026-02-23T02:29:04.651Z",
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-23T00:00:10.828Z"
+      "updated_ts": "2026-02-23T02:29:04.651Z"
     },
     {
       "uid": "ft61c7fe7o96h2gyomc1z3wv",
@@ -592,10 +592,10 @@
       "status": "active",
       "weight": 40,
       "cooldown_minutes": 90,
-      "hit_count": 51,
-      "last_hit_ts": "2026-02-23T00:27:46.337Z",
+      "hit_count": 55,
+      "last_hit_ts": "2026-02-23T02:47:06.887Z",
       "created_ts": "2026-02-21T02:43:27.698Z",
-      "updated_ts": "2026-02-23T00:27:46.337Z"
+      "updated_ts": "2026-02-23T02:47:06.887Z"
     },
     {
       "uid": "ft3is8sw5sxfbi6w5l2qnk4y",
@@ -660,10 +660,10 @@
       "status": "active",
       "weight": 30,
       "cooldown_minutes": 90,
-      "hit_count": 5,
-      "last_hit_ts": "2026-02-23T00:27:46.337Z",
+      "hit_count": 7,
+      "last_hit_ts": "2026-02-23T02:47:06.887Z",
       "created_ts": "2026-02-22T18:57:07.977Z",
-      "updated_ts": "2026-02-23T00:27:46.337Z"
+      "updated_ts": "2026-02-23T02:47:06.887Z"
     },
     {
       "uid": "ft2dgqg2ppqu35fktdbm5w0c",
@@ -694,10 +694,10 @@
       "status": "active",
       "weight": 29,
       "cooldown_minutes": 90,
-      "hit_count": 33,
-      "last_hit_ts": "2026-02-23T00:00:10.828Z",
+      "hit_count": 37,
+      "last_hit_ts": "2026-02-23T02:29:04.651Z",
       "created_ts": "2026-02-21T02:43:27.698Z",
-      "updated_ts": "2026-02-23T00:00:10.828Z"
+      "updated_ts": "2026-02-23T02:29:04.651Z"
     },
     {
       "uid": "ft4mwyaugg92r7feadk50y87",
@@ -728,10 +728,10 @@
       "status": "active",
       "weight": 26,
       "cooldown_minutes": 90,
-      "hit_count": 94,
-      "last_hit_ts": "2026-02-23T00:00:35.780Z",
+      "hit_count": 104,
+      "last_hit_ts": "2026-02-23T02:29:06.275Z",
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-23T00:00:35.780Z"
+      "updated_ts": "2026-02-23T02:29:06.275Z"
     },
     {
       "uid": "ft4j211uk5aq98jxchk9gfc4",
@@ -745,10 +745,10 @@
       "status": "active",
       "weight": 26,
       "cooldown_minutes": 90,
-      "hit_count": 75,
-      "last_hit_ts": "2026-02-23T00:00:11.206Z",
+      "hit_count": 87,
+      "last_hit_ts": "2026-02-23T02:29:06.275Z",
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-23T00:00:11.206Z"
+      "updated_ts": "2026-02-23T02:29:06.275Z"
     },
     {
       "uid": "ft5e677km6r532epkoxyn4r9",
@@ -762,10 +762,10 @@
       "status": "active",
       "weight": 26,
       "cooldown_minutes": 90,
-      "hit_count": 44,
-      "last_hit_ts": "2026-02-23T00:00:10.828Z",
+      "hit_count": 48,
+      "last_hit_ts": "2026-02-23T02:29:04.651Z",
       "created_ts": "2026-02-21T02:43:27.698Z",
-      "updated_ts": "2026-02-23T00:00:10.828Z"
+      "updated_ts": "2026-02-23T02:29:04.651Z"
     },
     {
       "uid": "ft5z5pjiud6xm7hbtg8ulb5y",
@@ -830,10 +830,10 @@
       "status": "active",
       "weight": 20,
       "cooldown_minutes": 90,
-      "hit_count": 2,
-      "last_hit_ts": "2026-02-22T21:50:57.123Z",
+      "hit_count": 5,
+      "last_hit_ts": "2026-02-23T02:29:04.687Z",
       "created_ts": "2026-02-22T18:57:07.977Z",
-      "updated_ts": "2026-02-23T00:00:10.238Z"
+      "updated_ts": "2026-02-23T02:29:04.687Z"
     },
     {
       "uid": "ft5inldyn7zz79et4462fxq3",
@@ -1000,10 +1000,10 @@
         "skills",
         "patterns"
       ],
-      "focus_hits_total": 102,
-      "update_count": 22,
+      "focus_hits_total": 106,
+      "update_count": 24,
       "created_ts": "2026-02-21T04:03:43.974Z",
-      "updated_ts": "2026-02-23T00:00:35.780Z"
+      "updated_ts": "2026-02-23T02:29:04.716Z"
     },
     "local_state_fallback": {
       "eye_id": "local_state_fallback",
@@ -1051,10 +1051,10 @@
         "infra",
         "reliability"
       ],
-      "focus_hits_total": 54,
-      "update_count": 21,
+      "focus_hits_total": 56,
+      "update_count": 23,
       "created_ts": "2026-02-21T04:03:43.974Z",
-      "updated_ts": "2026-02-23T00:27:46.337Z"
+      "updated_ts": "2026-02-23T02:47:06.887Z"
     },
     "ollama_search": {
       "eye_id": "ollama_search",
@@ -1154,10 +1154,10 @@
         "ai",
         "automation"
       ],
-      "focus_hits_total": 14,
-      "update_count": 11,
+      "focus_hits_total": 18,
+      "update_count": 13,
       "created_ts": "2026-02-21T04:03:43.974Z",
-      "updated_ts": "2026-02-23T00:00:11.206Z"
+      "updated_ts": "2026-02-23T02:29:04.687Z"
     },
     "stock_market": {
       "eye_id": "stock_market",
@@ -1252,10 +1252,10 @@
         "automation",
         "nocode"
       ],
-      "focus_hits_total": 110,
-      "update_count": 23,
+      "focus_hits_total": 114,
+      "update_count": 25,
       "created_ts": "2026-02-21T04:03:43.974Z",
-      "updated_ts": "2026-02-23T00:00:10.828Z"
+      "updated_ts": "2026-02-23T02:29:04.651Z"
     },
     "producthunt_launches": {
       "eye_id": "producthunt_launches",
@@ -1612,10 +1612,10 @@
         "gemini_gems",
         "search_trends"
       ],
-      "focus_hits_total": 54,
-      "update_count": 15,
+      "focus_hits_total": 58,
+      "update_count": 17,
       "created_ts": "2026-02-21T04:03:43.974Z",
-      "updated_ts": "2026-02-23T00:00:10.984Z"
+      "updated_ts": "2026-02-23T02:29:06.275Z"
     },
     "reddit_ai_automation": {
       "eye_id": "reddit_ai_automation",
@@ -1654,8 +1654,8 @@
     }
   },
   "recent_focus_items": {
-    "id:449c6a78-2512-423a-8896-652a8e977c60": "2026-02-23T00:00:35.780Z",
-    "id:b6701e63-51e7-4e7d-8c76-1d4f2a362c20": "2026-02-23T00:00:35.780Z",
+    "id:449c6a78-2512-423a-8896-652a8e977c60": "2026-02-23T02:29:04.716Z",
+    "id:b6701e63-51e7-4e7d-8c76-1d4f2a362c20": "2026-02-23T02:29:04.716Z",
     "id:af1dd947eb134297": "2026-02-21T21:45:43.704Z",
     "id:6d8c02dbacbc1a18": "2026-02-21T21:46:43.546Z",
     "id:506727c5c36a748c": "2026-02-21T21:46:43.546Z",
@@ -1718,12 +1718,14 @@
     "id:79052fb57af39a9b": "2026-02-22T21:50:57.074Z",
     "id:c69c8b3e95b1d6d1": "2026-02-22T18:14:49.963Z",
     "id:9c337ba9-33b8-4f03-b1b3-b4cf1130a4c3": "2026-02-22T19:38:01.311Z",
-    "id:17b0988cd40d8187": "2026-02-23T00:00:10.828Z",
-    "id:d6b949e8e040802c": "2026-02-23T00:00:10.828Z",
+    "id:17b0988cd40d8187": "2026-02-23T02:29:04.651Z",
+    "id:d6b949e8e040802c": "2026-02-23T02:29:04.651Z",
     "id:1c731051e648e3b0": "2026-02-23T00:00:11.206Z",
-    "id:81dc0ed17314ee6e": "2026-02-23T00:00:11.206Z",
+    "id:81dc0ed17314ee6e": "2026-02-23T02:29:06.275Z",
     "id:b39046d9c25f7d03": "2026-02-23T00:00:13.439Z",
-    "id:4d5f7272f9447ae2": "2026-02-23T00:27:46.337Z"
+    "id:4d5f7272f9447ae2": "2026-02-23T02:47:06.887Z",
+    "id:a16f5cf006c11e94": "2026-02-23T02:29:04.687Z",
+    "id:b4a1a1affa0c39ea": "2026-02-23T02:29:06.275Z"
   },
   "last_refresh_ts": "2026-02-23T00:00:10.238Z",
   "last_refresh_sources": {
@@ -1744,7 +1746,7 @@
   "stats": {
     "refresh_count": 9,
     "lens_refresh_count": 6,
-    "focused_items_total": 197,
-    "last_focus_ts": "2026-02-23T00:27:46.337Z"
+    "focused_items_total": 215,
+    "last_focus_ts": "2026-02-23T02:47:06.887Z"
   }
 }

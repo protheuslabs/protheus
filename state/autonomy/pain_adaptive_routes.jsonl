@@ -30,3 +30,9 @@
 {"ts":"2026-02-23T00:00:13.932Z","type":"pain_adaptive_router_run","date":"2026-02-23","scanned":15,"routed":3,"routed_reflex":0,"routed_habit":3,"skipped":12}
 {"ts":"2026-02-23T00:00:38.010Z","type":"pain_adaptive_router_run","date":"2026-02-22","scanned":15,"routed":0,"routed_reflex":0,"routed_habit":0,"skipped":15}
 {"ts":"2026-02-23T00:27:46.822Z","type":"pain_adaptive_router_run","date":"2026-02-23","scanned":15,"routed":0,"routed_reflex":0,"routed_habit":0,"skipped":15}
+{"ts":"2026-02-23T01:12:38.994Z","type":"pain_adaptive_router_run","date":"2026-02-23","scanned":15,"routed":0,"routed_reflex":0,"routed_habit":0,"skipped":15}
+{"ts":"2026-02-23T02:04:33.568Z","type":"pain_adaptive_router_run","date":"2026-02-23","scanned":16,"routed":0,"routed_reflex":0,"routed_habit":0,"skipped":16}
+{"ts":"2026-02-23T02:06:17.849Z","type":"pain_adaptive_router_run","date":"2026-02-23","scanned":16,"routed":0,"routed_reflex":0,"routed_habit":0,"skipped":16}
+{"ts":"2026-02-23T02:08:11.276Z","type":"pain_adaptive_router_run","date":"2026-02-23","scanned":16,"routed":0,"routed_reflex":0,"routed_habit":0,"skipped":16}
+{"ts":"2026-02-23T02:11:42.461Z","type":"pain_adaptive_router_run","date":"2026-02-23","scanned":16,"routed":0,"routed_reflex":0,"routed_habit":0,"skipped":16}
+{"ts":"2026-02-23T02:11:49.835Z","type":"pain_adaptive_router_run","date":"2026-02-23","scanned":17,"routed":0,"routed_reflex":0,"routed_habit":0,"skipped":17}

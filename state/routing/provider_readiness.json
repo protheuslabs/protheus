@@ -1,0 +1,21 @@
+{
+  "version": "1.0",
+  "updated_ts": "2026-02-23T02:45:53.657Z",
+  "providers": {
+    "ollama": {
+      "provider": "ollama",
+      "status": "down",
+      "last_check_ts": "2026-02-23T02:45:53.657Z",
+      "last_success_ts": "2026-02-23T02:11:49.034Z",
+      "last_failure_ts": "2026-02-23T02:45:53.657Z",
+      "last_latency_ms": 88,
+      "last_error": "env_blocked",
+      "last_code": 1,
+      "failure_streak": 5,
+      "success_streak": 0,
+      "circuit_open_until_ts": "2026-02-23T03:17:53.567Z",
+      "circuit_reason": "env_blocked",
+      "last_pain_ts": "2026-02-23T01:56:38.275Z"
+    }
+  }
+}

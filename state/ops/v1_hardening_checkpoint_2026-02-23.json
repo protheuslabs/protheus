@@ -1,6 +1,6 @@
 {
   "ok": true,
-  "generated_at": "2026-02-23T00:30:33.848Z",
+  "generated_at": "2026-02-23T01:12:12.069Z",
   "date": "2026-02-23",
   "outcomes": {
     "window_days": 14,
@@ -75,6 +75,6 @@
   "next_steps": [
     "Hold current policies and continue periodic checkpoint audits."
   ],
-  "health_report_ts": "2026-02-23T00:30:33.827Z",
+  "health_report_ts": "2026-02-23T01:12:12.053Z",
   "queue_hygiene_summary_ts": "2026-02-23T00:01:19.864Z"
 }

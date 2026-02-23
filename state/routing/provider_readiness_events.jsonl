@@ -1,0 +1,17 @@
+{"ts":"2026-02-23T01:56:38.275Z","type":"provider_outage_pain","provider":"ollama","reason":"env_blocked","code":1,"emitted":true}
+{"ts":"2026-02-23T01:56:38.275Z","type":"provider_outage_pain","provider":"ollama","reason":"env_blocked","code":1,"emitted":true}
+{"ts":"2026-02-23T01:56:38.275Z","type":"provider_outage_pain","provider":"ollama","reason":"env_blocked","code":1,"emitted":true}
+{"ts":"2026-02-23T01:56:38.276Z","type":"provider_down","provider":"ollama","source":"reflex_worker","reason":"env_blocked","code":1,"failure_streak":1,"circuit_open_until_ts":"2026-02-23T01:58:38.158Z","pain_emitted":true}
+{"ts":"2026-02-23T01:56:38.276Z","type":"provider_down","provider":"ollama","source":"model_router_route","reason":"env_blocked","code":1,"failure_streak":1,"circuit_open_until_ts":"2026-02-23T01:58:38.207Z","pain_emitted":true}
+{"ts":"2026-02-23T01:56:38.276Z","type":"provider_down","provider":"ollama","source":"provider_readiness_cli","reason":"env_blocked","code":1,"failure_streak":1,"circuit_open_until_ts":"2026-02-23T01:58:38.154Z","pain_emitted":true}
+{"ts":"2026-02-23T01:57:02.595Z","type":"provider_down","provider":"ollama","source":"idle_dream_cycle_idle","reason":"env_blocked","code":1,"failure_streak":2,"circuit_open_until_ts":"2026-02-23T02:01:02.562Z","pain_emitted":false}
+{"ts":"2026-02-23T02:04:31.101Z","type":"provider_down","provider":"ollama","source":"spine_startup_pulse","reason":"env_blocked","code":1,"failure_streak":3,"circuit_open_until_ts":"2026-02-23T02:12:30.774Z","pain_emitted":false}
+{"ts":"2026-02-23T02:06:15.130Z","type":"provider_down","provider":"ollama","source":"spine_startup_pulse","reason":"env_blocked","code":1,"failure_streak":4,"circuit_open_until_ts":"2026-02-23T02:22:14.914Z","pain_emitted":false}
+{"ts":"2026-02-23T02:07:59.586Z","type":"provider_down","provider":"ollama","source":"spine_startup_pulse","reason":"env_blocked","code":1,"failure_streak":5,"circuit_open_until_ts":"2026-02-23T02:39:58.786Z","pain_emitted":false}
+{"ts":"2026-02-23T02:11:40.142Z","type":"provider_forced_status","provider":"ollama","source":"spine_startup_pulse","forced_status":"down","reason":"test_forced_down"}
+{"ts":"2026-02-23T02:11:49.035Z","type":"provider_forced_status","provider":"ollama","source":"spine_startup_pulse","forced_status":"up","reason":"test_forced_up"}
+{"ts":"2026-02-23T02:13:58.724Z","type":"provider_down","provider":"ollama","source":"model_router_route","reason":"env_blocked","code":1,"failure_streak":1,"circuit_open_until_ts":"2026-02-23T02:15:58.508Z","pain_emitted":false}
+{"ts":"2026-02-23T02:22:28.787Z","type":"provider_down","provider":"ollama","source":"model_router_route","reason":"env_blocked","code":1,"failure_streak":2,"circuit_open_until_ts":"2026-02-23T02:26:28.714Z","pain_emitted":false}
+{"ts":"2026-02-23T02:28:58.016Z","type":"provider_down","provider":"ollama","source":"model_router_route","reason":"env_blocked","code":1,"failure_streak":3,"circuit_open_until_ts":"2026-02-23T02:36:57.942Z","pain_emitted":false}
+{"ts":"2026-02-23T02:29:09.800Z","type":"provider_down","provider":"ollama","source":"idle_dream_cycle_idle","reason":"env_blocked","code":1,"failure_streak":4,"circuit_open_until_ts":"2026-02-23T02:45:09.769Z","pain_emitted":false}
+{"ts":"2026-02-23T02:45:53.658Z","type":"provider_down","provider":"ollama","source":"model_router_route","reason":"env_blocked","code":1,"failure_streak":5,"circuit_open_until_ts":"2026-02-23T03:17:53.567Z","pain_emitted":false}

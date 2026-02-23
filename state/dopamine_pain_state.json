@@ -1,0 +1,21 @@
+{
+  "ts": "2026-02-23T02:47:41.372Z",
+  "date": "2026-02-23",
+  "active": false,
+  "reasons": [],
+  "stall_days": 1,
+  "summary": {
+    "linked_entries": 3,
+    "unlinked_entries": 0,
+    "verified_objective_entries": 0,
+    "linked_verified_hl_minutes": 0,
+    "linked_unverified_hl_minutes": 35,
+    "linked_hl_minutes": 35,
+    "unlinked_hl_minutes": 0,
+    "unlinked_hl_ratio": 0,
+    "unlinked_self_optimization_entries": 0,
+    "revenue_actions_total": 2,
+    "revenue_actions_verified": 0,
+    "high_leverage_minutes_raw": 70
+  }
+}
