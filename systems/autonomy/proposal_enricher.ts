@@ -85,6 +85,13 @@ const AUTONOMY_OPTIMIZATION_MIN_DELTA_PERCENT = clamp(Number(process.env.AUTONOM
 const AUTONOMY_OPTIMIZATION_MIN_DELTA_PERCENT_HIGH_ACCURACY = clamp(Number(process.env.AUTONOMY_OPTIMIZATION_MIN_DELTA_PERCENT_HIGH_ACCURACY || 5), 1, 50);
 const AUTONOMY_OPTIMIZATION_HIGH_ACCURACY_MODE = String(process.env.AUTONOMY_OPTIMIZATION_HIGH_ACCURACY_MODE || '0') === '1';
 const AUTONOMY_OPTIMIZATION_REQUIRE_DELTA = String(process.env.AUTONOMY_OPTIMIZATION_REQUIRE_DELTA || '1') !== '0';
+const AUTONOMY_SUBDIRECTIVE_V2_REQUIRED = String(process.env.AUTONOMY_SUBDIRECTIVE_V2_REQUIRED || '1') !== '0';
+const AUTONOMY_SUBDIRECTIVE_V2_EXEMPT_TYPES = new Set(
+  String(process.env.AUTONOMY_SUBDIRECTIVE_V2_EXEMPT_TYPES || 'directive_clarification,directive_decomposition')
+    .split(',')
+    .map((s) => String(s || '').trim().toLowerCase())
+    .filter(Boolean)
+);
 const EVALUABLE_SUCCESS_METRICS = new Set([
   'execution_success',
   'postconditions_ok',
@@ -1061,6 +1068,73 @@ function inferOptimizationDelta(proposal) {
   return { delta_percent: null, delta_source: null };
 }
 
+function subDirectiveV2Signals(proposal) {
+  const p = proposal && typeof proposal === 'object' ? proposal : {};
+  const type = normalizeText(p.type).toLowerCase();
+  const actionSpec = p.action_spec && typeof p.action_spec === 'object' ? p.action_spec : {};
+  const nextCmd = normalizeText(p.suggested_next_command);
+  const executable = !!(nextCmd || (p.action_spec && typeof p.action_spec === 'object'));
+  const required = AUTONOMY_SUBDIRECTIVE_V2_REQUIRED
+    && executable
+    && !AUTONOMY_SUBDIRECTIVE_V2_EXEMPT_TYPES.has(type);
+
+  const targetRows = []
+    .concat(normalizeText(actionSpec.target))
+    .concat(normalizeText(actionSpec.file))
+    .concat(normalizeText(actionSpec.path))
+    .concat(Array.isArray(actionSpec.files) ? actionSpec.files.map((row) => normalizeText(row)) : [])
+    .filter(Boolean);
+  const hasTargetField = targetRows.some((row) => {
+    const v = normalizeText(row).toLowerCase();
+    if (!v) return false;
+    if (CONCRETE_TARGET_RE.test(v)) return true;
+    if (v.includes('/')) return true;
+    if (v.includes(':')) return true;
+    return /\.[a-z0-9]{1,8}$/i.test(v);
+  });
+  const hasConcreteTarget = hasTargetField || CONCRETE_TARGET_RE.test(proposalTextBlob(p));
+
+  const inferredDelta = inferOptimizationDelta(p);
+  const explicitDeltaCandidates = [
+    Number(actionSpec.expected_delta_percent),
+    Number(actionSpec.delta_percent),
+    Number(actionSpec.expected_improvement_percent),
+    Number(p.meta && p.meta.expected_delta_percent),
+    Number(p.meta && p.meta.optimization_delta_percent)
+  ];
+  const hasExplicitDelta = explicitDeltaCandidates.some((n) => Number.isFinite(n) && n > 0);
+  const successCriteriaRows = Array.isArray(actionSpec.success_criteria) ? actionSpec.success_criteria : [];
+  const hasSuccessDelta = successCriteriaRows.some((row) => {
+    if (typeof row === 'string') {
+      const text = normalizeText(row);
+      return /\d/.test(text) || /%|percent|delta|improv|increase|decrease|reduce|faster|slower|>=|<=|>|</i.test(text);
+    }
+    if (!row || typeof row !== 'object') return false;
+    const metric = normalizeText(row.metric || row.name);
+    const target = normalizeText(row.target || row.threshold || row.goal || row.description);
+    const blob = normalizeText(`${metric} ${target}`);
+    return /\d/.test(blob) || /%|percent|delta|improv|increase|decrease|reduce|faster|slower|>=|<=|>|</i.test(blob);
+  });
+  const hasExpectedDelta = hasConcreteDeltaSignal(p)
+    || hasExplicitDelta
+    || Number.isFinite(Number(inferredDelta && inferredDelta.delta_percent))
+    || hasSuccessDelta;
+
+  const verifyRows = Array.isArray(actionSpec.verify) ? actionSpec.verify : [];
+  const validationRows = Array.isArray(p.validation) ? p.validation : [];
+  const hasVerificationStep = verifyRows.length > 0 || validationRows.length > 0 || successCriteriaRows.length > 0;
+
+  return {
+    required,
+    has_concrete_target: hasConcreteTarget,
+    has_expected_delta: hasExpectedDelta,
+    has_verification_step: hasVerificationStep,
+    target_count: targetRows.length,
+    verify_count: verifyRows.length,
+    success_criteria_count: successCriteriaRows.length
+  };
+}
+
 function isOptimizationIntentProposal(proposal) {
   const p = proposal || {};
   const type = normalizeText(p.type).toLowerCase();
@@ -1380,6 +1454,7 @@ function assessActionability(proposal, directiveFitScore, relevanceScore, outcom
   const weightedCriteriaCountValue = criteriaCounts.weighted_count;
   const isExecutableProposal = !!(nextCmd || (p.action_spec && typeof p.action_spec === 'object'));
   const criteriaExempt = isExecutableProposal && isSuccessCriteriaExemptProposal(proposalType, criteriaPolicy);
+  const subdirectiveV2 = subDirectiveV2Signals(p);
 
   let score = 14;
   const reasons = [];
@@ -1452,10 +1527,25 @@ function assessActionability(proposal, directiveFitScore, relevanceScore, outcom
     score -= 18;
     reasons.push('boilerplate_execution_path');
   }
+  if (subdirectiveV2.required) {
+    if (!subdirectiveV2.has_concrete_target) {
+      score -= 18;
+      reasons.push('subdirective_v2_missing_target');
+    }
+    if (!subdirectiveV2.has_expected_delta) {
+      score -= 20;
+      reasons.push('subdirective_v2_missing_expected_delta');
+    }
+    if (!subdirectiveV2.has_verification_step) {
+      score -= 20;
+      reasons.push('subdirective_v2_missing_verification_step');
+    }
+  }
 
   return {
     score: clamp(Math.round(score), 0, 100),
     reasons: uniq(reasons),
+    subdirective_v2: subdirectiveV2,
     success_criteria: {
       required: isExecutableProposal && criteriaPolicy.required,
       requirement_applied: isExecutableProposal && criteriaPolicy.required && !criteriaExempt,
@@ -1538,6 +1628,12 @@ function admission(meta, eye, risk, t, proposal, strategy, outcomePolicy, optimi
     ? optimizationGate
     : optimizationGateDecision(proposal, risk);
   if (optGate.applies && !optGate.pass && optGate.reason) reasons.push(optGate.reason);
+  const subdirectiveV2 = subDirectiveV2Signals(proposal);
+  if (subdirectiveV2.required) {
+    if (!subdirectiveV2.has_concrete_target) reasons.push('subdirective_v2_missing_target');
+    if (!subdirectiveV2.has_expected_delta) reasons.push('subdirective_v2_missing_expected_delta');
+    if (!subdirectiveV2.has_verification_step) reasons.push('subdirective_v2_missing_verification_step');
+  }
 
   return {
     eligible: reasons.length === 0,
@@ -1672,6 +1768,15 @@ function enrichOne(proposal, ctx) {
     optimization_require_delta: optimizationGate.require_delta === true,
     optimization_gate_pass: optimizationGate.pass === true,
     optimization_gate_reason: optimizationGate.reason || null,
+    subdirective_v2_required: a.subdirective_v2 && a.subdirective_v2.required === true,
+    subdirective_v2_target_ok: !(a.subdirective_v2 && a.subdirective_v2.required === true)
+      || (a.subdirective_v2 && a.subdirective_v2.has_concrete_target === true),
+    subdirective_v2_expected_delta_ok: !(a.subdirective_v2 && a.subdirective_v2.required === true)
+      || (a.subdirective_v2 && a.subdirective_v2.has_expected_delta === true),
+    subdirective_v2_verification_ok: !(a.subdirective_v2 && a.subdirective_v2.required === true)
+      || (a.subdirective_v2 && a.subdirective_v2.has_verification_step === true),
+    subdirective_v2_target_count: a.subdirective_v2 ? Number(a.subdirective_v2.target_count || 0) : 0,
+    subdirective_v2_verify_count: a.subdirective_v2 ? Number(a.subdirective_v2.verify_count || 0) : 0,
     success_criteria_required: a.success_criteria && a.success_criteria.required === true,
     success_criteria_requirement_applied: a.success_criteria && a.success_criteria.requirement_applied === true,
     success_criteria_exempt_type: a.success_criteria && a.success_criteria.exempt_type === true,

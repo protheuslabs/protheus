@@ -226,6 +226,13 @@ const AUTONOMY_OPTIMIZATION_MIN_DELTA_PERCENT = clampNumber(Number(process.env.A
 const AUTONOMY_OPTIMIZATION_MIN_DELTA_PERCENT_HIGH_ACCURACY = clampNumber(Number(process.env.AUTONOMY_OPTIMIZATION_MIN_DELTA_PERCENT_HIGH_ACCURACY || 5), 1, 50);
 const AUTONOMY_OPTIMIZATION_HIGH_ACCURACY_MODE = String(process.env.AUTONOMY_OPTIMIZATION_HIGH_ACCURACY_MODE || '0') === '1';
 const AUTONOMY_OPTIMIZATION_REQUIRE_DELTA = String(process.env.AUTONOMY_OPTIMIZATION_REQUIRE_DELTA || '1') !== '0';
+const AUTONOMY_SUBDIRECTIVE_V2_REQUIRED = String(process.env.AUTONOMY_SUBDIRECTIVE_V2_REQUIRED || '1') !== '0';
+const AUTONOMY_SUBDIRECTIVE_V2_EXEMPT_TYPES = new Set(
+  String(process.env.AUTONOMY_SUBDIRECTIVE_V2_EXEMPT_TYPES || 'directive_clarification,directive_decomposition')
+    .split(',')
+    .map((s) => String(s || '').trim().toLowerCase())
+    .filter(Boolean)
+);
 const AUTONOMY_DOPAMINE_REQUIRE_VERIFIED_PROGRESS = String(process.env.AUTONOMY_DOPAMINE_REQUIRE_VERIFIED_PROGRESS || '1') !== '0';
 const AUTONOMY_UNLINKED_OPTIMIZATION_PENALTY = Math.max(0, Number(process.env.AUTONOMY_UNLINKED_OPTIMIZATION_PENALTY || 18));
 const AUTONOMY_UNLINKED_OPTIMIZATION_HARD_BLOCK_HIGH_RISK = String(process.env.AUTONOMY_UNLINKED_OPTIMIZATION_HARD_BLOCK_HIGH_RISK || '1') !== '0';
@@ -3896,6 +3903,70 @@ function successCriteriaPolicyForProposal(proposal) {
   };
 }
 
+function subDirectiveV2SignalsForProposal(proposal, opts: AnyObj = {}) {
+  const p = proposal && typeof proposal === 'object' ? proposal : {};
+  const type = normalizeSpaces(p.type).toLowerCase();
+  const actionSpec = p.action_spec && typeof p.action_spec === 'object' ? p.action_spec : {};
+  const nextCmd = normalizeSpaces(p.suggested_next_command);
+  const executable = !!(nextCmd || (p && p.action_spec && typeof p.action_spec === 'object'));
+  const required = AUTONOMY_SUBDIRECTIVE_V2_REQUIRED
+    && executable
+    && !AUTONOMY_SUBDIRECTIVE_V2_EXEMPT_TYPES.has(type);
+
+  const targetRows = []
+    .concat(normalizeSpaces(actionSpec.target))
+    .concat(normalizeSpaces(actionSpec.file))
+    .concat(normalizeSpaces(actionSpec.path))
+    .concat(Array.isArray(actionSpec.files) ? actionSpec.files.map((row) => normalizeSpaces(row)) : [])
+    .filter(Boolean);
+  const hasTargetField = targetRows.some((row) => {
+    const v = normalizeSpaces(row).toLowerCase();
+    if (!v) return false;
+    if (CONCRETE_TARGET_RE.test(v)) return true;
+    if (v.includes('/')) return true;
+    if (v.includes(':')) return true;
+    return /\.[a-z0-9]{1,8}$/i.test(v);
+  });
+  const hasConcreteTarget = hasTargetField || CONCRETE_TARGET_RE.test(proposalTextBlob(p));
+
+  const inferredDelta = inferOptimizationDeltaForProposal(p);
+  const explicitDeltaCandidates = [
+    Number(actionSpec.expected_delta_percent),
+    Number(actionSpec.delta_percent),
+    Number(actionSpec.expected_improvement_percent),
+    Number(p.meta && p.meta.expected_delta_percent),
+    Number(p.meta && p.meta.optimization_delta_percent)
+  ];
+  const hasExplicitDelta = explicitDeltaCandidates.some((n) => Number.isFinite(n) && n > 0);
+
+  const successCriteriaRows = Array.isArray(opts && opts.success_criteria_rows)
+    ? opts.success_criteria_rows
+    : parseSuccessCriteriaRows(p);
+  const hasSuccessCriteriaDelta = successCriteriaRows.some((row) => {
+    const metric = normalizeSpaces(row && row.metric);
+    const target = normalizeSpaces(row && row.target);
+    const blob = normalizeSpaces(`${metric} ${target}`);
+    return /\d/.test(blob) || /%|percent|delta|improv|increase|decrease|reduce|faster|slower|>=|<=|>|</i.test(blob);
+  });
+  const hasExpectedDelta = Number.isFinite(Number(inferredDelta && inferredDelta.delta_percent))
+    || hasExplicitDelta
+    || hasSuccessCriteriaDelta;
+
+  const verifyRows = Array.isArray(actionSpec.verify) ? actionSpec.verify : [];
+  const validationRows = Array.isArray(p.validation) ? p.validation : [];
+  const hasVerificationStep = verifyRows.length > 0 || validationRows.length > 0 || successCriteriaRows.length > 0;
+
+  return {
+    required,
+    has_concrete_target: hasConcreteTarget,
+    has_expected_delta: hasExpectedDelta,
+    has_verification_step: hasVerificationStep,
+    target_count: targetRows.length,
+    verify_count: verifyRows.length,
+    success_criteria_count: successCriteriaRows.length
+  };
+}
+
 function assessActionability(p, directiveFit, thresholds) {
   const minActionability = Number((thresholds && thresholds.min_actionability_score) || AUTONOMY_MIN_ACTIONABILITY_SCORE);
   const risk = normalizedRisk(p && p.risk);
@@ -3932,6 +4003,7 @@ function assessActionability(p, directiveFit, thresholds) {
   const capabilityKey = String((capabilityDescriptor(p, parseActuationSpec(p)) || {}).key || '').toLowerCase();
   const criteriaPatternPenalty = criteriaPatternPenaltyForProposal(p, capabilityKey);
   const isExecutableProposal = !!(nextCmd || (p && p.action_spec && typeof p.action_spec === 'object'));
+  const subdirectiveV2 = subDirectiveV2SignalsForProposal(p, { success_criteria_rows: criteriaRows });
   const rollbackBlob = normalizeSpaces([
     p && p.rollback_plan,
     p && p.meta && p.meta.rollback_plan,
@@ -4035,6 +4107,23 @@ function assessActionability(p, directiveFit, thresholds) {
     reasons.push('medium_risk_missing_rollback_path');
     hardBlock = true;
   }
+  if (subdirectiveV2.required) {
+    if (!subdirectiveV2.has_concrete_target) {
+      score -= 18;
+      reasons.push('subdirective_v2_missing_target');
+      hardBlock = true;
+    }
+    if (!subdirectiveV2.has_expected_delta) {
+      score -= 20;
+      reasons.push('subdirective_v2_missing_expected_delta');
+      hardBlock = true;
+    }
+    if (!subdirectiveV2.has_verification_step) {
+      score -= 20;
+      reasons.push('subdirective_v2_missing_verification_step');
+      hardBlock = true;
+    }
+  }
 
   const finalScore = clampNumber(Math.round(score), 0, 100);
   const pass = !hardBlock && finalScore >= minActionability;
@@ -4047,6 +4136,7 @@ function assessActionability(p, directiveFit, thresholds) {
     executable: isExecutableProposal,
     rollback_signal: hasRollbackSignal,
     generic_next_command_template: genericRouteTask,
+    subdirective_v2: subdirectiveV2,
     success_criteria: {
       required: criteriaRequirementApplied,
       exempt_type: criteriaPolicy.exempt_type === true,
