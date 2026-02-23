@@ -98,8 +98,9 @@ function runCycle(opts = {}) {
   const days = toInt(opts.days, 180, 1, 365);
   const queueEnabled = opts.queue_enabled === true;
   const write = opts.write !== false;
+  const artifactWrite = true;
 
-  const simulationCmd = ['systems/autonomy/autonomy_simulation_harness.js', 'run', dateStr, `--days=${days}`, `--write=${write ? 1 : 0}`];
+  const simulationCmd = ['systems/autonomy/autonomy_simulation_harness.js', 'run', dateStr, `--days=${days}`, `--write=${artifactWrite ? 1 : 0}`];
   const simulation = runJson(simulationCmd);
   if (!simulation.ok) return { ok: false, stage: 'simulation', error: simulation };
 
@@ -120,7 +121,7 @@ function runCycle(opts = {}) {
     '--quarantine-days=7',
     '--min-support=5',
     '--min-confidence=0.65',
-    `--write=${write ? 1 : 0}`
+    `--write=${artifactWrite ? 1 : 0}`
   ]);
   if (!harvest.ok) return { ok: false, stage: 'harvest', error: harvest };
 
@@ -134,7 +135,7 @@ function runCycle(opts = {}) {
     `--days=${days}`,
     '--baseline=state/autonomy/autophagy_baseline.json',
     `--simulation=state/autonomy/simulations/${dateStr}.json`,
-    `--write=${write ? 1 : 0}`
+    `--write=${artifactWrite ? 1 : 0}`
   ];
   if (harvestPath) replayArgs.push(`--candidates=${harvestPath}`);
   const replay = runJson(replayArgs);
