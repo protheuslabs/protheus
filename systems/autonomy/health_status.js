@@ -405,8 +405,9 @@ function toMs(value) {
 }
 
 function hoursSince(ts, now) {
-  if (!Number.isFinite(Number(ts))) return null;
-  return Number(((Number(now) - Number(ts)) / 3600000).toFixed(3));
+  const t = Number(ts);
+  if (!Number.isFinite(t) || t <= 0) return null;
+  return Number(((Number(now) - t) / 3600000).toFixed(3));
 }
 
 function buildEyeRuntimeMeta(catalog, registry) {
@@ -1048,13 +1049,32 @@ function assessQueueBacklog(now, proposalRows, queueEvents, windowDays = 1, auto
   };
 }
 
-function assessLoopStall(now, runEvents) {
+function assessLoopStall(now, runEvents, autonomyEnabled = true) {
   const lastRun = lastTs(runEvents, () => true);
   const ageHours = hoursSince(lastRun, now);
   const runs24h = runEvents.filter((e) => {
     const t = toMs(e && e.ts);
     return Number.isFinite(t) && (now - t) <= 24 * 3600 * 1000;
   }).length;
+  if (!autonomyEnabled) {
+    return {
+      name: 'loop_stall',
+      ok: true,
+      level: 'ok',
+      reason: 'autonomy_disabled_manual_mode',
+      metrics: {
+        autonomy_enabled: false,
+        runs_window: runEvents.length,
+        runs_last_24h: runs24h,
+        last_run_ts: lastRun ? new Date(lastRun).toISOString() : null,
+        hours_since_last_run: ageHours
+      },
+      thresholds: {
+        warn_hours: Number(LOOP_STALL_WARN_HOURS || 8),
+        critical_hours: Number(LOOP_STALL_CRITICAL_HOURS || 24)
+      }
+    };
+  }
   let level = 'ok';
   if (ageHours == null || ageHours >= Number(LOOP_STALL_CRITICAL_HOURS || 24)) level = 'critical';
   else if (ageHours >= Number(LOOP_STALL_WARN_HOURS || 8) || runs24h === 0) level = 'warn';
@@ -1066,6 +1086,7 @@ function assessLoopStall(now, runEvents) {
       ? 'autonomy_loop_recent'
       : `hours_since_last_run=${ageHours == null ? 'none' : ageHours}`,
     metrics: {
+      autonomy_enabled: true,
       runs_window: runEvents.length,
       runs_last_24h: runs24h,
       last_run_ts: lastRun ? new Date(lastRun).toISOString() : null,
@@ -1078,7 +1099,7 @@ function assessLoopStall(now, runEvents) {
   };
 }
 
-function assessDrift(spcResult) {
+function assessDrift(spcResult, autonomyEnabled = true) {
   const payload = spcResult && spcResult.payload && typeof spcResult.payload === 'object'
     ? spcResult.payload
     : null;
@@ -1103,28 +1124,42 @@ function assessDrift(spcResult) {
   const current = payload.current && typeof payload.current === 'object'
     ? payload.current
     : {};
+  const outcomeDependentChecks = new Set([
+    'attempted',
+    'executed',
+    'success_criteria_receipts',
+    'success_criteria_pass_rate'
+  ]);
+  const onlyOutcomeDataGap = failed.length > 0 && failed.every((id) => outcomeDependentChecks.has(String(id || '')));
   const passRateOnlyFailure = failed.length === 1 && failed[0] === 'success_criteria_pass_rate';
   const source = String(current.success_criteria_source || 'legacy_fallback');
   const fallbackRetired = current.success_criteria_fallback_retired === true;
   const deferPassRateWarn = passRateOnlyFailure && !fallbackRetired && source !== 'quality_forced';
+  const deferManualOutcomeGaps = !autonomyEnabled && onlyOutcomeDataGap;
   const level = deferPassRateWarn
     ? 'ok'
-    : (failed.length >= 2 ? 'critical' : (failed.length > 0 ? 'warn' : 'ok'));
+    : deferManualOutcomeGaps
+      ? 'ok'
+      : (failed.length >= 2 ? 'critical' : (failed.length > 0 ? 'warn' : 'ok'));
   const reason = deferPassRateWarn
     ? 'spc_pre_retirement_quality_passrate_nonblocking'
-    : (level === 'ok' ? 'spc_in_control' : `spc_failed=${failed.join(',')}`);
+    : deferManualOutcomeGaps
+      ? 'spc_preview_outcome_data_gap_manual_mode'
+      : (level === 'ok' ? 'spc_in_control' : `spc_failed=${failed.join(',')}`);
   return {
     name: 'drift',
     ok: level === 'ok',
     level,
     reason,
     metrics: {
+      autonomy_enabled: !!autonomyEnabled,
       spc_ok: true,
       hold_escalation: payload.hold_escalation === true,
       failed_checks: failed,
       success_criteria_source: source,
       success_criteria_fallback_retired: fallbackRetired,
-      deferred_passrate_warning: deferPassRateWarn
+      deferred_passrate_warning: deferPassRateWarn,
+      deferred_manual_outcome_gap: deferManualOutcomeGaps
     },
     thresholds: {
       baseline_days: payload.control ? Number(payload.control.baseline_days || SPC_BASELINE_DAYS) : Number(SPC_BASELINE_DAYS || 21),
@@ -1182,22 +1217,37 @@ function assessRoutingDegraded(routing) {
   };
 }
 
-function assessRoutingRecoveryPulse(routing) {
+function assessRoutingRecoveryPulse(routing, autonomyEnabled = true) {
   const pulse = routing && routing.recovery_pulse && typeof routing.recovery_pulse === 'object'
     ? routing.recovery_pulse
     : {};
   const runtime = routing && routing.doctor_runtime && typeof routing.doctor_runtime === 'object'
     ? routing.doctor_runtime
     : {};
+  const doctor = routing && routing.doctor_summary && typeof routing.doctor_summary === 'object'
+    ? routing.doctor_summary
+    : {};
+  const downConsecutive = Number(routing && routing.spine_local_down_consecutive || 0);
   const localTotal = Number(runtime.total_local_models || 0);
   const pulseEvents = Number(pulse.pulse_events || 0);
   const ageHours = Number(pulse.last_pulse_age_hours);
   const recoveredTotal = Number(pulse.recovered_total || 0);
   const eligible = Number(runtime.local_eligible_models || 0);
+  const doctorEscalate = doctor.escalate === true;
 
   let level = 'ok';
   let reason = 'routing_recovery_pulse_healthy';
-  if (localTotal > 0 && pulseEvents <= 0) {
+  const stableLocalManualMode = (
+    !autonomyEnabled
+    && localTotal > 0
+    && eligible > 0
+    && downConsecutive <= 0
+    && doctorEscalate !== true
+  );
+  if (stableLocalManualMode && pulseEvents <= 0) {
+    level = 'ok';
+    reason = 'routing_recovery_pulse_not_required_manual_mode';
+  } else if (localTotal > 0 && pulseEvents <= 0) {
     level = 'warn';
     reason = 'routing_recovery_pulse_missing';
   } else if (localTotal > 0 && Number.isFinite(ageHours) && ageHours >= Number(ROUTING_RECOVERY_CRITICAL_HOURS || 72)) {
@@ -1217,8 +1267,11 @@ function assessRoutingRecoveryPulse(routing) {
     level,
     reason,
     metrics: {
+      autonomy_enabled: !!autonomyEnabled,
       local_total_models: localTotal,
       local_eligible_models: eligible,
+      doctor_escalate: doctorEscalate,
+      spine_local_down_consecutive: downConsecutive,
       pulse_events: pulseEvents,
       warmed_total: Number(pulse.warmed_total || 0),
       recovered_total: recoveredTotal,
@@ -1733,6 +1786,7 @@ function main() {
   const proposalRows = readProposalRows(dates);
   const queueEvents = readQueueEvents(dates);
   const runEvents = readAutonomyRunEvents(dates);
+  const autonomyEnabled = !!(autonomy.payload && autonomy.payload.autonomy_enabled === true);
 
   const routing = {
     spine_local_down_consecutive: Number(spineHealth.consecutive_full_local_down || 0),
@@ -1751,19 +1805,19 @@ function main() {
       proposalRows,
       queueEvents,
       windowCfg.days,
-      !!(autonomy.payload && autonomy.payload.autonomy_enabled === true)
+      autonomyEnabled
     ),
     proposal_starvation: assessProposalStarvation(
       now,
       proposalRows,
       queueEvents,
       runEvents,
-      !!(autonomy.payload && autonomy.payload.autonomy_enabled === true)
+      autonomyEnabled
     ),
-    loop_stall: assessLoopStall(now, runEvents),
-    drift: assessDrift(spc),
+    loop_stall: assessLoopStall(now, runEvents, autonomyEnabled),
+    drift: assessDrift(spc, autonomyEnabled),
     routing_degraded: assessRoutingDegraded(routing),
-    routing_recovery_pulse: assessRoutingRecoveryPulse(routing),
+    routing_recovery_pulse: assessRoutingRecoveryPulse(routing, autonomyEnabled),
     budget_guard: assessBudgetGuard(now, dates),
     route_attestation: assessRouteAttestation(receiptSummary),
     startup_attestation: assessStartupAttestation(startupAttestation, startupAttestationTelemetry),

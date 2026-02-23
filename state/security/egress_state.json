@@ -155,14 +155,14 @@
       }
     },
     "2026-02-23T00": {
-      "total": 25,
+      "total": 28,
       "scopes": {
-        "sensory.collector.ollama_search": 3,
+        "sensory.collector.ollama_search": 4,
         "sensory.collector.upwork_gigs": 1,
         "sensory.collector.google_trends": 2,
-        "sensory.focus_fetch": 12,
+        "sensory.focus_fetch": 13,
         "sensory.collector.moltbook_hot": 3,
-        "sensory.collector.stock_market": 2,
+        "sensory.collector.stock_market": 3,
         "sensory.collector.github_repo": 2
       }
     }
@@ -198,14 +198,14 @@
       }
     },
     "2026-02-23": {
-      "total": 25,
+      "total": 28,
       "scopes": {
-        "sensory.collector.ollama_search": 3,
+        "sensory.collector.ollama_search": 4,
         "sensory.collector.upwork_gigs": 1,
         "sensory.collector.google_trends": 2,
-        "sensory.focus_fetch": 12,
+        "sensory.focus_fetch": 13,
         "sensory.collector.moltbook_hot": 3,
-        "sensory.collector.stock_market": 2,
+        "sensory.collector.stock_market": 3,
         "sensory.collector.github_repo": 2
       }
     }

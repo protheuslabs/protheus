@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "updated_ts": "2026-02-23T00:01:31.906Z",
+  "updated_ts": "2026-02-23T00:27:46.977Z",
   "item_hashes": {
     "322525e41384fb34": {
       "node_id": "failure-t1-322525e4",
@@ -126,11 +126,11 @@
       "node_id": "failure-t1-ed445d71",
       "uid": "7f819575356d9adafa5c3721",
       "memory_file": "memory/2026-02-22.md",
-      "date": "2026-02-22",
+      "date": "2026-02-23",
       "failure_tier": 1,
       "source": "idle_dream_cycle",
       "code": "dream_idle:local_model_unavailable",
-      "ts": "2026-02-23T00:00:38.350Z"
+      "ts": "2026-02-23T00:27:46.977Z"
     },
     "32f42c233cd8487f": {
       "node_id": "failure-t2-32f42c23",

@@ -107,3 +107,11 @@
 {"ts":"2026-02-23T00:18:14.951Z","type":"startup_attestation_verify","ok":true,"reason":"verified"}
 {"ts":"2026-02-23T00:19:44.258Z","type":"startup_attestation_verify","ok":true,"reason":"verified"}
 {"ts":"2026-02-23T00:20:10.847Z","type":"startup_attestation_verify","ok":true,"reason":"verified"}
+{"ts":"2026-02-23T00:27:45.340Z","type":"startup_attestation_verify","ok":true,"reason":"verified"}
+{"ts":"2026-02-23T00:27:46.025Z","type":"startup_attestation_verify","ok":true,"reason":"verified"}
+{"ts":"2026-02-23T00:27:47.530Z","type":"startup_attestation_verify","ok":true,"reason":"verified"}
+{"ts":"2026-02-23T00:27:49.558Z","type":"startup_attestation_verify","ok":true,"reason":"verified"}
+{"ts":"2026-02-23T00:27:50.186Z","type":"startup_attestation_verify","ok":true,"reason":"verified"}
+{"ts":"2026-02-23T00:28:02.666Z","type":"startup_attestation_verify","ok":true,"reason":"verified"}
+{"ts":"2026-02-23T00:30:33.463Z","type":"startup_attestation_verify","ok":true,"reason":"verified"}
+{"ts":"2026-02-23T00:30:33.794Z","type":"startup_attestation_verify","ok":true,"reason":"verified"}

@@ -286,10 +286,10 @@
       "status": "active",
       "weight": 73,
       "cooldown_minutes": 90,
-      "hit_count": 14,
-      "last_hit_ts": "2026-02-23T00:00:34.812Z",
+      "hit_count": 15,
+      "last_hit_ts": "2026-02-23T00:27:46.337Z",
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-23T00:00:34.812Z"
+      "updated_ts": "2026-02-23T00:27:46.337Z"
     },
     {
       "uid": "ft6aa3y5yefrv9skn68znwld",
@@ -592,10 +592,10 @@
       "status": "active",
       "weight": 40,
       "cooldown_minutes": 90,
-      "hit_count": 50,
-      "last_hit_ts": "2026-02-23T00:00:34.812Z",
+      "hit_count": 51,
+      "last_hit_ts": "2026-02-23T00:27:46.337Z",
       "created_ts": "2026-02-21T02:43:27.698Z",
-      "updated_ts": "2026-02-23T00:00:34.812Z"
+      "updated_ts": "2026-02-23T00:27:46.337Z"
     },
     {
       "uid": "ft3is8sw5sxfbi6w5l2qnk4y",
@@ -660,10 +660,10 @@
       "status": "active",
       "weight": 30,
       "cooldown_minutes": 90,
-      "hit_count": 4,
-      "last_hit_ts": "2026-02-23T00:00:34.812Z",
+      "hit_count": 5,
+      "last_hit_ts": "2026-02-23T00:27:46.337Z",
       "created_ts": "2026-02-22T18:57:07.977Z",
-      "updated_ts": "2026-02-23T00:00:34.812Z"
+      "updated_ts": "2026-02-23T00:27:46.337Z"
     },
     {
       "uid": "ft2dgqg2ppqu35fktdbm5w0c",
@@ -1051,10 +1051,10 @@
         "infra",
         "reliability"
       ],
-      "focus_hits_total": 53,
-      "update_count": 20,
+      "focus_hits_total": 54,
+      "update_count": 21,
       "created_ts": "2026-02-21T04:03:43.974Z",
-      "updated_ts": "2026-02-23T00:00:34.812Z"
+      "updated_ts": "2026-02-23T00:27:46.337Z"
     },
     "ollama_search": {
       "eye_id": "ollama_search",
@@ -1723,7 +1723,7 @@
     "id:1c731051e648e3b0": "2026-02-23T00:00:11.206Z",
     "id:81dc0ed17314ee6e": "2026-02-23T00:00:11.206Z",
     "id:b39046d9c25f7d03": "2026-02-23T00:00:13.439Z",
-    "id:4d5f7272f9447ae2": "2026-02-23T00:00:34.812Z"
+    "id:4d5f7272f9447ae2": "2026-02-23T00:27:46.337Z"
   },
   "last_refresh_ts": "2026-02-23T00:00:10.238Z",
   "last_refresh_sources": {
@@ -1744,7 +1744,7 @@
   "stats": {
     "refresh_count": 9,
     "lens_refresh_count": 6,
-    "focused_items_total": 196,
-    "last_focus_ts": "2026-02-23T00:00:35.780Z"
+    "focused_items_total": 197,
+    "last_focus_ts": "2026-02-23T00:27:46.337Z"
   }
 }

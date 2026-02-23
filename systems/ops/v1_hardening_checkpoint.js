@@ -170,6 +170,12 @@ function buildCriteria(health, queueHygiene, outcomes) {
   const queueTotals = queueHygiene && queueHygiene.summary && queueHygiene.summary.totals
     ? queueHygiene.summary.totals
     : null;
+  const starvationCheck = checks.proposal_starvation && typeof checks.proposal_starvation === 'object'
+    ? checks.proposal_starvation
+    : null;
+  const starvationReason = String(starvationCheck && starvationCheck.reason || '').trim().toLowerCase();
+  const starvationPreviewOnly = starvationReason === 'autonomy_disabled_starvation_preview';
+  const starvationPass = bool(starvationCheck && starvationCheck.ok) || starvationPreviewOnly;
 
   const criteria = [
     {
@@ -196,8 +202,10 @@ function buildCriteria(health, queueHygiene, outcomes) {
       weight: 2,
       pass: bool(checks.dark_eyes && checks.dark_eyes.ok)
         && bool(checks.queue_backlog && checks.queue_backlog.ok)
-        && bool(checks.proposal_starvation && checks.proposal_starvation.ok),
-      detail: 'dark_eyes + queue_backlog + proposal_starvation'
+        && starvationPass,
+      detail: starvationPreviewOnly
+        ? 'dark_eyes + queue_backlog + proposal_starvation_preview_nonblocking'
+        : 'dark_eyes + queue_backlog + proposal_starvation'
     },
     {
       id: 'drift_control',
