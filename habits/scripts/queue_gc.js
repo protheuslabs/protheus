@@ -357,9 +357,11 @@ function main() {
   const capPerType = tuned.capPerType;
   const ttlHours = tuned.ttlHours;
   const queueDir = path.join(repo, process.env.QUEUE_DIR || path.join("state", "queue"));
+  const sensoryTestDir = String(process.env.SENSORY_QUEUE_TEST_DIR || "").trim();
 
   // Try storage locations in priority order (legacy queue + active sensory proposals).
   const proposalsPath = findFirstExisting([
+    ...(sensoryTestDir ? [path.join(sensoryTestDir, "state", "sensory", "proposals", `${dateStr}.json`)] : []),
     path.join(repo, "state", "sensory", "proposals", `${dateStr}.json`),
     path.join(queueDir, "proposals.jsonl"),
     path.join(queueDir, "proposals", `${dateStr}.jsonl`),
@@ -414,7 +416,7 @@ function main() {
 
   // 2) Dedup reject (keep newest by semantic key)
   const dedupReject = [];
-  const dedupEnabled = String(process.env.QUEUE_GC_DEDUP_ENABLED || "1") !== "0";
+  const dedupEnabled = String(process.env.QUEUE_GC_DEDUP_ENABLED || "0") !== "0";
   const dedupSeen = new Set();
   if (dedupEnabled) {
     const newestFirst = remaining.slice().sort((a, b) => {

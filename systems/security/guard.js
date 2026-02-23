@@ -511,19 +511,36 @@ function main() {
   }
 
   const riskyToggleGate = detectRiskyEnvToggles(process.env, approvalNote);
+  const remoteApprovedDirectApply = !!(
+    remoteGate
+    && remoteGate.is_remote === true
+    && remoteGate.allowed === true
+    && String(remoteGate.action || "").toLowerCase() === "apply"
+    && isTruthyEnv(process.env.REMOTE_DIRECT_OVERRIDE)
+    && isTruthyEnv(process.env.BREAK_GLASS)
+  );
+  const effectiveRiskyToggleGate = remoteApprovedDirectApply
+    ? {
+        ...riskyToggleGate,
+        ok: true,
+        reason: "remote_direct_apply_guarded_by_remote_gate",
+        bypassed_by_remote_gate: true
+      }
+    : riskyToggleGate;
   logRiskyToggleGate({
     ts: nowIso(),
     source: requestSource || "local",
     action: requestAction || "apply",
-    allowed: riskyToggleGate.ok === true,
-    reason: riskyToggleGate.reason || null,
-    active_toggles: riskyToggleGate.active_toggles || [],
-    missing_note_keys: riskyToggleGate.missing_note_keys || [],
+    allowed: effectiveRiskyToggleGate.ok === true,
+    reason: effectiveRiskyToggleGate.reason || null,
+    active_toggles: effectiveRiskyToggleGate.active_toggles || [],
+    missing_note_keys: effectiveRiskyToggleGate.missing_note_keys || [],
+    bypassed_by_remote_gate: effectiveRiskyToggleGate.bypassed_by_remote_gate === true,
     files
   });
-  if (riskyToggleGate.ok !== true) {
+  if (effectiveRiskyToggleGate.ok !== true) {
     process.stderr.write("guard: BLOCKED (risky env toggle gate)\n");
-    process.stderr.write(`  active_toggles=${(riskyToggleGate.active_toggles || []).join(",")}\n`);
+    process.stderr.write(`  active_toggles=${(effectiveRiskyToggleGate.active_toggles || []).join(",")}\n`);
     process.stderr.write('  approval_note must include "env_toggle" + each risky env key name\n');
     emitJson({
       ok: false,
@@ -538,7 +555,7 @@ function main() {
       request_source: requestSource || "local",
       request_action: requestAction || "apply",
       remote_policy: remoteGate,
-      risky_toggle_policy: riskyToggleGate,
+      risky_toggle_policy: effectiveRiskyToggleGate,
       reasons
     });
     process.exit(1);
@@ -556,7 +573,7 @@ function main() {
       request_source: requestSource || "local",
       request_action: requestAction || "apply",
       remote_policy: remoteGate,
-      risky_toggle_policy: riskyToggleGate
+      risky_toggle_policy: effectiveRiskyToggleGate
     });
     return;
   }

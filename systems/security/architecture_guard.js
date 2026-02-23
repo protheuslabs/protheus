@@ -50,8 +50,8 @@ function tokenRegex(token) {
   const raw = String(token || '').trim().toLowerCase();
   if (!raw) return null;
   const escaped = escapeRegExp(raw);
-  // Word-like tokens should use boundaries to avoid substring false positives.
-  if (/^[a-z0-9_-]+$/i.test(raw)) return new RegExp(`\\b${escaped}\\b`, 'i');
+  // Treat "_" and "-" as separators so "moltbook_publish" matches "moltbook".
+  if (/^[a-z0-9_-]+$/i.test(raw)) return new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`, 'i');
   return new RegExp(escaped, 'i');
 }
 

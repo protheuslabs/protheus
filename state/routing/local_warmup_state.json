@@ -1,6 +1,6 @@
 {
-  "last_warmup_ts": "2026-02-23T04:29:37.569Z",
-  "last_warmup_ms": 1771820977568,
+  "last_warmup_ts": "2026-02-23T04:50:24.675Z",
+  "last_warmup_ms": 1771822224675,
   "last_reason": "route_decision|provider_unavailable",
   "last_models": [],
   "last_recovered_models": []

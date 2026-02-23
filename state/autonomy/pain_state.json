@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "updated_ts": "2026-02-23T03:57:57.800Z",
+  "updated_ts": "2026-02-23T04:46:32.405Z",
   "signatures": {
     "4278015a179efcf9": {
       "source": "external_eyes",
@@ -517,7 +517,7 @@
       "severity": "high",
       "risk": "medium",
       "signature": "ed445d71f2fee5f7",
-      "total_count": 3,
+      "total_count": 4,
       "events": [
         {
           "ts": "2026-02-22T22:21:48.224Z",
@@ -530,9 +530,13 @@
         {
           "ts": "2026-02-23T00:22:54.231Z",
           "code": "dream_idle:local_model_unavailable"
+        },
+        {
+          "ts": "2026-02-23T04:46:32.400Z",
+          "code": "dream_idle:local_model_unavailable"
         }
       ],
-      "last_ts": "2026-02-23T00:22:54.231Z",
+      "last_ts": "2026-02-23T04:46:32.400Z",
       "last_summary": "Dream idle phase degraded or blocked (local_model_unavailable)",
       "last_details": "ok=false skipped=true degraded=false failed_model=none timed_out=false cooldown_until=none",
       "cooldown_until_ts": "2026-02-23T06:00:59.336Z",

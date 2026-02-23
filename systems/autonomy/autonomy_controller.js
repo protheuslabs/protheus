@@ -6361,8 +6361,10 @@ function statusCmd(dateStr) {
     },
     human_escalation: {
       block_runs: AUTONOMY_HUMAN_ESCALATION_BLOCK_RUNS,
+      block_active: AUTONOMY_HUMAN_ESCALATION_BLOCK_RUNS && humanEscalations.length > 0,
       hold_hours: Math.max(1, Number(AUTONOMY_HUMAN_ESCALATION_HOLD_HOURS || 6)),
       active_count: humanEscalations.length,
+      pending_count: humanEscalations.length,
       next_clear_at: humanEscalationNextClearAt,
       active: humanEscalations.slice(0, Math.max(1, Number(AUTONOMY_HUMAN_ESCALATION_MAX_STATUS_ROWS || 5))).map(e => ({
         escalation_id: e.escalation_id || null,
@@ -10258,7 +10260,15 @@ function acquireAutonomyRunLock(meta) {
       const existingPid = Number(existing && existing.pid);
       const processAlive = pidAlive(existingPid);
       const staleByAge = Number.isFinite(ageMinutes) && staleMinutes > 0 && ageMinutes > staleMinutes;
-      const staleByDeadPid = Number.isInteger(existingPid) && existingPid > 0 && existingPid !== process.pid && processAlive === false;
+      const staleByDeadPid = Number.isInteger(existingPid)
+        && existingPid > 0
+        && existingPid !== process.pid
+        && processAlive === false
+        && (
+          !Number.isFinite(ageMinutes)
+          || staleMinutes <= 0
+          || ageMinutes > staleMinutes
+        );
       const malformed = !existing || typeof existing !== 'object';
       const stale = staleByAge || staleByDeadPid || malformed;
       if (stale) {
