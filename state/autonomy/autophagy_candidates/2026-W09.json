@@ -1,21 +1,21 @@
 {
   "ok": true,
   "type": "autonomy_non_yield_harvest",
-  "ts": "2026-02-23T21:32:17.742Z",
+  "ts": "2026-02-23T22:33:26.481Z",
   "end_date": "2026-02-23",
   "week_id": "2026-W09",
   "source_ledger_path": "/Users/jay/.openclaw/workspace/state/autonomy/non_yield_ledger.jsonl",
   "policy": {
-    "lookback_days": 30,
+    "lookback_days": 180,
     "quarantine_days": 7,
     "min_support": 5,
     "min_confidence": 0.65
   },
   "counts": {
-    "scanned": 1,
+    "scanned": 2,
     "malformed_ts": 0,
-    "in_lookback": 1,
-    "dropped_quarantine": 1,
+    "in_lookback": 2,
+    "dropped_quarantine": 2,
     "groups": 0,
     "candidates": 0
   },

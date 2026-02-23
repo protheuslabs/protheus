@@ -276,6 +276,18 @@
       "scopes": {
         "sensory.collector.ollama_search": 8
       }
+    },
+    "2026-02-23T22": {
+      "total": 12,
+      "scopes": {
+        "sensory.collector.ollama_search": 12
+      }
+    },
+    "2026-02-23T23": {
+      "total": 8,
+      "scopes": {
+        "sensory.collector.ollama_search": 8
+      }
     }
   },
   "per_day": {
@@ -309,9 +321,9 @@
       }
     },
     "2026-02-23": {
-      "total": 584,
+      "total": 604,
       "scopes": {
-        "sensory.collector.ollama_search": 115,
+        "sensory.collector.ollama_search": 135,
         "sensory.collector.upwork_gigs": 8,
         "sensory.collector.google_trends": 81,
         "sensory.focus_fetch": 120,

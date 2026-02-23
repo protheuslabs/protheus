@@ -1,0 +1,20 @@
+{
+  "version": "1.0",
+  "enforce_single_active_lever": true,
+  "require_code_changes_for_evaluate": true,
+  "metric_scope": "checks_effective",
+  "performance": {
+    "min_drift_reduction": 0.003,
+    "min_yield_increase": 0.02,
+    "max_drift_increase": 0.001,
+    "max_yield_drop": 0.01,
+    "max_safety_stop_increase": 0
+  },
+  "churn_excludes": [
+    "state/**",
+    "memory/.rebuild_delta_cache.json",
+    "memory/MEMORY_INDEX.md",
+    "memory/TAGS_INDEX.md",
+    "memory/SNIPPET_INDEX.md"
+  ]
+}

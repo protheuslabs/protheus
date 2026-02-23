@@ -141,3 +141,9 @@
 {"ts":"2026-02-23T20:30:09.646Z","type":"provider_ok","provider":"ollama","source":"model_router_warmup","latency_ms":21,"model_count":11}
 {"ts":"2026-02-23T20:30:46.126Z","type":"provider_ok","provider":"ollama","source":"reflex_worker","latency_ms":115,"model_count":11}
 {"ts":"2026-02-23T21:04:26.924Z","type":"provider_down","provider":"ollama","source":"model_router_route","reason":"env_blocked","code":1,"failure_streak":1,"circuit_open_until_ts":"2026-02-23T21:05:11.836Z","pain_emitted":false}
+{"ts":"2026-02-23T22:54:27.865Z","type":"provider_outage_pain","provider":"ollama","reason":"env_blocked","code":1,"emitted":true}
+{"ts":"2026-02-23T22:54:27.866Z","type":"provider_down","provider":"ollama","source":"model_router_route","reason":"env_blocked","code":1,"failure_streak":2,"circuit_open_until_ts":"2026-02-23T22:55:12.738Z","pain_emitted":true}
+{"ts":"2026-02-23T22:55:55.104Z","type":"provider_down","provider":"ollama","source":"model_router_route","reason":"env_blocked","code":1,"failure_streak":3,"circuit_open_until_ts":"2026-02-23T22:56:39.977Z","pain_emitted":false}
+{"ts":"2026-02-23T22:57:12.291Z","type":"provider_down","provider":"ollama","source":"model_router_route","reason":"env_blocked","code":1,"failure_streak":4,"circuit_open_until_ts":"2026-02-23T22:57:57.199Z","pain_emitted":false}
+{"ts":"2026-02-23T23:08:48.468Z","type":"provider_down","provider":"ollama","source":"model_router_route","reason":"env_blocked","code":1,"failure_streak":5,"circuit_open_until_ts":"2026-02-23T23:09:33.368Z","pain_emitted":false}
+{"ts":"2026-02-23T23:10:11.426Z","type":"provider_down","provider":"ollama","source":"model_router_route","reason":"env_blocked","code":1,"failure_streak":6,"circuit_open_until_ts":"2026-02-23T23:10:56.328Z","pain_emitted":false}

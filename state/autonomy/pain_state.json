@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "updated_ts": "2026-02-23T20:20:15.269Z",
+  "updated_ts": "2026-02-23T23:10:26.437Z",
   "signatures": {
     "4278015a179efcf9": {
       "source": "external_eyes",
@@ -517,12 +517,8 @@
       "severity": "high",
       "risk": "medium",
       "signature": "ed445d71f2fee5f7",
-      "total_count": 22,
+      "total_count": 27,
       "events": [
-        {
-          "ts": "2026-02-23T10:43:15.428Z",
-          "code": "dream_idle:local_model_unavailable"
-        },
         {
           "ts": "2026-02-23T16:48:32.437Z",
           "code": "dream_idle:local_model_unavailable"
@@ -590,9 +586,29 @@
         {
           "ts": "2026-02-23T20:20:15.262Z",
           "code": "dream_idle:local_model_unavailable"
+        },
+        {
+          "ts": "2026-02-23T22:54:43.399Z",
+          "code": "dream_idle:local_model_unavailable"
+        },
+        {
+          "ts": "2026-02-23T22:56:13.925Z",
+          "code": "dream_idle:local_model_unavailable"
+        },
+        {
+          "ts": "2026-02-23T22:57:31.960Z",
+          "code": "dream_idle:local_model_unavailable"
+        },
+        {
+          "ts": "2026-02-23T23:09:07.628Z",
+          "code": "dream_idle:local_model_unavailable"
+        },
+        {
+          "ts": "2026-02-23T23:10:26.426Z",
+          "code": "dream_idle:local_model_unavailable"
         }
       ],
-      "last_ts": "2026-02-23T20:20:15.262Z",
+      "last_ts": "2026-02-23T23:10:26.426Z",
       "last_summary": "Dream idle phase degraded or blocked (local_model_unavailable)",
       "last_details": "ok=false skipped=true degraded=false failed_model=none timed_out=false cooldown_until=none",
       "cooldown_until_ts": "2026-02-23T06:00:59.336Z",
@@ -608,24 +624,24 @@
       "subsystem": "routing",
       "code": "provider_outage:ollama:env_blocked",
       "summary": "Provider ollama unavailable",
-      "details": "reason=env_blocked code=1 latency_ms=80",
+      "details": "reason=env_blocked code=1 latency_ms=122",
       "severity": "low",
       "risk": "low",
       "signature": "5ded14bc3908ca66",
-      "total_count": 3,
+      "total_count": 4,
       "events": [
-        {
-          "ts": "2026-02-23T08:45:46.226Z",
-          "code": "provider_outage:ollama:env_blocked"
-        },
         {
           "ts": "2026-02-23T15:23:10.516Z",
           "code": "provider_outage:ollama:env_blocked"
+        },
+        {
+          "ts": "2026-02-23T22:54:27.862Z",
+          "code": "provider_outage:ollama:env_blocked"
         }
       ],
-      "last_ts": "2026-02-23T15:23:10.516Z",
+      "last_ts": "2026-02-23T22:54:27.862Z",
       "last_summary": "Provider ollama unavailable",
-      "last_details": "reason=env_blocked code=1 latency_ms=80",
+      "last_details": "reason=env_blocked code=1 latency_ms=122",
       "cooldown_until_ts": null,
       "last_escalation_ts": null,
       "last_proposal_id": null,
@@ -914,7 +930,7 @@
       "severity": "high",
       "risk": "medium",
       "signature": "b08c5c3826289c9d",
-      "total_count": 34,
+      "total_count": 44,
       "events": [
         {
           "ts": "2026-02-23T16:48:31.870Z",
@@ -1051,9 +1067,49 @@
         {
           "ts": "2026-02-23T20:20:15.269Z",
           "code": "dream_rem:local_model_unavailable"
+        },
+        {
+          "ts": "2026-02-23T22:54:43.288Z",
+          "code": "dream_rem:local_model_unavailable"
+        },
+        {
+          "ts": "2026-02-23T22:54:43.406Z",
+          "code": "dream_rem:local_model_unavailable"
+        },
+        {
+          "ts": "2026-02-23T22:56:13.805Z",
+          "code": "dream_rem:local_model_unavailable"
+        },
+        {
+          "ts": "2026-02-23T22:56:13.934Z",
+          "code": "dream_rem:local_model_unavailable"
+        },
+        {
+          "ts": "2026-02-23T22:57:31.829Z",
+          "code": "dream_rem:local_model_unavailable"
+        },
+        {
+          "ts": "2026-02-23T22:57:31.968Z",
+          "code": "dream_rem:local_model_unavailable"
+        },
+        {
+          "ts": "2026-02-23T23:09:07.510Z",
+          "code": "dream_rem:local_model_unavailable"
+        },
+        {
+          "ts": "2026-02-23T23:09:07.635Z",
+          "code": "dream_rem:local_model_unavailable"
+        },
+        {
+          "ts": "2026-02-23T23:10:26.302Z",
+          "code": "dream_rem:local_model_unavailable"
+        },
+        {
+          "ts": "2026-02-23T23:10:26.433Z",
+          "code": "dream_rem:local_model_unavailable"
         }
       ],
-      "last_ts": "2026-02-23T20:20:15.269Z",
+      "last_ts": "2026-02-23T23:10:26.433Z",
       "last_summary": "Dream rem phase degraded or blocked (local_model_unavailable)",
       "last_details": "ok=false skipped=true degraded=false failed_model=none timed_out=false cooldown_until=none",
       "cooldown_until_ts": "2026-02-23T22:48:32.467Z",

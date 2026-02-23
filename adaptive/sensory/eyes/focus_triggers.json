@@ -875,8 +875,8 @@
         "dev_tools",
         "agent",
         "agents",
-        "automation",
         "about",
+        "automation",
         "x27",
         "what",
         "llm",
@@ -894,8 +894,8 @@
         "dev_tools": 20,
         "agent": 20,
         "agents": 20,
-        "automation": 20,
         "about": 20,
+        "automation": 20,
         "x27": 20,
         "what": 20,
         "llm": 20,
@@ -904,17 +904,11 @@
         "open": 20,
         "show": 20
       },
-      "baseline_topics": [
-        "startups",
-        "dev_tools",
-        "ai",
-        "security",
-        "infra"
-      ],
-      "focus_hits_total": 74,
-      "update_count": 15,
+      "baseline_topics": [],
+      "focus_hits_total": 80,
+      "update_count": 16,
       "created_ts": "2026-02-21T04:03:43.974Z",
-      "updated_ts": "2026-02-23T15:20:59.539Z"
+      "updated_ts": "2026-02-23T22:54:36.316Z"
     },
     "x_trends": {
       "eye_id": "x_trends",
@@ -934,7 +928,7 @@
         "actually",
         "nobody",
         "need",
-        "platform"
+        "about"
       ],
       "exclude_terms": [],
       "term_weights": {
@@ -953,19 +947,13 @@
         "actually": 20,
         "nobody": 20,
         "need": 20,
-        "platform": 20
+        "about": 20
       },
-      "baseline_topics": [
-        "ai_agents",
-        "llm",
-        "automation",
-        "agent_community",
-        "business"
-      ],
-      "focus_hits_total": 40,
-      "update_count": 12,
+      "baseline_topics": [],
+      "focus_hits_total": 46,
+      "update_count": 13,
       "created_ts": "2026-02-21T04:03:43.974Z",
-      "updated_ts": "2026-02-23T15:20:59.539Z"
+      "updated_ts": "2026-02-23T22:54:36.316Z"
     },
     "moltbook_feed": {
       "eye_id": "moltbook_feed",
@@ -981,11 +969,11 @@
         "feedback",
         "skill",
         "platform",
+        "loops",
         "publishing",
         "code",
         "nobody",
-        "human",
-        "loops"
+        "human"
       ],
       "exclude_terms": [],
       "term_weights": {
@@ -1000,28 +988,24 @@
         "feedback": 20,
         "skill": 20,
         "platform": 20,
+        "loops": 20,
         "publishing": 20,
         "code": 20,
         "nobody": 20,
-        "human": 20,
-        "loops": 20
+        "human": 20
       },
-      "baseline_topics": [
-        "agent_innovation",
-        "skills",
-        "patterns"
-      ],
-      "focus_hits_total": 158,
-      "update_count": 26,
+      "baseline_topics": [],
+      "focus_hits_total": 184,
+      "update_count": 27,
       "created_ts": "2026-02-21T04:03:43.974Z",
-      "updated_ts": "2026-02-23T15:20:59.539Z"
+      "updated_ts": "2026-02-23T22:54:36.316Z"
     },
     "local_state_fallback": {
       "eye_id": "local_state_fallback",
       "include_terms": [
         "automation",
-        "open",
         "system",
+        "open",
         "infra",
         "growth",
         "reliability",
@@ -1030,8 +1014,8 @@
         "saturation:",
         "threshold",
         "deterministic",
-        "across",
         "accepted",
+        "across",
         "git_tags",
         "increase",
         "reliability:"
@@ -1039,8 +1023,8 @@
       "exclude_terms": [],
       "term_weights": {
         "automation": 20,
-        "open": 20,
         "system": 20,
+        "open": 20,
         "infra": 20,
         "growth": 20,
         "reliability": 20,
@@ -1049,23 +1033,17 @@
         "saturation:": 20,
         "threshold": 20,
         "deterministic": 20,
-        "across": 20,
         "accepted": 20,
-        "git_tags": 16,
-        "increase": 16,
-        "reliability:": 16
+        "across": 20,
+        "git_tags": 20,
+        "increase": 20,
+        "reliability:": 20
       },
-      "baseline_topics": [
-        "automation",
-        "system",
-        "growth",
-        "infra",
-        "reliability"
-      ],
-      "focus_hits_total": 84,
-      "update_count": 27,
+      "baseline_topics": [],
+      "focus_hits_total": 100,
+      "update_count": 28,
       "created_ts": "2026-02-21T04:03:43.974Z",
-      "updated_ts": "2026-02-23T16:26:33.050Z"
+      "updated_ts": "2026-02-23T22:54:36.316Z"
     },
     "ollama_search": {
       "eye_id": "ollama_search",
@@ -1106,17 +1084,11 @@
         "multimodal": 20,
         "glm-4": 20
       },
-      "baseline_topics": [
-        "ai",
-        "llm",
-        "local_models",
-        "agents",
-        "edge_ai"
-      ],
-      "focus_hits_total": 32,
-      "update_count": 11,
+      "baseline_topics": [],
+      "focus_hits_total": 36,
+      "update_count": 12,
       "created_ts": "2026-02-21T04:03:43.974Z",
-      "updated_ts": "2026-02-23T15:20:59.539Z"
+      "updated_ts": "2026-02-23T22:54:36.316Z"
     },
     "google_trends": {
       "eye_id": "google_trends",
@@ -1132,11 +1104,11 @@
         "agents",
         "funding",
         "best",
-        "agent",
-        "startup",
         "tools",
-        "saas",
-        "work"
+        "startup",
+        "agent",
+        "work",
+        "saas"
       ],
       "exclude_terms": [],
       "term_weights": {
@@ -1151,24 +1123,17 @@
         "agents": 20,
         "funding": 20,
         "best": 20,
-        "agent": 20,
-        "startup": 20,
         "tools": 20,
-        "saas": 20,
-        "work": 20
+        "startup": 20,
+        "agent": 20,
+        "work": 20,
+        "saas": 20
       },
-      "baseline_topics": [
-        "market_demand",
-        "commercial_intent",
-        "trends",
-        "saas",
-        "ai",
-        "automation"
-      ],
-      "focus_hits_total": 46,
-      "update_count": 16,
+      "baseline_topics": [],
+      "focus_hits_total": 61,
+      "update_count": 17,
       "created_ts": "2026-02-21T04:03:43.974Z",
-      "updated_ts": "2026-02-23T16:04:37.026Z"
+      "updated_ts": "2026-02-23T22:54:36.316Z"
     },
     "stock_market": {
       "eye_id": "stock_market",
@@ -1185,6 +1150,7 @@
         "nasdaq",
         "composite",
         "russell",
+        "com",
         "investing",
         "economy"
       ],
@@ -1202,19 +1168,15 @@
         "nasdaq": 20,
         "composite": 20,
         "russell": 20,
-        "investing": 17,
-        "economy": 17
+        "com": 16,
+        "investing": 15,
+        "economy": 15
       },
-      "baseline_topics": [
-        "finance",
-        "market",
-        "investing",
-        "economy"
-      ],
-      "focus_hits_total": 29,
-      "update_count": 15,
+      "baseline_topics": [],
+      "focus_hits_total": 35,
+      "update_count": 16,
       "created_ts": "2026-02-21T04:03:43.974Z",
-      "updated_ts": "2026-02-23T16:26:38.784Z"
+      "updated_ts": "2026-02-23T22:54:36.316Z"
     },
     "upwork_gigs": {
       "eye_id": "upwork_gigs",
@@ -1255,18 +1217,11 @@
         "optimization": 20,
         "no-code": 20
       },
-      "baseline_topics": [
-        "revenue",
-        "freelance",
-        "gigs",
-        "ai",
-        "automation",
-        "nocode"
-      ],
-      "focus_hits_total": 166,
-      "update_count": 29,
+      "baseline_topics": [],
+      "focus_hits_total": 194,
+      "update_count": 30,
       "created_ts": "2026-02-21T04:03:43.974Z",
-      "updated_ts": "2026-02-23T17:21:32.821Z"
+      "updated_ts": "2026-02-23T22:54:36.316Z"
     },
     "producthunt_launches": {
       "eye_id": "producthunt_launches",
@@ -1279,14 +1234,14 @@
         "product_launches",
         "producthunt",
         "affiliateboard",
-        "pro",
         "agentflow",
+        "pro",
         "build",
         "agent",
         "stripepartner",
         "api",
-        "saas",
-        "partnerships"
+        "com",
+        "collector"
       ],
       "exclude_terms": [],
       "term_weights": {
@@ -1298,32 +1253,26 @@
         "product_launches": 20,
         "producthunt": 20,
         "affiliateboard": 20,
-        "pro": 20,
         "agentflow": 20,
+        "pro": 20,
         "build": 20,
         "agent": 20,
         "stripepartner": 20,
         "api": 20,
-        "saas": 20,
-        "partnerships": 17
+        "com": 20,
+        "collector": 20
       },
-      "baseline_topics": [
-        "revenue",
-        "affiliate",
-        "product_launches",
-        "saas",
-        "partnerships"
-      ],
-      "focus_hits_total": 84,
-      "update_count": 19,
+      "baseline_topics": [],
+      "focus_hits_total": 100,
+      "update_count": 20,
       "created_ts": "2026-02-21T04:03:43.974Z",
-      "updated_ts": "2026-02-23T17:03:52.767Z"
+      "updated_ts": "2026-02-23T22:54:36.316Z"
     },
     "window_shoppr_repo": {
       "eye_id": "window_shoppr_repo",
       "include_terms": [
-        "data",
         "development",
+        "data",
         "repo_activity",
         "jakerslam",
         "window_shoppr:",
@@ -1341,8 +1290,8 @@
       ],
       "exclude_terms": [],
       "term_weights": {
-        "data": 20,
         "development": 20,
+        "data": 20,
         "repo_activity": 20,
         "jakerslam": 20,
         "window_shoppr:": 20,
@@ -1352,23 +1301,17 @@
         "r30": 20,
         "chore:": 20,
         "add": 20,
-        "window_shoppr": 19,
-        "revenue": 17,
-        "affiliate": 17,
-        "product": 17,
-        "agent_integration": 17
+        "window_shoppr": 17,
+        "revenue": 15,
+        "affiliate": 15,
+        "product": 15,
+        "agent_integration": 15
       },
-      "baseline_topics": [
-        "revenue",
-        "affiliate",
-        "product",
-        "window_shoppr",
-        "agent_integration"
-      ],
-      "focus_hits_total": 13,
-      "update_count": 10,
+      "baseline_topics": [],
+      "focus_hits_total": 15,
+      "update_count": 11,
       "created_ts": "2026-02-21T04:03:43.974Z",
-      "updated_ts": "2026-02-23T15:20:59.539Z"
+      "updated_ts": "2026-02-23T22:54:36.316Z"
     },
     "medium_com": {
       "eye_id": "medium_com",
@@ -1381,18 +1324,17 @@
         "about",
         "nobody",
         "built",
-        "every",
         "just",
+        "every",
         "actually",
+        "com",
         "broken",
         "system",
         "here",
-        "need",
-        "2026"
+        "need"
       ],
       "exclude_terms": [],
       "term_weights": {
-        "2026": 20,
         "automation": 20,
         "business": 20,
         "ai": 20,
@@ -1401,27 +1343,20 @@
         "about": 20,
         "nobody": 20,
         "built": 20,
-        "every": 20,
         "just": 20,
+        "every": 20,
         "actually": 20,
+        "com": 20,
         "broken": 20,
         "system": 20,
         "here": 20,
         "need": 20
       },
-      "baseline_topics": [
-        "ai",
-        "startups",
-        "business",
-        "automation",
-        "revenue",
-        "growth",
-        "engineering"
-      ],
-      "focus_hits_total": 48,
-      "update_count": 14,
+      "baseline_topics": [],
+      "focus_hits_total": 54,
+      "update_count": 15,
       "created_ts": "2026-02-21T04:03:43.974Z",
-      "updated_ts": "2026-02-23T15:30:25.342Z"
+      "updated_ts": "2026-02-23T22:54:36.316Z"
     },
     "moltstack_discover": {
       "eye_id": "moltstack_discover",
@@ -1433,9 +1368,9 @@
         "agent_community",
         "ai_agents",
         "agent_publishing",
+        "about",
         "just",
         "nobody",
-        "about",
         "alpha",
         "hour",
         "gemini",
@@ -1453,26 +1388,20 @@
         "agent_community": 20,
         "ai_agents": 20,
         "agent_publishing": 20,
+        "about": 20,
         "just": 20,
         "nobody": 20,
-        "about": 20,
         "alpha": 20,
         "hour": 20,
         "gemini": 20,
         "need": 20,
         "system": 20
       },
-      "baseline_topics": [
-        "agent_publishing",
-        "ai_agents",
-        "agent_community",
-        "automation",
-        "patterns"
-      ],
-      "focus_hits_total": 48,
-      "update_count": 12,
+      "baseline_topics": [],
+      "focus_hits_total": 52,
+      "update_count": 13,
       "created_ts": "2026-02-21T04:03:43.974Z",
-      "updated_ts": "2026-02-23T15:20:59.539Z"
+      "updated_ts": "2026-02-23T22:54:36.316Z"
     },
     "memory_standards_watch": {
       "eye_id": "memory_standards_watch",
@@ -1483,16 +1412,16 @@
         "agent_protocol",
         "ietf",
         "agent",
-        "assistant",
-        "open",
         "code",
+        "open",
+        "assistant",
         "alpha",
         "every",
         "building",
         "down",
         "work",
-        "company",
-        "keep"
+        "agents",
+        "claude"
       ],
       "exclude_terms": [],
       "term_weights": {
@@ -1502,29 +1431,22 @@
         "agent_protocol": 20,
         "ietf": 20,
         "agent": 20,
-        "assistant": 20,
-        "open": 20,
         "code": 20,
+        "open": 20,
+        "assistant": 20,
         "alpha": 20,
         "every": 20,
         "building": 20,
         "down": 20,
         "work": 20,
-        "company": 20,
-        "keep": 20
+        "agents": 20,
+        "claude": 20
       },
-      "baseline_topics": [
-        "standards",
-        "memory",
-        "portability",
-        "agent_protocol",
-        "ietf",
-        "w3c"
-      ],
-      "focus_hits_total": 22,
-      "update_count": 10,
+      "baseline_topics": [],
+      "focus_hits_total": 24,
+      "update_count": 11,
       "created_ts": "2026-02-21T04:03:43.974Z",
-      "updated_ts": "2026-02-23T15:20:59.539Z"
+      "updated_ts": "2026-02-23T22:54:36.316Z"
     },
     "moltbook_memory_signal": {
       "eye_id": "moltbook_memory_signal",
@@ -1541,8 +1463,8 @@
         "need",
         "just",
         "actually",
-        "while",
         "build",
+        "while",
         "platform",
         "nobody"
       ],
@@ -1560,22 +1482,16 @@
         "need": 20,
         "just": 20,
         "actually": 20,
-        "while": 20,
         "build": 20,
+        "while": 20,
         "platform": 20,
         "nobody": 20
       },
-      "baseline_topics": [
-        "memory",
-        "context",
-        "compression",
-        "amnesia",
-        "agent_memory"
-      ],
-      "focus_hits_total": 55,
-      "update_count": 15,
+      "baseline_topics": [],
+      "focus_hits_total": 65,
+      "update_count": 16,
       "created_ts": "2026-02-21T04:03:43.974Z",
-      "updated_ts": "2026-02-23T15:20:59.539Z"
+      "updated_ts": "2026-02-23T22:54:36.316Z"
     },
     "provider_memory_trends": {
       "eye_id": "provider_memory_trends",
@@ -1587,15 +1503,15 @@
         "demand",
         "commercial",
         "trends",
+        "com",
+        "collector",
         "business",
         "agents",
         "remote",
         "tools",
-        "best",
-        "funding",
         "work",
-        "agent",
-        "startup"
+        "best",
+        "funding"
       ],
       "exclude_terms": [],
       "term_weights": {
@@ -1606,27 +1522,21 @@
         "demand": 20,
         "commercial": 20,
         "trends": 20,
+        "com": 20,
+        "collector": 20,
         "business": 20,
         "agents": 20,
         "remote": 20,
         "tools": 20,
-        "best": 20,
-        "funding": 20,
         "work": 20,
-        "agent": 20,
-        "startup": 20
+        "best": 20,
+        "funding": 20
       },
-      "baseline_topics": [
-        "provider_memory",
-        "openai_memory",
-        "claude_projects",
-        "gemini_gems",
-        "search_trends"
-      ],
-      "focus_hits_total": 234,
-      "update_count": 87,
+      "baseline_topics": [],
+      "focus_hits_total": 388,
+      "update_count": 88,
       "created_ts": "2026-02-21T04:03:43.974Z",
-      "updated_ts": "2026-02-23T17:23:42.596Z"
+      "updated_ts": "2026-02-23T22:54:36.316Z"
     },
     "reddit_ai_automation": {
       "eye_id": "reddit_ai_automation",
@@ -1641,27 +1551,19 @@
       ],
       "exclude_terms": [],
       "term_weights": {
-        "ai": 17,
-        "automation": 17,
-        "startups": 17,
-        "sidehustle": 17,
-        "passiveincome": 17,
-        "agents": 17,
-        "machinelearning": 17
+        "ai": 15,
+        "automation": 15,
+        "startups": 15,
+        "sidehustle": 15,
+        "passiveincome": 15,
+        "agents": 15,
+        "machinelearning": 15
       },
-      "baseline_topics": [
-        "ai",
-        "automation",
-        "startups",
-        "sidehustle",
-        "passiveincome",
-        "agents",
-        "machinelearning"
-      ],
+      "baseline_topics": [],
       "focus_hits_total": 0,
-      "update_count": 8,
+      "update_count": 9,
       "created_ts": "2026-02-21T04:03:43.974Z",
-      "updated_ts": "2026-02-23T15:20:59.539Z"
+      "updated_ts": "2026-02-23T22:54:36.316Z"
     },
     "watch_trends_google_com": {
       "eye_id": "watch_trends_google_com",
@@ -1670,18 +1572,18 @@
         "commercial",
         "demand",
         "fallback",
-        "business",
         "market",
-        "funding",
         "trends",
-        "best",
-        "deals",
-        "remote",
-        "chatgpt",
-        "alternatives",
         "signal",
         "collector",
-        "agents"
+        "business",
+        "remote",
+        "com",
+        "funding",
+        "best",
+        "deals",
+        "chatgpt",
+        "alternatives"
       ],
       "exclude_terms": [],
       "term_weights": {
@@ -1689,30 +1591,24 @@
         "commercial": 20,
         "demand": 20,
         "fallback": 20,
-        "business": 20,
         "market": 20,
-        "funding": 18,
         "trends": 20,
-        "best": 15,
-        "deals": 15,
-        "remote": 19,
-        "chatgpt": 15,
-        "alternatives": 15,
         "signal": 20,
-        "collector": 13,
-        "agents": 6
+        "collector": 20,
+        "business": 20,
+        "remote": 20,
+        "com": 20,
+        "funding": 20,
+        "best": 20,
+        "deals": 20,
+        "chatgpt": 20,
+        "alternatives": 20
       },
-      "baseline_topics": [
-        "market_demand",
-        "trends",
-        "commercial",
-        "demand",
-        "fallback"
-      ],
-      "focus_hits_total": 6,
-      "update_count": 3,
+      "baseline_topics": [],
+      "focus_hits_total": 12,
+      "update_count": 4,
       "created_ts": "2026-02-23T15:20:59.539Z",
-      "updated_ts": "2026-02-23T16:04:37.212Z"
+      "updated_ts": "2026-02-23T22:54:36.316Z"
     },
     "watch_medium_com": {
       "eye_id": "watch_medium_com",
@@ -1731,17 +1627,11 @@
         "automation": 3,
         "revenue": 3
       },
-      "baseline_topics": [
-        "ai",
-        "startups",
-        "business",
-        "automation",
-        "revenue"
-      ],
+      "baseline_topics": [],
       "focus_hits_total": 0,
-      "update_count": 1,
+      "update_count": 2,
       "created_ts": "2026-02-23T15:20:59.539Z",
-      "updated_ts": "2026-02-23T15:20:59.539Z"
+      "updated_ts": "2026-02-23T22:54:36.316Z"
     },
     "proto_36c7ba62382ba23c": {
       "eye_id": "proto_36c7ba62382ba23c",
@@ -1760,17 +1650,11 @@
         "automation": 3,
         "revenue": 3
       },
-      "baseline_topics": [
-        "ai",
-        "startups",
-        "business",
-        "automation",
-        "revenue"
-      ],
+      "baseline_topics": [],
       "focus_hits_total": 0,
-      "update_count": 1,
+      "update_count": 2,
       "created_ts": "2026-02-23T15:20:59.539Z",
-      "updated_ts": "2026-02-23T15:20:59.539Z"
+      "updated_ts": "2026-02-23T22:54:36.316Z"
     },
     "proto_affc19cbf503b0d7": {
       "eye_id": "proto_affc19cbf503b0d7",
@@ -1780,17 +1664,17 @@
         "gigs",
         "high-value",
         "opportunity",
-        "automation",
         "revenue",
         "gig",
-        "developer",
-        "assistant",
         "high",
         "build",
+        "automation",
         "flow",
-        "code",
-        "specialist",
-        "workflow"
+        "developer",
+        "assistant",
+        "com",
+        "builder",
+        "specialist"
       ],
       "exclude_terms": [],
       "term_weights": {
@@ -1799,29 +1683,23 @@
         "gigs": 20,
         "high-value": 20,
         "opportunity": 20,
-        "automation": 20,
         "revenue": 20,
         "gig": 20,
-        "developer": 17,
-        "assistant": 17,
-        "high": 19,
-        "build": 15,
-        "flow": 12,
-        "code": 7,
-        "specialist": 6,
-        "workflow": 6
+        "high": 20,
+        "build": 20,
+        "automation": 20,
+        "flow": 20,
+        "developer": 20,
+        "assistant": 20,
+        "com": 20,
+        "builder": 20,
+        "specialist": 20
       },
-      "baseline_topics": [
-        "revenue",
-        "freelance",
-        "gigs",
-        "high-value",
-        "gig"
-      ],
-      "focus_hits_total": 6,
-      "update_count": 3,
+      "baseline_topics": [],
+      "focus_hits_total": 12,
+      "update_count": 4,
       "created_ts": "2026-02-23T15:20:59.539Z",
-      "updated_ts": "2026-02-23T16:04:40.968Z"
+      "updated_ts": "2026-02-23T22:54:36.316Z"
     },
     "proto_7ea4f111e8e34620": {
       "eye_id": "proto_7ea4f111e8e34620",
@@ -1830,18 +1708,18 @@
         "commercial",
         "demand",
         "fallback",
+        "market",
+        "trends",
+        "signal",
+        "collector",
         "business",
         "agents",
-        "market",
+        "remote",
+        "com",
         "funding",
-        "trends",
         "best",
         "deals",
-        "remote",
-        "chatgpt",
-        "alternatives",
-        "signal",
-        "collector"
+        "chatgpt"
       ],
       "exclude_terms": [],
       "term_weights": {
@@ -1849,30 +1727,24 @@
         "commercial": 20,
         "demand": 20,
         "fallback": 20,
+        "market": 20,
+        "trends": 20,
+        "signal": 20,
+        "collector": 20,
         "business": 20,
         "agents": 20,
-        "market": 20,
-        "funding": 18,
-        "trends": 20,
-        "best": 15,
-        "deals": 15,
-        "remote": 19,
-        "chatgpt": 15,
-        "alternatives": 15,
-        "signal": 17,
-        "collector": 13
+        "remote": 20,
+        "com": 20,
+        "funding": 20,
+        "best": 20,
+        "deals": 20,
+        "chatgpt": 20
       },
-      "baseline_topics": [
-        "market_demand",
-        "trends",
-        "commercial",
-        "demand",
-        "fallback"
-      ],
-      "focus_hits_total": 6,
-      "update_count": 3,
+      "baseline_topics": [],
+      "focus_hits_total": 12,
+      "update_count": 4,
       "created_ts": "2026-02-23T15:20:59.539Z",
-      "updated_ts": "2026-02-23T16:04:40.847Z"
+      "updated_ts": "2026-02-23T22:54:36.316Z"
     },
     "proto_8f57fcde11bdc4ad": {
       "eye_id": "proto_8f57fcde11bdc4ad",
@@ -1880,48 +1752,44 @@
         "patterns",
         "agent_innovation",
         "skills",
+        "com",
+        "human",
         "chain",
         "nobody",
-        "human",
-        "build",
-        "operator",
-        "built",
-        "deterministic",
         "skill",
-        "attack",
+        "build",
+        "built",
+        "operator",
         "nightly",
         "ship",
-        "power",
-        "just"
+        "deterministic",
+        "attack",
+        "power"
       ],
       "exclude_terms": [],
       "term_weights": {
         "patterns": 20,
         "agent_innovation": 20,
         "skills": 20,
-        "chain": 17,
-        "nobody": 17,
-        "human": 19,
-        "build": 19,
-        "operator": 17,
-        "built": 15,
-        "deterministic": 15,
-        "skill": 17,
-        "attack": 10,
-        "nightly": 12,
-        "ship": 12,
-        "power": 10,
-        "just": 10
+        "com": 20,
+        "human": 20,
+        "chain": 20,
+        "nobody": 20,
+        "skill": 20,
+        "build": 20,
+        "built": 20,
+        "operator": 20,
+        "nightly": 20,
+        "ship": 20,
+        "deterministic": 20,
+        "attack": 20,
+        "power": 20
       },
-      "baseline_topics": [
-        "agent_innovation",
-        "skills",
-        "patterns"
-      ],
-      "focus_hits_total": 4,
-      "update_count": 3,
+      "baseline_topics": [],
+      "focus_hits_total": 8,
+      "update_count": 4,
       "created_ts": "2026-02-23T15:20:59.539Z",
-      "updated_ts": "2026-02-23T16:26:49.499Z"
+      "updated_ts": "2026-02-23T22:54:36.316Z"
     },
     "proto_84fd25a1242fee41": {
       "eye_id": "proto_84fd25a1242fee41",
@@ -1929,55 +1797,110 @@
         "finance",
         "market",
         "index",
+        "com",
         "cboe",
         "volatility"
       ],
       "exclude_terms": [],
       "term_weights": {
         "finance": 20,
-        "market": 18,
-        "index": 18,
-        "cboe": 4,
-        "volatility": 4
+        "market": 20,
+        "index": 20,
+        "com": 13,
+        "cboe": 8,
+        "volatility": 8
       },
-      "baseline_topics": [
-        "finance",
-        "market",
-        "index"
-      ],
-      "focus_hits_total": 2,
-      "update_count": 2,
+      "baseline_topics": [],
+      "focus_hits_total": 4,
+      "update_count": 3,
       "created_ts": "2026-02-23T15:20:59.539Z",
-      "updated_ts": "2026-02-23T16:03:52.232Z"
+      "updated_ts": "2026-02-23T22:54:36.316Z"
     },
     "hkuds_clawwork_repo": {
       "eye_id": "hkuds_clawwork_repo",
       "include_terms": [
+        "development",
+        "repo_activity",
+        "github",
+        "commit",
+        "hkuds",
+        "clawwork:",
+        "com",
+        "fix",
+        "frontend",
         "multi_agent",
         "llm",
         "automation",
         "agent_framework",
-        "research"
+        "research",
+        "feb",
+        "update"
       ],
       "exclude_terms": [],
       "term_weights": {
+        "development": 13,
+        "repo_activity": 6,
+        "github": 6,
+        "commit": 6,
+        "hkuds": 6,
+        "clawwork:": 6,
+        "com": 6,
+        "fix": 4,
+        "frontend": 4,
         "multi_agent": 3,
         "llm": 3,
         "automation": 3,
         "agent_framework": 3,
-        "research": 3
+        "research": 3,
+        "feb": 2,
+        "update": 2
       },
-      "baseline_topics": [
-        "multi_agent",
-        "llm",
-        "automation",
-        "agent_framework",
-        "research"
-      ],
-      "focus_hits_total": 1,
-      "update_count": 2,
+      "baseline_topics": [],
+      "focus_hits_total": 2,
+      "update_count": 3,
       "created_ts": "2026-02-23T15:20:59.539Z",
-      "updated_ts": "2026-02-23T15:21:01.056Z"
+      "updated_ts": "2026-02-23T22:54:36.316Z"
+    },
+    "proto_0d5097942d9a12e9": {
+      "eye_id": "proto_0d5097942d9a12e9",
+      "include_terms": [
+        "affiliate",
+        "product_launches",
+        "producthunt",
+        "launch",
+        "fallback",
+        "opportunity",
+        "agentflow",
+        "revenue",
+        "affiliateboard",
+        "com",
+        "collector",
+        "pro",
+        "flow",
+        "build"
+      ],
+      "exclude_terms": [],
+      "term_weights": {
+        "affiliate": 15,
+        "product_launches": 15,
+        "producthunt": 15,
+        "launch": 15,
+        "fallback": 15,
+        "opportunity": 15,
+        "agentflow": 13,
+        "revenue": 8,
+        "affiliateboard": 8,
+        "com": 8,
+        "collector": 8,
+        "pro": 6,
+        "flow": 6,
+        "build": 6
+      },
+      "baseline_topics": [],
+      "focus_hits_total": 1,
+      "update_count": 1,
+      "created_ts": "2026-02-23T22:54:36.316Z",
+      "updated_ts": "2026-02-23T22:54:36.316Z"
     }
   },
   "recent_focus_items": {
@@ -1988,19 +1911,9 @@
     "id:2e39ec89-c8fb-4e1a-a009-10f6918cc9d8": "2026-02-22T21:36:55.383Z",
     "id:1b010d61971a97d9": "2026-02-22T21:50:57.149Z",
     "id:72874f5cd78e31d1": "2026-02-22T21:50:57.149Z",
-    "id:005477b599084b35": "2026-02-22T10:07:17.431Z",
-    "id:34f15dbbd66d67aa": "2026-02-22T10:07:17.431Z",
-    "id:4e8f450b17be0c0b": "2026-02-22T10:07:55.206Z",
     "id:b7241cbd57481e60": "2026-02-22T22:17:07.422Z",
-    "id:24ddc3fdc6e6c900": "2026-02-22T10:07:20.220Z",
-    "id:2d3c6b9ebfd91d0b": "2026-02-22T10:07:20.220Z",
-    "id:eebfc31aa7576cab": "2026-02-22T10:07:22.294Z",
-    "id:3e0667b68779d8f3": "2026-02-22T10:07:22.294Z",
     "id:1bad8ee3de451e3a": "2026-02-22T22:03:28.718Z",
     "id:4abea8fc9d3954ea": "2026-02-22T22:03:28.718Z",
-    "id:0d20374b4e0e401b": "2026-02-22T10:07:53.888Z",
-    "id:4aa05610b97ac49c": "2026-02-22T10:07:53.888Z",
-    "id:a9aff61a53c6350e": "2026-02-22T10:07:55.206Z",
     "id:3bb887205f6e6de0": "2026-02-22T14:46:19.528Z",
     "id:3bcafdbbc1921d7f": "2026-02-22T14:46:19.528Z",
     "id:70685245b584a703": "2026-02-22T14:46:19.961Z",
@@ -2047,17 +1960,17 @@
     "anomalies": 40,
     "top_eyes": 0
   },
-  "last_lens_refresh_ts": "2026-02-23T15:20:59.539Z",
+  "last_lens_refresh_ts": "2026-02-23T22:54:36.316Z",
   "last_lens_refresh_sources": {
-    "recent_event_count": 926,
+    "recent_event_count": 1363,
     "recent_window_days": 2,
     "cross_signal_hypotheses": 240,
     "cross_signal_window_days": 2,
-    "catalog_eyes": 24
+    "catalog_eyes": 0
   },
   "stats": {
     "refresh_count": 13,
-    "lens_refresh_count": 8,
+    "lens_refresh_count": 9,
     "focused_items_total": 398,
     "last_focus_ts": "2026-02-23T17:23:42.596Z"
   }

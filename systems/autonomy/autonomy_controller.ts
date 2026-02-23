@@ -8496,6 +8496,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
   const candidateAuditLimit = clampNumber(Math.round(AUTONOMY_CANDIDATE_AUDIT_MAX_ROWS), 5, 200);
   const candidateRejectedByGate = {};
   const candidateAuditRows = [];
+  const budgetPacingState = budgetPacingSnapshot(dateStr);
   const candidateAuditPolicy = {
     strategy_id: strategy ? strategy.id : null,
     execution_mode: executionMode,
@@ -8543,7 +8544,8 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       enabled: AUTONOMY_BUDGET_PACING_ENABLED,
       min_remaining_ratio: AUTONOMY_BUDGET_PACING_MIN_REMAINING_RATIO,
       high_token_threshold: AUTONOMY_BUDGET_PACING_HIGH_TOKEN_THRESHOLD,
-      min_value_signal_score: AUTONOMY_BUDGET_PACING_MIN_VALUE_SIGNAL
+      min_value_signal_score: AUTONOMY_BUDGET_PACING_MIN_VALUE_SIGNAL,
+      snapshot: budgetPacingState
     },
     campaign_scheduler: {
       enabled: Array.isArray(strategy && strategy.campaigns) && strategy.campaigns.length > 0
@@ -8592,9 +8594,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       sample_events: 0,
       by_capability: {}
     };
-  const budgetPacingState = budgetPacingSnapshot(dateStr);
   candidateAuditPolicy.route_block_prefilter.sample_events = Number(routeBlockPrefilterTelemetry.sample_events || 0);
-  candidateAuditPolicy.budget_pacing.snapshot = budgetPacingState;
   for (const cand of pool) {
     const proposalId = String(cand && cand.proposal && cand.proposal.id || '');
     const proposalType = String(cand && cand.proposal && cand.proposal.type || '');
@@ -11721,9 +11721,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
           ok: true,
           code: 0,
           stdout: 'outcome_fallback_logged',
-          stderr: retryRes && retryRes.stderr ? String(retryRes.stderr) : '',
-          fallback_logged: true,
-          fallback_path: outcomeFallbackPath
+          stderr: retryRes && retryRes.stderr ? String(retryRes.stderr) : ''
         };
       } catch {
         outcome = 'reverted';

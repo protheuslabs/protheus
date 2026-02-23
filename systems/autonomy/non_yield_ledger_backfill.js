@@ -11,7 +11,7 @@ const AUTONOMY_DIR = process.env.AUTONOMY_STATE_DIR
 const RUNS_DIR = process.env.AUTONOMY_RUNS_DIR
   ? path.resolve(process.env.AUTONOMY_RUNS_DIR)
   : path.join(AUTONOMY_DIR, 'runs');
-const LEDGER_PATH = process.env.AUTONOMY_NON_YIELD_LEDGER_PATH
+const NON_YIELD_LEDGER_PATH = process.env.AUTONOMY_NON_YIELD_LEDGER_PATH
   ? path.resolve(process.env.AUTONOMY_NON_YIELD_LEDGER_PATH)
   : path.join(AUTONOMY_DIR, 'non_yield_ledger.jsonl');
 
@@ -269,7 +269,7 @@ function cardKey(card) {
 
 function existingLedgerKeys() {
   const keys = new Set();
-  const rows = readJsonl(LEDGER_PATH);
+  const rows = readJsonl(NON_YIELD_LEDGER_PATH);
   for (const row of rows) {
     if (!row || String(row.type || '') !== 'autonomy_non_yield') continue;
     keys.add(cardKey(row));
@@ -299,7 +299,7 @@ function backfill(endDateStr, days, write) {
     }
   }
   staged.sort((a, b) => String(a.ts || '').localeCompare(String(b.ts || '')));
-  if (write && staged.length > 0) appendJsonl(LEDGER_PATH, staged);
+  if (write && staged.length > 0) appendJsonl(NON_YIELD_LEDGER_PATH, staged);
   const categoryCounts = {};
   for (const card of staged) {
     const cat = String(card.category || 'unknown');
@@ -313,7 +313,7 @@ function backfill(endDateStr, days, write) {
     days,
     write: !!write,
     source_runs_dir: RUNS_DIR,
-    ledger_path: LEDGER_PATH,
+    ledger_path: NON_YIELD_LEDGER_PATH,
     counts: {
       scanned_runs: scanned,
       classified_runs: classified,

@@ -1,8 +1,8 @@
 {
   "type": "startup_attestation",
   "version": "1.0",
-  "ts": "2026-02-23T20:05:46.094Z",
-  "expires_at": "2026-02-24T20:05:46.095Z",
+  "ts": "2026-02-23T22:54:41.205Z",
+  "expires_at": "2026-02-24T22:54:41.206Z",
   "ttl_hours": 24,
   "policy_path": "config/startup_attestation_policy.json",
   "critical_hashes": [
@@ -23,8 +23,8 @@
     },
     {
       "path": "systems/autonomy/autonomy_controller.js",
-      "sha256": "5d8154276123114254d80c2f552561b7b71267764e127a5d667f1e9b17b2fa3f",
-      "size_bytes": 535078
+      "sha256": "143e09ae84af0a4a980da4c1fba16d7b8f7d0d2240025116487c69203b96e206",
+      "size_bytes": 566080
     },
     {
       "path": "systems/security/capability_lease.js",
@@ -53,5 +53,5 @@
     }
   ],
   "missing_paths": [],
-  "signature": "a7b8f2ff1ed500ef00c22b2bdc0ee0624425d08c37ba72d2214ea2a0296d52f1"
+  "signature": "dbe1cce6e412487b506c8a140885344efa1a89d46f8561e0e9a986884dd0098d"
 }

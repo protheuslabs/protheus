@@ -152,7 +152,7 @@ const VERIFICATION_PASS_RATE_WARN_MIN_ATTEMPTED = Number(
 );
 const VERIFICATION_PASS_RATE_CRITICAL_MIN_ATTEMPTED = Number(
   process.env.AUTONOMY_HEALTH_VERIFICATION_PASS_RATE_CRITICAL_MIN_ATTEMPTED
-  || Math.max(VERIFICATION_PASS_RATE_WARN_MIN_ATTEMPTED, 20)
+  || VERIFICATION_PASS_RATE_WARN_MIN_ATTEMPTED
 );
 const ROUTING_RECOVERY_WARN_HOURS = Number(process.env.AUTONOMY_HEALTH_ROUTING_RECOVERY_WARN_HOURS || 24);
 const ROUTING_RECOVERY_CRITICAL_HOURS = Number(process.env.AUTONOMY_HEALTH_ROUTING_RECOVERY_CRITICAL_HOURS || 72);
@@ -1631,7 +1631,7 @@ function assessVerificationPassRate(receiptSummaryResult, autonomyEnabled = true
   );
   const criticalMinAttempted = Math.max(
     warnMinAttempted,
-    Number(VERIFICATION_PASS_RATE_CRITICAL_MIN_ATTEMPTED || 20)
+    Number(VERIFICATION_PASS_RATE_CRITICAL_MIN_ATTEMPTED || warnMinAttempted)
   );
   const hasWarnSample = attempted >= warnMinAttempted;
   const hasCriticalSample = attempted >= criticalMinAttempted;

@@ -1,23 +1,15 @@
 # Approval Queue
-# Updated: 2026-02-23T21:10:01.960Z
+# Updated: 2026-02-23T23:10:39.414Z
 
 pending:
   - action_id: act_modegov_governor_test_score_only_to_canary_execute
-    timestamp: "2026-02-23T20:20:31.183Z"
+    timestamp: "2026-02-23T23:10:39.414Z"
     directive_id: T0_invariants
     type: strategy_mode_escalation
     summary: Promote strategy mode governor_test from score_only to canary_execute
-    reason: "Dual-control required for strategy mode escalation. Run: node systems/autonomy/strategy_mode.js set --mode=canary_execute --approval-note=\\\"<reason>\\\" --approver-id=<id> --second-approver-id=<id> --second-approval-note=\\\"<reason>\\\""
+    reason: "Dual-control required for strategy mode escalation. Run: node systems/autonomy/strategy_mode.js set --mode=canary_execute --approval-note=\"<reason>\" --approver-id=<id> --second-approver-id=<id> --second-approval-note=\"<reason>\""
     status: PENDING
     payload_pointer: act_modegov_governor_test_score_only_to_canary_execute
-  - action_id: act_autophagy_nyc-df7a3dcdfdc9_20260223
-    timestamp: "2026-02-23T21:10:01.960Z"
-    directive_id: T0_invariants
-    type: autophagy_policy_candidate
-    summary: "[Autophagy] policy_hold/daily_cap support=1 conf=0.700"
-    reason: "Replay gate pass. Guardrail: No change if policy_hold_rate increases in replay.. deltas(drift=-0.000421,yield=-0.000333,safety=0.000000). Human approval required before canary."
-    status: PENDING
-    payload_pointer: act_autophagy_nyc-df7a3dcdfdc9_20260223
 
 approved: []
 

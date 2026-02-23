@@ -90,7 +90,7 @@ function capabilityMetricContract(capabilityKey) {
   };
 }
 
-function parseSuccessCriteriaRows(proposal, opts = {}) {
+function parseSuccessCriteriaRows(proposal: any, opts: { capability_key?: string } = {}) {
   const p = proposal && typeof proposal === 'object' ? proposal : {};
   const capabilityKey = normalizeCapabilityKey(opts && opts.capability_key);
   const compiledRows = compileProposalSuccessCriteria(p, {

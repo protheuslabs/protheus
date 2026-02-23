@@ -1,7 +1,7 @@
 {
   "ok": true,
   "type": "autonomy_simulation_harness",
-  "ts": "2026-02-23T21:32:17.676Z",
+  "ts": "2026-02-23T22:33:26.567Z",
   "end_date": "2026-02-23",
   "days": 180,
   "verdict": "warn",
@@ -9,7 +9,7 @@
   "verdict_effective": "warn",
   "checks": {
     "drift_rate": {
-      "value": 0.243,
+      "value": 0.242,
       "warn": 0.65,
       "fail": 0.85,
       "status": "pass"
@@ -27,12 +27,12 @@
       "status": "pass"
     },
     "attempt_volume": {
-      "value": 214,
+      "value": 215,
       "min": 5,
       "status": "pass"
     },
     "policy_hold_rate": {
-      "value": 0.304,
+      "value": 0.307,
       "warn": 0.2,
       "fail": 0.35,
       "enforce_fail": false,
@@ -76,7 +76,7 @@
       "status": "pass"
     },
     "policy_hold_rate": {
-      "value": 0.389,
+      "value": 0.4,
       "warn": 0.2,
       "fail": 0.35,
       "enforce_fail": false,
@@ -100,25 +100,25 @@
     "baseline_preserved": true,
     "effective_projection_present": true,
     "denominator_reduction_only": true,
-    "denominator_delta": 119
+    "denominator_delta": 120
   },
   "counters": {
-    "run_rows": 229,
-    "attempts": 214,
+    "run_rows": 232,
+    "attempts": 215,
     "executed": 14,
     "shipped": 6,
     "no_progress": 52,
     "safety_stops": 4,
-    "policy_holds": 65,
+    "policy_holds": 66,
     "budget_holds": 7
   },
   "baseline_counters": {
-    "attempts": 214,
+    "attempts": 215,
     "executed": 14,
     "shipped": 6,
     "no_progress": 52,
     "safety_stops": 4,
-    "policy_holds": 65,
+    "policy_holds": 66,
     "budget_holds": 7
   },
   "effective_counters": {
@@ -127,19 +127,19 @@
     "shipped": 6,
     "no_progress": 3,
     "safety_stops": 0,
-    "policy_holds": 37,
+    "policy_holds": 38,
     "budget_holds": 7
   },
   "budget_autopause": {
     "path": "/Users/jay/.openclaw/workspace/state/autonomy/budget_autopause.json",
-    "active": true,
+    "active": false,
     "currently_active": false,
     "active_relevant": false,
     "source": "idle_dream_cycle",
     "reason": "burn_rate_exceeded",
     "pressure": "hard",
-    "until": "2026-02-23T21:31:05.075Z",
-    "updated_at": "2026-02-23T21:04:26.962Z",
+    "until": null,
+    "updated_at": "2026-02-23T22:19:56.807Z",
     "observed_in_window": true,
     "active_at_window_end": false,
     "signal_source": "route_summary.autopause",
@@ -155,7 +155,7 @@
     "rolling_context_enabled": false,
     "compiler_hash": "40cc5cf18353cd99",
     "compiler_active_count": 3,
-    "accepted_attempts": 132,
+    "accepted_attempts": 133,
     "rejected_attempts": 0,
     "skipped_attempts": 82,
     "rejected_by_reason": {},
