@@ -161,7 +161,7 @@ function runCycle(opts = {}) {
   const days = toInt(opts.days, 180, 1, 365);
   const queueEnabled = opts.queue_enabled === true;
   const write = opts.write !== false;
-  const artifactWrite = true;
+  const artifactWrite = write === true;
   const trial = trialSnapshotForDate(dateStr);
 
   const simulationCmd = ['systems/autonomy/autonomy_simulation_harness.js', 'run', dateStr, `--days=${days}`, `--write=${artifactWrite ? 1 : 0}`];
@@ -176,6 +176,15 @@ function runCycle(opts = {}) {
     '--strict'
   ]);
   if (!baselineCheck.ok) return { ok: false, stage: 'baseline_check', error: baselineCheck };
+
+  const backfill = runJson([
+    'systems/autonomy/non_yield_ledger_backfill.js',
+    artifactWrite ? 'run' : 'status',
+    dateStr,
+    `--days=${days}`,
+    `--write=${artifactWrite ? 1 : 0}`
+  ]);
+  if (!backfill.ok) return { ok: false, stage: 'backfill', error: backfill };
 
   const harvest = runJson([
     'systems/autonomy/non_yield_harvest.js',
@@ -234,6 +243,14 @@ function runCycle(opts = {}) {
         ok: baselineCheck.payload && baselineCheck.payload.ok === true,
         failures: baselineCheck.payload && baselineCheck.payload.failures || []
       },
+      backfill: {
+        inserted_rows: backfill.payload && backfill.payload.counts ? Number(backfill.payload.counts.inserted_rows || 0) : 0,
+        scanned_runs: backfill.payload && backfill.payload.counts ? Number(backfill.payload.counts.scanned_runs || 0) : 0,
+        classified_runs: backfill.payload && backfill.payload.counts ? Number(backfill.payload.counts.classified_runs || 0) : 0,
+        inserted_by_category: backfill.payload && backfill.payload.inserted_by_category && typeof backfill.payload.inserted_by_category === 'object'
+          ? backfill.payload.inserted_by_category
+          : {}
+      },
       harvest: {
         candidates: harvest.payload && harvest.payload.counts ? Number(harvest.payload.counts.candidates || 0) : 0,
         report_path: harvest.payload && harvest.payload.report_path || null
@@ -267,17 +284,18 @@ function main() {
     return;
   }
   const dateStr = resolveDate(args);
+  const writeEnabled = String(args.write == null ? (cmd === 'run' ? '1' : '0') : args.write).trim() !== '0';
   const out = runCycle({
     date: dateStr,
     days: args.days,
     queue_enabled: String(args.queue == null ? (cmd === 'run' ? '1' : '0') : args.queue).trim() !== '0',
-    write: String(args.write == null ? '1' : args.write).trim() !== '0'
+    write: writeEnabled
   });
   if (!out.ok) {
     process.stdout.write(JSON.stringify(out, null, 2) + '\n');
     process.exit(1);
   }
-  if (cmd === 'run' && String(args.write == null ? '1' : args.write).trim() !== '0') {
+  if (cmd === 'run' && writeEnabled) {
     out.report_path = writeOutput(out);
   }
   process.stdout.write(JSON.stringify(out, null, 2) + '\n');
