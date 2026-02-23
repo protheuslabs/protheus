@@ -1537,6 +1537,20 @@ function parseIsoTs(ts) {
   return isNaN(d.getTime()) ? null : d;
 }
 
+function isPolicyHoldResult(result) {
+  const r = String(result || '').trim();
+  if (!r) return false;
+  return r.startsWith('no_candidates_policy_')
+    || r === 'score_only_fallback_route_block'
+    || r === 'score_only_fallback_low_execution_confidence';
+}
+
+function isPolicyHoldRunEvent(evt) {
+  if (!evt || evt.type !== 'autonomy_run') return false;
+  if (evt.policy_hold === true) return true;
+  return isPolicyHoldResult(evt.result);
+}
+
 function isRecentTsWithin(ts, minutes) {
   const t = parseIsoTs(ts);
   if (!t) return false;
@@ -1576,6 +1590,38 @@ function setCooldown(proposalId, hours, reason) {
     reason: String(reason || '').slice(0, 200)
   };
   saveJson(COOLDOWNS_PATH, cooldowns);
+}
+
+function cooldownEntry(proposalId) {
+  const cooldowns = getCooldowns();
+  const ent = cooldowns[proposalId];
+  if (!ent) return null;
+  const untilMs = Number(ent.until_ms || 0);
+  if (!untilMs || Date.now() > untilMs) {
+    delete cooldowns[proposalId];
+    saveJson(COOLDOWNS_PATH, cooldowns);
+    return null;
+  }
+  return {
+    until_ms: untilMs,
+    until: String(ent.until || ''),
+    reason: String(ent.reason || ''),
+    set_ts: String(ent.set_ts || '')
+  };
+}
+
+function nextGlobalCooldownClearAt() {
+  const cooldowns = getCooldowns();
+  let minUntil = null;
+  const nowMs = Date.now();
+  for (const key of Object.keys(cooldowns || {})) {
+    const row = cooldowns[key];
+    const untilMs = Number(row && row.until_ms || 0);
+    if (!Number.isFinite(untilMs) || untilMs <= nowMs) continue;
+    if (minUntil == null || untilMs < minUntil) minUntil = untilMs;
+  }
+  if (minUntil == null) return null;
+  return new Date(minUntil).toISOString();
 }
 
 function cooldownActive(proposalId) {
@@ -1648,6 +1694,7 @@ function readRuns(dateStr) {
 
 function isNoProgressRun(evt) {
   if (!evt || evt.type !== 'autonomy_run') return false;
+  if (isPolicyHoldRunEvent(evt)) return false;
   if (evt.result === 'executed') return evt.outcome !== 'shipped';
   return evt.result === 'init_gate_stub'
     || evt.result === 'init_gate_low_score'
@@ -1690,6 +1737,7 @@ function runsSinceReset(events) {
 
 function isAttemptRunEvent(evt) {
   if (!evt || evt.type !== 'autonomy_run') return false;
+  if (isPolicyHoldRunEvent(evt)) return false;
   return evt.result === 'executed'
     || evt.result === 'init_gate_stub'
     || evt.result === 'init_gate_low_score'
@@ -1780,6 +1828,7 @@ function scoreOnlyProposalChurn(priorRuns, proposalId, windowHours) {
 
 function isGateExhaustedAttempt(evt) {
   if (!evt || evt.type !== 'autonomy_run') return false;
+  if (isPolicyHoldRunEvent(evt)) return false;
   return evt.result === 'stop_repeat_gate_stale_signal'
     || evt.result === 'stop_repeat_gate_capability_cap'
     || evt.result === 'stop_repeat_gate_directive_pulse_cooldown'
@@ -8469,6 +8518,8 @@ function runCmd(dateStr, opts = {}) {
           type: 'autonomy_run',
           result: 'no_candidates_policy_manual_review_pending',
           legacy_result: 'stop_repeat_gate_human_escalation_pending',
+          policy_hold: true,
+          hold_scope: 'global',
           active_count: activeEscalations.length,
           hold_hours: Math.max(1, Number(AUTONOMY_HUMAN_ESCALATION_HOLD_HOURS || 6)),
           reconcile: escalationReconcile
@@ -8485,6 +8536,8 @@ function runCmd(dateStr, opts = {}) {
         ok: true,
         result: 'no_candidates_policy_manual_review_pending',
         legacy_result: 'stop_repeat_gate_human_escalation_pending',
+        policy_hold: true,
+        hold_scope: 'global',
         deduped,
         dedupe_window_minutes: dedupeWindowMinutes,
         active_count: activeEscalations.length,
@@ -10049,18 +10102,25 @@ function runCmd(dateStr, opts = {}) {
       && skipStats.directive_pulse_cooldown === 0
       && skipStats.objective_binding === 0
     ) {
+      const nextClearAt = nextGlobalCooldownClearAt();
       writeRun(dateStr, {
         ts: nowIso(),
         type: 'autonomy_run',
         result: 'stop_repeat_gate_capability_cooldown',
+        policy_hold: true,
+        hold_scope: 'cooldown',
         skipped_capability_cooldown: skipStats.capability_cooldown,
-        sample_capability_cooldown: sampleCapabilityCooldown
+        sample_capability_cooldown: sampleCapabilityCooldown,
+        next_clear_at: nextClearAt
       });
       process.stdout.write(JSON.stringify({
         ok: true,
         result: 'stop_repeat_gate_capability_cooldown',
+        policy_hold: true,
+        hold_scope: 'cooldown',
         skipped_capability_cooldown: skipStats.capability_cooldown,
         sample_capability_cooldown: sampleCapabilityCooldown,
+        next_clear_at: nextClearAt,
         ts: nowIso()
       }) + '\n');
       return;
@@ -10135,7 +10195,8 @@ function runCmd(dateStr, opts = {}) {
       sample_medium_policy_blocked: sampleMediumPolicyBlocked,
       sample_medium_daily_cap: sampleMediumDailyCap,
       sample_directive_pulse_cooldown: sampleDirectivePulseCooldown,
-      sample_objective_runtime: sampleObjectiveRuntime
+      sample_objective_runtime: sampleObjectiveRuntime,
+      next_clear_at: skipStats.capability_cooldown > 0 ? nextGlobalCooldownClearAt() : null
     });
     process.stdout.write(JSON.stringify({
       ok: true,
@@ -10170,6 +10231,7 @@ function runCmd(dateStr, opts = {}) {
       sample_medium_daily_cap: sampleMediumDailyCap,
       sample_directive_pulse_cooldown: sampleDirectivePulseCooldown,
       sample_objective_runtime: sampleObjectiveRuntime,
+      next_clear_at: skipStats.capability_cooldown > 0 ? nextGlobalCooldownClearAt() : null,
       ts: nowIso()
     }) + '\n');
     return;
@@ -10396,11 +10458,15 @@ function runCmd(dateStr, opts = {}) {
         const reason = `auto:score_only_structural_criteria cooldown_${AUTONOMY_SCORE_ONLY_STRUCTURAL_COOLDOWN_HOURS}h`;
         runProposalQueue('park', p.id, reason);
         setCooldown(p.id, AUTONOMY_SCORE_ONLY_STRUCTURAL_COOLDOWN_HOURS, reason);
+        const cooldown = cooldownEntry(p.id);
+        const nextClearAt = cooldown ? (cooldown.until || null) : null;
         writeRun(dateStr, {
           ts: nowIso(),
           type: 'autonomy_run',
           result: 'no_candidates_policy_preview_structural_hold',
           legacy_result: 'stop_repeat_gate_preview_structural_cooldown',
+          policy_hold: true,
+          hold_scope: 'proposal',
           proposal_id: p.id,
           objective_id: executionObjectiveId || null,
           proposal_date: proposalDate,
@@ -10413,16 +10479,20 @@ function runCmd(dateStr, opts = {}) {
           preview_receipt_id: previewReceiptId,
           preview_verification: previewVerification,
           cooldown_hours: AUTONOMY_SCORE_ONLY_STRUCTURAL_COOLDOWN_HOURS,
+          next_clear_at: nextClearAt,
           reason
         });
         process.stdout.write(JSON.stringify({
           ok: true,
           result: 'no_candidates_policy_preview_structural_hold',
           legacy_result: 'stop_repeat_gate_preview_structural_cooldown',
+          policy_hold: true,
+          hold_scope: 'proposal',
           proposal_id: p.id,
           capability_key: capabilityKey,
           preview_receipt_id: previewReceiptId,
           cooldown_hours: AUTONOMY_SCORE_ONLY_STRUCTURAL_COOLDOWN_HOURS,
+          next_clear_at: nextClearAt,
           reason,
           ts: nowIso()
         }) + '\n');
@@ -11026,6 +11096,10 @@ function runCmd(dateStr, opts = {}) {
       && isExecuteMode(executionMode)
       && executionTarget === 'route'
     ) {
+      const fallbackHoldReason = `auto:route_block_score_only_hold cooldown_${AUTONOMY_ROUTE_BLOCK_COOLDOWN_HOURS}h`;
+      setCooldown(p.id, AUTONOMY_ROUTE_BLOCK_COOLDOWN_HOURS, fallbackHoldReason);
+      const fallbackCooldown = cooldownEntry(p.id);
+      const fallbackNextClearAt = fallbackCooldown ? (fallbackCooldown.until || null) : null;
       const preflightException = trackTier1Exception(
         dateStr,
         `preflight_${executionTarget}`,
@@ -11053,6 +11127,8 @@ function runCmd(dateStr, opts = {}) {
         type: 'autonomy_run',
         result: 'score_only_fallback_route_block',
         legacy_result: 'init_gate_blocked_route',
+        policy_hold: true,
+        hold_scope: 'proposal',
         proposal_id: p.id,
         objective_id: executionObjectiveId || null,
         proposal_date: proposalDate,
@@ -11062,6 +11138,9 @@ function runCmd(dateStr, opts = {}) {
         route_summary: preSummary,
         route_code: preflight.code,
         route_self_heal: routeSelfHeal,
+        cooldown_hours: AUTONOMY_ROUTE_BLOCK_COOLDOWN_HOURS,
+        next_clear_at: fallbackNextClearAt,
+        hold_reason: fallbackHoldReason,
         token_usage: preTokenUsage,
         exception_novelty: preflightException
       });
@@ -11069,6 +11148,8 @@ function runCmd(dateStr, opts = {}) {
         ok: true,
         result: 'score_only_fallback_route_block',
         legacy_result: 'init_gate_blocked_route',
+        policy_hold: true,
+        hold_scope: 'proposal',
         proposal_id: p.id,
         objective_id: executionObjectiveId || null,
         capability_key: capabilityKey,
@@ -11077,6 +11158,9 @@ function runCmd(dateStr, opts = {}) {
         route_summary: preSummary,
         route_code: preflight.code,
         route_self_heal: routeSelfHeal,
+        cooldown_hours: AUTONOMY_ROUTE_BLOCK_COOLDOWN_HOURS,
+        next_clear_at: fallbackNextClearAt,
+        hold_reason: fallbackHoldReason,
         token_usage: preTokenUsage,
         exception_novelty: preflightException,
         ts: nowIso()
@@ -11107,10 +11191,14 @@ function runCmd(dateStr, opts = {}) {
     });
     const reason = `auto:init_gate ${blockReason} cooldown_${AUTONOMY_ROUTE_BLOCK_COOLDOWN_HOURS}h`;
     setCooldown(p.id, AUTONOMY_ROUTE_BLOCK_COOLDOWN_HOURS, reason);
+    const routeCooldown = cooldownEntry(p.id);
+    const routeNextClearAt = routeCooldown ? (routeCooldown.until || null) : null;
     writeRun(dateStr, {
       ts: nowIso(),
       type: 'autonomy_run',
       result: 'init_gate_blocked_route',
+      policy_hold: true,
+      hold_scope: 'proposal',
       receipt_id: receiptId,
       proposal_id: p.id,
       objective_id: executionObjectiveId || null,
@@ -11123,6 +11211,8 @@ function runCmd(dateStr, opts = {}) {
       token_usage: preTokenUsage,
       route_code: preflight.code,
       route_block_reason: blockReason,
+      cooldown_hours: AUTONOMY_ROUTE_BLOCK_COOLDOWN_HOURS,
+      next_clear_at: routeNextClearAt,
       exception_novelty: preflightException,
       route_self_heal: routeSelfHeal,
       repeats_14d: repeats14d,
@@ -11196,6 +11286,8 @@ function runCmd(dateStr, opts = {}) {
     process.stdout.write(JSON.stringify({
       ok: true,
       result: 'init_gate_blocked_route',
+      policy_hold: true,
+      hold_scope: 'proposal',
       receipt_id: receiptId,
       proposal_id: p.id,
       objective_id: executionObjectiveId || null,
@@ -11203,6 +11295,8 @@ function runCmd(dateStr, opts = {}) {
       execution_target: executionTarget,
       directive_pulse: directivePulse,
       route_block_reason: blockReason,
+      cooldown_hours: AUTONOMY_ROUTE_BLOCK_COOLDOWN_HOURS,
+      next_clear_at: routeNextClearAt,
       exception_novelty: preflightException,
       route_self_heal: routeSelfHeal,
       route_summary: preSummary,

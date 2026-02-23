@@ -182,8 +182,19 @@ function worstVerdict(a, b) {
   return av >= bv ? String(a || 'pass') : String(b || 'pass');
 }
 
+function isPolicyHoldEvent(evt) {
+  if (!evt || evt.type !== 'autonomy_run') return false;
+  if (evt.policy_hold === true) return true;
+  const result = String(evt.result || '');
+  if (!result) return false;
+  return result.startsWith('no_candidates_policy_')
+    || result === 'score_only_fallback_route_block'
+    || result === 'score_only_fallback_low_execution_confidence';
+}
+
 function isAttemptRun(evt) {
   if (!evt || evt.type !== 'autonomy_run') return false;
+  if (isPolicyHoldEvent(evt)) return false;
   const result = String(evt.result || '');
   if (!result) return false;
   if (result === 'lock_busy' || result === 'stop_repeat_gate_interval') return false;
@@ -192,6 +203,7 @@ function isAttemptRun(evt) {
 
 function isNoProgress(evt) {
   if (!evt || evt.type !== 'autonomy_run') return false;
+  if (isPolicyHoldEvent(evt)) return false;
   if (evt.result === 'executed') return String(evt.outcome || '') !== 'shipped';
   const result = String(evt.result || '');
   return result.startsWith('stop_') || result.startsWith('init_gate_');
