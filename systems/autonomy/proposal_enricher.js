@@ -51,6 +51,12 @@ const DREAM_REM_RUN_FILE_LIMIT = clamp(Number(process.env.PROPOSAL_ENRICHER_DREA
 const DREAM_REM_SYNTHESIS_WEIGHT_SCALE = clamp(Number(process.env.PROPOSAL_ENRICHER_DREAM_REM_SYNTHESIS_WEIGHT_SCALE || 0.5), 0.25, 1);
 const DREAM_REM_BONUS_CAP = clamp(Number(process.env.AUTONOMY_DREAM_REM_BONUS_CAP || 2), 0, 4);
 const DREAM_MAX_SOURCE_UIDS = clamp(Number(process.env.PROPOSAL_ENRICHER_DREAM_MAX_SOURCE_UIDS || 24), 8, 128);
+const ALIGNMENT_PRESSURE_PATH = process.env.AUTONOMY_ALIGNMENT_PRESSURE_PATH
+  ? path.resolve(process.env.AUTONOMY_ALIGNMENT_PRESSURE_PATH)
+  : path.join(ROOT, 'state', 'autonomy', 'alignment_oracle', 'pressure.json');
+const ALIGNMENT_DEFICIT_MIN_RATIO = clamp(Number(process.env.AUTONOMY_ALIGNMENT_DEFICIT_MIN_RATIO || 0.05), 0, 1);
+const ALIGNMENT_DEFICIT_MAX_FIT_BONUS = clamp(Number(process.env.AUTONOMY_ALIGNMENT_DEFICIT_MAX_FIT_BONUS || 8), 0, 20);
+const ALIGNMENT_DEFICIT_MAX_RANK_BONUS = clamp(Number(process.env.AUTONOMY_ALIGNMENT_DEFICIT_MAX_RANK_BONUS || 12), 0, 30);
 
 const FIT_STOPWORDS = new Set([
   'the', 'and', 'for', 'with', 'from', 'into', 'through', 'that', 'this', 'those', 'these', 'your', 'you',
@@ -391,6 +397,43 @@ function loadDreamSignals(dateStr) {
       rem: fs.existsSync(remPath),
       rem_runs: remRunPaths.map((fp) => path.basename(fp))
     }
+  };
+}
+
+function loadAlignmentPressure() {
+  const raw = readJsonSafe(ALIGNMENT_PRESSURE_PATH, null);
+  if (!raw || typeof raw !== 'object') {
+    return {
+      available: false,
+      active: false,
+      date: null,
+      deficit_ratio: 0,
+      threshold: null,
+      score: null,
+      focus_objective_ids: []
+    };
+  }
+  const threshold = Number(raw.threshold);
+  const score = Number(raw.score);
+  const explicitRatio = Number(raw.deficit_ratio);
+  const derivedRatio = Number.isFinite(threshold) && threshold > 0 && Number.isFinite(score)
+    ? Math.max(0, Math.min(1, (threshold - score) / threshold))
+    : 0;
+  const ratio = Number.isFinite(explicitRatio)
+    ? Math.max(0, Math.min(1, explicitRatio))
+    : derivedRatio;
+  const focusObjectiveIds = Array.isArray(raw.focus_objective_ids)
+    ? raw.focus_objective_ids.map((v) => normalizeText(v)).filter(Boolean).slice(0, 64)
+    : [];
+  const active = raw.active === true && ratio >= ALIGNMENT_DEFICIT_MIN_RATIO;
+  return {
+    available: true,
+    active,
+    date: normalizeText(raw.date) || null,
+    deficit_ratio: Number(ratio.toFixed(4)),
+    threshold: Number.isFinite(threshold) ? Number(threshold) : null,
+    score: Number.isFinite(score) ? Number(score) : null,
+    focus_objective_ids: focusObjectiveIds
   };
 }
 
@@ -1335,6 +1378,65 @@ function assessDreamAlignment(proposal, dreamSignals) {
   };
 }
 
+function assessAlignmentDeficitBoost(proposal, pressure, objectiveBinding) {
+  const p = proposal && typeof proposal === 'object' ? proposal : {};
+  const src = pressure && typeof pressure === 'object' ? pressure : {};
+  const ratio = clamp(Number(src.deficit_ratio || 0), 0, 1);
+  const focus = Array.isArray(src.focus_objective_ids) ? src.focus_objective_ids : [];
+  const objectiveId = normalizeText(
+    objectiveBinding && objectiveBinding.objective_id
+      ? objectiveBinding.objective_id
+      : (p.meta && (p.meta.objective_id || p.meta.directive_objective_id))
+  );
+  const objectiveMatch = focus.length === 0 || (objectiveId && focus.includes(objectiveId));
+  const risk = normalizedRisk(p && p.risk);
+  const riskMultiplier = risk === 'high' ? 0.5 : (risk === 'medium' ? 0.75 : 1);
+
+  if (src.active !== true || ratio < ALIGNMENT_DEFICIT_MIN_RATIO) {
+    return {
+      available: src.available === true,
+      active: false,
+      objective_match: objectiveMatch,
+      objective_id: objectiveId || null,
+      deficit_ratio: Number(ratio.toFixed(4)),
+      fit_bonus: 0,
+      rank_bonus: 0,
+      reasons: ['alignment_deficit_inactive']
+    };
+  }
+  if (!objectiveMatch) {
+    return {
+      available: true,
+      active: true,
+      objective_match: false,
+      objective_id: objectiveId || null,
+      deficit_ratio: Number(ratio.toFixed(4)),
+      fit_bonus: 0,
+      rank_bonus: 0,
+      reasons: ['alignment_objective_not_in_focus']
+    };
+  }
+
+  const fitBonus = clamp(Math.round(ratio * ALIGNMENT_DEFICIT_MAX_FIT_BONUS * riskMultiplier), 0, ALIGNMENT_DEFICIT_MAX_FIT_BONUS);
+  const rankBonus = clamp(Math.round(ratio * ALIGNMENT_DEFICIT_MAX_RANK_BONUS * riskMultiplier), 0, ALIGNMENT_DEFICIT_MAX_RANK_BONUS);
+  const reasons = [];
+  if (fitBonus > 0) reasons.push('alignment_deficit_fit_bonus_applied');
+  if (rankBonus > 0) reasons.push('alignment_deficit_rank_bonus_applied');
+  if (riskMultiplier < 1) reasons.push(`alignment_risk_scaled:${risk}`);
+  if (!reasons.length) reasons.push('alignment_deficit_no_bonus');
+
+  return {
+    available: true,
+    active: true,
+    objective_match: true,
+    objective_id: objectiveId || null,
+    deficit_ratio: Number(ratio.toFixed(4)),
+    fit_bonus: fitBonus,
+    rank_bonus: rankBonus,
+    reasons
+  };
+}
+
 function assessActionability(proposal, directiveFitScore, relevanceScore, outcomePolicy) {
   const p = proposal || {};
   const proposalType = normalizeText(p.type).toLowerCase();
@@ -1542,6 +1644,7 @@ function enrichOne(proposal, ctx) {
   const typeThresholds = applyTypeThresholds(ctx.thresholds, proposalType, ctx.outcomePolicy);
   const t = typeThresholds.thresholds;
   const objectiveBinding = resolveObjectiveBinding(p, ctx.directiveObjectiveIds);
+  const alignmentDeficit = assessAlignmentDeficitBoost(p, ctx.alignmentPressure, objectiveBinding);
 
   let q = assessQuality(p, eye, t);
   const crossSignalDecay = crossSignalNoChangeDecay(p, ctx);
@@ -1557,10 +1660,11 @@ function enrichOne(proposal, ctx) {
   }
   const dream = assessDreamAlignment(p, ctx.dreamSignals);
   const d0 = assessDirectiveFit(p, ctx.directiveProfile, t);
+  const fitBonus = Number(dream.directive_bonus || 0) + Number(alignmentDeficit.fit_bonus || 0);
   const d = {
     ...d0,
     base_score: d0.score,
-    score: clamp(Math.round(Number(d0.score || 0) + Number(dream.directive_bonus || 0)), 0, 100)
+    score: clamp(Math.round(Number(d0.score || 0) + fitBonus), 0, 100)
   };
   const relevance = clamp(Math.round((q.score * 0.55) + (d.score * 0.45)), 0, 100);
   const a = assessActionability(p, d.score, relevance, ctx.outcomePolicy);
@@ -1644,7 +1748,15 @@ function enrichOne(proposal, ctx) {
     dream_alignment_sources: dream.matched_sources,
     dream_alignment_source_uids: dream.matched_source_uids,
     dream_alignment_reasons: dream.reasons,
-    relevance_reasons: uniq([...q.reasons, ...d.reasons, ...dream.reasons]).slice(0, 10),
+    alignment_deficit_available: alignmentDeficit.available === true,
+    alignment_deficit_active: alignmentDeficit.active === true,
+    alignment_deficit_ratio: Number(alignmentDeficit.deficit_ratio || 0),
+    alignment_deficit_objective_match: alignmentDeficit.objective_match === true,
+    alignment_deficit_objective_id: alignmentDeficit.objective_id || null,
+    alignment_deficit_fit_bonus: Number(alignmentDeficit.fit_bonus || 0),
+    alignment_deficit_rank_bonus: Number(alignmentDeficit.rank_bonus || 0),
+    alignment_deficit_reasons: Array.isArray(alignmentDeficit.reasons) ? alignmentDeficit.reasons.slice(0, 6) : [],
+    relevance_reasons: uniq([...q.reasons, ...d.reasons, ...dream.reasons, ...(alignmentDeficit.reasons || [])]).slice(0, 12),
     actionability_score: a.score,
     actionability_pass: a.score >= t.min_actionability_score,
     actionability_reasons: a.reasons.slice(0, 6),
@@ -1916,6 +2028,7 @@ function runForDate(dateStr, dryRun = false) {
 
   const directiveProfile = loadDirectiveProfile();
   const dreamSignals = loadDreamSignals(dateStr);
+  const alignmentPressure = loadAlignmentPressure();
   const ctx = {
     eyes: loadEyesMap(),
     directiveProfile,
@@ -1924,6 +2037,7 @@ function runForDate(dateStr, dryRun = false) {
     thresholds: thresholds(),
     outcomePolicy: loadOutcomeFitnessPolicy(ROOT),
     dreamSignals,
+    alignmentPressure,
     cross_signal_no_change: loadCrossSignalNoChangeTopicCounts(dateStr)
   };
 
@@ -1972,6 +2086,17 @@ function runForDate(dateStr, dryRun = false) {
     objective_binding: objectiveBindingSummary,
     dream_alignment: dreamAlignmentSummary
     ,
+    alignment_pressure: {
+      available: alignmentPressure.available === true,
+      active: alignmentPressure.active === true,
+      date: alignmentPressure.date || null,
+      deficit_ratio: Number(alignmentPressure.deficit_ratio || 0),
+      threshold: alignmentPressure.threshold,
+      score: alignmentPressure.score,
+      focus_objective_ids: Array.isArray(alignmentPressure.focus_objective_ids)
+        ? alignmentPressure.focus_objective_ids.slice(0, 12)
+        : []
+    },
     cross_signal_no_change: {
       window_days: Number(ctx.cross_signal_no_change && ctx.cross_signal_no_change.window_days || CROSS_SIGNAL_NO_CHANGE_WINDOW_DAYS),
       topics: Array.from((ctx.cross_signal_no_change && ctx.cross_signal_no_change.counts && ctx.cross_signal_no_change.counts.entries()) || [])

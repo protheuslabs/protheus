@@ -4103,6 +4103,43 @@ function cmdWarmup() {
   });
 }
 
+function cmdSelfHeal() {
+  const reason = String(parseArg("reason") || "self_heal").trim().slice(0, 120);
+  const force = parseBoolArg("force", true);
+  const maxProbesRaw = Number(parseArg("max-probes"));
+  const maxProbes = Number.isFinite(maxProbesRaw)
+    ? Math.max(1, Math.min(6, Math.round(maxProbesRaw)))
+    : LOCAL_WARMUP_MAX_PROBES;
+  const cfg = readConfig();
+  const allowlist = modelsFromAllowlist(cfg);
+  const hardwarePlan = resolveHardwarePlan(cfg, allowlist);
+  const hardwareFilterActive = localHardwareFilterEnabled(hardwarePlan);
+  const eligibleLocals = effectiveLocalModelSet(hardwarePlan);
+  const localModelAllowed = (modelId) => {
+    if (!isLocalOllamaModel(modelId)) return true;
+    if (!hardwareFilterActive) return true;
+    return eligibleLocals.has(String(modelId || ""));
+  };
+  const warmup = runPeriodicLocalWarmup({
+    allowlist,
+    localModelAllowed,
+    reason: `self_heal:${reason || "unknown"}`,
+    force,
+    maxProbes
+  });
+  printJson({
+    ok: true,
+    type: "router_self_heal",
+    ts: nowIso(),
+    reason,
+    force,
+    max_probes: maxProbes,
+    recovered_count: Number(warmup && warmup.recovered_count || 0),
+    probe_count: Number(warmup && warmup.probe_count || 0),
+    warmup
+  });
+}
+
 function main() {
   const cmd = process.argv[2] || "";
   if (cmd === "route") return cmdRoute();
@@ -4115,6 +4152,7 @@ function main() {
   if (cmd === "cache-summary") return cmdCacheSummary();
   if (cmd === "hardware-plan") return cmdHardwarePlan();
   if (cmd === "warmup") return cmdWarmup();
+  if (cmd === "self-heal") return cmdSelfHeal();
 
   console.log("Usage:");
   console.log("  node systems/routing/model_router.js route --risk=low|medium|high --complexity=low|medium|high [--intent=..] [--task=..] [--tokens_est=N] [--capability=..] [--mode=normal|narrative|creative|hyper-creative|deep-thinker] [--role=..] [--route_class=..]");
@@ -4127,6 +4165,7 @@ function main() {
   console.log("  node systems/routing/model_router.js cache-summary [--for-routing=1|0] [--risk=low|medium|high] [--complexity=low|medium|high] [--intent=..] [--task=..] [--capability=..]");
   console.log("  node systems/routing/model_router.js hardware-plan");
   console.log("  node systems/routing/model_router.js warmup [--force=1] [--max-probes=N]");
+  console.log("  node systems/routing/model_router.js self-heal [--reason=..] [--force=1] [--max-probes=N]");
 }
 
 if (require.main === module) main();
