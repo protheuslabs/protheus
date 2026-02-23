@@ -129,9 +129,6 @@ const RECEIPTS_DIR = process.env.AUTONOMY_RECEIPTS_DIR
 const COOLDOWNS_PATH = process.env.AUTONOMY_COOLDOWNS_PATH
   ? path.resolve(process.env.AUTONOMY_COOLDOWNS_PATH)
   : path.join(AUTONOMY_DIR, 'cooldowns.json');
-const MANUAL_ROUTE_QUARANTINE_PATH = process.env.AUTONOMY_MANUAL_ROUTE_QUARANTINE_PATH
-  ? path.resolve(process.env.AUTONOMY_MANUAL_ROUTE_QUARANTINE_PATH)
-  : path.join(AUTONOMY_DIR, 'manual_route_quarantine.json');
 const CALIBRATION_PATH = process.env.AUTONOMY_CALIBRATION_PATH
   ? path.resolve(process.env.AUTONOMY_CALIBRATION_PATH)
   : path.join(AUTONOMY_DIR, 'calibration.json');
@@ -172,8 +169,6 @@ const REVERT_COOLDOWN_HOURS = Number(process.env.AUTONOMY_REVERT_COOLDOWN_HOURS 
 const AUTONOMY_REPEAT_NO_PROGRESS_LIMIT = Number(process.env.AUTONOMY_REPEAT_NO_PROGRESS_LIMIT || 2);
 const AUTONOMY_MIN_PROPOSAL_SCORE = Number(process.env.AUTONOMY_MIN_PROPOSAL_SCORE || 0);
 const AUTONOMY_ROUTE_BLOCK_COOLDOWN_HOURS = Number(process.env.AUTONOMY_ROUTE_BLOCK_COOLDOWN_HOURS || 12);
-const AUTONOMY_MANUAL_ROUTE_QUARANTINE_HOURS = Math.max(1, Number(process.env.AUTONOMY_MANUAL_ROUTE_QUARANTINE_HOURS || 72));
-const AUTONOMY_MANUAL_ROUTE_QUARANTINE_REQUIRE_TOKEN = String(process.env.AUTONOMY_MANUAL_ROUTE_QUARANTINE_REQUIRE_TOKEN || '1') !== '0';
 const AUTONOMY_ROUTE_BLOCK_SELF_HEAL_ENABLED = String(process.env.AUTONOMY_ROUTE_BLOCK_SELF_HEAL_ENABLED || '1') !== '0';
 const AUTONOMY_ROUTE_BLOCK_SELF_HEAL_MAX_PROBES = Math.max(1, Math.min(6, Number(process.env.AUTONOMY_ROUTE_BLOCK_SELF_HEAL_MAX_PROBES || 2)));
 const AUTONOMY_ROUTE_BLOCK_FALLBACK_SCORE_ONLY = String(process.env.AUTONOMY_ROUTE_BLOCK_FALLBACK_SCORE_ONLY || '1') !== '0';
@@ -295,10 +290,6 @@ const AUTONOMY_MEDIUM_RISK_NO_CHANGE_COOLDOWN_HOURS = Number(process.env.AUTONOM
 const AUTONOMY_MEDIUM_RISK_REVERT_COOLDOWN_HOURS = Number(process.env.AUTONOMY_MEDIUM_RISK_REVERT_COOLDOWN_HOURS || 48);
 const AUTONOMY_MIN_VALUE_SIGNAL_SCORE = Number(process.env.AUTONOMY_MIN_VALUE_SIGNAL_SCORE || 45);
 const AUTONOMY_MEDIUM_RISK_VALUE_SIGNAL_BONUS = Number(process.env.AUTONOMY_MEDIUM_RISK_VALUE_SIGNAL_BONUS || 8);
-const AUTONOMY_EXECUTE_READINESS_GATE_ENABLED = String(process.env.AUTONOMY_EXECUTE_READINESS_GATE_ENABLED || '1') !== '0';
-const AUTONOMY_TEMPLATE_NO_CHANGE_WINDOW_DAYS = clampNumber(Number(process.env.AUTONOMY_TEMPLATE_NO_CHANGE_WINDOW_DAYS || 14), 1, 60);
-const AUTONOMY_TEMPLATE_NO_CHANGE_MIN_SETTLEMENTS = Math.max(1, Number(process.env.AUTONOMY_TEMPLATE_NO_CHANGE_MIN_SETTLEMENTS || 3));
-const AUTONOMY_TEMPLATE_NO_CHANGE_BLOCK_RATE = clampNumber(Number(process.env.AUTONOMY_TEMPLATE_NO_CHANGE_BLOCK_RATE || 0.75), 0.3, 1, 0.75);
 const AUTONOMY_LANE_NO_CHANGE_WINDOW_DAYS = Number(process.env.AUTONOMY_LANE_NO_CHANGE_WINDOW_DAYS || 7);
 const AUTONOMY_LANE_NO_CHANGE_LIMIT = Number(process.env.AUTONOMY_LANE_NO_CHANGE_LIMIT || 3);
 const AUTONOMY_LANE_NO_CHANGE_COOLDOWN_HOURS = Number(process.env.AUTONOMY_LANE_NO_CHANGE_COOLDOWN_HOURS || 24);
@@ -1551,11 +1542,7 @@ function isPolicyHoldResult(result) {
   if (!r) return false;
   return r.startsWith('no_candidates_policy_')
     || r === 'score_only_fallback_route_block'
-    || r === 'score_only_fallback_low_execution_confidence'
-    || r === 'stop_repeat_gate_manual_route_quarantine'
-    || r === 'stop_init_gate_execute_readiness_exhausted'
-    || r === 'stop_repeat_gate_template_no_change_pressure'
-    || r === 'init_gate_blocked_route_runtime';
+    || r === 'score_only_fallback_low_execution_confidence';
 }
 
 function isPolicyHoldRunEvent(evt) {
@@ -1581,105 +1568,6 @@ function latestAutonomyRunByResult(events, result) {
     return evt;
   }
   return null;
-}
-
-function loadManualRouteQuarantineState() {
-  const raw = loadJson(MANUAL_ROUTE_QUARANTINE_PATH, {});
-  const entries = raw && raw.entries && typeof raw.entries === 'object' ? raw.entries : {};
-  const nowMs = Date.now();
-  let dirty = false;
-  for (const key of Object.keys(entries)) {
-    const row = entries[key];
-    const untilMs = Number(row && row.until_ms || 0);
-    if (!Number.isFinite(untilMs) || untilMs <= nowMs) {
-      delete entries[key];
-      dirty = true;
-    }
-  }
-  const state = {
-    version: '1.0',
-    updated_at: nowIso(),
-    entries
-  };
-  if (dirty) saveJson(MANUAL_ROUTE_QUARANTINE_PATH, state);
-  return state;
-}
-
-function saveManualRouteQuarantineState(state) {
-  const entries = state && state.entries && typeof state.entries === 'object'
-    ? state.entries
-    : {};
-  saveJson(MANUAL_ROUTE_QUARANTINE_PATH, {
-    version: '1.0',
-    updated_at: nowIso(),
-    entries
-  });
-}
-
-function manualRouteOverrideTokenFromProposal(proposal) {
-  const meta = proposal && proposal.meta && typeof proposal.meta === 'object' ? proposal.meta : {};
-  return String(
-    meta.manual_route_override_token
-    || meta.manual_override_token
-    || meta.override_token
-    || ''
-  ).trim();
-}
-
-function issueManualRouteQuarantine(proposal, opts = {}) {
-  const proposalId = String(proposal && proposal.id || '').trim();
-  if (!proposalId) return null;
-  const st = loadManualRouteQuarantineState();
-  const entries = st.entries && typeof st.entries === 'object' ? st.entries : {};
-  const existing = entries[proposalId] && typeof entries[proposalId] === 'object'
-    ? entries[proposalId]
-    : null;
-  const token = String(existing && existing.token || `mro_${crypto.randomBytes(6).toString('hex')}`);
-  const untilMs = Date.now() + (AUTONOMY_MANUAL_ROUTE_QUARANTINE_HOURS * 60 * 60 * 1000);
-  const row = {
-    proposal_id: proposalId,
-    token,
-    created_ts: String(existing && existing.created_ts || nowIso()),
-    issued_ts: nowIso(),
-    until_ms: untilMs,
-    expires_at: new Date(untilMs).toISOString(),
-    reason: shortText(opts.reason || 'manual_route_quarantine', 180),
-    route_block_reason: String(opts.route_block_reason || ''),
-    gate_risk: String(opts.gate_risk || ''),
-    objective_id: String(opts.objective_id || ''),
-    proposal_type: String(opts.proposal_type || '')
-  };
-  entries[proposalId] = row;
-  saveManualRouteQuarantineState({ entries });
-  return row;
-}
-
-function resolveManualRouteQuarantineForProposal(proposal) {
-  if (!AUTONOMY_MANUAL_ROUTE_QUARANTINE_REQUIRE_TOKEN) {
-    return { blocked: false, released: false, token_required: false, entry: null };
-  }
-  const proposalId = String(proposal && proposal.id || '').trim();
-  if (!proposalId) return { blocked: false, released: false, token_required: false, entry: null };
-  const st = loadManualRouteQuarantineState();
-  const entries = st.entries && typeof st.entries === 'object' ? st.entries : {};
-  const entry = entries[proposalId] && typeof entries[proposalId] === 'object'
-    ? entries[proposalId]
-    : null;
-  if (!entry) return { blocked: false, released: false, token_required: false, entry: null };
-  const providedToken = manualRouteOverrideTokenFromProposal(proposal);
-  const expectedToken = String(entry.token || '').trim();
-  if (providedToken && expectedToken && providedToken === expectedToken) {
-    delete entries[proposalId];
-    saveManualRouteQuarantineState({ entries });
-    return { blocked: false, released: true, token_required: true, entry };
-  }
-  return {
-    blocked: true,
-    released: false,
-    token_required: true,
-    entry,
-    next_clear_at: entry.expires_at || null
-  };
 }
 
 function ageHours(dateStr) {
@@ -4553,58 +4441,6 @@ function capabilityOutcomeStatsInWindow(dateStr, descriptor, days) {
     }
   }
   return out;
-}
-
-function proposalTypeOutcomeStatsInWindow(dateStr, proposalType, days) {
-  const windowDays = clampNumber(Number(days || AUTONOMY_TEMPLATE_NO_CHANGE_WINDOW_DAYS), 1, 60);
-  const targetType = String(proposalType || '').trim().toLowerCase();
-  const out = { executed: 0, shipped: 0, no_change: 0, reverted: 0 };
-  if (!targetType) return out;
-  for (const d of dateWindow(dateStr, windowDays)) {
-    for (const evt of readRuns(d)) {
-      if (!evt || evt.type !== 'autonomy_run' || evt.result !== 'executed') continue;
-      const evtType = String(evt.proposal_type || '').trim().toLowerCase();
-      if (!evtType || evtType !== targetType) continue;
-      out.executed += 1;
-      const outcome = String(evt.outcome || '').toLowerCase();
-      if (outcome === 'shipped') out.shipped += 1;
-      else if (outcome === 'no_change') out.no_change += 1;
-      else if (outcome === 'reverted') out.reverted += 1;
-    }
-  }
-  return out;
-}
-
-function templateNoChangePressure(dateStr, proposal, capabilityDescriptorObj) {
-  const capStats = capabilityOutcomeStatsInWindow(
-    dateStr,
-    capabilityDescriptorObj,
-    AUTONOMY_TEMPLATE_NO_CHANGE_WINDOW_DAYS
-  );
-  const typeStats = proposalTypeOutcomeStatsInWindow(
-    dateStr,
-    proposal && proposal.type,
-    AUTONOMY_TEMPLATE_NO_CHANGE_WINDOW_DAYS
-  );
-  const useCapability = Number(capStats.executed || 0) >= Number(typeStats.executed || 0);
-  const stats = useCapability ? capStats : typeStats;
-  const source = useCapability ? 'capability' : 'proposal_type';
-  const settled = Number(stats.shipped || 0) + Number(stats.no_change || 0) + Number(stats.reverted || 0);
-  const noProgress = Number(stats.no_change || 0) + Number(stats.reverted || 0);
-  const rate = settled > 0 ? noProgress / settled : 0;
-  const block = settled >= AUTONOMY_TEMPLATE_NO_CHANGE_MIN_SETTLEMENTS
-    && rate >= AUTONOMY_TEMPLATE_NO_CHANGE_BLOCK_RATE;
-  return {
-    block,
-    source,
-    settled,
-    no_progress: noProgress,
-    no_progress_rate: Number(rate.toFixed(3)),
-    threshold_rate: AUTONOMY_TEMPLATE_NO_CHANGE_BLOCK_RATE,
-    threshold_settled: AUTONOMY_TEMPLATE_NO_CHANGE_MIN_SETTLEMENTS,
-    capability_stats: capStats,
-    proposal_type_stats: typeStats
-  };
 }
 
 function expectedValueScore(p) {
@@ -8729,13 +8565,10 @@ function runCmd(dateStr, opts = {}) {
     low_quality: 0,
     low_directive_fit: 0,
     low_actionability: 0,
-    execute_readiness: 0,
     optimization_good_enough: 0,
     objective_binding: 0,
-    manual_route_quarantine: 0,
     low_value_signal: 0,
     low_composite: 0,
-    template_no_change_pressure: 0,
     capability_cooldown: 0,
     medium_risk_guard: 0,
     medium_policy_blocked: 0,
@@ -8747,13 +8580,10 @@ function runCmd(dateStr, opts = {}) {
   let sampleLowQuality = null;
   let sampleLowDirectiveFit = null;
   let sampleLowActionability = null;
-  let sampleExecuteReadiness = null;
   let sampleOptimizationGoodEnough = null;
   let sampleObjectiveBinding = null;
-  let sampleManualRouteQuarantine = null;
   let sampleLowValueSignal = null;
   let sampleLowComposite = null;
-  let sampleTemplateNoChangePressure = null;
   let sampleCapabilityCooldown = null;
   let sampleMediumRiskGuard = null;
   let sampleMediumPolicyBlocked = null;
@@ -8800,15 +8630,6 @@ function runCmd(dateStr, opts = {}) {
       require_executable: AUTONOMY_CANARY_REQUIRE_EXECUTABLE,
       block_generic_route_task: AUTONOMY_CANARY_BLOCK_GENERIC_ROUTE_TASK
     },
-    execute_readiness_gate: {
-      enabled: AUTONOMY_EXECUTE_READINESS_GATE_ENABLED,
-      confidence_margin_composite: AUTONOMY_EXECUTE_CONFIDENCE_MARGIN,
-      confidence_bonus_value_signal: AUTONOMY_EXECUTE_MIN_VALUE_SIGNAL_BONUS
-    },
-    manual_route_quarantine: {
-      enabled: AUTONOMY_MANUAL_ROUTE_QUARANTINE_REQUIRE_TOKEN,
-      hold_hours: AUTONOMY_MANUAL_ROUTE_QUARANTINE_HOURS
-    },
     optimization_policy: {
       high_accuracy_mode: AUTONOMY_OPTIMIZATION_HIGH_ACCURACY_MODE,
       min_delta_percent: optimizationMinDeltaPercent(),
@@ -8818,11 +8639,6 @@ function runCmd(dateStr, opts = {}) {
     },
     campaign_scheduler: {
       enabled: Array.isArray(strategy && strategy.campaigns) && strategy.campaigns.length > 0
-    },
-    template_no_change_pressure: {
-      window_days: AUTONOMY_TEMPLATE_NO_CHANGE_WINDOW_DAYS,
-      min_settlements: AUTONOMY_TEMPLATE_NO_CHANGE_MIN_SETTLEMENTS,
-      block_rate: AUTONOMY_TEMPLATE_NO_CHANGE_BLOCK_RATE
     },
     queue_underflow_backfill: {
       enabled: AUTONOMY_QUEUE_UNDERFLOW_BACKFILL_MAX > 0,
@@ -8874,40 +8690,6 @@ function runCmd(dateStr, opts = {}) {
     const typeThresholdPack = thresholdsForProposalType(thresholds, proposalType, fitnessPolicy);
     const gateThresholds = typeThresholdPack.thresholds;
     const risk = normalizedRisk(cand.proposal && cand.proposal.risk);
-    const manualRouteQuarantine = !shadowOnly
-      ? resolveManualRouteQuarantineForProposal(cand.proposal)
-      : { blocked: false, released: false, token_required: false, entry: null };
-    if (!shadowOnly && manualRouteQuarantine && manualRouteQuarantine.blocked === true) {
-      skipStats.manual_route_quarantine += 1;
-      bumpCount(candidateRejectedByGate, 'manual_route_quarantine');
-      pushCandidateAudit({
-        proposal_id: proposalId,
-        proposal_type: proposalType,
-        risk,
-        pass: false,
-        gate: 'manual_route_quarantine',
-        score: Number(cand.score || 0),
-        manual_route_quarantine: {
-          token_required: true,
-          next_clear_at: manualRouteQuarantine.next_clear_at || null,
-          reason: manualRouteQuarantine.entry && manualRouteQuarantine.entry.reason
-            ? String(manualRouteQuarantine.entry.reason)
-            : 'manual_route_override_required'
-        },
-        reasons: ['manual_route_override_required']
-      });
-      if (!sampleManualRouteQuarantine) {
-        sampleManualRouteQuarantine = {
-          proposal_id: cand.proposal.id,
-          token_required: true,
-          next_clear_at: manualRouteQuarantine.next_clear_at || null,
-          reason: manualRouteQuarantine.entry && manualRouteQuarantine.entry.reason
-            ? String(manualRouteQuarantine.entry.reason)
-            : 'manual_route_override_required'
-        };
-      }
-      continue;
-    }
     const q = assessSignalQuality(cand.proposal, eyesMap, gateThresholds, calibrationProfile);
     if (!q.pass) {
       skipStats.low_quality += 1;
@@ -9263,64 +9045,6 @@ function runCmd(dateStr, opts = {}) {
       continue;
     }
 
-    if (!shadowOnly && isExecuteMode(executionMode) && AUTONOMY_EXECUTE_READINESS_GATE_ENABLED) {
-      const executeCompositeMin = Math.max(0, Number(compositeMin || 0) + AUTONOMY_EXECUTE_CONFIDENCE_MARGIN);
-      const executeValueMin = Math.max(
-        0,
-        Number(AUTONOMY_MIN_VALUE_SIGNAL_SCORE || 0)
-          + AUTONOMY_EXECUTE_MIN_VALUE_SIGNAL_BONUS
-          + (risk === 'medium' ? Number(AUTONOMY_MEDIUM_RISK_VALUE_SIGNAL_BONUS || 0) : 0)
-      );
-      const expectedValue = Number(valueSignal && valueSignal.components && valueSignal.components.expected_value || 0);
-      const hasPredictedDelta = expectedValue > 0 || Number(optimizationGate && optimizationGate.delta_percent || 0) > 0;
-      const readinessReasons = [];
-      if (actionability.executable !== true) readinessReasons.push('execute_requires_executable');
-      if (
-        actionability.success_criteria
-        && actionability.success_criteria.required === true
-        && Number(actionability.success_criteria.measurable_count || 0) < Number(actionability.success_criteria.min_count || 0)
-      ) {
-        readinessReasons.push('execute_requires_measurable_success_criteria');
-      }
-      if (Number(compositeScore || 0) < executeCompositeMin) readinessReasons.push('execute_confidence_composite_low');
-      if (Number(valueSignal && valueSignal.score || 0) < executeValueMin) readinessReasons.push('execute_confidence_value_signal_low');
-      if (!hasPredictedDelta) readinessReasons.push('execute_predicted_delta_missing');
-      if (readinessReasons.length > 0) {
-        skipStats.execute_readiness += 1;
-        bumpCount(candidateRejectedByGate, 'execute_readiness');
-        pushCandidateAudit({
-          proposal_id: proposalId,
-          proposal_type: proposalType,
-          risk,
-          pass: false,
-          gate: 'execute_readiness',
-          score: Number(cand.score || 0),
-          scores: {
-            composite: compositeScore,
-            value_signal: Number(valueSignal && valueSignal.score || 0),
-            expected_value: expectedValue
-          },
-          thresholds: {
-            composite_min_required: executeCompositeMin,
-            value_signal_min_required: executeValueMin
-          },
-          reasons: readinessReasons.slice(0, 4)
-        });
-        if (!sampleExecuteReadiness) {
-          sampleExecuteReadiness = {
-            proposal_id: cand.proposal.id,
-            reasons: readinessReasons.slice(0, 4),
-            composite_score: compositeScore,
-            composite_min_required: executeCompositeMin,
-            value_signal_score: Number(valueSignal && valueSignal.score || 0),
-            value_signal_min_required: executeValueMin,
-            expected_value: expectedValue
-          };
-        }
-        continue;
-      }
-    }
-
     const mediumGate = mediumRiskGateDecision(cand.proposal, dfit.score, actionability.score, compositeScore, gateThresholds);
     if (!mediumGate.pass) {
       skipStats.medium_risk_guard += 1;
@@ -9583,35 +9307,6 @@ function runCmd(dateStr, opts = {}) {
         };
       }
       continue;
-    }
-
-    if (!shadowOnly) {
-      const templatePressure = templateNoChangePressure(dateStr, cand.proposal, capDescriptorCand);
-      if (templatePressure.block) {
-        skipStats.template_no_change_pressure += 1;
-        bumpCount(candidateRejectedByGate, 'template_no_change_pressure');
-        pushCandidateAudit({
-          proposal_id: proposalId,
-          proposal_type: proposalType,
-          risk,
-          pass: false,
-          gate: 'template_no_change_pressure',
-          score: Number(cand.score || 0),
-          template_no_change_pressure: templatePressure,
-          reasons: ['template_no_change_pressure_high']
-        });
-        if (!sampleTemplateNoChangePressure) {
-          sampleTemplateNoChangePressure = {
-            proposal_id: cand.proposal.id,
-            source: templatePressure.source,
-            settled: templatePressure.settled,
-            no_progress_rate: templatePressure.no_progress_rate,
-            threshold_rate: templatePressure.threshold_rate,
-            threshold_settled: templatePressure.threshold_settled
-          };
-        }
-        continue;
-      }
     }
 
     eligible.push({
@@ -10227,129 +9922,6 @@ function runCmd(dateStr, opts = {}) {
     }
 
     if (
-      skipStats.manual_route_quarantine > 0
-      && skipStats.eye_no_progress === 0
-      && skipStats.low_quality === 0
-      && skipStats.low_directive_fit === 0
-      && skipStats.low_actionability === 0
-      && skipStats.execute_readiness === 0
-      && skipStats.optimization_good_enough === 0
-      && skipStats.low_value_signal === 0
-      && skipStats.low_composite === 0
-      && skipStats.template_no_change_pressure === 0
-      && skipStats.capability_cooldown === 0
-      && skipStats.medium_risk_guard === 0
-      && skipStats.medium_policy_blocked === 0
-      && skipStats.medium_daily_cap === 0
-      && skipStats.directive_pulse_cooldown === 0
-      && skipStats.objective_binding === 0
-      && skipStats.t1_execute_required === 0
-      && skipStats.objective_runtime === 0
-    ) {
-      writeRun(dateStr, {
-        ts: nowIso(),
-        type: 'autonomy_run',
-        result: 'stop_repeat_gate_manual_route_quarantine',
-        policy_hold: true,
-        hold_scope: 'proposal',
-        skipped_manual_route_quarantine: skipStats.manual_route_quarantine,
-        sample_manual_route_quarantine: sampleManualRouteQuarantine
-      });
-      process.stdout.write(JSON.stringify({
-        ok: true,
-        result: 'stop_repeat_gate_manual_route_quarantine',
-        policy_hold: true,
-        hold_scope: 'proposal',
-        skipped_manual_route_quarantine: skipStats.manual_route_quarantine,
-        sample_manual_route_quarantine: sampleManualRouteQuarantine,
-        ts: nowIso()
-      }) + '\n');
-      return;
-    }
-
-    if (
-      skipStats.execute_readiness > 0
-      && skipStats.eye_no_progress === 0
-      && skipStats.low_quality === 0
-      && skipStats.low_directive_fit === 0
-      && skipStats.low_actionability === 0
-      && skipStats.optimization_good_enough === 0
-      && skipStats.low_value_signal === 0
-      && skipStats.low_composite === 0
-      && skipStats.manual_route_quarantine === 0
-      && skipStats.template_no_change_pressure === 0
-      && skipStats.capability_cooldown === 0
-      && skipStats.medium_risk_guard === 0
-      && skipStats.medium_policy_blocked === 0
-      && skipStats.medium_daily_cap === 0
-      && skipStats.directive_pulse_cooldown === 0
-      && skipStats.objective_binding === 0
-      && skipStats.t1_execute_required === 0
-      && skipStats.objective_runtime === 0
-    ) {
-      writeRun(dateStr, {
-        ts: nowIso(),
-        type: 'autonomy_run',
-        result: 'stop_init_gate_execute_readiness_exhausted',
-        policy_hold: true,
-        hold_scope: 'quality',
-        skipped_execute_readiness: skipStats.execute_readiness,
-        sample_execute_readiness: sampleExecuteReadiness
-      });
-      process.stdout.write(JSON.stringify({
-        ok: true,
-        result: 'stop_init_gate_execute_readiness_exhausted',
-        policy_hold: true,
-        hold_scope: 'quality',
-        skipped_execute_readiness: skipStats.execute_readiness,
-        sample_execute_readiness: sampleExecuteReadiness,
-        ts: nowIso()
-      }) + '\n');
-      return;
-    }
-
-    if (
-      skipStats.template_no_change_pressure > 0
-      && skipStats.eye_no_progress === 0
-      && skipStats.low_quality === 0
-      && skipStats.low_directive_fit === 0
-      && skipStats.low_actionability === 0
-      && skipStats.execute_readiness === 0
-      && skipStats.optimization_good_enough === 0
-      && skipStats.low_value_signal === 0
-      && skipStats.low_composite === 0
-      && skipStats.manual_route_quarantine === 0
-      && skipStats.capability_cooldown === 0
-      && skipStats.medium_risk_guard === 0
-      && skipStats.medium_policy_blocked === 0
-      && skipStats.medium_daily_cap === 0
-      && skipStats.directive_pulse_cooldown === 0
-      && skipStats.objective_binding === 0
-      && skipStats.t1_execute_required === 0
-      && skipStats.objective_runtime === 0
-    ) {
-      writeRun(dateStr, {
-        ts: nowIso(),
-        type: 'autonomy_run',
-        result: 'stop_repeat_gate_template_no_change_pressure',
-        policy_hold: true,
-        hold_scope: 'template',
-        skipped_template_no_change_pressure: skipStats.template_no_change_pressure,
-        sample_template_no_change_pressure: sampleTemplateNoChangePressure
-      });
-      process.stdout.write(JSON.stringify({
-        ok: true,
-        result: 'stop_repeat_gate_template_no_change_pressure',
-        policy_hold: true,
-        hold_scope: 'template',
-        skipped_template_no_change_pressure: skipStats.template_no_change_pressure,
-        sample_template_no_change_pressure: sampleTemplateNoChangePressure,
-        ts: nowIso()
-      }) + '\n');
-      return;
-    }
-
-    if (
       skipStats.low_quality > 0
       && skipStats.eye_no_progress === 0
       && skipStats.low_directive_fit === 0
@@ -10594,19 +10166,16 @@ function runCmd(dateStr, opts = {}) {
       ts: nowIso(),
       type: 'autonomy_run',
       result: 'stop_repeat_gate_candidate_exhausted',
-      reason: `all_candidates_exhausted quality_or_directive_fit_or_actionability_or_execute_readiness_or_optimization_good_enough_or_objective_binding_or_manual_route_quarantine_or_t1_execute_or_value_or_composite_or_template_no_change_or_capability_cooldown_or_medium_risk_or_eye_no_progress_or_directive_pulse_or_objective_runtime`,
+      reason: `all_candidates_exhausted quality_or_directive_fit_or_actionability_or_optimization_good_enough_or_objective_binding_or_t1_execute_or_value_or_composite_or_capability_cooldown_or_medium_risk_or_eye_no_progress_or_directive_pulse_or_objective_runtime`,
       skipped_eye_no_progress: skipStats.eye_no_progress,
       skipped_low_quality: skipStats.low_quality,
       skipped_low_directive_fit: skipStats.low_directive_fit,
       skipped_low_actionability: skipStats.low_actionability,
-      skipped_execute_readiness: skipStats.execute_readiness,
       skipped_optimization_good_enough: skipStats.optimization_good_enough,
       skipped_objective_binding: skipStats.objective_binding,
-      skipped_manual_route_quarantine: skipStats.manual_route_quarantine,
       skipped_t1_execute_required: skipStats.t1_execute_required,
       skipped_low_value_signal: skipStats.low_value_signal,
       skipped_low_composite: skipStats.low_composite,
-      skipped_template_no_change_pressure: skipStats.template_no_change_pressure,
       skipped_capability_cooldown: skipStats.capability_cooldown,
       skipped_medium_risk_guard: skipStats.medium_risk_guard,
       skipped_medium_policy_blocked: skipStats.medium_policy_blocked,
@@ -10616,14 +10185,11 @@ function runCmd(dateStr, opts = {}) {
       sample_low_quality: sampleLowQuality,
       sample_low_directive_fit: sampleLowDirectiveFit,
       sample_low_actionability: sampleLowActionability,
-      sample_execute_readiness: sampleExecuteReadiness,
       sample_optimization_good_enough: sampleOptimizationGoodEnough,
       sample_objective_binding: sampleObjectiveBinding,
-      sample_manual_route_quarantine: sampleManualRouteQuarantine,
       sample_t1_execute_required: sampleT1ExecuteRequired,
       sample_low_value_signal: sampleLowValueSignal,
       sample_low_composite: sampleLowComposite,
-      sample_template_no_change_pressure: sampleTemplateNoChangePressure,
       sample_capability_cooldown: sampleCapabilityCooldown,
       sample_medium_risk_guard: sampleMediumRiskGuard,
       sample_medium_policy_blocked: sampleMediumPolicyBlocked,
@@ -10635,19 +10201,16 @@ function runCmd(dateStr, opts = {}) {
     process.stdout.write(JSON.stringify({
       ok: true,
       result: 'stop_repeat_gate_candidate_exhausted',
-      reason: `all_candidates_exhausted quality_or_directive_fit_or_actionability_or_execute_readiness_or_optimization_good_enough_or_objective_binding_or_manual_route_quarantine_or_t1_execute_or_value_or_composite_or_template_no_change_or_capability_cooldown_or_medium_risk_or_eye_no_progress_or_directive_pulse_or_objective_runtime`,
+      reason: `all_candidates_exhausted quality_or_directive_fit_or_actionability_or_optimization_good_enough_or_objective_binding_or_t1_execute_or_value_or_composite_or_capability_cooldown_or_medium_risk_or_eye_no_progress_or_directive_pulse_or_objective_runtime`,
       skipped_eye_no_progress: skipStats.eye_no_progress,
       skipped_low_quality: skipStats.low_quality,
       skipped_low_directive_fit: skipStats.low_directive_fit,
       skipped_low_actionability: skipStats.low_actionability,
-      skipped_execute_readiness: skipStats.execute_readiness,
       skipped_optimization_good_enough: skipStats.optimization_good_enough,
       skipped_objective_binding: skipStats.objective_binding,
-      skipped_manual_route_quarantine: skipStats.manual_route_quarantine,
       skipped_t1_execute_required: skipStats.t1_execute_required,
       skipped_low_value_signal: skipStats.low_value_signal,
       skipped_low_composite: skipStats.low_composite,
-      skipped_template_no_change_pressure: skipStats.template_no_change_pressure,
       skipped_capability_cooldown: skipStats.capability_cooldown,
       skipped_medium_risk_guard: skipStats.medium_risk_guard,
       skipped_medium_policy_blocked: skipStats.medium_policy_blocked,
@@ -10657,14 +10220,11 @@ function runCmd(dateStr, opts = {}) {
       sample_low_quality: sampleLowQuality,
       sample_low_directive_fit: sampleLowDirectiveFit,
       sample_low_actionability: sampleLowActionability,
-      sample_execute_readiness: sampleExecuteReadiness,
       sample_optimization_good_enough: sampleOptimizationGoodEnough,
       sample_objective_binding: sampleObjectiveBinding,
-      sample_manual_route_quarantine: sampleManualRouteQuarantine,
       sample_t1_execute_required: sampleT1ExecuteRequired,
       sample_low_value_signal: sampleLowValueSignal,
       sample_low_composite: sampleLowComposite,
-      sample_template_no_change_pressure: sampleTemplateNoChangePressure,
       sample_capability_cooldown: sampleCapabilityCooldown,
       sample_medium_risk_guard: sampleMediumRiskGuard,
       sample_medium_policy_blocked: sampleMediumPolicyBlocked,
@@ -11530,21 +11090,6 @@ function runCmd(dateStr, opts = {}) {
         : (preSummary && preSummary.gate_decision === 'DENY')
           ? 'gate_deny'
           : 'not_executable';
-    const highRiskManualRouteBlock = executionTarget === 'route'
-      && blockReason === 'gate_manual'
-      && String(preSummary && preSummary.gate_risk || '').trim().toLowerCase() === 'high';
-    const manualRouteQuarantine = highRiskManualRouteBlock
-      ? issueManualRouteQuarantine(p, {
-        reason: 'high_risk_route_requires_manual_override',
-        route_block_reason: blockReason,
-        gate_risk: String(preSummary && preSummary.gate_risk || ''),
-        objective_id: executionObjectiveId || '',
-        proposal_type: String(p.type || '')
-      })
-      : null;
-    if (manualRouteQuarantine) {
-      runProposalQueue('park', p.id, 'auto:manual_route_quarantine token_required');
-    }
     if (
       AUTONOMY_ROUTE_BLOCK_FALLBACK_SCORE_ONLY
       && !shadowOnly
@@ -11596,14 +11141,6 @@ function runCmd(dateStr, opts = {}) {
         cooldown_hours: AUTONOMY_ROUTE_BLOCK_COOLDOWN_HOURS,
         next_clear_at: fallbackNextClearAt,
         hold_reason: fallbackHoldReason,
-        manual_route_quarantine: manualRouteQuarantine
-          ? {
-              issued: true,
-              proposal_id: manualRouteQuarantine.proposal_id || p.id,
-              token: manualRouteQuarantine.token || null,
-              expires_at: manualRouteQuarantine.expires_at || null
-            }
-          : null,
         token_usage: preTokenUsage,
         exception_novelty: preflightException
       });
@@ -11624,14 +11161,6 @@ function runCmd(dateStr, opts = {}) {
         cooldown_hours: AUTONOMY_ROUTE_BLOCK_COOLDOWN_HOURS,
         next_clear_at: fallbackNextClearAt,
         hold_reason: fallbackHoldReason,
-        manual_route_quarantine: manualRouteQuarantine
-          ? {
-              issued: true,
-              proposal_id: manualRouteQuarantine.proposal_id || p.id,
-              token: manualRouteQuarantine.token || null,
-              expires_at: manualRouteQuarantine.expires_at || null
-            }
-          : null,
         token_usage: preTokenUsage,
         exception_novelty: preflightException,
         ts: nowIso()
@@ -11684,14 +11213,6 @@ function runCmd(dateStr, opts = {}) {
       route_block_reason: blockReason,
       cooldown_hours: AUTONOMY_ROUTE_BLOCK_COOLDOWN_HOURS,
       next_clear_at: routeNextClearAt,
-      manual_route_quarantine: manualRouteQuarantine
-        ? {
-            issued: true,
-            proposal_id: manualRouteQuarantine.proposal_id || p.id,
-            token: manualRouteQuarantine.token || null,
-            expires_at: manualRouteQuarantine.expires_at || null
-          }
-        : null,
       exception_novelty: preflightException,
       route_self_heal: routeSelfHeal,
       repeats_14d: repeats14d,
@@ -11776,14 +11297,6 @@ function runCmd(dateStr, opts = {}) {
       route_block_reason: blockReason,
       cooldown_hours: AUTONOMY_ROUTE_BLOCK_COOLDOWN_HOURS,
       next_clear_at: routeNextClearAt,
-      manual_route_quarantine: manualRouteQuarantine
-        ? {
-            issued: true,
-            proposal_id: manualRouteQuarantine.proposal_id || p.id,
-            token: manualRouteQuarantine.token || null,
-            expires_at: manualRouteQuarantine.expires_at || null
-          }
-        : null,
       exception_novelty: preflightException,
       route_self_heal: routeSelfHeal,
       route_summary: preSummary,
@@ -12197,96 +11710,6 @@ function runCmd(dateStr, opts = {}) {
   budget.token_cap = Number(recordedBudget.token_cap || budget.token_cap || 0);
 
   const summary = execRes.summary || {};
-  const runtimeRouteBlocked = executionTarget === 'route'
-    && execRes && execRes.ok === true
-    && (
-      summary.executable !== true
-      || summary.gate_decision === 'MANUAL'
-      || summary.gate_decision === 'DENY'
-      || summary.budget_blocked === true
-      || summary.needs_manual_review === true
-    );
-  if (runtimeRouteBlocked) {
-    const runtimeBlockReason = summary.gate_decision === 'MANUAL'
-      ? 'gate_manual_runtime'
-      : (summary.gate_decision === 'DENY'
-        ? 'gate_deny_runtime'
-        : (summary.budget_blocked === true
-          ? String(summary.budget_block_reason || 'budget_blocked_runtime')
-          : 'not_executable_runtime'));
-    const highRiskRuntimeManual = summary.gate_decision === 'MANUAL'
-      && String(summary.gate_risk || '').trim().toLowerCase() === 'high';
-    const runtimeManualRouteQuarantine = highRiskRuntimeManual
-      ? issueManualRouteQuarantine(p, {
-        reason: 'high_risk_route_requires_manual_override_runtime',
-        route_block_reason: runtimeBlockReason,
-        gate_risk: String(summary.gate_risk || ''),
-        objective_id: executionObjectiveId || '',
-        proposal_type: String(p.type || '')
-      })
-      : null;
-    if (runtimeManualRouteQuarantine) {
-      runProposalQueue('park', p.id, 'auto:manual_route_quarantine token_required');
-    }
-    const reason = `auto:runtime_route_block ${runtimeBlockReason} cooldown_${AUTONOMY_ROUTE_BLOCK_COOLDOWN_HOURS}h`;
-    setCooldown(p.id, AUTONOMY_ROUTE_BLOCK_COOLDOWN_HOURS, reason);
-    const runtimeCooldown = cooldownEntry(p.id);
-    const runtimeNextClearAt = runtimeCooldown ? (runtimeCooldown.until || null) : null;
-    writeRun(dateStr, {
-      ts: nowIso(),
-      type: 'autonomy_run',
-      result: 'init_gate_blocked_route_runtime',
-      legacy_result: 'init_gate_blocked_route',
-      policy_hold: true,
-      hold_scope: 'proposal',
-      receipt_id: receiptId,
-      proposal_id: p.id,
-      objective_id: executionObjectiveId || null,
-      proposal_date: proposalDate,
-      proposal_type: String(p.type || ''),
-      capability_key: capabilityKey,
-      execution_target: executionTarget,
-      route_summary: summary,
-      route_block_reason: runtimeBlockReason,
-      cooldown_hours: AUTONOMY_ROUTE_BLOCK_COOLDOWN_HOURS,
-      next_clear_at: runtimeNextClearAt,
-      manual_route_quarantine: runtimeManualRouteQuarantine
-        ? {
-            issued: true,
-            proposal_id: runtimeManualRouteQuarantine.proposal_id || p.id,
-            token: runtimeManualRouteQuarantine.token || null,
-            expires_at: runtimeManualRouteQuarantine.expires_at || null
-          }
-        : null,
-      token_usage: execTokenUsage,
-      execution_metrics: execRes.execution_metrics || null
-    });
-    process.stdout.write(JSON.stringify({
-      ok: true,
-      result: 'init_gate_blocked_route_runtime',
-      legacy_result: 'init_gate_blocked_route',
-      policy_hold: true,
-      hold_scope: 'proposal',
-      proposal_id: p.id,
-      objective_id: executionObjectiveId || null,
-      capability_key: capabilityKey,
-      route_block_reason: runtimeBlockReason,
-      cooldown_hours: AUTONOMY_ROUTE_BLOCK_COOLDOWN_HOURS,
-      next_clear_at: runtimeNextClearAt,
-      manual_route_quarantine: runtimeManualRouteQuarantine
-        ? {
-            issued: true,
-            proposal_id: runtimeManualRouteQuarantine.proposal_id || p.id,
-            token: runtimeManualRouteQuarantine.token || null,
-            expires_at: runtimeManualRouteQuarantine.expires_at || null
-          }
-        : null,
-      route_summary: summary,
-      token_usage: execTokenUsage,
-      ts: nowIso()
-    }) + '\n');
-    return;
-  }
   const postconditions = runPostconditions(actuationSpec, execRes);
   const dod = evaluateDoD({
     summary,
