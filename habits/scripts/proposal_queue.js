@@ -33,6 +33,11 @@
 
 const fs = require('fs');
 const path = require('path');
+const {
+  compileDirectiveLineage,
+  evaluateDirectiveLineageCandidate,
+  extractObjectiveIdFromProposal
+} = require('../../systems/security/directive_compiler.js');
 
 // Root assumptions (repo root = two levels up from habits/scripts)
 const REPO_ROOT = path.join(__dirname, '..', '..');
@@ -43,6 +48,18 @@ const QUEUE_DIR = path.join(REPO_ROOT, 'state', 'queue');
 const DECISIONS_DIR = path.join(QUEUE_DIR, 'decisions');
 const METRICS_DIR = path.join(QUEUE_DIR, 'metrics');
 const SLO_REPORTS_DIR = path.join(QUEUE_DIR, 'slo');
+const DIRECTIVE_COMPILER_CACHE_TTL_MS = Math.max(
+  1000,
+  Number(process.env.QUEUE_DIRECTIVE_COMPILER_CACHE_TTL_MS || 30000)
+);
+const PROPOSAL_LOOKUP_CACHE_TTL_MS = Math.max(
+  1000,
+  Number(process.env.QUEUE_PROPOSAL_LOOKUP_CACHE_TTL_MS || 30000)
+);
+let directiveCompilerCache = null;
+let directiveCompilerCacheTs = 0;
+let proposalLookupCache = new Map();
+let proposalLookupCacheTs = 0;
 
 function ensureDirs() {
   [QUEUE_DIR, DECISIONS_DIR, METRICS_DIR, SLO_REPORTS_DIR].forEach(dir => {
@@ -115,6 +132,81 @@ function parseArgs(argv) {
     }
   }
   return out;
+}
+
+function loadDirectiveCompilerCached() {
+  const now = Date.now();
+  if (directiveCompilerCache && (now - directiveCompilerCacheTs) <= DIRECTIVE_COMPILER_CACHE_TTL_MS) {
+    return directiveCompilerCache;
+  }
+  try {
+    directiveCompilerCache = compileDirectiveLineage();
+    directiveCompilerCacheTs = now;
+    return directiveCompilerCache;
+  } catch {
+    directiveCompilerCache = null;
+    directiveCompilerCacheTs = now;
+    return null;
+  }
+}
+
+function refreshProposalLookupCache() {
+  const now = Date.now();
+  if ((now - proposalLookupCacheTs) <= PROPOSAL_LOOKUP_CACHE_TTL_MS && proposalLookupCache.size > 0) {
+    return proposalLookupCache;
+  }
+  const next = new Map();
+  const files = listProposalFiles({});
+  for (const file of files) {
+    const date = String(file).slice(0, 10);
+    const raw = readJsonSafe(path.join(SENSORY_PROPOSALS_DIR, file));
+    const shaped = normalizeProposalsShape(raw);
+    if (!shaped || !Array.isArray(shaped.proposals)) continue;
+    for (const proposal of shaped.proposals) {
+      const p = proposal && typeof proposal === 'object' ? proposal : null;
+      const id = String(p && p.id || '').trim();
+      if (!id) continue;
+      next.set(id, { proposal: p, date });
+    }
+  }
+  proposalLookupCache = next;
+  proposalLookupCacheTs = now;
+  return proposalLookupCache;
+}
+
+function findProposalById(proposalId) {
+  const id = String(proposalId || '').trim();
+  if (!id) return null;
+  const cached = refreshProposalLookupCache();
+  return cached.get(id) || null;
+}
+
+function resolveDirectiveCompilerMeta(proposalId, proposalObj = null) {
+  const id = String(proposalId || '').trim();
+  const fromLookup = proposalObj && typeof proposalObj === 'object'
+    ? { proposal: proposalObj, date: null }
+    : findProposalById(id);
+  const proposal = fromLookup && fromLookup.proposal ? fromLookup.proposal : null;
+  const objectiveId = extractObjectiveIdFromProposal(proposal || {});
+  const compiler = loadDirectiveCompilerCached();
+  const lineage = evaluateDirectiveLineageCandidate(
+    { objective_id: objectiveId || '' },
+    {
+      compiler: compiler || undefined,
+      require_t1_root: true,
+      block_missing_objective: true,
+      max_depth: 8
+    }
+  );
+  return {
+    objective_id: objectiveId || null,
+    objective_source_date: fromLookup && fromLookup.date ? fromLookup.date : null,
+    root_objective_id: lineage.root_objective_id || null,
+    lineage_path: Array.isArray(lineage.lineage_path) ? lineage.lineage_path.slice(0, 12) : [],
+    lineage_valid: lineage.pass === true,
+    lineage_reason: lineage.reason || null,
+    compiler_hash: compiler && compiler.hash ? compiler.hash : null
+  };
 }
 
 // Overlay model:
@@ -363,12 +455,21 @@ function overlaySatisfiesStatus(overlayEntry, status) {
   return false;
 }
 
-function synthQueueEventForStatus(proposalId, status, fromStatus, sourceTag = 'proposal_queue_reconcile_v2') {
+function synthQueueEventForStatus(
+  proposalId,
+  status,
+  fromStatus,
+  sourceTag = 'proposal_queue_reconcile_v2',
+  directiveCompilerMeta = null
+) {
   const id = String(proposalId || '').trim();
   const target = String(status || '').trim().toLowerCase();
   if (!id) return null;
   const ts = new Date().toISOString();
   const from = String(fromStatus || '').trim().toLowerCase() || null;
+  const compilerMeta = directiveCompilerMeta && typeof directiveCompilerMeta === 'object'
+    ? { ...directiveCompilerMeta }
+    : null;
   if (target === 'accepted') {
     return {
       ts,
@@ -378,7 +479,8 @@ function synthQueueEventForStatus(proposalId, status, fromStatus, sourceTag = 'p
       reason: `${sourceTag}: sync accepted status`,
       source: sourceTag,
       from_status: from,
-      to_status: target
+      to_status: target,
+      directive_compiler: compilerMeta
     };
   }
   if (target === 'rejected') {
@@ -390,7 +492,8 @@ function synthQueueEventForStatus(proposalId, status, fromStatus, sourceTag = 'p
       reason: `${sourceTag}: sync rejected status`,
       source: sourceTag,
       from_status: from,
-      to_status: target
+      to_status: target,
+      directive_compiler: compilerMeta
     };
   }
   if (target === 'parked') {
@@ -402,7 +505,8 @@ function synthQueueEventForStatus(proposalId, status, fromStatus, sourceTag = 'p
       reason: `${sourceTag}: sync parked status`,
       source: sourceTag,
       from_status: from,
-      to_status: target
+      to_status: target,
+      directive_compiler: compilerMeta
     };
   }
   if (target === 'closed') {
@@ -414,7 +518,8 @@ function synthQueueEventForStatus(proposalId, status, fromStatus, sourceTag = 'p
       evidence_ref: `${sourceTag}:status_sync`,
       source: sourceTag,
       from_status: from,
-      to_status: target
+      to_status: target,
+      directive_compiler: compilerMeta
     };
   }
   return null;
@@ -486,7 +591,14 @@ function reconcileCmd(opts) {
         if (!dryRun) {
           const ovEntry = overlay.get(id) || null;
           if (!overlaySatisfiesStatus(ovEntry, desired)) {
-            const evt = synthQueueEventForStatus(id, desired, current || null);
+            const compilerMeta = resolveDirectiveCompilerMeta(id, p);
+            const evt = synthQueueEventForStatus(
+              id,
+              desired,
+              current || null,
+              'proposal_queue_reconcile_v2',
+              compilerMeta
+            );
             if (evt) {
               const dateFromFile = String(file || '').replace(/\.json$/i, '').trim();
               const eventDate = /^\d{4}-\d{2}-\d{2}$/.test(dateFromFile) ? dateFromFile : todayStr();
@@ -599,12 +711,14 @@ function recordDecision(proposalId, decision, reason) {
     process.exit(1);
   }
   const dateStr = todayStr();
+  const compilerMeta = resolveDirectiveCompilerMeta(proposalId);
   const evt = {
     ts: new Date().toISOString(),
     type: 'decision',
     proposal_id: proposalId,
     decision,
-    reason
+    reason,
+    directive_compiler: compilerMeta
   };
   appendJsonl(decisionsPathFor(dateStr), evt);
   console.log(`Recorded ${decision} for ${proposalId}: ${reason}`);
@@ -620,12 +734,14 @@ function recordOutcome(proposalId, outcome, evidenceRef) {
     process.exit(1);
   }
   const dateStr = todayStr();
+  const compilerMeta = resolveDirectiveCompilerMeta(proposalId);
   const evt = {
     ts: new Date().toISOString(),
     type: 'outcome',
     proposal_id: proposalId,
     outcome,
-    evidence_ref: evidenceRef
+    evidence_ref: evidenceRef,
+    directive_compiler: compilerMeta
   };
   appendJsonl(decisionsPathFor(dateStr), evt);
   console.log(`Recorded ${outcome} for ${proposalId}: ${evidenceRef}`);
@@ -905,7 +1021,8 @@ module.exports = {
   reconcileCmd,
   recordDecision,
   recordOutcome,
-  parseArgs
+  parseArgs,
+  resolveDirectiveCompilerMeta
 };
 
 if (require.main === module) {

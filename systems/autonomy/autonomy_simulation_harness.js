@@ -14,6 +14,11 @@
 
 const fs = require('fs');
 const path = require('path');
+const {
+  compileDirectiveLineage,
+  evaluateDirectiveLineageCandidate,
+  extractObjectiveIdFromProposal
+} = require('../security/directive_compiler.js');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const RUNS_DIR = process.env.AUTONOMY_SIM_RUNS_DIR
@@ -34,6 +39,10 @@ const SAFETY_WARN = Number(process.env.AUTONOMY_SIM_SAFETY_WARN || 0.25);
 const SAFETY_FAIL = Number(process.env.AUTONOMY_SIM_SAFETY_FAIL || 0.45);
 const MIN_ATTEMPTS = Math.max(1, Number(process.env.AUTONOMY_SIM_MIN_ATTEMPTS || 5));
 const MAX_WINDOW_DAYS = Math.max(1, Math.floor(Number(process.env.AUTONOMY_SIM_MAX_DAYS || 180)));
+const SIM_LINEAGE_REQUIRED = String(process.env.AUTONOMY_SIM_LINEAGE_REQUIRED || '1').trim() !== '0';
+const SIM_LINEAGE_REQUIRE_T1_ROOT = String(process.env.AUTONOMY_SIM_LINEAGE_REQUIRE_T1_ROOT || '1').trim() !== '0';
+const SIM_LINEAGE_BLOCK_MISSING_OBJECTIVE = String(process.env.AUTONOMY_SIM_LINEAGE_BLOCK_MISSING_OBJECTIVE || '1').trim() !== '0';
+const SIM_LINEAGE_FILTER_CONTEXTLESS = String(process.env.AUTONOMY_SIM_LINEAGE_FILTER_CONTEXTLESS || '1').trim() !== '0';
 
 function usage() {
   console.log('Usage:');
@@ -148,11 +157,128 @@ function isSafetyStop(evt) {
     || result.includes('directive_pulse_tier_reservation');
 }
 
+function normalizeText(v) {
+  return String(v == null ? '' : v).trim();
+}
+
 function objectiveIdFromRun(evt) {
   if (!evt || evt.type !== 'autonomy_run') return '';
   const pulse = evt.directive_pulse && typeof evt.directive_pulse === 'object' ? evt.directive_pulse : {};
-  const id = String(pulse.objective_id || evt.objective_id || '').trim();
+  const binding = evt.objective_binding && typeof evt.objective_binding === 'object'
+    ? evt.objective_binding
+    : {};
+  const id = normalizeText(
+    pulse.objective_id
+    || evt.objective_id
+    || binding.objective_id
+    || ''
+  );
   return id;
+}
+
+function proposalIdFromRun(evt) {
+  if (!evt || evt.type !== 'autonomy_run') return '';
+  const topEscalation = evt.top_escalation && typeof evt.top_escalation === 'object'
+    ? evt.top_escalation
+    : {};
+  const id = normalizeText(
+    evt.proposal_id
+    || evt.selected_proposal_id
+    || topEscalation.proposal_id
+    || ''
+  );
+  return id;
+}
+
+function normalizeProposalRows(raw) {
+  if (Array.isArray(raw)) return raw;
+  if (raw && Array.isArray(raw.proposals)) return raw.proposals;
+  return [];
+}
+
+function proposalIndexForWindow(dates) {
+  const byId = new Map();
+  for (const d of dates) {
+    const fp = path.join(PROPOSALS_DIR, `${d}.json`);
+    const rows = normalizeProposalRows(readJson(fp, []));
+    for (const row of rows) {
+      if (!row || typeof row !== 'object') continue;
+      const id = normalizeText(row.id || '');
+      if (!id) continue;
+      const objectiveId = extractObjectiveIdFromProposal(row);
+      byId.set(id, {
+        proposal_id: id,
+        proposal_date: d,
+        objective_id: objectiveId || '',
+        proposal_type: normalizeText(row.type || '')
+      });
+    }
+  }
+  return byId;
+}
+
+function resolveRunContext(evt, proposalIndex) {
+  const proposalId = proposalIdFromRun(evt);
+  const fromRun = objectiveIdFromRun(evt);
+  const fromIndex = proposalId && proposalIndex && proposalIndex.get(proposalId)
+    ? normalizeText(proposalIndex.get(proposalId).objective_id || '')
+    : '';
+  return {
+    proposal_id: proposalId || null,
+    objective_id: fromRun || fromIndex || null,
+    source: fromRun ? 'run' : (fromIndex ? 'proposal_index' : 'none')
+  };
+}
+
+function applyDirectiveCompilerProjection(attempts, proposalIndex, directiveCompiler) {
+  const accepted = [];
+  const rejected = [];
+  const rejectedByReason = {};
+
+  for (const evt of attempts) {
+    const ctx = resolveRunContext(evt, proposalIndex);
+    if (SIM_LINEAGE_FILTER_CONTEXTLESS && !ctx.objective_id && !ctx.proposal_id) {
+      const row = {
+        pass: false,
+        reason: 'objective_context_missing',
+        objective_id: null,
+        root_objective_id: null,
+        lineage_path: []
+      };
+      rejected.push({ evt, context: ctx, lineage: row });
+      rejectedByReason[row.reason] = Number(rejectedByReason[row.reason] || 0) + 1;
+      continue;
+    }
+
+    const lineage = SIM_LINEAGE_REQUIRED
+      ? evaluateDirectiveLineageCandidate(
+        {
+          objective_id: ctx.objective_id || ''
+        },
+        {
+          compiler: directiveCompiler,
+          require_t1_root: SIM_LINEAGE_REQUIRE_T1_ROOT,
+          block_missing_objective: SIM_LINEAGE_BLOCK_MISSING_OBJECTIVE,
+          max_depth: 8
+        }
+      )
+      : { pass: true, reason: null, objective_id: ctx.objective_id || null, root_objective_id: null, lineage_path: [] };
+
+    if (!lineage.pass) {
+      const reason = String(lineage.reason || 'lineage_invalid');
+      rejected.push({ evt, context: ctx, lineage });
+      rejectedByReason[reason] = Number(rejectedByReason[reason] || 0) + 1;
+      continue;
+    }
+
+    accepted.push(evt);
+  }
+
+  return {
+    accepted,
+    rejected,
+    rejected_by_reason: rejectedByReason
+  };
 }
 
 function queueSnapshotForWindow(dates) {
@@ -186,8 +312,22 @@ function computeSimulation(endDateStr, days) {
     runs.push(...readJsonl(path.join(RUNS_DIR, `${d}.jsonl`)));
   }
   const runRows = runs.filter((row) => row && row.type === 'autonomy_run');
-  const attempts = runRows.filter(isAttemptRun);
-  const executed = runRows.filter((row) => row && row.result === 'executed');
+  const baselineAttempts = runRows.filter(isAttemptRun);
+  const baselineExecuted = runRows.filter((row) => row && row.result === 'executed');
+  const baselineShipped = baselineExecuted.filter((row) => String(row.outcome || '') === 'shipped');
+  const baselineNoProgress = baselineAttempts.filter(isNoProgress);
+  const baselineSafetyStops = baselineAttempts.filter(isSafetyStop);
+
+  const proposalIndex = proposalIndexForWindow(dates);
+  const directiveCompiler = compileDirectiveLineage();
+  const compilerProjection = applyDirectiveCompilerProjection(
+    baselineAttempts,
+    proposalIndex,
+    directiveCompiler
+  );
+
+  const attempts = compilerProjection.accepted;
+  const executed = attempts.filter((row) => row && row.result === 'executed');
   const shipped = executed.filter((row) => String(row.outcome || '') === 'shipped');
   const noProgress = attempts.filter(isNoProgress);
   const safetyStops = attempts.filter(isSafetyStop);
@@ -270,6 +410,30 @@ function computeSimulation(endDateStr, days) {
       shipped: shipped.length,
       no_progress: noProgress.length,
       safety_stops: safetyStops.length
+    },
+    baseline_counters: {
+      attempts: baselineAttempts.length,
+      executed: baselineExecuted.length,
+      shipped: baselineShipped.length,
+      no_progress: baselineNoProgress.length,
+      safety_stops: baselineSafetyStops.length
+    },
+    compiler_projection: {
+      enabled: SIM_LINEAGE_REQUIRED === true,
+      lineage_require_t1_root: SIM_LINEAGE_REQUIRE_T1_ROOT === true,
+      lineage_block_missing_objective: SIM_LINEAGE_BLOCK_MISSING_OBJECTIVE === true,
+      filter_contextless_attempts: SIM_LINEAGE_FILTER_CONTEXTLESS === true,
+      compiler_hash: directiveCompiler.hash || null,
+      compiler_active_count: Number(directiveCompiler.active_count || 0),
+      accepted_attempts: compilerProjection.accepted.length,
+      rejected_attempts: compilerProjection.rejected.length,
+      rejected_by_reason: compilerProjection.rejected_by_reason || {},
+      sample_rejected: compilerProjection.rejected.slice(0, 8).map((row) => ({
+        result: String(row && row.evt && row.evt.result || ''),
+        proposal_id: row && row.context ? row.context.proposal_id : null,
+        objective_id: row && row.context ? row.context.objective_id : null,
+        reason: row && row.lineage ? row.lineage.reason || null : null
+      }))
     },
     queue,
     objective_mix: {

@@ -30,6 +30,7 @@ function run() {
     pressure_min_value_signal: 62,
     meta_no_change_streak_limit: 2,
     high_risk_exempt: true,
+    lineage_required: false,
     meta_types: ['local_state_fallback', 'collector_remediation']
   };
 
@@ -107,6 +108,65 @@ function run() {
   });
   assert.strictEqual(passAlternative.pass, true, 'non-dominant high-value candidate should pass');
 
+  const lineageCompiler = {
+    resolveObjective(id) {
+      if (id === 'T1_valid') {
+        return {
+          pass: true,
+          reason: null,
+          objective_id: id,
+          root_objective_id: 'T1_valid',
+          lineage_path: ['T1_valid'],
+          depth: 1
+        };
+      }
+      return {
+        pass: false,
+        reason: 'objective_unknown',
+        objective_id: id || null,
+        root_objective_id: null,
+        lineage_path: [],
+        depth: 0
+      };
+    }
+  };
+  const lineagePolicy = {
+    ...policy,
+    lineage_required: true,
+    lineage_require_t1_root: true,
+    lineage_block_missing_objective: true
+  };
+  const lineageBlocked = evaluateObjectiveRuntimeCandidate({
+    dateStr: date,
+    summary: { ...summary, policy: lineagePolicy },
+    candidate: {
+      proposal_id: 'X-1',
+      proposal_type: 'opportunity_capture',
+      objective_id: 'T1_unknown',
+      risk: 'low',
+      value_signal_score: 90
+    }
+  }, {
+    directiveCompiler: lineageCompiler
+  });
+  assert.strictEqual(lineageBlocked.pass, false, 'unknown objective should fail lineage gate');
+  assert.strictEqual(lineageBlocked.reason, 'objective_unknown', 'lineage gate should expose objective_unknown');
+
+  const lineagePass = evaluateObjectiveRuntimeCandidate({
+    dateStr: date,
+    summary: { ...summary, policy: lineagePolicy },
+    candidate: {
+      proposal_id: 'X-2',
+      proposal_type: 'opportunity_capture',
+      objective_id: 'T1_valid',
+      risk: 'low',
+      value_signal_score: 90
+    }
+  }, {
+    directiveCompiler: lineageCompiler
+  });
+  assert.strictEqual(lineagePass.pass, true, 'known objective should pass lineage gate');
+
   console.log('objective_runtime_governor.test.js: OK');
 }
 
@@ -116,4 +176,3 @@ try {
   console.error(`objective_runtime_governor.test.js: FAIL: ${err.message}`);
   process.exit(1);
 }
-

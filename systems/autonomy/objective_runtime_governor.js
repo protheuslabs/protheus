@@ -3,6 +3,10 @@
 
 const fs = require('fs');
 const path = require('path');
+const {
+  compileDirectiveLineage,
+  evaluateDirectiveLineageCandidate
+} = require('../security/directive_compiler.js');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const DEFAULT_POLICY_PATH = process.env.AUTONOMY_OBJECTIVE_RUNTIME_POLICY_PATH
@@ -23,6 +27,12 @@ const DEFAULT_META_TYPES = [
   'human_escalation',
   'collector_remediation'
 ];
+const DIRECTIVE_COMPILER_CACHE_TTL_MS = Math.max(
+  1000,
+  Number(process.env.AUTONOMY_DIRECTIVE_COMPILER_CACHE_TTL_MS || 30000)
+);
+let cachedDirectiveCompiler = null;
+let cachedDirectiveCompilerTs = 0;
 
 function clampNumber(v, lo, hi, fallback) {
   const n = Number(v);
@@ -110,7 +120,11 @@ function defaultPolicy() {
     pressure_min_value_signal: 62,
     meta_no_change_streak_limit: 2,
     high_risk_exempt: true,
-    meta_types: DEFAULT_META_TYPES.slice()
+    meta_types: DEFAULT_META_TYPES.slice(),
+    lineage_required: true,
+    lineage_require_t1_root: true,
+    lineage_block_missing_objective: true,
+    lineage_max_depth: 8
   };
 }
 
@@ -134,12 +148,35 @@ function normalizePolicy(input) {
       base.meta_no_change_streak_limit
     ))),
     high_risk_exempt: merged.high_risk_exempt !== false,
+    lineage_required: merged.lineage_required !== false,
+    lineage_require_t1_root: merged.lineage_require_t1_root !== false,
+    lineage_block_missing_objective: merged.lineage_block_missing_objective !== false,
+    lineage_max_depth: Math.max(1, Math.round(clampNumber(
+      merged.lineage_max_depth,
+      1,
+      24,
+      base.lineage_max_depth
+    ))),
     meta_types: Array.from(new Set(
       (Array.isArray(merged.meta_types) ? merged.meta_types : base.meta_types)
         .map((v) => normalizeProposalType(v))
         .filter(Boolean)
     ))
   };
+}
+
+function loadDirectiveCompilerCached(opts = {}) {
+  const now = Date.now();
+  if (
+    !opts.forceRefresh
+    && cachedDirectiveCompiler
+    && (now - cachedDirectiveCompilerTs) <= DIRECTIVE_COMPILER_CACHE_TTL_MS
+  ) {
+    return cachedDirectiveCompiler;
+  }
+  cachedDirectiveCompiler = compileDirectiveLineage(opts);
+  cachedDirectiveCompilerTs = now;
+  return cachedDirectiveCompiler;
 }
 
 function loadObjectiveRuntimePolicy(policyPath = DEFAULT_POLICY_PATH) {
@@ -309,8 +346,31 @@ function evaluateObjectiveRuntimeCandidate(input, opts = {}) {
       dominant_share: Number(summary.dominant_share || 0),
       objective_share: objectiveStats ? Number(objectiveStats.share || 0) : 0,
       objective_meta_no_change_streak: objectiveStats ? Number(objectiveStats.meta_no_change_streak || 0) : 0
-    }
+    },
+    lineage: null
   };
+
+  if (policy.lineage_required === true) {
+    const lineage = evaluateDirectiveLineageCandidate(
+      {
+        objective_id: objectiveId
+      },
+      {
+        compiler: opts.directiveCompiler || loadDirectiveCompilerCached(opts.directiveCompilerOpts || {}),
+        require_t1_root: policy.lineage_require_t1_root === true,
+        block_missing_objective: policy.lineage_block_missing_objective === true,
+        max_depth: policy.lineage_max_depth
+      }
+    );
+    response.lineage = lineage;
+    if (!lineage.pass) {
+      response.pass = false;
+      response.gate = 'objective_runtime';
+      response.reason = String(lineage.reason || 'lineage_invalid');
+      response.reasons.push(String(lineage.reason || 'lineage_invalid'));
+      return response;
+    }
+  }
 
   if (summary.enabled !== true || summary.enforced !== true) return response;
   if (policy.high_risk_exempt === true && risk === 'high') {
@@ -372,6 +432,20 @@ function evaluateObjectiveRuntimeCandidate(input, opts = {}) {
 function settleObjectiveRuntimeOutcome(input, opts = {}) {
   const src = input && typeof input === 'object' ? input : {};
   const settlementsPath = opts.settlementsPath || DEFAULT_SETTLEMENTS_PATH;
+  const policy = normalizePolicy(opts.policy || loadObjectiveRuntimePolicy(opts.policyPath || DEFAULT_POLICY_PATH));
+  const lineage = policy.lineage_required === true
+    ? evaluateDirectiveLineageCandidate(
+      {
+        objective_id: src.objective_id
+      },
+      {
+        compiler: opts.directiveCompiler || loadDirectiveCompilerCached(opts.directiveCompilerOpts || {}),
+        require_t1_root: policy.lineage_require_t1_root === true,
+        block_missing_objective: policy.lineage_block_missing_objective === true,
+        max_depth: policy.lineage_max_depth
+      }
+    )
+    : null;
   const row = {
     ts: normalizeText(src.ts) || nowIso(),
     date: normalizeText(src.date) || normalizeText(src.dateStr) || nowIso().slice(0, 10),
@@ -389,6 +463,12 @@ function settleObjectiveRuntimeOutcome(input, opts = {}) {
     external_signal: src.external_signal === true
       || (normalizeOutcome(src.outcome) === 'shipped' && isExternalSignalProposalType(src.proposal_type))
   };
+  if (lineage && typeof lineage === 'object') {
+    row.lineage_valid = lineage.pass === true;
+    row.lineage_reason = lineage.reason || null;
+    row.root_objective_id = lineage.root_objective_id || null;
+    row.lineage_path = Array.isArray(lineage.lineage_path) ? lineage.lineage_path.slice(0, 12) : [];
+  }
   appendJsonl(settlementsPath, row);
   const summary = summarizeObjectiveRuntime(src.date || src.dateStr || null, {
     ...opts,
