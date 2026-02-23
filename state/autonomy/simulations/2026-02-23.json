@@ -1,7 +1,7 @@
 {
   "ok": true,
   "type": "autonomy_simulation_harness",
-  "ts": "2026-02-23T09:08:06.263Z",
+  "ts": "2026-02-23T09:24:14.060Z",
   "end_date": "2026-02-23",
   "days": 180,
   "verdict": "pass",
@@ -9,38 +9,38 @@
   "verdict_effective": "pass",
   "checks": {
     "drift_rate": {
-      "value": 0.359,
+      "value": 0.342,
       "warn": 0.65,
       "fail": 0.85,
       "status": "pass"
     },
     "yield_rate": {
-      "value": 0.5,
+      "value": 0.462,
       "warn": 0.2,
       "fail": 0.08,
       "status": "pass"
     },
     "safety_stop_rate": {
-      "value": 0.022,
+      "value": 0.02,
       "warn": 0.25,
       "fail": 0.45,
       "status": "pass"
     },
     "attempt_volume": {
-      "value": 184,
+      "value": 196,
       "min": 5,
       "status": "pass"
     }
   },
   "checks_effective": {
     "drift_rate": {
-      "value": 0.026,
+      "value": 0.038,
       "warn": 0.65,
       "fail": 0.85,
       "status": "pass"
     },
     "yield_rate": {
-      "value": 0.833,
+      "value": 0.714,
       "warn": 0.2,
       "fail": 0.08,
       "status": "pass"
@@ -52,7 +52,7 @@
       "status": "pass"
     },
     "attempt_volume": {
-      "value": 77,
+      "value": 78,
       "min": 5,
       "status": "pass"
     }
@@ -62,32 +62,32 @@
     "baseline_preserved": true,
     "effective_projection_present": true,
     "denominator_reduction_only": true,
-    "denominator_delta": 107
+    "denominator_delta": 118
   },
   "counters": {
-    "run_rows": 192,
-    "attempts": 184,
-    "executed": 12,
+    "run_rows": 208,
+    "attempts": 196,
+    "executed": 13,
     "shipped": 6,
-    "no_progress": 66,
+    "no_progress": 67,
     "safety_stops": 4,
-    "policy_holds": 22
+    "policy_holds": 33
   },
   "baseline_counters": {
-    "attempts": 184,
-    "executed": 12,
+    "attempts": 196,
+    "executed": 13,
     "shipped": 6,
-    "no_progress": 66,
+    "no_progress": 67,
     "safety_stops": 4,
-    "policy_holds": 22
+    "policy_holds": 33
   },
   "effective_counters": {
-    "attempts": 77,
-    "executed": 6,
+    "attempts": 78,
+    "executed": 7,
     "shipped": 5,
-    "no_progress": 2,
+    "no_progress": 3,
     "safety_stops": 0,
-    "policy_holds": 22
+    "policy_holds": 28
   },
   "compiler_projection": {
     "enabled": true,
@@ -96,10 +96,10 @@
     "filter_contextless_attempts": true,
     "compiler_hash": "40cc5cf18353cd99",
     "compiler_active_count": 3,
-    "accepted_attempts": 99,
-    "rejected_attempts": 85,
+    "accepted_attempts": 106,
+    "rejected_attempts": 90,
     "rejected_by_reason": {
-      "objective_context_missing": 64,
+      "objective_context_missing": 69,
       "objective_missing": 21
     },
     "sample_rejected": [
@@ -116,37 +116,37 @@
         "reason": "objective_context_missing"
       },
       {
+        "result": "no_candidates_policy_canary_cap",
+        "proposal_id": null,
+        "objective_id": null,
+        "reason": "objective_context_missing"
+      },
+      {
+        "result": "no_candidates_policy_canary_cap",
+        "proposal_id": null,
+        "objective_id": null,
+        "reason": "objective_context_missing"
+      },
+      {
+        "result": "no_candidates_policy_canary_cap",
+        "proposal_id": null,
+        "objective_id": null,
+        "reason": "objective_context_missing"
+      },
+      {
+        "result": "no_candidates_policy_unchanged_state",
+        "proposal_id": null,
+        "objective_id": null,
+        "reason": "objective_context_missing"
+      },
+      {
+        "result": "no_candidates_policy_canary_cap",
+        "proposal_id": null,
+        "objective_id": null,
+        "reason": "objective_context_missing"
+      },
+      {
         "result": "init_gate_canary_relaxed_readiness",
-        "proposal_id": null,
-        "objective_id": null,
-        "reason": "objective_context_missing"
-      },
-      {
-        "result": "init_gate_canary_relaxed_spc",
-        "proposal_id": null,
-        "objective_id": null,
-        "reason": "objective_context_missing"
-      },
-      {
-        "result": "stop_repeat_gate_unchanged_state",
-        "proposal_id": null,
-        "objective_id": null,
-        "reason": "objective_context_missing"
-      },
-      {
-        "result": "stop_repeat_gate_unchanged_state",
-        "proposal_id": null,
-        "objective_id": null,
-        "reason": "objective_context_missing"
-      },
-      {
-        "result": "stop_repeat_gate_canary_cap",
-        "proposal_id": null,
-        "objective_id": null,
-        "reason": "objective_context_missing"
-      },
-      {
-        "result": "stop_repeat_gate_unchanged_state",
         "proposal_id": null,
         "objective_id": null,
         "reason": "objective_context_missing"
@@ -154,15 +154,15 @@
     ]
   },
   "queue": {
-    "total": 127,
-    "pending": 31,
+    "total": 128,
+    "pending": 32,
     "stale_pending_72h": 0
   },
   "objective_mix": {
-    "executed_total": 6,
+    "executed_total": 7,
     "objective_count": 2,
     "counts": {
-      "T1_generational_wealth_v1": 2,
+      "T1_generational_wealth_v1": 3,
       "T1_make_jay_billionaire_v1": 4
     }
   },
