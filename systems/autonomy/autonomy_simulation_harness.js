@@ -186,11 +186,7 @@ const LEGACY_POLICY_HOLD_RESULTS = new Set([
   'stop_repeat_gate_preview_structural_cooldown',
   'stop_repeat_gate_preview_churn_cooldown',
   'stop_repeat_gate_human_escalation_pending',
-  'stop_init_gate_budget_autopause',
-  'stop_repeat_gate_manual_route_quarantine',
-  'stop_init_gate_execute_readiness_exhausted',
-  'stop_repeat_gate_template_no_change_pressure',
-  'init_gate_blocked_route_runtime'
+  'stop_init_gate_budget_autopause'
 ]);
 
 function isRouteBudgetHoldEvent(evt) {
