@@ -42,12 +42,17 @@ const POLICY_HOLD_FAIL = Number(process.env.AUTONOMY_SIM_POLICY_HOLD_FAIL || 0.3
 const BUDGET_HOLD_WARN = Number(process.env.AUTONOMY_SIM_BUDGET_HOLD_WARN || 0.12);
 const BUDGET_HOLD_FAIL = Number(process.env.AUTONOMY_SIM_BUDGET_HOLD_FAIL || 0.25);
 const BUDGET_AUTOPAUSE_ACTIVE_FAIL = String(process.env.AUTONOMY_SIM_AUTOPAUSE_ACTIVE_FAIL || '1').trim() !== '0';
+const ENFORCE_POLICY_HOLD_FAIL = String(process.env.AUTONOMY_SIM_ENFORCE_POLICY_HOLD_FAIL || '0').trim() === '1';
+const ENFORCE_BUDGET_HOLD_FAIL = String(process.env.AUTONOMY_SIM_ENFORCE_BUDGET_HOLD_FAIL || '0').trim() === '1';
 const MIN_ATTEMPTS = Math.max(1, Number(process.env.AUTONOMY_SIM_MIN_ATTEMPTS || 5));
 const MAX_WINDOW_DAYS = Math.max(1, Math.floor(Number(process.env.AUTONOMY_SIM_MAX_DAYS || 180)));
 const SIM_LINEAGE_REQUIRED = String(process.env.AUTONOMY_SIM_LINEAGE_REQUIRED || '1').trim() !== '0';
 const SIM_LINEAGE_REQUIRE_T1_ROOT = String(process.env.AUTONOMY_SIM_LINEAGE_REQUIRE_T1_ROOT || '1').trim() !== '0';
 const SIM_LINEAGE_BLOCK_MISSING_OBJECTIVE = String(process.env.AUTONOMY_SIM_LINEAGE_BLOCK_MISSING_OBJECTIVE || '1').trim() !== '0';
 const SIM_LINEAGE_FILTER_CONTEXTLESS = String(process.env.AUTONOMY_SIM_LINEAGE_FILTER_CONTEXTLESS || '1').trim() !== '0';
+const SIM_LINEAGE_ROLLING_CONTEXT = String(process.env.AUTONOMY_SIM_LINEAGE_ROLLING_CONTEXT || '0').trim() === '1';
+const SIM_EXTERNAL_INPUT_OVERRIDE = process.env.AUTONOMY_SIM_RUNS_DIR != null
+  || process.env.AUTONOMY_SIM_PROPOSALS_DIR != null;
 
 function usage() {
   console.log('Usage:');
@@ -172,6 +177,12 @@ function buildChecks(input, context = {}) {
   const safetyRate = safeRate(safetyStops, attempts);
   const policyHoldRate = safeRate(policyHolds, attempts);
   const budgetHoldRate = safeRate(budgetHolds, attempts);
+  const policyHoldStatus = policyHoldRate >= POLICY_HOLD_FAIL
+    ? (ENFORCE_POLICY_HOLD_FAIL ? 'fail' : 'warn')
+    : policyHoldRate >= POLICY_HOLD_WARN ? 'warn' : 'pass';
+  const budgetHoldStatus = budgetHoldRate >= BUDGET_HOLD_FAIL
+    ? (ENFORCE_BUDGET_HOLD_FAIL ? 'fail' : 'warn')
+    : budgetHoldRate >= BUDGET_HOLD_WARN ? 'warn' : 'pass';
   return {
     drift_rate: {
       value: Number(driftRate.toFixed(3)),
@@ -200,13 +211,15 @@ function buildChecks(input, context = {}) {
       value: Number(policyHoldRate.toFixed(3)),
       warn: POLICY_HOLD_WARN,
       fail: POLICY_HOLD_FAIL,
-      status: policyHoldRate >= POLICY_HOLD_FAIL ? 'fail' : policyHoldRate >= POLICY_HOLD_WARN ? 'warn' : 'pass'
+      enforce_fail: ENFORCE_POLICY_HOLD_FAIL,
+      status: policyHoldStatus
     },
     budget_hold_rate: {
       value: Number(budgetHoldRate.toFixed(3)),
       warn: BUDGET_HOLD_WARN,
       fail: BUDGET_HOLD_FAIL,
-      status: budgetHoldRate >= BUDGET_HOLD_FAIL ? 'fail' : budgetHoldRate >= BUDGET_HOLD_WARN ? 'warn' : 'pass'
+      enforce_fail: ENFORCE_BUDGET_HOLD_FAIL,
+      status: budgetHoldStatus
     },
     budget_autopause_active: {
       value: autopauseActive,
@@ -293,6 +306,92 @@ function isBudgetHoldEvent(evt) {
     || holdReason.includes('burn_rate')
     || blockReason.includes('budget')
     || blockReason.includes('burn_rate');
+}
+
+function deriveBudgetAutopauseFromRuns(runRows, endDateStr) {
+  const endMs = Date.parse(`${String(endDateStr || '')}T23:59:59.999Z`);
+  let latestExplicit = null;
+  let latestImplicit = null;
+
+  for (const evt of (Array.isArray(runRows) ? runRows : [])) {
+    if (!evt || evt.type !== 'autonomy_run') continue;
+    const tsMs = Date.parse(String(evt.ts || ''));
+    if (!Number.isFinite(tsMs)) continue;
+    if (Number.isFinite(endMs) && tsMs > endMs) continue;
+
+    const routeSummary = evt.route_summary && typeof evt.route_summary === 'object'
+      ? evt.route_summary
+      : {};
+    const budgetGlobalGuard = routeSummary.budget_global_guard && typeof routeSummary.budget_global_guard === 'object'
+      ? routeSummary.budget_global_guard
+      : null;
+    const autopause = budgetGlobalGuard && budgetGlobalGuard.autopause && typeof budgetGlobalGuard.autopause === 'object'
+      ? budgetGlobalGuard.autopause
+      : null;
+
+    if (autopause && typeof autopause.active === 'boolean') {
+      const untilMs = Date.parse(String(autopause.until || ''));
+      if (!latestExplicit || tsMs >= latestExplicit.ts_ms) {
+        latestExplicit = {
+          ts_ms: tsMs,
+          active: autopause.active === true,
+          until_ms: Number.isFinite(untilMs) ? untilMs : null,
+          source: 'route_summary.autopause'
+        };
+      }
+    }
+
+    const result = String(evt.result || '').toLowerCase();
+    const blockReason = String(evt.route_block_reason || '').toLowerCase();
+    const routeBudgetBlockReason = String(routeSummary.budget_block_reason || '').toLowerCase();
+    if (
+      result.includes('budget_autopause')
+      || blockReason.includes('budget_autopause')
+      || routeBudgetBlockReason.includes('budget_autopause')
+    ) {
+      if (!latestImplicit || tsMs >= latestImplicit.ts_ms) {
+        latestImplicit = {
+          ts_ms: tsMs,
+          active: true,
+          until_ms: null,
+          source: 'budget_autopause_signal'
+        };
+      }
+    }
+  }
+
+  const lastSignal = latestExplicit || latestImplicit;
+  let activeAtEnd = false;
+  if (latestExplicit) {
+    activeAtEnd = latestExplicit.active === true;
+    if (activeAtEnd && Number.isFinite(latestExplicit.until_ms) && Number.isFinite(endMs)) {
+      activeAtEnd = latestExplicit.until_ms > endMs;
+    }
+  } else if (latestImplicit) {
+    activeAtEnd = true;
+  }
+
+  return {
+    observed_in_window: !!lastSignal,
+    active_at_window_end: activeAtEnd,
+    signal_source: lastSignal ? lastSignal.source : null,
+    explicit_last_ts: latestExplicit ? new Date(latestExplicit.ts_ms).toISOString() : null,
+    implicit_last_ts: latestImplicit ? new Date(latestImplicit.ts_ms).toISOString() : null
+  };
+}
+
+function resolveBudgetAutopauseSnapshot(endDateStr, runRows) {
+  const snapshot = readBudgetAutopauseSnapshot(endDateStr);
+  const derived = deriveBudgetAutopauseFromRuns(runRows, endDateStr);
+  const activeRelevant = SIM_EXTERNAL_INPUT_OVERRIDE
+    ? derived.active_at_window_end === true
+    : (snapshot.active_relevant === true || derived.active_at_window_end === true);
+  return {
+    ...snapshot,
+    ...derived,
+    source_mode: SIM_EXTERNAL_INPUT_OVERRIDE ? 'derived_from_runs' : 'live_state_plus_runs',
+    active_relevant: activeRelevant
+  };
 }
 
 function isAttemptRunRaw(evt) {
@@ -432,7 +531,13 @@ function applyDirectiveCompilerProjection(attempts, proposalIndex, directiveComp
         source: 'proposal_objective_cache'
       };
     }
-    if (!ctx.objective_id && !ctx.proposal_id && (rollingContext.objective_id || rollingContext.proposal_id) && isContextlessGateResult(evt)) {
+    if (
+      SIM_LINEAGE_ROLLING_CONTEXT
+      && !ctx.objective_id
+      && !ctx.proposal_id
+      && (rollingContext.objective_id || rollingContext.proposal_id)
+      && isContextlessGateResult(evt)
+    ) {
       ctx = {
         proposal_id: ctx.proposal_id || rollingContext.proposal_id || null,
         objective_id: ctx.objective_id || rollingContext.objective_id || null,
@@ -442,7 +547,7 @@ function applyDirectiveCompilerProjection(attempts, proposalIndex, directiveComp
     if (ctx.proposal_id && ctx.objective_id) {
       proposalObjectiveCache.set(ctx.proposal_id, ctx.objective_id);
     }
-    if (ctx.objective_id || ctx.proposal_id) {
+    if (SIM_LINEAGE_ROLLING_CONTEXT && (ctx.objective_id || ctx.proposal_id)) {
       rollingContext = {
         proposal_id: ctx.proposal_id || rollingContext.proposal_id || null,
         objective_id: ctx.objective_id || rollingContext.objective_id || null
@@ -582,7 +687,7 @@ function computeSimulation(endDateStr, days) {
   }
 
   const queue = queueSnapshotForWindow(dates);
-  const budgetAutopause = readBudgetAutopauseSnapshot(endDateStr);
+  const budgetAutopause = resolveBudgetAutopauseSnapshot(endDateStr, runRows);
   const baselineCounters = {
     attempts: baselineAttemptsRaw.length,
     executed: baselineExecuted.length,
@@ -670,6 +775,7 @@ function computeSimulation(endDateStr, days) {
       lineage_require_t1_root: SIM_LINEAGE_REQUIRE_T1_ROOT === true,
       lineage_block_missing_objective: SIM_LINEAGE_BLOCK_MISSING_OBJECTIVE === true,
       filter_contextless_attempts: SIM_LINEAGE_FILTER_CONTEXTLESS === true,
+      rolling_context_enabled: SIM_LINEAGE_ROLLING_CONTEXT === true,
       compiler_hash: directiveCompiler.hash || null,
       compiler_active_count: Number(directiveCompiler.active_count || 0),
       accepted_attempts: compilerProjection.accepted.length,
