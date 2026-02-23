@@ -6747,6 +6747,7 @@ function maybeRunModelCatalogLoop(dateStr) {
     writeRun(dateStr, {
       ts: nowIso(),
       type: 'autonomy_model_catalog_run',
+      step: 'gate',
       result: 'skipped',
       reason: gate.reason
     });
