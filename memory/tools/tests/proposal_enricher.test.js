@@ -50,6 +50,11 @@ function run() {
   const valueOracleExemptBefore = process.env.AUTONOMY_VALUE_ORACLE_EXEMPT_TYPES;
   const valueOracleDefaultCurrenciesBefore = process.env.AUTONOMY_VALUE_ORACLE_DEFAULT_CURRENCIES;
   const valueOracleRequirePrimaryBefore = process.env.AUTONOMY_VALUE_ORACLE_REQUIRE_PRIMARY_SIGNAL;
+  const mutationGuardRequiredBefore = process.env.AUTONOMY_MUTATION_GUARD_REQUIRED;
+  const mutationBudgetMaxBefore = process.env.AUTONOMY_MUTATION_BUDGET_CAP_MAX;
+  const mutationTtlMaxBefore = process.env.AUTONOMY_MUTATION_TTL_HOURS_MAX;
+  const mutationQuarantineMinBefore = process.env.AUTONOMY_MUTATION_QUARANTINE_HOURS_MIN;
+  const mutationVetoMinBefore = process.env.AUTONOMY_MUTATION_VETO_WINDOW_HOURS_MIN;
   const outcomePolicyPath = path.join(tmpRoot, 'outcome_fitness.json');
   const objectiveId = (() => {
     try {
@@ -79,6 +84,11 @@ function run() {
     process.env.AUTONOMY_VALUE_ORACLE_EXEMPT_TYPES = 'pain_signal_escalation,dream_cycle_escalation,collector_remediation,infrastructure_outage,directive_clarification,directive_decomposition';
     process.env.AUTONOMY_VALUE_ORACLE_DEFAULT_CURRENCIES = 'revenue,delivery';
     process.env.AUTONOMY_VALUE_ORACLE_REQUIRE_PRIMARY_SIGNAL = '0';
+    process.env.AUTONOMY_MUTATION_GUARD_REQUIRED = '1';
+    process.env.AUTONOMY_MUTATION_BUDGET_CAP_MAX = '5';
+    process.env.AUTONOMY_MUTATION_TTL_HOURS_MAX = '168';
+    process.env.AUTONOMY_MUTATION_QUARANTINE_HOURS_MIN = '24';
+    process.env.AUTONOMY_MUTATION_VETO_WINDOW_HOURS_MIN = '24';
     process.env.AUTONOMY_REVENUE_ORACLE_REQUIRED = '1';
     process.env.AUTONOMY_REVENUE_ORACLE_SCOPE = 'dream';
     process.env.AUTONOMY_REVENUE_ORACLE_EXEMPT_TYPES = 'pain_signal_escalation,dream_cycle_escalation,collector_remediation,infrastructure_outage,directive_clarification,directive_decomposition';
@@ -520,6 +530,102 @@ function run() {
       && directiveDeliveryRes.proposal.meta.value_oracle_matched_currencies.includes('delivery'),
       'delivery-oriented proposal should match delivery value currency'
     );
+    const mutationBlockedRes = script.enrichOne({
+      id: 'PMUTATION_BLOCKED',
+      type: 'adaptive_topology_mutation',
+      title: 'Adaptive topology mutation to rewire spawn branches',
+      summary: 'Mutate branch topology for higher throughput.',
+      risk: 'low',
+      evidence: [{ evidence_ref: 'dream:idle:topology_shift', match: 'spawn branch churn detected' }],
+      validation: ['Run bounded dry-run and verify postconditions'],
+      suggested_next_command: 'node systems/routing/route_execute.js --task=\"Simulate topology mutation\" --dry-run'
+    }, {
+      eyes: new Map(),
+      directiveProfile: { available: false, active_directive_ids: [] },
+      directiveObjectiveIds: ['T1_ALPHA_OBJECTIVE'],
+      strategy: null,
+      thresholds: {
+        min_signal_quality: 35,
+        min_sensory_signal_score: 35,
+        min_sensory_relevance_score: 35,
+        min_directive_fit: 20,
+        min_actionability_score: 35,
+        min_composite_eligibility: 45,
+        min_eye_score_ema: 35
+      },
+      outcomePolicy: {}
+    });
+    const mutationBlockedReasons = (mutationBlockedRes.proposal.meta.admission_preview || {}).blocked_by || [];
+    assert.strictEqual(
+      mutationBlockedRes.proposal.meta.adaptive_mutation_guard_applies,
+      true,
+      'adaptive mutation proposal should trigger mutation safety guard'
+    );
+    assert.strictEqual(
+      mutationBlockedRes.proposal.meta.adaptive_mutation_guard_pass,
+      false,
+      'adaptive mutation proposal without controls should fail safety guard'
+    );
+    assert.ok(
+      Array.isArray(mutationBlockedReasons) && mutationBlockedReasons.includes('adaptive_mutation_missing_safety_attestation'),
+      'adaptive mutation proposal should fail closed when safety attestation is missing'
+    );
+
+    const mutationPassRes = script.enrichOne({
+      id: 'PMUTATION_PASS',
+      type: 'adaptive_topology_mutation',
+      title: 'Adaptive topology mutation with bounded guardrails',
+      summary: 'Mutation trial keeps strict safety attestation and rollback receipt controls.',
+      risk: 'low',
+      evidence: [{ evidence_ref: 'eye:local_state_fallback', match: 'topology pressure under sustained load' }],
+      validation: ['Apply bounded mutation dry-run', 'Verify postconditions and rollback receipt'],
+      suggested_next_command: 'node systems/routing/route_execute.js --task=\"Run guarded topology mutation dry-run\" --dry-run',
+      action_spec: {
+        version: 1,
+        objective_id: 'T1_ALPHA_OBJECTIVE',
+        target: 'spawn:topology',
+        verify: ['record mutation receipt'],
+        success_criteria: [
+          { metric: 'postconditions_ok', target: 'postconditions pass', horizon: 'next run' }
+        ],
+        rollback_receipt_id: 'receipt_mutation_guard_001',
+        rollback: 'revert topology mutation'
+      },
+      meta: {
+        objective_id: 'T1_ALPHA_OBJECTIVE',
+        safety_attestation_id: 'attest_mutation_guard_001',
+        mutation_budget_cap: 2,
+        mutation_ttl_hours: 48,
+        mutation_quarantine_hours: 48,
+        mutation_veto_window_hours: 24,
+        rollback_receipt_id: 'receipt_mutation_guard_001'
+      }
+    }, {
+      eyes: new Map(),
+      directiveProfile: { available: false, active_directive_ids: [] },
+      directiveObjectiveIds: ['T1_ALPHA_OBJECTIVE'],
+      strategy: null,
+      thresholds: {
+        min_signal_quality: 35,
+        min_sensory_signal_score: 35,
+        min_sensory_relevance_score: 35,
+        min_directive_fit: 20,
+        min_actionability_score: 35,
+        min_composite_eligibility: 45,
+        min_eye_score_ema: 35
+      },
+      outcomePolicy: {}
+    });
+    assert.strictEqual(
+      mutationPassRes.proposal.meta.adaptive_mutation_guard_pass,
+      true,
+      'adaptive mutation proposal with required controls should pass mutation safety guard'
+    );
+    assert.strictEqual(
+      mutationPassRes.proposal.meta.adaptive_mutation_guard_reason,
+      null,
+      'passing mutation guard should not emit guard reason'
+    );
 
     assert.ok(high.meta && high.meta.admission_preview && high.meta.admission_preview.eligible === false, 'high-risk proposal should be blocked');
     assert.ok(
@@ -569,6 +675,16 @@ function run() {
     else process.env.AUTONOMY_VALUE_ORACLE_DEFAULT_CURRENCIES = valueOracleDefaultCurrenciesBefore;
     if (valueOracleRequirePrimaryBefore == null) delete process.env.AUTONOMY_VALUE_ORACLE_REQUIRE_PRIMARY_SIGNAL;
     else process.env.AUTONOMY_VALUE_ORACLE_REQUIRE_PRIMARY_SIGNAL = valueOracleRequirePrimaryBefore;
+    if (mutationGuardRequiredBefore == null) delete process.env.AUTONOMY_MUTATION_GUARD_REQUIRED;
+    else process.env.AUTONOMY_MUTATION_GUARD_REQUIRED = mutationGuardRequiredBefore;
+    if (mutationBudgetMaxBefore == null) delete process.env.AUTONOMY_MUTATION_BUDGET_CAP_MAX;
+    else process.env.AUTONOMY_MUTATION_BUDGET_CAP_MAX = mutationBudgetMaxBefore;
+    if (mutationTtlMaxBefore == null) delete process.env.AUTONOMY_MUTATION_TTL_HOURS_MAX;
+    else process.env.AUTONOMY_MUTATION_TTL_HOURS_MAX = mutationTtlMaxBefore;
+    if (mutationQuarantineMinBefore == null) delete process.env.AUTONOMY_MUTATION_QUARANTINE_HOURS_MIN;
+    else process.env.AUTONOMY_MUTATION_QUARANTINE_HOURS_MIN = mutationQuarantineMinBefore;
+    if (mutationVetoMinBefore == null) delete process.env.AUTONOMY_MUTATION_VETO_WINDOW_HOURS_MIN;
+    else process.env.AUTONOMY_MUTATION_VETO_WINDOW_HOURS_MIN = mutationVetoMinBefore;
   }
 }
 

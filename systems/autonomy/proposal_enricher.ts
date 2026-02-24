@@ -137,6 +137,13 @@ const AUTONOMY_VALUE_ORACLE_DEFAULT_CURRENCIES = String(process.env.AUTONOMY_VAL
   .filter((k) => VALUE_CURRENCY_KEYS.has(k));
 const AUTONOMY_VALUE_ORACLE_REQUIRE_PRIMARY_SIGNAL = String(process.env.AUTONOMY_VALUE_ORACLE_REQUIRE_PRIMARY_SIGNAL || '0') === '1';
 const AUTONOMY_VALUE_ORACLE_BACKFILL_EXPECTED_VALUE = String(process.env.AUTONOMY_VALUE_ORACLE_BACKFILL_EXPECTED_VALUE || '1') !== '0';
+const ADAPTIVE_MUTATION_TYPE_RE = /\b(adaptive|mutation|topology|genome|fractal|morph|self[_-]?(?:improv|mutation|modify)|branch[_-]?(?:spawn|rewire|prune)|spawn[_-]?(?:broker|agent|cell)|organism)\b/i;
+const ADAPTIVE_MUTATION_SIGNAL_RE = /\b(topology|genome|fractal|mutation|morph|rewire|prune|spawn|self[_-]?improv)\b/i;
+const AUTONOMY_MUTATION_GUARD_REQUIRED = String(process.env.AUTONOMY_MUTATION_GUARD_REQUIRED || '1') !== '0';
+const AUTONOMY_MUTATION_BUDGET_CAP_MAX = clamp(Number(process.env.AUTONOMY_MUTATION_BUDGET_CAP_MAX || 5), 1, 50);
+const AUTONOMY_MUTATION_TTL_HOURS_MAX = clamp(Number(process.env.AUTONOMY_MUTATION_TTL_HOURS_MAX || 168), 1, 24 * 90);
+const AUTONOMY_MUTATION_QUARANTINE_HOURS_MIN = clamp(Number(process.env.AUTONOMY_MUTATION_QUARANTINE_HOURS_MIN || 24), 0, 24 * 30);
+const AUTONOMY_MUTATION_VETO_WINDOW_HOURS_MIN = clamp(Number(process.env.AUTONOMY_MUTATION_VETO_WINDOW_HOURS_MIN || 24), 0, 24 * 30);
 const EVALUABLE_SUCCESS_METRICS = new Set([
   'execution_success',
   'postconditions_ok',
@@ -1316,6 +1323,225 @@ function valueOracleDecision(proposal, blobHint, isMetaNoop, directiveProfile) {
   };
 }
 
+function firstFinitePositiveNumber(values) {
+  for (const value of values || []) {
+    const n = Number(value);
+    if (!Number.isFinite(n) || n <= 0) continue;
+    return n;
+  }
+  return null;
+}
+
+function parseHoursLike(value) {
+  const numeric = Number(value);
+  if (Number.isFinite(numeric) && numeric > 0) return numeric;
+  const text = normalizeText(value).toLowerCase();
+  if (!text) return null;
+  const m = text.match(/^(-?\d+(?:\.\d+)?)\s*(h|hr|hour|hours|d|day|days)?$/i);
+  if (!m) return null;
+  const base = Number(m[1]);
+  if (!Number.isFinite(base) || base <= 0) return null;
+  const unit = String(m[2] || 'h').toLowerCase();
+  if (unit === 'd' || unit === 'day' || unit === 'days') return base * 24;
+  return base;
+}
+
+function parseFutureHoursFromTimestamp(values) {
+  const now = Date.now();
+  for (const value of values || []) {
+    const text = normalizeText(value);
+    if (!text) continue;
+    const ts = Date.parse(text);
+    if (!Number.isFinite(ts)) continue;
+    const deltaHours = (ts - now) / 3600000;
+    if (deltaHours > 0) return deltaHours;
+  }
+  return null;
+}
+
+function parseDaysFieldToHours(value) {
+  const numeric = Number(value);
+  if (Number.isFinite(numeric) && numeric > 0) return numeric * 24;
+  const text = normalizeText(value).toLowerCase();
+  if (!text) return null;
+  const m = text.match(/^(-?\d+(?:\.\d+)?)\s*(d|day|days|h|hr|hour|hours)?$/i);
+  if (!m) return null;
+  const base = Number(m[1]);
+  if (!Number.isFinite(base) || base <= 0) return null;
+  const unit = String(m[2] || 'day').toLowerCase();
+  if (unit === 'h' || unit === 'hr' || unit === 'hour' || unit === 'hours') return base;
+  return base * 24;
+}
+
+function hasAdaptiveMutationSignal(proposal) {
+  const p = proposal && typeof proposal === 'object' ? proposal : {};
+  const type = normalizeText(p.type).toLowerCase();
+  if (type && ADAPTIVE_MUTATION_TYPE_RE.test(type)) return true;
+  const meta = p.meta && typeof p.meta === 'object' ? p.meta : {};
+  if (
+    meta.adaptive_mutation === true
+    || meta.mutation_proposal === true
+    || meta.topology_mutation === true
+    || meta.self_improvement_change === true
+  ) {
+    return true;
+  }
+  const blob = normalizeFitText([
+    p.title,
+    p.summary,
+    p.notes,
+    p.suggested_next_command,
+    p.action_spec && typeof p.action_spec === 'object' ? JSON.stringify(p.action_spec) : '',
+    meta && typeof meta === 'object' ? JSON.stringify(meta) : ''
+  ].join(' '));
+  if (!blob) return false;
+  return ADAPTIVE_MUTATION_SIGNAL_RE.test(blob);
+}
+
+function adaptiveMutationGuardDecision(proposal) {
+  const p = proposal && typeof proposal === 'object' ? proposal : {};
+  const meta = p.meta && typeof p.meta === 'object' ? p.meta : {};
+  const actionSpec = p.action_spec && typeof p.action_spec === 'object' ? p.action_spec : {};
+  const applies = AUTONOMY_MUTATION_GUARD_REQUIRED && hasAdaptiveMutationSignal(p);
+  if (!AUTONOMY_MUTATION_GUARD_REQUIRED) {
+    return {
+      enabled: false,
+      required: false,
+      applies: false,
+      pass: true,
+      reason: null,
+      reasons: [],
+      controls: {},
+      thresholds: {}
+    };
+  }
+  if (!applies) {
+    return {
+      enabled: true,
+      required: true,
+      applies: false,
+      pass: true,
+      reason: null,
+      reasons: [],
+      controls: {},
+      thresholds: {
+        budget_cap_max: AUTONOMY_MUTATION_BUDGET_CAP_MAX,
+        ttl_hours_max: AUTONOMY_MUTATION_TTL_HOURS_MAX,
+        quarantine_hours_min: AUTONOMY_MUTATION_QUARANTINE_HOURS_MIN,
+        veto_window_hours_min: AUTONOMY_MUTATION_VETO_WINDOW_HOURS_MIN
+      }
+    };
+  }
+
+  const reasons = [];
+
+  const safetyAttestation = normalizeText(
+    meta.safety_attestation_id
+    || meta.safety_attestation
+    || meta.attestation_id
+    || meta.attestation_hash
+    || meta.integrity_attestation_id
+    || actionSpec.safety_attestation_id
+    || actionSpec.attestation_id
+    || actionSpec.integrity_attestation_id
+  );
+  const safetyAttestationPresent = !!safetyAttestation;
+  if (!safetyAttestationPresent) reasons.push('adaptive_mutation_missing_safety_attestation');
+
+  const budgetCap = firstFinitePositiveNumber([
+    meta.mutation_budget_cap,
+    meta.adaptive_mutation_budget_cap,
+    meta.budget_cap,
+    actionSpec.mutation_budget_cap,
+    actionSpec.budget_cap
+  ]);
+  if (budgetCap == null) reasons.push('adaptive_mutation_missing_budget_cap');
+  else if (budgetCap > AUTONOMY_MUTATION_BUDGET_CAP_MAX) reasons.push('adaptive_mutation_budget_cap_exceeds_max');
+
+  const ttlHoursFromNumeric = firstFinitePositiveNumber([
+    parseHoursLike(meta.mutation_ttl_hours),
+    parseHoursLike(meta.adaptive_mutation_ttl_hours),
+    parseHoursLike(meta.ttl_hours),
+    parseHoursLike(meta.lease_ttl_hours),
+    parseHoursLike(actionSpec.mutation_ttl_hours),
+    parseHoursLike(actionSpec.ttl_hours),
+    parseHoursLike(actionSpec.lease_ttl_hours)
+  ]);
+  const ttlHoursFromExpiry = parseFutureHoursFromTimestamp([
+    meta.mutation_expires_at,
+    meta.expires_at,
+    meta.lease_expires_at,
+    actionSpec.mutation_expires_at,
+    actionSpec.expires_at,
+    actionSpec.lease_expires_at
+  ]);
+  const ttlHours = ttlHoursFromNumeric != null ? ttlHoursFromNumeric : ttlHoursFromExpiry;
+  if (ttlHours == null) reasons.push('adaptive_mutation_missing_ttl');
+  else if (ttlHours > AUTONOMY_MUTATION_TTL_HOURS_MAX) reasons.push('adaptive_mutation_ttl_exceeds_max');
+
+  const quarantineHours = firstFinitePositiveNumber([
+    parseHoursLike(meta.mutation_quarantine_hours),
+    parseHoursLike(meta.quarantine_hours),
+    parseHoursLike(meta.quarantine_window_hours),
+    parseDaysFieldToHours(meta.mutation_quarantine_days),
+    parseDaysFieldToHours(meta.quarantine_days),
+    parseHoursLike(actionSpec.mutation_quarantine_hours),
+    parseHoursLike(actionSpec.quarantine_hours),
+    parseHoursLike(actionSpec.quarantine_window_hours),
+    parseDaysFieldToHours(actionSpec.mutation_quarantine_days),
+    parseDaysFieldToHours(actionSpec.quarantine_days)
+  ]);
+  if (quarantineHours == null) reasons.push('adaptive_mutation_missing_quarantine_window');
+  else if (quarantineHours < AUTONOMY_MUTATION_QUARANTINE_HOURS_MIN) reasons.push('adaptive_mutation_quarantine_window_too_short');
+
+  const vetoWindowHours = firstFinitePositiveNumber([
+    parseHoursLike(meta.mutation_veto_window_hours),
+    parseHoursLike(meta.veto_window_hours),
+    parseDaysFieldToHours(meta.veto_window_days),
+    parseHoursLike(actionSpec.mutation_veto_window_hours),
+    parseHoursLike(actionSpec.veto_window_hours),
+    parseDaysFieldToHours(actionSpec.veto_window_days)
+  ]);
+  if (vetoWindowHours == null) reasons.push('adaptive_mutation_missing_veto_window');
+  else if (vetoWindowHours < AUTONOMY_MUTATION_VETO_WINDOW_HOURS_MIN) reasons.push('adaptive_mutation_veto_window_too_short');
+
+  const rollbackReceipt = normalizeText(
+    meta.rollback_receipt_id
+    || meta.rollback_receipt_path
+    || meta.rollback_receipt
+    || actionSpec.rollback_receipt_id
+    || actionSpec.rollback_receipt_path
+    || actionSpec.rollback_receipt
+  );
+  const rollbackReceiptPresent = !!rollbackReceipt;
+  if (!rollbackReceiptPresent) reasons.push('adaptive_mutation_missing_rollback_receipt');
+
+  return {
+    enabled: true,
+    required: true,
+    applies,
+    pass: reasons.length === 0,
+    reason: reasons[0] || null,
+    reasons,
+    controls: {
+      safety_attestation_present: safetyAttestationPresent,
+      safety_attestation: safetyAttestationPresent ? safetyAttestation : null,
+      budget_cap: budgetCap != null ? Number(budgetCap) : null,
+      ttl_hours: ttlHours != null ? Number(ttlHours.toFixed(3)) : null,
+      quarantine_hours: quarantineHours != null ? Number(quarantineHours.toFixed(3)) : null,
+      veto_window_hours: vetoWindowHours != null ? Number(vetoWindowHours.toFixed(3)) : null,
+      rollback_receipt_present: rollbackReceiptPresent,
+      rollback_receipt: rollbackReceiptPresent ? rollbackReceipt : null
+    },
+    thresholds: {
+      budget_cap_max: AUTONOMY_MUTATION_BUDGET_CAP_MAX,
+      ttl_hours_max: AUTONOMY_MUTATION_TTL_HOURS_MAX,
+      quarantine_hours_min: AUTONOMY_MUTATION_QUARANTINE_HOURS_MIN,
+      veto_window_hours_min: AUTONOMY_MUTATION_VETO_WINDOW_HOURS_MIN
+    }
+  };
+}
+
 function hasConcreteDeltaSignal(proposal) {
   const p = proposal || {};
   const nextCmd = normalizeText(p.suggested_next_command);
@@ -1902,6 +2128,7 @@ function admission(meta, eye, risk, t, proposal, strategy, outcomePolicy, optimi
   const isMetaCoordination = META_COORDINATION_RE.test(blob);
   const isMetaNoop = isMetaNoopCandidate(proposal, blob);
   const valueOracle = valueOracleDecision(proposal, blob, isMetaNoop, directiveProfile);
+  const mutationGuard = adaptiveMutationGuardDecision(proposal);
   const hasConcreteDelta = hasConcreteDeltaSignal(proposal);
   const criteriaPolicy = successCriteriaRequirement(outcomePolicy);
   const criteriaExempt = isSuccessCriteriaExemptProposal(type, criteriaPolicy);
@@ -1944,6 +2171,11 @@ function admission(meta, eye, risk, t, proposal, strategy, outcomePolicy, optimi
   if (isMetaNoop && !hasConcreteDelta) reasons.push('meta_missing_concrete_delta');
   if (isMetaNoop && measuredCriteriaCount < META_MEASURABLE_MIN_COUNT) reasons.push('meta_missing_measurable_outcome');
   if (valueOracle.applies && !valueOracle.pass && valueOracle.reason) reasons.push(valueOracle.reason);
+  if (mutationGuard.applies && !mutationGuard.pass) {
+    for (const reason of mutationGuard.reasons || []) {
+      if (reason) reasons.push(reason);
+    }
+  }
   const optGate = optimizationGate && typeof optimizationGate === 'object'
     ? optimizationGate
     : optimizationGateDecision(proposal, risk);
@@ -1957,8 +2189,9 @@ function admission(meta, eye, risk, t, proposal, strategy, outcomePolicy, optimi
 
   return {
     eligible: reasons.length === 0,
-    blocked_by: reasons,
-    value_oracle: valueOracle
+    blocked_by: uniq(reasons),
+    value_oracle: valueOracle,
+    mutation_guard: mutationGuard
   };
 }
 
@@ -2058,6 +2291,23 @@ function enrichOne(proposal, ctx) {
         reduces_time_to_revenue: false,
         can_simulate_first: false
       };
+  const mutationGuard = admit && admit.mutation_guard && typeof admit.mutation_guard === 'object'
+    ? admit.mutation_guard
+    : {
+        enabled: AUTONOMY_MUTATION_GUARD_REQUIRED,
+        required: AUTONOMY_MUTATION_GUARD_REQUIRED,
+        applies: false,
+        pass: true,
+        reason: null,
+        reasons: [],
+        controls: {},
+        thresholds: {
+          budget_cap_max: AUTONOMY_MUTATION_BUDGET_CAP_MAX,
+          ttl_hours_max: AUTONOMY_MUTATION_TTL_HOURS_MAX,
+          quarantine_hours_min: AUTONOMY_MUTATION_QUARANTINE_HOURS_MIN,
+          veto_window_hours_min: AUTONOMY_MUTATION_VETO_WINDOW_HOURS_MIN
+        }
+      };
   const rawExpectedValueScore = Number((p.meta && p.meta.expected_value_score));
   const shouldBackfillExpectedValue = AUTONOMY_VALUE_ORACLE_BACKFILL_EXPECTED_VALUE
     && !Number.isFinite(rawExpectedValueScore)
@@ -2139,6 +2389,18 @@ function enrichOne(proposal, ctx) {
       : 0,
     value_oracle_can_simulate_first: valueOracle.can_simulate_first === true,
     value_oracle_backfilled_expected_value: shouldBackfillExpectedValue,
+    adaptive_mutation_guard_enabled: mutationGuard.enabled === true,
+    adaptive_mutation_guard_required: mutationGuard.required === true,
+    adaptive_mutation_guard_applies: mutationGuard.applies === true,
+    adaptive_mutation_guard_pass: mutationGuard.pass !== false,
+    adaptive_mutation_guard_reason: mutationGuard.reason || null,
+    adaptive_mutation_guard_reasons: Array.isArray(mutationGuard.reasons) ? mutationGuard.reasons.slice(0, 8) : [],
+    adaptive_mutation_guard_controls: mutationGuard.controls && typeof mutationGuard.controls === 'object'
+      ? mutationGuard.controls
+      : {},
+    adaptive_mutation_guard_thresholds: mutationGuard.thresholds && typeof mutationGuard.thresholds === 'object'
+      ? mutationGuard.thresholds
+      : {},
     revenue_oracle_enabled: valueOracle.enabled === true,
     revenue_oracle_applies: valueOracle.applies === true,
     revenue_oracle_scope: valueOracle.scope || null,
