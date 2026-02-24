@@ -418,6 +418,18 @@ const AUTONOMY_MEDIUM_RISK_NO_CHANGE_COOLDOWN_HOURS = Number(process.env.AUTONOM
 const AUTONOMY_MEDIUM_RISK_REVERT_COOLDOWN_HOURS = Number(process.env.AUTONOMY_MEDIUM_RISK_REVERT_COOLDOWN_HOURS || 48);
 const AUTONOMY_MIN_VALUE_SIGNAL_SCORE = Number(process.env.AUTONOMY_MIN_VALUE_SIGNAL_SCORE || 45);
 const AUTONOMY_MEDIUM_RISK_VALUE_SIGNAL_BONUS = Number(process.env.AUTONOMY_MEDIUM_RISK_VALUE_SIGNAL_BONUS || 8);
+const AUTONOMY_VALUE_CURRENCY_RANKING_ENABLED = String(process.env.AUTONOMY_VALUE_CURRENCY_RANKING_ENABLED || '1') !== '0';
+const AUTONOMY_VALUE_CURRENCY_RANK_BLEND = clampNumber(Number(process.env.AUTONOMY_VALUE_CURRENCY_RANK_BLEND || 0.35), 0, 1);
+const AUTONOMY_VALUE_CURRENCY_RANK_BONUS_CAP = clampNumber(Number(process.env.AUTONOMY_VALUE_CURRENCY_RANK_BONUS_CAP || 12), 0, 30);
+const VALUE_CURRENCY_RANK_KEYS = new Set(['revenue', 'delivery', 'user_value', 'quality', 'time_savings', 'learning']);
+const VALUE_CURRENCY_RANK_WEIGHTS = {
+  revenue: 1.15,
+  delivery: 1.06,
+  user_value: 1.1,
+  quality: 1.04,
+  time_savings: 1.05,
+  learning: 0.96
+};
 const AUTONOMY_LANE_NO_CHANGE_WINDOW_DAYS = Number(process.env.AUTONOMY_LANE_NO_CHANGE_WINDOW_DAYS || 7);
 const AUTONOMY_LANE_NO_CHANGE_LIMIT = Number(process.env.AUTONOMY_LANE_NO_CHANGE_LIMIT || 3);
 const AUTONOMY_LANE_NO_CHANGE_COOLDOWN_HOURS = Number(process.env.AUTONOMY_LANE_NO_CHANGE_COOLDOWN_HOURS || 24);
@@ -5831,17 +5843,107 @@ function capabilityOutcomeStatsInWindow(dateStr, descriptor, days) {
   return out;
 }
 
-function expectedValueScore(p) {
+function normalizeValueCurrencyToken(value) {
+  const token = String(value || '').trim().toLowerCase();
+  if (!token || !VALUE_CURRENCY_RANK_KEYS.has(token)) return '';
+  return token;
+}
+
+function listValueCurrencies(value) {
+  const rows = Array.isArray(value)
+    ? value
+    : String(value || '')
+      .split(',')
+      .map((row) => String(row || '').trim())
+      .filter(Boolean);
+  const out = [];
+  const seen = new Set();
+  for (const row of rows) {
+    const token = normalizeValueCurrencyToken(row);
+    if (!token || seen.has(token)) continue;
+    seen.add(token);
+    out.push(token);
+  }
+  return out;
+}
+
+function expectedValueSignalForProposal(p) {
   const meta = p && p.meta && typeof p.meta === 'object' ? p.meta : {};
   const direct = Number(meta.expected_value_score);
-  if (Number.isFinite(direct)) return clampNumber(Math.round(direct), 0, 100);
   const usd = Number(meta.expected_value_usd);
-  if (Number.isFinite(usd) && usd > 0) {
-    // Log-scale bucket: $1->$100 maps roughly 20->80, capped.
-    const score = Math.log10(Math.max(1, usd)) * 30;
-    return clampNumber(Math.round(score), 0, 100);
+  const oraclePriorityRaw = Number(meta.value_oracle_priority_score);
+  const oraclePriority = Number.isFinite(oraclePriorityRaw)
+    ? clampNumber(Math.round(oraclePriorityRaw), 0, 100)
+    : null;
+  const matchedCurrencies = listValueCurrencies(meta.value_oracle_matched_currencies);
+  const activeCurrencies = listValueCurrencies(meta.value_oracle_active_currencies);
+  const matchedFirstSentenceCurrencies = listValueCurrencies(meta.value_oracle_matched_first_sentence_currencies);
+  const primaryCurrency = normalizeValueCurrencyToken(meta.value_oracle_primary_currency);
+  const selectedCurrency = primaryCurrency || matchedCurrencies[0] || activeCurrencies[0] || null;
+  const currencyMultiplier = selectedCurrency
+    ? Number(VALUE_CURRENCY_RANK_WEIGHTS[selectedCurrency] || 1)
+    : 1;
+  const oracleApplies = meta.value_oracle_applies === true || matchedCurrencies.length > 0 || activeCurrencies.length > 0;
+  const oraclePass = meta.value_oracle_pass !== false;
+
+  let baseScore = impactWeight(p) * 20;
+  let source = 'impact_weight_fallback';
+  if (Number.isFinite(direct)) {
+    baseScore = clampNumber(Math.round(direct), 0, 100);
+    source = 'expected_value_score';
+  } else if (Number.isFinite(usd) && usd > 0) {
+    baseScore = clampNumber(Math.round(Math.log10(Math.max(1, usd)) * 30), 0, 100);
+    source = 'expected_value_usd';
+  } else if (oraclePriority != null) {
+    baseScore = oraclePriority;
+    source = 'value_oracle_priority_score';
   }
-  return impactWeight(p) * 20;
+
+  const currencyAdjusted = oraclePriority != null
+    ? clampNumber(Math.round(oraclePriority * currencyMultiplier), 0, 100)
+    : null;
+  const applyCurrencyRank = AUTONOMY_VALUE_CURRENCY_RANKING_ENABLED
+    && oracleApplies
+    && oraclePass
+    && currencyAdjusted != null;
+  const firstSentenceBonus = (
+    applyCurrencyRank
+    && selectedCurrency
+    && matchedFirstSentenceCurrencies.includes(selectedCurrency)
+  )
+    ? 2
+    : 0;
+  let delta = 0;
+  if (applyCurrencyRank && currencyAdjusted != null) {
+    const blended = (baseScore * (1 - AUTONOMY_VALUE_CURRENCY_RANK_BLEND))
+      + (currencyAdjusted * AUTONOMY_VALUE_CURRENCY_RANK_BLEND)
+      + firstSentenceBonus;
+    delta = clampNumber(
+      blended - baseScore,
+      -AUTONOMY_VALUE_CURRENCY_RANK_BONUS_CAP,
+      AUTONOMY_VALUE_CURRENCY_RANK_BONUS_CAP
+    );
+  }
+  const finalScore = clampNumber(Math.round(baseScore + delta), 0, 100);
+  return {
+    score: finalScore,
+    base_score: clampNumber(Math.round(baseScore), 0, 100),
+    source,
+    value_oracle_priority: oraclePriority,
+    currency: selectedCurrency,
+    currency_multiplier: Number(currencyMultiplier.toFixed(3)),
+    currency_adjusted_score: currencyAdjusted,
+    currency_delta: Number(delta.toFixed(3)),
+    oracle_applies: oracleApplies,
+    oracle_pass: oraclePass,
+    matched_currencies: matchedCurrencies.slice(0, 6),
+    active_currencies: activeCurrencies.slice(0, 6),
+    matched_first_sentence_currencies: matchedFirstSentenceCurrencies.slice(0, 6)
+  };
+}
+
+function expectedValueScore(p) {
+  return expectedValueSignalForProposal(p).score;
 }
 
 function timeToValueScore(p) {
@@ -5946,7 +6048,8 @@ function evaluateBudgetPacingGate(cand, valueSignal, risk, snapshot) {
 function strategyRankForCandidate(cand, strategy) {
   const p = cand && cand.proposal ? cand.proposal : {};
   const weights = strategyRankingWeights(strategy);
-  const expectedValue = expectedValueScore(p);
+  const expectedValueSignal = expectedValueSignalForProposal(p);
+  const expectedValue = expectedValueSignal.score;
   const estimatedTokens = estimateTokensForCandidate(cand, p);
   const valueDensity = valueDensityScore(expectedValue, estimatedTokens);
   const valueDensityWeight = Number.isFinite(Number(weights && weights.value_density))
@@ -5958,6 +6061,12 @@ function strategyRankForCandidate(cand, strategy) {
     directive_fit: clampNumber(Number(cand && cand.directive_fit && cand.directive_fit.score || 0), 0, 100),
     signal_quality: clampNumber(Number(cand && cand.quality && cand.quality.score || 0), 0, 100),
     expected_value: expectedValue,
+    expected_value_base: expectedValueSignal.base_score,
+    expected_value_source: expectedValueSignal.source,
+    value_oracle_priority: expectedValueSignal.value_oracle_priority,
+    value_currency: expectedValueSignal.currency,
+    value_currency_multiplier: expectedValueSignal.currency_multiplier,
+    value_currency_delta: expectedValueSignal.currency_delta,
     estimated_tokens: estimatedTokens,
     value_density: valueDensity,
     risk_penalty: riskPenalty(p) * 50,
@@ -15297,6 +15406,9 @@ module.exports = {
   proposalStatus,
   proposalScore,
   assessActionability,
+  expectedValueScore,
+  expectedValueSignalForProposal,
+  strategyRankForCandidate,
   estimateTokens,
   candidatePool,
   evaluateDoD,
