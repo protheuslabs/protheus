@@ -39,7 +39,7 @@
     "systems/security/emergency_stop.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/guard.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/habit_hygiene_guard.js": "7e13f5a60c9e412655e536edccab0b9f47c54b7af009eb37b1f3c2a4fe97df9a",
-    "systems/security/integrity_kernel.js": "768839126ca7e829a6dadd055ea87147a50d51a5f4119461a76ee8c1dadac6a1",
+    "systems/security/integrity_kernel.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/integrity_reseal.js": "defa53e3095c785196309006d6d53d14bb9a45cb54bb367f866f3d640bdfd675",
     "systems/security/llm_gateway_guard.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/merge_guard.js": "f5158e426cff7bee461bf56e2ed1fdd9a83adc14b24609a50c2baa75ef14b2ce",
@@ -54,7 +54,7 @@
     "systems/security/workspace_dump_guard.js": "fa94a0e44f65203cae3fc1c6dc8c20ce0199710d3be6867e1b7821eb825859c3",
     "systems/sensory/adaptive_layer_guard.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2"
   },
-  "sealed_at": "2026-02-24T03:27:45.232Z",
+  "sealed_at": "2026-02-24T03:35:53.667Z",
   "sealed_by": "jay",
-  "last_approval_note": "ts-migration architecture_guard wrapper parity"
+  "last_approval_note": "ts-migration integrity_kernel wrapper"
 }
