@@ -40,58 +40,6 @@
   },
   "triggers": [
     {
-      "uid": "ft4hr10chp9de1v7xrm40tgs",
-      "key": "token:across",
-      "pattern": "across",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "anomalies",
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 100,
-      "cooldown_minutes": 90,
-      "hit_count": 1,
-      "last_hit_ts": "2026-02-23T10:04:07.385Z",
-      "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
-    },
-    {
-      "uid": "ftms5nt9fcdzwrqiuh59i3nb",
-      "key": "token:assessment",
-      "pattern": "assessment",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 100,
-      "cooldown_minutes": 90,
-      "hit_count": 1,
-      "last_hit_ts": "2026-02-23T15:30:25.342Z",
-      "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
-    },
-    {
-      "uid": "ft4m3sabx44qy9wf60ewfbza",
-      "key": "token:execution",
-      "pattern": "execution",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 100,
-      "cooldown_minutes": 90,
-      "hit_count": 5,
-      "last_hit_ts": "2026-02-23T16:26:33.050Z",
-      "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
-    },
-    {
       "uid": "ft4k3924z5gqr2k65hhukkgn",
       "key": "token:increase",
       "pattern": "increase",
@@ -101,12 +49,12 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 100,
+      "weight": 85,
       "cooldown_minutes": 90,
       "hit_count": 2,
       "last_hit_ts": "2026-02-21T21:45:43.704Z",
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
+      "updated_ts": "2026-02-24T00:18:26.568Z"
     },
     {
       "uid": "ft3ryke2h5gp5nsj557nymem",
@@ -118,12 +66,12 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 100,
+      "weight": 85,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
+      "updated_ts": "2026-02-24T00:18:26.568Z"
     },
     {
       "uid": "ft39x57i8nf8q87e91gv7qzy",
@@ -135,12 +83,12 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 100,
+      "weight": 85,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
+      "updated_ts": "2026-02-24T00:18:26.568Z"
     },
     {
       "uid": "ft295r3uf47ycdrst7r72s32",
@@ -152,30 +100,12 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 100,
+      "weight": 85,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
-    },
-    {
-      "uid": "ft2oucdb619v88i8vu8x2a64",
-      "key": "token:automated",
-      "pattern": "automated",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "directives",
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 99,
-      "cooldown_minutes": 90,
-      "hit_count": 0,
-      "last_hit_ts": null,
-      "created_ts": "2026-02-21T02:43:27.698Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
+      "updated_ts": "2026-02-24T00:18:26.568Z"
     },
     {
       "uid": "ft5scteiftpw21yv5r8kaxne",
@@ -187,12 +117,12 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 99,
+      "weight": 84,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
+      "updated_ts": "2026-02-24T00:18:26.568Z"
     },
     {
       "uid": "ftq23fu36ppv4n3yzv0357rs",
@@ -204,12 +134,12 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 99,
+      "weight": 84,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
+      "updated_ts": "2026-02-24T00:18:26.568Z"
     },
     {
       "uid": "ft1fz2j83196slr4cvu2d7bw",
@@ -221,29 +151,12 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 99,
+      "weight": 84,
       "cooldown_minutes": 90,
       "hit_count": 1,
       "last_hit_ts": "2026-02-23T15:30:25.342Z",
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
-    },
-    {
-      "uid": "ft2bg7sakwhspfku26is8jug",
-      "key": "token:efficiency",
-      "pattern": "efficiency",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 98,
-      "cooldown_minutes": 90,
-      "hit_count": 1,
-      "last_hit_ts": "2026-02-22T10:07:53.888Z",
-      "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
+      "updated_ts": "2026-02-24T00:18:26.568Z"
     },
     {
       "uid": "ft5gzzwbjt08966rma9j5xk3",
@@ -255,12 +168,12 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 94,
+      "weight": 80,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
+      "updated_ts": "2026-02-24T00:18:26.568Z"
     },
     {
       "uid": "ft3jpsih8v1go94wsol7xi7r",
@@ -272,12 +185,12 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 94,
+      "weight": 80,
       "cooldown_minutes": 90,
       "hit_count": 2,
       "last_hit_ts": "2026-02-21T21:45:43.704Z",
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
+      "updated_ts": "2026-02-24T00:18:26.568Z"
     },
     {
       "uid": "ftln7gn2fdw0r65wo8qh6wwe",
@@ -289,30 +202,12 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 94,
+      "weight": 80,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
-    },
-    {
-      "uid": "ft338el555kgy4bhadn3ziqz",
-      "key": "token:create",
-      "pattern": "create",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "directives",
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 92,
-      "cooldown_minutes": 90,
-      "hit_count": 5,
-      "last_hit_ts": "2026-02-23T17:21:32.821Z",
-      "created_ts": "2026-02-23T09:58:11.988Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
+      "updated_ts": "2026-02-24T00:18:26.568Z"
     },
     {
       "uid": "ft2h2n4qm7kh76fydahw6oxr",
@@ -324,29 +219,12 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 91,
+      "weight": 77,
       "cooldown_minutes": 90,
       "hit_count": 47,
       "last_hit_ts": "2026-02-23T17:21:32.821Z",
       "created_ts": "2026-02-21T02:43:27.698Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
-    },
-    {
-      "uid": "ft3royntyttzckgxtx3gieeg",
-      "key": "token:directive",
-      "pattern": "directive",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 88,
-      "cooldown_minutes": 90,
-      "hit_count": 0,
-      "last_hit_ts": null,
-      "created_ts": "2026-02-23T09:58:11.988Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
+      "updated_ts": "2026-02-24T00:18:26.568Z"
     },
     {
       "uid": "ft5nf566cuocdehzvfy7hvrn",
@@ -358,82 +236,29 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 88,
+      "weight": 75,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
+      "updated_ts": "2026-02-24T00:18:26.568Z"
     },
     {
-      "uid": "ft4klnv7pcmlxwji8o3nyq7m",
-      "key": "token:systems",
-      "pattern": "systems",
+      "uid": "ft4hr10chp9de1v7xrm40tgs",
+      "key": "token:across",
+      "pattern": "across",
       "mode": "contains",
       "source": "auto",
       "source_signals": [
-        "directives",
-        "proposals"
+        "anomalies"
       ],
       "status": "active",
-      "weight": 87,
+      "weight": 74,
       "cooldown_minutes": 90,
-      "hit_count": 4,
-      "last_hit_ts": "2026-02-22T14:46:19.528Z",
-      "created_ts": "2026-02-21T02:43:27.698Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
-    },
-    {
-      "uid": "ft17lhwbgfe03l72726gutx5",
-      "key": "token:flow",
-      "pattern": "flow",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 86,
-      "cooldown_minutes": 90,
-      "hit_count": 13,
-      "last_hit_ts": "2026-02-23T17:21:32.821Z",
-      "created_ts": "2026-02-23T09:58:11.988Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
-    },
-    {
-      "uid": "ft3x4o9uqzkbcdwwhneftot4",
-      "key": "token:objective",
-      "pattern": "objective",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 86,
-      "cooldown_minutes": 90,
-      "hit_count": 0,
-      "last_hit_ts": null,
-      "created_ts": "2026-02-23T09:58:11.988Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
-    },
-    {
-      "uid": "ft4hmlg5mrj2v6mmba6ldmhy",
-      "key": "token:collector",
-      "pattern": "collector",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "anomalies",
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 85,
-      "cooldown_minutes": 90,
-      "hit_count": 157,
-      "last_hit_ts": "2026-02-23T17:23:42.596Z",
-      "created_ts": "2026-02-23T04:29:07.778Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
+      "hit_count": 1,
+      "last_hit_ts": "2026-02-23T10:04:07.385Z",
+      "created_ts": "2026-02-21T06:43:30.470Z",
+      "updated_ts": "2026-02-24T00:18:26.568Z"
     },
     {
       "uid": "ft4dbd6htnekju3dc23t3ino",
@@ -446,12 +271,12 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 83,
+      "weight": 71,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-23T15:20:59.511Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
+      "updated_ts": "2026-02-24T00:18:26.568Z"
     },
     {
       "uid": "ft3p7upgpvcq7p2g5l62pdub",
@@ -463,12 +288,12 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 80,
+      "weight": 68,
       "cooldown_minutes": 90,
       "hit_count": 68,
       "last_hit_ts": "2026-02-23T17:21:32.821Z",
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
+      "updated_ts": "2026-02-24T00:18:26.568Z"
     },
     {
       "uid": "ft30g741vaay3g6ug2o0ip6g",
@@ -480,12 +305,12 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 79,
+      "weight": 67,
       "cooldown_minutes": 90,
       "hit_count": 167,
       "last_hit_ts": "2026-02-23T17:23:42.596Z",
       "created_ts": "2026-02-23T15:20:59.511Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
+      "updated_ts": "2026-02-24T00:18:26.568Z"
     },
     {
       "uid": "ft4lbkjwhv0gvab0yqcku36p",
@@ -497,12 +322,12 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 77,
+      "weight": 65,
       "cooldown_minutes": 90,
       "hit_count": 61,
       "last_hit_ts": "2026-02-23T17:21:32.821Z",
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
+      "updated_ts": "2026-02-24T00:18:26.568Z"
     },
     {
       "uid": "ftxuncz0jz4j3dv9m1gk1x8s",
@@ -514,12 +339,29 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 76,
+      "weight": 65,
       "cooldown_minutes": 90,
       "hit_count": 21,
       "last_hit_ts": "2026-02-23T16:26:33.050Z",
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
+      "updated_ts": "2026-02-24T00:18:26.568Z"
+    },
+    {
+      "uid": "ft3zvsqnj892z33x2mhnvo3p",
+      "key": "token:detected",
+      "pattern": "detected",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "anomalies"
+      ],
+      "status": "active",
+      "weight": 64,
+      "cooldown_minutes": 90,
+      "hit_count": 2,
+      "last_hit_ts": "2026-02-21T21:45:43.704Z",
+      "created_ts": "2026-02-21T06:43:30.470Z",
+      "updated_ts": "2026-02-24T00:18:26.568Z"
     },
     {
       "uid": "ft3lbog1vjlfu56fykmd5cyy",
@@ -531,98 +373,30 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 75,
+      "weight": 64,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-23T09:58:11.988Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
+      "updated_ts": "2026-02-24T00:18:26.568Z"
     },
     {
-      "uid": "ft3zvsqnj892z33x2mhnvo3p",
-      "key": "token:detected",
-      "pattern": "detected",
+      "uid": "ft2oucdb619v88i8vu8x2a64",
+      "key": "token:automated",
+      "pattern": "automated",
       "mode": "contains",
       "source": "auto",
       "source_signals": [
-        "anomalies",
+        "directives",
         "proposals"
       ],
       "status": "active",
-      "weight": 72,
-      "cooldown_minutes": 90,
-      "hit_count": 2,
-      "last_hit_ts": "2026-02-21T21:45:43.704Z",
-      "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
-    },
-    {
-      "uid": "ft6aa3y5yefrv9skn68znwld",
-      "key": "token:income",
-      "pattern": "income",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 71,
+      "weight": 61,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
-      "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
-    },
-    {
-      "uid": "ft4wj5rdzsjsa6vi0g0ktqh7",
-      "key": "token:converging",
-      "pattern": "converging",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 70,
-      "cooldown_minutes": 90,
-      "hit_count": 0,
-      "last_hit_ts": null,
-      "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
-    },
-    {
-      "uid": "ftvp7jbtwjzzg9twpve6ddza",
-      "key": "token:execute",
-      "pattern": "execute",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 69,
-      "cooldown_minutes": 90,
-      "hit_count": 0,
-      "last_hit_ts": null,
-      "created_ts": "2026-02-23T09:58:11.988Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
-    },
-    {
-      "uid": "ft1foyqfjjf31nfske233owr",
-      "key": "token:reliability",
-      "pattern": "reliability",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 65,
-      "cooldown_minutes": 90,
-      "hit_count": 0,
-      "last_hit_ts": null,
-      "created_ts": "2026-02-23T20:05:41.987Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
+      "created_ts": "2026-02-21T02:43:27.698Z",
+      "updated_ts": "2026-02-24T00:18:26.568Z"
     },
     {
       "uid": "ft3ac4qec9byq5oul6smy408",
@@ -639,7 +413,24 @@
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
+      "updated_ts": "2026-02-24T00:18:26.568Z"
+    },
+    {
+      "uid": "ft4wj5rdzsjsa6vi0g0ktqh7",
+      "key": "token:converging",
+      "pattern": "converging",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "proposals"
+      ],
+      "status": "active",
+      "weight": 60,
+      "cooldown_minutes": 90,
+      "hit_count": 0,
+      "last_hit_ts": null,
+      "created_ts": "2026-02-21T06:43:30.470Z",
+      "updated_ts": "2026-02-24T00:18:26.568Z"
     },
     {
       "uid": "ft20nvngxs1zep0yxlatbdp9",
@@ -656,7 +447,7 @@
       "hit_count": 1,
       "last_hit_ts": "2026-02-21T20:32:21.734Z",
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
+      "updated_ts": "2026-02-24T00:18:26.568Z"
     },
     {
       "uid": "ft244q3gsgznlqmmoiss0lwz",
@@ -673,7 +464,7 @@
       "hit_count": 2,
       "last_hit_ts": "2026-02-22T10:07:53.888Z",
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
+      "updated_ts": "2026-02-24T00:18:26.568Z"
     },
     {
       "uid": "ft7ds2pfg6xpj8145626z2k6",
@@ -690,7 +481,7 @@
       "hit_count": 44,
       "last_hit_ts": "2026-02-23T17:21:32.821Z",
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
+      "updated_ts": "2026-02-24T00:18:26.568Z"
     },
     {
       "uid": "ft61c7fe7o96h2gyomc1z3wv",
@@ -707,24 +498,110 @@
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
+      "updated_ts": "2026-02-24T00:18:26.568Z"
     },
     {
-      "uid": "ft2in0s8wi2sluqdgu3o6vp8",
-      "key": "token:campaign",
-      "pattern": "campaign",
+      "uid": "ft6aa3y5yefrv9skn68znwld",
+      "key": "token:income",
+      "pattern": "income",
       "mode": "contains",
       "source": "auto",
       "source_signals": [
         "proposals"
       ],
       "status": "active",
-      "weight": 58,
+      "weight": 60,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
+      "created_ts": "2026-02-21T06:43:30.470Z",
+      "updated_ts": "2026-02-24T00:18:26.568Z"
+    },
+    {
+      "uid": "ft6a0ykfwtuazsp6z9ya4tse",
+      "key": "token:modified",
+      "pattern": "modified",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "anomalies"
+      ],
+      "status": "active",
+      "weight": 57,
+      "cooldown_minutes": 90,
+      "hit_count": 0,
+      "last_hit_ts": null,
+      "created_ts": "2026-02-21T06:43:30.470Z",
+      "updated_ts": "2026-02-24T00:18:26.568Z"
+    },
+    {
+      "uid": "ft1foyqfjjf31nfske233owr",
+      "key": "token:reliability",
+      "pattern": "reliability",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "proposals"
+      ],
+      "status": "active",
+      "weight": 55,
+      "cooldown_minutes": 90,
+      "hit_count": 0,
+      "last_hit_ts": null,
+      "created_ts": "2026-02-23T20:05:41.987Z",
+      "updated_ts": "2026-02-24T00:18:26.568Z"
+    },
+    {
+      "uid": "ftms5nt9fcdzwrqiuh59i3nb",
+      "key": "token:assessment",
+      "pattern": "assessment",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "proposals"
+      ],
+      "status": "active",
+      "weight": 51,
+      "cooldown_minutes": 90,
+      "hit_count": 1,
+      "last_hit_ts": "2026-02-23T15:30:25.342Z",
+      "created_ts": "2026-02-21T06:43:30.470Z",
+      "updated_ts": "2026-02-24T00:18:26.568Z"
+    },
+    {
+      "uid": "ft4klnv7pcmlxwji8o3nyq7m",
+      "key": "token:systems",
+      "pattern": "systems",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "directives"
+      ],
+      "status": "active",
+      "weight": 51,
+      "cooldown_minutes": 90,
+      "hit_count": 4,
+      "last_hit_ts": "2026-02-22T14:46:19.528Z",
+      "created_ts": "2026-02-21T02:43:27.698Z",
+      "updated_ts": "2026-02-24T00:18:26.568Z"
+    },
+    {
+      "uid": "ft338el555kgy4bhadn3ziqz",
+      "key": "token:create",
+      "pattern": "create",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "directives",
+        "proposals"
+      ],
+      "status": "active",
+      "weight": 50,
+      "cooldown_minutes": 90,
+      "hit_count": 5,
+      "last_hit_ts": "2026-02-23T17:21:32.821Z",
       "created_ts": "2026-02-23T09:58:11.988Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
+      "updated_ts": "2026-02-24T00:18:26.568Z"
     },
     {
       "uid": "ftg64r8hve5xzfow9a37ev3y",
@@ -736,12 +613,63 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 57,
+      "weight": 48,
       "cooldown_minutes": 90,
       "hit_count": 71,
       "last_hit_ts": "2026-02-23T17:21:32.821Z",
       "created_ts": "2026-02-21T02:43:27.698Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
+      "updated_ts": "2026-02-24T00:18:26.568Z"
+    },
+    {
+      "uid": "ft3royntyttzckgxtx3gieeg",
+      "key": "token:directive",
+      "pattern": "directive",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "proposals"
+      ],
+      "status": "active",
+      "weight": 46,
+      "cooldown_minutes": 90,
+      "hit_count": 0,
+      "last_hit_ts": null,
+      "created_ts": "2026-02-23T09:58:11.988Z",
+      "updated_ts": "2026-02-24T00:18:26.568Z"
+    },
+    {
+      "uid": "ft17lhwbgfe03l72726gutx5",
+      "key": "token:flow",
+      "pattern": "flow",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "proposals"
+      ],
+      "status": "active",
+      "weight": 46,
+      "cooldown_minutes": 90,
+      "hit_count": 13,
+      "last_hit_ts": "2026-02-23T17:21:32.821Z",
+      "created_ts": "2026-02-23T09:58:11.988Z",
+      "updated_ts": "2026-02-24T00:18:26.568Z"
+    },
+    {
+      "uid": "ft3x4o9uqzkbcdwwhneftot4",
+      "key": "token:objective",
+      "pattern": "objective",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "proposals"
+      ],
+      "status": "active",
+      "weight": 46,
+      "cooldown_minutes": 90,
+      "hit_count": 0,
+      "last_hit_ts": null,
+      "created_ts": "2026-02-23T09:58:11.988Z",
+      "updated_ts": "2026-02-24T00:18:26.568Z"
     },
     {
       "uid": "ft3ot9nfy1o3fnh1qyl77kxm",
@@ -753,12 +681,12 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 53,
+      "weight": 45,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-23T15:20:59.511Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
+      "updated_ts": "2026-02-24T00:18:26.568Z"
     },
     {
       "uid": "ft2xwzwxngr50xa5g83ya04l",
@@ -770,12 +698,12 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 53,
+      "weight": 45,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
+      "updated_ts": "2026-02-24T00:18:26.568Z"
     },
     {
       "uid": "ft4sx191h4gigzjuo9c7frnu",
@@ -787,12 +715,29 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 51,
+      "weight": 43,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-23T20:05:41.987Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
+      "updated_ts": "2026-02-24T00:18:26.568Z"
+    },
+    {
+      "uid": "ft4m3sabx44qy9wf60ewfbza",
+      "key": "token:execution",
+      "pattern": "execution",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "proposals"
+      ],
+      "status": "active",
+      "weight": 43,
+      "cooldown_minutes": 90,
+      "hit_count": 5,
+      "last_hit_ts": "2026-02-23T16:26:33.050Z",
+      "created_ts": "2026-02-21T06:43:30.470Z",
+      "updated_ts": "2026-02-24T00:18:26.568Z"
     },
     {
       "uid": "ft43ct1br4hfqoxqvg6e85y1",
@@ -805,12 +750,12 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 51,
+      "weight": 43,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-23T20:05:41.987Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
+      "updated_ts": "2026-02-24T00:18:26.568Z"
     },
     {
       "uid": "ft2ybvl8vlxz0ya4p9g3xbgv",
@@ -822,29 +767,64 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 51,
+      "weight": 43,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-23T20:05:41.987Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
+      "updated_ts": "2026-02-24T00:18:26.568Z"
     },
     {
-      "uid": "ft6a0ykfwtuazsp6z9ya4tse",
-      "key": "token:modified",
-      "pattern": "modified",
+      "uid": "ft2bg7sakwhspfku26is8jug",
+      "key": "token:efficiency",
+      "pattern": "efficiency",
       "mode": "contains",
       "source": "auto",
       "source_signals": [
-        "anomalies"
+        "proposals"
       ],
       "status": "active",
-      "weight": 51,
+      "weight": 42,
+      "cooldown_minutes": 90,
+      "hit_count": 1,
+      "last_hit_ts": "2026-02-22T10:07:53.888Z",
+      "created_ts": "2026-02-21T06:43:30.470Z",
+      "updated_ts": "2026-02-24T00:18:26.568Z"
+    },
+    {
+      "uid": "ft4hmlg5mrj2v6mmba6ldmhy",
+      "key": "token:collector",
+      "pattern": "collector",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "anomalies",
+        "proposals"
+      ],
+      "status": "active",
+      "weight": 41,
+      "cooldown_minutes": 90,
+      "hit_count": 157,
+      "last_hit_ts": "2026-02-23T17:23:42.596Z",
+      "created_ts": "2026-02-23T04:29:07.778Z",
+      "updated_ts": "2026-02-24T00:18:26.568Z"
+    },
+    {
+      "uid": "ft2in0s8wi2sluqdgu3o6vp8",
+      "key": "token:campaign",
+      "pattern": "campaign",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "proposals"
+      ],
+      "status": "active",
+      "weight": 36,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
-      "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
+      "created_ts": "2026-02-23T09:58:11.988Z",
+      "updated_ts": "2026-02-24T00:18:26.568Z"
     },
     {
       "uid": "ft622h4wui949e6godhdhhdq",
@@ -856,12 +836,29 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 51,
+      "weight": 33,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-23T20:05:41.987Z",
-      "updated_ts": "2026-02-23T20:05:41.987Z"
+      "updated_ts": "2026-02-24T00:18:26.568Z"
+    },
+    {
+      "uid": "ftvp7jbtwjzzg9twpve6ddza",
+      "key": "token:execute",
+      "pattern": "execute",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "proposals"
+      ],
+      "status": "active",
+      "weight": 32,
+      "cooldown_minutes": 90,
+      "hit_count": 0,
+      "last_hit_ts": null,
+      "created_ts": "2026-02-23T09:58:11.988Z",
+      "updated_ts": "2026-02-24T00:18:26.568Z"
     }
   ],
   "eye_lenses": {
@@ -1952,12 +1949,12 @@
     "id:4b64728c-645d-45ea-86a7-338e52a2abc6": "2026-02-23T16:26:49.499Z",
     "id:ff0c3b4cb312e87d": "2026-02-23T17:04:06.694Z"
   },
-  "last_refresh_ts": "2026-02-23T20:05:41.987Z",
+  "last_refresh_ts": "2026-02-24T00:18:26.568Z",
   "last_refresh_sources": {
     "strategy": 8,
     "directives": 8,
-    "proposals": 211,
-    "anomalies": 40,
+    "proposals": 20,
+    "anomalies": 22,
     "top_eyes": 0
   },
   "last_lens_refresh_ts": "2026-02-23T22:54:36.316Z",
@@ -1969,7 +1966,7 @@
     "catalog_eyes": 0
   },
   "stats": {
-    "refresh_count": 13,
+    "refresh_count": 14,
     "lens_refresh_count": 9,
     "focused_items_total": 398,
     "last_focus_ts": "2026-02-23T17:23:42.596Z"

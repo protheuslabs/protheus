@@ -1564,6 +1564,81 @@
           "window_runs": []
         }
       }
+    },
+    {
+      "uid": "h27m6w3mqgahzcqeua5x3n5m",
+      "id": "pain_external_eyes_a86a891d7237",
+      "name": "Pain Habit external_eyes collector_preflight:collector_er",
+      "description": "Collector preflight failed for ollama_search",
+      "created_at": "2026-02-24T00:00:13.034Z",
+      "last_used_at": null,
+      "uses_30d": 0,
+      "lifetime_uses": 0,
+      "success_rate": 0,
+      "avg_tokens_in": null,
+      "avg_tokens_out": null,
+      "estimated_tokens_saved": 0,
+      "rollback_plan": "Disable placeholder entry and remove adaptive binding if behavior diverges.",
+      "test_plan": "Validate proxy execution is no-op and adaptive bindings remain intact.",
+      "idempotent": true,
+      "inputs_schema": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "notes": {
+            "type": "string",
+            "description": "Optional notes for adaptive candidate execution context"
+          }
+        }
+      },
+      "entrypoint": "habits/routines/adaptive_candidate_proxy.js",
+      "permissions": {
+        "network": "deny",
+        "write_paths_allowlist": [
+          "habits/logs/*"
+        ],
+        "exec_allowlist": []
+      },
+      "status": "disabled",
+      "outcome": {
+        "last_outcome_score": null,
+        "last_delta_value": null,
+        "outcome_unit": null
+      },
+      "governance": {
+        "state": "disabled",
+        "promote": {
+          "min_success_runs": 99,
+          "min_outcome_score": 0.95
+        },
+        "demote": {
+          "max_consecutive_errors": 1,
+          "min_outcome_score": 0.4,
+          "cooldown_minutes": 1440
+        },
+        "pinned": false,
+        "consecutive_errors": 0
+      },
+      "provenance": {
+        "source": "adaptive_habit_runtime_sync",
+        "created_by": "systems/adaptive/habits/habit_runtime_sync.js",
+        "created_at": "2026-02-24T00:00:13.136Z",
+        "intent_key": "adaptive_habit:pain_external_eyes_a86a891d7237",
+        "adaptive_uid": "h27m6w3mqgahzcqeua5x3n5m"
+      },
+      "metrics": {
+        "baseline": {
+          "avg_duration_ms": null,
+          "avg_tokens_est": null,
+          "avg_error_rate": null
+        },
+        "rolling": {
+          "avg_duration_ms_30d": null,
+          "avg_tokens_est_30d": null,
+          "error_rate_30d": null,
+          "window_runs": []
+        }
+      }
     }
   ]
 }

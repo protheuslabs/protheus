@@ -1,6 +1,39 @@
 {
   "version": "1.0",
-  "eyes": [],
+  "eyes": [
+    {
+      "uid": "emlzvbq3bxqt0qh6zwx5yxjw",
+      "id": "reddit_ai_agents",
+      "name": "reddit_ai_agents",
+      "status": "probation",
+      "cadence_hours": 24,
+      "allowed_domains": [
+        "example.com"
+      ],
+      "budgets": {
+        "max_items": 10,
+        "max_seconds": 15,
+        "max_bytes": 524288,
+        "max_requests": 1
+      },
+      "parser_type": "medium_rss",
+      "topics": [
+        "t1_generational_wealth_v1"
+      ],
+      "directive_ref": "T1_generational_wealth_v1",
+      "last_run": null,
+      "last_success": null,
+      "error_rate": 0,
+      "score_ema": 50,
+      "notes": "Generated via eyes_intake for T1_generational_wealth_v1",
+      "created_ts": "2026-02-24T00:29:30.456Z",
+      "updated_ts": "2026-02-24T00:29:30.741Z",
+      "parser_options": {
+        "url": "https://www.reddit.com/r/AI_Agents/new/.rss",
+        "title": "r/AI_Agents"
+      }
+    }
+  ],
   "global_limits": {
     "max_concurrent_runs": 3,
     "global_max_requests_per_day": 50,

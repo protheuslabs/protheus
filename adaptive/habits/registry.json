@@ -19,7 +19,7 @@
         "last_used_ts": null
       },
       "created_ts": "2026-02-23T00:00:13.902Z",
-      "updated_ts": "2026-02-23T20:31:06.426Z"
+      "updated_ts": "2026-02-24T00:00:13.034Z"
     },
     {
       "uid": "h63c93y89php6m0vtx7bzmhz",
@@ -34,7 +34,7 @@
         "last_used_ts": null
       },
       "created_ts": "2026-02-23T00:00:13.872Z",
-      "updated_ts": "2026-02-23T20:31:06.426Z"
+      "updated_ts": "2026-02-24T00:00:13.034Z"
     },
     {
       "uid": "h3xhvd9zjg1blxys93gwgmwj",
@@ -49,7 +49,22 @@
         "last_used_ts": null
       },
       "created_ts": "2026-02-23T00:00:13.919Z",
-      "updated_ts": "2026-02-23T20:31:06.426Z"
+      "updated_ts": "2026-02-24T00:00:13.034Z"
+    },
+    {
+      "uid": "h27m6w3mqgahzcqeua5x3n5m",
+      "id": "pain_external_eyes_a86a891d7237",
+      "name": "Pain Habit external_eyes collector_preflight:collector_er",
+      "summary": "Collector preflight failed for ollama_search",
+      "routine_path": "habits/routines/pain_external_eyes_a86a891d7237.js",
+      "status": "disabled",
+      "usage": {
+        "uses_total": 0,
+        "uses_30d": 0,
+        "last_used_ts": null
+      },
+      "created_ts": "2026-02-24T00:00:13.034Z",
+      "updated_ts": "2026-02-24T00:00:13.034Z"
     },
     {
       "uid": "h1uloqpwv586fu3qkjag0t7v",
@@ -64,7 +79,7 @@
         "last_used_ts": null
       },
       "created_ts": "2026-02-22T22:03:29.590Z",
-      "updated_ts": "2026-02-23T20:31:06.426Z"
+      "updated_ts": "2026-02-24T00:00:13.034Z"
     },
     {
       "uid": "h4l4q8epe25wz7txwrbxmrwu",
@@ -79,7 +94,7 @@
         "last_used_ts": null
       },
       "created_ts": "2026-02-23T20:31:06.426Z",
-      "updated_ts": "2026-02-23T20:31:06.426Z"
+      "updated_ts": "2026-02-24T00:00:13.034Z"
     },
     {
       "uid": "h2j4cwftgeb6odbe52uyho2z",
@@ -94,12 +109,12 @@
         "last_used_ts": null
       },
       "created_ts": "2026-02-23T15:30:26.991Z",
-      "updated_ts": "2026-02-23T20:31:06.426Z"
+      "updated_ts": "2026-02-24T00:00:13.034Z"
     }
   ],
   "metrics": {
-    "total_created": 6,
-    "total_updated": 0,
+    "total_created": 7,
+    "total_updated": 1,
     "total_gc_deleted": 0,
     "last_gc_ts": null
   }
