@@ -18,6 +18,7 @@ secrets/*
 # Runtime/ops outputs (high churn, non-source artifacts)
 logs/tool_raw/
 tmp/
+dist/
 memory/_snapshots/
 memory/*.backup.*
 memory/tools/tests/temp_*/
