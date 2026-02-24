@@ -45,6 +45,11 @@ function run() {
   const revenueOracleBefore = process.env.AUTONOMY_REVENUE_ORACLE_REQUIRED;
   const revenueOracleScopeBefore = process.env.AUTONOMY_REVENUE_ORACLE_SCOPE;
   const revenueOracleExemptBefore = process.env.AUTONOMY_REVENUE_ORACLE_EXEMPT_TYPES;
+  const valueOracleBefore = process.env.AUTONOMY_VALUE_ORACLE_REQUIRED;
+  const valueOracleScopeBefore = process.env.AUTONOMY_VALUE_ORACLE_SCOPE;
+  const valueOracleExemptBefore = process.env.AUTONOMY_VALUE_ORACLE_EXEMPT_TYPES;
+  const valueOracleDefaultCurrenciesBefore = process.env.AUTONOMY_VALUE_ORACLE_DEFAULT_CURRENCIES;
+  const valueOracleRequirePrimaryBefore = process.env.AUTONOMY_VALUE_ORACLE_REQUIRE_PRIMARY_SIGNAL;
   const outcomePolicyPath = path.join(tmpRoot, 'outcome_fitness.json');
   const objectiveId = (() => {
     try {
@@ -69,6 +74,11 @@ function run() {
     process.env.AUTONOMY_MIN_ACTIONABILITY_SCORE = '35';
     process.env.AUTONOMY_MIN_COMPOSITE_ELIGIBILITY = '45';
     process.env.AUTONOMY_DREAM_DIRECTIVE_BONUS_CAP = '6';
+    process.env.AUTONOMY_VALUE_ORACLE_REQUIRED = '1';
+    process.env.AUTONOMY_VALUE_ORACLE_SCOPE = 'dream';
+    process.env.AUTONOMY_VALUE_ORACLE_EXEMPT_TYPES = 'pain_signal_escalation,dream_cycle_escalation,collector_remediation,infrastructure_outage,directive_clarification,directive_decomposition';
+    process.env.AUTONOMY_VALUE_ORACLE_DEFAULT_CURRENCIES = 'revenue,delivery';
+    process.env.AUTONOMY_VALUE_ORACLE_REQUIRE_PRIMARY_SIGNAL = '0';
     process.env.AUTONOMY_REVENUE_ORACLE_REQUIRED = '1';
     process.env.AUTONOMY_REVENUE_ORACLE_SCOPE = 'dream';
     process.env.AUTONOMY_REVENUE_ORACLE_EXEMPT_TYPES = 'pain_signal_escalation,dream_cycle_escalation,collector_remediation,infrastructure_outage,directive_clarification,directive_decomposition';
@@ -404,13 +414,13 @@ function run() {
     });
     const dreamBlocked = (dreamBlockedRes.proposal.meta.admission_preview || {}).blocked_by || [];
     assert.ok(
-      Array.isArray(dreamBlocked) && dreamBlocked.includes('revenue_oracle_first_sentence_missing'),
-      'dream-origin proposal without first-sentence value signal should be blocked by revenue oracle'
+      Array.isArray(dreamBlocked) && dreamBlocked.includes('value_oracle_first_sentence_missing'),
+      'dream-origin proposal without first-sentence value signal should be blocked by value oracle'
     );
     assert.strictEqual(
-      dreamBlockedRes.proposal.meta.revenue_oracle_applies,
+      dreamBlockedRes.proposal.meta.value_oracle_applies,
       true,
-      'dream-origin proposal should trigger revenue oracle scope'
+      'dream-origin proposal should trigger value oracle scope'
     );
     const dreamValueRes = script.enrichOne({
       id: 'PDREAM_VALUE',
@@ -448,18 +458,67 @@ function run() {
       outcomePolicy: {}
     });
     assert.strictEqual(
-      dreamValueRes.proposal.meta.revenue_oracle_applies,
+      dreamValueRes.proposal.meta.value_oracle_applies,
       true,
-      'dream-origin value proposal should trigger revenue oracle'
+      'dream-origin value proposal should trigger value oracle'
     );
     assert.strictEqual(
-      dreamValueRes.proposal.meta.revenue_oracle_pass,
+      dreamValueRes.proposal.meta.value_oracle_pass,
       true,
-      'dream-origin proposal with first-sentence customer/revenue signal should pass revenue oracle'
+      'dream-origin proposal with first-sentence customer/revenue signal should pass value oracle'
     );
     assert.ok(
-      !((dreamValueRes.proposal.meta.admission_preview || {}).blocked_by || []).includes('revenue_oracle_first_sentence_missing'),
+      !((dreamValueRes.proposal.meta.admission_preview || {}).blocked_by || []).includes('value_oracle_first_sentence_missing'),
       'value-oriented dream proposal should not be blocked by first-sentence revenue gate'
+    );
+    const directiveDeliveryRes = script.enrichOne({
+      id: 'PDREAM_DELIVERY',
+      type: 'dream_build_probe',
+      title: 'Build deterministic publish pipeline from dream link',
+      summary: 'Build and ship the deterministic publish workflow this run.',
+      risk: 'low',
+      evidence: [{ evidence_ref: 'dream:idle:workflow_gap', match: 'delivery bottleneck found in dream synthesis' }],
+      validation: ['Implement one bounded file-level patch and verify postconditions'],
+      suggested_next_command: 'node systems/routing/route_execute.js --task=\"Implement one bounded workflow patch\" --dry-run'
+    }, {
+      eyes: new Map(),
+      directiveProfile: {
+        available: true,
+        strategy_id: 'delivery-focus',
+        strategy_tokens: ['ship', 'deliverable'],
+        active_directive_ids: ['T1_ALPHA_OBJECTIVE'],
+        positive_phrases: ['Ship one concrete deliverable'],
+        negative_phrases: [],
+        positive_tokens: ['build', 'ship', 'deliver'],
+        negative_tokens: []
+      },
+      directiveObjectiveIds: ['T1_ALPHA_OBJECTIVE'],
+      strategy: null,
+      thresholds: {
+        min_signal_quality: 35,
+        min_sensory_signal_score: 35,
+        min_sensory_relevance_score: 35,
+        min_directive_fit: 20,
+        min_actionability_score: 35,
+        min_composite_eligibility: 45,
+        min_eye_score_ema: 35
+      },
+      outcomePolicy: {}
+    });
+    assert.strictEqual(
+      directiveDeliveryRes.proposal.meta.value_oracle_pass,
+      true,
+      'delivery-oriented directive should allow non-revenue dream proposal when delivery currency matches'
+    );
+    assert.strictEqual(
+      directiveDeliveryRes.proposal.meta.value_oracle_primary_currency,
+      'delivery',
+      'value oracle should derive delivery as primary currency from directive profile'
+    );
+    assert.ok(
+      Array.isArray(directiveDeliveryRes.proposal.meta.value_oracle_matched_currencies)
+      && directiveDeliveryRes.proposal.meta.value_oracle_matched_currencies.includes('delivery'),
+      'delivery-oriented proposal should match delivery value currency'
     );
 
     assert.ok(high.meta && high.meta.admission_preview && high.meta.admission_preview.eligible === false, 'high-risk proposal should be blocked');
@@ -500,6 +559,16 @@ function run() {
     else process.env.AUTONOMY_REVENUE_ORACLE_SCOPE = revenueOracleScopeBefore;
     if (revenueOracleExemptBefore == null) delete process.env.AUTONOMY_REVENUE_ORACLE_EXEMPT_TYPES;
     else process.env.AUTONOMY_REVENUE_ORACLE_EXEMPT_TYPES = revenueOracleExemptBefore;
+    if (valueOracleBefore == null) delete process.env.AUTONOMY_VALUE_ORACLE_REQUIRED;
+    else process.env.AUTONOMY_VALUE_ORACLE_REQUIRED = valueOracleBefore;
+    if (valueOracleScopeBefore == null) delete process.env.AUTONOMY_VALUE_ORACLE_SCOPE;
+    else process.env.AUTONOMY_VALUE_ORACLE_SCOPE = valueOracleScopeBefore;
+    if (valueOracleExemptBefore == null) delete process.env.AUTONOMY_VALUE_ORACLE_EXEMPT_TYPES;
+    else process.env.AUTONOMY_VALUE_ORACLE_EXEMPT_TYPES = valueOracleExemptBefore;
+    if (valueOracleDefaultCurrenciesBefore == null) delete process.env.AUTONOMY_VALUE_ORACLE_DEFAULT_CURRENCIES;
+    else process.env.AUTONOMY_VALUE_ORACLE_DEFAULT_CURRENCIES = valueOracleDefaultCurrenciesBefore;
+    if (valueOracleRequirePrimaryBefore == null) delete process.env.AUTONOMY_VALUE_ORACLE_REQUIRE_PRIMARY_SIGNAL;
+    else process.env.AUTONOMY_VALUE_ORACLE_REQUIRE_PRIMARY_SIGNAL = valueOracleRequirePrimaryBefore;
   }
 }
 
