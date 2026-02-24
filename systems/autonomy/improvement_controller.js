@@ -17,7 +17,7 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
-const { writeContractReceipt } = require('../../lib/action_receipts.js');
+const { writeContractReceipt } = require('../../lib/action_receipts');
 const { beginChange, completeChange, recoverIfInterrupted, writeAtomicJson } = require('./self_change_failsafe');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');

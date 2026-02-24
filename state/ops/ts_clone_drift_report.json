@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-02-24T00:35:13.008Z",
+  "generated_at": "2026-02-24T00:38:36.742Z",
   "roots": [
     "lib",
     "systems"
@@ -15,11 +15,11 @@
   "highest_drift": [
     {
       "base": "lib/command_output_compactor",
-      "similarity": 0.5333
+      "similarity": 0.5424
     },
     {
       "base": "systems/sensory/eyes_collectors/cache_store",
-      "similarity": 0.5714
+      "similarity": 0.6154
     },
     {
       "base": "lib/action_envelope",
@@ -35,7 +35,7 @@
     },
     {
       "base": "lib/eyes_catalog",
-      "similarity": 0.766
+      "similarity": 0.7826
     },
     {
       "base": "systems/spine/spine",
@@ -54,12 +54,12 @@
       "similarity": 0.8664
     },
     {
-      "base": "systems/sensory/eyes_collectors/ollama_search",
-      "similarity": 0.8876
+      "base": "lib/quorum_validator",
+      "similarity": 0.8968
     },
     {
-      "base": "lib/quorum_validator",
-      "similarity": 0.891
+      "base": "systems/sensory/eyes_collectors/ollama_search",
+      "similarity": 0.8977
     },
     {
       "base": "systems/memory/creative_links",
@@ -79,15 +79,11 @@
     },
     {
       "base": "lib/strategy_resolver",
-      "similarity": 0.9062
+      "similarity": 0.9086
     },
     {
       "base": "systems/autonomy/alignment_oracle",
       "similarity": 0.9146
-    },
-    {
-      "base": "lib/tool_compactor_integration",
-      "similarity": 0.9231
     },
     {
       "base": "systems/security/merge_guard",
@@ -100,6 +96,10 @@
     {
       "base": "systems/routing/llm_gateway",
       "similarity": 0.9257
+    },
+    {
+      "base": "lib/tool_compactor_integration",
+      "similarity": 0.9351
     },
     {
       "base": "systems/security/integrity_kernel",
@@ -122,10 +122,22 @@
       "exact": false,
       "similarity": 1,
       "transpile_error": null,
-      "js_hash": "a4c96934a4d9abb708d1919ac3ecd06e8f4a92f75d79fcbe92bab5d723b76009",
+      "js_hash": "907e8f8489706c0e69d9002c2e83546115a42d05fad249ab844478c8b47e74fa",
       "ts_hash": "01f5966d99acc473ce721002d7c47a6eb3ee90ff858f9fd41ae59c407f3fd6ef",
-      "js_size": 22239,
+      "js_size": 22236,
       "ts_size": 24162
+    },
+    {
+      "base": "lib/success_criteria_verifier",
+      "js": "lib/success_criteria_verifier.js",
+      "ts": "lib/success_criteria_verifier.ts",
+      "exact": false,
+      "similarity": 0.9949,
+      "transpile_error": null,
+      "js_hash": "9ab067f7128caaf5ecfe5ec1da55b00e27845fafec6696cc8e1d36982d01f068",
+      "ts_hash": "c38e5e2249ecdccad3688ed236197bfa0d205137807f28b1c6aa9f2c55fd5c05",
+      "js_size": 25312,
+      "ts_size": 27767
     },
     {
       "base": "systems/autonomy/strategy_mode_governor",
@@ -134,9 +146,9 @@
       "exact": false,
       "similarity": 0.9949,
       "transpile_error": null,
-      "js_hash": "2f95fb586e97163f038b958db4ef41bcf0985bc8c4a040b2a785d2fd41402072",
+      "js_hash": "0b8cbb9062f975f48fe200b7e7401b4311a1e7155f6e42d44f33c4c2954ee478",
       "ts_hash": "2ed5303bbb54caf871cd882b88349987c1f931cf7b6e44258b6473088ca896ea",
-      "js_size": 46692,
+      "js_size": 46674,
       "ts_size": 50650
     },
     {
@@ -146,9 +158,9 @@
       "exact": false,
       "similarity": 0.9949,
       "transpile_error": null,
-      "js_hash": "a689a3a88f3e142c6f75472c0c8fcf8522eadd68c50728411f240a1c959cbcc5",
+      "js_hash": "cb2b0612aa3138bae3d0e13150bf2a7c1f77ec9b091cfd77369007773513986b",
       "ts_hash": "73d28466f27c9edf6737efa9b2bb41255f5a8e48a8117209a6fdd747d3318ecd",
-      "js_size": 59206,
+      "js_size": 59185,
       "ts_size": 65807
     },
     {
@@ -158,9 +170,9 @@
       "exact": false,
       "similarity": 0.9944,
       "transpile_error": null,
-      "js_hash": "5b82ef7c3220d04cc1582ee5efde3055881c978caf931f31d08245e758ee3336",
+      "js_hash": "68247d742c8d7e70c3873bf503bce61688f9de18e987df73ca4a335101535fe7",
       "ts_hash": "3aa021583651d3d2ab5eb690947be4880a1e61d9211f510c822c21605ce91665",
-      "js_size": 40338,
+      "js_size": 40335,
       "ts_size": 44048
     },
     {
@@ -170,9 +182,9 @@
       "exact": false,
       "similarity": 0.9943,
       "transpile_error": null,
-      "js_hash": "4355ba790c463ff51f15553401860469825843d3c0e08ebab55d3a33e998891b",
+      "js_hash": "6201edf1d673959bda472f1972a761e532dd43db8bb3571ba560acb467e51314",
       "ts_hash": "912c643fed78bb2a32f73f6b1e8b71ee6e70c16b53edeeceb097d1403dc43bdc",
-      "js_size": 96929,
+      "js_size": 96920,
       "ts_size": 104603
     },
     {
@@ -182,9 +194,9 @@
       "exact": false,
       "similarity": 0.9942,
       "transpile_error": null,
-      "js_hash": "bfc652c98786945421afb90a5bdd37cfcb5c469e3da9e830b44fc3cd52af4737",
+      "js_hash": "0a37f15ded24fc647662bcdf886b7cf1d5326446e110a4570a4fcd69890b29ee",
       "ts_hash": "27c368c06eaef49d46aeeb43aaa9094f23dad560dee8898d37ee5af3a2d52564",
-      "js_size": 34374,
+      "js_size": 34371,
       "ts_size": 37854
     },
     {
@@ -194,9 +206,9 @@
       "exact": false,
       "similarity": 0.9939,
       "transpile_error": null,
-      "js_hash": "103c456c92603a7308cdb5ccd870f995602266c4db60563a55ec6ce13ff710f7",
+      "js_hash": "47312a03bba9b738d11d89573143822aed14ec39769e0ea0a2a181d6947db234",
       "ts_hash": "07ffc600e2da8e0a606741804e0e4a148684894fffff15a0b423420444294fe1",
-      "js_size": 32680,
+      "js_size": 32674,
       "ts_size": 36684
     },
     {
@@ -206,9 +218,9 @@
       "exact": false,
       "similarity": 0.9934,
       "transpile_error": null,
-      "js_hash": "d40de7ed7e0509bec7a98db5c26c2b218e82b9415c80510bbe5decb51e48d1ae",
+      "js_hash": "e457e74c01fac5ad201794be7de0a79509c77a51380fd9d2b1b4fa39eaf6e7f0",
       "ts_hash": "f60df9d4e2ebb396b7a6a9505ba468f5c1ecd92502df6972f4a6c10ff44f68a4",
-      "js_size": 12176,
+      "js_size": 12173,
       "ts_size": 13204
     },
     {
@@ -218,9 +230,9 @@
       "exact": false,
       "similarity": 0.9928,
       "transpile_error": null,
-      "js_hash": "31850695522336ddab1b26243f9d336f5fa8d66d24130b55a3c2963648e9ecb2",
+      "js_hash": "a6cd4dce7a7f8232a3aab6cf2162835f6f62800e1556ad228d05c461291b1fc1",
       "ts_hash": "3b181370fb2986006ffd63dcd2209acb97d902dc01934b288fc0fde08483f16e",
-      "js_size": 28078,
+      "js_size": 28075,
       "ts_size": 30803
     },
     {
@@ -242,22 +254,10 @@
       "exact": false,
       "similarity": 0.9927,
       "transpile_error": null,
-      "js_hash": "356e96a7f8b013670a4d801f8bd8d8446b18becf7eef359fa4b078543661e80e",
+      "js_hash": "9db864a436106650e0351ae83b127a75f9b1f0afbb5c99e72e3e340bfb569ffd",
       "ts_hash": "ebf6ffdbb9c28237c9cc16b82a4f6f0450e56c8af2f475faf529a893ed32cc9e",
-      "js_size": 33490,
+      "js_size": 33487,
       "ts_size": 35715
-    },
-    {
-      "base": "lib/success_criteria_verifier",
-      "js": "lib/success_criteria_verifier.js",
-      "ts": "lib/success_criteria_verifier.ts",
-      "exact": false,
-      "similarity": 0.9923,
-      "transpile_error": null,
-      "js_hash": "d1ddad82a096e6f6f6eb41dfdccaaa3b57cf01ed3444353088ff75566a53302b",
-      "ts_hash": "c38e5e2249ecdccad3688ed236197bfa0d205137807f28b1c6aa9f2c55fd5c05",
-      "js_size": 25315,
-      "ts_size": 27767
     },
     {
       "base": "systems/autonomy/improvement_orchestrator",
@@ -266,9 +266,9 @@
       "exact": false,
       "similarity": 0.9922,
       "transpile_error": null,
-      "js_hash": "5c4a86ec806537fd2a8113defa884d7bd3336c4058a3a53dcfbabcb005791b97",
+      "js_hash": "3517c1683a2053c3e17ca91d1a2ab795de36a35a6030afbf10c26a246a46243b",
       "ts_hash": "406f56e815c3aaa94b4f6409091a1ab1973ec483d6166fd56372fe0080e18401",
-      "js_size": 25442,
+      "js_size": 25439,
       "ts_size": 27944
     },
     {
@@ -290,9 +290,9 @@
       "exact": false,
       "similarity": 0.9919,
       "transpile_error": null,
-      "js_hash": "85321348fbc8e1786bb9cbc5283b67a1102e95e36a992bc16d900b0a3f69f472",
+      "js_hash": "836435c149890957c6bce625dc44b033b1beccc05355c4d69090b1b24222b8d4",
       "ts_hash": "2affeb1cbf4daf661f7253dd822f9ef5d044537f89afe15634d111aa2f5e3900",
-      "js_size": 18140,
+      "js_size": 18137,
       "ts_size": 19686
     },
     {
@@ -302,9 +302,9 @@
       "exact": false,
       "similarity": 0.9916,
       "transpile_error": null,
-      "js_hash": "e1b1230095ce433ea98e98185bf904fdee8b96dad07b0af50f31afed4b2dbe09",
+      "js_hash": "5c6476d0accd7f4a82744366cb697bcfa4e5c734aa6becf6a7f46375d541d982",
       "ts_hash": "c92db5f4275e5140f24058f36c5ef662bdf49adfd421925566b697d6131e9336",
-      "js_size": 19308,
+      "js_size": 19299,
       "ts_size": 21491
     },
     {
@@ -314,9 +314,9 @@
       "exact": false,
       "similarity": 0.9915,
       "transpile_error": null,
-      "js_hash": "1c68778f7528651838568d6cb29936d5d0e37214caa749b39115a70e2e629ee2",
+      "js_hash": "7632fa7fce2c78025576471cb0811063191a76d5a228c2d685d47e9fa03051ec",
       "ts_hash": "e3aa7371e361e0d6afe1ff07c983c3f25bd00ff9bd2c4b8636a12a234f72e68c",
-      "js_size": 14071,
+      "js_size": 14062,
       "ts_size": 15302
     },
     {
@@ -326,9 +326,9 @@
       "exact": false,
       "similarity": 0.9914,
       "transpile_error": null,
-      "js_hash": "60953fc67d62338f2358d17f7b209d03d8d8fef582c0d2dbe4940673de69c23f",
+      "js_hash": "e5b7c62127e8d4b2892e22fb1b4a1f96e740dc09b93c9bc02b89ce248a8a8ce6",
       "ts_hash": "cf60a61983d6faa1fdea1554a52dd572df65d9430a977d4bc9da7d5d6819fafc",
-      "js_size": 32431,
+      "js_size": 32425,
       "ts_size": 34704
     },
     {
@@ -338,9 +338,9 @@
       "exact": false,
       "similarity": 0.9904,
       "transpile_error": null,
-      "js_hash": "6faabbea013c37205ad2bf1b4de1fcc18fdee327c799d30f7227c9409638a9a9",
+      "js_hash": "d7bce63a49ee9156178125ef18a745e9af132aefca07f5abc0e499342ac50b13",
       "ts_hash": "57a4c879fb69a95abff98046dd9ae5ab9551d85c0f93f6c97339f2a182032080",
-      "js_size": 14762,
+      "js_size": 14756,
       "ts_size": 16272
     },
     {
@@ -350,9 +350,9 @@
       "exact": false,
       "similarity": 0.9902,
       "transpile_error": null,
-      "js_hash": "c58f40f1429d55a8d22160e573731ad6c34d719f23bae178435ce0d80be37927",
+      "js_hash": "e9fcfd610e037ae8a227ca91785bcc4384216fb6d91cfc0025dfb82ff81024a7",
       "ts_hash": "bacd375bca830a2ea6656bf8faf77355679eddd3ba6abfc9d1a1dc03d3e9cc63",
-      "js_size": 20166,
+      "js_size": 20163,
       "ts_size": 22406
     },
     {
@@ -374,9 +374,9 @@
       "exact": false,
       "similarity": 0.9902,
       "transpile_error": null,
-      "js_hash": "2e77d03d1c3fce5170fc20f063e72804783af5765712e375b73f1eaa62384555",
+      "js_hash": "db720c3eeeb1b0b4e30099194cc3298c3dca966a97c5f117aa726e4c5cf83e50",
       "ts_hash": "bcf34916b6b651ebcf3b95a8b6bec0063c37a57d255917958e31cf5408fba42a",
-      "js_size": 28471,
+      "js_size": 28468,
       "ts_size": 31459
     },
     {
@@ -386,9 +386,9 @@
       "exact": false,
       "similarity": 0.99,
       "transpile_error": null,
-      "js_hash": "05d8ff8334398c970d030c4e3cc1ad1e14c3304eec066bfd33ebf5db4cbbee4c",
+      "js_hash": "5bb1222188ecc2802bddaf7e77a8f781290add38c54a29dc8013932493ab29fd",
       "ts_hash": "e96581edff9cd234d3e6336dee5f3d7f4594b1673e8ea1d1b27f436d753a612d",
-      "js_size": 11688,
+      "js_size": 11682,
       "ts_size": 12274
     },
     {
@@ -410,9 +410,9 @@
       "exact": false,
       "similarity": 0.989,
       "transpile_error": null,
-      "js_hash": "6eaa2651d1a4ecef8b0a4be9aea3047cc0be79be08e7e56d3f63cd2438508e4e",
+      "js_hash": "ffd3f45bb91c5bae7870354d9c929153ed8fa27e8a5cead0f5145cc0943e883c",
       "ts_hash": "60e34a4e11cd4063a2f6366fb83cc0f94cab610b7aef4cb63b825c67ab26e300",
-      "js_size": 38842,
+      "js_size": 38836,
       "ts_size": 43440
     },
     {
@@ -458,9 +458,9 @@
       "exact": false,
       "similarity": 0.9882,
       "transpile_error": null,
-      "js_hash": "ef010620f4e1d6b7cbd86cf09bf218f9e2e9a25f6f7e10c2e589968cc4166527",
+      "js_hash": "2051007d00afcd4b68ac5bce83b0bfc3b2f0e4d56f7c22ab8d74ba337f7a2110",
       "ts_hash": "13a42a8c1afc64184498a41eaf84b0b360527d602bbeb723f57a8fb94dbd4e17",
-      "js_size": 17820,
+      "js_size": 17817,
       "ts_size": 20078
     },
     {
@@ -482,9 +482,9 @@
       "exact": false,
       "similarity": 0.9879,
       "transpile_error": null,
-      "js_hash": "25c5eddaf548f73e20937a13de10ab1a5d523beefb370bcfd7e69754388fad61",
+      "js_hash": "055d7a1cdffeb6b916fb334810f6b6768096efbcba6b396b77e697f939635c67",
       "ts_hash": "f8b59b6dcb86e24cf885a8651ecf71e7d2056672d38ed15dac7c1d03c8823f3c",
-      "js_size": 40395,
+      "js_size": 40389,
       "ts_size": 44316
     },
     {
@@ -494,9 +494,9 @@
       "exact": false,
       "similarity": 0.9875,
       "transpile_error": null,
-      "js_hash": "8510bbde3cd56078e8d0fa2722f30cbaea2200faa42641412101fb18d8ec8b78",
+      "js_hash": "25ec8c136d604cdaf07d2da0892a33e4c14b819497e1d1e56695346ae370107d",
       "ts_hash": "099bf98f2f5fdfbf01d8bb9f6638209ee766d44b7143effb9f39acf0ded22477",
-      "js_size": 20745,
+      "js_size": 20739,
       "ts_size": 22627
     },
     {
@@ -506,9 +506,9 @@
       "exact": false,
       "similarity": 0.9875,
       "transpile_error": null,
-      "js_hash": "e74c45a96ad014aaf6781827f2032a7fdcbb20cd5315adcbb3dfe2082a74a115",
+      "js_hash": "58c051d33bd0bc0c038a84794a7bf9729847e037707eee197c4cb7f3e97b6e5b",
       "ts_hash": "bd18459e159b8e3f91b8b5f5cbade8470e0f5c6b92f0fc4e1a355518a301930b",
-      "js_size": 12180,
+      "js_size": 12156,
       "ts_size": 13415
     },
     {
@@ -542,9 +542,9 @@
       "exact": false,
       "similarity": 0.9872,
       "transpile_error": null,
-      "js_hash": "d9573b81d929ee42f167da2209003d71f5472ec1061c41f06ab1d5a8ced16895",
+      "js_hash": "fab46097f502183fdd5bba81c6777e08a51cbfe8b1e6fb61e67d49eb871a9875",
       "ts_hash": "cf5d97a6538fde525c56aa580010e1f931d4b0fde644213a4236c94555b752c2",
-      "js_size": 11464,
+      "js_size": 11458,
       "ts_size": 12549
     },
     {
@@ -578,9 +578,9 @@
       "exact": false,
       "similarity": 0.9857,
       "transpile_error": null,
-      "js_hash": "a5efe672ceb4ebe3ccf551c4ddeabbe920e3e7ee97aec6631d694d23cd668d8e",
+      "js_hash": "c44ce073ffecee3f8381cdbde837f60a1805b0202a4227cb949909f9881b2550",
       "ts_hash": "90c2371678cba12e7c535d1ad275cf526eb7c7d8bf5a3b43797a24307d3bdad0",
-      "js_size": 25626,
+      "js_size": 25623,
       "ts_size": 28135
     },
     {
@@ -590,9 +590,9 @@
       "exact": false,
       "similarity": 0.9855,
       "transpile_error": null,
-      "js_hash": "88fa60dbebcdb605fe2958f1d5691f0cebf020356bad52a584f8fbf138760eac",
+      "js_hash": "3af6e5f17d39414a3bd8e9c4167189ef10e856c7e643d2fad4b70c3c24b49011",
       "ts_hash": "4f4d873815690a3187f3a6195143ecbb77a15939eb7e61daa5e5c18e586329ee",
-      "js_size": 14848,
+      "js_size": 14845,
       "ts_size": 16015
     },
     {
@@ -650,9 +650,9 @@
       "exact": false,
       "similarity": 0.9842,
       "transpile_error": null,
-      "js_hash": "4b3d03e7f7782ca03dcff3f7aa8a428f43498b8e8aca5b8e1641be14d70076a8",
+      "js_hash": "7cce1091c7dc6b7cd5fc9a57ad9ca41440cb98e3db03a6a7d1c118c733db7d4d",
       "ts_hash": "75efd3b20a7408d129b79da895d0b657f4f379b0fbdd30b9714158d813d78948",
-      "js_size": 154853,
+      "js_size": 154847,
       "ts_size": 165444
     },
     {
@@ -662,9 +662,9 @@
       "exact": false,
       "similarity": 0.9831,
       "transpile_error": null,
-      "js_hash": "08f36c46fd4266bdd0df40b3a5bcafb9e8f60261f89ec9974d58c26d47d88671",
+      "js_hash": "56632fa3f3c91008aecca066a67e434b8e5c18bc031de1b7a8d3cad697b2f3e5",
       "ts_hash": "189520f50106274da180ca3f19db0628130cfe97c2867f432b96143b59c0b697",
-      "js_size": 15310,
+      "js_size": 15304,
       "ts_size": 16531
     },
     {
@@ -674,9 +674,9 @@
       "exact": false,
       "similarity": 0.9828,
       "transpile_error": null,
-      "js_hash": "2b4bcb11f74718025969e551b42a8d1ffccc912d6daef72b5258199ca91fc9ae",
+      "js_hash": "001fdd7ac3ac8bbbecc0d9af8272d08ca1500e92fb4670b68f937006d795619d",
       "ts_hash": "9f713d4cbfa356e251bb01d403017695978e8314af6edcac128390cde77dbaf6",
-      "js_size": 16581,
+      "js_size": 16575,
       "ts_size": 18562
     },
     {
@@ -698,9 +698,9 @@
       "exact": false,
       "similarity": 0.9826,
       "transpile_error": null,
-      "js_hash": "c91a3ab243877939f8c9bfd457c237e815cbc5ae5da40aed6e0b4582f198a294",
+      "js_hash": "9079a35d99505b2b0230145aed69b2ae9fc451d3a92b471c13cd3826095b0fa7",
       "ts_hash": "ec5687639cbb0c887804a3162d3b1b576863028cad32a8c4d2e61b04a80e99af",
-      "js_size": 21297,
+      "js_size": 21294,
       "ts_size": 25789
     },
     {
@@ -746,9 +746,9 @@
       "exact": false,
       "similarity": 0.9804,
       "transpile_error": null,
-      "js_hash": "69b74624910d6f0365286bc3dec2ea63748dfd7073b7637d5f9e1c1f2b08b3d7",
+      "js_hash": "55649c72fe734a5f6211a63f7a2e4bdb81e3c2d47af4022c30166ed4ad562b40",
       "ts_hash": "d60d412144ff2d3aebd90bc96042de45fe3b3d9fe1bff135142264b14602b9ad",
-      "js_size": 8058,
+      "js_size": 8055,
       "ts_size": 8828
     },
     {
@@ -758,9 +758,9 @@
       "exact": false,
       "similarity": 0.9803,
       "transpile_error": null,
-      "js_hash": "14534f2d468fcd06c9c587e30d76bba225fc1698d8a0b60ea09135264e3383ee",
+      "js_hash": "92cfae90d9bfe7fcb6f63b51393c164d88caf2a64b941486b67a9913255d7dd0",
       "ts_hash": "2074352fba6be0e7c8ff2c1eca474ccb154404e6889a88364bfde3b500075db5",
-      "js_size": 11134,
+      "js_size": 11128,
       "ts_size": 12390
     },
     {
@@ -806,9 +806,9 @@
       "exact": false,
       "similarity": 0.9798,
       "transpile_error": null,
-      "js_hash": "ea3a82dbbe9b9c0b4cbbf3b02ee06dabb3cdd2ac6c67a99df005e8a876bc2943",
+      "js_hash": "f9c5ce659dcef7c76ef667f410e7deb38f0a904027ece0257372714f656e6059",
       "ts_hash": "72df929590510ef41f1528c949ea503f64755d88401e7c4c5ae5deda08d718f6",
-      "js_size": 22277,
+      "js_size": 22271,
       "ts_size": 25248
     },
     {
@@ -854,9 +854,9 @@
       "exact": false,
       "similarity": 0.979,
       "transpile_error": null,
-      "js_hash": "fcafc69e7c3156d773d850b30bb22780211dc94a65d81c8adbecb484d5c02ccc",
+      "js_hash": "a4f9a1e36ab8651e5119659c52d4dca857e50aa69a9bbbfd2ae556009531969d",
       "ts_hash": "21bcd9c8dd54858ade34ebd40e17a8d902d2daf1095f7410f051aef987ccc68b",
-      "js_size": 15294,
+      "js_size": 15288,
       "ts_size": 17483
     },
     {
@@ -890,9 +890,9 @@
       "exact": false,
       "similarity": 0.9766,
       "transpile_error": null,
-      "js_hash": "93981deb17b93b1913295de9c9aff7aab3bb593f4112103c9d54b5317037e044",
+      "js_hash": "30f89458df1c75bdd16c20d27166eee6725cb210c9a3d4b2b6451b9778b3fb66",
       "ts_hash": "0516ad23bc8144944fdc5540626ddadbd1a2340d6ad7bba35d4adb8d7e5c74d1",
-      "js_size": 6443,
+      "js_size": 6440,
       "ts_size": 7111
     },
     {
@@ -902,9 +902,9 @@
       "exact": false,
       "similarity": 0.9765,
       "transpile_error": null,
-      "js_hash": "9282df77d78ff81b70bfee7caab306b8cc4f1248166a038343610c1e7e906fe4",
+      "js_hash": "ec7dc2d06d2cd61387f12a3f15134b8765598a914c6072befdfee8e3f0c9f4c6",
       "ts_hash": "343f007cc90bc8425e3a05ef73d9855c36fb40ede6938dd2dcaf059f1b81f30d",
-      "js_size": 9779,
+      "js_size": 9776,
       "ts_size": 10640
     },
     {
@@ -914,9 +914,9 @@
       "exact": false,
       "similarity": 0.9765,
       "transpile_error": null,
-      "js_hash": "c13b19f492150dfd36130e08ad67fdf015dfa52936bfa467960b0f376cf09058",
+      "js_hash": "d312f715e0db529a918538baafc0cdae8ea0e8e4d870b544a39714f1edafd557",
       "ts_hash": "0e623ba0c80d2209166ddc2ae8d55183342bb08265083cbc18563007bb3bbca1",
-      "js_size": 5886,
+      "js_size": 5883,
       "ts_size": 6568
     },
     {
@@ -938,9 +938,9 @@
       "exact": false,
       "similarity": 0.9747,
       "transpile_error": null,
-      "js_hash": "44df2ebdd3c0a2f57efa0e7b29c286f0dae3ddaf0b4977a36c6379466c3a734a",
+      "js_hash": "dd3aedbce6a10a5da30ffbd2d92fbd8b5d0d9f496533f7b25456a174e82a3191",
       "ts_hash": "8334a747398cb5ed99ee870c4bb3e1c5e6c3f47a55d129b045afb7b4d061f136",
-      "js_size": 8381,
+      "js_size": 8378,
       "ts_size": 9419
     },
     {
@@ -974,9 +974,9 @@
       "exact": false,
       "similarity": 0.9721,
       "transpile_error": null,
-      "js_hash": "26d110343f4d86e87ac6e0ea75bd565d475cc1772427d9018b15c995df9100cb",
+      "js_hash": "75cd1b27abeff24e2df161a5e3b6cfda1d4788ee0ed2a44863791e652e752c72",
       "ts_hash": "dc7cf59c3012e865be55707eefd430d89d9b2a4c0162bc9fc0e5fcb0f74fe8a2",
-      "js_size": 12671,
+      "js_size": 12668,
       "ts_size": 13933
     },
     {
@@ -1010,9 +1010,9 @@
       "exact": false,
       "similarity": 0.9697,
       "transpile_error": null,
-      "js_hash": "28eefb9ec852906b49feb0645e870dac4b26e86fa7bd497d67733dfc03b98de3",
+      "js_hash": "7703104e5c3907cff5fa1913f51534deda3c996a61cc2d1b976e03a02bcebe3f",
       "ts_hash": "a550752651c9352c6ad366d6ecc4c403194ae8df59da755d8eff13817170e4de",
-      "js_size": 5616,
+      "js_size": 5601,
       "ts_size": 6518
     },
     {
@@ -1022,9 +1022,9 @@
       "exact": false,
       "similarity": 0.9686,
       "transpile_error": null,
-      "js_hash": "4c91ef73d507bab197ebd324f3aafa5b46166ff8b7bdf84198b2aeed69bce0bf",
+      "js_hash": "8af7ef695b196d95a78ba974b24f7db9998698cf26325a2494e6d3b6032223d7",
       "ts_hash": "acd06c3da35392aa5947f45ef8bd71f63e8894c6d040755937ea82dbc1726de7",
-      "js_size": 5115,
+      "js_size": 5112,
       "ts_size": 5490
     },
     {
@@ -1034,9 +1034,9 @@
       "exact": false,
       "similarity": 0.9679,
       "transpile_error": null,
-      "js_hash": "c0aea7120a7eae8dd66fa904631c06358e9643f188617d57e07c7e5d56ddde6d",
+      "js_hash": "f7f595400dccb4cb54fc4bc8178a76421d0e6497ad39c54d89a6fd838c83a8fc",
       "ts_hash": "ef11ed4398333b67b8d66325a9ae4df69d092ef97fbefce39c28ada50ccc870d",
-      "js_size": 4253,
+      "js_size": 4250,
       "ts_size": 4581
     },
     {
@@ -1070,9 +1070,9 @@
       "exact": false,
       "similarity": 0.9639,
       "transpile_error": null,
-      "js_hash": "7790c4b61bf150be8a6a40f05eea9956413220228566ac87b82c6733aafe0702",
+      "js_hash": "1511b6e61b2be792d97190b1bd7467deacf2dd42f460388f545a4f1a296d963f",
       "ts_hash": "be9a78c623aed2cffd4043da098f0ba718c72da09620ca29e96ccb5d748954e9",
-      "js_size": 91685,
+      "js_size": 91664,
       "ts_size": 93842
     },
     {
@@ -1094,9 +1094,9 @@
       "exact": false,
       "similarity": 0.9618,
       "transpile_error": null,
-      "js_hash": "edf5d3b9e4667a88c64ab30d3b044b4bb78f99646cf7046f242f349a109f4e36",
+      "js_hash": "085c6b8e827f41b3e781f46d1d1d3970cde9e34abb93d358309bc7a261370f80",
       "ts_hash": "df851f54fbe92ce88fd2ffe7206586a43a30a16b1c18bb631fe19ba40b441e19",
-      "js_size": 6354,
+      "js_size": 6348,
       "ts_size": 6944
     },
     {
@@ -1106,9 +1106,9 @@
       "exact": false,
       "similarity": 0.9613,
       "transpile_error": null,
-      "js_hash": "66e62eca86a79a556bca409f0d1551372a169edabcf3200950ae2745e9a3ef6d",
+      "js_hash": "5ee9ffb4f7fbddbe753047538885f6379b041ef30b4bcbe89acd07ad7e9a7da6",
       "ts_hash": "35308b8ba31a085aa55ec516b353e4fd5748e5b7d6672cd8f164d7aad00f24cf",
-      "js_size": 6448,
+      "js_size": 6442,
       "ts_size": 7058
     },
     {
@@ -1154,9 +1154,9 @@
       "exact": false,
       "similarity": 0.9554,
       "transpile_error": null,
-      "js_hash": "3a4e6a5583d33a0b381be7f737b5795ffbb7191536911433e0b2131d437efa0b",
+      "js_hash": "12a74baefdf022cf8c5939b91e59fd2e7f9dda267eb8381be455a5f374e50b21",
       "ts_hash": "c7cc072e1182df51240f7920f17899ca4f6af2e09781ea01b9e69c6bfca5440d",
-      "js_size": 3646,
+      "js_size": 3643,
       "ts_size": 4087
     },
     {
@@ -1178,9 +1178,9 @@
       "exact": false,
       "similarity": 0.9528,
       "transpile_error": null,
-      "js_hash": "337556cff0d416de72d5c0465bfdfd4c06a55c234b1e1a82aab02b42852ba5da",
+      "js_hash": "b1ef275cea29cb7639cab1a2a021e4d90fe86f5b04da73f69b39c39f01a6e412",
       "ts_hash": "3d78a00d16e36b8e0557d3cba632dcce05ebbbb27b38317be0f842667f2c4346",
-      "js_size": 2816,
+      "js_size": 2813,
       "ts_size": 3123
     },
     {
@@ -1190,9 +1190,9 @@
       "exact": false,
       "similarity": 0.9512,
       "transpile_error": null,
-      "js_hash": "9e3ba96c0720d7eb22bfea90b29919f1e7049007b07044fd9773881071df0b2c",
+      "js_hash": "df827cbe9b1c1796600c68807638fb77397405fc79d01e8d3d10b114824086db",
       "ts_hash": "b8655e0eea0df94876da1d29221909c74734922c1753a5c5f975d977fe38a37a",
-      "js_size": 4186,
+      "js_size": 4180,
       "ts_size": 4590
     },
     {
@@ -1202,9 +1202,9 @@
       "exact": false,
       "similarity": 0.95,
       "transpile_error": null,
-      "js_hash": "9a0887fa5d82dccd1628e3a19639a95d30662fafa428e3018550cec1a49a7fa8",
+      "js_hash": "7288a0572553dbc5c0e6f35c66851bed2a8f4c60d2c9005a4be615fb7b2083cc",
       "ts_hash": "1948960856f3151473a21b74458b62db979eda7aeae9f3b37d07daa4366914a2",
-      "js_size": 2041,
+      "js_size": 2038,
       "ts_size": 2284
     },
     {
@@ -1214,9 +1214,9 @@
       "exact": false,
       "similarity": 0.9485,
       "transpile_error": null,
-      "js_hash": "7ee11076964d4bd2f65edad92f7a9cf0c58a6613a156198c7b5b0a9f40cc1786",
+      "js_hash": "944ff52931c9d3acf69b754294aef93d7ee30857e1231218d8c5a85504a5513d",
       "ts_hash": "ae9f1af133f978b2d79a7a8843a99c621748bd4730328f47c853d6c6091e9735",
-      "js_size": 2385,
+      "js_size": 2382,
       "ts_size": 2645
     },
     {
@@ -1226,9 +1226,9 @@
       "exact": false,
       "similarity": 0.9485,
       "transpile_error": null,
-      "js_hash": "e83d682308fe561c7cf6b2b0e60211cfb988b498061b0a5ffaf7e1192132fcb7",
+      "js_hash": "0b0d2f1cdee2d28c8d741e9cee10745a94c5eb4d9a1f9d202b162ac40124a566",
       "ts_hash": "0407feb72a705f55da27f9611b2453972ebf733848a0eacf1aa76542256ee863",
-      "js_size": 2971,
+      "js_size": 2968,
       "ts_size": 3329
     },
     {
@@ -1238,9 +1238,9 @@
       "exact": false,
       "similarity": 0.9468,
       "transpile_error": null,
-      "js_hash": "b27827d6fa533124d978b1b05280a9cbbfaaf062b5b66b807a7e6b192cd8ba41",
+      "js_hash": "cc81bfdbfb5f389ed4390a4cde200553b899eee38193a6e9e3e1b1d1d5828f00",
       "ts_hash": "618643875ecfdd444ab8fe3338ffa211a4834130b68867a674018ccab14427ed",
-      "js_size": 3007,
+      "js_size": 3004,
       "ts_size": 3352
     },
     {
@@ -1250,10 +1250,22 @@
       "exact": false,
       "similarity": 0.9425,
       "transpile_error": null,
-      "js_hash": "22edfd4de2d0991eaeaba415508a72dba1e6a3caa76537ee066d7085d85f1bdb",
+      "js_hash": "3eeb38fd9b5efd79ec92e79590b0ebc7376a060f59b3be3b0e91d58280f110b0",
       "ts_hash": "d7d19102f9aef2d7f4e62e8fdef83e70751cde241b49b3e93ebed7fb1d2515f2",
-      "js_size": 2528,
+      "js_size": 2525,
       "ts_size": 2760
+    },
+    {
+      "base": "lib/tool_compactor_integration",
+      "js": "lib/tool_compactor_integration.js",
+      "ts": "lib/tool_compactor_integration.ts",
+      "exact": false,
+      "similarity": 0.9351,
+      "transpile_error": null,
+      "js_hash": "02b6477de1a60f14c2cdce6cb245b62acc701f740548a363e387b7e72de84a48",
+      "ts_hash": "8ebf5fa78c9d2a74288a14e37f595ba070ceefae9d7e19a426b6f665a17917e4",
+      "js_size": 970,
+      "ts_size": 1047
     },
     {
       "base": "systems/routing/llm_gateway",
@@ -1262,9 +1274,9 @@
       "exact": false,
       "similarity": 0.9257,
       "transpile_error": null,
-      "js_hash": "789a45507b1b670896133fcc02927ddcdabda761a8bd8b7c78447b73950b873b",
+      "js_hash": "9082fe6bd7a49d4deb6f27a0503c258f10b956565a79ca387b9000461c9d550a",
       "ts_hash": "ee92e9650e08bcd53c0bc6db0e55c10c2660df605583be5278aeebeb95f82d63",
-      "js_size": 16387,
+      "js_size": 16384,
       "ts_size": 14352
     },
     {
@@ -1278,18 +1290,6 @@
       "ts_hash": "11d6e6595f9d0f0a9f5f99debec5cae4ae0f516f651c7b6a48b4e0477e7ebeb7",
       "js_size": 5953,
       "ts_size": 5754
-    },
-    {
-      "base": "lib/tool_compactor_integration",
-      "js": "lib/tool_compactor_integration.js",
-      "ts": "lib/tool_compactor_integration.ts",
-      "exact": false,
-      "similarity": 0.9231,
-      "transpile_error": null,
-      "js_hash": "a9c48847537306d4fd73f278d7123e2e0d578195fccc8e0ae2ddc62a19812682",
-      "ts_hash": "8ebf5fa78c9d2a74288a14e37f595ba070ceefae9d7e19a426b6f665a17917e4",
-      "js_size": 973,
-      "ts_size": 1047
     },
     {
       "base": "systems/security/merge_guard",
@@ -1310,9 +1310,9 @@
       "exact": false,
       "similarity": 0.9146,
       "transpile_error": null,
-      "js_hash": "39047a556cf1a9d762593aaa12ffcea33fb9a03cef8d8ea6d766c12990fbf929",
+      "js_hash": "9ed444a18e21d7bcd6fe55cb29216d42577164f1699a6a0f8a674678e6633728",
       "ts_hash": "a89be1e1e1e535bf82ec2eab2e72572233b551edc8db3b59d2d3cdc834de9e7b",
-      "js_size": 9683,
+      "js_size": 9680,
       "ts_size": 8452
     },
     {
@@ -1320,11 +1320,11 @@
       "js": "lib/strategy_resolver.js",
       "ts": "lib/strategy_resolver.ts",
       "exact": false,
-      "similarity": 0.9062,
+      "similarity": 0.9086,
       "transpile_error": null,
-      "js_hash": "6fab601d448763541c583d42b0286e3dfee3a05c006ca34de7d63a839f81bfb9",
+      "js_hash": "5582c42cfa430e1ffbcb64915e61d36934e4b20d581bd7afcb7b50448b336237",
       "ts_hash": "0f964539516c8bf6eeec1f535c8956e30141b052014213b874348fbe208642af",
-      "js_size": 32035,
+      "js_size": 32032,
       "ts_size": 30525
     },
     {
@@ -1334,9 +1334,9 @@
       "exact": false,
       "similarity": 0.9058,
       "transpile_error": null,
-      "js_hash": "e7ce0cdaba4f1ba48a81869614cf66446b89d984ff672168438489f7811ba943",
+      "js_hash": "ce437943bdf4af337d0c4f4ca3bb6cf9206c7c863b0f3d28b96b3aa04a3d47c9",
       "ts_hash": "8a49dcc5580a389651b97ee35af585118887ae599904afd1270620162339cac0",
-      "js_size": 577681,
+      "js_size": 577630,
       "ts_size": 551491
     },
     {
@@ -1370,34 +1370,34 @@
       "exact": false,
       "similarity": 0.8985,
       "transpile_error": null,
-      "js_hash": "4bb387ddd76ed0368684bcf0093bd9cd51f05e35ec045914c5f92532e63941d6",
+      "js_hash": "858c145e223941b6de6e7907e5db5eb41ab07bae75261027e8e52491819b051c",
       "ts_hash": "c40c5e0d61c4c8419dbdf3915857a60ee43a4c54ad5a7a04d73e4966ea530d83",
-      "js_size": 29861,
+      "js_size": 29852,
       "ts_size": 28784
-    },
-    {
-      "base": "lib/quorum_validator",
-      "js": "lib/quorum_validator.js",
-      "ts": "lib/quorum_validator.ts",
-      "exact": false,
-      "similarity": 0.891,
-      "transpile_error": null,
-      "js_hash": "ce663a68784195f464ca71a6880f7383655b834200da8ac65d2cc66be0e30786",
-      "ts_hash": "13880639734a6eaf3ec4d12593d02f6b9330f897b9a9577e016c71c8798f536d",
-      "js_size": 4901,
-      "ts_size": 4956
     },
     {
       "base": "systems/sensory/eyes_collectors/ollama_search",
       "js": "systems/sensory/eyes_collectors/ollama_search.js",
       "ts": "systems/sensory/eyes_collectors/ollama_search.ts",
       "exact": false,
-      "similarity": 0.8876,
+      "similarity": 0.8977,
       "transpile_error": null,
-      "js_hash": "70f5e23fe1037e5ea7ed3445488e7f2d994820cc19fa0ff3ecc7fd956c78ca54",
+      "js_hash": "804eeb2ff3ebf7aa6d2f2ba492097512a102c8a05e0262105b655d1da9ecdd7b",
       "ts_hash": "9ffd340366845bd28a24d01f2268519c4849ecca2e53e9ec2293f22497bc16f2",
-      "js_size": 2067,
+      "js_size": 2064,
       "ts_size": 2430
+    },
+    {
+      "base": "lib/quorum_validator",
+      "js": "lib/quorum_validator.js",
+      "ts": "lib/quorum_validator.ts",
+      "exact": false,
+      "similarity": 0.8968,
+      "transpile_error": null,
+      "js_hash": "299b8ddd09ef0d7432468512f5b79a7cdc9f6dae4a56e3f2fba8c096ac61b4e7",
+      "ts_hash": "13880639734a6eaf3ec4d12593d02f6b9330f897b9a9577e016c71c8798f536d",
+      "js_size": 4898,
+      "ts_size": 4956
     },
     {
       "base": "systems/memory/idle_dream_cycle",
@@ -1406,9 +1406,9 @@
       "exact": false,
       "similarity": 0.8664,
       "transpile_error": null,
-      "js_hash": "71bcd9f3e2309d653f1d21804e63301e77c427f49c84d0d849daaae3754a1c61",
+      "js_hash": "30fc904e78f8b18b9ff9af54ca4b6176eda92c73acf6e2f420c5b3130e097bff",
       "ts_hash": "2b703c7cb14b52e63b2909b9e6bff9a2903d0c04307bce0197283f414c12d2f4",
-      "js_size": 97772,
+      "js_size": 97751,
       "ts_size": 91902
     },
     {
@@ -1418,9 +1418,9 @@
       "exact": false,
       "similarity": 0.8308,
       "transpile_error": null,
-      "js_hash": "2db19321212238bdeb99da08e28481381315805bfd76d9bf26f6ca4aa1465139",
+      "js_hash": "1aa1cdc12f433172ada2d61ae13050105b3438fc9a018722bf15f742fad45a02",
       "ts_hash": "1daa7dac45e5715b29abb02e191eb8133ca063ba0cc3a409e8faa8f4840b98b4",
-      "js_size": 3634,
+      "js_size": 3631,
       "ts_size": 3116
     },
     {
@@ -1442,9 +1442,9 @@
       "exact": false,
       "similarity": 0.8161,
       "transpile_error": null,
-      "js_hash": "31bf0ff22e85faf929e5ea721725beec30fff7bf7714f6fb671a801b0061ba07",
+      "js_hash": "926aa4110c550fc8e167e6185222f892d07ecfef8cea9bc4aec48dd39f804d51",
       "ts_hash": "403c95c279e6a78f2c1669c64a400c33554d74825115a6428d5f8f92b2a524cf",
-      "js_size": 153403,
+      "js_size": 153382,
       "ts_size": 134816
     },
     {
@@ -1452,11 +1452,11 @@
       "js": "lib/eyes_catalog.js",
       "ts": "lib/eyes_catalog.ts",
       "exact": false,
-      "similarity": 0.766,
+      "similarity": 0.7826,
       "transpile_error": null,
-      "js_hash": "4178d9a57fb3fe63a0864ba4fe70fa833ceacb57c2c7d9857ceccfe82a2a07d0",
+      "js_hash": "ea589306ae9a2217f1bb8f8b1862d079c3bae674ac1c18d3800bb6192bb1275e",
       "ts_hash": "9bfe053637a19652a55070b8f3803564456419f281c283a3d381f533bf4e0a93",
-      "js_size": 882,
+      "js_size": 879,
       "ts_size": 1279
     },
     {
@@ -1466,9 +1466,9 @@
       "exact": false,
       "similarity": 0.7594,
       "transpile_error": null,
-      "js_hash": "5dd8ef2b942d6e4479555206740f8b13171309c9a902a12475aa7bcf5e048959",
+      "js_hash": "8fd5a0ab3cae005968c6aababf85b2d196fded4747eb2ece35c306ac8bdb07bc",
       "ts_hash": "593e0ecb72c84b4a1d71fc67ea66c5ef42f74348b5fca82bdd1c58ae14efeb2f",
-      "js_size": 9068,
+      "js_size": 9065,
       "ts_size": 5512
     },
     {
@@ -1500,11 +1500,11 @@
       "js": "systems/sensory/eyes_collectors/cache_store.js",
       "ts": "systems/sensory/eyes_collectors/cache_store.ts",
       "exact": false,
-      "similarity": 0.5714,
+      "similarity": 0.6154,
       "transpile_error": null,
-      "js_hash": "2f077b20f7220578a89e3b4339563058fc4c01cae30a7f9612bb677ef615b71a",
+      "js_hash": "21c6f3f4c01ea109599eee61a1810709b954a2ca34ae2af5a7e29ea3d476c944",
       "ts_hash": "792368f6fa1d27935e19b21a466170aae3db08853f33622846b3e68da31af4b7",
-      "js_size": 85,
+      "js_size": 82,
       "ts_size": 145
     },
     {
@@ -1512,11 +1512,11 @@
       "js": "lib/command_output_compactor.js",
       "ts": "lib/command_output_compactor.ts",
       "exact": false,
-      "similarity": 0.5333,
+      "similarity": 0.5424,
       "transpile_error": null,
-      "js_hash": "16efdc5359c6e1f608076989c5b0b24a6289f97c2843d6823f182fa8ab4e31a6",
+      "js_hash": "937499169d8edc8f36a61da4245aa46397105e8e71ebc7ad19727ca4404aa71e",
       "ts_hash": "67d86d7df168fa0c8f531af04fa18cb20e5004b92b495bd9d367359683814447",
-      "js_size": 942,
+      "js_size": 939,
       "ts_size": 938
     }
   ]

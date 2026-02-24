@@ -17,7 +17,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { resolveCatalogPath } = require('../../lib/eyes_catalog.js');
+const { resolveCatalogPath } = require('../../lib/eyes_catalog');
 
 const WORKSPACE_DIR = path.join(__dirname, '..', '..');
 

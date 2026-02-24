@@ -33,7 +33,7 @@ const {
   loadSystemBudgetAutopauseState,
   setSystemBudgetAutopause,
   evaluateSystemBudgetGuard
-} = require('../budget/system_budget.js');
+} = require('../budget/system_budget');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const POLICY_PATH = process.env.SPAWN_POLICY_PATH

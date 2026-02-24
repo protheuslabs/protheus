@@ -16,21 +16,21 @@
 
 const fs = require('fs');
 const path = require('path');
-const { loadActiveDirectives } = require('../../lib/directive_resolver.js');
-const { resolveCatalogPath } = require('../../lib/eyes_catalog.js');
+const { loadActiveDirectives } = require('../../lib/directive_resolver');
+const { resolveCatalogPath } = require('../../lib/eyes_catalog');
 const {
   loadActiveStrategy,
   applyThresholdOverrides,
   effectiveAllowedRisks,
   strategyAllowsProposalType
-} = require('../../lib/strategy_resolver.js');
+} = require('../../lib/strategy_resolver');
 const {
   loadOutcomeFitnessPolicy,
   proposalTypeThresholdOffsetsFor
-} = require('../../lib/outcome_fitness.js');
-const { compileProposalSuccessCriteria } = require('../../lib/success_criteria_compiler.js');
-const { evaluateProposalQuorum } = require('../../lib/quorum_validator.js');
-const { classifyProposalType } = require('../../lib/proposal_type_classifier.js');
+} = require('../../lib/outcome_fitness');
+const { compileProposalSuccessCriteria } = require('../../lib/success_criteria_compiler');
+const { evaluateProposalQuorum } = require('../../lib/quorum_validator');
+const { classifyProposalType } = require('../../lib/proposal_type_classifier');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const SENSORY_DIR = process.env.SENSORY_TEST_DIR

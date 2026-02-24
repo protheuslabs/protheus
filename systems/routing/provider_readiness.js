@@ -17,7 +17,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { emitPainSignal } = require('../autonomy/pain_signal.js');
+const { emitPainSignal } = require('../autonomy/pain_signal');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const STATE_PATH = process.env.PROVIDER_READINESS_STATE_PATH
@@ -247,7 +247,7 @@ function probeProvider(provider, opts = {}) {
   if (provider === 'ollama') {
     const startedMs = Date.now();
     try {
-      const { listLocalOllamaModels } = require('./llm_gateway.js');
+      const { listLocalOllamaModels } = require('./llm_gateway');
       const listed = typeof listLocalOllamaModels === 'function'
         ? listLocalOllamaModels({
             timeoutMs,

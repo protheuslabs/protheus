@@ -15,7 +15,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { isAlnum } = require('../../lib/uid.js');
+const { isAlnum } = require('../../lib/uid');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const REGISTRY_PATH = process.env.HABIT_HYGIENE_REGISTRY_PATH

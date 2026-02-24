@@ -23,7 +23,7 @@ const {
   sealIntegrity,
   collectPresentProtectedFiles,
   appendIntegrityEvent
-} = require('../../lib/security_integrity.js');
+} = require('../../lib/security_integrity');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const STARTUP_ATTESTATION_SCRIPT = process.env.INTEGRITY_RESEAL_STARTUP_ATTESTATION_SCRIPT

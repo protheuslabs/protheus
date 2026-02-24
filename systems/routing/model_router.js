@@ -14,7 +14,7 @@ const os = require("os");
 const path = require("path");
 const crypto = require("crypto");
 const { spawnSync } = require("child_process");
-const { evaluateLocalProviderGate } = require("./provider_readiness.js");
+const { evaluateLocalProviderGate } = require("./provider_readiness");
 const {
   loadSystemBudgetState,
   projectSystemBudget,
@@ -23,7 +23,7 @@ const {
   writeSystemBudgetDecision,
   setSystemBudgetAutopause,
   clearSystemBudgetAutopause
-} = require("../budget/system_budget.js");
+} = require("../budget/system_budget");
 
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
 const CONFIG_PATH = process.env.ROUTER_CONFIG_PATH || path.join(REPO_ROOT, "config", "agent_routing_rules.json");

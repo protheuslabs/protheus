@@ -12,7 +12,7 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
-const { stampGuardEnv } = require('../../lib/request_envelope.js');
+const { stampGuardEnv } = require('../../lib/request_envelope');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const ROUTING_CONFIG = path.join(REPO_ROOT, 'config', 'agent_routing_rules.json');

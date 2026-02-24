@@ -6,7 +6,7 @@ const path = require('path');
 const {
   compileDirectiveLineage,
   evaluateDirectiveLineageCandidate
-} = require('../security/directive_compiler.js');
+} = require('../security/directive_compiler');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const DEFAULT_POLICY_PATH = process.env.AUTONOMY_OBJECTIVE_RUNTIME_POLICY_PATH

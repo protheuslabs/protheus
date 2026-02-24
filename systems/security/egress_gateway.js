@@ -7,7 +7,7 @@ const {
   loadPolicy,
   loadState,
   authorizeEgress
-} = require('../../lib/egress_gateway.js');
+} = require('../../lib/egress_gateway');
 
 function usage() {
   console.log('Usage:');

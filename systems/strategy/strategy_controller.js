@@ -41,7 +41,7 @@ const {
   materializeFromQueue,
   touchProfileUsage,
   gcProfiles
-} = require('../adaptive/strategy/strategy_store.js');
+} = require('../adaptive/strategy/strategy_store');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const RUNS_DIR = process.env.STRATEGY_CONTROLLER_RUNS_DIR

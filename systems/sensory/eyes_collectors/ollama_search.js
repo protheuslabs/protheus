@@ -3,7 +3,7 @@
 const http = require('http');
 const https = require('https');
 const { URL } = require('url');
-const adaptive = require('../../../adaptive/sensory/eyes/collectors/ollama_search.js');
+const adaptive = require('../../../adaptive/sensory/eyes/collectors/ollama_search');
 
 function fetchViaNodeGet(url, options = {}) {
   return new Promise((resolve, reject) => {

@@ -17,18 +17,18 @@ const os = require('os');
 const path = require('path');
 const {
   normalizeAutonomyReceiptForWrite
-} = require('../../lib/autonomy_receipt_schema.js');
-const { enrichOne } = require('../autonomy/proposal_enricher.js');
-const { defaultCatalog } = require('../adaptive/sensory/eyes/catalog_store.js');
-const { defaultFocusState } = require('../adaptive/sensory/eyes/focus_trigger_store.js');
-const { defaultHabitState } = require('../adaptive/habits/habit_store.js');
-const { defaultReflexState } = require('../adaptive/reflex/reflex_store.js');
-const { defaultStrategyState } = require('../adaptive/strategy/strategy_store.js');
+} = require('../../lib/autonomy_receipt_schema');
+const { enrichOne } = require('../autonomy/proposal_enricher');
+const { defaultCatalog } = require('../adaptive/sensory/eyes/catalog_store');
+const { defaultFocusState } = require('../adaptive/sensory/eyes/focus_trigger_store');
+const { defaultHabitState } = require('../adaptive/habits/habit_store');
+const { defaultReflexState } = require('../adaptive/reflex/reflex_store');
+const { defaultStrategyState } = require('../adaptive/strategy/strategy_store');
 const {
   loadSystemBudgetState,
   recordSystemBudgetUsage,
   writeSystemBudgetDecision
-} = require('../budget/system_budget.js');
+} = require('../budget/system_budget');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const CONTRACTS_DIR = path.join(ROOT, 'config', 'contracts');

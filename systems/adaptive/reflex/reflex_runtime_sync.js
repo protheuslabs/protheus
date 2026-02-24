@@ -14,7 +14,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { readReflexState } = require('./reflex_store.js');
+const { readReflexState } = require('./reflex_store');
 
 const ROOT = path.resolve(__dirname, '..', '..', '..');
 const RUNTIME_PATH = process.env.REFLEX_RUNTIME_ROUTINES_PATH

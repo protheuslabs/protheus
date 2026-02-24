@@ -16,7 +16,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { evaluateStrategicAlignment } = require('./tier1_governance.js');
+const { evaluateStrategicAlignment } = require('./tier1_governance');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const RUNS_DIR = process.env.AUTONOMY_RUNS_DIR

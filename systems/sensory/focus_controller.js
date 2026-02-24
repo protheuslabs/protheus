@@ -18,11 +18,11 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { loadActiveDirectives } = require('../../lib/directive_resolver.js');
-const { loadActiveStrategy } = require('../../lib/strategy_resolver.js');
-const { loadOutcomeFitnessPolicy } = require('../../lib/outcome_fitness.js');
-const { ensureCatalog } = require('../../lib/eyes_catalog.js');
-const { egressFetch, EgressGatewayError } = require('../../lib/egress_gateway.js');
+const { loadActiveDirectives } = require('../../lib/directive_resolver');
+const { loadActiveStrategy } = require('../../lib/strategy_resolver');
+const { loadOutcomeFitnessPolicy } = require('../../lib/outcome_fitness');
+const { ensureCatalog } = require('../../lib/eyes_catalog');
+const { egressFetch, EgressGatewayError } = require('../../lib/egress_gateway');
 const {
   DEFAULT_STATE_DIR: GLOBAL_BUDGET_STATE_DIR,
   DEFAULT_EVENTS_PATH: GLOBAL_BUDGET_EVENTS_PATH,
@@ -34,11 +34,11 @@ const {
   loadSystemBudgetAutopauseState,
   setSystemBudgetAutopause,
   evaluateSystemBudgetGuard
-} = require('../budget/system_budget.js');
+} = require('../budget/system_budget');
 const {
   ensureFocusState,
   mutateFocusState
-} = require('../adaptive/sensory/eyes/focus_trigger_store.js');
+} = require('../adaptive/sensory/eyes/focus_trigger_store');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const SENSORY_DIR = process.env.FOCUS_SENSORY_DIR

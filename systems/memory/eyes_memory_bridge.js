@@ -16,7 +16,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { enforceMutationProvenance, recordMutationAudit } = require('../../lib/mutation_provenance.js');
+const { enforceMutationProvenance, recordMutationAudit } = require('../../lib/mutation_provenance');
 
 const SCRIPT_SOURCE = 'systems/memory/eyes_memory_bridge.js';
 

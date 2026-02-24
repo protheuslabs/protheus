@@ -17,7 +17,7 @@ const {
   compileDirectiveLineage,
   evaluateDirectiveLineageCandidate,
   normalizeDirectiveId
-} = require('../security/directive_compiler.js');
+} = require('../security/directive_compiler');
 
 const STOPWORDS = new Set([
   'the', 'and', 'for', 'with', 'that', 'this', 'from', 'into', 'mode', 'task',

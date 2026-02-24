@@ -3,8 +3,8 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { stableUid, isAlnum } = require('../../../lib/uid.js');
-const { enforceMutationProvenance } = require('../../../lib/mutation_provenance.js');
+const { stableUid, isAlnum } = require('../../../lib/uid');
+const { enforceMutationProvenance } = require('../../../lib/mutation_provenance');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..', '..');
 const ADAPTIVE_ROOT = path.join(REPO_ROOT, 'adaptive');

@@ -19,7 +19,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { spawnSync } = require('child_process');
-const { writeContractReceipt } = require('../../lib/action_receipts.js');
+const { writeContractReceipt } = require('../../lib/action_receipts');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const RUNS_DIR = process.env.AUTONOMY_RUNS_DIR

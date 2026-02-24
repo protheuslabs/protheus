@@ -22,7 +22,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const { beginChange, completeChange, recoverIfInterrupted, writeAtomicJson } = require('./self_change_failsafe');
-const { loadActiveStrategy, strategyGenerationMode } = require('../../lib/strategy_resolver.js');
+const { loadActiveStrategy, strategyGenerationMode } = require('../../lib/strategy_resolver');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const SELF_PATH = path.join(REPO_ROOT, 'systems', 'autonomy', 'improvement_orchestrator.js');
