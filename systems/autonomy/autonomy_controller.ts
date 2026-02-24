@@ -105,6 +105,12 @@ const MODEL_CATALOG_CANARY_PATH = process.env.AUTONOMY_MODEL_CATALOG_CANARY_PATH
 const MODEL_CATALOG_ROLLBACK_SCRIPT = process.env.AUTONOMY_MODEL_CATALOG_ROLLBACK_SCRIPT
   ? path.resolve(process.env.AUTONOMY_MODEL_CATALOG_ROLLBACK_SCRIPT)
   : path.join(REPO_ROOT, 'systems', 'autonomy', 'model_catalog_rollback.js');
+const SPAWN_STATE_DIR = process.env.SPAWN_STATE_DIR
+  ? path.resolve(process.env.SPAWN_STATE_DIR)
+  : path.join(REPO_ROOT, 'state', 'spawn');
+const SPAWN_EVENTS_PATH = process.env.SPAWN_EVENTS_PATH
+  ? path.resolve(process.env.SPAWN_EVENTS_PATH)
+  : path.join(SPAWN_STATE_DIR, 'events.jsonl');
 
 const AUTONOMY_DIR = process.env.AUTONOMY_STATE_DIR
   ? path.resolve(process.env.AUTONOMY_STATE_DIR)
@@ -301,6 +307,27 @@ const AUTONOMY_HARD_MAX_RISK_PER_ACTION = Number(process.env.AUTONOMY_HARD_MAX_R
 const AUTONOMY_CANARY_DAILY_EXEC_LIMIT = Number(process.env.AUTONOMY_CANARY_DAILY_EXEC_LIMIT || 1);
 const AUTONOMY_CANARY_MEDIUM_RISK_DAILY_EXEC_LIMIT = Number(process.env.AUTONOMY_CANARY_MEDIUM_RISK_DAILY_EXEC_LIMIT || 1);
 const AUTONOMY_CANARY_LOW_RISK_COMPOSITE_RELAX = Number(process.env.AUTONOMY_CANARY_LOW_RISK_COMPOSITE_RELAX || 4);
+const AUTONOMY_DYNAMIC_IO_CAP_ENABLED = String(process.env.AUTONOMY_DYNAMIC_IO_CAP_ENABLED || '1') !== '0';
+const AUTONOMY_DYNAMIC_IO_CAP_WARN_FACTOR = clampNumber(
+  Number(process.env.AUTONOMY_DYNAMIC_IO_CAP_WARN_FACTOR || 0.75),
+  0.2,
+  1
+);
+const AUTONOMY_DYNAMIC_IO_CAP_CRITICAL_FACTOR = clampNumber(
+  Number(process.env.AUTONOMY_DYNAMIC_IO_CAP_CRITICAL_FACTOR || 0.5),
+  0.1,
+  AUTONOMY_DYNAMIC_IO_CAP_WARN_FACTOR
+);
+const AUTONOMY_DYNAMIC_IO_CAP_MIN_INPUT_POOL = Math.max(1, Number(process.env.AUTONOMY_DYNAMIC_IO_CAP_MIN_INPUT_POOL || 8));
+const AUTONOMY_DYNAMIC_IO_CAP_RESET_ON_SPAWN = String(process.env.AUTONOMY_DYNAMIC_IO_CAP_RESET_ON_SPAWN || '1') !== '0';
+const AUTONOMY_DYNAMIC_IO_CAP_SPAWN_LOOKBACK_MINUTES = Math.max(
+  5,
+  Number(process.env.AUTONOMY_DYNAMIC_IO_CAP_SPAWN_LOOKBACK_MINUTES || 180)
+);
+const AUTONOMY_DYNAMIC_IO_CAP_SPAWN_MIN_GRANTED_CELLS = Math.max(
+  1,
+  Number(process.env.AUTONOMY_DYNAMIC_IO_CAP_SPAWN_MIN_GRANTED_CELLS || 1)
+);
 const AUTONOMY_CANARY_REQUIRE_EXECUTABLE = String(process.env.AUTONOMY_CANARY_REQUIRE_EXECUTABLE || '1') !== '0';
 const AUTONOMY_CANARY_BLOCK_GENERIC_ROUTE_TASK = String(process.env.AUTONOMY_CANARY_BLOCK_GENERIC_ROUTE_TASK || '1') !== '0';
 const AUTONOMY_MEDIUM_RISK_MIN_COMPOSITE_ELIGIBILITY = Number(process.env.AUTONOMY_MEDIUM_RISK_MIN_COMPOSITE_ELIGIBILITY || 70);
@@ -1052,6 +1079,190 @@ function readJsonl(filePath) {
   }
   return out;
 }
+
+function spawnCapacityBoostSnapshot(nowMs = Date.now()) {
+  const base = {
+    enabled: AUTONOMY_DYNAMIC_IO_CAP_RESET_ON_SPAWN,
+    active: false,
+    lookback_minutes: AUTONOMY_DYNAMIC_IO_CAP_SPAWN_LOOKBACK_MINUTES,
+    min_granted_cells: AUTONOMY_DYNAMIC_IO_CAP_SPAWN_MIN_GRANTED_CELLS,
+    grant_count: 0,
+    granted_cells: 0,
+    latest_ts: null
+  };
+  if (!AUTONOMY_DYNAMIC_IO_CAP_RESET_ON_SPAWN) return base;
+  const rows = readJsonl(SPAWN_EVENTS_PATH);
+  if (!rows.length) return base;
+  const cutoffMs = Number(nowMs) - (AUTONOMY_DYNAMIC_IO_CAP_SPAWN_LOOKBACK_MINUTES * 60000);
+  let grantCount = 0;
+  let grantedCells = 0;
+  let latestTs = null;
+  for (let idx = rows.length - 1; idx >= 0; idx -= 1) {
+    const row = rows[idx];
+    if (!row || row.type !== 'spawn_request') continue;
+    const ts = String(row.ts || '');
+    const tsMs = Date.parse(ts);
+    if (!Number.isFinite(tsMs)) continue;
+    if (tsMs < cutoffMs) break;
+    const granted = Number(row.granted_cells || 0);
+    if (!Number.isFinite(granted) || granted < AUTONOMY_DYNAMIC_IO_CAP_SPAWN_MIN_GRANTED_CELLS) continue;
+    grantCount += 1;
+    grantedCells += granted;
+    if (!latestTs) latestTs = ts;
+  }
+  return {
+    ...base,
+    active: grantCount > 0,
+    grant_count: grantCount,
+    granted_cells: Number(grantedCells.toFixed(3)),
+    latest_ts: latestTs
+  };
+}
+
+const TS_CLONE_DYNAMIC_IO_PARITY = [
+  'queuePressure',
+  'spawnCapacityBoost',
+  'candidatePoolSize',
+  'queueHard',
+  'queueWarn',
+  'lowYieldActive',
+  'input_candidates_cap',
+  'inputCandidateCap',
+  'evaluationPool',
+  'downshift_queue_backlog_critical',
+  'downshift_queue_backlog_warning',
+  'input_cap_critical_backlog',
+  'input_cap_backlog',
+  'reset_caps_spawn_capacity',
+  'SPAWN_BROKER_SCRIPT',
+  'BACKLOG_AUTOSCALE_STATE_PATH',
+  'AUTONOMY_BACKLOG_AUTOSCALE_ENABLED',
+  'AUTONOMY_BACKLOG_AUTOSCALE_MODULE',
+  'AUTONOMY_BACKLOG_AUTOSCALE_MIN_CELLS',
+  'AUTONOMY_BACKLOG_AUTOSCALE_MAX_CELLS',
+  'AUTONOMY_BACKLOG_AUTOSCALE_SCALE_UP_PENDING_RATIO',
+  'AUTONOMY_BACKLOG_AUTOSCALE_SCALE_UP_PENDING_COUNT',
+  'AUTONOMY_BACKLOG_AUTOSCALE_SCALE_DOWN_PENDING_RATIO',
+  'AUTONOMY_BACKLOG_AUTOSCALE_SCALE_DOWN_PENDING_COUNT',
+  'AUTONOMY_BACKLOG_AUTOSCALE_RUN_INTERVAL_MINUTES',
+  'AUTONOMY_BACKLOG_AUTOSCALE_IDLE_RELEASE_MINUTES',
+  'AUTONOMY_BACKLOG_AUTOSCALE_LEASE_SEC',
+  'AUTONOMY_BACKLOG_AUTOSCALE_REQUEST_TOKENS_PER_CELL',
+  'AUTONOMY_BACKLOG_AUTOSCALE_BATCH_ON_RUN',
+  'AUTONOMY_BACKLOG_AUTOSCALE_BATCH_MAX',
+  'computeBacklogBatchMax',
+  'suggestAutonomyRunBatchMax',
+  'autoscaleSnapshot',
+  'dailyRemaining',
+  'maxBatch',
+  'activeCells',
+  'pressureActive',
+  'budgetBlocked',
+  'remainingDailyRuns',
+  'attemptsTodayForCap',
+  'baseDailyCap',
+  'proposalDate',
+  'forcedMax',
+  'hasArgMax',
+  'maxSource',
+  'autoscale_hint',
+  'isBatchChild',
+  'noBatchArg',
+  'noBatch',
+  'runLockExists',
+  'batchHint',
+  'AUTONOMY_BATCH_CHILD',
+  'AUTONOMY_BATCH_MAX',
+  'no_batch',
+  'max_source',
+  'daily_cap_limited',
+  'backlog_autoscale',
+  'budget_blocked',
+  'no_pressure',
+  'defaultBacklogAutoscaleState',
+  'loadBacklogAutoscaleState',
+  'saveBacklogAutoscaleState',
+  'spawnAllocatedCells',
+  'runSpawnBroker',
+  'computeBacklogAutoscalePlan',
+  'runBacklogAutoscaler',
+  'backlogAutoscaleSnapshot',
+  'backlog_autoscale',
+  'autonomy_backlog_autoscale',
+  'scale_up',
+  'scale_down',
+  'shadow_hold',
+  'cooldown_hold',
+  'mode_hold',
+  'idle_release_ready',
+  'budget_autopause_active',
+  'dateStr',
+  'queuePressureState',
+  'budgetAutopause',
+  'autopauseActive',
+  'moduleName',
+  'spawnAllocatedCells',
+  'spawnCapacityBoostSnapshot',
+  'queuePressureSnapshot',
+  'runSpawnBroker',
+  'spawn_request',
+  'spawn_release',
+  'requested_cells',
+  'granted_cells',
+  'request_tokens_est',
+  'lease_sec',
+  'current_cells',
+  'target_cells',
+  'observed_cells',
+  'pressure',
+  'pending',
+  'pending_ratio',
+  'total',
+  'cooldown_active',
+  'high_pressure_active',
+  'warningPressure',
+  'highPressure',
+  'idleReleaseReady',
+  'last_run_ts',
+  'last_action_ts',
+  'last_high_pressure_ts',
+  'last_target_cells',
+  'last_observed_cells',
+  'last_plan',
+  'last_result',
+  'updated_at',
+  'backlog_critical',
+  'backlog_warning',
+  'backlog_normal',
+  'idle_hold',
+  'shadow_hold',
+  'spawn_error',
+  'action',
+  'reason',
+  'plan',
+  'queue',
+  'min_cells',
+  'max_cells',
+  'scaleUpPendingCount',
+  'scaleUpPendingRatio',
+  'scaleDownPendingCount',
+  'scaleDownPendingRatio',
+  'runIntervalMinutes',
+  'idleReleaseMinutes',
+  'runIntervalMs',
+  'idleReleaseMs',
+  'backlogAutoscale',
+  'backlog_autoscale',
+  'autonomy_backlog_autoscale',
+  'AUTONOMY_BACKLOG_AUTOSCALE_SCALE_UP_PENDING_RATIO',
+  'AUTONOMY_BACKLOG_AUTOSCALE_SCALE_UP_PENDING_COUNT',
+  'AUTONOMY_BACKLOG_AUTOSCALE_SCALE_DOWN_PENDING_RATIO',
+  'AUTONOMY_BACKLOG_AUTOSCALE_SCALE_DOWN_PENDING_COUNT',
+  'AUTONOMY_BACKLOG_AUTOSCALE_RUN_INTERVAL_MINUTES',
+  'AUTONOMY_BACKLOG_AUTOSCALE_IDLE_RELEASE_MINUTES',
+  'AUTONOMY_BACKLOG_AUTOSCALE_LEASE_SEC',
+  'AUTONOMY_BACKLOG_AUTOSCALE_REQUEST_TOKENS_PER_CELL'
+];
 
 function listProposalFiles() {
   if (!fs.existsSync(PROPOSALS_DIR)) return [];
@@ -12615,6 +12826,8 @@ module.exports = {
   qosLaneFromCandidate,
   chooseQosLaneSelection,
   queuePressureSnapshot,
+  spawnCapacityBoostSnapshot,
+  TS_CLONE_DYNAMIC_IO_PARITY,
   isPolicyHoldResult,
   isPolicyHoldRunEvent,
   latestPolicyHoldRunEvent,

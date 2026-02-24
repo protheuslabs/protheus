@@ -168,6 +168,16 @@ const SCORE_ONLY_PROMOTION_LOG_PATH = process.env.AUTONOMY_SCORE_ONLY_PROMOTION_
   : path.join(AUTONOMY_DIR, 'score_only_promotions.jsonl');
 const STRATEGY_MODE_GOVERNOR_SCRIPT = path.join(REPO_ROOT, 'systems', 'autonomy', 'strategy_mode_governor.js');
 const MODEL_ROUTER_SCRIPT = path.join(REPO_ROOT, 'systems', 'routing', 'model_router.js');
+const SPAWN_BROKER_SCRIPT = path.join(REPO_ROOT, 'systems', 'spawn', 'spawn_broker.js');
+const SPAWN_STATE_DIR = process.env.SPAWN_STATE_DIR
+  ? path.resolve(process.env.SPAWN_STATE_DIR)
+  : path.join(REPO_ROOT, 'state', 'spawn');
+const SPAWN_EVENTS_PATH = process.env.SPAWN_EVENTS_PATH
+  ? path.resolve(process.env.SPAWN_EVENTS_PATH)
+  : path.join(SPAWN_STATE_DIR, 'events.jsonl');
+const BACKLOG_AUTOSCALE_STATE_PATH = process.env.AUTONOMY_BACKLOG_AUTOSCALE_STATE_PATH
+  ? path.resolve(process.env.AUTONOMY_BACKLOG_AUTOSCALE_STATE_PATH)
+  : path.join(AUTONOMY_DIR, 'backlog_autoscale_state.json');
 
 const DAILY_TOKEN_CAP = Number(process.env.AUTONOMY_DAILY_TOKEN_CAP || 4000);
 const NO_CHANGE_LIMIT = Number(process.env.AUTONOMY_NO_CHANGE_LIMIT || 2);
@@ -331,6 +341,73 @@ const AUTONOMY_ADAPTIVE_CAPS_MIN_ELIGIBLE_RATE_FOR_UPSHIFT = clampNumber(
   Number(process.env.AUTONOMY_ADAPTIVE_CAPS_MIN_ELIGIBLE_RATE_FOR_UPSHIFT || 0.5),
   0.1,
   1
+);
+const AUTONOMY_DYNAMIC_IO_CAP_ENABLED = String(process.env.AUTONOMY_DYNAMIC_IO_CAP_ENABLED || '1') !== '0';
+const AUTONOMY_DYNAMIC_IO_CAP_WARN_FACTOR = clampNumber(
+  Number(process.env.AUTONOMY_DYNAMIC_IO_CAP_WARN_FACTOR || 0.75),
+  0.2,
+  1
+);
+const AUTONOMY_DYNAMIC_IO_CAP_CRITICAL_FACTOR = clampNumber(
+  Number(process.env.AUTONOMY_DYNAMIC_IO_CAP_CRITICAL_FACTOR || 0.5),
+  0.1,
+  AUTONOMY_DYNAMIC_IO_CAP_WARN_FACTOR
+);
+const AUTONOMY_DYNAMIC_IO_CAP_MIN_INPUT_POOL = Math.max(1, Number(process.env.AUTONOMY_DYNAMIC_IO_CAP_MIN_INPUT_POOL || 8));
+const AUTONOMY_DYNAMIC_IO_CAP_RESET_ON_SPAWN = String(process.env.AUTONOMY_DYNAMIC_IO_CAP_RESET_ON_SPAWN || '1') !== '0';
+const AUTONOMY_DYNAMIC_IO_CAP_SPAWN_LOOKBACK_MINUTES = Math.max(
+  5,
+  Number(process.env.AUTONOMY_DYNAMIC_IO_CAP_SPAWN_LOOKBACK_MINUTES || 180)
+);
+const AUTONOMY_DYNAMIC_IO_CAP_SPAWN_MIN_GRANTED_CELLS = Math.max(
+  1,
+  Number(process.env.AUTONOMY_DYNAMIC_IO_CAP_SPAWN_MIN_GRANTED_CELLS || 1)
+);
+const AUTONOMY_BACKLOG_AUTOSCALE_ENABLED = String(process.env.AUTONOMY_BACKLOG_AUTOSCALE_ENABLED || '1') !== '0';
+const AUTONOMY_BACKLOG_AUTOSCALE_MODULE = String(process.env.AUTONOMY_BACKLOG_AUTOSCALE_MODULE || 'autonomy_backlog').trim() || 'autonomy_backlog';
+const AUTONOMY_BACKLOG_AUTOSCALE_MIN_CELLS = Math.max(0, Number(process.env.AUTONOMY_BACKLOG_AUTOSCALE_MIN_CELLS || 0));
+const AUTONOMY_BACKLOG_AUTOSCALE_MAX_CELLS = Math.max(
+  AUTONOMY_BACKLOG_AUTOSCALE_MIN_CELLS,
+  Number(process.env.AUTONOMY_BACKLOG_AUTOSCALE_MAX_CELLS || 2)
+);
+const AUTONOMY_BACKLOG_AUTOSCALE_SCALE_UP_PENDING_RATIO = clampNumber(
+  Number(process.env.AUTONOMY_BACKLOG_AUTOSCALE_SCALE_UP_PENDING_RATIO || 0.45),
+  0.05,
+  0.99
+);
+const AUTONOMY_BACKLOG_AUTOSCALE_SCALE_UP_PENDING_COUNT = Math.max(
+  1,
+  Number(process.env.AUTONOMY_BACKLOG_AUTOSCALE_SCALE_UP_PENDING_COUNT || 80)
+);
+const AUTONOMY_BACKLOG_AUTOSCALE_SCALE_DOWN_PENDING_RATIO = clampNumber(
+  Number(process.env.AUTONOMY_BACKLOG_AUTOSCALE_SCALE_DOWN_PENDING_RATIO || 0.18),
+  0.01,
+  AUTONOMY_BACKLOG_AUTOSCALE_SCALE_UP_PENDING_RATIO
+);
+const AUTONOMY_BACKLOG_AUTOSCALE_SCALE_DOWN_PENDING_COUNT = Math.max(
+  0,
+  Number(process.env.AUTONOMY_BACKLOG_AUTOSCALE_SCALE_DOWN_PENDING_COUNT || 18)
+);
+const AUTONOMY_BACKLOG_AUTOSCALE_RUN_INTERVAL_MINUTES = Math.max(
+  1,
+  Number(process.env.AUTONOMY_BACKLOG_AUTOSCALE_RUN_INTERVAL_MINUTES || 10)
+);
+const AUTONOMY_BACKLOG_AUTOSCALE_IDLE_RELEASE_MINUTES = Math.max(
+  AUTONOMY_BACKLOG_AUTOSCALE_RUN_INTERVAL_MINUTES,
+  Number(process.env.AUTONOMY_BACKLOG_AUTOSCALE_IDLE_RELEASE_MINUTES || 120)
+);
+const AUTONOMY_BACKLOG_AUTOSCALE_LEASE_SEC = Math.max(
+  60,
+  Number(process.env.AUTONOMY_BACKLOG_AUTOSCALE_LEASE_SEC || 900)
+);
+const AUTONOMY_BACKLOG_AUTOSCALE_REQUEST_TOKENS_PER_CELL = Math.max(
+  0,
+  Number(process.env.AUTONOMY_BACKLOG_AUTOSCALE_REQUEST_TOKENS_PER_CELL || 600)
+);
+const AUTONOMY_BACKLOG_AUTOSCALE_BATCH_ON_RUN = String(process.env.AUTONOMY_BACKLOG_AUTOSCALE_BATCH_ON_RUN || '1') !== '0';
+const AUTONOMY_BACKLOG_AUTOSCALE_BATCH_MAX = Math.max(
+  1,
+  Number(process.env.AUTONOMY_BACKLOG_AUTOSCALE_BATCH_MAX || 3)
 );
 const AUTONOMY_CANARY_REQUIRE_EXECUTABLE = String(process.env.AUTONOMY_CANARY_REQUIRE_EXECUTABLE || '1') !== '0';
 const AUTONOMY_CANARY_BLOCK_GENERIC_ROUTE_TASK = String(process.env.AUTONOMY_CANARY_BLOCK_GENERIC_ROUTE_TASK || '1') !== '0';
@@ -706,7 +783,10 @@ function adaptiveExecutionCaps({
   gateExhaustionStreak,
   shippedToday,
   admission,
-  policyHoldPressure
+  policyHoldPressure,
+  queuePressure,
+  spawnCapacityBoost,
+  candidatePoolSize
 }) {
   const baseDaily = normalizeExecutionCap(baseDailyCap, AUTONOMY_MAX_RUNS_PER_DAY, 1);
   const canaryEnabled = String(executionMode || '') === 'canary_execute';
@@ -727,6 +807,56 @@ function adaptiveExecutionCaps({
   const pressureWarn = pressureApplicable
     && !pressureHard
     && (pressureLevelRaw === 'warn' || pressureRate >= AUTONOMY_POLICY_HOLD_PRESSURE_WARN_RATE);
+  const queue = queuePressure && typeof queuePressure === 'object'
+    ? queuePressure
+    : {};
+  const queueTotal = Math.max(0, Number(queue.total || 0));
+  const queuePending = Math.max(0, Number(queue.pending || 0));
+  const queuePendingRatio = queue.pending_ratio != null
+    ? clampNumber(Number(queue.pending_ratio || 0), 0, 1)
+    : queueTotal > 0
+      ? clampNumber(queuePending / queueTotal, 0, 1)
+      : 0;
+  const queueWarnRatio = clampNumber(
+    Number(queue.warn_ratio != null ? queue.warn_ratio : AUTONOMY_QOS_QUEUE_PENDING_WARN_RATIO),
+    0,
+    1
+  );
+  const queueCriticalRatio = clampNumber(
+    Number(queue.critical_ratio != null ? queue.critical_ratio : AUTONOMY_QOS_QUEUE_PENDING_CRITICAL_RATIO),
+    queueWarnRatio,
+    1
+  );
+  const queueWarnCount = Math.max(
+    0,
+    Number(queue.warn_count != null ? queue.warn_count : AUTONOMY_QOS_QUEUE_PENDING_WARN_COUNT)
+  );
+  const queueCriticalCount = Math.max(
+    queueWarnCount,
+    Number(queue.critical_count != null ? queue.critical_count : AUTONOMY_QOS_QUEUE_PENDING_CRITICAL_COUNT)
+  );
+  const queueLevelRaw = String(queue.pressure || '').trim().toLowerCase();
+  const queueHard = queueLevelRaw === 'critical'
+    || queuePending >= queueCriticalCount
+    || queuePendingRatio >= queueCriticalRatio;
+  const queueWarn = !queueHard
+    && (
+      queueLevelRaw === 'warning'
+      || queuePending >= queueWarnCount
+      || queuePendingRatio >= queueWarnRatio
+    );
+  const spawnBoost = spawnCapacityBoost && typeof spawnCapacityBoost === 'object'
+    ? spawnCapacityBoost
+    : {
+      enabled: AUTONOMY_DYNAMIC_IO_CAP_RESET_ON_SPAWN,
+      active: false,
+      lookback_minutes: AUTONOMY_DYNAMIC_IO_CAP_SPAWN_LOOKBACK_MINUTES,
+      min_granted_cells: AUTONOMY_DYNAMIC_IO_CAP_SPAWN_MIN_GRANTED_CELLS,
+      grant_count: 0,
+      granted_cells: 0,
+      latest_ts: null
+    };
+  const spawnResetActive = AUTONOMY_DYNAMIC_IO_CAP_RESET_ON_SPAWN && spawnBoost.active === true;
   const total = Math.max(0, Number(summary.total || 0));
   const eligible = Math.max(0, Number(summary.eligible || 0));
   const eligibleRate = total > 0 ? clampNumber(eligible / total, 0, 1) : null;
@@ -741,7 +871,10 @@ function adaptiveExecutionCaps({
       && eligibleRate < 0.35)
     || pressureWarn
     || pressureHard
+    || queueWarn
+    || queueHard
   );
+  const lowYieldActive = lowYield && !spawnResetActive;
   const highYield = (
     Number(shippedToday || 0) > 0
     && Number(executedNoProgressStreak || 0) === 0
@@ -752,16 +885,20 @@ function adaptiveExecutionCaps({
     && eligibleRate >= AUTONOMY_ADAPTIVE_CAPS_MIN_ELIGIBLE_RATE_FOR_UPSHIFT
     && !pressureWarn
     && !pressureHard
+    && !queueWarn
+    && !queueHard
   );
 
   let daily = baseDaily;
   let canary = baseCanary;
   const reasons = [];
 
-  if (AUTONOMY_ADAPTIVE_CAPS_ENABLED && lowYield) {
-    const downshiftFactor = pressureHard
+  if (AUTONOMY_ADAPTIVE_CAPS_ENABLED && lowYieldActive) {
+    const hardDownshift = pressureHard || queueHard;
+    const warnDownshift = !hardDownshift && (pressureWarn || queueWarn);
+    const downshiftFactor = hardDownshift
       ? Math.min(AUTONOMY_ADAPTIVE_CAPS_DOWNSHIFT_FACTOR, 0.25)
-      : pressureWarn
+      : warnDownshift
         ? Math.min(AUTONOMY_ADAPTIVE_CAPS_DOWNSHIFT_FACTOR, 0.4)
         : AUTONOMY_ADAPTIVE_CAPS_DOWNSHIFT_FACTOR;
     const downshiftedDaily = Math.max(
@@ -778,6 +915,11 @@ function adaptiveExecutionCaps({
     } else if (pressureWarn) {
       reasons.push('downshift_policy_hold_warn');
     }
+    if (queueHard) {
+      reasons.push('downshift_queue_backlog_critical');
+    } else if (queueWarn) {
+      reasons.push('downshift_queue_backlog_warning');
+    }
     if (canaryEnabled && canary != null) {
       const downshiftedCanary = Math.max(
         1,
@@ -790,7 +932,7 @@ function adaptiveExecutionCaps({
     }
   }
 
-  if (AUTONOMY_ADAPTIVE_CAPS_ENABLED && !lowYield && highYield) {
+  if (AUTONOMY_ADAPTIVE_CAPS_ENABLED && !lowYieldActive && highYield) {
     const hardDailyCap = Number.isFinite(Number(AUTONOMY_HARD_MAX_DAILY_RUNS_CAP)) && Number(AUTONOMY_HARD_MAX_DAILY_RUNS_CAP) > 0
       ? Number(AUTONOMY_HARD_MAX_DAILY_RUNS_CAP)
       : null;
@@ -815,20 +957,63 @@ function adaptiveExecutionCaps({
     }
   }
 
+  let inputCandidatesCap = null;
+  const poolSize = Math.max(0, Number(candidatePoolSize || 0));
+  if (AUTONOMY_DYNAMIC_IO_CAP_ENABLED && poolSize > 0 && lowYield && !spawnResetActive) {
+    const criticalSignal = pressureHard || queueHard;
+    const capFactor = criticalSignal
+      ? AUTONOMY_DYNAMIC_IO_CAP_CRITICAL_FACTOR
+      : AUTONOMY_DYNAMIC_IO_CAP_WARN_FACTOR;
+    const floorCap = Math.min(poolSize, Math.max(1, AUTONOMY_DYNAMIC_IO_CAP_MIN_INPUT_POOL));
+    const nextCap = Math.max(
+      floorCap,
+      Math.min(poolSize, Math.floor(poolSize * capFactor))
+    );
+    if (nextCap < poolSize) {
+      inputCandidatesCap = nextCap;
+      reasons.push(criticalSignal ? 'input_cap_critical_backlog' : 'input_cap_backlog');
+    }
+  }
+  if (spawnResetActive && lowYield) {
+    reasons.push('reset_caps_spawn_capacity');
+  }
+
   return {
     enabled: AUTONOMY_ADAPTIVE_CAPS_ENABLED,
     base_daily_runs_cap: baseDaily,
     daily_runs_cap: daily,
     base_canary_daily_exec_limit: baseCanary,
     canary_daily_exec_limit: canary,
+    base_input_candidates_cap: poolSize > 0 ? poolSize : null,
+    input_candidates_cap: inputCandidatesCap,
     policy_hold_pressure: {
       rate: Number(pressureRate.toFixed(3)),
       samples: pressureSamples,
       level: pressureHard ? 'hard' : pressureWarn ? 'warn' : 'normal',
       applicable: pressureApplicable
     },
+    queue_pressure: {
+      total: queueTotal,
+      pending: queuePending,
+      pending_ratio: Number(queuePendingRatio.toFixed(6)),
+      warn_ratio: Number(queueWarnRatio.toFixed(6)),
+      critical_ratio: Number(queueCriticalRatio.toFixed(6)),
+      warn_count: queueWarnCount,
+      critical_count: queueCriticalCount,
+      level: queueHard ? 'critical' : queueWarn ? 'warning' : 'normal'
+    },
+    spawn_capacity_boost: {
+      enabled: spawnBoost.enabled === true,
+      active: spawnResetActive,
+      lookback_minutes: Math.max(0, Number(spawnBoost.lookback_minutes || AUTONOMY_DYNAMIC_IO_CAP_SPAWN_LOOKBACK_MINUTES)),
+      min_granted_cells: Math.max(0, Number(spawnBoost.min_granted_cells || AUTONOMY_DYNAMIC_IO_CAP_SPAWN_MIN_GRANTED_CELLS)),
+      grant_count: Math.max(0, Number(spawnBoost.grant_count || 0)),
+      granted_cells: Math.max(0, Number(spawnBoost.granted_cells || 0)),
+      latest_ts: spawnBoost.latest_ts ? String(spawnBoost.latest_ts) : null
+    },
     eligible_rate: eligibleRate == null ? null : Number(eligibleRate.toFixed(3)),
     low_yield: lowYield,
+    spawn_reset_active: spawnResetActive,
     high_yield: highYield,
     reasons
   };
@@ -1275,6 +1460,453 @@ function readJsonl(filePath) {
     try { out.push(JSON.parse(line)); } catch {}
   }
   return out;
+}
+
+function spawnCapacityBoostSnapshot(nowMs = Date.now()) {
+  const base = {
+    enabled: AUTONOMY_DYNAMIC_IO_CAP_RESET_ON_SPAWN,
+    active: false,
+    lookback_minutes: AUTONOMY_DYNAMIC_IO_CAP_SPAWN_LOOKBACK_MINUTES,
+    min_granted_cells: AUTONOMY_DYNAMIC_IO_CAP_SPAWN_MIN_GRANTED_CELLS,
+    grant_count: 0,
+    granted_cells: 0,
+    latest_ts: null
+  };
+  if (!AUTONOMY_DYNAMIC_IO_CAP_RESET_ON_SPAWN) return base;
+  const rows = readJsonl(SPAWN_EVENTS_PATH);
+  if (!rows.length) return base;
+  const cutoffMs = Number(nowMs) - (AUTONOMY_DYNAMIC_IO_CAP_SPAWN_LOOKBACK_MINUTES * 60000);
+  let grantCount = 0;
+  let grantedCells = 0;
+  let latestTs = null;
+  for (let idx = rows.length - 1; idx >= 0; idx -= 1) {
+    const row = rows[idx];
+    if (!row || row.type !== 'spawn_request') continue;
+    const ts = String(row.ts || '');
+    const tsMs = Date.parse(ts);
+    if (!Number.isFinite(tsMs)) continue;
+    if (tsMs < cutoffMs) break;
+    const granted = Number(row.granted_cells || 0);
+    if (!Number.isFinite(granted) || granted < AUTONOMY_DYNAMIC_IO_CAP_SPAWN_MIN_GRANTED_CELLS) continue;
+    grantCount += 1;
+    grantedCells += granted;
+    if (!latestTs) latestTs = ts;
+  }
+  return {
+    ...base,
+    active: grantCount > 0,
+    grant_count: grantCount,
+    granted_cells: Number(grantedCells.toFixed(3)),
+    latest_ts: latestTs
+  };
+}
+
+function defaultBacklogAutoscaleState() {
+  return {
+    version: '1.0',
+    updated_at: null,
+    last_run_ts: null,
+    last_action_ts: null,
+    last_high_pressure_ts: null,
+    last_target_cells: 0,
+    last_observed_cells: 0,
+    last_plan: null,
+    last_result: null
+  };
+}
+
+function loadBacklogAutoscaleState() {
+  const raw = loadJson(BACKLOG_AUTOSCALE_STATE_PATH, null);
+  const base = defaultBacklogAutoscaleState();
+  if (!raw || typeof raw !== 'object') return base;
+  return {
+    ...base,
+    updated_at: raw.updated_at ? String(raw.updated_at) : null,
+    last_run_ts: raw.last_run_ts ? String(raw.last_run_ts) : null,
+    last_action_ts: raw.last_action_ts ? String(raw.last_action_ts) : null,
+    last_high_pressure_ts: raw.last_high_pressure_ts ? String(raw.last_high_pressure_ts) : null,
+    last_target_cells: Math.max(0, Math.round(Number(raw.last_target_cells || 0))),
+    last_observed_cells: Math.max(0, Math.round(Number(raw.last_observed_cells || 0))),
+    last_plan: raw.last_plan && typeof raw.last_plan === 'object' ? raw.last_plan : null,
+    last_result: raw.last_result && typeof raw.last_result === 'object' ? raw.last_result : null
+  };
+}
+
+function saveBacklogAutoscaleState(state) {
+  const src = state && typeof state === 'object' ? state : defaultBacklogAutoscaleState();
+  saveJson(BACKLOG_AUTOSCALE_STATE_PATH, {
+    ...defaultBacklogAutoscaleState(),
+    ...src,
+    updated_at: nowIso()
+  });
+}
+
+function spawnAllocatedCells(moduleName) {
+  const m = String(moduleName || AUTONOMY_BACKLOG_AUTOSCALE_MODULE).trim();
+  if (!m) return 0;
+  const state = loadJson(path.join(SPAWN_STATE_DIR, 'allocations.json'), null);
+  if (!state || typeof state !== 'object') return 0;
+  const allocations = state.allocations && typeof state.allocations === 'object'
+    ? state.allocations
+    : {};
+  const row = allocations[m] && typeof allocations[m] === 'object'
+    ? allocations[m]
+    : null;
+  if (!row) return 0;
+  return Math.max(0, Math.round(Number(row.cells || 0)));
+}
+
+function runSpawnBroker(args = []) {
+  const callArgs = [SPAWN_BROKER_SCRIPT, ...args];
+  const r = spawnSync('node', callArgs, { cwd: REPO_ROOT, encoding: 'utf8' });
+  const stdout = String(r.stdout || '').trim();
+  const stderr = String(r.stderr || '').trim();
+  let payload = null;
+  if (stdout) {
+    try {
+      payload = JSON.parse(stdout);
+    } catch {
+      payload = parseLastJsonLine(stdout);
+    }
+  }
+  return {
+    ok: r.status === 0 && !!(payload && payload.ok !== false),
+    code: Number(r.status || 0),
+    stdout,
+    stderr,
+    payload
+  };
+}
+
+function computeBacklogAutoscalePlan({
+  queuePressure,
+  currentCells,
+  nowMs = Date.now(),
+  lastRunTs,
+  lastHighPressureTs,
+  autopauseActive,
+  minCells = AUTONOMY_BACKLOG_AUTOSCALE_MIN_CELLS,
+  maxCells = AUTONOMY_BACKLOG_AUTOSCALE_MAX_CELLS,
+  scaleUpPendingCount = AUTONOMY_BACKLOG_AUTOSCALE_SCALE_UP_PENDING_COUNT,
+  scaleUpPendingRatio = AUTONOMY_BACKLOG_AUTOSCALE_SCALE_UP_PENDING_RATIO,
+  scaleDownPendingCount = AUTONOMY_BACKLOG_AUTOSCALE_SCALE_DOWN_PENDING_COUNT,
+  scaleDownPendingRatio = AUTONOMY_BACKLOG_AUTOSCALE_SCALE_DOWN_PENDING_RATIO,
+  runIntervalMinutes = AUTONOMY_BACKLOG_AUTOSCALE_RUN_INTERVAL_MINUTES,
+  idleReleaseMinutes = AUTONOMY_BACKLOG_AUTOSCALE_IDLE_RELEASE_MINUTES
+} = {}) {
+  const queue = queuePressure && typeof queuePressure === 'object' ? queuePressure : {};
+  const queueTotal = Math.max(0, Number(queue.total || 0));
+  const queuePending = Math.max(0, Number(queue.pending || 0));
+  const queuePendingRatio = queue.pending_ratio != null
+    ? clampNumber(Number(queue.pending_ratio || 0), 0, 1)
+    : queueTotal > 0
+      ? clampNumber(queuePending / queueTotal, 0, 1)
+      : 0;
+  const current = Math.max(0, Math.round(Number(currentCells || 0)));
+  const floor = Math.max(0, Math.round(Number(minCells || 0)));
+  const ceil = Math.max(floor, Math.round(Number(maxCells || floor)));
+  const runIntervalMs = Math.max(60000, Number(runIntervalMinutes || 1) * 60000);
+  const idleReleaseMs = Math.max(runIntervalMs, Number(idleReleaseMinutes || 1) * 60000);
+  const now = Number.isFinite(Number(nowMs)) ? Number(nowMs) : Date.now();
+  const lastRunMs = Date.parse(String(lastRunTs || ''));
+  const lastHighMs = Date.parse(String(lastHighPressureTs || ''));
+  const pressureRaw = String(queue.pressure || 'normal').trim().toLowerCase();
+
+  const highPressure = (
+    pressureRaw === 'critical'
+    || queuePending >= Math.max(1, Number(scaleUpPendingCount || 1))
+    || queuePendingRatio >= clampNumber(Number(scaleUpPendingRatio || 0.5), 0.05, 0.99)
+  );
+  const warningPressure = !highPressure && (
+    pressureRaw === 'warning'
+    || queuePending > Math.max(0, Number(scaleDownPendingCount || 0))
+    || queuePendingRatio > clampNumber(Number(scaleDownPendingRatio || 0.2), 0.01, 0.99)
+  );
+
+  let target = floor;
+  let reason = 'backlog_normal';
+  if (highPressure) {
+    target = ceil;
+    reason = 'backlog_critical';
+  } else if (warningPressure) {
+    target = Math.min(ceil, Math.max(floor, floor + 1));
+    reason = 'backlog_warning';
+  }
+
+  let budgetBlocked = false;
+  if (autopauseActive === true && target > current) {
+    target = current;
+    budgetBlocked = true;
+  }
+
+  const idleReleaseReady = (
+    !highPressure
+    && !warningPressure
+    && current > floor
+    && (!Number.isFinite(lastHighMs) || (now - lastHighMs) >= idleReleaseMs)
+  );
+  if (!idleReleaseReady && !highPressure && !warningPressure && target < current) {
+    target = current;
+    reason = 'idle_hold';
+  }
+
+  const cooldownActive = Number.isFinite(lastRunMs) && (now - lastRunMs) < runIntervalMs;
+  let action = 'hold';
+  if (!cooldownActive && target > current) action = 'scale_up';
+  else if (!cooldownActive && target < current) action = 'scale_down';
+  else if (cooldownActive && target !== current) action = 'cooldown_hold';
+
+  if (budgetBlocked && action === 'scale_up') action = 'hold';
+
+  return {
+    pressure: highPressure ? 'critical' : warningPressure ? 'warning' : 'normal',
+    queue: {
+      total: queueTotal,
+      pending: queuePending,
+      pending_ratio: Number(queuePendingRatio.toFixed(6))
+    },
+    current_cells: current,
+    min_cells: floor,
+    max_cells: ceil,
+    target_cells: target,
+    action,
+    reason: budgetBlocked ? 'budget_autopause_active' : reason,
+    cooldown_active: cooldownActive,
+    idle_release_ready: idleReleaseReady,
+    high_pressure_active: highPressure || warningPressure,
+    budget_blocked: budgetBlocked
+  };
+}
+
+function runBacklogAutoscaler({
+  dateStr,
+  queuePressure,
+  shadowOnly,
+  budgetAutopause,
+  executionMode
+} = {}) {
+  const moduleName = AUTONOMY_BACKLOG_AUTOSCALE_MODULE;
+  const base = {
+    enabled: AUTONOMY_BACKLOG_AUTOSCALE_ENABLED,
+    module: moduleName,
+    execution_mode: String(executionMode || ''),
+    shadow_only: !!shadowOnly,
+    action: 'disabled',
+    plan: null,
+    current_cells: 0,
+    target_cells: 0,
+    spawn: null
+  };
+  if (!AUTONOMY_BACKLOG_AUTOSCALE_ENABLED || !moduleName) return base;
+  const state = loadBacklogAutoscaleState();
+  const now = Date.now();
+  const currentCells = spawnAllocatedCells(moduleName);
+  const autopauseActive = !!(budgetAutopause && budgetAutopause.active === true);
+  const plan = computeBacklogAutoscalePlan({
+    queuePressure,
+    currentCells,
+    nowMs: now,
+    lastRunTs: state.last_run_ts,
+    lastHighPressureTs: state.last_high_pressure_ts,
+    autopauseActive
+  });
+
+  let action = plan.action;
+  let spawnResult = null;
+  if (!isExecuteMode(executionMode)) {
+    action = 'mode_hold';
+  } else if (shadowOnly) {
+    action = plan.action === 'hold' ? 'hold' : 'shadow_hold';
+  } else if (plan.action === 'scale_up' || plan.action === 'scale_down') {
+    if (plan.target_cells <= 0) {
+      spawnResult = runSpawnBroker([
+        'release',
+        `--module=${moduleName}`,
+        `--reason=autonomy_backlog_${plan.reason}`
+      ]);
+    } else {
+      const reqTokensEst = Math.max(
+        0,
+        Math.round(Number(plan.target_cells || 0) * AUTONOMY_BACKLOG_AUTOSCALE_REQUEST_TOKENS_PER_CELL)
+      );
+      spawnResult = runSpawnBroker([
+        'request',
+        `--module=${moduleName}`,
+        `--requested_cells=${Math.max(0, Math.round(Number(plan.target_cells || 0)))}`,
+        `--request_tokens_est=${reqTokensEst}`,
+        `--lease_sec=${AUTONOMY_BACKLOG_AUTOSCALE_LEASE_SEC}`,
+        `--reason=autonomy_backlog_${plan.reason}`,
+        '--apply=1'
+      ]);
+    }
+    if (!(spawnResult && spawnResult.ok)) action = 'spawn_error';
+  }
+
+  const observedCells = spawnAllocatedCells(moduleName);
+  const nextState = {
+    ...state,
+    last_run_ts: nowIso(),
+    last_target_cells: Math.max(0, Math.round(Number(plan.target_cells || 0))),
+    last_observed_cells: observedCells,
+    last_plan: plan,
+    last_result: spawnResult && typeof spawnResult === 'object'
+      ? {
+          ok: spawnResult.ok === true,
+          code: Number(spawnResult.code || 0),
+          action,
+          payload: spawnResult.payload && typeof spawnResult.payload === 'object'
+            ? spawnResult.payload
+            : null
+        }
+      : {
+          ok: true,
+          code: 0,
+          action,
+          payload: null
+        }
+  };
+  if (plan.high_pressure_active) nextState.last_high_pressure_ts = nowIso();
+  if (action === 'scale_up' || action === 'scale_down') nextState.last_action_ts = nowIso();
+  saveBacklogAutoscaleState(nextState);
+
+  return {
+    ...base,
+    action,
+    plan,
+    current_cells: currentCells,
+    target_cells: Math.max(0, Math.round(Number(plan.target_cells || 0))),
+    observed_cells: observedCells,
+    spawn: spawnResult && typeof spawnResult === 'object'
+      ? {
+          ok: spawnResult.ok === true,
+          code: Number(spawnResult.code || 0),
+          payload: spawnResult.payload && typeof spawnResult.payload === 'object'
+            ? spawnResult.payload
+            : null,
+          error: spawnResult.ok === true ? null : shortText(spawnResult.stderr || spawnResult.stdout || `spawn_broker_exit_${spawnResult.code}`, 220)
+        }
+      : null
+  };
+}
+
+function backlogAutoscaleSnapshot(queuePressure, budgetAutopause) {
+  const moduleName = AUTONOMY_BACKLOG_AUTOSCALE_MODULE;
+  const state = loadBacklogAutoscaleState();
+  const currentCells = spawnAllocatedCells(moduleName);
+  const plan = computeBacklogAutoscalePlan({
+    queuePressure,
+    currentCells,
+    nowMs: Date.now(),
+    lastRunTs: state.last_run_ts,
+    lastHighPressureTs: state.last_high_pressure_ts,
+    autopauseActive: !!(budgetAutopause && budgetAutopause.active === true)
+  });
+  return {
+    enabled: AUTONOMY_BACKLOG_AUTOSCALE_ENABLED,
+    module: moduleName,
+    current_cells: currentCells,
+    plan,
+    state: {
+      last_run_ts: state.last_run_ts || null,
+      last_action_ts: state.last_action_ts || null,
+      last_high_pressure_ts: state.last_high_pressure_ts || null,
+      last_target_cells: Math.max(0, Number(state.last_target_cells || 0)),
+      last_observed_cells: Math.max(0, Number(state.last_observed_cells || 0))
+    }
+  };
+}
+
+function computeBacklogBatchMax({
+  enabled = AUTONOMY_BACKLOG_AUTOSCALE_BATCH_ON_RUN,
+  maxBatch = AUTONOMY_BACKLOG_AUTOSCALE_BATCH_MAX,
+  autoscaleSnapshot = null,
+  dailyRemaining = null
+} = {}) {
+  const snapshot = autoscaleSnapshot && typeof autoscaleSnapshot === 'object'
+    ? autoscaleSnapshot
+    : {};
+  const plan = snapshot.plan && typeof snapshot.plan === 'object'
+    ? snapshot.plan
+    : {};
+  const pressure = String(plan.pressure || 'normal').trim().toLowerCase() || 'normal';
+  const activeCells = Math.max(
+    0,
+    Number(snapshot.current_cells || 0),
+    Number(snapshot.observed_cells || 0),
+    Number(plan.target_cells || 0),
+    Number(snapshot.state && snapshot.state.last_observed_cells || 0)
+  );
+  const budgetBlocked = plan.budget_blocked === true;
+  const pressureActive = (
+    pressure === 'warning'
+    || pressure === 'critical'
+    || String(plan.action || '') === 'scale_up'
+  );
+  const cap = Math.max(1, Math.min(10, Math.round(Number(maxBatch || AUTONOMY_BACKLOG_AUTOSCALE_BATCH_MAX || 3))));
+  const out = {
+    max: 1,
+    reason: 'disabled',
+    pressure,
+    active_cells: activeCells,
+    budget_blocked: budgetBlocked
+  };
+  if (!enabled) return out;
+  out.reason = 'no_pressure';
+  if (budgetBlocked) {
+    out.reason = 'budget_blocked';
+    return out;
+  }
+  if (!pressureActive || activeCells <= 0) {
+    return out;
+  }
+  let suggested = Math.max(1, Math.min(cap, 1 + Math.round(activeCells)));
+  if (pressure === 'warning') suggested = Math.min(suggested, 2);
+  if (Number.isFinite(Number(dailyRemaining))) {
+    const remain = Math.max(1, Math.round(Number(dailyRemaining || 1)));
+    suggested = Math.max(1, Math.min(suggested, remain));
+  }
+  out.max = suggested;
+  out.reason = suggested > 1 ? 'backlog_autoscale' : 'daily_cap_limited';
+  return out;
+}
+
+function suggestAutonomyRunBatchMax(dateStr) {
+  const proposalDate = latestProposalDate(dateStr);
+  const queuePressure = proposalDate
+    ? queuePressureSnapshot(proposalDate)
+    : {
+        total: 0,
+        pending: 0,
+        pending_ratio: 0,
+        pressure: 'normal',
+        warn_ratio: AUTONOMY_QOS_QUEUE_PENDING_WARN_RATIO,
+        critical_ratio: AUTONOMY_QOS_QUEUE_PENDING_CRITICAL_RATIO,
+        warn_count: AUTONOMY_QOS_QUEUE_PENDING_WARN_COUNT,
+        critical_count: AUTONOMY_QOS_QUEUE_PENDING_CRITICAL_COUNT
+      };
+  const budgetAutopause = loadSystemBudgetAutopauseState();
+  const autoscale = backlogAutoscaleSnapshot(queuePressure, budgetAutopause);
+  const priorRuns = runsSinceReset(readRuns(dateStr));
+  const attemptsTodayForCap = capacityCountedAttemptEvents(priorRuns).length;
+  const strategyBudget = effectiveStrategyBudget();
+  const baseDailyCap = Number.isFinite(Number(strategyBudget && strategyBudget.daily_runs_cap))
+    ? Number(strategyBudget.daily_runs_cap)
+    : AUTONOMY_MAX_RUNS_PER_DAY;
+  const remainingDailyRuns = Math.max(0, Math.round(baseDailyCap - attemptsTodayForCap));
+  const decision = computeBacklogBatchMax({
+    enabled: AUTONOMY_BACKLOG_AUTOSCALE_BATCH_ON_RUN,
+    maxBatch: AUTONOMY_BACKLOG_AUTOSCALE_BATCH_MAX,
+    autoscaleSnapshot: autoscale,
+    dailyRemaining: remainingDailyRuns
+  });
+  return {
+    ...decision,
+    proposal_date: proposalDate,
+    daily_runs_cap: baseDailyCap,
+    attempts_today_for_cap: attemptsTodayForCap,
+    remaining_daily_runs: remainingDailyRuns,
+    autoscale
+  };
 }
 
 function listProposalFiles() {
@@ -8392,6 +9024,8 @@ function statusCmd(dateStr) {
   const capAttempts = capacityCountedAttemptEvents(runs);
   const executedRuns = runs.filter(e => e && e.type === 'autonomy_run' && e.result === 'executed');
   const policyHoldPressure = policyHoldPressureSnapshot(runs);
+  const queuePressureState = queuePressureSnapshot(effectiveDate);
+  const spawnCapacityBoost = spawnCapacityBoostSnapshot();
   const mediumExecuted = executedCountByRisk(executedRuns, 'medium');
   const attemptsToday = attempts.length;
   const attemptsTodayForCap = capAttempts.length;
@@ -8421,7 +9055,10 @@ function statusCmd(dateStr) {
     gateExhaustionStreak,
     shippedToday,
     admission: poolAdmissionSummary,
-    policyHoldPressure
+    policyHoldPressure,
+    queuePressure: queuePressureState,
+    spawnCapacityBoost,
+    candidatePoolSize: pool.length
   });
   const maxRunsPerDay = adaptiveCaps.daily_runs_cap;
   const canaryDailyExecLimit = executionMode === 'canary_execute'
@@ -8437,6 +9074,7 @@ function statusCmd(dateStr) {
   const humanEscalations = activeHumanEscalations(AUTONOMY_HUMAN_ESCALATION_HOLD_HOURS);
   const humanEscalationNextClearAt = nextHumanEscalationClearAt(humanEscalations);
   const objectiveRuntime = objectiveRuntimeSnapshot(dateStr);
+  const backlogAutoscale = backlogAutoscaleSnapshot(queuePressureState, budgetAutopause);
   const statusPoolObjectiveIds = Array.from(new Set(
     pool
       .map((cand) => {
@@ -8459,6 +9097,7 @@ function statusCmd(dateStr) {
       pressure: budgetAutopause && budgetAutopause.pressure ? String(budgetAutopause.pressure) : null,
       until: budgetAutopause && budgetAutopause.until ? String(budgetAutopause.until) : null
     },
+    backlog_autoscale: backlogAutoscale,
     repeat_gate: {
       no_progress_streak: noProgressStreak,
       executed_no_progress_streak: executedNoProgressStreak,
@@ -8858,6 +9497,9 @@ function readinessCmd(dateStr) {
   const attempts = attemptEvents(runs);
   const capAttempts = capacityCountedAttemptEvents(runs);
   const policyHoldPressure = policyHoldPressureSnapshot(runs);
+  const queuePressureDate = latestProposalDate(dateStr) || dateStr;
+  const queuePressureState = queuePressureSnapshot(queuePressureDate);
+  const spawnCapacityBoost = spawnCapacityBoostSnapshot();
   const attemptsToday = attempts.length;
   const attemptsTodayForCap = capAttempts.length;
   const executedRuns = runs.filter(e => e && e.type === 'autonomy_run' && e.result === 'executed');
@@ -8879,7 +9521,9 @@ function readinessCmd(dateStr) {
     executedNoProgressStreak,
     gateExhaustionStreak,
     shippedToday,
-    policyHoldPressure
+    policyHoldPressure,
+    queuePressure: queuePressureState,
+    spawnCapacityBoost
   });
   const maxRunsPerDay = adaptiveCaps.daily_runs_cap;
   const canaryDailyExecLimit = executionMode === 'canary_execute'
@@ -9642,6 +10286,8 @@ function runCmd(dateStr, opts = {}) {
   const executedNoProgressStreak = consecutiveExecutedNoProgressRuns(priorRuns);
   const gateExhaustionStreak = consecutiveGateExhaustedAttempts(priorAttempts);
   const shippedToday = shippedCount(priorRuns);
+  const queuePressureState = queuePressureSnapshot(proposalDate);
+  const spawnCapacityBoost = spawnCapacityBoostSnapshot();
   const executionQuotaDeficit = needsExecutionQuota(executionMode, shadowOnly, executedToday);
   const executionQuotaRemaining = Math.max(0, Number(AUTONOMY_MIN_DAILY_EXECUTIONS || 0) - Number(executedToday || 0));
   const baseMaxRunsPerDay = Number.isFinite(Number(strategyBudget.daily_runs_cap))
@@ -9660,12 +10306,48 @@ function runCmd(dateStr, opts = {}) {
     gateExhaustionStreak,
     shippedToday,
     admission: admissionSummary,
-    policyHoldPressure
+    policyHoldPressure,
+    queuePressure: queuePressureState,
+    spawnCapacityBoost,
+    candidatePoolSize: pool.length
   });
   const maxRunsPerDay = adaptiveCaps.daily_runs_cap;
   const canaryDailyExecLimit = executionMode === 'canary_execute'
     ? adaptiveCaps.canary_daily_exec_limit
     : null;
+  const inputCandidateCap = adaptiveCaps.input_candidates_cap != null
+    && Number.isFinite(Number(adaptiveCaps.input_candidates_cap))
+    ? Math.max(1, Math.floor(Number(adaptiveCaps.input_candidates_cap)))
+    : null;
+  const evaluationPool = pool;
+  const backlogAutoscale = runBacklogAutoscaler({
+    dateStr,
+    queuePressure: queuePressureState,
+    shadowOnly,
+    budgetAutopause: loadSystemBudgetAutopauseState(),
+    executionMode
+  });
+  if (
+    backlogAutoscale
+    && backlogAutoscale.enabled === true
+    && (
+      backlogAutoscale.action === 'scale_up'
+      || backlogAutoscale.action === 'scale_down'
+      || backlogAutoscale.action === 'spawn_error'
+    )
+  ) {
+    writeRun(dateStr, {
+      ts: nowIso(),
+      type: 'autonomy_backlog_autoscale',
+      module: backlogAutoscale.module || null,
+      action: backlogAutoscale.action || 'hold',
+      current_cells: Number(backlogAutoscale.current_cells || 0),
+      target_cells: Number(backlogAutoscale.target_cells || 0),
+      observed_cells: Number(backlogAutoscale.observed_cells || 0),
+      plan: backlogAutoscale.plan || null,
+      spawn: backlogAutoscale.spawn || null
+    });
+  }
   const mediumCanaryDailyExecLimit = executionMode === 'canary_execute'
     ? Math.max(0, Number(AUTONOMY_CANARY_MEDIUM_RISK_DAILY_EXEC_LIMIT || 0))
     : 0;
@@ -9678,7 +10360,7 @@ function runCmd(dateStr, opts = {}) {
   const repeatGateAnchor = deriveRepeatGateAnchor(lastCapacityAttempt || lastAttempt);
   const objectiveRuntime = objectiveRuntimeSnapshot(dateStr);
   const poolObjectiveIds = Array.from(new Set(
-    pool
+    evaluationPool
       .map((cand) => {
         const binding = resolveObjectiveBinding(cand && cand.proposal, directivePulseCtx);
         return binding && binding.objective_id ? String(binding.objective_id) : '';
@@ -10025,7 +10707,6 @@ function runCmd(dateStr, opts = {}) {
   const candidateRejectedByGate = {};
   const candidateAuditRows = [];
   const budgetPacingState = budgetPacingSnapshot(dateStr);
-  const queuePressureState = queuePressureSnapshot(proposalDate);
   const candidateAuditPolicy = {
     strategy_id: strategy ? strategy.id : null,
     execution_mode: executionMode,
@@ -10117,6 +10798,27 @@ function runCmd(dateStr, opts = {}) {
       deficit: executionQuotaDeficit,
       remaining: executionQuotaRemaining
     },
+    dynamic_io_caps: {
+      enabled: AUTONOMY_DYNAMIC_IO_CAP_ENABLED,
+      adaptive_enabled: AUTONOMY_ADAPTIVE_CAPS_ENABLED,
+      pool_total_size: pool.length,
+      pool_evaluated_size: evaluationPool.length,
+      input_candidates_cap: inputCandidateCap,
+      spawn_reset_active: adaptiveCaps.spawn_reset_active === true
+    },
+    backlog_autoscale: backlogAutoscale && typeof backlogAutoscale === 'object'
+      ? {
+          enabled: backlogAutoscale.enabled === true,
+          module: backlogAutoscale.module || null,
+          action: backlogAutoscale.action || 'hold',
+          current_cells: Number(backlogAutoscale.current_cells || 0),
+          target_cells: Number(backlogAutoscale.target_cells || 0),
+          observed_cells: Number(backlogAutoscale.observed_cells || 0),
+          pressure: backlogAutoscale.plan && backlogAutoscale.plan.pressure
+            ? String(backlogAutoscale.plan.pressure)
+            : null
+        }
+      : null,
     t1_execute_gate: {
       enabled: AUTONOMY_EXECUTE_REQUIRE_T1 && isExecuteMode(executionMode)
     },
@@ -10137,16 +10839,17 @@ function runCmd(dateStr, opts = {}) {
       proposal_date: proposalDate,
       policy_hash: candidateAuditPolicyHash,
       policy: candidateAuditPolicy,
-      pool_size: pool.length,
+      pool_size: evaluationPool.length,
+      pool_size_total: pool.length,
       eligible_count: eligible.length,
-      rejected_count: Math.max(0, pool.length - eligible.length),
+      rejected_count: Math.max(0, evaluationPool.length - eligible.length),
       rejected_by_gate: candidateRejectedByGate,
       skip_stats: skipStats,
       selected_proposal_id: selectedProposalId,
       selection_mode: selectionMode,
       tier_reservation: reservation || null,
       objective_mix: objectiveMix || null,
-      rows_truncated: pool.length > candidateAuditRows.length,
+      rows_truncated: evaluationPool.length > candidateAuditRows.length,
       rows: candidateAuditRows
     });
   };
@@ -10168,7 +10871,7 @@ function runCmd(dateStr, opts = {}) {
       by_capability: {}
     };
   candidateAuditPolicy.route_block_prefilter.sample_events = Number(routeBlockPrefilterTelemetry.sample_events || 0);
-  for (const cand of pool) {
+  for (const cand of evaluationPool) {
     const proposalId = String(cand && cand.proposal && cand.proposal.id || '');
     const proposalType = String(cand && cand.proposal && cand.proposal.type || '');
     const typeThresholdPack = thresholdsForProposalType(thresholds, proposalType, fitnessPolicy);
@@ -11233,8 +11936,8 @@ function runCmd(dateStr, opts = {}) {
     }
   }
 
-  if (!pick && shadowOnly && pool.length > 0) {
-    const fallback = pool[0];
+  if (!pick && shadowOnly && evaluationPool.length > 0) {
+    const fallback = evaluationPool[0];
     const fallbackType = String(fallback && fallback.proposal && fallback.proposal.type || '');
     const fallbackThresholdPack = thresholdsForProposalType(thresholds, fallbackType, fitnessPolicy);
     const fallbackThresholds = fallbackThresholdPack.thresholds;
@@ -14411,7 +15114,7 @@ function releaseAutonomyRunLock() {
 
 function usage() {
   console.log('Usage:');
-  console.log('  node systems/autonomy/autonomy_controller.js run [YYYY-MM-DD]');
+  console.log('  node systems/autonomy/autonomy_controller.js run [YYYY-MM-DD] [--no_batch=1]');
   console.log('  node systems/autonomy/autonomy_controller.js run-batch [YYYY-MM-DD] [--max=N]');
   console.log('  node systems/autonomy/autonomy_controller.js evidence [YYYY-MM-DD]');
   console.log('  node systems/autonomy/autonomy_controller.js readiness [YYYY-MM-DD]');
@@ -14454,9 +15157,21 @@ function runChildAutonomy(dateStr) {
   };
 }
 
-function runBatchCmd(dateStr) {
-  const rawMax = Number(parseArg('max') || process.env.AUTONOMY_BATCH_MAX || 3);
+function runBatchCmd(dateStr, opts = {}) {
+  const maxArg = parseArg('max');
+  const hasArgMax = maxArg != null && String(maxArg).trim() !== '';
+  const forcedMax = Number(opts && opts.forcedMax);
+  const rawMax = hasArgMax
+    ? Number(maxArg)
+    : (Number.isFinite(forcedMax)
+      ? forcedMax
+      : Number(process.env.AUTONOMY_BATCH_MAX || 3));
   const max = Number.isFinite(rawMax) ? Math.max(1, Math.min(10, Math.round(rawMax))) : 3;
+  const maxSource = hasArgMax
+    ? 'arg'
+    : (Number.isFinite(forcedMax)
+      ? String((opts && opts.source) || 'forced')
+      : (process.env.AUTONOMY_BATCH_MAX != null ? 'env' : 'default'));
   const rows = [];
   let executed = 0;
   let stop = null;
@@ -14496,9 +15211,19 @@ function runBatchCmd(dateStr) {
     result: 'batch_complete',
     date: dateStr,
     max,
+    max_source: maxSource,
     executed,
     attempted: rows.length,
     stop_reason: stop || null,
+    autoscale_hint: opts && opts.autoscale_hint && typeof opts.autoscale_hint === 'object'
+      ? {
+          reason: opts.autoscale_hint.reason || null,
+          pressure: opts.autoscale_hint.pressure || null,
+          active_cells: Number(opts.autoscale_hint.active_cells || 0),
+          proposal_date: opts.autoscale_hint.proposal_date || null,
+          remaining_daily_runs: Number(opts.autoscale_hint.remaining_daily_runs || 0)
+        }
+      : null,
     runs: rows
   }) + '\n');
 }
@@ -14518,6 +15243,20 @@ function main() {
   if (cmd === 'run-batch') return runBatchCmd(dateStr);
   if (cmd === 'run' || cmd === 'evidence') {
     const shadowOnly = cmd === 'evidence';
+    const isBatchChild = String(process.env.AUTONOMY_BATCH_CHILD || '').trim() === '1';
+    const noBatchArg = String(parseArg('no_batch') || '').trim().toLowerCase();
+    const noBatch = noBatchArg === '1' || noBatchArg === 'true' || noBatchArg === 'yes';
+    const runLockExists = fs.existsSync(AUTONOMY_RUN_LOCK_PATH);
+    if (!shadowOnly && !isBatchChild && !noBatch && !runLockExists) {
+      const batchHint = suggestAutonomyRunBatchMax(dateStr);
+      if (Number(batchHint.max || 0) > 1) {
+        return runBatchCmd(dateStr, {
+          forcedMax: Number(batchHint.max || 1),
+          source: 'backlog_autoscale',
+          autoscale_hint: batchHint
+        });
+      }
+    }
     const lockRes = acquireAutonomyRunLock({
       mode: shadowOnly ? 'evidence' : 'run',
       date: dateStr
@@ -14570,6 +15309,12 @@ module.exports = {
   qosLaneFromCandidate,
   chooseQosLaneSelection,
   queuePressureSnapshot,
+  spawnCapacityBoostSnapshot,
+  computeBacklogAutoscalePlan,
+  backlogAutoscaleSnapshot,
+  runBacklogAutoscaler,
+  computeBacklogBatchMax,
+  suggestAutonomyRunBatchMax,
   adaptiveExecutionCaps,
   isPolicyHoldResult,
   isPolicyHoldRunEvent,
