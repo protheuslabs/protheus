@@ -1,3 +1,3 @@
 'use strict';
 
-module.exports = require('../../../adaptive/sensory/eyes/collectors/cache_store');
+require('../../../lib/ts_bootstrap').bootstrap(__filename, module);

@@ -533,7 +533,7 @@ function spawnWorkersSnapshot(now) {
   let expiredLeases = 0;
   let expiringSoonLeases = 0;
   for (const [moduleId, value] of Object.entries(allocations)) {
-    const row = value && typeof value === 'object' ? value : {};
+    const row: AnyObj = value && typeof value === 'object' ? value as AnyObj : {};
     const cells = Math.max(0, Number(row.cells || 0));
     const leaseExpiresAt = row.lease_expires_at || row.lease_expiry || row.expires_at || null;
     const leaseMs = toMs(leaseExpiresAt);
@@ -572,7 +572,7 @@ function capabilityLeaseSnapshot(now) {
   let active = 0;
   let expiredUnconsumed = 0;
   for (const [leaseId, value] of Object.entries(issued)) {
-    const row = value && typeof value === 'object' ? value : {};
+    const row: AnyObj = value && typeof value === 'object' ? value as AnyObj : {};
     const scope = String(row.scope || 'unknown');
     scopeCounts[scope] = Number(scopeCounts[scope] || 0) + 1;
     const consumedLease = consumedSet.has(String(leaseId || ''));
@@ -605,7 +605,7 @@ function cooldownSnapshot(cooldowns, now) {
   };
   for (const value of Object.values(cooldowns || {})) {
     out.total += 1;
-    const row = value && typeof value === 'object' ? value : {};
+    const row: AnyObj = value && typeof value === 'object' ? value as AnyObj : {};
     const explicitMs = Number(
       row.until_ms
       || row.expires_ms
