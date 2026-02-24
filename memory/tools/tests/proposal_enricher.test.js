@@ -42,6 +42,9 @@ function run() {
   const outcomePolicyBefore = process.env.OUTCOME_FITNESS_POLICY_PATH;
   const dreamsDirBefore = process.env.PROPOSAL_ENRICHER_DREAMS_DIR;
   const dreamBonusCapBefore = process.env.AUTONOMY_DREAM_DIRECTIVE_BONUS_CAP;
+  const revenueOracleBefore = process.env.AUTONOMY_REVENUE_ORACLE_REQUIRED;
+  const revenueOracleScopeBefore = process.env.AUTONOMY_REVENUE_ORACLE_SCOPE;
+  const revenueOracleExemptBefore = process.env.AUTONOMY_REVENUE_ORACLE_EXEMPT_TYPES;
   const outcomePolicyPath = path.join(tmpRoot, 'outcome_fitness.json');
   const objectiveId = (() => {
     try {
@@ -66,6 +69,9 @@ function run() {
     process.env.AUTONOMY_MIN_ACTIONABILITY_SCORE = '35';
     process.env.AUTONOMY_MIN_COMPOSITE_ELIGIBILITY = '45';
     process.env.AUTONOMY_DREAM_DIRECTIVE_BONUS_CAP = '6';
+    process.env.AUTONOMY_REVENUE_ORACLE_REQUIRED = '1';
+    process.env.AUTONOMY_REVENUE_ORACLE_SCOPE = 'dream';
+    process.env.AUTONOMY_REVENUE_ORACLE_EXEMPT_TYPES = 'pain_signal_escalation,dream_cycle_escalation,collector_remediation,infrastructure_outage,directive_clarification,directive_decomposition';
     process.env.PROPOSAL_ENRICHER_DREAMS_DIR = dreamsDir;
     fs.writeFileSync(outcomePolicyPath, JSON.stringify({
       strategy_policy: {
@@ -371,6 +377,90 @@ function run() {
       Array.isArray(metaBlocked) && metaBlocked.includes('meta_missing_measurable_outcome'),
       'meta-noop proposal should require measurable outcome evidence'
     );
+    const dreamBlockedRes = script.enrichOne({
+      id: 'PDREAM_BLOCKED',
+      type: 'dream_revenue_probe',
+      title: 'Improve dream synthesis reliability and cadence',
+      summary: 'Improve dream synthesis reliability and cadence.',
+      risk: 'low',
+      evidence: [{ evidence_ref: 'dream:idle:model_timeout', match: 'idle dream preflight degradation' }],
+      validation: ['Run bounded simulation and verify queue impact'],
+      suggested_next_command: 'node systems/routing/route_execute.js --task=\"Simulate one bounded dream intervention\" --dry-run'
+    }, {
+      eyes: new Map(),
+      directiveProfile: { available: false, active_directive_ids: [] },
+      directiveObjectiveIds: ['T1_ALPHA_OBJECTIVE'],
+      strategy: null,
+      thresholds: {
+        min_signal_quality: 35,
+        min_sensory_signal_score: 35,
+        min_sensory_relevance_score: 35,
+        min_directive_fit: 20,
+        min_actionability_score: 35,
+        min_composite_eligibility: 45,
+        min_eye_score_ema: 35
+      },
+      outcomePolicy: {}
+    });
+    const dreamBlocked = (dreamBlockedRes.proposal.meta.admission_preview || {}).blocked_by || [];
+    assert.ok(
+      Array.isArray(dreamBlocked) && dreamBlocked.includes('revenue_oracle_first_sentence_missing'),
+      'dream-origin proposal without first-sentence value signal should be blocked by revenue oracle'
+    );
+    assert.strictEqual(
+      dreamBlockedRes.proposal.meta.revenue_oracle_applies,
+      true,
+      'dream-origin proposal should trigger revenue oracle scope'
+    );
+    const dreamValueRes = script.enrichOne({
+      id: 'PDREAM_VALUE',
+      type: 'dream_revenue_probe',
+      title: 'Run customer lead pilot from dream signal',
+      summary: 'Customer lead pilot targets $500 monthly revenue from an Upwork automation niche.',
+      risk: 'low',
+      evidence: [{ evidence_ref: 'dream:idle:market_signal', match: 'external demand for automation gigs' }],
+      validation: ['Simulate one pilot and verify projected ROI before execution'],
+      suggested_next_command: 'node systems/routing/route_execute.js --task=\"Simulate one bounded Upwork lead pilot\" --dry-run',
+      action_spec: {
+        version: 1,
+        objective_id: 'T1_ALPHA_OBJECTIVE',
+        target: 'upwork:automation',
+        verify: ['record simulation receipts'],
+        success_criteria: [
+          { metric: 'revenue_actions_count', target: '>=1 verified projected revenue action', horizon: 'next run' }
+        ],
+        rollback: 'cancel pilot'
+      }
+    }, {
+      eyes: new Map(),
+      directiveProfile: { available: false, active_directive_ids: [] },
+      directiveObjectiveIds: ['T1_ALPHA_OBJECTIVE'],
+      strategy: null,
+      thresholds: {
+        min_signal_quality: 35,
+        min_sensory_signal_score: 35,
+        min_sensory_relevance_score: 35,
+        min_directive_fit: 20,
+        min_actionability_score: 35,
+        min_composite_eligibility: 45,
+        min_eye_score_ema: 35
+      },
+      outcomePolicy: {}
+    });
+    assert.strictEqual(
+      dreamValueRes.proposal.meta.revenue_oracle_applies,
+      true,
+      'dream-origin value proposal should trigger revenue oracle'
+    );
+    assert.strictEqual(
+      dreamValueRes.proposal.meta.revenue_oracle_pass,
+      true,
+      'dream-origin proposal with first-sentence customer/revenue signal should pass revenue oracle'
+    );
+    assert.ok(
+      !((dreamValueRes.proposal.meta.admission_preview || {}).blocked_by || []).includes('revenue_oracle_first_sentence_missing'),
+      'value-oriented dream proposal should not be blocked by first-sentence revenue gate'
+    );
 
     assert.ok(high.meta && high.meta.admission_preview && high.meta.admission_preview.eligible === false, 'high-risk proposal should be blocked');
     assert.ok(
@@ -404,6 +494,12 @@ function run() {
     else process.env.PROPOSAL_ENRICHER_DREAMS_DIR = dreamsDirBefore;
     if (dreamBonusCapBefore == null) delete process.env.AUTONOMY_DREAM_DIRECTIVE_BONUS_CAP;
     else process.env.AUTONOMY_DREAM_DIRECTIVE_BONUS_CAP = dreamBonusCapBefore;
+    if (revenueOracleBefore == null) delete process.env.AUTONOMY_REVENUE_ORACLE_REQUIRED;
+    else process.env.AUTONOMY_REVENUE_ORACLE_REQUIRED = revenueOracleBefore;
+    if (revenueOracleScopeBefore == null) delete process.env.AUTONOMY_REVENUE_ORACLE_SCOPE;
+    else process.env.AUTONOMY_REVENUE_ORACLE_SCOPE = revenueOracleScopeBefore;
+    if (revenueOracleExemptBefore == null) delete process.env.AUTONOMY_REVENUE_ORACLE_EXEMPT_TYPES;
+    else process.env.AUTONOMY_REVENUE_ORACLE_EXEMPT_TYPES = revenueOracleExemptBefore;
   }
 }
 

@@ -80,6 +80,12 @@ const SUCCESS_RELAXED_RUN_HORIZON_RE = /\b(next|this)\s+(run|cycle)\b/i;
 const SUCCESS_COMPARATOR_RE = /\b(>=|<=|>|<|at least|at most|less than|more than|within|under|over)\b/i;
 const OPTIMIZATION_INTENT_RE = /\b(optimi[sz]e|optimization|improv(?:e|ement)|tune|polish|streamlin|efficien(?:cy|t)|latency|throughput|cost|token(?:s)?|performance)\b/i;
 const OPTIMIZATION_EXEMPT_RE = /\b(fail(?:ure)?|error|outage|broken|incident|security|integrity|violation|breach|timeout|rate\s*limit|dns|connection|recover|restore|rollback|revert|remediation)\b/i;
+const REVENUE_VALUE_MONEY_RE = /\b(revenue|mrr|arr|cash|money|usd|dollar|profit|pricing|invoice|paid|payment|bill(?:ing)?)\b/;
+const REVENUE_VALUE_CUSTOMER_RE = /\b(customer|client|user|buyer|subscriber|audience|lead|prospect|account|tenant)\b/;
+const REVENUE_VALUE_EXTERNAL_RE = /\b(external|market|demand|opportunity|contract|gig|upwork|freelance|sales?|pipeline|conversion|acquisition|churn|retention|roi)\b/;
+const REVENUE_VALUE_TIME_TO_REV_RE = /\b(time[\s_-]*to[\s_-]*revenue|time[\s_-]*to[\s_-]*cash|hours?\s+saved|payback)\b/;
+const REVENUE_SIMULATION_RE = /\b(simulat(?:e|ion)|what[-\s]?if|forecast|backtest|sandbox|dry[-\s]?run|pilot)\b/;
+const DREAM_ORIGIN_RE = /\b(dream|idle_dream|memory_dream|rem_dream)\b/;
 const PERCENT_VALUE_RE = /(-?\d+(?:\.\d+)?)\s*%/g;
 const AUTONOMY_OPTIMIZATION_MIN_DELTA_PERCENT = clamp(Number(process.env.AUTONOMY_OPTIMIZATION_MIN_DELTA_PERCENT || 10), 1, 50);
 const AUTONOMY_OPTIMIZATION_MIN_DELTA_PERCENT_HIGH_ACCURACY = clamp(Number(process.env.AUTONOMY_OPTIMIZATION_MIN_DELTA_PERCENT_HIGH_ACCURACY || 5), 1, 50);
@@ -88,6 +94,22 @@ const AUTONOMY_OPTIMIZATION_REQUIRE_DELTA = String(process.env.AUTONOMY_OPTIMIZA
 const AUTONOMY_SUBDIRECTIVE_V2_REQUIRED = String(process.env.AUTONOMY_SUBDIRECTIVE_V2_REQUIRED || '1') !== '0';
 const AUTONOMY_SUBDIRECTIVE_V2_EXEMPT_TYPES = new Set(
   String(process.env.AUTONOMY_SUBDIRECTIVE_V2_EXEMPT_TYPES || 'directive_clarification,directive_decomposition')
+    .split(',')
+    .map((s) => String(s || '').trim().toLowerCase())
+    .filter(Boolean)
+);
+const AUTONOMY_REVENUE_ORACLE_REQUIRED = String(process.env.AUTONOMY_REVENUE_ORACLE_REQUIRED || '1') !== '0';
+const AUTONOMY_REVENUE_ORACLE_SCOPE = new Set(
+  String(process.env.AUTONOMY_REVENUE_ORACLE_SCOPE || 'dream')
+    .split(',')
+    .map((s) => String(s || '').trim().toLowerCase())
+    .filter(Boolean)
+);
+const AUTONOMY_REVENUE_ORACLE_EXEMPT_TYPES = new Set(
+  String(
+    process.env.AUTONOMY_REVENUE_ORACLE_EXEMPT_TYPES
+      || 'pain_signal_escalation,dream_cycle_escalation,collector_remediation,infrastructure_outage,directive_clarification,directive_decomposition'
+  )
     .split(',')
     .map((s) => String(s || '').trim().toLowerCase())
     .filter(Boolean)
@@ -998,6 +1020,135 @@ function proposalTextBlob(proposal) {
   return normalizeFitText(bits.filter(Boolean).join(' '));
 }
 
+function firstSentenceText(v) {
+  const raw = normalizeText(v);
+  if (!raw) return '';
+  const cut = raw.search(/[.!?\n]/);
+  const sentence = cut >= 0 ? raw.slice(0, cut) : raw;
+  return normalizeFitText(sentence);
+}
+
+function proposalFirstSentenceBlob(proposal) {
+  const p = proposal || {};
+  const candidates = [
+    p.summary,
+    p.title,
+    p.notes,
+    p.suggested_next_command,
+    Array.isArray(p.validation) ? p.validation[0] : ''
+  ];
+  for (const row of candidates) {
+    const s = firstSentenceText(row);
+    if (s) return s;
+  }
+  return '';
+}
+
+function isDreamOriginProposal(proposal) {
+  const p = proposal && typeof proposal === 'object' ? proposal : {};
+  const type = normalizeText(p.type).toLowerCase();
+  if (type.includes('dream')) return true;
+  const meta = p.meta && typeof p.meta === 'object' ? p.meta : {};
+  const metaBits = [
+    meta.source,
+    meta.origin,
+    meta.generator,
+    meta.source_eye,
+    meta.pain_source,
+    meta.pain_code
+  ];
+  for (const bit of metaBits) {
+    const value = normalizeFitText(bit);
+    if (value && DREAM_ORIGIN_RE.test(value)) return true;
+  }
+  const evidence = Array.isArray(p.evidence) ? p.evidence : [];
+  for (const ev of evidence) {
+    const bits = [
+      ev && ev.evidence_ref,
+      ev && ev.source,
+      ev && ev.path,
+      ev && ev.match
+    ];
+    for (const bit of bits) {
+      const value = normalizeFitText(bit);
+      if (!value) continue;
+      if (value.startsWith('dream')) return true;
+      if (DREAM_ORIGIN_RE.test(value)) return true;
+    }
+  }
+  return false;
+}
+
+function revenueOracleScope(proposal, isMetaNoop) {
+  if (!AUTONOMY_REVENUE_ORACLE_REQUIRED) {
+    return { applies: false, scope: 'disabled' };
+  }
+  const type = normalizeText(proposal && proposal.type).toLowerCase();
+  if (type && AUTONOMY_REVENUE_ORACLE_EXEMPT_TYPES.has(type)) {
+    return { applies: false, scope: 'exempt_type' };
+  }
+  if (AUTONOMY_REVENUE_ORACLE_SCOPE.has('all')) {
+    return { applies: true, scope: 'all' };
+  }
+  if (AUTONOMY_REVENUE_ORACLE_SCOPE.has('dream') && isDreamOriginProposal(proposal)) {
+    return { applies: true, scope: 'dream' };
+  }
+  if (AUTONOMY_REVENUE_ORACLE_SCOPE.has('meta') && isMetaNoop === true) {
+    return { applies: true, scope: 'meta' };
+  }
+  return { applies: false, scope: 'out_of_scope' };
+}
+
+function revenueOracleDecision(proposal, blobHint, isMetaNoop) {
+  const p = proposal && typeof proposal === 'object' ? proposal : {};
+  const meta = p.meta && typeof p.meta === 'object' ? p.meta : {};
+  const scope = revenueOracleScope(p, isMetaNoop === true);
+  const blob = normalizeFitText(blobHint || proposalTextBlob(p));
+  const firstSentence = proposalFirstSentenceBlob(p);
+  const touchesMoney = REVENUE_VALUE_MONEY_RE.test(firstSentence) || Number.isFinite(Number(meta.expected_value_usd || meta.expected_value_score));
+  const touchesCustomer = REVENUE_VALUE_CUSTOMER_RE.test(firstSentence);
+  const touchesExternalValue = REVENUE_VALUE_EXTERNAL_RE.test(firstSentence);
+  const reducesTimeToRevenue = REVENUE_VALUE_TIME_TO_REV_RE.test(firstSentence) || Number.isFinite(Number(meta.time_to_cash_hours));
+  const canSimulateFirst = REVENUE_SIMULATION_RE.test(blob)
+    || normalizeText(p.suggested_next_command).includes('--dry-run');
+  const hasFirstSentenceValue = touchesMoney
+    || touchesCustomer
+    || touchesExternalValue
+    || reducesTimeToRevenue;
+  const hasExternalValue = hasFirstSentenceValue
+    || REVENUE_VALUE_MONEY_RE.test(blob)
+    || REVENUE_VALUE_CUSTOMER_RE.test(blob)
+    || REVENUE_VALUE_EXTERNAL_RE.test(blob)
+    || REVENUE_VALUE_TIME_TO_REV_RE.test(blob)
+    || Number.isFinite(Number(meta.expected_value_score))
+    || Number.isFinite(Number(meta.expected_value_usd))
+    || Number.isFinite(Number(meta.time_to_cash_hours));
+
+  let pass = true;
+  let reason = null;
+  if (scope.applies && !hasExternalValue) {
+    pass = false;
+    reason = 'revenue_oracle_no_external_value';
+  } else if (scope.applies && !hasFirstSentenceValue) {
+    pass = false;
+    reason = 'revenue_oracle_first_sentence_missing';
+  }
+
+  return {
+    enabled: AUTONOMY_REVENUE_ORACLE_REQUIRED,
+    applies: scope.applies,
+    scope: scope.scope,
+    pass,
+    reason,
+    first_sentence: firstSentence.slice(0, 180),
+    touches_money: touchesMoney,
+    touches_customer_or_user: touchesCustomer,
+    touches_external_value: touchesExternalValue,
+    reduces_time_to_revenue: reducesTimeToRevenue,
+    can_simulate_first: canSimulateFirst
+  };
+}
+
 function hasConcreteDeltaSignal(proposal) {
   const p = proposal || {};
   const nextCmd = normalizeText(p.suggested_next_command);
@@ -1583,6 +1734,7 @@ function admission(meta, eye, risk, t, proposal, strategy, outcomePolicy, optimi
   const hasConcreteTarget = CONCRETE_TARGET_RE.test(blob);
   const isMetaCoordination = META_COORDINATION_RE.test(blob);
   const isMetaNoop = isMetaNoopCandidate(proposal, blob);
+  const revenueOracle = revenueOracleDecision(proposal, blob, isMetaNoop);
   const hasConcreteDelta = hasConcreteDeltaSignal(proposal);
   const criteriaPolicy = successCriteriaRequirement(outcomePolicy);
   const criteriaExempt = isSuccessCriteriaExemptProposal(type, criteriaPolicy);
@@ -1624,6 +1776,7 @@ function admission(meta, eye, risk, t, proposal, strategy, outcomePolicy, optimi
   if (/\bproposals?\b/.test(blob) && !hasConcreteTarget && !hasOpportunity) reasons.push('proposal_recursion_non_actionable');
   if (isMetaNoop && !hasConcreteDelta) reasons.push('meta_missing_concrete_delta');
   if (isMetaNoop && measuredCriteriaCount < META_MEASURABLE_MIN_COUNT) reasons.push('meta_missing_measurable_outcome');
+  if (revenueOracle.applies && !revenueOracle.pass && revenueOracle.reason) reasons.push(revenueOracle.reason);
   const optGate = optimizationGate && typeof optimizationGate === 'object'
     ? optimizationGate
     : optimizationGateDecision(proposal, risk);
@@ -1637,7 +1790,8 @@ function admission(meta, eye, risk, t, proposal, strategy, outcomePolicy, optimi
 
   return {
     eligible: reasons.length === 0,
-    blocked_by: reasons
+    blocked_by: reasons,
+    revenue_oracle: revenueOracle
   };
 }
 
@@ -1715,6 +1869,21 @@ function enrichOne(proposal, ctx) {
   }
 
   const prevMeta = raw.meta && typeof raw.meta === 'object' ? raw.meta : {};
+  const revenueOracle = admit && admit.revenue_oracle && typeof admit.revenue_oracle === 'object'
+    ? admit.revenue_oracle
+    : {
+        enabled: AUTONOMY_REVENUE_ORACLE_REQUIRED,
+        applies: false,
+        scope: 'unknown',
+        pass: true,
+        reason: null,
+        first_sentence: '',
+        touches_money: false,
+        touches_customer_or_user: false,
+        touches_external_value: false,
+        reduces_time_to_revenue: false,
+        can_simulate_first: false
+      };
   const nextMeta = {
     ...prevMeta,
     ...(p.meta && typeof p.meta === 'object' ? p.meta : {}),
@@ -1768,6 +1937,17 @@ function enrichOne(proposal, ctx) {
     optimization_require_delta: optimizationGate.require_delta === true,
     optimization_gate_pass: optimizationGate.pass === true,
     optimization_gate_reason: optimizationGate.reason || null,
+    revenue_oracle_enabled: revenueOracle.enabled === true,
+    revenue_oracle_applies: revenueOracle.applies === true,
+    revenue_oracle_scope: revenueOracle.scope || null,
+    revenue_oracle_pass: revenueOracle.pass !== false,
+    revenue_oracle_reason: revenueOracle.reason || null,
+    revenue_oracle_first_sentence: revenueOracle.first_sentence || null,
+    revenue_oracle_touches_money: revenueOracle.touches_money === true,
+    revenue_oracle_touches_customer_or_user: revenueOracle.touches_customer_or_user === true,
+    revenue_oracle_touches_external_value: revenueOracle.touches_external_value === true,
+    revenue_oracle_reduces_time_to_revenue: revenueOracle.reduces_time_to_revenue === true,
+    revenue_oracle_can_simulate_first: revenueOracle.can_simulate_first === true,
     subdirective_v2_required: a.subdirective_v2 && a.subdirective_v2.required === true,
     subdirective_v2_target_ok: !(a.subdirective_v2 && a.subdirective_v2.required === true)
       || (a.subdirective_v2 && a.subdirective_v2.has_concrete_target === true),
