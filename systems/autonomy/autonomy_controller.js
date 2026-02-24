@@ -222,6 +222,19 @@ const AUTONOMY_POLICY_HOLD_COOLDOWN_HARD_MINUTES = Math.max(
   AUTONOMY_POLICY_HOLD_COOLDOWN_WARN_MINUTES,
   Number(process.env.AUTONOMY_POLICY_HOLD_COOLDOWN_HARD_MINUTES || Math.max(AUTONOMY_POLICY_HOLD_COOLDOWN_MINUTES * 4, 60))
 );
+const AUTONOMY_POLICY_HOLD_COOLDOWN_CAP_MINUTES = Math.max(
+  AUTONOMY_POLICY_HOLD_COOLDOWN_HARD_MINUTES,
+  Number(process.env.AUTONOMY_POLICY_HOLD_COOLDOWN_CAP_MINUTES || 180)
+);
+const AUTONOMY_POLICY_HOLD_COOLDOWN_MANUAL_REVIEW_MINUTES = Math.max(
+  AUTONOMY_POLICY_HOLD_COOLDOWN_HARD_MINUTES,
+  Number(process.env.AUTONOMY_POLICY_HOLD_COOLDOWN_MANUAL_REVIEW_MINUTES || 90)
+);
+const AUTONOMY_POLICY_HOLD_COOLDOWN_UNCHANGED_STATE_MINUTES = Math.max(
+  AUTONOMY_POLICY_HOLD_COOLDOWN_WARN_MINUTES,
+  Number(process.env.AUTONOMY_POLICY_HOLD_COOLDOWN_UNCHANGED_STATE_MINUTES || 90)
+);
+const AUTONOMY_POLICY_HOLD_COOLDOWN_UNTIL_NEXT_DAY_CAPS = String(process.env.AUTONOMY_POLICY_HOLD_COOLDOWN_UNTIL_NEXT_DAY_CAPS || '1') !== '0';
 const AUTONOMY_POLICY_HOLD_DAMPENER_ENABLED = String(process.env.AUTONOMY_POLICY_HOLD_DAMPENER_ENABLED || '1') !== '0';
 const AUTONOMY_POLICY_HOLD_DAMPENER_WINDOW_HOURS = Math.max(1, Number(process.env.AUTONOMY_POLICY_HOLD_DAMPENER_WINDOW_HOURS || 24));
 const AUTONOMY_POLICY_HOLD_DAMPENER_REPEAT_THRESHOLD = Math.max(2, Number(process.env.AUTONOMY_POLICY_HOLD_DAMPENER_REPEAT_THRESHOLD || 2));
@@ -2453,6 +2466,42 @@ function policyHoldCooldownMinutesForPressure(baseMinutes, pressure) {
   } else if (snapshot.applicable === true && level === 'warn') {
     cooldown = Math.max(cooldown, AUTONOMY_POLICY_HOLD_COOLDOWN_WARN_MINUTES);
   }
+  return Math.max(0, Math.round(cooldown));
+}
+
+function minutesUntilNextUtcDay(nowMs = Date.now()) {
+  const now = Number(nowMs);
+  if (!Number.isFinite(now) || now <= 0) return 0;
+  const d = new Date(now);
+  const nextUtcDayMs = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1, 0, 0, 0, 0);
+  const deltaMs = Math.max(0, nextUtcDayMs - now);
+  return Math.max(0, Math.ceil(deltaMs / 60000));
+}
+
+function policyHoldCooldownMinutesForResult(baseMinutes, pressure, lastPolicyHoldRun) {
+  let cooldown = policyHoldCooldownMinutesForPressure(baseMinutes, pressure);
+  const row = lastPolicyHoldRun && typeof lastPolicyHoldRun === 'object' ? lastPolicyHoldRun : {};
+  const result = String(row.result || '').trim().toLowerCase();
+  if (!result) return cooldown;
+
+  if (result === 'no_candidates_policy_daily_cap' || result === 'no_candidates_policy_canary_cap') {
+    const capCooldown = AUTONOMY_POLICY_HOLD_COOLDOWN_UNTIL_NEXT_DAY_CAPS
+      ? minutesUntilNextUtcDay()
+      : AUTONOMY_POLICY_HOLD_COOLDOWN_CAP_MINUTES;
+    cooldown = Math.max(cooldown, capCooldown);
+  } else if (result === 'no_candidates_policy_manual_review_pending' || result === 'stop_repeat_gate_human_escalation_pending') {
+    cooldown = Math.max(cooldown, AUTONOMY_POLICY_HOLD_COOLDOWN_MANUAL_REVIEW_MINUTES);
+  } else if (result === 'no_candidates_policy_unchanged_state') {
+    cooldown = Math.max(cooldown, AUTONOMY_POLICY_HOLD_COOLDOWN_UNCHANGED_STATE_MINUTES);
+  } else if (
+    result === 'stop_init_gate_readiness'
+    || result === 'stop_init_gate_readiness_blocked'
+    || result === 'stop_init_gate_criteria_quality_insufficient'
+  ) {
+    const readinessRetryMinutes = Math.max(0, Math.round(Number(AUTONOMY_READINESS_RETRY_COOLDOWN_HOURS || 0) * 60));
+    cooldown = Math.max(cooldown, readinessRetryMinutes);
+  }
+
   return Math.max(0, Math.round(cooldown));
 }
 
@@ -9985,9 +10034,10 @@ function runCmd(dateStr, opts = {}) {
   const priorRunsForPolicyHoldCooldown = runsSinceReset(readRuns(dateStr));
   const lastPolicyHoldRun = latestPolicyHoldRunEvent(priorRunsForPolicyHoldCooldown);
   const policyHoldPressure = policyHoldPressureSnapshot(priorRunsForPolicyHoldCooldown);
-  const policyHoldCooldownMinutes = policyHoldCooldownMinutesForPressure(
+  const policyHoldCooldownMinutes = policyHoldCooldownMinutesForResult(
     Math.max(0, Number(AUTONOMY_POLICY_HOLD_COOLDOWN_MINUTES || 0)),
-    policyHoldPressure
+    policyHoldPressure,
+    lastPolicyHoldRun
   );
   const lastPolicyHoldMinutesAgo = lastPolicyHoldRun ? minutesSinceTs(lastPolicyHoldRun.ts) : null;
   if (
@@ -15433,6 +15483,7 @@ module.exports = {
   latestPolicyHoldRunEvent,
   policyHoldPressureSnapshot,
   policyHoldCooldownMinutesForPressure,
+  policyHoldCooldownMinutesForResult,
   executeConfidenceCooldownKey,
   executeConfidenceCooldownActive,
   objectiveRuntimeSnapshot,
