@@ -67,12 +67,37 @@ function checkScript(relPath, requiredTokens) {
   checkUsage(relPath, [], requiredTokens);
 }
 
+function isTsBootstrapWrapper(jsSource) {
+  const normalized = String(jsSource || '')
+    .replace(/\r\n/g, '\n')
+    .replace(/^#!.*\n/, '')
+    .trim();
+  if (!normalized) return false;
+  const withoutUseStrict = normalized
+    .replace(/^(['"])use strict\1;\s*/i, '')
+    .trim();
+  return /^require\((['"])(?:(?:\.{1,2}\/)+lib\/ts_bootstrap|\.\/ts_bootstrap)\1\)\.bootstrap\(__filename,\s*module\);\s*$/m.test(withoutUseStrict);
+}
+
+function resolveContractSource(absPath) {
+  const jsSource = fs.readFileSync(absPath, "utf8");
+  if (!isTsBootstrapWrapper(jsSource)) return jsSource;
+  if (path.extname(absPath) !== ".js") return jsSource;
+  const tsPath = `${absPath.slice(0, -3)}.ts`;
+  if (!fs.existsSync(tsPath)) return jsSource;
+  try {
+    return fs.readFileSync(tsPath, "utf8");
+  } catch {
+    return jsSource;
+  }
+}
+
 function checkSourceContains(relPath, requiredTokens) {
   const root = repoRoot();
   const abs = path.join(root, relPath);
   let text = "";
   try {
-    text = fs.readFileSync(abs, "utf8");
+    text = resolveContractSource(abs);
   } catch (err) {
     console.error("contract_check: FAILED");
     console.error(` script: ${relPath}`);
