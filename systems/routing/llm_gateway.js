@@ -17,7 +17,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { spawnSync } = require('child_process');
-const { evaluateLocalProviderGate } = require('./provider_readiness.js');
+const { evaluateLocalProviderGate } = require('./provider_readiness');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const GATEWAY_LOG_PATH = process.env.LLM_GATEWAY_LOG_PATH

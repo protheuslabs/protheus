@@ -15,7 +15,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { verifyLease } = require('../../lib/capability_lease.js');
+const { verifyLease } = require('../../lib/capability_lease');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const POLICY_AUDIT_PATH = process.env.POLICY_ROOT_AUDIT_PATH

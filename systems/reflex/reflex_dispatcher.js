@@ -21,7 +21,7 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
-const { stableUid, randomUid, isAlnum } = require('../../lib/uid.js');
+const { stableUid, randomUid, isAlnum } = require('../../lib/uid');
 const {
   GLOBAL_BUDGET_DEFAULT_DIR,
   DEFAULT_EVENTS_PATH,
@@ -30,7 +30,7 @@ const {
   writeSystemBudgetDecision,
   loadSystemBudgetAutopauseState,
   setSystemBudgetAutopause
-} = require('../budget/system_budget.js');
+} = require('../budget/system_budget');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const POLICY_PATH = process.env.REFLEX_POLICY_PATH

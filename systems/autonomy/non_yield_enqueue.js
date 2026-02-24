@@ -3,7 +3,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { loadQueue, queueForApproval } = require('../../lib/approval_gate.js');
+const { loadQueue, queueForApproval } = require('../../lib/approval_gate');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const AUTONOMY_DIR = process.env.AUTONOMY_STATE_DIR

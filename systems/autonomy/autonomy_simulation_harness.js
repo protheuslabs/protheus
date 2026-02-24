@@ -18,7 +18,7 @@ const {
   compileDirectiveLineage,
   evaluateDirectiveLineageCandidate,
   extractObjectiveIdFromProposal
-} = require('../security/directive_compiler.js');
+} = require('../security/directive_compiler');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const RUNS_DIR = process.env.AUTONOMY_SIM_RUNS_DIR

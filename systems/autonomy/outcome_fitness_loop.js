@@ -20,8 +20,8 @@
 
 const fs = require('fs');
 const path = require('path');
-const { listStrategies } = require('../../lib/strategy_resolver.js');
-const { normalizeRankingWeights } = require('../../lib/outcome_fitness.js');
+const { listStrategies } = require('../../lib/strategy_resolver');
+const { normalizeRankingWeights } = require('../../lib/outcome_fitness');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const RUNS_DIR = process.env.OUTCOME_FITNESS_RUNS_DIR

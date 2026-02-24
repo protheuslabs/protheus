@@ -5,12 +5,12 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { spawnSync } = require('child_process');
-const { getStopState } = require('../../lib/emergency_stop.js');
-const { resolveCatalogPath } = require('../../lib/eyes_catalog.js');
+const { getStopState } = require('../../lib/emergency_stop');
+const { resolveCatalogPath } = require('../../lib/eyes_catalog');
 const {
   deriveMetricsFromHealthPayload: deriveDriftTargetMetrics,
   evaluateWindow: evaluateDriftTargetWindow
-} = require('./drift_target_governor.js');
+} = require('./drift_target_governor');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 

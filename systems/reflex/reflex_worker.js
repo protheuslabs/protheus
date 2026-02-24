@@ -3,7 +3,7 @@
 
 const path = require('path');
 const { spawnSync } = require('child_process');
-const { evaluateLocalProviderGate } = require('../routing/provider_readiness.js');
+const { evaluateLocalProviderGate } = require('../routing/provider_readiness');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const ROUTER_SCRIPT = process.env.REFLEX_ROUTER_SCRIPT

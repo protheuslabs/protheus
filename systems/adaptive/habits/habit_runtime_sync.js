@@ -14,8 +14,8 @@
 
 const fs = require('fs');
 const path = require('path');
-const { readHabitState } = require('./habit_store.js');
-const { readRegistryWithUids, writeRegistryWithUids } = require('../../../habits/scripts/habit_uid_store.js');
+const { readHabitState } = require('./habit_store');
+const { readRegistryWithUids, writeRegistryWithUids } = require('../../../habits/scripts/habit_uid_store');
 
 const ROOT = path.resolve(__dirname, '..', '..', '..');
 const HABIT_REGISTRY_PATH = path.join(ROOT, 'habits', 'registry.json');

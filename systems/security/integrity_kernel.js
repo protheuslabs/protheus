@@ -18,7 +18,7 @@ const {
   DEFAULT_POLICY_PATH,
   verifyIntegrity,
   sealIntegrity
-} = require('../../lib/security_integrity.js');
+} = require('../../lib/security_integrity');
 
 function usage() {
   console.log('Usage:');

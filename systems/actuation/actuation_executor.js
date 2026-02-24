@@ -14,7 +14,7 @@
 const fs = require('fs');
 const path = require('path');
 const { writeContractReceipt } = require('../../lib/action_receipts');
-const { isEmergencyStopEngaged } = require('../../lib/emergency_stop.js');
+const { isEmergencyStopEngaged } = require('../../lib/emergency_stop');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const RECEIPTS_DIR = process.env.ACTUATION_RECEIPTS_DIR

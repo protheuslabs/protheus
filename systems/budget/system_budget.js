@@ -21,7 +21,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { loadActiveStrategy, strategyBudgetCaps } = require('../../lib/strategy_resolver.js');
+const { loadActiveStrategy, strategyBudgetCaps } = require('../../lib/strategy_resolver');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const GLOBAL_BUDGET_DEFAULT_DIR = path.join(REPO_ROOT, 'state', 'autonomy', 'daily_budget');

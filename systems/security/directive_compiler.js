@@ -4,7 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { parseYaml } = require('../../lib/directive_resolver.js');
+const { parseYaml } = require('../../lib/directive_resolver');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const DEFAULT_DIRECTIVES_DIR = path.join(REPO_ROOT, 'config', 'directives');

@@ -20,8 +20,8 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { mutateHabitState, readHabitState } = require('../adaptive/habits/habit_store.js');
-const { mutateReflexState, readReflexState } = require('../adaptive/reflex/reflex_store.js');
+const { mutateHabitState, readHabitState } = require('../adaptive/habits/habit_store');
+const { mutateReflexState, readReflexState } = require('../adaptive/reflex/reflex_store');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const PAIN_STATE_PATH = process.env.PAIN_SIGNAL_STATE_PATH

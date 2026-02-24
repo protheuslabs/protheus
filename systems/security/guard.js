@@ -32,10 +32,10 @@ const path = require("path");
 const {
   verifyIntegrity,
   appendIntegrityEvent
-} = require("../../lib/security_integrity.js");
+} = require("../../lib/security_integrity");
 const {
   verifySignedEnvelopeFromEnv
-} = require("../../lib/request_envelope.js");
+} = require("../../lib/request_envelope");
 
 const RISKY_ENV_TOGGLE_RULES = [
   { key: "AUTONOMY_ENABLED", mode: "truthy" },

@@ -107,7 +107,7 @@ function loadSimulation(dateStr, days, simulationPath) {
   if (fs.existsSync(simulationPath)) {
     return { payload: readJson(simulationPath), source: simulationPath, computed: false };
   }
-  const harness = require('./autonomy_simulation_harness.js');
+  const harness = require('./autonomy_simulation_harness');
   const payload = harness.computeSimulation(dateStr, days);
   return { payload, source: simulationPath, computed: true };
 }

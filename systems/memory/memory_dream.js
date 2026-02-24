@@ -15,7 +15,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { enforceMutationProvenance, recordMutationAudit } = require('../../lib/mutation_provenance.js');
+const { enforceMutationProvenance, recordMutationAudit } = require('../../lib/mutation_provenance');
 
 const SCRIPT_SOURCE = 'systems/memory/memory_dream.js';
 

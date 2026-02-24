@@ -118,7 +118,7 @@ function loadRecentTelemetry(hours = DEFAULT_HOURS, maxEvents = MAX_EVENTS) {
 
 function loadDirectiveSummary() {
   try {
-    const { loadActiveDirectives } = require('../../lib/directive_resolver.js');
+    const { loadActiveDirectives } = require('../../lib/directive_resolver');
     const rows = loadActiveDirectives();
     if (!Array.isArray(rows)) return [];
     return rows.map((row) => {
@@ -138,7 +138,7 @@ function loadDirectiveSummary() {
 
 function loadStrategySummary() {
   try {
-    const { loadActiveStrategy } = require('../../lib/strategy_resolver.js');
+    const { loadActiveStrategy } = require('../../lib/strategy_resolver');
     const s = loadActiveStrategy();
     const campaignsRaw = Array.isArray(s && s.campaigns) ? s.campaigns : [];
     const campaigns = campaignsRaw.map((c) => {

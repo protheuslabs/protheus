@@ -20,7 +20,7 @@ const fs = require('fs');
 const path = require('path');
 
 // v1.0: Import existing directive resolver
-const { loadActiveDirectives, mergeConstraints, validateAction } = require('../../lib/directive_resolver.js');
+const { loadActiveDirectives, mergeConstraints, validateAction } = require('../../lib/directive_resolver');
 
 // Trust registry path (for tamper detection)
 const TRUST_REGISTRY = path.join(__dirname, '..', '..', 'memory', 'trust', 'registry.json');

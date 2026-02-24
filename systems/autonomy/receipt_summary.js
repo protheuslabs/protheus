@@ -13,7 +13,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { successCriteriaFromReceipt } = require('../../lib/autonomy_receipt_schema.js');
+const { successCriteriaFromReceipt } = require('../../lib/autonomy_receipt_schema');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const AUTONOMY_RUNS_DIR = process.env.AUTONOMY_SUMMARY_RUNS_DIR

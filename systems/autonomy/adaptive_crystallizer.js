@@ -16,8 +16,8 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { readHabitState } = require('../adaptive/habits/habit_store.js');
-const { readReflexState } = require('../adaptive/reflex/reflex_store.js');
+const { readHabitState } = require('../adaptive/habits/habit_store');
+const { readReflexState } = require('../adaptive/reflex/reflex_store');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const LEGACY_HABITS_PATH = path.join(ROOT, 'habits', 'registry.json');
