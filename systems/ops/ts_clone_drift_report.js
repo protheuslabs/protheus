@@ -63,6 +63,18 @@ function tokenize(value) {
   return matches ? matches : [];
 }
 
+function isTsBootstrapWrapper(jsCode) {
+  const text = String(jsCode || '')
+    .replace(/\r\n/g, '\n')
+    .replace(/^#!.*\n/, '')
+    .trim();
+  if (!text) return false;
+  const withoutUseStrict = text
+    .replace(/^(['"])use strict\1;\s*/i, '')
+    .trim();
+  return /^require\((['"])(?:\.{1,2}\/)+lib\/ts_bootstrap\1\)\.bootstrap\(__filename,\s*module\);\s*$/m.test(withoutUseStrict);
+}
+
 function jaccard(left, right) {
   const setA = new Set(left);
   const setB = new Set(right);
@@ -177,6 +189,7 @@ function buildReport(roots) {
     const tsPath = path.join(ROOT, entry.ts);
     const jsCode = fs.readFileSync(jsPath, 'utf8');
     const tsCode = fs.readFileSync(tsPath, 'utf8');
+    const bootstrapWrapper = isTsBootstrapWrapper(jsCode);
     let transpiledTs = '';
     let transpileError = null;
 
@@ -186,7 +199,9 @@ function buildReport(roots) {
       transpileError = err instanceof Error ? err.message : String(err);
     }
 
-    const normalizedJs = normalizeCode(jsCode);
+    const normalizedJs = bootstrapWrapper
+      ? normalizeCode(transpiledTs || '')
+      : normalizeCode(jsCode);
     const normalizedTsJs = normalizeCode(transpiledTs);
     const similarity = transpileError
       ? 0
@@ -199,6 +214,7 @@ function buildReport(roots) {
       ts: entry.ts,
       exact,
       similarity,
+      bootstrap_wrapper: bootstrapWrapper,
       transpile_error: transpileError,
       js_hash: digest(normalizedJs),
       ts_hash: digest(normalizedTsJs),
