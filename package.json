@@ -3,6 +3,7 @@
     "test:ci": "node memory/tools/tests/run_ci_suite.js",
     "test:ci:stateful": "node memory/tools/tests/run_ci_suite.js --include-stateful",
     "typecheck:systems": "node systems/ops/typecheck_systems.js",
+    "ts:clone:drift": "node systems/ops/ts_clone_drift_report.js --write=state/ops/ts_clone_drift_report.json",
     "build:systems": "node systems/ops/build_systems.js",
     "build:systems:smoke": "node systems/ops/build_smoke.js",
     "build:systems:verify": "npm run build:systems && npm run build:systems:smoke",
