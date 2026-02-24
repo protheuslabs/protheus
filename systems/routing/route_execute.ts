@@ -18,7 +18,7 @@
 const { spawnSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
-const { isEmergencyStopEngaged } = require('../../lib/emergency_stop.js');
+const { isEmergencyStopEngaged } = require('../../lib/emergency_stop');
 const {
   GLOBAL_BUDGET_DEFAULT_DIR,
   DEFAULT_EVENTS_PATH,
@@ -27,7 +27,7 @@ const {
   loadSystemBudgetAutopauseState,
   writeSystemBudgetDecision,
   setSystemBudgetAutopause
-} = require('../budget/system_budget.js');
+} = require('../budget/system_budget');
 
 const ROUTE_EXECUTE_BUDGET_ENABLED = !['0', 'false', 'no', 'off'].includes(
   String(process.env.ROUTE_EXECUTE_BUDGET_ENABLED || '1').trim().toLowerCase()

@@ -22,7 +22,7 @@ export {};
 
 const fs = require('fs');
 const path = require('path');
-const { loadActiveStrategy, strategyBudgetCaps } = require('../../lib/strategy_resolver.js');
+const { loadActiveStrategy, strategyBudgetCaps } = require('../../lib/strategy_resolver');
 
 type AnyObj = Record<string, any>;
 

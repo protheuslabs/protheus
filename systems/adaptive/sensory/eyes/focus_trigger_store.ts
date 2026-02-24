@@ -1,14 +1,14 @@
 'use strict';
 
 const path = require('path');
-const { stableUid, randomUid, isAlnum } = require('../../../../lib/uid.js');
+const { stableUid, randomUid, isAlnum } = require('../../../../lib/uid');
 const {
   ADAPTIVE_ROOT,
   readJson,
   ensureJson,
   setJson,
   mutateJson
-} = require('../../core/layer_store.js');
+} = require('../../core/layer_store');
 
 const DEFAULT_REL_PATH = 'sensory/eyes/focus_triggers.json';
 const DEFAULT_ABS_PATH = path.join(ADAPTIVE_ROOT, DEFAULT_REL_PATH);

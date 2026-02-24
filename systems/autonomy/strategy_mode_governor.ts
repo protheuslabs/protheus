@@ -23,12 +23,12 @@ const {
   loadActiveStrategy,
   strategyExecutionMode,
   strategyPromotionPolicy
-} = require('../../lib/strategy_resolver.js');
-const { queueForApproval, loadQueue } = require('../../lib/approval_gate.js');
-const { loadOutcomeFitnessPolicy } = require('../../lib/outcome_fitness.js');
-const { summarizeForDate } = require('./receipt_summary.js');
-const { evaluateReadiness } = require('./strategy_readiness.js');
-const { evaluatePipelineSpcGate } = require('./pipeline_spc_gate.js');
+} = require('../../lib/strategy_resolver');
+const { queueForApproval, loadQueue } = require('../../lib/approval_gate');
+const { loadOutcomeFitnessPolicy } = require('../../lib/outcome_fitness');
+const { summarizeForDate } = require('./receipt_summary');
+const { evaluateReadiness } = require('./strategy_readiness');
+const { evaluatePipelineSpcGate } = require('./pipeline_spc_gate');
 
 type AnyObj = Record<string, any>;
 

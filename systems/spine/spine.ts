@@ -25,15 +25,15 @@ const { spawnSync } = require("child_process");
 const path = require("path");
 const fs = require("fs");
 const crypto = require("crypto");
-const { isEmergencyStopEngaged } = require("../../lib/emergency_stop.js");
-const { stampGuardEnv } = require("../../lib/request_envelope.js");
-const { compactCommandOutput } = require("../../lib/command_output_compactor.js");
+const { isEmergencyStopEngaged } = require("../../lib/emergency_stop");
+const { stampGuardEnv } = require("../../lib/request_envelope");
+const { compactCommandOutput } = require("../../lib/command_output_compactor");
 const {
   setSystemBudgetAutopause,
   clearSystemBudgetAutopause,
   loadSystemBudgetAutopauseState
-} = require("../budget/system_budget.js");
-const { computeEvidenceRunPlan } = require("./evidence_run_plan.js");
+} = require("../budget/system_budget");
+const { computeEvidenceRunPlan } = require("./evidence_run_plan");
 
 function arg(name) {
   const pref = `--${name}=`;

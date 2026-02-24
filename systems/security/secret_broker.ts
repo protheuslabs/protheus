@@ -4,7 +4,7 @@
 const {
   issueSecretHandle,
   resolveSecretHandle
-} = require('../../lib/secret_broker.js');
+} = require('../../lib/secret_broker');
 
 function usage() {
   console.log('Usage:');

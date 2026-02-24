@@ -18,7 +18,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 export {};
-const { writeContractReceipt } = require('../../lib/action_receipts.js');
+const { writeContractReceipt } = require('../../lib/action_receipts');
 const { beginChange, completeChange, recoverIfInterrupted, writeAtomicJson } = require('./self_change_failsafe');
 
 type AnyObj = Record<string, any>;

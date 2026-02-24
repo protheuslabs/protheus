@@ -21,8 +21,8 @@ export {};
 
 const fs = require('fs');
 const path = require('path');
-const { listStrategies } = require('../../lib/strategy_resolver.js');
-const { normalizeRankingWeights } = require('../../lib/outcome_fitness.js');
+const { listStrategies } = require('../../lib/strategy_resolver');
+const { normalizeRankingWeights } = require('../../lib/outcome_fitness');
 
 type AnyObj = Record<string, any>;
 

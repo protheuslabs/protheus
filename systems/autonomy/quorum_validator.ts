@@ -13,7 +13,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { evaluateProposalQuorum } = require('../../lib/quorum_validator.js');
+const { evaluateProposalQuorum } = require('../../lib/quorum_validator');
 
 function usage() {
   console.log('Usage:');

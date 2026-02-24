@@ -3,7 +3,7 @@ export {};
 
 const fs = require('fs');
 const path = require('path');
-const { loadOutcomeFitnessPolicy } = require('./outcome_fitness.js');
+const { loadOutcomeFitnessPolicy } = require('./outcome_fitness');
 
 type AnyObj = Record<string, any>;
 

@@ -20,8 +20,8 @@ const fs = require('fs');
 const path = require('path');
 
 // v1.1: Import directive gate for T0/T1 enforcement
-const { evaluateTask, logGateDecision } = require('../security/directive_gate.js');
-const { isEmergencyStopEngaged } = require('../../lib/emergency_stop.js');
+const { evaluateTask, logGateDecision } = require('../security/directive_gate');
+const { isEmergencyStopEngaged } = require('../../lib/emergency_stop');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const REGISTRY_PATH = path.join(REPO_ROOT, 'habits', 'registry.json');
@@ -198,7 +198,7 @@ function compactRouteMeta(routeMeta) {
 function tryRouteModel({ gateRisk, complexity, intent, task, mode, forceModel, tokensEst, executionIntent = false }) {
   try {
     // Lazy require keeps route_task resilient if router file is missing.
-    const { routeDecision } = require('../../systems/routing/model_router.js');
+    const { routeDecision } = require('../../systems/routing/model_router');
     const risk = gateRisk || 'medium';
     return routeDecision({
       risk,

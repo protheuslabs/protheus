@@ -16,8 +16,8 @@ const {
   loadActiveStrategy,
   strategyExecutionMode,
   strategyPromotionPolicy
-} = require('../../lib/strategy_resolver.js');
-const { summarizeForDate } = require('./receipt_summary.js');
+} = require('../../lib/strategy_resolver');
+const { summarizeForDate } = require('./receipt_summary');
 
 function usage() {
   console.log('Usage:');

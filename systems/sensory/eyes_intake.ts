@@ -19,9 +19,9 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
-const { loadActiveDirectives } = require('../../lib/directive_resolver.js');
-const { resolveCatalogPath, ensureCatalog, setCatalog } = require('../../lib/eyes_catalog.js');
-const { randomUid } = require('../../lib/uid.js');
+const { loadActiveDirectives } = require('../../lib/directive_resolver');
+const { resolveCatalogPath, ensureCatalog, setCatalog } = require('../../lib/eyes_catalog');
+const { randomUid } = require('../../lib/uid');
 
 const WORKSPACE_DIR = path.join(__dirname, '..', '..');
 const CONFIG_PATH = resolveCatalogPath(WORKSPACE_DIR);

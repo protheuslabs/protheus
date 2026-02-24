@@ -14,7 +14,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { summarizeForDate } = require('./receipt_summary.js');
+const { summarizeForDate } = require('./receipt_summary');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const PROPOSALS_DIR = process.env.AUTONOMY_SPC_PROPOSALS_DIR
