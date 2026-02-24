@@ -1,9 +1,9 @@
 {
   "version": "1.0",
-  "updated_ts": "2026-02-23T23:10:35.336Z",
-  "fail_streak": 35,
+  "updated_ts": "2026-02-23T23:36:59.675Z",
+  "fail_streak": 47,
   "last_ok_ts": "2026-02-23T17:23:42.677Z",
-  "last_fail_ts": "2026-02-23T23:10:35.336Z",
+  "last_fail_ts": "2026-02-23T23:36:59.675Z",
   "last_reason": "real_external_items",
   "last_pause_ts": null,
   "paused_eyes_last_run": []

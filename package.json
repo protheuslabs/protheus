@@ -10,6 +10,7 @@
     "autophagy:enqueue": "node systems/autonomy/non_yield_enqueue.js run",
     "autophagy:cycle": "node systems/autonomy/non_yield_cycle.js run",
     "autophagy:trial:status": "node systems/autonomy/non_yield_cycle.js status --queue=0 --write=0",
+    "autonomy:physiology:map": "node systems/autonomy/physiology_opportunity_map.js run",
     "impact:start": "node systems/autonomy/lever_experiment_gate.js start",
     "impact:evaluate": "node systems/autonomy/lever_experiment_gate.js evaluate",
     "impact:scope": "node systems/autonomy/lever_experiment_gate.js scope",
