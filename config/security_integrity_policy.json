@@ -46,7 +46,7 @@
     "systems/security/policy_rootd.js": "8801285009208271da55dba25b1a8b0da07b5aa9043327c1a1d54b3e4ffae97d",
     "systems/security/repo_hygiene_guard.js": "b08801c2688f86496c30d28f960489795c399971dc23115cf47fedee7d90003a",
     "systems/security/request_ingress.js": "15f44f2633615a73c9afb29d4d2461e65d66feb7f4c79a9e0a04bcc6acae346b",
-    "systems/security/schema_contract_check.js": "2bb53dab6a7357ffc943551342015b4fcb1b69e880bcced7391fdad32ee182f5",
+    "systems/security/schema_contract_check.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/secret_broker.js": "23885d50a70652d06fadcb394b2b7b0479f5ec641e3b11663903126f3e909546",
     "systems/security/skill_install_enforcer.js": "f97f0310cc2f8d88fbe79fc8430ef6341de87dbe3ada0de2742bd8f6ff035925",
     "systems/security/skill_quarantine.js": "4fd57a207a558a0fc079a2ce2477100bb9e5d0aec15b6a4bcbd7a7ae71963947",
@@ -54,7 +54,7 @@
     "systems/security/workspace_dump_guard.js": "fa94a0e44f65203cae3fc1c6dc8c20ce0199710d3be6867e1b7821eb825859c3",
     "systems/sensory/adaptive_layer_guard.js": "5443d35d5a28c918ec374f1d01b88edac9546233276bdc86e2a677543f52461a"
   },
-  "sealed_at": "2026-02-24T01:16:58.118Z",
+  "sealed_at": "2026-02-24T01:24:56.295Z",
   "sealed_by": "jay",
-  "last_approval_note": "ts shim migration for directive intake"
+  "last_approval_note": "ts shim migration for schema contract check"
 }
