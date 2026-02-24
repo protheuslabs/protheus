@@ -29,7 +29,7 @@
     "lib/eyes_catalog.js": "a287c365cea16fd339fbf12a005949bb44e9fdf41a5887b28e20256595924cbe",
     "systems/adaptive/core/layer_store.js": "5eba699acf3b07abc44442c27d5dc2cc96bdf3f06b5cbdf6a8979eed4384b3e7",
     "systems/adaptive/sensory/eyes/catalog_store.js": "15782561fb6bf63001fc75cd57f089c5737036729e9efbf44a796e8c3baa3ad9",
-    "systems/security/architecture_guard.js": "5bf2d44483d7c84afa3cdff927fb2332961185e6fd78b2caddc1cc8322dc3d66",
+    "systems/security/architecture_guard.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/capability_lease.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/directive_compiler.js": "17c6c2fd896a88e795cbe1f29e8b4e756f57357c8bc9ae8ca2faae741f21c0a0",
     "systems/security/directive_gate.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
@@ -54,7 +54,7 @@
     "systems/security/workspace_dump_guard.js": "fa94a0e44f65203cae3fc1c6dc8c20ce0199710d3be6867e1b7821eb825859c3",
     "systems/sensory/adaptive_layer_guard.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2"
   },
-  "sealed_at": "2026-02-24T02:50:01.379Z",
+  "sealed_at": "2026-02-24T03:27:45.232Z",
   "sealed_by": "jay",
-  "last_approval_note": "ts shim migration for egress, secret broker, and catalog store"
+  "last_approval_note": "ts-migration architecture_guard wrapper parity"
 }
