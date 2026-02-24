@@ -50,11 +50,11 @@
     "systems/security/secret_broker.js": "23885d50a70652d06fadcb394b2b7b0479f5ec641e3b11663903126f3e909546",
     "systems/security/skill_install_enforcer.js": "f97f0310cc2f8d88fbe79fc8430ef6341de87dbe3ada0de2742bd8f6ff035925",
     "systems/security/skill_quarantine.js": "4fd57a207a558a0fc079a2ce2477100bb9e5d0aec15b6a4bcbd7a7ae71963947",
-    "systems/security/startup_attestation.js": "1915618dbe23e1f600986f3545ee1525bf67f0d84fe09258601b56fdead08e0d",
+    "systems/security/startup_attestation.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/workspace_dump_guard.js": "fa94a0e44f65203cae3fc1c6dc8c20ce0199710d3be6867e1b7821eb825859c3",
     "systems/sensory/adaptive_layer_guard.js": "5443d35d5a28c918ec374f1d01b88edac9546233276bdc86e2a677543f52461a"
   },
-  "sealed_at": "2026-02-24T01:45:34.610Z",
+  "sealed_at": "2026-02-24T01:54:55.805Z",
   "sealed_by": "jay",
-  "last_approval_note": "ts shim migration for directive resolver"
+  "last_approval_note": "ts shim migration for startup attestation"
 }
