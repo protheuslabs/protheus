@@ -661,6 +661,26 @@ function strategyRankingWeights(strategy) {
   return strategy.ranking_weights;
 }
 
+function strategyCampaigns(strategy: AnyObj, activeOnly: boolean = false): AnyObj[] {
+  const rows = Array.isArray(strategy && strategy.campaigns) ? strategy.campaigns : [];
+  const out: AnyObj[] = [];
+  for (const row of rows) {
+    if (!row || typeof row !== 'object') continue;
+    const id = asString(row.id).toLowerCase();
+    if (!id) continue;
+    const status = normalizeStatus((row as AnyObj).status);
+    if (activeOnly && status !== 'active') continue;
+    const objectiveId = asString((row as AnyObj).objective_id || (row as AnyObj).directive_ref);
+    out.push({
+      ...(row as AnyObj),
+      id,
+      status,
+      objective_id: objectiveId || null
+    });
+  }
+  return out;
+}
+
 function strategyAllowsProposalType(strategy, proposalType) {
   if (!strategy || !strategy.admission_policy) return true;
   const type = asString(proposalType).toLowerCase();
@@ -717,6 +737,7 @@ module.exports = {
   strategyBudgetCaps,
   strategyExplorationPolicy,
   strategyRankingWeights,
+  strategyCampaigns,
   strategyAllowsProposalType,
   strategyPromotionPolicy,
   strategyMaxRiskPerAction,

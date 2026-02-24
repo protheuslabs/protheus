@@ -8,7 +8,8 @@
       "status": "probation",
       "cadence_hours": 24,
       "allowed_domains": [
-        "example.com"
+        "example.com",
+        "medium.com"
       ],
       "budgets": {
         "max_items": 10,
@@ -27,7 +28,7 @@
       "score_ema": 50,
       "notes": "Generated via eyes_intake for T1_generational_wealth_v1",
       "created_ts": "2026-02-24T00:29:30.456Z",
-      "updated_ts": "2026-02-24T00:29:30.741Z",
+      "updated_ts": "2026-02-24T17:24:25.847Z",
       "parser_options": {
         "url": "https://www.reddit.com/r/AI_Agents/new/.rss",
         "title": "r/AI_Agents"
