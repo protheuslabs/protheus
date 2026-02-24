@@ -63,6 +63,15 @@ function main() {
     process.exit(typecheck.status || 1);
   }
 
+  console.log('=== CI SUITE: ts_clone_drift_guard ===');
+  const tsCloneGuard = runNode(['systems/ops/ts_clone_drift_guard.js', '--baseline=config/ts_clone_drift_baseline.json']);
+  printOutput('  ', tsCloneGuard.stdout);
+  printOutput('  ', tsCloneGuard.stderr);
+  if (!tsCloneGuard.ok) {
+    console.error(`ts_clone_drift_guard failed (exit ${tsCloneGuard.status})`);
+    process.exit(tsCloneGuard.status || 1);
+  }
+
   console.log('=== CI SUITE: contract_check ===');
   const contract = runNode(['systems/spine/contract_check.js']);
   printOutput('  ', contract.stdout);
