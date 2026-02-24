@@ -32,7 +32,7 @@
     "systems/security/architecture_guard.js": "5bf2d44483d7c84afa3cdff927fb2332961185e6fd78b2caddc1cc8322dc3d66",
     "systems/security/capability_lease.js": "00cb9e14341768678749ef51fff4cb38bde41115777c5780121db50686d647d2",
     "systems/security/directive_compiler.js": "17c6c2fd896a88e795cbe1f29e8b4e756f57357c8bc9ae8ca2faae741f21c0a0",
-    "systems/security/directive_gate.js": "2b6e610f8b0be0dfa468587d2e58aed67f5471bcb31204be3d317b0210e01458",
+    "systems/security/directive_gate.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/directive_hierarchy_controller.js": "32afdb8107864200628427d2fae14f8ce67414519555e8002df0b76f2c2c36df",
     "systems/security/directive_intake.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/egress_gateway.js": "8d982011923ddf706eb70c318a377119ac1f67d6495ad39af0b5de40a8af6174",
@@ -49,12 +49,12 @@
     "systems/security/schema_contract_check.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/secret_broker.js": "23885d50a70652d06fadcb394b2b7b0479f5ec641e3b11663903126f3e909546",
     "systems/security/skill_install_enforcer.js": "f97f0310cc2f8d88fbe79fc8430ef6341de87dbe3ada0de2742bd8f6ff035925",
-    "systems/security/skill_quarantine.js": "4fd57a207a558a0fc079a2ce2477100bb9e5d0aec15b6a4bcbd7a7ae71963947",
+    "systems/security/skill_quarantine.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/startup_attestation.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/workspace_dump_guard.js": "fa94a0e44f65203cae3fc1c6dc8c20ce0199710d3be6867e1b7821eb825859c3",
     "systems/sensory/adaptive_layer_guard.js": "5443d35d5a28c918ec374f1d01b88edac9546233276bdc86e2a677543f52461a"
   },
-  "sealed_at": "2026-02-24T01:54:55.805Z",
+  "sealed_at": "2026-02-24T01:59:08.645Z",
   "sealed_by": "jay",
-  "last_approval_note": "ts shim migration for startup attestation"
+  "last_approval_note": "ts shim migration for directive gate and skill quarantine"
 }
