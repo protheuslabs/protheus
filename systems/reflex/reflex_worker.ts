@@ -3,6 +3,7 @@
 
 const path = require('path');
 const { spawnSync } = require('child_process');
+const { evaluateLocalProviderGate } = require('../routing/provider_readiness');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const ROUTER_SCRIPT = process.env.REFLEX_ROUTER_SCRIPT
@@ -69,8 +70,14 @@ function once(args) {
     '--route_class=reflex',
     `--tokens_est=${tokensEst}`
   ];
-
-  const r = spawnSync('node', routeArgs, { cwd: REPO_ROOT, encoding: 'utf8' });
+  const providerGate = evaluateLocalProviderGate('ollama/smallthinker', {
+    source: 'reflex_worker'
+  });
+  const providerDown = providerGate.applicable === true && providerGate.available !== true;
+  const childEnv = providerDown
+    ? { ...process.env, ROUTER_T1_LOCAL_FIRST: '0' }
+    : process.env;
+  const r = spawnSync('node', routeArgs, { cwd: REPO_ROOT, encoding: 'utf8', env: childEnv });
   const decision = safeJson(r.stdout);
 
   process.stdout.write(JSON.stringify({
@@ -78,6 +85,17 @@ function once(args) {
     worker_id: workerId,
     task: task.slice(0, 160),
     tokens_est: tokensEst,
+    local_provider_gate: providerGate && providerGate.applicable === true
+      ? {
+          provider: providerGate.provider || 'ollama',
+          available: providerGate.available === true,
+          reason: providerGate.reason || null,
+          source: providerGate.source || null,
+          circuit_open: providerGate.circuit_open === true,
+          circuit_open_until_ts: providerGate.circuit_open_until_ts || null
+        }
+      : null,
+    local_provider_forced_cloud_bias: providerDown,
     route: decision,
     stderr: String(r.stderr || '').trim().slice(0, 240)
   }) + '\n');
