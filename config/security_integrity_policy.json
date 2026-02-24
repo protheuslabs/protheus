@@ -25,7 +25,7 @@
     "config/directives/T1_generational_wealth_v1.yaml": "def757e86e8136c75766e35098414c8b8ca7b1f75707c4c9c3f474b35da78107",
     "config/directives/T1_make_jay_billionaire_v1.yaml": "e9a9082270763dc429b1b032c7f7c606c4a47e7cc252a3f501ac1ef975c7deb0",
     "config/directives/T1_northstars.yaml": "dbababba9f2dc49b0d24ada4a1a70117cdafe0767ba2ec4a69ec7f80c1721610",
-    "lib/directive_resolver.js": "d3363ffb364a49ccb3d8cce1dcd49f86f9f3ca0bbdad15953916390db38f292b",
+    "lib/directive_resolver.js": "7cb0308999d849521a360618e233c19d0e748c0ab806ff29c6e0ad583810b9b7",
     "lib/eyes_catalog.js": "a287c365cea16fd339fbf12a005949bb44e9fdf41a5887b28e20256595924cbe",
     "systems/adaptive/core/layer_store.js": "22f78afc925fee3fdad2d76745b6904be8767baebe72ef27e0b829bf9501d8b8",
     "systems/adaptive/sensory/eyes/catalog_store.js": "c08bc6525b469843fad83b1a680e862097505e8ccf49114cd138e047a6395db3",
@@ -54,7 +54,7 @@
     "systems/security/workspace_dump_guard.js": "fa94a0e44f65203cae3fc1c6dc8c20ce0199710d3be6867e1b7821eb825859c3",
     "systems/sensory/adaptive_layer_guard.js": "5443d35d5a28c918ec374f1d01b88edac9546233276bdc86e2a677543f52461a"
   },
-  "sealed_at": "2026-02-24T01:24:56.295Z",
+  "sealed_at": "2026-02-24T01:45:34.610Z",
   "sealed_by": "jay",
-  "last_approval_note": "ts shim migration for schema contract check"
+  "last_approval_note": "ts shim migration for directive resolver"
 }
