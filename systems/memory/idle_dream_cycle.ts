@@ -19,9 +19,9 @@ export {};
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
-const { stableUid } = require('../../lib/uid.js');
-const { listLocalOllamaModels, runLocalOllamaPrompt, stripAnsi } = require('../routing/llm_gateway.js');
-const { enforceMutationProvenance, recordMutationAudit } = require('../../lib/mutation_provenance.js');
+const { stableUid } = require('../../lib/uid');
+const { listLocalOllamaModels, runLocalOllamaPrompt, stripAnsi } = require('../routing/llm_gateway');
+const { enforceMutationProvenance, recordMutationAudit } = require('../../lib/mutation_provenance');
 const {
   DEFAULT_STATE_DIR: GLOBAL_BUDGET_STATE_DIR,
   DEFAULT_EVENTS_PATH: GLOBAL_BUDGET_EVENTS_PATH,
@@ -30,7 +30,7 @@ const {
   loadSystemBudgetAutopauseState,
   setSystemBudgetAutopause,
   evaluateSystemBudgetGuard
-} = require('../budget/system_budget.js');
+} = require('../budget/system_budget');
 
 type AnyObj = Record<string, any>;
 

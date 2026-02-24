@@ -19,7 +19,7 @@ const {
   stampGuardEnv,
   normalizeKeyId,
   secretKeyEnvVarName
-} = require('../../lib/request_envelope.js');
+} = require('../../lib/request_envelope');
 
 function usage() {
   console.log('Usage:');

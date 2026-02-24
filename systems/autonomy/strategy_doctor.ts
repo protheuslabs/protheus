@@ -12,7 +12,7 @@ const {
   strategyMaxRiskPerAction,
   strategyDuplicateWindowHours,
   strategyCanaryDailyExecLimit
-} = require('../../lib/strategy_resolver.js');
+} = require('../../lib/strategy_resolver');
 
 function usage() {
   console.log('Usage:');

@@ -23,22 +23,22 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { spawnSync } = require('child_process');
-const { loadActiveDirectives } = require('../../lib/directive_resolver.js');
-const { writeContractReceipt } = require('../../lib/action_receipts.js');
-const { isEmergencyStopEngaged } = require('../../lib/emergency_stop.js');
-const { compactCommandOutput } = require('../../lib/command_output_compactor.js');
+const { loadActiveDirectives } = require('../../lib/directive_resolver');
+const { writeContractReceipt } = require('../../lib/action_receipts');
+const { isEmergencyStopEngaged } = require('../../lib/emergency_stop');
+const { compactCommandOutput } = require('../../lib/command_output_compactor');
 const {
   loadOutcomeFitnessPolicy,
   proposalTypeThresholdOffsetsFor
-} = require('../../lib/outcome_fitness.js');
-const { evaluateSuccessCriteria } = require('../../lib/success_criteria_verifier.js');
+} = require('../../lib/outcome_fitness');
+const { evaluateSuccessCriteria } = require('../../lib/success_criteria_verifier');
 const {
   toSuccessCriteriaRecord,
   withSuccessCriteriaVerification,
   normalizeAutonomyReceiptForWrite
-} = require('../../lib/autonomy_receipt_schema.js');
-const { resolveCatalogPath } = require('../../lib/eyes_catalog.js');
-const { evaluatePipelineSpcGate } = require('./pipeline_spc_gate.js');
+} = require('../../lib/autonomy_receipt_schema');
+const { resolveCatalogPath } = require('../../lib/eyes_catalog');
+const { evaluatePipelineSpcGate } = require('./pipeline_spc_gate');
 const {
   loadActiveStrategy,
   applyThresholdOverrides,
@@ -51,18 +51,18 @@ const {
   strategyMaxRiskPerAction,
   strategyDuplicateWindowHours,
   strategyCanaryDailyExecLimit
-} = require('../../lib/strategy_resolver.js');
+} = require('../../lib/strategy_resolver');
 const {
   annotateCampaignPriority,
   buildCampaignDecompositionPlans
-} = require('../../lib/strategy_campaign_scheduler.js');
-const { classifyProposalType } = require('../../lib/proposal_type_classifier.js');
+} = require('../../lib/strategy_campaign_scheduler');
+const { classifyProposalType } = require('../../lib/proposal_type_classifier');
 const {
   evaluateTier1Governance,
   classifyAndRecordException,
   summarizeExceptionMemory,
   exceptionRecoveryDecision
-} = require('./tier1_governance.js');
+} = require('./tier1_governance');
 const {
   DEFAULT_STATE_DIR: GLOBAL_BUDGET_STATE_DIR,
   loadSystemBudgetState,
@@ -71,11 +71,11 @@ const {
   writeSystemBudgetDecision,
   loadSystemBudgetAutopauseState,
   setSystemBudgetAutopause
-} = require('../budget/system_budget.js');
+} = require('../budget/system_budget');
 const {
   startPainFocusSession,
   stopPainFocusSession
-} = require('./pain_signal.js');
+} = require('./pain_signal');
 
 type AnyObj = Record<string, any>;
 

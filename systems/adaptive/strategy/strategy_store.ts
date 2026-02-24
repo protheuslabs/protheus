@@ -3,14 +3,14 @@ export {};
 
 const path = require('path');
 const crypto = require('crypto');
-const { stableUid, randomUid, isAlnum } = require('../../../lib/uid.js');
+const { stableUid, randomUid, isAlnum } = require('../../../lib/uid');
 const {
   ADAPTIVE_ROOT,
   readJson,
   ensureJson,
   setJson,
   mutateJson
-} = require('../core/layer_store.js');
+} = require('../core/layer_store');
 
 type AnyObj = Record<string, any>;
 

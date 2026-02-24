@@ -16,7 +16,7 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
-const { loadActiveStrategy, strategyExecutionMode } = require('../../lib/strategy_resolver.js');
+const { loadActiveStrategy, strategyExecutionMode } = require('../../lib/strategy_resolver');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const READINESS_SCRIPT = path.join(REPO_ROOT, 'systems', 'autonomy', 'strategy_readiness.js');

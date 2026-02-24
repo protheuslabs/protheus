@@ -14,8 +14,8 @@
 
 const fs = require('fs');
 const path = require('path');
-const { listStrategies } = require('../../lib/strategy_resolver.js');
-const { stableUid, isAlnum } = require('../../lib/uid.js');
+const { listStrategies } = require('../../lib/strategy_resolver');
+const { stableUid, isAlnum } = require('../../lib/uid');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const RUNS_DIR = process.env.STRATEGY_LEARNER_RUNS_DIR

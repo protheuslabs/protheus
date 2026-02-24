@@ -21,7 +21,7 @@ const {
   verifyIntegrity,
   sealIntegrity,
   collectPresentProtectedFiles
-} = require('../../lib/security_integrity.js');
+} = require('../../lib/security_integrity');
 
 type AnyObj = Record<string, any>;
 

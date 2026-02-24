@@ -24,7 +24,7 @@ const {
   writeSystemBudgetDecision,
   setSystemBudgetAutopause,
   clearSystemBudgetAutopause
-} = require("../budget/system_budget.js");
+} = require("../budget/system_budget");
 
 type AnyObj = Record<string, any>;
 

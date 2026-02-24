@@ -18,8 +18,8 @@
 
 const fs = require('fs');
 const path = require('path');
-const { stableUid } = require('../../lib/uid.js');
-const { enforceMutationProvenance, recordMutationAudit } = require('../../lib/mutation_provenance.js');
+const { stableUid } = require('../../lib/uid');
+const { enforceMutationProvenance, recordMutationAudit } = require('../../lib/mutation_provenance');
 
 const SCRIPT_SOURCE = 'systems/memory/creative_links.js';
 

@@ -18,7 +18,7 @@ const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
 const { spawnSync } = require('child_process');
-const { validateTier1DirectiveQuality } = require('../../lib/directive_resolver.js');
+const { validateTier1DirectiveQuality } = require('../../lib/directive_resolver');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 

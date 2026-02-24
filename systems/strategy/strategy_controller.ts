@@ -42,7 +42,7 @@ const {
   materializeFromQueue,
   touchProfileUsage,
   gcProfiles
-} = require('../adaptive/strategy/strategy_store.js');
+} = require('../adaptive/strategy/strategy_store');
 
 type AnyObj = Record<string, any>;
 

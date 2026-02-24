@@ -148,7 +148,7 @@ const benchmarkResults = {
 // Add regression tests at the end
 console.log('=== REGRESSION TESTS ===\n');
 
-const { redactSecretsOnly } = require('./tool_response_compactor.js');
+const { redactSecretsOnly } = require('./tool_response_compactor');
 
 // TEST 1 - Redaction
 console.log('[TEST 1] Redaction of secrets...');
@@ -197,7 +197,7 @@ console.log(`  Compaction occurred: ${integrationResult.compacted ? '✅' : '❌
 
 // TEST 3 - execCompacted() wrapper + redaction
 console.log('\n[TEST 3] execCompacted() wrapper redaction...');
-const { execCompacted } = require('./exec_compacted.js');
+const { execCompacted } = require('./exec_compacted');
 
 (async () => {
   const testCmd = `echo "API call with token moltbook_sk_TEST1234567890ABCDEF1234567890ABCDEF1234567890

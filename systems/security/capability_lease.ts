@@ -13,7 +13,7 @@
  *   node systems/security/capability_lease.js --help
  */
 
-const { issueLease, verifyLease, LEASE_STATE_PATH, LEASE_AUDIT_PATH } = require('../../lib/capability_lease.js');
+const { issueLease, verifyLease, LEASE_STATE_PATH, LEASE_AUDIT_PATH } = require('../../lib/capability_lease');
 
 function usage() {
   console.log('Usage:');

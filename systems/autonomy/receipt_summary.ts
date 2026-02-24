@@ -14,7 +14,7 @@ export {};
 
 const fs = require('fs');
 const path = require('path');
-const { successCriteriaFromReceipt } = require('../../lib/autonomy_receipt_schema.js');
+const { successCriteriaFromReceipt } = require('../../lib/autonomy_receipt_schema');
 
 type AnyObj = Record<string, any>;
 

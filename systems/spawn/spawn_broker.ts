@@ -34,7 +34,7 @@ const {
   loadSystemBudgetAutopauseState,
   setSystemBudgetAutopause,
   evaluateSystemBudgetGuard
-} = require('../budget/system_budget.js');
+} = require('../budget/system_budget');
 
 type AnyObj = Record<string, any>;
 

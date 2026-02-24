@@ -16,7 +16,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { evaluateStrategicAlignment } = require('./tier1_governance.js');
+const { evaluateStrategicAlignment } = require('./tier1_governance');
 
 type AnyObj = Record<string, any>;
 

@@ -16,7 +16,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { enforceMutationProvenance, recordMutationAudit } = require('../../lib/mutation_provenance.js');
+const { enforceMutationProvenance, recordMutationAudit } = require('../../lib/mutation_provenance');
 
 const SCRIPT_SOURCE = 'systems/memory/failure_memory_bridge.js';
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
