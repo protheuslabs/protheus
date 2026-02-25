@@ -548,5 +548,6 @@ if (require.main === module) {
 module.exports = {
   loadRegistry,
   applyDrafts,
-  mergeDrafts
+  mergeDrafts,
+  main
 };

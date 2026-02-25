@@ -13,7 +13,8 @@ Applied workflows are stored in:
 
 Controllers:
 - `node systems/workflow/workflow_generator.js run [YYYY-MM-DD]`
-- `node systems/workflow/workflow_controller.js run [YYYY-MM-DD] --apply=1`
+- `node systems/workflow/orchestron_controller.js run [YYYY-MM-DD] --apply=1` (preferred entrypoint)
+- `node systems/workflow/workflow_controller.js run [YYYY-MM-DD] --apply=1` (legacy-compatible)
 - `node systems/workflow/orchestron/adaptive_controller.js run [YYYY-MM-DD] --intent="..."` (intent -> candidates -> nursery scorecards)
 
 Orchestron integration defaults to shadow mode in `config/orchestron_policy.json`:

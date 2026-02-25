@@ -793,6 +793,12 @@ function main() {
     ["workflow_controller.js", "run", "list", "status", "--apply", "--days", "--max", "--policy", "--orchestron", "--orchestron-apply", "--orchestron-auto", "--intent"]
   );
 
+  // orchestron_controller.js is the branded alias entrypoint for workflow_controller.
+  checkScript(
+    "systems/workflow/orchestron_controller.js",
+    ["workflow_controller.js", "run", "list", "status", "--apply", "--days", "--max", "--policy", "--orchestron", "--orchestron-apply", "--orchestron-auto", "--intent"]
+  );
+
   // orchestron adaptive_controller.js runs intent->candidate->nursery scorecard cycles.
   checkScript(
     "systems/workflow/orchestron/adaptive_controller.js",

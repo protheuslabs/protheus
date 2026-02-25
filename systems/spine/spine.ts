@@ -1122,6 +1122,7 @@ function main() {
     "systems/autonomy/observer_mirror.js",
     "systems/strategy/strategy_principles.js",
     "systems/workflow/workflow_generator.js",
+    "systems/workflow/orchestron_controller.js",
     "systems/workflow/workflow_controller.js",
     "systems/nursery/nursery_bootstrap.js",
     "systems/actuation/claw_registry.js",
@@ -2581,7 +2582,7 @@ function main() {
       const workflowMax = Math.max(1, Number(process.env.SPINE_WORKFLOW_LAYER_MAX || 8) || 8);
       const workflowApply = String(process.env.SPINE_WORKFLOW_LAYER_APPLY || "1") !== "0" ? "1" : "0";
       const workflow = runJson("node", [
-        "systems/workflow/workflow_controller.js",
+        "systems/workflow/orchestron_controller.js",
         "run",
         dateStr,
         `--days=${workflowDays}`,
