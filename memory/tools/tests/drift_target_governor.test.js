@@ -61,6 +61,9 @@ function run() {
   assert.strictEqual(day1.decision.action, 'hold');
   assert.strictEqual(day1.decision.reason, 'good_window');
   assert.strictEqual(Number(day1.state.current_target_rate), 0.03);
+  assert.ok(day1.decision.trit_shadow && day1.decision.trit_shadow.enabled === true, 'day1 should include trit shadow');
+  assert.strictEqual(day1.decision.trit_shadow.action, 'tighten', 'day1 trit shadow should prefer tighten');
+  assert.strictEqual(day1.decision.trit_shadow.divergence, true, 'day1 trit shadow should record divergence from legacy hold');
 
   const day2 = evaluateWindow({
     source: 'test',
@@ -76,6 +79,9 @@ function run() {
   });
   assert.strictEqual(day2.decision.action, 'tighten');
   assert.strictEqual(Number(day2.state.current_target_rate), 0.0285);
+  assert.ok(day2.trit_shadow && day2.trit_shadow.enabled === true, 'day2 result should expose trit shadow');
+  assert.strictEqual(day2.decision.trit_shadow.action, 'tighten', 'day2 trit shadow should tighten');
+  assert.strictEqual(day2.decision.trit_shadow.divergence, false, 'day2 trit shadow should match legacy action');
 
   const replay = evaluateWindow({
     source: 'test',
@@ -106,6 +112,8 @@ function run() {
   });
   assert.strictEqual(day3.decision.action, 'loosen');
   assert.strictEqual(Number(day3.state.current_target_rate), 0.031);
+  assert.strictEqual(day3.decision.trit_shadow.action, 'loosen', 'day3 trit shadow should loosen');
+  assert.strictEqual(day3.decision.trit_shadow.divergence, false, 'day3 trit shadow should match legacy action');
 
   const derived = deriveMetricsFromHealthPayload({
     autonomy: {

@@ -1,0 +1,59 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "semantics": {
+    "locked": true,
+    "neutral_on_missing": true,
+    "min_non_neutral_signals": 1,
+    "min_non_neutral_weight": 0.9,
+    "min_confidence_for_non_neutral": 0.3
+  },
+  "trust": {
+    "enabled": true,
+    "default_source_trust": 1,
+    "source_trust_floor": 0.6,
+    "source_trust_ceiling": 1.5,
+    "freshness_half_life_hours": 72
+  },
+  "influence": {
+    "stage": 0,
+    "min_confidence_stage2": 0.78,
+    "min_confidence_stage3": 0.85,
+    "max_overrides_per_day": 3,
+    "auto_disable_hours_on_regression": 24,
+    "auto_stage": {
+      "enabled": true,
+      "mode": "floor",
+      "stage2": {
+        "consecutive_reports": 3,
+        "min_decisions": 20,
+        "max_divergence_rate": 0.08,
+        "min_calibration_events": 20,
+        "min_calibration_accuracy": 0.55,
+        "max_calibration_ece": 0.25,
+        "require_success_criteria_pass": false,
+        "require_safety_pass": true,
+        "require_drift_non_increasing": true
+      },
+      "stage3": {
+        "consecutive_reports": 6,
+        "min_decisions": 40,
+        "max_divergence_rate": 0.05,
+        "min_calibration_events": 40,
+        "min_calibration_accuracy": 0.65,
+        "max_calibration_ece": 0.2,
+        "require_success_criteria_pass": true,
+        "require_safety_pass": true,
+        "require_drift_non_increasing": true
+      }
+    }
+  },
+  "adaptation": {
+    "enabled": true,
+    "cadence_days": 7,
+    "min_samples_per_source": 6,
+    "reward_step": 0.04,
+    "penalty_step": 0.06,
+    "max_delta_per_cycle": 0.08
+  }
+}

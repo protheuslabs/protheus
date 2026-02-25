@@ -1,0 +1,131 @@
+{
+  "schema_id": "spine_ternary_belief_snapshot",
+  "schema_version": "1.0.0",
+  "ts": "2026-02-25T05:54:13.365Z",
+  "date": "2026-02-25",
+  "mode": "eyes",
+  "run_row_count": 5,
+  "signal_count": 6,
+  "belief": {
+    "schema_id": "ternary_belief_serialized",
+    "schema_version": "1.0.0",
+    "trit": -1,
+    "trit_label": "pain",
+    "score": -0.4706,
+    "confidence": 0.5588,
+    "vector": {
+      "schema_id": "balanced_trit_vector",
+      "schema_version": "1.0.0",
+      "encoding": "balanced_ternary_sign",
+      "digits": "--0",
+      "values": [
+        "-1",
+        "-1",
+        "0"
+      ]
+    },
+    "portability": {
+      "target_hardware": "balanced_ternary_ready",
+      "carrier_order": [
+        "belief",
+        "majority",
+        "consensus"
+      ],
+      "carriers": 3
+    }
+  },
+  "summary": {
+    "trit": -1,
+    "label": "pain",
+    "score": -0.4706,
+    "confidence": 0.5588,
+    "evidence_count": 6,
+    "pain_signals": 2,
+    "unknown_signals": 2,
+    "ok_signals": 2,
+    "top_pain_sources": [
+      {
+        "source": "spine_signal_gate",
+        "weighted": 3
+      },
+      {
+        "source": "runtime_signal_gate",
+        "weighted": 3
+      }
+    ]
+  },
+  "signals": [
+    {
+      "source": "spine_run_started",
+      "trit": 0,
+      "label": "unknown",
+      "weight": 1,
+      "confidence": 0.25,
+      "weighted": 0.25,
+      "tags": [
+        "missing_text_signal"
+      ],
+      "meta": {}
+    },
+    {
+      "source": "spine_collector_health",
+      "trit": 1,
+      "label": "ok",
+      "weight": 1,
+      "confidence": 1,
+      "weighted": 1,
+      "tags": [
+        "ok_flag"
+      ],
+      "meta": {}
+    },
+    {
+      "source": "spine_signal_gate",
+      "trit": -1,
+      "label": "pain",
+      "weight": 3,
+      "confidence": 1,
+      "weighted": 3,
+      "tags": [
+        "ok_flag"
+      ],
+      "meta": {}
+    },
+    {
+      "source": "spine_failure_memory_bridge",
+      "trit": 1,
+      "label": "ok",
+      "weight": 1,
+      "confidence": 1,
+      "weighted": 1,
+      "tags": [
+        "ok_flag"
+      ],
+      "meta": {}
+    },
+    {
+      "source": "spine_run_ok",
+      "trit": 0,
+      "label": "unknown",
+      "weight": 1,
+      "confidence": 0.25,
+      "weighted": 0.25,
+      "tags": [
+        "missing_text_signal"
+      ],
+      "meta": {}
+    },
+    {
+      "source": "runtime_signal_gate",
+      "trit": -1,
+      "label": "pain",
+      "weight": 3,
+      "confidence": 1,
+      "weighted": 3,
+      "tags": [
+        "runtime_override"
+      ],
+      "meta": {}
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "ok": true,
+  "type": "trit_shadow_report",
+  "ts": "2026-02-25T06:14:01.913Z",
+  "date": "2026-02-25",
+  "days": 7,
+  "window": {
+    "start_date": "2026-02-19",
+    "end_date": "2026-02-25"
+  },
+  "thresholds": {
+    "min_samples": 6,
+    "warn_divergence_rate": 0.2,
+    "critical_divergence_rate": 0.35,
+    "max_divergence_rate": 0.2
+  },
+  "summary": {
+    "status": "insufficient_samples",
+    "total_decisions": 1,
+    "divergence_count": 0,
+    "divergence_rate": 0,
+    "confidence_avg": 0.3309,
+    "gate": {
+      "enabled": true,
+      "pass": true,
+      "reason": "insufficient_samples",
+      "max_divergence_rate": 0.2
+    }
+  },
+  "sources": {
+    "strategy_mode": {
+      "source": "strategy_mode_governor",
+      "total_decisions": 1,
+      "divergence_count": 0,
+      "divergence_rate": 0,
+      "confidence_avg": 0.6618,
+      "belief_trits": {
+        "pain": 0,
+        "neutral": 0,
+        "ok": 1
+      },
+      "top_reasons": [
+        {
+          "reason": "shadow_promote_canary",
+          "count": 1
+        }
+      ],
+      "last_ts": "2026-02-25T06:03:31.612Z"
+    },
+    "drift_target": {
+      "source": "drift_target_governor",
+      "total_decisions": 0,
+      "divergence_count": 0,
+      "divergence_rate": 0,
+      "confidence_avg": null,
+      "belief_trits": {
+        "pain": 0,
+        "neutral": 0,
+        "ok": 0
+      },
+      "top_reasons": [],
+      "last_ts": null
+    }
+  }
+}

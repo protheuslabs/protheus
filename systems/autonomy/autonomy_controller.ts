@@ -37,6 +37,12 @@ const {
   withSuccessCriteriaVerification,
   normalizeAutonomyReceiptForWrite
 } = require('../../lib/autonomy_receipt_schema');
+const { evaluateTernaryBelief } = require('../../lib/ternary_belief_engine');
+const {
+  loadTritShadowPolicy,
+  loadTritShadowTrustState,
+  buildTritSourceTrustMap
+} = require('../../lib/trit_shadow_control');
 const { resolveCatalogPath } = require('../../lib/eyes_catalog');
 const { evaluatePipelineSpcGate } = require('./pipeline_spc_gate');
 const {
@@ -585,6 +591,9 @@ const AUTONOMY_STRATEGY_RANK_NON_YIELD_NO_PROGRESS_WEIGHT = Math.max(0, Number(p
 const AUTONOMY_STRATEGY_RANK_NON_YIELD_STOP_WEIGHT = Math.max(0, Number(process.env.AUTONOMY_STRATEGY_RANK_NON_YIELD_STOP_WEIGHT || 10));
 const AUTONOMY_STRATEGY_RANK_NON_YIELD_SHIPPED_RELIEF_WEIGHT = Math.max(0, Number(process.env.AUTONOMY_STRATEGY_RANK_NON_YIELD_SHIPPED_RELIEF_WEIGHT || 8));
 const AUTONOMY_STRATEGY_RANK_NON_YIELD_MAX_PENALTY = Math.max(0, Number(process.env.AUTONOMY_STRATEGY_RANK_NON_YIELD_MAX_PENALTY || 30));
+const AUTONOMY_TRIT_SHADOW_ENABLED = String(process.env.AUTONOMY_TRIT_SHADOW_ENABLED || '1') !== '0';
+const AUTONOMY_TRIT_SHADOW_BONUS_BLEND = clampNumber(Number(process.env.AUTONOMY_TRIT_SHADOW_BONUS_BLEND || 0.2), 0, 1);
+const AUTONOMY_TRIT_SHADOW_TOP_K = Math.max(1, Number(process.env.AUTONOMY_TRIT_SHADOW_TOP_K || 5));
 const AUTONOMY_MULTI_STRATEGY_CANARY_ENABLED = String(process.env.AUTONOMY_MULTI_STRATEGY_CANARY_ENABLED || '1') !== '0';
 const AUTONOMY_MULTI_STRATEGY_CANARY_FRACTION = clampNumber(Number(process.env.AUTONOMY_MULTI_STRATEGY_CANARY_FRACTION || 0.25), 0, 0.9);
 const AUTONOMY_MULTI_STRATEGY_MAX_ACTIVE = Math.max(1, Number(process.env.AUTONOMY_MULTI_STRATEGY_MAX_ACTIVE || 3));
@@ -5758,6 +5767,188 @@ function strategyRankAdjustedForCandidate(cand, executionMode) {
   };
 }
 
+function tritShadowRankScoreFromBelief(belief) {
+  const src = belief && typeof belief === 'object' ? belief : {};
+  const score = clampNumber(Number(src.score || 0), -1, 1);
+  const confidence = clampNumber(Number(src.confidence || 0), 0, 1);
+  const normalized = ((score + 1) * 50) + (confidence * 10);
+  return Number(clampNumber(normalized, 0, 100).toFixed(3));
+}
+
+function tritShadowBeliefOptions() {
+  const policy = loadTritShadowPolicy();
+  const trustState = loadTritShadowTrustState(policy);
+  const trustMap = buildTritSourceTrustMap(trustState);
+  const trust = policy && policy.trust && typeof policy.trust === 'object' ? policy.trust : {};
+  const semantics = policy && policy.semantics && typeof policy.semantics === 'object' ? policy.semantics : {};
+  return {
+    source_trust: trustMap,
+    source_trust_floor: trust.source_trust_floor,
+    source_trust_ceiling: trust.source_trust_ceiling,
+    freshness_half_life_hours: trust.freshness_half_life_hours,
+    min_non_neutral_signals: semantics.min_non_neutral_signals,
+    min_non_neutral_weight: semantics.min_non_neutral_weight,
+    min_confidence_for_non_neutral: semantics.min_confidence_for_non_neutral,
+    force_neutral_on_insufficient_evidence: semantics.neutral_on_missing !== false
+  };
+}
+
+function strategyTritShadowForCandidate(cand) {
+  if (!AUTONOMY_TRIT_SHADOW_ENABLED) return null;
+  const row = cand && typeof cand === 'object' ? cand : {};
+  const qualityScore = clampNumber(Number(row.quality && row.quality.score || 0), 0, 100);
+  const directiveFitScore = clampNumber(Number(row.directive_fit && row.directive_fit.score || 0), 0, 100);
+  const actionabilityScore = clampNumber(Number(row.actionability && row.actionability.score || 0), 0, 100);
+  const compositeScore = clampNumber(Number(row.composite_score || 0), 0, 100);
+  const compositeMin = clampNumber(Number(row.composite_min_score || 0), 0, 100);
+  const valueSignalScore = clampNumber(Number(row.value_signal && row.value_signal.score || 0), 0, 100);
+  const risk = normalizedRisk(row.risk);
+  const nonYieldPenalty = clampNumber(Number(
+    row.strategy_rank
+    && row.strategy_rank.adjustments
+    && row.strategy_rank.adjustments.non_yield_penalty
+    && row.strategy_rank.adjustments.non_yield_penalty.penalty
+    || 0
+  ), 0, AUTONOMY_STRATEGY_RANK_NON_YIELD_MAX_PENALTY);
+
+  const signals = [
+    {
+      source: 'quality_gate',
+      trit: qualityScore >= AUTONOMY_MIN_SIGNAL_QUALITY ? 1 : -1,
+      weight: 1.2
+    },
+    {
+      source: 'directive_fit_gate',
+      trit: directiveFitScore >= AUTONOMY_MIN_DIRECTIVE_FIT ? 1 : -1,
+      weight: 1.1
+    },
+    {
+      source: 'actionability_gate',
+      trit: actionabilityScore >= AUTONOMY_MIN_ACTIONABILITY_SCORE ? 1 : -1,
+      weight: 1.2
+    },
+    {
+      source: 'value_signal_gate',
+      trit: valueSignalScore >= AUTONOMY_MIN_VALUE_SIGNAL_SCORE ? 1 : -1,
+      weight: 1.2
+    },
+    {
+      source: 'composite_gate',
+      trit: compositeScore >= compositeMin ? 1 : -1,
+      weight: 1.5
+    },
+    {
+      source: 'risk_posture',
+      trit: risk === 'low' ? 1 : (risk === 'medium' ? 0 : -1),
+      weight: 0.8
+    },
+    {
+      source: 'objective_binding',
+      trit: row.objective_binding && row.objective_binding.pass === false ? -1 : 1,
+      weight: 1.1
+    },
+    {
+      source: 'budget_pacing',
+      trit: row.budget_pacing_gate && row.budget_pacing_gate.pass === false ? -1 : 0,
+      weight: 0.9
+    },
+    {
+      source: 'non_yield_penalty',
+      trit: nonYieldPenalty >= (AUTONOMY_STRATEGY_RANK_NON_YIELD_MAX_PENALTY * 0.5)
+        ? -1
+        : (nonYieldPenalty <= 2 ? 1 : 0),
+      weight: 0.9
+    }
+  ];
+
+  const belief = evaluateTernaryBelief(signals, {
+    label: 'autonomy_strategy_rank_shadow',
+    positive_threshold: 0.12,
+    negative_threshold: -0.12,
+    evidence_saturation_count: 8,
+    ...tritShadowBeliefOptions()
+  });
+  const baseScore = tritShadowRankScoreFromBelief(belief);
+  const bonusRaw = Number(row.strategy_rank_bonus && row.strategy_rank_bonus.total || 0);
+  const blendedBonus = Number((bonusRaw * AUTONOMY_TRIT_SHADOW_BONUS_BLEND).toFixed(3));
+  const adjustedScore = Number((baseScore + blendedBonus).toFixed(3));
+  const topSignals = Array.isArray(belief.top_sources) ? belief.top_sources.slice(0, 5) : [];
+  return {
+    score: baseScore,
+    adjusted_score: adjustedScore,
+    bonus_blend: AUTONOMY_TRIT_SHADOW_BONUS_BLEND,
+    bonus_applied: blendedBonus,
+    belief: {
+      trit: Number(belief.trit || 0),
+      label: String(belief.trit_label || 'unknown'),
+      score: Number(belief.score || 0),
+      confidence: Number(belief.confidence || 0),
+      evidence_count: Number(belief.evidence_count || 0)
+    },
+    top_sources: topSignals
+  };
+}
+
+function strategyTritShadowRankingSummary(eligible, selectedProposalId = null, selectionMode = null) {
+  if (!AUTONOMY_TRIT_SHADOW_ENABLED) return null;
+  const rows = Array.isArray(eligible) ? eligible : [];
+  if (!rows.length) {
+    return {
+      enabled: true,
+      considered: 0,
+      diverged_from_legacy_top: false,
+      diverged_from_selected: false,
+      selected_proposal_id: selectedProposalId || null,
+      selection_mode: selectionMode || null,
+      legacy_top_proposal_id: null,
+      trit_top_proposal_id: null,
+      top: []
+    };
+  }
+  const ranked = rows.map((cand, idx) => {
+    const proposalId = String(cand && cand.proposal && cand.proposal.id || '');
+    const legacy = Number(cand && (cand.strategy_rank_adjusted != null
+      ? cand.strategy_rank_adjusted
+      : (cand.strategy_rank && cand.strategy_rank.score || 0)));
+    const tritShadow = cand && cand.strategy_trit_shadow && typeof cand.strategy_trit_shadow === 'object'
+      ? cand.strategy_trit_shadow
+      : strategyTritShadowForCandidate(cand);
+    const tritScore = Number(tritShadow && tritShadow.adjusted_score != null
+      ? tritShadow.adjusted_score
+      : (tritShadow && tritShadow.score != null ? tritShadow.score : 0));
+    return {
+      index: idx,
+      proposal_id: proposalId,
+      legacy_rank: Number(legacy.toFixed(3)),
+      trit_rank: Number(tritScore.toFixed(3)),
+      trit_label: tritShadow && tritShadow.belief ? tritShadow.belief.label : 'unknown',
+      trit_confidence: Number(tritShadow && tritShadow.belief && tritShadow.belief.confidence != null
+        ? Number(tritShadow.belief.confidence).toFixed(4)
+        : 0),
+      trit_top_sources: tritShadow && Array.isArray(tritShadow.top_sources) ? tritShadow.top_sources.slice(0, 3) : []
+    };
+  }).sort((a, b) => {
+    if (b.trit_rank !== a.trit_rank) return b.trit_rank - a.trit_rank;
+    if (b.legacy_rank !== a.legacy_rank) return b.legacy_rank - a.legacy_rank;
+    return String(a.proposal_id || '').localeCompare(String(b.proposal_id || ''));
+  });
+
+  const legacyTop = String(rows[0] && rows[0].proposal && rows[0].proposal.id || '');
+  const tritTop = String(ranked[0] && ranked[0].proposal_id || '');
+  const selected = String(selectedProposalId || '');
+  return {
+    enabled: true,
+    considered: rows.length,
+    selection_mode: selectionMode || null,
+    selected_proposal_id: selected || null,
+    legacy_top_proposal_id: legacyTop || null,
+    trit_top_proposal_id: tritTop || null,
+    diverged_from_legacy_top: !!(legacyTop && tritTop && legacyTop !== tritTop),
+    diverged_from_selected: !!(selected && tritTop && selected !== tritTop),
+    top: ranked.slice(0, AUTONOMY_TRIT_SHADOW_TOP_K)
+  };
+}
+
 function strategyCircuitCooldownHours(p, strategy) {
   const stopPolicy = strategy && strategy.stop_policy && typeof strategy.stop_policy === 'object'
     ? strategy.stop_policy
@@ -9557,6 +9748,11 @@ function runCmd(dateStr, opts: AnyObj = {}) {
     campaign_scheduler: {
       enabled: Array.isArray(strategy && strategy.campaigns) && strategy.campaigns.length > 0
     },
+    trit_shadow: {
+      enabled: AUTONOMY_TRIT_SHADOW_ENABLED,
+      bonus_blend: AUTONOMY_TRIT_SHADOW_BONUS_BLEND,
+      top_k: AUTONOMY_TRIT_SHADOW_TOP_K
+    },
     queue_underflow_backfill: {
       enabled: AUTONOMY_QUEUE_UNDERFLOW_BACKFILL_MAX > 0,
       max_candidates: AUTONOMY_QUEUE_UNDERFLOW_BACKFILL_MAX
@@ -9592,7 +9788,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
     if (!row || typeof row !== 'object') return;
     if (candidateAuditRows.length < candidateAuditLimit) candidateAuditRows.push(row);
   };
-  const writeCandidateAudit = (selectedProposalId = null, selectionMode = null, reservation = null) => {
+  const writeCandidateAudit = (selectedProposalId = null, selectionMode = null, reservation = null, tritShadow = null) => {
     writeRun(dateStr, {
       ts: nowIso(),
       type: 'autonomy_candidate_audit',
@@ -9607,6 +9803,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       selected_proposal_id: selectedProposalId,
       selection_mode: selectionMode,
       tier_reservation: reservation || null,
+      trit_shadow: tritShadow && typeof tritShadow === 'object' ? tritShadow : null,
       rows_truncated: pool.length > candidateAuditRows.length,
       rows: candidateAuditRows
     });
@@ -10484,6 +10681,12 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       const adjusted = strategyRankAdjustedForCandidate(cand, executionMode);
       cand.strategy_rank_adjusted = adjusted.adjusted;
       cand.strategy_rank_bonus = adjusted.bonus;
+      cand.strategy_trit_shadow = strategyTritShadowForCandidate(cand);
+      cand.strategy_trit_shadow_adjusted = Number(
+        cand.strategy_trit_shadow && cand.strategy_trit_shadow.adjusted_score != null
+          ? cand.strategy_trit_shadow.adjusted_score
+          : 0
+      );
     }
     campaignPlan = annotateCampaignPriority(eligible, strategy);
     eligible.sort((a, b) => {
@@ -10615,6 +10818,19 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       directive_pulse: pulse,
       strategy_rank: fallbackStrategyRank
     }, executionMode);
+    const fallbackTritShadow = strategyTritShadowForCandidate({
+      ...fallback,
+      quality: q,
+      directive_fit: dfit,
+      actionability,
+      value_signal: valueSignal,
+      composite_score: compositeScore,
+      composite_min_score: compositeMin,
+      risk: fallbackRisk,
+      objective_binding: fallbackObjectiveBinding,
+      strategy_rank: fallbackStrategyRank,
+      strategy_rank_bonus: fallbackAdjusted.bonus
+    });
     pick = {
       ...fallback,
       quality: q,
@@ -10632,7 +10848,13 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       type_thresholds_applied: fallbackThresholds,
       strategy_rank: fallbackStrategyRank,
       strategy_rank_adjusted: fallbackAdjusted.adjusted,
-      strategy_rank_bonus: fallbackAdjusted.bonus
+      strategy_rank_bonus: fallbackAdjusted.bonus,
+      strategy_trit_shadow: fallbackTritShadow,
+      strategy_trit_shadow_adjusted: Number(
+        fallbackTritShadow && fallbackTritShadow.adjusted_score != null
+          ? fallbackTritShadow.adjusted_score
+          : 0
+      )
     };
     selection = {
       mode: 'shadow_fallback',
@@ -10643,10 +10865,32 @@ function runCmd(dateStr, opts: AnyObj = {}) {
     };
   }
 
+  const tritShadowSelection = strategyTritShadowRankingSummary(
+    eligible,
+    pick && pick.proposal ? String(pick.proposal.id || '') : null,
+    selection ? selection.mode : null
+  );
+  if (tritShadowSelection && tritShadowSelection.enabled) {
+    writeRun(dateStr, {
+      ts: nowIso(),
+      type: 'autonomy_trit_shadow_ranking',
+      result: tritShadowSelection.diverged_from_legacy_top ? 'diverged' : 'matched',
+      selection_mode: tritShadowSelection.selection_mode || null,
+      considered: Number(tritShadowSelection.considered || 0),
+      selected_proposal_id: tritShadowSelection.selected_proposal_id || null,
+      legacy_top_proposal_id: tritShadowSelection.legacy_top_proposal_id || null,
+      trit_top_proposal_id: tritShadowSelection.trit_top_proposal_id || null,
+      diverged_from_legacy_top: tritShadowSelection.diverged_from_legacy_top === true,
+      diverged_from_selected: tritShadowSelection.diverged_from_selected === true,
+      top: Array.isArray(tritShadowSelection.top) ? tritShadowSelection.top.slice(0, AUTONOMY_TRIT_SHADOW_TOP_K) : []
+    });
+  }
+
   writeCandidateAudit(
     pick && pick.proposal ? String(pick.proposal.id || '') : null,
     selection ? selection.mode : null,
-    tierReservation && Number(tierReservation.candidate_count || 0) > 0 ? tierReservation : null
+    tierReservation && Number(tierReservation.candidate_count || 0) > 0 ? tierReservation : null,
+    tritShadowSelection
   );
 
   if (!pick) {
@@ -13405,6 +13649,8 @@ module.exports = {
   expectedValueScore,
   expectedValueSignalForProposal,
   strategyRankForCandidate,
+  strategyTritShadowForCandidate,
+  strategyTritShadowRankingSummary,
   candidateNonYieldPenaltySignal,
   selectStrategyForRun,
   estimateTokens,

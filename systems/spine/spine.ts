@@ -33,7 +33,9 @@ const {
   clearSystemBudgetAutopause,
   loadSystemBudgetAutopauseState
 } = require("../budget/system_budget");
+const { loadTritShadowPolicy, applyInfluenceGuardFromShadowReport } = require("../../lib/trit_shadow_control");
 const { computeEvidenceRunPlan } = require("./evidence_run_plan");
+const { evaluateTernaryBelief, serializeBeliefResult } = require("../../lib/ternary_belief_engine");
 
 function arg(name) {
   const pref = `--${name}=`;
@@ -134,6 +136,213 @@ function readJson(filePath, fallback) {
     return parsed == null ? fallback : parsed;
   } catch {
     return fallback;
+  }
+}
+
+function spineRunsLedgerPath(dateStr) {
+  return path.join(repoRoot(), "state", "spine", "runs", `${String(dateStr || "").slice(0, 10)}.jsonl`);
+}
+
+function spineTernaryBeliefSnapshotPath(dateStr, mode) {
+  const dir = path.join(repoRoot(), "state", "spine", "ternary_belief");
+  fs.mkdirSync(dir, { recursive: true });
+  return path.join(dir, `${String(dateStr || "").slice(0, 10)}_${String(mode || "unknown")}.json`);
+}
+
+function writeJsonAtomic(filePath, value) {
+  const tmpPath = `${filePath}.tmp`;
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(tmpPath, `${JSON.stringify(value, null, 2)}\n`);
+  fs.renameSync(tmpPath, filePath);
+}
+
+function latestSpineRunRows(rows, mode) {
+  const scoped = (Array.isArray(rows) ? rows : []).filter((row) => {
+    if (!row || typeof row !== "object") return false;
+    if (!mode) return true;
+    return String(row.mode || "") === String(mode);
+  });
+  if (!scoped.length) return [];
+  let startIndex = 0;
+  for (let i = scoped.length - 1; i >= 0; i -= 1) {
+    const row = scoped[i];
+    if (String(row.type || "") !== "spine_run_started") continue;
+    startIndex = i;
+    break;
+  }
+  return scoped.slice(startIndex);
+}
+
+function spineTritWeightForType(type) {
+  const t = String(type || "");
+  if (!t) return 1;
+  if (/signal_gate|signal_slo|integrity|security|emergency|critical/i.test(t)) return 3;
+  if (/budget_guard|autonomy_health|strategy|router_alert|startup_attestation/i.test(t)) return 2;
+  if (/_skipped$/i.test(t)) return 0.5;
+  return 1;
+}
+
+const SPINE_TRIT_OK_RE = /\b(ok|pass|allow|approved|healthy|ready|triggered|applied|success|complete)\b/i;
+const SPINE_TRIT_PAIN_RE = /\b(fail|error|deny|blocked|violation|critical|halt|stop|degraded|unhealthy|missing|regression)\b/i;
+const SPINE_TRIT_UNKNOWN_RE = /\b(skip|skipped|unknown|unavailable|none|n\/a|noop|disabled|pending|neutral)\b/i;
+
+function spineTritSignalFromEvent(evt) {
+  if (!evt || typeof evt !== "object") return null;
+  const type = String(evt.type || "").trim();
+  if (!type || /^spine_ternary_belief/.test(type)) return null;
+  const weight = spineTritWeightForType(type);
+
+  if (/_skipped$/i.test(type)) {
+    return { source: type, trit: 0, weight, confidence: 0.35, tags: ["skipped"] };
+  }
+  if (evt.ok === true) {
+    return { source: type, trit: 1, weight, confidence: 1, tags: ["ok_flag"] };
+  }
+  if (evt.ok === false) {
+    return { source: type, trit: -1, weight, confidence: 1, tags: ["ok_flag"] };
+  }
+
+  const blob = [
+    evt.result,
+    evt.reason,
+    evt.alert,
+    evt.status,
+    evt.action
+  ].map((part) => String(part || "").trim()).filter(Boolean).join(" ").toLowerCase();
+
+  if (!blob) {
+    return { source: type, trit: 0, weight, confidence: 0.25, tags: ["missing_text_signal"] };
+  }
+
+  const hasPain = SPINE_TRIT_PAIN_RE.test(blob);
+  const hasOk = SPINE_TRIT_OK_RE.test(blob);
+  const hasUnknown = SPINE_TRIT_UNKNOWN_RE.test(blob);
+
+  if (hasPain && !hasOk) return { source: type, trit: -1, weight, confidence: 0.7, tags: ["text_signal"] };
+  if (hasOk && !hasPain) return { source: type, trit: 1, weight, confidence: 0.7, tags: ["text_signal"] };
+  if (hasUnknown || (hasPain && hasOk)) return { source: type, trit: 0, weight, confidence: 0.5, tags: ["text_signal"] };
+
+  return { source: type, trit: 0, weight, confidence: 0.3, tags: ["fallback_unknown"] };
+}
+
+function buildSpineTernaryBeliefSnapshot(
+  dateStr,
+  mode,
+  runtimeSignals: { signal_gate_ok?: unknown; signal_slo_ok?: unknown } = {}
+) {
+  const rows = readJsonl(spineRunsLedgerPath(dateStr))
+    .filter((row) => row && typeof row === "object");
+  const runRows = latestSpineRunRows(rows, mode);
+  const signals = [];
+  for (const row of runRows) {
+    const signal = spineTritSignalFromEvent(row);
+    if (!signal) continue;
+    signals.push(signal);
+  }
+  if (runtimeSignals && runtimeSignals.signal_gate_ok != null) {
+    signals.push({
+      source: "runtime_signal_gate",
+      trit: runtimeSignals.signal_gate_ok ? 1 : -1,
+      weight: 3,
+      confidence: 1,
+      tags: ["runtime_override"]
+    });
+  }
+  if (runtimeSignals && runtimeSignals.signal_slo_ok != null) {
+    signals.push({
+      source: "runtime_signal_slo",
+      trit: runtimeSignals.signal_slo_ok ? 1 : -1,
+      weight: 3,
+      confidence: 1,
+      tags: ["runtime_override"]
+    });
+  }
+  if (!signals.length) return null;
+
+  const belief = evaluateTernaryBelief(signals, {
+    label: "spine_run_health",
+    positive_threshold: 0.2,
+    negative_threshold: -0.2,
+    evidence_saturation_count: 12
+  });
+  const topPainSources = (Array.isArray(belief.signals) ? belief.signals : [])
+    .filter((row) => Number(row.trit || 0) === -1)
+    .sort((a, b) => Number(b.weighted || 0) - Number(a.weighted || 0))
+    .slice(0, 5)
+    .map((row) => ({
+      source: row.source,
+      weighted: Number(Number(row.weighted || 0).toFixed(4))
+    }));
+  const summary = {
+    trit: Number(belief.trit || 0),
+    label: String(belief.trit_label || "unknown"),
+    score: Number(Number(belief.score || 0).toFixed(4)),
+    confidence: Number(Number(belief.confidence || 0).toFixed(4)),
+    evidence_count: Number(belief.evidence_count || 0),
+    pain_signals: (Array.isArray(belief.signals) ? belief.signals : []).filter((row) => Number(row.trit || 0) === -1).length,
+    unknown_signals: (Array.isArray(belief.signals) ? belief.signals : []).filter((row) => Number(row.trit || 0) === 0).length,
+    ok_signals: (Array.isArray(belief.signals) ? belief.signals : []).filter((row) => Number(row.trit || 0) === 1).length,
+    top_pain_sources: topPainSources
+  };
+  const snapshot = {
+    schema_id: "spine_ternary_belief_snapshot",
+    schema_version: "1.0.0",
+    ts: nowIso(),
+    date: String(dateStr || "").slice(0, 10),
+    mode: String(mode || ""),
+    run_row_count: runRows.length,
+    signal_count: signals.length,
+    belief: serializeBeliefResult(belief),
+    summary,
+    signals: belief.signals
+  };
+  const snapshotPath = spineTernaryBeliefSnapshotPath(dateStr, mode);
+  writeJsonAtomic(snapshotPath, snapshot);
+  return {
+    ...summary,
+    snapshot_path: snapshotPath,
+    signal_count: signals.length
+  };
+}
+
+function emitSpineTernaryBelief(
+  dateStr,
+  mode,
+  runtimeSignals: { signal_gate_ok?: unknown; signal_slo_ok?: unknown } = {}
+) {
+  try {
+    const out = buildSpineTernaryBeliefSnapshot(dateStr, mode, runtimeSignals);
+    if (!out) return null;
+    appendLedger(dateStr, {
+      ts: nowIso(),
+      type: "spine_ternary_belief",
+      mode,
+      date: dateStr,
+      trit: out.trit,
+      label: out.label,
+      score: out.score,
+      confidence: out.confidence,
+      evidence_count: out.evidence_count,
+      signal_count: out.signal_count,
+      pain_signals: out.pain_signals,
+      unknown_signals: out.unknown_signals,
+      ok_signals: out.ok_signals,
+      top_pain_sources: out.top_pain_sources,
+      snapshot_path: out.snapshot_path
+    });
+    console.log(` spine_ternary_belief label=${out.label} score=${out.score} confidence=${out.confidence}`);
+    return out;
+  } catch (err) {
+    const reason = String(err && err.message ? err.message : err || "ternary_belief_unavailable").slice(0, 180);
+    appendLedger(dateStr, {
+      ts: nowIso(),
+      type: "spine_ternary_belief_unavailable",
+      mode,
+      date: dateStr,
+      reason
+    });
+    console.log(` spine_ternary_belief unavailable reason=${reason}`);
+    return null;
   }
 }
 
@@ -1354,6 +1563,10 @@ function main() {
       signal_slo_ok: signalSloOk,
       short_circuit: true
     });
+    emitSpineTernaryBelief(dateStr, mode, {
+      signal_gate_ok: signalGateOk,
+      signal_slo_ok: signalSloOk
+    });
     console.log(
       ` spine_short_circuit reason=unchanged_state ttl_minutes=${shortCircuit.ttl_minutes}` +
       ` age_minutes=${shortCircuit.age_minutes == null ? "n/a" : shortCircuit.age_minutes}`
@@ -2552,6 +2765,215 @@ function main() {
       console.log(" ops_dashboard skipped reason=feature_flag_disabled flag=SPINE_OPS_DASHBOARD_ENABLED");
     }
 
+    // 4e) Trit shadow divergence stability report (strategy/drift governors) + optional strict gate.
+    if (String(process.env.SPINE_TRIT_SHADOW_REPORT_ENABLED || "1") !== "0") {
+      const reportDays = Math.max(1, Number(process.env.SPINE_TRIT_SHADOW_REPORT_DAYS || 14) || 14);
+      const strict = String(process.env.SPINE_TRIT_SHADOW_REPORT_STRICT || "0") === "1";
+      const maxDivergenceRaw = String(process.env.SPINE_TRIT_SHADOW_MAX_DIVERGENCE_RATE || "").trim();
+      const shadowArgs = ["systems/autonomy/trit_shadow_report.js", "run", dateStr, `--days=${reportDays}`];
+      if (maxDivergenceRaw) shadowArgs.push(`--max-divergence-rate=${maxDivergenceRaw}`);
+      const shadow = runJson("node", shadowArgs);
+      const payload = shadow.payload && typeof shadow.payload === "object" ? shadow.payload : null;
+      const summary = payload && payload.summary && typeof payload.summary === "object" ? payload.summary : {};
+      const gate = summary && summary.gate && typeof summary.gate === "object" ? summary.gate : {};
+
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_trit_shadow_report",
+        mode,
+        date: dateStr,
+        ok: shadow.ok && !!payload && payload.ok === true,
+        strict,
+        status: payload ? String(summary.status || "unknown") : null,
+        total_decisions: payload ? Number(summary.total_decisions || 0) : null,
+        divergence_count: payload ? Number(summary.divergence_count || 0) : null,
+        divergence_rate: payload ? Number(summary.divergence_rate || 0) : null,
+        gate_enabled: payload ? gate.enabled === true : null,
+        gate_pass: payload ? gate.pass !== false : null,
+        gate_reason: payload ? String(gate.reason || "") : null,
+        report_path: payload ? payload.report_path || null : null,
+        reason: (!shadow.ok || !payload || payload.ok !== true)
+          ? String(shadow.stderr || shadow.stdout || `trit_shadow_report_exit_${shadow.code}`).slice(0, 180)
+          : null
+      });
+
+      if (shadow.ok && payload && payload.ok === true) {
+        console.log(
+          ` trit_shadow_report status=${String(summary.status || "unknown")}` +
+          ` decisions=${Number(summary.total_decisions || 0)}` +
+          ` divergence=${Number(summary.divergence_rate || 0)}` +
+          ` gate=${gate.enabled === true ? (gate.pass === false ? "fail" : "pass") : "disabled"}`
+        );
+        try {
+          const tritPolicy = loadTritShadowPolicy();
+          const guardState = applyInfluenceGuardFromShadowReport(payload, tritPolicy);
+          appendLedger(dateStr, {
+            ts: nowIso(),
+            type: "spine_trit_shadow_influence_guard",
+            mode,
+            date: dateStr,
+            disabled: guardState && guardState.disabled === true,
+            reason: guardState ? guardState.reason || null : null,
+            disabled_until: guardState ? guardState.disabled_until || null : null
+          });
+          console.log(
+            ` trit_shadow_guard disabled=${guardState && guardState.disabled === true ? "yes" : "no"}` +
+            ` reason=${String(guardState && guardState.reason || "none")}`
+          );
+        } catch (guardErr) {
+          appendLedger(dateStr, {
+            ts: nowIso(),
+            type: "spine_trit_shadow_influence_guard_unavailable",
+            mode,
+            date: dateStr,
+            reason: String(guardErr && guardErr.message ? guardErr.message : guardErr || "unknown").slice(0, 180)
+          });
+          console.log(` trit_shadow_guard unavailable reason=${String(guardErr && guardErr.message ? guardErr.message : guardErr || "unknown").slice(0, 120)}`);
+        }
+      } else {
+        console.log(` trit_shadow_report unavailable reason=${String(shadow.stderr || shadow.stdout || "unknown").slice(0, 120)}`);
+      }
+
+      if (String(process.env.SPINE_TRIT_SHADOW_CALIBRATION_ENABLED || "1") !== "0") {
+        const calibrationDays = Math.max(7, Number(process.env.SPINE_TRIT_SHADOW_CALIBRATION_DAYS || 42) || 42);
+        const lookaheadHours = Math.max(1, Number(process.env.SPINE_TRIT_SHADOW_CALIBRATION_LOOKAHEAD_HOURS || 24) || 24);
+        const calibration = runJson("node", [
+          "systems/autonomy/trit_shadow_replay_calibration.js",
+          "run",
+          dateStr,
+          `--days=${calibrationDays}`,
+          `--lookahead-hours=${lookaheadHours}`
+        ]);
+        const calibrationPayload = calibration.payload && typeof calibration.payload === "object"
+          ? calibration.payload
+          : null;
+        const calibrationSummary = calibrationPayload && calibrationPayload.summary && typeof calibrationPayload.summary === "object"
+          ? calibrationPayload.summary
+          : {};
+        appendLedger(dateStr, {
+          ts: nowIso(),
+          type: "spine_trit_shadow_calibration",
+          mode,
+          date: dateStr,
+          ok: calibration.ok && !!calibrationPayload && calibrationPayload.ok === true,
+          total_events: calibrationPayload ? Number(calibrationSummary.total_events || 0) : null,
+          accuracy: calibrationPayload ? Number(calibrationSummary.accuracy || 0) : null,
+          ece: calibrationPayload ? Number(calibrationSummary.expected_calibration_error || 0) : null,
+          brier_score: calibrationPayload ? Number(calibrationSummary.brier_score || 0) : null,
+          report_path: calibrationPayload ? calibrationPayload.report_path || null : null,
+          reason: (!calibration.ok || !calibrationPayload || calibrationPayload.ok !== true)
+            ? String(calibration.stderr || calibration.stdout || `trit_shadow_calibration_exit_${calibration.code}`).slice(0, 180)
+            : null
+        });
+        if (calibration.ok && calibrationPayload && calibrationPayload.ok === true) {
+          console.log(
+            ` trit_shadow_calibration events=${Number(calibrationSummary.total_events || 0)}` +
+            ` accuracy=${Number(calibrationSummary.accuracy || 0)}` +
+            ` ece=${Number(calibrationSummary.expected_calibration_error || 0)}`
+          );
+        } else {
+          console.log(` trit_shadow_calibration unavailable reason=${String(calibration.stderr || calibration.stdout || "unknown").slice(0, 120)}`);
+        }
+      } else {
+        appendLedger(dateStr, {
+          ts: nowIso(),
+          type: "spine_trit_shadow_calibration_skipped",
+          mode,
+          date: dateStr,
+          reason: "feature_flag_disabled",
+          flag: "SPINE_TRIT_SHADOW_CALIBRATION_ENABLED",
+          flag_value: String(process.env.SPINE_TRIT_SHADOW_CALIBRATION_ENABLED || "")
+        });
+        console.log(" trit_shadow_calibration skipped reason=feature_flag_disabled flag=SPINE_TRIT_SHADOW_CALIBRATION_ENABLED");
+      }
+
+      if (String(process.env.SPINE_TRIT_SHADOW_ADAPTATION_ENABLED || "1") !== "0") {
+        const weekday = new Date(`${dateStr}T00:00:00.000Z`).getUTCDay();
+        const runWeekday = Math.max(0, Math.min(6, Number(process.env.SPINE_TRIT_SHADOW_ADAPTATION_WEEKDAY || 0) || 0));
+        const forced = String(process.env.SPINE_TRIT_SHADOW_ADAPTATION_FORCE || "0") === "1";
+        if (forced || weekday === runWeekday) {
+          const adaptation = runJson("node", [
+            "systems/autonomy/trit_shadow_weekly_adaptation.js",
+            "run",
+            dateStr
+          ]);
+          const adaptationPayload = adaptation.payload && typeof adaptation.payload === "object"
+            ? adaptation.payload
+            : null;
+          appendLedger(dateStr, {
+            ts: nowIso(),
+            type: "spine_trit_shadow_weekly_adaptation",
+            mode,
+            date: dateStr,
+            ok: adaptation.ok && !!adaptationPayload && adaptationPayload.ok === true,
+            forced,
+            suggestions_count: adaptationPayload ? Number(adaptationPayload.suggestions && adaptationPayload.suggestions.length || 0) : null,
+            proposal_id: adaptationPayload && adaptationPayload.review ? adaptationPayload.review.proposal_id || null : null,
+            report_path: adaptationPayload ? adaptationPayload.report_path || null : null,
+            reason: (!adaptation.ok || !adaptationPayload || adaptationPayload.ok !== true)
+              ? String(adaptation.stderr || adaptation.stdout || `trit_shadow_weekly_adaptation_exit_${adaptation.code}`).slice(0, 180)
+              : null
+          });
+          if (adaptation.ok && adaptationPayload && adaptationPayload.ok === true) {
+            console.log(
+              ` trit_shadow_weekly_adaptation suggestions=${Number(adaptationPayload.suggestions && adaptationPayload.suggestions.length || 0)}` +
+              ` proposal=${String(adaptationPayload.review && adaptationPayload.review.proposal_id || "none")}`
+            );
+          } else {
+            console.log(` trit_shadow_weekly_adaptation unavailable reason=${String(adaptation.stderr || adaptation.stdout || "unknown").slice(0, 120)}`);
+          }
+        } else {
+          appendLedger(dateStr, {
+            ts: nowIso(),
+            type: "spine_trit_shadow_weekly_adaptation_skipped",
+            mode,
+            date: dateStr,
+            reason: "weekday_not_scheduled",
+            run_weekday: runWeekday,
+            weekday
+          });
+          console.log(` trit_shadow_weekly_adaptation skipped reason=weekday_not_scheduled weekday=${weekday} run_weekday=${runWeekday}`);
+        }
+      } else {
+        appendLedger(dateStr, {
+          ts: nowIso(),
+          type: "spine_trit_shadow_weekly_adaptation_skipped",
+          mode,
+          date: dateStr,
+          reason: "feature_flag_disabled",
+          flag: "SPINE_TRIT_SHADOW_ADAPTATION_ENABLED",
+          flag_value: String(process.env.SPINE_TRIT_SHADOW_ADAPTATION_ENABLED || "")
+        });
+        console.log(" trit_shadow_weekly_adaptation skipped reason=feature_flag_disabled flag=SPINE_TRIT_SHADOW_ADAPTATION_ENABLED");
+      }
+
+      if (strict) {
+        let strictFailReason = null;
+        if (!shadow.ok || !payload || payload.ok !== true) {
+          strictFailReason = String(shadow.stderr || shadow.stdout || `trit_shadow_report_exit_${shadow.code}`).slice(0, 160);
+        } else if (gate.enabled === true && gate.pass === false) {
+          strictFailReason = `gate_failed:${String(gate.reason || "divergence_rate_exceeds_limit")}`;
+        } else if (gate.enabled !== true && String(summary.status || "") === "critical") {
+          strictFailReason = "status_critical_without_gate_limit";
+        }
+        if (strictFailReason) {
+          console.error(` trit_shadow_report strict_fail reason=${strictFailReason}`);
+          process.exit(1);
+        }
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_trit_shadow_report_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "SPINE_TRIT_SHADOW_REPORT_ENABLED",
+        flag_value: String(process.env.SPINE_TRIT_SHADOW_REPORT_ENABLED || "")
+      });
+      console.log(" trit_shadow_report skipped reason=feature_flag_disabled flag=SPINE_TRIT_SHADOW_REPORT_ENABLED");
+    }
+
     // 5) optional external state backup (outside git workspace)
     if (String(process.env.STATE_BACKUP_ENABLED || "") === "1") {
       const backupArgs = ["systems/ops/state_backup.js", "run", `--date=${dateStr}`];
@@ -2702,6 +3124,10 @@ function main() {
     type: "spine_run_ok",
     mode,
     date: dateStr,
+    signal_gate_ok: signalGateOk,
+    signal_slo_ok: signalSloOk
+  });
+  emitSpineTernaryBelief(dateStr, mode, {
     signal_gate_ok: signalGateOk,
     signal_slo_ok: signalSloOk
   });

@@ -1,4 +1,4 @@
-# V1 Hardening Checkpoint (2026-02-22)
+# V1.0 Hardening Checkpoint (2026-02-22)
 
 Generated: 2026-02-23T00:01:20.636Z
 Window days: 14

@@ -25,3 +25,5 @@
 {"ts":"2026-02-24T00:00:13.222Z","type":"failure_memory_bridge_run","date":"2026-02-24","candidates":0,"eligible_candidates":0,"selected":0,"created_nodes":0,"revisit_pointers":0}
 {"ts":"2026-02-24T17:25:15.463Z","type":"failure_memory_bridge_run","date":"2026-02-24","candidates":5,"eligible_candidates":5,"selected":4,"created_nodes":2,"revisit_pointers":2}
 {"ts":"2026-02-24T17:26:30.392Z","type":"failure_memory_bridge_run","date":"2026-02-24","candidates":5,"eligible_candidates":1,"selected":1,"created_nodes":0,"revisit_pointers":1}
+{"ts":"2026-02-25T02:10:05.510Z","type":"failure_memory_bridge_run","date":"2026-02-25","candidates":0,"eligible_candidates":0,"selected":0,"created_nodes":0,"revisit_pointers":0}
+{"ts":"2026-02-25T05:54:13.070Z","type":"failure_memory_bridge_run","date":"2026-02-25","candidates":0,"eligible_candidates":0,"selected":0,"created_nodes":0,"revisit_pointers":0}

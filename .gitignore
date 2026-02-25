@@ -153,3 +153,8 @@ state/ops/ts_clone_drift_report.json
 
 # Local sibling/sidecar repos (kept separate from workspace repo)
 agent-holo-viz/
+
+# Local transient runtime artifacts (non-canonical)
+sleep
+state/autonomy/*.lock
+state/sensory/*.backup.*.jsonl

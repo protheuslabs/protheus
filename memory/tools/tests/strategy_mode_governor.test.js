@@ -135,6 +135,7 @@ function run() {
   assert.strictEqual(out.result, 'blocked_dual_control_required');
   assert.strictEqual(out.from_mode, 'score_only');
   assert.strictEqual(out.to_mode, 'canary_execute');
+  assert.ok(out.trit_shadow && out.trit_shadow.enabled === true, 'blocked escalation should include trit shadow payload');
   let after = readJson(strategyPath);
   assert.strictEqual(after.execution_policy.mode, 'score_only');
 
@@ -145,6 +146,7 @@ function run() {
   assert.strictEqual(out.result, 'mode_changed');
   assert.strictEqual(out.from_mode, 'score_only');
   assert.strictEqual(out.to_mode, 'canary_execute');
+  assert.ok(out.trit_shadow && out.trit_shadow.enabled === true, 'mode change should include trit shadow payload');
   after = readJson(strategyPath);
   assert.strictEqual(after.execution_policy.mode, 'canary_execute');
 
@@ -155,6 +157,7 @@ function run() {
   assert.strictEqual(out.result, 'mode_changed');
   assert.strictEqual(out.from_mode, 'canary_execute');
   assert.strictEqual(out.to_mode, 'execute');
+  assert.ok(out.trit_shadow && out.trit_shadow.enabled === true, 'execute promotion should include trit shadow payload');
   after = readJson(strategyPath);
   assert.strictEqual(after.execution_policy.mode, 'execute');
 
@@ -173,6 +176,7 @@ function run() {
   assert.strictEqual(out.result, 'mode_changed');
   assert.strictEqual(out.from_mode, 'execute');
   assert.strictEqual(out.to_mode, 'canary_execute');
+  assert.ok(out.trit_shadow && out.trit_shadow.enabled === true, 'execute demotion should include trit shadow payload');
   after = readJson(strategyPath);
   assert.strictEqual(after.execution_policy.mode, 'canary_execute');
 

@@ -24,8 +24,20 @@ const {
   strategyExecutionMode,
   strategyPromotionPolicy
 } = require('../../lib/strategy_resolver');
+const { evaluateTernaryBelief } = require('../../lib/ternary_belief_engine');
 const { queueForApproval, loadQueue } = require('../../lib/approval_gate');
 const { loadOutcomeFitnessPolicy } = require('../../lib/outcome_fitness');
+const {
+  loadTritShadowPolicy,
+  loadTritShadowTrustState,
+  buildTritSourceTrustMap,
+  resolveTritShadowStageDecision,
+  resolveTritShadowStage,
+  canConsumeTritShadowOverride,
+  consumeTritShadowOverride,
+  loadTritShadowInfluenceGuard,
+  isTritShadowInfluenceBlocked
+} = require('../../lib/trit_shadow_control');
 const { summarizeForDate } = require('./receipt_summary');
 const { evaluateReadiness } = require('./strategy_readiness');
 const { evaluatePipelineSpcGate } = require('./pipeline_spc_gate');
@@ -81,6 +93,7 @@ const MODE_GOVERNOR_SPC_SIGMA = Number(process.env.AUTONOMY_MODE_GOVERNOR_SPC_SI
 const MODE_GOVERNOR_MIN_ESCALATE_STREAK = Number(process.env.AUTONOMY_MODE_GOVERNOR_MIN_ESCALATE_STREAK || 2);
 const MODE_GOVERNOR_MIN_DEMOTE_STREAK = Number(process.env.AUTONOMY_MODE_GOVERNOR_MIN_DEMOTE_STREAK || 1);
 const MODE_GOVERNOR_QUEUE_DUAL_CONTROL = String(process.env.AUTONOMY_MODE_GOVERNOR_QUEUE_DUAL_CONTROL || '1') !== '0';
+const MODE_GOVERNOR_TRIT_SHADOW_ENABLED = String(process.env.AUTONOMY_MODE_GOVERNOR_TRIT_SHADOW_ENABLED || '1') !== '0';
 
 function usage() {
   console.log('Usage:');
@@ -131,6 +144,225 @@ function readinessState(mode, readiness) {
     ready_for_execute: readyForExecute,
     effective_ready: effectiveReady,
     failed_checks: failedChecks
+  };
+}
+
+function modeTritShadowDecision(currentMode, readiness, canary, policy, spc, executeFreeze, transition, tritCtx: AnyObj = {}) {
+  if (!MODE_GOVERNOR_TRIT_SHADOW_ENABLED) return null;
+  const mode = String(currentMode || '');
+  const rs = readinessState(mode, readiness);
+  const qualityLockRequired = !!(policy && policy.canary_require_quality_lock_for_execute === true);
+  const qualityLockActive = !!(canary && canary.metrics && canary.metrics.quality_lock_active === true);
+  const spcPass = !policy || policy.require_spc !== true || !!(spc && spc.pass === true && spc.hold_escalation !== true);
+  const freezeActive = !!(executeFreeze && executeFreeze.active === true);
+
+  const signals = [
+    { source: 'ready_for_canary', trit: rs.ready_for_canary ? 1 : -1, weight: 1.1 },
+    { source: 'ready_for_execute', trit: rs.ready_for_execute ? 1 : -1, weight: 1.3 },
+    {
+      source: 'canary_preview',
+      trit: canary && canary.preview_ready_for_canary === false ? -1 : 1,
+      weight: 1
+    },
+    {
+      source: 'canary_execute',
+      trit: canary && canary.ready_for_execute === false ? -1 : 1,
+      weight: 1.1
+    },
+    { source: 'spc_gate', trit: spcPass ? 1 : -1, weight: 1.4 },
+    {
+      source: 'quality_lock',
+      trit: qualityLockRequired ? (qualityLockActive ? 1 : -1) : 0,
+      weight: 1.2
+    },
+    { source: 'execute_freeze', trit: freezeActive ? -1 : 1, weight: 1.4 },
+    {
+      source: 'hysteresis_streak',
+      trit: Number(tritCtx && tritCtx.escalate_ready_streak || 0) >= Number(policy && policy.min_escalate_streak || 1) ? 1 : 0,
+      weight: 0.7
+    }
+  ];
+  const tritPolicy = tritCtx && tritCtx.trit_policy && typeof tritCtx.trit_policy === 'object'
+    ? tritCtx.trit_policy
+    : null;
+  const trust = tritPolicy && tritPolicy.trust && typeof tritPolicy.trust === 'object'
+    ? tritPolicy.trust
+    : {};
+  const semantics = tritPolicy && tritPolicy.semantics && typeof tritPolicy.semantics === 'object'
+    ? tritPolicy.semantics
+    : {};
+  const belief = evaluateTernaryBelief(signals, {
+    label: 'strategy_mode_governor_shadow',
+    positive_threshold: 0.18,
+    negative_threshold: -0.18,
+    evidence_saturation_count: 6,
+    source_trust: tritCtx && tritCtx.source_trust ? tritCtx.source_trust : null,
+    source_trust_floor: trust.source_trust_floor,
+    source_trust_ceiling: trust.source_trust_ceiling,
+    freshness_half_life_hours: trust.freshness_half_life_hours,
+    min_non_neutral_signals: semantics.min_non_neutral_signals,
+    min_non_neutral_weight: semantics.min_non_neutral_weight,
+    min_confidence_for_non_neutral: semantics.min_confidence_for_non_neutral,
+    force_neutral_on_insufficient_evidence: semantics.neutral_on_missing !== false
+  });
+
+  let shadowToMode = null;
+  let shadowReason = 'hold';
+  if (mode === 'score_only') {
+    if (
+      Number(belief.trit || 0) === 1
+      && rs.ready_for_canary
+      && (!canary || canary.preview_ready_for_canary !== false)
+      && spcPass
+    ) {
+      shadowToMode = 'canary_execute';
+      shadowReason = 'shadow_promote_canary';
+    }
+  } else if (mode === 'canary_execute') {
+    if (Number(belief.trit || 0) === 1 && rs.ready_for_execute && canary && canary.ready_for_execute === true && spcPass) {
+      shadowToMode = 'execute';
+      shadowReason = 'shadow_promote_execute';
+    } else if (Number(belief.trit || 0) === -1 && !rs.ready_for_canary) {
+      shadowToMode = 'score_only';
+      shadowReason = 'shadow_demote_score_only';
+    }
+  } else if (mode === 'execute') {
+    const needsDemotion = !rs.ready_for_execute || (qualityLockRequired && !qualityLockActive) || freezeActive;
+    if (Number(belief.trit || 0) === -1 && needsDemotion) {
+      shadowToMode = 'canary_execute';
+      shadowReason = freezeActive ? 'shadow_execute_freeze_demote' : 'shadow_demote_canary';
+    }
+  }
+
+  const legacyToMode = transition && transition.to_mode ? String(transition.to_mode) : null;
+  const divergence = (legacyToMode || '') !== (shadowToMode || '');
+  const evidenceGuard = belief && belief.evidence_guard && typeof belief.evidence_guard === 'object'
+    ? belief.evidence_guard
+    : null;
+  return {
+    enabled: true,
+    current_mode: mode,
+    legacy_to_mode: legacyToMode,
+    shadow_to_mode: shadowToMode,
+    divergence,
+    reason: shadowReason,
+    belief: {
+      trit: Number(belief.trit || 0),
+      label: String(belief.trit_label || 'unknown'),
+      score: Number(Number(belief.score || 0).toFixed(4)),
+      confidence: Number(Number(belief.confidence || 0).toFixed(4)),
+      evidence_count: Number(belief.evidence_count || 0)
+    },
+    evidence_guard: evidenceGuard,
+    top_sources: Array.isArray(belief.top_sources) ? belief.top_sources.slice(0, 5) : []
+  };
+}
+
+function tritShadowInfluenceDecision(
+  status,
+  transition,
+  tritPolicy,
+  stage,
+  guardState,
+  dateStr
+) {
+  const shadow = status && status.trit_shadow && typeof status.trit_shadow === 'object' ? status.trit_shadow : null;
+  if (!shadow || shadow.enabled !== true) {
+    return { enabled: false, stage, apply: false, reason: 'shadow_unavailable' };
+  }
+  if (!shadow.shadow_to_mode) {
+    return { enabled: true, stage, apply: false, reason: 'shadow_hold' };
+  }
+  if (stage < 2) {
+    return { enabled: true, stage, apply: false, reason: 'stage_shadow_only' };
+  }
+  const block = isTritShadowInfluenceBlocked(guardState || {});
+  if (block.blocked) {
+    return { enabled: true, stage, apply: false, reason: `guard_blocked:${block.reason}`, guard: block };
+  }
+
+  const confidence = Number(shadow && shadow.belief && shadow.belief.confidence || 0);
+  const confMin = stage >= 3
+    ? Number(tritPolicy && tritPolicy.influence && tritPolicy.influence.min_confidence_stage3 || 0.85)
+    : Number(tritPolicy && tritPolicy.influence && tritPolicy.influence.min_confidence_stage2 || 0.78);
+  if (confidence < confMin) {
+    return {
+      enabled: true,
+      stage,
+      apply: false,
+      reason: 'confidence_below_stage_min',
+      confidence: Number(confidence.toFixed(4)),
+      min_confidence: Number(confMin.toFixed(4))
+    };
+  }
+
+  const target = String(shadow.shadow_to_mode || '');
+  const rs = status && status.readiness_effective && typeof status.readiness_effective === 'object'
+    ? status.readiness_effective
+    : {};
+  const canary = status && status.canary && typeof status.canary === 'object' ? status.canary : {};
+  const executeFreeze = status && status.execute_freeze && typeof status.execute_freeze === 'object'
+    ? status.execute_freeze
+    : {};
+  const spc = status && status.spc && typeof status.spc === 'object' ? status.spc : null;
+  const policy = status && status.policy && typeof status.policy === 'object' ? status.policy : {};
+
+  if (target === 'execute') {
+    if (rs.ready_for_execute !== true) return { enabled: true, stage, apply: false, reason: 'execute_not_ready' };
+    if (canary.ready_for_execute !== true) return { enabled: true, stage, apply: false, reason: 'execute_canary_gate_failed' };
+    if (executeFreeze.active === true) return { enabled: true, stage, apply: false, reason: 'execute_freeze_active' };
+    if (policy.require_spc === true && (!spc || spc.pass !== true || spc.hold_escalation === true)) {
+      return { enabled: true, stage, apply: false, reason: 'execute_spc_gate_failed' };
+    }
+    if (
+      policy.canary_require_quality_lock_for_execute === true
+      && !(canary && canary.metrics && canary.metrics.quality_lock_active === true)
+    ) {
+      return { enabled: true, stage, apply: false, reason: 'execute_quality_lock_inactive' };
+    }
+  } else if (target === 'canary_execute') {
+    if (rs.ready_for_canary !== true) return { enabled: true, stage, apply: false, reason: 'canary_not_ready' };
+    if (canary.preview_ready_for_canary === false) {
+      return { enabled: true, stage, apply: false, reason: 'canary_preview_gate_failed' };
+    }
+    if (policy.require_spc === true && (!spc || spc.pass !== true || spc.hold_escalation === true)) {
+      return { enabled: true, stage, apply: false, reason: 'canary_spc_gate_failed' };
+    }
+  }
+
+  const legacyToMode = transition && transition.to_mode ? String(transition.to_mode) : null;
+  if (legacyToMode && legacyToMode === target) {
+    return { enabled: true, stage, apply: false, reason: 'already_matches_legacy', to_mode: target };
+  }
+
+  const override = !!legacyToMode && legacyToMode !== target;
+  if (override && stage < 3) {
+    return { enabled: true, stage, apply: false, reason: 'stage2_no_override', to_mode: target };
+  }
+
+  if (override) {
+    const budget = canConsumeTritShadowOverride(tritPolicy, dateStr);
+    if (!budget.allowed) {
+      return { enabled: true, stage, apply: false, reason: budget.reason || 'override_budget_denied', to_mode: target, budget };
+    }
+    return {
+      enabled: true,
+      stage,
+      apply: true,
+      to_mode: target,
+      reason: 'budgeted_shadow_override',
+      override: true,
+      budget
+    };
+  }
+
+  return {
+    enabled: true,
+    stage,
+    apply: true,
+    to_mode: target,
+    reason: 'shadow_fill_gap',
+    override: false
   };
 }
 
@@ -686,6 +918,12 @@ function applyMode(strategy, toMode) {
 }
 
 function buildStatus(dateStr, days, strategy, policy, prevStreak) {
+  const tritPolicy = loadTritShadowPolicy();
+  const tritTrustState = loadTritShadowTrustState(tritPolicy);
+  const tritSourceTrust = buildTritSourceTrustMap(tritTrustState);
+  const tritStageDecision = resolveTritShadowStageDecision(tritPolicy);
+  const tritStage = Number(tritStageDecision && tritStageDecision.stage || resolveTritShadowStage(tritPolicy));
+  const tritGuardState = loadTritShadowInfluenceGuard();
   const promotion = strategyPromotionPolicy(strategy, {});
   const effectivePolicy = {
     ...policy,
@@ -724,11 +962,45 @@ function buildStatus(dateStr, days, strategy, policy, prevStreak) {
   const executeFreeze = computeExecuteFreezeState(effectivePolicy, prevStreak);
   const last = lastModeChangeEvent(strategy.id);
   const cooldown = cooldownState(last, effectivePolicy.min_hours_between_changes);
-  let transition = decideTransition(mode, readiness, canary, effectivePolicy, spc, nextStreak);
+  let transition: AnyObj | null = decideTransition(mode, readiness, canary, effectivePolicy, spc, nextStreak);
   if (transition && String(transition.to_mode || '') === 'execute' && executeFreeze.active) {
     transition = null;
   }
+  const tritShadow = modeTritShadowDecision(mode, readiness, canary, effectivePolicy, spc, executeFreeze, transition, {
+    trit_policy: tritPolicy,
+    source_trust: tritSourceTrust,
+    escalate_ready_streak: nextStreak && nextStreak.escalate_ready_streak
+  });
   const readinessEval = readinessState(mode, readiness);
+  const tritShadowInfluence = tritShadowInfluenceDecision(
+    {
+      trit_shadow: tritShadow,
+      readiness_effective: readinessEval,
+      canary,
+      execute_freeze: executeFreeze,
+      spc,
+      policy: effectivePolicy
+    },
+    transition,
+    tritPolicy,
+    tritStage,
+    tritGuardState,
+    dateStr
+  );
+  if (
+    tritShadowInfluence
+    && tritShadowInfluence.apply === true
+    && tritShadowInfluence.to_mode
+    && (!transition || String(transition.to_mode || '') !== String(tritShadowInfluence.to_mode || ''))
+  ) {
+    transition = {
+      to_mode: String(tritShadowInfluence.to_mode),
+      reason: `trit_shadow_${String(tritShadowInfluence.reason || 'influence')}`,
+      cooldown_exempt: false,
+      trit_shadow_influence: true,
+      trit_shadow_override: tritShadowInfluence.override === true
+    };
+  }
   const transitionBlockReason = (
     mode === 'score_only'
     && readinessEval.ready_for_canary === true
@@ -788,6 +1060,15 @@ function buildStatus(dateStr, days, strategy, policy, prevStreak) {
     } : null,
     cooldown,
     transition,
+    trit_shadow: tritShadow,
+    trit_shadow_influence: tritShadowInfluence,
+    trit_shadow_runtime: {
+      stage: tritStage,
+      stage_source: tritStageDecision && tritStageDecision.source ? String(tritStageDecision.source) : null,
+      base_stage: tritStageDecision && tritStageDecision.base_stage != null ? Number(tritStageDecision.base_stage) : null,
+      auto_stage: tritStageDecision && tritStageDecision.auto_stage ? tritStageDecision.auto_stage : null,
+      policy_path: String(process.env.AUTONOMY_TRIT_SHADOW_POLICY_PATH || '').trim() || null
+    },
     transition_block_reason: transitionBlockReason || freezeBlockReason || streakBlockReason
   };
 }
@@ -814,6 +1095,9 @@ function cmdStatus(args) {
     execute_freeze: status.execute_freeze,
     spc: status.spc,
     streak: status.streak,
+    trit_shadow: status.trit_shadow,
+    trit_shadow_influence: status.trit_shadow_influence,
+    trit_shadow_runtime: status.trit_shadow_runtime,
     policy: status.policy,
     cooldown: status.cooldown,
     transition: status.transition
@@ -847,6 +1131,9 @@ function cmdRun(args) {
   saveGovernorState(state);
   const fromMode = status.current_mode;
   const transition = status.transition;
+  const tritInfluence = status.trit_shadow_influence && typeof status.trit_shadow_influence === 'object'
+    ? status.trit_shadow_influence
+    : null;
 
   if (!transition) {
     if (status.transition_block_reason === 'execute_freeze_active') {
@@ -862,6 +1149,8 @@ function cmdRun(args) {
         governor_policy: policy,
         readiness: status.readiness,
         canary: status.canary,
+        trit_shadow: status.trit_shadow,
+        trit_shadow_influence: tritInfluence,
         spc: status.spc,
         streak: status.streak
       });
@@ -875,6 +1164,9 @@ function cmdRun(args) {
       reason: status.transition_block_reason || 'no_transition_rule_triggered',
       readiness: status.readiness,
       canary: status.canary,
+      trit_shadow: status.trit_shadow,
+      trit_shadow_influence: tritInfluence,
+      trit_shadow_runtime: status.trit_shadow_runtime,
       execute_freeze: status.execute_freeze,
       spc: status.spc,
       streak: status.streak
@@ -893,6 +1185,9 @@ function cmdRun(args) {
       to_mode: transition.to_mode,
       reason: transition.reason,
       cooldown,
+      trit_shadow: status.trit_shadow,
+      trit_shadow_influence: tritInfluence,
+      trit_shadow_runtime: status.trit_shadow_runtime,
       execute_freeze: status.execute_freeze,
       spc: status.spc,
       streak: status.streak
@@ -911,6 +1206,9 @@ function cmdRun(args) {
       reason: transition.reason,
       readiness: status.readiness,
       canary: status.canary,
+      trit_shadow: status.trit_shadow,
+      trit_shadow_influence: tritInfluence,
+      trit_shadow_runtime: status.trit_shadow_runtime,
       execute_freeze: status.execute_freeze,
       spc: status.spc,
       streak: status.streak
@@ -939,6 +1237,8 @@ function cmdRun(args) {
       governor_policy: policy,
       readiness: status.readiness,
       canary: status.canary,
+      trit_shadow: status.trit_shadow,
+      trit_shadow_influence: tritInfluence,
       spc: status.spc,
       streak: status.streak
     };
@@ -974,6 +1274,8 @@ function cmdRun(args) {
         governor_policy: policy,
         readiness: status.readiness,
         canary: status.canary,
+        trit_shadow: status.trit_shadow,
+        trit_shadow_influence: tritInfluence,
         spc: status.spc,
         streak: status.streak
       };
@@ -986,6 +1288,12 @@ function cmdRun(args) {
       }, null, 2) + '\n');
       return;
     }
+  }
+
+  let tritOverrideBudget = null;
+  if (tritInfluence && tritInfluence.apply === true && tritInfluence.override === true) {
+    const tritPolicy = loadTritShadowPolicy();
+    tritOverrideBudget = consumeTritShadowOverride('strategy_mode_governor', tritPolicy, dateStr);
   }
 
   applyMode(strategy, transition.to_mode);
@@ -1001,6 +1309,10 @@ function cmdRun(args) {
     governor_policy: policy,
     readiness: status.readiness,
     canary: status.canary,
+    trit_shadow: status.trit_shadow,
+    trit_shadow_influence: tritInfluence,
+    trit_shadow_runtime: status.trit_shadow_runtime,
+    trit_shadow_override_budget: tritOverrideBudget,
     spc: status.spc,
     streak: status.streak
   };
@@ -1084,5 +1396,7 @@ if (require.main === module) {
 
 module.exports = {
   canaryMetrics,
-  decideTransition
+  decideTransition,
+  modeTritShadowDecision,
+  tritShadowInfluenceDecision
 };
