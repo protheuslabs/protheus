@@ -112,6 +112,7 @@
     "systems/fractal/morph_planner.ts",
     "systems/fractal/genome_ledger.ts",
     "systems/fractal/introspection_map.ts",
+    "systems/fractal/organism_cycle.ts",
     "systems/autonomy/backfill_signal_quality.ts",
     "systems/autonomy/improvement_controller.ts",
     "systems/autonomy/improvement_orchestrator.ts",
