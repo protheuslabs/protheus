@@ -2630,6 +2630,63 @@ function main() {
       console.log(" workflow_layer skipped reason=feature_flag_disabled flag=SPINE_WORKFLOW_LAYER_ENABLED");
     }
 
+    // 0d2) optional workflow executor runtime (runs active workflow steps).
+    if (String(process.env.SPINE_WORKFLOW_EXECUTOR_ENABLED || "0") !== "0") {
+      const workflowExecMax = Math.max(1, Number(process.env.SPINE_WORKFLOW_EXECUTOR_MAX || 6) || 6);
+      const workflowExecDryRun = String(process.env.SPINE_WORKFLOW_EXECUTOR_DRY_RUN || "0") !== "0" ? "1" : "0";
+      const workflowExecContinue = String(process.env.SPINE_WORKFLOW_EXECUTOR_CONTINUE_ON_ERROR || "0") !== "0" ? "1" : "0";
+      const workflowExecReceiptStrict = String(process.env.SPINE_WORKFLOW_EXECUTOR_RECEIPT_STRICT || "1") !== "0" ? "1" : "0";
+      const workflowExec = runJson("node", [
+        "systems/workflow/workflow_executor.js",
+        "run",
+        dateStr,
+        `--max=${workflowExecMax}`,
+        `--dry-run=${workflowExecDryRun}`,
+        `--continue-on-error=${workflowExecContinue}`,
+        `--receipt-strict=${workflowExecReceiptStrict}`
+      ]);
+      const payload = workflowExec.payload && typeof workflowExec.payload === "object"
+        ? workflowExec.payload
+        : null;
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_workflow_executor",
+        mode,
+        date: dateStr,
+        ok: workflowExec.ok && !!payload && payload.ok === true,
+        dry_run: payload ? payload.dry_run === true : null,
+        workflows_selected: payload ? Number(payload.workflows_selected || 0) : null,
+        workflows_executed: payload ? Number(payload.workflows_executed || 0) : null,
+        workflows_succeeded: payload ? Number(payload.workflows_succeeded || 0) : null,
+        workflows_failed: payload ? Number(payload.workflows_failed || 0) : null,
+        workflows_blocked: payload ? Number(payload.workflows_blocked || 0) : null,
+        run_path: payload ? payload.run_path || null : null,
+        reason: (!workflowExec.ok || !payload || payload.ok !== true)
+          ? String(workflowExec.stderr || workflowExec.stdout || `workflow_executor_exit_${workflowExec.code}`).slice(0, 180)
+          : null
+      });
+      if (workflowExec.ok && payload && payload.ok === true) {
+        console.log(
+          ` workflow_executor selected=${Number(payload.workflows_selected || 0)}` +
+          ` executed=${Number(payload.workflows_executed || 0)}` +
+          ` failed=${Number(payload.workflows_failed || 0)}`
+        );
+      } else {
+        console.log(` workflow_executor unavailable reason=${String(workflowExec.stderr || workflowExec.stdout || "unknown").slice(0, 120)}`);
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_workflow_executor_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "SPINE_WORKFLOW_EXECUTOR_ENABLED",
+        flag_value: String(process.env.SPINE_WORKFLOW_EXECUTOR_ENABLED || "")
+      });
+      console.log(" workflow_executor skipped reason=feature_flag_disabled flag=SPINE_WORKFLOW_EXECUTOR_ENABLED");
+    }
+
     // 0e) claw registry status snapshot (actuation lane readiness visibility).
     if (String(process.env.SPINE_CLAW_REGISTRY_STATUS_ENABLED || "1") !== "0") {
       const claws = runJson("node", [

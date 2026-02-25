@@ -805,6 +805,12 @@ function main() {
     ["adaptive_controller.js", "run", "status", "--intent", "--max-candidates", "--value-currency", "--objective-id", "--policy"]
   );
 
+  // workflow_executor.js runs active workflow steps with retries/gate checks/receipt checks.
+  checkScript(
+    "systems/workflow/workflow_executor.js",
+    ["workflow_executor.js", "run", "status", "--id", "--max", "--include-draft", "--dry-run", "--continue-on-error", "--receipt-strict"]
+  );
+
   // claw_registry.js governs high-power actuation lanes (browser/computer/payment).
   checkScript(
     "systems/actuation/claw_registry.js",
