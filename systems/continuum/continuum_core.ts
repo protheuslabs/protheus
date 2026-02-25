@@ -57,6 +57,7 @@ const SCRIPT_OBSERVER_MIRROR = 'systems/autonomy/observer_mirror.js';
 const SCRIPT_FRACTAL_INTROSPECTION = 'systems/fractal/introspection_map.js';
 const SCRIPT_RED_TEAM = 'systems/autonomy/red_team_harness.js';
 const SCRIPT_AUTOTEST = 'systems/ops/autotest_controller.js';
+const SCRIPT_ORGAN_ATROPHY = 'systems/ops/organ_atrophy_controller.js';
 
 const ALLOWED_SCRIPTS = new Set([
   SCRIPT_MEMORY_DREAM,
@@ -66,7 +67,8 @@ const ALLOWED_SCRIPTS = new Set([
   SCRIPT_OBSERVER_MIRROR,
   SCRIPT_FRACTAL_INTROSPECTION,
   SCRIPT_RED_TEAM,
-  SCRIPT_AUTOTEST
+  SCRIPT_AUTOTEST,
+  SCRIPT_ORGAN_ATROPHY
 ]);
 
 function usage() {
@@ -255,7 +257,8 @@ function defaultPolicy() {
       self_improvement: 25 * 60,
       creative_incubation: 60 * 60,
       security_vigilance: 35 * 60,
-      autotest_validation: 90 * 60
+      autotest_validation: 90 * 60,
+      organ_atrophy_shadow: 6 * 60 * 60
     },
     tasks: {
       dream_consolidation: {
@@ -312,6 +315,15 @@ function defaultPolicy() {
         strict: false,
         min_trit: -1,
         max_trit: 1
+      },
+      organ_atrophy_shadow: {
+        enabled: true,
+        timeout_ms: 16000,
+        window_days: 30,
+        max_candidates: 8,
+        write_endpoints: true,
+        min_trit: -1,
+        max_trit: 1
       }
     },
     training_queue: {
@@ -343,9 +355,12 @@ function normalizeTaskGate(src: AnyObj, fallback: AnyObj) {
     max_promotions: clampInt(task.max_promotions, 1, 20, Number(fallback.max_promotions || 1)),
     max_cases: clampInt(task.max_cases, 1, 64, Number(fallback.max_cases || 1)),
     max_tests: clampInt(task.max_tests, 1, 256, Number(fallback.max_tests || 12)),
+    window_days: clampInt(task.window_days, 1, 365, Number(fallback.window_days || 30)),
+    max_candidates: clampInt(task.max_candidates, 1, 128, Number(fallback.max_candidates || 8)),
     include_idle_cycle: toBool(task.include_idle_cycle, fallback.include_idle_cycle === true),
     include_fractal_introspection: toBool(task.include_fractal_introspection, fallback.include_fractal_introspection === true),
     sleep_only: toBool(task.sleep_only, fallback.sleep_only === true),
+    write_endpoints: toBool(task.write_endpoints, fallback.write_endpoints !== false),
     intent: cleanText(task.intent || fallback.intent || '', 220),
     scope,
     value_currency: normalizeToken(task.value_currency || fallback.value_currency || 'adaptive_value', 64) || 'adaptive_value',
@@ -398,7 +413,8 @@ function loadPolicy(policyPath: string) {
       self_improvement: clampInt(cooldownSec.self_improvement, 0, 24 * 60 * 60, base.cooldown_sec.self_improvement),
       creative_incubation: clampInt(cooldownSec.creative_incubation, 0, 24 * 60 * 60, base.cooldown_sec.creative_incubation),
       security_vigilance: clampInt(cooldownSec.security_vigilance, 0, 24 * 60 * 60, base.cooldown_sec.security_vigilance),
-      autotest_validation: clampInt(cooldownSec.autotest_validation, 0, 24 * 60 * 60, base.cooldown_sec.autotest_validation)
+      autotest_validation: clampInt(cooldownSec.autotest_validation, 0, 24 * 60 * 60, base.cooldown_sec.autotest_validation),
+      organ_atrophy_shadow: clampInt(cooldownSec.organ_atrophy_shadow, 0, 24 * 60 * 60, base.cooldown_sec.organ_atrophy_shadow)
     },
     tasks: {
       dream_consolidation: normalizeTaskGate(tasks.dream_consolidation, base.tasks.dream_consolidation),
@@ -406,7 +422,8 @@ function loadPolicy(policyPath: string) {
       self_improvement: normalizeTaskGate(tasks.self_improvement, base.tasks.self_improvement),
       creative_incubation: normalizeTaskGate(tasks.creative_incubation, base.tasks.creative_incubation),
       security_vigilance: normalizeTaskGate(tasks.security_vigilance, base.tasks.security_vigilance),
-      autotest_validation: normalizeTaskGate(tasks.autotest_validation, base.tasks.autotest_validation)
+      autotest_validation: normalizeTaskGate(tasks.autotest_validation, base.tasks.autotest_validation),
+      organ_atrophy_shadow: normalizeTaskGate(tasks.organ_atrophy_shadow, base.tasks.organ_atrophy_shadow)
     },
     training_queue: {
       enabled: toBool(trainingQueue.enabled, base.training_queue.enabled),
@@ -965,11 +982,36 @@ function runAutotestValidation(taskCfg: AnyObj, dryRun: boolean) {
   };
 }
 
+function runOrganAtrophyShadow(dateStr: string, taskCfg: AnyObj, dryRun: boolean) {
+  const args = [
+    'scan',
+    dateStr,
+    `--window-days=${clampInt(taskCfg && taskCfg.window_days, 1, 365, 30)}`,
+    `--max-candidates=${clampInt(taskCfg && taskCfg.max_candidates, 1, 128, 8)}`,
+    `--persist=${dryRun ? '0' : '1'}`,
+    `--write-endpoints=${taskCfg && taskCfg.write_endpoints === false ? '0' : '1'}`
+  ];
+  const run = runNodeJson(SCRIPT_ORGAN_ATROPHY, args, {
+    timeout_ms: taskCfg && taskCfg.timeout_ms,
+    dry_run: dryRun
+  });
+  const summary = summarizeRun('organ_atrophy_controller', run);
+  const payload = summary.payload && typeof summary.payload === 'object' ? summary.payload : {};
+  return {
+    ok: summary.ok,
+    scanned_organs: Number(payload.scanned_organs || 0),
+    candidates_count: Number(payload.candidates_count || 0),
+    endpoints_written: Number(payload.endpoints_written || 0),
+    organ_atrophy_controller: summary
+  };
+}
+
 function dualBrainLaneForTask(taskId: string) {
   const id = normalizeToken(taskId || '', 64);
   if (id === 'dream_consolidation') return 'right';
   if (id === 'creative_incubation') return 'right';
   if (id === 'anticipation') return 'right';
+  if (id === 'organ_atrophy_shadow') return 'left';
   return 'left';
 }
 
@@ -979,6 +1021,7 @@ function dualBrainTaskClassForTask(taskId: string) {
   if (id === 'creative_incubation') return 'creative';
   if (id === 'anticipation') return 'workflow_generation';
   if (id === 'autotest_validation') return 'governance';
+  if (id === 'organ_atrophy_shadow') return 'governance';
   if (id === 'security_vigilance') return 'security';
   if (id === 'self_improvement') return 'identity';
   return 'general';
@@ -1079,7 +1122,8 @@ function pulse(dateStr: string, opts: AnyObj = {}) {
     self_improvement: 0,
     creative: 0,
     security: 0,
-    autotest: 0
+    autotest: 0,
+    atrophy: 0
   };
   const recordTask = (taskId: string, stage: string, result: AnyObj, metrics: AnyObj = {}, skippedTask = false) => {
     const entry = {
@@ -1164,6 +1208,7 @@ function pulse(dateStr: string, opts: AnyObj = {}) {
       delete metrics.creative_links;
       delete metrics.red_team_harness;
       delete metrics.autotest_controller;
+      delete metrics.organ_atrophy_controller;
       return recordTask(taskId, stage, out, metrics, false);
     };
 
@@ -1179,6 +1224,8 @@ function pulse(dateStr: string, opts: AnyObj = {}) {
     if (securityOut.skipped !== true) taskEvents.security += 1;
     const autotestOut = runTask('autotest_validation', 'autotest_validation', () => runAutotestValidation(taskCfg.autotest_validation, dryRun));
     if (autotestOut.skipped !== true) taskEvents.autotest += 1;
+    const atrophyOut = runTask('organ_atrophy_shadow', 'organ_atrophy_shadow', () => runOrganAtrophyShadow(dateStr, taskCfg.organ_atrophy_shadow, dryRun));
+    if (atrophyOut.skipped !== true) taskEvents.atrophy += 1;
   }
 
   runtimeState.last_pulse_ts = nowIso();

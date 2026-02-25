@@ -31,7 +31,8 @@
     "self_improvement": 1500,
     "creative_incubation": 3600,
     "security_vigilance": 2100,
-    "autotest_validation": 5400
+    "autotest_validation": 5400,
+    "organ_atrophy_shadow": 21600
   },
   "tasks": {
     "dream_consolidation": {
@@ -86,6 +87,15 @@
       "max_tests": 12,
       "sleep_only": true,
       "strict": false,
+      "min_trit": -1,
+      "max_trit": 1
+    },
+    "organ_atrophy_shadow": {
+      "enabled": true,
+      "timeout_ms": 16000,
+      "window_days": 30,
+      "max_candidates": 8,
+      "write_endpoints": true,
       "min_trit": -1,
       "max_trit": 1
     }
