@@ -1,0 +1,12 @@
+.git
+.gitignore
+.DS_Store
+node_modules
+tmp
+logs
+dist
+agent-holo-viz
+state
+tests
+patches
+memory/_archive

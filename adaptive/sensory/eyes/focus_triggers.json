@@ -40,23 +40,6 @@
   },
   "triggers": [
     {
-      "uid": "ftms5nt9fcdzwrqiuh59i3nb",
-      "key": "token:assessment",
-      "pattern": "assessment",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 58,
-      "cooldown_minutes": 90,
-      "hit_count": 1,
-      "last_hit_ts": "2026-02-23T15:30:25.342Z",
-      "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-25T13:38:26.336Z"
-    },
-    {
       "uid": "ft3ac4qec9byq5oul6smy408",
       "key": "token:churn",
       "pattern": "churn",
@@ -66,12 +49,12 @@
         "anomalies"
       ],
       "status": "active",
-      "weight": 54,
+      "weight": 58,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-25T13:38:26.336Z"
+      "updated_ts": "2026-02-25T17:53:58.655Z"
     },
     {
       "uid": "ft3zvsqnj892z33x2mhnvo3p",
@@ -83,12 +66,12 @@
         "anomalies"
       ],
       "status": "active",
-      "weight": 54,
+      "weight": 58,
       "cooldown_minutes": 90,
       "hit_count": 2,
       "last_hit_ts": "2026-02-21T21:45:43.704Z",
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-25T13:38:26.336Z"
+      "updated_ts": "2026-02-25T17:53:58.655Z"
     },
     {
       "uid": "ft244q3gsgznlqmmoiss0lwz",
@@ -100,12 +83,12 @@
         "anomalies"
       ],
       "status": "active",
-      "weight": 54,
+      "weight": 58,
       "cooldown_minutes": 90,
       "hit_count": 2,
       "last_hit_ts": "2026-02-22T10:07:53.888Z",
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-25T13:38:26.336Z"
+      "updated_ts": "2026-02-25T17:53:58.655Z"
     },
     {
       "uid": "ft7ds2pfg6xpj8145626z2k6",
@@ -117,12 +100,12 @@
         "anomalies"
       ],
       "status": "active",
-      "weight": 54,
+      "weight": 58,
       "cooldown_minutes": 90,
       "hit_count": 44,
       "last_hit_ts": "2026-02-23T17:21:32.821Z",
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-25T13:38:26.336Z"
+      "updated_ts": "2026-02-25T17:53:58.655Z"
     },
     {
       "uid": "ft61c7fe7o96h2gyomc1z3wv",
@@ -134,12 +117,12 @@
         "anomalies"
       ],
       "status": "active",
-      "weight": 54,
+      "weight": 58,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-25T13:38:26.336Z"
+      "updated_ts": "2026-02-25T17:53:58.655Z"
     },
     {
       "uid": "ft6a0ykfwtuazsp6z9ya4tse",
@@ -151,12 +134,12 @@
         "anomalies"
       ],
       "status": "active",
-      "weight": 54,
+      "weight": 58,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-25T13:38:26.336Z"
+      "updated_ts": "2026-02-25T17:53:58.655Z"
     },
     {
       "uid": "ft17lhwbgfe03l72726gutx5",
@@ -168,12 +151,12 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 52,
+      "weight": 44,
       "cooldown_minutes": 90,
       "hit_count": 13,
       "last_hit_ts": "2026-02-23T17:21:32.821Z",
       "created_ts": "2026-02-23T09:58:11.988Z",
-      "updated_ts": "2026-02-25T13:38:26.336Z"
+      "updated_ts": "2026-02-25T17:53:58.655Z"
     },
     {
       "uid": "ft3x4o9uqzkbcdwwhneftot4",
@@ -185,12 +168,12 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 52,
+      "weight": 44,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-23T09:58:11.988Z",
-      "updated_ts": "2026-02-25T13:38:26.336Z"
+      "updated_ts": "2026-02-25T17:53:58.655Z"
     },
     {
       "uid": "ftq23fu36ppv4n3yzv0357rs",
@@ -202,12 +185,46 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 48,
+      "weight": 41,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-25T13:38:26.336Z"
+      "updated_ts": "2026-02-25T17:53:58.655Z"
+    },
+    {
+      "uid": "ft4hr10chp9de1v7xrm40tgs",
+      "key": "token:across",
+      "pattern": "across",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "anomalies"
+      ],
+      "status": "active",
+      "weight": 39,
+      "cooldown_minutes": 90,
+      "hit_count": 0,
+      "last_hit_ts": null,
+      "created_ts": "2026-02-25T17:53:58.655Z",
+      "updated_ts": "2026-02-25T17:53:58.655Z"
+    },
+    {
+      "uid": "ft20nvngxs1zep0yxlatbdp9",
+      "key": "token:days",
+      "pattern": "days",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "anomalies"
+      ],
+      "status": "active",
+      "weight": 39,
+      "cooldown_minutes": 90,
+      "hit_count": 0,
+      "last_hit_ts": null,
+      "created_ts": "2026-02-25T17:53:58.655Z",
+      "updated_ts": "2026-02-25T17:53:58.655Z"
     },
     {
       "uid": "ft4k3924z5gqr2k65hhukkgn",
@@ -219,12 +236,12 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 46,
+      "weight": 39,
       "cooldown_minutes": 90,
       "hit_count": 2,
       "last_hit_ts": "2026-02-21T21:45:43.704Z",
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-25T13:38:26.336Z"
+      "updated_ts": "2026-02-25T17:53:58.655Z"
     },
     {
       "uid": "ft3ryke2h5gp5nsj557nymem",
@@ -236,12 +253,12 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 46,
+      "weight": 39,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-25T13:38:26.336Z"
+      "updated_ts": "2026-02-25T17:53:58.655Z"
     },
     {
       "uid": "ft39x57i8nf8q87e91gv7qzy",
@@ -253,12 +270,12 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 46,
+      "weight": 39,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-25T13:38:26.336Z"
+      "updated_ts": "2026-02-25T17:53:58.655Z"
     },
     {
       "uid": "ft4m3sabx44qy9wf60ewfbza",
@@ -270,131 +287,12 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 43,
+      "weight": 37,
       "cooldown_minutes": 90,
       "hit_count": 5,
       "last_hit_ts": "2026-02-23T16:26:33.050Z",
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-25T13:38:26.336Z"
-    },
-    {
-      "uid": "ft1fz2j83196slr4cvu2d7bw",
-      "key": "token:risk",
-      "pattern": "risk",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 42,
-      "cooldown_minutes": 90,
-      "hit_count": 1,
-      "last_hit_ts": "2026-02-23T15:30:25.342Z",
-      "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-25T13:38:26.336Z"
-    },
-    {
-      "uid": "ft5scteiftpw21yv5r8kaxne",
-      "key": "token:quality",
-      "pattern": "quality",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 37,
-      "cooldown_minutes": 90,
-      "hit_count": 0,
-      "last_hit_ts": null,
-      "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-25T13:38:26.336Z"
-    },
-    {
-      "uid": "ft5gzzwbjt08966rma9j5xk3",
-      "key": "token:eyes",
-      "pattern": "eyes",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 36,
-      "cooldown_minutes": 90,
-      "hit_count": 0,
-      "last_hit_ts": null,
-      "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-25T13:38:26.336Z"
-    },
-    {
-      "uid": "ft3jpsih8v1go94wsol7xi7r",
-      "key": "token:improve",
-      "pattern": "improve",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 36,
-      "cooldown_minutes": 90,
-      "hit_count": 2,
-      "last_hit_ts": "2026-02-21T21:45:43.704Z",
-      "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-25T13:38:26.336Z"
-    },
-    {
-      "uid": "ftln7gn2fdw0r65wo8qh6wwe",
-      "key": "token:topic",
-      "pattern": "topic",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 36,
-      "cooldown_minutes": 90,
-      "hit_count": 0,
-      "last_hit_ts": null,
-      "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-25T13:38:26.336Z"
-    },
-    {
-      "uid": "ft2in0s8wi2sluqdgu3o6vp8",
-      "key": "token:campaign",
-      "pattern": "campaign",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 35,
-      "cooldown_minutes": 90,
-      "hit_count": 0,
-      "last_hit_ts": null,
-      "created_ts": "2026-02-23T09:58:11.988Z",
-      "updated_ts": "2026-02-25T13:38:26.336Z"
-    },
-    {
-      "uid": "ft2h2n4qm7kh76fydahw6oxr",
-      "key": "token:freelance",
-      "pattern": "freelance",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 34,
-      "cooldown_minutes": 90,
-      "hit_count": 47,
-      "last_hit_ts": "2026-02-23T17:21:32.821Z",
-      "created_ts": "2026-02-21T02:43:27.698Z",
-      "updated_ts": "2026-02-25T13:38:26.336Z"
+      "updated_ts": "2026-02-25T17:53:58.655Z"
     },
     {
       "uid": "ft4klnv7pcmlxwji8o3nyq7m",
@@ -406,12 +304,114 @@
         "directives"
       ],
       "status": "active",
-      "weight": 34,
+      "weight": 33,
       "cooldown_minutes": 90,
       "hit_count": 4,
       "last_hit_ts": "2026-02-22T14:46:19.528Z",
       "created_ts": "2026-02-21T02:43:27.698Z",
-      "updated_ts": "2026-02-25T13:38:26.336Z"
+      "updated_ts": "2026-02-25T17:53:58.655Z"
+    },
+    {
+      "uid": "ft5gzzwbjt08966rma9j5xk3",
+      "key": "token:eyes",
+      "pattern": "eyes",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "proposals"
+      ],
+      "status": "active",
+      "weight": 31,
+      "cooldown_minutes": 90,
+      "hit_count": 0,
+      "last_hit_ts": null,
+      "created_ts": "2026-02-21T06:43:30.470Z",
+      "updated_ts": "2026-02-25T17:53:58.655Z"
+    },
+    {
+      "uid": "ft3jpsih8v1go94wsol7xi7r",
+      "key": "token:improve",
+      "pattern": "improve",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "proposals"
+      ],
+      "status": "active",
+      "weight": 31,
+      "cooldown_minutes": 90,
+      "hit_count": 2,
+      "last_hit_ts": "2026-02-21T21:45:43.704Z",
+      "created_ts": "2026-02-21T06:43:30.470Z",
+      "updated_ts": "2026-02-25T17:53:58.655Z"
+    },
+    {
+      "uid": "ft5scteiftpw21yv5r8kaxne",
+      "key": "token:quality",
+      "pattern": "quality",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "proposals"
+      ],
+      "status": "active",
+      "weight": 31,
+      "cooldown_minutes": 90,
+      "hit_count": 0,
+      "last_hit_ts": null,
+      "created_ts": "2026-02-21T06:43:30.470Z",
+      "updated_ts": "2026-02-25T17:53:58.655Z"
+    },
+    {
+      "uid": "ftln7gn2fdw0r65wo8qh6wwe",
+      "key": "token:topic",
+      "pattern": "topic",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "proposals"
+      ],
+      "status": "active",
+      "weight": 31,
+      "cooldown_minutes": 90,
+      "hit_count": 0,
+      "last_hit_ts": null,
+      "created_ts": "2026-02-21T06:43:30.470Z",
+      "updated_ts": "2026-02-25T17:53:58.655Z"
+    },
+    {
+      "uid": "ft2in0s8wi2sluqdgu3o6vp8",
+      "key": "token:campaign",
+      "pattern": "campaign",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "proposals"
+      ],
+      "status": "active",
+      "weight": 30,
+      "cooldown_minutes": 90,
+      "hit_count": 0,
+      "last_hit_ts": null,
+      "created_ts": "2026-02-23T09:58:11.988Z",
+      "updated_ts": "2026-02-25T17:53:58.655Z"
+    },
+    {
+      "uid": "ft2h2n4qm7kh76fydahw6oxr",
+      "key": "token:freelance",
+      "pattern": "freelance",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "proposals"
+      ],
+      "status": "active",
+      "weight": 29,
+      "cooldown_minutes": 90,
+      "hit_count": 47,
+      "last_hit_ts": "2026-02-23T17:21:32.821Z",
+      "created_ts": "2026-02-21T02:43:27.698Z",
+      "updated_ts": "2026-02-25T17:53:58.655Z"
     },
     {
       "uid": "ft5nf566cuocdehzvfy7hvrn",
@@ -423,12 +423,29 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 33,
+      "weight": 28,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-25T13:38:26.336Z"
+      "updated_ts": "2026-02-25T17:53:58.655Z"
+    },
+    {
+      "uid": "ft30g741vaay3g6ug2o0ip6g",
+      "key": "token:com",
+      "pattern": "com",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "proposals"
+      ],
+      "status": "active",
+      "weight": 26,
+      "cooldown_minutes": 90,
+      "hit_count": 179,
+      "last_hit_ts": "2026-02-25T18:24:22.044Z",
+      "created_ts": "2026-02-23T15:20:59.511Z",
+      "updated_ts": "2026-02-25T18:24:22.044Z"
     },
     {
       "uid": "ft4dbd6htnekju3dc23t3ino",
@@ -441,12 +458,12 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 31,
+      "weight": 26,
       "cooldown_minutes": 90,
-      "hit_count": 0,
-      "last_hit_ts": null,
+      "hit_count": 1,
+      "last_hit_ts": "2026-02-25T17:53:59.839Z",
       "created_ts": "2026-02-23T15:20:59.511Z",
-      "updated_ts": "2026-02-25T13:38:26.336Z"
+      "updated_ts": "2026-02-25T17:53:59.839Z"
     },
     {
       "uid": "ft3p7upgpvcq7p2g5l62pdub",
@@ -458,12 +475,12 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 31,
+      "weight": 26,
       "cooldown_minutes": 90,
       "hit_count": 68,
       "last_hit_ts": "2026-02-23T17:21:32.821Z",
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-25T13:38:26.336Z"
+      "updated_ts": "2026-02-25T17:53:58.655Z"
     },
     {
       "uid": "ft3lbog1vjlfu56fykmd5cyy",
@@ -475,29 +492,12 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 31,
+      "weight": 26,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-23T09:58:11.988Z",
-      "updated_ts": "2026-02-25T13:38:26.336Z"
-    },
-    {
-      "uid": "ft30g741vaay3g6ug2o0ip6g",
-      "key": "token:com",
-      "pattern": "com",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 30,
-      "cooldown_minutes": 90,
-      "hit_count": 172,
-      "last_hit_ts": "2026-02-25T16:45:52.719Z",
-      "created_ts": "2026-02-23T15:20:59.511Z",
-      "updated_ts": "2026-02-25T16:45:52.719Z"
+      "updated_ts": "2026-02-25T17:53:58.655Z"
     },
     {
       "uid": "ft4lbkjwhv0gvab0yqcku36p",
@@ -509,12 +509,12 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 29,
+      "weight": 25,
       "cooldown_minutes": 90,
-      "hit_count": 63,
-      "last_hit_ts": "2026-02-25T16:42:09.027Z",
+      "hit_count": 64,
+      "last_hit_ts": "2026-02-25T18:23:18.744Z",
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-25T16:42:09.027Z"
+      "updated_ts": "2026-02-25T18:23:18.744Z"
     },
     {
       "uid": "ftxuncz0jz4j3dv9m1gk1x8s",
@@ -526,12 +526,12 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 29,
+      "weight": 25,
       "cooldown_minutes": 90,
       "hit_count": 21,
       "last_hit_ts": "2026-02-23T16:26:33.050Z",
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-25T13:38:26.336Z"
+      "updated_ts": "2026-02-25T17:53:58.655Z"
     },
     {
       "uid": "ftvp7jbtwjzzg9twpve6ddza",
@@ -543,12 +543,12 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 28,
+      "weight": 24,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-23T09:58:11.988Z",
-      "updated_ts": "2026-02-25T13:38:26.336Z"
+      "updated_ts": "2026-02-25T17:53:58.655Z"
     },
     {
       "uid": "ft4wj5rdzsjsa6vi0g0ktqh7",
@@ -560,12 +560,12 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 26,
+      "weight": 22,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-25T13:38:26.336Z"
+      "updated_ts": "2026-02-25T17:53:58.655Z"
     },
     {
       "uid": "ft6aa3y5yefrv9skn68znwld",
@@ -577,12 +577,12 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 26,
+      "weight": 22,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-25T13:38:26.336Z"
+      "updated_ts": "2026-02-25T17:53:58.655Z"
     },
     {
       "uid": "ft1foyqfjjf31nfske233owr",
@@ -594,12 +594,12 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 23,
+      "weight": 20,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-23T20:05:41.987Z",
-      "updated_ts": "2026-02-25T13:38:26.336Z"
+      "updated_ts": "2026-02-25T17:53:58.655Z"
     },
     {
       "uid": "ftg64r8hve5xzfow9a37ev3y",
@@ -611,12 +611,12 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 22,
+      "weight": 19,
       "cooldown_minutes": 90,
       "hit_count": 71,
       "last_hit_ts": "2026-02-23T17:21:32.821Z",
       "created_ts": "2026-02-21T02:43:27.698Z",
-      "updated_ts": "2026-02-25T13:38:26.336Z"
+      "updated_ts": "2026-02-25T17:53:58.655Z"
     },
     {
       "uid": "ft3royntyttzckgxtx3gieeg",
@@ -628,12 +628,12 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 22,
+      "weight": 19,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-23T09:58:11.988Z",
-      "updated_ts": "2026-02-25T13:38:26.336Z"
+      "updated_ts": "2026-02-25T17:53:58.655Z"
     },
     {
       "uid": "ft2oucdb619v88i8vu8x2a64",
@@ -645,12 +645,12 @@
         "directives"
       ],
       "status": "active",
-      "weight": 20,
+      "weight": 17,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-21T02:43:27.698Z",
-      "updated_ts": "2026-02-25T13:38:26.336Z"
+      "updated_ts": "2026-02-25T17:53:58.655Z"
     },
     {
       "uid": "ft3ot9nfy1o3fnh1qyl77kxm",
@@ -662,12 +662,12 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 20,
+      "weight": 17,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-23T15:20:59.511Z",
-      "updated_ts": "2026-02-25T13:38:26.336Z"
+      "updated_ts": "2026-02-25T17:53:58.655Z"
     },
     {
       "uid": "ft2xwzwxngr50xa5g83ya04l",
@@ -679,64 +679,12 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 20,
+      "weight": 17,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-25T13:38:26.336Z"
-    },
-    {
-      "uid": "ft43ct1br4hfqoxqvg6e85y1",
-      "key": "token:failure",
-      "pattern": "failure",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "anomalies",
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 19,
-      "cooldown_minutes": 90,
-      "hit_count": 0,
-      "last_hit_ts": null,
-      "created_ts": "2026-02-23T20:05:41.987Z",
-      "updated_ts": "2026-02-25T13:38:26.336Z"
-    },
-    {
-      "uid": "ft295r3uf47ycdrst7r72s32",
-      "key": "token:metrics",
-      "pattern": "metrics",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 19,
-      "cooldown_minutes": 90,
-      "hit_count": 0,
-      "last_hit_ts": null,
-      "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-25T13:38:26.336Z"
-    },
-    {
-      "uid": "ft622h4wui949e6godhdhhdq",
-      "key": "token:pain",
-      "pattern": "pain",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 19,
-      "cooldown_minutes": 90,
-      "hit_count": 0,
-      "last_hit_ts": null,
-      "created_ts": "2026-02-23T20:05:41.987Z",
-      "updated_ts": "2026-02-25T13:38:26.336Z"
+      "updated_ts": "2026-02-25T17:53:58.655Z"
     },
     {
       "uid": "ft338el555kgy4bhadn3ziqz",
@@ -748,29 +696,12 @@
         "directives"
       ],
       "status": "active",
-      "weight": 17,
+      "weight": 16,
       "cooldown_minutes": 90,
       "hit_count": 5,
       "last_hit_ts": "2026-02-23T17:21:32.821Z",
       "created_ts": "2026-02-23T09:58:11.988Z",
-      "updated_ts": "2026-02-25T13:38:26.336Z"
-    },
-    {
-      "uid": "ft2xxsez33hb04dnwc1wmcis",
-      "key": "token:decomposition",
-      "pattern": "decomposition",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 17,
-      "cooldown_minutes": 90,
-      "hit_count": 0,
-      "last_hit_ts": null,
-      "created_ts": "2026-02-24T17:25:07.998Z",
-      "updated_ts": "2026-02-25T13:38:26.336Z"
+      "updated_ts": "2026-02-25T17:53:58.655Z"
     },
     {
       "uid": "ft2uekd41gc5sg14qa33ye8p",
@@ -782,12 +713,46 @@
         "strategy"
       ],
       "status": "active",
-      "weight": 12,
+      "weight": 16,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-25T13:38:26.336Z",
-      "updated_ts": "2026-02-25T13:38:26.336Z"
+      "updated_ts": "2026-02-25T17:53:58.655Z"
+    },
+    {
+      "uid": "ft295r3uf47ycdrst7r72s32",
+      "key": "token:metrics",
+      "pattern": "metrics",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "proposals"
+      ],
+      "status": "active",
+      "weight": 16,
+      "cooldown_minutes": 90,
+      "hit_count": 0,
+      "last_hit_ts": null,
+      "created_ts": "2026-02-21T06:43:30.470Z",
+      "updated_ts": "2026-02-25T17:53:58.655Z"
+    },
+    {
+      "uid": "ft622h4wui949e6godhdhhdq",
+      "key": "token:pain",
+      "pattern": "pain",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "proposals"
+      ],
+      "status": "active",
+      "weight": 16,
+      "cooldown_minutes": 90,
+      "hit_count": 0,
+      "last_hit_ts": null,
+      "created_ts": "2026-02-23T20:05:41.987Z",
+      "updated_ts": "2026-02-25T17:53:58.655Z"
     },
     {
       "uid": "ft37raft1ohxyxzexz9x2xw4",
@@ -799,12 +764,63 @@
         "directives"
       ],
       "status": "active",
-      "weight": 10,
+      "weight": 14,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-25T13:38:26.336Z",
-      "updated_ts": "2026-02-25T13:38:26.336Z"
+      "updated_ts": "2026-02-25T17:53:58.655Z"
+    },
+    {
+      "uid": "ft2xxsez33hb04dnwc1wmcis",
+      "key": "token:decomposition",
+      "pattern": "decomposition",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "proposals"
+      ],
+      "status": "active",
+      "weight": 14,
+      "cooldown_minutes": 90,
+      "hit_count": 0,
+      "last_hit_ts": null,
+      "created_ts": "2026-02-24T17:25:07.998Z",
+      "updated_ts": "2026-02-25T17:53:58.655Z"
+    },
+    {
+      "uid": "ft43ct1br4hfqoxqvg6e85y1",
+      "key": "token:failure",
+      "pattern": "failure",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "proposals"
+      ],
+      "status": "active",
+      "weight": 11,
+      "cooldown_minutes": 90,
+      "hit_count": 0,
+      "last_hit_ts": null,
+      "created_ts": "2026-02-23T20:05:41.987Z",
+      "updated_ts": "2026-02-25T17:53:58.655Z"
+    },
+    {
+      "uid": "ftwpujs84xqbymr2ua399n5o",
+      "key": "token:compounding",
+      "pattern": "compounding",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "directives"
+      ],
+      "status": "active",
+      "weight": 10,
+      "cooldown_minutes": 90,
+      "hit_count": 0,
+      "last_hit_ts": null,
+      "created_ts": "2026-02-25T17:53:58.655Z",
+      "updated_ts": "2026-02-25T17:53:58.655Z"
     }
   ],
   "eye_lenses": {
@@ -1587,17 +1603,17 @@
       ],
       "exclude_terms": [],
       "term_weights": {
-        "ai": 6,
-        "startups": 6,
-        "business": 3,
+        "ai": 11,
+        "startups": 11,
+        "business": 5,
         "automation": 3,
-        "revenue": 6
+        "revenue": 11
       },
       "baseline_topics": [],
-      "focus_hits_total": 3,
-      "update_count": 10,
+      "focus_hits_total": 7,
+      "update_count": 14,
       "created_ts": "2026-02-23T15:20:59.539Z",
-      "updated_ts": "2026-02-25T16:45:52.719Z"
+      "updated_ts": "2026-02-25T18:23:18.744Z"
     },
     "proto_affc19cbf503b0d7": {
       "eye_id": "proto_affc19cbf503b0d7",
@@ -1860,15 +1876,15 @@
       ],
       "exclude_terms": [],
       "term_weights": {
-        "t1_generational_wealth_v1": 14
+        "t1_generational_wealth_v1": 20
       },
       "baseline_topics": [
         "t1_generational_wealth_v1"
       ],
-      "focus_hits_total": 2,
-      "update_count": 6,
+      "focus_hits_total": 5,
+      "update_count": 9,
       "created_ts": "2026-02-24T05:00:32.146Z",
-      "updated_ts": "2026-02-25T16:42:09.027Z"
+      "updated_ts": "2026-02-25T18:24:22.044Z"
     }
   },
   "recent_focus_items": {
@@ -1876,15 +1892,22 @@
     "id:5fff89a4d1da750f": "2026-02-25T16:42:09.027Z",
     "id:2724da09f034140a": "2026-02-25T16:42:12.322Z",
     "id:757b25c3831e8486": "2026-02-25T16:45:50.735Z",
-    "id:8072a682db46e9f2": "2026-02-25T16:45:52.719Z"
+    "id:8072a682db46e9f2": "2026-02-25T16:45:52.719Z",
+    "id:6600b0822c383811": "2026-02-25T17:53:59.839Z",
+    "id:98f5005bfbc048c7": "2026-02-25T17:54:02.216Z",
+    "id:a7fe22a59060a33c": "2026-02-25T17:57:45.819Z",
+    "id:c2705dbd1af62eef": "2026-02-25T18:23:18.744Z",
+    "id:64a08dc998ec7146": "2026-02-25T18:23:20.484Z",
+    "id:d9b8859a619d5f39": "2026-02-25T18:23:22.184Z",
+    "id:00f15ec13d512666": "2026-02-25T18:24:22.044Z"
   },
-  "last_refresh_ts": "2026-02-25T13:38:26.336Z",
+  "last_refresh_ts": "2026-02-25T17:53:58.655Z",
   "last_refresh_sources": {
     "strategy": 8,
     "directives": 8,
-    "proposals": 0,
-    "anomalies": 22,
-    "top_eyes": 1
+    "proposals": 1,
+    "anomalies": 20,
+    "top_eyes": 6
   },
   "last_lens_refresh_ts": "2026-02-25T16:42:06.732Z",
   "last_lens_refresh_sources": {
@@ -1895,9 +1918,9 @@
     "catalog_eyes": 1
   },
   "stats": {
-    "refresh_count": 19,
+    "refresh_count": 20,
     "lens_refresh_count": 14,
-    "focused_items_total": 403,
-    "last_focus_ts": "2026-02-25T16:45:52.719Z"
+    "focused_items_total": 410,
+    "last_focus_ts": "2026-02-25T18:24:22.044Z"
   }
 }

@@ -1,0 +1,62 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: protheus-daily
+  namespace: protheus
+spec:
+  schedule: "0 */4 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 5
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: protheus
+            app.kubernetes.io/component: daily-orchestrator
+        spec:
+          restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: spine-daily
+              image: protheus:latest
+              imagePullPolicy: IfNotPresent
+              command: ["node", "systems/spine/spine.js", "daily"]
+              envFrom:
+                - configMapRef:
+                    name: protheus-runtime-config
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+              resources:
+                requests:
+                  cpu: "250m"
+                  memory: "512Mi"
+                limits:
+                  cpu: "1000m"
+                  memory: "2Gi"
+              volumeMounts:
+                - name: state
+                  mountPath: /app/state
+                - name: logs
+                  mountPath: /app/logs
+                - name: tmp
+                  mountPath: /tmp
+                - name: app-tmp
+                  mountPath: /app/tmp
+          volumes:
+            - name: state
+              emptyDir: {}
+            - name: logs
+              emptyDir: {}
+            - name: tmp
+              emptyDir: {}
+            - name: app-tmp
+              emptyDir: {}

@@ -1,0 +1,21 @@
+services:
+  protheus:
+    image: protheus:local
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: protheus
+    command: ["node", "systems/spine/spine.js", "daily"]
+    environment:
+      CLEARANCE: "3"
+      NODE_ENV: "production"
+      SPINE_PUBLIC_BENCHMARK_ENABLED: "0"
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /app/tmp
+    volumes:
+      - ./state:/app/state
+      - ./logs:/app/logs
+      - ./secrets:/app/secrets:ro

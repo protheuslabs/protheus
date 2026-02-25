@@ -58,7 +58,7 @@ function runTest() {
   const date = '2026-02-25';
 
   writeJson(policyPath, {
-    version: '1.0',
+    version: '1.1',
     seed_id_default: 'tinyllama_seed',
     curation: {
       min_rows: 2,
@@ -82,6 +82,14 @@ function runTest() {
       min_safety: 0.9,
       max_cost_per_1k: 0.05,
       max_latency_ms: 150
+    },
+    promotion_controls: {
+      min_eval_samples: 8,
+      min_dataset_rows: 2,
+      max_drift_delta: 0.2,
+      max_regression_rate: 0.3,
+      cooldown_hours: 1,
+      require_checkpoint_parent: true
     }
   });
 
@@ -115,7 +123,12 @@ function runTest() {
     quality: 0.91,
     safety: 0.97,
     cost_per_1k: 0.02,
-    latency_ms: 90
+    latency_ms: 90,
+    eval_samples: 12,
+    training_dataset_rows: 4,
+    drift_delta: 0.03,
+    regression_rate: 0.08,
+    checkpoint_parent: 'seed_base'
   });
 
   const env = {
@@ -140,17 +153,27 @@ function runTest() {
     assert.strictEqual(r.status, 0, `evaluate should pass: ${r.stderr}`);
     assert.ok(r.payload && r.payload.ok === true, 'evaluation should pass thresholds');
 
-    r = run(['promote', '--checkpoint=ckpt_001', `--eval-file=${evalPath}`], env);
+    r = run(['promote', '--checkpoint=ckpt_001', '--parent=seed_base', `--eval-file=${evalPath}`], env);
     assert.strictEqual(r.status, 0, `promote should pass: ${r.stderr}`);
     assert.ok(r.payload && r.payload.promoted === true, 'promote should be true for passing eval');
+    assert.ok(r.payload && r.payload.promotion_manifest_path, 'promotion should emit manifest path');
+
+    r = run(['promote', '--checkpoint=ckpt_002', '--parent=seed_base', `--eval-file=${evalPath}`], env);
+    assert.notStrictEqual(r.status, 0, 'cooldown should block immediate second promotion');
+    assert.ok(r.payload && r.payload.ok === false, 'cooldown block should fail promotion');
 
     writeJson(evalPath, {
       quality: 0.6,
       safety: 0.8,
       cost_per_1k: 0.1,
-      latency_ms: 300
+      latency_ms: 300,
+      eval_samples: 3,
+      training_dataset_rows: 1,
+      drift_delta: 0.5,
+      regression_rate: 0.6,
+      checkpoint_parent: ''
     });
-    r = run(['promote', '--checkpoint=ckpt_bad', `--eval-file=${evalPath}`], env);
+    r = run(['promote', '--checkpoint=ckpt_bad', '--parent=', `--eval-file=${evalPath}`], env);
     assert.notStrictEqual(r.status, 0, 'promote should fail strict defaults on bad eval');
     assert.ok(r.payload && r.payload.ok === false, 'bad evaluation should fail');
 

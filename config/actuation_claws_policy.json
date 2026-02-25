@@ -1,0 +1,31 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "default_lane": "api",
+  "adapter_lane_map": {
+    "moltbook_publish": "api",
+    "eyes_create": "api",
+    "http_request": "api",
+    "browser_task": "browser",
+    "computer_task": "computer_use",
+    "payment_task": "payment"
+  },
+  "lanes": {
+    "api": {
+      "mode": "active",
+      "require_human_approval": false
+    },
+    "browser": {
+      "mode": "shadow_only",
+      "require_human_approval": true
+    },
+    "computer_use": {
+      "mode": "shadow_only",
+      "require_human_approval": true
+    },
+    "payment": {
+      "mode": "disabled",
+      "require_human_approval": true
+    }
+  }
+}

@@ -65,6 +65,13 @@ node systems/spine/spine.js daily [YYYY-MM-DD] [--max-eyes=N]
 # Optional: enable daily external runtime-state backups during spine daily
 STATE_BACKUP_ENABLED=1 node systems/spine/spine.js daily [YYYY-MM-DD]
 
+# Deployment packaging gate (Docker + k8s hardening posture)
+node systems/ops/deployment_packaging.js run --profile=prod --strict=1
+
+# Compliance posture aggregate (SOC2 + integrity + attestation + packaging)
+node systems/ops/compliance_posture.js run --days=30 --profile=prod --strict=0
+node systems/ops/compliance_posture.js status latest
+
 # Optional: disable daily local probe-all refresh (enabled by default)
 SPINE_ROUTER_PROBE_ALL=0 node systems/spine/spine.js daily [YYYY-MM-DD]
 
@@ -175,6 +182,8 @@ node systems/security/emergency_stop.js release --approval-note="..."
 - See `docs/ARCHITECTURE_OWNERSHIP.md` for ownership boundaries and canonical adaptive mutation channels.
 - See `docs/OPERATOR_RUNBOOK.md` for incident response and rollback drill procedures.
 - See `docs/BRANCH_PROTECTION_POLICY.md` for required branch settings and check gates.
+- See `docs/DEPLOYMENT_PACKAGING.md` for container and Kubernetes deployment packaging.
+- See `docs/COMPLIANCE_POSTURE.md` for aggregate compliance posture scoring and gates.
 
 ## Autonomy Capability Note
 

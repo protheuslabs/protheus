@@ -1,0 +1,10 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "window_days": 14,
+  "min_pattern_occurrences": 3,
+  "min_shipped_rate": 0.28,
+  "max_drafts_per_run": 8,
+  "apply_threshold": 0.62,
+  "max_registry_workflows": 128
+}

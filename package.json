@@ -41,6 +41,19 @@
     "integrity:check": "node systems/security/integrity_reseal.js check",
     "integrity:reseal": "node systems/security/integrity_reseal.js apply",
     "visualizer:system": "node systems/ops/system_visualizer_server.js --port 8787 --host 127.0.0.1 --hours 24"
+    ,
+    "strategy:principles": "node systems/strategy/strategy_principles.js run",
+    "workflow:generate": "node systems/workflow/workflow_generator.js run",
+    "workflow:run": "node systems/workflow/workflow_controller.js run --apply=1",
+    "workflow:orchestron": "node systems/workflow/orchestron/adaptive_controller.js run",
+    "claws:status": "node systems/actuation/claw_registry.js status",
+    "install:personal": "node systems/ops/personal_protheus_installer.js install",
+    "benchmark:public": "node systems/ops/public_benchmark_pack.js run",
+    "deploy:package": "node systems/ops/deployment_packaging.js run --profile=prod --strict=1",
+    "deploy:package:status": "node systems/ops/deployment_packaging.js status latest",
+    "compliance:posture": "node systems/ops/compliance_posture.js run --profile=prod --strict=0",
+    "compliance:posture:strict": "node systems/ops/compliance_posture.js run --profile=prod --strict=1",
+    "compliance:posture:status": "node systems/ops/compliance_posture.js status latest"
   },
   "devDependencies": {
     "typescript": "^5.9.3",

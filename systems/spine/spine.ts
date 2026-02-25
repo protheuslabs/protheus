@@ -1118,10 +1118,25 @@ function main() {
     "systems/strategy/weekly_strategy_synthesis.js",
     "systems/autonomy/ops_dashboard.js",
     "systems/autonomy/red_team_harness.js",
+    "systems/autonomy/collective_shadow.js",
+    "systems/autonomy/observer_mirror.js",
+    "systems/strategy/strategy_principles.js",
+    "systems/workflow/workflow_generator.js",
+    "systems/workflow/workflow_controller.js",
     "systems/nursery/nursery_bootstrap.js",
+    "systems/actuation/claw_registry.js",
+    "systems/ops/public_benchmark_pack.js",
+    "systems/ops/deployment_packaging.js",
+    "systems/ops/compliance_posture.js",
+    "systems/ops/personal_protheus_installer.js",
     "config/actuation_adapters.json",
+    "config/actuation_claws_policy.json",
     "config/red_team_policy.json",
+    "config/collective_shadow_policy.json",
     "config/nursery_policy.json",
+    "config/workflow_policy.json",
+    "config/deployment_packaging_policy.json",
+    "config/compliance_posture_policy.json",
     "config/state_backup_policy.json",
     "skills/moltbook/actuation_adapter.js",
     "skills/moltbook/moltbook_publish_guard.js",
@@ -2514,6 +2529,251 @@ function main() {
       console.log(" weekly_strategy_synthesis skipped reason=feature_flag_disabled flag=SPINE_WEEKLY_STRATEGY_SYNTHESIS_ENABLED");
     }
 
+    // 0c) strategy principle extraction for downstream workflow generation quality.
+    if (String(process.env.SPINE_STRATEGY_PRINCIPLES_ENABLED || "1") !== "0") {
+      const principles = runJson("node", [
+        "systems/strategy/strategy_principles.js",
+        "run",
+        dateStr
+      ]);
+      const payload = principles.payload && typeof principles.payload === "object"
+        ? principles.payload
+        : null;
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_strategy_principles",
+        mode,
+        date: dateStr,
+        ok: principles.ok && !!payload && payload.ok === true,
+        strategy_id: payload ? payload.strategy_id || null : null,
+        score: payload ? Number(payload.score || 0) : null,
+        band: payload ? payload.band || null : null,
+        checks_failed: payload ? Number(payload.checks_failed || 0) : null,
+        output_path: payload ? payload.output_path || null : null,
+        reason: (!principles.ok || !payload || payload.ok !== true)
+          ? String(principles.stderr || principles.stdout || `strategy_principles_exit_${principles.code}`).slice(0, 180)
+          : null
+      });
+      if (principles.ok && payload && payload.ok === true) {
+        console.log(
+          ` strategy_principles score=${Number(payload.score || 0)}` +
+          ` band=${String(payload.band || "unknown")}`
+        );
+      } else {
+        console.log(` strategy_principles unavailable reason=${String(principles.stderr || principles.stdout || "unknown").slice(0, 120)}`);
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_strategy_principles_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "SPINE_STRATEGY_PRINCIPLES_ENABLED",
+        flag_value: String(process.env.SPINE_STRATEGY_PRINCIPLES_ENABLED || "")
+      });
+      console.log(" strategy_principles skipped reason=feature_flag_disabled flag=SPINE_STRATEGY_PRINCIPLES_ENABLED");
+    }
+
+    // 0d) adaptive workflow layer run (draft generation + optional registry apply).
+    if (String(process.env.SPINE_WORKFLOW_LAYER_ENABLED || "1") !== "0") {
+      const workflowDays = Math.max(1, Number(process.env.SPINE_WORKFLOW_LAYER_DAYS || 14) || 14);
+      const workflowMax = Math.max(1, Number(process.env.SPINE_WORKFLOW_LAYER_MAX || 8) || 8);
+      const workflowApply = String(process.env.SPINE_WORKFLOW_LAYER_APPLY || "1") !== "0" ? "1" : "0";
+      const workflow = runJson("node", [
+        "systems/workflow/workflow_controller.js",
+        "run",
+        dateStr,
+        `--days=${workflowDays}`,
+        `--max=${workflowMax}`,
+        `--apply=${workflowApply}`
+      ]);
+      const payload = workflow.payload && typeof workflow.payload === "object"
+        ? workflow.payload
+        : null;
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_workflow_layer",
+        mode,
+        date: dateStr,
+        ok: workflow.ok && !!payload && payload.ok === true,
+        apply: payload ? payload.apply === true : null,
+        drafts: payload ? Number(payload.drafts || 0) : null,
+        applied: payload ? Number(payload.applied || 0) : null,
+        updated: payload ? Number(payload.updated || 0) : null,
+        registry_total: payload ? Number(payload.registry_total || 0) : null,
+        registry_path: payload ? payload.registry_path || null : null,
+        reason: (!workflow.ok || !payload || payload.ok !== true)
+          ? String(workflow.stderr || workflow.stdout || `workflow_layer_exit_${workflow.code}`).slice(0, 180)
+          : null
+      });
+      if (workflow.ok && payload && payload.ok === true) {
+        console.log(
+          ` workflow_layer drafts=${Number(payload.drafts || 0)}` +
+          ` applied=${Number(payload.applied || 0)}` +
+          ` registry=${Number(payload.registry_total || 0)}`
+        );
+      } else {
+        console.log(` workflow_layer unavailable reason=${String(workflow.stderr || workflow.stdout || "unknown").slice(0, 120)}`);
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_workflow_layer_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "SPINE_WORKFLOW_LAYER_ENABLED",
+        flag_value: String(process.env.SPINE_WORKFLOW_LAYER_ENABLED || "")
+      });
+      console.log(" workflow_layer skipped reason=feature_flag_disabled flag=SPINE_WORKFLOW_LAYER_ENABLED");
+    }
+
+    // 0e) claw registry status snapshot (actuation lane readiness visibility).
+    if (String(process.env.SPINE_CLAW_REGISTRY_STATUS_ENABLED || "1") !== "0") {
+      const claws = runJson("node", [
+        "systems/actuation/claw_registry.js",
+        "status"
+      ]);
+      const payload = claws.payload && typeof claws.payload === "object"
+        ? claws.payload
+        : null;
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_claw_registry_status",
+        mode,
+        date: dateStr,
+        ok: claws.ok && !!payload && payload.ok === true,
+        enabled: payload ? payload.enabled === true : null,
+        default_lane: payload ? payload.default_lane || null : null,
+        lane_count: payload ? Number(payload.lane_count || 0) : null,
+        reason: (!claws.ok || !payload || payload.ok !== true)
+          ? String(claws.stderr || claws.stdout || `claw_registry_status_exit_${claws.code}`).slice(0, 180)
+          : null
+      });
+      if (claws.ok && payload && payload.ok === true) {
+        console.log(
+          ` claw_registry lanes=${Number(payload.lane_count || 0)}` +
+          ` default=${String(payload.default_lane || "unknown")}`
+        );
+      } else {
+        console.log(` claw_registry unavailable reason=${String(claws.stderr || claws.stdout || "unknown").slice(0, 120)}`);
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_claw_registry_status_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "SPINE_CLAW_REGISTRY_STATUS_ENABLED",
+        flag_value: String(process.env.SPINE_CLAW_REGISTRY_STATUS_ENABLED || "")
+      });
+      console.log(" claw_registry skipped reason=feature_flag_disabled flag=SPINE_CLAW_REGISTRY_STATUS_ENABLED");
+    }
+
+    // 0f) optional public benchmark snapshot for reproducible external reporting.
+    if (String(process.env.SPINE_PUBLIC_BENCHMARK_ENABLED || "0") !== "0") {
+      const benchmarkDays = Math.max(7, Number(process.env.SPINE_PUBLIC_BENCHMARK_DAYS || 180) || 180);
+      const benchmark = runJson("node", [
+        "systems/ops/public_benchmark_pack.js",
+        "run",
+        dateStr,
+        `--days=${benchmarkDays}`
+      ], {
+        RED_TEAM_DISABLE_MODEL_EXEC: process.env.RED_TEAM_DISABLE_MODEL_EXEC || "1"
+      });
+      const payload = benchmark.payload && typeof benchmark.payload === "object"
+        ? benchmark.payload
+        : null;
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_public_benchmark",
+        mode,
+        date: dateStr,
+        ok: benchmark.ok && !!payload && payload.ok === true,
+        days: benchmarkDays,
+        verdict: payload ? payload.verdict || null : null,
+        drift_rate: payload ? Number(payload.drift_rate || 0) : null,
+        yield_rate: payload ? Number(payload.yield_rate || 0) : null,
+        red_team_critical_fail_cases: payload ? Number(payload.red_team_critical_fail_cases || 0) : null,
+        output_path: payload ? payload.output_path || null : null,
+        reason: (!benchmark.ok || !payload || payload.ok !== true)
+          ? String(benchmark.stderr || benchmark.stdout || `public_benchmark_exit_${benchmark.code}`).slice(0, 180)
+          : null
+      });
+      if (benchmark.ok && payload && payload.ok === true) {
+        console.log(
+          ` public_benchmark verdict=${String(payload.verdict || "unknown")}` +
+          ` drift=${Number(payload.drift_rate || 0)}` +
+          ` yield=${Number(payload.yield_rate || 0)}`
+        );
+      } else {
+        console.log(` public_benchmark unavailable reason=${String(benchmark.stderr || benchmark.stdout || "unknown").slice(0, 120)}`);
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_public_benchmark_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "SPINE_PUBLIC_BENCHMARK_ENABLED",
+        flag_value: String(process.env.SPINE_PUBLIC_BENCHMARK_ENABLED || "")
+      });
+      console.log(" public_benchmark skipped reason=feature_flag_disabled flag=SPINE_PUBLIC_BENCHMARK_ENABLED");
+    }
+
+    // 0g) optional compliance posture aggregation (SOC2 + integrity + packaging).
+    if (String(process.env.SPINE_COMPLIANCE_POSTURE_ENABLED || "0") !== "0") {
+      const postureDays = Math.max(1, Number(process.env.SPINE_COMPLIANCE_POSTURE_DAYS || 30) || 30);
+      const postureProfile = String(process.env.SPINE_COMPLIANCE_POSTURE_PROFILE || "prod").trim() || "prod";
+      const posture = runJson("node", [
+        "systems/ops/compliance_posture.js",
+        "run",
+        `--days=${postureDays}`,
+        `--profile=${postureProfile}`,
+        "--strict=0"
+      ]);
+      const payload = posture.payload && typeof posture.payload === "object"
+        ? posture.payload
+        : null;
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_compliance_posture",
+        mode,
+        date: dateStr,
+        ok: posture.ok && !!payload && payload.ok === true,
+        days: postureDays,
+        profile: postureProfile,
+        verdict: payload ? payload.verdict || null : null,
+        posture_score: payload ? Number(payload.posture_score || 0) : null,
+        output_path: payload ? payload.output_path || null : null,
+        reason: (!posture.ok || !payload || payload.ok !== true)
+          ? String(posture.stderr || posture.stdout || `compliance_posture_exit_${posture.code}`).slice(0, 180)
+          : null
+      });
+      if (posture.ok && payload && payload.ok === true) {
+        console.log(
+          ` compliance_posture verdict=${String(payload.verdict || "unknown")}` +
+          ` score=${Number(payload.posture_score || 0)}`
+        );
+      } else {
+        console.log(` compliance_posture unavailable reason=${String(posture.stderr || posture.stdout || "unknown").slice(0, 120)}`);
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_compliance_posture_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "SPINE_COMPLIANCE_POSTURE_ENABLED",
+        flag_value: String(process.env.SPINE_COMPLIANCE_POSTURE_ENABLED || "")
+      });
+      console.log(" compliance_posture skipped reason=feature_flag_disabled flag=SPINE_COMPLIANCE_POSTURE_ENABLED");
+    }
+
     // DAILY MODE (orchestration only)
     // 1) auto-record shipped outcomes from git tags
     run("node", ["habits/scripts/git_outcomes.js", "run", dateStr]);
@@ -3440,7 +3700,108 @@ function main() {
       console.log(" fractal_organism skipped reason=feature_flag_disabled flag=SPINE_FRACTAL_ORGANISM_CYCLE_ENABLED");
     }
 
-    // 4j) self-documentation closeout (daily MEMORY.md session summary with significance gating).
+    // 4j) collective shadow distillation (read-only failure-memory lane).
+    if (String(process.env.SPINE_COLLECTIVE_SHADOW_ENABLED || "1") !== "0") {
+      const shadowDays = Math.max(1, Number(process.env.SPINE_COLLECTIVE_SHADOW_DAYS || 14) || 14);
+      const collectiveShadow = runJson("node", [
+        "systems/autonomy/collective_shadow.js",
+        "run",
+        dateStr,
+        `--days=${shadowDays}`
+      ]);
+      const payload = collectiveShadow.payload && typeof collectiveShadow.payload === "object"
+        ? collectiveShadow.payload
+        : null;
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_collective_shadow",
+        mode,
+        date: dateStr,
+        ok: collectiveShadow.ok && !!payload && payload.ok === true,
+        window_days: payload ? Number(payload.window_days || shadowDays) : shadowDays,
+        run_rows: payload ? Number(payload.run_rows || 0) : null,
+        archetypes_total: payload ? Number(payload.archetypes_total || 0) : null,
+        avoid: payload ? Number(payload.avoid || 0) : null,
+        reinforce: payload ? Number(payload.reinforce || 0) : null,
+        red_team_fail_rate: payload ? Number(payload.red_team_fail_rate || 0) : null,
+        output_path: payload ? payload.output_path || null : null,
+        reason: (!collectiveShadow.ok || !payload || payload.ok !== true)
+          ? String(collectiveShadow.stderr || collectiveShadow.stdout || `collective_shadow_exit_${collectiveShadow.code}`).slice(0, 180)
+          : null
+      });
+      if (collectiveShadow.ok && payload && payload.ok === true) {
+        console.log(
+          ` collective_shadow archetypes=${Number(payload.archetypes_total || 0)}` +
+          ` avoid=${Number(payload.avoid || 0)}` +
+          ` reinforce=${Number(payload.reinforce || 0)}`
+        );
+      } else {
+        console.log(` collective_shadow unavailable reason=${String(collectiveShadow.stderr || collectiveShadow.stdout || "unknown").slice(0, 120)}`);
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_collective_shadow_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "SPINE_COLLECTIVE_SHADOW_ENABLED",
+        flag_value: String(process.env.SPINE_COLLECTIVE_SHADOW_ENABLED || "")
+      });
+      console.log(" collective_shadow skipped reason=feature_flag_disabled flag=SPINE_COLLECTIVE_SHADOW_ENABLED");
+    }
+
+    // 4k) observer mirror snapshot (read-only narrative + machine summary).
+    if (String(process.env.SPINE_OBSERVER_MIRROR_ENABLED || "1") !== "0") {
+      const mirrorDays = Math.max(1, Number(process.env.SPINE_OBSERVER_MIRROR_DAYS || 1) || 1);
+      const observerMirror = runJson("node", [
+        "systems/autonomy/observer_mirror.js",
+        "run",
+        dateStr,
+        `--days=${mirrorDays}`
+      ]);
+      const payload = observerMirror.payload && typeof observerMirror.payload === "object"
+        ? observerMirror.payload
+        : null;
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_observer_mirror",
+        mode,
+        date: dateStr,
+        ok: observerMirror.ok && !!payload && payload.ok === true,
+        mood: payload ? payload.mood || null : null,
+        drift_rate: payload ? Number(payload.drift_rate || 0) : null,
+        yield_rate: payload ? Number(payload.yield_rate || 0) : null,
+        ship_rate: payload ? Number(payload.ship_rate || 0) : null,
+        hold_rate: payload ? Number(payload.hold_rate || 0) : null,
+        queue_pressure: payload ? payload.queue_pressure || null : null,
+        output_path: payload ? payload.output_path || null : null,
+        reason: (!observerMirror.ok || !payload || payload.ok !== true)
+          ? String(observerMirror.stderr || observerMirror.stdout || `observer_mirror_exit_${observerMirror.code}`).slice(0, 180)
+          : null
+      });
+      if (observerMirror.ok && payload && payload.ok === true) {
+        console.log(
+          ` observer_mirror mood=${String(payload.mood || "unknown")}` +
+          ` drift=${payload.drift_rate == null ? "n/a" : Number(payload.drift_rate || 0)}`
+        );
+      } else {
+        console.log(` observer_mirror unavailable reason=${String(observerMirror.stderr || observerMirror.stdout || "unknown").slice(0, 120)}`);
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_observer_mirror_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "SPINE_OBSERVER_MIRROR_ENABLED",
+        flag_value: String(process.env.SPINE_OBSERVER_MIRROR_ENABLED || "")
+      });
+      console.log(" observer_mirror skipped reason=feature_flag_disabled flag=SPINE_OBSERVER_MIRROR_ENABLED");
+    }
+
+    // 4l) self-documentation closeout (daily MEMORY.md session summary with significance gating).
     if (String(process.env.SPINE_SELF_DOCUMENTATION_ENABLED || "1") !== "0") {
       const selfDocArgs = [
         "systems/autonomy/self_documentation_closeout.js",

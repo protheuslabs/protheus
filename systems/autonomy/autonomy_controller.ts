@@ -652,6 +652,17 @@ const AUTONOMY_STRATEGY_RANK_NON_YIELD_NO_PROGRESS_WEIGHT = Math.max(0, Number(p
 const AUTONOMY_STRATEGY_RANK_NON_YIELD_STOP_WEIGHT = Math.max(0, Number(process.env.AUTONOMY_STRATEGY_RANK_NON_YIELD_STOP_WEIGHT || 10));
 const AUTONOMY_STRATEGY_RANK_NON_YIELD_SHIPPED_RELIEF_WEIGHT = Math.max(0, Number(process.env.AUTONOMY_STRATEGY_RANK_NON_YIELD_SHIPPED_RELIEF_WEIGHT || 8));
 const AUTONOMY_STRATEGY_RANK_NON_YIELD_MAX_PENALTY = Math.max(0, Number(process.env.AUTONOMY_STRATEGY_RANK_NON_YIELD_MAX_PENALTY || 30));
+const COLLECTIVE_SHADOW_LATEST_PATH = process.env.AUTONOMY_COLLECTIVE_SHADOW_PATH
+  ? path.resolve(process.env.AUTONOMY_COLLECTIVE_SHADOW_PATH)
+  : path.join(REPO_ROOT, 'state', 'autonomy', 'collective_shadow', 'latest.json');
+const AUTONOMY_COLLECTIVE_SHADOW_ENABLED = String(process.env.AUTONOMY_COLLECTIVE_SHADOW_ENABLED || '1') !== '0';
+const AUTONOMY_COLLECTIVE_SHADOW_MIN_CONFIDENCE = clampNumber(
+  Number(process.env.AUTONOMY_COLLECTIVE_SHADOW_MIN_CONFIDENCE || 0.6),
+  0,
+  1
+);
+const AUTONOMY_COLLECTIVE_SHADOW_MAX_PENALTY = Math.max(0, Number(process.env.AUTONOMY_COLLECTIVE_SHADOW_MAX_PENALTY || 8));
+const AUTONOMY_COLLECTIVE_SHADOW_MAX_BONUS = Math.max(0, Number(process.env.AUTONOMY_COLLECTIVE_SHADOW_MAX_BONUS || 3));
 const AUTONOMY_TRIT_SHADOW_ENABLED = String(process.env.AUTONOMY_TRIT_SHADOW_ENABLED || '1') !== '0';
 const AUTONOMY_TRIT_SHADOW_BONUS_BLEND = clampNumber(Number(process.env.AUTONOMY_TRIT_SHADOW_BONUS_BLEND || 0.2), 0, 1);
 const AUTONOMY_TRIT_SHADOW_TOP_K = Math.max(1, Number(process.env.AUTONOMY_TRIT_SHADOW_TOP_K || 5));
@@ -665,6 +676,7 @@ const STRATEGY_SCORECARD_LATEST_PATH = process.env.AUTONOMY_STRATEGY_SCORECARD_L
 let STRATEGY_CACHE = undefined;
 let STRATEGY_VARIANTS_CACHE = undefined;
 let STRATEGY_SCORECARD_CACHE = undefined;
+let COLLECTIVE_SHADOW_CACHE = undefined;
 let OUTCOME_FITNESS_POLICY_CACHE = undefined;
 
 function strategyProfile() {
@@ -6455,6 +6467,133 @@ function candidateNonYieldPenaltySignal(cand, opts: AnyObj = {}) {
   return out;
 }
 
+function loadCollectiveShadowSnapshot() {
+  if (COLLECTIVE_SHADOW_CACHE !== undefined) return COLLECTIVE_SHADOW_CACHE;
+  const payload = loadJson(COLLECTIVE_SHADOW_LATEST_PATH, null);
+  const rows = Array.isArray(payload && payload.archetypes) ? payload.archetypes : [];
+  COLLECTIVE_SHADOW_CACHE = {
+    available: !!(payload && typeof payload === 'object' && rows.length > 0),
+    path: COLLECTIVE_SHADOW_LATEST_PATH,
+    ts: payload && payload.ts ? String(payload.ts) : null,
+    date: payload && payload.date ? String(payload.date) : null,
+    archetypes: rows
+  };
+  return COLLECTIVE_SHADOW_CACHE;
+}
+
+function shadowScopeMatchesCandidate(scope, candidateCtx) {
+  const s = scope && typeof scope === 'object' ? scope : {};
+  const scopeType = String(s.scope_type || '').trim().toLowerCase();
+  const scopeValue = String(s.scope_value || '').trim().toLowerCase();
+  const riskLevels = Array.isArray(s.risk_levels)
+    ? s.risk_levels.map((v) => String(v || '').trim().toLowerCase()).filter(Boolean)
+    : [];
+  const risk = String(candidateCtx.risk || '').trim().toLowerCase();
+  const proposalType = String(candidateCtx.proposal_type || '').trim().toLowerCase();
+  const capabilityKey = String(candidateCtx.capability_key || '').trim().toLowerCase();
+  const objectiveId = String(candidateCtx.objective_id || '').trim().toLowerCase();
+
+  if (scopeType === 'proposal_type') {
+    if (!scopeValue || !proposalType) return false;
+    return scopeValue === proposalType;
+  }
+  if (scopeType === 'capability_key') {
+    if (!scopeValue || !capabilityKey) return false;
+    return scopeValue === capabilityKey;
+  }
+  if (scopeType === 'objective_id') {
+    if (!scopeValue || !objectiveId) return false;
+    return scopeValue === objectiveId;
+  }
+  if (scopeType === 'global') {
+    if (!riskLevels.length) return true;
+    return !!risk && riskLevels.includes(risk);
+  }
+  return false;
+}
+
+function candidateCollectiveShadowSignal(cand) {
+  const out = {
+    applied: false,
+    available: false,
+    snapshot_date: null,
+    snapshot_ts: null,
+    penalty: 0,
+    bonus: 0,
+    matches: 0,
+    matched_ids: [],
+    confidence_avg: 0,
+    source_path: path.relative(REPO_ROOT, COLLECTIVE_SHADOW_LATEST_PATH).replace(/\\/g, '/')
+  };
+  if (!AUTONOMY_COLLECTIVE_SHADOW_ENABLED) return out;
+
+  const snapshot = loadCollectiveShadowSnapshot();
+  out.available = snapshot && snapshot.available === true;
+  out.snapshot_date = snapshot && snapshot.date ? snapshot.date : null;
+  out.snapshot_ts = snapshot && snapshot.ts ? snapshot.ts : null;
+  if (!snapshot || snapshot.available !== true) return out;
+
+  const proposal = cand && cand.proposal && typeof cand.proposal === 'object' ? cand.proposal : {};
+  const objectiveBinding = cand && cand.objective_binding && typeof cand.objective_binding === 'object'
+    ? cand.objective_binding
+    : {};
+  const proposalType = String(proposal && proposal.type || '').trim().toLowerCase();
+  const capabilityKey = String(
+    cand && cand.capability_key
+    || capabilityDescriptor(proposal, parseActuationSpec(proposal)).key
+    || ''
+  ).trim().toLowerCase();
+  const objectiveId = sanitizeDirectiveObjectiveId(
+    objectiveBinding.objective_id
+    || cand && cand.directive_pulse && cand.directive_pulse.objective_id
+    || proposal && proposal.meta && proposal.meta.objective_id
+    || proposal && proposal.meta && proposal.meta.directive_objective_id
+    || ''
+  ).toLowerCase();
+  const risk = normalizedRisk(cand && cand.risk || proposal && proposal.risk || 'low');
+  const candidateCtx = {
+    proposal_type: proposalType,
+    capability_key: capabilityKey,
+    objective_id: objectiveId,
+    risk
+  };
+
+  const matched = [];
+  for (const row of snapshot.archetypes) {
+    const archetype = row && typeof row === 'object' ? row : {};
+    const confidence = clampNumber(Number(archetype.confidence || 0), 0, 1);
+    if (confidence < AUTONOMY_COLLECTIVE_SHADOW_MIN_CONFIDENCE) continue;
+    if (!shadowScopeMatchesCandidate(archetype.scope, candidateCtx)) continue;
+    const kind = String(archetype.kind || '').trim().toLowerCase();
+    const impact = Math.max(0, Number(archetype.score_impact || 0));
+    matched.push({
+      id: String(archetype.id || '').trim(),
+      kind,
+      confidence,
+      score_impact: impact
+    });
+  }
+
+  if (!matched.length) return out;
+  out.applied = true;
+  out.matches = matched.length;
+  out.matched_ids = matched.map((row) => row.id).filter(Boolean).slice(0, 8);
+  out.confidence_avg = Number(
+    (matched.reduce((acc, row) => acc + Number(row.confidence || 0), 0) / matched.length).toFixed(4)
+  );
+
+  const penaltyRaw = matched
+    .filter((row) => row.kind === 'avoid')
+    .reduce((acc, row) => acc + (Number(row.score_impact || 0) * Number(row.confidence || 0)), 0);
+  const bonusRaw = matched
+    .filter((row) => row.kind === 'reinforce')
+    .reduce((acc, row) => acc + (Number(row.score_impact || 0) * Number(row.confidence || 0)), 0);
+
+  out.penalty = Number(clampNumber(penaltyRaw, 0, AUTONOMY_COLLECTIVE_SHADOW_MAX_PENALTY).toFixed(3));
+  out.bonus = Number(clampNumber(bonusRaw, 0, AUTONOMY_COLLECTIVE_SHADOW_MAX_BONUS).toFixed(3));
+  return out;
+}
+
 function candidateObjectiveId(cand, proposal) {
   const c = cand && typeof cand === 'object' ? cand : {};
   const p = proposal && typeof proposal === 'object' ? proposal : {};
@@ -6493,6 +6632,7 @@ function strategyRankForCandidate(cand, strategy, opts: AnyObj = {}) {
     ? Number(weights.value_density)
     : 0.08;
   const nonYieldPenalty = candidateNonYieldPenaltySignal(cand, opts);
+  const collectiveShadow = candidateCollectiveShadowSignal(cand);
   const components = {
     composite: clampNumber(Number(cand && cand.composite_score || 0), 0, 100),
     actionability: clampNumber(Number(cand && cand.actionability && cand.actionability.score || 0), 0, 100),
@@ -6515,6 +6655,10 @@ function strategyRankForCandidate(cand, strategy, opts: AnyObj = {}) {
     non_yield_no_progress_rate: Number(nonYieldPenalty.no_progress_rate || 0),
     non_yield_stop_rate: Number(nonYieldPenalty.stop_rate || 0),
     non_yield_shipped_rate: Number(nonYieldPenalty.shipped_rate || 0),
+    collective_shadow_penalty: Number(collectiveShadow.penalty || 0),
+    collective_shadow_bonus: Number(collectiveShadow.bonus || 0),
+    collective_shadow_matches: Number(collectiveShadow.matches || 0),
+    collective_shadow_confidence: Number(collectiveShadow.confidence_avg || 0),
     ranking_context_objective_id: rankingContext.objective_id || null,
     ranking_context_currency: rankingContext.value_currency || null,
     ranking_context_overrides: Array.isArray(rankingContext.applied_overrides)
@@ -6531,12 +6675,15 @@ function strategyRankForCandidate(cand, strategy, opts: AnyObj = {}) {
     - Number(weights.risk_penalty || 0) * components.risk_penalty
     + Number(weights.time_to_value || 0) * components.time_to_value
     - Number(nonYieldPenalty.penalty || 0)
+    - Number(collectiveShadow.penalty || 0)
+    + Number(collectiveShadow.bonus || 0)
   );
   return {
     score: Number(raw.toFixed(3)),
     components,
     adjustments: {
-      non_yield_penalty: nonYieldPenalty
+      non_yield_penalty: nonYieldPenalty,
+      collective_shadow: collectiveShadow
     },
     weights: {
       ...weights,
@@ -14827,6 +14974,7 @@ module.exports = {
   strategyTritShadowForCandidate,
   strategyTritShadowRankingSummary,
   candidateNonYieldPenaltySignal,
+  candidateCollectiveShadowSignal,
   selectStrategyForRun,
   estimateTokens,
   candidatePool,

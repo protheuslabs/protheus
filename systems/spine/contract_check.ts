@@ -763,6 +763,72 @@ function main() {
     ["specialist_training.js", "curate", "plan", "evaluate", "promote", "--profile", "--checkpoint"]
   );
 
+  // collective_shadow.js distills non-yield/red-team outcomes into bounded ranking archetypes.
+  checkScript(
+    "systems/autonomy/collective_shadow.js",
+    ["collective_shadow.js", "run", "status", "--days", "--policy"]
+  );
+
+  // observer_mirror.js emits read-only health narration and machine summary snapshots.
+  checkScript(
+    "systems/autonomy/observer_mirror.js",
+    ["observer_mirror.js", "run", "status", "--days"]
+  );
+
+  // strategy_principles.js derives implementation principles from active strategy policy.
+  checkScript(
+    "systems/strategy/strategy_principles.js",
+    ["strategy_principles.js", "run", "status"]
+  );
+
+  // workflow_generator.js emits proposal-only adaptive workflow drafts.
+  checkScript(
+    "systems/workflow/workflow_generator.js",
+    ["workflow_generator.js", "run", "status", "--days", "--max", "--policy"]
+  );
+
+  // workflow_controller.js applies/surfaces workflow registry materialization.
+  checkScript(
+    "systems/workflow/workflow_controller.js",
+    ["workflow_controller.js", "run", "list", "status", "--apply", "--days", "--max", "--policy", "--orchestron", "--orchestron-apply", "--intent"]
+  );
+
+  // orchestron adaptive_controller.js runs intent->candidate->nursery scorecard cycles.
+  checkScript(
+    "systems/workflow/orchestron/adaptive_controller.js",
+    ["adaptive_controller.js", "run", "status", "--intent", "--max-candidates", "--policy"]
+  );
+
+  // claw_registry.js governs high-power actuation lanes (browser/computer/payment).
+  checkScript(
+    "systems/actuation/claw_registry.js",
+    ["claw_registry.js", "status", "evaluate", "--kind", "--dry-run", "--context", "--policy"]
+  );
+
+  // personal_protheus_installer.js provides one-command local bootstrap.
+  checkScript(
+    "systems/ops/personal_protheus_installer.js",
+    ["personal_protheus_installer.js", "install", "status", "--profile", "--workspace", "--dry-run"]
+  );
+
+  // public_benchmark_pack.js emits reproducible public benchmark artifacts.
+  checkScript(
+    "systems/ops/public_benchmark_pack.js",
+    ["public_benchmark_pack.js", "run", "status", "--days"]
+  );
+
+  // deployment_packaging.js validates container/k8s packaging hardening posture.
+  checkScript(
+    "systems/ops/deployment_packaging.js",
+    ["deployment_packaging.js", "run", "status", "--profile", "--strict"]
+  );
+
+  // compliance_posture.js aggregates SOC2/integrity/packaging/contract posture.
+  checkScript(
+    "systems/ops/compliance_posture.js",
+    ["compliance_posture.js", "run", "status", "--days", "--profile", "--strict"]
+  );
+
   // skill_generation_pipeline.js guards pattern->candidate skill generation with policy checks.
   checkScript(
     "systems/autonomy/skill_generation_pipeline.js",

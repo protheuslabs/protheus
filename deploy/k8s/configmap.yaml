@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: protheus-runtime-config
+  namespace: protheus
+data:
+  CLEARANCE: "3"
+  NODE_ENV: "production"
+  SPINE_PUBLIC_BENCHMARK_ENABLED: "0"
+  SPINE_WORKFLOW_LAYER_ENABLED: "1"
+  SPINE_STRATEGY_PRINCIPLES_ENABLED: "1"

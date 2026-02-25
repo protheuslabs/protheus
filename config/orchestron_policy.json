@@ -1,0 +1,19 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "default_window_days": 14,
+  "min_pattern_occurrences": 2,
+  "min_candidates": 3,
+  "max_candidates": 8,
+  "max_promotions_per_run": 4,
+  "min_principle_score": 0.6,
+  "nursery": {
+    "min_safety_score": 0.62,
+    "max_regression_risk": 0.45,
+    "min_composite_score": 0.58,
+    "max_predicted_drift_delta": 0.01,
+    "min_predicted_yield_delta": -0.01,
+    "max_promotions_per_run": 4
+  }
+}

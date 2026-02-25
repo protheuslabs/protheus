@@ -5,6 +5,22 @@ on:
   workflow_dispatch:
 
 jobs:
+  typecheck_systems:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - name: Install dependencies
+        run: npm ci
+      - name: typecheck_systems
+        run: npm run typecheck:systems
+
   integrity_kernel_check:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -81,6 +97,38 @@ jobs:
         run: npm ci
       - name: docs_coverage_gate
         run: node systems/ops/docs_coverage_gate.js run --strict=1
+
+  deployment_packaging_gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - name: Install dependencies
+        run: npm ci
+      - name: deployment_packaging_gate
+        run: node systems/ops/deployment_packaging.js run --profile=prod --strict=1
+
+  compliance_posture_gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - name: Install dependencies
+        run: npm ci
+      - name: compliance_posture_gate
+        run: node systems/ops/compliance_posture.js run --profile=prod --strict=1
 
   dr_gameday_gate:
     runs-on: ubuntu-latest

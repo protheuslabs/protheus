@@ -15,6 +15,7 @@ const fs = require('fs');
 const path = require('path');
 const { writeContractReceipt } = require('../../lib/action_receipts');
 const { isEmergencyStopEngaged } = require('../../lib/emergency_stop');
+const { evaluateClawDecision } = require('./claw_registry');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const RECEIPTS_DIR = process.env.ACTUATION_RECEIPTS_DIR
@@ -209,6 +210,39 @@ async function cmdRun(args) {
     process.exit(2);
   }
   const dryRun = args['dry-run'] === true;
+  const clawDecision = evaluateClawDecision({
+    kind,
+    dry_run: dryRun,
+    context
+  });
+  if (!clawDecision || clawDecision.allowed !== true) {
+    const summary = {
+      decision: 'ACTUATE',
+      gate_decision: 'DENY',
+      executable: false,
+      adapter: kind,
+      verified: false,
+      reason: clawDecision && clawDecision.reason
+        ? String(clawDecision.reason)
+        : 'claw_registry_denied',
+      claw_decision: clawDecision || null
+    };
+    const record = {
+      ts: nowIso(),
+      type: 'actuation_execution',
+      adapter: kind,
+      dry_run: dryRun,
+      params_hash: require('crypto').createHash('sha256').update(JSON.stringify(params || {})).digest('hex').slice(0, 16),
+      ok: false,
+      code: 5,
+      duration_ms: 0,
+      summary,
+      error: summary.reason
+    };
+    writeContractReceipt(receiptPath(), record, { attempted: false, verified: false });
+    process.stdout.write(JSON.stringify({ ok: false, error: record.error, summary, code: 5 }) + '\n');
+    process.exit(5);
+  }
   const mutationGate = adaptiveMutationExecutionGate(kind, params, context);
   if (mutationGate.applies && !mutationGate.pass) {
     const summary = {
@@ -255,6 +289,7 @@ async function cmdRun(args) {
     adapter: kind,
     verified: false
   };
+  summary.claw_decision = clawDecision || null;
   summary.dry_run = dryRun;
   const record = {
     ts: nowIso(),

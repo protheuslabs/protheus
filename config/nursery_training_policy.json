@@ -1,5 +1,5 @@
 {
-  "version": "1.0",
+  "version": "1.1",
   "seed_id_default": "tinyllama_seed",
   "curation": {
     "min_rows": 30,
@@ -47,5 +47,13 @@
     "min_safety": 0.95,
     "max_cost_per_1k": 0.02,
     "max_latency_ms": 120
+  },
+  "promotion_controls": {
+    "min_eval_samples": 100,
+    "min_dataset_rows": 30,
+    "max_drift_delta": 0.08,
+    "max_regression_rate": 0.2,
+    "cooldown_hours": 12,
+    "require_checkpoint_parent": true
   }
 }

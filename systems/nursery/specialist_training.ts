@@ -10,7 +10,7 @@
  *   node systems/nursery/specialist_training.js curate [--days=30] [--write=1|0]
  *   node systems/nursery/specialist_training.js plan [--profile=small|medium|large] [--seed=tinyllama_seed]
  *   node systems/nursery/specialist_training.js evaluate [--quality=0.85] [--safety=0.95] [--cost=0.2] [--latency_ms=50] [--eval-file=/abs/path.json]
- *   node systems/nursery/specialist_training.js promote --checkpoint=<id> [--eval-file=/abs/path.json]
+ *   node systems/nursery/specialist_training.js promote --checkpoint=<id> [--parent=<checkpoint_id>] [--eval-file=/abs/path.json]
  */
 
 const fs = require('fs');
@@ -44,7 +44,7 @@ function usage() {
   console.log('  node systems/nursery/specialist_training.js curate [--days=30] [--write=1|0]');
   console.log('  node systems/nursery/specialist_training.js plan [--profile=small|medium|large] [--seed=tinyllama_seed]');
   console.log('  node systems/nursery/specialist_training.js evaluate [--quality=0.85] [--safety=0.95] [--cost=0.2] [--latency_ms=50] [--eval-file=/abs/path.json]');
-  console.log('  node systems/nursery/specialist_training.js promote --checkpoint=<id> [--eval-file=/abs/path.json]');
+  console.log('  node systems/nursery/specialist_training.js promote --checkpoint=<id> [--parent=<checkpoint_id>] [--eval-file=/abs/path.json]');
 }
 
 function parseArgs(argv) {
@@ -157,7 +157,7 @@ function windowDates(endDate, days) {
 
 function defaultPolicy() {
   return {
-    version: '1.0',
+    version: '1.1',
     seed_id_default: 'tinyllama_seed',
     curation: {
       min_rows: 30,
@@ -201,6 +201,14 @@ function defaultPolicy() {
       min_safety: 0.95,
       max_cost_per_1k: 0.02,
       max_latency_ms: 120
+    },
+    promotion_controls: {
+      min_eval_samples: 0,
+      min_dataset_rows: 0,
+      max_drift_delta: 1,
+      max_regression_rate: 1,
+      cooldown_hours: 12,
+      require_checkpoint_parent: true
     }
   };
 }
@@ -226,6 +234,42 @@ function loadPolicy(policyPath = POLICY_PATH) {
       min_safety: clampNumber(src.promotion_thresholds && src.promotion_thresholds.min_safety, 0, 1, base.promotion_thresholds.min_safety),
       max_cost_per_1k: clampNumber(src.promotion_thresholds && src.promotion_thresholds.max_cost_per_1k, 0, 100, base.promotion_thresholds.max_cost_per_1k),
       max_latency_ms: clampNumber(src.promotion_thresholds && src.promotion_thresholds.max_latency_ms, 1, 600000, base.promotion_thresholds.max_latency_ms)
+    },
+    promotion_controls: {
+      min_eval_samples: clampInt(
+        src.promotion_controls && src.promotion_controls.min_eval_samples,
+        0,
+        10000000,
+        base.promotion_controls.min_eval_samples
+      ),
+      min_dataset_rows: clampInt(
+        src.promotion_controls && src.promotion_controls.min_dataset_rows,
+        0,
+        10000000,
+        base.promotion_controls.min_dataset_rows
+      ),
+      max_drift_delta: clampNumber(
+        src.promotion_controls && src.promotion_controls.max_drift_delta,
+        0,
+        1,
+        base.promotion_controls.max_drift_delta
+      ),
+      max_regression_rate: clampNumber(
+        src.promotion_controls && src.promotion_controls.max_regression_rate,
+        0,
+        1,
+        base.promotion_controls.max_regression_rate
+      ),
+      cooldown_hours: clampNumber(
+        src.promotion_controls && src.promotion_controls.cooldown_hours,
+        0,
+        720,
+        base.promotion_controls.cooldown_hours
+      ),
+      require_checkpoint_parent: toBool(
+        src.promotion_controls && src.promotion_controls.require_checkpoint_parent,
+        base.promotion_controls.require_checkpoint_parent
+      )
     }
   };
 }
@@ -362,7 +406,12 @@ function readEvalInput(args) {
       quality: payload && Number(payload.quality),
       safety: payload && Number(payload.safety),
       cost_per_1k: payload && Number(payload.cost_per_1k),
-      latency_ms: payload && Number(payload.latency_ms)
+      latency_ms: payload && Number(payload.latency_ms),
+      eval_samples: payload && Number(payload.eval_samples),
+      training_dataset_rows: payload && Number(payload.training_dataset_rows),
+      drift_delta: payload && Number(payload.drift_delta),
+      regression_rate: payload && Number(payload.regression_rate),
+      checkpoint_parent: payload && normalizeToken(payload.checkpoint_parent || payload.parent || '', 180)
     };
   }
   return {
@@ -370,16 +419,35 @@ function readEvalInput(args) {
     quality: Number(args.quality),
     safety: Number(args.safety),
     cost_per_1k: Number(args.cost || args.cost_per_1k),
-    latency_ms: Number(args.latency_ms || args.latency)
+    latency_ms: Number(args.latency_ms || args.latency),
+    eval_samples: Number(args.eval_samples),
+    training_dataset_rows: Number(args.training_dataset_rows),
+    drift_delta: Number(args.drift_delta),
+    regression_rate: Number(args.regression_rate),
+    checkpoint_parent: normalizeToken(args.parent || args.checkpoint_parent || '', 180)
   };
 }
 
-function evaluateMetrics(input, policy) {
+function metricOrNull(v) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+function evaluateMetrics(input, policy, opts = {}) {
   const th = policy.promotion_thresholds;
+  const controls = policy.promotion_controls && typeof policy.promotion_controls === 'object'
+    ? policy.promotion_controls
+    : defaultPolicy().promotion_controls;
+  const requireCheckpointParent = opts.require_checkpoint_parent === true;
   const quality = clampNumber(input.quality, 0, 1, 0);
   const safety = clampNumber(input.safety, 0, 1, 0);
   const costPer1k = clampNumber(input.cost_per_1k, 0, 1000, Number.POSITIVE_INFINITY);
   const latencyMs = clampNumber(input.latency_ms, 0, 10000000, Number.POSITIVE_INFINITY);
+  const evalSamples = metricOrNull(input.eval_samples);
+  const datasetRows = metricOrNull(input.training_dataset_rows);
+  const driftDelta = metricOrNull(input.drift_delta);
+  const regressionRate = metricOrNull(input.regression_rate);
+  const checkpointParent = normalizeToken(input.checkpoint_parent || '', 180);
 
   const checks = {
     quality: {
@@ -401,6 +469,35 @@ function evaluateMetrics(input, policy) {
       pass: latencyMs <= th.max_latency_ms,
       value: Number(latencyMs.toFixed(4)),
       threshold: Number(th.max_latency_ms.toFixed(4))
+    },
+    eval_samples: {
+      pass: Number(evalSamples) >= Number(controls.min_eval_samples || 0),
+      value: evalSamples == null ? null : Number(evalSamples),
+      threshold: Number(controls.min_eval_samples || 0)
+    },
+    training_dataset_rows: {
+      pass: Number(datasetRows) >= Number(controls.min_dataset_rows || 0),
+      value: datasetRows == null ? null : Number(datasetRows),
+      threshold: Number(controls.min_dataset_rows || 0)
+    },
+    drift_delta: {
+      pass: Number(controls.max_drift_delta || 1) >= 1
+        ? true
+        : (driftDelta != null && Number(driftDelta) <= Number(controls.max_drift_delta || 1)),
+      value: driftDelta == null ? null : Number(Number(driftDelta).toFixed(6)),
+      threshold: Number(Number(controls.max_drift_delta || 1).toFixed(6))
+    },
+    regression_rate: {
+      pass: Number(controls.max_regression_rate || 1) >= 1
+        ? true
+        : (regressionRate != null && Number(regressionRate) <= Number(controls.max_regression_rate || 1)),
+      value: regressionRate == null ? null : Number(Number(regressionRate).toFixed(6)),
+      threshold: Number(Number(controls.max_regression_rate || 1).toFixed(6))
+    },
+    checkpoint_parent: {
+      pass: requireCheckpointParent ? checkpointParent.length > 0 : true,
+      value: checkpointParent || null,
+      required: requireCheckpointParent === true
     }
   };
   const pass = Object.values(checks).every((row) => row.pass === true);
@@ -443,19 +540,90 @@ function cmdPromote(args) {
     process.exit(2);
   }
   const policy = loadPolicy();
-  const result = evaluateMetrics(readEvalInput(args), policy);
+  const evalInputRaw = readEvalInput(args);
+  const history = readJsonl(HISTORY_PATH);
+  const latestCuration = [...history]
+    .reverse()
+    .find((row) => row && row.type === 'nursery_training_curation' && Number(row.row_count || 0) > 0);
+  const latestPromotion = [...history]
+    .reverse()
+    .find((row) => row && row.type === 'nursery_training_promotion' && row.promoted === true);
+  const controls = policy.promotion_controls && typeof policy.promotion_controls === 'object'
+    ? policy.promotion_controls
+    : defaultPolicy().promotion_controls;
+
+  const checkpointParent = normalizeToken(
+    args.parent
+    || args['checkpoint-parent']
+    || evalInputRaw.checkpoint_parent
+    || '',
+    180
+  );
+  const datasetRowsFallback = latestCuration && Number.isFinite(Number(latestCuration.row_count))
+    ? Number(latestCuration.row_count)
+    : null;
+  const evalInput = {
+    ...evalInputRaw,
+    checkpoint_parent: checkpointParent || null,
+    training_dataset_rows: Number.isFinite(Number(evalInputRaw.training_dataset_rows))
+      ? Number(evalInputRaw.training_dataset_rows)
+      : datasetRowsFallback
+  };
+  const result = evaluateMetrics(evalInput, policy, {
+    require_checkpoint_parent: controls.require_checkpoint_parent === true
+  });
+
+  const latestPromotionTs = latestPromotion && latestPromotion.ts ? Date.parse(String(latestPromotion.ts)) : NaN;
+  const cooldownMs = Number(controls.cooldown_hours || 0) * 3600000;
+  const cooldownActive = Number.isFinite(latestPromotionTs)
+    && cooldownMs > 0
+    && (Date.now() - latestPromotionTs) < cooldownMs;
+  const cooldownRemainingHours = cooldownActive
+    ? Number((((latestPromotionTs + cooldownMs) - Date.now()) / 3600000).toFixed(3))
+    : 0;
+  const promoted = result.pass && !cooldownActive;
+  const promotionGates = {
+    cooldown: {
+      pass: !cooldownActive,
+      cooldown_hours: Number(controls.cooldown_hours || 0),
+      remaining_hours: cooldownRemainingHours > 0 ? cooldownRemainingHours : 0,
+      last_promotion_ts: Number.isFinite(latestPromotionTs) ? new Date(latestPromotionTs).toISOString() : null
+    }
+  };
+
+  const promotionManifest = {
+    schema_id: 'nursery_training_promotion_manifest',
+    schema_version: '1.0.0',
+    ts: nowIso(),
+    checkpoint,
+    checkpoint_parent: checkpointParent || null,
+    policy_version: policy.version,
+    evaluation_source: result.source,
+    evaluation: result,
+    promotion_gates: promotionGates,
+    promoted,
+    dataset_row_count: Number(evalInput.training_dataset_rows || 0),
+    latest_curation_ts: latestCuration && latestCuration.ts ? String(latestCuration.ts) : null
+  };
+  const promotionManifestPath = path.join(OUT_DIR, 'promotions', `${normalizeToken(checkpoint, 180) || 'checkpoint'}.json`);
+  writeJsonAtomic(promotionManifestPath, promotionManifest);
+
   const out = {
-    ok: result.pass,
+    ok: promoted,
     type: 'nursery_training_promotion',
     ts: nowIso(),
     policy_version: policy.version,
     checkpoint,
+    checkpoint_parent: checkpointParent || null,
     evaluation: result,
-    promoted: result.pass,
-    routing_proposal: result.pass
+    promotion_gates: promotionGates,
+    promotion_manifest_path: relPath(promotionManifestPath),
+    promoted,
+    routing_proposal: promoted
       ? {
         action: 'candidate_routing_promotion',
         checkpoint,
+        checkpoint_parent: checkpointParent || null,
         mode: 'shadow_then_apprentice',
         required_human_approval: true
       }
@@ -467,6 +635,7 @@ function cmdPromote(args) {
     type: out.type,
     ok: out.ok,
     checkpoint,
+    checkpoint_parent: checkpointParent || null,
     promoted: out.promoted
   });
 
