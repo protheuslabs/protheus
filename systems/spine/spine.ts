@@ -185,6 +185,10 @@ function spineTritWeightForType(type) {
 const SPINE_TRIT_OK_RE = /\b(ok|pass|allow|approved|healthy|ready|triggered|applied|success|complete)\b/i;
 const SPINE_TRIT_PAIN_RE = /\b(fail|error|deny|blocked|violation|critical|halt|stop|degraded|unhealthy|missing|regression)\b/i;
 const SPINE_TRIT_UNKNOWN_RE = /\b(skip|skipped|unknown|unavailable|none|n\/a|noop|disabled|pending|neutral)\b/i;
+const SPINE_TRIT_ANOMALY_ENABLED = String(process.env.SPINE_TRIT_ANOMALY_ENABLED || "1") !== "0";
+const SPINE_TRIT_ANOMALY_NEGATIVE_STREAK = Math.max(1, Number(process.env.SPINE_TRIT_ANOMALY_NEGATIVE_STREAK || 2));
+const SPINE_TRIT_ANOMALY_MIN_CONFIDENCE = Math.max(0, Math.min(1, Number(process.env.SPINE_TRIT_ANOMALY_MIN_CONFIDENCE || 0.65)));
+const SPINE_TRIT_ANOMALY_MAX_SCORE = Math.max(-1, Math.min(0, Number(process.env.SPINE_TRIT_ANOMALY_MAX_SCORE || -0.2)));
 
 function spineTritSignalFromEvent(evt) {
   if (!evt || typeof evt !== "object") return null;
@@ -344,6 +348,57 @@ function emitSpineTernaryBelief(
     console.log(` spine_ternary_belief unavailable reason=${reason}`);
     return null;
   }
+}
+
+function maybeEmitSpineTritAnomaly(
+  dateStr,
+  mode,
+  latestBelief
+) {
+  if (!SPINE_TRIT_ANOMALY_ENABLED) return null;
+  const belief = latestBelief && typeof latestBelief === "object" ? latestBelief : null;
+  if (!belief) return null;
+  if (Number(belief.trit || 0) >= 0) return null;
+  if (Number(belief.confidence || 0) < SPINE_TRIT_ANOMALY_MIN_CONFIDENCE) return null;
+  if (Number(belief.score || 0) > SPINE_TRIT_ANOMALY_MAX_SCORE) return null;
+
+  const rows = readJsonl(spineRunsLedgerPath(dateStr))
+    .filter((row) => row && typeof row === "object" && String(row.type || "") === "spine_ternary_belief")
+    .filter((row) => !mode || String(row.mode || "") === String(mode))
+    .sort((a, b) => String(a.ts || "").localeCompare(String(b.ts || "")));
+  let streak = 0;
+  for (let i = rows.length - 1; i >= 0; i -= 1) {
+    const row = rows[i];
+    if (Number(row.trit || 0) < 0) {
+      streak += 1;
+      continue;
+    }
+    break;
+  }
+  if (streak < SPINE_TRIT_ANOMALY_NEGATIVE_STREAK) return null;
+  const topPain = Array.isArray(belief.top_pain_sources) ? belief.top_pain_sources.slice(0, 5) : [];
+  const alert = {
+    ts: nowIso(),
+    type: "spine_ternary_anomaly_alert",
+    mode,
+    date: dateStr,
+    severity: streak >= (SPINE_TRIT_ANOMALY_NEGATIVE_STREAK + 1) ? "critical" : "warn",
+    negative_streak: streak,
+    threshold_streak: SPINE_TRIT_ANOMALY_NEGATIVE_STREAK,
+    trit: Number(belief.trit || 0),
+    score: Number(belief.score || 0),
+    confidence: Number(belief.confidence || 0),
+    top_pain_sources: topPain,
+    reason: "ternary_negative_streak"
+  };
+  appendLedger(dateStr, alert);
+  console.log(
+    ` spine_ternary_anomaly severity=${alert.severity}` +
+    ` streak=${streak}` +
+    ` score=${Number(alert.score).toFixed(4)}` +
+    ` confidence=${Number(alert.confidence).toFixed(4)}`
+  );
+  return alert;
 }
 
 function proposalTypeMapForDate(dateStr) {
@@ -1563,10 +1618,11 @@ function main() {
       signal_slo_ok: signalSloOk,
       short_circuit: true
     });
-    emitSpineTernaryBelief(dateStr, mode, {
+    const ternary = emitSpineTernaryBelief(dateStr, mode, {
       signal_gate_ok: signalGateOk,
       signal_slo_ok: signalSloOk
     });
+    maybeEmitSpineTritAnomaly(dateStr, mode, ternary);
     console.log(
       ` spine_short_circuit reason=unchanged_state ttl_minutes=${shortCircuit.ttl_minutes}` +
       ` age_minutes=${shortCircuit.age_minutes == null ? "n/a" : shortCircuit.age_minutes}`
@@ -3127,10 +3183,11 @@ function main() {
     signal_gate_ok: signalGateOk,
     signal_slo_ok: signalSloOk
   });
-  emitSpineTernaryBelief(dateStr, mode, {
+  const ternary = emitSpineTernaryBelief(dateStr, mode, {
     signal_gate_ok: signalGateOk,
     signal_slo_ok: signalSloOk
   });
+  maybeEmitSpineTritAnomaly(dateStr, mode, ternary);
 
   if (mode === "daily") {
     const pending = modelCatalogPendingCount();

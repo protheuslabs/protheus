@@ -21,11 +21,29 @@
     "min_confidence_stage3": 0.85,
     "max_overrides_per_day": 3,
     "auto_disable_hours_on_regression": 24,
+    "activation": {
+      "enabled": true,
+      "report_window": 4,
+      "min_decisions": 20,
+      "max_divergence_rate": 0.08,
+      "require_success_criteria_pass": true,
+      "require_safety_pass": true,
+      "require_drift_non_increasing": true,
+      "calibration_window": 3,
+      "min_calibration_events": 20,
+      "min_calibration_accuracy": 0.58,
+      "max_calibration_ece": 0.23,
+      "min_source_samples": 8,
+      "min_source_hit_rate": 0.55,
+      "max_sources_below_threshold": 1,
+      "allow_if_no_source_data": false
+    },
     "auto_stage": {
       "enabled": true,
       "mode": "floor",
       "stage2": {
         "consecutive_reports": 3,
+        "min_calibration_reports": 2,
         "min_decisions": 20,
         "max_divergence_rate": 0.08,
         "min_calibration_events": 20,
@@ -33,10 +51,12 @@
         "max_calibration_ece": 0.25,
         "require_success_criteria_pass": false,
         "require_safety_pass": true,
-        "require_drift_non_increasing": true
+        "require_drift_non_increasing": true,
+        "require_source_reliability": true
       },
       "stage3": {
         "consecutive_reports": 6,
+        "min_calibration_reports": 3,
         "min_decisions": 40,
         "max_divergence_rate": 0.05,
         "min_calibration_events": 40,
@@ -44,7 +64,8 @@
         "max_calibration_ece": 0.2,
         "require_success_criteria_pass": true,
         "require_safety_pass": true,
-        "require_drift_non_increasing": true
+        "require_drift_non_increasing": true,
+        "require_source_reliability": true
       }
     }
   },

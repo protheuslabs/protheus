@@ -113,11 +113,29 @@ function defaultTritShadowPolicy() {
       min_confidence_stage3: 0.85,
       max_overrides_per_day: 3,
       auto_disable_hours_on_regression: 24,
+      activation: {
+        enabled: false,
+        report_window: 4,
+        min_decisions: 20,
+        max_divergence_rate: 0.08,
+        require_success_criteria_pass: true,
+        require_safety_pass: true,
+        require_drift_non_increasing: true,
+        calibration_window: 3,
+        min_calibration_events: 20,
+        min_calibration_accuracy: 0.58,
+        max_calibration_ece: 0.23,
+        min_source_samples: 8,
+        min_source_hit_rate: 0.55,
+        max_sources_below_threshold: 1,
+        allow_if_no_source_data: false
+      },
       auto_stage: {
         enabled: false,
         mode: 'floor',
         stage2: {
           consecutive_reports: 3,
+          min_calibration_reports: 1,
           min_decisions: 20,
           max_divergence_rate: 0.08,
           min_calibration_events: 20,
@@ -125,10 +143,12 @@ function defaultTritShadowPolicy() {
           max_calibration_ece: 0.25,
           require_success_criteria_pass: false,
           require_safety_pass: true,
-          require_drift_non_increasing: true
+          require_drift_non_increasing: true,
+          require_source_reliability: false
         },
         stage3: {
           consecutive_reports: 6,
+          min_calibration_reports: 1,
           min_decisions: 40,
           max_divergence_rate: 0.05,
           min_calibration_events: 40,
@@ -136,7 +156,8 @@ function defaultTritShadowPolicy() {
           max_calibration_ece: 0.2,
           require_success_criteria_pass: true,
           require_safety_pass: true,
-          require_drift_non_increasing: true
+          require_drift_non_increasing: true,
+          require_source_reliability: false
         }
       }
     },
@@ -157,6 +178,7 @@ function normalizeTritShadowPolicy(input: AnyObj) {
   const semantics = src.semantics && typeof src.semantics === 'object' ? src.semantics : {};
   const trust = src.trust && typeof src.trust === 'object' ? src.trust : {};
   const influence = src.influence && typeof src.influence === 'object' ? src.influence : {};
+  const activation = influence.activation && typeof influence.activation === 'object' ? influence.activation : {};
   const autoStage = influence.auto_stage && typeof influence.auto_stage === 'object' ? influence.auto_stage : {};
   const autoStage2 = autoStage.stage2 && typeof autoStage.stage2 === 'object' ? autoStage.stage2 : {};
   const autoStage3 = autoStage.stage3 && typeof autoStage.stage3 === 'object' ? autoStage.stage3 : {};
@@ -240,6 +262,73 @@ function normalizeTritShadowPolicy(input: AnyObj) {
         24 * 30,
         Number(base.influence.auto_disable_hours_on_regression)
       ),
+      activation: {
+        enabled: activation.enabled === true,
+        report_window: clampInt(
+          activation.report_window,
+          1,
+          365,
+          Number(base.influence.activation.report_window)
+        ),
+        min_decisions: clampInt(
+          activation.min_decisions,
+          1,
+          1000000,
+          Number(base.influence.activation.min_decisions)
+        ),
+        max_divergence_rate: clampNumber(
+          activation.max_divergence_rate,
+          0,
+          1,
+          Number(base.influence.activation.max_divergence_rate)
+        ),
+        require_success_criteria_pass: activation.require_success_criteria_pass !== false,
+        require_safety_pass: activation.require_safety_pass !== false,
+        require_drift_non_increasing: activation.require_drift_non_increasing !== false,
+        calibration_window: clampInt(
+          activation.calibration_window,
+          1,
+          365,
+          Number(base.influence.activation.calibration_window)
+        ),
+        min_calibration_events: clampInt(
+          activation.min_calibration_events,
+          0,
+          1000000,
+          Number(base.influence.activation.min_calibration_events)
+        ),
+        min_calibration_accuracy: clampNumber(
+          activation.min_calibration_accuracy,
+          0,
+          1,
+          Number(base.influence.activation.min_calibration_accuracy)
+        ),
+        max_calibration_ece: clampNumber(
+          activation.max_calibration_ece,
+          0,
+          1,
+          Number(base.influence.activation.max_calibration_ece)
+        ),
+        min_source_samples: clampInt(
+          activation.min_source_samples,
+          1,
+          1000000,
+          Number(base.influence.activation.min_source_samples)
+        ),
+        min_source_hit_rate: clampNumber(
+          activation.min_source_hit_rate,
+          0,
+          1,
+          Number(base.influence.activation.min_source_hit_rate)
+        ),
+        max_sources_below_threshold: clampInt(
+          activation.max_sources_below_threshold,
+          0,
+          1000000,
+          Number(base.influence.activation.max_sources_below_threshold)
+        ),
+        allow_if_no_source_data: activation.allow_if_no_source_data === true
+      },
       auto_stage: {
         enabled: autoStage.enabled === true,
         mode: String(autoStage.mode || base.influence.auto_stage.mode || 'floor').toLowerCase() === 'override' ? 'override' : 'floor',
@@ -249,6 +338,12 @@ function normalizeTritShadowPolicy(input: AnyObj) {
             1,
             365,
             Number(base.influence.auto_stage.stage2.consecutive_reports)
+          ),
+          min_calibration_reports: clampInt(
+            autoStage2.min_calibration_reports,
+            1,
+            365,
+            Number(base.influence.auto_stage.stage2.min_calibration_reports)
           ),
           min_decisions: clampInt(
             autoStage2.min_decisions,
@@ -282,7 +377,8 @@ function normalizeTritShadowPolicy(input: AnyObj) {
           ),
           require_success_criteria_pass: autoStage2.require_success_criteria_pass === true,
           require_safety_pass: autoStage2.require_safety_pass !== false,
-          require_drift_non_increasing: autoStage2.require_drift_non_increasing !== false
+          require_drift_non_increasing: autoStage2.require_drift_non_increasing !== false,
+          require_source_reliability: autoStage2.require_source_reliability === true
         },
         stage3: {
           consecutive_reports: clampInt(
@@ -290,6 +386,12 @@ function normalizeTritShadowPolicy(input: AnyObj) {
             1,
             365,
             Number(base.influence.auto_stage.stage3.consecutive_reports)
+          ),
+          min_calibration_reports: clampInt(
+            autoStage3.min_calibration_reports,
+            1,
+            365,
+            Number(base.influence.auto_stage.stage3.min_calibration_reports)
           ),
           min_decisions: clampInt(
             autoStage3.min_decisions,
@@ -323,7 +425,8 @@ function normalizeTritShadowPolicy(input: AnyObj) {
           ),
           require_success_criteria_pass: autoStage3.require_success_criteria_pass !== false,
           require_safety_pass: autoStage3.require_safety_pass !== false,
-          require_drift_non_increasing: autoStage3.require_drift_non_increasing !== false
+          require_drift_non_increasing: autoStage3.require_drift_non_increasing !== false,
+          require_source_reliability: autoStage3.require_source_reliability === true
         }
       }
     },
@@ -444,6 +547,18 @@ function latestCalibration() {
   return rows[rows.length - 1];
 }
 
+function sortedShadowReports() {
+  return readJsonl(REPORT_HISTORY_PATH)
+    .filter((row) => row && typeof row === 'object' && row.type === 'trit_shadow_report' && row.ok === true)
+    .sort((a, b) => String(a.ts || '').localeCompare(String(b.ts || '')));
+}
+
+function sortedCalibrationRows() {
+  return readJsonl(CALIBRATION_HISTORY_PATH)
+    .filter((row) => row && typeof row === 'object' && row.type === 'trit_shadow_replay_calibration' && row.ok === true)
+    .sort((a, b) => String(a.ts || '').localeCompare(String(b.ts || '')));
+}
+
 function reportPassesAutoStage(row: AnyObj, cfg: AnyObj) {
   const report = row && typeof row === 'object' ? row : {};
   const summary = report.summary && typeof report.summary === 'object' ? report.summary : {};
@@ -477,6 +592,137 @@ function calibrationPassesAutoStage(calibration: AnyObj, cfg: AnyObj) {
   return true;
 }
 
+function calibrationWindowPassesAutoStage(rows: AnyObj[], cfg: AnyObj, requiredWindow: number) {
+  const window = Math.max(1, Number(requiredWindow || 1));
+  const recent = (Array.isArray(rows) ? rows : []).slice(-window);
+  return {
+    required_window: window,
+    rows_evaluated: recent.length,
+    pass: recent.length >= window && recent.every((row) => calibrationPassesAutoStage(row, cfg)),
+    recent
+  };
+}
+
+function sourceReliabilityGate(rows: AnyObj[], cfg: AnyObj) {
+  const config = cfg && typeof cfg === 'object' ? cfg : {};
+  const minSamples = Math.max(1, Number(config.min_source_samples || 8));
+  const minHitRate = Number(config.min_source_hit_rate || 0.55);
+  const maxBelow = Math.max(0, Number(config.max_sources_below_threshold || 0));
+  const allowNoSourceData = config.allow_if_no_source_data === true;
+  const totals: AnyObj = {};
+  for (const row of Array.isArray(rows) ? rows : []) {
+    const sourceRows = Array.isArray(row && row.source_reliability) ? row.source_reliability : [];
+    for (const sourceRow of sourceRows) {
+      if (!sourceRow || typeof sourceRow !== 'object') continue;
+      const source = String(sourceRow.source || '').trim();
+      if (!source) continue;
+      const samples = Math.max(0, Number(sourceRow.samples || 0));
+      const hitRateRaw = Number(sourceRow.hit_rate);
+      const reliabilityRaw = Number(sourceRow.reliability);
+      const hitRate = Number.isFinite(hitRateRaw) ? hitRateRaw : reliabilityRaw;
+      if (!Number.isFinite(hitRate)) continue;
+      const rec = totals[source] && typeof totals[source] === 'object'
+        ? totals[source]
+        : { source, samples: 0, weighted_hits: 0 };
+      rec.samples += samples;
+      rec.weighted_hits += samples * hitRate;
+      totals[source] = rec;
+    }
+  }
+  const aggregated = Object.values(totals)
+    .map((row: AnyObj) => {
+      const samples = Math.max(0, Number(row.samples || 0));
+      const hitRate = samples > 0 ? Number(row.weighted_hits || 0) / samples : 0;
+      return {
+        source: String(row.source || ''),
+        samples,
+        hit_rate: Number(hitRate.toFixed(4)),
+        pass: samples >= minSamples && hitRate >= minHitRate
+      };
+    })
+    .sort((a: AnyObj, b: AnyObj) => Number(b.samples || 0) - Number(a.samples || 0) || String(a.source).localeCompare(String(b.source)));
+  const observed = aggregated.filter((row: AnyObj) => Number(row.samples || 0) >= minSamples);
+  const failing = observed.filter((row: AnyObj) => row.pass !== true);
+  const pass = observed.length === 0
+    ? allowNoSourceData
+    : failing.length <= maxBelow;
+  return {
+    pass,
+    observed_count: observed.length,
+    failing_count: failing.length,
+    min_source_samples: minSamples,
+    min_source_hit_rate: minHitRate,
+    max_sources_below_threshold: maxBelow,
+    allow_if_no_source_data: allowNoSourceData,
+    top_observed: observed.slice(0, 8),
+    top_failing: failing.slice(0, 8)
+  };
+}
+
+function evaluateTritShadowProductivity(policy: AnyObj = loadTritShadowPolicy()) {
+  const p = policy && typeof policy === 'object' ? policy : loadTritShadowPolicy();
+  const activation = p && p.influence && p.influence.activation && typeof p.influence.activation === 'object'
+    ? p.influence.activation
+    : {};
+  if (activation.enabled !== true) {
+    return {
+      enabled: false,
+      active: true,
+      reason: 'activation_gate_disabled',
+      report_rows_evaluated: 0,
+      calibration_rows_evaluated: 0,
+      source_reliability: null
+    };
+  }
+  const reports = sortedShadowReports();
+  const reportWindow = Math.max(1, Number(activation.report_window || 1));
+  const recentReports = reports.slice(-reportWindow);
+  const reportsPass = recentReports.length >= reportWindow
+    && recentReports.every((row) => reportPassesAutoStage(row, activation));
+  if (!reportsPass) {
+    return {
+      enabled: true,
+      active: false,
+      reason: 'activation_report_threshold_not_met',
+      report_rows_evaluated: recentReports.length,
+      calibration_rows_evaluated: 0,
+      source_reliability: null
+    };
+  }
+  const calibrations = sortedCalibrationRows();
+  const calibrationWindow = Math.max(1, Number(activation.calibration_window || 1));
+  const calibrationCheck = calibrationWindowPassesAutoStage(calibrations, activation, calibrationWindow);
+  if (!calibrationCheck.pass) {
+    return {
+      enabled: true,
+      active: false,
+      reason: 'activation_calibration_threshold_not_met',
+      report_rows_evaluated: recentReports.length,
+      calibration_rows_evaluated: calibrationCheck.rows_evaluated,
+      source_reliability: null
+    };
+  }
+  const sourceReliability = sourceReliabilityGate(calibrationCheck.recent, activation);
+  if (!sourceReliability.pass) {
+    return {
+      enabled: true,
+      active: false,
+      reason: 'activation_source_reliability_not_met',
+      report_rows_evaluated: recentReports.length,
+      calibration_rows_evaluated: calibrationCheck.rows_evaluated,
+      source_reliability: sourceReliability
+    };
+  }
+  return {
+    enabled: true,
+    active: true,
+    reason: 'activation_threshold_met',
+    report_rows_evaluated: recentReports.length,
+    calibration_rows_evaluated: calibrationCheck.rows_evaluated,
+    source_reliability: sourceReliability
+  };
+}
+
 function evaluateAutoStage(policy: AnyObj) {
   const p = policy && typeof policy === 'object' ? policy : loadTritShadowPolicy();
   const autoCfg = p && p.influence && p.influence.auto_stage && typeof p.influence.auto_stage === 'object'
@@ -490,21 +736,41 @@ function evaluateAutoStage(policy: AnyObj) {
       report_rows_evaluated: 0
     };
   }
-  const reports = readJsonl(REPORT_HISTORY_PATH)
-    .filter((row) => row && typeof row === 'object' && row.type === 'trit_shadow_report' && row.ok === true)
-    .sort((a, b) => String(a.ts || '').localeCompare(String(b.ts || '')));
+  const productivity = evaluateTritShadowProductivity(p);
+  if (productivity.enabled === true && productivity.active !== true) {
+    return {
+      enabled: true,
+      stage: 0,
+      reason: 'productivity_threshold_not_met',
+      report_rows_evaluated: Number(productivity.report_rows_evaluated || 0),
+      calibration_rows_evaluated: Number(productivity.calibration_rows_evaluated || 0),
+      productivity
+    };
+  }
+  const reports = sortedShadowReports();
+  const calibrations = sortedCalibrationRows();
   const calibration = latestCalibration();
   const stage3Cfg = autoCfg.stage3 && typeof autoCfg.stage3 === 'object' ? autoCfg.stage3 : {};
   const stage2Cfg = autoCfg.stage2 && typeof autoCfg.stage2 === 'object' ? autoCfg.stage2 : {};
   const stage3Window = Math.max(1, Number(stage3Cfg.consecutive_reports || 6));
   const stage2Window = Math.max(1, Number(stage2Cfg.consecutive_reports || 3));
+  const stage3CalibrationWindow = Math.max(1, Number(stage3Cfg.min_calibration_reports || 1));
+  const stage2CalibrationWindow = Math.max(1, Number(stage2Cfg.min_calibration_reports || 1));
   const recent3 = reports.slice(-stage3Window);
   const recent2 = reports.slice(-stage2Window);
 
   const stage3ReportsPass = recent3.length >= stage3Window && recent3.every((row) => reportPassesAutoStage(row, stage3Cfg));
   const stage2ReportsPass = recent2.length >= stage2Window && recent2.every((row) => reportPassesAutoStage(row, stage2Cfg));
-  const stage3CalibrationPass = calibrationPassesAutoStage(calibration, stage3Cfg);
-  const stage2CalibrationPass = calibrationPassesAutoStage(calibration, stage2Cfg);
+  const stage3CalibrationCheck = calibrationWindowPassesAutoStage(calibrations, stage3Cfg, stage3CalibrationWindow);
+  const stage2CalibrationCheck = calibrationWindowPassesAutoStage(calibrations, stage2Cfg, stage2CalibrationWindow);
+  const stage3SourceReliability = stage3Cfg.require_source_reliability === true
+    ? sourceReliabilityGate(stage3CalibrationCheck.recent, p && p.influence && p.influence.activation ? p.influence.activation : {})
+    : { pass: true };
+  const stage2SourceReliability = stage2Cfg.require_source_reliability === true
+    ? sourceReliabilityGate(stage2CalibrationCheck.recent, p && p.influence && p.influence.activation ? p.influence.activation : {})
+    : { pass: true };
+  const stage3CalibrationPass = stage3CalibrationCheck.pass && stage3SourceReliability.pass === true;
+  const stage2CalibrationPass = stage2CalibrationCheck.pass && stage2SourceReliability.pass === true;
 
   if (stage3ReportsPass && stage3CalibrationPass) {
     return {
@@ -512,7 +778,9 @@ function evaluateAutoStage(policy: AnyObj) {
       stage: 3,
       reason: 'auto_stage3_threshold_met',
       report_rows_evaluated: recent3.length,
-      calibration_date: calibration && calibration.date ? String(calibration.date) : null
+      calibration_rows_evaluated: stage3CalibrationCheck.rows_evaluated,
+      calibration_date: calibration && calibration.date ? String(calibration.date) : null,
+      productivity
     };
   }
   if (stage2ReportsPass && stage2CalibrationPass) {
@@ -521,7 +789,9 @@ function evaluateAutoStage(policy: AnyObj) {
       stage: 2,
       reason: 'auto_stage2_threshold_met',
       report_rows_evaluated: recent2.length,
-      calibration_date: calibration && calibration.date ? String(calibration.date) : null
+      calibration_rows_evaluated: stage2CalibrationCheck.rows_evaluated,
+      calibration_date: calibration && calibration.date ? String(calibration.date) : null,
+      productivity
     };
   }
   return {
@@ -529,7 +799,9 @@ function evaluateAutoStage(policy: AnyObj) {
     stage: 0,
     reason: 'auto_thresholds_not_met',
     report_rows_evaluated: reports.length,
-    calibration_date: calibration && calibration.date ? String(calibration.date) : null
+    calibration_rows_evaluated: calibrations.length,
+    calibration_date: calibration && calibration.date ? String(calibration.date) : null,
+    productivity
   };
 }
 
@@ -745,6 +1017,7 @@ module.exports = {
   loadTritShadowTrustState,
   saveTritShadowTrustState,
   buildTritSourceTrustMap,
+  evaluateTritShadowProductivity,
   evaluateAutoStage,
   resolveTritShadowStageDecision,
   resolveTritShadowStage,

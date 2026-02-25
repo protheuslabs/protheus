@@ -41,7 +41,8 @@ const { evaluateTernaryBelief } = require('../../lib/ternary_belief_engine');
 const {
   loadTritShadowPolicy,
   loadTritShadowTrustState,
-  buildTritSourceTrustMap
+  buildTritSourceTrustMap,
+  evaluateTritShadowProductivity
 } = require('../../lib/trit_shadow_control');
 const { resolveCatalogPath } = require('../../lib/eyes_catalog');
 const { evaluatePipelineSpcGate } = require('./pipeline_spc_gate');
@@ -118,6 +119,9 @@ const SPAWN_STATE_DIR = process.env.SPAWN_STATE_DIR
 const SPAWN_EVENTS_PATH = process.env.SPAWN_EVENTS_PATH
   ? path.resolve(process.env.SPAWN_EVENTS_PATH)
   : path.join(SPAWN_STATE_DIR, 'events.jsonl');
+const SPAWN_BROKER_SCRIPT = process.env.SPAWN_BROKER_SCRIPT
+  ? path.resolve(process.env.SPAWN_BROKER_SCRIPT)
+  : path.join(REPO_ROOT, 'systems', 'spawn', 'spawn_broker.js');
 
 const AUTONOMY_DIR = process.env.AUTONOMY_STATE_DIR
   ? path.resolve(process.env.AUTONOMY_STATE_DIR)
@@ -155,6 +159,9 @@ const SUCCESS_CRITERIA_PATTERN_STATE_PATH = process.env.AUTONOMY_SUCCESS_CRITERI
 const SHORT_CIRCUIT_PATH = process.env.AUTONOMY_SHORT_CIRCUIT_PATH
   ? path.resolve(process.env.AUTONOMY_SHORT_CIRCUIT_PATH)
   : path.join(AUTONOMY_DIR, 'short_circuit.json');
+const BACKLOG_AUTOSCALE_STATE_PATH = process.env.AUTONOMY_BACKLOG_AUTOSCALE_STATE_PATH
+  ? path.resolve(process.env.AUTONOMY_BACKLOG_AUTOSCALE_STATE_PATH)
+  : path.join(AUTONOMY_DIR, 'backlog_autoscale.json');
 const HUMAN_CANARY_OVERRIDE_PATH = process.env.HUMAN_CANARY_OVERRIDE_PATH
   ? path.resolve(process.env.HUMAN_CANARY_OVERRIDE_PATH)
   : path.join(REPO_ROOT, 'state', 'security', 'human_canary_override.json');
@@ -348,6 +355,49 @@ const AUTONOMY_DYNAMIC_IO_CAP_SPAWN_MIN_GRANTED_CELLS = Math.max(
   1,
   Number(process.env.AUTONOMY_DYNAMIC_IO_CAP_SPAWN_MIN_GRANTED_CELLS || 1)
 );
+const AUTONOMY_BACKLOG_AUTOSCALE_ENABLED = String(process.env.AUTONOMY_BACKLOG_AUTOSCALE_ENABLED || '1') !== '0';
+const AUTONOMY_BACKLOG_AUTOSCALE_MODULE = String(process.env.AUTONOMY_BACKLOG_AUTOSCALE_MODULE || 'autonomy').trim() || 'autonomy';
+const AUTONOMY_BACKLOG_AUTOSCALE_MIN_CELLS = Math.max(0, Number(process.env.AUTONOMY_BACKLOG_AUTOSCALE_MIN_CELLS || 0));
+const AUTONOMY_BACKLOG_AUTOSCALE_MAX_CELLS = Math.max(
+  AUTONOMY_BACKLOG_AUTOSCALE_MIN_CELLS,
+  Number(process.env.AUTONOMY_BACKLOG_AUTOSCALE_MAX_CELLS || 3)
+);
+const AUTONOMY_BACKLOG_AUTOSCALE_SCALE_UP_PENDING_RATIO = clampNumber(
+  Number(process.env.AUTONOMY_BACKLOG_AUTOSCALE_SCALE_UP_PENDING_RATIO || 0.3),
+  0.01,
+  1
+);
+const AUTONOMY_BACKLOG_AUTOSCALE_SCALE_UP_PENDING_COUNT = Math.max(
+  1,
+  Number(process.env.AUTONOMY_BACKLOG_AUTOSCALE_SCALE_UP_PENDING_COUNT || 45)
+);
+const AUTONOMY_BACKLOG_AUTOSCALE_SCALE_DOWN_PENDING_RATIO = clampNumber(
+  Number(process.env.AUTONOMY_BACKLOG_AUTOSCALE_SCALE_DOWN_PENDING_RATIO || 0.08),
+  0,
+  AUTONOMY_BACKLOG_AUTOSCALE_SCALE_UP_PENDING_RATIO
+);
+const AUTONOMY_BACKLOG_AUTOSCALE_SCALE_DOWN_PENDING_COUNT = Math.max(
+  0,
+  Number(process.env.AUTONOMY_BACKLOG_AUTOSCALE_SCALE_DOWN_PENDING_COUNT || 8)
+);
+const AUTONOMY_BACKLOG_AUTOSCALE_RUN_INTERVAL_MINUTES = Math.max(
+  1,
+  Number(process.env.AUTONOMY_BACKLOG_AUTOSCALE_RUN_INTERVAL_MINUTES || 10)
+);
+const AUTONOMY_BACKLOG_AUTOSCALE_IDLE_RELEASE_MINUTES = Math.max(
+  AUTONOMY_BACKLOG_AUTOSCALE_RUN_INTERVAL_MINUTES,
+  Number(process.env.AUTONOMY_BACKLOG_AUTOSCALE_IDLE_RELEASE_MINUTES || 120)
+);
+const AUTONOMY_BACKLOG_AUTOSCALE_LEASE_SEC = Math.max(
+  60,
+  Number(process.env.AUTONOMY_BACKLOG_AUTOSCALE_LEASE_SEC || 600)
+);
+const AUTONOMY_BACKLOG_AUTOSCALE_REQUEST_TOKENS_PER_CELL = Math.max(
+  0,
+  Number(process.env.AUTONOMY_BACKLOG_AUTOSCALE_REQUEST_TOKENS_PER_CELL || 200)
+);
+const AUTONOMY_BACKLOG_AUTOSCALE_BATCH_ON_RUN = String(process.env.AUTONOMY_BACKLOG_AUTOSCALE_BATCH_ON_RUN || '1') !== '0';
+const AUTONOMY_BACKLOG_AUTOSCALE_BATCH_MAX = Math.max(1, Number(process.env.AUTONOMY_BACKLOG_AUTOSCALE_BATCH_MAX || 4));
 const AUTONOMY_CANARY_REQUIRE_EXECUTABLE = String(process.env.AUTONOMY_CANARY_REQUIRE_EXECUTABLE || '1') !== '0';
 const AUTONOMY_CANARY_BLOCK_GENERIC_ROUTE_TASK = String(process.env.AUTONOMY_CANARY_BLOCK_GENERIC_ROUTE_TASK || '1') !== '0';
 const AUTONOMY_MEDIUM_RISK_MIN_COMPOSITE_ELIGIBILITY = Number(process.env.AUTONOMY_MEDIUM_RISK_MIN_COMPOSITE_ELIGIBILITY || 70);
@@ -1315,6 +1365,533 @@ function spawnCapacityBoostSnapshot(nowMs = Date.now()) {
     grant_count: grantCount,
     granted_cells: Number(grantedCells.toFixed(3)),
     latest_ts: latestTs
+  };
+}
+
+function defaultBacklogAutoscaleState() {
+  return {
+    schema_id: 'autonomy_backlog_autoscale',
+    schema_version: '1.0.0',
+    module: AUTONOMY_BACKLOG_AUTOSCALE_MODULE,
+    current_cells: 0,
+    target_cells: 0,
+    last_run_ts: null,
+    last_high_pressure_ts: null,
+    last_action: null,
+    updated_at: null
+  };
+}
+
+function loadBacklogAutoscaleState(filePath = BACKLOG_AUTOSCALE_STATE_PATH) {
+  const raw = loadJson(filePath, null);
+  const base = defaultBacklogAutoscaleState();
+  const src = raw && typeof raw === 'object' ? raw : {};
+  return {
+    ...base,
+    ...src,
+    module: String(src.module || base.module),
+    current_cells: Math.max(0, Number(src.current_cells || 0)),
+    target_cells: Math.max(0, Number(src.target_cells || 0)),
+    last_run_ts: src.last_run_ts ? String(src.last_run_ts) : null,
+    last_high_pressure_ts: src.last_high_pressure_ts ? String(src.last_high_pressure_ts) : null,
+    last_action: src.last_action ? String(src.last_action) : null,
+    updated_at: src.updated_at ? String(src.updated_at) : null
+  };
+}
+
+function saveBacklogAutoscaleState(state, filePath = BACKLOG_AUTOSCALE_STATE_PATH) {
+  const next = state && typeof state === 'object' ? state : defaultBacklogAutoscaleState();
+  saveJson(filePath, {
+    ...next,
+    updated_at: nowIso()
+  });
+}
+
+function spawnAllocatedCells() {
+  const allocations = loadJson(path.join(SPAWN_STATE_DIR, 'allocations.json'), {});
+  const active = Number(
+    allocations && allocations.active_cells != null
+      ? allocations.active_cells
+      : (allocations && allocations.current_cells != null
+        ? allocations.current_cells
+        : allocations && allocations.allocated_cells)
+  );
+  if (Number.isFinite(active)) return Math.max(0, Math.floor(active));
+  const state = loadBacklogAutoscaleState();
+  return Math.max(0, Math.floor(Number(state.current_cells || 0)));
+}
+
+function normalizeQueuePressure(queuePressure: AnyObj = {}) {
+  const src = queuePressure && typeof queuePressure === 'object' ? queuePressure : {};
+  const pending = Math.max(0, Number(src.pending || 0));
+  const total = Math.max(0, Number(src.total || 0));
+  const pendingRatioRaw = Number(src.pending_ratio);
+  const pendingRatio = Number.isFinite(pendingRatioRaw)
+    ? Math.max(0, Math.min(1, pendingRatioRaw))
+    : (total > 0 ? pending / total : 0);
+  let pressure = String(src.pressure || '').trim().toLowerCase();
+  if (pressure !== 'critical' && pressure !== 'warning' && pressure !== 'normal') {
+    pressure = 'normal';
+    if (
+      pending >= AUTONOMY_QOS_QUEUE_PENDING_CRITICAL_COUNT
+      || pendingRatio >= AUTONOMY_QOS_QUEUE_PENDING_CRITICAL_RATIO
+    ) {
+      pressure = 'critical';
+    } else if (
+      pending >= AUTONOMY_QOS_QUEUE_PENDING_WARN_COUNT
+      || pendingRatio >= AUTONOMY_QOS_QUEUE_PENDING_WARN_RATIO
+    ) {
+      pressure = 'warning';
+    }
+  }
+  return {
+    pressure,
+    pending,
+    total,
+    pending_ratio: Number(pendingRatio.toFixed(6))
+  };
+}
+
+function adaptiveExecutionCaps(input: AnyObj = {}) {
+  const baseDailyCap = Math.max(1, Number(input.baseDailyCap || AUTONOMY_MAX_RUNS_PER_DAY));
+  const baseCanaryCapRaw = Number(input.baseCanaryCap);
+  const baseCanaryCap = Number.isFinite(baseCanaryCapRaw) ? Math.max(0, Math.floor(baseCanaryCapRaw)) : null;
+  const candidatePoolSizeRaw = Number(input.candidatePoolSize);
+  const admission = input.admission && typeof input.admission === 'object' ? input.admission : {};
+  const candidatePoolSize = Number.isFinite(candidatePoolSizeRaw)
+    ? Math.max(0, Math.floor(candidatePoolSizeRaw))
+    : Math.max(0, Math.floor(Number(admission.total || 0)));
+  const queuePressure = normalizeQueuePressure(input.queuePressure && typeof input.queuePressure === 'object' ? input.queuePressure : {});
+  const policyHold = input.policyHoldPressure && typeof input.policyHoldPressure === 'object' ? input.policyHoldPressure : {};
+  const spawnCapacityBoost = input.spawnCapacityBoost && typeof input.spawnCapacityBoost === 'object'
+    ? input.spawnCapacityBoost
+    : { enabled: false, active: false };
+  const out: AnyObj = {
+    enabled: AUTONOMY_DYNAMIC_IO_CAP_ENABLED,
+    daily_runs_cap: baseDailyCap,
+    canary_daily_exec_cap: baseCanaryCap,
+    input_candidates_cap: null,
+    inputCandidateCap: null,
+    low_yield: false,
+    high_yield: false,
+    spawn_reset_active: false,
+    queue_pressure: queuePressure.pressure,
+    policy_hold_level: String(policyHold.level || 'normal'),
+    reasons: []
+  };
+
+  const markLowYield = (reason: string) => {
+    out.low_yield = true;
+    if (!out.reasons.includes(reason)) out.reasons.push(reason);
+  };
+
+  if (AUTONOMY_DYNAMIC_IO_CAP_ENABLED) {
+    let factor = 1;
+    if (queuePressure.pressure === 'critical') {
+      factor = AUTONOMY_DYNAMIC_IO_CAP_CRITICAL_FACTOR;
+      markLowYield('downshift_queue_backlog_critical');
+    } else if (queuePressure.pressure === 'warning') {
+      factor = AUTONOMY_DYNAMIC_IO_CAP_WARN_FACTOR;
+      markLowYield('downshift_queue_backlog_warning');
+    }
+    if (factor < 1) {
+      const loweredRuns = Math.max(1, Math.floor(baseDailyCap * factor));
+      out.daily_runs_cap = Math.min(out.daily_runs_cap, loweredRuns);
+      if (candidatePoolSize > 0) {
+        const loweredPool = Math.max(
+          AUTONOMY_DYNAMIC_IO_CAP_MIN_INPUT_POOL,
+          Math.floor(candidatePoolSize * factor)
+        );
+        if (loweredPool < candidatePoolSize) {
+          out.input_candidates_cap = loweredPool;
+          out.inputCandidateCap = loweredPool;
+        }
+      }
+    }
+  }
+
+  const holdLevel = String(policyHold.level || 'normal');
+  const holdApplicable = policyHold.applicable === true;
+  if (holdApplicable && holdLevel === 'hard') {
+    out.daily_runs_cap = Math.min(out.daily_runs_cap, 1);
+    out.high_yield = false;
+    markLowYield('downshift_policy_hold_hard');
+  } else if (holdApplicable && holdLevel === 'warn') {
+    const warnCap = Math.max(1, Math.floor(baseDailyCap * 0.6));
+    out.daily_runs_cap = Math.min(out.daily_runs_cap, warnCap);
+    out.high_yield = false;
+    markLowYield('downshift_policy_hold_warn');
+  }
+
+  if (spawnCapacityBoost.enabled === true && spawnCapacityBoost.active === true) {
+    out.daily_runs_cap = baseDailyCap;
+    out.input_candidates_cap = null;
+    out.inputCandidateCap = null;
+    out.low_yield = false;
+    out.spawn_reset_active = true;
+    if (!out.reasons.includes('reset_caps_spawn_capacity')) out.reasons.push('reset_caps_spawn_capacity');
+  }
+
+  if (!out.low_yield) {
+    const shippedToday = Number(input.shippedToday || 0);
+    const noProgressStreak = Number(input.noProgressStreak || 0);
+    const gateExhaustionStreak = Number(input.gateExhaustionStreak || 0);
+    out.high_yield = shippedToday > 0 && noProgressStreak <= 0 && gateExhaustionStreak <= 0;
+  }
+
+  return out;
+}
+
+function computeBacklogAutoscalePlan(input: AnyObj = {}) {
+  const queuePressure = normalizeQueuePressure(input.queuePressure && typeof input.queuePressure === 'object' ? input.queuePressure : {});
+  const minCells = Math.max(0, Math.floor(Number(input.minCells != null ? input.minCells : AUTONOMY_BACKLOG_AUTOSCALE_MIN_CELLS)));
+  const maxCells = Math.max(minCells, Math.floor(Number(input.maxCells != null ? input.maxCells : AUTONOMY_BACKLOG_AUTOSCALE_MAX_CELLS)));
+  const currentCells = Math.max(minCells, Math.min(maxCells, Math.floor(Number(input.currentCells || 0))));
+  const runIntervalMinutes = Math.max(1, Number(input.runIntervalMinutes || AUTONOMY_BACKLOG_AUTOSCALE_RUN_INTERVAL_MINUTES));
+  const idleReleaseMinutes = Math.max(runIntervalMinutes, Number(input.idleReleaseMinutes || AUTONOMY_BACKLOG_AUTOSCALE_IDLE_RELEASE_MINUTES));
+  const autopauseActive = input.autopauseActive === true;
+  const lastRunMinutesAgo = minutesSinceTs(input.lastRunTs);
+  const lastHighPressureMinutesAgo = minutesSinceTs(input.lastHighPressureTs);
+  const tritProductivity = input.tritProductivity && typeof input.tritProductivity === 'object'
+    ? input.tritProductivity
+    : null;
+  const tritBlocked = !!(tritProductivity && tritProductivity.enabled === true && tritProductivity.active !== true);
+  const highPressure = queuePressure.pressure === 'critical';
+  const warningPressure = queuePressure.pressure === 'warning';
+  const pressureActive = highPressure || warningPressure;
+  const cooldownActive = Number.isFinite(Number(lastRunMinutesAgo)) && Number(lastRunMinutesAgo) < runIntervalMinutes;
+  const idleReleaseReady = currentCells > minCells
+    && !pressureActive
+    && Number.isFinite(Number(lastHighPressureMinutesAgo))
+    && Number(lastHighPressureMinutesAgo) >= idleReleaseMinutes;
+
+  if (tritBlocked) {
+    return {
+      action: 'hold',
+      reason: 'shadow_hold',
+      pressure: queuePressure.pressure,
+      pending: queuePressure.pending,
+      pending_ratio: queuePressure.pending_ratio,
+      current_cells: currentCells,
+      target_cells: currentCells,
+      warningPressure,
+      highPressure,
+      pressureActive,
+      cooldown_active: cooldownActive,
+      idle_release_ready: idleReleaseReady,
+      budget_blocked: autopauseActive,
+      trit_shadow_blocked: true
+    };
+  }
+
+  if (autopauseActive && pressureActive) {
+    return {
+      action: 'hold',
+      reason: 'budget_autopause_active',
+      pressure: queuePressure.pressure,
+      pending: queuePressure.pending,
+      pending_ratio: queuePressure.pending_ratio,
+      current_cells: currentCells,
+      target_cells: currentCells,
+      warningPressure,
+      highPressure,
+      pressureActive,
+      cooldown_active: cooldownActive,
+      idle_release_ready: idleReleaseReady,
+      budget_blocked: true,
+      trit_shadow_blocked: false
+    };
+  }
+
+  if (pressureActive && cooldownActive) {
+    return {
+      action: 'cooldown_hold',
+      reason: 'cooldown_hold',
+      pressure: queuePressure.pressure,
+      pending: queuePressure.pending,
+      pending_ratio: queuePressure.pending_ratio,
+      current_cells: currentCells,
+      target_cells: currentCells,
+      warningPressure,
+      highPressure,
+      pressureActive,
+      cooldown_active: true,
+      idle_release_ready: idleReleaseReady,
+      budget_blocked: autopauseActive,
+      trit_shadow_blocked: false
+    };
+  }
+
+  if (highPressure && currentCells < maxCells) {
+    return {
+      action: 'scale_up',
+      reason: 'backlog_critical',
+      pressure: queuePressure.pressure,
+      pending: queuePressure.pending,
+      pending_ratio: queuePressure.pending_ratio,
+      current_cells: currentCells,
+      target_cells: maxCells,
+      warningPressure,
+      highPressure,
+      pressureActive,
+      cooldown_active: cooldownActive,
+      idle_release_ready: idleReleaseReady,
+      budget_blocked: autopauseActive,
+      trit_shadow_blocked: false
+    };
+  }
+
+  if (warningPressure && currentCells < maxCells) {
+    return {
+      action: 'scale_up',
+      reason: 'backlog_warning',
+      pressure: queuePressure.pressure,
+      pending: queuePressure.pending,
+      pending_ratio: queuePressure.pending_ratio,
+      current_cells: currentCells,
+      target_cells: Math.min(maxCells, Math.max(currentCells + 1, minCells)),
+      warningPressure,
+      highPressure,
+      pressureActive,
+      cooldown_active: cooldownActive,
+      idle_release_ready: idleReleaseReady,
+      budget_blocked: autopauseActive,
+      trit_shadow_blocked: false
+    };
+  }
+
+  if (idleReleaseReady) {
+    return {
+      action: 'scale_down',
+      reason: 'idle_release_ready',
+      pressure: queuePressure.pressure,
+      pending: queuePressure.pending,
+      pending_ratio: queuePressure.pending_ratio,
+      current_cells: currentCells,
+      target_cells: minCells,
+      warningPressure,
+      highPressure,
+      pressureActive,
+      cooldown_active: cooldownActive,
+      idle_release_ready: true,
+      budget_blocked: autopauseActive,
+      trit_shadow_blocked: false
+    };
+  }
+
+  return {
+    action: 'hold',
+    reason: currentCells > minCells && !pressureActive ? 'idle_hold' : 'no_pressure',
+    pressure: queuePressure.pressure,
+    pending: queuePressure.pending,
+    pending_ratio: queuePressure.pending_ratio,
+    current_cells: currentCells,
+    target_cells: currentCells,
+    warningPressure,
+    highPressure,
+    pressureActive,
+    cooldown_active: cooldownActive,
+    idle_release_ready: idleReleaseReady,
+    budget_blocked: autopauseActive,
+    trit_shadow_blocked: false
+  };
+}
+
+function runSpawnBroker(action: string, opts: AnyObj = {}) {
+  if (!fs.existsSync(SPAWN_BROKER_SCRIPT)) {
+    return {
+      ok: false,
+      skipped: true,
+      reason: 'spawn_broker_unavailable',
+      action
+    };
+  }
+  const args = [
+    SPAWN_BROKER_SCRIPT,
+    String(action || 'status'),
+    '--json=1',
+    `--module=${String(opts.module || AUTONOMY_BACKLOG_AUTOSCALE_MODULE)}`
+  ];
+  if (opts.cells != null) args.push(`--cells=${Math.max(0, Math.floor(Number(opts.cells || 0)))}`);
+  if (opts.leaseSec != null) args.push(`--lease-sec=${Math.max(1, Math.floor(Number(opts.leaseSec || AUTONOMY_BACKLOG_AUTOSCALE_LEASE_SEC)))}`);
+  if (opts.requestTokensEst != null) args.push(`--request-tokens-est=${Math.max(0, Math.floor(Number(opts.requestTokensEst || 0)))}`);
+  const child = spawnSync(process.execPath, args, {
+    encoding: 'utf8',
+    cwd: REPO_ROOT
+  });
+  const stdout = String(child.stdout || '').trim();
+  let payload = null;
+  if (stdout) {
+    const lines = stdout.split('\n').map((line) => String(line || '').trim()).filter(Boolean);
+    for (let idx = lines.length - 1; idx >= 0; idx -= 1) {
+      if (!lines[idx].startsWith('{')) continue;
+      try {
+        payload = JSON.parse(lines[idx]);
+        break;
+      } catch {}
+    }
+  }
+  return {
+    ok: child.status === 0,
+    code: child.status == null ? 1 : child.status,
+    action,
+    payload,
+    stdout,
+    stderr: String(child.stderr || '').trim()
+  };
+}
+
+function backlogAutoscaleSnapshot(dateStr, opts: AnyObj = {}) {
+  const state = loadBacklogAutoscaleState();
+  const queuePressure = opts.queuePressure && typeof opts.queuePressure === 'object'
+    ? opts.queuePressure
+    : queuePressureSnapshot(dateStr);
+  const budgetAutopause = opts.budgetAutopause && typeof opts.budgetAutopause === 'object'
+    ? opts.budgetAutopause
+    : loadSystemBudgetAutopauseState();
+  const tritProductivity = opts.tritProductivity && typeof opts.tritProductivity === 'object'
+    ? opts.tritProductivity
+    : evaluateTritShadowProductivity(loadTritShadowPolicy());
+  const plan = computeBacklogAutoscalePlan({
+    queuePressure,
+    currentCells: Number(state.current_cells || spawnAllocatedCells()),
+    minCells: AUTONOMY_BACKLOG_AUTOSCALE_MIN_CELLS,
+    maxCells: AUTONOMY_BACKLOG_AUTOSCALE_MAX_CELLS,
+    lastRunTs: state.last_run_ts,
+    lastHighPressureTs: state.last_high_pressure_ts,
+    autopauseActive: budgetAutopause && budgetAutopause.active === true,
+    runIntervalMinutes: AUTONOMY_BACKLOG_AUTOSCALE_RUN_INTERVAL_MINUTES,
+    idleReleaseMinutes: AUTONOMY_BACKLOG_AUTOSCALE_IDLE_RELEASE_MINUTES,
+    tritProductivity
+  });
+  return {
+    enabled: AUTONOMY_BACKLOG_AUTOSCALE_ENABLED,
+    module: AUTONOMY_BACKLOG_AUTOSCALE_MODULE,
+    state,
+    queue: normalizeQueuePressure(queuePressure),
+    current_cells: Number(plan.current_cells || 0),
+    plan,
+    trit_productivity: tritProductivity
+  };
+}
+
+function runBacklogAutoscaler(dateStr, opts: AnyObj = {}) {
+  const snapshot = backlogAutoscaleSnapshot(dateStr, opts);
+  const state = snapshot.state && typeof snapshot.state === 'object'
+    ? snapshot.state
+    : defaultBacklogAutoscaleState();
+  const plan = snapshot.plan && typeof snapshot.plan === 'object' ? snapshot.plan : { action: 'hold' };
+  if (!AUTONOMY_BACKLOG_AUTOSCALE_ENABLED) {
+    return {
+      ...snapshot,
+      executed: false,
+      action: 'hold',
+      reason: 'feature_disabled'
+    };
+  }
+
+  const nextState: AnyObj = {
+    ...state,
+    module: AUTONOMY_BACKLOG_AUTOSCALE_MODULE,
+    current_cells: Number(plan.current_cells || 0),
+    target_cells: Number(plan.target_cells != null ? plan.target_cells : plan.current_cells || 0),
+    last_action: String(plan.action || 'hold'),
+    last_run_ts: nowIso()
+  };
+  if (plan.pressureActive === true) nextState.last_high_pressure_ts = nowIso();
+  if (!nextState.last_high_pressure_ts && state.last_high_pressure_ts) nextState.last_high_pressure_ts = state.last_high_pressure_ts;
+
+  let broker = null;
+  if (plan.action === 'scale_up' || plan.action === 'scale_down') {
+    const desired = Math.max(0, Number(plan.target_cells || 0));
+    const delta = Math.max(0, Math.abs(desired - Number(plan.current_cells || 0)));
+    const reqTokens = Math.max(0, Math.floor(delta * AUTONOMY_BACKLOG_AUTOSCALE_REQUEST_TOKENS_PER_CELL));
+    broker = runSpawnBroker(plan.action === 'scale_up' ? 'spawn_request' : 'spawn_release', {
+      module: AUTONOMY_BACKLOG_AUTOSCALE_MODULE,
+      cells: delta,
+      leaseSec: AUTONOMY_BACKLOG_AUTOSCALE_LEASE_SEC,
+      requestTokensEst: reqTokens
+    });
+  }
+  saveBacklogAutoscaleState(nextState);
+  return {
+    ...snapshot,
+    executed: true,
+    action: String(plan.action || 'hold'),
+    reason: String(plan.reason || 'hold'),
+    state: nextState,
+    broker
+  };
+}
+
+function computeBacklogBatchMax(input: AnyObj = {}) {
+  const enabled = input.enabled === true;
+  const autoscaleSnapshot = input.autoscaleSnapshot && typeof input.autoscaleSnapshot === 'object'
+    ? input.autoscaleSnapshot
+    : {};
+  const plan = autoscaleSnapshot.plan && typeof autoscaleSnapshot.plan === 'object'
+    ? autoscaleSnapshot.plan
+    : {};
+  const maxBatch = Math.max(1, Math.floor(Number(input.maxBatch || AUTONOMY_BACKLOG_AUTOSCALE_BATCH_MAX)));
+  const currentCells = Math.max(0, Math.floor(Number(autoscaleSnapshot.current_cells || plan.current_cells || 0)));
+  const dailyRemainingRaw = Number(input.dailyRemaining);
+  const dailyRemaining = Number.isFinite(dailyRemainingRaw) ? Math.max(0, Math.floor(dailyRemainingRaw)) : null;
+  const pressure = String(plan.pressure || 'normal').toLowerCase();
+  const budgetBlocked = plan.budget_blocked === true;
+  const tritBlocked = plan.trit_shadow_blocked === true;
+  if (!enabled) {
+    return { max: 1, reason: 'disabled', pressure, current_cells: currentCells, budget_blocked: budgetBlocked, trit_shadow_blocked: tritBlocked };
+  }
+  if (budgetBlocked) {
+    return { max: 1, reason: 'budget_blocked', pressure, current_cells: currentCells, budget_blocked: true, trit_shadow_blocked: tritBlocked };
+  }
+  if (tritBlocked) {
+    return { max: 1, reason: 'shadow_hold', pressure, current_cells: currentCells, budget_blocked: budgetBlocked, trit_shadow_blocked: true };
+  }
+  let suggested = 1;
+  if (pressure === 'critical') {
+    suggested = Math.min(maxBatch, Math.max(1, currentCells + 1));
+  } else if (pressure === 'warning') {
+    suggested = Math.min(maxBatch, 2);
+  }
+  let reason = suggested > 1 ? 'backlog_autoscale' : 'no_pressure';
+  if (dailyRemaining != null && dailyRemaining < suggested) {
+    suggested = Math.max(1, dailyRemaining);
+    reason = 'daily_cap_limited';
+  }
+  return {
+    max: Math.max(1, Math.floor(suggested)),
+    reason,
+    pressure,
+    current_cells: currentCells,
+    budget_blocked: budgetBlocked,
+    trit_shadow_blocked: tritBlocked
+  };
+}
+
+function suggestAutonomyRunBatchMax(dateStr, opts: AnyObj = {}) {
+  const runs = runsSinceReset(readRuns(dateStr));
+  const attempts = capacityCountedAttemptEvents(runs);
+  const strategyBudget = opts.strategyBudget && typeof opts.strategyBudget === 'object'
+    ? opts.strategyBudget
+    : effectiveStrategyBudget();
+  const baseDailyCap = Number.isFinite(Number(strategyBudget.daily_runs_cap))
+    ? Number(strategyBudget.daily_runs_cap)
+    : AUTONOMY_MAX_RUNS_PER_DAY;
+  const dailyRemaining = Math.max(0, Math.floor(baseDailyCap - attempts.length));
+  const autoscale = backlogAutoscaleSnapshot(dateStr, opts);
+  const batch = computeBacklogBatchMax({
+    enabled: AUTONOMY_BACKLOG_AUTOSCALE_BATCH_ON_RUN,
+    maxBatch: AUTONOMY_BACKLOG_AUTOSCALE_BATCH_MAX,
+    autoscaleSnapshot: autoscale,
+    dailyRemaining
+  });
+  return {
+    enabled: AUTONOMY_BACKLOG_AUTOSCALE_BATCH_ON_RUN,
+    max: Number(batch.max || 1),
+    reason: batch.reason || 'no_pressure',
+    daily_remaining: dailyRemaining,
+    autoscale_hint: autoscale
   };
 }
 
@@ -9682,6 +10259,30 @@ function runCmd(dateStr, opts: AnyObj = {}) {
   const candidateAuditRows = [];
   const budgetPacingState = budgetPacingSnapshot(dateStr);
   const queuePressureState = queuePressureSnapshot(proposalDate);
+  const tritProductivityState = AUTONOMY_TRIT_SHADOW_ENABLED
+    ? evaluateTritShadowProductivity(loadTritShadowPolicy())
+    : { enabled: false, active: true, reason: 'trit_shadow_disabled' };
+  const dynamicCapsState = adaptiveExecutionCaps({
+    executionMode,
+    baseDailyCap: maxRunsPerDay,
+    baseCanaryCap: canaryDailyExecLimit,
+    attemptsToday: attemptsTodayForCap,
+    noProgressStreak,
+    executedNoProgressStreak: noProgressStreak,
+    gateExhaustionStreak,
+    shippedToday,
+    admission: admissionSummary,
+    policyHoldPressure,
+    queuePressure: queuePressureState,
+    candidatePoolSize: pool.length,
+    spawnCapacityBoost: spawnCapacityBoostSnapshot(),
+    trit_shadow: tritProductivityState
+  });
+  const backlogAutoscaleState = backlogAutoscaleSnapshot(dateStr, {
+    queuePressure: queuePressureState,
+    budgetAutopause: loadSystemBudgetAutopauseState(),
+    tritProductivity: tritProductivityState
+  });
   const candidateAuditPolicy = {
     strategy_id: strategy ? strategy.id : null,
     strategy_selection: strategySelection
@@ -9751,7 +10352,14 @@ function runCmd(dateStr, opts: AnyObj = {}) {
     trit_shadow: {
       enabled: AUTONOMY_TRIT_SHADOW_ENABLED,
       bonus_blend: AUTONOMY_TRIT_SHADOW_BONUS_BLEND,
-      top_k: AUTONOMY_TRIT_SHADOW_TOP_K
+      top_k: AUTONOMY_TRIT_SHADOW_TOP_K,
+      productivity: tritProductivityState
+    },
+    dynamic_execution_caps: dynamicCapsState,
+    backlog_autoscale: {
+      enabled: AUTONOMY_BACKLOG_AUTOSCALE_ENABLED,
+      batch_on_run: AUTONOMY_BACKLOG_AUTOSCALE_BATCH_ON_RUN,
+      snapshot: backlogAutoscaleState
     },
     queue_underflow_backfill: {
       enabled: AUTONOMY_QUEUE_UNDERFLOW_BACKFILL_MAX > 0,
@@ -9789,6 +10397,10 @@ function runCmd(dateStr, opts: AnyObj = {}) {
     if (candidateAuditRows.length < candidateAuditLimit) candidateAuditRows.push(row);
   };
   const writeCandidateAudit = (selectedProposalId = null, selectionMode = null, reservation = null, tritShadow = null) => {
+    const tritShadowAudit = {
+      ranking: tritShadow && typeof tritShadow === 'object' ? tritShadow : null,
+      productivity: tritProductivityState
+    };
     writeRun(dateStr, {
       ts: nowIso(),
       type: 'autonomy_candidate_audit',
@@ -9803,7 +10415,9 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       selected_proposal_id: selectedProposalId,
       selection_mode: selectionMode,
       tier_reservation: reservation || null,
-      trit_shadow: tritShadow && typeof tritShadow === 'object' ? tritShadow : null,
+      trit_shadow: tritShadowAudit,
+      dynamic_execution_caps: dynamicCapsState,
+      backlog_autoscale: backlogAutoscaleState,
       rows_truncated: pool.length > candidateAuditRows.length,
       rows: candidateAuditRows
     });
@@ -13544,8 +14158,19 @@ function runChildAutonomy(dateStr) {
 }
 
 function runBatchCmd(dateStr) {
-  const rawMax = Number(parseArg('max') || process.env.AUTONOMY_BATCH_MAX || 3);
+  const argMax = parseArg('max');
+  const envMax = process.env.AUTONOMY_BATCH_MAX;
+  const hasArgMax = argMax != null && String(argMax).trim() !== '';
+  const hasEnvMax = envMax != null && String(envMax).trim() !== '';
+  const strategyBudget = effectiveStrategyBudget();
+  const batchHint = suggestAutonomyRunBatchMax(dateStr, { strategyBudget });
+  const rawMax = Number(
+    hasArgMax
+      ? argMax
+      : (hasEnvMax ? envMax : Number(batchHint && batchHint.max || 3))
+  );
   const max = Number.isFinite(rawMax) ? Math.max(1, Math.min(10, Math.round(rawMax))) : 3;
+  const maxSource = hasArgMax ? 'arg' : (hasEnvMax ? 'env' : 'backlog_autoscale');
   const rows = [];
   let executed = 0;
   let stop = null;
@@ -13585,6 +14210,25 @@ function runBatchCmd(dateStr) {
     result: 'batch_complete',
     date: dateStr,
     max,
+    max_source: maxSource,
+    backlog_autoscale: batchHint && batchHint.autoscale_hint ? {
+      enabled: AUTONOMY_BACKLOG_AUTOSCALE_ENABLED,
+      batch_on_run: AUTONOMY_BACKLOG_AUTOSCALE_BATCH_ON_RUN,
+      reason: batchHint.reason || null,
+      suggested_max: Number(batchHint.max || 1),
+      daily_remaining: Number(batchHint.daily_remaining || 0),
+      pressure: batchHint.autoscale_hint && batchHint.autoscale_hint.plan
+        ? String(batchHint.autoscale_hint.plan.pressure || 'normal')
+        : 'normal',
+      action: batchHint.autoscale_hint && batchHint.autoscale_hint.plan
+        ? String(batchHint.autoscale_hint.plan.action || 'hold')
+        : 'hold',
+      trit_productivity_active: !!(
+        batchHint.autoscale_hint
+        && batchHint.autoscale_hint.trit_productivity
+        && batchHint.autoscale_hint.trit_productivity.active === true
+      )
+    } : null,
     executed,
     attempted: rows.length,
     stop_reason: stop || null,
@@ -13666,6 +14310,17 @@ module.exports = {
   chooseQosLaneSelection,
   queuePressureSnapshot,
   spawnCapacityBoostSnapshot,
+  adaptiveExecutionCaps,
+  defaultBacklogAutoscaleState,
+  loadBacklogAutoscaleState,
+  saveBacklogAutoscaleState,
+  spawnAllocatedCells,
+  runSpawnBroker,
+  computeBacklogAutoscalePlan,
+  runBacklogAutoscaler,
+  backlogAutoscaleSnapshot,
+  computeBacklogBatchMax,
+  suggestAutonomyRunBatchMax,
   TS_CLONE_DYNAMIC_IO_PARITY,
   isPolicyHoldResult,
   isPolicyHoldRunEvent,

@@ -12,6 +12,12 @@ const {
   deriveMetricsFromHealthPayload: deriveDriftTargetMetrics,
   evaluateWindow: evaluateDriftTargetWindow
 } = require('./drift_target_governor');
+const {
+  loadTritShadowPolicy,
+  resolveTritShadowStageDecision,
+  evaluateTritShadowProductivity,
+  paths: TRIT_SHADOW_PATHS
+} = require('../../lib/trit_shadow_control');
 
 type AnyObj = Record<string, any>;
 
@@ -432,6 +438,74 @@ function readJsonl(fp) {
       try { return JSON.parse(line); } catch { return null; }
     })
     .filter(Boolean);
+}
+
+function latestJsonlRecord(fp, expectedType = null) {
+  const rows = readJsonl(fp)
+    .filter((row) => row && typeof row === 'object')
+    .sort((a, b) => String(a.ts || '').localeCompare(String(b.ts || '')));
+  for (let idx = rows.length - 1; idx >= 0; idx -= 1) {
+    const row = rows[idx];
+    if (expectedType && String(row.type || '') !== String(expectedType)) continue;
+    return row;
+  }
+  return null;
+}
+
+function summarizeTritShadowHealth() {
+  try {
+    const policy = loadTritShadowPolicy();
+    const stageDecision = resolveTritShadowStageDecision(policy);
+    const productivity = evaluateTritShadowProductivity(policy);
+    const latestReport = latestJsonlRecord(TRIT_SHADOW_PATHS.report_history, 'trit_shadow_report');
+    const latestCalibration = latestJsonlRecord(TRIT_SHADOW_PATHS.calibration_history, 'trit_shadow_replay_calibration');
+    const reportSummary = latestReport && latestReport.summary && typeof latestReport.summary === 'object'
+      ? latestReport.summary
+      : {};
+    const successCriteria = latestReport && latestReport.success_criteria && typeof latestReport.success_criteria === 'object'
+      ? latestReport.success_criteria
+      : {};
+    const calibrationSummary = latestCalibration && latestCalibration.summary && typeof latestCalibration.summary === 'object'
+      ? latestCalibration.summary
+      : {};
+    const sourceReliability = Array.isArray(latestCalibration && latestCalibration.source_reliability)
+      ? latestCalibration.source_reliability
+      : [];
+    return {
+      enabled: policy && policy.enabled !== false,
+      stage_decision: {
+        stage: Number(stageDecision && stageDecision.stage || 0),
+        source: stageDecision && stageDecision.source ? String(stageDecision.source) : 'policy',
+        base_stage: Number(stageDecision && stageDecision.base_stage || 0),
+        auto_reason: stageDecision && stageDecision.auto_stage && stageDecision.auto_stage.reason
+          ? String(stageDecision.auto_stage.reason)
+          : null
+      },
+      productivity: productivity && typeof productivity === 'object' ? productivity : null,
+      latest_report: latestReport ? {
+        ts: latestReport.ts ? String(latestReport.ts) : null,
+        date: latestReport.date ? String(latestReport.date) : null,
+        status: reportSummary.status ? String(reportSummary.status) : null,
+        total_decisions: Number(reportSummary.total_decisions || 0),
+        divergence_rate: Number(reportSummary.divergence_rate || 0),
+        success_criteria_pass: successCriteria.pass === true,
+        gate: reportSummary.gate && typeof reportSummary.gate === 'object' ? reportSummary.gate : null
+      } : null,
+      latest_calibration: latestCalibration ? {
+        ts: latestCalibration.ts ? String(latestCalibration.ts) : null,
+        date: latestCalibration.date ? String(latestCalibration.date) : null,
+        total_events: Number(calibrationSummary.total_events || 0),
+        accuracy: Number(calibrationSummary.accuracy || 0),
+        expected_calibration_error: Number(calibrationSummary.expected_calibration_error || 0),
+        source_reliability_top: sourceReliability.slice(0, 8)
+      } : null
+    };
+  } catch (err: any) {
+    return {
+      enabled: false,
+      error: String(err && err.message || err || 'trit_shadow_unavailable')
+    };
+  }
 }
 
 function ensureDir(dirPath) {
@@ -2358,6 +2432,7 @@ function main() {
     },
     startup_attestation_auto_issue: startupAttestationState.auto_issue,
     startup_attestation_telemetry: startupAttestationTelemetry,
+    trit_shadow: summarizeTritShadowHealth(),
     autonomy_receipts: receiptSummary.payload || { ok: false, error: receiptSummary.stderr || `receipt_summary_exit_${receiptSummary.code}` },
     architecture_guard: architecture.payload || { ok: false, error: architecture.stderr || `architecture_guard_exit_${architecture.code}` },
     pipeline_spc: spc.payload || { ok: false, error: spc.stderr || `pipeline_spc_exit_${spc.code}` },
