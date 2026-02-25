@@ -790,7 +790,7 @@ function main() {
   // workflow_controller.js applies/surfaces workflow registry materialization.
   checkScript(
     "systems/workflow/workflow_controller.js",
-    ["workflow_controller.js", "run", "list", "status", "--apply", "--days", "--max", "--policy", "--orchestron", "--orchestron-apply", "--intent"]
+    ["workflow_controller.js", "run", "list", "status", "--apply", "--days", "--max", "--policy", "--orchestron", "--orchestron-apply", "--orchestron-auto", "--intent"]
   );
 
   // orchestron adaptive_controller.js runs intent->candidate->nursery scorecard cycles.
