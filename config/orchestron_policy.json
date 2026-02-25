@@ -8,6 +8,16 @@
   "max_candidates": 8,
   "max_promotions_per_run": 4,
   "min_principle_score": 0.6,
+  "auto_apply": {
+    "enabled": true,
+    "min_promotable_drafts": 2,
+    "min_principle_score": 0.75,
+    "min_composite_score": 0.48,
+    "max_predicted_drift_delta": 0.004,
+    "min_predicted_yield_delta": 0,
+    "max_red_team_critical_fail_cases": 0,
+    "require_shadow_off": true
+  },
   "nursery": {
     "min_safety_score": 0.5,
     "max_regression_risk": 0.56,

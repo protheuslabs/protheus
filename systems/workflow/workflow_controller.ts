@@ -30,7 +30,7 @@ const DEFAULT_ORCHESTRON_POLICY_PATH = path.join(REPO_ROOT, 'config', 'orchestro
 
 function usage() {
   console.log('Usage:');
-  console.log('  node systems/workflow/workflow_controller.js run [YYYY-MM-DD] [--days=N] [--max=N] [--apply=1|0] [--policy=path] [--orchestron=1|0] [--orchestron-apply=1|0] [--intent=\"...\"] [--orchestron-policy=path]');
+  console.log('  node systems/workflow/workflow_controller.js run [YYYY-MM-DD] [--days=N] [--max=N] [--apply=1|0] [--policy=path] [--orchestron=1|0] [--orchestron-apply=1|0] [--orchestron-auto=1|0] [--intent=\"...\"] [--orchestron-policy=path]');
   console.log('  node systems/workflow/workflow_controller.js list [--status=active|draft|all] [--limit=N]');
   console.log('  node systems/workflow/workflow_controller.js status [--policy=path]');
 }
@@ -66,6 +66,14 @@ function clampInt(v, lo, hi, fallback) {
   if (i < lo) return lo;
   if (i > hi) return hi;
   return i;
+}
+
+function clampNumber(v, lo, hi, fallback) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return fallback;
+  if (n < lo) return lo;
+  if (n > hi) return hi;
+  return n;
 }
 
 function boolFlag(v, fallback = false) {
@@ -217,6 +225,81 @@ function mergeDrafts(baseDrafts, extraDrafts) {
   return Array.from(map.values());
 }
 
+function normalizeAutoApplyPolicy(raw, fallbackPrincipleScore = 0.6) {
+  const src = raw && typeof raw === 'object' ? raw : {};
+  return {
+    enabled: src.enabled === true,
+    min_promotable_drafts: clampInt(src.min_promotable_drafts, 1, 64, 1),
+    min_principle_score: clampNumber(src.min_principle_score, 0, 1, fallbackPrincipleScore),
+    min_composite_score: clampNumber(src.min_composite_score, 0, 1, 0.5),
+    max_predicted_drift_delta: clampNumber(src.max_predicted_drift_delta, -1, 1, 0),
+    min_predicted_yield_delta: clampNumber(src.min_predicted_yield_delta, -1, 1, 0),
+    max_red_team_critical_fail_cases: clampInt(src.max_red_team_critical_fail_cases, 0, 64, 0),
+    require_shadow_off: src.require_shadow_off !== false
+  };
+}
+
+function summarizeDraftMetrics(drafts) {
+  const rows = Array.isArray(drafts) ? drafts : [];
+  if (!rows.length) {
+    return {
+      count: 0,
+      avg_composite_score: 0,
+      avg_predicted_drift_delta: 0,
+      avg_predicted_yield_delta: 0,
+      max_predicted_drift_delta: 0,
+      min_predicted_yield_delta: 0
+    };
+  }
+  const metrics = rows.map((row) => (row && row.metrics && typeof row.metrics === 'object') ? row.metrics : {});
+  const asNum = (v, fallback = 0) => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : fallback;
+  };
+  const scores = metrics.map((m) => asNum(m.score, 0));
+  const drifts = metrics.map((m) => asNum(m.predicted_drift_delta, 0));
+  const yields = metrics.map((m) => asNum(m.predicted_yield_delta, 0));
+  const avg = (arr) => arr.reduce((sum, n) => sum + n, 0) / Math.max(1, arr.length);
+  return {
+    count: rows.length,
+    avg_composite_score: Number(avg(scores).toFixed(4)),
+    avg_predicted_drift_delta: Number(avg(drifts).toFixed(4)),
+    avg_predicted_yield_delta: Number(avg(yields).toFixed(4)),
+    max_predicted_drift_delta: Number(Math.max(...drifts).toFixed(4)),
+    min_predicted_yield_delta: Number(Math.min(...yields).toFixed(4))
+  };
+}
+
+function evaluateAutoApplyGate(context) {
+  const src = context && typeof context === 'object' ? context : {};
+  const policy = src.policy && typeof src.policy === 'object' ? src.policy : normalizeAutoApplyPolicy({}, 0.6);
+  const shadowOnly = src.shadowOnly === true;
+  const orchestronError = src.orchestronError ? String(src.orchestronError) : '';
+  const principleScore = Number(src.principleScore || 0);
+  const redCritical = Number(src.redTeamCriticalFailCases || 0);
+  const metrics = summarizeDraftMetrics(src.promotableDrafts);
+  const reasons = [];
+
+  if (shadowOnly && policy.require_shadow_off) reasons.push('shadow_only_policy_on');
+  if (orchestronError) reasons.push('orchestron_error');
+  if (metrics.count < Number(policy.min_promotable_drafts || 1)) reasons.push('promotable_drafts_below_min');
+  if (principleScore < Number(policy.min_principle_score || 0.6)) reasons.push('principle_score_below_min');
+  if (redCritical > Number(policy.max_red_team_critical_fail_cases || 0)) reasons.push('red_team_critical_failures');
+  if (metrics.avg_composite_score < Number(policy.min_composite_score || 0.5)) reasons.push('composite_score_below_min');
+  if (metrics.max_predicted_drift_delta > Number(policy.max_predicted_drift_delta || 0)) reasons.push('predicted_drift_above_max');
+  if (metrics.avg_predicted_yield_delta < Number(policy.min_predicted_yield_delta || 0)) reasons.push('predicted_yield_below_min');
+
+  return {
+    pass: reasons.length === 0,
+    reasons,
+    metrics,
+    checks: {
+      principle_score: Number(principleScore.toFixed(4)),
+      red_team_critical_fail_cases: redCritical
+    }
+  };
+}
+
 function runCmd(dateStr, args) {
   const policyPath = path.resolve(String(args.policy || process.env.WORKFLOW_POLICY_PATH || DEFAULT_POLICY_PATH));
   const policy = loadPolicy(policyPath);
@@ -234,6 +317,10 @@ function runCmd(dateStr, args) {
     args['orchestron-apply'],
     boolFlag(process.env.WORKFLOW_ORCHESTRON_APPLY, false)
   );
+  const orchestronAutoRequested = boolFlag(
+    args['orchestron-auto'],
+    boolFlag(process.env.WORKFLOW_ORCHESTRON_AUTO_APPLY, false)
+  );
   const orchestronPolicyPath = path.resolve(String(
     args['orchestron-policy']
       || process.env.ORCHESTRON_POLICY_PATH
@@ -243,6 +330,23 @@ function runCmd(dateStr, args) {
   let orchestronError = null;
   let orchestronApplyEffective = false;
   let orchestronDraftsForApply = [];
+  let orchestronAutoEnabled = false;
+  let orchestronAutoGate = {
+    pass: false,
+    reasons: [],
+    metrics: {
+      count: 0,
+      avg_composite_score: 0,
+      avg_predicted_drift_delta: 0,
+      avg_predicted_yield_delta: 0,
+      max_predicted_drift_delta: 0,
+      min_predicted_yield_delta: 0
+    },
+    checks: {
+      principle_score: 0,
+      red_team_critical_fail_cases: 0
+    }
+  };
 
   if (orchestronEnabled) {
     try {
@@ -258,9 +362,39 @@ function runCmd(dateStr, args) {
         ? orchestronPayload.promotable_drafts
         : (orchestronPayload && Array.isArray(orchestronPayload.drafts) ? orchestronPayload.drafts : []);
       const shadowOnly = orchestronPayload && orchestronPayload.policy && orchestronPayload.policy.shadow_only === true;
-      orchestronApplyEffective = orchestronApplyRequested && !shadowOnly;
+      const autoPolicy = normalizeAutoApplyPolicy(
+        orchestronPolicy && orchestronPolicy.auto_apply,
+        Number(orchestronPolicy && orchestronPolicy.min_principle_score || 0.6)
+      );
+      orchestronAutoEnabled = orchestronAutoRequested || autoPolicy.enabled === true;
+      if (orchestronAutoEnabled) {
+        orchestronAutoGate = evaluateAutoApplyGate({
+          policy: autoPolicy,
+          shadowOnly,
+          orchestronError: null,
+          principleScore: orchestronPayload && orchestronPayload.principles
+            ? Number(orchestronPayload.principles.score || 0)
+            : 0,
+          redTeamCriticalFailCases: orchestronPayload && orchestronPayload.red_team
+            ? Number(orchestronPayload.red_team.critical_fail_cases || 0)
+            : 0,
+          promotableDrafts: orchestronDraftsForApply
+        });
+      }
+      orchestronApplyEffective = (!shadowOnly && orchestronApplyRequested)
+        || (orchestronAutoEnabled && orchestronAutoGate.pass === true);
     } catch (err) {
       orchestronError = String(err && err.message ? err.message : err || 'orchestron_failed');
+      if (orchestronAutoEnabled) {
+        orchestronAutoGate = evaluateAutoApplyGate({
+          policy: normalizeAutoApplyPolicy({}, 0.6),
+          shadowOnly: true,
+          orchestronError,
+          principleScore: 0,
+          redTeamCriticalFailCases: 0,
+          promotableDrafts: []
+        });
+      }
     }
   }
   const generatedDrafts = orchestronApplyEffective
@@ -294,6 +428,12 @@ function runCmd(dateStr, args) {
     baseline_drafts: baseline && Array.isArray(baseline.drafts) ? baseline.drafts.length : 0,
     orchestron_enabled: orchestronEnabled,
     orchestron_apply_requested: orchestronApplyRequested,
+    orchestron_auto_requested: orchestronAutoRequested,
+    orchestron_auto_enabled: orchestronAutoEnabled,
+    orchestron_auto_pass: orchestronAutoGate.pass === true,
+    orchestron_auto_reasons: orchestronAutoGate.reasons,
+    orchestron_auto_metrics: orchestronAutoGate.metrics,
+    orchestron_auto_checks: orchestronAutoGate.checks,
     orchestron_apply_effective: orchestronApplyEffective,
     orchestron_drafts: orchestronPayload && Array.isArray(orchestronPayload.drafts) ? orchestronPayload.drafts.length : 0,
     orchestron_promotable_drafts: Array.isArray(orchestronDraftsForApply) ? orchestronDraftsForApply.length : 0,
