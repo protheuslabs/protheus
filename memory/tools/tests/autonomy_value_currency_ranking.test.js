@@ -96,6 +96,60 @@ function run() {
     'strategy ranking should expose expected value source for audit'
   );
 
+  const rankedContextual = controller.strategyRankForCandidate({
+    proposal: {
+      id: 'PVCR-002',
+      expected_impact: 'high',
+      risk: 'low',
+      meta: {
+        objective_id: 'T1_make_jay_billionaire_v1',
+        value_oracle_applies: true,
+        value_oracle_pass: true,
+        value_oracle_priority_score: 78,
+        value_oracle_primary_currency: 'revenue',
+        value_oracle_matched_currencies: ['revenue'],
+        value_oracle_matched_first_sentence_currencies: ['revenue']
+      }
+    },
+    directive_pulse: {
+      objective_id: 'T1_make_jay_billionaire_v1'
+    },
+    composite_score: 72,
+    actionability: { score: 70 },
+    directive_fit: { score: 61 },
+    quality: { score: 66 }
+  }, {
+    ranking_weights: {
+      composite: 0.3,
+      actionability: 0.2,
+      directive_fit: 0.2,
+      signal_quality: 0.12,
+      expected_value: 0.12,
+      risk_penalty: 0.06
+    },
+    value_currency_policy: {
+      currency_overrides: {
+        revenue: {
+          ranking_weights: {
+            expected_value: 0.2,
+            time_to_value: 0.08
+          }
+        }
+      },
+      objective_overrides: {
+        T1_make_jay_billionaire_v1: {
+          primary_currency: 'revenue',
+          ranking_weights: {
+            directive_fit: 0.24
+          }
+        }
+      }
+    }
+  });
+  assert.ok(Array.isArray(rankedContextual.components.ranking_context_overrides), 'context overrides should be exposed');
+  assert.ok(rankedContextual.components.ranking_context_overrides.includes('objective:T1_make_jay_billionaire_v1'));
+  assert.ok(rankedContextual.components.ranking_context_overrides.includes('currency:revenue'));
+
   console.log('autonomy_value_currency_ranking.test.js: OK');
 }
 

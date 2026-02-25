@@ -28,7 +28,8 @@ function baseProposal() {
     summary: 'Create scalable automation that compounds monthly revenue.',
     meta: {
       normalized_objective: 'Generate wealth through scalable, automated systems',
-      relevance_score: 82
+      relevance_score: 82,
+      value_oracle_primary_currency: 'revenue'
     }
   };
 }
@@ -69,6 +70,8 @@ test('compileDirectivePulseObjectives extracts strategic objectives', () => {
   assert.strictEqual(objectives[0].tier, 1);
   assert.ok(objectives[0].tier_weight > 1);
   assert.ok(objectives[0].tokens.includes('wealth'));
+  assert.ok(Array.isArray(objectives[0].value_currencies), 'compiled objectives should include value currencies');
+  assert.ok(objectives[0].value_currencies.includes('revenue'), 'revenue should be inferred from directive content');
 });
 
 test('assessDirectivePulse produces strong score for aligned T1 objective', () => {
@@ -89,7 +92,9 @@ test('assessDirectivePulse produces strong score for aligned T1 objective', () =
           tier_weight: 1.3,
           min_share: 0.5,
           phrases: ['generate wealth through scalable automated systems'],
-          tokens: ['generate', 'wealth', 'scalable', 'automation', 'income']
+          tokens: ['generate', 'wealth', 'scalable', 'automation', 'income'],
+          value_currencies: ['revenue'],
+          primary_currency: 'revenue'
         }
       ],
       objective_stats: new Map(),
@@ -105,6 +110,9 @@ test('assessDirectivePulse produces strong score for aligned T1 objective', () =
   assert.strictEqual(pulse.objective_id, 'T1_make_jay_billionaire_v1');
   assert.strictEqual(pulse.tier, 1);
   assert.ok(pulse.score >= 55, `expected pulse score >= 55, got ${pulse.score}`);
+  assert.strictEqual(pulse.proposal_value_currency, 'revenue');
+  assert.strictEqual(pulse.objective_primary_currency, 'revenue');
+  assert.strictEqual(Number(pulse.value_currency_alignment || 0), 1);
 });
 
 test('assessDirectivePulse blocks on objective cooldown after repeated no-progress', () => {

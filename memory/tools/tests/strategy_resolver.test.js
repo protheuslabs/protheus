@@ -58,6 +58,32 @@ function run() {
       expected_value: 0.1,
       risk_penalty: 0
     },
+    value_currency_policy: {
+      default_currency: 'delivery',
+      currency_overrides: {
+        revenue: {
+          ranking_weights: {
+            expected_value: 0.2,
+            time_to_value: 0.08
+          }
+        },
+        quality: {
+          ranking_weights: {
+            signal_quality: 0.24,
+            risk_penalty: 0.1
+          }
+        }
+      },
+      objective_overrides: {
+        T1_test: {
+          primary_currency: 'revenue',
+          ranking_weights: {
+            directive_fit: 0.24,
+            expected_value: 0.16
+          }
+        }
+      }
+    },
     budget_policy: { daily_runs_cap: 7, daily_token_cap: 9000, max_tokens_per_action: 1200 },
     exploration_policy: { fraction: 0.3, every_n: 4, min_eligible: 5 },
     threshold_overrides: { min_signal_quality: 63 }
@@ -150,6 +176,16 @@ function run() {
   const weights = resolver.strategyRankingWeights(active);
   const wsum = Object.values(weights).reduce((a, b) => a + Number(b || 0), 0);
   assert.ok(Math.abs(wsum - 1) < 0.0001, 'ranking weights should normalize to ~1');
+  const contextRevenue = resolver.resolveStrategyRankingContext(active, {
+    objective_id: 'T1_test',
+    value_currency: 'revenue'
+  });
+  assert.ok(Array.isArray(contextRevenue.applied_overrides), 'contextual ranking should expose applied overrides');
+  assert.ok(contextRevenue.applied_overrides.includes('objective:T1_test'));
+  assert.ok(contextRevenue.applied_overrides.includes('currency:revenue'));
+  assert.strictEqual(contextRevenue.value_currency, 'revenue');
+  const contextWeightsSum = Object.values(contextRevenue.weights).reduce((a, b) => a + Number(b || 0), 0);
+  assert.ok(Math.abs(contextWeightsSum - 1) < 0.0001, 'contextual ranking weights should normalize');
 
   const invalid = resolver.loadActiveStrategy({ dir: strategyDir, id: 'invalid_profile' });
   assert.strictEqual(invalid.validation.strict_ok, false);

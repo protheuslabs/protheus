@@ -26,6 +26,7 @@ const ALLOWED_TOP_KEYS = new Set([
   'status',
   'tags',
   'objective',
+  'campaigns',
   'generation_policy',
   'risk_policy',
   'allowed_risks',
@@ -36,7 +37,8 @@ const ALLOWED_TOP_KEYS = new Set([
   'stop_policy',
   'promotion_policy',
   'execution_policy',
-  'threshold_overrides'
+  'threshold_overrides',
+  'value_currency_policy'
 ]);
 const STRATEGY_GENERATION_MODES = new Set([
   'normal',
@@ -44,6 +46,14 @@ const STRATEGY_GENERATION_MODES = new Set([
   'creative',
   'hyper-creative',
   'deep-thinker'
+]);
+const VALUE_CURRENCY_KEYS = new Set([
+  'revenue',
+  'delivery',
+  'user_value',
+  'quality',
+  'time_savings',
+  'learning'
 ]);
 
 function asString(v) {
@@ -58,6 +68,12 @@ function asStringArray(v) {
     if (s) out.push(s);
   }
   return Array.from(new Set(out));
+}
+
+function normalizeValueCurrencyToken(v) {
+  const key = asString(v).toLowerCase();
+  if (!VALUE_CURRENCY_KEYS.has(key)) return '';
+  return key;
 }
 
 function readJsonSafe(filePath, fallback) {
@@ -162,6 +178,49 @@ function normalizeRankingWeights(raw, errors) {
     normalized[k] = Number((Number(v) / total).toFixed(6));
   }
   return normalized;
+}
+
+function normalizeValueCurrencyPolicy(raw) {
+  const src = raw && typeof raw === 'object' ? raw : {};
+  const objectiveSrc = src.objective_overrides && typeof src.objective_overrides === 'object'
+    ? src.objective_overrides
+    : {};
+  const currencySrc = src.currency_overrides && typeof src.currency_overrides === 'object'
+    ? src.currency_overrides
+    : {};
+  const objectiveOverrides = {};
+  const currencyOverrides = {};
+  for (const [objectiveIdRaw, row] of Object.entries(objectiveSrc)) {
+    const objectiveId = asString(objectiveIdRaw);
+    if (!objectiveId) continue;
+    const payload = row && typeof row === 'object' ? row : {};
+    const ranking = payload.ranking_weights && typeof payload.ranking_weights === 'object'
+      ? mergeRankingWeights({}, payload.ranking_weights)
+      : null;
+    const primaryCurrency = normalizeValueCurrencyToken(payload.primary_currency);
+    if (!ranking && !primaryCurrency) continue;
+    objectiveOverrides[objectiveId] = {
+      primary_currency: primaryCurrency || null,
+      ranking_weights: ranking || null
+    };
+  }
+  for (const [currencyRaw, row] of Object.entries(currencySrc)) {
+    const currency = normalizeValueCurrencyToken(currencyRaw);
+    if (!currency) continue;
+    const payload = row && typeof row === 'object' ? row : {};
+    const ranking = payload.ranking_weights && typeof payload.ranking_weights === 'object'
+      ? mergeRankingWeights({}, payload.ranking_weights)
+      : mergeRankingWeights({}, payload);
+    currencyOverrides[currency] = {
+      ranking_weights: ranking
+    };
+  }
+  const defaultCurrency = normalizeValueCurrencyToken(src.default_currency);
+  return {
+    default_currency: defaultCurrency || null,
+    objective_overrides: objectiveOverrides,
+    currency_overrides: currencyOverrides
+  };
 }
 
 function mergeRankingWeights(base, overlay) {
@@ -403,6 +462,7 @@ function normalizeStrategy(raw, filePath) {
   const status = normalizeStatus(src.status);
   const objective = normalizeObjective(src.objective);
   const generation_policy = normalizeGenerationPolicy(src.generation_policy);
+  const campaigns = strategyCampaigns({ campaigns: src.campaigns }, false);
   const tags = asStringArray(src.tags).map(x => x.toLowerCase());
   const risk_policy = normalizeRiskPolicy(src.risk_policy, src.allowed_risks, warnings);
   const admission_policy = normalizeAdmissionPolicy(src.admission_policy);
@@ -413,6 +473,7 @@ function normalizeStrategy(raw, filePath) {
   const promotion_policy = normalizePromotionPolicy(src.promotion_policy);
   const execution_policy = normalizeExecutionPolicy(src.execution_policy);
   const threshold_overrides = normalizeThresholdOverrides(src.threshold_overrides);
+  const value_currency_policy = normalizeValueCurrencyPolicy(src.value_currency_policy);
   if (!objective.primary) warnings.push('objective_primary_missing');
   if (!risk_policy.allowed_risks.length) errors.push('risk_policy_allowed_risks_empty');
   const normalized = {
@@ -422,6 +483,7 @@ function normalizeStrategy(raw, filePath) {
     file: filePath,
     version: asString(src.version) || '1.0',
     objective,
+    campaigns,
     generation_policy,
     tags,
     risk_policy,
@@ -432,7 +494,8 @@ function normalizeStrategy(raw, filePath) {
     stop_policy,
     promotion_policy,
     execution_policy,
-    threshold_overrides
+    threshold_overrides,
+    value_currency_policy
   };
   pushValidationChecks(normalized, warnings, errors);
   return {
@@ -654,11 +717,59 @@ function strategyExplorationPolicy(strategy: AnyObj, defaults: AnyObj = {}): Any
   };
 }
 
-function strategyRankingWeights(strategy) {
-  if (!strategy || !strategy.ranking_weights || typeof strategy.ranking_weights !== 'object') {
-    return normalizeRankingWeights({}, []);
+function resolveStrategyRankingContext(strategy, context: AnyObj = {}) {
+  const base = strategy && strategy.ranking_weights && typeof strategy.ranking_weights === 'object'
+    ? strategy.ranking_weights
+    : normalizeRankingWeights({}, []);
+  const policy = strategy && strategy.value_currency_policy && typeof strategy.value_currency_policy === 'object'
+    ? strategy.value_currency_policy
+    : null;
+  const objectiveId = asString(context.objective_id);
+  const requestedCurrency = normalizeValueCurrencyToken(context.value_currency);
+  const applied = [] as string[];
+  let selectedCurrency = requestedCurrency || null;
+  let weights = { ...base };
+
+  if (policy) {
+    const objectiveOverrides = policy.objective_overrides && typeof policy.objective_overrides === 'object'
+      ? policy.objective_overrides
+      : {};
+    const currencyOverrides = policy.currency_overrides && typeof policy.currency_overrides === 'object'
+      ? policy.currency_overrides
+      : {};
+    const objectiveHit = objectiveId && objectiveOverrides[objectiveId] && typeof objectiveOverrides[objectiveId] === 'object'
+      ? objectiveOverrides[objectiveId]
+      : null;
+    if (objectiveHit && objectiveHit.ranking_weights && typeof objectiveHit.ranking_weights === 'object') {
+      weights = mergeRankingWeights(weights, objectiveHit.ranking_weights);
+      applied.push(`objective:${objectiveId}`);
+    }
+    if (!selectedCurrency && objectiveHit && normalizeValueCurrencyToken(objectiveHit.primary_currency)) {
+      selectedCurrency = normalizeValueCurrencyToken(objectiveHit.primary_currency);
+    }
+    if (!selectedCurrency && normalizeValueCurrencyToken(policy.default_currency)) {
+      selectedCurrency = normalizeValueCurrencyToken(policy.default_currency);
+    }
+    const currencyHit = selectedCurrency
+      && currencyOverrides[selectedCurrency]
+      && typeof currencyOverrides[selectedCurrency] === 'object'
+      ? currencyOverrides[selectedCurrency]
+      : null;
+    if (currencyHit && currencyHit.ranking_weights && typeof currencyHit.ranking_weights === 'object') {
+      weights = mergeRankingWeights(weights, currencyHit.ranking_weights);
+      applied.push(`currency:${selectedCurrency}`);
+    }
   }
-  return strategy.ranking_weights;
+  return {
+    objective_id: objectiveId || null,
+    value_currency: selectedCurrency || null,
+    weights,
+    applied_overrides: applied
+  };
+}
+
+function strategyRankingWeights(strategy, context: AnyObj = {}) {
+  return resolveStrategyRankingContext(strategy, context).weights;
 }
 
 function strategyCampaigns(strategy: AnyObj, activeOnly: boolean = false): AnyObj[] {
@@ -737,6 +848,7 @@ module.exports = {
   strategyBudgetCaps,
   strategyExplorationPolicy,
   strategyRankingWeights,
+  resolveStrategyRankingContext,
   strategyCampaigns,
   strategyAllowsProposalType,
   strategyPromotionPolicy,

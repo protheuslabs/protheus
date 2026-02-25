@@ -54,7 +54,7 @@ const {
   strategyExecutionMode,
   strategyBudgetCaps,
   strategyExplorationPolicy,
-  strategyRankingWeights,
+  resolveStrategyRankingContext,
   strategyAllowsProposalType,
   strategyMaxRiskPerAction,
   strategyDuplicateWindowHours,
@@ -419,6 +419,12 @@ const VALUE_CURRENCY_RANK_WEIGHTS = {
   time_savings: 1.05,
   learning: 0.96
 };
+const VALUE_CURRENCY_REVENUE_RE = /\b(revenue|mrr|arr|cash|money|usd|dollar|profit|pricing|invoice|paid|payment|billing|income)\b/i;
+const VALUE_CURRENCY_DELIVERY_RE = /\b(deliver|delivery|ship|release|milestone|throughput|lead[\s_-]?time|cycle[\s_-]?time|backlog)\b/i;
+const VALUE_CURRENCY_USER_RE = /\b(customer|user|adoption|engagement|retention|conversion|satisfaction|onboarding)\b/i;
+const VALUE_CURRENCY_QUALITY_RE = /\b(quality|reliab|uptime|error|stability|safety|accuracy|resilience|regression)\b/i;
+const VALUE_CURRENCY_TIME_RE = /\b(time[\s_-]*to[\s_-]*(?:value|cash|revenue)|hours?\s+saved|latency|faster|payback)\b/i;
+const VALUE_CURRENCY_LEARNING_RE = /\b(learn|discovery|research|insight|ab[\s_-]?test|hypothesis)\b/i;
 const AUTONOMY_LANE_NO_CHANGE_WINDOW_DAYS = Number(process.env.AUTONOMY_LANE_NO_CHANGE_WINDOW_DAYS || 7);
 const AUTONOMY_LANE_NO_CHANGE_LIMIT = Number(process.env.AUTONOMY_LANE_NO_CHANGE_LIMIT || 3);
 const AUTONOMY_LANE_NO_CHANGE_COOLDOWN_HOURS = Number(process.env.AUTONOMY_LANE_NO_CHANGE_COOLDOWN_HOURS || 24);
@@ -4191,6 +4197,25 @@ function compileDirectivePulseObjectives(directives) {
       for (const tok of tokenizeDirectiveText(p)) tokenSet.add(tok);
     }
     const tokens = uniqSorted(Array.from(tokenSet)).slice(0, 64);
+    const explicitCurrencies = listValueCurrencies(
+      []
+        .concat(asStringArray(metadata.value_currency))
+        .concat(asStringArray(metadata.value_currencies))
+        .concat(asStringArray(data.value_currency))
+        .concat(asStringArray(data.value_currencies))
+        .concat(asStringArray(intent.value_currency))
+        .concat(asStringArray(intent.value_currencies))
+    );
+    const inferredCurrencies = inferValueCurrenciesFromDirectiveBits([
+      id,
+      ...phrasesRaw,
+      ...phrases,
+      ...tokens
+    ]);
+    const valueCurrencies = explicitCurrencies.length > 0
+      ? listValueCurrencies([].concat(explicitCurrencies).concat(inferredCurrencies))
+      : inferredCurrencies;
+    const primaryCurrency = valueCurrencies.length > 0 ? valueCurrencies[0] : null;
 
     out.push({
       id,
@@ -4199,7 +4224,9 @@ function compileDirectivePulseObjectives(directives) {
       tier_weight: directiveTierWeight(tier),
       min_share: directiveTierMinShare(tier),
       phrases,
-      tokens
+      tokens,
+      value_currencies: valueCurrencies,
+      primary_currency: primaryCurrency
     });
     seen.add(id);
   }
@@ -4438,6 +4465,25 @@ function assessDirectivePulse(p, directiveFitScore, compositeScore, overlay, pul
 
   const obj = best.objective;
   const stats = objectiveStatsById.get(obj.id) || null;
+  const meta = p && p.meta && typeof p.meta === 'object' ? p.meta : {};
+  const proposalCurrency = normalizeValueCurrencyToken(
+    meta.value_oracle_primary_currency
+    || listValueCurrencies(meta.value_oracle_matched_currencies)[0]
+    || listValueCurrencies(meta.value_oracle_active_currencies)[0]
+    || ''
+  );
+  const objectiveCurrencies = listValueCurrencies(
+    []
+      .concat(asStringArray(obj && obj.value_currencies))
+      .concat(asStringArray(obj && obj.primary_currency))
+  );
+  const primaryObjectiveCurrency = objectiveCurrencies.length > 0 ? objectiveCurrencies[0] : null;
+  const valueCurrencyAlignment = (
+    proposalCurrency && objectiveCurrencies.length > 0
+      ? (objectiveCurrencies.includes(proposalCurrency) ? 1 : -1)
+      : 0
+  );
+  const valueCurrencyBonus = valueCurrencyAlignment > 0 ? 10 : (valueCurrencyAlignment < 0 ? -6 : 0);
   if (pulseObjectiveCooldownActive(stats, pulseCtx)) {
     return {
       pass: false,
@@ -4452,6 +4498,10 @@ function assessDirectivePulse(p, directiveFitScore, compositeScore, overlay, pul
         cooldown_hours: Number(pulseCtx.cooldown_hours || AUTONOMY_DIRECTIVE_PULSE_COOLDOWN_HOURS),
         last_attempt_ts: stats && stats.last_attempt_ts ? String(stats.last_attempt_ts) : null
       },
+      proposal_value_currency: proposalCurrency || null,
+      objective_primary_currency: primaryObjectiveCurrency,
+      objective_value_currencies: objectiveCurrencies,
+      value_currency_alignment: valueCurrencyAlignment,
       matched_positive: uniqSorted([...(best.phrase_hits || []), ...(best.token_hits || [])]).slice(0, 6)
     };
   }
@@ -4485,6 +4535,7 @@ function assessDirectivePulse(p, directiveFitScore, compositeScore, overlay, pul
     + ((1 - clampNumber(shippedRate, 0, 1)) * 28)
     + (Math.max(0, urgency - 1) * 15)
     + (attempts === 0 ? 12 : 0)
+    + valueCurrencyBonus
     - (objectiveNoProgress * 12)
     - (objectiveReverted * 6)
   );
@@ -4510,6 +4561,10 @@ function assessDirectivePulse(p, directiveFitScore, compositeScore, overlay, pul
     retry_penalty: Number(retryPenalty.toFixed(3)),
     coverage_bonus: Number(coverageBonus.toFixed(3)),
     reasons: [],
+    proposal_value_currency: proposalCurrency || null,
+    objective_primary_currency: primaryObjectiveCurrency,
+    objective_value_currencies: objectiveCurrencies,
+    value_currency_alignment: valueCurrencyAlignment,
     matched_positive: uniqSorted([...(best.phrase_hits || []), ...(best.token_hits || [])]).slice(0, 6)
   };
 }
@@ -5972,6 +6027,19 @@ function listValueCurrencies(value) {
   return out;
 }
 
+function inferValueCurrenciesFromDirectiveBits(bits) {
+  const blob = normalizeSpaces((Array.isArray(bits) ? bits : []).map((x) => String(x || '')).join(' ')).toLowerCase();
+  const out = [];
+  if (!blob) return out;
+  if (VALUE_CURRENCY_REVENUE_RE.test(blob)) out.push('revenue');
+  if (VALUE_CURRENCY_DELIVERY_RE.test(blob)) out.push('delivery');
+  if (VALUE_CURRENCY_USER_RE.test(blob)) out.push('user_value');
+  if (VALUE_CURRENCY_QUALITY_RE.test(blob)) out.push('quality');
+  if (VALUE_CURRENCY_TIME_RE.test(blob)) out.push('time_savings');
+  if (VALUE_CURRENCY_LEARNING_RE.test(blob)) out.push('learning');
+  return listValueCurrencies(out);
+}
+
 function expectedValueSignalForProposal(p) {
   const meta = p && p.meta && typeof p.meta === 'object' ? p.meta : {};
   const direct = Number(meta.expected_value_score);
@@ -6257,10 +6325,37 @@ function candidateNonYieldPenaltySignal(cand, opts: AnyObj = {}) {
   return out;
 }
 
+function candidateObjectiveId(cand, proposal) {
+  const c = cand && typeof cand === 'object' ? cand : {};
+  const p = proposal && typeof proposal === 'object' ? proposal : {};
+  const meta = p && p.meta && typeof p.meta === 'object' ? p.meta : {};
+  return sanitizeDirectiveObjectiveId(
+    c && c.directive_pulse && c.directive_pulse.objective_id
+    || p.objective_id
+    || meta.objective_id
+    || meta.directive_objective_id
+    || ''
+  );
+}
+
 function strategyRankForCandidate(cand, strategy, opts: AnyObj = {}) {
   const p = cand && cand.proposal ? cand.proposal : {};
-  const weights = strategyRankingWeights(strategy);
   const expectedValueSignal = expectedValueSignalForProposal(p);
+  const rankingContext = resolveStrategyRankingContext(strategy, {
+    objective_id: candidateObjectiveId(cand, p),
+    value_currency: expectedValueSignal.currency
+  });
+  const weights = rankingContext.weights && typeof rankingContext.weights === 'object'
+    ? rankingContext.weights
+    : {
+      composite: 0.35,
+      actionability: 0.2,
+      directive_fit: 0.15,
+      signal_quality: 0.15,
+      expected_value: 0.1,
+      time_to_value: 0,
+      risk_penalty: 0.05
+    };
   const expectedValue = expectedValueSignal.score;
   const estimatedTokens = estimateTokensForCandidate(cand, p);
   const valueDensity = valueDensityScore(expectedValue, estimatedTokens);
@@ -6289,7 +6384,12 @@ function strategyRankForCandidate(cand, strategy, opts: AnyObj = {}) {
     non_yield_policy_hold_rate: Number(nonYieldPenalty.policy_hold_rate || 0),
     non_yield_no_progress_rate: Number(nonYieldPenalty.no_progress_rate || 0),
     non_yield_stop_rate: Number(nonYieldPenalty.stop_rate || 0),
-    non_yield_shipped_rate: Number(nonYieldPenalty.shipped_rate || 0)
+    non_yield_shipped_rate: Number(nonYieldPenalty.shipped_rate || 0),
+    ranking_context_objective_id: rankingContext.objective_id || null,
+    ranking_context_currency: rankingContext.value_currency || null,
+    ranking_context_overrides: Array.isArray(rankingContext.applied_overrides)
+      ? rankingContext.applied_overrides.slice(0, 4)
+      : []
   };
   const raw = (
     Number(weights.composite || 0) * components.composite

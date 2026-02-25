@@ -121,6 +121,15 @@ function defaultStrategyDraft(seed: AnyObj = {}): AnyObj {
       time_to_value: 0,
       risk_penalty: 0.05
     },
+    value_currency_policy: {
+      default_currency: 'revenue',
+      currency_overrides: {
+        revenue: { ranking_weights: { expected_value: 0.16, time_to_value: 0.06, risk_penalty: 0.04 } },
+        quality: { ranking_weights: { signal_quality: 0.24, risk_penalty: 0.08, expected_value: 0.06 } },
+        delivery: { ranking_weights: { actionability: 0.24, expected_value: 0.11, risk_penalty: 0.04 } }
+      },
+      objective_overrides: {}
+    },
     budget_policy: {
       daily_runs_cap: 4,
       daily_token_cap: 4000,

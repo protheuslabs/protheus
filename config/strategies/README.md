@@ -27,6 +27,18 @@ Each `*.json` here is declarative policy consumed by generic controllers.
   "risk_policy": { "allowed_risks": ["low"], "max_risk_per_action": 35 },
   "admission_policy": { "allowed_types": [], "blocked_types": [], "max_remediation_depth": 2, "duplicate_window_hours": 24 },
   "ranking_weights": { "composite": 0.35, "actionability": 0.2, "directive_fit": 0.15, "signal_quality": 0.15, "expected_value": 0.1, "risk_penalty": 0.05 },
+  "value_currency_policy": {
+    "default_currency": "revenue",
+    "currency_overrides": {
+      "revenue": { "ranking_weights": { "expected_value": 0.14, "time_to_value": 0.06 } }
+    },
+    "objective_overrides": {
+      "T1_make_jay_billionaire_v1": {
+        "primary_currency": "revenue",
+        "ranking_weights": { "expected_value": 0.16, "risk_penalty": 0.03 }
+      }
+    }
+  },
   "budget_policy": {
     "daily_runs_cap": 4,
     "daily_token_cap": 4000,
@@ -63,6 +75,10 @@ Each `*.json` here is declarative policy consumed by generic controllers.
   - `admission_policy.duplicate_window_hours` to suppress rapid retries of equivalent proposal keys
   - `budget_policy` USD fields for Tier-1 cost governor (env vars still override if explicitly set)
   - `admission_policy.blocked_types` for manual-only proposal types (example: `human_escalation`)
+- Value-currency propagation:
+  - `value_currency_policy.default_currency` sets fallback success currency when proposal signals are neutral.
+  - `value_currency_policy.currency_overrides.<currency>.ranking_weights` applies objective-conditioned ranking overlays.
+  - `value_currency_policy.objective_overrides.<objective_id>` can force objective-specific currency and ranking weights.
 - Strict validation blocks profiles with contradictory admission lists (`allowed_types` intersect `blocked_types`) or invalid promotion policy (`min_shipped > min_attempted`).
 - Strategy lifecycle grading can be generated via:
   - `node systems/strategy/strategy_learner.js run [YYYY-MM-DD] --days=14`

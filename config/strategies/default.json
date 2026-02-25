@@ -83,6 +83,42 @@
     "expected_value": 0.07,
     "risk_penalty": 0.04
   },
+  "value_currency_policy": {
+    "default_currency": "revenue",
+    "currency_overrides": {
+      "revenue": {
+        "ranking_weights": {
+          "expected_value": 0.14,
+          "time_to_value": 0.06,
+          "risk_penalty": 0.03
+        }
+      },
+      "delivery": {
+        "ranking_weights": {
+          "actionability": 0.24,
+          "expected_value": 0.1,
+          "risk_penalty": 0.03
+        }
+      },
+      "quality": {
+        "ranking_weights": {
+          "signal_quality": 0.24,
+          "risk_penalty": 0.08,
+          "expected_value": 0.05
+        }
+      }
+    },
+    "objective_overrides": {
+      "T1_make_jay_billionaire_v1": {
+        "primary_currency": "revenue",
+        "ranking_weights": {
+          "expected_value": 0.16,
+          "time_to_value": 0.05,
+          "risk_penalty": 0.03
+        }
+      }
+    }
+  },
   "budget_policy": {
     "daily_runs_cap": 6,
     "daily_token_cap": 6000,
