@@ -52,6 +52,7 @@
     "systems/spine/heartbeat_trigger.ts",
     "systems/spine/spine.ts",
     "systems/security/architecture_guard.ts",
+    "systems/security/black_box_ledger.ts",
     "systems/security/capability_lease.ts",
     "systems/security/directive_gate.ts",
     "systems/security/directive_intake.ts",
