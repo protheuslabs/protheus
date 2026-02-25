@@ -32,6 +32,7 @@ const FRACTAL_DIR = process.env.FRACTAL_ORGANISM_DIR
 const OUTPUT_DIR = path.join(FRACTAL_DIR, 'organism_cycle');
 const EPIGENETIC_PATH = path.join(FRACTAL_DIR, 'epigenetic_tags.json');
 const ARCHETYPE_POOL_PATH = path.join(FRACTAL_DIR, 'archetype_pool.json');
+const ALERTS_DIR = path.join(FRACTAL_DIR, 'alerts');
 const PHEROMONE_DIR = path.join(FRACTAL_DIR, 'pheromones');
 const RUNS_DIR = process.env.FRACTAL_ORGANISM_RUNS_DIR
   ? path.resolve(process.env.FRACTAL_ORGANISM_RUNS_DIR)
@@ -43,6 +44,10 @@ const SIM_DIR = process.env.FRACTAL_ORGANISM_SIM_DIR
   ? path.resolve(process.env.FRACTAL_ORGANISM_SIM_DIR)
   : path.join(ROOT, 'state', 'autonomy', 'simulations');
 const SALT = String(process.env.FRACTAL_PHEROMONE_SIGNING_SALT || 'local_fractal_pheromone_salt_v1');
+const ARCHETYPE_NOVELTY_CONFIDENCE_DELTA_MIN = Math.max(
+  0.01,
+  Math.min(0.5, Number(process.env.FRACTAL_ARCHETYPE_NOVELTY_CONFIDENCE_DELTA_MIN || 0.08))
+);
 
 function usage() {
   console.log('Usage:');
@@ -103,6 +108,11 @@ function readJsonl(filePath) {
 function writeJson(filePath, value) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+}
+
+function appendJsonl(filePath, row) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.appendFileSync(filePath, `${JSON.stringify(row)}\n`, 'utf8');
 }
 
 function stableId(seed, prefix = 'id') {
@@ -426,6 +436,64 @@ function updateArchetypes(pool, runSig) {
   };
 }
 
+function archetypeDeltaSummary(beforePool, afterPool) {
+  const beforeRows = Array.isArray(beforePool && beforePool.archetypes) ? beforePool.archetypes : [];
+  const afterRows = Array.isArray(afterPool && afterPool.archetypes) ? afterPool.archetypes : [];
+  const beforeById = new Map(beforeRows.map((row) => [String(row && row.id || ''), row]));
+  const newIds = [];
+  const confidenceShifts = [];
+  for (const row of afterRows) {
+    const cur = row && typeof row === 'object' ? row : {};
+    const id = String(cur && cur.id || '');
+    if (!id) continue;
+    const prev = beforeById.get(id);
+    if (!prev) {
+      newIds.push(id);
+      continue;
+    }
+    const prevRow = prev && typeof prev === 'object' ? prev : {};
+    const beforeConf = safeNumber((prevRow as any).confidence, NaN);
+    const afterConf = safeNumber((cur as any).confidence, NaN);
+    if (!Number.isFinite(beforeConf) || !Number.isFinite(afterConf)) continue;
+    const delta = Number((afterConf - beforeConf).toFixed(4));
+    if (Math.abs(delta) < ARCHETYPE_NOVELTY_CONFIDENCE_DELTA_MIN) continue;
+    confidenceShifts.push({
+      id,
+      before: Number(beforeConf.toFixed(4)),
+      after: Number(afterConf.toFixed(4)),
+      delta
+    });
+  }
+  const signals = newIds.length + confidenceShifts.length;
+  return {
+    new_count: newIds.length,
+    confidence_shift_count: confidenceShifts.length,
+    signal_count: signals,
+    novelty_alert: signals > 0,
+    threshold_confidence_delta: ARCHETYPE_NOVELTY_CONFIDENCE_DELTA_MIN,
+    sample_new_ids: newIds.slice(0, 5),
+    sample_confidence_shifts: confidenceShifts.slice(0, 5)
+  };
+}
+
+function writeArchetypeAlert(dateStr, delta, context = {}) {
+  if (!delta || delta.novelty_alert !== true) return;
+  const row = {
+    schema_id: 'fractal_archetype_novelty_alert',
+    schema_version: '1.0.0',
+    ts: nowIso(),
+    date: dateStr,
+    signal_count: Number(delta.signal_count || 0),
+    new_count: Number(delta.new_count || 0),
+    confidence_shift_count: Number(delta.confidence_shift_count || 0),
+    threshold_confidence_delta: Number(delta.threshold_confidence_delta || 0),
+    sample_new_ids: Array.isArray(delta.sample_new_ids) ? delta.sample_new_ids.slice(0, 5) : [],
+    sample_confidence_shifts: Array.isArray(delta.sample_confidence_shifts) ? delta.sample_confidence_shifts.slice(0, 5) : [],
+    context: context && typeof context === 'object' ? context : {}
+  };
+  appendJsonl(path.join(ALERTS_DIR, `${dateStr}.jsonl`), row);
+}
+
 function outputPath(dateStr) {
   return path.join(OUTPUT_DIR, `${dateStr}.json`);
 }
@@ -453,6 +521,10 @@ function runCycle(dateStr) {
   const archetypeBefore = loadArchetypePool();
   const archetypeAfter = updateArchetypes(archetypeBefore, runSig);
   writeJson(ARCHETYPE_POOL_PATH, archetypeAfter);
+  const archetypeDelta = archetypeDeltaSummary(archetypeBefore, archetypeAfter);
+  writeArchetypeAlert(dateStr, archetypeDelta, {
+    run_counts: runSig && runSig.counts ? runSig.counts : {}
+  });
 
   const payload = {
     ok: true,
@@ -476,6 +548,7 @@ function runCycle(dateStr) {
       count: Array.isArray(archetypeAfter.archetypes) ? archetypeAfter.archetypes.length : 0,
       path: path.relative(ROOT, ARCHETYPE_POOL_PATH).replace(/\\/g, '/')
     },
+    archetype_delta: archetypeDelta,
     recommendations: [
       ...symbiosis.map((s) => `symbiosis:${s.objective}`),
       ...predatorPrey.candidates.map((c) => `predator_shadow:${c.module}`)
@@ -491,6 +564,9 @@ function runCycle(dateStr) {
     pheromones: pheromones.length,
     harmony_score: harmony.score,
     archetypes: payload.archetype_pool.count,
+    archetype_novelty_alert: archetypeDelta.novelty_alert === true,
+    archetype_new: Number(archetypeDelta.new_count || 0),
+    archetype_confidence_shifts: Number(archetypeDelta.confidence_shift_count || 0),
     output_path: path.relative(ROOT, outputPath(dateStr)).replace(/\\/g, '/')
   })}\n`);
 }
@@ -516,7 +592,10 @@ function status(dateStr) {
       : 0,
     pheromones: payload.pheromones ? safeNumber(payload.pheromones.count, 0) : 0,
     harmony_score: payload.resonance ? safeNumber(payload.resonance.score, 0) : 0,
-    archetypes: payload.archetype_pool ? safeNumber(payload.archetype_pool.count, 0) : 0
+    archetypes: payload.archetype_pool ? safeNumber(payload.archetype_pool.count, 0) : 0,
+    archetype_novelty_alert: payload.archetype_delta ? payload.archetype_delta.novelty_alert === true : false,
+    archetype_new: payload.archetype_delta ? safeNumber(payload.archetype_delta.new_count, 0) : 0,
+    archetype_confidence_shifts: payload.archetype_delta ? safeNumber(payload.archetype_delta.confidence_shift_count, 0) : 0
   })}\n`);
 }
 

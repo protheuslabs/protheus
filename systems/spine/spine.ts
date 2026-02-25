@@ -3409,6 +3409,9 @@ function main() {
         pheromones: payload ? Number(payload.pheromones || 0) : null,
         harmony_score: payload ? Number(payload.harmony_score || 0) : null,
         archetypes: payload ? Number(payload.archetypes || 0) : null,
+        archetype_novelty_alert: payload ? payload.archetype_novelty_alert === true : null,
+        archetype_new: payload ? Number(payload.archetype_new || 0) : null,
+        archetype_confidence_shifts: payload ? Number(payload.archetype_confidence_shifts || 0) : null,
         output_path: payload ? payload.output_path || null : null,
         reason: (!cycle.ok || !payload || payload.ok !== true)
           ? String(cycle.stderr || cycle.stdout || `fractal_organism_cycle_exit_${cycle.code}`).slice(0, 180)
@@ -3417,7 +3420,9 @@ function main() {
       if (cycle.ok && payload && payload.ok === true) {
         console.log(
           ` fractal_organism cycle_harmony=${Number(payload.harmony_score || 0)}` +
-          ` archetypes=${Number(payload.archetypes || 0)}`
+          ` archetypes=${Number(payload.archetypes || 0)}` +
+          ` novelty=${payload.archetype_novelty_alert === true ? "1" : "0"}` +
+          ` new=${Number(payload.archetype_new || 0)}`
         );
       } else {
         console.log(` fractal_organism unavailable reason=${String(cycle.stderr || cycle.stdout || "unknown").slice(0, 120)}`);
