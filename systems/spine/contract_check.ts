@@ -130,7 +130,69 @@ function checkSourceContains(relPath, requiredTokens) {
   process.exit(1);
 }
 
+function effectiveRuntimeMode(root) {
+  const envMode = String(process.env.PROTHEUS_RUNTIME_MODE || '').trim().toLowerCase();
+  if (envMode === 'dist' || envMode === 'source') return envMode;
+  const statePath = process.env.PROTHEUS_RUNTIME_MODE_STATE_PATH
+    ? path.resolve(process.env.PROTHEUS_RUNTIME_MODE_STATE_PATH)
+    : path.join(root, 'state', 'ops', 'runtime_mode.json');
+  try {
+    if (!fs.existsSync(statePath)) return 'source';
+    const payload = JSON.parse(fs.readFileSync(statePath, 'utf8'));
+    const mode = String(payload && payload.mode || '').trim().toLowerCase();
+    if (mode === 'dist' || mode === 'source') return mode;
+  } catch {}
+  return 'source';
+}
+
+function walkJsFiles(dirAbs, out) {
+  if (!fs.existsSync(dirAbs)) return;
+  const ents = fs.readdirSync(dirAbs, { withFileTypes: true });
+  for (const ent of ents) {
+    if (!ent) continue;
+    if (ent.name === 'node_modules' || ent.name === '.git' || ent.name === 'dist') continue;
+    const abs = path.join(dirAbs, ent.name);
+    if (ent.isDirectory()) {
+      walkJsFiles(abs, out);
+      continue;
+    }
+    if (ent.isFile() && abs.endsWith('.js')) out.push(abs);
+  }
+}
+
+function checkDistRuntimeGuardrails(root) {
+  const mode = effectiveRuntimeMode(root);
+  if (mode !== 'dist') return;
+  if (String(process.env.PROTHEUS_RUNTIME_DIST_REQUIRED || '0') !== '1') {
+    console.error('contract_check: FAILED');
+    console.error(' runtime_mode: dist');
+    console.error(' reason: dist_mode_requires_PROTHEUS_RUNTIME_DIST_REQUIRED=1 to prevent source fallback');
+    process.exit(1);
+  }
+  if (String(process.env.CONTRACT_CHECK_DIST_WRAPPER_STRICT || '0') !== '1') return;
+  const files = [];
+  walkJsFiles(path.join(root, 'systems'), files);
+  walkJsFiles(path.join(root, 'lib'), files);
+  const missing = [];
+  for (const abs of files) {
+    let src = '';
+    try { src = fs.readFileSync(abs, 'utf8'); } catch { continue; }
+    if (!isTsBootstrapWrapper(src)) continue;
+    const rel = path.relative(root, abs);
+    const distPath = path.join(root, 'dist', rel);
+    if (!fs.existsSync(distPath)) missing.push(rel);
+  }
+  if (missing.length === 0) return;
+  console.error('contract_check: FAILED');
+  console.error(' runtime_mode: dist');
+  console.error(` reason: missing_dist_wrappers count=${missing.length}`);
+  console.error(` sample: ${missing.slice(0, 10).join(', ')}`);
+  process.exit(1);
+}
+
 function main() {
+  const root = repoRoot();
+  checkDistRuntimeGuardrails(root);
   // Keep this list small and only for scripts that are hard-coupled by spine.
   // If you rename commands/flags in any of these, update tokens here.
 

@@ -19,6 +19,13 @@ Purpose: run runtime entrypoints from deterministic `dist/` output while preserv
 
 In `dist` mode, wrappers compile from `dist/<same-path>.js` when present. If missing and `PROTHEUS_RUNTIME_DIST_REQUIRED=1`, startup fails closed.
 
+## Guardrails
+
+- `systems/spine/contract_check.js` now fails if runtime mode resolves to `dist` while `PROTHEUS_RUNTIME_DIST_REQUIRED` is not `1`.
+- Optional strict wrapper coverage check:
+  - `CONTRACT_CHECK_DIST_WRAPPER_STRICT=1 node systems/spine/contract_check.js`
+  - Fails if any TS bootstrap wrapper lacks its `dist/` counterpart.
+
 ## Rollback
 
 - Immediate rollback: `set-mode --mode=source`
