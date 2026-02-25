@@ -111,6 +111,8 @@ state/sensory/eyes/cache/*.json
 state/sensory/eyes/registry.json
 state/sensory/queue_log.jsonl
 state/sensory/trends/*.json
+state/nursery/**
+state/security/red_team/**
 
 # Local skill imports/experiments (keep canonical workspace skills tracked)
 skills/*
