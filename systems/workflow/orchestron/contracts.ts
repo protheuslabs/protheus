@@ -119,8 +119,10 @@ function normalizeStep(rawStep, index) {
   };
 }
 
-function normalizeCandidate(rawCandidate, index = 0) {
+function normalizeCandidate(rawCandidate, index = 0, opts = {}) {
   const src = rawCandidate && typeof rawCandidate === 'object' ? rawCandidate : {};
+  const depthHint = clampInt(opts && opts.depth, 0, 12, 0);
+  const maxDepth = clampInt(opts && opts.maxDepth, 1, 12, 3);
   const stepsRaw = Array.isArray(src.steps) ? src.steps : [];
   const steps = stepsRaw.map((row, i) => normalizeStep(row, i)).filter((row) => row.command || row.type === 'receipt');
   const proposalType = normalizeToken(
@@ -130,6 +132,36 @@ function normalizeCandidate(rawCandidate, index = 0) {
   const idSeed = `${src.id || ''}|${src.strategy_id || ''}|${proposalType}|${index}`;
   const id = normalizeToken(src.id || '', 48) || stableId(idSeed, 'wfc', 16);
   const intent = normalizeIntent(src.intent, { id: src.strategy_id || 'unknown', objective: { primary: src.objective_primary || '' } });
+  const explicitParentWorkflowId = src.parent_workflow_id
+    ? cleanText(src.parent_workflow_id, 120)
+    : (
+      src.mutation && src.mutation.parent_workflow_id
+        ? cleanText(src.mutation.parent_workflow_id, 120)
+        : null
+    );
+  const fractalDepth = clampInt(src.fractal_depth, 0, 12, depthHint);
+  const nextDepth = clampInt(fractalDepth + 1, 0, 12, fractalDepth + 1);
+
+  const normalizedChildren = [];
+  if (fractalDepth < maxDepth) {
+    const childRows = Array.isArray(src.children) ? src.children : [];
+    for (let i = 0; i < childRows.length; i += 1) {
+      const child = normalizeCandidate(
+        {
+          ...childRows[i],
+          parent_workflow_id: id
+        },
+        i,
+        {
+          depth: nextDepth,
+          maxDepth
+        }
+      );
+      if (!child || child.id === id) continue;
+      normalizedChildren.push(child);
+    }
+  }
+
   return {
     id,
     name: cleanText(src.name || `Orchestron candidate ${index + 1}`, 120),
@@ -144,6 +176,8 @@ function normalizeCandidate(rawCandidate, index = 0) {
       intent_signature: cleanText(src.trigger && src.trigger.intent_signature || intent.signature, 180)
     },
     intent,
+    parent_workflow_id: explicitParentWorkflowId,
+    fractal_depth: fractalDepth,
     mutation: src.mutation && typeof src.mutation === 'object'
       ? {
           kind: normalizeToken(src.mutation.kind || 'none', 48) || 'none',
@@ -159,6 +193,7 @@ function normalizeCandidate(rawCandidate, index = 0) {
         : ['low']
     },
     steps,
+    children: normalizedChildren,
     generated_at: cleanText(src.generated_at || nowIso(), 64),
     metadata: src.metadata && typeof src.metadata === 'object' ? src.metadata : {}
   };
@@ -174,6 +209,7 @@ function normalizeScorecard(rawScorecard) {
     predicted_drift_delta: Number(clampNumber(src.predicted_drift_delta, -1, 1, 0).toFixed(4)),
     safety_score: Number(clampNumber(src.safety_score, 0, 1, 0).toFixed(4)),
     regression_risk: Number(clampNumber(src.regression_risk, 0, 1, 1).toFixed(4)),
+    trit_alignment: Number(clampNumber(src.trit_alignment, -1, 1, 0).toFixed(4)),
     composite_score: Number(clampNumber(src.composite_score, 0, 1, 0).toFixed(4)),
     reasons: Array.isArray(src.reasons)
       ? src.reasons.map((row) => cleanText(row, 120)).filter(Boolean).slice(0, 8)
@@ -182,42 +218,92 @@ function normalizeScorecard(rawScorecard) {
   };
 }
 
+function defaultScorecard(candidateId = '') {
+  return normalizeScorecard({
+    candidate_id: cleanText(candidateId, 80),
+    pass: false,
+    base_shipped_rate: 0,
+    predicted_yield_delta: 0,
+    predicted_drift_delta: 0,
+    safety_score: 0,
+    regression_risk: 1,
+    trit_alignment: 0,
+    composite_score: 0,
+    reasons: ['scorecard_missing'],
+    tested_at: nowIso()
+  });
+}
+
 function toWorkflowDraft(candidate, scorecard, context = {}) {
-  const c = normalizeCandidate(candidate, 0);
-  const s = normalizeScorecard({ ...scorecard, candidate_id: c.id });
+  const c = normalizeCandidate(candidate, 0, {
+    depth: clampInt(candidate && candidate.fractal_depth, 0, 12, 0),
+    maxDepth: clampInt(context && context.max_depth, 1, 12, 3)
+  });
   const principles = context.principles && typeof context.principles === 'object' ? context.principles : {};
-  const score = Number(clampNumber(s.composite_score, 0, 1, 0).toFixed(4));
-  return {
-    id: c.id,
-    name: c.name,
-    status: 'draft',
-    source: 'orchestron_adaptive_controller',
-    strategy_id: c.strategy_id,
-    objective_id: c.objective_id,
-    objective_primary: c.objective_primary,
-    trigger: c.trigger,
-    intent: c.intent,
-    mutation: c.mutation,
-    principles: {
-      score: clampNumber(principles.score, 0, 1, 0.5),
-      band: cleanText(principles.band || 'unknown', 32),
-      ids: Array.isArray(principles.ids) ? principles.ids.slice(0, 8) : []
-    },
-    metrics: {
-      attempts: Number(c.metadata && c.metadata.attempts || 0),
-      shipped_rate: Number(clampNumber(s.base_shipped_rate, 0, 1, 0).toFixed(4)),
-      failure_rate: Number(clampNumber(c.metadata && c.metadata.failure_rate, 0, 1, 1).toFixed(4)),
-      score,
-      predicted_yield_delta: s.predicted_yield_delta,
-      predicted_drift_delta: s.predicted_drift_delta,
-      safety_score: s.safety_score,
-      regression_risk: s.regression_risk,
-      scorecard_pass: s.pass
-    },
-    risk_policy: c.risk_policy,
-    steps: c.steps,
-    generated_at: nowIso()
-  };
+  const scoreLookup = context.score_lookup instanceof Map
+    ? context.score_lookup
+    : (
+      context.score_lookup && typeof context.score_lookup === 'object'
+        ? new Map(Object.entries(context.score_lookup))
+        : null
+    );
+
+  function draftForNode(node, parentId = null) {
+    const rawScorecard = (
+      scoreLookup && node && node.id && scoreLookup.has(String(node.id))
+        ? scoreLookup.get(String(node.id))
+        : null
+    );
+    const scorecardForNode = rawScorecard && typeof rawScorecard === 'object'
+      ? normalizeScorecard({ ...rawScorecard, candidate_id: node.id })
+      : (
+        node && node.id === c.id
+          ? normalizeScorecard({ ...scorecard, candidate_id: node.id })
+          : defaultScorecard(node && node.id ? node.id : '')
+      );
+    const score = Number(clampNumber(scorecardForNode.composite_score, 0, 1, 0).toFixed(4));
+    const children = Array.isArray(node && node.children) ? node.children : [];
+    const nextDepth = clampInt(node && node.fractal_depth, 0, 12, 0);
+    return {
+      id: node.id,
+      name: node.name,
+      status: 'draft',
+      source: 'orchestron_adaptive_controller',
+      strategy_id: node.strategy_id,
+      objective_id: node.objective_id,
+      objective_primary: node.objective_primary,
+      trigger: node.trigger,
+      intent: node.intent,
+      parent_workflow_id: parentId || node.parent_workflow_id || null,
+      fractal_depth: nextDepth,
+      mutation: node.mutation,
+      principles: {
+        score: clampNumber(principles.score, 0, 1, 0.5),
+        band: cleanText(principles.band || 'unknown', 32),
+        ids: Array.isArray(principles.ids) ? principles.ids.slice(0, 8) : []
+      },
+      metrics: {
+        attempts: Number(node.metadata && node.metadata.attempts || 0),
+        shipped_rate: Number(clampNumber(scorecardForNode.base_shipped_rate, 0, 1, 0).toFixed(4)),
+        failure_rate: Number(clampNumber(node.metadata && node.metadata.failure_rate, 0, 1, 1).toFixed(4)),
+        value_currency: cleanText(node.metadata && node.metadata.value_currency || '', 40) || null,
+        value_priority_score: Number(clampNumber(node.metadata && node.metadata.value_priority_score, 0, 1, 0.5).toFixed(4)),
+        score,
+        predicted_yield_delta: scorecardForNode.predicted_yield_delta,
+        predicted_drift_delta: scorecardForNode.predicted_drift_delta,
+        safety_score: scorecardForNode.safety_score,
+        regression_risk: scorecardForNode.regression_risk,
+        trit_alignment: scorecardForNode.trit_alignment,
+        scorecard_pass: scorecardForNode.pass
+      },
+      risk_policy: node.risk_policy,
+      steps: node.steps,
+      children: children.map((child) => draftForNode(child, node.id)),
+      generated_at: nowIso()
+    };
+  }
+
+  return draftForNode(c, c.parent_workflow_id || null);
 }
 
 module.exports = {

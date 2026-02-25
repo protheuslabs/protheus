@@ -6,7 +6,8 @@ const fs = require('fs');
 const path = require('path');
 const {
   loadActiveStrategy,
-  strategyMaxRiskPerAction
+  strategyMaxRiskPerAction,
+  resolveStrategyRankingContext
 } = require('../../../lib/strategy_resolver');
 const { analyzeIntent } = require('./intent_analyzer');
 const { generateCandidates } = require('./candidate_generator');
@@ -17,6 +18,7 @@ const {
   clampNumber,
   cleanText,
   normalizeToken,
+  stableId,
   toWorkflowDraft
 } = require('./contracts');
 
@@ -37,12 +39,15 @@ const RED_TEAM_RUNTIME_PATH = process.env.ORCHESTRON_RED_TEAM_RUNTIME_PATH
 const OUT_DIR = process.env.ORCHESTRON_OUT_DIR
   ? path.resolve(process.env.ORCHESTRON_OUT_DIR)
   : path.join(REPO_ROOT, 'state', 'adaptive', 'workflows', 'orchestron');
+const BIRTH_EVENTS_PATH = process.env.ORCHESTRON_BIRTH_EVENTS_PATH
+  ? path.resolve(process.env.ORCHESTRON_BIRTH_EVENTS_PATH)
+  : path.join(OUT_DIR, 'birth_events.jsonl');
 const HISTORY_PATH = path.join(OUT_DIR, 'history.jsonl');
 const LATEST_PATH = path.join(OUT_DIR, 'latest.json');
 
 function usage() {
   console.log('Usage:');
-  console.log('  node systems/workflow/orchestron/adaptive_controller.js run [YYYY-MM-DD] [--intent="..."] [--days=N] [--max-candidates=N] [--policy=path]');
+  console.log('  node systems/workflow/orchestron/adaptive_controller.js run [YYYY-MM-DD] [--intent="..."] [--days=N] [--max-candidates=N] [--value-currency=<currency>] [--objective-id=<id>] [--policy=path]');
   console.log('  node systems/workflow/orchestron/adaptive_controller.js status [YYYY-MM-DD|latest]');
 }
 
@@ -140,12 +145,47 @@ function defaultPolicy() {
     max_candidates: 8,
     max_promotions_per_run: 4,
     min_principle_score: 0.6,
+    auto_apply: {
+      enabled: false,
+      min_promotable_drafts: 1,
+      min_principle_score: 0.75,
+      min_composite_score: 0.48,
+      max_predicted_drift_delta: 0.004,
+      min_predicted_yield_delta: 0,
+      max_red_team_critical_fail_cases: 0,
+      require_shadow_off: true
+    },
+    creative_llm: {
+      enabled: false,
+      model: 'qwen3:4b',
+      timeout_ms: 2500,
+      max_candidates: 3,
+      min_novelty_trit: 0,
+      cache_ttl_ms: 600000
+    },
+    fractal: {
+      enabled: true,
+      max_depth: 3,
+      max_children_per_workflow: 3,
+      min_attempts_for_split: 4,
+      min_failure_rate_for_split: 0.45
+    },
+    runtime_evolution: {
+      enabled: true,
+      max_candidates: 3,
+      failure_pressure_min: 0.45,
+      no_change_pressure_min: 0.35
+    },
+    telemetry: {
+      emit_birth_events: true
+    },
     nursery: {
       min_safety_score: 0.5,
       max_regression_risk: 0.56,
       min_composite_score: 0.45,
       max_predicted_drift_delta: 0.008,
       min_predicted_yield_delta: -0.005,
+      min_trit_alignment: -0.7,
       max_promotions_per_run: 4
     }
   };
@@ -155,6 +195,11 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
   const raw = readJson(policyPath, {});
   const base = defaultPolicy();
   const nurserySrc = raw.nursery && typeof raw.nursery === 'object' ? raw.nursery : {};
+  const autoApplySrc = raw.auto_apply && typeof raw.auto_apply === 'object' ? raw.auto_apply : {};
+  const creativeSrc = raw.creative_llm && typeof raw.creative_llm === 'object' ? raw.creative_llm : {};
+  const fractalSrc = raw.fractal && typeof raw.fractal === 'object' ? raw.fractal : {};
+  const runtimeSrc = raw.runtime_evolution && typeof raw.runtime_evolution === 'object' ? raw.runtime_evolution : {};
+  const telemetrySrc = raw.telemetry && typeof raw.telemetry === 'object' ? raw.telemetry : {};
   return {
     version: String(raw.version || base.version),
     enabled: raw.enabled !== false,
@@ -165,15 +210,55 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
     max_candidates: clampInt(raw.max_candidates, 1, 24, base.max_candidates),
     max_promotions_per_run: clampInt(raw.max_promotions_per_run, 1, 24, base.max_promotions_per_run),
     min_principle_score: clampNumber(raw.min_principle_score, 0, 1, base.min_principle_score),
+    auto_apply: {
+      enabled: autoApplySrc.enabled === true,
+      min_promotable_drafts: clampInt(autoApplySrc.min_promotable_drafts, 1, 64, base.auto_apply.min_promotable_drafts),
+      min_principle_score: clampNumber(autoApplySrc.min_principle_score, 0, 1, base.auto_apply.min_principle_score),
+      min_composite_score: clampNumber(autoApplySrc.min_composite_score, 0, 1, base.auto_apply.min_composite_score),
+      max_predicted_drift_delta: clampNumber(autoApplySrc.max_predicted_drift_delta, -1, 1, base.auto_apply.max_predicted_drift_delta),
+      min_predicted_yield_delta: clampNumber(autoApplySrc.min_predicted_yield_delta, -1, 1, base.auto_apply.min_predicted_yield_delta),
+      max_red_team_critical_fail_cases: clampInt(autoApplySrc.max_red_team_critical_fail_cases, 0, 64, base.auto_apply.max_red_team_critical_fail_cases),
+      require_shadow_off: autoApplySrc.require_shadow_off !== false
+    },
+    creative_llm: {
+      enabled: creativeSrc.enabled === true,
+      model: cleanText(creativeSrc.model || base.creative_llm.model, 80),
+      timeout_ms: clampInt(creativeSrc.timeout_ms, 300, 30000, base.creative_llm.timeout_ms),
+      max_candidates: clampInt(creativeSrc.max_candidates, 1, 12, base.creative_llm.max_candidates),
+      min_novelty_trit: clampInt(creativeSrc.min_novelty_trit, -1, 1, base.creative_llm.min_novelty_trit),
+      cache_ttl_ms: clampInt(creativeSrc.cache_ttl_ms, 0, 24 * 60 * 60 * 1000, base.creative_llm.cache_ttl_ms)
+    },
+    fractal: {
+      enabled: fractalSrc.enabled !== false,
+      max_depth: clampInt(fractalSrc.max_depth, 1, 6, base.fractal.max_depth),
+      max_children_per_workflow: clampInt(fractalSrc.max_children_per_workflow, 1, 8, base.fractal.max_children_per_workflow),
+      min_attempts_for_split: clampInt(fractalSrc.min_attempts_for_split, 1, 100000, base.fractal.min_attempts_for_split),
+      min_failure_rate_for_split: clampNumber(fractalSrc.min_failure_rate_for_split, 0, 1, base.fractal.min_failure_rate_for_split)
+    },
+    runtime_evolution: {
+      enabled: runtimeSrc.enabled !== false,
+      max_candidates: clampInt(runtimeSrc.max_candidates, 0, 24, base.runtime_evolution.max_candidates),
+      failure_pressure_min: clampNumber(runtimeSrc.failure_pressure_min, 0, 1, base.runtime_evolution.failure_pressure_min),
+      no_change_pressure_min: clampNumber(runtimeSrc.no_change_pressure_min, 0, 1, base.runtime_evolution.no_change_pressure_min)
+    },
+    telemetry: {
+      emit_birth_events: telemetrySrc.emit_birth_events !== false
+    },
     nursery: {
       min_safety_score: clampNumber(nurserySrc.min_safety_score, 0, 1, base.nursery.min_safety_score),
       max_regression_risk: clampNumber(nurserySrc.max_regression_risk, 0, 1, base.nursery.max_regression_risk),
       min_composite_score: clampNumber(nurserySrc.min_composite_score, 0, 1, base.nursery.min_composite_score),
       max_predicted_drift_delta: clampNumber(nurserySrc.max_predicted_drift_delta, -1, 1, base.nursery.max_predicted_drift_delta),
       min_predicted_yield_delta: clampNumber(nurserySrc.min_predicted_yield_delta, -1, 1, base.nursery.min_predicted_yield_delta),
+      min_trit_alignment: clampNumber(nurserySrc.min_trit_alignment, -1, 1, base.nursery.min_trit_alignment),
       max_promotions_per_run: clampInt(nurserySrc.max_promotions_per_run, 1, 24, base.nursery.max_promotions_per_run)
     }
   };
+}
+
+function emitBirthEvent(policy, row) {
+  if (!policy || !policy.telemetry || policy.telemetry.emit_birth_events !== true) return;
+  appendJsonl(BIRTH_EVENTS_PATH, row);
 }
 
 function defaultPatternStats(scopeValue) {
@@ -272,12 +357,14 @@ function generateAdaptiveDrafts(dateStr, opts = {}) {
   const policyPath = path.resolve(String(opts.policyPath || process.env.ORCHESTRON_POLICY_PATH || DEFAULT_POLICY_PATH));
   const policy = opts.policy && typeof opts.policy === 'object' ? opts.policy : loadPolicy(policyPath);
   const days = clampInt(opts.days, 1, 90, policy.default_window_days);
+  const runId = stableId(`${dateStr}|${opts.intent || ''}|${Date.now()}`, 'orcrun', 14);
   if (policy.enabled === false) {
     return {
       ok: true,
       skipped: true,
       reason: 'policy_disabled',
       date: dateStr,
+      run_id: runId,
       policy,
       policy_path: relPath(policyPath),
       drafts: [],
@@ -296,10 +383,41 @@ function generateAdaptiveDrafts(dateStr, opts = {}) {
     strategy,
     source: 'orchestron_adaptive_controller'
   });
+  emitBirthEvent(policy, {
+    ts: nowIso(),
+    type: 'orchestron_birth_event',
+    stage: 'intent_analyzed',
+    run_id: runId,
+    date: dateStr,
+    strategy_id: strategyId,
+    intent_id: intent.id,
+    objective: intent.objective
+  });
   const patternStats = collectPatternStats(dateStr, days, policy.min_pattern_occurrences);
+  const objectiveHint = cleanText(
+    opts.objectiveId
+      || (patternStats.rows.find((row) => row && row.recent_objective_id) || {}).recent_objective_id
+      || '',
+    120
+  ) || null;
+  const requestedValueCurrency = normalizeToken(opts.valueCurrency || '', 40) || null;
+  const valueContext = resolveStrategyRankingContext(strategy, {
+    objective_id: objectiveHint,
+    value_currency: requestedValueCurrency
+  });
   const principles = loadPrincipleSnapshot();
   const registry = loadRegistryWorkflows();
   const redTeam = loadRedTeamSnapshot();
+  emitBirthEvent(policy, {
+    ts: nowIso(),
+    type: 'orchestron_birth_event',
+    stage: 'context_collected',
+    run_id: runId,
+    date: dateStr,
+    strategy_id: strategyId,
+    pattern_rows: patternStats.rows.length,
+    registry_workflows: registry.length
+  });
 
   const riskPolicy = {
     max_risk_per_action: clampInt(strategyMaxRiskPerAction(strategy, 35), 1, 100, 35),
@@ -313,22 +431,50 @@ function generateAdaptiveDrafts(dateStr, opts = {}) {
     strategy_id: strategyId,
     objective_primary: objectivePrimary,
     intent,
+    value_context: valueContext,
     risk_policy: riskPolicy,
     pattern_rows: patternStats.rows,
     registry_workflows: registry,
     min_candidates: policy.min_candidates,
-    max_candidates: clampInt(opts.maxCandidates, 1, 24, policy.max_candidates)
+    max_candidates: clampInt(opts.maxCandidates, 1, 24, policy.max_candidates),
+    creative_llm: policy.creative_llm,
+    fractal: policy.fractal,
+    runtime_evolution: policy.runtime_evolution
+  });
+  const fractalChildren = candidates.reduce((sum, row) => (
+    sum + (Array.isArray(row && row.children) ? row.children.length : 0)
+  ), 0);
+  emitBirthEvent(policy, {
+    ts: nowIso(),
+    type: 'orchestron_birth_event',
+    stage: 'candidates_generated',
+    run_id: runId,
+    date: dateStr,
+    strategy_id: strategyId,
+    candidates: candidates.length,
+    fractal_children: fractalChildren
   });
 
   const nursery = evaluateCandidates({
     candidates,
     pattern_rows: patternStats.rows,
+    value_context: valueContext,
     principle_snapshot: principles,
     red_team: redTeam,
     policy: {
       ...policy.nursery,
       max_promotions_per_run: policy.max_promotions_per_run
     }
+  });
+  emitBirthEvent(policy, {
+    ts: nowIso(),
+    type: 'orchestron_birth_event',
+    stage: 'nursery_scored',
+    run_id: runId,
+    date: dateStr,
+    strategy_id: strategyId,
+    scorecards: Array.isArray(nursery.scorecards) ? nursery.scorecards.length : 0,
+    passing: Array.isArray(nursery.passing) ? nursery.passing.length : 0
   });
 
   const scoreById = new Map((Array.isArray(nursery.scorecards) ? nursery.scorecards : []).map((row) => [String(row.candidate_id || ''), row]));
@@ -340,34 +486,55 @@ function generateAdaptiveDrafts(dateStr, opts = {}) {
   }
 
   const drafts = candidates.map((candidate) => {
-    const scorecard = scoreById.get(String(candidate && candidate.id || '')) || {
-      candidate_id: candidate && candidate.id ? candidate.id : '',
-      pass: false,
-      base_shipped_rate: 0,
-      predicted_yield_delta: 0,
-      predicted_drift_delta: 0,
-      safety_score: 0,
-      regression_risk: 1,
-      composite_score: 0,
-      reasons: ['scorecard_missing'],
-      tested_at: nowIso()
-    };
-    return toWorkflowDraft(candidate, scorecard, { principles });
+    const scorecard = scoreById.get(String(candidate && candidate.id || '')) || null;
+    return toWorkflowDraft(candidate, scorecard, {
+      principles,
+      score_lookup: scoreById,
+      max_depth: policy.fractal.max_depth
+    });
   });
   drafts.sort((a, b) => Number(b.metrics && b.metrics.score || 0) - Number(a.metrics && a.metrics.score || 0));
   const promotableDrafts = gatedPassing
-    .map((row) => toWorkflowDraft(row.candidate, row.scorecard, { principles }))
+    .map((row) => toWorkflowDraft(row.candidate, row.scorecard, {
+      principles,
+      score_lookup: scoreById,
+      max_depth: policy.fractal.max_depth
+    }))
     .sort((a, b) => Number(b.metrics && b.metrics.score || 0) - Number(a.metrics && a.metrics.score || 0));
+  emitBirthEvent(policy, {
+    ts: nowIso(),
+    type: 'orchestron_birth_event',
+    stage: 'drafts_built',
+    run_id: runId,
+    date: dateStr,
+    strategy_id: strategyId,
+    drafts: drafts.length,
+    promotable_drafts: promotableDrafts.length
+  });
+  if (promotableDrafts.length) {
+    emitBirthEvent(policy, {
+      ts: nowIso(),
+      type: 'orchestron_birth_event',
+      stage: 'graft_ready',
+      run_id: runId,
+      date: dateStr,
+      strategy_id: strategyId,
+      promotable_drafts: promotableDrafts.length
+    });
+  }
 
   return {
     ok: true,
     type: 'orchestron_adaptive_run',
     ts: nowIso(),
+    run_id: runId,
     date: dateStr,
     days,
     policy,
     policy_path: relPath(policyPath),
+    birth_events_path: relPath(BIRTH_EVENTS_PATH),
     strategy_id: strategyId,
+    value_context: valueContext,
     objective_primary: objectivePrimary,
     intent,
     run_rows: patternStats.run_rows,
@@ -393,6 +560,7 @@ function persistRun(result) {
   appendJsonl(HISTORY_PATH, {
     ts: result.ts || nowIso(),
     type: result.type || 'orchestron_adaptive_run',
+    run_id: result.run_id || null,
     date: dateStr,
     strategy_id: result.strategy_id || null,
     run_rows: Number(result.run_rows || 0),
@@ -411,18 +579,23 @@ function runCmd(dateStr, args) {
     policyPath: args.policy,
     days: args.days,
     maxCandidates: args['max-candidates'],
-    intent: args.intent
+    intent: args.intent,
+    valueCurrency: args['value-currency'],
+    objectiveId: args['objective-id']
   });
   const fp = persistRun(payload);
   process.stdout.write(`${JSON.stringify({
     ok: true,
     type: payload.type,
+    run_id: payload.run_id || null,
     date: payload.date,
     run_rows: Number(payload.run_rows || 0),
     candidates: Array.isArray(payload.candidates) ? payload.candidates.length : 0,
     passing: Array.isArray(payload.passing) ? payload.passing.length : 0,
     drafts: Array.isArray(payload.drafts) ? payload.drafts.length : 0,
     promotable_drafts: Array.isArray(payload.promotable_drafts) ? payload.promotable_drafts.length : 0,
+    value_currency: payload && payload.value_context ? payload.value_context.value_currency || null : null,
+    birth_events_path: payload.birth_events_path || null,
     policy_path: payload.policy_path,
     output_path: relPath(fp)
   })}\n`);
@@ -445,7 +618,9 @@ function statusCmd(dateArg) {
     type: 'orchestron_adaptive_status',
     date: payload.date || null,
     ts: payload.ts || null,
+    run_id: payload.run_id || null,
     strategy_id: payload.strategy_id || null,
+    value_currency: payload && payload.value_context ? payload.value_context.value_currency || null : null,
     run_rows: Number(payload.run_rows || 0),
     candidates: Array.isArray(payload.candidates) ? payload.candidates.length : 0,
     passing: Array.isArray(payload.passing) ? payload.passing.length : 0,

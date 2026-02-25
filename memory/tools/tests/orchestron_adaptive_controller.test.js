@@ -40,6 +40,7 @@ function run() {
   const registryPath = path.join(tmp, 'state', 'adaptive', 'workflows', 'registry.json');
   const redTeamPath = path.join(tmp, 'state', 'security', 'red_team', 'runtime_state.json');
   const orchestronOutDir = path.join(tmp, 'state', 'adaptive', 'workflows', 'orchestron');
+  const birthEventsPath = path.join(orchestronOutDir, 'birth_events.jsonl');
   const orchestronPolicyPath = path.join(tmp, 'config', 'orchestron_policy.json');
 
   writeJson(path.join(strategyDir, 'default.json'), {
@@ -138,12 +139,32 @@ function run() {
     max_candidates: 6,
     max_promotions_per_run: 4,
     min_principle_score: 0.6,
+    creative_llm: {
+      enabled: false
+    },
+    fractal: {
+      enabled: true,
+      max_depth: 3,
+      max_children_per_workflow: 2,
+      min_attempts_for_split: 3,
+      min_failure_rate_for_split: 0.3
+    },
+    runtime_evolution: {
+      enabled: true,
+      max_candidates: 2,
+      failure_pressure_min: 0.3,
+      no_change_pressure_min: 0.3
+    },
+    telemetry: {
+      emit_birth_events: true
+    },
     nursery: {
       min_safety_score: 0.55,
       max_regression_risk: 0.6,
       min_composite_score: 0.5,
       max_predicted_drift_delta: 0.03,
       min_predicted_yield_delta: -0.02,
+      min_trit_alignment: -1,
       max_promotions_per_run: 4
     }
   });
@@ -156,6 +177,7 @@ function run() {
     ORCHESTRON_REGISTRY_PATH: registryPath,
     ORCHESTRON_RED_TEAM_RUNTIME_PATH: redTeamPath,
     ORCHESTRON_OUT_DIR: orchestronOutDir,
+    ORCHESTRON_BIRTH_EVENTS_PATH: birthEventsPath,
     ORCHESTRON_POLICY_PATH: orchestronPolicyPath
   };
 
@@ -183,8 +205,14 @@ function run() {
   const payload = JSON.parse(fs.readFileSync(outputPath, 'utf8'));
   assert.ok(Array.isArray(payload.candidates), 'payload candidates should be present');
   assert.ok(payload.candidates.some((row) => row && row.mutation && row.mutation.parent_workflow_id === 'wf_active_a'), 'expected mutation candidate from active workflow');
+  assert.ok(payload.candidates.some((row) => Array.isArray(row && row.children) && row.children.length >= 1), 'expected fractal child workflows');
   assert.ok(Array.isArray(payload.scorecards) && payload.scorecards.length >= 1, 'scorecards should exist');
   assert.ok(Array.isArray(payload.drafts) && payload.drafts.length >= 1, 'drafts should exist');
+  assert.ok(fs.existsSync(birthEventsPath), 'birth events should be emitted');
+  const birthRows = fs.readFileSync(birthEventsPath, 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line));
+  const stages = new Set(birthRows.map((row) => String(row.stage || '')));
+  assert.ok(stages.has('candidates_generated'), 'birth events should include candidates_generated');
+  assert.ok(stages.has('nursery_scored'), 'birth events should include nursery_scored');
 
   const statusProc = spawnSync(process.execPath, [scriptPath, 'status', 'latest'], {
     cwd: root,

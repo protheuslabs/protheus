@@ -790,19 +790,19 @@ function main() {
   // workflow_controller.js applies/surfaces workflow registry materialization.
   checkScript(
     "systems/workflow/workflow_controller.js",
-    ["workflow_controller.js", "run", "list", "status", "--apply", "--days", "--max", "--policy", "--orchestron", "--orchestron-apply", "--orchestron-auto", "--intent"]
+    ["workflow_controller.js", "run", "list", "status", "--apply", "--days", "--max", "--policy", "--orchestron", "--orchestron-apply", "--orchestron-auto", "--intent", "--value-currency", "--objective-id"]
   );
 
   // orchestron_controller.js is the branded alias entrypoint for workflow_controller.
   checkScript(
     "systems/workflow/orchestron_controller.js",
-    ["workflow_controller.js", "run", "list", "status", "--apply", "--days", "--max", "--policy", "--orchestron", "--orchestron-apply", "--orchestron-auto", "--intent"]
+    ["workflow_controller.js", "run", "list", "status", "--apply", "--days", "--max", "--policy", "--orchestron", "--orchestron-apply", "--orchestron-auto", "--intent", "--value-currency", "--objective-id"]
   );
 
   // orchestron adaptive_controller.js runs intent->candidate->nursery scorecard cycles.
   checkScript(
     "systems/workflow/orchestron/adaptive_controller.js",
-    ["adaptive_controller.js", "run", "status", "--intent", "--max-candidates", "--policy"]
+    ["adaptive_controller.js", "run", "status", "--intent", "--max-candidates", "--value-currency", "--objective-id", "--policy"]
   );
 
   // claw_registry.js governs high-power actuation lanes (browser/computer/payment).

@@ -28,32 +28,11 @@ function parsePayload(stdout) {
   return null;
 }
 
-function runController(scriptPath, root, env, dateStr, workflowPolicyPath, orchestronPolicyPath, opts = {}) {
-  const args = [
-    scriptPath,
-    'run',
-    dateStr,
-    '--days=7',
-    '--max=6',
-    '--apply=1',
-    '--orchestron=1',
-    '--orchestron-apply=0',
-    `--policy=${workflowPolicyPath}`,
-    `--orchestron-policy=${orchestronPolicyPath}`
-  ];
-  if (opts.autoArg != null) args.push(`--orchestron-auto=${opts.autoArg ? '1' : '0'}`);
-  return spawnSync(process.execPath, args, {
-    cwd: root,
-    encoding: 'utf8',
-    env
-  });
-}
-
 function run() {
   const root = path.resolve(__dirname, '..', '..', '..');
   const scriptPath = path.join(root, 'systems', 'workflow', 'workflow_controller.js');
   const dateStr = '2026-02-25';
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'workflow-controller-orchestron-auto-'));
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'workflow-controller-orchestron-fractal-'));
 
   const strategyDir = path.join(tmp, 'config', 'strategies');
   const runsDir = path.join(tmp, 'state', 'autonomy', 'runs');
@@ -67,14 +46,14 @@ function run() {
 
   writeJson(path.join(strategyDir, 'default.json'), {
     version: '1.0',
-    id: 'auto_strategy',
-    name: 'Auto Apply Strategy',
+    id: 'fractal_apply_strategy',
+    name: 'Fractal Apply Strategy',
     status: 'active',
-    objective: { primary: 'Generate adaptive workflows with bounded dynamic promotion.' },
-    risk_policy: { allowed_risks: ['low'], max_risk_per_action: 35 },
+    objective: { primary: 'Generate recursive adaptive workflows for external intake pressure.' },
+    risk_policy: { allowed_risks: ['low', 'medium'], max_risk_per_action: 40 },
     execution_policy: { mode: 'execute' },
-    promotion_policy: { min_success_criteria_receipts: 1, min_success_criteria_pass_rate: 0.6 },
-    budget_policy: { daily_runs_cap: 8, daily_token_cap: 9000, max_tokens_per_action: 1800 },
+    promotion_policy: { min_success_criteria_receipts: 1, min_success_criteria_pass_rate: 0.5 },
+    budget_policy: { daily_runs_cap: 8, daily_token_cap: 9000, max_tokens_per_action: 2200 },
     ranking_weights: {
       composite: 0.34,
       actionability: 0.2,
@@ -87,8 +66,10 @@ function run() {
 
   writeJsonl(path.join(runsDir, `${dateStr}.jsonl`), [
     { type: 'autonomy_run', result: 'executed', outcome: 'shipped', proposal_type: 'external_intel', objective_id: 'obj_x' },
-    { type: 'autonomy_run', result: 'executed', outcome: 'shipped', proposal_type: 'external_intel', objective_id: 'obj_x' },
     { type: 'autonomy_run', result: 'executed', outcome: 'no_change', proposal_type: 'external_intel', objective_id: 'obj_x' },
+    { type: 'autonomy_run', result: 'executed', outcome: 'no_change', proposal_type: 'external_intel', objective_id: 'obj_x' },
+    { type: 'autonomy_run', result: 'executed', outcome: 'no_change', proposal_type: 'external_intel', objective_id: 'obj_x' },
+    { type: 'autonomy_run', result: 'policy_hold', outcome: 'no_change', proposal_type: 'external_intel', objective_id: 'obj_x' },
     { type: 'autonomy_run', result: 'executed', outcome: 'no_change', proposal_type: 'external_intel', objective_id: 'obj_x' }
   ]);
 
@@ -99,15 +80,21 @@ function run() {
     principles: [{ id: 'objective_clarity', pass: true }]
   });
 
+  writeJson(redTeamPath, {
+    ok: true,
+    type: 'red_team_harness_run',
+    summary: { critical_fail_cases: 0 }
+  });
+
   writeJson(workflowPolicyPath, {
     version: '1.0',
     enabled: true,
     window_days: 7,
     min_pattern_occurrences: 2,
-    min_shipped_rate: 0.95,
-    max_drafts_per_run: 6,
-    apply_threshold: 0.5,
-    max_registry_workflows: 50
+    min_shipped_rate: 0.01,
+    max_drafts_per_run: 10,
+    apply_threshold: 0.15,
+    max_registry_workflows: 100
   });
 
   writeJson(orchestronPolicyPath, {
@@ -117,18 +104,27 @@ function run() {
     default_window_days: 7,
     min_pattern_occurrences: 2,
     min_candidates: 3,
-    max_candidates: 6,
-    max_promotions_per_run: 4,
-    min_principle_score: 0.6,
-    auto_apply: {
+    max_candidates: 8,
+    max_promotions_per_run: 6,
+    min_principle_score: 0.4,
+    creative_llm: {
+      enabled: false
+    },
+    fractal: {
       enabled: true,
-      min_promotable_drafts: 1,
-      min_principle_score: 0.3,
-      min_composite_score: 0,
-      max_predicted_drift_delta: 1,
-      min_predicted_yield_delta: -1,
-      max_red_team_critical_fail_cases: 0,
-      require_shadow_off: true
+      max_depth: 3,
+      max_children_per_workflow: 3,
+      min_attempts_for_split: 3,
+      min_failure_rate_for_split: 0.3
+    },
+    runtime_evolution: {
+      enabled: true,
+      max_candidates: 3,
+      failure_pressure_min: 0.3,
+      no_change_pressure_min: 0.3
+    },
+    telemetry: {
+      emit_birth_events: false
     },
     nursery: {
       min_safety_score: 0,
@@ -137,7 +133,7 @@ function run() {
       max_predicted_drift_delta: 1,
       min_predicted_yield_delta: -1,
       min_trit_alignment: -1,
-      max_promotions_per_run: 4
+      max_promotions_per_run: 6
     }
   });
 
@@ -145,7 +141,21 @@ function run() {
     version: '1.0',
     updated_at: null,
     generated_at: null,
-    workflows: []
+    workflows: [
+      {
+        id: 'wf_parent_base',
+        name: 'External Intel Baseline',
+        status: 'active',
+        source: 'test',
+        trigger: { proposal_type: 'external_intel', min_occurrences: 2 },
+        steps: [
+          { id: 'collect', type: 'command', command: 'node habits/scripts/external_eyes.js run --eye=test' },
+          { id: 'verify', type: 'gate', command: 'node systems/autonomy/strategy_execute_guard.js run <date>' },
+          { id: 'receipt', type: 'receipt', command: 'state/autonomy/receipts/<date>.jsonl' }
+        ],
+        metrics: { attempts: 12, shipped_rate: 0.2, failure_rate: 0.8 }
+      }
+    ]
   });
 
   const env = {
@@ -163,45 +173,43 @@ function run() {
     ORCHESTRON_OUT_DIR: orchOutDir
   };
 
-  // Pass case: no red-team critical failures.
-  writeJson(redTeamPath, {
-    ok: true,
-    type: 'red_team_harness_run',
-    summary: { critical_fail_cases: 0 }
+  const runProc = spawnSync(process.execPath, [
+    scriptPath,
+    'run',
+    dateStr,
+    '--days=7',
+    '--max=8',
+    '--apply=1',
+    '--orchestron=1',
+    '--orchestron-apply=1',
+    '--orchestron-auto=0',
+    `--policy=${workflowPolicyPath}`,
+    `--orchestron-policy=${orchestronPolicyPath}`
+  ], {
+    cwd: root,
+    encoding: 'utf8',
+    env
   });
-  const passRun = runController(scriptPath, root, env, dateStr, workflowPolicyPath, orchestronPolicyPath);
-  assert.strictEqual(passRun.status, 0, passRun.stderr || 'auto pass run should pass');
-  const passOut = parsePayload(passRun.stdout);
-  assert.ok(passOut && passOut.ok === true, 'auto pass output should be ok');
-  assert.strictEqual(passOut.full_automation_mode, true, 'full automation mode should be true');
-  assert.strictEqual(passOut.strategy_execution_mode, 'execute', 'strategy mode should be execute');
-  assert.strictEqual(passOut.orchestron_auto_requested, true, 'auto should default on in full automation mode');
-  assert.strictEqual(passOut.orchestron_auto_enabled, true, 'auto apply should be enabled');
-  assert.strictEqual(passOut.orchestron_auto_pass, true, 'auto gate should pass');
-  assert.strictEqual(passOut.orchestron_apply_effective, true, 'auto pass should activate apply');
-  assert.ok(Number(passOut.applied || 0) >= 1 || Number(passOut.updated || 0) >= 1, 'auto pass should apply or update at least one workflow');
 
-  // Fail case: red-team critical failure blocks auto apply.
-  writeJson(redTeamPath, {
-    ok: true,
-    type: 'red_team_harness_run',
-    summary: { critical_fail_cases: 1 }
-  });
-  const failRun = runController(scriptPath, root, env, dateStr, workflowPolicyPath, orchestronPolicyPath);
-  assert.strictEqual(failRun.status, 0, failRun.stderr || 'auto fail run should pass');
-  const failOut = parsePayload(failRun.stdout);
-  assert.ok(failOut && failOut.ok === true, 'auto fail output should be ok');
-  assert.strictEqual(failOut.orchestron_auto_enabled, true, 'auto apply should remain enabled');
-  assert.strictEqual(failOut.orchestron_auto_pass, false, 'auto gate should fail when red-team critical > max');
-  assert.strictEqual(failOut.orchestron_apply_effective, false, 'auto fail should not activate apply');
+  assert.strictEqual(runProc.status, 0, runProc.stderr || 'controller run should pass');
+  const out = parsePayload(runProc.stdout);
+  assert.ok(out && out.ok === true, 'controller output should be ok');
+  assert.strictEqual(out.orchestron_apply_effective, true, 'orchestron apply should be effective');
+
+  const registry = JSON.parse(fs.readFileSync(registryPath, 'utf8'));
+  const rows = Array.isArray(registry && registry.workflows) ? registry.workflows : [];
+  assert.ok(rows.length >= 2, 'expected registry growth');
+  const childRows = rows.filter((row) => row && row.parent_workflow_id);
+  assert.ok(childRows.length >= 1, 'expected at least one applied fractal child workflow');
+  assert.ok(childRows.some((row) => Number(row.fractal_depth || 0) >= 1), 'child workflow should carry fractal depth');
 
   fs.rmSync(tmp, { recursive: true, force: true });
-  console.log('workflow_controller_orchestron_auto_apply.test.js: OK');
+  console.log('workflow_controller_orchestron_fractal_apply.test.js: OK');
 }
 
 try {
   run();
 } catch (err) {
-  console.error(`workflow_controller_orchestron_auto_apply.test.js: FAIL: ${err.message}`);
+  console.error(`workflow_controller_orchestron_fractal_apply.test.js: FAIL: ${err.message}`);
   process.exit(1);
 }

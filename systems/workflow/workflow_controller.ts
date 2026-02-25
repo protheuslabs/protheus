@@ -34,7 +34,7 @@ const DEFAULT_ORCHESTRON_POLICY_PATH = path.join(REPO_ROOT, 'config', 'orchestro
 
 function usage() {
   console.log('Usage:');
-  console.log('  node systems/workflow/workflow_controller.js run [YYYY-MM-DD] [--days=N] [--max=N] [--apply=1|0] [--policy=path] [--orchestron=1|0] [--orchestron-apply=1|0] [--orchestron-auto=1|0] [--intent=\"...\"] [--orchestron-policy=path]');
+  console.log('  node systems/workflow/workflow_controller.js run [YYYY-MM-DD] [--days=N] [--max=N] [--apply=1|0] [--policy=path] [--orchestron=1|0] [--orchestron-apply=1|0] [--orchestron-auto=1|0] [--intent=\"...\"] [--value-currency=<currency>] [--objective-id=<id>] [--orchestron-policy=path]');
   console.log('  node systems/workflow/workflow_controller.js list [--status=active|draft|all] [--limit=N]');
   console.log('  node systems/workflow/workflow_controller.js status [--policy=path]');
 }
@@ -174,12 +174,52 @@ function applyDrafts(registry, drafts, policy) {
   const threshold = Number(policy && policy.apply_threshold || 0.62);
   let applied = 0;
   let updated = 0;
+  const activatedThisRun = new Set();
 
-  for (const draft of Array.isArray(drafts) ? drafts : []) {
+  function flattenDraftTree(sourceRows) {
+    const out = [];
+    const queue = [];
+    for (const row of Array.isArray(sourceRows) ? sourceRows : []) {
+      if (!row || typeof row !== 'object') continue;
+      queue.push({
+        row,
+        parent_workflow_id: row.parent_workflow_id || null,
+        fractal_depth: Number(row.fractal_depth || 0)
+      });
+    }
+    while (queue.length) {
+      const current = queue.shift();
+      if (!current || !current.row || typeof current.row !== 'object') continue;
+      const children = Array.isArray(current.row.children) ? current.row.children : [];
+      out.push({
+        ...current.row,
+        parent_workflow_id: current.parent_workflow_id || null,
+        fractal_depth: Number(current.fractal_depth || 0),
+        children_ids: children.map((child) => String(child && child.id || '')).filter(Boolean),
+        children: undefined
+      });
+      for (const child of children) {
+        if (!child || typeof child !== 'object') continue;
+        queue.push({
+          row: child,
+          parent_workflow_id: current.row.id || current.parent_workflow_id || null,
+          fractal_depth: Number(current.fractal_depth || 0) + 1
+        });
+      }
+    }
+    return out;
+  }
+
+  for (const draft of flattenDraftTree(drafts)) {
     const score = Number(draft && draft.metrics && draft.metrics.score || 0);
     if (score < threshold) continue;
     const id = String(draft && draft.id || '').trim();
     if (!id) continue;
+    const parentWorkflowId = String(draft && draft.parent_workflow_id || '').trim();
+    if (parentWorkflowId) {
+      const parentKnown = map.has(parentWorkflowId) || activatedThisRun.has(parentWorkflowId);
+      if (!parentKnown) continue;
+    }
     const existing = map.get(id);
     const row = {
       ...(existing || {}),
@@ -190,6 +230,7 @@ function applyDrafts(registry, drafts, policy) {
       updated_at: nowIso()
     };
     map.set(id, row);
+    activatedThisRun.add(id);
     if (existing) updated += 1;
     else applied += 1;
   }
@@ -387,7 +428,9 @@ function runCmd(dateStr, args) {
         policyPath: orchestronPolicyPath,
         days: args.days,
         maxCandidates: args.max,
-        intent: args.intent
+        intent: args.intent,
+        valueCurrency: args['value-currency'],
+        objectiveId: args['objective-id']
       });
       orchestronDraftsForApply = orchestronPayload && Array.isArray(orchestronPayload.promotable_drafts)
         ? orchestronPayload.promotable_drafts
@@ -472,6 +515,9 @@ function runCmd(dateStr, args) {
     orchestron_promotable_drafts: Array.isArray(orchestronDraftsForApply) ? orchestronDraftsForApply.length : 0,
     orchestron_candidates: orchestronPayload && Array.isArray(orchestronPayload.candidates) ? orchestronPayload.candidates.length : 0,
     orchestron_passing: orchestronPayload && Array.isArray(orchestronPayload.passing) ? orchestronPayload.passing.length : 0,
+    orchestron_value_currency: orchestronPayload && orchestronPayload.value_context
+      ? orchestronPayload.value_context.value_currency || null
+      : null,
     orchestron_policy_path: orchestronEnabled ? relPath(orchestronPolicyPath) : null,
     orchestron_shadow_only: orchestronPayload && orchestronPayload.policy ? orchestronPayload.policy.shadow_only === true : null,
     orchestron_error: orchestronError,

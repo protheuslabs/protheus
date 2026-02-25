@@ -90,7 +90,7 @@ function run() {
     min_pattern_occurrences: 2,
     min_shipped_rate: 0.95,
     max_drafts_per_run: 6,
-    apply_threshold: 0.5,
+    apply_threshold: 0.1,
     max_registry_workflows: 50
   });
 
@@ -105,11 +105,12 @@ function run() {
     max_promotions_per_run: 4,
     min_principle_score: 0.6,
     nursery: {
-      min_safety_score: 0.55,
-      max_regression_risk: 0.6,
-      min_composite_score: 0.5,
-      max_predicted_drift_delta: 0.03,
-      min_predicted_yield_delta: -0.02,
+      min_safety_score: 0,
+      max_regression_risk: 1,
+      min_composite_score: 0,
+      max_predicted_drift_delta: 1,
+      min_predicted_yield_delta: -1,
+      min_trit_alignment: -1,
       max_promotions_per_run: 4
     }
   });

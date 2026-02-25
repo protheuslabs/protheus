@@ -15,6 +15,7 @@ function defaultPolicy() {
     min_composite_score: 0.45,
     max_predicted_drift_delta: 0.008,
     min_predicted_yield_delta: -0.005,
+    min_trit_alignment: -0.7,
     max_promotions_per_run: 4
   };
 }
@@ -62,10 +63,82 @@ function mutationEffects(candidate) {
   if (kind === 'retry_tuning') {
     return { yield_delta: 0.022, drift_delta: 0.004, safety_delta: -0.02, regression_delta: 0.04 };
   }
+  if (kind === 'fractal_split') {
+    return { yield_delta: 0.016, drift_delta: -0.006, safety_delta: 0.02, regression_delta: 0.01 };
+  }
   return { yield_delta: 0.008, drift_delta: -0.006, safety_delta: 0, regression_delta: 0.01 };
 }
 
-function scoreCandidate(candidate, ctx) {
+function normalizeTritSignals(intent) {
+  const src = intent && intent.signals && typeof intent.signals === 'object' ? intent.signals : {};
+  const feasibility = clampNumber(src.feasibility, -1, 1, 0);
+  const risk = clampNumber(src.risk, -1, 1, 0);
+  const novelty = clampNumber(src.novelty, -1, 1, 0);
+  const alignment = Number(clampNumber(
+    (feasibility * 0.42) + (risk * 0.36) + (novelty * 0.22),
+    -1,
+    1,
+    0
+  ).toFixed(4));
+  return {
+    feasibility,
+    risk,
+    novelty,
+    alignment
+  };
+}
+
+function normalizeValueContext(ctx) {
+  const src = ctx && ctx.valueContext && typeof ctx.valueContext === 'object'
+    ? ctx.valueContext
+    : {};
+  const weightsSrc = src.weights && typeof src.weights === 'object' ? src.weights : {};
+  return {
+    value_currency: String(src.value_currency || '').trim().toLowerCase() || null,
+    weights: {
+      expected_value: clampNumber(weightsSrc.expected_value, 0, 1, 0.1),
+      actionability: clampNumber(weightsSrc.actionability, 0, 1, 0.2),
+      signal_quality: clampNumber(weightsSrc.signal_quality, 0, 1, 0.15),
+      risk_penalty: clampNumber(weightsSrc.risk_penalty, 0, 1, 0.05)
+    }
+  };
+}
+
+function flattenCandidateTree(candidates, maxDepth = 6) {
+  const out = [];
+  const queue = [];
+  for (const row of Array.isArray(candidates) ? candidates : []) {
+    if (!row || typeof row !== 'object') continue;
+    queue.push({
+      candidate: row,
+      parent_candidate_id: row.parent_workflow_id || null,
+      depth: Number(row.fractal_depth || 0)
+    });
+  }
+  while (queue.length) {
+    const current = queue.shift();
+    if (!current || !current.candidate || typeof current.candidate !== 'object') continue;
+    const depth = Number(current.depth || 0);
+    out.push({
+      candidate: current.candidate,
+      parent_candidate_id: current.parent_candidate_id || null,
+      depth
+    });
+    if (depth >= maxDepth) continue;
+    const children = Array.isArray(current.candidate.children) ? current.candidate.children : [];
+    for (const child of children) {
+      if (!child || typeof child !== 'object') continue;
+      queue.push({
+        candidate: child,
+        parent_candidate_id: current.candidate.id || current.parent_candidate_id || null,
+        depth: depth + 1
+      });
+    }
+  }
+  return out;
+}
+
+function scoreCandidate(candidate, ctx, frame = {}) {
   const proposalType = String(candidate && candidate.trigger && candidate.trigger.proposal_type || 'unknown').toLowerCase();
   const pattern = ctx.patternMap.get(proposalType) || null;
   const attempts = Number(pattern && pattern.attempts || 0);
@@ -77,12 +150,14 @@ function scoreCandidate(candidate, ctx) {
   const failureRate = attempts > 0
     ? (noChange + holds + stops) / attempts
     : Number(candidate && candidate.metadata && candidate.metadata.failure_rate || 1);
+  const noChangeRate = attempts > 0
+    ? noChange / attempts
+    : Number(candidate && candidate.metadata && candidate.metadata.no_change_rate || failureRate);
 
   const tradeoffs = candidate && candidate.tradeoffs && typeof candidate.tradeoffs === 'object'
     ? candidate.tradeoffs
     : { speed_weight: 0.34, robustness_weight: 0.33, cost_weight: 0.33 };
   const intent = candidate && candidate.intent && typeof candidate.intent === 'object' ? candidate.intent : {};
-  const signals = intent.signals && typeof intent.signals === 'object' ? intent.signals : {};
 
   const effects = mutationEffects(candidate);
   const uncertainty = String(intent.uncertainty_band || 'medium').toLowerCase();
@@ -93,12 +168,21 @@ function scoreCandidate(candidate, ctx) {
     ? (0.08 * redTeamPressure)
     : (0.02 * redTeamPressure);
 
+  const trits = normalizeTritSignals(intent);
+  const tritSignal = clampNumber((trits.alignment + 1) / 2, 0, 1, 0.5);
+  const depth = Number(frame && frame.depth || 0);
+  const depthPenalty = clampNumber(depth * 0.025, 0, 0.2, 0);
+
   const predictedYieldDelta = clampNumber(
     (0.03 * shippedRate)
       - (0.015 * failureRate)
+      - (0.006 * noChangeRate)
       + effects.yield_delta
       + (Number(tradeoffs.robustness_weight || 0) * 0.015)
-      - (Number(tradeoffs.cost_weight || 0) * 0.008),
+      - (Number(tradeoffs.cost_weight || 0) * 0.008)
+      + (trits.feasibility * 0.008)
+      + (trits.novelty * 0.004)
+      - depthPenalty,
     -0.25,
     0.25,
     0
@@ -107,32 +191,35 @@ function scoreCandidate(candidate, ctx) {
   const predictedDriftDelta = clampNumber(
     (-0.02 * shippedRate)
       + (0.018 * failureRate)
+      + (0.01 * noChangeRate)
       + effects.drift_delta
-      + (Number(signals.risk || 0) < 0 ? 0.01 : -0.004)
-      + (uncertainty === 'high' ? 0.01 : 0),
+      + (trits.risk < 0 ? 0.012 : -0.006)
+      + (uncertainty === 'high' ? 0.01 : 0)
+      + (depthPenalty * 0.6),
     -0.25,
     0.25,
     0
   );
 
   let safetyScore =
-    (Number(ctx.principleScore || 0.5) * 0.55)
+    (Number(ctx.principleScore || 0.5) * 0.48)
     + (hasRollbackStep(candidate) ? 0.14 : 0)
     + (hasPreflightStep(candidate) ? 0.12 : 0)
     + effects.safety_delta
     - uncertaintyPenalty
     - redTeamPenalty
-    + (Number(signals.feasibility || 0) > 0 ? 0.06 : 0)
-    + (Number(signals.risk || 0) < 0 ? -0.04 : 0.03);
+    + (tritSignal * 0.14)
+    - (depthPenalty * 0.5);
   safetyScore = clampNumber(safetyScore, 0, 1, 0);
 
   let regressionRisk =
-    0.25
-    + (1 - shippedRate) * 0.25
+    0.23
+    + (1 - shippedRate) * 0.24
     + uncertaintyPenalty
     + effects.regression_delta
-    + (Number(signals.risk || 0) < 0 ? 0.08 : -0.03)
+    + (trits.risk < 0 ? 0.08 : -0.03)
     + redTeamPenalty
+    + (depthPenalty * 0.8)
     - (hasRollbackStep(candidate) ? 0.08 : 0)
     - (hasPreflightStep(candidate) ? 0.07 : 0);
   regressionRisk = clampNumber(regressionRisk, 0, 1, 1);
@@ -141,11 +228,22 @@ function scoreCandidate(candidate, ctx) {
   const yieldLiftSignal = clampNumber((predictedYieldDelta + 0.015) / 0.06, 0, 1, 0);
   const driftSignal = clampNumber((0.018 - predictedDriftDelta) / 0.05, 0, 1, 0);
   const regressionSignal = clampNumber(1 - regressionRisk, 0, 1, 0);
+  const valueCtx = normalizeValueContext(ctx);
+  const vw = valueCtx.weights;
+  const yieldWeight = 0.2 + (vw.expected_value * 0.45);
+  const driftWeight = 0.16 + (vw.actionability * 0.2);
+  const regressionWeight = 0.15 + (vw.risk_penalty * 0.45);
+  const safetyWeight = 0.14 + (vw.signal_quality * 0.26);
+  const tritWeight = 0.09 + (vw.signal_quality * 0.12) + (vw.actionability * 0.06);
+  const totalWeight = Math.max(0.001, yieldWeight + driftWeight + regressionWeight + safetyWeight + tritWeight);
   const composite = clampNumber(
-    (yieldLiftSignal * 0.34)
-      + (driftSignal * 0.24)
-      + (regressionSignal * 0.2)
-      + (safetyScore * 0.22),
+    (
+      (yieldLiftSignal * yieldWeight)
+      + (driftSignal * driftWeight)
+      + (regressionSignal * regressionWeight)
+      + (safetyScore * safetyWeight)
+      + (tritSignal * tritWeight)
+    ) / totalWeight,
     0,
     1,
     0
@@ -158,15 +256,19 @@ function scoreCandidate(candidate, ctx) {
   if (predictedDriftDelta > policy.max_predicted_drift_delta) reasons.push('predicted_drift_regression');
   if (predictedYieldDelta < policy.min_predicted_yield_delta) reasons.push('yield_lift_insufficient');
   if (composite < policy.min_composite_score) reasons.push('composite_score_low');
+  if (trits.alignment < policy.min_trit_alignment) reasons.push('trit_alignment_low');
 
   return normalizeScorecard({
     candidate_id: candidate && candidate.id ? candidate.id : '',
     pass: reasons.length === 0,
     base_shipped_rate: shippedRate,
+    projected_yield: projectedYield,
     predicted_yield_delta: predictedYieldDelta,
     predicted_drift_delta: predictedDriftDelta,
     safety_score: safetyScore,
     regression_risk: regressionRisk,
+    trit_alignment: trits.alignment,
+    value_currency: valueCtx.value_currency,
     composite_score: composite,
     reasons,
     tested_at: nowIso()
@@ -188,38 +290,57 @@ function evaluateCandidates(input) {
       || 0
   );
   const principleScore = Number(src.principle_snapshot && src.principle_snapshot.score || 0.5);
+  const valueContext = src.value_context && typeof src.value_context === 'object' ? src.value_context : {};
 
   const patternMap = buildPatternMap(patternRows);
   const context = {
     policy,
     patternMap,
     redTeamCriticalFailures,
-    principleScore
+    principleScore,
+    valueContext
   };
 
-  const scorecards = candidates.map((candidate) => scoreCandidate(candidate, context));
+  const flattened = flattenCandidateTree(candidates, 6);
+  const scorecards = flattened.map((entry) => scoreCandidate(entry.candidate, context, entry));
   scorecards.sort((a, b) => Number(b.composite_score || 0) - Number(a.composite_score || 0));
 
   const scoreMap = new Map(scorecards.map((row) => [String(row.candidate_id || ''), row]));
+  const passMap = new Map(scorecards.map((row) => [String(row.candidate_id || ''), row.pass === true]));
+  const byId = new Map(flattened.map((row) => [String(row.candidate && row.candidate.id || ''), row]));
   const passing = [];
-  for (const candidate of candidates) {
-    const card = scoreMap.get(String(candidate && candidate.id || ''));
-    if (!card || card.pass !== true) continue;
-    passing.push({ candidate, scorecard: card });
+
+  for (const card of scorecards) {
+    const candidateId = String(card && card.candidate_id || '');
+    if (!candidateId || card.pass !== true) continue;
+    const entry = byId.get(candidateId);
+    if (!entry || !entry.candidate) continue;
+    const parentId = String(entry.parent_candidate_id || '').trim();
+    if (parentId && passMap.get(parentId) !== true) continue;
+    passing.push({
+      candidate: entry.candidate,
+      scorecard: card,
+      parent_candidate_id: parentId || null,
+      depth: Number(entry.depth || 0)
+    });
+    if (passing.length >= Math.max(1, Number(policy.max_promotions_per_run || 4))) break;
   }
-  passing.sort((a, b) => Number(b.scorecard.composite_score || 0) - Number(a.scorecard.composite_score || 0));
 
   return {
     ok: true,
     type: 'orchestron_nursery_scorecard',
     ts: nowIso(),
     policy,
+    value_currency: normalizeValueContext(context).value_currency,
     red_team_critical_failures: redTeamCriticalFailures,
+    flattened_candidates: flattened.length,
     scorecards,
-    passing: passing.slice(0, Math.max(1, Number(policy.max_promotions_per_run || 4)))
+    passing
   };
 }
 
 module.exports = {
-  evaluateCandidates
+  evaluateCandidates,
+  flattenCandidateTree,
+  normalizeTritSignals
 };

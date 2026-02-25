@@ -8,6 +8,30 @@
   "max_candidates": 8,
   "max_promotions_per_run": 4,
   "min_principle_score": 0.6,
+  "creative_llm": {
+    "enabled": true,
+    "model": "qwen3:4b",
+    "timeout_ms": 2200,
+    "max_candidates": 2,
+    "min_novelty_trit": 0,
+    "cache_ttl_ms": 600000
+  },
+  "fractal": {
+    "enabled": true,
+    "max_depth": 3,
+    "max_children_per_workflow": 3,
+    "min_attempts_for_split": 4,
+    "min_failure_rate_for_split": 0.45
+  },
+  "runtime_evolution": {
+    "enabled": true,
+    "max_candidates": 3,
+    "failure_pressure_min": 0.45,
+    "no_change_pressure_min": 0.35
+  },
+  "telemetry": {
+    "emit_birth_events": true
+  },
   "auto_apply": {
     "enabled": true,
     "min_promotable_drafts": 2,
@@ -24,6 +48,7 @@
     "min_composite_score": 0.45,
     "max_predicted_drift_delta": 0.008,
     "min_predicted_yield_delta": -0.005,
+    "min_trit_alignment": -0.6,
     "max_promotions_per_run": 4
   }
 }
