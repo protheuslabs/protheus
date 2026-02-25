@@ -3308,6 +3308,53 @@ function main() {
       console.log(" self_documentation skipped reason=feature_flag_disabled flag=SPINE_SELF_DOCUMENTATION_ENABLED");
     }
 
+    // 4g) black-box hash ledger rollup for tamper-evident decision traceability.
+    if (String(process.env.SPINE_BLACK_BOX_LEDGER_ENABLED || "1") !== "0") {
+      const blackBox = runJson("node", [
+        "systems/security/black_box_ledger.js",
+        "rollup",
+        dateStr,
+        `--mode=${String(mode || "daily")}`
+      ]);
+      const blackBoxPayload = blackBox.payload && typeof blackBox.payload === "object"
+        ? blackBox.payload
+        : null;
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_black_box_ledger",
+        mode,
+        date: dateStr,
+        ok: blackBox.ok && !!blackBoxPayload && blackBoxPayload.ok === true,
+        total_events: blackBoxPayload ? Number(blackBoxPayload.total_events || 0) : null,
+        spine_events: blackBoxPayload ? Number(blackBoxPayload.spine_events || 0) : null,
+        autonomy_events: blackBoxPayload ? Number(blackBoxPayload.autonomy_events || 0) : null,
+        chain_hash: blackBoxPayload ? blackBoxPayload.chain_hash || null : null,
+        chain_path: blackBoxPayload ? blackBoxPayload.chain_path || null : null,
+        reason: (!blackBox.ok || !blackBoxPayload || blackBoxPayload.ok !== true)
+          ? String(blackBox.stderr || blackBox.stdout || `black_box_ledger_exit_${blackBox.code}`).slice(0, 180)
+          : null
+      });
+      if (blackBox.ok && blackBoxPayload && blackBoxPayload.ok === true) {
+        console.log(
+          ` black_box_ledger events=${Number(blackBoxPayload.total_events || 0)}` +
+          ` hash=${String(blackBoxPayload.chain_hash || "").slice(0, 12)}`
+        );
+      } else {
+        console.log(` black_box_ledger unavailable reason=${String(blackBox.stderr || blackBox.stdout || "unknown").slice(0, 120)}`);
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_black_box_ledger_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "SPINE_BLACK_BOX_LEDGER_ENABLED",
+        flag_value: String(process.env.SPINE_BLACK_BOX_LEDGER_ENABLED || "")
+      });
+      console.log(" black_box_ledger skipped reason=feature_flag_disabled flag=SPINE_BLACK_BOX_LEDGER_ENABLED");
+    }
+
     // 5) optional external state backup (outside git workspace)
     if (String(process.env.STATE_BACKUP_ENABLED || "") === "1") {
       const backupArgs = ["systems/ops/state_backup.js", "run", `--date=${dateStr}`];
