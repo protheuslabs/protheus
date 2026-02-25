@@ -12,6 +12,7 @@ const {
 const { analyzeIntent } = require('./intent_analyzer');
 const { generateCandidates } = require('./candidate_generator');
 const { evaluateCandidates } = require('./nursery_tester');
+const { runAdversarialLane } = require('./adversarial_lane');
 const {
   nowIso,
   clampInt,
@@ -188,6 +189,17 @@ function defaultPolicy() {
     telemetry: {
       emit_birth_events: true
     },
+    adversarial_lane: {
+      enabled: true,
+      max_critical_failures_per_candidate: 0,
+      max_non_critical_findings_per_candidate: 8,
+      max_findings_per_candidate: 24,
+      block_unresolved_placeholders: true,
+      high_power_requires_preflight: true,
+      high_power_requires_rollback: false,
+      persist_replay_artifacts: true,
+      unresolved_placeholder_allowlist: ['date', 'run_id', 'workflow_id', 'objective_id', 'eye_id', 'adapter']
+    },
     nursery: {
       min_safety_score: 0.5,
       max_regression_risk: 0.56,
@@ -210,6 +222,7 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
   const fractalSrc = raw.fractal && typeof raw.fractal === 'object' ? raw.fractal : {};
   const runtimeSrc = raw.runtime_evolution && typeof raw.runtime_evolution === 'object' ? raw.runtime_evolution : {};
   const telemetrySrc = raw.telemetry && typeof raw.telemetry === 'object' ? raw.telemetry : {};
+  const adversarialSrc = raw.adversarial_lane && typeof raw.adversarial_lane === 'object' ? raw.adversarial_lane : {};
   return {
     version: String(raw.version || base.version),
     enabled: raw.enabled !== false,
@@ -263,6 +276,37 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
     },
     telemetry: {
       emit_birth_events: telemetrySrc.emit_birth_events !== false
+    },
+    adversarial_lane: {
+      enabled: adversarialSrc.enabled !== false,
+      max_critical_failures_per_candidate: clampInt(
+        adversarialSrc.max_critical_failures_per_candidate,
+        0,
+        64,
+        base.adversarial_lane.max_critical_failures_per_candidate
+      ),
+      max_non_critical_findings_per_candidate: clampInt(
+        adversarialSrc.max_non_critical_findings_per_candidate,
+        0,
+        128,
+        base.adversarial_lane.max_non_critical_findings_per_candidate
+      ),
+      max_findings_per_candidate: clampInt(
+        adversarialSrc.max_findings_per_candidate,
+        1,
+        256,
+        base.adversarial_lane.max_findings_per_candidate
+      ),
+      block_unresolved_placeholders: adversarialSrc.block_unresolved_placeholders !== false,
+      high_power_requires_preflight: adversarialSrc.high_power_requires_preflight !== false,
+      high_power_requires_rollback: adversarialSrc.high_power_requires_rollback === true,
+      persist_replay_artifacts: adversarialSrc.persist_replay_artifacts !== false,
+      unresolved_placeholder_allowlist: Array.isArray(adversarialSrc.unresolved_placeholder_allowlist)
+        ? adversarialSrc.unresolved_placeholder_allowlist
+          .map((row) => normalizeToken(row, 60))
+          .filter(Boolean)
+          .slice(0, 32)
+        : base.adversarial_lane.unresolved_placeholder_allowlist.slice(0, 32)
     },
     nursery: {
       min_safety_score: clampNumber(nurserySrc.min_safety_score, 0, 1, base.nursery.min_safety_score),
@@ -520,14 +564,56 @@ function generateAdaptiveDrafts(dateStr, opts = {}) {
     });
   }
 
+  const adversarial = runAdversarialLane({
+    date: dateStr,
+    run_id: runId,
+    candidates,
+    max_depth: policy.fractal.max_depth,
+    policy: policy.adversarial_lane
+  });
+  emitBirthEvent(policy, {
+    ts: nowIso(),
+    type: 'orchestron_birth_event',
+    stage: 'adversarial_scored',
+    run_id: runId,
+    date: dateStr,
+    strategy_id: strategyId,
+    probes_run: Number(adversarial && adversarial.probes_run || 0),
+    candidates_failed: Number(adversarial && adversarial.candidates_failed || 0),
+    critical_failures: Number(adversarial && adversarial.critical_failures || 0)
+  });
+  for (const row of (Array.isArray(adversarial && adversarial.results) ? adversarial.results : []).slice(0, 96)) {
+    emitBirthEvent(policy, {
+      ts: nowIso(),
+      type: 'orchestron_birth_event',
+      stage: 'candidate_adversarial',
+      run_id: runId,
+      date: dateStr,
+      strategy_id: strategyId,
+      candidate_id: row && row.candidate_id ? String(row.candidate_id) : null,
+      parent_candidate_id: row && row.parent_candidate_id ? String(row.parent_candidate_id) : null,
+      fractal_depth: Number(row && row.depth || 0),
+      critical_failures: Number(row && row.critical_failures || 0),
+      non_critical_findings: Number(row && row.non_critical_findings || 0),
+      pass: row && row.pass === true
+    });
+  }
+
   const nursery = evaluateCandidates({
     candidates,
     pattern_rows: patternStats.rows,
     value_context: valueContext,
     principle_snapshot: principles,
     red_team: redTeam,
+    adversarial_results: Array.isArray(adversarial && adversarial.results) ? adversarial.results : [],
     policy: {
       ...policy.nursery,
+      max_candidate_adversarial_critical_failures: Number(
+        policy.adversarial_lane && policy.adversarial_lane.max_critical_failures_per_candidate
+      ),
+      max_candidate_adversarial_non_critical_findings: Number(
+        policy.adversarial_lane && policy.adversarial_lane.max_non_critical_findings_per_candidate
+      ),
       max_promotions_per_run: policy.max_promotions_per_run
     }
   });
@@ -636,6 +722,13 @@ function generateAdaptiveDrafts(dateStr, opts = {}) {
     pattern_rows: patternStats.rows.length,
     principles,
     red_team: redTeam,
+    adversarial: {
+      probes_run: Number(adversarial && adversarial.probes_run || 0),
+      candidates_failed: Number(adversarial && adversarial.candidates_failed || 0),
+      critical_failures: Number(adversarial && adversarial.critical_failures || 0),
+      non_critical_findings: Number(adversarial && adversarial.non_critical_findings || 0),
+      results: Array.isArray(adversarial && adversarial.results) ? adversarial.results.slice(0, 256) : []
+    },
     candidates,
     scorecards: Array.isArray(nursery.scorecards) ? nursery.scorecards : [],
     passing: gatedPassing.map((row) => ({
@@ -664,6 +757,9 @@ function persistRun(result) {
     drafts: Array.isArray(result.drafts) ? result.drafts.length : 0,
     promotable_drafts: Array.isArray(result.promotable_drafts) ? result.promotable_drafts.length : 0,
     red_team_critical_fail_cases: Number(result.red_team && result.red_team.critical_fail_cases || 0),
+    adversarial_probes_run: Number(result.adversarial && result.adversarial.probes_run || 0),
+    adversarial_candidates_failed: Number(result.adversarial && result.adversarial.candidates_failed || 0),
+    adversarial_critical_failures: Number(result.adversarial && result.adversarial.critical_failures || 0),
     principle_score: Number(result.principles && result.principles.score || 0)
   });
   return fp;
@@ -689,6 +785,9 @@ function runCmd(dateStr, args) {
     passing: Array.isArray(payload.passing) ? payload.passing.length : 0,
     drafts: Array.isArray(payload.drafts) ? payload.drafts.length : 0,
     promotable_drafts: Array.isArray(payload.promotable_drafts) ? payload.promotable_drafts.length : 0,
+    adversarial_probes_run: Number(payload.adversarial && payload.adversarial.probes_run || 0),
+    adversarial_candidates_failed: Number(payload.adversarial && payload.adversarial.candidates_failed || 0),
+    adversarial_critical_failures: Number(payload.adversarial && payload.adversarial.critical_failures || 0),
     value_currency: payload && payload.value_context ? payload.value_context.value_currency || null : null,
     birth_events_path: payload.birth_events_path || null,
     policy_path: payload.policy_path,
@@ -720,7 +819,10 @@ function statusCmd(dateArg) {
     candidates: Array.isArray(payload.candidates) ? payload.candidates.length : 0,
     passing: Array.isArray(payload.passing) ? payload.passing.length : 0,
     drafts: Array.isArray(payload.drafts) ? payload.drafts.length : 0,
-    promotable_drafts: Array.isArray(payload.promotable_drafts) ? payload.promotable_drafts.length : 0
+    promotable_drafts: Array.isArray(payload.promotable_drafts) ? payload.promotable_drafts.length : 0,
+    adversarial_probes_run: Number(payload.adversarial && payload.adversarial.probes_run || 0),
+    adversarial_candidates_failed: Number(payload.adversarial && payload.adversarial.candidates_failed || 0),
+    adversarial_critical_failures: Number(payload.adversarial && payload.adversarial.critical_failures || 0)
   })}\n`);
 }
 

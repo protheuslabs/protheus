@@ -158,6 +158,17 @@ function run() {
     telemetry: {
       emit_birth_events: true
     },
+    adversarial_lane: {
+      enabled: true,
+      max_critical_failures_per_candidate: 0,
+      max_non_critical_findings_per_candidate: 12,
+      max_findings_per_candidate: 24,
+      block_unresolved_placeholders: true,
+      high_power_requires_preflight: true,
+      high_power_requires_rollback: false,
+      persist_replay_artifacts: true,
+      unresolved_placeholder_allowlist: ['date', 'run_id', 'workflow_id', 'objective_id', 'eye_id', 'adapter']
+    },
     nursery: {
       min_safety_score: 0.55,
       max_regression_risk: 0.6,
@@ -207,13 +218,17 @@ function run() {
   assert.ok(Array.isArray(payload.candidates), 'payload candidates should be present');
   assert.ok(payload.candidates.some((row) => row && row.mutation && row.mutation.parent_workflow_id === 'wf_active_a'), 'expected mutation candidate from active workflow');
   assert.ok(payload.candidates.some((row) => Array.isArray(row && row.children) && row.children.length >= 1), 'expected fractal child workflows');
+  assert.ok(payload.adversarial && Number(payload.adversarial.probes_run || 0) >= Number(payload.candidates.length || 0), 'adversarial probes should run per candidate');
+  assert.ok(Array.isArray(payload.adversarial.results), 'adversarial results should be present');
   assert.ok(Array.isArray(payload.scorecards) && payload.scorecards.length >= 1, 'scorecards should exist');
+  assert.ok(payload.scorecards.every((row) => Number.isFinite(Number(row.adversarial_critical_failures))), 'scorecards should include adversarial critical field');
   assert.ok(Array.isArray(payload.drafts) && payload.drafts.length >= 1, 'drafts should exist');
   assert.ok(fs.existsSync(birthEventsPath), 'birth events should be emitted');
   const birthRows = fs.readFileSync(birthEventsPath, 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line));
   const stages = new Set(birthRows.map((row) => String(row.stage || '')));
   assert.ok(stages.has('candidates_generated'), 'birth events should include candidates_generated');
   assert.ok(stages.has('candidate_indexed'), 'birth events should include candidate_indexed');
+  assert.ok(stages.has('adversarial_scored'), 'birth events should include adversarial_scored');
   assert.ok(stages.has('nursery_scored'), 'birth events should include nursery_scored');
   if (Array.isArray(payload.passing) && payload.passing.length > 0) {
     assert.ok(stages.has('graft_planned'), 'birth events should include graft_planned when passing candidates exist');

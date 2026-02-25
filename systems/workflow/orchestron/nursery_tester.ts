@@ -17,6 +17,8 @@ function defaultPolicy() {
     min_predicted_yield_delta: -0.005,
     min_trit_alignment: -0.7,
     max_candidate_red_team_pressure: 0.72,
+    max_candidate_adversarial_critical_failures: 0,
+    max_candidate_adversarial_non_critical_findings: 8,
     max_promotions_per_run: 4
   };
 }
@@ -203,11 +205,24 @@ function scoreCandidate(candidate, ctx, frame = {}) {
   const globalRedTeamPenalty = isHighPowerCandidate(candidate)
     ? (0.08 * redTeamPressure)
     : (0.02 * redTeamPressure);
+  const adversarial = (
+    ctx.adversarialMap instanceof Map
+      ? ctx.adversarialMap.get(String(candidate && candidate.id || ''))
+      : null
+  ) || {};
+  const adversarialCritical = Math.max(0, Number(adversarial.critical_failures || 0));
+  const adversarialNonCritical = Math.max(0, Number(adversarial.non_critical_findings || 0));
+  const adversarialPenalty = clampNumber(
+    (adversarialCritical * 0.16) + (adversarialNonCritical * 0.02),
+    0,
+    0.45,
+    0
+  );
 
   const trits = normalizeTritSignals(intent);
   const candidateRedTeamPressureScore = candidateRedTeamPressure(candidate, trits, frame, redTeamCritical);
   const candidateRedTeamPenalty = candidateRedTeamPressureScore * (isHighPowerCandidate(candidate) ? 0.16 : 0.09);
-  const redTeamPenalty = globalRedTeamPenalty + candidateRedTeamPenalty;
+  const redTeamPenalty = globalRedTeamPenalty + candidateRedTeamPenalty + adversarialPenalty;
   const tritSignal = clampNumber((trits.alignment + 1) / 2, 0, 1, 0.5);
   const depth = Number(frame && frame.depth || 0);
   const depthPenalty = clampNumber(depth * 0.025, 0, 0.2, 0);
@@ -296,6 +311,12 @@ function scoreCandidate(candidate, ctx, frame = {}) {
   const maxCandidateRedTeamPressure = Number.isFinite(Number(policy.max_candidate_red_team_pressure))
     ? Number(policy.max_candidate_red_team_pressure)
     : 0.72;
+  const maxCandidateAdversarialCritical = Number.isFinite(Number(policy.max_candidate_adversarial_critical_failures))
+    ? Number(policy.max_candidate_adversarial_critical_failures)
+    : 0;
+  const maxCandidateAdversarialNonCritical = Number.isFinite(Number(policy.max_candidate_adversarial_non_critical_findings))
+    ? Number(policy.max_candidate_adversarial_non_critical_findings)
+    : 8;
   if (safetyScore < policy.min_safety_score) reasons.push('safety_below_threshold');
   if (regressionRisk > policy.max_regression_risk) reasons.push('regression_risk_high');
   if (predictedDriftDelta > policy.max_predicted_drift_delta) reasons.push('predicted_drift_regression');
@@ -303,6 +324,8 @@ function scoreCandidate(candidate, ctx, frame = {}) {
   if (compositeAdjusted < policy.min_composite_score) reasons.push('composite_score_low');
   if (trits.alignment < policy.min_trit_alignment) reasons.push('trit_alignment_low');
   if (candidateRedTeamPressureScore > maxCandidateRedTeamPressure) reasons.push('candidate_red_team_pressure_high');
+  if (adversarialCritical > maxCandidateAdversarialCritical) reasons.push('candidate_adversarial_critical_failures');
+  if (adversarialNonCritical > maxCandidateAdversarialNonCritical) reasons.push('candidate_adversarial_non_critical_findings_high');
 
   return normalizeScorecard({
     candidate_id: candidate && candidate.id ? candidate.id : '',
@@ -315,6 +338,12 @@ function scoreCandidate(candidate, ctx, frame = {}) {
     regression_risk: regressionRisk,
     candidate_red_team_pressure: candidateRedTeamPressureScore,
     red_team_penalty: redTeamPenalty,
+    adversarial_critical_failures: adversarialCritical,
+    adversarial_non_critical_findings: adversarialNonCritical,
+    adversarial_penalty: adversarialPenalty,
+    adversarial_replay_artifact: adversarial && adversarial.replay_artifact_path
+      ? String(adversarial.replay_artifact_path)
+      : null,
     trit_alignment: trits.alignment,
     value_currency: valueCtx.value_currency,
     composite_score: compositeAdjusted,
@@ -339,14 +368,21 @@ function evaluateCandidates(input) {
   );
   const principleScore = Number(src.principle_snapshot && src.principle_snapshot.score || 0.5);
   const valueContext = src.value_context && typeof src.value_context === 'object' ? src.value_context : {};
+  const adversarialResults = Array.isArray(src.adversarial_results) ? src.adversarial_results : [];
 
   const patternMap = buildPatternMap(patternRows);
+  const adversarialMap = new Map(
+    adversarialResults
+      .map((row) => [String(row && row.candidate_id || ''), row])
+      .filter((pair) => String(pair[0] || ''))
+  );
   const context = {
     policy,
     patternMap,
     redTeamCriticalFailures,
     principleScore,
-    valueContext
+    valueContext,
+    adversarialMap
   };
 
   const flattened = flattenCandidateTree(candidates, 6);
@@ -381,6 +417,7 @@ function evaluateCandidates(input) {
     policy,
     value_currency: normalizeValueContext(context).value_currency,
     red_team_critical_failures: redTeamCriticalFailures,
+    adversarial_results: adversarialResults.length,
     flattened_candidates: flattened.length,
     scorecards,
     passing

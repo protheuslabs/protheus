@@ -41,6 +41,24 @@
   "telemetry": {
     "emit_birth_events": true
   },
+  "adversarial_lane": {
+    "enabled": true,
+    "max_critical_failures_per_candidate": 0,
+    "max_non_critical_findings_per_candidate": 8,
+    "max_findings_per_candidate": 24,
+    "block_unresolved_placeholders": true,
+    "high_power_requires_preflight": true,
+    "high_power_requires_rollback": false,
+    "persist_replay_artifacts": true,
+    "unresolved_placeholder_allowlist": [
+      "date",
+      "run_id",
+      "workflow_id",
+      "objective_id",
+      "eye_id",
+      "adapter"
+    ]
+  },
   "auto_apply": {
     "enabled": true,
     "min_promotable_drafts": 2,
