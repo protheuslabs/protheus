@@ -3,6 +3,12 @@
 export {};
 
 const { runLocalOllamaPrompt } = require('../../routing/llm_gateway');
+let decideBrainRoute = null;
+try {
+  ({ decideBrainRoute } = require('../../dual_brain/coordinator.js'));
+} catch {
+  decideBrainRoute = null;
+}
 const {
   stableId,
   cleanText,
@@ -743,6 +749,8 @@ function normalizeCreativePolicy(raw) {
     reserved_slots: clampInt(src.reserved_slots, 0, 12, 2),
     min_novelty_trit: clampInt(src.min_novelty_trit, -1, 1, 0),
     cache_ttl_ms: clampInt(src.cache_ttl_ms, 0, 24 * 60 * 60 * 1000, 10 * 60 * 1000),
+    use_dual_brain_gate: src.use_dual_brain_gate !== false,
+    allow_shadow_llm_apply: src.allow_shadow_llm_apply === true,
     seed_candidates: Array.isArray(src.seed_candidates) ? src.seed_candidates.slice(0, 24) : []
   };
 }
@@ -958,16 +966,48 @@ function generateCreativeCandidates(ctx, existingIds = new Set()) {
   if (slots <= 0) return [];
   const t = tritProfile(ctx && ctx.intent);
   if (t.novelty < policy.min_novelty_trit) return [];
+  let dualBrain = null;
+  if (policy.use_dual_brain_gate === true && typeof decideBrainRoute === 'function') {
+    try {
+      dualBrain = decideBrainRoute({
+        context: 'orchestron.creative_llm',
+        task_class: 'workflow_generation',
+        desired_lane: 'right',
+        trit: Number(t.alignment || 0) >= 0 ? 1 : -1,
+        date: ctx && ctx.date ? String(ctx.date) : null,
+        persist: ctx && ctx.dual_brain_persist === true
+      });
+    } catch (err) {
+      dualBrain = {
+        ok: false,
+        mode: 'left_only',
+        reasons: [cleanText(err && err.message ? err.message : err || 'dual_brain_route_failed', 120)]
+      };
+    }
+  }
+
+  const rightPermitted = dualBrain && dualBrain.right && dualBrain.right.permitted === true;
+  const shadowMode = dualBrain && dualBrain.shadow_mode_active === true;
+  const allowCreativeLlm = policy.use_dual_brain_gate !== true
+    || (rightPermitted && (!shadowMode || policy.allow_shadow_llm_apply === true));
+
   const out = [];
   const seedRows = Array.isArray(policy.seed_candidates) ? policy.seed_candidates : [];
   for (let i = 0; i < seedRows.length; i += 1) {
     if (out.length >= slots) break;
     const candidate = creativeCandidateFromRow(seedRows[i], i, ctx);
     if (!candidate || !candidate.id || existingIds.has(candidate.id)) continue;
+    candidate.metadata = {
+      ...(candidate.metadata || {}),
+      dual_brain_mode: cleanText(dualBrain && dualBrain.mode || 'left_only', 48),
+      dual_brain_right_permitted: !!rightPermitted,
+      dual_brain_shadow_mode: !!shadowMode
+    };
     existingIds.add(candidate.id);
     out.push(candidate);
   }
   if (out.length >= slots) return out;
+  if (!allowCreativeLlm) return out;
 
   const prompt = buildCreativePrompt(ctx, Math.min(slots, policy.max_candidates));
   const llm = runLocalOllamaPrompt({
@@ -991,6 +1031,12 @@ function generateCreativeCandidates(ctx, existingIds = new Set()) {
     if (out.length >= slots) break;
     const candidate = creativeCandidateFromRow(candidatesRaw[i], i, ctx);
     if (!candidate || !candidate.id || existingIds.has(candidate.id)) continue;
+    candidate.metadata = {
+      ...(candidate.metadata || {}),
+      dual_brain_mode: cleanText(dualBrain && dualBrain.mode || 'left_only', 48),
+      dual_brain_right_permitted: !!rightPermitted,
+      dual_brain_shadow_mode: !!shadowMode
+    };
     existingIds.add(candidate.id);
     out.push(candidate);
   }

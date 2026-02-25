@@ -16,7 +16,9 @@
     "primary_source": true,
     "reserved_slots": 2,
     "min_novelty_trit": 0,
-    "cache_ttl_ms": 600000
+    "cache_ttl_ms": 600000,
+    "use_dual_brain_gate": true,
+    "allow_shadow_llm_apply": false
   },
   "fractal": {
     "enabled": true,
