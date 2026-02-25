@@ -29,14 +29,21 @@ const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const REGISTRY_PATH = process.env.WORKFLOW_REGISTRY_PATH
   ? path.resolve(process.env.WORKFLOW_REGISTRY_PATH)
   : path.join(REPO_ROOT, 'state', 'adaptive', 'workflows', 'registry.json');
+const ORCHESTRON_OUT_DIR = process.env.ORCHESTRON_OUT_DIR
+  ? path.resolve(process.env.ORCHESTRON_OUT_DIR)
+  : path.join(REPO_ROOT, 'state', 'adaptive', 'workflows', 'orchestron');
+const ORCHESTRON_LATEST_PATH = process.env.ORCHESTRON_LATEST_PATH
+  ? path.resolve(process.env.ORCHESTRON_LATEST_PATH)
+  : path.join(ORCHESTRON_OUT_DIR, 'latest.json');
 const DEFAULT_POLICY_PATH = path.join(REPO_ROOT, 'config', 'workflow_policy.json');
 const DEFAULT_ORCHESTRON_POLICY_PATH = path.join(REPO_ROOT, 'config', 'orchestron_policy.json');
 
 function usage() {
   console.log('Usage:');
   console.log('  node systems/workflow/workflow_controller.js run [YYYY-MM-DD] [--days=N] [--max=N] [--apply=1|0] [--policy=path] [--orchestron=1|0] [--orchestron-apply=1|0] [--orchestron-auto=1|0] [--intent=\"...\"] [--value-currency=<currency>] [--objective-id=<id>] [--orchestron-policy=path]');
+  console.log('  node systems/workflow/workflow_controller.js promote [--source=promotable|passing|drafts] [--status=active|draft] [--id=<workflow_id[,workflow_id...]>] [--from=path] [--dry-run=1|0] [--ignore-threshold=1|0] [--policy=path]');
   console.log('  node systems/workflow/workflow_controller.js list [--status=active|draft|all] [--limit=N]');
-  console.log('  node systems/workflow/workflow_controller.js status [--policy=path]');
+  console.log('  node systems/workflow/workflow_controller.js status [--policy=path] [--orchestron-latest=path]');
 }
 
 function parseArgs(argv) {
@@ -168,10 +175,13 @@ function saveRegistry(registry) {
   return payload;
 }
 
-function applyDrafts(registry, drafts, policy) {
+function applyDrafts(registry, drafts, policy, options = {}) {
   const rows = Array.isArray(registry && registry.workflows) ? registry.workflows.slice() : [];
   const map = new Map(rows.map((row) => [String(row.id || ''), row]));
   const threshold = Number(policy && policy.apply_threshold || 0.62);
+  const ignoreThreshold = options && options.ignore_threshold === true;
+  const statusRaw = String(options && options.status || 'active').trim().toLowerCase();
+  const targetStatus = statusRaw === 'draft' ? 'draft' : 'active';
   let applied = 0;
   let updated = 0;
   const activatedThisRun = new Set();
@@ -227,7 +237,7 @@ function applyDrafts(registry, drafts, policy) {
 
   for (const draft of flattenDraftTree(drafts)) {
     const score = Number(draft && draft.metrics && draft.metrics.score || 0);
-    if (score < threshold) continue;
+    if (!ignoreThreshold && score < threshold) continue;
     const id = String(draft && draft.id || '').trim();
     if (!id) continue;
     const parentWorkflowId = String(draft && draft.parent_workflow_id || '').trim();
@@ -239,13 +249,17 @@ function applyDrafts(registry, drafts, policy) {
     const rootWorkflowId = effectiveParentId ? (resolveRootWorkflowId(effectiveParentId) || effectiveParentId) : id;
     const depth = Number(draft && draft.fractal_depth || 0);
     const existing = map.get(id);
-    const activatedAt = existing && existing.activated_at ? existing.activated_at : nowIso();
-    const lineageState = effectiveParentId ? 'child_active' : 'root_active';
+    const activatedAt = targetStatus === 'active'
+      ? (existing && existing.activated_at ? existing.activated_at : nowIso())
+      : (existing && existing.activated_at ? existing.activated_at : null);
+    const lineageState = targetStatus === 'active'
+      ? (effectiveParentId ? 'child_active' : 'root_active')
+      : (effectiveParentId ? 'child_draft' : 'root_draft');
     const row = {
       ...(existing || {}),
       ...draft,
       parent_workflow_id: effectiveParentId,
-      status: 'active',
+      status: targetStatus,
       source: existing ? 'adaptive_workflow_controller_update' : 'adaptive_workflow_controller',
       activated_at: activatedAt,
       fractal_state: lineageState,
@@ -273,6 +287,52 @@ function applyDrafts(registry, drafts, policy) {
     workflows,
     applied,
     updated
+  };
+}
+
+function loadOrchestronSnapshot(filePath) {
+  const resolved = path.resolve(String(filePath || ORCHESTRON_LATEST_PATH));
+  const payload = readJson(resolved, null);
+  if (!payload || typeof payload !== 'object') {
+    return {
+      path: resolved,
+      payload: null
+    };
+  }
+  return {
+    path: resolved,
+    payload
+  };
+}
+
+function normalizePromotionSource(raw) {
+  const source = String(raw || 'promotable').trim().toLowerCase();
+  if (source === 'drafts') return 'drafts';
+  if (source === 'passing') return 'passing';
+  return 'promotable';
+}
+
+function parseIdFilter(raw) {
+  const txt = String(raw || '').trim();
+  if (!txt) return null;
+  const ids = txt.split(',').map((v) => String(v || '').trim()).filter(Boolean);
+  return ids.length ? new Set(ids) : null;
+}
+
+function selectPromotableRows(snapshotPayload, source, idFilter) {
+  const payload = snapshotPayload && typeof snapshotPayload === 'object' ? snapshotPayload : {};
+  const sourceRows = source === 'drafts'
+    ? (Array.isArray(payload.drafts) ? payload.drafts : [])
+    : (source === 'passing'
+        ? (Array.isArray(payload.passing) ? payload.passing : [])
+        : (Array.isArray(payload.promotable_drafts) ? payload.promotable_drafts : []));
+  const rows = idFilter
+    ? sourceRows.filter((row) => row && idFilter.has(String(row.id || '').trim()))
+    : sourceRows.slice();
+  return {
+    rows,
+    source_total: sourceRows.length,
+    selected: rows.length
   };
 }
 
@@ -483,7 +543,7 @@ function runCmd(dateStr, args) {
       });
       orchestronDraftsForApply = orchestronPayload && Array.isArray(orchestronPayload.promotable_drafts)
         ? orchestronPayload.promotable_drafts
-        : (orchestronPayload && Array.isArray(orchestronPayload.drafts) ? orchestronPayload.drafts : []);
+        : [];
       const shadowOnly = orchestronPayload && orchestronPayload.policy && orchestronPayload.policy.shadow_only === true;
       const autoPolicy = normalizeAutoApplyPolicy(
         orchestronPolicy && orchestronPolicy.auto_apply,
@@ -595,7 +655,71 @@ function listCmd(args) {
   })}\n`);
 }
 
-function statusCmd() {
+function promoteCmd(args) {
+  const policyPath = path.resolve(String(args.policy || process.env.WORKFLOW_POLICY_PATH || DEFAULT_POLICY_PATH));
+  const policy = loadPolicy(policyPath);
+  const source = normalizePromotionSource(args.source);
+  const status = String(args.status || 'active').trim().toLowerCase() === 'draft' ? 'draft' : 'active';
+  const idFilter = parseIdFilter(args.id);
+  const dryRun = boolFlag(args['dry-run'], false);
+  const ignoreThreshold = boolFlag(args['ignore-threshold'], false);
+  const snapshotPath = path.resolve(String(args.from || args['orchestron-latest'] || ORCHESTRON_LATEST_PATH));
+  const snapshot = loadOrchestronSnapshot(snapshotPath);
+  if (!snapshot.payload) {
+    process.stdout.write(`${JSON.stringify({
+      ok: false,
+      type: 'workflow_controller_promote',
+      error: 'orchestron_snapshot_missing',
+      source,
+      status,
+      snapshot_path: relPath(snapshot.path)
+    })}\n`);
+    process.exitCode = 1;
+    return;
+  }
+  const selected = selectPromotableRows(snapshot.payload, source, idFilter);
+  const registry = loadRegistry();
+  const applied = applyDrafts(registry, selected.rows, policy, {
+    status,
+    ignore_threshold: ignoreThreshold
+  });
+  const saved = dryRun
+    ? {
+        ...registry,
+        workflows: applied.workflows,
+        updated_at: registry.updated_at || null
+      }
+    : saveRegistry({
+        ...registry,
+        generated_at: nowIso(),
+        workflows: applied.workflows
+      });
+
+  process.stdout.write(`${JSON.stringify({
+    ok: true,
+    type: 'workflow_controller_promote',
+    source,
+    status,
+    dry_run: dryRun,
+    ignore_threshold: ignoreThreshold,
+    snapshot_path: relPath(snapshot.path),
+    snapshot_shadow_only: snapshot.payload && snapshot.payload.policy
+      ? snapshot.payload.policy.shadow_only === true
+      : null,
+    snapshot_red_team_critical_fail_cases: snapshot.payload && snapshot.payload.red_team
+      ? Number(snapshot.payload.red_team.critical_fail_cases || 0)
+      : 0,
+    source_total: selected.source_total,
+    selected: selected.selected,
+    applied: applied.applied,
+    updated: applied.updated,
+    registry_total: Array.isArray(saved.workflows) ? saved.workflows.length : 0,
+    policy_path: relPath(policyPath),
+    registry_path: relPath(REGISTRY_PATH)
+  })}\n`);
+}
+
+function statusCmd(args) {
   const registry = loadRegistry();
   const rows = Array.isArray(registry.workflows) ? registry.workflows : [];
   const counts = {
@@ -603,13 +727,23 @@ function statusCmd() {
     draft: rows.filter((row) => String(row.status || '') === 'draft').length,
     disabled: rows.filter((row) => String(row.status || '') === 'disabled').length
   };
+  const snapshotPath = path.resolve(String(args['orchestron-latest'] || ORCHESTRON_LATEST_PATH));
+  const snapshot = loadOrchestronSnapshot(snapshotPath);
+  const orchPayload = snapshot.payload || null;
   process.stdout.write(`${JSON.stringify({
     ok: true,
     type: 'workflow_controller_status',
     total: rows.length,
     counts,
     registry_path: relPath(REGISTRY_PATH),
-    updated_at: registry.updated_at || null
+    updated_at: registry.updated_at || null,
+    orchestron_latest_path: relPath(snapshot.path),
+    orchestron_latest_exists: !!orchPayload,
+    orchestron_shadow_only: orchPayload && orchPayload.policy ? orchPayload.policy.shadow_only === true : null,
+    orchestron_promotable_drafts: orchPayload && Array.isArray(orchPayload.promotable_drafts) ? orchPayload.promotable_drafts.length : 0,
+    orchestron_passing: orchPayload && Array.isArray(orchPayload.passing) ? orchPayload.passing.length : 0,
+    orchestron_drafts: orchPayload && Array.isArray(orchPayload.drafts) ? orchPayload.drafts.length : 0,
+    orchestron_red_team_critical_fail_cases: orchPayload && orchPayload.red_team ? Number(orchPayload.red_team.critical_fail_cases || 0) : 0
   })}\n`);
 }
 
@@ -621,8 +755,9 @@ function main() {
     return;
   }
   if (cmd === 'run') return runCmd(dateArgOrToday(args._[1]), args);
+  if (cmd === 'promote') return promoteCmd(args);
   if (cmd === 'list') return listCmd(args);
-  if (cmd === 'status') return statusCmd();
+  if (cmd === 'status') return statusCmd(args);
   usage();
   process.exitCode = 2;
 }
@@ -644,5 +779,7 @@ module.exports = {
   loadRegistry,
   applyDrafts,
   mergeDrafts,
+  loadOrchestronSnapshot,
+  selectPromotableRows,
   main
 };
