@@ -1125,6 +1125,7 @@ function main() {
     "systems/workflow/workflow_generator.js",
     "systems/workflow/orchestron_controller.js",
     "systems/workflow/workflow_controller.js",
+    "systems/fractal/regime_organ.js",
     "systems/identity/identity_anchor.js",
     "systems/nursery/nursery_bootstrap.js",
     "systems/actuation/claw_registry.js",
@@ -1139,6 +1140,7 @@ function main() {
     "config/continuum_policy.json",
     "config/nursery_policy.json",
     "config/workflow_policy.json",
+    "config/regime_organ_policy.json",
     "config/identity_anchor_policy.json",
     "config/deployment_packaging_policy.json",
     "config/compliance_posture_policy.json",
@@ -3661,6 +3663,61 @@ function main() {
         flag_value: String(process.env.SPINE_FRACTAL_MORPH_ENABLED || "")
       });
       console.log(" fractal_morph skipped reason=feature_flag_disabled flag=SPINE_FRACTAL_MORPH_ENABLED");
+    }
+
+    // 4g1) regime organ (task/environment sensing + bounded morph trigger).
+    if (String(process.env.SPINE_FRACTAL_REGIME_ORGAN_ENABLED || "1") !== "0") {
+      const regimeMaxActions = Math.max(1, Number(process.env.SPINE_FRACTAL_REGIME_MAX_ACTIONS || 4) || 4);
+      const regime = runJson("node", [
+        "systems/fractal/regime_organ.js",
+        "run",
+        dateStr,
+        `--max-actions=${regimeMaxActions}`
+      ]);
+      const payload = regime.payload && typeof regime.payload === "object"
+        ? regime.payload
+        : null;
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_fractal_regime_organ",
+        mode,
+        date: dateStr,
+        ok: regime.ok && !!payload && payload.ok === true,
+        selected_regime: payload ? payload.selected_regime || null : null,
+        candidate_regime: payload ? payload.candidate_regime || null : null,
+        switched: payload ? payload.switched === true : null,
+        switch_reason: payload ? payload.switch_reason || null : null,
+        confidence: payload ? Number(payload.confidence || 0) : null,
+        action_count: payload ? Number(payload.action_count || 0) : null,
+        promotion_ready: payload ? payload.promotion_ready === true : null,
+        non_regression_pass: payload ? payload.non_regression_pass === true : null,
+        output_path: payload ? payload.output_path || null : null,
+        receipt_path: payload ? payload.receipt_path || null : null,
+        reason: (!regime.ok || !payload || payload.ok !== true)
+          ? String(regime.stderr || regime.stdout || `fractal_regime_exit_${regime.code}`).slice(0, 180)
+          : null
+      });
+      if (regime.ok && payload && payload.ok === true) {
+        console.log(
+          ` fractal_regime selected=${String(payload.selected_regime || "none")}` +
+          ` switched=${payload.switched === true ? "1" : "0"}` +
+          ` actions=${Number(payload.action_count || 0)}` +
+          ` promotion_ready=${payload.promotion_ready === true ? "1" : "0"}`
+        );
+      } else {
+        console.log(` fractal_regime unavailable reason=${String(regime.stderr || regime.stdout || "unknown").slice(0, 120)}`);
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_fractal_regime_organ_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "SPINE_FRACTAL_REGIME_ORGAN_ENABLED",
+        flag_value: String(process.env.SPINE_FRACTAL_REGIME_ORGAN_ENABLED || "")
+      });
+      console.log(" fractal_regime skipped reason=feature_flag_disabled flag=SPINE_FRACTAL_REGIME_ORGAN_ENABLED");
     }
 
     // 4g2) identity anchor over workflow graft + morph outputs.

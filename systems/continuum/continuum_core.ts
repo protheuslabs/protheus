@@ -26,6 +26,12 @@ const {
   tritLabel,
   majorityTrit
 } = require('../../lib/trit');
+let decideBrainRoute = null;
+try {
+  ({ decideBrainRoute } = require('../dual_brain/coordinator.js'));
+} catch {
+  decideBrainRoute = null;
+}
 
 type AnyObj = Record<string, any>;
 
@@ -959,6 +965,25 @@ function runAutotestValidation(taskCfg: AnyObj, dryRun: boolean) {
   };
 }
 
+function dualBrainLaneForTask(taskId: string) {
+  const id = normalizeToken(taskId || '', 64);
+  if (id === 'dream_consolidation') return 'right';
+  if (id === 'creative_incubation') return 'right';
+  if (id === 'anticipation') return 'right';
+  return 'left';
+}
+
+function dualBrainTaskClassForTask(taskId: string) {
+  const id = normalizeToken(taskId || '', 64);
+  if (id === 'dream_consolidation') return 'dream';
+  if (id === 'creative_incubation') return 'creative';
+  if (id === 'anticipation') return 'workflow_generation';
+  if (id === 'autotest_validation') return 'governance';
+  if (id === 'security_vigilance') return 'security';
+  if (id === 'self_improvement') return 'identity';
+  return 'general';
+}
+
 function resolveTrainingQueuePath(paths: AnyObj, policy: AnyObj) {
   const configured = cleanText(policy && policy.training_queue && policy.training_queue.path || '', 260);
   if (!configured) return paths.training_queue_path;
@@ -1095,6 +1120,24 @@ function pulse(dateStr: string, opts: AnyObj = {}) {
       if (cooldownRem > 0 && force !== true) {
         return recordTask(taskId, stage, { ok: true, reason: `cooldown_${cooldownRem}s` }, { cooldown_remaining_sec: cooldownRem }, true);
       }
+      let dualBrain = null;
+      if (typeof decideBrainRoute === 'function') {
+        try {
+          dualBrain = decideBrainRoute({
+            context: `continuum.${stage}`,
+            task_class: dualBrainTaskClassForTask(taskId),
+            desired_lane: dualBrainLaneForTask(taskId),
+            trit: trit.trit,
+            date: dateStr,
+            persist: dryRun !== true
+          });
+        } catch (err) {
+          dualBrain = {
+            ok: false,
+            error: cleanText(err && err.message ? err.message : err || 'dual_brain_route_failed', 180)
+          };
+        }
+      }
       const started = Date.now();
       const out = fn();
       const elapsedMs = Date.now() - started;
@@ -1102,6 +1145,15 @@ function pulse(dateStr: string, opts: AnyObj = {}) {
       runtimeState.last_task_ts[taskId] = nowIso();
       const metrics = {
         duration_ms: elapsedMs,
+        dual_brain: dualBrain && typeof dualBrain === 'object'
+          ? {
+              mode: cleanText(dualBrain.mode || '', 48),
+              selected_live_brain: cleanText(dualBrain.selected_live_brain || '', 24),
+              right_permitted: !!(dualBrain.right && dualBrain.right.permitted === true),
+              right_shadow: !!(dualBrain.right && dualBrain.right.shadow === true),
+              reasons: Array.isArray(dualBrain.reasons) ? dualBrain.reasons.slice(0, 6) : []
+            }
+          : null,
         ...(out && typeof out === 'object' ? out : {})
       };
       delete metrics.memory_dream;
