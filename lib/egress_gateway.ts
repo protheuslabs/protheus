@@ -160,8 +160,8 @@ function audit(entry: Record<string, unknown>, auditPath = DEFAULT_AUDIT_PATH): 
   });
 }
 
-function pruneCounters(state: Record<string, any>): void {
-  const now = Date.now();
+function pruneCounters(state: Record<string, any>, referenceMs?: unknown): void {
+  const now = nowMs(referenceMs);
   const keepHourAfter = now - (72 * 60 * 60 * 1000);
   const keepDayAfter = now - (45 * 24 * 60 * 60 * 1000);
   for (const key of Object.keys(state.per_hour || {})) {
@@ -222,7 +222,7 @@ function authorizeEgress(opts: Record<string, any> = {}): Record<string, any> {
 
   const policy = loadPolicy(opts.policy_path || DEFAULT_POLICY_PATH);
   const state = loadState(opts.state_path || DEFAULT_STATE_PATH);
-  pruneCounters(state);
+  pruneCounters(state, atMs);
 
   const out = {
     ok: false,
