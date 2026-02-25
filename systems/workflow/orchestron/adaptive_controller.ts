@@ -160,6 +160,8 @@ function defaultPolicy() {
       model: 'qwen3:4b',
       timeout_ms: 2500,
       max_candidates: 3,
+      primary_source: true,
+      reserved_slots: 2,
       min_novelty_trit: 0,
       cache_ttl_ms: 600000
     },
@@ -168,7 +170,14 @@ function defaultPolicy() {
       max_depth: 3,
       max_children_per_workflow: 3,
       min_attempts_for_split: 4,
-      min_failure_rate_for_split: 0.45
+      min_failure_rate_for_split: 0.45,
+      auto_depth_expansion: true,
+      auto_depth_cap: 5,
+      recurse_child_budget: 1,
+      recurse_when_failure_min: 0.58,
+      recurse_when_no_change_min: 0.5,
+      recurse_when_uncertainty_min: 0.55,
+      active_registry_soft_cap: 24
     },
     runtime_evolution: {
       enabled: true,
@@ -186,6 +195,7 @@ function defaultPolicy() {
       max_predicted_drift_delta: 0.008,
       min_predicted_yield_delta: -0.005,
       min_trit_alignment: -0.7,
+      max_candidate_red_team_pressure: 0.72,
       max_promotions_per_run: 4
     }
   };
@@ -225,15 +235,25 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
       model: cleanText(creativeSrc.model || base.creative_llm.model, 80),
       timeout_ms: clampInt(creativeSrc.timeout_ms, 300, 30000, base.creative_llm.timeout_ms),
       max_candidates: clampInt(creativeSrc.max_candidates, 1, 12, base.creative_llm.max_candidates),
+      primary_source: creativeSrc.primary_source !== false,
+      reserved_slots: clampInt(creativeSrc.reserved_slots, 0, 12, base.creative_llm.reserved_slots),
       min_novelty_trit: clampInt(creativeSrc.min_novelty_trit, -1, 1, base.creative_llm.min_novelty_trit),
-      cache_ttl_ms: clampInt(creativeSrc.cache_ttl_ms, 0, 24 * 60 * 60 * 1000, base.creative_llm.cache_ttl_ms)
+      cache_ttl_ms: clampInt(creativeSrc.cache_ttl_ms, 0, 24 * 60 * 60 * 1000, base.creative_llm.cache_ttl_ms),
+      seed_candidates: Array.isArray(creativeSrc.seed_candidates) ? creativeSrc.seed_candidates.slice(0, 24) : []
     },
     fractal: {
       enabled: fractalSrc.enabled !== false,
       max_depth: clampInt(fractalSrc.max_depth, 1, 6, base.fractal.max_depth),
       max_children_per_workflow: clampInt(fractalSrc.max_children_per_workflow, 1, 8, base.fractal.max_children_per_workflow),
       min_attempts_for_split: clampInt(fractalSrc.min_attempts_for_split, 1, 100000, base.fractal.min_attempts_for_split),
-      min_failure_rate_for_split: clampNumber(fractalSrc.min_failure_rate_for_split, 0, 1, base.fractal.min_failure_rate_for_split)
+      min_failure_rate_for_split: clampNumber(fractalSrc.min_failure_rate_for_split, 0, 1, base.fractal.min_failure_rate_for_split),
+      auto_depth_expansion: fractalSrc.auto_depth_expansion !== false,
+      auto_depth_cap: clampInt(fractalSrc.auto_depth_cap, 1, 8, base.fractal.auto_depth_cap),
+      recurse_child_budget: clampInt(fractalSrc.recurse_child_budget, 0, 4, base.fractal.recurse_child_budget),
+      recurse_when_failure_min: clampNumber(fractalSrc.recurse_when_failure_min, 0, 1, base.fractal.recurse_when_failure_min),
+      recurse_when_no_change_min: clampNumber(fractalSrc.recurse_when_no_change_min, 0, 1, base.fractal.recurse_when_no_change_min),
+      recurse_when_uncertainty_min: clampNumber(fractalSrc.recurse_when_uncertainty_min, 0, 1, base.fractal.recurse_when_uncertainty_min),
+      active_registry_soft_cap: clampInt(fractalSrc.active_registry_soft_cap, 1, 500, base.fractal.active_registry_soft_cap)
     },
     runtime_evolution: {
       enabled: runtimeSrc.enabled !== false,
@@ -251,6 +271,7 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
       max_predicted_drift_delta: clampNumber(nurserySrc.max_predicted_drift_delta, -1, 1, base.nursery.max_predicted_drift_delta),
       min_predicted_yield_delta: clampNumber(nurserySrc.min_predicted_yield_delta, -1, 1, base.nursery.min_predicted_yield_delta),
       min_trit_alignment: clampNumber(nurserySrc.min_trit_alignment, -1, 1, base.nursery.min_trit_alignment),
+      max_candidate_red_team_pressure: clampNumber(nurserySrc.max_candidate_red_team_pressure, 0, 1, base.nursery.max_candidate_red_team_pressure),
       max_promotions_per_run: clampInt(nurserySrc.max_promotions_per_run, 1, 24, base.nursery.max_promotions_per_run)
     }
   };
@@ -259,6 +280,35 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
 function emitBirthEvent(policy, row) {
   if (!policy || !policy.telemetry || policy.telemetry.emit_birth_events !== true) return;
   appendJsonl(BIRTH_EVENTS_PATH, row);
+}
+
+function flattenCandidateNodes(candidates, maxDepth = 6) {
+  const out = [];
+  const queue = [];
+  for (const row of Array.isArray(candidates) ? candidates : []) {
+    if (!row || typeof row !== 'object') continue;
+    queue.push({
+      node: row,
+      parent_candidate_id: row.parent_workflow_id || null,
+      depth: Number(row.fractal_depth || 0)
+    });
+  }
+  while (queue.length) {
+    const current = queue.shift();
+    if (!current || !current.node || typeof current.node !== 'object') continue;
+    out.push(current);
+    if (Number(current.depth || 0) >= Number(maxDepth || 6)) continue;
+    const children = Array.isArray(current.node.children) ? current.node.children : [];
+    for (const child of children) {
+      if (!child || typeof child !== 'object') continue;
+      queue.push({
+        node: child,
+        parent_candidate_id: current.node.id || current.parent_candidate_id || null,
+        depth: Number(current.depth || 0) + 1
+      });
+    }
+  }
+  return out;
 }
 
 function defaultPatternStats(scopeValue) {
@@ -454,6 +504,21 @@ function generateAdaptiveDrafts(dateStr, opts = {}) {
     candidates: candidates.length,
     fractal_children: fractalChildren
   });
+  for (const node of flattenCandidateNodes(candidates, policy.fractal.max_depth).slice(0, 96)) {
+    emitBirthEvent(policy, {
+      ts: nowIso(),
+      type: 'orchestron_birth_event',
+      stage: 'candidate_indexed',
+      run_id: runId,
+      date: dateStr,
+      strategy_id: strategyId,
+      candidate_id: node.node && node.node.id ? String(node.node.id) : null,
+      parent_candidate_id: node.parent_candidate_id || null,
+      fractal_depth: Number(node.depth || 0),
+      proposal_type: node.node && node.node.trigger ? node.node.trigger.proposal_type || null : null,
+      mutation_kind: node.node && node.node.mutation ? node.node.mutation.kind || 'none' : 'none'
+    });
+  }
 
   const nursery = evaluateCandidates({
     candidates,
@@ -476,6 +541,27 @@ function generateAdaptiveDrafts(dateStr, opts = {}) {
     scorecards: Array.isArray(nursery.scorecards) ? nursery.scorecards.length : 0,
     passing: Array.isArray(nursery.passing) ? nursery.passing.length : 0
   });
+  for (const row of (Array.isArray(nursery.passing) ? nursery.passing : []).slice(0, 48)) {
+    const candidate = row && row.candidate && typeof row.candidate === 'object' ? row.candidate : {};
+    const scorecard = row && row.scorecard && typeof row.scorecard === 'object' ? row.scorecard : {};
+    emitBirthEvent(policy, {
+      ts: nowIso(),
+      type: 'orchestron_birth_event',
+      stage: 'graft_planned',
+      run_id: runId,
+      date: dateStr,
+      strategy_id: strategyId,
+      candidate_id: candidate && candidate.id ? String(candidate.id) : null,
+      parent_candidate_id: row && row.parent_candidate_id ? String(row.parent_candidate_id) : null,
+      fractal_depth: Number(row && row.depth || candidate && candidate.fractal_depth || 0),
+      proposal_type: candidate && candidate.trigger ? candidate.trigger.proposal_type || null : null,
+      mutation_kind: candidate && candidate.mutation ? candidate.mutation.kind || 'none' : 'none',
+      trit_alignment: Number(scorecard && scorecard.trit_alignment || 0),
+      composite_score: Number(scorecard && scorecard.composite_score || 0),
+      predicted_drift_delta: Number(scorecard && scorecard.predicted_drift_delta || 0),
+      predicted_yield_delta: Number(scorecard && scorecard.predicted_yield_delta || 0)
+    });
+  }
 
   const scoreById = new Map((Array.isArray(nursery.scorecards) ? nursery.scorecards : []).map((row) => [String(row.candidate_id || ''), row]));
   const gatedPassing = [];
@@ -516,6 +602,15 @@ function generateAdaptiveDrafts(dateStr, opts = {}) {
       ts: nowIso(),
       type: 'orchestron_birth_event',
       stage: 'graft_ready',
+      run_id: runId,
+      date: dateStr,
+      strategy_id: strategyId,
+      promotable_drafts: promotableDrafts.length
+    });
+    emitBirthEvent(policy, {
+      ts: nowIso(),
+      type: 'orchestron_birth_event',
+      stage: 'grafted',
       run_id: runId,
       date: dateStr,
       strategy_id: strategyId,

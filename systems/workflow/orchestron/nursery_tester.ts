@@ -16,6 +16,7 @@ function defaultPolicy() {
     max_predicted_drift_delta: 0.008,
     min_predicted_yield_delta: -0.005,
     min_trit_alignment: -0.7,
+    max_candidate_red_team_pressure: 0.72,
     max_promotions_per_run: 4
   };
 }
@@ -47,6 +48,41 @@ function isHighPowerCandidate(candidate) {
     || proposalType.includes('payment')
     || proposalType.includes('browser')
     || proposalType.includes('computer');
+}
+
+function candidateRedTeamPressure(candidate, trits, frame = {}, redTeamCriticalFailures = 0) {
+  const steps = Array.isArray(candidate && candidate.steps) ? candidate.steps : [];
+  const depth = Number(frame && frame.depth || 0);
+  const mutationKind = String(candidate && candidate.mutation && candidate.mutation.kind || 'none').toLowerCase();
+  const commandSurfaceHits = steps.filter((row) => {
+    const command = String(row && row.command || '').toLowerCase();
+    return command.includes('http')
+      || command.includes('curl')
+      || command.includes('fetch')
+      || command.includes('email')
+      || command.includes('publish')
+      || command.includes('payment')
+      || command.includes('browser')
+      || command.includes('actuation')
+      || command.includes('bridge')
+      || command.includes('deploy')
+      || command.includes('api');
+  }).length;
+
+  let pressure = 0.03;
+  pressure += Math.min(0.36, Math.max(0, Number(redTeamCriticalFailures || 0)) * 0.12);
+  pressure += Math.min(0.34, commandSurfaceHits * 0.07);
+  pressure += isHighPowerCandidate(candidate) ? 0.22 : 0;
+  pressure += hasPreflightStep(candidate) ? 0 : 0.09;
+  pressure += hasRollbackStep(candidate) ? 0 : 0.1;
+  pressure += clampNumber(depth * 0.025, 0, 0.2, 0);
+  pressure += (trits && Number(trits.risk || 0) < 0) ? Math.abs(Number(trits.risk || 0)) * 0.14 : 0;
+  pressure += (trits && Number(trits.feasibility || 0) < 0) ? Math.abs(Number(trits.feasibility || 0)) * 0.06 : 0;
+  if (mutationKind === 'fractal_split') pressure += 0.08;
+  if (mutationKind === 'retry_tuning') pressure += 0.05;
+  if (mutationKind === 'guard_hardening') pressure -= 0.06;
+  if (mutationKind === 'rollback_path') pressure -= 0.07;
+  return clampNumber(pressure, 0, 1, 0);
 }
 
 function mutationEffects(candidate) {
@@ -164,11 +200,14 @@ function scoreCandidate(candidate, ctx, frame = {}) {
   const uncertaintyPenalty = uncertainty === 'high' ? 0.11 : (uncertainty === 'medium' ? 0.05 : 0.01);
   const redTeamCritical = Number(ctx.redTeamCriticalFailures || 0);
   const redTeamPressure = clampNumber(redTeamCritical > 0 ? 1 : 0, 0, 1, 0);
-  const redTeamPenalty = isHighPowerCandidate(candidate)
+  const globalRedTeamPenalty = isHighPowerCandidate(candidate)
     ? (0.08 * redTeamPressure)
     : (0.02 * redTeamPressure);
 
   const trits = normalizeTritSignals(intent);
+  const candidateRedTeamPressureScore = candidateRedTeamPressure(candidate, trits, frame, redTeamCritical);
+  const candidateRedTeamPenalty = candidateRedTeamPressureScore * (isHighPowerCandidate(candidate) ? 0.16 : 0.09);
+  const redTeamPenalty = globalRedTeamPenalty + candidateRedTeamPenalty;
   const tritSignal = clampNumber((trits.alignment + 1) / 2, 0, 1, 0.5);
   const depth = Number(frame && frame.depth || 0);
   const depthPenalty = clampNumber(depth * 0.025, 0, 0.2, 0);
@@ -182,6 +221,7 @@ function scoreCandidate(candidate, ctx, frame = {}) {
       - (Number(tradeoffs.cost_weight || 0) * 0.008)
       + (trits.feasibility * 0.008)
       + (trits.novelty * 0.004)
+      - (candidateRedTeamPenalty * 0.04)
       - depthPenalty,
     -0.25,
     0.25,
@@ -195,6 +235,7 @@ function scoreCandidate(candidate, ctx, frame = {}) {
       + effects.drift_delta
       + (trits.risk < 0 ? 0.012 : -0.006)
       + (uncertainty === 'high' ? 0.01 : 0)
+      + (candidateRedTeamPenalty * 0.06)
       + (depthPenalty * 0.6),
     -0.25,
     0.25,
@@ -248,15 +289,20 @@ function scoreCandidate(candidate, ctx, frame = {}) {
     1,
     0
   );
+  const compositeAdjusted = clampNumber(composite - (candidateRedTeamPenalty * 0.18), 0, 1, 0);
 
   const reasons = [];
   const policy = ctx.policy;
+  const maxCandidateRedTeamPressure = Number.isFinite(Number(policy.max_candidate_red_team_pressure))
+    ? Number(policy.max_candidate_red_team_pressure)
+    : 0.72;
   if (safetyScore < policy.min_safety_score) reasons.push('safety_below_threshold');
   if (regressionRisk > policy.max_regression_risk) reasons.push('regression_risk_high');
   if (predictedDriftDelta > policy.max_predicted_drift_delta) reasons.push('predicted_drift_regression');
   if (predictedYieldDelta < policy.min_predicted_yield_delta) reasons.push('yield_lift_insufficient');
-  if (composite < policy.min_composite_score) reasons.push('composite_score_low');
+  if (compositeAdjusted < policy.min_composite_score) reasons.push('composite_score_low');
   if (trits.alignment < policy.min_trit_alignment) reasons.push('trit_alignment_low');
+  if (candidateRedTeamPressureScore > maxCandidateRedTeamPressure) reasons.push('candidate_red_team_pressure_high');
 
   return normalizeScorecard({
     candidate_id: candidate && candidate.id ? candidate.id : '',
@@ -267,9 +313,11 @@ function scoreCandidate(candidate, ctx, frame = {}) {
     predicted_drift_delta: predictedDriftDelta,
     safety_score: safetyScore,
     regression_risk: regressionRisk,
+    candidate_red_team_pressure: candidateRedTeamPressureScore,
+    red_team_penalty: redTeamPenalty,
     trit_alignment: trits.alignment,
     value_currency: valueCtx.value_currency,
-    composite_score: composite,
+    composite_score: compositeAdjusted,
     reasons,
     tested_at: nowIso()
   });

@@ -111,6 +111,7 @@ function run() {
       max_predicted_drift_delta: 1,
       min_predicted_yield_delta: -1,
       min_trit_alignment: -1,
+      max_candidate_red_team_pressure: 1,
       max_promotions_per_run: 4
     }
   });

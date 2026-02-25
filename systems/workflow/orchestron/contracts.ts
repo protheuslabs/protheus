@@ -209,6 +209,8 @@ function normalizeScorecard(rawScorecard) {
     predicted_drift_delta: Number(clampNumber(src.predicted_drift_delta, -1, 1, 0).toFixed(4)),
     safety_score: Number(clampNumber(src.safety_score, 0, 1, 0).toFixed(4)),
     regression_risk: Number(clampNumber(src.regression_risk, 0, 1, 1).toFixed(4)),
+    candidate_red_team_pressure: Number(clampNumber(src.candidate_red_team_pressure, 0, 1, 0).toFixed(4)),
+    red_team_penalty: Number(clampNumber(src.red_team_penalty, 0, 1, 0).toFixed(4)),
     trit_alignment: Number(clampNumber(src.trit_alignment, -1, 1, 0).toFixed(4)),
     composite_score: Number(clampNumber(src.composite_score, 0, 1, 0).toFixed(4)),
     reasons: Array.isArray(src.reasons)
@@ -227,6 +229,8 @@ function defaultScorecard(candidateId = '') {
     predicted_drift_delta: 0,
     safety_score: 0,
     regression_risk: 1,
+    candidate_red_team_pressure: 0,
+    red_team_penalty: 0,
     trit_alignment: 0,
     composite_score: 0,
     reasons: ['scorecard_missing'],

@@ -125,6 +125,8 @@ function run() {
       min_promotable_drafts: 1,
       min_principle_score: 0.3,
       min_composite_score: 0,
+      min_avg_trit_alignment: -1,
+      min_min_trit_alignment: -1,
       max_predicted_drift_delta: 1,
       min_predicted_yield_delta: -1,
       max_red_team_critical_fail_cases: 0,
@@ -137,6 +139,7 @@ function run() {
       max_predicted_drift_delta: 1,
       min_predicted_yield_delta: -1,
       min_trit_alignment: -1,
+      max_candidate_red_team_pressure: 1,
       max_promotions_per_run: 4
     }
   });

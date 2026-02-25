@@ -133,6 +133,7 @@ function run() {
       max_predicted_drift_delta: 1,
       min_predicted_yield_delta: -1,
       min_trit_alignment: -1,
+      max_candidate_red_team_pressure: 1,
       max_promotions_per_run: 6
     }
   });
@@ -202,6 +203,8 @@ function run() {
   const childRows = rows.filter((row) => row && row.parent_workflow_id);
   assert.ok(childRows.length >= 1, 'expected at least one applied fractal child workflow');
   assert.ok(childRows.some((row) => Number(row.fractal_depth || 0) >= 1), 'child workflow should carry fractal depth');
+  assert.ok(childRows.some((row) => row && row.lineage && row.lineage.state === 'child_active'), 'child workflow should carry child lineage state');
+  assert.ok(childRows.some((row) => row && row.fractal_state === 'child_active'), 'child workflow should carry fractal_state metadata');
 
   fs.rmSync(tmp, { recursive: true, force: true });
   console.log('workflow_controller_orchestron_fractal_apply.test.js: OK');

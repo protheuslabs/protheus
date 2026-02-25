@@ -1,0 +1,26 @@
+{
+  "version": "1.0",
+  "default_profile": "state_phase1",
+  "profiles": {
+    "state_phase1": {
+      "description": "Phase 1 cryonics: state-only archival for high-churn runtime data.",
+      "registry_path": "state/memory/cryonics_registry.json",
+      "remove_source_after_verify": true,
+      "keep_versions_per_source": 6,
+      "max_files_per_run": 5000,
+      "tiers": [
+        {
+          "id": "warm",
+          "source_prefixes": [
+            "state/sensory/eyes/raw",
+            "state/spine/runs",
+            "state/autonomy/runs"
+          ],
+          "dest_prefix": "state/_cryonics/warm",
+          "compression": "gzip",
+          "min_age_days": 7
+        }
+      ]
+    }
+  }
+}

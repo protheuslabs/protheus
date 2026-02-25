@@ -176,6 +176,21 @@ function applyDrafts(registry, drafts, policy) {
   let updated = 0;
   const activatedThisRun = new Set();
 
+  function resolveRootWorkflowId(workflowId, maxHops = 24) {
+    let currentId = String(workflowId || '').trim();
+    if (!currentId) return null;
+    let hops = 0;
+    while (hops < maxHops) {
+      const row = map.get(currentId);
+      if (!row || typeof row !== 'object') break;
+      const parentId = String(row.parent_workflow_id || '').trim();
+      if (!parentId) return currentId;
+      currentId = parentId;
+      hops += 1;
+    }
+    return currentId || null;
+  }
+
   function flattenDraftTree(sourceRows) {
     const out = [];
     const queue = [];
@@ -220,13 +235,28 @@ function applyDrafts(registry, drafts, policy) {
       const parentKnown = map.has(parentWorkflowId) || activatedThisRun.has(parentWorkflowId);
       if (!parentKnown) continue;
     }
+    const effectiveParentId = parentWorkflowId || null;
+    const rootWorkflowId = effectiveParentId ? (resolveRootWorkflowId(effectiveParentId) || effectiveParentId) : id;
+    const depth = Number(draft && draft.fractal_depth || 0);
     const existing = map.get(id);
+    const activatedAt = existing && existing.activated_at ? existing.activated_at : nowIso();
+    const lineageState = effectiveParentId ? 'child_active' : 'root_active';
     const row = {
       ...(existing || {}),
       ...draft,
+      parent_workflow_id: effectiveParentId,
       status: 'active',
       source: existing ? 'adaptive_workflow_controller_update' : 'adaptive_workflow_controller',
-      activated_at: existing && existing.activated_at ? existing.activated_at : nowIso(),
+      activated_at: activatedAt,
+      fractal_state: lineageState,
+      lineage: {
+        parent_workflow_id: effectiveParentId,
+        root_workflow_id: rootWorkflowId,
+        fractal_depth: depth,
+        state: lineageState,
+        activation_mode: existing ? 'update' : 'promote',
+        activated_at: activatedAt
+      },
       updated_at: nowIso()
     };
     map.set(id, row);
@@ -300,6 +330,8 @@ function normalizeAutoApplyPolicy(raw, fallbackPrincipleScore = 0.6) {
     min_promotable_drafts: clampInt(src.min_promotable_drafts, 1, 64, 1),
     min_principle_score: clampNumber(src.min_principle_score, 0, 1, fallbackPrincipleScore),
     min_composite_score: clampNumber(src.min_composite_score, 0, 1, 0.5),
+    min_avg_trit_alignment: clampNumber(src.min_avg_trit_alignment, -1, 1, -0.2),
+    min_min_trit_alignment: clampNumber(src.min_min_trit_alignment, -1, 1, -0.7),
     max_predicted_drift_delta: clampNumber(src.max_predicted_drift_delta, -1, 1, 0),
     min_predicted_yield_delta: clampNumber(src.min_predicted_yield_delta, -1, 1, 0),
     max_red_team_critical_fail_cases: clampInt(src.max_red_team_critical_fail_cases, 0, 64, 0),
@@ -315,8 +347,10 @@ function summarizeDraftMetrics(drafts) {
       avg_composite_score: 0,
       avg_predicted_drift_delta: 0,
       avg_predicted_yield_delta: 0,
+      avg_trit_alignment: 0,
       max_predicted_drift_delta: 0,
-      min_predicted_yield_delta: 0
+      min_predicted_yield_delta: 0,
+      min_trit_alignment: 0
     };
   }
   const metrics = rows.map((row) => (row && row.metrics && typeof row.metrics === 'object') ? row.metrics : {});
@@ -327,14 +361,17 @@ function summarizeDraftMetrics(drafts) {
   const scores = metrics.map((m) => asNum(m.score, 0));
   const drifts = metrics.map((m) => asNum(m.predicted_drift_delta, 0));
   const yields = metrics.map((m) => asNum(m.predicted_yield_delta, 0));
+  const trits = metrics.map((m) => asNum(m.trit_alignment, 0));
   const avg = (arr) => arr.reduce((sum, n) => sum + n, 0) / Math.max(1, arr.length);
   return {
     count: rows.length,
     avg_composite_score: Number(avg(scores).toFixed(4)),
     avg_predicted_drift_delta: Number(avg(drifts).toFixed(4)),
     avg_predicted_yield_delta: Number(avg(yields).toFixed(4)),
+    avg_trit_alignment: Number(avg(trits).toFixed(4)),
     max_predicted_drift_delta: Number(Math.max(...drifts).toFixed(4)),
-    min_predicted_yield_delta: Number(Math.min(...yields).toFixed(4))
+    min_predicted_yield_delta: Number(Math.min(...yields).toFixed(4)),
+    min_trit_alignment: Number(Math.min(...trits).toFixed(4))
   };
 }
 
@@ -347,15 +384,21 @@ function evaluateAutoApplyGate(context) {
   const redCritical = Number(src.redTeamCriticalFailCases || 0);
   const metrics = summarizeDraftMetrics(src.promotableDrafts);
   const reasons = [];
+  const policyNum = (v, fallback) => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : fallback;
+  };
 
   if (shadowOnly && policy.require_shadow_off) reasons.push('shadow_only_policy_on');
   if (orchestronError) reasons.push('orchestron_error');
-  if (metrics.count < Number(policy.min_promotable_drafts || 1)) reasons.push('promotable_drafts_below_min');
-  if (principleScore < Number(policy.min_principle_score || 0.6)) reasons.push('principle_score_below_min');
-  if (redCritical > Number(policy.max_red_team_critical_fail_cases || 0)) reasons.push('red_team_critical_failures');
-  if (metrics.avg_composite_score < Number(policy.min_composite_score || 0.5)) reasons.push('composite_score_below_min');
-  if (metrics.max_predicted_drift_delta > Number(policy.max_predicted_drift_delta || 0)) reasons.push('predicted_drift_above_max');
-  if (metrics.avg_predicted_yield_delta < Number(policy.min_predicted_yield_delta || 0)) reasons.push('predicted_yield_below_min');
+  if (metrics.count < policyNum(policy.min_promotable_drafts, 1)) reasons.push('promotable_drafts_below_min');
+  if (principleScore < policyNum(policy.min_principle_score, 0.6)) reasons.push('principle_score_below_min');
+  if (redCritical > policyNum(policy.max_red_team_critical_fail_cases, 0)) reasons.push('red_team_critical_failures');
+  if (metrics.avg_composite_score < policyNum(policy.min_composite_score, 0.5)) reasons.push('composite_score_below_min');
+  if (metrics.avg_trit_alignment < policyNum(policy.min_avg_trit_alignment, -0.2)) reasons.push('avg_trit_alignment_below_min');
+  if (metrics.min_trit_alignment < policyNum(policy.min_min_trit_alignment, -0.7)) reasons.push('min_trit_alignment_below_min');
+  if (metrics.max_predicted_drift_delta > policyNum(policy.max_predicted_drift_delta, 0)) reasons.push('predicted_drift_above_max');
+  if (metrics.avg_predicted_yield_delta < policyNum(policy.min_predicted_yield_delta, 0)) reasons.push('predicted_yield_below_min');
 
   return {
     pass: reasons.length === 0,
@@ -363,7 +406,9 @@ function evaluateAutoApplyGate(context) {
     metrics,
     checks: {
       principle_score: Number(principleScore.toFixed(4)),
-      red_team_critical_fail_cases: redCritical
+      red_team_critical_fail_cases: redCritical,
+      avg_trit_alignment: Number(metrics.avg_trit_alignment || 0),
+      min_trit_alignment: Number(metrics.min_trit_alignment || 0)
     }
   };
 }
@@ -411,12 +456,16 @@ function runCmd(dateStr, args) {
       avg_composite_score: 0,
       avg_predicted_drift_delta: 0,
       avg_predicted_yield_delta: 0,
+      avg_trit_alignment: 0,
       max_predicted_drift_delta: 0,
-      min_predicted_yield_delta: 0
+      min_predicted_yield_delta: 0,
+      min_trit_alignment: 0
     },
     checks: {
       principle_score: 0,
-      red_team_critical_fail_cases: 0
+      red_team_critical_fail_cases: 0,
+      avg_trit_alignment: 0,
+      min_trit_alignment: 0
     }
   };
 

@@ -165,6 +165,7 @@ function run() {
       max_predicted_drift_delta: 0.03,
       min_predicted_yield_delta: -0.02,
       min_trit_alignment: -1,
+      max_candidate_red_team_pressure: 1,
       max_promotions_per_run: 4
     }
   });
@@ -212,7 +213,11 @@ function run() {
   const birthRows = fs.readFileSync(birthEventsPath, 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line));
   const stages = new Set(birthRows.map((row) => String(row.stage || '')));
   assert.ok(stages.has('candidates_generated'), 'birth events should include candidates_generated');
+  assert.ok(stages.has('candidate_indexed'), 'birth events should include candidate_indexed');
   assert.ok(stages.has('nursery_scored'), 'birth events should include nursery_scored');
+  if (Array.isArray(payload.passing) && payload.passing.length > 0) {
+    assert.ok(stages.has('graft_planned'), 'birth events should include graft_planned when passing candidates exist');
+  }
 
   const statusProc = spawnSync(process.execPath, [scriptPath, 'status', 'latest'], {
     cwd: root,

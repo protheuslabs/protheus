@@ -12,7 +12,9 @@
     "enabled": true,
     "model": "qwen3:4b",
     "timeout_ms": 2200,
-    "max_candidates": 2,
+    "max_candidates": 3,
+    "primary_source": true,
+    "reserved_slots": 2,
     "min_novelty_trit": 0,
     "cache_ttl_ms": 600000
   },
@@ -21,7 +23,14 @@
     "max_depth": 3,
     "max_children_per_workflow": 3,
     "min_attempts_for_split": 4,
-    "min_failure_rate_for_split": 0.45
+    "min_failure_rate_for_split": 0.45,
+    "auto_depth_expansion": true,
+    "auto_depth_cap": 5,
+    "recurse_child_budget": 1,
+    "recurse_when_failure_min": 0.58,
+    "recurse_when_no_change_min": 0.5,
+    "recurse_when_uncertainty_min": 0.55,
+    "active_registry_soft_cap": 24
   },
   "runtime_evolution": {
     "enabled": true,
@@ -37,6 +46,8 @@
     "min_promotable_drafts": 2,
     "min_principle_score": 0.75,
     "min_composite_score": 0.48,
+    "min_avg_trit_alignment": -0.2,
+    "min_min_trit_alignment": -0.7,
     "max_predicted_drift_delta": 0.004,
     "min_predicted_yield_delta": 0,
     "max_red_team_critical_fail_cases": 0,
@@ -49,6 +60,7 @@
     "max_predicted_drift_delta": 0.008,
     "min_predicted_yield_delta": -0.005,
     "min_trit_alignment": -0.6,
+    "max_candidate_red_team_pressure": 0.72,
     "max_promotions_per_run": 4
   }
 }

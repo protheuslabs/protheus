@@ -223,6 +223,17 @@ function tritContext(intent) {
   return { feasibility, risk, novelty, alignment };
 }
 
+function tritProfile(intent) {
+  const ctx = tritContext(intent);
+  const uncertainty = Number(clampNumber(1 - Math.abs(ctx.alignment), 0, 1, 1).toFixed(4));
+  const novelty_unit = Number(clampNumber((ctx.novelty + 1) / 2, 0, 1, 0.5).toFixed(4));
+  return {
+    ...ctx,
+    uncertainty,
+    novelty_unit
+  };
+}
+
 function patternRates(row) {
   const attempts = Number(row && row.attempts || 0);
   const shipped = Number(row && row.shipped || 0);
@@ -292,7 +303,14 @@ function normalizeFractalPolicy(raw) {
     max_depth: clampInt(src.max_depth, 1, 6, 3),
     max_children_per_workflow: clampInt(src.max_children_per_workflow, 1, 8, 3),
     min_attempts_for_split: clampInt(src.min_attempts_for_split, 1, 100000, 4),
-    min_failure_rate_for_split: clampNumber(src.min_failure_rate_for_split, 0, 1, 0.45)
+    min_failure_rate_for_split: clampNumber(src.min_failure_rate_for_split, 0, 1, 0.45),
+    auto_depth_expansion: src.auto_depth_expansion !== false,
+    auto_depth_cap: clampInt(src.auto_depth_cap, 1, 8, 5),
+    recurse_child_budget: clampInt(src.recurse_child_budget, 0, 4, 1),
+    recurse_when_failure_min: clampNumber(src.recurse_when_failure_min, 0, 1, 0.58),
+    recurse_when_no_change_min: clampNumber(src.recurse_when_no_change_min, 0, 1, 0.5),
+    recurse_when_uncertainty_min: clampNumber(src.recurse_when_uncertainty_min, 0, 1, 0.55),
+    active_registry_soft_cap: clampInt(src.active_registry_soft_cap, 1, 500, 24)
   };
 }
 
@@ -306,14 +324,39 @@ function normalizeRuntimeEvolutionPolicy(raw) {
   };
 }
 
+function resolveEffectiveFractalMaxDepth(fractalPolicy, row, ctx, parentDepth = 0) {
+  const fractal = fractalPolicy && typeof fractalPolicy === 'object'
+    ? fractalPolicy
+    : normalizeFractalPolicy(null);
+  const baseDepth = clampInt(fractal.max_depth, 1, 8, 3);
+  if (fractal.auto_depth_expansion !== true) return baseDepth;
+  const rates = patternRates(row);
+  const trits = tritProfile(ctx && ctx.intent);
+  const activeRegistry = (Array.isArray(ctx && ctx.registry_workflows) ? ctx.registry_workflows : [])
+    .filter((entry) => String(entry && entry.status || '').toLowerCase() === 'active');
+  if (activeRegistry.length >= fractal.active_registry_soft_cap) return baseDepth;
+
+  let boost = 0;
+  if (rates.failure_rate >= fractal.recurse_when_failure_min) boost += 1;
+  if (rates.no_change_rate >= fractal.recurse_when_no_change_min) boost += 1;
+  if (trits.uncertainty >= fractal.recurse_when_uncertainty_min) boost += 1;
+  if (trits.novelty > 0) boost += 1;
+  const maxBoost = Math.max(0, Number(fractal.auto_depth_cap || baseDepth) - baseDepth);
+  if (maxBoost <= 0) return baseDepth;
+  const depth = clampInt(baseDepth + boost, 1, fractal.auto_depth_cap, baseDepth);
+  if (depth <= parentDepth) return Math.min(fractal.auto_depth_cap, parentDepth + 1);
+  return depth;
+}
+
 function shouldSplitFractal(row, ctx) {
   const fractal = normalizeFractalPolicy(ctx && ctx.fractal);
   if (fractal.enabled !== true) return false;
   const rates = patternRates(row);
   if (rates.attempts < fractal.min_attempts_for_split) return false;
-  const t = tritContext(ctx && ctx.intent);
+  const t = tritProfile(ctx && ctx.intent);
   if (rates.failure_rate >= fractal.min_failure_rate_for_split) return true;
   if (rates.no_change_rate >= fractal.min_failure_rate_for_split * 0.85) return true;
+  if (t.uncertainty >= fractal.recurse_when_uncertainty_min && rates.attempts >= fractal.min_attempts_for_split + 1) return true;
   if (t.novelty > 0 && rates.attempts >= fractal.min_attempts_for_split + 1) return true;
   return false;
 }
@@ -327,19 +370,39 @@ function fractalChildTemplates() {
   ];
 }
 
-function spawnFractalChildren(parentCandidate, row, ctx, seedSuffix = 'split') {
+function spawnFractalChildren(parentCandidate, row, ctx, seedSuffix = 'split', recurseOptions = {}) {
   const fractal = normalizeFractalPolicy(ctx && ctx.fractal);
   if (fractal.enabled !== true) return [];
   const parent = parentCandidate && typeof parentCandidate === 'object' ? parentCandidate : {};
   const parentDepth = clampInt(parent.fractal_depth, 0, 12, 0);
-  if (parentDepth + 1 > fractal.max_depth) return [];
+  const effectiveMaxDepth = clampInt(
+    recurseOptions && recurseOptions.effective_max_depth,
+    1,
+    8,
+    resolveEffectiveFractalMaxDepth(fractal, row, ctx, parentDepth)
+  );
+  if (parentDepth + 1 > effectiveMaxDepth) return [];
   const proposalType = normalizeToken(parent.trigger && parent.trigger.proposal_type || row && row.proposal_type || 'unknown', 80) || 'unknown';
   const rates = patternRates(row);
-  const trits = tritContext(ctx && ctx.intent);
+  const trits = tritProfile(ctx && ctx.intent);
   const value = valuePriorityContext(rates, trits, ctx);
   const templates = fractalChildTemplates();
-  const count = clampInt(Math.min(fractal.max_children_per_workflow, templates.length), 1, templates.length, 2);
+  const pressure = Math.max(rates.failure_rate, rates.no_change_rate, trits.uncertainty);
+  const dynamicCount = clampInt(
+    1 + Math.round(pressure * Math.max(1, fractal.max_children_per_workflow - 1)),
+    1,
+    fractal.max_children_per_workflow,
+    2
+  );
+  const count = clampInt(Math.min(dynamicCount, templates.length), 1, templates.length, 2);
   const out = [];
+  const mutationFit = mutationIntentScore('fractal_split', ctx, {
+    failure_rate: rates.failure_rate,
+    no_change_rate: rates.no_change_rate
+  }, {
+    failure_pressure: rates.failure_rate,
+    no_change_pressure: rates.no_change_rate
+  });
   for (let i = 0; i < count; i += 1) {
     const lane = templates[i];
     const childProposalType = normalizeToken(`${proposalType}.${lane.key}`, 80) || proposalType;
@@ -379,36 +442,77 @@ function spawnFractalChildren(parentCandidate, row, ctx, seedSuffix = 'split') {
         attempts: Number(row && row.attempts || 0),
         shipped_rate: Number(row && row.shipped_rate || 0),
         failure_rate: Number(row && row.failure_rate || 1),
-        intent_trit_alignment: Number(tritContext(ctx && ctx.intent).alignment || 0),
+        intent_trit_alignment: Number(trits.alignment || 0),
+        trit_uncertainty: Number(trits.uncertainty || 0),
+        trit_novelty: Number(trits.novelty || 0),
+        trit_mutation_fit: Number(mutationFit || 0),
         value_currency: value.value_currency || null,
         value_priority_score: Number(value.score || 0.5),
+        fractal_effective_max_depth: Number(effectiveMaxDepth || fractal.max_depth || 0),
         lane: lane.key
       },
       generated_at: nowIso()
-    }, i, { depth: parentDepth + 1, maxDepth: fractal.max_depth });
+    }, i, { depth: parentDepth + 1, maxDepth: effectiveMaxDepth });
     if (child) out.push(child);
+  }
+
+  const recurseBudget = clampInt(
+    recurseOptions && recurseOptions.recurse_budget,
+    0,
+    8,
+    fractal.recurse_child_budget
+  );
+  const recurseFanout = clampInt(
+    recurseOptions && recurseOptions.recurse_fanout,
+    1,
+    Math.max(1, out.length),
+    Math.min(1, out.length || 1)
+  );
+  if (recurseBudget > 0 && parentDepth + 1 < effectiveMaxDepth) {
+    for (let i = 0; i < Math.min(recurseFanout, out.length); i += 1) {
+      const child = out[i];
+      const nested = spawnFractalChildren(
+        child,
+        row,
+        ctx,
+        `${seedSuffix}_d${parentDepth + 1}_${i}`,
+        {
+          effective_max_depth: effectiveMaxDepth,
+          recurse_budget: recurseBudget - 1,
+          recurse_fanout: recurseFanout
+        }
+      );
+      if (!nested.length) continue;
+      child.children = nested;
+      child.metadata = {
+        ...(child.metadata || {}),
+        fractal_children_count: nested.length
+      };
+    }
   }
   return out;
 }
 
 function mutationIntentScore(kind, ctx, workflowMetrics = {}, pressure = {}) {
-  const t = tritContext(ctx && ctx.intent);
+  const t = tritProfile(ctx && ctx.intent);
   const failureRate = clampNumber(workflowMetrics.failure_rate, 0, 1, 0.5);
   const noChangeRate = clampNumber(workflowMetrics.no_change_rate, 0, 1, 0.5);
   const failurePressure = clampNumber(pressure.failure_pressure, 0, 1, failureRate);
   const noChangePressure = clampNumber(pressure.no_change_pressure, 0, 1, noChangeRate);
+  const explorationBias = clampNumber(t.uncertainty * 0.14, 0, 0.2, 0.05);
+  const exploitationBias = clampNumber((1 - t.uncertainty) * 0.08, 0, 0.12, 0.04);
   const mutation = String(kind || '').toLowerCase();
   if (mutation === 'guard_hardening') {
-    return Number((0.45 + (failurePressure * 0.3) + (t.risk < 0 ? 0.2 : 0.02)).toFixed(4));
+    return Number((0.45 + (failurePressure * 0.3) + (t.risk < 0 ? 0.2 : 0.02) + exploitationBias).toFixed(4));
   }
   if (mutation === 'rollback_path') {
-    return Number((0.44 + (failurePressure * 0.25) + (t.feasibility <= 0 ? 0.12 : 0.02)).toFixed(4));
+    return Number((0.44 + (failurePressure * 0.25) + (t.feasibility <= 0 ? 0.12 : 0.02) + exploitationBias).toFixed(4));
   }
   if (mutation === 'retry_tuning') {
-    return Number((0.4 + (noChangePressure * 0.2) + (t.feasibility > 0 ? 0.12 : -0.05) - (t.risk < 0 ? 0.07 : 0)).toFixed(4));
+    return Number((0.4 + (noChangePressure * 0.2) + (t.feasibility > 0 ? 0.12 : -0.05) - (t.risk < 0 ? 0.07 : 0) + explorationBias).toFixed(4));
   }
   if (mutation === 'fractal_split') {
-    return Number((0.38 + (failurePressure * 0.2) + (noChangePressure * 0.18) + (t.novelty > 0 ? 0.16 : 0)).toFixed(4));
+    return Number((0.38 + (failurePressure * 0.2) + (noChangePressure * 0.18) + (t.novelty > 0 ? 0.16 : 0) + explorationBias).toFixed(4));
   }
   return 0;
 }
@@ -416,6 +520,9 @@ function mutationIntentScore(kind, ctx, workflowMetrics = {}, pressure = {}) {
 function chooseMutationKinds(workflow, ctx = {}, pressure = {}) {
   const wf = workflow && typeof workflow === 'object' ? workflow : {};
   const steps = Array.isArray(wf.steps) ? wf.steps : [];
+  const trits = tritProfile(ctx && ctx.intent);
+  const explorationBias = clampNumber(trits.uncertainty * 0.15, 0, 0.22, 0.08);
+  const exploitationBias = clampNumber((1 - trits.uncertainty) * 0.12, 0, 0.18, 0.06);
   const mutationCandidates = [];
   const hasRollback = hasStep(steps, (row) => String(row.id || '').toLowerCase().includes('rollback'));
   const hasPreflight = hasStep(steps, (row) => String(row.id || '').toLowerCase() === 'preflight');
@@ -426,14 +533,20 @@ function chooseMutationKinds(workflow, ctx = {}, pressure = {}) {
   const scored = mutationCandidates
     .map((kind) => ({
       kind,
-      score: mutationIntentScore(kind, ctx, wf.metrics || {}, pressure)
+      score: Number((
+        mutationIntentScore(kind, ctx, wf.metrics || {}, pressure)
+        + ((kind === 'fractal_split' || kind === 'retry_tuning') ? explorationBias : 0)
+        + ((kind === 'guard_hardening' || kind === 'rollback_path') ? exploitationBias : 0)
+        + ((kind === 'fractal_split' && trits.risk < 0) ? -0.07 : 0)
+      ).toFixed(6))
     }))
     .sort((a, b) => b.score - a.score);
+  const maxKinds = trits.uncertainty >= 0.45 ? 3 : 2;
   const out = [];
   for (const row of scored) {
     if (!row || !row.kind) continue;
     if (!out.includes(row.kind)) out.push(row.kind);
-    if (out.length >= 2) break;
+    if (out.length >= maxKinds) break;
   }
   return out;
 }
@@ -441,8 +554,16 @@ function chooseMutationKinds(workflow, ctx = {}, pressure = {}) {
 function patternToCandidate(row, idx, ctx) {
   const proposalType = normalizeToken(row && row.proposal_type || 'unknown', 80) || 'unknown';
   const rates = patternRates(row);
-  const t = tritContext(ctx && ctx.intent);
+  const t = tritProfile(ctx && ctx.intent);
   const value = valuePriorityContext(rates, t, ctx);
+  const fractal = normalizeFractalPolicy(ctx && ctx.fractal);
+  const effectiveMaxDepth = resolveEffectiveFractalMaxDepth(fractal, { ...row, ...rates }, ctx, 0);
+  const tritMutationFit = clampNumber(
+    0.52 + (t.feasibility * 0.12) + (value.score * 0.18) - (rates.failure_rate * 0.08),
+    0,
+    1,
+    0.5
+  );
   const priority = clampNumber(
     0.48
       + (value.score * 0.28)
@@ -481,20 +602,24 @@ function patternToCandidate(row, idx, ctx) {
       failure_rate: Number(rates.failure_rate.toFixed(4)),
       no_change_rate: Number(rates.no_change_rate.toFixed(4)),
       intent_trit_alignment: Number(t.alignment.toFixed(4)),
+      trit_uncertainty: Number(t.uncertainty.toFixed(4)),
+      trit_novelty: Number(t.novelty.toFixed(4)),
+      trit_mutation_fit: Number(tritMutationFit.toFixed(4)),
       value_currency: value.value_currency || null,
       value_priority_score: Number(value.score || 0.5)
     },
     generated_at: nowIso()
   }, idx, {
     depth: 0,
-    maxDepth: clampInt(ctx.fractal && ctx.fractal.max_depth, 1, 6, 3)
+    maxDepth: effectiveMaxDepth
   });
 
   if (candidate && shouldSplitFractal({ ...row, ...rates }, ctx)) {
     candidate.children = spawnFractalChildren(candidate, { ...row, ...rates }, ctx, 'pattern');
     candidate.metadata = {
       ...(candidate.metadata || {}),
-      fractal_children_count: Array.isArray(candidate.children) ? candidate.children.length : 0
+      fractal_children_count: Array.isArray(candidate.children) ? candidate.children.length : 0,
+      fractal_effective_max_depth: effectiveMaxDepth
     };
   }
 
@@ -526,8 +651,18 @@ function workflowToMutationCandidate(workflow, mutationKind, idx, ctx, extras = 
     failure_rate: clampNumber(metrics.failure_rate, 0, 1, 1),
     no_change_rate: clampNumber(pressure.no_change_pressure, 0, 1, 0)
   };
-  const trits = tritContext(ctx && ctx.intent);
+  const trits = tritProfile(ctx && ctx.intent);
   const value = valuePriorityContext(rates, trits, ctx);
+  const mutationFit = mutationIntentScore(mutationKind, ctx, metrics, pressure);
+  const fractal = normalizeFractalPolicy(ctx && ctx.fractal);
+  const effectiveMaxDepth = resolveEffectiveFractalMaxDepth(fractal, {
+    proposal_type: proposalType,
+    attempts: Number(metrics.attempts || 0),
+    shipped: Math.round(Number(metrics.shipped_rate || 0) * Number(metrics.attempts || 0)),
+    no_change: Math.round(Number((pressure.no_change_pressure || metrics.failure_rate || 0)) * Number(metrics.attempts || 0)),
+    holds: 0,
+    stops: 0
+  }, ctx, clampInt(wf.fractal_depth, 0, 12, 0));
   const priority = clampNumber(
     0.4
       + (Number(pressure.failure_pressure || 0) * 0.16)
@@ -565,13 +700,17 @@ function workflowToMutationCandidate(workflow, mutationKind, idx, ctx, extras = 
       failure_rate: Number(metrics.failure_rate || 0),
       no_change_rate: Number(pressure.no_change_pressure || 0),
       intent_trit_alignment: Number(trits.alignment || 0),
+      trit_uncertainty: Number(trits.uncertainty || 0),
+      trit_novelty: Number(trits.novelty || 0),
+      trit_mutation_fit: Number(mutationFit || 0),
       value_currency: value.value_currency || null,
-      value_priority_score: Number(value.score || 0.5)
+      value_priority_score: Number(value.score || 0.5),
+      fractal_effective_max_depth: effectiveMaxDepth
     },
     generated_at: nowIso()
   }, idx, {
     depth: clampInt(wf.fractal_depth, 0, 12, 0),
-    maxDepth: clampInt(ctx.fractal && ctx.fractal.max_depth, 1, 6, 3)
+    maxDepth: effectiveMaxDepth
   });
 
   if (candidate && mutationKind === 'fractal_split') {
@@ -600,8 +739,11 @@ function normalizeCreativePolicy(raw) {
     model: cleanText(src.model || process.env.ORCHESTRON_CREATIVE_LLM_MODEL || 'qwen3:4b', 80),
     timeout_ms: clampInt(src.timeout_ms, 300, 30000, 2500),
     max_candidates: clampInt(src.max_candidates, 1, 12, 3),
+    primary_source: src.primary_source !== false,
+    reserved_slots: clampInt(src.reserved_slots, 0, 12, 2),
     min_novelty_trit: clampInt(src.min_novelty_trit, -1, 1, 0),
-    cache_ttl_ms: clampInt(src.cache_ttl_ms, 0, 24 * 60 * 60 * 1000, 10 * 60 * 1000)
+    cache_ttl_ms: clampInt(src.cache_ttl_ms, 0, 24 * 60 * 60 * 1000, 10 * 60 * 1000),
+    seed_candidates: Array.isArray(src.seed_candidates) ? src.seed_candidates.slice(0, 24) : []
   };
 }
 
@@ -699,8 +841,20 @@ function creativeCandidateFromRow(row, idx, ctx) {
     }))
     : defaultStepsForProposalType(proposalType);
   const rates = { attempts: 0, shipped_rate: 0, failure_rate: 1, no_change_rate: 1 };
-  const trits = tritContext(ctx && ctx.intent);
+  const trits = tritProfile(ctx && ctx.intent);
   const value = valuePriorityContext(rates, trits, ctx);
+  const mutationFit = mutationKind && mutationKind !== 'none'
+    ? mutationIntentScore(mutationKind, ctx, {}, {})
+    : clampNumber(0.48 + (value.score * 0.25) + (trits.novelty_unit * 0.17), 0, 1, 0.58);
+  const fractal = normalizeFractalPolicy(ctx && ctx.fractal);
+  const effectiveMaxDepth = resolveEffectiveFractalMaxDepth(fractal, {
+    proposal_type: proposalType,
+    attempts: 4,
+    shipped: 1,
+    no_change: 3,
+    holds: 0,
+    stops: 0
+  }, ctx, 0);
   const priority = clampNumber(
     0.5 + (value.score * 0.28) + (((trits.novelty + 1) / 2) * 0.22),
     0.35,
@@ -744,13 +898,17 @@ function creativeCandidateFromRow(row, idx, ctx) {
       failure_rate: Number(rates.failure_rate.toFixed(4)),
       no_change_rate: Number(rates.no_change_rate.toFixed(4)),
       intent_trit_alignment: Number(trits.alignment || 0),
+      trit_uncertainty: Number(trits.uncertainty || 0),
+      trit_novelty: Number(trits.novelty || 0),
+      trit_mutation_fit: Number(mutationFit || 0),
       value_currency: value.value_currency || null,
-      value_priority_score: Number(value.score || 0.5)
+      value_priority_score: Number(value.score || 0.5),
+      fractal_effective_max_depth: effectiveMaxDepth
     },
     generated_at: nowIso()
   }, idx, {
     depth: 0,
-    maxDepth: clampInt(ctx.fractal && ctx.fractal.max_depth, 1, 6, 3)
+    maxDepth: effectiveMaxDepth
   });
 
   const childrenRaw = Array.isArray(src.children) ? src.children : [];
@@ -790,10 +948,27 @@ function creativeCandidateFromRow(row, idx, ctx) {
 function generateCreativeCandidates(ctx, existingIds = new Set()) {
   const policy = normalizeCreativePolicy(ctx && ctx.creative_llm);
   if (policy.enabled !== true) return [];
-  const slots = Math.max(0, Number(ctx.max_candidates || 0) - Number(existingIds.size || 0));
+  const slots = Math.max(
+    0,
+    Math.min(
+      Number(ctx.max_candidates || 0),
+      Number(policy.max_candidates || 0)
+    )
+  );
   if (slots <= 0) return [];
-  const t = tritContext(ctx && ctx.intent);
+  const t = tritProfile(ctx && ctx.intent);
   if (t.novelty < policy.min_novelty_trit) return [];
+  const out = [];
+  const seedRows = Array.isArray(policy.seed_candidates) ? policy.seed_candidates : [];
+  for (let i = 0; i < seedRows.length; i += 1) {
+    if (out.length >= slots) break;
+    const candidate = creativeCandidateFromRow(seedRows[i], i, ctx);
+    if (!candidate || !candidate.id || existingIds.has(candidate.id)) continue;
+    existingIds.add(candidate.id);
+    out.push(candidate);
+  }
+  if (out.length >= slots) return out;
+
   const prompt = buildCreativePrompt(ctx, Math.min(slots, policy.max_candidates));
   const llm = runLocalOllamaPrompt({
     model: policy.model,
@@ -811,10 +986,9 @@ function generateCreativeCandidates(ctx, existingIds = new Set()) {
   const candidatesRaw = Array.isArray(parsed)
     ? parsed
     : (parsed && Array.isArray(parsed.candidates) ? parsed.candidates : []);
-  if (!candidatesRaw.length) return [];
-  const out = [];
+  if (!candidatesRaw.length) return out;
   for (let i = 0; i < candidatesRaw.length; i += 1) {
-    if (out.length >= policy.max_candidates) break;
+    if (out.length >= slots) break;
     const candidate = creativeCandidateFromRow(candidatesRaw[i], i, ctx);
     if (!candidate || !candidate.id || existingIds.has(candidate.id)) continue;
     existingIds.add(candidate.id);
@@ -829,16 +1003,25 @@ function candidatePriority(candidate) {
   const shippedRate = clampNumber(meta.shipped_rate, 0, 1, 0);
   const failureRate = clampNumber(meta.failure_rate, 0, 1, 1);
   const tritAlignment = clampNumber(meta.intent_trit_alignment, -1, 1, 0);
+  const tritUncertainty = clampNumber(meta.trit_uncertainty, 0, 1, 0.5);
+  const tritMutationFit = clampNumber(meta.trit_mutation_fit, 0, 1, 0.5);
+  const tritNovelty = clampNumber(meta.trit_novelty, -1, 1, 0);
   const valuePriorityScore = clampNumber(meta.value_priority_score, 0, 1, 0.5);
   const childrenCount = Array.isArray(src.children) ? src.children.length : 0;
   const priority = clampNumber(meta.priority, 0, 1, 0.5);
+  const generationKind = String(meta.generation_kind || '').toLowerCase();
+  const creativeBonus = generationKind === 'creative_llm' ? 0.04 : 0;
   return Number((
-    (priority * 0.45)
-    + (shippedRate * 0.16)
-    + ((1 - failureRate) * 0.13)
-    + (((tritAlignment + 1) / 2) * 0.12)
+    (priority * 0.32)
+    + (shippedRate * 0.13)
+    + ((1 - failureRate) * 0.1)
+    + (((tritAlignment + 1) / 2) * 0.1)
     + (valuePriorityScore * 0.12)
+    + (tritMutationFit * 0.14)
+    + (tritUncertainty * 0.06)
+    + (((tritNovelty + 1) / 2) * 0.03)
     + (Math.min(childrenCount, 4) * 0.015)
+    + creativeBonus
   ).toFixed(6));
 }
 
@@ -854,6 +1037,8 @@ function patternRowForProposalType(rows, proposalType) {
 function runtimeEvolutionCandidates(ctx, existingIds = new Set()) {
   const policy = normalizeRuntimeEvolutionPolicy(ctx && ctx.runtime_evolution);
   if (policy.enabled !== true || policy.max_candidates <= 0) return [];
+  const trits = tritProfile(ctx && ctx.intent);
+  const perWorkflowKinds = trits.uncertainty >= 0.45 ? 2 : 1;
   const activeRegistry = (Array.isArray(ctx && ctx.registry_workflows) ? ctx.registry_workflows : [])
     .filter((row) => String(row && row.status || '').toLowerCase() === 'active');
   const out = [];
@@ -885,20 +1070,22 @@ function runtimeEvolutionCandidates(ctx, existingIds = new Set()) {
       pressure
     );
     if (!mutationKinds.length) continue;
-    const kind = mutationKinds[0];
-    const candidate = workflowToMutationCandidate(
-      wf,
-      kind,
-      out.length,
-      ctx,
-      {
-        generation_kind: 'runtime_evolution',
-        pressure
-      }
-    );
-    if (!candidate || !candidate.id || existingIds.has(candidate.id)) continue;
-    existingIds.add(candidate.id);
-    out.push(candidate);
+    for (const kind of mutationKinds.slice(0, perWorkflowKinds)) {
+      if (out.length >= policy.max_candidates) break;
+      const candidate = workflowToMutationCandidate(
+        wf,
+        kind,
+        out.length,
+        ctx,
+        {
+          generation_kind: 'runtime_evolution',
+          pressure
+        }
+      );
+      if (!candidate || !candidate.id || existingIds.has(candidate.id)) continue;
+      existingIds.add(candidate.id);
+      out.push(candidate);
+    }
   }
   return out;
 }
@@ -907,6 +1094,7 @@ function generateCandidates(input) {
   const ctx = input && typeof input === 'object' ? input : {};
   const maxCandidates = clampInt(ctx.max_candidates, 1, 24, 8);
   const minCandidates = clampInt(ctx.min_candidates, 1, maxCandidates, 3);
+  const creativePolicy = normalizeCreativePolicy(ctx && ctx.creative_llm);
   const rows = Array.isArray(ctx.pattern_rows) ? ctx.pattern_rows.slice() : [];
   const registry = Array.isArray(ctx.registry_workflows) ? ctx.registry_workflows.slice() : [];
 
@@ -923,8 +1111,28 @@ function generateCandidates(input) {
 
   const candidates = [];
   const existingIds = new Set();
-  const patternBudget = Math.max(1, Math.min(maxCandidates, 4));
-  for (let i = 0; i < sortedPatterns.length && candidates.length < patternBudget; i += 1) {
+  const creativePrimarySlots = creativePolicy.enabled && creativePolicy.primary_source === true
+    ? clampInt(
+      Math.min(maxCandidates, creativePolicy.max_candidates, creativePolicy.reserved_slots),
+      0,
+      maxCandidates,
+      Math.min(2, maxCandidates)
+    )
+    : 0;
+  if (creativePrimarySlots > 0) {
+    for (const candidate of generateCreativeCandidates({
+      ...ctx,
+      max_candidates: creativePrimarySlots
+    }, existingIds)) {
+      if (candidates.length >= creativePrimarySlots) break;
+      candidates.push(candidate);
+    }
+  }
+
+  const remainingSlots = Math.max(0, maxCandidates - candidates.length);
+  const patternBudget = Math.max(0, Math.min(remainingSlots, 4));
+  const patternTarget = candidates.length + patternBudget;
+  for (let i = 0; i < sortedPatterns.length && candidates.length < patternTarget; i += 1) {
     const candidate = patternToCandidate(sortedPatterns[i], i, ctx);
     if (!candidate || !candidate.id || existingIds.has(candidate.id)) continue;
     existingIds.add(candidate.id);
@@ -959,7 +1167,7 @@ function generateCandidates(input) {
     }
   }
 
-  if (candidates.length < maxCandidates) {
+  if (creativePrimarySlots === 0 && candidates.length < maxCandidates) {
     for (const candidate of generateCreativeCandidates({
       ...ctx,
       max_candidates: maxCandidates
