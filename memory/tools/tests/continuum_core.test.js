@@ -63,14 +63,16 @@ function run() {
       anticipation: { enabled: true, timeout_ms: 5000, days: 7, max: 3, intent: 'test intent', value_currency: 'delivery', objective_id: 'continuum_test', min_trit: -1, max_trit: 1 },
       self_improvement: { enabled: true, timeout_ms: 5000, mirror_days: 1, include_fractal_introspection: true, min_trit: -1, max_trit: 1 },
       creative_incubation: { enabled: true, timeout_ms: 5000, days: 7, top: 8, max_promotions: 1, min_trit: -1, max_trit: 1 },
-      security_vigilance: { enabled: true, timeout_ms: 5000, max_cases: 1, strict: false, min_trit: -1, max_trit: 1 }
+      security_vigilance: { enabled: true, timeout_ms: 5000, max_cases: 1, strict: false, min_trit: -1, max_trit: 1 },
+      autotest_validation: { enabled: true, timeout_ms: 5000, scope: 'changed', max_tests: 4, sleep_only: true, strict: false, min_trit: -1, max_trit: 1 }
     },
     cooldown_sec: {
       dream_consolidation: 0,
       anticipation: 0,
       self_improvement: 0,
       creative_incubation: 0,
-      security_vigilance: 0
+      security_vigilance: 0,
+      autotest_validation: 0
     },
     training_queue: {
       enabled: true,
@@ -142,7 +144,7 @@ function run() {
   assert.ok(pulseOut && pulseOut.ok === true, 'pulse output should be ok');
   assert.strictEqual(pulseOut.skipped, false, 'pulse should execute in dry-run mode');
   assert.ok(Number(pulseOut.tasks_executed || 0) >= 1, 'pulse should report executed tasks');
-  assert.ok(Array.isArray(pulseOut.actions) && pulseOut.actions.length >= 5, 'pulse should include action rows');
+  assert.ok(Array.isArray(pulseOut.actions) && pulseOut.actions.length >= 6, 'pulse should include action rows');
   assert.ok(fs.existsSync(path.join(stateDir, 'latest.json')), 'latest pulse snapshot should exist');
   assert.ok(fs.existsSync(path.join(stateDir, 'runs', `${dateStr}.json`)), 'dated pulse snapshot should exist');
   assert.ok(fs.existsSync(trainingQueuePath), 'training queue should be written');

@@ -30,7 +30,8 @@
     "anticipation": 1800,
     "self_improvement": 1500,
     "creative_incubation": 3600,
-    "security_vigilance": 2100
+    "security_vigilance": 2100,
+    "autotest_validation": 5400
   },
   "tasks": {
     "dream_consolidation": {
@@ -74,6 +75,16 @@
       "enabled": true,
       "timeout_ms": 22000,
       "max_cases": 1,
+      "strict": false,
+      "min_trit": -1,
+      "max_trit": 1
+    },
+    "autotest_validation": {
+      "enabled": true,
+      "timeout_ms": 180000,
+      "scope": "changed",
+      "max_tests": 12,
+      "sleep_only": true,
       "strict": false,
       "min_trit": -1,
       "max_trit": 1

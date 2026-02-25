@@ -50,6 +50,7 @@ const SCRIPT_WORKFLOW_CONTROLLER = 'systems/workflow/workflow_controller.js';
 const SCRIPT_OBSERVER_MIRROR = 'systems/autonomy/observer_mirror.js';
 const SCRIPT_FRACTAL_INTROSPECTION = 'systems/fractal/introspection_map.js';
 const SCRIPT_RED_TEAM = 'systems/autonomy/red_team_harness.js';
+const SCRIPT_AUTOTEST = 'systems/ops/autotest_controller.js';
 
 const ALLOWED_SCRIPTS = new Set([
   SCRIPT_MEMORY_DREAM,
@@ -58,7 +59,8 @@ const ALLOWED_SCRIPTS = new Set([
   SCRIPT_WORKFLOW_CONTROLLER,
   SCRIPT_OBSERVER_MIRROR,
   SCRIPT_FRACTAL_INTROSPECTION,
-  SCRIPT_RED_TEAM
+  SCRIPT_RED_TEAM,
+  SCRIPT_AUTOTEST
 ]);
 
 function usage() {
@@ -246,7 +248,8 @@ function defaultPolicy() {
       anticipation: 30 * 60,
       self_improvement: 25 * 60,
       creative_incubation: 60 * 60,
-      security_vigilance: 35 * 60
+      security_vigilance: 35 * 60,
+      autotest_validation: 90 * 60
     },
     tasks: {
       dream_consolidation: {
@@ -293,6 +296,16 @@ function defaultPolicy() {
         strict: false,
         min_trit: -1,
         max_trit: 1
+      },
+      autotest_validation: {
+        enabled: true,
+        timeout_ms: 180000,
+        scope: 'changed',
+        max_tests: 12,
+        sleep_only: true,
+        strict: false,
+        min_trit: -1,
+        max_trit: 1
       }
     },
     training_queue: {
@@ -309,6 +322,8 @@ function defaultPolicy() {
 
 function normalizeTaskGate(src: AnyObj, fallback: AnyObj) {
   const task = src && typeof src === 'object' ? src : {};
+  const scopeRaw = normalizeToken(task.scope || fallback.scope || 'changed', 24);
+  const scope = ['changed', 'critical', 'all'].includes(scopeRaw) ? scopeRaw : 'changed';
   return {
     ...fallback,
     enabled: toBool(task.enabled, fallback.enabled !== false),
@@ -321,9 +336,12 @@ function normalizeTaskGate(src: AnyObj, fallback: AnyObj) {
     mirror_days: clampInt(task.mirror_days, 1, 30, Number(fallback.mirror_days || 1)),
     max_promotions: clampInt(task.max_promotions, 1, 20, Number(fallback.max_promotions || 1)),
     max_cases: clampInt(task.max_cases, 1, 64, Number(fallback.max_cases || 1)),
+    max_tests: clampInt(task.max_tests, 1, 256, Number(fallback.max_tests || 12)),
     include_idle_cycle: toBool(task.include_idle_cycle, fallback.include_idle_cycle === true),
     include_fractal_introspection: toBool(task.include_fractal_introspection, fallback.include_fractal_introspection === true),
+    sleep_only: toBool(task.sleep_only, fallback.sleep_only === true),
     intent: cleanText(task.intent || fallback.intent || '', 220),
+    scope,
     value_currency: normalizeToken(task.value_currency || fallback.value_currency || 'adaptive_value', 64) || 'adaptive_value',
     objective_id: normalizeToken(task.objective_id || fallback.objective_id || 'continuum_anticipation', 120) || 'continuum_anticipation',
     strict: toBool(task.strict, fallback.strict === true)
@@ -373,14 +391,16 @@ function loadPolicy(policyPath: string) {
       anticipation: clampInt(cooldownSec.anticipation, 0, 24 * 60 * 60, base.cooldown_sec.anticipation),
       self_improvement: clampInt(cooldownSec.self_improvement, 0, 24 * 60 * 60, base.cooldown_sec.self_improvement),
       creative_incubation: clampInt(cooldownSec.creative_incubation, 0, 24 * 60 * 60, base.cooldown_sec.creative_incubation),
-      security_vigilance: clampInt(cooldownSec.security_vigilance, 0, 24 * 60 * 60, base.cooldown_sec.security_vigilance)
+      security_vigilance: clampInt(cooldownSec.security_vigilance, 0, 24 * 60 * 60, base.cooldown_sec.security_vigilance),
+      autotest_validation: clampInt(cooldownSec.autotest_validation, 0, 24 * 60 * 60, base.cooldown_sec.autotest_validation)
     },
     tasks: {
       dream_consolidation: normalizeTaskGate(tasks.dream_consolidation, base.tasks.dream_consolidation),
       anticipation: normalizeTaskGate(tasks.anticipation, base.tasks.anticipation),
       self_improvement: normalizeTaskGate(tasks.self_improvement, base.tasks.self_improvement),
       creative_incubation: normalizeTaskGate(tasks.creative_incubation, base.tasks.creative_incubation),
-      security_vigilance: normalizeTaskGate(tasks.security_vigilance, base.tasks.security_vigilance)
+      security_vigilance: normalizeTaskGate(tasks.security_vigilance, base.tasks.security_vigilance),
+      autotest_validation: normalizeTaskGate(tasks.autotest_validation, base.tasks.autotest_validation)
     },
     training_queue: {
       enabled: toBool(trainingQueue.enabled, base.training_queue.enabled),
@@ -908,6 +928,37 @@ function runSecurityVigilance(dateStr: string, taskCfg: AnyObj, dryRun: boolean)
   };
 }
 
+function runAutotestValidation(taskCfg: AnyObj, dryRun: boolean) {
+  const scope = ['changed', 'critical', 'all'].includes(String(taskCfg && taskCfg.scope || ''))
+    ? String(taskCfg.scope)
+    : 'changed';
+  const args = [
+    'pulse',
+    `--scope=${scope}`,
+    `--max-tests=${clampInt(taskCfg && taskCfg.max_tests, 1, 256, 12)}`,
+    `--sleep-only=${taskCfg && taskCfg.sleep_only === false ? '0' : '1'}`,
+    `--strict=${taskCfg && taskCfg.strict === true ? '1' : '0'}`
+  ];
+  const run = runNodeJson(SCRIPT_AUTOTEST, args, {
+    timeout_ms: taskCfg && taskCfg.timeout_ms,
+    dry_run: dryRun
+  });
+  const summary = summarizeRun('autotest_controller', run);
+  const payload = summary.payload && typeof summary.payload === 'object' ? summary.payload : {};
+  const runPayload = payload.run && typeof payload.run === 'object' ? payload.run : {};
+  const reportPayload = payload.report && typeof payload.report === 'object' ? payload.report : {};
+  return {
+    ok: summary.ok,
+    selected_tests: Number(runPayload.selected_tests || 0),
+    failed: Number(runPayload.failed || 0),
+    guard_blocked: Number(runPayload.guard_blocked || 0),
+    untested_modules: Number(runPayload.untested_modules || 0),
+    report_failed_tests: Number(reportPayload.failed_tests || 0),
+    report_untested_modules: Number(reportPayload.untested_modules || 0),
+    autotest_controller: summary
+  };
+}
+
 function resolveTrainingQueuePath(paths: AnyObj, policy: AnyObj) {
   const configured = cleanText(policy && policy.training_queue && policy.training_queue.path || '', 260);
   if (!configured) return paths.training_queue_path;
@@ -1002,7 +1053,8 @@ function pulse(dateStr: string, opts: AnyObj = {}) {
     anticipation: 0,
     self_improvement: 0,
     creative: 0,
-    security: 0
+    security: 0,
+    autotest: 0
   };
   const recordTask = (taskId: string, stage: string, result: AnyObj, metrics: AnyObj = {}, skippedTask = false) => {
     const entry = {
@@ -1059,6 +1111,7 @@ function pulse(dateStr: string, opts: AnyObj = {}) {
       delete metrics.fractal_introspection;
       delete metrics.creative_links;
       delete metrics.red_team_harness;
+      delete metrics.autotest_controller;
       return recordTask(taskId, stage, out, metrics, false);
     };
 
@@ -1072,6 +1125,8 @@ function pulse(dateStr: string, opts: AnyObj = {}) {
     if (creativeOut.skipped !== true) taskEvents.creative += 1;
     const securityOut = runTask('security_vigilance', 'security_vigilance', () => runSecurityVigilance(dateStr, taskCfg.security_vigilance, dryRun));
     if (securityOut.skipped !== true) taskEvents.security += 1;
+    const autotestOut = runTask('autotest_validation', 'autotest_validation', () => runAutotestValidation(taskCfg.autotest_validation, dryRun));
+    if (autotestOut.skipped !== true) taskEvents.autotest += 1;
   }
 
   runtimeState.last_pulse_ts = nowIso();
