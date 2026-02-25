@@ -55,7 +55,13 @@ function run() {
   const mutationTtlMaxBefore = process.env.AUTONOMY_MUTATION_TTL_HOURS_MAX;
   const mutationQuarantineMinBefore = process.env.AUTONOMY_MUTATION_QUARANTINE_HOURS_MIN;
   const mutationVetoMinBefore = process.env.AUTONOMY_MUTATION_VETO_WINDOW_HOURS_MIN;
+  const mutationKernelPolicyBefore = process.env.MUTATION_SAFETY_KERNEL_POLICY_PATH;
+  const mutationKernelRunsBefore = process.env.MUTATION_SAFETY_RUNS_DIR;
+  const mutationKernelStateBefore = process.env.MUTATION_SAFETY_STATE_DIR;
   const outcomePolicyPath = path.join(tmpRoot, 'outcome_fitness.json');
+  const mutationKernelPolicyPath = path.join(tmpRoot, 'mutation_safety_kernel_policy.json');
+  const mutationKernelRunsDir = path.join(tmpRoot, 'state', 'autonomy', 'runs');
+  const mutationKernelStateDir = path.join(tmpRoot, 'state', 'autonomy', 'mutation_safety_kernel');
   const objectiveId = (() => {
     try {
       const directives = loadActiveDirectives({ allowMissing: true });
@@ -89,6 +95,9 @@ function run() {
     process.env.AUTONOMY_MUTATION_TTL_HOURS_MAX = '168';
     process.env.AUTONOMY_MUTATION_QUARANTINE_HOURS_MIN = '24';
     process.env.AUTONOMY_MUTATION_VETO_WINDOW_HOURS_MIN = '24';
+    process.env.MUTATION_SAFETY_KERNEL_POLICY_PATH = mutationKernelPolicyPath;
+    process.env.MUTATION_SAFETY_RUNS_DIR = mutationKernelRunsDir;
+    process.env.MUTATION_SAFETY_STATE_DIR = mutationKernelStateDir;
     process.env.AUTONOMY_REVENUE_ORACLE_REQUIRED = '1';
     process.env.AUTONOMY_REVENUE_ORACLE_SCOPE = 'dream';
     process.env.AUTONOMY_REVENUE_ORACLE_EXEMPT_TYPES = 'pain_signal_escalation,dream_cycle_escalation,collector_remediation,infrastructure_outage,directive_clarification,directive_decomposition';
@@ -104,6 +113,16 @@ function run() {
       }
     }, null, 2));
     process.env.OUTCOME_FITNESS_POLICY_PATH = outcomePolicyPath;
+    fs.mkdirSync(mutationKernelRunsDir, { recursive: true });
+    fs.writeFileSync(mutationKernelPolicyPath, JSON.stringify({
+      version: '1.0',
+      max_mutation_attempts_per_day: 100,
+      high_risk_score_min: 70,
+      medium_risk_score_min: 45,
+      require_lineage_id: true,
+      require_policy_root_for_high: true,
+      require_dual_control_for_high: true
+    }, null, 2), 'utf8');
 
     fs.mkdirSync(path.dirname(eyesConfigPath), { recursive: true });
     fs.writeFileSync(eyesConfigPath, JSON.stringify({
@@ -594,6 +613,9 @@ function run() {
       meta: {
         objective_id: 'T1_ALPHA_OBJECTIVE',
         safety_attestation_id: 'attest_mutation_guard_001',
+        mutation_lineage_id: 'lineage_mutation_guard_001',
+        policy_root_approval_id: 'policy_root_approval_001',
+        dual_approval_id: 'dual_approval_001',
         mutation_budget_cap: 2,
         mutation_ttl_hours: 48,
         mutation_quarantine_hours: 48,
@@ -685,6 +707,12 @@ function run() {
     else process.env.AUTONOMY_MUTATION_QUARANTINE_HOURS_MIN = mutationQuarantineMinBefore;
     if (mutationVetoMinBefore == null) delete process.env.AUTONOMY_MUTATION_VETO_WINDOW_HOURS_MIN;
     else process.env.AUTONOMY_MUTATION_VETO_WINDOW_HOURS_MIN = mutationVetoMinBefore;
+    if (mutationKernelPolicyBefore == null) delete process.env.MUTATION_SAFETY_KERNEL_POLICY_PATH;
+    else process.env.MUTATION_SAFETY_KERNEL_POLICY_PATH = mutationKernelPolicyBefore;
+    if (mutationKernelRunsBefore == null) delete process.env.MUTATION_SAFETY_RUNS_DIR;
+    else process.env.MUTATION_SAFETY_RUNS_DIR = mutationKernelRunsBefore;
+    if (mutationKernelStateBefore == null) delete process.env.MUTATION_SAFETY_STATE_DIR;
+    else process.env.MUTATION_SAFETY_STATE_DIR = mutationKernelStateBefore;
   }
 }
 

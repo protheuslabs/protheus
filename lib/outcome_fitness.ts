@@ -25,6 +25,14 @@ const RANKING_WEIGHT_KEYS = new Set([
   'time_to_value',
   'risk_penalty'
 ]);
+const VALUE_CURRENCY_KEYS = new Set([
+  'revenue',
+  'delivery',
+  'user_value',
+  'quality',
+  'time_savings',
+  'learning'
+]);
 
 function normalizeProposalTypeKey(v) {
   const key = String(v || '').trim().toLowerCase();
@@ -34,6 +42,18 @@ function normalizeProposalTypeKey(v) {
     .replace(/_+/g, '_')
     .replace(/^_+|_+$/g, '')
     .slice(0, 64);
+}
+
+function normalizeValueCurrencyToken(v) {
+  const key = String(v || '').trim().toLowerCase();
+  if (!key) return '';
+  const token = key
+    .replace(/[^a-z0-9_.:-]+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 64);
+  if (!token) return '';
+  return VALUE_CURRENCY_KEYS.has(token) ? token : '';
 }
 
 function clampNumber(v, lo, hi, fallback) {
@@ -146,6 +166,53 @@ function normalizePromotionPolicyAudit(raw) {
   };
 }
 
+function normalizeValueCurrencyPolicyOverrides(raw) {
+  const src = raw && typeof raw === 'object' ? raw : {};
+  const defaultCurrency = normalizeValueCurrencyToken(src.default_currency);
+  const currencySrc = src.currency_overrides && typeof src.currency_overrides === 'object'
+    ? src.currency_overrides
+    : {};
+  const objectiveSrc = src.objective_overrides && typeof src.objective_overrides === 'object'
+    ? src.objective_overrides
+    : {};
+
+  const currencyOverrides = {};
+  for (const [rawKey, rowRaw] of Object.entries(currencySrc)) {
+    const currency = normalizeValueCurrencyToken(rawKey);
+    if (!currency) continue;
+    const row = rowRaw && typeof rowRaw === 'object' ? rowRaw as Record<string, any> : {} as Record<string, any>;
+    const ranking = row.ranking_weights && typeof row.ranking_weights === 'object'
+      ? normalizeRankingWeights(row.ranking_weights)
+      : normalizeRankingWeights(row);
+    if (!ranking) continue;
+    currencyOverrides[currency] = {
+      ranking_weights: ranking
+    };
+  }
+
+  const objectiveOverrides = {};
+  for (const [objectiveIdRaw, rowRaw] of Object.entries(objectiveSrc)) {
+    const objectiveId = String(objectiveIdRaw || '').trim();
+    if (!objectiveId) continue;
+    const row = rowRaw && typeof rowRaw === 'object' ? rowRaw as Record<string, any> : {} as Record<string, any>;
+    const ranking = row.ranking_weights && typeof row.ranking_weights === 'object'
+      ? normalizeRankingWeights(row.ranking_weights)
+      : normalizeRankingWeights(row);
+    const primaryCurrency = normalizeValueCurrencyToken(row.primary_currency);
+    if (!ranking && !primaryCurrency) continue;
+    objectiveOverrides[objectiveId] = {
+      primary_currency: primaryCurrency || null,
+      ranking_weights: ranking || null
+    };
+  }
+
+  return {
+    default_currency: defaultCurrency || null,
+    currency_overrides: currencyOverrides,
+    objective_overrides: objectiveOverrides
+  };
+}
+
 function proposalTypeThresholdOffsetsFor(policy, proposalType) {
   const typeKey = normalizeProposalTypeKey(proposalType);
   if (!typeKey) return {};
@@ -189,7 +256,8 @@ function loadOutcomeFitnessPolicy(rootDir = REPO_ROOT, overridePath = null) {
       ranking_weights_override: normalizeRankingWeights(strategyPolicy.ranking_weights_override),
       proposal_type_threshold_offsets: normalizeProposalTypeThresholdOffsets(strategyPolicy.proposal_type_threshold_offsets),
       promotion_policy_overrides: normalizePromotionPolicyOverrides(strategyPolicy.promotion_policy_overrides),
-      promotion_policy_audit: normalizePromotionPolicyAudit(strategyPolicy.promotion_policy_audit)
+      promotion_policy_audit: normalizePromotionPolicyAudit(strategyPolicy.promotion_policy_audit),
+      value_currency_policy_overrides: normalizeValueCurrencyPolicyOverrides(strategyPolicy.value_currency_policy_overrides)
     },
     focus_policy: {
       min_focus_score_delta: clampInt(focusPolicy.min_focus_score_delta, -20, 20, 0)
@@ -210,7 +278,9 @@ module.exports = {
   normalizeRankingWeights,
   normalizeProposalTypeThresholdOffsets,
   normalizePromotionPolicyOverrides,
+  normalizeValueCurrencyPolicyOverrides,
   normalizeProposalTypeKey,
+  normalizeValueCurrencyToken,
   proposalTypeThresholdOffsetsFor
 };
 export {};

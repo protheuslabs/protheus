@@ -53,6 +53,16 @@ const QUALITY_LOCK_RELEASE_UNSTABLE_WINDOWS = clampInt(process.env.OUTCOME_FITNE
 const QUALITY_LOCK_MIN_REALIZED_SCORE = clampNumber(process.env.OUTCOME_FITNESS_QUALITY_LOCK_MIN_REALIZED_SCORE, 0, 100, 65);
 const QUALITY_LOCK_MIN_QUALITY_RECEIPTS = clampInt(process.env.OUTCOME_FITNESS_QUALITY_LOCK_MIN_QUALITY_RECEIPTS, 0, 10000, 5);
 const QUALITY_LOCK_MAX_INSUFFICIENT_RATE = clampNumber(process.env.OUTCOME_FITNESS_QUALITY_LOCK_MAX_INSUFFICIENT_RATE, 0, 1, 0.3);
+const CURRENCY_MIN_OUTCOME_SAMPLES = clampInt(process.env.OUTCOME_FITNESS_CURRENCY_MIN_OUTCOME_SAMPLES, 2, 50, 3);
+const VALUE_CURRENCY_KEYS = new Set(['revenue', 'delivery', 'user_value', 'quality', 'time_savings', 'learning']);
+const VALUE_CURRENCY_BIASES = {
+  revenue: { expected_value: 0.18, time_to_value: 0.09, risk_penalty: 0.02 },
+  delivery: { actionability: 0.16, directive_fit: 0.08, expected_value: 0.05 },
+  user_value: { directive_fit: 0.12, signal_quality: 0.11, expected_value: 0.05 },
+  quality: { signal_quality: 0.16, risk_penalty: 0.09, expected_value: 0.03 },
+  time_savings: { time_to_value: 0.2, actionability: 0.08, expected_value: 0.04 },
+  learning: { signal_quality: 0.09, directive_fit: 0.08, expected_value: 0.03 }
+};
 
 function nowIso() { return new Date().toISOString(); }
 function todayStr() { return new Date().toISOString().slice(0, 10); }
@@ -188,6 +198,42 @@ function normalizeProposalType(v, row = null) {
   return direct || 'unknown';
 }
 
+function normalizeValueCurrencyToken(v) {
+  const token = String(v || '').trim().toLowerCase()
+    .replace(/[^a-z0-9_.:-]+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 64);
+  if (!token) return '';
+  return VALUE_CURRENCY_KEYS.has(token) ? token : '';
+}
+
+function extractRunValueCurrency(row) {
+  const r = row && typeof row === 'object' ? row : {};
+  const strategyRank = r.strategy_rank && typeof r.strategy_rank === 'object' ? r.strategy_rank : {};
+  const components = strategyRank.components && typeof strategyRank.components === 'object'
+    ? strategyRank.components
+    : {};
+  const valueSignal = r.value_signal && typeof r.value_signal === 'object' ? r.value_signal : {};
+  const directivePulse = r.directive_pulse && typeof r.directive_pulse === 'object'
+    ? r.directive_pulse
+    : {};
+  const meta = r.meta && typeof r.meta === 'object' ? r.meta : {};
+
+  const candidates = [
+    r.value_currency,
+    components.value_currency,
+    valueSignal.value_currency,
+    directivePulse.value_currency,
+    meta.value_currency
+  ];
+  for (const candidate of candidates) {
+    const token = normalizeValueCurrencyToken(candidate);
+    if (token) return token;
+  }
+  return '';
+}
+
 function normalizeCriteriaMetric(v) {
   const key = String(v || '').trim().toLowerCase();
   if (!key) return 'unknown';
@@ -295,6 +341,104 @@ function summarizeTypeOutcomes(dates) {
   return {
     min_outcome_samples: TYPE_MIN_OUTCOME_SAMPLES,
     rows
+  };
+}
+
+function summarizeCurrencyOutcomes(dates) {
+  const byCurrency: AnyObj = {};
+  const objectiveCurrency: AnyObj = {};
+
+  for (const dateStr of dates) {
+    const rows = readJsonl(path.join(RUNS_DIR, `${dateStr}.jsonl`));
+    for (const row of rows) {
+      if (!row || row.type !== 'autonomy_run') continue;
+      const currency = extractRunValueCurrency(row);
+      if (!currency) continue;
+      const rec = byCurrency[currency] || {
+        value_currency: currency,
+        attempted: 0,
+        executed: 0,
+        shipped: 0,
+        no_change: 0,
+        reverted: 0,
+        stopped: 0,
+        outcome_samples: 0
+      };
+      const result = String(row.result || '');
+      const outcome = String(row.outcome || '');
+      if (result !== 'no_candidates') rec.attempted += 1;
+      if (result === 'executed') rec.executed += 1;
+      if (result.startsWith('stop_')) rec.stopped += 1;
+      if (outcome === 'shipped' || outcome === 'no_change' || outcome === 'reverted') {
+        rec.outcome_samples += 1;
+        if (outcome === 'shipped') rec.shipped += 1;
+        if (outcome === 'no_change') rec.no_change += 1;
+        if (outcome === 'reverted') rec.reverted += 1;
+      }
+      byCurrency[currency] = rec;
+
+      const objectiveId = String(row.objective_id || '').trim();
+      if (objectiveId) {
+        const objectiveRec = objectiveCurrency[objectiveId] && typeof objectiveCurrency[objectiveId] === 'object'
+          ? objectiveCurrency[objectiveId]
+          : { objective_id: objectiveId, total: 0, currencies: {} };
+        objectiveRec.total += 1;
+        objectiveRec.currencies[currency] = Number(objectiveRec.currencies[currency] || 0) + 1;
+        objectiveCurrency[objectiveId] = objectiveRec;
+      }
+    }
+  }
+
+  const rows = (Object.values(byCurrency) as AnyObj[])
+    .map((rowRaw) => {
+      const row = rowRaw && typeof rowRaw === 'object' ? rowRaw as AnyObj : {} as AnyObj;
+      const shippedRate = rate(row.shipped, row.outcome_samples);
+      const noChangeRate = rate(row.no_change, row.outcome_samples);
+      const revertedRate = rate(row.reverted, row.outcome_samples);
+      const performance = Number(clampNumber(shippedRate - (revertedRate * 1.2) - (noChangeRate * 0.35), -1, 1, 0).toFixed(4));
+      return {
+        ...row,
+        shipped_rate: shippedRate,
+        no_change_rate: noChangeRate,
+        reverted_rate: revertedRate,
+        stop_ratio: rate(row.stopped, row.attempted),
+        performance
+      };
+    })
+    .sort((a: AnyObj, b: AnyObj) => {
+      const sampleSort = Number(b.outcome_samples || 0) - Number(a.outcome_samples || 0);
+      if (sampleSort !== 0) return sampleSort;
+      return String(a.value_currency || '').localeCompare(String(b.value_currency || ''));
+    });
+
+  const objectiveRows = Object.values(objectiveCurrency)
+    .map((rowRaw: AnyObj) => {
+      const total = Number(rowRaw.total || 0);
+      const currencies = rowRaw.currencies && typeof rowRaw.currencies === 'object' ? rowRaw.currencies : {};
+      const top = Object.entries(currencies)
+        .map(([currency, count]) => ({
+          value_currency: normalizeValueCurrencyToken(currency),
+          count: Number(count || 0)
+        }))
+        .filter((x) => x.value_currency && x.count > 0)
+        .sort((a, b) => b.count - a.count);
+      const topRow = top[0] || null;
+      const confidence = topRow && total > 0 ? Number((topRow.count / total).toFixed(4)) : 0;
+      return {
+        objective_id: String(rowRaw.objective_id || '').trim(),
+        total_samples: total,
+        primary_currency: topRow ? topRow.value_currency : null,
+        primary_confidence: confidence,
+        top_currencies: top.slice(0, 3)
+      };
+    })
+    .filter((row: AnyObj) => row.objective_id)
+    .sort((a: AnyObj, b: AnyObj) => Number(b.total_samples || 0) - Number(a.total_samples || 0));
+
+  return {
+    min_outcome_samples: CURRENCY_MIN_OUTCOME_SAMPLES,
+    rows,
+    objective_rows: objectiveRows
   };
 }
 
@@ -607,6 +751,88 @@ function deriveRankingWeightOverride(baseWeights, runMetrics, receiptMetrics) {
   };
 }
 
+function deriveValueCurrencyPolicyOverrides(baseWeights, currencySummary) {
+  const rows = currencySummary && Array.isArray(currencySummary.rows) ? currencySummary.rows : [];
+  const objectiveRows = currencySummary && Array.isArray(currencySummary.objective_rows)
+    ? currencySummary.objective_rows
+    : [];
+
+  const currencyOverrides: AnyObj = {};
+  const auditByCurrency: AnyObj = {};
+  let defaultCurrency = '';
+  let defaultScore = -1;
+
+  for (const row of rows) {
+    const currency = normalizeValueCurrencyToken(row && row.value_currency);
+    if (!currency) continue;
+    const samples = Number(row && row.outcome_samples || 0);
+    const performance = Number(row && row.performance || 0);
+    const shippedRate = Number(row && row.shipped_rate || 0);
+    const noChangeRate = Number(row && row.no_change_rate || 0);
+    const revertedRate = Number(row && row.reverted_rate || 0);
+    if (samples < CURRENCY_MIN_OUTCOME_SAMPLES) continue;
+
+    const confidence = clampNumber(samples / 8, 0, 1, 0);
+    const influence = Number(clampNumber(performance * confidence, -1, 1, 0).toFixed(4));
+    const bias = VALUE_CURRENCY_BIASES[currency] || null;
+    if (!bias || Math.abs(influence) < 0.08) continue;
+
+    const raw = { ...(baseWeights && typeof baseWeights === 'object' ? baseWeights : {}) };
+    for (const [k, b] of Object.entries(bias)) {
+      const base = Number(raw[k] || 0);
+      const delta = Number(b || 0) * influence;
+      raw[k] = Number(clampNumber(base + delta, 0.001, 0.8, base).toFixed(6));
+    }
+
+    const normalized = normalizeRankingWeights(raw) || normalizeRankingWeights(baseWeights);
+    if (!normalized) continue;
+    currencyOverrides[currency] = { ranking_weights: normalized };
+    auditByCurrency[currency] = {
+      outcome_samples: samples,
+      shipped_rate: shippedRate,
+      no_change_rate: noChangeRate,
+      reverted_rate: revertedRate,
+      performance,
+      confidence: Number(confidence.toFixed(4)),
+      influence
+    };
+
+    const score = Number(((shippedRate * 1.5) - (revertedRate * 1.2) - (noChangeRate * 0.3)).toFixed(4));
+    if (score > defaultScore) {
+      defaultScore = score;
+      defaultCurrency = currency;
+    }
+  }
+
+  const objectiveOverrides: AnyObj = {};
+  for (const row of objectiveRows) {
+    const objectiveId = String(row && row.objective_id || '').trim();
+    const primaryCurrency = normalizeValueCurrencyToken(row && row.primary_currency);
+    const confidence = Number(row && row.primary_confidence || 0);
+    const samples = Number(row && row.total_samples || 0);
+    if (!objectiveId || !primaryCurrency) continue;
+    if (samples < CURRENCY_MIN_OUTCOME_SAMPLES || confidence < 0.55) continue;
+    objectiveOverrides[objectiveId] = {
+      primary_currency: primaryCurrency
+    };
+  }
+
+  return {
+    overrides: {
+      default_currency: defaultCurrency || null,
+      currency_overrides: currencyOverrides,
+      objective_overrides: objectiveOverrides
+    },
+    audit: {
+      min_outcome_samples: CURRENCY_MIN_OUTCOME_SAMPLES,
+      currencies_evaluated: rows.length,
+      currencies_updated: Object.keys(currencyOverrides).length,
+      objectives_updated: Object.keys(objectiveOverrides).length,
+      by_currency: auditByCurrency
+    }
+  };
+}
+
 function deriveFocusDelta(runMetrics, blocks) {
   const blocked = blocks && blocks.blocked_by_reason ? blocks.blocked_by_reason : {};
   const blockedTotal = Math.max(1, Number(blocks && blocks.blocked_total || 0));
@@ -867,6 +1093,7 @@ function buildPayload(dateStr, days) {
 
   const runSummary = summarizeRuns(dates);
   const typeSummary = summarizeTypeOutcomes(dates);
+  const currencySummary = summarizeCurrencyOutcomes(dates);
   const receiptMetrics = summarizeReceipts(dates);
   const blockSummary = summarizeProposalBlocks(dates);
   const runMetrics = runSummary.metrics;
@@ -877,6 +1104,7 @@ function buildPayload(dateStr, days) {
   const rankingWeights = deriveRankingWeightOverride(baseWeights, runMetrics, receiptMetrics);
   const focusDelta = deriveFocusDelta(runMetrics, blockSummary);
   const criteriaMetricWeights = deriveSuccessCriteriaMetricWeights(receiptMetrics);
+  const valueCurrencyPolicy = deriveValueCurrencyPolicyOverrides(baseWeights, currencySummary);
   const qualityLock = computeQualityLockState(realizedScore, receiptMetrics);
   const promotionPolicy = derivePromotionPolicyOverrides(receiptMetrics, qualityLock);
   const minCriteriaCount = (
@@ -901,7 +1129,8 @@ function buildPayload(dateStr, days) {
       runs: runMetrics,
       receipts: receiptMetrics,
       admission: blockSummary,
-      proposal_type_outcomes: typeSummary
+      proposal_type_outcomes: typeSummary,
+      value_currency_outcomes: currencySummary
     },
     realized_outcome_score: realizedScore,
     strategy_policy: {
@@ -910,6 +1139,8 @@ function buildPayload(dateStr, days) {
       proposal_type_threshold_offsets: typeCalibration.offsets,
       proposal_type_calibration_audit: typeCalibration.audit,
       ranking_weights_override: rankingWeights,
+      value_currency_policy_overrides: valueCurrencyPolicy.overrides,
+      value_currency_policy_audit: valueCurrencyPolicy.audit,
       promotion_policy_overrides: promotionPolicy.overrides,
       promotion_policy_audit: promotionPolicy.audit
     },
@@ -959,6 +1190,31 @@ function runCmd(args) {
         previous_offsets: prevOffsets,
         next_offsets: nextOffsets,
         calibration_audit: payload.strategy_policy.proposal_type_calibration_audit || {}
+      });
+    }
+    const prevCurrencyPolicy = prevPayload
+      && prevPayload.strategy_policy
+      && prevPayload.strategy_policy.value_currency_policy_overrides
+      && typeof prevPayload.strategy_policy.value_currency_policy_overrides === 'object'
+        ? prevPayload.strategy_policy.value_currency_policy_overrides
+        : {};
+    const nextCurrencyPolicy = payload
+      && payload.strategy_policy
+      && payload.strategy_policy.value_currency_policy_overrides
+      && typeof payload.strategy_policy.value_currency_policy_overrides === 'object'
+        ? payload.strategy_policy.value_currency_policy_overrides
+        : {};
+    const currencyChanged = JSON.stringify(prevCurrencyPolicy) !== JSON.stringify(nextCurrencyPolicy);
+    if (currencyChanged) {
+      appendJsonl(RECEIPTS_PATH, {
+        ts: nowIso(),
+        type: 'value_currency_policy_calibration',
+        date: dateStr,
+        window_days: days,
+        changed: true,
+        previous_policy: prevCurrencyPolicy,
+        next_policy: nextCurrencyPolicy,
+        calibration_audit: payload.strategy_policy.value_currency_policy_audit || {}
       });
     }
   }

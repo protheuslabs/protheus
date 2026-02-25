@@ -1,0 +1,15 @@
+{
+  "version": "1.0",
+  "strict_default": true,
+  "default_objective": "T1_generational_wealth_v1",
+  "default_variants": [
+    "incumbent",
+    "candidate_a",
+    "candidate_b"
+  ],
+  "requested_cells_per_variant": 1,
+  "synthetic_tokens_per_variant": 900,
+  "max_token_budget": 5000,
+  "min_promotion_gain": 0.04,
+  "loser_ttl_days": 3
+}

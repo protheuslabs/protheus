@@ -1786,7 +1786,7 @@ function runBacklogAutoscaler(dateStr, opts: AnyObj = {}) {
   const state = snapshot.state && typeof snapshot.state === 'object'
     ? snapshot.state
     : defaultBacklogAutoscaleState();
-  const plan = snapshot.plan && typeof snapshot.plan === 'object' ? snapshot.plan : { action: 'hold' };
+  const plan: AnyObj = snapshot.plan && typeof snapshot.plan === 'object' ? snapshot.plan as AnyObj : { action: 'hold' };
   if (!AUTONOMY_BACKLOG_AUTOSCALE_ENABLED) {
     return {
       ...snapshot,
@@ -7278,7 +7278,7 @@ function preexecVerdictFromSignals(blockers, signals, nextRunnableAt) {
     - (failCount * 0.22)
     - (warnCount * 0.08)
     - blockerPenalty;
-  confidence = clampNumber(confidence, 0.05, 1, 0.5);
+  confidence = clampNumber(confidence, 0.05, 1);
   if (verdict === 'reject') confidence = Math.min(confidence, 0.49);
   if (verdict === 'defer') confidence = Math.min(confidence, 0.69);
 

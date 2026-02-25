@@ -1,0 +1,9 @@
+{
+  "version": "1.0",
+  "min_pattern_attempts": 4,
+  "min_pattern_shipped": 2,
+  "min_estimated_savings_minutes": 30,
+  "max_candidates_per_run": 5,
+  "novelty_only_block_enabled": true,
+  "require_dual_approval": true
+}

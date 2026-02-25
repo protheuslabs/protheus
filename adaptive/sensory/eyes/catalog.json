@@ -28,11 +28,47 @@
       "score_ema": 50,
       "notes": "Generated via eyes_intake for T1_generational_wealth_v1",
       "created_ts": "2026-02-24T00:29:30.456Z",
-      "updated_ts": "2026-02-24T17:24:25.847Z",
+      "updated_ts": "2026-02-25T16:42:09.978Z",
       "parser_options": {
         "url": "https://www.reddit.com/r/AI_Agents/new/.rss",
         "title": "r/AI_Agents"
       }
+    },
+    {
+      "uid": "emm29ietk11v6ischumkbdr2",
+      "id": "proto_36c7ba62382ba23c",
+      "name": "Watch medium.com",
+      "status": "probation",
+      "cadence_hours": 12,
+      "allowed_domains": [
+        "medium.com"
+      ],
+      "budgets": {
+        "max_items": 10,
+        "max_seconds": 20,
+        "max_bytes": 524288,
+        "max_requests": 2
+      },
+      "parser_type": "medium_rss",
+      "topics": [
+        "t1_generational_wealth_v1",
+        "ai",
+        "startups",
+        "revenue",
+        "saas"
+      ],
+      "directive_ref": "T1_generational_wealth_v1",
+      "last_run": null,
+      "last_success": null,
+      "error_rate": 0,
+      "score_ema": 50,
+      "notes": "Auto-sprout candidate: domain seen 6 times across 1 eyes",
+      "created_ts": "2026-02-25T16:42:09.416Z",
+      "updated_ts": "2026-02-25T16:42:09.978Z",
+      "strategy_id": "default_general",
+      "campaign_ids": [
+        "objective_flow"
+      ]
     }
   ],
   "global_limits": {

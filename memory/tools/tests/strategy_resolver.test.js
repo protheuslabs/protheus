@@ -206,6 +206,22 @@ function run() {
       promotion_policy_overrides: {
         disable_legacy_fallback_after_quality_receipts: 14,
         max_success_criteria_quality_insufficient_rate: 0.45
+      },
+      value_currency_policy_overrides: {
+        default_currency: 'revenue',
+        currency_overrides: {
+          revenue: {
+            ranking_weights: {
+              expected_value: 0.28,
+              time_to_value: 0.11
+            }
+          }
+        },
+        objective_overrides: {
+          T1_test: {
+            primary_currency: 'revenue'
+          }
+        }
       }
     }
   });
@@ -213,6 +229,17 @@ function run() {
   const overlayed = resolver.loadActiveStrategy({ dir: strategyDir, id: 'default_general' });
   assert.strictEqual(overlayed.promotion_policy.disable_legacy_fallback_after_quality_receipts, 14);
   assert.strictEqual(overlayed.promotion_policy.max_success_criteria_quality_insufficient_rate, 0.45);
+  assert.strictEqual(overlayed.value_currency_policy.default_currency, 'revenue');
+  assert.strictEqual(
+    overlayed.value_currency_policy.objective_overrides.T1_test.primary_currency,
+    'revenue'
+  );
+  assert.ok(
+    Number(
+      overlayed.value_currency_policy.currency_overrides.revenue.ranking_weights.expected_value || 0
+    ) > 0.2,
+    'outcome overlay should elevate revenue expected_value weighting'
+  );
 
   console.log('strategy_resolver.test.js: OK');
   if (outcomePolicyBefore == null) delete process.env.OUTCOME_FITNESS_POLICY_PATH;

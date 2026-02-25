@@ -1,0 +1,35 @@
+{
+  "version": "1.0",
+  "strict_default": true,
+  "integrity_command": "node systems/security/integrity_kernel.js run",
+  "scenarios": [
+    {
+      "id": "collector_fault",
+      "lane": "sensory",
+      "fault": "collector_timeout_simulation",
+      "recovery_command": "node systems/sensory/adaptive_layer_guard.js run --strict",
+      "timeout_ms": 30000
+    },
+    {
+      "id": "routing_fault",
+      "lane": "routing",
+      "fault": "model_health_degraded_simulation",
+      "recovery_command": "node systems/routing/route_probe.js",
+      "timeout_ms": 30000
+    },
+    {
+      "id": "actuation_fault",
+      "lane": "actuation",
+      "fault": "actuation_adapter_failure_simulation",
+      "recovery_command": "node systems/security/guard.js run --strict",
+      "timeout_ms": 30000
+    },
+    {
+      "id": "state_fault",
+      "lane": "state",
+      "fault": "state_write_contention_simulation",
+      "recovery_command": "node systems/memory/memory_layer_guard.js run --strict",
+      "timeout_ms": 30000
+    }
+  ]
+}

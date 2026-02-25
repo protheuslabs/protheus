@@ -29,6 +29,10 @@ const {
   loadOutcomeFitnessPolicy,
   proposalTypeThresholdOffsetsFor
 } = require('../../lib/outcome_fitness');
+const {
+  evaluateMutationSafetyEnvelope,
+  loadPolicy: loadMutationSafetyKernelPolicy
+} = require('./mutation_safety_kernel');
 const { compileProposalSuccessCriteria } = require('../../lib/success_criteria_compiler');
 const { evaluateProposalQuorum } = require('../../lib/quorum_validator');
 const { classifyProposalType } = require('../../lib/proposal_type_classifier');
@@ -140,6 +144,7 @@ const AUTONOMY_VALUE_ORACLE_BACKFILL_EXPECTED_VALUE = String(process.env.AUTONOM
 const ADAPTIVE_MUTATION_TYPE_RE = /\b(adaptive|mutation|topology|genome|fractal|morph|self[_-]?(?:improv|mutation|modify)|branch[_-]?(?:spawn|rewire|prune)|spawn[_-]?(?:broker|agent|cell)|organism)\b/i;
 const ADAPTIVE_MUTATION_SIGNAL_RE = /\b(topology|genome|fractal|mutation|morph|rewire|prune|spawn|self[_-]?improv)\b/i;
 const AUTONOMY_MUTATION_GUARD_REQUIRED = String(process.env.AUTONOMY_MUTATION_GUARD_REQUIRED || '1') !== '0';
+const AUTONOMY_MUTATION_KERNEL_REQUIRED = String(process.env.AUTONOMY_MUTATION_KERNEL_REQUIRED || '1') !== '0';
 const AUTONOMY_MUTATION_BUDGET_CAP_MAX = clamp(Number(process.env.AUTONOMY_MUTATION_BUDGET_CAP_MAX || 5), 1, 50);
 const AUTONOMY_MUTATION_TTL_HOURS_MAX = clamp(Number(process.env.AUTONOMY_MUTATION_TTL_HOURS_MAX || 168), 1, 24 * 90);
 const AUTONOMY_MUTATION_QUARANTINE_HOURS_MIN = clamp(Number(process.env.AUTONOMY_MUTATION_QUARANTINE_HOURS_MIN || 24), 0, 24 * 30);
@@ -1407,6 +1412,7 @@ function adaptiveMutationGuardDecision(proposal) {
     return {
       enabled: false,
       required: false,
+      kernel_required: false,
       applies: false,
       pass: true,
       reason: null,
@@ -1419,6 +1425,7 @@ function adaptiveMutationGuardDecision(proposal) {
     return {
       enabled: true,
       required: true,
+      kernel_required: AUTONOMY_MUTATION_KERNEL_REQUIRED,
       applies: false,
       pass: true,
       reason: null,
@@ -1428,7 +1435,8 @@ function adaptiveMutationGuardDecision(proposal) {
         budget_cap_max: AUTONOMY_MUTATION_BUDGET_CAP_MAX,
         ttl_hours_max: AUTONOMY_MUTATION_TTL_HOURS_MAX,
         quarantine_hours_min: AUTONOMY_MUTATION_QUARANTINE_HOURS_MIN,
-        veto_window_hours_min: AUTONOMY_MUTATION_VETO_WINDOW_HOURS_MIN
+        veto_window_hours_min: AUTONOMY_MUTATION_VETO_WINDOW_HOURS_MIN,
+        mutation_kernel_required: AUTONOMY_MUTATION_KERNEL_REQUIRED
       }
     };
   }
@@ -1516,9 +1524,42 @@ function adaptiveMutationGuardDecision(proposal) {
   const rollbackReceiptPresent = !!rollbackReceipt;
   if (!rollbackReceiptPresent) reasons.push('adaptive_mutation_missing_rollback_receipt');
 
+  let kernelDecision = null;
+  let kernelPolicyVersion = null;
+  if (AUTONOMY_MUTATION_KERNEL_REQUIRED) {
+    try {
+      const kernelPolicy = loadMutationSafetyKernelPolicy();
+      if (kernelPolicy && typeof kernelPolicy === 'object') {
+        kernelPolicyVersion = normalizeText(kernelPolicy.version) || null;
+      }
+      const evaluated = evaluateMutationSafetyEnvelope({ proposal: p, policy: kernelPolicy });
+      if (evaluated && typeof evaluated === 'object') {
+        kernelDecision = evaluated;
+        if (evaluated.applies === true && evaluated.pass === false) {
+          const kernelReasons = Array.isArray(evaluated.reasons) ? evaluated.reasons : [];
+          for (const reasonRaw of kernelReasons) {
+            const reason = normalizeText(reasonRaw);
+            if (!reason || reasons.includes(reason)) continue;
+            reasons.push(reason);
+          }
+        }
+      }
+    } catch (err) {
+      reasons.push('adaptive_mutation_kernel_error');
+      kernelDecision = {
+        applies: true,
+        pass: false,
+        reason: 'adaptive_mutation_kernel_error',
+        reasons: ['adaptive_mutation_kernel_error'],
+        error: normalizeText(err && err.message ? err.message : err)
+      };
+    }
+  }
+
   return {
     enabled: true,
     required: true,
+    kernel_required: AUTONOMY_MUTATION_KERNEL_REQUIRED,
     applies,
     pass: reasons.length === 0,
     reason: reasons[0] || null,
@@ -1531,14 +1572,25 @@ function adaptiveMutationGuardDecision(proposal) {
       quarantine_hours: quarantineHours != null ? Number(quarantineHours.toFixed(3)) : null,
       veto_window_hours: vetoWindowHours != null ? Number(vetoWindowHours.toFixed(3)) : null,
       rollback_receipt_present: rollbackReceiptPresent,
-      rollback_receipt: rollbackReceiptPresent ? rollbackReceipt : null
+      rollback_receipt: rollbackReceiptPresent ? rollbackReceipt : null,
+      mutation_kernel_applies: !!(kernelDecision && kernelDecision.applies === true),
+      mutation_kernel_pass: !(kernelDecision && kernelDecision.pass === false),
+      mutation_kernel_risk_score: kernelDecision && Number.isFinite(Number(kernelDecision.risk_score))
+        ? Number(kernelDecision.risk_score)
+        : null,
+      mutation_kernel_promotion_band: kernelDecision && kernelDecision.promotion_band
+        ? normalizeText(kernelDecision.promotion_band)
+        : null
     },
     thresholds: {
       budget_cap_max: AUTONOMY_MUTATION_BUDGET_CAP_MAX,
       ttl_hours_max: AUTONOMY_MUTATION_TTL_HOURS_MAX,
       quarantine_hours_min: AUTONOMY_MUTATION_QUARANTINE_HOURS_MIN,
-      veto_window_hours_min: AUTONOMY_MUTATION_VETO_WINDOW_HOURS_MIN
-    }
+      veto_window_hours_min: AUTONOMY_MUTATION_VETO_WINDOW_HOURS_MIN,
+      mutation_kernel_required: AUTONOMY_MUTATION_KERNEL_REQUIRED
+    },
+    kernel_policy_version: kernelPolicyVersion,
+    kernel_decision: kernelDecision
   };
 }
 

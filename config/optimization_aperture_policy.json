@@ -1,0 +1,48 @@
+{
+  "version": "1.0",
+  "strict_default": false,
+  "target_drift_rate": 0.03,
+  "score_floor": 0.05,
+  "score_ceiling": 1,
+  "penalties": {
+    "risk": {
+      "low": 0.05,
+      "medium": 0.22,
+      "high": 0.42
+    },
+    "impact": {
+      "low": 0.02,
+      "medium": 0.1,
+      "high": 0.2
+    },
+    "budget_pressure": {
+      "low": 0.02,
+      "medium": 0.1,
+      "high": 0.2,
+      "critical": 0.32
+    },
+    "safety_critical": 0.2,
+    "drift_multiplier": 4
+  },
+  "rewards": {
+    "verification_pass_rate_multiplier": 0.4
+  },
+  "level_thresholds": {
+    "tight_max": 0.35,
+    "balanced_max": 0.7
+  },
+  "lane_defaults": {
+    "autonomy": {
+      "exploration_fraction": 0.2
+    },
+    "routing": {
+      "exploration_fraction": 0.12
+    },
+    "dreams": {
+      "exploration_fraction": 0.16
+    },
+    "reflex": {
+      "exploration_fraction": 0.08
+    }
+  }
+}

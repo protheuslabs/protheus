@@ -62,6 +62,21 @@ function checkUsage(relPath, probeArgs, requiredTokens) {
   process.exit(1);
 }
 
+function checkUsageTextOnly(relPath, probeArgs, requiredTokens) {
+  const root = repoRoot();
+  const abs = path.join(root, relPath);
+  const r = runCapture([abs, ...probeArgs]);
+  const missing = missingTokens(r.text, requiredTokens);
+  if (missing.length === 0) return;
+
+  console.error("contract_check: FAILED");
+  console.error(` script: ${relPath}`);
+  console.error(` probe: ${formatProbe(probeArgs)}`);
+  console.error(` exit_code: ${r.code}`);
+  console.error(` missing tokens: ${missing.join(", ")}`);
+  process.exit(1);
+}
+
 function checkScript(relPath, requiredTokens) {
   // Standard contract for all validated CLIs:
   //   1) --help prints usage and exits 0
@@ -140,10 +155,10 @@ function main() {
     "systems/sensory/adaptive_layer_guard.js",
     ["adaptive_layer_guard.js", "run", "--strict"]
   );
-  checkUsage(
+  checkUsageTextOnly(
     "systems/sensory/adaptive_layer_guard.js",
     ["run", "--strict"],
-    ['"ok": true']
+    ['"ok":']
   );
 
   // memory_layer_guard.js enforces channelized writes for memory/state-memory files.
@@ -151,10 +166,10 @@ function main() {
     "systems/memory/memory_layer_guard.js",
     ["memory_layer_guard.js", "run", "--strict"]
   );
-  checkUsage(
+  checkUsageTextOnly(
     "systems/memory/memory_layer_guard.js",
     ["run", "--strict"],
-    ['"ok": true']
+    ['"ok":']
   );
 
   // workspace_dump_guard.js blocks source dumps into memory/adaptive data roots.
@@ -162,10 +177,10 @@ function main() {
     "systems/security/workspace_dump_guard.js",
     ["workspace_dump_guard.js", "run", "--strict"]
   );
-  checkUsage(
+  checkUsageTextOnly(
     "systems/security/workspace_dump_guard.js",
     ["run", "--strict"],
-    ['"ok": true']
+    ['"ok":']
   );
 
   // eyes_insight.js should advertise run + date usage
@@ -437,10 +452,10 @@ function main() {
     "systems/security/habit_hygiene_guard.js",
     ["habit_hygiene_guard.js", "run", "--strict"]
   );
-  checkUsage(
+  checkUsageTextOnly(
     "systems/security/habit_hygiene_guard.js",
     ["run", "--strict"],
-    ['"ok": true']
+    ['"ok":']
   );
 
   // workspace_dump_guard.js prevents source/code dumps in data layers and misplaced collectors.
@@ -448,10 +463,10 @@ function main() {
     "systems/security/workspace_dump_guard.js",
     ["workspace_dump_guard.js", "run", "--strict"]
   );
-  checkUsage(
+  checkUsageTextOnly(
     "systems/security/workspace_dump_guard.js",
     ["run", "--strict"],
-    ['"ok": true']
+    ['"ok":']
   );
 
   // llm_gateway_guard.js prevents direct runtime LLM-provider calls outside routing gateway files.
@@ -459,10 +474,10 @@ function main() {
     "systems/security/llm_gateway_guard.js",
     ["llm_gateway_guard.js", "run", "--strict"]
   );
-  checkUsage(
+  checkUsageTextOnly(
     "systems/security/llm_gateway_guard.js",
     ["run", "--strict"],
-    ['"ok": true']
+    ['"ok":']
   );
 
   // capability_lease.js issues/verifies single-use scoped lease tokens for high-tier mutations.
@@ -630,6 +645,96 @@ function main() {
   checkScript(
     "systems/autonomy/outcome_fitness_loop.js",
     ["outcome_fitness_loop.js", "run", "status", "--days", "--apply"]
+  );
+
+  // capability_switchboard.js provides dual-control feature kill switches with immutable audit paths.
+  checkScript(
+    "systems/security/capability_switchboard.js",
+    ["capability_switchboard.js", "status", "evaluate", "set", "--switch", "--state", "--approver-id"]
+  );
+
+  // anti_sabotage_shield.js snapshots and verifies protected files with auto-reset option.
+  checkScript(
+    "systems/security/anti_sabotage_shield.js",
+    ["anti_sabotage_shield.js", "snapshot", "verify", "status", "--auto-reset", "--strict"]
+  );
+
+  // chaos_program.js runs controlled failure injection scenarios.
+  checkScript(
+    "systems/ops/chaos_program.js",
+    ["chaos_program.js", "run", "status", "--scenario", "--strict"]
+  );
+
+  // scale_benchmark.js emits throughput/latency/error-budget baseline reports.
+  checkScript(
+    "systems/ops/scale_benchmark.js",
+    ["scale_benchmark.js", "run", "status", "--tier", "--strict"]
+  );
+
+  // compliance_reports.js generates evidence index + SOC2 readiness summaries.
+  checkScript(
+    "systems/ops/compliance_reports.js",
+    ["compliance_reports.js", "evidence-index", "soc2-readiness", "status", "--days", "--strict"]
+  );
+
+  // environment_promotion_gate.js enforces promotion sequencing and approvals across env tiers.
+  checkScript(
+    "systems/ops/environment_promotion_gate.js",
+    ["environment_promotion_gate.js", "promote", "status", "--from", "--to", "--owner", "--artifact", "--checks"]
+  );
+
+  // optimization_aperture_controller.js computes risk-adaptive optimization posture per lane.
+  checkScript(
+    "systems/autonomy/optimization_aperture_controller.js",
+    ["optimization_aperture_controller.js", "run", "status", "--lane", "--risk", "--impact", "--budget-pressure"]
+  );
+
+  // objective_optimization_floor.js enforces criticality-aware good-enough floor decisions.
+  checkScript(
+    "systems/autonomy/objective_optimization_floor.js",
+    ["objective_optimization_floor.js", "run", "status", "--objective", "--criticality", "--delta"]
+  );
+
+  // specialist_training.js handles curation/plan/evaluate/promote for local specialist checkpoints.
+  checkScript(
+    "systems/nursery/specialist_training.js",
+    ["specialist_training.js", "curate", "plan", "evaluate", "promote", "--profile", "--checkpoint"]
+  );
+
+  // skill_generation_pipeline.js guards pattern->candidate skill generation with policy checks.
+  checkScript(
+    "systems/autonomy/skill_generation_pipeline.js",
+    ["skill_generation_pipeline.js", "run", "status", "--days", "--max-candidates", "--apply"]
+  );
+
+  // evolution_arena.js runs bounded spawn-broker variant trials for promotion decisions.
+  checkScript(
+    "systems/fractal/evolution_arena.js",
+    ["evolution_arena.js", "run", "status", "--objective", "--variants", "--scores", "--strict"]
+  );
+
+  // mutation_safety_kernel.js expands adaptive mutation containment with risk bands + lineage checks.
+  checkScript(
+    "systems/autonomy/mutation_safety_kernel.js",
+    ["mutation_safety_kernel.js", "evaluate", "status", "--proposal-file"]
+  );
+
+  // polyglot_service_adapter.js is the strict-contract pilot adapter for non-TS service workers.
+  checkScript(
+    "systems/polyglot/polyglot_service_adapter.js",
+    ["polyglot_service_adapter.js", "run", "benchmark", "status", "--task-type", "--signals"]
+  );
+
+  // dist_runtime_cutover.js controls source/dist runtime mode and verification checks.
+  checkScript(
+    "systems/ops/dist_runtime_cutover.js",
+    ["dist_runtime_cutover.js", "status", "set-mode", "verify", "--mode", "--build", "--strict"]
+  );
+
+  // external_security_cycle.js ingests third-party findings and tracks closure evidence.
+  checkScript(
+    "systems/security/external_security_cycle.js",
+    ["external_security_cycle.js", "ingest", "status", "--report-file", "--assessor"]
   );
 
   console.log("contract_check: OK");

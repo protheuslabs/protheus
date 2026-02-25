@@ -1,0 +1,6 @@
+{
+  "version": "1.0",
+  "required_fields": ["id", "severity", "title", "status"],
+  "status_closed_values": ["closed", "resolved", "verified"],
+  "severity_order": ["critical", "high", "medium", "low", "info"]
+}

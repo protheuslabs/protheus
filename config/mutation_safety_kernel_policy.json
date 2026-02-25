@@ -1,0 +1,9 @@
+{
+  "version": "1.0",
+  "max_mutation_attempts_per_day": 4,
+  "high_risk_score_min": 70,
+  "medium_risk_score_min": 45,
+  "require_lineage_id": true,
+  "require_policy_root_for_high": true,
+  "require_dual_control_for_high": true
+}

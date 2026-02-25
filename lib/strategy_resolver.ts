@@ -193,7 +193,7 @@ function normalizeValueCurrencyPolicy(raw) {
   for (const [objectiveIdRaw, row] of Object.entries(objectiveSrc)) {
     const objectiveId = asString(objectiveIdRaw);
     if (!objectiveId) continue;
-    const payload = row && typeof row === 'object' ? row : {};
+    const payload = row && typeof row === 'object' ? row as AnyObj : {} as AnyObj;
     const ranking = payload.ranking_weights && typeof payload.ranking_weights === 'object'
       ? mergeRankingWeights({}, payload.ranking_weights)
       : null;
@@ -207,7 +207,7 @@ function normalizeValueCurrencyPolicy(raw) {
   for (const [currencyRaw, row] of Object.entries(currencySrc)) {
     const currency = normalizeValueCurrencyToken(currencyRaw);
     if (!currency) continue;
-    const payload = row && typeof row === 'object' ? row : {};
+    const payload = row && typeof row === 'object' ? row as AnyObj : {} as AnyObj;
     const ranking = payload.ranking_weights && typeof payload.ranking_weights === 'object'
       ? mergeRankingWeights({}, payload.ranking_weights)
       : mergeRankingWeights({}, payload);
@@ -234,6 +234,48 @@ function mergeRankingWeights(base, overlay) {
   return normalizeRankingWeights(merged, []);
 }
 
+function mergeValueCurrencyPolicy(baseRaw, overlayRaw) {
+  const base = normalizeValueCurrencyPolicy(baseRaw);
+  const overlay = normalizeValueCurrencyPolicy(overlayRaw);
+
+  const objectiveOverrides = { ...(base.objective_overrides || {}) };
+  for (const [objectiveId, rowRaw] of Object.entries(overlay.objective_overrides || {})) {
+    const row = rowRaw && typeof rowRaw === 'object' ? rowRaw as AnyObj : {} as AnyObj;
+    const prev = objectiveOverrides[objectiveId] && typeof objectiveOverrides[objectiveId] === 'object'
+      ? objectiveOverrides[objectiveId] as AnyObj
+      : {} as AnyObj;
+    objectiveOverrides[objectiveId] = {
+      primary_currency: normalizeValueCurrencyToken(row.primary_currency) || normalizeValueCurrencyToken(prev.primary_currency) || null,
+      ranking_weights: row.ranking_weights && typeof row.ranking_weights === 'object'
+        ? mergeRankingWeights(prev.ranking_weights, row.ranking_weights)
+        : (prev.ranking_weights && typeof prev.ranking_weights === 'object' ? prev.ranking_weights : null)
+    };
+  }
+
+  const currencyOverrides = { ...(base.currency_overrides || {}) };
+  for (const [currency, rowRaw] of Object.entries(overlay.currency_overrides || {})) {
+    const row = rowRaw && typeof rowRaw === 'object' ? rowRaw as AnyObj : {} as AnyObj;
+    const prev = currencyOverrides[currency] && typeof currencyOverrides[currency] === 'object'
+      ? currencyOverrides[currency] as AnyObj
+      : {} as AnyObj;
+    const nextRanking = row.ranking_weights && typeof row.ranking_weights === 'object'
+      ? mergeRankingWeights(prev.ranking_weights, row.ranking_weights)
+      : (prev.ranking_weights && typeof prev.ranking_weights === 'object' ? prev.ranking_weights : null);
+    if (!nextRanking) continue;
+    currencyOverrides[currency] = { ranking_weights: nextRanking };
+  }
+
+  const defaultCurrency = normalizeValueCurrencyToken(overlay.default_currency)
+    || normalizeValueCurrencyToken(base.default_currency)
+    || null;
+
+  return {
+    default_currency: defaultCurrency,
+    objective_overrides: objectiveOverrides,
+    currency_overrides: currencyOverrides
+  };
+}
+
 function applyOutcomeFitnessOverlay(strategy) {
   if (!strategy || typeof strategy !== 'object') return strategy;
   const policy = loadOutcomeFitnessPolicy(REPO_ROOT);
@@ -253,6 +295,9 @@ function applyOutcomeFitnessOverlay(strategy) {
   const promotionOverlay = strategyPolicy.promotion_policy_overrides && typeof strategyPolicy.promotion_policy_overrides === 'object'
     ? strategyPolicy.promotion_policy_overrides
     : null;
+  const valueCurrencyOverlay = strategyPolicy.value_currency_policy_overrides && typeof strategyPolicy.value_currency_policy_overrides === 'object'
+    ? strategyPolicy.value_currency_policy_overrides
+    : null;
 
   const next = {
     ...strategy,
@@ -270,6 +315,9 @@ function applyOutcomeFitnessOverlay(strategy) {
       ...(strategy.promotion_policy && typeof strategy.promotion_policy === 'object' ? strategy.promotion_policy : {}),
       ...promotionOverlay
     });
+  }
+  if (valueCurrencyOverlay && Object.keys(valueCurrencyOverlay).length > 0) {
+    next.value_currency_policy = mergeValueCurrencyPolicy(strategy.value_currency_policy, valueCurrencyOverlay);
   }
 
   next.outcome_fitness_policy = {

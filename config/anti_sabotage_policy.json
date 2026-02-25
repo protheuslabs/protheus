@@ -1,0 +1,23 @@
+{
+  "version": "1.0",
+  "protected_roots": [
+    "systems",
+    "config",
+    "lib",
+    "adaptive"
+  ],
+  "extensions": [
+    ".js",
+    ".ts",
+    ".json",
+    ".yaml",
+    ".yml"
+  ],
+  "state_dir": "state/security/anti_sabotage",
+  "quarantine_dir": "state/security/anti_sabotage/quarantine",
+  "snapshots_dir": "state/security/anti_sabotage/snapshots",
+  "incident_log": "state/security/anti_sabotage/incidents.jsonl",
+  "state_file": "state/security/anti_sabotage/state.json",
+  "verify_strict_default": true,
+  "auto_reset_default": true
+}

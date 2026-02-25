@@ -1,0 +1,51 @@
+{
+  "version": "1.0",
+  "seed_id_default": "tinyllama_seed",
+  "curation": {
+    "min_rows": 30,
+    "max_rows": 5000,
+    "include_outcomes": [
+      "shipped",
+      "no_change",
+      "reverted"
+    ]
+  },
+  "profiles": {
+    "small": {
+      "adapter": "lora",
+      "rank": 16,
+      "alpha": 32,
+      "batch_size": 8,
+      "epochs": 1,
+      "max_train_minutes": 30,
+      "max_ram_gb": 8,
+      "max_gpu_vram_gb": 0
+    },
+    "medium": {
+      "adapter": "qlora",
+      "rank": 32,
+      "alpha": 64,
+      "batch_size": 16,
+      "epochs": 2,
+      "max_train_minutes": 90,
+      "max_ram_gb": 16,
+      "max_gpu_vram_gb": 8
+    },
+    "large": {
+      "adapter": "qlora",
+      "rank": 64,
+      "alpha": 128,
+      "batch_size": 24,
+      "epochs": 3,
+      "max_train_minutes": 180,
+      "max_ram_gb": 32,
+      "max_gpu_vram_gb": 24
+    }
+  },
+  "promotion_thresholds": {
+    "min_quality": 0.85,
+    "min_safety": 0.95,
+    "max_cost_per_1k": 0.02,
+    "max_latency_ms": 120
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "version": "1.0",
+  "strict_default": false,
+  "controls": [
+    {
+      "id": "CC6.1",
+      "title": "Logical Access Security Controls",
+      "owner": "security",
+      "frequency": "daily",
+      "evidence": [
+        {
+          "type": "jsonl_min_rows",
+          "path": "state/security/policy_root_decisions.jsonl",
+          "min_rows": 1
+        },
+        {
+          "type": "jsonl_min_rows",
+          "path": "state/security/integrity_violations.jsonl",
+          "min_rows": 0
+        }
+      ]
+    },
+    {
+      "id": "CC7.2",
+      "title": "Change Management + Detection",
+      "owner": "ops",
+      "frequency": "daily",
+      "evidence": [
+        {
+          "type": "jsonl_min_rows",
+          "path": "state/autonomy/receipts.jsonl",
+          "min_rows": 1
+        },
+        {
+          "type": "file_exists",
+          "path": "docs/OPERATOR_RUNBOOK.md"
+        }
+      ]
+    },
+    {
+      "id": "CC8.1",
+      "title": "Incident Response + Recovery",
+      "owner": "ops",
+      "frequency": "weekly",
+      "evidence": [
+        {
+          "type": "jsonl_min_rows",
+          "path": "state/ops/postmortem_log.jsonl",
+          "min_rows": 0
+        },
+        {
+          "type": "file_exists",
+          "path": "docs/THREAT_MODEL_V1.md"
+        }
+      ]
+    }
+  ]
+}
