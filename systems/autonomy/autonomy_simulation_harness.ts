@@ -19,6 +19,11 @@ const {
   evaluateDirectiveLineageCandidate,
   extractObjectiveIdFromProposal
 } = require('../security/directive_compiler');
+const {
+  loadIdentityContext,
+  evaluateWorkflowDraft,
+  summarizeIdentityEvaluations
+} = require('../identity/identity_anchor');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const RUNS_DIR = process.env.AUTONOMY_SIM_RUNS_DIR
@@ -54,6 +59,15 @@ const SIM_LINEAGE_ROLLING_CONTEXT = String(process.env.AUTONOMY_SIM_LINEAGE_ROLL
 const SIM_EXTERNAL_INPUT_OVERRIDE = process.env.AUTONOMY_SIM_RUNS_DIR != null
   || process.env.AUTONOMY_SIM_PROPOSALS_DIR != null;
 const SIM_FILTER_LEGACY_UNBOUND_EYE_NO_CHANGE = String(process.env.AUTONOMY_SIM_FILTER_LEGACY_UNBOUND_EYE_NO_CHANGE || '1').trim() !== '0';
+const SIM_IDENTITY_PROJECTION_ENABLED = process.env.AUTONOMY_SIM_IDENTITY_PROJECTION_ENABLED != null
+  ? String(process.env.AUTONOMY_SIM_IDENTITY_PROJECTION_ENABLED).trim() !== '0'
+  : String(process.env.SPINE_IDENTITY_ANCHOR_ENABLED || '0').trim() !== '0';
+const SIM_IDENTITY_POLICY_PATH = process.env.AUTONOMY_SIM_IDENTITY_POLICY_PATH
+  ? path.resolve(String(process.env.AUTONOMY_SIM_IDENTITY_POLICY_PATH))
+  : null;
+const SIM_IDENTITY_BLOCK_UNKNOWN_OBJECTIVE = process.env.AUTONOMY_SIM_IDENTITY_BLOCK_UNKNOWN_OBJECTIVE != null
+  ? String(process.env.AUTONOMY_SIM_IDENTITY_BLOCK_UNKNOWN_OBJECTIVE).trim() !== '0'
+  : null;
 
 function usage() {
   console.log('Usage:');
@@ -515,6 +529,132 @@ function resolveRunContext(evt, proposalIndex) {
   };
 }
 
+function valueCurrencyFromRun(evt) {
+  if (!evt || evt.type !== 'autonomy_run') return '';
+  const routeSummary = evt.route_summary && typeof evt.route_summary === 'object'
+    ? evt.route_summary
+    : {};
+  const rankingContext = routeSummary.strategy_ranking_context && typeof routeSummary.strategy_ranking_context === 'object'
+    ? routeSummary.strategy_ranking_context
+    : {};
+  const meta = evt.metadata && typeof evt.metadata === 'object'
+    ? evt.metadata
+    : {};
+  return normalizeText(
+    evt.value_currency
+    || routeSummary.value_currency
+    || rankingContext.value_currency
+    || meta.value_currency
+    || ''
+  ).toLowerCase();
+}
+
+function applyIdentityProjection(attempts, proposalIndex, endDateStr) {
+  if (SIM_IDENTITY_PROJECTION_ENABLED !== true) {
+    return {
+      enabled: false,
+      attempted: 0,
+      accepted_attempts: Array.isArray(attempts) ? attempts : [],
+      blocked_attempts: [],
+      blocked_by_reason: {},
+      summary: summarizeIdentityEvaluations([], 0.58),
+      policy_path: SIM_IDENTITY_POLICY_PATH ? path.relative(ROOT, SIM_IDENTITY_POLICY_PATH).replace(/\\/g, '/') : null
+    };
+  }
+
+  let context = null;
+  let unavailableReason = null;
+  try {
+    context = loadIdentityContext({
+      date: endDateStr,
+      policy_path: SIM_IDENTITY_POLICY_PATH || undefined
+    });
+    if (SIM_IDENTITY_BLOCK_UNKNOWN_OBJECTIVE != null) {
+      context.policy = context.policy && typeof context.policy === 'object'
+        ? { ...context.policy }
+        : {};
+      context.policy.enforcement = context.policy.enforcement && typeof context.policy.enforcement === 'object'
+        ? { ...context.policy.enforcement }
+        : {};
+      context.policy.enforcement.block_on_unknown_active_objective = SIM_IDENTITY_BLOCK_UNKNOWN_OBJECTIVE === true;
+    }
+  } catch (err) {
+    unavailableReason = String(err && err.message ? err.message : err || 'identity_projection_unavailable');
+  }
+  if (!context) {
+    return {
+      enabled: true,
+      unavailable: true,
+      unavailable_reason: unavailableReason || 'identity_projection_context_unavailable',
+      attempted: 0,
+      accepted_attempts: Array.isArray(attempts) ? attempts : [],
+      blocked_attempts: [],
+      blocked_by_reason: {},
+      summary: summarizeIdentityEvaluations([], 0.58),
+      policy_path: SIM_IDENTITY_POLICY_PATH ? path.relative(ROOT, SIM_IDENTITY_POLICY_PATH).replace(/\\/g, '/') : null
+    };
+  }
+
+  const accepted = [];
+  const blocked = [];
+  const evaluations = [];
+  const blockedByReason = {};
+  const sourceRows = Array.isArray(attempts) ? attempts : [];
+
+  for (let i = 0; i < sourceRows.length; i += 1) {
+    const evt = sourceRows[i];
+    const runCtx = resolveRunContext(evt, proposalIndex);
+    const candidate = {
+      id: runCtx.proposal_id || `SIM-${String(evt && evt.ts || endDateStr)}-${i}`,
+      objective_id: runCtx.objective_id || null,
+      metadata: {
+        value_currency: valueCurrencyFromRun(evt) || null
+      }
+    };
+    const verdict = evaluateWorkflowDraft(candidate, {
+      context,
+      parent: null,
+      source: 'autonomy_simulation_harness'
+    });
+    evaluations.push(verdict);
+    if (verdict && verdict.blocked === true) {
+      blocked.push({
+        evt,
+        context: runCtx,
+        verdict
+      });
+      const codes = Array.isArray(verdict.blocking_codes) ? verdict.blocking_codes : [];
+      if (!codes.length) {
+        blockedByReason.unknown = Number(blockedByReason.unknown || 0) + 1;
+      } else {
+        for (const code of codes) {
+          const key = String(code || '').trim() || 'unknown';
+          blockedByReason[key] = Number(blockedByReason[key] || 0) + 1;
+        }
+      }
+      continue;
+    }
+    accepted.push(evt);
+  }
+
+  return {
+    enabled: true,
+    unavailable: false,
+    attempted: sourceRows.length,
+    accepted_attempts: accepted,
+    blocked_attempts: blocked,
+    blocked_by_reason: blockedByReason,
+    summary: summarizeIdentityEvaluations(
+      evaluations,
+      Number(context && context.policy && context.policy.max_identity_drift_score || 0.58)
+    ),
+    policy_path: context && context.policy_path
+      ? path.relative(ROOT, context.policy_path).replace(/\\/g, '/')
+      : (SIM_IDENTITY_POLICY_PATH ? path.relative(ROOT, SIM_IDENTITY_POLICY_PATH).replace(/\\/g, '/') : null),
+    active_objective_ids: Array.isArray(context.active_objective_ids) ? context.active_objective_ids : []
+  };
+}
+
 function isLegacyUnboundEyeNoChange(evt, ctx) {
   if (!evt || evt.type !== 'autonomy_run') return false;
   if (String(evt.result || '') !== 'executed') return false;
@@ -703,13 +843,21 @@ function computeSimulation(endDateStr, days) {
     proposalIndex,
     directiveCompiler
   );
+  const identityProjection = applyIdentityProjection(
+    compilerProjection.accepted,
+    proposalIndex,
+    endDateStr
+  );
+  const projectedAccepted = Array.isArray(identityProjection.accepted_attempts)
+    ? identityProjection.accepted_attempts
+    : compilerProjection.accepted;
 
-  const attempts = compilerProjection.accepted.filter((row) => !isPolicyHoldEvent(row));
+  const attempts = projectedAccepted.filter((row) => !isPolicyHoldEvent(row));
   const executed = attempts.filter((row) => row && row.result === 'executed');
   const shipped = executed.filter((row) => String(row.outcome || '') === 'shipped');
   const noProgress = attempts.filter(isNoProgress);
   const safetyStops = attempts.filter(isSafetyStop);
-  const effectivePolicyHolds = compilerProjection.accepted.filter(isPolicyHoldEvent);
+  const effectivePolicyHolds = projectedAccepted.filter(isPolicyHoldEvent);
   const effectiveBudgetHolds = effectivePolicyHolds.filter(isBudgetHoldEvent);
 
   const objectiveCounts = {};
@@ -754,7 +902,11 @@ function computeSimulation(endDateStr, days) {
     baseline_preserved: true,
     effective_projection_present: true,
     denominator_reduction_only: effectiveCounters.attempts < baselineCounters.attempts,
-    denominator_delta: baselineCounters.attempts - effectiveCounters.attempts
+    denominator_delta: baselineCounters.attempts - effectiveCounters.attempts,
+    identity_projection_enabled: identityProjection.enabled === true,
+    identity_projection_blocked_attempts: Array.isArray(identityProjection.blocked_attempts)
+      ? identityProjection.blocked_attempts.length
+      : 0
   };
   const verdict = worstVerdict(verdictRaw, verdictEffective);
 
@@ -767,6 +919,9 @@ function computeSimulation(endDateStr, days) {
   }
   if (checksRaw.policy_hold_rate.status !== 'pass' || checksEffective.policy_hold_rate.status !== 'pass') {
     recommendations.push('Reduce policy-hold churn: tighten admission routing, quarantine low-actionability proposals, and cut retry pressure during governance holds.');
+  }
+  if (identityProjection.enabled === true && Array.isArray(identityProjection.blocked_attempts) && identityProjection.blocked_attempts.length > 0) {
+    recommendations.push('Identity projection blocked misaligned attempts; review blocked reasons and tighten objective/value propagation at proposal ingress.');
   }
   if (checksRaw.budget_hold_rate.status !== 'pass' || checksEffective.budget_hold_rate.status !== 'pass') {
     recommendations.push('Budget holds are elevated; reduce action frequency or projected token cost before resuming full autonomy cadence.');
@@ -832,6 +987,32 @@ function computeSimulation(endDateStr, days) {
         objective_id: row && row.context ? row.context.objective_id : null,
         reason: row && row.lineage ? row.lineage.reason || null : null
       }))
+    },
+    identity_projection: {
+      enabled: identityProjection.enabled === true,
+      unavailable: identityProjection.unavailable === true,
+      unavailable_reason: identityProjection.unavailable_reason || null,
+      policy_path: identityProjection.policy_path || null,
+      active_objective_ids: Array.isArray(identityProjection.active_objective_ids)
+        ? identityProjection.active_objective_ids
+        : [],
+      attempted: Number(identityProjection.attempted || 0),
+      blocked_attempts: Array.isArray(identityProjection.blocked_attempts)
+        ? identityProjection.blocked_attempts.length
+        : 0,
+      blocked_by_reason: identityProjection.blocked_by_reason || {},
+      summary: identityProjection.summary || summarizeIdentityEvaluations([], 0.58),
+      sample_blocked: (Array.isArray(identityProjection.blocked_attempts) ? identityProjection.blocked_attempts : [])
+        .slice(0, 8)
+        .map((row) => ({
+          result: String(row && row.evt && row.evt.result || ''),
+          proposal_id: row && row.context ? row.context.proposal_id : null,
+          objective_id: row && row.context ? row.context.objective_id : null,
+          value_currency: valueCurrencyFromRun(row && row.evt),
+          blocking_codes: row && row.verdict && Array.isArray(row.verdict.blocking_codes)
+            ? row.verdict.blocking_codes
+            : []
+        }))
     },
     queue,
     objective_mix: {

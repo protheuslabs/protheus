@@ -1,0 +1,442 @@
+{
+  "ok": true,
+  "type": "orchestron_adversarial_probe",
+  "ts": "2026-02-25T21:46:29.382Z",
+  "run_id": "orcrun_5f37a76d0f8845",
+  "date": "2026-02-25",
+  "candidate_id": "wfc_b64f099a253f122b",
+  "proposal_type": "cross_signal_opportunity.intake",
+  "pass": true,
+  "critical_failures": 0,
+  "non_critical_findings": 0,
+  "total_findings": 0,
+  "findings": [],
+  "policy": {
+    "enabled": true,
+    "max_critical_failures_per_candidate": 0,
+    "max_non_critical_findings_per_candidate": 8,
+    "max_findings_per_candidate": 24,
+    "block_unresolved_placeholders": true,
+    "high_power_requires_preflight": true,
+    "high_power_requires_rollback": false,
+    "persist_replay_artifacts": true,
+    "unresolved_placeholder_allowlist": [
+      "date",
+      "run_id",
+      "workflow_id",
+      "objective_id",
+      "eye_id",
+      "adapter"
+    ]
+  },
+  "candidate": {
+    "id": "wfc_b64f099a253f122b",
+    "name": "Adaptive cross_signal_opportunity workflow :: intake",
+    "status": "draft",
+    "source": "orchestron_candidate_generator",
+    "strategy_id": "workflow_strategy",
+    "objective_id": "T1_generational_wealth_v1",
+    "objective_primary": "Convert repeated successful patterns into reusable workflows.",
+    "trigger": {
+      "proposal_type": "cross_signal_opportunity.intake",
+      "min_occurrences": 12,
+      "intent_signature": "convert_repeated_successful_patterns_into_reusable_workflows._workflow_strategy_medium_speed_weight_:0.34_robustness_weight_:0.33_cost_weight_:0.33_feasibility_:0_risk_:0"
+    },
+    "intent": {
+      "id": "intent_ef528062d324fe",
+      "strategy_id": "workflow_strategy",
+      "objective": "Convert repeated successful patterns into reusable workflows.",
+      "uncertainty_band": "medium",
+      "constraints": {
+        "speed_weight": 0.34,
+        "robustness_weight": 0.33,
+        "cost_weight": 0.33
+      },
+      "signals": {
+        "feasibility": 0,
+        "risk": 0,
+        "novelty": 0
+      },
+      "source": "orchestron_adaptive_controller",
+      "ts": "2026-02-25T21:46:27.081Z",
+      "signature": "convert_repeated_successful_patterns_into_reusable_workflows._workflow_strategy_medium_speed_weight_:0.34_robustness_weight_:0.33_cost_weight_:0.33_feasibility_:0_risk_:0"
+    },
+    "parent_workflow_id": "wfc_bb3667438cb9e94c",
+    "fractal_depth": 1,
+    "mutation": {
+      "kind": "fractal_split",
+      "parent_workflow_id": "wfc_bb3667438cb9e94c",
+      "rationale": "spawned from cross_signal_opportunity to isolate intake pressure lane"
+    },
+    "tradeoffs": {
+      "speed_weight": 0.34,
+      "robustness_weight": 0.33,
+      "cost_weight": 0.33
+    },
+    "risk_policy": {
+      "max_risk_per_action": 45,
+      "allowed_risks": [
+        "low"
+      ]
+    },
+    "steps": [
+      {
+        "id": "scope",
+        "type": "command",
+        "command": "node systems/autonomy/proposal_enricher.js run <date>",
+        "purpose": "specialize intake and directive normalization",
+        "timeout_ms": 120000,
+        "retries": 1
+      },
+      {
+        "id": "execute_lane",
+        "type": "command",
+        "command": "node systems/autonomy/autonomy_controller.js run <date>",
+        "purpose": "execute sub-workflow lane",
+        "timeout_ms": 180000,
+        "retries": 1
+      },
+      {
+        "id": "verify",
+        "type": "gate",
+        "command": "node systems/autonomy/strategy_execute_guard.js run <date>",
+        "purpose": "verify lane safety and evidence",
+        "timeout_ms": 120000,
+        "retries": 0
+      },
+      {
+        "id": "receipt",
+        "type": "receipt",
+        "command": "state/autonomy/receipts/<date>.jsonl",
+        "purpose": "record lane receipt",
+        "timeout_ms": 30000,
+        "retries": 0
+      }
+    ],
+    "children": [
+      {
+        "id": "wfc_31061a84bbf073d5",
+        "name": "Adaptive cross_signal_opportunity workflow :: intake :: intake",
+        "status": "draft",
+        "source": "orchestron_candidate_generator",
+        "strategy_id": "workflow_strategy",
+        "objective_id": "T1_generational_wealth_v1",
+        "objective_primary": "Convert repeated successful patterns into reusable workflows.",
+        "trigger": {
+          "proposal_type": "cross_signal_opportunity.intake.intake",
+          "min_occurrences": 12,
+          "intent_signature": "convert_repeated_successful_patterns_into_reusable_workflows._workflow_strategy_medium_speed_weight_:0.34_robustness_weight_:0.33_cost_weight_:0.33_feasibility_:0_risk_:0"
+        },
+        "intent": {
+          "id": "intent_ef528062d324fe",
+          "strategy_id": "workflow_strategy",
+          "objective": "Convert repeated successful patterns into reusable workflows.",
+          "uncertainty_band": "medium",
+          "constraints": {
+            "speed_weight": 0.34,
+            "robustness_weight": 0.33,
+            "cost_weight": 0.33
+          },
+          "signals": {
+            "feasibility": 0,
+            "risk": 0,
+            "novelty": 0
+          },
+          "source": "orchestron_adaptive_controller",
+          "ts": "2026-02-25T21:46:27.081Z",
+          "signature": "convert_repeated_successful_patterns_into_reusable_workflows._workflow_strategy_medium_speed_weight_:0.34_robustness_weight_:0.33_cost_weight_:0.33_feasibility_:0_risk_:0"
+        },
+        "parent_workflow_id": "wfc_b64f099a253f122b",
+        "fractal_depth": 2,
+        "mutation": {
+          "kind": "fractal_split",
+          "parent_workflow_id": "wfc_b64f099a253f122b",
+          "rationale": "spawned from cross_signal_opportunity.intake to isolate intake pressure lane"
+        },
+        "tradeoffs": {
+          "speed_weight": 0.34,
+          "robustness_weight": 0.33,
+          "cost_weight": 0.33
+        },
+        "risk_policy": {
+          "max_risk_per_action": 45,
+          "allowed_risks": [
+            "low"
+          ]
+        },
+        "steps": [
+          {
+            "id": "scope",
+            "type": "command",
+            "command": "node systems/autonomy/proposal_enricher.js run <date>",
+            "purpose": "specialize intake and directive normalization",
+            "timeout_ms": 120000,
+            "retries": 1
+          },
+          {
+            "id": "execute_lane",
+            "type": "command",
+            "command": "node systems/autonomy/autonomy_controller.js run <date>",
+            "purpose": "execute sub-workflow lane",
+            "timeout_ms": 180000,
+            "retries": 1
+          },
+          {
+            "id": "verify",
+            "type": "gate",
+            "command": "node systems/autonomy/strategy_execute_guard.js run <date>",
+            "purpose": "verify lane safety and evidence",
+            "timeout_ms": 120000,
+            "retries": 0
+          },
+          {
+            "id": "receipt",
+            "type": "receipt",
+            "command": "state/autonomy/receipts/<date>.jsonl",
+            "purpose": "record lane receipt",
+            "timeout_ms": 30000,
+            "retries": 0
+          }
+        ],
+        "children": [],
+        "generated_at": "2026-02-25T21:46:29.350Z",
+        "metadata": {
+          "generation_kind": "fractal_child",
+          "parent_workflow_id": "wfc_b64f099a253f122b",
+          "attempts": 39,
+          "shipped_rate": 0.02564102564102564,
+          "failure_rate": 0.07692307692307693,
+          "intent_trit_alignment": 0,
+          "trit_uncertainty": 1,
+          "trit_novelty": 0,
+          "trit_mutation_fit": 0.54,
+          "value_currency": null,
+          "value_priority_score": 0.6679,
+          "fractal_effective_max_depth": 4,
+          "lane": "intake"
+        }
+      },
+      {
+        "id": "wfc_e0bd70c0a8815e6d",
+        "name": "Adaptive cross_signal_opportunity workflow :: intake :: execution",
+        "status": "draft",
+        "source": "orchestron_candidate_generator",
+        "strategy_id": "workflow_strategy",
+        "objective_id": "T1_generational_wealth_v1",
+        "objective_primary": "Convert repeated successful patterns into reusable workflows.",
+        "trigger": {
+          "proposal_type": "cross_signal_opportunity.intake.execution",
+          "min_occurrences": 12,
+          "intent_signature": "convert_repeated_successful_patterns_into_reusable_workflows._workflow_strategy_medium_speed_weight_:0.34_robustness_weight_:0.33_cost_weight_:0.33_feasibility_:0_risk_:0"
+        },
+        "intent": {
+          "id": "intent_ef528062d324fe",
+          "strategy_id": "workflow_strategy",
+          "objective": "Convert repeated successful patterns into reusable workflows.",
+          "uncertainty_band": "medium",
+          "constraints": {
+            "speed_weight": 0.34,
+            "robustness_weight": 0.33,
+            "cost_weight": 0.33
+          },
+          "signals": {
+            "feasibility": 0,
+            "risk": 0,
+            "novelty": 0
+          },
+          "source": "orchestron_adaptive_controller",
+          "ts": "2026-02-25T21:46:27.081Z",
+          "signature": "convert_repeated_successful_patterns_into_reusable_workflows._workflow_strategy_medium_speed_weight_:0.34_robustness_weight_:0.33_cost_weight_:0.33_feasibility_:0_risk_:0"
+        },
+        "parent_workflow_id": "wfc_b64f099a253f122b",
+        "fractal_depth": 2,
+        "mutation": {
+          "kind": "fractal_split",
+          "parent_workflow_id": "wfc_b64f099a253f122b",
+          "rationale": "spawned from cross_signal_opportunity.intake to isolate execution pressure lane"
+        },
+        "tradeoffs": {
+          "speed_weight": 0.34,
+          "robustness_weight": 0.33,
+          "cost_weight": 0.33
+        },
+        "risk_policy": {
+          "max_risk_per_action": 45,
+          "allowed_risks": [
+            "low"
+          ]
+        },
+        "steps": [
+          {
+            "id": "scope",
+            "type": "command",
+            "command": "node systems/autonomy/proposal_enricher.js run <date>",
+            "purpose": "specialize execution branch and fallback routing",
+            "timeout_ms": 120000,
+            "retries": 1
+          },
+          {
+            "id": "execute_lane",
+            "type": "command",
+            "command": "node systems/autonomy/autonomy_controller.js run <date>",
+            "purpose": "execute sub-workflow lane",
+            "timeout_ms": 180000,
+            "retries": 1
+          },
+          {
+            "id": "verify",
+            "type": "gate",
+            "command": "node systems/autonomy/strategy_execute_guard.js run <date>",
+            "purpose": "verify lane safety and evidence",
+            "timeout_ms": 120000,
+            "retries": 0
+          },
+          {
+            "id": "receipt",
+            "type": "receipt",
+            "command": "state/autonomy/receipts/<date>.jsonl",
+            "purpose": "record lane receipt",
+            "timeout_ms": 30000,
+            "retries": 0
+          }
+        ],
+        "children": [],
+        "generated_at": "2026-02-25T21:46:29.350Z",
+        "metadata": {
+          "generation_kind": "fractal_child",
+          "parent_workflow_id": "wfc_b64f099a253f122b",
+          "attempts": 39,
+          "shipped_rate": 0.02564102564102564,
+          "failure_rate": 0.07692307692307693,
+          "intent_trit_alignment": 0,
+          "trit_uncertainty": 1,
+          "trit_novelty": 0,
+          "trit_mutation_fit": 0.54,
+          "value_currency": null,
+          "value_priority_score": 0.6679,
+          "fractal_effective_max_depth": 4,
+          "lane": "execution"
+        }
+      },
+      {
+        "id": "wfc_73a4e4ecb469d416",
+        "name": "Adaptive cross_signal_opportunity workflow :: intake :: verification",
+        "status": "draft",
+        "source": "orchestron_candidate_generator",
+        "strategy_id": "workflow_strategy",
+        "objective_id": "T1_generational_wealth_v1",
+        "objective_primary": "Convert repeated successful patterns into reusable workflows.",
+        "trigger": {
+          "proposal_type": "cross_signal_opportunity.intake.verification",
+          "min_occurrences": 12,
+          "intent_signature": "convert_repeated_successful_patterns_into_reusable_workflows._workflow_strategy_medium_speed_weight_:0.34_robustness_weight_:0.33_cost_weight_:0.33_feasibility_:0_risk_:0"
+        },
+        "intent": {
+          "id": "intent_ef528062d324fe",
+          "strategy_id": "workflow_strategy",
+          "objective": "Convert repeated successful patterns into reusable workflows.",
+          "uncertainty_band": "medium",
+          "constraints": {
+            "speed_weight": 0.34,
+            "robustness_weight": 0.33,
+            "cost_weight": 0.33
+          },
+          "signals": {
+            "feasibility": 0,
+            "risk": 0,
+            "novelty": 0
+          },
+          "source": "orchestron_adaptive_controller",
+          "ts": "2026-02-25T21:46:27.081Z",
+          "signature": "convert_repeated_successful_patterns_into_reusable_workflows._workflow_strategy_medium_speed_weight_:0.34_robustness_weight_:0.33_cost_weight_:0.33_feasibility_:0_risk_:0"
+        },
+        "parent_workflow_id": "wfc_b64f099a253f122b",
+        "fractal_depth": 2,
+        "mutation": {
+          "kind": "fractal_split",
+          "parent_workflow_id": "wfc_b64f099a253f122b",
+          "rationale": "spawned from cross_signal_opportunity.intake to isolate verification pressure lane"
+        },
+        "tradeoffs": {
+          "speed_weight": 0.34,
+          "robustness_weight": 0.33,
+          "cost_weight": 0.33
+        },
+        "risk_policy": {
+          "max_risk_per_action": 45,
+          "allowed_risks": [
+            "low"
+          ]
+        },
+        "steps": [
+          {
+            "id": "scope",
+            "type": "command",
+            "command": "node systems/autonomy/proposal_enricher.js run <date>",
+            "purpose": "specialize verification + receipt hardening",
+            "timeout_ms": 120000,
+            "retries": 1
+          },
+          {
+            "id": "execute_lane",
+            "type": "command",
+            "command": "node systems/autonomy/autonomy_controller.js run <date>",
+            "purpose": "execute sub-workflow lane",
+            "timeout_ms": 180000,
+            "retries": 1
+          },
+          {
+            "id": "verify",
+            "type": "gate",
+            "command": "node systems/autonomy/strategy_execute_guard.js run <date>",
+            "purpose": "verify lane safety and evidence",
+            "timeout_ms": 120000,
+            "retries": 0
+          },
+          {
+            "id": "receipt",
+            "type": "receipt",
+            "command": "state/autonomy/receipts/<date>.jsonl",
+            "purpose": "record lane receipt",
+            "timeout_ms": 30000,
+            "retries": 0
+          }
+        ],
+        "children": [],
+        "generated_at": "2026-02-25T21:46:29.350Z",
+        "metadata": {
+          "generation_kind": "fractal_child",
+          "parent_workflow_id": "wfc_b64f099a253f122b",
+          "attempts": 39,
+          "shipped_rate": 0.02564102564102564,
+          "failure_rate": 0.07692307692307693,
+          "intent_trit_alignment": 0,
+          "trit_uncertainty": 1,
+          "trit_novelty": 0,
+          "trit_mutation_fit": 0.54,
+          "value_currency": null,
+          "value_priority_score": 0.6679,
+          "fractal_effective_max_depth": 4,
+          "lane": "verification"
+        }
+      }
+    ],
+    "generated_at": "2026-02-25T21:46:29.349Z",
+    "metadata": {
+      "generation_kind": "fractal_child",
+      "parent_workflow_id": "wfc_bb3667438cb9e94c",
+      "attempts": 39,
+      "shipped_rate": 0.02564102564102564,
+      "failure_rate": 0.07692307692307693,
+      "intent_trit_alignment": 0,
+      "trit_uncertainty": 1,
+      "trit_novelty": 0,
+      "trit_mutation_fit": 0.54,
+      "value_currency": null,
+      "value_priority_score": 0.6679,
+      "fractal_effective_max_depth": 4,
+      "lane": "intake",
+      "fractal_children_count": 3
+    }
+  }
+}

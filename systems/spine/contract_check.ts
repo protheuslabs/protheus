@@ -805,6 +805,12 @@ function main() {
     ["workflow_controller.js", "run", "list", "status", "--apply", "--days", "--max", "--policy", "--orchestron", "--orchestron-apply", "--orchestron-auto", "--intent", "--value-currency", "--objective-id"]
   );
 
+  // identity_anchor.js enforces objective/value coherence for workflow graft + morph proposals.
+  checkScript(
+    "systems/identity/identity_anchor.js",
+    ["identity_anchor.js", "run", "status", "--scope", "--strict", "--workflow-snapshot", "--workflow-registry", "--morph-plan"]
+  );
+
   // orchestron adaptive_controller.js runs intent->candidate->nursery scorecard cycles.
   checkScript(
     "systems/workflow/orchestron/adaptive_controller.js",

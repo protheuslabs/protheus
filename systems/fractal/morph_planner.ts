@@ -17,6 +17,11 @@ export {};
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const {
+  loadIdentityContext,
+  evaluateMorphActions,
+  writeIdentityReceipt
+} = require('../identity/identity_anchor');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const OUTPUT_DIR = process.env.FRACTAL_MORPH_PLAN_DIR
@@ -276,20 +281,48 @@ function cmdRun(dateStr, objectiveIdRaw, maxActionsRaw) {
     lane: laneStats(dateStr)
   };
   const actions = buildActions(ctx, maxActions);
+  const identityContext = loadIdentityContext({
+    date: dateStr
+  });
+  const identity = evaluateMorphActions(actions, {
+    context: identityContext,
+    source: 'fractal_morph_planner',
+    objective_id: objectiveId || null
+  });
+  const blockedActions = new Set(Array.isArray(identity.blocked_actions) ? identity.blocked_actions : []);
+  const filteredActions = actions.filter((row) => !blockedActions.has(String(row && row.id || '')));
+  const identityReceipt = writeIdentityReceipt({
+    context: identityContext,
+    scope: 'morph',
+    source: 'fractal_morph_planner',
+    evaluations: identity.evaluations,
+    summary: identity.summary
+  });
   const plan = {
     ok: true,
     type: 'fractal_morph_plan',
     ts: nowIso(),
     date: dateStr,
-    plan_id: stableId(`${dateStr}|${objectiveId}|${actions.map((a) => a.id).join(',')}`, 'morph'),
+    plan_id: stableId(`${dateStr}|${objectiveId}|${filteredActions.map((a) => a.id).join(',')}`, 'morph'),
     objective_id: objectiveId,
     max_actions: maxActions,
     governance_required: true,
     execution_mode: 'proposal_only',
-    actions,
+    actions: filteredActions,
+    identity: {
+      checked: Number(identity.summary && identity.summary.checked || 0),
+      blocked: Number(identity.summary && identity.summary.blocked || 0),
+      identity_drift_score: Number(identity.summary && identity.summary.identity_drift_score || 0),
+      max_identity_drift_score: Number(identity.summary && identity.summary.max_identity_drift_score || 0),
+      blocking_code_counts: identity.summary && identity.summary.blocking_code_counts
+        ? identity.summary.blocking_code_counts
+        : {},
+      blocked_action_ids: Array.isArray(identity.blocked_actions) ? identity.blocked_actions : [],
+      receipt_path: identityReceipt && identityReceipt.receipt_path ? identityReceipt.receipt_path : null
+    },
     context: ctx,
     summary: compact(
-      `${actions.length} bounded morph action(s); governance-required, no direct self-mutation.`,
+      `${filteredActions.length} bounded morph action(s); governance-required, no direct self-mutation.`,
       220
     )
   };
@@ -300,8 +333,11 @@ function cmdRun(dateStr, objectiveIdRaw, maxActionsRaw) {
     date: dateStr,
     plan_id: plan.plan_id,
     objective_id: objectiveId,
-    action_count: actions.length,
-    governance_required: true
+    action_count: filteredActions.length,
+    governance_required: true,
+    identity_drift_score: Number(identity.summary && identity.summary.identity_drift_score || 0),
+    identity_blocked: Number(identity.summary && identity.summary.blocked || 0),
+    identity_receipt_path: identityReceipt && identityReceipt.receipt_path ? identityReceipt.receipt_path : null
   });
   process.stdout.write(`${JSON.stringify({
     ok: true,
@@ -309,7 +345,12 @@ function cmdRun(dateStr, objectiveIdRaw, maxActionsRaw) {
     date: dateStr,
     plan_id: plan.plan_id,
     objective_id: objectiveId,
-    action_count: actions.length,
+    action_count: filteredActions.length,
+    identity_checked: Number(identity.summary && identity.summary.checked || 0),
+    identity_blocked: Number(identity.summary && identity.summary.blocked || 0),
+    identity_drift_score: Number(identity.summary && identity.summary.identity_drift_score || 0),
+    identity_max_drift_score: Number(identity.summary && identity.summary.max_identity_drift_score || 0),
+    identity_receipt_path: identityReceipt && identityReceipt.receipt_path ? identityReceipt.receipt_path : null,
     output_path: path.relative(ROOT, planPath(dateStr)).replace(/\\/g, '/')
   })}\n`);
 }

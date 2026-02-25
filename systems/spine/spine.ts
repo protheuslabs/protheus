@@ -1125,6 +1125,7 @@ function main() {
     "systems/workflow/workflow_generator.js",
     "systems/workflow/orchestron_controller.js",
     "systems/workflow/workflow_controller.js",
+    "systems/identity/identity_anchor.js",
     "systems/nursery/nursery_bootstrap.js",
     "systems/actuation/claw_registry.js",
     "systems/ops/public_benchmark_pack.js",
@@ -1138,6 +1139,7 @@ function main() {
     "config/continuum_policy.json",
     "config/nursery_policy.json",
     "config/workflow_policy.json",
+    "config/identity_anchor_policy.json",
     "config/deployment_packaging_policy.json",
     "config/compliance_posture_policy.json",
     "config/state_backup_policy.json",
@@ -3659,6 +3661,64 @@ function main() {
         flag_value: String(process.env.SPINE_FRACTAL_MORPH_ENABLED || "")
       });
       console.log(" fractal_morph skipped reason=feature_flag_disabled flag=SPINE_FRACTAL_MORPH_ENABLED");
+    }
+
+    // 4g2) identity anchor over workflow graft + morph outputs.
+    if (String(process.env.SPINE_IDENTITY_ANCHOR_ENABLED || "1") !== "0") {
+      const identityScopeRaw = String(process.env.SPINE_IDENTITY_ANCHOR_SCOPE || "all").trim().toLowerCase();
+      const identityScope = identityScopeRaw === "workflows" || identityScopeRaw === "morph"
+        ? identityScopeRaw
+        : "all";
+      const identityStrict = String(process.env.SPINE_IDENTITY_ANCHOR_STRICT || "0") === "1";
+      const identity = runJson("node", [
+        "systems/identity/identity_anchor.js",
+        "run",
+        dateStr,
+        `--scope=${identityScope}`,
+        `--strict=${identityStrict ? "1" : "0"}`
+      ]);
+      const payload = identity.payload && typeof identity.payload === "object"
+        ? identity.payload
+        : null;
+      const identityOk = identity.ok && !!payload && payload.ok === true;
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_identity_anchor",
+        mode,
+        date: dateStr,
+        ok: identityOk,
+        scope: payload ? payload.scope || identityScope : identityScope,
+        strict: identityStrict,
+        checked: payload ? Number(payload.checked || 0) : null,
+        blocked: payload ? Number(payload.blocked || 0) : null,
+        identity_drift_score: payload ? Number(payload.identity_drift_score || 0) : null,
+        max_identity_drift_score: payload ? Number(payload.max_identity_drift_score || 0) : null,
+        receipt_path: payload ? payload.receipt_path || null : null,
+        reason: (!identityOk)
+          ? String(identity.stderr || identity.stdout || `identity_anchor_exit_${identity.code}`).slice(0, 180)
+          : null
+      });
+      if (identityOk) {
+        console.log(
+          ` identity_anchor checked=${Number(payload.checked || 0)}` +
+          ` blocked=${Number(payload.blocked || 0)}` +
+          ` drift=${Number(payload.identity_drift_score || 0).toFixed(4)}`
+        );
+      } else {
+        console.log(` identity_anchor unavailable reason=${String(identity.stderr || identity.stdout || "unknown").slice(0, 120)}`);
+      }
+      if (identityStrict && !identityOk) process.exit(identity.code || 1);
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_identity_anchor_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "SPINE_IDENTITY_ANCHOR_ENABLED",
+        flag_value: String(process.env.SPINE_IDENTITY_ANCHOR_ENABLED || "")
+      });
+      console.log(" identity_anchor skipped reason=feature_flag_disabled flag=SPINE_IDENTITY_ANCHOR_ENABLED");
     }
 
     // 4h) genome topology snapshot + mutation journal append.

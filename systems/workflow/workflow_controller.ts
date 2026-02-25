@@ -24,6 +24,12 @@ const {
   generateAdaptiveDrafts,
   loadPolicy: loadOrchestronPolicy
 } = require('./orchestron/adaptive_controller');
+const {
+  loadIdentityContext,
+  evaluateWorkflowDraft,
+  summarizeIdentityEvaluations,
+  writeIdentityReceipt
+} = require('../identity/identity_anchor');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const REGISTRY_PATH = process.env.WORKFLOW_REGISTRY_PATH
@@ -182,9 +188,20 @@ function applyDrafts(registry, drafts, policy, options = {}) {
   const ignoreThreshold = options && options.ignore_threshold === true;
   const statusRaw = String(options && options.status || 'active').trim().toLowerCase();
   const targetStatus = statusRaw === 'draft' ? 'draft' : 'active';
+  const writeIdentityReceiptEnabled = options && options.identity_write_receipt !== false;
   let applied = 0;
   let updated = 0;
   const activatedThisRun = new Set();
+  const identityDate = dateArgOrToday(options && options.date);
+  const identitySource = String(options && options.identity_source || 'workflow_controller').trim() || 'workflow_controller';
+  let identityContext = null;
+  let identityError = null;
+  try {
+    identityContext = loadIdentityContext({ date: identityDate });
+  } catch (err) {
+    identityError = String(err && err.message ? err.message : err || 'identity_anchor_unavailable');
+  }
+  const identityEvaluations = [];
 
   function resolveRootWorkflowId(workflowId, maxHops = 24) {
     let currentId = String(workflowId || '').trim();
@@ -246,6 +263,16 @@ function applyDrafts(registry, drafts, policy, options = {}) {
       if (!parentKnown) continue;
     }
     const effectiveParentId = parentWorkflowId || null;
+    const parentRow = effectiveParentId ? (map.get(effectiveParentId) || null) : null;
+    if (targetStatus === 'active' && identityContext) {
+      const identityVerdict = evaluateWorkflowDraft(draft, {
+        context: identityContext,
+        parent: parentRow,
+        source: identitySource
+      });
+      identityEvaluations.push(identityVerdict);
+      if (identityVerdict && identityVerdict.blocked === true) continue;
+    }
     const rootWorkflowId = effectiveParentId ? (resolveRootWorkflowId(effectiveParentId) || effectiveParentId) : id;
     const depth = Number(draft && draft.fractal_depth || 0);
     const existing = map.get(id);
@@ -283,10 +310,32 @@ function applyDrafts(registry, drafts, policy, options = {}) {
   const workflows = Array.from(map.values())
     .sort((a, b) => String(b.updated_at || '').localeCompare(String(a.updated_at || '')))
     .slice(0, Math.max(8, maxRows));
+  const identitySummary = summarizeIdentityEvaluations(
+    identityEvaluations,
+    Number(identityContext && identityContext.policy && identityContext.policy.max_identity_drift_score || 0.58)
+  );
+  let identityReceiptPath = null;
+  if (identityContext && writeIdentityReceiptEnabled) {
+    const receipt = writeIdentityReceipt({
+      context: identityContext,
+      scope: 'workflows',
+      source: identitySource,
+      evaluations: identityEvaluations,
+      summary: identitySummary
+    });
+    identityReceiptPath = receipt && receipt.receipt_path ? String(receipt.receipt_path) : null;
+  }
   return {
     workflows,
     applied,
-    updated
+    updated,
+    identity_checked: Number(identitySummary.checked || 0),
+    identity_blocked: Number(identitySummary.blocked || 0),
+    identity_drift_score: Number(identitySummary.identity_drift_score || 0),
+    identity_max_drift_score: Number(identitySummary.max_identity_drift_score || 0),
+    identity_blocking_code_counts: identitySummary.blocking_code_counts || {},
+    identity_receipt_path: identityReceiptPath,
+    identity_error: identityError
   };
 }
 
@@ -587,13 +636,36 @@ function runCmd(dateStr, args) {
       )
     : (baseline && Array.isArray(baseline.drafts) ? baseline.drafts : []);
   const registry = loadRegistry();
-  let summary = { applied: 0, updated: 0 };
+  let summary = {
+    applied: 0,
+    updated: 0,
+    identity_checked: 0,
+    identity_blocked: 0,
+    identity_drift_score: 0,
+    identity_max_drift_score: 0,
+    identity_blocking_code_counts: {},
+    identity_receipt_path: null,
+    identity_error: null
+  };
   let nextWorkflows = registry.workflows;
 
   if (apply) {
-    const applied = applyDrafts(registry, generatedDrafts, policy);
+    const applied = applyDrafts(registry, generatedDrafts, policy, {
+      date: dateStr,
+      identity_source: 'workflow_controller_run'
+    });
     nextWorkflows = applied.workflows;
-    summary = { applied: applied.applied, updated: applied.updated };
+    summary = {
+      applied: applied.applied,
+      updated: applied.updated,
+      identity_checked: Number(applied.identity_checked || 0),
+      identity_blocked: Number(applied.identity_blocked || 0),
+      identity_drift_score: Number(applied.identity_drift_score || 0),
+      identity_max_drift_score: Number(applied.identity_max_drift_score || 0),
+      identity_blocking_code_counts: applied.identity_blocking_code_counts || {},
+      identity_receipt_path: applied.identity_receipt_path || null,
+      identity_error: applied.identity_error || null
+    };
   }
 
   const saved = saveRegistry({
@@ -632,6 +704,13 @@ function runCmd(dateStr, args) {
     orchestron_error: orchestronError,
     applied: summary.applied,
     updated: summary.updated,
+    identity_checked: summary.identity_checked,
+    identity_blocked: summary.identity_blocked,
+    identity_drift_score: summary.identity_drift_score,
+    identity_max_drift_score: summary.identity_max_drift_score,
+    identity_blocking_code_counts: summary.identity_blocking_code_counts,
+    identity_receipt_path: summary.identity_receipt_path,
+    identity_error: summary.identity_error,
     registry_total: Array.isArray(saved.workflows) ? saved.workflows.length : 0,
     policy_path: relPath(policyPath),
     registry_path: relPath(REGISTRY_PATH)
@@ -679,9 +758,13 @@ function promoteCmd(args) {
   }
   const selected = selectPromotableRows(snapshot.payload, source, idFilter);
   const registry = loadRegistry();
+  const promotionDate = dateArgOrToday(snapshot.payload && snapshot.payload.date);
   const applied = applyDrafts(registry, selected.rows, policy, {
     status,
-    ignore_threshold: ignoreThreshold
+    ignore_threshold: ignoreThreshold,
+    date: promotionDate,
+    identity_source: 'workflow_controller_promote',
+    identity_write_receipt: dryRun !== true
   });
   const saved = dryRun
     ? {
@@ -713,6 +796,13 @@ function promoteCmd(args) {
     selected: selected.selected,
     applied: applied.applied,
     updated: applied.updated,
+    identity_checked: Number(applied.identity_checked || 0),
+    identity_blocked: Number(applied.identity_blocked || 0),
+    identity_drift_score: Number(applied.identity_drift_score || 0),
+    identity_max_drift_score: Number(applied.identity_max_drift_score || 0),
+    identity_blocking_code_counts: applied.identity_blocking_code_counts || {},
+    identity_receipt_path: applied.identity_receipt_path || null,
+    identity_error: applied.identity_error || null,
     registry_total: Array.isArray(saved.workflows) ? saved.workflows.length : 0,
     policy_path: relPath(policyPath),
     registry_path: relPath(REGISTRY_PATH)

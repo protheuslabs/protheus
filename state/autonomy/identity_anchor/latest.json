@@ -1,0 +1,28 @@
+{
+  "ok": true,
+  "type": "identity_anchor_latest",
+  "ts": "2026-02-25T21:48:31.553Z",
+  "date": "2026-02-25",
+  "scope": "workflows",
+  "source": "workflow_controller_promote",
+  "strategy_id": "default_general",
+  "active_objective_ids": [
+    "T1_make_jay_billionaire_v1",
+    "T1_generational_wealth_v1"
+  ],
+  "summary": {
+    "checked": 1,
+    "blocked": 1,
+    "allowed": 0,
+    "identity_drift_score": 1,
+    "max_identity_drift_score": 0.58,
+    "max_candidate_drift_score": 1,
+    "blocking_code_counts": {
+      "value_currency_mismatch_parent": 1,
+      "value_currency_mismatch_objective": 1,
+      "identity_drift_above_max": 1
+    }
+  },
+  "receipt_path": "state/autonomy/identity_anchor/2026-02-25.jsonl",
+  "policy_path": "config/identity_anchor_policy.json"
+}
