@@ -173,11 +173,13 @@ function loadCriticalEvents(dateStr) {
   return { all, spineCount: spineRows.length, autonomyCount: autonomyRows.length };
 }
 
-function detailPath(dateStr) {
-  return path.join(LEDGER_DIR, `${dateStr}.jsonl`);
+function detailPath(dateStr, rollupSeq = 1) {
+  const seq = Number(rollupSeq || 1);
+  if (seq <= 1) return path.join(LEDGER_DIR, `${dateStr}.jsonl`);
+  return path.join(LEDGER_DIR, `${dateStr}.${seq}.jsonl`);
 }
 
-function writeDetailLedger(dateStr, events) {
+function writeDetailLedger(dateStr, events, rollupSeq) {
   const rows = [];
   let prevHash = 'GENESIS';
   for (let i = 0; i < events.length; i += 1) {
@@ -193,7 +195,7 @@ function writeDetailLedger(dateStr, events) {
     rows.push({ ...payload, hash });
     prevHash = hash;
   }
-  writeJsonl(detailPath(dateStr), rows);
+  writeJsonl(detailPath(dateStr, rollupSeq), rows);
   const digest = rows.length ? rows[rows.length - 1].hash : hashOf({ date: dateStr, empty: true });
   return { rows, digest };
 }
@@ -208,21 +210,40 @@ function chainTailHash() {
   return String(rows[rows.length - 1].hash || 'GENESIS');
 }
 
-function upsertChainRow(row) {
+function nextRollupSeq(dateStr, mode) {
   const rows = currentChainRows();
-  const idx = rows.findIndex((r) => String(r.date || '') === String(row.date || '') && String(r.mode || '') === String(row.mode || ''));
-  if (idx >= 0) {
-    // preserve append-only semantics: only allow exact idempotent replacement.
-    const existing = rows[idx];
-    if (String(existing.hash || '') !== String(row.hash || '')) {
-      throw new Error(`chain_row_conflict_for_${row.date}`);
-    }
-    return;
+  let maxSeq = 0;
+  for (const row of rows) {
+    if (String(row.date || '') !== String(dateStr || '')) continue;
+    if (String(row.mode || '') !== String(mode || '')) continue;
+    maxSeq = Math.max(maxSeq, Number(row.rollup_seq || 1));
   }
-  appendJsonl(CHAIN_PATH, row);
+  return maxSeq + 1;
 }
 
-function makeChainRow(dateStr, mode, digest, stats) {
+function upsertChainRow(row) {
+  const rows = currentChainRows();
+  const existing = rows.find((r) =>
+    String(r.date || '') === String(row.date || '')
+    && String(r.mode || '') === String(row.mode || '')
+    && String(r.digest || '') === String(row.digest || '')
+  );
+  if (existing) {
+    return {
+      appended: false,
+      hash: String(existing.hash || ''),
+      rollup_seq: Number(existing.rollup_seq || 1)
+    };
+  }
+  appendJsonl(CHAIN_PATH, row);
+  return {
+    appended: true,
+    hash: String(row.hash || ''),
+    rollup_seq: Number(row.rollup_seq || 1)
+  };
+}
+
+function makeChainRow(dateStr, mode, digest, stats, rollupSeq) {
   const prevHash = chainTailHash();
   const payload = {
     schema_id: 'black_box_chain',
@@ -230,6 +251,8 @@ function makeChainRow(dateStr, mode, digest, stats) {
     ts: nowIso(),
     date: dateStr,
     mode: String(mode || 'daily'),
+    rollup_seq: Number(rollupSeq || 1),
+    detail_file: path.basename(detailPath(dateStr, rollupSeq)),
     digest,
     prev_hash: prevHash,
     spine_events: Number(stats.spineCount || 0),
@@ -242,30 +265,37 @@ function makeChainRow(dateStr, mode, digest, stats) {
 
 function cmdRollup(dateStr, mode) {
   const stats = loadCriticalEvents(dateStr);
-  const detail = writeDetailLedger(dateStr, stats.all);
+  const rollupSeq = nextRollupSeq(dateStr, mode);
+  const detail = writeDetailLedger(dateStr, stats.all, rollupSeq);
   const chainRow = makeChainRow(dateStr, mode, detail.digest, {
     spineCount: stats.spineCount,
     autonomyCount: stats.autonomyCount,
     total: stats.all.length
-  });
-  upsertChainRow(chainRow);
+  }, rollupSeq);
+  const upsert = upsertChainRow(chainRow);
   process.stdout.write(`${JSON.stringify({
     ok: true,
     type: 'black_box_ledger_rollup',
     date: dateStr,
     mode,
+    rollup_seq: upsert.rollup_seq,
+    appended: upsert.appended,
     spine_events: stats.spineCount,
     autonomy_events: stats.autonomyCount,
     total_events: stats.all.length,
     digest: detail.digest,
-    chain_hash: chainRow.hash,
-    detail_path: path.relative(ROOT, detailPath(dateStr)).replace(/\\/g, '/'),
+    chain_hash: upsert.hash || chainRow.hash,
+    detail_path: path.relative(ROOT, detailPath(dateStr, rollupSeq)).replace(/\\/g, '/'),
     chain_path: path.relative(ROOT, CHAIN_PATH).replace(/\\/g, '/')
   })}\n`);
 }
 
-function verifyDetailFile(dateStr) {
-  const rows = readJsonl(detailPath(dateStr));
+function verifyDetailFile(dateStr, detailFile) {
+  const fallback = detailPath(dateStr, 1);
+  const fp = detailFile
+    ? path.join(LEDGER_DIR, String(detailFile || '').trim())
+    : fallback;
+  const rows = readJsonl(fp);
   let prevHash = 'GENESIS';
   for (let i = 0; i < rows.length; i += 1) {
     const row = rows[i] || {};
@@ -282,11 +312,22 @@ function verifyDetailFile(dateStr) {
     if (String(row.hash || '') !== expected) return { ok: false, error: 'detail_hash_mismatch', index: i };
     prevHash = expected;
   }
-  return { ok: true, digest: rows.length ? rows[rows.length - 1].hash : hashOf({ date: dateStr, empty: true }), rows: rows.length };
+  return {
+    ok: true,
+    digest: rows.length ? rows[rows.length - 1].hash : hashOf({ date: dateStr, empty: true }),
+    rows: rows.length
+  };
 }
 
 function cmdVerify() {
   const rows = currentChainRows();
+  const latestSeqByKey = {};
+  for (const row of rows) {
+    const key = `${String(row.date || '')}|${String(row.mode || '')}`;
+    const seq = Number(row.rollup_seq || 1);
+    latestSeqByKey[key] = Math.max(Number(latestSeqByKey[key] || 0), seq);
+  }
+  let skippedSuperseded = 0;
   let prevHash = 'GENESIS';
   for (let i = 0; i < rows.length; i += 1) {
     const row = rows[i] || {};
@@ -301,7 +342,13 @@ function cmdVerify() {
       spine_events: row.spine_events,
       autonomy_events: row.autonomy_events,
       total_events: row.total_events
-    };
+    } as Record<string, any>;
+    if (Object.prototype.hasOwnProperty.call(row, 'detail_file')) {
+      payload.detail_file = row.detail_file;
+    }
+    if (Object.prototype.hasOwnProperty.call(row, 'rollup_seq')) {
+      payload.rollup_seq = row.rollup_seq;
+    }
     const expected = hashOf(payload);
     if (String(row.prev_hash || '') !== String(prevHash)) {
       process.stdout.write(`${JSON.stringify({ ok: false, type: 'black_box_ledger_verify', error: 'chain_prev_hash_mismatch', index: i })}\n`);
@@ -313,16 +360,26 @@ function cmdVerify() {
       process.exitCode = 1;
       return;
     }
-    const detail = verifyDetailFile(String(row.date || '').slice(0, 10));
+    const detail = verifyDetailFile(
+      String(row.date || '').slice(0, 10),
+      row.detail_file ? String(row.detail_file || '').trim() : null
+    );
     if (!detail.ok) {
       process.stdout.write(`${JSON.stringify({ ok: false, type: 'black_box_ledger_verify', error: detail.error, date: row.date, index: detail.index })}\n`);
       process.exitCode = 1;
       return;
     }
     if (String(row.digest || '') !== String(detail.digest || '')) {
-      process.stdout.write(`${JSON.stringify({ ok: false, type: 'black_box_ledger_verify', error: 'digest_mismatch', date: row.date })}\n`);
-      process.exitCode = 1;
-      return;
+      const key = `${String(row.date || '')}|${String(row.mode || '')}`;
+      const seq = Number(row.rollup_seq || 1);
+      const latestSeq = Number(latestSeqByKey[key] || seq);
+      if (seq < latestSeq) {
+        skippedSuperseded += 1;
+      } else {
+        process.stdout.write(`${JSON.stringify({ ok: false, type: 'black_box_ledger_verify', error: 'digest_mismatch', date: row.date })}\n`);
+        process.exitCode = 1;
+        return;
+      }
     }
     prevHash = expected;
   }
@@ -331,6 +388,7 @@ function cmdVerify() {
     type: 'black_box_ledger_verify',
     rows: rows.length,
     valid: true,
+    skipped_superseded: skippedSuperseded,
     chain_path: path.relative(ROOT, CHAIN_PATH).replace(/\\/g, '/')
   })}\n`);
 }
@@ -348,6 +406,7 @@ function cmdStatus() {
     rows: rows.length,
     last_date: last.date || null,
     last_mode: last.mode || null,
+    last_rollup_seq: Number(last.rollup_seq || 1),
     last_hash: last.hash || null,
     chain_path: path.relative(ROOT, CHAIN_PATH).replace(/\\/g, '/')
   })}\n`);

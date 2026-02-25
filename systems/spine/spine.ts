@@ -3249,7 +3249,193 @@ function main() {
       console.log(" suggestion_lane skipped reason=feature_flag_disabled flag=SPINE_SUGGESTION_LANE_ENABLED");
     }
 
-    // 4f) self-documentation closeout (daily MEMORY.md session summary with significance gating).
+    // 4f) recursive organism introspection snapshot (branch health + restructure candidates).
+    if (String(process.env.SPINE_FRACTAL_INTROSPECTION_ENABLED || "1") !== "0") {
+      const introspection = runJson("node", [
+        "systems/fractal/introspection_map.js",
+        "run",
+        dateStr
+      ]);
+      const payload = introspection.payload && typeof introspection.payload === "object"
+        ? introspection.payload
+        : null;
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_fractal_introspection",
+        mode,
+        date: dateStr,
+        ok: introspection.ok && !!payload && payload.ok === true,
+        nodes: payload ? Number(payload.nodes || 0) : null,
+        edges: payload ? Number(payload.edges || 0) : null,
+        restructure_candidates: payload ? Number(payload.restructure_candidates || 0) : null,
+        output_path: payload ? payload.output_path || null : null,
+        reason: (!introspection.ok || !payload || payload.ok !== true)
+          ? String(introspection.stderr || introspection.stdout || `fractal_introspection_exit_${introspection.code}`).slice(0, 180)
+          : null
+      });
+      if (introspection.ok && payload && payload.ok === true) {
+        console.log(
+          ` fractal_introspection nodes=${Number(payload.nodes || 0)}` +
+          ` candidates=${Number(payload.restructure_candidates || 0)}`
+        );
+      } else {
+        console.log(` fractal_introspection unavailable reason=${String(introspection.stderr || introspection.stdout || "unknown").slice(0, 120)}`);
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_fractal_introspection_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "SPINE_FRACTAL_INTROSPECTION_ENABLED",
+        flag_value: String(process.env.SPINE_FRACTAL_INTROSPECTION_ENABLED || "")
+      });
+      console.log(" fractal_introspection skipped reason=feature_flag_disabled flag=SPINE_FRACTAL_INTROSPECTION_ENABLED");
+    }
+
+    // 4g) directive-conditioned morph planner (proposal-only).
+    if (String(process.env.SPINE_FRACTAL_MORPH_ENABLED || "1") !== "0") {
+      const morphMaxActions = Math.max(1, Number(process.env.SPINE_FRACTAL_MORPH_MAX_ACTIONS || 6) || 6);
+      const morph = runJson("node", [
+        "systems/fractal/morph_planner.js",
+        "run",
+        dateStr,
+        `--max-actions=${morphMaxActions}`
+      ]);
+      const payload = morph.payload && typeof morph.payload === "object"
+        ? morph.payload
+        : null;
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_fractal_morph_plan",
+        mode,
+        date: dateStr,
+        ok: morph.ok && !!payload && payload.ok === true,
+        plan_id: payload ? payload.plan_id || null : null,
+        objective_id: payload ? payload.objective_id || null : null,
+        action_count: payload ? Number(payload.action_count || 0) : null,
+        output_path: payload ? payload.output_path || null : null,
+        reason: (!morph.ok || !payload || payload.ok !== true)
+          ? String(morph.stderr || morph.stdout || `fractal_morph_exit_${morph.code}`).slice(0, 180)
+          : null
+      });
+      if (morph.ok && payload && payload.ok === true) {
+        console.log(
+          ` fractal_morph plan=${String(payload.plan_id || "none")}` +
+          ` actions=${Number(payload.action_count || 0)}`
+        );
+      } else {
+        console.log(` fractal_morph unavailable reason=${String(morph.stderr || morph.stdout || "unknown").slice(0, 120)}`);
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_fractal_morph_plan_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "SPINE_FRACTAL_MORPH_ENABLED",
+        flag_value: String(process.env.SPINE_FRACTAL_MORPH_ENABLED || "")
+      });
+      console.log(" fractal_morph skipped reason=feature_flag_disabled flag=SPINE_FRACTAL_MORPH_ENABLED");
+    }
+
+    // 4h) genome topology snapshot + mutation journal append.
+    if (String(process.env.SPINE_FRACTAL_GENOME_LEDGER_ENABLED || "1") !== "0") {
+      const genome = runJson("node", [
+        "systems/fractal/genome_ledger.js",
+        "snapshot",
+        dateStr
+      ]);
+      const payload = genome.payload && typeof genome.payload === "object"
+        ? genome.payload
+        : null;
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_fractal_genome_snapshot",
+        mode,
+        date: dateStr,
+        ok: genome.ok && !!payload && payload.ok === true,
+        modules_total: payload ? Number(payload.modules_total || 0) : null,
+        plan_id: payload ? payload.plan_id || null : null,
+        action_count: payload ? Number(payload.action_count || 0) : null,
+        snapshot_path: payload ? payload.snapshot_path || null : null,
+        ledger_path: payload ? payload.ledger_path || null : null,
+        hash: payload ? payload.hash || null : null,
+        reason: (!genome.ok || !payload || payload.ok !== true)
+          ? String(genome.stderr || genome.stdout || `fractal_genome_exit_${genome.code}`).slice(0, 180)
+          : null
+      });
+      if (genome.ok && payload && payload.ok === true) {
+        console.log(
+          ` fractal_genome modules=${Number(payload.modules_total || 0)}` +
+          ` hash=${String(payload.hash || "").slice(0, 12)}`
+        );
+      } else {
+        console.log(` fractal_genome unavailable reason=${String(genome.stderr || genome.stdout || "unknown").slice(0, 120)}`);
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_fractal_genome_snapshot_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "SPINE_FRACTAL_GENOME_LEDGER_ENABLED",
+        flag_value: String(process.env.SPINE_FRACTAL_GENOME_LEDGER_ENABLED || "")
+      });
+      console.log(" fractal_genome skipped reason=feature_flag_disabled flag=SPINE_FRACTAL_GENOME_LEDGER_ENABLED");
+    }
+
+    // 4i) bounded organism cycle (dream/symbiosis/predator/epigenetic/pheromone/resonance/archetypes).
+    if (String(process.env.SPINE_FRACTAL_ORGANISM_CYCLE_ENABLED || "1") !== "0") {
+      const cycle = runJson("node", [
+        "systems/fractal/organism_cycle.js",
+        "run",
+        dateStr
+      ]);
+      const payload = cycle.payload && typeof cycle.payload === "object"
+        ? cycle.payload
+        : null;
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_fractal_organism_cycle",
+        mode,
+        date: dateStr,
+        ok: cycle.ok && !!payload && payload.ok === true,
+        symbiosis_plans: payload ? Number(payload.symbiosis_plans || 0) : null,
+        predator_candidates: payload ? Number(payload.predator_candidates || 0) : null,
+        pheromones: payload ? Number(payload.pheromones || 0) : null,
+        harmony_score: payload ? Number(payload.harmony_score || 0) : null,
+        archetypes: payload ? Number(payload.archetypes || 0) : null,
+        output_path: payload ? payload.output_path || null : null,
+        reason: (!cycle.ok || !payload || payload.ok !== true)
+          ? String(cycle.stderr || cycle.stdout || `fractal_organism_cycle_exit_${cycle.code}`).slice(0, 180)
+          : null
+      });
+      if (cycle.ok && payload && payload.ok === true) {
+        console.log(
+          ` fractal_organism cycle_harmony=${Number(payload.harmony_score || 0)}` +
+          ` archetypes=${Number(payload.archetypes || 0)}`
+        );
+      } else {
+        console.log(` fractal_organism unavailable reason=${String(cycle.stderr || cycle.stdout || "unknown").slice(0, 120)}`);
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_fractal_organism_cycle_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "SPINE_FRACTAL_ORGANISM_CYCLE_ENABLED",
+        flag_value: String(process.env.SPINE_FRACTAL_ORGANISM_CYCLE_ENABLED || "")
+      });
+      console.log(" fractal_organism skipped reason=feature_flag_disabled flag=SPINE_FRACTAL_ORGANISM_CYCLE_ENABLED");
+    }
+
+    // 4j) self-documentation closeout (daily MEMORY.md session summary with significance gating).
     if (String(process.env.SPINE_SELF_DOCUMENTATION_ENABLED || "1") !== "0") {
       const selfDocArgs = [
         "systems/autonomy/self_documentation_closeout.js",
@@ -3308,7 +3494,7 @@ function main() {
       console.log(" self_documentation skipped reason=feature_flag_disabled flag=SPINE_SELF_DOCUMENTATION_ENABLED");
     }
 
-    // 4g) black-box hash ledger rollup for tamper-evident decision traceability.
+    // 4k) black-box hash ledger rollup for tamper-evident decision traceability.
     if (String(process.env.SPINE_BLACK_BOX_LEDGER_ENABLED || "1") !== "0") {
       const blackBox = runJson("node", [
         "systems/security/black_box_ledger.js",

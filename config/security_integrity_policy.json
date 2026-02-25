@@ -30,6 +30,7 @@
     "systems/adaptive/core/layer_store.js": "5eba699acf3b07abc44442c27d5dc2cc96bdf3f06b5cbdf6a8979eed4384b3e7",
     "systems/adaptive/sensory/eyes/catalog_store.js": "15782561fb6bf63001fc75cd57f089c5737036729e9efbf44a796e8c3baa3ad9",
     "systems/security/architecture_guard.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
+    "systems/security/black_box_ledger.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/capability_lease.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/directive_compiler.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/directive_gate.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
@@ -54,7 +55,7 @@
     "systems/security/workspace_dump_guard.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/sensory/adaptive_layer_guard.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2"
   },
-  "sealed_at": "2026-02-24T17:23:06.032Z",
+  "sealed_at": "2026-02-25T09:24:01.324Z",
   "sealed_by": "jay",
-  "last_approval_note": "approve ts bootstrap shim hashes for security wrappers"
+  "last_approval_note": "add black-box ledger security module"
 }
