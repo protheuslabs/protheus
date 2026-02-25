@@ -283,6 +283,60 @@ function runOllamaPromptRaw(model, prompt, timeoutMs, extraArgs = [], cwd = REPO
   };
 }
 
+function pullLocalOllamaModel(opts = {}) {
+  const o = (opts && typeof opts === 'object' ? opts : {}) as Record<string, any>;
+  const model = normalizeModelName(o.model);
+  const timeoutMs = Number.isFinite(Number(o.timeoutMs)) ? Number(o.timeoutMs) : 60000;
+  const source = String(o.source || 'llm_gateway').trim() || 'llm_gateway';
+  const cwd = o.cwd ? String(o.cwd) : REPO_ROOT;
+  if (!model) {
+    return {
+      ok: false,
+      model: '',
+      latency_ms: 0,
+      code: 2,
+      stderr: 'model_required',
+      stdout: '',
+      error: null
+    };
+  }
+
+  const started = Date.now();
+  const r = spawnSync('ollama', ['pull', model], {
+    encoding: 'utf8',
+    timeout: timeoutMs,
+    cwd
+  });
+  const latencyMs = Date.now() - started;
+  const errTxt = r.error ? String(r.error && r.error.message ? r.error.message : r.error) : '';
+  const stdout = stripAnsi(r.stdout || '');
+  const stderr = stripAnsi(r.stderr || '');
+  const ok = r.status === 0 && !r.error;
+
+  appendJsonl(GATEWAY_LOG_PATH, {
+    ts: nowIso(),
+    type: 'llm_gateway_pull',
+    ok,
+    source,
+    model,
+    timeout_ms: timeoutMs,
+    latency_ms: latencyMs,
+    code: r.status == null ? 1 : r.status,
+    error: errTxt || null,
+    stderr: stderr.slice(-240)
+  });
+
+  return {
+    ok,
+    model,
+    latency_ms: latencyMs,
+    code: r.status == null ? 1 : r.status,
+    stderr,
+    stdout,
+    error: errTxt || null
+  };
+}
+
 function runLocalOllamaPrompt(opts = {}) {
   const o = (opts && typeof opts === 'object' ? opts : {}) as Record<string, any>;
   const model = normalizeModelName(o.model);
@@ -399,6 +453,7 @@ function runLocalOllamaPrompt(opts = {}) {
 
 module.exports = {
   listLocalOllamaModels,
+  pullLocalOllamaModel,
   runLocalOllamaPrompt,
   stripAnsi,
   isUnknownFlagError,

@@ -1117,7 +1117,11 @@ function main() {
     "systems/sensory/cross_signal_engine.js",
     "systems/strategy/weekly_strategy_synthesis.js",
     "systems/autonomy/ops_dashboard.js",
+    "systems/autonomy/red_team_harness.js",
+    "systems/nursery/nursery_bootstrap.js",
     "config/actuation_adapters.json",
+    "config/red_team_policy.json",
+    "config/nursery_policy.json",
     "config/state_backup_policy.json",
     "skills/moltbook/actuation_adapter.js",
     "skills/moltbook/moltbook_publish_guard.js",
@@ -1133,6 +1137,101 @@ function main() {
 
   // Clearance gate
   guard(invoked);
+
+  if (String(process.env.SPINE_NURSERY_BOOTSTRAP_ENABLED || "1") !== "0") {
+    const nursery = runJson("node", ["systems/nursery/nursery_bootstrap.js", "run"]);
+    const nurseryPayload = nursery.payload && typeof nursery.payload === "object"
+      ? nursery.payload
+      : null;
+    const nurseryOk = nursery.ok && !!nurseryPayload && nurseryPayload.ok === true;
+    const nurseryStrict = String(process.env.SPINE_NURSERY_BOOTSTRAP_STRICT || "0") === "1";
+    appendLedger(dateStr, {
+      ts: nowIso(),
+      type: "spine_nursery_bootstrap",
+      mode,
+      date: dateStr,
+      ok: nurseryOk,
+      strict: nurseryStrict,
+      nursery_root: nurseryPayload ? nurseryPayload.nursery_root || null : null,
+      policy_path: nurseryPayload ? nurseryPayload.policy_path || null : null,
+      artifacts_total: nurseryPayload ? Number(nurseryPayload.artifacts_total || 0) : null,
+      artifacts_ready: nurseryPayload ? Number(nurseryPayload.artifacts_ready || 0) : null,
+      required_missing_count: nurseryPayload && Array.isArray(nurseryPayload.required_missing)
+        ? Number(nurseryPayload.required_missing.length || 0)
+        : null,
+      reason: !nurseryOk
+        ? String(nursery.stderr || nursery.stdout || `nursery_bootstrap_exit_${nursery.code}`).slice(0, 180)
+        : null
+    });
+    if (nurseryOk) {
+      console.log(
+        ` nursery_bootstrap ok ready=${Number(nurseryPayload.artifacts_ready || 0)}` +
+        `/${Number(nurseryPayload.artifacts_total || 0)}`
+      );
+    } else {
+      console.log(` nursery_bootstrap unavailable reason=${String(nursery.stderr || nursery.stdout || "unknown").slice(0, 120)}`);
+      if (nurseryStrict) process.exit(nursery.code || 1);
+    }
+  } else {
+    appendLedger(dateStr, {
+      ts: nowIso(),
+      type: "spine_nursery_bootstrap_skipped",
+      mode,
+      date: dateStr,
+      reason: "feature_flag_disabled",
+      flag: "SPINE_NURSERY_BOOTSTRAP_ENABLED",
+      flag_value: String(process.env.SPINE_NURSERY_BOOTSTRAP_ENABLED || "")
+    });
+    console.log(" nursery_bootstrap skipped reason=feature_flag_disabled flag=SPINE_NURSERY_BOOTSTRAP_ENABLED");
+  }
+
+  if (String(process.env.SPINE_RED_TEAM_BOOTSTRAP_ENABLED || "1") !== "0") {
+    const redBootstrap = runJson("node", ["systems/autonomy/red_team_harness.js", "bootstrap"]);
+    const redBootstrapPayload = redBootstrap.payload && typeof redBootstrap.payload === "object"
+      ? redBootstrap.payload
+      : null;
+    const redBootstrapOk = redBootstrap.ok && !!redBootstrapPayload && redBootstrapPayload.ok === true;
+    const redBootstrapStrict = String(process.env.SPINE_RED_TEAM_BOOTSTRAP_STRICT || "0") === "1";
+    appendLedger(dateStr, {
+      ts: nowIso(),
+      type: "spine_red_team_bootstrap",
+      mode,
+      date: dateStr,
+      ok: redBootstrapOk,
+      strict: redBootstrapStrict,
+      state_root: redBootstrapPayload ? redBootstrapPayload.state_root || null : null,
+      corpus_cases: redBootstrapPayload ? Number(redBootstrapPayload.corpus_cases || 0) : null,
+      model_available: redBootstrapPayload && redBootstrapPayload.model
+        ? redBootstrapPayload.model.available === true
+        : null,
+      model_reason: redBootstrapPayload && redBootstrapPayload.model
+        ? redBootstrapPayload.model.reason || null
+        : null,
+      reason: !redBootstrapOk
+        ? String(redBootstrap.stderr || redBootstrap.stdout || `red_team_bootstrap_exit_${redBootstrap.code}`).slice(0, 180)
+        : null
+    });
+    if (redBootstrapOk) {
+      console.log(
+        ` red_team_bootstrap ok corpus=${Number(redBootstrapPayload.corpus_cases || 0)}` +
+        ` model=${redBootstrapPayload && redBootstrapPayload.model && redBootstrapPayload.model.available === true ? "available" : "unavailable"}`
+      );
+    } else {
+      console.log(` red_team_bootstrap unavailable reason=${String(redBootstrap.stderr || redBootstrap.stdout || "unknown").slice(0, 120)}`);
+      if (redBootstrapStrict) process.exit(redBootstrap.code || 1);
+    }
+  } else {
+    appendLedger(dateStr, {
+      ts: nowIso(),
+      type: "spine_red_team_bootstrap_skipped",
+      mode,
+      date: dateStr,
+      reason: "feature_flag_disabled",
+      flag: "SPINE_RED_TEAM_BOOTSTRAP_ENABLED",
+      flag_value: String(process.env.SPINE_RED_TEAM_BOOTSTRAP_ENABLED || "")
+    });
+    console.log(" red_team_bootstrap skipped reason=feature_flag_disabled flag=SPINE_RED_TEAM_BOOTSTRAP_ENABLED");
+  }
 
   if (mode === "daily") {
     const skillInstallEnforcer = runJson("node", ["systems/security/skill_install_enforcer.js", "run", "--strict"]);
@@ -1793,6 +1892,74 @@ function main() {
         flag_value: String(process.env.SPINE_STARTUP_ATTESTATION_ENABLED || "")
       });
       console.log(" startup_attestation skipped reason=feature_flag_disabled flag=SPINE_STARTUP_ATTESTATION_ENABLED");
+    }
+
+    if (String(process.env.SPINE_RED_TEAM_RUN_ENABLED || "1") !== "0") {
+      const redTeamArgs = ["systems/autonomy/red_team_harness.js", "run", dateStr];
+      const redMaxCasesRaw = Number(process.env.SPINE_RED_TEAM_MAX_CASES || "");
+      if (Number.isFinite(redMaxCasesRaw) && redMaxCasesRaw > 0) {
+        redTeamArgs.push(`--max-cases=${Math.max(1, Math.min(64, Math.floor(redMaxCasesRaw)))}`);
+      }
+      const redRunStrict = String(process.env.SPINE_RED_TEAM_RUN_STRICT || "0") === "1";
+      if (redRunStrict) redTeamArgs.push("--strict");
+      const redRunTimeoutMs = Math.max(
+        5000,
+        Math.min(10 * 60 * 1000, Number(process.env.SPINE_RED_TEAM_RUN_TIMEOUT_MS || 180000) || 180000)
+      );
+      const redTeamRun = runJson("node", redTeamArgs, { timeout: redRunTimeoutMs });
+      const redTeamPayload = redTeamRun.payload && typeof redTeamRun.payload === "object"
+        ? redTeamRun.payload
+        : null;
+      const redTeamOk = redTeamRun.ok && !!redTeamPayload && redTeamPayload.ok === true;
+      const redSummary = redTeamPayload && redTeamPayload.summary && typeof redTeamPayload.summary === "object"
+        ? redTeamPayload.summary
+        : null;
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_red_team_run",
+        mode,
+        date: dateStr,
+        ok: redTeamOk,
+        strict: redRunStrict,
+        selected_cases: redSummary ? Number(redSummary.selected_cases || 0) : null,
+        executed_cases: redSummary ? Number(redSummary.executed_cases || 0) : null,
+        skipped_cases: redSummary ? Number(redSummary.skipped_cases || 0) : null,
+        pass_cases: redSummary ? Number(redSummary.pass_cases || 0) : null,
+        fail_cases: redSummary ? Number(redSummary.fail_cases || 0) : null,
+        critical_fail_cases: redSummary ? Number(redSummary.critical_fail_cases || 0) : null,
+        model_available: redTeamPayload && redTeamPayload.model
+          ? redTeamPayload.model.available === true
+          : null,
+        model_reason: redTeamPayload && redTeamPayload.model
+          ? redTeamPayload.model.reason || null
+          : null,
+        run_path: redTeamPayload ? redTeamPayload.run_path || null : null,
+        reason: !redTeamOk
+          ? String(redTeamRun.stderr || redTeamRun.stdout || `red_team_run_exit_${redTeamRun.code}`).slice(0, 180)
+          : null
+      });
+      if (redTeamOk) {
+        console.log(
+          ` red_team_run ok executed=${Number(redSummary && redSummary.executed_cases || 0)}` +
+          ` pass=${Number(redSummary && redSummary.pass_cases || 0)}` +
+          ` fail=${Number(redSummary && redSummary.fail_cases || 0)}` +
+          ` critical_fail=${Number(redSummary && redSummary.critical_fail_cases || 0)}`
+        );
+      } else {
+        console.log(` red_team_run unavailable reason=${String(redTeamRun.stderr || redTeamRun.stdout || "unknown").slice(0, 120)}`);
+        if (redRunStrict) process.exit(redTeamRun.code || 1);
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_red_team_run_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "SPINE_RED_TEAM_RUN_ENABLED",
+        flag_value: String(process.env.SPINE_RED_TEAM_RUN_ENABLED || "")
+      });
+      console.log(" red_team_run skipped reason=feature_flag_disabled flag=SPINE_RED_TEAM_RUN_ENABLED");
     }
 
     const autonomyEnabledFlag = String(process.env.AUTONOMY_ENABLED || "") === "1";
