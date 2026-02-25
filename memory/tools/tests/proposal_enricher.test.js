@@ -648,6 +648,18 @@ function run() {
       null,
       'passing mutation guard should not emit guard reason'
     );
+    assert.ok(
+      String(mutationPassRes.proposal.meta.adaptive_mutation_guard_receipt_id || '').startsWith('mut_guard_'),
+      'passing mutation guard should stamp deterministic execution guard receipt id'
+    );
+    assert.strictEqual(
+      String(
+        (mutationPassRes.proposal.meta.adaptive_mutation_guard_controls || {}).guard_receipt_id
+        || ''
+      ),
+      String(mutationPassRes.proposal.meta.adaptive_mutation_guard_receipt_id || ''),
+      'mutation guard controls should expose same guard receipt id'
+    );
 
     assert.ok(high.meta && high.meta.admission_preview && high.meta.admission_preview.eligible === false, 'high-risk proposal should be blocked');
     assert.ok(

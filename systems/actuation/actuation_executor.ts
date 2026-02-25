@@ -7,7 +7,7 @@
  *
  * Usage:
  *   node systems/actuation/actuation_executor.js list
- *   node systems/actuation/actuation_executor.js run --kind=<adapter_id> [--params=<json>] [--dry-run]
+ *   node systems/actuation/actuation_executor.js run --kind=<adapter_id> [--params=<json>] [--context=<json>] [--dry-run]
  *   node systems/actuation/actuation_executor.js --help
  */
 
@@ -23,6 +23,9 @@ const RECEIPTS_DIR = process.env.ACTUATION_RECEIPTS_DIR
 const ADAPTERS_CONFIG = process.env.ACTUATION_ADAPTERS_CONFIG
   ? path.resolve(process.env.ACTUATION_ADAPTERS_CONFIG)
   : path.join(ROOT, 'config', 'actuation_adapters.json');
+const ACTUATION_MUTATION_EXECUTION_GUARD_ENABLED = String(process.env.ACTUATION_MUTATION_EXECUTION_GUARD_ENABLED || '1') !== '0';
+const ADAPTIVE_MUTATION_TYPE_RE = /\b(adaptive|mutation|topology|genome|fractal|morph|self[_-]?(?:improv|mutation|modify)|branch[_-]?(?:spawn|rewire|prune)|spawn[_-]?(?:broker|agent|cell)|organism)\b/i;
+const ADAPTIVE_MUTATION_SIGNAL_RE = /\b(topology|genome|fractal|mutation|morph|rewire|prune|spawn|self[_-]?improv)\b/i;
 
 function nowIso() { return new Date().toISOString(); }
 function dayStr() { return nowIso().slice(0, 10); }
@@ -41,13 +44,73 @@ function parseArgs(argv) {
 function usage() {
   console.log('Usage:');
   console.log('  node systems/actuation/actuation_executor.js list');
-  console.log('  node systems/actuation/actuation_executor.js run --kind=<adapter_id> [--params=<json>] [--dry-run]');
+  console.log('  node systems/actuation/actuation_executor.js run --kind=<adapter_id> [--params=<json>] [--context=<json>] [--dry-run]');
   console.log('  node systems/actuation/actuation_executor.js --help');
 }
 
 function parseParams(raw) {
   if (!raw) return {};
   try { return JSON.parse(String(raw)); } catch { return null; }
+}
+
+function adaptiveMutationExecutionGate(kind, params, context) {
+  if (!ACTUATION_MUTATION_EXECUTION_GUARD_ENABLED) {
+    return { enabled: false, applies: false, pass: true, reason: null, reasons: [] };
+  }
+  const ctx = context && typeof context === 'object' ? context : {};
+  const mutationGuard = ctx.mutation_guard && typeof ctx.mutation_guard === 'object' ? ctx.mutation_guard : {};
+  const blob = [
+    String(kind || ''),
+    params && typeof params === 'object' ? JSON.stringify(params) : '',
+    ctx && typeof ctx === 'object' ? JSON.stringify(ctx) : ''
+  ].join(' ');
+  const applies = mutationGuard.applies === true
+    || ADAPTIVE_MUTATION_TYPE_RE.test(blob)
+    || ADAPTIVE_MUTATION_SIGNAL_RE.test(blob);
+  if (!applies) {
+    return { enabled: true, applies: false, pass: true, reason: null, reasons: [] };
+  }
+  const reasons = [];
+  if (mutationGuard.applies !== true) reasons.push('adaptive_mutation_guard_metadata_missing');
+  if (mutationGuard.pass === false) reasons.push(String(mutationGuard.reason || 'adaptive_mutation_guard_failed').trim() || 'adaptive_mutation_guard_failed');
+  const controls = mutationGuard.controls && typeof mutationGuard.controls === 'object' ? mutationGuard.controls : {};
+  const safetyAttestation = String(
+    controls.safety_attestation
+    || ctx.safety_attestation_id
+    || ctx.safety_attestation
+    || ''
+  ).trim();
+  const rollbackReceipt = String(
+    controls.rollback_receipt
+    || ctx.rollback_receipt_id
+    || ctx.rollback_receipt
+    || ''
+  ).trim();
+  const guardReceipt = String(
+    controls.guard_receipt_id
+    || ctx.adaptive_mutation_guard_receipt_id
+    || ctx.mutation_guard_receipt_id
+    || ''
+  ).trim();
+  if (!safetyAttestation) reasons.push('adaptive_mutation_missing_safety_attestation');
+  if (!rollbackReceipt) reasons.push('adaptive_mutation_missing_rollback_receipt');
+  if (!guardReceipt) reasons.push('adaptive_mutation_missing_execution_guard_receipt');
+  if (controls.mutation_kernel_applies === true && controls.mutation_kernel_pass === false) {
+    reasons.push('adaptive_mutation_kernel_failed');
+  }
+  const uniqReasons = Array.from(new Set(reasons.filter(Boolean)));
+  return {
+    enabled: true,
+    applies: true,
+    pass: uniqReasons.length === 0,
+    reason: uniqReasons[0] || null,
+    reasons: uniqReasons,
+    controls: {
+      safety_attestation: safetyAttestation || null,
+      rollback_receipt: rollbackReceipt || null,
+      guard_receipt_id: guardReceipt || null
+    }
+  };
 }
 
 function receiptPath() {
@@ -140,13 +203,45 @@ async function cmdRun(args) {
     process.stdout.write(JSON.stringify({ ok: false, error: 'invalid --params JSON' }) + '\n');
     process.exit(2);
   }
+  const context = parseParams(args.context);
+  if (context == null) {
+    process.stdout.write(JSON.stringify({ ok: false, error: 'invalid --context JSON' }) + '\n');
+    process.exit(2);
+  }
   const dryRun = args['dry-run'] === true;
+  const mutationGate = adaptiveMutationExecutionGate(kind, params, context);
+  if (mutationGate.applies && !mutationGate.pass) {
+    const summary = {
+      decision: 'ACTUATE',
+      gate_decision: 'DENY',
+      executable: false,
+      adapter: kind,
+      verified: false,
+      reason: mutationGate.reason || 'adaptive_mutation_execution_guard_blocked',
+      mutation_guard: mutationGate
+    };
+    const record = {
+      ts: nowIso(),
+      type: 'actuation_execution',
+      adapter: kind,
+      dry_run: dryRun,
+      params_hash: require('crypto').createHash('sha256').update(JSON.stringify(params || {})).digest('hex').slice(0, 16),
+      ok: false,
+      code: 4,
+      duration_ms: 0,
+      summary,
+      error: mutationGate.reason || 'adaptive_mutation_execution_guard_blocked'
+    };
+    writeContractReceipt(receiptPath(), record, { attempted: false, verified: false });
+    process.stdout.write(JSON.stringify({ ok: false, error: record.error, summary, code: 4 }) + '\n');
+    process.exit(4);
+  }
 
   const started = Date.now();
   let res;
   let err = null;
   try {
-    res = await adapter.execute({ params, dryRun });
+    res = await adapter.execute({ params, context, dryRun });
   } catch (e) {
     err = e;
   }

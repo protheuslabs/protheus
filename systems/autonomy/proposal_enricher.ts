@@ -2360,6 +2360,17 @@ function enrichOne(proposal, ctx) {
           veto_window_hours_min: AUTONOMY_MUTATION_VETO_WINDOW_HOURS_MIN
         }
       };
+  const mutationGuardControls: AnyObj = mutationGuard.controls && typeof mutationGuard.controls === 'object'
+    ? { ...mutationGuard.controls }
+    : {};
+  const mutationGuardReceiptId = mutationGuard.applies
+    ? normalizeText(
+      mutationGuardControls.guard_receipt_id
+      || prevMeta.adaptive_mutation_guard_receipt_id
+      || (raw && raw.id ? `mut_guard_${String(raw.id).replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 64)}` : '')
+    )
+    : null;
+  if (mutationGuardReceiptId) mutationGuardControls.guard_receipt_id = mutationGuardReceiptId;
   const rawExpectedValueScore = Number((p.meta && p.meta.expected_value_score));
   const shouldBackfillExpectedValue = AUTONOMY_VALUE_ORACLE_BACKFILL_EXPECTED_VALUE
     && !Number.isFinite(rawExpectedValueScore)
@@ -2447,9 +2458,8 @@ function enrichOne(proposal, ctx) {
     adaptive_mutation_guard_pass: mutationGuard.pass !== false,
     adaptive_mutation_guard_reason: mutationGuard.reason || null,
     adaptive_mutation_guard_reasons: Array.isArray(mutationGuard.reasons) ? mutationGuard.reasons.slice(0, 8) : [],
-    adaptive_mutation_guard_controls: mutationGuard.controls && typeof mutationGuard.controls === 'object'
-      ? mutationGuard.controls
-      : {},
+    adaptive_mutation_guard_controls: mutationGuardControls,
+    adaptive_mutation_guard_receipt_id: mutationGuardReceiptId || null,
     adaptive_mutation_guard_thresholds: mutationGuard.thresholds && typeof mutationGuard.thresholds === 'object'
       ? mutationGuard.thresholds
       : {},

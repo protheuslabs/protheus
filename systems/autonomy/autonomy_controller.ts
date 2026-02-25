@@ -286,6 +286,11 @@ const AUTONOMY_UNLINKED_OPTIMIZATION_EXEMPT_TYPES = new Set(
     .map((s) => String(s || '').trim().toLowerCase())
     .filter(Boolean)
 );
+const ADAPTIVE_MUTATION_TYPE_RE = /\b(adaptive|mutation|topology|genome|fractal|morph|self[_-]?(?:improv|mutation|modify)|branch[_-]?(?:spawn|rewire|prune)|spawn[_-]?(?:broker|agent|cell)|organism)\b/i;
+const ADAPTIVE_MUTATION_SIGNAL_RE = /\b(topology|genome|fractal|mutation|morph|rewire|prune|spawn|self[_-]?improv)\b/i;
+const AUTONOMY_REQUIRE_ADMISSION_PREVIEW = String(process.env.AUTONOMY_REQUIRE_ADMISSION_PREVIEW || '1') !== '0';
+const AUTONOMY_MUTATION_EXECUTION_GUARD_REQUIRED = String(process.env.AUTONOMY_MUTATION_EXECUTION_GUARD_REQUIRED || '1') !== '0';
+const AUTONOMY_MUTATION_EXECUTION_GUARD_COOLDOWN_HOURS = Math.max(1, Number(process.env.AUTONOMY_MUTATION_EXECUTION_GUARD_COOLDOWN_HOURS || 6));
 const AUTONOMY_MAX_PROPOSAL_FILE_AGE_HOURS = Number(process.env.AUTONOMY_MAX_PROPOSAL_FILE_AGE_HOURS || 48);
 const AUTONOMY_REPEAT_EXHAUSTED_LIMIT = Number(process.env.AUTONOMY_REPEAT_EXHAUSTED_LIMIT || 3);
 const AUTONOMY_REPEAT_EXHAUSTED_COOLDOWN_MINUTES = Number(process.env.AUTONOMY_REPEAT_EXHAUSTED_COOLDOWN_MINUTES || 90);
@@ -2487,6 +2492,7 @@ function isPolicyHoldResult(result): boolean {
     || r === 'stop_init_gate_readiness'
     || r === 'stop_init_gate_readiness_blocked'
     || r === 'stop_init_gate_criteria_quality_insufficient'
+    || r === 'stop_repeat_gate_mutation_guard'
     || r === 'score_only_fallback_route_block'
     || r === 'score_only_fallback_low_execution_confidence';
 }
@@ -5849,6 +5855,106 @@ function proposalRiskScore(p) {
   return 25;
 }
 
+function proposalAdmissionPreview(p) {
+  const meta = p && p.meta && typeof p.meta === 'object' ? p.meta : {};
+  const preview = meta && meta.admission_preview && typeof meta.admission_preview === 'object'
+    ? meta.admission_preview
+    : null;
+  return preview;
+}
+
+function hasAdaptiveMutationSignal(p) {
+  const proposal = p && typeof p === 'object' ? p : {};
+  const meta = proposal.meta && typeof proposal.meta === 'object' ? proposal.meta : {};
+  if (meta.adaptive_mutation === true) return true;
+  const blob = [
+    String(proposal.type || ''),
+    String(proposal.title || ''),
+    String(proposal.summary || ''),
+    String(proposal.suggested_next_command || ''),
+    proposal.action_spec && typeof proposal.action_spec === 'object' ? JSON.stringify(proposal.action_spec) : '',
+    meta && typeof meta === 'object' ? JSON.stringify(meta) : ''
+  ].join(' ');
+  if (!blob) return false;
+  return ADAPTIVE_MUTATION_TYPE_RE.test(blob) || ADAPTIVE_MUTATION_SIGNAL_RE.test(blob);
+}
+
+function adaptiveMutationExecutionGuardDecision(p) {
+  const proposal = p && typeof p === 'object' ? p : {};
+  const meta = proposal.meta && typeof proposal.meta === 'object' ? proposal.meta : {};
+  const controls = meta.adaptive_mutation_guard_controls && typeof meta.adaptive_mutation_guard_controls === 'object'
+    ? meta.adaptive_mutation_guard_controls
+    : {};
+  const applies = hasAdaptiveMutationSignal(proposal) || meta.adaptive_mutation_guard_applies === true;
+  if (!AUTONOMY_MUTATION_EXECUTION_GUARD_REQUIRED) {
+    return {
+      required: false,
+      applies: false,
+      pass: true,
+      reason: null,
+      reasons: [],
+      controls: {}
+    };
+  }
+  if (!applies) {
+    return {
+      required: true,
+      applies: false,
+      pass: true,
+      reason: null,
+      reasons: [],
+      controls: {}
+    };
+  }
+
+  const reasons = [];
+  if (meta.adaptive_mutation_guard_applies !== true) reasons.push('adaptive_mutation_guard_metadata_missing');
+  if (meta.adaptive_mutation_guard_pass === false) {
+    reasons.push(String(meta.adaptive_mutation_guard_reason || 'adaptive_mutation_guard_failed').trim() || 'adaptive_mutation_guard_failed');
+  }
+  const safetyAttestation = String(
+    controls.safety_attestation
+    || meta.safety_attestation_id
+    || meta.safety_attestation
+    || meta.attestation_id
+    || ''
+  ).trim();
+  if (!safetyAttestation) reasons.push('adaptive_mutation_missing_safety_attestation');
+  const rollbackReceipt = String(
+    controls.rollback_receipt
+    || meta.rollback_receipt_id
+    || meta.rollback_receipt
+    || ''
+  ).trim();
+  if (!rollbackReceipt) reasons.push('adaptive_mutation_missing_rollback_receipt');
+  const guardReceipt = String(
+    controls.guard_receipt_id
+    || meta.adaptive_mutation_guard_receipt_id
+    || meta.mutation_guard_receipt_id
+    || ''
+  ).trim();
+  if (!guardReceipt) reasons.push('adaptive_mutation_missing_execution_guard_receipt');
+  if (controls.mutation_kernel_applies === true && controls.mutation_kernel_pass === false) {
+    reasons.push('adaptive_mutation_kernel_failed');
+  }
+
+  const uniqReasons = Array.from(new Set(reasons.filter(Boolean)));
+  return {
+    required: true,
+    applies: true,
+    pass: uniqReasons.length === 0,
+    reason: uniqReasons[0] || null,
+    reasons: uniqReasons,
+    controls: {
+      safety_attestation: safetyAttestation || null,
+      rollback_receipt: rollbackReceipt || null,
+      guard_receipt_id: guardReceipt || null,
+      mutation_kernel_applies: controls.mutation_kernel_applies === true,
+      mutation_kernel_pass: controls.mutation_kernel_pass !== false
+    }
+  };
+}
+
 function recentProposalKeyCounts(dateStr, hours) {
   const out = new Map();
   const h = Number(hours || 0);
@@ -5877,6 +5983,30 @@ function recentProposalKeyCounts(dateStr, hours) {
 }
 
 function strategyAdmissionDecision(p, strategy, opts: AnyObj = {}) {
+  const preview = proposalAdmissionPreview(p);
+  if (AUTONOMY_REQUIRE_ADMISSION_PREVIEW && preview && preview.eligible === false) {
+    const blocked = Array.isArray(preview.blocked_by) && preview.blocked_by.length
+      ? preview.blocked_by.map((r) => String(r || '').trim()).filter(Boolean)
+      : [];
+    return {
+      allow: false,
+      reason: blocked[0] || 'admission_preview_blocked',
+      admission_preview: {
+        eligible: false,
+        blocked_by: blocked.slice(0, 6)
+      }
+    };
+  }
+
+  const mutationGuard = adaptiveMutationExecutionGuardDecision(p);
+  if (mutationGuard.applies && !mutationGuard.pass) {
+    return {
+      allow: false,
+      reason: mutationGuard.reason || 'adaptive_mutation_execution_guard_blocked',
+      mutation_guard: mutationGuard
+    };
+  }
+
   const type = String(p && p.type || '').toLowerCase();
   if (!strategyAllowsProposalType(strategy, type)) {
     return { allow: false, reason: 'strategy_type_filtered' };
@@ -6805,7 +6935,48 @@ function parseActuationSpec(p) {
   const kind = String(actuation.kind || '').trim();
   if (!kind) return null;
   const params = actuation.params && typeof actuation.params === 'object' ? actuation.params : {};
-  return { kind, params };
+  const actionSpec = p && p.action_spec && typeof p.action_spec === 'object' ? p.action_spec : {};
+  const guardControls = meta.adaptive_mutation_guard_controls && typeof meta.adaptive_mutation_guard_controls === 'object'
+    ? { ...meta.adaptive_mutation_guard_controls }
+    : {};
+  const context = {
+    proposal_id: String(p && p.id || '').trim() || null,
+    objective_id: sanitizeDirectiveObjectiveId(
+      meta.objective_id
+      || meta.directive_objective_id
+      || actionSpec.objective_id
+    ) || null,
+    safety_attestation_id: String(
+      guardControls.safety_attestation
+      || meta.safety_attestation_id
+      || meta.safety_attestation
+      || meta.attestation_id
+      || ''
+    ).trim() || null,
+    rollback_receipt_id: String(
+      guardControls.rollback_receipt
+      || meta.rollback_receipt_id
+      || meta.rollback_receipt
+      || actionSpec.rollback_receipt_id
+      || ''
+    ).trim() || null,
+    adaptive_mutation_guard_receipt_id: String(
+      guardControls.guard_receipt_id
+      || meta.adaptive_mutation_guard_receipt_id
+      || meta.mutation_guard_receipt_id
+      || ''
+    ).trim() || null,
+    mutation_guard: {
+      applies: meta.adaptive_mutation_guard_applies === true,
+      pass: meta.adaptive_mutation_guard_pass !== false,
+      reason: String(meta.adaptive_mutation_guard_reason || '').trim() || null,
+      reasons: Array.isArray(meta.adaptive_mutation_guard_reasons)
+        ? meta.adaptive_mutation_guard_reasons.slice(0, 8)
+        : [],
+      controls: guardControls
+    }
+  };
+  return { kind, params, context };
 }
 
 let objectiveBindingFallbackCache = null;
@@ -7006,6 +7177,9 @@ function runActuationExecute(spec, dryRun = false) {
     `--kind=${spec.kind}`,
     `--params=${JSON.stringify(spec.params || {})}`
   ];
+  if (spec && spec.context && typeof spec.context === 'object') {
+    args.push(`--context=${JSON.stringify(spec.context)}`);
+  }
   if (dryRun) args.push('--dry-run');
   const r = spawnSync('node', args, { cwd: REPO_ROOT, encoding: 'utf8' });
   const stdout = (r.stdout || '').trim();
@@ -12392,6 +12566,46 @@ function runCmd(dateStr, opts: AnyObj = {}) {
     window_hours: AUTONOMY_POLICY_HOLD_DAMPENER_WINDOW_HOURS,
     repeat_threshold: AUTONOMY_POLICY_HOLD_DAMPENER_REPEAT_THRESHOLD
   });
+  const mutationExecutionGuard = adaptiveMutationExecutionGuardDecision(p);
+
+  if (
+    !shadowOnly
+    && AUTONOMY_MUTATION_EXECUTION_GUARD_REQUIRED
+    && mutationExecutionGuard.applies
+    && !mutationExecutionGuard.pass
+  ) {
+    const guardReason = String(mutationExecutionGuard.reason || 'adaptive_mutation_execution_guard_blocked').trim() || 'adaptive_mutation_execution_guard_blocked';
+    const reason = `auto:mutation_guard ${guardReason} cooldown_${AUTONOMY_MUTATION_EXECUTION_GUARD_COOLDOWN_HOURS}h`;
+    runProposalQueue('park', p.id, reason);
+    setCooldown(p.id, AUTONOMY_MUTATION_EXECUTION_GUARD_COOLDOWN_HOURS, reason);
+    writeRun(dateStr, {
+      ts: nowIso(),
+      type: 'autonomy_run',
+      result: 'stop_repeat_gate_mutation_guard',
+      policy_hold: true,
+      hold_scope: 'proposal',
+      hold_reason: guardReason,
+      proposal_id: p.id,
+      objective_id: executionObjectiveId || null,
+      capability_key: capabilityKey,
+      execution_target: executionTarget,
+      proposal_type: String(p.type || ''),
+      risk: proposalRisk,
+      source_eye: sourceEyeId(p),
+      mutation_guard: mutationExecutionGuard
+    });
+    process.stdout.write(JSON.stringify({
+      ok: true,
+      result: 'stop_repeat_gate_mutation_guard',
+      proposal_id: p.id,
+      objective_id: executionObjectiveId || null,
+      capability_key: capabilityKey,
+      hold_reason: guardReason,
+      mutation_guard: mutationExecutionGuard,
+      ts: nowIso()
+    }) + '\n');
+    return;
+  }
 
   if (
     !shadowOnly
@@ -14602,6 +14816,10 @@ module.exports = {
   buildOverlay,
   proposalStatus,
   proposalScore,
+  proposalAdmissionPreview,
+  hasAdaptiveMutationSignal,
+  adaptiveMutationExecutionGuardDecision,
+  strategyAdmissionDecision,
   assessActionability,
   expectedValueScore,
   expectedValueSignalForProposal,
