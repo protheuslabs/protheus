@@ -66,6 +66,38 @@ jobs:
       - name: adaptive_layer_guard_strict
         run: node systems/sensory/adaptive_layer_guard.js run --strict
 
+  docs_coverage_gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - name: Install dependencies
+        run: npm ci
+      - name: docs_coverage_gate
+        run: node systems/ops/docs_coverage_gate.js run --strict=1
+
+  dr_gameday_gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - name: Install dependencies
+        run: npm ci
+      - name: dr_gameday_gate
+        run: node systems/ops/dr_gameday_gate.js run --strict=1
+
   security_threat_pack:
     runs-on: ubuntu-latest
     timeout-minutes: 10

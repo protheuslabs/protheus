@@ -4,7 +4,15 @@
   "default_profile": "runtime_state",
   "rto_target_minutes": 30,
   "rpo_target_hours": 24,
+  "cadence_hours": 168,
   "strict_default": true,
-  "max_history": 90
+  "max_history": 90,
+  "release_gate": {
+    "window": 6,
+    "min_samples": 3,
+    "required_pass_rate": 1,
+    "max_rto_regression_ratio": 0.15,
+    "max_rpo_regression_ratio": 0.15,
+    "strict_default": true
+  }
 }
-

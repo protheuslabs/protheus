@@ -13,6 +13,7 @@
  * Usage:
  *   node systems/ops/dr_gameday.js run [--channel=state_backup|blank_slate] [--profile=<id>] [--dest=<abs_path>] [--strict=1|0]
  *   node systems/ops/dr_gameday.js list [--limit=N]
+ *   node systems/ops/dr_gameday.js status
  */
 
 const fs = require('fs');
@@ -37,6 +38,7 @@ function usage() {
   console.log('Usage:');
   console.log('  node systems/ops/dr_gameday.js run [--channel=state_backup|blank_slate] [--profile=<id>] [--dest=<abs_path>] [--strict=1|0]');
   console.log('  node systems/ops/dr_gameday.js list [--limit=N]');
+  console.log('  node systems/ops/dr_gameday.js status');
 }
 
 function parseArgs(argv) {
@@ -86,6 +88,15 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+function trimJsonl(filePath, keepRows) {
+  const rows = readJsonl(filePath);
+  const limit = Math.max(10, Number(keepRows || 90));
+  if (rows.length <= limit) return;
+  const tail = rows.slice(-limit).map((row) => JSON.stringify(row));
+  ensureDir(path.dirname(filePath));
+  fs.writeFileSync(filePath, `${tail.join('\n')}\n`, 'utf8');
+}
+
 function toBool(v, fallback) {
   if (v == null) return fallback;
   const s = String(v).trim().toLowerCase();
@@ -130,6 +141,7 @@ function loadPolicy() {
     default_profile: String(raw.default_profile || 'runtime_state'),
     rto_target_minutes: Math.max(1, Number(raw.rto_target_minutes || 30)),
     rpo_target_hours: Math.max(1, Number(raw.rpo_target_hours || 24)),
+    cadence_hours: Math.max(1, Number(raw.cadence_hours || 168)),
     strict_default: toBool(raw.strict_default, true),
     max_history: Math.max(10, Number(raw.max_history || 90))
   };
@@ -238,6 +250,7 @@ function cmdRun(args) {
   };
 
   appendJsonl(RECEIPTS_PATH, out);
+  trimJsonl(RECEIPTS_PATH, policy.max_history);
   process.stdout.write(JSON.stringify(out) + '\n');
   if (strict && out.ok !== true) process.exitCode = 1;
 }
@@ -255,6 +268,28 @@ function cmdList(args) {
   }) + '\n');
 }
 
+function cmdStatus() {
+  const policy = loadPolicy();
+  const rows = readJsonl(RECEIPTS_PATH);
+  const last = rows.length > 0 ? rows[rows.length - 1] : null;
+  const lastTs = last && last.ts ? String(last.ts) : null;
+  const lastMs = toMs(lastTs);
+  const nowMs = Date.now();
+  const cadenceMs = Number(policy.cadence_hours || 168) * 3600000;
+  const nextDueMs = lastMs == null ? nowMs : (lastMs + cadenceMs);
+  const out = {
+    ok: true,
+    type: 'dr_gameday_status',
+    ts: nowIso(),
+    cadence_hours: Number(policy.cadence_hours || 168),
+    receipts: rows.length,
+    last_run_ts: lastTs,
+    due: nowMs >= nextDueMs,
+    next_due_ts: new Date(nextDueMs).toISOString()
+  };
+  process.stdout.write(JSON.stringify(out) + '\n');
+}
+
 function main() {
   const args = parseArgs(process.argv.slice(2));
   const cmd = String(args._[0] || '').trim().toLowerCase();
@@ -264,6 +299,7 @@ function main() {
   }
   if (cmd === 'run') return cmdRun(args);
   if (cmd === 'list') return cmdList(args);
+  if (cmd === 'status') return cmdStatus();
   usage();
   process.exitCode = 2;
 }
@@ -284,4 +320,3 @@ module.exports = {
   parseArgs,
   loadPolicy
 };
-
