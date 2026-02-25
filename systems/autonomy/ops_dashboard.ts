@@ -108,6 +108,17 @@ function summarize(rows) {
     active_cooldowns_peak: 0,
     policy_holds_total: 0
   };
+  const tritShadow = {
+    reports_with_trit_shadow: 0,
+    productivity_active: 0,
+    stage_0: 0,
+    stage_1: 0,
+    stage_2: 0,
+    stage_3: 0,
+    last_auto_reason: null,
+    latest_divergence_rate: null,
+    latest_calibration_accuracy: null
+  };
 
   for (const row of rows) {
     const checks = row && row.slo && Array.isArray(row.slo.checks) ? row.slo.checks : [];
@@ -142,9 +153,29 @@ function summarize(rows) {
       branchHealth.active_cooldowns_peak = Math.max(branchHealth.active_cooldowns_peak, activeCooldowns);
       branchHealth.policy_holds_total += Math.max(0, policyHolds);
     }
+
+    const trit = row && row.trit_shadow && typeof row.trit_shadow === 'object'
+      ? row.trit_shadow
+      : null;
+    if (trit) {
+      tritShadow.reports_with_trit_shadow += 1;
+      if (trit.productivity && trit.productivity.active === true) tritShadow.productivity_active += 1;
+      const stage = Number(trit.stage_decision && trit.stage_decision.stage || 0);
+      if (stage <= 0) tritShadow.stage_0 += 1;
+      else if (stage === 1) tritShadow.stage_1 += 1;
+      else if (stage === 2) tritShadow.stage_2 += 1;
+      else tritShadow.stage_3 += 1;
+      tritShadow.last_auto_reason = trit.stage_decision && trit.stage_decision.auto_reason
+        ? String(trit.stage_decision.auto_reason)
+        : tritShadow.last_auto_reason;
+      const divergenceRate = Number(trit.latest_report && trit.latest_report.divergence_rate);
+      if (Number.isFinite(divergenceRate)) tritShadow.latest_divergence_rate = divergenceRate;
+      const accuracy = Number(trit.latest_calibration && trit.latest_calibration.accuracy);
+      if (Number.isFinite(accuracy)) tritShadow.latest_calibration_accuracy = accuracy;
+    }
   }
 
-  return { totals, slo, branch_health: branchHealth };
+  return { totals, slo, branch_health: branchHealth, trit_shadow: tritShadow };
 }
 
 function summarizeDreams(dates) {

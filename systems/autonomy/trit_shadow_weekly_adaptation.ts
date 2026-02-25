@@ -18,7 +18,8 @@ const path = require('path');
 const crypto = require('crypto');
 const {
   loadTritShadowPolicy,
-  loadTritShadowTrustState
+  loadTritShadowTrustState,
+  evaluateTritShadowProductivity
 } = require('../../lib/trit_shadow_control');
 
 const ROOT = path.resolve(__dirname, '..', '..');
@@ -123,6 +124,7 @@ function loadLatestCalibration(onOrBeforeDate) {
 
 function deriveSuggestions(dateStr) {
   const policy = loadTritShadowPolicy();
+  const productivity = evaluateTritShadowProductivity(policy);
   const trustState = loadTritShadowTrustState(policy);
   const adaptation = policy && policy.adaptation && typeof policy.adaptation === 'object'
     ? policy.adaptation
@@ -140,6 +142,18 @@ function deriveSuggestions(dateStr) {
   const reliability = calibration && Array.isArray(calibration.source_reliability)
     ? calibration.source_reliability
     : [];
+
+  if (productivity && productivity.enabled === true && productivity.active !== true) {
+    return {
+      policy_version: String(policy.version || '1.0'),
+      calibration_date: calibration ? String(calibration.date || '') : null,
+      calibration_summary: calibration && calibration.summary ? calibration.summary : null,
+      blocked: true,
+      blocked_reason: String(productivity.reason || 'productivity_threshold_not_met'),
+      productivity,
+      suggestions: []
+    };
+  }
 
   const suggestions = [];
   for (const row of reliability) {
@@ -184,6 +198,9 @@ function deriveSuggestions(dateStr) {
     policy_version: String(policy.version || '1.0'),
     calibration_date: calibration ? String(calibration.date || '') : null,
     calibration_summary: calibration && calibration.summary ? calibration.summary : null,
+    blocked: false,
+    blocked_reason: null,
+    productivity,
     suggestions: suggestions
       .sort((a, b) => Math.abs(Number(b.delta || 0)) - Math.abs(Number(a.delta || 0)))
       .slice(0, 64)
