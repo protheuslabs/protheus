@@ -1120,6 +1120,7 @@ function main() {
     "systems/autonomy/red_team_harness.js",
     "systems/autonomy/collective_shadow.js",
     "systems/autonomy/observer_mirror.js",
+    "systems/continuum/continuum_core.js",
     "systems/strategy/strategy_principles.js",
     "systems/workflow/workflow_generator.js",
     "systems/workflow/orchestron_controller.js",
@@ -1134,6 +1135,7 @@ function main() {
     "config/actuation_claws_policy.json",
     "config/red_team_policy.json",
     "config/collective_shadow_policy.json",
+    "config/continuum_policy.json",
     "config/nursery_policy.json",
     "config/workflow_policy.json",
     "config/deployment_packaging_policy.json",
@@ -3859,7 +3861,68 @@ function main() {
       console.log(" observer_mirror skipped reason=feature_flag_disabled flag=SPINE_OBSERVER_MIRROR_ENABLED");
     }
 
-    // 4l) self-documentation closeout (daily MEMORY.md session summary with significance gating).
+    // 4l) continuum organ pulse (background consolidation + anticipation, low-priority and bounded).
+    if (String(process.env.SPINE_CONTINUUM_ENABLED || "1") !== "0") {
+      const continuumTimeoutMs = Math.max(2000, Number(process.env.SPINE_CONTINUUM_TIMEOUT_MS || 22000) || 22000);
+      const continuumProfile = String(process.env.SPINE_CONTINUUM_PROFILE || "spine").trim().toLowerCase() || "spine";
+      const continuumArgs = [
+        "systems/continuum/continuum_core.js",
+        "pulse",
+        dateStr,
+        `--profile=${continuumProfile}`,
+        "--reason=spine_daily"
+      ];
+      const continuumPolicyPath = String(process.env.SPINE_CONTINUUM_POLICY_PATH || "").trim();
+      if (continuumPolicyPath) continuumArgs.push(`--policy=${continuumPolicyPath}`);
+      if (String(process.env.SPINE_CONTINUUM_DRY_RUN || "0") === "1") continuumArgs.push("--dry-run=1");
+      if (String(process.env.SPINE_CONTINUUM_FORCE || "0") === "1") continuumArgs.push("--force=1");
+      const continuum = runJson("node", continuumArgs, { timeout: continuumTimeoutMs });
+      const payload = continuum.payload && typeof continuum.payload === "object"
+        ? continuum.payload
+        : null;
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_continuum_pulse",
+        mode,
+        date: dateStr,
+        ok: continuum.ok && !!payload && payload.ok === true,
+        profile: payload ? payload.profile || continuumProfile : continuumProfile,
+        skipped: payload ? payload.skipped === true : null,
+        skip_reasons: payload && Array.isArray(payload.skip_reasons) ? payload.skip_reasons.slice(0, 8) : null,
+        trit: payload && payload.trit ? Number(payload.trit.value || 0) : null,
+        trit_label: payload && payload.trit ? payload.trit.label || null : null,
+        tasks_executed: payload ? Number(payload.tasks_executed || 0) : null,
+        training_queue_rows: payload && payload.training_queue
+          ? Number(payload.training_queue.appended || 0)
+          : null,
+        run_path: payload ? payload.run_path || null : null,
+        reason: (!continuum.ok || !payload || payload.ok !== true)
+          ? String(continuum.stderr || continuum.stdout || `continuum_pulse_exit_${continuum.code}`).slice(0, 180)
+          : null
+      });
+      if (continuum.ok && payload && payload.ok === true) {
+        console.log(
+          ` continuum_pulse trit=${String(payload.trit && payload.trit.label || "unknown")}` +
+          ` tasks=${Number(payload.tasks_executed || 0)}` +
+          ` skipped=${payload.skipped === true ? "yes" : "no"}`
+        );
+      } else {
+        console.log(` continuum_pulse unavailable reason=${String(continuum.stderr || continuum.stdout || "unknown").slice(0, 120)}`);
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_continuum_pulse_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "SPINE_CONTINUUM_ENABLED",
+        flag_value: String(process.env.SPINE_CONTINUUM_ENABLED || "")
+      });
+      console.log(" continuum_pulse skipped reason=feature_flag_disabled flag=SPINE_CONTINUUM_ENABLED");
+    }
+
+    // 4m) self-documentation closeout (daily MEMORY.md session summary with significance gating).
     if (String(process.env.SPINE_SELF_DOCUMENTATION_ENABLED || "1") !== "0") {
       const selfDocArgs = [
         "systems/autonomy/self_documentation_closeout.js",

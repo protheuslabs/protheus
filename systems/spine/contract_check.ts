@@ -775,6 +775,12 @@ function main() {
     ["observer_mirror.js", "run", "status", "--days"]
   );
 
+  // continuum_core.js runs bounded background pulse/daemon/status contracts.
+  checkScript(
+    "systems/continuum/continuum_core.js",
+    ["continuum_core.js", "pulse", "daemon", "status", "--profile", "--policy", "--dry-run"]
+  );
+
   // strategy_principles.js derives implementation principles from active strategy policy.
   checkScript(
     "systems/strategy/strategy_principles.js",
