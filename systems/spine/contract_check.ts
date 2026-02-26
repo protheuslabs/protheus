@@ -869,6 +869,12 @@ function main() {
     ["workflow_executor.js", "run", "status", "--id", "--max", "--include-draft", "--dry-run", "--continue-on-error", "--receipt-strict"]
   );
 
+  // eye_kernel.js enforces control-plane lane routing with budget/clearance receipts.
+  checkScript(
+    "systems/eye/eye_kernel.js",
+    ["eye_kernel.js", "route", "status", "--lane", "--target", "--action", "--risk", "--clearance", "--estimated-tokens", "--apply"]
+  );
+
   // claw_registry.js governs high-power actuation lanes (browser/computer/payment).
   checkScript(
     "systems/actuation/claw_registry.js",
