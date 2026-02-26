@@ -345,5 +345,5 @@ openclaw cron add --json '{
 3. **Skill supply chain security** — Unsigned skills vulnerability; audit recommended
 
 ## Session Summaries
-- 2026-02-26: drift 0.00%, yield 0.00%, executed 0, holds 0, audits 5, suggestions 1, integrity 0, artifacts 4. flags=yield_low
+- 2026-02-26: drift 2.90%, yield 62.50%, executed 0, holds 0, audits 8, suggestions 2, integrity 0, artifacts 3.
 - 2026-02-25: drift 3.10%, yield 66.70%, executed 0, holds 0, audits 4, suggestions 0, integrity 0, artifacts 12.
