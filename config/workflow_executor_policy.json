@@ -1,0 +1,17 @@
+{
+  "version": "1.0",
+  "runtime_mutation": {
+    "enabled": true,
+    "max_mutations_per_run": 8,
+    "max_mutations_per_workflow": 2,
+    "retry_after_apply": true,
+    "rollback_on_regression": true,
+    "max_retry_increment": 1,
+    "max_total_retry_per_step": 3,
+    "allow": {
+      "guard_hardening": true,
+      "rollback_path": true,
+      "retry_tuning": true
+    }
+  }
+}
