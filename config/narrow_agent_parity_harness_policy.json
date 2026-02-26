@@ -1,0 +1,82 @@
+{
+  "version": "1.0",
+  "strict_default": false,
+  "baseline_profile": "narrow-agent-v1",
+  "window_days": 7,
+  "min_live_runs": 5,
+  "max_history_rows": 520,
+  "aggregate_gates": {
+    "min_scenarios_passed": 2,
+    "min_pass_ratio": 0.66,
+    "min_weighted_score": 0.85
+  },
+  "scenarios": [
+    {
+      "id": "governed_execution",
+      "name": "Governed execution lane",
+      "metrics": {
+        "reliability": "execution_success_rate",
+        "latency_ms": "execution_latency_ms",
+        "cost_pressure": "budget_used_ratio_avg"
+      },
+      "baselines": {
+        "reliability_min": 0.97,
+        "latency_ms_max": 120000,
+        "cost_pressure_max": 0.95
+      },
+      "weights": {
+        "reliability": 0.5,
+        "latency": 0.3,
+        "cost": 0.2
+      }
+    },
+    {
+      "id": "startup_responsiveness",
+      "name": "Startup responsiveness lane",
+      "metrics": {
+        "reliability": "runtime_pass_ratio",
+        "latency_ms": "boot_latency_ms",
+        "cost_pressure": "budget_used_ratio_avg"
+      },
+      "baselines": {
+        "reliability_min": 0.95,
+        "latency_ms_max": 800,
+        "cost_pressure_max": 0.98
+      },
+      "weights": {
+        "reliability": 0.3,
+        "latency": 0.5,
+        "cost": 0.2
+      }
+    },
+    {
+      "id": "sustained_autonomy",
+      "name": "Sustained autonomy lane",
+      "metrics": {
+        "reliability": "closure_pass_ratio",
+        "latency_ms": "blended_latency_ms",
+        "cost_pressure": "budget_autopause_deny_ratio"
+      },
+      "baselines": {
+        "reliability_min": 0.9,
+        "latency_ms_max": 60000,
+        "cost_pressure_max": 0.35
+      },
+      "weights": {
+        "reliability": 0.45,
+        "latency": 0.2,
+        "cost": 0.35
+      }
+    }
+  ],
+  "sources": {
+    "execution_reliability_slo_path": "state/ops/execution_reliability_slo.json",
+    "runtime_efficiency_floor_path": "state/ops/runtime_efficiency_floor.json",
+    "workflow_execution_closure_path": "state/ops/workflow_execution_closure.json",
+    "daily_budget_dir": "state/autonomy/daily_budget",
+    "budget_events_path": "state/autonomy/budget_events.jsonl"
+  },
+  "state_path": "state/ops/narrow_agent_parity_harness.json",
+  "history_path": "state/ops/narrow_agent_parity_harness_history.jsonl",
+  "weekly_receipts_dir": "state/ops/parity_scorecards"
+}

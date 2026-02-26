@@ -42,6 +42,8 @@
     "ops:compliance-retention:attest": "node systems/ops/compliance_retention_uplift.js attest",
     "ops:runtime-efficiency": "node systems/ops/runtime_efficiency_floor.js run",
     "ops:runtime-efficiency:status": "node systems/ops/runtime_efficiency_floor.js status",
+    "ops:narrow-agent-parity": "node systems/ops/narrow_agent_parity_harness.js run",
+    "ops:narrow-agent-parity:status": "node systems/ops/narrow_agent_parity_harness.js status",
     "ops:seed-boot-probe": "node systems/ops/seed_boot_probe.js run",
     "routing:provider-onboard:list": "node systems/routing/provider_onboarding_manifest.js list",
     "routing:provider-onboard": "node systems/routing/provider_onboarding_manifest.js run",
