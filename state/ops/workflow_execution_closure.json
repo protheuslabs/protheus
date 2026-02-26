@@ -1,13 +1,13 @@
 {
   "schema_id": "workflow_execution_closure",
   "schema_version": "1.0",
-  "updated_at": "2026-02-26T09:37:08.060Z",
+  "updated_at": "2026-02-26T10:15:41.984Z",
   "date": "2026-02-26",
   "policy_version": "1.0",
   "target_streak_days": 7,
   "min_accepted_items": 1,
   "min_workflows_executed": 1,
-  "lookback_days": 14,
+  "lookback_days": 21,
   "consecutive_days_passed": 2,
   "remaining_days": 5,
   "closure_pass": false,
@@ -189,6 +189,90 @@
         "proposal_total": 0,
         "proposal_path": "state/sensory/eyes/proposals/2026-02-13.json",
         "workflow_run_path": "state/adaptive/workflows/executor/runs/2026-02-13.json"
+      },
+      {
+        "date": "2026-02-12",
+        "pass": false,
+        "accepted_items": 0,
+        "workflows_executed": 0,
+        "workflows_selected": 0,
+        "workflows_succeeded": 0,
+        "workflows_failed": 0,
+        "proposal_total": 0,
+        "proposal_path": "state/sensory/eyes/proposals/2026-02-12.json",
+        "workflow_run_path": "state/adaptive/workflows/executor/runs/2026-02-12.json"
+      },
+      {
+        "date": "2026-02-11",
+        "pass": false,
+        "accepted_items": 0,
+        "workflows_executed": 0,
+        "workflows_selected": 0,
+        "workflows_succeeded": 0,
+        "workflows_failed": 0,
+        "proposal_total": 0,
+        "proposal_path": "state/sensory/eyes/proposals/2026-02-11.json",
+        "workflow_run_path": "state/adaptive/workflows/executor/runs/2026-02-11.json"
+      },
+      {
+        "date": "2026-02-10",
+        "pass": false,
+        "accepted_items": 0,
+        "workflows_executed": 0,
+        "workflows_selected": 0,
+        "workflows_succeeded": 0,
+        "workflows_failed": 0,
+        "proposal_total": 0,
+        "proposal_path": "state/sensory/eyes/proposals/2026-02-10.json",
+        "workflow_run_path": "state/adaptive/workflows/executor/runs/2026-02-10.json"
+      },
+      {
+        "date": "2026-02-09",
+        "pass": false,
+        "accepted_items": 0,
+        "workflows_executed": 0,
+        "workflows_selected": 0,
+        "workflows_succeeded": 0,
+        "workflows_failed": 0,
+        "proposal_total": 0,
+        "proposal_path": "state/sensory/eyes/proposals/2026-02-09.json",
+        "workflow_run_path": "state/adaptive/workflows/executor/runs/2026-02-09.json"
+      },
+      {
+        "date": "2026-02-08",
+        "pass": false,
+        "accepted_items": 0,
+        "workflows_executed": 0,
+        "workflows_selected": 0,
+        "workflows_succeeded": 0,
+        "workflows_failed": 0,
+        "proposal_total": 0,
+        "proposal_path": "state/sensory/eyes/proposals/2026-02-08.json",
+        "workflow_run_path": "state/adaptive/workflows/executor/runs/2026-02-08.json"
+      },
+      {
+        "date": "2026-02-07",
+        "pass": false,
+        "accepted_items": 0,
+        "workflows_executed": 0,
+        "workflows_selected": 0,
+        "workflows_succeeded": 0,
+        "workflows_failed": 0,
+        "proposal_total": 0,
+        "proposal_path": "state/sensory/eyes/proposals/2026-02-07.json",
+        "workflow_run_path": "state/adaptive/workflows/executor/runs/2026-02-07.json"
+      },
+      {
+        "date": "2026-02-06",
+        "pass": false,
+        "accepted_items": 0,
+        "workflows_executed": 0,
+        "workflows_selected": 0,
+        "workflows_succeeded": 0,
+        "workflows_failed": 0,
+        "proposal_total": 0,
+        "proposal_path": "state/sensory/eyes/proposals/2026-02-06.json",
+        "workflow_run_path": "state/adaptive/workflows/executor/runs/2026-02-06.json"
       }
     ]
   }
