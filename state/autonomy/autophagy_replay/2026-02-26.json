@@ -1,7 +1,7 @@
 {
   "ok": true,
   "type": "autonomy_non_yield_replay",
-  "ts": "2026-02-26T10:16:43.444Z",
+  "ts": "2026-02-26T10:40:37.950Z",
   "end_date": "2026-02-26",
   "days": 180,
   "sources": {
@@ -20,17 +20,17 @@
   },
   "baseline_effective_rates": {
     "drift_rate": 0.029,
-    "yield_rate": 0.667,
+    "yield_rate": 0.625,
     "safety_stop_rate": 0
   },
   "current_effective_counters": {
-    "attempts": 104,
-    "executed": 9,
-    "shipped": 6,
+    "attempts": 103,
+    "executed": 8,
+    "shipped": 5,
     "no_progress": 3,
     "safety_stops": 0,
-    "policy_holds": 44,
-    "budget_holds": 11
+    "policy_holds": 45,
+    "budget_holds": 12
   },
   "summary": {
     "candidates_total": 0,
