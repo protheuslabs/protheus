@@ -1,0 +1,44 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "state_path": "state/security/llm_test_opacity/state.json",
+  "incident_log_path": "state/security/llm_test_opacity/incidents.jsonl",
+  "block_response": {
+    "stderr": "test_opacity_blocked",
+    "error": "test_opacity_blocked"
+  },
+  "blocked_path_patterns": [
+    "(?:^|[\\\\/])memory[\\\\/]tools[\\\\/]tests(?:[\\\\/]|$)",
+    "(?:^|[\\\\/])tests(?:[\\\\/]|$)",
+    "(?:^|[\\\\/])config[\\\\/].*test",
+    "\\.test\\.(?:js|ts)\\b",
+    "autonomy_simulation_harness",
+    "red_team_harness",
+    "maturity_harness",
+    "shadow_pass_gate"
+  ],
+  "blocked_intent_patterns": [
+    "(?:reveal|show|print|dump|explain)\\b.{0,120}\\b(?:test|harness|rubric|scoring|criteria|oracle|judge)",
+    "\\b(?:hidden|private|internal|opaque)\\b.{0,120}\\b(?:test|harness|criteria|rubric|oracle|judge)",
+    "\\b(?:reverse(?:\\s|-)?engineer|brute(?:\\s|-)?force|game)\\b.{0,160}\\b(?:test|harness|criteria|rubric|oracle|judge)"
+  ],
+  "anti_reverse_engineering": {
+    "enabled": true,
+    "window_seconds": 900,
+    "max_blocked_attempts_per_window": 4,
+    "max_unique_signatures_per_window": 3,
+    "max_global_blocked_attempts_per_window": 20,
+    "lockout_seconds": 1800,
+    "suspicious_terms": [
+      "hidden test",
+      "test harness",
+      "rubric",
+      "scoring criteria",
+      "judge function",
+      "reverse engineer",
+      "brute force",
+      "game the test",
+      "oracle"
+    ]
+  }
+}

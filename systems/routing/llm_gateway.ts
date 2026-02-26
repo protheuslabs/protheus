@@ -33,6 +33,15 @@ const PROMPT_CACHE_MAX_ENTRIES = Math.max(50, Number(process.env.LLM_GATEWAY_PRO
 const PROMPT_CACHE_INVALIDATION_PATH = process.env.LLM_GATEWAY_PROMPT_CACHE_INVALIDATION_PATH
   ? path.resolve(String(process.env.LLM_GATEWAY_PROMPT_CACHE_INVALIDATION_PATH))
   : path.join(REPO_ROOT, 'state', 'routing', 'prompt_cache_invalidation.json');
+const TEST_OPACITY_POLICY_PATH = process.env.LLM_TEST_OPACITY_POLICY_PATH
+  ? path.resolve(String(process.env.LLM_TEST_OPACITY_POLICY_PATH))
+  : path.join(REPO_ROOT, 'config', 'llm_test_opacity_policy.json');
+
+let TEST_OPACITY_POLICY_CACHE: Record<string, any> = {
+  path: null,
+  mtime_ms: null,
+  value: null
+};
 
 function nowIso() {
   return new Date().toISOString();
@@ -60,6 +69,391 @@ function readJsonSafe(filePath, fallback = null) {
 function writeJson(filePath, obj) {
   ensureDir(path.dirname(filePath));
   fs.writeFileSync(filePath, JSON.stringify(obj, null, 2), 'utf8');
+}
+
+function appendJsonlAlways(filePath, obj) {
+  ensureDir(path.dirname(filePath));
+  fs.appendFileSync(filePath, JSON.stringify(obj) + '\n', 'utf8');
+}
+
+function resolveRepoPath(rawPath, fallbackPath) {
+  const candidate = String(rawPath || '').trim();
+  if (!candidate) return fallbackPath;
+  if (path.isAbsolute(candidate)) return candidate;
+  return path.join(REPO_ROOT, candidate);
+}
+
+function clampInt(v, lo, hi, fallback) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return fallback;
+  const i = Math.floor(n);
+  if (i < lo) return lo;
+  if (i > hi) return hi;
+  return i;
+}
+
+function safeRegexFromString(rawPattern) {
+  const p = String(rawPattern || '').trim();
+  if (!p) return null;
+  try {
+    return new RegExp(p, 'i');
+  } catch {
+    return null;
+  }
+}
+
+function uniqueLowerList(rows, maxItems = 128) {
+  const src = Array.isArray(rows) ? rows : [];
+  const out = [];
+  const seen = new Set();
+  for (const row of src) {
+    const next = String(row || '').trim().toLowerCase();
+    if (!next || seen.has(next)) continue;
+    seen.add(next);
+    out.push(next);
+    if (out.length >= maxItems) break;
+  }
+  return out;
+}
+
+function defaultTestOpacityPolicy() {
+  const statePath = path.join(REPO_ROOT, 'state', 'security', 'llm_test_opacity', 'state.json');
+  const incidentLogPath = path.join(REPO_ROOT, 'state', 'security', 'llm_test_opacity', 'incidents.jsonl');
+  return {
+    version: '1.0',
+    enabled: true,
+    state_path: statePath,
+    incident_log_path: incidentLogPath,
+    block_response: {
+      stderr: 'test_opacity_blocked',
+      error: 'test_opacity_blocked'
+    },
+    blocked_path_patterns: [
+      String.raw`(?:^|[\\/])memory[\\/]tools[\\/]tests(?:[\\/]|$)`,
+      String.raw`(?:^|[\\/])tests(?:[\\/]|$)`,
+      String.raw`(?:^|[\\/])config[\\/].*test`,
+      String.raw`\.test\.(?:js|ts)\b`,
+      String.raw`autonomy_simulation_harness`,
+      String.raw`red_team_harness`,
+      String.raw`maturity_harness`,
+      String.raw`shadow_pass_gate`
+    ],
+    blocked_intent_patterns: [
+      String.raw`(?:reveal|show|print|dump|explain)\b.{0,120}\b(?:test|harness|rubric|scoring|criteria|oracle|judge)`,
+      String.raw`\b(?:hidden|private|internal|opaque)\b.{0,120}\b(?:test|harness|criteria|rubric|oracle|judge)`,
+      String.raw`\b(?:reverse(?:\s|-)?engineer|brute(?:\s|-)?force|game)\b.{0,160}\b(?:test|harness|criteria|rubric|oracle|judge)`
+    ],
+    anti_reverse_engineering: {
+      enabled: true,
+      window_seconds: 900,
+      max_blocked_attempts_per_window: 4,
+      max_unique_signatures_per_window: 3,
+      max_global_blocked_attempts_per_window: 20,
+      lockout_seconds: 1800,
+      suspicious_terms: [
+        'hidden test',
+        'test harness',
+        'rubric',
+        'scoring criteria',
+        'judge function',
+        'reverse engineer',
+        'brute force',
+        'game the test',
+        'oracle'
+      ]
+    }
+  };
+}
+
+function normalizeTestOpacityPolicy(rawPolicy) {
+  const base = defaultTestOpacityPolicy();
+  const src = rawPolicy && typeof rawPolicy === 'object' ? rawPolicy : {};
+  const antiSrc = src.anti_reverse_engineering && typeof src.anti_reverse_engineering === 'object'
+    ? src.anti_reverse_engineering
+    : {};
+  const blockResponse = src.block_response && typeof src.block_response === 'object'
+    ? src.block_response
+    : {};
+
+  const out: Record<string, any> = {
+    version: String(src.version || base.version),
+    enabled: src.enabled !== false,
+    state_path: resolveRepoPath(src.state_path, base.state_path),
+    incident_log_path: resolveRepoPath(src.incident_log_path, base.incident_log_path),
+    block_response: {
+      stderr: String(blockResponse.stderr || base.block_response.stderr),
+      error: String(blockResponse.error || base.block_response.error)
+    },
+    blocked_path_patterns: Array.isArray(src.blocked_path_patterns) && src.blocked_path_patterns.length
+      ? src.blocked_path_patterns.map((x) => String(x || '')).filter(Boolean).slice(0, 128)
+      : base.blocked_path_patterns.slice(),
+    blocked_intent_patterns: Array.isArray(src.blocked_intent_patterns) && src.blocked_intent_patterns.length
+      ? src.blocked_intent_patterns.map((x) => String(x || '')).filter(Boolean).slice(0, 128)
+      : base.blocked_intent_patterns.slice(),
+    anti_reverse_engineering: {
+      enabled: antiSrc.enabled !== false,
+      window_seconds: clampInt(
+        antiSrc.window_seconds,
+        10,
+        24 * 60 * 60,
+        base.anti_reverse_engineering.window_seconds
+      ),
+      max_blocked_attempts_per_window: clampInt(
+        antiSrc.max_blocked_attempts_per_window,
+        1,
+        1000,
+        base.anti_reverse_engineering.max_blocked_attempts_per_window
+      ),
+      max_unique_signatures_per_window: clampInt(
+        antiSrc.max_unique_signatures_per_window,
+        1,
+        1000,
+        base.anti_reverse_engineering.max_unique_signatures_per_window
+      ),
+      max_global_blocked_attempts_per_window: clampInt(
+        antiSrc.max_global_blocked_attempts_per_window,
+        1,
+        100000,
+        base.anti_reverse_engineering.max_global_blocked_attempts_per_window
+      ),
+      lockout_seconds: clampInt(
+        antiSrc.lockout_seconds,
+        10,
+        24 * 60 * 60,
+        base.anti_reverse_engineering.lockout_seconds
+      ),
+      suspicious_terms: uniqueLowerList(
+        Array.isArray(antiSrc.suspicious_terms)
+          ? antiSrc.suspicious_terms
+          : base.anti_reverse_engineering.suspicious_terms,
+        128
+      )
+    }
+  };
+  out._blocked_path_regex = out.blocked_path_patterns.map((x) => safeRegexFromString(x)).filter(Boolean);
+  out._blocked_intent_regex = out.blocked_intent_patterns.map((x) => safeRegexFromString(x)).filter(Boolean);
+  return out;
+}
+
+function loadTestOpacityPolicy() {
+  const fp = TEST_OPACITY_POLICY_PATH;
+  const mtimeMs = fs.existsSync(fp)
+    ? Number(fs.statSync(fp).mtimeMs || 0)
+    : -1;
+  if (
+    TEST_OPACITY_POLICY_CACHE
+    && TEST_OPACITY_POLICY_CACHE.path === fp
+    && TEST_OPACITY_POLICY_CACHE.mtime_ms === mtimeMs
+    && TEST_OPACITY_POLICY_CACHE.value
+  ) {
+    return TEST_OPACITY_POLICY_CACHE.value;
+  }
+  const raw = readJsonSafe(fp, null);
+  const normalized = normalizeTestOpacityPolicy(raw);
+  TEST_OPACITY_POLICY_CACHE = {
+    path: fp,
+    mtime_ms: mtimeMs,
+    value: normalized
+  };
+  return normalized;
+}
+
+function normalizePromptForSecurity(v) {
+  return String(v || '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 12000);
+}
+
+function regexHitStrings(text, regexes) {
+  const out = [];
+  for (const rx of Array.isArray(regexes) ? regexes : []) {
+    if (!rx || typeof rx.test !== 'function') continue;
+    try {
+      if (rx.test(text)) out.push(String(rx.source || rx));
+    } catch {
+      // no-op
+    }
+    if (out.length >= 24) break;
+  }
+  return out;
+}
+
+function pruneTimedRows(rows, cutoffMs) {
+  const src = Array.isArray(rows) ? rows : [];
+  return src.filter((row) => {
+    const ts = Date.parse(String(row && row.ts || ''));
+    return Number.isFinite(ts) && ts >= cutoffMs;
+  }).slice(-2048);
+}
+
+function hashPromptSignature(normalizedPrompt) {
+  return crypto
+    .createHash('sha256')
+    .update(String(normalizedPrompt || ''), 'utf8')
+    .digest('hex')
+    .slice(0, 24);
+}
+
+function loadOpacityState(policy) {
+  const fallback = {
+    schema_id: 'llm_test_opacity_state',
+    schema_version: '1.0',
+    updated_at: nowIso(),
+    sources: {},
+    global_blocked_attempts: []
+  };
+  const raw = readJsonSafe(policy.state_path, fallback);
+  const src = raw && typeof raw === 'object' ? raw : fallback;
+  return {
+    schema_id: 'llm_test_opacity_state',
+    schema_version: '1.0',
+    updated_at: String(src.updated_at || nowIso()),
+    sources: src.sources && typeof src.sources === 'object' ? src.sources : {},
+    global_blocked_attempts: Array.isArray(src.global_blocked_attempts) ? src.global_blocked_attempts : []
+  };
+}
+
+function saveOpacityState(policy, state) {
+  const out = {
+    schema_id: 'llm_test_opacity_state',
+    schema_version: '1.0',
+    updated_at: nowIso(),
+    sources: state && state.sources && typeof state.sources === 'object' ? state.sources : {},
+    global_blocked_attempts: Array.isArray(state && state.global_blocked_attempts)
+      ? state.global_blocked_attempts
+      : []
+  };
+  writeJson(policy.state_path, out);
+  return out;
+}
+
+function evaluateTestOpacityGate(prompt, source, phase) {
+  const policy = loadTestOpacityPolicy();
+  const sourceName = String(source || 'llm_gateway').trim() || 'llm_gateway';
+  if (policy.enabled !== true) {
+    return { allowed: true, reason: 'policy_disabled', policy_version: policy.version, source: sourceName };
+  }
+  const nowMs = Date.now();
+  const ts = nowIso();
+  const windowMs = Math.max(10000, Number(policy.anti_reverse_engineering.window_seconds || 900) * 1000);
+  const cutoffMs = nowMs - windowMs;
+  const normPrompt = normalizePromptForSecurity(prompt);
+  const pathHits = regexHitStrings(normPrompt, policy._blocked_path_regex);
+  const intentHits = regexHitStrings(normPrompt, policy._blocked_intent_regex);
+  const suspiciousHits = (policy.anti_reverse_engineering.suspicious_terms || [])
+    .filter((term) => term && normPrompt.includes(term))
+    .slice(0, 24);
+  const blockedByPrompt = pathHits.length > 0 || intentHits.length > 0;
+  const signature = hashPromptSignature(normPrompt);
+
+  const state = loadOpacityState(policy);
+  if (!state.sources[sourceName] || typeof state.sources[sourceName] !== 'object') {
+    state.sources[sourceName] = {
+      blocked_attempts: [],
+      locked_until: null
+    };
+  }
+  const sourceState = state.sources[sourceName];
+  sourceState.blocked_attempts = pruneTimedRows(sourceState.blocked_attempts, cutoffMs);
+  state.global_blocked_attempts = pruneTimedRows(state.global_blocked_attempts, cutoffMs);
+
+  const lockUntilMs = Date.parse(String(sourceState.locked_until || ''));
+  const lockActive = Number.isFinite(lockUntilMs) && lockUntilMs > nowMs;
+  if (lockActive) {
+    const incident = {
+      ts,
+      type: 'llm_test_opacity_lockout_block',
+      source: sourceName,
+      phase: String(phase || 'general'),
+      reason: 'source_lockout_active',
+      lockout_until: String(sourceState.locked_until || '')
+    };
+    appendJsonlAlways(policy.incident_log_path, incident);
+    saveOpacityState(policy, state);
+    return {
+      allowed: false,
+      reason: 'source_lockout_active',
+      policy_version: policy.version,
+      source: sourceName,
+      lockout_until: String(sourceState.locked_until || ''),
+      blocked_path_hits: [],
+      blocked_intent_hits: [],
+      suspicious_hits: []
+    };
+  }
+
+  if (!blockedByPrompt) {
+    saveOpacityState(policy, state);
+    return {
+      allowed: true,
+      reason: 'pass',
+      policy_version: policy.version,
+      source: sourceName
+    };
+  }
+
+  const blockedAttempt = {
+    ts,
+    phase: String(phase || 'general'),
+    signature,
+    blocked_path_hits: pathHits.slice(0, 12),
+    blocked_intent_hits: intentHits.slice(0, 12),
+    suspicious_hits: suspiciousHits.slice(0, 12)
+  };
+  sourceState.blocked_attempts.push(blockedAttempt);
+  sourceState.blocked_attempts = pruneTimedRows(sourceState.blocked_attempts, cutoffMs);
+  state.global_blocked_attempts.push({
+    ts,
+    source: sourceName,
+    signature
+  });
+  state.global_blocked_attempts = pruneTimedRows(state.global_blocked_attempts, cutoffMs);
+
+  const sourceAttempts = sourceState.blocked_attempts.length;
+  const uniqueSignatures = new Set(sourceState.blocked_attempts.map((row) => String(row.signature || ''))).size;
+  const globalAttempts = state.global_blocked_attempts.length;
+
+  let lockoutTriggered = false;
+  if (policy.anti_reverse_engineering.enabled === true) {
+    if (
+      sourceAttempts >= Number(policy.anti_reverse_engineering.max_blocked_attempts_per_window || 4)
+      || uniqueSignatures >= Number(policy.anti_reverse_engineering.max_unique_signatures_per_window || 3)
+      || globalAttempts >= Number(policy.anti_reverse_engineering.max_global_blocked_attempts_per_window || 20)
+    ) {
+      lockoutTriggered = true;
+      const lockoutMs = Math.max(10000, Number(policy.anti_reverse_engineering.lockout_seconds || 1800) * 1000);
+      sourceState.locked_until = new Date(nowMs + lockoutMs).toISOString();
+    }
+  }
+
+  state.sources[sourceName] = sourceState;
+  saveOpacityState(policy, state);
+  appendJsonlAlways(policy.incident_log_path, {
+    ts,
+    type: lockoutTriggered ? 'llm_test_opacity_lockout_triggered' : 'llm_test_opacity_blocked',
+    source: sourceName,
+    phase: String(phase || 'general'),
+    signature,
+    blocked_path_hits: pathHits.slice(0, 12),
+    blocked_intent_hits: intentHits.slice(0, 12),
+    suspicious_hits: suspiciousHits.slice(0, 12),
+    source_attempts_in_window: sourceAttempts,
+    unique_signatures_in_window: uniqueSignatures,
+    global_attempts_in_window: globalAttempts,
+    lockout_until: lockoutTriggered ? String(sourceState.locked_until || '') : null
+  });
+  return {
+    allowed: false,
+    reason: lockoutTriggered ? 'bruteforce_lockout' : 'opaque_test_surface_blocked',
+    policy_version: policy.version,
+    source: sourceName,
+    lockout_until: lockoutTriggered ? String(sourceState.locked_until || '') : null,
+    blocked_path_hits: pathHits.slice(0, 12),
+    blocked_intent_hits: intentHits.slice(0, 12),
+    suspicious_hits: suspiciousHits.slice(0, 12)
+  };
 }
 
 function stripAnsi(v) {
@@ -354,6 +748,41 @@ function runLocalOllamaPrompt(opts = {}) {
     return { ok: false, stdout: '', stderr: 'no_local_model_selected', code: 2, signal: null, timed_out: false, error: null, latency_ms: 0 };
   }
 
+  const opacityGate = evaluateTestOpacityGate(prompt, source, phase);
+  if (opacityGate.allowed !== true) {
+    const lockoutReason = opacityGate.reason === 'source_lockout_active' || opacityGate.reason === 'bruteforce_lockout';
+    const errorCode = lockoutReason ? 'test_opacity_source_lockout' : 'test_opacity_blocked';
+    appendJsonl(GATEWAY_LOG_PATH, {
+      ts: nowIso(),
+      type: 'llm_gateway_opacity_block',
+      ok: false,
+      source,
+      phase,
+      model,
+      reason: opacityGate.reason,
+      policy_version: opacityGate.policy_version || null,
+      lockout_until: opacityGate.lockout_until || null,
+      blocked_path_hits: opacityGate.blocked_path_hits || [],
+      blocked_intent_hits: opacityGate.blocked_intent_hits || [],
+      suspicious_hits: opacityGate.suspicious_hits || []
+    });
+    return {
+      ok: false,
+      stdout: '',
+      stderr: 'test_opacity_blocked',
+      code: 451,
+      signal: null,
+      timed_out: false,
+      error: errorCode,
+      latency_ms: 0,
+      model,
+      phase,
+      blocked: true,
+      block_reason: opacityGate.reason,
+      lockout_until: opacityGate.lockout_until || null
+    };
+  }
+
   const cacheKey = promptCacheFingerprint({
     model,
     prompt,
@@ -455,6 +884,7 @@ module.exports = {
   listLocalOllamaModels,
   pullLocalOllamaModel,
   runLocalOllamaPrompt,
+  evaluateTestOpacityGate,
   stripAnsi,
   isUnknownFlagError,
   normalizeModelName
