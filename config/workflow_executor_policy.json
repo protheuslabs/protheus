@@ -65,5 +65,14 @@
       "rollback_path": true,
       "retry_tuning": true
     }
+  },
+  "step_runtime": {
+    "enforce_success_criteria": true,
+    "default_allowed_exit_codes": [
+      0
+    ],
+    "max_total_attempts_per_workflow": 24,
+    "max_total_retry_attempts_per_workflow": 16,
+    "max_total_step_duration_ms_per_workflow": 600000
   }
 }
