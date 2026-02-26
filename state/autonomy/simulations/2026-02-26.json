@@ -1,7 +1,7 @@
 {
   "ok": true,
   "type": "autonomy_simulation_harness",
-  "ts": "2026-02-26T09:56:32.940Z",
+  "ts": "2026-02-26T10:16:45.115Z",
   "end_date": "2026-02-26",
   "days": 180,
   "verdict": "warn",
@@ -9,37 +9,37 @@
   "verdict_effective": "warn",
   "checks": {
     "drift_rate": {
-      "value": 0.21,
+      "value": 0.165,
       "warn": 0.65,
       "fail": 0.85,
       "status": "pass"
     },
     "yield_rate": {
-      "value": 0.429,
+      "value": 0.625,
       "warn": 0.2,
       "fail": 0.08,
       "status": "pass"
     },
     "safety_stop_rate": {
-      "value": 0.016,
+      "value": 0.017,
       "warn": 0.25,
       "fail": 0.45,
       "status": "pass"
     },
     "attempt_volume": {
-      "value": 252,
+      "value": 236,
       "min": 5,
       "status": "pass"
     },
     "policy_hold_rate": {
-      "value": 0.286,
+      "value": 0.301,
       "warn": 0.2,
       "fail": 0.35,
       "enforce_fail": false,
       "status": "warn"
     },
     "budget_hold_rate": {
-      "value": 0.044,
+      "value": 0.047,
       "warn": 0.12,
       "fail": 0.25,
       "enforce_fail": false,
@@ -59,7 +59,7 @@
       "status": "pass"
     },
     "yield_rate": {
-      "value": 0.667,
+      "value": 0.625,
       "warn": 0.2,
       "fail": 0.08,
       "status": "pass"
@@ -71,19 +71,19 @@
       "status": "pass"
     },
     "attempt_volume": {
-      "value": 104,
+      "value": 103,
       "min": 5,
       "status": "pass"
     },
     "policy_hold_rate": {
-      "value": 0.423,
+      "value": 0.427,
       "warn": 0.2,
       "fail": 0.35,
       "enforce_fail": false,
       "status": "warn"
     },
     "budget_hold_rate": {
-      "value": 0.106,
+      "value": 0.107,
       "warn": 0.12,
       "fail": 0.25,
       "enforce_fail": false,
@@ -100,33 +100,33 @@
     "baseline_preserved": true,
     "effective_projection_present": true,
     "denominator_reduction_only": true,
-    "denominator_delta": 148,
+    "denominator_delta": 133,
     "identity_projection_enabled": false,
     "identity_projection_blocked_attempts": 0
   },
   "counters": {
-    "run_rows": 272,
-    "attempts": 252,
-    "executed": 14,
-    "shipped": 6,
-    "no_progress": 53,
+    "run_rows": 255,
+    "attempts": 236,
+    "executed": 8,
+    "shipped": 5,
+    "no_progress": 39,
     "safety_stops": 4,
-    "policy_holds": 72,
+    "policy_holds": 71,
     "budget_holds": 11
   },
   "baseline_counters": {
-    "attempts": 252,
-    "executed": 14,
-    "shipped": 6,
-    "no_progress": 53,
+    "attempts": 236,
+    "executed": 8,
+    "shipped": 5,
+    "no_progress": 39,
     "safety_stops": 4,
-    "policy_holds": 72,
+    "policy_holds": 71,
     "budget_holds": 11
   },
   "effective_counters": {
-    "attempts": 104,
-    "executed": 9,
-    "shipped": 6,
+    "attempts": 103,
+    "executed": 8,
+    "shipped": 5,
     "no_progress": 3,
     "safety_stops": 0,
     "policy_holds": 44,
@@ -140,8 +140,8 @@
     "source": "focus_controller",
     "reason": "burn_rate_exceeded",
     "pressure": "hard",
-    "until": "2026-02-26T10:03:10.634Z",
-    "updated_at": "2026-02-26T09:53:32.586Z",
+    "until": "2026-02-26T11:03:29.370Z",
+    "updated_at": "2026-02-26T10:16:33.905Z",
     "observed_in_window": true,
     "active_at_window_end": false,
     "signal_source": "route_summary.autopause",
@@ -158,13 +158,12 @@
     "rolling_context_enabled": false,
     "compiler_hash": "40cc5cf18353cd99",
     "compiler_active_count": 3,
-    "accepted_attempts": 148,
+    "accepted_attempts": 147,
     "rejected_attempts": 0,
-    "skipped_attempts": 104,
+    "skipped_attempts": 89,
     "rejected_by_reason": {},
     "skipped_by_reason": {
-      "non_proposal_gate": 99,
-      "legacy_unbound_eye_no_change": 5
+      "non_proposal_gate": 89
     },
     "sample_rejected": [],
     "sample_skipped": [
@@ -232,7 +231,7 @@
     "stale_pending_72h": 48
   },
   "objective_mix": {
-    "executed_total": 9,
+    "executed_total": 8,
     "objective_count": 2,
     "counts": {
       "T1_generational_wealth_v1": 4,
