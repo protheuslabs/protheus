@@ -35,6 +35,9 @@ const PROPOSALS_DIR = process.env.AUTONOMY_SIM_PROPOSALS_DIR
 const OUTPUT_DIR = process.env.AUTONOMY_SIM_OUTPUT_DIR
   ? path.resolve(String(process.env.AUTONOMY_SIM_OUTPUT_DIR))
   : path.join(ROOT, 'state', 'autonomy', 'simulations');
+const BUDGET_AUTOPAUSE_PATH = process.env.AUTONOMY_SIM_BUDGET_AUTOPAUSE_PATH
+  ? path.resolve(String(process.env.AUTONOMY_SIM_BUDGET_AUTOPAUSE_PATH))
+  : path.join(ROOT, 'state', 'autonomy', 'budget_autopause.json');
 
 const DRIFT_WARN = Number(process.env.AUTONOMY_SIM_DRIFT_WARN || 0.65);
 const DRIFT_FAIL = Number(process.env.AUTONOMY_SIM_DRIFT_FAIL || 0.85);
@@ -128,7 +131,7 @@ function readJson(fp, fallback) {
 }
 
 function readBudgetAutopauseSnapshot(endDateStr) {
-  const fp = path.join(ROOT, 'state', 'autonomy', 'budget_autopause.json');
+  const fp = BUDGET_AUTOPAUSE_PATH;
   const raw = readJson(fp, {});
   const active = raw && raw.active === true;
   const untilMs = Number(raw && raw.until_ms || 0);
@@ -398,13 +401,16 @@ function deriveBudgetAutopauseFromRuns(runRows, endDateStr) {
 function resolveBudgetAutopauseSnapshot(endDateStr, runRows) {
   const snapshot = readBudgetAutopauseSnapshot(endDateStr);
   const derived = deriveBudgetAutopauseFromRuns(runRows, endDateStr);
+  const derivedHasSignal = derived.observed_in_window === true;
+  const snapshotSuggestsActive = snapshot.active_relevant === true;
   const activeRelevant = SIM_EXTERNAL_INPUT_OVERRIDE
     ? derived.active_at_window_end === true
-    : (snapshot.active_relevant === true || derived.active_at_window_end === true);
+    : (derived.active_at_window_end === true || (!derivedHasSignal && snapshotSuggestsActive));
   return {
     ...snapshot,
     ...derived,
     source_mode: SIM_EXTERNAL_INPUT_OVERRIDE ? 'derived_from_runs' : 'live_state_plus_runs',
+    snapshot_fallback_used: SIM_EXTERNAL_INPUT_OVERRIDE ? false : (!derivedHasSignal && snapshotSuggestsActive),
     active_relevant: activeRelevant
   };
 }
