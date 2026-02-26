@@ -126,5 +126,14 @@
     "allow_escalate_decision": false,
     "estimated_tokens_default": 100,
     "default_provider": "ollama"
+  },
+  "security_gates": {
+    "soul_token": {
+      "enabled": true,
+      "enforce_shadow_on_violation": true,
+      "strict_verify": false,
+      "timeout_ms": 8000,
+      "script": "systems/security/soul_token_guard.js"
+    }
   }
 }
