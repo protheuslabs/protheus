@@ -117,6 +117,9 @@ try {
   const routedPath = path.join(state, 'observability', 'alerts', 'routed.jsonl');
   const routedLines = fs.readFileSync(routedPath, 'utf8').trim().split('\n').filter(Boolean);
   assert.strictEqual(routedLines.length, 2, 'exactly two routed rows expected');
+  const routedRows = routedLines.map((line) => JSON.parse(line));
+  assert.ok(routedRows.every((row) => typeof row.runbook_id === 'string' && row.runbook_id.length > 0), 'runbook_id should be mapped');
+  assert.ok(routedRows.every((row) => typeof row.owner === 'string' && row.owner.length > 0), 'owner should be mapped');
 
   fs.rmSync(tmp, { recursive: true, force: true });
   console.log('observability_slo_alert_router.test.js: OK');

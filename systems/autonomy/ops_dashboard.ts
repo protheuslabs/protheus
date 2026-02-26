@@ -14,6 +14,8 @@
 const fs = require('fs');
 const path = require('path');
 
+type AnyObj = Record<string, any>;
+
 const ROOT = path.resolve(__dirname, '..', '..');
 const REPORTS_DIR = process.env.AUTONOMY_HEALTH_REPORTS_DIR
   ? path.resolve(process.env.AUTONOMY_HEALTH_REPORTS_DIR)
@@ -21,6 +23,15 @@ const REPORTS_DIR = process.env.AUTONOMY_HEALTH_REPORTS_DIR
 const SPINE_RUNS_DIR = process.env.AUTONOMY_OPS_SPINE_RUNS_DIR
   ? path.resolve(process.env.AUTONOMY_OPS_SPINE_RUNS_DIR)
   : path.join(ROOT, 'state', 'spine', 'runs');
+const WORKFLOW_EXECUTOR_LATEST_PATH = process.env.AUTONOMY_OPS_WORKFLOW_EXECUTOR_LATEST_PATH
+  ? path.resolve(process.env.AUTONOMY_OPS_WORKFLOW_EXECUTOR_LATEST_PATH)
+  : path.join(ROOT, 'state', 'adaptive', 'workflows', 'executor', 'latest.json');
+const KPI_LATEST_PATH = process.env.AUTONOMY_OPS_KPI_LATEST_PATH
+  ? path.resolve(process.env.AUTONOMY_OPS_KPI_LATEST_PATH)
+  : path.join(ROOT, 'state', 'observability', 'kpi', 'latest.json');
+const KPI_HISTORY_PATH = process.env.AUTONOMY_OPS_KPI_HISTORY_PATH
+  ? path.resolve(process.env.AUTONOMY_OPS_KPI_HISTORY_PATH)
+  : path.join(ROOT, 'state', 'observability', 'kpi', 'history.jsonl');
 
 function usage() {
   console.log('Usage:');
@@ -85,7 +96,33 @@ function readJsonlSafe(filePath) {
     .filter(Boolean);
 }
 
+function appendJsonl(filePath, row) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.appendFileSync(filePath, `${JSON.stringify(row)}\n`, 'utf8');
+}
+
+function writeJson(filePath, row) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, `${JSON.stringify(row, null, 2)}\n`, 'utf8');
+}
+
 function norm(v) { return String(v == null ? '' : v).trim().toLowerCase(); }
+
+function normalizeChecks(checksRaw) {
+  if (Array.isArray(checksRaw)) return checksRaw.filter((row) => row && typeof row === 'object');
+  if (checksRaw && typeof checksRaw === 'object') {
+    return Object.entries(checksRaw).map(([id, row]) => {
+      const src = row && typeof row === 'object' ? row as AnyObj : {};
+      return {
+        name: src.name || id,
+        pass: src.pass === true || src.ok === true,
+        ok: src.ok,
+        level: src.level || null
+      };
+    });
+  }
+  return [];
+}
 
 function summarize(rows) {
   const totals = {
@@ -121,10 +158,10 @@ function summarize(rows) {
   };
 
   for (const row of rows) {
-    const checks = row && row.slo && Array.isArray(row.slo.checks) ? row.slo.checks : [];
+    const checks = normalizeChecks(row && row.slo ? row.slo.checks : null);
     const failed = checks.filter((c) => c && c.pass === false);
     totals.failed_checks += failed.length;
-    const level = norm(row && row.slo && row.slo.alert_level);
+    const level = norm(row && row.slo && (row.slo.alert_level || row.slo.level));
     if (level === 'critical') totals.critical += 1;
     else if (level === 'warn' || level === 'warning') totals.warnings += 1;
 
@@ -238,6 +275,88 @@ function summarizeDreams(dates) {
   };
 }
 
+function readHealthReport(date, window) {
+  const candidates = [
+    path.join(REPORTS_DIR, `${date}__${window}.json`),
+    path.join(REPORTS_DIR, `${date}.${window}.json`)
+  ];
+  for (const fp of candidates) {
+    const row = readJsonSafe(fp, null);
+    if (row && typeof row === 'object') {
+      return { row, path: fp };
+    }
+  }
+  return { row: null, path: null };
+}
+
+function buildKpiSummary(date, days, reports, summary) {
+  const dailyReport = readHealthReport(date, 'daily').row || null;
+  const workflowLatest = readJsonSafe(WORKFLOW_EXECUTOR_LATEST_PATH, {});
+  const workflowSlo = workflowLatest && workflowLatest.slo && typeof workflowLatest.slo === 'object'
+    ? workflowLatest.slo
+    : {};
+  const measured = workflowSlo && workflowSlo.measured && typeof workflowSlo.measured === 'object'
+    ? workflowSlo.measured
+    : {};
+  const branch = dailyReport && dailyReport.branch_health && typeof dailyReport.branch_health === 'object'
+    ? dailyReport.branch_health
+    : {};
+  const queue = branch && branch.queue && typeof branch.queue === 'object'
+    ? branch.queue
+    : {};
+  const policyHolds = branch && branch.policy_holds && typeof branch.policy_holds === 'object'
+    ? branch.policy_holds
+    : {};
+  const dailySlo = dailyReport && dailyReport.slo && typeof dailyReport.slo === 'object'
+    ? dailyReport.slo
+    : {};
+  const trendRows = readJsonlSafe(KPI_HISTORY_PATH).slice(-Math.max(1, Math.min(30, days * 2)));
+  const last = trendRows.length > 0 ? trendRows[trendRows.length - 1] : null;
+  const currentExecutionSuccess = Number(measured.execution_success_rate || 0);
+  const prevExecutionSuccess = last && last.kpi && last.kpi.execution
+    ? Number(last.kpi.execution.success_rate || 0)
+    : null;
+  const currentQueueOpen = Number(queue.open_count || 0);
+  const prevQueueOpen = last && last.kpi && last.kpi.queue_health
+    ? Number(last.kpi.queue_health.open_count || 0)
+    : null;
+
+  return {
+    generated_ts: nowIso(),
+    date,
+    window_days: days,
+    reports_considered: reports.length,
+    execution: {
+      workflows_executed: Number(workflowLatest.workflows_executed || 0),
+      workflows_succeeded: Number(workflowLatest.workflows_succeeded || 0),
+      workflows_failed: Number(workflowLatest.workflows_failed || 0),
+      success_rate: currentExecutionSuccess,
+      time_to_first_execution_ms: Number(measured.time_to_first_execution_ms || 0)
+    },
+    yield: {
+      queue_drain_rate: Number(measured.queue_drain_rate || 0),
+      verification_pass_rate: Number(workflowSlo && workflowSlo.aggregate && workflowSlo.aggregate.verified_rate || 0)
+    },
+    safety: {
+      health_level: norm(dailySlo.level || dailySlo.alert_level || 'unknown') || 'unknown',
+      failed_checks_count: Array.isArray(dailySlo.failed_checks) ? dailySlo.failed_checks.length : Number(summary && summary.totals && summary.totals.failed_checks || 0),
+      critical_checks_count: Number(dailySlo.critical_count || 0),
+      policy_holds: Number(policyHolds.count || 0)
+    },
+    queue_health: {
+      open_count: currentQueueOpen,
+      eligible_count: Number(queue.eligible_count || 0),
+      progress_per_day: Number(queue.queue_progress_per_day || 0),
+      unique_proposals: Number(queue.unique_proposals || 0)
+    },
+    trend: {
+      previous_date: last && last.date ? String(last.date) : null,
+      execution_success_rate_delta: Number.isFinite(prevExecutionSuccess) ? Number((currentExecutionSuccess - prevExecutionSuccess).toFixed(4)) : null,
+      queue_open_delta: Number.isFinite(prevQueueOpen) ? currentQueueOpen - prevQueueOpen : null
+    }
+  };
+}
+
 function cmdRun(args) {
   const date = isDateStr(args._[1]) ? String(args._[1]) : todayStr();
   const daysRaw = Number(args.days || 7);
@@ -247,15 +366,15 @@ function cmdRun(args) {
   const reports = [];
   for (const d of dates) {
     for (const window of ['daily', 'weekly']) {
-      const fp = path.join(REPORTS_DIR, `${d}__${window}.json`);
-      const row = readJsonSafe(fp, null);
-      if (row && typeof row === 'object') reports.push(row);
+      const loaded = readHealthReport(d, window);
+      if (loaded.row && typeof loaded.row === 'object') reports.push(loaded.row);
     }
   }
 
   const summary = summarize(reports);
   const dream = summarizeDreams(dates);
-  process.stdout.write(JSON.stringify({
+  const kpi = buildKpiSummary(date, days, reports, summary);
+  const out = {
     ok: true,
     type: 'ops_dashboard',
     ts: nowIso(),
@@ -263,8 +382,19 @@ function cmdRun(args) {
     days,
     reports: reports.length,
     summary,
-    dream
-  }) + '\n');
+    dream,
+    kpi
+  };
+  writeJson(KPI_LATEST_PATH, out);
+  appendJsonl(KPI_HISTORY_PATH, {
+    ts: out.ts,
+    type: out.type,
+    date: out.date,
+    days: out.days,
+    reports: out.reports,
+    kpi: out.kpi
+  });
+  process.stdout.write(JSON.stringify(out) + '\n');
 }
 
 function main() {

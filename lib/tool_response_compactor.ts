@@ -29,7 +29,16 @@ function redactSecrets(content) {
   });
   
   // Redact Authorization: Bearer headers
-  content = content.replace(/Authorization:\s*Bearer\s+[a-zA-Z0-9_-]+/gi, 'Authorization: Bearer [REDACTED]');
+  content = content.replace(/Authorization:\s*Bearer\s+[^\s"']+/gi, 'Authorization: Bearer [REDACTED]');
+
+  // Redact common auth header/value forms
+  content = content.replace(/(x-api-key|api-key|auth-token|authorization)\s*[:=]\s*["']?[a-z0-9._~+\\/-]{12,}["']?/gi, (_m, key) => `${key}: [REDACTED]`);
+
+  // Redact common JSON key secrets
+  content = content.replace(/("(?:auth_token|access_token|refresh_token|api_key|secret|password)"\s*:\s*)"(.*?)"/gi, '$1"[REDACTED]"');
+
+  // Redact common URL/query token forms
+  content = content.replace(/([?&](?:token|access_token|api_key|auth|ct0|bearer)=)[^&\\s]+/gi, '$1[REDACTED]');
   
   return content;
 }

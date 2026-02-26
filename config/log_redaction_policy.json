@@ -1,0 +1,38 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "max_file_bytes": 2097152,
+  "include_extensions": [
+    ".log",
+    ".jsonl",
+    ".txt",
+    ".json",
+    ".md"
+  ],
+  "target_paths": [
+    "logs",
+    "state"
+  ],
+  "exclude_path_substrings": [
+    "/node_modules/",
+    "/.git/",
+    "/dist/"
+  ],
+  "patterns": [
+    {
+      "id": "auth_bearer_header",
+      "regex": "Authorization:\\s*Bearer\\s+(?!\\[REDACTED\\])[^\\s\\\"']+",
+      "replace_with": "Authorization: Bearer [REDACTED]"
+    },
+    {
+      "id": "json_secret_fields",
+      "regex": "(\\\"(?:auth_token|access_token|refresh_token|api_key|secret|password)\\\"\\s*:\\s*)\\\"((?!\\[REDACTED\\])[^\\\"]+)\\\"",
+      "replace_with": "$1\"[REDACTED]\""
+    },
+    {
+      "id": "query_secret_fields",
+      "regex": "([?&](?:token|access_token|api_key|auth|ct0|bearer)=)(?!\\[REDACTED\\])[^&\\s]+",
+      "replace_with": "$1[REDACTED]"
+    }
+  ]
+}

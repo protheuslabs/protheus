@@ -140,6 +140,13 @@ function defaultPolicy() {
       state_path: 'state/observability/alerts/router_state.json',
       routed_jsonl_path: 'state/observability/alerts/routed.jsonl',
       max_state_keys: 12000,
+      actionability: {
+        enabled: true,
+        runbook_map_path: 'config/autonomy_slo_runbook_map.json',
+        default_owner: 'ops',
+        default_runbook_id: 'INC-000',
+        owner_overrides: {}
+      },
       sinks: {
         file: { enabled: true },
         stdout: { enabled: false },
@@ -166,6 +173,10 @@ function loadPolicy(policyPathRaw: unknown) {
   const fileSink = sinks.file && typeof sinks.file === 'object' ? sinks.file : {};
   const stdoutSink = sinks.stdout && typeof sinks.stdout === 'object' ? sinks.stdout : {};
   const webhookSink = sinks.webhook && typeof sinks.webhook === 'object' ? sinks.webhook : {};
+  const actionability = src && src.actionability && typeof src.actionability === 'object' ? src.actionability : {};
+  const ownerOverrides = actionability && actionability.owner_overrides && typeof actionability.owner_overrides === 'object'
+    ? actionability.owner_overrides
+    : {};
 
   return {
     path: policyPath,
@@ -180,6 +191,19 @@ function loadPolicy(policyPathRaw: unknown) {
       state_path: resolvePath(src.state_path, base.alert_routing.state_path),
       routed_jsonl_path: resolvePath(src.routed_jsonl_path, base.alert_routing.routed_jsonl_path),
       max_state_keys: clampInt(src.max_state_keys, 100, 200000, base.alert_routing.max_state_keys),
+      actionability: {
+        enabled: actionability.enabled === false ? false : true,
+        runbook_map_path: resolvePath(actionability.runbook_map_path, base.alert_routing.actionability.runbook_map_path),
+        default_owner: cleanText(actionability.default_owner || base.alert_routing.actionability.default_owner, 80) || base.alert_routing.actionability.default_owner,
+        default_runbook_id: cleanText(actionability.default_runbook_id || base.alert_routing.actionability.default_runbook_id, 80) || base.alert_routing.actionability.default_runbook_id,
+        owner_overrides: Object.entries(ownerOverrides).reduce((acc: AnyObj, [k, v]) => {
+          const key = cleanText(k, 120).toLowerCase();
+          const owner = cleanText(v, 120);
+          if (!key || !owner) return acc;
+          acc[key] = owner;
+          return acc;
+        }, {})
+      },
       sinks: {
         file: {
           enabled: fileSink.enabled !== false
@@ -232,7 +256,91 @@ function shouldRoute(row: AnyObj, minLevel: string) {
   return levelRank(rowLevel) >= levelRank(minLevel);
 }
 
-function toRoutedRow(row: AnyObj) {
+function loadActionability(policy: AnyObj) {
+  const cfg = policy && policy.alert_routing && policy.alert_routing.actionability && typeof policy.alert_routing.actionability === 'object'
+    ? policy.alert_routing.actionability
+    : null;
+  if (!cfg || cfg.enabled === false) {
+    return {
+      enabled: false,
+      runbook_map_path: null,
+      runbook_path: null,
+      default_owner: 'ops',
+      default_runbook_id: 'INC-000',
+      by_check: {},
+      by_health_check: {},
+      owner_overrides: {}
+    };
+  }
+  const mapPath = resolvePath(cfg.runbook_map_path, 'config/autonomy_slo_runbook_map.json');
+  const raw = readJson(mapPath, {});
+  const mappings = raw && raw.mappings && typeof raw.mappings === 'object' ? raw.mappings : {};
+  const byCheck: AnyObj = {};
+  const byHealthCheck: AnyObj = {};
+  for (const [key, value] of Object.entries(mappings)) {
+    const id = cleanText(key, 120).toLowerCase();
+    if (!id) continue;
+    const row: AnyObj = value && typeof value === 'object' ? value as AnyObj : {};
+    const normalized = {
+      id,
+      section: cleanText(row.section || '', 160) || null,
+      runbook_id: cleanText(row.runbook_id || '', 80) || null,
+      owner: cleanText(row.owner || '', 80) || null,
+      severity: cleanText(row.severity || '', 40) || null,
+      health_check: cleanText(row.health_check || '', 120).toLowerCase() || null
+    };
+    byCheck[id] = normalized;
+    if (normalized.health_check) byHealthCheck[normalized.health_check] = normalized;
+  }
+  const ownerOverrides = cfg.owner_overrides && typeof cfg.owner_overrides === 'object'
+    ? cfg.owner_overrides
+    : {};
+  const runbookPath = raw && raw.runbook && raw.runbook.path ? resolvePath(raw.runbook.path, 'docs/OPERATOR_RUNBOOK.md') : null;
+  const defaultOwner = cleanText(cfg.default_owner || raw.default_owner || 'ops', 80) || 'ops';
+  const defaultRunbookId = cleanText(cfg.default_runbook_id || raw.default_runbook_id || 'INC-000', 80) || 'INC-000';
+  return {
+    enabled: true,
+    runbook_map_path: mapPath,
+    runbook_path: runbookPath,
+    default_owner: defaultOwner,
+    default_runbook_id: defaultRunbookId,
+    by_check: byCheck,
+    by_health_check: byHealthCheck,
+    owner_overrides: ownerOverrides
+  };
+}
+
+function resolveAlertActionability(row: AnyObj, actionability: AnyObj) {
+  if (!actionability || actionability.enabled !== true) {
+    return {
+      mapped: false,
+      check_key: null,
+      runbook_id: null,
+      runbook_section: null,
+      runbook_path: null,
+      owner: null
+    };
+  }
+  const check = cleanText(row && row.check ? row.check : '', 120).toLowerCase();
+  const direct = check ? actionability.by_check[check] : null;
+  const viaHealth = check ? actionability.by_health_check[check] : null;
+  const match = direct || viaHealth || null;
+  const ownerOverrides = actionability.owner_overrides && typeof actionability.owner_overrides === 'object'
+    ? actionability.owner_overrides
+    : {};
+  const overrideOwner = cleanText(ownerOverrides[check] || '', 80) || null;
+  return {
+    mapped: !!match,
+    check_key: match ? String(match.id || check || '') : (check || null),
+    runbook_id: match && match.runbook_id ? String(match.runbook_id) : String(actionability.default_runbook_id || 'INC-000'),
+    runbook_section: match && match.section ? String(match.section) : null,
+    runbook_path: actionability.runbook_path ? relPath(actionability.runbook_path) : null,
+    owner: overrideOwner || (match && match.owner ? String(match.owner) : String(actionability.default_owner || 'ops'))
+  };
+}
+
+function toRoutedRow(row: AnyObj, actionability: AnyObj) {
+  const action = resolveAlertActionability(row, actionability);
   const key = cleanText(row && row.alert_key ? row.alert_key : '', 64);
   return {
     ts: nowIso(),
@@ -245,7 +353,15 @@ function toRoutedRow(row: AnyObj) {
     level: cleanText(row && row.level ? row.level : 'warn', 16) || 'warn',
     summary: cleanText(row && row.summary ? row.summary : '', 220),
     metrics: row && row.metrics && typeof row.metrics === 'object' ? row.metrics : {},
-    thresholds: row && row.thresholds && typeof row.thresholds === 'object' ? row.thresholds : {}
+    thresholds: row && row.thresholds && typeof row.thresholds === 'object' ? row.thresholds : {},
+    runbook_id: action.runbook_id,
+    runbook_section: action.runbook_section,
+    runbook_path: action.runbook_path,
+    owner: action.owner,
+    actionability: {
+      mapped: action.mapped === true,
+      check_key: action.check_key || null
+    }
   };
 }
 
@@ -324,6 +440,7 @@ async function cmdRoute(args: AnyObj) {
   const rows = readJsonl(sourcePath)
     .filter((row) => row && typeof row === 'object')
     .filter((row) => String(row.type || '') === 'autonomy_health_alert');
+  const actionability = loadActionability(policy);
   const state = loadRouterState(policy.alert_routing.state_path);
   const out: AnyObj = {
     ok: true,
@@ -341,12 +458,20 @@ async function cmdRoute(args: AnyObj) {
     filtered_out: 0,
     already_routed: 0,
     routed: 0,
+    actionability_mapped: 0,
+    actionability_unmapped: 0,
     webhook_delivered: 0,
     webhook_failed: 0,
     sinks: {
       file: policy.alert_routing.sinks.file.enabled,
       stdout: policy.alert_routing.sinks.stdout.enabled,
       webhook: policy.alert_routing.sinks.webhook.enabled
+    },
+    actionability: {
+      enabled: actionability.enabled === true,
+      runbook_map_path: actionability.runbook_map_path ? relPath(actionability.runbook_map_path) : null,
+      runbook_path: actionability.runbook_path ? relPath(actionability.runbook_path) : null,
+      default_owner: actionability.default_owner || null
     },
     routed_path: relPath(policy.alert_routing.routed_jsonl_path),
     state_path: relPath(policy.alert_routing.state_path),
@@ -364,7 +489,9 @@ async function cmdRoute(args: AnyObj) {
       out.filtered_out += 1;
       continue;
     }
-    const routedRow = toRoutedRow(row);
+    const routedRow = toRoutedRow(row, actionability);
+    if (routedRow.actionability && routedRow.actionability.mapped === true) out.actionability_mapped += 1;
+    else out.actionability_unmapped += 1;
     const alertKey = routedRow.alert_key || cleanText(`${routedRow.check}:${routedRow.level}:${routedRow.summary}`, 120);
     if (alertKey && state.routed_keys && state.routed_keys[alertKey]) {
       out.already_routed += 1;

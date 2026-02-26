@@ -1650,6 +1650,99 @@ function main() {
       const failed = payload && Array.isArray(payload.failed_checks) ? payload.failed_checks.join(",") : "unknown";
       console.log(` signal_slo FAIL failed_checks=${failed}`);
     }
+
+    if (String(process.env.SPINE_SIGNAL_SLO_DEADLOCK_BREAKER_ENABLED || "1") !== "0") {
+      const deadlock = runJson("node", [
+        "systems/ops/signal_slo_deadlock_breaker.js",
+        "run",
+        dateStr
+      ]);
+      const deadlockPayload = deadlock.payload && typeof deadlock.payload === "object"
+        ? deadlock.payload
+        : null;
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_signal_slo_deadlock_breaker",
+        mode,
+        date: dateStr,
+        ok: deadlock.ok && !!deadlockPayload && deadlockPayload.ok === true,
+        streak: deadlockPayload ? Number(deadlockPayload.streak || 0) : null,
+        threshold: deadlockPayload ? Number(deadlockPayload.streak_threshold || 0) : null,
+        signal_slo_ok: deadlockPayload ? deadlockPayload.signal_slo_ok === true : null,
+        escalation_proposal_id: deadlockPayload && deadlockPayload.escalation
+          ? deadlockPayload.escalation.proposal_id || null
+          : null,
+        closure_receipt: deadlockPayload ? deadlockPayload.closure_receipt || null : null,
+        reason: (!deadlock.ok || !deadlockPayload || deadlockPayload.ok !== true)
+          ? String(deadlock.stderr || deadlock.stdout || `signal_slo_deadlock_breaker_exit_${deadlock.code}`).slice(0, 180)
+          : null
+      });
+      if (deadlock.ok && deadlockPayload && deadlockPayload.ok === true) {
+        const streak = Number(deadlockPayload.streak || 0);
+        const threshold = Number(deadlockPayload.streak_threshold || 0);
+        const escalated = deadlockPayload.escalation && deadlockPayload.escalation.created === true;
+        console.log(` signal_slo_deadlock streak=${streak}/${threshold} escalated=${escalated ? "yes" : "no"}`);
+      } else {
+        console.log(` signal_slo_deadlock WARN reason=${String(deadlock.stderr || deadlock.stdout || "unknown").slice(0, 120)}`);
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_signal_slo_deadlock_breaker_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "SPINE_SIGNAL_SLO_DEADLOCK_BREAKER_ENABLED",
+        flag_value: String(process.env.SPINE_SIGNAL_SLO_DEADLOCK_BREAKER_ENABLED || "")
+      });
+      console.log(" signal_slo_deadlock skipped reason=feature_flag_disabled flag=SPINE_SIGNAL_SLO_DEADLOCK_BREAKER_ENABLED");
+    }
+
+    if (String(process.env.SPINE_MODEL_HEALTH_AUTORECOVERY_ENABLED || "1") !== "0") {
+      const recovery = runJson("node", [
+        "systems/ops/model_health_auto_recovery.js",
+        "run",
+        dateStr
+      ]);
+      const recoveryPayload = recovery.payload && typeof recovery.payload === "object"
+        ? recovery.payload
+        : null;
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_model_health_auto_recovery",
+        mode,
+        date: dateStr,
+        ok: recovery.ok && !!recoveryPayload && recoveryPayload.ok === true,
+        providers_total: recoveryPayload ? Number(recoveryPayload.providers_total || 0) : null,
+        providers_healthy: recoveryPayload ? Number(recoveryPayload.providers_healthy || 0) : null,
+        provider_health_pass_rate: recoveryPayload ? Number(recoveryPayload.provider_health_pass_rate || 0) : null,
+        failovers_applied: recoveryPayload && Array.isArray(recoveryPayload.providers)
+          ? recoveryPayload.providers.filter((row: any) => row && row.failover && row.failover.applied === true).length
+          : null,
+        reason: (!recovery.ok || !recoveryPayload || recoveryPayload.ok !== true)
+          ? String(recovery.stderr || recovery.stdout || `model_health_auto_recovery_exit_${recovery.code}`).slice(0, 180)
+          : null
+      });
+      if (recovery.ok && recoveryPayload && recoveryPayload.ok === true) {
+        console.log(
+          ` model_health_auto_recovery pass_rate=${Number(recoveryPayload.provider_health_pass_rate || 0)}` +
+          ` healthy=${Number(recoveryPayload.providers_healthy || 0)}/${Number(recoveryPayload.providers_total || 0)}`
+        );
+      } else {
+        console.log(` model_health_auto_recovery WARN reason=${String(recovery.stderr || recovery.stdout || "unknown").slice(0, 120)}`);
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_model_health_auto_recovery_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "SPINE_MODEL_HEALTH_AUTORECOVERY_ENABLED",
+        flag_value: String(process.env.SPINE_MODEL_HEALTH_AUTORECOVERY_ENABLED || "")
+      });
+      console.log(" model_health_auto_recovery skipped reason=feature_flag_disabled flag=SPINE_MODEL_HEALTH_AUTORECOVERY_ENABLED");
+    }
   }
 
   if (mode === "daily") {
@@ -3645,17 +3738,33 @@ function main() {
         warnings: payload && payload.summary && payload.summary.totals
           ? Number(payload.summary.totals.warnings || 0)
           : null,
+        kpi_execution_success_rate: payload && payload.kpi && payload.kpi.execution
+          ? Number(payload.kpi.execution.success_rate || 0)
+          : null,
+        kpi_queue_open_count: payload && payload.kpi && payload.kpi.queue_health
+          ? Number(payload.kpi.queue_health.open_count || 0)
+          : null,
+        kpi_health_level: payload && payload.kpi && payload.kpi.safety
+          ? String(payload.kpi.safety.health_level || "")
+          : null,
         reason: (!dashboard.ok || !payload || payload.ok !== true)
           ? String(dashboard.stderr || dashboard.stdout || `ops_dashboard_exit_${dashboard.code}`).slice(0, 180)
           : null
       });
       if (dashboard.ok && payload && payload.ok === true) {
         const totals = payload.summary && payload.summary.totals ? payload.summary.totals : {};
+        const kpi = payload.kpi && typeof payload.kpi === "object" ? payload.kpi : {};
+        const kpiExec = kpi.execution && typeof kpi.execution === "object" ? kpi.execution : {};
+        const kpiQueue = kpi.queue_health && typeof kpi.queue_health === "object" ? kpi.queue_health : {};
+        const kpiSafety = kpi.safety && typeof kpi.safety === "object" ? kpi.safety : {};
         console.log(
           ` ops_dashboard reports=${Number(payload.reports || 0)}` +
           ` failed_checks=${Number(totals.failed_checks || 0)}` +
           ` critical=${Number(totals.critical || 0)}` +
-          ` warnings=${Number(totals.warnings || 0)}`
+          ` warnings=${Number(totals.warnings || 0)}` +
+          ` kpi_exec_success=${Number(kpiExec.success_rate || 0)}` +
+          ` kpi_queue_open=${Number(kpiQueue.open_count || 0)}` +
+          ` kpi_health=${String(kpiSafety.health_level || "unknown")}`
         );
       } else {
         console.log(` ops_dashboard unavailable reason=${String(dashboard.stderr || dashboard.stdout || "unknown").slice(0, 120)}`);
@@ -3671,6 +3780,54 @@ function main() {
         flag_value: String(process.env.SPINE_OPS_DASHBOARD_ENABLED || "")
       });
       console.log(" ops_dashboard skipped reason=feature_flag_disabled flag=SPINE_OPS_DASHBOARD_ENABLED");
+    }
+
+    if (String(process.env.SPINE_CONFIG_REGISTRY_ENABLED || "1") !== "0") {
+      const applyAliases = String(process.env.SPINE_CONFIG_REGISTRY_APPLY_ALIASES || "1") === "1";
+      const registry = runJson("node", [
+        "systems/ops/config_registry.js",
+        "run",
+        `--apply-aliases=${applyAliases ? "1" : "0"}`
+      ]);
+      const payload = registry.payload && typeof registry.payload === "object" ? registry.payload : null;
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_config_registry",
+        mode,
+        date: dateStr,
+        ok: registry.ok && !!payload && payload.ok === true,
+        apply_aliases: applyAliases,
+        files_scanned: payload && payload.metrics ? Number(payload.metrics.files_scanned || 0) : null,
+        invalid_json_files: payload && payload.metrics ? Number(payload.metrics.invalid_json_files || 0) : null,
+        consolidation_candidate_groups: payload && payload.metrics
+          ? Number(payload.metrics.consolidation_candidate_groups || 0)
+          : null,
+        aliases_total: payload ? Number(payload.aliases_total || 0) : null,
+        aliases_synced: payload && payload.alias_sync ? Number(payload.alias_sync.synced || 0) : null,
+        reason: (!registry.ok || !payload || payload.ok !== true)
+          ? String(registry.stderr || registry.stdout || `config_registry_exit_${registry.code}`).slice(0, 180)
+          : null
+      });
+      if (registry.ok && payload && payload.ok === true) {
+        console.log(
+          ` config_registry files=${Number(payload.metrics && payload.metrics.files_scanned || 0)}` +
+          ` invalid=${Number(payload.metrics && payload.metrics.invalid_json_files || 0)}` +
+          ` aliases_synced=${Number(payload.alias_sync && payload.alias_sync.synced || 0)}`
+        );
+      } else {
+        console.log(` config_registry unavailable reason=${String(registry.stderr || registry.stdout || "unknown").slice(0, 120)}`);
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_config_registry_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "SPINE_CONFIG_REGISTRY_ENABLED",
+        flag_value: String(process.env.SPINE_CONFIG_REGISTRY_ENABLED || "")
+      });
+      console.log(" config_registry skipped reason=feature_flag_disabled flag=SPINE_CONFIG_REGISTRY_ENABLED");
     }
 
     // 4e) Trit shadow divergence stability report (strategy/drift governors) + optional strict gate.

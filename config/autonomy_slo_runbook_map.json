@@ -13,38 +13,56 @@
   "runbook": {
     "path": "docs/OPERATOR_RUNBOOK.md"
   },
+  "default_owner": "ops",
+  "default_runbook_id": "INC-000",
   "mappings": {
     "proposal_starvation": {
       "section": "Incident 3: Sensory Starvation",
+      "runbook_id": "INC-003",
+      "owner": "ops",
       "severity": "warn"
     },
     "queue_backlog": {
       "section": "Incident 5: Queue Backlog / Churn",
+      "runbook_id": "INC-005",
+      "owner": "ops",
       "severity": "warn"
     },
     "dark_eyes": {
       "section": "Incident 3: Sensory Starvation",
+      "runbook_id": "INC-003",
+      "owner": "ops",
       "severity": "critical"
     },
     "loop_stall": {
       "section": "Incident 4: Autonomy Stall",
+      "runbook_id": "INC-004",
+      "owner": "ops",
       "severity": "critical"
     },
     "drift": {
       "section": "Incident 4: Autonomy Stall",
+      "runbook_id": "INC-004",
+      "owner": "ops",
       "severity": "warn"
     },
     "budget_pressure": {
       "section": "Incident 7: Budget Pressure / Autopause",
+      "runbook_id": "INC-007",
+      "owner": "ops",
       "health_check": "budget_guard",
       "severity": "warn"
     },
     "dream_degradation": {
       "section": "Incident 6: Dream Degradation",
+      "runbook_id": "INC-006",
+      "owner": "ops",
       "severity": "warn"
     },
     "verification_pass_rate": {
       "section": "Incident 8: Verification Pass-Rate Regression",
+      "runbook_id": "INC-008",
+      "owner": "ops",
       "health_check": "verification_pass_rate",
       "severity": "warn"
     }

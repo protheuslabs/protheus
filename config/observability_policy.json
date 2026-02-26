@@ -27,6 +27,13 @@
     "state_path": "state/observability/alerts/router_state.json",
     "routed_jsonl_path": "state/observability/alerts/routed.jsonl",
     "max_state_keys": 12000,
+    "actionability": {
+      "enabled": true,
+      "runbook_map_path": "config/autonomy_slo_runbook_map.json",
+      "default_owner": "ops",
+      "default_runbook_id": "INC-000",
+      "owner_overrides": {}
+    },
     "sinks": {
       "file": {
         "enabled": true
