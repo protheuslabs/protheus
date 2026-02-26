@@ -13,6 +13,7 @@ export {};
  * - Supports shadow mode by default.
  * - Auto kill-switch engages on suspicious or potentially gamed conditions.
  * - On rollback, stores "broken piece" forensic bundles for later safe reimplementation.
+ * - Mirrors rollback bundles into a research area for deferred human/system analysis.
  *
  * Usage:
  *   node systems/ops/autotest_doctor.js run [YYYY-MM-DD|latest] [--policy=path] [--apply=1|0] [--max-actions=N] [--force=1|0] [--reset-kill-switch=1]
@@ -23,6 +24,14 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { spawnSync } = require('child_process');
+let evaluateTernaryBelief: null | ((signals: AnyObj[], opts?: AnyObj) => AnyObj) = null;
+let serializeBeliefResult: null | ((belief: AnyObj) => AnyObj) = null;
+try {
+  ({ evaluateTernaryBelief, serializeBeliefResult } = require('../../lib/ternary_belief_engine.js'));
+} catch {
+  evaluateTernaryBelief = null;
+  serializeBeliefResult = null;
+}
 
 type AnyObj = Record<string, any>;
 
@@ -33,6 +42,8 @@ const DEFAULT_AUTOTEST_LATEST_PATH = path.join(ROOT, 'state', 'ops', 'autotest',
 const DEFAULT_AUTOTEST_STATUS_PATH = path.join(ROOT, 'state', 'ops', 'autotest', 'status.json');
 const DEFAULT_AUTOTEST_REGISTRY_PATH = path.join(ROOT, 'state', 'ops', 'autotest', 'registry.json');
 const DEFAULT_SYSTEM_HEALTH_PATH = path.join(ROOT, 'state', 'ops', 'system_health', 'events.jsonl');
+const DEFAULT_INVERSION_MATURITY_PATH = path.join(ROOT, 'state', 'autonomy', 'inversion', 'maturity.json');
+const DEFAULT_TRIT_SHADOW_REPORTS_HISTORY_PATH = path.join(ROOT, 'state', 'autonomy', 'trit_shadow_reports', 'history.jsonl');
 
 function usage() {
   console.log('Usage:');
@@ -250,6 +261,46 @@ function defaultPolicy() {
       max_excerpt_files: 10,
       max_excerpt_chars: 3000
     },
+    safety_override: {
+      enabled: true,
+      require_human_approval_for_destructive_reimplementation: true,
+      destructive_tokens: [
+        'harm_human',
+        'disable_guard',
+        'disable_integrity',
+        'self_terminate',
+        'data_loss',
+        'destructive'
+      ],
+      min_approval_note_chars: 12
+    },
+    first_principles: {
+      enabled: true,
+      auto_extract_on_rollback: true,
+      auto_extract_on_success: true,
+      max_statement_chars: 320,
+      emit_trit_shadow_signal: true
+    },
+    research_quarantine: {
+      enabled: true,
+      maturity_state_path: 'state/autonomy/inversion/maturity.json',
+      default_maturity_band: 'developing',
+      min_days: 1,
+      max_days: 120,
+      severity_days: {
+        low: 2,
+        medium: 7,
+        high: 14,
+        critical: 30
+      },
+      maturity_multiplier: {
+        novice: 1.5,
+        developing: 1.25,
+        mature: 1.0,
+        seasoned: 0.85,
+        legendary: 0.65
+      }
+    },
     telemetry: {
       emit_system_health: true,
       max_history_events: 5000
@@ -287,6 +338,15 @@ function loadPolicy(policyPath: string) {
   const kill = raw && raw.kill_switch && typeof raw.kill_switch === 'object' ? raw.kill_switch : {};
   const execution = raw && raw.execution && typeof raw.execution === 'object' ? raw.execution : {};
   const rollback = raw && raw.rollback && typeof raw.rollback === 'object' ? raw.rollback : {};
+  const safetyOverride = raw && raw.safety_override && typeof raw.safety_override === 'object' ? raw.safety_override : {};
+  const firstPrinciples = raw && raw.first_principles && typeof raw.first_principles === 'object' ? raw.first_principles : {};
+  const quarantine = raw && raw.research_quarantine && typeof raw.research_quarantine === 'object' ? raw.research_quarantine : {};
+  const quarantineSeverity = quarantine && quarantine.severity_days && typeof quarantine.severity_days === 'object'
+    ? quarantine.severity_days
+    : {};
+  const quarantineMaturity = quarantine && quarantine.maturity_multiplier && typeof quarantine.maturity_multiplier === 'object'
+    ? quarantine.maturity_multiplier
+    : {};
   const telemetry = raw && raw.telemetry && typeof raw.telemetry === 'object' ? raw.telemetry : {};
 
   const fallbackRecipes = (Array.isArray(base.recipes) ? base.recipes : []).map((row) => normalizeRecipe(row, row));
@@ -335,6 +395,82 @@ function loadPolicy(policyPath: string) {
       max_excerpt_files: clampInt(rollback.max_excerpt_files, 1, 100, base.rollback.max_excerpt_files),
       max_excerpt_chars: clampInt(rollback.max_excerpt_chars, 200, 20000, base.rollback.max_excerpt_chars)
     },
+    safety_override: {
+      enabled: toBool(safetyOverride.enabled, base.safety_override.enabled),
+      require_human_approval_for_destructive_reimplementation: toBool(
+        safetyOverride.require_human_approval_for_destructive_reimplementation,
+        base.safety_override.require_human_approval_for_destructive_reimplementation
+      ),
+      destructive_tokens: normalizeTokenList(
+        Array.isArray(safetyOverride.destructive_tokens)
+          ? safetyOverride.destructive_tokens
+          : base.safety_override.destructive_tokens,
+        120
+      ),
+      min_approval_note_chars: clampInt(
+        safetyOverride.min_approval_note_chars,
+        4,
+        400,
+        base.safety_override.min_approval_note_chars
+      )
+    },
+    first_principles: {
+      enabled: toBool(firstPrinciples.enabled, base.first_principles.enabled),
+      auto_extract_on_rollback: toBool(
+        firstPrinciples.auto_extract_on_rollback,
+        base.first_principles.auto_extract_on_rollback
+      ),
+      auto_extract_on_success: toBool(
+        firstPrinciples.auto_extract_on_success,
+        base.first_principles.auto_extract_on_success
+      ),
+      max_statement_chars: clampInt(
+        firstPrinciples.max_statement_chars,
+        80,
+        1200,
+        base.first_principles.max_statement_chars
+      ),
+      emit_trit_shadow_signal: toBool(
+        firstPrinciples.emit_trit_shadow_signal,
+        base.first_principles.emit_trit_shadow_signal
+      )
+    },
+    research_quarantine: {
+      enabled: toBool(quarantine.enabled, base.research_quarantine.enabled),
+      maturity_state_path: cleanText(
+        quarantine.maturity_state_path || base.research_quarantine.maturity_state_path,
+        260
+      ) || base.research_quarantine.maturity_state_path,
+      default_maturity_band: normalizeToken(
+        quarantine.default_maturity_band || base.research_quarantine.default_maturity_band,
+        24
+      ) || base.research_quarantine.default_maturity_band,
+      min_days: clampInt(
+        quarantine.min_days,
+        1,
+        3650,
+        base.research_quarantine.min_days
+      ),
+      max_days: clampInt(
+        quarantine.max_days,
+        1,
+        3650,
+        base.research_quarantine.max_days
+      ),
+      severity_days: {
+        low: clampInt(quarantineSeverity.low, 1, 3650, base.research_quarantine.severity_days.low),
+        medium: clampInt(quarantineSeverity.medium, 1, 3650, base.research_quarantine.severity_days.medium),
+        high: clampInt(quarantineSeverity.high, 1, 3650, base.research_quarantine.severity_days.high),
+        critical: clampInt(quarantineSeverity.critical, 1, 3650, base.research_quarantine.severity_days.critical)
+      },
+      maturity_multiplier: {
+        novice: clampNumber(quarantineMaturity.novice, 0.1, 8, base.research_quarantine.maturity_multiplier.novice),
+        developing: clampNumber(quarantineMaturity.developing, 0.1, 8, base.research_quarantine.maturity_multiplier.developing),
+        mature: clampNumber(quarantineMaturity.mature, 0.1, 8, base.research_quarantine.maturity_multiplier.mature),
+        seasoned: clampNumber(quarantineMaturity.seasoned, 0.1, 8, base.research_quarantine.maturity_multiplier.seasoned),
+        legendary: clampNumber(quarantineMaturity.legendary, 0.1, 8, base.research_quarantine.maturity_multiplier.legendary)
+      }
+    },
     telemetry: {
       emit_system_health: toBool(telemetry.emit_system_health, base.telemetry.emit_system_health),
       max_history_events: clampInt(telemetry.max_history_events, 100, 200000, base.telemetry.max_history_events)
@@ -346,6 +482,9 @@ function runtimePaths(policyPath: string) {
   const stateDir = process.env.AUTOTEST_DOCTOR_STATE_DIR
     ? path.resolve(process.env.AUTOTEST_DOCTOR_STATE_DIR)
     : path.join(ROOT, 'state', 'ops', 'autotest_doctor');
+  const researchDir = process.env.AUTOTEST_DOCTOR_RESEARCH_DIR
+    ? path.resolve(process.env.AUTOTEST_DOCTOR_RESEARCH_DIR)
+    : path.join(ROOT, 'research', 'autotest_doctor');
   return {
     policy_path: process.env.AUTOTEST_DOCTOR_POLICY_PATH
       ? path.resolve(process.env.AUTOTEST_DOCTOR_POLICY_PATH)
@@ -372,7 +511,22 @@ function runtimePaths(policyPath: string) {
       : DEFAULT_AUTOTEST_REGISTRY_PATH,
     system_health_path: process.env.SYSTEM_HEALTH_EVENTS_PATH
       ? path.resolve(process.env.SYSTEM_HEALTH_EVENTS_PATH)
-      : DEFAULT_SYSTEM_HEALTH_PATH
+      : DEFAULT_SYSTEM_HEALTH_PATH,
+    research_dir: researchDir,
+    research_index_path: path.join(researchDir, 'index.jsonl'),
+    research_broken_dir: path.join(researchDir, 'broken_pieces'),
+    maturity_state_path: process.env.AUTOTEST_DOCTOR_MATURITY_PATH
+      ? path.resolve(process.env.AUTOTEST_DOCTOR_MATURITY_PATH)
+      : DEFAULT_INVERSION_MATURITY_PATH,
+    first_principles_dir: path.join(stateDir, 'first_principles'),
+    first_principles_latest_path: path.join(stateDir, 'first_principles', 'latest.json'),
+    first_principles_history_path: path.join(stateDir, 'first_principles', 'history.jsonl'),
+    trit_beliefs_dir: path.join(stateDir, 'trit_beliefs'),
+    trit_beliefs_latest_path: path.join(stateDir, 'trit_beliefs', 'latest.json'),
+    trit_beliefs_history_path: path.join(stateDir, 'trit_beliefs', 'history.jsonl'),
+    trit_shadow_reports_history_path: process.env.AUTOTEST_DOCTOR_TRIT_SHADOW_HISTORY_PATH
+      ? path.resolve(process.env.AUTOTEST_DOCTOR_TRIT_SHADOW_HISTORY_PATH)
+      : DEFAULT_TRIT_SHADOW_REPORTS_HISTORY_PATH
   };
 }
 
@@ -409,6 +563,7 @@ function defaultDoctorState() {
       last_trip_meta: null
     },
     signatures: {},
+    destructive_signatures: {},
     history: []
   };
 }
@@ -429,6 +584,9 @@ function loadDoctorState(paths: AnyObj) {
         : null
     },
     signatures: raw.signatures && typeof raw.signatures === 'object' ? raw.signatures : {},
+    destructive_signatures: raw.destructive_signatures && typeof raw.destructive_signatures === 'object'
+      ? raw.destructive_signatures
+      : {},
     history: Array.isArray(raw.history) ? raw.history : []
   };
 }
@@ -460,6 +618,276 @@ function recordHistoryEvent(state: AnyObj, type: string, payload: AnyObj = {}) {
     type: normalizeToken(type, 64) || 'event',
     ...(payload && typeof payload === 'object' ? payload : {})
   });
+}
+
+function normalizeMaturityBand(v: unknown, fallback = 'developing') {
+  const raw = normalizeToken(v, 24);
+  if (['novice', 'developing', 'mature', 'seasoned', 'legendary'].includes(raw)) return raw;
+  return normalizeToken(fallback, 24) || 'developing';
+}
+
+function loadMaturityBand(paths: AnyObj, policy: AnyObj) {
+  const cfg = policy && policy.research_quarantine && typeof policy.research_quarantine === 'object'
+    ? policy.research_quarantine
+    : {};
+  const fallback = normalizeMaturityBand(cfg.default_maturity_band || 'developing', 'developing');
+  const configuredPath = cleanText(cfg.maturity_state_path || '', 260);
+  const pathFromPolicy = configuredPath
+    ? path.resolve(ROOT, configuredPath)
+    : paths.maturity_state_path;
+  const src = readJson(pathFromPolicy, null)
+    || readJson(paths.maturity_state_path, null);
+  if (!src || typeof src !== 'object') return fallback;
+  return normalizeMaturityBand(src.band || src.maturity_band || fallback, fallback);
+}
+
+function classifySeverity(policy: AnyObj, signature: AnyObj, context: AnyObj = {}) {
+  const s = signature && typeof signature === 'object' ? signature : {};
+  const ctx = context && typeof context === 'object' ? context : {};
+  const blob = [
+    s.kind,
+    s.guard_reason,
+    s.stderr_excerpt,
+    s.stdout_excerpt,
+    s.command,
+    s.test_id,
+    ctx.reason,
+    ctx.rollback && ctx.rollback.reason
+  ].map((row) => String(row || '').toLowerCase()).join(' ');
+  const destructiveTokens = Array.isArray(policy && policy.safety_override && policy.safety_override.destructive_tokens)
+    ? policy.safety_override.destructive_tokens
+    : [];
+  const destructiveHit = destructiveTokens.find((tok: unknown) => {
+    const t = normalizeToken(tok, 120);
+    if (!t) return false;
+    return blob.includes(t);
+  });
+  if (destructiveHit) return { severity: 'critical', destructive_token: destructiveHit };
+  if (ctx.regression === true) return { severity: 'high', destructive_token: null };
+  const kind = normalizeToken(s.kind || '', 64);
+  if (kind === 'guard_blocked' || kind === 'timeout') return { severity: 'medium', destructive_token: null };
+  if (kind === 'exit_nonzero') return { severity: 'medium', destructive_token: null };
+  return { severity: 'low', destructive_token: null };
+}
+
+function computeQuarantinePlan(paths: AnyObj, policy: AnyObj, signature: AnyObj, context: AnyObj = {}) {
+  const cfg = policy && policy.research_quarantine && typeof policy.research_quarantine === 'object'
+    ? policy.research_quarantine
+    : {};
+  const enabled = cfg.enabled !== false;
+  const maturityBand = loadMaturityBand(paths, policy);
+  const severityInfo = classifySeverity(policy, signature, context);
+  const severity = normalizeToken(severityInfo.severity || 'medium', 24) || 'medium';
+  const severityDays = cfg.severity_days && typeof cfg.severity_days === 'object'
+    ? cfg.severity_days
+    : {};
+  const maturityMul = cfg.maturity_multiplier && typeof cfg.maturity_multiplier === 'object'
+    ? cfg.maturity_multiplier
+    : {};
+  const baseDays = Number(severityDays[severity] || severityDays.medium || 7);
+  const multiplier = Number(maturityMul[maturityBand] || maturityMul.developing || 1);
+  const rawDays = Math.max(1, Math.round(baseDays * Math.max(0.1, multiplier)));
+  const minDays = clampInt(cfg.min_days, 1, 3650, 1);
+  const maxDays = clampInt(cfg.max_days, minDays, 3650, 120);
+  const durationDays = clampInt(rawDays, minDays, maxDays, rawDays);
+  const startTs = nowIso();
+  const releaseAt = new Date(Date.now() + (durationDays * 24 * 60 * 60 * 1000)).toISOString();
+  return {
+    enabled,
+    status: enabled ? 'quarantine' : 'active',
+    severity,
+    destructive_token: severityInfo.destructive_token || null,
+    maturity_band: maturityBand,
+    duration_days: durationDays,
+    start_ts: startTs,
+    release_at: releaseAt
+  };
+}
+
+function isDestructiveSignature(policy: AnyObj, signature: AnyObj, context: AnyObj = {}) {
+  const severityInfo = classifySeverity(policy, signature, context);
+  return {
+    destructive: severityInfo.severity === 'critical',
+    severity: severityInfo.severity,
+    token: severityInfo.destructive_token || null
+  };
+}
+
+function getApprovalSignal(args: AnyObj, policy: AnyObj) {
+  const cfg = policy && policy.safety_override && typeof policy.safety_override === 'object'
+    ? policy.safety_override
+    : {};
+  if (!(cfg.enabled === true && cfg.require_human_approval_for_destructive_reimplementation === true)) {
+    return {
+      required: false,
+      approved: true,
+      reason: 'approval_not_required',
+      approver_id: null,
+      approval_note: null
+    };
+  }
+  const approverId = cleanText(args.approver_id || args['approver-id'] || '', 120) || null;
+  const approvalNote = cleanText(args.approval_note || args['approval-note'] || '', 500) || null;
+  const explicit = toBool(args.approve_destructive || args['approve-destructive'], false);
+  const minChars = clampInt(cfg.min_approval_note_chars, 4, 400, 12);
+  const approved = !!approverId && !!approvalNote && approvalNote.length >= minChars && (explicit || true);
+  return {
+    required: true,
+    approved,
+    reason: approved ? 'approval_present' : 'approval_missing_or_insufficient',
+    approver_id: approverId,
+    approval_note: approvalNote
+  };
+}
+
+function updateDestructiveSignatureState(state: AnyObj, signature: AnyObj, destructiveInfo: AnyObj) {
+  if (!(destructiveInfo && destructiveInfo.destructive === true)) return;
+  if (!state.destructive_signatures || typeof state.destructive_signatures !== 'object') {
+    state.destructive_signatures = {};
+  }
+  const sigId = String(signature && signature.signature_id || '');
+  if (!sigId) return;
+  const prev = state.destructive_signatures[sigId] && typeof state.destructive_signatures[sigId] === 'object'
+    ? state.destructive_signatures[sigId]
+    : {
+      signature_id: sigId,
+      first_seen_ts: nowIso(),
+      count: 0
+    };
+  prev.last_seen_ts = nowIso();
+  prev.count = Number(prev.count || 0) + 1;
+  prev.last_reason = cleanText(signature && (signature.guard_reason || signature.stderr_excerpt || signature.stdout_excerpt) || '', 220) || null;
+  prev.last_token = cleanText(destructiveInfo.token || '', 120) || null;
+  state.destructive_signatures[sigId] = prev;
+}
+
+function buildDoctorBelief(policy: AnyObj, signature: AnyObj, context: AnyObj = {}) {
+  if (!evaluateTernaryBelief || !serializeBeliefResult) return null;
+  const ctx = context && typeof context === 'object' ? context : {};
+  const severity = String(ctx.severity || 'medium');
+  const severityTrit = severity === 'critical'
+    ? -1
+    : (severity === 'high' ? -1 : (severity === 'medium' ? 0 : 1));
+  const signals = [
+    {
+      source: 'doctor_outcome',
+      trit: ctx.status === 'applied' ? 1 : -1,
+      weight: 3,
+      confidence: 1
+    },
+    {
+      source: 'doctor_regression',
+      trit: ctx.regression === true ? -1 : 1,
+      weight: 2,
+      confidence: 0.8
+    },
+    {
+      source: 'doctor_severity',
+      trit: severityTrit,
+      weight: 2,
+      confidence: 0.7
+    },
+    {
+      source: 'doctor_destructive',
+      trit: ctx.destructive === true ? -1 : 0,
+      weight: 3,
+      confidence: 1
+    }
+  ];
+  const belief = evaluateTernaryBelief(signals, {
+    label: 'autotest_doctor',
+    positive_threshold: 0.22,
+    negative_threshold: -0.22
+  });
+  const serialized = serializeBeliefResult(belief);
+  return {
+    belief,
+    serialized,
+    signals
+  };
+}
+
+function persistDoctorBelief(paths: AnyObj, payload: AnyObj) {
+  if (!payload || typeof payload !== 'object') return null;
+  ensureDir(paths.trit_beliefs_dir);
+  writeJsonAtomic(paths.trit_beliefs_latest_path, payload);
+  appendJsonl(paths.trit_beliefs_history_path, payload);
+  return payload;
+}
+
+function maybePersistFirstPrinciple(paths: AnyObj, policy: AnyObj, signature: AnyObj, context: AnyObj, beliefPack: AnyObj) {
+  const cfg = policy && policy.first_principles && typeof policy.first_principles === 'object'
+    ? policy.first_principles
+    : {};
+  if (cfg.enabled !== true) return null;
+  const status = String(context && context.status || '');
+  if (status === 'rolled_back' && cfg.auto_extract_on_rollback !== true) return null;
+  if (status === 'applied' && cfg.auto_extract_on_success !== true) return null;
+  if (status !== 'rolled_back' && status !== 'applied') return null;
+
+  const maxStatementChars = clampInt(cfg.max_statement_chars, 80, 1200, 320);
+  const testRef = cleanText(signature && (signature.test_id || signature.test_path || signature.signature_id) || '', 180) || 'unknown_test';
+  const guardReason = cleanText(signature && signature.guard_reason || '', 180) || null;
+  const severity = cleanText(context && context.severity || 'medium', 24) || 'medium';
+  const statement = status === 'rolled_back'
+    ? cleanText(
+      `For ${testRef}, do not reuse the same repair pattern without a materially different guard condition and verified rollback path. Severity=${severity}${guardReason ? `, guard=${guardReason}` : ''}.`,
+      maxStatementChars
+    )
+    : cleanText(
+      `For ${testRef}, the bounded sequence (targeted retest plus changed-scope autotest) restored health without regression; prefer this pattern for similar failures.`,
+      maxStatementChars
+    );
+  const beliefSer = beliefPack && beliefPack.serialized && typeof beliefPack.serialized === 'object'
+    ? beliefPack.serialized
+    : {};
+  const confidence = clampNumber(
+    beliefSer.confidence != null
+      ? beliefSer.confidence
+      : (status === 'applied' ? 0.62 : 0.55),
+    0,
+    1,
+    status === 'applied' ? 0.62 : 0.55
+  );
+  const polarity = Number(beliefSer.trit || (status === 'applied' ? 1 : -1));
+  const principle = {
+    id: stableId(`doctor|${String(signature && signature.signature_id || '')}|${status}|${Date.now()}`, 'dfp'),
+    ts: nowIso(),
+    source: 'autotest_doctor',
+    statement,
+    target: 'tactical',
+    confidence: Number(confidence.toFixed(6)),
+    polarity,
+    strategy_feedback: {
+      enabled: true,
+      suggested_bonus: status === 'applied'
+        ? Number(Math.max(0, Math.min(0.04, confidence * 0.04)).toFixed(6))
+        : 0
+    },
+    signature_id: String(signature && signature.signature_id || ''),
+    test_id: cleanText(signature && signature.test_id || '', 120) || null,
+    status
+  };
+
+  ensureDir(paths.first_principles_dir);
+  writeJsonAtomic(paths.first_principles_latest_path, principle);
+  appendJsonl(paths.first_principles_history_path, principle);
+
+  if (cfg.emit_trit_shadow_signal === true) {
+    appendJsonl(paths.trit_shadow_reports_history_path, {
+      ts: principle.ts,
+      type: 'trit_shadow_doctor_signal',
+      ok: true,
+      source: 'autotest_doctor',
+      signature_id: principle.signature_id,
+      principle_id: principle.id,
+      principle_status: status,
+      trit_shadow: {
+        belief: beliefSer
+      }
+    });
+  }
+  return principle;
 }
 
 function maybeAutoReleaseKillSwitch(state: AnyObj, policy: AnyObj) {
@@ -833,6 +1261,65 @@ function collectFileExcerpts(relFiles: string[], maxFiles: number, maxChars: num
   return out;
 }
 
+function writeResearchMirrorItem(
+  paths: AnyObj,
+  policy: AnyObj,
+  dateStr: string,
+  signature: AnyObj,
+  context: AnyObj,
+  brokenPiecePath: string
+) {
+  const dir = path.join(paths.research_broken_dir, dateStr);
+  ensureDir(dir);
+  const file = path.join(dir, `${String(signature.signature_id || 'unknown')}_${Date.now()}.json`);
+  const rollbackReason = cleanText(
+    context && context.rollback && context.rollback.reason
+      ? context.rollback.reason
+      : context && context.reason,
+    220
+  ) || null;
+  const summary = cleanText([
+    `signature=${String(signature.signature_id || 'unknown')}`,
+    `kind=${String(signature.kind || 'unknown')}`,
+    rollbackReason ? `rollback_reason=${rollbackReason}` : null
+  ].filter(Boolean).join(' '), 260);
+  const quarantine = computeQuarantinePlan(paths, policy, signature, context);
+  const payload = {
+    ts: nowIso(),
+    schema_id: 'autotest_research_item',
+    schema_version: '1.0.0',
+    source: 'autotest_doctor',
+    category: 'broken_piece',
+    date: dateStr,
+    signature_id: String(signature.signature_id || ''),
+    kind: String(signature.kind || ''),
+    test_id: cleanText(signature.test_id || '', 120) || null,
+    test_path: cleanText(signature.test_path || '', 260) || null,
+    summary: summary || null,
+    rollback_reason: rollbackReason,
+    broken_piece_path: brokenPiecePath,
+    quarantine,
+    context: {
+      run_id: cleanText(context && context.run_id || '', 120) || null,
+      recipe_id: cleanText(context && context.recipe_id || '', 120) || null
+    }
+  };
+  writeJsonAtomic(file, payload);
+  const researchPath = relPath(file);
+  appendJsonl(paths.research_index_path, {
+    ts: payload.ts,
+    type: 'autotest_doctor_broken_piece',
+    date: dateStr,
+    signature_id: payload.signature_id,
+    kind: payload.kind,
+    rollback_reason: payload.rollback_reason,
+    broken_piece_path: brokenPiecePath,
+    research_item_path: researchPath,
+    quarantine: payload.quarantine
+  });
+  return researchPath;
+}
+
 function writeBrokenPieceBundle(
   paths: AnyObj,
   policy: AnyObj,
@@ -862,7 +1349,19 @@ function writeBrokenPieceBundle(
     context: context && typeof context === 'object' ? context : {}
   };
   writeJsonAtomic(file, payload);
-  return relPath(file);
+  const brokenPiecePath = relPath(file);
+  const researchItemPath = writeResearchMirrorItem(
+    paths,
+    policy,
+    dateStr,
+    signature,
+    context,
+    brokenPiecePath
+  );
+  return {
+    broken_piece_path: brokenPiecePath,
+    research_item_path: researchItemPath
+  };
 }
 
 function withinSleepWindow(cfg: AnyObj, now = new Date()) {
@@ -922,6 +1421,12 @@ function runDoctor(dateArg: string, args: AnyObj) {
   ensureDir(path.dirname(paths.state_path));
   ensureDir(paths.rollback_dir);
   ensureDir(paths.broken_dir);
+  ensureDir(paths.research_dir);
+  ensureDir(paths.research_broken_dir);
+  ensureDir(path.dirname(paths.research_index_path));
+  ensureDir(paths.first_principles_dir);
+  ensureDir(paths.trit_beliefs_dir);
+  ensureDir(path.dirname(paths.trit_shadow_reports_history_path));
 
   const runId = `doctor_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
   const dateStr = String(dateArg || 'latest').toLowerCase() === 'latest'
@@ -974,6 +1479,25 @@ function runDoctor(dateArg: string, args: AnyObj) {
     sigState.consecutive_failures = Number(sigState.consecutive_failures || 0) + 1;
     sigState.total_failures = Number(sigState.total_failures || 0) + 1;
     sigState.last_fail_ts = nowIso();
+    const destructiveInfo = isDestructiveSignature(policy, failure, {});
+    updateDestructiveSignatureState(state, failure, destructiveInfo);
+    if (destructiveInfo.destructive === true) {
+      recordHistoryEvent(state, 'destructive_signature', {
+        signature_id: failure.signature_id,
+        reason: cleanText(failure.guard_reason || failure.stderr_excerpt || '', 180) || null,
+        token: destructiveInfo.token || null
+      });
+      appendSystemHealthEvent(paths, policy, {
+        severity: 'high',
+        risk: 'high',
+        code: 'autotest_doctor_wounded_module',
+        summary: `autotest doctor marked wounded module signature=${String(failure.signature_id || '').slice(0, 40)}`,
+        signature_id: failure.signature_id,
+        module: cleanText((Array.isArray(failure.guard_files) ? failure.guard_files[0] : '') || failure.test_path || '', 220) || null,
+        viz_state: 'wounded',
+        viz_color: 'red'
+      });
+    }
     if (failure.trusted_test_command !== true) {
       recordHistoryEvent(state, 'suspicious_signature', {
         signature_id: failure.signature_id,
@@ -1004,13 +1528,48 @@ function runDoctor(dateArg: string, args: AnyObj) {
   let actionsPlanned = 0;
   let actionsApplied = 0;
   let rollbacks = 0;
+  let destructiveBlocked = 0;
   const brokenPieces = [] as string[];
+  const researchItems = [] as string[];
+  const firstPrinciples = [] as string[];
+  const approvalSignal = getApprovalSignal(args, policy);
 
   if (!skipReasons.length || force === true) {
     for (const failure of failures) {
       if (actionsPlanned >= maxActions) break;
       const sigId = String(failure.signature_id || '');
       const sigState = ensureSignatureState(state, sigId);
+      const destructiveRec = state.destructive_signatures && typeof state.destructive_signatures === 'object'
+        ? state.destructive_signatures[sigId]
+        : null;
+      const requiresDestructiveApproval = !!(destructiveRec && typeof destructiveRec === 'object')
+        && policy.safety_override
+        && policy.safety_override.enabled === true
+        && policy.safety_override.require_human_approval_for_destructive_reimplementation === true;
+      if (apply && requiresDestructiveApproval && approvalSignal.approved !== true) {
+        destructiveBlocked += 1;
+        actions.push({
+          signature_id: sigId,
+          kind: failure.kind,
+          status: 'blocked',
+          reason: 'destructive_signature_requires_human_approval',
+          approval: {
+            required: true,
+            approved: false,
+            approver_id: approvalSignal.approver_id
+          }
+        });
+        appendSystemHealthEvent(paths, policy, {
+          severity: 'high',
+          risk: 'high',
+          code: 'autotest_doctor_destructive_repair_blocked',
+          summary: `autotest doctor blocked destructive reimplementation for signature=${sigId}`,
+          signature_id: sigId,
+          viz_state: 'wounded',
+          viz_color: 'red'
+        });
+        continue;
+      }
 
       const recipe = selectRecipe(policy, String(failure.kind || ''));
       if (!recipe) {
@@ -1106,6 +1665,16 @@ function runDoctor(dateArg: string, args: AnyObj) {
       let recipeFailureReason = null as string | null;
 
       if (apply) {
+        appendSystemHealthEvent(paths, policy, {
+          severity: 'medium',
+          risk: 'medium',
+          code: 'autotest_doctor_healing_attempt',
+          summary: `autotest doctor healing attempt signature=${sigId}`,
+          signature_id: sigId,
+          recipe_id: recipe.id,
+          viz_state: 'healing',
+          viz_color: 'white'
+        });
         for (const step of recipe.steps) {
           const result = executeStep(step, failure, policy);
           stepResults.push(result);
@@ -1125,6 +1694,8 @@ function runDoctor(dateArg: string, args: AnyObj) {
 
       let rollbackResult = null as AnyObj | null;
       let brokenPiecePath = null as string | null;
+      let researchItemPath = null as string | null;
+      let principleId = null as string | null;
       let status = 'shadow_planned';
       let reason = 'shadow_mode';
 
@@ -1161,7 +1732,7 @@ function runDoctor(dateArg: string, args: AnyObj) {
           });
 
           if (policy.rollback && policy.rollback.store_broken_pieces === true) {
-            brokenPiecePath = writeBrokenPieceBundle(paths, policy, dateStr, failure, {
+            const bundle = writeBrokenPieceBundle(paths, policy, dateStr, failure, {
               run_id: runId,
               recipe_id: recipe.id,
               pre_health: preHealth,
@@ -1170,13 +1741,67 @@ function runDoctor(dateArg: string, args: AnyObj) {
               rollback: rollbackResult,
               snapshot_path: snapshotInfo.snapshot_path
             });
-            brokenPieces.push(brokenPiecePath);
+            brokenPiecePath = String(bundle && bundle.broken_piece_path || '');
+            researchItemPath = String(bundle && bundle.research_item_path || '');
+            if (brokenPiecePath) brokenPieces.push(brokenPiecePath);
+            if (researchItemPath) researchItems.push(researchItemPath);
           }
+          appendSystemHealthEvent(paths, policy, {
+            severity: 'high',
+            risk: 'high',
+            code: 'autotest_doctor_rollback_cut',
+            summary: `autotest doctor rollback cut signature=${sigId}`,
+            signature_id: sigId,
+            rollback_reason: reason,
+            viz_state: 'rollback_cut',
+            viz_color: 'red'
+          });
         } else {
           status = 'applied';
           reason = 'recipe_applied';
           sigState.last_outcome = 'applied';
           sigState.consecutive_failures = 0;
+          appendSystemHealthEvent(paths, policy, {
+            severity: 'low',
+            risk: 'low',
+            code: 'autotest_doctor_regrowth',
+            summary: `autotest doctor regrowth success signature=${sigId}`,
+            signature_id: sigId,
+            recipe_id: recipe.id,
+            viz_state: 'regrowth',
+            viz_color: 'green'
+          });
+        }
+        const severityInfo = classifySeverity(policy, failure, {
+          reason,
+          rollback: rollbackResult,
+          regression
+        });
+        const beliefPack = buildDoctorBelief(policy, failure, {
+          status,
+          regression,
+          destructive: severityInfo.severity === 'critical',
+          severity: severityInfo.severity
+        });
+        if (beliefPack && beliefPack.serialized) {
+          persistDoctorBelief(paths, {
+            ts: nowIso(),
+            type: 'autotest_doctor_trit_belief',
+            signature_id: sigId,
+            status,
+            severity: severityInfo.severity,
+            belief: beliefPack.serialized,
+            signals: beliefPack.signals
+          });
+        }
+        const principle = maybePersistFirstPrinciple(paths, policy, failure, {
+          status,
+          reason,
+          severity: severityInfo.severity
+        }, beliefPack);
+        if (principle && principle.id) {
+          principleId = String(principle.id);
+          firstPrinciples.push(principleId);
         }
       } else {
         sigState.last_outcome = 'shadow_planned';
@@ -1196,7 +1821,9 @@ function runDoctor(dateArg: string, args: AnyObj) {
         regression: !!regression,
         rollback: rollbackResult,
         rollback_snapshot_path: snapshotInfo.snapshot_path,
-        broken_piece_path: brokenPiecePath
+        broken_piece_path: brokenPiecePath,
+        research_item_path: researchItemPath,
+        first_principle_id: principleId
       });
     }
   }
@@ -1249,8 +1876,14 @@ function runDoctor(dateArg: string, args: AnyObj) {
     actions_planned: actionsPlanned,
     actions_applied: actionsApplied,
     rollbacks,
+    destructive_repair_blocks: destructiveBlocked,
     broken_pieces_stored: brokenPieces.length,
     broken_piece_paths: brokenPieces,
+    research_items_stored: researchItems.length,
+    research_item_paths: researchItems,
+    first_principles_generated: firstPrinciples.length,
+    first_principle_ids: firstPrinciples,
+    destructive_approval: approvalSignal,
     kill_switch: state.kill_switch,
     latest_autotest_health: latestAutotest,
     actions,
@@ -1271,7 +1904,9 @@ function runDoctor(dateArg: string, args: AnyObj) {
     actions_planned: payload.actions_planned,
     actions_applied: payload.actions_applied,
     rollbacks: payload.rollbacks,
+    destructive_repair_blocks: payload.destructive_repair_blocks,
     broken_pieces_stored: payload.broken_pieces_stored,
+    research_items_stored: payload.research_items_stored,
     kill_switch_engaged: payload.kill_switch && payload.kill_switch.engaged === true
   });
 
@@ -1347,7 +1982,9 @@ function statusCmd(dateArg: string, args: AnyObj) {
     actions_planned: Number(payload.actions_planned || 0),
     actions_applied: Number(payload.actions_applied || 0),
     rollbacks: Number(payload.rollbacks || 0),
+    destructive_repair_blocks: Number(payload.destructive_repair_blocks || 0),
     broken_pieces_stored: Number(payload.broken_pieces_stored || 0),
+    research_items_stored: Number(payload.research_items_stored || 0),
     kill_switch: state.kill_switch,
     recent_repair_attempts_24h: countHistory(state, 'repair_attempt'),
     recent_rollbacks_24h: countHistory(state, 'repair_rollback'),

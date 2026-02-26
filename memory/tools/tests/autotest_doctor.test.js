@@ -44,6 +44,7 @@ function run() {
   const dateStr = '2026-02-26';
 
   const stateDir = path.join(tmp, 'state', 'ops', 'autotest_doctor');
+  const researchDir = path.join(tmp, 'research', 'autotest_doctor');
   const autotestRunsDir = path.join(tmp, 'state', 'ops', 'autotest', 'runs');
   const autotestLatestPath = path.join(tmp, 'state', 'ops', 'autotest', 'latest.json');
   const autotestStatusPath = path.join(tmp, 'state', 'ops', 'autotest', 'status.json');
@@ -52,6 +53,7 @@ function run() {
   const strictPolicyPath = path.join(tmp, 'config', 'autotest_doctor_kill_policy.json');
   const rollbackPolicyPath = path.join(tmp, 'config', 'autotest_doctor_rollback_policy.json');
   const rollbackStateDir = path.join(tmp, 'state', 'ops', 'autotest_doctor_rollback');
+  const destructiveStateDir = path.join(tmp, 'state', 'ops', 'autotest_doctor_destructive');
 
   writeJson(policyPath, {
     version: '1.0-test',
@@ -204,6 +206,8 @@ function run() {
   const env = {
     ...process.env,
     AUTOTEST_DOCTOR_STATE_DIR: stateDir,
+    AUTOTEST_DOCTOR_RESEARCH_DIR: researchDir,
+    AUTOTEST_DOCTOR_TRIT_SHADOW_HISTORY_PATH: path.join(tmp, 'state', 'autonomy', 'trit_shadow_reports', 'history.jsonl'),
     AUTOTEST_DOCTOR_AUTOTEST_RUNS_DIR: autotestRunsDir,
     AUTOTEST_DOCTOR_AUTOTEST_LATEST_PATH: autotestLatestPath,
     AUTOTEST_DOCTOR_AUTOTEST_STATUS_PATH: autotestStatusPath,
@@ -297,7 +301,55 @@ function run() {
   assert.strictEqual(Number(rollbackOut.actions_applied || 0), 1, 'rollback run should apply one repair attempt');
   assert.strictEqual(Number(rollbackOut.rollbacks || 0), 1, 'missing fixture should trigger rollback');
   assert.strictEqual(Number(rollbackOut.broken_pieces_stored || 0), 1, 'rollback should persist a broken piece bundle');
+  assert.strictEqual(Number(rollbackOut.research_items_stored || 0), 1, 'rollback should mirror broken piece into research area');
+  assert.strictEqual(Number(rollbackOut.first_principles_generated || 0), 1, 'rollback should generate one first principle');
   assert.ok(Array.isArray(rollbackOut.broken_piece_paths) && rollbackOut.broken_piece_paths.length >= 1, 'broken piece path should be reported');
+  assert.ok(Array.isArray(rollbackOut.research_item_paths) && rollbackOut.research_item_paths.length >= 1, 'research item path should be reported');
+  assert.ok(Array.isArray(rollbackOut.first_principle_ids) && rollbackOut.first_principle_ids.length >= 1, 'first principle id should be reported');
+  const brokenAbs = path.resolve(root, String(rollbackOut.broken_piece_paths[0]));
+  const researchAbs = path.resolve(root, String(rollbackOut.research_item_paths[0]));
+  assert.ok(fs.existsSync(brokenAbs), 'broken piece bundle should exist on disk');
+  assert.ok(fs.existsSync(researchAbs), 'research mirror bundle should exist on disk');
+  const researchPayload = JSON.parse(fs.readFileSync(researchAbs, 'utf8'));
+  assert.ok(researchPayload && researchPayload.quarantine && typeof researchPayload.quarantine === 'object', 'research payload should include quarantine plan');
+  assert.ok(Number(researchPayload.quarantine.duration_days || 0) >= 1, 'quarantine duration should be >= 1 day');
+  const tritBeliefLatest = path.join(rollbackStateDir, 'trit_beliefs', 'latest.json');
+  assert.ok(fs.existsSync(tritBeliefLatest), 'doctor trit belief latest should exist');
+
+  // Destructive signatures require explicit approval before reimplementation.
+  writeJsonl(path.join(autotestRunsDir, `${dateStr}.jsonl`), [
+    {
+      ok: true,
+      type: 'autotest_run',
+      ts: `${dateStr}T10:20:00.000Z`,
+      selected_tests: 1,
+      failed: 1,
+      guard_blocked: 0,
+      results: [
+        {
+          id: 'tst_destructive_guard',
+          command: 'node memory/tools/tests/autotest_doctor.test.js',
+          guard_ok: true,
+          ok: false,
+          exit_code: 1,
+          stderr_excerpt: 'detected disable_guard path',
+          stdout_excerpt: '',
+          guard_files: ['systems/ops/autotest_doctor.ts']
+        }
+      ]
+    }
+  ]);
+  const destructiveEnv = {
+    ...env,
+    AUTOTEST_DOCTOR_STATE_DIR: destructiveStateDir
+  };
+  const destructiveProc = runNode(scriptPath, ['run', dateStr, `--policy=${rollbackPolicyPath}`, '--apply=1'], destructiveEnv, root);
+  assert.strictEqual(destructiveProc.status, 0, destructiveProc.stderr || 'destructive run should pass');
+  const destructiveOut = parsePayload(destructiveProc.stdout);
+  assert.strictEqual(destructiveOut.ok, true);
+  assert.strictEqual(Number(destructiveOut.destructive_repair_blocks || 0), 1, 'destructive signature should be blocked without approval');
+  assert.strictEqual(Number(destructiveOut.actions_applied || 0), 0, 'destructive signature should not apply repair without approval');
+  assert.ok(Array.isArray(destructiveOut.actions) && destructiveOut.actions.some((row) => row && row.reason === 'destructive_signature_requires_human_approval'), 'destructive approval block reason should be present');
 
   fs.rmSync(tmp, { recursive: true, force: true });
   console.log('autotest_doctor.test.js: OK');

@@ -66,6 +66,46 @@
     "max_excerpt_files": 10,
     "max_excerpt_chars": 3000
   },
+  "safety_override": {
+    "enabled": true,
+    "require_human_approval_for_destructive_reimplementation": true,
+    "destructive_tokens": [
+      "harm_human",
+      "disable_guard",
+      "disable_integrity",
+      "self_terminate",
+      "data_loss",
+      "destructive"
+    ],
+    "min_approval_note_chars": 12
+  },
+  "first_principles": {
+    "enabled": true,
+    "auto_extract_on_rollback": true,
+    "auto_extract_on_success": true,
+    "max_statement_chars": 320,
+    "emit_trit_shadow_signal": true
+  },
+  "research_quarantine": {
+    "enabled": true,
+    "maturity_state_path": "state/autonomy/inversion/maturity.json",
+    "default_maturity_band": "developing",
+    "min_days": 1,
+    "max_days": 120,
+    "severity_days": {
+      "low": 2,
+      "medium": 7,
+      "high": 14,
+      "critical": 30
+    },
+    "maturity_multiplier": {
+      "novice": 1.5,
+      "developing": 1.25,
+      "mature": 1.0,
+      "seasoned": 0.85,
+      "legendary": 0.65
+    }
+  },
   "telemetry": {
     "emit_system_health": true,
     "max_history_events": 5000

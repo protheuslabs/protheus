@@ -279,6 +279,36 @@ All items below are treated as required for governed inversion safety (not optio
 | 28 | RM-203 | V4 | todo | Cross-instance federated learning | Enable multi-instance improvement without centralized raw-data pooling | Federated aggregation works with privacy controls and measurable lift vs isolated learning |
 | 29 | RM-204 | V4 | todo | Formal verification for critical protocols | High-autonomy systems need stronger guarantees than tests alone | Formal specs/checks exist for deadlock/safety invariants on spine->autonomy->actuation critical paths |
 
+## Narrow-Agent Supremacy Track (ROI Requirements)
+
+Objective: eliminate categories where narrow agent stacks outperform Protheus (execution reliability, startup efficiency, adapter breadth, provider onboarding, and mobile viability).
+
+| Priority | ID | Version | Status | ROI Requirement | Why | Exit Criteria |
+|---|---|---|---|---|---|---|
+| P0 | RM-119 | V2 | todo | Execution reliability parity SLO closure | Narrow systems currently win on immediate end-to-end task completion | 30-day rolling SLO: `workflow_executor` success >=97%, `queue_drain_rate` >=0.90, `time_to_first_execution_ms` p95 <=120000, and no 7+ day zero-shipped streaks |
+| P0 | RM-120 | V2 | todo | Adapter parity pack (top practical channels) | Narrow systems win on out-of-box integrations | Ship deterministic adapters/contracts for at least 10 high-use channels (webhook/http, browser, filesystem, shell, Slack, email, calendar, payments rail, repo/git, CRM/helpdesk) with dry-run/live tests and receipts |
+| P0 | RM-121 | V2 | todo | Provider onboarding in one manifest | Narrow systems win on fast model/provider plug-in | New LLM provider added via config-only manifest (no code edits) in <=15 minutes, with contract test and budget/guard policy auto-wiring |
+| P1 | RM-122 | V2 | todo | Runtime efficiency floor (desktop seed) | Startup/memory/install footprint is a visible competitive gap | Benchmark gates: cold start <=300ms (desktop profile), idle RSS <=120MB, install artifact <=60MB, verified in `public_benchmark_pack` trend receipts |
+| P1 | RM-123 | V2 | todo | Narrow-agent parity benchmark harness | Need objective proof of “at least as good” across common tasks | Add standardized scenario harness comparing Protheus against baseline narrow-agent patterns for reliability/latency/cost; publish scorecard receipts weekly |
+| P1 | RM-124 | V3 | todo | Phone Seed profile (usable, fast, bounded) | Seed accessibility on mobile is key to adoption and “run anywhere” goal | Mobile seed profile boots <=800ms, idle memory <=180MB, basic workflow/memory tasks <=3s median on target phone class, with heavy lanes disabled/offloaded by policy |
+| P1 | RM-125 | V3 | todo | Surface-budget controller (hardware sensors -> capability envelope) | Automatic scale-down/up is required for hardware-agnostic operation | Real-time budget from CPU/RAM/thermal/battery/network controls lane activation (dream/right-brain/inversion depth/fractal breadth) with auditable transitions and no policy bypass |
+| P2 | RM-126 | V3 | todo | Auto compression/expansion transfer plane | Need seamless “phone <-> desktop/server” morphing without manual rebuild | Stateful compression to dormant endpoints + deterministic restore on stronger hardware, with integrity attestations and replayable migration receipts |
+| P2 | RM-127 | V3 | todo | Opportunistic offload from seed to stronger nodes | Phone viability depends on graceful heavy-task delegation | Seed automatically offloads heavy jobs to attested peer/cloud nodes under budget/latency thresholds, with local fallback and failure receipts |
+| P3 | RM-128 | V4 | todo | Continuous parity maintainer | Prevent future regressions vs narrow-agent UX/perf | Nightly parity harness auto-opens remediation proposals when Protheus trails baseline thresholds in reliability/latency/cost categories |
+| P3 | RM-129 | V4 | todo | Device-mesh adaptive organism runtime | Long-term moat is superiority across any hardware envelope | Unified runtime can operate as single-node seed or multi-node mesh with automatic role assignment and stable performance under join/leave churn |
+
+## Fortune-100 Gap Closures (Kimi Delta)
+
+Objective: close remaining enterprise-operability gaps not already covered by existing DR/compliance/chaos items.
+
+| Priority | ID | Version | Status | ROI Requirement | Why | Exit Criteria |
+|---|---|---|---|---|---|---|
+| P0 | RM-130 | V2 | todo | Alert transport reliability hardening (Slack primary + fallback channels) | Current assessment shows alert routing/config fragility despite strong telemetry | Synthetic alert probes run every hour; 30-day delivery success >=99% with deterministic fallback (`email/local`) and dedupe receipts in `state/ops/alert_transport_health.json` |
+| P0 | RM-131 | V2 | todo | Compliance retention uplift (5-day -> tiered 90/180/365) | Enterprise audit and incident investigations need longer evidence windows | Policy-enforced tiered retention is active for logs/metrics/security receipts; retrieval index stays hot; monthly retention-attestation receipts prove no accidental data loss |
+| P1 | RM-132 | V3 | todo | SIEM bridge + correlation rule pack | Fortune-100 operations require centralized security telemetry and correlation | Security/ops events export to SIEM format (OTLP/CEF-compatible), correlation rules for auth anomalies/integrity drift/guard denies are active, and alert round-trip is test-verified |
+| P1 | RM-133 | V3 | todo | SOC2 Type II execution track (post-Type-I) | Type I readiness exists, but ongoing control operation evidence is needed for enterprise trust | 90+ day control operation evidence windows are automatically compiled, exceptions tracked to closure, and auditor-ready attestation bundle is generated on demand |
+| P1 | RM-134 | V3 | todo | Predictive capacity forecasting + preemptive scaling playbook | Current capacity response is mostly reactive; forecast-driven ops reduces saturation incidents | 7/30-day forecasts for queue depth/latency/token burn/model cooldown risk are published daily with threshold-based scaling recommendations and realized-error tracking |
+
 ## Holo-viz Track (Separated from Core Protheus)
 
 | ID | Version | Status | Upgrade | Why | Exit Criteria |
