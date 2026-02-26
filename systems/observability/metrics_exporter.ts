@@ -142,6 +142,7 @@ function defaultPolicy() {
       write_snapshot: true,
       health_reports_dir: 'state/autonomy/health_reports',
       workflow_executor_latest_path: 'state/adaptive/workflows/executor/latest.json',
+      workflow_executor_latest_live_path: 'state/adaptive/workflows/executor/latest_live.json',
       ci_baseline_streak_path: 'state/ops/ci_baseline_streak.json',
       output_prometheus_path: 'state/observability/prometheus/current.prom',
       output_snapshot_path: 'state/observability/metrics/latest.json',
@@ -168,6 +169,7 @@ function loadPolicy(policyPathRaw: unknown) {
       write_snapshot: src.write_snapshot !== false,
       health_reports_dir: resolvePath(src.health_reports_dir, base.metrics.health_reports_dir),
       workflow_executor_latest_path: resolvePath(src.workflow_executor_latest_path, base.metrics.workflow_executor_latest_path),
+      workflow_executor_latest_live_path: resolvePath(src.workflow_executor_latest_live_path, base.metrics.workflow_executor_latest_live_path),
       ci_baseline_streak_path: resolvePath(src.ci_baseline_streak_path, base.metrics.ci_baseline_streak_path),
       output_prometheus_path: resolvePath(src.output_prometheus_path, base.metrics.output_prometheus_path),
       output_snapshot_path: resolvePath(src.output_snapshot_path, base.metrics.output_snapshot_path),
@@ -355,7 +357,10 @@ function buildMetrics(dateStr: string, window: string, health: AnyObj, workflowL
 function runSnapshot(policy: AnyObj, dateStr: string, window: string, writeEnabled: boolean) {
   const healthPath = resolveHealthReportPath(policy.metrics.health_reports_dir, dateStr, window);
   const health = healthPath ? readJson(healthPath, {}) : {};
-  const workflowLatest = readJson(policy.metrics.workflow_executor_latest_path, {});
+  const workflowLatestPath = fs.existsSync(policy.metrics.workflow_executor_latest_live_path)
+    ? policy.metrics.workflow_executor_latest_live_path
+    : policy.metrics.workflow_executor_latest_path;
+  const workflowLatest = readJson(workflowLatestPath, {});
   const ciStreak = readJson(policy.metrics.ci_baseline_streak_path, {});
   const metrics = buildMetrics(dateStr, window, health, workflowLatest, ciStreak);
   const promText = toPrometheus(metrics);
@@ -371,7 +376,7 @@ function runSnapshot(policy: AnyObj, dateStr: string, window: string, writeEnabl
     write_enabled: writeEnabled,
     health_report_found: !!healthPath,
     health_report_path: healthPath ? relPath(healthPath) : null,
-    workflow_executor_path: relPath(policy.metrics.workflow_executor_latest_path),
+    workflow_executor_path: relPath(workflowLatestPath),
     ci_baseline_path: relPath(policy.metrics.ci_baseline_streak_path),
     metrics_count: metrics.length,
     output: {
@@ -388,7 +393,7 @@ function runSnapshot(policy: AnyObj, dateStr: string, window: string, writeEnabl
   };
 
   if (!healthPath) out.warnings.push('health_report_missing');
-  if (!fs.existsSync(policy.metrics.workflow_executor_latest_path)) out.warnings.push('workflow_executor_snapshot_missing');
+  if (!fs.existsSync(workflowLatestPath)) out.warnings.push('workflow_executor_snapshot_missing');
   if (!fs.existsSync(policy.metrics.ci_baseline_streak_path)) out.warnings.push('ci_baseline_streak_missing');
 
   if (writeEnabled) {

@@ -20,6 +20,9 @@ const HISTORY_PATH = process.env.WORKFLOW_EXECUTOR_HISTORY_PATH
 const LATEST_PATH = process.env.WORKFLOW_EXECUTOR_LATEST_PATH
   ? path.resolve(process.env.WORKFLOW_EXECUTOR_LATEST_PATH)
   : path.join(REPO_ROOT, 'state', 'adaptive', 'workflows', 'executor', 'latest.json');
+const LATEST_LIVE_PATH = process.env.WORKFLOW_EXECUTOR_LATEST_LIVE_PATH
+  ? path.resolve(process.env.WORKFLOW_EXECUTOR_LATEST_LIVE_PATH)
+  : path.join(REPO_ROOT, 'state', 'adaptive', 'workflows', 'executor', 'latest_live.json');
 const ROLLOUT_STATE_PATH = process.env.WORKFLOW_EXECUTOR_ROLLOUT_STATE_PATH
   ? path.resolve(process.env.WORKFLOW_EXECUTOR_ROLLOUT_STATE_PATH)
   : path.join(REPO_ROOT, 'state', 'adaptive', 'workflows', 'executor', 'rollout_state.json');
@@ -72,7 +75,7 @@ const SYSTEM_HEALTH_EVENTS_PATH = process.env.SYSTEM_HEALTH_EVENTS_PATH
 function usage() {
   console.log('Usage:');
   console.log('  node systems/workflow/workflow_executor.js run [YYYY-MM-DD] [--id=<workflow_id>] [--max=N] [--include-draft=1|0] [--dry-run=1|0] [--continue-on-error=1|0] [--receipt-strict=1|0] [--runtime-mutation=1|0] [--enforce-eligibility=1|0] [--policy=path]');
-  console.log('  node systems/workflow/workflow_executor.js status [YYYY-MM-DD|latest]');
+  console.log('  node systems/workflow/workflow_executor.js status [YYYY-MM-DD|latest|latest-live]');
 }
 
 function parseArgs(argv: string[]) {
@@ -305,7 +308,16 @@ function defaultPolicy() {
       min_queue_drain_rate: 0.75,
       max_time_to_first_execution_ms: 180000,
       lookback_runs: 6,
-      min_runs_for_decision: 3
+      min_runs_for_decision: 3,
+      ignore_dry_run_history: true
+    },
+    fallback_selection: {
+      enabled: true,
+      trigger_when_selected_zero: true,
+      include_drafts: false,
+      require_safe_commands: true,
+      allow_eligibility_reasons: ['composite_score_below_min'],
+      max_candidates_considered: 32
     },
     runtime_mutation: {
       enabled: true,
@@ -362,6 +374,9 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
     : {};
   const slo = raw && raw.slo && typeof raw.slo === 'object'
     ? raw.slo
+    : {};
+  const fallbackSelection = raw && raw.fallback_selection && typeof raw.fallback_selection === 'object'
+    ? raw.fallback_selection
     : {};
   const rm = raw && raw.runtime_mutation && typeof raw.runtime_mutation === 'object'
     ? raw.runtime_mutation
@@ -467,6 +482,28 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
         1,
         100,
         base.slo.min_runs_for_decision
+      ),
+      ignore_dry_run_history: slo.ignore_dry_run_history !== false
+    },
+    fallback_selection: {
+      enabled: fallbackSelection.enabled !== false,
+      trigger_when_selected_zero: fallbackSelection.trigger_when_selected_zero !== false,
+      include_drafts: fallbackSelection.include_drafts === true,
+      require_safe_commands: fallbackSelection.require_safe_commands !== false,
+      allow_eligibility_reasons: (() => {
+        const src = Array.isArray(fallbackSelection.allow_eligibility_reasons)
+          ? fallbackSelection.allow_eligibility_reasons
+          : base.fallback_selection.allow_eligibility_reasons;
+        const rows = src
+          .map((v) => cleanText(v || '', 96).toLowerCase())
+          .filter(Boolean);
+        return rows.length ? Array.from(new Set(rows)) : base.fallback_selection.allow_eligibility_reasons.slice(0);
+      })(),
+      max_candidates_considered: clampInt(
+        fallbackSelection.max_candidates_considered,
+        1,
+        256,
+        base.fallback_selection.max_candidates_considered
       )
     },
     runtime_mutation: {
@@ -772,6 +809,65 @@ function assessWorkflowEligibility(workflow: AnyObj, policy: AnyObj, opts: AnyOb
     reasons: Array.from(new Set(reasons)),
     has_rollback_path: hasRollback
   };
+}
+
+function commandAppearsSafeForFallback(commandRaw: unknown) {
+  const command = String(commandRaw || '').trim();
+  if (!command) return false;
+  const lower = command.toLowerCase();
+  if (lower.includes('systems/actuation/actuation_executor.js')) return false;
+  if (/\bcurl\b|\bwget\b/.test(lower)) return false;
+  if (/\bopen\s+https?:\/\//.test(lower)) return false;
+  return true;
+}
+
+function workflowAppearsSafeForFallback(workflow: AnyObj) {
+  const steps = Array.isArray(workflow && workflow.steps) ? workflow.steps : [];
+  if (!steps.length) return false;
+  for (let i = 0; i < steps.length; i += 1) {
+    const step = normalizeStep(steps[i], i);
+    const type = String(step && step.type || '').toLowerCase();
+    if (type === 'external') return false;
+    if (!commandAppearsSafeForFallback(step && step.command)) return false;
+  }
+  return true;
+}
+
+function fallbackSelectionDecision(candidates: AnyObj[], excluded: AnyObj[], policy: AnyObj, opts: AnyObj = {}) {
+  const cfg = policy && policy.fallback_selection && typeof policy.fallback_selection === 'object'
+    ? policy.fallback_selection
+    : defaultPolicy().fallback_selection;
+  if (cfg.enabled !== true || cfg.trigger_when_selected_zero !== true) {
+    return { selected: null, reason: 'fallback_disabled' };
+  }
+  const allowReasonSet = new Set(
+    Array.isArray(cfg.allow_eligibility_reasons) ? cfg.allow_eligibility_reasons.map((v: unknown) => String(v || '').toLowerCase()) : []
+  );
+  const maxConsider = clampInt(cfg.max_candidates_considered, 1, 256, 32);
+  const candidateRows = Array.isArray(candidates) ? candidates.slice(0, maxConsider) : [];
+  const explicitId = opts && opts.explicit_id ? String(opts.explicit_id).trim() : '';
+  for (const row of candidateRows) {
+    const workflowId = String(row && row.id || '').trim();
+    if (!workflowId) continue;
+    if (explicitId && workflowId !== explicitId) continue;
+    const gate = assessWorkflowEligibility(row, policy, { manual_id: !!explicitId });
+    const reasons = Array.isArray(gate && gate.reasons) ? gate.reasons : [];
+    const safeReasonOnly = reasons.length > 0 && reasons.every((r) => allowReasonSet.has(String(r || '').toLowerCase()));
+    if (!safeReasonOnly) continue;
+    if (cfg.require_safe_commands === true && !workflowAppearsSafeForFallback(row)) continue;
+    excluded.push({
+      workflow_id: workflowId,
+      reason: 'fallback_selected',
+      details: reasons,
+      fallback: true
+    });
+    return {
+      selected: row,
+      reason: 'fallback_composite_only',
+      reasons
+    };
+  }
+  return { selected: null, reason: 'fallback_no_candidate' };
 }
 
 function interpolateTemplate(input: unknown, context: AnyObj) {
@@ -1448,7 +1544,10 @@ function selectWorkflows(
 ) {
   const rows = Array.isArray(registry && registry.workflows) ? registry.workflows.slice() : [];
   const max = clampInt(args.max, 1, 256, 8);
-  const includeDraft = boolFlag(args['include-draft'], false);
+  const fallbackCfg = policy && policy.fallback_selection && typeof policy.fallback_selection === 'object'
+    ? policy.fallback_selection
+    : defaultPolicy().fallback_selection;
+  const includeDraft = boolFlag(args['include-draft'], fallbackCfg.include_drafts === true);
   const explicitId = String(args.id || '').trim();
   const enforceEligibility = boolFlag(args['enforce-eligibility'], true);
   const stage = normalizeStage(
@@ -1536,12 +1635,27 @@ function selectWorkflows(
     selected = selected.slice(0, max);
   }
 
+  let fallbackApplied = false;
+  let fallbackReason = '';
+  if (!explicitId && selected.length === 0) {
+    const fallback = fallbackSelectionDecision(candidates, excluded, policy, { explicit_id: explicitId });
+    if (fallback && fallback.selected) {
+      selected = [fallback.selected];
+      fallbackApplied = true;
+      fallbackReason = String(fallback.reason || 'fallback_selected');
+    } else {
+      fallbackReason = String(fallback && fallback.reason || '');
+    }
+  }
+
   return {
     selected,
     excluded,
     stage,
     canary_fraction: Number(canaryFraction.toFixed(6)),
-    enforce_eligibility: enforceEligibility
+    enforce_eligibility: enforceEligibility,
+    fallback_applied: fallbackApplied,
+    fallback_reason: fallbackReason
   };
 }
 
@@ -1874,10 +1988,12 @@ function computeRunSlo(results: AnyObj[], selectedCount: number, runStartedMs: n
   };
 }
 
-function historicalSloRows(historyRows: AnyObj[]) {
+function historicalSloRows(historyRows: AnyObj[], opts: AnyObj = {}) {
+  const ignoreDryRun = opts && opts.ignore_dry_run === true;
   const out = [];
   for (const row of Array.isArray(historyRows) ? historyRows : []) {
     if (!row || typeof row !== 'object') continue;
+    if (ignoreDryRun && row.dry_run === true) continue;
     if (row.slo && typeof row.slo === 'object' && row.slo.measured && typeof row.slo.measured === 'object') {
       out.push({
         ts: row.ts || null,
@@ -1907,7 +2023,9 @@ function historicalSloRows(historyRows: AnyObj[]) {
 function computeSloWindow(historyRows: AnyObj[], runSlo: AnyObj, policy: AnyObj) {
   const lookback = clampInt(policy && policy.slo ? policy.slo.lookback_runs : 6, 1, 200, 6);
   const minRuns = clampInt(policy && policy.slo ? policy.slo.min_runs_for_decision : 3, 1, 100, 3);
-  const prior = historicalSloRows(historyRows).slice(-Math.max(0, lookback - 1));
+  const prior = historicalSloRows(historyRows, {
+    ignore_dry_run: policy && policy.slo ? policy.slo.ignore_dry_run_history === true : true
+  }).slice(-Math.max(0, lookback - 1));
   const current = {
     ts: nowIso(),
     execution_success_rate: Number(runSlo && runSlo.measured ? runSlo.measured.execution_success_rate || 0 : 0),
@@ -2250,6 +2368,17 @@ function runCmd(dateStr: string, args: AnyObj) {
     workflows_selected: selected.length,
     workflows_excluded: Array.isArray(selection && selection.excluded) ? selection.excluded.length : 0,
     selection_excluded: Array.isArray(selection && selection.excluded) ? selection.excluded : [],
+    selection_excluded_by_reason: (() => {
+      const counts: AnyObj = {};
+      const rows = Array.isArray(selection && selection.excluded) ? selection.excluded : [];
+      for (const row of rows) {
+        const reason = cleanText(row && row.reason || 'unknown', 80) || 'unknown';
+        counts[reason] = Number(counts[reason] || 0) + 1;
+      }
+      return counts;
+    })(),
+    fallback_applied: selection && selection.fallback_applied === true,
+    fallback_reason: selection ? cleanText(selection.fallback_reason || '', 80) : '',
     enforce_eligibility: selection && selection.enforce_eligibility === true,
     workflows_executed: results.length,
     workflows_succeeded: succeeded,
@@ -2271,6 +2400,9 @@ function runCmd(dateStr: string, args: AnyObj) {
   const runPath = path.join(RUNS_DIR, `${dateStr}.json`);
   writeJsonAtomic(runPath, payload);
   writeJsonAtomic(LATEST_PATH, payload);
+  if (payload.dry_run !== true) {
+    writeJsonAtomic(LATEST_LIVE_PATH, payload);
+  }
   appendJsonl(HISTORY_PATH, {
     ts: payload.ts,
     type: payload.type,
@@ -2285,6 +2417,9 @@ function runCmd(dateStr: string, args: AnyObj) {
     rollout_last_scale_action: payload.rollout_state_after ? payload.rollout_state_after.last_scale_action : null,
     workflows_selected: payload.workflows_selected,
     workflows_excluded: payload.workflows_excluded,
+    selection_excluded_by_reason: payload.selection_excluded_by_reason || {},
+    fallback_applied: payload.fallback_applied === true,
+    fallback_reason: payload.fallback_reason || '',
     workflows_executed: payload.workflows_executed,
     workflows_succeeded: payload.workflows_succeeded,
     workflows_failed: payload.workflows_failed,
@@ -2367,7 +2502,8 @@ function runCmd(dateStr: string, args: AnyObj) {
     runtime_mutations_applied: payload.runtime_mutations_applied,
     runtime_mutations_rolled_back: payload.runtime_mutations_rolled_back,
     run_path: relPath(runPath),
-    latest_path: relPath(LATEST_PATH)
+    latest_path: relPath(LATEST_PATH),
+    latest_live_path: relPath(LATEST_LIVE_PATH)
   })}\n`);
 }
 
@@ -2375,7 +2511,9 @@ function statusCmd(dateArg: string) {
   const key = String(dateArg || 'latest').trim().toLowerCase();
   const payload = key === 'latest'
     ? readJson(LATEST_PATH, null)
-    : readJson(path.join(RUNS_DIR, `${dateArgOrToday(key)}.json`), null);
+    : key === 'latest-live' || key === 'latest_live'
+      ? readJson(LATEST_LIVE_PATH, null)
+      : readJson(path.join(RUNS_DIR, `${dateArgOrToday(key)}.json`), null);
   if (!payload || typeof payload !== 'object') {
     process.stdout.write(`${JSON.stringify({
       ok: false,
@@ -2399,6 +2537,11 @@ function statusCmd(dateArg: string) {
     runtime_mutations_rolled_back: Number(payload.runtime_mutations_rolled_back || 0),
     workflows_selected: Number(payload.workflows_selected || 0),
     workflows_excluded: Number(payload.workflows_excluded || 0),
+    selection_excluded_by_reason: payload.selection_excluded_by_reason && typeof payload.selection_excluded_by_reason === 'object'
+      ? payload.selection_excluded_by_reason
+      : {},
+    fallback_applied: payload.fallback_applied === true,
+    fallback_reason: payload.fallback_reason || '',
     workflows_executed: Number(payload.workflows_executed || 0),
     workflows_succeeded: Number(payload.workflows_succeeded || 0),
     workflows_failed: Number(payload.workflows_failed || 0),

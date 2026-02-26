@@ -36,12 +36,12 @@
     "enabled": true,
     "initial_stage": "canary",
     "shadow_dry_run": true,
-    "canary_fraction": 0.15,
+    "canary_fraction": 0.35,
     "canary_min_fraction": 0.05,
-    "canary_max_fraction": 0.6,
-    "scale_up_step": 0.1,
+    "canary_max_fraction": 0.8,
+    "scale_up_step": 0.15,
     "scale_down_step": 0.1,
-    "min_consecutive_green_for_scale_up": 3,
+    "min_consecutive_green_for_scale_up": 2,
     "min_consecutive_red_for_scale_down": 1,
     "promote_to_live_fraction": 0.6,
     "demote_shadow_on_floor_breach": true
@@ -51,7 +51,18 @@
     "min_queue_drain_rate": 0.75,
     "max_time_to_first_execution_ms": 180000,
     "lookback_runs": 6,
-    "min_runs_for_decision": 3
+    "min_runs_for_decision": 3,
+    "ignore_dry_run_history": true
+  },
+  "fallback_selection": {
+    "enabled": true,
+    "trigger_when_selected_zero": true,
+    "include_drafts": false,
+    "require_safe_commands": true,
+    "allow_eligibility_reasons": [
+      "composite_score_below_min"
+    ],
+    "max_candidates_considered": 32
   },
   "runtime_mutation": {
     "enabled": true,

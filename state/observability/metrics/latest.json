@@ -1,7 +1,7 @@
 {
   "ok": true,
   "type": "observability_metrics_exporter",
-  "ts": "2026-02-26T12:38:31.402Z",
+  "ts": "2026-02-26T17:29:50.029Z",
   "date": "2026-02-26",
   "window": "daily",
   "policy_path": "/Users/jay/.openclaw/workspace/config/observability_policy.json",
@@ -9,7 +9,7 @@
   "write_enabled": true,
   "health_report_found": true,
   "health_report_path": "state/autonomy/health_reports/2026-02-26.daily.json",
-  "workflow_executor_path": "state/adaptive/workflows/executor/latest.json",
+  "workflow_executor_path": "state/adaptive/workflows/executor/latest_live.json",
   "ci_baseline_path": "state/ops/ci_baseline_streak.json",
   "metrics_count": 15,
   "output": {
@@ -189,7 +189,7 @@
       "name": "protheus_observability_snapshot_timestamp_seconds",
       "help": "Unix timestamp of observability metrics snapshot.",
       "type": "gauge",
-      "value": 1772109511,
+      "value": 1772126990,
       "labels": {
         "date": "2026-02-26",
         "window": "daily"

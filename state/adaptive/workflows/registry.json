@@ -1,7 +1,7 @@
 {
   "version": "1.0",
-  "updated_at": "2026-02-26T12:38:15.569Z",
-  "generated_at": "2026-02-26T12:38:15.569Z",
+  "updated_at": "2026-02-26T17:29:54.486Z",
+  "generated_at": "2026-02-26T17:29:54.485Z",
   "workflows": [
     {
       "id": "wfc_07aee5ce1dfb0f41",
@@ -127,6 +127,162 @@
       "updated_at": "2026-02-26T02:42:38.585Z"
     },
     {
+      "id": "wfc_0d7f23c40175dcb9",
+      "name": "Adaptive cross_signal_opportunity workflow :: intake :: intake",
+      "status": "active",
+      "source": "adaptive_workflow_controller_update",
+      "strategy_id": "default_general",
+      "objective_id": "T1_make_jay_billionaire_v1",
+      "objective_primary": "Maximize verified progress under active directives.",
+      "trigger": {
+        "proposal_type": "cross_signal_opportunity.intake.intake",
+        "min_occurrences": 12,
+        "intent_signature": "maximize_verified_progress_under_active_directives._default_general_medium_speed_weight_:0.34_robustness_weight_:0.33_cost_weight_:0.33_feasibility_:0_risk_:0_novelty_:0"
+      },
+      "intent": {
+        "id": "intent_e3ee3d82b8f572",
+        "strategy_id": "default_general",
+        "objective": "Maximize verified progress under active directives.",
+        "uncertainty_band": "medium",
+        "constraints": {
+          "speed_weight": 0.34,
+          "robustness_weight": 0.33,
+          "cost_weight": 0.33
+        },
+        "signals": {
+          "feasibility": 0,
+          "risk": 0,
+          "novelty": 0
+        },
+        "risk_signals": {
+          "feasibility": 0,
+          "risk": 0,
+          "novelty": 0
+        },
+        "source": "orchestron_adaptive_controller",
+        "ts": "2026-02-26T17:29:54.434Z",
+        "signature": "maximize_verified_progress_under_active_directives._default_general_medium_speed_weight_:0.34_robustness_weight_:0.33_cost_weight_:0.33_feasibility_:0_risk_:0_novelty_:0"
+      },
+      "parent_workflow_id": "wfc_c526a0ca51072aa5",
+      "fractal_depth": 2,
+      "mutation": {
+        "kind": "fractal_split",
+        "parent_workflow_id": "wfc_c526a0ca51072aa5",
+        "rationale": "spawned from cross_signal_opportunity.intake to isolate intake pressure lane"
+      },
+      "principles": {
+        "score": 1,
+        "band": "strong",
+        "ids": [
+          "objective_clarity",
+          "risk_bounded",
+          "evidence_first",
+          "budget_discipline",
+          "ranking_balance"
+        ]
+      },
+      "metrics": {
+        "attempts": 42,
+        "shipped_rate": 0.0238,
+        "failure_rate": 0.0952,
+        "value_currency": "revenue",
+        "value_priority_score": 0.631,
+        "score": 0.2258,
+        "predicted_yield_delta": -0.0342,
+        "predicted_drift_delta": 0.0221,
+        "safety_score": 0.4635,
+        "regression_risk": 0.5658,
+        "adversarial_critical_failures": 0,
+        "adversarial_non_critical_findings": 0,
+        "adversarial_penalty": 0,
+        "adversarial_replay_artifact": "state/adaptive/workflows/orchestron/adversarial/2026-02-26/wfc_0d7f23c40175dcb9.json",
+        "trit_alignment": 0,
+        "scorecard_pass": false
+      },
+      "risk_policy": {
+        "max_risk_per_action": 65,
+        "allowed_risks": [
+          "low",
+          "medium"
+        ]
+      },
+      "steps": [
+        {
+          "id": "scope",
+          "type": "command",
+          "command": "node systems/autonomy/proposal_enricher.js run <date>",
+          "purpose": "specialize intake and directive normalization",
+          "timeout_ms": 120000,
+          "retries": 1,
+          "adapter": null,
+          "provider": null,
+          "lane": null,
+          "risk": null,
+          "clearance": null,
+          "estimated_tokens": null,
+          "require_policy_root": false
+        },
+        {
+          "id": "execute_lane",
+          "type": "command",
+          "command": "node systems/autonomy/autonomy_controller.js run <date>",
+          "purpose": "execute sub-workflow lane",
+          "timeout_ms": 180000,
+          "retries": 1,
+          "adapter": null,
+          "provider": null,
+          "lane": null,
+          "risk": null,
+          "clearance": null,
+          "estimated_tokens": null,
+          "require_policy_root": false
+        },
+        {
+          "id": "verify",
+          "type": "gate",
+          "command": "node systems/autonomy/strategy_execute_guard.js run <date>",
+          "purpose": "verify lane safety and evidence",
+          "timeout_ms": 120000,
+          "retries": 0,
+          "adapter": null,
+          "provider": null,
+          "lane": null,
+          "risk": null,
+          "clearance": null,
+          "estimated_tokens": null,
+          "require_policy_root": false
+        },
+        {
+          "id": "receipt",
+          "type": "receipt",
+          "command": "state/autonomy/receipts/<date>.jsonl",
+          "purpose": "record lane receipt",
+          "timeout_ms": 30000,
+          "retries": 0,
+          "adapter": null,
+          "provider": null,
+          "lane": null,
+          "risk": null,
+          "clearance": null,
+          "estimated_tokens": null,
+          "require_policy_root": false
+        }
+      ],
+      "generated_at": "2026-02-26T17:29:54.480Z",
+      "children_ids": [],
+      "activated_at": "2026-02-26T17:28:18.621Z",
+      "fractal_state": "child_active",
+      "lineage": {
+        "parent_workflow_id": "wfc_c526a0ca51072aa5",
+        "root_workflow_id": "wfc_2d5f1833a867e5c3",
+        "fractal_depth": 2,
+        "state": "child_active",
+        "activation_mode": "update",
+        "activated_at": "2026-02-26T17:28:18.621Z"
+      },
+      "updated_at": "2026-02-26T17:29:54.485Z"
+    },
+    {
       "id": "wfc_145ecc2f4cde0e52",
       "name": "Adaptive cross_signal_opportunity workflow :: intake :: execution",
       "status": "active",
@@ -248,6 +404,318 @@
         "activated_at": "2026-02-26T02:42:38.585Z"
       },
       "updated_at": "2026-02-26T02:42:38.585Z"
+    },
+    {
+      "id": "wfc_2d5f1833a867e5c3",
+      "name": "Adaptive cross_signal_opportunity workflow",
+      "status": "active",
+      "source": "adaptive_workflow_controller_update",
+      "strategy_id": "default_general",
+      "objective_id": "T1_make_jay_billionaire_v1",
+      "objective_primary": "Maximize verified progress under active directives.",
+      "trigger": {
+        "proposal_type": "cross_signal_opportunity",
+        "min_occurrences": 12,
+        "intent_signature": "maximize_verified_progress_under_active_directives._default_general_medium_speed_weight_:0.34_robustness_weight_:0.33_cost_weight_:0.33_feasibility_:0_risk_:0_novelty_:0"
+      },
+      "intent": {
+        "id": "intent_e3ee3d82b8f572",
+        "strategy_id": "default_general",
+        "objective": "Maximize verified progress under active directives.",
+        "uncertainty_band": "medium",
+        "constraints": {
+          "speed_weight": 0.34,
+          "robustness_weight": 0.33,
+          "cost_weight": 0.33
+        },
+        "signals": {
+          "feasibility": 0,
+          "risk": 0,
+          "novelty": 0
+        },
+        "risk_signals": {
+          "feasibility": 0,
+          "risk": 0,
+          "novelty": 0
+        },
+        "source": "orchestron_adaptive_controller",
+        "ts": "2026-02-26T17:29:54.434Z",
+        "signature": "maximize_verified_progress_under_active_directives._default_general_medium_speed_weight_:0.34_robustness_weight_:0.33_cost_weight_:0.33_feasibility_:0_risk_:0_novelty_:0"
+      },
+      "parent_workflow_id": null,
+      "fractal_depth": 0,
+      "mutation": null,
+      "principles": {
+        "score": 1,
+        "band": "strong",
+        "ids": [
+          "objective_clarity",
+          "risk_bounded",
+          "evidence_first",
+          "budget_discipline",
+          "ranking_balance"
+        ]
+      },
+      "metrics": {
+        "attempts": 42,
+        "shipped_rate": 0.0238,
+        "failure_rate": 0.0952,
+        "value_currency": "revenue",
+        "value_priority_score": 0.631,
+        "score": 0.4686,
+        "predicted_yield_delta": 0.0085,
+        "predicted_drift_delta": -0.0091,
+        "safety_score": 0.4802,
+        "regression_risk": 0.5141,
+        "adversarial_critical_failures": 0,
+        "adversarial_non_critical_findings": 0,
+        "adversarial_penalty": 0,
+        "adversarial_replay_artifact": "state/adaptive/workflows/orchestron/adversarial/2026-02-26/wfc_2d5f1833a867e5c3.json",
+        "trit_alignment": 0,
+        "scorecard_pass": true
+      },
+      "risk_policy": {
+        "max_risk_per_action": 65,
+        "allowed_risks": [
+          "low",
+          "medium"
+        ]
+      },
+      "steps": [
+        {
+          "id": "enrich",
+          "type": "command",
+          "command": "node systems/autonomy/proposal_enricher.js run <date>",
+          "purpose": "normalize proposal shape",
+          "timeout_ms": 120000,
+          "retries": 1,
+          "adapter": null,
+          "provider": null,
+          "lane": null,
+          "risk": null,
+          "clearance": null,
+          "estimated_tokens": null,
+          "require_policy_root": false
+        },
+        {
+          "id": "rank",
+          "type": "command",
+          "command": "node systems/autonomy/autonomy_controller.js run <date>",
+          "purpose": "rank and execute/preview",
+          "timeout_ms": 180000,
+          "retries": 1,
+          "adapter": null,
+          "provider": null,
+          "lane": null,
+          "risk": null,
+          "clearance": null,
+          "estimated_tokens": null,
+          "require_policy_root": false
+        },
+        {
+          "id": "verify",
+          "type": "gate",
+          "command": "node systems/autonomy/strategy_execute_guard.js run <date>",
+          "purpose": "enforce safety and evidence checks",
+          "timeout_ms": 120000,
+          "retries": 0,
+          "adapter": null,
+          "provider": null,
+          "lane": null,
+          "risk": null,
+          "clearance": null,
+          "estimated_tokens": null,
+          "require_policy_root": false
+        },
+        {
+          "id": "receipt",
+          "type": "receipt",
+          "command": "state/autonomy/receipts/<date>.jsonl",
+          "purpose": "record final receipt evidence",
+          "timeout_ms": 30000,
+          "retries": 0,
+          "adapter": null,
+          "provider": null,
+          "lane": null,
+          "risk": null,
+          "clearance": null,
+          "estimated_tokens": null,
+          "require_policy_root": false
+        }
+      ],
+      "generated_at": "2026-02-26T17:29:54.480Z",
+      "children_ids": [
+        "wfc_c526a0ca51072aa5",
+        "wfc_c2077422278c77a1",
+        "wfc_7c2d0fd1bc4fb843"
+      ],
+      "activated_at": "2026-02-26T17:28:18.621Z",
+      "fractal_state": "root_active",
+      "lineage": {
+        "parent_workflow_id": null,
+        "root_workflow_id": "wfc_2d5f1833a867e5c3",
+        "fractal_depth": 0,
+        "state": "root_active",
+        "activation_mode": "update",
+        "activated_at": "2026-02-26T17:28:18.621Z"
+      },
+      "updated_at": "2026-02-26T17:29:54.485Z"
+    },
+    {
+      "id": "wfc_545b11ab500ef289",
+      "name": "Adaptive cross_signal_opportunity workflow :: intake :: verification",
+      "status": "active",
+      "source": "adaptive_workflow_controller_update",
+      "strategy_id": "default_general",
+      "objective_id": "T1_make_jay_billionaire_v1",
+      "objective_primary": "Maximize verified progress under active directives.",
+      "trigger": {
+        "proposal_type": "cross_signal_opportunity.intake.verification",
+        "min_occurrences": 12,
+        "intent_signature": "maximize_verified_progress_under_active_directives._default_general_medium_speed_weight_:0.34_robustness_weight_:0.33_cost_weight_:0.33_feasibility_:0_risk_:0_novelty_:0"
+      },
+      "intent": {
+        "id": "intent_e3ee3d82b8f572",
+        "strategy_id": "default_general",
+        "objective": "Maximize verified progress under active directives.",
+        "uncertainty_band": "medium",
+        "constraints": {
+          "speed_weight": 0.34,
+          "robustness_weight": 0.33,
+          "cost_weight": 0.33
+        },
+        "signals": {
+          "feasibility": 0,
+          "risk": 0,
+          "novelty": 0
+        },
+        "risk_signals": {
+          "feasibility": 0,
+          "risk": 0,
+          "novelty": 0
+        },
+        "source": "orchestron_adaptive_controller",
+        "ts": "2026-02-26T17:29:54.434Z",
+        "signature": "maximize_verified_progress_under_active_directives._default_general_medium_speed_weight_:0.34_robustness_weight_:0.33_cost_weight_:0.33_feasibility_:0_risk_:0_novelty_:0"
+      },
+      "parent_workflow_id": "wfc_c526a0ca51072aa5",
+      "fractal_depth": 2,
+      "mutation": {
+        "kind": "fractal_split",
+        "parent_workflow_id": "wfc_c526a0ca51072aa5",
+        "rationale": "spawned from cross_signal_opportunity.intake to isolate verification pressure lane"
+      },
+      "principles": {
+        "score": 1,
+        "band": "strong",
+        "ids": [
+          "objective_clarity",
+          "risk_bounded",
+          "evidence_first",
+          "budget_discipline",
+          "ranking_balance"
+        ]
+      },
+      "metrics": {
+        "attempts": 42,
+        "shipped_rate": 0.0238,
+        "failure_rate": 0.0952,
+        "value_currency": "revenue",
+        "value_priority_score": 0.631,
+        "score": 0.2258,
+        "predicted_yield_delta": -0.0342,
+        "predicted_drift_delta": 0.0221,
+        "safety_score": 0.4635,
+        "regression_risk": 0.5658,
+        "adversarial_critical_failures": 0,
+        "adversarial_non_critical_findings": 0,
+        "adversarial_penalty": 0,
+        "adversarial_replay_artifact": "state/adaptive/workflows/orchestron/adversarial/2026-02-26/wfc_545b11ab500ef289.json",
+        "trit_alignment": 0,
+        "scorecard_pass": false
+      },
+      "risk_policy": {
+        "max_risk_per_action": 65,
+        "allowed_risks": [
+          "low",
+          "medium"
+        ]
+      },
+      "steps": [
+        {
+          "id": "scope",
+          "type": "command",
+          "command": "node systems/autonomy/proposal_enricher.js run <date>",
+          "purpose": "specialize verification + receipt hardening",
+          "timeout_ms": 120000,
+          "retries": 1,
+          "adapter": null,
+          "provider": null,
+          "lane": null,
+          "risk": null,
+          "clearance": null,
+          "estimated_tokens": null,
+          "require_policy_root": false
+        },
+        {
+          "id": "execute_lane",
+          "type": "command",
+          "command": "node systems/autonomy/autonomy_controller.js run <date>",
+          "purpose": "execute sub-workflow lane",
+          "timeout_ms": 180000,
+          "retries": 1,
+          "adapter": null,
+          "provider": null,
+          "lane": null,
+          "risk": null,
+          "clearance": null,
+          "estimated_tokens": null,
+          "require_policy_root": false
+        },
+        {
+          "id": "verify",
+          "type": "gate",
+          "command": "node systems/autonomy/strategy_execute_guard.js run <date>",
+          "purpose": "verify lane safety and evidence",
+          "timeout_ms": 120000,
+          "retries": 0,
+          "adapter": null,
+          "provider": null,
+          "lane": null,
+          "risk": null,
+          "clearance": null,
+          "estimated_tokens": null,
+          "require_policy_root": false
+        },
+        {
+          "id": "receipt",
+          "type": "receipt",
+          "command": "state/autonomy/receipts/<date>.jsonl",
+          "purpose": "record lane receipt",
+          "timeout_ms": 30000,
+          "retries": 0,
+          "adapter": null,
+          "provider": null,
+          "lane": null,
+          "risk": null,
+          "clearance": null,
+          "estimated_tokens": null,
+          "require_policy_root": false
+        }
+      ],
+      "generated_at": "2026-02-26T17:29:54.480Z",
+      "children_ids": [],
+      "activated_at": "2026-02-26T17:28:18.621Z",
+      "fractal_state": "child_active",
+      "lineage": {
+        "parent_workflow_id": "wfc_c526a0ca51072aa5",
+        "root_workflow_id": "wfc_2d5f1833a867e5c3",
+        "fractal_depth": 2,
+        "state": "child_active",
+        "activation_mode": "update",
+        "activated_at": "2026-02-26T17:28:18.621Z"
+      },
+      "updated_at": "2026-02-26T17:29:54.485Z"
     },
     {
       "id": "wfc_5d55739830782563",
@@ -500,6 +968,162 @@
       "updated_at": "2026-02-26T02:42:38.585Z"
     },
     {
+      "id": "wfc_7c2d0fd1bc4fb843",
+      "name": "Adaptive cross_signal_opportunity workflow :: verification",
+      "status": "active",
+      "source": "adaptive_workflow_controller_update",
+      "strategy_id": "default_general",
+      "objective_id": "T1_make_jay_billionaire_v1",
+      "objective_primary": "Maximize verified progress under active directives.",
+      "trigger": {
+        "proposal_type": "cross_signal_opportunity.verification",
+        "min_occurrences": 12,
+        "intent_signature": "maximize_verified_progress_under_active_directives._default_general_medium_speed_weight_:0.34_robustness_weight_:0.33_cost_weight_:0.33_feasibility_:0_risk_:0_novelty_:0"
+      },
+      "intent": {
+        "id": "intent_e3ee3d82b8f572",
+        "strategy_id": "default_general",
+        "objective": "Maximize verified progress under active directives.",
+        "uncertainty_band": "medium",
+        "constraints": {
+          "speed_weight": 0.34,
+          "robustness_weight": 0.33,
+          "cost_weight": 0.33
+        },
+        "signals": {
+          "feasibility": 0,
+          "risk": 0,
+          "novelty": 0
+        },
+        "risk_signals": {
+          "feasibility": 0,
+          "risk": 0,
+          "novelty": 0
+        },
+        "source": "orchestron_adaptive_controller",
+        "ts": "2026-02-26T17:29:54.434Z",
+        "signature": "maximize_verified_progress_under_active_directives._default_general_medium_speed_weight_:0.34_robustness_weight_:0.33_cost_weight_:0.33_feasibility_:0_risk_:0_novelty_:0"
+      },
+      "parent_workflow_id": "wfc_2d5f1833a867e5c3",
+      "fractal_depth": 1,
+      "mutation": {
+        "kind": "fractal_split",
+        "parent_workflow_id": "wfc_2d5f1833a867e5c3",
+        "rationale": "spawned from cross_signal_opportunity to isolate verification pressure lane"
+      },
+      "principles": {
+        "score": 1,
+        "band": "strong",
+        "ids": [
+          "objective_clarity",
+          "risk_bounded",
+          "evidence_first",
+          "budget_discipline",
+          "ranking_balance"
+        ]
+      },
+      "metrics": {
+        "attempts": 42,
+        "shipped_rate": 0.0238,
+        "failure_rate": 0.0952,
+        "value_currency": "revenue",
+        "value_priority_score": 0.631,
+        "score": 0.3085,
+        "predicted_yield_delta": -0.0091,
+        "predicted_drift_delta": 0.0069,
+        "safety_score": 0.4783,
+        "regression_risk": 0.5435,
+        "adversarial_critical_failures": 0,
+        "adversarial_non_critical_findings": 0,
+        "adversarial_penalty": 0,
+        "adversarial_replay_artifact": "state/adaptive/workflows/orchestron/adversarial/2026-02-26/wfc_7c2d0fd1bc4fb843.json",
+        "trit_alignment": 0,
+        "scorecard_pass": false
+      },
+      "risk_policy": {
+        "max_risk_per_action": 65,
+        "allowed_risks": [
+          "low",
+          "medium"
+        ]
+      },
+      "steps": [
+        {
+          "id": "scope",
+          "type": "command",
+          "command": "node systems/autonomy/proposal_enricher.js run <date>",
+          "purpose": "specialize verification + receipt hardening",
+          "timeout_ms": 120000,
+          "retries": 1,
+          "adapter": null,
+          "provider": null,
+          "lane": null,
+          "risk": null,
+          "clearance": null,
+          "estimated_tokens": null,
+          "require_policy_root": false
+        },
+        {
+          "id": "execute_lane",
+          "type": "command",
+          "command": "node systems/autonomy/autonomy_controller.js run <date>",
+          "purpose": "execute sub-workflow lane",
+          "timeout_ms": 180000,
+          "retries": 1,
+          "adapter": null,
+          "provider": null,
+          "lane": null,
+          "risk": null,
+          "clearance": null,
+          "estimated_tokens": null,
+          "require_policy_root": false
+        },
+        {
+          "id": "verify",
+          "type": "gate",
+          "command": "node systems/autonomy/strategy_execute_guard.js run <date>",
+          "purpose": "verify lane safety and evidence",
+          "timeout_ms": 120000,
+          "retries": 0,
+          "adapter": null,
+          "provider": null,
+          "lane": null,
+          "risk": null,
+          "clearance": null,
+          "estimated_tokens": null,
+          "require_policy_root": false
+        },
+        {
+          "id": "receipt",
+          "type": "receipt",
+          "command": "state/autonomy/receipts/<date>.jsonl",
+          "purpose": "record lane receipt",
+          "timeout_ms": 30000,
+          "retries": 0,
+          "adapter": null,
+          "provider": null,
+          "lane": null,
+          "risk": null,
+          "clearance": null,
+          "estimated_tokens": null,
+          "require_policy_root": false
+        }
+      ],
+      "generated_at": "2026-02-26T17:29:54.480Z",
+      "children_ids": [],
+      "activated_at": "2026-02-26T17:28:18.621Z",
+      "fractal_state": "child_active",
+      "lineage": {
+        "parent_workflow_id": "wfc_2d5f1833a867e5c3",
+        "root_workflow_id": "wfc_2d5f1833a867e5c3",
+        "fractal_depth": 1,
+        "state": "child_active",
+        "activation_mode": "update",
+        "activated_at": "2026-02-26T17:28:18.621Z"
+      },
+      "updated_at": "2026-02-26T17:29:54.485Z"
+    },
+    {
       "id": "wfc_7c82f6565f5e49c8",
       "name": "Adaptive cross_signal_opportunity workflow :: verification",
       "status": "active",
@@ -746,6 +1370,314 @@
       "updated_at": "2026-02-26T02:42:38.585Z"
     },
     {
+      "id": "wfc_a41a70667734f086",
+      "name": "Adaptive cross_signal_opportunity workflow :: intake :: execution",
+      "status": "active",
+      "source": "adaptive_workflow_controller_update",
+      "strategy_id": "default_general",
+      "objective_id": "T1_make_jay_billionaire_v1",
+      "objective_primary": "Maximize verified progress under active directives.",
+      "trigger": {
+        "proposal_type": "cross_signal_opportunity.intake.execution",
+        "min_occurrences": 12,
+        "intent_signature": "maximize_verified_progress_under_active_directives._default_general_medium_speed_weight_:0.34_robustness_weight_:0.33_cost_weight_:0.33_feasibility_:0_risk_:0_novelty_:0"
+      },
+      "intent": {
+        "id": "intent_e3ee3d82b8f572",
+        "strategy_id": "default_general",
+        "objective": "Maximize verified progress under active directives.",
+        "uncertainty_band": "medium",
+        "constraints": {
+          "speed_weight": 0.34,
+          "robustness_weight": 0.33,
+          "cost_weight": 0.33
+        },
+        "signals": {
+          "feasibility": 0,
+          "risk": 0,
+          "novelty": 0
+        },
+        "risk_signals": {
+          "feasibility": 0,
+          "risk": 0,
+          "novelty": 0
+        },
+        "source": "orchestron_adaptive_controller",
+        "ts": "2026-02-26T17:29:54.434Z",
+        "signature": "maximize_verified_progress_under_active_directives._default_general_medium_speed_weight_:0.34_robustness_weight_:0.33_cost_weight_:0.33_feasibility_:0_risk_:0_novelty_:0"
+      },
+      "parent_workflow_id": "wfc_c526a0ca51072aa5",
+      "fractal_depth": 2,
+      "mutation": {
+        "kind": "fractal_split",
+        "parent_workflow_id": "wfc_c526a0ca51072aa5",
+        "rationale": "spawned from cross_signal_opportunity.intake to isolate execution pressure lane"
+      },
+      "principles": {
+        "score": 1,
+        "band": "strong",
+        "ids": [
+          "objective_clarity",
+          "risk_bounded",
+          "evidence_first",
+          "budget_discipline",
+          "ranking_balance"
+        ]
+      },
+      "metrics": {
+        "attempts": 42,
+        "shipped_rate": 0.0238,
+        "failure_rate": 0.0952,
+        "value_currency": "revenue",
+        "value_priority_score": 0.631,
+        "score": 0.2258,
+        "predicted_yield_delta": -0.0342,
+        "predicted_drift_delta": 0.0221,
+        "safety_score": 0.4635,
+        "regression_risk": 0.5658,
+        "adversarial_critical_failures": 0,
+        "adversarial_non_critical_findings": 0,
+        "adversarial_penalty": 0,
+        "adversarial_replay_artifact": "state/adaptive/workflows/orchestron/adversarial/2026-02-26/wfc_a41a70667734f086.json",
+        "trit_alignment": 0,
+        "scorecard_pass": false
+      },
+      "risk_policy": {
+        "max_risk_per_action": 65,
+        "allowed_risks": [
+          "low",
+          "medium"
+        ]
+      },
+      "steps": [
+        {
+          "id": "scope",
+          "type": "command",
+          "command": "node systems/autonomy/proposal_enricher.js run <date>",
+          "purpose": "specialize execution branch and fallback routing",
+          "timeout_ms": 120000,
+          "retries": 1,
+          "adapter": null,
+          "provider": null,
+          "lane": null,
+          "risk": null,
+          "clearance": null,
+          "estimated_tokens": null,
+          "require_policy_root": false
+        },
+        {
+          "id": "execute_lane",
+          "type": "command",
+          "command": "node systems/autonomy/autonomy_controller.js run <date>",
+          "purpose": "execute sub-workflow lane",
+          "timeout_ms": 180000,
+          "retries": 1,
+          "adapter": null,
+          "provider": null,
+          "lane": null,
+          "risk": null,
+          "clearance": null,
+          "estimated_tokens": null,
+          "require_policy_root": false
+        },
+        {
+          "id": "verify",
+          "type": "gate",
+          "command": "node systems/autonomy/strategy_execute_guard.js run <date>",
+          "purpose": "verify lane safety and evidence",
+          "timeout_ms": 120000,
+          "retries": 0,
+          "adapter": null,
+          "provider": null,
+          "lane": null,
+          "risk": null,
+          "clearance": null,
+          "estimated_tokens": null,
+          "require_policy_root": false
+        },
+        {
+          "id": "receipt",
+          "type": "receipt",
+          "command": "state/autonomy/receipts/<date>.jsonl",
+          "purpose": "record lane receipt",
+          "timeout_ms": 30000,
+          "retries": 0,
+          "adapter": null,
+          "provider": null,
+          "lane": null,
+          "risk": null,
+          "clearance": null,
+          "estimated_tokens": null,
+          "require_policy_root": false
+        }
+      ],
+      "generated_at": "2026-02-26T17:29:54.480Z",
+      "children_ids": [],
+      "activated_at": "2026-02-26T17:28:18.621Z",
+      "fractal_state": "child_active",
+      "lineage": {
+        "parent_workflow_id": "wfc_c526a0ca51072aa5",
+        "root_workflow_id": "wfc_2d5f1833a867e5c3",
+        "fractal_depth": 2,
+        "state": "child_active",
+        "activation_mode": "update",
+        "activated_at": "2026-02-26T17:28:18.621Z"
+      },
+      "updated_at": "2026-02-26T17:29:54.485Z"
+    },
+    {
+      "id": "wfc_a44608bceb8564cf",
+      "name": "Adaptive infrastructure_outage workflow",
+      "status": "active",
+      "source": "adaptive_workflow_controller_update",
+      "strategy_id": "default_general",
+      "objective_id": "T1_generational_wealth_v1",
+      "objective_primary": "Maximize verified progress under active directives.",
+      "trigger": {
+        "proposal_type": "infrastructure_outage",
+        "min_occurrences": 2,
+        "intent_signature": "maximize_verified_progress_under_active_directives._default_general_medium_speed_weight_:0.34_robustness_weight_:0.33_cost_weight_:0.33_feasibility_:0_risk_:0_novelty_:0"
+      },
+      "intent": {
+        "id": "intent_e3ee3d82b8f572",
+        "strategy_id": "default_general",
+        "objective": "Maximize verified progress under active directives.",
+        "uncertainty_band": "medium",
+        "constraints": {
+          "speed_weight": 0.34,
+          "robustness_weight": 0.33,
+          "cost_weight": 0.33
+        },
+        "signals": {
+          "feasibility": 0,
+          "risk": 0,
+          "novelty": 0
+        },
+        "risk_signals": {
+          "feasibility": 0,
+          "risk": 0,
+          "novelty": 0
+        },
+        "source": "orchestron_adaptive_controller",
+        "ts": "2026-02-26T17:29:54.434Z",
+        "signature": "maximize_verified_progress_under_active_directives._default_general_medium_speed_weight_:0.34_robustness_weight_:0.33_cost_weight_:0.33_feasibility_:0_risk_:0_novelty_:0"
+      },
+      "parent_workflow_id": null,
+      "fractal_depth": 0,
+      "mutation": null,
+      "principles": {
+        "score": 1,
+        "band": "strong",
+        "ids": [
+          "objective_clarity",
+          "risk_bounded",
+          "evidence_first",
+          "budget_discipline",
+          "ranking_balance"
+        ]
+      },
+      "metrics": {
+        "attempts": 4,
+        "shipped_rate": 0,
+        "failure_rate": 0,
+        "value_currency": "revenue",
+        "value_priority_score": 0.3846,
+        "score": 0.4797,
+        "predicted_yield_delta": 0.0095,
+        "predicted_drift_delta": -0.0108,
+        "safety_score": 0.4802,
+        "regression_risk": 0.5198,
+        "adversarial_critical_failures": 0,
+        "adversarial_non_critical_findings": 0,
+        "adversarial_penalty": 0,
+        "adversarial_replay_artifact": "state/adaptive/workflows/orchestron/adversarial/2026-02-26/wfc_a44608bceb8564cf.json",
+        "trit_alignment": 0,
+        "scorecard_pass": true
+      },
+      "risk_policy": {
+        "max_risk_per_action": 65,
+        "allowed_risks": [
+          "low",
+          "medium"
+        ]
+      },
+      "steps": [
+        {
+          "id": "enrich",
+          "type": "command",
+          "command": "node systems/autonomy/proposal_enricher.js run <date>",
+          "purpose": "normalize proposal shape",
+          "timeout_ms": 120000,
+          "retries": 1,
+          "adapter": null,
+          "provider": null,
+          "lane": null,
+          "risk": null,
+          "clearance": null,
+          "estimated_tokens": null,
+          "require_policy_root": false
+        },
+        {
+          "id": "rank",
+          "type": "command",
+          "command": "node systems/autonomy/autonomy_controller.js run <date>",
+          "purpose": "rank and execute/preview",
+          "timeout_ms": 180000,
+          "retries": 1,
+          "adapter": null,
+          "provider": null,
+          "lane": null,
+          "risk": null,
+          "clearance": null,
+          "estimated_tokens": null,
+          "require_policy_root": false
+        },
+        {
+          "id": "verify",
+          "type": "gate",
+          "command": "node systems/autonomy/strategy_execute_guard.js run <date>",
+          "purpose": "enforce safety and evidence checks",
+          "timeout_ms": 120000,
+          "retries": 0,
+          "adapter": null,
+          "provider": null,
+          "lane": null,
+          "risk": null,
+          "clearance": null,
+          "estimated_tokens": null,
+          "require_policy_root": false
+        },
+        {
+          "id": "receipt",
+          "type": "receipt",
+          "command": "state/autonomy/receipts/<date>.jsonl",
+          "purpose": "record final receipt evidence",
+          "timeout_ms": 30000,
+          "retries": 0,
+          "adapter": null,
+          "provider": null,
+          "lane": null,
+          "risk": null,
+          "clearance": null,
+          "estimated_tokens": null,
+          "require_policy_root": false
+        }
+      ],
+      "generated_at": "2026-02-26T17:29:54.480Z",
+      "children_ids": [],
+      "activated_at": "2026-02-26T17:28:18.621Z",
+      "fractal_state": "root_active",
+      "lineage": {
+        "parent_workflow_id": null,
+        "root_workflow_id": "wfc_a44608bceb8564cf",
+        "fractal_depth": 0,
+        "state": "root_active",
+        "activation_mode": "update",
+        "activated_at": "2026-02-26T17:28:18.621Z"
+      },
+      "updated_at": "2026-02-26T17:29:54.484Z"
+    },
+    {
       "id": "wfc_b565c4e93d31b632",
       "name": "Adaptive cross_signal_opportunity workflow :: intake :: verification",
       "status": "active",
@@ -867,6 +1799,322 @@
         "activated_at": "2026-02-26T02:42:38.585Z"
       },
       "updated_at": "2026-02-26T02:42:38.585Z"
+    },
+    {
+      "id": "wfc_c2077422278c77a1",
+      "name": "Adaptive cross_signal_opportunity workflow :: execution",
+      "status": "active",
+      "source": "adaptive_workflow_controller_update",
+      "strategy_id": "default_general",
+      "objective_id": "T1_make_jay_billionaire_v1",
+      "objective_primary": "Maximize verified progress under active directives.",
+      "trigger": {
+        "proposal_type": "cross_signal_opportunity.execution",
+        "min_occurrences": 12,
+        "intent_signature": "maximize_verified_progress_under_active_directives._default_general_medium_speed_weight_:0.34_robustness_weight_:0.33_cost_weight_:0.33_feasibility_:0_risk_:0_novelty_:0"
+      },
+      "intent": {
+        "id": "intent_e3ee3d82b8f572",
+        "strategy_id": "default_general",
+        "objective": "Maximize verified progress under active directives.",
+        "uncertainty_band": "medium",
+        "constraints": {
+          "speed_weight": 0.34,
+          "robustness_weight": 0.33,
+          "cost_weight": 0.33
+        },
+        "signals": {
+          "feasibility": 0,
+          "risk": 0,
+          "novelty": 0
+        },
+        "risk_signals": {
+          "feasibility": 0,
+          "risk": 0,
+          "novelty": 0
+        },
+        "source": "orchestron_adaptive_controller",
+        "ts": "2026-02-26T17:29:54.434Z",
+        "signature": "maximize_verified_progress_under_active_directives._default_general_medium_speed_weight_:0.34_robustness_weight_:0.33_cost_weight_:0.33_feasibility_:0_risk_:0_novelty_:0"
+      },
+      "parent_workflow_id": "wfc_2d5f1833a867e5c3",
+      "fractal_depth": 1,
+      "mutation": {
+        "kind": "fractal_split",
+        "parent_workflow_id": "wfc_2d5f1833a867e5c3",
+        "rationale": "spawned from cross_signal_opportunity to isolate execution pressure lane"
+      },
+      "principles": {
+        "score": 1,
+        "band": "strong",
+        "ids": [
+          "objective_clarity",
+          "risk_bounded",
+          "evidence_first",
+          "budget_discipline",
+          "ranking_balance"
+        ]
+      },
+      "metrics": {
+        "attempts": 42,
+        "shipped_rate": 0.0238,
+        "failure_rate": 0.0952,
+        "value_currency": "revenue",
+        "value_priority_score": 0.631,
+        "score": 0.3085,
+        "predicted_yield_delta": -0.0091,
+        "predicted_drift_delta": 0.0069,
+        "safety_score": 0.4783,
+        "regression_risk": 0.5435,
+        "adversarial_critical_failures": 0,
+        "adversarial_non_critical_findings": 0,
+        "adversarial_penalty": 0,
+        "adversarial_replay_artifact": "state/adaptive/workflows/orchestron/adversarial/2026-02-26/wfc_c2077422278c77a1.json",
+        "trit_alignment": 0,
+        "scorecard_pass": false
+      },
+      "risk_policy": {
+        "max_risk_per_action": 65,
+        "allowed_risks": [
+          "low",
+          "medium"
+        ]
+      },
+      "steps": [
+        {
+          "id": "scope",
+          "type": "command",
+          "command": "node systems/autonomy/proposal_enricher.js run <date>",
+          "purpose": "specialize execution branch and fallback routing",
+          "timeout_ms": 120000,
+          "retries": 1,
+          "adapter": null,
+          "provider": null,
+          "lane": null,
+          "risk": null,
+          "clearance": null,
+          "estimated_tokens": null,
+          "require_policy_root": false
+        },
+        {
+          "id": "execute_lane",
+          "type": "command",
+          "command": "node systems/autonomy/autonomy_controller.js run <date>",
+          "purpose": "execute sub-workflow lane",
+          "timeout_ms": 180000,
+          "retries": 1,
+          "adapter": null,
+          "provider": null,
+          "lane": null,
+          "risk": null,
+          "clearance": null,
+          "estimated_tokens": null,
+          "require_policy_root": false
+        },
+        {
+          "id": "verify",
+          "type": "gate",
+          "command": "node systems/autonomy/strategy_execute_guard.js run <date>",
+          "purpose": "verify lane safety and evidence",
+          "timeout_ms": 120000,
+          "retries": 0,
+          "adapter": null,
+          "provider": null,
+          "lane": null,
+          "risk": null,
+          "clearance": null,
+          "estimated_tokens": null,
+          "require_policy_root": false
+        },
+        {
+          "id": "receipt",
+          "type": "receipt",
+          "command": "state/autonomy/receipts/<date>.jsonl",
+          "purpose": "record lane receipt",
+          "timeout_ms": 30000,
+          "retries": 0,
+          "adapter": null,
+          "provider": null,
+          "lane": null,
+          "risk": null,
+          "clearance": null,
+          "estimated_tokens": null,
+          "require_policy_root": false
+        }
+      ],
+      "generated_at": "2026-02-26T17:29:54.480Z",
+      "children_ids": [],
+      "activated_at": "2026-02-26T17:28:18.621Z",
+      "fractal_state": "child_active",
+      "lineage": {
+        "parent_workflow_id": "wfc_2d5f1833a867e5c3",
+        "root_workflow_id": "wfc_2d5f1833a867e5c3",
+        "fractal_depth": 1,
+        "state": "child_active",
+        "activation_mode": "update",
+        "activated_at": "2026-02-26T17:28:18.621Z"
+      },
+      "updated_at": "2026-02-26T17:29:54.485Z"
+    },
+    {
+      "id": "wfc_c526a0ca51072aa5",
+      "name": "Adaptive cross_signal_opportunity workflow :: intake",
+      "status": "active",
+      "source": "adaptive_workflow_controller_update",
+      "strategy_id": "default_general",
+      "objective_id": "T1_make_jay_billionaire_v1",
+      "objective_primary": "Maximize verified progress under active directives.",
+      "trigger": {
+        "proposal_type": "cross_signal_opportunity.intake",
+        "min_occurrences": 12,
+        "intent_signature": "maximize_verified_progress_under_active_directives._default_general_medium_speed_weight_:0.34_robustness_weight_:0.33_cost_weight_:0.33_feasibility_:0_risk_:0_novelty_:0"
+      },
+      "intent": {
+        "id": "intent_e3ee3d82b8f572",
+        "strategy_id": "default_general",
+        "objective": "Maximize verified progress under active directives.",
+        "uncertainty_band": "medium",
+        "constraints": {
+          "speed_weight": 0.34,
+          "robustness_weight": 0.33,
+          "cost_weight": 0.33
+        },
+        "signals": {
+          "feasibility": 0,
+          "risk": 0,
+          "novelty": 0
+        },
+        "risk_signals": {
+          "feasibility": 0,
+          "risk": 0,
+          "novelty": 0
+        },
+        "source": "orchestron_adaptive_controller",
+        "ts": "2026-02-26T17:29:54.434Z",
+        "signature": "maximize_verified_progress_under_active_directives._default_general_medium_speed_weight_:0.34_robustness_weight_:0.33_cost_weight_:0.33_feasibility_:0_risk_:0_novelty_:0"
+      },
+      "parent_workflow_id": "wfc_2d5f1833a867e5c3",
+      "fractal_depth": 1,
+      "mutation": {
+        "kind": "fractal_split",
+        "parent_workflow_id": "wfc_2d5f1833a867e5c3",
+        "rationale": "spawned from cross_signal_opportunity to isolate intake pressure lane"
+      },
+      "principles": {
+        "score": 1,
+        "band": "strong",
+        "ids": [
+          "objective_clarity",
+          "risk_bounded",
+          "evidence_first",
+          "budget_discipline",
+          "ranking_balance"
+        ]
+      },
+      "metrics": {
+        "attempts": 42,
+        "shipped_rate": 0.0238,
+        "failure_rate": 0.0952,
+        "value_currency": "revenue",
+        "value_priority_score": 0.631,
+        "score": 0.3085,
+        "predicted_yield_delta": -0.0091,
+        "predicted_drift_delta": 0.0069,
+        "safety_score": 0.4783,
+        "regression_risk": 0.5435,
+        "adversarial_critical_failures": 0,
+        "adversarial_non_critical_findings": 0,
+        "adversarial_penalty": 0,
+        "adversarial_replay_artifact": "state/adaptive/workflows/orchestron/adversarial/2026-02-26/wfc_c526a0ca51072aa5.json",
+        "trit_alignment": 0,
+        "scorecard_pass": false
+      },
+      "risk_policy": {
+        "max_risk_per_action": 65,
+        "allowed_risks": [
+          "low",
+          "medium"
+        ]
+      },
+      "steps": [
+        {
+          "id": "scope",
+          "type": "command",
+          "command": "node systems/autonomy/proposal_enricher.js run <date>",
+          "purpose": "specialize intake and directive normalization",
+          "timeout_ms": 120000,
+          "retries": 1,
+          "adapter": null,
+          "provider": null,
+          "lane": null,
+          "risk": null,
+          "clearance": null,
+          "estimated_tokens": null,
+          "require_policy_root": false
+        },
+        {
+          "id": "execute_lane",
+          "type": "command",
+          "command": "node systems/autonomy/autonomy_controller.js run <date>",
+          "purpose": "execute sub-workflow lane",
+          "timeout_ms": 180000,
+          "retries": 1,
+          "adapter": null,
+          "provider": null,
+          "lane": null,
+          "risk": null,
+          "clearance": null,
+          "estimated_tokens": null,
+          "require_policy_root": false
+        },
+        {
+          "id": "verify",
+          "type": "gate",
+          "command": "node systems/autonomy/strategy_execute_guard.js run <date>",
+          "purpose": "verify lane safety and evidence",
+          "timeout_ms": 120000,
+          "retries": 0,
+          "adapter": null,
+          "provider": null,
+          "lane": null,
+          "risk": null,
+          "clearance": null,
+          "estimated_tokens": null,
+          "require_policy_root": false
+        },
+        {
+          "id": "receipt",
+          "type": "receipt",
+          "command": "state/autonomy/receipts/<date>.jsonl",
+          "purpose": "record lane receipt",
+          "timeout_ms": 30000,
+          "retries": 0,
+          "adapter": null,
+          "provider": null,
+          "lane": null,
+          "risk": null,
+          "clearance": null,
+          "estimated_tokens": null,
+          "require_policy_root": false
+        }
+      ],
+      "generated_at": "2026-02-26T17:29:54.480Z",
+      "children_ids": [
+        "wfc_0d7f23c40175dcb9",
+        "wfc_a41a70667734f086",
+        "wfc_545b11ab500ef289"
+      ],
+      "activated_at": "2026-02-26T17:28:18.621Z",
+      "fractal_state": "child_active",
+      "lineage": {
+        "parent_workflow_id": "wfc_2d5f1833a867e5c3",
+        "root_workflow_id": "wfc_2d5f1833a867e5c3",
+        "fractal_depth": 1,
+        "state": "child_active",
+        "activation_mode": "update",
+        "activated_at": "2026-02-26T17:28:18.621Z"
+      },
+      "updated_at": "2026-02-26T17:29:54.485Z"
     },
     {
       "id": "wfc_ecea8fd103aab192",

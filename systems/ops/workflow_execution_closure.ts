@@ -137,11 +137,15 @@ function dateWindow(endDate: string, days: number) {
 
 function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
   const raw = readJson(policyPath, {});
+  const minSuccessRaw = Number(raw && raw.min_success_ratio);
+  const minSuccessRatio = Number.isFinite(minSuccessRaw) ? minSuccessRaw : 0.5;
   return {
     version: String(raw && raw.version || '1.0'),
     target_streak_days: clampInt(raw && raw.target_streak_days, 1, 365, 7),
     min_accepted_items: clampInt(raw && raw.min_accepted_items, 0, 1000, 1),
     min_workflows_executed: clampInt(raw && raw.min_workflows_executed, 0, 1000, 1),
+    min_workflows_succeeded: clampInt(raw && raw.min_workflows_succeeded, 0, 1000, 1),
+    min_success_ratio: Math.max(0, Math.min(1, minSuccessRatio)),
     lookback_days: clampInt(raw && raw.lookback_days, 1, 365, 21),
     max_history_rows: clampInt(raw && raw.max_history_rows, 10, 5000, 120)
   };
@@ -252,6 +256,16 @@ function runClosure(args: AnyObj) {
   const targetStreakDays = clampInt(args['target-days'] ?? args.target_days, 1, 365, policy.target_streak_days);
   const minAcceptedItems = clampInt(args['min-accepted'] ?? args.min_accepted_items, 0, 1000, policy.min_accepted_items);
   const minWorkflowsExecuted = clampInt(args['min-workflows'] ?? args.min_workflows_executed, 0, 1000, policy.min_workflows_executed);
+  const minWorkflowsSucceeded = clampInt(args['min-succeeded'] ?? args.min_workflows_succeeded, 0, 1000, policy.min_workflows_succeeded);
+  const minSuccessRatioRaw = args['min-success-ratio'] ?? args.min_success_ratio;
+  const minSuccessRatioParsed = Number(minSuccessRatioRaw == null ? policy.min_success_ratio : minSuccessRatioRaw);
+  const minSuccessRatio = Math.max(
+    0,
+    Math.min(
+      1,
+      Number.isFinite(minSuccessRatioParsed) ? minSuccessRatioParsed : policy.min_success_ratio
+    )
+  );
   const strict = toBool(args.strict, false);
   const statePath = args['state-path'] ? path.resolve(String(args['state-path'])) : DEFAULT_STATE_PATH;
   const historyPath = args['history-path'] ? path.resolve(String(args['history-path'])) : DEFAULT_HISTORY_PATH;
@@ -264,14 +278,20 @@ function runClosure(args: AnyObj) {
     const workflow = loadWorkflowRunForDate(workflowRunsDir, d);
     const acceptedItems = Number(proposals.accepted_items || 0);
     const workflowsExecuted = Number(workflow.workflows_executed || 0);
-    const pass = acceptedItems >= minAcceptedItems && workflowsExecuted >= minWorkflowsExecuted;
+    const workflowsSucceeded = Number(workflow.workflows_succeeded || 0);
+    const successRatio = workflowsExecuted > 0 ? (workflowsSucceeded / workflowsExecuted) : 0;
+    const pass = acceptedItems >= minAcceptedItems
+      && workflowsExecuted >= minWorkflowsExecuted
+      && workflowsSucceeded >= minWorkflowsSucceeded
+      && successRatio >= minSuccessRatio;
     return {
       date: d,
       pass,
       accepted_items: acceptedItems,
       workflows_executed: workflowsExecuted,
       workflows_selected: Number(workflow.workflows_selected || 0),
-      workflows_succeeded: Number(workflow.workflows_succeeded || 0),
+      workflows_succeeded: workflowsSucceeded,
+      workflow_success_ratio: Number(successRatio.toFixed(4)),
       workflows_failed: Number(workflow.workflows_failed || 0),
       proposal_total: Number(proposals.total || 0),
       proposal_path: proposals.path,
@@ -292,6 +312,8 @@ function runClosure(args: AnyObj) {
     target_streak_days: targetStreakDays,
     min_accepted_items: minAcceptedItems,
     min_workflows_executed: minWorkflowsExecuted,
+    min_workflows_succeeded: minWorkflowsSucceeded,
+    min_success_ratio: Number(minSuccessRatio.toFixed(4)),
     lookback_days: lookbackDays,
     consecutive_days_passed: streak,
     remaining_days: Math.max(0, targetStreakDays - streak),

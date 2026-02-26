@@ -6,6 +6,7 @@
     "write_snapshot": true,
     "health_reports_dir": "state/autonomy/health_reports",
     "workflow_executor_latest_path": "state/adaptive/workflows/executor/latest.json",
+    "workflow_executor_latest_live_path": "state/adaptive/workflows/executor/latest_live.json",
     "ci_baseline_streak_path": "state/ops/ci_baseline_streak.json",
     "output_prometheus_path": "state/observability/prometheus/current.prom",
     "output_snapshot_path": "state/observability/metrics/latest.json",

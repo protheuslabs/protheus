@@ -16,7 +16,7 @@
       "require_human_approval": false
     },
     "browser": {
-      "mode": "shadow_only",
+      "mode": "active",
       "require_human_approval": true
     },
     "computer_use": {

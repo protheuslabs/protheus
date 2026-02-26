@@ -2885,7 +2885,7 @@ function main() {
       const workflowMax = Math.max(1, Number(process.env.SPINE_WORKFLOW_LAYER_MAX || 8) || 8);
       const workflowApply = String(process.env.SPINE_WORKFLOW_LAYER_APPLY || "1") !== "0" ? "1" : "0";
       const workflowOrchestronEnabled = String(process.env.SPINE_WORKFLOW_ORCHESTRON_ENABLED || "1") !== "0" ? "1" : "0";
-      const workflowOrchestronApply = String(process.env.SPINE_WORKFLOW_ORCHESTRON_APPLY || "0") !== "0" ? "1" : "0";
+      const workflowOrchestronApply = String(process.env.SPINE_WORKFLOW_ORCHESTRON_APPLY || "1") !== "0" ? "1" : "0";
       const workflowOrchestronAuto = String(process.env.SPINE_WORKFLOW_ORCHESTRON_AUTO || "1") !== "0" ? "1" : "0";
       const workflow = runJson("node", [
         "systems/workflow/orchestron_controller.js",

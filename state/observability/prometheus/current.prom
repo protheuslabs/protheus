@@ -42,4 +42,4 @@ protheus_ci_baseline_target_days 7
 protheus_ci_baseline_streak_ratio 0.14285714285714285
 # HELP protheus_observability_snapshot_timestamp_seconds Unix timestamp of observability metrics snapshot.
 # TYPE protheus_observability_snapshot_timestamp_seconds gauge
-protheus_observability_snapshot_timestamp_seconds{date="2026-02-26",window="daily"} 1772109511
+protheus_observability_snapshot_timestamp_seconds{date="2026-02-26",window="daily"} 1772126990

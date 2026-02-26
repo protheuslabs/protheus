@@ -1,7 +1,7 @@
 {
   "ok": true,
   "type": "dual_brain_decision",
-  "ts": "2026-02-26T12:38:14.877Z",
+  "ts": "2026-02-26T17:00:31.173Z",
   "context": "inversion",
   "task_class": "creative",
   "desired_lane": "auto",
@@ -27,7 +27,7 @@
     "right_context_match": true,
     "wants_right": true,
     "gate_hardware": false,
-    "gate_budget": false,
+    "gate_budget": true,
     "gate_stability": true,
     "gate_safety": true,
     "gate_trit": true,
@@ -35,33 +35,32 @@
   },
   "trit": 0,
   "reasons": [
-    "hardware_gate",
-    "budget_autopause_active"
+    "hardware_gate"
   ],
   "signals": {
     "resource": {
       "cpu_count": 8,
-      "load_1m": 2.313,
-      "load_per_cpu": 0.2891,
-      "rss_mb": 140.63,
-      "heap_used_mb": 40.53,
-      "free_mem_mb": 195.63,
+      "load_1m": 8.084,
+      "load_per_cpu": 1.0105,
+      "rss_mb": 154.8,
+      "heap_used_mb": 46.48,
+      "free_mem_mb": 83.16,
       "total_mem_mb": 8192,
       "ok": false
     },
     "budget": {
       "available": true,
       "token_cap": 6000,
-      "used_est": 2800,
-      "burn_pct": 46.6667,
-      "token_headroom_ratio": 0.533333,
-      "autopause_active": true,
+      "used_est": 3080,
+      "burn_pct": 51.3333,
+      "token_headroom_ratio": 0.486667,
+      "autopause_active": false,
       "strategy_id": "default_general",
       "path": "state/autonomy/daily_budget/2026-02-26.json"
     },
     "stability": {
-      "effective_drift_rate": 0,
-      "policy_hold_rate": 0.225,
+      "effective_drift_rate": 0.029,
+      "policy_hold_rate": 0.272727,
       "autotest_failed_last": 0,
       "autotest_guard_blocked_last": 0
     },

@@ -1,47 +1,153 @@
 {
   "ok": true,
   "type": "workflow_executor_run",
-  "ts": "2026-02-26T15:06:07.935Z",
-  "run_id": "wfexec_mm3lirwb_qfi1ln",
+  "ts": "2026-02-26T17:29:41.313Z",
+  "run_id": "wfexec_mm3qn9cc_q3ryuz",
   "date": "2026-02-26",
-  "dry_run": true,
+  "dry_run": false,
   "forced_shadow_dry_run": false,
   "continue_on_error": false,
   "receipt_strict": true,
   "rollout_enabled": true,
   "rollout_stage": "canary",
-  "rollout_canary_fraction": 0.25,
-  "rollout_scale_eligible": false,
+  "rollout_canary_fraction": 0.4,
+  "rollout_scale_eligible": true,
   "rollout_state_before": {
     "stage": "canary",
-    "canary_fraction": 0.25,
-    "consecutive_green": 1,
+    "canary_fraction": 0.4,
+    "consecutive_green": 0,
     "consecutive_red": 0,
     "last_slo_pass": null,
     "last_scale_action": "rollout_scale_skipped"
   },
   "rollout_state_after": {
     "stage": "canary",
-    "canary_fraction": 0.25,
+    "canary_fraction": 0.4,
     "consecutive_green": 1,
     "consecutive_red": 0,
-    "last_slo_pass": null,
-    "last_scale_action": "rollout_scale_skipped"
+    "last_slo_pass": true,
+    "last_scale_action": null
   },
   "runtime_mutation_enabled": true,
   "runtime_mutation_policy_path": "config/workflow_executor_policy.json",
-  "registry_total": 8,
-  "workflows_selected": 0,
-  "workflows_excluded": 0,
-  "selection_excluded": [],
+  "registry_total": 16,
+  "workflows_selected": 1,
+  "workflows_excluded": 15,
+  "selection_excluded": [
+    {
+      "workflow_id": "wfc_0d7f23c40175dcb9",
+      "reason": "ineligible",
+      "details": [
+        "composite_score_below_min"
+      ]
+    },
+    {
+      "workflow_id": "wfc_545b11ab500ef289",
+      "reason": "ineligible",
+      "details": [
+        "composite_score_below_min"
+      ]
+    },
+    {
+      "workflow_id": "wfc_7c2d0fd1bc4fb843",
+      "reason": "ineligible",
+      "details": [
+        "composite_score_below_min"
+      ]
+    },
+    {
+      "workflow_id": "wfc_a41a70667734f086",
+      "reason": "ineligible",
+      "details": [
+        "composite_score_below_min"
+      ]
+    },
+    {
+      "workflow_id": "wfc_c2077422278c77a1",
+      "reason": "ineligible",
+      "details": [
+        "composite_score_below_min"
+      ]
+    },
+    {
+      "workflow_id": "wfc_c526a0ca51072aa5",
+      "reason": "ineligible",
+      "details": [
+        "composite_score_below_min"
+      ]
+    },
+    {
+      "workflow_id": "wfc_07aee5ce1dfb0f41",
+      "reason": "ineligible",
+      "details": [
+        "composite_score_below_min"
+      ]
+    },
+    {
+      "workflow_id": "wfc_145ecc2f4cde0e52",
+      "reason": "ineligible",
+      "details": [
+        "composite_score_below_min"
+      ]
+    },
+    {
+      "workflow_id": "wfc_5d55739830782563",
+      "reason": "ineligible",
+      "details": [
+        "composite_score_below_min"
+      ]
+    },
+    {
+      "workflow_id": "wfc_7c82f6565f5e49c8",
+      "reason": "ineligible",
+      "details": [
+        "composite_score_below_min"
+      ]
+    },
+    {
+      "workflow_id": "wfc_84dcfb815a85478f",
+      "reason": "ineligible",
+      "details": [
+        "composite_score_below_min"
+      ]
+    },
+    {
+      "workflow_id": "wfc_b565c4e93d31b632",
+      "reason": "ineligible",
+      "details": [
+        "composite_score_below_min"
+      ]
+    },
+    {
+      "workflow_id": "wfc_a44608bceb8564cf",
+      "reason": "max_limit_reached",
+      "max": 1
+    },
+    {
+      "workflow_id": "wfc_708d5d0247df6b21",
+      "reason": "max_limit_reached",
+      "max": 1
+    },
+    {
+      "workflow_id": "wfc_ecea8fd103aab192",
+      "reason": "max_limit_reached",
+      "max": 1
+    }
+  ],
+  "selection_excluded_by_reason": {
+    "ineligible": 12,
+    "max_limit_reached": 3
+  },
+  "fallback_applied": false,
+  "fallback_reason": "",
   "enforce_eligibility": true,
-  "workflows_executed": 0,
-  "workflows_succeeded": 0,
+  "workflows_executed": 1,
+  "workflows_succeeded": 1,
   "workflows_failed": 0,
   "workflows_blocked": 0,
   "failure_reasons": {},
-  "step_receipts_count": 0,
-  "step_receipts_path": null,
+  "step_receipts_count": 4,
+  "step_receipts_path": "state/adaptive/workflows/executor/step_receipts/2026-02-26.jsonl",
   "runtime_mutations_attempted": 0,
   "runtime_mutations_applied": 0,
   "runtime_mutations_rolled_back": 0,
@@ -53,16 +159,16 @@
       "max_time_to_first_execution_ms": 180000
     },
     "measured": {
-      "execution_success_rate": 0,
-      "queue_drain_rate": 0,
-      "time_to_first_execution_ms": null
+      "execution_success_rate": 1,
+      "queue_drain_rate": 1,
+      "time_to_first_execution_ms": 14
     },
     "checks": {
-      "execution_success_rate": false,
-      "queue_drain_rate": false,
-      "time_to_first_execution_ms": false
+      "execution_success_rate": true,
+      "queue_drain_rate": true,
+      "time_to_first_execution_ms": true
     },
-    "pass": false
+    "pass": true
   },
   "slo_window": {
     "thresholds": {
@@ -73,17 +179,205 @@
     "aggregate": {
       "runs_considered": 6,
       "min_runs_for_decision": 3,
-      "avg_execution_success_rate": 0.8333,
-      "avg_queue_drain_rate": 0.8333,
+      "avg_execution_success_rate": 1,
+      "avg_queue_drain_rate": 1,
       "max_time_to_first_execution_ms": 14
     },
     "checks": {
-      "execution_success_rate": false,
+      "execution_success_rate": true,
       "queue_drain_rate": true,
       "time_to_first_execution_ms": true
     },
     "sufficient_data": true,
-    "pass": false
+    "pass": true
   },
-  "results": []
+  "results": [
+    {
+      "workflow_id": "wfc_2d5f1833a867e5c3",
+      "name": "Adaptive cross_signal_opportunity workflow",
+      "status": "succeeded",
+      "ok": true,
+      "blocked_by_gate": false,
+      "stopped_step_id": null,
+      "failure_reason": null,
+      "rollback_attempted": false,
+      "rollback_ok": null,
+      "rollback_source": null,
+      "rollback_step_id": null,
+      "rollback_trigger_reason": null,
+      "started_at": "2026-02-26T17:29:35.258Z",
+      "ended_at": "2026-02-26T17:29:41.310Z",
+      "duration_ms": 6052,
+      "step_count": 4,
+      "execution_budget": {
+        "attempts_cap": 24,
+        "retries_cap": 16,
+        "duration_cap_ms": 600000,
+        "attempts_used": 4,
+        "retries_used": 0,
+        "duration_ms_used": 6050
+      },
+      "step_results": [
+        {
+          "ok": true,
+          "attempts": 1,
+          "dry_run": false,
+          "step": {
+            "id": "enrich",
+            "type": "command",
+            "command": "node systems/autonomy/proposal_enricher.js run 2026-02-26"
+          },
+          "records": [
+            {
+              "attempt": 1,
+              "ok": true,
+              "shell_ok": true,
+              "exit_code": 0,
+              "signal": null,
+              "timed_out": false,
+              "started_at": "2026-02-26T17:29:35.258Z",
+              "ended_at": "2026-02-26T17:29:35.808Z",
+              "duration_ms": 550,
+              "stdout": "{\"ok\":true,\"result\":\"enriched\",\"date\":\"2026-02-26\",\"path\":\"/Users/jay/.openclaw/workspace/state/sensory/proposals/2026-02-26.json\",\"changed\":7,\"total\":7,\"directive_profile_available\":true,\"strategy_profile\":{\"id\":\"default_general\",\"name\":\"Default General Strategy\",\"status\":\"active\",\"file\":\"config/strategies/default.json\",\"execution_mode\":\"canary_execute\",\"allowed_risks\":[\"low\",\"medium\"],\"threshold_overrides\":{\"min_directive_fit\":41,\"min_actionability_score\":47,\"min_composite_eligibility\":64},\"validation\":{\"strict_ok\":true,\"errors\":[],\"warnings\":[]}},\"thresholds\":{\"min_signal_quality\":58,\"min_sensory_signal_score\":45,\"min_sensory_relevance_score\":42,\"min_directive_fit\":41,\"min_actionability_score\":47,\"min_composite_eligibility\":64,\"min_eye_score_ema\":45},\"admission\":{\"total\":7,\"eligible\":7,\"blocked\":0,\"blocked_by_reason\":{}},\"objective_binding\":{\"total\":7,\"required\":7,\"valid_required\":7,\"missing_required\":0,\"invalid_required\":0,\"source_meta_required\":7,\"source_fallback_required\":0,\"source_counts\":{\"meta.objective_id\":7},\"ok\":true},\"dream_alignment\":{\"available\":true,\"tokens_loaded\":23,\"source_counts\":{\"theme\":6,\"rem_daily\":8,\"rem_run\":8,\"rem_synthesis\":16,\"rem\":16},\"source_uid_count\":2,\"files\":{\"themes\":true,\"rem\":true,\"rem_runs\":[\"2026-02-26__rem1iskpj08vorfg28b0q87g.json\"]},\"proposals_with_hits\":7,\"proposals_with_bonus\":7,\"bonus_total\":42,\"rem_bonus_total\":14,\"top_hit_tokens\":[{\"token\":\"token\",\"count\":7},{\"token\":\"signal\",\"count\":5},{\"token\":\"eyes\",\"count\":4}]},\"cross_signal_no_change\":{\"window_days\":7,\"topics\":[]}}",
+              "stderr": "",
+              "error": null,
+              "criteria_pass": true,
+              "criteria_fail_reasons": []
+            }
+          ],
+          "success_criteria": {
+            "allowed_exit_codes": [
+              0
+            ],
+            "stdout_includes": [],
+            "stderr_excludes": [],
+            "max_duration_ms": null
+          },
+          "failure_reason": null,
+          "external_gate": null
+        },
+        {
+          "ok": true,
+          "attempts": 1,
+          "dry_run": false,
+          "step": {
+            "id": "rank",
+            "type": "command",
+            "command": "node systems/autonomy/autonomy_controller.js run 2026-02-26"
+          },
+          "records": [
+            {
+              "attempt": 1,
+              "ok": true,
+              "shell_ok": true,
+              "exit_code": 0,
+              "signal": null,
+              "timed_out": false,
+              "started_at": "2026-02-26T17:29:35.809Z",
+              "ended_at": "2026-02-26T17:29:40.537Z",
+              "duration_ms": 4728,
+              "stdout": "{\"ok\":true,\"result\":\"init_gate_blocked_route\",\"legacy_result\":\"executed\",\"policy_hold\":true,\"hold_scope\":\"budget\",\"hold_reason\":\"burn_rate_exceeded\",\"route_block_phase\":\"execute\",\"receipt_id\":\"auto_1772126977938_CSG-1277d5a5ddcea6cb\",\"strategy_id\":\"default_general\",\"execution_mode\":\"canary_execute\",\"proposal_id\":\"CSG-1277d5a5ddcea6cb\",\"objective_id\":\"T1_make_jay_billionaire_v1\",\"capability_key\":\"proposal:cross_signal_opportunity\",\"execution_target\":\"route\",\"proposal_dependencies\":null,\"proposal_date\":\"2026-02-26\",\"risk\":\"low\",\"strategy_rank_adjusted\":99.562,\"est_tokens\":1400,\"route_tokens_est\":1400,\"token_usage\":{\"available\":false,\"source\":\"estimated_fallback\",\"actual_prompt_tokens\":null,\"actual_completion_tokens\":null,\"actual_total_tokens\":null,\"estimated_tokens\":1400,\"effective_tokens\":1400},\"repeats_14d\":48,\"errors_30d\":0,\"used_est_after\":4480,\"signal_quality\":{\"pass\":true,\"score\":84,\"score_source\":\"sensory_relevance_score\",\"eye_id\":\"cross_signal_engine\",\"sensory_relevance_score\":75,\"sensory_relevance_tier\":\"high\",\"sensory_quality_score\":88,\"sensory_quality_tier\":\"high\",\"eye_status\":null,\"eye_score_ema\":null,\"parser_type\":null,\"domain\":null,\"calibration_eye_bias\":0,\"calibration_topic_bias\":0,\"calibration_total_bias\":0,\"reasons\":[\"eye_unknown\"]},\"directive_fit\":{\"pass\":true,\"score\":54,\"profile_available\":true,\"active_directive_ids\":[\"T1_generational_wealth_v1\",\"T1_make_jay_billionaire_v1\"],\"matched_positive\":[\"automated\",\"rate\",\"systems\",\"verified\"],\"matched_negative\":[],\"reasons\":[]},\"actionability\":{\"pass\":true,\"score\":80,\"reasons\":[\"no_action_verb\"],\"executable\":true,\"rollback_signal\":true,\"generic_next_command_template\":false,\"subdirective_v2\":{\"required\":true,\"has_concrete_target\":true,\"has_expected_delta\":true,\"has_verification_step\":true,\"target_count\":1,\"verify_count\":3,\"success_criteria_count\":9},\"success_criteria\":{\"required\":true,\"exempt_type\":false,\"min_count\":2,\"measurable_count\":5,\"total_count\":9,\"pattern_penalty\":0,\"pattern_hits\":[]}},\"value_signal\"",
+              "stderr": "AUTONOMY_SUMMARY model_catalog_apply_pending=1",
+              "error": null,
+              "criteria_pass": true,
+              "criteria_fail_reasons": []
+            }
+          ],
+          "success_criteria": {
+            "allowed_exit_codes": [
+              0
+            ],
+            "stdout_includes": [],
+            "stderr_excludes": [],
+            "max_duration_ms": null
+          },
+          "failure_reason": null,
+          "external_gate": null
+        },
+        {
+          "ok": true,
+          "attempts": 1,
+          "dry_run": false,
+          "step": {
+            "id": "verify",
+            "type": "gate",
+            "command": "node systems/autonomy/strategy_execute_guard.js run 2026-02-26"
+          },
+          "records": [
+            {
+              "attempt": 1,
+              "ok": true,
+              "shell_ok": true,
+              "exit_code": 0,
+              "signal": null,
+              "timed_out": false,
+              "started_at": "2026-02-26T17:29:40.537Z",
+              "ended_at": "2026-02-26T17:29:41.309Z",
+              "duration_ms": 772,
+              "stdout": "{\n  \"ok\": true,\n  \"ts\": \"2026-02-26T17:29:41.305Z\",\n  \"result\": \"ready\",\n  \"strategy_id\": \"default_general\",\n  \"consecutive_not_ready\": 0,\n  \"max_consecutive_not_ready\": 2,\n  \"readiness\": {\n    \"current_mode\": \"canary_execute\",\n    \"ready_for_execute\": true,\n    \"recommended_mode\": \"canary_execute\",\n    \"checks\": [\n      {\n        \"name\": \"window_days\",\n        \"pass\": true,\n        \"value\": 7,\n        \"target\": \">=7\"\n      },\n      {\n        \"name\": \"attempted\",\n        \"pass\": true,\n        \"value\": 109,\n        \"target\": \">=12\"\n      },\n      {\n        \"name\": \"verified_rate\",\n        \"pass\": true,\n        \"value\": 0.615,\n        \"target\": \">=0.5\"\n      },\n      {\n        \"name\": \"reverted_rate\",\n        \"pass\": true,\n        \"value\": 0,\n        \"target\": \"<=0.35\"\n      },\n      {\n        \"name\": \"stop_ratio\",\n        \"pass\": true,\n        \"value\": 0.351,\n        \"target\": \"<=0.75\"\n      },\n      {\n        \"name\": \"min_shipped\",\n        \"pass\": true,\n        \"value\": 5,\n        \"target\": \">=1\"\n      },\n      {\n        \"name\": \"success_criteria_receipts\",\n        \"pass\": true,\n        \"value\": 41,\n        \"target\": \">=2\"\n      },\n      {\n        \"name\": \"success_criteria_pass_rate\",\n        \"pass\": true,\n        \"value\": 0.78,\n        \"target\": \">=0.6\"\n      },\n      {\n        \"name\": \"success_criteria_quality_insufficient_rate\",\n        \"pass\": true,\n        \"value\": 0.358,\n        \"target\": \"<=0.45\"\n      },\n      {\n        \"name\": \"objective_coverage\",\n        \"pass\": true,\n        \"value\": 1.211,\n        \"target\": \">=0.25\"\n      },\n      {\n        \"name\": \"objective_no_progress_rate\",\n        \"pass\": true,\n        \"value\": 0.023,\n        \"target\": \"<=0.9\"\n      }\n    ],\n    \"failed_checks\": [],\n    \"metrics\": {\n      \"attempted\": 109,\n      \"verified_rate\": 0.615,\n      \"success_criteria_receipts\": 41,\n      \"success_criteria_source\": \"quality_forced\",\n      \"success_criteria_fallback_retired\": true,\n      \"success_criteria_quality_receipts\": 41,\n      \"succes",
+              "stderr": "",
+              "error": null,
+              "criteria_pass": true,
+              "criteria_fail_reasons": []
+            }
+          ],
+          "success_criteria": {
+            "allowed_exit_codes": [
+              0
+            ],
+            "stdout_includes": [],
+            "stderr_excludes": [],
+            "max_duration_ms": null
+          },
+          "failure_reason": null,
+          "external_gate": null
+        },
+        {
+          "ok": true,
+          "attempts": 1,
+          "dry_run": false,
+          "step": {
+            "id": "receipt",
+            "type": "receipt",
+            "command": "state/autonomy/receipts/2026-02-26.jsonl"
+          },
+          "records": [
+            {
+              "attempt": 1,
+              "ok": true,
+              "criteria_pass": true,
+              "criteria_fail_reasons": [],
+              "exit_code": 0,
+              "started_at": "2026-02-26T17:29:41.310Z",
+              "ended_at": "2026-02-26T17:29:41.310Z",
+              "duration_ms": 0,
+              "timed_out": false,
+              "stdout": "",
+              "stderr": "",
+              "error": null
+            }
+          ],
+          "receipt_path": "/Users/jay/.openclaw/workspace/state/autonomy/receipts/2026-02-26.jsonl",
+          "receipt_exists": true,
+          "success_criteria": {
+            "allowed_exit_codes": [
+              0
+            ],
+            "stdout_includes": [],
+            "stderr_excludes": [],
+            "max_duration_ms": null
+          },
+          "failure_reason": null,
+          "external_gate": null
+        }
+      ],
+      "mutation_summary": {
+        "attempted": 0,
+        "applied": 0,
+        "rolled_back": 0,
+        "by_kind": {}
+      },
+      "mutation_receipts": []
+    }
+  ]
 }
