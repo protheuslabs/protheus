@@ -545,7 +545,7 @@ function runCmd(dateStr, args) {
     ? boolFlag(args['orchestron-auto'], false)
     : boolFlag(
         process.env.WORKFLOW_ORCHESTRON_AUTO_APPLY,
-        strategyMode.full_automation === true
+        false
       );
   const orchestronPolicyPath = path.resolve(String(
     args['orchestron-policy']

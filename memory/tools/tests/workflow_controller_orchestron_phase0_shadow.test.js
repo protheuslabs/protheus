@@ -28,7 +28,7 @@ function parsePayload(stdout) {
   return null;
 }
 
-function runController(scriptPath, root, env, dateStr, workflowPolicyPath, orchestronPolicyPath, opts = {}) {
+function runController(scriptPath, root, env, dateStr, workflowPolicyPath, orchestronPolicyPath, autoApplyArg) {
   const args = [
     scriptPath,
     'run',
@@ -41,7 +41,7 @@ function runController(scriptPath, root, env, dateStr, workflowPolicyPath, orche
     `--policy=${workflowPolicyPath}`,
     `--orchestron-policy=${orchestronPolicyPath}`
   ];
-  if (opts.autoArg != null) args.push(`--orchestron-auto=${opts.autoArg ? '1' : '0'}`);
+  if (autoApplyArg != null) args.push(`--orchestron-auto=${autoApplyArg ? '1' : '0'}`);
   return spawnSync(process.execPath, args, {
     cwd: root,
     encoding: 'utf8',
@@ -53,7 +53,7 @@ function run() {
   const root = path.resolve(__dirname, '..', '..', '..');
   const scriptPath = path.join(root, 'systems', 'workflow', 'workflow_controller.js');
   const dateStr = '2026-02-25';
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'workflow-controller-orchestron-auto-'));
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'workflow-controller-orchestron-phase0-'));
 
   const strategyDir = path.join(tmp, 'config', 'strategies');
   const runsDir = path.join(tmp, 'state', 'autonomy', 'runs');
@@ -67,10 +67,10 @@ function run() {
 
   writeJson(path.join(strategyDir, 'default.json'), {
     version: '1.0',
-    id: 'auto_strategy',
-    name: 'Auto Apply Strategy',
+    id: 'phase0_shadow_strategy',
+    name: 'Phase0 Shadow Strategy',
     status: 'active',
-    objective: { primary: 'Generate adaptive workflows with bounded dynamic promotion.' },
+    objective: { primary: 'Validate Orchestron phase-0 shadow-only gates.' },
     risk_policy: { allowed_risks: ['low'], max_risk_per_action: 35 },
     execution_policy: { mode: 'execute' },
     promotion_policy: { min_success_criteria_receipts: 1, min_success_criteria_pass_rate: 0.6 },
@@ -88,7 +88,6 @@ function run() {
   writeJsonl(path.join(runsDir, `${dateStr}.jsonl`), [
     { type: 'autonomy_run', result: 'executed', outcome: 'shipped', proposal_type: 'external_intel', objective_id: 'obj_x' },
     { type: 'autonomy_run', result: 'executed', outcome: 'shipped', proposal_type: 'external_intel', objective_id: 'obj_x' },
-    { type: 'autonomy_run', result: 'executed', outcome: 'no_change', proposal_type: 'external_intel', objective_id: 'obj_x' },
     { type: 'autonomy_run', result: 'executed', outcome: 'no_change', proposal_type: 'external_intel', objective_id: 'obj_x' }
   ]);
 
@@ -99,21 +98,27 @@ function run() {
     principles: [{ id: 'objective_clarity', pass: true }]
   });
 
+  writeJson(redTeamPath, {
+    ok: true,
+    type: 'red_team_harness_run',
+    summary: { critical_fail_cases: 0 }
+  });
+
   writeJson(workflowPolicyPath, {
     version: '1.0',
     enabled: true,
     window_days: 7,
     min_pattern_occurrences: 2,
-    min_shipped_rate: 0.95,
+    min_shipped_rate: 0.99,
     max_drafts_per_run: 6,
-    apply_threshold: 0.5,
+    apply_threshold: 0.1,
     max_registry_workflows: 50
   });
 
   writeJson(orchestronPolicyPath, {
     version: '1.0',
     enabled: true,
-    shadow_only: false,
+    shadow_only: true,
     default_window_days: 7,
     min_pattern_occurrences: 2,
     min_candidates: 3,
@@ -121,7 +126,7 @@ function run() {
     max_promotions_per_run: 4,
     min_principle_score: 0.6,
     auto_apply: {
-      enabled: true,
+      enabled: false,
       min_promotable_drafts: 1,
       min_principle_score: 0.3,
       min_composite_score: 0,
@@ -166,45 +171,54 @@ function run() {
     ORCHESTRON_OUT_DIR: orchOutDir
   };
 
-  // Pass case: no red-team critical failures.
-  writeJson(redTeamPath, {
-    ok: true,
-    type: 'red_team_harness_run',
-    summary: { critical_fail_cases: 0 }
-  });
-  const passRun = runController(scriptPath, root, env, dateStr, workflowPolicyPath, orchestronPolicyPath);
-  assert.strictEqual(passRun.status, 0, passRun.stderr || 'auto pass run should pass');
-  const passOut = parsePayload(passRun.stdout);
-  assert.ok(passOut && passOut.ok === true, 'auto pass output should be ok');
-  assert.strictEqual(passOut.full_automation_mode, true, 'full automation mode should be true');
-  assert.strictEqual(passOut.strategy_execution_mode, 'execute', 'strategy mode should be execute');
-  assert.strictEqual(passOut.orchestron_auto_requested, false, 'auto should require explicit opt-in or policy enable');
-  assert.strictEqual(passOut.orchestron_auto_enabled, true, 'auto apply should be enabled');
-  assert.strictEqual(passOut.orchestron_auto_pass, true, 'auto gate should pass');
-  assert.strictEqual(passOut.orchestron_apply_effective, true, 'auto pass should activate apply');
-  assert.ok(Number(passOut.applied || 0) >= 1 || Number(passOut.updated || 0) >= 1, 'auto pass should apply or update at least one workflow');
+  const defaultRun = runController(
+    scriptPath,
+    root,
+    env,
+    dateStr,
+    workflowPolicyPath,
+    orchestronPolicyPath,
+    null
+  );
+  assert.strictEqual(defaultRun.status, 0, defaultRun.stderr || 'phase0 default run should pass');
+  const defaultOut = parsePayload(defaultRun.stdout);
+  assert.ok(defaultOut && defaultOut.ok === true, 'default phase0 output should be ok');
+  assert.strictEqual(defaultOut.orchestron_shadow_only, true, 'phase0 policy must stay shadow-only');
+  assert.strictEqual(defaultOut.orchestron_auto_requested, false, 'auto apply should not self-enable by runtime mode');
+  assert.strictEqual(defaultOut.orchestron_auto_enabled, false, 'auto apply should remain disabled');
+  assert.strictEqual(defaultOut.orchestron_apply_effective, false, 'phase0 should not activate apply lane');
+  assert.strictEqual(Number(defaultOut.applied || 0), 0, 'phase0 default run should not apply workflows');
 
-  // Fail case: red-team critical failure blocks auto apply.
-  writeJson(redTeamPath, {
-    ok: true,
-    type: 'red_team_harness_run',
-    summary: { critical_fail_cases: 1 }
-  });
-  const failRun = runController(scriptPath, root, env, dateStr, workflowPolicyPath, orchestronPolicyPath);
-  assert.strictEqual(failRun.status, 0, failRun.stderr || 'auto fail run should pass');
-  const failOut = parsePayload(failRun.stdout);
-  assert.ok(failOut && failOut.ok === true, 'auto fail output should be ok');
-  assert.strictEqual(failOut.orchestron_auto_enabled, true, 'auto apply should remain enabled');
-  assert.strictEqual(failOut.orchestron_auto_pass, false, 'auto gate should fail when red-team critical > max');
-  assert.strictEqual(failOut.orchestron_apply_effective, false, 'auto fail should not activate apply');
+  const forcedAutoRun = runController(
+    scriptPath,
+    root,
+    env,
+    dateStr,
+    workflowPolicyPath,
+    orchestronPolicyPath,
+    true
+  );
+  assert.strictEqual(forcedAutoRun.status, 0, forcedAutoRun.stderr || 'phase0 forced auto run should pass');
+  const forcedOut = parsePayload(forcedAutoRun.stdout);
+  assert.ok(forcedOut && forcedOut.ok === true, 'forced phase0 output should be ok');
+  assert.strictEqual(forcedOut.orchestron_auto_requested, true, 'forced run should report requested auto mode');
+  assert.strictEqual(forcedOut.orchestron_auto_enabled, true, 'forced run should evaluate auto gate');
+  assert.strictEqual(forcedOut.orchestron_auto_pass, false, 'phase0 shadow-only policy must block auto gate');
+  assert.ok(
+    Array.isArray(forcedOut.orchestron_auto_reasons)
+      && forcedOut.orchestron_auto_reasons.includes('shadow_only_policy_on'),
+    'phase0 forced auto run should include shadow-only deny reason'
+  );
+  assert.strictEqual(forcedOut.orchestron_apply_effective, false, 'phase0 forced auto run should still block apply');
+  assert.strictEqual(Number(forcedOut.applied || 0), 0, 'phase0 forced auto run should not apply workflows');
 
   fs.rmSync(tmp, { recursive: true, force: true });
-  console.log('workflow_controller_orchestron_auto_apply.test.js: OK');
+  console.log('workflow_controller_orchestron_phase0_shadow.test.js: OK');
 }
 
 try {
   run();
 } catch (err) {
-  console.error(`workflow_controller_orchestron_auto_apply.test.js: FAIL: ${err.message}`);
+  console.error(`workflow_controller_orchestron_phase0_shadow.test.js: FAIL: ${err.message}`);
   process.exit(1);
 }

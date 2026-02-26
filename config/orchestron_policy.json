@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "enabled": true,
-  "shadow_only": false,
+  "shadow_only": true,
   "default_window_days": 14,
   "min_pattern_occurrences": 2,
   "min_candidates": 3,
@@ -62,7 +62,7 @@
     ]
   },
   "auto_apply": {
-    "enabled": true,
+    "enabled": false,
     "min_promotable_drafts": 1,
     "min_principle_score": 0.75,
     "min_composite_score": 0.45,
