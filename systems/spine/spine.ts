@@ -1051,6 +1051,7 @@ function shouldShortCircuitDaily(mode, dateStr) {
 }
 
 function main() {
+  const spineRunStartMs = Date.now();
   const mode = process.argv[2];
   const dateStr = todayOr(process.argv[3]);
   const maxEyes = arg("max-eyes");
@@ -1104,6 +1105,9 @@ function main() {
     "systems/autonomy/strategy_execute_guard.js",
     "systems/autonomy/strategy_mode_governor.js",
     "systems/autonomy/health_status.js",
+    "systems/observability/metrics_exporter.js",
+    "systems/observability/trace_bridge.js",
+    "systems/observability/slo_alert_router.js",
     "systems/actuation/actuation_executor.js",
     "systems/actuation/bridge_from_proposals.js",
     "systems/ops/state_backup.js",
@@ -1148,6 +1152,7 @@ function main() {
     "config/deployment_packaging_policy.json",
     "config/compliance_posture_policy.json",
     "config/state_backup_policy.json",
+    "config/observability_policy.json",
     "skills/moltbook/actuation_adapter.js",
     "skills/moltbook/moltbook_publish_guard.js",
     "systems/routing/route_execute.js",
@@ -3182,6 +3187,13 @@ function main() {
     if (String(process.env.SPINE_AUTONOMY_HEALTH_ENABLED || "1") !== "0") {
       const strict = String(process.env.SPINE_AUTONOMY_HEALTH_STRICT || "0") === "1";
       const weeklyDays = Math.max(2, Number(process.env.SPINE_AUTONOMY_HEALTH_WEEKLY_DAYS || 7) || 7);
+      const observabilityEnabled = String(process.env.SPINE_OBSERVABILITY_ENABLED || "1") !== "0";
+      const observabilityTraceEnabled = observabilityEnabled && String(process.env.SPINE_OBSERVABILITY_TRACE_ENABLED || "1") !== "0";
+      const observabilityStrict = observabilityEnabled && String(process.env.SPINE_OBSERVABILITY_STRICT || "0") === "1";
+      const observabilityAlertMinLevelRaw = String(process.env.SPINE_OBSERVABILITY_ALERT_MIN_LEVEL || "warn").trim().toLowerCase();
+      const observabilityAlertMinLevel = ["ok", "warn", "critical"].includes(observabilityAlertMinLevelRaw)
+        ? observabilityAlertMinLevelRaw
+        : "warn";
       const healthRuns = [
         { label: "daily", args: ["--window=daily", "--days=1"] },
         { label: "weekly", args: ["--window=weekly", `--days=${weeklyDays}`] }
@@ -3225,9 +3237,157 @@ function main() {
           ` critical=${critical}` +
           ` alerts_written=${Number(payload.alerts && payload.alerts.written || 0)}`
         );
+        if (observabilityEnabled) {
+          const alertPath = payload && payload.alerts ? String(payload.alerts.path || "").trim() : "";
+          const routerArgs = [
+            "systems/observability/slo_alert_router.js",
+            "route",
+            dateStr,
+            `--window=${runCfg.label}`,
+            `--min-level=${observabilityAlertMinLevel}`
+          ];
+          if (alertPath) routerArgs.push(`--source=${alertPath}`);
+          const routed = runJson("node", routerArgs);
+          const routedPayload = routed.payload && typeof routed.payload === "object" ? routed.payload : null;
+          appendLedger(dateStr, {
+            ts: nowIso(),
+            type: "spine_observability_alert_routing",
+            mode,
+            date: dateStr,
+            window: runCfg.label,
+            ok: routed.ok && !!routedPayload && routedPayload.ok === true,
+            min_level: observabilityAlertMinLevel,
+            source_total: routedPayload ? Number(routedPayload.source_total || 0) : null,
+            inspected: routedPayload ? Number(routedPayload.inspected || 0) : null,
+            filtered_out: routedPayload ? Number(routedPayload.filtered_out || 0) : null,
+            already_routed: routedPayload ? Number(routedPayload.already_routed || 0) : null,
+            routed: routedPayload ? Number(routedPayload.routed || 0) : null,
+            webhook_delivered: routedPayload ? Number(routedPayload.webhook_delivered || 0) : null,
+            webhook_failed: routedPayload ? Number(routedPayload.webhook_failed || 0) : null,
+            route_path: routedPayload ? routedPayload.routed_path || null : null,
+            reason: (!routed.ok || !routedPayload || routedPayload.ok !== true)
+              ? String(routed.stderr || routed.stdout || `observability_alert_router_exit_${routed.code}`).slice(0, 180)
+              : null
+          });
+          if (routed.ok && routedPayload && routedPayload.ok === true) {
+            console.log(
+              ` observability_alert_route ${runCfg.label}` +
+              ` routed=${Number(routedPayload.routed || 0)}` +
+              ` deduped=${Number(routedPayload.already_routed || 0)}` +
+              ` filtered=${Number(routedPayload.filtered_out || 0)}` +
+              ` min_level=${observabilityAlertMinLevel}`
+            );
+          } else {
+            console.log(` observability_alert_route ${runCfg.label} unavailable reason=${String(routed.stderr || routed.stdout || "unknown").slice(0, 120)}`);
+            if (observabilityStrict) process.exit(routed.code || 1);
+          }
+        }
+        if (observabilityTraceEnabled) {
+          const traceAttrs = JSON.stringify({
+            lane: "autonomy_health",
+            window: runCfg.label,
+            date: dateStr,
+            level: String(slo.level || "unknown"),
+            warn_count: warns,
+            critical_count: critical
+          });
+          const traceStatus = critical > 0 ? "error" : (warns > 0 ? "warn" : "ok");
+          const trace = runJson("node", [
+            "systems/observability/trace_bridge.js",
+            "span",
+            `--name=spine.autonomy_health.${runCfg.label}`,
+            `--status=${traceStatus}`,
+            `--duration-ms=${Math.max(0, Number((health as any).duration_ms || 0))}`,
+            "--component=spine",
+            `--attrs-json=${traceAttrs}`
+          ]);
+          const tracePayload = trace.payload && typeof trace.payload === "object" ? trace.payload : null;
+          appendLedger(dateStr, {
+            ts: nowIso(),
+            type: "spine_observability_trace",
+            mode,
+            date: dateStr,
+            window: runCfg.label,
+            ok: trace.ok && !!tracePayload && tracePayload.ok === true,
+            trace_name: tracePayload && tracePayload.span ? tracePayload.span.name || null : null,
+            trace_status: tracePayload && tracePayload.span ? tracePayload.span.status || null : null,
+            trace_duration_ms: tracePayload && tracePayload.span ? Number(tracePayload.span.duration_ms || 0) : null,
+            reason: (!trace.ok || !tracePayload || tracePayload.ok !== true)
+              ? String(trace.stderr || trace.stdout || `observability_trace_exit_${trace.code}`).slice(0, 180)
+              : null
+          });
+          if ((!trace.ok || !tracePayload || tracePayload.ok !== true) && observabilityStrict) {
+            process.exit(trace.code || 1);
+          }
+        }
         if (strict && critical > 0) {
           console.error(` autonomy_health ${runCfg.label} FAIL critical=${critical}`);
           process.exit(1);
+        }
+      }
+      if (observabilityEnabled) {
+        const metricsWindowRaw = String(process.env.SPINE_OBSERVABILITY_METRICS_WINDOW || "daily").trim().toLowerCase();
+        const metricsWindow = metricsWindowRaw === "weekly" ? "weekly" : "daily";
+        const metrics = runJson("node", [
+          "systems/observability/metrics_exporter.js",
+          "run",
+          dateStr,
+          `--window=${metricsWindow}`
+        ]);
+        const metricsPayload = metrics.payload && typeof metrics.payload === "object" ? metrics.payload : null;
+        appendLedger(dateStr, {
+          ts: nowIso(),
+          type: "spine_observability_metrics",
+          mode,
+          date: dateStr,
+          window: metricsWindow,
+          ok: metrics.ok && !!metricsPayload && metricsPayload.ok === true,
+          metrics_count: metricsPayload ? Number(metricsPayload.metrics_count || 0) : null,
+          health_report_found: metricsPayload ? metricsPayload.health_report_found === true : null,
+          output_prometheus_path: metricsPayload && metricsPayload.output ? metricsPayload.output.prometheus_path || null : null,
+          output_snapshot_path: metricsPayload && metricsPayload.output ? metricsPayload.output.snapshot_path || null : null,
+          reason: (!metrics.ok || !metricsPayload || metricsPayload.ok !== true)
+            ? String(metrics.stderr || metrics.stdout || `observability_metrics_exit_${metrics.code}`).slice(0, 180)
+            : null
+        });
+        if (metrics.ok && metricsPayload && metricsPayload.ok === true) {
+          console.log(
+            ` observability_metrics window=${metricsWindow}` +
+            ` count=${Number(metricsPayload.metrics_count || 0)}` +
+            ` health_report_found=${metricsPayload.health_report_found === true ? "1" : "0"}`
+          );
+        } else {
+          console.log(` observability_metrics unavailable reason=${String(metrics.stderr || metrics.stdout || "unknown").slice(0, 120)}`);
+          if (observabilityStrict) process.exit(metrics.code || 1);
+        }
+        if (observabilityTraceEnabled) {
+          const metricsTrace = runJson("node", [
+            "systems/observability/trace_bridge.js",
+            "span",
+            "--name=spine.observability.metrics_snapshot",
+            `--status=${metrics.ok && metricsPayload && metricsPayload.ok === true ? "ok" : "error"}`,
+            `--duration-ms=${Math.max(0, Number((metrics as any).duration_ms || 0))}`,
+            "--component=spine",
+            `--attrs-json=${JSON.stringify({ window: metricsWindow, date: dateStr })}`
+          ]);
+          const metricsTracePayload = metricsTrace.payload && typeof metricsTrace.payload === "object" ? metricsTrace.payload : null;
+          appendLedger(dateStr, {
+            ts: nowIso(),
+            type: "spine_observability_trace",
+            mode,
+            date: dateStr,
+            window: metricsWindow,
+            ok: metricsTrace.ok && !!metricsTracePayload && metricsTracePayload.ok === true,
+            trace_name: metricsTracePayload && metricsTracePayload.span ? metricsTracePayload.span.name || null : null,
+            trace_status: metricsTracePayload && metricsTracePayload.span ? metricsTracePayload.span.status || null : null,
+            trace_duration_ms: metricsTracePayload && metricsTracePayload.span ? Number(metricsTracePayload.span.duration_ms || 0) : null,
+            reason: (!metricsTrace.ok || !metricsTracePayload || metricsTracePayload.ok !== true)
+              ? String(metricsTrace.stderr || metricsTrace.stdout || `observability_trace_exit_${metricsTrace.code}`).slice(0, 180)
+              : null
+          });
+          if ((!metricsTrace.ok || !metricsTracePayload || metricsTracePayload.ok !== true) && observabilityStrict) {
+            process.exit(metricsTrace.code || 1);
+          }
         }
       }
     } else {
@@ -4570,6 +4730,39 @@ function main() {
     signal_slo_ok: signalSloOk
   });
   maybeEmitSpineTritAnomaly(dateStr, mode, ternary);
+  if (String(process.env.SPINE_OBSERVABILITY_ENABLED || "1") !== "0"
+    && String(process.env.SPINE_OBSERVABILITY_TRACE_ENABLED || "1") !== "0") {
+    const finalStatus = signalGateOk === true && signalSloOk === true ? "ok" : "warn";
+    const finalTrace = runJson("node", [
+      "systems/observability/trace_bridge.js",
+      "span",
+      "--name=spine.run.completed",
+      `--status=${finalStatus}`,
+      `--duration-ms=${Math.max(0, Date.now() - spineRunStartMs)}`,
+      "--component=spine",
+      `--attrs-json=${JSON.stringify({
+        mode,
+        date: dateStr,
+        signal_gate_ok: signalGateOk === true,
+        signal_slo_ok: signalSloOk === true
+      })}`
+    ]);
+    const finalTracePayload = finalTrace.payload && typeof finalTrace.payload === "object" ? finalTrace.payload : null;
+    appendLedger(dateStr, {
+      ts: nowIso(),
+      type: "spine_observability_trace",
+      mode,
+      date: dateStr,
+      window: "run_completed",
+      ok: finalTrace.ok && !!finalTracePayload && finalTracePayload.ok === true,
+      trace_name: finalTracePayload && finalTracePayload.span ? finalTracePayload.span.name || null : null,
+      trace_status: finalTracePayload && finalTracePayload.span ? finalTracePayload.span.status || null : null,
+      trace_duration_ms: finalTracePayload && finalTracePayload.span ? Number(finalTracePayload.span.duration_ms || 0) : null,
+      reason: (!finalTrace.ok || !finalTracePayload || finalTracePayload.ok !== true)
+        ? String(finalTrace.stderr || finalTrace.stdout || `observability_trace_exit_${finalTrace.code}`).slice(0, 180)
+        : null
+    });
+  }
 
   if (mode === "daily") {
     const pending = modelCatalogPendingCount();
