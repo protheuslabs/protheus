@@ -120,10 +120,10 @@
       "status": "active",
       "weight": 59,
       "cooldown_minutes": 90,
-      "hit_count": 7,
-      "last_hit_ts": "2026-02-26T00:56:07.063Z",
+      "hit_count": 12,
+      "last_hit_ts": "2026-02-26T10:37:09.117Z",
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-26T08:34:20.984Z"
+      "updated_ts": "2026-02-26T10:37:09.117Z"
     },
     {
       "uid": "ft7ds2pfg6xpj8145626z2k6",
@@ -205,10 +205,10 @@
       "status": "active",
       "weight": 57,
       "cooldown_minutes": 90,
-      "hit_count": 0,
-      "last_hit_ts": null,
+      "hit_count": 3,
+      "last_hit_ts": "2026-02-26T10:32:54.772Z",
       "created_ts": "2026-02-25T17:53:58.655Z",
-      "updated_ts": "2026-02-26T08:34:20.984Z"
+      "updated_ts": "2026-02-26T10:32:54.772Z"
     },
     {
       "uid": "ft295r3uf47ycdrst7r72s32",
@@ -377,10 +377,10 @@
       "status": "active",
       "weight": 37,
       "cooldown_minutes": 90,
-      "hit_count": 55,
-      "last_hit_ts": "2026-02-26T10:14:34.353Z",
+      "hit_count": 67,
+      "last_hit_ts": "2026-02-26T10:37:09.117Z",
       "created_ts": "2026-02-26T04:30:31.189Z",
-      "updated_ts": "2026-02-26T10:14:34.353Z"
+      "updated_ts": "2026-02-26T10:37:09.117Z"
     },
     {
       "uid": "ft4f8jeoqyesg2u0r8bg2tum",
@@ -396,10 +396,10 @@
       "status": "active",
       "weight": 33,
       "cooldown_minutes": 90,
-      "hit_count": 165,
-      "last_hit_ts": "2026-02-26T10:14:34.353Z",
+      "hit_count": 177,
+      "last_hit_ts": "2026-02-26T10:37:09.117Z",
       "created_ts": "2026-02-26T00:02:18.712Z",
-      "updated_ts": "2026-02-26T10:14:34.353Z"
+      "updated_ts": "2026-02-26T10:37:09.117Z"
     },
     {
       "uid": "ftxuncz0jz4j3dv9m1gk1x8s",
@@ -567,10 +567,10 @@
       "status": "active",
       "weight": 21,
       "cooldown_minutes": 90,
-      "hit_count": 71,
-      "last_hit_ts": "2026-02-26T10:14:34.353Z",
+      "hit_count": 83,
+      "last_hit_ts": "2026-02-26T10:37:09.117Z",
       "created_ts": "2026-02-26T04:30:31.189Z",
-      "updated_ts": "2026-02-26T10:14:34.353Z"
+      "updated_ts": "2026-02-26T10:37:09.117Z"
     },
     {
       "uid": "ft2peuozh4bp4cqa7jz8z82g",
@@ -585,10 +585,10 @@
       "status": "active",
       "weight": 21,
       "cooldown_minutes": 90,
-      "hit_count": 67,
-      "last_hit_ts": "2026-02-26T10:14:34.353Z",
+      "hit_count": 79,
+      "last_hit_ts": "2026-02-26T10:37:09.117Z",
       "created_ts": "2026-02-26T04:30:31.189Z",
-      "updated_ts": "2026-02-26T10:14:34.353Z"
+      "updated_ts": "2026-02-26T10:37:09.117Z"
     },
     {
       "uid": "ft1fz2j83196slr4cvu2d7bw",
@@ -670,10 +670,10 @@
       "status": "active",
       "weight": 16,
       "cooldown_minutes": 90,
-      "hit_count": 342,
-      "last_hit_ts": "2026-02-26T10:14:34.353Z",
+      "hit_count": 354,
+      "last_hit_ts": "2026-02-26T10:37:09.117Z",
       "created_ts": "2026-02-23T15:20:59.511Z",
-      "updated_ts": "2026-02-26T10:14:34.353Z"
+      "updated_ts": "2026-02-26T10:37:09.117Z"
     },
     {
       "uid": "ft44ejy16rfcgu7wmcd4evoz",
@@ -756,10 +756,10 @@
       "status": "active",
       "weight": 15,
       "cooldown_minutes": 90,
-      "hit_count": 82,
-      "last_hit_ts": "2026-02-26T08:34:21.886Z",
+      "hit_count": 83,
+      "last_hit_ts": "2026-02-26T10:32:50.599Z",
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-26T08:34:21.886Z"
+      "updated_ts": "2026-02-26T10:32:50.599Z"
     },
     {
       "uid": "ft37raft1ohxyxzexz9x2xw4",
@@ -1997,11 +1997,11 @@
       ],
       "exclude_terms": [],
       "term_weights": {
-        "t1_generational_wealth_v1": 6,
-        "ai": 6,
-        "startups": 6,
-        "revenue": 6,
-        "saas": 6
+        "t1_generational_wealth_v1": 8,
+        "ai": 8,
+        "startups": 8,
+        "revenue": 8,
+        "saas": 8
       },
       "baseline_topics": [
         "t1_generational_wealth_v1",
@@ -2010,10 +2010,10 @@
         "revenue",
         "saas"
       ],
-      "focus_hits_total": 0,
-      "update_count": 2,
+      "focus_hits_total": 2,
+      "update_count": 3,
       "created_ts": "2026-02-26T00:02:18.727Z",
-      "updated_ts": "2026-02-26T06:59:59.175Z"
+      "updated_ts": "2026-02-26T10:32:50.599Z"
     },
     "proto_f77f4766df89d469": {
       "eye_id": "proto_f77f4766df89d469",
@@ -2026,11 +2026,11 @@
       ],
       "exclude_terms": [],
       "term_weights": {
-        "t1_generational_wealth_v1": 3,
-        "ai": 3,
-        "startups": 3,
-        "revenue": 3,
-        "saas": 3
+        "t1_generational_wealth_v1": 5,
+        "ai": 5,
+        "startups": 5,
+        "revenue": 5,
+        "saas": 5
       },
       "baseline_topics": [
         "t1_generational_wealth_v1",
@@ -2039,10 +2039,10 @@
         "revenue",
         "saas"
       ],
-      "focus_hits_total": 0,
-      "update_count": 1,
+      "focus_hits_total": 2,
+      "update_count": 2,
       "created_ts": "2026-02-26T06:59:59.175Z",
-      "updated_ts": "2026-02-26T06:59:59.175Z"
+      "updated_ts": "2026-02-26T10:32:51.622Z"
     },
     "proto_e9b76b1298ad760c": {
       "eye_id": "proto_e9b76b1298ad760c",
@@ -2055,11 +2055,11 @@
       ],
       "exclude_terms": [],
       "term_weights": {
-        "t1_generational_wealth_v1": 3,
-        "ai": 3,
-        "startups": 3,
-        "revenue": 3,
-        "saas": 3
+        "t1_generational_wealth_v1": 11,
+        "ai": 11,
+        "startups": 11,
+        "revenue": 11,
+        "saas": 11
       },
       "baseline_topics": [
         "t1_generational_wealth_v1",
@@ -2068,10 +2068,10 @@
         "revenue",
         "saas"
       ],
-      "focus_hits_total": 0,
-      "update_count": 1,
+      "focus_hits_total": 8,
+      "update_count": 5,
       "created_ts": "2026-02-26T06:59:59.175Z",
-      "updated_ts": "2026-02-26T06:59:59.175Z"
+      "updated_ts": "2026-02-26T10:37:09.117Z"
     },
     "proto_1ee751437a437aef": {
       "eye_id": "proto_1ee751437a437aef",
@@ -2211,7 +2211,13 @@
     "id:401f875758a4b293": "2026-02-26T10:10:22.809Z",
     "id:4f67f008edd361fc": "2026-02-26T10:03:31.466Z",
     "id:26a5b3dce3eef9fe": "2026-02-26T10:14:34.353Z",
-    "id:5c08555d592c33c4": "2026-02-26T10:14:34.353Z"
+    "id:5c08555d592c33c4": "2026-02-26T10:14:34.353Z",
+    "id:46af5ffba17e71b3": "2026-02-26T10:32:50.599Z",
+    "id:4e7de11ef5856b25": "2026-02-26T10:37:09.117Z",
+    "id:54ba94861877defc": "2026-02-26T10:32:54.772Z",
+    "id:09c02c43f7e245d1": "2026-02-26T10:37:06.712Z",
+    "id:1dd22f7337726638": "2026-02-26T10:37:06.712Z",
+    "id:32b0bb8fdbcdb75c": "2026-02-26T10:37:09.117Z"
   },
   "last_refresh_ts": "2026-02-26T08:34:20.984Z",
   "last_refresh_sources": {
@@ -2232,7 +2238,7 @@
   "stats": {
     "refresh_count": 23,
     "lens_refresh_count": 16,
-    "focused_items_total": 575,
-    "last_focus_ts": "2026-02-26T10:14:34.353Z"
+    "focused_items_total": 587,
+    "last_focus_ts": "2026-02-26T10:37:09.117Z"
   }
 }
