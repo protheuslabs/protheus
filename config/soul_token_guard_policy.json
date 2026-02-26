@@ -8,5 +8,15 @@
   "token_state_path": "state/security/soul_token_guard.json",
   "audit_path": "state/security/soul_token_guard_audit.jsonl",
   "attestation_path": "state/security/release_attestations.jsonl",
-  "black_box_attestation_dir": "state/security/black_box_ledger/attestations"
+  "black_box_attestation_dir": "state/security/black_box_ledger/attestations",
+  "biometric_attestation": {
+    "enabled": true,
+    "shadow_only": true,
+    "require_for_verify": false,
+    "min_confidence": 0.82,
+    "min_live_modalities": 2,
+    "timeout_ms": 8000,
+    "script": "systems/soul/soul_print_manager.js",
+    "policy_path": "config/soul_policy.json"
+  }
 }

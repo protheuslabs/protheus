@@ -1292,7 +1292,21 @@ function evaluateSoulTokenGate(policy: AnyObj, args: AnyObj = {}) {
       type: payload.type || null,
       enforcement_mode: payload.enforcement_mode || null,
       token_present: payload.token_present === true,
-      attestation_present: payload.attestation_present === true
+      attestation_present: payload.attestation_present === true,
+      biometric_forced_shadow: payload.biometric_forced_shadow === true,
+      biometric_attestation: payload.biometric_attestation && typeof payload.biometric_attestation === 'object'
+        ? {
+            enabled: payload.biometric_attestation.enabled === true,
+            checked: payload.biometric_attestation.checked === true,
+            match: payload.biometric_attestation.match === true,
+            confidence: Number(payload.biometric_attestation.confidence || 0),
+            min_confidence: Number(payload.biometric_attestation.min_confidence || 0),
+            liveness_ok: payload.biometric_attestation.liveness_ok === true,
+            require_for_verify: payload.biometric_attestation.require_for_verify === true,
+            shadow_only: payload.biometric_attestation.shadow_only === true,
+            reason: payload.biometric_attestation.reason || null
+          }
+        : null
     } : null
   };
 }
@@ -3773,7 +3787,20 @@ function runCmd(dateStr: string, args: AnyObj) {
           verify_ok: payload.soul_token_gate.verify_ok === true,
           shadow_only: payload.soul_token_gate.shadow_only === true,
           forced_shadow: payload.soul_token_gate.forced_shadow === true,
-          reason: payload.soul_token_gate.reason || null
+          reason: payload.soul_token_gate.reason || null,
+          biometric_forced_shadow: payload.soul_token_gate.payload
+            && payload.soul_token_gate.payload.biometric_forced_shadow === true,
+          biometric_attestation: payload.soul_token_gate.payload
+            && payload.soul_token_gate.payload.biometric_attestation
+            && typeof payload.soul_token_gate.payload.biometric_attestation === 'object'
+            ? {
+                enabled: payload.soul_token_gate.payload.biometric_attestation.enabled === true,
+                checked: payload.soul_token_gate.payload.biometric_attestation.checked === true,
+                match: payload.soul_token_gate.payload.biometric_attestation.match === true,
+                confidence: Number(payload.soul_token_gate.payload.biometric_attestation.confidence || 0),
+                reason: payload.soul_token_gate.payload.biometric_attestation.reason || null
+              }
+            : null
         }
       : null,
     runtime_mutations_applied: payload.runtime_mutations_applied,
@@ -3944,7 +3971,20 @@ function runCmd(dateStr: string, args: AnyObj) {
           verify_ok: payload.soul_token_gate.verify_ok === true,
           shadow_only: payload.soul_token_gate.shadow_only === true,
           forced_shadow: payload.soul_token_gate.forced_shadow === true,
-          reason: payload.soul_token_gate.reason || null
+          reason: payload.soul_token_gate.reason || null,
+          biometric_forced_shadow: payload.soul_token_gate.payload
+            && payload.soul_token_gate.payload.biometric_forced_shadow === true,
+          biometric_attestation: payload.soul_token_gate.payload
+            && payload.soul_token_gate.payload.biometric_attestation
+            && typeof payload.soul_token_gate.payload.biometric_attestation === 'object'
+            ? {
+                enabled: payload.soul_token_gate.payload.biometric_attestation.enabled === true,
+                checked: payload.soul_token_gate.payload.biometric_attestation.checked === true,
+                match: payload.soul_token_gate.payload.biometric_attestation.match === true,
+                confidence: Number(payload.soul_token_gate.payload.biometric_attestation.confidence || 0),
+                reason: payload.soul_token_gate.payload.biometric_attestation.reason || null
+              }
+            : null
         }
       : null,
     runtime_mutations_applied: payload.runtime_mutations_applied,
@@ -3990,7 +4030,20 @@ function statusCmd(dateArg: string) {
           verify_ok: payload.soul_token_gate.verify_ok === true,
           shadow_only: payload.soul_token_gate.shadow_only === true,
           forced_shadow: payload.soul_token_gate.forced_shadow === true,
-          reason: payload.soul_token_gate.reason || null
+          reason: payload.soul_token_gate.reason || null,
+          biometric_forced_shadow: payload.soul_token_gate.payload
+            && payload.soul_token_gate.payload.biometric_forced_shadow === true,
+          biometric_attestation: payload.soul_token_gate.payload
+            && payload.soul_token_gate.payload.biometric_attestation
+            && typeof payload.soul_token_gate.payload.biometric_attestation === 'object'
+            ? {
+                enabled: payload.soul_token_gate.payload.biometric_attestation.enabled === true,
+                checked: payload.soul_token_gate.payload.biometric_attestation.checked === true,
+                match: payload.soul_token_gate.payload.biometric_attestation.match === true,
+                confidence: Number(payload.soul_token_gate.payload.biometric_attestation.confidence || 0),
+                reason: payload.soul_token_gate.payload.biometric_attestation.reason || null
+              }
+            : null
         }
       : null,
     runtime_mutations_applied: Number(payload.runtime_mutations_applied || 0),

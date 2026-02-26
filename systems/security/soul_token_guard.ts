@@ -18,6 +18,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
+const { spawnSync } = require('child_process');
 
 type AnyObj = Record<string, any>;
 
@@ -25,6 +26,7 @@ const ROOT = path.resolve(__dirname, '..', '..');
 const DEFAULT_POLICY_PATH = process.env.SOUL_TOKEN_GUARD_POLICY_PATH
   ? path.resolve(process.env.SOUL_TOKEN_GUARD_POLICY_PATH)
   : path.join(ROOT, 'config', 'soul_token_guard_policy.json');
+const DEFAULT_SOUL_POLICY_PATH = path.join(ROOT, 'config', 'soul_policy.json');
 
 function nowIso() {
   return new Date().toISOString();
@@ -99,6 +101,17 @@ function readJsonl(filePath: string) {
   }
 }
 
+function parseJsonPayload(raw: unknown) {
+  const text = String(raw == null ? '' : raw).trim();
+  if (!text) return null;
+  try { return JSON.parse(text); } catch {}
+  const lines = text.split('\n').map((line) => line.trim()).filter(Boolean);
+  for (let i = lines.length - 1; i >= 0; i -= 1) {
+    try { return JSON.parse(lines[i]); } catch {}
+  }
+  return null;
+}
+
 function writeJsonAtomic(filePath: string, value: AnyObj) {
   ensureDir(path.dirname(filePath));
   const tmp = `${filePath}.tmp-${process.pid}-${Date.now()}`;
@@ -160,7 +173,17 @@ function defaultPolicy() {
     token_state_path: 'state/security/soul_token_guard.json',
     audit_path: 'state/security/soul_token_guard_audit.jsonl',
     attestation_path: 'state/security/release_attestations.jsonl',
-    black_box_attestation_dir: 'state/security/black_box_ledger/attestations'
+    black_box_attestation_dir: 'state/security/black_box_ledger/attestations',
+    biometric_attestation: {
+      enabled: true,
+      shadow_only: true,
+      require_for_verify: false,
+      min_confidence: 0.82,
+      min_live_modalities: 2,
+      timeout_ms: 8000,
+      script: 'systems/soul/soul_print_manager.js',
+      policy_path: 'config/soul_policy.json'
+    }
   };
 }
 
@@ -172,6 +195,9 @@ function normalizeMode(raw: unknown) {
 function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
   const raw = readJson(policyPath, {});
   const base = defaultPolicy();
+  const biometric = raw.biometric_attestation && typeof raw.biometric_attestation === 'object'
+    ? raw.biometric_attestation
+    : {};
   return {
     version: clean(raw.version || base.version, 24) || '1.0',
     enabled: toBool(raw.enabled, true),
@@ -187,7 +213,42 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
     token_state_path: resolvePath(raw.token_state_path, base.token_state_path),
     audit_path: resolvePath(raw.audit_path, base.audit_path),
     attestation_path: resolvePath(raw.attestation_path, base.attestation_path),
-    black_box_attestation_dir: resolvePath(raw.black_box_attestation_dir, base.black_box_attestation_dir)
+    black_box_attestation_dir: resolvePath(raw.black_box_attestation_dir, base.black_box_attestation_dir),
+    biometric_attestation: {
+      enabled: toBool(biometric.enabled, base.biometric_attestation.enabled),
+      shadow_only: toBool(biometric.shadow_only, base.biometric_attestation.shadow_only),
+      require_for_verify: toBool(
+        biometric.require_for_verify,
+        base.biometric_attestation.require_for_verify
+      ),
+      min_confidence: Number(
+        Math.max(0, Math.min(1, Number(
+          biometric.min_confidence == null
+            ? base.biometric_attestation.min_confidence
+            : biometric.min_confidence
+        )))
+      ),
+      min_live_modalities: clampInt(
+        biometric.min_live_modalities,
+        1,
+        32,
+        base.biometric_attestation.min_live_modalities
+      ),
+      timeout_ms: clampInt(
+        biometric.timeout_ms,
+        200,
+        120000,
+        base.biometric_attestation.timeout_ms
+      ),
+      script: resolvePath(
+        biometric.script,
+        base.biometric_attestation.script
+      ),
+      policy_path: resolvePath(
+        biometric.policy_path,
+        base.biometric_attestation.policy_path
+      )
+    }
   };
 }
 
@@ -227,50 +288,169 @@ function latestAttestation(policy: AnyObj) {
   return filtered.length ? filtered[0] : null;
 }
 
+function evaluateBiometricAttestation(policy: AnyObj) {
+  const cfg = policy && policy.biometric_attestation && typeof policy.biometric_attestation === 'object'
+    ? policy.biometric_attestation
+    : {};
+  const enabled = cfg.enabled === true;
+  if (!enabled) {
+    return {
+      enabled: false,
+      checked: false,
+      match: null,
+      confidence: null,
+      liveness_ok: null,
+      shadow_only: false,
+      require_for_verify: false,
+      min_confidence: null,
+      min_live_modalities: null,
+      reason: 'biometric_disabled'
+    };
+  }
+  const scriptPath = resolvePath(cfg.script, path.join(ROOT, 'systems', 'soul', 'soul_print_manager.js'));
+  const policyPath = resolvePath(cfg.policy_path, DEFAULT_SOUL_POLICY_PATH);
+  const timeoutMs = clampInt(cfg.timeout_ms, 200, 120000, 8000);
+  const minConfidence = Number(
+    Math.max(0, Math.min(1, Number(cfg.min_confidence == null ? 0.82 : cfg.min_confidence)))
+  );
+  const minLiveModalities = clampInt(cfg.min_live_modalities, 1, 32, 2);
+  const requireForVerify = cfg.require_for_verify === true;
+  if (!fs.existsSync(scriptPath)) {
+    return {
+      enabled: true,
+      checked: false,
+      match: false,
+      confidence: 0,
+      liveness_ok: false,
+      shadow_only: true,
+      require_for_verify: requireForVerify,
+      min_confidence: minConfidence,
+      min_live_modalities: minLiveModalities,
+      reason: 'biometric_script_missing',
+      script_path: scriptPath,
+      policy_path: policyPath
+    };
+  }
+  const result = spawnSync(process.execPath, [
+    scriptPath,
+    'run',
+    `--policy=${policyPath}`,
+    '--shadow-only=1'
+  ], {
+    cwd: ROOT,
+    encoding: 'utf8',
+    timeout: timeoutMs
+  });
+  const payload = parseJsonPayload(result && result.stdout);
+  const checked = Number(result && result.status) === 0
+    && payload
+    && payload.ok === true;
+  const match = !!(checked && payload && payload.match === true);
+  const confidence = Number(payload && payload.confidence != null ? payload.confidence : 0);
+  const livenessOk = payload && payload.liveness_ok === true;
+  const reason = clean(
+    (payload && payload.error)
+      || (payload && Array.isArray(payload.reason_codes) && payload.reason_codes[0])
+      || (checked ? (match ? 'biometric_verified' : 'biometric_not_matched') : '')
+      || (result && result.stderr)
+      || (result && result.stdout)
+      || 'biometric_attestation_unknown',
+    160
+  ) || 'biometric_attestation_unknown';
+  return {
+    enabled: true,
+    checked,
+    match,
+    confidence: Number.isFinite(confidence) ? confidence : 0,
+    liveness_ok: livenessOk === true,
+    shadow_only: cfg.shadow_only !== false,
+    require_for_verify: requireForVerify,
+    min_confidence: minConfidence,
+    min_live_modalities: minLiveModalities,
+    reason,
+    script_path: scriptPath,
+    policy_path: policyPath,
+    payload: payload && typeof payload === 'object'
+      ? {
+          type: payload.type || null,
+          matched_modalities: Number(payload.matched_modalities || 0),
+          total_modalities: Number(payload.total_modalities || 0),
+          commitment_id: payload.commitment_id || null,
+          template_id: payload.template_id || null
+        }
+      : null
+  };
+}
+
 function evaluateEnforcement(policy: AnyObj) {
   const token = loadTokenState(policy);
   const keyInfo = resolveKey(policy);
   const fingerprint = currentFingerprint();
   const attestation = latestAttestation(policy);
+  const biometric = evaluateBiometricAttestation(policy);
+  const biometricMismatch = (
+    biometric && biometric.enabled === true
+    && (
+      biometric.checked !== true
+      || biometric.match !== true
+      || biometric.liveness_ok !== true
+      || Number(biometric.confidence || 0) < Number(biometric.min_confidence || 0)
+    )
+  );
+  const biometricForcedShadow = biometric && biometric.require_for_verify === true && biometricMismatch;
+  const finalize = (base: AnyObj = {}) => {
+    const next = {
+      ...base,
+      biometric_attestation: biometric
+    };
+    if (next.shadow_only === false && biometricForcedShadow) {
+      next.shadow_only = true;
+      next.reason = `biometric_${clean(biometric && biometric.reason || 'mismatch', 80) || 'mismatch'}`;
+      next.biometric_forced_shadow = true;
+    } else {
+      next.biometric_forced_shadow = false;
+    }
+    return next;
+  };
 
   if (policy.enabled !== true) {
-    return {
+    return finalize({
       shadow_only: false,
       reason: 'disabled',
       token_present: !!token,
       attestation_present: !!attestation,
       fingerprint
-    };
+    });
   }
 
   if (!token || typeof token !== 'object') {
-    return {
+    return finalize({
       shadow_only: policy.enforcement_mode === 'enforced',
       reason: 'token_missing',
       token_present: false,
       attestation_present: !!attestation,
       fingerprint
-    };
+    });
   }
 
   if (policy.bind_to_fingerprint === true && clean(token.fingerprint || '', 320) !== fingerprint) {
-    return {
+    return finalize({
       shadow_only: true,
       reason: 'token_fingerprint_mismatch',
       token_present: true,
       attestation_present: !!attestation,
       fingerprint
-    };
+    });
   }
 
   if (!attestation || typeof attestation !== 'object') {
-    return {
+    return finalize({
       shadow_only: policy.enforcement_mode === 'enforced',
       reason: 'attestation_missing',
       token_present: true,
       attestation_present: false,
       fingerprint
-    };
+    });
   }
 
   const sig = clean(attestation.signature || '', 200);
@@ -278,53 +458,53 @@ function evaluateEnforcement(policy: AnyObj) {
   delete signedPayload.signature;
   const expectedSig = keyInfo.key ? hmacHex(signedPayload, keyInfo.key) : '';
   if (!sig || !expectedSig || sig !== expectedSig) {
-    return {
+    return finalize({
       shadow_only: true,
       reason: 'attestation_signature_invalid',
       token_present: true,
       attestation_present: true,
       fingerprint
-    };
+    });
   }
 
   const exp = Date.parse(String(attestation.expires_at || ''));
   if (!Number.isFinite(exp) || exp < Date.now()) {
-    return {
+    return finalize({
       shadow_only: true,
       reason: 'attestation_expired',
       token_present: true,
       attestation_present: true,
       fingerprint
-    };
+    });
   }
 
   if (clean(attestation.watermark_id || '', 80) !== clean(token.watermark_id || '', 80)) {
-    return {
+    return finalize({
       shadow_only: true,
       reason: 'watermark_mismatch',
       token_present: true,
       attestation_present: true,
       fingerprint
-    };
+    });
   }
 
   if (policy.bind_to_fingerprint === true && clean(attestation.fingerprint || '', 320) !== fingerprint) {
-    return {
+    return finalize({
       shadow_only: true,
       reason: 'attestation_fingerprint_mismatch',
       token_present: true,
       attestation_present: true,
       fingerprint
-    };
+    });
   }
 
-  return {
+  return finalize({
     shadow_only: false,
     reason: 'verified',
     token_present: true,
     attestation_present: true,
     fingerprint
-  };
+  });
 }
 
 function requireApprovalNote(args: AnyObj) {
@@ -486,6 +666,21 @@ function cmdVerify(policy: AnyObj, strict: boolean) {
     token_present: evalResult.token_present === true,
     attestation_present: evalResult.attestation_present === true,
     fingerprint: evalResult.fingerprint || null,
+    biometric_attestation: evalResult.biometric_attestation && typeof evalResult.biometric_attestation === 'object'
+      ? {
+          enabled: evalResult.biometric_attestation.enabled === true,
+          checked: evalResult.biometric_attestation.checked === true,
+          match: evalResult.biometric_attestation.match === true,
+          confidence: Number(evalResult.biometric_attestation.confidence || 0),
+          min_confidence: Number(evalResult.biometric_attestation.min_confidence || 0),
+          liveness_ok: evalResult.biometric_attestation.liveness_ok === true,
+          require_for_verify: evalResult.biometric_attestation.require_for_verify === true,
+          shadow_only: evalResult.biometric_attestation.shadow_only === true,
+          reason: evalResult.biometric_attestation.reason || null,
+          payload: evalResult.biometric_attestation.payload || null
+        }
+      : null,
+    biometric_forced_shadow: evalResult.biometric_forced_shadow === true,
     token_state_path: relPath(policy.token_state_path),
     attestation_path: relPath(policy.attestation_path),
     audit_path: relPath(policy.audit_path)
@@ -511,6 +706,21 @@ function cmdStatus(policy: AnyObj) {
       shadow_only: evalResult.shadow_only === true,
       reason: evalResult.reason || null
     },
+    biometric_attestation: evalResult.biometric_attestation && typeof evalResult.biometric_attestation === 'object'
+      ? {
+          enabled: evalResult.biometric_attestation.enabled === true,
+          checked: evalResult.biometric_attestation.checked === true,
+          match: evalResult.biometric_attestation.match === true,
+          confidence: Number(evalResult.biometric_attestation.confidence || 0),
+          min_confidence: Number(evalResult.biometric_attestation.min_confidence || 0),
+          liveness_ok: evalResult.biometric_attestation.liveness_ok === true,
+          require_for_verify: evalResult.biometric_attestation.require_for_verify === true,
+          shadow_only: evalResult.biometric_attestation.shadow_only === true,
+          reason: evalResult.biometric_attestation.reason || null,
+          payload: evalResult.biometric_attestation.payload || null
+        }
+      : null,
+    biometric_forced_shadow: evalResult.biometric_forced_shadow === true,
     token_state_path: relPath(policy.token_state_path),
     attestation_path: relPath(policy.attestation_path),
     audit_path: relPath(policy.audit_path)
@@ -550,4 +760,3 @@ if (require.main === module) {
     process.exit(1);
   }
 }
-

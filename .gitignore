@@ -113,6 +113,7 @@ state/sensory/queue_log.jsonl
 state/sensory/trends/*.json
 state/nursery/**
 state/security/red_team/**
+state/security/soul_biometric/**
 state/assimilation/**
 state/helix/**
 state/eye/**

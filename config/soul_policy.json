@@ -1,0 +1,62 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "k_of_n_threshold": 2,
+  "min_confidence": 0.82,
+  "min_liveness_modalities": 2,
+  "anti_replay": {
+    "require_nonce": true,
+    "max_challenge_age_sec": 120
+  },
+  "template": {
+    "rotation_days": 30,
+    "allow_drift_adaptation": true,
+    "max_drift_delta": 0.2
+  },
+  "modalities": {
+    "voice": {
+      "enabled": true,
+      "weight": 0.34,
+      "min_confidence": 0.72,
+      "source": "microphone",
+      "mock_profile": "stable"
+    },
+    "typing_rhythm": {
+      "enabled": true,
+      "weight": 0.24,
+      "min_confidence": 0.7,
+      "source": "keyboard_dynamics",
+      "mock_profile": "stable"
+    },
+    "gait_motion": {
+      "enabled": true,
+      "weight": 0.18,
+      "min_confidence": 0.66,
+      "source": "accelerometer",
+      "mock_profile": "stable"
+    },
+    "os_biometric_attestation": {
+      "enabled": true,
+      "weight": 0.24,
+      "min_confidence": 0.8,
+      "source": "os_secure_enclave_attestation",
+      "mock_profile": "stable"
+    }
+  },
+  "fallback_chain": [
+    "biometric_primary",
+    "biometric_secondary",
+    "knowledge_possession"
+  ],
+  "outputs": {
+    "state_root": "state/security/soul_biometric",
+    "latest_path": "state/security/soul_biometric/latest.json",
+    "runtime_state_path": "state/security/soul_biometric/runtime_state.json",
+    "receipts_path": "state/security/soul_biometric/receipts.jsonl",
+    "events_path": "state/security/soul_biometric/events.jsonl",
+    "obsidian_path": "state/security/soul_biometric/obsidian_projection.jsonl",
+    "emit_holo_events": true,
+    "emit_obsidian_receipts": true
+  }
+}

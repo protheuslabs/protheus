@@ -138,6 +138,7 @@ function defaultColonyPolicy() {
       helix_latest_path: 'state/helix/latest.json',
       helix_sentinel_state_path: 'state/helix/sentinel_state.json',
       soul_token_state_path: 'state/security/soul_token_guard.json',
+      soul_biometric_latest_path: 'state/security/soul_biometric/latest.json',
       assimilation_ledger_path: 'state/assimilation/ledger.json',
       weaver_latest_path: 'state/autonomy/weaver/latest.json'
     }
@@ -204,6 +205,10 @@ function resolveColonyPolicy(fullPolicy: AnyObj = {}) {
       helix_latest_path: cleanText(paths.helix_latest_path || base.paths.helix_latest_path, 300) || base.paths.helix_latest_path,
       helix_sentinel_state_path: cleanText(paths.helix_sentinel_state_path || base.paths.helix_sentinel_state_path, 300) || base.paths.helix_sentinel_state_path,
       soul_token_state_path: cleanText(paths.soul_token_state_path || base.paths.soul_token_state_path, 300) || base.paths.soul_token_state_path,
+      soul_biometric_latest_path: cleanText(
+        paths.soul_biometric_latest_path || base.paths.soul_biometric_latest_path,
+        300
+      ) || base.paths.soul_biometric_latest_path,
       assimilation_ledger_path: cleanText(paths.assimilation_ledger_path || base.paths.assimilation_ledger_path, 300) || base.paths.assimilation_ledger_path,
       weaver_latest_path: cleanText(paths.weaver_latest_path || base.paths.weaver_latest_path, 300) || base.paths.weaver_latest_path
     }
@@ -317,13 +322,31 @@ function parseSoulSignals(colonyPolicy: AnyObj = {}) {
   const p = colonyPolicy && colonyPolicy.paths ? colonyPolicy.paths : {};
   const soulPath = resolvePath(p.soul_token_state_path, path.join(ROOT, 'state', 'security', 'soul_token_guard.json'));
   const soulState = readJson(soulPath, null);
+  const soulBiometricPath = resolvePath(
+    p.soul_biometric_latest_path,
+    path.join(ROOT, 'state', 'security', 'soul_biometric', 'latest.json')
+  );
+  const soulBiometric = readJson(soulBiometricPath, null);
   const fingerprint = cleanText(soulState && soulState.fingerprint || '', 260);
   const expectedFingerprint = cleanText(process.env.SOUL_TOKEN_GUARD_FINGERPRINT || '', 260);
   const mismatch = !!(expectedFingerprint && fingerprint && expectedFingerprint !== fingerprint);
+  const biometricMismatch = !!(
+    soulBiometric
+    && typeof soulBiometric === 'object'
+    && soulBiometric.checked === true
+    && (
+      soulBiometric.match !== true
+      || soulBiometric.liveness_ok !== true
+      || Number(soulBiometric.confidence || 0) < Number(soulBiometric.min_confidence || 0)
+    )
+  );
   return {
     soul_mismatch: mismatch,
+    soul_biometric_mismatch: biometricMismatch,
     soul_present: !!soulState,
-    path: soulPath
+    biometric_present: !!soulBiometric,
+    path: soulPath,
+    biometric_path: soulBiometricPath
   };
 }
 
@@ -404,7 +427,11 @@ function runAntColony(input: AnyObj = {}, opts: AnyObj = {}) {
   const signals = {
     helix_tamper: helixSignals.helix_tamper === true,
     sentinel_agreement: helixSignals.sentinel_agreement === true,
-    soul_mismatch: soulSignals.soul_mismatch === true || helixSignals.soul_mismatch_from_codex === true,
+    soul_mismatch: (
+      soulSignals.soul_mismatch === true
+      || soulSignals.soul_biometric_mismatch === true
+      || helixSignals.soul_mismatch_from_codex === true
+    ),
     red_confidence: redConfidence
   };
   const intensity = computeAdaptiveIntensity(colonyPolicy, input);
@@ -445,7 +472,8 @@ function runAntColony(input: AnyObj = {}, opts: AnyObj = {}) {
     signals: {
       helix_tamper: signals.helix_tamper,
       sentinel_agreement: signals.sentinel_agreement,
-      soul_mismatch: signals.soul_mismatch
+      soul_mismatch: signals.soul_mismatch,
+      soul_biometric_mismatch: soulSignals.soul_biometric_mismatch === true
     },
     paths: {
       state_root: relPath(paths.root),

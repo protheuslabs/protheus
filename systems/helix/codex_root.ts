@@ -104,6 +104,13 @@ function codexMetaFromPolicy(policy: AnyObj = {}) {
   const soulStatePath = path.isAbsolute(soulStateRaw)
     ? soulStateRaw
     : path.join(ROOT, soulStateRaw);
+  const soulBiometricRaw = cleanText(
+    codex.soul_biometric_state_path || 'state/security/soul_biometric/latest.json',
+    300
+  ) || 'state/security/soul_biometric/latest.json';
+  const soulBiometricPath = path.isAbsolute(soulBiometricRaw)
+    ? soulBiometricRaw
+    : path.join(ROOT, soulBiometricRaw);
   return {
     codex_id: normalizeToken(codex.codex_id || 'protheus_helix_codex', 80) || 'protheus_helix_codex',
     bootstrap_truths: bootstrapTruths.length
@@ -115,7 +122,8 @@ function codexMetaFromPolicy(policy: AnyObj = {}) {
           'fail_secure_before_actuation'
         ],
     constitution_path: constitutionPath,
-    soul_state_path: soulStatePath
+    soul_state_path: soulStatePath,
+    soul_biometric_state_path: soulBiometricPath
   };
 }
 
@@ -137,8 +145,14 @@ function normalizeCodex(raw: AnyObj = {}) {
 function buildCodexRoot(policy: AnyObj = {}, opts: AnyObj = {}) {
   const meta = codexMetaFromPolicy(policy);
   const soulState = readJson(meta.soul_state_path, {});
+  const soulBiometric = readJson(meta.soul_biometric_state_path, {});
   const soulFingerprint = cleanText(soulState && soulState.fingerprint || '', 320) || null;
   const soulInstanceId = normalizeToken(soulState && soulState.instance_id || '', 120) || null;
+  const soulCommitmentId = cleanText(soulBiometric && soulBiometric.commitment_id || '', 120) || null;
+  const soulTemplateId = cleanText(soulBiometric && soulBiometric.template_id || '', 120) || null;
+  const soulBiometricConfidence = Number(
+    soulBiometric && soulBiometric.confidence != null ? soulBiometric.confidence : 0
+  );
   const constitutionHash = fileSha256OrNull(meta.constitution_path);
   const keyInfo = resolveHelixKey(policy);
   const nowTs = nowIso();
@@ -151,7 +165,12 @@ function buildCodexRoot(policy: AnyObj = {}, opts: AnyObj = {}) {
     },
     soul_binding: {
       fingerprint: soulFingerprint,
-      instance_id: soulInstanceId
+      instance_id: soulInstanceId,
+      biometric_commitment_id: soulCommitmentId,
+      biometric_template_id: soulTemplateId,
+      biometric_confidence: Number.isFinite(soulBiometricConfidence)
+        ? Number(soulBiometricConfidence.toFixed(6))
+        : 0
     },
     approval_note: cleanText(opts.approval_note || '', 220) || null
   };

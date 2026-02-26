@@ -42,6 +42,8 @@ function run() {
   const script = path.join(root, 'systems', 'security', 'soul_token_guard.js');
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'soul-token-guard-'));
   const policyPath = path.join(tmp, 'config', 'soul_token_guard_policy.json');
+  const soulPolicyPath = path.join(tmp, 'config', 'soul_policy.json');
+  const soulStateRoot = path.join(tmp, 'state', 'security', 'soul_biometric');
   const tokenStatePath = path.join(tmp, 'state', 'security', 'soul_token_guard.json');
   const auditPath = path.join(tmp, 'state', 'security', 'soul_token_guard_audit.jsonl');
   const attestationPath = path.join(tmp, 'state', 'security', 'release_attestations.jsonl');
@@ -58,7 +60,40 @@ function run() {
     audit_path: auditPath,
     attestation_path: attestationPath,
     black_box_attestation_dir: blackBoxDir,
-    default_attestation_valid_hours: 24
+    default_attestation_valid_hours: 24,
+    biometric_attestation: {
+      enabled: true,
+      shadow_only: true,
+      require_for_verify: false,
+      min_confidence: 0.75,
+      min_live_modalities: 2,
+      timeout_ms: 8000,
+      script: path.join(root, 'systems', 'soul', 'soul_print_manager.js'),
+      policy_path: soulPolicyPath
+    }
+  });
+
+  writeJson(soulPolicyPath, {
+    version: '1.0-test',
+    enabled: true,
+    shadow_only: true,
+    min_confidence: 0.75,
+    k_of_n_threshold: 2,
+    min_liveness_modalities: 2,
+    modalities: {
+      voice: { enabled: true, weight: 0.4, min_confidence: 0.7, mock_profile: 'stable' },
+      typing_rhythm: { enabled: true, weight: 0.3, min_confidence: 0.7, mock_profile: 'stable' },
+      gait_motion: { enabled: true, weight: 0.2, min_confidence: 0.6, mock_profile: 'stable' },
+      os_biometric_attestation: { enabled: true, weight: 0.1, min_confidence: 0.8, mock_profile: 'stable' }
+    },
+    outputs: {
+      state_root: soulStateRoot,
+      latest_path: path.join(soulStateRoot, 'latest.json'),
+      runtime_state_path: path.join(soulStateRoot, 'runtime_state.json'),
+      receipts_path: path.join(soulStateRoot, 'receipts.jsonl'),
+      events_path: path.join(soulStateRoot, 'events.jsonl'),
+      obsidian_path: path.join(soulStateRoot, 'obsidian_projection.jsonl')
+    }
   });
 
   const baseEnv = {
@@ -113,6 +148,10 @@ function run() {
   const verifyPayload = parsePayload(verifyRun.stdout);
   assert.ok(verifyPayload && verifyPayload.ok === true, 'verify payload should be ok');
   assert.strictEqual(verifyPayload.shadow_only, false, 'verified token should not be shadow-only');
+  assert.ok(
+    verifyPayload.biometric_attestation && verifyPayload.biometric_attestation.checked === true,
+    'biometric attestation should be evaluated'
+  );
 
   const rows = readJsonl(attestationPath);
   assert.ok(rows.length >= 1, 'attestation rows should exist');

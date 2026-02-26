@@ -123,6 +123,7 @@ function defaultPolicy() {
       key_env: 'HELIX_CODEX_KEY',
       constitution_path: 'AGENT-CONSTITUTION.md',
       soul_token_state_path: 'state/security/soul_token_guard.json',
+      soul_biometric_state_path: 'state/security/soul_biometric/latest.json',
       bootstrap_truths: [
         'preserve_constitutional_root',
         'preserve_user_sovereignty',
@@ -178,6 +179,10 @@ function loadPolicy(policyPath: string) {
         || base.codex.constitution_path,
       soul_token_state_path: cleanText(codex.soul_token_state_path || base.codex.soul_token_state_path, 260)
         || base.codex.soul_token_state_path,
+      soul_biometric_state_path: cleanText(
+        codex.soul_biometric_state_path || base.codex.soul_biometric_state_path,
+        260
+      ) || base.codex.soul_biometric_state_path,
       bootstrap_truths: Array.isArray(codex.bootstrap_truths)
         ? codex.bootstrap_truths.map((row: unknown) => cleanText(row, 200)).filter(Boolean).slice(0, 64)
         : base.codex.bootstrap_truths.slice(0)

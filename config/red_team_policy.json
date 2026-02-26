@@ -97,6 +97,7 @@
       "helix_latest_path": "state/helix/latest.json",
       "helix_sentinel_state_path": "state/helix/sentinel_state.json",
       "soul_token_state_path": "state/security/soul_token_guard.json",
+      "soul_biometric_latest_path": "state/security/soul_biometric/latest.json",
       "assimilation_ledger_path": "state/assimilation/ledger.json",
       "weaver_latest_path": "state/autonomy/weaver/latest.json"
     }
