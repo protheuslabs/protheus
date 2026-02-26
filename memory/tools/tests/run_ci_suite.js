@@ -12,6 +12,7 @@ const { spawnSync } = require('child_process');
 const ROOT = path.resolve(__dirname, '..', '..', '..');
 const TEST_DIR = path.join(ROOT, 'memory', 'tools', 'tests');
 const INCLUDE_STATEFUL = process.argv.includes('--include-stateful');
+const CI_STREAK_STATE_PATH = path.join(ROOT, 'state', 'ops', 'ci_baseline_streak.json');
 
 const DEFAULT_EXCLUDES = new Set([
   'enforcement.smoke.test.js',
@@ -51,6 +52,96 @@ function printOutput(prefix, text) {
   for (const line of lines) {
     console.log(`${prefix}${line}`);
   }
+}
+
+function ensureDir(dirPath) {
+  fs.mkdirSync(dirPath, { recursive: true });
+}
+
+function readJsonSafe(filePath, fallback) {
+  try {
+    if (!fs.existsSync(filePath)) return fallback;
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch {
+    return fallback;
+  }
+}
+
+function writeJsonAtomic(filePath, value) {
+  ensureDir(path.dirname(filePath));
+  const tmp = `${filePath}.tmp-${Date.now()}`;
+  fs.writeFileSync(tmp, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+  fs.renameSync(tmp, filePath);
+}
+
+function dateOnlyUtc(tsIso) {
+  return String(tsIso || '').slice(0, 10);
+}
+
+function sortDescDate(a, b) {
+  return b.localeCompare(a);
+}
+
+function prevDateUtc(dateStr) {
+  const d = new Date(`${dateStr}T00:00:00.000Z`);
+  d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
+function computeConsecutiveDailyGreen(history) {
+  const byDay = new Map();
+  for (const row of Array.isArray(history) ? history : []) {
+    const day = String(row && row.date || '').trim();
+    if (!day) continue;
+    const prev = byDay.get(day);
+    if (!prev || String(row.ts || '') > String(prev.ts || '')) {
+      byDay.set(day, row);
+    }
+  }
+  const days = Array.from(byDay.keys()).sort(sortDescDate);
+  if (days.length === 0) return { streak: 0, latest_green_date: null };
+
+  let streak = 0;
+  let expect = days[0];
+  for (const day of days) {
+    if (day !== expect) break;
+    const row = byDay.get(day);
+    if (!row || row.ok !== true) break;
+    streak += 1;
+    expect = prevDateUtc(expect);
+  }
+
+  return {
+    streak,
+    latest_green_date: streak > 0 ? days[0] : null
+  };
+}
+
+function recordCiRun(outcome) {
+  const now = new Date().toISOString();
+  const base = readJsonSafe(CI_STREAK_STATE_PATH, {});
+  const history = Array.isArray(base.history) ? base.history.slice(-59) : [];
+  history.push({
+    ts: now,
+    date: dateOnlyUtc(now),
+    ok: outcome.ok === true,
+    passed: Number(outcome.passed || 0),
+    failed: Number(outcome.failed || 0),
+    total: Number(outcome.total || 0),
+    include_stateful: outcome.include_stateful === true
+  });
+  const streak = computeConsecutiveDailyGreen(history);
+  const out = {
+    schema_id: 'ci_baseline_streak',
+    schema_version: '1.0',
+    updated_at: now,
+    target_days: 7,
+    consecutive_daily_green_runs: streak.streak,
+    latest_green_date: streak.latest_green_date,
+    history
+  };
+  writeJsonAtomic(CI_STREAK_STATE_PATH, out);
+  return out;
 }
 
 function main() {
@@ -137,6 +228,14 @@ function main() {
   }
 
   console.log(`=== CI RESULT: passed=${passed} failed=${failed} ===`);
+  const streakState = recordCiRun({
+    ok: failed === 0,
+    passed,
+    failed,
+    total: tests.length,
+    include_stateful: INCLUDE_STATEFUL
+  });
+  console.log(`=== CI BASELINE STREAK: ${streakState.consecutive_daily_green_runs}/${streakState.target_days} days ===`);
   if (failed > 0) process.exit(1);
 }
 
