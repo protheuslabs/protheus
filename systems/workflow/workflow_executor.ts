@@ -71,6 +71,9 @@ const SUBSUMPTION_LATEST_PATH = process.env.WORKFLOW_EXECUTOR_SUBSUMPTION_LATEST
 const SYSTEM_HEALTH_EVENTS_PATH = process.env.SYSTEM_HEALTH_EVENTS_PATH
   ? path.resolve(process.env.SYSTEM_HEALTH_EVENTS_PATH)
   : path.join(REPO_ROOT, 'state', 'ops', 'system_health', 'events.jsonl');
+const SOUL_TOKEN_GUARD_SCRIPT = process.env.WORKFLOW_EXECUTOR_SOUL_TOKEN_GUARD_SCRIPT
+  ? path.resolve(process.env.WORKFLOW_EXECUTOR_SOUL_TOKEN_GUARD_SCRIPT)
+  : path.join(REPO_ROOT, 'systems', 'security', 'soul_token_guard.js');
 
 function usage() {
   console.log('Usage:');
@@ -377,6 +380,15 @@ function defaultPolicy() {
       allow_escalate_decision: false,
       estimated_tokens_default: 100,
       default_provider: 'ollama'
+    },
+    security_gates: {
+      soul_token: {
+        enabled: true,
+        enforce_shadow_on_violation: true,
+        strict_verify: false,
+        timeout_ms: 8000,
+        script: 'systems/security/soul_token_guard.js'
+      }
     }
   };
 }
@@ -413,6 +425,12 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
     : {};
   const external = raw && raw.external_orchestration && typeof raw.external_orchestration === 'object'
     ? raw.external_orchestration
+    : {};
+  const securityGates = raw && raw.security_gates && typeof raw.security_gates === 'object'
+    ? raw.security_gates
+    : {};
+  const soulTokenGateRaw = securityGates && securityGates.soul_token && typeof securityGates.soul_token === 'object'
+    ? securityGates.soul_token
     : {};
   const allowRaw = rm && rm.allow && typeof rm.allow === 'object' ? rm.allow : {};
   const normalizeTokenArray = (input: unknown, fallback: string[]) => {
@@ -665,7 +683,94 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
       ),
       default_provider: cleanText(external.default_provider || base.external_orchestration.default_provider, 80).toLowerCase()
         || base.external_orchestration.default_provider
+    },
+    security_gates: {
+      soul_token: {
+        enabled: soulTokenGateRaw.enabled !== false,
+        enforce_shadow_on_violation: soulTokenGateRaw.enforce_shadow_on_violation !== false,
+        strict_verify: soulTokenGateRaw.strict_verify === true,
+        timeout_ms: clampInt(
+          soulTokenGateRaw.timeout_ms,
+          200,
+          120000,
+          base.security_gates.soul_token.timeout_ms
+        ),
+        script: cleanText(soulTokenGateRaw.script || base.security_gates.soul_token.script, 260)
+          || base.security_gates.soul_token.script
+      }
     }
+  };
+}
+
+function evaluateSoulTokenGate(policy: AnyObj, args: AnyObj = {}) {
+  const base = defaultPolicy().security_gates.soul_token;
+  const gate = policy && policy.security_gates && policy.security_gates.soul_token
+    ? policy.security_gates.soul_token
+    : base;
+  const enabled = gate && gate.enabled !== false;
+  if (!enabled) {
+    return {
+      enabled: false,
+      checked: false,
+      verify_ok: null,
+      shadow_only: false,
+      forced_shadow: false,
+      reason: 'disabled',
+      script_path: null,
+      strict_verify: false
+    };
+  }
+  const scriptRaw = cleanText(gate.script || '', 260) || relPath(SOUL_TOKEN_GUARD_SCRIPT);
+  const scriptPath = path.isAbsolute(scriptRaw) ? scriptRaw : path.join(REPO_ROOT, scriptRaw);
+  const timeoutMs = clampInt(gate.timeout_ms, 200, 120000, base.timeout_ms);
+  const strictVerify = gate.strict_verify === true || boolFlag(args['soul-token-strict'], false);
+  if (!fs.existsSync(scriptPath)) {
+    return {
+      enabled: true,
+      checked: false,
+      verify_ok: false,
+      shadow_only: true,
+      forced_shadow: gate.enforce_shadow_on_violation !== false,
+      reason: 'script_missing',
+      script_path: relPath(scriptPath),
+      strict_verify: strictVerify
+    };
+  }
+  const verifyArgs = [scriptPath, 'verify'];
+  if (strictVerify) verifyArgs.push('--strict=1');
+  const verifyRes = spawnSync(process.execPath, verifyArgs, {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+    timeout: timeoutMs
+  });
+  const payload = parseJsonPayload(verifyRes && verifyRes.stdout);
+  const verifyOk = Number(verifyRes && verifyRes.status) === 0
+    && payload
+    && payload.ok === true;
+  const shadowOnly = payload && payload.shadow_only === true;
+  const reason = cleanText(
+    (payload && payload.reason)
+      || (verifyRes && verifyRes.stderr)
+      || (verifyRes && verifyRes.stdout)
+      || `soul_token_verify_exit_${Number.isInteger(verifyRes && verifyRes.status) ? verifyRes.status : 1}`,
+    180
+  ) || 'soul_token_verify_unknown';
+  const forcedShadow = gate.enforce_shadow_on_violation !== false && (!verifyOk || shadowOnly);
+  return {
+    enabled: true,
+    checked: true,
+    verify_ok: verifyOk === true,
+    shadow_only: shadowOnly === true,
+    forced_shadow: forcedShadow === true,
+    reason,
+    script_path: relPath(scriptPath),
+    strict_verify: strictVerify === true,
+    payload: payload && typeof payload === 'object' ? {
+      type: payload.type || null,
+      enforcement_mode: payload.enforcement_mode || null,
+      token_present: payload.token_present === true,
+      attestation_present: payload.attestation_present === true
+    } : null
   };
 }
 
@@ -2450,11 +2555,13 @@ function runCmd(dateStr: string, args: AnyObj) {
     : 'live';
   const dryRunArgPresent = Object.prototype.hasOwnProperty.call(args, 'dry-run');
   const dryRunArgValue = boolFlag(args['dry-run'], false);
+  const soulTokenGate = evaluateSoulTokenGate(policy, args);
+  const gateForcedDryRun = soulTokenGate.forced_shadow === true;
   const stageForcedDryRun = rolloutEnabled
     && stage === 'shadow'
     && policy.rollout.shadow_dry_run === true
     && !dryRunArgPresent;
-  const effectiveDryRun = dryRunArgValue || stageForcedDryRun;
+  const effectiveDryRun = dryRunArgValue || stageForcedDryRun || gateForcedDryRun;
   const options = {
     dry_run: effectiveDryRun,
     continue_on_error: boolFlag(args['continue-on-error'], false),
@@ -2469,6 +2576,7 @@ function runCmd(dateStr: string, args: AnyObj) {
         !!(policy && policy.runtime_mutation && policy.runtime_mutation.enabled === true)
       )
     },
+    soul_token_gate: soulTokenGate,
     _run_mutation_state: {
       total_mutations: 0
     }
@@ -2628,6 +2736,8 @@ function runCmd(dateStr: string, args: AnyObj) {
     date: dateStr,
     dry_run: options.dry_run === true,
     forced_shadow_dry_run: stageForcedDryRun === true,
+    forced_shadow_soul_token: gateForcedDryRun === true,
+    soul_token_gate: soulTokenGate,
     continue_on_error: options.continue_on_error === true,
     receipt_strict: options.receipt_strict === true,
     rollout_enabled: rolloutEnabled,
@@ -2697,6 +2807,16 @@ function runCmd(dateStr: string, args: AnyObj) {
     date: payload.date,
     dry_run: payload.dry_run,
     runtime_mutation_enabled: payload.runtime_mutation_enabled,
+    soul_token_gate: payload.soul_token_gate && typeof payload.soul_token_gate === 'object'
+      ? {
+          enabled: payload.soul_token_gate.enabled === true,
+          checked: payload.soul_token_gate.checked === true,
+          verify_ok: payload.soul_token_gate.verify_ok === true,
+          shadow_only: payload.soul_token_gate.shadow_only === true,
+          forced_shadow: payload.soul_token_gate.forced_shadow === true,
+          reason: payload.soul_token_gate.reason || null
+        }
+      : null,
     runtime_mutations_applied: payload.runtime_mutations_applied,
     runtime_mutations_rolled_back: payload.runtime_mutations_rolled_back,
     rollout_stage: payload.rollout_stage,
@@ -2787,6 +2907,9 @@ function runCmd(dateStr: string, args: AnyObj) {
     type: payload.type,
     run_id: payload.run_id,
     date: payload.date,
+    dry_run: payload.dry_run === true,
+    forced_shadow_dry_run: payload.forced_shadow_dry_run === true,
+    forced_shadow_soul_token: payload.forced_shadow_soul_token === true,
     workflows_selected: payload.workflows_selected,
     workflows_excluded: payload.workflows_excluded,
     minimum_selection_applied: payload.minimum_selection_applied === true,
@@ -2813,6 +2936,16 @@ function runCmd(dateStr: string, args: AnyObj) {
     slo_pass: payload.slo ? payload.slo.pass === true : false,
     slo_window_pass: payload.slo_window ? payload.slo_window.pass === true : false,
     runtime_mutation_enabled: payload.runtime_mutation_enabled,
+    soul_token_gate: payload.soul_token_gate && typeof payload.soul_token_gate === 'object'
+      ? {
+          enabled: payload.soul_token_gate.enabled === true,
+          checked: payload.soul_token_gate.checked === true,
+          verify_ok: payload.soul_token_gate.verify_ok === true,
+          shadow_only: payload.soul_token_gate.shadow_only === true,
+          forced_shadow: payload.soul_token_gate.forced_shadow === true,
+          reason: payload.soul_token_gate.reason || null
+        }
+      : null,
     runtime_mutations_applied: payload.runtime_mutations_applied,
     runtime_mutations_rolled_back: payload.runtime_mutations_rolled_back,
     live_zero_selection_streak: payload.live_zero_selection_streak,
@@ -2849,6 +2982,16 @@ function statusCmd(dateArg: string) {
     rollout_canary_fraction: payload.rollout_canary_fraction == null ? null : Number(payload.rollout_canary_fraction),
     rollout_last_scale_action: payload.rollout_state_after ? payload.rollout_state_after.last_scale_action || null : null,
     runtime_mutation_enabled: payload.runtime_mutation_enabled === true,
+    soul_token_gate: payload.soul_token_gate && typeof payload.soul_token_gate === 'object'
+      ? {
+          enabled: payload.soul_token_gate.enabled === true,
+          checked: payload.soul_token_gate.checked === true,
+          verify_ok: payload.soul_token_gate.verify_ok === true,
+          shadow_only: payload.soul_token_gate.shadow_only === true,
+          forced_shadow: payload.soul_token_gate.forced_shadow === true,
+          reason: payload.soul_token_gate.reason || null
+        }
+      : null,
     runtime_mutations_applied: Number(payload.runtime_mutations_applied || 0),
     runtime_mutations_rolled_back: Number(payload.runtime_mutations_rolled_back || 0),
     workflows_selected: Number(payload.workflows_selected || 0),
