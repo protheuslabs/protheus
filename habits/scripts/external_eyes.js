@@ -620,6 +620,39 @@ function normalizeSensoryProposalRow(row, fallback = 'open') {
   return next;
 }
 
+function proposalIsRejected(row) {
+  if (!row || typeof row !== 'object') return false;
+  const status = normalizedSensoryProposalStatus(row.status, 'open');
+  if (status === 'rejected' || status === 'blocked' || status === 'failed' || status === 'invalid') return true;
+  const decision = String(row.decision || row.queue_decision || '').trim().toLowerCase();
+  return decision === 'reject' || decision === 'rejected' || decision === 'block' || decision === 'blocked';
+}
+
+function proposalIsSignalAccepted(row) {
+  if (!row || typeof row !== 'object') return false;
+  if (proposalIsRejected(row)) return false;
+  const status = normalizedSensoryProposalStatus(row.status, 'open');
+  if (
+    status === 'accepted'
+    || status === 'approved'
+    || status === 'sprouted'
+    || status === 'verified'
+    || status === 'closed'
+    || status === 'resolved'
+    || status === 'executed'
+    || status === 'shipped'
+  ) {
+    return true;
+  }
+  const meta = row.meta && typeof row.meta === 'object' ? row.meta : {};
+  if (meta.admission_preview && typeof meta.admission_preview === 'object' && meta.admission_preview.eligible === true) {
+    return true;
+  }
+  if (meta.composite_eligibility_pass === true) return true;
+  const type = String(row.type || '').trim().toLowerCase();
+  return type === 'external_intel';
+}
+
 function failureCodesFromStaticPreflight(staticRep) {
   const failures = Array.isArray(staticRep && staticRep.failures) ? staticRep.failures : [];
   const codes = new Set();
@@ -2363,7 +2396,7 @@ function signalSlo(dateStr, opts = {}) {
 
   const proposalData = loadProposalsForDate(date);
   const proposals = Array.isArray(proposalData.proposals) ? proposalData.proposals : [];
-  const acceptedItems = proposals.filter(p => String(p && p.type || '') === 'external_intel').length;
+  const acceptedItems = proposals.filter((p) => proposalIsSignalAccepted(p)).length;
 
   const queueEvents = safeReadJsonl(SENSORY_QUEUE_LOG_PATH);
   const proposalGenerated = queueEvents

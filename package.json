@@ -28,6 +28,7 @@
     "security:logs:redaction:scrub": "node systems/security/log_redaction_guard.js scrub",
     "ops:model-health:recover": "node systems/ops/model_health_auto_recovery.js run",
     "ops:config-registry": "node systems/ops/config_registry.js run --apply-aliases=1",
+    "ops:workflow-closure": "node systems/ops/workflow_execution_closure.js run",
     "autophagy:baseline:capture": "node systems/autonomy/autophagy_baseline_guard.js capture",
     "autophagy:baseline:check": "node systems/autonomy/autophagy_baseline_guard.js check --strict",
     "autophagy:harvest": "node systems/autonomy/non_yield_harvest.js run",

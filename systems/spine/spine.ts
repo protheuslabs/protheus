@@ -2992,6 +2992,75 @@ function main() {
       console.log(" workflow_executor skipped reason=feature_flag_disabled flag=SPINE_WORKFLOW_EXECUTOR_ENABLED");
     }
 
+    if (String(process.env.SPINE_WORKFLOW_EXECUTION_CLOSURE_ENABLED || "1") !== "0") {
+      const closureLookbackDays = Math.max(
+        7,
+        Number(process.env.SPINE_WORKFLOW_EXECUTION_CLOSURE_LOOKBACK_DAYS || 21) || 21
+      );
+      const closureTargetDays = Math.max(
+        1,
+        Number(process.env.SPINE_WORKFLOW_EXECUTION_CLOSURE_TARGET_DAYS || 7) || 7
+      );
+      const closureMinAccepted = Math.max(
+        0,
+        Number(process.env.SPINE_WORKFLOW_EXECUTION_CLOSURE_MIN_ACCEPTED || 1) || 1
+      );
+      const closureMinExecuted = Math.max(
+        0,
+        Number(process.env.SPINE_WORKFLOW_EXECUTION_CLOSURE_MIN_EXECUTED || 1) || 1
+      );
+      const closure = runJson("node", [
+        "systems/ops/workflow_execution_closure.js",
+        "run",
+        dateStr,
+        `--days=${closureLookbackDays}`,
+        `--target-days=${closureTargetDays}`,
+        `--min-accepted=${closureMinAccepted}`,
+        `--min-workflows=${closureMinExecuted}`
+      ]);
+      const payload = closure.payload && typeof closure.payload === "object"
+        ? closure.payload
+        : null;
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_workflow_execution_closure",
+        mode,
+        date: dateStr,
+        ok: closure.ok && !!payload && payload.ok === true,
+        closure_pass: payload ? payload.closure_pass === true : null,
+        result: payload ? payload.result || null : null,
+        consecutive_days_passed: payload ? Number(payload.consecutive_days_passed || 0) : null,
+        target_streak_days: payload ? Number(payload.target_streak_days || 0) : null,
+        remaining_days: payload ? Number(payload.remaining_days || 0) : null,
+        latest_day_pass: payload && payload.latest_day ? payload.latest_day.pass === true : null,
+        latest_day_accepted_items: payload && payload.latest_day ? Number(payload.latest_day.accepted_items || 0) : null,
+        latest_day_workflows_executed: payload && payload.latest_day ? Number(payload.latest_day.workflows_executed || 0) : null,
+        reason: (!closure.ok || !payload || payload.ok !== true)
+          ? String(closure.stderr || closure.stdout || `workflow_execution_closure_exit_${closure.code}`).slice(0, 180)
+          : null
+      });
+      if (closure.ok && payload && payload.ok === true) {
+        console.log(
+          ` workflow_execution_closure streak=${Number(payload.consecutive_days_passed || 0)}` +
+          `/${Number(payload.target_streak_days || 0)}` +
+          ` latest=${payload.latest_day && payload.latest_day.pass === true ? "pass" : "fail"}`
+        );
+      } else {
+        console.log(` workflow_execution_closure WARN reason=${String(closure.stderr || closure.stdout || "unknown").slice(0, 120)}`);
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_workflow_execution_closure_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "SPINE_WORKFLOW_EXECUTION_CLOSURE_ENABLED",
+        flag_value: String(process.env.SPINE_WORKFLOW_EXECUTION_CLOSURE_ENABLED || "")
+      });
+      console.log(" workflow_execution_closure skipped reason=feature_flag_disabled flag=SPINE_WORKFLOW_EXECUTION_CLOSURE_ENABLED");
+    }
+
     // 0e) claw registry status snapshot (actuation lane readiness visibility).
     if (String(process.env.SPINE_CLAW_REGISTRY_STATUS_ENABLED || "1") !== "0") {
       const claws = runJson("node", [
