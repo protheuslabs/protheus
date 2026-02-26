@@ -219,6 +219,48 @@ function verifyBlankSlateSnapshot(snapshotDir, manifest, maxFiles) {
   };
 }
 
+function verifyOffsiteEncryptedSnapshot(snapshotDir, manifest, maxFiles) {
+  const files = Array.isArray(manifest && manifest.files) ? manifest.files : [];
+  const subset = files.slice(0, Math.max(1, Math.min(Number(maxFiles || 2000), 50000)));
+  let checked = 0;
+  let missing = 0;
+  let mismatch = 0;
+  const failures = [];
+
+  for (const row of subset) {
+    const rel = String(row && row.encrypted_path || '').replace(/\\/g, '/').replace(/^\/+/, '');
+    if (!rel || rel.includes('..')) continue;
+    const target = path.join(snapshotDir, rel);
+    if (!fs.existsSync(target)) {
+      missing += 1;
+      failures.push({ path: rel, reason: 'missing_encrypted_payload' });
+      continue;
+    }
+    const st = fs.statSync(target);
+    if (!st.isFile()) {
+      missing += 1;
+      failures.push({ path: rel, reason: 'not_file' });
+      continue;
+    }
+    checked += 1;
+    const expected = String(row && row.encrypted_sha256 || '').trim().toLowerCase();
+    if (!expected) continue;
+    const actual = sha256File(target);
+    if (actual !== expected) {
+      mismatch += 1;
+      failures.push({ path: rel, reason: 'sha_mismatch' });
+    }
+  }
+
+  return {
+    checked,
+    missing,
+    mismatch,
+    ok: missing === 0 && mismatch === 0,
+    failures: failures.slice(0, 50)
+  };
+}
+
 function verifyChannel(policy, channelId, args) {
   const cfg = policy.channels[channelId];
   if (!cfg || typeof cfg !== 'object') {
@@ -296,6 +338,8 @@ function verifyChannel(policy, channelId, args) {
   let verification;
   if (actualType === 'blank_slate_reset_snapshot') {
     verification = verifyBlankSlateSnapshot(snapshotDir, manifest, maxFiles);
+  } else if (actualType === 'offsite_encrypted_snapshot') {
+    verification = verifyOffsiteEncryptedSnapshot(snapshotDir, manifest, maxFiles);
   } else {
     verification = verifyStateBackupSnapshot(snapshotDir, manifest, maxFiles);
   }

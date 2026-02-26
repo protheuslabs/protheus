@@ -298,3 +298,36 @@ Primary files to inspect per incident:
 - `state/autonomy/runs/YYYY-MM-DD.jsonl`
 - `state/autonomy/receipts/YYYY-MM-DD.jsonl`
 - `state/routing/routing_decisions.jsonl`
+- `state/ops/offsite_backup_sync_receipts.jsonl`
+- `state/ops/offsite_restore_drill_receipts.jsonl`
+
+## Incident 9: Offsite DR Gap / Restore Drill Overdue
+
+Symptoms:
+
+- `offsite_backup status` reports `restore_drill_due=true`
+- latest offsite sync or restore drill has `ok=false`
+- no recent offsite receipts despite local state backups
+
+Diagnose:
+
+1. `node systems/ops/offsite_backup.js status`
+2. `node systems/ops/offsite_backup.js list --limit=3`
+3. `tail -n 20 state/ops/offsite_backup_sync_receipts.jsonl`
+4. `tail -n 20 state/ops/offsite_restore_drill_receipts.jsonl`
+
+Containment / Recovery:
+
+1. Ensure encryption key + destinations are set:
+`echo $STATE_BACKUP_OFFSITE_KEY | wc -c`
+`echo $STATE_BACKUP_OFFSITE_DEST`
+2. Run strict sync:
+`node systems/ops/offsite_backup.js sync --strict=1`
+3. Run strict restore drill:
+`node systems/ops/offsite_backup.js restore-drill --strict=1`
+
+Verification:
+
+1. `offsite_backup status` returns `restore_drill_due=false`.
+2. Latest sync receipt has `ok=true`.
+3. Latest restore-drill receipt has `ok=true` with `metrics.rto_minutes` and `metrics.rpo_hours` present.

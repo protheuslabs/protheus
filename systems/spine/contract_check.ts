@@ -578,6 +578,12 @@ function main() {
     ["state_backup.js", "run", "list", "--dest", "--profile"]
   );
 
+  // offsite_backup.js synchronizes encrypted offsite snapshots and runs restore drills.
+  checkScript(
+    "systems/ops/offsite_backup.js",
+    ["offsite_backup.js", "sync", "restore-drill", "status", "list", "--profile", "--policy", "--strict"]
+  );
+
   // openclaw_backup_retention.js keeps recent OpenClaw config backups and archives older files.
   checkScript(
     "systems/ops/openclaw_backup_retention.js",
@@ -620,7 +626,7 @@ function main() {
     ["blank_slate_reset.js", "run", "rollback", "list", "--confirm=RESET"]
   );
 
-  // backup_integrity_check.js validates state backup + blank-slate snapshot integrity.
+  // backup_integrity_check.js validates state + blank-slate + offsite snapshot integrity.
   checkScript(
     "systems/ops/backup_integrity_check.js",
     ["backup_integrity_check.js", "run", "list", "--strict", "--channel"]

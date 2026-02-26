@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "default_channels": ["state_backup", "blank_slate"],
+  "default_channels": ["state_backup", "blank_slate", "offsite_state_backup"],
   "channels": {
     "state_backup": {
       "description": "Verify latest state backup snapshot manifest hashes.",
@@ -18,6 +18,15 @@
       "profile": "adaptive_memory_blank_slate",
       "manifest_type": "blank_slate_reset_snapshot",
       "max_files": 4000,
+      "required": false
+    },
+    "offsite_state_backup": {
+      "description": "Verify latest encrypted offsite state backup snapshot payload hashes.",
+      "destination_env": "STATE_BACKUP_OFFSITE_DEST",
+      "destination_default": "~/.openclaw/backups/workspace-state-offsite",
+      "profile": "runtime_state",
+      "manifest_type": "offsite_encrypted_snapshot",
+      "max_files": 2000,
       "required": false
     }
   }

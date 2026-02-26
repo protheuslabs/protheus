@@ -42,6 +42,20 @@ function test() {
     files: [{ path: fileRel, sha256: sha }]
   });
 
+  const offsiteProfile = 'runtime_state_offsite';
+  const offsiteSnapshotId = '20260221T202020Z';
+  const offsiteDir = path.join(dest, offsiteProfile, offsiteSnapshotId);
+  mkdirp(offsiteDir);
+  const offsiteRel = 'payload/state/autonomy/runs/2026-02-21.jsonl.enc';
+  const offsiteAbs = path.join(offsiteDir, offsiteRel);
+  writeText(offsiteAbs, 'encrypted-payload');
+  const offsiteSha = require('crypto').createHash('sha256').update('encrypted-payload').digest('hex');
+  writeJson(path.join(offsiteDir, 'manifest.json'), {
+    type: 'offsite_encrypted_snapshot',
+    snapshot_id: offsiteSnapshotId,
+    files: [{ encrypted_path: offsiteRel, encrypted_sha256: offsiteSha }]
+  });
+
   const policyPath = path.join(tmp, 'policy.json');
   writeJson(policyPath, {
     version: '1.0',
@@ -51,6 +65,13 @@ function test() {
         destination_default: dest,
         profile,
         manifest_type: 'state_backup_snapshot',
+        max_files: 100,
+        required: true
+      },
+      offsite_state_backup: {
+        destination_default: dest,
+        profile: offsiteProfile,
+        manifest_type: 'offsite_encrypted_snapshot',
         max_files: 100,
         required: true
       }
@@ -71,6 +92,21 @@ function test() {
   });
   assert.strictEqual(r.status, 1, 'strict mismatch should fail exit=1');
   assert.ok(r.payload && r.payload.ok === false, 'strict mismatch should set ok=false');
+
+  r = run(['run', '--channel=offsite_state_backup', '--strict'], {
+    BACKUP_INTEGRITY_POLICY_PATH: policyPath,
+    BACKUP_INTEGRITY_AUDIT_PATH: path.join(tmp, 'audit.jsonl')
+  });
+  assert.strictEqual(r.status, 0, `expected offsite pass; stderr=${r.stderr}`);
+  assert.ok(r.payload && r.payload.ok === true, 'expected offsite ok=true');
+
+  writeText(offsiteAbs, 'encrypted-payload-corrupt');
+  r = run(['run', '--channel=offsite_state_backup', '--strict'], {
+    BACKUP_INTEGRITY_POLICY_PATH: policyPath,
+    BACKUP_INTEGRITY_AUDIT_PATH: path.join(tmp, 'audit.jsonl')
+  });
+  assert.strictEqual(r.status, 1, 'strict offsite mismatch should fail exit=1');
+  assert.ok(r.payload && r.payload.ok === false, 'strict offsite mismatch should set ok=false');
 
   fs.rmSync(tmp, { recursive: true, force: true });
 }

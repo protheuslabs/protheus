@@ -177,7 +177,7 @@ function spineTritWeightForType(type) {
   const t = String(type || "");
   if (!t) return 1;
   if (/signal_gate|signal_slo|integrity|security|emergency|critical/i.test(t)) return 3;
-  if (/budget_guard|autonomy_health|strategy|router_alert|startup_attestation|secret_rotation/i.test(t)) return 2;
+  if (/budget_guard|autonomy_health|strategy|router_alert|startup_attestation|secret_rotation|offsite_backup|restore_drill/i.test(t)) return 2;
   if (/_skipped$/i.test(t)) return 0.5;
   return 1;
 }
@@ -1112,6 +1112,7 @@ function main() {
     "systems/actuation/actuation_executor.js",
     "systems/actuation/bridge_from_proposals.js",
     "systems/ops/state_backup.js",
+    "systems/ops/offsite_backup.js",
     "systems/ops/backup_integrity_check.js",
     "systems/ops/openclaw_backup_retention.js",
     "systems/memory/eyes_memory_bridge.js",
@@ -1153,6 +1154,7 @@ function main() {
     "config/deployment_packaging_policy.json",
     "config/compliance_posture_policy.json",
     "config/state_backup_policy.json",
+    "config/offsite_backup_policy.json",
     "config/secret_broker_policy.json",
     "config/observability_policy.json",
     "skills/moltbook/actuation_adapter.js",
@@ -4568,6 +4570,163 @@ function main() {
         flag_value: String(process.env.STATE_BACKUP_ENABLED || "")
       });
       console.log(" state_backup skipped reason=feature_flag_disabled flag=STATE_BACKUP_ENABLED");
+    }
+
+    // 5a) optional encrypted offsite backup sync + cadence-based restore drills.
+    if (String(process.env.STATE_BACKUP_OFFSITE_ENABLED || "1") !== "0") {
+      const offsitePolicyPath = String(process.env.SPINE_OFFSITE_BACKUP_POLICY_PATH || "config/offsite_backup_policy.json").trim();
+      const offsiteProfile = String(process.env.SPINE_OFFSITE_BACKUP_PROFILE || process.env.STATE_BACKUP_PROFILE || "").trim();
+      const offsiteDest = String(process.env.STATE_BACKUP_OFFSITE_DEST || "").trim();
+      const offsiteSourceDest = String(process.env.STATE_BACKUP_DEST || "").trim();
+      const offsiteStrict = String(process.env.SPINE_OFFSITE_BACKUP_STRICT || "0") === "1";
+      const offsiteSyncArgs = ["systems/ops/offsite_backup.js", "sync"];
+      if (offsitePolicyPath) offsiteSyncArgs.push(`--policy=${offsitePolicyPath}`);
+      if (offsiteProfile) offsiteSyncArgs.push(`--profile=${offsiteProfile}`);
+      if (offsiteDest) offsiteSyncArgs.push(`--offsite-dest=${offsiteDest}`);
+      if (offsiteSourceDest) offsiteSyncArgs.push(`--source-dest=${offsiteSourceDest}`);
+      if (offsiteStrict) offsiteSyncArgs.push("--strict=1");
+      const offsiteSync = runJson("node", offsiteSyncArgs);
+      const offsiteSyncPayload = offsiteSync.payload && typeof offsiteSync.payload === "object"
+        ? offsiteSync.payload
+        : null;
+      const offsiteSyncOk = offsiteSync.ok && !!offsiteSyncPayload && offsiteSyncPayload.ok === true;
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_offsite_backup_sync",
+        mode,
+        date: dateStr,
+        ok: offsiteSyncOk,
+        strict: offsiteStrict,
+        profile: offsiteSyncPayload ? offsiteSyncPayload.profile || null : null,
+        snapshot_id: offsiteSyncPayload ? offsiteSyncPayload.snapshot_id || null : null,
+        file_count: offsiteSyncPayload ? Number(offsiteSyncPayload.file_count || 0) : null,
+        offsite_destination: offsiteSyncPayload ? offsiteSyncPayload.offsite_destination || null : null,
+        rpo_hours: offsiteSyncPayload && offsiteSyncPayload.metrics
+          ? Number(offsiteSyncPayload.metrics.rpo_hours || 0)
+          : null,
+        reason: !offsiteSyncOk
+          ? String(
+            (offsiteSyncPayload && offsiteSyncPayload.reason)
+            || offsiteSync.stderr
+            || offsiteSync.stdout
+            || `offsite_backup_sync_exit_${offsiteSync.code}`
+          ).slice(0, 180)
+          : null
+      });
+      if (offsiteSyncOk) {
+        console.log(
+          ` offsite_backup_sync ok snapshot=${String(offsiteSyncPayload && offsiteSyncPayload.snapshot_id || "unknown")}` +
+          ` files=${Number(offsiteSyncPayload && offsiteSyncPayload.file_count || 0)}` +
+          ` rpo_hours=${String(offsiteSyncPayload && offsiteSyncPayload.metrics ? offsiteSyncPayload.metrics.rpo_hours : "n/a")}`
+        );
+      } else {
+        console.log(` offsite_backup_sync unavailable reason=${String(offsiteSync.stderr || offsiteSync.stdout || "unknown").slice(0, 120)}`);
+        if (offsiteStrict) process.exit(offsiteSync.code || 1);
+      }
+
+      if (String(process.env.SPINE_OFFSITE_RESTORE_DRILL_ENABLED || "1") !== "0") {
+        const statusArgs = ["systems/ops/offsite_backup.js", "status"];
+        if (offsitePolicyPath) statusArgs.push(`--policy=${offsitePolicyPath}`);
+        if (offsiteProfile) statusArgs.push(`--profile=${offsiteProfile}`);
+        if (offsiteDest) statusArgs.push(`--offsite-dest=${offsiteDest}`);
+        const offsiteStatus = runJson("node", statusArgs);
+        const offsiteStatusPayload = offsiteStatus.payload && typeof offsiteStatus.payload === "object"
+          ? offsiteStatus.payload
+          : null;
+        const offsiteDue = !!(offsiteStatus.ok && offsiteStatusPayload && offsiteStatusPayload.restore_drill_due === true);
+        appendLedger(dateStr, {
+          ts: nowIso(),
+          type: "spine_offsite_restore_drill_status",
+          mode,
+          date: dateStr,
+          ok: offsiteStatus.ok && !!offsiteStatusPayload && offsiteStatusPayload.ok === true,
+          due: offsiteDue,
+          profile: offsiteStatusPayload ? offsiteStatusPayload.profile || null : null,
+          last_drill_ts: offsiteStatusPayload ? offsiteStatusPayload.last_drill_ts || null : null,
+          next_due_ts: offsiteStatusPayload ? offsiteStatusPayload.restore_drill_next_due_ts || null : null,
+          reason: (!offsiteStatus.ok || !offsiteStatusPayload || offsiteStatusPayload.ok !== true)
+            ? String(offsiteStatus.stderr || offsiteStatus.stdout || `offsite_restore_status_exit_${offsiteStatus.code}`).slice(0, 180)
+            : null
+        });
+
+        if (offsiteDue) {
+          const restoreArgs = ["systems/ops/offsite_backup.js", "restore-drill"];
+          const restoreStrict = String(process.env.SPINE_OFFSITE_RESTORE_DRILL_STRICT || "0") === "1";
+          const restoreDest = String(process.env.SPINE_OFFSITE_RESTORE_DRILL_DEST || "").trim();
+          if (offsitePolicyPath) restoreArgs.push(`--policy=${offsitePolicyPath}`);
+          if (offsiteProfile) restoreArgs.push(`--profile=${offsiteProfile}`);
+          if (offsiteDest) restoreArgs.push(`--offsite-dest=${offsiteDest}`);
+          if (restoreDest) restoreArgs.push(`--dest=${restoreDest}`);
+          if (restoreStrict) restoreArgs.push("--strict=1");
+          const offsiteRestore = runJson("node", restoreArgs);
+          const offsiteRestorePayload = offsiteRestore.payload && typeof offsiteRestore.payload === "object"
+            ? offsiteRestore.payload
+            : null;
+          const offsiteRestoreOk = offsiteRestore.ok && !!offsiteRestorePayload && offsiteRestorePayload.ok === true;
+          appendLedger(dateStr, {
+            ts: nowIso(),
+            type: "spine_offsite_restore_drill",
+            mode,
+            date: dateStr,
+            ok: offsiteRestoreOk,
+            strict: restoreStrict,
+            profile: offsiteRestorePayload ? offsiteRestorePayload.profile || null : null,
+            snapshot_id: offsiteRestorePayload ? offsiteRestorePayload.snapshot_id || null : null,
+            verified_files: offsiteRestorePayload ? Number(offsiteRestorePayload.verified_files || 0) : null,
+            rto_minutes: offsiteRestorePayload && offsiteRestorePayload.metrics
+              ? Number(offsiteRestorePayload.metrics.rto_minutes || 0)
+              : null,
+            rpo_hours: offsiteRestorePayload && offsiteRestorePayload.metrics
+              ? Number(offsiteRestorePayload.metrics.rpo_hours || 0)
+              : null,
+            reason: !offsiteRestoreOk
+              ? String(
+                (offsiteRestorePayload && Array.isArray(offsiteRestorePayload.reasons) && offsiteRestorePayload.reasons[0])
+                || offsiteRestorePayload && offsiteRestorePayload.reason
+                || offsiteRestore.stderr
+                || offsiteRestore.stdout
+                || `offsite_restore_drill_exit_${offsiteRestore.code}`
+              ).slice(0, 180)
+              : null
+          });
+          if (offsiteRestoreOk) {
+            console.log(
+              ` offsite_restore_drill ok snapshot=${String(offsiteRestorePayload && offsiteRestorePayload.snapshot_id || "unknown")}` +
+              ` rto=${String(offsiteRestorePayload && offsiteRestorePayload.metrics ? offsiteRestorePayload.metrics.rto_minutes : "n/a")}` +
+              ` rpo=${String(offsiteRestorePayload && offsiteRestorePayload.metrics ? offsiteRestorePayload.metrics.rpo_hours : "n/a")}`
+            );
+          } else {
+            console.log(` offsite_restore_drill unavailable reason=${String(offsiteRestore.stderr || offsiteRestore.stdout || "unknown").slice(0, 120)}`);
+            if (restoreStrict) process.exit(offsiteRestore.code || 1);
+          }
+        } else {
+          console.log(
+            ` offsite_restore_drill not_due next=${String(offsiteStatusPayload && offsiteStatusPayload.restore_drill_next_due_ts || "unknown")}`
+          );
+        }
+      } else {
+        appendLedger(dateStr, {
+          ts: nowIso(),
+          type: "spine_offsite_restore_drill_skipped",
+          mode,
+          date: dateStr,
+          reason: "feature_flag_disabled",
+          flag: "SPINE_OFFSITE_RESTORE_DRILL_ENABLED",
+          flag_value: String(process.env.SPINE_OFFSITE_RESTORE_DRILL_ENABLED || "")
+        });
+        console.log(" offsite_restore_drill skipped reason=feature_flag_disabled flag=SPINE_OFFSITE_RESTORE_DRILL_ENABLED");
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_offsite_backup_sync_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "STATE_BACKUP_OFFSITE_ENABLED",
+        flag_value: String(process.env.STATE_BACKUP_OFFSITE_ENABLED || "")
+      });
+      console.log(" offsite_backup_sync skipped reason=feature_flag_disabled flag=STATE_BACKUP_OFFSITE_ENABLED");
     }
 
     // 5b) backup integrity verification (state backups + blank-slate archives).
