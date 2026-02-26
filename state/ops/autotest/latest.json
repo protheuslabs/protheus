@@ -1,13 +1,11 @@
 {
   "ok": true,
-  "type": "autotest_report",
-  "ts": "2026-02-26T10:16:36.797Z",
-  "date": "2026-02-26",
-  "modules_total": 200,
-  "modules_checked": 10,
-  "modules_changed": 0,
+  "type": "autotest_sync",
+  "ts": "2026-02-26T10:39:19.150Z",
+  "changed_modules": 3,
+  "new_modules": 0,
   "untested_modules": 45,
-  "failed_tests": 0,
-  "output_path": "state/ops/autotest/reports/2026-02-26.md",
-  "write": true
+  "emitted_alerts": 1,
+  "registry_path": "state/ops/autotest/registry.json",
+  "status_path": "state/ops/autotest/status.json"
 }

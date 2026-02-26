@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "updated_at": "2026-02-26T10:16:36.793Z",
+  "updated_at": "2026-02-26T10:39:19.150Z",
   "modules": {
     "systems/actuation/actuation_executor.ts": {
       "id": "mod_0eff96d59cce2c",
@@ -798,14 +798,14 @@
     "systems/autonomy/non_yield_cycle.ts": {
       "id": "mod_abd8c904c687b5",
       "path": "systems/autonomy/non_yield_cycle.ts",
-      "fingerprint": "7150a2833f712d89f501adfb08e8618216eca2b700eea58d4f973a514ab3fd8b",
+      "fingerprint": "dbeb3a10ae6a5c0d3e3bd4745fe44e3711027ec0092668da722da92f330f90e4",
       "checked": false,
-      "changed": false,
+      "changed": true,
       "is_new": false,
       "untested": true,
       "mapped_test_ids": [],
       "mapped_test_count": 0,
-      "last_change_ts": "2026-02-26T10:15:45.275Z",
+      "last_change_ts": "2026-02-26T10:39:19.150Z",
       "last_test_ts": null,
       "last_pass_ts": null,
       "last_fail_ts": null,
@@ -2467,16 +2467,16 @@
     "systems/ops/dist_runtime_cutover.ts": {
       "id": "mod_d1da0c0d0e755b",
       "path": "systems/ops/dist_runtime_cutover.ts",
-      "fingerprint": "7adae82a59f8d080f1efeb1f01c10da263a781807dea2fe37115b258fa8aeba7",
+      "fingerprint": "58edb103cd8678389a1a0c70d53557ac0fad070741a7a7c6f7d533e058e11343",
       "checked": false,
-      "changed": false,
+      "changed": true,
       "is_new": false,
       "untested": false,
       "mapped_test_ids": [
         "tst_a456d3860b18ff"
       ],
       "mapped_test_count": 1,
-      "last_change_ts": "2026-02-26T10:15:45.275Z",
+      "last_change_ts": "2026-02-26T10:39:19.150Z",
       "last_test_ts": null,
       "last_pass_ts": null,
       "last_fail_ts": null,
@@ -3263,9 +3263,9 @@
     "systems/security/anti_sabotage_shield.ts": {
       "id": "mod_106909bc4407aa",
       "path": "systems/security/anti_sabotage_shield.ts",
-      "fingerprint": "3af61ee6531fe74913e69db0c1a279d8c38198d2c59836474412ca015a821dca",
+      "fingerprint": "51b22f48cc3621e3b322fae650dcd74efb156ff76d86cc28654587ba53d61030",
       "checked": false,
-      "changed": false,
+      "changed": true,
       "is_new": false,
       "untested": false,
       "mapped_test_ids": [
@@ -3276,7 +3276,7 @@
         "tst_b53119a002168a"
       ],
       "mapped_test_count": 5,
-      "last_change_ts": "2026-02-26T10:15:45.275Z",
+      "last_change_ts": "2026-02-26T10:39:19.150Z",
       "last_test_ts": null,
       "last_pass_ts": null,
       "last_fail_ts": null,
@@ -4846,22 +4846,7 @@
       "last_run_ts": "2026-02-26T10:16:27.712Z",
       "last_duration_ms": 809,
       "last_stdout_excerpt": "autonomy_actionability_rollback_guard.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/autonomy_actionability_rollback_guard.test.js",
-          "systems/autonomy/autonomy_controller.ts",
-          "systems/autonomy/autonomy_rollout_controller.ts",
-          "systems/autonomy/autonomy_simulation_harness.ts",
-          "systems/autonomy/autophagy_baseline_guard.ts",
-          "systems/autonomy/model_catalog_rollback.ts",
-          "systems/autonomy/strategy_execute_guard.ts",
-          "systems/security/guard.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:16:27.712Z"
+      "last_stderr_excerpt": null
     },
     "tst_6e303915d4e7be": {
       "id": "tst_6e303915d4e7be",
@@ -4874,18 +4859,7 @@
       "last_run_ts": "2026-02-26T10:16:18.839Z",
       "last_duration_ms": 751,
       "last_stdout_excerpt": "autonomy_backlog_autoscale.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/autonomy_backlog_autoscale.test.js",
-          "systems/autonomy/autonomy_controller.ts",
-          "systems/autonomy/autonomy_rollout_controller.ts",
-          "systems/autonomy/autonomy_simulation_harness.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:16:18.839Z"
+      "last_stderr_excerpt": null
     },
     "tst_1b339651037708": {
       "id": "tst_1b339651037708",
@@ -4898,19 +4872,7 @@
       "last_run_ts": "2026-02-26T10:16:11.146Z",
       "last_duration_ms": 747,
       "last_stdout_excerpt": "autonomy_backlog_batch_max.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/autonomy_backlog_batch_max.test.js",
-          "systems/autonomy/autonomy_controller.ts",
-          "systems/autonomy/autonomy_rollout_controller.ts",
-          "systems/autonomy/autonomy_simulation_harness.ts",
-          "systems/autonomy/batch_lane.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:16:11.146Z"
+      "last_stderr_excerpt": null
     },
     "tst_79fbb8b53e594c": {
       "id": "tst_79fbb8b53e594c",
@@ -4923,19 +4885,7 @@
       "last_run_ts": "2026-02-26T10:16:19.830Z",
       "last_duration_ms": 742,
       "last_stdout_excerpt": "═══════════════════════════════════════════════════════════ AUTONOMY CALIBRATION TESTS ═══════════════════════════════════════════════════════════ ✅ low ship-rate + high exhaustion loosens thresholds ✅ tightening requires sufficient sample and shipped baseline ✅ small-sample high no-change does not over-tighten ✅ fallback low-sample exhaustion still loosens slightly ✅ ALL AUTONOMY CALIBRATION TESTS PASS",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/autonomy_calibration.test.js",
-          "systems/autonomy/autonomy_controller.ts",
-          "systems/autonomy/autonomy_rollout_controller.ts",
-          "systems/autonomy/autonomy_simulation_harness.ts",
-          "systems/autonomy/trit_shadow_replay_calibration.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:16:19.830Z"
+      "last_stderr_excerpt": null
     },
     "tst_57372b6da983cd": {
       "id": "tst_57372b6da983cd",
@@ -4948,18 +4898,7 @@
       "last_run_ts": "2026-02-26T10:16:17.376Z",
       "last_duration_ms": 786,
       "last_stdout_excerpt": "autonomy_dynamic_io_caps.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/autonomy_dynamic_io_caps.test.js",
-          "systems/autonomy/autonomy_controller.ts",
-          "systems/autonomy/autonomy_rollout_controller.ts",
-          "systems/autonomy/autonomy_simulation_harness.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:16:17.376Z"
+      "last_stderr_excerpt": null
     },
     "tst_fe5cdcdc6a00be": {
       "id": "tst_fe5cdcdc6a00be",
@@ -4972,20 +4911,7 @@
       "last_run_ts": "2026-02-26T10:16:34.235Z",
       "last_duration_ms": 2008,
       "last_stdout_excerpt": "═══════════════════════════════════════════════════════════ AUTONOMY EVIDENCE PIPELINE INTEGRATION TEST ═══════════════════════════════════════════════════════════ Ingested 1 proposals for 2099-12-31 (0 duplicates skipped) ✅ eyes -> queue -> enrich -> evidence pipeline is healthy",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/autonomy_evidence_pipeline.integration.test.js",
-          "systems/autonomy/autonomy_controller.ts",
-          "systems/autonomy/autonomy_rollout_controller.ts",
-          "systems/autonomy/autonomy_simulation_harness.ts",
-          "systems/autonomy/pipeline_spc_gate.ts",
-          "systems/autonomy/skill_generation_pipeline.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:16:34.235Z"
+      "last_stderr_excerpt": null
     },
     "tst_2d2034df3ebeb7": {
       "id": "tst_2d2034df3ebeb7",
@@ -4998,19 +4924,7 @@
       "last_run_ts": "2026-02-26T10:16:13.148Z",
       "last_duration_ms": 746,
       "last_stdout_excerpt": "autonomy_execute_confidence_cooldown_key.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/autonomy_execute_confidence_cooldown_key.test.js",
-          "systems/autonomy/autonomy_controller.ts",
-          "systems/autonomy/autonomy_rollout_controller.ts",
-          "systems/autonomy/autonomy_simulation_harness.ts",
-          "systems/autonomy/strategy_execute_guard.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:16:13.148Z"
+      "last_stderr_excerpt": null
     },
     "tst_405dfbaeffd2e1": {
       "id": "tst_405dfbaeffd2e1",
@@ -5023,22 +4937,7 @@
       "last_run_ts": "2026-02-26T10:16:14.145Z",
       "last_duration_ms": 751,
       "last_stdout_excerpt": "autonomy_mutation_execution_guard.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/autonomy_mutation_execution_guard.test.js",
-          "systems/autonomy/autonomy_controller.ts",
-          "systems/autonomy/autonomy_rollout_controller.ts",
-          "systems/autonomy/autonomy_simulation_harness.ts",
-          "systems/autonomy/autophagy_baseline_guard.ts",
-          "systems/autonomy/mutation_safety_kernel.ts",
-          "systems/autonomy/strategy_execute_guard.ts",
-          "systems/security/guard.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:16:14.145Z"
+      "last_stderr_excerpt": null
     },
     "tst_92dab8ace7f60f": {
       "id": "tst_92dab8ace7f60f",
@@ -5051,18 +4950,7 @@
       "last_run_ts": "2026-02-26T10:16:21.832Z",
       "last_duration_ms": 752,
       "last_stdout_excerpt": "autonomy_policy_hold_classification.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/autonomy_policy_hold_classification.test.js",
-          "systems/autonomy/autonomy_controller.ts",
-          "systems/autonomy/autonomy_rollout_controller.ts",
-          "systems/autonomy/autonomy_simulation_harness.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:16:21.832Z"
+      "last_stderr_excerpt": null
     },
     "tst_9db6bc6ab985af": {
       "id": "tst_9db6bc6ab985af",
@@ -5075,18 +4963,7 @@
       "last_run_ts": "2026-02-26T10:16:23.831Z",
       "last_duration_ms": 738,
       "last_stdout_excerpt": "autonomy_policy_hold_pressure.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/autonomy_policy_hold_pressure.test.js",
-          "systems/autonomy/autonomy_controller.ts",
-          "systems/autonomy/autonomy_rollout_controller.ts",
-          "systems/autonomy/autonomy_simulation_harness.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:16:23.831Z"
+      "last_stderr_excerpt": null
     },
     "tst_27e08aaa70e813": {
       "id": "tst_27e08aaa70e813",
@@ -5099,18 +4976,7 @@
       "last_run_ts": "2026-02-26T10:16:12.157Z",
       "last_duration_ms": 765,
       "last_stdout_excerpt": "autonomy_policy_hold_reason_cooldown.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/autonomy_policy_hold_reason_cooldown.test.js",
-          "systems/autonomy/autonomy_controller.ts",
-          "systems/autonomy/autonomy_rollout_controller.ts",
-          "systems/autonomy/autonomy_simulation_harness.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:16:12.157Z"
+      "last_stderr_excerpt": null
     },
     "tst_9a5595e2a4eceb": {
       "id": "tst_9a5595e2a4eceb",
@@ -5123,18 +4989,7 @@
       "last_run_ts": "2026-02-26T10:16:22.845Z",
       "last_duration_ms": 762,
       "last_stdout_excerpt": "autonomy_postconditions.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/autonomy_postconditions.test.js",
-          "systems/autonomy/autonomy_controller.ts",
-          "systems/autonomy/autonomy_rollout_controller.ts",
-          "systems/autonomy/autonomy_simulation_harness.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:16:22.845Z"
+      "last_stderr_excerpt": null
     },
     "tst_dab32ddd01952e": {
       "id": "tst_dab32ddd01952e",
@@ -5147,18 +5002,7 @@
       "last_run_ts": "2026-02-26T10:16:28.757Z",
       "last_duration_ms": 786,
       "last_stdout_excerpt": "autonomy_preview_structural_cooldown.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/autonomy_preview_structural_cooldown.test.js",
-          "systems/autonomy/autonomy_controller.ts",
-          "systems/autonomy/autonomy_rollout_controller.ts",
-          "systems/autonomy/autonomy_simulation_harness.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:16:28.757Z"
+      "last_stderr_excerpt": null
     },
     "tst_df6b033e394bcd": {
       "id": "tst_df6b033e394bcd",
@@ -5171,20 +5015,7 @@
       "last_run_ts": "2026-02-26T10:16:29.813Z",
       "last_duration_ms": 799,
       "last_stdout_excerpt": "autonomy_qos_lane_selection.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/autonomy_qos_lane_selection.test.js",
-          "systems/autonomy/autonomy_controller.ts",
-          "systems/autonomy/autonomy_rollout_controller.ts",
-          "systems/autonomy/autonomy_simulation_harness.ts",
-          "systems/autonomy/batch_lane.ts",
-          "systems/autonomy/suggestion_lane.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:16:29.813Z"
+      "last_stderr_excerpt": null
     },
     "tst_5f0205511b09e8": {
       "id": "tst_5f0205511b09e8",
@@ -5197,21 +5028,7 @@
       "last_run_ts": "2026-02-26T10:16:17.831Z",
       "last_duration_ms": 207,
       "last_stdout_excerpt": "autonomy_rollout_controller.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/autonomy_rollout_controller.test.js",
-          "systems/autonomy/autonomy_controller.ts",
-          "systems/autonomy/autonomy_rollout_controller.ts",
-          "systems/autonomy/autonomy_simulation_harness.ts",
-          "systems/autonomy/improvement_controller.ts",
-          "systems/autonomy/inversion_controller.ts",
-          "systems/autonomy/optimization_aperture_controller.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:16:17.831Z"
+      "last_stderr_excerpt": null
     },
     "tst_b343fbf4b3b3c5": {
       "id": "tst_b343fbf4b3b3c5",
@@ -5224,19 +5041,7 @@
       "last_run_ts": "2026-02-26T10:16:26.019Z",
       "last_duration_ms": 1939,
       "last_stdout_excerpt": "✅ autonomy_run_batch.test.js PASS",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/autonomy_run_batch.test.js",
-          "systems/autonomy/autonomy_controller.ts",
-          "systems/autonomy/autonomy_rollout_controller.ts",
-          "systems/autonomy/autonomy_simulation_harness.ts",
-          "systems/autonomy/batch_lane.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:16:26.019Z"
+      "last_stderr_excerpt": null
     },
     "tst_fc21967864e868": {
       "id": "tst_fc21967864e868",
@@ -5249,18 +5054,7 @@
       "last_run_ts": "2026-02-26T10:16:31.966Z",
       "last_duration_ms": 836,
       "last_stdout_excerpt": "autonomy_run_lock.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/autonomy_run_lock.test.js",
-          "systems/autonomy/autonomy_controller.ts",
-          "systems/autonomy/autonomy_rollout_controller.ts",
-          "systems/autonomy/autonomy_simulation_harness.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:16:31.966Z"
+      "last_stderr_excerpt": null
     },
     "tst_b7b5d0cd46d660": {
       "id": "tst_b7b5d0cd46d660",
@@ -5273,19 +5067,7 @@
       "last_run_ts": "2026-02-26T10:16:26.657Z",
       "last_duration_ms": 390,
       "last_stdout_excerpt": "autonomy_simulation_harness_autopause_window.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/autonomy_simulation_harness_autopause_window.test.js",
-          "systems/autonomy/autonomy_controller.ts",
-          "systems/autonomy/autonomy_rollout_controller.ts",
-          "systems/autonomy/autonomy_simulation_harness.ts",
-          "systems/autonomy/red_team_harness.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:16:26.657Z"
+      "last_stderr_excerpt": null
     },
     "tst_8387f9beea340f": {
       "id": "tst_8387f9beea340f",
@@ -5298,20 +5080,7 @@
       "last_run_ts": "2026-02-26T10:16:20.823Z",
       "last_duration_ms": 745,
       "last_stdout_excerpt": "autonomy_simulation_harness_identity_projection.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/autonomy_simulation_harness_identity_projection.test.js",
-          "systems/autonomy/autonomy_controller.ts",
-          "systems/autonomy/autonomy_rollout_controller.ts",
-          "systems/autonomy/autonomy_simulation_harness.ts",
-          "systems/autonomy/red_team_harness.ts",
-          "systems/identity/identity_anchor.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:16:20.823Z"
+      "last_stderr_excerpt": null
     },
     "tst_42d21fbc81e7a5": {
       "id": "tst_42d21fbc81e7a5",
@@ -5324,27 +5093,7 @@
       "last_run_ts": "2026-02-26T10:16:15.344Z",
       "last_duration_ms": 953,
       "last_stdout_excerpt": "autonomy_strategy_layer_upgrades.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/autonomy_strategy_layer_upgrades.test.js",
-          "systems/autonomy/autonomy_controller.ts",
-          "systems/autonomy/autonomy_rollout_controller.ts",
-          "systems/autonomy/autonomy_simulation_harness.ts",
-          "systems/autonomy/strategy_doctor.ts",
-          "systems/autonomy/strategy_execute_guard.ts",
-          "systems/autonomy/strategy_mode_governor.ts",
-          "systems/autonomy/strategy_mode.ts",
-          "systems/autonomy/strategy_readiness.ts",
-          "systems/strategy/strategy_controller.ts",
-          "systems/strategy/strategy_learner.ts",
-          "systems/strategy/strategy_principles.ts",
-          "systems/strategy/weekly_strategy_synthesis.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:16:15.344Z"
+      "last_stderr_excerpt": null
     },
     "tst_4a58056b35f167": {
       "id": "tst_4a58056b35f167",
@@ -5357,22 +5106,7 @@
       "last_run_ts": "2026-02-26T10:16:16.343Z",
       "last_duration_ms": 753,
       "last_stdout_excerpt": "autonomy_trit_shadow_ranking.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/autonomy_trit_shadow_ranking.test.js",
-          "systems/autonomy/autonomy_controller.ts",
-          "systems/autonomy/autonomy_rollout_controller.ts",
-          "systems/autonomy/autonomy_simulation_harness.ts",
-          "systems/autonomy/collective_shadow.ts",
-          "systems/autonomy/trit_shadow_replay_calibration.ts",
-          "systems/autonomy/trit_shadow_report.ts",
-          "systems/autonomy/trit_shadow_weekly_adaptation.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:16:16.343Z"
+      "last_stderr_excerpt": null
     },
     "tst_e2e1e79fcccba0": {
       "id": "tst_e2e1e79fcccba0",
@@ -5385,18 +5119,7 @@
       "last_run_ts": "2026-02-26T10:16:30.871Z",
       "last_duration_ms": 798,
       "last_stdout_excerpt": "autonomy_value_currency_ranking.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/autonomy_value_currency_ranking.test.js",
-          "systems/autonomy/autonomy_controller.ts",
-          "systems/autonomy/autonomy_rollout_controller.ts",
-          "systems/autonomy/autonomy_simulation_harness.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:16:30.871Z"
+      "last_stderr_excerpt": null
     },
     "tst_1ff3470b67548d": {
       "id": "tst_1ff3470b67548d",
@@ -5435,16 +5158,7 @@
       "last_run_ts": "2026-02-26T10:16:35.332Z",
       "last_duration_ms": 849,
       "last_stdout_excerpt": "batch_lane.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/batch_lane.test.js",
-          "systems/autonomy/batch_lane.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:16:35.332Z"
+      "last_stderr_excerpt": null
     },
     "tst_a8a0968960973c": {
       "id": "tst_a8a0968960973c",
@@ -5548,16 +5262,7 @@
       "last_run_ts": "2026-02-26T10:16:36.792Z",
       "last_duration_ms": 1205,
       "last_stdout_excerpt": "collective_shadow.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/collective_shadow.test.js",
-          "systems/autonomy/collective_shadow.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:16:36.792Z"
+      "last_stderr_excerpt": null
     },
     "tst_4a193f7b9c6710": {
       "id": "tst_4a193f7b9c6710",
@@ -8154,11 +7859,22 @@
       "alert_8c1d152de34563": "2026-02-26T10:15:45.275Z",
       "alert_9fa2308ee9be68": "2026-02-26T10:15:45.275Z",
       "alert_9fc27e762217db": "2026-02-26T10:15:45.275Z",
-      "alert_57c89b65a0d063": "2026-02-26T10:15:45.275Z"
+      "alert_57c89b65a0d063": "2026-02-26T10:15:45.275Z",
+      "alert_ff5802caf1b13a": "2026-02-26T10:39:19.150Z"
     },
-    "latest": []
+    "latest": [
+      {
+        "ts": "2026-02-26T10:39:19.150Z",
+        "type": "autotest_alert",
+        "severity": "warn",
+        "alert_kind": "untested_module",
+        "module_path": "systems/autonomy/non_yield_cycle.ts",
+        "reason": "changed_module_without_tests",
+        "signature": "alert_ff5802caf1b13a"
+      }
+    ]
   },
-  "last_sync": "2026-02-26T10:16:10.110Z",
+  "last_sync": "2026-02-26T10:39:19.150Z",
   "last_run": "2026-02-26T10:16:36.793Z",
   "last_report": "2026-02-26T10:16:36.797Z"
 }
