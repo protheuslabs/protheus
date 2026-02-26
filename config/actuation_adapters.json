@@ -8,6 +8,50 @@
     "eyes_create": {
       "module": "systems/actuation/eyes_create_adapter.js",
       "description": "Create sensory eyes through eyes_intake with directive gating."
+    },
+    "http_request": {
+      "module": "systems/actuation/multi_channel_adapter.js",
+      "description": "Queue deterministic HTTP/webhook request actions with dry-run/live contracts."
+    },
+    "browser_task": {
+      "module": "systems/actuation/multi_channel_adapter.js",
+      "description": "Queue governed browser tasks for external execution lanes."
+    },
+    "filesystem_task": {
+      "module": "systems/actuation/multi_channel_adapter.js",
+      "description": "Perform bounded filesystem operations under allowed root."
+    },
+    "shell_task": {
+      "module": "systems/actuation/multi_channel_adapter.js",
+      "description": "Execute allowlisted shell commands with deterministic receipts."
+    },
+    "slack_message": {
+      "module": "systems/actuation/multi_channel_adapter.js",
+      "description": "Queue Slack outbound messages with deterministic outbox receipts."
+    },
+    "email_message": {
+      "module": "systems/actuation/multi_channel_adapter.js",
+      "description": "Queue outbound email payloads with deterministic outbox receipts."
+    },
+    "calendar_event": {
+      "module": "systems/actuation/multi_channel_adapter.js",
+      "description": "Queue calendar event upserts with deterministic outbox receipts."
+    },
+    "payment_task": {
+      "module": "systems/actuation/multi_channel_adapter.js",
+      "description": "Queue payment intents through governed payment lane controls."
+    },
+    "git_task": {
+      "module": "systems/actuation/multi_channel_adapter.js",
+      "description": "Execute bounded git status/log probes with deterministic receipts."
+    },
+    "crm_record": {
+      "module": "systems/actuation/multi_channel_adapter.js",
+      "description": "Queue CRM record upsert payloads with deterministic outbox receipts."
+    },
+    "helpdesk_ticket": {
+      "module": "systems/actuation/multi_channel_adapter.js",
+      "description": "Queue helpdesk ticket payloads with deterministic outbox receipts."
     }
   }
 }

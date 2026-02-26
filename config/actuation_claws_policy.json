@@ -8,7 +8,15 @@
     "http_request": "api",
     "browser_task": "browser",
     "computer_task": "computer_use",
-    "payment_task": "payment"
+    "payment_task": "payment",
+    "filesystem_task": "api",
+    "shell_task": "api",
+    "slack_message": "api",
+    "email_message": "api",
+    "calendar_event": "api",
+    "git_task": "api",
+    "crm_record": "api",
+    "helpdesk_ticket": "api"
   },
   "lanes": {
     "api": {
@@ -24,7 +32,7 @@
       "require_human_approval": true
     },
     "payment": {
-      "mode": "disabled",
+      "mode": "active",
       "require_human_approval": true
     }
   }

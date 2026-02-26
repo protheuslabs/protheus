@@ -275,7 +275,7 @@ async function cmdRun(args) {
   let res;
   let err = null;
   try {
-    res = await adapter.execute({ params, context, dryRun });
+    res = await adapter.execute({ params, context, dryRun, kind });
   } catch (e) {
     err = e;
   }
