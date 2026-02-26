@@ -20,6 +20,12 @@ const HISTORY_PATH = process.env.WORKFLOW_EXECUTOR_HISTORY_PATH
 const LATEST_PATH = process.env.WORKFLOW_EXECUTOR_LATEST_PATH
   ? path.resolve(process.env.WORKFLOW_EXECUTOR_LATEST_PATH)
   : path.join(REPO_ROOT, 'state', 'adaptive', 'workflows', 'executor', 'latest.json');
+const ROLLOUT_STATE_PATH = process.env.WORKFLOW_EXECUTOR_ROLLOUT_STATE_PATH
+  ? path.resolve(process.env.WORKFLOW_EXECUTOR_ROLLOUT_STATE_PATH)
+  : path.join(REPO_ROOT, 'state', 'adaptive', 'workflows', 'executor', 'rollout_state.json');
+const STEP_RECEIPTS_DIR = process.env.WORKFLOW_EXECUTOR_STEP_RECEIPTS_DIR
+  ? path.resolve(process.env.WORKFLOW_EXECUTOR_STEP_RECEIPTS_DIR)
+  : path.join(REPO_ROOT, 'state', 'adaptive', 'workflows', 'executor', 'step_receipts');
 const MUTATION_RECEIPTS_DIR = process.env.WORKFLOW_EXECUTOR_MUTATION_RECEIPTS_DIR
   ? path.resolve(process.env.WORKFLOW_EXECUTOR_MUTATION_RECEIPTS_DIR)
   : path.join(REPO_ROOT, 'state', 'adaptive', 'workflows', 'executor', 'mutations');
@@ -29,7 +35,7 @@ const EXEC_CWD = process.env.WORKFLOW_EXECUTOR_CWD
 
 function usage() {
   console.log('Usage:');
-  console.log('  node systems/workflow/workflow_executor.js run [YYYY-MM-DD] [--id=<workflow_id>] [--max=N] [--include-draft=1|0] [--dry-run=1|0] [--continue-on-error=1|0] [--receipt-strict=1|0] [--runtime-mutation=1|0] [--policy=path]');
+  console.log('  node systems/workflow/workflow_executor.js run [YYYY-MM-DD] [--id=<workflow_id>] [--max=N] [--include-draft=1|0] [--dry-run=1|0] [--continue-on-error=1|0] [--receipt-strict=1|0] [--runtime-mutation=1|0] [--enforce-eligibility=1|0] [--policy=path]');
   console.log('  node systems/workflow/workflow_executor.js status [YYYY-MM-DD|latest]');
 }
 
@@ -100,6 +106,26 @@ function readJson(filePath: string, fallback: any) {
   }
 }
 
+function readJsonl(filePath: string) {
+  try {
+    if (!fs.existsSync(filePath)) return [];
+    return fs.readFileSync(filePath, 'utf8')
+      .split('\n')
+      .filter(Boolean)
+      .map((line) => {
+        try {
+          const parsed = JSON.parse(line);
+          return parsed && typeof parsed === 'object' ? parsed : null;
+        } catch {
+          return null;
+        }
+      })
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
 function writeJsonAtomic(filePath: string, value: AnyObj) {
   ensureDir(path.dirname(filePath));
   const tmpPath = `${filePath}.tmp-${process.pid}-${Date.now()}`;
@@ -127,9 +153,56 @@ function stableId(seed: unknown, prefix = 'wf') {
   return `${prefix}_${hex}`;
 }
 
+function safeRate(num: unknown, den: unknown, fallback = 0) {
+  const n = Number(num);
+  const d = Number(den);
+  if (!Number.isFinite(n) || !Number.isFinite(d) || d <= 0) return fallback;
+  return n / d;
+}
+
 function defaultPolicy() {
   return {
     version: '1.0',
+    execution_gate: {
+      enabled: true,
+      min_steps: 3,
+      require_gate_step: true,
+      require_receipt_step: true,
+      require_concrete_commands: true,
+      require_rollback_path: true,
+      allow_policy_default_rollback: true,
+      min_composite_score: 0.45,
+      require_metrics_for_auto: false,
+      blocked_command_tokens: ['todo', 'placeholder', 'tbd'],
+      placeholder_allowlist: ['date', 'workflow_id', 'step_id', 'run_id', 'objective_id', 'eye_id', 'adapter']
+    },
+    failure_rollback: {
+      enabled: true,
+      default_command: 'node systems/autonomy/strategy_execute_guard.js rollback <date>',
+      timeout_ms: 120000,
+      retries: 0
+    },
+    rollout: {
+      enabled: true,
+      initial_stage: 'canary',
+      shadow_dry_run: true,
+      canary_fraction: 0.15,
+      canary_min_fraction: 0.05,
+      canary_max_fraction: 0.6,
+      scale_up_step: 0.1,
+      scale_down_step: 0.1,
+      min_consecutive_green_for_scale_up: 3,
+      min_consecutive_red_for_scale_down: 1,
+      promote_to_live_fraction: 0.6,
+      demote_shadow_on_floor_breach: true
+    },
+    slo: {
+      min_execution_success_rate: 0.9,
+      min_queue_drain_rate: 0.75,
+      max_time_to_first_execution_ms: 180000,
+      lookback_runs: 6,
+      min_runs_for_decision: 3
+    },
     runtime_mutation: {
       enabled: true,
       max_mutations_per_run: 8,
@@ -150,12 +223,118 @@ function defaultPolicy() {
 function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
   const raw = readJson(policyPath, {});
   const base = defaultPolicy();
+  const gate = raw && raw.execution_gate && typeof raw.execution_gate === 'object'
+    ? raw.execution_gate
+    : {};
+  const failureRollback = raw && raw.failure_rollback && typeof raw.failure_rollback === 'object'
+    ? raw.failure_rollback
+    : {};
+  const rollout = raw && raw.rollout && typeof raw.rollout === 'object'
+    ? raw.rollout
+    : {};
+  const slo = raw && raw.slo && typeof raw.slo === 'object'
+    ? raw.slo
+    : {};
   const rm = raw && raw.runtime_mutation && typeof raw.runtime_mutation === 'object'
     ? raw.runtime_mutation
     : {};
   const allowRaw = rm && rm.allow && typeof rm.allow === 'object' ? rm.allow : {};
+  const normalizeTokenArray = (input: unknown, fallback: string[]) => {
+    if (!Array.isArray(input)) return fallback.slice(0);
+    const out = input
+      .map((v) => String(v == null ? '' : v).trim().toLowerCase())
+      .filter(Boolean);
+    return out.length ? Array.from(new Set(out)) : fallback.slice(0);
+  };
+  const stageRaw = String(rollout.initial_stage || base.rollout.initial_stage).trim().toLowerCase();
+  const initialStage = stageRaw === 'shadow' || stageRaw === 'canary' || stageRaw === 'live'
+    ? stageRaw
+    : base.rollout.initial_stage;
   return {
     version: cleanText(raw.version || base.version, 24) || '1.0',
+    execution_gate: {
+      enabled: gate.enabled !== false,
+      min_steps: clampInt(gate.min_steps, 1, 32, base.execution_gate.min_steps),
+      require_gate_step: gate.require_gate_step !== false,
+      require_receipt_step: gate.require_receipt_step !== false,
+      require_concrete_commands: gate.require_concrete_commands !== false,
+      require_rollback_path: gate.require_rollback_path !== false,
+      allow_policy_default_rollback: gate.allow_policy_default_rollback !== false,
+      min_composite_score: clampNumber(gate.min_composite_score, 0, 1, base.execution_gate.min_composite_score),
+      require_metrics_for_auto: gate.require_metrics_for_auto === true,
+      blocked_command_tokens: normalizeTokenArray(gate.blocked_command_tokens, base.execution_gate.blocked_command_tokens),
+      placeholder_allowlist: normalizeTokenArray(gate.placeholder_allowlist, base.execution_gate.placeholder_allowlist)
+    },
+    failure_rollback: {
+      enabled: failureRollback.enabled !== false,
+      default_command: cleanText(
+        failureRollback.default_command || base.failure_rollback.default_command,
+        260
+      ) || base.failure_rollback.default_command,
+      timeout_ms: clampInt(
+        failureRollback.timeout_ms,
+        500,
+        30 * 60 * 1000,
+        base.failure_rollback.timeout_ms
+      ),
+      retries: clampInt(failureRollback.retries, 0, 8, base.failure_rollback.retries)
+    },
+    rollout: {
+      enabled: rollout.enabled !== false,
+      initial_stage: initialStage,
+      shadow_dry_run: rollout.shadow_dry_run !== false,
+      canary_fraction: clampNumber(rollout.canary_fraction, 0.01, 1, base.rollout.canary_fraction),
+      canary_min_fraction: clampNumber(rollout.canary_min_fraction, 0.01, 1, base.rollout.canary_min_fraction),
+      canary_max_fraction: clampNumber(rollout.canary_max_fraction, 0.01, 1, base.rollout.canary_max_fraction),
+      scale_up_step: clampNumber(rollout.scale_up_step, 0.01, 1, base.rollout.scale_up_step),
+      scale_down_step: clampNumber(rollout.scale_down_step, 0.01, 1, base.rollout.scale_down_step),
+      min_consecutive_green_for_scale_up: clampInt(
+        rollout.min_consecutive_green_for_scale_up,
+        1,
+        100,
+        base.rollout.min_consecutive_green_for_scale_up
+      ),
+      min_consecutive_red_for_scale_down: clampInt(
+        rollout.min_consecutive_red_for_scale_down,
+        1,
+        100,
+        base.rollout.min_consecutive_red_for_scale_down
+      ),
+      promote_to_live_fraction: clampNumber(
+        rollout.promote_to_live_fraction,
+        0.01,
+        1,
+        base.rollout.promote_to_live_fraction
+      ),
+      demote_shadow_on_floor_breach: rollout.demote_shadow_on_floor_breach !== false
+    },
+    slo: {
+      min_execution_success_rate: clampNumber(
+        slo.min_execution_success_rate,
+        0,
+        1,
+        base.slo.min_execution_success_rate
+      ),
+      min_queue_drain_rate: clampNumber(
+        slo.min_queue_drain_rate,
+        0,
+        1,
+        base.slo.min_queue_drain_rate
+      ),
+      max_time_to_first_execution_ms: clampInt(
+        slo.max_time_to_first_execution_ms,
+        1000,
+        24 * 60 * 60 * 1000,
+        base.slo.max_time_to_first_execution_ms
+      ),
+      lookback_runs: clampInt(slo.lookback_runs, 1, 200, base.slo.lookback_runs),
+      min_runs_for_decision: clampInt(
+        slo.min_runs_for_decision,
+        1,
+        100,
+        base.slo.min_runs_for_decision
+      )
+    },
     runtime_mutation: {
       enabled: rm.enabled !== false,
       max_mutations_per_run: clampInt(rm.max_mutations_per_run, 0, 128, base.runtime_mutation.max_mutations_per_run),
@@ -189,6 +368,165 @@ function normalizeStep(rawStep: AnyObj, index = 0) {
   };
 }
 
+function normalizeStage(raw: unknown, fallback = 'shadow') {
+  const s = String(raw == null ? '' : raw).trim().toLowerCase();
+  if (s === 'shadow' || s === 'canary' || s === 'live') return s;
+  return fallback;
+}
+
+function rolloutDefaultState(policy: AnyObj) {
+  const stage = normalizeStage(policy && policy.rollout ? policy.rollout.initial_stage : 'shadow', 'shadow');
+  const fraction = clampNumber(
+    Number(policy && policy.rollout ? policy.rollout.canary_fraction : 0.15),
+    0.01,
+    1,
+    0.15
+  );
+  return {
+    schema_id: 'workflow_executor_rollout_state',
+    schema_version: '1.0',
+    updated_at: nowIso(),
+    stage,
+    canary_fraction: fraction,
+    consecutive_green: 0,
+    consecutive_red: 0,
+    last_slo_pass: null,
+    last_scale_action: null
+  };
+}
+
+function loadRolloutState(policy: AnyObj) {
+  const fallback = rolloutDefaultState(policy);
+  const src = readJson(ROLLOUT_STATE_PATH, fallback);
+  const out = {
+    ...fallback,
+    ...(src && typeof src === 'object' ? src : {})
+  };
+  out.stage = normalizeStage(out.stage, fallback.stage);
+  out.canary_fraction = clampNumber(
+    Number(out.canary_fraction),
+    Number(policy && policy.rollout ? policy.rollout.canary_min_fraction : 0.05),
+    Number(policy && policy.rollout ? policy.rollout.canary_max_fraction : 1),
+    fallback.canary_fraction
+  );
+  out.consecutive_green = clampInt(out.consecutive_green, 0, 100000, 0);
+  out.consecutive_red = clampInt(out.consecutive_red, 0, 100000, 0);
+  out.last_slo_pass = out.last_slo_pass == null ? null : !!out.last_slo_pass;
+  out.last_scale_action = cleanText(out.last_scale_action || '', 80) || null;
+  return out;
+}
+
+function saveRolloutState(next: AnyObj) {
+  writeJsonAtomic(ROLLOUT_STATE_PATH, {
+    ...(next && typeof next === 'object' ? next : {}),
+    updated_at: nowIso()
+  });
+}
+
+function stableUnit(seed: unknown) {
+  const src = String(seed == null ? '' : seed);
+  let h = 2166136261;
+  for (let i = 0; i < src.length; i += 1) {
+    h ^= src.charCodeAt(i);
+    h += (h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24);
+  }
+  const out = (h >>> 0) / 0xffffffff;
+  return clampNumber(out, 0, 1, 0);
+}
+
+function extractTemplateTokens(value: unknown) {
+  const text = String(value == null ? '' : value);
+  const re = /<([a-zA-Z0-9_:-]+)>/g;
+  const out: string[] = [];
+  let m = null;
+  while ((m = re.exec(text)) != null) {
+    const token = String(m[1] || '').trim().toLowerCase();
+    if (token) out.push(token);
+  }
+  return Array.from(new Set(out));
+}
+
+function hasRollbackStep(steps: AnyObj[]) {
+  return (Array.isArray(steps) ? steps : []).some((row) => {
+    const id = String(row && row.id || '').toLowerCase();
+    const purpose = String(row && row.purpose || '').toLowerCase();
+    const command = String(row && row.command || '').toLowerCase();
+    return id.includes('rollback')
+      || purpose.includes('rollback')
+      || /\brollback\b/.test(command);
+  });
+}
+
+function assessWorkflowEligibility(workflow: AnyObj, policy: AnyObj, opts: AnyObj = {}) {
+  const gate = policy && policy.execution_gate && typeof policy.execution_gate === 'object'
+    ? policy.execution_gate
+    : defaultPolicy().execution_gate;
+  if (gate.enabled !== true) {
+    return {
+      eligible: true,
+      reasons: [],
+      has_rollback_path: hasRollbackStep(Array.isArray(workflow && workflow.steps) ? workflow.steps : [])
+    };
+  }
+  const steps = Array.isArray(workflow && workflow.steps)
+    ? workflow.steps.map((row, i) => normalizeStep(row, i))
+    : [];
+  const reasons: string[] = [];
+  if (steps.length < Number(gate.min_steps || 1)) reasons.push('min_steps_unmet');
+
+  const hasGate = steps.some((row) => String(row && row.type || '').toLowerCase() === 'gate');
+  const hasReceipt = steps.some((row) => String(row && row.type || '').toLowerCase() === 'receipt');
+  const hasRollback = hasRollbackStep(steps);
+  if (gate.require_gate_step === true && !hasGate) reasons.push('missing_gate_step');
+  if (gate.require_receipt_step === true && !hasReceipt) reasons.push('missing_receipt_step');
+  if (gate.require_rollback_path === true && !hasRollback && gate.allow_policy_default_rollback !== true) {
+    reasons.push('missing_rollback_step');
+  }
+
+  const allowTokens = new Set(
+    Array.isArray(gate.placeholder_allowlist) ? gate.placeholder_allowlist.map((v) => String(v).toLowerCase()) : []
+  );
+  const blockedTokens = Array.isArray(gate.blocked_command_tokens)
+    ? gate.blocked_command_tokens.map((v) => String(v).toLowerCase())
+    : [];
+  for (const step of steps) {
+    const command = String(step && step.command || '').trim();
+    if (gate.require_concrete_commands === true && !command) {
+      reasons.push(`empty_command:${String(step && step.id || '')}`);
+      continue;
+    }
+    const lower = command.toLowerCase();
+    for (const marker of blockedTokens) {
+      if (marker && lower.includes(marker)) {
+        reasons.push(`blocked_token:${marker}`);
+        break;
+      }
+    }
+    const placeholders = extractTemplateTokens(command);
+    for (const token of placeholders) {
+      if (!allowTokens.has(token)) {
+        reasons.push(`placeholder_not_allowed:${token}`);
+      }
+    }
+  }
+
+  const explicitManual = opts && opts.manual_id === true;
+  const requireMetrics = gate.require_metrics_for_auto === true && !explicitManual;
+  const metricScoreRaw = workflow && workflow.metrics && Number.isFinite(Number(workflow.metrics.score))
+    ? Number(workflow.metrics.score)
+    : null;
+  if (requireMetrics && metricScoreRaw == null) reasons.push('missing_metrics_score');
+  if (!explicitManual && metricScoreRaw != null && metricScoreRaw < Number(gate.min_composite_score || 0)) {
+    reasons.push('composite_score_below_min');
+  }
+
+  return {
+    eligible: reasons.length === 0,
+    reasons: Array.from(new Set(reasons)),
+    has_rollback_path: hasRollback
+  };
+}
+
 function interpolateTemplate(input: unknown, context: AnyObj) {
   const str = String(input == null ? '' : input);
   return str
@@ -200,6 +538,7 @@ function interpolateTemplate(input: unknown, context: AnyObj) {
 
 function runCommandShell(command: string, timeoutMs: number, env: AnyObj, cwd: string) {
   const started = Date.now();
+  const startedAt = new Date(started).toISOString();
   const result = spawnSync(command, {
     shell: true,
     cwd,
@@ -208,6 +547,7 @@ function runCommandShell(command: string, timeoutMs: number, env: AnyObj, cwd: s
     timeout: timeoutMs
   });
   const durationMs = Date.now() - started;
+  const endedAt = new Date(started + durationMs).toISOString();
   const exitCode = Number(result && result.status);
   const timedOut = !!(result && result.error && String(result.error.code || '') === 'ETIMEDOUT');
   const ok = Number.isInteger(exitCode) ? exitCode === 0 : (!timedOut && !result.error && !result.signal);
@@ -216,6 +556,8 @@ function runCommandShell(command: string, timeoutMs: number, env: AnyObj, cwd: s
     exit_code: Number.isFinite(exitCode) ? exitCode : null,
     signal: result && result.signal ? String(result.signal) : null,
     timed_out: timedOut,
+    started_at: startedAt,
+    ended_at: endedAt,
     duration_ms: durationMs,
     stdout: String(result && result.stdout || '').trim().slice(0, 2000),
     stderr: String(result && result.stderr || '').trim().slice(0, 2000),
@@ -257,6 +599,7 @@ function executeStep(step: AnyObj, context: AnyObj, options: AnyObj) {
   }
 
   if (step.type === 'receipt') {
+    const ts = nowIso();
     const receiptPath = resolveReceiptPath(step.command, context);
     const exists = !!(receiptPath && fs.existsSync(receiptPath));
     const ok = exists || options.receipt_strict !== true;
@@ -273,6 +616,8 @@ function executeStep(step: AnyObj, context: AnyObj, options: AnyObj) {
         attempt: 1,
         ok,
         exit_code: exists ? 0 : 1,
+        started_at: ts,
+        ended_at: ts,
         duration_ms: 0,
         timed_out: false,
         stdout: '',
@@ -450,22 +795,139 @@ function applyMutationKind(kind: string, steps: AnyObj[], stepIndex: number, pol
   return { ok: false, changed: false, reason: 'unknown_mutation_kind' };
 }
 
-function selectWorkflows(registry: AnyObj, args: AnyObj) {
+function selectWorkflows(
+  registry: AnyObj,
+  args: AnyObj,
+  policy: AnyObj,
+  rolloutState: AnyObj,
+  runSeed: string
+) {
   const rows = Array.isArray(registry && registry.workflows) ? registry.workflows.slice() : [];
   const max = clampInt(args.max, 1, 256, 8);
   const includeDraft = boolFlag(args['include-draft'], false);
   const explicitId = String(args.id || '').trim();
-  let selected = rows.filter((row) => {
+  const enforceEligibility = boolFlag(args['enforce-eligibility'], true);
+  const stage = normalizeStage(
+    rolloutState && rolloutState.stage,
+    policy && policy.rollout ? policy.rollout.initial_stage : 'shadow'
+  );
+  const canaryFraction = clampNumber(
+    Number(rolloutState && rolloutState.canary_fraction),
+    Number(policy && policy.rollout ? policy.rollout.canary_min_fraction : 0.05),
+    Number(policy && policy.rollout ? policy.rollout.canary_max_fraction : 1),
+    Number(policy && policy.rollout ? policy.rollout.canary_fraction : 0.15)
+  );
+
+  let candidates = rows.filter((row) => {
     const status = String(row && row.status || '').toLowerCase();
     if (explicitId) return String(row && row.id || '') === explicitId;
     if (status === 'active') return true;
     if (includeDraft && status === 'draft') return true;
     return false;
   });
-  selected = selected
-    .sort((a, b) => String(b && b.updated_at || '').localeCompare(String(a && a.updated_at || '')))
-    .slice(0, max);
-  return selected;
+  candidates = candidates
+    .sort((a, b) => String(b && b.updated_at || '').localeCompare(String(a && a.updated_at || '')));
+
+  let selected = [];
+  const excluded = [];
+  const eligiblePool = [];
+  for (const row of candidates) {
+    const workflowId = String(row && row.id || '').trim();
+    if (!workflowId) continue;
+    const gate = assessWorkflowEligibility(row, policy, {
+      manual_id: !!explicitId
+    });
+    if (enforceEligibility && gate.eligible !== true) {
+      excluded.push({
+        workflow_id: workflowId,
+        reason: 'ineligible',
+        details: gate.reasons
+      });
+      continue;
+    }
+    const seed = `${runSeed}|${workflowId}|canary`;
+    const sampleUnit = stableUnit(seed);
+    const sampled = !!explicitId || stage !== 'canary' || sampleUnit <= canaryFraction;
+    const candidate = {
+      row,
+      workflow_id: workflowId,
+      sample_unit: Number(sampleUnit.toFixed(6)),
+      sampled
+    };
+    eligiblePool.push(candidate);
+    if (!sampled) {
+      excluded.push({
+        workflow_id: workflowId,
+        reason: 'canary_not_sampled',
+        sample_unit: candidate.sample_unit,
+        canary_fraction: Number(canaryFraction.toFixed(6))
+      });
+      continue;
+    }
+    selected.push(row);
+  }
+
+  if (!explicitId && stage === 'canary' && selected.length === 0 && eligiblePool.length > 0 && canaryFraction > 0) {
+    const rescue = eligiblePool.slice(0).sort((a, b) => Number(a.sample_unit) - Number(b.sample_unit))[0];
+    if (rescue && rescue.row) {
+      selected.push(rescue.row);
+      excluded.push({
+        workflow_id: rescue.workflow_id,
+        reason: 'canary_force_single_sample',
+        sample_unit: rescue.sample_unit,
+        canary_fraction: Number(canaryFraction.toFixed(6))
+      });
+    }
+  }
+
+  if (!explicitId && selected.length > max) {
+    const overflow = selected.slice(max);
+    for (const row of overflow) {
+      excluded.push({
+        workflow_id: String(row && row.id || ''),
+        reason: 'max_limit_reached',
+        max
+      });
+    }
+    selected = selected.slice(0, max);
+  }
+
+  return {
+    selected,
+    excluded,
+    stage,
+    canary_fraction: Number(canaryFraction.toFixed(6)),
+    enforce_eligibility: enforceEligibility
+  };
+}
+
+function resolveFailureRollbackStep(steps: AnyObj[], policy: AnyObj) {
+  const list = Array.isArray(steps) ? steps : [];
+  const explicit = list.find((row) => {
+    const id = String(row && row.id || '').toLowerCase();
+    const purpose = String(row && row.purpose || '').toLowerCase();
+    const command = String(row && row.command || '').toLowerCase();
+    return id.includes('rollback')
+      || purpose.includes('rollback')
+      || /\brollback\b/.test(command);
+  });
+  if (explicit && typeof explicit === 'object') {
+    return normalizeStep(explicit, list.indexOf(explicit));
+  }
+  const fb = policy && policy.failure_rollback && typeof policy.failure_rollback === 'object'
+    ? policy.failure_rollback
+    : defaultPolicy().failure_rollback;
+  if (fb.enabled !== true) return null;
+  const command = String(fb.default_command || '').trim();
+  if (!command) return null;
+  return normalizeStep({
+    id: 'policy_default_rollback',
+    type: 'command',
+    command,
+    purpose: 'policy default rollback',
+    timeout_ms: Number(fb.timeout_ms || 120000),
+    retries: Number(fb.retries || 0)
+  }, list.length);
 }
 
 function executeWorkflow(workflow: AnyObj, context: AnyObj, options: AnyObj) {
@@ -485,6 +947,7 @@ function executeWorkflow(workflow: AnyObj, context: AnyObj, options: AnyObj) {
   let ok = true;
   let blockedByGate = false;
   let stoppedStep = null;
+  let rollbackResult = null;
   let cursor = 0;
 
   const runtimeMutation = options && options.runtime_mutation && typeof options.runtime_mutation === 'object'
@@ -607,6 +1070,25 @@ function executeWorkflow(workflow: AnyObj, context: AnyObj, options: AnyObj) {
     ok = false;
     stoppedStep = step.id;
     if (step.type === 'gate') blockedByGate = true;
+    if (options.dry_run !== true) {
+      const rollbackStep = resolveFailureRollbackStep(steps, options.policy || {});
+      if (rollbackStep) {
+        const rollbackExec = executeStep(rollbackStep, {
+          ...context,
+          step_id: rollbackStep.id
+        }, options);
+        rollbackResult = {
+          source: String(rollbackStep.id || '').toLowerCase() === 'policy_default_rollback'
+            ? 'policy_default'
+            : 'workflow',
+          ...rollbackExec
+        };
+        stepResults.push({
+          ...rollbackExec,
+          rollback_step: true
+        });
+      }
+    }
     break;
   }
 
@@ -618,6 +1100,10 @@ function executeWorkflow(workflow: AnyObj, context: AnyObj, options: AnyObj) {
     ok,
     blocked_by_gate: blockedByGate,
     stopped_step_id: stoppedStep,
+    rollback_attempted: !!rollbackResult,
+    rollback_ok: rollbackResult ? rollbackResult.ok === true : null,
+    rollback_source: rollbackResult ? rollbackResult.source : null,
+    rollback_step_id: rollbackResult && rollbackResult.step ? rollbackResult.step.id : null,
     started_at: new Date(started).toISOString(),
     ended_at: new Date(ended).toISOString(),
     duration_ms: ended - started,
@@ -628,14 +1114,265 @@ function executeWorkflow(workflow: AnyObj, context: AnyObj, options: AnyObj) {
   };
 }
 
+function parseIsoMs(value: unknown) {
+  const ts = Date.parse(String(value == null ? '' : value));
+  return Number.isFinite(ts) ? ts : null;
+}
+
+function computeRunSlo(results: AnyObj[], selectedCount: number, runStartedMs: number, policy: AnyObj) {
+  const list = Array.isArray(results) ? results : [];
+  const executed = list.length;
+  const succeeded = list.filter((row) => row && row.ok === true).length;
+  const firstStartMs = list
+    .map((row) => parseIsoMs(row && row.started_at))
+    .filter((n) => Number.isFinite(Number(n)))
+    .sort((a, b) => Number(a) - Number(b))[0];
+  const timeToFirst = Number.isFinite(Number(firstStartMs))
+    ? Math.max(0, Number(firstStartMs) - Number(runStartedMs || Date.now()))
+    : null;
+  const measured = {
+    execution_success_rate: Number(safeRate(succeeded, executed, 0).toFixed(4)),
+    queue_drain_rate: Number(safeRate(executed, selectedCount, 0).toFixed(4)),
+    time_to_first_execution_ms: timeToFirst
+  };
+  const thresholds = {
+    min_execution_success_rate: Number(policy && policy.slo ? policy.slo.min_execution_success_rate : 0.9),
+    min_queue_drain_rate: Number(policy && policy.slo ? policy.slo.min_queue_drain_rate : 0.75),
+    max_time_to_first_execution_ms: Number(policy && policy.slo ? policy.slo.max_time_to_first_execution_ms : 180000)
+  };
+  const checks = {
+    execution_success_rate: measured.execution_success_rate >= thresholds.min_execution_success_rate,
+    queue_drain_rate: measured.queue_drain_rate >= thresholds.min_queue_drain_rate,
+    time_to_first_execution_ms: measured.time_to_first_execution_ms != null
+      && measured.time_to_first_execution_ms <= thresholds.max_time_to_first_execution_ms
+  };
+  return {
+    thresholds,
+    measured,
+    checks,
+    pass: checks.execution_success_rate && checks.queue_drain_rate && checks.time_to_first_execution_ms
+  };
+}
+
+function historicalSloRows(historyRows: AnyObj[]) {
+  const out = [];
+  for (const row of Array.isArray(historyRows) ? historyRows : []) {
+    if (!row || typeof row !== 'object') continue;
+    if (row.slo && typeof row.slo === 'object' && row.slo.measured && typeof row.slo.measured === 'object') {
+      out.push({
+        ts: row.ts || null,
+        execution_success_rate: Number(row.slo.measured.execution_success_rate || 0),
+        queue_drain_rate: Number(row.slo.measured.queue_drain_rate || 0),
+        time_to_first_execution_ms: row.slo.measured.time_to_first_execution_ms == null
+          ? null
+          : Number(row.slo.measured.time_to_first_execution_ms || 0)
+      });
+      continue;
+    }
+    const selected = Number(row.workflows_selected || 0);
+    const executed = Number(row.workflows_executed || 0);
+    const succeeded = Number(row.workflows_succeeded || 0);
+    out.push({
+      ts: row.ts || null,
+      execution_success_rate: Number(safeRate(succeeded, executed, 0).toFixed(4)),
+      queue_drain_rate: Number(safeRate(executed, selected, 0).toFixed(4)),
+      time_to_first_execution_ms: row.time_to_first_execution_ms == null
+        ? null
+        : Number(row.time_to_first_execution_ms || 0)
+    });
+  }
+  return out;
+}
+
+function computeSloWindow(historyRows: AnyObj[], runSlo: AnyObj, policy: AnyObj) {
+  const lookback = clampInt(policy && policy.slo ? policy.slo.lookback_runs : 6, 1, 200, 6);
+  const minRuns = clampInt(policy && policy.slo ? policy.slo.min_runs_for_decision : 3, 1, 100, 3);
+  const prior = historicalSloRows(historyRows).slice(-Math.max(0, lookback - 1));
+  const current = {
+    ts: nowIso(),
+    execution_success_rate: Number(runSlo && runSlo.measured ? runSlo.measured.execution_success_rate || 0 : 0),
+    queue_drain_rate: Number(runSlo && runSlo.measured ? runSlo.measured.queue_drain_rate || 0 : 0),
+    time_to_first_execution_ms: runSlo && runSlo.measured ? runSlo.measured.time_to_first_execution_ms : null
+  };
+  const window = prior.concat([current]);
+  const successRates = window
+    .map((row) => Number(row.execution_success_rate))
+    .filter((v) => Number.isFinite(v));
+  const drainRates = window
+    .map((row) => Number(row.queue_drain_rate))
+    .filter((v) => Number.isFinite(v));
+  const ttfValues = window
+    .map((row) => Number(row.time_to_first_execution_ms))
+    .filter((v) => Number.isFinite(v) && v >= 0);
+  const avg = (values: number[]) => {
+    if (!Array.isArray(values) || values.length === 0) return null;
+    return values.reduce((sum, v) => sum + Number(v), 0) / values.length;
+  };
+  const aggregate = {
+    runs_considered: window.length,
+    min_runs_for_decision: minRuns,
+    avg_execution_success_rate: avg(successRates),
+    avg_queue_drain_rate: avg(drainRates),
+    max_time_to_first_execution_ms: ttfValues.length ? Math.max(...ttfValues) : null
+  };
+  const thresholds = {
+    min_execution_success_rate: Number(policy && policy.slo ? policy.slo.min_execution_success_rate : 0.9),
+    min_queue_drain_rate: Number(policy && policy.slo ? policy.slo.min_queue_drain_rate : 0.75),
+    max_time_to_first_execution_ms: Number(policy && policy.slo ? policy.slo.max_time_to_first_execution_ms : 180000)
+  };
+  const sufficientData = aggregate.runs_considered >= minRuns;
+  const checks = {
+    execution_success_rate: aggregate.avg_execution_success_rate != null
+      && aggregate.avg_execution_success_rate >= thresholds.min_execution_success_rate,
+    queue_drain_rate: aggregate.avg_queue_drain_rate != null
+      && aggregate.avg_queue_drain_rate >= thresholds.min_queue_drain_rate,
+    time_to_first_execution_ms: aggregate.max_time_to_first_execution_ms != null
+      && aggregate.max_time_to_first_execution_ms <= thresholds.max_time_to_first_execution_ms
+  };
+  return {
+    thresholds,
+    aggregate: {
+      ...aggregate,
+      avg_execution_success_rate: aggregate.avg_execution_success_rate == null
+        ? null
+        : Number(aggregate.avg_execution_success_rate.toFixed(4)),
+      avg_queue_drain_rate: aggregate.avg_queue_drain_rate == null
+        ? null
+        : Number(aggregate.avg_queue_drain_rate.toFixed(4))
+    },
+    checks,
+    sufficient_data: sufficientData,
+    pass: sufficientData && checks.execution_success_rate && checks.queue_drain_rate && checks.time_to_first_execution_ms
+  };
+}
+
+function nextRolloutState(current: AnyObj, policy: AnyObj, scalePass: boolean, scaleEligible: boolean) {
+  const rollout = policy && policy.rollout && typeof policy.rollout === 'object'
+    ? policy.rollout
+    : defaultPolicy().rollout;
+  const minFraction = Number(rollout.canary_min_fraction || 0.05);
+  const maxFraction = Number(rollout.canary_max_fraction || 1);
+  const next = {
+    ...(current && typeof current === 'object' ? current : rolloutDefaultState(policy))
+  };
+  next.stage = normalizeStage(next.stage, normalizeStage(rollout.initial_stage, 'shadow'));
+  next.canary_fraction = clampNumber(Number(next.canary_fraction), minFraction, maxFraction, Number(rollout.canary_fraction || 0.15));
+  next.last_scale_action = null;
+
+  if (rollout.enabled !== true) {
+    next.stage = 'live';
+    next.canary_fraction = 1;
+    next.last_slo_pass = null;
+    next.consecutive_green = 0;
+    next.consecutive_red = 0;
+    next.last_scale_action = 'rollout_disabled_force_live';
+    return next;
+  }
+
+  if (!scaleEligible) {
+    next.last_slo_pass = null;
+    next.last_scale_action = 'rollout_scale_skipped';
+    return next;
+  }
+
+  next.last_slo_pass = scalePass === true;
+  if (scalePass === true) {
+    next.consecutive_green = Number(next.consecutive_green || 0) + 1;
+    next.consecutive_red = 0;
+  } else {
+    next.consecutive_red = Number(next.consecutive_red || 0) + 1;
+    next.consecutive_green = 0;
+  }
+
+  const minGreen = Number(rollout.min_consecutive_green_for_scale_up || 3);
+  const minRed = Number(rollout.min_consecutive_red_for_scale_down || 1);
+  if (next.stage === 'shadow' && scalePass === true && next.consecutive_green >= minGreen) {
+    next.stage = 'canary';
+    next.canary_fraction = clampNumber(next.canary_fraction, minFraction, maxFraction, Number(rollout.canary_fraction || 0.15));
+    next.consecutive_green = 0;
+    next.consecutive_red = 0;
+    next.last_scale_action = 'promote_shadow_to_canary';
+    return next;
+  }
+
+  if (next.stage === 'canary') {
+    if (scalePass === true && next.consecutive_green >= minGreen) {
+      const promoteFloor = clampNumber(Number(rollout.promote_to_live_fraction || 0.6), minFraction, 1, 0.6);
+      if (next.canary_fraction >= promoteFloor) {
+        next.stage = 'live';
+        next.canary_fraction = 1;
+        next.last_scale_action = 'promote_canary_to_live';
+      } else {
+        next.canary_fraction = clampNumber(
+          next.canary_fraction + Number(rollout.scale_up_step || 0.1),
+          minFraction,
+          maxFraction,
+          next.canary_fraction
+        );
+        next.last_scale_action = 'canary_scale_up';
+      }
+      next.consecutive_green = 0;
+      next.consecutive_red = 0;
+      return next;
+    }
+    if (scalePass !== true && next.consecutive_red >= minRed) {
+      next.canary_fraction = clampNumber(
+        next.canary_fraction - Number(rollout.scale_down_step || 0.1),
+        minFraction,
+        maxFraction,
+        next.canary_fraction
+      );
+      const floorReached = next.canary_fraction <= (minFraction + 1e-9);
+      if (floorReached && rollout.demote_shadow_on_floor_breach === true) {
+        next.stage = 'shadow';
+        next.last_scale_action = 'demote_canary_to_shadow';
+      } else {
+        next.last_scale_action = 'canary_scale_down';
+      }
+      next.consecutive_green = 0;
+      next.consecutive_red = 0;
+      return next;
+    }
+    return next;
+  }
+
+  if (next.stage === 'live' && scalePass !== true && next.consecutive_red >= minRed) {
+    next.stage = 'canary';
+    next.canary_fraction = clampNumber(
+      Number(rollout.promote_to_live_fraction || 0.6),
+      minFraction,
+      maxFraction,
+      maxFraction
+    );
+    next.consecutive_green = 0;
+    next.consecutive_red = 0;
+    next.last_scale_action = 'demote_live_to_canary';
+  }
+  return next;
+}
+
 function runCmd(dateStr: string, args: AnyObj) {
+  const runStartedMs = Date.now();
   const runId = `wfexec_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
   const policyPath = path.resolve(String(args.policy || process.env.WORKFLOW_EXECUTOR_POLICY_PATH || DEFAULT_POLICY_PATH));
   const policy = loadPolicy(policyPath);
+  const rolloutState = loadRolloutState(policy);
+  const rolloutEnabled = policy && policy.rollout && policy.rollout.enabled === true;
+  const stage = rolloutEnabled
+    ? normalizeStage(rolloutState.stage, normalizeStage(policy.rollout.initial_stage, 'shadow'))
+    : 'live';
+  const dryRunArgPresent = Object.prototype.hasOwnProperty.call(args, 'dry-run');
+  const dryRunArgValue = boolFlag(args['dry-run'], false);
+  const stageForcedDryRun = rolloutEnabled
+    && stage === 'shadow'
+    && policy.rollout.shadow_dry_run === true
+    && !dryRunArgPresent;
+  const effectiveDryRun = dryRunArgValue || stageForcedDryRun;
   const options = {
-    dry_run: boolFlag(args['dry-run'], false),
+    dry_run: effectiveDryRun,
     continue_on_error: boolFlag(args['continue-on-error'], false),
     receipt_strict: boolFlag(args['receipt-strict'], true),
+    policy,
     runtime_mutation: {
       ...(policy && policy.runtime_mutation && typeof policy.runtime_mutation === 'object'
         ? policy.runtime_mutation
@@ -651,7 +1388,8 @@ function runCmd(dateStr: string, args: AnyObj) {
   };
 
   const registry = loadRegistry();
-  const selected = selectWorkflows(registry, args);
+  const selection = selectWorkflows(registry, args, policy, rolloutState, `${runId}|${dateStr}`);
+  const selected = Array.isArray(selection && selection.selected) ? selection.selected : [];
   const results = [];
 
   for (const workflow of selected) {
@@ -672,9 +1410,36 @@ function runCmd(dateStr: string, args: AnyObj) {
   const mutationRolledBack = results.reduce((sum, row) => sum + Number(row && row.mutation_summary && row.mutation_summary.rolled_back || 0), 0);
 
   const mutationRows = [];
+  const stepReceiptRows = [];
   for (const row of results) {
     const receipts = Array.isArray(row && row.mutation_receipts) ? row.mutation_receipts : [];
     for (const rec of receipts) mutationRows.push(rec);
+    const steps = Array.isArray(row && row.step_results) ? row.step_results : [];
+    for (const step of steps) {
+      stepReceiptRows.push({
+        ts: nowIso(),
+        type: 'workflow_executor_step_receipt',
+        run_id: runId,
+        date: dateStr,
+        workflow_id: String(row && row.workflow_id || ''),
+        workflow_name: String(row && row.name || ''),
+        workflow_status: String(row && row.status || ''),
+        step_id: String(step && step.step && step.step.id || ''),
+        step_type: String(step && step.step && step.step.type || ''),
+        ok: step && step.ok === true,
+        attempts: Number(step && step.attempts || 0),
+        dry_run: step && step.dry_run === true,
+        records: Array.isArray(step && step.records) ? step.records : []
+      });
+    }
+  }
+
+  let stepReceiptPathRel = null;
+  if (stepReceiptRows.length && options.dry_run !== true) {
+    ensureDir(STEP_RECEIPTS_DIR);
+    const stepReceiptPath = path.join(STEP_RECEIPTS_DIR, `${dateStr}.jsonl`);
+    for (const rec of stepReceiptRows) appendJsonl(stepReceiptPath, rec);
+    stepReceiptPathRel = relPath(stepReceiptPath);
   }
 
   let mutationReceiptPathRel = null;
@@ -685,6 +1450,29 @@ function runCmd(dateStr: string, args: AnyObj) {
     mutationReceiptPathRel = relPath(mutationReceiptPath);
   }
 
+  const runSlo = computeRunSlo(results, selected.length, runStartedMs, policy);
+  const historyRows = readJsonl(HISTORY_PATH);
+  const sloWindow = computeSloWindow(historyRows, runSlo, policy);
+  const scaleEligible = options.dry_run !== true;
+  const scalePass = sloWindow.sufficient_data === true
+    ? sloWindow.pass === true
+    : runSlo.pass === true;
+  const rolloutBefore = {
+    stage: normalizeStage(rolloutState.stage, stage),
+    canary_fraction: Number(clampNumber(
+      Number(rolloutState.canary_fraction),
+      Number(policy && policy.rollout ? policy.rollout.canary_min_fraction : 0.05),
+      Number(policy && policy.rollout ? policy.rollout.canary_max_fraction : 1),
+      Number(policy && policy.rollout ? policy.rollout.canary_fraction : 0.15)
+    ).toFixed(6)),
+    consecutive_green: Number(rolloutState.consecutive_green || 0),
+    consecutive_red: Number(rolloutState.consecutive_red || 0),
+    last_slo_pass: rolloutState.last_slo_pass == null ? null : rolloutState.last_slo_pass === true,
+    last_scale_action: rolloutState.last_scale_action || null
+  };
+  const rolloutAfter = nextRolloutState(rolloutState, policy, scalePass, scaleEligible);
+  saveRolloutState(rolloutAfter);
+
   const payload = {
     ok: true,
     type: 'workflow_executor_run',
@@ -692,20 +1480,41 @@ function runCmd(dateStr: string, args: AnyObj) {
     run_id: runId,
     date: dateStr,
     dry_run: options.dry_run === true,
+    forced_shadow_dry_run: stageForcedDryRun === true,
     continue_on_error: options.continue_on_error === true,
     receipt_strict: options.receipt_strict === true,
+    rollout_enabled: rolloutEnabled,
+    rollout_stage: stage,
+    rollout_canary_fraction: Number(selection && selection.canary_fraction || 0),
+    rollout_scale_eligible: scaleEligible,
+    rollout_state_before: rolloutBefore,
+    rollout_state_after: {
+      stage: rolloutAfter.stage,
+      canary_fraction: Number(Number(rolloutAfter.canary_fraction || 0).toFixed(6)),
+      consecutive_green: Number(rolloutAfter.consecutive_green || 0),
+      consecutive_red: Number(rolloutAfter.consecutive_red || 0),
+      last_slo_pass: rolloutAfter.last_slo_pass == null ? null : rolloutAfter.last_slo_pass === true,
+      last_scale_action: rolloutAfter.last_scale_action || null
+    },
     runtime_mutation_enabled: options.runtime_mutation.enabled === true,
     runtime_mutation_policy_path: relPath(policyPath),
     registry_total: Array.isArray(registry && registry.workflows) ? registry.workflows.length : 0,
     workflows_selected: selected.length,
+    workflows_excluded: Array.isArray(selection && selection.excluded) ? selection.excluded.length : 0,
+    selection_excluded: Array.isArray(selection && selection.excluded) ? selection.excluded : [],
+    enforce_eligibility: selection && selection.enforce_eligibility === true,
     workflows_executed: results.length,
     workflows_succeeded: succeeded,
     workflows_failed: failed,
     workflows_blocked: blocked,
+    step_receipts_count: stepReceiptRows.length,
+    step_receipts_path: stepReceiptPathRel,
     runtime_mutations_attempted: mutationAttempted,
     runtime_mutations_applied: mutationApplied,
     runtime_mutations_rolled_back: mutationRolledBack,
     runtime_mutation_receipts_path: mutationReceiptPathRel,
+    slo: runSlo,
+    slo_window: sloWindow,
     results
   };
 
@@ -722,11 +1531,33 @@ function runCmd(dateStr: string, args: AnyObj) {
     runtime_mutation_enabled: payload.runtime_mutation_enabled,
     runtime_mutations_applied: payload.runtime_mutations_applied,
     runtime_mutations_rolled_back: payload.runtime_mutations_rolled_back,
+    rollout_stage: payload.rollout_stage,
+    rollout_canary_fraction: payload.rollout_canary_fraction,
+    rollout_last_scale_action: payload.rollout_state_after ? payload.rollout_state_after.last_scale_action : null,
     workflows_selected: payload.workflows_selected,
+    workflows_excluded: payload.workflows_excluded,
     workflows_executed: payload.workflows_executed,
     workflows_succeeded: payload.workflows_succeeded,
     workflows_failed: payload.workflows_failed,
-    workflows_blocked: payload.workflows_blocked
+    workflows_blocked: payload.workflows_blocked,
+    time_to_first_execution_ms: payload.slo && payload.slo.measured
+      ? payload.slo.measured.time_to_first_execution_ms
+      : null,
+    slo: payload.slo && typeof payload.slo === 'object'
+      ? {
+          pass: payload.slo.pass === true,
+          measured: payload.slo.measured || {},
+          checks: payload.slo.checks || {}
+        }
+      : null,
+    slo_window: payload.slo_window && typeof payload.slo_window === 'object'
+      ? {
+          pass: payload.slo_window.pass === true,
+          sufficient_data: payload.slo_window.sufficient_data === true,
+          aggregate: payload.slo_window.aggregate || {},
+          checks: payload.slo_window.checks || {}
+        }
+      : null
   });
 
   process.stdout.write(`${JSON.stringify({
@@ -735,10 +1566,25 @@ function runCmd(dateStr: string, args: AnyObj) {
     run_id: payload.run_id,
     date: payload.date,
     workflows_selected: payload.workflows_selected,
+    workflows_excluded: payload.workflows_excluded,
     workflows_executed: payload.workflows_executed,
     workflows_succeeded: payload.workflows_succeeded,
     workflows_failed: payload.workflows_failed,
     workflows_blocked: payload.workflows_blocked,
+    rollout_stage: payload.rollout_stage,
+    rollout_canary_fraction: payload.rollout_canary_fraction,
+    rollout_last_scale_action: payload.rollout_state_after ? payload.rollout_state_after.last_scale_action : null,
+    execution_success_rate: payload.slo && payload.slo.measured
+      ? payload.slo.measured.execution_success_rate
+      : null,
+    queue_drain_rate: payload.slo && payload.slo.measured
+      ? payload.slo.measured.queue_drain_rate
+      : null,
+    time_to_first_execution_ms: payload.slo && payload.slo.measured
+      ? payload.slo.measured.time_to_first_execution_ms
+      : null,
+    slo_pass: payload.slo ? payload.slo.pass === true : false,
+    slo_window_pass: payload.slo_window ? payload.slo_window.pass === true : false,
     runtime_mutation_enabled: payload.runtime_mutation_enabled,
     runtime_mutations_applied: payload.runtime_mutations_applied,
     runtime_mutations_rolled_back: payload.runtime_mutations_rolled_back,
@@ -767,14 +1613,30 @@ function statusCmd(dateArg: string) {
     run_id: payload.run_id || null,
     date: payload.date || null,
     dry_run: payload.dry_run === true,
+    rollout_stage: payload.rollout_stage || null,
+    rollout_canary_fraction: payload.rollout_canary_fraction == null ? null : Number(payload.rollout_canary_fraction),
+    rollout_last_scale_action: payload.rollout_state_after ? payload.rollout_state_after.last_scale_action || null : null,
     runtime_mutation_enabled: payload.runtime_mutation_enabled === true,
     runtime_mutations_applied: Number(payload.runtime_mutations_applied || 0),
     runtime_mutations_rolled_back: Number(payload.runtime_mutations_rolled_back || 0),
     workflows_selected: Number(payload.workflows_selected || 0),
+    workflows_excluded: Number(payload.workflows_excluded || 0),
     workflows_executed: Number(payload.workflows_executed || 0),
     workflows_succeeded: Number(payload.workflows_succeeded || 0),
     workflows_failed: Number(payload.workflows_failed || 0),
-    workflows_blocked: Number(payload.workflows_blocked || 0)
+    workflows_blocked: Number(payload.workflows_blocked || 0),
+    execution_success_rate: payload.slo && payload.slo.measured
+      ? Number(payload.slo.measured.execution_success_rate || 0)
+      : Number(safeRate(payload.workflows_succeeded, payload.workflows_executed, 0).toFixed(4)),
+    queue_drain_rate: payload.slo && payload.slo.measured
+      ? Number(payload.slo.measured.queue_drain_rate || 0)
+      : Number(safeRate(payload.workflows_executed, payload.workflows_selected, 0).toFixed(4)),
+    time_to_first_execution_ms: payload.slo && payload.slo.measured
+      ? payload.slo.measured.time_to_first_execution_ms
+      : null,
+    slo_pass: payload.slo ? payload.slo.pass === true : false,
+    slo_window_pass: payload.slo_window ? payload.slo_window.pass === true : false,
+    slo_window_sufficient_data: payload.slo_window ? payload.slo_window.sufficient_data === true : false
   })}\n`);
 }
 

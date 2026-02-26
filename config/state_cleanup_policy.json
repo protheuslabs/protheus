@@ -60,6 +60,36 @@
           "path": "state/routing/model_catalog_trials",
           "max_age_hours": 720,
           "suffixes": [".json"]
+        },
+        {
+          "path": "state/routing/prompt_result_cache",
+          "max_age_hours": 168,
+          "suffixes": [".json"]
+        },
+        {
+          "path": "state/adaptive/workflows/orchestron/adversarial",
+          "max_age_hours": 168,
+          "suffixes": [".json"]
+        },
+        {
+          "path": "state/adaptive/workflows/executor/runs",
+          "max_age_hours": 336,
+          "suffixes": [".json"]
+        },
+        {
+          "path": "state/adaptive/workflows/executor/step_receipts",
+          "max_age_hours": 168,
+          "suffixes": [".jsonl"]
+        },
+        {
+          "path": "state/adaptive/workflows/executor/mutations",
+          "max_age_hours": 336,
+          "suffixes": [".jsonl"]
+        },
+        {
+          "path": "state/adaptive/workflows/executor/history.jsonl",
+          "max_age_hours": 720,
+          "suffixes": [".jsonl"]
         }
       ]
     }
