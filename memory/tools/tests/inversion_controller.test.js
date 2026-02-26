@@ -914,6 +914,132 @@ function run() {
   assert.ok(hasSuccess && hasFail, 'library should contain both success and failure outcomes');
   assert.ok(libraryRows.every((row) => Array.isArray(row.filter_stack)), 'library rows should persist filter stacks');
 
+  // Code-change proposal channel should emit proposal artifacts only when explicitly requested.
+  const codeProposalStateDir = path.join(tmpRoot, 'state', 'autonomy', 'inversion_code_proposal');
+  const codeProposalPolicyPath = path.join(tmpRoot, 'config', 'inversion_policy_code_proposal.json');
+  const codeProposalPolicy = readJson(policyPath, {});
+  codeProposalPolicy.version = '1.0-test-code-proposal';
+  codeProposalPolicy.shadow_mode = true;
+  codeProposalPolicy.maturity_harness = {
+    enabled: false,
+    auto_trigger_on_run: false,
+    trigger_interval_hours: 24,
+    max_tests_per_cycle: 1,
+    destructive_tokens: [],
+    runtime_probes: { enabled: false, required: false },
+    test_suite: []
+  };
+  codeProposalPolicy.output_interfaces = {
+    ...(codeProposalPolicy.output_interfaces || {}),
+    default_channel: 'code_change_proposal',
+    code_change_proposal: {
+      enabled: true,
+      live_enabled: false,
+      test_enabled: true,
+      require_sandbox_verification: true,
+      require_explicit_emit: true
+    }
+  };
+  writeJson(codeProposalPolicyPath, codeProposalPolicy);
+  const envCodeProposal = {
+    ...env,
+    INVERSION_STATE_DIR: codeProposalStateDir
+  };
+
+  for (let i = 0; i < 10; i += 1) {
+    const rec = runNode(scriptPath, ['record-test', '--result=pass', `--policy=${codeProposalPolicyPath}`], envCodeProposal, repoRoot);
+    assert.strictEqual(rec.status, 0, rec.stderr || 'code proposal maturity setup should pass');
+  }
+
+  const noEmitCodeProposalRun = runNode(
+    scriptPath,
+    [
+      'run',
+      '--objective=Generate safe inversion-guided code change proposal',
+      '--objective-id=code_proposal_probe_01',
+      '--impact=medium',
+      '--target=belief',
+      '--mode=test',
+      '--certainty=0.95',
+      '--evidence-count=3',
+      '--external-signals-count=2',
+      '--brain-lane=creative_lane',
+      '--sandbox-verified=1',
+      `--policy=${codeProposalPolicyPath}`
+    ],
+    envCodeProposal,
+    repoRoot
+  );
+  assert.strictEqual(noEmitCodeProposalRun.status, 0, noEmitCodeProposalRun.stderr || 'code proposal no-emit run should return payload');
+  const noEmitCodeProposalPayload = parseStdoutJson(noEmitCodeProposalRun);
+  assert.strictEqual(noEmitCodeProposalPayload.allowed, true);
+  assert.ok(
+    noEmitCodeProposalPayload.interfaces
+    && noEmitCodeProposalPayload.interfaces.channels
+    && noEmitCodeProposalPayload.interfaces.channels.code_change_proposal
+    && noEmitCodeProposalPayload.interfaces.channels.code_change_proposal.enabled === false,
+    'code change proposal channel should require explicit emit'
+  );
+  assert.ok(
+    noEmitCodeProposalPayload.code_change_proposal
+    && noEmitCodeProposalPayload.code_change_proposal.emitted === false
+    && noEmitCodeProposalPayload.code_change_proposal.reason === 'not_requested',
+    JSON.stringify(noEmitCodeProposalPayload.code_change_proposal || {})
+  );
+
+  const emitCodeProposalRun = runNode(
+    scriptPath,
+    [
+      'run',
+      '--objective=Generate safe inversion-guided code change proposal',
+      '--objective-id=code_proposal_probe_01',
+      '--impact=medium',
+      '--target=belief',
+      '--mode=test',
+      '--certainty=0.95',
+      '--evidence-count=3',
+      '--external-signals-count=2',
+      '--brain-lane=creative_lane',
+      '--sandbox-verified=1',
+      '--emit-code-change-proposal=1',
+      '--code-change-title=Harden inversion fallback routing',
+      '--code-change-summary=Draft a guarded patch proposal to improve fallback certainty and preserve shadow-only behavior.',
+      '--code-change-files=systems/autonomy/inversion_controller.ts,systems/routing/llm_gateway.ts',
+      '--code-change-tests=memory/tools/tests/inversion_controller.test.js,memory/tools/tests/llm_gateway_opacity.test.js',
+      '--code-change-risk=Must stay proposal-only and require mirror simulation before live apply.',
+      `--policy=${codeProposalPolicyPath}`
+    ],
+    envCodeProposal,
+    repoRoot
+  );
+  assert.strictEqual(emitCodeProposalRun.status, 0, emitCodeProposalRun.stderr || 'code proposal emit run should return payload');
+  const emitCodeProposalPayload = parseStdoutJson(emitCodeProposalRun);
+  assert.strictEqual(emitCodeProposalPayload.allowed, true);
+  assert.ok(
+    emitCodeProposalPayload.interfaces
+    && emitCodeProposalPayload.interfaces.channels
+    && emitCodeProposalPayload.interfaces.channels.code_change_proposal
+    && emitCodeProposalPayload.interfaces.channels.code_change_proposal.enabled === true,
+    JSON.stringify(emitCodeProposalPayload.interfaces && emitCodeProposalPayload.interfaces.channels && emitCodeProposalPayload.interfaces.channels.code_change_proposal || {})
+  );
+  assert.ok(
+    emitCodeProposalPayload.code_change_proposal
+    && emitCodeProposalPayload.code_change_proposal.emitted === true
+    && emitCodeProposalPayload.code_change_proposal.proposal_id,
+    JSON.stringify(emitCodeProposalPayload.code_change_proposal || {})
+  );
+  const codeProposalLatestPath = path.join(codeProposalStateDir, 'code_change_proposals', 'latest.json');
+  const codeProposalHistoryPath = path.join(codeProposalStateDir, 'code_change_proposals', 'history.jsonl');
+  assert.ok(fs.existsSync(codeProposalLatestPath), 'code proposal latest artifact should exist');
+  assert.ok(fs.existsSync(codeProposalHistoryPath), 'code proposal history artifact should exist');
+  const latestCodeProposal = readJson(codeProposalLatestPath);
+  assert.ok(latestCodeProposal && latestCodeProposal.proposal_id, 'latest code proposal should contain proposal id');
+  assert.strictEqual(latestCodeProposal.status, 'proposal_only');
+  assert.strictEqual(latestCodeProposal.governance && latestCodeProposal.governance.require_human_approval, true);
+  assert.strictEqual(latestCodeProposal.governance && latestCodeProposal.governance.require_mirror_simulation, true);
+  assert.ok(Array.isArray(latestCodeProposal.proposed_files) && latestCodeProposal.proposed_files.length >= 1, 'code proposal should include files');
+  assert.ok(Array.isArray(latestCodeProposal.proposed_tests) && latestCodeProposal.proposed_tests.length >= 1, 'code proposal should include tests');
+
   fs.rmSync(tmpRoot, { recursive: true, force: true });
   console.log('inversion_controller.test.js: OK');
 }

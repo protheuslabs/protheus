@@ -464,7 +464,8 @@
       "enabled": false,
       "live_enabled": false,
       "test_enabled": true,
-      "require_sandbox_verification": true
+      "require_sandbox_verification": true,
+      "require_explicit_emit": true
     }
   },
   "telemetry": {

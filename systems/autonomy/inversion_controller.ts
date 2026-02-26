@@ -14,7 +14,7 @@ export {};
  * - Constitution/directive inversion is blocked in live runtime (test-only for now).
  *
  * Usage:
- *   node systems/autonomy/inversion_controller.js run --objective="<text>" [--objective-id=<id>] [--impact=low|medium|high|critical] [--target=tactical|belief|identity|directive|constitution] [--certainty=0.72] [--trit=-1|0|1] [--trit-vector=-1,0,1] [--filters=a,b,c] [--brain-lane=<id>] [--mode=live|test] [--apply=1|0] [--allow-constitution-test=1|0] [--approver-id=<id>] [--approval-note=<note>] [--policy=path]
+ *   node systems/autonomy/inversion_controller.js run --objective="<text>" [--objective-id=<id>] [--impact=low|medium|high|critical] [--target=tactical|belief|identity|directive|constitution] [--certainty=0.72] [--trit=-1|0|1] [--trit-vector=-1,0,1] [--filters=a,b,c] [--brain-lane=<id>] [--mode=live|test] [--apply=1|0] [--allow-constitution-test=1|0] [--approver-id=<id>] [--approval-note=<note>] [--emit-code-change-proposal=1|0] [--code-change-title="<text>"] [--code-change-summary="<text>"] [--code-change-files=f1,f2] [--code-change-tests=t1,t2] [--code-change-risk="<text>"] [--sandbox-verified=1|0] [--policy=path]
  *   node systems/autonomy/inversion_controller.js resolve --session-id=<id> --result=success|neutral|fail|destructive [--principle="<text>"] [--certainty=0.7] [--destructive=1|0] [--record-test=1|0] [--policy=path]
  *   node systems/autonomy/inversion_controller.js record-test --result=pass|fail|destructive [--safe=1|0] [--note="<text>"] [--policy=path]
  *   node systems/autonomy/inversion_controller.js harness [--force=1|0] [--max-tests=<n>] [--policy=path]
@@ -50,7 +50,7 @@ try {
 
 function usage() {
   console.log('Usage:');
-  console.log('  node systems/autonomy/inversion_controller.js run --objective="<text>" [--objective-id=<id>] [--impact=low|medium|high|critical] [--target=tactical|belief|identity|directive|constitution] [--certainty=0.72] [--trit=-1|0|1] [--trit-vector=-1,0,1] [--filters=a,b,c] [--brain-lane=<id>] [--mode=live|test] [--apply=1|0] [--allow-constitution-test=1|0] [--approver-id=<id>] [--approval-note=<note>] [--policy=path]');
+  console.log('  node systems/autonomy/inversion_controller.js run --objective="<text>" [--objective-id=<id>] [--impact=low|medium|high|critical] [--target=tactical|belief|identity|directive|constitution] [--certainty=0.72] [--trit=-1|0|1] [--trit-vector=-1,0,1] [--filters=a,b,c] [--brain-lane=<id>] [--mode=live|test] [--apply=1|0] [--allow-constitution-test=1|0] [--approver-id=<id>] [--approval-note=<note>] [--emit-code-change-proposal=1|0] [--code-change-title="<text>"] [--code-change-summary="<text>"] [--code-change-files=f1,f2] [--code-change-tests=t1,t2] [--code-change-risk="<text>"] [--sandbox-verified=1|0] [--policy=path]');
   console.log('  node systems/autonomy/inversion_controller.js resolve --session-id=<id> --result=success|neutral|fail|destructive [--principle="<text>"] [--certainty=0.7] [--destructive=1|0] [--record-test=1|0] [--policy=path]');
   console.log('  node systems/autonomy/inversion_controller.js record-test --result=pass|fail|destructive [--safe=1|0] [--note="<text>"] [--policy=path]');
   console.log('  node systems/autonomy/inversion_controller.js harness [--force=1|0] [--max-tests=<n>] [--policy=path]');
@@ -202,6 +202,23 @@ function normalizeList(v: unknown, maxLen = 80) {
   return Array.from(new Set(raw.split(',').map((row) => normalizeToken(row, maxLen)).filter(Boolean))).slice(0, 64);
 }
 
+function normalizeTextList(v: unknown, maxLen = 180, maxItems = 64) {
+  const rows = Array.isArray(v)
+    ? v
+    : String(v || '').split(',');
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const row of rows) {
+    const next = cleanText(row, maxLen);
+    if (!next) continue;
+    if (seen.has(next)) continue;
+    seen.add(next);
+    out.push(next);
+    if (out.length >= maxItems) break;
+  }
+  return out;
+}
+
 function stableId(seed: string, prefix = 'inv') {
   const digest = crypto.createHash('sha256').update(String(seed || ''), 'utf8').digest('hex').slice(0, 16);
   return `${prefix}_${digest}`;
@@ -276,6 +293,9 @@ function runtimePaths(policyPath: string) {
     first_principles_latest_path: path.join(stateDir, 'first_principles', 'latest.json'),
     first_principles_history_path: path.join(stateDir, 'first_principles', 'history.jsonl'),
     first_principles_lock_path: path.join(stateDir, 'first_principles', 'lock_state.json'),
+    code_change_proposals_dir: path.join(stateDir, 'code_change_proposals'),
+    code_change_proposals_latest_path: path.join(stateDir, 'code_change_proposals', 'latest.json'),
+    code_change_proposals_history_path: path.join(stateDir, 'code_change_proposals', 'history.jsonl'),
     interfaces_dir: path.join(stateDir, 'interfaces'),
     interfaces_latest_path: path.join(stateDir, 'interfaces', 'latest.json'),
     interfaces_history_path: path.join(stateDir, 'interfaces', 'history.jsonl'),
@@ -599,7 +619,8 @@ function defaultPolicy() {
         enabled: false,
         live_enabled: false,
         test_enabled: true,
-        require_sandbox_verification: true
+        require_sandbox_verification: true,
+        require_explicit_emit: true
       }
     },
     telemetry: {
@@ -692,6 +713,10 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
       require_sandbox_verification: toBool(
         srcOut.require_sandbox_verification,
         baseOut.require_sandbox_verification === true
+      ),
+      require_explicit_emit: toBool(
+        srcOut.require_explicit_emit,
+        baseOut.require_explicit_emit === true
       )
     };
   }
@@ -1233,6 +1258,13 @@ function buildOutputInterfaces(policy: AnyObj, mode: string, basePayload: AnyObj
     ? policy.output_interfaces
     : defaultPolicy().output_interfaces;
   const sandboxVerified = toBool(opts.sandbox_verified, false);
+  const explicitCodeProposalEmit = toBool(
+    opts.emit_code_change_proposal || opts['emit-code-change-proposal'],
+    false
+  );
+  const channelPayloads = opts.channel_payloads && typeof opts.channel_payloads === 'object'
+    ? opts.channel_payloads
+    : {};
   const map: AnyObj = {};
   const channelNames = ['belief_update', 'strategy_hint', 'workflow_hint', 'code_change_proposal'];
   for (const name of channelNames) {
@@ -1243,15 +1275,19 @@ function buildOutputInterfaces(policy: AnyObj, mode: string, basePayload: AnyObj
     const gateSandbox = cfg.require_sandbox_verification === true
       ? sandboxVerified === true
       : true;
-    const enabled = cfg.enabled === true && gateMode && gateSandbox;
+    const gateExplicitEmit = cfg.require_explicit_emit === true
+      ? (name === 'code_change_proposal' ? explicitCodeProposalEmit === true : true)
+      : true;
+    const enabled = cfg.enabled === true && gateMode && gateSandbox && gateExplicitEmit;
     map[name] = {
       enabled,
       gated_reasons: [
         ...(cfg.enabled === true ? [] : ['channel_disabled']),
         ...(gateMode ? [] : [mode === 'test' ? 'test_mode_disabled' : 'live_mode_disabled']),
-        ...(gateSandbox ? [] : ['sandbox_verification_required'])
+        ...(gateSandbox ? [] : ['sandbox_verification_required']),
+        ...(gateExplicitEmit ? [] : ['explicit_emit_required'])
       ],
-      payload: enabled ? basePayload : null
+      payload: enabled ? (channelPayloads[name] || basePayload) : null
     };
   }
   const defaultChannel = normalizeToken(outputs.default_channel || 'strategy_hint', 64) || 'strategy_hint';
@@ -2731,6 +2767,75 @@ function persistInterfaceEnvelope(paths: AnyObj, envelope: AnyObj) {
   appendJsonl(paths.interfaces_history_path, envelope);
 }
 
+function buildCodeChangeProposalDraft(base: AnyObj, args: AnyObj, opts: AnyObj = {}) {
+  const objective = cleanText(base.objective || '', 260);
+  const objectiveId = cleanText(base.objective_id || '', 140) || null;
+  const title = cleanText(
+    args.code_change_title || args['code-change-title'] || '',
+    180
+  ) || cleanText(
+    `Inversion-driven code-change proposal: ${objective || 'unknown objective'}`,
+    180
+  );
+  const summary = cleanText(
+    args.code_change_summary || args['code-change-summary'] || '',
+    420
+  ) || cleanText(
+    `Use guarded inversion outputs to propose a reversible code change for objective "${objective || 'unknown'}".`,
+    420
+  );
+  const proposedFiles = normalizeTextList(
+    args.code_change_files || args['code-change-files'] || [],
+    220,
+    32
+  );
+  const proposedTests = normalizeTextList(
+    args.code_change_tests || args['code-change-tests'] || [],
+    220,
+    32
+  );
+  const ts = cleanText(base.ts || nowIso(), 64) || nowIso();
+  const riskNote = cleanText(args.code_change_risk || args['code-change-risk'] || '', 320) || null;
+  const proposal = {
+    proposal_id: stableId(`${objectiveId || objective}|${title}|${ts}`, 'icp'),
+    ts,
+    type: 'code_change_proposal',
+    source: 'inversion_controller',
+    mode: cleanText(base.mode || 'test', 24) || 'test',
+    shadow_mode: toBool(base.shadow_mode, true),
+    status: 'proposal_only',
+    title,
+    summary,
+    objective,
+    objective_id: objectiveId,
+    impact: normalizeImpact(base.impact || 'medium'),
+    target: normalizeTarget(base.target || 'tactical'),
+    certainty: Number(clampNumber(base.certainty, 0, 1, 0).toFixed(6)),
+    maturity_band: cleanText(base.maturity_band || 'novice', 24) || 'novice',
+    reasons: Array.isArray(base.reasons) ? base.reasons.slice(0, 8) : [],
+    session_id: cleanText(opts.session_id || '', 120) || null,
+    sandbox_verified: toBool(opts.sandbox_verified, false),
+    proposed_files: proposedFiles,
+    proposed_tests: proposedTests,
+    risk_note: riskNote,
+    governance: {
+      require_mirror_simulation: true,
+      require_human_approval: true,
+      live_apply_locked: true
+    }
+  };
+  return proposal;
+}
+
+function persistCodeChangeProposal(paths: AnyObj, proposal: AnyObj) {
+  writeJsonAtomic(paths.code_change_proposals_latest_path, proposal);
+  appendJsonl(paths.code_change_proposals_history_path, proposal);
+  return {
+    latest_path: relPath(paths.code_change_proposals_latest_path),
+    history_path: relPath(paths.code_change_proposals_history_path)
+  };
+}
+
 function createSession(paths: AnyObj, policy: AnyObj, decision: AnyObj, args: AnyObj) {
   const store = loadActiveSessions(paths);
   if (store.sessions.length >= Number(policy.guardrails.max_active_sessions || 8)) {
@@ -3326,6 +3431,25 @@ function cmdRun(args: AnyObj) {
     sweep
   };
 
+  const sandboxVerified = toBool(args.sandbox_verified || args['sandbox-verified'], false);
+  const emitCodeChangeProposal = toBool(
+    args.emit_code_change_proposal || args['emit-code-change-proposal'],
+    false
+  );
+  const codeChangeDraft = buildCodeChangeProposalDraft({
+    ts: out.ts,
+    objective: out.input.objective,
+    objective_id: out.input.objective_id,
+    impact: out.input.impact,
+    target: out.input.target,
+    mode: out.mode,
+    shadow_mode: out.shadow_mode,
+    certainty: out.input.effective_certainty,
+    maturity_band: out.maturity.band,
+    reasons: out.reasons
+  }, args, {
+    sandbox_verified: sandboxVerified
+  });
   const interfaceEnvelope = buildOutputInterfaces(
     policy,
     out.mode,
@@ -3341,7 +3465,11 @@ function cmdRun(args: AnyObj) {
       certainty: out.input.effective_certainty
     },
     {
-      sandbox_verified: toBool(args.sandbox_verified || args['sandbox-verified'], false)
+      sandbox_verified: sandboxVerified,
+      emit_code_change_proposal: emitCodeChangeProposal,
+      channel_payloads: {
+        code_change_proposal: codeChangeDraft
+      }
     }
   );
   out.interfaces = interfaceEnvelope;
@@ -3379,6 +3507,56 @@ function cmdRun(args: AnyObj) {
   }
   if (!out.tier_state || typeof out.tier_state !== 'object') {
     out.tier_state = loadTierGovernanceState(paths, cleanText(policy.version || '1.0', 24) || '1.0');
+  }
+
+  const codeChannel = out.interfaces
+    && out.interfaces.channels
+    && out.interfaces.channels.code_change_proposal
+    && typeof out.interfaces.channels.code_change_proposal === 'object'
+      ? out.interfaces.channels.code_change_proposal
+      : null;
+  if (emitCodeChangeProposal !== true) {
+    out.code_change_proposal = {
+      requested: false,
+      emitted: false,
+      reason: 'not_requested'
+    };
+  } else if (!codeChannel || codeChannel.enabled !== true) {
+    out.code_change_proposal = {
+      requested: true,
+      emitted: false,
+      reason: 'channel_gated',
+      gated_reasons: codeChannel && Array.isArray(codeChannel.gated_reasons)
+        ? codeChannel.gated_reasons.slice(0, 8)
+        : ['channel_unavailable']
+    };
+  } else if (out.allowed !== true) {
+    out.code_change_proposal = {
+      requested: true,
+      emitted: false,
+      reason: 'decision_not_allowed'
+    };
+  } else {
+    const proposal = buildCodeChangeProposalDraft({
+      ...codeChangeDraft,
+      session_id: out.session && out.session.session_id ? out.session.session_id : null
+    }, args, {
+      sandbox_verified: sandboxVerified,
+      session_id: out.session && out.session.session_id ? out.session.session_id : null
+    });
+    const persisted = persistCodeChangeProposal(paths, proposal);
+    out.code_change_proposal = {
+      requested: true,
+      emitted: true,
+      proposal_id: proposal.proposal_id,
+      latest_path: persisted.latest_path,
+      history_path: persisted.history_path
+    };
+    emitEvent(paths, policy, dateStr, 'code_change_proposal_emitted', {
+      proposal_id: proposal.proposal_id,
+      objective_id: proposal.objective_id,
+      target: proposal.target
+    });
   }
 
   persistDecision(paths, out);
