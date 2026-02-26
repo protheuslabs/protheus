@@ -21,7 +21,7 @@
   "patterns": [
     {
       "id": "auth_bearer_header",
-      "regex": "Authorization:\\s*Bearer\\s+(?!\\[REDACTED\\])[^\\s\\\"']+",
+      "regex": "Authorization:\\s*Bearer\\s+(?!\\[REDACTED\\])[A-Za-z0-9._~+/=-]{8,}",
       "replace_with": "Authorization: Bearer [REDACTED]"
     },
     {
