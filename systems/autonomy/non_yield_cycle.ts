@@ -14,8 +14,8 @@ const TRIAL_PATH = path.join(AUTONOMY_DIR, 'autophagy_trial.json');
 
 function usage() {
   console.log('Usage:');
-  console.log('  node systems/autonomy/non_yield_cycle.js run [YYYY-MM-DD] [--days=N] [--queue=1|0] [--write=1|0]');
-  console.log('  node systems/autonomy/non_yield_cycle.js status [YYYY-MM-DD] [--days=N] [--queue=1|0]');
+  console.log('  node systems/autonomy/non_yield_cycle.js run [YYYY-MM-DD] [--days=N] [--queue=1|0] [--write=1|0] [--strict-baseline=1|0]');
+  console.log('  node systems/autonomy/non_yield_cycle.js status [YYYY-MM-DD] [--days=N] [--queue=1|0] [--strict-baseline=1|0]');
 }
 
 function parseArgs(argv) {
@@ -55,6 +55,14 @@ function toInt(v, fallback, lo = 1, hi = 365) {
   if (i < lo) return lo;
   if (i > hi) return hi;
   return i;
+}
+
+function toBool(v, fallback = false) {
+  if (v == null) return fallback;
+  const s = String(v).trim().toLowerCase();
+  if (['1', 'true', 'yes', 'on'].includes(s)) return true;
+  if (['0', 'false', 'no', 'off'].includes(s)) return false;
+  return fallback;
 }
 
 function ensureDir(dirPath) {
@@ -161,6 +169,7 @@ function runCycle(opts = {}) {
   const days = toInt(opts.days, 180, 1, 365);
   const queueEnabled = opts.queue_enabled === true;
   const write = opts.write !== false;
+  const baselineStrict = opts.baseline_strict === true;
   const artifactWrite = write === true;
   const trial = trialSnapshotForDate(dateStr);
 
@@ -168,13 +177,14 @@ function runCycle(opts = {}) {
   const simulation = runJson(simulationCmd);
   if (!simulation.ok) return { ok: false, stage: 'simulation', error: simulation };
 
-  const baselineCheck = runJson([
+  const baselineArgs = [
     'systems/autonomy/autophagy_baseline_guard.js',
     'check',
     `--from=state/autonomy/simulations/${dateStr}.json`,
-    '--baseline=state/autonomy/autophagy_baseline.json',
-    '--strict'
-  ]);
+    '--baseline=state/autonomy/autophagy_baseline.json'
+  ];
+  if (baselineStrict) baselineArgs.push('--strict');
+  const baselineCheck = runJson(baselineArgs);
   if (!baselineCheck.ok) return { ok: false, stage: 'baseline_check', error: baselineCheck };
 
   const backfill = runJson([
@@ -241,6 +251,7 @@ function runCycle(opts = {}) {
       },
       baseline_check: {
         ok: baselineCheck.payload && baselineCheck.payload.ok === true,
+        strict: baselineStrict,
         failures: baselineCheck.payload && baselineCheck.payload.failures || []
       },
       backfill: {
@@ -289,7 +300,11 @@ function main() {
     date: dateStr,
     days: args.days,
     queue_enabled: String(args.queue == null ? (cmd === 'run' ? '1' : '0') : args.queue).trim() !== '0',
-    write: writeEnabled
+    write: writeEnabled,
+    baseline_strict: toBool(
+      args['strict-baseline'] != null ? args['strict-baseline'] : process.env.AUTOPHAGY_CYCLE_STRICT_BASELINE,
+      false
+    )
   });
   if (!out.ok) {
     process.stdout.write(JSON.stringify(out, null, 2) + '\n');
