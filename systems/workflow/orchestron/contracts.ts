@@ -112,11 +112,22 @@ function normalizeStep(rawStep, index) {
   const type = normalizeToken(src.type || 'command', 24) || 'command';
   return {
     id: stepId,
-    type,
+    type: (type === 'command' || type === 'gate' || type === 'receipt' || type === 'external')
+      ? type
+      : 'command',
     command: cleanText(src.command || '', 260),
     purpose: cleanText(src.purpose || '', 200),
     timeout_ms: clampInt(src.timeout_ms, 500, 30 * 60 * 1000, 120000),
-    retries: clampInt(src.retries, 0, 6, 1)
+    retries: clampInt(src.retries, 0, 6, 1),
+    adapter: cleanText(src.adapter || '', 80) || null,
+    provider: cleanText(src.provider || '', 80) || null,
+    lane: normalizeToken(src.lane || '', 40) || null,
+    risk: normalizeToken(src.risk || '', 24) || null,
+    clearance: cleanText(src.clearance || '', 12).toUpperCase() || null,
+    estimated_tokens: src.estimated_tokens == null
+      ? null
+      : clampInt(src.estimated_tokens, 0, 10_000_000, 0),
+    require_policy_root: src.require_policy_root === true
   };
 }
 

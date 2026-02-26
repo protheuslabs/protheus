@@ -58,7 +58,8 @@
       "workflow_id",
       "objective_id",
       "eye_id",
-      "adapter"
+      "adapter",
+      "provider"
     ]
   },
   "auto_apply": {

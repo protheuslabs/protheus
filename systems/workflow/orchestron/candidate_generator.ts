@@ -80,7 +80,20 @@ function defaultStepsForProposalType(proposalType) {
   if (p.includes('actuation') || p.includes('publish')) {
     return addSkillBridge([
       { id: 'bridge', type: 'command', command: 'node systems/actuation/bridge_from_proposals.js run <date>', purpose: 'proposal to actuation contract', timeout_ms: 180000, retries: 1 },
-      { id: 'execute', type: 'command', command: 'node systems/actuation/actuation_executor.js run --kind=<adapter> --dry-run', purpose: 'execute safely via adapter', timeout_ms: 240000, retries: 1 },
+      {
+        id: 'execute',
+        type: 'external',
+        adapter: '<adapter>',
+        provider: '<provider>',
+        risk: 'medium',
+        clearance: 'L2',
+        estimated_tokens: 120,
+        require_policy_root: true,
+        command: 'node systems/actuation/actuation_executor.js run --kind=<adapter> --dry-run',
+        purpose: 'execute safely via governed external adapter contract',
+        timeout_ms: 240000,
+        retries: 1
+      },
       { id: 'verify', type: 'gate', command: 'node systems/autonomy/strategy_execute_guard.js run <date>', purpose: 'postcondition and rollback checks', timeout_ms: 120000, retries: 0 },
       { id: 'receipt', type: 'receipt', command: 'state/actuation/receipts/<date>.jsonl', purpose: 'record receipt evidence', timeout_ms: 30000, retries: 0 }
     ], p);

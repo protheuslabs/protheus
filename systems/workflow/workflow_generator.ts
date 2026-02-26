@@ -326,7 +326,18 @@ function workflowStepsForProposalType(proposalType) {
   if (p.includes('actuation') || p.includes('publish')) {
     return [
       { id: 'bridge', type: 'command', command: 'node systems/actuation/bridge_from_proposals.js run <date>', purpose: 'map proposal -> actuation contract' },
-      { id: 'execute', type: 'command', command: 'node systems/actuation/actuation_executor.js run --kind=<adapter> --dry-run', purpose: 'execute safely via adapter lane' },
+      {
+        id: 'execute',
+        type: 'external',
+        adapter: '<adapter>',
+        provider: '<provider>',
+        risk: 'medium',
+        clearance: 'L2',
+        estimated_tokens: 120,
+        require_policy_root: true,
+        command: 'node systems/actuation/actuation_executor.js run --kind=<adapter> --dry-run',
+        purpose: 'execute safely via governed external adapter lane'
+      },
       { id: 'verify', type: 'gate', command: 'node systems/autonomy/strategy_execute_guard.js run <date>', purpose: 'confirm postconditions and rollbackability' },
       { id: 'receipt', type: 'receipt', command: 'state/actuation/receipts/<date>.jsonl', purpose: 'record actuation receipt' }
     ];

@@ -22,7 +22,8 @@
       "run_id",
       "objective_id",
       "eye_id",
-      "adapter"
+      "adapter",
+      "provider"
     ]
   },
   "failure_rollback": {
@@ -74,5 +75,22 @@
     "max_total_attempts_per_workflow": 24,
     "max_total_retry_attempts_per_workflow": 16,
     "max_total_step_duration_ms_per_workflow": 600000
+  },
+  "external_orchestration": {
+    "enabled": true,
+    "detect_actuation_commands": true,
+    "command_pattern": "systems/actuation/actuation_executor.js",
+    "require_policy_root_for_live": true,
+    "allow_dry_run_without_policy_root": true,
+    "policy_root_scope": "workflow_external_orchestration",
+    "policy_root_source": "workflow_executor",
+    "eye_lane": "vassal",
+    "eye_action": "execute",
+    "eye_clearance": "L2",
+    "risk_default": "medium",
+    "require_subsumption_allow": true,
+    "allow_escalate_decision": false,
+    "estimated_tokens_default": 100,
+    "default_provider": "ollama"
   }
 }

@@ -167,7 +167,7 @@ function run() {
       high_power_requires_preflight: true,
       high_power_requires_rollback: false,
       persist_replay_artifacts: true,
-      unresolved_placeholder_allowlist: ['date', 'run_id', 'workflow_id', 'objective_id', 'eye_id', 'adapter']
+      unresolved_placeholder_allowlist: ['date', 'run_id', 'workflow_id', 'objective_id', 'eye_id', 'adapter', 'provider']
     },
     nursery: {
       min_safety_score: 0.55,

@@ -32,6 +32,39 @@ const MUTATION_RECEIPTS_DIR = process.env.WORKFLOW_EXECUTOR_MUTATION_RECEIPTS_DI
 const EXEC_CWD = process.env.WORKFLOW_EXECUTOR_CWD
   ? path.resolve(process.env.WORKFLOW_EXECUTOR_CWD)
   : REPO_ROOT;
+const EYE_KERNEL_SCRIPT = process.env.WORKFLOW_EXECUTOR_EYE_KERNEL_SCRIPT
+  ? path.resolve(process.env.WORKFLOW_EXECUTOR_EYE_KERNEL_SCRIPT)
+  : path.join(REPO_ROOT, 'systems', 'eye', 'eye_kernel.js');
+const SUBSUMPTION_REGISTRY_SCRIPT = process.env.WORKFLOW_EXECUTOR_SUBSUMPTION_REGISTRY_SCRIPT
+  ? path.resolve(process.env.WORKFLOW_EXECUTOR_SUBSUMPTION_REGISTRY_SCRIPT)
+  : path.join(REPO_ROOT, 'systems', 'eye', 'subsumption_registry.js');
+const POLICY_ROOT_SCRIPT = process.env.WORKFLOW_EXECUTOR_POLICY_ROOT_SCRIPT
+  ? path.resolve(process.env.WORKFLOW_EXECUTOR_POLICY_ROOT_SCRIPT)
+  : path.join(REPO_ROOT, 'systems', 'security', 'policy_rootd.js');
+const EYE_POLICY_PATH = process.env.WORKFLOW_EXECUTOR_EYE_POLICY_PATH
+  ? path.resolve(process.env.WORKFLOW_EXECUTOR_EYE_POLICY_PATH)
+  : path.join(REPO_ROOT, 'config', 'eye_kernel_policy.json');
+const EYE_STATE_PATH = process.env.WORKFLOW_EXECUTOR_EYE_STATE_PATH
+  ? path.resolve(process.env.WORKFLOW_EXECUTOR_EYE_STATE_PATH)
+  : path.join(REPO_ROOT, 'state', 'eye', 'control_plane_state.json');
+const EYE_AUDIT_PATH = process.env.WORKFLOW_EXECUTOR_EYE_AUDIT_PATH
+  ? path.resolve(process.env.WORKFLOW_EXECUTOR_EYE_AUDIT_PATH)
+  : path.join(REPO_ROOT, 'state', 'eye', 'audit', 'command_bus.jsonl');
+const EYE_LATEST_PATH = process.env.WORKFLOW_EXECUTOR_EYE_LATEST_PATH
+  ? path.resolve(process.env.WORKFLOW_EXECUTOR_EYE_LATEST_PATH)
+  : path.join(REPO_ROOT, 'state', 'eye', 'latest.json');
+const SUBSUMPTION_POLICY_PATH = process.env.WORKFLOW_EXECUTOR_SUBSUMPTION_POLICY_PATH
+  ? path.resolve(process.env.WORKFLOW_EXECUTOR_SUBSUMPTION_POLICY_PATH)
+  : path.join(REPO_ROOT, 'config', 'subsumption_adapter_policy.json');
+const SUBSUMPTION_STATE_PATH = process.env.WORKFLOW_EXECUTOR_SUBSUMPTION_STATE_PATH
+  ? path.resolve(process.env.WORKFLOW_EXECUTOR_SUBSUMPTION_STATE_PATH)
+  : path.join(REPO_ROOT, 'state', 'eye', 'subsumption_registry_state.json');
+const SUBSUMPTION_AUDIT_PATH = process.env.WORKFLOW_EXECUTOR_SUBSUMPTION_AUDIT_PATH
+  ? path.resolve(process.env.WORKFLOW_EXECUTOR_SUBSUMPTION_AUDIT_PATH)
+  : path.join(REPO_ROOT, 'state', 'eye', 'audit', 'subsumption_registry.jsonl');
+const SUBSUMPTION_LATEST_PATH = process.env.WORKFLOW_EXECUTOR_SUBSUMPTION_LATEST_PATH
+  ? path.resolve(process.env.WORKFLOW_EXECUTOR_SUBSUMPTION_LATEST_PATH)
+  : path.join(REPO_ROOT, 'state', 'eye', 'subsumption_latest.json');
 
 function usage() {
   console.log('Usage:');
@@ -126,6 +159,53 @@ function readJsonl(filePath: string) {
   }
 }
 
+function parseJsonPayload(raw: unknown) {
+  const text = String(raw == null ? '' : raw).trim();
+  if (!text) return null;
+  try { return JSON.parse(text); } catch {}
+  const lines = text.split('\n').map((line) => line.trim()).filter(Boolean);
+  for (let i = lines.length - 1; i >= 0; i -= 1) {
+    try { return JSON.parse(lines[i]); } catch {}
+  }
+  return null;
+}
+
+function shellUnquote(raw: unknown) {
+  const text = String(raw == null ? '' : raw).trim();
+  if (!text) return '';
+  if ((text.startsWith('"') && text.endsWith('"')) || (text.startsWith('\'') && text.endsWith('\''))) {
+    return text.slice(1, -1);
+  }
+  return text;
+}
+
+function parseCommandFlag(command: string, flag: string) {
+  const escaped = String(flag || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp(`(?:^|\\s)--${escaped}=(\"[^\"]+\"|'[^']+'|[^\\s]+)`);
+  const match = String(command || '').match(re);
+  if (!match) return '';
+  return shellUnquote(match[1] || '');
+}
+
+function runJsonCommand(args: string[], opts: AnyObj = {}) {
+  const timeoutMs = clampInt(opts.timeout_ms, 200, 120000, 15000);
+  const result = spawnSync(process.execPath, args, {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+    timeout: timeoutMs
+  });
+  const payload = parseJsonPayload(result && result.stdout);
+  const ok = Number(result && result.status) === 0 && payload && payload.ok === true;
+  return {
+    ok,
+    status: Number.isInteger(result && result.status) ? Number(result.status) : 1,
+    payload,
+    stdout: String(result && result.stdout || '').trim().slice(0, 2000),
+    stderr: String(result && result.stderr || '').trim().slice(0, 2000),
+    error: result && result.error ? String(result.error.message || result.error).slice(0, 2000) : null
+  };
+}
+
 function writeJsonAtomic(filePath: string, value: AnyObj) {
   ensureDir(path.dirname(filePath));
   const tmpPath = `${filePath}.tmp-${process.pid}-${Date.now()}`;
@@ -174,7 +254,7 @@ function defaultPolicy() {
       min_composite_score: 0.45,
       require_metrics_for_auto: false,
       blocked_command_tokens: ['todo', 'placeholder', 'tbd'],
-      placeholder_allowlist: ['date', 'workflow_id', 'step_id', 'run_id', 'objective_id', 'eye_id', 'adapter']
+      placeholder_allowlist: ['date', 'workflow_id', 'step_id', 'run_id', 'objective_id', 'eye_id', 'adapter', 'provider']
     },
     failure_rollback: {
       enabled: true,
@@ -223,6 +303,23 @@ function defaultPolicy() {
       max_total_attempts_per_workflow: 24,
       max_total_retry_attempts_per_workflow: 16,
       max_total_step_duration_ms_per_workflow: 10 * 60 * 1000
+    },
+    external_orchestration: {
+      enabled: true,
+      detect_actuation_commands: true,
+      command_pattern: 'systems/actuation/actuation_executor.js',
+      require_policy_root_for_live: true,
+      allow_dry_run_without_policy_root: true,
+      policy_root_scope: 'workflow_external_orchestration',
+      policy_root_source: 'workflow_executor',
+      eye_lane: 'vassal',
+      eye_action: 'execute',
+      eye_clearance: 'L2',
+      risk_default: 'medium',
+      require_subsumption_allow: true,
+      allow_escalate_decision: false,
+      estimated_tokens_default: 100,
+      default_provider: 'ollama'
     }
   };
 }
@@ -247,6 +344,9 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
     : {};
   const stepRuntime = raw && raw.step_runtime && typeof raw.step_runtime === 'object'
     ? raw.step_runtime
+    : {};
+  const external = raw && raw.external_orchestration && typeof raw.external_orchestration === 'object'
+    ? raw.external_orchestration
     : {};
   const allowRaw = rm && rm.allow && typeof rm.allow === 'object' ? rm.allow : {};
   const normalizeTokenArray = (input: unknown, fallback: string[]) => {
@@ -388,6 +488,36 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
         24 * 60 * 60 * 1000,
         base.step_runtime.max_total_step_duration_ms_per_workflow
       )
+    },
+    external_orchestration: {
+      enabled: external.enabled !== false,
+      detect_actuation_commands: external.detect_actuation_commands !== false,
+      command_pattern: cleanText(external.command_pattern || base.external_orchestration.command_pattern, 220)
+        || base.external_orchestration.command_pattern,
+      require_policy_root_for_live: external.require_policy_root_for_live !== false,
+      allow_dry_run_without_policy_root: external.allow_dry_run_without_policy_root !== false,
+      policy_root_scope: cleanText(external.policy_root_scope || base.external_orchestration.policy_root_scope, 120)
+        || base.external_orchestration.policy_root_scope,
+      policy_root_source: cleanText(external.policy_root_source || base.external_orchestration.policy_root_source, 120)
+        || base.external_orchestration.policy_root_source,
+      eye_lane: cleanText(external.eye_lane || base.external_orchestration.eye_lane, 40).toLowerCase()
+        || base.external_orchestration.eye_lane,
+      eye_action: cleanText(external.eye_action || base.external_orchestration.eye_action, 40).toLowerCase()
+        || base.external_orchestration.eye_action,
+      eye_clearance: cleanText(external.eye_clearance || base.external_orchestration.eye_clearance, 12).toUpperCase()
+        || base.external_orchestration.eye_clearance,
+      risk_default: cleanText(external.risk_default || base.external_orchestration.risk_default, 24).toLowerCase()
+        || base.external_orchestration.risk_default,
+      require_subsumption_allow: external.require_subsumption_allow !== false,
+      allow_escalate_decision: external.allow_escalate_decision === true,
+      estimated_tokens_default: clampInt(
+        external.estimated_tokens_default,
+        0,
+        10_000_000,
+        base.external_orchestration.estimated_tokens_default
+      ),
+      default_provider: cleanText(external.default_provider || base.external_orchestration.default_provider, 80).toLowerCase()
+        || base.external_orchestration.default_provider
     }
   };
 }
@@ -425,8 +555,24 @@ function normalizeStep(rawStep: AnyObj, index = 0) {
   const fallbackId = `step_${index + 1}`;
   const id = String(src.id || fallbackId).trim() || fallbackId;
   const typeRaw = String(src.type || 'command').trim().toLowerCase();
-  const type = typeRaw === 'gate' || typeRaw === 'receipt' ? typeRaw : 'command';
+  const type = typeRaw === 'gate' || typeRaw === 'receipt' || typeRaw === 'external'
+    ? typeRaw
+    : 'command';
   const policyFallbackExitCodes = defaultPolicy().step_runtime.default_allowed_exit_codes;
+  const normalizeExternalValue = (value: unknown, maxLen: number) => {
+    const cleaned = cleanText(value || '', maxLen);
+    if (!cleaned) return null;
+    if (/^<[^>]+>$/.test(cleaned)) return null;
+    return cleaned;
+  };
+  const adapter = normalizeExternalValue(src.adapter, 80);
+  const provider = normalizeExternalValue(src.provider, 80);
+  const lane = cleanText(src.lane || '', 40).toLowerCase() || null;
+  const risk = cleanText(src.risk || '', 24).toLowerCase() || null;
+  const clearance = cleanText(src.clearance || '', 12).toUpperCase() || null;
+  const estimatedTokens = src.estimated_tokens == null
+    ? null
+    : clampInt(src.estimated_tokens, 0, 10_000_000, 0);
   return {
     id,
     type,
@@ -434,7 +580,14 @@ function normalizeStep(rawStep: AnyObj, index = 0) {
     purpose: String(src.purpose || '').trim(),
     timeout_ms: clampInt(src.timeout_ms, 500, 30 * 60 * 1000, 120000),
     retries: clampInt(src.retries, 0, 8, 0),
-    success_criteria: normalizeSuccessCriteria(src.success_criteria, policyFallbackExitCodes)
+    success_criteria: normalizeSuccessCriteria(src.success_criteria, policyFallbackExitCodes),
+    adapter,
+    provider,
+    lane,
+    risk,
+    clearance,
+    estimated_tokens: estimatedTokens,
+    require_policy_root: src.require_policy_root === true
   };
 }
 
@@ -603,7 +756,11 @@ function interpolateTemplate(input: unknown, context: AnyObj) {
     .replace(/<date>/g, String(context.date || ''))
     .replace(/<workflow_id>/g, String(context.workflow_id || ''))
     .replace(/<step_id>/g, String(context.step_id || ''))
-    .replace(/<run_id>/g, String(context.run_id || ''));
+    .replace(/<run_id>/g, String(context.run_id || ''))
+    .replace(/<objective_id>/g, String(context.objective_id || ''))
+    .replace(/<eye_id>/g, String(context.eye_id || ''))
+    .replace(/<adapter>/g, String(context.adapter || ''))
+    .replace(/<provider>/g, String(context.provider || ''));
 }
 
 function runCommandShell(command: string, timeoutMs: number, env: AnyObj, cwd: string) {
@@ -761,8 +918,214 @@ function resolveReceiptPath(stepCommand: string, context: AnyObj) {
   return path.resolve(EXEC_CWD, templated);
 }
 
+function stepLooksExternal(step: AnyObj, command: string, policy: AnyObj) {
+  const externalPolicy = policy && policy.external_orchestration && typeof policy.external_orchestration === 'object'
+    ? policy.external_orchestration
+    : defaultPolicy().external_orchestration;
+  if (String(step && step.type || '').toLowerCase() === 'external') return true;
+  if (externalPolicy.enabled !== true || externalPolicy.detect_actuation_commands !== true) return false;
+  const marker = String(externalPolicy.command_pattern || '').trim().toLowerCase();
+  if (!marker) return false;
+  return String(command || '').toLowerCase().includes(marker);
+}
+
+function resolveExternalMetadata(step: AnyObj, command: string, context: AnyObj, policy: AnyObj) {
+  const externalPolicy = policy && policy.external_orchestration && typeof policy.external_orchestration === 'object'
+    ? policy.external_orchestration
+    : defaultPolicy().external_orchestration;
+  const adapterFromCommand = parseCommandFlag(command, 'kind');
+  const cleanExternalRef = (value: unknown, maxLen: number) => {
+    const cleaned = cleanText(value, maxLen);
+    if (!cleaned) return '';
+    if (/^<[^>]+>$/.test(cleaned)) return '';
+    return cleaned;
+  };
+  const adapter = cleanExternalRef(
+    step && step.adapter
+      ? step.adapter
+      : (context && context.adapter ? context.adapter : adapterFromCommand),
+    80
+  ) || null;
+  const provider = cleanExternalRef(
+    step && step.provider
+      ? step.provider
+      : (
+        context && context.provider
+          ? context.provider
+          : (adapter || externalPolicy.default_provider)
+      ),
+    80
+  ).toLowerCase() || externalPolicy.default_provider;
+  const lane = cleanText(step && step.lane ? step.lane : externalPolicy.eye_lane, 40).toLowerCase() || 'vassal';
+  const risk = cleanText(step && step.risk ? step.risk : externalPolicy.risk_default, 24).toLowerCase() || 'medium';
+  const clearance = cleanText(step && step.clearance ? step.clearance : externalPolicy.eye_clearance, 12).toUpperCase() || 'L2';
+  const estimatedTokens = step && step.estimated_tokens != null
+    ? clampInt(step.estimated_tokens, 0, 10_000_000, 0)
+    : clampInt(externalPolicy.estimated_tokens_default, 0, 10_000_000, 100);
+  return {
+    adapter,
+    provider,
+    lane,
+    risk,
+    clearance,
+    estimated_tokens: estimatedTokens
+  };
+}
+
+function evaluateExternalOrchestrationGate(step: AnyObj, command: string, context: AnyObj, options: AnyObj) {
+  const policy = options && options.policy && typeof options.policy === 'object'
+    ? options.policy
+    : defaultPolicy();
+  const externalPolicy = policy && policy.external_orchestration && typeof policy.external_orchestration === 'object'
+    ? policy.external_orchestration
+    : defaultPolicy().external_orchestration;
+  if (!stepLooksExternal(step, command, policy)) {
+    return { applicable: false, ok: true, reason: null, metadata: null };
+  }
+  if (externalPolicy.enabled !== true) {
+    return {
+      applicable: true,
+      ok: false,
+      reason: 'external_orchestration_disabled',
+      metadata: null
+    };
+  }
+  const dryRun = options && options.dry_run === true;
+  const meta = resolveExternalMetadata(step, command, context, policy);
+  const allowDryRunBypass = dryRun && externalPolicy.allow_dry_run_without_policy_root === true;
+  const requirePolicyRoot = !allowDryRunBypass && (
+    (step && step.require_policy_root === true)
+    || externalPolicy.require_policy_root_for_live === true
+  );
+  let policyRoot = null;
+  if (requirePolicyRoot) {
+    const leaseToken = cleanText(
+      context && context.policy_root_lease_token
+        ? context.policy_root_lease_token
+        : (process.env.CAPABILITY_LEASE_TOKEN || ''),
+      8192
+    );
+    const approvalNote = cleanText(
+      context && context.policy_root_approval_note
+        ? context.policy_root_approval_note
+        : (
+          `workflow ${String(context && context.workflow_id || '')} external step ${String(step && step.id || '')}`
+        ),
+      320
+    );
+    const policyRootArgs = [
+      POLICY_ROOT_SCRIPT,
+      'authorize',
+      `--scope=${cleanText(externalPolicy.policy_root_scope || 'workflow_external_orchestration', 120) || 'workflow_external_orchestration'}`,
+      `--target=${meta.provider}`,
+      `--source=${cleanText(externalPolicy.policy_root_source || 'workflow_executor', 120) || 'workflow_executor'}`,
+      `--approval-note=${approvalNote}`
+    ];
+    if (leaseToken) policyRootArgs.push(`--lease-token=${leaseToken}`);
+    policyRoot = runJsonCommand(policyRootArgs, { timeout_ms: 15000 });
+    if (!policyRoot.payload || policyRoot.payload.ok !== true) {
+      return {
+        applicable: true,
+        ok: false,
+        reason: 'policy_root_denied',
+        metadata: meta,
+        policy_root: policyRoot
+      };
+    }
+  }
+
+  const apply = dryRun !== true;
+  const eyeArgs = [
+    EYE_KERNEL_SCRIPT,
+    'route',
+    `--lane=${meta.lane}`,
+    `--target=${meta.provider}`,
+    `--action=${cleanText(externalPolicy.eye_action || 'execute', 40).toLowerCase() || 'execute'}`,
+    `--risk=${meta.risk}`,
+    `--clearance=${meta.clearance}`,
+    `--estimated-tokens=${meta.estimated_tokens}`,
+    `--apply=${apply ? 1 : 0}`,
+    `--policy=${EYE_POLICY_PATH}`,
+    `--state=${EYE_STATE_PATH}`,
+    `--audit=${EYE_AUDIT_PATH}`,
+    `--latest=${EYE_LATEST_PATH}`,
+    `--reason=workflow_external_orchestration`
+  ];
+  const eyeRoute = runJsonCommand(eyeArgs, { timeout_ms: 15000 });
+  if (!eyeRoute.payload || eyeRoute.payload.ok !== true) {
+    return {
+      applicable: true,
+      ok: false,
+      reason: 'eye_route_denied',
+      metadata: meta,
+      policy_root: policyRoot,
+      eye_route: eyeRoute
+    };
+  }
+  if (eyeRoute.payload.decision === 'escalate' && externalPolicy.allow_escalate_decision !== true) {
+    return {
+      applicable: true,
+      ok: false,
+      reason: 'eye_route_escalated',
+      metadata: meta,
+      policy_root: policyRoot,
+      eye_route: eyeRoute
+    };
+  }
+
+  let subsumption = null;
+  if (externalPolicy.require_subsumption_allow === true) {
+    const subsumptionArgs = [
+      SUBSUMPTION_REGISTRY_SCRIPT,
+      'evaluate',
+      `--provider=${meta.provider}`,
+      `--estimated-tokens=${meta.estimated_tokens}`,
+      `--risk=${meta.risk}`,
+      `--apply=${apply ? 1 : 0}`,
+      `--policy=${SUBSUMPTION_POLICY_PATH}`,
+      `--state=${SUBSUMPTION_STATE_PATH}`,
+      `--audit=${SUBSUMPTION_AUDIT_PATH}`,
+      `--latest=${SUBSUMPTION_LATEST_PATH}`
+    ];
+    subsumption = runJsonCommand(subsumptionArgs, { timeout_ms: 15000 });
+    if (!subsumption.payload || subsumption.payload.ok !== true) {
+      return {
+        applicable: true,
+        ok: false,
+        reason: 'subsumption_denied',
+        metadata: meta,
+        policy_root: policyRoot,
+        eye_route: eyeRoute,
+        subsumption
+      };
+    }
+    if (subsumption.payload.decision === 'escalate' && externalPolicy.allow_escalate_decision !== true) {
+      return {
+        applicable: true,
+        ok: false,
+        reason: 'subsumption_escalated',
+        metadata: meta,
+        policy_root: policyRoot,
+        eye_route: eyeRoute,
+        subsumption
+      };
+    }
+  }
+
+  return {
+    applicable: true,
+    ok: true,
+    reason: null,
+    metadata: meta,
+    policy_root: policyRoot,
+    eye_route: eyeRoute,
+    subsumption
+  };
+}
+
 function executeStep(step: AnyObj, context: AnyObj, options: AnyObj) {
-  const command = interpolateTemplate(step.command, context);
+  let executionContext = { ...(context && typeof context === 'object' ? context : {}) };
+  let command = interpolateTemplate(step.command, executionContext);
   const maxAttempts = Math.max(1, Number(step.retries || 0) + 1);
   const records = [];
   const runtimePolicy = options && options.policy && typeof options.policy.step_runtime === 'object'
@@ -774,12 +1137,51 @@ function executeStep(step: AnyObj, context: AnyObj, options: AnyObj) {
       : {},
     Array.isArray(runtimePolicy.default_allowed_exit_codes) ? runtimePolicy.default_allowed_exit_codes : [0]
   );
+  const externalGate = evaluateExternalOrchestrationGate(step, command, executionContext, options);
+  if (externalGate && externalGate.applicable === true && externalGate.metadata && typeof externalGate.metadata === 'object') {
+    executionContext = { ...executionContext, ...externalGate.metadata };
+    command = interpolateTemplate(step.command, executionContext);
+  }
+  if (externalGate && externalGate.applicable === true && externalGate.ok !== true) {
+    const ts = nowIso();
+    const reason = cleanText(externalGate.reason || 'external_orchestration_denied', 120) || 'external_orchestration_denied';
+    return {
+      ok: false,
+      attempts: 1,
+      dry_run: options && options.dry_run === true,
+      step: {
+        id: step.id,
+        type: step.type,
+        command
+      },
+      records: [{
+        attempt: 1,
+        ok: false,
+        criteria_pass: false,
+        criteria_fail_reasons: [reason],
+        exit_code: 1,
+        started_at: ts,
+        ended_at: ts,
+        duration_ms: 0,
+        timed_out: false,
+        stdout: '',
+        stderr: reason,
+        error: null
+      }],
+      success_criteria: criteria,
+      failure_reason: reason,
+      external_gate: externalGate
+    };
+  }
   const env = {
     ...process.env,
-    WORKFLOW_RUN_ID: String(context.run_id || ''),
-    WORKFLOW_ID: String(context.workflow_id || ''),
+    WORKFLOW_RUN_ID: String(executionContext.run_id || ''),
+    WORKFLOW_ID: String(executionContext.workflow_id || ''),
     WORKFLOW_STEP_ID: String(step.id || ''),
-    WORKFLOW_DATE: String(context.date || '')
+    WORKFLOW_DATE: String(executionContext.date || ''),
+    WORKFLOW_OBJECTIVE_ID: String(executionContext.objective_id || ''),
+    WORKFLOW_ADAPTER: String(executionContext.adapter || ''),
+    WORKFLOW_PROVIDER: String(executionContext.provider || '')
   };
 
   if (options.dry_run === true) {
@@ -793,13 +1195,14 @@ function executeStep(step: AnyObj, context: AnyObj, options: AnyObj) {
         command
       },
       records: [],
-      success_criteria: criteria
+      success_criteria: criteria,
+      external_gate: externalGate && externalGate.applicable === true ? externalGate : null
     };
   }
 
   if (step.type === 'receipt') {
     const ts = nowIso();
-    const receiptPath = resolveReceiptPath(step.command, context);
+    const receiptPath = resolveReceiptPath(step.command, executionContext);
     const exists = !!(receiptPath && fs.existsSync(receiptPath));
     const ok = exists || options.receipt_strict !== true;
     return {
@@ -828,7 +1231,8 @@ function executeStep(step: AnyObj, context: AnyObj, options: AnyObj) {
       receipt_path: receiptPath,
       receipt_exists: exists,
       success_criteria: criteria,
-      failure_reason: ok ? null : 'receipt_missing'
+      failure_reason: ok ? null : 'receipt_missing',
+      external_gate: externalGate && externalGate.applicable === true ? externalGate : null
     };
   }
 
@@ -853,7 +1257,8 @@ function executeStep(step: AnyObj, context: AnyObj, options: AnyObj) {
         },
         records,
         success_criteria: evalResult.criteria,
-        failure_reason: null
+        failure_reason: null,
+        external_gate: externalGate && externalGate.applicable === true ? externalGate : null
       };
     }
   }
@@ -871,7 +1276,8 @@ function executeStep(step: AnyObj, context: AnyObj, options: AnyObj) {
     },
     records,
     success_criteria: criteria,
-    failure_reason: failReasons.length ? String(failReasons[0]) : 'step_failed'
+    failure_reason: failReasons.length ? String(failReasons[0]) : 'step_failed',
+    external_gate: externalGate && externalGate.applicable === true ? externalGate : null
   };
 }
 
@@ -891,7 +1297,9 @@ function stepsFingerprint(steps: AnyObj[]) {
     type: String(row && row.type || ''),
     retries: Number(row && row.retries || 0),
     timeout_ms: Number(row && row.timeout_ms || 0),
-    command: String(row && row.command || '')
+    command: String(row && row.command || ''),
+    adapter: String(row && row.adapter || ''),
+    provider: String(row && row.provider || '')
   }));
   return stableId(JSON.stringify(list), 'fp');
 }
@@ -1681,10 +2089,25 @@ function runCmd(dateStr: string, args: AnyObj) {
   const results = [];
 
   for (const workflow of selected) {
+    const workflowMeta = workflow && workflow.metadata && typeof workflow.metadata === 'object'
+      ? workflow.metadata
+      : {};
     const result = executeWorkflow(workflow, {
       run_id: runId,
       date: dateStr,
-      workflow_id: String(workflow && workflow.id || '')
+      workflow_id: String(workflow && workflow.id || ''),
+      objective_id: String(workflow && workflow.objective_id || ''),
+      eye_id: String(workflow && workflow.trigger && workflow.trigger.eye_id || workflow && workflow.eye_id || ''),
+      adapter: cleanText(workflowMeta.adapter || '', 80) || '',
+      provider: cleanText(workflowMeta.provider || '', 80).toLowerCase() || '',
+      policy_root_lease_token: cleanText(
+        args['lease-token'] || args.lease_token || process.env.CAPABILITY_LEASE_TOKEN || '',
+        8192
+      ),
+      policy_root_approval_note: cleanText(
+        args['approval-note'] || args.approval_note || process.env.WORKFLOW_EXECUTOR_POLICY_ROOT_APPROVAL_NOTE || '',
+        320
+      )
     }, options);
     results.push(result);
     if (result.ok !== true && options.continue_on_error !== true) break;
@@ -1724,6 +2147,9 @@ function runCmd(dateStr: string, args: AnyObj) {
         rollback_step: step && step.rollback_step === true,
         rollback_trigger_reason: step && step.rollback_trigger_reason ? String(step.rollback_trigger_reason) : null,
         runtime_mutation_retry: step && step.runtime_mutation_retry === true,
+        external_gate: step && step.external_gate && typeof step.external_gate === 'object'
+          ? step.external_gate
+          : null,
         success_criteria: step && step.success_criteria && typeof step.success_criteria === 'object'
           ? step.success_criteria
           : null,

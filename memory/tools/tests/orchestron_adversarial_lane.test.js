@@ -51,7 +51,7 @@ function run() {
       high_power_requires_preflight: true,
       high_power_requires_rollback: false,
       persist_replay_artifacts: true,
-      unresolved_placeholder_allowlist: ['date', 'eye_id', 'adapter']
+      unresolved_placeholder_allowlist: ['date', 'eye_id', 'adapter', 'provider']
     }
   });
 
