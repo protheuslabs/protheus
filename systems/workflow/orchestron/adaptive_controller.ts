@@ -9,6 +9,12 @@ const {
   strategyMaxRiskPerAction,
   resolveStrategyRankingContext
 } = require('../../../lib/strategy_resolver');
+let runWeaver = null;
+try {
+  ({ runWeaver } = require('../../weaver/weaver_core.js'));
+} catch {
+  runWeaver = null;
+}
 const { analyzeIntent } = require('./intent_analyzer');
 const { generateCandidates } = require('./candidate_generator');
 const { evaluateCandidates } = require('./nursery_tester');
@@ -22,6 +28,12 @@ const {
   stableId,
   toWorkflowDraft
 } = require('./contracts');
+let detectHighValuePlays = null;
+try {
+  ({ detectHighValuePlays } = require('../high_value_play_detector.js'));
+} catch {
+  detectHighValuePlays = null;
+}
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..', '..');
 const DEFAULT_POLICY_PATH = path.join(REPO_ROOT, 'config', 'orchestron_policy.json');
@@ -48,7 +60,7 @@ const LATEST_PATH = path.join(OUT_DIR, 'latest.json');
 
 function usage() {
   console.log('Usage:');
-  console.log('  node systems/workflow/orchestron/adaptive_controller.js run [YYYY-MM-DD] [--intent="..."] [--days=N] [--max-candidates=N] [--value-currency=<currency>] [--objective-id=<id>] [--policy=path]');
+  console.log('  node systems/workflow/orchestron/adaptive_controller.js run [YYYY-MM-DD] [--intent="..."] [--days=N] [--max-candidates=N] [--value-currency=<currency>] [--value-metrics=<csv|json>] [--primary-metric=<id>] [--objective-id=<id>] [--policy=path]');
   console.log('  node systems/workflow/orchestron/adaptive_controller.js status [YYYY-MM-DD|latest]');
 }
 
@@ -495,10 +507,82 @@ function generateAdaptiveDrafts(dateStr, opts = {}) {
     120
   ) || null;
   const requestedValueCurrency = normalizeToken(opts.valueCurrency || '', 40) || null;
+  const requestedValueCurrencyCompat = (
+    requestedValueCurrency
+    && ['revenue', 'delivery', 'user_value', 'quality', 'time_savings', 'learning'].includes(requestedValueCurrency)
+  )
+    ? requestedValueCurrency
+    : null;
+  let weaver = null;
+  if (typeof runWeaver === 'function') {
+    try {
+      const weaverRun = runWeaver(dateStr, {
+        objectiveId: objectiveHint || 'orchestron_objective',
+        objective: intent.objective,
+        valueMetrics: opts.valueMetrics || opts.valueCurrency || null,
+        primaryMetric: opts.primaryMetric || null,
+        apply: false,
+        dry_run: true,
+        source: 'orchestron_adaptive_controller'
+      });
+      if (weaverRun && weaverRun.ok === true) {
+        weaver = weaverRun;
+        emitBirthEvent(policy, {
+          ts: nowIso(),
+          type: 'orchestron_birth_event',
+          stage: 'weaver_arbitrated',
+          run_id: runId,
+          date: dateStr,
+          strategy_id: strategyId,
+          objective_id: objectiveHint || null,
+          primary_metric_id: weaverRun
+            && weaverRun.value_context
+            ? weaverRun.value_context.primary_metric_id || null
+            : null,
+          value_currency: weaverRun
+            && weaverRun.value_context
+            ? weaverRun.value_context.value_currency || null
+            : null,
+          monoculture_guard_triggered: !!(
+            weaverRun
+            && weaverRun.value_context
+            && weaverRun.value_context.monoculture_guard
+            && weaverRun.value_context.monoculture_guard.triggered === true
+          )
+        });
+      }
+    } catch (err) {
+      emitBirthEvent(policy, {
+        ts: nowIso(),
+        type: 'orchestron_birth_event',
+        stage: 'weaver_unavailable',
+        run_id: runId,
+        date: dateStr,
+        strategy_id: strategyId,
+        reason: cleanText(err && err.message ? err.message : err || 'weaver_unavailable', 160)
+      });
+    }
+  }
+  const weaverValueCurrency = normalizeToken(
+    weaver && weaver.value_context ? weaver.value_context.value_currency || '' : '',
+    40
+  ) || null;
   const valueContext = resolveStrategyRankingContext(strategy, {
     objective_id: objectiveHint,
-    value_currency: requestedValueCurrency
+    value_currency: requestedValueCurrencyCompat || weaverValueCurrency
   });
+  if (weaver && weaver.value_context && typeof weaver.value_context === 'object') {
+    valueContext.weaver = {
+      primary_metric_id: weaver.value_context.primary_metric_id || null,
+      active_metric_ids: Array.isArray(weaver.value_context.active_metric_ids)
+        ? weaver.value_context.active_metric_ids.slice(0, 8)
+        : [],
+      reason_codes: Array.isArray(weaver.value_context.reason_codes)
+        ? weaver.value_context.reason_codes.slice(0, 8)
+        : [],
+      monoculture_guard: weaver.value_context.monoculture_guard || null
+    };
+  }
   const principles = loadPrincipleSnapshot();
   const registry = loadRegistryWorkflows();
   const redTeam = loadRedTeamSnapshot();
@@ -657,7 +741,7 @@ function generateAdaptiveDrafts(dateStr, opts = {}) {
     gatedPassing.push(row);
   }
 
-  const drafts = candidates.map((candidate) => {
+  let drafts = candidates.map((candidate) => {
     const scorecard = scoreById.get(String(candidate && candidate.id || '')) || null;
     return toWorkflowDraft(candidate, scorecard, {
       principles,
@@ -666,13 +750,57 @@ function generateAdaptiveDrafts(dateStr, opts = {}) {
     });
   });
   drafts.sort((a, b) => Number(b.metrics && b.metrics.score || 0) - Number(a.metrics && a.metrics.score || 0));
-  const promotableDrafts = gatedPassing
+  let promotableDrafts = gatedPassing
     .map((row) => toWorkflowDraft(row.candidate, row.scorecard, {
       principles,
       score_lookup: scoreById,
       max_depth: policy.fractal.max_depth
     }))
     .sort((a, b) => Number(b.metrics && b.metrics.score || 0) - Number(a.metrics && a.metrics.score || 0));
+
+  let highValue = {
+    ok: false,
+    applied: false,
+    reason: 'high_value_detector_unavailable',
+    summary: null
+  };
+  if (typeof detectHighValuePlays === 'function') {
+    try {
+      const hv = detectHighValuePlays({
+        date: dateStr,
+        run_id: runId,
+        drafts,
+        promotable_drafts: promotableDrafts,
+        dry_run: false
+      }, {
+        apply: true
+      });
+      if (hv && hv.ok === true) {
+        drafts = Array.isArray(hv.drafts) ? hv.drafts : drafts;
+        promotableDrafts = Array.isArray(hv.promotable_drafts) ? hv.promotable_drafts : promotableDrafts;
+        highValue = {
+          ok: true,
+          applied: true,
+          reason: null,
+          summary: hv.summary && typeof hv.summary === 'object' ? hv.summary : null
+        };
+      } else {
+        highValue = {
+          ok: false,
+          applied: false,
+          reason: cleanText(hv && hv.reason ? hv.reason : 'high_value_detector_failed', 120),
+          summary: null
+        };
+      }
+    } catch (err) {
+      highValue = {
+        ok: false,
+        applied: false,
+        reason: cleanText(err && err.message ? err.message : err || 'high_value_detector_failed', 140),
+        summary: null
+      };
+    }
+  }
   emitBirthEvent(policy, {
     ts: nowIso(),
     type: 'orchestron_birth_event',
@@ -721,6 +849,7 @@ function generateAdaptiveDrafts(dateStr, opts = {}) {
     run_rows: patternStats.run_rows,
     pattern_rows: patternStats.rows.length,
     principles,
+    high_value_play: highValue,
     red_team: redTeam,
     adversarial: {
       probes_run: Number(adversarial && adversarial.probes_run || 0),
@@ -772,6 +901,8 @@ function runCmd(dateStr, args) {
     maxCandidates: args['max-candidates'],
     intent: args.intent,
     valueCurrency: args['value-currency'],
+    valueMetrics: args['value-metrics'],
+    primaryMetric: args['primary-metric'],
     objectiveId: args['objective-id']
   });
   const fp = persistRun(payload);

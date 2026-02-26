@@ -1,0 +1,46 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "apply_in_dry_run": false,
+  "channels": {
+    "default": {
+      "hard_limit_per_hour": 18,
+      "min_interval_sec": 20,
+      "base_cooldown_sec": 300,
+      "max_cooldown_sec": 10800
+    },
+    "email": {
+      "hard_limit_per_hour": 12,
+      "min_interval_sec": 75,
+      "base_cooldown_sec": 900,
+      "max_cooldown_sec": 21600
+    },
+    "discord": {
+      "hard_limit_per_hour": 28,
+      "min_interval_sec": 8,
+      "base_cooldown_sec": 120,
+      "max_cooldown_sec": 3600
+    },
+    "upwork": {
+      "hard_limit_per_hour": 8,
+      "min_interval_sec": 120,
+      "base_cooldown_sec": 1200,
+      "max_cooldown_sec": 28800
+    }
+  },
+  "high_trust_fast_path": {
+    "enabled": true,
+    "min_trust_score": 0.78,
+    "min_quality_score": 0.72,
+    "max_drift_risk": 0.28,
+    "max_interval_reduction": 0.6
+  },
+  "drift_penalty": {
+    "enabled": true,
+    "max_interval_multiplier": 2.8
+  },
+  "learning": {
+    "ema_alpha": 0.2,
+    "deny_streak_cooldown_threshold": 3
+  }
+}

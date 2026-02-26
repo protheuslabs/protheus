@@ -6,6 +6,35 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const { loadRegistry } = require('./workflow_controller');
+const {
+  loadSystemBudgetState,
+  loadSystemBudgetAutopauseState,
+  evaluateSystemBudgetGuard,
+  writeSystemBudgetDecision,
+  recordSystemBudgetUsage
+} = require('../budget/system_budget');
+let evaluateRateLimitDecision = null;
+let recordRateLimitOutcome = null;
+try {
+  ({ evaluateRateLimitDecision, recordRateLimitOutcome } = require('./rate_limit_intelligence.js'));
+} catch {
+  evaluateRateLimitDecision = null;
+  recordRateLimitOutcome = null;
+}
+let prepareCommunicationAttempt = null;
+let finalizeCommunicationAttempt = null;
+try {
+  ({ prepareCommunicationAttempt, finalizeCommunicationAttempt } = require('./client_communication_organ.js'));
+} catch {
+  prepareCommunicationAttempt = null;
+  finalizeCommunicationAttempt = null;
+}
+let recordHighValuePlayOutcomes = null;
+try {
+  ({ recordExecutionOutcomes: recordHighValuePlayOutcomes } = require('./high_value_play_detector.js'));
+} catch {
+  recordHighValuePlayOutcomes = null;
+}
 
 type AnyObj = Record<string, any>;
 
@@ -32,6 +61,9 @@ const STEP_RECEIPTS_DIR = process.env.WORKFLOW_EXECUTOR_STEP_RECEIPTS_DIR
 const MUTATION_RECEIPTS_DIR = process.env.WORKFLOW_EXECUTOR_MUTATION_RECEIPTS_DIR
   ? path.resolve(process.env.WORKFLOW_EXECUTOR_MUTATION_RECEIPTS_DIR)
   : path.join(REPO_ROOT, 'state', 'adaptive', 'workflows', 'executor', 'mutations');
+const DEFER_QUEUE_PATH = process.env.WORKFLOW_EXECUTOR_DEFER_QUEUE_PATH
+  ? path.resolve(process.env.WORKFLOW_EXECUTOR_DEFER_QUEUE_PATH)
+  : path.join(REPO_ROOT, 'state', 'adaptive', 'workflows', 'executor', 'defer_queue.jsonl');
 const EXEC_CWD = process.env.WORKFLOW_EXECUTOR_CWD
   ? path.resolve(process.env.WORKFLOW_EXECUTOR_CWD)
   : REPO_ROOT;
@@ -389,6 +421,28 @@ function defaultPolicy() {
         timeout_ms: 8000,
         script: 'systems/security/soul_token_guard.js'
       }
+    },
+    token_economics: {
+      enabled: true,
+      use_system_budget: true,
+      run_token_cap: 0,
+      fallback_run_token_cap: 1200,
+      reserve_tokens_for_critical_lanes: 320,
+      per_workflow_min_token_cap: 80,
+      per_workflow_min_token_cap_critical: 140,
+      per_workflow_max_token_cap: 2200,
+      step_command_default_tokens: 40,
+      step_gate_tokens: 18,
+      step_receipt_tokens: 10,
+      step_external_tokens: 120,
+      envelope_headroom_multiplier: 1.6,
+      throttle_floor_ratio: 0.35,
+      defer_queue_enabled: true,
+      defer_on_autopause: true,
+      defer_on_guard_deny: true,
+      allow_critical_when_autopause: false,
+      critical_priority_floor: 4,
+      critical_tags: ['critical', 'security', 'doctor', 'repair', 'incident', 'compliance', 'recovery']
     }
   };
 }
@@ -428,6 +482,9 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
     : {};
   const securityGates = raw && raw.security_gates && typeof raw.security_gates === 'object'
     ? raw.security_gates
+    : {};
+  const tokenEconomicsRaw = raw && raw.token_economics && typeof raw.token_economics === 'object'
+    ? raw.token_economics
     : {};
   const soulTokenGateRaw = securityGates && securityGates.soul_token && typeof securityGates.soul_token === 'object'
     ? securityGates.soul_token
@@ -698,6 +755,472 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
         script: cleanText(soulTokenGateRaw.script || base.security_gates.soul_token.script, 260)
           || base.security_gates.soul_token.script
       }
+    },
+    token_economics: {
+      enabled: tokenEconomicsRaw.enabled !== false,
+      use_system_budget: tokenEconomicsRaw.use_system_budget !== false,
+      run_token_cap: clampInt(
+        tokenEconomicsRaw.run_token_cap,
+        0,
+        100_000_000,
+        base.token_economics.run_token_cap
+      ),
+      fallback_run_token_cap: clampInt(
+        tokenEconomicsRaw.fallback_run_token_cap,
+        100,
+        100_000_000,
+        base.token_economics.fallback_run_token_cap
+      ),
+      reserve_tokens_for_critical_lanes: clampInt(
+        tokenEconomicsRaw.reserve_tokens_for_critical_lanes,
+        0,
+        100_000_000,
+        base.token_economics.reserve_tokens_for_critical_lanes
+      ),
+      per_workflow_min_token_cap: clampInt(
+        tokenEconomicsRaw.per_workflow_min_token_cap,
+        0,
+        10_000_000,
+        base.token_economics.per_workflow_min_token_cap
+      ),
+      per_workflow_min_token_cap_critical: clampInt(
+        tokenEconomicsRaw.per_workflow_min_token_cap_critical,
+        0,
+        10_000_000,
+        base.token_economics.per_workflow_min_token_cap_critical
+      ),
+      per_workflow_max_token_cap: clampInt(
+        tokenEconomicsRaw.per_workflow_max_token_cap,
+        1,
+        100_000_000,
+        base.token_economics.per_workflow_max_token_cap
+      ),
+      step_command_default_tokens: clampInt(
+        tokenEconomicsRaw.step_command_default_tokens,
+        1,
+        1_000_000,
+        base.token_economics.step_command_default_tokens
+      ),
+      step_gate_tokens: clampInt(
+        tokenEconomicsRaw.step_gate_tokens,
+        0,
+        1_000_000,
+        base.token_economics.step_gate_tokens
+      ),
+      step_receipt_tokens: clampInt(
+        tokenEconomicsRaw.step_receipt_tokens,
+        0,
+        1_000_000,
+        base.token_economics.step_receipt_tokens
+      ),
+      step_external_tokens: clampInt(
+        tokenEconomicsRaw.step_external_tokens,
+        1,
+        1_000_000,
+        base.token_economics.step_external_tokens
+      ),
+      envelope_headroom_multiplier: clampNumber(
+        tokenEconomicsRaw.envelope_headroom_multiplier,
+        1,
+        3,
+        base.token_economics.envelope_headroom_multiplier
+      ),
+      throttle_floor_ratio: clampNumber(
+        tokenEconomicsRaw.throttle_floor_ratio,
+        0,
+        1,
+        base.token_economics.throttle_floor_ratio
+      ),
+      defer_queue_enabled: tokenEconomicsRaw.defer_queue_enabled !== false,
+      defer_on_autopause: tokenEconomicsRaw.defer_on_autopause !== false,
+      defer_on_guard_deny: tokenEconomicsRaw.defer_on_guard_deny !== false,
+      allow_critical_when_autopause: tokenEconomicsRaw.allow_critical_when_autopause === true,
+      critical_priority_floor: clampInt(
+        tokenEconomicsRaw.critical_priority_floor,
+        1,
+        5,
+        base.token_economics.critical_priority_floor
+      ),
+      critical_tags: (() => {
+        const src = Array.isArray(tokenEconomicsRaw.critical_tags)
+          ? tokenEconomicsRaw.critical_tags
+          : base.token_economics.critical_tags;
+        const out = src
+          .map((v) => cleanText(v || '', 64).toLowerCase())
+          .filter(Boolean);
+        return out.length ? Array.from(new Set(out)) : base.token_economics.critical_tags.slice(0);
+      })()
+    }
+  };
+}
+
+function workflowPriorityRank(priorityRaw: unknown) {
+  const p = String(priorityRaw || '').trim().toLowerCase();
+  if (p === 'critical' || p === 'p0') return 5;
+  if (p === 'high' || p === 'p1') return 4;
+  if (p === 'medium' || p === 'p2') return 3;
+  if (p === 'low' || p === 'p3') return 2;
+  if (p === 'background' || p === 'p4') return 1;
+  return 3;
+}
+
+function classifyWorkflowPriority(workflow: AnyObj, tokenPolicy: AnyObj) {
+  const wf = workflow && typeof workflow === 'object' ? workflow : {};
+  const meta = wf.metadata && typeof wf.metadata === 'object' ? wf.metadata : {};
+  const tags = []
+    .concat(Array.isArray(wf.tags) ? wf.tags : [])
+    .concat(Array.isArray(meta.tags) ? meta.tags : [])
+    .map((v) => cleanText(v || '', 64).toLowerCase())
+    .filter(Boolean);
+  const criticalTagSet = new Set(
+    Array.isArray(tokenPolicy && tokenPolicy.critical_tags)
+      ? tokenPolicy.critical_tags.map((v: unknown) => cleanText(v || '', 64).toLowerCase()).filter(Boolean)
+      : []
+  );
+  const explicitPriority = cleanText(
+    wf.priority || meta.priority || (wf.value_context && wf.value_context.priority) || '',
+    24
+  ).toLowerCase();
+  const objectiveText = cleanText(
+    wf.objective || wf.objective_id || meta.objective || wf.name || '',
+    220
+  ).toLowerCase();
+  const criticalKeyword = /\b(incident|security|doctor|repair|rollback|compliance|integrity|recovery|hotfix|safety)\b/.test(objectiveText);
+  const hasCriticalTag = tags.some((tag) => criticalTagSet.has(tag));
+  const rank = workflowPriorityRank(explicitPriority) + (criticalKeyword || hasCriticalTag ? 1 : 0);
+  const bounded = clampInt(rank, 1, 5, 3);
+  const isCritical = bounded >= Number(tokenPolicy && tokenPolicy.critical_priority_floor || 4);
+  let normalized = explicitPriority;
+  if (!normalized) normalized = bounded >= 5 ? 'critical' : bounded >= 4 ? 'high' : bounded === 3 ? 'medium' : 'low';
+  return {
+    priority: normalized,
+    priority_rank: bounded,
+    critical_lane: isCritical
+  };
+}
+
+function estimateStepTokens(step: AnyObj, tokenPolicy: AnyObj) {
+  const row = step && typeof step === 'object' ? step : {};
+  const explicit = Number(row.estimated_tokens);
+  if (Number.isFinite(explicit) && explicit > 0) return Math.round(explicit);
+  const type = String(row.type || 'command').trim().toLowerCase();
+  if (type === 'gate') return clampInt(tokenPolicy && tokenPolicy.step_gate_tokens, 0, 1_000_000, 18);
+  if (type === 'receipt') return clampInt(tokenPolicy && tokenPolicy.step_receipt_tokens, 0, 1_000_000, 10);
+  if (type === 'external') return clampInt(tokenPolicy && tokenPolicy.step_external_tokens, 1, 1_000_000, 120);
+  return clampInt(tokenPolicy && tokenPolicy.step_command_default_tokens, 1, 1_000_000, 40);
+}
+
+function estimateWorkflowTokens(workflow: AnyObj, tokenPolicy: AnyObj) {
+  const steps = Array.isArray(workflow && workflow.steps) ? workflow.steps.map((row, i) => normalizeStep(row, i)) : [];
+  if (!steps.length) {
+    return clampInt(tokenPolicy && tokenPolicy.per_workflow_min_token_cap, 0, 10_000_000, 80);
+  }
+  const total = steps.reduce((sum, step) => {
+    const perAttempt = Math.max(0, estimateStepTokens(step, tokenPolicy));
+    const attempts = Math.max(1, Number(step && step.retries || 0) + 1);
+    return sum + (perAttempt * attempts);
+  }, 0);
+  const minCap = clampInt(tokenPolicy && tokenPolicy.per_workflow_min_token_cap, 0, 10_000_000, 80);
+  const maxCap = clampInt(tokenPolicy && tokenPolicy.per_workflow_max_token_cap, 1, 100_000_000, 2200);
+  return clampInt(total, 0, 100_000_000, minCap > 0 ? minCap : 1) > 0
+    ? Math.max(minCap, Math.min(maxCap, Math.round(total)))
+    : minCap;
+}
+
+function tokenEconomicsBudgetSnapshot(dateStr: string, tokenPolicy: AnyObj) {
+  const out = {
+    budget_state_available: false,
+    token_cap_tokens: 0,
+    used_est_tokens: 0,
+    remaining_tokens: 0,
+    autopause_active: false,
+    autopause_reason: null,
+    autopause_source: null
+  };
+  if (!(tokenPolicy && tokenPolicy.use_system_budget === true)) return out;
+  try {
+    const state = loadSystemBudgetState(dateStr, {});
+    out.budget_state_available = !!(state && typeof state === 'object');
+    out.token_cap_tokens = Math.max(0, Number(state && state.token_cap || 0));
+    out.used_est_tokens = Math.max(0, Number(state && state.used_est || 0));
+    out.remaining_tokens = Math.max(0, out.token_cap_tokens - out.used_est_tokens);
+  } catch {
+    // Fail-open to local executor token cap fallback.
+  }
+  try {
+    const autopause = loadSystemBudgetAutopauseState({});
+    out.autopause_active = !!(autopause && autopause.active === true);
+    out.autopause_reason = autopause && autopause.reason ? cleanText(autopause.reason, 180) : null;
+    out.autopause_source = autopause && autopause.source ? cleanText(autopause.source, 80) : null;
+  } catch {
+    // Fail-open: missing autopause state should not block execution.
+  }
+  return out;
+}
+
+function planTokenEconomics(
+  dateStr: string,
+  selected: AnyObj[],
+  policy: AnyObj,
+  args: AnyObj = {},
+  opts: AnyObj = {}
+) {
+  const tokenPolicy = policy && policy.token_economics && typeof policy.token_economics === 'object'
+    ? policy.token_economics
+    : defaultPolicy().token_economics;
+  const dryRun = opts && opts.dry_run === true;
+  const rows = Array.isArray(selected) ? selected : [];
+  if (tokenPolicy.enabled !== true) {
+    return {
+      enabled: false,
+      token_policy: tokenPolicy,
+      run_token_cap_tokens: 0,
+      predicted_total_tokens: 0,
+      enveloped_total_tokens: 0,
+      deferred: [],
+      executable: rows.map((workflow) => ({
+        workflow,
+        predicted_tokens: 0,
+        envelope_tokens: 0,
+        throttle_ratio: 1,
+        priority: 'medium',
+        priority_rank: 3,
+        critical_lane: false,
+        reason: 'token_economics_disabled'
+      })),
+      budget_snapshot: tokenEconomicsBudgetSnapshot(dateStr, tokenPolicy)
+    };
+  }
+
+  const budgetSnapshot = tokenEconomicsBudgetSnapshot(dateStr, tokenPolicy);
+  const explicitCap = clampInt(
+    args && (args['token-cap'] != null ? args['token-cap'] : args.token_cap),
+    0,
+    100_000_000,
+    0
+  );
+  const configuredRunCap = clampInt(tokenPolicy.run_token_cap, 0, 100_000_000, 0);
+  let runCap = explicitCap > 0 ? explicitCap : configuredRunCap;
+  if (runCap <= 0 && tokenPolicy.use_system_budget === true && budgetSnapshot.remaining_tokens > 0) {
+    runCap = budgetSnapshot.remaining_tokens;
+  }
+  if (runCap <= 0) {
+    runCap = clampInt(tokenPolicy.fallback_run_token_cap, 100, 100_000_000, 1200);
+  }
+
+  const planned = rows.map((workflow) => {
+    const priority = classifyWorkflowPriority(workflow, tokenPolicy);
+    const predictedTokens = estimateWorkflowTokens(workflow, tokenPolicy);
+    return {
+      workflow,
+      workflow_id: String(workflow && workflow.id || '').trim(),
+      workflow_name: cleanText(workflow && workflow.name || '', 120),
+      ...priority,
+      predicted_tokens: predictedTokens
+    };
+  });
+  const criticalRows = planned.filter((row) => row.critical_lane === true);
+  const nonCriticalRows = planned.filter((row) => row.critical_lane !== true);
+  const criticalTotal = criticalRows.reduce((sum, row) => sum + Number(row.predicted_tokens || 0), 0);
+  const nonCriticalTotal = nonCriticalRows.reduce((sum, row) => sum + Number(row.predicted_tokens || 0), 0);
+  let reserveForCritical = clampInt(tokenPolicy.reserve_tokens_for_critical_lanes, 0, runCap, 0);
+  if (criticalTotal <= 0) reserveForCritical = 0;
+  let criticalBudget = Math.max(reserveForCritical, Math.round(runCap * 0.35));
+  criticalBudget = Math.min(runCap, criticalBudget);
+  if (criticalTotal > 0 && criticalTotal < criticalBudget) criticalBudget = criticalTotal;
+  let nonCriticalBudget = Math.max(0, runCap - criticalBudget);
+  if (criticalTotal <= 0) nonCriticalBudget = runCap;
+
+  const criticalScale = criticalTotal > 0 ? Math.min(1, criticalBudget / criticalTotal) : 1;
+  const nonCriticalScale = nonCriticalTotal > 0 ? Math.min(1, nonCriticalBudget / nonCriticalTotal) : 1;
+  const headroomMultiplier = clampNumber(tokenPolicy.envelope_headroom_multiplier, 1, 3, 1.6);
+  const throttleFloor = clampNumber(tokenPolicy.throttle_floor_ratio, 0, 1, 0.35);
+  let criticalRemaining = criticalBudget;
+  let nonCriticalRemaining = nonCriticalBudget;
+
+  const deferred: AnyObj[] = [];
+  const executable: AnyObj[] = [];
+  const sorted = planned.slice().sort((a, b) => {
+    if (Number(b.priority_rank) !== Number(a.priority_rank)) return Number(b.priority_rank) - Number(a.priority_rank);
+    if (Number(a.predicted_tokens) !== Number(b.predicted_tokens)) return Number(a.predicted_tokens) - Number(b.predicted_tokens);
+    return String(a.workflow_id).localeCompare(String(b.workflow_id));
+  });
+
+  let attemptsToday = 0;
+  for (const row of sorted) {
+    const predictedTokens = Math.max(0, Number(row.predicted_tokens || 0));
+    const isCritical = row.critical_lane === true;
+    const minCap = isCritical
+      ? clampInt(tokenPolicy.per_workflow_min_token_cap_critical, 0, 10_000_000, 140)
+      : clampInt(tokenPolicy.per_workflow_min_token_cap, 0, 10_000_000, 80);
+    const maxCap = clampInt(tokenPolicy.per_workflow_max_token_cap, 1, 100_000_000, 2200);
+    const laneScale = isCritical ? criticalScale : nonCriticalScale;
+    const laneRemaining = isCritical ? criticalRemaining : nonCriticalRemaining;
+    let envelope = Math.min(maxCap, Math.floor(predictedTokens * laneScale));
+    if (predictedTokens > 0 && envelope < minCap) envelope = Math.min(maxCap, minCap);
+    if (predictedTokens > 0) {
+      const headroomTarget = Math.ceil(predictedTokens * headroomMultiplier);
+      if (envelope < headroomTarget) envelope = Math.min(maxCap, headroomTarget);
+    }
+    if (envelope > laneRemaining) envelope = laneRemaining;
+    if (envelope < 0) envelope = 0;
+    const throttleRatio = predictedTokens > 0 ? Number((envelope / predictedTokens).toFixed(4)) : 1;
+
+    const autopauseActive = budgetSnapshot.autopause_active === true;
+    if (
+      autopauseActive
+      && tokenPolicy.defer_on_autopause === true
+      && (!isCritical || tokenPolicy.allow_critical_when_autopause !== true)
+    ) {
+      deferred.push({
+        workflow_id: row.workflow_id,
+        workflow_name: row.workflow_name,
+        predicted_tokens: predictedTokens,
+        envelope_tokens: 0,
+        priority: row.priority,
+        priority_rank: row.priority_rank,
+        critical_lane: isCritical,
+        throttle_ratio: 0,
+        reason: 'budget_autopause_active_preflight',
+        autopause_reason: budgetSnapshot.autopause_reason || null
+      });
+      continue;
+    }
+
+    if (envelope <= 0) {
+      deferred.push({
+        workflow_id: row.workflow_id,
+        workflow_name: row.workflow_name,
+        predicted_tokens: predictedTokens,
+        envelope_tokens: 0,
+        priority: row.priority,
+        priority_rank: row.priority_rank,
+        critical_lane: isCritical,
+        throttle_ratio: 0,
+        reason: 'token_economics_no_headroom'
+      });
+      continue;
+    }
+    if (predictedTokens > 0 && throttleRatio < throttleFloor && !isCritical) {
+      deferred.push({
+        workflow_id: row.workflow_id,
+        workflow_name: row.workflow_name,
+        predicted_tokens: predictedTokens,
+        envelope_tokens: envelope,
+        priority: row.priority,
+        priority_rank: row.priority_rank,
+        critical_lane: isCritical,
+        throttle_ratio: throttleRatio,
+        reason: 'token_economics_throttle_floor_unmet'
+      });
+      continue;
+    }
+
+    let budgetGuard = null;
+    if (tokenPolicy.use_system_budget === true) {
+      try {
+        budgetGuard = evaluateSystemBudgetGuard({
+          date: dateStr,
+          request_tokens_est: envelope,
+          attempts_today: attemptsToday
+        }, {});
+      } catch {
+        budgetGuard = null;
+      }
+      if (
+        tokenPolicy.defer_on_guard_deny === true
+        && budgetGuard
+        && budgetGuard.allow !== true
+      ) {
+        deferred.push({
+          workflow_id: row.workflow_id,
+          workflow_name: row.workflow_name,
+          predicted_tokens: predictedTokens,
+          envelope_tokens: envelope,
+          priority: row.priority,
+          priority_rank: row.priority_rank,
+          critical_lane: isCritical,
+          throttle_ratio: throttleRatio,
+          reason: cleanText(
+            Array.isArray(budgetGuard.hard_stop_reasons) && budgetGuard.hard_stop_reasons.length
+              ? budgetGuard.hard_stop_reasons[0]
+              : 'budget_guard_deny_preflight',
+            140
+          ) || 'budget_guard_deny_preflight',
+          budget_guard: {
+            allow: budgetGuard.allow === true,
+            hard_stop: budgetGuard.hard_stop === true
+          }
+        });
+        continue;
+      }
+    }
+
+    executable.push({
+      workflow: row.workflow,
+      workflow_id: row.workflow_id,
+      workflow_name: row.workflow_name,
+      predicted_tokens: predictedTokens,
+      envelope_tokens: envelope,
+      throttle_ratio: throttleRatio,
+      priority: row.priority,
+      priority_rank: row.priority_rank,
+      critical_lane: isCritical,
+      reason: throttleRatio < 0.9999 ? 'token_economics_throttled' : 'token_economics_allow',
+      budget_guard: budgetGuard
+    });
+    attemptsToday += 1;
+    if (isCritical) criticalRemaining = Math.max(0, criticalRemaining - envelope);
+    else nonCriticalRemaining = Math.max(0, nonCriticalRemaining - envelope);
+  }
+
+  if (tokenPolicy.use_system_budget === true && !dryRun) {
+    for (const row of executable) {
+      try {
+        writeSystemBudgetDecision({
+          date: dateStr,
+          module: 'workflow_executor',
+          capability: row.priority || 'workflow',
+          request_tokens_est: row.envelope_tokens,
+          decision: 'allow',
+          reason: row.reason
+        }, {});
+      } catch {
+        // Non-fatal: decision receipts should not block executor.
+      }
+    }
+    for (const row of deferred) {
+      try {
+        writeSystemBudgetDecision({
+          date: dateStr,
+          module: 'workflow_executor',
+          capability: row.priority || 'workflow',
+          request_tokens_est: row.envelope_tokens || row.predicted_tokens || 0,
+          decision: 'deny',
+          reason: row.reason
+        }, {});
+      } catch {
+        // Non-fatal.
+      }
+    }
+  }
+
+  return {
+    enabled: true,
+    token_policy: tokenPolicy,
+    run_token_cap_tokens: runCap,
+    predicted_total_tokens: planned.reduce((sum, row) => sum + Number(row.predicted_tokens || 0), 0),
+    enveloped_total_tokens: executable.reduce((sum, row) => sum + Number(row.envelope_tokens || 0), 0),
+    deferred,
+    executable,
+    budget_snapshot: budgetSnapshot,
+    scaling: {
+      critical_scale: Number(criticalScale.toFixed(4)),
+      non_critical_scale: Number(nonCriticalScale.toFixed(4)),
+      critical_budget_tokens: criticalBudget,
+      non_critical_budget_tokens: nonCriticalBudget,
+      critical_remaining_tokens: criticalRemaining,
+      non_critical_remaining_tokens: nonCriticalRemaining
     }
   };
 }
@@ -1229,29 +1752,39 @@ function summarizeStepUsage(stepResult: AnyObj) {
     const v = Number(row && row.duration_ms || 0);
     return sum + (Number.isFinite(v) && v > 0 ? v : 0);
   }, 0);
+  const tokensEst = Number.isFinite(Number(stepResult && stepResult.tokens_est_total))
+    ? Number(stepResult.tokens_est_total)
+    : records.reduce((sum, row) => {
+      const v = Number(row && row.tokens_est || 0);
+      return sum + (Number.isFinite(v) && v > 0 ? v : 0);
+    }, 0);
   return {
     attempts,
     retries,
-    duration_ms: durationMs
+    duration_ms: durationMs,
+    tokens_est: Math.max(0, Number(tokensEst || 0))
   };
 }
 
-function projectedStepBudget(step: AnyObj) {
+function projectedStepBudget(step: AnyObj, tokenPolicy: AnyObj = {}) {
   const attempts = Math.max(1, Number(step && step.retries || 0) + 1);
   const retries = Math.max(0, attempts - 1);
   const timeoutMs = Math.max(0, Number(step && step.timeout_ms || 0));
+  const tokensPerAttempt = Math.max(0, estimateStepTokens(step, tokenPolicy));
   return {
     attempts,
     retries,
-    duration_ms: timeoutMs * attempts
+    duration_ms: timeoutMs * attempts,
+    tokens_est: tokensPerAttempt * attempts
   };
 }
 
-function checkBudgetPreflight(step: AnyObj, budgetState: AnyObj, budgetPolicy: AnyObj) {
-  const projected = projectedStepBudget(step);
+function checkBudgetPreflight(step: AnyObj, budgetState: AnyObj, budgetPolicy: AnyObj, tokenPolicy: AnyObj = {}) {
+  const projected = projectedStepBudget(step, tokenPolicy);
   const attemptsCap = Math.max(0, Number(budgetPolicy && budgetPolicy.max_total_attempts_per_workflow || 0));
   const retryCap = Math.max(0, Number(budgetPolicy && budgetPolicy.max_total_retry_attempts_per_workflow || 0));
   const durationCap = Math.max(0, Number(budgetPolicy && budgetPolicy.max_total_step_duration_ms_per_workflow || 0));
+  const tokenCap = Math.max(0, Number(budgetState && budgetState.token_cap_tokens || 0));
   if (attemptsCap > 0 && (Number(budgetState && budgetState.attempts_used || 0) + projected.attempts) > attemptsCap) {
     return 'attempt_budget_exceeded_precheck';
   }
@@ -1261,6 +1794,9 @@ function checkBudgetPreflight(step: AnyObj, budgetState: AnyObj, budgetPolicy: A
   if (durationCap > 0 && (Number(budgetState && budgetState.duration_ms_used || 0) + projected.duration_ms) > durationCap) {
     return 'duration_budget_exceeded_precheck';
   }
+  if (tokenCap > 0 && (Number(budgetState && budgetState.tokens_used_est || 0) + projected.tokens_est) > tokenCap) {
+    return 'token_budget_exceeded_precheck';
+  }
   return null;
 }
 
@@ -1268,6 +1804,7 @@ function checkBudgetPostStep(budgetState: AnyObj, budgetPolicy: AnyObj) {
   const attemptsCap = Math.max(0, Number(budgetPolicy && budgetPolicy.max_total_attempts_per_workflow || 0));
   const retryCap = Math.max(0, Number(budgetPolicy && budgetPolicy.max_total_retry_attempts_per_workflow || 0));
   const durationCap = Math.max(0, Number(budgetPolicy && budgetPolicy.max_total_step_duration_ms_per_workflow || 0));
+  const tokenCap = Math.max(0, Number(budgetState && budgetState.token_cap_tokens || 0));
   if (attemptsCap > 0 && Number(budgetState && budgetState.attempts_used || 0) > attemptsCap) {
     return 'attempt_budget_exceeded';
   }
@@ -1276,6 +1813,9 @@ function checkBudgetPostStep(budgetState: AnyObj, budgetPolicy: AnyObj) {
   }
   if (durationCap > 0 && Number(budgetState && budgetState.duration_ms_used || 0) > durationCap) {
     return 'duration_budget_exceeded';
+  }
+  if (tokenCap > 0 && Number(budgetState && budgetState.tokens_used_est || 0) > tokenCap) {
+    return 'token_budget_exceeded';
   }
   return null;
 }
@@ -1492,6 +2032,65 @@ function evaluateExternalOrchestrationGate(step: AnyObj, command: string, contex
   };
 }
 
+function resolveWorkflowSignals(executionContext: AnyObj, step: AnyObj, externalMeta: AnyObj = {}) {
+  const workflow = executionContext && executionContext.workflow && typeof executionContext.workflow === 'object'
+    ? executionContext.workflow
+    : {};
+  const metrics = workflow && workflow.metrics && typeof workflow.metrics === 'object' ? workflow.metrics : {};
+  const highValue = workflow && workflow.high_value_play && typeof workflow.high_value_play === 'object'
+    ? workflow.high_value_play
+    : {};
+  const approval = workflow && workflow.approval && typeof workflow.approval === 'object'
+    ? workflow.approval
+    : {};
+  const objectiveText = cleanText(
+    workflow && workflow.objective_primary
+      ? workflow.objective_primary
+      : (workflow && workflow.objective_id ? workflow.objective_id : executionContext && executionContext.objective_id),
+    260
+  );
+  const qualityScore = clampNumber(
+    metrics.composite_score != null ? metrics.composite_score : metrics.score,
+    0,
+    1,
+    0.55
+  );
+  const driftRisk = clampNumber(
+    highValue.drift_risk != null
+      ? highValue.drift_risk
+      : (
+        metrics.regression_risk != null
+          ? metrics.regression_risk
+          : Math.max(0, Number(metrics.predicted_drift_delta || 0) / 0.06)
+      ),
+    0,
+    1,
+    0.32
+  );
+  const trustScore = clampNumber(
+    highValue.confidence != null
+      ? highValue.confidence
+      : (
+        cleanText(externalMeta && externalMeta.risk || '', 24).toLowerCase() === 'low'
+          ? 0.72
+          : 0.55
+      ),
+    0,
+    1,
+    0.55
+  );
+  return {
+    workflow,
+    objective_text: objectiveText,
+    quality_score: qualityScore,
+    drift_risk: driftRisk,
+    trust_score: trustScore,
+    high_value_confidence: clampNumber(highValue.confidence, 0, 1, 0),
+    communication_gate_approved: approval.communication_gate === true,
+    risk: cleanText(externalMeta && externalMeta.risk || step && step.risk || 'medium', 24).toLowerCase() || 'medium'
+  };
+}
+
 function executeStep(step: AnyObj, context: AnyObj, options: AnyObj) {
   let executionContext = { ...(context && typeof context === 'object' ? context : {}) };
   let command = interpolateTemplate(step.command, executionContext);
@@ -1506,7 +2105,13 @@ function executeStep(step: AnyObj, context: AnyObj, options: AnyObj) {
       : {},
     Array.isArray(runtimePolicy.default_allowed_exit_codes) ? runtimePolicy.default_allowed_exit_codes : [0]
   );
+  const tokenPolicy = options && options.token_economics && typeof options.token_economics === 'object'
+    ? options.token_economics
+    : defaultPolicy().token_economics;
+  const tokensPerAttempt = Math.max(0, estimateStepTokens(step, tokenPolicy));
   const externalGate = evaluateExternalOrchestrationGate(step, command, executionContext, options);
+  let rateLimitGate = null;
+  let communicationGate = null;
   if (externalGate && externalGate.applicable === true && externalGate.metadata && typeof externalGate.metadata === 'object') {
     executionContext = { ...executionContext, ...externalGate.metadata };
     command = interpolateTemplate(step.command, executionContext);
@@ -1528,6 +2133,7 @@ function executeStep(step: AnyObj, context: AnyObj, options: AnyObj) {
         ok: false,
         criteria_pass: false,
         criteria_fail_reasons: [reason],
+        tokens_est: tokensPerAttempt,
         exit_code: 1,
         started_at: ts,
         ended_at: ts,
@@ -1537,11 +2143,186 @@ function executeStep(step: AnyObj, context: AnyObj, options: AnyObj) {
         stderr: reason,
         error: null
       }],
+      tokens_est_per_attempt: tokensPerAttempt,
+      tokens_est_total: tokensPerAttempt,
       success_criteria: criteria,
       failure_reason: reason,
-      external_gate: externalGate
+      external_gate: externalGate,
+      rate_limit_gate: null,
+      communication_gate: null
     };
   }
+  if (
+    externalGate
+    && externalGate.applicable === true
+    && externalGate.ok === true
+    && externalGate.metadata
+    && typeof externalGate.metadata === 'object'
+  ) {
+    const signals = resolveWorkflowSignals(executionContext, step, externalGate.metadata);
+    if (typeof evaluateRateLimitDecision === 'function') {
+      try {
+        rateLimitGate = evaluateRateLimitDecision({
+          workflow_id: executionContext.workflow_id || '',
+          objective_id: executionContext.objective_id || '',
+          objective: signals.objective_text,
+          adapter: externalGate.metadata.adapter || '',
+          provider: externalGate.metadata.provider || '',
+          risk: signals.risk,
+          quality_score: signals.quality_score,
+          drift_risk: signals.drift_risk,
+          trust_score: signals.trust_score,
+          dry_run: options && options.dry_run === true
+        }, {
+          apply: options && options.dry_run !== true
+        });
+      } catch (err) {
+        rateLimitGate = {
+          ok: false,
+          applicable: true,
+          reason: cleanText(err && err.message ? err.message : err || 'rate_limit_guard_failed', 160) || 'rate_limit_guard_failed'
+        };
+      }
+      if (rateLimitGate && rateLimitGate.applicable === true && rateLimitGate.ok !== true) {
+        const ts = nowIso();
+        const reason = cleanText(rateLimitGate.reason || 'rate_limit_guard_blocked', 140) || 'rate_limit_guard_blocked';
+        return {
+          ok: false,
+          attempts: 1,
+          dry_run: options && options.dry_run === true,
+          step: {
+            id: step.id,
+            type: step.type,
+            command
+          },
+          records: [{
+            attempt: 1,
+            ok: false,
+            criteria_pass: false,
+            criteria_fail_reasons: [reason],
+            tokens_est: tokensPerAttempt,
+            exit_code: 1,
+            started_at: ts,
+            ended_at: ts,
+            duration_ms: 0,
+            timed_out: false,
+            stdout: '',
+            stderr: reason,
+            error: null
+          }],
+          tokens_est_per_attempt: tokensPerAttempt,
+          tokens_est_total: tokensPerAttempt,
+          success_criteria: criteria,
+          failure_reason: reason,
+          external_gate: externalGate,
+          rate_limit_gate: rateLimitGate,
+          communication_gate: null
+        };
+      }
+    }
+    if (typeof prepareCommunicationAttempt === 'function') {
+      try {
+        communicationGate = prepareCommunicationAttempt({
+          workflow_id: executionContext.workflow_id || '',
+          objective_id: executionContext.objective_id || '',
+          objective: signals.objective_text,
+          adapter: externalGate.metadata.adapter || '',
+          provider: externalGate.metadata.provider || '',
+          risk: signals.risk,
+          channel: externalGate.metadata.adapter || externalGate.metadata.provider || '',
+          high_value_confidence: signals.high_value_confidence,
+          communication_gate_approved: signals.communication_gate_approved === true,
+          dry_run: options && options.dry_run === true
+        }, {
+          apply: options && options.dry_run !== true
+        });
+      } catch (err) {
+        communicationGate = {
+          ok: false,
+          applicable: true,
+          allowed: false,
+          reason: cleanText(err && err.message ? err.message : err || 'client_communication_guard_failed', 160) || 'client_communication_guard_failed'
+        };
+      }
+      if (
+        communicationGate
+        && communicationGate.applicable === true
+        && communicationGate.allowed !== true
+      ) {
+        const ts = nowIso();
+        const reason = cleanText(communicationGate.reason || 'client_communication_guard_blocked', 140) || 'client_communication_guard_blocked';
+        return {
+          ok: false,
+          attempts: 1,
+          dry_run: options && options.dry_run === true,
+          step: {
+            id: step.id,
+            type: step.type,
+            command
+          },
+          records: [{
+            attempt: 1,
+            ok: false,
+            criteria_pass: false,
+            criteria_fail_reasons: [reason],
+            tokens_est: tokensPerAttempt,
+            exit_code: 1,
+            started_at: ts,
+            ended_at: ts,
+            duration_ms: 0,
+            timed_out: false,
+            stdout: '',
+            stderr: reason,
+            error: null
+          }],
+          tokens_est_per_attempt: tokensPerAttempt,
+          tokens_est_total: tokensPerAttempt,
+          success_criteria: criteria,
+          failure_reason: reason,
+          external_gate: externalGate,
+          rate_limit_gate: rateLimitGate,
+          communication_gate: communicationGate
+        };
+      }
+    }
+  }
+  const finalizeExternalTelemetry = (ok: boolean, failureReason = '') => {
+    if (
+      rateLimitGate
+      && rateLimitGate.applicable === true
+      && typeof recordRateLimitOutcome === 'function'
+    ) {
+      try {
+        recordRateLimitOutcome({
+          workflow_id: executionContext.workflow_id || '',
+          objective_id: executionContext.objective_id || '',
+          adapter: executionContext.adapter || '',
+          provider: executionContext.provider || '',
+          ok: ok === true,
+          failure_reason: failureReason || null,
+          drift_risk: Number(rateLimitGate && rateLimitGate.drift_risk || 0)
+        });
+      } catch {
+        // Best-effort telemetry must never block execution.
+      }
+    }
+    if (
+      communicationGate
+      && communicationGate.applicable === true
+      && typeof finalizeCommunicationAttempt === 'function'
+    ) {
+      try {
+        finalizeCommunicationAttempt({
+          thread_id: communicationGate.thread_id || '',
+          ok: ok === true,
+          dry_run: options && options.dry_run === true,
+          failure_reason: failureReason || null
+        });
+      } catch {
+        // Best-effort telemetry must never block execution.
+      }
+    }
+  };
   const env = {
     ...process.env,
     WORKFLOW_RUN_ID: String(executionContext.run_id || ''),
@@ -1564,8 +2345,12 @@ function executeStep(step: AnyObj, context: AnyObj, options: AnyObj) {
         command
       },
       records: [],
+      tokens_est_per_attempt: tokensPerAttempt,
+      tokens_est_total: 0,
       success_criteria: criteria,
-      external_gate: externalGate && externalGate.applicable === true ? externalGate : null
+      external_gate: externalGate && externalGate.applicable === true ? externalGate : null,
+      rate_limit_gate: rateLimitGate && rateLimitGate.applicable === true ? rateLimitGate : null,
+      communication_gate: communicationGate && communicationGate.applicable === true ? communicationGate : null
     };
   }
 
@@ -1588,6 +2373,7 @@ function executeStep(step: AnyObj, context: AnyObj, options: AnyObj) {
         ok,
         criteria_pass: ok,
         criteria_fail_reasons: ok ? [] : ['receipt_missing'],
+        tokens_est: tokensPerAttempt,
         exit_code: exists ? 0 : 1,
         started_at: ts,
         ended_at: ts,
@@ -1599,9 +2385,13 @@ function executeStep(step: AnyObj, context: AnyObj, options: AnyObj) {
       }],
       receipt_path: receiptPath,
       receipt_exists: exists,
+      tokens_est_per_attempt: tokensPerAttempt,
+      tokens_est_total: tokensPerAttempt,
       success_criteria: criteria,
       failure_reason: ok ? null : 'receipt_missing',
-      external_gate: externalGate && externalGate.applicable === true ? externalGate : null
+      external_gate: externalGate && externalGate.applicable === true ? externalGate : null,
+      rate_limit_gate: rateLimitGate && rateLimitGate.applicable === true ? rateLimitGate : null,
+      communication_gate: communicationGate && communicationGate.applicable === true ? communicationGate : null
     };
   }
 
@@ -1611,10 +2401,12 @@ function executeStep(step: AnyObj, context: AnyObj, options: AnyObj) {
     records.push({
       attempt,
       ...run,
+      tokens_est: tokensPerAttempt,
       criteria_pass: evalResult.pass === true,
       criteria_fail_reasons: evalResult.reasons
     });
     if (evalResult.pass === true) {
+      finalizeExternalTelemetry(true, null);
       return {
         ok: true,
         attempts: attempt,
@@ -1625,15 +2417,21 @@ function executeStep(step: AnyObj, context: AnyObj, options: AnyObj) {
           command
         },
         records,
+        tokens_est_per_attempt: tokensPerAttempt,
+        tokens_est_total: tokensPerAttempt * attempt,
         success_criteria: evalResult.criteria,
         failure_reason: null,
-        external_gate: externalGate && externalGate.applicable === true ? externalGate : null
+        external_gate: externalGate && externalGate.applicable === true ? externalGate : null,
+        rate_limit_gate: rateLimitGate && rateLimitGate.applicable === true ? rateLimitGate : null,
+        communication_gate: communicationGate && communicationGate.applicable === true ? communicationGate : null
       };
     }
   }
 
   const last = records.length ? records[records.length - 1] : null;
   const failReasons = Array.isArray(last && last.criteria_fail_reasons) ? last.criteria_fail_reasons : [];
+  const failureReason = failReasons.length ? String(failReasons[0]) : 'step_failed';
+  finalizeExternalTelemetry(false, failureReason);
   return {
     ok: false,
     attempts: records.length,
@@ -1644,9 +2442,13 @@ function executeStep(step: AnyObj, context: AnyObj, options: AnyObj) {
       command
     },
     records,
+    tokens_est_per_attempt: tokensPerAttempt,
+    tokens_est_total: tokensPerAttempt * records.length,
     success_criteria: criteria,
-    failure_reason: failReasons.length ? String(failReasons[0]) : 'step_failed',
-    external_gate: externalGate && externalGate.applicable === true ? externalGate : null
+    failure_reason: failureReason,
+    external_gate: externalGate && externalGate.applicable === true ? externalGate : null,
+    rate_limit_gate: rateLimitGate && rateLimitGate.applicable === true ? rateLimitGate : null,
+    communication_gate: communicationGate && communicationGate.applicable === true ? communicationGate : null
   };
 }
 
@@ -2001,13 +2803,20 @@ function executeWorkflow(workflow: AnyObj, context: AnyObj, options: AnyObj) {
   const stepRuntime = options && options.policy && options.policy.step_runtime && typeof options.policy.step_runtime === 'object'
     ? options.policy.step_runtime
     : defaultPolicy().step_runtime;
+  const tokenPolicy = options && options.token_economics && typeof options.token_economics === 'object'
+    ? options.token_economics
+    : defaultPolicy().token_economics;
+  const workflowTokenCap = Math.max(0, Number(context && context.workflow_token_cap_tokens || 0));
+  const workflowPredictedTokens = Math.max(0, Number(context && context.workflow_predicted_tokens || 0));
   const executionBudget = {
     attempts_cap: Number(stepRuntime.max_total_attempts_per_workflow || 0),
     retries_cap: Number(stepRuntime.max_total_retry_attempts_per_workflow || 0),
     duration_cap_ms: Number(stepRuntime.max_total_step_duration_ms_per_workflow || 0),
+    token_cap_tokens: workflowTokenCap,
     attempts_used: 0,
     retries_used: 0,
-    duration_ms_used: 0
+    duration_ms_used: 0,
+    tokens_used_est: 0
   };
   let ok = true;
   let blockedByGate = false;
@@ -2028,6 +2837,7 @@ function executeWorkflow(workflow: AnyObj, context: AnyObj, options: AnyObj) {
     executionBudget.attempts_used += Number(usage.attempts || 0);
     executionBudget.retries_used += Number(usage.retries || 0);
     executionBudget.duration_ms_used += Number(usage.duration_ms || 0);
+    executionBudget.tokens_used_est += Number(usage.tokens_est || 0);
     return checkBudgetPostStep(executionBudget, stepRuntime);
   };
 
@@ -2066,7 +2876,7 @@ function executeWorkflow(workflow: AnyObj, context: AnyObj, options: AnyObj) {
 
   while (cursor < steps.length) {
     const step = steps[cursor];
-    const preflightBudgetReason = checkBudgetPreflight(step, executionBudget, stepRuntime);
+    const preflightBudgetReason = checkBudgetPreflight(step, executionBudget, stepRuntime, tokenPolicy);
     if (preflightBudgetReason) {
       ok = false;
       stoppedStep = String(step && step.id || `step_${cursor + 1}`);
@@ -2234,9 +3044,12 @@ function executeWorkflow(workflow: AnyObj, context: AnyObj, options: AnyObj) {
       attempts_cap: executionBudget.attempts_cap,
       retries_cap: executionBudget.retries_cap,
       duration_cap_ms: executionBudget.duration_cap_ms,
+      token_cap_tokens: executionBudget.token_cap_tokens,
+      predicted_tokens: workflowPredictedTokens,
       attempts_used: executionBudget.attempts_used,
       retries_used: executionBudget.retries_used,
-      duration_ms_used: executionBudget.duration_ms_used
+      duration_ms_used: executionBudget.duration_ms_used,
+      tokens_used_est: executionBudget.tokens_used_est
     },
     step_results: stepResults,
     mutation_summary: mutationSummary,
@@ -2584,21 +3397,73 @@ function runCmd(dateStr: string, args: AnyObj) {
 
   const registry = loadRegistry();
   const selection = selectWorkflows(registry, args, policy, rolloutState, `${runId}|${dateStr}`);
-  const selected = Array.isArray(selection && selection.selected) ? selection.selected : [];
+  const selectedInitial = Array.isArray(selection && selection.selected) ? selection.selected : [];
+  const tokenPlan = planTokenEconomics(dateStr, selectedInitial, policy, args, {
+    dry_run: options.dry_run === true
+  });
+  const deferredRows = Array.isArray(tokenPlan && tokenPlan.deferred) ? tokenPlan.deferred : [];
+  if (Array.isArray(selection && selection.excluded) && deferredRows.length) {
+    for (const row of deferredRows) {
+      selection.excluded.push({
+        workflow_id: row.workflow_id || null,
+        reason: row.reason || 'token_economics_deferred',
+        details: [
+          `predicted_tokens=${Number(row.predicted_tokens || 0)}`,
+          `envelope_tokens=${Number(row.envelope_tokens || 0)}`,
+          `critical_lane=${row.critical_lane === true ? '1' : '0'}`
+        ]
+      });
+    }
+  }
+  if (
+    options.dry_run !== true
+    && tokenPlan
+    && tokenPlan.token_policy
+    && tokenPlan.token_policy.defer_queue_enabled === true
+    && deferredRows.length
+  ) {
+    for (const row of deferredRows) {
+      appendJsonl(DEFER_QUEUE_PATH, {
+        ts: nowIso(),
+        type: 'workflow_executor_defer',
+        run_id: runId,
+        date: dateStr,
+        workflow_id: row.workflow_id || null,
+        workflow_name: row.workflow_name || null,
+        predicted_tokens: Number(row.predicted_tokens || 0),
+        envelope_tokens: Number(row.envelope_tokens || 0),
+        priority: row.priority || null,
+        priority_rank: Number(row.priority_rank || 0),
+        critical_lane: row.critical_lane === true,
+        throttle_ratio: Number(row.throttle_ratio || 0),
+        reason: row.reason || 'token_economics_deferred',
+        autopause_reason: row.autopause_reason || null
+      });
+    }
+  }
+  const executionPlans = Array.isArray(tokenPlan && tokenPlan.executable) ? tokenPlan.executable : [];
+  const selected = executionPlans.map((row) => row.workflow).filter(Boolean);
   const results = [];
 
-  for (const workflow of selected) {
+  for (const planned of executionPlans) {
+    const workflow = planned && planned.workflow ? planned.workflow : null;
+    if (!workflow) continue;
     const workflowMeta = workflow && workflow.metadata && typeof workflow.metadata === 'object'
       ? workflow.metadata
       : {};
     const result = executeWorkflow(workflow, {
       run_id: runId,
       date: dateStr,
+      workflow,
       workflow_id: String(workflow && workflow.id || ''),
       objective_id: String(workflow && workflow.objective_id || ''),
       eye_id: String(workflow && workflow.trigger && workflow.trigger.eye_id || workflow && workflow.eye_id || ''),
       adapter: cleanText(workflowMeta.adapter || '', 80) || '',
       provider: cleanText(workflowMeta.provider || '', 80).toLowerCase() || '',
+      workflow_priority: planned && planned.priority ? String(planned.priority) : 'medium',
+      workflow_critical_lane: planned && planned.critical_lane === true,
+      workflow_predicted_tokens: Number(planned && planned.predicted_tokens || 0),
+      workflow_token_cap_tokens: Number(planned && planned.envelope_tokens || 0),
       policy_root_lease_token: cleanText(
         args['lease-token'] || args.lease_token || process.env.CAPABILITY_LEASE_TOKEN || '',
         8192
@@ -2608,8 +3473,67 @@ function runCmd(dateStr: string, args: AnyObj) {
         320
       )
     }, options);
+    result.token_economics = {
+      predicted_tokens: Number(planned && planned.predicted_tokens || 0),
+      envelope_tokens: Number(planned && planned.envelope_tokens || 0),
+      throttle_ratio: Number(planned && planned.throttle_ratio || 0),
+      priority: planned && planned.priority ? String(planned.priority) : 'medium',
+      priority_rank: Number(planned && planned.priority_rank || 0),
+      critical_lane: planned && planned.critical_lane === true,
+      decision_reason: planned && planned.reason ? String(planned.reason) : 'token_economics_allow'
+    };
+    result.high_value_play = workflow && workflow.high_value_play && typeof workflow.high_value_play === 'object'
+      ? workflow.high_value_play
+      : null;
     results.push(result);
+    if (
+      options.dry_run !== true
+      && tokenPlan
+      && tokenPlan.token_policy
+      && tokenPlan.token_policy.use_system_budget === true
+    ) {
+      try {
+        const usedTokens = Math.max(
+          0,
+          Number(
+            result
+            && result.execution_budget
+            && result.execution_budget.tokens_used_est != null
+              ? result.execution_budget.tokens_used_est
+              : (planned && planned.envelope_tokens || 0)
+          )
+        );
+        if (usedTokens > 0) {
+          recordSystemBudgetUsage({
+            date: dateStr,
+            module: 'workflow_executor',
+            capability: planned && planned.priority ? String(planned.priority) : 'workflow',
+            tokens_est: usedTokens
+          }, {});
+        }
+      } catch {
+        // Budget usage receipts are best-effort and should never stop execution.
+      }
+    }
     if (result.ok !== true && options.continue_on_error !== true) break;
+  }
+
+  let highValueOutcomes = null;
+  if (typeof recordHighValuePlayOutcomes === 'function') {
+    try {
+      highValueOutcomes = recordHighValuePlayOutcomes({
+        date: dateStr,
+        run_id: runId,
+        dry_run: options.dry_run === true,
+        results,
+        workflows: selected
+      });
+    } catch (err) {
+      highValueOutcomes = {
+        ok: false,
+        error: cleanText(err && err.message ? err.message : err || 'high_value_outcome_record_failed', 180)
+      };
+    }
   }
 
   const succeeded = results.filter((row) => row && row.ok === true).length;
@@ -2626,6 +3550,17 @@ function runCmd(dateStr: string, args: AnyObj) {
   const mutationAttempted = results.reduce((sum, row) => sum + Number(row && row.mutation_summary && row.mutation_summary.attempted || 0), 0);
   const mutationApplied = results.reduce((sum, row) => sum + Number(row && row.mutation_summary && row.mutation_summary.applied || 0), 0);
   const mutationRolledBack = results.reduce((sum, row) => sum + Number(row && row.mutation_summary && row.mutation_summary.rolled_back || 0), 0);
+  const workflowsDeferred = deferredRows.length;
+  const tokenPredictedSelected = Number(tokenPlan && tokenPlan.predicted_total_tokens || 0);
+  const tokenEnvelopeSelected = Number(tokenPlan && tokenPlan.enveloped_total_tokens || 0);
+  const tokenUsedExecuted = results.reduce((sum, row) => {
+    return sum + Number(row && row.execution_budget && row.execution_budget.tokens_used_est || 0);
+  }, 0);
+  const deferredByReason = deferredRows.reduce((acc: AnyObj, row: AnyObj) => {
+    const reason = cleanText(row && row.reason || 'token_economics_deferred', 80) || 'token_economics_deferred';
+    acc[reason] = Number(acc[reason] || 0) + 1;
+    return acc;
+  }, {});
 
   const mutationRows = [];
   const stepReceiptRows = [];
@@ -2654,8 +3589,15 @@ function runCmd(dateStr: string, args: AnyObj) {
         rollback_step: step && step.rollback_step === true,
         rollback_trigger_reason: step && step.rollback_trigger_reason ? String(step.rollback_trigger_reason) : null,
         runtime_mutation_retry: step && step.runtime_mutation_retry === true,
+        tokens_est_total: Number(step && step.tokens_est_total || 0),
         external_gate: step && step.external_gate && typeof step.external_gate === 'object'
           ? step.external_gate
+          : null,
+        rate_limit_gate: step && step.rate_limit_gate && typeof step.rate_limit_gate === 'object'
+          ? step.rate_limit_gate
+          : null,
+        communication_gate: step && step.communication_gate && typeof step.communication_gate === 'object'
+          ? step.communication_gate
           : null,
         success_criteria: step && step.success_criteria && typeof step.success_criteria === 'object'
           ? step.success_criteria
@@ -2756,7 +3698,9 @@ function runCmd(dateStr: string, args: AnyObj) {
     runtime_mutation_enabled: options.runtime_mutation.enabled === true,
     runtime_mutation_policy_path: relPath(policyPath),
     registry_total: Array.isArray(registry && registry.workflows) ? registry.workflows.length : 0,
+    workflows_selected_initial: selectedInitial.length,
     workflows_selected: selected.length,
+    workflows_deferred: workflowsDeferred,
     workflows_excluded: Array.isArray(selection && selection.excluded) ? selection.excluded.length : 0,
     selection_excluded: Array.isArray(selection && selection.excluded) ? selection.excluded : [],
     selection_excluded_by_reason: (() => {
@@ -2782,6 +3726,21 @@ function runCmd(dateStr: string, args: AnyObj) {
     handled_failures: handledFailures,
     unhandled_failures: unhandledFailures,
     failure_reasons: failureReasons,
+    deferred_reasons: deferredByReason,
+    token_economics: {
+      enabled: tokenPlan && tokenPlan.enabled === true,
+      run_token_cap_tokens: Number(tokenPlan && tokenPlan.run_token_cap_tokens || 0),
+      predicted_total_tokens: tokenPredictedSelected,
+      enveloped_total_tokens: tokenEnvelopeSelected,
+      used_total_tokens: Number(tokenUsedExecuted.toFixed(2)),
+      deferred_count: workflowsDeferred,
+      deferred_by_reason: deferredByReason,
+      budget_snapshot: tokenPlan && tokenPlan.budget_snapshot ? tokenPlan.budget_snapshot : null,
+      scaling: tokenPlan && tokenPlan.scaling ? tokenPlan.scaling : null
+    },
+    high_value_play: highValueOutcomes && typeof highValueOutcomes === 'object'
+      ? highValueOutcomes
+      : null,
     step_receipts_count: stepReceiptRows.length,
     step_receipts_path: stepReceiptPathRel,
     runtime_mutations_attempted: mutationAttempted,
@@ -2822,7 +3781,9 @@ function runCmd(dateStr: string, args: AnyObj) {
     rollout_stage: payload.rollout_stage,
     rollout_canary_fraction: payload.rollout_canary_fraction,
     rollout_last_scale_action: payload.rollout_state_after ? payload.rollout_state_after.last_scale_action : null,
+    workflows_selected_initial: payload.workflows_selected_initial,
     workflows_selected: payload.workflows_selected,
+    workflows_deferred: payload.workflows_deferred,
     workflows_excluded: payload.workflows_excluded,
     selection_excluded_by_reason: payload.selection_excluded_by_reason || {},
     fallback_applied: payload.fallback_applied === true,
@@ -2837,6 +3798,26 @@ function runCmd(dateStr: string, args: AnyObj) {
     workflows_blocked: payload.workflows_blocked,
     handled_failures: payload.handled_failures,
     unhandled_failures: payload.unhandled_failures,
+    deferred_reasons: payload.deferred_reasons || {},
+    token_economics: payload.token_economics && typeof payload.token_economics === 'object'
+      ? {
+          enabled: payload.token_economics.enabled === true,
+          run_token_cap_tokens: Number(payload.token_economics.run_token_cap_tokens || 0),
+          predicted_total_tokens: Number(payload.token_economics.predicted_total_tokens || 0),
+          enveloped_total_tokens: Number(payload.token_economics.enveloped_total_tokens || 0),
+          used_total_tokens: Number(payload.token_economics.used_total_tokens || 0),
+          deferred_count: Number(payload.token_economics.deferred_count || 0),
+          deferred_by_reason: payload.token_economics.deferred_by_reason || {}
+        }
+      : null,
+    high_value_play: payload.high_value_play && typeof payload.high_value_play === 'object'
+      ? {
+          ok: payload.high_value_play.ok === true,
+          outcomes_recorded: Number(payload.high_value_play.outcomes_recorded || 0),
+          false_positive_rate: Number(payload.high_value_play.false_positive_rate || 0),
+          false_positive_samples: Number(payload.high_value_play.false_positive_samples || 0)
+        }
+      : null,
     time_to_first_execution_ms: payload.slo && payload.slo.measured
       ? payload.slo.measured.time_to_first_execution_ms
       : null,
@@ -2871,6 +3852,7 @@ function runCmd(dateStr: string, args: AnyObj) {
       date: dateStr,
       dry_run: options.dry_run === true,
       workflows_selected: selected.length,
+      workflows_deferred: workflowsDeferred,
       workflows_executed: results.length,
       workflows_succeeded: succeeded,
       workflows_failed: failed,
@@ -2881,6 +3863,9 @@ function runCmd(dateStr: string, args: AnyObj) {
       execution_success_rate: runSlo && runSlo.measured ? runSlo.measured.execution_success_rate : null,
       queue_drain_rate: runSlo && runSlo.measured ? runSlo.measured.queue_drain_rate : null,
       time_to_first_execution_ms: runSlo && runSlo.measured ? runSlo.measured.time_to_first_execution_ms : null,
+      token_predicted_total: tokenPredictedSelected,
+      token_enveloped_total: tokenEnvelopeSelected,
+      token_used_total: Number(tokenUsedExecuted.toFixed(2)),
       slo_pass: runSlo ? runSlo.pass === true : null,
       slo_window_pass: sloWindow ? sloWindow.pass === true : null,
       slo_window_sufficient_data: sloWindow ? sloWindow.sufficient_data === true : null
@@ -2896,6 +3881,7 @@ function runCmd(dateStr: string, args: AnyObj) {
       run_id: runId,
       date: dateStr,
       workflows_selected: selected.length,
+      workflows_deferred: workflowsDeferred,
       workflows_executed: results.length,
       live_zero_selection_streak: liveZeroStreak,
       live_zero_selection_streak_threshold: liveZeroSelectionThreshold
@@ -2910,7 +3896,9 @@ function runCmd(dateStr: string, args: AnyObj) {
     dry_run: payload.dry_run === true,
     forced_shadow_dry_run: payload.forced_shadow_dry_run === true,
     forced_shadow_soul_token: payload.forced_shadow_soul_token === true,
+    workflows_selected_initial: payload.workflows_selected_initial,
     workflows_selected: payload.workflows_selected,
+    workflows_deferred: payload.workflows_deferred,
     workflows_excluded: payload.workflows_excluded,
     minimum_selection_applied: payload.minimum_selection_applied === true,
     minimum_selection_reason: payload.minimum_selection_reason || '',
@@ -2921,6 +3909,19 @@ function runCmd(dateStr: string, args: AnyObj) {
     handled_failures: payload.handled_failures,
     unhandled_failures: payload.unhandled_failures,
     failure_reasons: payload.failure_reasons || {},
+    deferred_reasons: payload.deferred_reasons || {},
+    token_run_cap_tokens: payload.token_economics && payload.token_economics.run_token_cap_tokens != null
+      ? Number(payload.token_economics.run_token_cap_tokens)
+      : 0,
+    token_predicted_total: payload.token_economics && payload.token_economics.predicted_total_tokens != null
+      ? Number(payload.token_economics.predicted_total_tokens)
+      : 0,
+    token_enveloped_total: payload.token_economics && payload.token_economics.enveloped_total_tokens != null
+      ? Number(payload.token_economics.enveloped_total_tokens)
+      : 0,
+    token_used_total: payload.token_economics && payload.token_economics.used_total_tokens != null
+      ? Number(payload.token_economics.used_total_tokens)
+      : 0,
     rollout_stage: payload.rollout_stage,
     rollout_canary_fraction: payload.rollout_canary_fraction,
     rollout_last_scale_action: payload.rollout_state_after ? payload.rollout_state_after.last_scale_action : null,
@@ -2994,7 +3995,9 @@ function statusCmd(dateArg: string) {
       : null,
     runtime_mutations_applied: Number(payload.runtime_mutations_applied || 0),
     runtime_mutations_rolled_back: Number(payload.runtime_mutations_rolled_back || 0),
+    workflows_selected_initial: Number(payload.workflows_selected_initial || payload.workflows_selected || 0),
     workflows_selected: Number(payload.workflows_selected || 0),
+    workflows_deferred: Number(payload.workflows_deferred || 0),
     workflows_excluded: Number(payload.workflows_excluded || 0),
     selection_excluded_by_reason: payload.selection_excluded_by_reason && typeof payload.selection_excluded_by_reason === 'object'
       ? payload.selection_excluded_by_reason
@@ -3012,6 +4015,12 @@ function statusCmd(dateArg: string) {
     failure_reasons: payload.failure_reasons && typeof payload.failure_reasons === 'object'
       ? payload.failure_reasons
       : {},
+    deferred_reasons: payload.deferred_reasons && typeof payload.deferred_reasons === 'object'
+      ? payload.deferred_reasons
+      : {},
+    token_economics: payload.token_economics && typeof payload.token_economics === 'object'
+      ? payload.token_economics
+      : null,
     execution_success_rate: payload.slo && payload.slo.measured
       ? Number(payload.slo.measured.execution_success_rate || 0)
       : Number(safeRate(payload.workflows_succeeded, payload.workflows_executed, 0).toFixed(4)),
@@ -3068,6 +4077,9 @@ if (require.main === module) {
 
 module.exports = {
   normalizeStep,
+  estimateStepTokens,
+  estimateWorkflowTokens,
+  planTokenEconomics,
   executeStep,
   executeWorkflow,
   selectWorkflows,

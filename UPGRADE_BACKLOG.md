@@ -297,6 +297,24 @@ Objective: eliminate categories where narrow agent stacks outperform Protheus (e
 | P3 | RM-128 | V4 | todo | Continuous parity maintainer | Prevent future regressions vs narrow-agent UX/perf | Nightly parity harness auto-opens remediation proposals when Protheus trails baseline thresholds in reliability/latency/cost categories |
 | P3 | RM-129 | V4 | todo | Device-mesh adaptive organism runtime | Long-term moat is superiority across any hardware envelope | Unified runtime can operate as single-node seed or multi-node mesh with automatic role assignment and stable performance under join/leave churn |
 
+## Constraint Bridge Track (Grok Intake, 2026-02-26)
+
+Objective: close the immediate monetization/execution constraints (token burn, payment rails, client communication, cooldown rigidity, and value-safe high-reward opportunity capture) while preserving governance and drift controls.
+
+| ID | Version | Status | Upgrade | Why | Exit Criteria |
+|---|---|---|---|---|---|
+| V2-WVR-001 | V2 | doing | Weaver organ epic (metric-agnostic value orchestration layer) | Provide one elegant control layer that generalizes to any objective/value currency (revenue, time saved, knowledge, impact, reliability) while reusing existing organs | Objective contract accepts weighted value metrics + hard constraints (drift/budget/safety); planner emits bounded temporary tendrils/workflows with TTL + atrophy; decisions are trit-weighted and auditable; integrates with Eye/Regime/Mirror/Doctor/Nursery; 30-day run shows no critical SLO regression |
+| V2-WVR-002 | V2 | doing | Unified value metric schema + adapter interface | Prevent value logic from hard-coding to money-only lanes and keep future metrics pluggable | Introduce typed value schema (`metric_id`, unit, horizon, confidence, guardrails), adapter contract for ingest/scoring, and migration mapping for existing value-currency fields without breaking current workflows |
+| V2-WVR-003 | V2 | doing | Trit-weighted value arbitration engine | Resolve tradeoffs between high-value opportunities and drift/safety/cost constraints consistently | Arbitration engine outputs ranked actions with explicit reward/risk rationale, supports uncertainty-aware exploration caps, and blocks unsafe high-reward paths with deterministic reason codes + receipts |
+| V2-BRG-001 | V2 | doing | Token economics engine + smart autopause | Prevent burn-rate/autopause deadlocks that stall productive execution lanes | Per-workflow budget envelopes + predicted token cost are enforced pre-execution; dynamic throttling/defer queue activates before hard stop; 30-day receipts show no unplanned full-system autopause events while critical lanes remain in-budget |
+| V2-BRG-002 | V2 | doing | Payment skills bridge + secure payout lane | Remove payment execution bottleneck while keeping constitutional/payment safety controls | Stripe/PayPal/Mercury bridges run behind policy-root + dry-run/live gates, include payout risk checks, and emit immutable payout receipts with reversible hold/fail paths |
+| V2-BRG-003 | V2 | done | Client communication organ (light) | Convert generated opportunities into delivered outbound actions and structured follow-up loops | Draft -> send -> follow-up lifecycle is operational for Upwork/email/Discord with escalation tiers; high-value or high-risk outbound actions require human gate; response tracking and retry backoff receipts are deterministic |
+| V2-BRG-004 | V2 | done | Rate-limit intelligence layer | Replace fixed cooldown behavior with adaptive channel-specific throughput control | Cooldowns are model/platform-specific and tuned by quality, trust, and drift risk signals; high-trust channels can fast-path within policy bounds; rate-limit decisions are auditable and no lane exceeds provider hard limits |
+| V2-BRG-005 | V2 | done | Safe high-value play detector | Distinguish profitable low-drift opportunities from risky high-volatility noise | Value-currency scoring incorporates reward potential, drift risk, and reversibility; high-value/low-drift plays auto-propose with simulation evidence and confidence; false-positive rate stays below configured policy threshold; depends_on `V2-WVR-002`, `V2-WVR-003` |
+| V3-BRG-001 | V3 | todo | Autonomous client relationship manager | Enable end-to-end client lifecycle handling with bounded human intervention | Negotiation/scope-change/dispute/repeat-work flows execute through governed workflows with SLA tracking; <5% of qualified client interactions require manual intervention over rolling 30 days |
+| V3-BRG-002 | V3 | todo | Capital allocation + reinvestment organ | Let earned value fund controlled growth loops (ads/tools/compute/float) under policy constraints | Capital buckets, allocation limits, and drawdown protections are enforced; each allocation is simulation-backed and receipt-tracked; positive risk-adjusted return is sustained over a policy-defined evaluation window |
+| V3-BRG-003 | V3 | todo | Drift-aware revenue optimizer | Maximize value velocity without violating alignment/safety envelopes | Optimizer continuously tunes workflow mix and budget routing to increase value currency while keeping 30-day drift under policy cap (default `<2%`) and maintaining execution SLO pass rates |
+
 ## Fortune-100 Gap Closures (Kimi Delta)
 
 Objective: close remaining enterprise-operability gaps not already covered by existing DR/compliance/chaos items.
@@ -338,6 +356,42 @@ These proposals were normalized to avoid duplicate tracking with existing backlo
 | V4-003 | V4 | todo | Economic value distribution layer | Long-run value strategy needs explicit creation-and-distribution rails | Value/accounting primitives, policy-bound payout routing, and auditable distribution receipts are operational with abuse controls and rollback plans |
 | V4-004 | V4 | todo | Dire-case emergency autonomy protocol (existential only) | Extreme-case autonomy must be narrowly scoped, reversible, and externally auditable | Trigger requires multi-organ consensus + independent evidence classes, protocol is time-boxed, human override is always available, and all actions are black-box ledgered with post-incident replay |
 | V4-005 | V4 | todo | Civilizational symbiosis research track | Keep long-horizon symbiosis goals explicit without polluting near-term delivery lanes | Research charter, risk model, staged ethics/governance gates, and non-production sandbox milestones are published and reviewed before any deployment consideration |
+
+## Security Fortress Intake (Normalized, 2026-02-26)
+
+Objective: harden anti-cloning, runtime trust, and compromise-response posture without duplicating existing security/governance tracks.
+
+| Proposal Theme | Resolution | Existing Coverage |
+|---|---|---|
+| Watermarking + soul token anti-cloning | partial (new item added) | New `V2-058` |
+| Expand integrity kernel (boot-time + runtime) | mapped (no duplicate item added) | `BL-032`, `systems/security/integrity_kernel.ts`, `systems/security/guard.ts`, `V2-052` |
+| Emergency stop + remote kill switch | partial (new item added) | Existing local kill path in `BL-013`; remote-signed lane in new `V2-059` |
+| Full sandbox enforcement for all execution lanes | partial (new item added) | Existing quarantine/guard coverage; full containerized execution in new `V3-024` |
+| Zero-trust routing layer | mapped (no duplicate item added) | `BL-031`, `RM-101`, `RM-102`, `RM-103` |
+| Encrypted memory graphs + per-organ encryption | partial (new item added) | New `V3-025` |
+| Heartbeat + tamper detection service (rogue instance quarantine) | partial (new item added) | Existing anti-sabotage/integrity/startup attestation; remote heartbeat lane in new `V3-026` |
+| Runtime attestation for phone seed | mapped (no duplicate item added) | `RM-124`, `RM-125`, `RM-112`, `V3-021` |
+
+### Net-New Security Items Added
+
+| ID | Version | Status | Upgrade | Why | Exit Criteria |
+|---|---|---|---|---|---|
+| V2-058 | V2 | todo | Build watermark + soul-token anti-cloning guard | Raise cost of unauthorized cloning and prevent stolen copies from operating at full autonomy | Build artifacts and runtime profile include signed watermark + instance soul token; desktop/phone build outputs are code-signed and verifiable against release attestations; missing/mismatched token forces shadow-only mode + emits immutable security receipt; regression tests cover replay/tamper attempts |
+| V2-059 | V2 | todo | Signed remote emergency halt channel | Enable immediate off-host containment for active compromise scenarios | Add remote halt endpoint requiring policy-root signature + nonce + TTL; valid command triggers graceful emergency stop, revokes active leases, and writes black-box ledger receipts; include optional time-boxed secure purge mode that requires dual approval + key-signed authorization + explicit human confirmation before sensitive-state purge; invalid/replayed commands are rejected and alerted |
+| V3-024 | V3 | todo | Full execution sandbox envelope for skills/workflows | Eliminate direct host blast radius from actuation and third-party skill execution | All workflow steps/skill actions execute in policy-selected sandbox profiles (container/gVisor/seccomp/AppArmor), with explicit capability manifests, no default host FS/network access, and audited escape-attempt denies |
+| V3-025 | V3 | todo | Per-organ encrypted state/memory + cryonics encryption plane | Protect long-term memory/state against cold-storage theft and cross-organ leakage | Memory/cryonics/state shards are encrypted per-organ with key versioning + integrity MAC; key rotation and decrypt audit receipts are enforced; unauthorized decrypt attempts fail-closed and alert |
+| V3-026 | V3 | todo | Remote tamper heartbeat + rogue-instance quarantine | Detect cloned/diverged instances and contain them quickly | Instance emits authenticated heartbeat attesting build/watermark/constitution hash/integrity status; anomaly policy auto-transitions instance to quarantine mode and notifies operators with signed evidence bundle |
+
+### Manual Security Tasks (Human-Owned)
+
+| ID | Version | Status | Task | Why | Exit Criteria |
+|---|---|---|---|---|---|
+| SEC-M01 | V2 | todo | Set repository visibility and collaborator access model | Prevent uncontrolled source distribution and accidental privilege spread | Repository access policy is explicitly documented, least-privilege collaborators are enforced, and quarterly access review is scheduled |
+| SEC-M02 | V2 | todo | Publish proprietary licensing + contribution terms | Establish legal boundaries for use, redistribution, and commercialization | LICENSE + contribution/commercial terms are present at repo root and referenced by onboarding docs |
+| SEC-M03 | V2 | todo | Rotate all secrets and complete secret-manager migration | Remove residual secret exposure risk and improve revocation control | All active keys rotated, no plaintext secrets remain in tracked files/history, and secret issuance/rotation runbook is operational |
+| SEC-M04 | V2 | todo | Add operator ToS/EULA + first-run acknowledgment path | Clarify usage limits, liability boundaries, and operator responsibilities | ToS/EULA artifact exists, first-run acknowledgment is enforced/logged, and update versioning is documented |
+| SEC-M05 | V3 | todo | Complete IP posture review (trade secrets/provisional patents) | Protect novel mechanisms and reduce strategic imitation risk | Counsel-reviewed IP strategy exists with filing decisions and evidence-retention plan for inventions/trade-secret controls |
+| SEC-M06 | V2 | todo | Provision secure external heartbeat endpoint | Required external control-plane for remote halt/rogue detection flows | Hardened endpoint (authn/authz, rate limits, audit logs, key rotation) is live and connected to security alerting runbook |
 
 ## Obsidian Track (Isolated from Core Protheus)
 

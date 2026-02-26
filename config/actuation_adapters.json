@@ -29,9 +29,17 @@
       "module": "systems/actuation/multi_channel_adapter.js",
       "description": "Queue Slack outbound messages with deterministic outbox receipts."
     },
+    "discord_message": {
+      "module": "systems/actuation/multi_channel_adapter.js",
+      "description": "Queue Discord outbound messages with deterministic outbox receipts."
+    },
     "email_message": {
       "module": "systems/actuation/multi_channel_adapter.js",
       "description": "Queue outbound email payloads with deterministic outbox receipts."
+    },
+    "upwork_message": {
+      "module": "systems/actuation/multi_channel_adapter.js",
+      "description": "Queue Upwork thread replies with deterministic outbox receipts."
     },
     "calendar_event": {
       "module": "systems/actuation/multi_channel_adapter.js",

@@ -11,7 +11,9 @@ export {};
  * - filesystem_task
  * - shell_task
  * - slack_message
+ * - discord_message
  * - email_message
+ * - upwork_message
  * - calendar_event
  * - payment_task
  * - git_task
@@ -374,7 +376,9 @@ function executeByKind(kind: string, params: Record<string, any>, dryRun: boolea
   if (kind === 'filesystem_task') return executeFilesystemTask(params, dryRun);
   if (kind === 'shell_task') return executeShellTask(params, dryRun);
   if (kind === 'slack_message') return queueMessageAdapter('slack_message', 'queue_slack_message', ['channel', 'text'], params, dryRun);
+  if (kind === 'discord_message') return queueMessageAdapter('discord_message', 'queue_discord_message', ['channel_id', 'content'], params, dryRun);
   if (kind === 'email_message') return queueMessageAdapter('email_message', 'queue_email_message', ['to', 'subject', 'body'], params, dryRun);
+  if (kind === 'upwork_message') return queueMessageAdapter('upwork_message', 'queue_upwork_message', ['thread_id', 'body'], params, dryRun);
   if (kind === 'calendar_event') return queueMessageAdapter('calendar_event', 'queue_calendar_event', ['title', 'start', 'end'], params, dryRun);
   if (kind === 'payment_task') return executePaymentTask(params, dryRun);
   if (kind === 'git_task') return executeGitTask(params, dryRun);
@@ -395,4 +399,3 @@ module.exports = {
   description: 'Deterministic multi-channel adapter pack for top practical channels.',
   execute
 };
-

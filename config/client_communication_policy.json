@@ -1,0 +1,36 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "channels": {
+    "default": {
+      "followup_hours": [24, 72],
+      "retry_backoff_sec": [300, 1800, 7200],
+      "escalation_hours": [24, 72, 168],
+      "max_followups": 2
+    },
+    "email": {
+      "followup_hours": [24, 72],
+      "retry_backoff_sec": [300, 1800, 7200],
+      "escalation_hours": [24, 72, 168],
+      "max_followups": 2
+    },
+    "discord": {
+      "followup_hours": [4, 24],
+      "retry_backoff_sec": [60, 300, 900],
+      "escalation_hours": [4, 24, 72],
+      "max_followups": 3
+    },
+    "upwork": {
+      "followup_hours": [24, 72],
+      "retry_backoff_sec": [900, 3600, 14400],
+      "escalation_hours": [24, 72, 168],
+      "max_followups": 2
+    }
+  },
+  "human_gate": {
+    "enabled": true,
+    "require_gate_channels": ["email", "discord", "upwork"],
+    "high_value_confidence_threshold": 0.72,
+    "high_risk_levels": ["high", "critical"]
+  }
+}
