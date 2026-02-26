@@ -2507,6 +2507,14 @@ function runCmd(dateStr: string, args: AnyObj) {
   const succeeded = results.filter((row) => row && row.ok === true).length;
   const failed = results.filter((row) => row && row.ok !== true).length;
   const blocked = results.filter((row) => row && row.blocked_by_gate === true).length;
+  const failedNonBlocked = results.filter((row) => row && row.ok !== true && row.blocked_by_gate !== true).length;
+  const unhandledFailures = results.filter((row) =>
+    row
+    && row.ok !== true
+    && row.blocked_by_gate !== true
+    && row.rollback_ok !== true
+  ).length;
+  const handledFailures = Math.max(0, failedNonBlocked - unhandledFailures);
   const mutationAttempted = results.reduce((sum, row) => sum + Number(row && row.mutation_summary && row.mutation_summary.attempted || 0), 0);
   const mutationApplied = results.reduce((sum, row) => sum + Number(row && row.mutation_summary && row.mutation_summary.applied || 0), 0);
   const mutationRolledBack = results.reduce((sum, row) => sum + Number(row && row.mutation_summary && row.mutation_summary.rolled_back || 0), 0);
@@ -2661,6 +2669,8 @@ function runCmd(dateStr: string, args: AnyObj) {
     workflows_succeeded: succeeded,
     workflows_failed: failed,
     workflows_blocked: blocked,
+    handled_failures: handledFailures,
+    unhandled_failures: unhandledFailures,
     failure_reasons: failureReasons,
     step_receipts_count: stepReceiptRows.length,
     step_receipts_path: stepReceiptPathRel,
@@ -2705,6 +2715,8 @@ function runCmd(dateStr: string, args: AnyObj) {
     workflows_succeeded: payload.workflows_succeeded,
     workflows_failed: payload.workflows_failed,
     workflows_blocked: payload.workflows_blocked,
+    handled_failures: payload.handled_failures,
+    unhandled_failures: payload.unhandled_failures,
     time_to_first_execution_ms: payload.slo && payload.slo.measured
       ? payload.slo.measured.time_to_first_execution_ms
       : null,
@@ -2743,6 +2755,8 @@ function runCmd(dateStr: string, args: AnyObj) {
       workflows_succeeded: succeeded,
       workflows_failed: failed,
       workflows_blocked: blocked,
+      handled_failures: handledFailures,
+      unhandled_failures: unhandledFailures,
       failure_reasons: failureReasons,
       execution_success_rate: runSlo && runSlo.measured ? runSlo.measured.execution_success_rate : null,
       queue_drain_rate: runSlo && runSlo.measured ? runSlo.measured.queue_drain_rate : null,
@@ -2781,6 +2795,8 @@ function runCmd(dateStr: string, args: AnyObj) {
     workflows_succeeded: payload.workflows_succeeded,
     workflows_failed: payload.workflows_failed,
     workflows_blocked: payload.workflows_blocked,
+    handled_failures: payload.handled_failures,
+    unhandled_failures: payload.unhandled_failures,
     failure_reasons: payload.failure_reasons || {},
     rollout_stage: payload.rollout_stage,
     rollout_canary_fraction: payload.rollout_canary_fraction,
@@ -2848,6 +2864,8 @@ function statusCmd(dateArg: string) {
     workflows_succeeded: Number(payload.workflows_succeeded || 0),
     workflows_failed: Number(payload.workflows_failed || 0),
     workflows_blocked: Number(payload.workflows_blocked || 0),
+    handled_failures: Number(payload.handled_failures || 0),
+    unhandled_failures: Number(payload.unhandled_failures || 0),
     failure_reasons: payload.failure_reasons && typeof payload.failure_reasons === 'object'
       ? payload.failure_reasons
       : {},

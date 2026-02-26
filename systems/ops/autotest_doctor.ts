@@ -515,6 +515,7 @@ function runtimePaths(policyPath: string) {
     research_dir: researchDir,
     research_index_path: path.join(researchDir, 'index.jsonl'),
     research_broken_dir: path.join(researchDir, 'broken_pieces'),
+    research_unknown_dir: path.join(researchDir, 'unknown_signatures'),
     maturity_state_path: process.env.AUTOTEST_DOCTOR_MATURITY_PATH
       ? path.resolve(process.env.AUTOTEST_DOCTOR_MATURITY_PATH)
       : DEFAULT_INVERSION_MATURITY_PATH,
@@ -1320,6 +1321,55 @@ function writeResearchMirrorItem(
   return researchPath;
 }
 
+function writeUnknownSignatureResearchItem(
+  paths: AnyObj,
+  policy: AnyObj,
+  dateStr: string,
+  signature: AnyObj,
+  context: AnyObj
+) {
+  const dir = path.join(paths.research_unknown_dir, dateStr);
+  ensureDir(dir);
+  const file = path.join(dir, `${String(signature.signature_id || 'unknown')}_${Date.now()}.json`);
+  const summary = cleanText([
+    `signature=${String(signature.signature_id || 'unknown')}`,
+    `kind=${String(signature.kind || 'unknown')}`,
+    `reason=${cleanText(context && context.reason || 'no_recipe', 120) || 'no_recipe'}`
+  ].filter(Boolean).join(' '), 260) || null;
+  const quarantine = computeQuarantinePlan(paths, policy, signature, context);
+  const payload = {
+    ts: nowIso(),
+    schema_id: 'autotest_research_item',
+    schema_version: '1.0.0',
+    source: 'autotest_doctor',
+    category: 'unknown_signature',
+    date: dateStr,
+    signature_id: String(signature.signature_id || ''),
+    kind: String(signature.kind || ''),
+    test_id: cleanText(signature.test_id || '', 120) || null,
+    test_path: cleanText(signature.test_path || '', 260) || null,
+    summary,
+    reason: cleanText(context && context.reason || 'no_recipe', 120) || 'no_recipe',
+    quarantine,
+    context: {
+      run_id: cleanText(context && context.run_id || '', 120) || null
+    }
+  };
+  writeJsonAtomic(file, payload);
+  const researchPath = relPath(file);
+  appendJsonl(paths.research_index_path, {
+    ts: payload.ts,
+    type: 'autotest_doctor_unknown_signature',
+    date: dateStr,
+    signature_id: payload.signature_id,
+    kind: payload.kind,
+    reason: payload.reason,
+    research_item_path: researchPath,
+    quarantine: payload.quarantine
+  });
+  return researchPath;
+}
+
 function writeBrokenPieceBundle(
   paths: AnyObj,
   policy: AnyObj,
@@ -1423,6 +1473,7 @@ function runDoctor(dateArg: string, args: AnyObj) {
   ensureDir(paths.broken_dir);
   ensureDir(paths.research_dir);
   ensureDir(paths.research_broken_dir);
+  ensureDir(paths.research_unknown_dir);
   ensureDir(path.dirname(paths.research_index_path));
   ensureDir(paths.first_principles_dir);
   ensureDir(paths.trit_beliefs_dir);
@@ -1531,7 +1582,11 @@ function runDoctor(dateArg: string, args: AnyObj) {
   let destructiveBlocked = 0;
   const brokenPieces = [] as string[];
   const researchItems = [] as string[];
+  const unknownSignatureRoutePaths = [] as string[];
   const firstPrinciples = [] as string[];
+  let unknownSignatureCount = 0;
+  let knownSignatureCandidates = 0;
+  let knownSignatureAutoHandled = 0;
   const approvalSignal = getApprovalSignal(args, policy);
 
   if (!skipReasons.length || force === true) {
@@ -1573,19 +1628,41 @@ function runDoctor(dateArg: string, args: AnyObj) {
 
       const recipe = selectRecipe(policy, String(failure.kind || ''));
       if (!recipe) {
+        unknownSignatureCount += 1;
         recordHistoryEvent(state, 'unknown_signature', {
           signature_id: sigId,
           kind: failure.kind || null,
           test_id: failure.test_id || null
         });
+        let researchItemPath = null as string | null;
+        try {
+          researchItemPath = writeUnknownSignatureResearchItem(
+            paths,
+            policy,
+            dateStr,
+            failure,
+            {
+              run_id: runId,
+              reason: 'no_recipe'
+            }
+          );
+        } catch {
+          researchItemPath = null;
+        }
+        if (researchItemPath) {
+          unknownSignatureRoutePaths.push(researchItemPath);
+          researchItems.push(researchItemPath);
+        }
         actions.push({
           signature_id: sigId,
           kind: failure.kind,
           status: 'skipped',
-          reason: 'no_recipe'
+          reason: 'no_recipe',
+          research_item_path: researchItemPath
         });
         continue;
       }
+      knownSignatureCandidates += 1;
 
       const minFailures = Number(policy.gating.min_consecutive_failures || 2);
       if (Number(sigState.consecutive_failures || 0) < minFailures) {
@@ -1807,6 +1884,10 @@ function runDoctor(dateArg: string, args: AnyObj) {
         sigState.last_outcome = 'shadow_planned';
       }
 
+      if (status === 'applied' || status === 'rolled_back' || status === 'shadow_planned') {
+        knownSignatureAutoHandled += 1;
+      }
+
       actions.push({
         signature_id: sigId,
         kind: failure.kind,
@@ -1875,6 +1956,16 @@ function runDoctor(dateArg: string, args: AnyObj) {
     failures_observed: failures.length,
     actions_planned: actionsPlanned,
     actions_applied: actionsApplied,
+    unknown_signature_count: unknownSignatureCount,
+    unknown_signature_routes: unknownSignatureRoutePaths.length,
+    unknown_signature_route_paths: unknownSignatureRoutePaths,
+    known_signature_candidates: knownSignatureCandidates,
+    known_signature_auto_handled: knownSignatureAutoHandled,
+    known_signature_auto_handle_rate: Number((
+      knownSignatureCandidates > 0
+        ? (knownSignatureAutoHandled / knownSignatureCandidates)
+        : 1
+    ).toFixed(4)),
     rollbacks,
     destructive_repair_blocks: destructiveBlocked,
     broken_pieces_stored: brokenPieces.length,
@@ -1903,6 +1994,11 @@ function runDoctor(dateArg: string, args: AnyObj) {
     failures_observed: payload.failures_observed,
     actions_planned: payload.actions_planned,
     actions_applied: payload.actions_applied,
+    unknown_signature_count: payload.unknown_signature_count,
+    unknown_signature_routes: payload.unknown_signature_routes,
+    known_signature_candidates: payload.known_signature_candidates,
+    known_signature_auto_handled: payload.known_signature_auto_handled,
+    known_signature_auto_handle_rate: payload.known_signature_auto_handle_rate,
     rollbacks: payload.rollbacks,
     destructive_repair_blocks: payload.destructive_repair_blocks,
     broken_pieces_stored: payload.broken_pieces_stored,
@@ -1981,6 +2077,11 @@ function statusCmd(dateArg: string, args: AnyObj) {
     failures_observed: Number(payload.failures_observed || 0),
     actions_planned: Number(payload.actions_planned || 0),
     actions_applied: Number(payload.actions_applied || 0),
+    unknown_signature_count: Number(payload.unknown_signature_count || 0),
+    unknown_signature_routes: Number(payload.unknown_signature_routes || 0),
+    known_signature_candidates: Number(payload.known_signature_candidates || 0),
+    known_signature_auto_handled: Number(payload.known_signature_auto_handled || 0),
+    known_signature_auto_handle_rate: Number(payload.known_signature_auto_handle_rate || 0),
     rollbacks: Number(payload.rollbacks || 0),
     destructive_repair_blocks: Number(payload.destructive_repair_blocks || 0),
     broken_pieces_stored: Number(payload.broken_pieces_stored || 0),
