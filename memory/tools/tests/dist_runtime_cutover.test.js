@@ -60,6 +60,12 @@ function run() {
   out = parseJson(r.stdout);
   assert.strictEqual(out.effective_mode, 'source');
 
+  r = runCmd(['legacy-pairs'], baseEnv);
+  assert.strictEqual(r.status, 0, `legacy-pairs should pass: ${r.stderr}`);
+  out = parseJson(r.stdout);
+  assert.strictEqual(out.ok, true, 'legacy runtime JS pairs should be retired');
+  assert.strictEqual(Number(out.legacy_pair_count || 0), 0, 'no legacy runtime JS pairs expected');
+
   fs.rmSync(tmp, { recursive: true, force: true });
   console.log('dist_runtime_cutover.test.js: OK');
 }

@@ -18,6 +18,10 @@
   "snapshots_dir": "state/security/anti_sabotage/snapshots",
   "incident_log": "state/security/anti_sabotage/incidents.jsonl",
   "state_file": "state/security/anti_sabotage/state.json",
+  "watcher_state_file": "state/security/anti_sabotage/watcher_state.json",
+  "watcher_interval_ms": 30000,
+  "watcher_strict_default": false,
+  "watcher_auto_reset_default": true,
   "verify_strict_default": true,
   "auto_reset_default": true
 }

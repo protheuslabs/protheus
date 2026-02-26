@@ -104,6 +104,64 @@ function runCmd(name, command, args, env = {}) {
   };
 }
 
+function walkFiles(dirPath, out = []) {
+  if (!fs.existsSync(dirPath)) return out;
+  let entries = [];
+  try {
+    entries = fs.readdirSync(dirPath, { withFileTypes: true });
+  } catch {
+    return out;
+  }
+  entries.sort((a, b) => a.name.localeCompare(b.name));
+  for (const entry of entries) {
+    if (entry.isSymbolicLink()) continue;
+    const abs = path.join(dirPath, entry.name);
+    if (entry.isDirectory()) walkFiles(abs, out);
+    else if (entry.isFile()) out.push(abs);
+  }
+  return out;
+}
+
+function isTsBootstrapWrapper(jsAbsPath) {
+  try {
+    const text = fs.readFileSync(jsAbsPath, 'utf8');
+    return /ts_bootstrap/.test(text) && /\.bootstrap\(__filename,\s*module\)/.test(text);
+  } catch {
+    return false;
+  }
+}
+
+function legacyRuntimeJsPairs() {
+  const roots = ['systems', 'lib'];
+  const out = [];
+  for (const relRoot of roots) {
+    const absRoot = path.join(ROOT, relRoot);
+    for (const absPath of walkFiles(absRoot, [])) {
+      if (!absPath.endsWith('.js')) continue;
+      const tsPath = absPath.slice(0, -3) + '.ts';
+      if (!fs.existsSync(tsPath)) continue;
+      if (isTsBootstrapWrapper(absPath)) continue;
+      out.push(path.relative(ROOT, absPath).replace(/\\/g, '/'));
+    }
+  }
+  out.sort((a, b) => a.localeCompare(b));
+  return out;
+}
+
+function cmdLegacyPairs(args) {
+  const strict = toBool(args.strict, false);
+  const pairs = legacyRuntimeJsPairs();
+  const out = {
+    ok: pairs.length === 0,
+    type: 'dist_runtime_legacy_pairs',
+    ts: nowIso(),
+    legacy_pair_count: pairs.length,
+    legacy_pairs: pairs
+  };
+  process.stdout.write(JSON.stringify(out, null, 2) + '\n');
+  if (strict && !out.ok) process.exit(1);
+}
+
 function cmdStatus() {
   const state = readJson(MODE_STATE_PATH, null);
   process.stdout.write(JSON.stringify({
@@ -158,6 +216,15 @@ function cmdVerify(args) {
     PROTHEUS_RUNTIME_MODE: 'dist',
     PROTHEUS_RUNTIME_DIST_REQUIRED: '1'
   }));
+  const legacyPairs = legacyRuntimeJsPairs();
+  checks.push({
+    name: 'legacy_runtime_js_pairs',
+    ok: legacyPairs.length === 0,
+    status: legacyPairs.length === 0 ? 0 : 1,
+    stdout: legacyPairs.join('\n'),
+    stderr: '',
+    command: 'internal:legacy_runtime_js_pairs'
+  });
 
   const failed = checks.filter((c) => !c.ok);
   const out = {
@@ -166,6 +233,8 @@ function cmdVerify(args) {
     ts: nowIso(),
     strict,
     build_step: withBuild,
+    legacy_pair_count: legacyPairs.length,
+    legacy_pairs: legacyPairs,
     checks: checks.map((c) => ({ name: c.name, ok: c.ok, status: c.status, command: c.command })),
     failed: failed.map((c) => ({
       name: c.name,
@@ -184,6 +253,7 @@ function usage() {
   console.log('  node systems/ops/dist_runtime_cutover.js status');
   console.log('  node systems/ops/dist_runtime_cutover.js set-mode --mode=dist|source');
   console.log('  node systems/ops/dist_runtime_cutover.js verify [--build=1|0] [--strict=1|0]');
+  console.log('  node systems/ops/dist_runtime_cutover.js legacy-pairs [--strict=1|0]');
 }
 
 function main() {
@@ -196,6 +266,7 @@ function main() {
   if (cmd === 'status') return cmdStatus();
   if (cmd === 'set-mode') return cmdSetMode(args);
   if (cmd === 'verify') return cmdVerify(args);
+  if (cmd === 'legacy-pairs') return cmdLegacyPairs(args);
   usage();
   process.exit(2);
 }

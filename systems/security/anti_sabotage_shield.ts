@@ -9,6 +9,7 @@
  * Usage:
  *   node systems/security/anti_sabotage_shield.js snapshot [--label=<id>]
  *   node systems/security/anti_sabotage_shield.js verify [--snapshot=latest|<id>] [--auto-reset=1|0] [--strict=1|0]
+ *   node systems/security/anti_sabotage_shield.js watch [--snapshot=latest|<id>] [--auto-reset=1|0] [--strict=1|0] [--interval-ms=<n>] [--iterations=<n>] [--bootstrap-snapshot=1|0]
  *   node systems/security/anti_sabotage_shield.js status
  */
 
@@ -29,6 +30,7 @@ function usage() {
   console.log('Usage:');
   console.log('  node systems/security/anti_sabotage_shield.js snapshot [--label=<id>]');
   console.log('  node systems/security/anti_sabotage_shield.js verify [--snapshot=latest|<id>] [--auto-reset=1|0] [--strict=1|0]');
+  console.log('  node systems/security/anti_sabotage_shield.js watch [--snapshot=latest|<id>] [--auto-reset=1|0] [--strict=1|0] [--interval-ms=<n>] [--iterations=<n>] [--bootstrap-snapshot=1|0]');
   console.log('  node systems/security/anti_sabotage_shield.js status');
 }
 
@@ -97,6 +99,10 @@ function defaultPolicy() {
     snapshots_dir: 'state/security/anti_sabotage/snapshots',
     incident_log: 'state/security/anti_sabotage/incidents.jsonl',
     state_file: 'state/security/anti_sabotage/state.json',
+    watcher_state_file: 'state/security/anti_sabotage/watcher_state.json',
+    watcher_interval_ms: 30000,
+    watcher_strict_default: false,
+    watcher_auto_reset_default: true,
     verify_strict_default: true,
     auto_reset_default: true
   };
@@ -125,6 +131,10 @@ function loadPolicy(policyPath = POLICY_PATH) {
     snapshots_dir: normalizeText(raw.snapshots_dir || base.snapshots_dir, 200) || base.snapshots_dir,
     incident_log: normalizeText(raw.incident_log || base.incident_log, 200) || base.incident_log,
     state_file: normalizeText(raw.state_file || base.state_file, 200) || base.state_file,
+    watcher_state_file: normalizeText(raw.watcher_state_file || base.watcher_state_file, 200) || base.watcher_state_file,
+    watcher_interval_ms: Math.max(250, Number(raw.watcher_interval_ms || base.watcher_interval_ms || 30000)),
+    watcher_strict_default: raw.watcher_strict_default === true,
+    watcher_auto_reset_default: raw.watcher_auto_reset_default !== false,
     verify_strict_default: raw.verify_strict_default !== false,
     auto_reset_default: raw.auto_reset_default !== false
   };
@@ -195,6 +205,33 @@ function statePath(policy) {
 
 function incidentLogPath(policy) {
   return path.resolve(ROOT, policy.incident_log);
+}
+
+function watcherStatePath(policy) {
+  return path.resolve(ROOT, policy.watcher_state_file || path.join(policy.state_dir || 'state/security/anti_sabotage', 'watcher_state.json'));
+}
+
+function saveWatcherState(policy, next = {}) {
+  const out = {
+    schema_id: 'anti_sabotage_watcher_state',
+    schema_version: '1.0',
+    updated_at: nowIso(),
+    last_verify_ts: normalizeText(next.last_verify_ts || '', 64) || null,
+    last_snapshot_id: normalizeText(next.last_snapshot_id || '', 120) || null,
+    iterations: Math.max(0, Number(next.iterations || 0)),
+    violations: Math.max(0, Number(next.violations || 0)),
+    recoveries: Math.max(0, Number(next.recoveries || 0)),
+    last_incident_id: normalizeText(next.last_incident_id || '', 120) || null
+  };
+  writeJsonAtomic(watcherStatePath(policy), out);
+}
+
+function sleepMs(ms) {
+  const waitMs = Math.max(0, Math.floor(Number(ms || 0)));
+  if (waitMs <= 0) return;
+  const shared = new SharedArrayBuffer(4);
+  const view = new Int32Array(shared);
+  Atomics.wait(view, 0, 0, waitMs);
 }
 
 function loadState(policy) {
@@ -279,7 +316,10 @@ function createSnapshot(policy, label = '') {
 
 function loadSnapshotManifest(policy, selector) {
   const state = loadState(policy);
-  const id = normalizeText(selector || '', 120) || state.latest_snapshot;
+  const selected = normalizeText(selector || '', 120).toLowerCase();
+  const id = (!selected || selected === 'latest')
+    ? state.latest_snapshot
+    : selected;
   if (!id) return { ok: false, error: 'snapshot_not_found' };
   const paths = snapshotPaths(policy, id);
   const manifest = readJson(paths.manifest_path, null);
@@ -398,14 +438,18 @@ function cmdSnapshot(args) {
   process.stdout.write(JSON.stringify(out, null, 2) + '\n');
 }
 
-function cmdVerify(args) {
-  const policy = loadPolicy();
-  const strict = toBool(args.strict, policy.verify_strict_default);
-  const autoReset = toBool(args['auto-reset'] || args.auto_reset, policy.auto_reset_default);
-  const loaded = loadSnapshotManifest(policy, args.snapshot);
+function runVerifyOnce(policy, opts = {}) {
+  const strict = toBool(opts.strict, policy.verify_strict_default);
+  const autoReset = toBool(opts.autoReset, policy.auto_reset_default);
+  const loaded = loadSnapshotManifest(policy, opts.snapshot);
   if (!loaded.ok) {
-    process.stdout.write(JSON.stringify({ ok: false, ...loaded }, null, 2) + '\n');
-    process.exit(2);
+    return {
+      ok: false,
+      strict,
+      auto_reset: autoReset,
+      error: loaded,
+      incident: null
+    };
   }
 
   const evalOut = evaluateSnapshot(policy, loaded);
@@ -418,6 +462,7 @@ function cmdVerify(args) {
   const incident = {
     ok: !violated || !!recovery,
     type: 'anti_sabotage_verify',
+    source: normalizeText(opts.source || 'verify', 48) || 'verify',
     ts: nowIso(),
     snapshot_id: loaded.snapshot_id,
     strict,
@@ -441,13 +486,129 @@ function cmdVerify(args) {
     });
   }
 
-  process.stdout.write(JSON.stringify(incident, null, 2) + '\n');
-  if (strict && violated && !recovery) process.exit(1);
+  return {
+    ok: incident.ok,
+    strict,
+    auto_reset: autoReset,
+    incident,
+    loaded
+  };
+}
+
+function cmdVerify(args) {
+  const policy = loadPolicy();
+  const result = runVerifyOnce(policy, {
+    snapshot: args.snapshot,
+    strict: args.strict,
+    autoReset: args['auto-reset'] || args.auto_reset,
+    source: 'verify'
+  });
+  if (!result.incident) {
+    process.stdout.write(JSON.stringify({ ok: false, ...(result.error || { error: 'snapshot_not_found' }) }, null, 2) + '\n');
+    process.exit(2);
+  }
+  process.stdout.write(JSON.stringify(result.incident, null, 2) + '\n');
+  if (result.strict && result.incident.violated && !result.incident.recovery) process.exit(1);
+}
+
+function cmdWatch(args) {
+  const policy = loadPolicy();
+  const strict = toBool(args.strict, policy.watcher_strict_default);
+  const autoReset = toBool(args['auto-reset'] || args.auto_reset, policy.watcher_auto_reset_default);
+  const bootstrapSnapshot = toBool(args['bootstrap-snapshot'] || args.bootstrap_snapshot, true);
+  const intervalMs = Math.max(250, Number(args['interval-ms'] || args.interval_ms || policy.watcher_interval_ms || 30000));
+  const iterationsTarget = Math.max(0, Number(args.iterations || 0));
+
+  if (bootstrapSnapshot) {
+    const current = loadState(policy);
+    if (!current.latest_snapshot) {
+      createSnapshot(policy, 'watch_bootstrap');
+    }
+  }
+
+  let iteration = 0;
+  let violations = 0;
+  let recoveries = 0;
+  let lastSnapshotId = null;
+  let lastIncidentId = null;
+
+  while (true) {
+    const once = runVerifyOnce(policy, {
+      snapshot: args.snapshot || 'latest',
+      strict,
+      autoReset,
+      source: 'watch'
+    });
+    if (!once.incident) {
+      process.stdout.write(JSON.stringify({
+        ok: false,
+        type: 'anti_sabotage_watch',
+        ts: nowIso(),
+        strict,
+        auto_reset: autoReset,
+        interval_ms: intervalMs,
+        iterations: iteration,
+        error: once.error || { error: 'snapshot_not_found' }
+      }, null, 2) + '\n');
+      process.exit(2);
+    }
+    iteration += 1;
+    lastSnapshotId = once.incident.snapshot_id || null;
+    if (once.incident.violated) violations += 1;
+    if (once.incident.recovery && once.incident.recovery.incident_id) {
+      recoveries += 1;
+      lastIncidentId = once.incident.recovery.incident_id;
+    }
+    saveWatcherState(policy, {
+      last_verify_ts: once.incident.ts,
+      last_snapshot_id: once.incident.snapshot_id,
+      iterations: iteration,
+      violations,
+      recoveries,
+      last_incident_id: lastIncidentId
+    });
+
+    if (strict && once.incident.violated && !once.incident.recovery) {
+      process.stdout.write(JSON.stringify({
+        ok: false,
+        type: 'anti_sabotage_watch',
+        ts: nowIso(),
+        strict,
+        auto_reset: autoReset,
+        interval_ms: intervalMs,
+        iterations: iteration,
+        violations,
+        recoveries,
+        last_snapshot_id: lastSnapshotId,
+        last_incident_id: lastIncidentId,
+        halt_reason: 'strict_violation_without_recovery'
+      }, null, 2) + '\n');
+      process.exit(1);
+    }
+
+    if (iterationsTarget > 0 && iteration >= iterationsTarget) break;
+    sleepMs(intervalMs);
+  }
+
+  process.stdout.write(JSON.stringify({
+    ok: true,
+    type: 'anti_sabotage_watch',
+    ts: nowIso(),
+    strict,
+    auto_reset: autoReset,
+    interval_ms: intervalMs,
+    iterations: iteration,
+    violations,
+    recoveries,
+    last_snapshot_id: lastSnapshotId,
+    last_incident_id: lastIncidentId
+  }, null, 2) + '\n');
 }
 
 function cmdStatus() {
   const policy = loadPolicy();
   const state = loadState(policy);
+  const watcherState = readJson(watcherStatePath(policy), null);
   const out = {
     ok: true,
     type: 'anti_sabotage_status',
@@ -457,7 +618,9 @@ function cmdStatus() {
     latest_snapshot_manifest: state.latest_snapshot_manifest,
     latest_incident: state.latest_incident,
     state_path: relPath(statePath(policy)),
-    incident_log: relPath(incidentLogPath(policy))
+    incident_log: relPath(incidentLogPath(policy)),
+    watcher_state_path: relPath(watcherStatePath(policy)),
+    watcher_state: watcherState
   };
   process.stdout.write(JSON.stringify(out, null, 2) + '\n');
 }
@@ -471,6 +634,7 @@ function main() {
   }
   if (cmd === 'snapshot') return cmdSnapshot(args);
   if (cmd === 'verify') return cmdVerify(args);
+  if (cmd === 'watch') return cmdWatch(args);
   if (cmd === 'status') return cmdStatus();
   usage();
   process.exit(2);
