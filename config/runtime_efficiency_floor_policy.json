@@ -4,8 +4,8 @@
   "cold_start_probe": {
     "command": [
       "node",
-      "systems/workflow/workflow_controller.js",
-      "status"
+      "systems/ops/seed_boot_probe.js",
+      "run"
     ],
     "samples": 5,
     "max_ms": 300
