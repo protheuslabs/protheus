@@ -590,6 +590,24 @@ function main() {
     ["cleanup_orchestrator.js", "run", "status", "profiles", "--profile", "--apply", "--dry-run", "--policy"]
   );
 
+  // metrics_exporter.js emits Prometheus and JSON snapshots from runtime health artifacts.
+  checkScript(
+    "systems/observability/metrics_exporter.js",
+    ["metrics_exporter.js", "run", "prom", "status", "--window", "--policy", "--write"]
+  );
+
+  // trace_bridge.js emits structured trace spans and summaries for local observability lanes.
+  checkScript(
+    "systems/observability/trace_bridge.js",
+    ["trace_bridge.js", "span", "summary", "status", "--name", "--status", "--duration-ms", "--attrs-json", "--policy", "--write"]
+  );
+
+  // slo_alert_router.js routes SLO breach alerts to local sinks (file/stdout/webhook).
+  checkScript(
+    "systems/observability/slo_alert_router.js",
+    ["slo_alert_router.js", "route", "status", "--source", "--window", "--min-level", "--max", "--policy", "--write"]
+  );
+
   // blank_slate_reset.js performs reversible archive-based adaptive+memory resets with rollback.
   checkScript(
     "systems/ops/blank_slate_reset.js",
