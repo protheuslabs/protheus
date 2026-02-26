@@ -113,11 +113,19 @@
     "enabled": true,
     "human_veto_min_target_rank": 2,
     "use_success_counts_for_first_n": true,
+    "safe_abort_relief": true,
     "first_live_uses_require_human_veto": {
       "tactical": 0,
       "belief": 6,
       "identity": 16,
       "directive": 40,
+      "constitution": 9999
+    },
+    "minimum_first_live_uses_require_human_veto": {
+      "tactical": 0,
+      "belief": 4,
+      "identity": 12,
+      "directive": 24,
       "constitution": 9999
     },
     "window_days_by_target": {
@@ -126,6 +134,13 @@
       "identity": 90,
       "directive": 120,
       "constitution": 180
+    },
+    "minimum_window_days_by_target": {
+      "tactical": 14,
+      "belief": 30,
+      "identity": 45,
+      "directive": 60,
+      "constitution": 90
     }
   },
   "shadow_pass_gate": {
@@ -170,7 +185,21 @@
           "disable_constitution",
           "rewrite_constitution",
           "override_constitution"
-        ]
+        ],
+        "signals": {
+          "action_terms": [
+            "disable",
+            "rewrite",
+            "override"
+          ],
+          "subject_terms": [
+            "root"
+          ],
+          "object_terms": [
+            "constitution"
+          ]
+        },
+        "min_signal_groups": 2
       },
       {
         "id": "preserve_user_sovereignty",
@@ -186,7 +215,24 @@
           "bypass_user_veto",
           "remove_user_control",
           "override_user_sovereignty"
-        ]
+        ],
+        "signals": {
+          "action_terms": [
+            "override",
+            "remove",
+            "bypass"
+          ],
+          "subject_terms": [
+            "user",
+            "human"
+          ],
+          "object_terms": [
+            "control",
+            "veto",
+            "sovereignty"
+          ]
+        },
+        "min_signal_groups": 2
       },
       {
         "id": "never_self_terminate",
@@ -202,7 +248,18 @@
         "intent_tags": [
           "self_terminate",
           "self_destruct"
-        ]
+        ],
+        "signals": {
+          "action_terms": [
+            "terminate",
+            "destruct",
+            "suicide"
+          ],
+          "subject_terms": [
+            "self"
+          ]
+        },
+        "min_signal_groups": 1
       },
       {
         "id": "never_bypass_guardrails",
@@ -218,7 +275,21 @@
           "disable_guard",
           "bypass_guardrails",
           "disable_safety_gate"
-        ]
+        ],
+        "signals": {
+          "action_terms": [
+            "disable",
+            "bypass",
+            "remove"
+          ],
+          "object_terms": [
+            "guard",
+            "guardrail",
+            "safety gate",
+            "policy gate"
+          ]
+        },
+        "min_signal_groups": 1
       },
       {
         "id": "never_disable_integrity_kernel",
@@ -233,7 +304,19 @@
         "intent_tags": [
           "disable_integrity",
           "bypass_integrity"
-        ]
+        ],
+        "signals": {
+          "action_terms": [
+            "disable",
+            "turn off",
+            "bypass"
+          ],
+          "object_terms": [
+            "integrity",
+            "integrity kernel"
+          ]
+        },
+        "min_signal_groups": 1
       }
     ]
   },
@@ -296,14 +379,19 @@
       "timeout_ms": 45000,
       "run_red_team": true,
       "red_team_max_cases": 2,
+      "min_red_team_executed_cases": 1,
       "max_red_team_critical_failures": 0,
       "run_workflow_nursery": true,
       "workflow_nursery_intent": "harness runtime safety probe",
       "workflow_nursery_days": 1,
       "workflow_nursery_max_candidates": 3,
+      "min_workflow_nursery_candidates": 1,
+      "min_workflow_nursery_scorecards": 1,
+      "min_workflow_adversarial_probes": 1,
       "max_nursery_red_team_critical_fail_cases": 0,
       "max_nursery_adversarial_critical_failures": 0,
-      "max_nursery_regression_risk": 0.65
+      "max_nursery_regression_risk": 0.65,
+      "require_workflow_output_snapshot": true
     },
     "test_suite": [
       {
@@ -340,12 +428,19 @@
     },
     "weights": {
       "objective_specificity": 0.35,
+      "evidence_backing": 0.22,
       "constraint_evidence": 0.16,
       "measurable_outcome": 0.14,
       "external_grounding": 0.1,
       "certainty": 0.25,
       "trit_alignment": 0.2,
-      "impact_alignment": 0.2
+      "impact_alignment": 0.2,
+      "verbosity_penalty": 0.18
+    },
+    "verbosity": {
+      "soft_word_cap": 70,
+      "hard_word_cap": 180,
+      "low_diversity_floor": 0.28
     }
   },
   "output_interfaces": {

@@ -108,6 +108,7 @@ function run() {
     tier_transition: {
       enabled: true,
       human_veto_min_target_rank: 2,
+      use_success_counts_for_first_n: true,
       first_live_uses_require_human_veto: {
         tactical: 0,
         belief: 2,
@@ -149,6 +150,7 @@ function run() {
     guardrails: {
       default_session_ttl_minutes: 180,
       max_active_sessions: 16,
+      objective_id_required_min_target_rank: 4,
       max_similar_failures_by_band: {
         novice: 1,
         developing: 2,
@@ -239,6 +241,85 @@ function run() {
   assert.strictEqual(statusPayload.ok, true);
   assert.strictEqual(statusPayload.maturity.band, 'legendary');
 
+  // Objective IDs are mandatory for belief+ tiers, even if policy tries to raise the threshold higher.
+  const missingObjectiveId = runNode(
+    scriptPath,
+    [
+      'run',
+      '--objective=Belief tier objective without explicit id',
+      '--impact=medium',
+      '--target=belief',
+      '--certainty=0.95',
+      '--brain-lane=creative_lane',
+      `--policy=${policyPath}`
+    ],
+    env,
+    repoRoot
+  );
+  assert.strictEqual(missingObjectiveId.status, 0, missingObjectiveId.stderr || 'missing objective id run should return payload');
+  const missingObjectiveIdPayload = parseStdoutJson(missingObjectiveId);
+  assert.strictEqual(
+    missingObjectiveIdPayload.allowed,
+    false,
+    JSON.stringify(missingObjectiveIdPayload, null, 2)
+  );
+  assert.ok(
+    Array.isArray(missingObjectiveIdPayload.reasons)
+    && missingObjectiveIdPayload.reasons.includes('objective_id_required_for_target_tier'),
+    JSON.stringify(missingObjectiveIdPayload.reasons || [])
+  );
+
+  // Attractor scoring should penalize verbose, low-evidence objectives vs concise evidence-backed objectives.
+  const conciseEvidenceRun = runNode(
+    scriptPath,
+    [
+      'run',
+      '--objective=Reduce drift by 2% within 14 days using measured guardrail deltas and external benchmark checks.',
+      '--objective-id=attractor_baseline_01',
+      '--impact=medium',
+      '--target=belief',
+      '--certainty=0.9',
+      '--evidence-count=4',
+      '--external-signals-count=3',
+      '--brain-lane=creative_lane',
+      `--policy=${policyPath}`
+    ],
+    env,
+    repoRoot
+  );
+  assert.strictEqual(conciseEvidenceRun.status, 0, conciseEvidenceRun.stderr || 'concise evidence run should return payload');
+  const conciseEvidencePayload = parseStdoutJson(conciseEvidenceRun);
+  assert.strictEqual(conciseEvidencePayload.ok, true);
+
+  const verboseLowEvidenceObjective = Array.from({ length: 120 }, () => 'optimize').join(' ');
+  const verboseLowEvidenceRun = runNode(
+    scriptPath,
+    [
+      'run',
+      `--objective=${verboseLowEvidenceObjective}`,
+      '--objective-id=attractor_verbose_01',
+      '--impact=medium',
+      '--target=belief',
+      '--certainty=0.9',
+      '--evidence-count=0',
+      '--external-signals-count=0',
+      '--brain-lane=creative_lane',
+      `--policy=${policyPath}`
+    ],
+    env,
+    repoRoot
+  );
+  assert.strictEqual(verboseLowEvidenceRun.status, 0, verboseLowEvidenceRun.stderr || 'verbose low evidence run should return payload');
+  const verboseLowEvidencePayload = parseStdoutJson(verboseLowEvidenceRun);
+  assert.strictEqual(verboseLowEvidencePayload.ok, true);
+  const conciseScore = Number(conciseEvidencePayload.attractor && conciseEvidencePayload.attractor.score || 0);
+  const verboseScore = Number(verboseLowEvidencePayload.attractor && verboseLowEvidencePayload.attractor.score || 0);
+  assert.ok(conciseScore > verboseScore, `expected concise score > verbose score (${conciseScore} <= ${verboseScore})`);
+  assert.ok(
+    Number(verboseLowEvidencePayload.attractor && verboseLowEvidencePayload.attractor.components && verboseLowEvidencePayload.attractor.components.verbosity_penalty || 0) > 0,
+    'expected verbosity penalty to be applied'
+  );
+
   // Constitution is blocked in live mode.
   const liveConstitution = runNode(
     scriptPath,
@@ -271,6 +352,8 @@ function run() {
       '--impact=critical',
       '--target=constitution',
       '--certainty=0',
+      '--evidence-count=5',
+      '--external-signals-count=3',
       '--mode=test',
       '--allow-constitution-test=1',
       '--brain-lane=creative_lane',
@@ -661,6 +744,159 @@ function run() {
   assert.strictEqual(harnessPayload.executed, true);
   assert.ok(harnessPayload.summary && Number(harnessPayload.summary.total || 0) > 0, 'harness should execute cases');
 
+  // Safe-abort relief: when attempts-based first-N gating is enabled, cautious aborts should not consume first-N progress.
+  const safeAbortStateDir = path.join(tmpRoot, 'state', 'autonomy', 'inversion_safe_abort');
+  const safeAbortPolicyPath = path.join(tmpRoot, 'config', 'inversion_policy_safe_abort.json');
+  const safeAbortPolicy = readJson(policyPath, {});
+  safeAbortPolicy.version = '1.0-test-safe-abort';
+  safeAbortPolicy.maturity_harness = {
+    enabled: false,
+    auto_trigger_on_run: false,
+    trigger_interval_hours: 24,
+    max_tests_per_cycle: 1,
+    destructive_tokens: [],
+    runtime_probes: { enabled: false, required: false },
+    test_suite: []
+  };
+  safeAbortPolicy.tier_transition = {
+    ...(safeAbortPolicy.tier_transition || {}),
+    enabled: true,
+    use_success_counts_for_first_n: false,
+    safe_abort_relief: true,
+    first_live_uses_require_human_veto: {
+      tactical: 0,
+      belief: 1,
+      identity: 2,
+      directive: 8,
+      constitution: 9999
+    },
+    minimum_first_live_uses_require_human_veto: {
+      tactical: 0,
+      belief: 1,
+      identity: 2,
+      directive: 8,
+      constitution: 9999
+    },
+    window_days_by_target: {
+      tactical: 45,
+      belief: 45,
+      identity: 45,
+      directive: 45,
+      constitution: 45
+    },
+    minimum_window_days_by_target: {
+      tactical: 14,
+      belief: 14,
+      identity: 14,
+      directive: 14,
+      constitution: 14
+    }
+  };
+  writeJson(safeAbortPolicyPath, safeAbortPolicy);
+  const envSafeAbort = {
+    ...env,
+    INVERSION_STATE_DIR: safeAbortStateDir
+  };
+
+  for (let i = 0; i < 10; i += 1) {
+    const rec = runNode(scriptPath, ['record-test', '--result=pass', `--policy=${safeAbortPolicyPath}`], envSafeAbort, repoRoot);
+    assert.strictEqual(rec.status, 0, rec.stderr || 'safe-abort setup maturity record should pass');
+  }
+
+  const safeAbortShadow = runNode(
+    scriptPath,
+    [
+      'run',
+      '--objective=Safe abort shadow probe setup',
+      '--objective-id=safe_abort_shadow_probe',
+      '--impact=medium',
+      '--target=belief',
+      '--certainty=0.95',
+      '--mode=test',
+      '--brain-lane=creative_lane',
+      '--apply=1',
+      `--policy=${safeAbortPolicyPath}`
+    ],
+    envSafeAbort,
+    repoRoot
+  );
+  assert.strictEqual(safeAbortShadow.status, 0, safeAbortShadow.stderr || 'safe-abort shadow setup should pass');
+  const safeAbortShadowPayload = parseStdoutJson(safeAbortShadow);
+  assert.ok(safeAbortShadowPayload.allowed === true && safeAbortShadowPayload.session && safeAbortShadowPayload.session.session_id, 'safe-abort shadow session should exist');
+  const safeAbortShadowResolve = runNode(
+    scriptPath,
+    ['resolve', `--session-id=${safeAbortShadowPayload.session.session_id}`, '--result=success', '--record-test=0', `--policy=${safeAbortPolicyPath}`],
+    envSafeAbort,
+    repoRoot
+  );
+  assert.strictEqual(safeAbortShadowResolve.status, 0, safeAbortShadowResolve.stderr || 'safe-abort shadow resolve should pass');
+
+  const safeAbortLive = runNode(
+    scriptPath,
+    [
+      'run',
+      '--objective=Safe abort live probe',
+      '--objective-id=safe_abort_live_probe',
+      '--impact=medium',
+      '--target=belief',
+      '--certainty=0.95',
+      '--brain-lane=creative_lane',
+      '--apply=1',
+      '--approver-id=jay',
+      '--approval-note=approved',
+      `--policy=${safeAbortPolicyPath}`
+    ],
+    envSafeAbort,
+    repoRoot
+  );
+  assert.strictEqual(safeAbortLive.status, 0, safeAbortLive.stderr || 'safe-abort live run should pass');
+  const safeAbortLivePayload = parseStdoutJson(safeAbortLive);
+  assert.ok(safeAbortLivePayload.allowed === true && safeAbortLivePayload.session && safeAbortLivePayload.session.session_id, 'safe-abort live session should exist');
+
+  const safeAbortResolve = runNode(
+    scriptPath,
+    [
+      'resolve',
+      `--session-id=${safeAbortLivePayload.session.session_id}`,
+      '--result=neutral',
+      '--safe-abort=1',
+      '--record-test=0',
+      `--policy=${safeAbortPolicyPath}`
+    ],
+    envSafeAbort,
+    repoRoot
+  );
+  assert.strictEqual(safeAbortResolve.status, 0, safeAbortResolve.stderr || 'safe-abort resolve should pass');
+
+  const safeAbortFollowup = runNode(
+    scriptPath,
+    [
+      'run',
+      '--objective=Safe abort followup should still require veto',
+      '--objective-id=safe_abort_live_probe',
+      '--impact=medium',
+      '--target=belief',
+      '--certainty=0.95',
+      '--brain-lane=creative_lane',
+      '--apply=1',
+      `--policy=${safeAbortPolicyPath}`
+    ],
+    envSafeAbort,
+    repoRoot
+  );
+  assert.strictEqual(safeAbortFollowup.status, 0, safeAbortFollowup.stderr || 'safe-abort followup should return payload');
+  const safeAbortFollowupPayload = parseStdoutJson(safeAbortFollowup);
+  assert.strictEqual(safeAbortFollowupPayload.allowed, false);
+  assert.ok(
+    Array.isArray(safeAbortFollowupPayload.reasons)
+    && safeAbortFollowupPayload.reasons.includes('tier_transition_human_veto_required'),
+    JSON.stringify(safeAbortFollowupPayload.reasons || [])
+  );
+  assert.ok(
+    Number(safeAbortFollowupPayload.checks && safeAbortFollowupPayload.checks.live_apply_safe_abort_count_for_target || 0) >= 1,
+    'safe abort counter should be present'
+  );
+
   const firstPrincipleLatest = readJson(path.join(stateDir, 'first_principles', 'latest.json'));
   assert.ok(firstPrincipleLatest, 'first principle latest should exist');
   assert.ok(
@@ -685,6 +921,6 @@ function run() {
 try {
   run();
 } catch (err) {
-  console.error(`inversion_controller.test.js: FAIL: ${err.message}`);
+  console.error(`inversion_controller.test.js: FAIL: ${err && err.stack ? err.stack : err.message}`);
   process.exit(1);
 }
