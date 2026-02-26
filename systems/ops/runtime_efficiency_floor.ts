@@ -125,7 +125,10 @@ function defaultPolicy() {
     cold_start_probe: {
       command: ['node', 'systems/workflow/workflow_controller.js', 'status'],
       samples: 5,
-      max_ms: 300
+      max_ms: 300,
+      warmup_runs: 1,
+      runtime_mode: 'dist',
+      require_full_dist: false
     },
     idle_rss_probe: {
       samples: 3,
@@ -159,7 +162,12 @@ function loadPolicy(policyPath = POLICY_PATH) {
     cold_start_probe: {
       command: normalizeCmd(coldRaw.command, base.cold_start_probe.command),
       samples: clampInt(coldRaw.samples, 1, 30, base.cold_start_probe.samples),
-      max_ms: clampNum(coldRaw.max_ms, 1, 30000, base.cold_start_probe.max_ms)
+      max_ms: clampNum(coldRaw.max_ms, 1, 30000, base.cold_start_probe.max_ms),
+      warmup_runs: clampInt(coldRaw.warmup_runs, 0, 10, base.cold_start_probe.warmup_runs),
+      runtime_mode: ['source', 'dist'].includes(String(coldRaw.runtime_mode || '').trim().toLowerCase())
+        ? String(coldRaw.runtime_mode || '').trim().toLowerCase()
+        : String(base.cold_start_probe.runtime_mode),
+      require_full_dist: toBool(coldRaw.require_full_dist, base.cold_start_probe.require_full_dist === true)
     },
     idle_rss_probe: {
       samples: clampInt(idleRaw.samples, 1, 20, base.idle_rss_probe.samples),
@@ -187,32 +195,119 @@ function loadPolicy(policyPath = POLICY_PATH) {
   };
 }
 
-function runColdStartProbe(policy: AnyObj) {
-  const cmd = policy.cold_start_probe.command as string[];
-  const samples = Number(policy.cold_start_probe.samples || 1);
-  const msRows: number[] = [];
-  let lastErr = '';
-  for (let i = 0; i < samples; i += 1) {
-    const started = Date.now();
-    const run = spawnSync(cmd[0], cmd.slice(1), {
+function maybeRewriteToDistCommand(cmd: string[]) {
+  if (!Array.isArray(cmd) || cmd.length < 2) {
+    return { command: cmd, build_attempted: false, build_ok: null, dist_target: null, build_error: null };
+  }
+  const runner = String(cmd[0] || '').trim();
+  const scriptArg = String(cmd[1] || '').trim();
+  const isNodeRunner = runner === 'node' || path.basename(runner) === 'node';
+  if (!isNodeRunner || !scriptArg || scriptArg.startsWith('-')) {
+    return { command: cmd, build_attempted: false, build_ok: null, dist_target: null, build_error: null };
+  }
+  const relScript = scriptArg.replace(/\\/g, '/').replace(/^\.\/+/, '');
+  if (!relScript.startsWith('systems/')) {
+    return { command: cmd, build_attempted: false, build_ok: null, dist_target: null, build_error: null };
+  }
+
+  const distRel = path.join('dist', relScript).replace(/\\/g, '/');
+  const distAbs = path.join(ROOT, distRel);
+  let buildAttempted = false;
+  let buildOk: boolean | null = null;
+  let buildError: string | null = null;
+  if (!fs.existsSync(distAbs)) {
+    buildAttempted = true;
+    const build = spawnSync(process.execPath, ['systems/ops/build_systems.js'], {
       cwd: ROOT,
       encoding: 'utf8'
     });
+    buildOk = build.status === 0;
+    if (buildOk !== true) {
+      buildError = String(build.stderr || build.stdout || `build_systems_exit_${build.status}`).slice(0, 200);
+    }
+  }
+
+  if (fs.existsSync(distAbs)) {
+    return {
+      command: [cmd[0], distRel, ...cmd.slice(2)],
+      build_attempted: buildAttempted,
+      build_ok: buildAttempted ? true : null,
+      dist_target: distRel,
+      build_error: null
+    };
+  }
+
+  return {
+    command: cmd,
+    build_attempted: buildAttempted,
+    build_ok: buildOk,
+    dist_target: distRel,
+    build_error: buildError || 'dist_target_missing_after_build'
+  };
+}
+
+function runColdStartProbe(policy: AnyObj) {
+  const baseCmd = policy.cold_start_probe.command as string[];
+  const samples = Number(policy.cold_start_probe.samples || 1);
+  const warmupRuns = Number(policy.cold_start_probe.warmup_runs || 0);
+  const runtimeMode = String(policy.cold_start_probe.runtime_mode || 'source').toLowerCase() === 'dist'
+    ? 'dist'
+    : 'source';
+  const requireFullDist = policy.cold_start_probe.require_full_dist === true;
+  const msRows: number[] = [];
+  let lastErr = '';
+  let cmd = baseCmd.slice();
+  let distBuildAttempted = false;
+  let distBuildOk: boolean | null = null;
+  let distTarget: string | null = null;
+  let distBuildError: string | null = null;
+  if (runtimeMode === 'dist') {
+    const rewritten = maybeRewriteToDistCommand(baseCmd.slice());
+    cmd = rewritten.command;
+    distBuildAttempted = rewritten.build_attempted === true;
+    distBuildOk = rewritten.build_ok === null ? null : rewritten.build_ok === true;
+    distTarget = rewritten.dist_target ? String(rewritten.dist_target) : null;
+    distBuildError = rewritten.build_error ? String(rewritten.build_error) : null;
+  }
+
+  const totalRuns = samples + warmupRuns;
+  for (let i = 0; i < totalRuns; i += 1) {
+    const started = Date.now();
+    const run = spawnSync(cmd[0], cmd.slice(1), {
+      cwd: ROOT,
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        PROTHEUS_RUNTIME_MODE: runtimeMode,
+        PROTHEUS_RUNTIME_DIST_REQUIRED: runtimeMode === 'dist'
+          ? (requireFullDist ? '1' : '0')
+          : String(process.env.PROTHEUS_RUNTIME_DIST_REQUIRED || '0')
+      }
+    });
     const elapsed = Math.max(1, Date.now() - started);
-    msRows.push(elapsed);
+    if (i >= warmupRuns) msRows.push(elapsed);
     if (run.status !== 0) {
       lastErr = String(run.stderr || run.stdout || `cold_start_probe_exit_${run.status}`).slice(0, 200);
     }
+  }
+  if (!lastErr && distBuildError && requireFullDist) {
+    lastErr = String(distBuildError).slice(0, 200);
   }
   const p95Ms = percentile(msRows, 0.95);
   const pass = !!p95Ms && p95Ms <= Number(policy.cold_start_probe.max_ms || 300) && !lastErr;
   return {
     pass,
     samples,
+    warmup_runs: warmupRuns,
     samples_ms: msRows,
     p95_ms: p95Ms,
     threshold_ms: Number(policy.cold_start_probe.max_ms || 300),
     command: cmd,
+    runtime_mode: runtimeMode,
+    require_full_dist: requireFullDist,
+    dist_build_attempted: distBuildAttempted,
+    dist_build_ok: distBuildOk,
+    dist_target: distTarget,
     error: lastErr || null
   };
 }

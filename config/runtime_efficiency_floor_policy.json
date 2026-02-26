@@ -8,7 +8,10 @@
       "run"
     ],
     "samples": 5,
-    "max_ms": 300
+    "max_ms": 300,
+    "warmup_runs": 1,
+    "runtime_mode": "dist",
+    "require_full_dist": false
   },
   "idle_rss_probe": {
     "samples": 3,

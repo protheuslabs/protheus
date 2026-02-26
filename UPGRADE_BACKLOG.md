@@ -339,6 +339,31 @@ These proposals were normalized to avoid duplicate tracking with existing backlo
 | V4-004 | V4 | todo | Dire-case emergency autonomy protocol (existential only) | Extreme-case autonomy must be narrowly scoped, reversible, and externally auditable | Trigger requires multi-organ consensus + independent evidence classes, protocol is time-boxed, human override is always available, and all actions are black-box ledgered with post-incident replay |
 | V4-005 | V4 | todo | Civilizational symbiosis research track | Keep long-horizon symbiosis goals explicit without polluting near-term delivery lanes | Research charter, risk model, staged ethics/governance gates, and non-production sandbox milestones are published and reviewed before any deployment consideration |
 
+## Obsidian Track (Isolated from Core Protheus)
+
+Policy: this track ships behind explicit feature flags and separate policies so Obsidian integration cannot bypass or destabilize core system lanes.
+
+| Phase | Scope | Entry Gate | Exit Criteria |
+|---|---|---|---|
+| Phase 1 | Read/write foundation, governance-first | Core execution/security lanes stable; no unresolved P0 core incidents | Obsidian bridge runs read-only + governed write projection with receipts, no bypass paths |
+| Phase 2 | Bi-directional intent + canvas intelligence | Phase 1 stable for 30 days, conflict/loop rates within policy | Note intents can compile to proposals safely, auto-canvas is canary-gated and reversible |
+| Phase 3 | Unified mind projection + mobile seed mode | Phase 2 stable with acceptance precision target met | Holo and Obsidian share identity graph links; mobile plugin mode is bounded and policy-enforced |
+
+| ID | Phase | Status | Upgrade | Why | Exit Criteria |
+|---|---|---|---|---|---|
+| OBS-001 | Phase 1 | todo | Obsidian bridge contracts + policy root | Prevent uncontrolled vault access or action bypass via notes | `systems/obsidian/obsidian_bridge.ts` enforces typed contracts, path allowlists, clearance tiers, and explicit deny-by-default write policy |
+| OBS-002 | Phase 1 | todo | Vault watcher sensory ingest (read-only) | Capture user knowledge flow safely before enabling any actuation coupling | `systems/obsidian/vault_watcher.ts` ingests note/canvas edits as sensory events with idempotent event IDs, replay-safe receipts, and no write side effects |
+| OBS-003 | Phase 1 | todo | Governed markdown projection lane | Human-readable outputs must appear in vault without editing user-authored content by surprise | Protheus projections (summaries, receipts, doctor reports, wisdom notes) write only to dedicated system folders unless elevated approval is present |
+| OBS-004 | Phase 1 | todo | Sync integrity + conflict loop guard | Bidirectional sync can corrupt content without strict loop/conflict controls | Hash-based change detection, source tags, merge strategy, and loop suppression are enforced; conflict receipts are deterministic and test-covered |
+| OBS-005 | Phase 1 | todo | Wisdom projector v1 | First-principle outputs need durable, linkable memory on human side | New principles generate linked markdown notes with provenance, backlinks, and reference to corresponding holographic node IDs |
+| OBS-006 | Phase 1 | todo | Doctor/execution visibility cards | Operational legibility should be available in Obsidian without reading raw logs | Rollbacks/heals/executions produce timestamped cards/notes with receipt links and status transitions |
+| OBS-007 | Phase 2 | todo | Intent compiler from notes (shadow->canary->live) | Converting notes to action is high leverage and high risk | Note intents compile to proposals in shadow first; precision/false-positive gates must pass before any live path |
+| OBS-008 | Phase 2 | todo | Automatic canvas intelligence | Users need structured planning artifacts generated from high-level intents | Canvas generator creates/updates node maps, linked notes, and live status blocks with reversible patch receipts |
+| OBS-009 | Phase 2 | todo | Cross-view identity bus (Obsidian <-> Holo) | Two interfaces should behave like one mind, not separate tools | Shared entity IDs enable click/highlight sync between Obsidian graph/canvas and holo graph for mapped nodes |
+| OBS-010 | Phase 2 | todo | Desktop Obsidian plugin (control + veto UI) | Human needs fast approval/veto at interface layer | Plugin exposes pending actions, approval/veto controls, and receipt drilldown with governance reason codes |
+| OBS-011 | Phase 3 | todo | Phone-seed Obsidian plugin mode | Mobile continuity requires lightweight bounded integration | Mobile mode syncs selected vault segments with policy-bounded status/intent surfaces and no heavy background lanes |
+| OBS-012 | Phase 3 | todo | Unified projection and resilience hardening | Final integration should feel seamless while remaining sovereign and reversible | Obsidian + holo projections share consistent state, survive reconnect/replay scenarios, and maintain zero policy-bypass findings in red-team tests |
+
 ## Holo-viz Track (Separated from Core Protheus)
 
 | ID | Version | Status | Upgrade | Why | Exit Criteria |
