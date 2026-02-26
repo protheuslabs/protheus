@@ -65,6 +65,9 @@ const SUBSUMPTION_AUDIT_PATH = process.env.WORKFLOW_EXECUTOR_SUBSUMPTION_AUDIT_P
 const SUBSUMPTION_LATEST_PATH = process.env.WORKFLOW_EXECUTOR_SUBSUMPTION_LATEST_PATH
   ? path.resolve(process.env.WORKFLOW_EXECUTOR_SUBSUMPTION_LATEST_PATH)
   : path.join(REPO_ROOT, 'state', 'eye', 'subsumption_latest.json');
+const SYSTEM_HEALTH_EVENTS_PATH = process.env.SYSTEM_HEALTH_EVENTS_PATH
+  ? path.resolve(process.env.SYSTEM_HEALTH_EVENTS_PATH)
+  : path.join(REPO_ROOT, 'state', 'ops', 'system_health', 'events.jsonl');
 
 function usage() {
   console.log('Usage:');
@@ -216,6 +219,27 @@ function writeJsonAtomic(filePath: string, value: AnyObj) {
 function appendJsonl(filePath: string, row: AnyObj) {
   ensureDir(path.dirname(filePath));
   fs.appendFileSync(filePath, `${JSON.stringify(row)}\n`);
+}
+
+function appendSystemHealthEvent(row: AnyObj) {
+  try {
+    ensureDir(path.dirname(SYSTEM_HEALTH_EVENTS_PATH));
+    const payload = row && typeof row === 'object' ? row : {};
+    const event = {
+      ts: nowIso(),
+      type: 'system_health_event',
+      source: 'workflow_executor',
+      subsystem: 'workflow.executor',
+      severity: 'medium',
+      risk: 'medium',
+      code: 'workflow_executor_event',
+      summary: 'workflow executor event',
+      ...payload
+    };
+    fs.appendFileSync(SYSTEM_HEALTH_EVENTS_PATH, `${JSON.stringify(event)}\n`);
+  } catch {
+    // Health telemetry must never block workflow execution.
+  }
 }
 
 function relPath(filePath: string) {
@@ -2285,6 +2309,34 @@ function runCmd(dateStr: string, args: AnyObj) {
       : null
   });
 
+  const runDegraded = failed > 0
+    || blocked > 0
+    || (runSlo && runSlo.pass !== true)
+    || (sloWindow && sloWindow.sufficient_data === true && sloWindow.pass !== true);
+  if (runDegraded) {
+    appendSystemHealthEvent({
+      severity: failed > 0 ? 'high' : 'medium',
+      risk: failed > 0 ? 'high' : 'medium',
+      code: blocked > 0 ? 'workflow_executor_blocked' : 'workflow_executor_degraded',
+      summary: `workflow executor degraded fail=${failed} blocked=${blocked} slo=${runSlo.pass === true ? 'pass' : 'fail'}`.slice(0, 220),
+      run_id: runId,
+      date: dateStr,
+      dry_run: options.dry_run === true,
+      workflows_selected: selected.length,
+      workflows_executed: results.length,
+      workflows_succeeded: succeeded,
+      workflows_failed: failed,
+      workflows_blocked: blocked,
+      failure_reasons: failureReasons,
+      execution_success_rate: runSlo && runSlo.measured ? runSlo.measured.execution_success_rate : null,
+      queue_drain_rate: runSlo && runSlo.measured ? runSlo.measured.queue_drain_rate : null,
+      time_to_first_execution_ms: runSlo && runSlo.measured ? runSlo.measured.time_to_first_execution_ms : null,
+      slo_pass: runSlo ? runSlo.pass === true : null,
+      slo_window_pass: sloWindow ? sloWindow.pass === true : null,
+      slo_window_sufficient_data: sloWindow ? sloWindow.sufficient_data === true : null
+    });
+  }
+
   process.stdout.write(`${JSON.stringify({
     ok: true,
     type: payload.type,
@@ -2386,6 +2438,13 @@ if (require.main === module) {
   try {
     main();
   } catch (err) {
+    appendSystemHealthEvent({
+      severity: 'critical',
+      risk: 'high',
+      code: 'workflow_executor_fatal',
+      summary: 'workflow executor crashed',
+      details: String(err && err.message ? err.message : err || 'workflow_executor_failed').slice(0, 240)
+    });
     process.stdout.write(`${JSON.stringify({
       ok: false,
       type: 'workflow_executor',

@@ -31,6 +31,9 @@ const PAIN_FOCUS_STATE_PATH = process.env.PAIN_SIGNAL_FOCUS_STATE_PATH
 const PAIN_FOCUS_AUDIT_PATH = process.env.PAIN_SIGNAL_FOCUS_AUDIT_PATH
   ? path.resolve(String(process.env.PAIN_SIGNAL_FOCUS_AUDIT_PATH))
   : path.join(ROOT, 'state', 'autonomy', 'pain_focus_events.jsonl');
+const SYSTEM_HEALTH_EVENTS_PATH = process.env.SYSTEM_HEALTH_EVENTS_PATH
+  ? path.resolve(String(process.env.SYSTEM_HEALTH_EVENTS_PATH))
+  : path.join(ROOT, 'state', 'ops', 'system_health', 'events.jsonl');
 const PROPOSALS_DIR = process.env.PAIN_SIGNAL_PROPOSALS_DIR
   ? path.resolve(String(process.env.PAIN_SIGNAL_PROPOSALS_DIR))
   : path.join(ROOT, 'state', 'sensory', 'proposals');
@@ -54,6 +57,10 @@ function ensureDir(dirPath) {
 function appendJsonl(filePath, row) {
   ensureDir(path.dirname(filePath));
   fs.appendFileSync(filePath, JSON.stringify(row) + '\n', 'utf8');
+}
+
+function appendSystemHealthEvent(row) {
+  appendJsonl(SYSTEM_HEALTH_EVENTS_PATH, row);
 }
 
 function readJsonSafe(filePath, fallback) {
@@ -637,6 +644,22 @@ function emitPainSignal(input = {}) {
   };
 
   appendJsonl(PAIN_LOG_PATH, painRow);
+  appendSystemHealthEvent({
+    ts,
+    type: 'system_health_event',
+    source: source,
+    subsystem: subsystem,
+    code,
+    severity,
+    risk,
+    summary: summary.slice(0, 220),
+    details: details || null,
+    signature,
+    origin: 'pain_signal',
+    failure_count_window: failureCountWindow,
+    total_count: totalCount,
+    create_proposal: proposalEnabled
+  });
 
   if (shouldEscalate || shouldRefreshProposal) {
     const proposalsCtx = loadProposals(todayStr(ts));
@@ -749,6 +772,23 @@ function emitPainSignal(input = {}) {
       : null
   });
 
+  appendSystemHealthEvent({
+    ts: nowIso(),
+    type: 'system_health_event',
+    source: source,
+    subsystem: subsystem,
+    code: `${code}_decision`,
+    severity: escalation.emitted === true ? 'high' : 'medium',
+    risk: escalation.emitted === true ? 'high' : risk,
+    summary: `pain_signal_decision ${source}:${code} ${escalation.reason}`.slice(0, 220),
+    details: normalizeText(escalation.reason, '').slice(0, 240) || null,
+    signature,
+    origin: 'pain_signal_decision',
+    escalation_emitted: escalation.emitted === true,
+    escalation_reason: normalizeText(escalation.reason, '') || null,
+    proposal_id: normalizeText(escalation.proposal_id, '') || null
+  });
+
   return {
     ok: true,
     signal: painRow,
@@ -773,6 +813,7 @@ function status() {
     active_cooldowns: activeCooldown,
     state_path: path.relative(ROOT, PAIN_STATE_PATH).replace(/\\/g, '/'),
     log_path: path.relative(ROOT, PAIN_LOG_PATH).replace(/\\/g, '/'),
+    system_health_path: path.relative(ROOT, SYSTEM_HEALTH_EVENTS_PATH).replace(/\\/g, '/'),
     focus,
     policy: {
       defer_enabled: policy.defer_enabled === true,

@@ -1,108 +1,47 @@
 {
   "ok": true,
   "type": "workflow_executor_run",
-  "ts": "2026-02-26T12:38:18.466Z",
-  "run_id": "wfexec_mm3g8m9o_fctv93",
+  "ts": "2026-02-26T15:06:07.935Z",
+  "run_id": "wfexec_mm3lirwb_qfi1ln",
   "date": "2026-02-26",
-  "dry_run": false,
+  "dry_run": true,
   "forced_shadow_dry_run": false,
   "continue_on_error": false,
   "receipt_strict": true,
   "rollout_enabled": true,
   "rollout_stage": "canary",
   "rollout_canary_fraction": 0.25,
-  "rollout_scale_eligible": true,
+  "rollout_scale_eligible": false,
   "rollout_state_before": {
     "stage": "canary",
     "canary_fraction": 0.25,
-    "consecutive_green": 0,
+    "consecutive_green": 1,
     "consecutive_red": 0,
-    "last_slo_pass": true,
-    "last_scale_action": "canary_scale_up"
+    "last_slo_pass": null,
+    "last_scale_action": "rollout_scale_skipped"
   },
   "rollout_state_after": {
     "stage": "canary",
     "canary_fraction": 0.25,
     "consecutive_green": 1,
     "consecutive_red": 0,
-    "last_slo_pass": true,
-    "last_scale_action": null
+    "last_slo_pass": null,
+    "last_scale_action": "rollout_scale_skipped"
   },
   "runtime_mutation_enabled": true,
   "runtime_mutation_policy_path": "config/workflow_executor_policy.json",
   "registry_total": 8,
-  "workflows_selected": 1,
-  "workflows_excluded": 9,
-  "selection_excluded": [
-    {
-      "workflow_id": "wfc_07aee5ce1dfb0f41",
-      "reason": "ineligible",
-      "details": [
-        "composite_score_below_min"
-      ]
-    },
-    {
-      "workflow_id": "wfc_145ecc2f4cde0e52",
-      "reason": "ineligible",
-      "details": [
-        "composite_score_below_min"
-      ]
-    },
-    {
-      "workflow_id": "wfc_5d55739830782563",
-      "reason": "ineligible",
-      "details": [
-        "composite_score_below_min"
-      ]
-    },
-    {
-      "workflow_id": "wfc_708d5d0247df6b21",
-      "reason": "canary_not_sampled",
-      "sample_unit": 0.570203,
-      "canary_fraction": 0.25
-    },
-    {
-      "workflow_id": "wfc_7c82f6565f5e49c8",
-      "reason": "ineligible",
-      "details": [
-        "composite_score_below_min"
-      ]
-    },
-    {
-      "workflow_id": "wfc_84dcfb815a85478f",
-      "reason": "ineligible",
-      "details": [
-        "composite_score_below_min"
-      ]
-    },
-    {
-      "workflow_id": "wfc_b565c4e93d31b632",
-      "reason": "ineligible",
-      "details": [
-        "composite_score_below_min"
-      ]
-    },
-    {
-      "workflow_id": "wfc_ecea8fd103aab192",
-      "reason": "canary_not_sampled",
-      "sample_unit": 0.813943,
-      "canary_fraction": 0.25
-    },
-    {
-      "workflow_id": "wfc_708d5d0247df6b21",
-      "reason": "canary_force_single_sample",
-      "sample_unit": 0.570203,
-      "canary_fraction": 0.25
-    }
-  ],
+  "workflows_selected": 0,
+  "workflows_excluded": 0,
+  "selection_excluded": [],
   "enforce_eligibility": true,
-  "workflows_executed": 1,
-  "workflows_succeeded": 1,
+  "workflows_executed": 0,
+  "workflows_succeeded": 0,
   "workflows_failed": 0,
   "workflows_blocked": 0,
   "failure_reasons": {},
-  "step_receipts_count": 4,
-  "step_receipts_path": "state/adaptive/workflows/executor/step_receipts/2026-02-26.jsonl",
+  "step_receipts_count": 0,
+  "step_receipts_path": null,
   "runtime_mutations_attempted": 0,
   "runtime_mutations_applied": 0,
   "runtime_mutations_rolled_back": 0,
@@ -114,16 +53,16 @@
       "max_time_to_first_execution_ms": 180000
     },
     "measured": {
-      "execution_success_rate": 1,
-      "queue_drain_rate": 1,
-      "time_to_first_execution_ms": 14
+      "execution_success_rate": 0,
+      "queue_drain_rate": 0,
+      "time_to_first_execution_ms": null
     },
     "checks": {
-      "execution_success_rate": true,
-      "queue_drain_rate": true,
-      "time_to_first_execution_ms": true
+      "execution_success_rate": false,
+      "queue_drain_rate": false,
+      "time_to_first_execution_ms": false
     },
-    "pass": true
+    "pass": false
   },
   "slo_window": {
     "thresholds": {
@@ -134,205 +73,17 @@
     "aggregate": {
       "runs_considered": 6,
       "min_runs_for_decision": 3,
-      "avg_execution_success_rate": 1,
-      "avg_queue_drain_rate": 1,
-      "max_time_to_first_execution_ms": 19
+      "avg_execution_success_rate": 0.8333,
+      "avg_queue_drain_rate": 0.8333,
+      "max_time_to_first_execution_ms": 14
     },
     "checks": {
-      "execution_success_rate": true,
+      "execution_success_rate": false,
       "queue_drain_rate": true,
       "time_to_first_execution_ms": true
     },
     "sufficient_data": true,
-    "pass": true
+    "pass": false
   },
-  "results": [
-    {
-      "workflow_id": "wfc_708d5d0247df6b21",
-      "name": "Adaptive cross_signal_opportunity workflow",
-      "status": "succeeded",
-      "ok": true,
-      "blocked_by_gate": false,
-      "stopped_step_id": null,
-      "failure_reason": null,
-      "rollback_attempted": false,
-      "rollback_ok": null,
-      "rollback_source": null,
-      "rollback_step_id": null,
-      "rollback_trigger_reason": null,
-      "started_at": "2026-02-26T12:38:16.010Z",
-      "ended_at": "2026-02-26T12:38:18.463Z",
-      "duration_ms": 2453,
-      "step_count": 4,
-      "execution_budget": {
-        "attempts_cap": 24,
-        "retries_cap": 16,
-        "duration_cap_ms": 600000,
-        "attempts_used": 4,
-        "retries_used": 0,
-        "duration_ms_used": 2451
-      },
-      "step_results": [
-        {
-          "ok": true,
-          "attempts": 1,
-          "dry_run": false,
-          "step": {
-            "id": "enrich",
-            "type": "command",
-            "command": "node systems/autonomy/proposal_enricher.js run 2026-02-26"
-          },
-          "records": [
-            {
-              "attempt": 1,
-              "ok": true,
-              "shell_ok": true,
-              "exit_code": 0,
-              "signal": null,
-              "timed_out": false,
-              "started_at": "2026-02-26T12:38:16.011Z",
-              "ended_at": "2026-02-26T12:38:16.432Z",
-              "duration_ms": 421,
-              "stdout": "{\"ok\":true,\"result\":\"enriched\",\"date\":\"2026-02-26\",\"path\":\"/Users/jay/.openclaw/workspace/state/sensory/proposals/2026-02-26.json\",\"changed\":6,\"total\":6,\"directive_profile_available\":true,\"strategy_profile\":{\"id\":\"default_general\",\"name\":\"Default General Strategy\",\"status\":\"active\",\"file\":\"config/strategies/default.json\",\"execution_mode\":\"canary_execute\",\"allowed_risks\":[\"low\",\"medium\"],\"threshold_overrides\":{\"min_directive_fit\":41,\"min_actionability_score\":47,\"min_composite_eligibility\":64},\"validation\":{\"strict_ok\":true,\"errors\":[],\"warnings\":[]}},\"thresholds\":{\"min_signal_quality\":58,\"min_sensory_signal_score\":45,\"min_sensory_relevance_score\":42,\"min_directive_fit\":41,\"min_actionability_score\":47,\"min_composite_eligibility\":64,\"min_eye_score_ema\":45},\"admission\":{\"total\":6,\"eligible\":6,\"blocked\":0,\"blocked_by_reason\":{}},\"objective_binding\":{\"total\":6,\"required\":6,\"valid_required\":6,\"missing_required\":0,\"invalid_required\":0,\"source_meta_required\":6,\"source_fallback_required\":0,\"source_counts\":{\"meta.objective_id\":6},\"ok\":true},\"dream_alignment\":{\"available\":true,\"tokens_loaded\":23,\"source_counts\":{\"theme\":6,\"rem_daily\":8,\"rem_run\":8,\"rem_synthesis\":16,\"rem\":16},\"source_uid_count\":2,\"files\":{\"themes\":true,\"rem\":true,\"rem_runs\":[\"2026-02-26__rem1iskpj08vorfg28b0q87g.json\"]},\"proposals_with_hits\":6,\"proposals_with_bonus\":6,\"bonus_total\":36,\"rem_bonus_total\":12,\"top_hit_tokens\":[{\"token\":\"token\",\"count\":6},{\"token\":\"signal\",\"count\":5},{\"token\":\"eyes\",\"count\":4}]},\"cross_signal_no_change\":{\"window_days\":7,\"topics\":[]}}",
-              "stderr": "",
-              "error": null,
-              "criteria_pass": true,
-              "criteria_fail_reasons": []
-            }
-          ],
-          "success_criteria": {
-            "allowed_exit_codes": [
-              0
-            ],
-            "stdout_includes": [],
-            "stderr_excludes": [],
-            "max_duration_ms": null
-          },
-          "failure_reason": null,
-          "external_gate": null
-        },
-        {
-          "ok": true,
-          "attempts": 1,
-          "dry_run": false,
-          "step": {
-            "id": "rank",
-            "type": "command",
-            "command": "node systems/autonomy/autonomy_controller.js run 2026-02-26"
-          },
-          "records": [
-            {
-              "attempt": 1,
-              "ok": true,
-              "shell_ok": true,
-              "exit_code": 0,
-              "signal": null,
-              "timed_out": false,
-              "started_at": "2026-02-26T12:38:16.432Z",
-              "ended_at": "2026-02-26T12:38:17.967Z",
-              "duration_ms": 1535,
-              "stdout": "{\"ok\":true,\"result\":\"stop_init_gate_budget_autopause\",\"policy_hold\":true,\"hold_scope\":\"budget\",\"hold_reason\":\"burn_rate_exceeded\",\"proposal_id\":\"CSG-1277d5a5ddcea6cb\",\"capability_key\":\"proposal:cross_signal_opportunity\",\"directive_pulse\":{\"pass\":true,\"score\":87,\"objective_id\":\"T1_make_jay_billionaire_v1\",\"tier\":1,\"alignment\":16,\"objective_allocation_score\":55,\"urgency\":1.8,\"evidence_gap_multiplier\":1,\"retry_penalty\":0,\"coverage_bonus\":0,\"reasons\":[],\"proposal_value_currency\":\"delivery\",\"objective_primary_currency\":null,\"objective_value_currencies\":[],\"value_currency_alignment\":0,\"matched_positive\":[\"automated\",\"systems\"]},\"budget_autopause\":{\"source\":\"idle_dream_cycle\",\"reason\":\"burn_rate_exceeded\",\"pressure\":\"hard\",\"until\":\"2026-02-26T13:06:41.732Z\"},\"ts\":\"2026-02-26T12:38:17.959Z\"}",
-              "stderr": "AUTONOMY_SUMMARY model_catalog_apply_pending=1",
-              "error": null,
-              "criteria_pass": true,
-              "criteria_fail_reasons": []
-            }
-          ],
-          "success_criteria": {
-            "allowed_exit_codes": [
-              0
-            ],
-            "stdout_includes": [],
-            "stderr_excludes": [],
-            "max_duration_ms": null
-          },
-          "failure_reason": null,
-          "external_gate": null
-        },
-        {
-          "ok": true,
-          "attempts": 1,
-          "dry_run": false,
-          "step": {
-            "id": "verify",
-            "type": "gate",
-            "command": "node systems/autonomy/strategy_execute_guard.js run 2026-02-26"
-          },
-          "records": [
-            {
-              "attempt": 1,
-              "ok": true,
-              "shell_ok": true,
-              "exit_code": 0,
-              "signal": null,
-              "timed_out": false,
-              "started_at": "2026-02-26T12:38:17.968Z",
-              "ended_at": "2026-02-26T12:38:18.463Z",
-              "duration_ms": 495,
-              "stdout": "{\n  \"ok\": true,\n  \"ts\": \"2026-02-26T12:38:18.455Z\",\n  \"result\": \"ready\",\n  \"strategy_id\": \"default_general\",\n  \"consecutive_not_ready\": 0,\n  \"max_consecutive_not_ready\": 2,\n  \"readiness\": {\n    \"current_mode\": \"canary_execute\",\n    \"ready_for_execute\": true,\n    \"recommended_mode\": \"canary_execute\",\n    \"checks\": [\n      {\n        \"name\": \"window_days\",\n        \"pass\": true,\n        \"value\": 7,\n        \"target\": \">=7\"\n      },\n      {\n        \"name\": \"attempted\",\n        \"pass\": true,\n        \"value\": 107,\n        \"target\": \">=12\"\n      },\n      {\n        \"name\": \"verified_rate\",\n        \"pass\": true,\n        \"value\": 0.626,\n        \"target\": \">=0.5\"\n      },\n      {\n        \"name\": \"reverted_rate\",\n        \"pass\": true,\n        \"value\": 0,\n        \"target\": \"<=0.35\"\n      },\n      {\n        \"name\": \"stop_ratio\",\n        \"pass\": true,\n        \"value\": 0.354,\n        \"target\": \"<=0.75\"\n      },\n      {\n        \"name\": \"min_shipped\",\n        \"pass\": true,\n        \"value\": 5,\n        \"target\": \">=1\"\n      },\n      {\n        \"name\": \"success_criteria_receipts\",\n        \"pass\": true,\n        \"value\": 39,\n        \"target\": \">=2\"\n      },\n      {\n        \"name\": \"success_criteria_pass_rate\",\n        \"pass\": true,\n        \"value\": 0.821,\n        \"target\": \">=0.6\"\n      },\n      {\n        \"name\": \"success_criteria_quality_insufficient_rate\",\n        \"pass\": true,\n        \"value\": 0.364,\n        \"target\": \"<=0.45\"\n      },\n      {\n        \"name\": \"objective_coverage\",\n        \"pass\": true,\n        \"value\": 1.215,\n        \"target\": \">=0.25\"\n      },\n      {\n        \"name\": \"objective_no_progress_rate\",\n        \"pass\": true,\n        \"value\": 0.023,\n        \"target\": \"<=0.9\"\n      }\n    ],\n    \"failed_checks\": [],\n    \"metrics\": {\n      \"attempted\": 107,\n      \"verified_rate\": 0.626,\n      \"success_criteria_receipts\": 39,\n      \"success_criteria_source\": \"quality_forced\",\n      \"success_criteria_fallback_retired\": true,\n      \"success_criteria_quality_receipts\": 39,\n      \"succe",
-              "stderr": "",
-              "error": null,
-              "criteria_pass": true,
-              "criteria_fail_reasons": []
-            }
-          ],
-          "success_criteria": {
-            "allowed_exit_codes": [
-              0
-            ],
-            "stdout_includes": [],
-            "stderr_excludes": [],
-            "max_duration_ms": null
-          },
-          "failure_reason": null,
-          "external_gate": null
-        },
-        {
-          "ok": true,
-          "attempts": 1,
-          "dry_run": false,
-          "step": {
-            "id": "receipt",
-            "type": "receipt",
-            "command": "state/autonomy/receipts/2026-02-26.jsonl"
-          },
-          "records": [
-            {
-              "attempt": 1,
-              "ok": true,
-              "criteria_pass": true,
-              "criteria_fail_reasons": [],
-              "exit_code": 0,
-              "started_at": "2026-02-26T12:38:18.463Z",
-              "ended_at": "2026-02-26T12:38:18.463Z",
-              "duration_ms": 0,
-              "timed_out": false,
-              "stdout": "",
-              "stderr": "",
-              "error": null
-            }
-          ],
-          "receipt_path": "/Users/jay/.openclaw/workspace/state/autonomy/receipts/2026-02-26.jsonl",
-          "receipt_exists": true,
-          "success_criteria": {
-            "allowed_exit_codes": [
-              0
-            ],
-            "stdout_includes": [],
-            "stderr_excludes": [],
-            "max_duration_ms": null
-          },
-          "failure_reason": null,
-          "external_gate": null
-        }
-      ],
-      "mutation_summary": {
-        "attempted": 0,
-        "applied": 0,
-        "rolled_back": 0,
-        "by_kind": {}
-      },
-      "mutation_receipts": []
-    }
-  ]
+  "results": []
 }

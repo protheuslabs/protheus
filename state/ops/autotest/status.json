@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "updated_at": "2026-02-26T10:40:31.342Z",
+  "updated_at": "2026-02-26T14:56:44.838Z",
   "modules": {
     "systems/actuation/actuation_executor.ts": {
       "id": "mod_0eff96d59cce2c",
@@ -20,7 +20,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/actuation/bridge_from_proposals.ts": {
       "id": "mod_3a7bf55a33cc5c",
@@ -36,13 +38,15 @@
       "mapped_test_count": 1,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
       "last_test_ts": null,
-      "last_pass_ts": "2026-02-26T10:40:31.341Z",
+      "last_pass_ts": "2026-02-26T14:33:40.866Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/actuation/claw_registry.ts": {
       "id": "mod_bdc7495ff7288b",
@@ -62,7 +66,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/actuation/eyes_create_adapter.ts": {
       "id": "mod_dca7f8a32117f2",
@@ -82,7 +88,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/actuation/proposal_template.ts": {
       "id": "mod_d92c061171d584",
@@ -102,7 +110,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/adaptive/core/layer_store.ts": {
       "id": "mod_3093e4cc7846ec",
@@ -118,13 +128,15 @@
       "mapped_test_count": 1,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
       "last_test_ts": null,
-      "last_pass_ts": "2026-02-26T10:40:31.341Z",
+      "last_pass_ts": "2026-02-26T14:33:40.866Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/adaptive/habits/habit_runtime_sync.ts": {
       "id": "mod_a7c2da12f0619c",
@@ -144,7 +156,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/adaptive/habits/habit_store.ts": {
       "id": "mod_9dda584ec7129c",
@@ -160,13 +174,15 @@
       "mapped_test_count": 1,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
       "last_test_ts": null,
-      "last_pass_ts": "2026-02-26T10:40:31.341Z",
+      "last_pass_ts": "2026-02-26T14:33:40.866Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/adaptive/reflex/reflex_runtime_sync.ts": {
       "id": "mod_42d2662a4bc64e",
@@ -186,7 +202,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/adaptive/reflex/reflex_store.ts": {
       "id": "mod_ef0aa8eeb48818",
@@ -206,7 +224,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/adaptive/sensory/eyes/catalog_store.ts": {
       "id": "mod_bcd7f691dc5b9a",
@@ -226,7 +246,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/adaptive/sensory/eyes/focus_trigger_store.ts": {
       "id": "mod_763a65d6e7bfa2",
@@ -242,13 +264,15 @@
       "mapped_test_count": 1,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
       "last_test_ts": null,
-      "last_pass_ts": "2026-02-26T10:40:31.341Z",
+      "last_pass_ts": "2026-02-26T14:33:40.866Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/adaptive/strategy/strategy_store.ts": {
       "id": "mod_e23100139704f3",
@@ -268,7 +292,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/autonomy/adaptive_crystallizer.ts": {
       "id": "mod_25125a70701daf",
@@ -288,7 +314,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/autonomy/alignment_oracle.ts": {
       "id": "mod_36c5d1dce8c202",
@@ -308,7 +336,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/autonomy/autonomy_controller.ts": {
       "id": "mod_58513633b36e29",
@@ -344,14 +374,16 @@
       ],
       "mapped_test_count": 22,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
-      "last_pass_ts": "2026-02-26T10:40:31.341Z",
+      "last_test_ts": "2026-02-26T14:42:27.236Z",
+      "last_pass_ts": "2026-02-26T14:33:40.866Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/autonomy/autonomy_rollout_controller.ts": {
       "id": "mod_2d4a23dbe4c856",
@@ -387,14 +419,16 @@
       ],
       "mapped_test_count": 22,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
-      "last_pass_ts": "2026-02-26T10:40:31.341Z",
+      "last_test_ts": "2026-02-26T14:42:27.236Z",
+      "last_pass_ts": "2026-02-26T14:33:40.866Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/autonomy/autonomy_simulation_harness.ts": {
       "id": "mod_f588bc580ea537",
@@ -430,14 +464,16 @@
       ],
       "mapped_test_count": 22,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
-      "last_pass_ts": "2026-02-26T10:40:31.341Z",
+      "last_test_ts": "2026-02-26T14:42:27.236Z",
+      "last_pass_ts": "2026-02-26T14:33:40.866Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/autonomy/autophagy_baseline_guard.ts": {
       "id": "mod_ea7fbe69ce43fc",
@@ -454,13 +490,15 @@
       "mapped_test_count": 2,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
       "last_test_ts": null,
-      "last_pass_ts": "2026-02-26T10:40:31.341Z",
+      "last_pass_ts": "2026-02-26T14:33:40.866Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/autonomy/backfill_signal_quality.ts": {
       "id": "mod_57eee6943ce362",
@@ -480,7 +518,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/autonomy/batch_lane.ts": {
       "id": "mod_e2d62b3243503b",
@@ -499,13 +539,15 @@
       "mapped_test_count": 4,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
       "last_test_ts": null,
-      "last_pass_ts": "2026-02-26T10:40:31.341Z",
+      "last_pass_ts": "2026-02-26T14:33:40.866Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/autonomy/canary_scheduler.ts": {
       "id": "mod_fe58c2d9a9d3bf",
@@ -525,7 +567,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/autonomy/collective_shadow.ts": {
       "id": "mod_b06be4a2387e88",
@@ -541,14 +585,16 @@
       ],
       "mapped_test_count": 2,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
-      "last_pass_ts": "2026-02-26T10:40:31.341Z",
+      "last_test_ts": "2026-02-26T14:42:27.236Z",
+      "last_pass_ts": "2026-02-26T14:33:40.866Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/autonomy/drift_target_governor.ts": {
       "id": "mod_a8ce418537b09b",
@@ -564,13 +610,15 @@
       "mapped_test_count": 1,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
       "last_test_ts": null,
-      "last_pass_ts": "2026-02-26T10:40:31.341Z",
+      "last_pass_ts": "2026-02-26T14:33:40.866Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/autonomy/escalation_resolver.ts": {
       "id": "mod_ed47677792865c",
@@ -586,13 +634,15 @@
       "mapped_test_count": 1,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
       "last_test_ts": null,
-      "last_pass_ts": "2026-02-26T10:40:31.341Z",
+      "last_pass_ts": "2026-02-26T14:33:40.866Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/autonomy/health_status.ts": {
       "id": "mod_9bc679a5d4ed0d",
@@ -608,13 +658,15 @@
       "mapped_test_count": 1,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
       "last_test_ts": null,
-      "last_pass_ts": "2026-02-26T10:40:31.341Z",
+      "last_pass_ts": "2026-02-26T14:33:40.866Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/autonomy/improvement_controller.ts": {
       "id": "mod_75b85e23ddb92c",
@@ -632,13 +684,15 @@
       "mapped_test_count": 3,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
       "last_test_ts": null,
-      "last_pass_ts": "2026-02-26T10:40:31.341Z",
+      "last_pass_ts": "2026-02-26T14:33:40.866Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/autonomy/improvement_orchestrator.ts": {
       "id": "mod_8ee6a7a07c290a",
@@ -658,7 +712,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/autonomy/inversion_controller.ts": {
       "id": "mod_92bf7662e03afb",
@@ -675,13 +731,15 @@
       "mapped_test_count": 2,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
       "last_test_ts": null,
-      "last_pass_ts": "2026-02-26T10:40:31.341Z",
+      "last_pass_ts": "2026-02-26T14:33:40.866Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/autonomy/lever_experiment_gate.ts": {
       "id": "mod_e7bda7826131e6",
@@ -697,13 +755,15 @@
       "mapped_test_count": 1,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
       "last_test_ts": null,
-      "last_pass_ts": "2026-02-26T10:40:31.341Z",
+      "last_pass_ts": "2026-02-26T14:33:40.866Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/autonomy/mirror_organ.ts": {
       "id": "mod_dbe55227eeeb15",
@@ -719,13 +779,15 @@
       "mapped_test_count": 1,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
       "last_test_ts": null,
-      "last_pass_ts": "2026-02-26T10:40:31.341Z",
+      "last_pass_ts": "2026-02-26T14:33:40.866Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/autonomy/model_catalog_loop.ts": {
       "id": "mod_324d89a46e3999",
@@ -741,13 +803,15 @@
       "mapped_test_count": 1,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
       "last_test_ts": null,
-      "last_pass_ts": "2026-02-26T10:40:31.341Z",
+      "last_pass_ts": "2026-02-26T14:33:40.866Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/autonomy/model_catalog_rollback.ts": {
       "id": "mod_38e748d610d577",
@@ -764,13 +828,15 @@
       "mapped_test_count": 2,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
       "last_test_ts": null,
-      "last_pass_ts": "2026-02-26T10:40:31.341Z",
+      "last_pass_ts": "2026-02-26T14:33:40.866Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/autonomy/mutation_safety_kernel.ts": {
       "id": "mod_3fac5845529221",
@@ -787,13 +853,15 @@
       "mapped_test_count": 2,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
       "last_test_ts": null,
-      "last_pass_ts": "2026-02-26T10:40:31.341Z",
+      "last_pass_ts": "2026-02-26T14:33:40.866Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/autonomy/non_yield_cycle.ts": {
       "id": "mod_abd8c904c687b5",
@@ -813,7 +881,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/autonomy/non_yield_enqueue.ts": {
       "id": "mod_fd0daf8fffc2b3",
@@ -833,7 +903,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/autonomy/non_yield_harvest.ts": {
       "id": "mod_1f0651dd7c4ec3",
@@ -853,7 +925,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/autonomy/non_yield_ledger_backfill.ts": {
       "id": "mod_3956033efdf9ba",
@@ -873,7 +947,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/autonomy/non_yield_replay.ts": {
       "id": "mod_444965f63e85f9",
@@ -893,7 +969,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/autonomy/objective_optimization_floor.ts": {
       "id": "mod_c968f3334efd05",
@@ -909,13 +987,15 @@
       "mapped_test_count": 1,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
       "last_test_ts": null,
-      "last_pass_ts": "2026-02-26T10:40:31.341Z",
+      "last_pass_ts": "2026-02-26T14:33:40.866Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/autonomy/objective_runtime_governor.ts": {
       "id": "mod_236d936879bf41",
@@ -931,13 +1011,15 @@
       "mapped_test_count": 1,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
       "last_test_ts": null,
-      "last_pass_ts": "2026-02-26T10:40:31.341Z",
+      "last_pass_ts": "2026-02-26T14:33:40.866Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/autonomy/observer_mirror.ts": {
       "id": "mod_17271034232259",
@@ -953,13 +1035,15 @@
       "mapped_test_count": 1,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
       "last_test_ts": null,
-      "last_pass_ts": "2026-02-26T10:40:31.341Z",
+      "last_pass_ts": "2026-02-26T14:33:40.866Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/autonomy/ops_dashboard.ts": {
       "id": "mod_37a46b2fb471db",
@@ -975,13 +1059,15 @@
       "mapped_test_count": 1,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
       "last_test_ts": null,
-      "last_pass_ts": "2026-02-26T10:40:31.341Z",
+      "last_pass_ts": "2026-02-26T14:33:40.866Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/autonomy/optimization_aperture_controller.ts": {
       "id": "mod_c520c0fc722540",
@@ -998,13 +1084,15 @@
       "mapped_test_count": 2,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
       "last_test_ts": null,
-      "last_pass_ts": "2026-02-26T10:40:31.341Z",
+      "last_pass_ts": "2026-02-26T14:33:40.866Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/autonomy/outcome_fitness_loop.ts": {
       "id": "mod_a8a86e76c3e1f2",
@@ -1020,13 +1108,15 @@
       "mapped_test_count": 1,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
       "last_test_ts": null,
-      "last_pass_ts": "2026-02-26T10:40:31.341Z",
+      "last_pass_ts": "2026-02-26T14:33:40.866Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/autonomy/pain_adaptive_router.ts": {
       "id": "mod_6f8bd7a2be817a",
@@ -1046,19 +1136,21 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/autonomy/pain_signal.ts": {
       "id": "mod_e38fbfa20a0423",
       "path": "systems/autonomy/pain_signal.ts",
-      "fingerprint": "c25b49ba46ed781f74a302af19eeeeb96cc64c3661c3341ec1f920d130be0c2a",
+      "fingerprint": "76263fad0456845e4f448afeb7892cf0a8e290a474aff058ae8b7ccfbbbd1a3b",
       "checked": false,
-      "changed": false,
+      "changed": true,
       "is_new": false,
       "untested": true,
       "mapped_test_ids": [],
       "mapped_test_count": 0,
-      "last_change_ts": "2026-02-26T10:15:45.275Z",
+      "last_change_ts": "2026-02-26T14:56:41.828Z",
       "last_test_ts": null,
       "last_pass_ts": null,
       "last_fail_ts": null,
@@ -1066,7 +1158,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/autonomy/physiology_opportunity_map.ts": {
       "id": "mod_03569007653bf1",
@@ -1082,13 +1176,15 @@
       "mapped_test_count": 1,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
       "last_test_ts": null,
-      "last_pass_ts": "2026-02-26T10:40:31.341Z",
+      "last_pass_ts": "2026-02-26T14:33:40.866Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/autonomy/pipeline_spc_gate.ts": {
       "id": "mod_51f2ab62fd3c60",
@@ -1105,13 +1201,15 @@
       "mapped_test_count": 2,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
       "last_test_ts": null,
-      "last_pass_ts": "2026-02-26T10:40:31.342Z",
+      "last_pass_ts": "2026-02-26T14:33:40.866Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/autonomy/proposal_enricher.ts": {
       "id": "mod_457ff6e3f2363f",
@@ -1127,13 +1225,15 @@
       "mapped_test_count": 1,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
       "last_test_ts": null,
-      "last_pass_ts": "2026-02-26T10:40:31.342Z",
+      "last_pass_ts": "2026-02-26T14:33:40.866Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/autonomy/quorum_validator.ts": {
       "id": "mod_f1b09facae10b9",
@@ -1149,13 +1249,15 @@
       "mapped_test_count": 1,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
       "last_test_ts": null,
-      "last_pass_ts": "2026-02-26T10:40:31.342Z",
+      "last_pass_ts": "2026-02-26T14:33:40.866Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/autonomy/receipt_summary.ts": {
       "id": "mod_d07d59a7995ca5",
@@ -1172,13 +1274,15 @@
       "mapped_test_count": 2,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
       "last_test_ts": null,
-      "last_pass_ts": "2026-02-26T10:40:31.342Z",
+      "last_pass_ts": "2026-02-26T14:33:40.866Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/autonomy/red_team_harness.ts": {
       "id": "mod_90295de1c7ce7a",
@@ -1196,13 +1300,15 @@
       "mapped_test_count": 3,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
       "last_test_ts": null,
-      "last_pass_ts": "2026-02-26T10:40:31.342Z",
+      "last_pass_ts": "2026-02-26T14:33:40.866Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/autonomy/self_change_failsafe.ts": {
       "id": "mod_25d9dbc8233440",
@@ -1222,7 +1328,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/autonomy/self_documentation_closeout.ts": {
       "id": "mod_df0eac0bb0204c",
@@ -1238,13 +1346,15 @@
       "mapped_test_count": 1,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
       "last_test_ts": null,
-      "last_pass_ts": "2026-02-26T10:40:31.342Z",
+      "last_pass_ts": "2026-02-26T14:33:40.866Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/autonomy/skill_generation_pipeline.ts": {
       "id": "mod_10330d4338d545",
@@ -1261,13 +1371,15 @@
       "mapped_test_count": 2,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
       "last_test_ts": null,
-      "last_pass_ts": "2026-02-26T10:40:31.342Z",
+      "last_pass_ts": "2026-02-26T14:33:40.866Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/autonomy/slo_runbook_check.ts": {
       "id": "mod_8242e48ac357af",
@@ -1283,13 +1395,15 @@
       "mapped_test_count": 1,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
       "last_test_ts": null,
-      "last_pass_ts": "2026-02-26T10:40:31.342Z",
+      "last_pass_ts": "2026-02-26T14:33:40.866Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/autonomy/strategy_doctor.ts": {
       "id": "mod_5a91b1ea56d9fe",
@@ -1305,14 +1419,16 @@
       ],
       "mapped_test_count": 2,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
-      "last_pass_ts": "2026-02-26T10:40:31.342Z",
+      "last_test_ts": "2026-02-26T14:42:27.236Z",
+      "last_pass_ts": "2026-02-26T14:33:40.866Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/autonomy/strategy_execute_guard.ts": {
       "id": "mod_6bd0e50b27b775",
@@ -1332,14 +1448,16 @@
       ],
       "mapped_test_count": 6,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
-      "last_pass_ts": "2026-02-26T10:40:31.342Z",
+      "last_test_ts": "2026-02-26T14:42:27.236Z",
+      "last_pass_ts": "2026-02-26T14:33:40.866Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/autonomy/strategy_mode_governor.ts": {
       "id": "mod_50cfefd23813e7",
@@ -1364,14 +1482,16 @@
       ],
       "mapped_test_count": 11,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
+      "last_test_ts": "2026-02-26T14:42:27.236Z",
       "last_pass_ts": null,
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/autonomy/strategy_mode.ts": {
       "id": "mod_aed0d86f123b86",
@@ -1396,14 +1516,16 @@
       ],
       "mapped_test_count": 11,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
+      "last_test_ts": "2026-02-26T14:42:27.236Z",
       "last_pass_ts": null,
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/autonomy/strategy_readiness.ts": {
       "id": "mod_66591cfc1fe7ef",
@@ -1419,14 +1541,16 @@
       ],
       "mapped_test_count": 2,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
+      "last_test_ts": "2026-02-26T14:42:27.236Z",
       "last_pass_ts": null,
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/autonomy/suggestion_lane.ts": {
       "id": "mod_c3e50646c89ffb",
@@ -1449,7 +1573,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/autonomy/tier1_governance.ts": {
       "id": "mod_9133d9ff7060ec",
@@ -1469,7 +1595,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/autonomy/trit_shadow_replay_calibration.ts": {
       "id": "mod_7e2216f0ac5012",
@@ -1492,14 +1620,16 @@
       ],
       "mapped_test_count": 9,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
+      "last_test_ts": "2026-02-26T14:42:27.236Z",
       "last_pass_ts": null,
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/autonomy/trit_shadow_report.ts": {
       "id": "mod_dae58d5f171b87",
@@ -1521,14 +1651,16 @@
       ],
       "mapped_test_count": 8,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
+      "last_test_ts": "2026-02-26T14:42:27.236Z",
       "last_pass_ts": null,
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/autonomy/trit_shadow_weekly_adaptation.ts": {
       "id": "mod_43f167cc35b09e",
@@ -1550,14 +1682,16 @@
       ],
       "mapped_test_count": 8,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
+      "last_test_ts": "2026-02-26T14:42:27.236Z",
       "last_pass_ts": null,
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/budget/system_budget.ts": {
       "id": "mod_77b5088972f932",
@@ -1585,7 +1719,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/continuity/active_state_bridge.ts": {
       "id": "mod_bfc80f570513c6",
@@ -1607,7 +1743,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/continuum/continuum_core.ts": {
       "id": "mod_45e02ba5d48e0b",
@@ -1629,7 +1767,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/dual_brain/coordinator.ts": {
       "id": "mod_47560c481ea0c9",
@@ -1651,7 +1791,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/eye/eye_kernel.ts": {
       "id": "mod_71ac864b0d61da",
@@ -1673,7 +1815,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/eye/subsumption_registry.ts": {
       "id": "mod_205db1c746115a",
@@ -1695,7 +1839,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/fractal/evolution_arena.ts": {
       "id": "mod_a12dad82b90675",
@@ -1717,7 +1863,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/fractal/genome_ledger.ts": {
       "id": "mod_4e06c2fd7932a1",
@@ -1739,7 +1887,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/fractal/introspection_map.ts": {
       "id": "mod_6caa3646a0bb0f",
@@ -1761,7 +1911,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/fractal/morph_planner.ts": {
       "id": "mod_3b23235ee679f8",
@@ -1784,7 +1936,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/fractal/organism_cycle.ts": {
       "id": "mod_1adbc460623b39",
@@ -1807,7 +1961,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/fractal/regime_organ.ts": {
       "id": "mod_ff72c8529326b1",
@@ -1829,7 +1985,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/habits/habit_cell_pool.ts": {
       "id": "mod_316f175fc854f4",
@@ -1849,7 +2007,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/identity/identity_anchor.ts": {
       "id": "mod_3e1376688f24da",
@@ -1873,7 +2033,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/memory/creative_links.ts": {
       "id": "mod_66dae6ff106b5d",
@@ -1895,7 +2057,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/memory/cross_domain_mapper.ts": {
       "id": "mod_8f2bbf200a6e0a",
@@ -1917,7 +2081,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/memory/cryonics_tier.ts": {
       "id": "mod_600f3594748242",
@@ -1939,7 +2105,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/memory/eyes_memory_bridge.ts": {
       "id": "mod_4bcf3a55b82bb2",
@@ -1965,7 +2133,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/memory/failure_memory_bridge.ts": {
       "id": "mod_b7515b5dfd76ca",
@@ -1991,7 +2161,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/memory/idle_dream_cycle.ts": {
       "id": "mod_41b3a0616e9154",
@@ -2015,7 +2187,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/memory/memory_dream.ts": {
       "id": "mod_0773b585a423c8",
@@ -2041,7 +2215,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/memory/memory_layer_guard.ts": {
       "id": "mod_44d1e48718ed55",
@@ -2067,7 +2243,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/memory/memory_recall.ts": {
       "id": "mod_7e94a688dc75e0",
@@ -2093,7 +2271,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/memory/uid_connections.ts": {
       "id": "mod_061a899ff61ea5",
@@ -2115,7 +2295,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/nursery/nursery_bootstrap.ts": {
       "id": "mod_b069a333037f48",
@@ -2138,7 +2320,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/nursery/specialist_training.ts": {
       "id": "mod_741eafe87a379c",
@@ -2160,7 +2344,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/observability/metrics_exporter.ts": {
       "id": "mod_2ec0d52bbff3b8",
@@ -2182,7 +2368,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/observability/slo_alert_router.ts": {
       "id": "mod_1a6ef5227d2819",
@@ -2204,7 +2392,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/observability/trace_bridge.ts": {
       "id": "mod_8ece913193f2b8",
@@ -2226,13 +2416,15 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/ops/autotest_controller.ts": {
       "id": "mod_d1c0b35fd15d81",
       "path": "systems/ops/autotest_controller.ts",
-      "fingerprint": "af8cd242b370648eb3800213699be6e765627a271480009254849649d47b8be9",
-      "checked": false,
+      "fingerprint": "b2157ebd7909ad5a41f7f5ccb525f59ba6d4f076ca8d12cc752acca32d9e44ee",
+      "checked": true,
       "changed": false,
       "is_new": false,
       "untested": false,
@@ -2240,15 +2432,17 @@
         "tst_1ff3470b67548d"
       ],
       "mapped_test_count": 1,
-      "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
-      "last_pass_ts": null,
-      "last_fail_ts": null,
+      "last_change_ts": "2026-02-26T14:56:41.828Z",
+      "last_test_ts": "2026-02-26T14:56:44.838Z",
+      "last_pass_ts": "2026-02-26T14:56:44.838Z",
+      "last_fail_ts": "2026-02-26T14:43:37.425Z",
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/ops/backup_integrity_check.ts": {
       "id": "mod_f3851e0f5bd91c",
@@ -2270,7 +2464,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/ops/blank_slate_reset.ts": {
       "id": "mod_717f15dfd7771e",
@@ -2292,7 +2488,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/ops/build_smoke.ts": {
       "id": "mod_a7160bbeb50843",
@@ -2312,7 +2510,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/ops/build_systems.ts": {
       "id": "mod_dc5c644dc67c12",
@@ -2332,7 +2532,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/ops/chaos_program.ts": {
       "id": "mod_8849e490ab4c6f",
@@ -2354,7 +2556,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/ops/cleanup_orchestrator.ts": {
       "id": "mod_de75959ecb476c",
@@ -2374,7 +2578,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/ops/compliance_posture.ts": {
       "id": "mod_2aa0de669c1442",
@@ -2396,7 +2602,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/ops/compliance_reports.ts": {
       "id": "mod_8b3f2c7c4b2260",
@@ -2418,7 +2626,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/ops/config_registry.ts": {
       "id": "mod_c1ebd1c47e551b",
@@ -2440,7 +2650,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/ops/deployment_packaging.ts": {
       "id": "mod_66a11466304cc3",
@@ -2462,7 +2674,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/ops/dist_runtime_cutover.ts": {
       "id": "mod_d1da0c0d0e755b",
@@ -2484,7 +2698,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/ops/docs_coverage_gate.ts": {
       "id": "mod_ebb54bfb29d715",
@@ -2506,7 +2722,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/ops/dr_gameday_gate.ts": {
       "id": "mod_7c0f8f5f9146ae",
@@ -2529,7 +2747,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/ops/dr_gameday.ts": {
       "id": "mod_edf97925d54e40",
@@ -2552,7 +2772,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/ops/environment_promotion_gate.ts": {
       "id": "mod_d538847fbf7cd8",
@@ -2568,14 +2790,16 @@
       ],
       "mapped_test_count": 2,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
+      "last_test_ts": "2026-02-26T14:45:26.244Z",
       "last_pass_ts": null,
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/ops/handoff_pack.ts": {
       "id": "mod_a244e0fe1371c1",
@@ -2597,7 +2821,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/ops/model_health_auto_recovery.ts": {
       "id": "mod_2a5820f356526f",
@@ -2620,7 +2846,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/ops/offsite_backup.ts": {
       "id": "mod_43699237905ed2",
@@ -2642,7 +2870,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/ops/openclaw_backup_retention.ts": {
       "id": "mod_c06d3c0d766564",
@@ -2662,7 +2892,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/ops/organ_atrophy_controller.ts": {
       "id": "mod_a058567547c7d2",
@@ -2684,7 +2916,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/ops/os_bridge.ts": {
       "id": "mod_a9285da35d9053",
@@ -2704,7 +2938,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/ops/personal_protheus_installer.ts": {
       "id": "mod_a5d44ec318df25",
@@ -2724,7 +2960,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/ops/postmortem_loop.ts": {
       "id": "mod_78d4f665b9a1a2",
@@ -2746,7 +2984,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/ops/public_benchmark_pack.ts": {
       "id": "mod_467df60704bef7",
@@ -2766,7 +3006,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/ops/queue_hygiene_summary.ts": {
       "id": "mod_223e68b9ed9bbf",
@@ -2786,7 +3028,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/ops/queue_log_compact.ts": {
       "id": "mod_49fe52cdae427e",
@@ -2806,7 +3050,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/ops/scale_benchmark.ts": {
       "id": "mod_100a24b13107d6",
@@ -2828,7 +3074,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/ops/signal_slo_deadlock_breaker.ts": {
       "id": "mod_3fcbddb4de624e",
@@ -2850,7 +3098,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/ops/state_backup.ts": {
       "id": "mod_7091e4abfbf51d",
@@ -2872,7 +3122,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/ops/state_cleanup.ts": {
       "id": "mod_981e653f3cf5aa",
@@ -2894,7 +3146,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/ops/system_visualizer_server.ts": {
       "id": "mod_3f3caee21dfd83",
@@ -2914,27 +3168,31 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/ops/top50_roi_sweep.ts": {
       "id": "mod_1a2de07cd7761c",
       "path": "systems/ops/top50_roi_sweep.ts",
-      "fingerprint": "e9301a761cc4c0a9331926c343225b80ba8572fc099b516739af4cba44ab47e3",
+      "fingerprint": "7634869936728f4681aadfd62e194369d38654f57dfd1d9efb6dc771099a5c67",
       "checked": false,
       "changed": false,
       "is_new": false,
       "untested": true,
       "mapped_test_ids": [],
       "mapped_test_count": 0,
-      "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
+      "last_change_ts": "2026-02-26T14:33:35.896Z",
+      "last_test_ts": "2026-02-26T14:33:40.866Z",
       "last_pass_ts": null,
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/ops/ts_clone_drift_guard.ts": {
       "id": "mod_627fed58cbc620",
@@ -2954,7 +3212,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/ops/ts_clone_drift_report.ts": {
       "id": "mod_d42c45ef43c2e1",
@@ -2974,7 +3234,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/ops/typecheck_systems.ts": {
       "id": "mod_8aecf54d2f9bb0",
@@ -2994,7 +3256,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/ops/v1_hardening_checkpoint.ts": {
       "id": "mod_308283cafbee53",
@@ -3014,7 +3278,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/ops/workflow_execution_closure.ts": {
       "id": "mod_60722dfb31b082",
@@ -3036,7 +3302,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/polyglot/polyglot_service_adapter.ts": {
       "id": "mod_5a28649fc11763",
@@ -3058,7 +3326,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/reflex/reflex_dispatcher.ts": {
       "id": "mod_72435d6e8063e1",
@@ -3080,7 +3350,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/reflex/reflex_worker.ts": {
       "id": "mod_d03d3cd3e50663",
@@ -3102,7 +3374,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/routing/llm_gateway.ts": {
       "id": "mod_ad04f6e047b26c",
@@ -3124,7 +3398,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/routing/model_router.ts": {
       "id": "mod_7ee9fc850e4958",
@@ -3149,7 +3425,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/routing/provider_readiness.ts": {
       "id": "mod_6eefa0fd5171d2",
@@ -3169,7 +3447,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/routing/route_execute.ts": {
       "id": "mod_61158c7183f0e7",
@@ -3192,7 +3472,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/routing/route_probe.ts": {
       "id": "mod_8b2e58015fbf52",
@@ -3212,7 +3494,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/routing/route_task.ts": {
       "id": "mod_cbb18b6a635cd4",
@@ -3235,7 +3519,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/routing/router_budget_calibration.ts": {
       "id": "mod_2dfdbfd3b0ff65",
@@ -3258,12 +3544,14 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/security/anti_sabotage_shield.ts": {
       "id": "mod_106909bc4407aa",
       "path": "systems/security/anti_sabotage_shield.ts",
-      "fingerprint": "51b22f48cc3621e3b322fae650dcd74efb156ff76d86cc28654587ba53d61030",
+      "fingerprint": "0937a225f0bd687ea4d5ad7b0c0a7f96857dd44a7198175855acd770c06e0e32",
       "checked": false,
       "changed": false,
       "is_new": false,
@@ -3276,15 +3564,17 @@
         "tst_b53119a002168a"
       ],
       "mapped_test_count": 5,
-      "last_change_ts": "2026-02-26T10:39:19.150Z",
-      "last_test_ts": null,
+      "last_change_ts": "2026-02-26T14:33:35.896Z",
+      "last_test_ts": "2026-02-26T14:42:08.310Z",
       "last_pass_ts": null,
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/security/architecture_guard.ts": {
       "id": "mod_9b7896532995dc",
@@ -3302,14 +3592,16 @@
       ],
       "mapped_test_count": 4,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
+      "last_test_ts": "2026-02-26T14:42:08.310Z",
       "last_pass_ts": null,
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/security/black_box_ledger.ts": {
       "id": "mod_c20b76dff67b15",
@@ -3328,20 +3620,22 @@
       ],
       "mapped_test_count": 5,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
+      "last_test_ts": "2026-02-26T14:42:08.310Z",
       "last_pass_ts": null,
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/security/capability_lease.ts": {
       "id": "mod_bdf1afc7e8750e",
       "path": "systems/security/capability_lease.ts",
       "fingerprint": "fc741d084dd027804f7137d233504d53295c76220d3b1e5a752c670b4a07b5a8",
-      "checked": false,
+      "checked": true,
       "changed": false,
       "is_new": false,
       "untested": false,
@@ -3352,14 +3646,16 @@
       ],
       "mapped_test_count": 3,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
-      "last_pass_ts": null,
+      "last_test_ts": "2026-02-26T14:42:08.310Z",
+      "last_pass_ts": "2026-02-26T14:42:08.310Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/security/capability_switchboard.ts": {
       "id": "mod_385d07b3419d9f",
@@ -3377,20 +3673,22 @@
       ],
       "mapped_test_count": 4,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
+      "last_test_ts": "2026-02-26T14:42:08.310Z",
       "last_pass_ts": null,
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/security/directive_compiler.ts": {
       "id": "mod_d64ef9dbe70476",
       "path": "systems/security/directive_compiler.ts",
       "fingerprint": "17c6c2fd896a88e795cbe1f29e8b4e756f57357c8bc9ae8ca2faae741f21c0a0",
-      "checked": false,
+      "checked": true,
       "changed": false,
       "is_new": false,
       "untested": false,
@@ -3401,20 +3699,22 @@
       ],
       "mapped_test_count": 3,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
-      "last_pass_ts": null,
+      "last_test_ts": "2026-02-26T14:42:08.310Z",
+      "last_pass_ts": "2026-02-26T14:42:08.310Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/security/directive_gate.ts": {
       "id": "mod_55638aaebbaaea",
       "path": "systems/security/directive_gate.ts",
       "fingerprint": "532debd77cb585f45be84a8b6612e078552325768e591efb71f1812d835da974",
-      "checked": false,
+      "checked": true,
       "changed": false,
       "is_new": false,
       "untested": false,
@@ -3425,20 +3725,22 @@
       ],
       "mapped_test_count": 3,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
-      "last_pass_ts": null,
+      "last_test_ts": "2026-02-26T14:42:08.310Z",
+      "last_pass_ts": "2026-02-26T14:42:08.310Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/security/directive_hierarchy_controller.ts": {
       "id": "mod_bdfe4a872314b9",
       "path": "systems/security/directive_hierarchy_controller.ts",
       "fingerprint": "32afdb8107864200628427d2fae14f8ce67414519555e8002df0b76f2c2c36df",
-      "checked": false,
+      "checked": true,
       "changed": false,
       "is_new": false,
       "untested": false,
@@ -3449,14 +3751,16 @@
       ],
       "mapped_test_count": 3,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
-      "last_pass_ts": null,
+      "last_test_ts": "2026-02-26T14:42:08.310Z",
+      "last_pass_ts": "2026-02-26T14:42:08.310Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/security/directive_intake.ts": {
       "id": "mod_f901fca644b80c",
@@ -3474,14 +3778,16 @@
       ],
       "mapped_test_count": 4,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
+      "last_test_ts": "2026-02-26T14:42:08.310Z",
       "last_pass_ts": null,
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/security/egress_gateway.ts": {
       "id": "mod_30ba84d9ed5ca4",
@@ -3499,14 +3805,16 @@
       ],
       "mapped_test_count": 4,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
+      "last_test_ts": "2026-02-26T14:42:08.310Z",
       "last_pass_ts": null,
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/security/emergency_stop.ts": {
       "id": "mod_2715a5df47f195",
@@ -3526,14 +3834,16 @@
       ],
       "mapped_test_count": 6,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
+      "last_test_ts": "2026-02-26T14:42:08.310Z",
       "last_pass_ts": null,
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/security/external_security_cycle.ts": {
       "id": "mod_7732d8fe635fc6",
@@ -3552,14 +3862,16 @@
       ],
       "mapped_test_count": 5,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
+      "last_test_ts": "2026-02-26T14:42:08.310Z",
       "last_pass_ts": null,
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/security/guard.ts": {
       "id": "mod_5540592337811d",
@@ -3594,14 +3906,16 @@
       ],
       "mapped_test_count": 21,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
+      "last_test_ts": "2026-02-26T14:42:08.310Z",
       "last_pass_ts": null,
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/security/habit_hygiene_guard.ts": {
       "id": "mod_9922aecd34955f",
@@ -3621,20 +3935,22 @@
       ],
       "mapped_test_count": 6,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
+      "last_test_ts": "2026-02-26T14:42:08.310Z",
       "last_pass_ts": null,
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/security/integrity_kernel.ts": {
       "id": "mod_d26e8df3257142",
       "path": "systems/security/integrity_kernel.ts",
       "fingerprint": "97036b0d339c4bcd1c21e77600f146534c2fed7e1e5385636fe52144edb638ac",
-      "checked": false,
+      "checked": true,
       "changed": false,
       "is_new": false,
       "untested": false,
@@ -3645,20 +3961,22 @@
       ],
       "mapped_test_count": 3,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
-      "last_pass_ts": null,
+      "last_test_ts": "2026-02-26T14:42:08.310Z",
+      "last_pass_ts": "2026-02-26T14:42:08.310Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/security/integrity_reseal.ts": {
       "id": "mod_a169b932cd7b0a",
       "path": "systems/security/integrity_reseal.ts",
       "fingerprint": "96f56d961fc97e97777f695383c4a15795d5ff9675a29c044cd4aec43582dbe7",
-      "checked": false,
+      "checked": true,
       "changed": false,
       "is_new": false,
       "untested": false,
@@ -3669,14 +3987,16 @@
       ],
       "mapped_test_count": 3,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
-      "last_pass_ts": null,
+      "last_test_ts": "2026-02-26T14:42:08.310Z",
+      "last_pass_ts": "2026-02-26T14:42:08.310Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/security/llm_gateway_guard.ts": {
       "id": "mod_4a0dcc6d170c02",
@@ -3694,14 +4014,16 @@
       ],
       "mapped_test_count": 4,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
+      "last_test_ts": "2026-02-26T14:42:08.310Z",
       "last_pass_ts": null,
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/security/log_redaction_guard.ts": {
       "id": "mod_848e44a3b95a28",
@@ -3719,20 +4041,22 @@
       ],
       "mapped_test_count": 4,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
+      "last_test_ts": "2026-02-26T14:42:08.310Z",
       "last_pass_ts": null,
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/security/merge_guard.ts": {
       "id": "mod_0de08af2a2635c",
       "path": "systems/security/merge_guard.ts",
       "fingerprint": "fd4d879f10d6717ce95f42ad0a560492e03a00e57698c46eb3e716f09b3559ec",
-      "checked": false,
+      "checked": true,
       "changed": false,
       "is_new": false,
       "untested": false,
@@ -3743,14 +4067,16 @@
       ],
       "mapped_test_count": 3,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
-      "last_pass_ts": null,
+      "last_test_ts": "2026-02-26T14:42:08.310Z",
+      "last_pass_ts": "2026-02-26T14:42:08.310Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/security/policy_rootd.ts": {
       "id": "mod_a16e33af6e380d",
@@ -3768,14 +4094,16 @@
       ],
       "mapped_test_count": 4,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
+      "last_test_ts": "2026-02-26T14:42:08.310Z",
       "last_pass_ts": null,
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/security/repo_hygiene_guard.ts": {
       "id": "mod_5fd714cd8c01e3",
@@ -3794,20 +4122,22 @@
       ],
       "mapped_test_count": 5,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
+      "last_test_ts": "2026-02-26T14:42:08.310Z",
       "last_pass_ts": null,
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/security/request_ingress.ts": {
       "id": "mod_44d73c89466bfa",
       "path": "systems/security/request_ingress.ts",
       "fingerprint": "d6390da80149e4957260bea24b65bc6ae07e97c0e29f88f77923fd10f838dd5e",
-      "checked": false,
+      "checked": true,
       "changed": false,
       "is_new": false,
       "untested": false,
@@ -3818,14 +4148,16 @@
       ],
       "mapped_test_count": 3,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
-      "last_pass_ts": null,
+      "last_test_ts": "2026-02-26T14:42:08.310Z",
+      "last_pass_ts": "2026-02-26T14:42:08.310Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/security/schema_contract_check.ts": {
       "id": "mod_3b6450ba17d00e",
@@ -3843,14 +4175,16 @@
       ],
       "mapped_test_count": 4,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
+      "last_test_ts": "2026-02-26T14:42:08.310Z",
       "last_pass_ts": null,
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/security/secret_broker.ts": {
       "id": "mod_28a580f3fc6ade",
@@ -3870,14 +4204,16 @@
       ],
       "mapped_test_count": 6,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
+      "last_test_ts": "2026-02-26T14:42:08.310Z",
       "last_pass_ts": null,
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/security/skill_install_enforcer.ts": {
       "id": "mod_cac08098381ae8",
@@ -3896,20 +4232,22 @@
       ],
       "mapped_test_count": 5,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
+      "last_test_ts": "2026-02-26T14:42:08.310Z",
       "last_pass_ts": null,
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/security/skill_quarantine.ts": {
       "id": "mod_40202bbdcc3cd5",
       "path": "systems/security/skill_quarantine.ts",
       "fingerprint": "92b35ba7bcc743730a42dd60d667e46285f7545dd5a6998e24cf4929bcae0fc5",
-      "checked": false,
+      "checked": true,
       "changed": false,
       "is_new": false,
       "untested": false,
@@ -3920,14 +4258,16 @@
       ],
       "mapped_test_count": 3,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
-      "last_pass_ts": null,
+      "last_test_ts": "2026-02-26T14:42:08.310Z",
+      "last_pass_ts": "2026-02-26T14:42:08.310Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/security/startup_attestation.ts": {
       "id": "mod_8ef0d2708b1961",
@@ -3946,20 +4286,22 @@
       ],
       "mapped_test_count": 5,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
+      "last_test_ts": "2026-02-26T14:42:08.310Z",
       "last_pass_ts": null,
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/security/workspace_dump_guard.ts": {
       "id": "mod_b48f84a96f1b23",
       "path": "systems/security/workspace_dump_guard.ts",
       "fingerprint": "f6c63acc29a0952c948a1668b9cd602b019f5636a66fe2bc936c7dd95d23f414",
-      "checked": false,
+      "checked": true,
       "changed": false,
       "is_new": false,
       "untested": false,
@@ -3970,14 +4312,16 @@
       ],
       "mapped_test_count": 3,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
-      "last_pass_ts": null,
+      "last_test_ts": "2026-02-26T14:42:08.310Z",
+      "last_pass_ts": "2026-02-26T14:42:08.310Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "green",
+      "health_reason": "all_mapped_tests_passing"
     },
     "systems/sensory/adaptive_layer_guard.ts": {
       "id": "mod_d6a62fd0c54e11",
@@ -4000,7 +4344,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/sensory/collector_driver.ts": {
       "id": "mod_0bc376399693ea",
@@ -4020,7 +4366,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/sensory/cross_signal_engine.ts": {
       "id": "mod_1bd0ce66505e59",
@@ -4042,7 +4390,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/sensory/eyes_collectors/bird_x.ts": {
       "id": "mod_5704cf6dc94cfa",
@@ -4064,7 +4414,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/sensory/eyes_collectors/cache_store.ts": {
       "id": "mod_f0827cedeaf033",
@@ -4084,7 +4436,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/sensory/eyes_collectors/ollama_search.ts": {
       "id": "mod_9dd2656b9f2ec8",
@@ -4106,7 +4460,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/sensory/eyes_intake.ts": {
       "id": "mod_f91a95aa6e67a8",
@@ -4128,7 +4484,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/sensory/focus_controller.ts": {
       "id": "mod_c845440867a58f",
@@ -4150,7 +4508,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/sensory/temporal_patterns.ts": {
       "id": "mod_cb0941ae47b3fd",
@@ -4172,7 +4532,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/spawn/spawn_broker.ts": {
       "id": "mod_c39c5d688672d3",
@@ -4194,7 +4556,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/spine/contract_check.ts": {
       "id": "mod_64f8a88c570014",
@@ -4217,7 +4581,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/spine/evidence_run_plan.ts": {
       "id": "mod_a1eab5723d5827",
@@ -4239,7 +4605,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/spine/heartbeat_trigger.ts": {
       "id": "mod_822a3e512010cb",
@@ -4261,7 +4629,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/spine/spine.ts": {
       "id": "mod_cd1ab5803fc264",
@@ -4283,7 +4653,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/strategy/strategy_controller.ts": {
       "id": "mod_4c68a166d54c1c",
@@ -4317,14 +4689,16 @@
       ],
       "mapped_test_count": 20,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
+      "last_test_ts": "2026-02-26T14:42:27.236Z",
       "last_pass_ts": null,
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/strategy/strategy_learner.ts": {
       "id": "mod_96bb6f7364c680",
@@ -4358,14 +4732,16 @@
       ],
       "mapped_test_count": 20,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
+      "last_test_ts": "2026-02-26T14:42:27.236Z",
       "last_pass_ts": null,
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/strategy/strategy_principles.ts": {
       "id": "mod_e6bf0561c62f14",
@@ -4399,14 +4775,16 @@
       ],
       "mapped_test_count": 20,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
+      "last_test_ts": "2026-02-26T14:42:27.236Z",
       "last_pass_ts": null,
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/strategy/weekly_strategy_synthesis.ts": {
       "id": "mod_40d739c7c57609",
@@ -4440,14 +4818,16 @@
       ],
       "mapped_test_count": 20,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
+      "last_test_ts": "2026-02-26T14:42:27.236Z",
       "last_pass_ts": null,
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/workflow/orchestron_controller.ts": {
       "id": "mod_5830c3b5d7fcb8",
@@ -4471,14 +4851,16 @@
       ],
       "mapped_test_count": 10,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
+      "last_test_ts": "2026-02-26T14:45:26.244Z",
       "last_pass_ts": null,
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/workflow/orchestron/adaptive_controller.ts": {
       "id": "mod_aa88c589e49b66",
@@ -4501,14 +4883,16 @@
       ],
       "mapped_test_count": 9,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
+      "last_test_ts": "2026-02-26T14:45:26.244Z",
       "last_pass_ts": null,
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/workflow/orchestron/adversarial_lane.ts": {
       "id": "mod_177a14fc88a6e9",
@@ -4530,7 +4914,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/workflow/orchestron/candidate_generator.ts": {
       "id": "mod_29378612599114",
@@ -4553,7 +4939,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/workflow/orchestron/contracts.ts": {
       "id": "mod_cc09a5381147ac",
@@ -4573,7 +4961,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/workflow/orchestron/intent_analyzer.ts": {
       "id": "mod_7aec57980593b3",
@@ -4595,7 +4985,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/workflow/orchestron/nursery_tester.ts": {
       "id": "mod_30391d11e62f11",
@@ -4615,7 +5007,9 @@
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "untested",
+      "health_reason": "no_mapped_tests"
     },
     "systems/workflow/workflow_controller.ts": {
       "id": "mod_0bb40ce3c6ce3c",
@@ -4641,14 +5035,16 @@
       ],
       "mapped_test_count": 12,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
+      "last_test_ts": "2026-02-26T14:45:26.244Z",
       "last_pass_ts": null,
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/workflow/workflow_executor.ts": {
       "id": "mod_100df3b7738bb6",
@@ -4674,14 +5070,16 @@
       ],
       "mapped_test_count": 12,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
+      "last_test_ts": "2026-02-26T14:45:26.244Z",
       "last_pass_ts": null,
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     },
     "systems/workflow/workflow_generator.ts": {
       "id": "mod_62bdfba6423c0f",
@@ -4707,14 +5105,16 @@
       ],
       "mapped_test_count": 12,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
-      "last_test_ts": null,
+      "last_test_ts": "2026-02-26T14:45:26.244Z",
       "last_pass_ts": null,
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
         "priority": "normal",
         "notes": null
-      }
+      },
+      "health_state": "yellow",
+      "health_reason": "partial_or_stale_coverage"
     }
   },
   "tests": {
@@ -4846,22 +5246,7 @@
       "last_run_ts": "2026-02-26T10:40:18.256Z",
       "last_duration_ms": 929,
       "last_stdout_excerpt": "autonomy_actionability_rollback_guard.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/autonomy_actionability_rollback_guard.test.js",
-          "systems/autonomy/autonomy_controller.ts",
-          "systems/autonomy/autonomy_rollout_controller.ts",
-          "systems/autonomy/autonomy_simulation_harness.ts",
-          "systems/autonomy/autophagy_baseline_guard.ts",
-          "systems/autonomy/model_catalog_rollback.ts",
-          "systems/autonomy/strategy_execute_guard.ts",
-          "systems/security/guard.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:40:18.256Z"
+      "last_stderr_excerpt": null
     },
     "tst_6e303915d4e7be": {
       "id": "tst_6e303915d4e7be",
@@ -4926,20 +5311,7 @@
       "last_run_ts": "2026-02-26T10:40:10.758Z",
       "last_duration_ms": 2066,
       "last_stdout_excerpt": "═══════════════════════════════════════════════════════════ AUTONOMY EVIDENCE PIPELINE INTEGRATION TEST ═══════════════════════════════════════════════════════════ Ingested 1 proposals for 2099-12-31 (0 duplicates skipped) ✅ eyes -> queue -> enrich -> evidence pipeline is healthy",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/autonomy_evidence_pipeline.integration.test.js",
-          "systems/autonomy/autonomy_controller.ts",
-          "systems/autonomy/autonomy_rollout_controller.ts",
-          "systems/autonomy/autonomy_simulation_harness.ts",
-          "systems/autonomy/pipeline_spc_gate.ts",
-          "systems/autonomy/skill_generation_pipeline.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:40:10.758Z"
+      "last_stderr_excerpt": null
     },
     "tst_2d2034df3ebeb7": {
       "id": "tst_2d2034df3ebeb7",
@@ -4952,19 +5324,7 @@
       "last_run_ts": "2026-02-26T10:40:14.271Z",
       "last_duration_ms": 798,
       "last_stdout_excerpt": "autonomy_execute_confidence_cooldown_key.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/autonomy_execute_confidence_cooldown_key.test.js",
-          "systems/autonomy/autonomy_controller.ts",
-          "systems/autonomy/autonomy_rollout_controller.ts",
-          "systems/autonomy/autonomy_simulation_harness.ts",
-          "systems/autonomy/strategy_execute_guard.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:40:14.271Z"
+      "last_stderr_excerpt": null
     },
     "tst_405dfbaeffd2e1": {
       "id": "tst_405dfbaeffd2e1",
@@ -4977,22 +5337,7 @@
       "last_run_ts": "2026-02-26T10:40:15.286Z",
       "last_duration_ms": 759,
       "last_stdout_excerpt": "autonomy_mutation_execution_guard.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/autonomy_mutation_execution_guard.test.js",
-          "systems/autonomy/autonomy_controller.ts",
-          "systems/autonomy/autonomy_rollout_controller.ts",
-          "systems/autonomy/autonomy_simulation_harness.ts",
-          "systems/autonomy/autophagy_baseline_guard.ts",
-          "systems/autonomy/mutation_safety_kernel.ts",
-          "systems/autonomy/strategy_execute_guard.ts",
-          "systems/security/guard.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:40:15.286Z"
+      "last_stderr_excerpt": null
     },
     "tst_92dab8ace7f60f": {
       "id": "tst_92dab8ace7f60f",
@@ -5122,19 +5467,7 @@
       "last_run_ts": "2026-02-26T10:40:05.157Z",
       "last_duration_ms": 392,
       "last_stdout_excerpt": "autonomy_simulation_harness_autopause_window.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/autonomy_simulation_harness_autopause_window.test.js",
-          "systems/autonomy/autonomy_controller.ts",
-          "systems/autonomy/autonomy_rollout_controller.ts",
-          "systems/autonomy/autonomy_simulation_harness.ts",
-          "systems/autonomy/red_team_harness.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:40:05.157Z"
+      "last_stderr_excerpt": null
     },
     "tst_8387f9beea340f": {
       "id": "tst_8387f9beea340f",
@@ -5147,20 +5480,7 @@
       "last_run_ts": "2026-02-26T10:40:04.515Z",
       "last_duration_ms": 755,
       "last_stdout_excerpt": "autonomy_simulation_harness_identity_projection.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/autonomy_simulation_harness_identity_projection.test.js",
-          "systems/autonomy/autonomy_controller.ts",
-          "systems/autonomy/autonomy_rollout_controller.ts",
-          "systems/autonomy/autonomy_simulation_harness.ts",
-          "systems/autonomy/red_team_harness.ts",
-          "systems/identity/identity_anchor.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:40:04.515Z"
+      "last_stderr_excerpt": null
     },
     "tst_42d21fbc81e7a5": {
       "id": "tst_42d21fbc81e7a5",
@@ -5170,30 +5490,10 @@
       "critical": false,
       "last_status": "pass",
       "last_exit_code": 0,
-      "last_run_ts": "2026-02-26T10:40:12.687Z",
-      "last_duration_ms": 966,
+      "last_run_ts": "2026-02-26T14:42:25.853Z",
+      "last_duration_ms": 1629,
       "last_stdout_excerpt": "autonomy_strategy_layer_upgrades.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/autonomy_strategy_layer_upgrades.test.js",
-          "systems/autonomy/autonomy_controller.ts",
-          "systems/autonomy/autonomy_rollout_controller.ts",
-          "systems/autonomy/autonomy_simulation_harness.ts",
-          "systems/autonomy/strategy_doctor.ts",
-          "systems/autonomy/strategy_execute_guard.ts",
-          "systems/autonomy/strategy_mode_governor.ts",
-          "systems/autonomy/strategy_mode.ts",
-          "systems/autonomy/strategy_readiness.ts",
-          "systems/strategy/strategy_controller.ts",
-          "systems/strategy/strategy_learner.ts",
-          "systems/strategy/strategy_principles.ts",
-          "systems/strategy/weekly_strategy_synthesis.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:40:12.687Z"
+      "last_stderr_excerpt": null
     },
     "tst_4a58056b35f167": {
       "id": "tst_4a58056b35f167",
@@ -5203,8 +5503,8 @@
       "critical": false,
       "last_status": "pass",
       "last_exit_code": 0,
-      "last_run_ts": "2026-02-26T10:16:16.343Z",
-      "last_duration_ms": 753,
+      "last_run_ts": "2026-02-26T14:42:27.236Z",
+      "last_duration_ms": 1042,
       "last_stdout_excerpt": "autonomy_trit_shadow_ranking.test.js: OK",
       "last_stderr_excerpt": null
     },
@@ -5227,12 +5527,25 @@
       "path": "memory/tools/tests/autotest_controller.test.js",
       "command": "node memory/tools/tests/autotest_controller.test.js",
       "critical": false,
-      "last_status": "untested",
+      "last_status": "pass",
       "last_exit_code": 0,
-      "last_run_ts": null,
-      "last_duration_ms": 0,
-      "last_stdout_excerpt": null,
-      "last_stderr_excerpt": null
+      "last_run_ts": "2026-02-26T14:56:44.838Z",
+      "last_duration_ms": 2564,
+      "last_stdout_excerpt": "autotest_controller.test.js: OK",
+      "last_stderr_excerpt": "",
+      "last_guard": {
+        "ok": true,
+        "reason": null,
+        "files": [
+          "memory/tools/tests/autotest_controller.test.js",
+          "systems/ops/autotest_controller.ts"
+        ]
+      },
+      "last_retry_count": 0,
+      "last_flaky": false,
+      "consecutive_flaky": 0,
+      "quarantined_until_ts": null,
+      "last_pass_ts": "2026-02-26T14:56:44.838Z"
     },
     "tst_02b587660600cd": {
       "id": "tst_02b587660600cd",
@@ -5513,11 +5826,11 @@
       "path": "memory/tools/tests/directive_gate.test.js",
       "command": "node memory/tools/tests/directive_gate.test.js",
       "critical": false,
-      "last_status": "untested",
+      "last_status": "pass",
       "last_exit_code": 0,
-      "last_run_ts": null,
-      "last_duration_ms": 0,
-      "last_stdout_excerpt": null,
+      "last_run_ts": "2026-02-26T14:42:07.894Z",
+      "last_duration_ms": 228,
+      "last_stdout_excerpt": "═══════════════════════════════════════════════════════════ DIRECTIVE GATE ENFORCEMENT v1.0 TESTS T0/T1 Tiered Directives | Truthful PASS/FAIL ═══════════════════════════════════════════════════════════ ✅ exec detection: child_process.spawn() task => MANUAL ✅ exec detection: execSync() task => MANUAL ✅ network detection: http.get() task => MANUAL ✅ network detection: axios.post() task => MANUAL ✅ trust modify detection: edit trust_registry task => DENY ✅ trust modify detection: delete trust_add.js task => MANUAL ✅ safe: read file in workspace => ALLOW ✅ safe: write to allowlisted path => ALLOW ✅ safe: list files in habits directory => ALLOW ✅ bypass detection: disable the gate => DENY ✅ bypass detection: skip gate validation => DENY ✅ tamper detection: modify registry hashes => DENY ✅ cred...",
       "last_stderr_excerpt": null
     },
     "tst_2f8b7f5774b004": {
@@ -6007,11 +6320,11 @@
       "path": "memory/tools/tests/guard_remote_gate.test.js",
       "command": "node memory/tools/tests/guard_remote_gate.test.js",
       "critical": false,
-      "last_status": "untested",
+      "last_status": "pass",
       "last_exit_code": 0,
-      "last_run_ts": null,
-      "last_duration_ms": 0,
-      "last_stdout_excerpt": null,
+      "last_run_ts": "2026-02-26T14:42:07.414Z",
+      "last_duration_ms": 1638,
+      "last_stdout_excerpt": "guard_remote_gate.test.js: OK",
       "last_stderr_excerpt": null
     },
     "tst_92ae8cd55c5931": {
@@ -6753,16 +7066,7 @@
       "last_run_ts": "2026-02-26T10:40:03.510Z",
       "last_duration_ms": 245,
       "last_stdout_excerpt": "receipt_summary_success_criteria_fallback.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/receipt_summary_success_criteria_fallback.test.js",
-          "systems/autonomy/receipt_summary.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:40:03.510Z"
+      "last_stderr_excerpt": null
     },
     "tst_85f92a213d2907": {
       "id": "tst_85f92a213d2907",
@@ -6775,16 +7079,7 @@
       "last_run_ts": "2026-02-26T10:40:03.017Z",
       "last_duration_ms": 249,
       "last_stdout_excerpt": "receipt_summary.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/receipt_summary.test.js",
-          "systems/autonomy/receipt_summary.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:40:03.017Z"
+      "last_stderr_excerpt": null
     },
     "tst_ddbcfef7997282": {
       "id": "tst_ddbcfef7997282",
@@ -6797,16 +7092,7 @@
       "last_run_ts": "2026-02-26T10:40:06.643Z",
       "last_duration_ms": 1231,
       "last_stdout_excerpt": "red_team_harness.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/red_team_harness.test.js",
-          "systems/autonomy/red_team_harness.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:40:06.643Z"
+      "last_stderr_excerpt": null
     },
     "tst_dd73f0c2538655": {
       "id": "tst_dd73f0c2538655",
@@ -6871,19 +7157,7 @@
       "last_run_ts": "2026-02-26T10:40:19.100Z",
       "last_duration_ms": 600,
       "last_stdout_excerpt": "route_execute_budget_guard.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/route_execute_budget_guard.test.js",
-          "systems/autonomy/strategy_execute_guard.ts",
-          "systems/budget/system_budget.ts",
-          "systems/routing/route_execute.ts",
-          "systems/security/guard.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:40:19.100Z"
+      "last_stderr_excerpt": null
     },
     "tst_f89b08acd2b2ff": {
       "id": "tst_f89b08acd2b2ff",
@@ -7034,11 +7308,11 @@
       "path": "memory/tools/tests/security_integrity.test.js",
       "command": "node memory/tools/tests/security_integrity.test.js",
       "critical": false,
-      "last_status": "untested",
+      "last_status": "pass",
       "last_exit_code": 0,
-      "last_run_ts": null,
-      "last_duration_ms": 0,
-      "last_stdout_excerpt": null,
+      "last_run_ts": "2026-02-26T14:42:08.310Z",
+      "last_duration_ms": 184,
+      "last_stdout_excerpt": "security_integrity.test.js: OK",
       "last_stderr_excerpt": null
     },
     "tst_65fe6e42df5e01": {
@@ -7065,16 +7339,7 @@
       "last_run_ts": "2026-02-26T10:40:07.760Z",
       "last_duration_ms": 868,
       "last_stdout_excerpt": "self_documentation_closeout.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/self_documentation_closeout.test.js",
-          "systems/autonomy/self_documentation_closeout.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:40:07.760Z"
+      "last_stderr_excerpt": null
     },
     "tst_014d7c14d3e8e0": {
       "id": "tst_014d7c14d3e8e0",
@@ -7178,16 +7443,7 @@
       "last_run_ts": "2026-02-26T10:40:08.441Z",
       "last_duration_ms": 429,
       "last_stdout_excerpt": "skill_generation_pipeline.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/skill_generation_pipeline.test.js",
-          "systems/autonomy/skill_generation_pipeline.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:40:08.441Z"
+      "last_stderr_excerpt": null
     },
     "tst_12b7c26ca2feb5": {
       "id": "tst_12b7c26ca2feb5",
@@ -7213,16 +7469,7 @@
       "last_run_ts": "2026-02-26T10:40:11.472Z",
       "last_duration_ms": 464,
       "last_stdout_excerpt": "slo_runbook_check.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/slo_runbook_check.test.js",
-          "systems/autonomy/slo_runbook_check.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:40:11.472Z"
+      "last_stderr_excerpt": null
     },
     "tst_57086933e16de7": {
       "id": "tst_57086933e16de7",
@@ -7352,20 +7599,7 @@
       "last_run_ts": "2026-02-26T10:40:13.219Z",
       "last_duration_ms": 283,
       "last_stdout_excerpt": "strategy_doctor.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/strategy_doctor.test.js",
-          "systems/autonomy/strategy_doctor.ts",
-          "systems/strategy/strategy_controller.ts",
-          "systems/strategy/strategy_learner.ts",
-          "systems/strategy/strategy_principles.ts",
-          "systems/strategy/weekly_strategy_synthesis.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:40:13.219Z"
+      "last_stderr_excerpt": null
     },
     "tst_ac6a6b50987c97": {
       "id": "tst_ac6a6b50987c97",
@@ -7378,21 +7612,7 @@
       "last_run_ts": "2026-02-26T10:40:17.080Z",
       "last_duration_ms": 1548,
       "last_stdout_excerpt": "strategy_execute_guard.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/strategy_execute_guard.test.js",
-          "systems/autonomy/strategy_execute_guard.ts",
-          "systems/security/guard.ts",
-          "systems/strategy/strategy_controller.ts",
-          "systems/strategy/strategy_learner.ts",
-          "systems/strategy/strategy_principles.ts",
-          "systems/strategy/weekly_strategy_synthesis.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:40:17.080Z"
+      "last_stderr_excerpt": null
     },
     "tst_1d2a13ca26be21": {
       "id": "tst_1d2a13ca26be21",
@@ -7418,21 +7638,7 @@
       "last_run_ts": "2026-02-26T10:40:31.341Z",
       "last_duration_ms": 984,
       "last_stdout_excerpt": "strategy_mode_cooldown.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/strategy_mode_cooldown.test.js",
-          "systems/autonomy/strategy_mode_governor.ts",
-          "systems/autonomy/strategy_mode.ts",
-          "systems/strategy/strategy_controller.ts",
-          "systems/strategy/strategy_learner.ts",
-          "systems/strategy/strategy_principles.ts",
-          "systems/strategy/weekly_strategy_synthesis.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:40:31.341Z"
+      "last_stderr_excerpt": null
     },
     "tst_dbd08853934f0a": {
       "id": "tst_dbd08853934f0a",
@@ -7458,21 +7664,7 @@
       "last_run_ts": "2026-02-26T10:40:29.370Z",
       "last_duration_ms": 1498,
       "last_stdout_excerpt": "strategy_mode_governor_policy_root.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/strategy_mode_governor_policy_root.test.js",
-          "systems/autonomy/strategy_mode_governor.ts",
-          "systems/autonomy/strategy_mode.ts",
-          "systems/strategy/strategy_controller.ts",
-          "systems/strategy/strategy_learner.ts",
-          "systems/strategy/strategy_principles.ts",
-          "systems/strategy/weekly_strategy_synthesis.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:40:29.370Z"
+      "last_stderr_excerpt": null
     },
     "tst_a98f0d4281ac4b": {
       "id": "tst_a98f0d4281ac4b",
@@ -7485,21 +7677,7 @@
       "last_run_ts": "2026-02-26T10:40:30.108Z",
       "last_duration_ms": 488,
       "last_stdout_excerpt": "strategy_mode_governor_preview_gate.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/strategy_mode_governor_preview_gate.test.js",
-          "systems/autonomy/strategy_mode_governor.ts",
-          "systems/autonomy/strategy_mode.ts",
-          "systems/strategy/strategy_controller.ts",
-          "systems/strategy/strategy_learner.ts",
-          "systems/strategy/strategy_principles.ts",
-          "systems/strategy/weekly_strategy_synthesis.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:40:30.108Z"
+      "last_stderr_excerpt": null
     },
     "tst_0dfc809f09c5ea": {
       "id": "tst_0dfc809f09c5ea",
@@ -7509,24 +7687,10 @@
       "critical": false,
       "last_status": "pass",
       "last_exit_code": 0,
-      "last_run_ts": "2026-02-26T10:40:23.370Z",
-      "last_duration_ms": 3107,
+      "last_run_ts": "2026-02-26T14:33:40.865Z",
+      "last_duration_ms": 3193,
       "last_stdout_excerpt": "strategy_mode_governor_quality_lock_gate.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/strategy_mode_governor_quality_lock_gate.test.js",
-          "systems/autonomy/strategy_mode_governor.ts",
-          "systems/autonomy/strategy_mode.ts",
-          "systems/strategy/strategy_controller.ts",
-          "systems/strategy/strategy_learner.ts",
-          "systems/strategy/strategy_principles.ts",
-          "systems/strategy/weekly_strategy_synthesis.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:40:23.370Z"
+      "last_stderr_excerpt": null
     },
     "tst_4af7a2bdc2c925": {
       "id": "tst_4af7a2bdc2c925",
@@ -7539,21 +7703,7 @@
       "last_run_ts": "2026-02-26T10:40:24.105Z",
       "last_duration_ms": 487,
       "last_stdout_excerpt": "strategy_mode_governor_spc_gate.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/strategy_mode_governor_spc_gate.test.js",
-          "systems/autonomy/strategy_mode_governor.ts",
-          "systems/autonomy/strategy_mode.ts",
-          "systems/strategy/strategy_controller.ts",
-          "systems/strategy/strategy_learner.ts",
-          "systems/strategy/strategy_principles.ts",
-          "systems/strategy/weekly_strategy_synthesis.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:40:24.105Z"
+      "last_stderr_excerpt": null
     },
     "tst_9124071cf69a6b": {
       "id": "tst_9124071cf69a6b",
@@ -7566,21 +7716,7 @@
       "last_run_ts": "2026-02-26T10:40:27.622Z",
       "last_duration_ms": 1777,
       "last_stdout_excerpt": "strategy_mode_governor.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/strategy_mode_governor.test.js",
-          "systems/autonomy/strategy_mode_governor.ts",
-          "systems/autonomy/strategy_mode.ts",
-          "systems/strategy/strategy_controller.ts",
-          "systems/strategy/strategy_learner.ts",
-          "systems/strategy/strategy_principles.ts",
-          "systems/strategy/weekly_strategy_synthesis.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:40:27.622Z"
+      "last_stderr_excerpt": null
     },
     "tst_7231681bd8cd89": {
       "id": "tst_7231681bd8cd89",
@@ -7593,21 +7729,7 @@
       "last_run_ts": "2026-02-26T10:40:25.597Z",
       "last_duration_ms": 1245,
       "last_stdout_excerpt": "strategy_mode_policy_root.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/strategy_mode_policy_root.test.js",
-          "systems/autonomy/strategy_mode_governor.ts",
-          "systems/autonomy/strategy_mode.ts",
-          "systems/strategy/strategy_controller.ts",
-          "systems/strategy/strategy_learner.ts",
-          "systems/strategy/strategy_principles.ts",
-          "systems/strategy/weekly_strategy_synthesis.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:40:25.597Z"
+      "last_stderr_excerpt": null
     },
     "tst_0d6c534f778207": {
       "id": "tst_0d6c534f778207",
@@ -7617,24 +7739,10 @@
       "critical": false,
       "last_status": "pass",
       "last_exit_code": 0,
-      "last_run_ts": "2026-02-26T10:40:20.017Z",
-      "last_duration_ms": 671,
+      "last_run_ts": "2026-02-26T14:33:37.413Z",
+      "last_duration_ms": 951,
       "last_stdout_excerpt": "strategy_mode_spc_gate.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/strategy_mode_spc_gate.test.js",
-          "systems/autonomy/strategy_mode_governor.ts",
-          "systems/autonomy/strategy_mode.ts",
-          "systems/strategy/strategy_controller.ts",
-          "systems/strategy/strategy_learner.ts",
-          "systems/strategy/strategy_principles.ts",
-          "systems/strategy/weekly_strategy_synthesis.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:40:20.017Z"
+      "last_stderr_excerpt": null
     },
     "tst_cb0df5ac8e9db3": {
       "id": "tst_cb0df5ac8e9db3",
@@ -8006,11 +8114,11 @@
       "path": "memory/tools/tests/workflow_controller_promotion_gate.test.js",
       "command": "node memory/tools/tests/workflow_controller_promotion_gate.test.js",
       "critical": false,
-      "last_status": "untested",
+      "last_status": "pass",
       "last_exit_code": 0,
-      "last_run_ts": null,
-      "last_duration_ms": 0,
-      "last_stdout_excerpt": null,
+      "last_run_ts": "2026-02-26T14:45:26.244Z",
+      "last_duration_ms": 920,
+      "last_stdout_excerpt": "workflow_controller_promotion_gate.test.js: OK",
       "last_stderr_excerpt": null
     },
     "tst_305fd555d5e562": {
@@ -8165,11 +8273,23 @@
       "alert_9fa2308ee9be68": "2026-02-26T10:15:45.275Z",
       "alert_9fc27e762217db": "2026-02-26T10:15:45.275Z",
       "alert_57c89b65a0d063": "2026-02-26T10:15:45.275Z",
-      "alert_ff5802caf1b13a": "2026-02-26T10:39:19.150Z"
+      "alert_ff5802caf1b13a": "2026-02-26T10:39:19.150Z",
+      "alert_2f26da8184da8d": "2026-02-26T14:33:35.896Z",
+      "alert_4bc70d7a020116": "2026-02-26T14:56:41.828Z"
     },
-    "latest": []
+    "latest": [
+      {
+        "ts": "2026-02-26T14:56:41.828Z",
+        "type": "autotest_alert",
+        "severity": "warn",
+        "alert_kind": "untested_module",
+        "module_path": "systems/autonomy/pain_signal.ts",
+        "reason": "changed_module_without_tests",
+        "signature": "alert_4bc70d7a020116"
+      }
+    ]
   },
-  "last_sync": "2026-02-26T10:40:02.471Z",
-  "last_run": "2026-02-26T10:40:31.342Z",
-  "last_report": "2026-02-26T10:40:31.345Z"
+  "last_sync": "2026-02-26T14:56:41.828Z",
+  "last_run": "2026-02-26T14:56:44.838Z",
+  "last_report": "2026-02-26T15:05:51.669Z"
 }

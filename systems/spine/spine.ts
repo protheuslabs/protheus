@@ -119,6 +119,31 @@ function appendLedger(dateStr, evt) {
   }
 }
 
+const SYSTEM_HEALTH_EVENTS_PATH = process.env.SYSTEM_HEALTH_EVENTS_PATH
+  ? path.resolve(process.env.SYSTEM_HEALTH_EVENTS_PATH)
+  : path.join(repoRoot(), "state", "ops", "system_health", "events.jsonl");
+
+function appendSystemHealthEvent(evt) {
+  try {
+    const row = evt && typeof evt === "object" ? evt : {};
+    const payload = {
+      ts: nowIso(),
+      type: "system_health_event",
+      source: "spine",
+      subsystem: "spine",
+      severity: "medium",
+      risk: "medium",
+      code: "spine_event",
+      summary: "spine event",
+      ...row
+    };
+    fs.mkdirSync(path.dirname(SYSTEM_HEALTH_EVENTS_PATH), { recursive: true });
+    fs.appendFileSync(SYSTEM_HEALTH_EVENTS_PATH, JSON.stringify(payload) + "\n");
+  } catch {
+    // System-health telemetry must never block spine execution.
+  }
+}
+
 function readJsonl(filePath) {
   if (!fs.existsSync(filePath)) return [];
   const lines = fs.readFileSync(filePath, "utf8").split("\n").filter(Boolean);
@@ -1649,6 +1674,15 @@ function main() {
     } else {
       const failed = payload && Array.isArray(payload.failed_checks) ? payload.failed_checks.join(",") : "unknown";
       console.log(` signal_slo FAIL failed_checks=${failed}`);
+      appendSystemHealthEvent({
+        severity: "high",
+        risk: "high",
+        code: "signal_slo_fail",
+        summary: `spine signal_slo failed (${String(failed || "unknown").slice(0, 120)})`,
+        date: dateStr,
+        mode,
+        failed_checks: payload && Array.isArray(payload.failed_checks) ? payload.failed_checks.slice(0, 12) : []
+      });
     }
 
     if (String(process.env.SPINE_SIGNAL_SLO_DEADLOCK_BREAKER_ENABLED || "1") !== "0") {
@@ -2898,7 +2932,17 @@ function main() {
           ` registry=${Number(payload.registry_total || 0)}`
         );
       } else {
-        console.log(` workflow_layer unavailable reason=${String(workflow.stderr || workflow.stdout || "unknown").slice(0, 120)}`);
+        const reason = String(workflow.stderr || workflow.stdout || "unknown").slice(0, 180);
+        console.log(` workflow_layer unavailable reason=${String(reason).slice(0, 120)}`);
+        appendSystemHealthEvent({
+          severity: "high",
+          risk: "high",
+          code: "workflow_layer_unavailable",
+          summary: `spine workflow layer unavailable (${reason.slice(0, 120)})`,
+          details: reason,
+          date: dateStr,
+          mode
+        });
       }
     } else {
       appendLedger(dateStr, {
@@ -2911,6 +2955,16 @@ function main() {
         flag_value: String(process.env.SPINE_WORKFLOW_LAYER_ENABLED || "")
       });
       console.log(" workflow_layer skipped reason=feature_flag_disabled flag=SPINE_WORKFLOW_LAYER_ENABLED");
+      appendSystemHealthEvent({
+        severity: "low",
+        risk: "low",
+        code: "workflow_layer_disabled",
+        summary: "spine workflow layer disabled by feature flag",
+        date: dateStr,
+        mode,
+        flag: "SPINE_WORKFLOW_LAYER_ENABLED",
+        flag_value: String(process.env.SPINE_WORKFLOW_LAYER_ENABLED || "")
+      });
     }
 
     // 0d2) optional workflow executor runtime (runs active workflow steps).
@@ -2976,8 +3030,37 @@ function main() {
           ` stage=${String(payload.rollout_stage || "unknown")}` +
           ` slo=${payload.slo && payload.slo.pass === true ? "green" : "red"}`
         );
+        const execFailed = Number(payload.workflows_failed || 0);
+        const execBlocked = Number(payload.workflows_blocked || 0);
+        const sloPass = !!(payload.slo && payload.slo.pass === true);
+        if (execFailed > 0 || execBlocked > 0 || !sloPass) {
+          appendSystemHealthEvent({
+            severity: execFailed > 0 ? "high" : "medium",
+            risk: execFailed > 0 ? "high" : "medium",
+            code: execBlocked > 0 ? "workflow_executor_blocked" : "workflow_executor_degraded",
+            summary: `spine workflow executor degraded fail=${execFailed} blocked=${execBlocked} slo=${sloPass ? "pass" : "fail"}`,
+            date: dateStr,
+            mode,
+            workflows_selected: Number(payload.workflows_selected || 0),
+            workflows_executed: Number(payload.workflows_executed || 0),
+            workflows_succeeded: Number(payload.workflows_succeeded || 0),
+            workflows_failed: execFailed,
+            workflows_blocked: execBlocked,
+            failure_reasons: payload.failure_reasons || {}
+          });
+        }
       } else {
-        console.log(` workflow_executor unavailable reason=${String(workflowExec.stderr || workflowExec.stdout || "unknown").slice(0, 120)}`);
+        const reason = String(workflowExec.stderr || workflowExec.stdout || "unknown").slice(0, 180);
+        console.log(` workflow_executor unavailable reason=${String(reason).slice(0, 120)}`);
+        appendSystemHealthEvent({
+          severity: "high",
+          risk: "high",
+          code: "workflow_executor_unavailable",
+          summary: `spine workflow executor unavailable (${reason.slice(0, 120)})`,
+          details: reason,
+          date: dateStr,
+          mode
+        });
       }
     } else {
       appendLedger(dateStr, {
@@ -2990,6 +3073,16 @@ function main() {
         flag_value: String(process.env.SPINE_WORKFLOW_EXECUTOR_ENABLED || "")
       });
       console.log(" workflow_executor skipped reason=feature_flag_disabled flag=SPINE_WORKFLOW_EXECUTOR_ENABLED");
+      appendSystemHealthEvent({
+        severity: "medium",
+        risk: "medium",
+        code: "workflow_executor_disabled",
+        summary: "spine workflow executor disabled by feature flag",
+        date: dateStr,
+        mode,
+        flag: "SPINE_WORKFLOW_EXECUTOR_ENABLED",
+        flag_value: String(process.env.SPINE_WORKFLOW_EXECUTOR_ENABLED || "")
+      });
     }
 
     if (String(process.env.SPINE_WORKFLOW_EXECUTION_CLOSURE_ENABLED || "1") !== "0") {

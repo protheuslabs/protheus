@@ -37,6 +37,10 @@ const {
   verifySignedEnvelopeFromEnv
 } = require("../../lib/request_envelope");
 
+const SYSTEM_HEALTH_EVENTS_PATH = process.env.SYSTEM_HEALTH_EVENTS_PATH
+  ? path.resolve(process.env.SYSTEM_HEALTH_EVENTS_PATH)
+  : path.join(path.resolve(__dirname, "..", ".."), "state", "ops", "system_health", "events.jsonl");
+
 const RISKY_ENV_TOGGLE_RULES = [
   { key: "AUTONOMY_ENABLED", mode: "truthy" },
   { key: "AUTONOMY_MODEL_CATALOG_AUTO_APPLY", mode: "truthy" },
@@ -149,6 +153,27 @@ function logRiskyToggleGate(entry) {
     fs.appendFileSync(file, JSON.stringify(entry) + "\n");
   } catch {
     // Never block execution because logging failed.
+  }
+}
+
+function appendSystemHealthEvent(entry) {
+  try {
+    const payload = entry && typeof entry === "object" ? entry : {};
+    const row = {
+      ts: nowIso(),
+      type: "system_health_event",
+      source: "guard",
+      subsystem: "security.guard",
+      severity: "medium",
+      risk: "medium",
+      code: "guard_event",
+      summary: "guard event",
+      ...payload
+    };
+    fs.mkdirSync(path.dirname(SYSTEM_HEALTH_EVENTS_PATH), { recursive: true });
+    fs.appendFileSync(SYSTEM_HEALTH_EVENTS_PATH, JSON.stringify(row) + "\n");
+  } catch {
+    // Never block guard execution because health logging failed.
   }
 }
 
@@ -396,6 +421,14 @@ function main() {
 
   if (!files.length) {
     process.stderr.write("guard: missing --files=...\n");
+    appendSystemHealthEvent({
+      severity: "high",
+      risk: "medium",
+      code: "missing_files",
+      summary: "guard invocation missing files argument",
+      details: "missing --files",
+      request_source: String(process.env.REQUEST_SOURCE || "local").slice(0, 64)
+    });
     emitJson({ ok: false, blocked: true, reason: "missing_files", ts: nowIso() });
     process.exit(2);
   }
@@ -419,6 +452,15 @@ function main() {
       for (const v of topViolations(integrity.violations, 6)) {
         process.stderr.write(`    - ${v.type}${v.file ? ` (${v.file})` : ""}\n`);
       }
+      appendSystemHealthEvent({
+        severity: "critical",
+        risk: "high",
+        code: "integrity_violation",
+        summary: "guard blocked by integrity kernel",
+        details: JSON.stringify(integrity.violation_counts || {}).slice(0, 240),
+        violations: topViolations(integrity.violations, 6),
+        policy_version: integrity.policy_version || null
+      });
       emitJson({
         ok: false,
         blocked: true,
@@ -492,6 +534,17 @@ function main() {
     if (Array.isArray(remoteGate.missing) && remoteGate.missing.length) {
       process.stderr.write(`  missing: ${remoteGate.missing.join(", ")}\n`);
     }
+    appendSystemHealthEvent({
+      severity: "high",
+      risk: "high",
+      code: "remote_request_gate_blocked",
+      summary: `guard blocked remote request gate (${String(remoteGate.reason || "unknown").slice(0, 80)})`,
+      details: String((Array.isArray(remoteGate.missing) ? remoteGate.missing.join(",") : "") || "").slice(0, 240),
+      request_source: String(requestSource || "local").slice(0, 64),
+      request_action: String(requestAction || "apply").slice(0, 64),
+      files: files.slice(0, 12),
+      remote_reason: remoteGate.reason || null
+    });
     emitJson({
       ok: false,
       blocked: true,
@@ -562,6 +615,16 @@ function main() {
     process.stderr.write("guard: BLOCKED (risky env toggle gate)\n");
     process.stderr.write(`  active_toggles=${riskyTogglePolicy.active_toggles.join(",")}\n`);
     process.stderr.write('  approval_note must include "env_toggle" + each risky env key name\n');
+    appendSystemHealthEvent({
+      severity: "high",
+      risk: "high",
+      code: "risky_env_toggle_blocked",
+      summary: "guard blocked risky env toggle",
+      details: String(riskyTogglePolicy.reason || "manual_approval_missing").slice(0, 240),
+      active_toggles: riskyTogglePolicy.active_toggles.slice(0, 12),
+      request_source: String(requestSource || "local").slice(0, 64),
+      request_action: String(requestAction || "apply").slice(0, 64)
+    });
     emitJson({
       ok: false,
       blocked: true,
@@ -601,6 +664,14 @@ function main() {
   if (breakGlass) {
     if (!approvalNote) {
       process.stderr.write("guard: BREAK_GLASS=1 requires APPROVAL_NOTE\n");
+      appendSystemHealthEvent({
+        severity: "high",
+        risk: "high",
+        code: "break_glass_missing_approval_note",
+        summary: "guard blocked break-glass request missing approval note",
+        request_source: String(requestSource || "local").slice(0, 64),
+        request_action: String(requestAction || "apply").slice(0, 64)
+      });
       emitJson({
         ok: false,
         blocked: true,
@@ -652,6 +723,17 @@ function main() {
   }
   process.stderr.write("  To override (not recommended):\n");
   process.stderr.write('    BREAK_GLASS=1 APPROVAL_NOTE="why" CLEARANCE=<your_level> node ...\n');
+  appendSystemHealthEvent({
+    severity: "medium",
+    risk: "medium",
+    code: "insufficient_clearance",
+    summary: `guard blocked insufficient clearance (${clearance}<${required})`,
+    request_source: String(requestSource || "local").slice(0, 64),
+    request_action: String(requestAction || "apply").slice(0, 64),
+    required_clearance: required,
+    provided_clearance: clearance,
+    files: files.slice(0, 12)
+  });
 
   emitJson({
     ok: false,

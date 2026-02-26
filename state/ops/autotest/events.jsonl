@@ -48,3 +48,11 @@
 {"ts":"2026-02-26T10:39:19.150Z","type":"autotest_alert","severity":"warn","alert_kind":"untested_module","module_path":"systems/autonomy/non_yield_cycle.ts","reason":"changed_module_without_tests","signature":"alert_ff5802caf1b13a"}
 {"ts":"2026-02-26T10:40:00.837Z","type":"autotest_alert","severity":"warn","alert_kind":"untested_modules","failed":0,"guard_blocked":0,"untested_modules":45,"scope":"changed"}
 {"ts":"2026-02-26T10:40:31.344Z","type":"autotest_alert","severity":"warn","alert_kind":"untested_modules","failed":0,"guard_blocked":0,"untested_modules":45,"scope":"changed"}
+{"ts":"2026-02-26T14:33:35.896Z","type":"autotest_alert","severity":"warn","alert_kind":"untested_module","module_path":"systems/ops/top50_roi_sweep.ts","reason":"changed_module_without_tests","signature":"alert_2f26da8184da8d"}
+{"ts":"2026-02-26T14:33:40.868Z","type":"autotest_alert","severity":"warn","alert_kind":"untested_modules","failed":0,"guard_blocked":0,"untested_modules":45,"scope":"changed"}
+{"ts":"2026-02-26T14:42:08.310Z","type":"autotest_alert","severity":"warn","alert_kind":"untested_modules","failed":0,"guard_blocked":0,"flaky_tests":0,"untested_modules":45,"scope":"changed"}
+{"ts":"2026-02-26T14:42:27.236Z","type":"autotest_alert","severity":"warn","alert_kind":"untested_modules","failed":0,"guard_blocked":0,"flaky_tests":0,"untested_modules":45,"scope":"changed"}
+{"ts":"2026-02-26T14:43:37.425Z","type":"autotest_alert","severity":"error","alert_kind":"test_failures","failed":1,"guard_blocked":0,"flaky_tests":0,"untested_modules":45,"scope":"changed"}
+{"ts":"2026-02-26T14:45:26.244Z","type":"autotest_alert","severity":"warn","alert_kind":"untested_modules","failed":0,"guard_blocked":0,"flaky_tests":0,"untested_modules":45,"scope":"changed"}
+{"ts":"2026-02-26T14:56:41.828Z","type":"autotest_alert","severity":"warn","alert_kind":"untested_module","module_path":"systems/autonomy/pain_signal.ts","reason":"changed_module_without_tests","signature":"alert_4bc70d7a020116"}
+{"ts":"2026-02-26T14:56:44.838Z","type":"autotest_alert","severity":"warn","alert_kind":"untested_modules","failed":0,"guard_blocked":0,"flaky_tests":0,"untested_modules":45,"scope":"changed"}

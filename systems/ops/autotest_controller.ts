@@ -39,6 +39,7 @@ function runtimePaths() {
   const stateDir = process.env.AUTOTEST_STATE_DIR
     ? path.resolve(process.env.AUTOTEST_STATE_DIR)
     : path.join(ROOT, 'state', 'ops', 'autotest');
+  const defaultPainSignalsPath = path.join(ROOT, 'state', 'autonomy', 'pain_signals.jsonl');
   return {
     policy_path: process.env.AUTOTEST_POLICY_PATH
       ? path.resolve(process.env.AUTOTEST_POLICY_PATH)
@@ -58,7 +59,10 @@ function runtimePaths() {
       : path.join(ROOT, 'memory', 'tools', 'tests'),
     spine_runs_dir: process.env.AUTOTEST_SPINE_RUNS_DIR
       ? path.resolve(process.env.AUTOTEST_SPINE_RUNS_DIR)
-      : path.join(ROOT, 'state', 'spine', 'runs')
+      : path.join(ROOT, 'state', 'spine', 'runs'),
+    pain_signals_path: process.env.AUTOTEST_PAIN_SIGNALS_PATH
+      ? path.resolve(process.env.AUTOTEST_PAIN_SIGNALS_PATH)
+      : defaultPainSignalsPath
   };
 }
 
@@ -99,6 +103,11 @@ function parseArgs(argv) {
 
 function nowIso() {
   return new Date().toISOString();
+}
+
+function parseIsoMs(v) {
+  const ms = Date.parse(String(v || ''));
+  return Number.isFinite(ms) ? ms : null;
 }
 
 function dateArgOrToday(v) {
@@ -260,7 +269,13 @@ function defaultPolicy() {
       max_tests_per_run: 24,
       strict: false,
       timeout_ms_per_test: 180000,
-      run_timeout_ms: 120000
+      run_timeout_ms: 120000,
+      selection_strategy: 'stale_first',
+      midrun_resource_guard: true,
+      resource_recheck_every_tests: 1,
+      retry_flaky_once: true,
+      flaky_quarantine_after: 3,
+      flaky_quarantine_sec: 3600
     },
     sleep_window_local: {
       enabled: true,
@@ -276,8 +291,56 @@ function defaultPolicy() {
       interval_sec: 900,
       max_cycles: 0,
       jitter_sec: 20
+    },
+    health_ingest: {
+      enabled: true,
+      pain_signal_log_path: 'state/autonomy/pain_signals.jsonl',
+      window_hours: 24,
+      max_log_bytes: 8 * 1024 * 1024,
+      sources: [
+        {
+          path: 'state/ops/system_health/events.jsonl',
+          format: 'system_health'
+        },
+        {
+          path: 'state/autonomy/pain_signals.jsonl',
+          format: 'pain_signal'
+        },
+        {
+          path: 'state/autonomy/exception_events.jsonl',
+          format: 'generic'
+        },
+        {
+          path: 'state/observability/alerts/routed.jsonl',
+          format: 'generic'
+        },
+        {
+          path: 'state/security/strategy_controller_audit.jsonl',
+          format: 'audit_error'
+        }
+      ]
     }
   };
+}
+
+function normalizeHealthSources(rawSources, fallbackSources) {
+  const sources = Array.isArray(rawSources) && rawSources.length
+    ? rawSources
+    : (Array.isArray(fallbackSources) ? fallbackSources : []);
+  const out = [];
+  const allowedFormats = new Set(['pain_signal', 'system_health', 'generic', 'audit_error']);
+  for (const row of sources) {
+    if (!row || typeof row !== 'object') continue;
+    const p = String(row.path || '').trim();
+    if (!p) continue;
+    const formatRaw = String(row.format || 'generic').trim().toLowerCase();
+    const format = allowedFormats.has(formatRaw) ? formatRaw : 'generic';
+    out.push({
+      path: p,
+      format
+    });
+  }
+  return out;
 }
 
 function loadPolicy(policyPathRaw) {
@@ -312,6 +375,9 @@ function loadPolicy(policyPathRaw) {
     : {};
   const daemon = raw.daemon && typeof raw.daemon === 'object'
     ? raw.daemon
+    : {};
+  const healthIngest = raw.health_ingest && typeof raw.health_ingest === 'object'
+    ? raw.health_ingest
     : {};
 
   const normalizeList = (arr, fallback = []) => {
@@ -377,7 +443,30 @@ function loadPolicy(policyPathRaw) {
       max_tests_per_run: clampInt(execution.max_tests_per_run, 1, 500, base.execution.max_tests_per_run),
       strict: toBool(execution.strict, base.execution.strict),
       timeout_ms_per_test: clampInt(execution.timeout_ms_per_test, 1000, 30 * 60 * 1000, base.execution.timeout_ms_per_test),
-      run_timeout_ms: clampInt(execution.run_timeout_ms, 1000, 2 * 60 * 60 * 1000, base.execution.run_timeout_ms)
+      run_timeout_ms: clampInt(execution.run_timeout_ms, 1000, 2 * 60 * 60 * 1000, base.execution.run_timeout_ms),
+      selection_strategy: ['stale_first', 'critical_first'].includes(String(execution.selection_strategy || ''))
+        ? String(execution.selection_strategy)
+        : String(base.execution.selection_strategy || 'stale_first'),
+      midrun_resource_guard: toBool(execution.midrun_resource_guard, base.execution.midrun_resource_guard),
+      resource_recheck_every_tests: clampInt(
+        execution.resource_recheck_every_tests,
+        1,
+        256,
+        base.execution.resource_recheck_every_tests
+      ),
+      retry_flaky_once: toBool(execution.retry_flaky_once, base.execution.retry_flaky_once),
+      flaky_quarantine_after: clampInt(
+        execution.flaky_quarantine_after,
+        1,
+        100,
+        base.execution.flaky_quarantine_after
+      ),
+      flaky_quarantine_sec: clampInt(
+        execution.flaky_quarantine_sec,
+        60,
+        14 * 24 * 60 * 60,
+        base.execution.flaky_quarantine_sec
+      )
     },
     sleep_window_local: {
       enabled: toBool(sleepWindow.enabled, base.sleep_window_local.enabled),
@@ -393,6 +482,25 @@ function loadPolicy(policyPathRaw) {
       interval_sec: clampInt(daemon.interval_sec, 20, 24 * 60 * 60, base.daemon.interval_sec),
       max_cycles: clampInt(daemon.max_cycles, 0, 1000000, base.daemon.max_cycles),
       jitter_sec: clampInt(daemon.jitter_sec, 0, 600, base.daemon.jitter_sec)
+    },
+    health_ingest: {
+      enabled: toBool(healthIngest.enabled, base.health_ingest.enabled),
+      pain_signal_log_path: String(
+        healthIngest.pain_signal_log_path || base.health_ingest.pain_signal_log_path
+      ).trim() || base.health_ingest.pain_signal_log_path,
+      window_hours: clampInt(
+        healthIngest.window_hours,
+        1,
+        24 * 30,
+        base.health_ingest.window_hours
+      ),
+      max_log_bytes: clampInt(
+        healthIngest.max_log_bytes,
+        32 * 1024,
+        256 * 1024 * 1024,
+        base.health_ingest.max_log_bytes
+      ),
+      sources: normalizeHealthSources(healthIngest.sources, base.health_ingest.sources)
     }
   };
 }
@@ -624,7 +732,9 @@ function syncState(paths, policy) {
     const mappedTests = Array.isArray(mapping[mod.path]) ? mapping[mod.path] : [];
     const hasTests = mappedTests.length > 0;
     const isNew = !prevRow;
-    const changed = !prevRow || String(prevRow.fingerprint || '') !== fp;
+    const fingerprintChanged = !prevRow || String(prevRow.fingerprint || '') !== fp;
+    const pendingPrior = !!(prevRow && prevRow.changed === true && prevRow.checked !== true);
+    const changed = fingerprintChanged || pendingPrior;
 
     if (isNew) newCount += 1;
     if (changed) changedCount += 1;
@@ -644,7 +754,7 @@ function syncState(paths, policy) {
       untested: !hasTests,
       mapped_test_ids: mappedTests,
       mapped_test_count: mappedTests.length,
-      last_change_ts: changed ? now : (prevRow && prevRow.last_change_ts ? String(prevRow.last_change_ts) : null),
+      last_change_ts: fingerprintChanged ? now : (prevRow && prevRow.last_change_ts ? String(prevRow.last_change_ts) : null),
       last_test_ts: prevRow && prevRow.last_test_ts ? String(prevRow.last_test_ts) : null,
       last_pass_ts: prevRow && prevRow.last_pass_ts ? String(prevRow.last_pass_ts) : null,
       last_fail_ts: prevRow && prevRow.last_fail_ts ? String(prevRow.last_fail_ts) : null,
@@ -743,6 +853,7 @@ function syncState(paths, policy) {
     tests: nextTests,
     last_sync: now
   };
+  updateModuleCheckStates(nextStatus);
 
   const emittedAlerts = emitAlerts(paths, nextStatus, alerts);
 
@@ -984,6 +1095,86 @@ function testSetForScope(status, scope) {
   return selected;
 }
 
+function moduleStaleMs(mod, nowMs) {
+  const lastTestMs = parseIsoMs(mod && mod.last_test_ts);
+  const lastChangeMs = parseIsoMs(mod && mod.last_change_ts);
+  if (Number.isFinite(lastTestMs)) return Math.max(0, nowMs - lastTestMs);
+  if (Number.isFinite(lastChangeMs)) return Math.max(0, nowMs - lastChangeMs);
+  return nowMs;
+}
+
+function prioritizeTests(status, testIds, policy) {
+  const tests = status.tests && typeof status.tests === 'object' ? status.tests : {};
+  const modules = status.modules && typeof status.modules === 'object' ? status.modules : {};
+  const mapping = reverseModuleMapping(status);
+  const nowMs = Date.now();
+  const out = [];
+
+  for (const idRaw of Array.from(testIds)) {
+    const id = String(idRaw || '');
+    const test = tests[id];
+    if (!test || typeof test !== 'object') continue;
+
+    const qUntilMs = parseIsoMs(test.quarantined_until_ts);
+    const quarantined = Number.isFinite(qUntilMs) && qUntilMs > nowMs;
+    if (quarantined && test.critical !== true) continue;
+
+    const modulePaths = Array.from(mapping.get(id) || []);
+    let changedCount = 0;
+    let staleMaxMs = 0;
+    let neverTestedCount = 0;
+    for (const modulePath of modulePaths) {
+      const mod = modules[modulePath];
+      if (!mod || typeof mod !== 'object') continue;
+      if (mod.changed === true) changedCount += 1;
+      if (!mod.last_test_ts) neverTestedCount += 1;
+      const staleMs = moduleStaleMs(mod, nowMs);
+      if (staleMs > staleMaxMs) staleMaxMs = staleMs;
+    }
+
+    const hadFail = String(test.last_status || '') === 'fail';
+    const hadGuardBlock = !!(test.last_guard && test.last_guard.ok === false);
+    const wasFlaky = test.last_flaky === true;
+    const staleHours = Math.floor(staleMaxMs / (60 * 60 * 1000));
+
+    // Strongly prioritize changed + longest-waiting modules.
+    let score = 0;
+    score += changedCount * 1_000_000_000;
+    score += Math.min(staleHours, 24 * 365) * 1000;
+    score += neverTestedCount * 100_000_000;
+    if (test.critical === true) score += 10_000_000_000;
+    if (hadFail) score += 500_000_000;
+    if (hadGuardBlock) score += 600_000_000;
+    if (wasFlaky) score += 150_000_000;
+
+    if (String(policy.execution.selection_strategy || 'stale_first') === 'critical_first' && test.critical === true) {
+      score += 1_000_000_000_000;
+    }
+
+    out.push({
+      id,
+      test,
+      score,
+      priority: {
+        critical: test.critical === true,
+        changed_modules: changedCount,
+        stale_hours: staleHours,
+        never_tested_modules: neverTestedCount,
+        previous_fail: hadFail,
+        previous_guard_block: hadGuardBlock,
+        previous_flaky: wasFlaky,
+        quarantined_until_ts: quarantined ? new Date(qUntilMs).toISOString() : null
+      }
+    });
+  }
+
+  out.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    return String(a.id).localeCompare(String(b.id));
+  });
+  return out;
+}
+
 function updateModuleCheckStates(status) {
   const modules = status.modules && typeof status.modules === 'object' ? status.modules : {};
   const tests = status.tests && typeof status.tests === 'object' ? status.tests : {};
@@ -994,13 +1185,240 @@ function updateModuleCheckStates(status) {
       const t = tests[id];
       return !!t && String(t.last_status || '') === 'pass';
     });
+    const hasFail = ids.some((id) => {
+      const t = tests[id];
+      if (!t) return false;
+      if (String(t.last_status || '') === 'fail') return true;
+      if (t.last_guard && t.last_guard.ok === false) return true;
+      return false;
+    });
     const checked = allPass && mod.changed !== true;
     mod.checked = checked;
     mod.untested = ids.length === 0;
     if (checked && !mod.last_pass_ts) mod.last_pass_ts = nowIso();
+    if (mod.untested === true) {
+      mod.health_state = 'untested';
+      mod.health_reason = 'no_mapped_tests';
+    } else if (hasFail) {
+      mod.health_state = 'red';
+      mod.health_reason = 'failing_or_guard_blocked_test';
+    } else if (mod.changed === true) {
+      mod.health_state = 'pending';
+      mod.health_reason = 'changed_waiting_for_fresh_pass';
+    } else if (checked) {
+      mod.health_state = 'green';
+      mod.health_reason = 'all_mapped_tests_passing';
+    } else {
+      mod.health_state = 'yellow';
+      mod.health_reason = 'partial_or_stale_coverage';
+    }
     modules[modulePath] = mod;
   }
   status.modules = modules;
+}
+
+function normalizeHealthSeverity(v, fallback = 'medium') {
+  const raw = String(v == null ? '' : v).trim().toLowerCase();
+  if (raw === 'critical') return 'critical';
+  if (raw === 'high') return 'high';
+  if (raw === 'medium') return 'medium';
+  if (raw === 'low') return 'low';
+  if (raw === 'error') return 'high';
+  if (raw === 'warn' || raw === 'warning') return 'medium';
+  return fallback;
+}
+
+function healthSeverityRank(v) {
+  const sev = normalizeHealthSeverity(v, 'medium');
+  if (sev === 'critical') return 4;
+  if (sev === 'high') return 3;
+  if (sev === 'medium') return 2;
+  return 1;
+}
+
+function extractHealthEvent(row, format, defaultSource) {
+  if (!row || typeof row !== 'object') return null;
+  const type = String(row.type || '').toLowerCase();
+  const hasErrorToken = type.includes('error') || type.includes('exception') || type.includes('fail');
+  const okFalse = row.ok === false;
+  const errorText = String(row.error || row.code || '').toLowerCase();
+  const hasErrorField = !!errorText;
+  let include = false;
+  let severity = normalizeHealthSeverity(row.severity, 'medium');
+
+  if (format === 'pain_signal') {
+    include = type === 'pain_signal';
+    severity = normalizeHealthSeverity(row.severity, 'medium');
+  } else if (format === 'system_health') {
+    include = type === 'system_health_event' || type === 'system_health';
+    severity = normalizeHealthSeverity(row.severity, severity);
+  } else if (format === 'audit_error') {
+    include = type.endsWith('_error') || hasErrorField || hasErrorToken || okFalse;
+    severity = normalizeHealthSeverity(row.severity, include ? 'high' : 'medium');
+  } else {
+    // generic
+    include = okFalse || hasErrorToken || hasErrorField || !!row.alert_kind;
+    severity = normalizeHealthSeverity(row.severity, include ? (okFalse ? 'high' : 'medium') : 'medium');
+  }
+
+  if (!include) return null;
+  const tsMs = parseIsoMs(row.ts);
+  if (!Number.isFinite(tsMs)) return null;
+
+  const source = normalizeToken(
+    row.source || row.subsystem || row.module || defaultSource || 'unknown',
+    80
+  ) || 'unknown';
+  const moduleName = normalizeToken(
+    row.subsystem || row.module || row.op || row.actor || '',
+    120
+  ) || null;
+  const code = normalizeToken(
+    row.code || row.error || row.alert_kind || row.reason || row.type || 'unknown_code',
+    120
+  ) || 'unknown_code';
+  const summary = shortText(
+    row.summary || row.reason || row.details || row.error || row.type || code,
+    220
+  );
+
+  return {
+    ts_ms: tsMs,
+    ts: new Date(tsMs).toISOString(),
+    severity,
+    source,
+    module: moduleName,
+    code,
+    summary
+  };
+}
+
+function summarizeExternalHealth(paths, policy) {
+  const cfg = policy.health_ingest && typeof policy.health_ingest === 'object'
+    ? policy.health_ingest
+    : {};
+  if (cfg.enabled !== true) {
+    return { enabled: false };
+  }
+
+  const fallbackSource = {
+    path: String(cfg.pain_signal_log_path || 'state/autonomy/pain_signals.jsonl'),
+    format: 'pain_signal'
+  };
+  const sources = Array.isArray(cfg.sources) && cfg.sources.length
+    ? cfg.sources
+    : [fallbackSource];
+
+  const maxBytes = Number(cfg.max_log_bytes || 8 * 1024 * 1024);
+  const windowHours = Math.max(1, Number(cfg.window_hours || 24));
+  const cutoffMs = Date.now() - (windowHours * 60 * 60 * 1000);
+  const sourceFiles = [];
+  const events = [];
+  let anyReadable = false;
+
+  for (const sourceCfg of sources) {
+    const sourcePathRaw = String(sourceCfg && sourceCfg.path || '').trim();
+    const sourceFormat = String(sourceCfg && sourceCfg.format || 'generic').trim().toLowerCase() || 'generic';
+    if (!sourcePathRaw) continue;
+    const resolvedPath = path.isAbsolute(sourcePathRaw)
+      ? path.resolve(sourcePathRaw)
+      : path.resolve(ROOT, sourcePathRaw);
+    const fileMeta = {
+      path: relPath(resolvedPath),
+      format: sourceFormat,
+      available: false,
+      reason: null,
+      events: 0
+    };
+
+    if (!fs.existsSync(resolvedPath)) {
+      fileMeta.reason = 'missing';
+      sourceFiles.push(fileMeta);
+      continue;
+    }
+    const stats = fs.statSync(resolvedPath);
+    if (!stats.isFile()) {
+      fileMeta.reason = 'not_file';
+      sourceFiles.push(fileMeta);
+      continue;
+    }
+    if (stats.size > maxBytes) {
+      fileMeta.reason = 'too_large';
+      fileMeta.size_bytes = stats.size;
+      fileMeta.max_log_bytes = maxBytes;
+      sourceFiles.push(fileMeta);
+      continue;
+    }
+
+    anyReadable = true;
+    fileMeta.available = true;
+    const rows = readJsonl(resolvedPath);
+    for (const row of rows) {
+      const event = extractHealthEvent(row, sourceFormat, sourcePathRaw);
+      if (!event) continue;
+      if (event.ts_ms < cutoffMs) continue;
+      fileMeta.events += 1;
+      events.push(event);
+    }
+    sourceFiles.push(fileMeta);
+  }
+
+  if (!anyReadable) {
+    return {
+      enabled: true,
+      available: false,
+      reason: 'no_readable_sources',
+      window_hours: windowHours,
+      source_files: sourceFiles
+    };
+  }
+
+  const bySource = {};
+  const byCode = {};
+  const byModule = {};
+  const severityCounts = {
+    low: 0,
+    medium: 0,
+    high: 0,
+    critical: 0
+  };
+  let highOrCritical = 0;
+
+  for (const event of events) {
+    bySource[event.source] = Number(bySource[event.source] || 0) + 1;
+    byCode[event.code] = Number(byCode[event.code] || 0) + 1;
+    if (event.module) byModule[event.module] = Number(byModule[event.module] || 0) + 1;
+    const sev = normalizeHealthSeverity(event.severity, 'medium');
+    severityCounts[sev] = Number(severityCounts[sev] || 0) + 1;
+    if (healthSeverityRank(sev) >= 3) highOrCritical += 1;
+  }
+
+  const topSources = Object.entries(bySource)
+    .sort((a, b) => Number(b[1]) - Number(a[1]))
+    .slice(0, 10)
+    .map(([source, count]) => ({ source, count: Number(count) }));
+  const topCodes = Object.entries(byCode)
+    .sort((a, b) => Number(b[1]) - Number(a[1]))
+    .slice(0, 10)
+    .map(([code, count]) => ({ code, count: Number(count) }));
+  const topModules = Object.entries(byModule)
+    .sort((a, b) => Number(b[1]) - Number(a[1]))
+    .slice(0, 10)
+    .map(([module, count]) => ({ module, count: Number(count) }));
+
+  return {
+    enabled: true,
+    available: true,
+    ingest_mode: 'multi_source',
+    window_hours: windowHours,
+    total: events.length,
+    high_or_critical: highOrCritical,
+    severity_counts: severityCounts,
+    top_sources: topSources,
+    top_modules: topModules,
+    top_codes: topCodes,
+    source_files: sourceFiles
+  };
 }
 
 function cmdRun(args, policy, paths) {
@@ -1014,9 +1432,9 @@ function cmdRun(args, policy, paths) {
   const maxTests = clampInt(args['max-tests'], 1, 500, policy.execution.max_tests_per_run);
   const runTimeoutMs = clampInt(
     args['run-timeout-ms'],
-    policy.execution.run_timeout_ms,
     1000,
-    2 * 60 * 60 * 1000
+    2 * 60 * 60 * 1000,
+    policy.execution.run_timeout_ms
   );
   const runDeadlineMs = runStartMs + runTimeoutMs;
   const phaseMs = {
@@ -1038,6 +1456,7 @@ function cmdRun(args, policy, paths) {
   const syncOut = syncState(paths, policy);
   phaseMs.sync_ms = Date.now() - syncStarted;
   const status = loadStatus(paths);
+  const externalHealth = summarizeExternalHealth(paths, policy);
 
   const sleepGate = inSleepWindow(policy);
   const resources = runtimeResourceWithin(policy);
@@ -1056,6 +1475,7 @@ function cmdRun(args, policy, paths) {
       skipped: true,
       skip_reasons: skipReasons,
       synced: syncOut,
+      external_health: externalHealth,
       sleep_window_ok: sleepGate,
       resource_guard: resources,
       spine_hot: spineHot,
@@ -1081,6 +1501,33 @@ function cmdRun(args, policy, paths) {
       timeout_reason: reason,
       run_timeout_ms: runTimeoutMs,
       synced: syncOut,
+      external_health: externalHealth,
+      sleep_window_ok: sleepGate,
+      resource_guard: resources,
+      spine_hot: spineHot,
+      phase_ms: {
+        ...phaseMs,
+        total_ms: Date.now() - runStartMs
+      },
+      ...extras
+    };
+    writeJsonAtomic(paths.latest_path, out);
+    appendJsonl(path.join(paths.runs_dir, `${dateArgOrToday()}.jsonl`), out);
+    return out;
+  }
+
+  function abortOut(reason, extras = {}) {
+    const out = {
+      ok: false,
+      type: 'autotest_run',
+      ts: nowIso(),
+      scope,
+      strict,
+      aborted: true,
+      abort_reason: reason,
+      run_timeout_ms: runTimeoutMs,
+      synced: syncOut,
+      external_health: externalHealth,
       sleep_window_ok: sleepGate,
       resource_guard: resources,
       spine_hot: spineHot,
@@ -1101,17 +1548,42 @@ function cmdRun(args, policy, paths) {
 
   const selectStarted = Date.now();
   const testIds = Array.from(testSetForScope(status, scope));
-  const selected = testIds
-    .map((id) => status.tests && status.tests[id])
-    .filter(Boolean)
-    .slice(0, maxTests);
+  const prioritized = prioritizeTests(status, testIds, policy);
+  const selected = prioritized.slice(0, maxTests).map((row) => row.test);
+  const selectionPreview = prioritized.slice(0, 24).map((row) => ({
+    id: row.id,
+    score: row.score,
+    priority: row.priority
+  }));
   const testToModules = reverseModuleMapping(status);
   phaseMs.select_ms = Date.now() - selectStarted;
 
   const results = [];
   let guardBlocked = 0;
+  let flakyCount = 0;
+  let quarantinedCount = 0;
+  const executedStatus = {};
   const executeStarted = Date.now();
+  const recheckEvery = clampInt(
+    policy.execution && policy.execution.resource_recheck_every_tests,
+    1,
+    256,
+    1
+  );
   for (const test of selected) {
+    if (policy.execution.midrun_resource_guard === true && results.length % recheckEvery === 0) {
+      const loopResources = runtimeResourceWithin(policy);
+      if (loopResources.ok !== true && !force) {
+        phaseMs.execute_ms = Date.now() - executeStarted;
+        return abortOut('resource_guard_during_execution', {
+          selected_tests: results.length,
+          passed: results.filter((r) => r.ok === true).length,
+          failed: results.filter((r) => r.ok !== true).length,
+          resource_guard_runtime: loopResources,
+          partial_results: results.slice(0, 120)
+        });
+      }
+    }
     if (budgetExceeded()) {
       phaseMs.execute_ms = Date.now() - executeStarted;
       return timeoutOut('execution_budget_exhausted', {
@@ -1135,7 +1607,7 @@ function cmdRun(args, policy, paths) {
       1000,
       Math.min(policy.execution.timeout_ms_per_test, remainingBudgetMs())
     );
-    const res = guard.ok
+    let res = guard.ok
       ? runCommand(test.command, perTestTimeoutMs)
       : {
           ok: false,
@@ -1151,6 +1623,31 @@ function cmdRun(args, policy, paths) {
         };
     if (guard.ok !== true) guardBlocked += 1;
 
+    let retried = false;
+    let flaky = false;
+    if (
+      guard.ok === true &&
+      res.ok !== true &&
+      policy.execution.retry_flaky_once === true &&
+      test.critical !== true &&
+      res.timed_out !== true &&
+      remainingBudgetMs() > 1500
+    ) {
+      retried = true;
+      const retryTimeoutMs = Math.max(
+        1000,
+        Math.min(policy.execution.timeout_ms_per_test, remainingBudgetMs())
+      );
+      const retryRes = runCommand(test.command, retryTimeoutMs);
+      if (retryRes.ok === true) {
+        flaky = true;
+        res = retryRes;
+        flakyCount += 1;
+      } else {
+        res = retryRes;
+      }
+    }
+
     const row = status.tests[test.id] || {};
     row.last_status = res.ok ? 'pass' : 'fail';
     row.last_exit_code = res.exit_code;
@@ -1163,9 +1660,20 @@ function cmdRun(args, policy, paths) {
       reason: guard.reason || null,
       files: Array.isArray(guard.files) ? guard.files.slice(0, 24) : []
     };
+    row.last_retry_count = retried ? 1 : 0;
+    row.last_flaky = flaky === true;
+    row.consecutive_flaky = flaky ? Number(row.consecutive_flaky || 0) + 1 : 0;
+    if (flaky && row.consecutive_flaky >= Number(policy.execution.flaky_quarantine_after || 3)) {
+      const quarantineSec = Number(policy.execution.flaky_quarantine_sec || 3600);
+      row.quarantined_until_ts = new Date(Date.now() + quarantineSec * 1000).toISOString();
+      quarantinedCount += 1;
+    } else if (!flaky && res.ok) {
+      row.quarantined_until_ts = null;
+    }
     if (res.ok) row.last_pass_ts = row.last_run_ts;
     else row.last_fail_ts = row.last_run_ts;
     status.tests[test.id] = row;
+    executedStatus[String(test.id)] = res.ok ? 'pass' : 'fail';
 
     results.push({
       id: test.id,
@@ -1177,29 +1685,35 @@ function cmdRun(args, policy, paths) {
       ok: res.ok,
       exit_code: res.exit_code,
       duration_ms: res.duration_ms,
+      retried,
+      flaky,
+      quarantined_until_ts: row.quarantined_until_ts || null,
       stdout_excerpt: res.stdout_excerpt,
       stderr_excerpt: res.stderr_excerpt
     });
   }
   phaseMs.execute_ms = Date.now() - executeStarted;
 
+  const runTs = nowIso();
   for (const mod of Object.values(status.modules)) {
     if (!mod || typeof mod !== 'object') continue;
-    if (mod.changed === true) mod.last_test_ts = nowIso();
     const ids = Array.isArray(mod.mapped_test_ids) ? mod.mapped_test_ids : [];
     if (!ids.length) continue;
-    const fail = ids.some((id) => String(status.tests[id] && status.tests[id].last_status || '') === 'fail');
-    const pass = ids.every((id) => String(status.tests[id] && status.tests[id].last_status || '') === 'pass');
-    if (fail) mod.last_fail_ts = nowIso();
-    if (pass) {
-      mod.last_pass_ts = nowIso();
+    const hasExecuted = ids.some((id) => Object.prototype.hasOwnProperty.call(executedStatus, String(id)));
+    if (!hasExecuted) continue;
+    mod.last_test_ts = runTs;
+    const fail = ids.some((id) => executedStatus[String(id)] === 'fail');
+    const freshPass = ids.length > 0 && ids.every((id) => executedStatus[String(id)] === 'pass');
+    if (fail) mod.last_fail_ts = runTs;
+    if (freshPass) {
+      mod.last_pass_ts = runTs;
       if (mod.changed === true) mod.changed = false;
     }
   }
 
   updateModuleCheckStates(status);
-  status.updated_at = nowIso();
-  status.last_run = nowIso();
+  status.updated_at = runTs;
+  status.last_run = runTs;
   writeJsonAtomic(paths.status_path, status);
 
   const passed = results.filter((r) => r.ok === true).length;
@@ -1246,15 +1760,20 @@ function cmdRun(args, policy, paths) {
   const out = {
     ok: strict ? failed === 0 && untested === 0 : failed === 0,
     type: 'autotest_run',
-    ts: nowIso(),
+    ts: runTs,
     scope,
     strict,
     synced: syncOut,
     selected_tests: results.length,
+    queued_candidates: prioritized.length,
+    selection_preview: selectionPreview,
     passed,
     failed,
     guard_blocked: guardBlocked,
+    flaky_tests: flakyCount,
+    newly_quarantined_tests: quarantinedCount,
     untested_modules: untested,
+    external_health: externalHealth,
     sleep_window_ok: sleepGate,
     resource_guard: resources,
     spine_hot: spineHot,
@@ -1270,16 +1789,17 @@ function cmdRun(args, policy, paths) {
   writeJsonAtomic(paths.latest_path, out);
   appendJsonl(path.join(paths.runs_dir, `${dateArgOrToday()}.jsonl`), out);
 
-  if (failed > 0 || untested > 0 || guardBlocked > 0) {
+  if (failed > 0 || untested > 0 || guardBlocked > 0 || flakyCount > 0) {
     appendJsonl(paths.events_path, {
-      ts: nowIso(),
+      ts: runTs,
       type: 'autotest_alert',
       severity: (failed > 0 || guardBlocked > 0) ? 'error' : 'warn',
       alert_kind: guardBlocked > 0
         ? 'guard_blocked'
-        : (failed > 0 ? 'test_failures' : 'untested_modules'),
+        : (failed > 0 ? 'test_failures' : (flakyCount > 0 ? 'flaky_tests' : 'untested_modules')),
       failed,
       guard_blocked: guardBlocked,
+      flaky_tests: flakyCount,
       untested_modules: untested,
       scope
     });
@@ -1299,9 +1819,15 @@ function cmdReport(args, policy, paths) {
 
   const modules = Object.values(status.modules || {});
   const tests = Object.values(status.tests || {});
+  const externalHealth = summarizeExternalHealth(paths, policy);
 
   const untested = modules
     .filter((m) => m && m.untested === true)
+    .sort((a, b) => String(a.path || '').localeCompare(String(b.path || '')))
+    .slice(0, policy.alerts.max_untested_in_report);
+
+  const redModules = modules
+    .filter((m) => m && String(m.health_state || '') === 'red')
     .sort((a, b) => String(a.path || '').localeCompare(String(b.path || '')))
     .slice(0, policy.alerts.max_untested_in_report);
 
@@ -1311,6 +1837,7 @@ function cmdReport(args, policy, paths) {
     .slice(0, policy.alerts.max_failed_in_report);
 
   const checkedModules = modules.filter((m) => m && m.checked === true).length;
+  const greenModules = modules.filter((m) => m && String(m.health_state || '') === 'green').length;
   const changedModules = modules.filter((m) => m && m.changed === true).length;
   const totalModules = modules.length;
 
@@ -1321,12 +1848,25 @@ function cmdReport(args, policy, paths) {
   lines.push(`- Date: ${date}`);
   lines.push(`- Modules: ${totalModules}`);
   lines.push(`- Checked: ${checkedModules}`);
+  lines.push(`- Green Modules: ${greenModules}`);
+  lines.push(`- Red Modules: ${redModules.length}`);
   lines.push(`- Changed/Pending: ${changedModules}`);
   lines.push(`- Untested Modules: ${untested.length}`);
   lines.push(`- Failed Tests: ${failedTests.length}`);
   if (latestRun && typeof latestRun === 'object') {
     lines.push(`- Last Run Scope: ${String(latestRun.scope || 'n/a')}`);
     lines.push(`- Last Run Passed/Failed: ${Number(latestRun.passed || 0)}/${Number(latestRun.failed || 0)}`);
+  }
+
+  lines.push('');
+  lines.push('## Red Modules (Need Help)');
+  if (!redModules.length) {
+    lines.push('- None');
+  } else {
+    for (const m of redModules) {
+      lines.push(`- ${String(m.path || 'unknown_module')}`);
+      lines.push(`  - reason: ${String(m.health_reason || 'failing_or_guard_blocked_test')}`);
+    }
   }
 
   lines.push('');
@@ -1339,6 +1879,19 @@ function cmdReport(args, policy, paths) {
       lines.push(`- ${label}`);
       if (t.last_stderr_excerpt) lines.push(`  - stderr: ${String(t.last_stderr_excerpt)}`);
     }
+  }
+
+  lines.push('');
+  lines.push('## External Health Signals');
+  if (externalHealth && externalHealth.enabled === true && externalHealth.available === true) {
+    lines.push(`- Source: ${String(externalHealth.path || 'state/autonomy/pain_signals.jsonl')}`);
+    lines.push(`- Window Hours: ${Number(externalHealth.window_hours || 24)}`);
+    lines.push(`- Total Signals: ${Number(externalHealth.total || 0)}`);
+    lines.push(`- High/Critical: ${Number(externalHealth.high_or_critical || 0)}`);
+  } else if (externalHealth && externalHealth.enabled === true) {
+    lines.push(`- unavailable: ${String(externalHealth.reason || 'unknown')}`);
+  } else {
+    lines.push('- disabled');
   }
 
   lines.push('');
@@ -1365,9 +1918,12 @@ function cmdReport(args, policy, paths) {
     date,
     modules_total: totalModules,
     modules_checked: checkedModules,
+    modules_green: greenModules,
+    modules_red: redModules.length,
     modules_changed: changedModules,
     untested_modules: untested.length,
     failed_tests: failedTests.length,
+    external_health: externalHealth,
     output_path: write ? relPath(outPath) : null,
     write
   };
@@ -1383,6 +1939,7 @@ function cmdStatus(policy, paths) {
   const status = loadStatus(paths);
   const modules = Object.values(status.modules || {});
   const tests = Object.values(status.tests || {});
+  const externalHealth = summarizeExternalHealth(paths, policy);
   const out = {
     ok: true,
     type: 'autotest_status',
@@ -1390,12 +1947,21 @@ function cmdStatus(policy, paths) {
     policy_version: policy.version,
     modules_total: modules.length,
     modules_checked: modules.filter((m) => m && m.checked === true).length,
+    modules_green: modules.filter((m) => m && String(m.health_state || '') === 'green').length,
+    modules_red: modules.filter((m) => m && String(m.health_state || '') === 'red').length,
+    modules_pending: modules.filter((m) => m && String(m.health_state || '') === 'pending').length,
     modules_changed: modules.filter((m) => m && m.changed === true).length,
     untested_modules: modules.filter((m) => m && m.untested === true).length,
     tests_total: tests.length,
     tests_failed: tests.filter((t) => t && String(t.last_status || '') === 'fail').length,
+    tests_flaky: tests.filter((t) => t && t.last_flaky === true).length,
+    tests_quarantined: tests.filter((t) => {
+      const qMs = parseIsoMs(t && t.quarantined_until_ts);
+      return Number.isFinite(qMs) && qMs > Date.now();
+    }).length,
     tests_passed: tests.filter((t) => t && String(t.last_status || '') === 'pass').length,
     tests_untested: tests.filter((t) => t && String(t.last_status || '') === 'untested').length,
+    external_health: externalHealth,
     last_sync: status.last_sync || null,
     last_run: status.last_run || null,
     last_report: status.last_report || null,
