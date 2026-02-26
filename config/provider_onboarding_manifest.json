@@ -1,0 +1,56 @@
+{
+  "version": "1.0",
+  "providers": {
+    "openai_gpt5_cloud": {
+      "enabled": false,
+      "model_id": "openai/gpt-5.2",
+      "provider_key": "openai",
+      "tiers": [2, 3],
+      "roles": ["planning", "logic", "coding", "general"],
+      "class": "cloud_specialist",
+      "spawn_allowed": true,
+      "budget": {
+        "daily_token_cap": 24000,
+        "request_token_cap": 3200
+      },
+      "guard": {
+        "max_risk": "high",
+        "require_second_opinion_for_high_risk": true
+      },
+      "secret": {
+        "secret_id": "openai_api_key",
+        "env_var": "OPENAI_API_KEY"
+      },
+      "trainability": {
+        "allow": false,
+        "note": "Third-party terms review required."
+      }
+    },
+    "anthropic_claude_cloud": {
+      "enabled": false,
+      "model_id": "anthropic/claude-3.7-sonnet",
+      "provider_key": "anthropic",
+      "tiers": [2, 3],
+      "roles": ["planning", "logic", "general"],
+      "class": "cloud_specialist",
+      "spawn_allowed": true,
+      "budget": {
+        "daily_token_cap": 22000,
+        "request_token_cap": 2800
+      },
+      "guard": {
+        "max_risk": "high",
+        "require_second_opinion_for_high_risk": true
+      },
+      "secret": {
+        "secret_id": "anthropic_api_key",
+        "env_var": "ANTHROPIC_API_KEY"
+      },
+      "trainability": {
+        "allow": false,
+        "note": "Third-party terms review required."
+      }
+    }
+  }
+}
+
