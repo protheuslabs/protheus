@@ -1,0 +1,8 @@
+{
+  "version": "1.0.6",
+  "updated": "2026-02-26",
+  "systems": {
+    "enabled": true,
+    "mode": "production"
+  }
+}
