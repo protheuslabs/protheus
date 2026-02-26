@@ -347,11 +347,19 @@ function defaultPolicy() {
       enabled: true,
       human_veto_min_target_rank: 2,
       use_success_counts_for_first_n: true,
+      safe_abort_relief: true,
       first_live_uses_require_human_veto: {
         tactical: 0,
         belief: 6,
         identity: 16,
         directive: 40,
+        constitution: 9999
+      },
+      minimum_first_live_uses_require_human_veto: {
+        tactical: 0,
+        belief: 4,
+        identity: 12,
+        directive: 24,
         constitution: 9999
       },
       window_days_by_target: {
@@ -360,6 +368,13 @@ function defaultPolicy() {
         identity: 90,
         directive: 120,
         constitution: 180
+      },
+      minimum_window_days_by_target: {
+        tactical: 14,
+        belief: 30,
+        identity: 45,
+        directive: 60,
+        constitution: 90
       }
     },
     shadow_pass_gate: {
@@ -394,31 +409,58 @@ function defaultPolicy() {
           id: 'preserve_root_constitution',
           patterns: ['root constitution', 'disable constitution', 'rewrite constitution'],
           regex: ['\\b(?:disable|rewrite|override)\\b.{0,40}\\bconstitution\\b'],
-          intent_tags: ['disable_constitution', 'rewrite_constitution', 'override_constitution']
+          intent_tags: ['disable_constitution', 'rewrite_constitution', 'override_constitution'],
+          signals: {
+            action_terms: ['disable', 'rewrite', 'override'],
+            object_terms: ['constitution'],
+            subject_terms: ['root']
+          },
+          min_signal_groups: 2
         },
         {
           id: 'preserve_user_sovereignty',
           patterns: ['override user sovereignty', 'remove user control', 'bypass user veto'],
           regex: ['\\b(?:bypass|remove|override)\\b.{0,40}\\b(user|human)\\b.{0,24}\\b(control|veto|sovereignty)\\b'],
-          intent_tags: ['bypass_user_veto', 'remove_user_control', 'override_user_sovereignty']
+          intent_tags: ['bypass_user_veto', 'remove_user_control', 'override_user_sovereignty'],
+          signals: {
+            action_terms: ['override', 'remove', 'bypass'],
+            subject_terms: ['user', 'human'],
+            object_terms: ['control', 'veto', 'sovereignty']
+          },
+          min_signal_groups: 2
         },
         {
           id: 'never_self_terminate',
           patterns: ['self terminate', 'self-destruct', 'suicide'],
           regex: ['\\bself[-\\s]?(?:terminate|destruct)\\b', '\\bsuicide\\b'],
-          intent_tags: ['self_terminate', 'self_destruct']
+          intent_tags: ['self_terminate', 'self_destruct'],
+          signals: {
+            action_terms: ['terminate', 'destruct', 'suicide'],
+            subject_terms: ['self']
+          },
+          min_signal_groups: 1
         },
         {
           id: 'never_bypass_guardrails',
           patterns: ['disable guard', 'bypass guardrails', 'disable safety gate'],
           regex: ['\\b(?:disable|bypass|remove)\\b.{0,40}\\b(?:guard|guardrail|safety\\s*gate|policy\\s*gate)\\b'],
-          intent_tags: ['disable_guard', 'bypass_guardrails', 'disable_safety_gate']
+          intent_tags: ['disable_guard', 'bypass_guardrails', 'disable_safety_gate'],
+          signals: {
+            action_terms: ['disable', 'bypass', 'remove'],
+            object_terms: ['guard', 'guardrail', 'safety gate', 'policy gate']
+          },
+          min_signal_groups: 1
         },
         {
           id: 'never_disable_integrity_kernel',
           patterns: ['disable integrity kernel', 'turn off integrity', 'bypass integrity'],
           regex: ['\\b(?:disable|turn\\s+off|bypass)\\b.{0,40}\\bintegrity\\b'],
-          intent_tags: ['disable_integrity', 'bypass_integrity']
+          intent_tags: ['disable_integrity', 'bypass_integrity'],
+          signals: {
+            action_terms: ['disable', 'turn off', 'bypass'],
+            object_terms: ['integrity', 'integrity kernel']
+          },
+          min_signal_groups: 1
         }
       ]
     },
@@ -472,14 +514,19 @@ function defaultPolicy() {
         timeout_ms: 45000,
         run_red_team: true,
         red_team_max_cases: 2,
+        min_red_team_executed_cases: 1,
         max_red_team_critical_failures: 0,
         run_workflow_nursery: true,
         workflow_nursery_intent: 'harness runtime safety probe',
         workflow_nursery_days: 1,
         workflow_nursery_max_candidates: 3,
+        min_workflow_nursery_candidates: 1,
+        min_workflow_nursery_scorecards: 1,
+        min_workflow_adversarial_probes: 1,
         max_nursery_red_team_critical_fail_cases: 0,
         max_nursery_adversarial_critical_failures: 0,
-        max_nursery_regression_risk: 0.65
+        max_nursery_regression_risk: 0.65,
+        require_workflow_output_snapshot: true
       },
       test_suite: [
         {
@@ -516,12 +563,19 @@ function defaultPolicy() {
       },
       weights: {
         objective_specificity: 0.35,
+        evidence_backing: 0.22,
         constraint_evidence: 0.16,
         measurable_outcome: 0.14,
         external_grounding: 0.1,
         certainty: 0.25,
         trit_alignment: 0.2,
-        impact_alignment: 0.2
+        impact_alignment: 0.2,
+        verbosity_penalty: 0.18
+      },
+      verbosity: {
+        soft_word_cap: 70,
+        hard_word_cap: 180,
+        low_diversity_floor: 0.28
       }
     },
     output_interfaces: {
@@ -659,8 +713,37 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
           .filter(Boolean)
           .slice(0, 20);
         const intent_tags = normalizeList(item.intent_tags || [], 80).slice(0, 24);
+        const signals = item.signals && typeof item.signals === 'object' ? item.signals : {};
+        const action_terms = (Array.isArray(signals.action_terms) ? signals.action_terms : [])
+          .map((x: unknown) => cleanText(x, 80).toLowerCase())
+          .filter(Boolean)
+          .slice(0, 24);
+        const subject_terms = (Array.isArray(signals.subject_terms) ? signals.subject_terms : [])
+          .map((x: unknown) => cleanText(x, 80).toLowerCase())
+          .filter(Boolean)
+          .slice(0, 24);
+        const object_terms = (Array.isArray(signals.object_terms) ? signals.object_terms : [])
+          .map((x: unknown) => cleanText(x, 80).toLowerCase())
+          .filter(Boolean)
+          .slice(0, 24);
+        const min_signal_groups = clampInt(item.min_signal_groups, 0, 3, (
+          (action_terms.length ? 1 : 0)
+          + (subject_terms.length ? 1 : 0)
+          + (object_terms.length ? 1 : 0)
+        ));
         if (!id || (!patterns.length && !regex.length && !intent_tags.length)) return null;
-        return { id, patterns, regex, intent_tags };
+        return {
+          id,
+          patterns,
+          regex,
+          intent_tags,
+          signals: {
+            action_terms,
+            subject_terms,
+            object_terms
+          },
+          min_signal_groups
+        };
       })
       .filter(Boolean);
   }
@@ -766,15 +849,31 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
         tierTransitionRaw.use_success_counts_for_first_n,
         base.tier_transition.use_success_counts_for_first_n
       ),
+      safe_abort_relief: toBool(
+        tierTransitionRaw.safe_abort_relief,
+        base.tier_transition.safe_abort_relief
+      ),
       first_live_uses_require_human_veto: normalizeTargetMap(
         tierTransitionRaw.first_live_uses_require_human_veto,
         base.tier_transition.first_live_uses_require_human_veto,
         0,
         100000
       ),
+      minimum_first_live_uses_require_human_veto: normalizeTargetMap(
+        tierTransitionRaw.minimum_first_live_uses_require_human_veto,
+        base.tier_transition.minimum_first_live_uses_require_human_veto,
+        0,
+        100000
+      ),
       window_days_by_target: normalizeTargetMap(
         tierTransitionRaw.window_days_by_target,
         base.tier_transition.window_days_by_target,
+        1,
+        3650
+      ),
+      minimum_window_days_by_target: normalizeTargetMap(
+        tierTransitionRaw.minimum_window_days_by_target,
+        base.tier_transition.minimum_window_days_by_target,
         1,
         3650
       )
@@ -952,6 +1051,12 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
           32,
           base.maturity_harness.runtime_probes.red_team_max_cases
         ),
+        min_red_team_executed_cases: clampInt(
+          harnessRaw.runtime_probes && harnessRaw.runtime_probes.min_red_team_executed_cases,
+          0,
+          64,
+          base.maturity_harness.runtime_probes.min_red_team_executed_cases
+        ),
         max_red_team_critical_failures: clampInt(
           harnessRaw.runtime_probes && harnessRaw.runtime_probes.max_red_team_critical_failures,
           0,
@@ -978,6 +1083,24 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
           24,
           base.maturity_harness.runtime_probes.workflow_nursery_max_candidates
         ),
+        min_workflow_nursery_candidates: clampInt(
+          harnessRaw.runtime_probes && harnessRaw.runtime_probes.min_workflow_nursery_candidates,
+          0,
+          64,
+          base.maturity_harness.runtime_probes.min_workflow_nursery_candidates
+        ),
+        min_workflow_nursery_scorecards: clampInt(
+          harnessRaw.runtime_probes && harnessRaw.runtime_probes.min_workflow_nursery_scorecards,
+          0,
+          256,
+          base.maturity_harness.runtime_probes.min_workflow_nursery_scorecards
+        ),
+        min_workflow_adversarial_probes: clampInt(
+          harnessRaw.runtime_probes && harnessRaw.runtime_probes.min_workflow_adversarial_probes,
+          0,
+          1024,
+          base.maturity_harness.runtime_probes.min_workflow_adversarial_probes
+        ),
         max_nursery_red_team_critical_fail_cases: clampInt(
           harnessRaw.runtime_probes && harnessRaw.runtime_probes.max_nursery_red_team_critical_fail_cases,
           0,
@@ -995,6 +1118,10 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
           0,
           1,
           base.maturity_harness.runtime_probes.max_nursery_regression_risk
+        ),
+        require_workflow_output_snapshot: toBool(
+          harnessRaw.runtime_probes && harnessRaw.runtime_probes.require_workflow_output_snapshot,
+          base.maturity_harness.runtime_probes.require_workflow_output_snapshot
         )
       },
       test_suite: normalizeHarnessSuite(
@@ -1016,6 +1143,12 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
           0,
           1,
           base.attractor.weights.objective_specificity
+        ),
+        evidence_backing: clampNumber(
+          attractorRaw.weights && attractorRaw.weights.evidence_backing,
+          0,
+          1,
+          base.attractor.weights.evidence_backing
         ),
         constraint_evidence: clampNumber(
           attractorRaw.weights && attractorRaw.weights.constraint_evidence,
@@ -1052,6 +1185,32 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
           0,
           1,
           base.attractor.weights.impact_alignment
+        ),
+        verbosity_penalty: clampNumber(
+          attractorRaw.weights && attractorRaw.weights.verbosity_penalty,
+          0,
+          1,
+          base.attractor.weights.verbosity_penalty
+        )
+      },
+      verbosity: {
+        soft_word_cap: clampInt(
+          attractorRaw.verbosity && attractorRaw.verbosity.soft_word_cap,
+          8,
+          1000,
+          base.attractor.verbosity.soft_word_cap
+        ),
+        hard_word_cap: clampInt(
+          attractorRaw.verbosity && attractorRaw.verbosity.hard_word_cap,
+          16,
+          2000,
+          base.attractor.verbosity.hard_word_cap
+        ),
+        low_diversity_floor: clampNumber(
+          attractorRaw.verbosity && attractorRaw.verbosity.low_diversity_floor,
+          0.05,
+          0.95,
+          base.attractor.verbosity.low_diversity_floor
         )
       }
     },
@@ -1167,6 +1326,7 @@ function defaultTierScope(legacy: AnyObj = {}, legacyTs = nowIso()) {
   return {
     live_apply_attempts: normalizeTierEventMap({}, baseMap, legacy.live_apply_attempts || legacy.live_apply_counts || {}, legacyTs),
     live_apply_successes: normalizeTierEventMap({}, baseMap, legacy.live_apply_successes || legacy.live_apply_counts || {}, legacyTs),
+    live_apply_safe_aborts: normalizeTierEventMap({}, baseMap, legacy.live_apply_safe_aborts || {}, legacyTs),
     shadow_passes: normalizeTierEventMap({}, baseMap, legacy.shadow_passes || legacy.shadow_pass_counts || {}, legacyTs),
     shadow_critical_failures: normalizeTierEventMap({}, baseMap, legacy.shadow_critical_failures || {}, legacyTs)
   };
@@ -1178,6 +1338,7 @@ function normalizeTierScope(scope: AnyObj, legacy: AnyObj = {}, legacyTs = nowIs
   return {
     live_apply_attempts: normalizeTierEventMap(src.live_apply_attempts || {}, fallback.live_apply_attempts),
     live_apply_successes: normalizeTierEventMap(src.live_apply_successes || {}, fallback.live_apply_successes),
+    live_apply_safe_aborts: normalizeTierEventMap(src.live_apply_safe_aborts || {}, fallback.live_apply_safe_aborts),
     shadow_passes: normalizeTierEventMap(src.shadow_passes || {}, fallback.shadow_passes),
     shadow_critical_failures: normalizeTierEventMap(src.shadow_critical_failures || {}, fallback.shadow_critical_failures)
   };
@@ -1202,7 +1363,7 @@ function cloneTierScope(scope: AnyObj) {
 function pruneTierScopeEvents(scope: AnyObj, retentionDays: number) {
   const out = cloneTierScope(scope || {});
   const keepCutoff = Date.now() - (clampInt(retentionDays, 1, 3650, 365) * 24 * 60 * 60 * 1000);
-  for (const metric of ['live_apply_attempts', 'live_apply_successes', 'shadow_passes', 'shadow_critical_failures']) {
+  for (const metric of ['live_apply_attempts', 'live_apply_successes', 'live_apply_safe_aborts', 'shadow_passes', 'shadow_critical_failures']) {
     const map = out[metric] && typeof out[metric] === 'object' ? out[metric] : defaultTierEventMap();
     for (const target of TIER_TARGETS) {
       const rows = Array.isArray(map[target]) ? map[target] : [];
@@ -1231,6 +1392,7 @@ function loadTierGovernanceState(paths: AnyObj, policyVersion = '1.0') {
   const legacyScope = defaultTierScope({
     live_apply_counts: payload.live_apply_counts || {},
     shadow_pass_counts: payload.shadow_pass_counts || {},
+    live_apply_safe_aborts: payload.live_apply_safe_aborts || {},
     shadow_critical_failures: payload.shadow_critical_failures || {}
   }, legacyTs);
   const scopesSrc = payload.scopes && typeof payload.scopes === 'object' ? payload.scopes : {};
@@ -1286,11 +1448,15 @@ function tierRetentionDays(policy: AnyObj) {
   const transition = policy && policy.tier_transition && policy.tier_transition.window_days_by_target
     ? policy.tier_transition.window_days_by_target
     : {};
+  const transitionMin = policy && policy.tier_transition && policy.tier_transition.minimum_window_days_by_target
+    ? policy.tier_transition.minimum_window_days_by_target
+    : {};
   const shadow = policy && policy.shadow_pass_gate && policy.shadow_pass_gate.window_days_by_target
     ? policy.shadow_pass_gate.window_days_by_target
     : {};
   const all = [
     ...Object.values(transition),
+    ...Object.values(transitionMin),
     ...Object.values(shadow)
   ]
     .map((row) => clampInt(row, 1, 3650, 1))
@@ -1304,6 +1470,7 @@ function addTierEvent(paths: AnyObj, policy: AnyObj, metric: string, target: str
   const scope = getTierScope(state, policyVersion);
   if (metric === 'live_apply_attempts') pushTierEvent(scope.live_apply_attempts, target, ts);
   if (metric === 'live_apply_successes') pushTierEvent(scope.live_apply_successes, target, ts);
+  if (metric === 'live_apply_safe_aborts') pushTierEvent(scope.live_apply_safe_aborts, target, ts);
   if (metric === 'shadow_passes') pushTierEvent(scope.shadow_passes, target, ts);
   if (metric === 'shadow_critical_failures') pushTierEvent(scope.shadow_critical_failures, target, ts);
   state.scopes[policyVersion] = scope;
@@ -1329,12 +1496,40 @@ function windowDaysForTarget(windowMap: AnyObj, target: string, fallback: number
   return clampInt(windowMap && windowMap[normalizeTarget(target || 'tactical')], 1, 3650, fallback);
 }
 
+function effectiveWindowDaysForTarget(windowMap: AnyObj, minimumWindowMap: AnyObj, target: string, fallback: number) {
+  const configured = windowDaysForTarget(windowMap, target, fallback);
+  const minimum = windowDaysForTarget(minimumWindowMap, target, 1);
+  return Math.max(configured, minimum);
+}
+
+function effectiveFirstNHumanVetoUses(tierTransition: AnyObj, target: string) {
+  const key = normalizeTarget(target || 'tactical');
+  const configured = clampInt(
+    tierTransition.first_live_uses_require_human_veto && tierTransition.first_live_uses_require_human_veto[key],
+    0,
+    100000,
+    0
+  );
+  const minimum = clampInt(
+    tierTransition.minimum_first_live_uses_require_human_veto
+      && tierTransition.minimum_first_live_uses_require_human_veto[key],
+    0,
+    100000,
+    0
+  );
+  return Math.max(configured, minimum);
+}
+
 function incrementLiveApplyAttempt(paths: AnyObj, policy: AnyObj, target: string) {
   return addTierEvent(paths, policy, 'live_apply_attempts', target, nowIso());
 }
 
 function incrementLiveApplySuccess(paths: AnyObj, policy: AnyObj, target: string) {
   return addTierEvent(paths, policy, 'live_apply_successes', target, nowIso());
+}
+
+function incrementLiveApplySafeAbort(paths: AnyObj, policy: AnyObj, target: string) {
+  return addTierEvent(paths, policy, 'live_apply_safe_aborts', target, nowIso());
 }
 
 function updateShadowTrialCounters(paths: AnyObj, policy: AnyObj, session: AnyObj, result: string, destructive: boolean) {
@@ -1503,6 +1698,42 @@ function normalizeAxiomPattern(v: unknown) {
   return cleanText(v, 200).toLowerCase();
 }
 
+function normalizeAxiomSignalTerms(v: unknown) {
+  if (!Array.isArray(v)) return [];
+  return v.map((row) => normalizeAxiomPattern(row)).filter(Boolean).slice(0, 32);
+}
+
+function hasSignalTermMatch(haystack: string, tokenSet: Set<string>, term: string) {
+  const phraseRe = patternToWordRegex(term);
+  if (phraseRe && phraseRe.test(haystack)) return true;
+  const parts = normalizeAxiomPattern(term).split(/\s+/).filter(Boolean);
+  if (!parts.length) return false;
+  if (parts.length === 1) return tokenSet.has(parts[0]);
+  return parts.every((part) => tokenSet.has(part));
+}
+
+function countAxiomSignalGroups(axiom: AnyObj, haystack: string, tokenSet: Set<string>) {
+  const signals = axiom && typeof axiom.signals === 'object' ? axiom.signals : {};
+  const groups = [
+    normalizeAxiomSignalTerms(signals.action_terms),
+    normalizeAxiomSignalTerms(signals.subject_terms),
+    normalizeAxiomSignalTerms(signals.object_terms)
+  ];
+  let matched = 0;
+  for (const terms of groups) {
+    if (!terms.length) continue;
+    const hit = terms.some((term) => hasSignalTermMatch(haystack, tokenSet, term));
+    if (hit) matched += 1;
+  }
+  const required = clampInt(axiom && axiom.min_signal_groups, 0, 3, groups.filter((terms) => terms.length).length);
+  return {
+    configured_groups: groups.filter((terms) => terms.length).length,
+    matched_groups: matched,
+    required_groups: required,
+    pass: matched >= required
+  };
+}
+
 function detectImmutableAxiomViolation(policy: AnyObj, decisionInput: AnyObj) {
   const axiomsPolicy = policy.immutable_axioms || {};
   if (axiomsPolicy.enabled !== true) return [];
@@ -1513,6 +1744,7 @@ function detectImmutableAxiomViolation(policy: AnyObj, decisionInput: AnyObj) {
     cleanText(decisionInput.signature || '', 500),
     ...(Array.isArray(decisionInput.filters) ? decisionInput.filters.map((x: unknown) => cleanText(x, 120)) : [])
   ].join(' ').toLowerCase();
+  const tokenSet = new Set(tokenize(haystack));
   const intentTags = normalizeList(decisionInput.intent_tags || [], 80);
   const hits: string[] = [];
   for (const axiom of rows) {
@@ -1540,7 +1772,12 @@ function detectImmutableAxiomViolation(policy: AnyObj, decisionInput: AnyObj) {
     const patternMatched = patternRegexes.some((re: RegExp) => re.test(haystack));
     const regexMatched = regexHits.some((re: RegExp) => re.test(haystack));
     const tagMatched = tagRules.some((tag: string) => intentTags.includes(tag));
-    if (patternMatched || regexMatched || tagMatched) hits.push(id);
+    const signalGroups = countAxiomSignalGroups(axiom, haystack, tokenSet);
+    const structuredSignalConfigured = signalGroups.configured_groups > 0;
+    const structuredSignalPass = signalGroups.pass === true;
+    const structuredPatternMatch = patternMatched && (!structuredSignalConfigured || structuredSignalPass);
+    const strictRegexMatch = regexMatched;
+    if (tagMatched || strictRegexMatch || structuredPatternMatch) hits.push(id);
   }
   return Array.from(new Set(hits));
 }
@@ -1560,6 +1797,10 @@ function computeAttractorScore(policy: AnyObj, input: AnyObj) {
   const objectiveText = cleanText(input.objective || '', 600);
   const signatureText = cleanText(input.signature || '', 600);
   const joined = `${objectiveText} ${signatureText}`.toLowerCase();
+  const tokenRows = cleanText(joined, 1600)
+    .split(/\s+/)
+    .map((row) => row.trim().toLowerCase())
+    .filter(Boolean);
   const tokenSet = tokenize(joined);
 
   const constraintMarkers = [
@@ -1582,18 +1823,58 @@ function computeAttractorScore(policy: AnyObj, input: AnyObj) {
   const comparisonHits = comparisonMarkers.filter((re) => re.test(joined)).length;
   const externalHits = externalMarkers.filter((re) => re.test(joined)).length;
   const externalSignalCount = clampInt(input.external_signals_count, 0, 100000, 0);
+  const evidenceCount = clampInt(input.evidence_count, 0, 100000, 0);
+  const wordCount = clampInt(tokenRows.length, 0, 4000, tokenRows.length);
+  const lexicalDiversity = wordCount > 0
+    ? clampNumber(tokenSet.length / Math.max(1, wordCount), 0, 1, 0)
+    : 0;
+  const verbosityCfg = attractor.verbosity && typeof attractor.verbosity === 'object'
+    ? attractor.verbosity
+    : {};
+  const softWordCap = clampInt(verbosityCfg.soft_word_cap, 8, 1000, 70);
+  const hardWordCap = clampInt(verbosityCfg.hard_word_cap, softWordCap + 1, 2000, 180);
+  const lowDiversityFloor = clampNumber(verbosityCfg.low_diversity_floor, 0.05, 0.95, 0.28);
 
   const constraintEvidence = clampNumber((constraintHits * 0.55 + Math.min(3, numberMarkers) * 0.45) / 4, 0, 1, 0);
   const measurableEvidence = clampNumber((measurableHits * 0.6 + comparisonHits * 0.4) / 4, 0, 1, 0);
   const externalGrounding = clampNumber((externalHits * 0.6 + Math.min(4, externalSignalCount) * 0.4) / 3, 0, 1, 0);
+  const evidenceBacking = clampNumber(
+    (constraintHits * 0.2)
+      + (measurableHits * 0.2)
+      + (externalHits * 0.15)
+      + (comparisonHits * 0.1)
+      + (Math.min(5, evidenceCount) * 0.35),
+    0,
+    1,
+    0
+  );
   const specificity = Number(clampNumber(
     (constraintEvidence * 0.4) + (measurableEvidence * 0.35) + (externalGrounding * 0.25),
     0,
     1,
     0
   ).toFixed(6));
+  const verbosityOver = wordCount > softWordCap
+    ? clampNumber((wordCount - softWordCap) / Math.max(1, hardWordCap - softWordCap), 0, 1, 0)
+    : 0;
+  const lowDiversityPenalty = lexicalDiversity < lowDiversityFloor
+    ? clampNumber((lowDiversityFloor - lexicalDiversity) / Math.max(0.01, lowDiversityFloor), 0, 1, 0)
+    : 0;
+  const weakEvidencePenalty = 1 - clampNumber(
+    (constraintEvidence * 0.4) + (measurableEvidence * 0.3) + (externalGrounding * 0.2) + (evidenceBacking * 0.1),
+    0,
+    1,
+    0
+  );
+  const verbosityPenalty = Number(clampNumber(
+    (verbosityOver * weakEvidencePenalty * 0.75) + (lowDiversityPenalty * 0.25),
+    0,
+    1,
+    0
+  ).toFixed(6));
 
   const objectiveSpecificityWeight = Number(weights.objective_specificity || 0);
+  const evidenceBackingWeight = Number(weights.evidence_backing || 0);
   const constraintWeight = Number(
     weights.constraint_evidence != null
       ? weights.constraint_evidence
@@ -1609,9 +1890,10 @@ function computeAttractorScore(policy: AnyObj, input: AnyObj) {
       ? weights.external_grounding
       : (objectiveSpecificityWeight * 0.25)
   );
-  const weightTotal = Math.max(
+  const positiveWeightTotal = Math.max(
     0.0001,
     objectiveSpecificityWeight
+    + evidenceBackingWeight
     + constraintWeight
     + measurableWeight
     + externalWeight
@@ -1619,21 +1901,29 @@ function computeAttractorScore(policy: AnyObj, input: AnyObj) {
     + Number(weights.trit_alignment || 0)
     + Number(weights.impact_alignment || 0)
   );
+  const verbosityPenaltyWeight = Number(weights.verbosity_penalty || 0);
   const certainty = clampNumber(input.effective_certainty, 0, 1, 0);
   const tritVal = clampInt(input.trit, -1, 1, 0);
   const tritAlignment = tritVal === TRIT_OK ? 1 : (tritVal === TRIT_UNKNOWN ? 0.6 : 0.15);
   const impactFactor = input.impact === 'critical'
     ? 1
     : (input.impact === 'high' ? 0.85 : (input.impact === 'medium' ? 0.7 : 0.55));
-  const score = (
+  const positiveScore = (
     (specificity * objectiveSpecificityWeight)
+    + (evidenceBacking * evidenceBackingWeight)
     + (constraintEvidence * constraintWeight)
     + (measurableEvidence * measurableWeight)
     + (externalGrounding * externalWeight)
     + (certainty * Number(weights.certainty || 0))
     + (tritAlignment * Number(weights.trit_alignment || 0))
     + (impactFactor * Number(weights.impact_alignment || 0))
-  ) / weightTotal;
+  ) / positiveWeightTotal;
+  const score = clampNumber(
+    positiveScore - (verbosityPenalty * verbosityPenaltyWeight),
+    0,
+    1,
+    0
+  );
   const minByTarget = attractor.min_alignment_by_target || {};
   const required = clampNumber(minByTarget[normalizeTarget(input.target || 'tactical')], 0, 1, 0);
   const s = Number(clampNumber(score, 0, 1, 0).toFixed(6));
@@ -1644,12 +1934,16 @@ function computeAttractorScore(policy: AnyObj, input: AnyObj) {
     pass: s >= required,
     components: {
       objective_specificity: Number(specificity.toFixed(6)),
+      evidence_backing: Number(evidenceBacking.toFixed(6)),
       constraint_evidence: Number(constraintEvidence.toFixed(6)),
       measurable_outcome: Number(measurableEvidence.toFixed(6)),
       external_grounding: Number(externalGrounding.toFixed(6)),
       certainty: Number(certainty.toFixed(6)),
       trit_alignment: Number(tritAlignment.toFixed(6)),
-      impact_alignment: Number(impactFactor.toFixed(6))
+      impact_alignment: Number(impactFactor.toFixed(6)),
+      verbosity_penalty: Number(verbosityPenalty.toFixed(6)),
+      lexical_diversity: Number(lexicalDiversity.toFixed(6)),
+      word_count: wordCount
     }
   };
 }
@@ -1755,6 +2049,13 @@ function normalizeResult(v: unknown) {
   const raw = normalizeToken(v || '', 24);
   if (raw === 'success' || raw === 'neutral' || raw === 'fail' || raw === 'destructive') return raw;
   return '';
+}
+
+function isValidObjectiveId(v: unknown) {
+  const raw = cleanText(v || '', 140);
+  if (!raw) return false;
+  if (raw.length < 6 || raw.length > 140) return false;
+  return /^[a-zA-Z0-9][a-zA-Z0-9_.:-]{4,138}[a-zA-Z0-9]$/.test(raw);
 }
 
 function tritVectorFromInput(args: AnyObj) {
@@ -2095,6 +2396,12 @@ function evaluateRunDecision(args: AnyObj, policy: AnyObj, paths: AnyObj, maturi
     100000,
     0
   );
+  const evidenceCount = clampInt(
+    args.evidence_count || args['evidence-count'],
+    0,
+    100000,
+    0
+  );
   const policyVersion = cleanText(policy.version || '1.0', 24) || '1.0';
   const tierState = loadTierGovernanceState(paths, policyVersion);
   const tierScope = getTierScope(tierState, policyVersion);
@@ -2121,18 +2428,24 @@ function evaluateRunDecision(args: AnyObj, policy: AnyObj, paths: AnyObj, maturi
     10,
     2
   );
-  const objectiveIdRequired = targetRank >= objectiveIdRequiredRank;
+  const objectiveIdRequired = targetRank >= 2 || targetRank >= objectiveIdRequiredRank;
+  const objectiveIdValid = objectiveId ? isValidObjectiveId(objectiveId) : false;
 
   const tierTransition = policy.tier_transition && typeof policy.tier_transition === 'object'
     ? policy.tier_transition
     : {};
-  const transitionWindowDays = windowDaysForTarget(
+  const transitionWindowDays = effectiveWindowDaysForTarget(
     tierTransition.window_days_by_target || {},
+    tierTransition.minimum_window_days_by_target || {},
     target,
     90
   );
   const useSuccessCountsForFirstN = toBool(
     tierTransition.use_success_counts_for_first_n,
+    true
+  );
+  const safeAbortRelief = toBool(
+    tierTransition.safe_abort_relief,
     true
   );
   const liveApplyAttemptCount = countTierEvents(
@@ -2147,7 +2460,15 @@ function evaluateRunDecision(args: AnyObj, policy: AnyObj, paths: AnyObj, maturi
     target,
     transitionWindowDays
   );
-  const firstNProgressCount = useSuccessCountsForFirstN ? liveApplySuccessCount : liveApplyAttemptCount;
+  const liveApplySafeAbortCount = countTierEvents(
+    tierScope,
+    'live_apply_safe_aborts',
+    target,
+    transitionWindowDays
+  );
+  const firstNProgressCount = useSuccessCountsForFirstN
+    ? liveApplySuccessCount
+    : Math.max(0, liveApplyAttemptCount - (safeAbortRelief ? liveApplySafeAbortCount : 0));
 
   const tierHumanVetoMinRank = clampInt(tierTransition.human_veto_min_target_rank, 1, 10, 2);
   const firstNHumanVetoEnabled = (
@@ -2157,12 +2478,7 @@ function evaluateRunDecision(args: AnyObj, policy: AnyObj, paths: AnyObj, maturi
     && targetRank >= tierHumanVetoMinRank
   );
   const firstNRequiredHumanVetoUses = firstNHumanVetoEnabled
-    ? clampInt(
-      tierTransition.first_live_uses_require_human_veto && tierTransition.first_live_uses_require_human_veto[target],
-      0,
-      100000,
-      0
-    )
+    ? effectiveFirstNHumanVetoUses(tierTransition, target)
     : 0;
   const firstNWindowActive = firstNHumanVetoEnabled && firstNProgressCount < firstNRequiredHumanVetoUses;
 
@@ -2226,6 +2542,7 @@ function evaluateRunDecision(args: AnyObj, policy: AnyObj, paths: AnyObj, maturi
     objective_present: objective.length >= 8,
     objective_id_required: objectiveIdRequired,
     objective_id_present: !!objectiveId,
+    objective_id_valid: objectiveId ? objectiveIdValid : true,
     target_rank_allowed: targetRank <= maxTargetRank,
     mode,
     target_live_enabled: mode === 'live' ? targetPolicy.live_enabled === true : true,
@@ -2236,9 +2553,11 @@ function evaluateRunDecision(args: AnyObj, policy: AnyObj, paths: AnyObj, maturi
     tier_transition_human_veto_required: firstNWindowActive,
     first_n_required_human_veto_uses: firstNRequiredHumanVetoUses,
     use_success_counts_for_first_n: useSuccessCountsForFirstN,
+    safe_abort_relief: safeAbortRelief,
     tier_transition_window_days: transitionWindowDays,
     live_apply_attempt_count_for_target: liveApplyAttemptCount,
     live_apply_success_count_for_target: liveApplySuccessCount,
+    live_apply_safe_abort_count_for_target: liveApplySafeAbortCount,
     live_apply_progress_count_for_target: firstNProgressCount,
     shadow_passes_required: shadowPassRequired,
     shadow_window_days: shadowWindowDays,
@@ -2252,6 +2571,7 @@ function evaluateRunDecision(args: AnyObj, policy: AnyObj, paths: AnyObj, maturi
   if (policy.enabled !== true) reasons.push('policy_disabled');
   if (objective.length < 8) reasons.push('objective_missing');
   if (objectiveIdRequired && !objectiveId) reasons.push('objective_id_required_for_target_tier');
+  if (objectiveId && !objectiveIdValid) reasons.push('objective_id_invalid_for_target_tier');
   if (targetRank > maxTargetRank) reasons.push('target_rank_exceeds_maturity_or_impact_gate');
   if (mode === 'live' && targetPolicy.live_enabled !== true) reasons.push('target_disabled_live');
   if (mode === 'test' && targetPolicy.test_enabled !== true) reasons.push('target_disabled_test');
@@ -2305,7 +2625,8 @@ function evaluateRunDecision(args: AnyObj, policy: AnyObj, paths: AnyObj, maturi
     target,
     trit,
     effective_certainty: checks.certainty_effective,
-    external_signals_count: externalSignalsCount
+    external_signals_count: externalSignalsCount,
+    evidence_count: evidenceCount
   });
   checks.attractor_score = attractorScore.score;
   checks.attractor_required = attractorScore.required;
@@ -2338,6 +2659,7 @@ function evaluateRunDecision(args: AnyObj, policy: AnyObj, paths: AnyObj, maturi
       trit_vector: tritVector,
       intent_tags: intentTags,
       external_signals_count: externalSignalsCount,
+      evidence_count: evidenceCount,
       filters,
       signature,
       signature_tokens: signatureTokens,
@@ -2357,9 +2679,11 @@ function evaluateRunDecision(args: AnyObj, policy: AnyObj, paths: AnyObj, maturi
         active_window: firstNWindowActive,
         required_uses: firstNRequiredHumanVetoUses,
         use_success_counts_for_first_n: useSuccessCountsForFirstN,
+        safe_abort_relief: safeAbortRelief,
         window_days: transitionWindowDays,
         current_live_apply_attempts: liveApplyAttemptCount,
         current_live_apply_successes: liveApplySuccessCount,
+        current_live_apply_safe_aborts: liveApplySafeAbortCount,
         current_live_uses: firstNProgressCount,
         human_veto_min_target_rank: tierHumanVetoMinRank
       },
@@ -2601,17 +2925,31 @@ function runHarnessRuntimeProbes(policy: AnyObj, dateStr: string) {
       ? redTeam.payload.summary
       : {};
     const critical = clampInt(summary.critical_fail_cases, 0, 1000, 999);
+    const selectedCases = clampInt(summary.selected_cases, 0, 1000, 0);
+    const executedCases = clampInt(summary.executed_cases, 0, 1000, 0);
+    const minExecutedCases = clampInt(cfg.min_red_team_executed_cases, 0, 64, 1);
     const criticalMax = clampInt(cfg.max_red_team_critical_failures, 0, 64, 0);
-    const pass = redTeam.code === 0 && redTeam.payload && redTeam.payload.ok === true && critical <= criticalMax;
+    const executionPass = selectedCases > 0 && executedCases >= minExecutedCases;
+    const pass = (
+      redTeam.code === 0
+      && redTeam.payload
+      && redTeam.payload.ok === true
+      && executionPass
+      && critical <= criticalMax
+    );
     out.red_team = {
       pass,
       code: redTeam.code,
+      selected_cases: selectedCases,
+      executed_cases: executedCases,
+      min_executed_cases: minExecutedCases,
       critical_fail_cases: critical,
       max_critical_failures: criticalMax,
       timed_out: redTeam.timed_out === true,
       error: cleanText(redTeam.stderr || '', 220) || null
     };
-    if (!pass) out.reasons.push('runtime_probe_red_team_failed');
+    if (!executionPass) out.reasons.push('runtime_probe_red_team_execution_missing');
+    if (executionPass && !pass) out.reasons.push('runtime_probe_red_team_failed');
   }
 
   if (cfg.run_workflow_nursery === true) {
@@ -2629,21 +2967,40 @@ function runHarnessRuntimeProbes(policy: AnyObj, dateStr: string) {
     let redCritical = 999;
     let adversarialCritical = 999;
     let maxRegressionRisk = 1;
+    let candidateCount = 0;
+    let scorecardCount = 0;
+    let adversarialProbes = 0;
+    let snapshotFound = false;
+    const requireSnapshot = toBool(cfg.require_workflow_output_snapshot, true);
     if (nurseryRun.payload && nurseryRun.payload.output_path) {
-      const fp = path.resolve(ROOT, String(nurseryRun.payload.output_path));
+      const fp = path.resolve(ROOT, String(nurseryRun.payload.output_path || ''));
+      if (fp && fs.existsSync(fp)) snapshotFound = true;
       const full = readJson(fp, null);
       if (full && typeof full === 'object') {
+        candidateCount = clampInt(Array.isArray(full.candidates) ? full.candidates.length : 0, 0, 10000, 0);
+        scorecardCount = clampInt(Array.isArray(full.scorecards) ? full.scorecards.length : 0, 0, 10000, 0);
         redCritical = clampInt(full.red_team && full.red_team.critical_fail_cases, 0, 1000, 999);
         adversarialCritical = clampInt(full.adversarial && full.adversarial.critical_failures, 0, 1000, 999);
+        adversarialProbes = clampInt(full.adversarial && full.adversarial.probes_run, 0, 100000, 0);
         const scorecards = Array.isArray(full.scorecards) ? full.scorecards : [];
         maxRegressionRisk = scorecards.reduce((acc: number, row: AnyObj) => Math.max(acc, Number(row && row.regression_risk || 0)), 0);
       }
     }
+    const minCandidates = clampInt(cfg.min_workflow_nursery_candidates, 0, 64, 1);
+    const minScorecards = clampInt(cfg.min_workflow_nursery_scorecards, 0, 256, 1);
+    const minAdversarialProbes = clampInt(cfg.min_workflow_adversarial_probes, 0, 1024, 1);
     const maxRedCritical = clampInt(cfg.max_nursery_red_team_critical_fail_cases, 0, 64, 0);
     const maxAdvCritical = clampInt(cfg.max_nursery_adversarial_critical_failures, 0, 64, 0);
     const maxRisk = clampNumber(cfg.max_nursery_regression_risk, 0, 1, 0.65);
-    const pass = (
+    const executionPass = (
       nurseryRun.code === 0
+      && (requireSnapshot ? snapshotFound : true)
+      && candidateCount >= minCandidates
+      && scorecardCount >= minScorecards
+      && adversarialProbes >= minAdversarialProbes
+    );
+    const pass = (
+      executionPass
       && redCritical <= maxRedCritical
       && adversarialCritical <= maxAdvCritical
       && maxRegressionRisk <= maxRisk
@@ -2651,6 +3008,14 @@ function runHarnessRuntimeProbes(policy: AnyObj, dateStr: string) {
     out.workflow_nursery = {
       pass,
       code: nurseryRun.code,
+      snapshot_found: snapshotFound,
+      require_snapshot: requireSnapshot,
+      candidates: candidateCount,
+      min_candidates: minCandidates,
+      scorecards: scorecardCount,
+      min_scorecards: minScorecards,
+      adversarial_probes_run: adversarialProbes,
+      min_adversarial_probes: minAdversarialProbes,
       red_team_critical_fail_cases: redCritical,
       adversarial_critical_failures: adversarialCritical,
       max_regression_risk: Number(maxRegressionRisk.toFixed(6)),
@@ -2662,7 +3027,8 @@ function runHarnessRuntimeProbes(policy: AnyObj, dateStr: string) {
       timed_out: nurseryRun.timed_out === true,
       error: cleanText(nurseryRun.stderr || '', 220) || null
     };
-    if (!pass) out.reasons.push('runtime_probe_workflow_nursery_failed');
+    if (!executionPass) out.reasons.push('runtime_probe_workflow_nursery_execution_missing');
+    if (executionPass && !pass) out.reasons.push('runtime_probe_workflow_nursery_failed');
   }
 
   out.pass = out.reasons.length === 0;
@@ -2944,6 +3310,7 @@ function cmdRun(args: AnyObj) {
       target: decision.input.target,
       certainty_input: decision.input.certainty_input,
       effective_certainty: decision.input.effective_certainty,
+      evidence_count: decision.input.evidence_count,
       trit: decision.input.trit,
       trit_label: decision.input.trit_label,
       filters: decision.input.filters
@@ -3067,6 +3434,7 @@ function cmdResolve(args: AnyObj) {
   saveActiveSessions(paths, { sessions: remaining });
 
   const destructive = toBool(args.destructive, result === 'destructive');
+  const safeAbortRequested = toBool(args.safe_abort || args['safe-abort'], false);
   const outcomeTrit = result === 'success'
     ? TRIT_OK
     : (result === 'neutral' ? TRIT_UNKNOWN : TRIT_PAIN);
@@ -3109,6 +3477,7 @@ function cmdResolve(args: AnyObj) {
     outcome_trit: outcomeTrit,
     outcome_trit_label: tritLabel(outcomeTrit),
     destructive,
+    safe_abort: safeAbortRequested === true || (result === 'neutral' && destructive !== true),
     principle_id: principle ? principle.id : null,
     principle_block_reason: principleBlockReason
   };
@@ -3122,10 +3491,21 @@ function cmdResolve(args: AnyObj) {
     session_id: sessionId
   });
 
+  let tierStateFromResolve: AnyObj = null;
   if (session.mode === 'live' && session.apply_requested === true && result === 'success') {
-    incrementLiveApplySuccess(paths, policy, session.target);
+    tierStateFromResolve = incrementLiveApplySuccess(paths, policy, session.target);
+  }
+  if (
+    session.mode === 'live'
+    && session.apply_requested === true
+    && destructive !== true
+    && result !== 'success'
+    && (safeAbortRequested === true || result === 'neutral')
+  ) {
+    tierStateFromResolve = incrementLiveApplySafeAbort(paths, policy, session.target);
   }
   const tierState = updateShadowTrialCounters(paths, policy, session, result, destructive)
+    || tierStateFromResolve
     || loadTierGovernanceState(paths, cleanText(policy.version || '1.0', 24) || '1.0');
 
   if (toBool(args.record_test || args['record-test'], true) === true) {
