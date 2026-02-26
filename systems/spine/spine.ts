@@ -1141,6 +1141,7 @@ function main() {
     "config/continuum_policy.json",
     "config/mirror_organ_policy.json",
     "config/nursery_policy.json",
+    "config/workflow_executor_policy.json",
     "config/workflow_policy.json",
     "config/regime_organ_policy.json",
     "config/identity_anchor_policy.json",

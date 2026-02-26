@@ -38,7 +38,10 @@ function run() {
   const latestPath = path.join(tmp, 'state', 'adaptive', 'workflows', 'executor', 'latest.json');
   const toolsDir = path.join(tmp, 'tools');
   const writerScript = path.join(toolsDir, 'write_receipt.js');
+  const failOnceScript = path.join(toolsDir, 'fail_once_then_pass.js');
   const receiptPath = path.join(tmp, 'state', 'autonomy', 'receipts', `${dateStr}.jsonl`);
+  const failOnceMarkerPath = path.join(tmp, 'state', 'tmp', 'fail_once_marker.txt');
+  const mutationPolicyPath = path.join(tmp, 'config', 'workflow_executor_policy.json');
 
   fs.mkdirSync(toolsDir, { recursive: true });
   fs.writeFileSync(
@@ -53,6 +56,38 @@ function run() {
     ].join('\n'),
     'utf8'
   );
+  fs.writeFileSync(
+    failOnceScript,
+    [
+      '#!/usr/bin/env node',
+      "const fs = require('fs');",
+      "const path = require('path');",
+      "const marker = String(process.argv[2] || '');",
+      "if (!marker) process.exit(2);",
+      "if (fs.existsSync(marker)) process.exit(0);",
+      "fs.mkdirSync(path.dirname(marker), { recursive: true });",
+      "fs.writeFileSync(marker, 'first_fail\\n', 'utf8');",
+      'process.exit(9);'
+    ].join('\n'),
+    'utf8'
+  );
+  writeJson(mutationPolicyPath, {
+    version: '1.0',
+    runtime_mutation: {
+      enabled: true,
+      max_mutations_per_run: 4,
+      max_mutations_per_workflow: 2,
+      retry_after_apply: true,
+      rollback_on_regression: true,
+      max_retry_increment: 1,
+      max_total_retry_per_step: 3,
+      allow: {
+        guard_hardening: false,
+        rollback_path: false,
+        retry_tuning: true
+      }
+    }
+  });
 
   const successWorkflow = {
     id: 'wf_success',
@@ -195,7 +230,8 @@ function run() {
     dateStr,
     '--max=3',
     '--continue-on-error=1',
-    '--dry-run=0'
+    '--dry-run=0',
+    '--runtime-mutation=0'
   ], {
     cwd: root,
     encoding: 'utf8',
@@ -206,6 +242,68 @@ function run() {
   assert.ok(failOut && failOut.ok === true, 'fail run output should be ok');
   assert.strictEqual(Number(failOut.workflows_failed || 0), 1, 'expected one failed workflow');
   assert.strictEqual(Number(failOut.workflows_blocked || 0), 1, 'gate failure should count as blocked');
+
+  const mutatingWorkflow = {
+    id: 'wf_mutation_retry',
+    name: 'Mutation Retry Workflow',
+    status: 'active',
+    source: 'test',
+    updated_at: '2026-02-25T00:00:00.000Z',
+    mutation: {
+      kind: 'retry_tuning'
+    },
+    steps: [
+      {
+        id: 'flaky',
+        type: 'command',
+        command: `${shellQuote(process.execPath)} ${shellQuote(failOnceScript)} ${shellQuote(failOnceMarkerPath)}`,
+        retries: 0,
+        timeout_ms: 30000
+      },
+      {
+        id: 'confirm',
+        type: 'command',
+        command: `${shellQuote(process.execPath)} -e ${shellQuote('process.exit(0)')}`,
+        retries: 0,
+        timeout_ms: 30000
+      }
+    ]
+  };
+  writeJson(registryPath, {
+    version: '1.0',
+    updated_at: null,
+    generated_at: null,
+    workflows: [mutatingWorkflow]
+  });
+
+  const mutationRun = spawnSync(process.execPath, [
+    scriptPath,
+    'run',
+    dateStr,
+    '--max=2',
+    '--dry-run=0',
+    '--runtime-mutation=1',
+    `--policy=${mutationPolicyPath}`
+  ], {
+    cwd: root,
+    encoding: 'utf8',
+    env
+  });
+  assert.strictEqual(mutationRun.status, 0, mutationRun.stderr || 'mutation run should pass');
+  const mutationOut = parsePayload(mutationRun.stdout);
+  assert.ok(mutationOut && mutationOut.ok === true, 'mutation run output should be ok');
+  assert.strictEqual(Number(mutationOut.workflows_succeeded || 0), 1, 'mutation workflow should succeed after runtime retry tuning');
+  assert.ok(Number(mutationOut.runtime_mutations_applied || 0) >= 1, 'runtime mutation should be applied');
+
+  const mutationRunPayload = JSON.parse(fs.readFileSync(runPath, 'utf8'));
+  assert.ok(Number(mutationRunPayload.runtime_mutations_applied || 0) >= 1, 'run snapshot should record mutation apply');
+  const mutationResult = Array.isArray(mutationRunPayload.results) ? mutationRunPayload.results[0] : null;
+  assert.ok(mutationResult && mutationResult.mutation_summary, 'mutation summary should exist on result');
+  assert.ok(Number(mutationResult.mutation_summary.applied || 0) >= 1, 'result mutation summary should record applied mutation');
+  const retryRows = Array.isArray(mutationResult.step_results)
+    ? mutationResult.step_results.filter((row) => row && row.runtime_mutation_retry === true)
+    : [];
+  assert.ok(retryRows.length >= 1, 'step results should include runtime mutation retry execution');
 
   fs.rmSync(tmp, { recursive: true, force: true });
   console.log('workflow_executor.test.js: OK');
