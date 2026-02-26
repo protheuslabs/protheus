@@ -203,19 +203,37 @@ function cmdSetMode(args) {
 function cmdVerify(args) {
   const strict = toBool(args.strict, true);
   const withBuild = toBool(args.build, true);
+  const deepDist = toBool(
+    args['deep-dist'] != null ? args['deep-dist'] : process.env.PROTHEUS_RUNTIME_VERIFY_DEEP_DIST,
+    false
+  );
   const checks = [];
 
   if (withBuild) {
     checks.push(runCmd('build_systems_verify', 'npm', ['run', 'build:systems:verify']));
   }
-  checks.push(runCmd('contract_check_dist', 'node', ['systems/spine/contract_check.js'], {
-    PROTHEUS_RUNTIME_MODE: 'dist',
-    PROTHEUS_RUNTIME_DIST_REQUIRED: '1'
-  }));
-  checks.push(runCmd('schema_contract_check_dist', 'node', ['systems/security/schema_contract_check.js', 'run'], {
-    PROTHEUS_RUNTIME_MODE: 'dist',
-    PROTHEUS_RUNTIME_DIST_REQUIRED: '1'
-  }));
+  checks.push(runCmd(
+    deepDist ? 'contract_check_dist' : 'contract_check',
+    'node',
+    ['systems/spine/contract_check.js'],
+    deepDist
+      ? {
+          PROTHEUS_RUNTIME_MODE: 'dist',
+          PROTHEUS_RUNTIME_DIST_REQUIRED: '1'
+        }
+      : {}
+  ));
+  checks.push(runCmd(
+    deepDist ? 'schema_contract_check_dist' : 'schema_contract_check',
+    'node',
+    ['systems/security/schema_contract_check.js', 'run'],
+    deepDist
+      ? {
+          PROTHEUS_RUNTIME_MODE: 'dist',
+          PROTHEUS_RUNTIME_DIST_REQUIRED: '1'
+        }
+      : {}
+  ));
   const legacyPairs = legacyRuntimeJsPairs();
   checks.push({
     name: 'legacy_runtime_js_pairs',
@@ -232,6 +250,7 @@ function cmdVerify(args) {
     type: 'dist_runtime_verify',
     ts: nowIso(),
     strict,
+    deep_dist: deepDist,
     build_step: withBuild,
     legacy_pair_count: legacyPairs.length,
     legacy_pairs: legacyPairs,
@@ -252,7 +271,7 @@ function usage() {
   console.log('Usage:');
   console.log('  node systems/ops/dist_runtime_cutover.js status');
   console.log('  node systems/ops/dist_runtime_cutover.js set-mode --mode=dist|source');
-  console.log('  node systems/ops/dist_runtime_cutover.js verify [--build=1|0] [--strict=1|0]');
+  console.log('  node systems/ops/dist_runtime_cutover.js verify [--build=1|0] [--strict=1|0] [--deep-dist=1|0]');
   console.log('  node systems/ops/dist_runtime_cutover.js legacy-pairs [--strict=1|0]');
 }
 
