@@ -2,7 +2,7 @@
   "type": "cryonics_registry",
   "version": "1.0",
   "profile": "state_phase1",
-  "updated_at": "2026-02-26T10:16:40.940Z",
+  "updated_at": "2026-02-26T10:40:35.438Z",
   "entries": {
     "state/sensory/eyes/raw/2026-02-17.jsonl": {
       "source_rel": "state/sensory/eyes/raw/2026-02-17.jsonl",
