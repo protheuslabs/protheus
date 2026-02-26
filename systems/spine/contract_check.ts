@@ -858,6 +858,10 @@ function main() {
     "systems/workflow/orchestron/intent_analyzer.js",
     ["intent_analyzer.js", "run", "--intent"]
   );
+  checkSourceContains(
+    "systems/workflow/orchestron/nursery_tester.js",
+    ["orchestron_nursery_scorecard", "contract_version: '1.0'", "summary:", "blocked,"]
+  );
 
   // workflow_executor.js runs active workflow steps with retries/gate checks/receipt checks.
   checkScript(

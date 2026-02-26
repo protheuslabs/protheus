@@ -387,20 +387,51 @@ function evaluateCandidates(input) {
 
   const flattened = flattenCandidateTree(candidates, 6);
   const scorecards = flattened.map((entry) => scoreCandidate(entry.candidate, context, entry));
-  scorecards.sort((a, b) => Number(b.composite_score || 0) - Number(a.composite_score || 0));
+  scorecards.sort((a, b) => {
+    const scoreDiff = Number(b.composite_score || 0) - Number(a.composite_score || 0);
+    if (scoreDiff !== 0) return scoreDiff;
+    return String(a.candidate_id || '').localeCompare(String(b.candidate_id || ''));
+  });
 
-  const scoreMap = new Map(scorecards.map((row) => [String(row.candidate_id || ''), row]));
   const passMap = new Map(scorecards.map((row) => [String(row.candidate_id || ''), row.pass === true]));
   const byId = new Map(flattened.map((row) => [String(row.candidate && row.candidate.id || ''), row]));
   const passing = [];
+  const blocked = [];
 
   for (const card of scorecards) {
     const candidateId = String(card && card.candidate_id || '');
-    if (!candidateId || card.pass !== true) continue;
+    if (!candidateId) continue;
     const entry = byId.get(candidateId);
     if (!entry || !entry.candidate) continue;
     const parentId = String(entry.parent_candidate_id || '').trim();
-    if (parentId && passMap.get(parentId) !== true) continue;
+    if (card.pass !== true) {
+      blocked.push({
+        candidate_id: candidateId,
+        parent_candidate_id: parentId || null,
+        depth: Number(entry.depth || 0),
+        predicted_yield_delta: Number(card.predicted_yield_delta || 0),
+        predicted_drift_delta: Number(card.predicted_drift_delta || 0),
+        safety_score: Number(card.safety_score || 0),
+        regression_risk: Number(card.regression_risk || 0),
+        composite_score: Number(card.composite_score || 0),
+        reasons: Array.isArray(card.reasons) ? card.reasons.slice(0, 12) : []
+      });
+      continue;
+    }
+    if (parentId && passMap.get(parentId) !== true) {
+      blocked.push({
+        candidate_id: candidateId,
+        parent_candidate_id: parentId,
+        depth: Number(entry.depth || 0),
+        predicted_yield_delta: Number(card.predicted_yield_delta || 0),
+        predicted_drift_delta: Number(card.predicted_drift_delta || 0),
+        safety_score: Number(card.safety_score || 0),
+        regression_risk: Number(card.regression_risk || 0),
+        composite_score: Number(card.composite_score || 0),
+        reasons: ['parent_candidate_failed']
+      });
+      continue;
+    }
     passing.push({
       candidate: entry.candidate,
       scorecard: card,
@@ -410,16 +441,28 @@ function evaluateCandidates(input) {
     if (passing.length >= Math.max(1, Number(policy.max_promotions_per_run || 4))) break;
   }
 
+  const passRate = scorecards.length > 0
+    ? Number((passing.length / scorecards.length).toFixed(4))
+    : 0;
+
   return {
     ok: true,
     type: 'orchestron_nursery_scorecard',
+    contract_version: '1.0',
     ts: nowIso(),
     policy,
     value_currency: normalizeValueContext(context).value_currency,
     red_team_critical_failures: redTeamCriticalFailures,
     adversarial_results: adversarialResults.length,
     flattened_candidates: flattened.length,
+    summary: {
+      scorecards: scorecards.length,
+      passing: passing.length,
+      blocked: blocked.length,
+      pass_rate: passRate
+    },
     scorecards,
+    blocked,
     passing
   };
 }
