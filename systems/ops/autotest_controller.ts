@@ -13,11 +13,11 @@
  *
  * Usage:
  *   node systems/ops/autotest_controller.js sync [--policy=path] [--strict=1|0]
- *   node systems/ops/autotest_controller.js run [--policy=path] [--scope=critical|changed|all] [--max-tests=N] [--strict=1|0] [--sleep-only=1|0] [--force=1|0]
+ *   node systems/ops/autotest_controller.js run [--policy=path] [--scope=critical|changed|all] [--max-tests=N] [--strict=1|0] [--sleep-only=1|0] [--force=1|0] [--run-timeout-ms=N]
  *   node systems/ops/autotest_controller.js report [YYYY-MM-DD|latest] [--policy=path] [--write=1|0]
  *   node systems/ops/autotest_controller.js status [--policy=path]
- *   node systems/ops/autotest_controller.js pulse [--policy=path] [--scope=changed|critical|all] [--max-tests=N] [--strict=1|0] [--force=1|0]
- *   node systems/ops/autotest_controller.js daemon [--policy=path] [--interval-sec=N] [--max-cycles=N] [--scope=changed|critical|all] [--max-tests=N] [--strict=1|0]
+ *   node systems/ops/autotest_controller.js pulse [--policy=path] [--scope=changed|critical|all] [--max-tests=N] [--strict=1|0] [--force=1|0] [--run-timeout-ms=N]
+ *   node systems/ops/autotest_controller.js daemon [--policy=path] [--interval-sec=N] [--max-cycles=N] [--scope=changed|critical|all] [--max-tests=N] [--strict=1|0] [--run-timeout-ms=N]
  */
 
 const fs = require('fs');
@@ -65,11 +65,11 @@ function runtimePaths() {
 function usage() {
   console.log('Usage:');
   console.log('  node systems/ops/autotest_controller.js sync [--policy=path] [--strict=1|0]');
-  console.log('  node systems/ops/autotest_controller.js run [--policy=path] [--scope=critical|changed|all] [--max-tests=N] [--strict=1|0] [--sleep-only=1|0] [--force=1|0]');
+  console.log('  node systems/ops/autotest_controller.js run [--policy=path] [--scope=critical|changed|all] [--max-tests=N] [--strict=1|0] [--sleep-only=1|0] [--force=1|0] [--run-timeout-ms=N]');
   console.log('  node systems/ops/autotest_controller.js report [YYYY-MM-DD|latest] [--policy=path] [--write=1|0]');
   console.log('  node systems/ops/autotest_controller.js status [--policy=path]');
-  console.log('  node systems/ops/autotest_controller.js pulse [--policy=path] [--scope=changed|critical|all] [--max-tests=N] [--strict=1|0] [--force=1|0]');
-  console.log('  node systems/ops/autotest_controller.js daemon [--policy=path] [--interval-sec=N] [--max-cycles=N] [--scope=changed|critical|all] [--max-tests=N] [--strict=1|0]');
+  console.log('  node systems/ops/autotest_controller.js pulse [--policy=path] [--scope=changed|critical|all] [--max-tests=N] [--strict=1|0] [--force=1|0] [--run-timeout-ms=N]');
+  console.log('  node systems/ops/autotest_controller.js daemon [--policy=path] [--interval-sec=N] [--max-cycles=N] [--scope=changed|critical|all] [--max-tests=N] [--strict=1|0] [--run-timeout-ms=N]');
 }
 
 function parseArgs(argv) {
@@ -259,7 +259,8 @@ function defaultPolicy() {
       default_scope: 'changed',
       max_tests_per_run: 24,
       strict: false,
-      timeout_ms_per_test: 180000
+      timeout_ms_per_test: 180000,
+      run_timeout_ms: 120000
     },
     sleep_window_local: {
       enabled: true,
@@ -375,7 +376,8 @@ function loadPolicy(policyPathRaw) {
         : base.execution.default_scope,
       max_tests_per_run: clampInt(execution.max_tests_per_run, 1, 500, base.execution.max_tests_per_run),
       strict: toBool(execution.strict, base.execution.strict),
-      timeout_ms_per_test: clampInt(execution.timeout_ms_per_test, 1000, 30 * 60 * 1000, base.execution.timeout_ms_per_test)
+      timeout_ms_per_test: clampInt(execution.timeout_ms_per_test, 1000, 30 * 60 * 1000, base.execution.timeout_ms_per_test),
+      run_timeout_ms: clampInt(execution.run_timeout_ms, 1000, 2 * 60 * 60 * 1000, base.execution.run_timeout_ms)
     },
     sleep_window_local: {
       enabled: toBool(sleepWindow.enabled, base.sleep_window_local.enabled),
@@ -1002,6 +1004,7 @@ function updateModuleCheckStates(status) {
 }
 
 function cmdRun(args, policy, paths) {
+  const runStartMs = Date.now();
   const strict = toBool(args.strict, policy.execution.strict);
   const sleepOnly = toBool(args['sleep-only'], false);
   const force = toBool(args.force, false);
@@ -1009,8 +1012,31 @@ function cmdRun(args, policy, paths) {
     ? String(args.scope).trim()
     : String(policy.execution.default_scope || 'changed');
   const maxTests = clampInt(args['max-tests'], 1, 500, policy.execution.max_tests_per_run);
+  const runTimeoutMs = clampInt(
+    args['run-timeout-ms'],
+    policy.execution.run_timeout_ms,
+    1000,
+    2 * 60 * 60 * 1000
+  );
+  const runDeadlineMs = runStartMs + runTimeoutMs;
+  const phaseMs = {
+    sync_ms: 0,
+    select_ms: 0,
+    execute_ms: 0,
+    total_ms: 0
+  };
 
+  function budgetExceeded() {
+    return Date.now() > runDeadlineMs;
+  }
+
+  function remainingBudgetMs() {
+    return Math.max(1000, runDeadlineMs - Date.now());
+  }
+
+  const syncStarted = Date.now();
   const syncOut = syncState(paths, policy);
+  phaseMs.sync_ms = Date.now() - syncStarted;
   const status = loadStatus(paths);
 
   const sleepGate = inSleepWindow(policy);
@@ -1032,23 +1058,69 @@ function cmdRun(args, policy, paths) {
       synced: syncOut,
       sleep_window_ok: sleepGate,
       resource_guard: resources,
-      spine_hot: spineHot
+      spine_hot: spineHot,
+      run_timeout_ms: runTimeoutMs,
+      phase_ms: {
+        ...phaseMs,
+        total_ms: Date.now() - runStartMs
+      }
     };
     writeJsonAtomic(paths.latest_path, out);
     appendJsonl(path.join(paths.runs_dir, `${dateArgOrToday()}.jsonl`), out);
     return out;
   }
 
+  function timeoutOut(reason, extras = {}) {
+    const out = {
+      ok: false,
+      type: 'autotest_run',
+      ts: nowIso(),
+      scope,
+      strict,
+      timeout: true,
+      timeout_reason: reason,
+      run_timeout_ms: runTimeoutMs,
+      synced: syncOut,
+      sleep_window_ok: sleepGate,
+      resource_guard: resources,
+      spine_hot: spineHot,
+      phase_ms: {
+        ...phaseMs,
+        total_ms: Date.now() - runStartMs
+      },
+      ...extras
+    };
+    writeJsonAtomic(paths.latest_path, out);
+    appendJsonl(path.join(paths.runs_dir, `${dateArgOrToday()}.jsonl`), out);
+    return out;
+  }
+
+  if (budgetExceeded()) {
+    return timeoutOut('sync_budget_exhausted');
+  }
+
+  const selectStarted = Date.now();
   const testIds = Array.from(testSetForScope(status, scope));
   const selected = testIds
     .map((id) => status.tests && status.tests[id])
     .filter(Boolean)
     .slice(0, maxTests);
   const testToModules = reverseModuleMapping(status);
+  phaseMs.select_ms = Date.now() - selectStarted;
 
   const results = [];
   let guardBlocked = 0;
+  const executeStarted = Date.now();
   for (const test of selected) {
+    if (budgetExceeded()) {
+      phaseMs.execute_ms = Date.now() - executeStarted;
+      return timeoutOut('execution_budget_exhausted', {
+        selected_tests: results.length,
+        passed: results.filter((r) => r.ok === true).length,
+        failed: results.filter((r) => r.ok !== true).length,
+        partial_results: results.slice(0, 120)
+      });
+    }
     const guardFiles = [];
     if (test.path) guardFiles.push(String(test.path));
     const mapped = testToModules.get(String(test.id || ''));
@@ -1059,8 +1131,12 @@ function cmdRun(args, policy, paths) {
     for (const hint of commandHints) guardFiles.push(hint);
 
     const guard = runGuardForFiles(guardFiles);
+    const perTestTimeoutMs = Math.max(
+      1000,
+      Math.min(policy.execution.timeout_ms_per_test, remainingBudgetMs())
+    );
     const res = guard.ok
-      ? runCommand(test.command, policy.execution.timeout_ms_per_test)
+      ? runCommand(test.command, perTestTimeoutMs)
       : {
           ok: false,
           exit_code: 1,
@@ -1105,6 +1181,7 @@ function cmdRun(args, policy, paths) {
       stderr_excerpt: res.stderr_excerpt
     });
   }
+  phaseMs.execute_ms = Date.now() - executeStarted;
 
   for (const mod of Object.values(status.modules)) {
     if (!mod || typeof mod !== 'object') continue;
@@ -1181,6 +1258,11 @@ function cmdRun(args, policy, paths) {
     sleep_window_ok: sleepGate,
     resource_guard: resources,
     spine_hot: spineHot,
+    run_timeout_ms: runTimeoutMs,
+    phase_ms: {
+      ...phaseMs,
+      total_ms: Date.now() - runStartMs
+    },
     results: results.slice(0, 300),
     pain_signal: painSignal
   };
@@ -1341,7 +1423,8 @@ async function cmdDaemon(args, policy, paths) {
       scope,
       strict,
       'max-tests': maxTests,
-      'sleep-only': true
+      'sleep-only': true,
+      'run-timeout-ms': args['run-timeout-ms']
     }, policy, paths);
     const reportOut = cmdReport({ _: ['report', 'latest'], write: true }, policy, paths);
     lastOut = {

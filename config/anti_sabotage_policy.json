@@ -20,6 +20,8 @@
   "state_file": "state/security/anti_sabotage/state.json",
   "watcher_state_file": "state/security/anti_sabotage/watcher_state.json",
   "watcher_interval_ms": 30000,
+  "max_snapshots": 20,
+  "max_snapshot_age_days": 14,
   "watcher_strict_default": false,
   "watcher_auto_reset_default": true,
   "verify_strict_default": true,

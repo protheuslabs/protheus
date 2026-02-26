@@ -101,6 +101,8 @@ function defaultPolicy() {
     state_file: 'state/security/anti_sabotage/state.json',
     watcher_state_file: 'state/security/anti_sabotage/watcher_state.json',
     watcher_interval_ms: 30000,
+    max_snapshots: 20,
+    max_snapshot_age_days: 14,
     watcher_strict_default: false,
     watcher_auto_reset_default: true,
     verify_strict_default: true,
@@ -133,10 +135,75 @@ function loadPolicy(policyPath = POLICY_PATH) {
     state_file: normalizeText(raw.state_file || base.state_file, 200) || base.state_file,
     watcher_state_file: normalizeText(raw.watcher_state_file || base.watcher_state_file, 200) || base.watcher_state_file,
     watcher_interval_ms: Math.max(250, Number(raw.watcher_interval_ms || base.watcher_interval_ms || 30000)),
+    max_snapshots: Math.max(1, Number(raw.max_snapshots || base.max_snapshots || 20)),
+    max_snapshot_age_days: Math.max(1, Number(raw.max_snapshot_age_days || base.max_snapshot_age_days || 14)),
     watcher_strict_default: raw.watcher_strict_default === true,
     watcher_auto_reset_default: raw.watcher_auto_reset_default !== false,
     verify_strict_default: raw.verify_strict_default !== false,
     auto_reset_default: raw.auto_reset_default !== false
+  };
+}
+
+function pruneSnapshots(policy) {
+  const snapshotsRoot = path.resolve(ROOT, policy.snapshots_dir);
+  if (!fs.existsSync(snapshotsRoot)) {
+    return {
+      pruned_for_age: 0,
+      pruned_for_count: 0,
+      remaining: 0
+    };
+  }
+  const maxAgeDays = Math.max(1, Number(policy.max_snapshot_age_days || 14));
+  const maxSnapshots = Math.max(1, Number(policy.max_snapshots || 20));
+  const maxAgeMs = maxAgeDays * 24 * 60 * 60 * 1000;
+  const nowMs = Date.now();
+  let entries = [];
+  try {
+    entries = fs.readdirSync(snapshotsRoot, { withFileTypes: true })
+      .filter((ent) => ent && ent.isDirectory())
+      .map((ent) => {
+        const abs = path.join(snapshotsRoot, ent.name);
+        let mtimeMs = 0;
+        try {
+          mtimeMs = Number(fs.statSync(abs).mtimeMs || 0);
+        } catch {
+          mtimeMs = 0;
+        }
+        return {
+          id: ent.name,
+          abs,
+          mtimeMs
+        };
+      })
+      .sort((a, b) => Number(a.mtimeMs || 0) - Number(b.mtimeMs || 0));
+  } catch {
+    entries = [];
+  }
+
+  let prunedForAge = 0;
+  for (const row of entries) {
+    if ((nowMs - Number(row.mtimeMs || 0)) <= maxAgeMs) continue;
+    try {
+      fs.rmSync(row.abs, { recursive: true, force: true });
+      prunedForAge += 1;
+    } catch {}
+  }
+
+  entries = entries.filter((row) => fs.existsSync(row.abs));
+  let prunedForCount = 0;
+  while (entries.length > maxSnapshots) {
+    const row = entries.shift();
+    if (!row) break;
+    try {
+      fs.rmSync(row.abs, { recursive: true, force: true });
+      prunedForCount += 1;
+    } catch {}
+  }
+
+  return {
+    pruned_for_age: prunedForAge,
+    pruned_for_count: prunedForCount,
+    remaining: entries.length
   };
 }
 
@@ -303,6 +370,8 @@ function createSnapshot(policy, label = '') {
     latest_incident: loadState(policy).latest_incident || null
   });
 
+  const prune = pruneSnapshots(policy);
+
   return {
     ok: true,
     type: 'anti_sabotage_snapshot',
@@ -310,7 +379,8 @@ function createSnapshot(policy, label = '') {
     snapshot_id: id,
     manifest_path: relPath(paths.manifest_path),
     file_count: files.length,
-    policy_version: policy.version
+    policy_version: policy.version,
+    prune
   };
 }
 

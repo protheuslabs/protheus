@@ -49,7 +49,8 @@
     "default_scope": "changed",
     "max_tests_per_run": 24,
     "strict": false,
-    "timeout_ms_per_test": 180000
+    "timeout_ms_per_test": 180000,
+    "run_timeout_ms": 120000
   },
   "sleep_window_local": {
     "enabled": true,
