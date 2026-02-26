@@ -1,0 +1,158 @@
+{
+  "type": "cryonics_registry",
+  "version": "1.0",
+  "profile": "state_phase1",
+  "updated_at": "2026-02-26T10:16:40.940Z",
+  "entries": {
+    "state/sensory/eyes/raw/2026-02-17.jsonl": {
+      "source_rel": "state/sensory/eyes/raw/2026-02-17.jsonl",
+      "state": "archived",
+      "latest": {
+        "archived_rel": "state/_cryonics/warm/state/sensory/eyes/raw/2026-02-17.jsonl.gz",
+        "tier_id": "warm",
+        "compression": "gzip",
+        "archived_at": "2026-02-26T10:16:40.935Z",
+        "source_sha256": "827dd1d69e05b91d2bd011ebb6efde20009c6915438fd6d55dbfc397fba8ffe3",
+        "source_size_bytes": 5627,
+        "archived_size_bytes": 836,
+        "source_mtime_ms": 1771367694121.1707,
+        "verify_sha256": "827dd1d69e05b91d2bd011ebb6efde20009c6915438fd6d55dbfc397fba8ffe3",
+        "source_deleted": true
+      },
+      "versions": [
+        {
+          "archived_rel": "state/_cryonics/warm/state/sensory/eyes/raw/2026-02-17.jsonl.gz",
+          "tier_id": "warm",
+          "compression": "gzip",
+          "archived_at": "2026-02-26T10:16:40.935Z",
+          "source_sha256": "827dd1d69e05b91d2bd011ebb6efde20009c6915438fd6d55dbfc397fba8ffe3",
+          "source_size_bytes": 5627,
+          "archived_size_bytes": 836,
+          "source_mtime_ms": 1771367694121.1707,
+          "verify_sha256": "827dd1d69e05b91d2bd011ebb6efde20009c6915438fd6d55dbfc397fba8ffe3",
+          "source_deleted": true
+        }
+      ]
+    },
+    "state/spine/runs/2026-02-18.jsonl": {
+      "source_rel": "state/spine/runs/2026-02-18.jsonl",
+      "state": "archived",
+      "latest": {
+        "archived_rel": "state/_cryonics/warm/state/spine/runs/2026-02-18.jsonl.gz",
+        "tier_id": "warm",
+        "compression": "gzip",
+        "archived_at": "2026-02-26T10:16:40.937Z",
+        "source_sha256": "6083e333e077130cb45f4b0571f0a4222c4af912e309e38721f6b538a01d2a66",
+        "source_size_bytes": 582,
+        "archived_size_bytes": 268,
+        "source_mtime_ms": 1771399167706.3716,
+        "verify_sha256": "6083e333e077130cb45f4b0571f0a4222c4af912e309e38721f6b538a01d2a66",
+        "source_deleted": true
+      },
+      "versions": [
+        {
+          "archived_rel": "state/_cryonics/warm/state/spine/runs/2026-02-18.jsonl.gz",
+          "tier_id": "warm",
+          "compression": "gzip",
+          "archived_at": "2026-02-26T10:16:40.937Z",
+          "source_sha256": "6083e333e077130cb45f4b0571f0a4222c4af912e309e38721f6b538a01d2a66",
+          "source_size_bytes": 582,
+          "archived_size_bytes": 268,
+          "source_mtime_ms": 1771399167706.3716,
+          "verify_sha256": "6083e333e077130cb45f4b0571f0a4222c4af912e309e38721f6b538a01d2a66",
+          "source_deleted": true
+        }
+      ]
+    },
+    "state/autonomy/runs/2026-02-18.jsonl": {
+      "source_rel": "state/autonomy/runs/2026-02-18.jsonl",
+      "state": "archived",
+      "latest": {
+        "archived_rel": "state/_cryonics/warm/state/autonomy/runs/2026-02-18.jsonl.gz",
+        "tier_id": "warm",
+        "compression": "gzip",
+        "archived_at": "2026-02-26T10:16:40.938Z",
+        "source_sha256": "10e17589342ed6b81efbea6b0a5c777280c2dff41dbdbd64567ae02c354d4368",
+        "source_size_bytes": 8046,
+        "archived_size_bytes": 1526,
+        "source_mtime_ms": 1771405097271.069,
+        "verify_sha256": "10e17589342ed6b81efbea6b0a5c777280c2dff41dbdbd64567ae02c354d4368",
+        "source_deleted": true
+      },
+      "versions": [
+        {
+          "archived_rel": "state/_cryonics/warm/state/autonomy/runs/2026-02-18.jsonl.gz",
+          "tier_id": "warm",
+          "compression": "gzip",
+          "archived_at": "2026-02-26T10:16:40.938Z",
+          "source_sha256": "10e17589342ed6b81efbea6b0a5c777280c2dff41dbdbd64567ae02c354d4368",
+          "source_size_bytes": 8046,
+          "archived_size_bytes": 1526,
+          "source_mtime_ms": 1771405097271.069,
+          "verify_sha256": "10e17589342ed6b81efbea6b0a5c777280c2dff41dbdbd64567ae02c354d4368",
+          "source_deleted": true
+        }
+      ]
+    },
+    "state/sensory/eyes/raw/2026-02-18.jsonl": {
+      "source_rel": "state/sensory/eyes/raw/2026-02-18.jsonl",
+      "state": "archived",
+      "latest": {
+        "archived_rel": "state/_cryonics/warm/state/sensory/eyes/raw/2026-02-18.jsonl.gz",
+        "tier_id": "warm",
+        "compression": "gzip",
+        "archived_at": "2026-02-26T10:16:40.939Z",
+        "source_sha256": "8d41df35d542d8df11d890f1fa719ee7505e9130470ba0405d60a2843ada8442",
+        "source_size_bytes": 20597,
+        "archived_size_bytes": 3676,
+        "source_mtime_ms": 1771495587282.6892,
+        "verify_sha256": "8d41df35d542d8df11d890f1fa719ee7505e9130470ba0405d60a2843ada8442",
+        "source_deleted": true
+      },
+      "versions": [
+        {
+          "archived_rel": "state/_cryonics/warm/state/sensory/eyes/raw/2026-02-18.jsonl.gz",
+          "tier_id": "warm",
+          "compression": "gzip",
+          "archived_at": "2026-02-26T10:16:40.939Z",
+          "source_sha256": "8d41df35d542d8df11d890f1fa719ee7505e9130470ba0405d60a2843ada8442",
+          "source_size_bytes": 20597,
+          "archived_size_bytes": 3676,
+          "source_mtime_ms": 1771495587282.6892,
+          "verify_sha256": "8d41df35d542d8df11d890f1fa719ee7505e9130470ba0405d60a2843ada8442",
+          "source_deleted": true
+        }
+      ]
+    },
+    "state/spine/runs/2026-02-17.jsonl": {
+      "source_rel": "state/spine/runs/2026-02-17.jsonl",
+      "state": "archived",
+      "latest": {
+        "archived_rel": "state/_cryonics/warm/state/spine/runs/2026-02-17.jsonl.gz",
+        "tier_id": "warm",
+        "compression": "gzip",
+        "archived_at": "2026-02-26T10:16:40.940Z",
+        "source_sha256": "c86d07b0a3b096afea1e4bcaab376edd4ac8af66ba582c4e4c6666f943d1cb82",
+        "source_size_bytes": 3560,
+        "archived_size_bytes": 417,
+        "source_mtime_ms": 1771495587284.3594,
+        "verify_sha256": "c86d07b0a3b096afea1e4bcaab376edd4ac8af66ba582c4e4c6666f943d1cb82",
+        "source_deleted": true
+      },
+      "versions": [
+        {
+          "archived_rel": "state/_cryonics/warm/state/spine/runs/2026-02-17.jsonl.gz",
+          "tier_id": "warm",
+          "compression": "gzip",
+          "archived_at": "2026-02-26T10:16:40.940Z",
+          "source_sha256": "c86d07b0a3b096afea1e4bcaab376edd4ac8af66ba582c4e4c6666f943d1cb82",
+          "source_size_bytes": 3560,
+          "archived_size_bytes": 417,
+          "source_mtime_ms": 1771495587284.3594,
+          "verify_sha256": "c86d07b0a3b096afea1e4bcaab376edd4ac8af66ba582c4e4c6666f943d1cb82",
+          "source_deleted": true
+        }
+      ]
+    }
+  }
+}
