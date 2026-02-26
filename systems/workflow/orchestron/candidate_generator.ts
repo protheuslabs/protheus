@@ -215,6 +215,81 @@ function tradeoffForMutation(baseTradeoff, mutationKind) {
   return t;
 }
 
+function normalizeAllowedRisks(raw) {
+  const rows = Array.isArray(raw) ? raw : [];
+  const out = [];
+  for (const row of rows) {
+    const token = normalizeToken(row, 20) || '';
+    if (!token) continue;
+    if (!out.includes(token)) out.push(token);
+  }
+  return out.length ? out : ['low'];
+}
+
+function riskLevelFromPolicy(riskPolicy) {
+  const src = riskPolicy && typeof riskPolicy === 'object' ? riskPolicy : {};
+  const maxRisk = clampInt(src.max_risk_per_action, 1, 100, 35);
+  const allowed = normalizeAllowedRisks(src.allowed_risks);
+  if (allowed.includes('critical') || allowed.includes('high') || maxRisk >= 70) return 'high';
+  if (allowed.includes('medium') || maxRisk >= 40) return 'medium';
+  return 'low';
+}
+
+function estimateCandidateTokenCost(steps) {
+  const rows = Array.isArray(steps) ? steps : [];
+  let total = 0;
+  for (const row of rows) {
+    const type = normalizeToken(row && row.type || 'command', 24) || 'command';
+    const retries = clampInt(row && row.retries, 0, 6, 1);
+    const timeoutMs = clampInt(row && row.timeout_ms, 500, 30 * 60 * 1000, 120000);
+    const timeoutPenalty = clampInt(Math.round(timeoutMs / 15000), 1, 120, 8);
+    const base = type === 'receipt' ? 40 : (type === 'gate' ? 90 : 150);
+    total += base + (retries * 35) + timeoutPenalty;
+  }
+  return clampInt(total, 120, 12000, 480);
+}
+
+function decorateCandidateContracts(candidate) {
+  const src = candidate && typeof candidate === 'object' ? candidate : null;
+  if (!src) return src;
+  const tradeoffs = normalizeTradeoffs(src.tradeoffs);
+  const riskPolicySrc = src.risk_policy && typeof src.risk_policy === 'object'
+    ? src.risk_policy
+    : {};
+  const riskPolicy = {
+    max_risk_per_action: clampInt(riskPolicySrc.max_risk_per_action, 1, 100, 35),
+    allowed_risks: normalizeAllowedRisks(riskPolicySrc.allowed_risks)
+  };
+  const riskLevel = riskLevelFromPolicy(riskPolicy);
+  const estimatedTokens = estimateCandidateTokenCost(src.steps);
+  const costTier = estimatedTokens >= 2200
+    ? 'high'
+    : (estimatedTokens >= 900 ? 'medium' : 'low');
+  const children = Array.isArray(src.children)
+    ? src.children.map((child) => decorateCandidateContracts(child))
+    : [];
+  return {
+    ...src,
+    tradeoffs,
+    risk_policy: riskPolicy,
+    children,
+    metadata: {
+      ...(src.metadata && typeof src.metadata === 'object' ? src.metadata : {}),
+      explicit_tradeoffs: tradeoffs,
+      cost_profile: {
+        estimated_tokens: estimatedTokens,
+        cost_weight: Number(tradeoffs.cost_weight || 0),
+        tier: costTier
+      },
+      risk_profile: {
+        level: riskLevel,
+        max_risk_per_action: Number(riskPolicy.max_risk_per_action || 0),
+        allowed_risks: riskPolicy.allowed_risks.slice(0, 4)
+      }
+    }
+  };
+}
+
 function tritContext(intent) {
   const signals = intent && intent.signals && typeof intent.signals === 'object' ? intent.signals : {};
   const feasibility = clampNumber(signals.feasibility, -1, 1, 0);
@@ -1138,8 +1213,8 @@ function runtimeEvolutionCandidates(ctx, existingIds = new Set()) {
 
 function generateCandidates(input) {
   const ctx = input && typeof input === 'object' ? input : {};
-  const maxCandidates = clampInt(ctx.max_candidates, 1, 24, 8);
-  const minCandidates = clampInt(ctx.min_candidates, 1, maxCandidates, 3);
+  const maxCandidates = clampInt(ctx.max_candidates, 3, 8, 8);
+  const minCandidates = clampInt(ctx.min_candidates, 3, maxCandidates, 3);
   const creativePolicy = normalizeCreativePolicy(ctx && ctx.creative_llm);
   const rows = Array.isArray(ctx.pattern_rows) ? ctx.pattern_rows.slice() : [];
   const registry = Array.isArray(ctx.registry_workflows) ? ctx.registry_workflows.slice() : [];
@@ -1249,6 +1324,7 @@ function generateCandidates(input) {
   }
 
   return Array.from(dedupe.values())
+    .map((row) => decorateCandidateContracts(row))
     .sort((a, b) => candidatePriority(b) - candidatePriority(a))
     .slice(0, maxCandidates);
 }
