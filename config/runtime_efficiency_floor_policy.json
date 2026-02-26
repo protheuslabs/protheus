@@ -1,0 +1,26 @@
+{
+  "version": "1.0",
+  "strict_default": false,
+  "cold_start_probe": {
+    "command": [
+      "node",
+      "systems/workflow/workflow_controller.js",
+      "status"
+    ],
+    "samples": 5,
+    "max_ms": 300
+  },
+  "idle_rss_probe": {
+    "samples": 3,
+    "max_mb": 120,
+    "require_modules": []
+  },
+  "install_artifact_probe": {
+    "max_mb": 60,
+    "paths": [
+      "dist"
+    ]
+  },
+  "state_path": "state/ops/runtime_efficiency_floor.json",
+  "history_path": "state/ops/runtime_efficiency_floor_history.jsonl"
+}

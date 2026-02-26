@@ -40,6 +40,8 @@
     "ops:compliance-retention": "node systems/ops/compliance_retention_uplift.js run",
     "ops:compliance-retention:status": "node systems/ops/compliance_retention_uplift.js status",
     "ops:compliance-retention:attest": "node systems/ops/compliance_retention_uplift.js attest",
+    "ops:runtime-efficiency": "node systems/ops/runtime_efficiency_floor.js run",
+    "ops:runtime-efficiency:status": "node systems/ops/runtime_efficiency_floor.js status",
     "routing:provider-onboard:list": "node systems/routing/provider_onboarding_manifest.js list",
     "routing:provider-onboard": "node systems/routing/provider_onboarding_manifest.js run",
     "routing:provider-onboard:status": "node systems/routing/provider_onboarding_manifest.js status",
