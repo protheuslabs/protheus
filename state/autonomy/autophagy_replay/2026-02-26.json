@@ -1,0 +1,42 @@
+{
+  "ok": true,
+  "type": "autonomy_non_yield_replay",
+  "ts": "2026-02-26T10:16:43.444Z",
+  "end_date": "2026-02-26",
+  "days": 180,
+  "sources": {
+    "baseline_path": "/Users/jay/.openclaw/workspace/state/autonomy/autophagy_baseline.json",
+    "candidates_path": "/Users/jay/.openclaw/workspace/state/autonomy/autophagy_candidates/2026-W09.json",
+    "simulation_path": "/Users/jay/.openclaw/workspace/state/autonomy/simulations/2026-02-26.json",
+    "simulation_computed": false
+  },
+  "gate_policy": {
+    "min_confidence": 0.65,
+    "effective": {
+      "max_drift_rate_increase": 0.003,
+      "max_yield_rate_drop": 0.03,
+      "max_safety_stop_rate_increase": 0
+    }
+  },
+  "baseline_effective_rates": {
+    "drift_rate": 0.029,
+    "yield_rate": 0.667,
+    "safety_stop_rate": 0
+  },
+  "current_effective_counters": {
+    "attempts": 104,
+    "executed": 9,
+    "shipped": 6,
+    "no_progress": 3,
+    "safety_stops": 0,
+    "policy_holds": 44,
+    "budget_holds": 11
+  },
+  "summary": {
+    "candidates_total": 0,
+    "replay_pass": 0,
+    "replay_fail": 0
+  },
+  "replay_pass_candidates": [],
+  "replay_fail_candidates": []
+}
