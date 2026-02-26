@@ -1,0 +1,31 @@
+{
+  "version": "1.0",
+  "tiers": {
+    "hot_days": 90,
+    "warm_days": 180,
+    "cold_days": 365
+  },
+  "archive_root": "state/_retention",
+  "index_path": "state/ops/compliance_retention_index.json",
+  "state_path": "state/ops/compliance_retention_uplift.json",
+  "history_path": "state/ops/compliance_retention_uplift_history.jsonl",
+  "attestation_dir": "state/ops/compliance_retention_attestations",
+  "include_extensions": [
+    ".json",
+    ".jsonl",
+    ".log",
+    ".prom",
+    ".txt"
+  ],
+  "scopes": [
+    "state/observability",
+    "state/security",
+    "state/actuation/receipts",
+    "state/autonomy/health_reports",
+    "state/autonomy/health_alerts"
+  ],
+  "exclude_contains": [
+    "/state/_retention/"
+  ]
+}
+

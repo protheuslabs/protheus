@@ -3366,6 +3366,92 @@ function main() {
       console.log(" alert_transport_health skipped reason=feature_flag_disabled flag=SPINE_ALERT_TRANSPORT_HEALTH_ENABLED");
     }
 
+    if (String(process.env.SPINE_COMPLIANCE_RETENTION_UPLIFT_ENABLED || "1") !== "0") {
+      const retentionArgs = ["systems/ops/compliance_retention_uplift.js", "run"];
+      if (String(process.env.SPINE_COMPLIANCE_RETENTION_UPLIFT_APPLY || "1").trim() === "0") {
+        retentionArgs.push("--apply=0");
+      }
+      retentionArgs.push("--strict=1");
+      const retention = runJson("node", retentionArgs);
+      const payload = retention.payload && typeof retention.payload === "object"
+        ? retention.payload
+        : null;
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_compliance_retention_uplift",
+        mode,
+        date: dateStr,
+        ok: retention.ok && !!payload && payload.ok === true,
+        pass: payload ? payload.pass === true : null,
+        apply: payload ? payload.apply === true : null,
+        scanned_files: payload ? Number(payload.scanned_files || 0) : null,
+        hot_count: payload && payload.tiers ? Number(payload.tiers.hot || 0) : null,
+        warm_count: payload && payload.tiers ? Number(payload.tiers.warm || 0) : null,
+        cold_count: payload && payload.tiers ? Number(payload.tiers.cold || 0) : null,
+        archive_count: payload && payload.tiers ? Number(payload.tiers.archive || 0) : null,
+        moved_count: payload && payload.moved
+          ? Number(payload.moved.warm || 0) + Number(payload.moved.cold || 0) + Number(payload.moved.archive || 0)
+          : null,
+        reason: (!retention.ok || !payload || payload.ok !== true)
+          ? String(retention.stderr || retention.stdout || `compliance_retention_uplift_exit_${retention.code}`).slice(0, 180)
+          : null
+      });
+      if (retention.ok && payload && payload.ok === true) {
+        console.log(
+          ` compliance_retention_uplift scanned=${Number(payload.scanned_files || 0)}` +
+          ` moved=${Number((payload.moved && payload.moved.warm) || 0) + Number((payload.moved && payload.moved.cold) || 0) + Number((payload.moved && payload.moved.archive) || 0)}` +
+          ` apply=${payload.apply === true ? "yes" : "no"}`
+        );
+      } else {
+        console.log(` compliance_retention_uplift WARN reason=${String(retention.stderr || retention.stdout || "unknown").slice(0, 120)}`);
+      }
+
+      const shouldAttest = String(dateStr || "").slice(8, 10) === "01";
+      if (shouldAttest && String(process.env.SPINE_COMPLIANCE_RETENTION_ATTEST_ENABLED || "1") !== "0") {
+        const attest = runJson("node", [
+          "systems/ops/compliance_retention_uplift.js",
+          "attest",
+          `--date=${dateStr}`
+        ]);
+        const attestPayload = attest.payload && typeof attest.payload === "object"
+          ? attest.payload
+          : null;
+        appendLedger(dateStr, {
+          ts: nowIso(),
+          type: "spine_compliance_retention_attestation",
+          mode,
+          date: dateStr,
+          ok: attest.ok && !!attestPayload && attestPayload.ok === true,
+          month: attestPayload ? attestPayload.month || null : null,
+          path: attestPayload ? attestPayload.path || null : null,
+          digest_sha256: attestPayload ? attestPayload.digest_sha256 || null : null,
+          reason: (!attest.ok || !attestPayload || attestPayload.ok !== true)
+            ? String(attest.stderr || attest.stdout || `compliance_retention_attestation_exit_${attest.code}`).slice(0, 180)
+            : null
+        });
+        if (attest.ok && attestPayload && attestPayload.ok === true) {
+          console.log(
+            ` compliance_retention_attestation ok` +
+            ` month=${String(attestPayload.month || "unknown")}` +
+            ` path=${String(attestPayload.path || "unknown")}`
+          );
+        } else {
+          console.log(` compliance_retention_attestation WARN reason=${String(attest.stderr || attest.stdout || "unknown").slice(0, 120)}`);
+        }
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_compliance_retention_uplift_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "SPINE_COMPLIANCE_RETENTION_UPLIFT_ENABLED",
+        flag_value: String(process.env.SPINE_COMPLIANCE_RETENTION_UPLIFT_ENABLED || "")
+      });
+      console.log(" compliance_retention_uplift skipped reason=feature_flag_disabled flag=SPINE_COMPLIANCE_RETENTION_UPLIFT_ENABLED");
+    }
+
     if (String(process.env.SPINE_RM_PROGRESS_DASHBOARD_ENABLED || "1") !== "0") {
       const dashboard = runJson("node", [
         "systems/ops/rm_progress_dashboard.js",
