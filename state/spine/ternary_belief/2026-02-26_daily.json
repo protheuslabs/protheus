@@ -1,18 +1,18 @@
 {
   "schema_id": "spine_ternary_belief_snapshot",
   "schema_version": "1.0.0",
-  "ts": "2026-02-26T00:06:36.214Z",
+  "ts": "2026-02-26T04:32:52.606Z",
   "date": "2026-02-26",
   "mode": "daily",
-  "run_row_count": 57,
-  "signal_count": 59,
+  "run_row_count": 69,
+  "signal_count": 71,
   "belief": {
     "schema_id": "ternary_belief_serialized",
     "schema_version": "1.0.0",
     "trit": 1,
     "trit_label": "ok",
-    "score": 0.8042,
-    "confidence": 0.873,
+    "score": 0.8832,
+    "confidence": 0.9228,
     "vector": {
       "schema_id": "balanced_trit_vector",
       "schema_version": "1.0.0",
@@ -37,20 +37,20 @@
   "summary": {
     "trit": 1,
     "label": "ok",
-    "score": 0.8042,
-    "confidence": 0.873,
-    "evidence_count": 59,
+    "score": 0.8832,
+    "confidence": 0.9228,
+    "evidence_count": 71,
     "pain_signals": 2,
-    "unknown_signals": 9,
-    "ok_signals": 48,
+    "unknown_signals": 10,
+    "ok_signals": 59,
     "top_pain_sources": [
       {
-        "source": "spine_signal_slo",
-        "weighted": 3
+        "source": "spine_offsite_backup_sync",
+        "weighted": 2
       },
       {
-        "source": "runtime_signal_slo",
-        "weighted": 3
+        "source": "spine_offsite_restore_drill",
+        "weighted": 2
       }
     ]
   },
@@ -155,8 +155,8 @@
     },
     {
       "source": "spine_signal_slo",
-      "trit": -1,
-      "label": "pain",
+      "trit": 1,
+      "label": "ok",
       "weight": 3,
       "confidence": 1,
       "source_trust": 1,
@@ -211,6 +211,20 @@
     },
     {
       "source": "spine_startup_attestation",
+      "trit": 1,
+      "label": "ok",
+      "weight": 2,
+      "confidence": 1,
+      "source_trust": 1,
+      "freshness": 1,
+      "weighted": 2,
+      "tags": [
+        "ok_flag"
+      ],
+      "meta": {}
+    },
+    {
+      "source": "spine_secret_rotation_check",
       "trit": 1,
       "label": "ok",
       "weight": 2,
@@ -350,16 +364,16 @@
       "meta": {}
     },
     {
-      "source": "spine_workflow_executor_skipped",
-      "trit": 0,
-      "label": "unknown",
-      "weight": 0.5,
-      "confidence": 0.35,
+      "source": "spine_workflow_executor",
+      "trit": 1,
+      "label": "ok",
+      "weight": 1,
+      "confidence": 1,
       "source_trust": 1,
       "freshness": 1,
-      "weighted": 0.175,
+      "weighted": 1,
       "tags": [
-        "skipped"
+        "ok_flag"
       ],
       "meta": {}
     },
@@ -504,6 +518,34 @@
       "meta": {}
     },
     {
+      "source": "spine_observability_alert_routing",
+      "trit": 1,
+      "label": "ok",
+      "weight": 1,
+      "confidence": 1,
+      "source_trust": 1,
+      "freshness": 1,
+      "weighted": 1,
+      "tags": [
+        "ok_flag"
+      ],
+      "meta": {}
+    },
+    {
+      "source": "spine_observability_trace",
+      "trit": 1,
+      "label": "ok",
+      "weight": 1,
+      "confidence": 1,
+      "source_trust": 1,
+      "freshness": 1,
+      "weighted": 1,
+      "tags": [
+        "ok_flag"
+      ],
+      "meta": {}
+    },
+    {
       "source": "spine_autonomy_health",
       "trit": 1,
       "label": "ok",
@@ -512,6 +554,62 @@
       "source_trust": 1,
       "freshness": 1,
       "weighted": 2,
+      "tags": [
+        "ok_flag"
+      ],
+      "meta": {}
+    },
+    {
+      "source": "spine_observability_alert_routing",
+      "trit": 1,
+      "label": "ok",
+      "weight": 1,
+      "confidence": 1,
+      "source_trust": 1,
+      "freshness": 1,
+      "weighted": 1,
+      "tags": [
+        "ok_flag"
+      ],
+      "meta": {}
+    },
+    {
+      "source": "spine_observability_trace",
+      "trit": 1,
+      "label": "ok",
+      "weight": 1,
+      "confidence": 1,
+      "source_trust": 1,
+      "freshness": 1,
+      "weighted": 1,
+      "tags": [
+        "ok_flag"
+      ],
+      "meta": {}
+    },
+    {
+      "source": "spine_observability_metrics",
+      "trit": 1,
+      "label": "ok",
+      "weight": 1,
+      "confidence": 1,
+      "source_trust": 1,
+      "freshness": 1,
+      "weighted": 1,
+      "tags": [
+        "ok_flag"
+      ],
+      "meta": {}
+    },
+    {
+      "source": "spine_observability_trace",
+      "trit": 1,
+      "label": "ok",
+      "weight": 1,
+      "confidence": 1,
+      "source_trust": 1,
+      "freshness": 1,
+      "weighted": 1,
       "tags": [
         "ok_flag"
       ],
@@ -812,6 +910,48 @@
       "meta": {}
     },
     {
+      "source": "spine_offsite_backup_sync",
+      "trit": -1,
+      "label": "pain",
+      "weight": 2,
+      "confidence": 1,
+      "source_trust": 1,
+      "freshness": 1,
+      "weighted": 2,
+      "tags": [
+        "ok_flag"
+      ],
+      "meta": {}
+    },
+    {
+      "source": "spine_offsite_restore_drill_status",
+      "trit": 1,
+      "label": "ok",
+      "weight": 2,
+      "confidence": 1,
+      "source_trust": 1,
+      "freshness": 1,
+      "weighted": 2,
+      "tags": [
+        "ok_flag"
+      ],
+      "meta": {}
+    },
+    {
+      "source": "spine_offsite_restore_drill",
+      "trit": -1,
+      "label": "pain",
+      "weight": 2,
+      "confidence": 1,
+      "source_trust": 1,
+      "freshness": 1,
+      "weighted": 2,
+      "tags": [
+        "ok_flag"
+      ],
+      "meta": {}
+    },
+    {
       "source": "spine_backup_integrity",
       "trit": 1,
       "label": "ok",
@@ -826,7 +966,7 @@
       "meta": {}
     },
     {
-      "source": "spine_openclaw_backup_retention",
+      "source": "spine_cleanup_orchestrator",
       "trit": 1,
       "label": "ok",
       "weight": 1,
@@ -836,6 +976,34 @@
       "weighted": 1,
       "tags": [
         "ok_flag"
+      ],
+      "meta": {}
+    },
+    {
+      "source": "spine_openclaw_backup_retention_skipped",
+      "trit": 0,
+      "label": "unknown",
+      "weight": 0.5,
+      "confidence": 0.35,
+      "source_trust": 1,
+      "freshness": 1,
+      "weighted": 0.175,
+      "tags": [
+        "skipped"
+      ],
+      "meta": {}
+    },
+    {
+      "source": "spine_state_cleanup_skipped",
+      "trit": 0,
+      "label": "unknown",
+      "weight": 0.5,
+      "confidence": 0.35,
+      "source_trust": 1,
+      "freshness": 1,
+      "weighted": 0.175,
+      "tags": [
+        "skipped"
       ],
       "meta": {}
     },
@@ -869,8 +1037,8 @@
     },
     {
       "source": "runtime_signal_slo",
-      "trit": -1,
-      "label": "pain",
+      "trit": 1,
+      "label": "ok",
       "weight": 3,
       "confidence": 1,
       "source_trust": 1,

@@ -1,0 +1,78 @@
+{
+  "ok": true,
+  "type": "dual_brain_decision",
+  "ts": "2026-02-26T08:20:23.789Z",
+  "context": "inversion",
+  "task_class": "creative",
+  "desired_lane": "auto",
+  "shadow_mode_active": true,
+  "mode": "left_only",
+  "selected_live_brain": "left",
+  "left": {
+    "id": "left_standard",
+    "model": "qwen3:4b"
+  },
+  "right": {
+    "id": "right_creative",
+    "model": "qwen3:4b",
+    "requested": true,
+    "permitted": false,
+    "shadow": false,
+    "live": false
+  },
+  "checks": {
+    "policy_enabled": true,
+    "right_enabled": true,
+    "forced_left": false,
+    "right_context_match": true,
+    "wants_right": true,
+    "gate_hardware": false,
+    "gate_budget": false,
+    "gate_stability": true,
+    "gate_safety": false,
+    "gate_trit": true,
+    "gate_training": true
+  },
+  "trit": 0,
+  "reasons": [
+    "hardware_gate",
+    "budget_autopause_active",
+    "safety_integrity_alert"
+  ],
+  "signals": {
+    "resource": {
+      "cpu_count": 8,
+      "load_1m": 4.6348,
+      "load_per_cpu": 0.5793,
+      "rss_mb": 125.72,
+      "heap_used_mb": 29.41,
+      "free_mem_mb": 460.34,
+      "total_mem_mb": 8192,
+      "ok": false
+    },
+    "budget": {
+      "available": true,
+      "token_cap": 6000,
+      "used_est": 2415,
+      "burn_pct": 40.25,
+      "token_headroom_ratio": 0.5975,
+      "autopause_active": true,
+      "strategy_id": "default_general",
+      "path": "state/autonomy/daily_budget/2026-02-26.json"
+    },
+    "stability": {
+      "effective_drift_rate": 0,
+      "policy_hold_rate": 0.034483,
+      "autotest_failed_last": 0,
+      "autotest_guard_blocked_last": 0
+    },
+    "safety": {
+      "integrity_active_alert": true,
+      "integrity_violation_total": 1,
+      "spine_critical": false,
+      "spine_slo_level": "warn"
+    }
+  },
+  "policy_version": "1.0",
+  "policy_path": "config/dual_brain_policy.json"
+}

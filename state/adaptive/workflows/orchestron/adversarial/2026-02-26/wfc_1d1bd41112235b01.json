@@ -1,8 +1,8 @@
 {
   "ok": true,
   "type": "orchestron_adversarial_probe",
-  "ts": "2026-02-26T02:40:13.984Z",
-  "run_id": "orcrun_4e315652ed2987",
+  "ts": "2026-02-26T04:32:15.819Z",
+  "run_id": "orcrun_aa688c98055c77",
   "date": "2026-02-26",
   "candidate_id": "wfc_1d1bd41112235b01",
   "proposal_type": "collector_preflight_remediation",
@@ -67,8 +67,13 @@
         "risk": 0,
         "novelty": 0
       },
+      "risk_signals": {
+        "feasibility": 0,
+        "risk": 0,
+        "novelty": 0
+      },
       "source": "orchestron_adaptive_controller",
-      "ts": "2026-02-26T02:40:13.958Z",
+      "ts": "2026-02-26T04:32:15.793Z",
       "signature": "maximize_verified_progress_under_active_directives._default_general_medium_speed_weight_:0.34_robustness_weight_:0.33_cost_weight_:0.33_feasibility_:0_risk_:0_novelty_:0"
     },
     "parent_workflow_id": null,
@@ -157,8 +162,13 @@
             "risk": 0,
             "novelty": 0
           },
+          "risk_signals": {
+            "feasibility": 0,
+            "risk": 0,
+            "novelty": 0
+          },
           "source": "orchestron_adaptive_controller",
-          "ts": "2026-02-26T02:40:13.958Z",
+          "ts": "2026-02-26T04:32:15.793Z",
           "signature": "maximize_verified_progress_under_active_directives._default_general_medium_speed_weight_:0.34_robustness_weight_:0.33_cost_weight_:0.33_feasibility_:0_risk_:0_novelty_:0"
         },
         "parent_workflow_id": "wfc_1d1bd41112235b01",
@@ -243,8 +253,13 @@
                 "risk": 0,
                 "novelty": 0
               },
+              "risk_signals": {
+                "feasibility": 0,
+                "risk": 0,
+                "novelty": 0
+              },
               "source": "orchestron_adaptive_controller",
-              "ts": "2026-02-26T02:40:13.958Z",
+              "ts": "2026-02-26T04:32:15.793Z",
               "signature": "maximize_verified_progress_under_active_directives._default_general_medium_speed_weight_:0.34_robustness_weight_:0.33_cost_weight_:0.33_feasibility_:0_risk_:0_novelty_:0"
             },
             "parent_workflow_id": "wfc_6fd458a3eb110f11",
@@ -301,7 +316,7 @@
               }
             ],
             "children": [],
-            "generated_at": "2026-02-26T02:40:13.980Z",
+            "generated_at": "2026-02-26T04:32:15.813Z",
             "metadata": {
               "generation_kind": "fractal_child",
               "parent_workflow_id": "wfc_6fd458a3eb110f11",
@@ -346,8 +361,13 @@
                 "risk": 0,
                 "novelty": 0
               },
+              "risk_signals": {
+                "feasibility": 0,
+                "risk": 0,
+                "novelty": 0
+              },
               "source": "orchestron_adaptive_controller",
-              "ts": "2026-02-26T02:40:13.958Z",
+              "ts": "2026-02-26T04:32:15.793Z",
               "signature": "maximize_verified_progress_under_active_directives._default_general_medium_speed_weight_:0.34_robustness_weight_:0.33_cost_weight_:0.33_feasibility_:0_risk_:0_novelty_:0"
             },
             "parent_workflow_id": "wfc_6fd458a3eb110f11",
@@ -404,7 +424,7 @@
               }
             ],
             "children": [],
-            "generated_at": "2026-02-26T02:40:13.980Z",
+            "generated_at": "2026-02-26T04:32:15.813Z",
             "metadata": {
               "generation_kind": "fractal_child",
               "parent_workflow_id": "wfc_6fd458a3eb110f11",
@@ -449,8 +469,13 @@
                 "risk": 0,
                 "novelty": 0
               },
+              "risk_signals": {
+                "feasibility": 0,
+                "risk": 0,
+                "novelty": 0
+              },
               "source": "orchestron_adaptive_controller",
-              "ts": "2026-02-26T02:40:13.958Z",
+              "ts": "2026-02-26T04:32:15.793Z",
               "signature": "maximize_verified_progress_under_active_directives._default_general_medium_speed_weight_:0.34_robustness_weight_:0.33_cost_weight_:0.33_feasibility_:0_risk_:0_novelty_:0"
             },
             "parent_workflow_id": "wfc_6fd458a3eb110f11",
@@ -507,7 +532,7 @@
               }
             ],
             "children": [],
-            "generated_at": "2026-02-26T02:40:13.980Z",
+            "generated_at": "2026-02-26T04:32:15.813Z",
             "metadata": {
               "generation_kind": "fractal_child",
               "parent_workflow_id": "wfc_6fd458a3eb110f11",
@@ -525,7 +550,7 @@
             }
           }
         ],
-        "generated_at": "2026-02-26T02:40:13.980Z",
+        "generated_at": "2026-02-26T04:32:15.813Z",
         "metadata": {
           "generation_kind": "fractal_child",
           "parent_workflow_id": "wfc_1d1bd41112235b01",
@@ -571,8 +596,13 @@
             "risk": 0,
             "novelty": 0
           },
+          "risk_signals": {
+            "feasibility": 0,
+            "risk": 0,
+            "novelty": 0
+          },
           "source": "orchestron_adaptive_controller",
-          "ts": "2026-02-26T02:40:13.958Z",
+          "ts": "2026-02-26T04:32:15.793Z",
           "signature": "maximize_verified_progress_under_active_directives._default_general_medium_speed_weight_:0.34_robustness_weight_:0.33_cost_weight_:0.33_feasibility_:0_risk_:0_novelty_:0"
         },
         "parent_workflow_id": "wfc_1d1bd41112235b01",
@@ -629,7 +659,7 @@
           }
         ],
         "children": [],
-        "generated_at": "2026-02-26T02:40:13.980Z",
+        "generated_at": "2026-02-26T04:32:15.813Z",
         "metadata": {
           "generation_kind": "fractal_child",
           "parent_workflow_id": "wfc_1d1bd41112235b01",
@@ -674,8 +704,13 @@
             "risk": 0,
             "novelty": 0
           },
+          "risk_signals": {
+            "feasibility": 0,
+            "risk": 0,
+            "novelty": 0
+          },
           "source": "orchestron_adaptive_controller",
-          "ts": "2026-02-26T02:40:13.958Z",
+          "ts": "2026-02-26T04:32:15.793Z",
           "signature": "maximize_verified_progress_under_active_directives._default_general_medium_speed_weight_:0.34_robustness_weight_:0.33_cost_weight_:0.33_feasibility_:0_risk_:0_novelty_:0"
         },
         "parent_workflow_id": "wfc_1d1bd41112235b01",
@@ -732,7 +767,7 @@
           }
         ],
         "children": [],
-        "generated_at": "2026-02-26T02:40:13.980Z",
+        "generated_at": "2026-02-26T04:32:15.813Z",
         "metadata": {
           "generation_kind": "fractal_child",
           "parent_workflow_id": "wfc_1d1bd41112235b01",
@@ -750,7 +785,7 @@
         }
       }
     ],
-    "generated_at": "2026-02-26T02:40:13.979Z",
+    "generated_at": "2026-02-26T04:32:15.812Z",
     "metadata": {
       "generation_kind": "pattern",
       "priority": 0.7692,

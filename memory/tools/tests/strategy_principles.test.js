@@ -28,6 +28,7 @@ function run() {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'strategy-principles-'));
   const strategyDir = path.join(tmp, 'config', 'strategies');
   const outDir = path.join(tmp, 'state', 'adaptive', 'strategy', 'principles');
+  const inversionLatestPath = path.join(tmp, 'state', 'autonomy', 'inversion', 'first_principles', 'latest.json');
   const dateStr = '2026-02-25';
 
   writeJson(path.join(strategyDir, 'default.json'), {
@@ -61,10 +62,21 @@ function run() {
     }
   });
 
+  writeJson(inversionLatestPath, {
+    id: 'ifp_test',
+    source: 'inversion_controller',
+    confidence: 0.8,
+    polarity: 1,
+    strategy_feedback: {
+      suggested_bonus: 0.05
+    }
+  });
+
   const env = {
     ...process.env,
     AUTONOMY_STRATEGY_DIR: strategyDir,
-    STRATEGY_PRINCIPLES_OUT_DIR: outDir
+    STRATEGY_PRINCIPLES_OUT_DIR: outDir,
+    STRATEGY_PRINCIPLES_INVERSION_PATH: inversionLatestPath
   };
 
   const runProc = spawnSync(process.execPath, [scriptPath, 'run', dateStr], {
@@ -77,12 +89,14 @@ function run() {
   assert.ok(runOut && runOut.ok === true, 'run output should be ok');
   assert.strictEqual(runOut.strategy_id, 'test_strategy');
   assert.ok(Number(runOut.score || 0) > 0.6, 'principles score should be above threshold');
+  assert.ok(Number(runOut.inversion_bonus || 0) > 0, 'inversion bonus should be surfaced');
 
   const latestPath = path.join(outDir, 'latest.json');
   assert.ok(fs.existsSync(latestPath), 'latest snapshot should exist');
   const latest = JSON.parse(fs.readFileSync(latestPath, 'utf8'));
   assert.ok(Array.isArray(latest.principles), 'principles array should exist');
   assert.ok(latest.principles.length >= 4, 'expected multiple principles');
+  assert.ok(Number(latest.summary && latest.summary.inversion_bonus || 0) > 0, 'latest summary should include inversion bonus');
 
   const statusProc = spawnSync(process.execPath, [scriptPath, 'status', 'latest'], {
     cwd: root,

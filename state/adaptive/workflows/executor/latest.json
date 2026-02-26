@@ -1,12 +1,12 @@
 {
   "ok": true,
   "type": "workflow_executor_run",
-  "ts": "2026-02-26T02:45:38.157Z",
-  "run_id": "wfexec_mm2v2g5d_5wfuj6",
-  "date": "2026-02-25",
+  "ts": "2026-02-26T04:32:18.656Z",
+  "run_id": "wfexec_mm2yvmo8_7lgy8o",
+  "date": "2026-02-26",
   "dry_run": false,
   "forced_shadow_dry_run": false,
-  "continue_on_error": true,
+  "continue_on_error": false,
   "receipt_strict": true,
   "rollout_enabled": true,
   "rollout_stage": "canary",
@@ -15,15 +15,15 @@
   "rollout_state_before": {
     "stage": "canary",
     "canary_fraction": 0.05,
-    "consecutive_green": 0,
+    "consecutive_green": 1,
     "consecutive_red": 0,
     "last_slo_pass": true,
-    "last_scale_action": "promote_shadow_to_canary"
+    "last_scale_action": null
   },
   "rollout_state_after": {
     "stage": "canary",
     "canary_fraction": 0.05,
-    "consecutive_green": 1,
+    "consecutive_green": 2,
     "consecutive_red": 0,
     "last_slo_pass": true,
     "last_scale_action": null
@@ -32,7 +32,7 @@
   "runtime_mutation_policy_path": "config/workflow_executor_policy.json",
   "registry_total": 8,
   "workflows_selected": 1,
-  "workflows_excluded": 7,
+  "workflows_excluded": 9,
   "selection_excluded": [
     {
       "workflow_id": "wfc_07aee5ce1dfb0f41",
@@ -58,7 +58,7 @@
     {
       "workflow_id": "wfc_708d5d0247df6b21",
       "reason": "canary_not_sampled",
-      "sample_unit": 0.098991,
+      "sample_unit": 0.79205,
       "canary_fraction": 0.05
     },
     {
@@ -81,6 +81,18 @@
       "details": [
         "composite_score_below_min"
       ]
+    },
+    {
+      "workflow_id": "wfc_ecea8fd103aab192",
+      "reason": "canary_not_sampled",
+      "sample_unit": 0.22412,
+      "canary_fraction": 0.05
+    },
+    {
+      "workflow_id": "wfc_ecea8fd103aab192",
+      "reason": "canary_force_single_sample",
+      "sample_unit": 0.22412,
+      "canary_fraction": 0.05
     }
   ],
   "enforce_eligibility": true,
@@ -89,7 +101,7 @@
   "workflows_failed": 0,
   "workflows_blocked": 0,
   "step_receipts_count": 4,
-  "step_receipts_path": "state/adaptive/workflows/executor/step_receipts/2026-02-25.jsonl",
+  "step_receipts_path": "state/adaptive/workflows/executor/step_receipts/2026-02-26.jsonl",
   "runtime_mutations_attempted": 0,
   "runtime_mutations_applied": 0,
   "runtime_mutations_rolled_back": 0,
@@ -103,7 +115,7 @@
     "measured": {
       "execution_success_rate": 1,
       "queue_drain_rate": 1,
-      "time_to_first_execution_ms": 12
+      "time_to_first_execution_ms": 19
     },
     "checks": {
       "execution_success_rate": true,
@@ -145,9 +157,9 @@
       "rollback_ok": null,
       "rollback_source": null,
       "rollback_step_id": null,
-      "started_at": "2026-02-26T02:45:36.205Z",
-      "ended_at": "2026-02-26T02:45:38.156Z",
-      "duration_ms": 1951,
+      "started_at": "2026-02-26T04:32:16.539Z",
+      "ended_at": "2026-02-26T04:32:18.651Z",
+      "duration_ms": 2112,
       "step_count": 4,
       "step_results": [
         {
@@ -157,7 +169,7 @@
           "step": {
             "id": "enrich",
             "type": "command",
-            "command": "node systems/autonomy/proposal_enricher.js run 2026-02-25"
+            "command": "node systems/autonomy/proposal_enricher.js run 2026-02-26"
           },
           "records": [
             {
@@ -166,10 +178,10 @@
               "exit_code": 0,
               "signal": null,
               "timed_out": false,
-              "started_at": "2026-02-26T02:45:36.205Z",
-              "ended_at": "2026-02-26T02:45:36.674Z",
-              "duration_ms": 469,
-              "stdout": "{\"ok\":true,\"result\":\"enriched\",\"date\":\"2026-02-25\",\"path\":\"/Users/jay/.openclaw/workspace/state/sensory/proposals/2026-02-25.json\",\"changed\":4,\"total\":4,\"directive_profile_available\":true,\"strategy_profile\":{\"id\":\"default_general\",\"name\":\"Default General Strategy\",\"status\":\"active\",\"file\":\"config/strategies/default.json\",\"execution_mode\":\"score_only\",\"allowed_risks\":[\"low\",\"medium\"],\"threshold_overrides\":{\"min_directive_fit\":41,\"min_actionability_score\":47,\"min_composite_eligibility\":64},\"validation\":{\"strict_ok\":true,\"errors\":[],\"warnings\":[]}},\"thresholds\":{\"min_signal_quality\":58,\"min_sensory_signal_score\":45,\"min_sensory_relevance_score\":42,\"min_directive_fit\":41,\"min_actionability_score\":47,\"min_composite_eligibility\":64,\"min_eye_score_ema\":45},\"admission\":{\"total\":4,\"eligible\":0,\"blocked\":4,\"blocked_by_reason\":{\"adaptive_mutation_missing_budget_cap\":4,\"adaptive_mutation_missing_quarantine_window\":4,\"adaptive_mutation_missing_rollback_receipt\":4,\"adaptive_mutation_missing_safety_attestation\":4,\"adaptive_mutation_missing_ttl\":4,\"adaptive_mutation_missing_veto_window\":4,\"mutation_lineage_missing\":4,\"composite_low\":1}},\"objective_binding\":{\"total\":4,\"required\":4,\"valid_required\":4,\"missing_required\":0,\"invalid_required\":0,\"source_meta_required\":4,\"source_fallback_required\":0,\"source_counts\":{\"meta.objective_id\":4},\"ok\":true},\"dream_alignment\":{\"available\":true,\"tokens_loaded\":10,\"source_counts\":{\"theme\":6,\"rem_daily\":3,\"rem_run\":3,\"rem_synthesis\":6,\"rem\":6},\"source_uid_count\":2,\"files\":{\"themes\":true,\"rem\":true,\"rem_runs\":[\"2026-02-25__rem4gkb4kmccnuht0d3t532h.json\"]},\"proposals_with_hits\":4,\"proposals_with_bonus\":4,\"bonus_total\":14,\"rem_bonus_total\":2,\"top_hit_tokens\":[{\"token\":\"eyes\",\"count\":3},{\"token\":\"signal\",\"count\":3},{\"token\":\"failure\",\"count\":2}]},\"cross_signal_no_change\":{\"window_days\":7,\"topics\":[]}}",
+              "started_at": "2026-02-26T04:32:16.539Z",
+              "ended_at": "2026-02-26T04:32:17.404Z",
+              "duration_ms": 865,
+              "stdout": "{\"ok\":true,\"result\":\"enriched\",\"date\":\"2026-02-26\",\"path\":\"/Users/jay/.openclaw/workspace/state/sensory/proposals/2026-02-26.json\",\"changed\":5,\"total\":5,\"directive_profile_available\":true,\"strategy_profile\":{\"id\":\"default_general\",\"name\":\"Default General Strategy\",\"status\":\"active\",\"file\":\"config/strategies/default.json\",\"execution_mode\":\"score_only\",\"allowed_risks\":[\"low\",\"medium\"],\"threshold_overrides\":{\"min_directive_fit\":41,\"min_actionability_score\":47,\"min_composite_eligibility\":64},\"validation\":{\"strict_ok\":true,\"errors\":[],\"warnings\":[]}},\"thresholds\":{\"min_signal_quality\":58,\"min_sensory_signal_score\":45,\"min_sensory_relevance_score\":42,\"min_directive_fit\":41,\"min_actionability_score\":47,\"min_composite_eligibility\":64,\"min_eye_score_ema\":45},\"admission\":{\"total\":5,\"eligible\":0,\"blocked\":5,\"blocked_by_reason\":{\"adaptive_mutation_missing_budget_cap\":5,\"adaptive_mutation_missing_quarantine_window\":5,\"adaptive_mutation_missing_rollback_receipt\":5,\"adaptive_mutation_missing_safety_attestation\":5,\"adaptive_mutation_missing_ttl\":5,\"adaptive_mutation_missing_veto_window\":5,\"mutation_lineage_missing\":5}},\"objective_binding\":{\"total\":5,\"required\":5,\"valid_required\":5,\"missing_required\":0,\"invalid_required\":0,\"source_meta_required\":5,\"source_fallback_required\":0,\"source_counts\":{\"meta.objective_id\":5},\"ok\":true},\"dream_alignment\":{\"available\":true,\"tokens_loaded\":23,\"source_counts\":{\"theme\":6,\"rem_daily\":8,\"rem_run\":8,\"rem_synthesis\":16,\"rem\":16},\"source_uid_count\":2,\"files\":{\"themes\":true,\"rem\":true,\"rem_runs\":[\"2026-02-26__rem1iskpj08vorfg28b0q87g.json\"]},\"proposals_with_hits\":5,\"proposals_with_bonus\":5,\"bonus_total\":30,\"rem_bonus_total\":10,\"top_hit_tokens\":[{\"token\":\"token\",\"count\":5},{\"token\":\"signal\",\"count\":4},{\"token\":\"eyes\",\"count\":3}]},\"cross_signal_no_change\":{\"window_days\":7,\"topics\":[]}}",
               "stderr": "",
               "error": null
             }
@@ -182,7 +194,7 @@
           "step": {
             "id": "rank",
             "type": "command",
-            "command": "node systems/autonomy/autonomy_controller.js run 2026-02-25"
+            "command": "node systems/autonomy/autonomy_controller.js run 2026-02-26"
           },
           "records": [
             {
@@ -191,11 +203,11 @@
               "exit_code": 0,
               "signal": null,
               "timed_out": false,
-              "started_at": "2026-02-26T02:45:36.674Z",
-              "ended_at": "2026-02-26T02:45:37.917Z",
-              "duration_ms": 1243,
-              "stdout": "{\"ok\":true,\"result\":\"no_candidates\",\"proposal_date\":\"2026-02-25\",\"admission\":{\"total\":4,\"eligible\":0,\"blocked\":4,\"blocked_by_reason\":{\"adaptive_mutation_missing_budget_cap\":4,\"adaptive_mutation_missing_quarantine_window\":4,\"adaptive_mutation_missing_rollback_receipt\":4,\"adaptive_mutation_missing_safety_attestation\":4,\"adaptive_mutation_missing_ttl\":4,\"adaptive_mutation_missing_veto_window\":4,\"mutation_lineage_missing\":4,\"composite_low\":1}},\"ts\":\"2026-02-26T02:45:37.909Z\"}",
-              "stderr": "AUTONOMY_SUMMARY model_catalog_apply_pending=0",
+              "started_at": "2026-02-26T04:32:17.404Z",
+              "ended_at": "2026-02-26T04:32:18.346Z",
+              "duration_ms": 942,
+              "stdout": "{\"ok\":true,\"skipped\":true,\"reason\":\"AUTONOMY_ENABLED!=1\",\"execution_mode\":\"score_only\",\"canary_allow_with_flag_off\":true,\"ts\":\"2026-02-26T04:32:18.338Z\"}",
+              "stderr": "",
               "error": null
             }
           ]
@@ -207,7 +219,7 @@
           "step": {
             "id": "verify",
             "type": "gate",
-            "command": "node systems/autonomy/strategy_execute_guard.js run 2026-02-25"
+            "command": "node systems/autonomy/strategy_execute_guard.js run 2026-02-26"
           },
           "records": [
             {
@@ -216,10 +228,10 @@
               "exit_code": 0,
               "signal": null,
               "timed_out": false,
-              "started_at": "2026-02-26T02:45:37.917Z",
-              "ended_at": "2026-02-26T02:45:38.155Z",
-              "duration_ms": 238,
-              "stdout": "{\"ok\":true,\"ts\":\"2026-02-26T02:45:38.147Z\",\"result\":\"mode_not_execute\",\"strategy_id\":\"default_general\",\"mode\":\"score_only\"}",
+              "started_at": "2026-02-26T04:32:18.346Z",
+              "ended_at": "2026-02-26T04:32:18.651Z",
+              "duration_ms": 305,
+              "stdout": "{\"ok\":true,\"ts\":\"2026-02-26T04:32:18.638Z\",\"result\":\"mode_not_execute\",\"strategy_id\":\"default_general\",\"mode\":\"score_only\"}",
               "stderr": "",
               "error": null
             }
@@ -232,15 +244,15 @@
           "step": {
             "id": "receipt",
             "type": "receipt",
-            "command": "state/autonomy/receipts/2026-02-25.jsonl"
+            "command": "state/autonomy/receipts/2026-02-26.jsonl"
           },
           "records": [
             {
               "attempt": 1,
               "ok": true,
               "exit_code": 0,
-              "started_at": "2026-02-26T02:45:38.156Z",
-              "ended_at": "2026-02-26T02:45:38.156Z",
+              "started_at": "2026-02-26T04:32:18.651Z",
+              "ended_at": "2026-02-26T04:32:18.651Z",
               "duration_ms": 0,
               "timed_out": false,
               "stdout": "",
@@ -248,7 +260,7 @@
               "error": null
             }
           ],
-          "receipt_path": "/Users/jay/.openclaw/workspace/state/autonomy/receipts/2026-02-25.jsonl",
+          "receipt_path": "/Users/jay/.openclaw/workspace/state/autonomy/receipts/2026-02-26.jsonl",
           "receipt_exists": true
         }
       ],

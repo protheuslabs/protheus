@@ -1,9 +1,9 @@
 {
   "schema_id": "autonomy_genome_topology",
   "schema_version": "1.0.0",
-  "ts": "2026-02-26T00:06:33.362Z",
+  "ts": "2026-02-26T04:32:45.051Z",
   "date": "2026-02-26",
-  "modules_total": 22,
+  "modules_total": 23,
   "modules": [
     "actuation",
     "adaptive",
@@ -17,6 +17,7 @@
     "identity",
     "memory",
     "nursery",
+    "observability",
     "ops",
     "polyglot",
     "reflex",
@@ -41,6 +42,7 @@
     "identity": 1,
     "memory": 1,
     "nursery": 1,
+    "observability": 1,
     "ops": 1,
     "polyglot": 1,
     "reflex": 1,

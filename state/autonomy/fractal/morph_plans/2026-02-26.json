@@ -1,7 +1,7 @@
 {
   "ok": true,
   "type": "fractal_morph_plan",
-  "ts": "2026-02-26T00:06:32.511Z",
+  "ts": "2026-02-26T04:32:43.738Z",
   "date": "2026-02-26",
   "plan_id": "morph_129e64f8a0be20b1",
   "objective_id": null,
@@ -28,7 +28,7 @@
     "receipt_path": "state/autonomy/identity_anchor/2026-02-26.jsonl"
   },
   "context": {
-    "ts": "2026-02-26T00:06:32.443Z",
+    "ts": "2026-02-26T04:32:43.705Z",
     "date": "2026-02-26",
     "objective_id": null,
     "sim": {

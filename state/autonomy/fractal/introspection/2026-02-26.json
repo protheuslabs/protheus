@@ -1,10 +1,10 @@
 {
   "ok": true,
   "type": "fractal_introspection_map",
-  "ts": "2026-02-26T00:06:32.055Z",
+  "ts": "2026-02-26T04:32:42.042Z",
   "date": "2026-02-26",
   "snapshot": {
-    "ts": "2026-02-26T00:06:32.053Z",
+    "ts": "2026-02-26T04:32:42.040Z",
     "date": "2026-02-26",
     "queue": {
       "pending": 0,
@@ -15,7 +15,7 @@
       "pressure": "normal"
     },
     "runs": {
-      "runs": 1,
+      "runs": 2,
       "executed": 0,
       "policy_holds": 0,
       "no_progress": 0
@@ -25,7 +25,7 @@
       "cooldown_keys": 0
     },
     "autopause": {
-      "active": false,
+      "active": true,
       "source": "idle_dream_cycle",
       "reason": "burn_rate_exceeded"
     },
@@ -65,7 +65,7 @@
         "id": "budget",
         "label": "budget",
         "type": "module",
-        "health": "ok"
+        "health": "warn"
       },
       {
         "id": "continuity",
@@ -102,5 +102,14 @@
       }
     ]
   },
-  "restructure_candidates": []
+  "restructure_candidates": [
+    {
+      "id": "cand_2623174090b965",
+      "type": "autopause_active",
+      "severity": "high",
+      "reason": "budget autopause active source=idle_dream_cycle",
+      "suggested_plan": "budget_first_mode_and_low_cost_routes",
+      "reversible_plan_ref": "state/autonomy/fractal/morph_plans/2026-02-26.json"
+    }
+  ]
 }

@@ -1,7 +1,7 @@
 {
   "schema_id": "ci_baseline_streak",
   "schema_version": "1.0",
-  "updated_at": "2026-02-26T02:19:48.454Z",
+  "updated_at": "2026-02-26T07:42:16.845Z",
   "target_days": 7,
   "consecutive_daily_green_runs": 1,
   "latest_green_date": "2026-02-26",
@@ -13,6 +13,60 @@
       "passed": 209,
       "failed": 0,
       "total": 209,
+      "include_stateful": false
+    },
+    {
+      "ts": "2026-02-26T03:15:30.858Z",
+      "date": "2026-02-26",
+      "ok": true,
+      "passed": 209,
+      "failed": 0,
+      "total": 209,
+      "include_stateful": false
+    },
+    {
+      "ts": "2026-02-26T03:39:00.507Z",
+      "date": "2026-02-26",
+      "ok": true,
+      "passed": 213,
+      "failed": 0,
+      "total": 213,
+      "include_stateful": false
+    },
+    {
+      "ts": "2026-02-26T07:05:51.846Z",
+      "date": "2026-02-26",
+      "ok": true,
+      "passed": 224,
+      "failed": 0,
+      "total": 224,
+      "include_stateful": false
+    },
+    {
+      "ts": "2026-02-26T07:10:44.548Z",
+      "date": "2026-02-26",
+      "ok": true,
+      "passed": 224,
+      "failed": 0,
+      "total": 224,
+      "include_stateful": false
+    },
+    {
+      "ts": "2026-02-26T07:20:19.036Z",
+      "date": "2026-02-26",
+      "ok": true,
+      "passed": 224,
+      "failed": 0,
+      "total": 224,
+      "include_stateful": false
+    },
+    {
+      "ts": "2026-02-26T07:42:16.845Z",
+      "date": "2026-02-26",
+      "ok": true,
+      "passed": 225,
+      "failed": 0,
+      "total": 225,
       "include_stateful": false
     }
   ]

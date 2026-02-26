@@ -40,6 +40,24 @@
   },
   "triggers": [
     {
+      "uid": "ft4hr10chp9de1v7xrm40tgs",
+      "key": "token:across",
+      "pattern": "across",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "anomalies",
+        "proposals"
+      ],
+      "status": "active",
+      "weight": 74,
+      "cooldown_minutes": 90,
+      "hit_count": 0,
+      "last_hit_ts": null,
+      "created_ts": "2026-02-25T17:53:58.655Z",
+      "updated_ts": "2026-02-26T04:30:31.189Z"
+    },
+    {
       "uid": "ft3ac4qec9byq5oul6smy408",
       "key": "token:churn",
       "pattern": "churn",
@@ -49,12 +67,12 @@
         "anomalies"
       ],
       "status": "active",
-      "weight": 49,
+      "weight": 56,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-26T00:02:18.712Z"
+      "updated_ts": "2026-02-26T04:30:31.189Z"
     },
     {
       "uid": "ft3zvsqnj892z33x2mhnvo3p",
@@ -66,12 +84,12 @@
         "anomalies"
       ],
       "status": "active",
-      "weight": 49,
+      "weight": 56,
       "cooldown_minutes": 90,
       "hit_count": 2,
       "last_hit_ts": "2026-02-21T21:45:43.704Z",
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-26T00:02:18.712Z"
+      "updated_ts": "2026-02-26T04:30:31.189Z"
     },
     {
       "uid": "ft244q3gsgznlqmmoiss0lwz",
@@ -83,12 +101,12 @@
         "anomalies"
       ],
       "status": "active",
-      "weight": 49,
+      "weight": 56,
       "cooldown_minutes": 90,
       "hit_count": 7,
       "last_hit_ts": "2026-02-26T00:56:07.063Z",
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-26T00:56:07.063Z"
+      "updated_ts": "2026-02-26T04:30:31.189Z"
     },
     {
       "uid": "ft7ds2pfg6xpj8145626z2k6",
@@ -100,12 +118,12 @@
         "anomalies"
       ],
       "status": "active",
-      "weight": 49,
+      "weight": 56,
       "cooldown_minutes": 90,
-      "hit_count": 50,
-      "last_hit_ts": "2026-02-26T00:30:19.591Z",
+      "hit_count": 57,
+      "last_hit_ts": "2026-02-26T07:41:10.229Z",
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-26T00:30:19.591Z"
+      "updated_ts": "2026-02-26T07:41:10.229Z"
     },
     {
       "uid": "ft61c7fe7o96h2gyomc1z3wv",
@@ -117,12 +135,12 @@
         "anomalies"
       ],
       "status": "active",
-      "weight": 49,
+      "weight": 56,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-26T00:02:18.712Z"
+      "updated_ts": "2026-02-26T04:30:31.189Z"
     },
     {
       "uid": "ft6a0ykfwtuazsp6z9ya4tse",
@@ -134,80 +152,12 @@
         "anomalies"
       ],
       "status": "active",
-      "weight": 49,
+      "weight": 56,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-26T00:02:18.712Z"
-    },
-    {
-      "uid": "ft17lhwbgfe03l72726gutx5",
-      "key": "token:flow",
-      "pattern": "flow",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 37,
-      "cooldown_minutes": 90,
-      "hit_count": 13,
-      "last_hit_ts": "2026-02-23T17:21:32.821Z",
-      "created_ts": "2026-02-23T09:58:11.988Z",
-      "updated_ts": "2026-02-26T00:02:18.712Z"
-    },
-    {
-      "uid": "ft3x4o9uqzkbcdwwhneftot4",
-      "key": "token:objective",
-      "pattern": "objective",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 37,
-      "cooldown_minutes": 90,
-      "hit_count": 0,
-      "last_hit_ts": null,
-      "created_ts": "2026-02-23T09:58:11.988Z",
-      "updated_ts": "2026-02-26T00:02:18.712Z"
-    },
-    {
-      "uid": "ftq23fu36ppv4n3yzv0357rs",
-      "key": "token:return",
-      "pattern": "return",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 35,
-      "cooldown_minutes": 90,
-      "hit_count": 0,
-      "last_hit_ts": null,
-      "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-26T00:02:18.712Z"
-    },
-    {
-      "uid": "ft4hr10chp9de1v7xrm40tgs",
-      "key": "token:across",
-      "pattern": "across",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "anomalies"
-      ],
-      "status": "active",
-      "weight": 33,
-      "cooldown_minutes": 90,
-      "hit_count": 0,
-      "last_hit_ts": null,
-      "created_ts": "2026-02-25T17:53:58.655Z",
-      "updated_ts": "2026-02-26T00:02:18.712Z"
+      "updated_ts": "2026-02-26T04:30:31.189Z"
     },
     {
       "uid": "ft20nvngxs1zep0yxlatbdp9",
@@ -219,63 +169,12 @@
         "anomalies"
       ],
       "status": "active",
-      "weight": 33,
+      "weight": 51,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-25T17:53:58.655Z",
-      "updated_ts": "2026-02-26T00:02:18.712Z"
-    },
-    {
-      "uid": "ft4k3924z5gqr2k65hhukkgn",
-      "key": "token:increase",
-      "pattern": "increase",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 33,
-      "cooldown_minutes": 90,
-      "hit_count": 2,
-      "last_hit_ts": "2026-02-21T21:45:43.704Z",
-      "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-26T00:02:18.712Z"
-    },
-    {
-      "uid": "ft3ryke2h5gp5nsj557nymem",
-      "key": "token:low-risk",
-      "pattern": "low-risk",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 33,
-      "cooldown_minutes": 90,
-      "hit_count": 0,
-      "last_hit_ts": null,
-      "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-26T00:02:18.712Z"
-    },
-    {
-      "uid": "ft39x57i8nf8q87e91gv7qzy",
-      "key": "token:measurable",
-      "pattern": "measurable",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 33,
-      "cooldown_minutes": 90,
-      "hit_count": 0,
-      "last_hit_ts": null,
-      "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-26T00:02:18.712Z"
+      "updated_ts": "2026-02-26T04:30:31.189Z"
     },
     {
       "uid": "ft4klnv7pcmlxwji8o3nyq7m",
@@ -284,49 +183,16 @@
       "mode": "contains",
       "source": "auto",
       "source_signals": [
-        "directives"
+        "directives",
+        "proposals"
       ],
       "status": "active",
-      "weight": 32,
+      "weight": 36,
       "cooldown_minutes": 90,
       "hit_count": 4,
       "last_hit_ts": "2026-02-22T14:46:19.528Z",
       "created_ts": "2026-02-21T02:43:27.698Z",
-      "updated_ts": "2026-02-26T00:02:18.712Z"
-    },
-    {
-      "uid": "ft4m3sabx44qy9wf60ewfbza",
-      "key": "token:execution",
-      "pattern": "execution",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 31,
-      "cooldown_minutes": 90,
-      "hit_count": 5,
-      "last_hit_ts": "2026-02-23T16:26:33.050Z",
-      "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-26T00:02:18.712Z"
-    },
-    {
-      "uid": "ft2in0s8wi2sluqdgu3o6vp8",
-      "key": "token:campaign",
-      "pattern": "campaign",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 26,
-      "cooldown_minutes": 90,
-      "hit_count": 0,
-      "last_hit_ts": null,
-      "created_ts": "2026-02-23T09:58:11.988Z",
-      "updated_ts": "2026-02-26T00:02:18.712Z"
+      "updated_ts": "2026-02-26T04:30:31.189Z"
     },
     {
       "uid": "ft5gzzwbjt08966rma9j5xk3",
@@ -338,46 +204,12 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 26,
+      "weight": 33,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-26T00:02:18.712Z"
-    },
-    {
-      "uid": "ft3jpsih8v1go94wsol7xi7r",
-      "key": "token:improve",
-      "pattern": "improve",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 26,
-      "cooldown_minutes": 90,
-      "hit_count": 2,
-      "last_hit_ts": "2026-02-21T21:45:43.704Z",
-      "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-26T00:02:18.712Z"
-    },
-    {
-      "uid": "ft5scteiftpw21yv5r8kaxne",
-      "key": "token:quality",
-      "pattern": "quality",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 26,
-      "cooldown_minutes": 90,
-      "hit_count": 0,
-      "last_hit_ts": null,
-      "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-26T00:02:18.712Z"
+      "updated_ts": "2026-02-26T04:30:31.189Z"
     },
     {
       "uid": "ftln7gn2fdw0r65wo8qh6wwe",
@@ -389,12 +221,218 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 26,
+      "weight": 33,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-26T00:02:18.712Z"
+      "updated_ts": "2026-02-26T04:30:31.189Z"
+    },
+    {
+      "uid": "ft17lhwbgfe03l72726gutx5",
+      "key": "token:flow",
+      "pattern": "flow",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "proposals"
+      ],
+      "status": "active",
+      "weight": 31,
+      "cooldown_minutes": 90,
+      "hit_count": 19,
+      "last_hit_ts": "2026-02-26T03:38:10.834Z",
+      "created_ts": "2026-02-23T09:58:11.988Z",
+      "updated_ts": "2026-02-26T04:30:31.189Z"
+    },
+    {
+      "uid": "ft3x4o9uqzkbcdwwhneftot4",
+      "key": "token:objective",
+      "pattern": "objective",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "proposals"
+      ],
+      "status": "active",
+      "weight": 31,
+      "cooldown_minutes": 90,
+      "hit_count": 0,
+      "last_hit_ts": null,
+      "created_ts": "2026-02-23T09:58:11.988Z",
+      "updated_ts": "2026-02-26T04:30:31.189Z"
+    },
+    {
+      "uid": "ft4wj5rdzsjsa6vi0g0ktqh7",
+      "key": "token:converging",
+      "pattern": "converging",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "proposals"
+      ],
+      "status": "active",
+      "weight": 30,
+      "cooldown_minutes": 90,
+      "hit_count": 0,
+      "last_hit_ts": null,
+      "created_ts": "2026-02-21T06:43:30.470Z",
+      "updated_ts": "2026-02-26T04:30:31.189Z"
+    },
+    {
+      "uid": "ft4k3924z5gqr2k65hhukkgn",
+      "key": "token:increase",
+      "pattern": "increase",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "proposals"
+      ],
+      "status": "active",
+      "weight": 27,
+      "cooldown_minutes": 90,
+      "hit_count": 2,
+      "last_hit_ts": "2026-02-21T21:45:43.704Z",
+      "created_ts": "2026-02-21T06:43:30.470Z",
+      "updated_ts": "2026-02-26T04:30:31.189Z"
+    },
+    {
+      "uid": "ft3ryke2h5gp5nsj557nymem",
+      "key": "token:low-risk",
+      "pattern": "low-risk",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "proposals"
+      ],
+      "status": "active",
+      "weight": 27,
+      "cooldown_minutes": 90,
+      "hit_count": 0,
+      "last_hit_ts": null,
+      "created_ts": "2026-02-21T06:43:30.470Z",
+      "updated_ts": "2026-02-26T04:30:31.189Z"
+    },
+    {
+      "uid": "ft39x57i8nf8q87e91gv7qzy",
+      "key": "token:measurable",
+      "pattern": "measurable",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "proposals"
+      ],
+      "status": "active",
+      "weight": 27,
+      "cooldown_minutes": 90,
+      "hit_count": 0,
+      "last_hit_ts": null,
+      "created_ts": "2026-02-21T06:43:30.470Z",
+      "updated_ts": "2026-02-26T04:30:31.189Z"
+    },
+    {
+      "uid": "ft4m3sabx44qy9wf60ewfbza",
+      "key": "token:execution",
+      "pattern": "execution",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "proposals"
+      ],
+      "status": "active",
+      "weight": 26,
+      "cooldown_minutes": 90,
+      "hit_count": 5,
+      "last_hit_ts": "2026-02-23T16:26:33.050Z",
+      "created_ts": "2026-02-21T06:43:30.470Z",
+      "updated_ts": "2026-02-26T04:30:31.189Z"
+    },
+    {
+      "uid": "ft3jpsih8v1go94wsol7xi7r",
+      "key": "token:improve",
+      "pattern": "improve",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "proposals"
+      ],
+      "status": "active",
+      "weight": 25,
+      "cooldown_minutes": 90,
+      "hit_count": 2,
+      "last_hit_ts": "2026-02-21T21:45:43.704Z",
+      "created_ts": "2026-02-21T06:43:30.470Z",
+      "updated_ts": "2026-02-26T04:30:31.189Z"
+    },
+    {
+      "uid": "ft5e677km6r532epkoxyn4r9",
+      "key": "token:revenue",
+      "pattern": "revenue",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "proposals",
+        "top_eyes"
+      ],
+      "status": "active",
+      "weight": 25,
+      "cooldown_minutes": 90,
+      "hit_count": 1,
+      "last_hit_ts": "2026-02-26T04:30:32.493Z",
+      "created_ts": "2026-02-26T04:30:31.189Z",
+      "updated_ts": "2026-02-26T04:30:32.493Z"
+    },
+    {
+      "uid": "ft4f8jeoqyesg2u0r8bg2tum",
+      "key": "token:t1_generational_wealth_v1",
+      "pattern": "t1_generational_wealth_v1",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "directives",
+        "top_eyes"
+      ],
+      "status": "active",
+      "weight": 25,
+      "cooldown_minutes": 90,
+      "hit_count": 110,
+      "last_hit_ts": "2026-02-26T07:41:10.229Z",
+      "created_ts": "2026-02-26T00:02:18.712Z",
+      "updated_ts": "2026-02-26T07:41:10.229Z"
+    },
+    {
+      "uid": "ftms5nt9fcdzwrqiuh59i3nb",
+      "key": "token:assessment",
+      "pattern": "assessment",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "proposals"
+      ],
+      "status": "active",
+      "weight": 23,
+      "cooldown_minutes": 90,
+      "hit_count": 0,
+      "last_hit_ts": null,
+      "created_ts": "2026-02-26T04:30:31.189Z",
+      "updated_ts": "2026-02-26T04:30:31.189Z"
+    },
+    {
+      "uid": "ft2in0s8wi2sluqdgu3o6vp8",
+      "key": "token:campaign",
+      "pattern": "campaign",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "proposals"
+      ],
+      "status": "active",
+      "weight": 22,
+      "cooldown_minutes": 90,
+      "hit_count": 0,
+      "last_hit_ts": null,
+      "created_ts": "2026-02-23T09:58:11.988Z",
+      "updated_ts": "2026-02-26T04:30:31.189Z"
     },
     {
       "uid": "ft2h2n4qm7kh76fydahw6oxr",
@@ -406,29 +444,46 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 25,
+      "weight": 21,
       "cooldown_minutes": 90,
       "hit_count": 47,
       "last_hit_ts": "2026-02-23T17:21:32.821Z",
       "created_ts": "2026-02-21T02:43:27.698Z",
-      "updated_ts": "2026-02-26T00:02:18.712Z"
+      "updated_ts": "2026-02-26T04:30:31.189Z"
     },
     {
-      "uid": "ft5nf566cuocdehzvfy7hvrn",
-      "key": "token:outcome:",
-      "pattern": "outcome:",
+      "uid": "ft295r3uf47ycdrst7r72s32",
+      "key": "token:metrics",
+      "pattern": "metrics",
       "mode": "contains",
       "source": "auto",
       "source_signals": [
         "proposals"
       ],
       "status": "active",
-      "weight": 24,
+      "weight": 21,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-26T00:02:18.712Z"
+      "updated_ts": "2026-02-26T04:30:31.189Z"
+    },
+    {
+      "uid": "ftq23fu36ppv4n3yzv0357rs",
+      "key": "token:return",
+      "pattern": "return",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "proposals"
+      ],
+      "status": "active",
+      "weight": 20,
+      "cooldown_minutes": 90,
+      "hit_count": 0,
+      "last_hit_ts": null,
+      "created_ts": "2026-02-21T06:43:30.470Z",
+      "updated_ts": "2026-02-26T04:30:31.189Z"
     },
     {
       "uid": "ft30g741vaay3g6ug2o0ip6g",
@@ -440,12 +495,12 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 22,
+      "weight": 19,
       "cooldown_minutes": 90,
-      "hit_count": 242,
-      "last_hit_ts": "2026-02-26T02:19:02.190Z",
+      "hit_count": 287,
+      "last_hit_ts": "2026-02-26T07:41:10.229Z",
       "created_ts": "2026-02-23T15:20:59.511Z",
-      "updated_ts": "2026-02-26T02:19:02.190Z"
+      "updated_ts": "2026-02-26T07:41:10.229Z"
     },
     {
       "uid": "ft4dbd6htnekju3dc23t3ino",
@@ -458,63 +513,12 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 22,
+      "weight": 19,
       "cooldown_minutes": 90,
       "hit_count": 1,
       "last_hit_ts": "2026-02-25T17:53:59.839Z",
       "created_ts": "2026-02-23T15:20:59.511Z",
-      "updated_ts": "2026-02-26T00:02:18.712Z"
-    },
-    {
-      "uid": "ft3p7upgpvcq7p2g5l62pdub",
-      "key": "token:opportunity",
-      "pattern": "opportunity",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 22,
-      "cooldown_minutes": 90,
-      "hit_count": 68,
-      "last_hit_ts": "2026-02-23T17:21:32.821Z",
-      "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-26T00:02:18.712Z"
-    },
-    {
-      "uid": "ft3lbog1vjlfu56fykmd5cyy",
-      "key": "token:stabilize",
-      "pattern": "stabilize",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 22,
-      "cooldown_minutes": 90,
-      "hit_count": 0,
-      "last_hit_ts": null,
-      "created_ts": "2026-02-23T09:58:11.988Z",
-      "updated_ts": "2026-02-26T00:02:18.712Z"
-    },
-    {
-      "uid": "ft4lbkjwhv0gvab0yqcku36p",
-      "key": "token:build",
-      "pattern": "build",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 21,
-      "cooldown_minutes": 90,
-      "hit_count": 65,
-      "last_hit_ts": "2026-02-26T00:02:20.843Z",
-      "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-26T00:02:20.843Z"
+      "updated_ts": "2026-02-26T04:30:31.189Z"
     },
     {
       "uid": "ftxuncz0jz4j3dv9m1gk1x8s",
@@ -526,63 +530,63 @@
         "proposals"
       ],
       "status": "active",
-      "weight": 21,
+      "weight": 19,
       "cooldown_minutes": 90,
       "hit_count": 21,
       "last_hit_ts": "2026-02-23T16:26:33.050Z",
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-26T00:02:18.712Z"
+      "updated_ts": "2026-02-26T04:30:31.189Z"
     },
     {
-      "uid": "ftvp7jbtwjzzg9twpve6ddza",
-      "key": "token:execute",
-      "pattern": "execute",
+      "uid": "ft3p7upgpvcq7p2g5l62pdub",
+      "key": "token:opportunity",
+      "pattern": "opportunity",
       "mode": "contains",
       "source": "auto",
       "source_signals": [
         "proposals"
       ],
       "status": "active",
-      "weight": 20,
+      "weight": 19,
+      "cooldown_minutes": 90,
+      "hit_count": 68,
+      "last_hit_ts": "2026-02-23T17:21:32.821Z",
+      "created_ts": "2026-02-21T06:43:30.470Z",
+      "updated_ts": "2026-02-26T04:30:31.189Z"
+    },
+    {
+      "uid": "ft3lbog1vjlfu56fykmd5cyy",
+      "key": "token:stabilize",
+      "pattern": "stabilize",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "proposals"
+      ],
+      "status": "active",
+      "weight": 19,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-23T09:58:11.988Z",
-      "updated_ts": "2026-02-26T00:02:18.712Z"
+      "updated_ts": "2026-02-26T04:30:31.189Z"
     },
     {
-      "uid": "ft4wj5rdzsjsa6vi0g0ktqh7",
-      "key": "token:converging",
-      "pattern": "converging",
+      "uid": "ft4lbkjwhv0gvab0yqcku36p",
+      "key": "token:build",
+      "pattern": "build",
       "mode": "contains",
       "source": "auto",
       "source_signals": [
         "proposals"
       ],
       "status": "active",
-      "weight": 19,
+      "weight": 18,
       "cooldown_minutes": 90,
-      "hit_count": 0,
-      "last_hit_ts": null,
+      "hit_count": 81,
+      "last_hit_ts": "2026-02-26T07:09:49.960Z",
       "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-26T00:02:18.712Z"
-    },
-    {
-      "uid": "ft6aa3y5yefrv9skn68znwld",
-      "key": "token:income",
-      "pattern": "income",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 19,
-      "cooldown_minutes": 90,
-      "hit_count": 0,
-      "last_hit_ts": null,
-      "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-26T00:02:18.712Z"
+      "updated_ts": "2026-02-26T07:09:49.960Z"
     },
     {
       "uid": "ft2uekd41gc5sg14qa33ye8p",
@@ -594,17 +598,17 @@
         "strategy"
       ],
       "status": "active",
-      "weight": 17,
+      "weight": 18,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-25T13:38:26.336Z",
-      "updated_ts": "2026-02-26T00:02:18.712Z"
+      "updated_ts": "2026-02-26T04:30:31.189Z"
     },
     {
-      "uid": "ft1foyqfjjf31nfske233owr",
-      "key": "token:reliability",
-      "pattern": "reliability",
+      "uid": "ftvp7jbtwjzzg9twpve6ddza",
+      "key": "token:execute",
+      "pattern": "execute",
       "mode": "contains",
       "source": "auto",
       "source_signals": [
@@ -615,8 +619,42 @@
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
-      "created_ts": "2026-02-23T20:05:41.987Z",
-      "updated_ts": "2026-02-26T00:02:18.712Z"
+      "created_ts": "2026-02-23T09:58:11.988Z",
+      "updated_ts": "2026-02-26T04:30:31.189Z"
+    },
+    {
+      "uid": "ft5scteiftpw21yv5r8kaxne",
+      "key": "token:quality",
+      "pattern": "quality",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "proposals"
+      ],
+      "status": "active",
+      "weight": 17,
+      "cooldown_minutes": 90,
+      "hit_count": 6,
+      "last_hit_ts": "2026-02-26T07:41:10.229Z",
+      "created_ts": "2026-02-21T06:43:30.470Z",
+      "updated_ts": "2026-02-26T07:41:10.229Z"
+    },
+    {
+      "uid": "ft37raft1ohxyxzexz9x2xw4",
+      "key": "token:assets",
+      "pattern": "assets",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "directives"
+      ],
+      "status": "active",
+      "weight": 16,
+      "cooldown_minutes": 90,
+      "hit_count": 0,
+      "last_hit_ts": null,
+      "created_ts": "2026-02-25T13:38:26.336Z",
+      "updated_ts": "2026-02-26T04:30:31.189Z"
     },
     {
       "uid": "ft2oucdb619v88i8vu8x2a64",
@@ -633,24 +671,7 @@
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-21T02:43:27.698Z",
-      "updated_ts": "2026-02-26T00:02:18.712Z"
-    },
-    {
-      "uid": "ftg64r8hve5xzfow9a37ev3y",
-      "key": "token:automation",
-      "pattern": "automation",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 16,
-      "cooldown_minutes": 90,
-      "hit_count": 71,
-      "last_hit_ts": "2026-02-23T17:21:32.821Z",
-      "created_ts": "2026-02-21T02:43:27.698Z",
-      "updated_ts": "2026-02-26T00:02:18.712Z"
+      "updated_ts": "2026-02-26T04:30:31.189Z"
     },
     {
       "uid": "ft338el555kgy4bhadn3ziqz",
@@ -667,12 +688,12 @@
       "hit_count": 5,
       "last_hit_ts": "2026-02-23T17:21:32.821Z",
       "created_ts": "2026-02-23T09:58:11.988Z",
-      "updated_ts": "2026-02-26T00:02:18.712Z"
+      "updated_ts": "2026-02-26T04:30:31.189Z"
     },
     {
-      "uid": "ft3royntyttzckgxtx3gieeg",
-      "key": "token:directive",
-      "pattern": "directive",
+      "uid": "ft6aa3y5yefrv9skn68znwld",
+      "key": "token:income",
+      "pattern": "income",
       "mode": "contains",
       "source": "auto",
       "source_signals": [
@@ -683,25 +704,25 @@
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
-      "created_ts": "2026-02-23T09:58:11.988Z",
-      "updated_ts": "2026-02-26T00:02:18.712Z"
+      "created_ts": "2026-02-21T06:43:30.470Z",
+      "updated_ts": "2026-02-26T04:30:31.189Z"
     },
     {
-      "uid": "ft37raft1ohxyxzexz9x2xw4",
-      "key": "token:assets",
-      "pattern": "assets",
+      "uid": "ft5nf566cuocdehzvfy7hvrn",
+      "key": "token:outcome:",
+      "pattern": "outcome:",
       "mode": "contains",
       "source": "auto",
       "source_signals": [
-        "directives"
+        "proposals"
       ],
       "status": "active",
-      "weight": 15,
+      "weight": 16,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
-      "created_ts": "2026-02-25T13:38:26.336Z",
-      "updated_ts": "2026-02-26T00:02:18.712Z"
+      "created_ts": "2026-02-21T06:43:30.470Z",
+      "updated_ts": "2026-02-26T04:30:31.189Z"
     },
     {
       "uid": "ftwpujs84xqbymr2ua399n5o",
@@ -713,17 +734,34 @@
         "directives"
       ],
       "status": "active",
-      "weight": 14,
+      "weight": 15,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-25T17:53:58.655Z",
-      "updated_ts": "2026-02-26T00:02:18.712Z"
+      "updated_ts": "2026-02-26T04:30:31.189Z"
     },
     {
-      "uid": "ft3ot9nfy1o3fnh1qyl77kxm",
-      "key": "token:coverage",
-      "pattern": "coverage",
+      "uid": "ftg64r8hve5xzfow9a37ev3y",
+      "key": "token:automation",
+      "pattern": "automation",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "proposals"
+      ],
+      "status": "active",
+      "weight": 14,
+      "cooldown_minutes": 90,
+      "hit_count": 71,
+      "last_hit_ts": "2026-02-23T17:21:32.821Z",
+      "created_ts": "2026-02-21T02:43:27.698Z",
+      "updated_ts": "2026-02-26T04:30:31.189Z"
+    },
+    {
+      "uid": "ft3royntyttzckgxtx3gieeg",
+      "key": "token:directive",
+      "pattern": "directive",
       "mode": "contains",
       "source": "auto",
       "source_signals": [
@@ -734,94 +772,8 @@
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
-      "created_ts": "2026-02-23T15:20:59.511Z",
-      "updated_ts": "2026-02-26T00:02:18.712Z"
-    },
-    {
-      "uid": "ft295r3uf47ycdrst7r72s32",
-      "key": "token:metrics",
-      "pattern": "metrics",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 14,
-      "cooldown_minutes": 90,
-      "hit_count": 0,
-      "last_hit_ts": null,
-      "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-26T00:02:18.712Z"
-    },
-    {
-      "uid": "ft622h4wui949e6godhdhhdq",
-      "key": "token:pain",
-      "pattern": "pain",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 14,
-      "cooldown_minutes": 90,
-      "hit_count": 0,
-      "last_hit_ts": null,
-      "created_ts": "2026-02-23T20:05:41.987Z",
-      "updated_ts": "2026-02-26T00:02:18.712Z"
-    },
-    {
-      "uid": "ft2xwzwxngr50xa5g83ya04l",
-      "key": "token:validation",
-      "pattern": "validation",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 14,
-      "cooldown_minutes": 90,
-      "hit_count": 0,
-      "last_hit_ts": null,
-      "created_ts": "2026-02-21T06:43:30.470Z",
-      "updated_ts": "2026-02-26T00:02:18.712Z"
-    },
-    {
-      "uid": "ft4f8jeoqyesg2u0r8bg2tum",
-      "key": "token:t1_generational_wealth_v1",
-      "pattern": "t1_generational_wealth_v1",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "directives",
-        "top_eyes"
-      ],
-      "status": "active",
-      "weight": 13,
-      "cooldown_minutes": 90,
-      "hit_count": 65,
-      "last_hit_ts": "2026-02-26T02:19:02.190Z",
-      "created_ts": "2026-02-26T00:02:18.712Z",
-      "updated_ts": "2026-02-26T02:19:02.190Z"
-    },
-    {
-      "uid": "ft2xxsez33hb04dnwc1wmcis",
-      "key": "token:decomposition",
-      "pattern": "decomposition",
-      "mode": "contains",
-      "source": "auto",
-      "source_signals": [
-        "proposals"
-      ],
-      "status": "active",
-      "weight": 12,
-      "cooldown_minutes": 90,
-      "hit_count": 0,
-      "last_hit_ts": null,
-      "created_ts": "2026-02-24T17:25:07.998Z",
-      "updated_ts": "2026-02-26T00:02:18.712Z"
+      "created_ts": "2026-02-23T09:58:11.988Z",
+      "updated_ts": "2026-02-26T04:30:31.189Z"
     },
     {
       "uid": "ft3aq9xmah37j9px3n0qqd90",
@@ -833,12 +785,12 @@
         "directives"
       ],
       "status": "active",
-      "weight": 10,
+      "weight": 14,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-26T00:02:18.712Z",
-      "updated_ts": "2026-02-26T00:02:18.712Z"
+      "updated_ts": "2026-02-26T04:30:31.189Z"
     },
     {
       "uid": "ftfeskmnmb8tqpigafqqx03v",
@@ -850,12 +802,63 @@
         "directives"
       ],
       "status": "active",
-      "weight": 10,
+      "weight": 14,
       "cooldown_minutes": 90,
       "hit_count": 0,
       "last_hit_ts": null,
       "created_ts": "2026-02-26T00:02:18.712Z",
-      "updated_ts": "2026-02-26T00:02:18.712Z"
+      "updated_ts": "2026-02-26T04:30:31.189Z"
+    },
+    {
+      "uid": "ft1foyqfjjf31nfske233owr",
+      "key": "token:reliability",
+      "pattern": "reliability",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "proposals"
+      ],
+      "status": "active",
+      "weight": 14,
+      "cooldown_minutes": 90,
+      "hit_count": 0,
+      "last_hit_ts": null,
+      "created_ts": "2026-02-23T20:05:41.987Z",
+      "updated_ts": "2026-02-26T04:30:31.189Z"
+    },
+    {
+      "uid": "ft2z7yzgzuuzf44cbf9oe16a",
+      "key": "token:saas",
+      "pattern": "saas",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "top_eyes"
+      ],
+      "status": "active",
+      "weight": 13,
+      "cooldown_minutes": 90,
+      "hit_count": 17,
+      "last_hit_ts": "2026-02-26T07:09:49.960Z",
+      "created_ts": "2026-02-26T04:30:31.189Z",
+      "updated_ts": "2026-02-26T07:09:49.960Z"
+    },
+    {
+      "uid": "ft2peuozh4bp4cqa7jz8z82g",
+      "key": "token:startups",
+      "pattern": "startups",
+      "mode": "contains",
+      "source": "auto",
+      "source_signals": [
+        "top_eyes"
+      ],
+      "status": "active",
+      "weight": 13,
+      "cooldown_minutes": 90,
+      "hit_count": 13,
+      "last_hit_ts": "2026-02-26T07:14:59.304Z",
+      "created_ts": "2026-02-26T04:30:31.189Z",
+      "updated_ts": "2026-02-26T07:14:59.304Z"
     }
   ],
   "eye_lenses": {
@@ -864,45 +867,45 @@
       "include_terms": [
         "agents",
         "about",
-        "code",
         "agent",
         "built",
         "just",
         "best",
-        "patterns",
         "build",
         "assistant",
+        "code",
+        "patterns",
         "developer",
         "operator",
         "skill",
         "open",
-        "automation",
-        "nobody"
+        "claude",
+        "memory"
       ],
       "exclude_terms": [],
       "term_weights": {
         "agents": 20,
         "about": 20,
-        "code": 20,
         "agent": 20,
         "built": 20,
         "just": 20,
         "best": 20,
-        "patterns": 20,
         "build": 20,
         "assistant": 20,
+        "code": 20,
+        "patterns": 20,
         "developer": 20,
         "operator": 20,
         "skill": 20,
         "open": 20,
-        "automation": 18,
-        "nobody": 18
+        "claude": 20,
+        "memory": 20
       },
       "baseline_topics": [],
       "focus_hits_total": 80,
-      "update_count": 22,
+      "update_count": 23,
       "created_ts": "2026-02-21T04:03:43.974Z",
-      "updated_ts": "2026-02-26T00:02:18.727Z"
+      "updated_ts": "2026-02-26T06:59:59.175Z"
     },
     "x_trends": {
       "eye_id": "x_trends",
@@ -911,18 +914,18 @@
         "automation",
         "agent",
         "built",
-        "just",
         "actually",
-        "nobody",
-        "best",
         "human",
         "chain",
         "claude",
+        "just",
+        "nobody",
+        "best",
         "about",
-        "agents",
         "need",
-        "across",
-        "here"
+        "here",
+        "agents",
+        "across"
       ],
       "exclude_terms": [],
       "term_weights": {
@@ -930,34 +933,31 @@
         "automation": 20,
         "agent": 20,
         "built": 20,
-        "just": 20,
         "actually": 20,
-        "nobody": 20,
-        "best": 20,
         "human": 20,
         "chain": 20,
         "claude": 20,
+        "just": 20,
+        "nobody": 20,
+        "best": 20,
         "about": 20,
-        "agents": 20,
         "need": 20,
-        "across": 20,
-        "here": 20
+        "here": 20,
+        "agents": 20,
+        "across": 20
       },
       "baseline_topics": [],
       "focus_hits_total": 46,
-      "update_count": 19,
+      "update_count": 20,
       "created_ts": "2026-02-21T04:03:43.974Z",
-      "updated_ts": "2026-02-26T00:02:18.727Z"
+      "updated_ts": "2026-02-26T06:59:59.175Z"
     },
     "moltbook_feed": {
       "eye_id": "moltbook_feed",
       "include_terms": [
         "agent",
-        "patterns",
         "agents",
         "actually",
-        "deterministic",
-        "code",
         "nobody",
         "human",
         "about",
@@ -965,6 +965,9 @@
         "built",
         "chain",
         "build",
+        "patterns",
+        "deterministic",
+        "code",
         "broken",
         "skill",
         "need"
@@ -972,11 +975,8 @@
       "exclude_terms": [],
       "term_weights": {
         "agent": 20,
-        "patterns": 20,
         "agents": 20,
         "actually": 20,
-        "deterministic": 20,
-        "code": 20,
         "nobody": 20,
         "human": 20,
         "about": 20,
@@ -984,15 +984,18 @@
         "built": 20,
         "chain": 20,
         "build": 20,
+        "patterns": 20,
+        "deterministic": 20,
+        "code": 20,
         "broken": 20,
         "skill": 20,
         "need": 20
       },
       "baseline_topics": [],
       "focus_hits_total": 200,
-      "update_count": 33,
+      "update_count": 34,
       "created_ts": "2026-02-21T04:03:43.974Z",
-      "updated_ts": "2026-02-26T00:02:18.727Z"
+      "updated_ts": "2026-02-26T06:59:59.175Z"
     },
     "local_state_fallback": {
       "eye_id": "local_state_fallback",
@@ -1020,24 +1023,24 @@
         "deterministic": 20,
         "open": 20,
         "across": 20,
-        "execution": 18,
-        "infra": 18,
-        "system": 13,
-        "growth": 13,
-        "reliability": 13,
-        "remediate": 13,
-        "backlog": 13,
-        "saturation:": 13,
-        "threshold": 13,
-        "accepted": 13,
-        "git_tags": 13,
-        "increase": 13
+        "execution": 16,
+        "infra": 16,
+        "system": 12,
+        "growth": 12,
+        "reliability": 12,
+        "remediate": 12,
+        "backlog": 12,
+        "saturation:": 12,
+        "threshold": 12,
+        "accepted": 12,
+        "git_tags": 12,
+        "increase": 12
       },
       "baseline_topics": [],
       "focus_hits_total": 116,
-      "update_count": 34,
+      "update_count": 35,
       "created_ts": "2026-02-21T04:03:43.974Z",
-      "updated_ts": "2026-02-26T00:02:18.727Z"
+      "updated_ts": "2026-02-26T06:59:59.175Z"
     },
     "ollama_search": {
       "eye_id": "ollama_search",
@@ -1064,70 +1067,70 @@
         "agents": 20,
         "code": 20,
         "gemini": 20,
-        "tools": 18,
-        "edge": 18,
-        "ai": 11,
-        "llm": 11,
-        "local_models": 11,
-        "agent": 11,
-        "built": 11,
-        "vision": 11,
-        "efficiency": 11,
-        "large_models": 11,
-        "qwen": 11,
-        "multimodal": 11,
-        "glm-4": 11
+        "tools": 16,
+        "edge": 16,
+        "ai": 10,
+        "llm": 10,
+        "local_models": 10,
+        "agent": 10,
+        "built": 10,
+        "vision": 10,
+        "efficiency": 10,
+        "large_models": 10,
+        "qwen": 10,
+        "multimodal": 10,
+        "glm-4": 10
       },
       "baseline_topics": [],
       "focus_hits_total": 36,
-      "update_count": 18,
+      "update_count": 19,
       "created_ts": "2026-02-21T04:03:43.974Z",
-      "updated_ts": "2026-02-26T00:02:18.727Z"
+      "updated_ts": "2026-02-26T06:59:59.175Z"
     },
     "google_trends": {
       "eye_id": "google_trends",
       "include_terms": [
         "business",
         "market_demand",
-        "demand",
-        "commercial",
         "agents",
         "funding",
-        "remote",
         "best",
-        "deals",
         "chatgpt",
+        "demand",
+        "commercial",
+        "remote",
+        "deals",
         "alternatives",
         "fallback",
         "market",
         "tools",
-        "signal",
-        "trends"
+        "saas",
+        "signal"
       ],
       "exclude_terms": [],
       "term_weights": {
         "business": 20,
         "market_demand": 20,
-        "demand": 20,
-        "commercial": 20,
         "agents": 20,
         "funding": 20,
-        "remote": 20,
         "best": 20,
-        "deals": 20,
         "chatgpt": 20,
+        "demand": 20,
+        "commercial": 20,
+        "remote": 20,
+        "deals": 20,
         "alternatives": 20,
         "fallback": 20,
         "market": 20,
-        "tools": 18,
-        "signal": 13,
-        "trends": 13
+        "tools": 16,
+        "saas": 14,
+        "signal": 12
       },
       "baseline_topics": [],
       "focus_hits_total": 77,
-      "update_count": 23,
+      "update_count": 24,
       "created_ts": "2026-02-21T04:03:43.974Z",
-      "updated_ts": "2026-02-26T00:02:18.727Z"
+      "updated_ts": "2026-02-26T06:59:59.175Z"
     },
     "stock_market": {
       "eye_id": "stock_market",
@@ -1151,35 +1154,35 @@
       "exclude_terms": [],
       "term_weights": {
         "market": 20,
-        "finance": 18,
-        "industrial": 18,
-        "index": 18,
-        "nasdaq": 18,
-        "composite": 18,
-        "russell": 18,
-        "com": 13,
-        "dow": 13,
-        "jones": 13,
-        "average": 13,
-        "cboe": 13,
-        "volatility": 13,
-        "investing": 9,
-        "economy": 9
+        "finance": 16,
+        "industrial": 16,
+        "index": 16,
+        "nasdaq": 16,
+        "composite": 16,
+        "russell": 16,
+        "com": 12,
+        "dow": 12,
+        "jones": 12,
+        "average": 12,
+        "cboe": 12,
+        "volatility": 12,
+        "investing": 8,
+        "economy": 8
       },
       "baseline_topics": [],
       "focus_hits_total": 41,
-      "update_count": 22,
+      "update_count": 23,
       "created_ts": "2026-02-21T04:03:43.974Z",
-      "updated_ts": "2026-02-26T00:02:18.727Z"
+      "updated_ts": "2026-02-26T06:59:59.175Z"
     },
     "upwork_gigs": {
       "eye_id": "upwork_gigs",
       "include_terms": [
         "automation",
-        "code",
         "assistant",
-        "developer",
         "revenue",
+        "code",
+        "developer",
         "fallback",
         "opportunity",
         "gigs",
@@ -1195,27 +1198,27 @@
       "exclude_terms": [],
       "term_weights": {
         "automation": 20,
-        "code": 20,
         "assistant": 20,
-        "developer": 20,
         "revenue": 20,
+        "code": 20,
+        "developer": 20,
         "fallback": 20,
         "opportunity": 20,
-        "gigs": 18,
-        "builder": 18,
-        "freelance": 13,
-        "high-value": 13,
-        "gig": 13,
-        "build": 13,
-        "high": 13,
-        "saas": 13,
-        "specialist": 13
+        "gigs": 16,
+        "builder": 16,
+        "freelance": 12,
+        "high-value": 12,
+        "gig": 12,
+        "build": 12,
+        "high": 12,
+        "saas": 12,
+        "specialist": 12
       },
       "baseline_topics": [],
       "focus_hits_total": 214,
-      "update_count": 36,
+      "update_count": 37,
       "created_ts": "2026-02-21T04:03:43.974Z",
-      "updated_ts": "2026-02-26T00:02:18.727Z"
+      "updated_ts": "2026-02-26T06:59:59.175Z"
     },
     "producthunt_launches": {
       "eye_id": "producthunt_launches",
@@ -1243,34 +1246,34 @@
         "fallback": 20,
         "opportunity": 20,
         "affiliate": 20,
-        "affiliateboard": 18,
-        "product_launches": 13,
-        "producthunt": 13,
-        "revenue": 13,
-        "com": 13,
-        "collector": 13,
-        "agentflow": 13,
-        "stripepartner": 13,
-        "api": 13,
-        "pro": 13,
-        "build": 13,
-        "agent": 11
+        "affiliateboard": 16,
+        "product_launches": 12,
+        "producthunt": 12,
+        "revenue": 12,
+        "com": 12,
+        "collector": 12,
+        "agentflow": 12,
+        "stripepartner": 12,
+        "api": 12,
+        "pro": 12,
+        "build": 12,
+        "agent": 10
       },
       "baseline_topics": [],
       "focus_hits_total": 108,
-      "update_count": 26,
+      "update_count": 27,
       "created_ts": "2026-02-21T04:03:43.974Z",
-      "updated_ts": "2026-02-26T00:02:18.727Z"
+      "updated_ts": "2026-02-26T06:59:59.175Z"
     },
     "window_shoppr_repo": {
       "eye_id": "window_shoppr_repo",
       "include_terms": [
-        "development",
         "data",
+        "development",
+        "github",
         "repo_activity",
         "jakerslam",
         "window_shoppr:",
-        "github",
         "commit",
         "runtime",
         "r30",
@@ -1284,28 +1287,28 @@
       ],
       "exclude_terms": [],
       "term_weights": {
-        "development": 20,
         "data": 20,
-        "repo_activity": 11,
-        "jakerslam": 11,
-        "window_shoppr:": 11,
-        "github": 11,
-        "commit": 11,
-        "runtime": 11,
-        "r30": 11,
-        "chore:": 11,
-        "add": 11,
-        "window_shoppr": 10,
-        "revenue": 9,
-        "affiliate": 9,
-        "product": 9,
-        "agent_integration": 9
+        "development": 20,
+        "github": 17,
+        "repo_activity": 10,
+        "jakerslam": 10,
+        "window_shoppr:": 10,
+        "commit": 10,
+        "runtime": 10,
+        "r30": 10,
+        "chore:": 10,
+        "add": 10,
+        "window_shoppr": 9,
+        "revenue": 8,
+        "affiliate": 8,
+        "product": 8,
+        "agent_integration": 8
       },
       "baseline_topics": [],
       "focus_hits_total": 15,
-      "update_count": 17,
+      "update_count": 18,
       "created_ts": "2026-02-21T04:03:43.974Z",
-      "updated_ts": "2026-02-26T00:02:18.727Z"
+      "updated_ts": "2026-02-26T06:59:59.175Z"
     },
     "medium_com": {
       "eye_id": "medium_com",
@@ -1318,14 +1321,14 @@
         "just",
         "actually",
         "funding",
-        "broken",
         "every",
         "revenue",
+        "broken",
+        "startups",
         "launch",
         "development",
         "here",
-        "startups",
-        "ai"
+        "based"
       ],
       "exclude_terms": [],
       "term_weights": {
@@ -1337,20 +1340,20 @@
         "just": 20,
         "actually": 20,
         "funding": 20,
-        "broken": 20,
         "every": 20,
         "revenue": 20,
+        "broken": 20,
+        "startups": 20,
         "launch": 20,
         "development": 20,
         "here": 20,
-        "startups": 20,
-        "ai": 13
+        "based": 20
       },
       "baseline_topics": [],
       "focus_hits_total": 62,
-      "update_count": 21,
+      "update_count": 22,
       "created_ts": "2026-02-21T04:03:43.974Z",
-      "updated_ts": "2026-02-26T00:02:18.727Z"
+      "updated_ts": "2026-02-26T06:59:59.175Z"
     },
     "moltstack_discover": {
       "eye_id": "moltstack_discover",
@@ -1358,56 +1361,56 @@
         "automation",
         "about",
         "agent",
-        "patterns",
         "just",
         "nobody",
         "claude",
+        "patterns",
+        "agents",
+        "data",
         "alpha",
         "gemini",
-        "agents",
         "hour",
         "across",
-        "data",
         "ai_agents",
-        "agent_community",
-        "agent_publishing"
+        "most",
+        "agent_community"
       ],
       "exclude_terms": [],
       "term_weights": {
         "automation": 20,
         "about": 20,
         "agent": 20,
-        "patterns": 20,
         "just": 20,
         "nobody": 20,
         "claude": 20,
+        "patterns": 20,
+        "agents": 20,
+        "data": 20,
         "alpha": 20,
         "gemini": 20,
-        "agents": 20,
         "hour": 20,
         "across": 20,
-        "data": 20,
-        "ai_agents": 18,
-        "agent_community": 11,
-        "agent_publishing": 11
+        "ai_agents": 16,
+        "most": 14,
+        "agent_community": 10
       },
       "baseline_topics": [],
       "focus_hits_total": 52,
-      "update_count": 19,
+      "update_count": 20,
       "created_ts": "2026-02-21T04:03:43.974Z",
-      "updated_ts": "2026-02-26T00:02:18.727Z"
+      "updated_ts": "2026-02-26T06:59:59.175Z"
     },
     "memory_standards_watch": {
       "eye_id": "memory_standards_watch",
       "include_terms": [
-        "code",
         "memory",
         "assistant",
         "every",
         "claude",
+        "code",
+        "agents",
         "alpha",
         "open",
-        "agents",
         "building",
         "down",
         "back",
@@ -1419,14 +1422,14 @@
       ],
       "exclude_terms": [],
       "term_weights": {
-        "code": 20,
         "memory": 20,
         "assistant": 20,
         "every": 20,
         "claude": 20,
+        "code": 20,
+        "agents": 20,
         "alpha": 20,
         "open": 20,
-        "agents": 20,
         "building": 20,
         "down": 20,
         "back": 20,
@@ -1438,24 +1441,24 @@
       },
       "baseline_topics": [],
       "focus_hits_total": 24,
-      "update_count": 17,
+      "update_count": 18,
       "created_ts": "2026-02-21T04:03:43.974Z",
-      "updated_ts": "2026-02-26T00:02:18.727Z"
+      "updated_ts": "2026-02-26T06:59:59.175Z"
     },
     "moltbook_memory_signal": {
       "eye_id": "moltbook_memory_signal",
       "include_terms": [
-        "code",
         "about",
         "agent",
         "human",
-        "deterministic",
         "just",
         "actually",
         "built",
         "chain",
         "memory",
         "build",
+        "code",
+        "deterministic",
         "free",
         "broken",
         "agents",
@@ -1464,17 +1467,17 @@
       ],
       "exclude_terms": [],
       "term_weights": {
-        "code": 20,
         "about": 20,
         "agent": 20,
         "human": 20,
-        "deterministic": 20,
         "just": 20,
         "actually": 20,
         "built": 20,
         "chain": 20,
         "memory": 20,
         "build": 20,
+        "code": 20,
+        "deterministic": 20,
         "free": 20,
         "broken": 20,
         "agents": 20,
@@ -1483,22 +1486,22 @@
       },
       "baseline_topics": [],
       "focus_hits_total": 65,
-      "update_count": 22,
+      "update_count": 23,
       "created_ts": "2026-02-21T04:03:43.974Z",
-      "updated_ts": "2026-02-26T00:02:18.727Z"
+      "updated_ts": "2026-02-26T06:59:59.175Z"
     },
     "provider_memory_trends": {
       "eye_id": "provider_memory_trends",
       "include_terms": [
         "business",
         "market_demand",
+        "best",
+        "funding",
+        "chatgpt",
         "demand",
         "commercial",
         "remote",
-        "best",
-        "funding",
         "alternatives",
-        "chatgpt",
         "deals",
         "fallback",
         "market",
@@ -1511,26 +1514,26 @@
       "term_weights": {
         "business": 20,
         "market_demand": 20,
+        "best": 20,
+        "funding": 20,
+        "chatgpt": 20,
         "demand": 20,
         "commercial": 20,
         "remote": 20,
-        "best": 20,
-        "funding": 20,
         "alternatives": 20,
-        "chatgpt": 20,
         "deals": 20,
         "fallback": 20,
         "market": 20,
         "agents": 20,
-        "signal": 13,
-        "trends": 13,
-        "com": 13
+        "signal": 12,
+        "trends": 12,
+        "com": 12
       },
       "baseline_topics": [],
       "focus_hits_total": 672,
-      "update_count": 94,
+      "update_count": 95,
       "created_ts": "2026-02-21T04:03:43.974Z",
-      "updated_ts": "2026-02-26T00:02:18.727Z"
+      "updated_ts": "2026-02-26T06:59:59.175Z"
     },
     "reddit_ai_automation": {
       "eye_id": "reddit_ai_automation",
@@ -1545,32 +1548,32 @@
       ],
       "exclude_terms": [],
       "term_weights": {
-        "ai": 9,
-        "automation": 9,
-        "startups": 9,
-        "sidehustle": 9,
-        "passiveincome": 9,
-        "agents": 9,
-        "machinelearning": 9
+        "ai": 8,
+        "automation": 8,
+        "startups": 8,
+        "sidehustle": 8,
+        "passiveincome": 8,
+        "agents": 8,
+        "machinelearning": 8
       },
       "baseline_topics": [],
       "focus_hits_total": 0,
-      "update_count": 15,
+      "update_count": 16,
       "created_ts": "2026-02-21T04:03:43.974Z",
-      "updated_ts": "2026-02-26T00:02:18.727Z"
+      "updated_ts": "2026-02-26T06:59:59.175Z"
     },
     "watch_trends_google_com": {
       "eye_id": "watch_trends_google_com",
       "include_terms": [
         "business",
         "market_demand",
+        "funding",
+        "best",
+        "chatgpt",
         "commercial",
         "demand",
         "remote",
-        "funding",
-        "best",
         "deals",
-        "chatgpt",
         "alternatives",
         "fallback",
         "market",
@@ -1583,26 +1586,26 @@
       "term_weights": {
         "business": 20,
         "market_demand": 20,
+        "funding": 20,
+        "best": 20,
+        "chatgpt": 20,
         "commercial": 20,
         "demand": 20,
         "remote": 20,
-        "funding": 20,
-        "best": 20,
         "deals": 20,
-        "chatgpt": 20,
         "alternatives": 20,
         "fallback": 20,
         "market": 20,
-        "trends": 13,
-        "signal": 13,
-        "collector": 13,
-        "com": 13
+        "trends": 12,
+        "signal": 12,
+        "collector": 12,
+        "com": 12
       },
       "baseline_topics": [],
       "focus_hits_total": 24,
-      "update_count": 10,
+      "update_count": 11,
       "created_ts": "2026-02-23T15:20:59.539Z",
-      "updated_ts": "2026-02-26T00:02:18.727Z"
+      "updated_ts": "2026-02-26T06:59:59.175Z"
     },
     "watch_medium_com": {
       "eye_id": "watch_medium_com",
@@ -1623,48 +1626,48 @@
       },
       "baseline_topics": [],
       "focus_hits_total": 0,
-      "update_count": 8,
+      "update_count": 9,
       "created_ts": "2026-02-23T15:20:59.539Z",
-      "updated_ts": "2026-02-26T00:02:18.727Z"
+      "updated_ts": "2026-02-26T06:59:59.175Z"
     },
     "proto_36c7ba62382ba23c": {
       "eye_id": "proto_36c7ba62382ba23c",
       "include_terms": [
         "revenue",
         "startups",
-        "ai",
         "t1_generational_wealth_v1",
         "saas",
+        "ai",
         "com",
-        "business",
-        "claude",
-        "every",
         "how",
-        "about",
-        "memory",
-        "human",
-        "founder",
         "why",
-        "building"
+        "business",
+        "digital",
+        "platform",
+        "hidden",
+        "product",
+        "built",
+        "businesses",
+        "found"
       ],
       "exclude_terms": [],
       "term_weights": {
         "revenue": 20,
         "startups": 20,
-        "ai": 20,
         "t1_generational_wealth_v1": 20,
         "saas": 20,
+        "ai": 20,
         "com": 20,
-        "business": 20,
-        "claude": 20,
-        "every": 20,
         "how": 20,
-        "about": 20,
-        "memory": 20,
-        "human": 20,
-        "founder": 19,
         "why": 20,
-        "building": 17
+        "business": 20,
+        "digital": 20,
+        "platform": 20,
+        "hidden": 20,
+        "product": 20,
+        "built": 20,
+        "businesses": 20,
+        "found": 20
       },
       "baseline_topics": [
         "t1_generational_wealth_v1",
@@ -1673,21 +1676,22 @@
         "revenue",
         "saas"
       ],
-      "focus_hits_total": 77,
-      "update_count": 48,
+      "focus_hits_total": 179,
+      "update_count": 57,
       "created_ts": "2026-02-23T15:20:59.539Z",
-      "updated_ts": "2026-02-26T02:19:02.190Z"
+      "updated_ts": "2026-02-26T06:59:59.175Z"
     },
     "proto_affc19cbf503b0d7": {
       "eye_id": "proto_affc19cbf503b0d7",
       "include_terms": [
-        "developer",
         "assistant",
         "automation",
+        "developer",
         "fallback",
         "opportunity",
         "gigs",
         "builder",
+        "code",
         "freelance",
         "high-value",
         "revenue",
@@ -1695,46 +1699,45 @@
         "high",
         "build",
         "flow",
-        "com",
-        "specialist"
+        "com"
       ],
       "exclude_terms": [],
       "term_weights": {
-        "developer": 20,
         "assistant": 20,
         "automation": 20,
+        "developer": 20,
         "fallback": 20,
         "opportunity": 20,
-        "gigs": 18,
-        "builder": 18,
-        "freelance": 13,
-        "high-value": 13,
-        "revenue": 13,
-        "gig": 13,
-        "high": 13,
-        "build": 13,
-        "flow": 13,
-        "com": 13,
-        "specialist": 13
+        "gigs": 16,
+        "builder": 16,
+        "code": 14,
+        "freelance": 12,
+        "high-value": 12,
+        "revenue": 12,
+        "gig": 12,
+        "high": 12,
+        "build": 12,
+        "flow": 12,
+        "com": 12
       },
       "baseline_topics": [],
       "focus_hits_total": 24,
-      "update_count": 10,
+      "update_count": 11,
       "created_ts": "2026-02-23T15:20:59.539Z",
-      "updated_ts": "2026-02-26T00:02:18.727Z"
+      "updated_ts": "2026-02-26T06:59:59.175Z"
     },
     "proto_7ea4f111e8e34620": {
       "eye_id": "proto_7ea4f111e8e34620",
       "include_terms": [
         "business",
         "market_demand",
+        "funding",
+        "best",
+        "chatgpt",
         "commercial",
         "demand",
         "remote",
-        "funding",
-        "best",
         "deals",
-        "chatgpt",
         "alternatives",
         "fallback",
         "market",
@@ -1747,36 +1750,36 @@
       "term_weights": {
         "business": 20,
         "market_demand": 20,
+        "funding": 20,
+        "best": 20,
+        "chatgpt": 20,
         "commercial": 20,
         "demand": 20,
         "remote": 20,
-        "funding": 20,
-        "best": 20,
         "deals": 20,
-        "chatgpt": 20,
         "alternatives": 20,
         "fallback": 20,
         "market": 20,
         "agents": 20,
-        "trends": 13,
-        "signal": 13,
-        "collector": 13
+        "trends": 12,
+        "signal": 12,
+        "collector": 12
       },
       "baseline_topics": [],
       "focus_hits_total": 24,
-      "update_count": 10,
+      "update_count": 11,
       "created_ts": "2026-02-23T15:20:59.539Z",
-      "updated_ts": "2026-02-26T00:02:18.727Z"
+      "updated_ts": "2026-02-26T06:59:59.175Z"
     },
     "proto_8f57fcde11bdc4ad": {
       "eye_id": "proto_8f57fcde11bdc4ad",
       "include_terms": [
-        "patterns",
         "human",
         "chain",
         "nobody",
         "built",
         "build",
+        "patterns",
         "operator",
         "deterministic",
         "skill",
@@ -1784,34 +1787,34 @@
         "agent_innovation",
         "ship",
         "power",
-        "skills",
-        "com",
-        "nightly"
+        "about",
+        "just",
+        "gods"
       ],
       "exclude_terms": [],
       "term_weights": {
-        "patterns": 20,
         "human": 20,
         "chain": 20,
         "nobody": 20,
         "built": 20,
         "build": 20,
+        "patterns": 20,
         "operator": 20,
         "deterministic": 20,
         "skill": 20,
         "attack": 20,
-        "agent_innovation": 18,
-        "ship": 18,
-        "power": 18,
-        "skills": 13,
-        "com": 13,
-        "nightly": 13
+        "agent_innovation": 16,
+        "ship": 16,
+        "power": 16,
+        "about": 14,
+        "just": 14,
+        "gods": 14
       },
       "baseline_topics": [],
       "focus_hits_total": 16,
-      "update_count": 10,
+      "update_count": 11,
       "created_ts": "2026-02-23T15:20:59.539Z",
-      "updated_ts": "2026-02-26T00:02:18.727Z"
+      "updated_ts": "2026-02-26T06:59:59.175Z"
     },
     "proto_84fd25a1242fee41": {
       "eye_id": "proto_84fd25a1242fee41",
@@ -1830,28 +1833,28 @@
       "exclude_terms": [],
       "term_weights": {
         "market": 20,
-        "finance": 18,
-        "index": 18,
-        "industrial": 18,
-        "com": 13,
-        "composite": 10,
-        "nasdaq": 10,
-        "russell": 10,
-        "cboe": 10,
-        "volatility": 10
+        "finance": 16,
+        "index": 16,
+        "industrial": 16,
+        "com": 12,
+        "composite": 9,
+        "nasdaq": 9,
+        "russell": 9,
+        "cboe": 9,
+        "volatility": 9
       },
       "baseline_topics": [],
       "focus_hits_total": 8,
-      "update_count": 9,
+      "update_count": 10,
       "created_ts": "2026-02-23T15:20:59.539Z",
-      "updated_ts": "2026-02-26T00:02:18.727Z"
+      "updated_ts": "2026-02-26T06:59:59.175Z"
     },
     "hkuds_clawwork_repo": {
       "eye_id": "hkuds_clawwork_repo",
       "include_terms": [
         "development",
-        "repo_activity",
         "github",
+        "repo_activity",
         "commit",
         "hkuds",
         "clawwork:",
@@ -1869,14 +1872,14 @@
       "exclude_terms": [],
       "term_weights": {
         "development": 20,
-        "repo_activity": 11,
-        "github": 11,
-        "commit": 11,
-        "hkuds": 11,
-        "clawwork:": 11,
-        "com": 11,
-        "fix": 7,
-        "frontend": 7,
+        "github": 17,
+        "repo_activity": 10,
+        "commit": 10,
+        "hkuds": 10,
+        "clawwork:": 10,
+        "com": 10,
+        "fix": 6,
+        "frontend": 6,
         "feb": 5,
         "update": 5,
         "multi_agent": 3,
@@ -1887,9 +1890,9 @@
       },
       "baseline_topics": [],
       "focus_hits_total": 4,
-      "update_count": 9,
+      "update_count": 10,
       "created_ts": "2026-02-23T15:20:59.539Z",
-      "updated_ts": "2026-02-26T00:02:18.727Z"
+      "updated_ts": "2026-02-26T06:59:59.175Z"
     },
     "proto_0d5097942d9a12e9": {
       "eye_id": "proto_0d5097942d9a12e9",
@@ -1915,22 +1918,22 @@
         "fallback": 20,
         "opportunity": 20,
         "affiliate": 20,
-        "affiliateboard": 18,
-        "product_launches": 13,
-        "producthunt": 13,
-        "agentflow": 13,
-        "revenue": 13,
-        "com": 13,
-        "collector": 13,
-        "pro": 11,
-        "flow": 11,
-        "build": 11
+        "affiliateboard": 16,
+        "product_launches": 12,
+        "producthunt": 12,
+        "agentflow": 12,
+        "revenue": 12,
+        "com": 12,
+        "collector": 12,
+        "pro": 10,
+        "flow": 10,
+        "build": 10
       },
       "baseline_topics": [],
       "focus_hits_total": 3,
-      "update_count": 7,
+      "update_count": 8,
       "created_ts": "2026-02-23T22:54:36.316Z",
-      "updated_ts": "2026-02-26T00:02:18.727Z"
+      "updated_ts": "2026-02-26T06:59:59.175Z"
     },
     "reddit_ai_agents": {
       "eye_id": "reddit_ai_agents",
@@ -1940,17 +1943,17 @@
         "ai",
         "business",
         "building",
-        "memory",
-        "codex",
-        "landscape",
-        "engineering",
-        "build",
         "actually",
-        "game",
+        "memory",
         "revenue",
         "claude",
-        "openai",
-        "system"
+        "engineering",
+        "build",
+        "game",
+        "startups",
+        "codex",
+        "landscape",
+        "openai"
       ],
       "exclude_terms": [],
       "term_weights": {
@@ -1959,28 +1962,57 @@
         "ai": 20,
         "business": 20,
         "building": 20,
+        "actually": 20,
         "memory": 20,
-        "codex": 19,
-        "landscape": 19,
+        "revenue": 20,
+        "claude": 20,
         "engineering": 20,
         "build": 20,
-        "actually": 19,
-        "game": 17,
-        "revenue": 16,
-        "claude": 16,
-        "openai": 16,
-        "system": 14
+        "game": 20,
+        "startups": 20,
+        "codex": 20,
+        "landscape": 20,
+        "openai": 20
       },
       "baseline_topics": [
         "t1_generational_wealth_v1"
       ],
-      "focus_hits_total": 16,
-      "update_count": 11,
+      "focus_hits_total": 58,
+      "update_count": 31,
       "created_ts": "2026-02-24T05:00:32.146Z",
-      "updated_ts": "2026-02-26T00:02:20.843Z"
+      "updated_ts": "2026-02-26T07:41:10.229Z"
     },
     "proto_7fc543231788d688": {
       "eye_id": "proto_7fc543231788d688",
+      "include_terms": [
+        "t1_generational_wealth_v1",
+        "ai",
+        "startups",
+        "revenue",
+        "saas"
+      ],
+      "exclude_terms": [],
+      "term_weights": {
+        "t1_generational_wealth_v1": 6,
+        "ai": 6,
+        "startups": 6,
+        "revenue": 6,
+        "saas": 6
+      },
+      "baseline_topics": [
+        "t1_generational_wealth_v1",
+        "ai",
+        "startups",
+        "revenue",
+        "saas"
+      ],
+      "focus_hits_total": 0,
+      "update_count": 2,
+      "created_ts": "2026-02-26T00:02:18.727Z",
+      "updated_ts": "2026-02-26T06:59:59.175Z"
+    },
+    "proto_f77f4766df89d469": {
+      "eye_id": "proto_f77f4766df89d469",
       "include_terms": [
         "t1_generational_wealth_v1",
         "ai",
@@ -2005,8 +2037,88 @@
       ],
       "focus_hits_total": 0,
       "update_count": 1,
-      "created_ts": "2026-02-26T00:02:18.727Z",
-      "updated_ts": "2026-02-26T00:02:18.727Z"
+      "created_ts": "2026-02-26T06:59:59.175Z",
+      "updated_ts": "2026-02-26T06:59:59.175Z"
+    },
+    "proto_e9b76b1298ad760c": {
+      "eye_id": "proto_e9b76b1298ad760c",
+      "include_terms": [
+        "t1_generational_wealth_v1",
+        "ai",
+        "startups",
+        "revenue",
+        "saas"
+      ],
+      "exclude_terms": [],
+      "term_weights": {
+        "t1_generational_wealth_v1": 3,
+        "ai": 3,
+        "startups": 3,
+        "revenue": 3,
+        "saas": 3
+      },
+      "baseline_topics": [
+        "t1_generational_wealth_v1",
+        "ai",
+        "startups",
+        "revenue",
+        "saas"
+      ],
+      "focus_hits_total": 0,
+      "update_count": 1,
+      "created_ts": "2026-02-26T06:59:59.175Z",
+      "updated_ts": "2026-02-26T06:59:59.175Z"
+    },
+    "proto_1ee751437a437aef": {
+      "eye_id": "proto_1ee751437a437aef",
+      "include_terms": [
+        "startups",
+        "revenue",
+        "t1_generational_wealth_v1",
+        "saas",
+        "data",
+        "chain",
+        "ai",
+        "best",
+        "com",
+        "between",
+        "about",
+        "real",
+        "machine",
+        "learning",
+        "infrastructure",
+        "almost"
+      ],
+      "exclude_terms": [],
+      "term_weights": {
+        "startups": 20,
+        "revenue": 20,
+        "t1_generational_wealth_v1": 20,
+        "saas": 20,
+        "data": 15,
+        "chain": 15,
+        "ai": 14,
+        "best": 11,
+        "com": 10,
+        "between": 8,
+        "about": 8,
+        "real": 8,
+        "machine": 8,
+        "learning": 8,
+        "infrastructure": 8,
+        "almost": 8
+      },
+      "baseline_topics": [
+        "t1_generational_wealth_v1",
+        "ai",
+        "startups",
+        "revenue",
+        "saas"
+      ],
+      "focus_hits_total": 1,
+      "update_count": 1,
+      "created_ts": "2026-02-26T06:59:59.175Z",
+      "updated_ts": "2026-02-26T06:59:59.175Z"
     }
   },
   "recent_focus_items": {
@@ -2058,28 +2170,49 @@
     "id:1bc139bb0c79a60e": "2026-02-26T02:07:49.150Z",
     "id:5358ff154a6cd794": "2026-02-26T02:07:51.622Z",
     "id:85480cc79a86a85b": "2026-02-26T02:07:51.622Z",
-    "id:dc504d19e49a6eb1": "2026-02-26T02:15:07.486Z"
+    "id:dc504d19e49a6eb1": "2026-02-26T02:15:07.486Z",
+    "id:19adb2d517124497": "2026-02-26T03:10:38.034Z",
+    "id:b2baab9db7e79daf": "2026-02-26T03:38:10.834Z",
+    "id:d814e046450a2e76": "2026-02-26T03:10:40.001Z",
+    "id:f6a7af85dd009638": "2026-02-26T03:10:40.001Z",
+    "id:174ccdfb993b83e8": "2026-02-26T03:14:39.683Z",
+    "id:2b9462526be25ad5": "2026-02-26T03:14:41.594Z",
+    "id:1c85ad845a500370": "2026-02-26T03:34:08.059Z",
+    "id:dc486aead61f1eaf": "2026-02-26T03:34:08.059Z",
+    "id:0cab17be8ee197c0": "2026-02-26T03:34:10.436Z",
+    "id:4927c0bdad9706e9": "2026-02-26T03:38:08.715Z",
+    "id:c038703bbe7eb885": "2026-02-26T03:38:10.834Z",
+    "id:07dbec348cd00c3b": "2026-02-26T04:30:32.493Z",
+    "id:3ddedec3e90562ad": "2026-02-26T04:30:34.907Z",
+    "id:4dfdd991c3f34008": "2026-02-26T04:30:37.107Z",
+    "id:3159c494b79df899": "2026-02-26T04:32:22.505Z",
+    "id:02a6f68090b7db36": "2026-02-26T07:09:49.960Z",
+    "id:dfae90a80b11551c": "2026-02-26T07:09:49.960Z",
+    "id:bfb5dc8b7574c259": "2026-02-26T07:14:57.203Z",
+    "id:cae4814c8d89028c": "2026-02-26T07:14:59.304Z",
+    "id:396dece774bdcf28": "2026-02-26T07:41:10.229Z",
+    "id:3240a81c8460fb37": "2026-02-26T07:19:22.837Z"
   },
-  "last_refresh_ts": "2026-02-26T00:02:18.712Z",
+  "last_refresh_ts": "2026-02-26T04:30:31.189Z",
   "last_refresh_sources": {
     "strategy": 8,
     "directives": 8,
-    "proposals": 0,
-    "anomalies": 0,
-    "top_eyes": 11
+    "proposals": 10,
+    "anomalies": 20,
+    "top_eyes": 26
   },
-  "last_lens_refresh_ts": "2026-02-26T00:02:18.727Z",
+  "last_lens_refresh_ts": "2026-02-26T06:59:59.175Z",
   "last_lens_refresh_sources": {
-    "recent_event_count": 120,
+    "recent_event_count": 488,
     "recent_window_days": 2,
-    "cross_signal_hypotheses": 120,
+    "cross_signal_hypotheses": 240,
     "cross_signal_window_days": 2,
-    "catalog_eyes": 3
+    "catalog_eyes": 6
   },
   "stats": {
-    "refresh_count": 21,
-    "lens_refresh_count": 15,
-    "focused_items_total": 475,
-    "last_focus_ts": "2026-02-26T02:19:02.190Z"
+    "refresh_count": 22,
+    "lens_refresh_count": 16,
+    "focused_items_total": 520,
+    "last_focus_ts": "2026-02-26T07:41:10.229Z"
   }
 }

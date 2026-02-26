@@ -1127,6 +1127,7 @@ function main() {
     "systems/autonomy/collective_shadow.js",
     "systems/autonomy/observer_mirror.js",
     "systems/autonomy/mirror_organ.js",
+    "systems/autonomy/inversion_controller.js",
     "systems/continuum/continuum_core.js",
     "systems/strategy/strategy_principles.js",
     "systems/workflow/workflow_generator.js",
@@ -1146,6 +1147,7 @@ function main() {
     "config/collective_shadow_policy.json",
     "config/continuum_policy.json",
     "config/mirror_organ_policy.json",
+    "config/inversion_policy.json",
     "config/nursery_policy.json",
     "config/workflow_executor_policy.json",
     "config/workflow_policy.json",
@@ -2621,7 +2623,90 @@ function main() {
       console.log(" weekly_strategy_synthesis skipped reason=feature_flag_disabled flag=SPINE_WEEKLY_STRATEGY_SYNTHESIS_ENABLED");
     }
 
-    // 0c) strategy principle extraction for downstream workflow generation quality.
+    // 0c) inversion controller (shadow-first) for impossible-task paradigm pivots.
+    if (String(process.env.SPINE_INVERSION_ENABLED || "1") !== "0") {
+      const inversionObjective = String(
+        process.env.SPINE_INVERSION_OBJECTIVE
+        || "impossible_task_probe"
+      ).trim() || "impossible_task_probe";
+      const inversionImpact = String(process.env.SPINE_INVERSION_IMPACT || "medium").trim().toLowerCase() || "medium";
+      const inversionTarget = String(process.env.SPINE_INVERSION_TARGET || "belief").trim().toLowerCase() || "belief";
+      const inversionCertainty = Math.max(
+        0,
+        Math.min(1, Number(process.env.SPINE_INVERSION_CERTAINTY || 0.7) || 0.7)
+      );
+      const inversionMode = String(process.env.SPINE_INVERSION_MODE || "live").trim().toLowerCase() === "test"
+        ? "test"
+        : "live";
+      const inversionApply = String(process.env.SPINE_INVERSION_APPLY || "0") !== "0" ? "1" : "0";
+      const inversionArgs = [
+        "systems/autonomy/inversion_controller.js",
+        "run",
+        `--objective=${inversionObjective}`,
+        `--impact=${inversionImpact}`,
+        `--target=${inversionTarget}`,
+        `--certainty=${Number(inversionCertainty.toFixed(6))}`,
+        `--mode=${inversionMode}`,
+        `--apply=${inversionApply}`
+      ];
+      const inversionPolicyPath = String(process.env.SPINE_INVERSION_POLICY_PATH || "").trim();
+      if (inversionPolicyPath) inversionArgs.push(`--policy=${inversionPolicyPath}`);
+      if (String(process.env.SPINE_INVERSION_ALLOW_CONSTITUTION_TEST || "0") === "1") {
+        inversionArgs.push("--allow-constitution-test=1");
+      }
+      const inversion = runJson("node", inversionArgs);
+      const payload = inversion.payload && typeof inversion.payload === "object"
+        ? inversion.payload
+        : null;
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_inversion_controller",
+        mode,
+        date: dateStr,
+        ok: inversion.ok && !!payload && payload.ok === true,
+        allowed: payload ? payload.allowed === true : null,
+        run_mode: payload ? payload.mode || inversionMode : inversionMode,
+        target: payload && payload.input ? payload.input.target || inversionTarget : inversionTarget,
+        impact: payload && payload.input ? payload.input.impact || inversionImpact : inversionImpact,
+        certainty_effective: payload && payload.input
+          ? Number(payload.input.effective_certainty || 0)
+          : null,
+        maturity_band: payload && payload.maturity
+          ? payload.maturity.band || null
+          : null,
+        reasons: payload && Array.isArray(payload.reasons)
+          ? payload.reasons.slice(0, 8)
+          : [],
+        session_id: payload && payload.session
+          ? payload.session.session_id || null
+          : null,
+        reason: (!inversion.ok || !payload || payload.ok !== true)
+          ? String(inversion.stderr || inversion.stdout || `inversion_controller_exit_${inversion.code}`).slice(0, 180)
+          : null
+      });
+      if (inversion.ok && payload && payload.ok === true) {
+        console.log(
+          ` inversion_controller allowed=${payload.allowed === true ? "yes" : "no"}` +
+          ` target=${String(payload.input && payload.input.target || inversionTarget)}` +
+          ` maturity=${String(payload.maturity && payload.maturity.band || "unknown")}`
+        );
+      } else {
+        console.log(` inversion_controller unavailable reason=${String(inversion.stderr || inversion.stdout || "unknown").slice(0, 120)}`);
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_inversion_controller_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "SPINE_INVERSION_ENABLED",
+        flag_value: String(process.env.SPINE_INVERSION_ENABLED || "")
+      });
+      console.log(" inversion_controller skipped reason=feature_flag_disabled flag=SPINE_INVERSION_ENABLED");
+    }
+
+    // 0d) strategy principle extraction for downstream workflow generation quality.
     if (String(process.env.SPINE_STRATEGY_PRINCIPLES_ENABLED || "1") !== "0") {
       const principles = runJson("node", [
         "systems/strategy/strategy_principles.js",

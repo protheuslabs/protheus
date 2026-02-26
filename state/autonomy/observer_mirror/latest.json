@@ -1,12 +1,12 @@
 {
   "ok": true,
   "type": "observer_mirror_run",
-  "ts": "2026-02-26T00:06:34.074Z",
+  "ts": "2026-02-26T04:32:45.834Z",
   "date": "2026-02-26",
   "window_days": 1,
   "summary": {
     "counts": {
-      "runs": 1,
+      "runs": 2,
       "executed": 0,
       "shipped": 0,
       "no_change": 0,
@@ -22,23 +22,23 @@
       "proposal_types": [
         {
           "key": "unknown",
-          "count": 1
+          "count": 2
         }
       ],
       "results": [
         {
           "key": "no_candidates",
-          "count": 1
+          "count": 2
         }
       ],
       "objectives": [
         {
           "key": "none",
-          "count": 1
+          "count": 2
         }
       ]
     },
-    "sample_size": 1
+    "sample_size": 2
   },
   "simulation": {
     "drift_rate": null,
@@ -46,8 +46,8 @@
   },
   "introspection": {
     "queue_pressure": "normal",
-    "autopause_active": false,
-    "restructure_candidates": 0
+    "autopause_active": true,
+    "restructure_candidates": 1
   },
   "observer": {
     "mood": "strained",

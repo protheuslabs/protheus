@@ -142,6 +142,28 @@ Status legend:
 | V2-046 | done | Regime Organ (task/environment regime sensing + morph trigger) | Enable sports-car adaptation by detecting current regime and rewiring priorities/topology safely | Implemented in `systems/fractal/regime_organ.ts` (+ runtime mirror `systems/fractal/regime_organ.js`) with regime scoring from queue/runs/simulation/trit/budget signals, hysteresis + dwell + cooldown state in `state/autonomy/fractal/regime/state.json`, proposal-only bounded morph actions, identity-anchor filtering, non-regression simulation gating before promotion, daily receipts in `state/autonomy/fractal/regime/YYYY-MM-DD.jsonl`, and spine telemetry stage (`spine_fractal_regime_organ`). Coverage: `memory/tools/tests/fractal_regime_organ.test.js`. Spec reference: `tmp/grok_fractal_organs_2026-02-25.md` |
 | V2-047 | done | Mirror Organ (active self-observation and self-critique) | Upgrade read-only observer into a controlled self-improvement loop | Implemented via `systems/autonomy/mirror_organ.ts` + wrapper, with proposal-only outputs, confidence scoring, replayable evidence (`replay --proposal-id`), spine stage (`spine_mirror_organ`), continuum self-improvement integration, and suggestion-lane ingestion from `state/autonomy/mirror_organ/suggestions/`. Coverage: `memory/tools/tests/mirror_organ.test.js`, `memory/tools/tests/suggestion_lane.test.js`, `memory/tools/tests/continuum_core.test.js`. |
 
+### Inversion Safety Hardening (Necessary Set)
+
+All items below are treated as required for governed inversion safety (not optional tuning).
+
+| ID | Version | Status | Necessary Upgrade | Why | Exit Criteria |
+|---|---|---|---|---|---|
+| INV-001 | V2 | done | Structured immutable-axiom matching (signal groups, not substring-only) | Prevent false-positive/false-negative dangerous-intent checks | `immutable_axioms` support `signals` + `min_signal_groups`, matcher enforces structured-action/subject/object logic |
+| INV-002 | V2 | done | Tier-transition governance (first-N human veto + decay window floors) | Prevent premature autonomy escalation at deeper inversion tiers | `tier_transition` enforces first-N veto, minimum first-N floors, and minimum decay windows per target |
+| INV-003 | V2 | done | Mandatory `objective_id` for belief+ tiers | Keep high-impact inversion attempts attributable and auditable | Belief/identity/directive/constitution runs block without valid `objective_id` |
+| INV-004 | V2 | done | Evidence-backed attractor scoring with anti-gaming penalty | Reduce verbose-objective gaming and improve desired-outcome signal quality | Attractor uses `evidence_backing` + verbosity/low-diversity penalties and enforces target thresholds |
+| INV-005 | V2 | done | True runtime execution checks in maturity probes | Ensure maturity reflects executed runtime behavior, not only decision-surface logic | Runtime probe gates require red-team executed cases + nursery/adversarial execution evidence |
+| INV-006 | V2 | done | Live gating tracks attempts and successes (plus safe-abort relief) | Preserve safety while avoiding over-penalizing cautious abort behavior | Tier state persists attempts/successes/safe-aborts and first-N progress applies configured safe-abort relief |
+| INV-007 | V2 | done | Immutable never-invert axiom set | Establish non-negotiable safety boundaries | Policy includes explicit non-invert axioms (constitution, sovereignty, guardrails, integrity, self-termination) |
+| INV-008 | V2 | done | First-principle anti-downgrade lock | Prevent lower-confidence/lower-maturity rewrites of learned principles | Principle updates block on lower maturity and lower-confidence same-band downgrade attempts |
+| INV-009 | V2 | done | Maturity harness uses real runtime probes | Keep maturity progression grounded in operational safety performance | Harness cycles include required runtime probes and fail closed on probe gate failures |
+| INV-010 | V2 | done | Explicit shadow-pass kill switch before live apply | Stop live inversion when shadow safety conditions regress | Live apply blocks on shadow-pass deficit and critical-failure kill-switch thresholds |
+
+| ID | Version | Status | Follow-on Hardening | Why | Exit Criteria |
+|---|---|---|---|---|---|
+| INV-011 | V3 | todo | Formal semantic/ontology axiom matcher | Improve precision beyond regex + token heuristics for complex adversarial phrasing | Add typed semantic parser/classifier path for axiom evaluation with adversarial benchmark pack |
+| INV-012 | V3 | todo | Inversion live-graduation ladder (canary quotas + observer quorum) | Further reduce blast radius when enabling live inversion beyond shadow | Add staged canary quotas per tier with observer quorum checks and automatic rollback on regression |
+
 ## V3 (Lamp / Super-Intelligence Containment)
 
 ### V3 Active Priority (Within Version)

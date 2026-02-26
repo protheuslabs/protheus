@@ -1,0 +1,18 @@
+{
+  "ts": "2026-02-26T04:32:52.799Z",
+  "type": "trace_span",
+  "trace_id": "fc37bd57678e7ea00b0b121be46a1be8",
+  "span_id": "d476a173d9f046e2",
+  "parent_span_id": null,
+  "name": "spine.run.completed",
+  "service": "protheus",
+  "component": "spine",
+  "status": "ok",
+  "duration_ms": 154801,
+  "attributes": {
+    "mode": "daily",
+    "date": "2026-02-26",
+    "signal_gate_ok": "true",
+    "signal_slo_ok": "true"
+  }
+}

@@ -28,7 +28,7 @@
       "score_ema": 50,
       "notes": "Generated via eyes_intake for T1_generational_wealth_v1",
       "created_ts": "2026-02-24T00:29:30.456Z",
-      "updated_ts": "2026-02-26T00:39:41.003Z",
+      "updated_ts": "2026-02-26T04:30:28.112Z",
       "parser_options": {
         "url": "https://www.reddit.com/r/AI_Agents/new/.rss",
         "title": "r/AI_Agents"
@@ -64,7 +64,7 @@
       "score_ema": 50,
       "notes": "Auto-sprout candidate: domain seen 6 times across 1 eyes",
       "created_ts": "2026-02-25T16:42:09.416Z",
-      "updated_ts": "2026-02-26T00:39:41.003Z",
+      "updated_ts": "2026-02-26T04:30:28.112Z",
       "strategy_id": "default_general",
       "campaign_ids": [
         "objective_flow"
@@ -101,7 +101,7 @@
       "score_ema": 50,
       "notes": "Auto-sprout candidate: domain seen 4 times across 1 eyes",
       "created_ts": "2026-02-25T17:54:02.575Z",
-      "updated_ts": "2026-02-26T00:39:41.003Z",
+      "updated_ts": "2026-02-26T04:30:28.112Z",
       "strategy_id": "default_general",
       "campaign_ids": [
         "objective_flow"
@@ -114,7 +114,8 @@
       "status": "probation",
       "cadence_hours": 12,
       "allowed_domains": [
-        "ai.gopubby.com"
+        "ai.gopubby.com",
+        "medium.com"
       ],
       "budgets": {
         "max_items": 10,
@@ -137,7 +138,7 @@
       "score_ema": 50,
       "notes": "Auto-sprout candidate: domain seen 4 times across 2 eyes",
       "created_ts": "2026-02-26T00:03:26.660Z",
-      "updated_ts": "2026-02-26T00:39:41.003Z",
+      "updated_ts": "2026-02-26T04:30:28.112Z",
       "strategy_id": "default_general",
       "campaign_ids": [
         "objective_flow"
@@ -150,7 +151,8 @@
       "status": "probation",
       "cadence_hours": 12,
       "allowed_domains": [
-        "generativeai.pub"
+        "generativeai.pub",
+        "medium.com"
       ],
       "budgets": {
         "max_items": 10,
@@ -173,7 +175,44 @@
       "score_ema": 50,
       "notes": "Auto-sprout candidate: domain seen 4 times across 1 eyes",
       "created_ts": "2026-02-26T00:39:40.544Z",
-      "updated_ts": "2026-02-26T00:39:41.003Z",
+      "updated_ts": "2026-02-26T04:30:28.112Z",
+      "strategy_id": "default_general",
+      "campaign_ids": [
+        "objective_flow"
+      ]
+    },
+    {
+      "uid": "emm2wy2ki1b3lg2exmfazuf2",
+      "id": "proto_1ee751437a437aef",
+      "name": "Watch ai.plainenglish.io",
+      "status": "probation",
+      "cadence_hours": 12,
+      "allowed_domains": [
+        "ai.plainenglish.io",
+        "medium.com"
+      ],
+      "budgets": {
+        "max_items": 10,
+        "max_seconds": 20,
+        "max_bytes": 524288,
+        "max_requests": 2
+      },
+      "parser_type": "medium_rss",
+      "topics": [
+        "t1_generational_wealth_v1",
+        "ai",
+        "startups",
+        "revenue",
+        "saas"
+      ],
+      "directive_ref": "T1_generational_wealth_v1",
+      "last_run": null,
+      "last_success": null,
+      "error_rate": 0,
+      "score_ema": 50,
+      "notes": "Auto-sprout candidate: domain seen 4 times across 1 eyes",
+      "created_ts": "2026-02-26T03:38:11.202Z",
+      "updated_ts": "2026-02-26T04:30:28.112Z",
       "strategy_id": "default_general",
       "campaign_ids": [
         "objective_flow"

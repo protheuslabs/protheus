@@ -1,8 +1,8 @@
 {
   "ok": true,
   "type": "continuum_pulse",
-  "ts": "2026-02-26T00:06:34.790Z",
-  "run_id": "cont_mm2pdxy5_jroegz",
+  "ts": "2026-02-26T04:32:49.767Z",
+  "run_id": "cont_mm2ywcba_kkpesg",
   "date": "2026-02-26",
   "profile": "spine",
   "reason": "spine_daily",
@@ -24,25 +24,25 @@
   },
   "resource": {
     "cpu_count": 8,
-    "load_1m": 5.772,
-    "load_per_cpu": 0.7215,
-    "rss_mb": 133.73,
-    "heap_used_mb": 32.02,
+    "load_1m": 13.2671,
+    "load_per_cpu": 1.6584,
+    "rss_mb": 109.63,
+    "heap_used_mb": 35.2,
     "within_limits": false
   },
   "spine_hot": {
     "hot": true,
-    "latest_ts": "2026-02-26T00:06:34.489Z",
-    "age_sec": 0.29
+    "latest_ts": "2026-02-26T04:32:47.140Z",
+    "age_sec": 2.61
   },
   "autonomy": {
-    "runs": 11,
+    "runs": 29,
     "executed": 0,
     "shipped": 0,
     "no_change": 0,
     "reverted": 0,
     "policy_holds": 1,
-    "hold_rate": 0.090909,
+    "hold_rate": 0.034483,
     "yield_rate": 0,
     "drift_proxy": 0
   },
@@ -73,7 +73,7 @@
         "name": "policy_hold_rate",
         "trit": 1,
         "label": "ok",
-        "value": 0.090909,
+        "value": 0.034483,
         "weight": 1
       },
       {
@@ -81,9 +81,9 @@
         "trit": -1,
         "label": "pain",
         "value": {
-          "load_per_cpu": 0.7215,
-          "rss_mb": 133.73,
-          "heap_used_mb": 32.02
+          "load_per_cpu": 1.6584,
+          "rss_mb": 109.63,
+          "heap_used_mb": 35.2
         },
         "weight": 1.2
       },
@@ -91,7 +91,7 @@
         "name": "spine_activity",
         "trit": -1,
         "label": "pain",
-        "value": 0.29,
+        "value": 2.61,
         "weight": 1.4
       }
     ]
@@ -107,7 +107,7 @@
     "atrophy": 0
   },
   "actions": [],
-  "duration_ms": 9,
+  "duration_ms": 17,
   "training_queue": {
     "enabled": true,
     "appended": 5,

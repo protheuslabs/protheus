@@ -121,6 +121,7 @@
     "systems/autonomy/improvement_orchestrator.ts",
     "systems/autonomy/model_catalog_loop.ts",
     "systems/autonomy/model_catalog_rollback.ts",
+    "systems/autonomy/inversion_controller.ts",
     "systems/autonomy/ops_dashboard.ts",
     "systems/autonomy/pipeline_spc_gate.ts",
     "systems/autonomy/quorum_validator.ts",

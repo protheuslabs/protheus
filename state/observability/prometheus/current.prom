@@ -1,0 +1,45 @@
+# HELP protheus_health_slo_level SLO alert level (ok=0,warn=1,critical=2,unknown=-1).
+# TYPE protheus_health_slo_level gauge
+protheus_health_slo_level{window="daily"} 1
+# HELP protheus_health_slo_warn_count Count of SLO checks at warn level.
+# TYPE protheus_health_slo_warn_count gauge
+protheus_health_slo_warn_count{window="daily"} 1
+# HELP protheus_health_slo_critical_count Count of SLO checks at critical level.
+# TYPE protheus_health_slo_critical_count gauge
+protheus_health_slo_critical_count{window="daily"} 0
+# HELP protheus_health_slo_failed_checks_total Count of failed SLO checks in selected window.
+# TYPE protheus_health_slo_failed_checks_total gauge
+protheus_health_slo_failed_checks_total{window="daily"} 1
+# HELP protheus_health_verification_pass_rate Receipt verification pass rate from autonomy health checks.
+# TYPE protheus_health_verification_pass_rate gauge
+protheus_health_verification_pass_rate{window="daily"} 1
+# HELP protheus_branch_queue_open_count Current queue open count from branch health snapshot.
+# TYPE protheus_branch_queue_open_count gauge
+protheus_branch_queue_open_count{window="daily"} 5
+# HELP protheus_branch_policy_holds_count Current policy hold count from branch health snapshot.
+# TYPE protheus_branch_policy_holds_count gauge
+protheus_branch_policy_holds_count{window="daily"} 0
+# HELP protheus_observed_autonomy_runs Observed autonomy runs in selected health window.
+# TYPE protheus_observed_autonomy_runs gauge
+protheus_observed_autonomy_runs{window="daily"} 2
+# HELP protheus_workflow_executor_slo_pass Workflow executor SLO pass flag (1=pass,0=fail).
+# TYPE protheus_workflow_executor_slo_pass gauge
+protheus_workflow_executor_slo_pass 1
+# HELP protheus_workflow_executor_execution_success_rate Workflow executor measured execution success rate.
+# TYPE protheus_workflow_executor_execution_success_rate gauge
+protheus_workflow_executor_execution_success_rate 1
+# HELP protheus_workflow_executor_queue_drain_rate Workflow executor measured queue drain rate.
+# TYPE protheus_workflow_executor_queue_drain_rate gauge
+protheus_workflow_executor_queue_drain_rate 1
+# HELP protheus_ci_baseline_streak_days Current consecutive daily green CI streak.
+# TYPE protheus_ci_baseline_streak_days gauge
+protheus_ci_baseline_streak_days 1
+# HELP protheus_ci_baseline_target_days Target daily green CI streak length.
+# TYPE protheus_ci_baseline_target_days gauge
+protheus_ci_baseline_target_days 7
+# HELP protheus_ci_baseline_streak_ratio CI streak ratio against target streak.
+# TYPE protheus_ci_baseline_streak_ratio gauge
+protheus_ci_baseline_streak_ratio 0.14285714285714285
+# HELP protheus_observability_snapshot_timestamp_seconds Unix timestamp of observability metrics snapshot.
+# TYPE protheus_observability_snapshot_timestamp_seconds gauge
+protheus_observability_snapshot_timestamp_seconds{date="2026-02-26",window="daily"} 1772080359

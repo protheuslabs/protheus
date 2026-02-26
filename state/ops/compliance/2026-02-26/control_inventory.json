@@ -1,0 +1,230 @@
+{
+  "ok": true,
+  "type": "compliance_control_inventory",
+  "ts": "2026-02-26T04:18:19.553Z",
+  "policy_version": "1.1",
+  "controls_total": 10,
+  "controls_passed": 10,
+  "controls_failed": 0,
+  "pass_rate": 1,
+  "controls": [
+    {
+      "id": "CC6.1",
+      "title": "Logical Access Security Controls",
+      "owner": "security",
+      "frequency": "daily",
+      "frameworks": [
+        "soc2",
+        "iso27001"
+      ],
+      "evidence_paths": [
+        "state/security/policy_root_decisions.jsonl",
+        "state/security/integrity_violations.jsonl",
+        "config/capability_switchboard_policy.json"
+      ],
+      "checks": {
+        "owner_present": true,
+        "frequency_present": true,
+        "evidence_paths_present": true,
+        "frameworks_present": true
+      },
+      "pass": true
+    },
+    {
+      "id": "CC7.2",
+      "title": "Change Management + Detection",
+      "owner": "ops",
+      "frequency": "daily",
+      "frameworks": [
+        "soc2",
+        "iso27001"
+      ],
+      "evidence_paths": [
+        "state/ops/compliance/history.jsonl",
+        "docs/OPERATOR_RUNBOOK.md",
+        "state/ops/ci_baseline_streak.json"
+      ],
+      "checks": {
+        "owner_present": true,
+        "frequency_present": true,
+        "evidence_paths_present": true,
+        "frameworks_present": true
+      },
+      "pass": true
+    },
+    {
+      "id": "CC8.1",
+      "title": "Incident Response + Recovery",
+      "owner": "ops",
+      "frequency": "weekly",
+      "frameworks": [
+        "soc2",
+        "iso27001",
+        "nist_ai_rmf"
+      ],
+      "evidence_paths": [
+        "docs/THREAT_MODEL_V1.md",
+        "systems/security/emergency_stop.ts",
+        "state/ops/dr_gameday_receipts.jsonl"
+      ],
+      "checks": {
+        "owner_present": true,
+        "frequency_present": true,
+        "evidence_paths_present": true,
+        "frameworks_present": true
+      },
+      "pass": true
+    },
+    {
+      "id": "A.5.1",
+      "title": "Information Security Policies",
+      "owner": "security",
+      "frequency": "monthly",
+      "frameworks": [
+        "iso27001"
+      ],
+      "evidence_paths": [
+        "docs/THREAT_MODEL_V1.md",
+        "docs/COMPLIANCE_POSTURE.md",
+        "config/compliance_controls_map.json"
+      ],
+      "checks": {
+        "owner_present": true,
+        "frequency_present": true,
+        "evidence_paths_present": true,
+        "frameworks_present": true
+      },
+      "pass": true
+    },
+    {
+      "id": "A.8.16",
+      "title": "Monitoring Activities",
+      "owner": "ops",
+      "frequency": "daily",
+      "frameworks": [
+        "iso27001",
+        "soc2"
+      ],
+      "evidence_paths": [
+        "systems/observability/metrics_exporter.ts",
+        "systems/observability/slo_alert_router.ts",
+        "state/ops/ci_baseline_streak.json"
+      ],
+      "checks": {
+        "owner_present": true,
+        "frequency_present": true,
+        "evidence_paths_present": true,
+        "frameworks_present": true
+      },
+      "pass": true
+    },
+    {
+      "id": "A.8.13",
+      "title": "Backup and Recovery Governance",
+      "owner": "ops",
+      "frequency": "monthly",
+      "frameworks": [
+        "iso27001",
+        "soc2"
+      ],
+      "evidence_paths": [
+        "config/state_backup_policy.json",
+        "config/offsite_backup_policy.json",
+        "state/ops/offsite_restore_drill_receipts.jsonl"
+      ],
+      "checks": {
+        "owner_present": true,
+        "frequency_present": true,
+        "evidence_paths_present": true,
+        "frameworks_present": true
+      },
+      "pass": true
+    },
+    {
+      "id": "GOV-1.1",
+      "title": "AI Governance Policies Defined",
+      "owner": "governance",
+      "frequency": "monthly",
+      "frameworks": [
+        "nist_ai_rmf"
+      ],
+      "evidence_paths": [
+        "config/directives/ACTIVE.yaml",
+        "systems/security/directive_hierarchy_controller.ts",
+        "state/security/policy_root_decisions.jsonl"
+      ],
+      "checks": {
+        "owner_present": true,
+        "frequency_present": true,
+        "evidence_paths_present": true,
+        "frameworks_present": true
+      },
+      "pass": true
+    },
+    {
+      "id": "MAP-2.2",
+      "title": "Risk Mapping Across Inputs and Context",
+      "owner": "safety",
+      "frequency": "weekly",
+      "frameworks": [
+        "nist_ai_rmf"
+      ],
+      "evidence_paths": [
+        "systems/autonomy/mutation_safety_kernel.ts",
+        "systems/security/egress_gateway.ts",
+        "state/ops/compliance_posture/history.jsonl"
+      ],
+      "checks": {
+        "owner_present": true,
+        "frequency_present": true,
+        "evidence_paths_present": true,
+        "frameworks_present": true
+      },
+      "pass": true
+    },
+    {
+      "id": "MEASURE-3.3",
+      "title": "Operational Monitoring and Drift Evidence",
+      "owner": "ops",
+      "frequency": "daily",
+      "frameworks": [
+        "nist_ai_rmf",
+        "soc2"
+      ],
+      "evidence_paths": [
+        "systems/ops/public_benchmark_pack.ts",
+        "systems/ops/compliance_posture.ts",
+        "state/ops/compliance/history.jsonl"
+      ],
+      "checks": {
+        "owner_present": true,
+        "frequency_present": true,
+        "evidence_paths_present": true,
+        "frameworks_present": true
+      },
+      "pass": true
+    },
+    {
+      "id": "MANAGE-4.2",
+      "title": "Incident Response and Corrective Controls",
+      "owner": "security",
+      "frequency": "weekly",
+      "frameworks": [
+        "nist_ai_rmf",
+        "soc2"
+      ],
+      "evidence_paths": [
+        "systems/security/emergency_stop.ts",
+        "systems/ops/postmortem_loop.ts",
+        "state/security/black_box_ledger.jsonl"
+      ],
+      "checks": {
+        "owner_present": true,
+        "frequency_present": true,
+        "evidence_paths_present": true,
+        "frameworks_present": true
+      },
+      "pass": true
+    }
+  ]
+}

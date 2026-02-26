@@ -1,46 +1,107 @@
 {
   "ok": true,
   "type": "workflow_executor_run",
-  "ts": "2026-02-26T02:40:07.024Z",
-  "run_id": "wfexec_mm2uve5p_yzfuo4",
+  "ts": "2026-02-26T04:32:18.656Z",
+  "run_id": "wfexec_mm2yvmo8_7lgy8o",
   "date": "2026-02-26",
-  "dry_run": true,
+  "dry_run": false,
   "forced_shadow_dry_run": false,
   "continue_on_error": false,
   "receipt_strict": true,
   "rollout_enabled": true,
-  "rollout_stage": "shadow",
+  "rollout_stage": "canary",
   "rollout_canary_fraction": 0.05,
-  "rollout_scale_eligible": false,
+  "rollout_scale_eligible": true,
   "rollout_state_before": {
-    "stage": "shadow",
+    "stage": "canary",
     "canary_fraction": 0.05,
-    "consecutive_green": 0,
-    "consecutive_red": 1,
-    "last_slo_pass": false,
+    "consecutive_green": 1,
+    "consecutive_red": 0,
+    "last_slo_pass": true,
     "last_scale_action": null
   },
   "rollout_state_after": {
-    "stage": "shadow",
+    "stage": "canary",
     "canary_fraction": 0.05,
-    "consecutive_green": 0,
-    "consecutive_red": 1,
-    "last_slo_pass": null,
-    "last_scale_action": "rollout_scale_skipped"
+    "consecutive_green": 2,
+    "consecutive_red": 0,
+    "last_slo_pass": true,
+    "last_scale_action": null
   },
   "runtime_mutation_enabled": true,
   "runtime_mutation_policy_path": "config/workflow_executor_policy.json",
-  "registry_total": 0,
-  "workflows_selected": 0,
-  "workflows_excluded": 0,
-  "selection_excluded": [],
+  "registry_total": 8,
+  "workflows_selected": 1,
+  "workflows_excluded": 9,
+  "selection_excluded": [
+    {
+      "workflow_id": "wfc_07aee5ce1dfb0f41",
+      "reason": "ineligible",
+      "details": [
+        "composite_score_below_min"
+      ]
+    },
+    {
+      "workflow_id": "wfc_145ecc2f4cde0e52",
+      "reason": "ineligible",
+      "details": [
+        "composite_score_below_min"
+      ]
+    },
+    {
+      "workflow_id": "wfc_5d55739830782563",
+      "reason": "ineligible",
+      "details": [
+        "composite_score_below_min"
+      ]
+    },
+    {
+      "workflow_id": "wfc_708d5d0247df6b21",
+      "reason": "canary_not_sampled",
+      "sample_unit": 0.79205,
+      "canary_fraction": 0.05
+    },
+    {
+      "workflow_id": "wfc_7c82f6565f5e49c8",
+      "reason": "ineligible",
+      "details": [
+        "composite_score_below_min"
+      ]
+    },
+    {
+      "workflow_id": "wfc_84dcfb815a85478f",
+      "reason": "ineligible",
+      "details": [
+        "composite_score_below_min"
+      ]
+    },
+    {
+      "workflow_id": "wfc_b565c4e93d31b632",
+      "reason": "ineligible",
+      "details": [
+        "composite_score_below_min"
+      ]
+    },
+    {
+      "workflow_id": "wfc_ecea8fd103aab192",
+      "reason": "canary_not_sampled",
+      "sample_unit": 0.22412,
+      "canary_fraction": 0.05
+    },
+    {
+      "workflow_id": "wfc_ecea8fd103aab192",
+      "reason": "canary_force_single_sample",
+      "sample_unit": 0.22412,
+      "canary_fraction": 0.05
+    }
+  ],
   "enforce_eligibility": true,
-  "workflows_executed": 0,
-  "workflows_succeeded": 0,
+  "workflows_executed": 1,
+  "workflows_succeeded": 1,
   "workflows_failed": 0,
   "workflows_blocked": 0,
-  "step_receipts_count": 0,
-  "step_receipts_path": null,
+  "step_receipts_count": 4,
+  "step_receipts_path": "state/adaptive/workflows/executor/step_receipts/2026-02-26.jsonl",
   "runtime_mutations_attempted": 0,
   "runtime_mutations_applied": 0,
   "runtime_mutations_rolled_back": 0,
@@ -52,16 +113,16 @@
       "max_time_to_first_execution_ms": 180000
     },
     "measured": {
-      "execution_success_rate": 0,
-      "queue_drain_rate": 0,
-      "time_to_first_execution_ms": null
+      "execution_success_rate": 1,
+      "queue_drain_rate": 1,
+      "time_to_first_execution_ms": 19
     },
     "checks": {
-      "execution_success_rate": false,
-      "queue_drain_rate": false,
-      "time_to_first_execution_ms": false
+      "execution_success_rate": true,
+      "queue_drain_rate": true,
+      "time_to_first_execution_ms": true
     },
-    "pass": false
+    "pass": true
   },
   "slo_window": {
     "thresholds": {
@@ -70,19 +131,146 @@
       "max_time_to_first_execution_ms": 180000
     },
     "aggregate": {
-      "runs_considered": 1,
+      "runs_considered": 6,
       "min_runs_for_decision": 3,
-      "avg_execution_success_rate": 0,
-      "avg_queue_drain_rate": 0,
-      "max_time_to_first_execution_ms": 0
+      "avg_execution_success_rate": 1,
+      "avg_queue_drain_rate": 1,
+      "max_time_to_first_execution_ms": 154
     },
     "checks": {
-      "execution_success_rate": false,
-      "queue_drain_rate": false,
+      "execution_success_rate": true,
+      "queue_drain_rate": true,
       "time_to_first_execution_ms": true
     },
-    "sufficient_data": false,
-    "pass": false
+    "sufficient_data": true,
+    "pass": true
   },
-  "results": []
+  "results": [
+    {
+      "workflow_id": "wfc_ecea8fd103aab192",
+      "name": "Adaptive infrastructure_outage workflow",
+      "status": "succeeded",
+      "ok": true,
+      "blocked_by_gate": false,
+      "stopped_step_id": null,
+      "rollback_attempted": false,
+      "rollback_ok": null,
+      "rollback_source": null,
+      "rollback_step_id": null,
+      "started_at": "2026-02-26T04:32:16.539Z",
+      "ended_at": "2026-02-26T04:32:18.651Z",
+      "duration_ms": 2112,
+      "step_count": 4,
+      "step_results": [
+        {
+          "ok": true,
+          "attempts": 1,
+          "dry_run": false,
+          "step": {
+            "id": "enrich",
+            "type": "command",
+            "command": "node systems/autonomy/proposal_enricher.js run 2026-02-26"
+          },
+          "records": [
+            {
+              "attempt": 1,
+              "ok": true,
+              "exit_code": 0,
+              "signal": null,
+              "timed_out": false,
+              "started_at": "2026-02-26T04:32:16.539Z",
+              "ended_at": "2026-02-26T04:32:17.404Z",
+              "duration_ms": 865,
+              "stdout": "{\"ok\":true,\"result\":\"enriched\",\"date\":\"2026-02-26\",\"path\":\"/Users/jay/.openclaw/workspace/state/sensory/proposals/2026-02-26.json\",\"changed\":5,\"total\":5,\"directive_profile_available\":true,\"strategy_profile\":{\"id\":\"default_general\",\"name\":\"Default General Strategy\",\"status\":\"active\",\"file\":\"config/strategies/default.json\",\"execution_mode\":\"score_only\",\"allowed_risks\":[\"low\",\"medium\"],\"threshold_overrides\":{\"min_directive_fit\":41,\"min_actionability_score\":47,\"min_composite_eligibility\":64},\"validation\":{\"strict_ok\":true,\"errors\":[],\"warnings\":[]}},\"thresholds\":{\"min_signal_quality\":58,\"min_sensory_signal_score\":45,\"min_sensory_relevance_score\":42,\"min_directive_fit\":41,\"min_actionability_score\":47,\"min_composite_eligibility\":64,\"min_eye_score_ema\":45},\"admission\":{\"total\":5,\"eligible\":0,\"blocked\":5,\"blocked_by_reason\":{\"adaptive_mutation_missing_budget_cap\":5,\"adaptive_mutation_missing_quarantine_window\":5,\"adaptive_mutation_missing_rollback_receipt\":5,\"adaptive_mutation_missing_safety_attestation\":5,\"adaptive_mutation_missing_ttl\":5,\"adaptive_mutation_missing_veto_window\":5,\"mutation_lineage_missing\":5}},\"objective_binding\":{\"total\":5,\"required\":5,\"valid_required\":5,\"missing_required\":0,\"invalid_required\":0,\"source_meta_required\":5,\"source_fallback_required\":0,\"source_counts\":{\"meta.objective_id\":5},\"ok\":true},\"dream_alignment\":{\"available\":true,\"tokens_loaded\":23,\"source_counts\":{\"theme\":6,\"rem_daily\":8,\"rem_run\":8,\"rem_synthesis\":16,\"rem\":16},\"source_uid_count\":2,\"files\":{\"themes\":true,\"rem\":true,\"rem_runs\":[\"2026-02-26__rem1iskpj08vorfg28b0q87g.json\"]},\"proposals_with_hits\":5,\"proposals_with_bonus\":5,\"bonus_total\":30,\"rem_bonus_total\":10,\"top_hit_tokens\":[{\"token\":\"token\",\"count\":5},{\"token\":\"signal\",\"count\":4},{\"token\":\"eyes\",\"count\":3}]},\"cross_signal_no_change\":{\"window_days\":7,\"topics\":[]}}",
+              "stderr": "",
+              "error": null
+            }
+          ]
+        },
+        {
+          "ok": true,
+          "attempts": 1,
+          "dry_run": false,
+          "step": {
+            "id": "rank",
+            "type": "command",
+            "command": "node systems/autonomy/autonomy_controller.js run 2026-02-26"
+          },
+          "records": [
+            {
+              "attempt": 1,
+              "ok": true,
+              "exit_code": 0,
+              "signal": null,
+              "timed_out": false,
+              "started_at": "2026-02-26T04:32:17.404Z",
+              "ended_at": "2026-02-26T04:32:18.346Z",
+              "duration_ms": 942,
+              "stdout": "{\"ok\":true,\"skipped\":true,\"reason\":\"AUTONOMY_ENABLED!=1\",\"execution_mode\":\"score_only\",\"canary_allow_with_flag_off\":true,\"ts\":\"2026-02-26T04:32:18.338Z\"}",
+              "stderr": "",
+              "error": null
+            }
+          ]
+        },
+        {
+          "ok": true,
+          "attempts": 1,
+          "dry_run": false,
+          "step": {
+            "id": "verify",
+            "type": "gate",
+            "command": "node systems/autonomy/strategy_execute_guard.js run 2026-02-26"
+          },
+          "records": [
+            {
+              "attempt": 1,
+              "ok": true,
+              "exit_code": 0,
+              "signal": null,
+              "timed_out": false,
+              "started_at": "2026-02-26T04:32:18.346Z",
+              "ended_at": "2026-02-26T04:32:18.651Z",
+              "duration_ms": 305,
+              "stdout": "{\"ok\":true,\"ts\":\"2026-02-26T04:32:18.638Z\",\"result\":\"mode_not_execute\",\"strategy_id\":\"default_general\",\"mode\":\"score_only\"}",
+              "stderr": "",
+              "error": null
+            }
+          ]
+        },
+        {
+          "ok": true,
+          "attempts": 1,
+          "dry_run": false,
+          "step": {
+            "id": "receipt",
+            "type": "receipt",
+            "command": "state/autonomy/receipts/2026-02-26.jsonl"
+          },
+          "records": [
+            {
+              "attempt": 1,
+              "ok": true,
+              "exit_code": 0,
+              "started_at": "2026-02-26T04:32:18.651Z",
+              "ended_at": "2026-02-26T04:32:18.651Z",
+              "duration_ms": 0,
+              "timed_out": false,
+              "stdout": "",
+              "stderr": "",
+              "error": null
+            }
+          ],
+          "receipt_path": "/Users/jay/.openclaw/workspace/state/autonomy/receipts/2026-02-26.jsonl",
+          "receipt_exists": true
+        }
+      ],
+      "mutation_summary": {
+        "attempted": 0,
+        "applied": 0,
+        "rolled_back": 0,
+        "by_kind": {}
+      },
+      "mutation_receipts": []
+    }
+  ]
 }

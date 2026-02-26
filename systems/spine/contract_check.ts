@@ -823,6 +823,25 @@ function main() {
     ["strategy_principles.js", "run", "status"]
   );
 
+  // inversion_controller.js enforces maturity/impact/certainty-gated inversion sessions and outcomes.
+  checkScript(
+    "systems/autonomy/inversion_controller.js",
+    [
+      "inversion_controller.js",
+      "run",
+      "resolve",
+      "record-test",
+      "sweep",
+      "status",
+      "--objective",
+      "--impact",
+      "--target",
+      "--certainty",
+      "--mode",
+      "--apply"
+    ]
+  );
+
   // workflow_generator.js emits proposal-only adaptive workflow drafts.
   checkScript(
     "systems/workflow/workflow_generator.js",

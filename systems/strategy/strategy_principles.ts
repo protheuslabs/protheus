@@ -28,6 +28,9 @@ const OUT_DIR = process.env.STRATEGY_PRINCIPLES_OUT_DIR
   : path.join(REPO_ROOT, 'state', 'adaptive', 'strategy', 'principles');
 const HISTORY_PATH = path.join(OUT_DIR, 'history.jsonl');
 const LATEST_PATH = path.join(OUT_DIR, 'latest.json');
+const INVERSION_FIRST_PRINCIPLE_LATEST_PATH = process.env.STRATEGY_PRINCIPLES_INVERSION_PATH
+  ? path.resolve(process.env.STRATEGY_PRINCIPLES_INVERSION_PATH)
+  : path.join(REPO_ROOT, 'state', 'autonomy', 'inversion', 'first_principles', 'latest.json');
 
 function usage() {
   console.log('Usage:');
@@ -191,6 +194,33 @@ function evaluatePrinciples(strategy) {
   };
 }
 
+function loadInversionFeedback() {
+  const latest = readJson(INVERSION_FIRST_PRINCIPLE_LATEST_PATH, null);
+  if (!latest || typeof latest !== 'object') {
+    return {
+      available: false,
+      polarity: 0,
+      confidence: 0,
+      suggested_bonus: 0,
+      principle_id: null,
+      source: null
+    };
+  }
+  const confidence = clampNumber(latest.confidence, 0, 1, 0);
+  const polarity = clampNumber(latest.polarity, -1, 1, 1);
+  const suggestedBonus = latest.strategy_feedback && typeof latest.strategy_feedback === 'object'
+    ? clampNumber(latest.strategy_feedback.suggested_bonus, -0.25, 0.25, 0)
+    : 0;
+  return {
+    available: true,
+    polarity,
+    confidence,
+    suggested_bonus: Number((suggestedBonus * Math.max(0, confidence)).toFixed(6)),
+    principle_id: cleanText(latest.id || '', 80) || null,
+    source: cleanText(latest.source || '', 80) || null
+  };
+}
+
 function runCmd(dateStr) {
   const strategy = loadActiveStrategy({ allowMissing: true });
   if (!strategy || typeof strategy !== 'object') {
@@ -204,6 +234,13 @@ function runCmd(dateStr) {
   }
 
   const evalResult = evaluatePrinciples(strategy);
+  const inversionFeedback = loadInversionFeedback();
+  const baseScore = Number(evalResult.summary.score || 0);
+  const inversionBonus = inversionFeedback.available
+    ? Number(inversionFeedback.suggested_bonus || 0)
+    : 0;
+  const finalScore = clampNumber(baseScore + inversionBonus, 0, 1, baseScore);
+  const finalBand = finalScore >= 0.8 ? 'strong' : (finalScore >= 0.6 ? 'acceptable' : 'weak');
   const payload = {
     ok: true,
     type: 'strategy_principles',
@@ -213,7 +250,14 @@ function runCmd(dateStr) {
     strategy_name: String(strategy.name || ''),
     objective_primary: cleanText(strategy.objective && strategy.objective.primary || '', 240),
     principles: evalResult.checks,
-    summary: evalResult.summary
+    summary: {
+      ...evalResult.summary,
+      base_score: Number(baseScore.toFixed(6)),
+      inversion_bonus: Number(inversionBonus.toFixed(6)),
+      score: Number(finalScore.toFixed(6)),
+      band: finalBand
+    },
+    inversion_feedback: inversionFeedback
   };
 
   const fp = outputPath(dateStr);
@@ -226,7 +270,9 @@ function runCmd(dateStr) {
     strategy_id: payload.strategy_id,
     score: payload.summary.score,
     band: payload.summary.band,
-    checks_failed: payload.summary.checks_failed
+    checks_failed: payload.summary.checks_failed,
+    inversion_bonus: payload.summary.inversion_bonus,
+    inversion_principle_id: payload.inversion_feedback ? payload.inversion_feedback.principle_id : null
   });
 
   process.stdout.write(`${JSON.stringify({
@@ -237,6 +283,8 @@ function runCmd(dateStr) {
     score: payload.summary.score,
     band: payload.summary.band,
     checks_failed: payload.summary.checks_failed,
+    inversion_bonus: payload.summary.inversion_bonus,
+    inversion_principle_id: payload.inversion_feedback ? payload.inversion_feedback.principle_id : null,
     output_path: path.relative(REPO_ROOT, fp).replace(/\\/g, '/')
   })}\n`);
 }

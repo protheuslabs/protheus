@@ -1,7 +1,7 @@
 {
   "schema_id": "epigenetic_tags",
   "schema_version": "1.0.0",
-  "updated_at": "2026-02-26T00:06:33.623Z",
+  "updated_at": "2026-02-26T04:32:45.330Z",
   "tags": {
     "autonomy_selector": {
       "trit": -1,

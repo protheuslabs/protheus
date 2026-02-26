@@ -1,7 +1,7 @@
 {
   "ok": true,
   "type": "trit_shadow_report",
-  "ts": "2026-02-26T00:06:31.026Z",
+  "ts": "2026-02-26T04:32:40.149Z",
   "date": "2026-02-26",
   "days": 14,
   "window": {
@@ -16,10 +16,10 @@
   },
   "summary": {
     "status": "warn",
-    "total_decisions": 36,
-    "divergence_count": 9,
-    "divergence_rate": 0.25,
-    "confidence_avg": 0.7384,
+    "total_decisions": 127,
+    "divergence_count": 39,
+    "divergence_rate": 0.3071,
+    "confidence_avg": 0.746,
     "gate": {
       "enabled": false,
       "pass": true,
@@ -32,10 +32,10 @@
     "checks": {
       "divergence_rate": {
         "pass": false,
-        "value": 0.25,
+        "value": 0.3071,
         "target": "<=0.05",
         "min_decisions": 30,
-        "decisions": 36
+        "decisions": 127
       },
       "safety_regressions": {
         "pass": false,
@@ -73,30 +73,30 @@
   "sources": {
     "strategy_mode": {
       "source": "strategy_mode_governor",
-      "total_decisions": 34,
-      "divergence_count": 9,
-      "divergence_rate": 0.2647,
-      "confidence_avg": 0.7695,
+      "total_decisions": 125,
+      "divergence_count": 39,
+      "divergence_rate": 0.312,
+      "confidence_avg": 0.7848,
       "belief_trits": {
         "pain": 0,
         "neutral": 0,
-        "ok": 34
+        "ok": 125
       },
       "top_reasons": [
         {
-          "reason": "shadow_promote_canary",
-          "count": 16
+          "reason": "shadow_promote_execute",
+          "count": 52
         },
         {
-          "reason": "shadow_promote_execute",
-          "count": 12
+          "reason": "shadow_promote_canary",
+          "count": 47
         },
         {
           "reason": "hold",
-          "count": 6
+          "count": 26
         }
       ],
-      "last_ts": "2026-02-26T00:03:21.845Z"
+      "last_ts": "2026-02-26T04:32:13.938Z"
     },
     "drift_target": {
       "source": "drift_target_governor",

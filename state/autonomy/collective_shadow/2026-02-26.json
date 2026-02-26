@@ -1,7 +1,7 @@
 {
   "ok": true,
   "type": "collective_shadow_run",
-  "ts": "2026-02-26T00:06:33.864Z",
+  "ts": "2026-02-26T04:32:45.602Z",
   "date": "2026-02-26",
   "policy_version": "1.0",
   "policy_path": "config/collective_shadow_policy.json",
@@ -22,13 +22,13 @@
     "2026-02-25",
     "2026-02-26"
   ],
-  "run_rows": 243,
+  "run_rows": 261,
   "red_team": {
-    "runs": 19,
-    "executed_cases": 53,
+    "runs": 20,
+    "executed_cases": 55,
     "fail_cases": 10,
     "critical_fail_cases": 10,
-    "fail_rate": 0.1887
+    "fail_rate": 0.1818
   },
   "summary": {
     "archetypes_total": 4,
@@ -48,11 +48,11 @@
           "low"
         ]
       },
-      "samples": 112,
-      "shipped_rate": 0.0089,
-      "failure_rate": 1.5625,
-      "evidence": "fail=175/112; shipped=1/112",
-      "updated_at": "2026-02-26T00:06:33.856Z"
+      "samples": 130,
+      "shipped_rate": 0.0077,
+      "failure_rate": 1.3462,
+      "evidence": "fail=175/130; shipped=1/130",
+      "updated_at": "2026-02-26T04:32:45.593Z"
     },
     {
       "id": "csh_8995f0f9bf4ecb",
@@ -66,11 +66,11 @@
           "low"
         ]
       },
-      "samples": 123,
-      "shipped_rate": 0.0081,
-      "failure_rate": 1.5203,
-      "evidence": "fail=187/123; shipped=1/123",
-      "updated_at": "2026-02-26T00:06:33.856Z"
+      "samples": 141,
+      "shipped_rate": 0.0071,
+      "failure_rate": 1.3262,
+      "evidence": "fail=187/141; shipped=1/141",
+      "updated_at": "2026-02-26T04:32:45.593Z"
     },
     {
       "id": "csh_ed3d010bda4d09",
@@ -88,7 +88,7 @@
       "shipped_rate": 0,
       "failure_rate": 2,
       "evidence": "fail=10/5; shipped=0/5",
-      "updated_at": "2026-02-26T00:06:33.856Z"
+      "updated_at": "2026-02-26T04:32:45.593Z"
     },
     {
       "id": "csh_efe5f1c23436e5",
@@ -103,11 +103,11 @@
           "high"
         ]
       },
-      "samples": 53,
+      "samples": 55,
       "shipped_rate": 0,
-      "failure_rate": 0.1887,
-      "evidence": "red_team runs=19 fail_rate=0.1887",
-      "updated_at": "2026-02-26T00:06:33.856Z"
+      "failure_rate": 0.1818,
+      "evidence": "red_team runs=20 fail_rate=0.1818",
+      "updated_at": "2026-02-26T04:32:45.593Z"
     }
   ]
 }

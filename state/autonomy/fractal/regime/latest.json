@@ -1,56 +1,56 @@
 {
   "schema_id": "fractal_regime_receipt",
   "schema_version": "1.0.0",
-  "ts": "2026-02-26T00:06:32.841Z",
+  "ts": "2026-02-26T04:32:44.348Z",
   "date": "2026-02-26",
   "policy_path": "config/regime_organ_policy.json",
   "policy_version": "1.0",
   "objective_id": null,
-  "selected_regime": "exploration",
-  "candidate_regime": "exploration",
+  "selected_regime": "constrained_budget",
+  "candidate_regime": "constrained_budget",
   "switched": true,
-  "switch_reason": "initial_assignment",
-  "candidate_confidence": 0.918455,
-  "candidate_margin": 0.51725,
+  "switch_reason": "switch_conditions_met",
+  "candidate_confidence": 0.790175,
+  "candidate_margin": 0.248563,
   "scores": {
-    "throughput": 0.16875,
+    "throughput": 0,
     "quality": 0.25,
     "recovery": 0,
-    "exploration": 0.76725,
-    "constrained_budget": 0.0475
+    "exploration": 0.463937,
+    "constrained_budget": 0.7125
   },
   "actions": [
     {
-      "id": "rga_d6ad7238867525",
-      "kind": "spawn",
-      "target": "module:hypothesis_probe_lane",
-      "reason": "low pressure + uncertainty supports controlled exploration",
+      "id": "rga_c737ee069d06eb",
+      "kind": "prune",
+      "target": "lane:high_cost_routes",
+      "reason": "budget pressure requires cost shedding and route contraction",
       "risk": "low",
       "ttl_hours": 24,
-      "magnitude": 0.3
+      "magnitude": 0.38
     },
     {
-      "id": "rga_2fc3583cab4399",
+      "id": "rga_9c8cfbea2d127d",
       "kind": "rewire",
-      "target": "strategy->evolution_arena",
-      "reason": "route bounded experiments to sandboxed arena",
+      "target": "routing->local_first",
+      "reason": "bias toward local/low-burn routes while constrained",
       "risk": "low",
       "ttl_hours": 24,
-      "magnitude": 0.27
+      "magnitude": 0.34
     },
     {
-      "id": "rga_d11848bf655027",
+      "id": "rga_aadbd1cc76df67",
       "kind": "reprioritize",
-      "target": "lane:novelty_sampling",
-      "reason": "increase novelty sampling under healthy system conditions",
+      "target": "lane:cost_efficiency",
+      "reason": "prioritize high value-per-token activity until pressure clears",
       "risk": "low",
       "ttl_hours": 24,
-      "magnitude": 0.33
+      "magnitude": 0.36
     }
   ],
   "action_count": 3,
   "context": {
-    "ts": "2026-02-26T00:06:32.831Z",
+    "ts": "2026-02-26T04:32:44.337Z",
     "date": "2026-02-26",
     "objective_id": null,
     "queue": {
@@ -60,7 +60,7 @@
       "pressure": "normal"
     },
     "runs": {
-      "runs": 1,
+      "runs": 2,
       "no_progress": 0,
       "policy_holds": 0,
       "safety_stops": 0,
@@ -74,16 +74,16 @@
       "yield_rate": null
     },
     "autopause": {
-      "active": false,
+      "active": true,
       "source": "idle_dream_cycle",
       "reason": "burn_rate_exceeded"
     },
     "trit": {
-      "available": false,
-      "trit": 0,
-      "score": 0,
-      "confidence": 0,
-      "snapshot_path": null
+      "available": true,
+      "trit": 1,
+      "score": 0.8042,
+      "confidence": 0.873,
+      "snapshot_path": "state/spine/ternary_belief/2026-02-26_daily.json"
     }
   },
   "non_regression": {
@@ -97,7 +97,7 @@
   "identity": {
     "checked": 3,
     "blocked": 0,
-    "identity_drift_score": 0.04,
+    "identity_drift_score": 0,
     "max_identity_drift_score": 0.58,
     "blocking_code_counts": {},
     "blocked_action_ids": [],

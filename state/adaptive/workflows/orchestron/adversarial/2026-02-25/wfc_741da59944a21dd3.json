@@ -1,8 +1,8 @@
 {
   "ok": true,
   "type": "orchestron_adversarial_probe",
-  "ts": "2026-02-26T02:43:22.707Z",
-  "run_id": "orcrun_8a0787987c3709",
+  "ts": "2026-02-26T07:41:59.513Z",
+  "run_id": "orcrun_29a046e9f0eb8c",
   "date": "2026-02-25",
   "candidate_id": "wfc_741da59944a21dd3",
   "proposal_type": "cross_signal_opportunity.execution",
@@ -26,7 +26,8 @@
       "workflow_id",
       "objective_id",
       "eye_id",
-      "adapter"
+      "adapter",
+      "provider"
     ]
   },
   "candidate": {
@@ -57,8 +58,13 @@
         "risk": 0,
         "novelty": 0
       },
+      "risk_signals": {
+        "feasibility": 0,
+        "risk": 0,
+        "novelty": 0
+      },
       "source": "orchestron_adaptive_controller",
-      "ts": "2026-02-26T02:43:22.523Z",
+      "ts": "2026-02-26T07:41:59.473Z",
       "signature": "convert_repeated_successful_patterns_into_reusable_workflows._workflow_strategy_medium_speed_weight_:0.34_robustness_weight_:0.33_cost_weight_:0.33_feasibility_:0_risk_:0"
     },
     "parent_workflow_id": "wfc_07aee5ce1dfb0f41",
@@ -87,7 +93,14 @@
         "command": "node systems/autonomy/proposal_enricher.js run <date>",
         "purpose": "specialize execution branch and fallback routing",
         "timeout_ms": 120000,
-        "retries": 1
+        "retries": 1,
+        "adapter": null,
+        "provider": null,
+        "lane": null,
+        "risk": null,
+        "clearance": null,
+        "estimated_tokens": null,
+        "require_policy_root": false
       },
       {
         "id": "execute_lane",
@@ -95,7 +108,14 @@
         "command": "node systems/autonomy/autonomy_controller.js run <date>",
         "purpose": "execute sub-workflow lane",
         "timeout_ms": 180000,
-        "retries": 1
+        "retries": 1,
+        "adapter": null,
+        "provider": null,
+        "lane": null,
+        "risk": null,
+        "clearance": null,
+        "estimated_tokens": null,
+        "require_policy_root": false
       },
       {
         "id": "verify",
@@ -103,7 +123,14 @@
         "command": "node systems/autonomy/strategy_execute_guard.js run <date>",
         "purpose": "verify lane safety and evidence",
         "timeout_ms": 120000,
-        "retries": 0
+        "retries": 0,
+        "adapter": null,
+        "provider": null,
+        "lane": null,
+        "risk": null,
+        "clearance": null,
+        "estimated_tokens": null,
+        "require_policy_root": false
       },
       {
         "id": "spawn_subworkflow",
@@ -111,7 +138,14 @@
         "command": "node systems/workflow/orchestron_controller.js run <date> --orchestron=1 --orchestron-auto=1",
         "purpose": "spawn focused sub-workflows for pressure lanes",
         "timeout_ms": 120000,
-        "retries": 0
+        "retries": 0,
+        "adapter": null,
+        "provider": null,
+        "lane": null,
+        "risk": null,
+        "clearance": null,
+        "estimated_tokens": null,
+        "require_policy_root": false
       },
       {
         "id": "receipt",
@@ -119,7 +153,14 @@
         "command": "state/autonomy/receipts/<date>.jsonl",
         "purpose": "record lane receipt",
         "timeout_ms": 30000,
-        "retries": 0
+        "retries": 0,
+        "adapter": null,
+        "provider": null,
+        "lane": null,
+        "risk": null,
+        "clearance": null,
+        "estimated_tokens": null,
+        "require_policy_root": false
       }
     ],
     "children": [
@@ -151,8 +192,13 @@
             "risk": 0,
             "novelty": 0
           },
+          "risk_signals": {
+            "feasibility": 0,
+            "risk": 0,
+            "novelty": 0
+          },
           "source": "orchestron_adaptive_controller",
-          "ts": "2026-02-26T02:43:22.523Z",
+          "ts": "2026-02-26T07:41:59.473Z",
           "signature": "convert_repeated_successful_patterns_into_reusable_workflows._workflow_strategy_medium_speed_weight_:0.34_robustness_weight_:0.33_cost_weight_:0.33_feasibility_:0_risk_:0"
         },
         "parent_workflow_id": "wfc_741da59944a21dd3",
@@ -181,7 +227,14 @@
             "command": "node systems/autonomy/proposal_enricher.js run <date>",
             "purpose": "specialize intake and directive normalization",
             "timeout_ms": 120000,
-            "retries": 1
+            "retries": 1,
+            "adapter": null,
+            "provider": null,
+            "lane": null,
+            "risk": null,
+            "clearance": null,
+            "estimated_tokens": null,
+            "require_policy_root": false
           },
           {
             "id": "execute_lane",
@@ -189,7 +242,14 @@
             "command": "node systems/autonomy/autonomy_controller.js run <date>",
             "purpose": "execute sub-workflow lane",
             "timeout_ms": 180000,
-            "retries": 1
+            "retries": 1,
+            "adapter": null,
+            "provider": null,
+            "lane": null,
+            "risk": null,
+            "clearance": null,
+            "estimated_tokens": null,
+            "require_policy_root": false
           },
           {
             "id": "verify",
@@ -197,7 +257,14 @@
             "command": "node systems/autonomy/strategy_execute_guard.js run <date>",
             "purpose": "verify lane safety and evidence",
             "timeout_ms": 120000,
-            "retries": 0
+            "retries": 0,
+            "adapter": null,
+            "provider": null,
+            "lane": null,
+            "risk": null,
+            "clearance": null,
+            "estimated_tokens": null,
+            "require_policy_root": false
           },
           {
             "id": "receipt",
@@ -205,7 +272,14 @@
             "command": "state/autonomy/receipts/<date>.jsonl",
             "purpose": "record lane receipt",
             "timeout_ms": 30000,
-            "retries": 0
+            "retries": 0,
+            "adapter": null,
+            "provider": null,
+            "lane": null,
+            "risk": null,
+            "clearance": null,
+            "estimated_tokens": null,
+            "require_policy_root": false
           }
         ],
         "children": [
@@ -237,8 +311,13 @@
                 "risk": 0,
                 "novelty": 0
               },
+              "risk_signals": {
+                "feasibility": 0,
+                "risk": 0,
+                "novelty": 0
+              },
               "source": "orchestron_adaptive_controller",
-              "ts": "2026-02-26T02:43:22.523Z",
+              "ts": "2026-02-26T07:41:59.473Z",
               "signature": "convert_repeated_successful_patterns_into_reusable_workflows._workflow_strategy_medium_speed_weight_:0.34_robustness_weight_:0.33_cost_weight_:0.33_feasibility_:0_risk_:0"
             },
             "parent_workflow_id": "wfc_66d331f4f9b95ac3",
@@ -267,7 +346,14 @@
                 "command": "node systems/autonomy/proposal_enricher.js run <date>",
                 "purpose": "specialize intake and directive normalization",
                 "timeout_ms": 120000,
-                "retries": 1
+                "retries": 1,
+                "adapter": null,
+                "provider": null,
+                "lane": null,
+                "risk": null,
+                "clearance": null,
+                "estimated_tokens": null,
+                "require_policy_root": false
               },
               {
                 "id": "execute_lane",
@@ -275,7 +361,14 @@
                 "command": "node systems/autonomy/autonomy_controller.js run <date>",
                 "purpose": "execute sub-workflow lane",
                 "timeout_ms": 180000,
-                "retries": 1
+                "retries": 1,
+                "adapter": null,
+                "provider": null,
+                "lane": null,
+                "risk": null,
+                "clearance": null,
+                "estimated_tokens": null,
+                "require_policy_root": false
               },
               {
                 "id": "verify",
@@ -283,7 +376,14 @@
                 "command": "node systems/autonomy/strategy_execute_guard.js run <date>",
                 "purpose": "verify lane safety and evidence",
                 "timeout_ms": 120000,
-                "retries": 0
+                "retries": 0,
+                "adapter": null,
+                "provider": null,
+                "lane": null,
+                "risk": null,
+                "clearance": null,
+                "estimated_tokens": null,
+                "require_policy_root": false
               },
               {
                 "id": "receipt",
@@ -291,11 +391,18 @@
                 "command": "state/autonomy/receipts/<date>.jsonl",
                 "purpose": "record lane receipt",
                 "timeout_ms": 30000,
-                "retries": 0
+                "retries": 0,
+                "adapter": null,
+                "provider": null,
+                "lane": null,
+                "risk": null,
+                "clearance": null,
+                "estimated_tokens": null,
+                "require_policy_root": false
               }
             ],
             "children": [],
-            "generated_at": "2026-02-26T02:43:22.697Z",
+            "generated_at": "2026-02-26T07:41:59.508Z",
             "metadata": {
               "generation_kind": "fractal_child",
               "parent_workflow_id": "wfc_66d331f4f9b95ac3",
@@ -309,7 +416,25 @@
               "value_currency": null,
               "value_priority_score": 0.6474,
               "fractal_effective_max_depth": 4,
-              "lane": "intake"
+              "lane": "intake",
+              "explicit_tradeoffs": {
+                "speed_weight": 0.3232,
+                "robustness_weight": 0.3632,
+                "cost_weight": 0.3137
+              },
+              "cost_profile": {
+                "estimated_tokens": 530,
+                "cost_weight": 0.3137,
+                "tier": "low"
+              },
+              "risk_profile": {
+                "level": "medium",
+                "max_risk_per_action": 65,
+                "allowed_risks": [
+                  "low",
+                  "medium"
+                ]
+              }
             }
           },
           {
@@ -340,8 +465,13 @@
                 "risk": 0,
                 "novelty": 0
               },
+              "risk_signals": {
+                "feasibility": 0,
+                "risk": 0,
+                "novelty": 0
+              },
               "source": "orchestron_adaptive_controller",
-              "ts": "2026-02-26T02:43:22.523Z",
+              "ts": "2026-02-26T07:41:59.473Z",
               "signature": "convert_repeated_successful_patterns_into_reusable_workflows._workflow_strategy_medium_speed_weight_:0.34_robustness_weight_:0.33_cost_weight_:0.33_feasibility_:0_risk_:0"
             },
             "parent_workflow_id": "wfc_66d331f4f9b95ac3",
@@ -370,7 +500,14 @@
                 "command": "node systems/autonomy/proposal_enricher.js run <date>",
                 "purpose": "specialize execution branch and fallback routing",
                 "timeout_ms": 120000,
-                "retries": 1
+                "retries": 1,
+                "adapter": null,
+                "provider": null,
+                "lane": null,
+                "risk": null,
+                "clearance": null,
+                "estimated_tokens": null,
+                "require_policy_root": false
               },
               {
                 "id": "execute_lane",
@@ -378,7 +515,14 @@
                 "command": "node systems/autonomy/autonomy_controller.js run <date>",
                 "purpose": "execute sub-workflow lane",
                 "timeout_ms": 180000,
-                "retries": 1
+                "retries": 1,
+                "adapter": null,
+                "provider": null,
+                "lane": null,
+                "risk": null,
+                "clearance": null,
+                "estimated_tokens": null,
+                "require_policy_root": false
               },
               {
                 "id": "verify",
@@ -386,7 +530,14 @@
                 "command": "node systems/autonomy/strategy_execute_guard.js run <date>",
                 "purpose": "verify lane safety and evidence",
                 "timeout_ms": 120000,
-                "retries": 0
+                "retries": 0,
+                "adapter": null,
+                "provider": null,
+                "lane": null,
+                "risk": null,
+                "clearance": null,
+                "estimated_tokens": null,
+                "require_policy_root": false
               },
               {
                 "id": "receipt",
@@ -394,11 +545,18 @@
                 "command": "state/autonomy/receipts/<date>.jsonl",
                 "purpose": "record lane receipt",
                 "timeout_ms": 30000,
-                "retries": 0
+                "retries": 0,
+                "adapter": null,
+                "provider": null,
+                "lane": null,
+                "risk": null,
+                "clearance": null,
+                "estimated_tokens": null,
+                "require_policy_root": false
               }
             ],
             "children": [],
-            "generated_at": "2026-02-26T02:43:22.697Z",
+            "generated_at": "2026-02-26T07:41:59.508Z",
             "metadata": {
               "generation_kind": "fractal_child",
               "parent_workflow_id": "wfc_66d331f4f9b95ac3",
@@ -412,7 +570,25 @@
               "value_currency": null,
               "value_priority_score": 0.6474,
               "fractal_effective_max_depth": 4,
-              "lane": "execution"
+              "lane": "execution",
+              "explicit_tradeoffs": {
+                "speed_weight": 0.3232,
+                "robustness_weight": 0.3632,
+                "cost_weight": 0.3137
+              },
+              "cost_profile": {
+                "estimated_tokens": 530,
+                "cost_weight": 0.3137,
+                "tier": "low"
+              },
+              "risk_profile": {
+                "level": "medium",
+                "max_risk_per_action": 65,
+                "allowed_risks": [
+                  "low",
+                  "medium"
+                ]
+              }
             }
           },
           {
@@ -443,8 +619,13 @@
                 "risk": 0,
                 "novelty": 0
               },
+              "risk_signals": {
+                "feasibility": 0,
+                "risk": 0,
+                "novelty": 0
+              },
               "source": "orchestron_adaptive_controller",
-              "ts": "2026-02-26T02:43:22.523Z",
+              "ts": "2026-02-26T07:41:59.473Z",
               "signature": "convert_repeated_successful_patterns_into_reusable_workflows._workflow_strategy_medium_speed_weight_:0.34_robustness_weight_:0.33_cost_weight_:0.33_feasibility_:0_risk_:0"
             },
             "parent_workflow_id": "wfc_66d331f4f9b95ac3",
@@ -473,7 +654,14 @@
                 "command": "node systems/autonomy/proposal_enricher.js run <date>",
                 "purpose": "specialize verification + receipt hardening",
                 "timeout_ms": 120000,
-                "retries": 1
+                "retries": 1,
+                "adapter": null,
+                "provider": null,
+                "lane": null,
+                "risk": null,
+                "clearance": null,
+                "estimated_tokens": null,
+                "require_policy_root": false
               },
               {
                 "id": "execute_lane",
@@ -481,7 +669,14 @@
                 "command": "node systems/autonomy/autonomy_controller.js run <date>",
                 "purpose": "execute sub-workflow lane",
                 "timeout_ms": 180000,
-                "retries": 1
+                "retries": 1,
+                "adapter": null,
+                "provider": null,
+                "lane": null,
+                "risk": null,
+                "clearance": null,
+                "estimated_tokens": null,
+                "require_policy_root": false
               },
               {
                 "id": "verify",
@@ -489,7 +684,14 @@
                 "command": "node systems/autonomy/strategy_execute_guard.js run <date>",
                 "purpose": "verify lane safety and evidence",
                 "timeout_ms": 120000,
-                "retries": 0
+                "retries": 0,
+                "adapter": null,
+                "provider": null,
+                "lane": null,
+                "risk": null,
+                "clearance": null,
+                "estimated_tokens": null,
+                "require_policy_root": false
               },
               {
                 "id": "receipt",
@@ -497,11 +699,18 @@
                 "command": "state/autonomy/receipts/<date>.jsonl",
                 "purpose": "record lane receipt",
                 "timeout_ms": 30000,
-                "retries": 0
+                "retries": 0,
+                "adapter": null,
+                "provider": null,
+                "lane": null,
+                "risk": null,
+                "clearance": null,
+                "estimated_tokens": null,
+                "require_policy_root": false
               }
             ],
             "children": [],
-            "generated_at": "2026-02-26T02:43:22.697Z",
+            "generated_at": "2026-02-26T07:41:59.508Z",
             "metadata": {
               "generation_kind": "fractal_child",
               "parent_workflow_id": "wfc_66d331f4f9b95ac3",
@@ -515,11 +724,29 @@
               "value_currency": null,
               "value_priority_score": 0.6474,
               "fractal_effective_max_depth": 4,
-              "lane": "verification"
+              "lane": "verification",
+              "explicit_tradeoffs": {
+                "speed_weight": 0.3232,
+                "robustness_weight": 0.3632,
+                "cost_weight": 0.3137
+              },
+              "cost_profile": {
+                "estimated_tokens": 530,
+                "cost_weight": 0.3137,
+                "tier": "low"
+              },
+              "risk_profile": {
+                "level": "medium",
+                "max_risk_per_action": 65,
+                "allowed_risks": [
+                  "low",
+                  "medium"
+                ]
+              }
             }
           }
         ],
-        "generated_at": "2026-02-26T02:43:22.697Z",
+        "generated_at": "2026-02-26T07:41:59.508Z",
         "metadata": {
           "generation_kind": "fractal_child",
           "parent_workflow_id": "wfc_741da59944a21dd3",
@@ -534,7 +761,25 @@
           "value_priority_score": 0.6474,
           "fractal_effective_max_depth": 4,
           "lane": "intake",
-          "fractal_children_count": 3
+          "fractal_children_count": 3,
+          "explicit_tradeoffs": {
+            "speed_weight": 0.3232,
+            "robustness_weight": 0.3632,
+            "cost_weight": 0.3137
+          },
+          "cost_profile": {
+            "estimated_tokens": 530,
+            "cost_weight": 0.3137,
+            "tier": "low"
+          },
+          "risk_profile": {
+            "level": "medium",
+            "max_risk_per_action": 65,
+            "allowed_risks": [
+              "low",
+              "medium"
+            ]
+          }
         }
       },
       {
@@ -565,8 +810,13 @@
             "risk": 0,
             "novelty": 0
           },
+          "risk_signals": {
+            "feasibility": 0,
+            "risk": 0,
+            "novelty": 0
+          },
           "source": "orchestron_adaptive_controller",
-          "ts": "2026-02-26T02:43:22.523Z",
+          "ts": "2026-02-26T07:41:59.473Z",
           "signature": "convert_repeated_successful_patterns_into_reusable_workflows._workflow_strategy_medium_speed_weight_:0.34_robustness_weight_:0.33_cost_weight_:0.33_feasibility_:0_risk_:0"
         },
         "parent_workflow_id": "wfc_741da59944a21dd3",
@@ -595,7 +845,14 @@
             "command": "node systems/autonomy/proposal_enricher.js run <date>",
             "purpose": "specialize execution branch and fallback routing",
             "timeout_ms": 120000,
-            "retries": 1
+            "retries": 1,
+            "adapter": null,
+            "provider": null,
+            "lane": null,
+            "risk": null,
+            "clearance": null,
+            "estimated_tokens": null,
+            "require_policy_root": false
           },
           {
             "id": "execute_lane",
@@ -603,7 +860,14 @@
             "command": "node systems/autonomy/autonomy_controller.js run <date>",
             "purpose": "execute sub-workflow lane",
             "timeout_ms": 180000,
-            "retries": 1
+            "retries": 1,
+            "adapter": null,
+            "provider": null,
+            "lane": null,
+            "risk": null,
+            "clearance": null,
+            "estimated_tokens": null,
+            "require_policy_root": false
           },
           {
             "id": "verify",
@@ -611,7 +875,14 @@
             "command": "node systems/autonomy/strategy_execute_guard.js run <date>",
             "purpose": "verify lane safety and evidence",
             "timeout_ms": 120000,
-            "retries": 0
+            "retries": 0,
+            "adapter": null,
+            "provider": null,
+            "lane": null,
+            "risk": null,
+            "clearance": null,
+            "estimated_tokens": null,
+            "require_policy_root": false
           },
           {
             "id": "receipt",
@@ -619,11 +890,18 @@
             "command": "state/autonomy/receipts/<date>.jsonl",
             "purpose": "record lane receipt",
             "timeout_ms": 30000,
-            "retries": 0
+            "retries": 0,
+            "adapter": null,
+            "provider": null,
+            "lane": null,
+            "risk": null,
+            "clearance": null,
+            "estimated_tokens": null,
+            "require_policy_root": false
           }
         ],
         "children": [],
-        "generated_at": "2026-02-26T02:43:22.697Z",
+        "generated_at": "2026-02-26T07:41:59.508Z",
         "metadata": {
           "generation_kind": "fractal_child",
           "parent_workflow_id": "wfc_741da59944a21dd3",
@@ -637,7 +915,25 @@
           "value_currency": null,
           "value_priority_score": 0.6474,
           "fractal_effective_max_depth": 4,
-          "lane": "execution"
+          "lane": "execution",
+          "explicit_tradeoffs": {
+            "speed_weight": 0.3232,
+            "robustness_weight": 0.3632,
+            "cost_weight": 0.3137
+          },
+          "cost_profile": {
+            "estimated_tokens": 530,
+            "cost_weight": 0.3137,
+            "tier": "low"
+          },
+          "risk_profile": {
+            "level": "medium",
+            "max_risk_per_action": 65,
+            "allowed_risks": [
+              "low",
+              "medium"
+            ]
+          }
         }
       },
       {
@@ -668,8 +964,13 @@
             "risk": 0,
             "novelty": 0
           },
+          "risk_signals": {
+            "feasibility": 0,
+            "risk": 0,
+            "novelty": 0
+          },
           "source": "orchestron_adaptive_controller",
-          "ts": "2026-02-26T02:43:22.523Z",
+          "ts": "2026-02-26T07:41:59.473Z",
           "signature": "convert_repeated_successful_patterns_into_reusable_workflows._workflow_strategy_medium_speed_weight_:0.34_robustness_weight_:0.33_cost_weight_:0.33_feasibility_:0_risk_:0"
         },
         "parent_workflow_id": "wfc_741da59944a21dd3",
@@ -698,7 +999,14 @@
             "command": "node systems/autonomy/proposal_enricher.js run <date>",
             "purpose": "specialize verification + receipt hardening",
             "timeout_ms": 120000,
-            "retries": 1
+            "retries": 1,
+            "adapter": null,
+            "provider": null,
+            "lane": null,
+            "risk": null,
+            "clearance": null,
+            "estimated_tokens": null,
+            "require_policy_root": false
           },
           {
             "id": "execute_lane",
@@ -706,7 +1014,14 @@
             "command": "node systems/autonomy/autonomy_controller.js run <date>",
             "purpose": "execute sub-workflow lane",
             "timeout_ms": 180000,
-            "retries": 1
+            "retries": 1,
+            "adapter": null,
+            "provider": null,
+            "lane": null,
+            "risk": null,
+            "clearance": null,
+            "estimated_tokens": null,
+            "require_policy_root": false
           },
           {
             "id": "verify",
@@ -714,7 +1029,14 @@
             "command": "node systems/autonomy/strategy_execute_guard.js run <date>",
             "purpose": "verify lane safety and evidence",
             "timeout_ms": 120000,
-            "retries": 0
+            "retries": 0,
+            "adapter": null,
+            "provider": null,
+            "lane": null,
+            "risk": null,
+            "clearance": null,
+            "estimated_tokens": null,
+            "require_policy_root": false
           },
           {
             "id": "receipt",
@@ -722,11 +1044,18 @@
             "command": "state/autonomy/receipts/<date>.jsonl",
             "purpose": "record lane receipt",
             "timeout_ms": 30000,
-            "retries": 0
+            "retries": 0,
+            "adapter": null,
+            "provider": null,
+            "lane": null,
+            "risk": null,
+            "clearance": null,
+            "estimated_tokens": null,
+            "require_policy_root": false
           }
         ],
         "children": [],
-        "generated_at": "2026-02-26T02:43:22.697Z",
+        "generated_at": "2026-02-26T07:41:59.508Z",
         "metadata": {
           "generation_kind": "fractal_child",
           "parent_workflow_id": "wfc_741da59944a21dd3",
@@ -740,11 +1069,29 @@
           "value_currency": null,
           "value_priority_score": 0.6474,
           "fractal_effective_max_depth": 4,
-          "lane": "verification"
+          "lane": "verification",
+          "explicit_tradeoffs": {
+            "speed_weight": 0.3232,
+            "robustness_weight": 0.3632,
+            "cost_weight": 0.3137
+          },
+          "cost_profile": {
+            "estimated_tokens": 530,
+            "cost_weight": 0.3137,
+            "tier": "low"
+          },
+          "risk_profile": {
+            "level": "medium",
+            "max_risk_per_action": 65,
+            "allowed_risks": [
+              "low",
+              "medium"
+            ]
+          }
         }
       }
     ],
-    "generated_at": "2026-02-26T02:43:22.697Z",
+    "generated_at": "2026-02-26T07:41:59.508Z",
     "metadata": {
       "generation_kind": "mutation",
       "priority": 0.5492,
@@ -759,7 +1106,25 @@
       "value_currency": null,
       "value_priority_score": 0.6782,
       "fractal_effective_max_depth": 4,
-      "fractal_children_count": 3
+      "fractal_children_count": 3,
+      "explicit_tradeoffs": {
+        "speed_weight": 0.3232,
+        "robustness_weight": 0.3632,
+        "cost_weight": 0.3137
+      },
+      "cost_profile": {
+        "estimated_tokens": 688,
+        "cost_weight": 0.3137,
+        "tier": "low"
+      },
+      "risk_profile": {
+        "level": "medium",
+        "max_risk_per_action": 65,
+        "allowed_risks": [
+          "low",
+          "medium"
+        ]
+      }
     }
   }
 }

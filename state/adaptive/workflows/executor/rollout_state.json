@@ -1,10 +1,10 @@
 {
   "schema_id": "workflow_executor_rollout_state",
   "schema_version": "1.0",
-  "updated_at": "2026-02-26T02:45:38.157Z",
+  "updated_at": "2026-02-26T04:32:18.655Z",
   "stage": "canary",
   "canary_fraction": 0.05,
-  "consecutive_green": 1,
+  "consecutive_green": 2,
   "consecutive_red": 0,
   "last_slo_pass": true,
   "last_scale_action": null

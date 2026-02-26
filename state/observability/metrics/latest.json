@@ -1,0 +1,199 @@
+{
+  "ok": true,
+  "type": "observability_metrics_exporter",
+  "ts": "2026-02-26T04:32:39.106Z",
+  "date": "2026-02-26",
+  "window": "daily",
+  "policy_path": "/Users/jay/.openclaw/workspace/config/observability_policy.json",
+  "policy_version": "1.0",
+  "write_enabled": true,
+  "health_report_found": true,
+  "health_report_path": "state/autonomy/health_reports/2026-02-26.daily.json",
+  "workflow_executor_path": "state/adaptive/workflows/executor/latest.json",
+  "ci_baseline_path": "state/ops/ci_baseline_streak.json",
+  "metrics_count": 15,
+  "output": {
+    "prometheus_path": "state/observability/prometheus/current.prom",
+    "snapshot_path": "state/observability/metrics/latest.json",
+    "history_path": "state/observability/metrics/history.jsonl"
+  },
+  "metrics_preview": [
+    {
+      "name": "protheus_health_slo_level",
+      "value": 1,
+      "labels": {
+        "window": "daily"
+      }
+    },
+    {
+      "name": "protheus_health_slo_warn_count",
+      "value": 1,
+      "labels": {
+        "window": "daily"
+      }
+    },
+    {
+      "name": "protheus_health_slo_critical_count",
+      "value": 0,
+      "labels": {
+        "window": "daily"
+      }
+    },
+    {
+      "name": "protheus_health_slo_failed_checks_total",
+      "value": 1,
+      "labels": {
+        "window": "daily"
+      }
+    },
+    {
+      "name": "protheus_health_verification_pass_rate",
+      "value": 1,
+      "labels": {
+        "window": "daily"
+      }
+    },
+    {
+      "name": "protheus_branch_queue_open_count",
+      "value": 5,
+      "labels": {
+        "window": "daily"
+      }
+    },
+    {
+      "name": "protheus_branch_policy_holds_count",
+      "value": 0,
+      "labels": {
+        "window": "daily"
+      }
+    },
+    {
+      "name": "protheus_observed_autonomy_runs",
+      "value": 2,
+      "labels": {
+        "window": "daily"
+      }
+    }
+  ],
+  "warnings": [],
+  "metrics": [
+    {
+      "name": "protheus_health_slo_level",
+      "help": "SLO alert level (ok=0,warn=1,critical=2,unknown=-1).",
+      "type": "gauge",
+      "value": 1,
+      "labels": {
+        "window": "daily"
+      }
+    },
+    {
+      "name": "protheus_health_slo_warn_count",
+      "help": "Count of SLO checks at warn level.",
+      "type": "gauge",
+      "value": 1,
+      "labels": {
+        "window": "daily"
+      }
+    },
+    {
+      "name": "protheus_health_slo_critical_count",
+      "help": "Count of SLO checks at critical level.",
+      "type": "gauge",
+      "value": 0,
+      "labels": {
+        "window": "daily"
+      }
+    },
+    {
+      "name": "protheus_health_slo_failed_checks_total",
+      "help": "Count of failed SLO checks in selected window.",
+      "type": "gauge",
+      "value": 1,
+      "labels": {
+        "window": "daily"
+      }
+    },
+    {
+      "name": "protheus_health_verification_pass_rate",
+      "help": "Receipt verification pass rate from autonomy health checks.",
+      "type": "gauge",
+      "value": 1,
+      "labels": {
+        "window": "daily"
+      }
+    },
+    {
+      "name": "protheus_branch_queue_open_count",
+      "help": "Current queue open count from branch health snapshot.",
+      "type": "gauge",
+      "value": 5,
+      "labels": {
+        "window": "daily"
+      }
+    },
+    {
+      "name": "protheus_branch_policy_holds_count",
+      "help": "Current policy hold count from branch health snapshot.",
+      "type": "gauge",
+      "value": 0,
+      "labels": {
+        "window": "daily"
+      }
+    },
+    {
+      "name": "protheus_observed_autonomy_runs",
+      "help": "Observed autonomy runs in selected health window.",
+      "type": "gauge",
+      "value": 2,
+      "labels": {
+        "window": "daily"
+      }
+    },
+    {
+      "name": "protheus_workflow_executor_slo_pass",
+      "help": "Workflow executor SLO pass flag (1=pass,0=fail).",
+      "type": "gauge",
+      "value": 1
+    },
+    {
+      "name": "protheus_workflow_executor_execution_success_rate",
+      "help": "Workflow executor measured execution success rate.",
+      "type": "gauge",
+      "value": 1
+    },
+    {
+      "name": "protheus_workflow_executor_queue_drain_rate",
+      "help": "Workflow executor measured queue drain rate.",
+      "type": "gauge",
+      "value": 1
+    },
+    {
+      "name": "protheus_ci_baseline_streak_days",
+      "help": "Current consecutive daily green CI streak.",
+      "type": "gauge",
+      "value": 1
+    },
+    {
+      "name": "protheus_ci_baseline_target_days",
+      "help": "Target daily green CI streak length.",
+      "type": "gauge",
+      "value": 7
+    },
+    {
+      "name": "protheus_ci_baseline_streak_ratio",
+      "help": "CI streak ratio against target streak.",
+      "type": "gauge",
+      "value": 0.14285714285714285
+    },
+    {
+      "name": "protheus_observability_snapshot_timestamp_seconds",
+      "help": "Unix timestamp of observability metrics snapshot.",
+      "type": "gauge",
+      "value": 1772080359,
+      "labels": {
+        "date": "2026-02-26",
+        "window": "daily"
+      }
+    }
+  ]
+}

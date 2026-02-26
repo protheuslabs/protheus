@@ -1,12 +1,12 @@
 {
-  "active_regime": "exploration",
-  "active_since": "2026-02-26T00:06:32.833Z",
-  "last_switch_ts": "2026-02-26T00:06:32.833Z",
-  "cooldown_until": "2026-02-26T02:06:32.833Z",
-  "last_candidate_regime": "exploration",
-  "last_candidate_score": 0.76725,
-  "last_candidate_confidence": 0.918455,
-  "last_selected_score": 0.76725,
-  "last_reason": "initial_assignment",
-  "last_updated": "2026-02-26T00:06:32.842Z"
+  "active_regime": "constrained_budget",
+  "active_since": "2026-02-26T04:32:44.341Z",
+  "last_switch_ts": "2026-02-26T04:32:44.341Z",
+  "cooldown_until": "2026-02-26T06:32:44.341Z",
+  "last_candidate_regime": "constrained_budget",
+  "last_candidate_score": 0.7125,
+  "last_candidate_confidence": 0.790175,
+  "last_selected_score": 0.7125,
+  "last_reason": "switch_conditions_met",
+  "last_updated": "2026-02-26T04:32:44.348Z"
 }
