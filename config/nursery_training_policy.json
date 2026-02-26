@@ -58,6 +58,7 @@
   },
   "training_conduit": {
     "metadata_strict": true,
+    "trainability_strict": true,
     "owner_id": "",
     "owner_type": "human_operator",
     "license_id": "",

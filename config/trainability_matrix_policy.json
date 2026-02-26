@@ -1,0 +1,37 @@
+{
+  "version": "1.0",
+  "default_allow": false,
+  "require_consent_granted": true,
+  "provider_rules": {
+    "internal": {
+      "allow": true,
+      "allowed_license_ids": [
+        "internal_protheus"
+      ],
+      "allowed_consent_modes": [
+        "operator_policy",
+        "internal_system",
+        "explicit_opt_in"
+      ],
+      "note": "Internal first-party data retained by local operator policy."
+    },
+    "openai": {
+      "allow": false,
+      "allowed_license_ids": [],
+      "allowed_consent_modes": [],
+      "note": "Third-party terms review required."
+    },
+    "anthropic": {
+      "allow": false,
+      "allowed_license_ids": [],
+      "allowed_consent_modes": [],
+      "note": "Third-party terms review required."
+    },
+    "google": {
+      "allow": false,
+      "allowed_license_ids": [],
+      "allowed_consent_modes": [],
+      "note": "Third-party terms review required."
+    }
+  }
+}

@@ -20,6 +20,10 @@ const {
   buildTrainingConduitMetadata,
   validateTrainingConduitMetadata
 } = require('../../lib/training_conduit_schema');
+const {
+  loadTrainabilityMatrixPolicy,
+  evaluateTrainingDatumTrainability
+} = require('../../lib/trainability_matrix');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const POLICY_PATH = process.env.NURSERY_TRAINING_POLICY_PATH
@@ -217,6 +221,7 @@ function defaultPolicy() {
     },
     training_conduit: {
       metadata_strict: true,
+      trainability_strict: true,
       owner_id: '',
       owner_type: 'human_operator',
       license_id: '',
@@ -292,6 +297,10 @@ function loadPolicy(policyPath = POLICY_PATH) {
         src.training_conduit && src.training_conduit.metadata_strict,
         base.training_conduit.metadata_strict
       ),
+      trainability_strict: toBool(
+        src.training_conduit && src.training_conduit.trainability_strict,
+        base.training_conduit.trainability_strict
+      ),
       owner_id: normalizeToken(
         src.training_conduit && src.training_conduit.owner_id,
         120
@@ -334,6 +343,7 @@ function listTrainingRows(dateStr, days, policy) {
   const dates = windowDates(dateStr, days);
   const includeOutcomes = new Set(policy.curation.include_outcomes || []);
   const conduitPolicy = loadTrainingConduitPolicy();
+  const trainabilityPolicy = loadTrainabilityMatrixPolicy();
   const conduitCfg = policy.training_conduit && typeof policy.training_conduit === 'object'
     ? policy.training_conduit
     : defaultPolicy().training_conduit;
@@ -379,6 +389,10 @@ function listTrainingRows(dateStr, days, policy) {
       if (conduitCfg.metadata_strict === true && conduitValidation.ok !== true) {
         continue;
       }
+      const trainability = evaluateTrainingDatumTrainability(conduit, trainabilityPolicy);
+      if (conduitCfg.trainability_strict === true && trainability.allow !== true) {
+        continue;
+      }
       rows.push({
         ts: normalizeText(row.ts || '', 64) || null,
         objective_id: objectiveId,
@@ -387,7 +401,8 @@ function listTrainingRows(dateStr, days, policy) {
         risk: normalizeToken(row.risk || 'low', 24) || 'low',
         value_currency: valueCurrency,
         label: outcome === 'shipped' ? 1 : (outcome === 'reverted' ? -1 : 0),
-        training_conduit: conduit
+        training_conduit: conduit,
+        trainability
       });
     }
   }

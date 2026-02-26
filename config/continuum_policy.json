@@ -106,6 +106,7 @@
     "path": "state/nursery/training/continuum_queue.jsonl",
     "max_rows_per_pulse": 6,
     "metadata_strict": true,
+    "trainability_strict": true,
     "owner_id": "",
     "owner_type": "human_operator",
     "license_id": "",

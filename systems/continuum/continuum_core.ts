@@ -31,6 +31,10 @@ const {
   buildTrainingConduitMetadata,
   validateTrainingConduitMetadata
 } = require('../../lib/training_conduit_schema');
+const {
+  loadTrainabilityMatrixPolicy,
+  evaluateTrainingDatumTrainability
+} = require('../../lib/trainability_matrix');
 let decideBrainRoute = null;
 try {
   ({ decideBrainRoute } = require('../dual_brain/coordinator.js'));
@@ -339,6 +343,7 @@ function defaultPolicy() {
       path: relPath(DEFAULT_TRAINING_QUEUE_PATH),
       max_rows_per_pulse: 6,
       metadata_strict: true,
+      trainability_strict: true,
       owner_id: '',
       owner_type: 'human_operator',
       license_id: '',
@@ -448,6 +453,7 @@ function loadPolicy(policyPath: string) {
       path: cleanText(trainingQueue.path || base.training_queue.path, 260) || relPath(DEFAULT_TRAINING_QUEUE_PATH),
       max_rows_per_pulse: clampInt(trainingQueue.max_rows_per_pulse, 1, 128, base.training_queue.max_rows_per_pulse),
       metadata_strict: toBool(trainingQueue.metadata_strict, base.training_queue.metadata_strict),
+      trainability_strict: toBool(trainingQueue.trainability_strict, base.training_queue.trainability_strict),
       owner_id: normalizeToken(trainingQueue.owner_id || base.training_queue.owner_id, 120),
       owner_type: normalizeToken(trainingQueue.owner_type || base.training_queue.owner_type, 80) || base.training_queue.owner_type,
       license_id: normalizeToken(trainingQueue.license_id || base.training_queue.license_id, 160),
@@ -1122,9 +1128,12 @@ function appendTrainingQueue(paths: AnyObj, policy: AnyObj, pulse: AnyObj, maxRo
     ? policy.training_queue
     : {};
   const strict = queueCfg.metadata_strict === true;
+  const trainabilityStrict = queueCfg.trainability_strict === true;
   const sourcePath = relPath(queuePath);
+  const trainabilityPolicy = loadTrainabilityMatrixPolicy();
   const rows = [];
   let metadataRejected = 0;
+  let trainabilityRejected = 0;
   const base = {
     ts: nowIso(),
     type: 'continuum_training_signal',
@@ -1153,9 +1162,15 @@ function appendTrainingQueue(paths: AnyObj, policy: AnyObj, pulse: AnyObj, maxRo
       metadataRejected += 1;
       continue;
     }
+    const trainability = evaluateTrainingDatumTrainability(conduit, trainabilityPolicy);
+    if (trainabilityStrict && trainability.allow !== true) {
+      trainabilityRejected += 1;
+      continue;
+    }
     rows.push({
       ...row,
-      training_conduit: conduit
+      training_conduit: conduit,
+      trainability
     });
   }
   for (const action of Array.isArray(pulse.actions) ? pulse.actions : []) {
@@ -1180,9 +1195,15 @@ function appendTrainingQueue(paths: AnyObj, policy: AnyObj, pulse: AnyObj, maxRo
       metadataRejected += 1;
       continue;
     }
+    const trainability = evaluateTrainingDatumTrainability(conduit, trainabilityPolicy);
+    if (trainabilityStrict && trainability.allow !== true) {
+      trainabilityRejected += 1;
+      continue;
+    }
     rows.push({
       ...row,
-      training_conduit: conduit
+      training_conduit: conduit,
+      trainability
     });
   }
   const capped = rows.slice(0, Math.max(1, Math.min(256, maxRows)));
@@ -1191,7 +1212,8 @@ function appendTrainingQueue(paths: AnyObj, policy: AnyObj, pulse: AnyObj, maxRo
     enabled: true,
     appended: capped.length,
     path: relPath(queuePath),
-    metadata_rejected: metadataRejected
+    metadata_rejected: metadataRejected,
+    trainability_rejected: trainabilityRejected
   };
 }
 

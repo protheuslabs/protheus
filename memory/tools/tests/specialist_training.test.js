@@ -156,6 +156,8 @@ function runTest() {
       true,
       'training conduit metadata should validate'
     );
+    assert.ok(firstDatasetRow.trainability, 'dataset rows should include trainability decision');
+    assert.strictEqual(firstDatasetRow.trainability.allow, true, 'internal curated rows should be trainable by default matrix');
 
     r = run(['plan', '--profile=small', '--seed=tinyllama_seed'], env);
     assert.strictEqual(r.status, 0, `plan should pass: ${r.stderr}`);

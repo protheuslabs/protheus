@@ -162,6 +162,8 @@ function run() {
   assert.ok(firstTrainingRow.training_conduit.retention, 'training conduit should include retention metadata');
   assert.ok(firstTrainingRow.training_conduit.delete, 'training conduit should include delete metadata');
   assert.strictEqual(firstTrainingRow.training_conduit.validation.ok, true, 'training conduit metadata should validate');
+  assert.ok(firstTrainingRow.trainability, 'training row should include trainability decision');
+  assert.strictEqual(firstTrainingRow.trainability.allow, true, 'internal training rows should be trainable by default policy');
 
   const statusProc = spawnSync(process.execPath, [
     scriptPath,
