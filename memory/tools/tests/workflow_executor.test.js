@@ -249,6 +249,50 @@ function run() {
   assert.ok(failOut && failOut.ok === true, 'fail run output should be ok');
   assert.strictEqual(Number(failOut.workflows_failed || 0), 1, 'expected one failed workflow');
   assert.strictEqual(Number(failOut.workflows_blocked || 0), 1, 'gate failure should count as blocked');
+  assert.strictEqual(Number(failOut.unhandled_failures || 0), 0, 'gate-blocked failures should not count as unhandled');
+
+  const unhandledWorkflow = {
+    id: 'wf_unhandled',
+    name: 'Unhandled Workflow',
+    status: 'active',
+    source: 'test',
+    updated_at: '2026-02-25T00:00:00.000Z',
+    steps: [
+      {
+        id: 'fails_without_rollback',
+        type: 'command',
+        command: `${shellQuote(process.execPath)} -e ${shellQuote('process.exit(11)')}`,
+        retries: 0,
+        timeout_ms: 30000
+      }
+    ]
+  };
+  writeJson(registryPath, {
+    version: '1.0',
+    updated_at: null,
+    generated_at: null,
+    workflows: [unhandledWorkflow]
+  });
+  const unhandledRun = spawnSync(process.execPath, [
+    scriptPath,
+    'run',
+    dateStr,
+    '--max=1',
+    '--continue-on-error=1',
+    '--dry-run=0',
+    '--runtime-mutation=0',
+    '--enforce-eligibility=0'
+  ], {
+    cwd: root,
+    encoding: 'utf8',
+    env
+  });
+  assert.strictEqual(unhandledRun.status, 0, unhandledRun.stderr || 'unhandled run should return payload');
+  const unhandledOut = parsePayload(unhandledRun.stdout);
+  assert.ok(unhandledOut && unhandledOut.ok === true, 'unhandled run output should be ok');
+  assert.strictEqual(Number(unhandledOut.workflows_failed || 0), 1, 'unhandled run should fail once');
+  assert.strictEqual(Number(unhandledOut.workflows_blocked || 0), 0, 'command failure should not be gate-blocked');
+  assert.strictEqual(Number(unhandledOut.unhandled_failures || 0), 1, 'unrecovered command failure should count as unhandled');
 
   const mutatingWorkflow = {
     id: 'wf_mutation_retry',
@@ -302,6 +346,7 @@ function run() {
   assert.ok(mutationOut && mutationOut.ok === true, 'mutation run output should be ok');
   assert.strictEqual(Number(mutationOut.workflows_succeeded || 0), 1, 'mutation workflow should succeed after runtime retry tuning');
   assert.ok(Number(mutationOut.runtime_mutations_applied || 0) >= 1, 'runtime mutation should be applied');
+  assert.strictEqual(Number(mutationOut.unhandled_failures || 0), 0, 'successful mutation run should have no unhandled failures');
 
   const mutationRunPayload = JSON.parse(fs.readFileSync(runPath, 'utf8'));
   assert.ok(Number(mutationRunPayload.runtime_mutations_applied || 0) >= 1, 'run snapshot should record mutation apply');

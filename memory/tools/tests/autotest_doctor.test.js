@@ -52,6 +52,7 @@ function run() {
   const policyPath = path.join(tmp, 'config', 'autotest_doctor_policy.json');
   const strictPolicyPath = path.join(tmp, 'config', 'autotest_doctor_kill_policy.json');
   const rollbackPolicyPath = path.join(tmp, 'config', 'autotest_doctor_rollback_policy.json');
+  const unknownRoutePolicyPath = path.join(tmp, 'config', 'autotest_doctor_unknown_route_policy.json');
   const rollbackStateDir = path.join(tmp, 'state', 'ops', 'autotest_doctor_rollback');
   const destructiveStateDir = path.join(tmp, 'state', 'ops', 'autotest_doctor_destructive');
 
@@ -167,6 +168,37 @@ function run() {
     }
   });
 
+  writeJson(unknownRoutePolicyPath, {
+    version: '1.0-test-unknown-route',
+    enabled: true,
+    shadow_mode: true,
+    sleep_window_local: { enabled: false, start_hour: 0, end_hour: 7 },
+    gating: {
+      min_consecutive_failures: 1,
+      max_actions_per_run: 3,
+      cooldown_sec_per_signature: 0,
+      max_repairs_per_signature_per_day: 5
+    },
+    kill_switch: {
+      enabled: true,
+      window_hours: 24,
+      max_unknown_signatures_per_window: 10,
+      max_suspicious_signatures_per_window: 10,
+      max_repairs_per_window: 50,
+      max_rollbacks_per_window: 50,
+      max_same_signature_repairs_per_window: 20,
+      auto_reset_hours: 0
+    },
+    recipes: [
+      {
+        id: 'only_guard_recover',
+        enabled: true,
+        applies_to: ['guard_blocked'],
+        steps: ['autotest_sync']
+      }
+    ]
+  });
+
   writeJson(autotestLatestPath, {
     ok: true,
     type: 'autotest_report',
@@ -265,6 +297,44 @@ function run() {
   const resetOut = parsePayload(resetProc.stdout);
   assert.strictEqual(resetOut.ok, true);
   assert.strictEqual(!!(resetOut.kill_switch && resetOut.kill_switch.engaged === true), true, 'strict policy should re-engage kill switch after reset due same suspicious input');
+
+  // Unknown signatures must route to research queue (no silent drops).
+  writeJsonl(path.join(autotestRunsDir, `${dateStr}.jsonl`), [
+    {
+      ok: true,
+      type: 'autotest_run',
+      ts: `${dateStr}T10:07:00.000Z`,
+      selected_tests: 1,
+      failed: 1,
+      guard_blocked: 0,
+      results: [
+        {
+          id: 'tst_unknown_recipe_kind',
+          command: 'node memory/tools/tests/autotest_doctor.test.js',
+          guard_ok: true,
+          ok: false,
+          exit_code: 13,
+          stderr_excerpt: 'unknown route capture probe',
+          stdout_excerpt: '',
+          guard_files: ['systems/ops/autotest_doctor.ts']
+        }
+      ]
+    }
+  ]);
+  const unknownRouteProc = runNode(
+    scriptPath,
+    ['run', dateStr, `--policy=${unknownRoutePolicyPath}`, '--apply=0', '--reset-kill-switch=1', '--force=1'],
+    env,
+    root
+  );
+  assert.strictEqual(unknownRouteProc.status, 0, unknownRouteProc.stderr || 'unknown-route run should pass');
+  const unknownRouteOut = parsePayload(unknownRouteProc.stdout);
+  assert.strictEqual(unknownRouteOut.ok, true);
+  assert.strictEqual(Number(unknownRouteOut.unknown_signature_count || 0), 1, 'unknown signature count should increment');
+  assert.strictEqual(Number(unknownRouteOut.unknown_signature_routes || 0), 1, 'unknown signature should route to research');
+  assert.ok(Array.isArray(unknownRouteOut.unknown_signature_route_paths) && unknownRouteOut.unknown_signature_route_paths.length >= 1, 'unknown route path should be reported');
+  const unknownRouteAbs = path.resolve(root, String(unknownRouteOut.unknown_signature_route_paths[0]));
+  assert.ok(fs.existsSync(unknownRouteAbs), 'unknown-signature research artifact should exist');
 
   // Rollback + forensic bundle path: trusted but missing test file should fail repair and archive broken piece.
   writeJsonl(path.join(autotestRunsDir, `${dateStr}.jsonl`), [
