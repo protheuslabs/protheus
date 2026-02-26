@@ -2590,13 +2590,19 @@ function main() {
       const workflowDays = Math.max(1, Number(process.env.SPINE_WORKFLOW_LAYER_DAYS || 14) || 14);
       const workflowMax = Math.max(1, Number(process.env.SPINE_WORKFLOW_LAYER_MAX || 8) || 8);
       const workflowApply = String(process.env.SPINE_WORKFLOW_LAYER_APPLY || "1") !== "0" ? "1" : "0";
+      const workflowOrchestronEnabled = String(process.env.SPINE_WORKFLOW_ORCHESTRON_ENABLED || "1") !== "0" ? "1" : "0";
+      const workflowOrchestronApply = String(process.env.SPINE_WORKFLOW_ORCHESTRON_APPLY || "0") !== "0" ? "1" : "0";
+      const workflowOrchestronAuto = String(process.env.SPINE_WORKFLOW_ORCHESTRON_AUTO || "1") !== "0" ? "1" : "0";
       const workflow = runJson("node", [
         "systems/workflow/orchestron_controller.js",
         "run",
         dateStr,
         `--days=${workflowDays}`,
         `--max=${workflowMax}`,
-        `--apply=${workflowApply}`
+        `--apply=${workflowApply}`,
+        `--orchestron=${workflowOrchestronEnabled}`,
+        `--orchestron-apply=${workflowOrchestronApply}`,
+        `--orchestron-auto=${workflowOrchestronAuto}`
       ]);
       const payload = workflow.payload && typeof workflow.payload === "object"
         ? workflow.payload
@@ -2609,6 +2615,13 @@ function main() {
         ok: workflow.ok && !!payload && payload.ok === true,
         apply: payload ? payload.apply === true : null,
         drafts: payload ? Number(payload.drafts || 0) : null,
+        baseline_drafts: payload ? Number(payload.baseline_drafts || 0) : null,
+        orchestron_drafts: payload ? Number(payload.orchestron_drafts || 0) : null,
+        orchestron_promotable_drafts: payload ? Number(payload.orchestron_promotable_drafts || 0) : null,
+        orchestron_auto_enabled: payload ? payload.orchestron_auto_enabled === true : null,
+        orchestron_auto_pass: payload ? payload.orchestron_auto_pass === true : null,
+        orchestron_auto_reasons: payload ? payload.orchestron_auto_reasons || [] : [],
+        orchestron_apply_effective: payload ? payload.orchestron_apply_effective === true : null,
         applied: payload ? Number(payload.applied || 0) : null,
         updated: payload ? Number(payload.updated || 0) : null,
         registry_total: payload ? Number(payload.registry_total || 0) : null,
@@ -2620,6 +2633,7 @@ function main() {
       if (workflow.ok && payload && payload.ok === true) {
         console.log(
           ` workflow_layer drafts=${Number(payload.drafts || 0)}` +
+          ` auto=${payload.orchestron_auto_pass === true ? "pass" : "block"}` +
           ` applied=${Number(payload.applied || 0)}` +
           ` registry=${Number(payload.registry_total || 0)}`
         );
@@ -2640,11 +2654,12 @@ function main() {
     }
 
     // 0d2) optional workflow executor runtime (runs active workflow steps).
-    if (String(process.env.SPINE_WORKFLOW_EXECUTOR_ENABLED || "0") !== "0") {
+    if (String(process.env.SPINE_WORKFLOW_EXECUTOR_ENABLED || "1") !== "0") {
       const workflowExecMax = Math.max(1, Number(process.env.SPINE_WORKFLOW_EXECUTOR_MAX || 6) || 6);
       const workflowExecDryRun = String(process.env.SPINE_WORKFLOW_EXECUTOR_DRY_RUN || "0") !== "0" ? "1" : "0";
       const workflowExecContinue = String(process.env.SPINE_WORKFLOW_EXECUTOR_CONTINUE_ON_ERROR || "0") !== "0" ? "1" : "0";
       const workflowExecReceiptStrict = String(process.env.SPINE_WORKFLOW_EXECUTOR_RECEIPT_STRICT || "1") !== "0" ? "1" : "0";
+      const workflowExecEligibility = String(process.env.SPINE_WORKFLOW_EXECUTOR_ENFORCE_ELIGIBILITY || "1") !== "0" ? "1" : "0";
       const workflowExec = runJson("node", [
         "systems/workflow/workflow_executor.js",
         "run",
@@ -2652,7 +2667,8 @@ function main() {
         `--max=${workflowExecMax}`,
         `--dry-run=${workflowExecDryRun}`,
         `--continue-on-error=${workflowExecContinue}`,
-        `--receipt-strict=${workflowExecReceiptStrict}`
+        `--receipt-strict=${workflowExecReceiptStrict}`,
+        `--enforce-eligibility=${workflowExecEligibility}`
       ]);
       const payload = workflowExec.payload && typeof workflowExec.payload === "object"
         ? workflowExec.payload
@@ -2669,6 +2685,24 @@ function main() {
         workflows_succeeded: payload ? Number(payload.workflows_succeeded || 0) : null,
         workflows_failed: payload ? Number(payload.workflows_failed || 0) : null,
         workflows_blocked: payload ? Number(payload.workflows_blocked || 0) : null,
+        workflows_excluded: payload ? Number(payload.workflows_excluded || 0) : null,
+        rollout_stage: payload ? payload.rollout_stage || null : null,
+        rollout_canary_fraction: payload ? Number(payload.rollout_canary_fraction || 0) : null,
+        rollout_last_scale_action: payload && payload.rollout_state_after
+          ? payload.rollout_state_after.last_scale_action || null
+          : null,
+        execution_success_rate: payload && payload.slo && payload.slo.measured
+          ? Number(payload.slo.measured.execution_success_rate || 0)
+          : null,
+        queue_drain_rate: payload && payload.slo && payload.slo.measured
+          ? Number(payload.slo.measured.queue_drain_rate || 0)
+          : null,
+        time_to_first_execution_ms: payload && payload.slo && payload.slo.measured
+          ? payload.slo.measured.time_to_first_execution_ms
+          : null,
+        slo_pass: payload && payload.slo ? payload.slo.pass === true : null,
+        slo_window_pass: payload && payload.slo_window ? payload.slo_window.pass === true : null,
+        slo_window_sufficient_data: payload && payload.slo_window ? payload.slo_window.sufficient_data === true : null,
         run_path: payload ? payload.run_path || null : null,
         reason: (!workflowExec.ok || !payload || payload.ok !== true)
           ? String(workflowExec.stderr || workflowExec.stdout || `workflow_executor_exit_${workflowExec.code}`).slice(0, 180)
@@ -2678,7 +2712,9 @@ function main() {
         console.log(
           ` workflow_executor selected=${Number(payload.workflows_selected || 0)}` +
           ` executed=${Number(payload.workflows_executed || 0)}` +
-          ` failed=${Number(payload.workflows_failed || 0)}`
+          ` failed=${Number(payload.workflows_failed || 0)}` +
+          ` stage=${String(payload.rollout_stage || "unknown")}` +
+          ` slo=${payload.slo && payload.slo.pass === true ? "green" : "red"}`
         );
       } else {
         console.log(` workflow_executor unavailable reason=${String(workflowExec.stderr || workflowExec.stdout || "unknown").slice(0, 120)}`);
@@ -4344,8 +4380,67 @@ function main() {
       console.log(" backup_integrity skipped reason=feature_flag_disabled flag=STATE_BACKUP_INTEGRITY_ENABLED");
     }
 
-    // 6) external OpenClaw config backup retention (keep recent backups + archive older).
-    if (String(process.env.SPINE_OPENCLAW_BACKUP_RETENTION || "1") !== "0") {
+    // 6) centralized cleanup orchestrator (state churn + backup retention + optional cryonics).
+    const cleanupOrchestratorEnabled = String(process.env.SPINE_CLEANUP_ORCHESTRATOR_ENABLED || "1") !== "0";
+    if (cleanupOrchestratorEnabled) {
+      const cleanupProfile = String(process.env.SPINE_CLEANUP_ORCHESTRATOR_PROFILE || "spine_default").trim() || "spine_default";
+      const cleanupArgs = [
+        "systems/ops/cleanup_orchestrator.js",
+        "run",
+        `--profile=${cleanupProfile}`
+      ];
+      const cleanupApply = String(process.env.SPINE_CLEANUP_ORCHESTRATOR_APPLY || "1") !== "0";
+      const cleanupDryRun = String(process.env.SPINE_CLEANUP_ORCHESTRATOR_DRY_RUN || "0") === "1";
+      if (!cleanupApply) cleanupArgs.push("--apply=0");
+      if (cleanupDryRun) cleanupArgs.push("--dry-run=1");
+      if (String(process.env.CLEANUP_ORCHESTRATOR_POLICY_PATH || "").trim()) {
+        cleanupArgs.push(`--policy=${String(process.env.CLEANUP_ORCHESTRATOR_POLICY_PATH).trim()}`);
+      }
+      const cleanup = runJson("node", cleanupArgs);
+      const cleanupPayload = cleanup.payload && typeof cleanup.payload === "object" ? cleanup.payload : null;
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_cleanup_orchestrator",
+        mode,
+        date: dateStr,
+        ok: cleanup.ok && !!cleanupPayload && cleanupPayload.ok === true,
+        profile: cleanupPayload ? cleanupPayload.profile || cleanupProfile : cleanupProfile,
+        forced_dry_run: cleanupPayload ? cleanupPayload.forced_dry_run === true : null,
+        tasks_executed: cleanupPayload ? Number(cleanupPayload.tasks_executed || 0) : null,
+        tasks_failed: cleanupPayload ? Number(cleanupPayload.tasks_failed || 0) : null,
+        critical_failures: cleanupPayload ? Number(cleanupPayload.critical_failures || 0) : null,
+        state_deleted: cleanupPayload ? Number(cleanupPayload.state_deleted || 0) : null,
+        backups_moved: cleanupPayload ? Number(cleanupPayload.backups_moved || 0) : null,
+        cryonics_archived: cleanupPayload ? Number(cleanupPayload.cryonics_archived || 0) : null,
+        reason: (!cleanup.ok || !cleanupPayload || cleanupPayload.ok !== true)
+          ? String(cleanup.stderr || cleanup.stdout || `cleanup_orchestrator_exit_${cleanup.code}`).slice(0, 180)
+          : null
+      });
+      if (cleanup.ok && cleanupPayload && cleanupPayload.ok === true) {
+        console.log(
+          ` cleanup_orchestrator profile=${String(cleanupPayload.profile || cleanupProfile)}` +
+          ` tasks=${Number(cleanupPayload.tasks_executed || 0)}` +
+          ` failed=${Number(cleanupPayload.tasks_failed || 0)}` +
+          ` state_deleted=${Number(cleanupPayload.state_deleted || 0)}`
+        );
+      } else {
+        console.log(` cleanup_orchestrator unavailable reason=${String(cleanup.stderr || cleanup.stdout || "unknown").slice(0, 120)}`);
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_cleanup_orchestrator_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "SPINE_CLEANUP_ORCHESTRATOR_ENABLED",
+        flag_value: String(process.env.SPINE_CLEANUP_ORCHESTRATOR_ENABLED || "")
+      });
+      console.log(" cleanup_orchestrator skipped reason=feature_flag_disabled flag=SPINE_CLEANUP_ORCHESTRATOR_ENABLED");
+    }
+
+    // 6a) external OpenClaw config backup retention fallback path (legacy mode).
+    if (!cleanupOrchestratorEnabled && String(process.env.SPINE_OPENCLAW_BACKUP_RETENTION || "1") !== "0") {
       const retentionArgs = ["systems/ops/openclaw_backup_retention.js", "run"];
       if (String(process.env.OPENCLAW_BACKUP_ROOT || "").trim()) {
         retentionArgs.push(`--root=${String(process.env.OPENCLAW_BACKUP_ROOT).trim()}`);
@@ -4392,11 +4487,73 @@ function main() {
         type: "spine_openclaw_backup_retention_skipped",
         mode,
         date: dateStr,
-        reason: "feature_flag_disabled",
+        reason: cleanupOrchestratorEnabled ? "delegated_to_cleanup_orchestrator" : "feature_flag_disabled",
         flag: "SPINE_OPENCLAW_BACKUP_RETENTION",
         flag_value: String(process.env.SPINE_OPENCLAW_BACKUP_RETENTION || "")
       });
-      console.log(" openclaw_backup_retention skipped reason=feature_flag_disabled flag=SPINE_OPENCLAW_BACKUP_RETENTION");
+      console.log(
+        cleanupOrchestratorEnabled
+          ? " openclaw_backup_retention skipped reason=delegated_to_cleanup_orchestrator"
+          : " openclaw_backup_retention skipped reason=feature_flag_disabled flag=SPINE_OPENCLAW_BACKUP_RETENTION"
+      );
+    }
+
+    // 6b) runtime state cleanup fallback path (legacy mode).
+    if (!cleanupOrchestratorEnabled && String(process.env.SPINE_STATE_CLEANUP_ENABLED || "1") !== "0") {
+      const cleanupArgs = ["systems/ops/state_cleanup.js", "run"];
+      const cleanupProfile = String(process.env.SPINE_STATE_CLEANUP_PROFILE || "runtime_churn").trim() || "runtime_churn";
+      cleanupArgs.push(`--profile=${cleanupProfile}`);
+      if (String(process.env.SPINE_STATE_CLEANUP_MAX_DELETE || "").trim()) {
+        cleanupArgs.push(`--max-delete=${String(process.env.SPINE_STATE_CLEANUP_MAX_DELETE).trim()}`);
+      }
+      const cleanupApply = String(process.env.SPINE_STATE_CLEANUP_APPLY || "1") !== "0";
+      const cleanupDryRun = String(process.env.SPINE_STATE_CLEANUP_DRY_RUN || "0") === "1";
+      if (cleanupApply && !cleanupDryRun) cleanupArgs.push("--apply");
+      if (cleanupDryRun) cleanupArgs.push("--dry-run");
+      const cleanup = runJson("node", cleanupArgs);
+      const cleanupPayload = cleanup.payload && typeof cleanup.payload === "object" ? cleanup.payload : null;
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_state_cleanup",
+        mode,
+        date: dateStr,
+        ok: cleanup.ok && !!cleanupPayload && cleanupPayload.ok === true,
+        profile: cleanupPayload ? cleanupPayload.profile || cleanupProfile : cleanupProfile,
+        dry_run: cleanupPayload ? cleanupPayload.dry_run === true : null,
+        candidates: cleanupPayload && cleanupPayload.totals ? Number(cleanupPayload.totals.candidates || 0) : null,
+        selected: cleanupPayload && cleanupPayload.totals ? Number(cleanupPayload.totals.selected || 0) : null,
+        deleted: cleanupPayload && cleanupPayload.totals ? Number(cleanupPayload.totals.deleted || 0) : null,
+        protected_tracked: cleanupPayload && cleanupPayload.totals ? Number(cleanupPayload.totals.protected_tracked || 0) : null,
+        reason: (!cleanup.ok || !cleanupPayload || cleanupPayload.ok !== true)
+          ? String(cleanup.stderr || cleanup.stdout || `state_cleanup_exit_${cleanup.code}`).slice(0, 180)
+          : null
+      });
+      if (cleanup.ok && cleanupPayload && cleanupPayload.ok === true) {
+        console.log(
+          ` state_cleanup profile=${String(cleanupPayload.profile || cleanupProfile)}` +
+          ` deleted=${Number(cleanupPayload.totals && cleanupPayload.totals.deleted || 0)}` +
+          ` selected=${Number(cleanupPayload.totals && cleanupPayload.totals.selected || 0)}` +
+          ` candidates=${Number(cleanupPayload.totals && cleanupPayload.totals.candidates || 0)}` +
+          ` dry_run=${cleanupPayload.dry_run === true ? "1" : "0"}`
+        );
+      } else {
+        console.log(` state_cleanup unavailable reason=${String(cleanup.stderr || cleanup.stdout || "unknown").slice(0, 120)}`);
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_state_cleanup_skipped",
+        mode,
+        date: dateStr,
+        reason: cleanupOrchestratorEnabled ? "delegated_to_cleanup_orchestrator" : "feature_flag_disabled",
+        flag: "SPINE_STATE_CLEANUP_ENABLED",
+        flag_value: String(process.env.SPINE_STATE_CLEANUP_ENABLED || "")
+      });
+      console.log(
+        cleanupOrchestratorEnabled
+          ? " state_cleanup skipped reason=delegated_to_cleanup_orchestrator"
+          : " state_cleanup skipped reason=feature_flag_disabled flag=SPINE_STATE_CLEANUP_ENABLED"
+      );
     }
   }
 

@@ -36,6 +36,9 @@ function run() {
   const runsDir = path.join(tmp, 'state', 'adaptive', 'workflows', 'executor', 'runs');
   const historyPath = path.join(tmp, 'state', 'adaptive', 'workflows', 'executor', 'history.jsonl');
   const latestPath = path.join(tmp, 'state', 'adaptive', 'workflows', 'executor', 'latest.json');
+  const rolloutStatePath = path.join(tmp, 'state', 'adaptive', 'workflows', 'executor', 'rollout_state.json');
+  const stepReceiptsDir = path.join(tmp, 'state', 'adaptive', 'workflows', 'executor', 'step_receipts');
+  const mutationReceiptsDir = path.join(tmp, 'state', 'adaptive', 'workflows', 'executor', 'mutations');
   const toolsDir = path.join(tmp, 'tools');
   const writerScript = path.join(toolsDir, 'write_receipt.js');
   const failOnceScript = path.join(toolsDir, 'fail_once_then_pass.js');
@@ -150,6 +153,9 @@ function run() {
     WORKFLOW_EXECUTOR_RUNS_DIR: runsDir,
     WORKFLOW_EXECUTOR_HISTORY_PATH: historyPath,
     WORKFLOW_EXECUTOR_LATEST_PATH: latestPath,
+    WORKFLOW_EXECUTOR_ROLLOUT_STATE_PATH: rolloutStatePath,
+    WORKFLOW_EXECUTOR_STEP_RECEIPTS_DIR: stepReceiptsDir,
+    WORKFLOW_EXECUTOR_MUTATION_RECEIPTS_DIR: mutationReceiptsDir,
     WORKFLOW_EXECUTOR_CWD: tmp
   };
 
@@ -231,7 +237,8 @@ function run() {
     '--max=3',
     '--continue-on-error=1',
     '--dry-run=0',
-    '--runtime-mutation=0'
+    '--runtime-mutation=0',
+    '--enforce-eligibility=0'
   ], {
     cwd: root,
     encoding: 'utf8',
@@ -283,6 +290,7 @@ function run() {
     '--max=2',
     '--dry-run=0',
     '--runtime-mutation=1',
+    '--enforce-eligibility=0',
     `--policy=${mutationPolicyPath}`
   ], {
     cwd: root,

@@ -650,9 +650,11 @@ function runCmd(dateStr, args) {
   let nextWorkflows = registry.workflows;
 
   if (apply) {
+    const ignoreThresholdForApply = orchestronApplyEffective === true;
     const applied = applyDrafts(registry, generatedDrafts, policy, {
       date: dateStr,
-      identity_source: 'workflow_controller_run'
+      identity_source: 'workflow_controller_run',
+      ignore_threshold: ignoreThresholdForApply
     });
     nextWorkflows = applied.workflows;
     summary = {

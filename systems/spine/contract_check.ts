@@ -584,6 +584,12 @@ function main() {
     ["state_cleanup.js", "run", "profiles", "--apply", "--dry-run"]
   );
 
+  // cleanup_orchestrator.js coordinates cleanup crews and centralizes retention policy execution.
+  checkScript(
+    "systems/ops/cleanup_orchestrator.js",
+    ["cleanup_orchestrator.js", "run", "status", "profiles", "--profile", "--apply", "--dry-run", "--policy"]
+  );
+
   // blank_slate_reset.js performs reversible archive-based adaptive+memory resets with rollback.
   checkScript(
     "systems/ops/blank_slate_reset.js",

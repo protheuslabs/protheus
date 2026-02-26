@@ -1,5 +1,57 @@
 {
   "version": "1.0",
+  "execution_gate": {
+    "enabled": true,
+    "min_steps": 3,
+    "require_gate_step": true,
+    "require_receipt_step": true,
+    "require_concrete_commands": true,
+    "require_rollback_path": true,
+    "allow_policy_default_rollback": true,
+    "min_composite_score": 0.45,
+    "require_metrics_for_auto": false,
+    "blocked_command_tokens": [
+      "todo",
+      "placeholder",
+      "tbd"
+    ],
+    "placeholder_allowlist": [
+      "date",
+      "workflow_id",
+      "step_id",
+      "run_id",
+      "objective_id",
+      "eye_id",
+      "adapter"
+    ]
+  },
+  "failure_rollback": {
+    "enabled": true,
+    "default_command": "node systems/autonomy/strategy_execute_guard.js rollback <date>",
+    "timeout_ms": 120000,
+    "retries": 0
+  },
+  "rollout": {
+    "enabled": true,
+    "initial_stage": "canary",
+    "shadow_dry_run": true,
+    "canary_fraction": 0.15,
+    "canary_min_fraction": 0.05,
+    "canary_max_fraction": 0.6,
+    "scale_up_step": 0.1,
+    "scale_down_step": 0.1,
+    "min_consecutive_green_for_scale_up": 3,
+    "min_consecutive_red_for_scale_down": 1,
+    "promote_to_live_fraction": 0.6,
+    "demote_shadow_on_floor_breach": true
+  },
+  "slo": {
+    "min_execution_success_rate": 0.9,
+    "min_queue_drain_rate": 0.75,
+    "max_time_to_first_execution_ms": 180000,
+    "lookback_runs": 6,
+    "min_runs_for_decision": 3
+  },
   "runtime_mutation": {
     "enabled": true,
     "max_mutations_per_run": 8,
