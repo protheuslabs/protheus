@@ -169,6 +169,7 @@ function defaultPolicy() {
       workflow_executor_zero_selection_warn_streak: 2,
       execution_reliability_slo_path: 'state/ops/execution_reliability_slo.json',
       ci_baseline_guard_path: 'state/ops/ci_baseline_guard.json',
+      alert_transport_health_path: 'state/ops/alert_transport_health.json',
       rm_progress_dashboard_path: 'state/ops/rm_progress_dashboard.json',
       ci_baseline_streak_path: 'state/ops/ci_baseline_streak.json',
       output_prometheus_path: 'state/observability/prometheus/current.prom',
@@ -211,6 +212,10 @@ function loadPolicy(policyPathRaw: unknown) {
       ci_baseline_guard_path: resolvePath(
         src.ci_baseline_guard_path,
         base.metrics.ci_baseline_guard_path
+      ),
+      alert_transport_health_path: resolvePath(
+        src.alert_transport_health_path,
+        base.metrics.alert_transport_health_path
       ),
       rm_progress_dashboard_path: resolvePath(
         src.rm_progress_dashboard_path,
@@ -301,6 +306,7 @@ function buildMetrics(
   ciStreak: AnyObj,
   executionReliability: AnyObj,
   ciBaselineGuard: AnyObj,
+  alertTransportHealth: AnyObj,
   rmProgressDashboard: AnyObj,
   liveZeroSelectionStreak: number,
   liveZeroSelectionWarnStreak: number
@@ -329,6 +335,9 @@ function buildMetrics(
     : {};
   const rmStatus = rmProgressDashboard && rmProgressDashboard.status && typeof rmProgressDashboard.status === 'object'
     ? rmProgressDashboard.status
+    : {};
+  const alertRolling = alertTransportHealth && alertTransportHealth.rolling && typeof alertTransportHealth.rolling === 'object'
+    ? alertTransportHealth.rolling
     : {};
 
   const labels = { window };
@@ -463,6 +472,30 @@ function buildMetrics(
       value: ciGuardChecks.streak_target_met === true ? 1 : 0
     },
     {
+      name: 'protheus_alert_transport_health_pass',
+      help: 'Alert transport health pass flag (1=pass,0=fail).',
+      type: 'gauge',
+      value: alertTransportHealth && alertTransportHealth.pass === true ? 1 : 0
+    },
+    {
+      name: 'protheus_alert_transport_success_rate_30d',
+      help: 'Rolling 30-day alert transport delivery success rate.',
+      type: 'gauge',
+      value: asRatio(alertRolling.success_rate)
+    },
+    {
+      name: 'protheus_alert_transport_delivered_count_30d',
+      help: 'Rolling 30-day delivered synthetic probe count.',
+      type: 'gauge',
+      value: asNumber(alertRolling.delivered, 0)
+    },
+    {
+      name: 'protheus_alert_transport_failed_count_30d',
+      help: 'Rolling 30-day failed synthetic probe count.',
+      type: 'gauge',
+      value: asNumber(alertRolling.failed, 0)
+    },
+    {
       name: 'protheus_rm_progress_dashboard_all_pass',
       help: 'RM progress dashboard all-pass flag (1=pass,0=not_pass).',
       type: 'gauge',
@@ -529,6 +562,7 @@ function runSnapshot(policy: AnyObj, dateStr: string, window: string, writeEnabl
   );
   const executionReliability = readJson(policy.metrics.execution_reliability_slo_path, {});
   const ciBaselineGuard = readJson(policy.metrics.ci_baseline_guard_path, {});
+  const alertTransportHealth = readJson(policy.metrics.alert_transport_health_path, {});
   const rmProgressDashboard = readJson(policy.metrics.rm_progress_dashboard_path, {});
   const ciStreak = readJson(policy.metrics.ci_baseline_streak_path, {});
   const metrics = buildMetrics(
@@ -539,6 +573,7 @@ function runSnapshot(policy: AnyObj, dateStr: string, window: string, writeEnabl
     ciStreak,
     executionReliability,
     ciBaselineGuard,
+    alertTransportHealth,
     rmProgressDashboard,
     liveZeroSelectionStreak,
     liveZeroSelectionWarnStreak
@@ -565,6 +600,8 @@ function runSnapshot(policy: AnyObj, dateStr: string, window: string, writeEnabl
     execution_reliability_slo_pass: executionReliability && executionReliability.pass === true,
     ci_baseline_guard_path: relPath(policy.metrics.ci_baseline_guard_path),
     ci_baseline_guard_pass: ciBaselineGuard && ciBaselineGuard.pass === true,
+    alert_transport_health_path: relPath(policy.metrics.alert_transport_health_path),
+    alert_transport_health_pass: alertTransportHealth && alertTransportHealth.pass === true,
     rm_progress_dashboard_path: relPath(policy.metrics.rm_progress_dashboard_path),
     rm_progress_dashboard_all_pass: rmProgressDashboard && rmProgressDashboard.status && rmProgressDashboard.status.all_pass === true,
     metrics_count: metrics.length,
@@ -586,6 +623,7 @@ function runSnapshot(policy: AnyObj, dateStr: string, window: string, writeEnabl
   if (!fs.existsSync(policy.metrics.workflow_executor_history_path)) out.warnings.push('workflow_executor_history_missing');
   if (!fs.existsSync(policy.metrics.execution_reliability_slo_path)) out.warnings.push('execution_reliability_slo_missing');
   if (!fs.existsSync(policy.metrics.ci_baseline_guard_path)) out.warnings.push('ci_baseline_guard_missing');
+  if (!fs.existsSync(policy.metrics.alert_transport_health_path)) out.warnings.push('alert_transport_health_missing');
   if (!fs.existsSync(policy.metrics.rm_progress_dashboard_path)) out.warnings.push('rm_progress_dashboard_missing');
   if (!fs.existsSync(policy.metrics.ci_baseline_streak_path)) out.warnings.push('ci_baseline_streak_missing');
   if (liveZeroSelectionStreak >= liveZeroSelectionWarnStreak) {
@@ -596,6 +634,9 @@ function runSnapshot(policy: AnyObj, dateStr: string, window: string, writeEnabl
   }
   if (ciBaselineGuard && ciBaselineGuard.pass === false) {
     out.warnings.push(`ci_baseline_guard_fail:${String(ciBaselineGuard.result || 'pending')}`);
+  }
+  if (alertTransportHealth && alertTransportHealth.pass === false) {
+    out.warnings.push('alert_transport_health_fail');
   }
   if (rmProgressDashboard && rmProgressDashboard.status && rmProgressDashboard.status.all_pass === false) {
     out.warnings.push(`rm_progress_dashboard_blocked:${String(rmProgressDashboard.status.result || 'partial')}`);

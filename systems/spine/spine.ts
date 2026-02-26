@@ -3315,6 +3315,57 @@ function main() {
       console.log(" ci_baseline_guard skipped reason=feature_flag_disabled flag=SPINE_CI_BASELINE_GUARD_ENABLED");
     }
 
+    if (String(process.env.SPINE_ALERT_TRANSPORT_HEALTH_ENABLED || "1") !== "0") {
+      const probeId = `${String(dateStr || "").slice(0, 10)}T00`;
+      const probe = runJson("node", [
+        "systems/ops/alert_transport_health.js",
+        "run",
+        `--probe-id=${probeId}`
+      ]);
+      const payload = probe.payload && typeof probe.payload === "object"
+        ? probe.payload
+        : null;
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_alert_transport_health",
+        mode,
+        date: dateStr,
+        ok: probe.ok && !!payload && payload.ok === true,
+        pass: payload ? payload.pass === true : null,
+        deduped: payload ? payload.deduped === true : null,
+        delivered: payload ? payload.delivered === true : null,
+        delivered_via: payload ? payload.delivered_via || null : null,
+        success_rate: payload && payload.rolling
+          ? Number(payload.rolling.success_rate || 0)
+          : null,
+        target_success_rate: payload ? Number(payload.target_success_rate || 0) : null,
+        reason: (!probe.ok || !payload || payload.ok !== true)
+          ? String(probe.stderr || probe.stdout || `alert_transport_health_exit_${probe.code}`).slice(0, 180)
+          : null
+      });
+      if (probe.ok && payload && payload.ok === true) {
+        console.log(
+          ` alert_transport_health pass=${payload.pass === true ? "yes" : "no"}` +
+          ` delivered=${payload.delivered === true ? "yes" : "no"}` +
+          ` rate=${Number(payload.rolling && payload.rolling.success_rate || 0).toFixed(3)}` +
+          ` via=${String(payload.delivered_via || "none")}`
+        );
+      } else {
+        console.log(` alert_transport_health WARN reason=${String(probe.stderr || probe.stdout || "unknown").slice(0, 120)}`);
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_alert_transport_health_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "SPINE_ALERT_TRANSPORT_HEALTH_ENABLED",
+        flag_value: String(process.env.SPINE_ALERT_TRANSPORT_HEALTH_ENABLED || "")
+      });
+      console.log(" alert_transport_health skipped reason=feature_flag_disabled flag=SPINE_ALERT_TRANSPORT_HEALTH_ENABLED");
+    }
+
     if (String(process.env.SPINE_RM_PROGRESS_DASHBOARD_ENABLED || "1") !== "0") {
       const dashboard = runJson("node", [
         "systems/ops/rm_progress_dashboard.js",

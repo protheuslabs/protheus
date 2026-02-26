@@ -11,6 +11,7 @@
     "workflow_executor_zero_selection_warn_streak": 2,
     "execution_reliability_slo_path": "state/ops/execution_reliability_slo.json",
     "ci_baseline_guard_path": "state/ops/ci_baseline_guard.json",
+    "alert_transport_health_path": "state/ops/alert_transport_health.json",
     "rm_progress_dashboard_path": "state/ops/rm_progress_dashboard.json",
     "ci_baseline_streak_path": "state/ops/ci_baseline_streak.json",
     "output_prometheus_path": "state/observability/prometheus/current.prom",

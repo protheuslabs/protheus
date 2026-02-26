@@ -35,6 +35,8 @@
     "ops:ci-baseline:status": "node systems/ops/ci_baseline_guard.js status",
     "ops:rm-progress:dashboard": "node systems/ops/rm_progress_dashboard.js run",
     "ops:rm-progress:status": "node systems/ops/rm_progress_dashboard.js status",
+    "ops:alert-transport": "node systems/ops/alert_transport_health.js run",
+    "ops:alert-transport:status": "node systems/ops/alert_transport_health.js status",
     "routing:provider-onboard:list": "node systems/routing/provider_onboarding_manifest.js list",
     "routing:provider-onboard": "node systems/routing/provider_onboarding_manifest.js run",
     "routing:provider-onboard:status": "node systems/routing/provider_onboarding_manifest.js status",

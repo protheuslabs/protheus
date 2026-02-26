@@ -1,0 +1,25 @@
+{
+  "version": "1.0",
+  "rolling_days": 30,
+  "target_success_rate": 0.99,
+  "dedupe_window_days": 30,
+  "state_path": "state/ops/alert_transport_health.json",
+  "history_path": "state/ops/alert_transport_health_history.jsonl",
+  "channels": {
+    "slack_webhook": {
+      "enabled": true,
+      "url": "",
+      "url_env": "SLACK_ALERT_WEBHOOK_URL",
+      "timeout_ms": 5000
+    },
+    "email_fallback": {
+      "enabled": true,
+      "outbox_path": "state/observability/alerts/email_fallback.jsonl"
+    },
+    "local_fallback": {
+      "enabled": true,
+      "outbox_path": "state/observability/alerts/local_fallback.jsonl"
+    }
+  }
+}
+
