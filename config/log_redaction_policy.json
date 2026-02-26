@@ -16,7 +16,8 @@
   "exclude_path_substrings": [
     "/node_modules/",
     "/.git/",
-    "/dist/"
+    "/dist/",
+    "/state/security/anti_sabotage/snapshots/"
   ],
   "patterns": [
     {

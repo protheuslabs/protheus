@@ -129,7 +129,7 @@ function actionsForToday(): Action[] {
     { roi_rank: 4, id: 'runtime_verify', command: 'npm run runtime:dist:verify' },
     { roi_rank: 5, id: 'integrity_kernel_run', command: 'node systems/security/integrity_kernel.js run' },
     { roi_rank: 6, id: 'integrity_reseal_check', command: 'npm run integrity:check' },
-    { roi_rank: 7, id: 'anti_sabotage_verify', command: 'npm run anti-sabotage:verify' },
+    { roi_rank: 7, id: 'anti_sabotage_verify', command: 'npm run anti-sabotage:snapshot && npm run anti-sabotage:verify' },
     { roi_rank: 8, id: 'log_redaction_check', command: 'npm run security:logs:redaction:check' },
     { roi_rank: 9, id: 'model_health_recover', command: 'npm run ops:model-health:recover' },
     { roi_rank: 10, id: 'config_registry_run', command: 'npm run ops:config-registry' },
