@@ -769,10 +769,10 @@ function main() {
     ["scale_benchmark.js", "run", "status", "--tier", "--strict"]
   );
 
-  // compliance_reports.js generates evidence index + SOC2 readiness summaries.
+  // compliance_reports.js generates evidence/inventory/framework readiness reports.
   checkScript(
     "systems/ops/compliance_reports.js",
-    ["compliance_reports.js", "evidence-index", "soc2-readiness", "status", "--days", "--strict"]
+    ["compliance_reports.js", "evidence-index", "control-inventory", "framework-readiness", "soc2-readiness", "status", "--days", "--strict", "--framework"]
   );
 
   // environment_promotion_gate.js enforces promotion sequencing and approvals across env tiers.

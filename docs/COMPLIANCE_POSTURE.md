@@ -9,6 +9,10 @@
 - Deployment hardening gate (`systems/ops/deployment_packaging.js`)
 - Contract surface stability (`systems/spine/contract_check.js`)
 
+For framework-depth reporting (SOC2/ISO/NIST) and control inventory completeness, use:
+`node systems/ops/compliance_reports.js framework-readiness --framework=all`
+`node systems/ops/compliance_reports.js control-inventory`
+
 ## Commands
 
 Run (non-blocking posture snapshot):
