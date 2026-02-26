@@ -41,13 +41,16 @@ const ORCHESTRON_OUT_DIR = process.env.ORCHESTRON_OUT_DIR
 const ORCHESTRON_LATEST_PATH = process.env.ORCHESTRON_LATEST_PATH
   ? path.resolve(process.env.ORCHESTRON_LATEST_PATH)
   : path.join(ORCHESTRON_OUT_DIR, 'latest.json');
+const PROMOTION_RECEIPTS_DIR = process.env.WORKFLOW_PROMOTION_RECEIPTS_DIR
+  ? path.resolve(process.env.WORKFLOW_PROMOTION_RECEIPTS_DIR)
+  : path.join(REPO_ROOT, 'state', 'adaptive', 'workflows', 'promotion_receipts');
 const DEFAULT_POLICY_PATH = path.join(REPO_ROOT, 'config', 'workflow_policy.json');
 const DEFAULT_ORCHESTRON_POLICY_PATH = path.join(REPO_ROOT, 'config', 'orchestron_policy.json');
 
 function usage() {
   console.log('Usage:');
   console.log('  node systems/workflow/workflow_controller.js run [YYYY-MM-DD] [--days=N] [--max=N] [--apply=1|0] [--policy=path] [--orchestron=1|0] [--orchestron-apply=1|0] [--orchestron-auto=1|0] [--intent=\"...\"] [--value-currency=<currency>] [--objective-id=<id>] [--orchestron-policy=path]');
-  console.log('  node systems/workflow/workflow_controller.js promote [--source=promotable|passing|drafts] [--status=active|draft] [--id=<workflow_id[,workflow_id...]>] [--from=path] [--dry-run=1|0] [--ignore-threshold=1|0] [--policy=path]');
+  console.log('  node systems/workflow/workflow_controller.js promote [--source=promotable|passing|drafts] [--status=active|draft] [--id=<workflow_id[,workflow_id...]>] [--from=path] [--dry-run=1|0] [--ignore-threshold=1|0] [--approval-note="..."] [--approver-id=<id>] [--policy=path]');
   console.log('  node systems/workflow/workflow_controller.js list [--status=active|draft|all] [--limit=N]');
   console.log('  node systems/workflow/workflow_controller.js status [--policy=path] [--orchestron-latest=path]');
 }
@@ -93,6 +96,10 @@ function clampNumber(v, lo, hi, fallback) {
   return n;
 }
 
+function cleanText(v, maxLen = 220) {
+  return String(v == null ? '' : v).replace(/\s+/g, ' ').trim().slice(0, maxLen);
+}
+
 function boolFlag(v, fallback = false) {
   if (v == null) return fallback;
   const raw = String(v).trim().toLowerCase();
@@ -120,6 +127,11 @@ function writeJsonAtomic(filePath, value) {
   const tmpPath = `${filePath}.tmp-${process.pid}-${Date.now()}`;
   fs.writeFileSync(tmpPath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
   fs.renameSync(tmpPath, filePath);
+}
+
+function appendJsonl(filePath, row) {
+  ensureDir(path.dirname(filePath));
+  fs.appendFileSync(filePath, `${JSON.stringify(row)}\n`, 'utf8');
 }
 
 function relPath(filePath) {
@@ -383,6 +395,113 @@ function selectPromotableRows(snapshotPayload, source, idFilter) {
     source_total: sourceRows.length,
     selected: rows.length
   };
+}
+
+function normalizePromotionGatePolicy(raw) {
+  const src = raw && typeof raw === 'object' ? raw : {};
+  return {
+    enabled: src.enabled !== false,
+    require_contract_fields: src.require_contract_fields !== false,
+    require_non_regression: src.require_non_regression !== false,
+    require_approval_receipt: src.require_approval_receipt !== false,
+    require_gate_step: src.require_gate_step !== false,
+    require_receipt_step: src.require_receipt_step !== false,
+    require_approver_id: src.require_approver_id !== false,
+    require_approval_note: src.require_approval_note !== false,
+    max_predicted_drift_delta: clampNumber(src.max_predicted_drift_delta, -1, 1, 0),
+    min_predicted_yield_delta: clampNumber(src.min_predicted_yield_delta, -1, 1, 0),
+    min_safety_score: clampNumber(src.min_safety_score, 0, 1, 0.5),
+    max_regression_risk: clampNumber(src.max_regression_risk, 0, 1, 0.56),
+    max_red_team_critical_fail_cases: clampInt(src.max_red_team_critical_fail_cases, 0, 64, 0)
+  };
+}
+
+function hasStepType(steps, type) {
+  const target = String(type || '').trim().toLowerCase();
+  return (Array.isArray(steps) ? steps : []).some((row) => String(row && row.type || '').trim().toLowerCase() === target);
+}
+
+function normalizeDraftMetricValue(metrics, key) {
+  const n = Number(metrics && metrics[key]);
+  return Number.isFinite(n) ? n : null;
+}
+
+function evaluatePromotionGate(draft, context = {}) {
+  const row = draft && typeof draft === 'object' ? draft : {};
+  const policy = normalizePromotionGatePolicy(context.policy);
+  const reasons = [];
+  if (policy.enabled !== true) {
+    return { pass: true, reasons, policy };
+  }
+
+  const status = String(context.status || 'active').trim().toLowerCase() === 'draft' ? 'draft' : 'active';
+  const dryRun = context.dry_run === true;
+  const approverId = cleanText(context.approver_id || '', 80);
+  const approvalNote = cleanText(context.approval_note || '', 240);
+  const snapshotRedTeamCritical = clampInt(context.snapshot_red_team_critical_fail_cases, 0, 1000, 0);
+  const steps = Array.isArray(row.steps) ? row.steps : [];
+  const metrics = row.metrics && typeof row.metrics === 'object' ? row.metrics : {};
+
+  if (policy.require_contract_fields) {
+    if (!cleanText(row.id || '', 120)) reasons.push('contract_id_missing');
+    if (!cleanText(row.name || '', 180)) reasons.push('contract_name_missing');
+    if (!cleanText(row.trigger && row.trigger.proposal_type || '', 120)) reasons.push('contract_trigger_missing');
+    if (!steps.length) reasons.push('contract_steps_missing');
+    if (policy.require_gate_step && !hasStepType(steps, 'gate')) reasons.push('contract_gate_step_missing');
+    if (policy.require_receipt_step && !hasStepType(steps, 'receipt')) reasons.push('contract_receipt_step_missing');
+    if (!Number.isFinite(Number(metrics.score))) reasons.push('contract_metrics_score_missing');
+  }
+
+  if (status === 'active' && policy.require_non_regression) {
+    const predictedDriftDelta = normalizeDraftMetricValue(metrics, 'predicted_drift_delta');
+    const predictedYieldDelta = normalizeDraftMetricValue(metrics, 'predicted_yield_delta');
+    const safetyScore = normalizeDraftMetricValue(metrics, 'safety_score');
+    const regressionRisk = normalizeDraftMetricValue(metrics, 'regression_risk');
+    if (predictedDriftDelta == null) reasons.push('non_regression_missing_predicted_drift');
+    else if (predictedDriftDelta > policy.max_predicted_drift_delta) reasons.push('non_regression_predicted_drift_above_max');
+    if (predictedYieldDelta == null) reasons.push('non_regression_missing_predicted_yield');
+    else if (predictedYieldDelta < policy.min_predicted_yield_delta) reasons.push('non_regression_predicted_yield_below_min');
+    if (safetyScore == null) reasons.push('non_regression_missing_safety_score');
+    else if (safetyScore < policy.min_safety_score) reasons.push('non_regression_safety_below_min');
+    if (regressionRisk == null) reasons.push('non_regression_missing_regression_risk');
+    else if (regressionRisk > policy.max_regression_risk) reasons.push('non_regression_regression_risk_above_max');
+    if (snapshotRedTeamCritical > policy.max_red_team_critical_fail_cases) reasons.push('non_regression_red_team_critical_failures_above_max');
+  }
+
+  if (status === 'active' && !dryRun && policy.require_approval_receipt) {
+    if (policy.require_approver_id && !approverId) reasons.push('approval_receipt_approver_id_missing');
+    if (policy.require_approval_note && !approvalNote) reasons.push('approval_receipt_note_missing');
+  }
+
+  return {
+    pass: reasons.length === 0,
+    reasons,
+    policy
+  };
+}
+
+function summarizeBlockedByReason(rows) {
+  const out = {};
+  for (const row of Array.isArray(rows) ? rows : []) {
+    for (const reason of Array.isArray(row && row.reasons) ? row.reasons : []) {
+      const key = String(reason || '').trim();
+      if (!key) continue;
+      out[key] = Number(out[key] || 0) + 1;
+    }
+  }
+  return out;
+}
+
+function appendPromotionReceipt(dateStr, row) {
+  const date = dateArgOrToday(dateStr);
+  const filePath = path.join(PROMOTION_RECEIPTS_DIR, `${date}.jsonl`);
+  appendJsonl(filePath, {
+    ts: nowIso(),
+    type: 'workflow_promotion_gate_receipt',
+    date,
+    ...row
+  });
+  return relPath(filePath);
 }
 
 function mergeDrafts(baseDrafts, extraDrafts) {
@@ -744,6 +863,8 @@ function promoteCmd(args) {
   const idFilter = parseIdFilter(args.id);
   const dryRun = boolFlag(args['dry-run'], false);
   const ignoreThreshold = boolFlag(args['ignore-threshold'], false);
+  const approvalNote = cleanText(args['approval-note'] || '', 240);
+  const approverId = cleanText(args['approver-id'] || '', 80);
   const snapshotPath = path.resolve(String(args.from || args['orchestron-latest'] || ORCHESTRON_LATEST_PATH));
   const snapshot = loadOrchestronSnapshot(snapshotPath);
   if (!snapshot.payload) {
@@ -758,10 +879,36 @@ function promoteCmd(args) {
     process.exitCode = 1;
     return;
   }
+
+  const snapshotRedTeamCritical = snapshot.payload && snapshot.payload.red_team
+    ? Number(snapshot.payload.red_team.critical_fail_cases || 0)
+    : 0;
+  const promotionGatePolicy = normalizePromotionGatePolicy(policy && policy.promotion_gate);
   const selected = selectPromotableRows(snapshot.payload, source, idFilter);
+  const gateEvaluations = selected.rows.map((row) => ({
+    draft: row,
+    ...evaluatePromotionGate(row, {
+      policy: promotionGatePolicy,
+      status,
+      dry_run: dryRun,
+      approver_id: approverId,
+      approval_note: approvalNote,
+      snapshot_red_team_critical_fail_cases: snapshotRedTeamCritical
+    })
+  }));
+  const gatedRows = gateEvaluations
+    .filter((row) => row.pass === true)
+    .map((row) => row.draft);
+  const blockedRows = gateEvaluations
+    .filter((row) => row.pass !== true)
+    .map((row) => ({
+      workflow_id: String(row && row.draft && row.draft.id || '').trim() || null,
+      reasons: Array.isArray(row && row.reasons) ? row.reasons.slice(0, 24) : []
+    }));
+  const promotionGateBlockedByReason = summarizeBlockedByReason(blockedRows);
   const registry = loadRegistry();
   const promotionDate = dateArgOrToday(snapshot.payload && snapshot.payload.date);
-  const applied = applyDrafts(registry, selected.rows, policy, {
+  const applied = applyDrafts(registry, gatedRows, policy, {
     status,
     ignore_threshold: ignoreThreshold,
     date: promotionDate,
@@ -779,6 +926,29 @@ function promoteCmd(args) {
         generated_at: nowIso(),
         workflows: applied.workflows
       });
+  const promotionReceiptPath = appendPromotionReceipt(promotionDate, {
+    source,
+    status,
+    dry_run: dryRun,
+    ignore_threshold: ignoreThreshold,
+    snapshot_path: relPath(snapshot.path),
+    snapshot_red_team_critical_fail_cases: snapshotRedTeamCritical,
+    approval: {
+      approver_id: approverId || null,
+      approval_note_present: approvalNote.length > 0
+    },
+    promotion_gate_policy: promotionGatePolicy,
+    source_total: selected.source_total,
+    selected: selected.selected,
+    eligible: gatedRows.length,
+    blocked: blockedRows.length,
+    blocked_by_reason: promotionGateBlockedByReason,
+    blocked_rows: blockedRows.slice(0, 128),
+    applied: Number(applied.applied || 0),
+    updated: Number(applied.updated || 0),
+    identity_checked: Number(applied.identity_checked || 0),
+    identity_blocked: Number(applied.identity_blocked || 0)
+  });
 
   process.stdout.write(`${JSON.stringify({
     ok: true,
@@ -787,15 +957,20 @@ function promoteCmd(args) {
     status,
     dry_run: dryRun,
     ignore_threshold: ignoreThreshold,
+    approver_id: approverId || null,
+    approval_note_present: approvalNote.length > 0,
     snapshot_path: relPath(snapshot.path),
     snapshot_shadow_only: snapshot.payload && snapshot.payload.policy
       ? snapshot.payload.policy.shadow_only === true
       : null,
-    snapshot_red_team_critical_fail_cases: snapshot.payload && snapshot.payload.red_team
-      ? Number(snapshot.payload.red_team.critical_fail_cases || 0)
-      : 0,
+    snapshot_red_team_critical_fail_cases: snapshotRedTeamCritical,
     source_total: selected.source_total,
     selected: selected.selected,
+    promotion_gate_enabled: promotionGatePolicy.enabled === true,
+    promotion_gate_eligible: gatedRows.length,
+    promotion_gate_blocked: blockedRows.length,
+    promotion_gate_blocked_by_reason: promotionGateBlockedByReason,
+    promotion_receipt_path: promotionReceiptPath,
     applied: applied.applied,
     updated: applied.updated,
     identity_checked: Number(applied.identity_checked || 0),

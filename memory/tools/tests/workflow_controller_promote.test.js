@@ -55,7 +55,7 @@ function run() {
       shadow_only: true
     },
     red_team: {
-      critical_fail_cases: 1
+      critical_fail_cases: 0
     },
     drafts: [],
     passing: [],
@@ -71,7 +71,11 @@ function run() {
           { id: 'receipt', type: 'receipt', command: 'state/autonomy/receipts/<date>.jsonl' }
         ],
         metrics: {
-          score: 0.4
+          score: 0.4,
+          predicted_drift_delta: -0.002,
+          predicted_yield_delta: 0.01,
+          safety_score: 0.78,
+          regression_risk: 0.22
         }
       }
     ]
@@ -100,6 +104,8 @@ function run() {
     'promote',
     '--source=promotable',
     '--status=active',
+    '--approver-id=test_runner',
+    '--approval-note=promotion-test',
     `--policy=${policyPath}`
   ], {
     cwd: root,
@@ -117,6 +123,8 @@ function run() {
     '--source=promotable',
     '--status=active',
     '--ignore-threshold=1',
+    '--approver-id=test_runner',
+    '--approval-note=promotion-test',
     `--policy=${policyPath}`
   ], {
     cwd: root,

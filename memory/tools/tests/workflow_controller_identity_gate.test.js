@@ -71,11 +71,24 @@ function run() {
         status: 'draft',
         objective_id: 'T1_make_jay_billionaire_v1',
         parent_workflow_id: 'wf_parent',
+        trigger: {
+          proposal_type: 'external_intel',
+          min_occurrences: 2
+        },
+        steps: [
+          { id: 'collect', type: 'command', command: 'node habits/scripts/external_eyes.js run --eye=test' },
+          { id: 'verify', type: 'gate', command: 'node systems/autonomy/strategy_execute_guard.js run <date>' },
+          { id: 'receipt', type: 'receipt', command: 'state/autonomy/receipts/<date>.jsonl' }
+        ],
+        metrics: {
+          score: 0.8,
+          predicted_drift_delta: -0.001,
+          predicted_yield_delta: 0.01,
+          safety_score: 0.8,
+          regression_risk: 0.2
+        },
         metadata: {
           value_currency: 'delivery'
-        },
-        metrics: {
-          score: 0.8
         }
       }
     ]
@@ -93,6 +106,8 @@ function run() {
     '--source=promotable',
     '--status=active',
     '--ignore-threshold=1',
+    '--approver-id=test_runner',
+    '--approval-note=identity-gate-test',
     `--policy=${policyPath}`
   ], {
     cwd: root,

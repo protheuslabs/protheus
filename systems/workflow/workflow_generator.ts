@@ -170,13 +170,31 @@ function defaultPolicy() {
     min_shipped_rate: 0.28,
     max_drafts_per_run: 8,
     apply_threshold: 0.62,
-    max_registry_workflows: 128
+    max_registry_workflows: 128,
+    promotion_gate: {
+      enabled: true,
+      require_contract_fields: true,
+      require_non_regression: true,
+      require_approval_receipt: true,
+      require_gate_step: true,
+      require_receipt_step: true,
+      require_approver_id: true,
+      require_approval_note: true,
+      max_predicted_drift_delta: 0,
+      min_predicted_yield_delta: 0,
+      min_safety_score: 0.5,
+      max_regression_risk: 0.56,
+      max_red_team_critical_fail_cases: 0
+    }
   };
 }
 
 function loadPolicy(policyPath) {
   const raw = readJson(policyPath, {});
   const base = defaultPolicy();
+  const promotionRaw = raw.promotion_gate && typeof raw.promotion_gate === 'object'
+    ? raw.promotion_gate
+    : {};
   return {
     version: String(raw.version || base.version),
     enabled: raw.enabled !== false,
@@ -185,7 +203,47 @@ function loadPolicy(policyPath) {
     min_shipped_rate: clampNumber(raw.min_shipped_rate, 0, 1, base.min_shipped_rate),
     max_drafts_per_run: clampInt(raw.max_drafts_per_run, 1, 64, base.max_drafts_per_run),
     apply_threshold: clampNumber(raw.apply_threshold, 0, 1, base.apply_threshold),
-    max_registry_workflows: clampInt(raw.max_registry_workflows, 8, 10000, base.max_registry_workflows)
+    max_registry_workflows: clampInt(raw.max_registry_workflows, 8, 10000, base.max_registry_workflows),
+    promotion_gate: {
+      enabled: promotionRaw.enabled !== false,
+      require_contract_fields: promotionRaw.require_contract_fields !== false,
+      require_non_regression: promotionRaw.require_non_regression !== false,
+      require_approval_receipt: promotionRaw.require_approval_receipt !== false,
+      require_gate_step: promotionRaw.require_gate_step !== false,
+      require_receipt_step: promotionRaw.require_receipt_step !== false,
+      require_approver_id: promotionRaw.require_approver_id !== false,
+      require_approval_note: promotionRaw.require_approval_note !== false,
+      max_predicted_drift_delta: clampNumber(
+        promotionRaw.max_predicted_drift_delta,
+        -1,
+        1,
+        base.promotion_gate.max_predicted_drift_delta
+      ),
+      min_predicted_yield_delta: clampNumber(
+        promotionRaw.min_predicted_yield_delta,
+        -1,
+        1,
+        base.promotion_gate.min_predicted_yield_delta
+      ),
+      min_safety_score: clampNumber(
+        promotionRaw.min_safety_score,
+        0,
+        1,
+        base.promotion_gate.min_safety_score
+      ),
+      max_regression_risk: clampNumber(
+        promotionRaw.max_regression_risk,
+        0,
+        1,
+        base.promotion_gate.max_regression_risk
+      ),
+      max_red_team_critical_fail_cases: clampInt(
+        promotionRaw.max_red_team_critical_fail_cases,
+        0,
+        64,
+        base.promotion_gate.max_red_team_critical_fail_cases
+      )
+    }
   };
 }
 

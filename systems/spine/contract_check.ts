@@ -832,13 +832,13 @@ function main() {
   // workflow_controller.js applies/surfaces workflow registry materialization.
   checkScript(
     "systems/workflow/workflow_controller.js",
-    ["workflow_controller.js", "run", "list", "status", "--apply", "--days", "--max", "--policy", "--orchestron", "--orchestron-apply", "--orchestron-auto", "--intent", "--value-currency", "--objective-id"]
+    ["workflow_controller.js", "run", "promote", "list", "status", "--apply", "--days", "--max", "--policy", "--orchestron", "--orchestron-apply", "--orchestron-auto", "--intent", "--value-currency", "--objective-id", "--approval-note", "--approver-id"]
   );
 
   // orchestron_controller.js is the branded alias entrypoint for workflow_controller.
   checkScript(
     "systems/workflow/orchestron_controller.js",
-    ["workflow_controller.js", "run", "list", "status", "--apply", "--days", "--max", "--policy", "--orchestron", "--orchestron-apply", "--orchestron-auto", "--intent", "--value-currency", "--objective-id"]
+    ["workflow_controller.js", "run", "promote", "list", "status", "--apply", "--days", "--max", "--policy", "--orchestron", "--orchestron-apply", "--orchestron-auto", "--intent", "--value-currency", "--objective-id", "--approval-note", "--approver-id"]
   );
 
   // identity_anchor.js enforces objective/value coherence for workflow graft + morph proposals.
