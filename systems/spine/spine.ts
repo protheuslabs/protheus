@@ -177,7 +177,7 @@ function spineTritWeightForType(type) {
   const t = String(type || "");
   if (!t) return 1;
   if (/signal_gate|signal_slo|integrity|security|emergency|critical/i.test(t)) return 3;
-  if (/budget_guard|autonomy_health|strategy|router_alert|startup_attestation/i.test(t)) return 2;
+  if (/budget_guard|autonomy_health|strategy|router_alert|startup_attestation|secret_rotation/i.test(t)) return 2;
   if (/_skipped$/i.test(t)) return 0.5;
   return 1;
 }
@@ -1092,6 +1092,7 @@ function main() {
     "systems/security/skill_install_enforcer.js",
     "systems/security/integrity_kernel.js",
     "systems/security/startup_attestation.js",
+    "systems/security/secret_broker.js",
     "habits/scripts/external_eyes.js",
     "habits/scripts/eyes_insight.js",
     "habits/scripts/sensory_queue.js",
@@ -1152,6 +1153,7 @@ function main() {
     "config/deployment_packaging_policy.json",
     "config/compliance_posture_policy.json",
     "config/state_backup_policy.json",
+    "config/secret_broker_policy.json",
     "config/observability_policy.json",
     "skills/moltbook/actuation_adapter.js",
     "skills/moltbook/moltbook_publish_guard.js",
@@ -1922,6 +1924,79 @@ function main() {
         flag_value: String(process.env.SPINE_STARTUP_ATTESTATION_ENABLED || "")
       });
       console.log(" startup_attestation skipped reason=feature_flag_disabled flag=SPINE_STARTUP_ATTESTATION_ENABLED");
+    }
+
+    if (String(process.env.SPINE_SECRET_ROTATION_CHECK_ENABLED || "1") !== "0") {
+      const secretRotationStrict = String(process.env.SPINE_SECRET_ROTATION_CHECK_STRICT || "0") === "1";
+      const secretRotationPolicyPath = String(
+        process.env.SPINE_SECRET_BROKER_POLICY_PATH || "config/secret_broker_policy.json"
+      ).trim();
+      const secretRotationSecretIds = String(process.env.SPINE_SECRET_ROTATION_SECRET_IDS || "")
+        .split(",")
+        .map((x) => String(x || "").trim())
+        .filter(Boolean)
+        .join(",");
+      const secretRotationTimeoutMs = Math.max(
+        5000,
+        Math.min(5 * 60 * 1000, Number(process.env.SPINE_SECRET_ROTATION_CHECK_TIMEOUT_MS || 45000) || 45000)
+      );
+      const secretRotationArgs = ["systems/security/secret_broker.js", "rotation-check"];
+      if (secretRotationPolicyPath) secretRotationArgs.push(`--policy=${secretRotationPolicyPath}`);
+      if (secretRotationSecretIds) secretRotationArgs.push(`--secret-ids=${secretRotationSecretIds}`);
+      if (secretRotationStrict) secretRotationArgs.push("--strict=1");
+      const secretRotation = runJson("node", secretRotationArgs, { timeout: secretRotationTimeoutMs });
+      const secretRotationPayload = secretRotation.payload && typeof secretRotation.payload === "object"
+        ? secretRotation.payload
+        : null;
+      const secretRotationCounts = secretRotationPayload && secretRotationPayload.counts && typeof secretRotationPayload.counts === "object"
+        ? secretRotationPayload.counts
+        : null;
+      const secretRotationOk = secretRotation.ok && !!secretRotationPayload && secretRotationPayload.ok === true;
+      const secretRotationReason = !secretRotationOk
+        ? String(
+            (secretRotationPayload && secretRotationPayload.reason)
+            || secretRotation.stderr
+            || secretRotation.stdout
+            || `secret_rotation_check_exit_${secretRotation.code}`
+          ).slice(0, 180)
+        : null;
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_secret_rotation_check",
+        mode,
+        date: dateStr,
+        ok: secretRotationOk,
+        strict: secretRotationStrict,
+        policy_path: secretRotationPolicyPath || null,
+        level: secretRotationPayload ? secretRotationPayload.level || null : null,
+        checked: secretRotationPayload ? Number(secretRotationPayload.checked || 0) : null,
+        count_ok: secretRotationCounts ? Number(secretRotationCounts.ok || 0) : null,
+        count_warn: secretRotationCounts ? Number(secretRotationCounts.warn || 0) : null,
+        count_critical: secretRotationCounts ? Number(secretRotationCounts.critical || 0) : null,
+        count_unknown: secretRotationCounts ? Number(secretRotationCounts.unknown || 0) : null,
+        reason: secretRotationReason
+      });
+      if (secretRotationOk) {
+        console.log(
+          ` secret_rotation_check ok checked=${Number(secretRotationPayload && secretRotationPayload.checked || 0)}` +
+          ` warn=${Number(secretRotationCounts && secretRotationCounts.warn || 0)}` +
+          ` critical=${Number(secretRotationCounts && secretRotationCounts.critical || 0)}`
+        );
+      } else {
+        console.log(` secret_rotation_check unavailable reason=${String(secretRotationReason || "unknown").slice(0, 120)}`);
+        if (secretRotationStrict) process.exit(secretRotation.code || 1);
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_secret_rotation_check_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "SPINE_SECRET_ROTATION_CHECK_ENABLED",
+        flag_value: String(process.env.SPINE_SECRET_ROTATION_CHECK_ENABLED || "")
+      });
+      console.log(" secret_rotation_check skipped reason=feature_flag_disabled flag=SPINE_SECRET_ROTATION_CHECK_ENABLED");
     }
 
     if (String(process.env.SPINE_RED_TEAM_RUN_ENABLED || "1") !== "0") {

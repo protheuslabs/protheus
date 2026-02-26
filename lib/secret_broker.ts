@@ -6,6 +6,7 @@ const fs = require('fs') as typeof import('fs');
 const os = require('os') as typeof import('os');
 const path = require('path') as typeof import('path');
 const crypto = require('crypto') as typeof import('crypto');
+const { spawnSync } = require('child_process') as typeof import('child_process');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
 const DEFAULT_SECRETS_DIR = process.env.SECRET_BROKER_SECRETS_DIR
@@ -17,6 +18,9 @@ const STATE_PATH = process.env.SECRET_BROKER_STATE_PATH
 const AUDIT_PATH = process.env.SECRET_BROKER_AUDIT_PATH
   ? path.resolve(process.env.SECRET_BROKER_AUDIT_PATH)
   : path.join(REPO_ROOT, 'state', 'security', 'secret_broker_audit.jsonl');
+const POLICY_PATH = process.env.SECRET_BROKER_POLICY_PATH
+  ? path.resolve(process.env.SECRET_BROKER_POLICY_PATH)
+  : path.join(REPO_ROOT, 'config', 'secret_broker_policy.json');
 const LEGACY_LOCAL_KEY_PATH = path.join(REPO_ROOT, 'state', 'security', 'secret_broker_key.txt');
 const LOCAL_KEY_PATH = process.env.SECRET_BROKER_LOCAL_KEY_PATH
   ? path.resolve(process.env.SECRET_BROKER_LOCAL_KEY_PATH)
@@ -25,6 +29,8 @@ const LOCAL_KEY_PATH = process.env.SECRET_BROKER_LOCAL_KEY_PATH
 const DEFAULT_TTL_SEC = Number(process.env.SECRET_BROKER_DEFAULT_TTL_SEC || 300);
 const MIN_TTL_SEC = Number(process.env.SECRET_BROKER_MIN_TTL_SEC || 30);
 const MAX_TTL_SEC = Number(process.env.SECRET_BROKER_MAX_TTL_SEC || 3600);
+
+type AnyObj = Record<string, any>;
 
 function nowMs(input: unknown): number {
   if (Number.isFinite(Number(input))) return Number(input);
@@ -69,8 +75,24 @@ function clampInt(v: unknown, lo: number, hi: number, fallback: number): number 
   return i;
 }
 
+function clampNumber(v: unknown, lo: number, hi: number, fallback: number): number {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return fallback;
+  if (n < lo) return lo;
+  if (n > hi) return hi;
+  return n;
+}
+
 function normalizeText(v: unknown, maxLen = 240): string {
   return String(v == null ? '' : v).trim().slice(0, maxLen);
+}
+
+function boolFlag(v: unknown, fallback = false): boolean {
+  if (v == null) return fallback;
+  const raw = String(v).trim().toLowerCase();
+  if (['1', 'true', 'yes', 'on'].includes(raw)) return true;
+  if (['0', 'false', 'no', 'off'].includes(raw)) return false;
+  return fallback;
 }
 
 function base64urlEncode(input: string): string {
@@ -112,7 +134,6 @@ function loadOrCreateLocalKey(): string {
     fs.writeFileSync(LOCAL_KEY_PATH, generated + '\n', { encoding: 'utf8', mode: 0o600 });
     return generated;
   } catch {
-    // Fail closed: do not create fresh keys under tracked repo paths.
     return '';
   }
 }
@@ -151,10 +172,10 @@ function safeTimingEqual(a: string, b: string): boolean {
 function loadState(): Record<string, any> {
   const raw = readJsonSafe(STATE_PATH, null);
   if (!raw || typeof raw !== 'object') {
-    return { version: '1.0', issued: {} };
+    return { version: '1.1', issued: {} };
   }
   return {
-    version: '1.0',
+    version: '1.1',
     issued: raw.issued && typeof raw.issued === 'object' ? raw.issued : {}
   };
 }
@@ -190,69 +211,568 @@ function parseHandle(handle: unknown): Record<string, any> {
   return { ok: true, body, sig, payload };
 }
 
-function loadMoltbookApiKey(): string {
-  if (process.env.MOLTBOOK_TOKEN && String(process.env.MOLTBOOK_TOKEN).trim()) {
-    return String(process.env.MOLTBOOK_TOKEN).trim();
+function getByPath(obj: AnyObj, dotted: unknown): unknown {
+  const p = normalizeText(dotted, 120);
+  if (!p) return undefined;
+  const parts = p.split('.').map((x) => x.trim()).filter(Boolean);
+  let cur: any = obj;
+  for (const part of parts) {
+    if (!cur || typeof cur !== 'object') return undefined;
+    cur = cur[part];
   }
-  const candidates = [
-    path.join(DEFAULT_SECRETS_DIR, 'moltbook.credentials.json'),
-    path.join(os.homedir(), '.config', 'moltbook', 'credentials.json'),
-    path.join(os.homedir(), '.openclaw', 'workspace', 'config', 'moltbook', 'credentials.json')
-  ];
-  for (const p of candidates) {
-    try {
-      if (!fs.existsSync(p)) continue;
-      const raw = JSON.parse(fs.readFileSync(p, 'utf8'));
-      const key = raw && raw.api_key ? String(raw.api_key).trim() : '';
-      if (key) return key;
-    } catch {
-      // Continue to next candidate.
-    }
-  }
-  return '';
+  return cur;
 }
 
-function loadMoltstackApiKey(): string {
-  if (process.env.MOLTSTACK_TOKEN && String(process.env.MOLTSTACK_TOKEN).trim()) {
-    return String(process.env.MOLTSTACK_TOKEN).trim();
+function parseTsMs(value: unknown): number | null {
+  if (value == null) return null;
+  const raw = String(value).trim();
+  if (!raw) return null;
+  const num = Number(raw);
+  if (Number.isFinite(num)) {
+    if (num > 100000000000) return Math.floor(num);
+    if (num > 1000000000) return Math.floor(num * 1000);
   }
-  const candidates = [
-    path.join(DEFAULT_SECRETS_DIR, 'moltstack.credentials.json'),
-    path.join(os.homedir(), '.config', 'moltstack', 'credentials.json')
-  ];
-  for (const candidate of candidates) {
-    try {
-      if (!fs.existsSync(candidate)) continue;
-      const raw = JSON.parse(fs.readFileSync(candidate, 'utf8'));
-      const key = raw && raw.api_key ? String(raw.api_key).trim() : '';
-      if (key) return key;
-    } catch {
-      // Continue to next candidate.
-    }
-  }
-  return '';
+  const ts = Date.parse(raw);
+  if (!Number.isFinite(ts)) return null;
+  return ts;
 }
 
-const SECRET_LOADERS: Record<string, () => string> = {
-  moltbook_api_key: loadMoltbookApiKey,
-  moltstack_api_key: loadMoltstackApiKey
-};
+function resolveTemplate(rawPath: unknown, secretId: string): string {
+  let out = String(rawPath == null ? '' : rawPath).trim();
+  if (!out) return '';
+  out = out
+    .replace(/\$\{HOME\}/g, os.homedir())
+    .replace(/\$\{REPO_ROOT\}/g, REPO_ROOT)
+    .replace(/\$\{DEFAULT_SECRETS_DIR\}/g, DEFAULT_SECRETS_DIR)
+    .replace(/\$\{SECRET_ID\}/g, secretId);
+  if (path.isAbsolute(out)) return out;
+  return path.join(REPO_ROOT, out);
+}
 
-function loadSecretById(secretId: unknown): Record<string, any> {
-  const key = normalizeText(secretId, 120);
-  const loader = SECRET_LOADERS[key];
-  if (typeof loader !== 'function') {
-    return { ok: false, error: 'secret_id_unsupported', secret_id: key || null };
+function defaultPolicy(): AnyObj {
+  return {
+    version: '1.0',
+    audit: {
+      include_backend_details: true
+    },
+    rotation_policy: {
+      warn_after_days: 45,
+      max_after_days: 90,
+      require_rotated_at: false,
+      enforce_on_issue: false
+    },
+    command_backend: {
+      timeout_ms: 5000
+    },
+    secrets: {
+      moltbook_api_key: {
+        providers: [
+          { type: 'env', env: 'MOLTBOOK_TOKEN', rotated_at_env: 'MOLTBOOK_TOKEN_ROTATED_AT' },
+          {
+            type: 'json_file',
+            paths: [
+              path.join(DEFAULT_SECRETS_DIR, 'moltbook.credentials.json'),
+              path.join(os.homedir(), '.config', 'moltbook', 'credentials.json'),
+              path.join(os.homedir(), '.openclaw', 'workspace', 'config', 'moltbook', 'credentials.json')
+            ],
+            field: 'api_key',
+            rotated_at_field: 'rotated_at'
+          }
+        ]
+      },
+      moltstack_api_key: {
+        providers: [
+          { type: 'env', env: 'MOLTSTACK_TOKEN', rotated_at_env: 'MOLTSTACK_TOKEN_ROTATED_AT' },
+          {
+            type: 'json_file',
+            paths: [
+              path.join(DEFAULT_SECRETS_DIR, 'moltstack.credentials.json'),
+              path.join(os.homedir(), '.config', 'moltstack', 'credentials.json')
+            ],
+            field: 'api_key',
+            rotated_at_field: 'rotated_at'
+          }
+        ]
+      }
+    }
+  };
+}
+
+function normalizeProvider(raw: AnyObj, policy: AnyObj): AnyObj {
+  const type = normalizeText(raw && raw.type, 32).toLowerCase();
+  if (!type) return {};
+  if (type === 'env') {
+    return {
+      type: 'env',
+      enabled: raw.enabled !== false,
+      env: normalizeText(raw.env, 100),
+      rotated_at_env: normalizeText(raw.rotated_at_env, 100)
+    };
   }
-  const value = String(loader() || '').trim();
-  if (!value) {
-    return { ok: false, error: 'secret_value_missing', secret_id: key };
+  if (type === 'json_file') {
+    const paths = Array.isArray(raw.paths)
+      ? raw.paths.map((p: unknown) => String(p || '').trim()).filter(Boolean)
+      : (normalizeText(raw.path || '', 400) ? [normalizeText(raw.path || '', 400)] : []);
+    return {
+      type: 'json_file',
+      enabled: raw.enabled !== false,
+      paths,
+      field: normalizeText(raw.field || 'api_key', 120) || 'api_key',
+      rotated_at_field: normalizeText(raw.rotated_at_field || 'rotated_at', 120) || 'rotated_at'
+    };
   }
+  if (type === 'command') {
+    const command = Array.isArray(raw.command)
+      ? raw.command.map((x: unknown) => String(x || '')).filter((x: string) => x.trim())
+      : normalizeText(raw.command || '', 2000);
+    return {
+      type: 'command',
+      enabled: raw.enabled === true,
+      command,
+      parse_json: raw.parse_json !== false,
+      value_path: normalizeText(raw.value_path || raw.value_field || 'value', 120) || 'value',
+      rotated_at_path: normalizeText(raw.rotated_at_path || raw.rotated_at_field || 'rotated_at', 120) || 'rotated_at',
+      timeout_ms: clampInt(raw.timeout_ms, 500, 60000, clampInt(policy.command_backend.timeout_ms, 500, 60000, 5000)),
+      env: raw.env && typeof raw.env === 'object' ? raw.env : {}
+    };
+  }
+  return {};
+}
+
+function normalizeSecretSpec(secretId: string, raw: AnyObj, baseSpec: AnyObj, policy: AnyObj): AnyObj {
+  const sourceProviders = Array.isArray(raw && raw.providers)
+    ? raw.providers
+    : Array.isArray(baseSpec && baseSpec.providers)
+      ? baseSpec.providers
+      : [];
+  const providers = sourceProviders
+    .map((provider: AnyObj) => normalizeProvider(provider, policy))
+    .filter((provider: AnyObj) => provider && provider.type);
+  const rotationRaw = {
+    ...(policy.rotation_policy && typeof policy.rotation_policy === 'object' ? policy.rotation_policy : {}),
+    ...(baseSpec && baseSpec.rotation && typeof baseSpec.rotation === 'object' ? baseSpec.rotation : {}),
+    ...(raw && raw.rotation && typeof raw.rotation === 'object' ? raw.rotation : {})
+  };
+  return {
+    secret_id: secretId,
+    providers,
+    rotation: {
+      warn_after_days: clampNumber(rotationRaw.warn_after_days, 1, 3650, 45),
+      max_after_days: clampNumber(rotationRaw.max_after_days, 1, 3650, 90),
+      require_rotated_at: boolFlag(rotationRaw.require_rotated_at, false),
+      enforce_on_issue: boolFlag(rotationRaw.enforce_on_issue, false)
+    }
+  };
+}
+
+function loadPolicy(policyPathRaw?: unknown): AnyObj {
+  const policyPath = policyPathRaw
+    ? path.resolve(String(policyPathRaw))
+    : POLICY_PATH;
+  const base = defaultPolicy();
+  const raw: AnyObj = readJsonSafe(policyPath, {} as AnyObj);
+  const merged: AnyObj = {
+    version: normalizeText(raw && raw.version ? raw.version : base.version, 24) || '1.0',
+    path: policyPath,
+    audit: {
+      include_backend_details: raw && raw.audit && raw.audit.include_backend_details === false
+        ? false
+        : base.audit.include_backend_details
+    },
+    rotation_policy: {
+      warn_after_days: clampNumber(
+        raw && raw.rotation_policy ? raw.rotation_policy.warn_after_days : base.rotation_policy.warn_after_days,
+        1,
+        3650,
+        base.rotation_policy.warn_after_days
+      ),
+      max_after_days: clampNumber(
+        raw && raw.rotation_policy ? raw.rotation_policy.max_after_days : base.rotation_policy.max_after_days,
+        1,
+        3650,
+        base.rotation_policy.max_after_days
+      ),
+      require_rotated_at: boolFlag(
+        raw && raw.rotation_policy ? raw.rotation_policy.require_rotated_at : base.rotation_policy.require_rotated_at,
+        false
+      ),
+      enforce_on_issue: boolFlag(
+        raw && raw.rotation_policy ? raw.rotation_policy.enforce_on_issue : base.rotation_policy.enforce_on_issue,
+        false
+      )
+    },
+    command_backend: {
+      timeout_ms: clampInt(
+        raw && raw.command_backend ? raw.command_backend.timeout_ms : base.command_backend.timeout_ms,
+        500,
+        60000,
+        base.command_backend.timeout_ms
+      )
+    },
+    secrets: {}
+  };
+
+  const sourceSecrets = raw && raw.secrets && typeof raw.secrets === 'object' ? raw.secrets : {};
+  const baseSecrets = base.secrets || {};
+  const secretIds = Array.from(
+    new Set(
+      Object.keys(baseSecrets)
+        .concat(Object.keys(sourceSecrets))
+        .map((id) => normalizeText(id, 120))
+        .filter(Boolean)
+    )
+  );
+  for (const secretId of secretIds) {
+    const baseSpec = baseSecrets[secretId] && typeof baseSecrets[secretId] === 'object' ? baseSecrets[secretId] : {};
+    const rawSpec = sourceSecrets[secretId] && typeof sourceSecrets[secretId] === 'object' ? sourceSecrets[secretId] : {};
+    merged.secrets[secretId] = normalizeSecretSpec(secretId, rawSpec, baseSpec, merged);
+  }
+  return merged;
+}
+
+function runProviderEnv(secretId: string, provider: AnyObj): AnyObj {
+  const envName = normalizeText(provider.env, 100);
+  if (!envName) return { ok: false, reason: 'env_name_missing' };
+  const value = normalizeText(process.env[envName], 8192);
+  if (!value) return { ok: false, reason: 'env_value_missing', env: envName };
+  const rotatedAt = provider.rotated_at_env
+    ? normalizeText(process.env[String(provider.rotated_at_env)], 120)
+    : '';
   return {
     ok: true,
-    secret_id: key,
     value,
-    value_hash: stableHash16(value)
+    rotated_at: rotatedAt || null,
+    provider_type: 'env',
+    provider_ref: envName,
+    external: true
+  };
+}
+
+function runProviderJsonFile(secretId: string, provider: AnyObj): AnyObj {
+  const candidates = Array.isArray(provider.paths) ? provider.paths : [];
+  const field = normalizeText(provider.field || 'api_key', 120) || 'api_key';
+  const rotatedField = normalizeText(provider.rotated_at_field || 'rotated_at', 120) || 'rotated_at';
+  for (const rawPath of candidates) {
+    const resolved = resolveTemplate(rawPath, secretId);
+    try {
+      if (!resolved || !fs.existsSync(resolved)) continue;
+      const payload = JSON.parse(fs.readFileSync(resolved, 'utf8'));
+      const candidate = getByPath(payload, field);
+      const value = normalizeText(candidate, 8192);
+      if (!value) continue;
+      const rotatedAt = getByPath(payload, rotatedField);
+      return {
+        ok: true,
+        value,
+        rotated_at: rotatedAt == null ? null : normalizeText(rotatedAt, 120),
+        provider_type: 'json_file',
+        provider_ref: resolved,
+        external: false
+      };
+    } catch {
+      continue;
+    }
+  }
+  return { ok: false, reason: 'json_file_value_missing', field };
+}
+
+function runProviderCommand(secretId: string, provider: AnyObj): AnyObj {
+  const command = provider.command;
+  const timeoutMs = clampInt(provider.timeout_ms, 500, 60000, 5000);
+  const mergedEnv = {
+    ...process.env,
+    SECRET_ID: secretId,
+    SECRET_BROKER_SECRET_ID: secretId
+  } as AnyObj;
+  if (provider.env && typeof provider.env === 'object') {
+    for (const [k, v] of Object.entries(provider.env)) {
+      const key = normalizeText(k, 80);
+      if (!key) continue;
+      mergedEnv[key] = String(v == null ? '' : v);
+    }
+  }
+
+  let result: AnyObj = null;
+  if (Array.isArray(command) && command.length >= 1) {
+    result = spawnSync(String(command[0]), command.slice(1).map((x: unknown) => String(x)), {
+      encoding: 'utf8',
+      env: mergedEnv,
+      timeout: timeoutMs
+    });
+  } else {
+    const cmd = normalizeText(command, 2000);
+    if (!cmd) return { ok: false, reason: 'command_missing' };
+    result = spawnSync('/bin/sh', ['-lc', cmd], {
+      encoding: 'utf8',
+      env: mergedEnv,
+      timeout: timeoutMs
+    });
+  }
+
+  const code = result && Number.isFinite(Number(result.status)) ? Number(result.status) : 1;
+  if (code !== 0) {
+    return {
+      ok: false,
+      reason: 'command_exit_nonzero',
+      code,
+      stderr: normalizeText(result && result.stderr ? result.stderr : '', 200)
+    };
+  }
+  const stdout = normalizeText(result && result.stdout ? result.stdout : '', 8000);
+  if (!stdout) return { ok: false, reason: 'command_empty_stdout' };
+
+  const parseJson = provider.parse_json !== false;
+  if (!parseJson) {
+    return {
+      ok: true,
+      value: stdout,
+      rotated_at: null,
+      provider_type: 'command',
+      provider_ref: Array.isArray(command) ? String(command[0] || '') : normalizeText(command, 180),
+      external: true
+    };
+  }
+
+  let payload = null;
+  try {
+    payload = JSON.parse(stdout);
+  } catch {
+    return { ok: false, reason: 'command_json_invalid' };
+  }
+  const value = normalizeText(getByPath(payload, provider.value_path || 'value'), 8192);
+  if (!value) return { ok: false, reason: 'command_value_missing' };
+  const rotatedAt = getByPath(payload, provider.rotated_at_path || 'rotated_at');
+  return {
+    ok: true,
+    value,
+    rotated_at: rotatedAt == null ? null : normalizeText(rotatedAt, 120),
+    provider_type: 'command',
+    provider_ref: Array.isArray(command) ? String(command[0] || '') : normalizeText(command, 180),
+    external: true
+  };
+}
+
+function evaluateRotation(secretId: string, rotationCfg: AnyObj, rotatedAtRaw: unknown, now: number): AnyObj {
+  const warnAfterDays = clampNumber(rotationCfg.warn_after_days, 1, 3650, 45);
+  const maxAfterDays = clampNumber(rotationCfg.max_after_days, warnAfterDays, 3650, 90);
+  const requireRotatedAt = rotationCfg.require_rotated_at === true;
+  const enforceOnIssue = rotationCfg.enforce_on_issue === true;
+  const rotatedAtMs = parseTsMs(rotatedAtRaw);
+  if (!rotatedAtMs) {
+    return {
+      status: requireRotatedAt ? 'critical' : 'unknown',
+      reason: 'rotated_at_missing',
+      rotated_at: null,
+      age_days: null,
+      warn_after_days: warnAfterDays,
+      max_after_days: maxAfterDays,
+      require_rotated_at: requireRotatedAt,
+      enforce_on_issue: enforceOnIssue
+    };
+  }
+  const ageDaysRaw = Math.max(0, (now - rotatedAtMs) / (24 * 60 * 60 * 1000));
+  const ageDays = Number(ageDaysRaw.toFixed(3));
+  let status = 'ok';
+  let reason = 'rotation_fresh';
+  if (ageDays > maxAfterDays) {
+    status = 'critical';
+    reason = 'rotation_age_exceeded';
+  } else if (ageDays > warnAfterDays) {
+    status = 'warn';
+    reason = 'rotation_age_warning';
+  }
+  return {
+    status,
+    reason,
+    rotated_at: nowIso(rotatedAtMs),
+    age_days: ageDays,
+    warn_after_days: warnAfterDays,
+    max_after_days: maxAfterDays,
+    require_rotated_at: requireRotatedAt,
+    enforce_on_issue: enforceOnIssue
+  };
+}
+
+function loadSecretById(secretId: unknown, opts: AnyObj = {}): Record<string, any> {
+  const now = nowMs(opts.now_ms);
+  const key = normalizeText(secretId, 120);
+  const policy = loadPolicy(opts.policy_path);
+  const spec = policy.secrets[key];
+  if (!spec || typeof spec !== 'object') {
+    return { ok: false, error: 'secret_id_unsupported', secret_id: key || null };
+  }
+  const providerErrors: AnyObj[] = [];
+  for (const provider of Array.isArray(spec.providers) ? spec.providers : []) {
+    if (!provider || provider.enabled === false) continue;
+    let result: AnyObj = { ok: false, reason: 'provider_unsupported' };
+    if (provider.type === 'env') result = runProviderEnv(key, provider);
+    else if (provider.type === 'json_file') result = runProviderJsonFile(key, provider);
+    else if (provider.type === 'command') result = runProviderCommand(key, provider);
+    else result = { ok: false, reason: 'provider_type_unsupported', provider_type: provider.type };
+
+    if (result.ok) {
+      const value = normalizeText(result.value, 8192);
+      if (!value) {
+        providerErrors.push({
+          provider_type: provider.type,
+          reason: 'value_empty'
+        });
+        continue;
+      }
+      const rotation = evaluateRotation(key, spec.rotation || {}, result.rotated_at, now);
+      const out = {
+        ok: true,
+        secret_id: key,
+        value,
+        value_hash: stableHash16(value),
+        backend: {
+          provider_type: result.provider_type || provider.type,
+          provider_ref: normalizeText(result.provider_ref || '', 200) || null,
+          external: result.external === true
+        },
+        rotation
+      };
+      if (opts.with_audit !== false) {
+        audit({
+          type: 'secret_value_loaded',
+          secret_id: key,
+          provider_type: out.backend.provider_type,
+          provider_ref: policy.audit.include_backend_details ? out.backend.provider_ref : null,
+          external_backend: out.backend.external === true,
+          value_hash: out.value_hash,
+          rotation_status: rotation.status,
+          rotation_age_days: rotation.age_days
+        });
+      }
+      return out;
+    }
+    providerErrors.push({
+      provider_type: provider.type,
+      reason: normalizeText(result.reason || 'provider_failed', 120),
+      code: Number.isFinite(Number(result.code)) ? Number(result.code) : null,
+      ref: normalizeText(result.provider_ref || '', 120) || null
+    });
+  }
+
+  if (opts.with_audit !== false) {
+    audit({
+      type: 'secret_value_load_failed',
+      secret_id: key,
+      reason: 'all_providers_failed',
+      provider_errors: providerErrors.slice(0, 8)
+    });
+  }
+  return {
+    ok: false,
+    error: 'secret_value_missing',
+    secret_id: key,
+    provider_errors: providerErrors.slice(0, 8)
+  };
+}
+
+function evaluateSecretRotationHealth(opts: AnyObj = {}): Record<string, any> {
+  const policy = loadPolicy(opts.policy_path);
+  const now = nowMs(opts.now_ms);
+  const secretIds = Array.isArray(opts.secret_ids)
+    ? opts.secret_ids.map((x: unknown) => normalizeText(x, 120)).filter(Boolean)
+    : Object.keys(policy.secrets || {});
+  const checks: AnyObj[] = [];
+  const counters = {
+    ok: 0,
+    warn: 0,
+    critical: 0,
+    unknown: 0,
+    unavailable: 0
+  };
+
+  for (const secretId of secretIds) {
+    const loaded = loadSecretById(secretId, { now_ms: now, with_audit: false, policy_path: policy.path });
+    if (!loaded.ok) {
+      counters.unavailable += 1;
+      checks.push({
+        secret_id: secretId,
+        status: 'critical',
+        reason: loaded.error || 'secret_unavailable',
+        available: false,
+        provider_errors: loaded.provider_errors || []
+      });
+      continue;
+    }
+    const rotation = loaded.rotation && typeof loaded.rotation === 'object'
+      ? loaded.rotation
+      : { status: 'unknown', reason: 'rotation_missing' };
+    const status = normalizeText(rotation.status || 'unknown', 24) || 'unknown';
+    if (status === 'ok') counters.ok += 1;
+    else if (status === 'warn') counters.warn += 1;
+    else if (status === 'critical') counters.critical += 1;
+    else counters.unknown += 1;
+
+    checks.push({
+      secret_id: secretId,
+      status,
+      reason: normalizeText(rotation.reason || '', 120) || null,
+      available: true,
+      provider_type: loaded.backend ? loaded.backend.provider_type || null : null,
+      provider_ref: policy.audit.include_backend_details && loaded.backend
+        ? loaded.backend.provider_ref || null
+        : null,
+      external_backend: loaded.backend ? loaded.backend.external === true : null,
+      rotated_at: rotation.rotated_at || null,
+      age_days: rotation.age_days == null ? null : Number(rotation.age_days),
+      warn_after_days: rotation.warn_after_days == null ? null : Number(rotation.warn_after_days),
+      max_after_days: rotation.max_after_days == null ? null : Number(rotation.max_after_days),
+      enforce_on_issue: rotation.enforce_on_issue === true
+    });
+  }
+
+  const total = checks.length;
+  const level = counters.critical > 0 || counters.unavailable > 0
+    ? 'critical'
+    : (counters.warn > 0 ? 'warn' : 'ok');
+  const out = {
+    ok: level !== 'critical',
+    type: 'secret_rotation_health',
+    ts: nowIso(now),
+    policy_path: policy.path,
+    policy_version: policy.version,
+    total,
+    level,
+    counts: counters,
+    checks
+  };
+  if (opts.with_audit !== false) {
+    audit({
+      type: 'secret_rotation_check',
+      level,
+      total,
+      counts: counters
+    });
+  }
+  return out;
+}
+
+function secretBrokerStatus(opts: AnyObj = {}): Record<string, any> {
+  const policy = loadPolicy(opts.policy_path);
+  const state = loadState();
+  const issuedRows = Object.values(state.issued || {}) as AnyObj[];
+  const activeHandles = issuedRows.filter((row) => {
+    const expires = parseTsMs(row && row.expires_at ? row.expires_at : null);
+    return Number.isFinite(expires) && Number(expires) > Date.now();
+  }).length;
+  const rotation = evaluateSecretRotationHealth({ policy_path: policy.path, with_audit: false });
+
+  return {
+    ok: true,
+    type: 'secret_broker_status',
+    ts: nowIso(),
+    policy_path: policy.path,
+    policy_version: policy.version,
+    state_path: STATE_PATH,
+    audit_path: AUDIT_PATH,
+    supported_secret_ids: Object.keys(policy.secrets || {}),
+    issued_total: issuedRows.length,
+    issued_active: activeHandles,
+    rotation
   };
 }
 
@@ -268,7 +788,7 @@ function issueSecretHandle(opts: Record<string, any> = {}): Record<string, any> 
   if (!secretId) return { ok: false, error: 'secret_id_required' };
   if (!scope) return { ok: false, error: 'scope_required' };
 
-  const secret = loadSecretById(secretId);
+  const secret = loadSecretById(secretId, { now_ms: opts.now_ms, policy_path: opts.policy_path });
   if (!secret.ok) {
     audit({
       type: 'secret_handle_issue_denied',
@@ -280,11 +800,29 @@ function issueSecretHandle(opts: Record<string, any> = {}): Record<string, any> 
     return secret;
   }
 
+  const rotation = secret.rotation && typeof secret.rotation === 'object' ? secret.rotation : {};
+  if (rotation.enforce_on_issue === true && String(rotation.status || '').toLowerCase() === 'critical') {
+    audit({
+      type: 'secret_handle_issue_denied',
+      secret_id: secretId,
+      scope,
+      caller,
+      reason: 'rotation_policy_enforced',
+      rotation_status: rotation.status || 'critical'
+    });
+    return {
+      ok: false,
+      error: 'rotation_policy_enforced',
+      secret_id: secretId,
+      rotation
+    };
+  }
+
   const ttlSec = clampInt(opts.ttl_sec, MIN_TTL_SEC, MAX_TTL_SEC, DEFAULT_TTL_SEC);
   const issuedMs = nowMs(opts.now_ms);
   const expiresMs = issuedMs + (ttlSec * 1000);
   const payload = {
-    v: '1.0',
+    v: '1.1',
     handle_id: makeHandleId(),
     secret_id: secret.secret_id,
     scope,
@@ -311,6 +849,9 @@ function issueSecretHandle(opts: Record<string, any> = {}): Record<string, any> 
     issued_at: payload.issued_at,
     expires_at: payload.expires_at,
     value_hash: secret.value_hash,
+    backend_provider_type: secret.backend ? secret.backend.provider_type || null : null,
+    backend_provider_ref: secret.backend ? secret.backend.provider_ref || null : null,
+    rotation_status: secret.rotation ? secret.rotation.status || null : null,
     resolve_count: 0,
     last_resolved_at: null
   };
@@ -323,7 +864,11 @@ function issueSecretHandle(opts: Record<string, any> = {}): Record<string, any> 
     scope: payload.scope,
     caller: payload.caller,
     ttl_sec: ttlSec,
-    reason: payload.reason
+    reason: payload.reason,
+    backend_provider_type: secret.backend ? secret.backend.provider_type || null : null,
+    backend_provider_ref: secret.backend ? secret.backend.provider_ref || null : null,
+    rotation_status: secret.rotation ? secret.rotation.status || null : null,
+    rotation_age_days: secret.rotation ? secret.rotation.age_days || null : null
   });
 
   return {
@@ -335,7 +880,9 @@ function issueSecretHandle(opts: Record<string, any> = {}): Record<string, any> 
     caller: payload.caller,
     issued_at: payload.issued_at,
     expires_at: payload.expires_at,
-    ttl_sec: ttlSec
+    ttl_sec: ttlSec,
+    backend: secret.backend || null,
+    rotation: secret.rotation || null
   };
 }
 
@@ -436,7 +983,7 @@ function resolveSecretHandle(handle: unknown, opts: Record<string, any> = {}): R
     return { ok: false, error: 'handle_unknown', handle_id: handleId, secret_id: secretId };
   }
 
-  const secret = loadSecretById(secretId);
+  const secret = loadSecretById(secretId, { now_ms: now, policy_path: opts.policy_path });
   if (!secret.ok) {
     audit({
       type: 'secret_handle_resolve_denied',
@@ -449,6 +996,8 @@ function resolveSecretHandle(handle: unknown, opts: Record<string, any> = {}): R
 
   state.issued[handleId].resolve_count = Number(state.issued[handleId].resolve_count || 0) + 1;
   state.issued[handleId].last_resolved_at = nowIso(now);
+  state.issued[handleId].last_backend_provider_type = secret.backend ? secret.backend.provider_type || null : null;
+  state.issued[handleId].last_rotation_status = secret.rotation ? secret.rotation.status || null : null;
   saveState(state);
 
   audit({
@@ -457,7 +1006,11 @@ function resolveSecretHandle(handle: unknown, opts: Record<string, any> = {}): R
     secret_id: secretId,
     scope,
     caller,
-    resolve_count: state.issued[handleId].resolve_count
+    resolve_count: state.issued[handleId].resolve_count,
+    backend_provider_type: secret.backend ? secret.backend.provider_type || null : null,
+    backend_provider_ref: secret.backend ? secret.backend.provider_ref || null : null,
+    rotation_status: secret.rotation ? secret.rotation.status || null : null,
+    rotation_age_days: secret.rotation ? secret.rotation.age_days || null : null
   });
 
   return {
@@ -468,7 +1021,9 @@ function resolveSecretHandle(handle: unknown, opts: Record<string, any> = {}): R
     caller,
     expires_at: payload.expires_at || null,
     value: secret.value,
-    value_hash: secret.value_hash
+    value_hash: secret.value_hash,
+    backend: secret.backend || null,
+    rotation: secret.rotation || null
   };
 }
 
@@ -476,6 +1031,10 @@ module.exports = {
   issueSecretHandle,
   resolveSecretHandle,
   loadSecretById,
+  evaluateSecretRotationHealth,
+  secretBrokerStatus,
+  loadPolicy,
+  POLICY_PATH,
   STATE_PATH,
   AUDIT_PATH
 };

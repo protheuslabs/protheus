@@ -548,6 +548,12 @@ function main() {
     ["capability_lease.js", "issue", "verify", "consume", "--scope"]
   );
 
+  // secret_broker.js mints scoped secret handles, resolves handles, and checks rotation posture.
+  checkScript(
+    "systems/security/secret_broker.js",
+    ["secret_broker.js", "issue", "resolve", "status", "rotation-check", "--scope", "--policy", "--strict", "--secret-ids"]
+  );
+
   // policy_rootd.js authorizes sensitive scope mutations via out-of-process policy root.
   checkScript(
     "systems/security/policy_rootd.js",
