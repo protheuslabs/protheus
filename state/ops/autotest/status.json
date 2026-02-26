@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "updated_at": "2026-02-26T10:16:08.434Z",
+  "updated_at": "2026-02-26T10:16:36.793Z",
   "modules": {
     "systems/actuation/actuation_executor.ts": {
       "id": "mod_0eff96d59cce2c",
@@ -36,7 +36,7 @@
       "mapped_test_count": 1,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
       "last_test_ts": null,
-      "last_pass_ts": "2026-02-26T10:16:08.433Z",
+      "last_pass_ts": "2026-02-26T10:16:36.792Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
@@ -118,7 +118,7 @@
       "mapped_test_count": 1,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
       "last_test_ts": null,
-      "last_pass_ts": "2026-02-26T10:16:08.433Z",
+      "last_pass_ts": "2026-02-26T10:16:36.792Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
@@ -160,7 +160,7 @@
       "mapped_test_count": 1,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
       "last_test_ts": null,
-      "last_pass_ts": "2026-02-26T10:16:08.433Z",
+      "last_pass_ts": "2026-02-26T10:16:36.792Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
@@ -242,7 +242,7 @@
       "mapped_test_count": 1,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
       "last_test_ts": null,
-      "last_pass_ts": "2026-02-26T10:16:08.433Z",
+      "last_pass_ts": "2026-02-26T10:16:36.792Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
@@ -314,7 +314,7 @@
       "id": "mod_58513633b36e29",
       "path": "systems/autonomy/autonomy_controller.ts",
       "fingerprint": "946d85c9c0438dbe1e4d8ae89d88a06f7874fb206122e424854a57f9eb256c0a",
-      "checked": false,
+      "checked": true,
       "changed": false,
       "is_new": false,
       "untested": false,
@@ -345,7 +345,7 @@
       "mapped_test_count": 22,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
       "last_test_ts": null,
-      "last_pass_ts": null,
+      "last_pass_ts": "2026-02-26T10:16:36.792Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
@@ -357,7 +357,7 @@
       "id": "mod_2d4a23dbe4c856",
       "path": "systems/autonomy/autonomy_rollout_controller.ts",
       "fingerprint": "26735004904905f5b217de8262ccf1ecd630e88642ae715504089f3863f1cd40",
-      "checked": false,
+      "checked": true,
       "changed": false,
       "is_new": false,
       "untested": false,
@@ -388,7 +388,7 @@
       "mapped_test_count": 22,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
       "last_test_ts": null,
-      "last_pass_ts": null,
+      "last_pass_ts": "2026-02-26T10:16:36.792Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
@@ -400,7 +400,7 @@
       "id": "mod_f588bc580ea537",
       "path": "systems/autonomy/autonomy_simulation_harness.ts",
       "fingerprint": "f82a17986ea95758f1d137716b6dba790f08de35d6c4064a9f86aa3a7f74c190",
-      "checked": false,
+      "checked": true,
       "changed": false,
       "is_new": false,
       "untested": false,
@@ -431,7 +431,7 @@
       "mapped_test_count": 22,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
       "last_test_ts": null,
-      "last_pass_ts": null,
+      "last_pass_ts": "2026-02-26T10:16:36.792Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
@@ -454,7 +454,7 @@
       "mapped_test_count": 2,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
       "last_test_ts": null,
-      "last_pass_ts": "2026-02-26T10:16:08.434Z",
+      "last_pass_ts": "2026-02-26T10:16:36.792Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
@@ -486,7 +486,7 @@
       "id": "mod_e2d62b3243503b",
       "path": "systems/autonomy/batch_lane.ts",
       "fingerprint": "66cfcc7e8824abb25ab21e18e9f1ce3fe9ccdc8512b84e851ffa458bebed836f",
-      "checked": false,
+      "checked": true,
       "changed": false,
       "is_new": false,
       "untested": false,
@@ -499,7 +499,7 @@
       "mapped_test_count": 4,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
       "last_test_ts": null,
-      "last_pass_ts": null,
+      "last_pass_ts": "2026-02-26T10:16:36.792Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
@@ -531,7 +531,7 @@
       "id": "mod_b06be4a2387e88",
       "path": "systems/autonomy/collective_shadow.ts",
       "fingerprint": "b800bd5603d167243fb78bdfd35b7075efded9ac8e30f944e6c5482400b39bc8",
-      "checked": false,
+      "checked": true,
       "changed": false,
       "is_new": false,
       "untested": false,
@@ -542,7 +542,7 @@
       "mapped_test_count": 2,
       "last_change_ts": "2026-02-26T10:15:45.275Z",
       "last_test_ts": null,
-      "last_pass_ts": null,
+      "last_pass_ts": "2026-02-26T10:16:36.792Z",
       "last_fail_ts": null,
       "seed_fields": {
         "owner": null,
@@ -4755,18 +4755,7 @@
       "last_run_ts": "2026-02-26T10:15:47.120Z",
       "last_duration_ms": 302,
       "last_stdout_excerpt": "adaptive_layer_boundary_guards.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/adaptive_layer_boundary_guards.test.js",
-          "systems/adaptive/core/layer_store.ts",
-          "systems/security/guard.ts",
-          "systems/sensory/adaptive_layer_guard.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:15:47.120Z"
+      "last_stderr_excerpt": null
     },
     "tst_38a671d2ef6608": {
       "id": "tst_38a671d2ef6608",
@@ -4854,8 +4843,8 @@
       "critical": false,
       "last_status": "pass",
       "last_exit_code": 0,
-      "last_run_ts": "2026-02-26T10:16:05.421Z",
-      "last_duration_ms": 751,
+      "last_run_ts": "2026-02-26T10:16:27.712Z",
+      "last_duration_ms": 809,
       "last_stdout_excerpt": "autonomy_actionability_rollback_guard.test.js: OK",
       "last_stderr_excerpt": "",
       "last_guard": {
@@ -4872,7 +4861,7 @@
           "systems/security/guard.ts"
         ]
       },
-      "last_pass_ts": "2026-02-26T10:16:05.421Z"
+      "last_pass_ts": "2026-02-26T10:16:27.712Z"
     },
     "tst_6e303915d4e7be": {
       "id": "tst_6e303915d4e7be",
@@ -4882,8 +4871,8 @@
       "critical": false,
       "last_status": "pass",
       "last_exit_code": 0,
-      "last_run_ts": "2026-02-26T10:15:56.659Z",
-      "last_duration_ms": 750,
+      "last_run_ts": "2026-02-26T10:16:18.839Z",
+      "last_duration_ms": 751,
       "last_stdout_excerpt": "autonomy_backlog_autoscale.test.js: OK",
       "last_stderr_excerpt": "",
       "last_guard": {
@@ -4896,7 +4885,7 @@
           "systems/autonomy/autonomy_simulation_harness.ts"
         ]
       },
-      "last_pass_ts": "2026-02-26T10:15:56.659Z"
+      "last_pass_ts": "2026-02-26T10:16:18.839Z"
     },
     "tst_1b339651037708": {
       "id": "tst_1b339651037708",
@@ -4906,8 +4895,8 @@
       "critical": false,
       "last_status": "pass",
       "last_exit_code": 0,
-      "last_run_ts": "2026-02-26T10:15:49.058Z",
-      "last_duration_ms": 745,
+      "last_run_ts": "2026-02-26T10:16:11.146Z",
+      "last_duration_ms": 747,
       "last_stdout_excerpt": "autonomy_backlog_batch_max.test.js: OK",
       "last_stderr_excerpt": "",
       "last_guard": {
@@ -4921,7 +4910,7 @@
           "systems/autonomy/batch_lane.ts"
         ]
       },
-      "last_pass_ts": "2026-02-26T10:15:49.058Z"
+      "last_pass_ts": "2026-02-26T10:16:11.146Z"
     },
     "tst_79fbb8b53e594c": {
       "id": "tst_79fbb8b53e594c",
@@ -4931,8 +4920,8 @@
       "critical": false,
       "last_status": "pass",
       "last_exit_code": 0,
-      "last_run_ts": "2026-02-26T10:15:57.647Z",
-      "last_duration_ms": 747,
+      "last_run_ts": "2026-02-26T10:16:19.830Z",
+      "last_duration_ms": 742,
       "last_stdout_excerpt": "═══════════════════════════════════════════════════════════ AUTONOMY CALIBRATION TESTS ═══════════════════════════════════════════════════════════ ✅ low ship-rate + high exhaustion loosens thresholds ✅ tightening requires sufficient sample and shipped baseline ✅ small-sample high no-change does not over-tighten ✅ fallback low-sample exhaustion still loosens slightly ✅ ALL AUTONOMY CALIBRATION TESTS PASS",
       "last_stderr_excerpt": "",
       "last_guard": {
@@ -4946,7 +4935,7 @@
           "systems/autonomy/trit_shadow_replay_calibration.ts"
         ]
       },
-      "last_pass_ts": "2026-02-26T10:15:57.647Z"
+      "last_pass_ts": "2026-02-26T10:16:19.830Z"
     },
     "tst_57372b6da983cd": {
       "id": "tst_57372b6da983cd",
@@ -4956,8 +4945,8 @@
       "critical": false,
       "last_status": "pass",
       "last_exit_code": 0,
-      "last_run_ts": "2026-02-26T10:15:55.207Z",
-      "last_duration_ms": 752,
+      "last_run_ts": "2026-02-26T10:16:17.376Z",
+      "last_duration_ms": 786,
       "last_stdout_excerpt": "autonomy_dynamic_io_caps.test.js: OK",
       "last_stderr_excerpt": "",
       "last_guard": {
@@ -4970,7 +4959,7 @@
           "systems/autonomy/autonomy_simulation_harness.ts"
         ]
       },
-      "last_pass_ts": "2026-02-26T10:15:55.207Z"
+      "last_pass_ts": "2026-02-26T10:16:17.376Z"
     },
     "tst_fe5cdcdc6a00be": {
       "id": "tst_fe5cdcdc6a00be",
@@ -4978,12 +4967,25 @@
       "path": "memory/tools/tests/autonomy_evidence_pipeline.integration.test.js",
       "command": "node memory/tools/tests/autonomy_evidence_pipeline.integration.test.js",
       "critical": false,
-      "last_status": "untested",
+      "last_status": "pass",
       "last_exit_code": 0,
-      "last_run_ts": null,
-      "last_duration_ms": 0,
-      "last_stdout_excerpt": null,
-      "last_stderr_excerpt": null
+      "last_run_ts": "2026-02-26T10:16:34.235Z",
+      "last_duration_ms": 2008,
+      "last_stdout_excerpt": "═══════════════════════════════════════════════════════════ AUTONOMY EVIDENCE PIPELINE INTEGRATION TEST ═══════════════════════════════════════════════════════════ Ingested 1 proposals for 2099-12-31 (0 duplicates skipped) ✅ eyes -> queue -> enrich -> evidence pipeline is healthy",
+      "last_stderr_excerpt": "",
+      "last_guard": {
+        "ok": true,
+        "reason": null,
+        "files": [
+          "memory/tools/tests/autonomy_evidence_pipeline.integration.test.js",
+          "systems/autonomy/autonomy_controller.ts",
+          "systems/autonomy/autonomy_rollout_controller.ts",
+          "systems/autonomy/autonomy_simulation_harness.ts",
+          "systems/autonomy/pipeline_spc_gate.ts",
+          "systems/autonomy/skill_generation_pipeline.ts"
+        ]
+      },
+      "last_pass_ts": "2026-02-26T10:16:34.235Z"
     },
     "tst_2d2034df3ebeb7": {
       "id": "tst_2d2034df3ebeb7",
@@ -4993,8 +4995,8 @@
       "critical": false,
       "last_status": "pass",
       "last_exit_code": 0,
-      "last_run_ts": "2026-02-26T10:15:51.031Z",
-      "last_duration_ms": 749,
+      "last_run_ts": "2026-02-26T10:16:13.148Z",
+      "last_duration_ms": 746,
       "last_stdout_excerpt": "autonomy_execute_confidence_cooldown_key.test.js: OK",
       "last_stderr_excerpt": "",
       "last_guard": {
@@ -5008,7 +5010,7 @@
           "systems/autonomy/strategy_execute_guard.ts"
         ]
       },
-      "last_pass_ts": "2026-02-26T10:15:51.031Z"
+      "last_pass_ts": "2026-02-26T10:16:13.148Z"
     },
     "tst_405dfbaeffd2e1": {
       "id": "tst_405dfbaeffd2e1",
@@ -5018,8 +5020,8 @@
       "critical": false,
       "last_status": "pass",
       "last_exit_code": 0,
-      "last_run_ts": "2026-02-26T10:15:52.025Z",
-      "last_duration_ms": 747,
+      "last_run_ts": "2026-02-26T10:16:14.145Z",
+      "last_duration_ms": 751,
       "last_stdout_excerpt": "autonomy_mutation_execution_guard.test.js: OK",
       "last_stderr_excerpt": "",
       "last_guard": {
@@ -5036,7 +5038,7 @@
           "systems/security/guard.ts"
         ]
       },
-      "last_pass_ts": "2026-02-26T10:15:52.025Z"
+      "last_pass_ts": "2026-02-26T10:16:14.145Z"
     },
     "tst_92dab8ace7f60f": {
       "id": "tst_92dab8ace7f60f",
@@ -5046,8 +5048,8 @@
       "critical": false,
       "last_status": "pass",
       "last_exit_code": 0,
-      "last_run_ts": "2026-02-26T10:15:59.626Z",
-      "last_duration_ms": 742,
+      "last_run_ts": "2026-02-26T10:16:21.832Z",
+      "last_duration_ms": 752,
       "last_stdout_excerpt": "autonomy_policy_hold_classification.test.js: OK",
       "last_stderr_excerpt": "",
       "last_guard": {
@@ -5060,7 +5062,7 @@
           "systems/autonomy/autonomy_simulation_harness.ts"
         ]
       },
-      "last_pass_ts": "2026-02-26T10:15:59.626Z"
+      "last_pass_ts": "2026-02-26T10:16:21.832Z"
     },
     "tst_9db6bc6ab985af": {
       "id": "tst_9db6bc6ab985af",
@@ -5070,8 +5072,8 @@
       "critical": false,
       "last_status": "pass",
       "last_exit_code": 0,
-      "last_run_ts": "2026-02-26T10:16:01.603Z",
-      "last_duration_ms": 752,
+      "last_run_ts": "2026-02-26T10:16:23.831Z",
+      "last_duration_ms": 738,
       "last_stdout_excerpt": "autonomy_policy_hold_pressure.test.js: OK",
       "last_stderr_excerpt": "",
       "last_guard": {
@@ -5084,7 +5086,7 @@
           "systems/autonomy/autonomy_simulation_harness.ts"
         ]
       },
-      "last_pass_ts": "2026-02-26T10:16:01.603Z"
+      "last_pass_ts": "2026-02-26T10:16:23.831Z"
     },
     "tst_27e08aaa70e813": {
       "id": "tst_27e08aaa70e813",
@@ -5094,8 +5096,8 @@
       "critical": false,
       "last_status": "pass",
       "last_exit_code": 0,
-      "last_run_ts": "2026-02-26T10:15:50.039Z",
-      "last_duration_ms": 736,
+      "last_run_ts": "2026-02-26T10:16:12.157Z",
+      "last_duration_ms": 765,
       "last_stdout_excerpt": "autonomy_policy_hold_reason_cooldown.test.js: OK",
       "last_stderr_excerpt": "",
       "last_guard": {
@@ -5108,7 +5110,7 @@
           "systems/autonomy/autonomy_simulation_harness.ts"
         ]
       },
-      "last_pass_ts": "2026-02-26T10:15:50.039Z"
+      "last_pass_ts": "2026-02-26T10:16:12.157Z"
     },
     "tst_9a5595e2a4eceb": {
       "id": "tst_9a5595e2a4eceb",
@@ -5118,8 +5120,8 @@
       "critical": false,
       "last_status": "pass",
       "last_exit_code": 0,
-      "last_run_ts": "2026-02-26T10:16:00.608Z",
-      "last_duration_ms": 740,
+      "last_run_ts": "2026-02-26T10:16:22.845Z",
+      "last_duration_ms": 762,
       "last_stdout_excerpt": "autonomy_postconditions.test.js: OK",
       "last_stderr_excerpt": "",
       "last_guard": {
@@ -5132,7 +5134,7 @@
           "systems/autonomy/autonomy_simulation_harness.ts"
         ]
       },
-      "last_pass_ts": "2026-02-26T10:16:00.608Z"
+      "last_pass_ts": "2026-02-26T10:16:22.845Z"
     },
     "tst_dab32ddd01952e": {
       "id": "tst_dab32ddd01952e",
@@ -5142,8 +5144,8 @@
       "critical": false,
       "last_status": "pass",
       "last_exit_code": 0,
-      "last_run_ts": "2026-02-26T10:16:06.423Z",
-      "last_duration_ms": 754,
+      "last_run_ts": "2026-02-26T10:16:28.757Z",
+      "last_duration_ms": 786,
       "last_stdout_excerpt": "autonomy_preview_structural_cooldown.test.js: OK",
       "last_stderr_excerpt": "",
       "last_guard": {
@@ -5156,7 +5158,7 @@
           "systems/autonomy/autonomy_simulation_harness.ts"
         ]
       },
-      "last_pass_ts": "2026-02-26T10:16:06.423Z"
+      "last_pass_ts": "2026-02-26T10:16:28.757Z"
     },
     "tst_df6b033e394bcd": {
       "id": "tst_df6b033e394bcd",
@@ -5166,8 +5168,8 @@
       "critical": false,
       "last_status": "pass",
       "last_exit_code": 0,
-      "last_run_ts": "2026-02-26T10:16:07.425Z",
-      "last_duration_ms": 753,
+      "last_run_ts": "2026-02-26T10:16:29.813Z",
+      "last_duration_ms": 799,
       "last_stdout_excerpt": "autonomy_qos_lane_selection.test.js: OK",
       "last_stderr_excerpt": "",
       "last_guard": {
@@ -5182,7 +5184,7 @@
           "systems/autonomy/suggestion_lane.ts"
         ]
       },
-      "last_pass_ts": "2026-02-26T10:16:07.425Z"
+      "last_pass_ts": "2026-02-26T10:16:29.813Z"
     },
     "tst_5f0205511b09e8": {
       "id": "tst_5f0205511b09e8",
@@ -5192,7 +5194,7 @@
       "critical": false,
       "last_status": "pass",
       "last_exit_code": 0,
-      "last_run_ts": "2026-02-26T10:15:55.662Z",
+      "last_run_ts": "2026-02-26T10:16:17.831Z",
       "last_duration_ms": 207,
       "last_stdout_excerpt": "autonomy_rollout_controller.test.js: OK",
       "last_stderr_excerpt": "",
@@ -5209,7 +5211,7 @@
           "systems/autonomy/optimization_aperture_controller.ts"
         ]
       },
-      "last_pass_ts": "2026-02-26T10:15:55.662Z"
+      "last_pass_ts": "2026-02-26T10:16:17.831Z"
     },
     "tst_b343fbf4b3b3c5": {
       "id": "tst_b343fbf4b3b3c5",
@@ -5219,8 +5221,8 @@
       "critical": false,
       "last_status": "pass",
       "last_exit_code": 0,
-      "last_run_ts": "2026-02-26T10:16:03.784Z",
-      "last_duration_ms": 1933,
+      "last_run_ts": "2026-02-26T10:16:26.019Z",
+      "last_duration_ms": 1939,
       "last_stdout_excerpt": "✅ autonomy_run_batch.test.js PASS",
       "last_stderr_excerpt": "",
       "last_guard": {
@@ -5234,7 +5236,7 @@
           "systems/autonomy/batch_lane.ts"
         ]
       },
-      "last_pass_ts": "2026-02-26T10:16:03.784Z"
+      "last_pass_ts": "2026-02-26T10:16:26.019Z"
     },
     "tst_fc21967864e868": {
       "id": "tst_fc21967864e868",
@@ -5242,12 +5244,23 @@
       "path": "memory/tools/tests/autonomy_run_lock.test.js",
       "command": "node memory/tools/tests/autonomy_run_lock.test.js",
       "critical": false,
-      "last_status": "untested",
+      "last_status": "pass",
       "last_exit_code": 0,
-      "last_run_ts": null,
-      "last_duration_ms": 0,
-      "last_stdout_excerpt": null,
-      "last_stderr_excerpt": null
+      "last_run_ts": "2026-02-26T10:16:31.966Z",
+      "last_duration_ms": 836,
+      "last_stdout_excerpt": "autonomy_run_lock.test.js: OK",
+      "last_stderr_excerpt": "",
+      "last_guard": {
+        "ok": true,
+        "reason": null,
+        "files": [
+          "memory/tools/tests/autonomy_run_lock.test.js",
+          "systems/autonomy/autonomy_controller.ts",
+          "systems/autonomy/autonomy_rollout_controller.ts",
+          "systems/autonomy/autonomy_simulation_harness.ts"
+        ]
+      },
+      "last_pass_ts": "2026-02-26T10:16:31.966Z"
     },
     "tst_b7b5d0cd46d660": {
       "id": "tst_b7b5d0cd46d660",
@@ -5257,8 +5270,8 @@
       "critical": false,
       "last_status": "pass",
       "last_exit_code": 0,
-      "last_run_ts": "2026-02-26T10:16:04.425Z",
-      "last_duration_ms": 393,
+      "last_run_ts": "2026-02-26T10:16:26.657Z",
+      "last_duration_ms": 390,
       "last_stdout_excerpt": "autonomy_simulation_harness_autopause_window.test.js: OK",
       "last_stderr_excerpt": "",
       "last_guard": {
@@ -5272,7 +5285,7 @@
           "systems/autonomy/red_team_harness.ts"
         ]
       },
-      "last_pass_ts": "2026-02-26T10:16:04.425Z"
+      "last_pass_ts": "2026-02-26T10:16:26.657Z"
     },
     "tst_8387f9beea340f": {
       "id": "tst_8387f9beea340f",
@@ -5282,8 +5295,8 @@
       "critical": false,
       "last_status": "pass",
       "last_exit_code": 0,
-      "last_run_ts": "2026-02-26T10:15:58.634Z",
-      "last_duration_ms": 738,
+      "last_run_ts": "2026-02-26T10:16:20.823Z",
+      "last_duration_ms": 745,
       "last_stdout_excerpt": "autonomy_simulation_harness_identity_projection.test.js: OK",
       "last_stderr_excerpt": "",
       "last_guard": {
@@ -5298,7 +5311,7 @@
           "systems/identity/identity_anchor.ts"
         ]
       },
-      "last_pass_ts": "2026-02-26T10:15:58.634Z"
+      "last_pass_ts": "2026-02-26T10:16:20.823Z"
     },
     "tst_42d21fbc81e7a5": {
       "id": "tst_42d21fbc81e7a5",
@@ -5308,8 +5321,8 @@
       "critical": false,
       "last_status": "pass",
       "last_exit_code": 0,
-      "last_run_ts": "2026-02-26T10:15:53.224Z",
-      "last_duration_ms": 955,
+      "last_run_ts": "2026-02-26T10:16:15.344Z",
+      "last_duration_ms": 953,
       "last_stdout_excerpt": "autonomy_strategy_layer_upgrades.test.js: OK",
       "last_stderr_excerpt": "",
       "last_guard": {
@@ -5331,7 +5344,7 @@
           "systems/strategy/weekly_strategy_synthesis.ts"
         ]
       },
-      "last_pass_ts": "2026-02-26T10:15:53.224Z"
+      "last_pass_ts": "2026-02-26T10:16:15.344Z"
     },
     "tst_4a58056b35f167": {
       "id": "tst_4a58056b35f167",
@@ -5341,8 +5354,8 @@
       "critical": false,
       "last_status": "pass",
       "last_exit_code": 0,
-      "last_run_ts": "2026-02-26T10:15:54.212Z",
-      "last_duration_ms": 742,
+      "last_run_ts": "2026-02-26T10:16:16.343Z",
+      "last_duration_ms": 753,
       "last_stdout_excerpt": "autonomy_trit_shadow_ranking.test.js: OK",
       "last_stderr_excerpt": "",
       "last_guard": {
@@ -5359,7 +5372,7 @@
           "systems/autonomy/trit_shadow_weekly_adaptation.ts"
         ]
       },
-      "last_pass_ts": "2026-02-26T10:15:54.212Z"
+      "last_pass_ts": "2026-02-26T10:16:16.343Z"
     },
     "tst_e2e1e79fcccba0": {
       "id": "tst_e2e1e79fcccba0",
@@ -5369,8 +5382,8 @@
       "critical": false,
       "last_status": "pass",
       "last_exit_code": 0,
-      "last_run_ts": "2026-02-26T10:16:08.433Z",
-      "last_duration_ms": 753,
+      "last_run_ts": "2026-02-26T10:16:30.871Z",
+      "last_duration_ms": 798,
       "last_stdout_excerpt": "autonomy_value_currency_ranking.test.js: OK",
       "last_stderr_excerpt": "",
       "last_guard": {
@@ -5383,7 +5396,7 @@
           "systems/autonomy/autonomy_simulation_harness.ts"
         ]
       },
-      "last_pass_ts": "2026-02-26T10:16:08.433Z"
+      "last_pass_ts": "2026-02-26T10:16:30.871Z"
     },
     "tst_1ff3470b67548d": {
       "id": "tst_1ff3470b67548d",
@@ -5417,12 +5430,21 @@
       "path": "memory/tools/tests/batch_lane.test.js",
       "command": "node memory/tools/tests/batch_lane.test.js",
       "critical": false,
-      "last_status": "untested",
+      "last_status": "pass",
       "last_exit_code": 0,
-      "last_run_ts": null,
-      "last_duration_ms": 0,
-      "last_stdout_excerpt": null,
-      "last_stderr_excerpt": null
+      "last_run_ts": "2026-02-26T10:16:35.332Z",
+      "last_duration_ms": 849,
+      "last_stdout_excerpt": "batch_lane.test.js: OK",
+      "last_stderr_excerpt": "",
+      "last_guard": {
+        "ok": true,
+        "reason": null,
+        "files": [
+          "memory/tools/tests/batch_lane.test.js",
+          "systems/autonomy/batch_lane.ts"
+        ]
+      },
+      "last_pass_ts": "2026-02-26T10:16:35.332Z"
     },
     "tst_a8a0968960973c": {
       "id": "tst_a8a0968960973c",
@@ -5487,16 +5509,7 @@
       "last_run_ts": "2026-02-26T10:15:46.572Z",
       "last_duration_ms": 239,
       "last_stdout_excerpt": "bridge_from_proposals.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/bridge_from_proposals.test.js",
-          "systems/actuation/bridge_from_proposals.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:15:46.572Z"
+      "last_stderr_excerpt": null
     },
     "tst_88d6d9193c554e": {
       "id": "tst_88d6d9193c554e",
@@ -5530,12 +5543,21 @@
       "path": "memory/tools/tests/collective_shadow.test.js",
       "command": "node memory/tools/tests/collective_shadow.test.js",
       "critical": false,
-      "last_status": "untested",
+      "last_status": "pass",
       "last_exit_code": 0,
-      "last_run_ts": null,
-      "last_duration_ms": 0,
-      "last_stdout_excerpt": null,
-      "last_stderr_excerpt": null
+      "last_run_ts": "2026-02-26T10:16:36.792Z",
+      "last_duration_ms": 1205,
+      "last_stdout_excerpt": "collective_shadow.test.js: OK",
+      "last_stderr_excerpt": "",
+      "last_guard": {
+        "ok": true,
+        "reason": null,
+        "files": [
+          "memory/tools/tests/collective_shadow.test.js",
+          "systems/autonomy/collective_shadow.ts"
+        ]
+      },
+      "last_pass_ts": "2026-02-26T10:16:36.792Z"
     },
     "tst_4a193f7b9c6710": {
       "id": "tst_4a193f7b9c6710",
@@ -6081,16 +6103,7 @@
       "last_run_ts": "2026-02-26T10:15:48.064Z",
       "last_duration_ms": 280,
       "last_stdout_excerpt": "focus_trigger_store.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/focus_trigger_store.test.js",
-          "systems/adaptive/sensory/eyes/focus_trigger_store.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:15:48.064Z"
+      "last_stderr_excerpt": null
     },
     "tst_881faa3dd5a7bc": {
       "id": "tst_881faa3dd5a7bc",
@@ -6233,16 +6246,7 @@
       "last_run_ts": "2026-02-26T10:15:47.539Z",
       "last_duration_ms": 173,
       "last_stdout_excerpt": "habit_uid_store.test.js: OK",
-      "last_stderr_excerpt": "",
-      "last_guard": {
-        "ok": true,
-        "reason": null,
-        "files": [
-          "memory/tools/tests/habit_uid_store.test.js",
-          "systems/adaptive/habits/habit_store.ts"
-        ]
-      },
-      "last_pass_ts": "2026-02-26T10:15:47.539Z"
+      "last_stderr_excerpt": null
     },
     "tst_3d6f48f9af232b": {
       "id": "tst_3d6f48f9af232b",
@@ -8154,7 +8158,7 @@
     },
     "latest": []
   },
-  "last_sync": "2026-02-26T10:15:46.072Z",
-  "last_run": "2026-02-26T10:16:08.434Z",
-  "last_report": "2026-02-26T10:16:09.276Z"
+  "last_sync": "2026-02-26T10:16:10.110Z",
+  "last_run": "2026-02-26T10:16:36.793Z",
+  "last_report": "2026-02-26T10:16:36.797Z"
 }
