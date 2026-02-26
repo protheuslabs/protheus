@@ -1,0 +1,49 @@
+{
+  "version": "1.0",
+  "pack_dir": "state/ops/handoff_pack",
+  "receipts_path": "state/ops/handoff_simulation_receipts.jsonl",
+  "sla_target_minutes": 45,
+  "required_docs": [
+    "docs/ARCHITECTURE_OWNERSHIP.md",
+    "docs/OPERATOR_RUNBOOK.md",
+    "docs/THREAT_MODEL_V1.md",
+    "docs/STATE_STREAM_POLICY.md"
+  ],
+  "critical_commands": [
+    "node systems/spine/contract_check.js",
+    "node systems/security/integrity_kernel.js run",
+    "node systems/ops/dr_gameday.js status"
+  ],
+  "ownership_matrix": [
+    {
+      "path_prefix": "systems/spine/",
+      "primary_owner": "jay",
+      "secondary_owner": "unassigned",
+      "service_level": "critical"
+    },
+    {
+      "path_prefix": "systems/security/",
+      "primary_owner": "jay",
+      "secondary_owner": "unassigned",
+      "service_level": "critical"
+    },
+    {
+      "path_prefix": "systems/autonomy/",
+      "primary_owner": "jay",
+      "secondary_owner": "unassigned",
+      "service_level": "high"
+    },
+    {
+      "path_prefix": "systems/sensory/",
+      "primary_owner": "jay",
+      "secondary_owner": "unassigned",
+      "service_level": "high"
+    },
+    {
+      "path_prefix": "systems/ops/",
+      "primary_owner": "jay",
+      "secondary_owner": "unassigned",
+      "service_level": "medium"
+    }
+  ]
+}

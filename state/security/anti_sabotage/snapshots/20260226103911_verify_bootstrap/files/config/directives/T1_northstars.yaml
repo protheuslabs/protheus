@@ -1,0 +1,14 @@
+# T1 Northstars Collection
+# 
+# This file is a DOCUMENTATION/LANDING file only.
+# It is NOT loaded by the directive resolver and should NOT be in ACTIVE.yaml.
+#
+# The actual active directives are stored in separate YAML files:
+#   - T1_make_jay_billionaire_v1.yaml
+#   - T1_generational_wealth_v1.yaml
+#
+# These are strategic Tier 1 directives guiding high-level decision making.
+# Add them to ACTIVE.yaml to activate them.
+#
+# Note: This file exists for organizational purposes only.
+# Do not add directive content here.

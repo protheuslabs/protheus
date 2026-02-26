@@ -1,0 +1,26 @@
+{
+  "schema_id": "proposal_admission",
+  "schema_version": "1.0.0",
+  "description": "Canonical minimum contract for enriched proposal admission records.",
+  "root_type": "object",
+  "required_paths": [
+    "id",
+    "title",
+    "type",
+    "risk",
+    "meta.source_eye",
+    "meta.objective_id",
+    "meta.directive_objective_id",
+    "meta.objective_binding_required",
+    "meta.objective_binding_valid",
+    "meta.signal_quality_score",
+    "meta.relevance_score",
+    "meta.directive_fit_score",
+    "meta.actionability_score",
+    "meta.composite_eligibility_score",
+    "meta.success_criteria_required",
+    "meta.admission_preview.eligible",
+    "meta.admission_preview.blocked_by",
+    "meta.enrichment_version"
+  ]
+}

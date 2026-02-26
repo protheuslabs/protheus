@@ -1,0 +1,8 @@
+{
+  "schema_id": "anti_sabotage_state",
+  "schema_version": "1.0",
+  "latest_snapshot": "20260226103911_verify_bootstrap",
+  "latest_snapshot_manifest": "state/security/anti_sabotage/snapshots/20260226103911_verify_bootstrap/manifest.json",
+  "latest_incident": null,
+  "updated_at": "2026-02-26T10:39:12.025Z"
+}

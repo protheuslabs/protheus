@@ -1,0 +1,204 @@
+{
+  "version": "1.0",
+  "gaps": {
+    "effective_drift_rate": {
+      "description": "Projected effective drift rate from simulation checks_effective",
+      "warn_at": 0.03,
+      "fail_at": 0.06
+    },
+    "effective_yield_rate": {
+      "description": "Projected effective yield rate from simulation checks_effective",
+      "target_at_least": 0.75,
+      "critical_below": 0.6
+    },
+    "effective_policy_hold_rate": {
+      "description": "Effective policy hold pressure from simulation checks_effective",
+      "warn_at": 0.2,
+      "fail_at": 0.35
+    },
+    "no_progress_rate_raw": {
+      "description": "Raw no-progress / attempts rate from counters",
+      "warn_at": 0.2,
+      "fail_at": 0.35
+    },
+    "safety_stop_rate_raw": {
+      "description": "Raw safety-stop rate from checks",
+      "warn_at": 0.02,
+      "fail_at": 0.05
+    },
+    "queue_pending_ratio": {
+      "description": "Queue pending / total ratio",
+      "warn_at": 0.2,
+      "fail_at": 0.4
+    },
+    "objective_concentration": {
+      "description": "Inverse diversification proxy: 1/objective_count",
+      "warn_at": 0.5,
+      "fail_at": 1
+    }
+  },
+  "opportunities": [
+    {
+      "id": "homeostasis_controller_v1",
+      "title": "Unified Homeostasis Controller",
+      "biological_parallel": "Endocrine + homeostasis",
+      "summary": "Unify budget, queue pressure, routing degradation, and safety pressure into one global modulation layer.",
+      "target_gaps": [
+        { "key": "effective_policy_hold_rate", "weight": 0.35 },
+        { "key": "no_progress_rate_raw", "weight": 0.25 },
+        { "key": "queue_pending_ratio", "weight": 0.2 },
+        { "key": "effective_drift_rate", "weight": 0.2 }
+      ],
+      "proposed_components": [
+        "systems/homeostasis/homeostasis_controller.js",
+        "systems/autonomy/autonomy_controller.ts",
+        "systems/autonomy/health_status.js"
+      ],
+      "expected_effect": {
+        "effective_policy_hold_rate_delta": -0.08,
+        "effective_drift_rate_delta": -0.005,
+        "effective_yield_rate_delta": 0.03
+      },
+      "anti_gaming_guardrails": [
+        "Do not reduce attempts denominator via silent reclassification; report raw and effective together.",
+        "Absolute shipped count over 180d must not decrease.",
+        "Safety stop rate must not increase."
+      ]
+    },
+    {
+      "id": "interoception_stream_v1",
+      "title": "Continuous Interoception Stream",
+      "biological_parallel": "Interoception",
+      "summary": "Add continuous telemetry (CPU/RAM/disk/latency/token burn) and integrate into strategy mode and route planning.",
+      "target_gaps": [
+        { "key": "effective_drift_rate", "weight": 0.35 },
+        { "key": "safety_stop_rate_raw", "weight": 0.3 },
+        { "key": "no_progress_rate_raw", "weight": 0.2 },
+        { "key": "queue_pending_ratio", "weight": 0.15 }
+      ],
+      "proposed_components": [
+        "systems/telemetry/interoception_stream.js",
+        "systems/autonomy/health_status.js",
+        "systems/routing/model_router.js"
+      ],
+      "expected_effect": {
+        "effective_drift_rate_delta": -0.004,
+        "safety_stop_rate_raw_delta": -0.01,
+        "effective_yield_rate_delta": 0.015
+      },
+      "anti_gaming_guardrails": [
+        "Track same-horizon 180d comparisons only.",
+        "No threshold changes allowed in the same experiment stage.",
+        "Require unchanged harness policy hash between baseline and candidate."
+      ]
+    },
+    {
+      "id": "immune_memory_synthesis_v1",
+      "title": "Immune Memory Policy Synthesis",
+      "biological_parallel": "Immune memory",
+      "summary": "Convert repeated failure signatures into bounded, reviewable preventive policy candidates.",
+      "target_gaps": [
+        { "key": "effective_policy_hold_rate", "weight": 0.3 },
+        { "key": "no_progress_rate_raw", "weight": 0.3 },
+        { "key": "effective_drift_rate", "weight": 0.25 },
+        { "key": "safety_stop_rate_raw", "weight": 0.15 }
+      ],
+      "proposed_components": [
+        "systems/autonomy/non_yield_harvest.js",
+        "systems/autonomy/non_yield_replay.js",
+        "systems/security/policy_rootd.js"
+      ],
+      "expected_effect": {
+        "effective_policy_hold_rate_delta": -0.06,
+        "effective_drift_rate_delta": -0.004,
+        "effective_yield_rate_delta": 0.02
+      },
+      "anti_gaming_guardrails": [
+        "All synthesized rules must be staged as proposals with expiry + rollback.",
+        "No direct policy writes from synthesis path.",
+        "At least one raw metric and one effective metric must improve."
+      ]
+    },
+    {
+      "id": "dream_to_action_bridge_v1",
+      "title": "Dream-to-Action Bridge",
+      "biological_parallel": "Sleep consolidation -> motor planning",
+      "summary": "Promote high-confidence dream links into bounded micro-experiments with explicit success criteria.",
+      "target_gaps": [
+        { "key": "effective_yield_rate", "weight": 0.45 },
+        { "key": "no_progress_rate_raw", "weight": 0.25 },
+        { "key": "effective_drift_rate", "weight": 0.2 },
+        { "key": "objective_concentration", "weight": 0.1 }
+      ],
+      "proposed_components": [
+        "systems/memory/memory_dream.js",
+        "systems/memory/idle_dream_cycle.js",
+        "systems/autonomy/proposal_enricher.js"
+      ],
+      "expected_effect": {
+        "effective_yield_rate_delta": 0.04,
+        "no_progress_rate_raw_delta": -0.04,
+        "effective_drift_rate_delta": -0.003
+      },
+      "anti_gaming_guardrails": [
+        "Require objective_id and success criteria for every promoted experiment.",
+        "Cap promoted experiments per cycle to prevent queue spam.",
+        "Count only shipped outcomes for yield gains."
+      ]
+    },
+    {
+      "id": "proprioception_control_plane_v1",
+      "title": "Proprioception Control Plane",
+      "biological_parallel": "Proprioception",
+      "summary": "Live map of active workers/cells, leases, cooldowns, blocked routes, and in-flight risk to reduce blind execution.",
+      "target_gaps": [
+        { "key": "queue_pending_ratio", "weight": 0.3 },
+        { "key": "effective_policy_hold_rate", "weight": 0.25 },
+        { "key": "safety_stop_rate_raw", "weight": 0.2 },
+        { "key": "objective_concentration", "weight": 0.25 }
+      ],
+      "proposed_components": [
+        "systems/spawn/spawn_broker.js",
+        "systems/security/capability_lease.js",
+        "systems/autonomy/health_status.js"
+      ],
+      "expected_effect": {
+        "queue_pending_ratio_delta": -0.08,
+        "safety_stop_rate_raw_delta": -0.008,
+        "effective_policy_hold_rate_delta": -0.03
+      },
+      "anti_gaming_guardrails": [
+        "Track both queue pending ratio and shipped throughput.",
+        "No suppression of blocked events; visibility must increase.",
+        "Hold counts may move, but shipped/attempted must improve."
+      ]
+    },
+    {
+      "id": "circulatory_qos_lanes_v1",
+      "title": "Circulatory QoS Lanes",
+      "biological_parallel": "Cardiovascular transport + flow control",
+      "summary": "End-to-end QoS lanes with explicit admission and lane pressure balancing across proposal->queue->execution.",
+      "target_gaps": [
+        { "key": "queue_pending_ratio", "weight": 0.35 },
+        { "key": "effective_yield_rate", "weight": 0.3 },
+        { "key": "effective_policy_hold_rate", "weight": 0.2 },
+        { "key": "no_progress_rate_raw", "weight": 0.15 }
+      ],
+      "proposed_components": [
+        "habits/scripts/sensory_queue.js",
+        "systems/autonomy/autonomy_controller.ts",
+        "systems/actuation/bridge_from_proposals.js"
+      ],
+      "expected_effect": {
+        "queue_pending_ratio_delta": -0.1,
+        "effective_yield_rate_delta": 0.03,
+        "effective_policy_hold_rate_delta": -0.025
+      },
+      "anti_gaming_guardrails": [
+        "Lane demotions must not silently drop proposals without audit rows.",
+        "Queue total and shipped must both be reported.",
+        "Reclassification-only gains are disallowed."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "shadow_min_days": 7,
+  "canary_min_days": 14,
+  "canary_live_fraction": 0.15,
+  "canary_force_low_risk": true,
+  "canary_frozen_daily_token_cap": 4000,
+  "canary_max_runs_per_day": 1,
+  "eval_every_hours": 12,
+  "harness_days": 180,
+  "gates": {
+    "max_effective_drift_rate": 0.04,
+    "min_effective_yield_rate": 0.6,
+    "max_effective_safety_stop_rate": 0.01
+  }
+}

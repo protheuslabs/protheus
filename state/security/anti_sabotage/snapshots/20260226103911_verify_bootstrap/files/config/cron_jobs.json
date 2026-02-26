@@ -1,0 +1,84 @@
+{
+  "snapshot_at": "2026-02-14T20:45:00Z",
+  "note": "Two-phase replacement complete: Regenerate-Memory-Indices moved 6:00PM→6:10PM",
+  "jobs": [
+    {
+      "name": "Moltbook Times",
+      "schedule": { "expr": "0 0,8,12,16,20 * * *", "tz": "America/Denver" },
+      "sessionTarget": "main",
+      "wakeMode": "next-heartbeat",
+      "payload": { "kind": "systemEvent", "text": "MOLTCHECK: Browse Moltbook feed, upvote interesting posts or add relevant comments. Stay active per 4h heartbeat rule. Report activity." },
+      "enabled": true,
+      "id": "5f453976-52dc-44d6-821d-686bfd5cf5bf"
+    },
+    {
+      "name": "X Daily Atom Harvest",
+      "schedule": { "expr": "0 10 * * *", "tz": "America/Denver" },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": { "kind": "agentTurn", "message": "X ATOM HARVEST: Browse X for AI agents, startups, physics, software engineering. Extract 1-3 X-ATOMS (single sentence each: hook/framing/question/data/contrarian-claim) + optional ONE conversion (moltbook-comment/moltstack-draft/experiment/backlog/none). If rate limited: status=READ_ONLY. Summary node <=180 tokens. No log unless explicitly requested." },
+      "delivery": { "mode": "announce", "channel": "last" },
+      "enabled": true,
+      "id": "c10f6528-aac8-4b6b-aad3-55ec20a511de"
+    },
+    {
+      "name": "Decision Review (weekly)",
+      "schedule": { "expr": "0 10 * * 0", "tz": "America/Denver" },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": { "kind": "agentTurn", "message": "DECISION REVIEW: Read DECISIONS_INDEX.md. For each open item with check_on <= today: mark status (win/loss/mixed/abandoned), set next (keep/tweak/revert/promote-pin/backlog). If tweak/revert: write one-line policy update OR lesson SNIP. Report: wins/losses/mixed/abandoned counts, 1 key lesson, 1 rule to update, 1 experiment for next week, 1 thing to stop." },
+      "delivery": { "mode": "announce", "channel": "last" },
+      "enabled": true,
+      "id": "10451ad1-3a70-455f-b706-14f386633fd6"
+    },
+    {
+      "name": "Weekly Goals & Review",
+      "schedule": { "expr": "0 18 * * 0", "tz": "America/Denver" },
+      "sessionTarget": "main",
+      "wakeMode": "next-heartbeat",
+      "payload": { "kind": "systemEvent", "text": "Reminder: It's Sunday 6PM. Time to ask for your weekly goals to advance the 5-year billionaire plan, and follow up on last week's outcomes for accountability. Remember: leadership goes both ways. (This reminder is for your agent, Protheus, to prompt you, track, and assist as agreed.)" },
+      "enabled": true,
+      "id": "70569979-d9cf-4ad9-819f-9709d6e278a9"
+    },
+    {
+      "name": "Regenerate-Memory-Indices",
+      "schedule": { "expr": "10 18 * * 0", "tz": "America/Denver" },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": { "kind": "agentTurn", "message": "cd ~/.openclaw/workspace && node memory/tools/rebuild_exclusive.js. Enforce: A) Whitelist: only top-level memory/YYYY-MM-DD.md, ignore memory/_archive/**. B) Exclusive categories: Projects > Rules > Concepts > System > Unassigned. Report completion + counts." },
+      "delivery": { "mode": "announce", "channel": "last" },
+      "enabled": true,
+      "id": "ca358383-ce8d-4b50-aecb-82efc3393142"
+    },
+    {
+      "name": "Weekly Compound",
+      "schedule": { "expr": "0 18 * * 0", "tz": "America/Denver" },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": { "kind": "agentTurn", "message": "WEEKLY COMPOUND ENGINE — RULES:\n1) IDEMPOTENT: Check for weekly-compound-YYYY-WW node. If exists and 'good enough' → SKIP with report. If exists but needs update → UPDATE sections, do NOT create new node.\n2) ATOM-FIRST: ONLY use X-ATOM outputs from x-output-contract nodes. DO NOT read x-browse-*-log files.\n3) GATHER: (a) top 3 X atoms if present, else note 'atoms missing'; (b) 3 Moltbook standouts; (c) 3 new SNIPs/PINs.\n4) PRODUCE: MoltStack outline (title+hook+5 bullets+CTA), 3 Moltbook comments, 1 experiment (hypothesis+setup+metric+pass/fail), 1 backlog item (item+why+when trigger).\n5) PERSIST: ONE node weekly-compound-YYYY-WW (max 200 tokens, Ops/Logs only).\n6) NEVER POST without explicit approval.\nNever run outside scheduled cron unless user says 'run weekly compound now'." },
+      "delivery": { "mode": "announce", "channel": "last" },
+      "enabled": true,
+      "id": "a3dc19a2-a18a-4def-a8a2-728d20f2a6cc"
+    },
+    {
+      "name": "Friday MoltStack Post",
+      "schedule": { "expr": "0 12 * * 5", "tz": "America/Denver" },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": { "kind": "agentTurn", "message": "Write and publish a post to The Protheus Codex on MoltStack. Topic: analyze a current trend in AI agents, software engineering, or income strategies. Use skills/moltstack/scripts/publish.js after quality check. Log to memory." },
+      "delivery": { "mode": "announce", "channel": "last" },
+      "enabled": true,
+      "id": "0fe0abd9-0672-4c44-b946-4581da3eb68f"
+    },
+    {
+      "name": "Quarterly Agent Health Check",
+      "schedule": { "expr": "0 9 1 * *", "tz": "America/Denver" },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": { "kind": "agentTurn", "message": "cd ~/.openclaw/workspace && node memory/tools/health_check_quarterly.js" },
+      "delivery": { "mode": "announce", "channel": "last" },
+      "enabled": true,
+      "id": "ec567010-8c1a-4f3f-b07e-ceeb98e37416"
+    }
+  ]
+}

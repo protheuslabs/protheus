@@ -1,0 +1,20 @@
+{
+  "schema_id": "autonomy_receipt",
+  "schema_version": "1.0.0",
+  "description": "Canonical minimum contract for autonomy action receipts after normalization.",
+  "root_type": "object",
+  "required_paths": [
+    "type",
+    "verdict",
+    "intent.success_criteria_policy.required",
+    "intent.success_criteria_policy.min_count",
+    "verification.passed",
+    "verification.failed",
+    "verification.checks",
+    "verification.success_criteria.required",
+    "verification.success_criteria.min_count",
+    "verification.success_criteria.passed",
+    "verification.success_criteria.synthesized",
+    "receipt_contract.attempted"
+  ]
+}

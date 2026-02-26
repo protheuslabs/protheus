@@ -1,0 +1,36 @@
+{
+  "version": "1.0",
+  "default_decision": "deny",
+  "clearance_levels": ["L0", "L1", "L2", "L3"],
+  "risk": {
+    "escalate": ["medium"],
+    "deny": ["high", "critical"]
+  },
+  "budgets": {
+    "global_daily_tokens": 25000
+  },
+  "lanes": {
+    "organ": {
+      "enabled": true,
+      "min_clearance": "L1",
+      "daily_tokens": 12000,
+      "actions": ["observe", "plan", "route", "execute"],
+      "targets": ["spine", "workflow", "autonomy", "memory", "sensory", "actuation"]
+    },
+    "vassal": {
+      "enabled": true,
+      "min_clearance": "L2",
+      "daily_tokens": 9000,
+      "actions": ["route", "execute"],
+      "targets": ["openai", "anthropic", "google", "ollama", "local"]
+    },
+    "external": {
+      "enabled": false,
+      "min_clearance": "L3",
+      "daily_tokens": 4000,
+      "actions": ["execute"],
+      "targets": ["web", "browser", "payment", "email"]
+    }
+  }
+}
+

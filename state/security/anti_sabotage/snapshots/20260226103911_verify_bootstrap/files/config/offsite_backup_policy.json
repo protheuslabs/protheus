@@ -1,0 +1,31 @@
+{
+  "version": "1.0",
+  "default_profile": "runtime_state",
+  "source": {
+    "destination_env": "STATE_BACKUP_DEST",
+    "destination_default": "~/.openclaw/backups/workspace-state"
+  },
+  "offsite": {
+    "destination_env": "STATE_BACKUP_OFFSITE_DEST",
+    "destination_default": "~/.openclaw/backups/workspace-state-offsite"
+  },
+  "encryption": {
+    "algorithm": "aes-256-gcm",
+    "key_env": "STATE_BACKUP_OFFSITE_KEY",
+    "key_min_bytes": 32
+  },
+  "sync": {
+    "strict_default": true,
+    "verify_write": true,
+    "verify_sample_files": 2000,
+    "max_history": 180
+  },
+  "restore_drill": {
+    "strict_default": true,
+    "cadence_days": 30,
+    "destination_default": "~/.openclaw/backups/offsite-restore-drills",
+    "rto_target_minutes": 30,
+    "rpo_target_hours": 24,
+    "max_history": 180
+  }
+}

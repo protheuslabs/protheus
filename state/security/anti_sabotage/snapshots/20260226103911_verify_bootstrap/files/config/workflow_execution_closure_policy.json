@@ -1,0 +1,8 @@
+{
+  "version": "1.0",
+  "target_streak_days": 7,
+  "min_accepted_items": 1,
+  "min_workflows_executed": 1,
+  "lookback_days": 21,
+  "max_history_rows": 120
+}

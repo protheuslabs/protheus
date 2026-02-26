@@ -1,0 +1,9 @@
+{
+  "version": "1.0",
+  "postmortem_dir": "state/ops/postmortems",
+  "receipts_path": "state/ops/postmortem_receipts.jsonl",
+  "default_severity": "sev2",
+  "require_preventive_check_ref": true,
+  "require_preventive_verification_pass": true,
+  "max_open_days_warn": 14
+}

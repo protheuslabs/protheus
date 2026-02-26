@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "slots": {
+    "master": {
+      "tier": 1,
+      "model": "kimi-k2.5:cloud",
+      "fallbacks": ["deepseek-v3:1:671b-cloud", "gpt-oss:120b", "glm-4.6-cloud"]
+    },
+    "agent": {
+      "tier": 2,
+      "model": "qwen3-coder:480b-cloud",
+      "fallbacks": ["qwen3-v1:235b-cloud", "minmax-m2-cloud"]
+    },
+    "grunt": {
+      "tier": 3,
+      "model": "qwen3:4b",
+      "fallbacks": ["gemma3:4b", "phi", "gemma3:1b"]
+    },
+    "coder": {
+      "tier": 2,
+      "model": "qwen3-coder:480b-cloud",
+      "fallbacks": ["qwen3-v1:235b-cloud"]
+    },
+    "fallback": {
+      "tier": 3,
+      "model": "gemma3:4b",
+      "fallbacks": ["qwen3:4b", "phi"]
+    }
+  },
+  "model_pool": {
+    "api": ["gemini", "chatgpt"],
+    "ollama_cloud": [
+      "kimi-k2.5:cloud",
+      "gpt-oss:120b",
+      "chat-gpt-oss-20b-cloud",
+      "deepseek-v3:1:671b-cloud",
+      "deepseek-v3.2-cloud",
+      "qwen3-coder:480b-cloud",
+      "qwen3-v1:235b-cloud",
+      "minmax-m2-cloud",
+      "glm-4.6-cloud"
+    ],
+    "local": ["gemma3:4b", "gemma3:1b", "qwen3:4b", "phi"]
+  },
+  "caps": {
+    "tier_1": {
+      "max_tokens_per_response": 8000,
+      "max_tokens_per_day": 25000
+    },
+    "tier_2": {
+      "max_tokens_per_response": 4000,
+      "max_tokens_per_day": 12000
+    },
+    "tier_3": {
+      "max_tokens_per_response": 1200,
+      "max_tokens_per_day": 3000,
+      "max_turns_before_handoff": 3
+    }
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "version": "1.0",
+  "require_dual_control": true,
+  "dual_control_min_note_len": 12,
+  "policy_root": {
+    "required": true,
+    "scope": "capability_switchboard_toggle"
+  },
+  "switches": {
+    "autonomy": {
+      "default_enabled": true,
+      "security_locked": false,
+      "require_policy_root": true,
+      "description": "Core autonomy execution lane"
+    },
+    "reflex": {
+      "default_enabled": true,
+      "security_locked": false,
+      "require_policy_root": true,
+      "description": "Reflex execution lane"
+    },
+    "dreams": {
+      "default_enabled": true,
+      "security_locked": false,
+      "require_policy_root": true,
+      "description": "Dream/idle synthesis lane"
+    },
+    "sensory_depth": {
+      "default_enabled": true,
+      "security_locked": false,
+      "require_policy_root": true,
+      "description": "Deep sensory collection lane"
+    },
+    "routing_modes": {
+      "default_enabled": true,
+      "security_locked": false,
+      "require_policy_root": true,
+      "description": "Routing/model mode lane"
+    },
+    "external_actuation": {
+      "default_enabled": true,
+      "security_locked": false,
+      "require_policy_root": true,
+      "description": "External actuation lane"
+    },
+    "security": {
+      "default_enabled": true,
+      "security_locked": true,
+      "require_policy_root": true,
+      "description": "Security controls (non-deactivatable)"
+    },
+    "integrity": {
+      "default_enabled": true,
+      "security_locked": true,
+      "require_policy_root": true,
+      "description": "Integrity controls (non-deactivatable)"
+    }
+  }
+}

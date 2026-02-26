@@ -1,0 +1,94 @@
+{
+  "version": "v1.1",
+  "description": "Daily achievement badges aligned with Tier-1 northstar directives",
+  "achievements": [
+    {
+      "id": "first_blood",
+      "name": "First Blood",
+      "description": "Log your first artifact",
+      "icon": "🩸",
+      "condition": "first_artifact_logged",
+      "tier": "bronze"
+    },
+    {
+      "id": "builder",
+      "name": "Builder",
+      "description": "Create 5 artifacts in 7 days",
+      "icon": "🔨",
+      "condition": "artifacts_in_7_days >= 5",
+      "tier": "silver"
+    },
+    {
+      "id": "streak_3",
+      "name": "On Fire",
+      "description": "3-day positive SDS streak",
+      "icon": "🔥",
+      "condition": "streak_days >= 3",
+      "tier": "bronze"
+    },
+    {
+      "id": "streak_7",
+      "name": "Unstoppable",
+      "description": "7-day positive SDS streak",
+      "icon": "⚡",
+      "condition": "streak_days >= 7",
+      "tier": "gold"
+    },
+    {
+      "id": "revenue_move",
+      "name": "Revenue Move",
+      "description": "Log your first revenue action",
+      "icon": "💰",
+      "condition": "revenue_actions >= 1",
+      "tier": "silver"
+    },
+    {
+      "id": "closer",
+      "name": "Closer",
+      "description": "3 revenue actions in 7 days",
+      "icon": "🎯",
+      "condition": "revenue_actions_in_7_days >= 3",
+      "tier": "gold"
+    },
+    {
+      "id": "no_drift_day",
+      "name": "Pure Focus",
+      "description": "Drift <= 15 min AND at least 1 artifact",
+      "icon": "🧘",
+      "condition": "drift_minutes <= 15 AND artifact_count >= 1",
+      "tier": "silver"
+    },
+    {
+      "id": "deep_work",
+      "name": "Deep Work",
+      "description": "0 context switches AND >= 90 min high-leverage with artifacts",
+      "icon": "🧠",
+      "condition": "context_switches == 0 AND high_leverage_minutes >= 90 AND artifact_count >= 1",
+      "tier": "gold"
+    },
+    {
+      "id": "compounding_week",
+      "name": "Compounding Week",
+      "description": "5 positive SDS days in last 7",
+      "icon": "📈",
+      "condition": "positive_days_in_7 >= 5",
+      "tier": "gold"
+    },
+    {
+      "id": "artifact_hunter",
+      "name": "Artifact Hunter",
+      "description": "Log 3+ artifacts in a single day",
+      "icon": "🏆",
+      "condition": "artifact_count >= 3",
+      "tier": "silver"
+    },
+    {
+      "id": "consistency_king",
+      "name": "Consistency King",
+      "description": "14-day streak",
+      "icon": "👑",
+      "condition": "streak_days >= 14",
+      "tier": "diamond"
+    }
+  ]
+}

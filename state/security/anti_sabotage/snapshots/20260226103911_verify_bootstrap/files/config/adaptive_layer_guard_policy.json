@@ -1,0 +1,33 @@
+{
+  "version": "1.0",
+  "target_roots": [
+    "systems",
+    "habits",
+    "lib",
+    "adaptive"
+  ],
+  "file_extensions": [
+    ".js",
+    ".ts"
+  ],
+  "exclude_paths": [
+    "systems/sensory/adaptive_layer_guard.js",
+    "systems/sensory/adaptive_layer_guard.ts"
+  ],
+  "allow_paths": [
+    "systems/adaptive/core/layer_store.js",
+    "systems/adaptive/core/layer_store.ts",
+    "systems/adaptive/sensory/eyes/catalog_store.js",
+    "systems/adaptive/sensory/eyes/catalog_store.ts",
+    "systems/adaptive/sensory/eyes/focus_trigger_store.js",
+    "systems/adaptive/sensory/eyes/focus_trigger_store.ts",
+    "systems/adaptive/habits/habit_store.js",
+    "systems/adaptive/habits/habit_store.ts",
+    "systems/adaptive/reflex/reflex_store.js",
+    "systems/adaptive/reflex/reflex_store.ts",
+    "systems/adaptive/strategy/strategy_store.js",
+    "systems/adaptive/strategy/strategy_store.ts",
+    "lib/eyes_catalog.js",
+    "lib/eyes_catalog.ts"
+  ]
+}

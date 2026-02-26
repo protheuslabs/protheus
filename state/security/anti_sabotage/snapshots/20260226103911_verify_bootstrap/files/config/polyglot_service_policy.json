@@ -1,0 +1,15 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "contract_version": "1.0",
+  "allow_fallback_baseline": true,
+  "worker": {
+    "runtime": "python3",
+    "script": "systems/polyglot/pilot_task_classifier.py",
+    "timeout_ms": 2500
+  },
+  "benchmark": {
+    "default_runs": 40,
+    "max_runs": 500
+  }
+}

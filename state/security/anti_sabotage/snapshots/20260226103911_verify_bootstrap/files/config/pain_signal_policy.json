@@ -1,0 +1,29 @@
+{
+  "version": "1.0",
+  "defer_enabled": true,
+  "defer_during_focus": true,
+  "focus_default_ttl_minutes": 30,
+  "focus_max_ttl_minutes": 240,
+  "defer_max_per_signature": 3,
+  "force_escalate_after_window_failures": 10,
+  "no_defer": {
+    "min_severity": "high",
+    "min_risk": "high",
+    "code_patterns": [
+      "security",
+      "integrity",
+      "guard",
+      "attestation",
+      "emergency",
+      "budget_hard_stop",
+      "data_loss",
+      "corrupt",
+      "exfil",
+      "unauthorized"
+    ],
+    "source_patterns": [
+      "security",
+      "secret_broker"
+    ]
+  }
+}

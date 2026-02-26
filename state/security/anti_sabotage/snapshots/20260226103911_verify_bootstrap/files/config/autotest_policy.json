@@ -1,0 +1,69 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "module_discovery": {
+    "root": "systems",
+    "include_ext": [
+      ".ts"
+    ],
+    "ignore_prefixes": [
+      "systems/ops/visualizer/"
+    ]
+  },
+  "test_discovery": {
+    "root": "memory/tools/tests",
+    "include_suffix": ".test.js",
+    "ignore_prefixes": []
+  },
+  "heuristics": {
+    "min_match_score": 4,
+    "min_token_len": 4,
+    "shared_token_score": 2,
+    "basename_contains_score": 4,
+    "layer_hint_score": 2
+  },
+  "explicit_maps": {
+    "by_prefix": {
+      "systems/security/": [
+        "memory/tools/tests/security_integrity.test.js",
+        "memory/tools/tests/guard_remote_gate.test.js",
+        "memory/tools/tests/directive_gate.test.js"
+      ],
+      "systems/spine/": [
+        "memory/tools/tests/spine_evidence_run_plan.test.js"
+      ]
+    }
+  },
+  "critical_commands": [
+    "node systems/ops/typecheck_systems.js",
+    "node systems/ops/ts_clone_drift_guard.js --baseline=config/ts_clone_drift_baseline.json",
+    "node systems/spine/contract_check.js"
+  ],
+  "alerts": {
+    "emit_untested": true,
+    "emit_changed_without_tests": true,
+    "max_untested_in_report": 120,
+    "max_failed_in_report": 120
+  },
+  "execution": {
+    "default_scope": "changed",
+    "max_tests_per_run": 24,
+    "strict": false,
+    "timeout_ms_per_test": 180000
+  },
+  "sleep_window_local": {
+    "enabled": true,
+    "start_hour": 0,
+    "end_hour": 7
+  },
+  "runtime_guard": {
+    "max_load_per_cpu": 0.75,
+    "max_rss_mb": 1600,
+    "spine_hot_window_sec": 75
+  },
+  "daemon": {
+    "interval_sec": 900,
+    "max_cycles": 0,
+    "jitter_sec": 20
+  }
+}

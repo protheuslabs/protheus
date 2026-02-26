@@ -1,0 +1,21 @@
+{
+  "version": "1.0",
+  "policy": {
+    "max_profiles": 64,
+    "max_queue": 64,
+    "gc_inactive_days": 21,
+    "gc_min_uses_30d": 1,
+    "gc_protect_new_days": 3
+  },
+  "profiles": [],
+  "intake_queue": [],
+  "metrics": {
+    "total_intakes": 0,
+    "total_profiles_created": 0,
+    "total_profiles_updated": 0,
+    "total_queue_consumed": 0,
+    "total_gc_deleted": 0,
+    "last_gc_ts": null,
+    "last_usage_sync_ts": null
+  }
+}

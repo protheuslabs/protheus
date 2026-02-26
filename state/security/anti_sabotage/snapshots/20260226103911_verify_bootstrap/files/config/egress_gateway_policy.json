@@ -1,0 +1,91 @@
+{
+  "version": "1.0",
+  "default_decision": "deny",
+  "global_rate_caps": {
+    "per_hour": 1200,
+    "per_day": 10000
+  },
+  "scopes": {
+    "sensory.collector.hn_rss": {
+      "methods": ["GET"],
+      "domains": ["news.ycombinator.com", "hnrss.org"],
+      "require_runtime_allowlist": true,
+      "rate_caps": { "per_hour": 120, "per_day": 1000 }
+    },
+    "sensory.collector.medium_rss": {
+      "methods": ["GET"],
+      "domains": ["medium.com", "www.medium.com"],
+      "require_runtime_allowlist": true,
+      "rate_caps": { "per_hour": 120, "per_day": 1000 }
+    },
+    "sensory.collector.moltstack_discover": {
+      "methods": ["GET"],
+      "domains": ["moltstack.net", "www.moltstack.net"],
+      "require_runtime_allowlist": true,
+      "rate_caps": { "per_hour": 60, "per_day": 400 }
+    },
+    "sensory.collector.ollama_search": {
+      "methods": ["GET"],
+      "domains": ["ollama.com", "www.ollama.com"],
+      "require_runtime_allowlist": true,
+      "rate_caps": { "per_hour": 60, "per_day": 400 }
+    },
+    "sensory.collector.google_trends": {
+      "methods": ["GET"],
+      "domains": ["trends.google.com"],
+      "require_runtime_allowlist": true,
+      "rate_caps": { "per_hour": 60, "per_day": 400 }
+    },
+    "sensory.collector.stock_market": {
+      "methods": ["GET"],
+      "domains": ["query1.finance.yahoo.com", "finance.yahoo.com"],
+      "require_runtime_allowlist": true,
+      "rate_caps": { "per_hour": 120, "per_day": 1000 }
+    },
+    "sensory.collector.upwork_gigs": {
+      "methods": ["GET"],
+      "domains": ["www.upwork.com", "upwork.com"],
+      "require_runtime_allowlist": true,
+      "rate_caps": { "per_hour": 60, "per_day": 400 }
+    },
+    "sensory.collector.github_repo": {
+      "methods": ["GET"],
+      "domains": ["api.github.com"],
+      "require_runtime_allowlist": true,
+      "rate_caps": { "per_hour": 120, "per_day": 1000 }
+    },
+    "sensory.collector.producthunt_launches": {
+      "methods": ["POST"],
+      "domains": ["www.producthunt.com", "producthunt.com"],
+      "require_runtime_allowlist": true,
+      "rate_caps": { "per_hour": 60, "per_day": 400 }
+    },
+    "sensory.collector.dynamic": {
+      "methods": ["GET", "POST"],
+      "domains": [],
+      "require_runtime_allowlist": true,
+      "rate_caps": { "per_hour": 120, "per_day": 1000 }
+    },
+    "sensory.focus_fetch": {
+      "methods": ["GET"],
+      "domains": [],
+      "require_runtime_allowlist": true,
+      "rate_caps": { "per_hour": 120, "per_day": 1000 }
+    },
+    "skill.moltbook.api": {
+      "methods": ["GET", "POST"],
+      "domains": ["www.moltbook.com", "api.moltbook.com"],
+      "rate_caps": { "per_hour": 240, "per_day": 2000 }
+    },
+    "skill.moltbook.publish_guard": {
+      "methods": ["GET"],
+      "domains": ["www.moltbook.com", "api.moltbook.com"],
+      "rate_caps": { "per_hour": 120, "per_day": 1000 }
+    },
+    "skill.moltstack.publish": {
+      "methods": ["POST"],
+      "domains": ["moltstack.net", "www.moltstack.net"],
+      "rate_caps": { "per_hour": 60, "per_day": 400 }
+    }
+  }
+}
