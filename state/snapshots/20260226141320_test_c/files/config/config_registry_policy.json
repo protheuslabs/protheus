@@ -1,0 +1,29 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "scan_roots": [
+    "config"
+  ],
+  "include_extensions": [
+    ".json"
+  ],
+  "exclude_path_substrings": [
+    "/node_modules/",
+    "/.git/",
+    "/dist/"
+  ],
+  "shape_depth": 3,
+  "max_files": 4000,
+  "inventory_output_path": "state/ops/config_registry/latest.json",
+  "inventory_history_jsonl_path": "state/ops/config_registry/history.jsonl",
+  "consolidation": {
+    "enabled": true,
+    "min_shape_group_size": 2,
+    "max_candidates": 80
+  },
+  "legacy_aliases": {
+    "enabled": true,
+    "alias_map_path": "config/config_aliases.json",
+    "strict_canonical_exists": true
+  }
+}

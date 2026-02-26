@@ -1,0 +1,30 @@
+{
+  "version": "1.0",
+  "strict_default": true,
+  "tiers": [
+    {
+      "id": "smoke",
+      "operations": 200,
+      "synthetic_tokens_per_op": 600,
+      "max_error_rate": 0.02,
+      "max_p95_latency_ms": 6,
+      "min_throughput_ops_sec": 800
+    },
+    {
+      "id": "baseline",
+      "operations": 1500,
+      "synthetic_tokens_per_op": 900,
+      "max_error_rate": 0.03,
+      "max_p95_latency_ms": 8,
+      "min_throughput_ops_sec": 650
+    },
+    {
+      "id": "stress",
+      "operations": 3000,
+      "synthetic_tokens_per_op": 1200,
+      "max_error_rate": 0.04,
+      "max_p95_latency_ms": 10,
+      "min_throughput_ops_sec": 500
+    }
+  ]
+}

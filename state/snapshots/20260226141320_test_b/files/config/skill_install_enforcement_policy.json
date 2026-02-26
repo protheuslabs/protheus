@@ -1,0 +1,42 @@
+{
+  "version": "1.1",
+  "target_roots": [
+    "systems",
+    "habits",
+    "skills",
+    "memory/tools"
+  ],
+  "target_files": [
+    "README.md",
+    "AGENTS.md"
+  ],
+  "file_extensions": [
+    ".js",
+    ".sh",
+    ".md",
+    ".json"
+  ],
+  "exclude_paths": [
+    "systems/security/skill_install_enforcer.js",
+    "memory/tools/tests/**"
+  ],
+  "allow_paths": [
+    "habits/scripts/install_skill_safe.js",
+    "systems/security/skill_quarantine.js",
+    "config/skill_install_policy.json"
+  ],
+  "blocked_regexes": [
+    "\\bnpx\\s+molthub\\s+install\\b",
+    "\\bmolthub\\s+install\\b",
+    "\\bspawnSync\\s*\\(\\s*['\\\"]npx['\\\"][\\s\\S]{0,220}['\\\"]molthub['\\\"][\\s\\S]{0,220}['\\\"]install['\\\"]",
+    "\\bspawnSync\\s*\\(\\s*['\\\"]molthub['\\\"][\\s\\S]{0,220}['\\\"]install['\\\"]",
+    "\\bexec(?:File)?Sync\\s*\\([\\s\\S]{0,260}molthub[\\s\\S]{0,160}install"
+  ],
+  "required_wrapper_path": "habits/scripts/install_skill_safe.js",
+  "required_wrapper_markers": [
+    "inspectSpec(",
+    "verifyPath(",
+    "trustFiles("
+  ],
+  "required_quarantine_path": "systems/security/skill_quarantine.js"
+}

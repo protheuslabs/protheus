@@ -1,0 +1,28 @@
+# Active Directives
+# This file controls which directives are currently enforced.
+# Edit to activate/deactivate directives by tier.
+
+metadata:
+  last_updated: "2026-02-16"
+  updated_by: "Protheus"
+  
+active_directives:
+  - id: T0_invariants
+    tier: 0
+    status: active
+    reason: "Always active - hard constraints"
+    
+  - id: T1_make_jay_billionaire_v1
+    tier: 1
+    status: active
+    reason: "Primary northstar directive"
+    
+  - id: T1_generational_wealth_v1
+    tier: 1
+    status: active
+    reason: "Secondary northstar directive"
+
+# Directive precedence (lower tier = higher precedence for constraints)
+# Tier 0: Hard invariants (blocks override all)
+# Tier 1: Strategic goals (optimize within T0 constraints)
+# Tier 2+: Domain-specific (can be overridden by T0)

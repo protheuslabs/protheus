@@ -1,0 +1,40 @@
+{
+  "version": "1.0",
+  "novel": {
+    "action": "escalate",
+    "cooldown_hours": 12,
+    "playbook": "novel_exception_escalation"
+  },
+  "known_default": {
+    "action": "recover",
+    "cooldown_hours": 2,
+    "playbook": "retry_with_backoff"
+  },
+  "code_overrides": {
+    "rate_limited": {
+      "action": "cooldown",
+      "cooldown_hours": 12,
+      "playbook": "respect_rate_limit"
+    },
+    "dns_unreachable": {
+      "action": "cooldown",
+      "cooldown_hours": 6,
+      "playbook": "retry_with_fallback_source"
+    },
+    "connection_refused": {
+      "action": "cooldown",
+      "cooldown_hours": 4,
+      "playbook": "retry_with_backoff"
+    },
+    "auth_missing": {
+      "action": "escalate",
+      "cooldown_hours": 24,
+      "playbook": "request_operator_credentials"
+    },
+    "permission_denied": {
+      "action": "escalate",
+      "cooldown_hours": 24,
+      "playbook": "request_operator_approval"
+    }
+  }
+}

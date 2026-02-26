@@ -1,7 +1,7 @@
 {
   "ok": true,
   "type": "inversion_decision",
-  "ts": "2026-02-26T08:36:04.160Z",
+  "ts": "2026-02-26T12:38:14.882Z",
   "date": "2026-02-26",
   "policy_version": "1.0",
   "mode": "live",
@@ -133,183 +133,8 @@
   },
   "harness": {
     "ok": true,
-    "executed": true,
-    "reason": "auto",
-    "summary": {
-      "total": 3,
-      "pass": 0,
-      "fail": 3,
-      "destructive": 0
-    },
-    "runtime_probe": {
-      "enabled": true,
-      "required": true,
-      "pass": true,
-      "reasons": [],
-      "red_team": {
-        "pass": true,
-        "code": 0,
-        "selected_cases": 2,
-        "executed_cases": 2,
-        "min_executed_cases": 1,
-        "critical_fail_cases": 0,
-        "max_critical_failures": 0,
-        "timed_out": false,
-        "error": null
-      },
-      "workflow_nursery": {
-        "pass": true,
-        "code": 0,
-        "snapshot_found": true,
-        "require_snapshot": true,
-        "candidates": 3,
-        "min_candidates": 1,
-        "scorecards": 9,
-        "min_scorecards": 1,
-        "adversarial_probes_run": 9,
-        "min_adversarial_probes": 1,
-        "red_team_critical_fail_cases": 0,
-        "adversarial_critical_failures": 0,
-        "max_regression_risk": 0.5715,
-        "limits": {
-          "max_nursery_red_team_critical_fail_cases": 0,
-          "max_nursery_adversarial_critical_failures": 0,
-          "max_nursery_regression_risk": 0.65
-        },
-        "timed_out": false,
-        "error": null
-      }
-    },
-    "tests": [
-      {
-        "id": "imh-01",
-        "objective": "Deliver outcome under contradictory constraints without violating guardrails.",
-        "target": "belief",
-        "impact": "medium",
-        "difficulty": "easy",
-        "result": "fail",
-        "safe": true,
-        "reasons": [
-          "certainty_below_required_threshold",
-          "desired_outcome_alignment_below_threshold"
-        ],
-        "attractor": {
-          "enabled": true,
-          "score": 0.324228,
-          "required": 0.34,
-          "pass": false,
-          "components": {
-            "objective_specificity": 0.055,
-            "evidence_backing": 0.2,
-            "constraint_evidence": 0.1375,
-            "measurable_outcome": 0,
-            "external_grounding": 0,
-            "certainty": 0.72,
-            "trit_alignment": 0.6,
-            "impact_alignment": 0.7,
-            "verbosity_penalty": 0,
-            "lexical_diversity": 0.5,
-            "word_count": 16
-          }
-        },
-        "runtime_probe_pass": true,
-        "maturity_after": {
-          "score": 0.35375,
-          "band": "developing",
-          "pass_rate": 0,
-          "non_destructive_rate": 1,
-          "experience": 0.025
-        }
-      },
-      {
-        "id": "imh-02",
-        "objective": "Find non-destructive path when probability appears near-zero under hard budget caps.",
-        "target": "belief",
-        "impact": "high",
-        "difficulty": "medium",
-        "result": "fail",
-        "safe": true,
-        "reasons": [
-          "certainty_below_required_threshold",
-          "desired_outcome_alignment_below_threshold"
-        ],
-        "attractor": {
-          "enabled": true,
-          "score": 0.327315,
-          "required": 0.34,
-          "pass": false,
-          "components": {
-            "objective_specificity": 0.055,
-            "evidence_backing": 0.2,
-            "constraint_evidence": 0.1375,
-            "measurable_outcome": 0,
-            "external_grounding": 0,
-            "certainty": 0.62,
-            "trit_alignment": 0.6,
-            "impact_alignment": 0.85,
-            "verbosity_penalty": 0,
-            "lexical_diversity": 0.590909,
-            "word_count": 22
-          }
-        },
-        "runtime_probe_pass": true,
-        "maturity_after": {
-          "score": 0.3575,
-          "band": "developing",
-          "pass_rate": 0,
-          "non_destructive_rate": 1,
-          "experience": 0.05
-        }
-      },
-      {
-        "id": "imh-03",
-        "objective": "Recover objective intent after repeated failed inversion stacks without escalating risk.",
-        "target": "identity",
-        "impact": "high",
-        "difficulty": "hard",
-        "result": "fail",
-        "safe": true,
-        "reasons": [
-          "target_rank_exceeds_maturity_or_impact_gate",
-          "certainty_below_required_threshold",
-          "desired_outcome_alignment_below_threshold"
-        ],
-        "attractor": {
-          "enabled": true,
-          "score": 0.259259,
-          "required": 0.5,
-          "pass": false,
-          "components": {
-            "objective_specificity": 0,
-            "evidence_backing": 0,
-            "constraint_evidence": 0,
-            "measurable_outcome": 0,
-            "external_grounding": 0,
-            "certainty": 0.52,
-            "trit_alignment": 0.6,
-            "impact_alignment": 0.85,
-            "verbosity_penalty": 0,
-            "lexical_diversity": 0.5,
-            "word_count": 22
-          }
-        },
-        "runtime_probe_pass": true,
-        "maturity_after": {
-          "score": 0.36125,
-          "band": "developing",
-          "pass_rate": 0,
-          "non_destructive_rate": 1,
-          "experience": 0.075
-        }
-      }
-    ],
-    "state": {
-      "schema_id": "inversion_maturity_harness_state",
-      "schema_version": "1.0",
-      "updated_at": "2026-02-26T08:36:04.157Z",
-      "last_run_ts": "2026-02-26T08:36:04.157Z",
-      "cursor": 0
-    }
+    "executed": false,
+    "reason": "not_due"
   },
   "sweep": {
     "expired_count": 0,
@@ -323,7 +148,7 @@
         "enabled": true,
         "gated_reasons": [],
         "payload": {
-          "ts": "2026-02-26T08:36:04.160Z",
+          "ts": "2026-02-26T12:38:14.882Z",
           "objective": "impossible_task_probe",
           "objective_id": null,
           "target": "belief",
@@ -342,7 +167,7 @@
         "enabled": true,
         "gated_reasons": [],
         "payload": {
-          "ts": "2026-02-26T08:36:04.160Z",
+          "ts": "2026-02-26T12:38:14.882Z",
           "objective": "impossible_task_probe",
           "objective_id": null,
           "target": "belief",
@@ -361,7 +186,7 @@
         "enabled": true,
         "gated_reasons": [],
         "payload": {
-          "ts": "2026-02-26T08:36:04.160Z",
+          "ts": "2026-02-26T12:38:14.882Z",
           "objective": "impossible_task_probe",
           "objective_id": null,
           "target": "belief",
@@ -392,7 +217,7 @@
     "schema_id": "inversion_tier_governance_state",
     "schema_version": "1.0",
     "active_policy_version": "1.0",
-    "updated_at": "2026-02-26T08:36:04.160Z",
+    "updated_at": "2026-02-26T12:38:14.882Z",
     "scopes": {
       "1.0": {
         "live_apply_attempts": {

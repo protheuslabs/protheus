@@ -1,8 +1,8 @@
 {
   "ok": true,
   "type": "orchestron_adversarial_probe",
-  "ts": "2026-02-26T10:43:44.333Z",
-  "run_id": "orcrun_21681fe7d65e98",
+  "ts": "2026-02-26T12:38:15.549Z",
+  "run_id": "orcrun_0d3e537e874f03",
   "date": "2026-02-26",
   "candidate_id": "wfc_e0e54a2e7c461f9e",
   "proposal_type": "cross_signal_opportunity.intake.execution.execution",
@@ -64,7 +64,7 @@
         "novelty": 0
       },
       "source": "orchestron_adaptive_controller",
-      "ts": "2026-02-26T10:43:44.297Z",
+      "ts": "2026-02-26T12:38:15.520Z",
       "signature": "maximize_verified_progress_under_active_directives._default_general_medium_speed_weight_:0.34_robustness_weight_:0.33_cost_weight_:0.33_feasibility_:0_risk_:0_novelty_:0"
     },
     "parent_workflow_id": "wfc_2495d96aedc262d2",
@@ -149,7 +149,7 @@
       }
     ],
     "children": [],
-    "generated_at": "2026-02-26T10:43:44.322Z",
+    "generated_at": "2026-02-26T12:38:15.538Z",
     "metadata": {
       "generation_kind": "fractal_child",
       "parent_workflow_id": "wfc_2495d96aedc262d2",

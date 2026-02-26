@@ -1,0 +1,14 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "streak_threshold": 3,
+  "max_open_escalations": 1,
+  "lookback_days": 14,
+  "default_objective_id": "T1_generational_wealth_v1",
+  "proposal": {
+    "type": "infrastructure_outage",
+    "risk": "medium",
+    "source": "signal_slo_deadlock_breaker",
+    "quality_gate": "ops_deadlock_v1"
+  }
+}

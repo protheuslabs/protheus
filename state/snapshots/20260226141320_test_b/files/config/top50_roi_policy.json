@@ -1,0 +1,42 @@
+{
+  "version": "1.0",
+  "defaults": {
+    "timeout_ms": 600000,
+    "retries": 0,
+    "retry_backoff_ms": 2500,
+    "commit_on_fail": false,
+    "commit_mode": "code_only",
+    "commit_include_prefixes": [
+      "systems",
+      "lib",
+      "config",
+      "memory/tools/tests",
+      "types",
+      "package.json",
+      "tsconfig.systems.json",
+      "tsconfig.systems.build.json"
+    ]
+  },
+  "actions": {
+    "ci_suite": {
+      "timeout_ms": 1200000
+    },
+    "runtime_verify": {
+      "timeout_ms": 300000
+    },
+    "autotest_pulse": {
+      "timeout_ms": 180000,
+      "retries": 1,
+      "retry_backoff_ms": 5000
+    },
+    "compliance_posture_strict": {
+      "timeout_ms": 300000
+    },
+    "merge_guard_fast": {
+      "timeout_ms": 300000
+    },
+    "handoff_simulate": {
+      "timeout_ms": 300000
+    }
+  }
+}

@@ -1,7 +1,7 @@
 {
   "ok": true,
   "type": "alignment_oracle",
-  "ts": "2026-02-26T08:36:31.702Z",
+  "ts": "2026-02-26T12:38:31.783Z",
   "date": "2026-02-26",
   "alignment_score": 63.51,
   "alignment": {
@@ -28,8 +28,8 @@
       "start": "2026-02-13",
       "end": "2026-02-19",
       "sample": 0,
-      "sample_raw": 6,
-      "filtered_legacy": 6,
+      "sample_raw": 0,
+      "filtered_legacy": 0,
       "include_legacy_executed": false,
       "score": null,
       "components": {
@@ -54,11 +54,6 @@
       "auto_1771861265180_PAINRT-43f0e508cdd117b1"
     ],
     "proposal_ids": [
-      "EYE-8e2312aaef07134e",
-      "EYE-169f927379b8035b",
-      "EYE-33cdb9639dd61b51",
-      "EYE-5db7d9e470de1df6",
-      "EYE-8768e72dacc5855f",
       "EYE-edb4c560e0b6aef6",
       "PRP-b422f9b8183ba4d0",
       "PRP-9eca862955cf4462",

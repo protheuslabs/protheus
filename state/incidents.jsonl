@@ -1,0 +1,3 @@
+{"ts":"2026-02-26T14:13:19.719Z","type":"anti_sabotage_snapshot","snapshot_id":"20260226141319_test_a","manifest_path":"state/snapshots/20260226141319_test_a/manifest.json","file_count":596}
+{"ts":"2026-02-26T14:13:20.280Z","type":"anti_sabotage_snapshot","snapshot_id":"20260226141320_test_b","manifest_path":"state/snapshots/20260226141320_test_b/manifest.json","file_count":596}
+{"ts":"2026-02-26T14:13:20.856Z","type":"anti_sabotage_snapshot","snapshot_id":"20260226141320_test_c","manifest_path":"state/snapshots/20260226141320_test_c/manifest.json","file_count":596}

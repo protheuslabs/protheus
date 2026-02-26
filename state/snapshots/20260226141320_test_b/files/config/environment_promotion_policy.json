@@ -1,0 +1,38 @@
+{
+  "version": "1.0",
+  "strict_default": true,
+  "environment_order": [
+    "dev",
+    "stage",
+    "prod"
+  ],
+  "ownership": {
+    "dev": [
+      "platform"
+    ],
+    "stage": [
+      "platform",
+      "qa"
+    ],
+    "prod": [
+      "platform",
+      "security"
+    ]
+  },
+  "dual_control_envs": [
+    "prod"
+  ],
+  "min_approval_note_len": 12,
+  "required_checks_by_env": {
+    "stage": [
+      "contract_check",
+      "schema_contract_check"
+    ],
+    "prod": [
+      "contract_check",
+      "integrity_kernel_check",
+      "schema_contract_check",
+      "ci_suite"
+    ]
+  }
+}

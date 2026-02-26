@@ -1,0 +1,19 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "window_days": 7,
+  "min_window_samples": 6,
+  "max_dominant_objective_share": 0.72,
+  "max_no_change_rate": 0.65,
+  "max_reverted_rate": 0.3,
+  "pressure_min_value_signal": 62,
+  "meta_no_change_streak_limit": 2,
+  "high_risk_exempt": true,
+  "meta_types": [
+    "local_state_fallback",
+    "directive_clarification",
+    "directive_decomposition",
+    "human_escalation",
+    "collector_remediation"
+  ]
+}

@@ -1,8 +1,8 @@
 {
   "ok": true,
   "type": "orchestron_adversarial_probe",
-  "ts": "2026-02-26T10:43:44.334Z",
-  "run_id": "orcrun_21681fe7d65e98",
+  "ts": "2026-02-26T12:38:15.550Z",
+  "run_id": "orcrun_0d3e537e874f03",
   "date": "2026-02-26",
   "candidate_id": "wfc_a41a70667734f086",
   "proposal_type": "cross_signal_opportunity.intake.execution",
@@ -64,7 +64,7 @@
         "novelty": 0
       },
       "source": "orchestron_adaptive_controller",
-      "ts": "2026-02-26T10:43:44.297Z",
+      "ts": "2026-02-26T12:38:15.520Z",
       "signature": "maximize_verified_progress_under_active_directives._default_general_medium_speed_weight_:0.34_robustness_weight_:0.33_cost_weight_:0.33_feasibility_:0_risk_:0_novelty_:0"
     },
     "parent_workflow_id": "wfc_c526a0ca51072aa5",
@@ -149,19 +149,19 @@
       }
     ],
     "children": [],
-    "generated_at": "2026-02-26T10:43:44.321Z",
+    "generated_at": "2026-02-26T12:38:15.537Z",
     "metadata": {
       "generation_kind": "fractal_child",
       "parent_workflow_id": "wfc_c526a0ca51072aa5",
-      "attempts": 40,
-      "shipped_rate": 0.025,
-      "failure_rate": 0.075,
+      "attempts": 41,
+      "shipped_rate": 0.024390243902439025,
+      "failure_rate": 0.07317073170731707,
       "intent_trit_alignment": 0,
       "trit_uncertainty": 1,
       "trit_novelty": 0,
-      "trit_mutation_fit": 0.5395,
+      "trit_mutation_fit": 0.539,
       "value_currency": "revenue",
-      "value_priority_score": 0.6464,
+      "value_priority_score": 0.647,
       "fractal_effective_max_depth": 4,
       "lane": "execution",
       "explicit_tradeoffs": {

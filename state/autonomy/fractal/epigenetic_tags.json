@@ -1,7 +1,7 @@
 {
   "schema_id": "epigenetic_tags",
   "schema_version": "1.0.0",
-  "updated_at": "2026-02-26T08:36:34.936Z",
+  "updated_at": "2026-02-26T12:38:34.942Z",
   "tags": {
     "autonomy_selector": {
       "trit": -1,
@@ -10,9 +10,9 @@
       "ttl_hours": 24
     },
     "risk_governor": {
-      "trit": 0,
-      "tag": "suppress",
-      "reason": "drift_elevated",
+      "trit": 1,
+      "tag": "amplify",
+      "reason": "drift_healthy",
       "ttl_hours": 24
     },
     "queue_scheduler": {

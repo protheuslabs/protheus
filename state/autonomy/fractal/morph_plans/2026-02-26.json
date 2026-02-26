@@ -1,19 +1,19 @@
 {
   "ok": true,
   "type": "fractal_morph_plan",
-  "ts": "2026-02-26T08:36:33.956Z",
+  "ts": "2026-02-26T12:38:34.037Z",
   "date": "2026-02-26",
-  "plan_id": "morph_40a065024cdcea98",
-  "objective_id": "T1_make_jay_billionaire_v1",
+  "plan_id": "morph_1a22d84714896541",
+  "objective_id": "T1_generational_wealth_v1",
   "max_actions": 6,
   "governance_required": true,
   "execution_mode": "proposal_only",
   "actions": [
     {
-      "id": "mpa_7fa60d6c7578fdea",
+      "id": "mpa_22a7c74d8a0146cd",
       "kind": "spawn",
       "target": "module:objective_binding_assistant",
-      "reason": "effective yield 0.0000 indicates directive fit pressure",
+      "reason": "effective yield 0.6250 indicates directive fit pressure",
       "risk": "medium",
       "ttl_hours": 48
     }
@@ -28,12 +28,12 @@
     "receipt_path": "state/autonomy/identity_anchor/2026-02-26.jsonl"
   },
   "context": {
-    "ts": "2026-02-26T08:36:33.948Z",
+    "ts": "2026-02-26T12:38:34.030Z",
     "date": "2026-02-26",
-    "objective_id": "T1_make_jay_billionaire_v1",
+    "objective_id": "T1_generational_wealth_v1",
     "sim": {
-      "drift": null,
-      "yieldRate": null
+      "drift": 0.029,
+      "yieldRate": 0.625
     },
     "queue": {
       "pending": 0,

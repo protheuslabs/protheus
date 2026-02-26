@@ -1,0 +1,86 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_mode": true,
+  "left_brain": {
+    "id": "left_standard",
+    "model": "qwen3:4b",
+    "force_context_contains": [
+      "identity",
+      "governance",
+      "contract",
+      "security",
+      "execution",
+      "spine"
+    ],
+    "force_task_classes": [
+      "identity",
+      "governance",
+      "contract",
+      "security",
+      "execution",
+      "spine",
+      "critical"
+    ]
+  },
+  "right_brain": {
+    "enabled": true,
+    "id": "right_creative",
+    "model": "qwen3:4b",
+    "opportunistic_only": true,
+    "allowed_context_contains": [
+      "dream",
+      "creative",
+      "orchestron",
+      "workflow_generation",
+      "hyper_creative",
+      "incubation"
+    ],
+    "allowed_task_classes": [
+      "creative",
+      "dream",
+      "workflow_generation",
+      "incubation",
+      "training"
+    ]
+  },
+  "trit": {
+    "require_non_pain_for_right": true,
+    "min_right_trit": 0
+  },
+  "thresholds": {
+    "hardware": {
+      "min_cpu_count": 4,
+      "max_load_per_cpu": 0.68,
+      "min_free_mem_mb": 1200,
+      "max_process_rss_mb": 1800,
+      "max_process_heap_mb": 900
+    },
+    "budget": {
+      "require_budget_data": true,
+      "min_token_headroom_ratio": 0.2,
+      "max_burn_pct": 85,
+      "deny_when_autopause_active": true
+    },
+    "stability": {
+      "max_effective_drift_rate": 0.035,
+      "max_policy_hold_rate": 0.5,
+      "max_autotest_failed_last": 0,
+      "max_autotest_guard_blocked_last": 0
+    },
+    "safety": {
+      "block_on_integrity_alert_within_hours": 24,
+      "block_on_spine_critical": true
+    }
+  },
+  "training_gate": {
+    "enabled": true,
+    "max_load_per_cpu": 0.55,
+    "min_free_mem_mb": 1800,
+    "min_token_headroom_ratio": 0.3
+  },
+  "telemetry": {
+    "emit_events": true,
+    "max_reasons": 8
+  }
+}

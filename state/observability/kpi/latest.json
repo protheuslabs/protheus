@@ -1,0 +1,98 @@
+{
+  "ok": true,
+  "type": "ops_dashboard",
+  "ts": "2026-02-26T12:38:31.985Z",
+  "date": "2026-02-26",
+  "days": 7,
+  "reports": 12,
+  "summary": {
+    "totals": {
+      "reports": 12,
+      "failed_checks": 23,
+      "critical": 3,
+      "warnings": 8
+    },
+    "slo": {
+      "dark_eye": {
+        "fail": 0
+      },
+      "proposal_starvation": {
+        "fail": 5
+      },
+      "loop_stall": {
+        "fail": 0
+      },
+      "drift": {
+        "fail": 2
+      }
+    },
+    "branch_health": {
+      "reports_with_branch_health": 6,
+      "queue_open_peak": 53,
+      "active_cells_peak": 0,
+      "active_leases_peak": 0,
+      "active_cooldowns_peak": 1,
+      "policy_holds_total": 309
+    },
+    "trit_shadow": {
+      "reports_with_trit_shadow": 4,
+      "productivity_active": 0,
+      "stage_0": 4,
+      "stage_1": 0,
+      "stage_2": 0,
+      "stage_3": 0,
+      "last_auto_reason": "productivity_threshold_not_met",
+      "latest_divergence_rate": 0.3129,
+      "latest_calibration_accuracy": 0
+    }
+  },
+  "dream": {
+    "idle_cycles": 52,
+    "idle_failures": 0,
+    "idle_timeouts": 0,
+    "idle_skipped": 44,
+    "rem_skipped": 47,
+    "memory_dream_failures": 0,
+    "top_failure_reasons": [
+      {
+        "reason": "feature_flag_disabled",
+        "count": 2
+      }
+    ],
+    "last_failure_ts": null
+  },
+  "kpi": {
+    "generated_ts": "2026-02-26T12:38:31.985Z",
+    "date": "2026-02-26",
+    "window_days": 7,
+    "reports_considered": 12,
+    "execution": {
+      "workflows_executed": 1,
+      "workflows_succeeded": 1,
+      "workflows_failed": 0,
+      "success_rate": 1,
+      "time_to_first_execution_ms": 14
+    },
+    "yield": {
+      "queue_drain_rate": 1,
+      "verification_pass_rate": 0
+    },
+    "safety": {
+      "health_level": "warn",
+      "failed_checks_count": 2,
+      "critical_checks_count": 0,
+      "policy_holds": 11
+    },
+    "queue_health": {
+      "open_count": 6,
+      "eligible_count": 6,
+      "progress_per_day": 161,
+      "unique_proposals": 6
+    },
+    "trend": {
+      "previous_date": null,
+      "execution_success_rate_delta": null,
+      "queue_open_delta": null
+    }
+  }
+}

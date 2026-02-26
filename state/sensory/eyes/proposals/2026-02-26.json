@@ -134,5 +134,50 @@
     "sprouted_eye_id": "proto_1ee751437a437aef",
     "sprouted_ts": "2026-02-26T03:38:11.794Z",
     "last_result": "created"
+  },
+  {
+    "id": "proto_ea17d2c8f15f143a",
+    "type": "eye_sprout",
+    "name": "Watch ehandbook.com",
+    "proposed_domains": [
+      "ehandbook.com"
+    ],
+    "proposed_parser_type": "medium_rss",
+    "directive_ref": "T1_generational_wealth_v1",
+    "proposed_strategy_id": "default_general",
+    "proposed_campaign_ids": [
+      "objective_flow"
+    ],
+    "proposed_topics": [
+      "t1_generational_wealth_v1",
+      "ai",
+      "startups",
+      "revenue",
+      "saas"
+    ],
+    "notes": "Auto-sprout candidate: domain seen 4 times across 1 eyes",
+    "auto_candidate_kind": "linkage_gap",
+    "source_stats": {
+      "hits": 4,
+      "support_eyes": [
+        "proto_e9b76b1298ad760c"
+      ],
+      "sample_title": "The Most Dangerous Emotion in Entrepreneurship Isn’t What You’d Think"
+    },
+    "proposed_status": "probation",
+    "proposed_cadence_hours": 12,
+    "proposed_budgets": {
+      "max_items": 10,
+      "max_seconds": 20,
+      "max_bytes": 524288,
+      "max_requests": 2
+    },
+    "proposed_date": "2026-02-26",
+    "proposed_by": "external_eyes.auto_sprout",
+    "auto_candidate": true,
+    "status": "sprouted",
+    "sprouted_eye_id": "proto_ea17d2c8f15f143a",
+    "sprouted_ts": "2026-02-26T12:36:49.446Z",
+    "last_result": "created"
   }
 ]

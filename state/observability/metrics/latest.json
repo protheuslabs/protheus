@@ -1,7 +1,7 @@
 {
   "ok": true,
   "type": "observability_metrics_exporter",
-  "ts": "2026-02-26T08:36:30.983Z",
+  "ts": "2026-02-26T12:38:31.402Z",
   "date": "2026-02-26",
   "window": "daily",
   "policy_path": "/Users/jay/.openclaw/workspace/config/observability_policy.json",
@@ -48,28 +48,28 @@
     },
     {
       "name": "protheus_health_verification_pass_rate",
-      "value": 0.75,
+      "value": 0.8,
       "labels": {
         "window": "daily"
       }
     },
     {
       "name": "protheus_branch_queue_open_count",
-      "value": 5,
+      "value": 6,
       "labels": {
         "window": "daily"
       }
     },
     {
       "name": "protheus_branch_policy_holds_count",
-      "value": 8,
+      "value": 11,
       "labels": {
         "window": "daily"
       }
     },
     {
       "name": "protheus_observed_autonomy_runs",
-      "value": 13,
+      "value": 17,
       "labels": {
         "window": "daily"
       }
@@ -117,7 +117,7 @@
       "name": "protheus_health_verification_pass_rate",
       "help": "Receipt verification pass rate from autonomy health checks.",
       "type": "gauge",
-      "value": 0.75,
+      "value": 0.8,
       "labels": {
         "window": "daily"
       }
@@ -126,7 +126,7 @@
       "name": "protheus_branch_queue_open_count",
       "help": "Current queue open count from branch health snapshot.",
       "type": "gauge",
-      "value": 5,
+      "value": 6,
       "labels": {
         "window": "daily"
       }
@@ -135,7 +135,7 @@
       "name": "protheus_branch_policy_holds_count",
       "help": "Current policy hold count from branch health snapshot.",
       "type": "gauge",
-      "value": 8,
+      "value": 11,
       "labels": {
         "window": "daily"
       }
@@ -144,7 +144,7 @@
       "name": "protheus_observed_autonomy_runs",
       "help": "Observed autonomy runs in selected health window.",
       "type": "gauge",
-      "value": 13,
+      "value": 17,
       "labels": {
         "window": "daily"
       }
@@ -189,7 +189,7 @@
       "name": "protheus_observability_snapshot_timestamp_seconds",
       "help": "Unix timestamp of observability metrics snapshot.",
       "type": "gauge",
-      "value": 1772094990,
+      "value": 1772109511,
       "labels": {
         "date": "2026-02-26",
         "window": "daily"

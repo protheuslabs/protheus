@@ -1,0 +1,55 @@
+# T1 Northstar Directive: Make Jay Billionaire (Tier 1)
+# Strategic directive for wealth generation
+# Version: 1.0.0
+
+metadata:
+  id: T1_make_jay_billionaire_v1
+  tier: 1
+  version: "1.0.0"
+  description: "Generate wealth through scalable, automated systems"
+  parent_collection: T1_northstars
+
+intent:
+  primary: "Generate wealth through scalable, automated systems"
+  definitions:
+    net_worth_target: 1000000000
+    timeframe_years: 5
+    catastrophic_downside: "Total loss of invested capital"
+    acceptable_downside: "50% drawdown on speculative bets"
+
+constraints:
+  risk_limits:
+    max_drawdown_pct: 10
+    max_single_bet_pct: 2
+    max_monthly_burn: 50000
+    emergency_reserve_months: 6
+  operational:
+    only_proven_strategies: false
+    require_diversification: true
+    max_concentration_pct: 20
+
+success_metrics:
+  leading:
+    - "Number of income streams automated"
+    - "Monthly recurring revenue growth rate"
+    - "System uptime / reliability"
+  lagging:
+    - "Net worth progression"
+    - "Cash flow positive months"
+    - "Return on time invested"
+
+scope:
+  included:
+    - "Income-generating automation"
+    - "Equity-building ventures"
+    - "High-leverage skill development"
+  excluded:
+    - "Pure consumption"
+    - "Zero-sum speculation"
+    - "Regulatory grey areas"
+
+approval_policy:
+  inherits: T0_invariants
+  additional_gates:
+    - "Impact on 5-year trajectory"
+    - "Risk-adjusted return assessment"

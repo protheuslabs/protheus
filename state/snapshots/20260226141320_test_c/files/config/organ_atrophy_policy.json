@@ -1,0 +1,45 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_mode": true,
+  "window_days": 30,
+  "max_candidates": 8,
+  "min_observations": 1,
+  "usefulness_threshold": 0.32,
+  "min_inactive_days": 14,
+  "max_touch_count_for_candidate": 4,
+  "scoring": {
+    "activity_weight": 0.55,
+    "health_weight": 0.3,
+    "test_weight": 0.15,
+    "touch_norm": 24
+  },
+  "exclusions": {
+    "organ_ids": [
+      "spine",
+      "security",
+      "identity",
+      "contracts"
+    ],
+    "path_prefixes": [
+      "systems/spine/",
+      "systems/security/",
+      "systems/identity/",
+      "systems/contracts/"
+    ]
+  },
+  "endpoint": {
+    "enabled": true,
+    "max_files_sample": 120,
+    "max_manifest_chars": 180000
+  },
+  "revive": {
+    "enabled": true,
+    "allow_manual": true,
+    "require_existing_endpoint": true,
+    "shadow_only": true
+  },
+  "telemetry": {
+    "max_reasons": 8
+  }
+}

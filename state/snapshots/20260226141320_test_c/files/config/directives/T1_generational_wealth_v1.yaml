@@ -1,0 +1,54 @@
+# T1 Northstar Directive: Generational Wealth (Tier 1)
+# Strategic directive for lasting wealth creation
+# Version: 1.0.0
+
+metadata:
+  id: T1_generational_wealth_v1
+  tier: 1
+  version: "1.0.0"
+  description: "Create compounding assets and knowledge systems"
+  parent_collection: T1_northstars
+
+intent:
+  primary: "Create compounding assets and knowledge systems"
+  definitions:
+    generational_threshold: "Sustainable 10M+ core with growth"
+    min_hold_period_years: 3
+    catastrophic_downside: "Loss of principal + reputation damage"
+    acceptable_downside: "Short-term liquidity constraints"
+
+constraints:
+  risk_limits:
+    max_drawdown_pct: 15
+    max_single_bet_pct: 5
+    min_hold_period_years: 3
+  operational:
+    tax_optimization_required: true
+    estate_planning_integration: true
+    education_fund_allocation_pct: 10
+
+success_metrics:
+  leading:
+    - "Asset diversification score"
+    - "Tax efficiency ratio"
+    - "Knowledge system completeness"
+  lagging:
+    - "Inflation-adjusted generational value"
+    - "Family financial literacy"
+
+scope:
+  included:
+    - "Tax-advantaged accounts"
+    - "Trust structures"
+    - "Education systems"
+    - "Long-term equity holds"
+  excluded:
+    - "Short-term trading"
+    - "Leverage beyond 2:1"
+    - "Unregistered securities"
+
+approval_policy:
+  inherits: T0_invariants
+  additional_gates:
+    - "30-year projection"
+    - "Downside scenario planning"

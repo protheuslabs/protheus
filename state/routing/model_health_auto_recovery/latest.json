@@ -1,7 +1,7 @@
 {
   "ok": true,
   "type": "model_health_auto_recovery",
-  "ts": "2026-02-26T10:39:14.444Z",
+  "ts": "2026-02-26T12:36:57.865Z",
   "date": "2026-02-26",
   "policy_path": "config/model_health_auto_recovery_policy.json",
   "providers_total": 1,
@@ -15,7 +15,7 @@
       "checks": [
         {
           "attempt": 1,
-          "ts": "2026-02-26T10:39:14.444Z",
+          "ts": "2026-02-26T12:36:57.865Z",
           "ok": true,
           "available": true,
           "reason": "ok",

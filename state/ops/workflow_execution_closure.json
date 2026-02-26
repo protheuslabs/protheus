@@ -1,7 +1,7 @@
 {
   "schema_id": "workflow_execution_closure",
   "schema_version": "1.0",
-  "updated_at": "2026-02-26T10:39:15.813Z",
+  "updated_at": "2026-02-26T12:38:18.641Z",
   "date": "2026-02-26",
   "policy_version": "1.0",
   "target_streak_days": 7,
@@ -15,7 +15,7 @@
   "latest_day": {
     "date": "2026-02-26",
     "pass": true,
-    "accepted_items": 3,
+    "accepted_items": 4,
     "workflows_executed": 1
   },
   "evidence": {
@@ -25,12 +25,12 @@
       {
         "date": "2026-02-26",
         "pass": true,
-        "accepted_items": 3,
+        "accepted_items": 4,
         "workflows_executed": 1,
         "workflows_selected": 1,
         "workflows_succeeded": 1,
         "workflows_failed": 0,
-        "proposal_total": 3,
+        "proposal_total": 4,
         "proposal_path": "state/sensory/eyes/proposals/2026-02-26.json",
         "workflow_run_path": "state/adaptive/workflows/executor/runs/2026-02-26.json"
       },

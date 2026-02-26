@@ -1,0 +1,23 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "providers": [
+    "ollama"
+  ],
+  "max_retries_per_provider": 3,
+  "retry_backoff_ms": [
+    0,
+    1200,
+    3200
+  ],
+  "ban_ttl_minutes": 120,
+  "warmup_on_failure": true,
+  "warmup_max_probes": 2,
+  "failover_route": {
+    "enabled": true,
+    "risk": "low",
+    "complexity": "low",
+    "intent_template": "model_health_auto_recovery_{provider}",
+    "task_template": "provider_{provider}_unavailable"
+  }
+}

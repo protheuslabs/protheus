@@ -1,0 +1,29 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "max_identity_drift_score": 0.58,
+  "enforcement": {
+    "block_on_parent_objective_mismatch": true,
+    "block_on_parent_value_currency_mismatch": true,
+    "block_on_active_objective_currency_mismatch": true,
+    "block_on_objective_missing_when_parent_present": true,
+    "block_on_unknown_active_objective": false,
+    "block_on_branch_depth_jump": false
+  },
+  "weights": {
+    "objective_mismatch_parent": 0.68,
+    "objective_missing_parent": 0.38,
+    "objective_unknown_active": 0.34,
+    "value_currency_mismatch_parent": 0.55,
+    "value_currency_mismatch_objective": 0.52,
+    "branch_depth_jump": 0.24,
+    "identity_missing_objective": 0.12
+  },
+  "branch_rules": {
+    "max_depth_delta_without_approval": 2
+  },
+  "receipts": {
+    "write": true,
+    "max_rows": 240
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "window_days": 14,
+  "min_occurrences": 4,
+  "max_archetypes": 24,
+  "avoid_failure_rate_min": 0.65,
+  "reinforce_success_rate_min": 0.58,
+  "min_confidence": 0.6,
+  "penalty_base": 1.8,
+  "penalty_slope": 9.5,
+  "penalty_max": 8,
+  "bonus_base": 0.4,
+  "bonus_slope": 5.5,
+  "bonus_max": 3,
+  "red_team_pressure": {
+    "enabled": true,
+    "min_runs": 1,
+    "critical_fail_penalty": 2.5,
+    "high_fail_rate_penalty": 1.5,
+    "fail_rate_threshold": 0.35
+  }
+}

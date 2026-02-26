@@ -44,3 +44,4 @@
 {"ts":"2026-02-26T10:39:41.058Z","type":"dual_brain_event","stage":"inversion","mode":"left_only","right_requested":true,"right_permitted":false,"reasons":["hardware_gate","budget_autopause_active"]}
 {"ts":"2026-02-26T10:39:41.064Z","type":"dual_brain_event","stage":"inversion","mode":"left_only","right_requested":true,"right_permitted":false,"reasons":["hardware_gate","budget_autopause_active"]}
 {"ts":"2026-02-26T10:40:45.485Z","type":"dual_brain_event","stage":"manual_probe","mode":"left_only","right_requested":false,"right_permitted":false,"reasons":[]}
+{"ts":"2026-02-26T12:38:14.877Z","type":"dual_brain_event","stage":"inversion","mode":"left_only","right_requested":true,"right_permitted":false,"reasons":["hardware_gate","budget_autopause_active"]}

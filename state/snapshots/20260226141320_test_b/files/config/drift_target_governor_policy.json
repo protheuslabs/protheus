@@ -1,0 +1,27 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "metric": {
+    "key": "error_rate_recent",
+    "fallback_keys": [
+      "spc_stop_ratio",
+      "simulation_drift_rate"
+    ],
+    "initial_target_rate": 0.03,
+    "floor_target_rate": 0.005,
+    "ceiling_target_rate": 0.12
+  },
+  "ratchet": {
+    "tighten_step_rate": 0.0015,
+    "loosen_step_rate": 0.0025,
+    "good_window_streak_required": 2,
+    "bad_window_streak_required": 1,
+    "min_windows_between_adjustments": 1,
+    "history_limit": 180
+  },
+  "guards": {
+    "min_samples": 6,
+    "min_verified_rate": 0.6,
+    "min_shipped_rate": 0.2
+  }
+}

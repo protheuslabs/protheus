@@ -1,7 +1,7 @@
 {
   "schema_id": "autonomy_genome_topology",
   "schema_version": "1.0.0",
-  "ts": "2026-02-26T08:36:34.747Z",
+  "ts": "2026-02-26T12:38:34.763Z",
   "date": "2026-02-26",
   "modules_total": 24,
   "modules": [
@@ -58,11 +58,11 @@
     "objective_binding_assistant": 1.1
   },
   "morph_plan": {
-    "plan_id": "morph_40a065024cdcea98",
-    "objective_id": "T1_make_jay_billionaire_v1",
+    "plan_id": "morph_1a22d84714896541",
+    "objective_id": "T1_generational_wealth_v1",
     "actions": [
       {
-        "id": "mpa_7fa60d6c7578fdea",
+        "id": "mpa_22a7c74d8a0146cd",
         "kind": "spawn",
         "target": "module:objective_binding_assistant",
         "risk": "medium"

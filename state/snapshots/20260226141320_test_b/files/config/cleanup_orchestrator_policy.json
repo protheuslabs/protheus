@@ -1,0 +1,45 @@
+{
+  "version": "1.0",
+  "default_profile": "spine_default",
+  "profiles": {
+    "spine_default": {
+      "description": "Default cleanup profile for spine runs.",
+      "max_tasks_per_run": 8,
+      "stop_on_failure": false,
+      "tasks": [
+        {
+          "id": "state_cleanup",
+          "enabled": true,
+          "critical": false,
+          "apply": true,
+          "dry_run": false,
+          "params": {
+            "profile": "runtime_churn",
+            "max_delete": 200
+          }
+        },
+        {
+          "id": "openclaw_backup_retention",
+          "enabled": true,
+          "critical": false,
+          "apply": true,
+          "dry_run": false,
+          "params": {
+            "keep": 20
+          }
+        },
+        {
+          "id": "cryonics_tier",
+          "enabled": false,
+          "critical": false,
+          "apply": false,
+          "dry_run": true,
+          "params": {
+            "profile": "state_phase1",
+            "max_files": 400
+          }
+        }
+      ]
+    }
+  }
+}

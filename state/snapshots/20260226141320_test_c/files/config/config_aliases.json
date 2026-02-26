@@ -1,0 +1,15 @@
+{
+  "version": "1.0",
+  "aliases": [
+    {
+      "alias": "config/signal_slo_deadlock_breaker_policy.json",
+      "canonical": "config/signal_slo_deadlock_policy.json",
+      "mode": "copy"
+    },
+    {
+      "alias": "config/model_health_recovery_policy.json",
+      "canonical": "config/model_health_auto_recovery_policy.json",
+      "mode": "copy"
+    }
+  ]
+}

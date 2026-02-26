@@ -1,0 +1,42 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_mode": true,
+  "proposal_only": true,
+  "window_days": 3,
+  "max_proposals": 6,
+  "min_confidence": 0.56,
+  "thresholds": {
+    "drift_warn": 0.03,
+    "drift_critical": 0.06,
+    "yield_warn": 0.68,
+    "yield_critical": 0.55,
+    "hold_warn": 0.35,
+    "hold_critical": 0.6,
+    "no_change_warn": 0.45,
+    "no_change_critical": 0.75
+  },
+  "weights": {
+    "drift": 0.28,
+    "yield": 0.24,
+    "hold": 0.2,
+    "no_change": 0.16,
+    "queue": 0.12
+  },
+  "queue": {
+    "normal": 0,
+    "elevated": 0.35,
+    "high": 0.72,
+    "critical": 1
+  },
+  "kinds": {
+    "epigenetic_tag": true,
+    "split": true,
+    "prune": true,
+    "rewire": true
+  },
+  "telemetry": {
+    "max_evidence_refs": 8,
+    "max_reasons": 8
+  }
+}

@@ -1,7 +1,7 @@
 {
   "ok": true,
   "type": "fractal_organism_cycle",
-  "ts": "2026-02-26T08:36:34.939Z",
+  "ts": "2026-02-26T12:38:34.944Z",
   "date": "2026-02-26",
   "proposal_only": true,
   "dream_consolidation": {
@@ -29,8 +29,8 @@
     "path": "state/autonomy/fractal/pheromones/2026-02-26.json"
   },
   "resonance": {
-    "score": 0.58,
-    "band": "steady"
+    "score": 0.78,
+    "band": "high"
   },
   "archetype_pool": {
     "count": 0,

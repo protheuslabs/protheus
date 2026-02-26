@@ -2,3 +2,4 @@
 {"ts":"2026-02-26T00:06:33.864Z","type":"collective_shadow_run","date":"2026-02-26","run_rows":243,"archetypes_total":4,"avoid":4,"reinforce":0,"red_team_fail_rate":0.1887,"red_team_critical_fail_cases":10}
 {"ts":"2026-02-26T04:32:45.602Z","type":"collective_shadow_run","date":"2026-02-26","run_rows":261,"archetypes_total":4,"avoid":4,"reinforce":0,"red_team_fail_rate":0.1818,"red_team_critical_fail_cases":10}
 {"ts":"2026-02-26T08:36:35.153Z","type":"collective_shadow_run","date":"2026-02-26","run_rows":272,"archetypes_total":4,"avoid":4,"reinforce":0,"red_team_fail_rate":0.1833,"red_team_critical_fail_cases":11}
+{"ts":"2026-02-26T12:38:35.147Z","type":"collective_shadow_run","date":"2026-02-26","run_rows":259,"archetypes_total":4,"avoid":4,"reinforce":0,"red_team_fail_rate":0.1905,"red_team_critical_fail_cases":12}

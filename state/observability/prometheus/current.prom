@@ -12,16 +12,16 @@ protheus_health_slo_critical_count{window="daily"} 0
 protheus_health_slo_failed_checks_total{window="daily"} 2
 # HELP protheus_health_verification_pass_rate Receipt verification pass rate from autonomy health checks.
 # TYPE protheus_health_verification_pass_rate gauge
-protheus_health_verification_pass_rate{window="daily"} 0.75
+protheus_health_verification_pass_rate{window="daily"} 0.8
 # HELP protheus_branch_queue_open_count Current queue open count from branch health snapshot.
 # TYPE protheus_branch_queue_open_count gauge
-protheus_branch_queue_open_count{window="daily"} 5
+protheus_branch_queue_open_count{window="daily"} 6
 # HELP protheus_branch_policy_holds_count Current policy hold count from branch health snapshot.
 # TYPE protheus_branch_policy_holds_count gauge
-protheus_branch_policy_holds_count{window="daily"} 8
+protheus_branch_policy_holds_count{window="daily"} 11
 # HELP protheus_observed_autonomy_runs Observed autonomy runs in selected health window.
 # TYPE protheus_observed_autonomy_runs gauge
-protheus_observed_autonomy_runs{window="daily"} 13
+protheus_observed_autonomy_runs{window="daily"} 17
 # HELP protheus_workflow_executor_slo_pass Workflow executor SLO pass flag (1=pass,0=fail).
 # TYPE protheus_workflow_executor_slo_pass gauge
 protheus_workflow_executor_slo_pass 1
@@ -42,4 +42,4 @@ protheus_ci_baseline_target_days 7
 protheus_ci_baseline_streak_ratio 0.14285714285714285
 # HELP protheus_observability_snapshot_timestamp_seconds Unix timestamp of observability metrics snapshot.
 # TYPE protheus_observability_snapshot_timestamp_seconds gauge
-protheus_observability_snapshot_timestamp_seconds{date="2026-02-26",window="daily"} 1772094990
+protheus_observability_snapshot_timestamp_seconds{date="2026-02-26",window="daily"} 1772109511

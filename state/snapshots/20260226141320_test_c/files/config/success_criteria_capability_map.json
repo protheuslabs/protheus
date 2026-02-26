@@ -1,0 +1,27 @@
+{
+  "version": "1.0",
+  "metric_aliases": {
+    "collector_success_runs": "artifact_count",
+    "collector_failure_streak": "queue_outcome_logged",
+    "offer_draft_count": "outreach_artifact",
+    "proposal_draft_count": "outreach_artifact",
+    "outreach_artifact_count": "outreach_artifact",
+    "reply_count": "reply_or_interview_count",
+    "interview_count": "reply_or_interview_count",
+    "outreach_reply_count": "reply_or_interview_count",
+    "outreach_interview_count": "reply_or_interview_count",
+    "validation_metric": "postconditions_ok",
+    "validation_check": "postconditions_ok",
+    "verification_metric": "postconditions_ok",
+    "verification_check": "postconditions_ok"
+  },
+  "capability_rewrite": {
+    "proposal_generic": {
+      "outreach_artifact": "artifact_count",
+      "reply_or_interview_count": "artifact_count"
+    },
+    "proposal_outreach": {},
+    "actuation": {},
+    "generic": {}
+  }
+}

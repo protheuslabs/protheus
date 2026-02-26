@@ -1,0 +1,19 @@
+{
+  "version": "1.0",
+  "criticality_floor_bands": {
+    "safety": 2,
+    "financial": 5,
+    "reliability": 5,
+    "standard": 10
+  },
+  "aperture_multipliers": {
+    "tight": 1.2,
+    "balanced": 1,
+    "wide": 0.85
+  },
+  "plateau_min_streak": 3,
+  "objective_criticality_map": {
+    "T1_make_jay_billionaire_v1": "financial",
+    "T1_generational_wealth_v1": "financial"
+  }
+}

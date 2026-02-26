@@ -1,19 +1,19 @@
 {
   "ok": true,
   "type": "identity_anchor_latest",
-  "ts": "2026-02-26T10:43:44.354Z",
+  "ts": "2026-02-26T12:38:34.599Z",
   "date": "2026-02-26",
-  "scope": "workflows",
-  "source": "workflow_controller_run",
+  "scope": "all",
+  "source": "identity_anchor_run",
   "strategy_id": "default_general",
   "active_objective_ids": [
     "T1_make_jay_billionaire_v1",
     "T1_generational_wealth_v1"
   ],
   "summary": {
-    "checked": 0,
+    "checked": 10,
     "blocked": 0,
-    "allowed": 0,
+    "allowed": 10,
     "identity_drift_score": 0,
     "max_identity_drift_score": 0.58,
     "max_candidate_drift_score": 0,

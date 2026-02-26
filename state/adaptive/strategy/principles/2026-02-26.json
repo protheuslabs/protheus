@@ -1,7 +1,7 @@
 {
   "ok": true,
   "type": "strategy_principles",
-  "ts": "2026-02-26T10:40:44.157Z",
+  "ts": "2026-02-26T12:38:15.106Z",
   "date": "2026-02-26",
   "strategy_id": "default_general",
   "strategy_name": "Default General Strategy",
@@ -73,12 +73,12 @@
       "pass": true,
       "signal": {
         "weights": {
-          "composite": 0.31068,
+          "composite": 0.339806,
           "actionability": 0.252427,
           "directive_fit": 0.174757,
-          "signal_quality": 0.097087,
-          "expected_value": 0.106796,
-          "time_to_value": 0.038835,
+          "signal_quality": 0.116505,
+          "expected_value": 0.07767,
+          "time_to_value": 0.019417,
           "risk_penalty": 0.019417
         }
       },

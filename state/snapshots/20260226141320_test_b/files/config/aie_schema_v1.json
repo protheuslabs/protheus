@@ -1,0 +1,72 @@
+{
+  "schema_version": "1.0",
+  "description": "AIE (Agent Improvement Engine) Event Schema - Tracks Protheus agent outputs for quality evaluation",
+  "event_types": {
+    "patch_applied": {
+      "description": "Code/script changes applied to repo",
+      "fields": ["timestamp", "repo", "path", "files_changed", "tests_passed", "test_log_path", "test_log_sha256", "artifact_refs"],
+      "scoring": "+10 if tests_passed=true WITH valid test_log_path + sha256 evidence, +5 if tests_passed=false/unknown/missing evidence"
+    },
+    "test_run": {
+      "description": "Test suite execution via auto-capture wrapper",
+      "fields": ["timestamp", "command", "exit_code", "test_log_path", "test_log_sha256", "repo_root", "artifact_refs"],
+      "scoring": "+6 if exit_code===0 (tests passed), -6 if exit_code!==0 (tests failed)"
+    },
+    "lint_run": {
+      "description": "Lint/static analysis execution",
+      "fields": ["timestamp", "repo", "linter", "errors", "warnings", "passed", "artifact_refs"],
+      "scoring": "contextual - supports quality assessment"
+    },
+    "build_run": {
+      "description": "Build/compilation execution",
+      "fields": ["timestamp", "repo", "target", "success", "duration_ms", "errors", "artifact_refs"],
+      "scoring": "contextual - supports patch_applied scoring"
+    },
+    "approval_queued": {
+      "description": "High-risk action queued for human approval",
+      "fields": ["timestamp", "action_type", "description", "risk_level", "queued_at", "artifact_refs"],
+      "scoring": "+5 per approval queued (directive compliance)"
+    },
+    "violation_blocked": {
+      "description": "Attempted directive violation that was blocked",
+      "fields": ["timestamp", "violation_type", "attempted_action", "blocked_by", "artifact_refs"],
+      "scoring": "-20 per violation attempt (even if blocked)"
+    },
+    "revert": {
+      "description": "Reverted previous patch",
+      "fields": ["timestamp", "original_patch", "reason", "hours_since_original", "artifact_refs"],
+      "scoring": "-10 if within 48h (rework), -5 if >48h"
+    },
+    "bug_fixed": {
+      "description": "Bug verified fixed via failing→passing test",
+      "fields": ["timestamp", "bug_description", "test_before", "test_after", "verified", "artifact_refs"],
+      "scoring": "+5 if verified=true with test evidence"
+    },
+    "claim_without_artifact": {
+      "description": "Output asserted repo state not supported by evidence",
+      "fields": ["timestamp", "claimed_state", "actual_state", "output_excerpt", "artifact_refs"],
+      "scoring": "-10 per hallucinated/unsupported claim"
+    },
+    "efficiency_marker": {
+      "description": "Token/output efficiency metric",
+      "fields": ["timestamp", "task_description", "tokens_used", "output_lines", "redundancy_detected"],
+      "scoring": "contextual - tracked but not directly scored"
+    }
+  },
+  "scoring_rules": {
+    "patch_applied_passing": 10,
+    "patch_applied_unknown": 5,
+    "test_run_passing": 6,
+    "test_run_failing": -6,
+    "bug_fixed_verified": 5,
+    "approval_queued": 5,
+    "revert_within_48h": -10,
+    "revert_after_48h": -5,
+    "violation_blocked": -20,
+    "claim_without_artifact": -10,
+    "daily_cap": 50,
+    "rolling_windows": [7, 30]
+  },
+  "required_fields_all": ["timestamp", "type", "artifact_refs"],
+  "optional_fields": ["summary", "outcome", "repo", "path"]
+}

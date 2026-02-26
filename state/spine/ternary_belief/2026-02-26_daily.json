@@ -1,18 +1,18 @@
 {
   "schema_id": "spine_ternary_belief_snapshot",
   "schema_version": "1.0.0",
-  "ts": "2026-02-26T08:36:37.798Z",
+  "ts": "2026-02-26T12:38:37.526Z",
   "date": "2026-02-26",
   "mode": "daily",
-  "run_row_count": 71,
-  "signal_count": 73,
+  "run_row_count": 74,
+  "signal_count": 76,
   "belief": {
     "schema_id": "ternary_belief_serialized",
     "schema_version": "1.0.0",
     "trit": 1,
     "trit_label": "ok",
-    "score": 0.8871,
-    "confidence": 0.9254,
+    "score": 0.892,
+    "confidence": 0.9286,
     "vector": {
       "schema_id": "balanced_trit_vector",
       "schema_version": "1.0.0",
@@ -37,12 +37,12 @@
   "summary": {
     "trit": 1,
     "label": "ok",
-    "score": 0.8871,
-    "confidence": 0.9254,
-    "evidence_count": 73,
+    "score": 0.892,
+    "confidence": 0.9286,
+    "evidence_count": 76,
     "pain_signals": 2,
     "unknown_signals": 10,
-    "ok_signals": 61,
+    "ok_signals": 64,
     "top_pain_sources": [
       {
         "source": "spine_offsite_backup_sync",
@@ -168,6 +168,34 @@
       "meta": {}
     },
     {
+      "source": "spine_signal_slo_deadlock_breaker",
+      "trit": 1,
+      "label": "ok",
+      "weight": 3,
+      "confidence": 1,
+      "source_trust": 1,
+      "freshness": 1,
+      "weighted": 3,
+      "tags": [
+        "ok_flag"
+      ],
+      "meta": {}
+    },
+    {
+      "source": "spine_model_health_auto_recovery",
+      "trit": 1,
+      "label": "ok",
+      "weight": 1,
+      "confidence": 1,
+      "source_trust": 1,
+      "freshness": 1,
+      "weighted": 1,
+      "tags": [
+        "ok_flag"
+      ],
+      "meta": {}
+    },
+    {
       "source": "spine_queue_compaction",
       "trit": 1,
       "label": "ok",
@@ -197,20 +225,6 @@
     },
     {
       "source": "spine_budget_guard",
-      "trit": 1,
-      "label": "ok",
-      "weight": 2,
-      "confidence": 1,
-      "source_trust": 1,
-      "freshness": 1,
-      "weighted": 2,
-      "tags": [
-        "ok_flag"
-      ],
-      "meta": {}
-    },
-    {
-      "source": "spine_startup_attestation_issue",
       "trit": 1,
       "label": "ok",
       "weight": 2,
@@ -393,6 +407,20 @@
     },
     {
       "source": "spine_workflow_executor",
+      "trit": 1,
+      "label": "ok",
+      "weight": 1,
+      "confidence": 1,
+      "source_trust": 1,
+      "freshness": 1,
+      "weighted": 1,
+      "tags": [
+        "ok_flag"
+      ],
+      "meta": {}
+    },
+    {
+      "source": "spine_workflow_execution_closure",
       "trit": 1,
       "label": "ok",
       "weight": 1,
@@ -659,6 +687,20 @@
     },
     {
       "source": "spine_ops_dashboard",
+      "trit": 1,
+      "label": "ok",
+      "weight": 1,
+      "confidence": 1,
+      "source_trust": 1,
+      "freshness": 1,
+      "weighted": 1,
+      "tags": [
+        "ok_flag"
+      ],
+      "meta": {}
+    },
+    {
+      "source": "spine_config_registry",
       "trit": 1,
       "label": "ok",
       "weight": 1,

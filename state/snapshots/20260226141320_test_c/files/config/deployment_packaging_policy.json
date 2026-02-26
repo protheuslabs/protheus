@@ -1,0 +1,54 @@
+{
+  "version": "1.0",
+  "strict_default": true,
+  "profiles": {
+    "dev": {
+      "required_files": [
+        "Dockerfile",
+        ".dockerignore",
+        "docker-compose.yml",
+        "deploy/k8s/namespace.yaml",
+        "deploy/k8s/configmap.yaml",
+        "deploy/k8s/cronjob-daily.yaml",
+        "deploy/k8s/networkpolicy.yaml"
+      ],
+      "required_scripts": [
+        "typecheck:systems",
+        "test:ci",
+        "guard:merge"
+      ],
+      "checks": {
+        "docker_require_user": true,
+        "docker_require_healthcheck": true,
+        "docker_forbid_latest_tag": true,
+        "k8s_require_run_as_non_root": true,
+        "k8s_require_no_privilege_escalation": true
+      }
+    },
+    "prod": {
+      "required_files": [
+        "Dockerfile",
+        ".dockerignore",
+        "docker-compose.yml",
+        "deploy/k8s/namespace.yaml",
+        "deploy/k8s/configmap.yaml",
+        "deploy/k8s/cronjob-daily.yaml",
+        "deploy/k8s/networkpolicy.yaml"
+      ],
+      "required_scripts": [
+        "typecheck:systems",
+        "test:ci",
+        "guard:merge",
+        "runtime:dist:verify"
+      ],
+      "checks": {
+        "docker_require_user": true,
+        "docker_require_healthcheck": true,
+        "docker_forbid_latest_tag": true,
+        "k8s_require_run_as_non_root": true,
+        "k8s_require_no_privilege_escalation": true,
+        "k8s_require_read_only_root_fs": true
+      }
+    }
+  }
+}

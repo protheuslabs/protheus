@@ -1,0 +1,32 @@
+{
+  "version": "1.0",
+  "default_profile": "runtime_state",
+  "profiles": {
+    "runtime_state": {
+      "description": "External backup profile for high-value runtime state and receipts.",
+      "includes": [
+        "state/autonomy",
+        "state/routing",
+        "state/actuation/receipts",
+        "state/sensory/proposals",
+        "state/sensory/anomalies",
+        "state/sensory/queue_log.jsonl",
+        "state/spine/runs",
+        "state/security/break_glass.jsonl",
+        "state/security/emergency_stop.json"
+      ],
+      "exclude_prefixes": [
+        "state/sensory/raw",
+        "state/sensory/eyes/raw",
+        "state/sensory/eyes/metrics"
+      ],
+      "exclude_suffixes": [
+        ".tmp",
+        ".lock"
+      ],
+      "retention": {
+        "max_snapshots": 21
+      }
+    }
+  }
+}

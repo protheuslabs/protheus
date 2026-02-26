@@ -1,7 +1,7 @@
 {
   "ok": true,
   "type": "config_registry",
-  "ts": "2026-02-26T10:39:15.155Z",
+  "ts": "2026-02-26T12:38:32.195Z",
   "policy_path": "config/config_registry_policy.json",
   "apply_aliases": true,
   "alias_map_path": "config/config_aliases.json",
@@ -936,9 +936,9 @@
     },
     {
       "path": "config/log_redaction_policy.json",
-      "bytes": 918,
-      "mtime_ts": "2026-02-26T10:27:41.245Z",
-      "sha256": "a7872c3cb3adeae1ebc02a67bce50290cbfe22361aaea0ecdd75ac8cf2030552",
+      "bytes": 966,
+      "mtime_ts": "2026-02-26T10:44:48.543Z",
+      "sha256": "8d69f0c8b27f309fda5940c13563504758f3f1706cd2c4e95a3d32c9be711239",
       "type_tag": "policy",
       "top_level_keys": [
         "enabled",
@@ -1788,7 +1788,7 @@
     {
       "path": "config/work_roots.json",
       "bytes": 275,
-      "mtime_ts": "2026-02-26T10:37:06.849Z",
+      "mtime_ts": "2026-02-26T11:03:47.748Z",
       "sha256": "5411c2d2d841377f06603d6453a1402326c12f5ad3e0c0756343fa4116f6ddeb",
       "type_tag": "config",
       "top_level_keys": [

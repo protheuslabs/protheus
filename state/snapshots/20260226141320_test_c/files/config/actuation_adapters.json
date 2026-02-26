@@ -1,0 +1,13 @@
+{
+  "version": "1.0",
+  "adapters": {
+    "moltbook_publish": {
+      "module": "skills/moltbook/actuation_adapter.js",
+      "description": "Guarded Moltbook post publication with verification receipts."
+    },
+    "eyes_create": {
+      "module": "systems/actuation/eyes_create_adapter.js",
+      "description": "Create sensory eyes through eyes_intake with directive gating."
+    }
+  }
+}

@@ -1,0 +1,56 @@
+# T0 Invariants - Non-negotiable constraints (Tier 0)
+# These apply to ALL tasks regardless of tier or directive inheritance.
+# Version: 1.0.0
+
+metadata:
+  id: T0_invariants
+  tier: 0
+  version: "1.0.0"
+  description: "Non-negotiable constraints that apply to all actions"
+  immutable: true
+
+# Hard blocks - these actions are blocked unless explicitly approved
+hard_blocks:
+  - rule: secret_redaction
+    description: Secrets must always be redacted
+    tier: 0
+
+# Approval required - these actions can proceed with explicit approval
+approval_required:
+  - rule: irreversible_actions
+    description: No irreversible actions without explicit approval
+    tier: 0
+    
+  - rule: financial_actions
+    description: No spending money without explicit approval
+    tier: 0
+    
+  - rule: publishing
+    description: No publishing publicly without explicit approval
+    tier: 0
+    
+  - rule: change_credentials
+    description: No changing credentials without explicit approval
+    tier: 0
+    
+  - rule: outbound_contact_new
+    description: No outbound contact to new people without approval
+    tier: 0
+
+# High-stakes domains that require automatic escalation
+high_stakes_domains:
+  - domain: finance
+    escalation_required: true
+    default_tier: 2
+  - domain: security
+    escalation_required: true
+    default_tier: 2
+  - domain: legal
+    escalation_required: true
+    default_tier: 2
+  - domain: deployment
+    escalation_required: true
+    default_tier: 2
+  - domain: production_change
+    escalation_required: true
+    default_tier: 2

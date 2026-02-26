@@ -1,0 +1,14 @@
+{
+  "version": "1.0",
+  "targets": {
+    "max_divergence_rate": 0.05,
+    "min_decisions_for_divergence": 30,
+    "max_safety_regressions": 0,
+    "drift_non_increasing": true,
+    "min_yield_lift": 0.03
+  },
+  "baseline": {
+    "drift_rate": 0.03,
+    "yield_rate": 0.714
+  }
+}

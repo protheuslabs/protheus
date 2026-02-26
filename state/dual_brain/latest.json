@@ -1,9 +1,9 @@
 {
   "ok": true,
   "type": "dual_brain_decision",
-  "ts": "2026-02-26T10:40:45.485Z",
-  "context": "manual_probe",
-  "task_class": "general",
+  "ts": "2026-02-26T12:38:14.877Z",
+  "context": "inversion",
+  "task_class": "creative",
   "desired_lane": "auto",
   "shadow_mode_active": true,
   "mode": "left_only",
@@ -15,7 +15,7 @@
   "right": {
     "id": "right_creative",
     "model": "qwen3:4b",
-    "requested": false,
+    "requested": true,
     "permitted": false,
     "shadow": false,
     "live": false
@@ -24,34 +24,37 @@
     "policy_enabled": true,
     "right_enabled": true,
     "forced_left": false,
-    "right_context_match": false,
-    "wants_right": false,
-    "gate_hardware": true,
-    "gate_budget": true,
+    "right_context_match": true,
+    "wants_right": true,
+    "gate_hardware": false,
+    "gate_budget": false,
     "gate_stability": true,
     "gate_safety": true,
     "gate_trit": true,
     "gate_training": true
   },
-  "trit": 1,
-  "reasons": [],
+  "trit": 0,
+  "reasons": [
+    "hardware_gate",
+    "budget_autopause_active"
+  ],
   "signals": {
     "resource": {
       "cpu_count": 8,
-      "load_1m": 4.4673,
-      "load_per_cpu": 0.5584,
-      "rss_mb": 121.52,
-      "heap_used_mb": 27.55,
-      "free_mem_mb": 498.72,
+      "load_1m": 2.313,
+      "load_per_cpu": 0.2891,
+      "rss_mb": 140.63,
+      "heap_used_mb": 40.53,
+      "free_mem_mb": 195.63,
       "total_mem_mb": 8192,
       "ok": false
     },
     "budget": {
       "available": true,
       "token_cap": 6000,
-      "used_est": 2660,
-      "burn_pct": 44.3333,
-      "token_headroom_ratio": 0.556667,
+      "used_est": 2800,
+      "burn_pct": 46.6667,
+      "token_headroom_ratio": 0.533333,
       "autopause_active": true,
       "strategy_id": "default_general",
       "path": "state/autonomy/daily_budget/2026-02-26.json"

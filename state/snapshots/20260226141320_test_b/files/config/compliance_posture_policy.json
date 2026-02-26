@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "strict_default": false,
+  "default_days": 30,
+  "weights": {
+    "soc2_readiness": 0.35,
+    "integrity_kernel": 0.2,
+    "startup_attestation": 0.15,
+    "deployment_packaging": 0.2,
+    "contract_surface": 0.1
+  },
+  "thresholds": {
+    "pass": 0.8,
+    "warn": 0.65
+  }
+}
