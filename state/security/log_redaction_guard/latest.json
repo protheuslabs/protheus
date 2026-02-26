@@ -1,0 +1,22 @@
+{
+  "ok": false,
+  "type": "log_redaction_guard",
+  "ts": "2026-02-26T10:15:39.666Z",
+  "apply": false,
+  "strict": true,
+  "policy_path": "config/log_redaction_policy.json",
+  "files_scanned": 2855,
+  "files_flagged": 1,
+  "files_redacted": 0,
+  "matches_found": 1,
+  "bytes_redacted": 0,
+  "flagged_samples": [
+    {
+      "path": "logs/tool_raw/benchmark_results_summary.json",
+      "matches": 1,
+      "patterns": {
+        "auth_bearer_header": 1
+      }
+    }
+  ]
+}
