@@ -8,6 +8,8 @@
  *
  * Usage:
  *   node systems/ops/compliance_reports.js evidence-index [--days=30]
+ *   node systems/ops/compliance_reports.js control-inventory
+ *   node systems/ops/compliance_reports.js framework-readiness [--framework=soc2|iso27001|nist_ai_rmf|all] [--days=30] [--strict=1|0]
  *   node systems/ops/compliance_reports.js soc2-readiness [--days=30] [--strict=1|0]
  *   node systems/ops/compliance_reports.js status
  */
@@ -37,6 +39,8 @@ function todayStr() {
 function usage() {
   console.log('Usage:');
   console.log('  node systems/ops/compliance_reports.js evidence-index [--days=30]');
+  console.log('  node systems/ops/compliance_reports.js control-inventory');
+  console.log('  node systems/ops/compliance_reports.js framework-readiness [--framework=soc2|iso27001|nist_ai_rmf|all] [--days=30] [--strict=1|0]');
   console.log('  node systems/ops/compliance_reports.js soc2-readiness [--days=30] [--strict=1|0]');
   console.log('  node systems/ops/compliance_reports.js status');
 }
@@ -122,14 +126,16 @@ function relPath(p) {
 
 function defaultPolicy() {
   return {
-    version: '1.0',
+    version: '1.1',
     strict_default: false,
+    frameworks: ['soc2', 'iso27001', 'nist_ai_rmf'],
     controls: [
       {
         id: 'CC6.1',
         title: 'Logical Access Security Controls',
         owner: 'security',
         frequency: 'daily',
+        frameworks: ['soc2', 'iso27001'],
         evidence: [
           { type: 'jsonl_min_rows', path: 'state/security/policy_root_decisions.jsonl', min_rows: 1 },
           { type: 'jsonl_min_rows', path: 'state/security/integrity_violations.jsonl', min_rows: 0 }
@@ -140,6 +146,7 @@ function defaultPolicy() {
         title: 'Change Management + Detection',
         owner: 'ops',
         frequency: 'daily',
+        frameworks: ['soc2', 'iso27001'],
         evidence: [
           { type: 'jsonl_min_rows', path: 'state/autonomy/receipts.jsonl', min_rows: 1 },
           { type: 'file_exists', path: 'docs/OPERATOR_RUNBOOK.md' }
@@ -150,6 +157,7 @@ function defaultPolicy() {
         title: 'Incident Response + Recovery',
         owner: 'ops',
         frequency: 'weekly',
+        frameworks: ['soc2', 'iso27001', 'nist_ai_rmf'],
         evidence: [
           { type: 'jsonl_min_rows', path: 'state/ops/postmortem_log.jsonl', min_rows: 0 },
           { type: 'file_exists', path: 'docs/THREAT_MODEL_V1.md' }
@@ -168,8 +176,18 @@ function normalizeEvidenceRule(raw) {
     type,
     path: rel,
     min_rows: Math.max(0, Number(src.min_rows || 0)),
-    key: normalizeText(src.key || '', 120) || null
+    key: normalizeText(src.key || '', 120) || null,
+    require_file: src.require_file === true
   };
+}
+
+function normalizeFrameworkId(v) {
+  const raw = normalizeText(v, 64).toLowerCase();
+  if (!raw) return '';
+  if (raw === 'soc2' || raw === 'soc_2') return 'soc2';
+  if (raw === 'iso27001' || raw === 'iso_27001' || raw === 'iso-27001') return 'iso27001';
+  if (raw === 'nist_ai_rmf' || raw === 'nist-airmf' || raw === 'nist_ai' || raw === 'nist') return 'nist_ai_rmf';
+  return raw.replace(/[^a-z0-9_]+/g, '_');
 }
 
 function normalizeControl(raw) {
@@ -184,6 +202,9 @@ function normalizeControl(raw) {
     title: normalizeText(src.title || '', 180) || id,
     owner: normalizeText(src.owner || 'unassigned', 80) || 'unassigned',
     frequency: normalizeText(src.frequency || 'weekly', 48) || 'weekly',
+    frameworks: Array.from(new Set((Array.isArray(src.frameworks) ? src.frameworks : ['soc2'])
+      .map(normalizeFrameworkId)
+      .filter(Boolean))),
     evidence
   };
 }
@@ -194,9 +215,15 @@ function loadPolicy(policyPath = POLICY_PATH) {
   const controls = (Array.isArray(src.controls) && src.controls.length ? src.controls : base.controls)
     .map(normalizeControl)
     .filter(Boolean);
+  const declaredFrameworks = Array.from(new Set((Array.isArray(src.frameworks) && src.frameworks.length ? src.frameworks : base.frameworks)
+    .map(normalizeFrameworkId)
+    .filter(Boolean)));
+  const controlFrameworks = Array.from(new Set(controls.flatMap((control) => Array.isArray(control.frameworks) ? control.frameworks : [])));
+  const frameworks = Array.from(new Set(declaredFrameworks.concat(controlFrameworks))).sort();
   return {
     version: normalizeText(src.version || base.version, 32) || '1.0',
     strict_default: src.strict_default === true,
+    frameworks,
     controls
   };
 }
@@ -223,6 +250,18 @@ function evaluateEvidenceRule(rule, days) {
   }
 
   if (rule.type === 'jsonl_min_rows') {
+    const exists = fs.existsSync(absPath);
+    if (rule.require_file === true && !exists) {
+      return {
+        ok: false,
+        type: rule.type,
+        path: rule.path,
+        observed: 'missing_file',
+        min_rows: Number(rule.min_rows || 0),
+        rows: 0,
+        latest_ts: null
+      };
+    }
     const rows = readJsonl(absPath).filter((row) => rowWithinDays(row && row.ts, days));
     let latestTs = null;
     for (const row of rows) {
@@ -287,6 +326,7 @@ function buildEvidenceIndex(policy, days) {
       title: control.title,
       owner: control.owner,
       frequency: control.frequency,
+      frameworks: Array.isArray(control.frameworks) ? control.frameworks : [],
       evidence
     });
   }
@@ -304,33 +344,118 @@ function buildEvidenceIndex(policy, days) {
   };
 }
 
-function buildSoc2Readiness(policy, evidenceIndex) {
-  const controls = [];
-  let passCount = 0;
-  for (const control of evidenceIndex.controls || []) {
-    const failedEvidence = (control.evidence || []).filter((row) => row.ok !== true);
-    const pass = failedEvidence.length === 0;
-    if (pass) passCount += 1;
-    controls.push({
+function buildControlInventory(policy) {
+  const controls = (Array.isArray(policy.controls) ? policy.controls : []).map((control) => {
+    const ownerOk = normalizeText(control.owner || '', 80).length > 0 && normalizeText(control.owner || '', 80) !== 'unassigned';
+    const frequencyOk = normalizeText(control.frequency || '', 80).length > 0;
+    const evidenceRules = Array.isArray(control.evidence) ? control.evidence : [];
+    const evidenceOk = evidenceRules.length > 0
+      && evidenceRules.every((rule) => normalizeText(rule && rule.path || '', 320).length > 0);
+    const frameworks = Array.isArray(control.frameworks) ? control.frameworks.filter(Boolean) : [];
+    const frameworksOk = frameworks.length > 0;
+    const pass = ownerOk && frequencyOk && evidenceOk && frameworksOk;
+    return {
       id: control.id,
       title: control.title,
       owner: control.owner,
       frequency: control.frequency,
-      pass,
-      failed_evidence: failedEvidence
-    });
-  }
-
+      frameworks,
+      evidence_paths: evidenceRules.map((rule) => normalizeText(rule.path || '', 320)).filter(Boolean),
+      checks: {
+        owner_present: ownerOk,
+        frequency_present: frequencyOk,
+        evidence_paths_present: evidenceOk,
+        frameworks_present: frameworksOk
+      },
+      pass
+    };
+  });
+  const passed = controls.filter((row) => row.pass === true).length;
   return {
-    ok: controls.length > 0 ? passCount === controls.length : false,
-    type: 'soc2_readiness',
+    ok: controls.length > 0 ? passed === controls.length : false,
+    type: 'compliance_control_inventory',
     ts: nowIso(),
     policy_version: policy.version,
     controls_total: controls.length,
-    controls_passed: passCount,
-    controls_failed: Math.max(0, controls.length - passCount),
-    pass_rate: controls.length > 0 ? Number((passCount / controls.length).toFixed(4)) : null,
+    controls_passed: passed,
+    controls_failed: Math.max(0, controls.length - passed),
+    pass_rate: controls.length > 0 ? Number((passed / controls.length).toFixed(4)) : null,
     controls
+  };
+}
+
+function buildFrameworkReadiness(policy, evidenceIndex, frameworkId) {
+  const requested = normalizeFrameworkId(frameworkId || 'all') || 'all';
+  const controls = Array.isArray(evidenceIndex && evidenceIndex.controls) ? evidenceIndex.controls : [];
+  const frameworks = requested === 'all'
+    ? Array.from(new Set((Array.isArray(policy.frameworks) ? policy.frameworks : []).concat(
+      controls.flatMap((control) => Array.isArray(control.frameworks) ? control.frameworks : [])
+    ))).sort()
+    : [requested];
+
+  const frameworkRows = frameworks.map((framework) => {
+    const scoped = controls.filter((control) => Array.isArray(control.frameworks) && control.frameworks.includes(framework));
+    const normalizedControls = scoped.map((control) => {
+      const failedEvidence = (Array.isArray(control.evidence) ? control.evidence : []).filter((row) => row.ok !== true);
+      return {
+        id: control.id,
+        title: control.title,
+        owner: control.owner,
+        frequency: control.frequency,
+        pass: failedEvidence.length === 0,
+        failed_evidence: failedEvidence
+      };
+    });
+    const passed = normalizedControls.filter((control) => control.pass === true).length;
+    return {
+      framework,
+      controls_total: normalizedControls.length,
+      controls_passed: passed,
+      controls_failed: Math.max(0, normalizedControls.length - passed),
+      pass_rate: normalizedControls.length > 0
+        ? Number((passed / normalizedControls.length).toFixed(4))
+        : null,
+      ok: normalizedControls.length > 0 ? passed === normalizedControls.length : false,
+      controls: normalizedControls
+    };
+  });
+
+  const controlsTotal = frameworkRows.reduce((sum, row) => sum + Number(row.controls_total || 0), 0);
+  const controlsPassed = frameworkRows.reduce((sum, row) => sum + Number(row.controls_passed || 0), 0);
+  return {
+    ok: frameworkRows.length > 0 ? frameworkRows.every((row) => row.ok === true) : false,
+    type: 'framework_readiness',
+    ts: nowIso(),
+    requested_framework: requested,
+    policy_version: policy.version,
+    frameworks: frameworkRows,
+    controls_total: controlsTotal,
+    controls_passed: controlsPassed,
+    controls_failed: Math.max(0, controlsTotal - controlsPassed),
+    pass_rate: controlsTotal > 0 ? Number((controlsPassed / controlsTotal).toFixed(4)) : null
+  };
+}
+
+function buildSoc2Readiness(policy, evidenceIndex) {
+  const framework = buildFrameworkReadiness(policy, evidenceIndex, 'soc2');
+  const soc2 = framework.frameworks && framework.frameworks[0] ? framework.frameworks[0] : {
+    controls_total: 0,
+    controls_passed: 0,
+    controls_failed: 0,
+    pass_rate: null,
+    ok: false,
+    controls: []
+  };
+  return {
+    ok: soc2.ok === true,
+    type: 'soc2_readiness',
+    ts: framework.ts,
+    policy_version: framework.policy_version,
+    controls_total: Number(soc2.controls_total || 0),
+    controls_passed: Number(soc2.controls_passed || 0),
+    controls_failed: Number(soc2.controls_failed || 0),
+    pass_rate: soc2.pass_rate == null ? null : Number(soc2.pass_rate),
+    controls: Array.isArray(soc2.controls) ? soc2.controls : []
   };
 }
 
@@ -339,6 +464,8 @@ function outPaths(dateStr) {
   return {
     day_dir: dayDir,
     evidence_index: path.join(dayDir, 'evidence_index.json'),
+    control_inventory: path.join(dayDir, 'control_inventory.json'),
+    framework_readiness: path.join(dayDir, 'framework_readiness.json'),
     soc2_readiness: path.join(dayDir, 'soc2_readiness.json')
   };
 }
@@ -363,15 +490,61 @@ function cmdEvidenceIndex(args) {
   }, null, 2) + '\n');
 }
 
+function cmdControlInventory() {
+  const policy = loadPolicy();
+  const inventory = buildControlInventory(policy);
+  const paths = outPaths(todayStr());
+  writeJsonAtomic(paths.control_inventory, inventory);
+  appendJsonl(HISTORY_PATH, {
+    ts: nowIso(),
+    type: 'compliance_control_inventory',
+    ok: inventory.ok,
+    controls_failed: inventory.controls_failed,
+    path: relPath(paths.control_inventory)
+  });
+  process.stdout.write(JSON.stringify({
+    ...inventory,
+    output_path: relPath(paths.control_inventory)
+  }, null, 2) + '\n');
+}
+
+function cmdFrameworkReadiness(args) {
+  const policy = loadPolicy();
+  const days = clampInt(args.days, 1, 365, 30);
+  const strict = toBool(args.strict, policy.strict_default);
+  const framework = normalizeFrameworkId(args.framework || 'all') || 'all';
+  const evidence = buildEvidenceIndex(policy, days);
+  const readiness = buildFrameworkReadiness(policy, evidence, framework);
+  const paths = outPaths(todayStr());
+  writeJsonAtomic(paths.evidence_index, evidence);
+  writeJsonAtomic(paths.framework_readiness, readiness);
+  appendJsonl(HISTORY_PATH, {
+    ts: nowIso(),
+    type: 'framework_readiness',
+    requested_framework: framework,
+    ok: readiness.ok,
+    controls_failed: readiness.controls_failed,
+    path: relPath(paths.framework_readiness)
+  });
+  process.stdout.write(JSON.stringify({
+    ...readiness,
+    evidence_index_path: relPath(paths.evidence_index),
+    readiness_path: relPath(paths.framework_readiness)
+  }, null, 2) + '\n');
+  if (strict && readiness.ok !== true) process.exit(1);
+}
+
 function cmdSoc2Readiness(args) {
   const policy = loadPolicy();
   const days = clampInt(args.days, 1, 365, 30);
   const strict = toBool(args.strict, policy.strict_default);
   const evidence = buildEvidenceIndex(policy, days);
   const readiness = buildSoc2Readiness(policy, evidence);
+  const frameworkReadiness = buildFrameworkReadiness(policy, evidence, 'soc2');
 
   const paths = outPaths(todayStr());
   writeJsonAtomic(paths.evidence_index, evidence);
+  writeJsonAtomic(paths.framework_readiness, frameworkReadiness);
   writeJsonAtomic(paths.soc2_readiness, readiness);
   appendJsonl(HISTORY_PATH, {
     ts: nowIso(),
@@ -392,6 +565,8 @@ function cmdSoc2Readiness(args) {
 function cmdStatus() {
   const history = readJsonl(HISTORY_PATH).slice(-30);
   const soc2Rows = history.filter((row) => row && row.type === 'soc2_readiness');
+  const frameworkRows = history.filter((row) => row && row.type === 'framework_readiness');
+  const inventoryRows = history.filter((row) => row && row.type === 'compliance_control_inventory');
   const fail = soc2Rows.filter((row) => row.ok !== true).length;
   process.stdout.write(JSON.stringify({
     ok: true,
@@ -401,6 +576,8 @@ function cmdStatus() {
     recent_history_count: history.length,
     recent_soc2_runs: soc2Rows.length,
     recent_soc2_failures: fail,
+    recent_framework_runs: frameworkRows.length,
+    recent_inventory_runs: inventoryRows.length,
     recent_soc2_pass_rate: soc2Rows.length > 0
       ? Number(((soc2Rows.length - fail) / soc2Rows.length).toFixed(4))
       : null,
@@ -416,6 +593,8 @@ function main() {
     process.exit(0);
   }
   if (cmd === 'evidence-index') return cmdEvidenceIndex(args);
+  if (cmd === 'control-inventory') return cmdControlInventory();
+  if (cmd === 'framework-readiness') return cmdFrameworkReadiness(args);
   if (cmd === 'soc2-readiness') return cmdSoc2Readiness(args);
   if (cmd === 'status') return cmdStatus();
   usage();
@@ -429,6 +608,8 @@ if (require.main === module) {
 module.exports = {
   loadPolicy,
   buildEvidenceIndex,
-  buildSoc2Readiness
+  buildSoc2Readiness,
+  buildControlInventory,
+  buildFrameworkReadiness
 };
 export {};

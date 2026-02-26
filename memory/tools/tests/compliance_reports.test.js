@@ -63,27 +63,31 @@ function runTest() {
   writeText(sourceFile, '# runbook\n');
 
   writeJson(policyPath, {
-    version: '1.0',
+    version: '1.1',
     strict_default: true,
+    frameworks: ['soc2', 'iso27001', 'nist_ai_rmf'],
     controls: [
       {
         id: 'CC6.1',
         title: 'Control A',
         owner: 'security',
         frequency: 'daily',
+        frameworks: ['soc2', 'iso27001'],
         evidence: [
           {
             type: 'jsonl_min_rows',
             path: path.relative(ROOT, sourceLog),
-            min_rows: 1
+            min_rows: 1,
+            require_file: true
           }
         ]
       },
       {
-        id: 'CC7.2',
+        id: 'GOV-1.1',
         title: 'Control B',
-        owner: 'ops',
+        owner: 'governance',
         frequency: 'weekly',
+        frameworks: ['nist_ai_rmf'],
         evidence: [
           {
             type: 'file_exists',
@@ -101,9 +105,19 @@ function runTest() {
   };
 
   try {
-    let r = run(['evidence-index', '--days=30'], env);
+    let r = run(['control-inventory'], env);
+    assert.strictEqual(r.status, 0, `control-inventory should pass: ${r.stderr}`);
+    assert.ok(r.payload && r.payload.type === 'compliance_control_inventory', 'inventory type expected');
+    assert.ok(Number(r.payload.controls_failed || 0) === 0, 'inventory should be complete');
+
+    r = run(['evidence-index', '--days=30'], env);
     assert.strictEqual(r.status, 0, `evidence-index should pass: ${r.stderr}`);
     assert.ok(r.payload && r.payload.failed_rules === 0, 'evidence index should have no failed rules');
+
+    r = run(['framework-readiness', '--framework=all', '--days=30', '--strict=1'], env);
+    assert.strictEqual(r.status, 0, `framework-readiness should pass strict: ${r.stderr}`);
+    assert.ok(r.payload && r.payload.type === 'framework_readiness', 'framework readiness type expected');
+    assert.ok(Array.isArray(r.payload.frameworks) && r.payload.frameworks.length >= 2, 'framework rows expected');
 
     r = run(['soc2-readiness', '--days=30', '--strict=1'], env);
     assert.strictEqual(r.status, 0, `soc2-readiness should pass strict: ${r.stderr}`);
@@ -112,8 +126,12 @@ function runTest() {
     // break one control and confirm strict failure.
     fs.unlinkSync(sourceFile);
     r = run(['soc2-readiness', '--days=30', '--strict=1'], env);
-    assert.notStrictEqual(r.status, 0, 'strict readiness should fail when evidence missing');
-    assert.ok(r.payload && r.payload.ok === false, 'readiness payload should fail');
+    assert.strictEqual(r.status, 0, 'strict SOC2 readiness should still pass when non-SOC2 evidence is missing');
+    assert.ok(r.payload && r.payload.ok === true, 'SOC2 readiness payload should still pass');
+
+    r = run(['framework-readiness', '--framework=nist_ai_rmf', '--days=30', '--strict=1'], env);
+    assert.notStrictEqual(r.status, 0, 'strict framework readiness should fail when evidence missing');
+    assert.ok(r.payload && r.payload.ok === false, 'framework readiness payload should fail');
 
     r = run(['status'], env);
     assert.strictEqual(r.status, 0, `status should pass: ${r.stderr}`);
