@@ -286,8 +286,8 @@ const AUTONOMY_UNLINKED_OPTIMIZATION_EXEMPT_TYPES = new Set(
     .map((s) => String(s || '').trim().toLowerCase())
     .filter(Boolean)
 );
-const ADAPTIVE_MUTATION_TYPE_RE = /\b(adaptive|mutation|topology|genome|fractal|morph|self[_-]?(?:improv|mutation|modify)|branch[_-]?(?:spawn|rewire|prune)|spawn[_-]?(?:broker|agent|cell)|organism)\b/i;
-const ADAPTIVE_MUTATION_SIGNAL_RE = /\b(topology|genome|fractal|mutation|morph|rewire|prune|spawn|self[_-]?improv)\b/i;
+const ADAPTIVE_MUTATION_TYPE_RE = /\b(adaptive[_-]?mutation|mutation(?:[_-]proposal)?|topology[_-]?mutation|genome[_-]?mutation|self[_-]?(?:mutation|modify)|branch[_-]?(?:rewire|prune))\b/i;
+const ADAPTIVE_MUTATION_SIGNAL_RE = /\b(mutation(?:[_-]?(?:guard|policy|kernel|budget|ttl|quarantine|veto|rollback|lineage|attestation))?|topology[_-]?mutation|genome[_-]?mutation|self[_-]?(?:mutation|modify)|branch[_-]?(?:rewire|prune))\b/i;
 const AUTONOMY_REQUIRE_ADMISSION_PREVIEW = String(process.env.AUTONOMY_REQUIRE_ADMISSION_PREVIEW || '1') !== '0';
 const AUTONOMY_MUTATION_EXECUTION_GUARD_REQUIRED = String(process.env.AUTONOMY_MUTATION_EXECUTION_GUARD_REQUIRED || '1') !== '0';
 const AUTONOMY_MUTATION_EXECUTION_GUARD_COOLDOWN_HOURS = Math.max(1, Number(process.env.AUTONOMY_MUTATION_EXECUTION_GUARD_COOLDOWN_HOURS || 6));
@@ -295,6 +295,12 @@ const AUTONOMY_MAX_PROPOSAL_FILE_AGE_HOURS = Number(process.env.AUTONOMY_MAX_PRO
 const AUTONOMY_REPEAT_EXHAUSTED_LIMIT = Number(process.env.AUTONOMY_REPEAT_EXHAUSTED_LIMIT || 3);
 const AUTONOMY_REPEAT_EXHAUSTED_COOLDOWN_MINUTES = Number(process.env.AUTONOMY_REPEAT_EXHAUSTED_COOLDOWN_MINUTES || 90);
 const AUTONOMY_BUDGET_AUTOPAUSE_MINUTES = Math.max(5, Number(process.env.AUTONOMY_BUDGET_AUTOPAUSE_MINUTES || 60));
+const AUTONOMY_BUDGET_AUTOPAUSE_CANARY_BYPASS_ENABLED = String(process.env.AUTONOMY_BUDGET_AUTOPAUSE_CANARY_BYPASS_ENABLED || '1') !== '0';
+const AUTONOMY_BUDGET_AUTOPAUSE_CANARY_BYPASS_MAX_PER_DAY = Math.max(0, Number(process.env.AUTONOMY_BUDGET_AUTOPAUSE_CANARY_BYPASS_MAX_PER_DAY || 1));
+const AUTONOMY_BUDGET_AUTOPAUSE_CANARY_BYPASS_MAX_TOKENS = Math.max(
+  100,
+  Number(process.env.AUTONOMY_BUDGET_AUTOPAUSE_CANARY_BYPASS_MAX_TOKENS || 2200)
+);
 const AUTONOMY_NON_YIELD_LEDGER_ENABLED = String(process.env.AUTONOMY_NON_YIELD_LEDGER_ENABLED || '1') !== '0';
 const AUTONOMY_BUDGET_PACING_ENABLED = String(process.env.AUTONOMY_BUDGET_PACING_ENABLED || '1') !== '0';
 const AUTONOMY_BUDGET_PACING_MIN_REMAINING_RATIO = clampNumber(Number(process.env.AUTONOMY_BUDGET_PACING_MIN_REMAINING_RATIO || 0.2), 0, 1);
@@ -5879,14 +5885,31 @@ function proposalAdmissionPreview(p) {
 function hasAdaptiveMutationSignal(p) {
   const proposal = p && typeof p === 'object' ? p : {};
   const meta = proposal.meta && typeof proposal.meta === 'object' ? proposal.meta : {};
+  const actionSpec = proposal.action_spec && typeof proposal.action_spec === 'object' ? proposal.action_spec : {};
+  const type = String(proposal.type || '').trim();
+  if (type && ADAPTIVE_MUTATION_TYPE_RE.test(type)) return true;
   if (meta.adaptive_mutation === true) return true;
+  if (meta.mutation_proposal === true || meta.topology_mutation === true || meta.self_improvement_change === true) {
+    return true;
+  }
   const blob = [
-    String(proposal.type || ''),
     String(proposal.title || ''),
     String(proposal.summary || ''),
     String(proposal.suggested_next_command || ''),
-    proposal.action_spec && typeof proposal.action_spec === 'object' ? JSON.stringify(proposal.action_spec) : '',
-    meta && typeof meta === 'object' ? JSON.stringify(meta) : ''
+    String(actionSpec.kind || ''),
+    String(actionSpec.target || ''),
+    String(actionSpec.mutation_kind || ''),
+    String(actionSpec.mutation_target || ''),
+    String(actionSpec.topology_action || ''),
+    String(actionSpec.genome_action || ''),
+    String(actionSpec.self_modify_scope || ''),
+    String(meta.mutation_kind || ''),
+    String(meta.mutation_target || ''),
+    String(meta.mutation_reason || ''),
+    String(meta.mutation_lineage_id || ''),
+    String(meta.topology_action || ''),
+    String(meta.genome_action || ''),
+    String(meta.self_modify_scope || '')
   ].join(' ');
   if (!blob) return false;
   return ADAPTIVE_MUTATION_TYPE_RE.test(blob) || ADAPTIVE_MUTATION_SIGNAL_RE.test(blob);
@@ -13289,6 +13312,17 @@ function runCmd(dateStr, opts: AnyObj = {}) {
   const budget = loadDailyBudget(dateStr);
   const budgetAutopause = loadSystemBudgetAutopauseState();
   const autopauseActive = !!(budgetAutopause && budgetAutopause.active === true && Number(budgetAutopause.until_ms || 0) > Date.now());
+  const autopauseBypassCountToday = Array.isArray(priorRunsForPolicyHoldCooldown)
+    ? priorRunsForPolicyHoldCooldown.filter((evt) => evt && evt.type === 'autonomy_run' && evt.result === 'budget_autopause_canary_bypass').length
+    : 0;
+  const canaryBudgetAutopauseBypassAllowed = !shadowOnly
+    && autopauseActive
+    && AUTONOMY_BUDGET_AUTOPAUSE_CANARY_BYPASS_ENABLED
+    && executionMode === 'canary_execute'
+    && proposalRisk === 'low'
+    && estTokens <= AUTONOMY_BUDGET_AUTOPAUSE_CANARY_BYPASS_MAX_TOKENS
+    && (budget.used_est + estTokens) <= budget.token_cap
+    && autopauseBypassCountToday < AUTONOMY_BUDGET_AUTOPAUSE_CANARY_BYPASS_MAX_PER_DAY;
   if (autopauseActive && shadowOnly) {
     writeRun(dateStr, {
       ts: nowIso(),
@@ -13305,30 +13339,11 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       }
     });
   }
-  if (autopauseActive && !shadowOnly) {
+  if (canaryBudgetAutopauseBypassAllowed) {
     writeRun(dateStr, {
       ts: nowIso(),
       type: 'autonomy_run',
-      result: 'stop_init_gate_budget_autopause',
-      policy_hold: true,
-      hold_scope: 'budget',
-      hold_reason: budgetAutopause && budgetAutopause.reason ? String(budgetAutopause.reason) : 'budget_autopause',
-      proposal_id: p.id,
-      capability_key: capabilityKey,
-      directive_pulse: directivePulse,
-      budget_autopause: {
-        source: budgetAutopause.source || null,
-        reason: budgetAutopause.reason || null,
-        pressure: budgetAutopause.pressure || null,
-        until: budgetAutopause.until || null
-      }
-    });
-    process.stdout.write(JSON.stringify({
-      ok: true,
-      result: 'stop_init_gate_budget_autopause',
-      policy_hold: true,
-      hold_scope: 'budget',
-      hold_reason: budgetAutopause && budgetAutopause.reason ? String(budgetAutopause.reason) : 'budget_autopause',
+      result: 'budget_autopause_canary_bypass',
       proposal_id: p.id,
       capability_key: capabilityKey,
       directive_pulse: directivePulse,
@@ -13338,9 +13353,56 @@ function runCmd(dateStr, opts: AnyObj = {}) {
         pressure: budgetAutopause.pressure || null,
         until: budgetAutopause.until || null
       },
-      ts: nowIso()
-    }) + '\n');
-    return;
+      bypass: {
+        execution_mode: executionMode,
+        proposal_risk: proposalRisk,
+        est_tokens: estTokens,
+        used_est: budget.used_est,
+        token_cap: budget.token_cap,
+        max_tokens: AUTONOMY_BUDGET_AUTOPAUSE_CANARY_BYPASS_MAX_TOKENS,
+        bypass_count_today: autopauseBypassCountToday,
+        bypass_limit_per_day: AUTONOMY_BUDGET_AUTOPAUSE_CANARY_BYPASS_MAX_PER_DAY
+      }
+    });
+  }
+  if (autopauseActive && !shadowOnly) {
+    if (!canaryBudgetAutopauseBypassAllowed) {
+      writeRun(dateStr, {
+        ts: nowIso(),
+        type: 'autonomy_run',
+        result: 'stop_init_gate_budget_autopause',
+        policy_hold: true,
+        hold_scope: 'budget',
+        hold_reason: budgetAutopause && budgetAutopause.reason ? String(budgetAutopause.reason) : 'budget_autopause',
+        proposal_id: p.id,
+        capability_key: capabilityKey,
+        directive_pulse: directivePulse,
+        budget_autopause: {
+          source: budgetAutopause.source || null,
+          reason: budgetAutopause.reason || null,
+          pressure: budgetAutopause.pressure || null,
+          until: budgetAutopause.until || null
+        }
+      });
+      process.stdout.write(JSON.stringify({
+        ok: true,
+        result: 'stop_init_gate_budget_autopause',
+        policy_hold: true,
+        hold_scope: 'budget',
+        hold_reason: budgetAutopause && budgetAutopause.reason ? String(budgetAutopause.reason) : 'budget_autopause',
+        proposal_id: p.id,
+        capability_key: capabilityKey,
+        directive_pulse: directivePulse,
+        budget_autopause: {
+          source: budgetAutopause.source || null,
+          reason: budgetAutopause.reason || null,
+          pressure: budgetAutopause.pressure || null,
+          until: budgetAutopause.until || null
+        },
+        ts: nowIso()
+      }) + '\n');
+      return;
+    }
   }
   if ((budget.used_est + estTokens) > budget.token_cap) {
     try {

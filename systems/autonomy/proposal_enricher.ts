@@ -141,8 +141,8 @@ const AUTONOMY_VALUE_ORACLE_DEFAULT_CURRENCIES = String(process.env.AUTONOMY_VAL
   .filter((k) => VALUE_CURRENCY_KEYS.has(k));
 const AUTONOMY_VALUE_ORACLE_REQUIRE_PRIMARY_SIGNAL = String(process.env.AUTONOMY_VALUE_ORACLE_REQUIRE_PRIMARY_SIGNAL || '0') === '1';
 const AUTONOMY_VALUE_ORACLE_BACKFILL_EXPECTED_VALUE = String(process.env.AUTONOMY_VALUE_ORACLE_BACKFILL_EXPECTED_VALUE || '1') !== '0';
-const ADAPTIVE_MUTATION_TYPE_RE = /\b(adaptive|mutation|topology|genome|fractal|morph|self[_-]?(?:improv|mutation|modify)|branch[_-]?(?:spawn|rewire|prune)|spawn[_-]?(?:broker|agent|cell)|organism)\b/i;
-const ADAPTIVE_MUTATION_SIGNAL_RE = /\b(topology|genome|fractal|mutation|morph|rewire|prune|spawn|self[_-]?improv)\b/i;
+const ADAPTIVE_MUTATION_TYPE_RE = /\b(adaptive[_-]?mutation|mutation(?:[_-]proposal)?|topology[_-]?mutation|genome[_-]?mutation|self[_-]?(?:mutation|modify)|branch[_-]?(?:rewire|prune))\b/i;
+const ADAPTIVE_MUTATION_SIGNAL_RE = /\b(mutation(?:[_-]?(?:guard|policy|kernel|budget|ttl|quarantine|veto|rollback|lineage|attestation))?|topology[_-]?mutation|genome[_-]?mutation|self[_-]?(?:mutation|modify)|branch[_-]?(?:rewire|prune))\b/i;
 const AUTONOMY_MUTATION_GUARD_REQUIRED = String(process.env.AUTONOMY_MUTATION_GUARD_REQUIRED || '1') !== '0';
 const AUTONOMY_MUTATION_KERNEL_REQUIRED = String(process.env.AUTONOMY_MUTATION_KERNEL_REQUIRED || '1') !== '0';
 const AUTONOMY_MUTATION_BUDGET_CAP_MAX = clamp(Number(process.env.AUTONOMY_MUTATION_BUDGET_CAP_MAX || 5), 1, 50);
@@ -1383,6 +1383,7 @@ function hasAdaptiveMutationSignal(proposal) {
   const type = normalizeText(p.type).toLowerCase();
   if (type && ADAPTIVE_MUTATION_TYPE_RE.test(type)) return true;
   const meta = p.meta && typeof p.meta === 'object' ? p.meta : {};
+  const actionSpec = p.action_spec && typeof p.action_spec === 'object' ? p.action_spec : {};
   if (
     meta.adaptive_mutation === true
     || meta.mutation_proposal === true
@@ -1396,8 +1397,20 @@ function hasAdaptiveMutationSignal(proposal) {
     p.summary,
     p.notes,
     p.suggested_next_command,
-    p.action_spec && typeof p.action_spec === 'object' ? JSON.stringify(p.action_spec) : '',
-    meta && typeof meta === 'object' ? JSON.stringify(meta) : ''
+    actionSpec.kind,
+    actionSpec.target,
+    actionSpec.mutation_kind,
+    actionSpec.mutation_target,
+    actionSpec.topology_action,
+    actionSpec.genome_action,
+    actionSpec.self_modify_scope,
+    meta.mutation_kind,
+    meta.mutation_target,
+    meta.mutation_reason,
+    meta.mutation_lineage_id,
+    meta.topology_action,
+    meta.genome_action,
+    meta.self_modify_scope
   ].join(' '));
   if (!blob) return false;
   return ADAPTIVE_MUTATION_SIGNAL_RE.test(blob);
