@@ -1,8 +1,8 @@
 {
   "ok": true,
   "type": "orchestron_adversarial_probe",
-  "ts": "2026-02-26T10:04:14.165Z",
-  "run_id": "orcrun_9fe78c062ce4c5",
+  "ts": "2026-02-26T10:15:13.553Z",
+  "run_id": "orcrun_2a1a96c2559790",
   "date": "2026-02-25",
   "candidate_id": "wfc_88c0781ed0cf2d4b",
   "proposal_type": "collector_remediation.intake.intake",
@@ -64,7 +64,7 @@
         "novelty": 0
       },
       "source": "orchestron_adaptive_controller",
-      "ts": "2026-02-26T10:04:14.131Z",
+      "ts": "2026-02-26T10:15:13.507Z",
       "signature": "convert_repeated_successful_patterns_into_reusable_workflows._workflow_strategy_medium_speed_weight_:0.34_robustness_weight_:0.33_cost_weight_:0.33_feasibility_:0_risk_:0"
     },
     "parent_workflow_id": "wfc_3d864dfecb70c27e",
@@ -148,7 +148,7 @@
       }
     ],
     "children": [],
-    "generated_at": "2026-02-26T10:04:14.150Z",
+    "generated_at": "2026-02-26T10:15:13.536Z",
     "metadata": {
       "generation_kind": "fractal_child",
       "parent_workflow_id": "wfc_3d864dfecb70c27e",
