@@ -16,6 +16,7 @@ const path = require('path');
 const { writeContractReceipt } = require('../../lib/action_receipts');
 const { isEmergencyStopEngaged } = require('../../lib/emergency_stop');
 const { evaluateClawDecision } = require('./claw_registry');
+const { executeActuationPrimitiveAsync } = require('../primitives/primitive_runtime.js');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const RECEIPTS_DIR = process.env.ACTUATION_RECEIPTS_DIR
@@ -29,7 +30,11 @@ const ADAPTIVE_MUTATION_TYPE_RE = /\b(adaptive|mutation|topology|genome|fractal|
 const ADAPTIVE_MUTATION_SIGNAL_RE = /\b(topology|genome|fractal|mutation|morph|rewire|prune|spawn|self[_-]?improv)\b/i;
 
 function nowIso() { return new Date().toISOString(); }
-function dayStr() { return nowIso().slice(0, 10); }
+function dayStr() {
+  const forced = String(process.env.WORKFLOW_DATE || '').trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(forced)) return forced;
+  return nowIso().slice(0, 10);
+}
 
 function parseArgs(argv) {
   const out = { _: [] } as Record<string, any>;
@@ -271,26 +276,44 @@ async function cmdRun(args) {
     process.exit(4);
   }
 
-  const started = Date.now();
-  let res;
-  let err = null;
-  try {
-    res = await adapter.execute({ params, context, dryRun, kind });
-  } catch (e) {
-    err = e;
-  }
-  const durationMs = Date.now() - started;
-
-  const ok = !err && res && res.ok === true;
+  const primitiveExec = await executeActuationPrimitiveAsync({
+    kind,
+    params,
+    context,
+    dry_run: dryRun,
+    runner: async () => adapter.execute({ params, context, dryRun, kind })
+  });
+  const res = primitiveExec && primitiveExec.result && typeof primitiveExec.result === 'object'
+    ? primitiveExec.result
+    : null;
+  const err = primitiveExec && primitiveExec.error && typeof primitiveExec.error === 'object'
+    ? primitiveExec.error
+    : null;
+  const durationMs = Math.max(0, Number(primitiveExec && primitiveExec.duration_ms || 0));
+  const blockedByPrimitive = primitiveExec && primitiveExec.blocked === true;
+  const ok = primitiveExec && primitiveExec.ok === true && !blockedByPrimitive;
   const summary = ok ? (res.summary || {}) : {
     decision: 'ACTUATE',
     gate_decision: 'DENY',
     executable: false,
     adapter: kind,
-    verified: false
+    verified: false,
+    reason: blockedByPrimitive
+      ? (
+        primitiveExec
+        && primitiveExec.policy
+        && Array.isArray(primitiveExec.policy.deny_reasons)
+        && primitiveExec.policy.deny_reasons.length
+          ? String(primitiveExec.policy.deny_reasons[0])
+          : 'primitive_policy_denied'
+      )
+      : 'adapter_failed'
   };
   summary.claw_decision = clawDecision || null;
   summary.dry_run = dryRun;
+  summary.primitive = primitiveExec && primitiveExec.primitive ? primitiveExec.primitive : null;
+  summary.primitive_policy = primitiveExec && primitiveExec.policy ? primitiveExec.policy : null;
+  summary.primitive_event_ids = primitiveExec && Array.isArray(primitiveExec.event_ids) ? primitiveExec.event_ids : [];
   const record = {
     ts: nowIso(),
     type: 'actuation_execution',
@@ -298,10 +321,12 @@ async function cmdRun(args) {
     dry_run: dryRun,
     params_hash: require('crypto').createHash('sha256').update(JSON.stringify(params || {})).digest('hex').slice(0, 16),
     ok,
-    code: ok ? Number(res.code || 0) : 1,
+    code: ok ? Number(res.code || 0) : (blockedByPrimitive ? 6 : 1),
     duration_ms: durationMs,
     summary,
-    error: err ? String(err && err.message ? err.message : err).slice(0, 240) : null
+    error: err
+      ? String(err && err.message ? err.message : err).slice(0, 240)
+      : (blockedByPrimitive ? String(summary.reason || 'primitive_policy_denied') : null)
   };
   writeContractReceipt(receiptPath(), record, {
     attempted: dryRun ? false : true,
