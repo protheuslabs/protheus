@@ -71,10 +71,19 @@ try {
   assert.strictEqual(pendingPayload.pass, false, 'pending should not pass target');
   assert.strictEqual(pendingPayload.result, 'pending', 'result should be pending');
   assert.strictEqual(Number(pendingPayload.remaining_days || 0), 4, 'remaining days should reflect target gap');
+  assert.strictEqual(
+    pendingPayload.advisories && pendingPayload.advisories.requires_future_green_days,
+    true,
+    'pending run should require future green days'
+  );
   assert.ok(Array.isArray(pendingPayload.blocking_checks), 'blocking checks should be emitted');
   assert.ok(
     pendingPayload.blocking_checks.includes('streak_target_met'),
     'streak_target_met should block pending state'
+  );
+  assert.ok(
+    Number(pendingPayload.same_day_green_runs || 0) >= 1,
+    'same_day_green_runs should track same-day reruns'
   );
 
   const passRun = run([
@@ -92,6 +101,11 @@ try {
   assert.strictEqual(passPayload.pass, true, 'expected pass=true with target-days=3');
   assert.strictEqual(passPayload.result, 'pass', 'result should be pass');
   assert.strictEqual(Number(passPayload.remaining_days || 0), 0, 'pass should have zero remaining days');
+  assert.strictEqual(
+    passPayload.advisories && passPayload.advisories.requires_future_green_days,
+    false,
+    'pass should not require future green days'
+  );
   assert.ok(Array.isArray(passPayload.blocking_checks), 'blocking checks should be present');
   assert.strictEqual(passPayload.blocking_checks.length, 0, 'pass should have no blocking checks');
 

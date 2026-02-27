@@ -126,6 +126,27 @@ function trimHistory(historyPath: string, maxRows: number) {
   fs.writeFileSync(historyPath, `${lines.slice(lines.length - maxRows).join('\n')}\n`, 'utf8');
 }
 
+function countSameDayGreenRuns(historyRows: unknown[], day: string) {
+  if (!Array.isArray(historyRows) || !day) return 0;
+  return historyRows.filter((row: AnyObj) => {
+    if (!row || typeof row !== 'object') return false;
+    const d = toDate(row.date);
+    return d === day && row.ok === true;
+  }).length;
+}
+
+function countUniqueGreenDays(historyRows: unknown[]) {
+  if (!Array.isArray(historyRows)) return 0;
+  const days = new Set<string>();
+  for (const row of historyRows as AnyObj[]) {
+    if (!row || typeof row !== 'object' || row.ok !== true) continue;
+    const d = toDate(row.date);
+    if (!d) continue;
+    days.add(d);
+  }
+  return days.size;
+}
+
 function defaultPolicy() {
   return {
     version: '1.0',
@@ -170,6 +191,8 @@ function runGuard(args: AnyObj) {
   const latestLagDaysRaw = latestRunDate ? dateDistanceDaysUtc(latestRunDate, date) : null;
   const latestLagDays = latestLagDaysRaw == null ? null : Math.max(0, latestLagDaysRaw);
   const stale = latestLagDays == null ? true : latestLagDays > staleAfterDays;
+  const sameDayGreenRuns = countSameDayGreenRuns(ciState && ciState.history, date);
+  const uniqueGreenDays = countUniqueGreenDays(ciState && ciState.history);
 
   const checks = {
     state_available: available,
@@ -184,6 +207,10 @@ function runGuard(args: AnyObj) {
   const targetEtaDate = checks.latest_run_fresh && checks.latest_run_green
     ? addUtcDays(date, remainingDays)
     : null;
+  const advisories = {
+    requires_future_green_days: remainingDays > 0,
+    same_day_streak_progress_only: remainingDays > 0 && sameDayGreenRuns > 0 && latestRunDate === date
+  };
 
   const pass = checks.state_available
     && checks.latest_run_fresh
@@ -203,8 +230,11 @@ function runGuard(args: AnyObj) {
     target_days: targetDays,
     stale_after_days: staleAfterDays,
     streak,
+    same_day_green_runs: sameDayGreenRuns,
+    unique_green_days_observed: uniqueGreenDays,
     remaining_days: remainingDays,
     target_eta_date: targetEtaDate,
+    advisories,
     latest_green_date: latestGreenDate || null,
     latest_run_date: latestRunDate || null,
     latest_run_ok: latestRunOk,
@@ -227,8 +257,11 @@ function runGuard(args: AnyObj) {
     target_days: payload.target_days,
     stale_after_days: payload.stale_after_days,
     streak: payload.streak,
+    same_day_green_runs: payload.same_day_green_runs,
+    unique_green_days_observed: payload.unique_green_days_observed,
     remaining_days: payload.remaining_days,
     target_eta_date: payload.target_eta_date,
+    advisories: payload.advisories,
     latest_green_date: payload.latest_green_date,
     latest_run_date: payload.latest_run_date,
     latest_run_ok: payload.latest_run_ok,
@@ -242,8 +275,11 @@ function runGuard(args: AnyObj) {
     ts: payload.ts,
     date: payload.date,
     streak: payload.streak,
+    same_day_green_runs: payload.same_day_green_runs,
+    unique_green_days_observed: payload.unique_green_days_observed,
     remaining_days: payload.remaining_days,
     target_eta_date: payload.target_eta_date,
+    advisories: payload.advisories,
     checks: payload.checks,
     blocking_checks: payload.blocking_checks,
     pass: payload.pass === true,
