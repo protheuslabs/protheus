@@ -1,7 +1,8 @@
 {
   "version": "1.0",
   "enabled": true,
-  "shadow_only": true,
+  "shadow_only": false,
+  "advisory_mode": true,
   "codex": {
     "codex_path": "codex.helix",
     "key_env": "HELIX_CODEX_KEY",
