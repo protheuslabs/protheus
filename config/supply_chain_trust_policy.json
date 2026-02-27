@@ -1,0 +1,38 @@
+{
+  "schema_id": "supply_chain_trust_policy",
+  "schema_version": "1.0",
+  "enabled": true,
+  "mode": "enforce",
+  "artifact_roots": [
+    "systems",
+    "config",
+    "docs"
+  ],
+  "include_extensions": [
+    ".ts",
+    ".js",
+    ".json",
+    ".md"
+  ],
+  "exclude_patterns": [
+    "state/",
+    "memory/",
+    "research/",
+    "node_modules/",
+    ".git/"
+  ],
+  "require_lockfile": true,
+  "lockfile_path": "package-lock.json",
+  "package_json_path": "package.json",
+  "sbom_from_lockfile": true,
+  "signature_key_env": "SUPPLY_CHAIN_SIGNING_KEY",
+  "allow_dev_fallback_key": true,
+  "dev_fallback_key": "dev-supply-chain-key-change-me",
+  "latest_path": "state/security/supply_chain/latest.json",
+  "receipts_path": "state/security/supply_chain/receipts.jsonl",
+  "manifest_path": "state/security/supply_chain/manifest.json",
+  "sbom_path": "state/security/supply_chain/sbom.json",
+  "attestation_path": "state/security/supply_chain/attestation.json",
+  "run_build_commands": false,
+  "build_commands": []
+}

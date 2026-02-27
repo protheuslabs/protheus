@@ -93,6 +93,8 @@
     "integrity:reseal": "node systems/security/integrity_reseal.js apply",
     "formal:invariants:run": "node systems/security/formal_invariant_engine.js run --strict=1",
     "formal:invariants:status": "node systems/security/formal_invariant_engine.js status",
+    "supply-chain:trust:run": "node systems/security/supply_chain_trust_plane.js run --strict=1",
+    "supply-chain:trust:status": "node systems/security/supply_chain_trust_plane.js status",
     "passport:issue": "node systems/security/agent_passport.js issue",
     "passport:verify": "node systems/security/agent_passport.js verify --strict=1",
     "passport:export": "node systems/security/agent_passport.js export-pdf",

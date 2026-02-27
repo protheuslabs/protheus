@@ -275,6 +275,13 @@ function runGate() {
     mergeGuardSrc.includes('formal_invariant_engine.js') && mergeGuardSrc.includes('--strict=1'),
     'merge_guard should enforce formal invariant engine'
   );
+  addCheck(
+    'supply_chain_trust_plane:merge_guard_hook',
+    mergeGuardSrc.includes('supply_chain_trust_plane.js')
+      && mergeGuardSrc.includes('--verify-only=1')
+      && mergeGuardSrc.includes('--strict=1'),
+    'merge_guard should enforce supply-chain trust verification'
+  );
 
   const workflowSrc = readFileSafe(path.join(ROOT, 'systems', 'workflow', 'workflow_executor.ts'));
   addCheck(

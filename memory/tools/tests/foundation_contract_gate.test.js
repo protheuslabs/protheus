@@ -44,6 +44,7 @@ function main() {
     'effect_type:policy_enforced',
     'effect_type:forbidden_transition_rules',
     'formal_invariant_engine:merge_guard_hook',
+    'supply_chain_trust_plane:merge_guard_hook',
     'workflow:effect_type_gate_hook'
   ]) {
     assert.ok(byId.has(id), `missing check: ${id}`);
