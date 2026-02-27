@@ -105,10 +105,20 @@ function defaultPolicy() {
     required_attestation_secret_env: 'HARDWARE_ASSIMILATION_SECRET',
     idle_dormant_sec: 300,
     max_nodes: 256,
+    compatibility: {
+      required_capabilities: ['ram_gb', 'cpu_threads', 'arch'],
+      min_ram_gb: 1,
+      min_cpu_threads: 1,
+      allowed_arches: [],
+      required_node_profile_version: null
+    },
     scheduler: {
       default_lease_sec: 120,
       max_lease_sec: 1800,
       max_leases_per_node: 8,
+      min_leases_per_node: 1,
+      baseline_cpu_threads_per_lease: 2,
+      baseline_ram_gb_per_lease: 2,
       work_steal_enabled: true
     }
   };
@@ -117,6 +127,7 @@ function defaultPolicy() {
 function loadPolicy(policyPath = POLICY_PATH) {
   const src = readJson(policyPath, {});
   const base = defaultPolicy();
+  const compatibilityRaw = src.compatibility && typeof src.compatibility === 'object' ? src.compatibility : {};
   const schedulerRaw = src.scheduler && typeof src.scheduler === 'object' ? src.scheduler : {};
   return {
     version: cleanText(src.version || base.version, 32) || '1.0',
@@ -126,10 +137,26 @@ function loadPolicy(policyPath = POLICY_PATH) {
     required_attestation_secret_env: cleanText(src.required_attestation_secret_env || base.required_attestation_secret_env, 80) || base.required_attestation_secret_env,
     idle_dormant_sec: clampInt(src.idle_dormant_sec, 5, 86400, base.idle_dormant_sec),
     max_nodes: clampInt(src.max_nodes, 1, 100000, base.max_nodes),
+    compatibility: {
+      required_capabilities: Array.isArray(compatibilityRaw.required_capabilities)
+        ? compatibilityRaw.required_capabilities.map((row: unknown) => normalizeToken(row, 80)).filter(Boolean).slice(0, 32)
+        : base.compatibility.required_capabilities.slice(0),
+      min_ram_gb: Math.max(0, Number(compatibilityRaw.min_ram_gb != null ? compatibilityRaw.min_ram_gb : base.compatibility.min_ram_gb) || base.compatibility.min_ram_gb),
+      min_cpu_threads: Math.max(0, Number(compatibilityRaw.min_cpu_threads != null ? compatibilityRaw.min_cpu_threads : base.compatibility.min_cpu_threads) || base.compatibility.min_cpu_threads),
+      allowed_arches: Array.isArray(compatibilityRaw.allowed_arches)
+        ? compatibilityRaw.allowed_arches.map((row: unknown) => normalizeToken(row, 40)).filter(Boolean).slice(0, 16)
+        : [],
+      required_node_profile_version: compatibilityRaw.required_node_profile_version == null
+        ? null
+        : cleanText(compatibilityRaw.required_node_profile_version, 40) || null
+    },
     scheduler: {
       default_lease_sec: clampInt(schedulerRaw.default_lease_sec, 10, 86400, base.scheduler.default_lease_sec),
       max_lease_sec: clampInt(schedulerRaw.max_lease_sec, 10, 86400, base.scheduler.max_lease_sec),
       max_leases_per_node: clampInt(schedulerRaw.max_leases_per_node, 1, 10000, base.scheduler.max_leases_per_node),
+      min_leases_per_node: clampInt(schedulerRaw.min_leases_per_node, 1, 1000, base.scheduler.min_leases_per_node),
+      baseline_cpu_threads_per_lease: clampInt(schedulerRaw.baseline_cpu_threads_per_lease, 1, 256, base.scheduler.baseline_cpu_threads_per_lease),
+      baseline_ram_gb_per_lease: clampInt(schedulerRaw.baseline_ram_gb_per_lease, 1, 4096, base.scheduler.baseline_ram_gb_per_lease),
       work_steal_enabled: schedulerRaw.work_steal_enabled !== false
     }
   };
@@ -267,6 +294,68 @@ function nodeMeetsRequirement(node: AnyObj, reqRam: number, reqCpu: number) {
   return ram >= reqRam && cpu >= reqCpu;
 }
 
+function nodeElasticLeaseLimit(policy: AnyObj, node: AnyObj) {
+  const caps = node && node.capabilities && typeof node.capabilities === 'object' ? node.capabilities : {};
+  const cpu = Math.max(0, Number(caps.cpu_threads || 0));
+  const ram = Math.max(0, Number(caps.ram_gb || 0));
+  const cpuPerLease = Math.max(1, Number(policy && policy.scheduler && policy.scheduler.baseline_cpu_threads_per_lease || 2));
+  const ramPerLease = Math.max(1, Number(policy && policy.scheduler && policy.scheduler.baseline_ram_gb_per_lease || 2));
+  const minLeases = Math.max(1, Number(policy && policy.scheduler && policy.scheduler.min_leases_per_node || 1));
+  const maxLeases = Math.max(minLeases, Number(policy && policy.scheduler && policy.scheduler.max_leases_per_node || 8));
+  const cpuCapacity = Math.max(0, Math.floor(cpu / cpuPerLease));
+  const ramCapacity = Math.max(0, Math.floor(ram / ramPerLease));
+  let elastic = Math.min(cpuCapacity, ramCapacity);
+  if (!Number.isFinite(elastic) || elastic <= 0) elastic = minLeases;
+  return clampInt(elastic, minLeases, maxLeases, minLeases);
+}
+
+function validateNodeCompatibility(policy: AnyObj, caps: AnyObj) {
+  const comp = policy && policy.compatibility && typeof policy.compatibility === 'object'
+    ? policy.compatibility
+    : {};
+  const requiredCaps = Array.isArray(comp.required_capabilities)
+    ? comp.required_capabilities
+    : ['ram_gb', 'cpu_threads'];
+  const out: string[] = [];
+  for (const key of requiredCaps) {
+    const token = normalizeToken(key, 80);
+    if (!token) continue;
+    if (!Object.prototype.hasOwnProperty.call(caps || {}, token)) out.push(`missing_capability:${token}`);
+  }
+  const ram = Number(caps && caps.ram_gb || 0);
+  const cpu = Number(caps && caps.cpu_threads || 0);
+  const minRam = Math.max(0, Number(comp.min_ram_gb || 0));
+  const minCpu = Math.max(0, Number(comp.min_cpu_threads || 0));
+  if (!Number.isFinite(ram) || ram < minRam) out.push('ram_below_minimum');
+  if (!Number.isFinite(cpu) || cpu < minCpu) out.push('cpu_below_minimum');
+  const allowedArches = Array.isArray(comp.allowed_arches)
+    ? comp.allowed_arches.map((row: unknown) => normalizeToken(row, 40)).filter(Boolean)
+    : [];
+  const arch = normalizeToken(caps && (caps.arch || caps.cpu_arch), 40);
+  if (allowedArches.length && (!arch || !allowedArches.includes(arch))) out.push('arch_not_allowed');
+  const requiredProfileVersion = cleanText(comp.required_node_profile_version || '', 40);
+  if (requiredProfileVersion) {
+    const profileVersion = cleanText(caps && (caps.node_profile_version || caps.profile_version), 40);
+    if (!profileVersion || profileVersion !== requiredProfileVersion) out.push('node_profile_version_mismatch');
+  }
+  return {
+    ok: out.length === 0,
+    reasons: out
+  };
+}
+
+function findReassignableLease(state: AnyObj, workId: string) {
+  const rows: AnyObj[] = [];
+  for (const [leaseId, lease] of Object.entries(state.leases || {})) {
+    const row = lease && typeof lease === 'object' ? lease as AnyObj : {};
+    if (String(row.work_id || '') !== workId) continue;
+    if (String(row.status || '') !== 'expired_reassignable') continue;
+    rows.push({ lease_id: leaseId, ...row });
+  }
+  rows.sort((a, b) => String(a.expires_at || '').localeCompare(String(b.expires_at || '')));
+  return rows.length ? rows[0] : null;
+}
+
 function cmdJoin(args: AnyObj) {
   const policy = loadPolicy(args.policy ? path.resolve(String(args.policy)) : POLICY_PATH);
   const state = loadState(policy);
@@ -296,6 +385,16 @@ function cmdJoin(args: AnyObj) {
     process.stdout.write(`${JSON.stringify({ ok: false, type: 'hardware_join', error: 'attestation_invalid' })}\n`);
     process.exit(1);
   }
+  const compatibility = validateNodeCompatibility(policy, caps);
+  if (!compatibility.ok) {
+    process.stdout.write(`${JSON.stringify({
+      ok: false,
+      type: 'hardware_join',
+      error: 'capability_incompatible',
+      reasons: compatibility.reasons
+    })}\n`);
+    process.exit(1);
+  }
 
   const nodeCount = Object.keys(state.nodes || {}).length;
   if (!state.nodes[nodeId] && nodeCount >= policy.max_nodes) {
@@ -310,6 +409,7 @@ function cmdJoin(args: AnyObj) {
     last_seen_at: nowIso(),
     capabilities: caps,
     constitution_hash: currentConstitutionHash,
+    lease_capacity: nodeElasticLeaseLimit(policy, { capabilities: caps }),
     attested: true,
     updated_at: nowIso()
   };
@@ -372,8 +472,16 @@ function cmdSchedule(args: AnyObj) {
   const candidates = Object.values(state.nodes || {})
     .filter((node: any) => node && node.status === 'active' && node.attested === true)
     .filter((node: any) => nodeMeetsRequirement(node, reqRam, reqCpu))
-    .filter((node: any) => activeLeasesForNode(state, node.node_id) < policy.scheduler.max_leases_per_node)
-    .sort((a: any, b: any) => activeLeasesForNode(state, a.node_id) - activeLeasesForNode(state, b.node_id));
+    .filter((node: any) => activeLeasesForNode(state, node.node_id) < nodeElasticLeaseLimit(policy, node))
+    .sort((a: any, b: any) => {
+      const aLimit = nodeElasticLeaseLimit(policy, a);
+      const bLimit = nodeElasticLeaseLimit(policy, b);
+      const aLoad = activeLeasesForNode(state, a.node_id) / Math.max(1, aLimit);
+      const bLoad = activeLeasesForNode(state, b.node_id) / Math.max(1, bLimit);
+      if (aLoad !== bLoad) return aLoad - bLoad;
+      if (bLimit !== aLimit) return bLimit - aLimit;
+      return String(a.node_id || '').localeCompare(String(b.node_id || ''));
+    });
 
   if (!candidates.length) {
     process.stdout.write(`${JSON.stringify({ ok: false, type: 'hardware_schedule', error: 'no_eligible_node' })}\n`);
@@ -381,6 +489,9 @@ function cmdSchedule(args: AnyObj) {
   }
 
   const node = candidates[0];
+  const priorLease = policy.scheduler.work_steal_enabled
+    ? findReassignableLease(state, workId)
+    : null;
   const leaseId = normalizeToken(`lease_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`, 120);
   const expiresAt = new Date(Date.now() + leaseSec * 1000).toISOString();
   state.leases[leaseId] = {
@@ -390,10 +501,17 @@ function cmdSchedule(args: AnyObj) {
     status: 'active',
     issued_at: nowIso(),
     expires_at: expiresAt,
+    reissued_from_lease_id: priorLease ? String(priorLease.lease_id || '') : null,
     required_ram_gb: reqRam,
     required_cpu_threads: reqCpu,
     updated_at: nowIso()
   };
+  if (priorLease && priorLease.lease_id && state.leases[priorLease.lease_id]) {
+    state.leases[priorLease.lease_id].status = 'reissued';
+    state.leases[priorLease.lease_id].reissued_by_lease_id = leaseId;
+    state.leases[priorLease.lease_id].updated_at = nowIso();
+  }
+  state.nodes[node.node_id].lease_capacity = nodeElasticLeaseLimit(policy, node);
   saveState(policy, state);
 
   const out = {
@@ -401,7 +519,8 @@ function cmdSchedule(args: AnyObj) {
     type: 'hardware_schedule',
     ts: nowIso(),
     lease: state.leases[leaseId],
-    node: state.nodes[node.node_id]
+    node: state.nodes[node.node_id],
+    lease_capacity: state.nodes[node.node_id].lease_capacity || null
   };
   audit(policy, out);
   process.stdout.write(`${JSON.stringify(out)}\n`);

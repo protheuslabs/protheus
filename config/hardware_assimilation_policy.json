@@ -6,10 +6,24 @@
   "required_attestation_secret_env": "HARDWARE_ASSIMILATION_SECRET",
   "idle_dormant_sec": 300,
   "max_nodes": 256,
+  "compatibility": {
+    "required_capabilities": [
+      "ram_gb",
+      "cpu_threads",
+      "arch"
+    ],
+    "min_ram_gb": 1,
+    "min_cpu_threads": 1,
+    "allowed_arches": [],
+    "required_node_profile_version": null
+  },
   "scheduler": {
     "default_lease_sec": 120,
     "max_lease_sec": 1800,
     "max_leases_per_node": 8,
+    "min_leases_per_node": 1,
+    "baseline_cpu_threads_per_lease": 2,
+    "baseline_ram_gb_per_lease": 2,
     "work_steal_enabled": true
   }
 }
