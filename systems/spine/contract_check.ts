@@ -1032,6 +1032,12 @@ function main() {
     ["remote_tamper_heartbeat.js", "emit", "verify", "status", "clear-quarantine", "--build-id", "--watermark", "--strict", "--reason"]
   );
 
+  // secure_heartbeat_endpoint.js provides signed ingress endpoint + key lifecycle controls.
+  checkScript(
+    "systems/security/secure_heartbeat_endpoint.js",
+    ["secure_heartbeat_endpoint.js", "issue-key", "revoke-key", "receive", "verify", "status", "serve", "--client-id", "--key-id", "--payload-json", "--ts", "--signature", "--strict"]
+  );
+
   // operator_terms_ack.js enforces versioned ToS/EULA acceptance before install/bootstrap lanes.
   checkScript(
     "systems/security/operator_terms_ack.js",

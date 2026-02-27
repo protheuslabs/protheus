@@ -11,6 +11,13 @@ node systems/security/remote_tamper_heartbeat.js status
 node systems/security/remote_tamper_heartbeat.js clear-quarantine --reason="manual_review_complete"
 ```
 
+For hardened off-host ingress, pair with:
+
+```bash
+node systems/security/secure_heartbeat_endpoint.js verify --strict=1
+node systems/security/secure_heartbeat_endpoint.js status
+```
+
 ## Coverage
 
 - Signed heartbeat contains: build ID, watermark, constitution hash, integrity probe result.

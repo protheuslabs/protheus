@@ -117,6 +117,7 @@ function runGate() {
     'config/organ_state_encryption_policy.json',
     'config/operator_terms_ack_policy.json',
     'config/remote_tamper_heartbeat_policy.json',
+    'config/secure_heartbeat_endpoint_policy.json',
     'config/crypto_agility_contract.json',
     'config/key_lifecycle_policy.json',
     'config/delegated_authority_policy.json',
@@ -172,6 +173,7 @@ function runGate() {
     'systems/security/organ_state_encryption_plane.ts',
     'systems/security/operator_terms_ack.ts',
     'systems/security/remote_tamper_heartbeat.ts',
+    'systems/security/secure_heartbeat_endpoint.ts',
     'systems/security/key_lifecycle_governor.ts',
     'systems/security/delegated_authority_branching.ts',
     'systems/security/safety_resilience_guard.ts',
@@ -188,7 +190,8 @@ function runGate() {
     'systems/ops/self_hosted_bootstrap_compiler.ts',
     'systems/primitives/primitive_runtime.ts',
     'systems/primitives/policy_vm.ts',
-    'systems/primitives/replay_verify.ts'
+    'systems/primitives/replay_verify.ts',
+    'docs/SECURE_HEARTBEAT_ENDPOINT.md'
   ];
   for (const rel of requiredFiles) {
     const abs = path.join(ROOT, rel);
@@ -868,6 +871,47 @@ function runGate() {
     `state=${cleanText(remotePaths.state_path || '', 100) || 'missing'} latest=${cleanText(remotePaths.latest_path || '', 100) || 'missing'} outbox=${cleanText(remotePaths.outbox_path || '', 100) || 'missing'} notifications=${cleanText(remotePaths.notifications_path || '', 100) || 'missing'} quarantine=${cleanText(remotePaths.quarantine_path || '', 100) || 'missing'} evidence_dir=${cleanText(remotePaths.evidence_dir || '', 100) || 'missing'}`
   );
   addCheck(
+    'secure_heartbeat_endpoint:merge_guard_hook',
+    mergeGuardSrc.includes('secure_heartbeat_endpoint.js')
+      && mergeGuardSrc.includes('verify')
+      && mergeGuardSrc.includes('--strict=1'),
+    'merge_guard should enforce secure heartbeat endpoint verify check'
+  );
+  const secureEndpointPolicy = readJsonSafe(path.join(ROOT, 'config', 'secure_heartbeat_endpoint_policy.json'), {});
+  const secureRate = secureEndpointPolicy.rate_limit && typeof secureEndpointPolicy.rate_limit === 'object'
+    ? secureEndpointPolicy.rate_limit
+    : {};
+  const secureAuth = secureEndpointPolicy.auth && typeof secureEndpointPolicy.auth === 'object'
+    ? secureEndpointPolicy.auth
+    : {};
+  const securePaths = secureEndpointPolicy.paths && typeof secureEndpointPolicy.paths === 'object'
+    ? secureEndpointPolicy.paths
+    : {};
+  addCheck(
+    'secure_heartbeat_endpoint:policy_auth_and_rate',
+    secureEndpointPolicy.enabled !== false
+      && secureAuth.required !== false
+      && Number(secureRate.window_sec || 0) >= 1
+      && Number(secureRate.max_requests_per_window || 0) >= 1
+      && Number(secureAuth.max_clock_skew_sec || 0) >= 0,
+    `enabled=${secureEndpointPolicy.enabled !== false ? '1' : '0'} auth_required=${secureAuth.required !== false ? '1' : '0'} window_sec=${Number(secureRate.window_sec || 0)} max_requests_per_window=${Number(secureRate.max_requests_per_window || 0)} max_clock_skew_sec=${Number(secureAuth.max_clock_skew_sec || 0)}`
+  );
+  addCheck(
+    'secure_heartbeat_endpoint:paths_present',
+    !!cleanText(securePaths.keys_path || '', 240)
+      && !!cleanText(securePaths.state_path || '', 240)
+      && !!cleanText(securePaths.latest_path || '', 240)
+      && !!cleanText(securePaths.audit_path || '', 240)
+      && !!cleanText(securePaths.alerts_path || '', 240),
+    `keys=${cleanText(securePaths.keys_path || '', 100) || 'missing'} state=${cleanText(securePaths.state_path || '', 100) || 'missing'} latest=${cleanText(securePaths.latest_path || '', 100) || 'missing'} audit=${cleanText(securePaths.audit_path || '', 100) || 'missing'} alerts=${cleanText(securePaths.alerts_path || '', 100) || 'missing'}`
+  );
+  const runbookSrc = readFileSafe(path.join(ROOT, 'docs', 'OPERATOR_RUNBOOK.md'));
+  addCheck(
+    'secure_heartbeat_endpoint:runbook_hook',
+    runbookSrc.includes('secure_heartbeat_endpoint.js'),
+    'operator runbook should include secure heartbeat endpoint incident flow'
+  );
+  addCheck(
     'helix_admission:merge_guard_hook',
     mergeGuardSrc.includes('helix_admission_gate.js')
       && mergeGuardSrc.includes('status'),
@@ -1352,6 +1396,7 @@ function runGate() {
       && contractCheckSrc.includes('execution_sandbox_envelope.js')
       && contractCheckSrc.includes('organ_state_encryption_plane.js')
       && contractCheckSrc.includes('remote_tamper_heartbeat.js')
+      && contractCheckSrc.includes('secure_heartbeat_endpoint.js')
       && contractCheckSrc.includes('gated_self_improvement_loop.js')
       && contractCheckSrc.includes('helix_admission_gate.js')
       && contractCheckSrc.includes('confirmed_malice_quarantine.js')
