@@ -495,6 +495,14 @@ function main() {
     ["min_simulation_score", "drawdown_stop_pct", "risk_adjusted_return", "simulation_id"]
   );
   checkScript(
+    "systems/finance/economic_entity_manager.js",
+    ["economic_entity_manager.js", "ledger-entry", "classify-tax", "tax-report", "contract-sign", "contract-verify", "payout-route", "status", "--amount-usd", "--category", "--contract-id", "--counterparty", "--provider", "--recipient"]
+  );
+  checkSourceContains(
+    "systems/finance/economic_entity_manager.js",
+    ["appendImmutableReceipt", "tax_classification_map", "EYE_KERNEL_SCRIPT", "PAYMENT_BRIDGE_SCRIPT"]
+  );
+  checkScript(
     "systems/weaver/drift_aware_revenue_optimizer.js",
     ["drift_aware_revenue_optimizer.js", "optimize", "status", "--strict", "--days"]
   );

@@ -93,6 +93,7 @@ function runGate() {
     'config/compression_transfer_plane_policy.json',
     'config/opportunistic_offload_policy.json',
     'config/drift_aware_revenue_optimizer_policy.json',
+    'config/economic_entity_management_policy.json',
     'config/deterministic_control_plane_policy.json',
     'config/emergent_primitive_synthesis_policy.json',
     'config/effect_type_policy.json',
@@ -148,6 +149,7 @@ function runGate() {
     'systems/hardware/surface_budget_controller.ts',
     'systems/hardware/opportunistic_offload_plane.ts',
     'systems/budget/capital_allocation_organ.ts',
+    'systems/finance/economic_entity_manager.ts',
     'systems/workflow/gated_account_creation_organ.ts',
     'systems/weaver/drift_aware_revenue_optimizer.ts',
     'systems/workflow/client_relationship_manager.ts',
@@ -1089,6 +1091,39 @@ function runGate() {
     `min_simulation_score=${Number(capitalPolicy.min_simulation_score || 0)} min_risk_adjusted_return=${Number(capitalPolicy.min_risk_adjusted_return || 0)}`
   );
   addCheck(
+    'economic_entity_manager:merge_guard_hook',
+    mergeGuardSrc.includes('economic_entity_manager.js')
+      && mergeGuardSrc.includes('status'),
+    'merge_guard should enforce economic entity manager status check'
+  );
+  const economicPolicy = readJsonSafe(path.join(ROOT, 'config', 'economic_entity_management_policy.json'), {});
+  const economicTaxMapCount = economicPolicy.tax_classification_map && typeof economicPolicy.tax_classification_map === 'object'
+    ? Object.keys(economicPolicy.tax_classification_map).length
+    : 0;
+  const economicHighRisk = economicPolicy.high_risk_filing && typeof economicPolicy.high_risk_filing === 'object'
+    ? economicPolicy.high_risk_filing
+    : {};
+  const economicPayout = economicPolicy.payout && typeof economicPolicy.payout === 'object'
+    ? economicPolicy.payout
+    : {};
+  addCheck(
+    'economic_entity_manager:policy_tax_and_human_gates',
+    economicTaxMapCount >= 3
+      && economicHighRisk.require_human_approval !== false
+      && Number(economicHighRisk.min_approval_note_chars || 0) >= 8
+      && economicPayout.require_eye_gate !== false,
+    `tax_map=${economicTaxMapCount} require_human_approval=${economicHighRisk.require_human_approval !== false ? '1' : '0'} min_approval_note_chars=${Number(economicHighRisk.min_approval_note_chars || 0)} require_eye_gate=${economicPayout.require_eye_gate !== false ? '1' : '0'}`
+  );
+  const economicSrc = readFileSafe(path.join(ROOT, 'systems', 'finance', 'economic_entity_manager.ts'));
+  addCheck(
+    'economic_entity_manager:controller_hooks',
+    economicSrc.includes('EYE_KERNEL_SCRIPT')
+      && economicSrc.includes('PAYMENT_BRIDGE_SCRIPT')
+      && economicSrc.includes('appendImmutableReceipt(')
+      && economicSrc.includes('cmdTaxReport('),
+    'economic entity manager should keep eye/payment gates + immutable receipts + tax reporting hooks'
+  );
+  addCheck(
     'drift_aware_revenue_optimizer:merge_guard_hook',
     mergeGuardSrc.includes('drift_aware_revenue_optimizer.js')
       && mergeGuardSrc.includes('status')
@@ -1259,6 +1294,7 @@ function runGate() {
       && contractCheckSrc.includes('pre_neuralink_interface.js')
       && contractCheckSrc.includes('client_relationship_manager.js')
       && contractCheckSrc.includes('capital_allocation_organ.js')
+      && contractCheckSrc.includes('economic_entity_manager.js')
       && contractCheckSrc.includes('drift_aware_revenue_optimizer.js'),
     'contract_check should validate foundation scripts'
   );

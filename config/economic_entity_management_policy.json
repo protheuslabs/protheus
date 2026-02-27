@@ -1,0 +1,39 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "currency": "USD",
+  "tax_classification_map": {
+    "saas_income": "business_income",
+    "service_income": "business_income",
+    "compute": "cost_of_goods",
+    "tools": "operating_expense",
+    "contractor": "contractor_expense",
+    "payout": "distribution"
+  },
+  "high_risk_filing": {
+    "amount_usd_threshold": 5000,
+    "categories": [
+      "tax_filing",
+      "external_contract_signing",
+      "capital_transfer"
+    ],
+    "require_human_approval": true,
+    "min_approval_note_chars": 12
+  },
+  "payout": {
+    "require_eye_gate": true,
+    "require_approval_note_for_amount_usd": 1000
+  },
+  "contracts": {
+    "require_terms_digest": true,
+    "require_counterparty": true
+  },
+  "paths": {
+    "state": "state/finance/economic_entity/state.json",
+    "latest": "state/finance/economic_entity/latest.json",
+    "ledger": "state/finance/economic_entity/ledger.jsonl",
+    "receipts": "state/finance/economic_entity/receipts.jsonl",
+    "tax_reports": "state/finance/economic_entity/tax_reports"
+  }
+}

@@ -87,6 +87,7 @@ function runGuard(opts = {}) {
   checks.push(runCmd('client_relationship_manager_status', 'node', ['systems/workflow/client_relationship_manager.js', 'status', '--days=30']));
   checks.push(runCmd('gated_account_creation_status', 'node', ['systems/workflow/gated_account_creation_organ.js', 'status']));
   checks.push(runCmd('capital_allocation_organ_status', 'node', ['systems/budget/capital_allocation_organ.js', 'status', '--days=30']));
+  checks.push(runCmd('economic_entity_manager_status', 'node', ['systems/finance/economic_entity_manager.js', 'status']));
   checks.push(runCmd('drift_aware_revenue_optimizer_status', 'node', ['systems/weaver/drift_aware_revenue_optimizer.js', 'status', '--days=30']));
   checks.push(runCmd('siem_bridge_status', 'node', ['systems/observability/siem_bridge.js', 'status']));
   checks.push(runCmd('soc2_type2_track_status', 'node', ['systems/ops/soc2_type2_track.js', 'status']));
