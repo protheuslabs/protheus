@@ -466,6 +466,10 @@ function main() {
     "systems/memory/failure_memory_bridge.js",
     ["failure_memory_bridge.js", "run", "status"]
   );
+  checkScript(
+    "systems/memory/causal_temporal_graph.js",
+    ["causal_temporal_graph.js", "build", "query", "status"]
+  );
 
   // memory_dream.js synthesizes recent memory pointers into deterministic dream sheets.
   checkScript(

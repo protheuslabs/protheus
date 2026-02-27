@@ -52,6 +52,9 @@ function main() {
     'simplicity_budget:merge_guard_hook',
     'simplicity_budget:policy_enabled',
     'simplicity_budget:core_caps_present',
+    'causal_temporal_graph:merge_guard_hook',
+    'causal_temporal_graph:policy_enabled',
+    'causal_temporal_graph:counterfactual_gate_present',
     'workflow:effect_type_gate_hook',
     'helix:safety_resilience_hook'
   ]) {

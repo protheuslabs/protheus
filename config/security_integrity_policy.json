@@ -148,7 +148,7 @@
     "systems/weaver/weaver_core.js": "4957d6177400020074450e9a32a81652e33d950d2a1323d33402448bca2e1d43",
     "systems/weaver/weaver_core.ts": "52a6b4ff2e16147e12ab702d255e7f37564526ee60a017a983385916e5afcf15"
   },
-  "sealed_at": "2026-02-27T16:26:17.617Z",
+  "sealed_at": "2026-02-27T16:31:20.725Z",
   "sealed_by": "jay",
-  "last_approval_note": "v3-052 simplicity budget gate and policy reseal"
+  "last_approval_note": "v3-053 causal temporal memory graph"
 }

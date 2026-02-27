@@ -86,6 +86,7 @@ function runGate() {
 
   const requiredFiles = [
     'config/abstraction_debt_baseline.json',
+    'config/causal_temporal_memory_policy.json',
     'config/deterministic_control_plane_policy.json',
     'config/effect_type_policy.json',
     'config/formal_invariants.json',
@@ -104,6 +105,7 @@ function runGate() {
     'systems/ops/profile_compatibility_gate.ts',
     'systems/ops/simplicity_budget_gate.ts',
     'systems/ops/schema_evolution_contract.ts',
+    'systems/memory/causal_temporal_graph.ts',
     'systems/distributed/deterministic_control_plane.ts',
     'systems/primitives/effect_type_system.ts',
     'systems/primitives/runtime_scheduler.ts',
@@ -327,6 +329,24 @@ function runGate() {
     mergeGuardSrc.includes('simplicity_budget_gate.js')
       && mergeGuardSrc.includes('--strict=1'),
     'merge_guard should enforce simplicity budget verification'
+  );
+  addCheck(
+    'causal_temporal_graph:merge_guard_hook',
+    mergeGuardSrc.includes('causal_temporal_graph.js')
+      && mergeGuardSrc.includes('build')
+      && mergeGuardSrc.includes('--strict=1'),
+    'merge_guard should enforce causal-temporal graph build verification'
+  );
+  const causalTemporalPolicy = readJsonSafe(path.join(ROOT, 'config', 'causal_temporal_memory_policy.json'), {});
+  addCheck(
+    'causal_temporal_graph:policy_enabled',
+    causalTemporalPolicy.enabled !== false,
+    `enabled=${causalTemporalPolicy.enabled !== false ? '1' : '0'}`
+  );
+  addCheck(
+    'causal_temporal_graph:counterfactual_gate_present',
+    typeof causalTemporalPolicy.allow_counterfactual_query === 'boolean',
+    `allow_counterfactual_query=${typeof causalTemporalPolicy.allow_counterfactual_query === 'boolean' ? String(causalTemporalPolicy.allow_counterfactual_query) : 'missing'}`
   );
   const simplicityPolicy = readJsonSafe(path.join(ROOT, 'config', 'simplicity_budget_policy.json'), {});
   addCheck(

@@ -1,0 +1,14 @@
+{
+  "schema_id": "causal_temporal_memory_policy",
+  "schema_version": "1.0",
+  "enabled": true,
+  "strict_requires_events": false,
+  "allow_counterfactual_query": true,
+  "max_events": 20000,
+  "default_query_depth": 4,
+  "max_query_depth": 8,
+  "canonical_events_path": "state/runtime/canonical_events",
+  "state_path": "state/memory/causal_temporal_graph/state.json",
+  "latest_query_path": "state/memory/causal_temporal_graph/latest_query.json",
+  "receipts_path": "state/memory/causal_temporal_graph/receipts.jsonl"
+}
