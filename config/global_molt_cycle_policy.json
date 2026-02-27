@@ -1,0 +1,20 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "cycle_days": 30,
+  "veto_window_hours": 24,
+  "require_human_approval_for_apply": true,
+  "require_veto_window_elapsed": true,
+  "max_actions_per_plan": 25,
+  "sources": {
+    "organ_atrophy_latest_path": "state/autonomy/organs/atrophy/latest.json",
+    "weaver_pathway_state_path": "state/autonomy/weaver/pathway_state.json",
+    "assimilation_ledger_path": "state/assimilation/ledger.json"
+  },
+  "limits": {
+    "max_organ_candidates": 10,
+    "max_pathway_candidates": 8,
+    "max_assimilation_candidates": 8,
+    "assimilation_stale_days": 30
+  }
+}
