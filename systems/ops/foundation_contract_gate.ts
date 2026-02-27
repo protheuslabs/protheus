@@ -94,6 +94,7 @@ function runGate() {
     'config/primitive_migration_contract.json',
     'config/primitive_policy_vm.json',
     'config/runtime_scheduler_policy.json',
+    'config/safety_resilience_policy.json',
     'config/scale_envelope_policy.json',
     'config/schema_evolution_policy.json',
     'systems/ops/profile_compatibility_gate.ts',
@@ -102,6 +103,7 @@ function runGate() {
     'systems/primitives/effect_type_system.ts',
     'systems/primitives/runtime_scheduler.ts',
     'systems/security/formal_invariant_engine.ts',
+    'systems/security/safety_resilience_guard.ts',
     'systems/primitives/primitive_runtime.ts',
     'systems/primitives/policy_vm.ts',
     'systems/primitives/replay_verify.ts'
@@ -315,6 +317,13 @@ function runGate() {
     workflowSrc.includes("require('../primitives/effect_type_system.js')")
       && workflowSrc.includes('evaluateWorkflowEffectPlan('),
     'workflow_executor must evaluate effect-type plans before execution'
+  );
+  const helixSrc = readFileSafe(path.join(ROOT, 'systems', 'helix', 'helix_controller.ts'));
+  addCheck(
+    'helix:safety_resilience_hook',
+    helixSrc.includes("require('../security/safety_resilience_guard')")
+      && helixSrc.includes('evaluateSafetyResilience('),
+    'helix_controller must route sentinel output through safety resilience guard'
   );
 
   const actuationSrc = readFileSafe(path.join(ROOT, 'systems', 'actuation', 'actuation_executor.ts'));

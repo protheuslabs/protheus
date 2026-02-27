@@ -18,6 +18,7 @@ const { evaluateSentinel } = require('./sentinel_network');
 const { planHunterActions } = require('./hunter_strand');
 const { applyQuarantine } = require('./quarantine_manager');
 const { planReweave } = require('./reweave_doctor');
+const { evaluateSafetyResilience } = require('../security/safety_resilience_guard');
 
 function nowIso() {
   return new Date().toISOString();
@@ -419,7 +420,22 @@ function commandAttest(args: AnyObj) {
         ])
       }
     : verifierBase;
-  const sentinel = evaluateSentinel(verifier, codexVerification, policy, readSentinelState(paths));
+  const sentinelBase = evaluateSentinel(verifier, codexVerification, policy, readSentinelState(paths));
+  const resilience = evaluateSafetyResilience({
+    source: 'helix_attestation',
+    sentinel: sentinelBase,
+    signals: {
+      strand_mismatch: Array.isArray(verifier && verifier.mismatches) && verifier.mismatches.length > 0,
+      codex_failure: codexVerification && codexVerification.ok === false,
+      codex_signature_mismatch: Array.isArray(codexVerification && codexVerification.reason_codes)
+        && codexVerification.reason_codes.includes('codex_signature_mismatch')
+    }
+  }, {
+    apply: true
+  });
+  const sentinel = resilience && resilience.adjusted_sentinel && typeof resilience.adjusted_sentinel === 'object'
+    ? resilience.adjusted_sentinel
+    : sentinelBase;
   const hunter = planHunterActions(sentinel, policy);
   const quarantine = applyQuarantine(sentinel, verifier, policy, paths.quarantine_path);
   const reweave = planReweave(sentinel, verifier, policy, {
@@ -449,6 +465,7 @@ function commandAttest(args: AnyObj) {
       fresh: manifestFresh === true
     },
     sentinel,
+    safety_resilience: resilience,
     hunter,
     quarantine: quarantine.state,
     reweave_plan: {

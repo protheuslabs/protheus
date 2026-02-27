@@ -47,7 +47,8 @@ function main() {
     'formal_invariant_engine:merge_guard_hook',
     'supply_chain_trust_plane:merge_guard_hook',
     'schema_evolution:merge_guard_hook',
-    'workflow:effect_type_gate_hook'
+    'workflow:effect_type_gate_hook',
+    'helix:safety_resilience_hook'
   ]) {
     assert.ok(byId.has(id), `missing check: ${id}`);
     assert.strictEqual(byId.get(id).ok, true, `check should pass: ${id}`);

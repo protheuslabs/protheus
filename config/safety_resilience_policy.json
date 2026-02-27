@@ -1,0 +1,26 @@
+{
+  "schema_id": "safety_resilience_policy",
+  "schema_version": "1.0",
+  "enabled": true,
+  "anti_spam": {
+    "window_minutes": 15,
+    "max_alerts_per_window": 6,
+    "max_identical_reason_burst": 4,
+    "cooldown_minutes": 20
+  },
+  "consensus": {
+    "min_independent_signals_for_confirmed_malice": 2,
+    "signal_keys": [
+      "strand_mismatch",
+      "codex_failure",
+      "codex_signature_mismatch"
+    ]
+  },
+  "false_positive": {
+    "max_daily_downgrades": 32,
+    "enforce_budget_guard": true,
+    "extra_signals_when_budget_exhausted": 1
+  },
+  "state_path": "state/security/safety_resilience/state.json",
+  "receipts_path": "state/security/safety_resilience/receipts.jsonl"
+}
