@@ -85,6 +85,7 @@ function runGate() {
   };
 
   const requiredFiles = [
+    'config/abstraction_debt_baseline.json',
     'config/primitive_catalog.json',
     'config/primitive_migration_contract.json',
     'config/primitive_policy_vm.json',
@@ -181,6 +182,37 @@ function runGate() {
     'catalog:migration_contract_coverage',
     unmappedOpcodes.length === 0,
     unmappedOpcodes.length === 0 ? `covered=${opcodeSet.size}` : `missing=${unmappedOpcodes.join(',')}`
+  );
+
+  const debtBaseline = readJsonSafe(path.join(ROOT, 'config', 'abstraction_debt_baseline.json'), {});
+  const subExecPolicy = readJsonSafe(path.join(ROOT, 'config', 'sub_executor_synthesis_policy.json'), {});
+  const subExecStatePathRaw = cleanText(
+    subExecPolicy.state_path || 'state/actuation/sub_executor_synthesis/state.json',
+    320
+  );
+  const subExecStatePath = path.isAbsolute(subExecStatePathRaw)
+    ? subExecStatePathRaw
+    : path.join(ROOT, subExecStatePathRaw);
+  const subExecState = readJsonSafe(subExecStatePath, {});
+  const candidates = subExecState && subExecState.candidates && typeof subExecState.candidates === 'object'
+    ? Object.values(subExecState.candidates)
+    : [];
+  const activeDebt = candidates.filter((row: AnyObj) => {
+    const status = normalizeLowerToken(row && row.status ? row.status : '', 40);
+    return status === 'proposed' || status === 'validated';
+  }).length;
+  const totalCandidates = candidates.length;
+  const maxActiveDebt = Math.max(0, Number(debtBaseline.max_active_sub_executors || 0) || 0);
+  const maxTotalCandidates = Math.max(0, Number(debtBaseline.max_total_sub_executor_candidates || 0) || 0);
+  addCheck(
+    'distill_or_atrophy:active_debt_cap',
+    activeDebt <= maxActiveDebt,
+    `active_debt=${activeDebt} cap=${maxActiveDebt}`
+  );
+  addCheck(
+    'distill_or_atrophy:total_candidate_cap',
+    totalCandidates <= maxTotalCandidates,
+    `total_candidates=${totalCandidates} cap=${maxTotalCandidates}`
   );
 
   const workflowSrc = readFileSafe(path.join(ROOT, 'systems', 'workflow', 'workflow_executor.ts'));

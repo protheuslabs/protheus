@@ -89,5 +89,111 @@
     "helpdesk_ticket": "identity",
     "eyes_create": "governance",
     "moltbook_publish": "comms"
+  },
+  "opcode_metadata": {
+    "ACTUATION_ADAPTER": {
+      "invariants": [
+        "policy_vm_gate_required",
+        "receipt_required"
+      ],
+      "cost_class": "medium",
+      "safety_class": "high"
+    },
+    "BROWSER_TASK": {
+      "invariants": [
+        "policy_vm_gate_required",
+        "receipt_required"
+      ],
+      "cost_class": "medium",
+      "safety_class": "high"
+    },
+    "CALENDAR_MUTATE": {
+      "invariants": [
+        "identity_scope_required",
+        "receipt_required"
+      ],
+      "cost_class": "low",
+      "safety_class": "high"
+    },
+    "COMMS_MESSAGE": {
+      "invariants": [
+        "policy_vm_gate_required",
+        "receipt_required"
+      ],
+      "cost_class": "low",
+      "safety_class": "high"
+    },
+    "CRM_MUTATE": {
+      "invariants": [
+        "identity_scope_required",
+        "receipt_required"
+      ],
+      "cost_class": "medium",
+      "safety_class": "high"
+    },
+    "EYE_MUTATE": {
+      "invariants": [
+        "governance_scope_required",
+        "receipt_required"
+      ],
+      "cost_class": "medium",
+      "safety_class": "critical"
+    },
+    "FILESYSTEM_MUTATE": {
+      "invariants": [
+        "path_policy_required",
+        "receipt_required"
+      ],
+      "cost_class": "low",
+      "safety_class": "high"
+    },
+    "FLOW_GATE": {
+      "invariants": [
+        "control_flow_only",
+        "receipt_required"
+      ],
+      "cost_class": "low",
+      "safety_class": "medium"
+    },
+    "HELPDESK_MUTATE": {
+      "invariants": [
+        "identity_scope_required",
+        "receipt_required"
+      ],
+      "cost_class": "medium",
+      "safety_class": "high"
+    },
+    "NETWORK_REQUEST": {
+      "invariants": [
+        "egress_policy_required",
+        "receipt_required"
+      ],
+      "cost_class": "medium",
+      "safety_class": "high"
+    },
+    "PAYMENT_EXECUTE": {
+      "invariants": [
+        "money_gate_required",
+        "receipt_required"
+      ],
+      "cost_class": "high",
+      "safety_class": "critical"
+    },
+    "RECEIPT_VERIFY": {
+      "invariants": [
+        "read_only",
+        "receipt_required"
+      ],
+      "cost_class": "low",
+      "safety_class": "medium"
+    },
+    "SHELL_EXECUTE": {
+      "invariants": [
+        "allowlist_required",
+        "receipt_required"
+      ],
+      "cost_class": "medium",
+      "safety_class": "high"
+    }
   }
 }

@@ -3,7 +3,7 @@
 export {};
 
 const crypto = require('crypto');
-const { classifyCommandPrimitive, classifyActuationPrimitive, loadPrimitiveCatalog } = require('./primitive_catalog.js');
+const { classifyCommandPrimitive, classifyActuationPrimitive, loadPrimitiveCatalog, describePrimitiveOpcode } = require('./primitive_catalog.js');
 
 type AnyObj = Record<string, any>;
 
@@ -18,6 +18,7 @@ function hashPayload(v: unknown) {
 function compileCommandToGrammar(command: unknown, opts: AnyObj = {}) {
   const primitive = classifyCommandPrimitive(command, opts);
   const catalog = loadPrimitiveCatalog();
+  const primitiveMeta = describePrimitiveOpcode(primitive.opcode, catalog);
   return {
     grammar_id: 'universal_action_grammar',
     grammar_version: '1.0',
@@ -25,6 +26,7 @@ function compileCommandToGrammar(command: unknown, opts: AnyObj = {}) {
     runtime_kind: 'command',
     opcode: primitive.opcode,
     effect: primitive.effect,
+    primitive_metadata: primitiveMeta ? primitiveMeta.metadata : null,
     confidence: Number(primitive.confidence || 0),
     source: primitive.source || null,
     command_preview: cleanText(primitive.command || command || '', 240),
@@ -43,6 +45,7 @@ function compileCommandToGrammar(command: unknown, opts: AnyObj = {}) {
 function compileActuationToGrammar(kind: unknown, params: unknown, opts: AnyObj = {}) {
   const primitive = classifyActuationPrimitive(kind, { params });
   const catalog = loadPrimitiveCatalog();
+  const primitiveMeta = describePrimitiveOpcode(primitive.opcode, catalog);
   const paramsObj = params && typeof params === 'object' ? params : {};
   return {
     grammar_id: 'universal_action_grammar',
@@ -51,6 +54,7 @@ function compileActuationToGrammar(kind: unknown, params: unknown, opts: AnyObj 
     runtime_kind: 'adapter',
     opcode: primitive.opcode,
     effect: primitive.effect,
+    primitive_metadata: primitiveMeta ? primitiveMeta.metadata : null,
     confidence: Number(primitive.confidence || 0),
     source: primitive.source || null,
     adapter_kind: primitive.adapter_kind || cleanText(kind || '', 80) || 'unknown_adapter',
