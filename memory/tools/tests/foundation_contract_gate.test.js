@@ -73,6 +73,9 @@ function main() {
     'delegated_authority:merge_guard_hook',
     'delegated_authority:constitution_denied_scopes',
     'delegated_authority:key_lifecycle_dependency',
+    'world_model_freshness:merge_guard_hook',
+    'world_model_freshness:stale_warning_order',
+    'world_model_freshness:profile_roots_present',
     'workflow:effect_type_gate_hook',
     'helix:safety_resilience_hook'
   ]) {
