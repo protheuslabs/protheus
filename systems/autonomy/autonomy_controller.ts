@@ -504,6 +504,18 @@ const AUTONOMY_SCORE_ONLY_REPEAT_COOLDOWN_HOURS = Math.max(
   0,
   Number(process.env.AUTONOMY_SCORE_ONLY_REPEAT_COOLDOWN_HOURS || 12)
 );
+const AUTONOMY_SEMANTIC_DEDUPE_ENABLED = String(process.env.AUTONOMY_SEMANTIC_DEDUPE_ENABLED || '1') !== '0';
+const AUTONOMY_SEMANTIC_DEDUPE_THRESHOLD = clampNumber(
+  Number(process.env.AUTONOMY_SEMANTIC_DEDUPE_THRESHOLD || 0.74),
+  0.55,
+  0.98
+);
+const AUTONOMY_SEMANTIC_DEDUPE_MIN_TOKENS = Math.max(
+  3,
+  Number(process.env.AUTONOMY_SEMANTIC_DEDUPE_MIN_TOKENS || 6)
+);
+const AUTONOMY_SEMANTIC_DEDUPE_REQUIRE_SAME_TYPE = String(process.env.AUTONOMY_SEMANTIC_DEDUPE_REQUIRE_SAME_TYPE || '1') !== '0';
+const AUTONOMY_SEMANTIC_DEDUPE_REQUIRE_SHARED_CONTEXT = String(process.env.AUTONOMY_SEMANTIC_DEDUPE_REQUIRE_SHARED_CONTEXT || '1') !== '0';
 const AUTONOMY_EVIDENCE_SAMPLE_WINDOW = Math.max(1, Number(process.env.AUTONOMY_EVIDENCE_SAMPLE_WINDOW || 5));
 const AUTONOMY_PREEXEC_CRITERIA_GATE_ENABLED = String(process.env.AUTONOMY_PREEXEC_CRITERIA_GATE_ENABLED || '1') !== '0';
 const AUTONOMY_PREEXEC_CRITERIA_COOLDOWN_HOURS = Math.max(1, Number(process.env.AUTONOMY_PREEXEC_CRITERIA_COOLDOWN_HOURS || AUTONOMY_ROUTE_BLOCK_COOLDOWN_HOURS));
@@ -5864,6 +5876,98 @@ function proposalDedupKey(p) {
   return `${type}|${eye}|${String(p && p.id || 'unknown')}`;
 }
 
+function proposalSemanticObjectiveId(p) {
+  const proposal = p && typeof p === 'object' ? p : {};
+  const meta = proposal.meta && typeof proposal.meta === 'object' ? proposal.meta : {};
+  const candidates = [
+    meta.objective_id,
+    meta.directive_objective_id,
+    meta.linked_objective_id,
+    parseDirectiveObjectiveArgFromCommand(proposal.suggested_next_command),
+    parseDirectiveObjectiveArgFromCommand(proposal.suggested_command)
+  ];
+  for (const raw of candidates) {
+    const id = sanitizeDirectiveObjectiveId(raw || '');
+    if (id) return id;
+  }
+  return '';
+}
+
+function proposalSemanticFingerprint(p) {
+  const proposal = p && typeof p === 'object' ? p : {};
+  const type = String(proposal.type || '').trim().toLowerCase() || 'unknown';
+  const sourceEye = String(sourceEyeId(proposal) || '').trim().toLowerCase();
+  const objectiveId = proposalSemanticObjectiveId(proposal);
+  const tokenStems = uniqSorted(
+    tokenizeDirectiveText(proposalTextBlob(proposal))
+      .map((tok) => toStem(tok))
+      .filter(Boolean)
+  );
+  return {
+    proposal_id: normalizeSpaces(proposal.id) || null,
+    proposal_type: type,
+    source_eye: sourceEye || null,
+    objective_id: objectiveId || null,
+    token_stems: tokenStems,
+    token_count: tokenStems.length,
+    eligible: tokenStems.length >= AUTONOMY_SEMANTIC_DEDUPE_MIN_TOKENS
+  };
+}
+
+function semanticTokenSimilarity(aTokens, bTokens) {
+  const aSet = new Set(Array.isArray(aTokens) ? aTokens.map((v) => String(v || '').trim()).filter(Boolean) : []);
+  const bSet = new Set(Array.isArray(bTokens) ? bTokens.map((v) => String(v || '').trim()).filter(Boolean) : []);
+  if (!aSet.size || !bSet.size) return 0;
+  let intersection = 0;
+  for (const token of aSet) {
+    if (bSet.has(token)) intersection += 1;
+  }
+  const union = (aSet.size + bSet.size) - intersection;
+  if (!union) return 0;
+  return Number((intersection / union).toFixed(6));
+}
+
+function semanticContextComparable(a, b) {
+  const left = a && typeof a === 'object' ? a : {};
+  const right = b && typeof b === 'object' ? b : {};
+  const leftType = String(left.proposal_type || '').trim().toLowerCase();
+  const rightType = String(right.proposal_type || '').trim().toLowerCase();
+  if (AUTONOMY_SEMANTIC_DEDUPE_REQUIRE_SAME_TYPE && leftType && rightType && leftType !== rightType) {
+    return false;
+  }
+  if (!AUTONOMY_SEMANTIC_DEDUPE_REQUIRE_SHARED_CONTEXT) return true;
+  const leftEye = String(left.source_eye || '').trim().toLowerCase();
+  const rightEye = String(right.source_eye || '').trim().toLowerCase();
+  const leftObjective = String(left.objective_id || '').trim();
+  const rightObjective = String(right.objective_id || '').trim();
+  if (leftEye && rightEye && leftEye === rightEye) return true;
+  if (leftObjective && rightObjective && leftObjective === rightObjective) return true;
+  return false;
+}
+
+function semanticNearDuplicateMatch(fingerprint, seenFingerprints, minSimilarity = AUTONOMY_SEMANTIC_DEDUPE_THRESHOLD) {
+  const fp = fingerprint && typeof fingerprint === 'object' ? fingerprint : null;
+  if (!fp || fp.eligible !== true) return null;
+  const seen = Array.isArray(seenFingerprints) ? seenFingerprints : [];
+  let best = null;
+  for (const candidate of seen) {
+    if (!candidate || candidate.eligible !== true) continue;
+    if (!semanticContextComparable(fp, candidate)) continue;
+    const similarity = semanticTokenSimilarity(fp.token_stems, candidate.token_stems);
+    if (similarity < Number(minSimilarity || AUTONOMY_SEMANTIC_DEDUPE_THRESHOLD)) continue;
+    if (!best || similarity > best.similarity) {
+      best = {
+        similarity,
+        proposal_id: candidate.proposal_id || null,
+        proposal_type: candidate.proposal_type || null,
+        source_eye: candidate.source_eye || null,
+        objective_id: candidate.objective_id || null
+      };
+    }
+  }
+  return best;
+}
+
 function proposalRiskScore(p) {
   const meta = p && p.meta && typeof p.meta === 'object' ? p.meta : {};
   const explicit = Number(meta.risk_score);
@@ -9133,6 +9237,7 @@ function candidatePool(dateStr, strategyOverride = null) {
   const recentKeyCounts = recentProposalKeyCounts(dateStr, duplicateWindowHours);
   const forcedProposalId = String(AUTONOMY_FORCE_PROPOSAL_ID || '').trim();
   const seenDedup = new Set();
+  const semanticFingerprints = [];
   const pool = [];
   const backfillPool = [];
   const forcedPool = [];
@@ -9162,14 +9267,31 @@ function candidatePool(dateStr, strategyOverride = null) {
     const risk = normalizedRisk(p.risk);
     if (!forceSelected && allowedRisks.size > 0 && !allowedRisks.has(risk)) continue;
     if (!forceSelected && cooldownActive(p.id)) continue;
+    const semanticFingerprint = proposalSemanticFingerprint(p);
+    const semanticDuplicate = !forceSelected && AUTONOMY_SEMANTIC_DEDUPE_ENABLED
+      ? semanticNearDuplicateMatch(
+          semanticFingerprint,
+          semanticFingerprints,
+          AUTONOMY_SEMANTIC_DEDUPE_THRESHOLD
+        )
+      : null;
+    if (!forceSelected && semanticDuplicate) continue;
     if (!forceSelected && seenDedup.has(dedupKey)) continue;
     seenDedup.add(dedupKey);
+    if (!forceSelected && semanticFingerprint && semanticFingerprint.eligible === true) {
+      semanticFingerprints.push({
+        ...semanticFingerprint,
+        proposal_id: proposalId,
+        dedup_key: dedupKey
+      });
+    }
     const row = {
       proposal: p,
       overlay: ov,
       status,
       score: proposalScore(p, ov, dateStr),
       dedup_key: dedupKey,
+      semantic_fingerprint: semanticFingerprint,
       admission,
       force_selected: forceSelected === true
     };
@@ -15097,5 +15219,8 @@ module.exports = {
   startModelCatalogCanary,
   evaluateModelCatalogCanary,
   readModelCatalogCanary,
-  runPostconditions
+  runPostconditions,
+  proposalSemanticFingerprint,
+  semanticTokenSimilarity,
+  semanticNearDuplicateMatch
 };
