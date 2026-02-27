@@ -15,6 +15,10 @@ function writeJson(filePath, value) {
   writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`);
 }
 
+function readJson(filePath) {
+  return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+}
+
 function runNode(scriptPath, args, env, cwd) {
   return spawnSync(process.execPath, [scriptPath, ...args], {
     cwd,
@@ -76,6 +80,7 @@ function run() {
     sentinel: {
       enabled: true,
       force_confirmed_malice: false,
+      max_manifest_age_minutes: 1440,
       thresholds: {
         stasis_mismatch_count: 1,
         malice_mismatch_count: 99,
@@ -133,6 +138,24 @@ function run() {
   const attestClear = assertOk(runNode(helixScript, ['attest'], env, repoRoot), 'helix attest clear');
   assert.strictEqual(attestClear.attestation_decision, 'allow');
   assert.strictEqual(attestClear.sentinel.tier, 'clear');
+  assert.strictEqual(attestClear.manifest_freshness.fresh, true);
+
+  const staleManifest = readJson(path.join(stateDir, 'manifest.json'));
+  staleManifest.generated_at = new Date(Date.now() - (2 * 24 * 60 * 60 * 1000)).toISOString();
+  writeJson(path.join(stateDir, 'manifest.json'), staleManifest);
+  const stalePolicy = readJson(helixPolicyPath);
+  stalePolicy.sentinel = stalePolicy.sentinel || {};
+  stalePolicy.sentinel.max_manifest_age_minutes = 30;
+  writeJson(helixPolicyPath, stalePolicy);
+
+  const attestStale = assertOk(runNode(helixScript, ['attest'], env, repoRoot), 'helix attest stale');
+  assert.strictEqual(attestStale.attestation_decision, 'escalate');
+  assert.strictEqual(attestStale.sentinel.tier, 'stasis');
+  assert.strictEqual(attestStale.manifest_freshness.fresh, false);
+  assert.ok(
+    (attestStale.verifier.reason_codes || []).includes('manifest_stale'),
+    'expected manifest_stale reason code'
+  );
 
   writeFile(path.join(fixtureRoot, 'alpha.txt'), 'alpha-v2-tampered\n');
   const attestStasis = assertOk(runNode(helixScript, ['attest'], env, repoRoot), 'helix attest stasis');

@@ -37,6 +37,7 @@
   "sentinel": {
     "enabled": true,
     "force_confirmed_malice": false,
+    "max_manifest_age_minutes": 1440,
     "thresholds": {
       "stasis_mismatch_count": 1,
       "malice_mismatch_count": 8,
