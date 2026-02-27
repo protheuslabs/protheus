@@ -1013,6 +1013,14 @@ function main() {
     "systems/helix/helix_admission_gate.js",
     ["strand_hash_mismatch", "doctor_approval_required", "manifest_updated", "codex_root_hash_mismatch"]
   );
+  checkScript(
+    "systems/helix/confirmed_malice_quarantine.js",
+    ["confirmed_malice_quarantine.js", "evaluate", "status", "release", "--input-json", "--human-approved", "--apply", "--state-root"]
+  );
+  checkSourceContains(
+    "systems/helix/confirmed_malice_quarantine.js",
+    ["insufficient_independent_signals", "confidence_below_threshold", "permanent_quarantine", "human_approval_required"]
+  );
 
   // environment_promotion_gate.js enforces promotion sequencing and approvals across env tiers.
   checkScript(

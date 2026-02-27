@@ -88,6 +88,7 @@ function runGate() {
     'config/abstraction_debt_baseline.json',
     'config/causal_temporal_memory_policy.json',
     'config/capital_allocation_policy.json',
+    'config/confirmed_malice_quarantine_policy.json',
     'config/client_relationship_manager_policy.json',
     'config/compression_transfer_plane_policy.json',
     'config/opportunistic_offload_policy.json',
@@ -131,6 +132,7 @@ function runGate() {
     'systems/ops/schema_evolution_contract.ts',
     'systems/continuity/resurrection_protocol.ts',
     'systems/echo/value_anchor_renewal.ts',
+    'systems/helix/confirmed_malice_quarantine.ts',
     'systems/helix/helix_admission_gate.ts',
     'systems/memory/causal_temporal_graph.ts',
     'systems/distributed/deterministic_control_plane.ts',
@@ -744,6 +746,36 @@ function runGate() {
     `admissions=${cleanText(helixAdmissionPaths.admissions_path || '', 120) || 'missing'} latest=${cleanText(helixAdmissionPaths.latest_path || '', 120) || 'missing'} manifest=${cleanText(helixAdmissionPaths.manifest_path || '', 120) || 'missing'}`
   );
   addCheck(
+    'helix_confirmed_malice:merge_guard_hook',
+    mergeGuardSrc.includes('confirmed_malice_quarantine.js')
+      && mergeGuardSrc.includes('status'),
+    'merge_guard should enforce confirmed malice quarantine status check'
+  );
+  const confirmedMalicePolicy = readJsonSafe(path.join(ROOT, 'config', 'confirmed_malice_quarantine_policy.json'), {});
+  const confirmedThresholds = confirmedMalicePolicy.thresholds && typeof confirmedMalicePolicy.thresholds === 'object'
+    ? confirmedMalicePolicy.thresholds
+    : {};
+  addCheck(
+    'helix_confirmed_malice:policy_thresholds',
+    confirmedMalicePolicy.enabled !== false
+      && confirmedMalicePolicy.require_sentinel_confirmed_malice !== false
+      && confirmedMalicePolicy.release_requires_human !== false
+      && Number(confirmedThresholds.min_independent_signals_for_permanent_quarantine || 0) >= 2
+      && Number(confirmedThresholds.min_confidence_for_permanent_quarantine || 0) >= 0.9,
+    `enabled=${confirmedMalicePolicy.enabled !== false ? '1' : '0'} require_sentinel_confirmed_malice=${confirmedMalicePolicy.require_sentinel_confirmed_malice !== false ? '1' : '0'} release_requires_human=${confirmedMalicePolicy.release_requires_human !== false ? '1' : '0'} min_independent_signals=${Number(confirmedThresholds.min_independent_signals_for_permanent_quarantine || 0)} min_confidence=${Number(confirmedThresholds.min_confidence_for_permanent_quarantine || 0)}`
+  );
+  const confirmedPaths = confirmedMalicePolicy.paths && typeof confirmedMalicePolicy.paths === 'object'
+    ? confirmedMalicePolicy.paths
+    : {};
+  addCheck(
+    'helix_confirmed_malice:paths_present',
+    !!cleanText(confirmedPaths.state_path || '', 240)
+      && !!cleanText(confirmedPaths.latest_path || '', 240)
+      && !!cleanText(confirmedPaths.events_path || '', 240)
+      && !!cleanText(confirmedPaths.forensic_dir || '', 240),
+    `state_path=${cleanText(confirmedPaths.state_path || '', 100) || 'missing'} latest_path=${cleanText(confirmedPaths.latest_path || '', 100) || 'missing'} events_path=${cleanText(confirmedPaths.events_path || '', 100) || 'missing'} forensic_dir=${cleanText(confirmedPaths.forensic_dir || '', 100) || 'missing'}`
+  );
+  addCheck(
     'neural_dormant_seed:merge_guard_hook',
     mergeGuardSrc.includes('neural_dormant_seed.js')
       && mergeGuardSrc.includes('check')
@@ -979,6 +1011,12 @@ function runGate() {
       && helixSrc.includes('evaluateSafetyResilience('),
     'helix_controller must route sentinel output through safety resilience guard'
   );
+  addCheck(
+    'helix:confirmed_malice_quarantine_hook',
+    helixSrc.includes("require('./confirmed_malice_quarantine')")
+      && helixSrc.includes('applyPermanentQuarantine('),
+    'helix_controller must route confirmed malice decisions through permanent quarantine lane'
+  );
 
   const actuationSrc = readFileSafe(path.join(ROOT, 'systems', 'actuation', 'actuation_executor.ts'));
   addCheck(
@@ -1015,6 +1053,7 @@ function runGate() {
       && contractCheckSrc.includes('organ_state_encryption_plane.js')
       && contractCheckSrc.includes('remote_tamper_heartbeat.js')
       && contractCheckSrc.includes('helix_admission_gate.js')
+      && contractCheckSrc.includes('confirmed_malice_quarantine.js')
       && contractCheckSrc.includes('neural_dormant_seed.js')
       && contractCheckSrc.includes('client_relationship_manager.js')
       && contractCheckSrc.includes('capital_allocation_organ.js')

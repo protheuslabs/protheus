@@ -170,6 +170,8 @@ function run() {
   assert.strictEqual(attestMalice.attestation_decision, 'deny');
   assert.strictEqual(attestMalice.sentinel.tier, 'confirmed_malice');
   assert.strictEqual(attestMalice.ok, false);
+  assert.ok(attestMalice.permanent_quarantine && attestMalice.permanent_quarantine.active === true, 'confirmed malice should activate permanent quarantine lane');
+  assert.strictEqual(String(attestMalice.permanent_quarantine.mode || ''), 'permanent_quarantine');
 
   const statusOut = parseJsonStdout(runNode(helixScript, ['status', 'latest'], env, repoRoot));
   assert.strictEqual(statusOut.type, 'helix_status');

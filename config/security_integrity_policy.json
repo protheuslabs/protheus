@@ -78,7 +78,7 @@
     "systems/helix/codex_root.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/helix/codex_root.ts": "e76e3c4a0070e5ebf321659b0024bee8f54e06f20476fc89f9e935fcb67fb0db",
     "systems/helix/helix_controller.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
-    "systems/helix/helix_controller.ts": "495ac0daff3b3e708be34b947215dffbfc70bbded17861e493b7580c864f943e",
+    "systems/helix/helix_controller.ts": "3db9c757837b214a52e79c51d5efcc7e99ffb14411f5dbc7f80699206fb45d91",
     "systems/helix/hunter_strand.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/helix/hunter_strand.ts": "2384cf44361b80b51f7c7fefeda3925fb43c962262cc8662615f0254fbc848d8",
     "systems/helix/quarantine_manager.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
@@ -152,7 +152,7 @@
     "systems/weaver/weaver_core.js": "4957d6177400020074450e9a32a81652e33d950d2a1323d33402448bca2e1d43",
     "systems/weaver/weaver_core.ts": "52a6b4ff2e16147e12ab702d255e7f37564526ee60a017a983385916e5afcf15"
   },
-  "sealed_at": "2026-02-27T19:29:43.392Z",
+  "sealed_at": "2026-02-27T19:43:12.013Z",
   "sealed_by": "jay",
-  "last_approval_note": "Seal helix admission gate V3-032"
+  "last_approval_note": "Seal V3-033 confirmed malice quarantine lane"
 }

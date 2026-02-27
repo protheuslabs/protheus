@@ -17,6 +17,7 @@ const { buildHelixManifest, verifyHelixManifest } = require('./strand_verifier')
 const { evaluateSentinel } = require('./sentinel_network');
 const { planHunterActions } = require('./hunter_strand');
 const { applyQuarantine } = require('./quarantine_manager');
+const { applyPermanentQuarantine } = require('./confirmed_malice_quarantine');
 const { planReweave } = require('./reweave_doctor');
 const { evaluateSafetyResilience } = require('../security/safety_resilience_guard');
 
@@ -438,6 +439,22 @@ function commandAttest(args: AnyObj) {
     : sentinelBase;
   const hunter = planHunterActions(sentinel, policy);
   const quarantine = applyQuarantine(sentinel, verifier, policy, paths.quarantine_path);
+  const permanentQuarantine = applyPermanentQuarantine({
+    sentinel,
+    verifier: {
+      mismatch_count: Array.isArray(verifier && verifier.mismatches) ? verifier.mismatches.length : 0,
+      reason_codes: verifier && verifier.reason_codes
+    },
+    codex_verification: codexVerification,
+    hunter,
+    confirmed_malice_score_threshold: policy
+      && policy.sentinel
+      && policy.sentinel.thresholds
+      && policy.sentinel.thresholds.confirmed_malice_score,
+    apply_requested: true
+  }, {
+    state_root: paths.state_dir
+  });
   const reweave = planReweave(sentinel, verifier, policy, {
     reason: sentinel.tier === 'clear' ? 'routine_attestation' : 'integrity_mismatch'
   });
@@ -468,6 +485,12 @@ function commandAttest(args: AnyObj) {
     safety_resilience: resilience,
     hunter,
     quarantine: quarantine.state,
+    permanent_quarantine: permanentQuarantine && permanentQuarantine.state
+      ? permanentQuarantine.state
+      : {
+          active: false,
+          mode: 'idle'
+        },
     reweave_plan: {
       plan_id: reweave.plan_id,
       strategy: reweave.strategy,
@@ -498,12 +521,24 @@ function commandAttest(args: AnyObj) {
     manifest_fresh: manifestFresh === true
   });
   emitEvent(paths, policy, 'sentinel_state', sentinelState);
+  emitEvent(paths, policy, 'confirmed_malice_quarantine', {
+    active: !!(permanentQuarantine && permanentQuarantine.state && permanentQuarantine.state.active),
+    mode: cleanText(
+      permanentQuarantine && permanentQuarantine.state && permanentQuarantine.state.mode,
+      80
+    ) || 'idle',
+    tier: cleanText(
+      permanentQuarantine && permanentQuarantine.state && permanentQuarantine.state.tier,
+      80
+    ) || 'clear'
+  });
   emitObsidianProjection(paths, policy, [
     '# Helix Attestation',
     '',
     `- Decision: \`${attestationDecision}\``,
     `- Tier: \`${sentinel.tier}\``,
     `- Mismatches: \`${out.verifier.mismatch_count}\``,
+    `- Permanent quarantine: \`${out.permanent_quarantine.mode}\``,
     `- Reweave strategy: \`${reweave.strategy}\``
   ].join('\n'));
   return out;
