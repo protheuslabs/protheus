@@ -1,0 +1,23 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "compaction": {
+    "source_paths": [
+      "state/autonomy/weaver/history.jsonl",
+      "state/autonomy/mirror_organ/history.jsonl",
+      "state/workflow/learning_conduit/receipts.jsonl"
+    ],
+    "max_source_rows_per_path": 5000
+  },
+  "stale_pruning": {
+    "enabled": true,
+    "max_age_days": 180,
+    "min_hits_keep": 2
+  },
+  "federation": {
+    "enabled": true,
+    "opt_in_required": true,
+    "attestation_required": true,
+    "local_instance_id": "local_instance"
+  }
+}
