@@ -105,10 +105,12 @@ function runGate() {
     'config/simplicity_baseline.json',
     'config/simplicity_budget_policy.json',
     'config/schema_evolution_policy.json',
+    'config/value_anchor_renewal_policy.json',
     'systems/ops/profile_compatibility_gate.ts',
     'systems/ops/simplicity_budget_gate.ts',
     'systems/ops/schema_evolution_contract.ts',
     'systems/continuity/resurrection_protocol.ts',
+    'systems/echo/value_anchor_renewal.ts',
     'systems/memory/causal_temporal_graph.ts',
     'systems/distributed/deterministic_control_plane.ts',
     'systems/hardware/embodiment_layer.ts',
@@ -412,6 +414,25 @@ function runGate() {
     'resurrection_protocol:multi_shard_floor',
     shardFloor >= 2,
     `default_shards=${shardFloor}`
+  );
+  addCheck(
+    'value_anchor_renewal:merge_guard_hook',
+    mergeGuardSrc.includes('value_anchor_renewal.js')
+      && mergeGuardSrc.includes('status'),
+    'merge_guard should enforce value-anchor renewal status check'
+  );
+  const valueAnchorPolicy = readJsonSafe(path.join(ROOT, 'config', 'value_anchor_renewal_policy.json'), {});
+  const maxAutoShift = Math.max(0, Math.min(1, Number(valueAnchorPolicy.max_auto_shift || 1)));
+  const highImpactShift = Math.max(0, Math.min(1, Number(valueAnchorPolicy.high_impact_shift || 1)));
+  addCheck(
+    'value_anchor_renewal:shift_threshold_order',
+    highImpactShift >= maxAutoShift,
+    `max_auto_shift=${maxAutoShift} high_impact_shift=${highImpactShift}`
+  );
+  addCheck(
+    'value_anchor_renewal:review_gate_enabled',
+    valueAnchorPolicy.require_user_review_above_shift !== false,
+    `require_user_review_above_shift=${valueAnchorPolicy.require_user_review_above_shift !== false ? '1' : '0'}`
   );
   const simplicityPolicy = readJsonSafe(path.join(ROOT, 'config', 'simplicity_budget_policy.json'), {});
   addCheck(

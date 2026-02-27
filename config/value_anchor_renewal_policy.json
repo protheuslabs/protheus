@@ -1,0 +1,15 @@
+{
+  "schema_id": "value_anchor_renewal_policy",
+  "schema_version": "1.0",
+  "enabled": true,
+  "renewal_interval_days": 14,
+  "max_auto_shift": 0.08,
+  "high_impact_shift": 0.15,
+  "require_user_review_above_shift": true,
+  "constitution_path": "AGENT-CONSTITUTION.md",
+  "first_principles_path": "state/autonomy/inversion/first_principles.jsonl",
+  "current_anchor_path": "state/autonomy/echo/value_anchor/current.json",
+  "proposals_path": "state/autonomy/echo/value_anchor/proposals.jsonl",
+  "history_path": "state/autonomy/echo/value_anchor/history.jsonl",
+  "receipts_path": "state/autonomy/echo/value_anchor/receipts.jsonl"
+}

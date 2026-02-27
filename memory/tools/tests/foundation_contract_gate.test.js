@@ -64,6 +64,9 @@ function main() {
     'resurrection_protocol:merge_guard_hook',
     'resurrection_protocol:key_env_present',
     'resurrection_protocol:multi_shard_floor',
+    'value_anchor_renewal:merge_guard_hook',
+    'value_anchor_renewal:shift_threshold_order',
+    'value_anchor_renewal:review_gate_enabled',
     'workflow:effect_type_gate_hook',
     'helix:safety_resilience_hook'
   ]) {

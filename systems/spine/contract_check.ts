@@ -732,6 +732,10 @@ function main() {
     "systems/continuity/resurrection_protocol.js",
     ["resurrection_protocol.js", "bundle", "verify", "restore", "status", "--bundle-id", "--attestation-token", "--target-host", "--shards", "--apply"]
   );
+  checkScript(
+    "systems/echo/value_anchor_renewal.js",
+    ["value_anchor_renewal.js", "run", "status", "--apply", "--approved-by", "--approval-note"]
+  );
 
   // agent_passport.js provides cryptographic action passport chain + export for audit.
   checkScript(

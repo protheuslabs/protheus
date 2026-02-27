@@ -173,6 +173,8 @@
     "weaver:status": "node systems/weaver/weaver_core.js status latest",
     "echo:run": "node systems/echo/heroic_echo_controller.js run",
     "echo:status": "node systems/echo/heroic_echo_controller.js status latest",
+    "echo:value-anchor:run": "node systems/echo/value_anchor_renewal.js run --apply=0",
+    "echo:value-anchor:status": "node systems/echo/value_anchor_renewal.js status",
     "test:echo:gate": "node memory/tools/tests/input_purification_gate.test.js",
     "test:echo:controller": "node memory/tools/tests/heroic_echo_controller.test.js",
     "assimilation:record-use": "node systems/assimilation/assimilation_controller.js record-use",

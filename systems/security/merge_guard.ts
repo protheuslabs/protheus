@@ -72,6 +72,7 @@ function runGuard(opts = {}) {
   checks.push(runCmd('emergent_primitive_synthesis_status', 'node', ['systems/primitives/emergent_primitive_synthesis.js', 'status']));
   checks.push(runCmd('hardware_embodiment_parity', 'node', ['systems/hardware/embodiment_layer.js', 'verify-parity', '--profiles=phone,desktop,cluster', '--strict=1']));
   checks.push(runCmd('resurrection_protocol_status', 'node', ['systems/continuity/resurrection_protocol.js', 'status']));
+  checks.push(runCmd('value_anchor_renewal_status', 'node', ['systems/echo/value_anchor_renewal.js', 'status']));
   checks.push(runCmd('profile_compatibility_gate', 'node', ['systems/ops/profile_compatibility_gate.js', 'run', '--strict=1']));
   checks.push(runCmd('schema_evolution_contract', 'node', ['systems/ops/schema_evolution_contract.js', 'run', '--strict=1', '--apply=0']));
   if (!options.skipTests) {
