@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "enabled": true,
-  "shadow_only": false,
+  "shadow_only": true,
   "advisory_mode": true,
   "codex": {
     "codex_path": "codex.helix",
@@ -51,5 +51,12 @@
   },
   "integration": {
     "eye_gate_mode": "shadow_advisory"
+  },
+  "reweave": {
+    "snapshot_path": "state/helix/reweave_snapshot.json",
+    "receipts_path": "state/helix/reweave_receipts.jsonl",
+    "quarantine_dir": "state/helix/reweave_quarantine",
+    "require_approval_note": true,
+    "snapshot_on_clear_attest": true
   }
 }

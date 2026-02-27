@@ -223,6 +223,7 @@ function verifyHelixManifest(codex: AnyObj, manifest: AnyObj, policy: AnyObj = {
 }
 
 module.exports = {
+  collectProtectedFiles,
   buildHelixManifest,
   verifyHelixManifest
 };
