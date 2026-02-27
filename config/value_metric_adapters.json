@@ -1,0 +1,44 @@
+{
+  "version": "1.0",
+  "adapters": [
+    {
+      "id": "core_human_values",
+      "enabled": true,
+      "metrics": [
+        {
+          "metric_id": "joy",
+          "label": "Joy",
+          "unit": "score",
+          "default_weight": 0.08,
+          "value_currency": "user_value",
+          "tags": [
+            "wellbeing",
+            "alignment"
+          ]
+        },
+        {
+          "metric_id": "freedom",
+          "label": "Freedom",
+          "unit": "hours",
+          "default_weight": 0.08,
+          "value_currency": "time_savings",
+          "tags": [
+            "agency",
+            "time"
+          ]
+        },
+        {
+          "metric_id": "truth_seeking",
+          "label": "Truth Seeking",
+          "unit": "score",
+          "default_weight": 0.08,
+          "value_currency": "quality",
+          "tags": [
+            "epistemic",
+            "accuracy"
+          ]
+        }
+      ]
+    }
+  ]
+}

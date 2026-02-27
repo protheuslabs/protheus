@@ -205,6 +205,29 @@ function mergeMetricRows(baseRows: AnyObj[], overlayRows: AnyObj[]) {
   return Array.from(merged.values());
 }
 
+function normalizeAdapterRows(src: unknown) {
+  const out: AnyObj[] = [];
+  const adapters = Array.isArray(src) ? src : [];
+  for (const adapterRaw of adapters) {
+    const adapter = adapterRaw && typeof adapterRaw === 'object' ? adapterRaw : {};
+    const adapterId = normalizeMetricId(adapter.id || adapter.adapter_id || adapter.name || '');
+    const enabled = adapter.enabled !== false;
+    if (!enabled) continue;
+    const rows = Array.isArray(adapter.metrics) ? adapter.metrics : [];
+    for (const rowRaw of rows) {
+      const row = rowRaw && typeof rowRaw === 'object' ? rowRaw : {};
+      out.push({
+        ...row,
+        tags: Array.from(new Set([
+          ...(Array.isArray(row.tags) ? row.tags : []),
+          adapterId ? `adapter:${adapterId}` : null
+        ].filter(Boolean)))
+      });
+    }
+  }
+  return out;
+}
+
 function normalizePolicyMetricSchema(src: AnyObj) {
   const schema = src && typeof src === 'object' ? src : {};
   const builtinEnabled = schema.include_builtin_metrics !== false;
@@ -258,7 +281,11 @@ function normalizeRequestedMetricWeights(raw: unknown) {
 function buildMetricSchema(input: AnyObj = {}) {
   const policySchema = normalizePolicyMetricSchema(input.policy_metric_schema);
   const strategyRows = metricRowsFromStrategy(input.strategy || {});
-  const mergedRows = mergeMetricRows(policySchema.rows, strategyRows);
+  const adapterRows = normalizeAdapterRows(input.adapter_rows);
+  const mergedRows = mergeMetricRows(
+    mergeMetricRows(policySchema.rows, strategyRows),
+    adapterRows
+  );
   const requestedWeights = normalizeRequestedMetricWeights(input.requested_metrics);
   const primaryMetricHint = normalizeMetricId(input.primary_metric || policySchema.default_primary_metric || '');
   const minMetricWeight = normalizeMetricWeight(policySchema.min_metric_weight, 0.04);
@@ -290,6 +317,7 @@ function buildMetricSchema(input: AnyObj = {}) {
 
   return {
     metrics: normalized,
+    adapter_rows_count: adapterRows.length,
     requested_weights: requestedWeights,
     requested_metric_ids: Object.keys(requestedWeights),
     primary_metric_hint: primaryMetricHint || null,
@@ -305,4 +333,3 @@ module.exports = {
   inferValueCurrency,
   buildMetricSchema
 };
-

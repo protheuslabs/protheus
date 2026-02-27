@@ -51,6 +51,7 @@ const DEFAULT_PREVIEW_OVERLAY_PATH = path.join(DEFAULT_STATE_DIR, 'strategy_over
 const DEFAULT_PATHWAY_STATE_PATH = path.join(DEFAULT_STATE_DIR, 'pathway_state.json');
 const DEFAULT_OBSIDIAN_QUEUE_PATH = path.join(DEFAULT_STATE_DIR, 'obsidian_projection.jsonl');
 const DEFAULT_AXIS_LEDGER_PATH = path.join(DEFAULT_STATE_DIR, 'value_axis_switches.jsonl');
+const DEFAULT_METRIC_ADAPTERS_PATH = path.join(ROOT, 'config', 'value_metric_adapters.json');
 
 const DEFAULT_REGIME_LATEST_PATH = path.join(ROOT, 'state', 'autonomy', 'fractal', 'regime', 'latest.json');
 const DEFAULT_MIRROR_LATEST_PATH = path.join(ROOT, 'state', 'autonomy', 'mirror_organ', 'latest.json');
@@ -528,6 +529,20 @@ function emitObsidianProjection(paths: AnyObj, policy: AnyObj, payload: AnyObj =
   });
 }
 
+function loadMetricAdapters(adapterPathRaw: unknown) {
+  const pathRaw = cleanText(adapterPathRaw || process.env.WEAVER_METRIC_ADAPTERS_PATH || DEFAULT_METRIC_ADAPTERS_PATH, 500);
+  const adapterPath = path.isAbsolute(pathRaw) ? pathRaw : path.join(ROOT, pathRaw);
+  const payload = readJson(adapterPath, {});
+  const adapters = Array.isArray(payload && payload.adapters)
+    ? payload.adapters
+    : [];
+  return {
+    path: adapterPath,
+    version: cleanText(payload && payload.version || '', 40) || null,
+    adapters
+  };
+}
+
 function readLatestAxisSwitch(axisLedgerPath: string) {
   try {
     if (!fs.existsSync(axisLedgerPath)) return null;
@@ -874,9 +889,11 @@ function runWeaver(dateStr: string, opts: AnyObj = {}) {
     opts.primaryMetric != null ? opts.primaryMetric : opts.primary_metric,
     80
   ) || null;
+  const metricAdapters = loadMetricAdapters(opts.metricAdaptersPath || opts.metric_adapters_path);
   const schema = buildMetricSchema({
     policy_metric_schema: policy.metric_schema,
     strategy,
+    adapter_rows: metricAdapters.adapters,
     requested_metrics: metricInput,
     primary_metric: primaryMetric
   });
@@ -1011,6 +1028,12 @@ function runWeaver(dateStr: string, opts: AnyObj = {}) {
     objective_text: objectiveText,
     requested_metrics: schema.requested_weights,
     requested_metric_ids: schema.requested_metric_ids,
+    adapter_rows_count: Number(schema.adapter_rows_count || 0),
+    metric_adapters: {
+      path: relPath(metricAdapters.path),
+      version: metricAdapters.version,
+      adapter_count: Array.isArray(metricAdapters.adapters) ? metricAdapters.adapters.length : 0
+    },
     primary_metric_hint: schema.primary_metric_hint,
     value_context: {
       primary_metric_id: finalMetric || null,
