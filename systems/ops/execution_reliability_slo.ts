@@ -337,6 +337,21 @@ function runSlo(args: AnyObj) {
     time_to_first_execution_p95_ms: ttfP95 != null && ttfP95 <= maxTtfP95Ms,
     zero_shipped_streak_days: zeroShippedStreakDays <= maxZeroShippedStreakDays
   };
+  const blockingChecks = Object.entries(checks)
+    .filter(([, ok]) => ok !== true)
+    .map(([key]) => key);
+  const recoveryGaps = {
+    execution_success_rate: Number(Math.max(0, minExecutionSuccessRate - executionSuccessRate).toFixed(6)),
+    queue_drain_rate: Number(Math.max(0, minQueueDrainRate - queueDrainRate).toFixed(6)),
+    time_to_first_execution_p95_ms: Number(
+      Math.max(0, Number(ttfP95 == null ? 0 : ttfP95) - maxTtfP95Ms)
+    ),
+    zero_shipped_streak_days: Number(Math.max(0, zeroShippedStreakDays - maxZeroShippedStreakDays))
+  };
+  const remainingRecoveryDays = Number(recoveryGaps.zero_shipped_streak_days || 0);
+  const projectedRecoveryDate = remainingRecoveryDays > 0
+    ? addUtcDays(date, remainingRecoveryDays)
+    : date;
   const pass = checks.sufficient_data
     && checks.execution_success_rate
     && checks.queue_drain_rate
@@ -366,6 +381,10 @@ function runSlo(args: AnyObj) {
       time_to_first_execution_p95_ms: ttfP95 == null ? null : Number(ttfP95),
       zero_shipped_streak_days: zeroShippedStreakDays
     },
+    blocking_checks: blockingChecks,
+    recovery_gaps: recoveryGaps,
+    remaining_recovery_days: remainingRecoveryDays,
+    projected_recovery_date: projectedRecoveryDate,
     totals,
     checks,
     pass,
@@ -389,6 +408,10 @@ function runSlo(args: AnyObj) {
     live_runs: payload.live_runs,
     thresholds: payload.thresholds,
     measured: payload.measured,
+    blocking_checks: payload.blocking_checks,
+    recovery_gaps: payload.recovery_gaps,
+    remaining_recovery_days: payload.remaining_recovery_days,
+    projected_recovery_date: payload.projected_recovery_date,
     checks: payload.checks,
     pass: payload.pass === true,
     result: payload.result
@@ -399,6 +422,9 @@ function runSlo(args: AnyObj) {
     window_days: payload.window_days,
     live_runs: payload.live_runs,
     measured: payload.measured,
+    blocking_checks: payload.blocking_checks,
+    remaining_recovery_days: payload.remaining_recovery_days,
+    projected_recovery_date: payload.projected_recovery_date,
     checks: payload.checks,
     pass: payload.pass === true,
     result: payload.result
@@ -443,4 +469,3 @@ function main() {
 }
 
 main();
-

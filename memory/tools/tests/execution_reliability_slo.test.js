@@ -90,6 +90,9 @@ try {
   assert.strictEqual(passPayload.ok, true, 'payload should be ok');
   assert.strictEqual(passPayload.pass, true, 'expected pass=true');
   assert.strictEqual(passPayload.result, 'pass', 'expected pass result');
+  assert.ok(Array.isArray(passPayload.blocking_checks), 'blocking_checks should be present');
+  assert.strictEqual(passPayload.blocking_checks.length, 0, 'pass should have no blocking checks');
+  assert.strictEqual(Number(passPayload.remaining_recovery_days || 0), 0, 'pass should have zero recovery days');
   assert.ok(passPayload.measured.execution_success_rate >= 0.97, 'success rate should meet threshold');
   assert.ok(passPayload.measured.queue_drain_rate >= 0.9, 'queue drain should meet threshold');
 
@@ -124,6 +127,11 @@ try {
   assert.strictEqual(failPayload.pass, false, 'expected pass=false');
   assert.strictEqual(failPayload.checks.zero_shipped_streak_days, false, 'zero shipped streak check should fail');
   assert.ok(Number(failPayload.measured.zero_shipped_streak_days || 0) >= 7, 'streak should be at least 7');
+  assert.ok(
+    Array.isArray(failPayload.blocking_checks) && failPayload.blocking_checks.includes('zero_shipped_streak_days'),
+    'failing payload should include zero_shipped_streak_days blocker'
+  );
+  assert.ok(Number(failPayload.remaining_recovery_days || 0) >= 1, 'failing payload should estimate recovery days');
 
   fs.rmSync(tmp, { recursive: true, force: true });
   console.log('execution_reliability_slo.test.js: OK');
@@ -131,4 +139,3 @@ try {
   console.error(`execution_reliability_slo.test.js: FAIL: ${err.message}`);
   process.exit(1);
 }
-
