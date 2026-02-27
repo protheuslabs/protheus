@@ -1,0 +1,28 @@
+{
+  "schema_id": "runtime_scheduler_policy",
+  "schema_version": "1.0",
+  "enabled": true,
+  "default_mode": "operational",
+  "modes": [
+    "operational",
+    "dream",
+    "inversion"
+  ],
+  "allowed_transitions": {
+    "operational": [
+      "operational",
+      "dream",
+      "inversion"
+    ],
+    "dream": [
+      "dream",
+      "operational"
+    ],
+    "inversion": [
+      "inversion",
+      "operational"
+    ]
+  },
+  "state_path": "state/runtime/scheduler_mode/latest.json",
+  "receipts_path": "state/runtime/scheduler_mode/receipts.jsonl"
+}

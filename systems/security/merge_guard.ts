@@ -64,6 +64,7 @@ function runGuard(opts = {}) {
   checks.push(runCmd('repo_hygiene_guard_strict', 'node', ['systems/security/repo_hygiene_guard.js', 'run', '--strict', '--staged']));
   checks.push(runCmd('docs_coverage_gate', 'node', ['systems/ops/docs_coverage_gate.js', 'run', '--strict=1']));
   checks.push(runCmd('dr_gameday_gate', 'node', ['systems/ops/dr_gameday_gate.js', 'run', '--strict=1']));
+  checks.push(runCmd('profile_compatibility_gate', 'node', ['systems/ops/profile_compatibility_gate.js', 'run', '--strict=1']));
   if (!options.skipTests) {
     checks.push(runCmd('test_ci', 'npm', ['run', 'test:ci']));
   }

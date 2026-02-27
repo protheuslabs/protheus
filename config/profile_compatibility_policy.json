@@ -1,0 +1,11 @@
+{
+  "schema_id": "profile_compatibility_policy",
+  "schema_version": "1.0",
+  "enabled": true,
+  "max_minor_behind": 2,
+  "profile_schema_path": "config/capability_profile_schema.json",
+  "profile_dir": "state/assimilation/capability_profiles/profiles",
+  "primitive_catalog_path": "config/primitive_catalog.json",
+  "state_path": "state/ops/profile_compatibility_gate/latest.json",
+  "history_path": "state/ops/profile_compatibility_gate/history.jsonl"
+}

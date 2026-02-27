@@ -36,7 +36,9 @@ function main() {
     'catalog:migration_contract_version',
     'catalog:migration_contract_coverage',
     'distill_or_atrophy:active_debt_cap',
-    'distill_or_atrophy:total_candidate_cap'
+    'distill_or_atrophy:total_candidate_cap',
+    'scheduler_modes:contains_dream_inversion',
+    'profile_compatibility:n_minus_2_minimum'
   ]) {
     assert.ok(byId.has(id), `missing check: ${id}`);
     assert.strictEqual(byId.get(id).ok, true, `check should pass: ${id}`);

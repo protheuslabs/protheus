@@ -86,10 +86,14 @@ function runGate() {
 
   const requiredFiles = [
     'config/abstraction_debt_baseline.json',
+    'config/profile_compatibility_policy.json',
     'config/primitive_catalog.json',
     'config/primitive_migration_contract.json',
     'config/primitive_policy_vm.json',
+    'config/runtime_scheduler_policy.json',
     'config/scale_envelope_policy.json',
+    'systems/ops/profile_compatibility_gate.ts',
+    'systems/primitives/runtime_scheduler.ts',
     'systems/primitives/primitive_runtime.ts',
     'systems/primitives/policy_vm.ts',
     'systems/primitives/replay_verify.ts'
@@ -213,6 +217,23 @@ function runGate() {
     'distill_or_atrophy:total_candidate_cap',
     totalCandidates <= maxTotalCandidates,
     `total_candidates=${totalCandidates} cap=${maxTotalCandidates}`
+  );
+
+  const schedulerPolicy = readJsonSafe(path.join(ROOT, 'config', 'runtime_scheduler_policy.json'), {});
+  const modes = Array.isArray(schedulerPolicy.modes) ? schedulerPolicy.modes : [];
+  const normalizedModes = new Set(modes.map((row: unknown) => normalizeLowerToken(row, 40)).filter(Boolean));
+  addCheck(
+    'scheduler_modes:contains_dream_inversion',
+    normalizedModes.has('dream') && normalizedModes.has('inversion'),
+    `modes=${Array.from(normalizedModes).join(',')}`
+  );
+
+  const compatPolicy = readJsonSafe(path.join(ROOT, 'config', 'profile_compatibility_policy.json'), {});
+  const maxMinorBehind = Math.max(0, Number(compatPolicy.max_minor_behind || 0) || 0);
+  addCheck(
+    'profile_compatibility:n_minus_2_minimum',
+    maxMinorBehind >= 2,
+    `max_minor_behind=${maxMinorBehind}`
   );
 
   const workflowSrc = readFileSafe(path.join(ROOT, 'systems', 'workflow', 'workflow_executor.ts'));
