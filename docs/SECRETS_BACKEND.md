@@ -22,6 +22,14 @@ node systems/security/secret_broker.js status
 node systems/security/secret_broker.js rotation-check --strict=1
 ```
 
+Migration governance lane:
+
+```bash
+node systems/security/secret_rotation_migration_auditor.js status --strict=1
+node systems/security/secret_rotation_migration_auditor.js scan
+node systems/security/secret_rotation_migration_auditor.js attest --operator-id=$USER --approval-note=\"rotation_complete\" --apply=1
+```
+
 ## Spine integration
 
 Daily spine mode runs secret rotation checks by default.
@@ -53,4 +61,3 @@ Notable events include:
 - `secret_handle_resolve_denied`
 - `secret_value_loaded`
 - `secret_value_load_failed`
-

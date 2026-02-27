@@ -118,7 +118,9 @@ function runGate() {
     'config/organ_state_encryption_policy.json',
     'config/operator_terms_ack_policy.json',
     'config/repository_access_policy.json',
+    'config/secret_rotation_attestation.json',
     'config/remote_tamper_heartbeat_policy.json',
+    'config/secret_rotation_migration_policy.json',
     'config/secure_heartbeat_endpoint_policy.json',
     'config/crypto_agility_contract.json',
     'config/key_lifecycle_policy.json',
@@ -178,6 +180,7 @@ function runGate() {
     'systems/security/operator_terms_ack.ts',
     'systems/security/repository_access_auditor.ts',
     'systems/security/remote_tamper_heartbeat.ts',
+    'systems/security/secret_rotation_migration_auditor.ts',
     'systems/security/secure_heartbeat_endpoint.ts',
     'systems/security/key_lifecycle_governor.ts',
     'systems/security/delegated_authority_branching.ts',
@@ -197,7 +200,8 @@ function runGate() {
     'systems/primitives/policy_vm.ts',
     'systems/primitives/replay_verify.ts',
     'docs/SECURE_HEARTBEAT_ENDPOINT.md',
-    'docs/REPOSITORY_ACCESS_CONTROL.md'
+    'docs/REPOSITORY_ACCESS_CONTROL.md',
+    'docs/SECRET_ROTATION_MIGRATION.md'
   ];
   for (const rel of requiredFiles) {
     const abs = path.join(ROOT, rel);
@@ -449,6 +453,26 @@ function runGate() {
     repoAccessReviewInterval >= 90,
     `interval_days=${repoAccessReviewInterval}`
   );
+  const secretRotationPolicy = readJsonSafe(path.join(ROOT, 'config', 'secret_rotation_migration_policy.json'), {});
+  const secretRotationFlags = Array.isArray(secretRotationPolicy.attestation && secretRotationPolicy.attestation.required_flags)
+    ? secretRotationPolicy.attestation.required_flags.map((row: unknown) => normalizeLowerToken(row, 120)).filter(Boolean)
+    : [];
+  const secretRotationRequiredIds = Array.isArray(secretRotationPolicy.required_secret_ids)
+    ? secretRotationPolicy.required_secret_ids.map((row: unknown) => normalizeLowerToken(row, 120)).filter(Boolean)
+    : [];
+  const secretRotationScanPatterns = Array.isArray(secretRotationPolicy.scan && secretRotationPolicy.scan.patterns)
+    ? secretRotationPolicy.scan.patterns.length
+    : 0;
+  addCheck(
+    'secret_rotation:policy_enabled_and_flags',
+    secretRotationPolicy.enabled !== false
+      && secretRotationRequiredIds.length >= 2
+      && secretRotationFlags.includes('active_keys_rotated')
+      && secretRotationFlags.includes('history_scrub_verified')
+      && secretRotationFlags.includes('secret_manager_migrated')
+      && secretRotationScanPatterns >= 3,
+    `enabled=${secretRotationPolicy.enabled !== false ? '1' : '0'} required_secret_ids=${secretRotationRequiredIds.length} required_flags=${secretRotationFlags.join(',')} scan_patterns=${secretRotationScanPatterns}`
+  );
   const mergeGuardSrc = readFileSafe(path.join(ROOT, 'systems', 'security', 'merge_guard.ts'));
   addCheck(
     'formal_invariant_engine:merge_guard_hook',
@@ -473,6 +497,13 @@ function runGate() {
       && mergeGuardSrc.includes('--strict=1'),
     'merge_guard should enforce repository access auditor status check'
   );
+  addCheck(
+    'secret_rotation:merge_guard_hook',
+    mergeGuardSrc.includes('secret_rotation_migration_auditor.js')
+      && mergeGuardSrc.includes('secret_rotation_migration_status')
+      && mergeGuardSrc.includes('--strict=1'),
+    'merge_guard should enforce secret rotation migration auditor status check'
+  );
   const repositoryAccessDocSrc = readFileSafe(path.join(ROOT, 'docs', 'REPOSITORY_ACCESS_CONTROL.md'));
   addCheck(
     'repo_access:runbook_present',
@@ -480,6 +511,13 @@ function runGate() {
       && repositoryAccessDocSrc.includes('review-plan')
       && repositoryAccessDocSrc.includes('quarterly'),
     'repository access control runbook should define status/review-plan flow'
+  );
+  const secretRotationRunbookSrc = readFileSafe(path.join(ROOT, 'docs', 'SECRET_ROTATION_MIGRATION.md'));
+  addCheck(
+    'secret_rotation:runbook_present',
+    secretRotationRunbookSrc.includes('secret_broker.js rotation-check')
+      && secretRotationRunbookSrc.includes('secret_rotation_migration_auditor.js attest'),
+    'secret rotation runbook should declare rotation-check + attestation workflow'
   );
   const installerSrc = readFileSafe(path.join(ROOT, 'systems', 'ops', 'personal_protheus_installer.ts'));
   addCheck(

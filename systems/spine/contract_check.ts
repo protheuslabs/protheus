@@ -1045,6 +1045,14 @@ function main() {
     "systems/security/repository_access_auditor.js",
     ["visibility_expected", "max_admins", "restricted_admin_users", "review_interval"]
   );
+  checkScript(
+    "systems/security/secret_rotation_migration_auditor.js",
+    ["secret_rotation_migration_auditor.js", "status", "scan", "attest", "--strict", "--scan", "--operator-id", "--approval-note", "--apply"]
+  );
+  checkSourceContains(
+    "systems/security/secret_rotation_migration_auditor.js",
+    ["required_secret_ids", "no_repo_local_secret_paths", "rotation_window_enforced", "attestation:required_flags"]
+  );
 
   // helix_controller.js governs codex/manifest attestation + reweave operations.
   checkScript(
