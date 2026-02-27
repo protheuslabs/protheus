@@ -7067,7 +7067,7 @@ function runProposalQueue(cmd, id, reasonOrEvidence = '', maybeEvidence = '') {
   };
 }
 
-function runRouteExecute(task, tokensEst, repeats14d = 1, errors30d = 0, dryRun = false) {
+function runRouteExecute(task, tokensEst, repeats14d = 1, errors30d = 0, dryRun = false, sourceEye = '') {
   const script = path.join(REPO_ROOT, 'systems', 'routing', 'route_execute.js');
   const args = [
     script,
@@ -7076,6 +7076,7 @@ function runRouteExecute(task, tokensEst, repeats14d = 1, errors30d = 0, dryRun 
     '--repeats_14d', String(repeats14d),
     '--errors_30d', String(errors30d)
   ];
+  if (sourceEye) args.push('--source_eye', String(sourceEye));
   if (dryRun) args.push('--dry-run');
   const env = {
     ...process.env,
@@ -13049,7 +13050,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
           ? runDirectiveDecomposition(directiveDecomposition, true)
         : actuationSpec
           ? runActuationExecute(actuationSpec, true)
-          : runRouteExecute(makeTaskFromProposal(p), routeTokensEst, repeats14d, errors30d, true);
+          : runRouteExecute(makeTaskFromProposal(p), routeTokensEst, repeats14d, errors30d, true, sourceEyeId(p));
       const preSummary = previewRes.summary || null;
       const preBudgetDeferred = !!(preSummary && preSummary.budget_deferred === true);
       const preBlocked = !previewRes.ok
@@ -13663,7 +13664,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       ? runDirectiveDecomposition(directiveDecomposition, true)
     : actuationSpec
       ? runActuationExecute(actuationSpec, true)
-      : runRouteExecute(task, routeTokensEst, repeats14d, errors30d, true);
+      : runRouteExecute(task, routeTokensEst, repeats14d, errors30d, true, sourceEyeId(p));
   const preSummary = preflight.summary || null;
   const preBlocked = !preflight.ok
     || !preSummary
@@ -14282,7 +14283,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       ? runDirectiveDecomposition(directiveDecomposition, false)
     : actuationSpec
       ? runActuationExecute(actuationSpec, false)
-      : runRouteExecute(task, routeTokensEst, repeats14d, errors30d, false);
+      : runRouteExecute(task, routeTokensEst, repeats14d, errors30d, false, sourceEyeId(p));
   try {
     const sid = painFocusSession && painFocusSession.session && painFocusSession.session.id
       ? String(painFocusSession.session.id)

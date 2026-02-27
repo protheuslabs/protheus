@@ -184,6 +184,7 @@ function compactRouteMeta(routeMeta) {
     slot: routeMeta.slot || null,
     mode: routeMeta.mode || null,
     route_class: routeMeta.route_class || null,
+    source_eye: routeMeta.source_eye || null,
     task_type: routeMeta.task_type || null,
     escalation_chain: Array.isArray(routeMeta.escalation_chain) ? routeMeta.escalation_chain.slice(0, 3) : [],
     budget: routeMeta.budget && typeof routeMeta.budget === 'object'
@@ -195,7 +196,7 @@ function compactRouteMeta(routeMeta) {
   };
 }
 
-function tryRouteModel({ gateRisk, complexity, intent, task, mode, forceModel, tokensEst, executionIntent = false }) {
+function tryRouteModel({ gateRisk, complexity, intent, task, mode, forceModel, sourceEye, tokensEst, executionIntent = false }) {
   try {
     // Lazy require keeps route_task resilient if router file is missing.
     const { routeDecision } = require('../../systems/routing/model_router');
@@ -207,6 +208,7 @@ function tryRouteModel({ gateRisk, complexity, intent, task, mode, forceModel, t
       task,
       mode,
       forceModel,
+      sourceEye,
       tokensEst,
       executionIntent
     });
@@ -226,6 +228,7 @@ function main() {
   const skipHabitId = getArg('--skip_habit_id', '') || getArg('--skip-habit-id', '');
   const mode = getArg('--mode', process.env.AGENT_MODE || 'normal');
   const forceModel = getArg('--force_model', process.env.ROUTER_FORCE_MODEL || '');
+  const sourceEye = getArg('--source_eye', '') || getArg('--source-eye', '');
   const executionIntent = String(getArg('--execution_intent', process.env.ROUTER_EXECUTION_INTENT || '0')).trim() === '1';
 
   const emergency = isEmergencyStopEngaged('routing');
@@ -300,6 +303,7 @@ function main() {
       task,
       mode,
       forceModel,
+      sourceEye,
       tokensEst,
       executionIntent
     })

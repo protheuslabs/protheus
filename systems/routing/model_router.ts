@@ -966,6 +966,7 @@ function loadOutcomeStatsCached() {
     if (!cached.by_capability || typeof cached.by_capability !== "object") cached.by_capability = {};
     if (!cached.by_role || typeof cached.by_role !== "object") cached.by_role = {};
     if (!cached.by_task_type || typeof cached.by_task_type !== "object") cached.by_task_type = {};
+    if (!cached.by_task_eye_source || typeof cached.by_task_eye_source !== "object") cached.by_task_eye_source = {};
     return cached;
   }
   return {
@@ -975,7 +976,8 @@ function loadOutcomeStatsCached() {
     models: {},
     by_capability: {},
     by_role: {},
-    by_task_type: {}
+    by_task_type: {},
+    by_task_eye_source: {}
   };
 }
 
@@ -2345,6 +2347,7 @@ function maybeApplyVariantSelection({
   role,
   capability,
   taskType,
+  sourceEye,
   outcomeStats,
   localHealth,
   localModelAllowed,
@@ -2457,8 +2460,8 @@ function maybeApplyVariantSelection({
     }
   }
 
-  const baseScore = outcomeScoreForModel(selectedModel, outcomeStats, { capability, taskType, role });
-  const variantScore = outcomeScoreForModel(variantModel, outcomeStats, { capability, taskType, role });
+  const baseScore = outcomeScoreForModel(selectedModel, outcomeStats, { capability, taskType, sourceEye, role });
+  const variantScore = outcomeScoreForModel(variantModel, outcomeStats, { capability, taskType, sourceEye, role });
   const scoreDelta = Number((variantScore - baseScore).toFixed(2));
   if (scoreDelta < Number(policy.max_negative_score_delta || -8)) {
     return {
@@ -2713,12 +2716,29 @@ function eventTaskTypeKey(evt) {
   return role ? `role:${role}` : "";
 }
 
+function normalizeSourceEyeKey(value) {
+  const key = normalizeKey(value || "");
+  if (!key) return "";
+  return key.replace(/^eye[:_]?/, "");
+}
+
+function eventSourceEyeKey(evt) {
+  return normalizeSourceEyeKey(
+    evt?.source_eye
+    || evt?.route_summary?.source_eye
+    || evt?.route_summary?.eye_id
+    || evt?.eye_id
+    || ""
+  );
+}
+
 function modelOutcomeStats(days = OUTCOME_WINDOW_DAYS) {
   const files = listRunFilesWithinDays(days);
   const stats = {};
   const byCapability = {};
   const byRole = {};
   const byTaskType = {};
+  const byTaskEyeSource = {};
   for (const fp of files) {
     const events = readJsonl(fp);
     for (const e of events) {
@@ -2746,6 +2766,12 @@ function modelOutcomeStats(days = OUTCOME_WINDOW_DAYS) {
         byTaskType[model] = byTaskType[model] || {};
         byTaskType[model][taskType] = addOutcomeToBucket(byTaskType[model][taskType], e);
       }
+      const sourceEye = eventSourceEyeKey(e);
+      if (taskType && sourceEye) {
+        const taskEyeKey = `${taskType}|eye:${sourceEye}`;
+        byTaskEyeSource[model] = byTaskEyeSource[model] || {};
+        byTaskEyeSource[model][taskEyeKey] = addOutcomeToBucket(byTaskEyeSource[model][taskEyeKey], e);
+      }
     }
   }
 
@@ -2760,7 +2786,8 @@ function modelOutcomeStats(days = OUTCOME_WINDOW_DAYS) {
     models: derived,
     by_capability: deriveNestedOutcomeBuckets(byCapability),
     by_role: deriveNestedOutcomeBuckets(byRole),
-    by_task_type: deriveNestedOutcomeBuckets(byTaskType)
+    by_task_type: deriveNestedOutcomeBuckets(byTaskType),
+    by_task_eye_source: deriveNestedOutcomeBuckets(byTaskEyeSource)
   };
   saveJson(OUTCOME_STATS_PATH, payload);
   return payload;
@@ -2783,14 +2810,17 @@ function findScopedModelOutcomeEntry(map, modelId, key) {
 
 function outcomeScoreDetailForModel(modelId, statsPayload, ctx: AnyObj = {}) {
   if (!statsPayload || typeof statsPayload !== "object") {
-    return { score: 0, sources: [], global_score: null, capability_score: null, task_type_score: null, role_score: null };
+    return { score: 0, sources: [], global_score: null, capability_score: null, task_type_score: null, task_eye_source_score: null, role_score: null };
   }
   const capability = normalizeCapabilityKey(ctx.capability || "");
   const taskType = normalizeKey(ctx.taskType || "");
+  const sourceEye = normalizeSourceEyeKey(ctx.sourceEye || "");
   const role = normalizeKey(ctx.role || "");
+  const taskEyeKey = taskType && sourceEye ? `${taskType}|eye:${sourceEye}` : "";
   const global = findModelOutcomeEntry(statsPayload.models, modelId);
   const scopedCapability = capability ? findScopedModelOutcomeEntry(statsPayload.by_capability, modelId, capability) : null;
   const scopedTaskType = taskType ? findScopedModelOutcomeEntry(statsPayload.by_task_type, modelId, taskType) : null;
+  const scopedTaskEyeSource = taskEyeKey ? findScopedModelOutcomeEntry(statsPayload.by_task_eye_source, modelId, taskEyeKey) : null;
   const scopedRole = role ? findScopedModelOutcomeEntry(statsPayload.by_role, modelId, role) : null;
 
   let score = 0;
@@ -2813,6 +2843,12 @@ function outcomeScoreDetailForModel(modelId, statsPayload, ctx: AnyObj = {}) {
     hasScore = true;
     sources.push("task_type");
   }
+  if (scopedTaskEyeSource && Number(scopedTaskEyeSource.attempts || 0) >= MIN_ATTEMPTS_FOR_OUTCOME_WEIGHT) {
+    const taskEyeScore = Number(scopedTaskEyeSource.score || 0);
+    score = hasScore ? ((score * 0.2) + (taskEyeScore * 0.8)) : taskEyeScore;
+    hasScore = true;
+    sources.push("task_eye_source");
+  }
   if (scopedRole && Number(scopedRole.attempts || 0) >= MIN_ATTEMPTS_FOR_OUTCOME_WEIGHT) {
     const roleScore = Number(scopedRole.score || 0);
     score = hasScore ? ((score * 0.7) + (roleScore * 0.3)) : roleScore;
@@ -2825,6 +2861,7 @@ function outcomeScoreDetailForModel(modelId, statsPayload, ctx: AnyObj = {}) {
     global_score: global && Number(global.attempts || 0) >= MIN_ATTEMPTS_FOR_OUTCOME_WEIGHT ? Number(global.score || 0) : null,
     capability_score: scopedCapability && Number(scopedCapability.attempts || 0) >= MIN_ATTEMPTS_FOR_OUTCOME_WEIGHT ? Number(scopedCapability.score || 0) : null,
     task_type_score: scopedTaskType && Number(scopedTaskType.attempts || 0) >= MIN_ATTEMPTS_FOR_OUTCOME_WEIGHT ? Number(scopedTaskType.score || 0) : null,
+    task_eye_source_score: scopedTaskEyeSource && Number(scopedTaskEyeSource.attempts || 0) >= MIN_ATTEMPTS_FOR_OUTCOME_WEIGHT ? Number(scopedTaskEyeSource.score || 0) : null,
     role_score: scopedRole && Number(scopedRole.attempts || 0) >= MIN_ATTEMPTS_FOR_OUTCOME_WEIGHT ? Number(scopedRole.score || 0) : null
   };
 }
@@ -2840,6 +2877,7 @@ function rankCandidate(modelId, ctx) {
     role,
     capability,
     taskType,
+    sourceEye,
     tier,
     profiles,
     outcomeStats,
@@ -2964,11 +3002,12 @@ function rankCandidate(modelId, ctx) {
     }
   }
 
-  const outcomeDetail = outcomeScoreDetailForModel(modelId, outcomeStats, { capability, taskType, role });
+  const outcomeDetail = outcomeScoreDetailForModel(modelId, outcomeStats, { capability, taskType, sourceEye, role });
   const outcomeScore = Number(outcomeDetail.score || 0);
   score += Math.max(-20, Math.min(20, outcomeScore / 3));
   if (outcomeScore !== 0) {
-    if (outcomeDetail.sources.includes("task_type")) reasons.push("outcome_weighted_task_type");
+    if (outcomeDetail.sources.includes("task_eye_source")) reasons.push("outcome_weighted_task_eye_source");
+    else if (outcomeDetail.sources.includes("task_type")) reasons.push("outcome_weighted_task_type");
     else if (outcomeDetail.sources.includes("capability")) reasons.push("outcome_weighted_capability");
     else if (outcomeDetail.sources.includes("role")) reasons.push("outcome_weighted_role");
     else reasons.push("outcome_weighted");
@@ -3177,7 +3216,7 @@ function saveRouteState(s) {
   saveJson(ROUTE_STATE_PATH, s || {});
 }
 
-function routeDecision({ risk, complexity, intent, task, mode, forceModel = "", capability, tokensEst, roleOverride, routeClass, executionIntent = false }: AnyObj) {
+function routeDecision({ risk, complexity, intent, task, mode, forceModel = "", capability, sourceEye, tokensEst, roleOverride, routeClass, executionIntent = false }: AnyObj) {
   const cfg = readConfig();
   const allowlist = modelsFromAllowlist(cfg);
   const profiles = modelProfilesFromConfig(cfg);
@@ -3266,6 +3305,7 @@ function routeDecision({ risk, complexity, intent, task, mode, forceModel = "", 
   const anchorModel = String(cfg?.routing?.default_anchor_model || "ollama/kimi-k2.5:cloud");
   const role = effectiveFastPath.matched ? "chat" : (normalizeKey(adjusted.role || requestedRole) || "general");
   const capabilityKey = normalizeCapabilityKey(capability || inferCapability(intent, task, role));
+  const sourceEyeKey = normalizeSourceEyeKey(sourceEye || "");
   const taskTypeKey = taskTypeKeyFromRoute({
     routeClass: classPolicy.id,
     capability: capabilityKey,
@@ -3330,6 +3370,7 @@ function routeDecision({ risk, complexity, intent, task, mode, forceModel = "", 
       role,
       capability: capabilityKey,
       taskType: taskTypeKey,
+      sourceEye: sourceEyeKey,
       tier,
       profiles,
       outcomeStats,
@@ -3356,6 +3397,7 @@ function routeDecision({ risk, complexity, intent, task, mode, forceModel = "", 
     const esc = shouldEscalateFromTier1Local(localBest, localHealth, outcomeStats, maxLatencyMs, {
       capability: capabilityKey,
       taskType: taskTypeKey,
+      sourceEye: sourceEyeKey,
       role
     });
     if (!esc.escalate && localBest) {
@@ -3405,6 +3447,7 @@ function routeDecision({ risk, complexity, intent, task, mode, forceModel = "", 
     role,
     capability: capabilityKey,
     taskType: taskTypeKey,
+    sourceEye: sourceEyeKey,
     outcomeStats,
     localHealth,
     localModelAllowed,
@@ -3463,6 +3506,7 @@ function routeDecision({ risk, complexity, intent, task, mode, forceModel = "", 
       role,
       capability: capabilityKey,
       taskType: taskTypeKey,
+      sourceEye: sourceEyeKey,
       tier,
       profiles,
       outcomeStats,
@@ -3491,6 +3535,7 @@ function routeDecision({ risk, complexity, intent, task, mode, forceModel = "", 
     tier,
     role,
     capability: capabilityKey,
+    source_eye: sourceEyeKey || null,
     task_type: taskTypeKey,
     execution_intent: executionIntent === true,
     slot: rulePick.slot || null,
@@ -4030,11 +4075,12 @@ function cmdRoute() {
   const task = parseArg("task") || "";
   const mode = parseArg("mode") || process.env.AGENT_MODE || "normal";
   const capability = parseArg("capability") || "";
+  const sourceEye = parseArg("source_eye") || parseArg("source-eye") || "";
   const role = parseArg("role") || "";
   const routeClass = parseArg("route_class") || parseArg("route-class") || "";
   const tokensEstRaw = parseArg("tokens_est") || parseArg("tokens-est");
   const tokensEst = Number(tokensEstRaw || 0);
-  const d = routeDecision({ risk, complexity, intent, task, mode, capability, tokensEst, roleOverride: role, routeClass });
+  const d = routeDecision({ risk, complexity, intent, task, mode, capability, sourceEye, tokensEst, roleOverride: role, routeClass });
   printJson(d);
 }
 
@@ -4162,7 +4208,7 @@ function main() {
   if (cmd === "warmup") return cmdWarmup();
 
   console.log("Usage:");
-  console.log("  node systems/routing/model_router.js route --risk=low|medium|high --complexity=low|medium|high [--intent=..] [--task=..] [--tokens_est=N] [--capability=..] [--mode=normal|narrative|creative|hyper-creative|deep-thinker] [--role=..] [--route_class=..]");
+  console.log("  node systems/routing/model_router.js route --risk=low|medium|high --complexity=low|medium|high [--intent=..] [--task=..] [--tokens_est=N] [--capability=..] [--source_eye=..] [--mode=normal|narrative|creative|hyper-creative|deep-thinker] [--role=..] [--route_class=..]");
   console.log("  node systems/routing/model_router.js probe --model=ollama/<name>");
   console.log("  node systems/routing/model_router.js probe-all");
   console.log("  node systems/routing/model_router.js bans");

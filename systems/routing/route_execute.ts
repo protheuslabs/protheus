@@ -58,7 +58,7 @@ function hasFlag(name) {
 
 function usage() {
   console.log('Usage:');
-  console.log('  node systems/routing/route_execute.js --task "..." [--tokens_est N] [--repeats_14d N] [--errors_30d N] [--skip-habit-id ID] [--mode normal|narrative|creative|hyper-creative|deep-thinker] [--dry-run]');
+  console.log('  node systems/routing/route_execute.js --task "..." [--tokens_est N] [--repeats_14d N] [--errors_30d N] [--skip-habit-id ID] [--source_eye ID] [--mode normal|narrative|creative|hyper-creative|deep-thinker] [--dry-run]');
 }
 
 function repoRoot() {
@@ -69,7 +69,7 @@ const ROUTE_TASK_SCRIPT = process.env.ROUTE_EXECUTE_ROUTE_TASK_SCRIPT
   ? path.resolve(process.env.ROUTE_EXECUTE_ROUTE_TASK_SCRIPT)
   : path.join(repoRoot(), 'systems', 'routing', 'route_task.js');
 
-function runRouteTask({ task, tokensEst, repeats14d, errors30d, skipHabitId, mode, forceModel = null, dryRun = false }) {
+function runRouteTask({ task, tokensEst, repeats14d, errors30d, skipHabitId, mode, sourceEye = "", forceModel = null, dryRun = false }) {
   const args = [
     ROUTE_TASK_SCRIPT,
     '--task', task,
@@ -80,6 +80,7 @@ function runRouteTask({ task, tokensEst, repeats14d, errors30d, skipHabitId, mod
   ];
   if (skipHabitId) args.push('--skip_habit_id', String(skipHabitId));
   if (mode) args.push('--mode', String(mode));
+  if (sourceEye) args.push('--source_eye', String(sourceEye));
   if (forceModel) args.push('--force_model', String(forceModel));
   const env = { ...process.env } as Record<string, any>;
   env.ROUTER_BUDGET_DRY_RUN = dryRun ? '1' : '0';
@@ -498,6 +499,7 @@ function main() {
   const errors30d = Number(getArg('--errors_30d', '0')) || 0;
   const skipHabitId = getArg('--skip-habit-id', '') || getArg('--skip_habit_id', '');
   const mode = getArg('--mode', process.env.AGENT_MODE || 'normal');
+  const sourceEye = getArg('--source-eye', '') || getArg('--source_eye', '');
   const dryRun = hasFlag('--dry-run');
   const routerRequired = String(process.env.ROUTER_REQUIRED || '0') === '1';
 
@@ -533,7 +535,7 @@ function main() {
     process.exit(0);
   }
 
-  const routed = runRouteTask({ task, tokensEst, repeats14d, errors30d, skipHabitId, mode, dryRun });
+  const routed = runRouteTask({ task, tokensEst, repeats14d, errors30d, skipHabitId, mode, sourceEye, dryRun });
   const parsedPrimary = parseRouteTaskOutput(routed);
   if (!parsedPrimary.ok) {
     console.error(`route_execute: ${parsedPrimary.error}`);
@@ -640,6 +642,7 @@ function main() {
         errors30d,
         skipHabitId,
         mode,
+        sourceEye,
         forceModel: modelId,
         dryRun
       });

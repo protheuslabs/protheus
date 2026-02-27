@@ -369,6 +369,132 @@ function runCaseTaskTypeOutcomeContext(repoRoot, root) {
   assert.strictEqual(out.base.selected_model, 'ollama/smallthinker', 'default task-type should keep smallthinker');
 }
 
+function runCaseTaskTypeEyeSourceOutcomeContext(repoRoot, root) {
+  const cfgPath = path.join(root, 'config', 'agent_routing_rules.json');
+  const adaptersPath = path.join(root, 'config', 'model_adapters.json');
+  const stateDir = path.join(root, 'state', 'routing');
+  const runsDir = path.join(root, 'state', 'autonomy', 'runs');
+  const budgetDir = path.join(root, 'state', 'autonomy', 'daily_budget');
+  mkDir(runsDir);
+  mkDir(budgetDir);
+
+  writeJson(cfgPath, {
+    version: 1,
+    routing: {
+      default_anchor_model: 'ollama/kimi-k2.5:cloud',
+      spawn_model_allowlist: ['ollama/smallthinker', 'ollama/qwen3:4b'],
+      model_profiles: {
+        'ollama/smallthinker': { tiers: [1, 2], roles: ['general'], class: 'cheap_local' },
+        'ollama/qwen3:4b': { tiers: [1, 2], roles: ['general'], class: 'cheap_local' }
+      },
+      communication_fast_path: { enabled: false },
+      router_budget_policy: { enabled: false },
+      slot_selection: [
+        {
+          when: { risk: 'medium', complexity: ['low', 'medium'] },
+          use_slot: 'agent',
+          fallback_slot: 'master'
+        }
+      ],
+      local_probe_policy: {
+        default: { timeout_ms: 8000, max_latency_ms: 8000, accept_ok_token: true }
+      }
+    }
+  });
+  writeJson(adaptersPath, { mode_routing: {} });
+  writeHealthSnapshot(stateDir, {
+    'ollama/smallthinker': { available: true, follows_instructions: true, latency_ms: 1100 },
+    'ollama/qwen3:4b': { available: true, follows_instructions: true, latency_ms: 1100 }
+  });
+
+  const day = todayStr();
+  const runFile = path.join(runsDir, `${day}.jsonl`);
+  const rows = [];
+  for (let i = 0; i < 4; i++) {
+    rows.push({
+      ts: `${day}T13:${String(i).padStart(2, '0')}:00.000Z`,
+      type: 'autonomy_run',
+      result: 'executed',
+      source_eye: 'x_watch',
+      execution_target: 'route',
+      proposal_type: 'external_intel',
+      capability_key: 'proposal:external_intel',
+      route_summary: { selected_model: 'ollama/qwen3:4b', route_role: 'general', route_class: 'focus' },
+      verification: { passed: true },
+      outcome: 'shipped'
+    });
+    rows.push({
+      ts: `${day}T14:${String(i).padStart(2, '0')}:00.000Z`,
+      type: 'autonomy_run',
+      result: 'executed',
+      source_eye: 'x_watch',
+      execution_target: 'route',
+      proposal_type: 'external_intel',
+      capability_key: 'proposal:external_intel',
+      route_summary: { selected_model: 'ollama/smallthinker', route_role: 'general', route_class: 'focus' },
+      verification: { passed: false },
+      outcome: 'no_change'
+    });
+  }
+  for (let i = 0; i < 4; i++) {
+    rows.push({
+      ts: `${day}T15:${String(i).padStart(2, '0')}:00.000Z`,
+      type: 'autonomy_run',
+      result: 'executed',
+      source_eye: 'hn_watch',
+      execution_target: 'route',
+      proposal_type: 'external_intel',
+      capability_key: 'proposal:external_intel',
+      route_summary: { selected_model: 'ollama/smallthinker', route_role: 'general', route_class: 'focus' },
+      verification: { passed: true },
+      outcome: 'shipped'
+    });
+    rows.push({
+      ts: `${day}T16:${String(i).padStart(2, '0')}:00.000Z`,
+      type: 'autonomy_run',
+      result: 'executed',
+      source_eye: 'hn_watch',
+      execution_target: 'route',
+      proposal_type: 'external_intel',
+      capability_key: 'proposal:external_intel',
+      route_summary: { selected_model: 'ollama/qwen3:4b', route_role: 'general', route_class: 'focus' },
+      verification: { passed: false },
+      outcome: 'no_change'
+    });
+  }
+  writeJsonl(runFile, rows);
+
+  const env = makeEnv({}, cfgPath, adaptersPath, stateDir, runsDir, budgetDir, day);
+  const r = runEval(repoRoot, `
+    const router = require('./systems/routing/model_router.js');
+    const x = router.routeDecision({
+      risk: 'medium',
+      complexity: 'medium',
+      intent: 'analyze external intel',
+      task: 'analyze external intel',
+      capability: 'proposal:external_intel',
+      routeClass: 'focus',
+      sourceEye: 'x_watch',
+      mode: 'normal'
+    });
+    const hn = router.routeDecision({
+      risk: 'medium',
+      complexity: 'medium',
+      intent: 'analyze external intel',
+      task: 'analyze external intel',
+      capability: 'proposal:external_intel',
+      routeClass: 'focus',
+      sourceEye: 'hn_watch',
+      mode: 'normal'
+    });
+    process.stdout.write(JSON.stringify({ x, hn }));
+  `, env);
+  assert.strictEqual(r.status, 0, `task-type-eye-source outcome eval failed: ${r.stderr}`);
+  const out = JSON.parse(String(r.stdout || '{}'));
+  assert.strictEqual(out.x.selected_model, 'ollama/qwen3:4b', 'x_watch should bias toward qwen from task-eye-source outcomes');
+  assert.strictEqual(out.hn.selected_model, 'ollama/smallthinker', 'hn_watch should bias toward smallthinker from task-eye-source outcomes');
+}
+
 function runCaseBudgetPressure(repoRoot, root) {
   const cfgPath = path.join(root, 'config', 'agent_routing_rules.json');
   const adaptersPath = path.join(root, 'config', 'model_adapters.json');
@@ -861,6 +987,7 @@ function run() {
   runCaseFastPath(repoRoot, path.join(tmpRoot, 'fast_path'));
   runCaseOutcomeContext(repoRoot, path.join(tmpRoot, 'outcome_context'));
   runCaseTaskTypeOutcomeContext(repoRoot, path.join(tmpRoot, 'task_type_outcome_context'));
+  runCaseTaskTypeEyeSourceOutcomeContext(repoRoot, path.join(tmpRoot, 'task_type_eye_source_outcome_context'));
   runCaseBudgetPressure(repoRoot, path.join(tmpRoot, 'budget_pressure'));
   runCaseProjectedBudgetFromRequest(repoRoot, path.join(tmpRoot, 'projected_budget'));
   runCaseGlobalBudgetAutopause(repoRoot, path.join(tmpRoot, 'global_budget_autopause'));
