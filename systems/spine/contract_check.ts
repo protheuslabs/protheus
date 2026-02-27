@@ -1038,6 +1038,16 @@ function main() {
     ["secure_heartbeat_endpoint.js", "issue-key", "revoke-key", "receive", "verify", "status", "serve", "--client-id", "--key-id", "--payload-json", "--ts", "--signature", "--strict"]
   );
 
+  // helix_controller.js governs codex/manifest attestation + reweave operations.
+  checkScript(
+    "systems/helix/helix_controller.js",
+    ["helix_controller.js", "init", "attest", "reweave", "status", "baseline", "--policy", "--overwrite", "--force-malice", "--apply", "--approval-note"]
+  );
+  checkSourceContains(
+    "systems/helix/reweave_doctor.js",
+    ["captureReweaveSnapshot", "applyReweave", "approval_note_required", "helix_reweave_apply"]
+  );
+
   // operator_terms_ack.js enforces versioned ToS/EULA acceptance before install/bootstrap lanes.
   checkScript(
     "systems/security/operator_terms_ack.js",

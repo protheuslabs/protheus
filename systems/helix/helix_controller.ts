@@ -18,7 +18,7 @@ const { evaluateSentinel } = require('./sentinel_network');
 const { planHunterActions } = require('./hunter_strand');
 const { applyQuarantine } = require('./quarantine_manager');
 const { applyPermanentQuarantine } = require('./confirmed_malice_quarantine');
-const { planReweave } = require('./reweave_doctor');
+const { planReweave, captureReweaveSnapshot, applyReweave } = require('./reweave_doctor');
 const { evaluateSafetyResilience } = require('../security/safety_resilience_guard');
 
 function nowIso() {
@@ -155,6 +155,13 @@ function defaultPolicy() {
     },
     integration: {
       eye_gate_mode: 'shadow_advisory'
+    },
+    reweave: {
+      snapshot_path: 'state/helix/reweave_snapshot.json',
+      receipts_path: 'state/helix/reweave_receipts.jsonl',
+      quarantine_dir: 'state/helix/reweave_quarantine',
+      require_approval_note: true,
+      snapshot_on_clear_attest: true
     }
   };
 }
@@ -170,6 +177,7 @@ function loadPolicy(policyPath: string) {
     : {};
   const outputs = raw.outputs && typeof raw.outputs === 'object' ? raw.outputs : {};
   const integration = raw.integration && typeof raw.integration === 'object' ? raw.integration : {};
+  const reweave = raw.reweave && typeof raw.reweave === 'object' ? raw.reweave : {};
   return {
     ...base,
     version: cleanText(raw.version || base.version, 40) || '1.0',
@@ -238,6 +246,13 @@ function loadPolicy(policyPath: string) {
     integration: {
       eye_gate_mode: normalizeToken(integration.eye_gate_mode || base.integration.eye_gate_mode, 40)
         || base.integration.eye_gate_mode
+    },
+    reweave: {
+      snapshot_path: cleanText(reweave.snapshot_path || base.reweave.snapshot_path, 320) || base.reweave.snapshot_path,
+      receipts_path: cleanText(reweave.receipts_path || base.reweave.receipts_path, 320) || base.reweave.receipts_path,
+      quarantine_dir: cleanText(reweave.quarantine_dir || base.reweave.quarantine_dir, 320) || base.reweave.quarantine_dir,
+      require_approval_note: reweave.require_approval_note !== false,
+      snapshot_on_clear_attest: reweave.snapshot_on_clear_attest !== false
     }
   };
 }
@@ -316,6 +331,10 @@ function commandInit(args: AnyObj) {
   const codex = loadCodex(paths.codex_path);
   const manifest = buildHelixManifest(codex, policy, { generated_at: nowIso() });
   writeJsonAtomic(paths.manifest_path, manifest);
+  const snapshot = captureReweaveSnapshot(policy, {
+    manifest_path: paths.manifest_path,
+    codex_path: paths.codex_path
+  });
   const advisoryMode = policy && policy.advisory_mode === true;
   const initReasonCodes = Array.isArray(initCodexResult && initCodexResult.verification && initCodexResult.verification.reason_codes)
     ? initCodexResult.verification.reason_codes
@@ -335,6 +354,7 @@ function commandInit(args: AnyObj) {
     codex_root_hash: codex.root_hash,
     merkle_root: manifest.merkle_root,
     strand_count: manifest.strand_count,
+    reweave_snapshot: snapshot,
     policy: {
       version: policy.version,
       path: relPath(policyPath)
@@ -458,6 +478,19 @@ function commandAttest(args: AnyObj) {
   const reweave = planReweave(sentinel, verifier, policy, {
     reason: sentinel.tier === 'clear' ? 'routine_attestation' : 'integrity_mismatch'
   });
+  const snapshotRefresh = (
+    sentinel.tier === 'clear'
+    && verifier.ok === true
+    && manifestFresh === true
+    && policy
+    && policy.reweave
+    && policy.reweave.snapshot_on_clear_attest === true
+  )
+    ? captureReweaveSnapshot(policy, {
+        manifest_path: paths.manifest_path,
+        codex_path: paths.codex_path
+      })
+    : null;
   const sentinelState = writeSentinelState(paths, sentinel);
 
   const attestationDecision = sentinel.tier === 'clear'
@@ -473,7 +506,8 @@ function commandAttest(args: AnyObj) {
     verifier: {
       ok: verifier.ok,
       mismatch_count: Array.isArray(verifier.mismatches) ? verifier.mismatches.length : 0,
-      reason_codes: verifier.reason_codes
+      reason_codes: verifier.reason_codes,
+      mismatches: Array.isArray(verifier.mismatches) ? verifier.mismatches.slice(0, 5000) : []
     },
     manifest_freshness: {
       generated_at: baseManifest && baseManifest.generated_at ? String(baseManifest.generated_at) : null,
@@ -496,6 +530,7 @@ function commandAttest(args: AnyObj) {
       strategy: reweave.strategy,
       step_count: Array.isArray(reweave.steps) ? reweave.steps.length : 0
     },
+    reweave_snapshot: snapshotRefresh,
     paths: {
       codex_path: relPath(paths.codex_path),
       manifest_path: relPath(paths.manifest_path),
@@ -556,24 +591,50 @@ function commandReweave(args: AnyObj) {
   const plan = planReweave(sentinel, verifier, policy, {
     reason: args.reason || 'manual_reweave_request'
   });
+  const applyRequested = toBool(args.apply, false);
+  const applyResult = applyReweave(plan, verifier, policy, {
+    apply: applyRequested,
+    approval_note: args['approval-note'] || args.approval_note,
+    manifest_path: paths.manifest_path,
+    codex_path: paths.codex_path
+  });
+  const snapshot = (applyResult && applyResult.applied)
+    ? captureReweaveSnapshot(policy, {
+        manifest_path: paths.manifest_path,
+        codex_path: paths.codex_path
+      })
+    : null;
   emitEvent(paths, policy, 'reweave_request', {
     plan_id: plan.plan_id,
     strategy: plan.strategy,
-    tier: plan.tier
+    tier: plan.tier,
+    apply_requested: applyRequested
   });
   writeJsonAtomic(paths.latest_path, {
-    ok: true,
+    ok: applyResult.ok !== false,
     type: 'helix_reweave',
     ts: nowIso(),
     shadow_only: policy.shadow_only === true,
-    plan
+    verifier: {
+      mismatch_count: Array.isArray(verifier.mismatches) ? verifier.mismatches.length : 0,
+      mismatches: Array.isArray(verifier.mismatches) ? verifier.mismatches.slice(0, 5000) : []
+    },
+    plan,
+    apply_result: applyResult,
+    reweave_snapshot: snapshot
   });
   return {
-    ok: true,
+    ok: applyResult.ok !== false,
     type: 'helix_reweave',
     ts: nowIso(),
     shadow_only: policy.shadow_only === true,
-    plan
+    verifier: {
+      mismatch_count: Array.isArray(verifier.mismatches) ? verifier.mismatches.length : 0,
+      mismatches: Array.isArray(verifier.mismatches) ? verifier.mismatches.slice(0, 5000) : []
+    },
+    plan,
+    apply_result: applyResult,
+    reweave_snapshot: snapshot
   };
 }
 
@@ -608,12 +669,80 @@ function commandStatus(args: AnyObj) {
   };
 }
 
+function commandBaseline(args: AnyObj) {
+  const policyPath = resolvePath(args.policy || process.env.HELIX_POLICY_PATH, DEFAULT_POLICY_PATH);
+  const policy = loadPolicy(policyPath);
+  const paths = runtimePaths(policyPath, policy);
+  if (!fs.existsSync(paths.codex_path)) {
+    initCodex(paths.codex_path, policy, {
+      overwrite: false,
+      approval_note: 'auto_init_before_baseline'
+    });
+  }
+  const codex = loadCodex(paths.codex_path);
+  const codexVerificationRaw = verifyCodexRoot(codex, policy);
+  const advisoryMode = policy && policy.advisory_mode === true;
+  const keyMissingOnly = codexVerificationRaw
+    && codexVerificationRaw.key_present === false
+    && Array.isArray(codexVerificationRaw.reason_codes)
+    && codexVerificationRaw.reason_codes.includes('codex_signing_key_missing');
+  const codexOk = codexVerificationRaw.ok === true || (advisoryMode && keyMissingOnly);
+  const manifest = readJson(paths.manifest_path, null);
+  const snapshotPath = resolvePath(policy.reweave && policy.reweave.snapshot_path, 'state/helix/reweave_snapshot.json');
+  let snapshot = readJson(snapshotPath, {});
+  const manifestStrands = Number(manifest && manifest.strand_count || 0);
+  let snapshotFiles = Number(snapshot && snapshot.file_count || 0);
+  let snapshotRefreshed = false;
+  if (manifestStrands > 0 && snapshotFiles < manifestStrands) {
+    captureReweaveSnapshot(policy, {
+      manifest_path: paths.manifest_path,
+      codex_path: paths.codex_path
+    });
+    snapshot = readJson(snapshotPath, {});
+    snapshotFiles = Number(snapshot && snapshot.file_count || 0);
+    snapshotRefreshed = true;
+  }
+  const reasons: string[] = [];
+  if (!codexOk) reasons.push('codex_verification_failed');
+  if (!(manifest && manifestStrands > 0)) reasons.push('manifest_missing_or_empty');
+  if (!(snapshot && snapshotFiles > 0)) reasons.push('reweave_snapshot_missing_or_empty');
+  if (policy.shadow_only !== true) reasons.push('shadow_mode_disabled');
+  return {
+    ok: reasons.length === 0,
+    type: 'helix_baseline_status',
+    ts: nowIso(),
+    policy: {
+      version: policy.version,
+      path: relPath(policyPath),
+      shadow_only: policy.shadow_only === true
+    },
+    codex: {
+      path: relPath(paths.codex_path),
+      root_hash: codex.root_hash || null,
+      verified: codexOk,
+      advisory_override: advisoryMode && keyMissingOnly
+    },
+    manifest: {
+      path: relPath(paths.manifest_path),
+      strand_count: manifestStrands,
+      merkle_root: manifest && manifest.merkle_root ? String(manifest.merkle_root) : null
+    },
+    snapshot: {
+      path: relPath(snapshotPath),
+      file_count: snapshotFiles,
+      refreshed: snapshotRefreshed
+    },
+    reasons
+  };
+}
+
 function usage() {
   console.log('Usage:');
   console.log('  node systems/helix/helix_controller.js init [--policy=path] [--overwrite=1]');
   console.log('  node systems/helix/helix_controller.js attest [--policy=path] [--force-malice=1]');
-  console.log('  node systems/helix/helix_controller.js reweave [--policy=path] [--reason="..."]');
+  console.log('  node systems/helix/helix_controller.js reweave [--policy=path] [--reason="..."] [--apply=1|0] [--approval-note="..."]');
   console.log('  node systems/helix/helix_controller.js status [latest|YYYY-MM-DD] [--policy=path]');
+  console.log('  node systems/helix/helix_controller.js baseline [--policy=path]');
 }
 
 function main() {
@@ -627,6 +756,7 @@ function main() {
   if (cmd === 'init') out = commandInit(args);
   else if (cmd === 'attest') out = commandAttest(args);
   else if (cmd === 'reweave') out = commandReweave(args);
+  else if (cmd === 'baseline') out = commandBaseline(args);
   else if (cmd === 'status') {
     args._ = args._.slice(1);
     out = commandStatus(args);
@@ -658,5 +788,6 @@ module.exports = {
   commandInit,
   commandAttest,
   commandReweave,
-  commandStatus
+  commandStatus,
+  commandBaseline
 };

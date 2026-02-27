@@ -110,6 +110,7 @@ function runGate() {
     'config/formal_invariants.json',
     'config/gated_self_improvement_policy.json',
     'config/helix_admission_policy.json',
+    'config/helix_policy.json',
     'config/phone_seed_profile_policy.json',
     'config/pre_neuralink_interface_policy.json',
     'config/predictive_capacity_forecast_policy.json',
@@ -147,7 +148,9 @@ function runGate() {
     'systems/autonomy/gated_self_improvement_loop.ts',
     'systems/echo/value_anchor_renewal.ts',
     'systems/helix/confirmed_malice_quarantine.ts',
+    'systems/helix/helix_controller.ts',
     'systems/helix/helix_admission_gate.ts',
+    'systems/helix/reweave_doctor.ts',
     'systems/memory/causal_temporal_graph.ts',
     'systems/distributed/deterministic_control_plane.ts',
     'systems/hardware/embodiment_layer.ts',
@@ -942,6 +945,40 @@ function runGate() {
     `admissions=${cleanText(helixAdmissionPaths.admissions_path || '', 120) || 'missing'} latest=${cleanText(helixAdmissionPaths.latest_path || '', 120) || 'missing'} manifest=${cleanText(helixAdmissionPaths.manifest_path || '', 120) || 'missing'}`
   );
   addCheck(
+    'helix_baseline:merge_guard_hook',
+    mergeGuardSrc.includes('helix_controller.js')
+      && mergeGuardSrc.includes('helix_baseline_status'),
+    'merge_guard should enforce helix baseline status check'
+  );
+  const helixPolicy = readJsonSafe(path.join(ROOT, 'config', 'helix_policy.json'), {});
+  const helixReweaveCfg = helixPolicy.reweave && typeof helixPolicy.reweave === 'object'
+    ? helixPolicy.reweave
+    : {};
+  addCheck(
+    'helix_baseline:policy_shadow_and_reweave_paths',
+    helixPolicy.shadow_only === true
+      && !!cleanText(helixReweaveCfg.snapshot_path || '', 240)
+      && !!cleanText(helixReweaveCfg.receipts_path || '', 240)
+      && !!cleanText(helixReweaveCfg.quarantine_dir || '', 240),
+    `shadow_only=${helixPolicy.shadow_only === true ? '1' : '0'} snapshot=${cleanText(helixReweaveCfg.snapshot_path || '', 100) || 'missing'} receipts=${cleanText(helixReweaveCfg.receipts_path || '', 100) || 'missing'} quarantine=${cleanText(helixReweaveCfg.quarantine_dir || '', 100) || 'missing'}`
+  );
+  const helixControllerSrc = readFileSafe(path.join(ROOT, 'systems', 'helix', 'helix_controller.ts'));
+  const reweaveDoctorSrc = readFileSafe(path.join(ROOT, 'systems', 'helix', 'reweave_doctor.ts'));
+  addCheck(
+    'helix_reweave:controller_apply_hook',
+    helixControllerSrc.includes('applyReweave(')
+      && helixControllerSrc.includes('captureReweaveSnapshot(')
+      && helixControllerSrc.includes('commandBaseline'),
+    'helix_controller should expose baseline and apply-capable reweave flow'
+  );
+  addCheck(
+    'helix_reweave:doctor_snapshot_apply_hooks',
+    reweaveDoctorSrc.includes('captureReweaveSnapshot(')
+      && reweaveDoctorSrc.includes('applyReweave(')
+      && reweaveDoctorSrc.includes('approval_note_required'),
+    'reweave_doctor should support snapshot capture + apply reweave with approval gate'
+  );
+  addCheck(
     'helix_confirmed_malice:merge_guard_hook',
     mergeGuardSrc.includes('confirmed_malice_quarantine.js')
       && mergeGuardSrc.includes('status'),
@@ -1400,6 +1437,7 @@ function runGate() {
       && contractCheckSrc.includes('gated_self_improvement_loop.js')
       && contractCheckSrc.includes('helix_admission_gate.js')
       && contractCheckSrc.includes('confirmed_malice_quarantine.js')
+      && contractCheckSrc.includes('helix_controller.js')
       && contractCheckSrc.includes('ant_colony_controller.js')
       && contractCheckSrc.includes('neural_dormant_seed.js')
       && contractCheckSrc.includes('pre_neuralink_interface.js')
