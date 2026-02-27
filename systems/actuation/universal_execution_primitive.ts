@@ -1,0 +1,458 @@
+#!/usr/bin/env node
+'use strict';
+export {};
+
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+const { spawnSync } = require('child_process');
+
+type AnyObj = Record<string, any>;
+
+const ROOT = path.resolve(__dirname, '..', '..');
+const POLICY_PATH = process.env.UNIVERSAL_EXECUTION_POLICY_PATH
+  ? path.resolve(process.env.UNIVERSAL_EXECUTION_POLICY_PATH)
+  : path.join(ROOT, 'config', 'universal_execution_primitive_policy.json');
+const ACTUATION_EXECUTOR = process.env.ACTUATION_EXECUTOR_PATH
+  ? path.resolve(process.env.ACTUATION_EXECUTOR_PATH)
+  : path.join(ROOT, 'systems', 'actuation', 'actuation_executor.js');
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function dayStr() {
+  return nowIso().slice(0, 10);
+}
+
+function usage() {
+  console.log('Usage:');
+  console.log('  node systems/actuation/universal_execution_primitive.js run --profile-id=<id> [--intent=<intent>] --params=<json> [--context=<json>] [--dry-run]');
+  console.log('  node systems/actuation/universal_execution_primitive.js run --profile-json=@/path/profile.json [--intent=<intent>] --params=<json> [--context=<json>] [--dry-run]');
+  console.log('  node systems/actuation/universal_execution_primitive.js status [latest|YYYY-MM-DD]');
+}
+
+function parseArgs(argv: string[]) {
+  const out: AnyObj = { _: [] };
+  for (const token of argv) {
+    if (!token.startsWith('--')) {
+      out._.push(token);
+      continue;
+    }
+    const idx = token.indexOf('=');
+    if (idx < 0) out[token.slice(2)] = true;
+    else out[token.slice(2, idx)] = token.slice(idx + 1);
+  }
+  return out;
+}
+
+function cleanText(v: unknown, maxLen = 320) {
+  return String(v == null ? '' : v).replace(/\s+/g, ' ').trim().slice(0, maxLen);
+}
+
+function normalizeToken(v: unknown, maxLen = 120) {
+  return cleanText(v, maxLen)
+    .toLowerCase()
+    .replace(/[^a-z0-9_.:/-]+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
+
+function toBool(v: unknown, fallback = false) {
+  if (v == null) return fallback;
+  const raw = String(v).trim().toLowerCase();
+  if (['1', 'true', 'yes', 'on'].includes(raw)) return true;
+  if (['0', 'false', 'no', 'off'].includes(raw)) return false;
+  return fallback;
+}
+
+function ensureDir(dirPath: string) {
+  fs.mkdirSync(dirPath, { recursive: true });
+}
+
+function readJson(filePath: string, fallback: any) {
+  try {
+    if (!fs.existsSync(filePath)) return fallback;
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch {
+    return fallback;
+  }
+}
+
+function appendJsonl(filePath: string, row: AnyObj) {
+  ensureDir(path.dirname(filePath));
+  fs.appendFileSync(filePath, `${JSON.stringify(row)}\n`, 'utf8');
+}
+
+function readJsonl(filePath: string) {
+  try {
+    if (!fs.existsSync(filePath)) return [];
+    return fs.readFileSync(filePath, 'utf8')
+      .split('\n')
+      .filter(Boolean)
+      .map((line) => {
+        try { return JSON.parse(line); } catch { return null; }
+      })
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+function parseJsonArg(raw: unknown, fallback: any) {
+  const text = cleanText(raw, 20000);
+  if (!text) return fallback;
+  const payloadText = text.startsWith('@')
+    ? fs.readFileSync(path.resolve(text.slice(1)), 'utf8')
+    : text;
+  try {
+    return JSON.parse(payloadText);
+  } catch {
+    return fallback;
+  }
+}
+
+function stableStringify(value: unknown): string {
+  if (value == null) return 'null';
+  if (Array.isArray(value)) return `[${value.map((row) => stableStringify(row)).join(',')}]`;
+  if (typeof value !== 'object') return JSON.stringify(value);
+  const obj = value as AnyObj;
+  return `{${Object.keys(obj).sort().map((k) => `${JSON.stringify(k)}:${stableStringify(obj[k])}`).join(',')}}`;
+}
+
+function shaHex(value: unknown) {
+  return crypto.createHash('sha256').update(stableStringify(value), 'utf8').digest('hex');
+}
+
+function relPath(filePath: string) {
+  return path.relative(ROOT, filePath).replace(/\\/g, '/');
+}
+
+function defaultPolicy() {
+  return {
+    version: '1.0',
+    enabled: true,
+    min_profile_confidence: 0.6,
+    default_adapter_kind: 'http_request',
+    allowed_adapter_kinds: [],
+    profile_roots: [
+      'state/assimilation/capability_profiles/profiles'
+    ],
+    source_type_adapter_map: {
+      api: 'http_request',
+      web_ui: 'browser_task',
+      filesystem: 'filesystem_task',
+      shell: 'shell_task',
+      payment: 'payment_task',
+      comms_email: 'email_message'
+    },
+    intent_adapter_map: {
+      send_email: 'email_message',
+      send_slack: 'slack_message',
+      send_discord: 'discord_message',
+      create_calendar_event: 'calendar_event',
+      run_shell: 'shell_task',
+      write_file: 'filesystem_task',
+      pay_invoice: 'payment_task'
+    },
+    receipts_path: 'state/actuation/universal_execution_primitive/receipts'
+  };
+}
+
+function loadPolicy(policyPath = POLICY_PATH) {
+  const src = readJson(policyPath, {});
+  const base = defaultPolicy();
+  const roots = Array.isArray(src.profile_roots)
+    ? src.profile_roots
+    : base.profile_roots;
+  return {
+    version: cleanText(src.version || base.version, 32) || base.version,
+    enabled: src.enabled !== false,
+    min_profile_confidence: Math.max(0, Math.min(1, Number(src.min_profile_confidence != null ? src.min_profile_confidence : base.min_profile_confidence) || base.min_profile_confidence)),
+    default_adapter_kind: normalizeToken(src.default_adapter_kind || base.default_adapter_kind, 80) || base.default_adapter_kind,
+    allowed_adapter_kinds: Array.isArray(src.allowed_adapter_kinds)
+      ? src.allowed_adapter_kinds.map((row: unknown) => normalizeToken(row, 80)).filter(Boolean)
+      : [],
+    profile_roots: roots
+      .map((row: unknown) => cleanText(row, 260))
+      .filter(Boolean)
+      .map((row: string) => (path.isAbsolute(row) ? row : path.join(ROOT, row))),
+    source_type_adapter_map: src.source_type_adapter_map && typeof src.source_type_adapter_map === 'object'
+      ? src.source_type_adapter_map
+      : base.source_type_adapter_map,
+    intent_adapter_map: src.intent_adapter_map && typeof src.intent_adapter_map === 'object'
+      ? src.intent_adapter_map
+      : base.intent_adapter_map,
+    receipts_path: path.isAbsolute(cleanText(src.receipts_path || base.receipts_path, 260))
+      ? cleanText(src.receipts_path || base.receipts_path, 260)
+      : path.join(ROOT, cleanText(src.receipts_path || base.receipts_path, 260))
+  };
+}
+
+function findProfileById(profileId: string, roots: string[]) {
+  const targetId = normalizeToken(profileId, 160);
+  if (!targetId) return null;
+  for (const root of roots) {
+    if (!fs.existsSync(root)) continue;
+    const entries = fs.readdirSync(root).filter((row: string) => row.endsWith('.json')).sort();
+    for (const fileName of entries) {
+      const abs = path.join(root, fileName);
+      const profile = readJson(abs, null);
+      if (!profile || typeof profile !== 'object') continue;
+      const id = normalizeToken(profile.profile_id || profile.capability_id || profile.source && profile.source.capability_id || '', 160);
+      if (id && id === targetId) return { profile, profile_path: abs };
+    }
+  }
+  return null;
+}
+
+function loadProfile(args: AnyObj, policy: AnyObj) {
+  const profileJsonArg = args.profile_json || args['profile-json'] || '';
+  if (profileJsonArg) {
+    const profile = parseJsonArg(profileJsonArg, null);
+    if (!profile || typeof profile !== 'object') return { ok: false, error: 'invalid_profile_json' };
+    return {
+      ok: true,
+      profile,
+      profile_path: String(profileJsonArg).startsWith('@') ? path.resolve(String(profileJsonArg).slice(1)) : null
+    };
+  }
+  const profileId = cleanText(args.profile_id || args['profile-id'] || '', 160);
+  if (!profileId) return { ok: false, error: 'profile_id_required' };
+  const found = findProfileById(profileId, policy.profile_roots || []);
+  if (!found) return { ok: false, error: 'profile_not_found', profile_id: normalizeToken(profileId, 160), search_roots: policy.profile_roots || [] };
+  return {
+    ok: true,
+    profile: found.profile,
+    profile_path: found.profile_path
+  };
+}
+
+function resolveAdapterKind(profile: AnyObj, intent: string, policy: AnyObj) {
+  const explicit = normalizeToken(profile && profile.execution && profile.execution.adapter_kind, 80);
+  if (explicit) return { kind: explicit, source: 'profile.execution.adapter_kind' };
+  const intentKey = normalizeToken(intent, 80);
+  const intentMap = policy.intent_adapter_map && typeof policy.intent_adapter_map === 'object'
+    ? policy.intent_adapter_map
+    : {};
+  if (intentKey && intentMap[intentKey]) {
+    return {
+      kind: normalizeToken(intentMap[intentKey], 80),
+      source: `policy.intent_adapter_map.${intentKey}`
+    };
+  }
+  const sourceType = normalizeToken(profile && profile.source && profile.source.source_type, 80);
+  const sourceMap = policy.source_type_adapter_map && typeof policy.source_type_adapter_map === 'object'
+    ? policy.source_type_adapter_map
+    : {};
+  if (sourceType && sourceMap[sourceType]) {
+    return {
+      kind: normalizeToken(sourceMap[sourceType], 80),
+      source: `policy.source_type_adapter_map.${sourceType}`
+    };
+  }
+  return {
+    kind: normalizeToken(policy.default_adapter_kind, 80) || 'http_request',
+    source: 'policy.default_adapter_kind'
+  };
+}
+
+function parseExecutorPayload(stdout: string) {
+  const lines = String(stdout || '')
+    .split('\n')
+    .map((row) => row.trim())
+    .filter(Boolean);
+  for (let i = lines.length - 1; i >= 0; i -= 1) {
+    try {
+      return JSON.parse(lines[i]);
+    } catch {
+      // continue
+    }
+  }
+  return null;
+}
+
+function receiptPath(policy: AnyObj, day = dayStr()) {
+  return path.join(policy.receipts_path, `${day}.jsonl`);
+}
+
+function cmdRun(args: AnyObj) {
+  const policy = loadPolicy(args.policy ? path.resolve(String(args.policy)) : POLICY_PATH);
+  if (!policy.enabled) {
+    process.stdout.write(`${JSON.stringify({ ok: false, type: 'universal_execution_primitive', error: 'policy_disabled' })}\n`);
+    process.exit(1);
+  }
+  const profileLoad = loadProfile(args, policy);
+  if (!profileLoad.ok) {
+    process.stdout.write(`${JSON.stringify({ ok: false, type: 'universal_execution_primitive', error: profileLoad.error, profile_id: profileLoad.profile_id || null })}\n`);
+    process.exit(1);
+  }
+  const profile = profileLoad.profile && typeof profileLoad.profile === 'object' ? profileLoad.profile : {};
+  const profileId = normalizeToken(profile.profile_id || profile.capability_id || profile.source && profile.source.capability_id || '', 160);
+  if (!profileId) {
+    process.stdout.write(`${JSON.stringify({ ok: false, type: 'universal_execution_primitive', error: 'profile_id_missing' })}\n`);
+    process.exit(1);
+  }
+  const provenance = profile.provenance && typeof profile.provenance === 'object' ? profile.provenance : {};
+  const profileConfidence = Math.max(0, Math.min(1, Number(provenance.confidence != null ? provenance.confidence : 0) || 0));
+  if (profileConfidence < Number(policy.min_profile_confidence || 0)) {
+    process.stdout.write(`${JSON.stringify({
+      ok: false,
+      type: 'universal_execution_primitive',
+      error: 'profile_confidence_below_minimum',
+      profile_id: profileId,
+      confidence: profileConfidence,
+      min_required: Number(policy.min_profile_confidence || 0)
+    })}\n`);
+    process.exit(1);
+  }
+
+  const intent = normalizeToken(args.intent || '', 80);
+  const adapter = resolveAdapterKind(profile, intent, policy);
+  if (!adapter.kind) {
+    process.stdout.write(`${JSON.stringify({ ok: false, type: 'universal_execution_primitive', error: 'adapter_kind_unresolved', profile_id: profileId })}\n`);
+    process.exit(1);
+  }
+  const allowedKinds = Array.isArray(policy.allowed_adapter_kinds) ? policy.allowed_adapter_kinds : [];
+  if (allowedKinds.length && !allowedKinds.includes(adapter.kind)) {
+    process.stdout.write(`${JSON.stringify({
+      ok: false,
+      type: 'universal_execution_primitive',
+      error: 'adapter_kind_not_allowed',
+      profile_id: profileId,
+      adapter_kind: adapter.kind
+    })}\n`);
+    process.exit(1);
+  }
+
+  const params = parseJsonArg(args.params, null);
+  if (!params || typeof params !== 'object' || Array.isArray(params)) {
+    process.stdout.write(`${JSON.stringify({ ok: false, type: 'universal_execution_primitive', error: 'invalid_params_json' })}\n`);
+    process.exit(2);
+  }
+  const contextRaw = parseJsonArg(args.context, {});
+  if (!contextRaw || typeof contextRaw !== 'object' || Array.isArray(contextRaw)) {
+    process.stdout.write(`${JSON.stringify({ ok: false, type: 'universal_execution_primitive', error: 'invalid_context_json' })}\n`);
+    process.exit(2);
+  }
+  const dryRun = args['dry-run'] === true;
+  const profileHash = cleanText(profile.profile_hash || '', 80) || shaHex(profile).slice(0, 64);
+  const passportLink = cleanText(
+    contextRaw.passport_id
+    || contextRaw.passport_link_id
+    || contextRaw.passport_receipt_id
+    || '',
+    180
+  ) || null;
+  const context = {
+    ...contextRaw,
+    capability_profile: {
+      profile_id: profileId,
+      profile_hash: profileHash,
+      source_type: normalizeToken(profile && profile.source && profile.source.source_type, 80) || null,
+      adapter_kind: adapter.kind,
+      adapter_resolution_source: adapter.source,
+      confidence: profileConfidence
+    },
+    passport_link_id: passportLink
+  };
+  const execArgs = [
+    ACTUATION_EXECUTOR,
+    'run',
+    `--kind=${adapter.kind}`,
+    `--params=${JSON.stringify(params)}`,
+    `--context=${JSON.stringify(context)}`
+  ];
+  if (dryRun) execArgs.push('--dry-run');
+  const proc = spawnSync('node', execArgs, {
+    cwd: ROOT,
+    encoding: 'utf8',
+    env: process.env
+  });
+  const payload = parseExecutorPayload(String(proc.stdout || '')) || {};
+  const ok = Number(proc.status || 0) === 0 && payload && payload.ok === true;
+  const row = {
+    ts: nowIso(),
+    type: 'universal_execution_primitive',
+    profile_id: profileId,
+    profile_hash: profileHash,
+    profile_path: profileLoad.profile_path ? relPath(String(profileLoad.profile_path)) : null,
+    profile_confidence: profileConfidence,
+    intent: intent || null,
+    adapter_kind: adapter.kind,
+    adapter_resolution_source: adapter.source,
+    dry_run: dryRun,
+    passport_link_id: passportLink,
+    params_hash: shaHex(params).slice(0, 16),
+    ok,
+    executor_status: Number(proc.status == null ? 1 : proc.status),
+    executor_payload: payload
+  };
+  appendJsonl(receiptPath(policy), row);
+
+  if (!ok) {
+    process.stdout.write(`${JSON.stringify({
+      ok: false,
+      type: 'universal_execution_primitive',
+      profile_id: profileId,
+      adapter_kind: adapter.kind,
+      error: payload && payload.error ? payload.error : 'executor_failed',
+      row
+    })}\n`);
+    process.exit(Number(proc.status == null ? 1 : proc.status) || 1);
+  }
+  process.stdout.write(`${JSON.stringify({
+    ok: true,
+    type: 'universal_execution_primitive',
+    profile_id: profileId,
+    adapter_kind: adapter.kind,
+    row
+  })}\n`);
+}
+
+function cmdStatus(args: AnyObj) {
+  const policy = loadPolicy(args.policy ? path.resolve(String(args.policy)) : POLICY_PATH);
+  const key = cleanText(args._[1] || args.day || args.date || 'latest', 40);
+  const day = key === 'latest' ? dayStr() : key;
+  const rows = readJsonl(receiptPath(policy, day));
+  const adapterCounts: Record<string, number> = {};
+  let okCount = 0;
+  let profileBased = 0;
+  for (const row of rows) {
+    if (!row || typeof row !== 'object') continue;
+    const adapter = normalizeToken(row.adapter_kind || '', 80) || 'unknown';
+    adapterCounts[adapter] = Number(adapterCounts[adapter] || 0) + 1;
+    if (row.ok === true) okCount += 1;
+    if (row.profile_id) profileBased += 1;
+  }
+  const out = {
+    ok: true,
+    type: 'universal_execution_primitive_status',
+    ts: nowIso(),
+    day,
+    receipt_path: relPath(receiptPath(policy, day)),
+    total_runs: rows.length,
+    successful_runs: okCount,
+    profile_based_runs: profileBased,
+    profile_only_ratio: rows.length > 0 ? Number((profileBased / rows.length).toFixed(6)) : 0,
+    adapter_counts: adapterCounts
+  };
+  process.stdout.write(`${JSON.stringify(out)}\n`);
+}
+
+function main() {
+  const args = parseArgs(process.argv.slice(2));
+  const cmd = String(args._[0] || '').trim().toLowerCase();
+  if (!cmd || cmd === '--help' || cmd === '-h' || cmd === 'help' || args.help) {
+    usage();
+    process.exit(0);
+  }
+  if (cmd === 'run') return cmdRun(args);
+  if (cmd === 'status') return cmdStatus(args);
+  usage();
+  process.exit(2);
+}
+
+if (require.main === module) {
+  main();
+}

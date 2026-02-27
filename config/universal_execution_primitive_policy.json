@@ -1,0 +1,28 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "min_profile_confidence": 0.6,
+  "default_adapter_kind": "http_request",
+  "allowed_adapter_kinds": [],
+  "profile_roots": [
+    "state/assimilation/capability_profiles/profiles"
+  ],
+  "source_type_adapter_map": {
+    "api": "http_request",
+    "web_ui": "browser_task",
+    "filesystem": "filesystem_task",
+    "shell": "shell_task",
+    "payment": "payment_task",
+    "comms_email": "email_message"
+  },
+  "intent_adapter_map": {
+    "send_email": "email_message",
+    "send_slack": "slack_message",
+    "send_discord": "discord_message",
+    "create_calendar_event": "calendar_event",
+    "run_shell": "shell_task",
+    "write_file": "filesystem_task",
+    "pay_invoice": "payment_task"
+  },
+  "receipts_path": "state/actuation/universal_execution_primitive/receipts"
+}

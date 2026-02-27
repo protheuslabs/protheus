@@ -55,6 +55,8 @@
     "ops:prime-seed:manifest": "node systems/ops/protheus_prime_seed.js manifest",
     "ops:prime-seed:bootstrap": "node systems/ops/protheus_prime_seed.js bootstrap",
     "ops:prime-seed:package": "node systems/ops/protheus_prime_seed.js package --strict=1",
+    "actuation:universal:run": "node systems/actuation/universal_execution_primitive.js run",
+    "actuation:universal:status": "node systems/actuation/universal_execution_primitive.js status",
     "routing:provider-onboard:list": "node systems/routing/provider_onboarding_manifest.js list",
     "routing:provider-onboard": "node systems/routing/provider_onboarding_manifest.js run",
     "routing:provider-onboard:status": "node systems/routing/provider_onboarding_manifest.js status",
