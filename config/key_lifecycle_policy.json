@@ -1,0 +1,24 @@
+{
+  "schema_id": "key_lifecycle_policy",
+  "schema_version": "1.0",
+  "enabled": true,
+  "default_algorithm": "ed25519",
+  "allowed_algorithms": [
+    "ed25519",
+    "rsa-4096",
+    "pq-dilithium3"
+  ],
+  "key_classes": [
+    "signing",
+    "encryption",
+    "transport"
+  ],
+  "hardware_required_classes": [
+    "signing"
+  ],
+  "min_recovery_shards": 3,
+  "drill_max_age_days": 30,
+  "state_path": "state/security/key_lifecycle/state.json",
+  "receipts_path": "state/security/key_lifecycle/receipts.jsonl",
+  "crypto_agility_contract_path": "config/crypto_agility_contract.json"
+}

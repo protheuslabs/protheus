@@ -89,6 +89,8 @@ function runGate() {
     'config/deterministic_control_plane_policy.json',
     'config/effect_type_policy.json',
     'config/formal_invariants.json',
+    'config/crypto_agility_contract.json',
+    'config/key_lifecycle_policy.json',
     'config/profile_compatibility_policy.json',
     'config/primitive_catalog.json',
     'config/primitive_migration_contract.json',
@@ -103,6 +105,7 @@ function runGate() {
     'systems/primitives/effect_type_system.ts',
     'systems/primitives/runtime_scheduler.ts',
     'systems/security/formal_invariant_engine.ts',
+    'systems/security/key_lifecycle_governor.ts',
     'systems/security/safety_resilience_guard.ts',
     'systems/primitives/primitive_runtime.ts',
     'systems/primitives/policy_vm.ts',
@@ -280,6 +283,15 @@ function runGate() {
     schemaEvolutionNMinus >= 2,
     `default_n_minus_minor=${schemaEvolutionNMinus}`
   );
+  const keyLifecyclePolicy = readJsonSafe(path.join(ROOT, 'config', 'key_lifecycle_policy.json'), {});
+  const keyAllowedAlgorithms = Array.isArray(keyLifecyclePolicy.allowed_algorithms)
+    ? keyLifecyclePolicy.allowed_algorithms.map((row: unknown) => normalizeLowerToken(row, 80)).filter(Boolean)
+    : [];
+  addCheck(
+    'key_lifecycle:post_quantum_track_present',
+    keyAllowedAlgorithms.includes('pq-dilithium3'),
+    `allowed_algorithms=${keyAllowedAlgorithms.join(',')}`
+  );
   const mergeGuardSrc = readFileSafe(path.join(ROOT, 'systems', 'security', 'merge_guard.ts'));
   addCheck(
     'formal_invariant_engine:merge_guard_hook',
@@ -299,6 +311,13 @@ function runGate() {
       && mergeGuardSrc.includes('--strict=1')
       && mergeGuardSrc.includes('--apply=0'),
     'merge_guard should enforce schema evolution verification'
+  );
+  addCheck(
+    'key_lifecycle:merge_guard_hook',
+    mergeGuardSrc.includes('key_lifecycle_governor.js')
+      && mergeGuardSrc.includes('verify')
+      && mergeGuardSrc.includes('--strict=1'),
+    'merge_guard should enforce key lifecycle verification'
   );
 
   const workflowSrc = readFileSafe(path.join(ROOT, 'systems', 'workflow', 'workflow_executor.ts'));

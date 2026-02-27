@@ -44,9 +44,11 @@ function main() {
     'effect_type:policy_enforced',
     'effect_type:forbidden_transition_rules',
     'schema_evolution:n_minus_two_floor',
+    'key_lifecycle:post_quantum_track_present',
     'formal_invariant_engine:merge_guard_hook',
     'supply_chain_trust_plane:merge_guard_hook',
     'schema_evolution:merge_guard_hook',
+    'key_lifecycle:merge_guard_hook',
     'workflow:effect_type_gate_hook',
     'helix:safety_resilience_hook'
   ]) {
