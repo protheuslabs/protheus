@@ -455,6 +455,23 @@ Objective: close remaining governance/intelligence gaps with stable versioned ID
 | V3-062 | V3 | done | Self-Hosted Runtime Bootstrap + Compiler Loop | Long-term sovereignty requires the organism to rebuild/upgrade its runtime from source under governance, not depend on external/manual build chains | Added `systems/ops/self_hosted_bootstrap_compiler.ts` + policy (`config/self_hosted_bootstrap_policy.json`) with governed `compile -> verify -> promote -> rollback -> status` lifecycle, build/smoke + invariant/supply-chain verify contracts, approval-gated promotion, and rollback-safe active/previous build state receipts. Integrated into merge/foundation/contract gates with docs in `docs/SELF_HOSTED_BOOTSTRAP_COMPILER.md` and regression coverage in `memory/tools/tests/self_hosted_bootstrap_compiler.test.js`. |
 | V4-006 | V4 | todo | Succession and Continuity Planning | Long-lived systems need secure, auditable control transfer when primary operator is unavailable | Formal successor model with cryptographic delegation, time-delayed transfer controls, emergency stewardship policy, and full transfer audit trail that cannot bypass constitution/identity invariants |
 
+## Post-Launch Base Migration Readiness (6-12 Weeks)
+
+Objective: migrate from OpenClaw base only after launch stability is proven and extraction can be done without degrading autonomy, safety, or rollback posture.
+
+| ID | Window | Status | Requirement | Why | Exit Criteria |
+|---|---|---|---|---|---|
+| PLM-001 | 6-12 weeks post-launch | todo | 30-day operational stability streak | Prevent migration during churn/regression windows | 30 consecutive days with zero unresolved P0 incidents, zero repeated integrity stalls, and workflow execution SLO within target |
+| PLM-002 | 6-12 weeks post-launch | todo | Runtime guardrail pass-rate gate | Migration should not begin if foundation checks are noisy/flaky | `merge_guard`, `contract_check`, `foundation_contract_gate`, and integrity checks pass for 30 consecutive daily runs |
+| PLM-003 | 6-12 weeks post-launch | todo | JS exception floor before extraction | Avoid carrying legacy JS debt into new base | No non-exempt JS in core runtime roots; all remaining JS entries are documented in `config/js_exception_registry.json` with benchmark justification |
+| PLM-004 | 6-12 weeks post-launch | todo | Primitive/profile coverage threshold | Ensure abstraction-first architecture survives base split | >=90% of production actuation routes execute via profile-driven primitive flow (`V3-039` path) with audited receipts |
+| PLM-005 | 6-12 weeks post-launch | todo | Canonical state portability contract | Preserve deterministic replay and continuity after extraction | Event/state replay from source base to extracted base is deterministic for 30-day artifact window with zero schema drift violations |
+| PLM-006 | 6-12 weeks post-launch | todo | Dual-run parity harness | Validate behavior equivalence before switching control-plane | Shadow dual-run (OpenClaw base vs extracted base) for 14 days shows no critical decision divergences and no safety-policy bypass |
+| PLM-007 | 6-12 weeks post-launch | todo | Cutover/rollback playbook | Extraction must be reversible under incident pressure | Documented one-command rollback to OpenClaw base with recovery drill evidence and RTO/RPO receipts |
+| PLM-008 | 6-12 weeks post-launch | todo | Independent bootstrap + packaging readiness | New base must be self-hosting, not manual-fragile | `self_hosted_bootstrap_compiler` promote/rollback cycle passes in extracted base; packaging + startup attestation succeed in CI |
+| PLM-009 | 6-12 weeks post-launch | todo | Security and secrets migration proof | Avoid introducing a weaker trust boundary in new base | Secret broker, key lifecycle, heartbeat endpoints, and integrity policy are ported with no repo-local secret path violations |
+| PLM-010 | 6-12 weeks post-launch | todo | Final migration go/no-go review | Force explicit operator decision after evidence collection | Signed migration review artifact with pass/fail per `PLM-001..PLM-009` and explicit go/no-go outcome |
+
 ## Foundation Hardening Sprint (7-14 Days)
 
 Objective: pause feature velocity briefly to harden core runtime abstractions so future revenue/capability work lands on deterministic, primitive-first foundations.
