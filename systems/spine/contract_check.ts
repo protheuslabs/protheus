@@ -800,6 +800,14 @@ function main() {
     "systems/ops/self_hosted_bootstrap_compiler.js",
     ["verify_commands", "active_build_id", "previous_active_build_id"]
   );
+  checkScript(
+    "systems/ops/phone_seed_profile.js",
+    ["phone_seed_profile.js", "run", "status", "--strict"]
+  );
+  checkSourceContains(
+    "systems/ops/phone_seed_profile.js",
+    ["heavy_lanes_disabled_by_policy", "seed_boot_probe.js", "memory_federation_plane.js"]
+  );
 
   // offdevice_memory_replication.js performs proof-verified off-device memory replication drills.
   checkScript(

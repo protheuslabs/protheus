@@ -1,0 +1,30 @@
+{
+  "version": "1.0",
+  "strict_default": false,
+  "samples": 5,
+  "thresholds": {
+    "boot_ms_max": 800,
+    "idle_rss_mb_max": 180,
+    "workflow_latency_ms_max": 3000,
+    "memory_latency_ms_max": 3000
+  },
+  "require_heavy_lanes_disabled": true,
+  "embodiment_snapshot_path": "state/hardware/embodiment/latest.json",
+  "boot_probe_command": [
+    "node",
+    "systems/ops/seed_boot_probe.js",
+    "run"
+  ],
+  "workflow_probe_command": [
+    "node",
+    "systems/workflow/workflow_controller.js",
+    "status"
+  ],
+  "memory_probe_command": [
+    "node",
+    "systems/memory/memory_federation_plane.js",
+    "status"
+  ],
+  "state_path": "state/ops/phone_seed_profile/status.json",
+  "history_path": "state/ops/phone_seed_profile/history.jsonl"
+}

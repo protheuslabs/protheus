@@ -93,6 +93,7 @@ function runGate() {
     'config/embodiment_layer_policy.json',
     'config/explanation_primitive_policy.json',
     'config/formal_invariants.json',
+    'config/phone_seed_profile_policy.json',
     'config/crypto_agility_contract.json',
     'config/key_lifecycle_policy.json',
     'config/delegated_authority_policy.json',
@@ -129,6 +130,7 @@ function runGate() {
     'systems/security/safety_resilience_guard.ts',
     'systems/assimilation/world_model_freshness.ts',
     'systems/ops/continuous_chaos_resilience.ts',
+    'systems/ops/phone_seed_profile.ts',
     'systems/ops/self_hosted_bootstrap_compiler.ts',
     'systems/primitives/primitive_runtime.ts',
     'systems/primitives/policy_vm.ts',
@@ -534,6 +536,29 @@ function runGate() {
     `scenario_cadence_entries=${Object.keys(cadenceCfg).length}`
   );
   addCheck(
+    'phone_seed_profile:merge_guard_hook',
+    mergeGuardSrc.includes('phone_seed_profile.js')
+      && mergeGuardSrc.includes('status'),
+    'merge_guard should enforce phone-seed profile status check'
+  );
+  const phoneSeedPolicy = readJsonSafe(path.join(ROOT, 'config', 'phone_seed_profile_policy.json'), {});
+  const phoneThresholds = phoneSeedPolicy.thresholds && typeof phoneSeedPolicy.thresholds === 'object'
+    ? phoneSeedPolicy.thresholds
+    : {};
+  addCheck(
+    'phone_seed_profile:thresholds_present',
+    Number(phoneThresholds.boot_ms_max || 0) > 0
+      && Number(phoneThresholds.idle_rss_mb_max || 0) > 0
+      && Number(phoneThresholds.workflow_latency_ms_max || 0) > 0
+      && Number(phoneThresholds.memory_latency_ms_max || 0) > 0,
+    `boot_ms_max=${Number(phoneThresholds.boot_ms_max || 0)} idle_rss_mb_max=${Number(phoneThresholds.idle_rss_mb_max || 0)} workflow_latency_ms_max=${Number(phoneThresholds.workflow_latency_ms_max || 0)} memory_latency_ms_max=${Number(phoneThresholds.memory_latency_ms_max || 0)}`
+  );
+  addCheck(
+    'phone_seed_profile:heavy_lane_gate',
+    phoneSeedPolicy.require_heavy_lanes_disabled !== false,
+    `require_heavy_lanes_disabled=${phoneSeedPolicy.require_heavy_lanes_disabled !== false ? '1' : '0'}`
+  );
+  addCheck(
     'self_hosted_bootstrap:merge_guard_hook',
     mergeGuardSrc.includes('self_hosted_bootstrap_compiler.js')
       && mergeGuardSrc.includes('status'),
@@ -607,7 +632,8 @@ function runGate() {
     'contract_check:foundation_hooks',
     contractCheckSrc.includes('foundation_contract_gate.js')
       && contractCheckSrc.includes('scale_envelope_baseline.js')
-      && contractCheckSrc.includes('simplicity_budget_gate.js'),
+      && contractCheckSrc.includes('simplicity_budget_gate.js')
+      && contractCheckSrc.includes('phone_seed_profile.js'),
     'contract_check should validate foundation scripts'
   );
 
