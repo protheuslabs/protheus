@@ -86,6 +86,8 @@
     "hardware:embodiment:sense": "node systems/hardware/embodiment_layer.js sense --profile=auto",
     "hardware:embodiment:verify": "node systems/hardware/embodiment_layer.js verify-parity --profiles=phone,desktop,cluster --strict=1",
     "hardware:embodiment:status": "node systems/hardware/embodiment_layer.js status",
+    "hardware:surface-budget:run": "node systems/hardware/surface_budget_controller.js run",
+    "hardware:surface-budget:status": "node systems/hardware/surface_budget_controller.js status",
     "actuation:universal:run": "node systems/actuation/universal_execution_primitive.js run",
     "actuation:universal:status": "node systems/actuation/universal_execution_primitive.js status",
     "actuation:defrag:run": "node systems/actuation/adapter_defragmentation.js run",

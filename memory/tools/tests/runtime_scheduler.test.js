@@ -47,6 +47,7 @@ try {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'runtime-scheduler-'));
   const policyPath = path.join(tmp, 'policy.json');
   const embodimentPolicyPath = path.join(tmp, 'embodiment_policy.json');
+  const surfaceBudgetPolicyPath = path.join(tmp, 'surface_budget_policy.json');
   const statePath = path.join(tmp, 'state', 'scheduler', 'latest.json');
   const receiptsPath = path.join(tmp, 'state', 'scheduler', 'receipts.jsonl');
   const canonicalDir = path.join(tmp, 'state', 'runtime', 'canonical_events');
@@ -78,11 +79,28 @@ try {
     latest_path: path.join(tmp, 'state', 'hardware', 'embodiment', 'latest.json'),
     receipts_path: path.join(tmp, 'state', 'hardware', 'embodiment', 'receipts.jsonl')
   });
+  writeJson(surfaceBudgetPolicyPath, {
+    version: '1.0-test',
+    enabled: true,
+    strict_default: false,
+    apply_default: false,
+    min_transition_seconds: 0,
+    embodiment_policy_path: embodimentPolicyPath,
+    embodiment_snapshot_path: path.join(tmp, 'state', 'hardware', 'embodiment', 'latest.json'),
+    runtime_state_path: statePath,
+    state_path: path.join(tmp, 'state', 'hardware', 'surface_budget', 'latest.json'),
+    receipts_path: path.join(tmp, 'state', 'hardware', 'surface_budget', 'receipts.jsonl'),
+    tiers: [
+      { id: 'critical', max_score: 0.2, allow_modes: ['operational'], inversion_depth_cap: 0, dream_intensity_cap: 0, right_brain_max_ratio: 0, fractal_breadth_cap: 1, max_parallel_workflows: 1 },
+      { id: 'balanced', max_score: 1, allow_modes: ['operational', 'dream', 'inversion'], inversion_depth_cap: 5, dream_intensity_cap: 5, right_brain_max_ratio: 1, fractal_breadth_cap: 8, max_parallel_workflows: 24 }
+    ]
+  });
 
   const env = {
     RUNTIME_SCHEDULER_POLICY_PATH: policyPath,
     CANONICAL_EVENT_LOG_DIR: canonicalDir,
-    EMBODIMENT_LAYER_POLICY_PATH: embodimentPolicyPath
+    EMBODIMENT_LAYER_POLICY_PATH: embodimentPolicyPath,
+    SURFACE_BUDGET_POLICY_PATH: surfaceBudgetPolicyPath
   };
 
   const status1 = run(['status'], env);
@@ -90,6 +108,7 @@ try {
   const status1Payload = parseJson(status1.stdout);
   assert.strictEqual(status1Payload.mode, 'operational');
   assert.ok(status1Payload.embodiment && status1Payload.embodiment.profile_id, 'status should include embodiment summary');
+  assert.ok(status1Payload.surface_budget && Array.isArray(status1Payload.surface_budget.allow_modes), 'status should include surface budget summary');
 
   const toDream = run(['switch', '--mode=dream', '--reason=test', '--apply=1'], env);
   assert.strictEqual(toDream.status, 0, toDream.stderr || toDream.stdout);

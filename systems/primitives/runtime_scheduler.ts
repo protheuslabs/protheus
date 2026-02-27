@@ -10,6 +10,10 @@ const {
   loadPolicy: loadEmbodimentPolicy,
   makeEmbodimentSnapshot
 } = require('../hardware/embodiment_layer.js');
+const {
+  loadPolicy: loadSurfaceBudgetPolicy,
+  evaluate: evaluateSurfaceBudget
+} = require('../hardware/surface_budget_controller.js');
 
 type AnyObj = Record<string, any>;
 
@@ -111,6 +115,40 @@ function embodimentSummary() {
   };
 }
 
+function surfaceBudgetSummary() {
+  try {
+    const policy = loadSurfaceBudgetPolicy();
+    const budget = evaluateSurfaceBudget(policy);
+    return {
+      tier_id: cleanText(budget?.budget?.tier_id || '', 40) || null,
+      score: typeof budget?.budget?.score === 'number' ? Number(budget.budget.score) : null,
+      allow_modes: Array.isArray(budget?.controls?.allow_modes) ? budget.controls.allow_modes : [],
+      inversion_depth_cap: Number.isFinite(Number(budget?.controls?.inversion_depth_cap))
+        ? Number(budget.controls.inversion_depth_cap)
+        : null,
+      dream_intensity_cap: Number.isFinite(Number(budget?.controls?.dream_intensity_cap))
+        ? Number(budget.controls.dream_intensity_cap)
+        : null,
+      right_brain_max_ratio: Number.isFinite(Number(budget?.controls?.right_brain_max_ratio))
+        ? Number(budget.controls.right_brain_max_ratio)
+        : null,
+      fractal_breadth_cap: Number.isFinite(Number(budget?.controls?.fractal_breadth_cap))
+        ? Number(budget.controls.fractal_breadth_cap)
+        : null
+    };
+  } catch {
+    return {
+      tier_id: null,
+      score: null,
+      allow_modes: [],
+      inversion_depth_cap: null,
+      dream_intensity_cap: null,
+      right_brain_max_ratio: null,
+      fractal_breadth_cap: null
+    };
+  }
+}
+
 function defaultPolicy() {
   return {
     schema_id: 'runtime_scheduler_policy',
@@ -193,6 +231,7 @@ function cmdStatus(args: AnyObj) {
   const state = loadState(policy);
   const allowedNext = policy.allowed_transitions[state.mode] || [];
   const embodiment = embodimentSummary();
+  const surface_budget = surfaceBudgetSummary();
   process.stdout.write(`${JSON.stringify({
     ok: true,
     type: 'runtime_scheduler_status',
@@ -201,7 +240,8 @@ function cmdStatus(args: AnyObj) {
     updated_at: state.updated_at,
     allowed_next_modes: allowedNext,
     policy_version: policy.schema_version,
-    embodiment
+    embodiment,
+    surface_budget
   })}\n`);
 }
 
@@ -227,6 +267,7 @@ function cmdSwitch(args: AnyObj) {
   const state = loadState(policy);
   const currentMode = normalizeToken(state.mode || policy.default_mode, 40) || policy.default_mode;
   const allowedNext = policy.allowed_transitions[currentMode] || [currentMode];
+  const surfaceBudget = surfaceBudgetSummary();
   if (!allowedNext.includes(targetMode)) {
     process.stdout.write(`${JSON.stringify({
       ok: false,
@@ -238,6 +279,19 @@ function cmdSwitch(args: AnyObj) {
     })}\n`);
     process.exit(1);
   }
+  if (Array.isArray(surfaceBudget.allow_modes) && surfaceBudget.allow_modes.length && !surfaceBudget.allow_modes.includes(targetMode)) {
+    process.stdout.write(`${JSON.stringify({
+      ok: false,
+      type: 'runtime_scheduler_switch',
+      error: 'surface_budget_mode_block',
+      from_mode: currentMode,
+      to_mode: targetMode,
+      allowed_modes_by_surface_budget: surfaceBudget.allow_modes,
+      tier_id: surfaceBudget.tier_id,
+      score: surfaceBudget.score
+    })}\n`);
+    process.exit(1);
+  }
 
   const preview = {
     ok: true,
@@ -246,7 +300,8 @@ function cmdSwitch(args: AnyObj) {
     from_mode: currentMode,
     to_mode: targetMode,
     reason,
-    embodiment: embodimentSummary()
+    embodiment: embodimentSummary(),
+    surface_budget: surfaceBudget
   };
   if (apply) {
     saveState(policy, {

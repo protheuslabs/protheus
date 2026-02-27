@@ -1,0 +1,54 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": false,
+  "apply_default": false,
+  "min_transition_seconds": 60,
+  "embodiment_policy_path": "config/embodiment_layer_policy.json",
+  "embodiment_snapshot_path": "state/hardware/embodiment/latest.json",
+  "runtime_state_path": "state/runtime/scheduler_mode/latest.json",
+  "state_path": "state/hardware/surface_budget/latest.json",
+  "receipts_path": "state/hardware/surface_budget/receipts.jsonl",
+  "tiers": [
+    {
+      "id": "critical",
+      "max_score": 0.2,
+      "allow_modes": ["operational"],
+      "inversion_depth_cap": 0,
+      "dream_intensity_cap": 0,
+      "right_brain_max_ratio": 0,
+      "fractal_breadth_cap": 1,
+      "max_parallel_workflows": 1
+    },
+    {
+      "id": "low",
+      "max_score": 0.4,
+      "allow_modes": ["operational", "dream"],
+      "inversion_depth_cap": 1,
+      "dream_intensity_cap": 1,
+      "right_brain_max_ratio": 0.25,
+      "fractal_breadth_cap": 2,
+      "max_parallel_workflows": 2
+    },
+    {
+      "id": "balanced",
+      "max_score": 0.75,
+      "allow_modes": ["operational", "dream", "inversion"],
+      "inversion_depth_cap": 2,
+      "dream_intensity_cap": 2,
+      "right_brain_max_ratio": 0.5,
+      "fractal_breadth_cap": 4,
+      "max_parallel_workflows": 6
+    },
+    {
+      "id": "high",
+      "max_score": 1,
+      "allow_modes": ["operational", "dream", "inversion"],
+      "inversion_depth_cap": 5,
+      "dream_intensity_cap": 5,
+      "right_brain_max_ratio": 0.9,
+      "fractal_breadth_cap": 8,
+      "max_parallel_workflows": 24
+    }
+  ]
+}

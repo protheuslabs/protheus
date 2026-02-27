@@ -432,6 +432,14 @@ function main() {
     ["embodiment_layer.js", "sense", "verify-parity", "status"]
   );
   checkScript(
+    "systems/hardware/surface_budget_controller.js",
+    ["surface_budget_controller.js", "run", "status", "--apply", "--strict"]
+  );
+  checkSourceContains(
+    "systems/primitives/runtime_scheduler.js",
+    ["surface_budget_mode_block", "surface_budget", "allow_modes"]
+  );
+  checkScript(
     "systems/ops/foundation_contract_gate.js",
     ["foundation_contract_gate.js", "run", "status"]
   );

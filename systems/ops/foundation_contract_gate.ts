@@ -110,6 +110,7 @@ function runGate() {
     'config/simplicity_baseline.json',
     'config/simplicity_budget_policy.json',
     'config/schema_evolution_policy.json',
+    'config/surface_budget_controller_policy.json',
     'config/value_anchor_renewal_policy.json',
     'config/world_model_freshness_policy.json',
     'systems/ops/profile_compatibility_gate.ts',
@@ -120,6 +121,7 @@ function runGate() {
     'systems/memory/causal_temporal_graph.ts',
     'systems/distributed/deterministic_control_plane.ts',
     'systems/hardware/embodiment_layer.ts',
+    'systems/hardware/surface_budget_controller.ts',
     'systems/primitives/effect_type_system.ts',
     'systems/primitives/emergent_primitive_synthesis.ts',
     'systems/primitives/explanation_primitive.ts',
@@ -559,6 +561,24 @@ function runGate() {
     `require_heavy_lanes_disabled=${phoneSeedPolicy.require_heavy_lanes_disabled !== false ? '1' : '0'}`
   );
   addCheck(
+    'surface_budget_controller:merge_guard_hook',
+    mergeGuardSrc.includes('surface_budget_controller.js')
+      && mergeGuardSrc.includes('status'),
+    'merge_guard should enforce surface-budget controller status check'
+  );
+  const surfaceBudgetPolicy = readJsonSafe(path.join(ROOT, 'config', 'surface_budget_controller_policy.json'), {});
+  const tiersCount = Array.isArray(surfaceBudgetPolicy.tiers) ? surfaceBudgetPolicy.tiers.length : 0;
+  addCheck(
+    'surface_budget_controller:tiers_declared',
+    tiersCount >= 3,
+    `tiers=${tiersCount}`
+  );
+  addCheck(
+    'surface_budget_controller:cadence_gate_present',
+    Number(surfaceBudgetPolicy.min_transition_seconds || 0) >= 0,
+    `min_transition_seconds=${Number(surfaceBudgetPolicy.min_transition_seconds || 0)}`
+  );
+  addCheck(
     'self_hosted_bootstrap:merge_guard_hook',
     mergeGuardSrc.includes('self_hosted_bootstrap_compiler.js')
       && mergeGuardSrc.includes('status'),
@@ -633,7 +653,8 @@ function runGate() {
     contractCheckSrc.includes('foundation_contract_gate.js')
       && contractCheckSrc.includes('scale_envelope_baseline.js')
       && contractCheckSrc.includes('simplicity_budget_gate.js')
-      && contractCheckSrc.includes('phone_seed_profile.js'),
+      && contractCheckSrc.includes('phone_seed_profile.js')
+      && contractCheckSrc.includes('surface_budget_controller.js'),
     'contract_check should validate foundation scripts'
   );
 
