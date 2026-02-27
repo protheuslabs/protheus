@@ -46,6 +46,12 @@
   "arbitration": {
     "floor_share": 0.04,
     "soft_caps": [],
+    "max_uncertainty_exploration_share": 0.35,
+    "exploration_uncertainty_threshold": 0.7,
+    "block_unsafe_high_reward": true,
+    "unsafe_high_reward_impact_threshold": 0.82,
+    "unsafe_high_reward_drift_threshold": 0.45,
+    "max_unsafe_high_reward_share": 0.15,
     "currency_profiles": {
       "learning": {
         "uncertainty_bias": 0.08,

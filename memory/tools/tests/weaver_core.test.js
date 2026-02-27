@@ -92,6 +92,12 @@ function run() {
           max_share: 0.6
         }
       ],
+      max_uncertainty_exploration_share: 0.2,
+      exploration_uncertainty_threshold: 0.3,
+      block_unsafe_high_reward: true,
+      unsafe_high_reward_impact_threshold: 0.8,
+      unsafe_high_reward_drift_threshold: 0.25,
+      max_unsafe_high_reward_share: 0.08,
       currency_profiles: {
         learning: {
           uncertainty_bias: 0.08,
@@ -197,6 +203,15 @@ function run() {
   assert.strictEqual(out1.ok, true);
   assert.strictEqual(out1.type, 'weaver_run');
   assert.ok(out1.value_context && out1.value_context.value_currency, 'value context should be present');
+  assert.ok(
+    Array.isArray(out1.value_context.reason_codes)
+      && out1.value_context.reason_codes.includes('uncertainty_exploration_capped'),
+    'uncertainty exploration cap should emit reason code'
+  );
+  assert.ok(
+    out1.value_context.reason_codes.includes('unsafe_high_reward_blocked'),
+    'unsafe high-reward cap should emit reason code'
+  );
   assert.strictEqual(
     out1.value_context.monoculture_guard && out1.value_context.monoculture_guard.triggered,
     true,

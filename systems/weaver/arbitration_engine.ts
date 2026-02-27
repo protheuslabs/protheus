@@ -212,6 +212,51 @@ function rankRows(rows: AnyObj[]) {
     .sort((a, b) => Number(b.share || 0) - Number(a.share || 0));
 }
 
+function applyCombinedShareCap(rows: AnyObj[], predicate: (row: AnyObj) => boolean, maxCombinedShare: number) {
+  const cap = clampNumber(maxCombinedShare, 0, 1, 0.35);
+  const out = rows.map((row) => ({ ...row, share: Number(row.share || 0) }));
+  const flaggedIdx = out
+    .map((row, idx) => ({ idx, row }))
+    .filter(({ row }) => predicate(row))
+    .map(({ idx }) => idx);
+  if (!flaggedIdx.length) {
+    return { rows: out, adjusted: false, combined_share: 0 };
+  }
+  const combined = flaggedIdx.reduce((acc, idx) => acc + Math.max(0, Number(out[idx].share || 0)), 0);
+  if (combined <= cap) {
+    return { rows: out, adjusted: false, combined_share: Number(combined.toFixed(6)) };
+  }
+  const excess = combined - cap;
+  for (const idx of flaggedIdx) {
+    const current = Math.max(0, Number(out[idx].share || 0));
+    const ratio = combined > 0 ? current / combined : 0;
+    out[idx].share = Number(Math.max(0, current - (excess * ratio)).toFixed(6));
+  }
+  const receivers = out
+    .map((row, idx) => ({ idx, share: Number(row.share || 0) }))
+    .filter((row) => !flaggedIdx.includes(row.idx));
+  const receiverTotal = receivers.reduce((acc, row) => acc + Math.max(row.share, 0.001), 0);
+  if (receiverTotal > 0) {
+    for (const receiver of receivers) {
+      const ratio = Math.max(receiver.share, 0.001) / receiverTotal;
+      out[receiver.idx].share = Number((Number(out[receiver.idx].share || 0) + (excess * ratio)).toFixed(6));
+    }
+  }
+  const sum = out.reduce((acc, row) => acc + Number(row.share || 0), 0);
+  const normalized = out.map((row) => ({
+    ...row,
+    share: Number((sum > 0 ? Number(row.share || 0) / sum : 0).toFixed(6))
+  }));
+  const normalizedCombined = normalized
+    .filter((row) => predicate(row))
+    .reduce((acc, row) => acc + Math.max(0, Number(row.share || 0)), 0);
+  return {
+    rows: normalized,
+    adjusted: true,
+    combined_share: Number(normalizedCombined.toFixed(6))
+  };
+}
+
 function rankingWeightsForCurrency(currency: string, primaryMetricId = '', profiles: AnyObj = {}) {
   const cur = normalizeToken(currency || '');
   const metric = normalizeToken(primaryMetricId || '');
@@ -296,6 +341,10 @@ function arbitrateMetrics(input: AnyObj = {}) {
   const weights = normalizeWeights(policy.weights || {});
   const floorShare = clampNumber(policy.floor_share, 0, 0.2, 0.04);
   const softCaps = normalizeSoftCaps(policy.soft_caps);
+  const reasonCodes = [
+    'trit_weighted_arbitration',
+    'config_soft_caps_ready'
+  ];
   const scored = metrics
     .map((rowRaw) => {
       const row = rowRaw && typeof rowRaw === 'object' ? rowRaw : {};
@@ -327,6 +376,37 @@ function arbitrateMetrics(input: AnyObj = {}) {
   let rows = normalizeShares(scored);
   rows = enforceShareFloor(rows, floorShare);
   rows = applyConfiguredSoftCaps(rows, softCaps);
+  const allowExploration = context.allow_exploration === true;
+  if (!allowExploration) {
+    const uncertaintyThreshold = clampNumber(policy.exploration_uncertainty_threshold, 0, 1, 0.7);
+    const maxUncertaintyShare = clampNumber(policy.max_uncertainty_exploration_share, 0, 1, 0.35);
+    const uncertaintyCap = applyCombinedShareCap(
+      rows,
+      (row) => Number(row && row.signals && row.signals.uncertainty || 0) >= uncertaintyThreshold,
+      maxUncertaintyShare
+    );
+    if (uncertaintyCap.adjusted) {
+      rows = uncertaintyCap.rows;
+      reasonCodes.push('uncertainty_exploration_capped');
+    }
+  }
+  if (policy.block_unsafe_high_reward === true) {
+    const highImpactThreshold = clampNumber(policy.unsafe_high_reward_impact_threshold, 0, 1, 0.82);
+    const highDriftThreshold = clampNumber(policy.unsafe_high_reward_drift_threshold, 0, 1, 0.45);
+    const maxUnsafeShare = clampNumber(policy.max_unsafe_high_reward_share, 0, 1, 0.15);
+    const unsafeCap = applyCombinedShareCap(
+      rows,
+      (row) => (
+        Number(row && row.signals && row.signals.impact || 0) >= highImpactThreshold
+        && Number(row && row.signals && row.signals.drift_risk || 0) >= highDriftThreshold
+      ),
+      maxUnsafeShare
+    );
+    if (unsafeCap.adjusted) {
+      rows = unsafeCap.rows;
+      reasonCodes.push('unsafe_high_reward_blocked');
+    }
+  }
   const ordered = rankRows(rows);
   const primary = ordered[0] || null;
 
@@ -334,13 +414,13 @@ function arbitrateMetrics(input: AnyObj = {}) {
     rows: ordered,
     primary_metric_id: primary ? String(primary.metric_id || '') : null,
     value_currency: primary ? String(primary.value_currency || '') : null,
-    reason_codes: [
-      'trit_weighted_arbitration',
-      'config_soft_caps_ready'
-    ],
+    reason_codes: reasonCodes,
     policy_applied: {
       floor_share: floorShare,
       soft_caps: softCaps,
+      allow_exploration: allowExploration,
+      max_uncertainty_exploration_share: clampNumber(policy.max_uncertainty_exploration_share, 0, 1, 0.35),
+      block_unsafe_high_reward: policy.block_unsafe_high_reward === true,
       weights
     }
   };

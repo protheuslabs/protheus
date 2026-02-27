@@ -260,6 +260,12 @@ function defaultPolicy() {
     arbitration: {
       floor_share: 0.04,
       soft_caps: [],
+      max_uncertainty_exploration_share: 0.35,
+      exploration_uncertainty_threshold: 0.7,
+      block_unsafe_high_reward: false,
+      unsafe_high_reward_impact_threshold: 0.82,
+      unsafe_high_reward_drift_threshold: 0.45,
+      max_unsafe_high_reward_share: 0.15,
       currency_profiles: {},
       ranking_profiles: {},
       weights: {
@@ -382,6 +388,37 @@ function loadPolicy(policyPath: string) {
     arbitration: {
       floor_share: clampNumber(arbitration.floor_share, 0, 0.2, base.arbitration.floor_share),
       soft_caps: softCaps,
+      max_uncertainty_exploration_share: clampNumber(
+        arbitration.max_uncertainty_exploration_share,
+        0,
+        1,
+        base.arbitration.max_uncertainty_exploration_share
+      ),
+      exploration_uncertainty_threshold: clampNumber(
+        arbitration.exploration_uncertainty_threshold,
+        0,
+        1,
+        base.arbitration.exploration_uncertainty_threshold
+      ),
+      block_unsafe_high_reward: arbitration.block_unsafe_high_reward === true,
+      unsafe_high_reward_impact_threshold: clampNumber(
+        arbitration.unsafe_high_reward_impact_threshold,
+        0,
+        1,
+        base.arbitration.unsafe_high_reward_impact_threshold
+      ),
+      unsafe_high_reward_drift_threshold: clampNumber(
+        arbitration.unsafe_high_reward_drift_threshold,
+        0,
+        1,
+        base.arbitration.unsafe_high_reward_drift_threshold
+      ),
+      max_unsafe_high_reward_share: clampNumber(
+        arbitration.max_unsafe_high_reward_share,
+        0,
+        1,
+        base.arbitration.max_unsafe_high_reward_share
+      ),
       currency_profiles: arbitration.currency_profiles && typeof arbitration.currency_profiles === 'object'
         ? arbitration.currency_profiles
         : {},
