@@ -10,3 +10,8 @@ drafts/** linguist-generated=true
 # TS is the source of truth; JS files in these roots are bootstrap/runtime shims.
 systems/**/*.js linguist-generated=true
 lib/**/*.js linguist-generated=true
+
+# Force TS source roots to remain linguist-detectable.
+systems/**/*.ts linguist-generated=false
+lib/**/*.ts linguist-generated=false
+types/**/*.ts linguist-generated=false
