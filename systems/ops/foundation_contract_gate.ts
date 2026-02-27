@@ -103,6 +103,7 @@ function runGate() {
     'config/predictive_capacity_forecast_policy.json',
     'config/neural_dormant_seed_policy.json',
     'config/organ_state_encryption_policy.json',
+    'config/remote_tamper_heartbeat_policy.json',
     'config/crypto_agility_contract.json',
     'config/key_lifecycle_policy.json',
     'config/delegated_authority_policy.json',
@@ -145,6 +146,7 @@ function runGate() {
     'systems/security/formal_invariant_engine.ts',
     'systems/security/execution_sandbox_envelope.ts',
     'systems/security/organ_state_encryption_plane.ts',
+    'systems/security/remote_tamper_heartbeat.ts',
     'systems/security/key_lifecycle_governor.ts',
     'systems/security/delegated_authority_branching.ts',
     'systems/security/safety_resilience_guard.ts',
@@ -681,6 +683,35 @@ function runGate() {
     `state=${cleanText(organEncLaneRoots.state || '', 120) || 'missing'} memory=${cleanText(organEncLaneRoots.memory || '', 120) || 'missing'} cryonics=${cleanText(organEncLaneRoots.cryonics || '', 120) || 'missing'}`
   );
   addCheck(
+    'remote_tamper_heartbeat:merge_guard_hook',
+    mergeGuardSrc.includes('remote_tamper_heartbeat.js')
+      && mergeGuardSrc.includes('verify')
+      && mergeGuardSrc.includes('--strict=1'),
+    'merge_guard should enforce remote tamper heartbeat verify check'
+  );
+  const remoteHeartbeatPolicy = readJsonSafe(path.join(ROOT, 'config', 'remote_tamper_heartbeat_policy.json'), {});
+  addCheck(
+    'remote_tamper_heartbeat:policy_quarantine_and_signature',
+    remoteHeartbeatPolicy.auto_quarantine_on_anomaly !== false
+      && remoteHeartbeatPolicy.signature_required !== false
+      && Number(remoteHeartbeatPolicy.heartbeat_interval_sec || 0) >= 10
+      && Number(remoteHeartbeatPolicy.max_silence_sec || 0) >= Number(remoteHeartbeatPolicy.heartbeat_interval_sec || 0),
+    `auto_quarantine_on_anomaly=${remoteHeartbeatPolicy.auto_quarantine_on_anomaly !== false ? '1' : '0'} signature_required=${remoteHeartbeatPolicy.signature_required !== false ? '1' : '0'} heartbeat_interval_sec=${Number(remoteHeartbeatPolicy.heartbeat_interval_sec || 0)} max_silence_sec=${Number(remoteHeartbeatPolicy.max_silence_sec || 0)}`
+  );
+  const remotePaths = remoteHeartbeatPolicy.paths && typeof remoteHeartbeatPolicy.paths === 'object'
+    ? remoteHeartbeatPolicy.paths
+    : {};
+  addCheck(
+    'remote_tamper_heartbeat:paths_present',
+    !!cleanText(remotePaths.state_path || '', 240)
+      && !!cleanText(remotePaths.latest_path || '', 240)
+      && !!cleanText(remotePaths.outbox_path || '', 240)
+      && !!cleanText(remotePaths.notifications_path || '', 240)
+      && !!cleanText(remotePaths.quarantine_path || '', 240)
+      && !!cleanText(remotePaths.evidence_dir || '', 240),
+    `state=${cleanText(remotePaths.state_path || '', 100) || 'missing'} latest=${cleanText(remotePaths.latest_path || '', 100) || 'missing'} outbox=${cleanText(remotePaths.outbox_path || '', 100) || 'missing'} notifications=${cleanText(remotePaths.notifications_path || '', 100) || 'missing'} quarantine=${cleanText(remotePaths.quarantine_path || '', 100) || 'missing'} evidence_dir=${cleanText(remotePaths.evidence_dir || '', 100) || 'missing'}`
+  );
+  addCheck(
     'neural_dormant_seed:merge_guard_hook',
     mergeGuardSrc.includes('neural_dormant_seed.js')
       && mergeGuardSrc.includes('check')
@@ -950,6 +981,7 @@ function runGate() {
       && contractCheckSrc.includes('predictive_capacity_forecast.js')
       && contractCheckSrc.includes('execution_sandbox_envelope.js')
       && contractCheckSrc.includes('organ_state_encryption_plane.js')
+      && contractCheckSrc.includes('remote_tamper_heartbeat.js')
       && contractCheckSrc.includes('neural_dormant_seed.js')
       && contractCheckSrc.includes('client_relationship_manager.js')
       && contractCheckSrc.includes('capital_allocation_organ.js')

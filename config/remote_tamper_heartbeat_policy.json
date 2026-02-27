@@ -1,0 +1,26 @@
+{
+  "schema_id": "remote_tamper_heartbeat_policy",
+  "schema_version": "1.0",
+  "enabled": true,
+  "mode": "enforce",
+  "heartbeat_interval_sec": 60,
+  "max_silence_sec": 180,
+  "integrity_probe_enabled": true,
+  "auto_quarantine_on_anomaly": true,
+  "signature_required": true,
+  "allow_auto_generated_local_key": true,
+  "static_watermark": "protheus-local",
+  "identity_drift_allowed": false,
+  "secrets": {
+    "signing_key_env": "PROTHEUS_HEARTBEAT_SIGNING_KEY",
+    "signing_key_path": "state/security/remote_tamper_heartbeat/signing_key.txt"
+  },
+  "paths": {
+    "state_path": "state/security/remote_tamper_heartbeat/state.json",
+    "latest_path": "state/security/remote_tamper_heartbeat/latest.json",
+    "outbox_path": "state/security/remote_tamper_heartbeat/outbox.jsonl",
+    "notifications_path": "state/security/remote_tamper_heartbeat/notifications.jsonl",
+    "quarantine_path": "state/security/remote_tamper_heartbeat/quarantine.json",
+    "evidence_dir": "state/security/remote_tamper_heartbeat/evidence"
+  }
+}

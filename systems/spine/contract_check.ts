@@ -997,6 +997,14 @@ function main() {
     "systems/security/organ_state_encryption_plane.js",
     ["key_version", "mac_b64", "unauthorized_decrypt_attempt", "unauthorized_fail_closed"]
   );
+  checkScript(
+    "systems/security/remote_tamper_heartbeat.js",
+    ["remote_tamper_heartbeat.js", "emit", "verify", "status", "clear-quarantine", "--build-id", "--watermark", "--strict", "--reason"]
+  );
+  checkSourceContains(
+    "systems/security/remote_tamper_heartbeat.js",
+    ["constitution_hash", "integrity_ok", "trusted_watermark_mismatch", "quarantine_activated"]
+  );
 
   // environment_promotion_gate.js enforces promotion sequencing and approvals across env tiers.
   checkScript(
