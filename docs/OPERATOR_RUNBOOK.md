@@ -10,6 +10,7 @@ Covers:
 2. Schema drift / contract failure
 3. Sensory starvation
 4. Autonomy stall
+5. Secure heartbeat endpoint compromise / drift
 
 ## Global Triage
 
@@ -331,3 +332,32 @@ Verification:
 1. `offsite_backup status` returns `restore_drill_due=false`.
 2. Latest sync receipt has `ok=true`.
 3. Latest restore-drill receipt has `ok=true` with `metrics.rto_minutes` and `metrics.rpo_hours` present.
+
+## Incident 10: Secure Heartbeat Endpoint Drift/Compromise
+
+Symptoms:
+
+- repeated heartbeat deny events (`signature_mismatch`, `key_not_found`, `rate_limited`)
+- secure heartbeat verify fails
+- endpoint receives traffic but `latest_heartbeat_id` stops advancing
+
+Diagnose:
+
+1. `node systems/security/secure_heartbeat_endpoint.js verify --strict=1`
+2. `node systems/security/secure_heartbeat_endpoint.js status`
+3. `tail -n 30 state/security/secure_heartbeat_endpoint/audit.jsonl`
+4. `tail -n 30 state/security/secure_heartbeat_endpoint/alerts.jsonl`
+
+Containment / Recovery:
+
+1. Revoke suspicious key:
+`node systems/security/secure_heartbeat_endpoint.js revoke-key --key-id=<id> --reason="incident_response"`
+2. Rotate client key:
+`node systems/security/secure_heartbeat_endpoint.js issue-key --client-id=<client>`
+3. If endpoint behavior is uncertain, keep remote channels advisory-only until audit stabilizes.
+
+Verification:
+
+1. `verify --strict=1` passes.
+2. deny-rate in audit stream drops to baseline.
+3. latest heartbeat advances with accepted signed payloads.
