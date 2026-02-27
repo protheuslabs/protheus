@@ -88,6 +88,7 @@ function runGate() {
     'config/abstraction_debt_baseline.json',
     'config/causal_temporal_memory_policy.json',
     'config/deterministic_control_plane_policy.json',
+    'config/emergent_primitive_synthesis_policy.json',
     'config/effect_type_policy.json',
     'config/formal_invariants.json',
     'config/crypto_agility_contract.json',
@@ -108,6 +109,7 @@ function runGate() {
     'systems/memory/causal_temporal_graph.ts',
     'systems/distributed/deterministic_control_plane.ts',
     'systems/primitives/effect_type_system.ts',
+    'systems/primitives/emergent_primitive_synthesis.ts',
     'systems/primitives/runtime_scheduler.ts',
     'systems/security/formal_invariant_engine.ts',
     'systems/security/key_lifecycle_governor.ts',
@@ -347,6 +349,23 @@ function runGate() {
     'causal_temporal_graph:counterfactual_gate_present',
     typeof causalTemporalPolicy.allow_counterfactual_query === 'boolean',
     `allow_counterfactual_query=${typeof causalTemporalPolicy.allow_counterfactual_query === 'boolean' ? String(causalTemporalPolicy.allow_counterfactual_query) : 'missing'}`
+  );
+  addCheck(
+    'emergent_primitive_synthesis:merge_guard_hook',
+    mergeGuardSrc.includes('emergent_primitive_synthesis.js')
+      && mergeGuardSrc.includes('status'),
+    'merge_guard should enforce emergent primitive synthesis contract checks'
+  );
+  const synthesisPolicy = readJsonSafe(path.join(ROOT, 'config', 'emergent_primitive_synthesis_policy.json'), {});
+  addCheck(
+    'emergent_primitive_synthesis:human_gate_required',
+    synthesisPolicy.require_human_approval === true,
+    `require_human_approval=${synthesisPolicy.require_human_approval === true ? '1' : '0'}`
+  );
+  addCheck(
+    'emergent_primitive_synthesis:nursery_adversarial_required',
+    synthesisPolicy.require_nursery_pass === true && synthesisPolicy.require_adversarial_pass === true,
+    `require_nursery_pass=${synthesisPolicy.require_nursery_pass === true ? '1' : '0'} require_adversarial_pass=${synthesisPolicy.require_adversarial_pass === true ? '1' : '0'}`
   );
   const simplicityPolicy = readJsonSafe(path.join(ROOT, 'config', 'simplicity_budget_policy.json'), {});
   addCheck(

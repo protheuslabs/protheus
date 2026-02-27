@@ -424,6 +424,10 @@ function main() {
     ["replay_verify.js", "run", "status"]
   );
   checkScript(
+    "systems/primitives/emergent_primitive_synthesis.js",
+    ["emergent_primitive_synthesis.js", "propose", "evaluate", "approve", "reject", "promote", "status"]
+  );
+  checkScript(
     "systems/ops/foundation_contract_gate.js",
     ["foundation_contract_gate.js", "run", "status"]
   );

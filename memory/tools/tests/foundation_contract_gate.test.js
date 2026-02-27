@@ -55,6 +55,9 @@ function main() {
     'causal_temporal_graph:merge_guard_hook',
     'causal_temporal_graph:policy_enabled',
     'causal_temporal_graph:counterfactual_gate_present',
+    'emergent_primitive_synthesis:merge_guard_hook',
+    'emergent_primitive_synthesis:human_gate_required',
+    'emergent_primitive_synthesis:nursery_adversarial_required',
     'workflow:effect_type_gate_hook',
     'helix:safety_resilience_hook'
   ]) {

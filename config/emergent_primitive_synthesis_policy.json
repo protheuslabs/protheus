@@ -1,0 +1,27 @@
+{
+  "schema_id": "emergent_primitive_synthesis_policy",
+  "schema_version": "1.0",
+  "enabled": true,
+  "max_open_candidates": 64,
+  "require_nursery_pass": true,
+  "require_adversarial_pass": true,
+  "require_invariant_pass": true,
+  "require_human_approval": true,
+  "allow_auto_promotion": false,
+  "min_lesson_length": 12,
+  "allowed_sources": [
+    "forge",
+    "inversion",
+    "research"
+  ],
+  "candidates_path": "state/primitives/synthesis/candidates.json",
+  "archive_path": "state/primitives/synthesis/archive.jsonl",
+  "promotions_path": "state/primitives/synthesis/promotions.jsonl",
+  "receipts_path": "state/primitives/synthesis/receipts.jsonl",
+  "invariant_check_command": [
+    "node",
+    "systems/security/formal_invariant_engine.js",
+    "run",
+    "--strict=1"
+  ]
+}
