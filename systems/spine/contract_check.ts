@@ -1021,6 +1021,14 @@ function main() {
     "systems/helix/confirmed_malice_quarantine.js",
     ["insufficient_independent_signals", "confidence_below_threshold", "permanent_quarantine", "human_approval_required"]
   );
+  checkScript(
+    "systems/redteam/ant_colony_controller.js",
+    ["ant_colony_controller.js", "run", "status", "--red-confidence", "--critical-fail-cases", "--executed-cases"]
+  );
+  checkSourceContains(
+    "systems/redteam/ant_colony_controller.js",
+    ["require_helix_tamper", "require_sentinel_agreement", "recentAssimilationTargets", "distillWisdom"]
+  );
 
   // environment_promotion_gate.js enforces promotion sequencing and approvals across env tiers.
   checkScript(

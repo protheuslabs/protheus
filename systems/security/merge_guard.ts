@@ -94,6 +94,7 @@ function runGuard(opts = {}) {
   checks.push(runCmd('remote_tamper_heartbeat_verify', 'node', ['systems/security/remote_tamper_heartbeat.js', 'verify', '--strict=1']));
   checks.push(runCmd('helix_admission_status', 'node', ['systems/helix/helix_admission_gate.js', 'status']));
   checks.push(runCmd('helix_confirmed_malice_status', 'node', ['systems/helix/confirmed_malice_quarantine.js', 'status']));
+  checks.push(runCmd('redteam_ant_colony_status', 'node', ['systems/redteam/ant_colony_controller.js', 'status']));
   checks.push(runCmd('profile_compatibility_gate', 'node', ['systems/ops/profile_compatibility_gate.js', 'run', '--strict=1']));
   checks.push(runCmd('schema_evolution_contract', 'node', ['systems/ops/schema_evolution_contract.js', 'run', '--strict=1', '--apply=0']));
   if (!options.skipTests) {
