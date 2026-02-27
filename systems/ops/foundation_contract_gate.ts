@@ -87,6 +87,7 @@ function runGate() {
   const requiredFiles = [
     'config/abstraction_debt_baseline.json',
     'config/causal_temporal_memory_policy.json',
+    'config/compression_transfer_plane_policy.json',
     'config/deterministic_control_plane_policy.json',
     'config/emergent_primitive_synthesis_policy.json',
     'config/effect_type_policy.json',
@@ -121,6 +122,7 @@ function runGate() {
     'systems/memory/causal_temporal_graph.ts',
     'systems/distributed/deterministic_control_plane.ts',
     'systems/hardware/embodiment_layer.ts',
+    'systems/hardware/compression_transfer_plane.ts',
     'systems/hardware/surface_budget_controller.ts',
     'systems/primitives/effect_type_system.ts',
     'systems/primitives/emergent_primitive_synthesis.ts',
@@ -579,6 +581,26 @@ function runGate() {
     `min_transition_seconds=${Number(surfaceBudgetPolicy.min_transition_seconds || 0)}`
   );
   addCheck(
+    'compression_transfer_plane:merge_guard_hook',
+    mergeGuardSrc.includes('compression_transfer_plane.js')
+      && mergeGuardSrc.includes('status'),
+    'merge_guard should enforce compression-transfer plane status check'
+  );
+  const transferPolicy = readJsonSafe(path.join(ROOT, 'config', 'compression_transfer_plane_policy.json'), {});
+  const transferPaths = Array.isArray(transferPolicy.include_paths) ? transferPolicy.include_paths.length : 0;
+  addCheck(
+    'compression_transfer_plane:include_paths_present',
+    transferPaths >= 1,
+    `include_paths=${transferPaths}`
+  );
+  addCheck(
+    'compression_transfer_plane:bundle_paths_present',
+    !!cleanText(transferPolicy.bundle_dir || '', 200)
+      && !!cleanText(transferPolicy.latest_path || '', 200)
+      && !!cleanText(transferPolicy.receipts_path || '', 200),
+    `bundle_dir=${cleanText(transferPolicy.bundle_dir || '', 120) || 'missing'} latest_path=${cleanText(transferPolicy.latest_path || '', 120) || 'missing'} receipts_path=${cleanText(transferPolicy.receipts_path || '', 120) || 'missing'}`
+  );
+  addCheck(
     'self_hosted_bootstrap:merge_guard_hook',
     mergeGuardSrc.includes('self_hosted_bootstrap_compiler.js')
       && mergeGuardSrc.includes('status'),
@@ -654,7 +676,8 @@ function runGate() {
       && contractCheckSrc.includes('scale_envelope_baseline.js')
       && contractCheckSrc.includes('simplicity_budget_gate.js')
       && contractCheckSrc.includes('phone_seed_profile.js')
-      && contractCheckSrc.includes('surface_budget_controller.js'),
+      && contractCheckSrc.includes('surface_budget_controller.js')
+      && contractCheckSrc.includes('compression_transfer_plane.js'),
     'contract_check should validate foundation scripts'
   );
 

@@ -435,6 +435,14 @@ function main() {
     "systems/hardware/surface_budget_controller.js",
     ["surface_budget_controller.js", "run", "status", "--apply", "--strict"]
   );
+  checkScript(
+    "systems/hardware/compression_transfer_plane.js",
+    ["compression_transfer_plane.js", "compress", "expand", "auto", "status", "--bundle-id", "--target-profile", "--apply", "--strict"]
+  );
+  checkSourceContains(
+    "systems/hardware/compression_transfer_plane.js",
+    ["digest_ok", "bundle_id", "compression_transfer_bundle"]
+  );
   checkSourceContains(
     "systems/primitives/runtime_scheduler.js",
     ["surface_budget_mode_block", "surface_budget", "allow_modes"]
