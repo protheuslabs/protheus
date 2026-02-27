@@ -1,0 +1,27 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": false,
+  "qualified_case_tiers": [
+    "standard",
+    "high",
+    "strategic"
+  ],
+  "event_types": [
+    "negotiation",
+    "scope_change",
+    "dispute",
+    "repeat_business"
+  ],
+  "require_workflow_ref_for_auto": true,
+  "manual_intervention_target": 0.05,
+  "sla_hours_by_type": {
+    "negotiation": 24,
+    "scope_change": 12,
+    "dispute": 4,
+    "repeat_business": 24
+  },
+  "state_path": "state/workflow/client_relationship_manager/state.json",
+  "latest_path": "state/workflow/client_relationship_manager/latest.json",
+  "receipts_path": "state/workflow/client_relationship_manager/receipts.jsonl"
+}

@@ -1018,6 +1018,14 @@ function main() {
     "systems/workflow/orchestron_controller.js",
     ["workflow_controller.js", "run", "promote", "list", "status", "--apply", "--days", "--max", "--policy", "--orchestron", "--orchestron-apply", "--orchestron-auto", "--intent", "--value-currency", "--objective-id", "--approval-note", "--approver-id"]
   );
+  checkScript(
+    "systems/workflow/client_relationship_manager.js",
+    ["client_relationship_manager.js", "case-open", "event", "evaluate", "status", "--client-id", "--case-id", "--type", "--handled-by", "--workflow-id", "--days", "--strict"]
+  );
+  checkSourceContains(
+    "systems/workflow/client_relationship_manager.js",
+    ["manual_intervention_target", "require_workflow_ref_for_auto", "sla_hours_by_type"]
+  );
 
   // identity_anchor.js enforces objective/value coherence for workflow graft + morph proposals.
   checkScript(
