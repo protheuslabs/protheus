@@ -1,0 +1,36 @@
+Protheus Proprietary License
+Copyright (c) 2026 Jay Haslam. All Rights Reserved.
+
+1. No Open-Source Grant
+This repository and all associated source code, configuration, documentation,
+policies, and runtime artifacts are proprietary. No open-source license is
+granted by default.
+
+2. Permitted Use
+You may view and use this software only if you are explicitly authorized by
+the copyright holder.
+
+3. Prohibited Use
+Without prior written permission from the copyright holder, you may not:
+- copy, redistribute, publish, sublicense, or sell any portion of this work;
+- create derivative works for commercial use;
+- provide this software as a hosted service;
+- remove or alter attribution, legal notices, or integrity metadata.
+
+4. Contributions
+Any contribution, patch, or submission to this repository is accepted only
+under the contribution terms in `CONTRIBUTING_TERMS.md`.
+
+5. Commercial Licensing
+Commercial use requires a separate written commercial license agreement.
+
+6. No Warranty
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO MERCHANTABILITY, FITNESS FOR A PARTICULAR
+PURPOSE, AND NON-INFRINGEMENT.
+
+7. Limitation of Liability
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR
+OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+OR OTHER DEALINGS IN THE SOFTWARE.

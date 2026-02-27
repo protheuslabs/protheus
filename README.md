@@ -2,6 +2,11 @@
 
 This repository is an agent-operations workspace: orchestration, governed habits, memory indices, and runtime state.
 
+## Legal
+
+- License: `LICENSE` (proprietary, all rights reserved)
+- Contribution/commercial terms: `CONTRIBUTING_TERMS.md`
+
 ## Architecture Map
 
 - `adaptive/`

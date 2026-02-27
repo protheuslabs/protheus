@@ -23,3 +23,10 @@ node systems/spine/spine.js daily
 ```
 
 Start in `score_only` execution mode until readiness/guard checks are healthy.
+
+## Legal Terms
+
+Before contributing or deploying commercially, review:
+
+- `LICENSE`
+- `CONTRIBUTING_TERMS.md`

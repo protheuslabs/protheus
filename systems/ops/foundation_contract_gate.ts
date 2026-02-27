@@ -85,6 +85,8 @@ function runGate() {
   };
 
   const requiredFiles = [
+    'LICENSE',
+    'CONTRIBUTING_TERMS.md',
     'config/abstraction_debt_baseline.json',
     'config/causal_temporal_memory_policy.json',
     'config/capital_allocation_policy.json',
@@ -364,6 +366,26 @@ function runGate() {
     'key_lifecycle:post_quantum_track_present',
     keyAllowedAlgorithms.includes('pq-dilithium3'),
     `allowed_algorithms=${keyAllowedAlgorithms.join(',')}`
+  );
+  const licenseSrc = readFileSafe(path.join(ROOT, 'LICENSE'));
+  const contributionTermsSrc = readFileSafe(path.join(ROOT, 'CONTRIBUTING_TERMS.md'));
+  const quickstartSrc = readFileSafe(path.join(ROOT, 'docs', 'PERSONAL_PROTHEUS_QUICKSTART.md'));
+  addCheck(
+    'legal:license_terms_present',
+    licenseSrc.includes('All Rights Reserved') && licenseSrc.includes('Commercial Licensing'),
+    'LICENSE should declare proprietary all-rights-reserved commercial terms'
+  );
+  addCheck(
+    'legal:contribution_terms_present',
+    contributionTermsSrc.includes('Ownership and Assignment')
+      && contributionTermsSrc.includes('Commercial Rights')
+      && contributionTermsSrc.includes('No Compensation'),
+    'CONTRIBUTING_TERMS should define assignment/commercial boundaries'
+  );
+  addCheck(
+    'legal:onboarding_references_present',
+    quickstartSrc.includes('LICENSE') && quickstartSrc.includes('CONTRIBUTING_TERMS.md'),
+    'onboarding quickstart should reference legal artifacts'
   );
   const mergeGuardSrc = readFileSafe(path.join(ROOT, 'systems', 'security', 'merge_guard.ts'));
   addCheck(
