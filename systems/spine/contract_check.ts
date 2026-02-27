@@ -981,6 +981,14 @@ function main() {
     "systems/symbiosis/neural_dormant_seed.js",
     ["allow_non_simulated_prototypes", "blocked_runtime_profiles", "no_runtime_activation_path"]
   );
+  checkScript(
+    "systems/security/execution_sandbox_envelope.js",
+    ["execution_sandbox_envelope.js", "status", "evaluate-workflow", "evaluate-actuation", "--step-id", "--step-type", "--command", "--kind"]
+  );
+  checkSourceContains(
+    "systems/security/execution_sandbox_envelope.js",
+    ["blocked_command_tokens", "high_risk_actuation_classes", "sandbox_escape_attempt_denied"]
+  );
 
   // environment_promotion_gate.js enforces promotion sequencing and approvals across env tiers.
   checkScript(

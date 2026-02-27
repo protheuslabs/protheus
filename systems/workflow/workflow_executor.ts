@@ -54,6 +54,12 @@ try {
   saveAssimilationLedger = null;
   recordAssimilationUsage = null;
 }
+let evaluateWorkflowSandbox = null;
+try {
+  ({ evaluateWorkflowSandbox } = require('../security/execution_sandbox_envelope.js'));
+} catch {
+  evaluateWorkflowSandbox = null;
+}
 let candidateMutationOrderExternal = null;
 let applyMutationKindExternal = null;
 let evaluateMutationGateExternal = null;
@@ -2530,6 +2536,73 @@ function executeStep(step: AnyObj, context: AnyObj, options: AnyObj) {
     WORKFLOW_ADAPTER: String(executionContext.adapter || ''),
     WORKFLOW_PROVIDER: String(executionContext.provider || '')
   };
+  let sandboxGate = null;
+  if (typeof evaluateWorkflowSandbox === 'function') {
+    try {
+      sandboxGate = evaluateWorkflowSandbox({
+        step,
+        command,
+        dry_run: options && options.dry_run === true
+      });
+    } catch (err) {
+      sandboxGate = {
+        ok: false,
+        allowed: false,
+        denied: true,
+        mode: 'enforce',
+        action_type: 'workflow_step',
+        profile_id: null,
+        capability_manifest: [],
+        deny_reasons: [
+          cleanText(err && err.message ? err.message : err || 'sandbox_evaluation_failed', 180) || 'sandbox_evaluation_failed'
+        ]
+      };
+    }
+  }
+  if (sandboxGate && sandboxGate.denied === true) {
+    const ts = nowIso();
+    const reason = cleanText(
+      Array.isArray(sandboxGate.deny_reasons) && sandboxGate.deny_reasons.length
+        ? sandboxGate.deny_reasons[0]
+        : 'sandbox_policy_denied',
+      180
+    ) || 'sandbox_policy_denied';
+    return {
+      ok: false,
+      attempts: 1,
+      dry_run: options && options.dry_run === true,
+      step: {
+        id: step.id,
+        type: step.type,
+        command
+      },
+      records: [{
+        attempt: 1,
+        ok: false,
+        criteria_pass: false,
+        criteria_fail_reasons: [reason],
+        tokens_est: tokensPerAttempt,
+        exit_code: 1,
+        started_at: ts,
+        ended_at: ts,
+        duration_ms: 0,
+        timed_out: false,
+        stdout: '',
+        stderr: reason,
+        error: null,
+        sandbox_profile_id: sandboxGate.profile_id || null,
+        sandbox_capability_manifest: Array.isArray(sandboxGate.capability_manifest) ? sandboxGate.capability_manifest : []
+      }],
+      tokens_est_per_attempt: tokensPerAttempt,
+      tokens_est_total: tokensPerAttempt,
+      success_criteria: criteria,
+      failure_reason: reason,
+      external_gate: externalGate && externalGate.applicable === true ? externalGate : null,
+      rate_limit_gate: rateLimitGate && rateLimitGate.applicable === true ? rateLimitGate : null,
+      communication_gate: communicationGate && communicationGate.applicable === true ? communicationGate : null,
+      sandbox_gate: sandboxGate
+    };
+  }
 
   if (options.dry_run === true) {
     return {
@@ -2549,7 +2622,8 @@ function executeStep(step: AnyObj, context: AnyObj, options: AnyObj) {
       primitive_policy: primitivePreview && primitivePreview.policy ? primitivePreview.policy : null,
       external_gate: externalGate && externalGate.applicable === true ? externalGate : null,
       rate_limit_gate: rateLimitGate && rateLimitGate.applicable === true ? rateLimitGate : null,
-      communication_gate: communicationGate && communicationGate.applicable === true ? communicationGate : null
+      communication_gate: communicationGate && communicationGate.applicable === true ? communicationGate : null,
+      sandbox_gate: sandboxGate
     };
   }
 
@@ -2592,7 +2666,8 @@ function executeStep(step: AnyObj, context: AnyObj, options: AnyObj) {
       failure_reason: ok ? null : 'receipt_missing',
       external_gate: externalGate && externalGate.applicable === true ? externalGate : null,
       rate_limit_gate: rateLimitGate && rateLimitGate.applicable === true ? rateLimitGate : null,
-      communication_gate: communicationGate && communicationGate.applicable === true ? communicationGate : null
+      communication_gate: communicationGate && communicationGate.applicable === true ? communicationGate : null,
+      sandbox_gate: sandboxGate
     };
   }
 
@@ -2621,7 +2696,11 @@ function executeStep(step: AnyObj, context: AnyObj, options: AnyObj) {
       criteria_fail_reasons: evalResult.reasons,
       primitive: primitiveExec && primitiveExec.primitive ? primitiveExec.primitive : null,
       primitive_policy: primitiveExec && primitiveExec.policy ? primitiveExec.policy : null,
-      primitive_event_ids: primitiveExec && Array.isArray(primitiveExec.event_ids) ? primitiveExec.event_ids : []
+      primitive_event_ids: primitiveExec && Array.isArray(primitiveExec.event_ids) ? primitiveExec.event_ids : [],
+      sandbox_profile_id: sandboxGate && sandboxGate.profile_id ? sandboxGate.profile_id : null,
+      sandbox_capability_manifest: sandboxGate && Array.isArray(sandboxGate.capability_manifest)
+        ? sandboxGate.capability_manifest
+        : []
     });
     if (evalResult.pass === true) {
       finalizeExternalTelemetry(true, null);
@@ -2643,7 +2722,8 @@ function executeStep(step: AnyObj, context: AnyObj, options: AnyObj) {
         primitive_policy: primitiveExec && primitiveExec.policy ? primitiveExec.policy : null,
         external_gate: externalGate && externalGate.applicable === true ? externalGate : null,
         rate_limit_gate: rateLimitGate && rateLimitGate.applicable === true ? rateLimitGate : null,
-        communication_gate: communicationGate && communicationGate.applicable === true ? communicationGate : null
+        communication_gate: communicationGate && communicationGate.applicable === true ? communicationGate : null,
+        sandbox_gate: sandboxGate
       };
     }
   }
@@ -2670,7 +2750,8 @@ function executeStep(step: AnyObj, context: AnyObj, options: AnyObj) {
     primitive_policy: primitivePreview && primitivePreview.policy ? primitivePreview.policy : null,
     external_gate: externalGate && externalGate.applicable === true ? externalGate : null,
     rate_limit_gate: rateLimitGate && rateLimitGate.applicable === true ? rateLimitGate : null,
-    communication_gate: communicationGate && communicationGate.applicable === true ? communicationGate : null
+    communication_gate: communicationGate && communicationGate.applicable === true ? communicationGate : null,
+    sandbox_gate: sandboxGate
   };
 }
 

@@ -17,6 +17,12 @@ const { writeContractReceipt } = require('../../lib/action_receipts');
 const { isEmergencyStopEngaged } = require('../../lib/emergency_stop');
 const { evaluateClawDecision } = require('./claw_registry');
 const { executeActuationPrimitiveAsync } = require('../primitives/primitive_runtime.js');
+let evaluateActuationSandbox = null;
+try {
+  ({ evaluateActuationSandbox } = require('../security/execution_sandbox_envelope.js'));
+} catch {
+  evaluateActuationSandbox = null;
+}
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const RECEIPTS_DIR = process.env.ACTUATION_RECEIPTS_DIR
@@ -275,6 +281,59 @@ async function cmdRun(args) {
     process.stdout.write(JSON.stringify({ ok: false, error: record.error, summary, code: 4 }) + '\n');
     process.exit(4);
   }
+  let sandboxDecision = null;
+  if (typeof evaluateActuationSandbox === 'function') {
+    try {
+      sandboxDecision = evaluateActuationSandbox({
+        kind,
+        params,
+        context,
+        dry_run: dryRun
+      });
+    } catch (err) {
+      sandboxDecision = {
+        ok: false,
+        allowed: false,
+        denied: true,
+        mode: 'enforce',
+        action_type: 'actuation',
+        profile_id: null,
+        capability_manifest: [],
+        deny_reasons: [
+          String(err && err.message ? err.message : err || 'sandbox_evaluation_failed').trim().slice(0, 200) || 'sandbox_evaluation_failed'
+        ]
+      };
+    }
+  }
+  if (sandboxDecision && sandboxDecision.denied === true) {
+    const reason = Array.isArray(sandboxDecision.deny_reasons) && sandboxDecision.deny_reasons.length
+      ? String(sandboxDecision.deny_reasons[0]).trim() || 'sandbox_policy_denied'
+      : 'sandbox_policy_denied';
+    const summary = {
+      decision: 'ACTUATE',
+      gate_decision: 'DENY',
+      executable: false,
+      adapter: kind,
+      verified: false,
+      reason,
+      sandbox_decision: sandboxDecision
+    };
+    const record = {
+      ts: nowIso(),
+      type: 'actuation_execution',
+      adapter: kind,
+      dry_run: dryRun,
+      params_hash: require('crypto').createHash('sha256').update(JSON.stringify(params || {})).digest('hex').slice(0, 16),
+      ok: false,
+      code: 7,
+      duration_ms: 0,
+      summary,
+      error: reason
+    };
+    writeContractReceipt(receiptPath(), record, { attempted: false, verified: false });
+    process.stdout.write(JSON.stringify({ ok: false, error: reason, summary, code: 7 }) + '\n');
+    process.exit(7);
+  }
 
   const primitiveExec = await executeActuationPrimitiveAsync({
     kind,
@@ -310,6 +369,7 @@ async function cmdRun(args) {
       : 'adapter_failed'
   };
   summary.claw_decision = clawDecision || null;
+  summary.sandbox_decision = sandboxDecision || null;
   summary.dry_run = dryRun;
   summary.primitive = primitiveExec && primitiveExec.primitive ? primitiveExec.primitive : null;
   summary.primitive_policy = primitiveExec && primitiveExec.policy ? primitiveExec.policy : null;

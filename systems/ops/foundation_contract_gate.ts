@@ -96,6 +96,7 @@ function runGate() {
     'config/emergent_primitive_synthesis_policy.json',
     'config/effect_type_policy.json',
     'config/embodiment_layer_policy.json',
+    'config/execution_sandbox_envelope_policy.json',
     'config/explanation_primitive_policy.json',
     'config/formal_invariants.json',
     'config/phone_seed_profile_policy.json',
@@ -141,6 +142,7 @@ function runGate() {
     'systems/primitives/explanation_primitive.ts',
     'systems/primitives/runtime_scheduler.ts',
     'systems/security/formal_invariant_engine.ts',
+    'systems/security/execution_sandbox_envelope.ts',
     'systems/security/key_lifecycle_governor.ts',
     'systems/security/delegated_authority_branching.ts',
     'systems/security/safety_resilience_guard.ts',
@@ -621,6 +623,35 @@ function runGate() {
     `history=${capacityPolicy.paths && cleanText(capacityPolicy.paths.history || '', 120) || 'missing'} errors=${capacityPolicy.paths && cleanText(capacityPolicy.paths.errors || '', 120) || 'missing'} latest=${capacityPolicy.paths && cleanText(capacityPolicy.paths.latest || '', 120) || 'missing'}`
   );
   addCheck(
+    'execution_sandbox_envelope:merge_guard_hook',
+    mergeGuardSrc.includes('execution_sandbox_envelope.js')
+      && mergeGuardSrc.includes('status'),
+    'merge_guard should enforce execution sandbox envelope status check'
+  );
+  const sandboxPolicy = readJsonSafe(path.join(ROOT, 'config', 'execution_sandbox_envelope_policy.json'), {});
+  const sandboxProfiles = sandboxPolicy.profiles && typeof sandboxPolicy.profiles === 'object'
+    ? Object.keys(sandboxPolicy.profiles)
+    : [];
+  addCheck(
+    'execution_sandbox_envelope:policy_profiles',
+    sandboxProfiles.includes('workflow_container_strict')
+      && sandboxProfiles.includes('actuation_container_strict')
+      && sandboxProfiles.includes('simulation_sandbox'),
+    `profiles=${sandboxProfiles.join(',')}`
+  );
+  const sandboxHighRisk = Array.isArray(sandboxPolicy.high_risk_actuation_classes)
+    ? sandboxPolicy.high_risk_actuation_classes.map((v: unknown) => normalizeLowerToken(v, 80))
+    : [];
+  addCheck(
+    'execution_sandbox_envelope:deny_defaults_and_high_risk_gate',
+    sandboxPolicy.default_host_fs_access !== true
+      && sandboxPolicy.default_network_access !== true
+      && sandboxPolicy.require_approval_for_high_risk_actuation !== false
+      && sandboxHighRisk.includes('payments')
+      && sandboxHighRisk.includes('shell'),
+    `default_host_fs_access=${sandboxPolicy.default_host_fs_access === true ? '1' : '0'} default_network_access=${sandboxPolicy.default_network_access === true ? '1' : '0'} require_approval_for_high_risk_actuation=${sandboxPolicy.require_approval_for_high_risk_actuation !== false ? '1' : '0'} high_risk=${sandboxHighRisk.join(',')}`
+  );
+  addCheck(
     'neural_dormant_seed:merge_guard_hook',
     mergeGuardSrc.includes('neural_dormant_seed.js')
       && mergeGuardSrc.includes('check')
@@ -843,6 +874,12 @@ function runGate() {
       && workflowSrc.includes('evaluateWorkflowEffectPlan('),
     'workflow_executor must evaluate effect-type plans before execution'
   );
+  addCheck(
+    'workflow:sandbox_envelope_hook',
+    workflowSrc.includes("require('../security/execution_sandbox_envelope.js')")
+      && workflowSrc.includes('evaluateWorkflowSandbox('),
+    'workflow_executor must evaluate sandbox envelope before step execution'
+  );
   const helixSrc = readFileSafe(path.join(ROOT, 'systems', 'helix', 'helix_controller.ts'));
   addCheck(
     'helix:safety_resilience_hook',
@@ -862,6 +899,12 @@ function runGate() {
     actuationSrc.includes('executeActuationPrimitiveAsync('),
     'actuation_executor must route adapter execution through primitive runtime'
   );
+  addCheck(
+    'actuation:sandbox_envelope_hook',
+    actuationSrc.includes("require('../security/execution_sandbox_envelope.js')")
+      && actuationSrc.includes('evaluateActuationSandbox('),
+    'actuation_executor must evaluate sandbox envelope before adapter execution'
+  );
 
   const contractCheckSrc = readFileSafe(path.join(ROOT, 'systems', 'spine', 'contract_check.ts'));
   addCheck(
@@ -876,6 +919,7 @@ function runGate() {
       && contractCheckSrc.includes('siem_bridge.js')
       && contractCheckSrc.includes('soc2_type2_track.js')
       && contractCheckSrc.includes('predictive_capacity_forecast.js')
+      && contractCheckSrc.includes('execution_sandbox_envelope.js')
       && contractCheckSrc.includes('neural_dormant_seed.js')
       && contractCheckSrc.includes('client_relationship_manager.js')
       && contractCheckSrc.includes('capital_allocation_organ.js')
