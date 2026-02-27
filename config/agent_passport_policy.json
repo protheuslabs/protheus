@@ -1,0 +1,31 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": false,
+  "auto_link_from_receipts": true,
+  "auto_issue_passport": true,
+  "require_active_passport": false,
+  "passport_ttl_hours": 168,
+  "key_env": "AGENT_PASSPORT_SIGNING_KEY",
+  "actor_defaults": {
+    "actor_id": "local_operator",
+    "role": "system",
+    "tenant_id": "local",
+    "org_id": "protheus",
+    "framework_id": "openclaw",
+    "model_id": "unknown"
+  },
+  "state": {
+    "root": "state/security/agent_passport",
+    "passport_path": "state/security/agent_passport/passport.json",
+    "action_log_path": "state/security/agent_passport/actions.jsonl",
+    "chain_state_path": "state/security/agent_passport/actions.chain.json",
+    "latest_path": "state/security/agent_passport/latest.json",
+    "receipts_path": "state/security/agent_passport/receipts.jsonl"
+  },
+  "pdf": {
+    "default_out_path": "state/security/agent_passport/exports/latest_passport.pdf",
+    "max_rows": 2000
+  }
+}
+

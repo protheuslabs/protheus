@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { linkReceiptToPassport } = require('./agent_passport_link');
 
 function nowIso() {
   return new Date().toISOString();
@@ -102,6 +103,8 @@ function writeContractReceipt(filePath, record, { attempted = true, verified = f
   const withContract = withReceiptContract(record, { attempted, verified });
   const withIntegrity = withReceiptIntegrity(filePath, withContract);
   appendJsonl(filePath, withIntegrity);
+  // Non-blocking adjacent lane: passport chain should never break receipt writes.
+  linkReceiptToPassport(filePath, withIntegrity);
   return withIntegrity;
 }
 

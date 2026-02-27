@@ -19,6 +19,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { spawnSync } = require('child_process');
 
 const ROOT = process.env.CONTINUITY_ROOT
   ? path.resolve(process.env.CONTINUITY_ROOT)
@@ -94,6 +95,17 @@ function writeJsonAtomic(filePath, obj) {
 function appendJsonl(filePath, row) {
   ensureDir(path.dirname(filePath));
   fs.appendFileSync(filePath, JSON.stringify(row) + '\n', 'utf8');
+}
+
+function parseJsonPayload(raw) {
+  const text = String(raw == null ? '' : raw).trim();
+  if (!text) return null;
+  try { return JSON.parse(text); } catch {}
+  const lines = text.split('\n').map((line) => line.trim()).filter(Boolean);
+  for (let i = lines.length - 1; i >= 0; i -= 1) {
+    try { return JSON.parse(lines[i]); } catch {}
+  }
+  return null;
 }
 
 function normalizeWriter(v) {
@@ -242,6 +254,27 @@ function replayCheckpoint(checkpoint, dryRun) {
   return applied;
 }
 
+function maybeArchiveVault(writer, checkpoint) {
+  const autoArchive = String(process.env.CONTINUITY_VAULT_AUTO_ARCHIVE || '1').trim() !== '0';
+  if (!autoArchive) return { attempted: false, reason: 'feature_flag_disabled' };
+  const scriptPath = path.join(ROOT, 'systems', 'continuity', 'session_continuity_vault.js');
+  if (!fs.existsSync(scriptPath)) return { attempted: false, reason: 'vault_script_missing' };
+  const args = [scriptPath, 'archive', `--writer=${writer}`, `--checkpoint=${String(checkpoint && checkpoint.id || '')}`];
+  if (checkpoint && checkpoint.label) args.push(`--label=${String(checkpoint.label)}`);
+  const run = spawnSync(process.execPath, args, {
+    cwd: ROOT,
+    env: process.env,
+    encoding: 'utf8'
+  });
+  const payload = parseJsonPayload(run.stdout || run.stderr || '');
+  return {
+    attempted: true,
+    ok: run.status === 0 && !!(payload && payload.ok === true),
+    exit_code: run.status ?? 1,
+    payload
+  };
+}
+
 function cmdStatus() {
   const lease = leaseState();
   const index = loadIndex();
@@ -332,12 +365,30 @@ function cmdCheckpoint(args) {
     docs: row.docs.length,
     delta_paths: row.delta_paths.length
   });
+  const vaultArchive = maybeArchiveVault(writer, row);
+  if (vaultArchive.attempted === true) {
+    appendJsonl(AUDIT_PATH, {
+      ts: nowIso(),
+      type: 'continuity_vault_archive',
+      writer,
+      checkpoint_id: row.id,
+      ok: vaultArchive.ok === true,
+      reason: vaultArchive.ok === true
+        ? null
+        : String(
+          vaultArchive.payload && (vaultArchive.payload.reason || vaultArchive.payload.error)
+          || `vault_archive_exit_${vaultArchive.exit_code}`
+        ).slice(0, 160),
+      vault_id: vaultArchive.payload && vaultArchive.payload.vault_id || null
+    });
+  }
   process.stdout.write(JSON.stringify({
     ok: true,
     checkpoint_id: row.id,
     docs: row.docs.length,
     delta_paths: row.delta_paths,
-    label: row.label
+    label: row.label,
+    vault_archive: vaultArchive
   }) + '\n');
 }
 

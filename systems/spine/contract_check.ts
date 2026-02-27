@@ -680,6 +680,24 @@ function main() {
     ["active_state_bridge.js", "acquire", "renew", "release", "checkpoint", "replay"]
   );
 
+  // session_continuity_vault.js archives encrypted continuity checkpoints + verified restores.
+  checkScript(
+    "systems/continuity/session_continuity_vault.js",
+    ["session_continuity_vault.js", "archive", "restore", "verify", "status", "--writer", "--checkpoint", "--vault-id", "--dry-run"]
+  );
+
+  // agent_passport.js provides cryptographic action passport chain + export for audit.
+  checkScript(
+    "systems/security/agent_passport.js",
+    ["agent_passport.js", "issue", "append", "verify", "export-pdf", "status", "--actor", "--role", "--tenant", "--model", "--framework", "--org"]
+  );
+
+  // offdevice_memory_replication.js performs proof-verified off-device memory replication drills.
+  checkScript(
+    "systems/memory/offdevice_memory_replication.js",
+    ["offdevice_memory_replication.js", "sync", "verify", "restore-drill", "status", "--provider", "--snapshot", "--scope", "--apply"]
+  );
+
   // spawn_broker.js is centralized spawn allocation/budget control for module cell pools.
   checkScript(
     "systems/spawn/spawn_broker.js",

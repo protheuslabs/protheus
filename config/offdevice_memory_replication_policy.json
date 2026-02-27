@@ -1,0 +1,27 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": false,
+  "fallback_local_only": true,
+  "max_snapshots": 300,
+  "source_paths": [
+    "state/memory/federation/state.json",
+    "state/memory/federation/distilled_latest.json"
+  ],
+  "state": {
+    "root": "state/memory/offdevice",
+    "state_path": "state/memory/offdevice/state.json",
+    "latest_path": "state/memory/offdevice/latest.json",
+    "receipts_path": "state/memory/offdevice/receipts.jsonl",
+    "drills_dir": "state/memory/offdevice/drills"
+  },
+  "providers": {
+    "local_mirror": {
+      "enabled": true,
+      "type": "local_mirror",
+      "root": "state/memory/offdevice/providers/local_mirror",
+      "verify_required": true
+    }
+  }
+}
+

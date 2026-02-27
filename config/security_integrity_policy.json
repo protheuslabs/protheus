@@ -29,11 +29,12 @@
     "lib/eyes_catalog.js": "4553ffd8db2ea42a3bd22892d89cb6cc555d05d8e96194d859ab1d8bffcdea0b",
     "systems/adaptive/core/layer_store.js": "5eba699acf3b07abc44442c27d5dc2cc96bdf3f06b5cbdf6a8979eed4384b3e7",
     "systems/adaptive/sensory/eyes/catalog_store.js": "15782561fb6bf63001fc75cd57f089c5737036729e9efbf44a796e8c3baa3ad9",
+    "systems/security/agent_passport.js": "4957d6177400020074450e9a32a81652e33d950d2a1323d33402448bca2e1d43",
     "systems/security/anti_sabotage_shield.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/architecture_guard.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/black_box_ledger.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
-    "systems/security/capability_lease.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/capability_envelope_guard.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
+    "systems/security/capability_lease.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/capability_switchboard.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/constitution_guardian.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/directive_compiler.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
@@ -42,6 +43,7 @@
     "systems/security/directive_intake.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/egress_gateway.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/emergency_stop.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
+    "systems/security/enterprise_access_gate.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/external_security_cycle.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/goal_preservation_kernel.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/guard.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
@@ -65,7 +67,7 @@
     "systems/security/workspace_dump_guard.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/sensory/adaptive_layer_guard.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2"
   },
-  "sealed_at": "2026-02-27T01:19:11.323Z",
+  "sealed_at": "2026-02-27T05:24:13.383Z",
   "sealed_by": "jay",
-  "last_approval_note": "seal remote halt + soul token guard"
+  "last_approval_note": "seal agent passport + enterprise gate"
 }

@@ -1,0 +1,22 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": false,
+  "auto_archive_on_checkpoint": true,
+  "key_env": "SESSION_CONTINUITY_VAULT_KEY",
+  "key_min_length": 24,
+  "max_index_entries": 500,
+  "source": {
+    "checkpoint_dir": "state/continuity/checkpoints",
+    "index_path": "state/continuity/checkpoints/index.json"
+  },
+  "state": {
+    "root": "state/continuity/vault",
+    "checkpoint_dir": "state/continuity/vault/checkpoints",
+    "index_path": "state/continuity/vault/index.json",
+    "latest_path": "state/continuity/vault/latest.json",
+    "receipts_path": "state/continuity/vault/receipts.jsonl",
+    "recovery_dir": "state/continuity/vault/recovery"
+  }
+}
+
