@@ -14,6 +14,10 @@ const {
   loadTrainabilityMatrixPolicy,
   evaluateTrainingDatumTrainability
 } = require('../../lib/trainability_matrix');
+const {
+  loadRedactionClassificationPolicy,
+  classifyTrainingDatum
+} = require('../../lib/redaction_classification');
 let recordTrainingDatumProvenance = null;
 try {
   ({ recordTrainingDatumProvenance } = require('./data_rights_engine'));
@@ -135,6 +139,11 @@ function defaultPolicy() {
       required: true,
       min_score: 0.75
     },
+    redaction_classification: {
+      enabled: true,
+      strict_block: true,
+      policy_path: 'config/redaction_classification_policy.json'
+    },
     defaults: {
       owner_id: 'workflow_operator',
       owner_type: 'human_operator',
@@ -153,6 +162,9 @@ function loadPolicy(policyPath = POLICY_PATH) {
   const base = defaultPolicy();
   const queuePaths = raw.queue_paths && typeof raw.queue_paths === 'object' ? raw.queue_paths : {};
   const canary = raw.canary && typeof raw.canary === 'object' ? raw.canary : {};
+  const redaction = raw.redaction_classification && typeof raw.redaction_classification === 'object'
+    ? raw.redaction_classification
+    : {};
   const defaults = raw.defaults && typeof raw.defaults === 'object' ? raw.defaults : {};
   return {
     version: cleanText(raw.version || base.version, 40) || base.version,
@@ -171,6 +183,14 @@ function loadPolicy(policyPath = POLICY_PATH) {
       min_score: Number.isFinite(Number(canary.min_score))
         ? Math.max(0, Math.min(1, Number(canary.min_score)))
         : base.canary.min_score
+    },
+    redaction_classification: {
+      enabled: redaction.enabled !== false,
+      strict_block: redaction.strict_block !== false,
+      policy_path: cleanText(
+        redaction.policy_path || base.redaction_classification.policy_path,
+        260
+      ) || base.redaction_classification.policy_path
     },
     defaults: {
       owner_id: normalizeToken(defaults.owner_id || base.defaults.owner_id, 120) || base.defaults.owner_id,
@@ -238,16 +258,82 @@ function loadRunPayload(args: AnyObj) {
   };
 }
 
+function deriveMetadataClassification(redaction: AnyObj) {
+  const categories = Array.isArray(redaction && redaction.categories) ? redaction.categories : [];
+  const set = new Set(categories.map((row: unknown) => normalizeToken(row, 80)).filter(Boolean));
+  if (set.has('secret')) return 'restricted_secret';
+  if (set.has('license_sensitive')) return 'license_sensitive';
+  if (set.has('pii')) return 'sensitive_pii';
+  return 'internal_runtime';
+}
+
 function buildQueueRows(policy: AnyObj, runPayload: AnyObj, args: AnyObj) {
   const results = Array.isArray(runPayload && runPayload.results) ? runPayload.results : [];
   const trainabilityPolicy = loadTrainabilityMatrixPolicy();
   const conduitPolicy = loadTrainingConduitPolicy();
+  const redactionCfg = policy && policy.redaction_classification && typeof policy.redaction_classification === 'object'
+    ? policy.redaction_classification
+    : {};
+  const redactionPolicyPath = cleanText(redactionCfg.policy_path || '', 260);
+  const redactionPolicy = loadRedactionClassificationPolicy(
+    redactionPolicyPath
+      ? path.resolve(ROOT, redactionPolicyPath)
+      : undefined
+  );
+  const redactionSummary: AnyObj = {
+    enabled: redactionCfg.enabled === true,
+    rows_scanned: 0,
+    redacted_rows: 0,
+    blocked_rows: 0,
+    findings_total: 0,
+    categories: {}
+  };
   const rows: AnyObj[] = [];
   const rejected: AnyObj[] = [];
 
   for (const row of results) {
     const workflowId = normalizeToken(row && row.workflow_id || 'unknown', 120) || 'unknown';
     const entryId = `lq_${hash10(`${runPayload.run_id || 'run'}|${workflowId}|${row.status || 'unknown'}`)}`;
+    const redaction = redactionCfg.enabled === true
+      ? classifyTrainingDatum({
+          workflow_id: workflowId,
+          workflow_status: cleanText(row && row.status || 'unknown', 40) || 'unknown',
+          failure_reason: cleanText(row && row.failure_reason || '', 400) || '',
+          message: cleanText(row && row.message || '', 400) || '',
+          reason: cleanText(row && row.reason || '', 400) || '',
+          step_results: Array.isArray(row && row.step_results)
+            ? row.step_results.map((step: AnyObj) => ({
+                error: cleanText(step && step.error || '', 300),
+                stderr: cleanText(step && step.stderr || '', 300),
+                stdout: cleanText(step && step.stdout || '', 300),
+                reason: cleanText(step && step.reason || '', 220),
+                command: cleanText(step && step.command || '', 220)
+              }))
+            : []
+        }, redactionPolicy)
+      : {
+          enabled: false,
+          blocked: false,
+          redacted: false,
+          categories: [],
+          findings: [],
+          sanitized_text: '',
+          evidence: null
+        };
+    if (redactionCfg.enabled === true) {
+      redactionSummary.rows_scanned += 1;
+      if (redaction && redaction.redacted === true) redactionSummary.redacted_rows += 1;
+      if (redaction && redaction.blocked === true) redactionSummary.blocked_rows += 1;
+      const findings = Array.isArray(redaction && redaction.findings) ? redaction.findings : [];
+      redactionSummary.findings_total += findings.reduce((sum: number, finding: AnyObj) => (
+        sum + Number(finding && finding.match_count || 0)
+      ), 0);
+      for (const category of Array.isArray(redaction && redaction.categories) ? redaction.categories : []) {
+        const token = normalizeToken(category, 80) || 'general';
+        redactionSummary.categories[token] = Number(redactionSummary.categories[token] || 0) + 1;
+      }
+    }
+    const metadataClassification = deriveMetadataClassification(redaction);
     const metadata = buildTrainingConduitMetadata({
       ts: nowIso(),
       source_system: 'workflow_executor',
@@ -264,7 +350,7 @@ function buildQueueRows(policy: AnyObj, runPayload: AnyObj, args: AnyObj) {
       retention_days: policy.defaults.retention_days,
       delete_scope: policy.defaults.delete_scope,
       delete_key: `${runPayload.run_id || 'run'}:${workflowId}`,
-      classification: 'internal_runtime'
+      classification: metadataClassification
     }, conduitPolicy);
     const validation = validateTrainingConduitMetadata(metadata, conduitPolicy);
     const trainability = evaluateTrainingDatumTrainability(metadata, trainabilityPolicy);
@@ -274,6 +360,9 @@ function buildQueueRows(policy: AnyObj, runPayload: AnyObj, args: AnyObj) {
     if (policy.metadata_strict && validation.ok !== true) reasons.push('metadata_validation_failed');
     if (policy.trainability_strict && trainability.allow !== true) reasons.push('trainability_rejected');
     if (policy.require_explicit_consent && !consentGranted) reasons.push('consent_not_granted');
+    if (redactionCfg.enabled === true && redactionCfg.strict_block === true && redaction && redaction.blocked === true) {
+      reasons.push('sensitive_content_blocked');
+    }
 
     const queueRow = {
       entry_id: entryId,
@@ -288,6 +377,17 @@ function buildQueueRows(policy: AnyObj, runPayload: AnyObj, args: AnyObj) {
         blocked: row && row.blocked_by_gate === true,
         duration_ms: Number(row && row.duration_ms || 0)
       },
+      learning_text: cleanText(redaction && redaction.sanitized_text || '', 1600) || null,
+      redaction: {
+        enabled: redactionCfg.enabled === true,
+        blocked: redaction && redaction.blocked === true,
+        redacted: redaction && redaction.redacted === true,
+        categories: Array.isArray(redaction && redaction.categories) ? redaction.categories : [],
+        findings: Array.isArray(redaction && redaction.findings) ? redaction.findings : [],
+        evidence: redaction && redaction.evidence && typeof redaction.evidence === 'object'
+          ? redaction.evidence
+          : null
+      },
       training_conduit: metadata,
       trainability,
       stage: reasons.length ? 'rejected' : 'pending_canary',
@@ -298,7 +398,7 @@ function buildQueueRows(policy: AnyObj, runPayload: AnyObj, args: AnyObj) {
     else rows.push(queueRow);
   }
 
-  return { rows, rejected };
+  return { rows, rejected, redaction_summary: redactionSummary };
 }
 
 function cmdIngest(args: AnyObj) {
@@ -370,6 +470,9 @@ function cmdIngest(args: AnyObj) {
     rights_events_written: rightsEventsWritten,
     pending_queue_path: relPath(pendingQueuePath),
     canary_queue_path: relPath(canaryQueuePath),
+    redaction_summary: built && built.redaction_summary && typeof built.redaction_summary === 'object'
+      ? built.redaction_summary
+      : null,
     proposal_only: policy.proposal_only === true
   };
   writeJsonAtomic(LATEST_PATH, out);

@@ -14,6 +14,11 @@
     "required": true,
     "min_score": 0.75
   },
+  "redaction_classification": {
+    "enabled": true,
+    "strict_block": true,
+    "policy_path": "config/redaction_classification_policy.json"
+  },
   "defaults": {
     "owner_id": "workflow_operator",
     "owner_type": "human_operator",

@@ -1,0 +1,56 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "max_text_bytes": 16384,
+  "redact_on_block": true,
+  "text_fields_allowlist": [
+    "workflow_id",
+    "workflow_status",
+    "failure_reason",
+    "message",
+    "error",
+    "stderr",
+    "stdout",
+    "summary",
+    "notes",
+    "reason",
+    "command"
+  ],
+  "rules": [
+    {
+      "id": "pii_email",
+      "category": "pii",
+      "action": "redact",
+      "regex": "[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}",
+      "flags": "gi"
+    },
+    {
+      "id": "pii_phone",
+      "category": "pii",
+      "action": "redact",
+      "regex": "(?:\\+?\\d[\\d\\-()\\s]{7,}\\d)",
+      "flags": "g"
+    },
+    {
+      "id": "secret_assignment",
+      "category": "secret",
+      "action": "block",
+      "regex": "(?:api[_-]?key|secret|token|password)\\s*[:=]\\s*[A-Za-z0-9_\\-]{8,}",
+      "flags": "gi"
+    },
+    {
+      "id": "secret_sk_token",
+      "category": "secret",
+      "action": "block",
+      "regex": "sk-[A-Za-z0-9]{20,}",
+      "flags": "g"
+    },
+    {
+      "id": "license_sensitive_notice",
+      "category": "license_sensitive",
+      "action": "block",
+      "regex": "\\b(?:all rights reserved|proprietary|confidential)\\b",
+      "flags": "gi"
+    }
+  ]
+}
