@@ -39,6 +39,8 @@ function main() {
     'distill_or_atrophy:total_candidate_cap',
     'scheduler_modes:contains_dream_inversion',
     'profile_compatibility:n_minus_2_minimum',
+    'distributed_control_plane:quorum_floor',
+    'distributed_control_plane:trust_domain_required',
     'formal_invariant_engine:merge_guard_hook'
   ]) {
     assert.ok(byId.has(id), `missing check: ${id}`);

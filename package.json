@@ -52,6 +52,8 @@
     "foundation:contract": "node systems/ops/foundation_contract_gate.js run --strict=1",
     "profile:compat:run": "node systems/ops/profile_compatibility_gate.js run --strict=1",
     "profile:compat:status": "node systems/ops/profile_compatibility_gate.js status",
+    "distributed:control:run": "node systems/distributed/deterministic_control_plane.js run",
+    "distributed:control:status": "node systems/distributed/deterministic_control_plane.js status",
     "foundation:scale-envelope": "node systems/ops/scale_envelope_baseline.js run --strict=1",
     "js:holdout:audit": "node systems/ops/js_holdout_audit.js run --strict=1",
     "js:holdout:status": "node systems/ops/js_holdout_audit.js status",

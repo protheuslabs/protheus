@@ -1,0 +1,10 @@
+{
+  "schema_id": "deterministic_control_plane_policy",
+  "schema_version": "1.0",
+  "enabled": true,
+  "quorum_size": 2,
+  "local_trust_domain": "primary",
+  "leader_strategy": "lexicographic_node_id",
+  "state_path": "state/distributed/control_plane/latest.json",
+  "history_path": "state/distributed/control_plane/history.jsonl"
+}

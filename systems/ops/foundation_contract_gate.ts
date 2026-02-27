@@ -86,6 +86,7 @@ function runGate() {
 
   const requiredFiles = [
     'config/abstraction_debt_baseline.json',
+    'config/deterministic_control_plane_policy.json',
     'config/formal_invariants.json',
     'config/profile_compatibility_policy.json',
     'config/primitive_catalog.json',
@@ -94,6 +95,7 @@ function runGate() {
     'config/runtime_scheduler_policy.json',
     'config/scale_envelope_policy.json',
     'systems/ops/profile_compatibility_gate.ts',
+    'systems/distributed/deterministic_control_plane.ts',
     'systems/primitives/runtime_scheduler.ts',
     'systems/security/formal_invariant_engine.ts',
     'systems/primitives/primitive_runtime.ts',
@@ -236,6 +238,19 @@ function runGate() {
     'profile_compatibility:n_minus_2_minimum',
     maxMinorBehind >= 2,
     `max_minor_behind=${maxMinorBehind}`
+  );
+  const controlPlanePolicy = readJsonSafe(path.join(ROOT, 'config', 'deterministic_control_plane_policy.json'), {});
+  const quorumSize = Math.max(0, Number(controlPlanePolicy.quorum_size || 0) || 0);
+  addCheck(
+    'distributed_control_plane:quorum_floor',
+    quorumSize >= 2,
+    `quorum_size=${quorumSize}`
+  );
+  const localTrustDomain = normalizeLowerToken(controlPlanePolicy.local_trust_domain || '', 80);
+  addCheck(
+    'distributed_control_plane:trust_domain_required',
+    !!localTrustDomain,
+    `local_trust_domain=${localTrustDomain || 'missing'}`
   );
   const mergeGuardSrc = readFileSafe(path.join(ROOT, 'systems', 'security', 'merge_guard.ts'));
   addCheck(
