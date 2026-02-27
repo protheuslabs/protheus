@@ -100,6 +100,7 @@ function runGate() {
     'config/execution_sandbox_envelope_policy.json',
     'config/explanation_primitive_policy.json',
     'config/formal_invariants.json',
+    'config/gated_self_improvement_policy.json',
     'config/helix_admission_policy.json',
     'config/phone_seed_profile_policy.json',
     'config/predictive_capacity_forecast_policy.json',
@@ -132,6 +133,7 @@ function runGate() {
     'systems/ops/simplicity_budget_gate.ts',
     'systems/ops/schema_evolution_contract.ts',
     'systems/continuity/resurrection_protocol.ts',
+    'systems/autonomy/gated_self_improvement_loop.ts',
     'systems/echo/value_anchor_renewal.ts',
     'systems/helix/confirmed_malice_quarantine.ts',
     'systems/helix/helix_admission_gate.ts',
@@ -482,6 +484,42 @@ function runGate() {
     'value_anchor_renewal:review_gate_enabled',
     valueAnchorPolicy.require_user_review_above_shift !== false,
     `require_user_review_above_shift=${valueAnchorPolicy.require_user_review_above_shift !== false ? '1' : '0'}`
+  );
+  addCheck(
+    'gated_self_improvement:merge_guard_hook',
+    mergeGuardSrc.includes('gated_self_improvement_loop.js')
+      && mergeGuardSrc.includes('status'),
+    'merge_guard should enforce gated self-improvement status checks'
+  );
+  const gatedSelfImprovePolicy = readJsonSafe(path.join(ROOT, 'config', 'gated_self_improvement_policy.json'), {});
+  const gatedSelfImproveGates = gatedSelfImprovePolicy.gates && typeof gatedSelfImprovePolicy.gates === 'object'
+    ? gatedSelfImprovePolicy.gates
+    : {};
+  const gatedStages = Array.isArray(gatedSelfImprovePolicy.rollout_stages)
+    ? gatedSelfImprovePolicy.rollout_stages.map((v: unknown) => normalizeLowerToken(v, 30)).filter(Boolean)
+    : [];
+  addCheck(
+    'gated_self_improvement:policy_gates_and_stages',
+    gatedSelfImprovePolicy.enabled !== false
+      && gatedSelfImprovePolicy.require_objective_id !== false
+      && gatedSelfImprovePolicy.auto_rollback_on_regression !== false
+      && Number(gatedSelfImproveGates.max_effective_drift_rate || 0) <= 0.05
+      && Number(gatedSelfImproveGates.min_effective_yield_rate || 0) >= 0.5
+      && Number(gatedSelfImproveGates.max_effective_safety_stop_rate || 0) <= 0.02
+      && gatedStages.includes('shadow')
+      && gatedStages.includes('canary')
+      && gatedStages.includes('live'),
+    `enabled=${gatedSelfImprovePolicy.enabled !== false ? '1' : '0'} require_objective_id=${gatedSelfImprovePolicy.require_objective_id !== false ? '1' : '0'} auto_rollback_on_regression=${gatedSelfImprovePolicy.auto_rollback_on_regression !== false ? '1' : '0'} stages=${gatedStages.join(',')}`
+  );
+  const gatedSelfImproveSrc = readFileSafe(path.join(ROOT, 'systems', 'autonomy', 'gated_self_improvement_loop.ts'));
+  addCheck(
+    'gated_self_improvement:controller_hooks',
+    gatedSelfImproveSrc.includes('extractSimulationMetrics(')
+      && gatedSelfImproveSrc.includes('evaluateGates(')
+      && gatedSelfImproveSrc.includes('self_code_evolution_sandbox.js')
+      && gatedSelfImproveSrc.includes('autonomy_simulation_harness.js')
+      && gatedSelfImproveSrc.includes('red_team_harness.js'),
+    'gated_self_improvement_loop should compose simulation, red-team, and rollback-linked evolution lanes'
   );
   addCheck(
     'explanation_primitive:merge_guard_hook',
@@ -1094,6 +1132,7 @@ function runGate() {
       && contractCheckSrc.includes('execution_sandbox_envelope.js')
       && contractCheckSrc.includes('organ_state_encryption_plane.js')
       && contractCheckSrc.includes('remote_tamper_heartbeat.js')
+      && contractCheckSrc.includes('gated_self_improvement_loop.js')
       && contractCheckSrc.includes('helix_admission_gate.js')
       && contractCheckSrc.includes('confirmed_malice_quarantine.js')
       && contractCheckSrc.includes('ant_colony_controller.js')

@@ -74,6 +74,7 @@ function runGuard(opts = {}) {
   checks.push(runCmd('resurrection_protocol_status', 'node', ['systems/continuity/resurrection_protocol.js', 'status']));
   checks.push(runCmd('value_anchor_renewal_status', 'node', ['systems/echo/value_anchor_renewal.js', 'status']));
   checks.push(runCmd('explanation_primitive_status', 'node', ['systems/primitives/explanation_primitive.js', 'status']));
+  checks.push(runCmd('gated_self_improvement_status', 'node', ['systems/autonomy/gated_self_improvement_loop.js', 'status']));
   checks.push(runCmd('delegated_authority_status', 'node', ['systems/security/delegated_authority_branching.js', 'status']));
   checks.push(runCmd('world_model_freshness_status', 'node', ['systems/assimilation/world_model_freshness.js', 'status']));
   checks.push(runCmd('continuous_chaos_resilience_status', 'node', ['systems/ops/continuous_chaos_resilience.js', 'status']));
