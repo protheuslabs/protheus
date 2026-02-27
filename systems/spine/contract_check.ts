@@ -1029,6 +1029,14 @@ function main() {
     "systems/redteam/ant_colony_controller.js",
     ["require_helix_tamper", "require_sentinel_agreement", "recentAssimilationTargets", "distillWisdom"]
   );
+  checkScript(
+    "systems/autonomy/gated_self_improvement_loop.js",
+    ["gated_self_improvement_loop.js", "propose", "run", "rollback", "status", "--proposal-id", "--objective-id", "--target-path", "--apply"]
+  );
+  checkSourceContains(
+    "systems/autonomy/gated_self_improvement_loop.js",
+    ["rollout_stages", "auto_rollback_on_regression", "extractSimulationMetrics", "evaluateGates"]
+  );
 
   // environment_promotion_gate.js enforces promotion sequencing and approvals across env tiers.
   checkScript(
