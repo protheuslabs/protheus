@@ -825,6 +825,14 @@ function main() {
     ["js_holdout_audit.js", "run", "status", "--registry", "--strict"]
   );
   checkScript(
+    "systems/observability/siem_bridge.js",
+    ["siem_bridge.js", "export", "correlate", "status", "--format", "--strict"]
+  );
+  checkSourceContains(
+    "systems/observability/siem_bridge.js",
+    ["auth_anomaly", "integrity_drift", "guard_denies", "alert_roundtrip"]
+  );
+  checkScript(
     "systems/ops/continuous_chaos_resilience.js",
     ["continuous_chaos_resilience.js", "tick", "gate", "status", "--apply", "--strict", "--max-scenarios"]
   );

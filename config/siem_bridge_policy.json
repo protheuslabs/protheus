@@ -1,0 +1,34 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": false,
+  "default_format": "otlp",
+  "input_paths": [
+    "state/security/integrity_status.json",
+    "state/security/log_redaction_guard/latest.json",
+    "state/ops/alert_transport_health.json",
+    "state/ops/execution_reliability_slo.json"
+  ],
+  "correlation_rules": {
+    "auth_anomaly": {
+      "enabled": true,
+      "pattern_tokens": ["auth", "token", "mfa", "forbidden"],
+      "min_hits": 2
+    },
+    "integrity_drift": {
+      "enabled": true,
+      "pattern_tokens": ["integrity", "tamper", "mismatch", "drift"],
+      "min_hits": 1
+    },
+    "guard_denies": {
+      "enabled": true,
+      "pattern_tokens": ["deny", "blocked", "policy", "gate"],
+      "min_hits": 1
+    }
+  },
+  "latest_export_path": "state/observability/siem_bridge/latest_export.json",
+  "export_history_path": "state/observability/siem_bridge/export_history.jsonl",
+  "latest_correlation_path": "state/observability/siem_bridge/latest_correlation.json",
+  "alert_roundtrip_path": "state/observability/siem_bridge/alert_roundtrip.json",
+  "receipts_path": "state/observability/siem_bridge/receipts.jsonl"
+}

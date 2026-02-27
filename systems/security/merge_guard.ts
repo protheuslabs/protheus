@@ -85,6 +85,7 @@ function runGuard(opts = {}) {
   checks.push(runCmd('client_relationship_manager_status', 'node', ['systems/workflow/client_relationship_manager.js', 'status', '--days=30']));
   checks.push(runCmd('capital_allocation_organ_status', 'node', ['systems/budget/capital_allocation_organ.js', 'status', '--days=30']));
   checks.push(runCmd('drift_aware_revenue_optimizer_status', 'node', ['systems/weaver/drift_aware_revenue_optimizer.js', 'status', '--days=30']));
+  checks.push(runCmd('siem_bridge_status', 'node', ['systems/observability/siem_bridge.js', 'status']));
   checks.push(runCmd('profile_compatibility_gate', 'node', ['systems/ops/profile_compatibility_gate.js', 'run', '--strict=1']));
   checks.push(runCmd('schema_evolution_contract', 'node', ['systems/ops/schema_evolution_contract.js', 'run', '--strict=1', '--apply=0']));
   if (!options.skipTests) {

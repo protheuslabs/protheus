@@ -115,6 +115,7 @@ function runGate() {
     'config/simplicity_baseline.json',
     'config/simplicity_budget_policy.json',
     'config/schema_evolution_policy.json',
+    'config/siem_bridge_policy.json',
     'config/surface_budget_controller_policy.json',
     'config/value_anchor_renewal_policy.json',
     'config/world_model_freshness_policy.json',
@@ -141,6 +142,7 @@ function runGate() {
     'systems/security/delegated_authority_branching.ts',
     'systems/security/safety_resilience_guard.ts',
     'systems/assimilation/world_model_freshness.ts',
+    'systems/observability/siem_bridge.ts',
     'systems/ops/continuous_chaos_resilience.ts',
     'systems/ops/phone_seed_profile.ts',
     'systems/ops/self_hosted_bootstrap_compiler.ts',
@@ -548,6 +550,28 @@ function runGate() {
     `scenario_cadence_entries=${Object.keys(cadenceCfg).length}`
   );
   addCheck(
+    'siem_bridge:merge_guard_hook',
+    mergeGuardSrc.includes('siem_bridge.js')
+      && mergeGuardSrc.includes('status'),
+    'merge_guard should enforce SIEM bridge status check'
+  );
+  const siemPolicy = readJsonSafe(path.join(ROOT, 'config', 'siem_bridge_policy.json'), {});
+  const siemRules = siemPolicy.correlation_rules && typeof siemPolicy.correlation_rules === 'object'
+    ? Object.keys(siemPolicy.correlation_rules)
+    : [];
+  addCheck(
+    'siem_bridge:correlation_rules_present',
+    siemRules.includes('auth_anomaly') && siemRules.includes('integrity_drift') && siemRules.includes('guard_denies'),
+    `rules=${siemRules.join(',')}`
+  );
+  addCheck(
+    'siem_bridge:export_and_roundtrip_paths_present',
+    !!cleanText(siemPolicy.latest_export_path || '', 200)
+      && !!cleanText(siemPolicy.latest_correlation_path || '', 200)
+      && !!cleanText(siemPolicy.alert_roundtrip_path || '', 200),
+    `latest_export_path=${cleanText(siemPolicy.latest_export_path || '', 120) || 'missing'} latest_correlation_path=${cleanText(siemPolicy.latest_correlation_path || '', 120) || 'missing'} alert_roundtrip_path=${cleanText(siemPolicy.alert_roundtrip_path || '', 120) || 'missing'}`
+  );
+  addCheck(
     'phone_seed_profile:merge_guard_hook',
     mergeGuardSrc.includes('phone_seed_profile.js')
       && mergeGuardSrc.includes('status'),
@@ -773,6 +797,7 @@ function runGate() {
       && contractCheckSrc.includes('surface_budget_controller.js')
       && contractCheckSrc.includes('compression_transfer_plane.js')
       && contractCheckSrc.includes('opportunistic_offload_plane.js')
+      && contractCheckSrc.includes('siem_bridge.js')
       && contractCheckSrc.includes('client_relationship_manager.js')
       && contractCheckSrc.includes('capital_allocation_organ.js')
       && contractCheckSrc.includes('drift_aware_revenue_optimizer.js'),
