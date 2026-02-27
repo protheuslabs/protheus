@@ -418,6 +418,28 @@ function main() {
     ["route_execute.js", "--task"]
   );
 
+  // Primitive baseline scripts must remain callable for canonical replay checks and foundational gates.
+  checkScript(
+    "systems/primitives/replay_verify.js",
+    ["replay_verify.js", "run", "status"]
+  );
+  checkScript(
+    "systems/ops/foundation_contract_gate.js",
+    ["foundation_contract_gate.js", "run", "status"]
+  );
+  checkScript(
+    "systems/ops/scale_envelope_baseline.js",
+    ["scale_envelope_baseline.js", "run", "status"]
+  );
+  checkSourceContains(
+    "systems/workflow/workflow_executor.js",
+    ["primitive_runtime.js", "executeCommandPrimitiveSync"]
+  );
+  checkSourceContains(
+    "systems/actuation/actuation_executor.js",
+    ["primitive_runtime.js", "executeActuationPrimitiveAsync"]
+  );
+
   // system_budget.js centralizes strategy-allocated caps + system enforcement + usage recording.
   checkScript(
     "systems/budget/system_budget.js",
@@ -690,6 +712,24 @@ function main() {
   checkScript(
     "systems/security/agent_passport.js",
     ["agent_passport.js", "issue", "append", "verify", "export-pdf", "status", "--actor", "--role", "--tenant", "--model", "--framework", "--org"]
+  );
+
+  // alias_verification_vault.js manages secure alias issuance + verification code routing.
+  checkScript(
+    "systems/security/alias_verification_vault.js",
+    ["alias_verification_vault.js", "issue", "route-code", "consume-code", "revoke", "cleanup", "status", "--channel", "--alias-id", "--code", "--passport-id"]
+  );
+
+  // capability_profile_compiler.js compiles canonical profile-only capability artifacts.
+  checkScript(
+    "systems/assimilation/capability_profile_compiler.js",
+    ["capability_profile_compiler.js", "compile", "from-research", "validate", "status", "--in", "--capability-id", "--source-type", "--research-json"]
+  );
+
+  // js_holdout_audit.js enforces JS->TS exception registry in strict runtime lanes.
+  checkScript(
+    "systems/ops/js_holdout_audit.js",
+    ["js_holdout_audit.js", "run", "status", "--registry", "--strict"]
   );
 
   // offdevice_memory_replication.js performs proof-verified off-device memory replication drills.

@@ -1,0 +1,20 @@
+{
+  "version": "1.0",
+  "strict_roots": [
+    "systems",
+    "lib"
+  ],
+  "advisory_roots": [
+    "habits/scripts",
+    "memory/tools"
+  ],
+  "exceptions": [
+    {
+      "path": "lib/ts_bootstrap.js",
+      "owner": "systems-core",
+      "reason": "Runtime bootstrap loader for TS entrypoints",
+      "benchmark_evidence": "required_bootstrap_lane",
+      "expires_at": "2027-02-27T00:00:00.000Z"
+    }
+  ]
+}
