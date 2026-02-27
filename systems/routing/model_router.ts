@@ -1585,7 +1585,10 @@ function eyesSignalPolicy(cfg) {
     cloud_penalty_degraded: toBoundedNumber(policy.cloud_penalty_degraded, 3, 0, 40),
     high_signal_score_ema: toBoundedNumber(policy.high_signal_score_ema, 72, 1, 100),
     high_signal_ratio_min: toBoundedNumber(policy.high_signal_ratio_min, 0.5, 0.1, 1),
-    cloud_anchor_bonus_high_signal: toBoundedNumber(policy.cloud_anchor_bonus_high_signal, 1, 0, 20)
+    cloud_anchor_bonus_high_signal: toBoundedNumber(policy.cloud_anchor_bonus_high_signal, 1, 0, 20),
+    local_bonus_degraded_ratio_weight: toBoundedNumber(policy.local_bonus_degraded_ratio_weight, 5, 0, 40),
+    cloud_penalty_degraded_ratio_weight: toBoundedNumber(policy.cloud_penalty_degraded_ratio_weight, 4, 0, 40),
+    cloud_anchor_bonus_high_signal_ratio_weight: toBoundedNumber(policy.cloud_anchor_bonus_high_signal_ratio_weight, 3, 0, 20)
   };
 }
 
@@ -1606,6 +1609,11 @@ function eyesRoutingSignal(cfg) {
     local_bonus_degraded: Number(policy.local_bonus_degraded || 0),
     cloud_penalty_degraded: Number(policy.cloud_penalty_degraded || 0),
     cloud_anchor_bonus_high_signal: Number(policy.cloud_anchor_bonus_high_signal || 0),
+    local_bonus_degraded_ratio_weight: Number(policy.local_bonus_degraded_ratio_weight || 0),
+    cloud_penalty_degraded_ratio_weight: Number(policy.cloud_penalty_degraded_ratio_weight || 0),
+    cloud_anchor_bonus_high_signal_ratio_weight: Number(policy.cloud_anchor_bonus_high_signal_ratio_weight || 0),
+    degraded_fail_ratio_threshold: Number(policy.degraded_fail_ratio || 0.5),
+    high_signal_ratio_threshold: Number(policy.high_signal_ratio_min || 0.5),
     reason: "disabled"
   };
   if (!policy.enabled) return base;
@@ -2856,22 +2864,50 @@ function rankCandidate(modelId, ctx) {
 
   if (eyesSignal && eyesSignal.enabled === true && eyesSignal.available === true) {
     if (eyesSignal.network_degraded === true) {
+      const failRatio = Number(eyesSignal.fail_ratio);
+      const failThreshold = Number(eyesSignal.degraded_fail_ratio_threshold || 0.5);
+      const failScale = Number.isFinite(failRatio) && Number.isFinite(failThreshold) && failThreshold < 1
+        ? Math.max(0, Math.min(1, (failRatio - failThreshold) / (1 - failThreshold)))
+        : 0;
       const localBonus = Number(eyesSignal.local_bonus_degraded || 0);
       const cloudPenalty = Number(eyesSignal.cloud_penalty_degraded || 0);
+      const localRatioWeight = Number(eyesSignal.local_bonus_degraded_ratio_weight || 0);
+      const cloudRatioWeight = Number(eyesSignal.cloud_penalty_degraded_ratio_weight || 0);
+      const localScaledBonus = Math.max(0, Math.round(localRatioWeight * failScale));
+      const cloudScaledPenalty = Math.max(0, Math.round(cloudRatioWeight * failScale));
       if (isLocalOllamaModel(modelId) && localBonus > 0) {
         score += localBonus;
         reasons.push("eyes_network_degraded_local_bonus");
+        if (localScaledBonus > 0) {
+          score += localScaledBonus;
+          reasons.push("eyes_network_degraded_ratio_scaled_local_bonus");
+        }
       }
       if (isCloudModel(modelId) && cloudPenalty > 0) {
         score -= cloudPenalty;
         reasons.push("eyes_network_degraded_cloud_penalty");
+        if (cloudScaledPenalty > 0) {
+          score -= cloudScaledPenalty;
+          reasons.push("eyes_network_degraded_ratio_scaled_cloud_penalty");
+        }
       }
     }
     if (eyesSignal.signal_rich === true && isCloudModel(modelId)) {
+      const highRatio = Number(eyesSignal.high_signal_ratio);
+      const highThreshold = Number(eyesSignal.high_signal_ratio_threshold || 0.5);
+      const highScale = Number.isFinite(highRatio) && Number.isFinite(highThreshold) && highThreshold < 1
+        ? Math.max(0, Math.min(1, (highRatio - highThreshold) / (1 - highThreshold)))
+        : 0;
       const anchorBonus = Number(eyesSignal.cloud_anchor_bonus_high_signal || 0);
+      const anchorRatioWeight = Number(eyesSignal.cloud_anchor_bonus_high_signal_ratio_weight || 0);
+      const anchorScaledBonus = Math.max(0, Math.round(anchorRatioWeight * highScale));
       if (anchorBonus > 0 && normalizeKey(modelId) === normalizeKey(anchorModel || "")) {
         score += anchorBonus;
         reasons.push("eyes_signal_rich_anchor_bonus");
+        if (anchorScaledBonus > 0) {
+          score += anchorScaledBonus;
+          reasons.push("eyes_signal_rich_ratio_scaled_anchor_bonus");
+        }
       }
     }
   }
@@ -3496,6 +3532,8 @@ function routeDecision({ risk, complexity, intent, task, mode, forceModel = "", 
       non_stub_total: eyesSignal.non_stub_total,
       fail_ratio: eyesSignal.fail_ratio,
       high_signal_ratio: eyesSignal.high_signal_ratio,
+      degraded_fail_ratio_threshold: eyesSignal.degraded_fail_ratio_threshold,
+      high_signal_ratio_threshold: eyesSignal.high_signal_ratio_threshold,
       reason: eyesSignal.reason || null
     },
     prompt_cache: {

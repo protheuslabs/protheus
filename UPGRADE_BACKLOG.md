@@ -532,7 +532,7 @@ Policy: this track ships behind explicit feature flags and separate policies so 
 
 | ID | Status | Optimization | Estimated Impact | Why It’s Deferred |
 |---|---|---|---|---|
-| OPT-001 | todo | Eyes signal weighting retune in router ranking | 6% | Current eyes-to-routing bridge is functional; additional weighting passes are incremental and lower leverage than gating/contract fixes. |
+| OPT-001 | done | Eyes signal weighting retune in router ranking | 6% | Router eyes-signal scoring now supports ratio-scaled degraded/signal-rich weighting (`systems/routing/model_router.ts`) with tuned policy knobs in `config/agent_routing_rules.json`; regression coverage validates ratio-scaled local bonus behavior (`memory/tools/tests/model_router_routing_features.test.js`). |
 | OPT-002 | todo | Prompt cache policy split by lane (reflex/autonomy/dream) | 5% | Existing TTL cache is live; lane-specific caching can improve hit rate but is not currently a top execution blocker. |
 | OPT-003 | todo | Dream fallback quality scoring before proposal injection | 7% | Dreams already bridge upstream; adding stricter fallback-quality filters is valuable but secondary to core autonomy flow reliability. |
 | OPT-004 | todo | Proposal semantic dedupe (near-duplicate clustering) | 8% | Queue dedupe exists; semantic clustering would reduce residual noise further but is not the largest current bottleneck. |

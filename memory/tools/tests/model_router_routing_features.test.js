@@ -703,7 +703,9 @@ function runCaseEyesSignalInfluence(repoRoot, root) {
         degraded_fail_ratio: 0.5,
         degraded_error_rate: 0.4,
         local_bonus_degraded: 16,
-        cloud_penalty_degraded: 8
+        cloud_penalty_degraded: 8,
+        local_bonus_degraded_ratio_weight: 6,
+        cloud_penalty_degraded_ratio_weight: 5
       },
       router_budget_policy: { enabled: false },
       slot_selection: [
@@ -746,6 +748,14 @@ function runCaseEyesSignalInfluence(repoRoot, root) {
   const out = JSON.parse(String(r.stdout || '{}'));
   assert.strictEqual(out.eyes_signal && out.eyes_signal.network_degraded, true, 'eyes signal should detect degraded sensory network');
   assert.strictEqual(out.selected_model, 'ollama/smallthinker', 'degraded sensory network should bias to local fallback model');
+  const selectedCandidate = Array.isArray(out.candidate_scores)
+    ? out.candidate_scores.find((row) => String(row && row.model || '') === String(out.selected_model || ''))
+    : null;
+  assert.ok(selectedCandidate && Array.isArray(selectedCandidate.reasons), 'selected candidate should include scored reasons');
+  assert.ok(
+    selectedCandidate.reasons.includes('eyes_network_degraded_ratio_scaled_local_bonus'),
+    'ratio-scaled eyes degradation bonus should apply to selected local model'
+  );
 }
 
 function runCasePromptCacheInfluence(repoRoot, root) {

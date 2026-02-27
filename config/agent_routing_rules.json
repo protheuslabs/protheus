@@ -95,6 +95,22 @@
         }
       }
     },
+    "eyes_signal_policy": {
+      "enabled": true,
+      "registry_path": "state/sensory/eyes/registry.json",
+      "ttl_ms": 120000,
+      "min_non_stub_eyes": 2,
+      "degraded_error_rate": 0.45,
+      "degraded_fail_ratio": 0.5,
+      "local_bonus_degraded": 4,
+      "cloud_penalty_degraded": 3,
+      "local_bonus_degraded_ratio_weight": 5,
+      "cloud_penalty_degraded_ratio_weight": 4,
+      "high_signal_score_ema": 72,
+      "high_signal_ratio_min": 0.5,
+      "cloud_anchor_bonus_high_signal": 1,
+      "cloud_anchor_bonus_high_signal_ratio_weight": 3
+    },
     "communication_fast_path": {
       "enabled": true,
       "match_mode": "heuristic",
