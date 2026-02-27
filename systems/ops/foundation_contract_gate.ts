@@ -124,6 +124,7 @@ function runGate() {
     'config/schema_evolution_policy.json',
     'config/siem_bridge_policy.json',
     'config/soc2_type2_policy.json',
+    'config/red_team_policy.json',
     'config/surface_budget_controller_policy.json',
     'config/value_anchor_renewal_policy.json',
     'config/world_model_freshness_policy.json',
@@ -147,6 +148,10 @@ function runGate() {
     'systems/primitives/emergent_primitive_synthesis.ts',
     'systems/primitives/explanation_primitive.ts',
     'systems/primitives/runtime_scheduler.ts',
+    'systems/redteam/ant_colony_controller.ts',
+    'systems/redteam/morph_manager.ts',
+    'systems/redteam/swarm_tactics.ts',
+    'systems/redteam/wisdom_distiller.ts',
     'systems/security/formal_invariant_engine.ts',
     'systems/security/execution_sandbox_envelope.ts',
     'systems/security/organ_state_encryption_plane.ts',
@@ -1017,6 +1022,43 @@ function runGate() {
       && helixSrc.includes('applyPermanentQuarantine('),
     'helix_controller must route confirmed malice decisions through permanent quarantine lane'
   );
+  const redTeamPolicy = readJsonSafe(path.join(ROOT, 'config', 'red_team_policy.json'), {});
+  const antColonyPolicy = redTeamPolicy.ant_colony && typeof redTeamPolicy.ant_colony === 'object'
+    ? redTeamPolicy.ant_colony
+    : {};
+  const antConsensus = antColonyPolicy.consensus && typeof antColonyPolicy.consensus === 'object'
+    ? antColonyPolicy.consensus
+    : {};
+  const antWar = antColonyPolicy.war_mode && typeof antColonyPolicy.war_mode === 'object'
+    ? antColonyPolicy.war_mode
+    : {};
+  const antAssimilation = antColonyPolicy.assimilation_priority && typeof antColonyPolicy.assimilation_priority === 'object'
+    ? antColonyPolicy.assimilation_priority
+    : {};
+  addCheck(
+    'redteam_ant_colony:merge_guard_hook',
+    mergeGuardSrc.includes('ant_colony_controller.js')
+      && mergeGuardSrc.includes('status'),
+    'merge_guard should enforce redteam ant colony status check'
+  );
+  addCheck(
+    'redteam_ant_colony:policy_triple_consensus_and_priority_window',
+    antColonyPolicy.enabled !== false
+      && antConsensus.require_helix_tamper !== false
+      && antConsensus.require_sentinel_agreement !== false
+      && Number(antWar.confidence_threshold || 0) >= 0.95
+      && Number(antAssimilation.hours_since_graft || 0) >= 72,
+    `enabled=${antColonyPolicy.enabled !== false ? '1' : '0'} require_helix_tamper=${antConsensus.require_helix_tamper !== false ? '1' : '0'} require_sentinel_agreement=${antConsensus.require_sentinel_agreement !== false ? '1' : '0'} confidence_threshold=${Number(antWar.confidence_threshold || 0)} hours_since_graft=${Number(antAssimilation.hours_since_graft || 0)}`
+  );
+  const antSrc = readFileSafe(path.join(ROOT, 'systems', 'redteam', 'ant_colony_controller.ts'));
+  addCheck(
+    'redteam_ant_colony:controller_hooks',
+    antSrc.includes("require('./morph_manager')")
+      && antSrc.includes("require('./swarm_tactics')")
+      && antSrc.includes("require('./wisdom_distiller')")
+      && antSrc.includes('recentAssimilationTargets('),
+    'ant_colony_controller should keep morph/tactics/wisdom/priority probe hooks'
+  );
 
   const actuationSrc = readFileSafe(path.join(ROOT, 'systems', 'actuation', 'actuation_executor.ts'));
   addCheck(
@@ -1054,6 +1096,7 @@ function runGate() {
       && contractCheckSrc.includes('remote_tamper_heartbeat.js')
       && contractCheckSrc.includes('helix_admission_gate.js')
       && contractCheckSrc.includes('confirmed_malice_quarantine.js')
+      && contractCheckSrc.includes('ant_colony_controller.js')
       && contractCheckSrc.includes('neural_dormant_seed.js')
       && contractCheckSrc.includes('client_relationship_manager.js')
       && contractCheckSrc.includes('capital_allocation_organ.js')
