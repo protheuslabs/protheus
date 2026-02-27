@@ -1037,6 +1037,14 @@ function main() {
     "systems/security/secure_heartbeat_endpoint.js",
     ["secure_heartbeat_endpoint.js", "issue-key", "revoke-key", "receive", "verify", "status", "serve", "--client-id", "--key-id", "--payload-json", "--ts", "--signature", "--strict"]
   );
+  checkScript(
+    "systems/security/repository_access_auditor.js",
+    ["repository_access_auditor.js", "status", "review-plan", "--strict", "--apply"]
+  );
+  checkSourceContains(
+    "systems/security/repository_access_auditor.js",
+    ["visibility_expected", "max_admins", "restricted_admin_users", "review_interval"]
+  );
 
   // helix_controller.js governs codex/manifest attestation + reweave operations.
   checkScript(

@@ -1,0 +1,30 @@
+{
+  "schema_id": "repository_access_policy",
+  "schema_version": "1.0",
+  "enabled": true,
+  "repo": {
+    "owner": "jakerslam",
+    "name": "protheus",
+    "visibility_expected": "private"
+  },
+  "least_privilege": {
+    "default_role": "read",
+    "max_admins": 2,
+    "restricted_admin_users": [
+      "jay"
+    ],
+    "allowed_roles": [
+      "read",
+      "triage",
+      "write",
+      "maintain",
+      "admin"
+    ]
+  },
+  "review": {
+    "interval_days": 90,
+    "next_review_due": "2026-05-27",
+    "artifact_path": "state/security/repo_access_review/latest.json",
+    "history_path": "state/security/repo_access_review/history.jsonl"
+  }
+}

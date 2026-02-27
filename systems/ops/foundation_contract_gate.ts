@@ -117,6 +117,7 @@ function runGate() {
     'config/neural_dormant_seed_policy.json',
     'config/organ_state_encryption_policy.json',
     'config/operator_terms_ack_policy.json',
+    'config/repository_access_policy.json',
     'config/remote_tamper_heartbeat_policy.json',
     'config/secure_heartbeat_endpoint_policy.json',
     'config/crypto_agility_contract.json',
@@ -175,6 +176,7 @@ function runGate() {
     'systems/security/execution_sandbox_envelope.ts',
     'systems/security/organ_state_encryption_plane.ts',
     'systems/security/operator_terms_ack.ts',
+    'systems/security/repository_access_auditor.ts',
     'systems/security/remote_tamper_heartbeat.ts',
     'systems/security/secure_heartbeat_endpoint.ts',
     'systems/security/key_lifecycle_governor.ts',
@@ -194,7 +196,8 @@ function runGate() {
     'systems/primitives/primitive_runtime.ts',
     'systems/primitives/policy_vm.ts',
     'systems/primitives/replay_verify.ts',
-    'docs/SECURE_HEARTBEAT_ENDPOINT.md'
+    'docs/SECURE_HEARTBEAT_ENDPOINT.md',
+    'docs/REPOSITORY_ACCESS_CONTROL.md'
   ];
   for (const rel of requiredFiles) {
     const abs = path.join(ROOT, rel);
@@ -423,6 +426,29 @@ function runGate() {
       && !!cleanText(termsAckPolicy.paths && termsAckPolicy.paths.state_path || '', 200),
     'operator terms ack policy should be enabled with terms version + path contracts'
   );
+  const repositoryAccessPolicy = readJsonSafe(path.join(ROOT, 'config', 'repository_access_policy.json'), {});
+  const repoAccessVisibility = normalizeLowerToken(repositoryAccessPolicy.repo && repositoryAccessPolicy.repo.visibility_expected || '', 40);
+  const repoAccessDefaultRole = normalizeLowerToken(repositoryAccessPolicy.least_privilege && repositoryAccessPolicy.least_privilege.default_role || '', 40);
+  const repoAccessMaxAdmins = Math.max(0, Number(repositoryAccessPolicy.least_privilege && repositoryAccessPolicy.least_privilege.max_admins || 0) || 0);
+  const repoAccessRestrictedAdmins = Array.isArray(repositoryAccessPolicy.least_privilege && repositoryAccessPolicy.least_privilege.restricted_admin_users)
+    ? repositoryAccessPolicy.least_privilege.restricted_admin_users.map((row: unknown) => normalizeLowerToken(row, 120)).filter(Boolean)
+    : [];
+  const repoAccessReviewInterval = Math.max(0, Number(repositoryAccessPolicy.review && repositoryAccessPolicy.review.interval_days || 0) || 0);
+  addCheck(
+    'repo_access:policy_private_visibility',
+    repoAccessVisibility === 'private',
+    `visibility_expected=${repoAccessVisibility || 'missing'}`
+  );
+  addCheck(
+    'repo_access:policy_least_privilege',
+    repoAccessDefaultRole === 'read' && repoAccessMaxAdmins >= 1 && repoAccessRestrictedAdmins.length >= 1,
+    `default_role=${repoAccessDefaultRole || 'missing'} max_admins=${repoAccessMaxAdmins} restricted_admin_users=${repoAccessRestrictedAdmins.join(',') || 'none'}`
+  );
+  addCheck(
+    'repo_access:quarterly_review_cadence',
+    repoAccessReviewInterval >= 90,
+    `interval_days=${repoAccessReviewInterval}`
+  );
   const mergeGuardSrc = readFileSafe(path.join(ROOT, 'systems', 'security', 'merge_guard.ts'));
   addCheck(
     'formal_invariant_engine:merge_guard_hook',
@@ -439,6 +465,21 @@ function runGate() {
     mergeGuardSrc.includes('operator_terms_ack.js')
       && mergeGuardSrc.includes('operator_terms_ack_status'),
     'merge_guard should enforce operator terms acknowledgment lane status check'
+  );
+  addCheck(
+    'repo_access:merge_guard_hook',
+    mergeGuardSrc.includes('repository_access_auditor.js')
+      && mergeGuardSrc.includes('repository_access_auditor_status')
+      && mergeGuardSrc.includes('--strict=1'),
+    'merge_guard should enforce repository access auditor status check'
+  );
+  const repositoryAccessDocSrc = readFileSafe(path.join(ROOT, 'docs', 'REPOSITORY_ACCESS_CONTROL.md'));
+  addCheck(
+    'repo_access:runbook_present',
+    repositoryAccessDocSrc.includes('repository_access_auditor.js')
+      && repositoryAccessDocSrc.includes('review-plan')
+      && repositoryAccessDocSrc.includes('quarterly'),
+    'repository access control runbook should define status/review-plan flow'
   );
   const installerSrc = readFileSafe(path.join(ROOT, 'systems', 'ops', 'personal_protheus_installer.ts'));
   addCheck(
