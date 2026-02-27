@@ -34,9 +34,11 @@ function run() {
   const scriptPath = path.join(root, 'systems', 'eye', 'eye_kernel.js');
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'eye-kernel-test-'));
   const policyPath = path.join(tmp, 'config', 'eye_kernel_policy.json');
+  const helixPolicyPath = path.join(tmp, 'config', 'eye_kernel_helix_policy.json');
   const statePath = path.join(tmp, 'state', 'eye', 'control_plane_state.json');
   const auditPath = path.join(tmp, 'state', 'eye', 'audit', 'command_bus.jsonl');
   const latestPath = path.join(tmp, 'state', 'eye', 'latest.json');
+  const helixLatestPath = path.join(tmp, 'state', 'helix', 'latest.json');
   const day = '2026-02-26';
 
   writeJson(policyPath, {
@@ -58,6 +60,40 @@ function run() {
         actions: ['route', 'execute'],
         targets: ['workflow', 'autonomy']
       }
+    }
+  });
+
+  writeJson(helixLatestPath, {
+    ts: '2026-02-20T00:00:00.000Z',
+    attestation_decision: 'deny',
+    sentinel: { tier: 'stasis' }
+  });
+
+  writeJson(helixPolicyPath, {
+    version: '1.0',
+    default_decision: 'deny',
+    clearance_levels: ['L0', 'L1', 'L2', 'L3'],
+    risk: {
+      escalate: ['medium'],
+      deny: ['high', 'critical']
+    },
+    budgets: {
+      global_daily_tokens: 120
+    },
+    lanes: {
+      organ: {
+        enabled: true,
+        min_clearance: 'L1',
+        daily_tokens: 100,
+        actions: ['route', 'execute'],
+        targets: ['workflow', 'autonomy']
+      }
+    },
+    helix_attestation: {
+      enabled: true,
+      mode: 'shadow_advisory',
+      latest_path: helixLatestPath,
+      max_staleness_sec: 10
     }
   });
 
@@ -175,6 +211,72 @@ function run() {
   assert.strictEqual(Number(statusOut.day_state.lanes.organ.deny || 0), 3, 'three deny decisions expected');
   assert.ok(fs.existsSync(auditPath), 'audit trail should be written');
 
+  r = runRoute([
+    '--lane=organ',
+    '--target=workflow',
+    '--action=route',
+    '--risk=low',
+    '--clearance=L2',
+    '--estimated-tokens=1',
+    '--apply=0',
+    `--date=${day}`,
+    `--policy=${helixPolicyPath}`,
+    `--state=${statePath}`,
+    `--audit=${auditPath}`,
+    `--latest=${latestPath}`
+  ]);
+  assert.strictEqual(r.status, 0, 'shadow advisory helix mode should not hard deny');
+  out = parsePayload(r.stdout);
+  assert.ok(out && out.decision === 'allow', 'advisory helix mode should preserve allow decision');
+  assert.ok(Array.isArray(out.reasons) && out.reasons.includes('helix_decision_deny'), 'advisory mode should surface helix reasons');
+
+  writeJson(helixPolicyPath, {
+    version: '1.0',
+    default_decision: 'deny',
+    clearance_levels: ['L0', 'L1', 'L2', 'L3'],
+    risk: {
+      escalate: ['medium'],
+      deny: ['high', 'critical']
+    },
+    budgets: {
+      global_daily_tokens: 120
+    },
+    lanes: {
+      organ: {
+        enabled: true,
+        min_clearance: 'L1',
+        daily_tokens: 100,
+        actions: ['route', 'execute'],
+        targets: ['workflow', 'autonomy']
+      }
+    },
+    helix_attestation: {
+      enabled: true,
+      mode: 'enforced',
+      latest_path: helixLatestPath,
+      max_staleness_sec: 10
+    }
+  });
+
+  r = runRoute([
+    '--lane=organ',
+    '--target=workflow',
+    '--action=route',
+    '--risk=low',
+    '--clearance=L2',
+    '--estimated-tokens=1',
+    '--apply=0',
+    `--date=${day}`,
+    `--policy=${helixPolicyPath}`,
+    `--state=${statePath}`,
+    `--audit=${auditPath}`,
+    `--latest=${latestPath}`
+  ]);
+  assert.strictEqual(r.status, 1, 'enforced helix mode should deny');
+  out = parsePayload(r.stdout);
+  assert.ok(out && out.decision === 'deny', 'enforced helix mode should deny route');
+  assert.ok(Array.isArray(out.reasons) && out.reasons.includes('helix_decision_deny'), 'enforced mode should include helix reason');
+
   fs.rmSync(tmp, { recursive: true, force: true });
   console.log('eye_kernel.test.js: OK');
 }
@@ -185,4 +287,3 @@ try {
   console.error(`eye_kernel.test.js: FAIL: ${err.message}`);
   process.exit(1);
 }
-
