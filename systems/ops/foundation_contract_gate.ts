@@ -87,6 +87,7 @@ function runGate() {
   const requiredFiles = [
     'config/abstraction_debt_baseline.json',
     'config/causal_temporal_memory_policy.json',
+    'config/client_relationship_manager_policy.json',
     'config/compression_transfer_plane_policy.json',
     'config/opportunistic_offload_policy.json',
     'config/deterministic_control_plane_policy.json',
@@ -126,6 +127,7 @@ function runGate() {
     'systems/hardware/compression_transfer_plane.ts',
     'systems/hardware/surface_budget_controller.ts',
     'systems/hardware/opportunistic_offload_plane.ts',
+    'systems/workflow/client_relationship_manager.ts',
     'systems/primitives/effect_type_system.ts',
     'systems/primitives/emergent_primitive_synthesis.ts',
     'systems/primitives/explanation_primitive.ts',
@@ -623,6 +625,26 @@ function runGate() {
     `schedule_command_len=${Array.isArray(offloadPolicy.schedule_command) ? offloadPolicy.schedule_command.length : 0}`
   );
   addCheck(
+    'client_relationship_manager:merge_guard_hook',
+    mergeGuardSrc.includes('client_relationship_manager.js')
+      && mergeGuardSrc.includes('status')
+      && mergeGuardSrc.includes('--days=30'),
+    'merge_guard should enforce client relationship status check'
+  );
+  const crmPolicy = readJsonSafe(path.join(ROOT, 'config', 'client_relationship_manager_policy.json'), {});
+  const crmTypes = Array.isArray(crmPolicy.event_types) ? crmPolicy.event_types.length : 0;
+  addCheck(
+    'client_relationship_manager:event_types_present',
+    crmTypes >= 4,
+    `event_types=${crmTypes}`
+  );
+  addCheck(
+    'client_relationship_manager:manual_target_present',
+    Number(crmPolicy.manual_intervention_target || 0) >= 0
+      && Number(crmPolicy.manual_intervention_target || 0) <= 1,
+    `manual_intervention_target=${Number(crmPolicy.manual_intervention_target || 0)}`
+  );
+  addCheck(
     'self_hosted_bootstrap:merge_guard_hook',
     mergeGuardSrc.includes('self_hosted_bootstrap_compiler.js')
       && mergeGuardSrc.includes('status'),
@@ -700,7 +722,8 @@ function runGate() {
       && contractCheckSrc.includes('phone_seed_profile.js')
       && contractCheckSrc.includes('surface_budget_controller.js')
       && contractCheckSrc.includes('compression_transfer_plane.js')
-      && contractCheckSrc.includes('opportunistic_offload_plane.js'),
+      && contractCheckSrc.includes('opportunistic_offload_plane.js')
+      && contractCheckSrc.includes('client_relationship_manager.js'),
     'contract_check should validate foundation scripts'
   );
 
