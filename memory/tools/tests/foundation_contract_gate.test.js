@@ -41,7 +41,10 @@ function main() {
     'profile_compatibility:n_minus_2_minimum',
     'distributed_control_plane:quorum_floor',
     'distributed_control_plane:trust_domain_required',
-    'formal_invariant_engine:merge_guard_hook'
+    'effect_type:policy_enforced',
+    'effect_type:forbidden_transition_rules',
+    'formal_invariant_engine:merge_guard_hook',
+    'workflow:effect_type_gate_hook'
   ]) {
     assert.ok(byId.has(id), `missing check: ${id}`);
     assert.strictEqual(byId.get(id).ok, true, `check should pass: ${id}`);

@@ -1,0 +1,53 @@
+{
+  "schema_id": "effect_type_policy",
+  "schema_version": "1.0",
+  "enabled": true,
+  "mode": "enforce",
+  "deny_unknown_effects": true,
+  "default_effect": "compute",
+  "step_type_effects": {
+    "receipt": "filesystem_read",
+    "gate": "governance",
+    "command": "compute"
+  },
+  "allowed_effects": [
+    "compute",
+    "filesystem",
+    "filesystem_read",
+    "network",
+    "shell",
+    "money",
+    "comms",
+    "identity",
+    "governance",
+    "actuation"
+  ],
+  "forbidden_transitions": [
+    "money->shell",
+    "money->network",
+    "money->filesystem",
+    "identity->shell"
+  ],
+  "forbidden_cooccurrence_sets": [
+    [
+      "money",
+      "shell"
+    ]
+  ],
+  "effect_shadow_weights": {
+    "governance": 0.6,
+    "identity": 0.7,
+    "money": 1.0,
+    "network": 0.5,
+    "shell": 0.8,
+    "filesystem": 0.4,
+    "filesystem_read": 0.2,
+    "comms": 0.4,
+    "actuation": 0.5,
+    "compute": 0.1
+  },
+  "max_transition_shadow": 0.85,
+  "max_total_shadow_per_workflow": 8,
+  "emit_audit": true,
+  "audit_path": "state/runtime/effect_type/decisions.jsonl"
+}

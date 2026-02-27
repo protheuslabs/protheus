@@ -87,6 +87,7 @@ function runGate() {
   const requiredFiles = [
     'config/abstraction_debt_baseline.json',
     'config/deterministic_control_plane_policy.json',
+    'config/effect_type_policy.json',
     'config/formal_invariants.json',
     'config/profile_compatibility_policy.json',
     'config/primitive_catalog.json',
@@ -96,6 +97,7 @@ function runGate() {
     'config/scale_envelope_policy.json',
     'systems/ops/profile_compatibility_gate.ts',
     'systems/distributed/deterministic_control_plane.ts',
+    'systems/primitives/effect_type_system.ts',
     'systems/primitives/runtime_scheduler.ts',
     'systems/security/formal_invariant_engine.ts',
     'systems/primitives/primitive_runtime.ts',
@@ -252,6 +254,21 @@ function runGate() {
     !!localTrustDomain,
     `local_trust_domain=${localTrustDomain || 'missing'}`
   );
+  const effectPolicy = readJsonSafe(path.join(ROOT, 'config', 'effect_type_policy.json'), {});
+  const effectMode = normalizeLowerToken(effectPolicy.mode || 'enforce', 24) || 'enforce';
+  const effectTransitions = Array.isArray(effectPolicy.forbidden_transitions)
+    ? effectPolicy.forbidden_transitions.length
+    : 0;
+  addCheck(
+    'effect_type:policy_enforced',
+    effectPolicy.enabled !== false && effectMode === 'enforce',
+    `enabled=${effectPolicy.enabled !== false ? '1' : '0'} mode=${effectMode || 'missing'}`
+  );
+  addCheck(
+    'effect_type:forbidden_transition_rules',
+    effectTransitions >= 1,
+    `forbidden_transitions=${effectTransitions}`
+  );
   const mergeGuardSrc = readFileSafe(path.join(ROOT, 'systems', 'security', 'merge_guard.ts'));
   addCheck(
     'formal_invariant_engine:merge_guard_hook',
@@ -269,6 +286,12 @@ function runGate() {
     'workflow:primitive_execute_call',
     workflowSrc.includes('executeCommandPrimitiveSync('),
     'workflow_executor must route command execution through primitive runtime'
+  );
+  addCheck(
+    'workflow:effect_type_gate_hook',
+    workflowSrc.includes("require('../primitives/effect_type_system.js')")
+      && workflowSrc.includes('evaluateWorkflowEffectPlan('),
+    'workflow_executor must evaluate effect-type plans before execution'
   );
 
   const actuationSrc = readFileSafe(path.join(ROOT, 'systems', 'actuation', 'actuation_executor.ts'));

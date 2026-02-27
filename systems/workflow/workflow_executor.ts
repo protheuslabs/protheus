@@ -10,6 +10,7 @@ const {
   previewCommandPrimitive,
   executeCommandPrimitiveSync
 } = require('../primitives/primitive_runtime.js');
+const { evaluateWorkflowEffectPlan } = require('../primitives/effect_type_system.js');
 const {
   loadSystemBudgetState,
   loadSystemBudgetAutopauseState,
@@ -3073,6 +3074,56 @@ function executeWorkflow(workflow: AnyObj, context: AnyObj, options: AnyObj) {
     ? options._run_mutation_state
     : { total_mutations: 0 };
 
+  let effectPlan = evaluateWorkflowEffectPlan({
+    id: String(workflow && workflow.id || ''),
+    objective_id: String(workflow && workflow.objective_id || ''),
+    steps
+  }, {
+    workflow_id: String(context && context.workflow_id || ''),
+    objective_id: String(context && context.objective_id || ''),
+    run_id: String(context && context.run_id || ''),
+    adapter: cleanText(context && context.adapter || '', 80) || ''
+  }, {
+    dry_run: options && options.dry_run === true
+  });
+
+  const effectCache = {
+    byIndex: new Map<number, AnyObj>(),
+    byStepId: new Map<string, AnyObj>(),
+    transitionByToIndex: new Map<number, AnyObj>()
+  };
+  const rebuildEffectCache = () => {
+    effectCache.byIndex.clear();
+    effectCache.byStepId.clear();
+    effectCache.transitionByToIndex.clear();
+    const stepRows = Array.isArray(effectPlan && effectPlan.step_effects) ? effectPlan.step_effects : [];
+    for (const row of stepRows) {
+      const idx = Number(row && row.step_index);
+      if (Number.isFinite(idx)) effectCache.byIndex.set(idx, row);
+      const stepId = String(row && row.step_id || '');
+      if (stepId) effectCache.byStepId.set(stepId, row);
+    }
+    const transitionRows = Array.isArray(effectPlan && effectPlan.transitions) ? effectPlan.transitions : [];
+    for (const row of transitionRows) {
+      const toIdx = Number(row && row.to_step_index);
+      if (Number.isFinite(toIdx)) effectCache.transitionByToIndex.set(toIdx, row);
+    }
+  };
+  const resolveStepEffectMeta = (stepRef: AnyObj, indexHint: number) => {
+    const stepId = String(stepRef && stepRef.id || '');
+    const byId = stepId ? effectCache.byStepId.get(stepId) : null;
+    const byIndex = Number.isFinite(indexHint) ? effectCache.byIndex.get(Number(indexHint)) : null;
+    const stepEffect = byId || byIndex || null;
+    const transition = stepEffect && Number.isFinite(Number(stepEffect.step_index))
+      ? effectCache.transitionByToIndex.get(Number(stepEffect.step_index)) || null
+      : null;
+    return {
+      step_effect: stepEffect,
+      transition_from_previous: transition
+    };
+  };
+  rebuildEffectCache();
+
   const mergeBudgetUsage = (stepResult) => {
     const usage = summarizeStepUsage(stepResult);
     executionBudget.attempts_used += Number(usage.attempts || 0);
@@ -3099,6 +3150,8 @@ function executeWorkflow(workflow: AnyObj, context: AnyObj, options: AnyObj) {
       ...context,
       step_id: rollbackStep.id
     }, options);
+    const rollbackStepIndex = steps.findIndex((row) => String(row && row.id || '') === String(rollbackStep && rollbackStep.id || ''));
+    const rollbackEffectMeta = resolveStepEffectMeta(rollbackStep, rollbackStepIndex);
     rollbackResult = {
       source: String(rollbackStep.id || '').toLowerCase() === 'policy_default_rollback'
         ? 'policy_default'
@@ -3110,10 +3163,51 @@ function executeWorkflow(workflow: AnyObj, context: AnyObj, options: AnyObj) {
     stepResults.push({
       ...rollbackExec,
       rollback_step: true,
-      rollback_trigger_reason: String(triggerReason || 'step_failed')
+      rollback_trigger_reason: String(triggerReason || 'step_failed'),
+      effect_type: rollbackEffectMeta.step_effect,
+      effect_transition: rollbackEffectMeta.transition_from_previous
     });
     mergeBudgetUsage(rollbackExec);
   };
+
+  if (effectPlan && effectPlan.ok !== true) {
+    const ended = Date.now();
+    return {
+      workflow_id: String(workflow && workflow.id || ''),
+      name: String(workflow && workflow.name || ''),
+      adapter: cleanText(context && context.adapter || '', 80) || '',
+      provider: cleanText(context && context.provider || '', 80).toLowerCase() || '',
+      status: 'blocked',
+      ok: false,
+      blocked_by_gate: true,
+      stopped_step_id: 'effect_plan_gate',
+      failure_reason: 'effect_plan_denied',
+      rollback_attempted: false,
+      rollback_ok: null,
+      rollback_source: null,
+      rollback_step_id: null,
+      rollback_trigger_reason: null,
+      started_at: new Date(started).toISOString(),
+      ended_at: new Date(ended).toISOString(),
+      duration_ms: ended - started,
+      step_count: steps.length,
+      execution_budget: {
+        attempts_cap: executionBudget.attempts_cap,
+        retries_cap: executionBudget.retries_cap,
+        duration_cap_ms: executionBudget.duration_cap_ms,
+        token_cap_tokens: executionBudget.token_cap_tokens,
+        predicted_tokens: workflowPredictedTokens,
+        attempts_used: 0,
+        retries_used: 0,
+        duration_ms_used: 0,
+        tokens_used_est: 0
+      },
+      step_results: [],
+      mutation_summary: mutationSummary,
+      mutation_receipts: mutationReceipts,
+      effect_plan: effectPlan
+    };
+  }
 
   while (cursor < steps.length) {
     const step = steps[cursor];
@@ -3130,7 +3224,12 @@ function executeWorkflow(workflow: AnyObj, context: AnyObj, options: AnyObj) {
       ...context,
       step_id: step && step.id ? step.id : `step_${cursor + 1}`
     }, options);
-    stepResults.push(stepResult);
+    const stepEffectMeta = resolveStepEffectMeta(step, cursor);
+    stepResults.push({
+      ...stepResult,
+      effect_type: stepEffectMeta.step_effect,
+      effect_transition: stepEffectMeta.transition_from_previous
+    });
     const postStepBudgetReason = mergeBudgetUsage(stepResult);
     if (postStepBudgetReason) {
       ok = false;
@@ -3188,6 +3287,7 @@ function executeWorkflow(workflow: AnyObj, context: AnyObj, options: AnyObj) {
         const beforeFingerprint = stepsFingerprint(beforeSteps);
         const mutationId = stableId(`${context.run_id}|${context.workflow_id}|${step.id}|${kind}|${mutationSummary.attempted}`, 'mut');
         const patch = applyMutationKind(kind, steps, cursor, runtimeMutation);
+        const beforeEffectPlan = effectPlan;
 
         if (!patch || patch.ok !== true || patch.changed !== true || !Array.isArray(patch.steps)) {
           mutationReceipts.push({
@@ -3208,7 +3308,41 @@ function executeWorkflow(workflow: AnyObj, context: AnyObj, options: AnyObj) {
           continue;
         }
 
+        const patchEffectPlan = evaluateWorkflowEffectPlan({
+          id: String(workflow && workflow.id || ''),
+          objective_id: String(workflow && workflow.objective_id || ''),
+          steps: patch.steps
+        }, {
+          workflow_id: String(context && context.workflow_id || ''),
+          objective_id: String(context && context.objective_id || ''),
+          run_id: String(context && context.run_id || ''),
+          adapter: cleanText(context && context.adapter || '', 80) || ''
+        }, {
+          dry_run: options && options.dry_run === true
+        });
+        if (!patchEffectPlan || patchEffectPlan.ok !== true) {
+          mutationReceipts.push({
+            ts: nowIso(),
+            type: 'workflow_runtime_mutation',
+            status: 'blocked',
+            mutation_id: mutationId,
+            run_id: String(context.run_id || ''),
+            workflow_id: String(context.workflow_id || ''),
+            workflow_name: String(workflow && workflow.name || ''),
+            step_id: String(step && step.id || ''),
+            step_type: String(step && step.type || ''),
+            mutation_kind: kind,
+            before_fingerprint: beforeFingerprint,
+            after_fingerprint: beforeFingerprint,
+            reason: 'effect_plan_denied',
+            effect_plan: patchEffectPlan
+          });
+          continue;
+        }
+
         steps = patch.steps.map((row, i) => normalizeStep(row, i));
+        effectPlan = patchEffectPlan;
+        rebuildEffectCache();
         const afterFingerprint = stepsFingerprint(steps);
         mutationSummary.applied += 1;
         runMutationState.total_mutations = Number(runMutationState.total_mutations || 0) + 1;
@@ -3273,6 +3407,8 @@ function executeWorkflow(workflow: AnyObj, context: AnyObj, options: AnyObj) {
               mutation_kind: kind,
               reason: 'regression_after_mutation_retry'
             });
+            effectPlan = beforeEffectPlan;
+            rebuildEffectCache();
           }
         }
       }
@@ -3322,7 +3458,8 @@ function executeWorkflow(workflow: AnyObj, context: AnyObj, options: AnyObj) {
     },
     step_results: stepResults,
     mutation_summary: mutationSummary,
-    mutation_receipts: mutationReceipts
+    mutation_receipts: mutationReceipts,
+    effect_plan: effectPlan
   };
 }
 
@@ -3872,6 +4009,12 @@ function runCmd(dateStr: string, args: AnyObj) {
           : null,
         success_criteria: step && step.success_criteria && typeof step.success_criteria === 'object'
           ? step.success_criteria
+          : null,
+        effect_type: step && step.effect_type && typeof step.effect_type === 'object'
+          ? step.effect_type
+          : null,
+        effect_transition: step && step.effect_transition && typeof step.effect_transition === 'object'
+          ? step.effect_transition
           : null,
         records: Array.isArray(step && step.records) ? step.records : []
       });
