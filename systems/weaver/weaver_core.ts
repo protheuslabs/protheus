@@ -50,6 +50,7 @@ const DEFAULT_ACTIVE_OVERLAY_PATH = path.join(DEFAULT_STATE_DIR, 'strategy_overl
 const DEFAULT_PREVIEW_OVERLAY_PATH = path.join(DEFAULT_STATE_DIR, 'strategy_overlay.preview.json');
 const DEFAULT_PATHWAY_STATE_PATH = path.join(DEFAULT_STATE_DIR, 'pathway_state.json');
 const DEFAULT_OBSIDIAN_QUEUE_PATH = path.join(DEFAULT_STATE_DIR, 'obsidian_projection.jsonl');
+const DEFAULT_AXIS_LEDGER_PATH = path.join(DEFAULT_STATE_DIR, 'value_axis_switches.jsonl');
 
 const DEFAULT_REGIME_LATEST_PATH = path.join(ROOT, 'state', 'autonomy', 'fractal', 'regime', 'latest.json');
 const DEFAULT_MIRROR_LATEST_PATH = path.join(ROOT, 'state', 'autonomy', 'mirror_organ', 'latest.json');
@@ -216,17 +217,27 @@ function runtimePaths(policyPath: string) {
   const stateDir = process.env.WEAVER_STATE_DIR
     ? path.resolve(process.env.WEAVER_STATE_DIR)
     : DEFAULT_STATE_DIR;
+  const defaultRunsDir = path.join(stateDir, 'runs');
+  const defaultEventsPath = path.join(stateDir, 'events.jsonl');
+  const defaultHistoryPath = path.join(stateDir, 'history.jsonl');
+  const defaultLatestPath = path.join(stateDir, 'latest.json');
+  const defaultActiveOverlayPath = path.join(stateDir, 'strategy_overlay.json');
+  const defaultPreviewOverlayPath = path.join(stateDir, 'strategy_overlay.preview.json');
+  const defaultPathwayStatePath = path.join(stateDir, 'pathway_state.json');
+  const defaultObsidianQueuePath = path.join(stateDir, 'obsidian_projection.jsonl');
+  const defaultAxisLedgerPath = path.join(stateDir, 'value_axis_switches.jsonl');
   return {
     policy_path: policyPath,
     state_dir: stateDir,
-    runs_dir: process.env.WEAVER_RUNS_DIR ? path.resolve(process.env.WEAVER_RUNS_DIR) : DEFAULT_RUNS_DIR,
-    events_path: process.env.WEAVER_EVENTS_PATH ? path.resolve(process.env.WEAVER_EVENTS_PATH) : DEFAULT_EVENTS_PATH,
-    history_path: process.env.WEAVER_HISTORY_PATH ? path.resolve(process.env.WEAVER_HISTORY_PATH) : DEFAULT_HISTORY_PATH,
-    latest_path: process.env.WEAVER_LATEST_PATH ? path.resolve(process.env.WEAVER_LATEST_PATH) : DEFAULT_LATEST_PATH,
-    active_overlay_path: process.env.WEAVER_ACTIVE_OVERLAY_PATH ? path.resolve(process.env.WEAVER_ACTIVE_OVERLAY_PATH) : DEFAULT_ACTIVE_OVERLAY_PATH,
-    preview_overlay_path: process.env.WEAVER_PREVIEW_OVERLAY_PATH ? path.resolve(process.env.WEAVER_PREVIEW_OVERLAY_PATH) : DEFAULT_PREVIEW_OVERLAY_PATH,
-    pathway_state_path: process.env.WEAVER_PATHWAY_STATE_PATH ? path.resolve(process.env.WEAVER_PATHWAY_STATE_PATH) : DEFAULT_PATHWAY_STATE_PATH,
-    obsidian_queue_path: process.env.WEAVER_OBSIDIAN_QUEUE_PATH ? path.resolve(process.env.WEAVER_OBSIDIAN_QUEUE_PATH) : DEFAULT_OBSIDIAN_QUEUE_PATH,
+    runs_dir: process.env.WEAVER_RUNS_DIR ? path.resolve(process.env.WEAVER_RUNS_DIR) : defaultRunsDir,
+    events_path: process.env.WEAVER_EVENTS_PATH ? path.resolve(process.env.WEAVER_EVENTS_PATH) : defaultEventsPath,
+    history_path: process.env.WEAVER_HISTORY_PATH ? path.resolve(process.env.WEAVER_HISTORY_PATH) : defaultHistoryPath,
+    latest_path: process.env.WEAVER_LATEST_PATH ? path.resolve(process.env.WEAVER_LATEST_PATH) : defaultLatestPath,
+    active_overlay_path: process.env.WEAVER_ACTIVE_OVERLAY_PATH ? path.resolve(process.env.WEAVER_ACTIVE_OVERLAY_PATH) : defaultActiveOverlayPath,
+    preview_overlay_path: process.env.WEAVER_PREVIEW_OVERLAY_PATH ? path.resolve(process.env.WEAVER_PREVIEW_OVERLAY_PATH) : defaultPreviewOverlayPath,
+    pathway_state_path: process.env.WEAVER_PATHWAY_STATE_PATH ? path.resolve(process.env.WEAVER_PATHWAY_STATE_PATH) : defaultPathwayStatePath,
+    obsidian_queue_path: process.env.WEAVER_OBSIDIAN_QUEUE_PATH ? path.resolve(process.env.WEAVER_OBSIDIAN_QUEUE_PATH) : defaultObsidianQueuePath,
+    axis_ledger_path: process.env.WEAVER_AXIS_LEDGER_PATH ? path.resolve(process.env.WEAVER_AXIS_LEDGER_PATH) : defaultAxisLedgerPath,
     regime_latest_path: process.env.WEAVER_REGIME_LATEST_PATH ? path.resolve(process.env.WEAVER_REGIME_LATEST_PATH) : DEFAULT_REGIME_LATEST_PATH,
     mirror_latest_path: process.env.WEAVER_MIRROR_LATEST_PATH ? path.resolve(process.env.WEAVER_MIRROR_LATEST_PATH) : DEFAULT_MIRROR_LATEST_PATH,
     autopause_path: process.env.WEAVER_AUTOPAUSE_PATH ? path.resolve(process.env.WEAVER_AUTOPAUSE_PATH) : DEFAULT_AUTOPAUSE_PATH
@@ -515,6 +526,20 @@ function emitObsidianProjection(paths: AnyObj, policy: AnyObj, payload: AnyObj =
     type: 'weaver_obsidian_projection',
     ...payload
   });
+}
+
+function readLatestAxisSwitch(axisLedgerPath: string) {
+  try {
+    if (!fs.existsSync(axisLedgerPath)) return null;
+    const rows = String(fs.readFileSync(axisLedgerPath, 'utf8') || '')
+      .split('\n')
+      .filter(Boolean);
+    if (!rows.length) return null;
+    const parsed = JSON.parse(rows[rows.length - 1]);
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch {
+    return null;
+  }
 }
 
 function evaluateConstitutionalVeto(policy: AnyObj, input: AnyObj = {}) {
@@ -929,8 +954,9 @@ function runWeaver(dateStr: string, opts: AnyObj = {}) {
     userDeclaredPrimaryMetric
     && userDeclaredPrimaryMetric !== previousPrimaryMetric
   );
+  const metricSwitchRequestedByUser = !!userDeclaredPrimaryMetric;
   const metricSwitchAccepted = !!(
-    metricSwitchDeclaredByUser
+    metricSwitchRequestedByUser
     && finalMetric
     && userDeclaredPrimaryMetric === finalMetric
   );
@@ -1011,9 +1037,10 @@ function runWeaver(dateStr: string, opts: AnyObj = {}) {
       },
       constitutional_veto: constitutionalVeto,
       creative_route: brainRoute,
-      metric_switch: metricSwitchDeclaredByUser
+      metric_switch: metricSwitchRequestedByUser
         ? {
             declared_by_user: true,
+            switch_changed: metricSwitchDeclaredByUser,
             from_metric_id: previousPrimaryMetric || null,
             requested_metric_id: userDeclaredPrimaryMetric,
             selected_metric_id: finalMetric || null,
@@ -1091,15 +1118,30 @@ function runWeaver(dateStr: string, opts: AnyObj = {}) {
       dominance: guarded.dominance && typeof guarded.dominance === 'object' ? guarded.dominance : {}
     });
   }
-  if (metricSwitchDeclaredByUser) {
+  if (metricSwitchRequestedByUser) {
     emitEvent(paths, policy, 'metric_switch_declared_by_user', {
       run_id: runId,
       date: dateStr,
       objective_id: objectiveId,
+      switch_changed: metricSwitchDeclaredByUser,
       from_metric_id: previousPrimaryMetric || null,
       requested_metric_id: userDeclaredPrimaryMetric,
       selected_metric_id: finalMetric || null,
       accepted: metricSwitchAccepted
+    });
+    appendJsonl(paths.axis_ledger_path, {
+      ts,
+      type: 'weaver_axis_switch',
+      run_id: runId,
+      date: dateStr,
+      source: cleanText(opts.source || 'manual', 80) || 'manual',
+      objective_id: objectiveId,
+      switch_changed: metricSwitchDeclaredByUser,
+      from_metric_id: previousPrimaryMetric || null,
+      requested_metric_id: userDeclaredPrimaryMetric,
+      selected_metric_id: finalMetric || null,
+      accepted: metricSwitchAccepted,
+      reason_codes: valueReasonCodes.slice(0, 10)
     });
   }
   if (pathwayState && pathwayState.dormant_count > 0) {
@@ -1133,9 +1175,10 @@ function runWeaver(dateStr: string, opts: AnyObj = {}) {
       : {},
     constitutional_veto: constitutionalVeto,
     creative_route: brainRoute,
-    metric_switch: metricSwitchDeclaredByUser
+    metric_switch: metricSwitchRequestedByUser
       ? {
           declared_by_user: true,
+          switch_changed: metricSwitchDeclaredByUser,
           from_metric_id: previousPrimaryMetric || null,
           requested_metric_id: userDeclaredPrimaryMetric,
           selected_metric_id: finalMetric || null,
@@ -1167,11 +1210,12 @@ function runWeaver(dateStr: string, opts: AnyObj = {}) {
     obsidianSummaryLines.push('', '## Reason Codes');
     for (const reason of valueReasonCodes.slice(0, 10)) obsidianSummaryLines.push(`- ${String(reason)}`);
   }
-  if (metricSwitchDeclaredByUser) {
+  if (metricSwitchRequestedByUser) {
     obsidianSummaryLines.push('', '## Value Axis Switch');
     obsidianSummaryLines.push(`- Previous: \`${previousPrimaryMetric || 'none'}\``);
     obsidianSummaryLines.push(`- Requested: \`${userDeclaredPrimaryMetric || 'none'}\``);
     obsidianSummaryLines.push(`- Selected: \`${finalMetric || 'none'}\``);
+    obsidianSummaryLines.push(`- Changed: \`${metricSwitchDeclaredByUser ? 'yes' : 'no'}\``);
     obsidianSummaryLines.push(`- Accepted: \`${metricSwitchAccepted ? 'yes' : 'no'}\``);
   }
   emitObsidianProjection(paths, policy, {
@@ -1182,12 +1226,13 @@ function runWeaver(dateStr: string, opts: AnyObj = {}) {
     value_currency: finalCurrency || null,
     markdown: obsidianSummaryLines.join('\n')
   });
-  if (metricSwitchDeclaredByUser) {
+  if (metricSwitchRequestedByUser) {
     emitObsidianProjection(paths, policy, {
       stage: 'metric_switch_declared_by_user',
       run_id: runId,
       date: dateStr,
       objective_id: objectiveId,
+      switch_changed: metricSwitchDeclaredByUser,
       from_metric_id: previousPrimaryMetric || null,
       requested_metric_id: userDeclaredPrimaryMetric,
       selected_metric_id: finalMetric || null,
@@ -1244,6 +1289,7 @@ function status(dateArg: string, opts: AnyObj = {}) {
       && payload.value_context.pathways.dormant_count
       || 0
     ),
+    latest_axis_switch: readLatestAxisSwitch(paths.axis_ledger_path),
     apply_executed: payload.apply_executed === true,
     run_path: payload.run_path || null,
     latest_path: relPath(paths.latest_path)
