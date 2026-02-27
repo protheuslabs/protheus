@@ -1,0 +1,11 @@
+{
+  "schema_id": "primitive_policy_vm",
+  "schema_version": "1.0",
+  "mode": "advisory",
+  "deny_effects": [],
+  "shadow_only_effects": [],
+  "allow_opcode_overrides": [],
+  "block_opcode_overrides": [],
+  "emit_audit": true,
+  "audit_path": "state/runtime/policy_vm/decisions.jsonl"
+}
