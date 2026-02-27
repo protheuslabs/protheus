@@ -4,7 +4,7 @@
   "canary_min_days": 14,
   "canary_live_fraction": 0.15,
   "canary_force_low_risk": true,
-  "canary_frozen_daily_token_cap": 4000,
+  "canary_frozen_daily_token_cap": 8000,
   "canary_max_runs_per_day": 1,
   "eval_every_hours": 12,
   "harness_days": 180,

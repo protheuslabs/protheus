@@ -1,0 +1,14 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "force_disable_on_violation": true,
+  "auto_clear_block": true,
+  "paths": {
+    "latest": "state/ops/autotest_doctor/latest.json",
+    "history": "state/ops/autotest_doctor/history.jsonl",
+    "state": "state/ops/autotest_doctor/state.json",
+    "watchdog_state": "state/ops/autotest_doctor/watchdog_state.json",
+    "watchdog_history": "state/ops/autotest_doctor/watchdog_history.jsonl",
+    "watchdog_block": "state/ops/autotest_doctor/watchdog_block.json"
+  }
+}

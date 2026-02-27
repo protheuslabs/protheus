@@ -3,7 +3,7 @@
   "enabled": true,
   "shadow_mode": true,
   "runtime": {
-    "mode": "live",
+    "mode": "test",
     "test": {
       "allow_constitution_inversion": true
     }

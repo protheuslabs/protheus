@@ -1,0 +1,23 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "require_runtime_mode_test": true,
+  "shadow_window_days": 30,
+  "max_critical_failures_shadow_window": 0,
+  "required_harness_tests": [
+    "imh-01",
+    "imh-02",
+    "imh-03"
+  ],
+  "require_human_veto_policy": true,
+  "paths": {
+    "inversion_policy": "config/inversion_policy.json",
+    "receipts": "state/autonomy/inversion/receipts.jsonl",
+    "events": "state/autonomy/inversion/events",
+    "history": "state/autonomy/inversion/history.jsonl",
+    "latest_state": "state/autonomy/inversion/latest.json",
+    "activation_receipt": "state/autonomy/inversion/live_activation_receipt.json",
+    "out_latest": "state/autonomy/inversion/readiness/latest.json",
+    "out_history": "state/autonomy/inversion/readiness/history.jsonl"
+  }
+}
