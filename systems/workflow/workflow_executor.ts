@@ -35,6 +35,20 @@ try {
 } catch {
   recordHighValuePlayOutcomes = null;
 }
+let loadAssimilationLedger = null;
+let saveAssimilationLedger = null;
+let recordAssimilationUsage = null;
+try {
+  ({
+    loadLedger: loadAssimilationLedger,
+    saveLedger: saveAssimilationLedger,
+    recordUsage: recordAssimilationUsage
+  } = require('../assimilation/candidacy_ledger.js'));
+} catch {
+  loadAssimilationLedger = null;
+  saveAssimilationLedger = null;
+  recordAssimilationUsage = null;
+}
 let candidateMutationOrderExternal = null;
 let applyMutationKindExternal = null;
 let evaluateMutationGateExternal = null;
@@ -120,6 +134,9 @@ const SYSTEM_HEALTH_EVENTS_PATH = process.env.SYSTEM_HEALTH_EVENTS_PATH
 const SOUL_TOKEN_GUARD_SCRIPT = process.env.WORKFLOW_EXECUTOR_SOUL_TOKEN_GUARD_SCRIPT
   ? path.resolve(process.env.WORKFLOW_EXECUTOR_SOUL_TOKEN_GUARD_SCRIPT)
   : path.join(REPO_ROOT, 'systems', 'security', 'soul_token_guard.js');
+const ASSIMILATION_LEDGER_PATH = process.env.ASSIMILATION_LEDGER_PATH
+  ? path.resolve(process.env.ASSIMILATION_LEDGER_PATH)
+  : path.join(REPO_ROOT, 'state', 'assimilation', 'ledger.json');
 
 function usage() {
   console.log('Usage:');
@@ -296,6 +313,110 @@ function appendSystemHealthEvent(row: AnyObj) {
 
 function relPath(filePath: string) {
   return path.relative(REPO_ROOT, filePath).replace(/\\/g, '/');
+}
+
+function normalizeCapabilityToken(v: unknown, maxLen = 160) {
+  return String(v == null ? '' : v)
+    .toLowerCase()
+    .trim()
+    .slice(0, maxLen)
+    .replace(/[^a-z0-9_.:/-]+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
+
+function capabilityFromCommand(command: unknown) {
+  const text = String(command || '').trim();
+  if (!text) return null;
+  const skillMatch = text.match(/skills\/([a-zA-Z0-9_-]+)\//);
+  if (skillMatch && skillMatch[1]) {
+    return {
+      capability_id: `skill:${normalizeCapabilityToken(skillMatch[1], 120)}`,
+      source_type: 'local_skill'
+    };
+  }
+  const adapterFromFlag = normalizeCapabilityToken(parseCommandFlag(text, 'kind'), 120);
+  if (adapterFromFlag) {
+    return {
+      capability_id: `adapter:${adapterFromFlag}`,
+      source_type: 'external_adapter'
+    };
+  }
+  return null;
+}
+
+function collectAssimilationUsageSignals(results: AnyObj[]) {
+  const out: AnyObj[] = [];
+  const seen = new Set<string>();
+  for (const row of (Array.isArray(results) ? results : [])) {
+    const workflowId = cleanText(row && row.workflow_id || '', 120) || 'unknown_workflow';
+    const rowAdapter = normalizeCapabilityToken(row && row.adapter || '', 120);
+    if (rowAdapter) {
+      const key = `adapter:${rowAdapter}|${workflowId}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        out.push({
+          capability_id: `adapter:${rowAdapter}`,
+          source_type: 'external_adapter',
+          workflow_id: workflowId,
+          success: row && row.ok === true,
+          pain_score: row && row.ok === true ? 0.1 : 0.6,
+          cost_score: clampNumber(row && row.execution_budget && row.execution_budget.tokens_used_est, 0, 1, 0.2)
+        });
+      }
+    }
+    const steps = Array.isArray(row && row.step_results) ? row.step_results : [];
+    for (const stepRes of steps) {
+      const step = stepRes && stepRes.step && typeof stepRes.step === 'object' ? stepRes.step : {};
+      const externalGate = stepRes && stepRes.external_gate && typeof stepRes.external_gate === 'object'
+        ? stepRes.external_gate
+        : {};
+      const adapter = normalizeCapabilityToken(
+        externalGate && externalGate.metadata && externalGate.metadata.adapter
+          ? externalGate.metadata.adapter
+          : step && step.adapter,
+        120
+      );
+      const provider = normalizeCapabilityToken(
+        externalGate && externalGate.metadata && externalGate.metadata.provider
+          ? externalGate.metadata.provider
+          : step && step.provider,
+        120
+      );
+      const commandSignal = capabilityFromCommand(step && step.command);
+      const candidateRows = [];
+      if (adapter) {
+        candidateRows.push({
+          capability_id: `adapter:${adapter}`,
+          source_type: 'external_adapter'
+        });
+      }
+      if (!adapter && provider) {
+        candidateRows.push({
+          capability_id: `provider:${provider}`,
+          source_type: 'external_tool'
+        });
+      }
+      if (commandSignal) candidateRows.push(commandSignal);
+
+      for (const candidate of candidateRows) {
+        const capId = normalizeCapabilityToken(candidate && candidate.capability_id || '', 180);
+        if (!capId) continue;
+        const key = `${capId}|${workflowId}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push({
+          capability_id: capId,
+          source_type: candidate.source_type || 'external_tool',
+          workflow_id: workflowId,
+          success: stepRes && stepRes.ok === true,
+          pain_score: stepRes && stepRes.ok === true ? 0.1 : 0.6,
+          cost_score: clampNumber(stepRes && stepRes.tokens_est_total, 0, 1, 0.2)
+        });
+      }
+    }
+  }
+  return out;
 }
 
 function stableId(seed: unknown, prefix = 'wf') {
@@ -3118,6 +3239,8 @@ function executeWorkflow(workflow: AnyObj, context: AnyObj, options: AnyObj) {
   return {
     workflow_id: String(workflow && workflow.id || ''),
     name: String(workflow && workflow.name || ''),
+    adapter: cleanText(context && context.adapter || '', 80) || '',
+    provider: cleanText(context && context.provider || '', 80).toLowerCase() || '',
     status: ok ? 'succeeded' : (blockedByGate ? 'blocked' : 'failed'),
     ok,
     blocked_by_gate: blockedByGate,
@@ -3717,6 +3840,51 @@ function runCmd(dateStr: string, args: AnyObj) {
     mutationReceiptPathRel = relPath(mutationReceiptPath);
   }
 
+  let assimilationUsageSummary = null;
+  if (
+    options.dry_run !== true
+    && typeof loadAssimilationLedger === 'function'
+    && typeof saveAssimilationLedger === 'function'
+    && typeof recordAssimilationUsage === 'function'
+  ) {
+    try {
+      const usageSignals = collectAssimilationUsageSignals(results);
+      if (usageSignals.length > 0) {
+        const ledger = loadAssimilationLedger(fs, ASSIMILATION_LEDGER_PATH);
+        let recorded = 0;
+        for (const signal of usageSignals) {
+          try {
+            recordAssimilationUsage(ledger, {
+              capability_id: signal.capability_id,
+              source_type: signal.source_type,
+              workflow_id: signal.workflow_id,
+              success: signal.success === true,
+              pain_score: signal.pain_score,
+              cost_score: signal.cost_score
+            }, nowIso());
+            recorded += 1;
+          } catch {
+            // Ignore malformed usage rows and continue.
+          }
+        }
+        if (recorded > 0) {
+          saveAssimilationLedger(fs, path, ASSIMILATION_LEDGER_PATH, ledger, nowIso());
+          assimilationUsageSummary = {
+            enabled: true,
+            recorded,
+            signals_seen: usageSignals.length,
+            ledger_path: relPath(ASSIMILATION_LEDGER_PATH)
+          };
+        }
+      }
+    } catch (err) {
+      assimilationUsageSummary = {
+        enabled: false,
+        error: cleanText(err && err.message ? err.message : err || 'assimilation_usage_tracking_failed', 180)
+      };
+    }
+  }
+
   const runSlo = computeRunSlo(results, selected.length, runStartedMs, policy);
   const historyRows = readJsonl(HISTORY_PATH);
   const sloWindow = computeSloWindow(historyRows, runSlo, policy);
@@ -3835,6 +4003,7 @@ function runCmd(dateStr: string, args: AnyObj) {
     high_value_play: highValueOutcomes && typeof highValueOutcomes === 'object'
       ? highValueOutcomes
       : null,
+    assimilation_usage: assimilationUsageSummary,
     step_receipts_count: stepReceiptRows.length,
     step_receipts_path: stepReceiptPathRel,
     runtime_mutations_attempted: mutationAttempted,
@@ -3924,6 +4093,9 @@ function runCmd(dateStr: string, args: AnyObj) {
           false_positive_rate: Number(payload.high_value_play.false_positive_rate || 0),
           false_positive_samples: Number(payload.high_value_play.false_positive_samples || 0)
         }
+      : null,
+    assimilation_usage: payload.assimilation_usage && typeof payload.assimilation_usage === 'object'
+      ? payload.assimilation_usage
       : null,
     time_to_first_execution_ms: payload.slo && payload.slo.measured
       ? payload.slo.measured.time_to_first_execution_ms
@@ -4017,6 +4189,9 @@ function runCmd(dateStr: string, args: AnyObj) {
     unhandled_failures: payload.unhandled_failures,
     failure_reasons: payload.failure_reasons || {},
     deferred_reasons: payload.deferred_reasons || {},
+    assimilation_usage: payload.assimilation_usage && typeof payload.assimilation_usage === 'object'
+      ? payload.assimilation_usage
+      : null,
     token_run_cap_tokens: payload.token_economics && payload.token_economics.run_token_cap_tokens != null
       ? Number(payload.token_economics.run_token_cap_tokens)
       : 0,
