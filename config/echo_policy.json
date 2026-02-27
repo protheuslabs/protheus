@@ -1,8 +1,9 @@
 {
   "version": "1.0",
   "enabled": true,
-  "shadow_only": true,
-  "allow_apply": false,
+  "shadow_only": false,
+  "advisory_mode": true,
+  "allow_apply": true,
   "input": {
     "max_rows_per_run": 96,
     "allow_stdin_json": true,
