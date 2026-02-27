@@ -59,6 +59,8 @@ const DREAM_REM_RUN_FILE_LIMIT = clamp(Number(process.env.PROPOSAL_ENRICHER_DREA
 const DREAM_REM_SYNTHESIS_WEIGHT_SCALE = clamp(Number(process.env.PROPOSAL_ENRICHER_DREAM_REM_SYNTHESIS_WEIGHT_SCALE || 0.5), 0.25, 1);
 const DREAM_REM_BONUS_CAP = clamp(Number(process.env.AUTONOMY_DREAM_REM_BONUS_CAP || 2), 0, 4);
 const DREAM_MAX_SOURCE_UIDS = clamp(Number(process.env.PROPOSAL_ENRICHER_DREAM_MAX_SOURCE_UIDS || 24), 8, 128);
+const DREAM_SIGNAL_QUALITY_MIN_SCORE = clamp(Number(process.env.PROPOSAL_ENRICHER_DREAM_QUALITY_MIN_SCORE || 35), 0, 100);
+const DREAM_SIGNAL_QUALITY_MIN_SCALE = clamp(Number(process.env.PROPOSAL_ENRICHER_DREAM_QUALITY_MIN_SCALE || 0.25), 0, 1);
 
 const FIT_STOPWORDS = new Set([
   'the', 'and', 'for', 'with', 'from', 'into', 'through', 'that', 'this', 'those', 'these', 'your', 'you',
@@ -444,9 +446,33 @@ function loadDreamSignals(dateStr) {
     .sort((a, b) => Number(b.weight || 0) - Number(a.weight || 0) || String(a.token).localeCompare(String(b.token)))
     .slice(0, DREAM_SIGNAL_MAX_TOKENS);
 
+  const sourceCoverage = ['theme', 'rem_daily', 'rem_run', 'rem_synthesis']
+    .filter((key) => Number(sourceCounts[key] || 0) > 0)
+    .length;
+  const tokenDensityScore = clamp(Math.round((tokens.length / Math.max(1, Math.min(8, DREAM_SIGNAL_MAX_TOKENS))) * 45), 0, 45);
+  const sourceCoverageScore = clamp(Math.round((sourceCoverage / 3) * 30), 0, 30);
+  const sourceUidScore = clamp(Math.round((sourceUidSet.size / 6) * 15), 0, 15);
+  const remPresenceScore = Number(sourceCounts.rem_daily || 0) + Number(sourceCounts.rem_run || 0) > 0 ? 10 : 0;
+  const qualityScore = clamp(tokenDensityScore + sourceCoverageScore + sourceUidScore + remPresenceScore, 0, 100);
+  const qualityTier = qualityScore >= 70 ? 'high' : (qualityScore >= 45 ? 'medium' : 'low');
+  const qualityScale = qualityScore >= DREAM_SIGNAL_QUALITY_MIN_SCORE
+    ? 1
+    : clamp(
+        Math.max(
+          DREAM_SIGNAL_QUALITY_MIN_SCALE,
+          qualityScore / Math.max(1, DREAM_SIGNAL_QUALITY_MIN_SCORE)
+        ),
+        DREAM_SIGNAL_QUALITY_MIN_SCALE,
+        1
+      );
+
   return {
     date: dateStr,
     available: tokens.length > 0,
+    quality_score: qualityScore,
+    quality_tier: qualityTier,
+    quality_scale: Number(qualityScale.toFixed(3)),
+    quality_floor: DREAM_SIGNAL_QUALITY_MIN_SCORE,
     total_weight: tokens.reduce((sum, row) => sum + Number(row.weight || 0), 0),
     tokens,
     source_counts: {
@@ -1946,10 +1972,18 @@ function assessDirectiveFit(proposal, profile, t) {
 
 function assessDreamAlignment(proposal, dreamSignals) {
   const source = dreamSignals && typeof dreamSignals === 'object' ? dreamSignals : {};
+  const qualityScore = clamp(Number(source.quality_score || 0), 0, 100);
+  const qualityTier = normalizeText(source.quality_tier || '').toLowerCase() || 'low';
+  const qualityScale = clamp(Number(source.quality_scale || 0), DREAM_SIGNAL_QUALITY_MIN_SCALE, 1);
+  const qualityFloor = DREAM_SIGNAL_QUALITY_MIN_SCORE;
   const rows = Array.isArray(source.tokens) ? source.tokens : [];
   if (!rows.length) {
     return {
       available: false,
+      quality_score: qualityScore,
+      quality_tier: qualityTier,
+      quality_scale: qualityScale,
+      quality_floor: qualityFloor,
       score: 0,
       directive_bonus: 0,
       hit_weight: 0,
@@ -1965,6 +1999,10 @@ function assessDreamAlignment(proposal, dreamSignals) {
   if (!proposalTokens.length) {
     return {
       available: true,
+      quality_score: qualityScore,
+      quality_tier: qualityTier,
+      quality_scale: qualityScale,
+      quality_floor: qualityFloor,
       score: 0,
       directive_bonus: 0,
       hit_weight: 0,
@@ -2006,10 +2044,10 @@ function assessDreamAlignment(proposal, dreamSignals) {
     ? clamp(Math.round((hitWeight / totalWeight) * 100), 0, 100)
     : 0;
   const baseBonus = hitWeight > 0
-    ? clamp(Math.round(hitWeight / 3), 0, DREAM_DIRECTIVE_BONUS_CAP)
+    ? clamp(Math.round((hitWeight / 3) * qualityScale), 0, DREAM_DIRECTIVE_BONUS_CAP)
     : 0;
   const remBonus = remHitWeight > 0
-    ? clamp(Math.round(remHitWeight / 6), 0, DREAM_REM_BONUS_CAP)
+    ? clamp(Math.round((remHitWeight / 6) * qualityScale), 0, DREAM_REM_BONUS_CAP)
     : 0;
   const bonus = clamp(baseBonus + remBonus, 0, DREAM_DIRECTIVE_BONUS_CAP);
   const sourceUids = Array.isArray(source.source_uids)
@@ -2019,8 +2057,14 @@ function assessDreamAlignment(proposal, dreamSignals) {
   if (baseBonus > 0) reasons.push('dream_alignment_bonus_applied');
   else reasons.push('dream_alignment_no_bonus');
   if (remBonus > 0) reasons.push('dream_rem_bonus_applied');
+  if (qualityScale < 1) reasons.push('dream_quality_fallback_scaled_bonus');
+  if (qualityScore < qualityFloor) reasons.push('dream_quality_below_floor');
   return {
     available: true,
+    quality_score: qualityScore,
+    quality_tier: qualityTier,
+    quality_scale: Number(qualityScale.toFixed(3)),
+    quality_floor: qualityFloor,
     score,
     directive_bonus: bonus,
     hit_weight: hitWeight,
@@ -2422,6 +2466,10 @@ function enrichOne(proposal, ctx) {
     directive_fit_positive: d.matched_positive,
     directive_fit_negative: d.matched_negative,
     dream_signal_available: dream.available === true,
+    dream_signal_quality_score: dream.quality_score,
+    dream_signal_quality_tier: dream.quality_tier,
+    dream_signal_quality_scale: dream.quality_scale,
+    dream_signal_quality_floor: dream.quality_floor,
     dream_alignment_score: dream.score,
     dream_alignment_hit_weight: dream.hit_weight,
     dream_alignment_bonus: dream.directive_bonus,
@@ -2582,6 +2630,10 @@ function summarizeDreamAlignment(results, dreamSignals) {
   const tokensLoaded = Array.isArray(source.tokens) ? source.tokens.length : 0;
   return {
     available: source.available === true,
+    quality_score: clamp(Number(source.quality_score || 0), 0, 100),
+    quality_tier: normalizeText(source.quality_tier || '').toLowerCase() || 'low',
+    quality_scale: clamp(Number(source.quality_scale || 0), DREAM_SIGNAL_QUALITY_MIN_SCALE, 1),
+    quality_floor: DREAM_SIGNAL_QUALITY_MIN_SCORE,
     tokens_loaded: tokensLoaded,
     source_counts: source.source_counts || { theme: 0, rem: 0 },
     source_uid_count: Array.isArray(source.source_uids) ? source.source_uids.length : 0,

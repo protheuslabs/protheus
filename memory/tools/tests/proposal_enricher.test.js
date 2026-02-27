@@ -228,6 +228,8 @@ function run() {
     assert.ok(out.objective_binding && typeof out.objective_binding === 'object', 'should return objective binding summary');
     assert.ok(out.dream_alignment && typeof out.dream_alignment === 'object', 'should return dream alignment summary');
     assert.strictEqual(out.dream_alignment.available, true, 'dream alignment should be available when dream inputs exist');
+    assert.ok(Number(out.dream_alignment.quality_score || 0) > 0, 'dream alignment summary should expose quality score');
+    assert.ok(Number(out.dream_alignment.quality_scale || 0) > 0, 'dream alignment summary should expose quality scale');
     assert.ok(Number(out.dream_alignment.tokens_loaded || 0) >= 2, 'dream alignment should load dream tokens');
 
     const enriched = readJson(proposalsPath);
@@ -252,6 +254,8 @@ function run() {
     assert.ok(low.meta && Number.isFinite(Number(low.meta.directive_fit_score)), 'low proposal has directive fit score');
     assert.ok(Number(low.meta.directive_fit_score || 0) >= Number(low.meta.directive_fit_base_score || 0), 'dream bonus should not reduce directive fit');
     assert.ok(Number(low.meta.dream_alignment_bonus || 0) >= 1, 'low proposal should receive bounded dream bonus');
+    assert.ok(Number(low.meta.dream_signal_quality_score || 0) > 0, 'proposal meta should include dream quality score');
+    assert.ok(Number(low.meta.dream_signal_quality_scale || 0) > 0, 'proposal meta should include dream quality scaling');
     assert.ok(
       Array.isArray(low.meta.dream_alignment_tokens) && low.meta.dream_alignment_tokens.includes('automation'),
       'dream alignment should record matching token evidence'
