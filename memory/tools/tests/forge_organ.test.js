@@ -79,6 +79,10 @@ function run() {
   const forgeId = forgedOut.record.forge_id;
   assert.ok(forgeId, 'forge_id should be emitted');
   assert.ok(Array.isArray(forgedOut.record.capability_packs), 'hardware packs should resolve');
+  assert.ok(
+    forgedOut.record.replica && forgedOut.record.replica.strand_candidate,
+    'forged record should include helix strand candidate'
+  );
 
   const statusOne = runNode(scriptPath, ['status', `--forge-id=${forgeId}`], env, root);
   assert.strictEqual(statusOne.status, 0, statusOne.stderr || statusOne.stdout);
@@ -103,6 +107,11 @@ function run() {
   const promoteOkOut = parseJson(promoteOk, 'promote_ok');
   assert.strictEqual(promoteOkOut.ok, true);
   assert.strictEqual(promoteOkOut.promotion.decision, 'promote');
+  assert.ok(
+    promoteOkOut.promotion.helix_admission
+      && promoteOkOut.promotion.helix_admission.apply_executed === true,
+    'promotion should pass helix admission apply path'
+  );
 
   const dissolved = runNode(scriptPath, [
     'dissolve',

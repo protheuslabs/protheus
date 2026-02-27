@@ -4,6 +4,12 @@ export {};
 
 type AnyObj = Record<string, any>;
 const crypto = require('crypto');
+let buildStrandCandidate = null;
+try {
+  ({ buildStrandCandidate } = require('../helix/helix_admission_gate.js'));
+} catch {
+  buildStrandCandidate = null;
+}
 
 function cleanText(v: unknown, maxLen = 220) {
   return String(v == null ? '' : v).replace(/\s+/g, ' ').trim().slice(0, maxLen);
@@ -58,6 +64,16 @@ function buildForgeReplica(input: AnyObj = {}, policy: AnyObj = {}) {
     }
   ].slice(0, maxBuildSteps);
 
+  const strandCandidate = typeof buildStrandCandidate === 'function'
+    ? buildStrandCandidate({
+      source: normalizeToken(input.source || 'assimilation', 80) || 'assimilation',
+      capability_id: capabilityId,
+      risk_class: riskClass,
+      mode,
+      replica_id: replicaId
+    })
+    : null;
+
   return {
     replica_id: replicaId,
     capability_id: capabilityId,
@@ -75,6 +91,7 @@ function buildForgeReplica(input: AnyObj = {}, policy: AnyObj = {}) {
       planned_contract_path: `systems/assimilation/generated/${replicaId}/contract.ts`,
       planned_adapter_path: `systems/assimilation/generated/${replicaId}/adapter.ts`
     },
+    strand_candidate: strandCandidate,
     reason_codes: ['forge_replica_planned', 'clean_room_mode']
   };
 }
