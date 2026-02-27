@@ -99,6 +99,7 @@ function runGate() {
     'config/embodiment_layer_policy.json',
     'config/gated_account_creation_policy.json',
     'config/account_creation_templates.json',
+    'config/critical_path_formal_policy.json',
     'config/execution_sandbox_envelope_policy.json',
     'config/explanation_primitive_policy.json',
     'config/formal_invariants.json',
@@ -158,6 +159,7 @@ function runGate() {
     'systems/redteam/swarm_tactics.ts',
     'systems/redteam/wisdom_distiller.ts',
     'systems/security/formal_invariant_engine.ts',
+    'systems/security/critical_path_formal_verifier.ts',
     'systems/security/execution_sandbox_envelope.ts',
     'systems/security/organ_state_encryption_plane.ts',
     'systems/security/remote_tamper_heartbeat.ts',
@@ -364,6 +366,40 @@ function runGate() {
     'formal_invariant_engine:merge_guard_hook',
     mergeGuardSrc.includes('formal_invariant_engine.js') && mergeGuardSrc.includes('--strict=1'),
     'merge_guard should enforce formal invariant engine'
+  );
+  addCheck(
+    'critical_path_formal:merge_guard_hook',
+    mergeGuardSrc.includes('critical_path_formal_verifier.js') && mergeGuardSrc.includes('--strict=1'),
+    'merge_guard should enforce critical-path formal verifier'
+  );
+  const criticalPathFormalPolicy = readJsonSafe(path.join(ROOT, 'config', 'critical_path_formal_policy.json'), {});
+  const criticalPathRequiredAxioms = Array.isArray(criticalPathFormalPolicy.checks && criticalPathFormalPolicy.checks.required_axiom_ids)
+    ? criticalPathFormalPolicy.checks.required_axiom_ids.length
+    : 0;
+  const criticalPathRequiredWeights = Array.isArray(criticalPathFormalPolicy.checks && criticalPathFormalPolicy.checks.required_weaver_weights)
+    ? criticalPathFormalPolicy.checks.required_weaver_weights.length
+    : 0;
+  const criticalPathDisabledTargets = Array.isArray(criticalPathFormalPolicy.checks && criticalPathFormalPolicy.checks.required_disabled_live_targets)
+    ? criticalPathFormalPolicy.checks.required_disabled_live_targets.map((row: unknown) => normalizeLowerToken(row, 80))
+    : [];
+  addCheck(
+    'critical_path_formal:policy_axioms_and_weights',
+    criticalPathRequiredAxioms >= 5 && criticalPathRequiredWeights >= 7,
+    `required_axiom_ids=${criticalPathRequiredAxioms} required_weaver_weights=${criticalPathRequiredWeights}`
+  );
+  addCheck(
+    'critical_path_formal:policy_high_risk_targets_disabled',
+    criticalPathDisabledTargets.includes('directive') && criticalPathDisabledTargets.includes('constitution'),
+    `required_disabled_live_targets=${criticalPathDisabledTargets.join(',')}`
+  );
+  addCheck(
+    'critical_path_formal:policy_paths_present',
+    !!(criticalPathFormalPolicy.paths
+      && criticalPathFormalPolicy.paths.weaver_policy
+      && criticalPathFormalPolicy.paths.inversion_policy
+      && criticalPathFormalPolicy.paths.constitution_policy
+      && criticalPathFormalPolicy.paths.formal_invariants),
+    'policy should declare required critical-path source roots'
   );
   addCheck(
     'supply_chain_trust_plane:merge_guard_hook',

@@ -63,6 +63,7 @@ function runGuard(opts = {}) {
   checks.push(runCmd('workspace_dump_guard_strict', 'node', ['systems/security/workspace_dump_guard.js', 'run', '--strict']));
   checks.push(runCmd('repo_hygiene_guard_strict', 'node', ['systems/security/repo_hygiene_guard.js', 'run', '--strict', '--staged']));
   checks.push(runCmd('formal_invariant_engine', 'node', ['systems/security/formal_invariant_engine.js', 'run', '--strict=1']));
+  checks.push(runCmd('critical_path_formal_verifier', 'node', ['systems/security/critical_path_formal_verifier.js', 'run', '--strict=1']));
   checks.push(runCmd('supply_chain_trust_plane', 'node', ['systems/security/supply_chain_trust_plane.js', 'run', '--strict=1', '--verify-only=1']));
   checks.push(runCmd('key_lifecycle_verify', 'node', ['systems/security/key_lifecycle_governor.js', 'verify', '--strict=1']));
   checks.push(runCmd('docs_coverage_gate', 'node', ['systems/ops/docs_coverage_gate.js', 'run', '--strict=1']));

@@ -1,0 +1,44 @@
+{
+  "schema_id": "critical_path_formal_policy",
+  "schema_version": "1.0",
+  "enabled": true,
+  "strict_fail_closed": true,
+  "paths": {
+    "weaver_policy": "config/weaver_policy.json",
+    "inversion_policy": "config/inversion_policy.json",
+    "constitution_policy": "config/constitution_guardian_policy.json",
+    "formal_invariants": "config/formal_invariants.json",
+    "weaver_arbitration_source": "systems/weaver/arbitration_engine.ts",
+    "weaver_core_source": "systems/weaver/weaver_core.ts",
+    "inversion_source": "systems/autonomy/inversion_controller.ts"
+  },
+  "checks": {
+    "required_weaver_weights": [
+      "impact",
+      "confidence",
+      "uncertainty",
+      "drift_risk",
+      "cost_pressure",
+      "mirror_pressure",
+      "regime_alignment"
+    ],
+    "required_axiom_ids": [
+      "preserve_root_constitution",
+      "preserve_user_sovereignty",
+      "never_self_terminate",
+      "never_bypass_guardrails",
+      "never_disable_integrity_kernel"
+    ],
+    "objective_id_required_min_target_rank": 2,
+    "require_shadow_pass_for_live_rank_at_least": 2,
+    "require_human_veto_for_live_rank_at_least": 3,
+    "minimum_observer_quorum_for_live_rank_at_least": 2,
+    "minimum_shadow_hours_for_live_rank_at_least": 2,
+    "required_disabled_live_targets": [
+      "directive",
+      "constitution"
+    ]
+  },
+  "state_path": "state/security/critical_path_formal/latest.json",
+  "history_path": "state/security/critical_path_formal/history.jsonl"
+}

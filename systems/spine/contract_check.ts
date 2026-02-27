@@ -796,9 +796,15 @@ function main() {
     "systems/security/alias_verification_vault.js",
     ["alias_verification_vault.js", "issue", "route-code", "consume-code", "revoke", "cleanup", "status", "--channel", "--alias-id", "--code", "--passport-id"]
   );
-  checkScript(
+  checkUsage(
     "systems/workflow/gated_account_creation_organ.js",
+    ["--help"],
     ["gated_account_creation_organ.js", "create", "status", "--template", "--objective-id", "--apply", "--human-approved", "--mock-execution"]
+  );
+  checkUsageTextOnly(
+    "systems/workflow/gated_account_creation_organ.js",
+    [],
+    ['"type": "gated_account_creation_status"', '"ok": true']
   );
   checkSourceContains(
     "systems/workflow/gated_account_creation_organ.js",
@@ -1014,6 +1020,14 @@ function main() {
     ["constitution_hash", "integrity_ok", "trusted_watermark_mismatch", "quarantine_activated"]
   );
   checkScript(
+    "systems/security/critical_path_formal_verifier.js",
+    ["critical_path_formal_verifier.js", "run", "status", "--strict"]
+  );
+  checkSourceContains(
+    "systems/security/critical_path_formal_verifier.js",
+    ["required_weaver_weights", "required_axiom_ids", "model_check_live_gate_ordering"]
+  );
+  checkScript(
     "systems/helix/helix_admission_gate.js",
     ["helix_admission_gate.js", "candidate", "admit", "status", "--capability-id", "--candidate-json", "--doctor-approved"]
   );
@@ -1021,9 +1035,15 @@ function main() {
     "systems/helix/helix_admission_gate.js",
     ["strand_hash_mismatch", "doctor_approval_required", "manifest_updated", "codex_root_hash_mismatch"]
   );
-  checkScript(
+  checkUsageTextOnly(
     "systems/helix/confirmed_malice_quarantine.js",
-    ["confirmed_malice_quarantine.js", "evaluate", "status", "release", "--input-json", "--human-approved", "--apply", "--state-root"]
+    ["--help"],
+    ['"type": "helix_permanent_quarantine_status"', '"release_requires_human":']
+  );
+  checkUsageTextOnly(
+    "systems/helix/confirmed_malice_quarantine.js",
+    [],
+    ['"type": "helix_permanent_quarantine_status"', '"ok": true']
   );
   checkSourceContains(
     "systems/helix/confirmed_malice_quarantine.js",
@@ -1037,9 +1057,15 @@ function main() {
     "systems/redteam/ant_colony_controller.js",
     ["require_helix_tamper", "require_sentinel_agreement", "recentAssimilationTargets", "distillWisdom"]
   );
-  checkScript(
+  checkUsage(
     "systems/autonomy/gated_self_improvement_loop.js",
+    ["--help"],
     ["gated_self_improvement_loop.js", "propose", "run", "rollback", "status", "--proposal-id", "--objective-id", "--target-path", "--apply"]
+  );
+  checkUsageTextOnly(
+    "systems/autonomy/gated_self_improvement_loop.js",
+    [],
+    ['"type": "gated_self_improvement_status"', '"ok": true']
   );
   checkSourceContains(
     "systems/autonomy/gated_self_improvement_loop.js",
