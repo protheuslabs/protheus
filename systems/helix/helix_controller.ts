@@ -139,6 +139,7 @@ function defaultPolicy() {
     sentinel: {
       enabled: true,
       force_confirmed_malice: false,
+      max_manifest_age_minutes: 1440,
       thresholds: {
         stasis_mismatch_count: 1,
         malice_mismatch_count: 8,
@@ -198,6 +199,12 @@ function loadPolicy(policyPath: string) {
     sentinel: {
       enabled: sentinel.enabled !== false,
       force_confirmed_malice: sentinel.force_confirmed_malice === true,
+      max_manifest_age_minutes: clampInt(
+        sentinel.max_manifest_age_minutes,
+        1,
+        365 * 24 * 60,
+        base.sentinel.max_manifest_age_minutes
+      ),
       thresholds: {
         stasis_mismatch_count: clampInt(
           thresholds.stasis_mismatch_count,
@@ -358,7 +365,28 @@ function commandAttest(args: AnyObj) {
   if (!previousManifest || typeof previousManifest !== 'object') {
     writeJsonAtomic(paths.manifest_path, baseManifest);
   }
-  const verifier = verifyHelixManifest(codex, baseManifest, policy);
+  const verifierBase = verifyHelixManifest(codex, baseManifest, policy);
+  const manifestGeneratedAtMs = Date.parse(String(baseManifest && baseManifest.generated_at || ''));
+  const manifestAgeMinutes = Number.isFinite(manifestGeneratedAtMs)
+    ? Number(Math.max(0, (Date.now() - Number(manifestGeneratedAtMs)) / 60000).toFixed(3))
+    : null;
+  const maxManifestAgeMinutes = Number(policy && policy.sentinel && policy.sentinel.max_manifest_age_minutes || 1440);
+  const manifestFresh = manifestAgeMinutes != null && manifestAgeMinutes <= maxManifestAgeMinutes;
+  const verifier = (!manifestFresh)
+    ? {
+        ...verifierBase,
+        ok: false,
+        reason_codes: Array.from(new Set([...(verifierBase.reason_codes || []), 'manifest_stale'])),
+        mismatches: (Array.isArray(verifierBase.mismatches) ? verifierBase.mismatches.slice(0) : []).concat([
+          {
+            type: 'manifest_stale',
+            file: null,
+            age_minutes: manifestAgeMinutes,
+            max_age_minutes: maxManifestAgeMinutes
+          }
+        ])
+      }
+    : verifierBase;
   const sentinel = evaluateSentinel(verifier, codexVerification, policy, readSentinelState(paths));
   const hunter = planHunterActions(sentinel, policy);
   const quarantine = applyQuarantine(sentinel, verifier, policy, paths.quarantine_path);
@@ -381,6 +409,12 @@ function commandAttest(args: AnyObj) {
       ok: verifier.ok,
       mismatch_count: Array.isArray(verifier.mismatches) ? verifier.mismatches.length : 0,
       reason_codes: verifier.reason_codes
+    },
+    manifest_freshness: {
+      generated_at: baseManifest && baseManifest.generated_at ? String(baseManifest.generated_at) : null,
+      age_minutes: manifestAgeMinutes,
+      max_age_minutes: maxManifestAgeMinutes,
+      fresh: manifestFresh === true
     },
     sentinel,
     hunter,
@@ -407,7 +441,8 @@ function commandAttest(args: AnyObj) {
     tier: sentinel.tier,
     attestation_decision: attestationDecision,
     mismatch_count: out.verifier.mismatch_count,
-    codex_ok: codexVerification.ok === true
+    codex_ok: codexVerification.ok === true,
+    manifest_fresh: manifestFresh === true
   });
   emitEvent(paths, policy, 'sentinel_state', sentinelState);
   emitObsidianProjection(paths, policy, [
