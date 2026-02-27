@@ -26,9 +26,11 @@ const DEFAULT_STATE_PATH = process.env.WORKFLOW_EXECUTION_CLOSURE_STATE_PATH
 const DEFAULT_HISTORY_PATH = process.env.WORKFLOW_EXECUTION_CLOSURE_HISTORY_PATH
   ? path.resolve(process.env.WORKFLOW_EXECUTION_CLOSURE_HISTORY_PATH)
   : path.join(ROOT, 'state', 'ops', 'workflow_execution_closure_history.jsonl');
-const DEFAULT_PROPOSALS_DIR = process.env.WORKFLOW_EXECUTION_CLOSURE_PROPOSALS_DIR
+const ENV_PROPOSALS_DIR = process.env.WORKFLOW_EXECUTION_CLOSURE_PROPOSALS_DIR
   ? path.resolve(process.env.WORKFLOW_EXECUTION_CLOSURE_PROPOSALS_DIR)
-  : path.join(ROOT, 'state', 'sensory', 'eyes', 'proposals');
+  : null;
+const DEFAULT_PROPOSALS_DIR = path.join(ROOT, 'state', 'sensory', 'proposals');
+const LEGACY_PROPOSALS_DIR = path.join(ROOT, 'state', 'sensory', 'eyes', 'proposals');
 const DEFAULT_WORKFLOW_RUNS_DIR = process.env.WORKFLOW_EXECUTION_CLOSURE_RUNS_DIR
   ? path.resolve(process.env.WORKFLOW_EXECUTION_CLOSURE_RUNS_DIR)
   : path.join(ROOT, 'state', 'adaptive', 'workflows', 'executor', 'runs');
@@ -123,6 +125,14 @@ function appendJsonl(filePath: string, row: AnyObj) {
 
 function relPath(filePath: string) {
   return path.relative(ROOT, filePath).replace(/\\/g, '/');
+}
+
+function resolveProposalsDir(args: AnyObj) {
+  if (args['proposals-dir']) return path.resolve(String(args['proposals-dir']));
+  if (ENV_PROPOSALS_DIR) return ENV_PROPOSALS_DIR;
+  if (fs.existsSync(DEFAULT_PROPOSALS_DIR)) return DEFAULT_PROPOSALS_DIR;
+  if (fs.existsSync(LEGACY_PROPOSALS_DIR)) return LEGACY_PROPOSALS_DIR;
+  return DEFAULT_PROPOSALS_DIR;
 }
 
 function addUtcDays(dateStr: string, deltaDays: number) {
@@ -364,7 +374,7 @@ function runClosure(args: AnyObj) {
   const strict = toBool(args.strict, false);
   const statePath = args['state-path'] ? path.resolve(String(args['state-path'])) : DEFAULT_STATE_PATH;
   const historyPath = args['history-path'] ? path.resolve(String(args['history-path'])) : DEFAULT_HISTORY_PATH;
-  const proposalsDir = args['proposals-dir'] ? path.resolve(String(args['proposals-dir'])) : DEFAULT_PROPOSALS_DIR;
+  const proposalsDir = resolveProposalsDir(args);
   const workflowRunsDir = args['workflow-runs-dir'] ? path.resolve(String(args['workflow-runs-dir'])) : DEFAULT_WORKFLOW_RUNS_DIR;
   const strategyPath = args['strategy-path'] ? path.resolve(String(args['strategy-path'])) : DEFAULT_STRATEGY_PATH;
   const strategyPayload = readJson(strategyPath, {});
