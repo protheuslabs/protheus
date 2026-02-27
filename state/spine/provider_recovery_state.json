@@ -1,9 +1,0 @@
-{
-  "ts": "2026-02-24T00:00:12.246Z",
-  "last_provider": "ollama",
-  "last_available": true,
-  "last_reason": "provider_recovered",
-  "last_transition_ts": "2026-02-23T20:31:05.103Z",
-  "last_warmup_ts": "2026-02-23T20:31:05.103Z",
-  "last_warmup_ok": true
-}

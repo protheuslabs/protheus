@@ -25,6 +25,23 @@ memory/tools/tests/temp_*/
 habits/scripts/*.bak.*
 
 # Generated state streams/snapshots
+#
+# Canonical rule: runtime state is ignored by default to prevent tree churn.
+# Keep only explicit governance allowlist tracked.
+state/**
+!state/long_term.md
+!state/session_summary.md
+!state/approvals_queue.yaml
+!state/sensory/
+!state/sensory/eyes/
+!state/sensory/eyes/registry.json
+!state/security/
+!state/security/break_glass.jsonl
+
+# Adaptive sensory runtime catalogs (high-churn generated stores)
+adaptive/sensory/eyes/catalog.json
+adaptive/sensory/eyes/focus_triggers.json
+
 state/daily_logs/*.json
 state/dopamine_state.json
 state/git/outcomes/*.jsonl
@@ -108,7 +125,6 @@ state/memory/uid_connection_index.json
 state/memory/uid_connections.jsonl
 state/sensory/cross_signal/hypotheses/*.json
 state/sensory/eyes/cache/*.json
-state/sensory/eyes/registry.json
 state/sensory/queue_log.jsonl
 state/sensory/trends/*.json
 state/nursery/**
@@ -135,7 +151,6 @@ skills/*
 
 # Additional runtime churn (adaptive + memory + ops)
 .clawhub/lock.json
-state/approvals_queue.yaml
 state/actuation/receipts/*.chain.json
 state/autonomy/budget_autopause.json
 state/autonomy/pain*.json

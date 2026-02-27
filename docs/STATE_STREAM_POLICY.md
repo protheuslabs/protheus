@@ -14,6 +14,8 @@ These are source-of-truth or governance state files and should stay tracked:
 
 Note: legacy tracked runtime artifacts may still exist in git history. Do not mass-untrack without an explicit migration change.
 
+Migration note (2026-02-27): legacy runtime `state/*` artifacts were explicitly untracked so only this allowlist remains tracked.
+
 ## Ignored By Default
 
 High-churn generated runtime streams are ignored:

@@ -1,4 +1,0 @@
-{"ts":"2026-02-26T08:36:04.150Z","type":"inversion_maturity_test","source":"harness","result":"fail","safe":true,"maturity_score":0.35375,"maturity_band":"developing","note":"harness:imh-01:auto"}
-{"ts":"2026-02-26T08:36:04.154Z","type":"inversion_maturity_test","source":"harness","result":"fail","safe":true,"maturity_score":0.3575,"maturity_band":"developing","note":"harness:imh-02:auto"}
-{"ts":"2026-02-26T08:36:04.157Z","type":"inversion_maturity_test","source":"harness","result":"fail","safe":true,"maturity_score":0.36125,"maturity_band":"developing","note":"harness:imh-03:auto"}
-{"ts":"2026-02-26T08:36:04.157Z","type":"inversion_maturity_harness","reason":"auto","tests_run":3,"pass_count":0,"fail_count":3,"destructive_count":0}

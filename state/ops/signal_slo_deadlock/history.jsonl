@@ -1,3 +1,0 @@
-{"ts":"2026-02-26T10:15:42.953Z","type":"signal_slo_deadlock_eval","date":"2026-02-26","pass":true,"streak":0,"streak_threshold":3,"failed_checks":[],"escalation":null}
-{"ts":"2026-02-26T10:39:16.749Z","type":"signal_slo_deadlock_eval","date":"2026-02-26","pass":true,"streak":0,"streak_threshold":3,"failed_checks":[],"escalation":null}
-{"ts":"2026-02-26T12:36:57.418Z","type":"signal_slo_deadlock_eval","date":"2026-02-26","pass":true,"streak":0,"streak_threshold":3,"failed_checks":[],"escalation":null}

@@ -1,4 +1,0 @@
-{"ts":"2026-02-22T20:48:39.167Z","type":"capability_lease_issued","lease_id":"lease_79468475a555660d","scope":"strategy_mode_escalation","target":"default_general","ttl_sec":900,"issued_by":"jay_owner"}
-{"ts":"2026-02-22T20:48:39.276Z","type":"capability_lease_consumed","lease_id":"lease_79468475a555660d","scope":"strategy_mode_escalation","target":"default_general","reason":"policy_root_authorize:strategy_mode_set"}
-{"ts":"2026-02-23T15:16:31.463Z","type":"capability_lease_issued","lease_id":"lease_d40c19f218cac536","scope":"strategy_mode_escalation","target":"default_general","ttl_sec":900,"issued_by":"jay"}
-{"ts":"2026-02-23T15:16:31.601Z","type":"capability_lease_consumed","lease_id":"lease_d40c19f218cac536","scope":"strategy_mode_escalation","target":"default_general","reason":"policy_root_authorize:strategy_mode_set"}

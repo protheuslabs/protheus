@@ -1,1 +1,0 @@
-{"ts":"2026-02-26T15:21:35.356Z","type":"autotest_doctor_event","run_id":"doctor_mm3m2nhn_lnd7qa","date":"2026-02-26","apply":false,"skipped":true,"failures_observed":0,"actions_applied":0,"rollbacks":0,"kill_switch":{"engaged":false,"reason":null,"engaged_at":null,"auto_release_at":null,"last_trip_meta":null}}
