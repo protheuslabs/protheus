@@ -1,0 +1,12 @@
+# Linguist normalization for repository language stats.
+# Goal: reflect maintained runtime source, not churn/state/test artifacts.
+
+# Runtime/state and research artifacts are not source-of-truth code.
+memory/** linguist-generated=true
+state/** linguist-generated=true
+research/** linguist-generated=true
+drafts/** linguist-generated=true
+
+# TS is the source of truth; JS files in these roots are bootstrap/runtime shims.
+systems/**/*.js linguist-generated=true
+lib/**/*.js linguist-generated=true
