@@ -100,6 +100,9 @@ function main() {
     'helix_admission:merge_guard_hook',
     'helix_admission:policy_sources_and_apply_controls',
     'helix_admission:paths_present',
+    'helix_confirmed_malice:merge_guard_hook',
+    'helix_confirmed_malice:policy_thresholds',
+    'helix_confirmed_malice:paths_present',
     'neural_dormant_seed:merge_guard_hook',
     'neural_dormant_seed:locked_and_blocked',
     'neural_dormant_seed:governance_checklist_depth',
@@ -130,7 +133,8 @@ function main() {
     'workflow:effect_type_gate_hook',
     'workflow:sandbox_envelope_hook',
     'actuation:sandbox_envelope_hook',
-    'helix:safety_resilience_hook'
+    'helix:safety_resilience_hook',
+    'helix:confirmed_malice_quarantine_hook'
   ]) {
     assert.ok(byId.has(id), `missing check: ${id}`);
     assert.strictEqual(byId.get(id).ok, true, `check should pass: ${id}`);

@@ -1,0 +1,18 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": false,
+  "require_sentinel_confirmed_malice": true,
+  "require_hunter_isolation_signal": true,
+  "release_requires_human": true,
+  "thresholds": {
+    "min_independent_signals_for_permanent_quarantine": 2,
+    "min_confidence_for_permanent_quarantine": 0.95
+  },
+  "paths": {
+    "state_path": "permanent_quarantine_state.json",
+    "latest_path": "permanent_quarantine_latest.json",
+    "events_path": "permanent_quarantine_events.jsonl",
+    "forensic_dir": "forensics"
+  }
+}
