@@ -49,6 +49,7 @@ function run() {
   const autopausePath = path.join(tmpRoot, 'state', 'autonomy', 'budget_autopause.json');
   const historyPath = path.join(stateDir, 'history.jsonl');
   const activeOverlayPath = path.join(stateDir, 'strategy_overlay.json');
+  const axisLedgerPath = path.join(stateDir, 'value_axis_switches.jsonl');
 
   writeJson(path.join(strategyDir, 'default.json'), {
     version: '1.0',
@@ -211,13 +212,16 @@ function run() {
   const revenueRow = (out1.value_context.allocations || []).find((row) => String(row.value_currency) === 'revenue');
   assert.ok(revenueRow, 'expected revenue row');
   assert.ok(Number(revenueRow.share || 0) <= 0.62 + 1e-6, 'revenue share should be capped by guard');
+  const requestedSwitchMetric = String(out1.value_context && out1.value_context.primary_metric_id) === 'beauty'
+    ? 'learning'
+    : 'beauty';
 
   const run2 = runNode(scriptPath, [
     'run',
     '2026-02-26',
     '--objective-id=creative_focus',
-    '--value-metrics=beauty:1,revenue:0.2',
-    '--primary-metric=beauty',
+    '--value-metrics=beauty:1,revenue:0.2,learning:0.4',
+    `--primary-metric=${requestedSwitchMetric}`,
     '--apply=1'
   ], env, repoRoot);
   assert.strictEqual(run2.status, 0, run2.stderr || 'run2 should pass');
@@ -233,6 +237,7 @@ function run() {
     'pathway state markers should exist'
   );
   assert.ok(fs.existsSync(activeOverlayPath), 'apply=1 should write active overlay');
+  assert.ok(fs.existsSync(axisLedgerPath), 'metric switch should be recorded in axis ledger');
   const overlay = JSON.parse(fs.readFileSync(activeOverlayPath, 'utf8'));
   assert.strictEqual(overlay.enabled, true, 'active overlay must be enabled');
   assert.ok(
@@ -248,6 +253,12 @@ function run() {
   assert.strictEqual(statusOut.ok, true);
   assert.ok(statusOut.primary_metric_id, 'status should expose primary metric');
   assert.ok(typeof statusOut.veto_blocked === 'boolean', 'status should expose veto state');
+  assert.ok(statusOut.latest_axis_switch && typeof statusOut.latest_axis_switch === 'object', 'status should expose latest axis switch');
+  assert.strictEqual(
+    String(statusOut.latest_axis_switch.requested_metric_id || ''),
+    requestedSwitchMetric,
+    'latest axis switch should track requested metric'
+  );
 
   console.log('weaver_core.test.js: OK');
 }
