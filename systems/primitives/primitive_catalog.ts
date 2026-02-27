@@ -45,7 +45,8 @@ function defaultCatalog() {
     default_command_effect: 'compute',
     command_rules: [],
     adapter_opcode_map: {},
-    adapter_effect_map: {}
+    adapter_effect_map: {},
+    opcode_metadata: {}
   };
 }
 
@@ -78,6 +79,39 @@ function normalizeMap(raw: AnyObj, toUpper = false) {
   return out;
 }
 
+function normalizeStringList(src: unknown, maxItems = 32, maxLen = 120) {
+  if (!Array.isArray(src)) return [];
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const raw of src) {
+    const value = normalizeLowerToken(raw, maxLen);
+    if (!value || seen.has(value)) continue;
+    seen.add(value);
+    out.push(value);
+    if (out.length >= maxItems) break;
+  }
+  return out;
+}
+
+function normalizeOpcodeMetadataMap(raw: AnyObj) {
+  const out: AnyObj = {};
+  const src = raw && typeof raw === 'object' ? raw : {};
+  for (const [k, v] of Object.entries(src)) {
+    const opcode = normalizeToken(k, 80).toUpperCase();
+    if (!opcode) continue;
+    const entry = v && typeof v === 'object' ? v as AnyObj : {};
+    const invariants = normalizeStringList(entry.invariants, 64, 120);
+    const costClass = normalizeLowerToken(entry.cost_class || '', 40) || null;
+    const safetyClass = normalizeLowerToken(entry.safety_class || '', 40) || null;
+    out[opcode] = {
+      invariants,
+      cost_class: costClass,
+      safety_class: safetyClass
+    };
+  }
+  return out;
+}
+
 function loadPrimitiveCatalog() {
   const base = defaultCatalog();
   const raw = readJson(DEFAULT_CATALOG_PATH, base);
@@ -98,7 +132,32 @@ function loadPrimitiveCatalog() {
     command_rules: rules,
     adapter_opcode_map: normalizeMap(raw.adapter_opcode_map, true),
     adapter_effect_map: normalizeMap(raw.adapter_effect_map, false),
+    opcode_metadata: normalizeOpcodeMetadataMap(raw.opcode_metadata),
     catalog_path: path.resolve(DEFAULT_CATALOG_PATH)
+  };
+}
+
+function describePrimitiveOpcode(opcodeRaw: unknown, catalogRaw: AnyObj = null) {
+  const catalog = catalogRaw && typeof catalogRaw === 'object' ? catalogRaw : loadPrimitiveCatalog();
+  const opcode = normalizeToken(opcodeRaw || '', 80).toUpperCase();
+  if (!opcode) return null;
+  const metadata = catalog.opcode_metadata && typeof catalog.opcode_metadata === 'object'
+    ? catalog.opcode_metadata[opcode]
+    : null;
+  return {
+    opcode,
+    metadata: metadata && typeof metadata === 'object'
+      ? {
+        invariants: Array.isArray(metadata.invariants) ? metadata.invariants : [],
+        cost_class: metadata.cost_class || null,
+        safety_class: metadata.safety_class || null
+      }
+      : {
+        invariants: [],
+        cost_class: null,
+        safety_class: null
+      },
+    catalog_version: catalog.schema_version || '1.0'
   };
 }
 
@@ -187,5 +246,6 @@ module.exports = {
   DEFAULT_CATALOG_PATH,
   loadPrimitiveCatalog,
   classifyCommandPrimitive,
-  classifyActuationPrimitive
+  classifyActuationPrimitive,
+  describePrimitiveOpcode
 };

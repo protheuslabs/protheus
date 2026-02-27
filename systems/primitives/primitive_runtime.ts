@@ -84,7 +84,8 @@ function executeCommandPrimitiveSync(opts: AnyObj = {}) {
     payload: {
       dry_run: dryRun,
       policy_decision: policy.decision,
-      command_hash: grammar.command_hash
+      command_hash: grammar.command_hash,
+      primitive_metadata: grammar.primitive_metadata || null
     }
   });
   const eventIds = [startedEvent.event_id];
@@ -238,7 +239,8 @@ async function executeActuationPrimitiveAsync(opts: AnyObj = {}) {
       dry_run: dryRun,
       policy_decision: policy.decision,
       adapter_kind: kind,
-      params_hash: grammar.params_hash
+      params_hash: grammar.params_hash,
+      primitive_metadata: grammar.primitive_metadata || null
     }
   });
   const eventIds = [startEvent.event_id];
