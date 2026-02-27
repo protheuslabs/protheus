@@ -1,0 +1,79 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "allow_apply": false,
+  "input": {
+    "max_rows_per_run": 96,
+    "allow_stdin_json": true,
+    "allow_empty_run": true
+  },
+  "gate": {
+    "version": "1.0",
+    "enabled": true,
+    "shadow_only": true,
+    "allow_user_override_classification": true,
+    "max_text_chars": 1400,
+    "max_reason_codes": 8,
+    "thresholds": {
+      "destructive": 0.18,
+      "distress": 0.16,
+      "contradictory": 0.24
+    },
+    "pattern_weights": {
+      "base_hit": 0.18,
+      "imperative_bonus": 0.1,
+      "contradiction_bonus": 0.08
+    },
+    "patterns": {
+      "constructive": [
+        "\\b(build|improve|learn|help|support|create|design|analyze|clarify|fix|stabilize|align)\\b",
+        "\\b(goal|objective|plan|safe|quality|reliable|healthy|useful)\\b"
+      ],
+      "distress": [
+        "\\b(i\\s+can.t|i\\s+cannot|i\\s+failed|i\\s+am\\s+stuck|overwhelmed|anxious|afraid|burned\\s*out|self\\s*doubt)\\b",
+        "\\b(hopeless|worthless|not\\s+good\\s+enough|panic|depressed)\\b"
+      ],
+      "destructive": [
+        "\\b(hurt|harm|destroy|sabotage|exploit|steal|override\\s+safety|disable\\s+guards?|bypass\\s+policy|self\\s*terminate)\\b",
+        "\\b(exfiltrate|wipe\\s+data|malware|ransom|dos|ddos|break\\s+out|escape\\s+confinement)\\b"
+      ],
+      "contradictory": [
+        "\\b(i\\s+believe|my\\s+belief|i\\s+think)\\b.*\\b(but|however|although|yet)\\b",
+        "\\b(on\\s+the\\s+other\\s+hand|at\\s+the\\s+same\\s+time)\\b"
+      ]
+    },
+    "beliefs": {
+      "default_integration": true,
+      "max_candidates_per_input": 4,
+      "min_statement_chars": 12,
+      "max_statement_chars": 260
+    },
+    "governance": {
+      "hard_block_destructive": true,
+      "enforce_user_sovereignty": true,
+      "allow_coercive_steering": false
+    }
+  },
+  "governance": {
+    "enforce_user_sovereignty": true,
+    "allow_auto_belief_apply": false,
+    "require_explicit_belief_review": true
+  },
+  "routes": {
+    "emit_shadow_routes": true,
+    "mirror_suggestions_dir": "state/autonomy/mirror_organ/suggestions",
+    "doctor_queue_path": "state/ops/autotest_doctor/echo_intake.jsonl",
+    "security_queue_path": "state/security/echo_purification_queue.jsonl",
+    "belief_review_queue_path": "state/autonomy/echo/belief_review.jsonl",
+    "belief_update_queue_path": "state/autonomy/echo/belief_updates/pending.jsonl",
+    "training_quarantine_queue_path": "state/nursery/containment/quarantine/training-data/echo_input_queue.jsonl",
+    "weaver_hint_queue_path": "state/autonomy/weaver/echo_value_hints.jsonl"
+  },
+  "outputs": {
+    "emit_events": true,
+    "emit_ide_events": true,
+    "emit_obsidian_projection": true,
+    "write_run_receipt": true
+  }
+}
