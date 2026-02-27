@@ -128,6 +128,7 @@
     "systems/security/log_redaction_guard.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/merge_guard.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/model_vaccine_sandbox.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
+    "systems/security/operator_terms_ack.js": "c8f67ceaca6409049c67d749d577330378bd0955bfd81a58a34644b6ef6bcc7a",
     "systems/security/organ_state_encryption_plane.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/policy_rootd.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/remote_emergency_halt.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
@@ -153,7 +154,7 @@
     "systems/weaver/weaver_core.js": "4957d6177400020074450e9a32a81652e33d950d2a1323d33402448bca2e1d43",
     "systems/weaver/weaver_core.ts": "52a6b4ff2e16147e12ab702d255e7f37564526ee60a017a983385916e5afcf15"
   },
-  "sealed_at": "2026-02-27T20:33:15.485Z",
+  "sealed_at": "2026-02-27T20:46:27.181Z",
   "sealed_by": "jay",
-  "last_approval_note": "SEC-M02 proprietary license and contribution terms"
+  "last_approval_note": "SEC-M04 operator terms + installer acknowledgment"
 }
