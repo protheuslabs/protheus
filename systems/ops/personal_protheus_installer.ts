@@ -9,13 +9,14 @@ export {};
  * Installs config/state scaffolding without shipping model artifacts.
  *
  * Usage:
- *   node systems/ops/personal_protheus_installer.js install [--profile=personal_default] [--workspace=/abs/path] [--dry-run]
+ *   node systems/ops/personal_protheus_installer.js install [--profile=personal_default] [--workspace=/abs/path] [--dry-run] [--accept-terms=1] [--operator-id=<id>] [--approval-note="..."]
  *   node systems/ops/personal_protheus_installer.js status
  */
 
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { cmdCheck: termsCheckCmd, cmdAccept: termsAcceptCmd, cmdStatus: termsStatusCmd } = require('../security/operator_terms_ack.js');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const OUT_DIR = process.env.PERSONAL_PROTHEUS_STATE_DIR
@@ -26,7 +27,7 @@ const PROFILE_PATH = path.join(OUT_DIR, 'profile.json');
 
 function usage() {
   console.log('Usage:');
-  console.log('  node systems/ops/personal_protheus_installer.js install [--profile=personal_default] [--workspace=/abs/path] [--dry-run]');
+  console.log('  node systems/ops/personal_protheus_installer.js install [--profile=personal_default] [--workspace=/abs/path] [--dry-run] [--accept-terms=1] [--operator-id=<id>] [--approval-note="..."]');
   console.log('  node systems/ops/personal_protheus_installer.js status');
 }
 
@@ -137,21 +138,51 @@ function installCmd(args) {
   const workspace = path.resolve(String(args.workspace || ROOT));
   const profileId = normalizeToken(args.profile || 'personal_default', 80) || 'personal_default';
   const dryRun = args['dry-run'] === true || boolFlag(args.dry_run, false);
+  const acceptTerms = boolFlag(args['accept-terms'] || args.accept_terms, false);
+  const operatorId = normalizeToken(args['operator-id'] || args.operator_id || process.env.USER || os.hostname(), 120) || 'unknown_operator';
+  const approvalNote = cleanText(args['approval-note'] || args.approval_note || '', 220) || null;
+  const termsPolicy = cleanText(args['terms-policy'] || args.terms_policy || '', 320) || null;
   const preflight = checks(workspace);
+  const termsCheckInitial = termsCheckCmd({
+    strict: false,
+    policy: termsPolicy || undefined
+  });
+  let termsAcceptance = null;
+  let termsCheckFinal = termsCheckInitial;
+  if (termsCheckInitial && termsCheckInitial.ok !== true && acceptTerms) {
+    termsAcceptance = termsAcceptCmd({
+      apply: dryRun ? 0 : 1,
+      policy: termsPolicy || undefined,
+      'operator-id': operatorId,
+      'approval-note': approvalNote || 'installer_terms_accept'
+    });
+    termsCheckFinal = termsCheckCmd({
+      strict: false,
+      policy: termsPolicy || undefined
+    });
+  }
   const manifest = {
-    ok: preflight.passed,
+    ok: preflight.passed && termsCheckFinal && termsCheckFinal.ok === true,
     type: 'personal_protheus_install',
     ts: nowIso(),
     profile_id: profileId,
     workspace,
     dry_run: dryRun,
-    preflight
+    preflight,
+    terms: {
+      accepted: termsCheckFinal && termsCheckFinal.ok === true,
+      check: termsCheckFinal || null,
+      acceptance: termsAcceptance
+    }
   };
 
-  if (!preflight.passed) {
+  if (!preflight.passed || !(termsCheckFinal && termsCheckFinal.ok === true)) {
     process.stdout.write(`${JSON.stringify({
       ...manifest,
-      error: 'preflight_failed'
+      error: !preflight.passed ? 'preflight_failed' : 'operator_terms_ack_required',
+      next_command: !preflight.passed
+        ? null
+        : 'node systems/security/operator_terms_ack.js accept --operator-id=<id> --approval-note="..."'
     })}\n`);
     process.exit(1);
   }
@@ -176,6 +207,7 @@ function installCmd(args) {
 function statusCmd() {
   const profile = readJson(PROFILE_PATH, null);
   const manifest = readJson(MANIFEST_PATH, null);
+  const terms = termsStatusCmd({});
   process.stdout.write(`${JSON.stringify({
     ok: true,
     type: 'personal_protheus_status',
@@ -183,7 +215,11 @@ function statusCmd() {
     profile_id: profile ? profile.profile_id || null : null,
     workspace: profile ? profile.workspace || null : null,
     created_at: profile ? profile.created_at || null : null,
-    manifest_ts: manifest ? manifest.ts || null : null
+    manifest_ts: manifest ? manifest.ts || null : null,
+    terms: terms && typeof terms === 'object' ? {
+      accepted: terms.accepted === true,
+      current_terms_version: terms.current_terms_version || null
+    } : null
   })}\n`);
 }
 

@@ -1031,6 +1031,12 @@ function main() {
     "systems/security/remote_tamper_heartbeat.js",
     ["remote_tamper_heartbeat.js", "emit", "verify", "status", "clear-quarantine", "--build-id", "--watermark", "--strict", "--reason"]
   );
+
+  // operator_terms_ack.js enforces versioned ToS/EULA acceptance before install/bootstrap lanes.
+  checkScript(
+    "systems/security/operator_terms_ack.js",
+    ["operator_terms_ack.js", "check", "accept", "status", "--strict", "--operator-id", "--approval-note", "--apply"]
+  );
   checkSourceContains(
     "systems/security/remote_tamper_heartbeat.js",
     ["constitution_hash", "integrity_ok", "trusted_watermark_mismatch", "quarantine_activated"]
@@ -1230,7 +1236,11 @@ function main() {
   // personal_protheus_installer.js provides one-command local bootstrap.
   checkScript(
     "systems/ops/personal_protheus_installer.js",
-    ["personal_protheus_installer.js", "install", "status", "--profile", "--workspace", "--dry-run"]
+    ["personal_protheus_installer.js", "install", "status", "--profile", "--workspace", "--dry-run", "--accept-terms", "--operator-id", "--approval-note"]
+  );
+  checkSourceContains(
+    "systems/ops/personal_protheus_installer.js",
+    ['operator_terms_ack_required', 'termsCheckCmd', 'termsAcceptCmd']
   );
 
   // public_benchmark_pack.js emits reproducible public benchmark artifacts.

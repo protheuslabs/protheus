@@ -86,6 +86,8 @@ function runGate() {
 
   const requiredFiles = [
     'LICENSE',
+    'TERMS_OF_SERVICE.md',
+    'EULA.md',
     'CONTRIBUTING_TERMS.md',
     'config/abstraction_debt_baseline.json',
     'config/causal_temporal_memory_policy.json',
@@ -113,6 +115,7 @@ function runGate() {
     'config/predictive_capacity_forecast_policy.json',
     'config/neural_dormant_seed_policy.json',
     'config/organ_state_encryption_policy.json',
+    'config/operator_terms_ack_policy.json',
     'config/remote_tamper_heartbeat_policy.json',
     'config/crypto_agility_contract.json',
     'config/key_lifecycle_policy.json',
@@ -167,6 +170,7 @@ function runGate() {
     'systems/security/critical_path_formal_verifier.ts',
     'systems/security/execution_sandbox_envelope.ts',
     'systems/security/organ_state_encryption_plane.ts',
+    'systems/security/operator_terms_ack.ts',
     'systems/security/remote_tamper_heartbeat.ts',
     'systems/security/key_lifecycle_governor.ts',
     'systems/security/delegated_authority_branching.ts',
@@ -384,8 +388,34 @@ function runGate() {
   );
   addCheck(
     'legal:onboarding_references_present',
-    quickstartSrc.includes('LICENSE') && quickstartSrc.includes('CONTRIBUTING_TERMS.md'),
+    quickstartSrc.includes('LICENSE')
+      && quickstartSrc.includes('CONTRIBUTING_TERMS.md')
+      && quickstartSrc.includes('TERMS_OF_SERVICE.md')
+      && quickstartSrc.includes('EULA.md'),
     'onboarding quickstart should reference legal artifacts'
+  );
+  const tosSrc = readFileSafe(path.join(ROOT, 'TERMS_OF_SERVICE.md'));
+  const eulaSrc = readFileSafe(path.join(ROOT, 'EULA.md'));
+  const termsAckPolicy = readJsonSafe(path.join(ROOT, 'config', 'operator_terms_ack_policy.json'), {});
+  addCheck(
+    'legal:tos_present',
+    tosSrc.includes('Terms of Service') && tosSrc.includes('Version:'),
+    'TERMS_OF_SERVICE.md should declare title + version'
+  );
+  addCheck(
+    'legal:eula_present',
+    eulaSrc.includes('End User License Agreement') && eulaSrc.includes('Version:'),
+    'EULA.md should declare title + version'
+  );
+  addCheck(
+    'legal:terms_ack_policy_present',
+    termsAckPolicy.enabled !== false
+      && termsAckPolicy.enforce_on_install !== false
+      && !!cleanText(termsAckPolicy.current_terms_version || '', 80)
+      && !!cleanText(termsAckPolicy.paths && termsAckPolicy.paths.tos_path || '', 200)
+      && !!cleanText(termsAckPolicy.paths && termsAckPolicy.paths.eula_path || '', 200)
+      && !!cleanText(termsAckPolicy.paths && termsAckPolicy.paths.state_path || '', 200),
+    'operator terms ack policy should be enabled with terms version + path contracts'
   );
   const mergeGuardSrc = readFileSafe(path.join(ROOT, 'systems', 'security', 'merge_guard.ts'));
   addCheck(
@@ -397,6 +427,20 @@ function runGate() {
     'critical_path_formal:merge_guard_hook',
     mergeGuardSrc.includes('critical_path_formal_verifier.js') && mergeGuardSrc.includes('--strict=1'),
     'merge_guard should enforce critical-path formal verifier'
+  );
+  addCheck(
+    'legal:merge_guard_terms_ack_hook',
+    mergeGuardSrc.includes('operator_terms_ack.js')
+      && mergeGuardSrc.includes('operator_terms_ack_status'),
+    'merge_guard should enforce operator terms acknowledgment lane status check'
+  );
+  const installerSrc = readFileSafe(path.join(ROOT, 'systems', 'ops', 'personal_protheus_installer.ts'));
+  addCheck(
+    'legal:installer_terms_ack_gate',
+    installerSrc.includes('operator_terms_ack_required')
+      && installerSrc.includes('termsCheckCmd')
+      && installerSrc.includes('termsAcceptCmd'),
+    'personal installer should gate install on operator terms acknowledgment'
   );
   const criticalPathFormalPolicy = readJsonSafe(path.join(ROOT, 'config', 'critical_path_formal_policy.json'), {});
   const criticalPathRequiredAxioms = Array.isArray(criticalPathFormalPolicy.checks && criticalPathFormalPolicy.checks.required_axiom_ids)

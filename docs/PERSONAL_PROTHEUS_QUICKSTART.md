@@ -3,6 +3,7 @@
 ## One-command install
 
 ```bash
+node systems/security/operator_terms_ack.js accept --operator-id=<id> --approval-note="initial_acceptance"
 node systems/ops/personal_protheus_installer.js install
 ```
 
@@ -30,3 +31,5 @@ Before contributing or deploying commercially, review:
 
 - `LICENSE`
 - `CONTRIBUTING_TERMS.md`
+- `TERMS_OF_SERVICE.md`
+- `EULA.md`

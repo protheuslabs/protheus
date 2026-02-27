@@ -6,6 +6,8 @@ This repository is an agent-operations workspace: orchestration, governed habits
 
 - License: `LICENSE` (proprietary, all rights reserved)
 - Contribution/commercial terms: `CONTRIBUTING_TERMS.md`
+- Operator terms of service: `TERMS_OF_SERVICE.md`
+- End-user license: `EULA.md`
 
 ## Architecture Map
 
