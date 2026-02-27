@@ -97,6 +97,8 @@ function runGate() {
     'config/emergent_primitive_synthesis_policy.json',
     'config/effect_type_policy.json',
     'config/embodiment_layer_policy.json',
+    'config/gated_account_creation_policy.json',
+    'config/account_creation_templates.json',
     'config/execution_sandbox_envelope_policy.json',
     'config/explanation_primitive_policy.json',
     'config/formal_invariants.json',
@@ -144,6 +146,7 @@ function runGate() {
     'systems/hardware/surface_budget_controller.ts',
     'systems/hardware/opportunistic_offload_plane.ts',
     'systems/budget/capital_allocation_organ.ts',
+    'systems/workflow/gated_account_creation_organ.ts',
     'systems/weaver/drift_aware_revenue_optimizer.ts',
     'systems/workflow/client_relationship_manager.ts',
     'systems/primitives/effect_type_system.ts',
@@ -947,6 +950,46 @@ function runGate() {
     `manual_intervention_target=${Number(crmPolicy.manual_intervention_target || 0)}`
   );
   addCheck(
+    'gated_account_creation:merge_guard_hook',
+    mergeGuardSrc.includes('gated_account_creation_organ.js')
+      && mergeGuardSrc.includes('status'),
+    'merge_guard should enforce gated account creation status checks'
+  );
+  const accountPolicy = readJsonSafe(path.join(ROOT, 'config', 'gated_account_creation_policy.json'), {});
+  const accountHighRisk = Array.isArray(accountPolicy.high_risk_classes)
+    ? accountPolicy.high_risk_classes.map((v: unknown) => normalizeLowerToken(v, 80)).filter(Boolean)
+    : [];
+  addCheck(
+    'gated_account_creation:policy_profile_first_high_risk_gate',
+    accountPolicy.enabled !== false
+      && accountPolicy.require_objective_id !== false
+      && accountPolicy.require_human_approval_for_high_risk !== false
+      && accountHighRisk.includes('payments')
+      && accountHighRisk.includes('auth')
+      && !!cleanText(accountPolicy.templates_path || '', 260),
+    `enabled=${accountPolicy.enabled !== false ? '1' : '0'} require_objective_id=${accountPolicy.require_objective_id !== false ? '1' : '0'} require_human_approval_for_high_risk=${accountPolicy.require_human_approval_for_high_risk !== false ? '1' : '0'} templates_path=${cleanText(accountPolicy.templates_path || '', 120) || 'missing'}`
+  );
+  const accountTemplates = readJsonSafe(path.join(ROOT, 'config', 'account_creation_templates.json'), {});
+  const templateCount = accountTemplates.templates && typeof accountTemplates.templates === 'object'
+    ? Object.keys(accountTemplates.templates).length
+    : 0;
+  addCheck(
+    'gated_account_creation:templates_present',
+    templateCount >= 1,
+    `templates=${templateCount}`
+  );
+  const accountSrc = readFileSafe(path.join(ROOT, 'systems', 'workflow', 'gated_account_creation_organ.ts'));
+  addCheck(
+    'gated_account_creation:controller_hooks',
+    accountSrc.includes('runConstitutionGate(')
+      && accountSrc.includes('runSoulGate(')
+      && accountSrc.includes('runWeaverGate(')
+      && accountSrc.includes('universal_execution_primitive.js')
+      && accountSrc.includes('alias_verification_vault')
+      && accountSrc.includes('agent_passport'),
+    'gated_account_creation_organ should compose constitution/weaver/soul gates with profile-first execution and passport linkage'
+  );
+  addCheck(
     'capital_allocation_organ:merge_guard_hook',
     mergeGuardSrc.includes('capital_allocation_organ.js')
       && mergeGuardSrc.includes('status')
@@ -1126,6 +1169,7 @@ function runGate() {
       && contractCheckSrc.includes('surface_budget_controller.js')
       && contractCheckSrc.includes('compression_transfer_plane.js')
       && contractCheckSrc.includes('opportunistic_offload_plane.js')
+      && contractCheckSrc.includes('gated_account_creation_organ.js')
       && contractCheckSrc.includes('siem_bridge.js')
       && contractCheckSrc.includes('soc2_type2_track.js')
       && contractCheckSrc.includes('predictive_capacity_forecast.js')

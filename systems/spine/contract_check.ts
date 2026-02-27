@@ -797,6 +797,14 @@ function main() {
     ["alias_verification_vault.js", "issue", "route-code", "consume-code", "revoke", "cleanup", "status", "--channel", "--alias-id", "--code", "--passport-id"]
   );
   checkScript(
+    "systems/workflow/gated_account_creation_organ.js",
+    ["gated_account_creation_organ.js", "create", "status", "--template", "--objective-id", "--apply", "--human-approved", "--mock-execution"]
+  );
+  checkSourceContains(
+    "systems/workflow/gated_account_creation_organ.js",
+    ["runConstitutionGate", "runSoulGate", "runWeaverGate", "universal_execution_primitive.js", "high_risk_classes"]
+  );
+  checkScript(
     "systems/security/delegated_authority_branching.js",
     ["delegated_authority_branching.js", "issue", "evaluate", "revoke", "handoff-contract", "status", "--delegate-id", "--roles", "--scopes", "--branch-id", "--scope", "--revoked-by"]
   );

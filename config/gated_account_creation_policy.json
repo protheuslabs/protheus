@@ -1,0 +1,27 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "require_objective_id": true,
+  "templates_path": "config/account_creation_templates.json",
+  "high_risk_classes": [
+    "payments",
+    "auth",
+    "filesystem",
+    "shell",
+    "network-control"
+  ],
+  "require_human_approval_for_high_risk": true,
+  "actor_defaults": {
+    "actor_id": "account_creation_organ",
+    "role": "workflow"
+  },
+  "execution": {
+    "mock_mode": false
+  },
+  "state": {
+    "state_path": "state/workflow/gated_account_creation/state.json",
+    "latest_path": "state/workflow/gated_account_creation/latest.json",
+    "receipts_path": "state/workflow/gated_account_creation/receipts.jsonl"
+  }
+}

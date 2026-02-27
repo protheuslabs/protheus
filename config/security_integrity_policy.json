@@ -152,7 +152,7 @@
     "systems/weaver/weaver_core.js": "4957d6177400020074450e9a32a81652e33d950d2a1323d33402448bca2e1d43",
     "systems/weaver/weaver_core.ts": "52a6b4ff2e16147e12ab702d255e7f37564526ee60a017a983385916e5afcf15"
   },
-  "sealed_at": "2026-02-27T19:56:47.044Z",
+  "sealed_at": "2026-02-27T20:02:23.480Z",
   "sealed_by": "jay",
-  "last_approval_note": "Seal V3-038 gated self-improvement loop hooks"
+  "last_approval_note": "Seal V2-065 gated account creation organ hooks"
 }

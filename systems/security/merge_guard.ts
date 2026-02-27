@@ -84,6 +84,7 @@ function runGuard(opts = {}) {
   checks.push(runCmd('opportunistic_offload_plane_status', 'node', ['systems/hardware/opportunistic_offload_plane.js', 'status']));
   checks.push(runCmd('phone_seed_profile_status', 'node', ['systems/ops/phone_seed_profile.js', 'status']));
   checks.push(runCmd('client_relationship_manager_status', 'node', ['systems/workflow/client_relationship_manager.js', 'status', '--days=30']));
+  checks.push(runCmd('gated_account_creation_status', 'node', ['systems/workflow/gated_account_creation_organ.js', 'status']));
   checks.push(runCmd('capital_allocation_organ_status', 'node', ['systems/budget/capital_allocation_organ.js', 'status', '--days=30']));
   checks.push(runCmd('drift_aware_revenue_optimizer_status', 'node', ['systems/weaver/drift_aware_revenue_optimizer.js', 'status', '--days=30']));
   checks.push(runCmd('siem_bridge_status', 'node', ['systems/observability/siem_bridge.js', 'status']));

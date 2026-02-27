@@ -1,0 +1,99 @@
+{
+  "version": "1.0",
+  "templates": {
+    "generic_email_account": {
+      "risk_class": "medium",
+      "alias_channel": "email",
+      "alias_purpose": "account_creation_verification",
+      "steps": [
+        {
+          "id": "open_signup",
+          "intent": "create_account_open_signup",
+          "profile": {
+            "profile_id": "acct_generic_open_signup",
+            "execution": {
+              "adapter_kind": "browser_task"
+            },
+            "source": {
+              "source_type": "web_ui"
+            }
+          },
+          "params": {
+            "flow": "open_signup_page"
+          }
+        },
+        {
+          "id": "submit_identity",
+          "intent": "create_account_submit_identity",
+          "profile": {
+            "profile_id": "acct_generic_submit_identity",
+            "execution": {
+              "adapter_kind": "browser_task"
+            },
+            "source": {
+              "source_type": "web_ui"
+            }
+          },
+          "params": {
+            "flow": "submit_identity_payload"
+          }
+        },
+        {
+          "id": "verify_account",
+          "intent": "create_account_verify_code",
+          "profile": {
+            "profile_id": "acct_generic_verify_code",
+            "execution": {
+              "adapter_kind": "browser_task"
+            },
+            "source": {
+              "source_type": "web_ui"
+            }
+          },
+          "params": {
+            "flow": "submit_verification_code"
+          }
+        }
+      ]
+    },
+    "payments_merchant_account": {
+      "risk_class": "payments",
+      "alias_channel": "email",
+      "alias_purpose": "payments_account_verification",
+      "steps": [
+        {
+          "id": "open_payments_signup",
+          "intent": "create_payments_account_start",
+          "profile": {
+            "profile_id": "acct_payments_start",
+            "execution": {
+              "adapter_kind": "browser_task"
+            },
+            "source": {
+              "source_type": "web_ui"
+            }
+          },
+          "params": {
+            "flow": "open_payments_signup"
+          }
+        },
+        {
+          "id": "submit_business_profile",
+          "intent": "create_payments_account_submit_business_profile",
+          "profile": {
+            "profile_id": "acct_payments_submit_profile",
+            "execution": {
+              "adapter_kind": "browser_task"
+            },
+            "source": {
+              "source_type": "web_ui"
+            }
+          },
+          "params": {
+            "flow": "submit_business_profile"
+          }
+        }
+      ]
+    }
+  }
+}
