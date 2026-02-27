@@ -1,0 +1,38 @@
+{
+  "schema_id": "delegated_authority_policy",
+  "schema_version": "1.0",
+  "enabled": true,
+  "shadow_only": false,
+  "signing_key_env": "DELEGATED_AUTHORITY_SIGNING_KEY",
+  "signing_key_min_length": 24,
+  "default_ttl_hours": 72,
+  "max_ttl_hours": 720,
+  "min_approval_note_chars": 12,
+  "required_key_class": "signing",
+  "required_constitution_guard_enabled": true,
+  "constitution_denied_scopes": [
+    "constitution_mutation",
+    "identity_rewrite",
+    "directive_root_override",
+    "policy_root_bypass",
+    "soul_token_override"
+  ],
+  "paths": {
+    "key_lifecycle_policy": "config/key_lifecycle_policy.json",
+    "constitution_guardian_policy": "config/constitution_guardian_policy.json",
+    "index_path": "state/security/delegated_authority/index.json",
+    "latest_path": "state/security/delegated_authority/latest.json",
+    "receipts_path": "state/security/delegated_authority/receipts.jsonl"
+  },
+  "handoff_contract": {
+    "v4_contract_id": "v4_succession_branch_handoff",
+    "minimum_fields": [
+      "branch_id",
+      "delegate_id",
+      "roles",
+      "scopes",
+      "expires_at",
+      "revoked_at"
+    ]
+  }
+}

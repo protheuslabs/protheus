@@ -70,6 +70,9 @@ function main() {
     'explanation_primitive:merge_guard_hook',
     'explanation_primitive:policy_enabled',
     'explanation_primitive:proof_and_passport_gates',
+    'delegated_authority:merge_guard_hook',
+    'delegated_authority:constitution_denied_scopes',
+    'delegated_authority:key_lifecycle_dependency',
     'workflow:effect_type_gate_hook',
     'helix:safety_resilience_hook'
   ]) {

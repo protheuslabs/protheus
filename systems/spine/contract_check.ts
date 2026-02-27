@@ -756,6 +756,14 @@ function main() {
     "systems/security/alias_verification_vault.js",
     ["alias_verification_vault.js", "issue", "route-code", "consume-code", "revoke", "cleanup", "status", "--channel", "--alias-id", "--code", "--passport-id"]
   );
+  checkScript(
+    "systems/security/delegated_authority_branching.js",
+    ["delegated_authority_branching.js", "issue", "evaluate", "revoke", "handoff-contract", "status", "--delegate-id", "--roles", "--scopes", "--branch-id", "--scope", "--revoked-by"]
+  );
+  checkSourceContains(
+    "systems/security/delegated_authority_branching.js",
+    ["constitution_denied_scopes", "required_key_class", "handoff_contract"]
+  );
 
   // capability_profile_compiler.js compiles canonical profile-only capability artifacts.
   checkScript(

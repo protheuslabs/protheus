@@ -74,6 +74,7 @@ function runGuard(opts = {}) {
   checks.push(runCmd('resurrection_protocol_status', 'node', ['systems/continuity/resurrection_protocol.js', 'status']));
   checks.push(runCmd('value_anchor_renewal_status', 'node', ['systems/echo/value_anchor_renewal.js', 'status']));
   checks.push(runCmd('explanation_primitive_status', 'node', ['systems/primitives/explanation_primitive.js', 'status']));
+  checks.push(runCmd('delegated_authority_status', 'node', ['systems/security/delegated_authority_branching.js', 'status']));
   checks.push(runCmd('profile_compatibility_gate', 'node', ['systems/ops/profile_compatibility_gate.js', 'run', '--strict=1']));
   checks.push(runCmd('schema_evolution_contract', 'node', ['systems/ops/schema_evolution_contract.js', 'run', '--strict=1', '--apply=0']));
   if (!options.skipTests) {

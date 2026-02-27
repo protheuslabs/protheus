@@ -95,6 +95,7 @@ function runGate() {
     'config/formal_invariants.json',
     'config/crypto_agility_contract.json',
     'config/key_lifecycle_policy.json',
+    'config/delegated_authority_policy.json',
     'config/profile_compatibility_policy.json',
     'config/primitive_catalog.json',
     'config/primitive_migration_contract.json',
@@ -121,6 +122,7 @@ function runGate() {
     'systems/primitives/runtime_scheduler.ts',
     'systems/security/formal_invariant_engine.ts',
     'systems/security/key_lifecycle_governor.ts',
+    'systems/security/delegated_authority_branching.ts',
     'systems/security/safety_resilience_guard.ts',
     'systems/primitives/primitive_runtime.ts',
     'systems/primitives/policy_vm.ts',
@@ -458,6 +460,27 @@ function runGate() {
         && explanationPolicy.passport_export.enabled !== false
       ),
     `proof_links=${explanationPolicy.require_proof_links !== false ? '1' : '0'} replayable=${explanationPolicy.require_event_replayable !== false ? '1' : '0'} passport_export=${explanationPolicy.passport_export && explanationPolicy.passport_export.enabled !== false ? '1' : '0'}`
+  );
+  addCheck(
+    'delegated_authority:merge_guard_hook',
+    mergeGuardSrc.includes('delegated_authority_branching.js')
+      && mergeGuardSrc.includes('status'),
+    'merge_guard should enforce delegated authority status check'
+  );
+  const delegatedPolicy = readJsonSafe(path.join(ROOT, 'config', 'delegated_authority_policy.json'), {});
+  const deniedScopeCount = Array.isArray(delegatedPolicy.constitution_denied_scopes)
+    ? delegatedPolicy.constitution_denied_scopes.length
+    : 0;
+  addCheck(
+    'delegated_authority:constitution_denied_scopes',
+    deniedScopeCount >= 3,
+    `constitution_denied_scopes=${deniedScopeCount}`
+  );
+  addCheck(
+    'delegated_authority:key_lifecycle_dependency',
+    !!cleanText(delegatedPolicy.required_key_class || '', 80)
+      && !!(delegatedPolicy.paths && typeof delegatedPolicy.paths === 'object' && cleanText(delegatedPolicy.paths.key_lifecycle_policy || '', 320)),
+    `required_key_class=${cleanText(delegatedPolicy.required_key_class || '', 80) || 'missing'}`
   );
   const simplicityPolicy = readJsonSafe(path.join(ROOT, 'config', 'simplicity_budget_policy.json'), {});
   addCheck(

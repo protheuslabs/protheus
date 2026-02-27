@@ -106,6 +106,7 @@
     "systems/security/capability_lease.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/capability_switchboard.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/constitution_guardian.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
+    "systems/security/delegated_authority_branching.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/directive_compiler.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/directive_gate.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/directive_hierarchy_controller.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
@@ -148,7 +149,7 @@
     "systems/weaver/weaver_core.js": "4957d6177400020074450e9a32a81652e33d950d2a1323d33402448bca2e1d43",
     "systems/weaver/weaver_core.ts": "52a6b4ff2e16147e12ab702d255e7f37564526ee60a017a983385916e5afcf15"
   },
-  "sealed_at": "2026-02-27T17:01:59.511Z",
+  "sealed_at": "2026-02-27T17:11:48.018Z",
   "sealed_by": "jay",
-  "last_approval_note": "V3-058 explanation primitive"
+  "last_approval_note": "V3-059 delegated authority branching"
 }
