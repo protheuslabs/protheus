@@ -7,6 +7,10 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 const { loadRegistry } = require('./workflow_controller');
 const {
+  previewCommandPrimitive,
+  executeCommandPrimitiveSync
+} = require('../primitives/primitive_runtime.js');
+const {
   loadSystemBudgetState,
   loadSystemBudgetAutopauseState,
   evaluateSystemBudgetGuard,
@@ -2261,6 +2265,9 @@ function resolveWorkflowSignals(executionContext: AnyObj, step: AnyObj, external
 function executeStep(step: AnyObj, context: AnyObj, options: AnyObj) {
   let executionContext = { ...(context && typeof context === 'object' ? context : {}) };
   let command = interpolateTemplate(step.command, executionContext);
+  let primitivePreview = previewCommandPrimitive(command, step, executionContext, {
+    dry_run: options && options.dry_run === true
+  });
   const maxAttempts = Math.max(1, Number(step.retries || 0) + 1);
   const records = [];
   const runtimePolicy = options && options.policy && typeof options.policy.step_runtime === 'object'
@@ -2282,6 +2289,9 @@ function executeStep(step: AnyObj, context: AnyObj, options: AnyObj) {
   if (externalGate && externalGate.applicable === true && externalGate.metadata && typeof externalGate.metadata === 'object') {
     executionContext = { ...executionContext, ...externalGate.metadata };
     command = interpolateTemplate(step.command, executionContext);
+    primitivePreview = previewCommandPrimitive(command, step, executionContext, {
+      dry_run: options && options.dry_run === true
+    });
   }
   if (externalGate && externalGate.applicable === true && externalGate.ok !== true) {
     const ts = nowIso();
@@ -2351,6 +2361,13 @@ function executeStep(step: AnyObj, context: AnyObj, options: AnyObj) {
         };
       }
       if (rateLimitGate && rateLimitGate.applicable === true && rateLimitGate.ok !== true) {
+        if (options && options.dry_run === true) {
+          rateLimitGate = {
+            ...rateLimitGate,
+            advisory_only: true,
+            advisory_reason: cleanText(rateLimitGate.reason || 'rate_limit_guard_advisory', 160) || 'rate_limit_guard_advisory'
+          };
+        } else {
         const ts = nowIso();
         const reason = cleanText(rateLimitGate.reason || 'rate_limit_guard_blocked', 140) || 'rate_limit_guard_blocked';
         return {
@@ -2385,6 +2402,7 @@ function executeStep(step: AnyObj, context: AnyObj, options: AnyObj) {
           rate_limit_gate: rateLimitGate,
           communication_gate: null
         };
+        }
       }
     }
     if (typeof prepareCommunicationAttempt === 'function') {
@@ -2416,6 +2434,16 @@ function executeStep(step: AnyObj, context: AnyObj, options: AnyObj) {
         && communicationGate.applicable === true
         && communicationGate.allowed !== true
       ) {
+        if (options && options.dry_run === true) {
+          communicationGate = {
+            ...communicationGate,
+            advisory_only: true,
+            advisory_reason: cleanText(
+              communicationGate.reason || 'client_communication_guard_advisory',
+              160
+            ) || 'client_communication_guard_advisory'
+          };
+        } else {
         const ts = nowIso();
         const reason = cleanText(communicationGate.reason || 'client_communication_guard_blocked', 140) || 'client_communication_guard_blocked';
         return {
@@ -2450,6 +2478,7 @@ function executeStep(step: AnyObj, context: AnyObj, options: AnyObj) {
           rate_limit_gate: rateLimitGate,
           communication_gate: communicationGate
         };
+        }
       }
     }
   }
@@ -2515,6 +2544,8 @@ function executeStep(step: AnyObj, context: AnyObj, options: AnyObj) {
       tokens_est_per_attempt: tokensPerAttempt,
       tokens_est_total: 0,
       success_criteria: criteria,
+      primitive: primitivePreview && primitivePreview.primitive ? primitivePreview.primitive : null,
+      primitive_policy: primitivePreview && primitivePreview.policy ? primitivePreview.policy : null,
       external_gate: externalGate && externalGate.applicable === true ? externalGate : null,
       rate_limit_gate: rateLimitGate && rateLimitGate.applicable === true ? rateLimitGate : null,
       communication_gate: communicationGate && communicationGate.applicable === true ? communicationGate : null
@@ -2555,6 +2586,8 @@ function executeStep(step: AnyObj, context: AnyObj, options: AnyObj) {
       tokens_est_per_attempt: tokensPerAttempt,
       tokens_est_total: tokensPerAttempt,
       success_criteria: criteria,
+      primitive: primitivePreview && primitivePreview.primitive ? primitivePreview.primitive : null,
+      primitive_policy: primitivePreview && primitivePreview.policy ? primitivePreview.policy : null,
       failure_reason: ok ? null : 'receipt_missing',
       external_gate: externalGate && externalGate.applicable === true ? externalGate : null,
       rate_limit_gate: rateLimitGate && rateLimitGate.applicable === true ? rateLimitGate : null,
@@ -2563,14 +2596,31 @@ function executeStep(step: AnyObj, context: AnyObj, options: AnyObj) {
   }
 
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-    const run = runCommandShell(command, step.timeout_ms, env, EXEC_CWD);
+    const primitiveExec = executeCommandPrimitiveSync({
+      command,
+      step,
+      context: executionContext,
+      timeout_ms: step.timeout_ms,
+      env,
+      cwd: EXEC_CWD,
+      dry_run: false,
+      runner: ({ command: commandValue, timeout_ms: timeoutValue, env: envValue, cwd: cwdValue }: AnyObj) => (
+        runCommandShell(commandValue, timeoutValue, envValue, cwdValue)
+      )
+    });
+    const run = primitiveExec && primitiveExec.run && typeof primitiveExec.run === 'object'
+      ? primitiveExec.run
+      : runCommandShell(command, step.timeout_ms, env, EXEC_CWD);
     const evalResult = evaluateStepSuccess(run, step, options && options.policy ? options.policy : {});
     records.push({
       attempt,
       ...run,
       tokens_est: tokensPerAttempt,
       criteria_pass: evalResult.pass === true,
-      criteria_fail_reasons: evalResult.reasons
+      criteria_fail_reasons: evalResult.reasons,
+      primitive: primitiveExec && primitiveExec.primitive ? primitiveExec.primitive : null,
+      primitive_policy: primitiveExec && primitiveExec.policy ? primitiveExec.policy : null,
+      primitive_event_ids: primitiveExec && Array.isArray(primitiveExec.event_ids) ? primitiveExec.event_ids : []
     });
     if (evalResult.pass === true) {
       finalizeExternalTelemetry(true, null);
@@ -2588,6 +2638,8 @@ function executeStep(step: AnyObj, context: AnyObj, options: AnyObj) {
         tokens_est_total: tokensPerAttempt * attempt,
         success_criteria: evalResult.criteria,
         failure_reason: null,
+        primitive: primitiveExec && primitiveExec.primitive ? primitiveExec.primitive : null,
+        primitive_policy: primitiveExec && primitiveExec.policy ? primitiveExec.policy : null,
         external_gate: externalGate && externalGate.applicable === true ? externalGate : null,
         rate_limit_gate: rateLimitGate && rateLimitGate.applicable === true ? rateLimitGate : null,
         communication_gate: communicationGate && communicationGate.applicable === true ? communicationGate : null
@@ -2613,6 +2665,8 @@ function executeStep(step: AnyObj, context: AnyObj, options: AnyObj) {
     tokens_est_total: tokensPerAttempt * records.length,
     success_criteria: criteria,
     failure_reason: failureReason,
+    primitive: primitivePreview && primitivePreview.primitive ? primitivePreview.primitive : null,
+    primitive_policy: primitivePreview && primitivePreview.policy ? primitivePreview.policy : null,
     external_gate: externalGate && externalGate.applicable === true ? externalGate : null,
     rate_limit_gate: rateLimitGate && rateLimitGate.applicable === true ? rateLimitGate : null,
     communication_gate: communicationGate && communicationGate.applicable === true ? communicationGate : null
