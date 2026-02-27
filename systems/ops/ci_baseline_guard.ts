@@ -177,6 +177,13 @@ function runGuard(args: AnyObj) {
     latest_run_green: latestRunOk === true,
     streak_target_met: streak >= targetDays
   };
+  const blockingChecks = Object.entries(checks)
+    .filter(([, ok]) => ok !== true)
+    .map(([key]) => key);
+  const remainingDays = Math.max(0, targetDays - streak);
+  const targetEtaDate = checks.latest_run_fresh && checks.latest_run_green
+    ? addUtcDays(date, remainingDays)
+    : null;
 
   const pass = checks.state_available
     && checks.latest_run_fresh
@@ -196,11 +203,14 @@ function runGuard(args: AnyObj) {
     target_days: targetDays,
     stale_after_days: staleAfterDays,
     streak,
+    remaining_days: remainingDays,
+    target_eta_date: targetEtaDate,
     latest_green_date: latestGreenDate || null,
     latest_run_date: latestRunDate || null,
     latest_run_ok: latestRunOk,
     latest_run_lag_days: latestLagDays,
     checks,
+    blocking_checks: blockingChecks,
     pass,
     result,
     ci_state_path: relPath(ciStatePath),
@@ -217,11 +227,14 @@ function runGuard(args: AnyObj) {
     target_days: payload.target_days,
     stale_after_days: payload.stale_after_days,
     streak: payload.streak,
+    remaining_days: payload.remaining_days,
+    target_eta_date: payload.target_eta_date,
     latest_green_date: payload.latest_green_date,
     latest_run_date: payload.latest_run_date,
     latest_run_ok: payload.latest_run_ok,
     latest_run_lag_days: payload.latest_run_lag_days,
     checks: payload.checks,
+    blocking_checks: payload.blocking_checks,
     pass: payload.pass === true,
     result: payload.result
   });
@@ -229,7 +242,10 @@ function runGuard(args: AnyObj) {
     ts: payload.ts,
     date: payload.date,
     streak: payload.streak,
+    remaining_days: payload.remaining_days,
+    target_eta_date: payload.target_eta_date,
     checks: payload.checks,
+    blocking_checks: payload.blocking_checks,
     pass: payload.pass === true,
     result: payload.result
   });
@@ -273,4 +289,3 @@ function main() {
 }
 
 main();
-

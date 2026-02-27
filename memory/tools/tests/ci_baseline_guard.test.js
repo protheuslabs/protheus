@@ -70,6 +70,12 @@ try {
   assert.strictEqual(pendingPayload.ok, true, 'pending payload should be ok');
   assert.strictEqual(pendingPayload.pass, false, 'pending should not pass target');
   assert.strictEqual(pendingPayload.result, 'pending', 'result should be pending');
+  assert.strictEqual(Number(pendingPayload.remaining_days || 0), 4, 'remaining days should reflect target gap');
+  assert.ok(Array.isArray(pendingPayload.blocking_checks), 'blocking checks should be emitted');
+  assert.ok(
+    pendingPayload.blocking_checks.includes('streak_target_met'),
+    'streak_target_met should block pending state'
+  );
 
   const passRun = run([
     'run',
@@ -85,6 +91,9 @@ try {
   assert.strictEqual(passPayload.ok, true, 'pass payload should be ok');
   assert.strictEqual(passPayload.pass, true, 'expected pass=true with target-days=3');
   assert.strictEqual(passPayload.result, 'pass', 'result should be pass');
+  assert.strictEqual(Number(passPayload.remaining_days || 0), 0, 'pass should have zero remaining days');
+  assert.ok(Array.isArray(passPayload.blocking_checks), 'blocking checks should be present');
+  assert.strictEqual(passPayload.blocking_checks.length, 0, 'pass should have no blocking checks');
 
   writeJson(ciStatePath, {
     schema_id: 'ci_baseline_streak',
@@ -119,4 +128,3 @@ try {
   console.error(`ci_baseline_guard.test.js: FAIL: ${err.message}`);
   process.exit(1);
 }
-
