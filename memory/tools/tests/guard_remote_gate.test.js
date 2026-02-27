@@ -53,10 +53,67 @@ function run() {
   const guardFiles = 'state/security/remote_request_gate.jsonl';
   const secret = 'remote-gate-test-secret';
   const replayPath = path.join(os.tmpdir(), `guard-replay-${process.pid}.json`);
+  const riskyToggleApprovalPath = path.join(os.tmpdir(), `guard-risky-toggle-${process.pid}.json`);
 
   try {
     fs.unlinkSync(replayPath);
   } catch {}
+  try {
+    fs.unlinkSync(riskyToggleApprovalPath);
+  } catch {}
+
+  const blockedLocalRiskyToggle = runGuard(repoRoot, {
+    CLEARANCE: '4',
+    REQUEST_SOURCE: 'local',
+    REQUEST_ACTION: 'apply',
+    AUTONOMY_ENABLED: '1',
+    REQUEST_RISKY_TOGGLE_APPROVAL_STATE_PATH: riskyToggleApprovalPath
+  }, guardFiles);
+  assert.strictEqual(blockedLocalRiskyToggle.status, 1, 'local risky toggle without approval should block');
+  assert.strictEqual(
+    blockedLocalRiskyToggle.payload && blockedLocalRiskyToggle.payload.reason,
+    'risky_env_toggle_requires_manual_approval'
+  );
+  assert.strictEqual(
+    blockedLocalRiskyToggle.payload && blockedLocalRiskyToggle.payload.risky_toggle_policy
+      && blockedLocalRiskyToggle.payload.risky_toggle_policy.reason,
+    'manual_toggle_approval_missing'
+  );
+
+  const allowedLocalRiskyToggle = runGuard(repoRoot, {
+    CLEARANCE: '4',
+    REQUEST_SOURCE: 'local',
+    REQUEST_ACTION: 'apply',
+    AUTONOMY_ENABLED: '1',
+    APPROVAL_NOTE: 'manual env_toggle AUTONOMY_ENABLED approved for supervised local run',
+    REQUEST_RISKY_TOGGLE_APPROVAL_STATE_PATH: riskyToggleApprovalPath
+  }, guardFiles);
+  assert.strictEqual(allowedLocalRiskyToggle.status, 0, `local risky toggle with approval should pass: ${allowedLocalRiskyToggle.stderr}`);
+  assert.ok(allowedLocalRiskyToggle.payload && allowedLocalRiskyToggle.payload.ok === true);
+  assert.strictEqual(
+    allowedLocalRiskyToggle.payload && allowedLocalRiskyToggle.payload.risky_toggle_policy
+      && allowedLocalRiskyToggle.payload.risky_toggle_policy.reason,
+    'manual_toggle_approval_present'
+  );
+
+  const allowedLocalRiskyToggleCached = runGuard(repoRoot, {
+    CLEARANCE: '4',
+    REQUEST_SOURCE: 'local',
+    REQUEST_ACTION: 'apply',
+    AUTONOMY_ENABLED: '1',
+    REQUEST_RISKY_TOGGLE_APPROVAL_STATE_PATH: riskyToggleApprovalPath
+  }, guardFiles);
+  assert.strictEqual(
+    allowedLocalRiskyToggleCached.status,
+    0,
+    `local risky toggle should reuse cached approval: ${allowedLocalRiskyToggleCached.stderr}`
+  );
+  assert.ok(allowedLocalRiskyToggleCached.payload && allowedLocalRiskyToggleCached.payload.ok === true);
+  assert.strictEqual(
+    allowedLocalRiskyToggleCached.payload && allowedLocalRiskyToggleCached.payload.risky_toggle_policy
+      && allowedLocalRiskyToggleCached.payload.risky_toggle_policy.reason,
+    'manual_toggle_approval_cached'
+  );
 
   const blockedNoOverride = runGuard(repoRoot, {
     CLEARANCE: '4',
@@ -145,6 +202,9 @@ function run() {
 
   try {
     fs.unlinkSync(replayPath);
+  } catch {}
+  try {
+    fs.unlinkSync(riskyToggleApprovalPath);
   } catch {}
 
   console.log('guard_remote_gate.test.js: OK');
