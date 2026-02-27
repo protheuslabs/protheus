@@ -1218,6 +1218,15 @@ function routeClassPolicy(cfg, routeClassRaw) {
   };
 }
 
+function promptCacheLaneForRoute({ routeClassId, mode, executionIntent }: AnyObj) {
+  const routeClass = normalizeKey(routeClassId || "");
+  const modeKey = normalizeKey(mode || "");
+  if (routeClass === "reflex") return "reflex";
+  if (modeKey.includes("dream")) return "dream";
+  if (executionIntent === true) return "autonomy";
+  return "autonomy";
+}
+
 function routerBudgetPolicy(cfg) {
   const src = cfg?.routing?.router_budget_policy;
   const policy = src && typeof src === "object" ? src : {};
@@ -1670,11 +1679,18 @@ function eyesRoutingSignal(cfg) {
   return out;
 }
 
-function promptCachePolicy(cfg) {
+function promptCachePolicy(cfg, laneHint = "autonomy") {
   const src = cfg?.routing?.prompt_cache_policy;
   const policy = src && typeof src === "object" ? src : {};
   const pathRaw = String(policy.index_path || PROMPT_CACHE_INDEX_PATH);
-  return {
+  const laneKey = normalizeKey(laneHint || "autonomy") || "autonomy";
+  const laneOverrides = policy.lane_overrides && typeof policy.lane_overrides === "object"
+    ? policy.lane_overrides
+    : {};
+  const lanePolicy = laneOverrides[laneKey] && typeof laneOverrides[laneKey] === "object"
+    ? laneOverrides[laneKey]
+    : {};
+  const base = {
     enabled: toBool(policy.enabled, true),
     index_path: path.isAbsolute(pathRaw) ? pathRaw : path.resolve(REPO_ROOT, pathRaw),
     window_minutes: toBoundedNumber(policy.window_minutes, 180, 15, 24 * 60),
@@ -1687,6 +1703,20 @@ function promptCachePolicy(cfg) {
     eligible_classes: Array.isArray(policy.eligible_classes)
       ? policy.eligible_classes.map((x) => normalizeKey(x)).filter(Boolean)
       : ["cloud_anchor", "cloud_specialist"]
+  };
+  return {
+    ...base,
+    lane: laneKey,
+    window_minutes: toBoundedNumber(lanePolicy.window_minutes, base.window_minutes, 15, 24 * 60),
+    min_hits: toBoundedNumber(lanePolicy.min_hits, base.min_hits, 1, 20),
+    max_entries: toBoundedNumber(lanePolicy.max_entries, base.max_entries, 64, 10000),
+    max_timestamps_per_key: toBoundedNumber(lanePolicy.max_timestamps_per_key, base.max_timestamps_per_key, 2, 256),
+    cache_friendly_bonus: toBoundedNumber(lanePolicy.cache_friendly_bonus, base.cache_friendly_bonus, 0, 40),
+    cloud_anchor_extra_bonus: toBoundedNumber(lanePolicy.cloud_anchor_extra_bonus, base.cloud_anchor_extra_bonus, 0, 20),
+    non_friendly_cloud_penalty: toBoundedNumber(lanePolicy.non_friendly_cloud_penalty, base.non_friendly_cloud_penalty, 0, 20),
+    eligible_classes: Array.isArray(lanePolicy.eligible_classes)
+      ? lanePolicy.eligible_classes.map((x) => normalizeKey(x)).filter(Boolean)
+      : base.eligible_classes
   };
 }
 
@@ -1701,8 +1731,9 @@ function normalizePromptForCache(s) {
     .slice(0, 1200);
 }
 
-function promptCacheKey({ intent, task, capability, role }) {
+function promptCacheKey({ intent, task, capability, role, lane }) {
   const base = [
+    normalizeKey(lane || ""),
     normalizeCapabilityKey(capability || ""),
     normalizeKey(role || ""),
     normalizePromptForCache(intent || ""),
@@ -1727,10 +1758,11 @@ function isPromptCacheFriendlyModel(modelId, profileClass, policy, cfg) {
   return policy.eligible_classes.includes(cls);
 }
 
-function promptCacheSignal(cfg, { intent, task, capability, role }) {
-  const policy = promptCachePolicy(cfg);
+function promptCacheSignal(cfg, { intent, task, capability, role, lane }) {
+  const policy = promptCachePolicy(cfg, lane || "autonomy");
   const base = {
     enabled: policy.enabled === true,
+    lane: policy.lane,
     key: null,
     eligible: false,
     hits_recent: 0,
@@ -1740,7 +1772,7 @@ function promptCacheSignal(cfg, { intent, task, capability, role }) {
     policy
   };
   if (!policy.enabled) return base;
-  const key = promptCacheKey({ intent, task, capability, role });
+  const key = promptCacheKey({ intent, task, capability, role, lane: policy.lane });
   const state = loadPromptCacheIndex(policy);
   const entry = state.entries[key] && typeof state.entries[key] === "object" ? state.entries[key] : {};
   const nowMs = Date.now();
@@ -1755,11 +1787,12 @@ function promptCacheSignal(cfg, { intent, task, capability, role }) {
     eligible: hitsRecent >= Number(policy.min_hits || 2),
     hits_recent: hitsRecent,
     reason: "ok",
+    lane: policy.lane,
     _state: state
   };
 }
 
-function writePromptCacheSignal(signal, { capability, role }) {
+function writePromptCacheSignal(signal, { capability, role, lane }) {
   if (!signal || signal.enabled !== true || !signal.key || !signal.policy) return;
   const policy = signal.policy;
   const state = signal._state && typeof signal._state === "object"
@@ -1786,6 +1819,7 @@ function writePromptCacheSignal(signal, { capability, role }) {
   entry.last_seen = new Date(nowMs).toISOString();
   entry.role = normalizeKey(role || "") || null;
   entry.capability = normalizeCapabilityKey(capability || "") || null;
+  entry.lane = normalizeKey(lane || signal.lane || policy.lane || "") || null;
   state.entries[key] = entry;
 
   const pairs = Object.entries(state.entries as AnyObj) as [string, AnyObj][];
@@ -3248,11 +3282,17 @@ function routeDecision({ risk, complexity, intent, task, mode, forceModel = "", 
     executionIntent
   });
   const eyesSignal = eyesRoutingSignal(cfg);
+  const promptCacheLane = promptCacheLaneForRoute({
+    routeClassId: classPolicy.id,
+    mode: adjusted.mode,
+    executionIntent
+  });
   const promptCache = promptCacheSignal(cfg, {
     intent,
     task,
     capability: capabilityKey,
-    role
+    role,
+    lane: promptCacheLane
   });
 
   const candidates = [];
@@ -3538,6 +3578,7 @@ function routeDecision({ risk, complexity, intent, task, mode, forceModel = "", 
     },
     prompt_cache: {
       enabled: promptCache.enabled === true,
+      lane: promptCache.lane || promptCacheLane,
       eligible: promptCache.eligible === true,
       hits_recent: promptCache.hits_recent,
       min_hits: promptCache.min_hits,
@@ -3637,7 +3678,7 @@ function routeDecision({ risk, complexity, intent, task, mode, forceModel = "", 
     } catch {}
   }
   try {
-    writePromptCacheSignal(promptCache, { capability: capabilityKey, role });
+    writePromptCacheSignal(promptCache, { capability: capabilityKey, role, lane: promptCacheLane });
   } catch {}
 
   return decision;

@@ -788,7 +788,21 @@ function runCasePromptCacheInfluence(repoRoot, root) {
         cloud_anchor_extra_bonus: 4,
         non_friendly_cloud_penalty: 6,
         eligible_classes: ['cloud_anchor'],
-        cache_friendly_models: ['ollama/kimi-k2.5:cloud']
+        cache_friendly_models: ['ollama/kimi-k2.5:cloud'],
+        lane_overrides: {
+          reflex: {
+            min_hits: 1,
+            window_minutes: 90
+          },
+          autonomy: {
+            min_hits: 2,
+            window_minutes: 180
+          },
+          dream: {
+            min_hits: 3,
+            window_minutes: 720
+          }
+        }
       },
       router_budget_policy: { enabled: false },
       slot_selection: [
@@ -813,15 +827,29 @@ function runCasePromptCacheInfluence(repoRoot, root) {
       task: 'plan integration rollout for router improvements',
       mode: 'normal'
     };
+    const reflexBase = {
+      risk: 'low',
+      complexity: 'low',
+      intent: 'quick reflex ping',
+      task: 'quick reflex ping',
+      mode: 'normal',
+      routeClass: 'reflex'
+    };
     router.routeDecision(base);
     router.routeDecision(base);
     const third = router.routeDecision(base);
-    process.stdout.write(JSON.stringify(third));
+    const reflexFirst = router.routeDecision(reflexBase);
+    const reflexSecond = router.routeDecision(reflexBase);
+    process.stdout.write(JSON.stringify({ third, reflexFirst, reflexSecond }));
   `, env);
   assert.strictEqual(r.status, 0, `prompt-cache eval failed: ${r.stderr}`);
   const out = JSON.parse(String(r.stdout || '{}'));
-  assert.strictEqual(out.prompt_cache && out.prompt_cache.eligible, true, 'third repeated prompt should become cache eligible');
-  assert.strictEqual(out.selected_model, 'ollama/kimi-k2.5:cloud', 'cache-friendly anchor model should win once cache signal becomes eligible');
+  assert.strictEqual(out.third && out.third.prompt_cache && out.third.prompt_cache.eligible, true, 'third repeated autonomy prompt should become cache eligible');
+  assert.strictEqual(out.third && out.third.prompt_cache && out.third.prompt_cache.lane, 'autonomy', 'default lane should be autonomy');
+  assert.strictEqual(out.third && out.third.selected_model, 'ollama/kimi-k2.5:cloud', 'cache-friendly anchor model should win once cache signal becomes eligible');
+  assert.strictEqual(out.reflexFirst && out.reflexFirst.prompt_cache && out.reflexFirst.prompt_cache.eligible, false, 'first reflex prompt should not be eligible yet');
+  assert.strictEqual(out.reflexSecond && out.reflexSecond.prompt_cache && out.reflexSecond.prompt_cache.eligible, true, 'second reflex prompt should become eligible under min_hits=1 lane override');
+  assert.strictEqual(out.reflexSecond && out.reflexSecond.prompt_cache && out.reflexSecond.prompt_cache.lane, 'reflex', 'reflex route class should switch cache lane');
 }
 
 function run() {

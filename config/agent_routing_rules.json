@@ -111,6 +111,41 @@
       "cloud_anchor_bonus_high_signal": 1,
       "cloud_anchor_bonus_high_signal_ratio_weight": 3
     },
+    "prompt_cache_policy": {
+      "enabled": true,
+      "index_path": "state/routing/prompt_cache_index.json",
+      "window_minutes": 180,
+      "min_hits": 2,
+      "max_entries": 900,
+      "max_timestamps_per_key": 32,
+      "cache_friendly_bonus": 2,
+      "cloud_anchor_extra_bonus": 1,
+      "non_friendly_cloud_penalty": 0,
+      "eligible_classes": ["cloud_anchor", "cloud_specialist"],
+      "lane_overrides": {
+        "reflex": {
+          "window_minutes": 90,
+          "min_hits": 1,
+          "cache_friendly_bonus": 1,
+          "cloud_anchor_extra_bonus": 0,
+          "non_friendly_cloud_penalty": 1
+        },
+        "autonomy": {
+          "window_minutes": 180,
+          "min_hits": 2,
+          "cache_friendly_bonus": 2,
+          "cloud_anchor_extra_bonus": 1,
+          "non_friendly_cloud_penalty": 0
+        },
+        "dream": {
+          "window_minutes": 720,
+          "min_hits": 3,
+          "cache_friendly_bonus": 3,
+          "cloud_anchor_extra_bonus": 2,
+          "non_friendly_cloud_penalty": 0
+        }
+      }
+    },
     "communication_fast_path": {
       "enabled": true,
       "match_mode": "heuristic",
