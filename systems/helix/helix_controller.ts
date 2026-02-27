@@ -118,6 +118,7 @@ function defaultPolicy() {
     version: '1.0',
     enabled: true,
     shadow_only: true,
+    advisory_mode: false,
     codex: {
       codex_path: 'codex.helix',
       key_env: 'HELIX_CODEX_KEY',
@@ -172,6 +173,7 @@ function loadPolicy(policyPath: string) {
     version: cleanText(raw.version || base.version, 40) || '1.0',
     enabled: raw.enabled !== false,
     shadow_only: raw.shadow_only !== false,
+    advisory_mode: raw.advisory_mode === true,
     codex: {
       ...base.codex,
       codex_path: cleanText(codex.codex_path || base.codex.codex_path, 260) || base.codex.codex_path,
@@ -312,8 +314,17 @@ function commandInit(args: AnyObj) {
   const codex = loadCodex(paths.codex_path);
   const manifest = buildHelixManifest(codex, policy, { generated_at: nowIso() });
   writeJsonAtomic(paths.manifest_path, manifest);
+  const advisoryMode = policy && policy.advisory_mode === true;
+  const initReasonCodes = Array.isArray(initCodexResult && initCodexResult.verification && initCodexResult.verification.reason_codes)
+    ? initCodexResult.verification.reason_codes
+    : [];
+  const initMissingSigningKey = initCodexResult
+    && initCodexResult.verification
+    && initCodexResult.verification.key_present === false
+    && initReasonCodes.includes('codex_signing_key_missing');
+  const initOk = initCodexResult.ok === true || (advisoryMode && initMissingSigningKey);
   const out = {
-    ok: initCodexResult.ok === true,
+    ok: initOk,
     type: 'helix_init',
     ts: nowIso(),
     shadow_only: policy.shadow_only === true,
@@ -325,6 +336,10 @@ function commandInit(args: AnyObj) {
     policy: {
       version: policy.version,
       path: relPath(policyPath)
+    },
+    advisory_mode: {
+      enabled: advisoryMode,
+      codex_key_missing_override: advisoryMode && initMissingSigningKey
     }
   };
   writeJsonAtomic(paths.latest_path, out);
@@ -357,7 +372,24 @@ function commandAttest(args: AnyObj) {
     });
   }
   const codex = loadCodex(paths.codex_path);
-  const codexVerification = verifyCodexRoot(codex, policy);
+  const codexVerificationRaw = verifyCodexRoot(codex, policy);
+  const advisoryMode = policy && policy.advisory_mode === true;
+  const missingSigningKey = codexVerificationRaw
+    && codexVerificationRaw.key_present === false
+    && Array.isArray(codexVerificationRaw.reason_codes)
+    && codexVerificationRaw.reason_codes.includes('codex_signing_key_missing');
+  const codexVerification = (advisoryMode && missingSigningKey)
+    ? {
+        ...codexVerificationRaw,
+        ok: true,
+        advisory_override: true,
+        advisory_reason_codes: ['codex_signing_key_missing_advisory'],
+        reason_codes: (Array.isArray(codexVerificationRaw.reason_codes)
+          ? codexVerificationRaw.reason_codes
+          : []
+        ).filter((row: string) => String(row || '') !== 'codex_signing_key_missing')
+      }
+    : codexVerificationRaw;
   const previousManifest = readJson(paths.manifest_path, null);
   const baseManifest = previousManifest && typeof previousManifest === 'object'
     ? previousManifest
@@ -431,6 +463,10 @@ function commandAttest(args: AnyObj) {
     },
     integration: {
       eye_gate_mode: policy.integration && policy.integration.eye_gate_mode || 'shadow_advisory'
+    },
+    advisory_mode: {
+      enabled: advisoryMode,
+      codex_key_missing_override: advisoryMode && missingSigningKey
     }
   };
   const runDate = nowIso().slice(0, 10);

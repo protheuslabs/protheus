@@ -63,8 +63,8 @@
     "config/directives/T1_generational_wealth_v1.yaml": "def757e86e8136c75766e35098414c8b8ca7b1f75707c4c9c3f474b35da78107",
     "config/directives/T1_make_jay_billionaire_v1.yaml": "e9a9082270763dc429b1b032c7f7c606c4a47e7cc252a3f501ac1ef975c7deb0",
     "config/directives/T1_northstars.yaml": "dbababba9f2dc49b0d24ada4a1a70117cdafe0767ba2ec4a69ec7f80c1721610",
-    "config/echo_policy.json": "0be7423abdde568456a66c4384d4acba54120996611a22e6ab8c2871d3be4864",
-    "config/helix_policy.json": "a31da39de9a7668c83a00ec61db35a7223f08a919c21453494b4715445f00490",
+    "config/echo_policy.json": "031025f20678cbe39446a160bb8e22916f8a90c9e1f392998ef666c45387d2e2",
+    "config/helix_policy.json": "320f16b214e1db6871998efdaa2da95ba0ae247966cc9710296289006c3a8448",
     "config/red_team_policy.json": "0b30d67021faf5c31ec8137b2a1cfd37a00dde85e4305c7f60e037b2335e3930",
     "config/weaver_policy.json": "3eeb526f2872cb986c9dc976302a5138f0a7aafce384e2753a8d02b4e54a9bcf",
     "lib/directive_resolver.js": "7cb0308999d849521a360618e233c19d0e748c0ab806ff29c6e0ad583810b9b7",
@@ -78,7 +78,7 @@
     "systems/helix/codex_root.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/helix/codex_root.ts": "e76e3c4a0070e5ebf321659b0024bee8f54e06f20476fc89f9e935fcb67fb0db",
     "systems/helix/helix_controller.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
-    "systems/helix/helix_controller.ts": "c76ad4cfc968b6df1d6839de74633558a2b7f8b991c95d57a58d6543e14dac88",
+    "systems/helix/helix_controller.ts": "0cdfff652a880b710f279a74d726b1cff7a9e155adf31af85fa3213e5a669933",
     "systems/helix/hunter_strand.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/helix/hunter_strand.ts": "2384cf44361b80b51f7c7fefeda3925fb43c962262cc8662615f0254fbc848d8",
     "systems/helix/quarantine_manager.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
@@ -144,7 +144,7 @@
     "systems/weaver/weaver_core.js": "4957d6177400020074450e9a32a81652e33d950d2a1323d33402448bca2e1d43",
     "systems/weaver/weaver_core.ts": "52a6b4ff2e16147e12ab702d255e7f37564526ee60a017a983385916e5afcf15"
   },
-  "sealed_at": "2026-02-27T07:51:59.292Z",
+  "sealed_at": "2026-02-27T08:49:45.170Z",
   "sealed_by": "jay",
-  "last_approval_note": "seal alias vault + v2 profile/js hardening"
+  "last_approval_note": "reseal after helix init advisory alignment"
 }
