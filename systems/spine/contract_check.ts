@@ -443,6 +443,14 @@ function main() {
     "systems/hardware/compression_transfer_plane.js",
     ["digest_ok", "bundle_id", "compression_transfer_bundle"]
   );
+  checkScript(
+    "systems/hardware/opportunistic_offload_plane.js",
+    ["opportunistic_offload_plane.js", "dispatch", "status", "--job-id", "--complexity", "--required-ram-gb", "--required-cpu-threads", "--strict"]
+  );
+  checkSourceContains(
+    "systems/hardware/opportunistic_offload_plane.js",
+    ["effective_route", "fallback_reason", "schedule_command"]
+  );
   checkSourceContains(
     "systems/primitives/runtime_scheduler.js",
     ["surface_budget_mode_block", "surface_budget", "allow_modes"]

@@ -88,6 +88,7 @@ function runGate() {
     'config/abstraction_debt_baseline.json',
     'config/causal_temporal_memory_policy.json',
     'config/compression_transfer_plane_policy.json',
+    'config/opportunistic_offload_policy.json',
     'config/deterministic_control_plane_policy.json',
     'config/emergent_primitive_synthesis_policy.json',
     'config/effect_type_policy.json',
@@ -124,6 +125,7 @@ function runGate() {
     'systems/hardware/embodiment_layer.ts',
     'systems/hardware/compression_transfer_plane.ts',
     'systems/hardware/surface_budget_controller.ts',
+    'systems/hardware/opportunistic_offload_plane.ts',
     'systems/primitives/effect_type_system.ts',
     'systems/primitives/emergent_primitive_synthesis.ts',
     'systems/primitives/explanation_primitive.ts',
@@ -601,6 +603,26 @@ function runGate() {
     `bundle_dir=${cleanText(transferPolicy.bundle_dir || '', 120) || 'missing'} latest_path=${cleanText(transferPolicy.latest_path || '', 120) || 'missing'} receipts_path=${cleanText(transferPolicy.receipts_path || '', 120) || 'missing'}`
   );
   addCheck(
+    'opportunistic_offload_plane:merge_guard_hook',
+    mergeGuardSrc.includes('opportunistic_offload_plane.js')
+      && mergeGuardSrc.includes('status'),
+    'merge_guard should enforce opportunistic offload status check'
+  );
+  const offloadPolicy = readJsonSafe(path.join(ROOT, 'config', 'opportunistic_offload_policy.json'), {});
+  addCheck(
+    'opportunistic_offload_plane:thresholds_present',
+    Number(offloadPolicy.local_execution_score_threshold || 0) >= 0
+      && Number(offloadPolicy.local_execution_score_threshold || 0) <= 1
+      && Number(offloadPolicy.local_max_complexity || 0) >= 0
+      && Number(offloadPolicy.local_max_complexity || 0) <= 1,
+    `local_execution_score_threshold=${Number(offloadPolicy.local_execution_score_threshold || 0)} local_max_complexity=${Number(offloadPolicy.local_max_complexity || 0)}`
+  );
+  addCheck(
+    'opportunistic_offload_plane:schedule_command_present',
+    Array.isArray(offloadPolicy.schedule_command) && offloadPolicy.schedule_command.length >= 2,
+    `schedule_command_len=${Array.isArray(offloadPolicy.schedule_command) ? offloadPolicy.schedule_command.length : 0}`
+  );
+  addCheck(
     'self_hosted_bootstrap:merge_guard_hook',
     mergeGuardSrc.includes('self_hosted_bootstrap_compiler.js')
       && mergeGuardSrc.includes('status'),
@@ -677,7 +699,8 @@ function runGate() {
       && contractCheckSrc.includes('simplicity_budget_gate.js')
       && contractCheckSrc.includes('phone_seed_profile.js')
       && contractCheckSrc.includes('surface_budget_controller.js')
-      && contractCheckSrc.includes('compression_transfer_plane.js'),
+      && contractCheckSrc.includes('compression_transfer_plane.js')
+      && contractCheckSrc.includes('opportunistic_offload_plane.js'),
     'contract_check should validate foundation scripts'
   );
 

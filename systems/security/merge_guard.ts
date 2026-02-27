@@ -80,6 +80,7 @@ function runGuard(opts = {}) {
   checks.push(runCmd('self_hosted_bootstrap_status', 'node', ['systems/ops/self_hosted_bootstrap_compiler.js', 'status']));
   checks.push(runCmd('surface_budget_controller_status', 'node', ['systems/hardware/surface_budget_controller.js', 'status']));
   checks.push(runCmd('compression_transfer_plane_status', 'node', ['systems/hardware/compression_transfer_plane.js', 'status']));
+  checks.push(runCmd('opportunistic_offload_plane_status', 'node', ['systems/hardware/opportunistic_offload_plane.js', 'status']));
   checks.push(runCmd('phone_seed_profile_status', 'node', ['systems/ops/phone_seed_profile.js', 'status']));
   checks.push(runCmd('profile_compatibility_gate', 'node', ['systems/ops/profile_compatibility_gate.js', 'run', '--strict=1']));
   checks.push(runCmd('schema_evolution_contract', 'node', ['systems/ops/schema_evolution_contract.js', 'run', '--strict=1', '--apply=0']));

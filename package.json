@@ -92,6 +92,8 @@
     "hardware:transfer:expand": "node systems/hardware/compression_transfer_plane.js expand --bundle-id=$BUNDLE_ID --apply=1",
     "hardware:transfer:auto": "node systems/hardware/compression_transfer_plane.js auto",
     "hardware:transfer:status": "node systems/hardware/compression_transfer_plane.js status",
+    "hardware:offload:dispatch": "node systems/hardware/opportunistic_offload_plane.js dispatch --job-id=example --complexity=0.8",
+    "hardware:offload:status": "node systems/hardware/opportunistic_offload_plane.js status",
     "actuation:universal:run": "node systems/actuation/universal_execution_primitive.js run",
     "actuation:universal:status": "node systems/actuation/universal_execution_primitive.js status",
     "actuation:defrag:run": "node systems/actuation/adapter_defragmentation.js run",
