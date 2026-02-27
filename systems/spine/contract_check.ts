@@ -770,6 +770,14 @@ function main() {
     "systems/assimilation/capability_profile_compiler.js",
     ["capability_profile_compiler.js", "compile", "from-research", "validate", "status", "--in", "--capability-id", "--source-type", "--research-json"]
   );
+  checkScript(
+    "systems/assimilation/world_model_freshness.js",
+    ["world_model_freshness.js", "run", "status", "--apply", "--strict", "--max-profiles"]
+  );
+  checkSourceContains(
+    "systems/assimilation/world_model_freshness.js",
+    ["freshness_slo_target", "compiler_queue_path", "required_surface_checks"]
+  );
 
   // js_holdout_audit.js enforces JS->TS exception registry in strict runtime lanes.
   checkScript(

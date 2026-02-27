@@ -108,6 +108,7 @@ function runGate() {
     'config/simplicity_budget_policy.json',
     'config/schema_evolution_policy.json',
     'config/value_anchor_renewal_policy.json',
+    'config/world_model_freshness_policy.json',
     'systems/ops/profile_compatibility_gate.ts',
     'systems/ops/simplicity_budget_gate.ts',
     'systems/ops/schema_evolution_contract.ts',
@@ -124,6 +125,7 @@ function runGate() {
     'systems/security/key_lifecycle_governor.ts',
     'systems/security/delegated_authority_branching.ts',
     'systems/security/safety_resilience_guard.ts',
+    'systems/assimilation/world_model_freshness.ts',
     'systems/primitives/primitive_runtime.ts',
     'systems/primitives/policy_vm.ts',
     'systems/primitives/replay_verify.ts'
@@ -481,6 +483,26 @@ function runGate() {
     !!cleanText(delegatedPolicy.required_key_class || '', 80)
       && !!(delegatedPolicy.paths && typeof delegatedPolicy.paths === 'object' && cleanText(delegatedPolicy.paths.key_lifecycle_policy || '', 320)),
     `required_key_class=${cleanText(delegatedPolicy.required_key_class || '', 80) || 'missing'}`
+  );
+  addCheck(
+    'world_model_freshness:merge_guard_hook',
+    mergeGuardSrc.includes('world_model_freshness.js')
+      && mergeGuardSrc.includes('status'),
+    'merge_guard should enforce world-model freshness status check'
+  );
+  const worldModelPolicy = readJsonSafe(path.join(ROOT, 'config', 'world_model_freshness_policy.json'), {});
+  addCheck(
+    'world_model_freshness:stale_warning_order',
+    Number(worldModelPolicy.stale_after_days || 0) >= Number(worldModelPolicy.warning_after_days || 0),
+    `warning_after_days=${Number(worldModelPolicy.warning_after_days || 0)} stale_after_days=${Number(worldModelPolicy.stale_after_days || 0)}`
+  );
+  const profileRootsCount = Array.isArray(worldModelPolicy.profile_roots)
+    ? worldModelPolicy.profile_roots.length
+    : 0;
+  addCheck(
+    'world_model_freshness:profile_roots_present',
+    profileRootsCount >= 1,
+    `profile_roots=${profileRootsCount}`
   );
   const simplicityPolicy = readJsonSafe(path.join(ROOT, 'config', 'simplicity_budget_policy.json'), {});
   addCheck(

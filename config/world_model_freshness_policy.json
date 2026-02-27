@@ -1,0 +1,26 @@
+{
+  "schema_id": "world_model_freshness_policy",
+  "schema_version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "strict_requires_profiles": false,
+  "stale_after_days": 14,
+  "warning_after_days": 7,
+  "min_refresh_interval_hours": 6,
+  "freshness_slo_target": 0.9,
+  "max_profiles_per_run": 50,
+  "profile_roots": [
+    "state/assimilation/capability_profiles/profiles"
+  ],
+  "required_surface_checks": {
+    "legal_ok": true,
+    "auth_model_present": true,
+    "rate_limit_hint_present": true
+  },
+  "outputs": {
+    "latest_path": "state/assimilation/world_model_freshness/latest.json",
+    "receipts_path": "state/assimilation/world_model_freshness/receipts.jsonl",
+    "deltas_path": "state/assimilation/world_model_freshness/deltas.jsonl",
+    "compiler_queue_path": "state/assimilation/world_model_freshness/compiler_queue.jsonl"
+  }
+}

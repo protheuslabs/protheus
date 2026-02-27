@@ -131,6 +131,8 @@
     "capability:profile:compile": "node systems/assimilation/capability_profile_compiler.js compile",
     "capability:profile:from-research": "node systems/assimilation/capability_profile_compiler.js from-research",
     "capability:profile:status": "node systems/assimilation/capability_profile_compiler.js status",
+    "world-model:freshness:run": "node systems/assimilation/world_model_freshness.js run",
+    "world-model:freshness:status": "node systems/assimilation/world_model_freshness.js status",
     "anti-sabotage:snapshot": "node systems/security/anti_sabotage_shield.js snapshot --label=manual",
     "anti-sabotage:verify": "node systems/security/anti_sabotage_shield.js verify --strict=1 --auto-reset=1",
     "anti-sabotage:watch": "node systems/security/anti_sabotage_shield.js watch",
