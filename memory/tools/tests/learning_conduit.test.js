@@ -42,6 +42,8 @@ function run() {
   const pendingQueuePath = path.join(tmp, 'state', 'nursery', 'training', 'workflow_learning_queue.jsonl');
   const canaryQueuePath = path.join(tmp, 'state', 'nursery', 'training', 'workflow_learning_canary.jsonl');
   const masterQueuePath = path.join(tmp, 'state', 'nursery', 'training', 'continuum_queue.jsonl');
+  const dataRightsPolicyPath = path.join(tmp, 'config', 'data_rights_policy.json');
+  const dataRightsStateDir = path.join(tmp, 'state', 'workflow', 'data_rights');
 
   writeJson(policyPath, {
     version: '1.0-test',
@@ -68,6 +70,26 @@ function run() {
       consent_evidence_ref: 'config/training_conduit_policy.json',
       retention_days: 365,
       delete_scope: 'workflow_learning_conduit'
+    }
+  });
+  writeJson(dataRightsPolicyPath, {
+    version: '1.0-test',
+    enabled: true,
+    sla_hours: 24,
+    signing: {
+      key_id: 'learning_test',
+      key_env: 'DATA_RIGHTS_SIGNING_KEY',
+      dev_fallback_key: 'learning_test_fallback'
+    },
+    queue_paths: {
+      pending_queue: pendingQueuePath,
+      canary_queue: canaryQueuePath,
+      master_queue: masterQueuePath
+    },
+    checkpoints_index_path: path.join(tmp, 'state', 'nursery', 'training', 'checkpoints', 'index.json'),
+    defaults: {
+      owner_id: 'ops_owner',
+      classification: 'internal_runtime'
     }
   });
 
@@ -98,7 +120,10 @@ function run() {
     LEARNING_CONDUIT_POLICY_PATH: policyPath,
     LEARNING_CONDUIT_STATE_PATH: statePath,
     LEARNING_CONDUIT_RECEIPTS_PATH: receiptsPath,
-    LEARNING_CONDUIT_LATEST_PATH: latestPath
+    LEARNING_CONDUIT_LATEST_PATH: latestPath,
+    DATA_RIGHTS_POLICY_PATH: dataRightsPolicyPath,
+    DATA_RIGHTS_STATE_DIR: dataRightsStateDir,
+    DATA_RIGHTS_SIGNING_KEY: 'learning_conduit_data_rights_secret'
   };
 
   const ingest = runNode(scriptPath, [
@@ -112,6 +137,11 @@ function run() {
   assert.strictEqual(ingestOut.ok, true);
   assert.strictEqual(Number(ingestOut.ingested || 0), 2);
   assert.strictEqual(Number(ingestOut.rejected || 0), 0);
+  assert.strictEqual(Number(ingestOut.rights_events_written || 0), 2);
+  const provenancePath = path.join(dataRightsStateDir, 'provenance.jsonl');
+  assert.ok(fs.existsSync(provenancePath), 'provenance log should be written');
+  const provenanceRows = fs.readFileSync(provenancePath, 'utf8').split('\n').filter(Boolean);
+  assert.strictEqual(provenanceRows.length, 2, 'expected provenance rows for ingested outcomes');
 
   const status = runNode(scriptPath, ['status'], env, root);
   assert.strictEqual(status.status, 0, status.stderr || status.stdout);

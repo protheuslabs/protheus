@@ -14,6 +14,12 @@ const {
   loadTrainabilityMatrixPolicy,
   evaluateTrainingDatumTrainability
 } = require('../../lib/trainability_matrix');
+let recordTrainingDatumProvenance = null;
+try {
+  ({ recordTrainingDatumProvenance } = require('./data_rights_engine'));
+} catch {
+  recordTrainingDatumProvenance = null;
+}
 
 type AnyObj = Record<string, any>;
 
@@ -312,14 +318,45 @@ function cmdIngest(args: AnyObj) {
   const pendingQueuePath = resolveQueuePath(policy.queue_paths.pending_queue);
   const canaryQueuePath = resolveQueuePath(policy.queue_paths.canary_queue);
   const built = buildQueueRows(policy, payload, args);
+  let rightsEventsWritten = 0;
 
   for (const row of built.rows) {
     appendJsonl(pendingQueuePath, row);
     appendJsonl(canaryQueuePath, row);
     state.entries[row.entry_id] = row;
+    if (typeof recordTrainingDatumProvenance === 'function') {
+      try {
+        const rightsOut = recordTrainingDatumProvenance(row.training_conduit, {
+          event: 'learning_conduit_ingest',
+          context: {
+            entry_id: row.entry_id,
+            queue_stage: 'pending_canary',
+            workflow_status: row.workflow_status
+          }
+        });
+        if (rightsOut && rightsOut.ok === true) rightsEventsWritten += 1;
+      } catch {
+        // Rights engine is best-effort for compatibility.
+      }
+    }
   }
   for (const row of built.rejected) {
     state.entries[row.entry_id] = row;
+    if (typeof recordTrainingDatumProvenance === 'function') {
+      try {
+        const rightsOut = recordTrainingDatumProvenance(row.training_conduit, {
+          event: 'learning_conduit_ingest_rejected',
+          context: {
+            entry_id: row.entry_id,
+            queue_stage: 'rejected',
+            reasons: Array.isArray(row.reasons) ? row.reasons : []
+          }
+        });
+        if (rightsOut && rightsOut.ok === true) rightsEventsWritten += 1;
+      } catch {
+        // Rights engine is best-effort for compatibility.
+      }
+    }
   }
   saveState(state);
 
@@ -330,6 +367,7 @@ function cmdIngest(args: AnyObj) {
     run_id: cleanText(payload.run_id || '', 120) || null,
     ingested: built.rows.length,
     rejected: built.rejected.length,
+    rights_events_written: rightsEventsWritten,
     pending_queue_path: relPath(pendingQueuePath),
     canary_queue_path: relPath(canaryQueuePath),
     proposal_only: policy.proposal_only === true
@@ -425,4 +463,3 @@ function main() {
 if (require.main === module) {
   main();
 }
-

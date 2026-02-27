@@ -1,0 +1,20 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "sla_hours": 24,
+  "signing": {
+    "key_id": "local_dev",
+    "key_env": "DATA_RIGHTS_SIGNING_KEY",
+    "dev_fallback_key": "data_rights_dev_key"
+  },
+  "queue_paths": {
+    "pending_queue": "state/nursery/training/workflow_learning_queue.jsonl",
+    "canary_queue": "state/nursery/training/workflow_learning_canary.jsonl",
+    "master_queue": "state/nursery/training/continuum_queue.jsonl"
+  },
+  "checkpoints_index_path": "state/nursery/training/checkpoints/index.json",
+  "defaults": {
+    "owner_id": "local_operator",
+    "classification": "internal"
+  }
+}
