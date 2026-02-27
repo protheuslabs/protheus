@@ -39,7 +39,7 @@ function run() {
   const repoRoot = path.resolve(__dirname, '..', '..', '..');
   const scriptPath = path.join(repoRoot, 'systems', 'ops', 'workflow_execution_closure.js');
   const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'workflow-exec-closure-'));
-  const proposalsDir = path.join(tmpRoot, 'state', 'sensory', 'eyes', 'proposals');
+  const proposalsDir = path.join(tmpRoot, 'state', 'sensory', 'proposals');
   const workflowRunsDir = path.join(tmpRoot, 'state', 'adaptive', 'workflows', 'executor', 'runs');
   const strategyPath = path.join(tmpRoot, 'config', 'strategies', 'default.json');
   const statePath = path.join(tmpRoot, 'state', 'ops', 'workflow_execution_closure.json');
