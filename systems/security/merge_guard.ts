@@ -67,6 +67,7 @@ function runGuard(opts = {}) {
   checks.push(runCmd('key_lifecycle_verify', 'node', ['systems/security/key_lifecycle_governor.js', 'verify', '--strict=1']));
   checks.push(runCmd('docs_coverage_gate', 'node', ['systems/ops/docs_coverage_gate.js', 'run', '--strict=1']));
   checks.push(runCmd('dr_gameday_gate', 'node', ['systems/ops/dr_gameday_gate.js', 'run', '--strict=1']));
+  checks.push(runCmd('simplicity_budget_gate', 'node', ['systems/ops/simplicity_budget_gate.js', 'run', '--strict=1']));
   checks.push(runCmd('profile_compatibility_gate', 'node', ['systems/ops/profile_compatibility_gate.js', 'run', '--strict=1']));
   checks.push(runCmd('schema_evolution_contract', 'node', ['systems/ops/schema_evolution_contract.js', 'run', '--strict=1', '--apply=0']));
   if (!options.skipTests) {

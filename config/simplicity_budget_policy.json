@@ -1,0 +1,15 @@
+{
+  "schema_id": "simplicity_budget_policy",
+  "schema_version": "1.0",
+  "enabled": true,
+  "max_system_files": 1400,
+  "max_system_loc": 450000,
+  "max_files_per_organ": 140,
+  "max_primitive_opcodes": 24,
+  "max_bespoke_actuation_modules": 28,
+  "require_offset_receipt_for_new_organs": true,
+  "systems_root": "systems",
+  "baseline_path": "config/simplicity_baseline.json",
+  "offset_receipts_path": "state/ops/complexity_offsets.jsonl",
+  "latest_path": "state/ops/simplicity_budget/latest.json"
+}

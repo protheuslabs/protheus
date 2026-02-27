@@ -49,6 +49,9 @@ function main() {
     'supply_chain_trust_plane:merge_guard_hook',
     'schema_evolution:merge_guard_hook',
     'key_lifecycle:merge_guard_hook',
+    'simplicity_budget:merge_guard_hook',
+    'simplicity_budget:policy_enabled',
+    'simplicity_budget:core_caps_present',
     'workflow:effect_type_gate_hook',
     'helix:safety_resilience_hook'
   ]) {

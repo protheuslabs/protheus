@@ -431,6 +431,15 @@ function main() {
     "systems/ops/scale_envelope_baseline.js",
     ["scale_envelope_baseline.js", "run", "status"]
   );
+  checkScript(
+    "systems/ops/simplicity_budget_gate.js",
+    ["simplicity_budget_gate.js", "run", "status", "capture-baseline"]
+  );
+  checkUsageTextOnly(
+    "systems/ops/simplicity_budget_gate.js",
+    ["run"],
+    ['simplicity_budget_gate']
+  );
   checkSourceContains(
     "systems/workflow/workflow_executor.js",
     ["primitive_runtime.js", "executeCommandPrimitiveSync"]

@@ -98,8 +98,11 @@ function runGate() {
     'config/runtime_scheduler_policy.json',
     'config/safety_resilience_policy.json',
     'config/scale_envelope_policy.json',
+    'config/simplicity_baseline.json',
+    'config/simplicity_budget_policy.json',
     'config/schema_evolution_policy.json',
     'systems/ops/profile_compatibility_gate.ts',
+    'systems/ops/simplicity_budget_gate.ts',
     'systems/ops/schema_evolution_contract.ts',
     'systems/distributed/deterministic_control_plane.ts',
     'systems/primitives/effect_type_system.ts',
@@ -319,6 +322,25 @@ function runGate() {
       && mergeGuardSrc.includes('--strict=1'),
     'merge_guard should enforce key lifecycle verification'
   );
+  addCheck(
+    'simplicity_budget:merge_guard_hook',
+    mergeGuardSrc.includes('simplicity_budget_gate.js')
+      && mergeGuardSrc.includes('--strict=1'),
+    'merge_guard should enforce simplicity budget verification'
+  );
+  const simplicityPolicy = readJsonSafe(path.join(ROOT, 'config', 'simplicity_budget_policy.json'), {});
+  addCheck(
+    'simplicity_budget:policy_enabled',
+    simplicityPolicy.enabled !== false,
+    `enabled=${simplicityPolicy.enabled !== false ? '1' : '0'}`
+  );
+  const simplicityMaxSystemFiles = Math.max(1, Number(simplicityPolicy.max_system_files || 0) || 0);
+  const simplicityMaxSystemLoc = Math.max(1, Number(simplicityPolicy.max_system_loc || 0) || 0);
+  addCheck(
+    'simplicity_budget:core_caps_present',
+    simplicityMaxSystemFiles > 0 && simplicityMaxSystemLoc > 0,
+    `max_system_files=${simplicityMaxSystemFiles} max_system_loc=${simplicityMaxSystemLoc}`
+  );
 
   const workflowSrc = readFileSafe(path.join(ROOT, 'systems', 'workflow', 'workflow_executor.ts'));
   addCheck(
@@ -360,7 +382,9 @@ function runGate() {
   const contractCheckSrc = readFileSafe(path.join(ROOT, 'systems', 'spine', 'contract_check.ts'));
   addCheck(
     'contract_check:foundation_hooks',
-    contractCheckSrc.includes('foundation_contract_gate.js') && contractCheckSrc.includes('scale_envelope_baseline.js'),
+    contractCheckSrc.includes('foundation_contract_gate.js')
+      && contractCheckSrc.includes('scale_envelope_baseline.js')
+      && contractCheckSrc.includes('simplicity_budget_gate.js'),
     'contract_check should validate foundation scripts'
   );
 
