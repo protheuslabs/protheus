@@ -99,6 +99,7 @@ function runGate() {
     'config/explanation_primitive_policy.json',
     'config/formal_invariants.json',
     'config/phone_seed_profile_policy.json',
+    'config/predictive_capacity_forecast_policy.json',
     'config/crypto_agility_contract.json',
     'config/key_lifecycle_policy.json',
     'config/delegated_authority_policy.json',
@@ -147,6 +148,7 @@ function runGate() {
     'systems/ops/continuous_chaos_resilience.ts',
     'systems/ops/soc2_type2_track.ts',
     'systems/ops/phone_seed_profile.ts',
+    'systems/ops/predictive_capacity_forecast.ts',
     'systems/ops/self_hosted_bootstrap_compiler.ts',
     'systems/primitives/primitive_runtime.ts',
     'systems/primitives/policy_vm.ts',
@@ -593,6 +595,28 @@ function runGate() {
     `exceptions_path=${cleanText(soc2Type2Policy.exceptions_path || '', 120) || 'missing'} bundle_dir=${cleanText(soc2Type2Policy.bundle_dir || '', 120) || 'missing'} window_history_path=${cleanText(soc2Type2Policy.window_history_path || '', 120) || 'missing'}`
   );
   addCheck(
+    'predictive_capacity_forecast:merge_guard_hook',
+    mergeGuardSrc.includes('predictive_capacity_forecast.js')
+      && mergeGuardSrc.includes('status'),
+    'merge_guard should enforce predictive capacity forecast status check'
+  );
+  const capacityPolicy = readJsonSafe(path.join(ROOT, 'config', 'predictive_capacity_forecast_policy.json'), {});
+  const horizons = Array.isArray(capacityPolicy.forecast_horizons_days)
+    ? capacityPolicy.forecast_horizons_days.map((n: unknown) => Number(n)).filter((n: number) => Number.isFinite(n))
+    : [];
+  addCheck(
+    'predictive_capacity_forecast:horizon_contract',
+    horizons.includes(7) && horizons.includes(30),
+    `forecast_horizons_days=${horizons.join(',')}`
+  );
+  addCheck(
+    'predictive_capacity_forecast:paths_present',
+    !!(capacityPolicy.paths && typeof capacityPolicy.paths === 'object' && cleanText(capacityPolicy.paths.history || '', 200))
+      && !!(capacityPolicy.paths && typeof capacityPolicy.paths === 'object' && cleanText(capacityPolicy.paths.errors || '', 200))
+      && !!(capacityPolicy.paths && typeof capacityPolicy.paths === 'object' && cleanText(capacityPolicy.paths.latest || '', 200)),
+    `history=${capacityPolicy.paths && cleanText(capacityPolicy.paths.history || '', 120) || 'missing'} errors=${capacityPolicy.paths && cleanText(capacityPolicy.paths.errors || '', 120) || 'missing'} latest=${capacityPolicy.paths && cleanText(capacityPolicy.paths.latest || '', 120) || 'missing'}`
+  );
+  addCheck(
     'phone_seed_profile:merge_guard_hook',
     mergeGuardSrc.includes('phone_seed_profile.js')
       && mergeGuardSrc.includes('status'),
@@ -820,6 +844,7 @@ function runGate() {
       && contractCheckSrc.includes('opportunistic_offload_plane.js')
       && contractCheckSrc.includes('siem_bridge.js')
       && contractCheckSrc.includes('soc2_type2_track.js')
+      && contractCheckSrc.includes('predictive_capacity_forecast.js')
       && contractCheckSrc.includes('client_relationship_manager.js')
       && contractCheckSrc.includes('capital_allocation_organ.js')
       && contractCheckSrc.includes('drift_aware_revenue_optimizer.js'),

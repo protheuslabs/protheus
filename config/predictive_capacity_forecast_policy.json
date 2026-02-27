@@ -1,0 +1,37 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": false,
+  "max_history_rows": 720,
+  "max_error_rows": 720,
+  "min_history_samples_for_forecast": 3,
+  "forecast_horizons_days": [
+    7,
+    30
+  ],
+  "thresholds": {
+    "queue_open_warn_7d": 80,
+    "queue_open_warn_30d": 120,
+    "latency_p95_warn_7d_ms": 1500,
+    "latency_p95_warn_30d_ms": 2500,
+    "token_burn_warn_7d": 2200,
+    "token_burn_warn_30d": 2600,
+    "model_cooldown_risk_warn_7d": 0.25,
+    "model_cooldown_risk_warn_30d": 0.35
+  },
+  "scaling": {
+    "queue_scale_step_pct": 20,
+    "model_pool_scale_step_pct": 15,
+    "budget_throttle_step_pct": 10
+  },
+  "paths": {
+    "execution_reliability_history": "state/ops/execution_reliability_slo_history.jsonl",
+    "token_economics_history": "state/ops/token_economics_engine_history.jsonl",
+    "queue_hygiene_state": "state/ops/queue_hygiene_state.json",
+    "model_health_latest": "state/routing/model_health_auto_recovery/latest.json",
+    "banned_models": "state/routing/banned_models.json",
+    "latest": "state/ops/predictive_capacity_forecast/latest.json",
+    "history": "state/ops/predictive_capacity_forecast/history.jsonl",
+    "errors": "state/ops/predictive_capacity_forecast/forecast_errors.jsonl"
+  }
+}

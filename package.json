@@ -55,6 +55,8 @@
     "ops:soc2-type2:bundle": "node systems/ops/soc2_type2_track.js bundle --strict=1",
     "ops:soc2-type2:exception-open": "node systems/ops/soc2_type2_track.js exception-open --id=$EXCEPTION_ID --control=$CONTROL_ID --reason=\"$REASON\"",
     "ops:soc2-type2:exception-close": "node systems/ops/soc2_type2_track.js exception-close --id=$EXCEPTION_ID --resolution=\"$RESOLUTION\"",
+    "ops:capacity-forecast:run": "node systems/ops/predictive_capacity_forecast.js run",
+    "ops:capacity-forecast:status": "node systems/ops/predictive_capacity_forecast.js status",
     "ops:siem:export": "node systems/observability/siem_bridge.js export --format=otlp",
     "ops:siem:export:cef": "node systems/observability/siem_bridge.js export --format=cef",
     "ops:siem:correlate": "node systems/observability/siem_bridge.js correlate --strict=1",

@@ -965,6 +965,14 @@ function main() {
     "systems/ops/soc2_type2_track.js",
     ["minimum_window_days", "max_open_exception_days", "soc2_type2_attestation_bundle"]
   );
+  checkScript(
+    "systems/ops/predictive_capacity_forecast.js",
+    ["predictive_capacity_forecast.js", "run", "status", "--strict"]
+  );
+  checkSourceContains(
+    "systems/ops/predictive_capacity_forecast.js",
+    ["forecast_horizons_days", "recommendation", "forecast_errors"]
+  );
 
   // environment_promotion_gate.js enforces promotion sequencing and approvals across env tiers.
   checkScript(
