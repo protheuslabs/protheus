@@ -1,0 +1,46 @@
+{
+  "schema_id": "embodiment_layer_policy",
+  "schema_version": "1.0",
+  "enabled": true,
+  "required_contract_fields": [
+    "profile_id",
+    "capabilities",
+    "surface_budget",
+    "capability_envelope",
+    "runtime_modes"
+  ],
+  "parity_ignore_fields": [
+    "measured_at",
+    "hardware_fingerprint",
+    "surface_budget.score",
+    "capabilities.cpu_threads",
+    "capabilities.ram_gb",
+    "capabilities.storage_gb",
+    "capabilities.free_ram_gb"
+  ],
+  "profiles": {
+    "phone": {
+      "max_parallel_workflows": 2,
+      "inversion_depth_cap": 1,
+      "dream_intensity_cap": 1,
+      "heavy_lanes_disabled": true,
+      "min_surface_budget_score": 0.2
+    },
+    "desktop": {
+      "max_parallel_workflows": 6,
+      "inversion_depth_cap": 3,
+      "dream_intensity_cap": 3,
+      "heavy_lanes_disabled": false,
+      "min_surface_budget_score": 0.35
+    },
+    "cluster": {
+      "max_parallel_workflows": 24,
+      "inversion_depth_cap": 5,
+      "dream_intensity_cap": 5,
+      "heavy_lanes_disabled": false,
+      "min_surface_budget_score": 0.5
+    }
+  },
+  "latest_path": "state/hardware/embodiment/latest.json",
+  "receipts_path": "state/hardware/embodiment/receipts.jsonl"
+}

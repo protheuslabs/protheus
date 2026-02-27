@@ -428,6 +428,10 @@ function main() {
     ["emergent_primitive_synthesis.js", "propose", "evaluate", "approve", "reject", "promote", "status"]
   );
   checkScript(
+    "systems/hardware/embodiment_layer.js",
+    ["embodiment_layer.js", "sense", "verify-parity", "status"]
+  );
+  checkScript(
     "systems/ops/foundation_contract_gate.js",
     ["foundation_contract_gate.js", "run", "status"]
   );

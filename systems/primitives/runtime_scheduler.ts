@@ -5,6 +5,11 @@ export {};
 const fs = require('fs');
 const path = require('path');
 const { appendCanonicalEvent } = require('./canonical_event_log.js');
+const {
+  readLatestEmbodiment,
+  loadPolicy: loadEmbodimentPolicy,
+  makeEmbodimentSnapshot
+} = require('../hardware/embodiment_layer.js');
 
 type AnyObj = Record<string, any>;
 
@@ -81,6 +86,29 @@ function writeJsonAtomic(filePath: string, payload: AnyObj) {
 function appendJsonl(filePath: string, row: AnyObj) {
   ensureDir(path.dirname(filePath));
   fs.appendFileSync(filePath, `${JSON.stringify(row)}\n`, 'utf8');
+}
+
+function embodimentSummary() {
+  const policyPath = process.env.EMBODIMENT_LAYER_POLICY_PATH
+    ? path.resolve(process.env.EMBODIMENT_LAYER_POLICY_PATH)
+    : undefined;
+  let snapshot = readLatestEmbodiment(policyPath);
+  if (!snapshot) {
+    const policy = loadEmbodimentPolicy(policyPath);
+    snapshot = makeEmbodimentSnapshot(policy, 'auto');
+  }
+  return {
+    profile_id: cleanText(snapshot && snapshot.profile_id || '', 40) || 'unknown',
+    surface_budget_score: snapshot && snapshot.surface_budget && typeof snapshot.surface_budget.score === 'number'
+      ? Number(snapshot.surface_budget.score)
+      : null,
+    max_parallel_workflows: snapshot && snapshot.capability_envelope
+      ? Number(snapshot.capability_envelope.max_parallel_workflows || 0)
+      : null,
+    inversion_depth_cap: snapshot && snapshot.capability_envelope
+      ? Number(snapshot.capability_envelope.inversion_depth_cap || 0)
+      : null
+  };
 }
 
 function defaultPolicy() {
@@ -164,6 +192,7 @@ function cmdStatus(args: AnyObj) {
   const policy = loadPolicy(args.policy ? path.resolve(String(args.policy)) : POLICY_PATH);
   const state = loadState(policy);
   const allowedNext = policy.allowed_transitions[state.mode] || [];
+  const embodiment = embodimentSummary();
   process.stdout.write(`${JSON.stringify({
     ok: true,
     type: 'runtime_scheduler_status',
@@ -171,7 +200,8 @@ function cmdStatus(args: AnyObj) {
     reason: state.reason,
     updated_at: state.updated_at,
     allowed_next_modes: allowedNext,
-    policy_version: policy.schema_version
+    policy_version: policy.schema_version,
+    embodiment
   })}\n`);
 }
 
@@ -215,7 +245,8 @@ function cmdSwitch(args: AnyObj) {
     apply,
     from_mode: currentMode,
     to_mode: targetMode,
-    reason
+    reason,
+    embodiment: embodimentSummary()
   };
   if (apply) {
     saveState(policy, {

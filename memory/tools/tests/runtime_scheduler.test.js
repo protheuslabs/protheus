@@ -46,6 +46,7 @@ function run(args, env = {}) {
 try {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'runtime-scheduler-'));
   const policyPath = path.join(tmp, 'policy.json');
+  const embodimentPolicyPath = path.join(tmp, 'embodiment_policy.json');
   const statePath = path.join(tmp, 'state', 'scheduler', 'latest.json');
   const receiptsPath = path.join(tmp, 'state', 'scheduler', 'receipts.jsonl');
   const canonicalDir = path.join(tmp, 'state', 'runtime', 'canonical_events');
@@ -63,16 +64,32 @@ try {
     state_path: statePath,
     receipts_path: receiptsPath
   });
+  writeJson(embodimentPolicyPath, {
+    schema_id: 'embodiment_layer_policy',
+    schema_version: '1.0',
+    enabled: true,
+    required_contract_fields: ['profile_id', 'capabilities', 'surface_budget', 'capability_envelope', 'runtime_modes'],
+    parity_ignore_fields: ['measured_at', 'hardware_fingerprint'],
+    profiles: {
+      phone: { max_parallel_workflows: 2, inversion_depth_cap: 1, dream_intensity_cap: 1, heavy_lanes_disabled: true, min_surface_budget_score: 0.2 },
+      desktop: { max_parallel_workflows: 6, inversion_depth_cap: 3, dream_intensity_cap: 3, heavy_lanes_disabled: false, min_surface_budget_score: 0.35 },
+      cluster: { max_parallel_workflows: 24, inversion_depth_cap: 5, dream_intensity_cap: 5, heavy_lanes_disabled: false, min_surface_budget_score: 0.5 }
+    },
+    latest_path: path.join(tmp, 'state', 'hardware', 'embodiment', 'latest.json'),
+    receipts_path: path.join(tmp, 'state', 'hardware', 'embodiment', 'receipts.jsonl')
+  });
 
   const env = {
     RUNTIME_SCHEDULER_POLICY_PATH: policyPath,
-    CANONICAL_EVENT_LOG_DIR: canonicalDir
+    CANONICAL_EVENT_LOG_DIR: canonicalDir,
+    EMBODIMENT_LAYER_POLICY_PATH: embodimentPolicyPath
   };
 
   const status1 = run(['status'], env);
   assert.strictEqual(status1.status, 0, status1.stderr || status1.stdout);
   const status1Payload = parseJson(status1.stdout);
   assert.strictEqual(status1Payload.mode, 'operational');
+  assert.ok(status1Payload.embodiment && status1Payload.embodiment.profile_id, 'status should include embodiment summary');
 
   const toDream = run(['switch', '--mode=dream', '--reason=test', '--apply=1'], env);
   assert.strictEqual(toDream.status, 0, toDream.stderr || toDream.stdout);

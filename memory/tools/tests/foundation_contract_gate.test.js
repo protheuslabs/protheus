@@ -58,6 +58,9 @@ function main() {
     'emergent_primitive_synthesis:merge_guard_hook',
     'emergent_primitive_synthesis:human_gate_required',
     'emergent_primitive_synthesis:nursery_adversarial_required',
+    'hardware_embodiment:merge_guard_hook',
+    'hardware_embodiment:required_contract_fields',
+    'hardware_embodiment:profile_count_floor',
     'workflow:effect_type_gate_hook',
     'helix:safety_resilience_hook'
   ]) {

@@ -90,6 +90,7 @@ function runGate() {
     'config/deterministic_control_plane_policy.json',
     'config/emergent_primitive_synthesis_policy.json',
     'config/effect_type_policy.json',
+    'config/embodiment_layer_policy.json',
     'config/formal_invariants.json',
     'config/crypto_agility_contract.json',
     'config/key_lifecycle_policy.json',
@@ -108,6 +109,7 @@ function runGate() {
     'systems/ops/schema_evolution_contract.ts',
     'systems/memory/causal_temporal_graph.ts',
     'systems/distributed/deterministic_control_plane.ts',
+    'systems/hardware/embodiment_layer.ts',
     'systems/primitives/effect_type_system.ts',
     'systems/primitives/emergent_primitive_synthesis.ts',
     'systems/primitives/runtime_scheduler.ts',
@@ -366,6 +368,30 @@ function runGate() {
     'emergent_primitive_synthesis:nursery_adversarial_required',
     synthesisPolicy.require_nursery_pass === true && synthesisPolicy.require_adversarial_pass === true,
     `require_nursery_pass=${synthesisPolicy.require_nursery_pass === true ? '1' : '0'} require_adversarial_pass=${synthesisPolicy.require_adversarial_pass === true ? '1' : '0'}`
+  );
+  addCheck(
+    'hardware_embodiment:merge_guard_hook',
+    mergeGuardSrc.includes('embodiment_layer.js')
+      && mergeGuardSrc.includes('verify-parity')
+      && mergeGuardSrc.includes('--strict=1'),
+    'merge_guard should enforce embodiment parity verification'
+  );
+  const embodimentPolicy = readJsonSafe(path.join(ROOT, 'config', 'embodiment_layer_policy.json'), {});
+  const requiredContractFields = Array.isArray(embodimentPolicy.required_contract_fields)
+    ? embodimentPolicy.required_contract_fields.length
+    : 0;
+  addCheck(
+    'hardware_embodiment:required_contract_fields',
+    requiredContractFields >= 5,
+    `required_contract_fields=${requiredContractFields}`
+  );
+  const profileCount = embodimentPolicy.profiles && typeof embodimentPolicy.profiles === 'object'
+    ? Object.keys(embodimentPolicy.profiles).length
+    : 0;
+  addCheck(
+    'hardware_embodiment:profile_count_floor',
+    profileCount >= 3,
+    `profiles=${profileCount}`
   );
   const simplicityPolicy = readJsonSafe(path.join(ROOT, 'config', 'simplicity_budget_policy.json'), {});
   addCheck(
