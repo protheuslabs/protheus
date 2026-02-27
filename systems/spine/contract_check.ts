@@ -996,6 +996,14 @@ function main() {
     ["allow_non_simulated_prototypes", "blocked_runtime_profiles", "no_runtime_activation_path"]
   );
   checkScript(
+    "systems/symbiosis/pre_neuralink_interface.js",
+    ["pre_neuralink_interface.js", "ingest", "route", "handoff-contract", "status", "--channel", "--signal", "--consent-state", "--signal-id", "--apply"]
+  );
+  checkSourceContains(
+    "systems/symbiosis/pre_neuralink_interface.js",
+    ["require_explicit_consent", "route_allowed_states", "eye_kernel.js", "handoff_contract"]
+  );
+  checkScript(
     "systems/security/execution_sandbox_envelope.js",
     ["execution_sandbox_envelope.js", "status", "evaluate-workflow", "evaluate-actuation", "--step-id", "--step-type", "--command", "--kind"]
   );

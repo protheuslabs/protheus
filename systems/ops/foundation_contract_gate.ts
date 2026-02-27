@@ -106,6 +106,7 @@ function runGate() {
     'config/gated_self_improvement_policy.json',
     'config/helix_admission_policy.json',
     'config/phone_seed_profile_policy.json',
+    'config/pre_neuralink_interface_policy.json',
     'config/predictive_capacity_forecast_policy.json',
     'config/neural_dormant_seed_policy.json',
     'config/organ_state_encryption_policy.json',
@@ -173,6 +174,7 @@ function runGate() {
     'systems/ops/phone_seed_profile.ts',
     'systems/ops/predictive_capacity_forecast.ts',
     'systems/symbiosis/neural_dormant_seed.ts',
+    'systems/symbiosis/pre_neuralink_interface.ts',
     'research/neural_dormant_seed/README.md',
     'research/neural_dormant_seed/governance_checklist.md',
     'systems/ops/self_hosted_bootstrap_compiler.ts',
@@ -885,6 +887,43 @@ function runGate() {
     `required_governance_checks=${governanceChecks.length}`
   );
   addCheck(
+    'pre_neuralink_interface:merge_guard_hook',
+    mergeGuardSrc.includes('pre_neuralink_interface.js')
+      && mergeGuardSrc.includes('status'),
+    'merge_guard should enforce pre-neuralink interface status check'
+  );
+  const preNeuralPolicy = readJsonSafe(path.join(ROOT, 'config', 'pre_neuralink_interface_policy.json'), {});
+  const preNeuralChannels = Array.isArray(preNeuralPolicy.channels)
+    ? preNeuralPolicy.channels.map((row: unknown) => normalizeLowerToken(row, 40)).filter(Boolean)
+    : [];
+  const preNeuralConsent = preNeuralPolicy.consent && typeof preNeuralPolicy.consent === 'object'
+    ? preNeuralPolicy.consent
+    : {};
+  addCheck(
+    'pre_neuralink_interface:policy_local_first_and_consent',
+    preNeuralPolicy.local_first !== false
+      && preNeuralPolicy.require_explicit_consent !== false
+      && preNeuralChannels.includes('voice')
+      && preNeuralChannels.includes('attention')
+      && preNeuralChannels.includes('haptic'),
+    `local_first=${preNeuralPolicy.local_first !== false ? '1' : '0'} require_explicit_consent=${preNeuralPolicy.require_explicit_consent !== false ? '1' : '0'} channels=${preNeuralChannels.join(',')}`
+  );
+  addCheck(
+    'pre_neuralink_interface:route_allowed_states_gate',
+    Array.isArray(preNeuralConsent.route_allowed_states)
+      && preNeuralConsent.route_allowed_states.map((row: unknown) => normalizeLowerToken(row, 40)).includes('granted'),
+    `route_allowed_states=${Array.isArray(preNeuralConsent.route_allowed_states) ? preNeuralConsent.route_allowed_states.join(',') : 'missing'}`
+  );
+  const preNeuralSrc = readFileSafe(path.join(ROOT, 'systems', 'symbiosis', 'pre_neuralink_interface.ts'));
+  addCheck(
+    'pre_neuralink_interface:controller_hooks',
+    preNeuralSrc.includes('EYE_KERNEL_SCRIPT')
+      && preNeuralSrc.includes('routeThroughEye(')
+      && preNeuralSrc.includes('buildHandoffContract(')
+      && preNeuralSrc.includes('require_explicit_consent'),
+    'pre_neuralink interface should keep eye-routing + handoff + consent hooks'
+  );
+  addCheck(
     'phone_seed_profile:merge_guard_hook',
     mergeGuardSrc.includes('phone_seed_profile.js')
       && mergeGuardSrc.includes('status'),
@@ -1217,6 +1256,7 @@ function runGate() {
       && contractCheckSrc.includes('confirmed_malice_quarantine.js')
       && contractCheckSrc.includes('ant_colony_controller.js')
       && contractCheckSrc.includes('neural_dormant_seed.js')
+      && contractCheckSrc.includes('pre_neuralink_interface.js')
       && contractCheckSrc.includes('client_relationship_manager.js')
       && contractCheckSrc.includes('capital_allocation_organ.js')
       && contractCheckSrc.includes('drift_aware_revenue_optimizer.js'),
