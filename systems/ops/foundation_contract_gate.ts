@@ -99,6 +99,7 @@ function runGate() {
     'config/execution_sandbox_envelope_policy.json',
     'config/explanation_primitive_policy.json',
     'config/formal_invariants.json',
+    'config/helix_admission_policy.json',
     'config/phone_seed_profile_policy.json',
     'config/predictive_capacity_forecast_policy.json',
     'config/neural_dormant_seed_policy.json',
@@ -130,6 +131,7 @@ function runGate() {
     'systems/ops/schema_evolution_contract.ts',
     'systems/continuity/resurrection_protocol.ts',
     'systems/echo/value_anchor_renewal.ts',
+    'systems/helix/helix_admission_gate.ts',
     'systems/memory/causal_temporal_graph.ts',
     'systems/distributed/deterministic_control_plane.ts',
     'systems/hardware/embodiment_layer.ts',
@@ -712,6 +714,36 @@ function runGate() {
     `state=${cleanText(remotePaths.state_path || '', 100) || 'missing'} latest=${cleanText(remotePaths.latest_path || '', 100) || 'missing'} outbox=${cleanText(remotePaths.outbox_path || '', 100) || 'missing'} notifications=${cleanText(remotePaths.notifications_path || '', 100) || 'missing'} quarantine=${cleanText(remotePaths.quarantine_path || '', 100) || 'missing'} evidence_dir=${cleanText(remotePaths.evidence_dir || '', 100) || 'missing'}`
   );
   addCheck(
+    'helix_admission:merge_guard_hook',
+    mergeGuardSrc.includes('helix_admission_gate.js')
+      && mergeGuardSrc.includes('status'),
+    'merge_guard should enforce helix admission status check'
+  );
+  const helixAdmissionPolicy = readJsonSafe(path.join(ROOT, 'config', 'helix_admission_policy.json'), {});
+  const helixAdmissionSources = Array.isArray(helixAdmissionPolicy.allowed_sources)
+    ? helixAdmissionPolicy.allowed_sources.map((v: unknown) => normalizeLowerToken(v, 80))
+    : [];
+  addCheck(
+    'helix_admission:policy_sources_and_apply_controls',
+    helixAdmissionSources.includes('assimilation')
+      && helixAdmissionSources.includes('forge')
+      && helixAdmissionSources.includes('doctor')
+      && helixAdmissionPolicy.require_doctor_approval_for_apply !== false
+      && typeof helixAdmissionPolicy.require_codex_root_for_apply === 'boolean'
+      && helixAdmissionPolicy.manifest_update_on_apply !== false,
+    `allowed_sources=${helixAdmissionSources.join(',')} require_doctor_approval_for_apply=${helixAdmissionPolicy.require_doctor_approval_for_apply !== false ? '1' : '0'} require_codex_root_for_apply=${typeof helixAdmissionPolicy.require_codex_root_for_apply === 'boolean' ? String(helixAdmissionPolicy.require_codex_root_for_apply) : 'missing'} manifest_update_on_apply=${helixAdmissionPolicy.manifest_update_on_apply !== false ? '1' : '0'}`
+  );
+  const helixAdmissionPaths = helixAdmissionPolicy.paths && typeof helixAdmissionPolicy.paths === 'object'
+    ? helixAdmissionPolicy.paths
+    : {};
+  addCheck(
+    'helix_admission:paths_present',
+    !!cleanText(helixAdmissionPaths.admissions_path || '', 240)
+      && !!cleanText(helixAdmissionPaths.latest_path || '', 240)
+      && !!cleanText(helixAdmissionPaths.manifest_path || '', 240),
+    `admissions=${cleanText(helixAdmissionPaths.admissions_path || '', 120) || 'missing'} latest=${cleanText(helixAdmissionPaths.latest_path || '', 120) || 'missing'} manifest=${cleanText(helixAdmissionPaths.manifest_path || '', 120) || 'missing'}`
+  );
+  addCheck(
     'neural_dormant_seed:merge_guard_hook',
     mergeGuardSrc.includes('neural_dormant_seed.js')
       && mergeGuardSrc.includes('check')
@@ -982,6 +1014,7 @@ function runGate() {
       && contractCheckSrc.includes('execution_sandbox_envelope.js')
       && contractCheckSrc.includes('organ_state_encryption_plane.js')
       && contractCheckSrc.includes('remote_tamper_heartbeat.js')
+      && contractCheckSrc.includes('helix_admission_gate.js')
       && contractCheckSrc.includes('neural_dormant_seed.js')
       && contractCheckSrc.includes('client_relationship_manager.js')
       && contractCheckSrc.includes('capital_allocation_organ.js')

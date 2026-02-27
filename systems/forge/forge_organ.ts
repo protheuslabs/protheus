@@ -6,6 +6,12 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { buildForgeReplica } = require('../assimilation/forge_replica.js');
+let admitStrandCandidate = null;
+try {
+  ({ admitStrandCandidate } = require('../helix/helix_admission_gate.js'));
+} catch {
+  admitStrandCandidate = null;
+}
 
 type AnyObj = Record<string, any>;
 
@@ -221,6 +227,7 @@ function cmdRun(args: AnyObj) {
 
   const replica = buildForgeReplica({
     capability_id: capabilityId,
+    source: 'forge',
     source_type: 'forge_organ',
     risk_class: riskClass,
     mode,
@@ -304,6 +311,28 @@ function cmdPromote(args: AnyObj) {
     blocked,
     decision: blocked.length ? 'retry' : 'promote'
   };
+  let helixAdmission = null;
+  if (blocked.length === 0 && typeof admitStrandCandidate === 'function') {
+    helixAdmission = admitStrandCandidate({
+      candidate: row && row.replica && row.replica.strand_candidate
+        ? row.replica.strand_candidate
+        : null,
+      apply_requested: true,
+      doctor_approved: policyApproval
+    });
+    promotion.helix_admission = helixAdmission;
+    if (!helixAdmission || helixAdmission.allowed !== true) {
+      blocked.push('helix_admission_denied');
+      if (helixAdmission && Array.isArray(helixAdmission.reason_codes)) {
+        for (const reason of helixAdmission.reason_codes) {
+          const token = normalizeToken(reason, 120);
+          if (token) blocked.push(token);
+        }
+      }
+      promotion.blocked = blocked.slice(0);
+      promotion.decision = 'retry';
+    }
+  }
   appendJsonl(PROMOTIONS_PATH, { type: 'forge_organ_promotion', ...promotion });
   if (!blocked.length) {
     row.promotion_recommendation = 'promote';

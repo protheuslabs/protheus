@@ -1005,6 +1005,14 @@ function main() {
     "systems/security/remote_tamper_heartbeat.js",
     ["constitution_hash", "integrity_ok", "trusted_watermark_mismatch", "quarantine_activated"]
   );
+  checkScript(
+    "systems/helix/helix_admission_gate.js",
+    ["helix_admission_gate.js", "candidate", "admit", "status", "--capability-id", "--candidate-json", "--doctor-approved"]
+  );
+  checkSourceContains(
+    "systems/helix/helix_admission_gate.js",
+    ["strand_hash_mismatch", "doctor_approval_required", "manifest_updated", "codex_root_hash_mismatch"]
+  );
 
   // environment_promotion_gate.js enforces promotion sequencing and approvals across env tiers.
   checkScript(

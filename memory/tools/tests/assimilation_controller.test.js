@@ -226,6 +226,14 @@ function run() {
     assert.strictEqual(row.outcome, 'shadow_only', 'shadow mode should not execute live graft');
     assert.strictEqual(row.graft.apply_executed, false, 'shadow mode should keep apply_executed=false');
     assert.ok(
+      row.forge_replica && row.forge_replica.strand_candidate,
+      'forge replica should include helix strand candidate'
+    );
+    assert.ok(
+      row.graft && row.graft.helix_admission && row.graft.helix_admission.allowed === true,
+      'graft should include helix admission decision'
+    );
+    assert.ok(
       row.capability_profile && row.capability_profile.ok === true,
       'capability profile should compile for ready candidates'
     );
@@ -292,6 +300,11 @@ function run() {
   assert.strictEqual(runApproved.candidates.length, 1);
   assert.strictEqual(runApproved.candidates[0].outcome, 'success');
   assert.strictEqual(runApproved.candidates[0].graft.apply_executed, true);
+  assert.ok(
+    runApproved.candidates[0].graft.helix_admission
+      && runApproved.candidates[0].graft.helix_admission.apply_executed === true,
+    'approved live graft should execute helix admission apply path'
+  );
 
   const status = assertOk(runNode(scriptPath, ['status', 'latest'], env, repoRoot), 'status latest');
   assert.ok(Number(status.candidates_processed || 0) >= 1, 'status should include processed count');

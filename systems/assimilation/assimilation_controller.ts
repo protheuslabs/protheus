@@ -766,6 +766,7 @@ function commandRun(args: AnyObj) {
     });
     const forge = buildForgeReplica({
       capability_id: capabilityId,
+      source: 'assimilation',
       source_type: record.source_type,
       risk_class: record.risk_class || 'general',
       mode: improvementMode ? 'improvement' : 'assimilation',
@@ -798,6 +799,7 @@ function commandRun(args: AnyObj) {
     const graft = evaluateGraftDecision({
       capability_id: capabilityId,
       risk_class: record.risk_class || 'general',
+      strand_candidate: forge && forge.strand_candidate ? forge.strand_candidate : null,
       legal_gate: legalGate,
       constitutional_veto: constitutionalVeto,
       research_probe: research,
