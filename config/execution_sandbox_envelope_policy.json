@@ -1,0 +1,71 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "mode": "enforce",
+  "default_host_fs_access": false,
+  "default_network_access": false,
+  "profiles": {
+    "workflow_container_strict": {
+      "runtime": "container",
+      "isolation": ["seccomp", "apparmor"],
+      "host_fs_access": false,
+      "network_access": false,
+      "capability_manifest": [
+        "exec:bounded",
+        "fs:workspace_read",
+        "fs:workspace_write_ephemeral",
+        "net:none"
+      ]
+    },
+    "actuation_container_strict": {
+      "runtime": "container",
+      "isolation": ["seccomp", "apparmor"],
+      "host_fs_access": false,
+      "network_access": false,
+      "capability_manifest": [
+        "exec:adapter_only",
+        "fs:workspace_read",
+        "fs:workspace_write_ephemeral",
+        "net:deny_default"
+      ]
+    },
+    "simulation_sandbox": {
+      "runtime": "container",
+      "isolation": ["seccomp", "apparmor"],
+      "host_fs_access": false,
+      "network_access": false,
+      "capability_manifest": [
+        "exec:simulation_only",
+        "fs:none",
+        "net:none"
+      ]
+    }
+  },
+  "workflow_profile_map": {
+    "command": "workflow_container_strict",
+    "receipt": "simulation_sandbox"
+  },
+  "actuation_profile": "actuation_container_strict",
+  "blocked_command_tokens": [
+    "sudo",
+    "--privileged",
+    "mount ",
+    "chroot",
+    "nsenter",
+    "rm -rf /",
+    "/etc/",
+    "/root/",
+    "/proc/",
+    "/sys/",
+    "/dev/",
+    "iptables",
+    "nft ",
+    "docker run"
+  ],
+  "high_risk_actuation_classes": ["payments", "auth", "filesystem", "shell", "network-control"],
+  "require_approval_for_high_risk_actuation": true,
+  "paths": {
+    "latest_path": "state/security/execution_sandbox_envelope/latest.json",
+    "audit_path": "state/security/execution_sandbox_envelope/audit.jsonl"
+  }
+}

@@ -88,6 +88,9 @@ function main() {
     'predictive_capacity_forecast:merge_guard_hook',
     'predictive_capacity_forecast:horizon_contract',
     'predictive_capacity_forecast:paths_present',
+    'execution_sandbox_envelope:merge_guard_hook',
+    'execution_sandbox_envelope:policy_profiles',
+    'execution_sandbox_envelope:deny_defaults_and_high_risk_gate',
     'neural_dormant_seed:merge_guard_hook',
     'neural_dormant_seed:locked_and_blocked',
     'neural_dormant_seed:governance_checklist_depth',
@@ -116,6 +119,8 @@ function main() {
     'self_hosted_bootstrap:verify_commands_present',
     'self_hosted_bootstrap:approval_gate_present',
     'workflow:effect_type_gate_hook',
+    'workflow:sandbox_envelope_hook',
+    'actuation:sandbox_envelope_hook',
     'helix:safety_resilience_hook'
   ]) {
     assert.ok(byId.has(id), `missing check: ${id}`);
