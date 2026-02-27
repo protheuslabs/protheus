@@ -1,0 +1,36 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "vault_roots": [
+    "memory",
+    "notes"
+  ],
+  "allowed_extensions": [
+    ".md",
+    ".canvas"
+  ],
+  "clearance": {
+    "ingest_min": 1,
+    "project_min": 2,
+    "project_elevated_min": 3
+  },
+  "ingest": {
+    "dedupe_enabled": true,
+    "loop_suppression": true,
+    "ignore_projection_marker": true
+  },
+  "projection": {
+    "projection_roots": [
+      "state/obsidian/projections"
+    ],
+    "deny_user_authored_paths": true,
+    "allow_elevated_override": true
+  },
+  "outputs": {
+    "receipts_path": "state/obsidian/receipts.jsonl",
+    "ingest_path": "state/obsidian/ingest_events.jsonl",
+    "latest_path": "state/obsidian/latest.json",
+    "ingest_index_path": "state/obsidian/ingest_index.json"
+  }
+}
