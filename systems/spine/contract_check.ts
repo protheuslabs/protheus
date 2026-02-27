@@ -494,6 +494,14 @@ function main() {
     "systems/budget/capital_allocation_organ.js",
     ["min_simulation_score", "drawdown_stop_pct", "risk_adjusted_return", "simulation_id"]
   );
+  checkScript(
+    "systems/weaver/drift_aware_revenue_optimizer.js",
+    ["drift_aware_revenue_optimizer.js", "optimize", "status", "--strict", "--days"]
+  );
+  checkSourceContains(
+    "systems/weaver/drift_aware_revenue_optimizer.js",
+    ["drift_cap_30d", "execution_slo_pass", "balanced_growth", "conservative"]
+  );
 
   // eyes_memory_bridge.js wires enriched sensory proposals into memory nodes + pointer logs.
   checkScript(

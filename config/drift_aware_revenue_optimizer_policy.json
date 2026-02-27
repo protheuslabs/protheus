@@ -1,0 +1,13 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": false,
+  "drift_cap_30d": 0.02,
+  "require_execution_slo_pass": true,
+  "execution_reliability_state_path": "state/ops/execution_reliability_slo.json",
+  "high_value_latest_path": "state/adaptive/workflows/high_value_play/latest.json",
+  "high_value_history_path": "state/adaptive/workflows/high_value_play/history.jsonl",
+  "latest_path": "state/weaver/drift_aware_revenue_optimizer/latest.json",
+  "history_path": "state/weaver/drift_aware_revenue_optimizer/history.jsonl",
+  "receipts_path": "state/weaver/drift_aware_revenue_optimizer/receipts.jsonl"
+}

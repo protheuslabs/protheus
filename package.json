@@ -203,6 +203,8 @@
     "budget:capital:settle": "node systems/budget/capital_allocation_organ.js settle --allocation-id=$ALLOCATION_ID --actual-return=0.05",
     "budget:capital:evaluate": "node systems/budget/capital_allocation_organ.js evaluate --days=30 --strict=1",
     "budget:capital:status": "node systems/budget/capital_allocation_organ.js status --days=30",
+    "weaver:drift-optimize": "node systems/weaver/drift_aware_revenue_optimizer.js optimize",
+    "weaver:drift-optimize:status": "node systems/weaver/drift_aware_revenue_optimizer.js status --days=30",
     "workflow:run": "node systems/workflow/orchestron_controller.js run --apply=1",
     "workflow:execute": "node systems/workflow/workflow_executor.js run",
     "orchestron:run": "node systems/workflow/orchestron_controller.js run --apply=1",

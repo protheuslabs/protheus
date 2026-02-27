@@ -91,6 +91,7 @@ function runGate() {
     'config/client_relationship_manager_policy.json',
     'config/compression_transfer_plane_policy.json',
     'config/opportunistic_offload_policy.json',
+    'config/drift_aware_revenue_optimizer_policy.json',
     'config/deterministic_control_plane_policy.json',
     'config/emergent_primitive_synthesis_policy.json',
     'config/effect_type_policy.json',
@@ -129,6 +130,7 @@ function runGate() {
     'systems/hardware/surface_budget_controller.ts',
     'systems/hardware/opportunistic_offload_plane.ts',
     'systems/budget/capital_allocation_organ.ts',
+    'systems/weaver/drift_aware_revenue_optimizer.ts',
     'systems/workflow/client_relationship_manager.ts',
     'systems/primitives/effect_type_system.ts',
     'systems/primitives/emergent_primitive_synthesis.ts',
@@ -671,6 +673,28 @@ function runGate() {
     `min_simulation_score=${Number(capitalPolicy.min_simulation_score || 0)} min_risk_adjusted_return=${Number(capitalPolicy.min_risk_adjusted_return || 0)}`
   );
   addCheck(
+    'drift_aware_revenue_optimizer:merge_guard_hook',
+    mergeGuardSrc.includes('drift_aware_revenue_optimizer.js')
+      && mergeGuardSrc.includes('status')
+      && mergeGuardSrc.includes('--days=30'),
+    'merge_guard should enforce drift-aware optimizer status check'
+  );
+  const driftPolicy = readJsonSafe(path.join(ROOT, 'config', 'drift_aware_revenue_optimizer_policy.json'), {});
+  addCheck(
+    'drift_aware_revenue_optimizer:drift_cap_present',
+    Number(driftPolicy.drift_cap_30d || 0) >= 0
+      && Number(driftPolicy.drift_cap_30d || 0) <= 1,
+    `drift_cap_30d=${Number(driftPolicy.drift_cap_30d || 0)}`
+  );
+  addCheck(
+    'drift_aware_revenue_optimizer:slo_and_sources_present',
+    typeof driftPolicy.require_execution_slo_pass === 'boolean'
+      && !!cleanText(driftPolicy.execution_reliability_state_path || '', 200)
+      && !!cleanText(driftPolicy.high_value_latest_path || '', 200)
+      && !!cleanText(driftPolicy.high_value_history_path || '', 200),
+    `require_execution_slo_pass=${typeof driftPolicy.require_execution_slo_pass === 'boolean' ? String(driftPolicy.require_execution_slo_pass) : 'missing'}`
+  );
+  addCheck(
     'self_hosted_bootstrap:merge_guard_hook',
     mergeGuardSrc.includes('self_hosted_bootstrap_compiler.js')
       && mergeGuardSrc.includes('status'),
@@ -750,7 +774,8 @@ function runGate() {
       && contractCheckSrc.includes('compression_transfer_plane.js')
       && contractCheckSrc.includes('opportunistic_offload_plane.js')
       && contractCheckSrc.includes('client_relationship_manager.js')
-      && contractCheckSrc.includes('capital_allocation_organ.js'),
+      && contractCheckSrc.includes('capital_allocation_organ.js')
+      && contractCheckSrc.includes('drift_aware_revenue_optimizer.js'),
     'contract_check should validate foundation scripts'
   );
 
