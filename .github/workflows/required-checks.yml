@@ -50,6 +50,54 @@ jobs:
       - name: contract_check
         run: node systems/spine/contract_check.js
 
+  foundation_contract_gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - name: Install dependencies
+        run: npm ci
+      - name: foundation_contract_gate
+        run: node systems/ops/foundation_contract_gate.js run --strict=1
+
+  scale_envelope_baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - name: Install dependencies
+        run: npm ci
+      - name: scale_envelope_baseline
+        run: node systems/ops/scale_envelope_baseline.js run --strict=1
+
+  js_holdout_audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - name: Install dependencies
+        run: npm ci
+      - name: js_holdout_audit
+        run: node systems/ops/js_holdout_audit.js run --strict=1
+
   schema_contract_check:
     runs-on: ubuntu-latest
     timeout-minutes: 10

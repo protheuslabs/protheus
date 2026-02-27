@@ -163,6 +163,15 @@ function main() {
     process.exit(tsCloneGuard.status || 1);
   }
 
+  console.log('=== CI SUITE: js_holdout_audit ===');
+  const jsHoldout = runNode(['systems/ops/js_holdout_audit.js', 'run', '--strict=1']);
+  printOutput('  ', jsHoldout.stdout);
+  printOutput('  ', jsHoldout.stderr);
+  if (!jsHoldout.ok) {
+    console.error(`js_holdout_audit failed (exit ${jsHoldout.status})`);
+    process.exit(jsHoldout.status || 1);
+  }
+
   console.log('=== CI SUITE: contract_check ===');
   const contract = runNode(['systems/spine/contract_check.js']);
   printOutput('  ', contract.stdout);
