@@ -1,0 +1,37 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "max_children": 24,
+  "default_ttl_hours": 24,
+  "max_ttl_hours": 168,
+  "resource_envelope": {
+    "token_cap_default": 800,
+    "token_cap_max": 5000,
+    "memory_mb_default": 512,
+    "memory_mb_max": 8192,
+    "cpu_threads_default": 2,
+    "cpu_threads_max": 16
+  },
+  "lanes": {
+    "nursery": {
+      "enabled": true,
+      "script": "systems/nursery/nursery_bootstrap.js",
+      "args": ["status"]
+    },
+    "redteam": {
+      "enabled": true,
+      "script": "systems/redteam/ant_colony_controller.js",
+      "args": ["status"]
+    },
+    "evolution": {
+      "enabled": true,
+      "script": "systems/autonomy/improvement_controller.js",
+      "args": ["status"]
+    }
+  },
+  "rollback": {
+    "require_receipts": true,
+    "rollback_reason_default": "child_lane_failure"
+  }
+}

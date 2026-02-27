@@ -1,0 +1,19 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "max_active_forged_organs": 16,
+  "default_ttl_hours": 24,
+  "max_ttl_hours": 168,
+  "containment": {
+    "sandbox_profile": "strict_isolated",
+    "require_nursery_pass_for_promotion": true,
+    "require_policy_approval_for_promotion": true
+  },
+  "hardware_classes": {
+    "tiny": ["io_bridge"],
+    "small": ["io_bridge", "parser"],
+    "medium": ["io_bridge", "parser", "planner"],
+    "large": ["io_bridge", "parser", "planner", "research_assist"]
+  }
+}

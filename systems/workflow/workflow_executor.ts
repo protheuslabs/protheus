@@ -35,6 +35,20 @@ try {
 } catch {
   recordHighValuePlayOutcomes = null;
 }
+let candidateMutationOrderExternal = null;
+let applyMutationKindExternal = null;
+let evaluateMutationGateExternal = null;
+try {
+  ({
+    candidateMutationOrder: candidateMutationOrderExternal,
+    applyMutationKind: applyMutationKindExternal,
+    evaluateMutationGate: evaluateMutationGateExternal
+  } = require('./inflight_mutation_engine.js'));
+} catch {
+  candidateMutationOrderExternal = null;
+  applyMutationKindExternal = null;
+  evaluateMutationGateExternal = null;
+}
 
 type AnyObj = Record<string, any>;
 
@@ -109,7 +123,7 @@ const SOUL_TOKEN_GUARD_SCRIPT = process.env.WORKFLOW_EXECUTOR_SOUL_TOKEN_GUARD_S
 
 function usage() {
   console.log('Usage:');
-  console.log('  node systems/workflow/workflow_executor.js run [YYYY-MM-DD] [--id=<workflow_id>] [--max=N] [--include-draft=1|0] [--dry-run=1|0] [--continue-on-error=1|0] [--receipt-strict=1|0] [--runtime-mutation=1|0] [--enforce-eligibility=1|0] [--policy=path]');
+  console.log('  node systems/workflow/workflow_executor.js run [YYYY-MM-DD] [--id=<workflow_id>] [--max=N] [--include-draft=1|0] [--dry-run=1|0] [--continue-on-error=1|0] [--receipt-strict=1|0] [--runtime-mutation=1|0] [--runtime-mutation-safety-attested=1|0] [--runtime-mutation-veto-cleared=1|0] [--enforce-eligibility=1|0] [--policy=path]');
   console.log('  node systems/workflow/workflow_executor.js status [YYYY-MM-DD|latest|latest-live]');
 }
 
@@ -383,6 +397,11 @@ function defaultPolicy() {
       rollback_on_regression: true,
       max_retry_increment: 1,
       max_total_retry_per_step: 3,
+      veto_window_sec: 0,
+      require_safety_attestation: false,
+      require_human_veto_for_high_impact: false,
+      high_impact_levels: ['high', 'critical'],
+      max_attempts_per_kind: 3,
       allow: {
         guard_hardening: true,
         rollback_path: true,
@@ -675,6 +694,19 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
       rollback_on_regression: rm.rollback_on_regression !== false,
       max_retry_increment: clampInt(rm.max_retry_increment, 0, 4, base.runtime_mutation.max_retry_increment),
       max_total_retry_per_step: clampInt(rm.max_total_retry_per_step, 0, 8, base.runtime_mutation.max_total_retry_per_step),
+      veto_window_sec: clampInt(rm.veto_window_sec, 0, 3600, base.runtime_mutation.veto_window_sec),
+      require_safety_attestation: rm.require_safety_attestation === true,
+      require_human_veto_for_high_impact: rm.require_human_veto_for_high_impact === true,
+      high_impact_levels: (() => {
+        const source = Array.isArray(rm.high_impact_levels)
+          ? rm.high_impact_levels
+          : base.runtime_mutation.high_impact_levels;
+        const out = source
+          .map((v) => cleanText(v, 40).toLowerCase().replace(/[^a-z0-9_.:/-]+/g, '_').replace(/_+/g, '_').replace(/^_+|_+$/g, ''))
+          .filter(Boolean);
+        return out.length ? Array.from(new Set(out)) : base.runtime_mutation.high_impact_levels.slice(0);
+      })(),
+      max_attempts_per_kind: clampInt(rm.max_attempts_per_kind, 1, 16, base.runtime_mutation.max_attempts_per_kind),
       allow: {
         guard_hardening: allowRaw.guard_hardening !== false,
         rollback_path: allowRaw.rollback_path !== false,
@@ -2498,6 +2530,18 @@ function insertBeforeReceipt(steps: AnyObj[], newStep: AnyObj) {
 }
 
 function candidateMutationOrder(workflow: AnyObj, step: AnyObj, policy: AnyObj, mutationSummary: AnyObj) {
+  if (typeof candidateMutationOrderExternal === 'function') {
+    try {
+      const delegated = candidateMutationOrderExternal(workflow, step, policy, mutationSummary);
+      if (Array.isArray(delegated)) {
+        return delegated
+          .map((v) => normalizeToken(v, 60))
+          .filter(Boolean);
+      }
+    } catch {
+      // Fall back to local ordering logic.
+    }
+  }
   const allow = policy && policy.allow && typeof policy.allow === 'object' ? policy.allow : {};
   const order: string[] = [];
   const preferred = String(workflow && workflow.mutation && workflow.mutation.kind || '')
@@ -2514,10 +2558,18 @@ function candidateMutationOrder(workflow: AnyObj, step: AnyObj, policy: AnyObj, 
   const attempts = mutationSummary && mutationSummary.by_kind && typeof mutationSummary.by_kind === 'object'
     ? mutationSummary.by_kind
     : {};
-  return order.filter((kind) => Number(attempts[kind] || 0) < 3);
+  return order.filter((kind) => Number(attempts[kind] || 0) < Number(policy && policy.max_attempts_per_kind || 3));
 }
 
 function applyMutationKind(kind: string, steps: AnyObj[], stepIndex: number, policy: AnyObj) {
+  if (typeof applyMutationKindExternal === 'function') {
+    try {
+      const delegated = applyMutationKindExternal(kind, steps, stepIndex, policy);
+      if (delegated && typeof delegated === 'object') return delegated;
+    } catch {
+      // Fall back to local mutation logic.
+    }
+  }
   const list = cloneSteps(steps);
   if (!list.length) return { ok: false, changed: false, reason: 'steps_empty' };
   const safeIndex = Math.max(0, Math.min(list.length - 1, Number(stepIndex || 0)));
@@ -2920,10 +2972,36 @@ function executeWorkflow(workflow: AnyObj, context: AnyObj, options: AnyObj) {
 
     let recovered = false;
     let terminalFailure = false;
+    const mutationGate = typeof evaluateMutationGateExternal === 'function'
+      ? evaluateMutationGateExternal({
+          now_ts: nowIso(),
+          last_failure_ts: nowIso(),
+          objective_impact: workflow && workflow.objective_impact || workflow && workflow.risk || 'medium',
+          safety_attested: options && options.runtime_mutation_safety_attested === true,
+          human_veto_cleared: options && options.runtime_mutation_veto_cleared === true
+        }, runtimeMutation)
+      : { allowed: true, reasons: [] };
+
     const canMutate = options.dry_run !== true
       && runtimeMutation.enabled === true
       && Number(runMutationState.total_mutations || 0) < Number(runtimeMutation.max_mutations_per_run || 0)
-      && Number(mutationSummary.applied || 0) < Number(runtimeMutation.max_mutations_per_workflow || 0);
+      && Number(mutationSummary.applied || 0) < Number(runtimeMutation.max_mutations_per_workflow || 0)
+      && mutationGate && mutationGate.allowed === true;
+
+    if (!canMutate && runtimeMutation.enabled === true && options.dry_run !== true && mutationGate && Array.isArray(mutationGate.reasons) && mutationGate.reasons.length) {
+      mutationReceipts.push({
+        ts: nowIso(),
+        type: 'workflow_runtime_mutation',
+        status: 'blocked',
+        run_id: String(context.run_id || ''),
+        workflow_id: String(context.workflow_id || ''),
+        workflow_name: String(workflow && workflow.name || ''),
+        step_id: String(step && step.id || ''),
+        step_type: String(step && step.type || ''),
+        reason: mutationGate.reasons.join('|'),
+        veto_until_ts: mutationGate.veto_until_ts || null
+      });
+    }
 
     if (canMutate) {
       const kinds = candidateMutationOrder(workflow, step, runtimeMutation, mutationSummary);
@@ -3403,6 +3481,8 @@ function runCmd(dateStr: string, args: AnyObj) {
         !!(policy && policy.runtime_mutation && policy.runtime_mutation.enabled === true)
       )
     },
+    runtime_mutation_safety_attested: boolFlag(args['runtime-mutation-safety-attested'], false),
+    runtime_mutation_veto_cleared: boolFlag(args['runtime-mutation-veto-cleared'], false),
     soul_token_gate: soulTokenGate,
     _run_mutation_state: {
       total_mutations: 0

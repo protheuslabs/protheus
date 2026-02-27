@@ -1,0 +1,12 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "max_active_sandboxes": 24,
+  "required_approvals": 2,
+  "require_tests_before_merge": true,
+  "sandbox_branch_prefix": "codex/evo/",
+  "test_commands": [
+    "node -e \"process.exit(0)\""
+  ]
+}

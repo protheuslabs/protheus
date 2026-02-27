@@ -1,0 +1,11 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "max_active_fusions": 12,
+  "default_ttl_hours": 12,
+  "max_ttl_hours": 168,
+  "min_members": 2,
+  "max_members": 8,
+  "require_policy_approval": true
+}

@@ -1,0 +1,24 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "proposal_only": true,
+  "budget": {
+    "max_depth": 6,
+    "max_steps": 36,
+    "max_external_calls": 8
+  },
+  "synthesis": {
+    "min_confidence_for_proposal": 0.55,
+    "max_proposals": 4
+  },
+  "uncertainty_scaling": {
+    "enabled": true,
+    "min_depth": 2,
+    "uncertainty_weight": 0.6,
+    "value_weight": 0.4
+  },
+  "adapters": {
+    "allowed_sources": ["internal_memory", "research_probe", "simulation"],
+    "blocked_sources": []
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "max_depth": 4,
+  "max_instances": 32,
+  "namespace_root": "state/fractal/mini_core_instancer/namespaces",
+  "envelopes": {
+    "token_cap_default": 400,
+    "token_cap_max": 5000,
+    "memory_mb_default": 256,
+    "memory_mb_max": 4096
+  },
+  "governance": {
+    "inherited_clearance_default": "L1",
+    "require_parent_contract": true
+  }
+}

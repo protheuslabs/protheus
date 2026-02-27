@@ -1,0 +1,27 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "proposal_only": true,
+  "metadata_strict": true,
+  "trainability_strict": true,
+  "require_explicit_consent": true,
+  "queue_paths": {
+    "pending_queue": "state/nursery/training/workflow_learning_queue.jsonl",
+    "canary_queue": "state/nursery/training/workflow_learning_canary.jsonl",
+    "master_queue": "state/nursery/training/continuum_queue.jsonl"
+  },
+  "canary": {
+    "required": true,
+    "min_score": 0.75
+  },
+  "defaults": {
+    "owner_id": "workflow_operator",
+    "owner_type": "human_operator",
+    "license_id": "internal_protheus",
+    "consent_status": "granted",
+    "consent_mode": "explicit_opt_in",
+    "consent_evidence_ref": "config/training_conduit_policy.json",
+    "retention_days": 365,
+    "delete_scope": "workflow_learning_conduit"
+  }
+}

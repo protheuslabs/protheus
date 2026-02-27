@@ -1,0 +1,10 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "max_influence": 0.25,
+  "min_confidence": 0.6,
+  "fallback_confidence_floor": 0.45,
+  "min_consensus_sources": 2,
+  "allowed_objective_prefixes": [],
+  "auto_fallback_on_drop": true
+}

@@ -1,0 +1,19 @@
+{
+  "version": "1.0",
+  "shadow_only": true,
+  "require_eye_route": true,
+  "approval_tiers": {
+    "low": { "human_approval": false },
+    "medium": { "human_approval": false },
+    "high": { "human_approval": true },
+    "critical": { "human_approval": true }
+  },
+  "channels": {
+    "browser": { "enabled": true, "adapter": "browser_action" },
+    "api": { "enabled": true, "adapter": "api_request" },
+    "payments": { "enabled": true, "adapter": "payment_action", "always_human_approval": true },
+    "comms": { "enabled": true, "adapter": "message_send" },
+    "files": { "enabled": true, "adapter": "file_update" }
+  },
+  "max_steps_per_plan": 8
+}
