@@ -92,6 +92,7 @@ function runGuard(opts = {}) {
   checks.push(runCmd('soc2_type2_track_status', 'node', ['systems/ops/soc2_type2_track.js', 'status']));
   checks.push(runCmd('predictive_capacity_forecast_status', 'node', ['systems/ops/predictive_capacity_forecast.js', 'status']));
   checks.push(runCmd('neural_dormant_seed_check', 'node', ['systems/symbiosis/neural_dormant_seed.js', 'check', '--strict=1', '--profile=prod']));
+  checks.push(runCmd('pre_neuralink_interface_status', 'node', ['systems/symbiosis/pre_neuralink_interface.js', 'status']));
   checks.push(runCmd('execution_sandbox_envelope_status', 'node', ['systems/security/execution_sandbox_envelope.js', 'status']));
   checks.push(runCmd('organ_state_encryption_verify', 'node', ['systems/security/organ_state_encryption_plane.js', 'verify', '--strict=1']));
   checks.push(runCmd('remote_tamper_heartbeat_verify', 'node', ['systems/security/remote_tamper_heartbeat.js', 'verify', '--strict=1']));

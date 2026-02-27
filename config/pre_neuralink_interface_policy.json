@@ -1,0 +1,57 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "local_first": true,
+  "require_explicit_consent": true,
+  "channels": [
+    "voice",
+    "attention",
+    "haptic"
+  ],
+  "consent": {
+    "default_state": "paused",
+    "allowed_states": [
+      "granted",
+      "paused",
+      "revoked"
+    ],
+    "route_allowed_states": [
+      "granted"
+    ],
+    "min_signal_confidence": 0.45
+  },
+  "routing": {
+    "lane": "organ",
+    "target": "symbiosis",
+    "action_by_intent": {
+      "execute": "execute",
+      "plan": "plan",
+      "reflect": "observe",
+      "support": "observe"
+    },
+    "risk_by_intent": {
+      "execute": "medium",
+      "plan": "low",
+      "reflect": "low",
+      "support": "low"
+    },
+    "default_estimated_tokens": 220
+  },
+  "handoff_contract": {
+    "version": "1.0",
+    "modality_family": "non_invasive",
+    "compatible_future_interfaces": [
+      "bci",
+      "neural_link"
+    ],
+    "path": "state/symbiosis/pre_neuralink_interface/handoff_contract.json"
+  },
+  "paths": {
+    "state": "state/symbiosis/pre_neuralink_interface/state.json",
+    "latest": "state/symbiosis/pre_neuralink_interface/latest.json",
+    "signals": "state/symbiosis/pre_neuralink_interface/signals.jsonl",
+    "routes": "state/symbiosis/pre_neuralink_interface/routes.jsonl",
+    "receipts": "state/symbiosis/pre_neuralink_interface/receipts.jsonl"
+  }
+}
