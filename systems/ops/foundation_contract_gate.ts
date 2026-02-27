@@ -97,6 +97,7 @@ function runGate() {
     'config/key_lifecycle_policy.json',
     'config/delegated_authority_policy.json',
     'config/continuous_chaos_resilience_policy.json',
+    'config/self_hosted_bootstrap_policy.json',
     'config/profile_compatibility_policy.json',
     'config/primitive_catalog.json',
     'config/primitive_migration_contract.json',
@@ -128,6 +129,7 @@ function runGate() {
     'systems/security/safety_resilience_guard.ts',
     'systems/assimilation/world_model_freshness.ts',
     'systems/ops/continuous_chaos_resilience.ts',
+    'systems/ops/self_hosted_bootstrap_compiler.ts',
     'systems/primitives/primitive_runtime.ts',
     'systems/primitives/policy_vm.ts',
     'systems/primitives/replay_verify.ts'
@@ -530,6 +532,24 @@ function runGate() {
     'continuous_chaos_resilience:cadence_declared',
     Object.keys(cadenceCfg).length >= 1,
     `scenario_cadence_entries=${Object.keys(cadenceCfg).length}`
+  );
+  addCheck(
+    'self_hosted_bootstrap:merge_guard_hook',
+    mergeGuardSrc.includes('self_hosted_bootstrap_compiler.js')
+      && mergeGuardSrc.includes('status'),
+    'merge_guard should enforce self-hosted bootstrap status check'
+  );
+  const selfHostPolicy = readJsonSafe(path.join(ROOT, 'config', 'self_hosted_bootstrap_policy.json'), {});
+  const verifyCommands = Array.isArray(selfHostPolicy.verify_commands) ? selfHostPolicy.verify_commands : [];
+  addCheck(
+    'self_hosted_bootstrap:verify_commands_present',
+    verifyCommands.length >= 2,
+    `verify_commands=${verifyCommands.length}`
+  );
+  addCheck(
+    'self_hosted_bootstrap:approval_gate_present',
+    Number(selfHostPolicy.min_approval_note_chars || 0) >= 8,
+    `min_approval_note_chars=${Number(selfHostPolicy.min_approval_note_chars || 0)}`
   );
   const simplicityPolicy = readJsonSafe(path.join(ROOT, 'config', 'simplicity_budget_policy.json'), {});
   addCheck(

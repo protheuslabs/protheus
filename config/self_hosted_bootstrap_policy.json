@@ -1,0 +1,25 @@
+{
+  "schema_id": "self_hosted_bootstrap_policy",
+  "schema_version": "1.0",
+  "enabled": true,
+  "shadow_only": false,
+  "min_approval_note_chars": 12,
+  "source_root": ".",
+  "build_command": [
+    "node",
+    "systems/ops/build_systems.js"
+  ],
+  "smoke_command": [
+    "node",
+    "systems/ops/build_smoke.js"
+  ],
+  "verify_commands": [
+    ["node", "systems/security/formal_invariant_engine.js", "run", "--strict=1"],
+    ["node", "systems/security/supply_chain_trust_plane.js", "run", "--strict=1", "--verify-only=1"]
+  ],
+  "outputs": {
+    "state_path": "state/ops/self_hosted_bootstrap/state.json",
+    "latest_path": "state/ops/self_hosted_bootstrap/latest.json",
+    "receipts_path": "state/ops/self_hosted_bootstrap/receipts.jsonl"
+  }
+}

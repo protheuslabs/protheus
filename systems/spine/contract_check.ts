@@ -792,6 +792,14 @@ function main() {
     "systems/ops/continuous_chaos_resilience.js",
     ["promotion_blocked", "scenario_cadence_minutes", "runbook_action"]
   );
+  checkScript(
+    "systems/ops/self_hosted_bootstrap_compiler.js",
+    ["self_hosted_bootstrap_compiler.js", "compile", "verify", "promote", "rollback", "status", "--build-id", "--approved-by", "--approval-note", "--source-root", "--apply"]
+  );
+  checkSourceContains(
+    "systems/ops/self_hosted_bootstrap_compiler.js",
+    ["verify_commands", "active_build_id", "previous_active_build_id"]
+  );
 
   // offdevice_memory_replication.js performs proof-verified off-device memory replication drills.
   checkScript(

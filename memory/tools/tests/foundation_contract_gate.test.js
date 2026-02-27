@@ -79,6 +79,9 @@ function main() {
     'continuous_chaos_resilience:merge_guard_hook',
     'continuous_chaos_resilience:gate_thresholds_valid',
     'continuous_chaos_resilience:cadence_declared',
+    'self_hosted_bootstrap:merge_guard_hook',
+    'self_hosted_bootstrap:verify_commands_present',
+    'self_hosted_bootstrap:approval_gate_present',
     'workflow:effect_type_gate_hook',
     'helix:safety_resilience_hook'
   ]) {
