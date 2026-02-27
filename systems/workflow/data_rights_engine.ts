@@ -16,6 +16,10 @@ export {};
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const {
+  evaluateAccess,
+  buildAccessContext
+} = require('../security/enterprise_access_gate');
 
 type AnyObj = Record<string, any>;
 
@@ -572,6 +576,29 @@ function cmdProcess(args: AnyObj) {
   const policy = loadPolicy(policyPath);
   const paths = runtimePaths(policyPath, policy);
   const apply = toBool(args.apply, false);
+  const accessDecision = apply
+    ? evaluateAccess(
+        'data_rights.process_apply',
+        buildAccessContext(args, {
+          target_tenant_id: args['target-tenant-id']
+            || args.target_tenant_id
+            || args['tenant-id']
+            || args.tenant_id
+            || process.env.PROTHEUS_TARGET_TENANT_ID
+            || process.env.PROTHEUS_TENANT_ID
+            || null
+        })
+      )
+    : null;
+  if (apply && accessDecision && accessDecision.allow !== true) {
+    return {
+      ok: false,
+      type: 'data_rights_process',
+      ts: nowIso(),
+      error: 'enterprise_access_denied',
+      access_decision: accessDecision
+    };
+  }
   const max = clampInt(args.max, 1, 1000, 50);
   const queueState = loadQueueState(paths.queue_state_path);
   const pending = queueState.requests.filter((row: AnyObj) => String(row.status || 'pending') === 'pending').slice(0, max);
@@ -663,6 +690,7 @@ function cmdProcess(args: AnyObj) {
     type: 'data_rights_process',
     ts: nowIso(),
     apply,
+    access_decision: accessDecision,
     processed_count: processed.length,
     processed
   };

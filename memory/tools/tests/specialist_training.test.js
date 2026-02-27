@@ -168,12 +168,30 @@ function runTest() {
     assert.strictEqual(r.status, 0, `evaluate should pass: ${r.stderr}`);
     assert.ok(r.payload && r.payload.ok === true, 'evaluation should pass thresholds');
 
-    r = run(['promote', '--checkpoint=ckpt_001', '--parent=seed_base', `--eval-file=${evalPath}`], env);
+    r = run([
+      'promote',
+      '--checkpoint=ckpt_001',
+      '--parent=seed_base',
+      `--eval-file=${evalPath}`,
+      '--actor-id=ml_ops_test',
+      '--actor-roles=ml_operator',
+      '--mfa-token=otp_222222',
+      '--tenant-id=tenant_alpha'
+    ], env);
     assert.strictEqual(r.status, 0, `promote should pass: ${r.stderr}`);
     assert.ok(r.payload && r.payload.promoted === true, 'promote should be true for passing eval');
     assert.ok(r.payload && r.payload.promotion_manifest_path, 'promotion should emit manifest path');
 
-    r = run(['promote', '--checkpoint=ckpt_002', '--parent=seed_base', `--eval-file=${evalPath}`], env);
+    r = run([
+      'promote',
+      '--checkpoint=ckpt_002',
+      '--parent=seed_base',
+      `--eval-file=${evalPath}`,
+      '--actor-id=ml_ops_test',
+      '--actor-roles=ml_operator',
+      '--mfa-token=otp_222222',
+      '--tenant-id=tenant_alpha'
+    ], env);
     assert.notStrictEqual(r.status, 0, 'cooldown should block immediate second promotion');
     assert.ok(r.payload && r.payload.ok === false, 'cooldown block should fail promotion');
 
@@ -188,7 +206,16 @@ function runTest() {
       regression_rate: 0.6,
       checkpoint_parent: ''
     });
-    r = run(['promote', '--checkpoint=ckpt_bad', '--parent=', `--eval-file=${evalPath}`], env);
+    r = run([
+      'promote',
+      '--checkpoint=ckpt_bad',
+      '--parent=',
+      `--eval-file=${evalPath}`,
+      '--actor-id=ml_ops_test',
+      '--actor-roles=ml_operator',
+      '--mfa-token=otp_222222',
+      '--tenant-id=tenant_alpha'
+    ], env);
     assert.notStrictEqual(r.status, 0, 'promote should fail strict defaults on bad eval');
     assert.ok(r.payload && r.payload.ok === false, 'bad evaluation should fail');
 

@@ -173,7 +173,14 @@ function run() {
   ], env, repoRoot);
   assert.strictEqual(revoke2.status, 0, revoke2.stderr || revoke2.stdout);
 
-  const processApply = runNode(scriptPath, ['process', '--apply=1'], env, repoRoot);
+  const processApply = runNode(scriptPath, [
+    'process',
+    '--apply=1',
+    '--actor-id=privacy_test_operator',
+    '--actor-roles=privacy_officer',
+    '--mfa-token=otp_654321',
+    '--tenant-id=tenant_alpha'
+  ], env, repoRoot);
   assert.strictEqual(processApply.status, 0, processApply.stderr || processApply.stdout);
   const processApplyOut = parseJson(processApply, 'process_apply');
   assert.strictEqual(processApplyOut.ok, true);

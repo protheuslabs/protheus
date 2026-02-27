@@ -18,6 +18,10 @@ const {
   loadRedactionClassificationPolicy,
   classifyTrainingDatum
 } = require('../../lib/redaction_classification');
+const {
+  evaluateAccess,
+  buildAccessContext
+} = require('../security/enterprise_access_gate');
 let recordTrainingDatumProvenance = null;
 try {
   ({ recordTrainingDatumProvenance } = require('./data_rights_engine'));
@@ -494,10 +498,25 @@ function cmdPromote(args: AnyObj) {
     ? Number(args.canary_score != null ? args.canary_score : args['canary-score'])
     : 0;
   const apply = toBool(args.apply, false);
+  const accessDecision = apply
+    ? evaluateAccess(
+        'learning_conduit.promote',
+        buildAccessContext(args, {
+          target_tenant_id: args['target-tenant-id']
+            || args.target_tenant_id
+            || args['tenant-id']
+            || args.tenant_id
+            || process.env.PROTHEUS_TARGET_TENANT_ID
+            || process.env.PROTHEUS_TENANT_ID
+            || null
+        })
+      )
+    : null;
   const blocked: string[] = [];
   if (policy.canary.required === true && !canaryPass) blocked.push('canary_pass_required');
   if (policy.canary.required === true && canaryScore < Number(policy.canary.min_score || 0)) blocked.push('canary_score_below_min');
   if (row.stage === 'rejected') blocked.push('entry_rejected_at_ingest');
+  if (apply && accessDecision && accessDecision.allow !== true) blocked.push('enterprise_access_denied');
   if (apply !== true) blocked.push('apply_disabled');
 
   const masterQueuePath = resolveQueuePath(policy.queue_paths.master_queue);
@@ -524,6 +543,7 @@ function cmdPromote(args: AnyObj) {
     canary_pass: canaryPass,
     canary_score: canaryScore,
     blocked,
+    access_decision: accessDecision,
     master_queue_path: relPath(masterQueuePath)
   };
   writeJsonAtomic(LATEST_PATH, out);

@@ -1,0 +1,30 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "default_deny": true,
+  "mfa": {
+    "min_token_length": 8
+  },
+  "operations": {
+    "learning_conduit.promote": {
+      "allowed_roles": ["ml_operator", "admin"],
+      "require_mfa": true,
+      "tenant_scoped": true
+    },
+    "data_rights.process_apply": {
+      "allowed_roles": ["privacy_officer", "admin"],
+      "require_mfa": true,
+      "tenant_scoped": true
+    },
+    "training_quarantine.evaluate_apply": {
+      "allowed_roles": ["ml_operator", "admin"],
+      "require_mfa": true,
+      "tenant_scoped": true
+    },
+    "specialist_training.promote": {
+      "allowed_roles": ["ml_operator", "admin"],
+      "require_mfa": true,
+      "tenant_scoped": true
+    }
+  }
+}

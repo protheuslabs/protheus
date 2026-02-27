@@ -159,7 +159,11 @@ function run() {
     `--entry-id=${promoteId}`,
     '--canary-pass=0',
     '--canary-score=0.9',
-    '--apply=1'
+    '--apply=1',
+    '--actor-id=learning_test_operator',
+    '--actor-roles=ml_operator',
+    '--mfa-token=otp_123456',
+    '--tenant-id=tenant_alpha'
   ], env, root);
   assert.notStrictEqual(blockedPromote.status, 0, 'promotion should fail when canary-pass is false');
   const blockedOut = parseJson(blockedPromote, 'promote_blocked');
@@ -171,7 +175,11 @@ function run() {
     `--entry-id=${promoteId}`,
     '--canary-pass=1',
     '--canary-score=0.92',
-    '--apply=1'
+    '--apply=1',
+    '--actor-id=learning_test_operator',
+    '--actor-roles=ml_operator',
+    '--mfa-token=otp_123456',
+    '--tenant-id=tenant_alpha'
   ], env, root);
   assert.strictEqual(promote.status, 0, promote.stderr || promote.stdout);
   const promoteOut = parseJson(promote, 'promote');

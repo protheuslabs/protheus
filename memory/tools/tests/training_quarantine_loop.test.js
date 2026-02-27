@@ -85,7 +85,11 @@ function run() {
     '--slo-pass=1',
     '--score=0.92',
     '--regression-rate=0.03',
-    '--apply=1'
+    '--apply=1',
+    '--actor-id=ml_ops_test',
+    '--actor-roles=ml_operator',
+    '--mfa-token=otp_777777',
+    '--tenant-id=tenant_alpha'
   ]);
   assert.strictEqual(proc.status, 0, proc.stderr || proc.stdout);
   out = parseJson(proc.stdout);
@@ -100,7 +104,11 @@ function run() {
     '--slo-pass=0',
     '--score=0.3',
     '--regression-rate=0.6',
-    '--apply=1'
+    '--apply=1',
+    '--actor-id=ml_ops_test',
+    '--actor-roles=ml_operator',
+    '--mfa-token=otp_777777',
+    '--tenant-id=tenant_alpha'
   ]);
   assert.strictEqual(proc.status, 0, proc.stderr || proc.stdout);
   out = parseJson(proc.stdout);

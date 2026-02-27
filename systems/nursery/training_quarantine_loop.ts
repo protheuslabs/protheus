@@ -5,6 +5,10 @@ export {};
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const {
+  evaluateAccess,
+  buildAccessContext
+} = require('../security/enterprise_access_gate');
 
 type AnyObj = Record<string, any>;
 
@@ -265,6 +269,29 @@ function cmdStage(policy: AnyObj, args: AnyObj) {
 
 function cmdEvaluate(policy: AnyObj, args: AnyObj) {
   const apply = toBool(args.apply, false);
+  const accessDecision = apply
+    ? evaluateAccess(
+        'training_quarantine.evaluate_apply',
+        buildAccessContext(args, {
+          target_tenant_id: args['target-tenant-id']
+            || args.target_tenant_id
+            || args['tenant-id']
+            || args.tenant_id
+            || process.env.PROTHEUS_TARGET_TENANT_ID
+            || process.env.PROTHEUS_TENANT_ID
+            || null
+        })
+      )
+    : null;
+  if (apply && accessDecision && accessDecision.allow !== true) {
+    return {
+      ok: false,
+      type: 'training_quarantine_evaluate',
+      ts: nowIso(),
+      error: 'enterprise_access_denied',
+      access_decision: accessDecision
+    };
+  }
   const entryId = normalizeToken(args['entry-id'] || args.entry_id || '', 120);
   const checkpointId = normalizeToken(args['checkpoint-id'] || args.checkpoint_id || '', 120);
   const state = loadState(policy.paths.state_path);
@@ -365,6 +392,7 @@ function cmdEvaluate(policy: AnyObj, args: AnyObj) {
     type: 'training_quarantine_evaluate',
     ts: nowIso(),
     apply,
+    access_decision: accessDecision,
     entry_id: checkpoint.entry_id,
     checkpoint_id: checkpoint.checkpoint_id,
     score,

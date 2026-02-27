@@ -24,6 +24,10 @@ const {
   loadTrainabilityMatrixPolicy,
   evaluateTrainingDatumTrainability
 } = require('../../lib/trainability_matrix');
+const {
+  evaluateAccess,
+  buildAccessContext
+} = require('../security/enterprise_access_gate');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const POLICY_PATH = process.env.NURSERY_TRAINING_POLICY_PATH
@@ -644,6 +648,37 @@ function cmdPromote(args) {
     process.exit(2);
   }
   const policy = loadPolicy();
+  const accessDecision = evaluateAccess(
+    'specialist_training.promote',
+    buildAccessContext(args, {
+      target_tenant_id: args['target-tenant-id']
+        || args.target_tenant_id
+        || args['tenant-id']
+        || args.tenant_id
+        || process.env.PROTHEUS_TARGET_TENANT_ID
+        || process.env.PROTHEUS_TENANT_ID
+        || null
+    })
+  );
+  if (accessDecision && accessDecision.allow !== true) {
+    const denied = {
+      ok: false,
+      type: 'nursery_training_promotion',
+      ts: nowIso(),
+      checkpoint,
+      error: 'enterprise_access_denied',
+      access_decision: accessDecision
+    };
+    appendJsonl(HISTORY_PATH, {
+      ts: denied.ts,
+      type: denied.type,
+      ok: false,
+      checkpoint,
+      reason: denied.error
+    });
+    process.stdout.write(JSON.stringify(denied) + '\n');
+    process.exit(1);
+  }
   const evalInputRaw = readEvalInput(args);
   const history = readJsonl(HISTORY_PATH);
   const latestCuration = [...history]
@@ -717,6 +752,7 @@ function cmdPromote(args) {
     type: 'nursery_training_promotion',
     ts: nowIso(),
     policy_version: policy.version,
+    access_decision: accessDecision,
     checkpoint,
     checkpoint_parent: checkpointParent || null,
     evaluation: result,
