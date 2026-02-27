@@ -58,10 +58,33 @@ try {
   const outboxRoot = path.join(tmp, 'outbox');
   const fsRoot = path.join(tmp, 'fs');
   const profileRoot = path.join(tmp, 'profiles');
+  const synthesisStatePath = path.join(tmp, 'subexec', 'state.json');
+  const synthesisReceiptsPath = path.join(tmp, 'subexec', 'receipts.jsonl');
+  const synthesisDistillDir = path.join(tmp, 'subexec', 'distilled');
   ensureDir(receiptsRoot);
   ensureDir(outboxRoot);
   ensureDir(fsRoot);
   ensureDir(profileRoot);
+  ensureDir(path.dirname(synthesisStatePath));
+  ensureDir(path.dirname(synthesisReceiptsPath));
+  ensureDir(synthesisDistillDir);
+
+  const synthesisPolicyPath = path.join(tmp, 'sub_executor_policy.json');
+  writeJson(synthesisPolicyPath, {
+    version: '1.0',
+    enabled: true,
+    default_ttl_sec: 7200,
+    max_active_candidates: 64,
+    allow_high_risk: false,
+    dedupe_window_sec: 3600,
+    validation: {
+      require_nursery_pass: true,
+      require_adversarial_pass: true
+    },
+    state_path: synthesisStatePath,
+    receipts_path: synthesisReceiptsPath,
+    distill_dir: synthesisDistillDir
+  });
 
   const policyPath = path.join(tmp, 'policy.json');
   writeJson(policyPath, {
@@ -77,6 +100,14 @@ try {
     },
     intent_adapter_map: {
       write_file: 'filesystem_task'
+    },
+    sub_executor_synthesis: {
+      enabled: true,
+      script_path: path.join(ROOT, 'systems', 'actuation', 'sub_executor_synthesis.js'),
+      auto_propose_on_errors: ['executor_failed'],
+      risk_class_by_error: {
+        executor_failed: 'low'
+      }
     },
     receipts_path: receiptsRoot
   });
@@ -99,7 +130,8 @@ try {
     UNIVERSAL_EXECUTION_POLICY_PATH: policyPath,
     ACTUATION_ADAPTER_OUTBOX_ROOT: outboxRoot,
     ACTUATION_FILESYSTEM_ROOT: fsRoot,
-    ACTUATION_RECEIPTS_DIR: path.join(tmp, 'actuation_receipts')
+    ACTUATION_RECEIPTS_DIR: path.join(tmp, 'actuation_receipts'),
+    SUB_EXECUTOR_SYNTHESIS_POLICY_PATH: synthesisPolicyPath
   };
 
   const dry = run([
@@ -129,6 +161,26 @@ try {
   const writtenPath = path.join(fsRoot, 'notes', 'universal.txt');
   assert.ok(fs.existsSync(writtenPath), 'filesystem write should execute');
   assert.ok(fs.readFileSync(writtenPath, 'utf8').includes('universal primitive'), 'written file should contain payload');
+
+  const fail = run([
+    'run',
+    '--profile-id=fs_profile',
+    '--intent=write_file',
+    '--params={"action":"not_supported","path":"notes/missing_action.txt","content":"unsupported action should fail"}'
+  ], env);
+  assert.notStrictEqual(fail.status, 0, 'unsupported action should fail through adapter');
+  const failPayload = parseJson(fail.stdout);
+  assert.strictEqual(failPayload.ok, false, 'failure payload should not be ok');
+  assert.ok(
+    failPayload.sub_executor_candidate && failPayload.sub_executor_candidate.candidate_id,
+    'executor failure should enqueue sub-executor synthesis candidate'
+  );
+
+  const synthesisState = JSON.parse(fs.readFileSync(synthesisStatePath, 'utf8'));
+  const synthesisCandidates = synthesisState && synthesisState.candidates && typeof synthesisState.candidates === 'object'
+    ? Object.values(synthesisState.candidates)
+    : [];
+  assert.ok(synthesisCandidates.length >= 1, 'synthesis state should contain candidate');
 
   const status = run(['status'], env);
   assert.strictEqual(status.status, 0, `status failed: ${status.stderr || status.stdout}`);

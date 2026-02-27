@@ -59,6 +59,8 @@
     "actuation:universal:status": "node systems/actuation/universal_execution_primitive.js status",
     "actuation:defrag:run": "node systems/actuation/adapter_defragmentation.js run",
     "actuation:defrag:status": "node systems/actuation/adapter_defragmentation.js status latest",
+    "actuation:subexec:status": "node systems/actuation/sub_executor_synthesis.js status",
+    "actuation:subexec:gc": "node systems/actuation/sub_executor_synthesis.js gc",
     "routing:provider-onboard:list": "node systems/routing/provider_onboarding_manifest.js list",
     "routing:provider-onboard": "node systems/routing/provider_onboarding_manifest.js run",
     "routing:provider-onboard:status": "node systems/routing/provider_onboarding_manifest.js status",

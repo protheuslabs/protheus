@@ -16,6 +16,9 @@ const POLICY_PATH = process.env.UNIVERSAL_EXECUTION_POLICY_PATH
 const ACTUATION_EXECUTOR = process.env.ACTUATION_EXECUTOR_PATH
   ? path.resolve(process.env.ACTUATION_EXECUTOR_PATH)
   : path.join(ROOT, 'systems', 'actuation', 'actuation_executor.js');
+const SUB_EXECUTOR_SYNTHESIS = process.env.SUB_EXECUTOR_SYNTHESIS_PATH
+  ? path.resolve(process.env.SUB_EXECUTOR_SYNTHESIS_PATH)
+  : path.join(ROOT, 'systems', 'actuation', 'sub_executor_synthesis.js');
 
 function nowIso() {
   return new Date().toISOString();
@@ -155,6 +158,20 @@ function defaultPolicy() {
       write_file: 'filesystem_task',
       pay_invoice: 'payment_task'
     },
+    sub_executor_synthesis: {
+      enabled: false,
+      script_path: 'systems/actuation/sub_executor_synthesis.js',
+      auto_propose_on_errors: [
+        'adapter_kind_unresolved',
+        'adapter_kind_not_allowed',
+        'executor_failed'
+      ],
+      risk_class_by_error: {
+        adapter_kind_unresolved: 'low',
+        adapter_kind_not_allowed: 'medium',
+        executor_failed: 'low'
+      }
+    },
     receipts_path: 'state/actuation/universal_execution_primitive/receipts'
   };
 }
@@ -165,6 +182,16 @@ function loadPolicy(policyPath = POLICY_PATH) {
   const roots = Array.isArray(src.profile_roots)
     ? src.profile_roots
     : base.profile_roots;
+  const synthesis = src.sub_executor_synthesis && typeof src.sub_executor_synthesis === 'object'
+    ? src.sub_executor_synthesis
+    : {};
+  const baseSynthesis = base.sub_executor_synthesis;
+  const synthesisErrors = Array.isArray(synthesis.auto_propose_on_errors)
+    ? synthesis.auto_propose_on_errors
+    : baseSynthesis.auto_propose_on_errors;
+  const synthesisRiskMap = synthesis.risk_class_by_error && typeof synthesis.risk_class_by_error === 'object'
+    ? synthesis.risk_class_by_error
+    : baseSynthesis.risk_class_by_error;
   return {
     version: cleanText(src.version || base.version, 32) || base.version,
     enabled: src.enabled !== false,
@@ -183,6 +210,18 @@ function loadPolicy(policyPath = POLICY_PATH) {
     intent_adapter_map: src.intent_adapter_map && typeof src.intent_adapter_map === 'object'
       ? src.intent_adapter_map
       : base.intent_adapter_map,
+    sub_executor_synthesis: {
+      enabled: synthesis.enabled === true,
+      script_path: path.isAbsolute(cleanText(synthesis.script_path || baseSynthesis.script_path, 320))
+        ? cleanText(synthesis.script_path || baseSynthesis.script_path, 320)
+        : path.join(ROOT, cleanText(synthesis.script_path || baseSynthesis.script_path, 320)),
+      auto_propose_on_errors: synthesisErrors
+        .map((row: unknown) => normalizeToken(row, 80))
+        .filter(Boolean),
+      risk_class_by_error: synthesisRiskMap && typeof synthesisRiskMap === 'object'
+        ? synthesisRiskMap
+        : {}
+    },
     receipts_path: path.isAbsolute(cleanText(src.receipts_path || base.receipts_path, 260))
       ? cleanText(src.receipts_path || base.receipts_path, 260)
       : path.join(ROOT, cleanText(src.receipts_path || base.receipts_path, 260))
@@ -272,6 +311,74 @@ function parseExecutorPayload(stdout: string) {
   return null;
 }
 
+function parseChildJson(stdout: string) {
+  const lines = String(stdout || '')
+    .split('\n')
+    .map((row) => row.trim())
+    .filter(Boolean);
+  for (let i = lines.length - 1; i >= 0; i -= 1) {
+    try {
+      return JSON.parse(lines[i]);
+    } catch {
+      // continue
+    }
+  }
+  return null;
+}
+
+function maybeProposeSubExecutor(policy: AnyObj, input: AnyObj) {
+  const cfg = policy && policy.sub_executor_synthesis && typeof policy.sub_executor_synthesis === 'object'
+    ? policy.sub_executor_synthesis
+    : {};
+  if (cfg.enabled !== true) return null;
+  const errorCode = normalizeToken(input.error_code || '', 80);
+  const allow = Array.isArray(cfg.auto_propose_on_errors)
+    ? cfg.auto_propose_on_errors.map((row: unknown) => normalizeToken(row, 80)).filter(Boolean)
+    : [];
+  if (!errorCode || (allow.length && !allow.includes(errorCode))) return null;
+  const profileId = normalizeToken(input.profile_id || '', 160);
+  if (!profileId) return null;
+  const scriptPath = cleanText(cfg.script_path || SUB_EXECUTOR_SYNTHESIS, 320) || SUB_EXECUTOR_SYNTHESIS;
+  if (!fs.existsSync(scriptPath)) return null;
+  const riskRaw = cfg.risk_class_by_error && typeof cfg.risk_class_by_error === 'object'
+    ? cfg.risk_class_by_error[errorCode]
+    : null;
+  const riskClass = normalizeToken(riskRaw || 'low', 20) || 'low';
+  const intent = normalizeToken(input.intent || '', 80) || 'unknown_intent';
+  const failureReason = cleanText(input.failure_reason || errorCode || 'executor_failed', 200) || 'executor_failed';
+  const proc = spawnSync('node', [
+    scriptPath,
+    'propose',
+    `--profile-id=${profileId}`,
+    `--intent=${intent}`,
+    `--failure-reason=${failureReason}`,
+    `--risk-class=${riskClass}`
+  ], {
+    cwd: ROOT,
+    encoding: 'utf8',
+    env: process.env
+  });
+  const payload = parseChildJson(String(proc.stdout || ''));
+  if (Number(proc.status || 0) !== 0 || !payload || payload.ok !== true) {
+    return {
+      ok: false,
+      error: payload && payload.error ? payload.error : 'sub_executor_propose_failed',
+      status: Number(proc.status == null ? 1 : proc.status),
+      payload
+    };
+  }
+  const candidate = payload && payload.candidate && typeof payload.candidate === 'object'
+    ? payload.candidate
+    : {};
+  return {
+    ok: true,
+    reused: payload.reused === true,
+    candidate_id: cleanText(candidate.candidate_id || '', 80) || null,
+    candidate_status: cleanText(candidate.status || '', 40) || null,
+    payload
+  };
+}
+
 function receiptPath(policy: AnyObj, day = dayStr()) {
   return path.join(policy.receipts_path, `${day}.jsonl`);
 }
@@ -310,17 +417,36 @@ function cmdRun(args: AnyObj) {
   const intent = normalizeToken(args.intent || '', 80);
   const adapter = resolveAdapterKind(profile, intent, policy);
   if (!adapter.kind) {
-    process.stdout.write(`${JSON.stringify({ ok: false, type: 'universal_execution_primitive', error: 'adapter_kind_unresolved', profile_id: profileId })}\n`);
+    const synthesis = maybeProposeSubExecutor(policy, {
+      error_code: 'adapter_kind_unresolved',
+      profile_id: profileId,
+      intent,
+      failure_reason: 'adapter_kind_unresolved'
+    });
+    process.stdout.write(`${JSON.stringify({
+      ok: false,
+      type: 'universal_execution_primitive',
+      error: 'adapter_kind_unresolved',
+      profile_id: profileId,
+      sub_executor_candidate: synthesis && synthesis.ok === true ? synthesis : null
+    })}\n`);
     process.exit(1);
   }
   const allowedKinds = Array.isArray(policy.allowed_adapter_kinds) ? policy.allowed_adapter_kinds : [];
   if (allowedKinds.length && !allowedKinds.includes(adapter.kind)) {
+    const synthesis = maybeProposeSubExecutor(policy, {
+      error_code: 'adapter_kind_not_allowed',
+      profile_id: profileId,
+      intent,
+      failure_reason: `adapter_kind_not_allowed:${adapter.kind}`
+    });
     process.stdout.write(`${JSON.stringify({
       ok: false,
       type: 'universal_execution_primitive',
       error: 'adapter_kind_not_allowed',
       profile_id: profileId,
-      adapter_kind: adapter.kind
+      adapter_kind: adapter.kind,
+      sub_executor_candidate: synthesis && synthesis.ok === true ? synthesis : null
     })}\n`);
     process.exit(1);
   }
@@ -388,19 +514,34 @@ function cmdRun(args: AnyObj) {
     executor_status: Number(proc.status == null ? 1 : proc.status),
     executor_payload: payload
   };
-  appendJsonl(receiptPath(policy), row);
-
   if (!ok) {
+    const failureError = payload && payload.error
+      ? cleanText(payload.error, 160)
+      : 'executor_failed';
+    const synthesis = maybeProposeSubExecutor(policy, {
+      error_code: 'executor_failed',
+      profile_id: profileId,
+      intent,
+      failure_reason: failureError
+    });
+    if (synthesis && synthesis.ok === true) {
+      row.sub_executor_candidate_id = synthesis.candidate_id || null;
+      row.sub_executor_candidate_status = synthesis.candidate_status || null;
+      row.sub_executor_candidate_reused = synthesis.reused === true;
+    }
+    appendJsonl(receiptPath(policy), row);
     process.stdout.write(`${JSON.stringify({
       ok: false,
       type: 'universal_execution_primitive',
       profile_id: profileId,
       adapter_kind: adapter.kind,
-      error: payload && payload.error ? payload.error : 'executor_failed',
+      error: failureError,
+      sub_executor_candidate: synthesis && synthesis.ok === true ? synthesis : null,
       row
     })}\n`);
     process.exit(Number(proc.status == null ? 1 : proc.status) || 1);
   }
+  appendJsonl(receiptPath(policy), row);
   process.stdout.write(`${JSON.stringify({
     ok: true,
     type: 'universal_execution_primitive',

@@ -24,5 +24,19 @@
     "write_file": "filesystem_task",
     "pay_invoice": "payment_task"
   },
+  "sub_executor_synthesis": {
+    "enabled": true,
+    "script_path": "systems/actuation/sub_executor_synthesis.js",
+    "auto_propose_on_errors": [
+      "adapter_kind_unresolved",
+      "adapter_kind_not_allowed",
+      "executor_failed"
+    ],
+    "risk_class_by_error": {
+      "adapter_kind_unresolved": "low",
+      "adapter_kind_not_allowed": "medium",
+      "executor_failed": "low"
+    }
+  },
   "receipts_path": "state/actuation/universal_execution_primitive/receipts"
 }

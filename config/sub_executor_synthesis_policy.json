@@ -1,0 +1,15 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "default_ttl_sec": 21600,
+  "max_active_candidates": 128,
+  "allow_high_risk": false,
+  "dedupe_window_sec": 3600,
+  "validation": {
+    "require_nursery_pass": true,
+    "require_adversarial_pass": true
+  },
+  "state_path": "state/actuation/sub_executor_synthesis/state.json",
+  "receipts_path": "state/actuation/sub_executor_synthesis/receipts.jsonl",
+  "distill_dir": "state/assimilation/capability_profiles/distilled"
+}
