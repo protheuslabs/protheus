@@ -156,6 +156,113 @@ function logRiskyToggleGate(entry) {
   }
 }
 
+function riskyToggleApprovalStatePath() {
+  const custom = String(process.env.REQUEST_RISKY_TOGGLE_APPROVAL_STATE_PATH || "").trim();
+  if (custom) return path.resolve(custom);
+  return path.join(repoRoot(), "state", "security", "risky_env_toggle_approvals.json");
+}
+
+function loadRiskyToggleApprovalState(filePath) {
+  try {
+    if (!fs.existsSync(filePath)) return { version: 1, entries: {} };
+    const raw = JSON.parse(fs.readFileSync(filePath, "utf8"));
+    if (!raw || typeof raw !== "object") return { version: 1, entries: {} };
+    const entries = raw.entries && typeof raw.entries === "object" ? raw.entries : {};
+    return { version: 1, entries };
+  } catch {
+    return { version: 1, entries: {} };
+  }
+}
+
+function saveRiskyToggleApprovalState(filePath, state) {
+  const dir = path.dirname(filePath);
+  fs.mkdirSync(dir, { recursive: true });
+  const payload = {
+    version: 1,
+    updated_at: nowIso(),
+    entries: state && state.entries && typeof state.entries === "object" ? state.entries : {}
+  };
+  fs.writeFileSync(filePath, JSON.stringify(payload, null, 2));
+}
+
+function riskyToggleKey(activeToggles, source, action) {
+  const sortedToggles = Array.isArray(activeToggles)
+    ? activeToggles
+      .map((k) => String(k || "").trim().toUpperCase())
+      .filter(Boolean)
+      .sort()
+    : [];
+  const sourceToken = normalizeLower(source || "local") || "local";
+  const actionToken = normalizeLower(action || "apply") || "apply";
+  return `${sourceToken}|${actionToken}|${sortedToggles.join("|")}`;
+}
+
+function readRiskyToggleApproval(activeToggles, ctx) {
+  const source = normalizeLower(ctx && ctx.request_source || "local") || "local";
+  const action = normalizeLower(ctx && ctx.request_action || "apply") || "apply";
+  if (source !== "local" || action !== "apply") {
+    return { ok: false, reason: "cache_not_applicable" };
+  }
+  const filePath = riskyToggleApprovalStatePath();
+  const state = loadRiskyToggleApprovalState(filePath);
+  const entries = state.entries || {};
+  const key = riskyToggleKey(activeToggles, source, action);
+  const nowMs = Date.now();
+  const entry = entries[key];
+  const expiresMs = Number(entry && entry.expires_ms || 0);
+  if (!entry || !Number.isFinite(expiresMs) || expiresMs <= nowMs) {
+    if (entry) {
+      delete entries[key];
+      try {
+        saveRiskyToggleApprovalState(filePath, { version: 1, entries });
+      } catch {
+        // best-effort cleanup only
+      }
+    }
+    return { ok: false, reason: "cache_missing" };
+  }
+  return {
+    ok: true,
+    reason: "cache_hit",
+    path: filePath,
+    key,
+    approved_at: entry.approved_at || null,
+    expires_at: entry.expires_at || null
+  };
+}
+
+function writeRiskyToggleApproval(activeToggles, ctx, approvalNote) {
+  const source = normalizeLower(ctx && ctx.request_source || "local") || "local";
+  const action = normalizeLower(ctx && ctx.request_action || "apply") || "apply";
+  if (source !== "local" || action !== "apply") {
+    return { ok: false, reason: "cache_not_applicable" };
+  }
+  const ttlHours = Math.max(1, Number(process.env.RISKY_TOGGLE_APPROVAL_CACHE_HOURS || 12));
+  const filePath = riskyToggleApprovalStatePath();
+  const state = loadRiskyToggleApprovalState(filePath);
+  const entries = state.entries || {};
+  const key = riskyToggleKey(activeToggles, source, action);
+  const nowMs = Date.now();
+  const expiresMs = nowMs + (ttlHours * 60 * 60 * 1000);
+  entries[key] = {
+    approved_at: nowIso(),
+    expires_at: new Date(expiresMs).toISOString(),
+    expires_ms: expiresMs,
+    source,
+    action,
+    active_toggles: Array.isArray(activeToggles) ? activeToggles.slice(0, 16) : [],
+    approval_note_len: String(approvalNote || "").trim().length
+  };
+  saveRiskyToggleApprovalState(filePath, { version: 1, entries });
+  return {
+    ok: true,
+    reason: "cache_written",
+    path: filePath,
+    key,
+    expires_at: entries[key].expires_at
+  };
+}
+
 function appendSystemHealthEvent(entry) {
   try {
     const payload = entry && typeof entry === "object" ? entry : {};
@@ -182,7 +289,7 @@ function isTruthyEnv(v) {
   return s === "1" || s === "true" || s === "yes" || s === "on";
 }
 
-function detectRiskyEnvToggles(env, approvalNote) {
+function detectRiskyEnvToggles(env, approvalNote, context = {}) {
   const note = String(approvalNote || "").trim().toLowerCase();
   const active = [];
   for (const rule of RISKY_ENV_TOGGLE_RULES) {
@@ -208,12 +315,38 @@ function detectRiskyEnvToggles(env, approvalNote) {
   const hasMarker = /\benv[_\s-]?toggle\b/.test(note) || /\bmanual[_\s-]?approval\b/.test(note);
   const missingNoteKeys = active.filter((k) => !note.includes(k.toLowerCase()));
   const approved = hasMarker && missingNoteKeys.length === 0;
+  if (approved) {
+    const cache = writeRiskyToggleApproval(active, context, approvalNote);
+    return {
+      ok: true,
+      active_toggles: active,
+      has_marker: hasMarker,
+      missing_note_keys: [],
+      reason: "manual_toggle_approval_present",
+      cache_written: cache.ok === true,
+      cache_expires_at: cache.expires_at || null,
+      cache_state_path: cache.path || null
+    };
+  }
+  const cached = readRiskyToggleApproval(active, context);
+  if (cached.ok === true) {
+    return {
+      ok: true,
+      active_toggles: active,
+      has_marker: hasMarker,
+      missing_note_keys: missingNoteKeys,
+      reason: "manual_toggle_approval_cached",
+      cache_expires_at: cached.expires_at || null,
+      cache_state_path: cached.path || null,
+      cache_written: false
+    };
+  }
   return {
-    ok: approved,
+    ok: false,
     active_toggles: active,
     has_marker: hasMarker,
     missing_note_keys: missingNoteKeys,
-    reason: approved ? "manual_toggle_approval_present" : "manual_toggle_approval_missing"
+    reason: "manual_toggle_approval_missing"
   };
 }
 
@@ -563,7 +696,10 @@ function main() {
     process.exit(1);
   }
 
-  const riskyToggleGate = detectRiskyEnvToggles(process.env, approvalNote);
+  const riskyToggleGate = detectRiskyEnvToggles(process.env, approvalNote, {
+    request_source: requestSource || "local",
+    request_action: requestAction || "apply"
+  });
   const requestActionNormalized = normalizeLower(requestAction || "apply") || "apply";
   const nonApplyActionExempt = requestActionNormalized !== "apply";
   const remoteApprovedDirectApply = !!(

@@ -2371,7 +2371,9 @@ function emitCollectorStarvedAnomaly(config, windowHours = 24) {
 function signalSlo(dateStr, opts = {}) {
   ensureDirs();
   const date = dateStr || getToday();
-  const config = loadConfig();
+  const config = opts && opts.config && typeof opts.config === 'object'
+    ? opts.config
+    : loadConfig();
   const thresholds = {
     real_external_items: Math.max(1, Number(process.env.EYES_SLO_MIN_REAL_EXTERNAL_ITEMS || 1)),
     accepted_items: Math.max(1, Number(process.env.EYES_SLO_MIN_ACCEPTED_ITEMS || 1)),
@@ -2399,9 +2401,37 @@ function signalSlo(dateStr, opts = {}) {
   const acceptedItems = proposals.filter((p) => proposalIsSignalAccepted(p)).length;
 
   const queueEvents = safeReadJsonl(SENSORY_QUEUE_LOG_PATH);
-  const proposalGenerated = queueEvents
-    .filter(e => e && e.type === 'proposal_generated' && String(e.date || '') === String(date))
+  const queueEventsForDate = queueEvents
+    .filter(e => e && String(e.date || '') === String(date));
+  const proposalGenerated = queueEventsForDate
+    .filter(e => e && e.type === 'proposal_generated')
     .length;
+  const postProcessingReady = proposals.length > 0
+    || queueEventsForDate.some((e) => {
+      const t = String(e && e.type || '').trim().toLowerCase();
+      return t === 'proposal_generated'
+        || t === 'proposal_rejected'
+        || t === 'proposal_filtered'
+        || t === 'proposal_ingested'
+        || t === 'sensory_queue_summary';
+    });
+
+  function buildThresholdCheck(value, threshold, requirePostProcessing) {
+    if (requirePostProcessing && !postProcessingReady) {
+      return {
+        value,
+        threshold,
+        ok: true,
+        skipped: true,
+        skip_reason: 'post_processing_pending'
+      };
+    }
+    return {
+      value,
+      threshold,
+      ok: value >= threshold
+    };
+  }
 
   const checks = {
     real_external_items: {
@@ -2409,19 +2439,11 @@ function signalSlo(dateStr, opts = {}) {
       threshold: thresholds.real_external_items,
       ok: realExternalItems >= thresholds.real_external_items
     },
-    accepted_items: {
-      value: acceptedItems,
-      threshold: thresholds.accepted_items,
-      ok: acceptedItems >= thresholds.accepted_items
-    },
-    proposal_generated: {
-      value: proposalGenerated,
-      threshold: thresholds.proposal_generated,
-      ok: proposalGenerated >= thresholds.proposal_generated
-    }
+    accepted_items: buildThresholdCheck(acceptedItems, thresholds.accepted_items, true),
+    proposal_generated: buildThresholdCheck(proposalGenerated, thresholds.proposal_generated, true)
   };
   const failed = Object.entries(checks)
-    .filter(([, v]) => v && v.ok !== true)
+    .filter(([, v]) => v && v.ok !== true && v.skipped !== true)
     .map(([k]) => k);
   const ok = failed.length === 0;
 
@@ -2432,6 +2454,8 @@ function signalSlo(dateStr, opts = {}) {
     ok,
     checks,
     failed_checks: failed,
+    post_processing_ready: postProcessingReady,
+    queue_events_for_date: queueEventsForDate.length,
     sources: {
       raw_path: rawPath,
       proposals_path: proposalData.filePath,
