@@ -1,0 +1,23 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "thresholds": {
+    "monoculture_warn_share": 0.68,
+    "high_impact_share": 0.72,
+    "maturity_min_for_prior_updates": 0.65,
+    "mirror_pressure_warn": 0.55
+  },
+  "value_priors": {
+    "adaptive_value": 0.2,
+    "user_value": 0.2,
+    "quality": 0.2,
+    "learning": 0.2,
+    "delivery": 0.2
+  },
+  "max_prior_delta_per_run": 0.03,
+  "integration": {
+    "weaver_latest_path": "state/autonomy/weaver/latest.json",
+    "mirror_latest_path": "state/autonomy/mirror_organ/latest.json"
+  }
+}

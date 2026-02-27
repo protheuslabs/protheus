@@ -47,6 +47,8 @@ function run() {
   const regimePath = path.join(tmpRoot, 'state', 'autonomy', 'fractal', 'regime', 'latest.json');
   const mirrorPath = path.join(tmpRoot, 'state', 'autonomy', 'mirror_organ', 'latest.json');
   const autopausePath = path.join(tmpRoot, 'state', 'autonomy', 'budget_autopause.json');
+  const ethicalPolicyPath = path.join(tmpRoot, 'config', 'ethical_reasoning_policy.json');
+  const ethicalStateDir = path.join(tmpRoot, 'state', 'autonomy', 'ethical_reasoning');
   const historyPath = path.join(stateDir, 'history.jsonl');
   const activeOverlayPath = path.join(stateDir, 'strategy_overlay.json');
   const axisLedgerPath = path.join(stateDir, 'value_axis_switches.jsonl');
@@ -166,6 +168,29 @@ function run() {
     active: true,
     until_ms: Date.now() + (10 * 60 * 1000)
   });
+  writeJson(ethicalPolicyPath, {
+    version: '1.0-test',
+    enabled: true,
+    shadow_only: true,
+    thresholds: {
+      monoculture_warn_share: 0.6,
+      high_impact_share: 0.7,
+      maturity_min_for_prior_updates: 0.4,
+      mirror_pressure_warn: 0.55
+    },
+    value_priors: {
+      adaptive_value: 0.2,
+      user_value: 0.2,
+      quality: 0.2,
+      learning: 0.2,
+      delivery: 0.2
+    },
+    max_prior_delta_per_run: 0.03,
+    integration: {
+      weaver_latest_path: path.join(stateDir, 'latest.json'),
+      mirror_latest_path: mirrorPath
+    }
+  });
 
   appendJsonl(historyPath, Array.from({ length: 12 }).map((_, i) => ({
     ts: new Date(Date.now() - ((i + 1) * 60 * 60 * 1000)).toISOString(),
@@ -189,7 +214,9 @@ function run() {
     WEAVER_ACTIVE_OVERLAY_PATH: activeOverlayPath,
     WEAVER_REGIME_LATEST_PATH: regimePath,
     WEAVER_MIRROR_LATEST_PATH: mirrorPath,
-    WEAVER_AUTOPAUSE_PATH: autopausePath
+    WEAVER_AUTOPAUSE_PATH: autopausePath,
+    ETHICAL_REASONING_POLICY_PATH: ethicalPolicyPath,
+    ETHICAL_REASONING_STATE_DIR: ethicalStateDir
   };
 
   const run1 = runNode(scriptPath, [
@@ -218,6 +245,11 @@ function run() {
     'monoculture guard should trigger on revenue dominance'
   );
   assert.strictEqual(out1.veto_blocked, false, 'constitution/identity veto should not block healthy run');
+  assert.ok(out1.ethical_reasoning && out1.ethical_reasoning.enabled === true, 'ethical reasoning should be attached');
+  assert.ok(
+    out1.ethical_reasoning.summary && typeof out1.ethical_reasoning.summary.top_metric_id === 'string',
+    'ethical summary should include top metric'
+  );
   assert.ok(
     out1.value_context
       && out1.value_context.creative_route

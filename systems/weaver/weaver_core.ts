@@ -18,6 +18,12 @@ const { loadActiveStrategy } = require('../../lib/strategy_resolver');
 const { buildMetricSchema } = require('./metric_schema');
 const { arbitrateMetrics, buildStrategyOverlayFromAllocation } = require('./arbitration_engine');
 const { applyMonocultureGuard } = require('./monoculture_guard');
+let runEthicalReasoning = null;
+try {
+  ({ runEthicalReasoning } = require('../autonomy/ethical_reasoning_organ.js'));
+} catch {
+  runEthicalReasoning = null;
+}
 let decideBrainRoute = null;
 try {
   ({ decideBrainRoute } = require('../dual_brain/coordinator.js'));
@@ -1211,6 +1217,51 @@ function runWeaver(dateStr: string, opts: AnyObj = {}) {
       dormant_count: Number(pathwayState.dormant_count || 0),
       dormant: Array.isArray(pathwayState.dormant) ? pathwayState.dormant.slice(0, 12) : []
     });
+  }
+
+  if (typeof runEthicalReasoning === 'function') {
+    try {
+      const ethicalOut = runEthicalReasoning({
+        ts,
+        run_id: runId,
+        objective_id: objectiveId,
+        maturity_score: clampNumber((regimeConfidence + (1 - mirrorPressure)) / 2, 0, 1, 0.5),
+        weaver_payload: payload,
+        mirror_payload: mirror
+      }, {
+        persist: true
+      });
+      if (ethicalOut && ethicalOut.ok === true) {
+        payload.ethical_reasoning = {
+          enabled: true,
+          summary: ethicalOut.summary || {},
+          reason_codes: Array.isArray(ethicalOut.reason_codes) ? ethicalOut.reason_codes.slice(0, 8) : [],
+          correction_actions: Array.isArray(ethicalOut.correction_actions)
+            ? ethicalOut.correction_actions.slice(0, 8)
+            : [],
+          tradeoff_receipts: Array.isArray(ethicalOut.tradeoff_receipts)
+            ? ethicalOut.tradeoff_receipts.slice(0, 8)
+            : []
+        };
+        if (Array.isArray(payload.ethical_reasoning.reason_codes) && payload.ethical_reasoning.reason_codes.length) {
+          emitEvent(paths, policy, 'ethical_reasoning', {
+            run_id: runId,
+            date: dateStr,
+            objective_id: objectiveId,
+            reason_codes: payload.ethical_reasoning.reason_codes
+          });
+        }
+      }
+    } catch (err) {
+      payload.ethical_reasoning = {
+        enabled: false,
+        error: cleanText(err && err.message ? err.message : err || 'ethical_reasoning_failed', 180)
+      };
+    }
+  }
+  if (payload.ethical_reasoning) {
+    writeJsonAtomic(runPath, payload);
+    writeJsonAtomic(paths.latest_path, payload);
   }
 
   emitIdeProjection(paths, policy, {
