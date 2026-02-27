@@ -106,6 +106,37 @@
       "legendary": 0.65
     }
   },
+  "recipe_release": {
+    "enabled": true,
+    "fail_closed": true,
+    "require_signature": true,
+    "max_manifest_age_hours": 336,
+    "key_env": "AUTOTEST_DOCTOR_RECIPE_KEY",
+    "manifest_path": "state/ops/autotest_doctor/recipe_release_manifest.json",
+    "state_path": "state/ops/autotest_doctor/recipe_release_state.json",
+    "allowed_channels": [
+      "stable",
+      "canary"
+    ]
+  },
+  "recipe_rollout": {
+    "enabled": true,
+    "default_stage": "shadow",
+    "canary_fraction": 0.35,
+    "max_canary_actions_per_run": 1,
+    "min_successes_for_live": 3,
+    "max_rollbacks_before_demote": 1,
+    "require_recent_verification": true,
+    "verification_max_age_hours": 168,
+    "state_path": "state/ops/autotest_doctor/recipe_rollout_state.json",
+    "verifier_state_path": "state/ops/autotest_doctor/recipe_verifier_state.json"
+  },
+  "watchdog": {
+    "enabled": true,
+    "fail_closed": true,
+    "force_shadow_on_block": true,
+    "block_file_path": "state/ops/autotest_doctor/watchdog_block.json"
+  },
   "telemetry": {
     "emit_system_health": true,
     "max_history_events": 5000

@@ -121,12 +121,12 @@
   },
   "budget_policy": {
     "daily_runs_cap": 6,
-    "daily_token_cap": 6000,
+    "daily_token_cap": 12000,
     "max_tokens_per_action": 2200,
     "token_cost_per_1k": 0.003,
-    "daily_usd_cap": 5.25,
+    "daily_usd_cap": 10.5,
     "per_action_avg_usd_cap": 1.25,
-    "monthly_usd_allocation": 90,
+    "monthly_usd_allocation": 180,
     "monthly_credits_floor_pct": 0.15,
     "min_projected_tokens_for_burn_check": 800,
     "per_capability_caps": {

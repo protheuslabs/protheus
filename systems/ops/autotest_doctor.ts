@@ -184,6 +184,32 @@ function sha16(seed: string) {
   return crypto.createHash('sha256').update(String(seed || '')).digest('hex').slice(0, 16);
 }
 
+function stableStringify(value: unknown): string {
+  if (value == null || typeof value !== 'object') return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map((row) => stableStringify(row)).join(',')}]`;
+  const obj = value as AnyObj;
+  const keys = Object.keys(obj).sort();
+  return `{${keys.map((key) => `${JSON.stringify(key)}:${stableStringify(obj[key])}`).join(',')}}`;
+}
+
+function hmacHex(value: unknown, key: string) {
+  return crypto
+    .createHmac('sha256', String(key || ''))
+    .update(stableStringify(value))
+    .digest('hex');
+}
+
+function timingSafeEq(a: unknown, b: unknown) {
+  const aa = Buffer.from(String(a || ''), 'utf8');
+  const bb = Buffer.from(String(b || ''), 'utf8');
+  if (aa.length !== bb.length) return false;
+  try {
+    return crypto.timingSafeEqual(aa, bb);
+  } catch {
+    return false;
+  }
+}
+
 function stableId(prefix: string, seed: string) {
   return `${prefix}_${sha16(seed)}`;
 }
@@ -301,6 +327,34 @@ function defaultPolicy() {
         legendary: 0.65
       }
     },
+    recipe_release: {
+      enabled: false,
+      fail_closed: true,
+      require_signature: true,
+      max_manifest_age_hours: 14 * 24,
+      key_env: 'AUTOTEST_DOCTOR_RECIPE_KEY',
+      manifest_path: 'state/ops/autotest_doctor/recipe_release_manifest.json',
+      state_path: 'state/ops/autotest_doctor/recipe_release_state.json',
+      allowed_channels: ['stable', 'canary']
+    },
+    recipe_rollout: {
+      enabled: false,
+      default_stage: 'shadow',
+      canary_fraction: 0.35,
+      max_canary_actions_per_run: 1,
+      min_successes_for_live: 3,
+      max_rollbacks_before_demote: 1,
+      require_recent_verification: true,
+      verification_max_age_hours: 7 * 24,
+      state_path: 'state/ops/autotest_doctor/recipe_rollout_state.json',
+      verifier_state_path: 'state/ops/autotest_doctor/recipe_verifier_state.json'
+    },
+    watchdog: {
+      enabled: false,
+      fail_closed: true,
+      force_shadow_on_block: true,
+      block_file_path: 'state/ops/autotest_doctor/watchdog_block.json'
+    },
     telemetry: {
       emit_system_health: true,
       max_history_events: 5000
@@ -312,6 +366,12 @@ function normalizeTokenList(v: unknown, maxLen = 120) {
   return (Array.isArray(v) ? v : [])
     .map((row) => normalizeToken(row, maxLen))
     .filter(Boolean);
+}
+
+function normalizeRecipeStage(v: unknown, fallback = 'shadow') {
+  const raw = normalizeToken(v, 24);
+  if (raw === 'shadow' || raw === 'canary' || raw === 'live') return raw;
+  return normalizeToken(fallback, 24) || 'shadow';
 }
 
 function normalizeRecipe(row: AnyObj, fallback: AnyObj) {
@@ -346,6 +406,15 @@ function loadPolicy(policyPath: string) {
     : {};
   const quarantineMaturity = quarantine && quarantine.maturity_multiplier && typeof quarantine.maturity_multiplier === 'object'
     ? quarantine.maturity_multiplier
+    : {};
+  const recipeRelease = raw && raw.recipe_release && typeof raw.recipe_release === 'object'
+    ? raw.recipe_release
+    : {};
+  const recipeRollout = raw && raw.recipe_rollout && typeof raw.recipe_rollout === 'object'
+    ? raw.recipe_rollout
+    : {};
+  const watchdogRaw = raw && raw.watchdog && typeof raw.watchdog === 'object'
+    ? raw.watchdog
     : {};
   const telemetry = raw && raw.telemetry && typeof raw.telemetry === 'object' ? raw.telemetry : {};
 
@@ -471,6 +540,74 @@ function loadPolicy(policyPath: string) {
         legendary: clampNumber(quarantineMaturity.legendary, 0.1, 8, base.research_quarantine.maturity_multiplier.legendary)
       }
     },
+    recipe_release: {
+      enabled: toBool(recipeRelease.enabled, base.recipe_release.enabled),
+      fail_closed: toBool(recipeRelease.fail_closed, base.recipe_release.fail_closed),
+      require_signature: toBool(recipeRelease.require_signature, base.recipe_release.require_signature),
+      max_manifest_age_hours: clampInt(
+        recipeRelease.max_manifest_age_hours,
+        1,
+        24 * 365,
+        base.recipe_release.max_manifest_age_hours
+      ),
+      key_env: cleanText(recipeRelease.key_env || base.recipe_release.key_env, 80) || base.recipe_release.key_env,
+      manifest_path: cleanText(recipeRelease.manifest_path || base.recipe_release.manifest_path, 260) || base.recipe_release.manifest_path,
+      state_path: cleanText(recipeRelease.state_path || base.recipe_release.state_path, 260) || base.recipe_release.state_path,
+      allowed_channels: normalizeTokenList(
+        Array.isArray(recipeRelease.allowed_channels)
+          ? recipeRelease.allowed_channels
+          : base.recipe_release.allowed_channels,
+        40
+      )
+    },
+    recipe_rollout: {
+      enabled: toBool(recipeRollout.enabled, base.recipe_rollout.enabled),
+      default_stage: normalizeRecipeStage(recipeRollout.default_stage || base.recipe_rollout.default_stage, base.recipe_rollout.default_stage),
+      canary_fraction: clampNumber(recipeRollout.canary_fraction, 0, 1, base.recipe_rollout.canary_fraction),
+      max_canary_actions_per_run: clampInt(
+        recipeRollout.max_canary_actions_per_run,
+        1,
+        100,
+        base.recipe_rollout.max_canary_actions_per_run
+      ),
+      min_successes_for_live: clampInt(
+        recipeRollout.min_successes_for_live,
+        1,
+        10000,
+        base.recipe_rollout.min_successes_for_live
+      ),
+      max_rollbacks_before_demote: clampInt(
+        recipeRollout.max_rollbacks_before_demote,
+        0,
+        10000,
+        base.recipe_rollout.max_rollbacks_before_demote
+      ),
+      require_recent_verification: toBool(
+        recipeRollout.require_recent_verification,
+        base.recipe_rollout.require_recent_verification
+      ),
+      verification_max_age_hours: clampInt(
+        recipeRollout.verification_max_age_hours,
+        1,
+        24 * 365,
+        base.recipe_rollout.verification_max_age_hours
+      ),
+      state_path: cleanText(recipeRollout.state_path || base.recipe_rollout.state_path, 260) || base.recipe_rollout.state_path,
+      verifier_state_path: cleanText(
+        recipeRollout.verifier_state_path || base.recipe_rollout.verifier_state_path,
+        260
+      ) || base.recipe_rollout.verifier_state_path
+    },
+    watchdog: {
+      enabled: toBool(watchdogRaw.enabled, base.watchdog.enabled),
+      fail_closed: toBool(watchdogRaw.fail_closed, base.watchdog.fail_closed),
+      force_shadow_on_block: toBool(
+        watchdogRaw.force_shadow_on_block,
+        base.watchdog.force_shadow_on_block
+      ),
+      block_file_path: cleanText(watchdogRaw.block_file_path || base.watchdog.block_file_path, 260)
+        || base.watchdog.block_file_path
+    },
     telemetry: {
       emit_system_health: toBool(telemetry.emit_system_health, base.telemetry.emit_system_health),
       max_history_events: clampInt(telemetry.max_history_events, 100, 200000, base.telemetry.max_history_events)
@@ -516,6 +653,8 @@ function runtimePaths(policyPath: string) {
     research_index_path: path.join(researchDir, 'index.jsonl'),
     research_broken_dir: path.join(researchDir, 'broken_pieces'),
     research_unknown_dir: path.join(researchDir, 'unknown_signatures'),
+    broken_lab_queue_path: path.join(stateDir, 'broken_lab_queue.jsonl'),
+    broken_lab_clusters_path: path.join(stateDir, 'broken_lab_clusters.json'),
     maturity_state_path: process.env.AUTOTEST_DOCTOR_MATURITY_PATH
       ? path.resolve(process.env.AUTOTEST_DOCTOR_MATURITY_PATH)
       : DEFAULT_INVERSION_MATURITY_PATH,
@@ -525,10 +664,351 @@ function runtimePaths(policyPath: string) {
     trit_beliefs_dir: path.join(stateDir, 'trit_beliefs'),
     trit_beliefs_latest_path: path.join(stateDir, 'trit_beliefs', 'latest.json'),
     trit_beliefs_history_path: path.join(stateDir, 'trit_beliefs', 'history.jsonl'),
+    recipe_release_manifest_path: path.join(stateDir, 'recipe_release_manifest.json'),
+    recipe_release_state_path: path.join(stateDir, 'recipe_release_state.json'),
+    recipe_rollout_state_path: path.join(stateDir, 'recipe_rollout_state.json'),
+    recipe_verifier_state_path: path.join(stateDir, 'recipe_verifier_state.json'),
+    watchdog_block_file_path: path.join(stateDir, 'watchdog_block.json'),
     trit_shadow_reports_history_path: process.env.AUTOTEST_DOCTOR_TRIT_SHADOW_HISTORY_PATH
       ? path.resolve(process.env.AUTOTEST_DOCTOR_TRIT_SHADOW_HISTORY_PATH)
       : DEFAULT_TRIT_SHADOW_REPORTS_HISTORY_PATH
   };
+}
+
+function resolvePolicyPath(rawPath: unknown, fallbackAbsPath: string) {
+  const s = cleanText(rawPath, 260);
+  if (!s) return fallbackAbsPath;
+  return path.isAbsolute(s) ? s : path.join(ROOT, s);
+}
+
+function sha256Hex(value: unknown) {
+  return crypto.createHash('sha256').update(stableStringify(value)).digest('hex');
+}
+
+function defaultRecipeReleaseState() {
+  return {
+    version: '1.0',
+    channels: {}
+  };
+}
+
+function loadRecipeReleaseState(filePath: string) {
+  const raw = readJson(filePath, {});
+  const base = defaultRecipeReleaseState();
+  return {
+    version: cleanText(raw.version || base.version, 24) || base.version,
+    channels: raw.channels && typeof raw.channels === 'object' ? raw.channels : {}
+  };
+}
+
+function verifyRecipeRelease(policy: AnyObj, paths: AnyObj) {
+  const cfg = policy && policy.recipe_release && typeof policy.recipe_release === 'object'
+    ? policy.recipe_release
+    : {};
+  const manifestPath = resolvePolicyPath(cfg.manifest_path, paths.recipe_release_manifest_path);
+  const statePath = resolvePolicyPath(cfg.state_path, paths.recipe_release_state_path);
+  const out: AnyObj = {
+    enabled: cfg.enabled === true,
+    valid: true,
+    reason: 'release_gate_disabled',
+    manifest_path: relPath(manifestPath),
+    state_path: relPath(statePath),
+    channel: null,
+    release_seq: null,
+    recipe_digest_expected: sha256Hex(Array.isArray(policy && policy.recipes) ? policy.recipes : []),
+    recipe_digest_manifest: null
+  };
+  if (cfg.enabled !== true) return out;
+
+  const manifest = readJson(manifestPath, null);
+  if (!manifest || typeof manifest !== 'object') {
+    out.valid = false;
+    out.reason = 'recipe_manifest_missing';
+    return out;
+  }
+  const channel = normalizeToken(manifest.channel || 'stable', 40) || 'stable';
+  out.channel = channel;
+  out.release_seq = Number.isFinite(Number(manifest.release_seq)) ? Number(manifest.release_seq) : 0;
+  const allowedChannels = Array.isArray(cfg.allowed_channels) ? cfg.allowed_channels : [];
+  if (allowedChannels.length > 0 && !allowedChannels.includes(channel)) {
+    out.valid = false;
+    out.reason = 'recipe_channel_not_allowed';
+    return out;
+  }
+
+  const digestManifest = cleanText(manifest.recipe_digest || manifest.recipes_digest || '', 128);
+  out.recipe_digest_manifest = digestManifest || null;
+  if (!digestManifest || digestManifest !== out.recipe_digest_expected) {
+    out.valid = false;
+    out.reason = 'recipe_manifest_digest_mismatch';
+    return out;
+  }
+
+  const generatedAtMs = parseIsoMs(manifest.generated_at || manifest.ts);
+  const maxAgeHours = Number(cfg.max_manifest_age_hours || 0);
+  if (!(generatedAtMs > 0) || !Number.isFinite(maxAgeHours) || maxAgeHours <= 0) {
+    out.valid = false;
+    out.reason = 'recipe_manifest_missing_timestamp';
+    return out;
+  }
+  const ageMs = Date.now() - Number(generatedAtMs);
+  if (ageMs > maxAgeHours * 60 * 60 * 1000) {
+    out.valid = false;
+    out.reason = 'recipe_manifest_stale';
+    out.age_hours = Number((ageMs / (60 * 60 * 1000)).toFixed(3));
+    return out;
+  }
+  out.age_hours = Number((Math.max(0, ageMs) / (60 * 60 * 1000)).toFixed(3));
+
+  if (cfg.require_signature === true) {
+    const keyEnv = cleanText(cfg.key_env || '', 80) || 'AUTOTEST_DOCTOR_RECIPE_KEY';
+    const key = String(process.env[keyEnv] || '').trim();
+    if (!key) {
+      out.valid = false;
+      out.reason = 'recipe_manifest_key_missing';
+      return out;
+    }
+    const signature = cleanText(manifest.signature || '', 128);
+    if (!signature) {
+      out.valid = false;
+      out.reason = 'recipe_manifest_signature_missing';
+      return out;
+    }
+    const payload = { ...manifest };
+    delete payload.signature;
+    const expectedSig = hmacHex(payload, key);
+    if (!timingSafeEq(signature, expectedSig)) {
+      out.valid = false;
+      out.reason = 'recipe_manifest_signature_invalid';
+      return out;
+    }
+  }
+
+  const state = loadRecipeReleaseState(statePath);
+  const channelStateRaw = state.channels[channel] && typeof state.channels[channel] === 'object'
+    ? state.channels[channel]
+    : {};
+  const prevSeq = Number(channelStateRaw.max_release_seq || 0);
+  const nextSeq = Number.isFinite(Number(out.release_seq)) ? Number(out.release_seq) : 0;
+  if (nextSeq < prevSeq) {
+    out.valid = false;
+    out.reason = 'recipe_manifest_replay_detected';
+    out.previous_release_seq = prevSeq;
+    return out;
+  }
+  state.channels[channel] = {
+    max_release_seq: Math.max(prevSeq, nextSeq),
+    updated_at: nowIso()
+  };
+  writeJsonAtomic(statePath, state);
+  out.reason = 'recipe_manifest_verified';
+  return out;
+}
+
+function defaultRecipeRolloutState() {
+  return {
+    version: '1.0',
+    updated_at: null,
+    recipes: {}
+  };
+}
+
+function loadRecipeRolloutState(filePath: string) {
+  const raw = readJson(filePath, {});
+  const base = defaultRecipeRolloutState();
+  return {
+    version: cleanText(raw.version || base.version, 24) || base.version,
+    updated_at: cleanText(raw.updated_at || '', 64) || null,
+    recipes: raw.recipes && typeof raw.recipes === 'object' ? raw.recipes : {}
+  };
+}
+
+function ensureRecipeRolloutEntry(state: AnyObj, recipeId: string, defaultStage = 'shadow') {
+  if (!state.recipes || typeof state.recipes !== 'object') state.recipes = {};
+  if (!state.recipes[recipeId] || typeof state.recipes[recipeId] !== 'object') {
+    state.recipes[recipeId] = {
+      stage: normalizeRecipeStage(defaultStage, 'shadow'),
+      attempts: 0,
+      successes: 0,
+      rollbacks: 0,
+      last_status: null,
+      last_status_ts: null,
+      last_transition: null
+    };
+  }
+  const row = state.recipes[recipeId];
+  row.stage = normalizeRecipeStage(row.stage, defaultStage);
+  row.attempts = clampInt(row.attempts, 0, 100000000, 0);
+  row.successes = clampInt(row.successes, 0, 100000000, 0);
+  row.rollbacks = clampInt(row.rollbacks, 0, 100000000, 0);
+  row.last_status = cleanText(row.last_status || '', 48) || null;
+  row.last_status_ts = cleanText(row.last_status_ts || '', 64) || null;
+  row.last_transition = cleanText(row.last_transition || '', 120) || null;
+  return row;
+}
+
+function loadRecipeVerifierState(filePath: string) {
+  const raw = readJson(filePath, {});
+  return {
+    version: cleanText(raw.version || '1.0', 24) || '1.0',
+    updated_at: cleanText(raw.updated_at || '', 64) || null,
+    recipes: raw.recipes && typeof raw.recipes === 'object' ? raw.recipes : {}
+  };
+}
+
+function canarySampleDecision(signatureId: string, recipeId: string, fraction: number) {
+  const clampFraction = clampNumber(fraction, 0, 1, 0);
+  if (clampFraction <= 0) return { sampled: false, unit: 1 };
+  if (clampFraction >= 1) return { sampled: true, unit: 0 };
+  const digest = crypto.createHash('sha256').update(`${signatureId}|${recipeId}`, 'utf8').digest('hex').slice(0, 8);
+  const unit = Number.parseInt(digest, 16) / 0xffffffff;
+  return {
+    sampled: unit <= clampFraction,
+    unit: Number(unit.toFixed(6))
+  };
+}
+
+function evaluateRecipeExecutionGate(
+  policy: AnyObj,
+  recipe: AnyObj,
+  signatureId: string,
+  rolloutEntry: AnyObj,
+  verifierEntry: AnyObj,
+  canaryActionsPlanned: number
+) {
+  const cfg = policy && policy.recipe_rollout && typeof policy.recipe_rollout === 'object'
+    ? policy.recipe_rollout
+    : {};
+  const out: AnyObj = {
+    stage: normalizeRecipeStage(rolloutEntry && rolloutEntry.stage || cfg.default_stage || 'shadow', 'shadow'),
+    allow_apply: true,
+    reason: 'allow',
+    verification_ok: true,
+    verification_age_hours: null,
+    sampled: true,
+    sample_unit: 0
+  };
+  if (cfg.enabled !== true) return out;
+
+  if (cfg.require_recent_verification === true) {
+    const ok = !!(verifierEntry && verifierEntry.ok === true);
+    const verifiedMs = parseIsoMs(verifierEntry && verifierEntry.verified_at);
+    const ageHours = verifiedMs > 0 ? (Date.now() - Number(verifiedMs)) / (60 * 60 * 1000) : Number.POSITIVE_INFINITY;
+    const maxAgeHours = Number(cfg.verification_max_age_hours || 0);
+    out.verification_ok = ok && Number.isFinite(ageHours) && ageHours <= maxAgeHours;
+    out.verification_age_hours = Number.isFinite(ageHours) ? Number(ageHours.toFixed(3)) : null;
+    if (!out.verification_ok) {
+      out.allow_apply = false;
+      out.reason = ok ? 'recipe_verification_stale' : 'recipe_verification_missing';
+      return out;
+    }
+  }
+
+  if (out.stage === 'shadow') {
+    if (out.verification_ok) {
+      out.stage = 'canary';
+      if (rolloutEntry && typeof rolloutEntry === 'object') {
+        rolloutEntry.stage = 'canary';
+        rolloutEntry.last_transition = 'promote_shadow_to_canary';
+      }
+    } else {
+      out.allow_apply = false;
+      out.reason = 'recipe_stage_shadow';
+      return out;
+    }
+  }
+
+  if (out.stage === 'canary') {
+    const maxCanary = clampInt(cfg.max_canary_actions_per_run, 1, 10000, 1);
+    if (canaryActionsPlanned >= maxCanary) {
+      out.allow_apply = false;
+      out.reason = 'recipe_canary_run_limit';
+      return out;
+    }
+    const sample = canarySampleDecision(signatureId, String(recipe && recipe.id || ''), Number(cfg.canary_fraction || 0));
+    out.sampled = sample.sampled;
+    out.sample_unit = sample.unit;
+    if (!sample.sampled) {
+      out.allow_apply = false;
+      out.reason = 'recipe_canary_not_sampled';
+      return out;
+    }
+  }
+
+  return out;
+}
+
+function recordRecipeOutcome(policy: AnyObj, rolloutEntry: AnyObj, status: string) {
+  if (!rolloutEntry || typeof rolloutEntry !== 'object') return null;
+  const cfg = policy && policy.recipe_rollout && typeof policy.recipe_rollout === 'object'
+    ? policy.recipe_rollout
+    : {};
+  rolloutEntry.attempts = clampInt(Number(rolloutEntry.attempts || 0) + 1, 0, 100000000, 0);
+  if (status === 'applied') {
+    rolloutEntry.successes = clampInt(Number(rolloutEntry.successes || 0) + 1, 0, 100000000, 0);
+  } else if (status === 'rolled_back') {
+    rolloutEntry.rollbacks = clampInt(Number(rolloutEntry.rollbacks || 0) + 1, 0, 100000000, 0);
+  }
+  rolloutEntry.last_status = cleanText(status, 48) || null;
+  rolloutEntry.last_status_ts = nowIso();
+
+  const stage = normalizeRecipeStage(rolloutEntry.stage || cfg.default_stage || 'shadow', 'shadow');
+  if (stage === 'canary') {
+    const minSuccess = clampInt(cfg.min_successes_for_live, 1, 100000, 3);
+    if (Number(rolloutEntry.successes || 0) >= minSuccess && Number(rolloutEntry.rollbacks || 0) === 0) {
+      rolloutEntry.stage = 'live';
+      rolloutEntry.last_transition = 'promote_canary_to_live';
+    }
+  } else if (stage === 'live') {
+    const maxRollbacks = clampInt(cfg.max_rollbacks_before_demote, 0, 100000, 1);
+    if (Number(rolloutEntry.rollbacks || 0) > maxRollbacks) {
+      rolloutEntry.stage = 'canary';
+      rolloutEntry.last_transition = 'demote_live_to_canary';
+    }
+  }
+  return rolloutEntry;
+}
+
+function readWatchdogBlock(policy: AnyObj, paths: AnyObj) {
+  const cfg = policy && policy.watchdog && typeof policy.watchdog === 'object'
+    ? policy.watchdog
+    : {};
+  const filePath = resolvePolicyPath(cfg.block_file_path, paths.watchdog_block_file_path);
+  if (!(cfg.enabled === true) || !fs.existsSync(filePath)) {
+    return {
+      enabled: cfg.enabled === true,
+      blocked: false,
+      reason: null,
+      block_path: relPath(filePath)
+    };
+  }
+  const row = readJson(filePath, {});
+  const blocked = !(row && row.active === false);
+  return {
+    enabled: true,
+    blocked,
+    reason: cleanText(row && row.reason || 'watchdog_blocked', 220) || 'watchdog_blocked',
+    block_path: relPath(filePath),
+    ts: cleanText(row && row.ts || '', 64) || null,
+    details: row && row.details && typeof row.details === 'object' ? row.details : null
+  };
+}
+
+function enqueueBrokenPieceLab(paths: AnyObj, dateStr: string, signature: AnyObj, context: AnyObj, brokenPiecePath: string, researchItemPath: string | null) {
+  const row = {
+    ts: nowIso(),
+    type: 'broken_piece_queue_item',
+    date: dateStr,
+    signature_id: String(signature && signature.signature_id || ''),
+    kind: String(signature && signature.kind || ''),
+    test_id: cleanText(signature && signature.test_id || '', 120) || null,
+    test_path: cleanText(signature && signature.test_path || '', 260) || null,
+    rollback_reason: cleanText(context && context.rollback && context.rollback.reason || '', 180) || null,
+    recipe_id: cleanText(context && context.recipe_id || '', 120) || null,
+    broken_piece_path: cleanText(brokenPiecePath || '', 260) || null,
+    research_item_path: cleanText(researchItemPath || '', 260) || null
+  };
+  appendJsonl(paths.broken_lab_queue_path, row);
 }
 
 function appendSystemHealthEvent(paths: AnyObj, policy: AnyObj, row: AnyObj) {
@@ -1475,8 +1955,15 @@ function runDoctor(dateArg: string, args: AnyObj) {
   ensureDir(paths.research_broken_dir);
   ensureDir(paths.research_unknown_dir);
   ensureDir(path.dirname(paths.research_index_path));
+  ensureDir(path.dirname(paths.broken_lab_queue_path));
+  ensureDir(path.dirname(paths.broken_lab_clusters_path));
   ensureDir(paths.first_principles_dir);
   ensureDir(paths.trit_beliefs_dir);
+  ensureDir(path.dirname(paths.recipe_release_manifest_path));
+  ensureDir(path.dirname(paths.recipe_release_state_path));
+  ensureDir(path.dirname(paths.recipe_rollout_state_path));
+  ensureDir(path.dirname(paths.recipe_verifier_state_path));
+  ensureDir(path.dirname(paths.watchdog_block_file_path));
   ensureDir(path.dirname(paths.trit_shadow_reports_history_path));
 
   const runId = `doctor_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
@@ -1490,10 +1977,23 @@ function runDoctor(dateArg: string, args: AnyObj) {
   pruneHistory(state, Number(policy.kill_switch.window_hours || 24), Number(policy.telemetry.max_history_events || 5000));
 
   const applyRequested = toBool(args.apply, false);
-  const apply = applyRequested && policy.shadow_mode !== true;
+  let apply = applyRequested && policy.shadow_mode !== true;
   const force = toBool(args.force, false);
   const resetKillSwitch = toBool(args['reset-kill-switch'], false);
   const maxActions = clampInt(args['max-actions'], 1, 100, Number(policy.gating.max_actions_per_run || 2));
+
+  const recipeReleaseGate = verifyRecipeRelease(policy, paths);
+  const watchdogState = readWatchdogBlock(policy, paths);
+  const recipeRolloutStatePath = resolvePolicyPath(
+    policy && policy.recipe_rollout && policy.recipe_rollout.state_path,
+    paths.recipe_rollout_state_path
+  );
+  const recipeVerifierStatePath = resolvePolicyPath(
+    policy && policy.recipe_rollout && policy.recipe_rollout.verifier_state_path,
+    paths.recipe_verifier_state_path
+  );
+  const recipeRolloutState = loadRecipeRolloutState(recipeRolloutStatePath);
+  const recipeVerifierState = loadRecipeVerifierState(recipeVerifierStatePath);
 
   if (resetKillSwitch) {
     state.kill_switch = {
@@ -1511,6 +2011,29 @@ function runDoctor(dateArg: string, args: AnyObj) {
   if (policy.enabled !== true) skipReasons.push('doctor_disabled');
   if (!sleepOk && force !== true) skipReasons.push('outside_sleep_window');
   if (state.kill_switch && state.kill_switch.engaged === true && force !== true) skipReasons.push('kill_switch_engaged');
+  if (
+    recipeReleaseGate.valid !== true
+    && applyRequested
+    && policy
+    && policy.recipe_release
+    && policy.recipe_release.fail_closed === true
+    && force !== true
+  ) {
+    skipReasons.push('recipe_release_gate_failed');
+  }
+  if (
+    watchdogState.blocked === true
+    && applyRequested
+    && policy
+    && policy.watchdog
+    && policy.watchdog.fail_closed === true
+    && force !== true
+  ) {
+    skipReasons.push('watchdog_blocked');
+  }
+  if (watchdogState.blocked === true && policy && policy.watchdog && policy.watchdog.force_shadow_on_block === true) {
+    apply = false;
+  }
 
   const latestAutotest = readAutotestLatest(paths);
   const runObj = loadLatestAutotestRun(paths, dateArg || 'latest');
@@ -1587,6 +2110,8 @@ function runDoctor(dateArg: string, args: AnyObj) {
   let unknownSignatureCount = 0;
   let knownSignatureCandidates = 0;
   let knownSignatureAutoHandled = 0;
+  let canaryActionsPlanned = 0;
+  let recipeGateBlocks = 0;
   const approvalSignal = getApprovalSignal(args, policy);
 
   if (!skipReasons.length || force === true) {
@@ -1663,6 +2188,40 @@ function runDoctor(dateArg: string, args: AnyObj) {
         continue;
       }
       knownSignatureCandidates += 1;
+      const rolloutEntry = ensureRecipeRolloutEntry(
+        recipeRolloutState,
+        String(recipe.id || ''),
+        policy && policy.recipe_rollout && policy.recipe_rollout.default_stage
+          ? policy.recipe_rollout.default_stage
+          : 'shadow'
+      );
+      const verifierEntry = recipeVerifierState.recipes && typeof recipeVerifierState.recipes === 'object'
+        ? recipeVerifierState.recipes[String(recipe.id || '')]
+        : null;
+      const recipeGate = evaluateRecipeExecutionGate(
+        policy,
+        recipe,
+        sigId,
+        rolloutEntry,
+        verifierEntry,
+        canaryActionsPlanned
+      );
+      if (apply && recipeGate.allow_apply !== true) {
+        recipeGateBlocks += 1;
+        actions.push({
+          signature_id: sigId,
+          kind: failure.kind,
+          recipe_id: recipe.id,
+          recipe_stage: recipeGate.stage,
+          recipe_gate: recipeGate,
+          status: 'skipped',
+          reason: String(recipeGate.reason || 'recipe_gate_blocked')
+        });
+        continue;
+      }
+      if (apply && String(recipeGate.stage || '') === 'canary') {
+        canaryActionsPlanned += 1;
+      }
 
       const minFailures = Number(policy.gating.min_consecutive_failures || 2);
       if (Number(sigState.consecutive_failures || 0) < minFailures) {
@@ -1822,6 +2381,20 @@ function runDoctor(dateArg: string, args: AnyObj) {
             researchItemPath = String(bundle && bundle.research_item_path || '');
             if (brokenPiecePath) brokenPieces.push(brokenPiecePath);
             if (researchItemPath) researchItems.push(researchItemPath);
+            if (brokenPiecePath) {
+              enqueueBrokenPieceLab(
+                paths,
+                dateStr,
+                failure,
+                {
+                  run_id: runId,
+                  recipe_id: recipe.id,
+                  rollback: rollbackResult
+                },
+                brokenPiecePath,
+                researchItemPath
+              );
+            }
           }
           appendSystemHealthEvent(paths, policy, {
             severity: 'high',
@@ -1883,6 +2456,7 @@ function runDoctor(dateArg: string, args: AnyObj) {
       } else {
         sigState.last_outcome = 'shadow_planned';
       }
+      recordRecipeOutcome(policy, rolloutEntry, status);
 
       if (status === 'applied' || status === 'rolled_back' || status === 'shadow_planned') {
         knownSignatureAutoHandled += 1;
@@ -1892,6 +2466,8 @@ function runDoctor(dateArg: string, args: AnyObj) {
         signature_id: sigId,
         kind: failure.kind,
         recipe_id: recipe.id,
+        recipe_stage: recipeGate.stage,
+        recipe_gate: recipeGate,
         status,
         reason,
         apply,
@@ -1925,6 +2501,8 @@ function runDoctor(dateArg: string, args: AnyObj) {
 
   state.updated_at = nowIso();
   writeJsonAtomic(paths.state_path, state);
+  recipeRolloutState.updated_at = nowIso();
+  writeJsonAtomic(recipeRolloutStatePath, recipeRolloutState);
 
   const payload = {
     ok: true,
@@ -1936,6 +2514,8 @@ function runDoctor(dateArg: string, args: AnyObj) {
     apply_requested: applyRequested,
     shadow_mode_policy: policy.shadow_mode === true,
     force,
+    recipe_release_gate: recipeReleaseGate,
+    watchdog: watchdogState,
     sleep_window_ok: sleepOk,
     skipped: skipReasons.length > 0 && force !== true,
     skip_reasons: skipReasons,
@@ -1967,6 +2547,8 @@ function runDoctor(dateArg: string, args: AnyObj) {
         : 1
     ).toFixed(4)),
     rollbacks,
+    recipe_gate_blocks: recipeGateBlocks,
+    canary_actions_planned: canaryActionsPlanned,
     destructive_repair_blocks: destructiveBlocked,
     broken_pieces_stored: brokenPieces.length,
     broken_piece_paths: brokenPieces,
@@ -2000,6 +2582,8 @@ function runDoctor(dateArg: string, args: AnyObj) {
     known_signature_auto_handled: payload.known_signature_auto_handled,
     known_signature_auto_handle_rate: payload.known_signature_auto_handle_rate,
     rollbacks: payload.rollbacks,
+    recipe_gate_blocks: payload.recipe_gate_blocks,
+    canary_actions_planned: payload.canary_actions_planned,
     destructive_repair_blocks: payload.destructive_repair_blocks,
     broken_pieces_stored: payload.broken_pieces_stored,
     research_items_stored: payload.research_items_stored,
@@ -2045,6 +2629,8 @@ function runDoctor(dateArg: string, args: AnyObj) {
   payload.run_path = relPath(runPath);
   payload.latest_path = relPath(paths.latest_path);
   payload.state_path = relPath(paths.state_path);
+  payload.recipe_rollout_state_path = relPath(recipeRolloutStatePath);
+  payload.recipe_verifier_state_path = relPath(recipeVerifierStatePath);
   return payload;
 }
 

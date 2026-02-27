@@ -132,7 +132,7 @@ function defaultStrategyDraft(seed: AnyObj = {}): AnyObj {
     },
     budget_policy: {
       daily_runs_cap: 4,
-      daily_token_cap: 4000,
+      daily_token_cap: 8000,
       max_tokens_per_action: 1600
     },
     exploration_policy: {
