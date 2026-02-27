@@ -1,20 +1,29 @@
 {
   "version": "1.0",
   "enabled": true,
-  "min_targets": 10,
+  "min_targets": 20,
   "min_duplicate_reduction_ratio": 0.5,
   "targets": [
     "config/alert_transport_policy.json",
     "config/autonomy_slo_runbook_map.json",
     "config/autotest_doctor_policy.json",
+    "config/autotest_doctor_watchdog_policy.json",
     "config/autotest_policy.json",
+    "config/ci_baseline_guard_policy.json",
     "config/config_plane_pilot_policy.json",
+    "config/config_registry_policy.json",
     "config/execution_doctor_ga_policy.json",
+    "config/execution_reliability_slo_policy.json",
     "config/model_health_auto_recovery_policy.json",
     "config/operational_maturity_closure_policy.json",
+    "config/rm_progress_dashboard_policy.json",
+    "config/signal_slo_deadlock_breaker_policy.json",
     "config/system_visualizer_guard_policy.json",
+    "config/token_economics_engine_policy.json",
+    "config/weaver_policy.json",
     "config/workflow_execution_closure_policy.json",
-    "config/workflow_executor_policy.json"
+    "config/workflow_executor_policy.json",
+    "config/workflow_policy.json"
   ],
   "outputs": {
     "central_plane_path": "state/ops/config_plane/pilot_latest.json",
