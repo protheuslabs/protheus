@@ -90,6 +90,7 @@ function runGuard(opts = {}) {
   checks.push(runCmd('predictive_capacity_forecast_status', 'node', ['systems/ops/predictive_capacity_forecast.js', 'status']));
   checks.push(runCmd('neural_dormant_seed_check', 'node', ['systems/symbiosis/neural_dormant_seed.js', 'check', '--strict=1', '--profile=prod']));
   checks.push(runCmd('execution_sandbox_envelope_status', 'node', ['systems/security/execution_sandbox_envelope.js', 'status']));
+  checks.push(runCmd('organ_state_encryption_verify', 'node', ['systems/security/organ_state_encryption_plane.js', 'verify', '--strict=1']));
   checks.push(runCmd('profile_compatibility_gate', 'node', ['systems/ops/profile_compatibility_gate.js', 'run', '--strict=1']));
   checks.push(runCmd('schema_evolution_contract', 'node', ['systems/ops/schema_evolution_contract.js', 'run', '--strict=1', '--apply=0']));
   if (!options.skipTests) {

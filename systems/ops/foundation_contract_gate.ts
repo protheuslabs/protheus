@@ -102,6 +102,7 @@ function runGate() {
     'config/phone_seed_profile_policy.json',
     'config/predictive_capacity_forecast_policy.json',
     'config/neural_dormant_seed_policy.json',
+    'config/organ_state_encryption_policy.json',
     'config/crypto_agility_contract.json',
     'config/key_lifecycle_policy.json',
     'config/delegated_authority_policy.json',
@@ -143,6 +144,7 @@ function runGate() {
     'systems/primitives/runtime_scheduler.ts',
     'systems/security/formal_invariant_engine.ts',
     'systems/security/execution_sandbox_envelope.ts',
+    'systems/security/organ_state_encryption_plane.ts',
     'systems/security/key_lifecycle_governor.ts',
     'systems/security/delegated_authority_branching.ts',
     'systems/security/safety_resilience_guard.ts',
@@ -652,6 +654,33 @@ function runGate() {
     `default_host_fs_access=${sandboxPolicy.default_host_fs_access === true ? '1' : '0'} default_network_access=${sandboxPolicy.default_network_access === true ? '1' : '0'} require_approval_for_high_risk_actuation=${sandboxPolicy.require_approval_for_high_risk_actuation !== false ? '1' : '0'} high_risk=${sandboxHighRisk.join(',')}`
   );
   addCheck(
+    'organ_state_encryption:merge_guard_hook',
+    mergeGuardSrc.includes('organ_state_encryption_plane.js')
+      && mergeGuardSrc.includes('verify')
+      && mergeGuardSrc.includes('--strict=1'),
+    'merge_guard should enforce organ state encryption verify check'
+  );
+  const organEncPolicy = readJsonSafe(path.join(ROOT, 'config', 'organ_state_encryption_policy.json'), {});
+  const organEncLaneRoots = organEncPolicy.lane_roots && typeof organEncPolicy.lane_roots === 'object'
+    ? organEncPolicy.lane_roots
+    : {};
+  addCheck(
+    'organ_state_encryption:rotation_and_fail_closed',
+    organEncPolicy.unauthorized_fail_closed !== false
+      && Number(organEncPolicy.max_rotation_age_days || 0) >= 30
+      && organEncPolicy.crypto
+      && cleanText(organEncPolicy.crypto.cipher || '', 40).toLowerCase() === 'aes-256-gcm'
+      && cleanText(organEncPolicy.crypto.mac || '', 40).toLowerCase() === 'hmac-sha256',
+    `unauthorized_fail_closed=${organEncPolicy.unauthorized_fail_closed !== false ? '1' : '0'} max_rotation_age_days=${Number(organEncPolicy.max_rotation_age_days || 0)} cipher=${cleanText(organEncPolicy.crypto && organEncPolicy.crypto.cipher || '', 40) || 'missing'} mac=${cleanText(organEncPolicy.crypto && organEncPolicy.crypto.mac || '', 40) || 'missing'}`
+  );
+  addCheck(
+    'organ_state_encryption:lane_roots_present',
+    !!cleanText(organEncLaneRoots.state || '', 240)
+      && !!cleanText(organEncLaneRoots.memory || '', 240)
+      && !!cleanText(organEncLaneRoots.cryonics || '', 240),
+    `state=${cleanText(organEncLaneRoots.state || '', 120) || 'missing'} memory=${cleanText(organEncLaneRoots.memory || '', 120) || 'missing'} cryonics=${cleanText(organEncLaneRoots.cryonics || '', 120) || 'missing'}`
+  );
+  addCheck(
     'neural_dormant_seed:merge_guard_hook',
     mergeGuardSrc.includes('neural_dormant_seed.js')
       && mergeGuardSrc.includes('check')
@@ -920,6 +949,7 @@ function runGate() {
       && contractCheckSrc.includes('soc2_type2_track.js')
       && contractCheckSrc.includes('predictive_capacity_forecast.js')
       && contractCheckSrc.includes('execution_sandbox_envelope.js')
+      && contractCheckSrc.includes('organ_state_encryption_plane.js')
       && contractCheckSrc.includes('neural_dormant_seed.js')
       && contractCheckSrc.includes('client_relationship_manager.js')
       && contractCheckSrc.includes('capital_allocation_organ.js')

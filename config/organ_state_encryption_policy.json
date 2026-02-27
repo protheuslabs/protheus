@@ -1,0 +1,40 @@
+{
+  "schema_id": "organ_state_encryption_policy",
+  "schema_version": "1.0",
+  "enabled": true,
+  "unauthorized_fail_closed": true,
+  "max_rotation_age_days": 90,
+  "crypto": {
+    "cipher": "aes-256-gcm",
+    "key_bytes": 32,
+    "iv_bytes": 12,
+    "mac": "hmac-sha256"
+  },
+  "paths": {
+    "keyring_path": "state/security/organ_state_encryption/keyring.json",
+    "audit_path": "state/security/organ_state_encryption/audit.jsonl",
+    "alerts_path": "state/ops/system_health/events.jsonl"
+  },
+  "lane_roots": {
+    "state": "state",
+    "memory": "memory",
+    "cryonics": "state/_cryonics"
+  },
+  "organs": {
+    "workflow": {
+      "lanes": ["state"]
+    },
+    "autonomy": {
+      "lanes": ["state"]
+    },
+    "sensory": {
+      "lanes": ["state"]
+    },
+    "memory": {
+      "lanes": ["memory", "state"]
+    },
+    "cryonics": {
+      "lanes": ["cryonics", "state"]
+    }
+  }
+}

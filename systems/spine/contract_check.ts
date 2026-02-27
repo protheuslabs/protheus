@@ -989,6 +989,14 @@ function main() {
     "systems/security/execution_sandbox_envelope.js",
     ["blocked_command_tokens", "high_risk_actuation_classes", "sandbox_escape_attempt_denied"]
   );
+  checkScript(
+    "systems/security/organ_state_encryption_plane.js",
+    ["organ_state_encryption_plane.js", "encrypt", "decrypt", "rotate-key", "verify", "status", "--organ", "--lane", "--source", "--cipher", "--out"]
+  );
+  checkSourceContains(
+    "systems/security/organ_state_encryption_plane.js",
+    ["key_version", "mac_b64", "unauthorized_decrypt_attempt", "unauthorized_fail_closed"]
+  );
 
   // environment_promotion_gate.js enforces promotion sequencing and approvals across env tiers.
   checkScript(
