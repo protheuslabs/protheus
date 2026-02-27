@@ -486,6 +486,14 @@ function main() {
     "systems/budget/system_budget.js",
     ["system_budget.js", "status", "project", "record", "decision", "--request_tokens_est"]
   );
+  checkScript(
+    "systems/budget/capital_allocation_organ.js",
+    ["capital_allocation_organ.js", "seed", "simulate", "allocate", "settle", "evaluate", "status", "--bucket", "--amount", "--simulation-id", "--allocation-id", "--actual-return", "--strict"]
+  );
+  checkSourceContains(
+    "systems/budget/capital_allocation_organ.js",
+    ["min_simulation_score", "drawdown_stop_pct", "risk_adjusted_return", "simulation_id"]
+  );
 
   // eyes_memory_bridge.js wires enriched sensory proposals into memory nodes + pointer logs.
   checkScript(

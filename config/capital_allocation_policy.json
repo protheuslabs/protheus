@@ -1,0 +1,28 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": false,
+  "min_simulation_score": 0.6,
+  "min_risk_adjusted_return": 0,
+  "buckets": {
+    "compute": {
+      "max_share": 0.5,
+      "drawdown_stop_pct": 0.3
+    },
+    "tools": {
+      "max_share": 0.25,
+      "drawdown_stop_pct": 0.25
+    },
+    "ads": {
+      "max_share": 0.2,
+      "drawdown_stop_pct": 0.35
+    },
+    "float": {
+      "max_share": 0.25,
+      "drawdown_stop_pct": 0.2
+    }
+  },
+  "state_path": "state/budget/capital_allocation/state.json",
+  "latest_path": "state/budget/capital_allocation/latest.json",
+  "receipts_path": "state/budget/capital_allocation/receipts.jsonl"
+}

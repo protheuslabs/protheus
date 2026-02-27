@@ -87,6 +87,7 @@ function runGate() {
   const requiredFiles = [
     'config/abstraction_debt_baseline.json',
     'config/causal_temporal_memory_policy.json',
+    'config/capital_allocation_policy.json',
     'config/client_relationship_manager_policy.json',
     'config/compression_transfer_plane_policy.json',
     'config/opportunistic_offload_policy.json',
@@ -127,6 +128,7 @@ function runGate() {
     'systems/hardware/compression_transfer_plane.ts',
     'systems/hardware/surface_budget_controller.ts',
     'systems/hardware/opportunistic_offload_plane.ts',
+    'systems/budget/capital_allocation_organ.ts',
     'systems/workflow/client_relationship_manager.ts',
     'systems/primitives/effect_type_system.ts',
     'systems/primitives/emergent_primitive_synthesis.ts',
@@ -645,6 +647,30 @@ function runGate() {
     `manual_intervention_target=${Number(crmPolicy.manual_intervention_target || 0)}`
   );
   addCheck(
+    'capital_allocation_organ:merge_guard_hook',
+    mergeGuardSrc.includes('capital_allocation_organ.js')
+      && mergeGuardSrc.includes('status')
+      && mergeGuardSrc.includes('--days=30'),
+    'merge_guard should enforce capital allocation status check'
+  );
+  const capitalPolicy = readJsonSafe(path.join(ROOT, 'config', 'capital_allocation_policy.json'), {});
+  const capitalBuckets = capitalPolicy.buckets && typeof capitalPolicy.buckets === 'object'
+    ? Object.keys(capitalPolicy.buckets).length
+    : 0;
+  addCheck(
+    'capital_allocation_organ:buckets_present',
+    capitalBuckets >= 2,
+    `buckets=${capitalBuckets}`
+  );
+  addCheck(
+    'capital_allocation_organ:simulation_and_rar_targets',
+    Number(capitalPolicy.min_simulation_score || 0) >= 0
+      && Number(capitalPolicy.min_simulation_score || 0) <= 1
+      && Number(capitalPolicy.min_risk_adjusted_return || 0) >= -10
+      && Number(capitalPolicy.min_risk_adjusted_return || 0) <= 10,
+    `min_simulation_score=${Number(capitalPolicy.min_simulation_score || 0)} min_risk_adjusted_return=${Number(capitalPolicy.min_risk_adjusted_return || 0)}`
+  );
+  addCheck(
     'self_hosted_bootstrap:merge_guard_hook',
     mergeGuardSrc.includes('self_hosted_bootstrap_compiler.js')
       && mergeGuardSrc.includes('status'),
@@ -723,7 +749,8 @@ function runGate() {
       && contractCheckSrc.includes('surface_budget_controller.js')
       && contractCheckSrc.includes('compression_transfer_plane.js')
       && contractCheckSrc.includes('opportunistic_offload_plane.js')
-      && contractCheckSrc.includes('client_relationship_manager.js'),
+      && contractCheckSrc.includes('client_relationship_manager.js')
+      && contractCheckSrc.includes('capital_allocation_organ.js'),
     'contract_check should validate foundation scripts'
   );
 
