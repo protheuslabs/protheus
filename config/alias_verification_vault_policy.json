@@ -1,0 +1,29 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": false,
+  "key_env": "ALIAS_VERIFICATION_VAULT_KEY",
+  "key_min_length": 24,
+  "default_ttl_hours": 72,
+  "max_aliases": 5000,
+  "code_ttl_minutes": 30,
+  "cleanup_retention_hours": 720,
+  "channels": {
+    "email": {
+      "domain": "vault.local",
+      "prefix": "ax"
+    },
+    "sms": {
+      "prefix": "+1555000"
+    }
+  },
+  "state": {
+    "root": "state/security/alias_verification_vault",
+    "index_path": "state/security/alias_verification_vault/index.json",
+    "latest_path": "state/security/alias_verification_vault/latest.json",
+    "receipts_path": "state/security/alias_verification_vault/receipts.jsonl"
+  },
+  "redaction": {
+    "show_plaintext_codes_by_default": false
+  }
+}

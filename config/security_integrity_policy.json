@@ -98,6 +98,7 @@
     "systems/redteam/wisdom_distiller.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/redteam/wisdom_distiller.ts": "b317283f1160a79306536e92e9d5a6485a45b12be10e3ba4a8e08fa6bc630c26",
     "systems/security/agent_passport.js": "4957d6177400020074450e9a32a81652e33d950d2a1323d33402448bca2e1d43",
+    "systems/security/alias_verification_vault.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/anti_sabotage_shield.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/architecture_guard.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/black_box_ledger.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
@@ -143,7 +144,7 @@
     "systems/weaver/weaver_core.js": "4957d6177400020074450e9a32a81652e33d950d2a1323d33402448bca2e1d43",
     "systems/weaver/weaver_core.ts": "52a6b4ff2e16147e12ab702d255e7f37564526ee60a017a983385916e5afcf15"
   },
-  "sealed_at": "2026-02-27T06:30:44.495Z",
+  "sealed_at": "2026-02-27T07:51:59.292Z",
   "sealed_by": "jay",
-  "last_approval_note": "seal helix echo weaver redteam v2 components"
+  "last_approval_note": "seal alias vault + v2 profile/js hardening"
 }
