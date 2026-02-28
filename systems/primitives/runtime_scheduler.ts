@@ -4,6 +4,7 @@ export {};
 
 const fs = require('fs');
 const path = require('path');
+const { spawnSync } = require('child_process');
 const { appendCanonicalEvent } = require('./canonical_event_log.js');
 const {
   readLatestEmbodiment,
@@ -21,6 +22,9 @@ const ROOT = path.resolve(__dirname, '..', '..');
 const POLICY_PATH = process.env.RUNTIME_SCHEDULER_POLICY_PATH
   ? path.resolve(process.env.RUNTIME_SCHEDULER_POLICY_PATH)
   : path.join(ROOT, 'config', 'runtime_scheduler_policy.json');
+const BACKGROUND_RUNTIME_SCRIPT = process.env.BACKGROUND_PERSISTENT_RUNTIME_SCRIPT
+  ? path.resolve(process.env.BACKGROUND_PERSISTENT_RUNTIME_SCRIPT)
+  : path.join(ROOT, 'systems', 'autonomy', 'background_persistent_agent_runtime.js');
 
 function nowIso() {
   return new Date().toISOString();
@@ -64,6 +68,7 @@ function usage() {
   console.log('Usage:');
   console.log('  node systems/primitives/runtime_scheduler.js status');
   console.log('  node systems/primitives/runtime_scheduler.js switch --mode=<operational|dream|inversion> [--reason=<text>] [--apply=1|0]');
+  console.log('  node systems/primitives/runtime_scheduler.js trigger-persistent [--context-json="{...}"] [--source=<id>] [--apply=1|0]');
 }
 
 function ensureDir(dirPath: string) {
@@ -90,6 +95,42 @@ function writeJsonAtomic(filePath: string, payload: AnyObj) {
 function appendJsonl(filePath: string, row: AnyObj) {
   ensureDir(path.dirname(filePath));
   fs.appendFileSync(filePath, `${JSON.stringify(row)}\n`, 'utf8');
+}
+
+function parseJsonFromOutput(raw: unknown) {
+  const text = String(raw || '').trim();
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {}
+  const lines = text.split('\n').map((line) => line.trim()).filter(Boolean);
+  for (let i = lines.length - 1; i >= 0; i -= 1) {
+    try {
+      return JSON.parse(lines[i]);
+    } catch {}
+  }
+  return null;
+}
+
+function runBackgroundPersistentRuntime(cmd: string, args: string[] = []) {
+  if (!fs.existsSync(BACKGROUND_RUNTIME_SCRIPT)) {
+    return {
+      ok: false,
+      error: 'background_runtime_script_missing',
+      script: path.relative(ROOT, BACKGROUND_RUNTIME_SCRIPT).replace(/\\/g, '/')
+    };
+  }
+  const proc = spawnSync(process.execPath, [BACKGROUND_RUNTIME_SCRIPT, cmd, ...args], {
+    cwd: ROOT,
+    encoding: 'utf8'
+  });
+  const payload = parseJsonFromOutput(proc.stdout);
+  return {
+    ok: Number(proc.status) === 0 && payload && payload.ok === true,
+    code: Number(proc.status == null ? 1 : proc.status),
+    payload,
+    stderr: cleanText(proc.stderr || '', 500)
+  };
 }
 
 function embodimentSummary() {
@@ -232,6 +273,7 @@ function cmdStatus(args: AnyObj) {
   const allowedNext = policy.allowed_transitions[state.mode] || [];
   const embodiment = embodimentSummary();
   const surface_budget = surfaceBudgetSummary();
+  const persistentRuntime = runBackgroundPersistentRuntime('status');
   process.stdout.write(`${JSON.stringify({
     ok: true,
     type: 'runtime_scheduler_status',
@@ -241,7 +283,15 @@ function cmdStatus(args: AnyObj) {
     allowed_next_modes: allowedNext,
     policy_version: policy.schema_version,
     embodiment,
-    surface_budget
+    surface_budget,
+    persistent_runtime: persistentRuntime && typeof persistentRuntime.payload === 'object'
+      ? {
+          ok: persistentRuntime.ok === true,
+          queue_depth: Number(persistentRuntime.payload.queue_depth || 0),
+          tick_count: Number(persistentRuntime.payload.tick_count || 0),
+          last_tick_ts: persistentRuntime.payload.last_tick_ts || null
+        }
+      : { ok: false }
   })}\n`);
 }
 
@@ -315,6 +365,24 @@ function cmdSwitch(args: AnyObj) {
       to_mode: targetMode,
       reason
     });
+    if (targetMode === 'operational') {
+      const persistentTick = runBackgroundPersistentRuntime('tick', [
+        '--source=runtime_scheduler_mode_switch',
+        '--apply=0'
+      ]);
+      preview.persistent_runtime_probe = persistentTick && typeof persistentTick.payload === 'object'
+        ? {
+            ok: persistentTick.ok === true,
+            activation_count: Number(persistentTick.payload.activation_count || 0),
+            trigger_count: Array.isArray(persistentTick.payload.triggers)
+              ? persistentTick.payload.triggers.length
+              : 0
+          }
+        : {
+            ok: false,
+            error: cleanText(persistentTick && persistentTick.stderr || 'probe_failed', 120)
+          };
+    }
   } else {
     emitReceipt(policy, {
       type: 'runtime_scheduler_mode_switch_preview',
@@ -340,6 +408,28 @@ function cmdSwitch(args: AnyObj) {
   process.stdout.write(`${JSON.stringify(preview)}\n`);
 }
 
+function cmdTriggerPersistent(args: AnyObj) {
+  const apply = toBool(args.apply, false);
+  const source = normalizeToken(args.source || 'runtime_scheduler', 120) || 'runtime_scheduler';
+  const context = String(args['context-json'] || args.context_json || '').trim();
+  const tickArgs = [
+    `--source=${source}`,
+    `--apply=${apply ? 1 : 0}`
+  ];
+  if (context) tickArgs.push(`--context-json=${context}`);
+  const tick = runBackgroundPersistentRuntime('tick', tickArgs);
+  const out = {
+    ok: tick.ok === true,
+    type: 'runtime_scheduler_trigger_persistent',
+    source,
+    apply,
+    tick: tick.payload || null,
+    error: tick.ok === true ? null : cleanText(tick.stderr || 'persistent_tick_failed', 200)
+  };
+  process.stdout.write(`${JSON.stringify(out)}\n`);
+  if (out.ok !== true) process.exit(1);
+}
+
 function main() {
   const args = parseArgs(process.argv.slice(2));
   const cmd = String(args._[0] || '').trim().toLowerCase();
@@ -349,6 +439,7 @@ function main() {
   }
   if (cmd === 'status') return cmdStatus(args);
   if (cmd === 'switch') return cmdSwitch(args);
+  if (cmd === 'trigger-persistent') return cmdTriggerPersistent(args);
   usage();
   process.exit(2);
 }

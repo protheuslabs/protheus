@@ -70,6 +70,7 @@ const SCRIPT_AUTOTEST = 'systems/ops/autotest_controller.js';
 const SCRIPT_AUTOTEST_DOCTOR = 'systems/ops/autotest_doctor.js';
 const SCRIPT_ORGAN_ATROPHY = 'systems/ops/organ_atrophy_controller.js';
 const SCRIPT_WEAVER = 'systems/weaver/weaver_core.js';
+const SCRIPT_BACKGROUND_PERSISTENT_RUNTIME = 'systems/autonomy/background_persistent_agent_runtime.js';
 
 const ALLOWED_SCRIPTS = new Set([
   SCRIPT_MEMORY_DREAM,
@@ -83,7 +84,8 @@ const ALLOWED_SCRIPTS = new Set([
   SCRIPT_AUTOTEST,
   SCRIPT_AUTOTEST_DOCTOR,
   SCRIPT_ORGAN_ATROPHY,
-  SCRIPT_WEAVER
+  SCRIPT_WEAVER,
+  SCRIPT_BACKGROUND_PERSISTENT_RUNTIME
 ]);
 
 function usage() {
@@ -275,7 +277,8 @@ function defaultPolicy() {
       security_vigilance: 35 * 60,
       autotest_validation: 90 * 60,
       autotest_doctor: 90 * 60,
-      organ_atrophy_shadow: 6 * 60 * 60
+      organ_atrophy_shadow: 6 * 60 * 60,
+      background_persistent_runtime: 15 * 60
     },
     tasks: {
       dream_consolidation: {
@@ -358,6 +361,14 @@ function defaultPolicy() {
         window_days: 30,
         max_candidates: 8,
         write_endpoints: true,
+        min_trit: -1,
+        max_trit: 1
+      },
+      background_persistent_runtime: {
+        enabled: true,
+        timeout_ms: 12000,
+        max_actions: 6,
+        apply: false,
         min_trit: -1,
         max_trit: 1
       }
@@ -465,7 +476,13 @@ function loadPolicy(policyPath: string) {
       security_vigilance: clampInt(cooldownSec.security_vigilance, 0, 24 * 60 * 60, base.cooldown_sec.security_vigilance),
       autotest_validation: clampInt(cooldownSec.autotest_validation, 0, 24 * 60 * 60, base.cooldown_sec.autotest_validation),
       autotest_doctor: clampInt(cooldownSec.autotest_doctor, 0, 24 * 60 * 60, base.cooldown_sec.autotest_doctor),
-      organ_atrophy_shadow: clampInt(cooldownSec.organ_atrophy_shadow, 0, 24 * 60 * 60, base.cooldown_sec.organ_atrophy_shadow)
+      organ_atrophy_shadow: clampInt(cooldownSec.organ_atrophy_shadow, 0, 24 * 60 * 60, base.cooldown_sec.organ_atrophy_shadow),
+      background_persistent_runtime: clampInt(
+        cooldownSec.background_persistent_runtime,
+        0,
+        24 * 60 * 60,
+        base.cooldown_sec.background_persistent_runtime
+      )
     },
     tasks: {
       dream_consolidation: normalizeTaskGate(tasks.dream_consolidation, base.tasks.dream_consolidation),
@@ -476,7 +493,11 @@ function loadPolicy(policyPath: string) {
       security_vigilance: normalizeTaskGate(tasks.security_vigilance, base.tasks.security_vigilance),
       autotest_validation: normalizeTaskGate(tasks.autotest_validation, base.tasks.autotest_validation),
       autotest_doctor: normalizeTaskGate(tasks.autotest_doctor, base.tasks.autotest_doctor),
-      organ_atrophy_shadow: normalizeTaskGate(tasks.organ_atrophy_shadow, base.tasks.organ_atrophy_shadow)
+      organ_atrophy_shadow: normalizeTaskGate(tasks.organ_atrophy_shadow, base.tasks.organ_atrophy_shadow),
+      background_persistent_runtime: normalizeTaskGate(
+        tasks.background_persistent_runtime,
+        base.tasks.background_persistent_runtime
+      )
     },
     training_queue: {
       enabled: toBool(trainingQueue.enabled, base.training_queue.enabled),
@@ -953,6 +974,41 @@ function runAnticipation(dateStr: string, taskCfg: AnyObj, dryRun: boolean) {
   };
 }
 
+function runBackgroundPersistentRuntime(dateStr: string, taskCfg: AnyObj, dryRun: boolean, trit: AnyObj, queuePressure: AnyObj) {
+  const context = {
+    ts: nowIso(),
+    source: 'continuum',
+    queue_backlog: clampInt(queuePressure && queuePressure.pending_items, 0, 10_000_000, 0),
+    error_rate: trit && Array.isArray(trit.signals)
+      ? clampNumber(
+          trit.signals
+            .filter((row: AnyObj) => row && row.name === 'policy_hold_rate')
+            .map((row: AnyObj) => Number(row.value || 0))[0],
+          0,
+          1,
+          0
+        )
+      : 0,
+    stale_age_sec: clampInt(taskCfg && taskCfg.days, 0, 365, 0) * 24 * 60 * 60
+  };
+  const run = runNodeJson(SCRIPT_BACKGROUND_PERSISTENT_RUNTIME, [
+    'tick',
+    '--source=continuum',
+    `--apply=${taskCfg && taskCfg.apply === true && dryRun !== true ? 1 : 0}`,
+    `--context-json=${JSON.stringify(context)}`
+  ], {
+    timeout_ms: taskCfg.timeout_ms,
+    dry_run: dryRun
+  });
+  const summary = summarizeRun('background_persistent_runtime', run);
+  return {
+    ok: summary.ok,
+    activation_count: Number(summary.payload && summary.payload.activation_count || 0),
+    trigger_count: Array.isArray(summary.payload && summary.payload.triggers) ? summary.payload.triggers.length : 0,
+    background_persistent_runtime: summary
+  };
+}
+
 function runValueWeaving(dateStr: string, taskCfg: AnyObj, dryRun: boolean) {
   const valueMetricInput = normalizeToken(taskCfg.value_currency || 'adaptive_value', 80) || 'adaptive_value';
   const run = runNodeJson(SCRIPT_WEAVER, [
@@ -1356,7 +1412,8 @@ function pulse(dateStr: string, opts: AnyObj = {}) {
     security: 0,
     autotest: 0,
     doctor: 0,
-    atrophy: 0
+    atrophy: 0,
+    persistent: 0
   };
   const recordTask = (taskId: string, stage: string, result: AnyObj, metrics: AnyObj = {}, skippedTask = false) => {
     const entry = {
@@ -1445,6 +1502,7 @@ function pulse(dateStr: string, opts: AnyObj = {}) {
       delete metrics.autotest_controller;
       delete metrics.autotest_doctor;
       delete metrics.organ_atrophy_controller;
+      delete metrics.background_persistent_runtime;
       return recordTask(taskId, stage, out, metrics, false);
     };
 
@@ -1452,6 +1510,12 @@ function pulse(dateStr: string, opts: AnyObj = {}) {
     if (dreamOut.skipped !== true) taskEvents.dream += 1;
     const anticipationOut = runTask('anticipation', 'anticipation', () => runAnticipation(dateStr, taskCfg.anticipation, dryRun));
     if (anticipationOut.skipped !== true) taskEvents.anticipation += 1;
+    const persistentOut = runTask(
+      'background_persistent_runtime',
+      'background_persistent_runtime',
+      () => runBackgroundPersistentRuntime(dateStr, taskCfg.background_persistent_runtime, dryRun, trit, queuePressure)
+    );
+    if (persistentOut.skipped !== true) taskEvents.persistent += 1;
     const weavingOut = runTask('value_weaving', 'value_weaving', () => runValueWeaving(dateStr, taskCfg.value_weaving, dryRun));
     if (weavingOut.skipped !== true) taskEvents.value_weaving += 1;
     const selfImproveOut = runTask('self_improvement', 'self_improvement', () => runSelfImprovement(dateStr, taskCfg.self_improvement, dryRun));
