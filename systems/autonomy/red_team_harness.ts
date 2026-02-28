@@ -25,6 +25,10 @@ const {
   runAntColony,
   statusAntColony
 } = require('../redteam/ant_colony_controller');
+const {
+  runTrainer: runRedteamSelfImprovement,
+  status: statusRedteamSelfImprovement
+} = require('../redteam/self_improving_redteam_trainer');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const DEFAULT_POLICY_PATH = path.join(ROOT, 'config', 'red_team_policy.json');
@@ -204,6 +208,11 @@ function defaultPolicy() {
     ant_colony: {
       enabled: true,
       shadow_only: true
+    },
+    self_improvement: {
+      enabled: false,
+      policy_path: 'config/redteam_self_improvement_policy.json',
+      shadow_only: true
     }
   };
 }
@@ -229,6 +238,9 @@ function normalizePolicy(rawPolicy) {
   const detectSrc = raw.detection && typeof raw.detection === 'object' ? raw.detection : {};
   const corpusSrc = raw.corpus && typeof raw.corpus === 'object' ? raw.corpus : {};
   const antColonySrc = raw.ant_colony && typeof raw.ant_colony === 'object' ? raw.ant_colony : {};
+  const selfImproveSrc = raw.self_improvement && typeof raw.self_improvement === 'object'
+    ? raw.self_improvement
+    : {};
 
   return {
     ...base,
@@ -262,6 +274,11 @@ function normalizePolicy(rawPolicy) {
       enabled: boolFlag(antColonySrc.enabled, base.ant_colony.enabled),
       shadow_only: boolFlag(antColonySrc.shadow_only, base.ant_colony.shadow_only),
       ...antColonySrc
+    },
+    self_improvement: {
+      enabled: boolFlag(selfImproveSrc.enabled, base.self_improvement.enabled),
+      policy_path: String(selfImproveSrc.policy_path || base.self_improvement.policy_path),
+      shadow_only: boolFlag(selfImproveSrc.shadow_only, base.self_improvement.shadow_only)
     }
   };
 }
@@ -618,6 +635,23 @@ function runHarness(args) {
     };
   }
 
+  if (policy.self_improvement && policy.self_improvement.enabled === true) {
+    try {
+      out.self_improvement = runRedteamSelfImprovement({
+        state_root: paths.root
+      }, {
+        policyPath: resolvePathFrom(ROOT, policy.self_improvement.policy_path),
+        apply: false
+      });
+    } catch (err) {
+      out.self_improvement = {
+        ok: false,
+        type: 'redteam_self_improvement_run',
+        error: String(err && err.message ? err.message : err || 'redteam_self_improvement_failed').slice(0, 260)
+      };
+    }
+  }
+
   const stamp = nowIso().replace(/[:.]/g, '-');
   const runPath = path.join(paths.runs_dir, `${dateStr}_${stamp}.json`);
   const findingsPath = path.join(paths.findings_dir, `${dateStr}.jsonl`);
@@ -689,6 +723,21 @@ function statusHarness(args) {
     history_path: paths.history_path,
     ant_colony: antColony
   };
+  if (policy.self_improvement && policy.self_improvement.enabled === true) {
+    try {
+      out.self_improvement = statusRedteamSelfImprovement({
+        state_root: paths.root
+      }, {
+        policyPath: resolvePathFrom(ROOT, policy.self_improvement.policy_path)
+      });
+    } catch (err) {
+      out.self_improvement = {
+        ok: false,
+        type: 'redteam_self_improvement_status',
+        error: String(err && err.message ? err.message : err || 'redteam_self_improvement_status_failed').slice(0, 260)
+      };
+    }
+  }
   return out;
 }
 

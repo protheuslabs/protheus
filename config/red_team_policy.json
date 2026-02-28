@@ -101,5 +101,10 @@
       "assimilation_ledger_path": "state/assimilation/ledger.json",
       "weaver_latest_path": "state/autonomy/weaver/latest.json"
     }
+  },
+  "self_improvement": {
+    "enabled": true,
+    "policy_path": "config/redteam_self_improvement_policy.json",
+    "shadow_only": true
   }
 }
