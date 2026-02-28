@@ -30,6 +30,15 @@ function parseJsonStdout(proc) {
   return JSON.parse(raw);
 }
 
+function readJsonl(filePath) {
+  if (!fs.existsSync(filePath)) return [];
+  return String(fs.readFileSync(filePath, 'utf8') || '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => JSON.parse(line));
+}
+
 function assertOk(proc, label) {
   assert.strictEqual(proc.status, 0, `${label} failed: ${proc.stderr || proc.stdout}`);
   const out = parseJsonStdout(proc);
@@ -109,6 +118,8 @@ function run() {
   const capabilityProfilePolicyPath = path.join(tmpRoot, 'config', 'capability_profile_policy.json');
   const capabilityProfileSchemaPath = path.join(tmpRoot, 'config', 'capability_profile_schema.json');
   const capabilityProfileStateRoot = path.join(tmpRoot, 'state', 'assimilation', 'capability_profiles');
+  const valueAttributionPolicyPath = path.join(tmpRoot, 'config', 'value_attribution_primitive_policy.json');
+  const valueAttributionRecordsPath = path.join(tmpRoot, 'state', 'assimilation', 'value_attribution', 'records.jsonl');
   const stateDir = path.join(tmpRoot, 'state', 'assimilation');
   const weaverLatestPath = path.join(tmpRoot, 'state', 'autonomy', 'weaver', 'latest.json');
 
@@ -152,6 +163,32 @@ function run() {
       max_profile_aliases: 64
     }
   });
+  writeJson(valueAttributionPolicyPath, {
+    version: '1.0-test',
+    enabled: true,
+    shadow_only: true,
+    allow_apply: false,
+    scoring: {
+      default_weight: 1,
+      default_confidence: 0.8,
+      default_impact: 0.7
+    },
+    passport: {
+      enabled: false,
+      source: 'value_attribution_primitive'
+    },
+    helix: {
+      enabled: true,
+      events_path: path.join(tmpRoot, 'state', 'helix', 'events.jsonl')
+    },
+    state: {
+      root: path.join(tmpRoot, 'state', 'assimilation', 'value_attribution'),
+      records_path: valueAttributionRecordsPath,
+      latest_path: path.join(tmpRoot, 'state', 'assimilation', 'value_attribution', 'latest.json'),
+      history_path: path.join(tmpRoot, 'state', 'assimilation', 'value_attribution', 'history.jsonl'),
+      receipts_path: path.join(tmpRoot, 'state', 'assimilation', 'value_attribution', 'receipts.jsonl')
+    }
+  });
   writeJson(policyPath, basePolicy());
   writeFile(dualityCodexPath, [
     '[meta]',
@@ -181,7 +218,8 @@ function run() {
     ASSIMILATION_STATE_DIR: stateDir,
     ASSIMILATION_WEAVER_LATEST_PATH: weaverLatestPath,
     CAPABILITY_PROFILE_POLICY_PATH: capabilityProfilePolicyPath,
-    DUALITY_SEED_POLICY_PATH: dualityPolicyPath
+    DUALITY_SEED_POLICY_PATH: dualityPolicyPath,
+    VALUE_ATTRIBUTION_POLICY_PATH: valueAttributionPolicyPath
   };
 
   // Unified candidacy ledger must accept both local skills and external adapters.
@@ -261,8 +299,18 @@ function run() {
       row.capability_profile && row.capability_profile.ok === true,
       'capability profile should compile for ready candidates'
     );
+    assert.ok(
+      row.value_attribution && row.value_attribution.attribution_id,
+      'candidate should include value attribution linkage'
+    );
     assert.ok(row.duality && typeof row.duality.enabled === 'boolean', 'candidate should include duality advisory');
   }
+
+  const attributionRows = readJsonl(valueAttributionRecordsPath);
+  assert.ok(
+    attributionRows.length >= Number(runShadow.candidates_processed || 0),
+    'assimilation run should emit value attribution rows for processed candidates'
+  );
 
   const ledgerPath = path.join(stateDir, 'ledger.json');
   const ledger = JSON.parse(fs.readFileSync(ledgerPath, 'utf8'));

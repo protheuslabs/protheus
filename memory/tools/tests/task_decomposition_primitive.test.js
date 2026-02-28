@@ -52,6 +52,8 @@ function run() {
   const agentPolicyPath = path.join(tmpRoot, 'config', 'agent_passport_policy.json');
   const dualityPolicyPath = path.join(tmpRoot, 'config', 'duality_seed_policy.json');
   const dualityCodexPath = path.join(tmpRoot, 'config', 'duality_codex.txt');
+  const valueAttributionPolicyPath = path.join(tmpRoot, 'config', 'value_attribution_primitive_policy.json');
+  const valueAttributionRecordsPath = path.join(tmpRoot, 'state', 'assimilation', 'value_attribution', 'records.jsonl');
 
   writeJson(policyPath, {
     version: '1.0-test',
@@ -166,12 +168,40 @@ function run() {
     }
   });
 
+  writeJson(valueAttributionPolicyPath, {
+    version: '1.0-test',
+    enabled: true,
+    shadow_only: true,
+    allow_apply: false,
+    scoring: {
+      default_weight: 1,
+      default_confidence: 0.8,
+      default_impact: 0.7
+    },
+    passport: {
+      enabled: true,
+      source: 'value_attribution_primitive'
+    },
+    helix: {
+      enabled: true,
+      events_path: path.join(tmpRoot, 'state', 'helix', 'events.jsonl')
+    },
+    state: {
+      root: path.join(tmpRoot, 'state', 'assimilation', 'value_attribution'),
+      records_path: valueAttributionRecordsPath,
+      latest_path: path.join(tmpRoot, 'state', 'assimilation', 'value_attribution', 'latest.json'),
+      history_path: path.join(tmpRoot, 'state', 'assimilation', 'value_attribution', 'history.jsonl'),
+      receipts_path: path.join(tmpRoot, 'state', 'assimilation', 'value_attribution', 'receipts.jsonl')
+    }
+  });
+
   const env = {
     ...process.env,
     TASK_DECOMPOSITION_POLICY_PATH: policyPath,
     AGENT_PASSPORT_POLICY_PATH: agentPolicyPath,
     AGENT_PASSPORT_SIGNING_KEY: 'agent_passport_signing_key_for_tests_123456',
-    DUALITY_SEED_POLICY_PATH: dualityPolicyPath
+    DUALITY_SEED_POLICY_PATH: dualityPolicyPath,
+    VALUE_ATTRIBUTION_POLICY_PATH: valueAttributionPolicyPath
   };
 
   const goal = [
@@ -199,6 +229,10 @@ function run() {
   assert.ok(Array.isArray(runPayload.micro_tasks), 'micro_tasks should be emitted');
   assert.ok(runPayload.micro_tasks.length >= 3, 'should decompose into several micro tasks');
   assert.ok(runPayload.micro_tasks.every((row) => row.profile && row.profile.schema_id === 'task_micro_profile'));
+  assert.ok(
+    runPayload.micro_tasks.every((row) => row.profile && row.profile.attribution && row.profile.attribution.value_attribution_id),
+    'every micro task should include value attribution id'
+  );
   assert.ok(runPayload.micro_tasks.some((row) => row.route && row.route.lane === 'storm_human_lane'), 'should include human lane routing');
   assert.ok(runPayload.summary.blocked >= 1, 'destructive instruction should be blocked by gates');
   assert.ok(Number(runPayload.summary.weaver_queue_enqueued || 0) === runPayload.micro_tasks.length, 'all tasks should enter weaver queue');
@@ -218,6 +252,13 @@ function run() {
   const ideRows = readJsonl(ideEventsPath);
   assert.ok(ideRows.length >= runPayload.micro_tasks.length, 'ide events should be emitted per micro-task');
   assert.ok(ideRows.some((row) => row.duality_indicator && typeof row.duality_indicator === 'object'), 'ide events should include duality indicator');
+
+  const attributionRows = readJsonl(valueAttributionRecordsPath);
+  assert.strictEqual(
+    attributionRows.length,
+    runPayload.micro_tasks.length,
+    'value attribution record count should match emitted micro tasks'
+  );
 
   const statusProc = runNode(scriptPath, ['status', 'latest', `--policy=${policyPath}`], env, repoRoot);
   assert.strictEqual(statusProc.status, 0, statusProc.stderr || statusProc.stdout);

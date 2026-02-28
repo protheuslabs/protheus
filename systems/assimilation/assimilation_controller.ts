@@ -28,6 +28,12 @@ const { runResearchProbe } = require('./research_probe');
 const { compileProfileFromResearch } = require('./capability_profile_compiler');
 const { buildForgeReplica } = require('./forge_replica');
 const { evaluateGraftDecision } = require('./graft_manager');
+let recordAttribution = null;
+try {
+  ({ recordAttribution } = require('../attribution/value_attribution_primitive.js'));
+} catch {
+  recordAttribution = null;
+}
 let dualityEvaluate = null;
 let registerDualityObservation = null;
 try {
@@ -888,6 +894,42 @@ function commandRun(args: AnyObj) {
       record.status = 'candidate';
     }
 
+    let valueAttribution = null;
+    if (typeof recordAttribution === 'function') {
+      try {
+        const attrOut = recordAttribution({
+          source_type: record.source_type || 'external_tool',
+          source_id: capabilityId,
+          source_url: record.legal && record.legal.source_url ? record.legal.source_url : null,
+          creator_id: record.metadata && record.metadata.creator_id ? record.metadata.creator_id : 'unknown_creator',
+          creator_alias: record.metadata && record.metadata.creator_alias ? record.metadata.creator_alias : null,
+          creator_opt_in: record.metadata && record.metadata.creator_opt_in === true,
+          license: record.legal && record.legal.license ? record.legal.license : 'unknown',
+          objective_id: `assimilation_${runId}`,
+          capability_id: capabilityId,
+          task_id: `${runId}_${capabilityId}`,
+          run_id: runId,
+          lane: 'assimilation',
+          weight: Number(candidate && candidate.thresholds && candidate.thresholds.metrics && candidate.thresholds.metrics.pain_cost_score || 1),
+          confidence: Number(research && research.confidence || 0.5),
+          impact_score: Number(graft && graft.score || 0.5),
+          influence_score: outcome === 'success' ? 0.8 : (outcome === 'shadow_only' ? 0.45 : 0.1)
+        }, {
+          apply: false
+        });
+        if (attrOut && attrOut.ok === true) {
+          valueAttribution = {
+            attribution_id: attrOut.attribution_id || null,
+            influence_score: Number(attrOut.influence_score || 0),
+            shadow_only: attrOut.shadow_only === true,
+            creator_id: attrOut.creator_id || null
+          };
+        }
+      } catch {
+        // Attribution is additive and must not block assimilation flow.
+      }
+    }
+
     const row = {
       capability_id: capabilityId,
       source_type: record.source_type,
@@ -930,6 +972,7 @@ function commandRun(args: AnyObj) {
       nursery,
       adversarial,
       graft,
+      value_attribution: valueAttribution,
       outcome
     };
     results.push(row);
