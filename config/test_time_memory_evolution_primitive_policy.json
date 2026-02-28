@@ -1,0 +1,24 @@
+{
+  "schema_id": "test_time_memory_evolution_primitive_policy",
+  "schema_version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "search": {
+    "max_episode_candidates": 180,
+    "max_synthesized_insights": 6,
+    "novelty_bias": 0.35
+  },
+  "evolution": {
+    "reward_gain": 0.18,
+    "penalty_gain": 0.24,
+    "decay": 0.95,
+    "target_step_reduction": 0.5,
+    "max_step_reduction": 0.82
+  },
+  "state": {
+    "memory_graph_path": "state/assimilation/memory_evolution/episodes.jsonl",
+    "state_path": "state/assimilation/test_time_memory_evolution/state.json",
+    "latest_path": "state/assimilation/test_time_memory_evolution/latest.json",
+    "receipts_path": "state/assimilation/test_time_memory_evolution/receipts.jsonl"
+  }
+}

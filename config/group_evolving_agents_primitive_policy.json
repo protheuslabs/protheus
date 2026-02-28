@@ -1,0 +1,22 @@
+{
+  "schema_id": "group_evolving_agents_primitive_policy",
+  "schema_version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "sharing": {
+    "max_peer_experiences": 48,
+    "min_reuse_confidence": 0.55,
+    "innovation_bonus": 0.22
+  },
+  "trust": {
+    "min_peer_trust": 0.35,
+    "trust_decay": 0.97,
+    "trust_gain": 0.04,
+    "trust_penalty": 0.08
+  },
+  "state": {
+    "pool_path": "state/assimilation/group_evolving_agents/pool.json",
+    "latest_path": "state/assimilation/group_evolving_agents/latest.json",
+    "receipts_path": "state/assimilation/group_evolving_agents/receipts.jsonl"
+  }
+}

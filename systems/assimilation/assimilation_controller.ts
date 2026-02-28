@@ -58,6 +58,36 @@ try {
 } catch {
   evaluateEnvironmentEvolution = null;
 }
+let runTestTimeMemoryEvolution = null;
+try {
+  ({ runTestTimeMemoryEvolution } = require('./test_time_memory_evolution_primitive'));
+} catch {
+  runTestTimeMemoryEvolution = null;
+}
+let runGroupEvolvingAgents = null;
+try {
+  ({ runGroupEvolvingAgents } = require('./group_evolving_agents_primitive'));
+} catch {
+  runGroupEvolvingAgents = null;
+}
+let runGenerativeMetaModel = null;
+try {
+  ({ runGenerativeMetaModel } = require('./generative_meta_model_primitive'));
+} catch {
+  runGenerativeMetaModel = null;
+}
+let runSelfTeacherDistillation = null;
+try {
+  ({ runSelfTeacherDistillation } = require('./self_teacher_distillation_primitive'));
+} catch {
+  runSelfTeacherDistillation = null;
+}
+let runAdaptiveEnsembleRouting = null;
+try {
+  ({ runAdaptiveEnsembleRouting } = require('./adaptive_ensemble_routing_primitive'));
+} catch {
+  runAdaptiveEnsembleRouting = null;
+}
 let recordAttribution = null;
 try {
   ({ recordAttribution } = require('../attribution/value_attribution_primitive.js'));
@@ -93,6 +123,13 @@ const DEFAULT_WEAVER_COLLECTIVE_PATH = path.join(
   'autonomy',
   'weaver',
   'collective_reasoning_profiles.jsonl'
+);
+const DEFAULT_WEAVER_ENSEMBLE_PATH = path.join(
+  ROOT,
+  'state',
+  'autonomy',
+  'weaver',
+  'adaptive_ensemble_profiles.jsonl'
 );
 
 function usage() {
@@ -287,11 +324,22 @@ function defaultPolicy() {
       generative_simulation_enabled: true,
       collective_reasoning_enabled: true,
       environment_evolution_enabled: true,
+      test_time_memory_evolution_enabled: true,
+      group_evolving_agents_enabled: true,
+      generative_meta_model_enabled: true,
+      self_teacher_distillation_enabled: true,
+      adaptive_ensemble_routing_enabled: true,
       memory_evolution_policy_path: 'config/memory_evolution_primitive_policy.json',
       context_navigation_policy_path: 'config/context_navigation_primitive_policy.json',
       generative_simulation_policy_path: 'config/generative_simulation_mode_policy.json',
       collective_reasoning_policy_path: 'config/collective_reasoning_primitive_policy.json',
-      environment_evolution_policy_path: 'config/environment_evolution_layer_policy.json'
+      environment_evolution_policy_path: 'config/environment_evolution_layer_policy.json',
+      test_time_memory_evolution_policy_path: 'config/test_time_memory_evolution_primitive_policy.json',
+      group_evolving_agents_policy_path: 'config/group_evolving_agents_primitive_policy.json',
+      generative_meta_model_policy_path: 'config/generative_meta_model_primitive_policy.json',
+      self_teacher_distillation_policy_path: 'config/self_teacher_distillation_primitive_policy.json',
+      adaptive_ensemble_routing_policy_path: 'config/adaptive_ensemble_routing_primitive_policy.json',
+      weaver_ensemble_profiles_path: relPath(DEFAULT_WEAVER_ENSEMBLE_PATH)
     },
     outputs: {
       emit_events: true,
@@ -492,6 +540,11 @@ function loadPolicy(policyPath: string) {
       generative_simulation_enabled: integration.generative_simulation_enabled !== false,
       collective_reasoning_enabled: integration.collective_reasoning_enabled !== false,
       environment_evolution_enabled: integration.environment_evolution_enabled !== false,
+      test_time_memory_evolution_enabled: integration.test_time_memory_evolution_enabled !== false,
+      group_evolving_agents_enabled: integration.group_evolving_agents_enabled !== false,
+      generative_meta_model_enabled: integration.generative_meta_model_enabled !== false,
+      self_teacher_distillation_enabled: integration.self_teacher_distillation_enabled !== false,
+      adaptive_ensemble_routing_enabled: integration.adaptive_ensemble_routing_enabled !== false,
       memory_evolution_policy_path: cleanText(
         integration.memory_evolution_policy_path || base.integration.memory_evolution_policy_path,
         300
@@ -511,7 +564,31 @@ function loadPolicy(policyPath: string) {
       environment_evolution_policy_path: cleanText(
         integration.environment_evolution_policy_path || base.integration.environment_evolution_policy_path,
         300
-      ) || base.integration.environment_evolution_policy_path
+      ) || base.integration.environment_evolution_policy_path,
+      test_time_memory_evolution_policy_path: cleanText(
+        integration.test_time_memory_evolution_policy_path || base.integration.test_time_memory_evolution_policy_path,
+        300
+      ) || base.integration.test_time_memory_evolution_policy_path,
+      group_evolving_agents_policy_path: cleanText(
+        integration.group_evolving_agents_policy_path || base.integration.group_evolving_agents_policy_path,
+        300
+      ) || base.integration.group_evolving_agents_policy_path,
+      generative_meta_model_policy_path: cleanText(
+        integration.generative_meta_model_policy_path || base.integration.generative_meta_model_policy_path,
+        300
+      ) || base.integration.generative_meta_model_policy_path,
+      self_teacher_distillation_policy_path: cleanText(
+        integration.self_teacher_distillation_policy_path || base.integration.self_teacher_distillation_policy_path,
+        300
+      ) || base.integration.self_teacher_distillation_policy_path,
+      adaptive_ensemble_routing_policy_path: cleanText(
+        integration.adaptive_ensemble_routing_policy_path || base.integration.adaptive_ensemble_routing_policy_path,
+        300
+      ) || base.integration.adaptive_ensemble_routing_policy_path,
+      weaver_ensemble_profiles_path: cleanText(
+        integration.weaver_ensemble_profiles_path || base.integration.weaver_ensemble_profiles_path,
+        300
+      ) || base.integration.weaver_ensemble_profiles_path
     },
     outputs: {
       emit_events: outputs.emit_events !== false,
@@ -597,6 +674,15 @@ function runtimePaths(policyPath: string, policy: AnyObj) {
   const weaverCollectivePath = path.isAbsolute(weaverCollectiveRaw)
     ? weaverCollectiveRaw
     : path.join(ROOT, weaverCollectiveRaw);
+  const weaverEnsembleRaw = cleanText(
+    process.env.ASSIMILATION_WEAVER_ENSEMBLE_PATH
+    || (policy && policy.integration && policy.integration.weaver_ensemble_profiles_path)
+    || relPath(DEFAULT_WEAVER_ENSEMBLE_PATH),
+    400
+  );
+  const weaverEnsemblePath = path.isAbsolute(weaverEnsembleRaw)
+    ? weaverEnsembleRaw
+    : path.join(ROOT, weaverEnsembleRaw);
   return {
     policy_path: policyPath,
     state_dir: stateDir,
@@ -607,7 +693,8 @@ function runtimePaths(policyPath: string, policy: AnyObj) {
     obsidian_path: path.join(stateDir, 'obsidian_projection.jsonl'),
     rollbacks_path: path.join(stateDir, 'rollbacks.jsonl'),
     weaver_latest_path: weaverLatestPath,
-    weaver_collective_profiles_path: weaverCollectivePath
+    weaver_collective_profiles_path: weaverCollectivePath,
+    weaver_ensemble_profiles_path: weaverEnsemblePath
   };
 }
 
@@ -986,6 +1073,82 @@ function commandRun(args: AnyObj) {
         error: 'collective_reasoning_disabled'
       };
 
+    const adaptiveEnsembleRouting = (
+      policy.integration
+      && policy.integration.adaptive_ensemble_routing_enabled === true
+      && typeof runAdaptiveEnsembleRouting === 'function'
+    )
+      ? runAdaptiveEnsembleRouting({
+        capability_id: capabilityId,
+        objective_id: `assimilation_${runId}`,
+        uncertainty_score: clampNumber(
+          1 - Number(research && research.confidence || 0),
+          0,
+          1,
+          0.5
+        ),
+        specialists: (collectiveReasoning && collectiveReasoning.ok === true && Array.isArray(collectiveReasoning.ranked_recommendations))
+          ? collectiveReasoning.ranked_recommendations.slice(0, 8).map((row: AnyObj, idx: number) => {
+            const recommendation = cleanText(row && row.recommendation || 'defer', 80);
+            const score = clampNumber(row && row.score, 0, 1, 0.5);
+            const complementary = recommendation.includes('defer') || recommendation.includes('reject');
+            return {
+              specialist_id: `collective_${idx + 1}`,
+              mode: complementary ? 'complementary' : 'aligned',
+              confidence: score,
+              error_correction: complementary ? 0.8 : 0.35,
+              trust_score: 0.7
+            };
+          })
+          : [
+            {
+              specialist_id: 'baseline_aligned_guard',
+              mode: 'aligned',
+              confidence: legalGate.allowed === true ? 0.7 : 0.4,
+              error_correction: 0.3,
+              trust_score: 0.75
+            },
+            {
+              specialist_id: 'baseline_complementary_probe',
+              mode: 'complementary',
+              confidence: research && research.fit === 'sufficient' ? 0.55 : 0.8,
+              error_correction: 0.85,
+              trust_score: 0.65
+            }
+          ]
+      }, {
+        apply: false,
+        policyPath: policy.integration.adaptive_ensemble_routing_policy_path
+      })
+      : {
+        ok: false,
+        type: 'adaptive_ensemble_routing_primitive',
+        error: 'adaptive_ensemble_routing_disabled'
+      };
+
+    const generativeMetaModel = (
+      policy.integration
+      && policy.integration.generative_meta_model_enabled === true
+      && typeof runGenerativeMetaModel === 'function'
+    )
+      ? runGenerativeMetaModel({
+        capability_id: capabilityId,
+        context_rows: Array.isArray(contextNavigation && contextNavigation.selected_segments)
+          ? contextNavigation.selected_segments.slice(0, 16).map((row: AnyObj) => row.excerpt || '')
+          : [],
+        base_drift: legalGate.allowed === true ? 0.2 : 0.35,
+        base_safety: legalGate.allowed === true ? 0.82 : 0.55,
+        base_yield: research && research.fit === 'sufficient' ? 0.5 : 0.25
+      }, {
+        apply: false,
+        policyPath: policy.integration.generative_meta_model_policy_path
+      })
+      : {
+        ok: false,
+        type: 'generative_meta_model_primitive',
+        error: 'generative_meta_model_disabled'
+      };
+
     const generativeSimulation = (
       policy.integration
       && policy.integration.generative_simulation_enabled === true
@@ -996,7 +1159,13 @@ function commandRun(args: AnyObj) {
         objective_id: `assimilation_${runId}`,
         risk_class: record.risk_class || 'general',
         impact_score: Number(candidate && candidate.thresholds && candidate.thresholds.metrics && candidate.thresholds.metrics.pain_cost_score || 0.5),
-        base_drift: legalGate.allowed === true ? 0.2 : 0.35,
+        base_drift: clampNumber(
+          (legalGate.allowed === true ? 0.2 : 0.35)
+            + Number(generativeMetaModel && generativeMetaModel.manifold_distance || 0) * 0.08,
+          0,
+          1,
+          0.25
+        ),
         base_safety: legalGate.allowed === true ? 0.82 : 0.55,
         base_yield: research && research.fit === 'sufficient' ? 0.5 : 0.25,
         heroic_echo_blocked: false,
@@ -1054,40 +1223,11 @@ function commandRun(args: AnyObj) {
       human_approved: humanApproved
     }, policy);
 
-    const reasonCodes = []
-      .concat(Array.isArray(legalGate.reason_codes) ? legalGate.reason_codes : [])
-      .concat(Array.isArray(weaverGate.reason_codes) ? weaverGate.reason_codes : [])
-      .concat(Array.isArray(research.reason_codes) ? research.reason_codes : [])
-      .concat(Array.isArray(profileCompile && profileCompile.validation && profileCompile.validation.failures)
-        ? profileCompile.validation.failures.map((f: string) => `profile:${f}`)
-        : [])
-      .concat(
-        collectiveReasoning && collectiveReasoning.ok === true
-          ? [`collective:${cleanText(collectiveReasoning.final_recommendation || 'unknown', 80)}`]
-          : []
-      )
-      .concat(
-        generativeSimulation && generativeSimulation.ok === true && Array.isArray(generativeSimulation.reason_codes)
-          ? generativeSimulation.reason_codes.map((r: string) => `simulation:${cleanText(r, 80)}`)
-          : []
-      )
-      .concat(Array.isArray(nursery.reason_codes) ? nursery.reason_codes : [])
-      .concat(Array.isArray(adversarial.reason_codes) ? adversarial.reason_codes : [])
-      .concat(Array.isArray(graft.reason_codes) ? graft.reason_codes : []);
-
     let outcome = 'shadow_only';
     if (graft.apply_executed === true) outcome = 'success';
     else if (graft.blocked === true) outcome = 'reject';
     else if (policy.shadow_only === true || applyRequested !== true) outcome = 'shadow_only';
     else outcome = 'fail';
-    setAttemptOutcome(record, outcome, reasonCodes, policy, nowTs);
-    if (outcome === 'success') {
-      record.status = 'assimilated_ttl';
-    } else if (outcome === 'shadow_only') {
-      record.status = 'shadow_candidate';
-    } else {
-      record.status = 'candidate';
-    }
 
     const environmentEvolution = (
       policy.integration
@@ -1130,6 +1270,134 @@ function commandRun(args: AnyObj) {
         type: 'memory_evolution_primitive',
         error: 'memory_evolution_disabled'
       };
+
+    const testTimeMemoryEvolution = (
+      policy.integration
+      && policy.integration.test_time_memory_evolution_enabled === true
+      && typeof runTestTimeMemoryEvolution === 'function'
+    )
+      ? runTestTimeMemoryEvolution({
+        capability_id: capabilityId,
+        interaction_id: `${runId}_${capabilityId}`,
+        outcome,
+        observed_steps: Number(candidate && candidate.thresholds && candidate.thresholds.metrics && candidate.thresholds.metrics.uses || 12)
+      }, {
+        apply: false,
+        policyPath: policy.integration.test_time_memory_evolution_policy_path
+      })
+      : {
+        ok: false,
+        type: 'test_time_memory_evolution_primitive',
+        error: 'test_time_memory_evolution_disabled'
+      };
+
+    const selfTeacherDistillation = (
+      policy.integration
+      && policy.integration.self_teacher_distillation_enabled === true
+      && typeof runSelfTeacherDistillation === 'function'
+    )
+      ? runSelfTeacherDistillation({
+        capability_id: capabilityId,
+        trajectories: []
+          .concat(Array.isArray(contextNavigation && contextNavigation.selected_segments)
+            ? contextNavigation.selected_segments.slice(0, 8).map((row: AnyObj) => ({
+              trajectory_id: row.segment_id,
+              quality: clampNumber((Number(row.relevance_score || 0) / 5), 0, 1, 0.5),
+              outcome: outcome === 'success' ? 'success' : 'shadow_only',
+              steps: clampInt(12 - Number(row.rank || 1), 1, 1000, 10)
+            }))
+            : [])
+      }, {
+        apply: false,
+        policyPath: policy.integration.self_teacher_distillation_policy_path
+      })
+      : {
+        ok: false,
+        type: 'self_teacher_distillation_primitive',
+        error: 'self_teacher_distillation_disabled'
+      };
+
+    const groupEvolvingAgents = (
+      policy.integration
+      && policy.integration.group_evolving_agents_enabled === true
+      && typeof runGroupEvolvingAgents === 'function'
+    )
+      ? runGroupEvolvingAgents({
+        capability_id: capabilityId,
+        agent_id: 'assimilation_controller',
+        experiences: []
+          .concat(Array.isArray(collectiveReasoning && collectiveReasoning.agents)
+            ? collectiveReasoning.agents.slice(0, 8).map((row: AnyObj) => ({
+              peer_id: row.agent_id,
+              innovation_id: row.recommendation,
+              confidence: clampNumber(row.vote_weight, 0, 1, 0.4),
+              adopted: outcome === 'success',
+              outcome
+            }))
+            : [])
+          .concat(Array.isArray(adaptiveEnsembleRouting && adaptiveEnsembleRouting.ranked_specialists)
+            ? adaptiveEnsembleRouting.ranked_specialists.slice(0, 6).map((row: AnyObj) => ({
+              peer_id: row.specialist_id,
+              innovation_id: row.mode,
+              confidence: clampNumber(row.score, 0, 1, 0.5),
+              adopted: row.mode === 'aligned' && outcome !== 'reject',
+              outcome
+            }))
+            : [])
+      }, {
+        apply: false,
+        policyPath: policy.integration.group_evolving_agents_policy_path
+      })
+      : {
+        ok: false,
+        type: 'group_evolving_agents_primitive',
+        error: 'group_evolving_agents_disabled'
+      };
+
+    const reasonCodes = []
+      .concat(Array.isArray(legalGate.reason_codes) ? legalGate.reason_codes : [])
+      .concat(Array.isArray(weaverGate.reason_codes) ? weaverGate.reason_codes : [])
+      .concat(Array.isArray(research.reason_codes) ? research.reason_codes : [])
+      .concat(Array.isArray(profileCompile && profileCompile.validation && profileCompile.validation.failures)
+        ? profileCompile.validation.failures.map((f: string) => `profile:${f}`)
+        : [])
+      .concat(
+        collectiveReasoning && collectiveReasoning.ok === true
+          ? [`collective:${cleanText(collectiveReasoning.final_recommendation || 'unknown', 80)}`]
+          : []
+      )
+      .concat(
+        adaptiveEnsembleRouting && adaptiveEnsembleRouting.ok === true
+          ? [`ensemble:${cleanText(adaptiveEnsembleRouting.route_plan && adaptiveEnsembleRouting.route_plan.selected_mode || 'unknown', 80)}`]
+          : []
+      )
+      .concat(
+        generativeMetaModel && generativeMetaModel.ok === true
+          ? [`meta_model_safe:${generativeMetaModel.safety && generativeMetaModel.safety.safe_steering === true ? '1' : '0'}`]
+          : []
+      )
+      .concat(
+        generativeSimulation && generativeSimulation.ok === true && Array.isArray(generativeSimulation.reason_codes)
+          ? generativeSimulation.reason_codes.map((r: string) => `simulation:${cleanText(r, 80)}`)
+          : []
+      )
+      .concat(
+        selfTeacherDistillation && selfTeacherDistillation.ok === true
+          ? [`self_teacher_accepted:${selfTeacherDistillation.accepted === true ? '1' : '0'}`]
+          : []
+      )
+      .concat(Array.isArray(nursery.reason_codes) ? nursery.reason_codes : [])
+      .concat(Array.isArray(adversarial.reason_codes) ? adversarial.reason_codes : [])
+      .concat(Array.isArray(graft.reason_codes) ? graft.reason_codes : []);
+
+    setAttemptOutcome(record, outcome, reasonCodes, policy, nowTs);
+    if (outcome === 'success') {
+      record.status = 'assimilated_ttl';
+    } else if (outcome === 'shadow_only') {
+      record.status = 'shadow_candidate';
+    } else {
+      record.status = 'candidate';
+    }
 
     let valueAttribution = null;
     if (typeof recordAttribution === 'function') {
@@ -1207,6 +1475,8 @@ function commandRun(args: AnyObj) {
       forge_replica: forge,
       context_navigation: contextNavigation,
       collective_reasoning: collectiveReasoning,
+      adaptive_ensemble_routing: adaptiveEnsembleRouting,
+      generative_meta_model: generativeMetaModel,
       generative_simulation: generativeSimulation,
       hidden_eval_suite: hiddenEval,
       nursery,
@@ -1214,6 +1484,9 @@ function commandRun(args: AnyObj) {
       graft,
       environment_evolution: environmentEvolution,
       memory_evolution: memoryEvolution,
+      test_time_memory_evolution: testTimeMemoryEvolution,
+      self_teacher_distillation: selfTeacherDistillation,
+      group_evolving_agents: groupEvolvingAgents,
       value_attribution: valueAttribution,
       outcome
     };
@@ -1232,6 +1505,22 @@ function commandRun(args: AnyObj) {
         consensus_share: Number(collectiveReasoning.consensus_share || 0),
         delegation_profile: Array.isArray(collectiveReasoning.delegation_profile)
           ? collectiveReasoning.delegation_profile.slice(0, 8)
+          : []
+      });
+    }
+    if (adaptiveEnsembleRouting && adaptiveEnsembleRouting.ok === true) {
+      appendJsonl(paths.weaver_ensemble_profiles_path, {
+        ts: nowTs,
+        type: 'adaptive_ensemble_profile',
+        run_id: runId,
+        date,
+        capability_id: capabilityId,
+        source_type: record.source_type || 'unknown',
+        selected_mode: adaptiveEnsembleRouting.route_plan
+          ? adaptiveEnsembleRouting.route_plan.selected_mode
+          : 'unknown',
+        specialist_ids: adaptiveEnsembleRouting.route_plan
+          ? adaptiveEnsembleRouting.route_plan.specialist_ids
           : []
       });
     }
@@ -1285,6 +1574,7 @@ function commandRun(args: AnyObj) {
     candidates: results,
     ledger_path: relPath(paths.ledger_path),
     weaver_collective_profiles_path: relPath(paths.weaver_collective_profiles_path),
+    weaver_ensemble_profiles_path: relPath(paths.weaver_ensemble_profiles_path),
     ledger_updated_at: outLedger.updated_at
   };
   const runPath = path.join(paths.runs_dir, `${date}.json`);

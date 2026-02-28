@@ -1,0 +1,22 @@
+{
+  "schema_id": "adaptive_ensemble_routing_primitive_policy",
+  "schema_version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "routing": {
+    "min_specialists": 2,
+    "aligned_weight": 0.56,
+    "complementary_weight": 0.44,
+    "uncertainty_bias": 0.65,
+    "max_selected_specialists": 3
+  },
+  "outputs": {
+    "emit_weaver_profile": true
+  },
+  "state": {
+    "latest_path": "state/assimilation/adaptive_ensemble_routing/latest.json",
+    "history_path": "state/assimilation/adaptive_ensemble_routing/history.jsonl",
+    "receipts_path": "state/assimilation/adaptive_ensemble_routing/receipts.jsonl",
+    "weaver_profiles_path": "state/autonomy/weaver/adaptive_ensemble_profiles.jsonl"
+  }
+}

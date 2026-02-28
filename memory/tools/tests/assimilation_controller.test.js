@@ -104,11 +104,22 @@ function basePolicy() {
       generative_simulation_enabled: true,
       collective_reasoning_enabled: true,
       environment_evolution_enabled: true,
+      test_time_memory_evolution_enabled: true,
+      group_evolving_agents_enabled: true,
+      generative_meta_model_enabled: true,
+      self_teacher_distillation_enabled: true,
+      adaptive_ensemble_routing_enabled: true,
       memory_evolution_policy_path: 'config/memory_evolution_primitive_policy.json',
       context_navigation_policy_path: 'config/context_navigation_primitive_policy.json',
       generative_simulation_policy_path: 'config/generative_simulation_mode_policy.json',
       collective_reasoning_policy_path: 'config/collective_reasoning_primitive_policy.json',
-      environment_evolution_policy_path: 'config/environment_evolution_layer_policy.json'
+      environment_evolution_policy_path: 'config/environment_evolution_layer_policy.json',
+      test_time_memory_evolution_policy_path: 'config/test_time_memory_evolution_primitive_policy.json',
+      group_evolving_agents_policy_path: 'config/group_evolving_agents_primitive_policy.json',
+      generative_meta_model_policy_path: 'config/generative_meta_model_primitive_policy.json',
+      self_teacher_distillation_policy_path: 'config/self_teacher_distillation_primitive_policy.json',
+      adaptive_ensemble_routing_policy_path: 'config/adaptive_ensemble_routing_primitive_policy.json',
+      weaver_ensemble_profiles_path: 'state/autonomy/weaver/adaptive_ensemble_profiles.jsonl'
     },
     outputs: {
       emit_events: true,
@@ -134,10 +145,16 @@ function run() {
   const generativeSimulationPolicyPath = path.join(tmpRoot, 'config', 'generative_simulation_mode_policy.json');
   const collectiveReasoningPolicyPath = path.join(tmpRoot, 'config', 'collective_reasoning_primitive_policy.json');
   const environmentEvolutionPolicyPath = path.join(tmpRoot, 'config', 'environment_evolution_layer_policy.json');
+  const testTimeMemoryEvolutionPolicyPath = path.join(tmpRoot, 'config', 'test_time_memory_evolution_primitive_policy.json');
+  const groupEvolvingAgentsPolicyPath = path.join(tmpRoot, 'config', 'group_evolving_agents_primitive_policy.json');
+  const generativeMetaModelPolicyPath = path.join(tmpRoot, 'config', 'generative_meta_model_primitive_policy.json');
+  const selfTeacherDistillationPolicyPath = path.join(tmpRoot, 'config', 'self_teacher_distillation_primitive_policy.json');
+  const adaptiveEnsembleRoutingPolicyPath = path.join(tmpRoot, 'config', 'adaptive_ensemble_routing_primitive_policy.json');
   const valueAttributionRecordsPath = path.join(tmpRoot, 'state', 'assimilation', 'value_attribution', 'records.jsonl');
   const stateDir = path.join(tmpRoot, 'state', 'assimilation');
   const weaverLatestPath = path.join(tmpRoot, 'state', 'autonomy', 'weaver', 'latest.json');
   const weaverCollectivePath = path.join(tmpRoot, 'state', 'autonomy', 'weaver', 'collective_reasoning_profiles.jsonl');
+  const weaverEnsemblePath = path.join(tmpRoot, 'state', 'autonomy', 'weaver', 'adaptive_ensemble_profiles.jsonl');
 
   writeJson(weaverLatestPath, {
     ts: new Date().toISOString(),
@@ -338,12 +355,129 @@ function run() {
       doctor_queue_path: path.join(tmpRoot, 'state', 'ops', 'autotest_doctor', 'environment_feedback_queue.jsonl')
     }
   });
+  writeJson(testTimeMemoryEvolutionPolicyPath, {
+    schema_id: 'test_time_memory_evolution_primitive_policy',
+    schema_version: '1.0-test',
+    enabled: true,
+    shadow_only: true,
+    search: {
+      max_episode_candidates: 64,
+      max_synthesized_insights: 6,
+      novelty_bias: 0.3
+    },
+    evolution: {
+      reward_gain: 0.2,
+      penalty_gain: 0.2,
+      decay: 0.94,
+      target_step_reduction: 0.5,
+      max_step_reduction: 0.85
+    },
+    state: {
+      memory_graph_path: path.join(tmpRoot, 'state', 'assimilation', 'memory_evolution', 'episodes.jsonl'),
+      state_path: path.join(tmpRoot, 'state', 'assimilation', 'test_time_memory_evolution', 'state.json'),
+      latest_path: path.join(tmpRoot, 'state', 'assimilation', 'test_time_memory_evolution', 'latest.json'),
+      receipts_path: path.join(tmpRoot, 'state', 'assimilation', 'test_time_memory_evolution', 'receipts.jsonl')
+    }
+  });
+  writeJson(groupEvolvingAgentsPolicyPath, {
+    schema_id: 'group_evolving_agents_primitive_policy',
+    schema_version: '1.0-test',
+    enabled: true,
+    shadow_only: true,
+    sharing: {
+      max_peer_experiences: 24,
+      min_reuse_confidence: 0.4,
+      innovation_bonus: 0.2
+    },
+    trust: {
+      min_peer_trust: 0.3,
+      trust_decay: 0.95,
+      trust_gain: 0.05,
+      trust_penalty: 0.1
+    },
+    state: {
+      pool_path: path.join(tmpRoot, 'state', 'assimilation', 'group_evolving_agents', 'pool.json'),
+      latest_path: path.join(tmpRoot, 'state', 'assimilation', 'group_evolving_agents', 'latest.json'),
+      receipts_path: path.join(tmpRoot, 'state', 'assimilation', 'group_evolving_agents', 'receipts.jsonl')
+    }
+  });
+  writeJson(generativeMetaModelPolicyPath, {
+    schema_id: 'generative_meta_model_primitive_policy',
+    schema_version: '1.0-test',
+    enabled: true,
+    shadow_only: true,
+    manifold: {
+      ema_alpha: 0.3,
+      max_vector_dims: 24,
+      max_steering_magnitude: 0.4,
+      steering_gain: 0.4
+    },
+    safety: {
+      fluency_floor: 0.2,
+      stability_floor: 0.2,
+      clamp_distance: 5
+    },
+    state: {
+      manifold_state_path: path.join(tmpRoot, 'state', 'assimilation', 'generative_meta_model', 'manifold_state.json'),
+      latest_path: path.join(tmpRoot, 'state', 'assimilation', 'generative_meta_model', 'latest.json'),
+      receipts_path: path.join(tmpRoot, 'state', 'assimilation', 'generative_meta_model', 'receipts.jsonl')
+    }
+  });
+  writeJson(selfTeacherDistillationPolicyPath, {
+    schema_id: 'self_teacher_distillation_primitive_policy',
+    schema_version: '1.0-test',
+    enabled: true,
+    shadow_only: true,
+    trajectories: {
+      min_quality: 0.5,
+      max_samples: 24,
+      success_bonus: 0.08
+    },
+    distillation: {
+      learning_rate: 0.2,
+      apply_gain_cap: 0.3,
+      acceptance_threshold: 0.5
+    },
+    state: {
+      ledger_path: path.join(tmpRoot, 'state', 'assimilation', 'self_teacher_distillation', 'ledger.json'),
+      latest_path: path.join(tmpRoot, 'state', 'assimilation', 'self_teacher_distillation', 'latest.json'),
+      receipts_path: path.join(tmpRoot, 'state', 'assimilation', 'self_teacher_distillation', 'receipts.jsonl')
+    }
+  });
+  writeJson(adaptiveEnsembleRoutingPolicyPath, {
+    schema_id: 'adaptive_ensemble_routing_primitive_policy',
+    schema_version: '1.0-test',
+    enabled: true,
+    shadow_only: true,
+    routing: {
+      min_specialists: 2,
+      aligned_weight: 0.56,
+      complementary_weight: 0.44,
+      uncertainty_bias: 0.65,
+      max_selected_specialists: 3
+    },
+    outputs: {
+      emit_weaver_profile: true
+    },
+    state: {
+      latest_path: path.join(tmpRoot, 'state', 'assimilation', 'adaptive_ensemble_routing', 'latest.json'),
+      history_path: path.join(tmpRoot, 'state', 'assimilation', 'adaptive_ensemble_routing', 'history.jsonl'),
+      receipts_path: path.join(tmpRoot, 'state', 'assimilation', 'adaptive_ensemble_routing', 'receipts.jsonl'),
+      weaver_profiles_path: weaverEnsemblePath
+    }
+  });
   const policy = basePolicy();
   policy.integration.memory_evolution_policy_path = memoryEvolutionPolicyPath;
   policy.integration.context_navigation_policy_path = contextNavigationPolicyPath;
   policy.integration.generative_simulation_policy_path = generativeSimulationPolicyPath;
   policy.integration.collective_reasoning_policy_path = collectiveReasoningPolicyPath;
   policy.integration.environment_evolution_policy_path = environmentEvolutionPolicyPath;
+  policy.integration.test_time_memory_evolution_policy_path = testTimeMemoryEvolutionPolicyPath;
+  policy.integration.group_evolving_agents_policy_path = groupEvolvingAgentsPolicyPath;
+  policy.integration.generative_meta_model_policy_path = generativeMetaModelPolicyPath;
+  policy.integration.self_teacher_distillation_policy_path = selfTeacherDistillationPolicyPath;
+  policy.integration.adaptive_ensemble_routing_policy_path = adaptiveEnsembleRoutingPolicyPath;
+  policy.integration.weaver_ensemble_profiles_path = weaverEnsemblePath;
   writeJson(policyPath, policy);
   writeFile(dualityCodexPath, [
     '[meta]',
@@ -373,6 +507,7 @@ function run() {
     ASSIMILATION_STATE_DIR: stateDir,
     ASSIMILATION_WEAVER_LATEST_PATH: weaverLatestPath,
     ASSIMILATION_WEAVER_COLLECTIVE_PATH: weaverCollectivePath,
+    ASSIMILATION_WEAVER_ENSEMBLE_PATH: weaverEnsemblePath,
     CAPABILITY_PROFILE_POLICY_PATH: capabilityProfilePolicyPath,
     DUALITY_SEED_POLICY_PATH: dualityPolicyPath,
     VALUE_ATTRIBUTION_POLICY_PATH: valueAttributionPolicyPath
@@ -468,12 +603,32 @@ function run() {
       'generative simulation mode should run for candidates'
     );
     assert.ok(
+      row.generative_meta_model && row.generative_meta_model.ok === true,
+      'generative meta-model primitive should run for candidates'
+    );
+    assert.ok(
+      row.adaptive_ensemble_routing && row.adaptive_ensemble_routing.ok === true,
+      'adaptive ensemble routing primitive should run for candidates'
+    );
+    assert.ok(
       row.environment_evolution && row.environment_evolution.ok === true,
       'environment evolution layer should run for candidates'
     );
     assert.ok(
       row.memory_evolution && row.memory_evolution.ok === true,
       'memory evolution primitive should run for candidates'
+    );
+    assert.ok(
+      row.test_time_memory_evolution && row.test_time_memory_evolution.ok === true,
+      'test-time memory evolution primitive should run for candidates'
+    );
+    assert.ok(
+      row.self_teacher_distillation && row.self_teacher_distillation.ok === true,
+      'self-teacher distillation primitive should run for candidates'
+    );
+    assert.ok(
+      row.group_evolving_agents && row.group_evolving_agents.ok === true,
+      'group-evolving agents primitive should run for candidates'
     );
     assert.ok(
       row.value_attribution && row.value_attribution.attribution_id,
@@ -494,11 +649,24 @@ function run() {
   assert.strictEqual(ledger.capabilities['cap.external.beta'].source_type, 'external_adapter');
   const collectiveProfiles = readJsonl(weaverCollectivePath);
   assert.ok(collectiveProfiles.length >= 2, 'collective profiles should be emitted for weaver integration');
+  const ensembleProfiles = readJsonl(weaverEnsemblePath);
+  assert.ok(ensembleProfiles.length >= 2, 'ensemble routing profiles should be emitted for weaver integration');
 
   // Move to live-eligible mode and validate high-risk approval gating.
   const livePolicy = basePolicy();
   livePolicy.shadow_only = false;
   livePolicy.allow_apply = true;
+  livePolicy.integration.memory_evolution_policy_path = memoryEvolutionPolicyPath;
+  livePolicy.integration.context_navigation_policy_path = contextNavigationPolicyPath;
+  livePolicy.integration.generative_simulation_policy_path = generativeSimulationPolicyPath;
+  livePolicy.integration.collective_reasoning_policy_path = collectiveReasoningPolicyPath;
+  livePolicy.integration.environment_evolution_policy_path = environmentEvolutionPolicyPath;
+  livePolicy.integration.test_time_memory_evolution_policy_path = testTimeMemoryEvolutionPolicyPath;
+  livePolicy.integration.group_evolving_agents_policy_path = groupEvolvingAgentsPolicyPath;
+  livePolicy.integration.generative_meta_model_policy_path = generativeMetaModelPolicyPath;
+  livePolicy.integration.self_teacher_distillation_policy_path = selfTeacherDistillationPolicyPath;
+  livePolicy.integration.adaptive_ensemble_routing_policy_path = adaptiveEnsembleRoutingPolicyPath;
+  livePolicy.integration.weaver_ensemble_profiles_path = weaverEnsemblePath;
   writeJson(policyPath, livePolicy);
 
   assertOk(runNode(scriptPath, [

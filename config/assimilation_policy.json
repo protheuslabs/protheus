@@ -78,11 +78,22 @@
     "generative_simulation_enabled": true,
     "collective_reasoning_enabled": true,
     "environment_evolution_enabled": true,
+    "test_time_memory_evolution_enabled": true,
+    "group_evolving_agents_enabled": true,
+    "generative_meta_model_enabled": true,
+    "self_teacher_distillation_enabled": true,
+    "adaptive_ensemble_routing_enabled": true,
     "memory_evolution_policy_path": "config/memory_evolution_primitive_policy.json",
     "context_navigation_policy_path": "config/context_navigation_primitive_policy.json",
     "generative_simulation_policy_path": "config/generative_simulation_mode_policy.json",
     "collective_reasoning_policy_path": "config/collective_reasoning_primitive_policy.json",
-    "environment_evolution_policy_path": "config/environment_evolution_layer_policy.json"
+    "environment_evolution_policy_path": "config/environment_evolution_layer_policy.json",
+    "test_time_memory_evolution_policy_path": "config/test_time_memory_evolution_primitive_policy.json",
+    "group_evolving_agents_policy_path": "config/group_evolving_agents_primitive_policy.json",
+    "generative_meta_model_policy_path": "config/generative_meta_model_primitive_policy.json",
+    "self_teacher_distillation_policy_path": "config/self_teacher_distillation_primitive_policy.json",
+    "adaptive_ensemble_routing_policy_path": "config/adaptive_ensemble_routing_primitive_policy.json",
+    "weaver_ensemble_profiles_path": "state/autonomy/weaver/adaptive_ensemble_profiles.jsonl"
   },
   "outputs": {
     "emit_events": true,

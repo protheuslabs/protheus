@@ -1,0 +1,21 @@
+{
+  "schema_id": "self_teacher_distillation_primitive_policy",
+  "schema_version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "trajectories": {
+    "min_quality": 0.65,
+    "max_samples": 60,
+    "success_bonus": 0.08
+  },
+  "distillation": {
+    "learning_rate": 0.18,
+    "apply_gain_cap": 0.3,
+    "acceptance_threshold": 0.66
+  },
+  "state": {
+    "ledger_path": "state/assimilation/self_teacher_distillation/ledger.json",
+    "latest_path": "state/assimilation/self_teacher_distillation/latest.json",
+    "receipts_path": "state/assimilation/self_teacher_distillation/receipts.jsonl"
+  }
+}

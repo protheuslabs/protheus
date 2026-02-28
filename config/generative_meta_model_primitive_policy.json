@@ -1,0 +1,22 @@
+{
+  "schema_id": "generative_meta_model_primitive_policy",
+  "schema_version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "manifold": {
+    "ema_alpha": 0.22,
+    "max_vector_dims": 64,
+    "max_steering_magnitude": 0.35,
+    "steering_gain": 0.45
+  },
+  "safety": {
+    "fluency_floor": 0.58,
+    "stability_floor": 0.55,
+    "clamp_distance": 4
+  },
+  "state": {
+    "manifold_state_path": "state/assimilation/generative_meta_model/manifold_state.json",
+    "latest_path": "state/assimilation/generative_meta_model/latest.json",
+    "receipts_path": "state/assimilation/generative_meta_model/receipts.jsonl"
+  }
+}
