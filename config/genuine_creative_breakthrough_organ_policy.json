@@ -1,0 +1,18 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "max_candidates_per_run": 5,
+  "candidate_classes": [
+    "new_primitive",
+    "primitive_upgrade",
+    "extension_profile"
+  ],
+  "novelty_floor": 0.65,
+  "state": {
+    "state_path": "state/autonomy/genuine_creative_breakthrough/state.json",
+    "latest_path": "state/autonomy/genuine_creative_breakthrough/latest.json",
+    "receipts_path": "state/autonomy/genuine_creative_breakthrough/receipts.jsonl",
+    "candidates_path": "state/autonomy/genuine_creative_breakthrough/candidates.jsonl"
+  }
+}

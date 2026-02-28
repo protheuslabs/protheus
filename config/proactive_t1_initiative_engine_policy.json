@@ -1,0 +1,19 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "auto_generate_from_context": true,
+  "min_tick_interval_sec": 300,
+  "max_initiatives_per_tick": 6,
+  "objective_id": "T1_make_jay_billionaire_v1",
+  "auto_execute_risk_tiers": [
+    "low",
+    "medium"
+  ],
+  "state": {
+    "state_path": "state/autonomy/proactive_t1_initiative_engine/state.json",
+    "queue_path": "state/autonomy/proactive_t1_initiative_engine/queue.jsonl",
+    "latest_path": "state/autonomy/proactive_t1_initiative_engine/latest.json",
+    "receipts_path": "state/autonomy/proactive_t1_initiative_engine/receipts.jsonl"
+  }
+}

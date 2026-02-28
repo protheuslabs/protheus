@@ -1,0 +1,21 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "anticipation_horizon_hours": 24,
+  "preferred_channels": [
+    "obsidian",
+    "holo",
+    "chat"
+  ],
+  "style_defaults": {
+    "directness": 0.9,
+    "brevity": 0.85,
+    "proactive_delta": 0.7
+  },
+  "state": {
+    "state_path": "state/symbiosis/deep_understanding/state.json",
+    "latest_path": "state/symbiosis/deep_understanding/latest.json",
+    "receipts_path": "state/symbiosis/deep_understanding/receipts.jsonl"
+  }
+}

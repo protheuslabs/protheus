@@ -1,0 +1,24 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "high_risk_min_approval_note_chars": 12,
+  "medium_veto_window_minutes": 10,
+  "low_to_medium_promote_usd": 50,
+  "default_risk_tier": "medium",
+  "default_cost_usd": 8,
+  "default_liability_score": 0.35,
+  "threshold_usd": {
+    "low": 100,
+    "medium": 1000
+  },
+  "liability_threshold": {
+    "low": 0.2,
+    "medium": 0.55
+  },
+  "state": {
+    "state_path": "state/autonomy/zero_permission_layer/state.json",
+    "latest_path": "state/autonomy/zero_permission_layer/latest.json",
+    "receipts_path": "state/autonomy/zero_permission_layer/receipts.jsonl"
+  }
+}

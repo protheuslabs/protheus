@@ -26,6 +26,7 @@ const EYE_KERNEL_SCRIPT = path.join(ROOT, 'systems', 'eye', 'eye_kernel.js');
 const SOUL_GUARD_SCRIPT = path.join(ROOT, 'systems', 'security', 'soul_token_guard.js');
 const CONSTITUTION_GUARD_SCRIPT = path.join(ROOT, 'systems', 'security', 'constitution_guardian.js');
 const WEAVER_CORE_SCRIPT = path.join(ROOT, 'systems', 'weaver', 'weaver_core.js');
+const ZERO_PERMISSION_LAYER_SCRIPT = path.join(ROOT, 'systems', 'autonomy', 'zero_permission_conversational_layer.js');
 
 function nowIso() {
   return new Date().toISOString();
@@ -143,11 +144,11 @@ function parseJsonArg(raw: unknown, fallback: any) {
   }
 }
 
-function runNodeJson(scriptPath: string, args: string[], envExtras: AnyObj = {}) {
+function runNodeJson(scriptPath: string, args: string[], envExtras: AnyObj = {}, timeoutMs = 1200) {
   const proc = spawnSync(process.execPath, [scriptPath, ...args], {
     cwd: ROOT,
     encoding: 'utf8',
-    timeout: 1200,
+    timeout: clampInt(timeoutMs, 200, 120000, 1200),
     maxBuffer: 1024 * 1024,
     env: {
       ...process.env,
@@ -515,6 +516,54 @@ function buildExecutionContract(policy: AnyObj, riskProfile: AnyObj, startTs: st
   };
 }
 
+function resolveConversationContract(policy: AnyObj, riskProfile: AnyObj, args: AnyObj, startTs: string) {
+  const fallbackExecution = buildExecutionContract(policy, riskProfile, startTs);
+  const fallbackApproval = evaluateApprovalContract(policy, riskProfile.risk_tier, args);
+  const payload = runNodeJson(ZERO_PERMISSION_LAYER_SCRIPT, [
+    'decide',
+    `--action-id=${normalizeToken(args['campaign-id'] || args.campaign_id || 'outreach_campaign', 160) || 'outreach_campaign'}`,
+    `--risk-tier=${normalizeToken(riskProfile.risk_tier || 'medium', 20) || 'medium'}`,
+    `--estimated-cost-usd=${Number(riskProfile.estimated_cost_usd || 0).toFixed(6)}`,
+    `--liability-score=${Number(riskProfile.liability_score || 0).toFixed(6)}`,
+    `--approval-note=${cleanText(args['approval-note'] || args.approval_note || '', 800)}`,
+    `--apply=${toBool(args.apply, false) ? '1' : '0'}`
+  ], {}, 5000).payload;
+  if (!payload || typeof payload !== 'object' || payload.ok !== true) {
+    return {
+      execution: fallbackExecution,
+      approval: fallbackApproval,
+      source: 'fallback_internal'
+    };
+  }
+  const execution = {
+    risk_tier: normalizeToken(payload.risk_tier || fallbackExecution.risk_tier, 20) || fallbackExecution.risk_tier,
+    execution_mode: cleanText(payload.execution_mode || fallbackExecution.execution_mode, 120) || fallbackExecution.execution_mode,
+    operator_prompt_required: payload.operator_prompt_required === true,
+    auto_execute_at: payload.execute_now === true ? nowIso() : fallbackExecution.auto_execute_at,
+    veto_window_minutes: clampInt(
+      payload.veto_deadline_at ? policy.autonomous_execution.medium_veto_window_minutes : fallbackExecution.veto_window_minutes,
+      0,
+      24 * 60,
+      fallbackExecution.veto_window_minutes
+    ),
+    veto_deadline_at: cleanText(payload.veto_deadline_at || fallbackExecution.veto_deadline_at || '', 60) || fallbackExecution.veto_deadline_at || null
+  };
+  const approval = {
+    apply_requested: payload.apply_requested === true,
+    apply_allowed: payload.approval_satisfied !== false || execution.risk_tier !== 'high',
+    explicit_approval_satisfied: payload.approval_satisfied !== false,
+    approval_note: cleanText(args['approval-note'] || args.approval_note || '', 800) || null,
+    reason_codes: Array.isArray(payload.reason_codes)
+      ? payload.reason_codes.map((row: unknown) => cleanText(row, 120)).filter(Boolean)
+      : []
+  };
+  return {
+    execution,
+    approval,
+    source: 'zero_permission_layer'
+  };
+}
+
 function readBurnProjection(policy: AnyObj) {
   const burn = readJson(policy.dependencies.burn_oracle_latest_path, null);
   const projection = burn && burn.projection && typeof burn.projection === 'object' ? burn.projection : {};
@@ -720,7 +769,13 @@ function cmdPlan(policy: AnyObj, args: AnyObj) {
     .slice(0, cap);
 
   const riskProfile = inferRiskProfile(policy, args, eligibleLeads.length, burnProjection);
-  const approvalContract = evaluateApprovalContract(policy, riskProfile.risk_tier, args);
+  const conversationContract = resolveConversationContract(policy, riskProfile, args, nowIso());
+  const approvalContract = conversationContract.approval;
+  const contractRiskTier = normalizeToken(
+    conversationContract.execution && conversationContract.execution.risk_tier || riskProfile.risk_tier,
+    20
+  ) || riskProfile.risk_tier;
+  riskProfile.risk_tier = contractRiskTier;
   const governance = evaluateGovernanceGates(policy, riskProfile.risk_tier, riskProfile.risk_tier === 'high');
   if (!governance.ok) {
     return {
@@ -736,7 +791,7 @@ function cmdPlan(policy: AnyObj, args: AnyObj) {
         .concat(governance.reason_codes || [])
     };
   }
-  const executionContract = buildExecutionContract(policy, riskProfile, nowIso());
+  const executionContract = conversationContract.execution;
 
   const reasonCodes = []
     .concat(riskProfile.reason_codes || [])
@@ -815,6 +870,7 @@ function cmdPlan(policy: AnyObj, args: AnyObj) {
     execution_mode: executionContract.execution_mode,
     veto_deadline_at: executionContract.veto_deadline_at,
     operator_prompt_required: executionContract.operator_prompt_required === true,
+    conversation_contract_source: conversationContract.source,
     reason_codes: reasonCodes,
     projected_runway_days: burnProjection.projected_runway_days,
     pressure: burnProjection.pressure,
@@ -860,10 +916,15 @@ function cmdRun(policy: AnyObj, args: AnyObj) {
       clampInt(campaign.leads_selected, 0, 1_000_000, 0),
       campaign.burn_projection && typeof campaign.burn_projection === 'object' ? campaign.burn_projection : readBurnProjection(policy)
     );
+  const conversationContract = resolveConversationContract(policy, riskProfile, args, nowIso());
   const executionContract = campaign.execution_contract && typeof campaign.execution_contract === 'object'
     ? campaign.execution_contract
-    : buildExecutionContract(policy, riskProfile, nowIso());
-  const approvalContract = evaluateApprovalContract(policy, riskProfile.risk_tier, args);
+    : conversationContract.execution;
+  const approvalContract = conversationContract.approval;
+  riskProfile.risk_tier = normalizeToken(
+    executionContract && executionContract.risk_tier || riskProfile.risk_tier,
+    20
+  ) || riskProfile.risk_tier;
   const governance = evaluateGovernanceGates(policy, riskProfile.risk_tier, riskProfile.risk_tier === 'high');
   const reasonCodes = []
     .concat(approvalContract.reason_codes || [])
@@ -1038,6 +1099,7 @@ function cmdRun(policy: AnyObj, args: AnyObj) {
     risk_tier: riskProfile.risk_tier,
     execution_mode: executionContract.execution_mode,
     operator_prompt_required: executionContract.operator_prompt_required === true,
+    conversation_contract_source: conversationContract.source,
     reason_codes: reasonCodes,
     paths: {
       campaign_path: rel(campaignPath),

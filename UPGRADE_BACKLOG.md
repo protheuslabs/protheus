@@ -673,6 +673,23 @@ Dependency notes:
 - `V3-ACT-001` depends on `V2-063`, `V2-066`, `V3-BUD-001`, and `V3-BLK-001` (optional on-chain add-on only).
 - `V3-ACT-002` depends on `V3-ACT-001`, `V3-039` (universal execution primitive), `V2-067`, and `V3-BUD-001`.
 
+## 100/100 Polish Pack (Normalized, 2026-02-28)
+
+Objective: close final user-perceived agency gaps by adding proactive initiative loops, zero-permission execution contracts, deep personalization signals, and bounded novelty generation in shadow-first mode.
+
+| ID | Class | Version | Status | Upgrade | Why | Exit Criteria |
+|---|---|---|---|---|---|---|
+| V3-PRO-001 | extension | V3 | done | Proactive T1 Initiative Engine | Execute bounded low/medium goal workflows continuously without waiting for prompts | Implemented `systems/autonomy/proactive_t1_initiative_engine.ts` + policy `config/proactive_t1_initiative_engine_policy.json` with queue/tick runtime, context-derived initiatives, zero-permission contract integration, autonomous outcome receipts, and coverage in `memory/tools/tests/proactive_t1_initiative_engine.test.js`. |
+| V3-AGT-001 | primitive-upgrade | V3 | done | Zero-Permission Conversational Layer | Remove low/medium “should I?” loops by defaulting to execution contracts + outcome reporting | Implemented `systems/autonomy/zero_permission_conversational_layer.ts` + policy `config/zero_permission_conversational_layer_policy.json`; integrated into `systems/workflow/universal_outreach_primitive.ts` as primary contract source for low/medium default autonomy and high-risk explicit-approval behavior. |
+| V3-SYM-001 | extension | V3 | done | Deep Symbiosis Understanding Layer | Personalize proactive/autonomous output style and anticipation signals to user preferences | Implemented `systems/symbiosis/deep_symbiosis_understanding_layer.ts` + policy `config/deep_symbiosis_understanding_layer_policy.json` with ingest/predict/status APIs and receipt trail; integrated into proactive initiative outcomes as preferred-output context. |
+| V3-CRT-001 | extension | V3 | done | Genuine Creative Breakthrough Organ | Generate bounded novel primitive/upgrade/extension candidates with governance-first promotion path | Implemented `systems/autonomy/genuine_creative_breakthrough_organ.ts` + policy `config/genuine_creative_breakthrough_organ_policy.json` with novelty scoring, dedupe ledger, mirror/constitution probes, and candidate proposal receipts in shadow mode. |
+
+Dependency notes:
+- `V3-PRO-001` depends on `V3-AGT-001`, `V3-BUD-001`, and `V3-ACT-002`.
+- `V3-AGT-001` depends on `V3-ACT-001` and `V3-ACT-002`.
+- `V3-SYM-001` depends on `V3-035` and `V3-036`.
+- `V3-CRT-001` depends on `V3-TASK-001`, `V3-ATTR-001`, and `V3-DUAL-001`.
+
 ## Binary Runtime Hardening Intake (Normalized, 2026-02-27)
 
 Objective: add reverse-engineering resistance + efficiency for distributed instances while keeping the master instance fully debuggable and source-first.
