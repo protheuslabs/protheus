@@ -18,6 +18,7 @@ export {};
 
 const fs = require('fs');
 const path = require('path');
+const { loadDynamicBurnOracleSignal } = require('../../lib/dynamic_burn_budget_signal');
 
 type AnyObj = Record<string, any>;
 
@@ -25,6 +26,9 @@ const ROOT = path.resolve(__dirname, '..', '..');
 const DEFAULT_POLICY_PATH = process.env.CAPITAL_ALLOCATION_POLICY_PATH
   ? path.resolve(String(process.env.CAPITAL_ALLOCATION_POLICY_PATH))
   : path.join(ROOT, 'config', 'capital_allocation_policy.json');
+const CAPITAL_BURN_ORACLE_LATEST_PATH = process.env.CAPITAL_ALLOCATION_BURN_ORACLE_LATEST_PATH
+  ? path.resolve(String(process.env.CAPITAL_ALLOCATION_BURN_ORACLE_LATEST_PATH))
+  : path.join(ROOT, 'state', 'ops', 'dynamic_burn_budget_oracle', 'latest.json');
 
 function nowIso() {
   return new Date().toISOString();
@@ -109,6 +113,43 @@ function appendJsonl(filePath: string, row: AnyObj) {
 
 function rel(absPath: string) {
   return path.relative(ROOT, absPath).replace(/\\/g, '/');
+}
+
+function normalizeBurnPressure(v: unknown) {
+  const raw = normalizeToken(v || 'none', 32);
+  if (raw === 'critical') return 'critical';
+  if (raw === 'high') return 'high';
+  if (raw === 'medium') return 'medium';
+  if (raw === 'low') return 'low';
+  return 'none';
+}
+
+function loadCapitalBurnOracle() {
+  const signal = loadDynamicBurnOracleSignal({
+    latest_path: CAPITAL_BURN_ORACLE_LATEST_PATH
+  });
+  const payload = signal && signal.payload && typeof signal.payload === 'object'
+    ? signal.payload
+    : {};
+  const decisions = payload && payload.decisions && typeof payload.decisions === 'object'
+    ? payload.decisions
+    : {};
+  const hold = decisions.capital_allocation_hold === true;
+  return {
+    available: signal && signal.available === true,
+    pressure: normalizeBurnPressure(signal && signal.pressure),
+    hold,
+    projected_runway_days: signal && signal.projected_runway_days != null
+      ? Number(signal.projected_runway_days)
+      : null,
+    projected_days_to_reset: signal && signal.projected_days_to_reset != null
+      ? Number(signal.projected_days_to_reset)
+      : null,
+    reason_codes: Array.isArray(signal && signal.reason_codes) ? signal.reason_codes.slice(0, 12) : [],
+    source_path: signal && signal.latest_path_rel
+      ? signal.latest_path_rel
+      : rel(CAPITAL_BURN_ORACLE_LATEST_PATH)
+  };
 }
 
 function defaultPolicy() {
@@ -279,7 +320,18 @@ function cmdSimulate(args: AnyObj) {
 function cmdAllocate(args: AnyObj) {
   const policy = loadPolicy(args.policy ? path.resolve(String(args.policy)) : DEFAULT_POLICY_PATH);
   const strict = toBool(args.strict, policy.strict_default === true);
+  const forceBudget = toBool(args['force-budget'] || args.force_budget, false);
   const state = loadState(policy);
+  const burnOracle = loadCapitalBurnOracle();
+  if (burnOracle.available === true && burnOracle.hold === true && !forceBudget) {
+    process.stdout.write(`${JSON.stringify({
+      ok: false,
+      type: 'capital_allocation_allocate',
+      error: 'budget_oracle_hold',
+      budget_oracle: burnOracle
+    })}\n`);
+    process.exit(1);
+  }
   const bucketId = normalizeToken(args.bucket || '', 80);
   const simId = normalizeToken(args['simulation-id'] || args.simulation_id || '', 120);
   if (!bucketId || !policy.buckets[bucketId]) {
@@ -338,6 +390,7 @@ function cmdAllocate(args: AnyObj) {
     allocation: state.allocations[allocationId],
     cash_balance: state.cash_balance,
     bucket_state: bucket,
+    budget_oracle: burnOracle,
     policy_path: rel(policy.policy_path)
   };
   writeJsonAtomic(policy.latest_path, out);
@@ -435,6 +488,7 @@ function cmdStatus(args: AnyObj) {
   const days = clampInt(args.days, 1, 365, 30);
   const state = loadState(policy);
   const metrics = evaluateWindow(policy, days);
+  const burnOracle = loadCapitalBurnOracle();
   process.stdout.write(`${JSON.stringify({
     ok: true,
     type: 'capital_allocation_status',
@@ -445,6 +499,7 @@ function cmdStatus(args: AnyObj) {
     open_allocations: Object.values(state.allocations || {}).filter((row: AnyObj) => row && row.status === 'open').length,
     simulations: Object.keys(state.simulations || {}).length,
     metrics,
+    budget_oracle: burnOracle,
     policy: {
       path: rel(policy.policy_path),
       min_simulation_score: policy.min_simulation_score,

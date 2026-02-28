@@ -1,0 +1,7 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "min_trust_score": 0.55,
+  "receipts_path": "state/assimilation/source_attestation_extension/receipts.jsonl",
+  "latest_path": "state/assimilation/source_attestation_extension/latest.json"
+}

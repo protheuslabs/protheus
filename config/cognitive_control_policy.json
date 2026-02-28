@@ -1,0 +1,9 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "min_sufficiency": 0.55,
+  "max_retrieval_items": 6,
+  "receipts_path": "state/primitives/cognitive_control/receipts.jsonl",
+  "latest_path": "state/primitives/cognitive_control/latest.json"
+}

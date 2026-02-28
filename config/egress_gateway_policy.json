@@ -86,6 +86,12 @@
       "methods": ["POST"],
       "domains": ["moltstack.net", "www.moltstack.net"],
       "rate_caps": { "per_hour": 60, "per_day": 400 }
+    },
+    "ops.dynamic_burn_budget_oracle": {
+      "methods": ["GET"],
+      "domains": ["api.openai.com", "api.anthropic.com", "api.x.ai", "console.x.ai"],
+      "require_runtime_allowlist": true,
+      "rate_caps": { "per_hour": 180, "per_day": 2400 }
     }
   }
 }

@@ -18,6 +18,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { spawnSync } = require('child_process');
+const { loadDynamicBurnOracleSignal } = require('../../lib/dynamic_burn_budget_signal');
 
 type AnyObj = Record<string, any>;
 
@@ -25,6 +26,9 @@ const ROOT = path.resolve(__dirname, '..', '..');
 const DEFAULT_POLICY_PATH = process.env.GATED_SELF_IMPROVEMENT_POLICY_PATH
   ? path.resolve(process.env.GATED_SELF_IMPROVEMENT_POLICY_PATH)
   : path.join(ROOT, 'config', 'gated_self_improvement_policy.json');
+const GATED_SELF_IMPROVEMENT_BURN_ORACLE_LATEST_PATH = process.env.GATED_SELF_IMPROVEMENT_BURN_ORACLE_LATEST_PATH
+  ? path.resolve(process.env.GATED_SELF_IMPROVEMENT_BURN_ORACLE_LATEST_PATH)
+  : path.join(ROOT, 'state', 'ops', 'dynamic_burn_budget_oracle', 'latest.json');
 const SELF_CODE_EVOLUTION_SCRIPT = path.join(ROOT, 'systems', 'autonomy', 'self_code_evolution_sandbox.js');
 const AUTONOMY_SIMULATION_SCRIPT = path.join(ROOT, 'systems', 'autonomy', 'autonomy_simulation_harness.js');
 const RED_TEAM_HARNESS_SCRIPT = path.join(ROOT, 'systems', 'autonomy', 'red_team_harness.js');
@@ -149,6 +153,42 @@ function parseJsonMaybe(v: unknown) {
   } catch {
     return null;
   }
+}
+
+function normalizeBurnPressure(v: unknown) {
+  const raw = normalizeToken(v || 'none', 32);
+  if (raw === 'critical') return 'critical';
+  if (raw === 'high') return 'high';
+  if (raw === 'medium') return 'medium';
+  if (raw === 'low') return 'low';
+  return 'none';
+}
+
+function loadSelfImprovementBurnOracle() {
+  const signal = loadDynamicBurnOracleSignal({
+    latest_path: GATED_SELF_IMPROVEMENT_BURN_ORACLE_LATEST_PATH
+  });
+  const payload = signal && signal.payload && typeof signal.payload === 'object'
+    ? signal.payload
+    : {};
+  const decisions = payload && payload.decisions && typeof payload.decisions === 'object'
+    ? payload.decisions
+    : {};
+  return {
+    available: signal && signal.available === true,
+    pressure: normalizeBurnPressure(signal && signal.pressure),
+    hold: decisions.self_improvement_hold === true,
+    projected_runway_days: signal && signal.projected_runway_days != null
+      ? Number(signal.projected_runway_days)
+      : null,
+    projected_days_to_reset: signal && signal.projected_days_to_reset != null
+      ? Number(signal.projected_days_to_reset)
+      : null,
+    reason_codes: Array.isArray(signal && signal.reason_codes) ? signal.reason_codes.slice(0, 12) : [],
+    source_path: signal && signal.latest_path_rel
+      ? signal.latest_path_rel
+      : rel(GATED_SELF_IMPROVEMENT_BURN_ORACLE_LATEST_PATH)
+  };
 }
 
 function defaultPolicy() {
@@ -419,6 +459,22 @@ function cmdRun(args: AnyObj) {
 
   const ts = nowIso();
   const applyRequested = toBool(args.apply, false);
+  const forceBudget = toBool(args['force-budget'] || args.force_budget, false);
+  const burnOracle = loadSelfImprovementBurnOracle();
+  if (burnOracle.available === true && burnOracle.hold === true && !forceBudget) {
+    const out = {
+      ok: false,
+      type: 'gated_self_improvement_run',
+      ts,
+      proposal_id: proposalId,
+      error: 'budget_oracle_hold',
+      budget_oracle: burnOracle
+    };
+    persistLatest(policy, out);
+    process.stdout.write(`${JSON.stringify(out, null, 2)}\n`);
+    process.exit(1);
+    return;
+  }
   const sandboxApplyAllowed = applyRequested && !policy.shadow_only;
   const mockMode = toBool(args['mock-sandbox'] || args.mock_sandbox, false);
 
@@ -580,6 +636,7 @@ function cmdRun(args: AnyObj) {
       ok: redRun.ok,
       summary: redSummary
     },
+    budget_oracle: burnOracle,
     sandbox: sandboxOps,
     rollback
   };
@@ -647,13 +704,15 @@ function cmdStatus(args: AnyObj) {
   const policy = loadPolicy(args.policy || DEFAULT_POLICY_PATH);
   const state = loadState(policy);
   const proposalId = normalizeToken(args['proposal-id'] || args.proposal_id || '', 120);
+  const burnOracle = loadSelfImprovementBurnOracle();
   const out = proposalId
     ? {
         ok: true,
         type: 'gated_self_improvement_status',
         ts: nowIso(),
         proposal_id: proposalId,
-        proposal: state.proposals[proposalId] || null
+        proposal: state.proposals[proposalId] || null,
+        budget_oracle: burnOracle
       }
     : {
         ok: true,
@@ -666,7 +725,8 @@ function cmdStatus(args: AnyObj) {
           live_ready: Object.values(state.proposals || {}).filter((row: any) => row && row.status === 'live_ready').length,
           live_merged: Object.values(state.proposals || {}).filter((row: any) => row && row.status === 'live_merged').length,
           rolled_back: Object.values(state.proposals || {}).filter((row: any) => row && row.status === 'rolled_back').length
-        }
+        },
+        budget_oracle: burnOracle
       };
   process.stdout.write(`${JSON.stringify(out, null, 2)}\n`);
 }

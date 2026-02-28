@@ -1,0 +1,157 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "poll_timeout_ms": 12000,
+  "cadence": {
+    "default_minutes": 15,
+    "high_burn_minutes": 5,
+    "low_burn_minutes": 30,
+    "burn_spike_multiplier": 1.35
+  },
+  "thresholds": {
+    "critical_runway_days": 2,
+    "high_runway_days": 5,
+    "medium_runway_days": 10,
+    "min_runway_days_for_capital_allocation": 3,
+    "min_runway_days_for_execute_escalation": 2
+  },
+  "regime_burn_multipliers": {
+    "constrained_budget": 0.85,
+    "exploit": 1.0,
+    "maintain": 0.95,
+    "explore": 1.15,
+    "unknown": 1.0
+  },
+  "providers": {
+    "openai": {
+      "enabled": true,
+      "secret_id": "openai_admin_key",
+      "secret_scope": "ops.dynamic_burn_budget_oracle",
+      "egress_scope": "ops.dynamic_burn_budget_oracle",
+      "runtime_allowlist": [
+        "api.openai.com"
+      ],
+      "auth_header": "Authorization",
+      "auth_prefix": "Bearer ",
+      "reset_cycle": "monthly",
+      "reset_day_utc": 1,
+      "endpoints": {
+        "costs": {
+          "method": "GET",
+          "url": "https://api.openai.com/organization/costs"
+        },
+        "credits": {
+          "method": "GET",
+          "url": "https://api.openai.com/v1/dashboard/billing/credit_grants"
+        }
+      },
+      "parse": {
+        "cost_24h_paths": [
+          "total_cost_usd",
+          "costs.total_usd"
+        ],
+        "balance_paths": [
+          "total_available",
+          "credit_grants.total_available",
+          "available",
+          "balance_usd"
+        ],
+        "reset_at_paths": [
+          "reset_at",
+          "next_reset_at",
+          "credit_grants.next_reset_at"
+        ]
+      }
+    },
+    "anthropic": {
+      "enabled": true,
+      "secret_id": "anthropic_admin_key",
+      "secret_scope": "ops.dynamic_burn_budget_oracle",
+      "egress_scope": "ops.dynamic_burn_budget_oracle",
+      "runtime_allowlist": [
+        "api.anthropic.com"
+      ],
+      "auth_header": "x-api-key",
+      "auth_prefix": "",
+      "reset_cycle": "monthly",
+      "reset_day_utc": 1,
+      "endpoints": {
+        "usage": {
+          "method": "GET",
+          "url": "https://api.anthropic.com/v1/organizations/usage_report/messages"
+        },
+        "costs": {
+          "method": "GET",
+          "url": "https://api.anthropic.com/v1/organizations/cost_report"
+        }
+      },
+      "parse": {
+        "cost_24h_paths": [
+          "total_cost_usd",
+          "cost_usd_24h",
+          "usage.total_cost_usd"
+        ],
+        "balance_paths": [
+          "balance_usd",
+          "remaining_credit_usd",
+          "total_available"
+        ],
+        "reset_at_paths": [
+          "reset_at",
+          "next_reset_at"
+        ]
+      }
+    },
+    "xai": {
+      "enabled": true,
+      "secret_id": "xai_admin_key",
+      "secret_scope": "ops.dynamic_burn_budget_oracle",
+      "egress_scope": "ops.dynamic_burn_budget_oracle",
+      "runtime_allowlist": [
+        "api.x.ai",
+        "console.x.ai"
+      ],
+      "auth_header": "Authorization",
+      "auth_prefix": "Bearer ",
+      "reset_cycle": "weekly",
+      "reset_weekday_utc": 1,
+      "endpoints": {
+        "usage": {
+          "method": "GET",
+          "url": "https://api.x.ai/v1/usage"
+        },
+        "credits": {
+          "method": "GET",
+          "url": "https://api.x.ai/v1/credits"
+        }
+      },
+      "parse": {
+        "cost_24h_paths": [
+          "total_cost_usd",
+          "usage.cost_usd_24h",
+          "cost_usd_24h"
+        ],
+        "balance_paths": [
+          "available",
+          "credits.available",
+          "remaining_credit_usd",
+          "balance_usd"
+        ],
+        "reset_at_paths": [
+          "reset_at",
+          "next_reset_at"
+        ]
+      }
+    }
+  },
+  "state": {
+    "state_path": "state/ops/dynamic_burn_budget_oracle/state.json",
+    "latest_path": "state/ops/dynamic_burn_budget_oracle/latest.json",
+    "history_path": "state/ops/dynamic_burn_budget_oracle/history.jsonl",
+    "receipts_path": "state/ops/dynamic_burn_budget_oracle/receipts.jsonl",
+    "weaver_hint_path": "state/autonomy/weaver/budget_oracle_hints.jsonl",
+    "routing_hint_path": "state/routing/budget_oracle_hints.jsonl",
+    "regime_latest_path": "state/autonomy/fractal/regime/latest.json"
+  }
+}

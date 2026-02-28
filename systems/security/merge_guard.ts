@@ -121,6 +121,13 @@ function runGuard(opts = {}) {
   checks.push(runCmd('state_kernel_replay_verify', 'node', ['systems/ops/state_kernel.js', 'replay-verify', '--profiles=phone,desktop,cluster']));
   checks.push(runCmd('state_kernel_cutover_status', 'node', ['systems/ops/state_kernel_cutover.js', 'status']));
   checks.push(runCmd('state_kernel_dual_write_status', 'node', ['systems/ops/state_kernel_dual_write.js', 'status']));
+  checks.push(runCmd('dynamic_burn_budget_oracle_status', 'node', ['systems/ops/dynamic_burn_budget_oracle.js', 'status']));
+  checks.push(runCmd('cognitive_control_primitive_status', 'node', ['systems/primitives/cognitive_control_primitive.js', 'status']));
+  checks.push(runCmd('dynamic_memory_embedding_adapter_status', 'node', ['systems/memory/dynamic_memory_embedding_adapter.js', 'status']));
+  checks.push(runCmd('trajectory_skill_distiller_status', 'node', ['systems/assimilation/trajectory_skill_distiller.js', 'status']));
+  checks.push(runCmd('motivational_state_vector_status', 'node', ['systems/autonomy/motivational_state_vector.js', 'status']));
+  checks.push(runCmd('agent_settlement_extension_status', 'node', ['systems/finance/agent_settlement_extension.js', 'status']));
+  checks.push(runCmd('source_attestation_extension_status', 'node', ['systems/assimilation/source_attestation_extension.js', 'status']));
   if (!options.skipTests) {
     checks.push(runCmd('test_ci', 'npm', ['run', 'test:ci']));
   }
