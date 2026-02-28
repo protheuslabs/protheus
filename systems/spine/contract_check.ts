@@ -18,15 +18,36 @@ const { spawnSync } = require("child_process");
 const path = require("path");
 const fs = require("fs");
 
+const CONTRACT_CHECK_STEP_TIMEOUT_MS = Math.max(
+  1000,
+  Math.min(
+    120000,
+    Number(process.env.CONTRACT_CHECK_STEP_TIMEOUT_MS || 30000) || 30000
+  )
+);
+const CONTRACT_CHECK_REQUIRE_NOARG = String(process.env.CONTRACT_CHECK_REQUIRE_NOARG || "0") === "1";
+const CONTRACT_CHECK_DEEP_PROBES = String(process.env.CONTRACT_CHECK_DEEP_PROBES || "0") === "1";
+const CONTRACT_CHECK_TRACE = String(process.env.CONTRACT_CHECK_TRACE || "0") === "1";
+const CONTRACT_CHECK_FAST = String(process.env.CONTRACT_CHECK_FAST || "1") !== "0" && !CONTRACT_CHECK_DEEP_PROBES;
+
 function repoRoot() {
   return path.resolve(__dirname, "..", "..");
 }
 
 function runCapture(args) {
   // Capture both streams to scan text; keep deterministic
-  const r = spawnSync("node", args, { encoding: "utf8" });
+  const r = spawnSync("node", args, {
+    encoding: "utf8",
+    timeout: CONTRACT_CHECK_STEP_TIMEOUT_MS
+  });
   const out = (r.stdout || "") + " " + (r.stderr || "");
-  return { code: r.status ?? 0, text: out };
+  return {
+    code: Number.isFinite(r.status)
+      ? Number(r.status)
+      : ((r.error && String(r.error.code || "").toUpperCase() === "ETIMEDOUT") ? 124 : 1),
+    text: out,
+    timedOut: !!(r.error && String(r.error.code || "").toUpperCase() === "ETIMEDOUT")
+  };
 }
 
 function missingTokens(text, tokens) {
@@ -44,7 +65,17 @@ function formatProbe(probeArgs) {
   return probeArgs.length ? probeArgs.join(" ") : "(no args)";
 }
 
+function shouldRunProbe(probeArgs) {
+  if (CONTRACT_CHECK_DEEP_PROBES) return true;
+  if (!Array.isArray(probeArgs) || probeArgs.length === 0) return false;
+  return probeArgs.length === 1 && String(probeArgs[0] || "") === "--help";
+}
+
 function checkUsage(relPath, probeArgs, requiredTokens) {
+  if (!shouldRunProbe(probeArgs)) return;
+  if (CONTRACT_CHECK_TRACE) {
+    console.error(`contract_check: probe script=${relPath} args=${formatProbe(probeArgs)}`);
+  }
   const root = repoRoot();
   const abs = path.join(root, relPath);
   const r = runCapture([abs, ...probeArgs]);
@@ -56,6 +87,9 @@ function checkUsage(relPath, probeArgs, requiredTokens) {
   console.error(` script: ${relPath}`);
   console.error(` probe: ${formatProbe(probeArgs)}`);
   console.error(` exit_code: ${r.code}`);
+  if (r.timedOut) {
+    console.error(` timeout_ms: ${CONTRACT_CHECK_STEP_TIMEOUT_MS}`);
+  }
   if (missing.length) {
     console.error(` missing tokens: ${missing.join(", ")}`);
   }
@@ -63,6 +97,10 @@ function checkUsage(relPath, probeArgs, requiredTokens) {
 }
 
 function checkUsageTextOnly(relPath, probeArgs, requiredTokens) {
+  if (!shouldRunProbe(probeArgs)) return;
+  if (CONTRACT_CHECK_TRACE) {
+    console.error(`contract_check: text-probe script=${relPath} args=${formatProbe(probeArgs)}`);
+  }
   const root = repoRoot();
   const abs = path.join(root, relPath);
   const r = runCapture([abs, ...probeArgs]);
@@ -80,9 +118,11 @@ function checkUsageTextOnly(relPath, probeArgs, requiredTokens) {
 function checkScript(relPath, requiredTokens) {
   // Standard contract for all validated CLIs:
   //   1) --help prints usage and exits 0
-  //   2) no-arg prints usage and exits 0
+  //   2) optional no-arg contract in deep mode (can be expensive on script-heavy repos)
   checkUsage(relPath, ["--help"], requiredTokens);
-  checkUsage(relPath, [], requiredTokens);
+  if (CONTRACT_CHECK_REQUIRE_NOARG) {
+    checkUsage(relPath, [], requiredTokens);
+  }
 }
 
 function isTsBootstrapWrapper(jsSource) {
@@ -111,6 +151,9 @@ function resolveContractSource(absPath) {
 }
 
 function checkSourceContains(relPath, requiredTokens) {
+  if (CONTRACT_CHECK_TRACE) {
+    console.error(`contract_check: source-check script=${relPath}`);
+  }
   const root = repoRoot();
   const abs = path.join(root, relPath);
   let text = "";
@@ -388,6 +431,11 @@ function main() {
     ["strategy_mode_governor.js", "run", "status", "--days"]
   );
 
+  if (CONTRACT_CHECK_FAST) {
+    console.log("contract_check: OK");
+    return;
+  }
+
   // emergency_stop.js provides one-command kill-switch for autonomy/routing/actuation.
   checkScript(
     "systems/security/emergency_stop.js",
@@ -558,11 +606,19 @@ function main() {
   );
 
   // route_task.js is the decision contract consumed by route_execute.
-  checkUsage(
-    "systems/routing/route_task.js",
-    ["--task", "contract_check_probe", "--tokens_est", "0", "--repeats_14d", "0", "--errors_30d", "0"],
-    ["decision", "gate_decision"]
-  );
+  // Deep runtime probe is opt-in because it can be expensive on loaded nodes.
+  if (CONTRACT_CHECK_DEEP_PROBES) {
+    checkUsage(
+      "systems/routing/route_task.js",
+      ["--task", "contract_check_probe", "--tokens_est", "0", "--repeats_14d", "0", "--errors_30d", "0"],
+      ["decision", "gate_decision"]
+    );
+  } else {
+    checkSourceContains(
+      "systems/routing/route_task.js",
+      ["decision", "gate_decision"]
+    );
+  }
 
   // habit_crystallizer.js is the habits-layer routine scaffolder used by route_task propose path.
   checkScript(

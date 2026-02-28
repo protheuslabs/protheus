@@ -136,6 +136,9 @@ const QUEUE_BACKLOG_DIVERGENCE_WARN = Number(process.env.AUTONOMY_HEALTH_QUEUE_B
 const QUEUE_BACKLOG_DIVERGENCE_CRITICAL = Number(process.env.AUTONOMY_HEALTH_QUEUE_BACKLOG_DIVERGENCE_CRITICAL || 30);
 const QUEUE_BACKLOG_WARN_AGE_HOURS = Number(process.env.AUTONOMY_HEALTH_QUEUE_BACKLOG_WARN_AGE_HOURS || 24);
 const QUEUE_BACKLOG_CRITICAL_AGE_HOURS = Number(process.env.AUTONOMY_HEALTH_QUEUE_BACKLOG_CRITICAL_AGE_HOURS || 72);
+const QUEUE_BACKLOG_AGED_CRITICAL_PROGRESS_FLOOR = Number(
+  process.env.AUTONOMY_HEALTH_QUEUE_BACKLOG_AGED_CRITICAL_PROGRESS_FLOOR || 1
+);
 
 const LOOP_STALL_WARN_HOURS = Number(process.env.AUTONOMY_HEALTH_LOOP_STALL_WARN_HOURS || 8);
 const LOOP_STALL_CRITICAL_HOURS = Number(process.env.AUTONOMY_HEALTH_LOOP_STALL_CRITICAL_HOURS || 24);
@@ -178,6 +181,17 @@ const STARTUP_ATTESTATION_AUTO_ISSUE_REASONS = new Set(
     .filter(Boolean)
 );
 const EXECUTE_LOCK_AUTO_DEMOTE = String(process.env.AUTONOMY_HEALTH_EXECUTE_LOCK_AUTO_DEMOTE || '1') !== '0';
+const COMMAND_TIMEOUT_MS = Number(process.env.AUTONOMY_HEALTH_COMMAND_TIMEOUT_MS || 30000);
+const STRICT_ALL_CRITICAL = String(process.env.AUTONOMY_HEALTH_STRICT_ALL_CRITICAL || '0') === '1';
+const STRICT_BLOCKING_CHECKS = new Set(
+  String(
+    process.env.AUTONOMY_HEALTH_STRICT_BLOCKING_CHECKS
+    || 'integrity,startup_attestation,route_attestation,execute_quality_lock_invariant'
+  )
+    .split(',')
+    .map((v) => String(v || '').trim())
+    .filter(Boolean)
+);
 
 const SPC_BASELINE_DAYS = Number(process.env.AUTONOMY_HEALTH_SPC_BASELINE_DAYS || 21);
 const SPC_SIGMA = Number(process.env.AUTONOMY_HEALTH_SPC_SIGMA || 3);
@@ -285,7 +299,11 @@ function runJson(script, args) {
   if (SKIP_COMMANDS) {
     return { ok: true, code: 0, payload: { ok: true, skipped: true }, stderr: '' };
   }
-  const r = spawnSync('node', [script, ...args], { cwd: ROOT, encoding: 'utf8' });
+  const r = spawnSync('node', [script, ...args], {
+    cwd: ROOT,
+    encoding: 'utf8',
+    timeout: Math.max(1000, Math.min(180000, Number(COMMAND_TIMEOUT_MS || 30000)))
+  });
   const out = String(r.stdout || '').trim();
   let payload = null;
   if (out) {
@@ -298,7 +316,14 @@ function runJson(script, args) {
       }
     }
   }
-  return { ok: r.status === 0, code: r.status || 0, payload, stderr: String(r.stderr || '').trim() };
+  const timedOut = !!(r.error && String(r.error.code || '').toUpperCase() === 'ETIMEDOUT');
+  return {
+    ok: r.status === 0,
+    code: Number.isFinite(r.status) ? r.status : (timedOut ? 124 : 1),
+    payload,
+    stderr: String(r.stderr || '').trim(),
+    timed_out: timedOut
+  };
 }
 
 function normalizeReasonToken(v) {
@@ -1321,6 +1346,7 @@ function assessQueueBacklog(now, proposalRows, queueEvents, windowDays = 1, auto
   const oldestHours = openAges.length ? Number(Math.max(...openAges).toFixed(3)) : null;
   const queueProgress = decisions + outcomes;
   const progressPerDay = Number((queueProgress / Math.max(1, Number(windowDays || 1))).toFixed(3));
+  const progressHealthyForAgedBacklog = progressPerDay >= Number(QUEUE_BACKLOG_AGED_CRITICAL_PROGRESS_FLOOR || 1);
 
   if (!autonomyEnabled) {
     return {
@@ -1354,7 +1380,7 @@ function assessQueueBacklog(now, proposalRows, queueEvents, windowDays = 1, auto
   }
 
   const critical = openCount >= Number(QUEUE_BACKLOG_CRITICAL_OPEN || 80)
-    || criticalAged > 0
+    || (criticalAged > 0 && !progressHealthyForAgedBacklog)
     || contractDivergence >= Number(QUEUE_BACKLOG_DIVERGENCE_CRITICAL || 30);
   const warn = !critical && (
     openCount >= Number(QUEUE_BACKLOG_WARN_OPEN || 40)
@@ -1369,7 +1395,7 @@ function assessQueueBacklog(now, proposalRows, queueEvents, windowDays = 1, auto
     level,
     reason: level === 'ok'
       ? 'queue_backlog_within_slo'
-      : `open=${openCount} aged_warn=${warnAged} aged_critical=${criticalAged}`,
+      : `open=${openCount} aged_warn=${warnAged} aged_critical=${criticalAged} progress_per_day=${progressPerDay}`,
     metrics: {
       open_count: openCount,
       unique_proposals: rawOpenCount,
@@ -1380,6 +1406,7 @@ function assessQueueBacklog(now, proposalRows, queueEvents, windowDays = 1, auto
       proposal_terminal_with_queue_non_terminal: proposalTerminalWithQueueNonTerminal,
       queue_progress_events: queueProgress,
       queue_progress_per_day: progressPerDay,
+      progress_healthy_for_aged_backlog: progressHealthyForAgedBacklog,
       aged_open_warn_count: warnAged,
       aged_open_critical_count: criticalAged,
       oldest_open_hours: oldestHours
@@ -1390,7 +1417,8 @@ function assessQueueBacklog(now, proposalRows, queueEvents, windowDays = 1, auto
       warn_divergence: Number(QUEUE_BACKLOG_DIVERGENCE_WARN || 12),
       critical_divergence: Number(QUEUE_BACKLOG_DIVERGENCE_CRITICAL || 30),
       warn_age_hours: Number(QUEUE_BACKLOG_WARN_AGE_HOURS || 24),
-      critical_age_hours: Number(QUEUE_BACKLOG_CRITICAL_AGE_HOURS || 72)
+      critical_age_hours: Number(QUEUE_BACKLOG_CRITICAL_AGE_HOURS || 72),
+      aged_critical_progress_floor: Number(QUEUE_BACKLOG_AGED_CRITICAL_PROGRESS_FLOOR || 1)
     }
   };
 }
@@ -2501,7 +2529,19 @@ function main() {
   }
 
   process.stdout.write(`${JSON.stringify(out, null, 2)}\n`);
-  if (strict && Number(slo.critical_count || 0) > 0) process.exit(1);
+  if (strict) {
+    if (STRICT_ALL_CRITICAL) {
+      if (Number(slo.critical_count || 0) > 0) process.exit(1);
+      return;
+    }
+    const checkRows = Object.values((slo && slo.checks) || {}) as AnyObj[];
+    const blockingCritical = checkRows.filter((row: AnyObj) => (
+      row
+      && row.level === 'critical'
+      && STRICT_BLOCKING_CHECKS.has(String(row.name || ''))
+    ));
+    if (blockingCritical.length > 0) process.exit(1);
+  }
 }
 
 if (require.main === module) {

@@ -188,6 +188,39 @@ function run() {
   const sum = plan.payouts.reduce((acc, row) => acc + Number(row.amount_usd || 0), 0);
   assert.ok(sum > 99.9 && sum < 100.1, 'payouts should approximately sum to pool');
 
+  appendJsonl(attributionRecordsPath, {
+    ts: new Date().toISOString(),
+    attribution_id: 'attr_gamma_1',
+    provenance: {
+      creator: { creator_id: 'creator_gamma' },
+      valuation: { influence_score: 0.8, weight: 1 },
+      context: { objective_id: 'obj_no_optin', run_id: 'run_no_optin_1' },
+      economic: {
+        sovereign_root_tithe: {
+          enabled: true,
+          tithe_bps: 1000
+        }
+      }
+    }
+  });
+
+  const noOptinPlan = parseOut(runNode(distributionScript, [
+    'plan',
+    `--policy=${distributionPolicyPath}`,
+    '--objective-id=obj_no_optin',
+    '--run-id=run_no_optin_1',
+    '--pool-usd=100',
+    '--days=30'
+  ], env, repoRoot), 'plan-no-optin');
+  assert.strictEqual(noOptinPlan.ok, true);
+  assert.strictEqual(noOptinPlan.status, 'shadow_only', 'no-optin plan should remain shadow-only, not blocked');
+  assert.strictEqual(Boolean(noOptinPlan.root_tithe && noOptinPlan.root_tithe.blocked), false, 'root tithe should not be blocked');
+  const noOptinSum = noOptinPlan.payouts.reduce((acc, row) => acc + Number(row.amount_usd || 0), 0);
+  assert.ok(noOptinSum > 99.9 && noOptinSum < 100.1, 'no-optin payouts should still sum to pool');
+  const residual = noOptinPlan.payouts.find((row) => row && row.is_creator_pool_residual === true);
+  assert.ok(residual, 'creator-pool residual payout should be emitted when opted-in creators are missing');
+  assert.strictEqual(String(residual.creator_id || ''), 'jay_sovereign_root');
+
   const saved = readJson(path.join(tmpRoot, 'state', 'storm', 'value_distribution', 'plans', `${plan.distribution_id}.json`));
   assert.ok(saved && saved.distribution_id === plan.distribution_id, 'plan file should persist');
 

@@ -729,6 +729,24 @@ Dependency notes:
 - `V3-LHP-001` depends on `V3-TASK-001`, `V3-DUAL-001`, and `V3-BUD-001`.
 - `V3-MAC-001` depends on `V3-LHP-001`, `V3-ASSIM-007`, and Weaver arbitration lanes.
 
+## Intelligence Requirement Intake (Deduplicated, 2026-02-28)
+
+Objective: absorb frontier-style intelligence requirements without adding duplicate epics; keep primitives as the contract layer and attach specific behavior as profiles/extensions.
+
+| Proposed ID | Disposition | Canonical Backlog Coverage | Action |
+|---|---|---|---|
+| V3-TTS-001 | duplicate | `V3-LHP-001` (done) | Use existing long-horizon planning primitive and keep any model-specific "thinking token" behavior as profile/config under this primitive. |
+| V3-MAD-001 | duplicate | `V3-MAC-001` (done) + `V3-ASSIM-007` (done) | Use existing multi-agent debate + collective reasoning lanes; do not add a parallel debate organ. |
+| V3-PCU-001 | duplicate | `V3-CU-001` (done) + `V3-ACT-002` (done) | Keep computer-use reliability as a universal execution primitive upgrade; add only profile packs per domain. |
+| V3-COL-001 | covered (composite) | `V3-ASSIM-004` (done), `V3-ASSIM-008` (done), `V3-ASSIM-009` (done), `V3-ASSIM-012` (done), `V3-XAI-002` (todo) | Close remaining session-bounded online adaptation via `V3-XAI-002`; no new top-level epic. |
+| V3-MCG-001 | covered (composite) | `V3-LHP-001` (done), `V3-ASSIM-013` (done), `V3-XAI-001` (todo) | Treat dynamic strategy selection as the decision policy layer of `V3-XAI-001` + existing routing primitives; no new epic. |
+| V3-HLM-001 | covered (composite) | `V2-062` (done), `V3-053` (done), `V3-XAI-003` (todo) | Complete abstraction/consolidation/distillation via `V3-XAI-003`; avoid duplicating memory hierarchy work. |
+| V3-DCS-001 | duplicate | `V3-019` (done), `V3-041` (done), `V3-054` (done) | Dynamic capability synthesis is already represented across forge + sub-executor + emergent primitive synthesis lanes. |
+
+Normalization notes:
+- No new IDs added from this intake because all proposed capabilities are either complete or already represented by open canonical items (`V3-XAI-001..003`).
+- Rule preserved: primitive-first contracts remain the source of truth; product/domain-specific logic belongs in profile packs, adapters, and policy files on top.
+
 ## Binary Runtime Hardening Intake (Normalized, 2026-02-27)
 
 Objective: add reverse-engineering resistance + efficiency for distributed instances while keeping the master instance fully debuggable and source-first.
@@ -809,6 +827,232 @@ Dependency notes:
 - `V3-MLC-001` depends on `V2-060`, `RM-106`, and `V3-ATTR-001`.
 - `V3-MLC-002` depends on `V2-026`, `V2-062`, and `V3-006`.
 - `V3-MLC-003` depends on `V2-054` and workflow executor runtime integration (`V2-055`/closure lanes).
+
+## Post-Soak Governance Hardening (Queued, 2026-02-28)
+
+Objective: replace covert/hidden directive concepts with explicit, non-bypass runtime governance that makes abusive actors ineffective through behavior-based containment and signed policy inheritance.
+
+| ID | Class | Version | Status | Upgrade | Why | Exit Criteria |
+|---|---|---|---|---|---|---|
+| V3-GOV-001 | hardening | V3 | todo | Behavior-Based Abuse Containment Envelope | Enforce long-term ineffectiveness for abusive users via deterministic runtime controls, not covert manipulation or identity targeting | Add identity-agnostic risk scoring over action trajectories (evasion attempts, high-risk chaining, anomaly bursts); map trust tiers to capability envelopes (`read_only`, `sandbox_only`, recursion clamp, external actuation deny, payout hold); wire enforcement through Eye -> Weaver -> Constitution + Dynamic Burn oracle; emit deterministic receipts + shadow metrics (`false_positive_rate`, `containment_bypass_rate`, `trusted_recovery_rate`) |
+| V3-GOV-002 | hardening | V3 | todo | Signed Inherited Policy Chain (Transparent Managed Mode) | Preserve non-removable parent-to-child governance without hidden directives by making inheritance cryptographically enforced and auditable | Child bootstrap requires parent policy hash + signature chain; fail-closed on mismatch/missing signature; bind policy hash into Helix attestation and passport receipts; support signed migration/rotation with rollback receipts; expose explicit managed-mode disclosure state/API so inherited controls are visible and reviewable |
+
+Dependency notes:
+- `V3-GOV-001` depends on `V3-ACT-001`, `V3-ACT-002`, `V3-BUD-001`, and `V2-063`.
+- `V3-GOV-002` depends on `V2-063`, `V3-SK-001`, `V3-SK-004`, `V3-033`, and `V3-059`.
+- Both items are queued for execution after the 24-hour soak + gated-cycle validation completes.
+
+## Post-Soak Runtime Closure Hardening (Queued, 2026-02-28)
+
+Objective: remove recurring runtime friction by eliminating silent spine endings, reducing manual integrity reseal bottlenecks, and auto-recovering degraded local model lanes.
+
+| ID | Class | Version | Status | Upgrade | Why | Exit Criteria |
+|---|---|---|---|---|---|---|
+| V3-OPS-001 | hardening | V3 | todo | Spine Terminal Run-State Closure (`complete`/`failed`) | `spine_run_started` without deterministic terminal events blocks root-cause analysis and SLO truth | Spine wraps run lifecycle in `try/finally` and emits exactly one terminal event per run (`spine_run_complete` or `spine_run_failed`) with run_id, elapsed_ms, terminal_step, failure_reason, and resource snapshot; ledger invariant check fails if any started run lacks terminal event |
+| V3-OPS-002 | hardening | V3 | todo | Gated Integrity Auto-Reseal Lane | Manual reseal (`integrity_reseal.js apply`) creates avoidable operator bottleneck during trusted local updates | Wire `integrity_reseal_assistant` into spine/ops in shadow-first mode; support policy allowlist for low-risk deterministic reseals, mandatory receipts with changed hashes/files, and strict-mode block when reseal class is outside allowlist or approval note policy |
+| V3-OPS-003 | primitive-upgrade | V3 | todo | Router Degradation Auto-Remediation Loop | Recurrent local model probe timeouts (`qwen3:4b`, `gemma3:4b`) degrade capacity and force manual intervention | On repeated timeout/unavailable streaks, router executes bounded remediation playbook (warmup probe, runtime restart, model pull/check, temporary demotion/failover) with cooldown + backoff; emits `router_recovery_action` receipts and restores target availability threshold over rolling window |
+| V3-OPS-011 | hardening | V3 | todo | External Eye Auth Lifecycle Guard (Bird/X + OAuth eyes) | Expired auth tokens silently reduce observability and distort routing decisions | Add credential-expiry watchdog for external eyes (Bird/X and other OAuth-backed collectors), deterministic `auth_expiring`/`auth_expired` events, guided reauth workflow receipt chain, automatic eye status degradation + fallback eye reweighting while auth is invalid, and strict health alerts when priority eyes are dark due to auth state |
+| V3-OPS-004 | extension | V3 | todo | Unified Protheus Control Plane CLI (`protheus`) | Raw `node systems/...` commands make operations feel script-fragmented and increase interface drift risk | Ship single operator surface (`protheus start|stop|status|health|run|audit`) with stable subcommands, route internals through typed command contracts, deprecate direct script entrypoints for non-dev workflows, and provide service supervision/terminal run-state parity receipts from one control plane |
+| V3-OPS-013 | hardening | V3 | todo | Event Name Parity Guard (spine + ledger canonicalization) | Mixed event labels (`spine_run_complete` vs `spine_run_completed`) create silent observability drift and false health conclusions | Introduce canonical event-name registry + compile-time/runtime validation that rejects non-canonical terminal lifecycle names, add compatibility alias map for replay-only reads, and fail health/contract gates when emitted names diverge from canonical schema |
+| V3-OPS-014 | hardening | V3 | todo | Routing Health Parity Guard (doctor vs preflight reconciler) | Conflicting health signals (`preflight local_eligible > 0` while doctor lane reports 0) can trigger wrong remediation and mislead operators | Add reconciler that compares router preflight, doctor runtime, and health-cache snapshots on every cycle; emit deterministic mismatch receipts with bounded auto-heal actions and strict-mode gating when parity drift exceeds policy threshold |
+| V3-OPS-015 | hardening | V3 | todo | Raw `.js` Entrypoint Deprecation + Operator Surface Clean-Up | Direct `.js` command entrypoints look script-fragmented and increase interface drift across docs/runbooks | Add deprecation lane that replaces operator-facing `node .../*.js` invocations with `protheus`/`protheusctl` commands, keeps temporary compatibility shims during transition, emits usage telemetry for legacy entrypoints, and fails merge/foundation gates on new non-dev raw `.js` entrypoints once migration window closes |
+
+Dependency notes:
+- `V3-OPS-001` depends on `V2-054`, `V3-FCH-002`, and existing spine ledger contracts.
+- `V3-OPS-002` depends on `V2-059`, `V3-SK-004`, and `systems/security/integrity_reseal_assistant`.
+- `V3-OPS-003` depends on `RM-121`, `V3-BUD-001`, and model router health history lanes.
+- `V3-OPS-011` depends on `BL-026`, `V2-057`, and external eye collector policies (`habits/scripts/external_eyes.js` + collector auth adapters).
+- `V3-OPS-004` depends on `V3-OPS-001`, `V3-SK-001`, and existing command/receipt schemas (`V2-063`).
+- `V3-OPS-013` depends on `V3-OPS-001`, `V3-SK-004`, `V2-060`, and event schema contracts in `systems/security/black_box_ledger.ts`.
+- `V3-OPS-014` depends on `V3-OPS-003`, `RM-121`, `V3-BUD-001`, and health report contracts in `systems/autonomy/health_status.ts`.
+- `V3-OPS-015` depends on `V3-OPS-004`, `V3-OPS-005`, `V3-FCH-002`, and documentation/runbook command-surface lanes.
+- All eight items are queued for execution after the active soak + gated-cycle validation completes.
+
+## Operator-System Feel Pack (Normalized, Queued, 2026-02-28)
+
+Objective: make operations feel like a coherent operating system control plane (not ad-hoc script entrypoints) while reusing existing runtime-closure work and only adding true net-new primitives.
+
+| Proposed Capability | Disposition | Canonical Backlog Coverage | Action |
+|---|---|---|---|
+| Single stable operator command surface (`protheus ...`) | covered | `V3-OPS-004` | Implement as canonical operator interface; deprecate direct raw script entrypoints for non-dev workflows |
+| Deterministic terminal run lifecycle (`started -> complete/failed`) | covered | `V3-OPS-001` | Enforce one terminal run event per run with invariant checks |
+| Integrity bottleneck removal | covered | `V3-OPS-002` | Add gated auto-reseal lane with strict receipts/allowlist |
+| Router self-heal on model degradation | covered | `V3-OPS-003` | Add bounded auto-remediation playbook + recovery telemetry |
+
+| ID | Class | Version | Status | Upgrade | Why | Exit Criteria |
+|---|---|---|---|---|---|---|
+| V3-OPS-005 | extension | V3 | todo | Daemon + Control Client Split (`protheusd` + `protheusctl`) | A persistent supervised daemon + thin control client is the standard OS operating pattern and removes brittle direct process spawning from operator workflows | `protheusd` owns runtime orchestration and health loops; `protheusctl` sends typed commands (`start/stop/restart/status/health/logs`); command bus receipts include request_id/run_id; daemon restarts are supervised and state-safe |
+| V3-OPS-006 | primitive | V3 | todo | Unified Job Runtime State Machine | OS feel depends on first-class jobs with lifecycle, retries, cancellation, and introspection | Add job model (`queued/running/succeeded/failed/canceled/timed_out`) with stable `job_id`, lease/retry semantics, cancellation API, per-job logs/metrics, and deterministic replay-compatible receipts |
+| V3-OPS-007 | hardening | V3 | todo | Incident Command Primitive Pack (`drain`, `freeze`, `quarantine`, `break_glass`) | Operators need explicit, auditable emergency controls instead of bespoke script sequences during incidents | Implement typed incident commands with policy gates, dual-approval where required, automatic rollback hooks, and incident timeline receipts linked to passport/helix |
+| V3-OPS-008 | hardening | V3 | todo | Release Channel + Atomic Upgrade/Rollback Plane (`dev/canary/stable`) | OS-grade operations require controlled promotion lanes and instant safe rollback | Define channel artifacts + promotion policy, stage upgrades atomically with health gates, support one-command rollback to last known-good, and emit promotion/rollback provenance receipts |
+| V3-OPS-009 | extension | V3 | todo | Operator TUI (`protheus top`) | Real-time operator situational awareness should be first-class, not log archaeology | Terminal dashboard shows queues, jobs, model health, burn runway, policy gates, and incident state; supports safe actions (`retry`, `cancel`, `drain`) with receipt-backed command dispatch |
+| V3-OPS-010 | extension | V3 | todo | Plugin/Capability Registry with Version Pinning | OS-like extensibility needs a governed package registry model rather than implicit script discovery | Introduce capability registry with install/uninstall/enable/disable/version pinning, compatibility checks, signed metadata, and rollback-safe activation lanes tied into foundation contract gate |
+| V3-OPS-012 | hardening | V3 | todo | Backlog ID Collision Guard + Allocator | Fast intake can accidentally create duplicate IDs or skipped dependency mappings | Add deterministic backlog ID validator (`unique_id`, `single_row_per_id`, `dependency_target_exists`) plus an ID allocator command for new entries; wire check into foundation/merge guards so duplicate IDs fail CI and intake runs |
+
+Dependency notes:
+- `V3-OPS-005` depends on `V3-OPS-001`, `V3-OPS-004`, and `V3-SK-001`.
+- `V3-OPS-006` depends on `V3-SK-001`, `V3-SK-003`, and `V3-OPS-005`.
+- `V3-OPS-007` depends on `V2-059`, `V3-033`, and `V3-OPS-005`.
+- `V3-OPS-008` depends on `V3-FCH-001`, `V3-FCH-002`, and `V3-OPS-005`.
+- `V3-OPS-009` depends on `V3-OPS-005`, `V3-OPS-006`, and observability lanes (`RM-005`, `RM-118`).
+- `V3-OPS-010` depends on `V3-048`, `V3-030`, and `V2-063`.
+- `V3-OPS-012` depends on `V3-FCH-004` and merge/foundation gate lanes (`V3-FCH-002`, `V2-FND-004`).
+- This pack is queued for execution after the active soak + gated-cycle validation completes.
+
+## Post-Soak Memory & Burn Efficiency Pack (Queued, 2026-02-28)
+
+Objective: improve memory quality and token efficiency with zero functional regression by using stronger indexing, dedupe, caching, and adaptive runtime cost controls.
+
+| ID | Class | Version | Status | Upgrade | Why | Exit Criteria |
+|---|---|---|---|---|---|---|
+| V3-MEM-001 | primitive-upgrade | V3 | todo | Content-Addressed Memory Dedupe | Duplicate memory payloads inflate storage and retrieval burn without adding capability | Normalize + hash memory payloads, store canonical body once, reference by content hash, preserve source provenance pointers, and prove no recall loss on regression corpus |
+| V3-MEM-002 | primitive-upgrade | V3 | todo | Two-Stage Retrieval Gate (metadata -> selective body fetch) | Full-body fetch on every query wastes tokens when index metadata already resolves intent | Retrieval defaults to index/tag/summary pass first, fetches full node bodies only when confidence/coverage is below policy threshold, and maintains identical answer-quality thresholds in benchmark set |
+| V3-MEM-003 | extension | V3 | todo | Objective-Scoped Memory Shards + Global Overlay | Broad memory scans increase context bloat and cross-objective noise | Runtime reads objective-local shard + bounded global overlay by default, supports explicit cross-shard traversal when needed, and reduces median retrieval token cost while preserving multi-objective correctness |
+| V3-MEM-004 | primitive-upgrade | V3 | todo | Lossless Distilled Runtime Memory Views | Raw event memory is valuable for audit but too expensive as default runtime context | Nightly distillation generates compact runtime views from raw memory/events, runtime consumes distilled views by default with raw on-demand fallback, and replay parity tests confirm no information loss |
+| V3-MEM-005 | hardening | V3 | todo | Prompt Skeleton Block Cache (hash-addressed prompt segments) | Re-sending stable policy/system prefixes creates recurring avoidable burn | Introduce hashed reusable prompt blocks for stable prefixes (constitution/policy/scaffold), compose final prompts from block refs + dynamic tail, and track token savings with cache-hit telemetry |
+| V3-MEM-006 | primitive-upgrade | V3 | todo | Deterministic Transform Memoization | Repeated deterministic LLM transforms consume tokens for identical inputs | Cache deterministic transform outputs (classification/scoring/normalization) by `(input_hash, policy_hash, model_profile)` with TTL+invalidation, and guarantee output parity with uncached path |
+| V3-MEM-007 | extension | V3 | todo | Adaptive Model-Health Probe Cadence | Fixed high-frequency model probing burns tokens/cycles under sustained degradation | Probe cadence/backoff adjusts by health history and recent failures, preserves failover correctness SLAs, and lowers probe burn while maintaining target mean-time-to-detect/repair |
+| V3-MEM-008 | hardening | V3 | todo | Receipt Verbosity Tiers (full audit + compact runtime views) | Full receipts everywhere are audit-safe but expensive for everyday runtime reasoning | Persist full receipts unchanged for audit, generate compact receipt summaries for runtime retrieval/planning, and prove audit completeness + runtime token reduction via dual-view parity checks |
+
+Dependency notes:
+- `V3-MEM-001` depends on `V3-SK-001`, `V2-063`, and memory graph lanes (`V2-062`).
+- `V3-MEM-002` depends on `V3-MEM-001`, `MEMORY_INDEX.md` traversal contracts, and retrieval rails.
+- `V3-MEM-003` depends on `V2-062`, `V3-MLC-002`, and objective binding lanes (`V2-070`).
+- `V3-MEM-004` depends on `V3-MEM-001`, `V3-XAI-003`, and replay/evidence lanes (`V2-060`, `V2-063`).
+- `V3-MEM-005` depends on `V3-SK-001`, `V3-OPS-004`, and router/prompt lanes.
+- `V3-MEM-006` depends on `V3-MEM-005`, `V3-FCH-002`, and policy-hash attestation lanes.
+- `V3-MEM-007` depends on `V3-OPS-003`, `RM-121`, and model router health history.
+- `V3-MEM-008` depends on `V2-063`, `V3-SK-004`, and explanation/receipt lanes.
+- This pack is queued for execution after the active soak + gated-cycle validation completes.
+
+## Architecture Refinement Intake (Normalized, Queued, 2026-02-28)
+
+Objective: close remaining structural holes while keeping primitive-first architecture intact and avoiding duplicate epics.
+
+| Identified Concern | Disposition | Canonical Backlog Coverage | Action |
+|---|---|---|---|
+| Script-fragmented operator surface (`node systems/...`) | covered | `V3-OPS-004`, `V3-OPS-005`, `V3-OPS-006` | Keep one operator surface (`protheus` + daemon/client + job runtime), deprecate raw entrypoints for non-dev paths. |
+| Event taxonomy drift (`spine_run_complete` vs `spine_run_completed`) | covered | `V3-OPS-013` | Canonical event registry + parity guard; keep replay aliases read-only. |
+| Router health signal disagreement (doctor vs preflight/cache) | covered | `V3-OPS-014` | Reconciler + strict parity gate with bounded auto-heal actions. |
+| Evidence quality debt in readiness/canary gates | covered | `V3-LOOP-002` | Standardize evidence pack shape and quality semantics before promotion decisions. |
+| Oversized monolith control files increase blast radius | net-new | `V3-ARC-001` (below) | Add decomposition contracts + blast-radius/LOC guard for core orchestrators. |
+| Policy-file sprawl and orphan/duplicate policies | net-new | `V3-ARC-002` (below) | Build canonical policy graph registry and dead-policy detection lane. |
+| High-level organ-to-organ coupling bypassing primitive contracts | net-new | `V3-ARC-003` (below) | Add static dependency firewall enforcing primitive/adaptor boundaries. |
+| Heavy policy logic concentrated in foundation gate file | covered + strengthened | `V3-ARC-002` + `V3-OPS-010` | Shift toward typed registries/ownership metadata and generated policy contract views. |
+| Runtime reads too many scattered JSON policies | net-new | `V3-ARC-004` (below) | Compile source policies into typed domain packs (`security/routing/autonomy/ops`) with deterministic build artifacts. |
+| Missing explicit policy owners/change-control matrix | net-new | `V3-ARC-005` (below) | Add policy ownership, approver matrix, and change-risk workflow requirements with audit receipts. |
+| Unbounded config-file growth over time | net-new | `V3-ARC-006` (below) | Enforce config growth budget and block new files when extension of existing schema is feasible. |
+
+| ID | Class | Version | Status | Upgrade | Why | Exit Criteria |
+|---|---|---|---|---|---|---|
+| V3-ARC-001 | hardening | V3 | todo | Core Monolith Decomposition Contract + Blast-Radius Guard | Extremely large control files (`autonomy_controller.ts`, `spine.ts`) raise regression blast radius and slow safe iteration | Define bounded module contracts for core orchestrators (admission, gating, execution, receipts, recovery), enforce file/segment blast-radius thresholds with CI guard receipts, and prove no behavior regressions via replay/contract parity tests during staged extraction |
+| V3-ARC-002 | primitive-upgrade | V3 | todo | Canonical Policy Graph Registry + Dead Policy Detector | Large policy surface (`config/*.json`) can drift into orphaned, duplicated, or conflicting controls | Generate canonical policy graph (`policy -> owners -> consumers -> last_read`), detect orphans/duplicate-key conflicts/unused policies, emit deterministic policy-health receipts, and fail foundation/merge gates on unresolved critical policy drift |
+| V3-ARC-003 | hardening | V3 | todo | Primitive Boundary Static Gate (Organ Dependency Firewall) | Direct high-level organ coupling weakens abstraction-first design and increases hidden complexity | Build static dependency analyzer that fails CI when disallowed organ-to-organ imports bypass primitive/adaptor contracts; maintain explicit allowlist for approved boundary exceptions; emit graph-diff receipts each merge cycle |
+| V3-ARC-004 | primitive-upgrade | V3 | todo | Config Pack Compiler + Domain Runtime Bundles | Enterprise control planes keep human-editable source config but run from deterministic compiled bundles to reduce runtime sprawl and drift | Build config compiler that validates source policy graph then emits signed typed domain packs (`security`, `routing`, `autonomy`, `ops`); runtime consumes packs by version/hash; drift between source and runtime pack fails contract/foundation gates |
+| V3-ARC-005 | hardening | V3 | todo | Policy Ownership + Change-Control Matrix | Unowned policies and unrestricted edits create governance blind spots at scale | Every policy file is mapped to owner + backup owner + risk class + required approvals; high-risk policy changes require explicit approval notes and dual-control where mandated; ownership/change-control receipts are exported and enforced in merge/foundation gates |
+| V3-ARC-006 | hardening | V3 | todo | Config Growth Budget Gate (`new-file` admission control) | Unchecked config file proliferation increases maintenance cost and hidden contradictions | Add gate that blocks new `config/*.json` files unless proposer proves existing schema extension is insufficient; requires impact/diff rationale receipt; enforces per-domain config-count budgets and tracks trend regressions |
+
+Dependency notes:
+- `V3-ARC-001` depends on `V3-052`, `V3-OPS-006`, and `V3-SK-001`.
+- `V3-ARC-002` depends on `V3-OPS-010`, `V3-FCH-002`, and `V3-SK-001`.
+- `V3-ARC-003` depends on `V2-FND-004`, `V3-039`, and `V3-ARC-001`.
+- `V3-ARC-004` depends on `BL-024`, `V3-ARC-002`, and `V3-SK-001`.
+- `V3-ARC-005` depends on `V3-ARC-002`, `V2-063`, and `V2-014`.
+- `V3-ARC-006` depends on `V3-052`, `V3-ARC-002`, and `V3-FCH-004`.
+- This intake is queued for execution after the active soak + gated-cycle validation completes.
+
+## Enterprise Readiness Intake (Normalized, Queued, 2026-02-28)
+
+Objective: capture enterprise-grade operational controls that are still missing while explicitly deduping controls already in place.
+
+| Enterprise Control | Disposition | Canonical Backlog Coverage | Action |
+|---|---|---|---|
+| Supply-chain provenance (SBOM + attestations + reproducible builds) | covered | `V3-048` (done), `V3-062` (done) | No new epic; keep enforcing through merge/foundation gates. |
+| Tenant/isolation contract for future multi-operator expansion | covered | `RM-109` (done), `V2-014` (done), `V4-001` (todo) | No new epic; maintain boundary tests and federation trust-domain checks. |
+| Disaster-recovery evidence with RTO/RPO drills | covered | `V2-019` (done), `PLM-007` (todo) | No new epic; continue scheduled drills and go/no-go evidence. |
+| Privileged access governance with JIT elevation/session controls | net-new | `V3-ENT-001` (below) | Add JIT/time-boxed elevation workflows, reason codes, and privileged session attestations. |
+| Data lifecycle governance (legal hold/DSAR-ready export/purge attestations) | net-new | `V3-ENT-002` (below) | Extend existing data-rights/retention lanes with legal-hold + subject-access + purge proof rails. |
+| Independent external assurance loop (third-party pentest/red-team cadence) | net-new | `V3-ENT-003` (below) | Add external-assurance cadence and remediation SLA ledger with release impact gates. |
+| Automated canary analysis + statistical auto-rollback | net-new | `V3-ENT-004` (below) | Add bounded auto-rollback policy driven by canary regression stats, not manual interpretation. |
+| Provider contract resilience (synthetic probes + failover playbooks) | net-new | `V3-ENT-005` (below) | Add provider-contract test lane and automatic degrade/failover activation on contract drift. |
+| FinOps-grade cost allocation + forecast variance alarms | net-new | `V3-ENT-006` (below) | Add per-primitive/workflow/objective cost attribution and forecast variance alerting. |
+
+| ID | Class | Version | Status | Upgrade | Why | Exit Criteria |
+|---|---|---|---|---|---|---|
+| V3-ENT-001 | hardening | V3 | todo | Privileged Access Governance (JIT Elevation + Session Attestation) | Enterprise operations require least-privilege, time-bounded privileged access with deterministic auditability | Introduce JIT elevation tokens with TTL + scope + reason code, enforce privileged command/session attestation receipts, require dual-control on high-impact elevation classes, and fail gates on expired/unscoped privileged actions |
+| V3-ENT-002 | hardening | V3 | todo | Data Lifecycle Governance Extension (Legal Hold + DSAR + Purge Proof) | Existing rights/retention controls need explicit legal-hold and subject-access export guarantees for enterprise/legal workflows | Add legal-hold state machine, DSAR-ready export contract, and cryptographic purge attestation receipts; enforce hold-aware deletion blocking and SLA metrics across retention tiers |
+| V3-ENT-003 | hardening | V3 | todo | External Assurance Cadence + Remediation SLA Ledger | Internal controls need independent validation to avoid blind spots and improve trust posture | Schedule third-party pentest/red-team windows, capture findings in immutable remediation ledger with SLA clocks, and block release promotion when critical findings are unresolved past policy thresholds |
+| V3-ENT-004 | primitive-upgrade | V3 | todo | Statistical Canary Analysis + Auto-Rollback Controller | Manual canary interpretation is slow and error-prone under incident pressure | Compute canary-vs-baseline regression deltas with policy thresholds/confidence bounds, trigger bounded auto-rollback on critical regressions, and emit deterministic rollback rationale receipts |
+| V3-ENT-005 | hardening | V3 | todo | Provider Contract Resilience Lane (Synthetic Contracts + Failover) | External provider/API drift can silently degrade autonomy quality and reliability | Maintain synthetic contract probes per provider/model/tool, detect contract drift/breaking response shape, automatically apply failover/degrade playbooks, and emit drift/failover receipts linked to routing decisions |
+| V3-ENT-006 | extension | V3 | todo | FinOps Attribution + Forecast Variance Alarming | High-scale operations need transparent cost ownership and early anomaly detection | Attribute spend to primitive/workflow/objective lanes, compare projected vs realized burn variance, emit thresholded FinOps alerts, and expose monthly reconciliation artifacts for operator review |
+
+Dependency notes:
+- `V3-ENT-001` depends on `RM-109`, `V2-014`, `V2-063`, and `V3-OPS-007`.
+- `V3-ENT-002` depends on `V2-060`, `V2-062`, `RM-104`, and `RM-131`.
+- `V3-ENT-003` depends on `V1H-004`, `V3-034`, and `V3-OPS-008`.
+- `V3-ENT-004` depends on `V3-OPS-008`, `V2-007`, and `V3-LOOP-002`.
+- `V3-ENT-005` depends on `V3-OPS-003`, `V3-OPS-014`, `V3-BUD-001`, and `V3-ECO-001`.
+- `V3-ENT-006` depends on `V3-BUD-001`, `V3-ATTR-001`, `V3-ATTR-002`, and `RM-134`.
+- This intake is queued for execution after the active soak + gated-cycle validation completes.
+
+## Benchmark-Gated Auto-Execution Intake (Normalized, Queued, 2026-02-28)
+
+Objective: allow autonomous execution of backlog items only when benchmark evidence is stable, anti-gamed, and risk-tier compliant.
+
+| Proposed Capability | Disposition | Canonical Backlog Coverage | Action |
+|---|---|---|---|
+| Auto-exec by risk tier (`low/medium/high`) | net-new | `V3-AEX-001` (below) | Add deterministic benchmark gate policy with tier-specific auto-exec behavior and veto/escalation rules. |
+| Item-level execution metadata (`auto_eligible`, checks, rollback path) | net-new | `V3-AEX-002` (below) | Add normalized backlog execution schema consumed by autonomy/improvement lanes. |
+| Stable benchmark windows, not one-shot pass | net-new | `V3-AEX-003` (below) | Require rolling window + holdout checks before auto promotion/apply. |
+| Anti-gaming benchmark integrity controls | net-new | `V3-AEX-004` (below) | Add holdout suite, benchmark signature/attestation, and drift guardrails. |
+| Existing self-improvement ladder + canary rollback | covered | `V3-038` (done), `V3-ENT-004` (todo), `V3-LOOP-002` (todo) | Reuse existing ladder; only add benchmark-admission policy layer and metadata contracts. |
+
+| ID | Class | Version | Status | Upgrade | Why | Exit Criteria |
+|---|---|---|---|---|---|---|
+| V3-AEX-001 | hardening | V3 | todo | Benchmark-Gated Autonomous Execution Policy | Auto-executing backlog work without stable quality gates can amplify regressions quickly | Add policy engine that maps risk tier to execution behavior (`low=auto shadow/canary/live`, `medium=auto shadow/canary + veto window`, `high=explicit approval`), enforces required benchmark checks, and emits deterministic gate decision receipts |
+| V3-AEX-002 | primitive-upgrade | V3 | todo | Backlog Execution Metadata Contract | Backlog items need machine-readable execution requirements for safe autonomous handling | Introduce normalized item metadata (`risk_tier`, `auto_eligible`, `required_checks`, `benchmark_profile`, `rollback_path`, `prerequisites`) with validation tool and CI guard that fails malformed/unsafe auto-eligible entries |
+| V3-AEX-003 | hardening | V3 | todo | Stable-Window Benchmark Admission Gate | Single-run benchmark passes are too noisy for autonomous apply decisions | Require N-consecutive pass windows + recency constraints + minimum sample floor before auto-exec eligibility; gate fails closed when benchmark freshness/sample thresholds are not met |
+| V3-AEX-004 | hardening | V3 | todo | Benchmark Anti-Gaming and Integrity Attestation Guard | Benchmark-driven automation can be gamed unless benchmark identity and holdout integrity are enforced | Add signed benchmark profile manifests, holdout benchmark lane, tamper-evident benchmark receipts, and drift/anomaly detection that freezes auto-exec on suspicious benchmark behavior |
+
+Dependency notes:
+- `V3-AEX-001` depends on `V3-038`, `V3-ENT-004`, `V3-LOOP-002`, and `V2-063`.
+- `V3-AEX-002` depends on `V3-OPS-012`, `V3-FCH-004`, and `V3-ARC-006`.
+- `V3-AEX-003` depends on `V2-011`, `RM-122`, `RM-123`, and `V3-AEX-002`.
+- `V3-AEX-004` depends on `V3-048`, `V3-FCH-002`, `V2-031`, and `V3-AEX-003`.
+- This intake is queued for execution after the active soak + gated-cycle validation completes.
+
+## Rust Memory Transition Intake (Normalized, Queued, 2026-02-28)
+
+Objective: migrate memory hot paths to Rust incrementally in tiny, reversible slices with deterministic parity first and benchmark-gated promotion thereafter.
+
+| Proposed Capability | Disposition | Canonical Backlog Coverage | Action |
+|---|---|---|---|
+| Small post-soak Rust pilot with no benchmark dependency | net-new | `V3-RMEM-001` (below) | Port one narrow memory box in shadow/test-only mode to prove correctness/parity before perf gating. |
+| Bench-gated index migration slice | net-new | `V3-RMEM-002` (below) | Move index build/refresh path after stable benchmark windows + parity pass. |
+| Bench-gated dedupe/content-hash slice | net-new | `V3-RMEM-003` (below) | Move dedupe/hash hot path only after benchmark and correctness gates. |
+| Bench-gated edge traversal/query slice | net-new | `V3-RMEM-004` (below) | Move graph traversal/query hot path with strict replay/parity requirements. |
+| Runtime backend selector + automatic safe fallback | net-new | `V3-RMEM-005` (below) | Keep JS baseline as deterministic fallback during phased migration. |
+| Benchmark-gated JS fallback retirement/exception retention | net-new | `V3-RMEM-006` (below) | Retire JS memory paths only after stable evidence; keep narrowly-scoped exceptions where JS proves better. |
+| Existing benchmark + auto-exec gating contracts | covered | `V2-011` (done), `RM-122` (doing), `V3-AEX-001..004` (todo) | Reuse benchmark and anti-gaming controls rather than creating parallel perf gates. |
+
+| ID | Class | Version | Status | Upgrade | Why | Exit Criteria |
+|---|---|---|---|---|---|---|
+| V3-RMEM-001 | primitive-upgrade | V3 | todo | Rust Memory Pilot Box (Frontmatter + Node Parse Parity, Post-Soak) | Establish safe Rust migration foothold without destabilizing active soak or requiring perf claims first | Implement Rust-backed parser for one narrow memory box (frontmatter + node extraction) in test/shadow mode only, with golden-corpus parity tests and deterministic fallback to JS; no live cutover and no benchmark gate required for this pilot |
+| V3-RMEM-002 | primitive-upgrade | V3 | todo | Rust Index Builder Slice (Benchmark-Gated) | Index regeneration is a recurring hot path where performance and stability gains are likely high | Add Rust index-build/refresh implementation behind backend flag; promote only after stable-window benchmark pass + parity tests + strict health non-regression receipts |
+| V3-RMEM-003 | primitive-upgrade | V3 | todo | Rust Content-Hash + Dedupe Slice (Benchmark-Gated) | Content-addressed dedupe is compute-heavy and central to memory efficiency roadmap | Port hash/dedupe lane to Rust with byte-for-byte parity checks against JS output; auto-promotion blocked unless benchmark profile and replay parity gates pass |
+| V3-RMEM-004 | primitive-upgrade | V3 | todo | Rust Edge Traversal + Query Slice (Benchmark-Gated) | Graph traversal/query latency impacts runtime memory access and autonomy loops | Port bounded edge traversal/query primitives to Rust, require deterministic query parity on regression corpus, and benchmark-gated canary promotion with rollback-ready receipts |
+| V3-RMEM-005 | hardening | V3 | todo | Memory Backend Selector + Fallback Guard (`js|rust_shadow|rust_live`) | Cross-language migration needs deterministic fail-safe behavior to avoid runtime instability | Add backend selector contract with health-based automatic fallback to JS, backend decision receipts, and CI checks preventing rust-live promotion without required benchmark/parity evidence artifacts |
+| V3-RMEM-006 | hardening | V3 | todo | Benchmark-Gated JS Memory Artifact Retirement + Exception Registry | Immediate JS removal can increase risk; fallback should be retired only after proven Rust stability while allowing benchmark-justified exceptions | Define retirement gate requiring stable benchmark window + zero critical fallback triggers over policy window; remove non-essential JS memory paths, retain only approved exception lanes with benchmark evidence in `config/js_exception_registry.json`, and enforce periodic revalidation receipts |
+
+Dependency notes:
+- `V3-RMEM-001` depends on `V3-OPS-015` and `V3-FCH-004`; intentionally has **no benchmark dependency** (post-soak correctness pilot only).
+- `V3-RMEM-002` depends on `V3-RMEM-001`, `V2-011`, `RM-122`, `V3-AEX-003`, and `V3-AEX-004`.
+- `V3-RMEM-003` depends on `V3-MEM-001`, `V3-RMEM-001`, `V3-AEX-003`, and `V3-AEX-004`.
+- `V3-RMEM-004` depends on `V3-MEM-002`, `V3-053`, `V3-RMEM-001`, `V3-AEX-003`, and `V3-AEX-004`.
+- `V3-RMEM-005` depends on `V3-RMEM-002`, `V3-RMEM-003`, `V3-RMEM-004`, `V3-SK-001`, and `V3-OPS-004`.
+- `V3-RMEM-006` depends on `V3-RMEM-005`, `V3-AEX-003`, `V3-AEX-004`, `RM-122`, `V2-068`, and `V3-OPS-015`.
+- Test wiring requirement for all slices: add/maintain parity + regression suites under `memory/tools/tests/*rust_memory*` and benchmark evidence artifacts in `state/ops/public_benchmark_pack/` before any rust-live promotion.
+- This intake is queued for execution after the active soak + gated-cycle validation completes.
 
 ## Backlog Policy
 

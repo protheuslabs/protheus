@@ -71,6 +71,8 @@ function clampInt(v, lo, hi, fallback) {
 }
 
 function safeNumber(v, fallback = 0) {
+  if (v == null) return fallback;
+  if (typeof v === 'string' && v.trim() === '') return fallback;
   const n = Number(v);
   return Number.isFinite(n) ? n : fallback;
 }
@@ -234,8 +236,8 @@ function introspectionSnapshot(dateStr) {
 }
 
 function observerMood(runSummary, sim, introspection) {
-  const drift = Number(sim && sim.drift_rate);
-  const yieldRate = Number(sim && sim.yield_rate);
+  const drift = safeNumber(sim && sim.drift_rate, NaN);
+  const yieldRate = safeNumber(sim && sim.yield_rate, NaN);
   const holdRate = Number(runSummary && runSummary.rates && runSummary.rates.hold_rate || 0);
   const queuePressure = String(introspection && introspection.queue_pressure || 'unknown');
 

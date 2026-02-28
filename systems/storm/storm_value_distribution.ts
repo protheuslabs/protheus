@@ -463,6 +463,29 @@ function buildPlan(args: AnyObj = {}, opts: AnyObj = {}) {
     });
   }
 
+  const allocatedCreatorPoolUsd = roundTo(
+    payouts
+      .filter((row: AnyObj) => !(row && row.is_sovereign_root_tithe === true))
+      .reduce((sum: number, row: AnyObj) => sum + Number(row && row.amount_usd || 0), 0),
+    6
+  );
+  const creatorPoolResidualUsd = roundTo(Math.max(0, creatorPoolUsd - allocatedCreatorPoolUsd), 6);
+  if (creatorPoolResidualUsd > Number(policy.distribution.min_payout_usd || 0.01)) {
+    payouts.push({
+      creator_id: rootCreatorId,
+      mode: rootMode,
+      donation_target: null,
+      amount_usd: creatorPoolResidualUsd,
+      share: poolUsd > 0 ? roundTo(creatorPoolResidualUsd / poolUsd, 6) : 0,
+      score: null,
+      attribution_ids: [],
+      objective_ids: objectiveFilter ? [objectiveFilter] : [],
+      run_ids: runFilter ? [runFilter] : [],
+      is_creator_pool_residual: true,
+      wallet_alias: rootWalletAlias
+    });
+  }
+
   const payoutTotalUsd = roundTo(
     payouts.reduce((sum: number, row: AnyObj) => sum + Number(row && row.amount_usd || 0), 0),
     6
@@ -498,6 +521,8 @@ function buildPlan(args: AnyObj = {}, opts: AnyObj = {}) {
       effective_tithe_bps: effectiveTitheBps,
       root_tithe_usd: rootTitheUsd,
       creator_pool_usd: creatorPoolUsd,
+      creator_pool_allocated_usd: allocatedCreatorPoolUsd,
+      creator_pool_residual_usd: creatorPoolResidualUsd,
       observed_tithe_bps: observedTitheBps,
       observed_tithe_bps_count: observedTitheBpsSet.size
     },
@@ -571,7 +596,7 @@ function buildPlan(args: AnyObj = {}, opts: AnyObj = {}) {
 
   // Feed contribution maturity back into creator ledger.
   for (const payout of payouts) {
-    if (payout && payout.is_sovereign_root_tithe === true) continue;
+    if (payout && (payout.is_sovereign_root_tithe === true || payout.is_creator_pool_residual === true)) continue;
     recordContribution({
       creator_id: payout.creator_id,
       influence: clampNumber(payout.share, 0, 1, 0),

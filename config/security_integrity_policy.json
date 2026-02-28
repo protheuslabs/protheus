@@ -65,8 +65,8 @@
     "config/directives/T1_northstars.yaml": "dbababba9f2dc49b0d24ada4a1a70117cdafe0767ba2ec4a69ec7f80c1721610",
     "config/echo_policy.json": "031025f20678cbe39446a160bb8e22916f8a90c9e1f392998ef666c45387d2e2",
     "config/helix_policy.json": "3f598262ce8f376acdb710b52d0074b846fa4925e4bfdd604ada1f724c4c0a79",
-    "config/red_team_policy.json": "0b30d67021faf5c31ec8137b2a1cfd37a00dde85e4305c7f60e037b2335e3930",
-    "config/weaver_policy.json": "3eeb526f2872cb986c9dc976302a5138f0a7aafce384e2753a8d02b4e54a9bcf",
+    "config/red_team_policy.json": "2a7373fcfbdd1e4e75ceffa4eef1323bec946418069e600b1ffc2553c9fd43e0",
+    "config/weaver_policy.json": "07a427a5883ca3fcb1be3792cd0779551c1d5cf67b7bfad5cd252efe75508a73",
     "lib/directive_resolver.js": "7cb0308999d849521a360618e233c19d0e748c0ab806ff29c6e0ad583810b9b7",
     "lib/eyes_catalog.js": "4553ffd8db2ea42a3bd22892d89cb6cc555d05d8e96194d859ab1d8bffcdea0b",
     "systems/adaptive/core/layer_store.js": "5eba699acf3b07abc44442c27d5dc2cc96bdf3f06b5cbdf6a8979eed4384b3e7",
@@ -112,6 +112,7 @@
     "systems/security/directive_gate.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/directive_hierarchy_controller.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/directive_intake.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
+    "systems/security/dream_warden_guard.js": "4957d6177400020074450e9a32a81652e33d950d2a1323d33402448bca2e1d43",
     "systems/security/egress_gateway.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/emergency_stop.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/enterprise_access_gate.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
@@ -156,9 +157,9 @@
     "systems/weaver/monoculture_guard.js": "4957d6177400020074450e9a32a81652e33d950d2a1323d33402448bca2e1d43",
     "systems/weaver/monoculture_guard.ts": "5549cb6b21dbfa618604b9d5bef972745988a190e2252a7fb54062fff45ce5ab",
     "systems/weaver/weaver_core.js": "4957d6177400020074450e9a32a81652e33d950d2a1323d33402448bca2e1d43",
-    "systems/weaver/weaver_core.ts": "03de43b3a639c1f6d98b1ef72a7e5a6bb330e75befad09599485b918e673543e"
+    "systems/weaver/weaver_core.ts": "438e474ce9979667c0154630e1c00d2f4e447d06bf468aea674dc48675261131"
   },
-  "sealed_at": "2026-02-28T02:21:57.871Z",
+  "sealed_at": "2026-02-28T12:39:07.022Z",
   "sealed_by": "jay",
-  "last_approval_note": "codex ci reseal after wrapper cutover"
+  "last_approval_note": "post-patch reseal for tithe+validation stability"
 }

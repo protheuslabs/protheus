@@ -1,0 +1,41 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "soak": {
+    "duration_hours": 24,
+    "interval_minutes": 60,
+    "cycle_count": 4
+  },
+  "thresholds": {
+    "symbiosis_min_score": 0.7,
+    "require_helix_tier": "clear",
+    "require_attestation_decision": "allow"
+  },
+  "gated_cycle": {
+    "policy_path": "state/autonomy/private_cycle_headstart/gated_self_improvement_policy.private.json",
+    "objective_id": "t1_make_jay_billionaire_v1",
+    "target_path": "systems/autonomy/gated_self_improvement_loop.ts",
+    "risk": "medium",
+    "approval_a": "private_headstart_a",
+    "approval_b": "private_headstart_b",
+    "simulation_days": 180
+  },
+  "attribution": {
+    "creator_id": "protheus_seed_instance",
+    "objective_id": "t1_make_jay_billionaire_v1",
+    "base_value_usd": 100,
+    "value_step_usd": 10
+  },
+  "checks": {
+    "command_timeout_ms": 180000
+  },
+  "paths": {
+    "root": "state/autonomy/runtime_stability_soak",
+    "state_path": "state/autonomy/runtime_stability_soak/state.json",
+    "latest_path": "state/autonomy/runtime_stability_soak/latest.json",
+    "checks_path": "state/autonomy/runtime_stability_soak/checks.jsonl",
+    "cycles_path": "state/autonomy/runtime_stability_soak/cycles.jsonl",
+    "reports_dir": "state/autonomy/runtime_stability_soak/reports"
+  }
+}

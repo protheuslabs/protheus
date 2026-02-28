@@ -36,6 +36,10 @@ const GATED_SELF_IMPROVEMENT_BURN_ORACLE_LATEST_PATH = process.env.GATED_SELF_IM
 const SELF_CODE_EVOLUTION_SCRIPT = path.join(ROOT, 'systems', 'autonomy', 'self_code_evolution_sandbox.js');
 const AUTONOMY_SIMULATION_SCRIPT = path.join(ROOT, 'systems', 'autonomy', 'autonomy_simulation_harness.js');
 const RED_TEAM_HARNESS_SCRIPT = path.join(ROOT, 'systems', 'autonomy', 'red_team_harness.js');
+const GATED_SELF_STEP_TIMEOUT_MS = Math.max(
+  1000,
+  Math.min(5 * 60 * 1000, Number(process.env.GATED_SELF_STEP_TIMEOUT_MS || 120000) || 120000)
+);
 let stateKernelDualWriteMod: AnyObj = null;
 try {
   stateKernelDualWriteMod = require('../ops/state_kernel_dual_write.js');
@@ -385,7 +389,8 @@ function evaluateGates(policy: AnyObj, simMetrics: AnyObj = {}, redSummary: AnyO
 function runNodeJson(script: string, args: string[], fallbackType: string) {
   const r = spawnSync(process.execPath, [script, ...args], {
     cwd: ROOT,
-    encoding: 'utf8'
+    encoding: 'utf8',
+    timeout: GATED_SELF_STEP_TIMEOUT_MS
   });
   const stdout = String(r.stdout || '').trim();
   const stderr = String(r.stderr || '').trim();
@@ -405,11 +410,12 @@ function runNodeJson(script: string, args: string[], fallbackType: string) {
   }
   return {
     ok: r.status === 0,
-    code: Number(r.status || 0),
+    code: Number.isFinite(r.status) ? Number(r.status) : 124,
     type: fallbackType,
     payload,
     stdout,
-    stderr
+    stderr,
+    timed_out: !!(r.error && String(r.error.code || '').toUpperCase() === 'ETIMEDOUT')
   };
 }
 
