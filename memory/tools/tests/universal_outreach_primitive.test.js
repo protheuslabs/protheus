@@ -78,6 +78,23 @@ function main() {
     min_personalization_score: 0.5,
     high_burn_batch_cap: 3,
     critical_burn_batch_cap: 1,
+    autonomous_execution: {
+      enabled: true,
+      medium_veto_window_minutes: 0,
+      high_risk_min_approval_note_chars: 12,
+      default_cost_per_lead_usd: 8,
+      default_liability_score: 0.35,
+      allow_gate_timeout_low_medium: true,
+      workflow_class_default: 'revenue_outreach',
+      threshold_usd: {
+        low: 100,
+        medium: 1000
+      },
+      liability_threshold: {
+        low: 0.2,
+        medium: 0.55
+      }
+    },
     dependencies: {
       burn_oracle_latest_path: burnLatestPath,
       disposable_infra_policy_path: disposablePolicyPath,
@@ -158,6 +175,8 @@ function main() {
   assert.ok(out.payload && out.payload.ok === true, 'plan payload should be ok');
   assert.strictEqual(Number(out.payload.leads_selected || 0), 3, 'high burn cap should limit selected leads to 3');
   assert.strictEqual(Number(out.payload.micro_tasks || 0), 15, 'expected 5 tasks per selected lead');
+  assert.strictEqual(String(out.payload.risk_tier || ''), 'medium', 'revenue outreach should default to medium tier');
+  assert.strictEqual(Boolean(out.payload.operator_prompt_required), false, 'medium tier should not prompt operator');
   assert.ok(Array.isArray(out.payload.reason_codes) && out.payload.reason_codes.includes('burn_pressure_high'), 'reason codes should include burn pressure');
 
   out = run(outreachScript, [
@@ -169,6 +188,7 @@ function main() {
   assert.ok(out.payload && out.payload.ok === true, 'run payload should be ok');
   assert.strictEqual(Number(out.payload.leads_executed || 0), 3, 'run should execute selected leads');
   assert.ok(Number(out.payload.deliverability_average || 0) > 0, 'deliverability average should be positive');
+  assert.strictEqual(String(out.payload.stage || ''), 'executed_autonomous_medium', 'medium tier should auto-execute after veto window');
 
   out = run(outreachScript, [
     'status',
@@ -176,7 +196,7 @@ function main() {
   ], env, root);
   assert.strictEqual(out.status, 0, out.stderr || 'outreach status should pass');
   assert.ok(out.payload && out.payload.ok === true, 'status payload should be ok');
-  assert.strictEqual(String(out.payload.campaign.stage || ''), 'shadow_executed', 'campaign should remain shadow executed');
+  assert.strictEqual(String(out.payload.campaign.stage || ''), 'executed_autonomous_medium', 'campaign should reflect autonomous medium execution');
 
   console.log('universal_outreach_primitive.test.js: OK');
 }

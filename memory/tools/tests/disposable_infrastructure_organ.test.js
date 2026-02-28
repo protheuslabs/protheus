@@ -121,6 +121,8 @@ function main() {
   assert.strictEqual(out.status, 0, out.stderr || 'acquire-session should pass');
   assert.ok(out.payload && out.payload.ok === true, 'acquire-session payload should be ok');
   assert.ok(out.payload.session && out.payload.session.session_id, 'session id should be emitted');
+  assert.strictEqual(String(out.payload.autonomy_contract && out.payload.autonomy_contract.risk_tier || ''), 'medium', 'session should carry medium tier autonomy');
+  assert.strictEqual(Boolean(out.payload.autonomy_contract && out.payload.autonomy_contract.operator_prompt_required), false, 'medium tier should not require operator prompt');
   const sessionId = String(out.payload.session.session_id || '');
 
   out = run(scriptPath, [

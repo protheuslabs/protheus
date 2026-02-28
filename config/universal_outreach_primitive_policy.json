@@ -8,6 +8,24 @@
   "critical_burn_batch_cap": 2,
   "default_channel": "email",
   "default_region": "us",
+  "autonomous_execution": {
+    "enabled": true,
+    "high_risk_min_approval_note_chars": 12,
+    "medium_veto_window_minutes": 10,
+    "low_to_medium_promote_usd": 50,
+    "default_cost_per_lead_usd": 8,
+    "default_liability_score": 0.35,
+    "workflow_class_default": "revenue_outreach",
+    "allow_gate_timeout_low_medium": true,
+    "threshold_usd": {
+      "low": 100,
+      "medium": 1000
+    },
+    "liability_threshold": {
+      "low": 0.2,
+      "medium": 0.55
+    }
+  },
   "dependencies": {
     "burn_oracle_latest_path": "state/ops/dynamic_burn_budget_oracle/latest.json",
     "disposable_infra_policy_path": "config/disposable_infrastructure_organ_policy.json",

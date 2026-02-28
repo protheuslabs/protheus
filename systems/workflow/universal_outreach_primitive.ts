@@ -24,6 +24,7 @@ const POLICY_PATH = process.env.UNIVERSAL_OUTREACH_PRIMITIVE_POLICY_PATH
 const DISPOSABLE_INFRA_SCRIPT = path.join(ROOT, 'systems', 'actuation', 'disposable_infrastructure_organ.js');
 const EYE_KERNEL_SCRIPT = path.join(ROOT, 'systems', 'eye', 'eye_kernel.js');
 const SOUL_GUARD_SCRIPT = path.join(ROOT, 'systems', 'security', 'soul_token_guard.js');
+const CONSTITUTION_GUARD_SCRIPT = path.join(ROOT, 'systems', 'security', 'constitution_guardian.js');
 const WEAVER_CORE_SCRIPT = path.join(ROOT, 'systems', 'weaver', 'weaver_core.js');
 
 function nowIso() {
@@ -189,6 +190,24 @@ function defaultPolicy() {
     critical_burn_batch_cap: 2,
     default_channel: 'email',
     default_region: 'us',
+    autonomous_execution: {
+      enabled: true,
+      high_risk_min_approval_note_chars: 12,
+      medium_veto_window_minutes: 10,
+      low_to_medium_promote_usd: 50,
+      default_cost_per_lead_usd: 8,
+      default_liability_score: 0.35,
+      workflow_class_default: 'revenue_outreach',
+      allow_gate_timeout_low_medium: true,
+      threshold_usd: {
+        low: 100,
+        medium: 1000
+      },
+      liability_threshold: {
+        low: 0.2,
+        medium: 0.55
+      }
+    },
     dependencies: {
       burn_oracle_latest_path: 'state/ops/dynamic_burn_budget_oracle/latest.json',
       disposable_infra_policy_path: 'config/disposable_infrastructure_organ_policy.json',
@@ -225,6 +244,15 @@ function loadPolicy(policyPath = POLICY_PATH) {
   const stormLane = profilePack.storm_human_lane && typeof profilePack.storm_human_lane === 'object'
     ? profilePack.storm_human_lane
     : {};
+  const autoExec = raw.autonomous_execution && typeof raw.autonomous_execution === 'object'
+    ? raw.autonomous_execution
+    : {};
+  const thresholdUsd = autoExec.threshold_usd && typeof autoExec.threshold_usd === 'object'
+    ? autoExec.threshold_usd
+    : {};
+  const liabilityThreshold = autoExec.liability_threshold && typeof autoExec.liability_threshold === 'object'
+    ? autoExec.liability_threshold
+    : {};
   const state = raw.state && typeof raw.state === 'object' ? raw.state : {};
   return {
     version: cleanText(raw.version || base.version, 24) || base.version,
@@ -236,6 +264,62 @@ function loadPolicy(policyPath = POLICY_PATH) {
     critical_burn_batch_cap: clampInt(raw.critical_burn_batch_cap, 1, 500, base.critical_burn_batch_cap),
     default_channel: normalizeToken(raw.default_channel || base.default_channel, 40) || base.default_channel,
     default_region: normalizeToken(raw.default_region || base.default_region, 40) || base.default_region,
+    autonomous_execution: {
+      enabled: autoExec.enabled !== false,
+      high_risk_min_approval_note_chars: clampInt(
+        autoExec.high_risk_min_approval_note_chars,
+        1,
+        200,
+        base.autonomous_execution.high_risk_min_approval_note_chars
+      ),
+      medium_veto_window_minutes: clampInt(
+        autoExec.medium_veto_window_minutes,
+        0,
+        24 * 60,
+        base.autonomous_execution.medium_veto_window_minutes
+      ),
+      low_to_medium_promote_usd: clampNumber(
+        autoExec.low_to_medium_promote_usd,
+        0,
+        1000000,
+        base.autonomous_execution.low_to_medium_promote_usd
+      ),
+      default_cost_per_lead_usd: clampNumber(
+        autoExec.default_cost_per_lead_usd,
+        0,
+        10000,
+        base.autonomous_execution.default_cost_per_lead_usd
+      ),
+      default_liability_score: clampNumber(
+        autoExec.default_liability_score,
+        0,
+        1,
+        base.autonomous_execution.default_liability_score
+      ),
+      workflow_class_default: normalizeToken(
+        autoExec.workflow_class_default || base.autonomous_execution.workflow_class_default,
+        80
+      ) || base.autonomous_execution.workflow_class_default,
+      allow_gate_timeout_low_medium: autoExec.allow_gate_timeout_low_medium !== false,
+      threshold_usd: {
+        low: clampNumber(thresholdUsd.low, 0, 1000000, base.autonomous_execution.threshold_usd.low),
+        medium: clampNumber(thresholdUsd.medium, 0, 10000000, base.autonomous_execution.threshold_usd.medium)
+      },
+      liability_threshold: {
+        low: clampNumber(
+          liabilityThreshold.low,
+          0,
+          1,
+          base.autonomous_execution.liability_threshold.low
+        ),
+        medium: clampNumber(
+          liabilityThreshold.medium,
+          0,
+          1,
+          base.autonomous_execution.liability_threshold.medium
+        )
+      }
+    },
     dependencies: {
       burn_oracle_latest_path: resolvePath(deps.burn_oracle_latest_path || base.dependencies.burn_oracle_latest_path, base.dependencies.burn_oracle_latest_path),
       disposable_infra_policy_path: resolvePath(deps.disposable_infra_policy_path || base.dependencies.disposable_infra_policy_path, base.dependencies.disposable_infra_policy_path),
@@ -313,19 +397,122 @@ function persistLatest(policy: AnyObj, row: AnyObj) {
 
 function usage() {
   console.log('Usage:');
-  console.log('  node systems/workflow/universal_outreach_primitive.js plan --campaign-id=<id> --leads-json=<json|@file> [--offer-json=<json|@file>] [--region=<id>] [--channel=<id>] [--apply=0|1]');
-  console.log('  node systems/workflow/universal_outreach_primitive.js run --campaign-id=<id> [--apply=0|1]');
+  console.log('  node systems/workflow/universal_outreach_primitive.js plan --campaign-id=<id> --leads-json=<json|@file> [--offer-json=<json|@file>] [--region=<id>] [--channel=<id>] [--risk-tier=<low|medium|high>] [--estimated-cost-usd=<n>] [--liability-score=<0..1>] [--apply=0|1]');
+  console.log('  node systems/workflow/universal_outreach_primitive.js run --campaign-id=<id> [--veto=1] [--veto-note=\"...\"] [--force=1] [--approval-note=\"...\"] [--apply=0|1]');
   console.log('  node systems/workflow/universal_outreach_primitive.js status [--campaign-id=<id>]');
 }
 
-function gateApply(policy: AnyObj, applyRequested: boolean) {
+function tierRank(v: unknown) {
+  const tier = normalizeToken(v, 40);
+  if (tier === 'high') return 3;
+  if (tier === 'medium') return 2;
+  if (tier === 'low') return 1;
+  return 0;
+}
+
+function inferRiskProfile(policy: AnyObj, args: AnyObj, leadsSelected: number, burnProjection: AnyObj) {
+  const cfg = policy.autonomous_execution && typeof policy.autonomous_execution === 'object'
+    ? policy.autonomous_execution
+    : defaultPolicy().autonomous_execution;
+  const override = normalizeToken(args['risk-tier'] || args.risk_tier || args.risk || '', 40);
+  const workflowClass = normalizeToken(
+    args['workflow-class'] || args.workflow_class || cfg.workflow_class_default || 'revenue_outreach',
+    80
+  ) || 'revenue_outreach';
+  const estimatedCostUsd = clampNumber(
+    args['estimated-cost-usd'] || args.estimated_cost_usd,
+    0,
+    1_000_000_000,
+    Number(leadsSelected || 0) * Number(cfg.default_cost_per_lead_usd || 0)
+  );
+  const liabilityScore = clampNumber(
+    args['liability-score'] || args.liability_score,
+    0,
+    1,
+    cfg.default_liability_score
+  );
   const reasonCodes: string[] = [];
-  let applyAllowed = applyRequested;
-  if (policy.shadow_only === true && applyRequested) {
-    applyAllowed = false;
-    reasonCodes.push('shadow_only_mode');
+
+  let riskTier = ['low', 'medium', 'high'].includes(override) ? override : '';
+  if (!riskTier) {
+    if (
+      estimatedCostUsd <= Number(cfg.threshold_usd && cfg.threshold_usd.low || 100)
+      && liabilityScore <= Number(cfg.liability_threshold && cfg.liability_threshold.low || 0.2)
+    ) riskTier = 'low';
+    else if (
+      estimatedCostUsd <= Number(cfg.threshold_usd && cfg.threshold_usd.medium || 1000)
+      && liabilityScore <= Number(cfg.liability_threshold && cfg.liability_threshold.medium || 0.55)
+    ) riskTier = 'medium';
+    else riskTier = 'high';
   }
-  return { apply_requested: applyRequested, apply_allowed: applyAllowed, reason_codes: reasonCodes };
+
+  if (workflowClass === 'revenue_outreach' && tierRank(riskTier) > tierRank('medium') && !override) {
+    riskTier = 'medium';
+    reasonCodes.push('revenue_default_low_medium');
+  }
+  if (workflowClass === 'revenue_outreach' && !reasonCodes.includes('revenue_default_low_medium')) {
+    reasonCodes.push('revenue_default_low_medium');
+  }
+
+  const pressure = normalizeToken(burnProjection && burnProjection.pressure || 'none', 40);
+  if (pressure === 'critical' && tierRank(riskTier) < tierRank('high')) {
+    riskTier = 'high';
+    reasonCodes.push('burn_pressure_promoted_to_high');
+  } else if (
+    pressure === 'high'
+    && riskTier === 'low'
+    && estimatedCostUsd > Number(cfg.low_to_medium_promote_usd || 50)
+  ) {
+    riskTier = 'medium';
+    reasonCodes.push('burn_pressure_promoted_to_medium');
+  }
+
+  return {
+    workflow_class: workflowClass,
+    risk_tier: riskTier,
+    estimated_cost_usd: Number(estimatedCostUsd.toFixed(6)),
+    liability_score: Number(liabilityScore.toFixed(6)),
+    reason_codes: reasonCodes
+  };
+}
+
+function buildExecutionContract(policy: AnyObj, riskProfile: AnyObj, startTs: string) {
+  const cfg = policy.autonomous_execution && typeof policy.autonomous_execution === 'object'
+    ? policy.autonomous_execution
+    : defaultPolicy().autonomous_execution;
+  const startMs = Date.parse(String(startTs || nowIso()));
+  const vetoWindowMinutes = clampInt(cfg.medium_veto_window_minutes, 0, 24 * 60, 10);
+  if (riskProfile.risk_tier === 'low') {
+    return {
+      risk_tier: 'low',
+      execution_mode: 'execute_and_report',
+      operator_prompt_required: false,
+      auto_execute_at: nowIso(),
+      veto_window_minutes: 0,
+      veto_deadline_at: null
+    };
+  }
+  if (riskProfile.risk_tier === 'medium') {
+    const executeAtMs = Number.isFinite(startMs)
+      ? startMs + (vetoWindowMinutes * 60 * 1000)
+      : Date.now() + (vetoWindowMinutes * 60 * 1000);
+    return {
+      risk_tier: 'medium',
+      execution_mode: 'shadow_then_auto_execute_unless_vetoed',
+      operator_prompt_required: false,
+      auto_execute_at: new Date(executeAtMs).toISOString(),
+      veto_window_minutes: vetoWindowMinutes,
+      veto_deadline_at: new Date(executeAtMs).toISOString()
+    };
+  }
+  return {
+    risk_tier: 'high',
+    execution_mode: 'explicit_approval_required',
+    operator_prompt_required: true,
+    auto_execute_at: null,
+    veto_window_minutes: 0,
+    veto_deadline_at: null
+  };
 }
 
 function readBurnProjection(policy: AnyObj) {
@@ -345,6 +532,36 @@ function computeBatchCap(policy: AnyObj, burnProjection: AnyObj) {
   if (pressure === 'critical') return Math.min(Number(policy.max_leads_per_batch || 25), Number(policy.critical_burn_batch_cap || 2));
   if (pressure === 'high') return Math.min(Number(policy.max_leads_per_batch || 25), Number(policy.high_burn_batch_cap || 5));
   return Number(policy.max_leads_per_batch || 25);
+}
+
+function evaluateApprovalContract(policy: AnyObj, riskTier: string, args: AnyObj) {
+  const cfg = policy.autonomous_execution && typeof policy.autonomous_execution === 'object'
+    ? policy.autonomous_execution
+    : defaultPolicy().autonomous_execution;
+  const approvalNote = cleanText(args['approval-note'] || args.approval_note || '', 800);
+  const applyRequested = toBool(args.apply, false);
+  const reasonCodes: string[] = [];
+  let applyAllowed = true;
+  let explicitApprovalSatisfied = true;
+  if (riskTier === 'high') {
+    applyAllowed = applyRequested && policy.shadow_only !== true;
+    explicitApprovalSatisfied = applyRequested
+      && approvalNote.length >= Number(cfg.high_risk_min_approval_note_chars || 12);
+    if (policy.shadow_only === true) reasonCodes.push('shadow_only_mode');
+    if (!applyRequested) reasonCodes.push('high_risk_apply_required');
+    if (approvalNote.length < Number(cfg.high_risk_min_approval_note_chars || 12)) {
+      reasonCodes.push('high_risk_approval_note_required');
+    }
+  } else if (policy.shadow_only === true) {
+    reasonCodes.push('autonomous_tier_override_shadow');
+  }
+  return {
+    apply_requested: applyRequested,
+    apply_allowed: applyAllowed,
+    explicit_approval_satisfied: explicitApprovalSatisfied,
+    approval_note: approvalNote || null,
+    reason_codes: reasonCodes
+  };
 }
 
 function scoreLead(raw: AnyObj) {
@@ -398,53 +615,74 @@ function buildMicroTasks(policy: AnyObj, campaignId: string, lead: AnyObj, sessi
   }));
 }
 
-function advisoryGates(applyRequested: boolean) {
+function evaluateGovernanceGates(policy: AnyObj, riskTier: string, requireSoul: boolean) {
   const gates: AnyObj = {};
   gates.eye = runNodeJson(EYE_KERNEL_SCRIPT, [
     'route',
     '--lane=organ',
     '--target=workflow',
     '--action=universal_outreach_campaign',
-    '--risk=medium',
+    `--risk=${normalizeToken(riskTier || 'medium', 20) || 'medium'}`,
     '--clearance=L2',
     '--apply=0'
   ]);
-  gates.soul = runNodeJson(SOUL_GUARD_SCRIPT, ['verify', '--strict=1']);
+  gates.constitution = runNodeJson(CONSTITUTION_GUARD_SCRIPT, ['status']);
   gates.weaver = runNodeJson(WEAVER_CORE_SCRIPT, ['status', 'latest']);
+  gates.soul = requireSoul ? runNodeJson(SOUL_GUARD_SCRIPT, ['verify', '--strict=1']) : { ok: true, skipped: true, timed_out: false };
 
-  if (!applyRequested) {
-    return {
-      ok: true,
-      mode: 'advisory_only',
-      gates: {
-        eye: gates.eye.ok,
-        soul: gates.soul.ok,
-        weaver: gates.weaver.ok
-      },
-      reason_codes: []
-        .concat(gates.eye.timed_out ? ['eye_probe_timeout'] : [])
-        .concat(gates.soul.timed_out ? ['soul_probe_timeout'] : [])
-        .concat(gates.weaver.timed_out ? ['weaver_probe_timeout'] : [])
-    };
-  }
-  const ok = gates.eye.ok && gates.soul.ok && gates.weaver.ok;
+  const reasonCodes: string[] = []
+    .concat(gates.eye.timed_out ? ['eye_probe_timeout'] : [])
+    .concat(gates.weaver.timed_out ? ['weaver_probe_timeout'] : [])
+    .concat(gates.constitution.timed_out ? ['constitution_probe_timeout'] : [])
+    .concat(gates.soul.timed_out ? ['soul_probe_timeout'] : []);
+  const hardFailures: string[] = []
+    .concat(gates.eye.ok ? [] : (gates.eye.timed_out ? [] : ['eye_gate_failed']))
+    .concat(gates.weaver.ok ? [] : (gates.weaver.timed_out ? [] : ['weaver_gate_failed']))
+    .concat(gates.constitution.ok ? [] : (gates.constitution.timed_out ? [] : ['constitution_gate_failed']))
+    .concat(gates.soul.ok ? [] : (gates.soul.timed_out ? [] : ['soul_gate_failed']));
+  const timeoutFailures = reasonCodes.filter((row) => row.endsWith('_timeout'));
+  const highRisk = normalizeToken(riskTier || '', 20) === 'high';
+  const allowLowMediumTimeout = policy.autonomous_execution
+    && policy.autonomous_execution.allow_gate_timeout_low_medium !== false;
+  const timeoutBlocks = timeoutFailures.length > 0
+    && (highRisk || allowLowMediumTimeout !== true);
+  const constitutionHardFail = hardFailures.includes('constitution_gate_failed');
+  const strictHardFail = highRisk
+    ? hardFailures.length > 0
+    : constitutionHardFail;
+  const ok = !strictHardFail && !timeoutBlocks;
+  if (!ok) reasonCodes.push('governance_gate_failed');
+  if (timeoutBlocks) reasonCodes.push('governance_timeout_block');
+
   return {
     ok,
-    mode: 'apply_required',
+    mode: riskTier === 'high' ? 'enforced_high_risk' : 'enforced_autonomous',
     gates: {
       eye: gates.eye.ok,
-      soul: gates.soul.ok,
-      weaver: gates.weaver.ok
+      weaver: gates.weaver.ok,
+      constitution: gates.constitution.ok,
+      soul: gates.soul.ok
     },
-    reason_codes: ok ? [] : ['governance_gate_failed']
+    require_soul: requireSoul === true,
+    reason_codes: reasonCodes,
+    hard_failures: hardFailures
   };
 }
 
-function acquireDisposableSession(policy: AnyObj, campaignId: string, leadId: string) {
+function acquireDisposableSession(
+  policy: AnyObj,
+  campaignId: string,
+  leadId: string,
+  riskTier: string,
+  estimatedCostUsd: number,
+  liabilityScore: number
+) {
   const args = [
     'acquire-session',
     `--task-id=${normalizeToken(`${campaignId}_${leadId}`, 180)}`,
-    '--risk-class=medium',
+    `--risk-class=${normalizeToken(riskTier || 'medium', 20) || 'medium'}`,
+    `--estimated-cost-usd=${Number(estimatedCostUsd || 0).toFixed(4)}`,
+    `--liability-score=${Number(liabilityScore || 0).toFixed(4)}`,
     '--apply=0',
     `--policy=${policy.dependencies.disposable_infra_policy_path}`
   ];
@@ -473,17 +711,6 @@ function cmdPlan(policy: AnyObj, args: AnyObj) {
     return { ok: false, type: 'universal_outreach_plan', ts: nowIso(), error: 'leads_json_array_required' };
   }
   const offer = parseJsonArg(args['offer-json'] || args.offer_json || '', {});
-  const applyGate = gateApply(policy, toBool(args.apply, false));
-  const governance = advisoryGates(applyGate.apply_requested);
-  if (applyGate.apply_allowed && !governance.ok) {
-    return {
-      ok: false,
-      type: 'universal_outreach_plan',
-      ts: nowIso(),
-      error: 'governance_gate_failed',
-      governance
-    };
-  }
 
   const burnProjection = readBurnProjection(policy);
   const cap = computeBatchCap(policy, burnProjection);
@@ -491,13 +718,42 @@ function cmdPlan(policy: AnyObj, args: AnyObj) {
   const eligibleLeads = normalizedLeads
     .filter((row: AnyObj) => Number(row.personalization_score || 0) >= Number(policy.min_personalization_score || 0))
     .slice(0, cap);
+
+  const riskProfile = inferRiskProfile(policy, args, eligibleLeads.length, burnProjection);
+  const approvalContract = evaluateApprovalContract(policy, riskProfile.risk_tier, args);
+  const governance = evaluateGovernanceGates(policy, riskProfile.risk_tier, riskProfile.risk_tier === 'high');
+  if (!governance.ok) {
+    return {
+      ok: false,
+      type: 'universal_outreach_plan',
+      ts: nowIso(),
+      error: 'governance_gate_failed',
+      governance,
+      risk_tier: riskProfile.risk_tier,
+      reason_codes: []
+        .concat(riskProfile.reason_codes || [])
+        .concat(approvalContract.reason_codes || [])
+        .concat(governance.reason_codes || [])
+    };
+  }
+  const executionContract = buildExecutionContract(policy, riskProfile, nowIso());
+
   const reasonCodes = []
+    .concat(riskProfile.reason_codes || [])
     .concat(burnProjection.pressure && burnProjection.pressure !== 'none' ? [`burn_pressure_${burnProjection.pressure}`] : [])
     .concat(eligibleLeads.length < normalizedLeads.length ? ['personalization_filtered'] : [])
-    .concat(applyGate.reason_codes || []);
+    .concat(approvalContract.reason_codes || [])
+    .concat(governance.reason_codes || []);
 
   const leadPlans = eligibleLeads.map((lead: AnyObj) => {
-    const session = acquireDisposableSession(policy, campaignId, lead.lead_id);
+    const session = acquireDisposableSession(
+      policy,
+      campaignId,
+      lead.lead_id,
+      riskProfile.risk_tier,
+      riskProfile.estimated_cost_usd / Math.max(1, eligibleLeads.length),
+      riskProfile.liability_score
+    );
     return {
       lead,
       session,
@@ -510,11 +766,17 @@ function cmdPlan(policy: AnyObj, args: AnyObj) {
     campaign_id: campaignId,
     created_at: nowIso(),
     updated_at: nowIso(),
-    stage: applyGate.apply_allowed ? 'planned' : 'shadow_planned',
+    stage: executionContract.risk_tier === 'low'
+      ? 'planned_autonomous_low'
+      : executionContract.risk_tier === 'medium'
+        ? 'planned_shadow_medium'
+        : 'planned_high_risk_pending_approval',
     channel: normalizeToken(args.channel || policy.default_channel, 40) || policy.default_channel,
     region: normalizeToken(args.region || policy.default_region, 40) || policy.default_region,
     offer: offer && typeof offer === 'object' ? offer : {},
     burn_projection: burnProjection,
+    risk_profile: riskProfile,
+    execution_contract: executionContract,
     batch_cap: cap,
     leads_total: normalizedLeads.length,
     leads_selected: eligibleLeads.length,
@@ -541,12 +803,18 @@ function cmdPlan(policy: AnyObj, args: AnyObj) {
     ok: true,
     type: 'universal_outreach_plan',
     ts: nowIso(),
-    ...applyGate,
+    ...approvalContract,
     campaign_id: campaignId,
     stage: campaign.stage,
     leads_total: campaign.leads_total,
     leads_selected: campaign.leads_selected,
     micro_tasks: microTasks.length,
+    risk_tier: riskProfile.risk_tier,
+    estimated_cost_usd: riskProfile.estimated_cost_usd,
+    liability_score: riskProfile.liability_score,
+    execution_mode: executionContract.execution_mode,
+    veto_deadline_at: executionContract.veto_deadline_at,
+    operator_prompt_required: executionContract.operator_prompt_required === true,
     reason_codes: reasonCodes,
     projected_runway_days: burnProjection.projected_runway_days,
     pressure: burnProjection.pressure,
@@ -584,16 +852,119 @@ function cmdRun(policy: AnyObj, args: AnyObj) {
   if (!campaign || typeof campaign !== 'object') {
     return { ok: false, type: 'universal_outreach_run', ts: nowIso(), error: 'campaign_not_found' };
   }
-
-  const applyGate = gateApply(policy, toBool(args.apply, false));
-  const governance = advisoryGates(applyGate.apply_requested);
-  if (applyGate.apply_allowed && !governance.ok) {
+  const riskProfile = campaign.risk_profile && typeof campaign.risk_profile === 'object'
+    ? campaign.risk_profile
+    : inferRiskProfile(
+      policy,
+      args,
+      clampInt(campaign.leads_selected, 0, 1_000_000, 0),
+      campaign.burn_projection && typeof campaign.burn_projection === 'object' ? campaign.burn_projection : readBurnProjection(policy)
+    );
+  const executionContract = campaign.execution_contract && typeof campaign.execution_contract === 'object'
+    ? campaign.execution_contract
+    : buildExecutionContract(policy, riskProfile, nowIso());
+  const approvalContract = evaluateApprovalContract(policy, riskProfile.risk_tier, args);
+  const governance = evaluateGovernanceGates(policy, riskProfile.risk_tier, riskProfile.risk_tier === 'high');
+  const reasonCodes = []
+    .concat(approvalContract.reason_codes || [])
+    .concat(governance.reason_codes || []);
+  if (!governance.ok) {
     return {
       ok: false,
       type: 'universal_outreach_run',
       ts: nowIso(),
       error: 'governance_gate_failed',
+      risk_tier: riskProfile.risk_tier,
+      governance,
+      reason_codes: reasonCodes
+    };
+  }
+
+  const vetoRequested = toBool(args.veto, false);
+  const vetoNote = cleanText(args['veto-note'] || args.veto_note || '', 600);
+  if (vetoRequested && riskProfile.risk_tier === 'medium') {
+    campaign.updated_at = nowIso();
+    campaign.stage = 'vetoed_medium';
+    campaign.execution = {
+      ts: nowIso(),
+      risk_tier: riskProfile.risk_tier,
+      vetoed: true,
+      veto_note: vetoNote || null,
       governance
+    };
+    writeJsonAtomic(campaignPath, campaign);
+    state.campaigns[campaignId] = {
+      campaign_id: campaignId,
+      stage: campaign.stage,
+      updated_at: nowIso(),
+      leads_selected: clampInt(campaign.leads_selected, 0, 1_000_000, 0),
+      micro_tasks: Array.isArray(campaign.micro_tasks) ? campaign.micro_tasks.length : 0
+    };
+    saveState(policy, state);
+    const vetoOut = {
+      ok: true,
+      type: 'universal_outreach_run',
+      ts: nowIso(),
+      ...approvalContract,
+      campaign_id: campaignId,
+      stage: campaign.stage,
+      leads_executed: 0,
+      deliverability_average: 0,
+      governance,
+      risk_tier: riskProfile.risk_tier,
+      execution_mode: executionContract.execution_mode,
+      operator_prompt_required: false,
+      reason_codes: reasonCodes.concat('operator_vetoed_medium')
+    };
+    persistLatest(policy, vetoOut);
+    return vetoOut;
+  }
+
+  const autoExecuteAtMs = Date.parse(String(executionContract.auto_execute_at || executionContract.veto_deadline_at || ''));
+  const forceRun = toBool(args.force, false) || toBool(args['force-auto'], false);
+  const highRiskReady = approvalContract.explicit_approval_satisfied === true
+    && governance.gates
+    && governance.gates.soul === true;
+  const shouldExecute = riskProfile.risk_tier === 'low'
+    ? true
+    : riskProfile.risk_tier === 'medium'
+      ? (
+        forceRun
+        || !Number.isFinite(autoExecuteAtMs)
+        || Date.now() >= Number(autoExecuteAtMs)
+      )
+      : highRiskReady;
+
+  if (!shouldExecute) {
+    if (riskProfile.risk_tier === 'medium') {
+      const pendingOut = {
+        ok: true,
+        type: 'universal_outreach_run',
+        ts: nowIso(),
+        ...approvalContract,
+        campaign_id: campaignId,
+        stage: 'pending_veto_window',
+        leads_executed: 0,
+        deliverability_average: 0,
+        governance,
+        risk_tier: riskProfile.risk_tier,
+        execution_mode: executionContract.execution_mode,
+        operator_prompt_required: false,
+        veto_deadline_at: executionContract.veto_deadline_at,
+        reason_codes: reasonCodes.concat('waiting_veto_window')
+      };
+      persistLatest(policy, pendingOut);
+      return pendingOut;
+    }
+    return {
+      ok: false,
+      type: 'universal_outreach_run',
+      ts: nowIso(),
+      error: 'high_risk_approval_required',
+      campaign_id: campaignId,
+      risk_tier: riskProfile.risk_tier,
+      governance,
+      reason_codes: reasonCodes.concat('high_risk_approval_required')
     };
   }
 
@@ -606,7 +977,11 @@ function cmdRun(policy: AnyObj, args: AnyObj) {
     const deliverability = Number(clampNumber((personalization * 0.6) + (sessionConfidence * 0.4), 0, 1, 0).toFixed(6));
     return {
       lead_id: cleanText(lead.lead_id || '', 160) || null,
-      stage: applyGate.apply_allowed ? 'executed' : 'shadow_executed',
+      stage: riskProfile.risk_tier === 'low'
+        ? 'executed_autonomous'
+        : riskProfile.risk_tier === 'medium'
+          ? 'executed_after_veto_window'
+          : 'executed_high_risk_approved',
       deliverability_score: deliverability,
       session_id: cleanText(session.session_id || '', 160) || null,
       action_summary: {
@@ -624,11 +999,16 @@ function cmdRun(policy: AnyObj, args: AnyObj) {
     : 0;
 
   campaign.updated_at = nowIso();
-  campaign.stage = applyGate.apply_allowed ? 'executed' : 'shadow_executed';
+  campaign.stage = riskProfile.risk_tier === 'low'
+    ? 'executed_autonomous_low'
+    : riskProfile.risk_tier === 'medium'
+      ? 'executed_autonomous_medium'
+      : 'executed_high_risk_approved';
   campaign.execution = {
     ts: nowIso(),
-    apply_requested: applyGate.apply_requested,
-    apply_allowed: applyGate.apply_allowed,
+    ...approvalContract,
+    risk_tier: riskProfile.risk_tier,
+    execution_mode: executionContract.execution_mode,
     governance,
     deliverability_average: deliverabilityAvg,
     results
@@ -649,13 +1029,16 @@ function cmdRun(policy: AnyObj, args: AnyObj) {
     ok: true,
     type: 'universal_outreach_run',
     ts: nowIso(),
-    ...applyGate,
+    ...approvalContract,
     campaign_id: campaignId,
     stage: campaign.stage,
     leads_executed: results.length,
     deliverability_average: deliverabilityAvg,
     governance,
-    reason_codes: applyGate.reason_codes || [],
+    risk_tier: riskProfile.risk_tier,
+    execution_mode: executionContract.execution_mode,
+    operator_prompt_required: executionContract.operator_prompt_required === true,
+    reason_codes: reasonCodes,
     paths: {
       campaign_path: rel(campaignPath),
       state_path: rel(policy.state.state_path),
@@ -687,6 +1070,8 @@ function cmdStatus(policy: AnyObj, args: AnyObj) {
       ? {
         stage: cleanText(campaign.stage || '', 80) || null,
         leads_selected: clampInt(campaign.leads_selected, 0, 1_000_000, 0),
+        risk_tier: cleanText(campaign.risk_profile && campaign.risk_profile.risk_tier || '', 32) || null,
+        execution_mode: cleanText(campaign.execution_contract && campaign.execution_contract.execution_mode || '', 120) || null,
         updated_at: cleanText(campaign.updated_at || '', 60) || null
       }
       : null,

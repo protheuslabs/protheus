@@ -14,6 +14,7 @@ export {};
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { spawnSync } = require('child_process');
 
 type AnyObj = Record<string, any>;
 
@@ -21,6 +22,7 @@ const ROOT = path.resolve(__dirname, '..', '..');
 const POLICY_PATH = process.env.DISPOSABLE_INFRASTRUCTURE_POLICY_PATH
   ? path.resolve(process.env.DISPOSABLE_INFRASTRUCTURE_POLICY_PATH)
   : path.join(ROOT, 'config', 'disposable_infrastructure_organ_policy.json');
+const SOUL_GUARD_SCRIPT = path.join(ROOT, 'systems', 'security', 'soul_token_guard.js');
 
 function nowIso() {
   return new Date().toISOString();
@@ -106,6 +108,38 @@ function readJson(filePath: string, fallback: any = null) {
   }
 }
 
+function parseJsonOutput(raw: unknown) {
+  const text = String(raw || '').trim();
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    const lines = text.split('\n').map((line) => line.trim()).filter(Boolean);
+    for (let i = lines.length - 1; i >= 0; i -= 1) {
+      try {
+        return JSON.parse(lines[i]);
+      } catch {}
+    }
+  }
+  return null;
+}
+
+function runNodeJson(scriptPath: string, args: string[], timeoutMs = 2500) {
+  const proc = spawnSync(process.execPath, [scriptPath, ...args], {
+    cwd: ROOT,
+    encoding: 'utf8',
+    timeout: timeoutMs
+  });
+  return {
+    ok: proc.status === 0,
+    code: Number(proc.status || 0),
+    payload: parseJsonOutput(proc.stdout),
+    stdout: String(proc.stdout || '').trim(),
+    stderr: String(proc.stderr || '').trim(),
+    timed_out: Boolean(proc.error && (proc.error as AnyObj).code === 'ETIMEDOUT')
+  };
+}
+
 function writeJsonAtomic(filePath: string, payload: AnyObj) {
   ensureDir(path.dirname(filePath));
   const tmp = `${filePath}.tmp-${Date.now()}-${process.pid}`;
@@ -158,6 +192,20 @@ function defaultPolicy() {
       rotate_on_block_score: 0.7,
       min_reputation_for_send: 0.45
     },
+    autonomous_execution: {
+      enabled: true,
+      high_risk_min_approval_note_chars: 12,
+      default_cost_usd: 8,
+      default_liability_score: 0.35,
+      threshold_usd: {
+        low: 100,
+        medium: 1000
+      },
+      liability_threshold: {
+        low: 0.2,
+        medium: 0.55
+      }
+    },
     pools: {
       accounts: {
         max_active: 48,
@@ -183,6 +231,15 @@ function loadPolicy(policyPath = POLICY_PATH) {
   const raw = readJson(policyPath, {});
   const compliance = raw.compliance && typeof raw.compliance === 'object' ? raw.compliance : {};
   const risk = raw.risk && typeof raw.risk === 'object' ? raw.risk : {};
+  const autoExec = raw.autonomous_execution && typeof raw.autonomous_execution === 'object'
+    ? raw.autonomous_execution
+    : {};
+  const thresholdUsd = autoExec.threshold_usd && typeof autoExec.threshold_usd === 'object'
+    ? autoExec.threshold_usd
+    : {};
+  const liabilityThreshold = autoExec.liability_threshold && typeof autoExec.liability_threshold === 'object'
+    ? autoExec.liability_threshold
+    : {};
   const pools = raw.pools && typeof raw.pools === 'object' ? raw.pools : {};
   const accounts = pools.accounts && typeof pools.accounts === 'object' ? pools.accounts : {};
   const proxies = pools.proxies && typeof pools.proxies === 'object' ? pools.proxies : {};
@@ -203,6 +260,45 @@ function loadPolicy(policyPath = POLICY_PATH) {
       rotate_on_bounce_rate: clampNumber(risk.rotate_on_bounce_rate, 0, 1, base.risk.rotate_on_bounce_rate),
       rotate_on_block_score: clampNumber(risk.rotate_on_block_score, 0, 1, base.risk.rotate_on_block_score),
       min_reputation_for_send: clampNumber(risk.min_reputation_for_send, 0, 1, base.risk.min_reputation_for_send)
+    },
+    autonomous_execution: {
+      enabled: autoExec.enabled !== false,
+      high_risk_min_approval_note_chars: clampInt(
+        autoExec.high_risk_min_approval_note_chars,
+        1,
+        200,
+        base.autonomous_execution.high_risk_min_approval_note_chars
+      ),
+      default_cost_usd: clampNumber(
+        autoExec.default_cost_usd,
+        0,
+        1000000,
+        base.autonomous_execution.default_cost_usd
+      ),
+      default_liability_score: clampNumber(
+        autoExec.default_liability_score,
+        0,
+        1,
+        base.autonomous_execution.default_liability_score
+      ),
+      threshold_usd: {
+        low: clampNumber(thresholdUsd.low, 0, 1000000, base.autonomous_execution.threshold_usd.low),
+        medium: clampNumber(thresholdUsd.medium, 0, 10000000, base.autonomous_execution.threshold_usd.medium)
+      },
+      liability_threshold: {
+        low: clampNumber(
+          liabilityThreshold.low,
+          0,
+          1,
+          base.autonomous_execution.liability_threshold.low
+        ),
+        medium: clampNumber(
+          liabilityThreshold.medium,
+          0,
+          1,
+          base.autonomous_execution.liability_threshold.medium
+        )
+      }
     },
     pools: {
       accounts: {
@@ -289,7 +385,7 @@ function usage() {
   console.log('Usage:');
   console.log('  node systems/actuation/disposable_infrastructure_organ.js register-account --account-id=<id> --provider=<provider> [--warmup-days=<n>] [--reputation=<0..1>] [--apply=0|1]');
   console.log('  node systems/actuation/disposable_infrastructure_organ.js register-proxy --proxy-id=<id> --provider=<provider> [--region=<id>] [--quality-score=<0..1>] [--apply=0|1]');
-  console.log('  node systems/actuation/disposable_infrastructure_organ.js acquire-session --task-id=<id> [--risk-class=<low|medium|high>] [--apply=0|1]');
+  console.log('  node systems/actuation/disposable_infrastructure_organ.js acquire-session --task-id=<id> [--risk-class=<low|medium|high>] [--estimated-cost-usd=<n>] [--liability-score=<0..1>] [--approval-note="..."] [--apply=0|1]');
   console.log('  node systems/actuation/disposable_infrastructure_organ.js report-deliverability --session-id=<id> --bounce-rate=<0..1> --block-score=<0..1> [--apply=0|1]');
   console.log('  node systems/actuation/disposable_infrastructure_organ.js release-session --session-id=<id> [--reason=<text>] [--apply=0|1]');
   console.log('  node systems/actuation/disposable_infrastructure_organ.js status');
@@ -450,6 +546,85 @@ function chooseProxy(state: AnyObj) {
   return rows.length ? rows[0] : null;
 }
 
+function inferSessionRiskTier(policy: AnyObj, args: AnyObj) {
+  const cfg = policy.autonomous_execution && typeof policy.autonomous_execution === 'object'
+    ? policy.autonomous_execution
+    : defaultPolicy().autonomous_execution;
+  const override = normalizeToken(args['risk-class'] || args.risk_class || args['risk-tier'] || args.risk_tier || '', 40);
+  const estimatedCostUsd = clampNumber(
+    args['estimated-cost-usd'] || args.estimated_cost_usd,
+    0,
+    1_000_000_000,
+    cfg.default_cost_usd
+  );
+  const liabilityScore = clampNumber(
+    args['liability-score'] || args.liability_score,
+    0,
+    1,
+    cfg.default_liability_score
+  );
+  let riskTier = ['low', 'medium', 'high'].includes(override) ? override : '';
+  if (!riskTier) {
+    if (
+      estimatedCostUsd <= Number(cfg.threshold_usd && cfg.threshold_usd.low || 100)
+      && liabilityScore <= Number(cfg.liability_threshold && cfg.liability_threshold.low || 0.2)
+    ) riskTier = 'low';
+    else if (
+      estimatedCostUsd <= Number(cfg.threshold_usd && cfg.threshold_usd.medium || 1000)
+      && liabilityScore <= Number(cfg.liability_threshold && cfg.liability_threshold.medium || 0.55)
+    ) riskTier = 'medium';
+    else riskTier = 'high';
+  }
+  return {
+    risk_tier: riskTier,
+    estimated_cost_usd: Number(estimatedCostUsd.toFixed(6)),
+    liability_score: Number(liabilityScore.toFixed(6))
+  };
+}
+
+function evaluateSessionAutonomy(policy: AnyObj, riskTier: string, args: AnyObj) {
+  const cfg = policy.autonomous_execution && typeof policy.autonomous_execution === 'object'
+    ? policy.autonomous_execution
+    : defaultPolicy().autonomous_execution;
+  const approvalNote = cleanText(args['approval-note'] || args.approval_note || '', 800);
+  const reasonCodes: string[] = [];
+  let mode = 'execute_and_report';
+  let allowExecution = true;
+  let soulVerified = false;
+  if (riskTier === 'medium') {
+    mode = 'shadow_then_auto_execute_unless_vetoed';
+  } else if (riskTier === 'high') {
+    mode = 'explicit_approval_required';
+    allowExecution = false;
+    if (approvalNote.length < Number(cfg.high_risk_min_approval_note_chars || 12)) {
+      reasonCodes.push('high_risk_approval_note_required');
+    } else {
+      const soul = runNodeJson(SOUL_GUARD_SCRIPT, ['verify', '--strict=1'], 5000);
+      soulVerified = soul.ok === true;
+      if (!soulVerified) {
+        reasonCodes.push(soul.timed_out ? 'soul_probe_timeout' : 'soul_gate_failed');
+      } else {
+        allowExecution = true;
+      }
+    }
+  }
+  if (policy.shadow_only === true && riskTier !== 'high') {
+    reasonCodes.push('autonomous_tier_override_shadow');
+  } else if (policy.shadow_only === true && riskTier === 'high') {
+    reasonCodes.push('shadow_only_mode');
+    allowExecution = false;
+  }
+  return {
+    risk_tier: riskTier,
+    execution_mode: mode,
+    allow_execution: allowExecution,
+    operator_prompt_required: riskTier === 'high',
+    approval_note: approvalNote || null,
+    soul_verified: soulVerified,
+    reason_codes: reasonCodes
+  };
+}
+
 function cmdAcquireSession(policy: AnyObj, args: AnyObj) {
   const state = loadState(policy);
   const taskId = normalizeToken(args['task-id'] || args.task_id || '', 160);
@@ -458,23 +633,27 @@ function cmdAcquireSession(policy: AnyObj, args: AnyObj) {
   if (!account) return { ok: false, type: 'disposable_infrastructure_acquire_session', ts: nowIso(), error: 'no_eligible_account' };
   const proxy = chooseProxy(state);
   if (!proxy) return { ok: false, type: 'disposable_infrastructure_acquire_session', ts: nowIso(), error: 'no_eligible_proxy' };
-  const riskClass = normalizeToken(args['risk-class'] || args.risk_class || 'medium', 40) || 'medium';
+  const riskProfile = inferSessionRiskTier(policy, args);
+  const autonomy = evaluateSessionAutonomy(policy, riskProfile.risk_tier, args);
   const applyGate = gateApply(policy, toBool(args.apply, false));
+  const applyAllowed = autonomy.allow_execution === true;
   const sessionId = `ds_${sha12({ taskId, account: account.account_id, proxy: proxy.proxy_id, ts: nowIso() })}`;
 
   const session = {
     session_id: sessionId,
     task_id: taskId,
-    risk_class: riskClass,
+    risk_class: riskProfile.risk_tier,
+    risk_profile: riskProfile,
+    execution_mode: autonomy.execution_mode,
     account_id: account.account_id,
     proxy_id: proxy.proxy_id,
-    status: applyGate.apply_allowed ? 'active' : 'shadow_active',
+    status: applyAllowed ? 'active' : 'approval_required',
     created_at: nowIso(),
     updated_at: nowIso(),
-    apply_allowed: applyGate.apply_allowed
+    apply_allowed: applyAllowed
   };
   state.sessions[sessionId] = session;
-  if (applyGate.apply_allowed) {
+  if (applyAllowed) {
     ensureAccountDailyCounter(account, dayStr());
     account.sends_today = clampInt(Number(account.sends_today || 0) + 1, 0, 100000, 0);
     account.updated_at = nowIso();
@@ -493,12 +672,16 @@ function cmdAcquireSession(policy: AnyObj, args: AnyObj) {
     type: 'disposable_infrastructure_acquire_session',
     ts: nowIso(),
     ...applyGate,
+    autonomy_contract: autonomy,
     session,
     routing_hint: {
       lane: 'disposable_outreach',
       identity_mode: 'isolated_disposable',
       compliance_enforced: policy.compliance.enforce_can_spam === true
-    }
+    },
+    reason_codes: []
+      .concat(applyGate.reason_codes || [])
+      .concat(autonomy.reason_codes || [])
   };
   persistLatest(policy, out);
   return out;

@@ -15,6 +15,20 @@
     "rotate_on_block_score": 0.7,
     "min_reputation_for_send": 0.45
   },
+  "autonomous_execution": {
+    "enabled": true,
+    "high_risk_min_approval_note_chars": 12,
+    "default_cost_usd": 8,
+    "default_liability_score": 0.35,
+    "threshold_usd": {
+      "low": 100,
+      "medium": 1000
+    },
+    "liability_threshold": {
+      "low": 0.2,
+      "medium": 0.55
+    }
+  },
   "pools": {
     "accounts": {
       "max_active": 48,
