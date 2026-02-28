@@ -35,9 +35,14 @@ function run() {
   const pendingQueuePath = path.join(tmp, 'state', 'nursery', 'training', 'workflow_learning_queue.jsonl');
   const canaryQueuePath = path.join(tmp, 'state', 'nursery', 'training', 'workflow_learning_canary.jsonl');
   const masterQueuePath = path.join(tmp, 'state', 'nursery', 'training', 'continuum_queue.jsonl');
+  const masterTransmitQueuePath = path.join(tmp, 'state', 'nursery', 'training', 'master_llm_ingest_queue.jsonl');
+  const instanceOptOutRegistryPath = path.join(tmp, 'state', 'workflow', 'learning_conduit', 'instance_opt_out_registry.json');
+  const hereditaryQueuePath = path.join(tmp, 'state', 'brain', 'hereditary_advancement_queue.jsonl');
+  const masterReviewQueuePath = path.join(tmp, 'state', 'brain', 'master_review_advancement_queue.jsonl');
   const dataRightsPolicyPath = path.join(tmp, 'config', 'data_rights_policy.json');
   const dataRightsStateDir = path.join(tmp, 'state', 'workflow', 'data_rights');
 
+  writeJson(instanceOptOutRegistryPath, { entries: {} });
   writeJson(policyPath, {
     version: '1.0-test',
     enabled: true,
@@ -58,6 +63,22 @@ function run() {
       enabled: true,
       strict_block: true,
       policy_path: redactionPolicyPath
+    },
+    master_conduit: {
+      enabled: true,
+      default_transmit: true,
+      shadow_only: true,
+      require_redaction: true,
+      queue_path: masterTransmitQueuePath,
+      receipts_path: path.join(tmp, 'state', 'workflow', 'learning_conduit', 'master_transmit_receipts.jsonl'),
+      opt_out_registry_path: instanceOptOutRegistryPath,
+      instance_id_env_keys: ['PROTHEUS_INSTANCE_ID']
+    },
+    federation: {
+      mode: 'hereditary_master_reviewed',
+      peer_to_peer_network_effect: false,
+      hereditary_update_queue_path: hereditaryQueuePath,
+      master_review_queue_path: masterReviewQueuePath
     },
     defaults: {
       owner_id: 'ops_owner',
@@ -141,6 +162,7 @@ function run() {
     LEARNING_CONDUIT_STATE_PATH: statePath,
     LEARNING_CONDUIT_RECEIPTS_PATH: receiptsPath,
     LEARNING_CONDUIT_LATEST_PATH: latestPath,
+    PROTHEUS_INSTANCE_ID: 'instance_redaction',
     DATA_RIGHTS_POLICY_PATH: dataRightsPolicyPath,
     DATA_RIGHTS_STATE_DIR: dataRightsStateDir,
     DATA_RIGHTS_SIGNING_KEY: 'learning_conduit_redaction_secret'
@@ -163,6 +185,7 @@ function run() {
   assert.ok(out && out.ok === true, 'ingest should succeed');
   assert.strictEqual(Number(out.ingested || 0), 1, 'one row should be ingested');
   assert.strictEqual(Number(out.rejected || 0), 1, 'one row should be rejected');
+  assert.strictEqual(Number(out.master_conduit && out.master_conduit.transmitted || 0), 1, 'only non-blocked row should transmit');
   assert.ok(out.redaction_summary, 'redaction summary should be present');
   assert.strictEqual(Number(out.redaction_summary.blocked_rows || 0), 1);
   assert.strictEqual(Number(out.redaction_summary.redacted_rows || 0) >= 1, true);

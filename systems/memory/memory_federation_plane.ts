@@ -184,7 +184,11 @@ function defaultPolicy() {
       enabled: true,
       opt_in_required: true,
       attestation_required: true,
-      local_instance_id: 'local_instance'
+      local_instance_id: 'local_instance',
+      exchange_model: 'peer_attested',
+      peer_to_peer_network_effect: true,
+      hereditary_update_queue_path: 'state/brain/hereditary_advancement_queue.jsonl',
+      master_review_queue_path: 'state/brain/master_review_advancement_queue.jsonl'
     }
   };
 }
@@ -222,7 +226,23 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
       local_instance_id: normalizeToken(
         federation.local_instance_id || base.federation.local_instance_id,
         120
-      ) || base.federation.local_instance_id
+      ) || base.federation.local_instance_id,
+      exchange_model: normalizeToken(
+        federation.exchange_model || base.federation.exchange_model,
+        80
+      ) || base.federation.exchange_model,
+      peer_to_peer_network_effect: toBool(
+        federation.peer_to_peer_network_effect,
+        base.federation.peer_to_peer_network_effect
+      ),
+      hereditary_update_queue_path: cleanText(
+        federation.hereditary_update_queue_path || base.federation.hereditary_update_queue_path,
+        320
+      ) || base.federation.hereditary_update_queue_path,
+      master_review_queue_path: cleanText(
+        federation.master_review_queue_path || base.federation.master_review_queue_path,
+        320
+      ) || base.federation.master_review_queue_path
     }
   };
 }
@@ -448,6 +468,23 @@ function cmdExport(args: AnyObj) {
   if (policy.federation.opt_in_required === true && optIn !== true) {
     return { ok: false, type: 'memory_federation_export', error: 'opt_in_required' };
   }
+  if (policy.federation.peer_to_peer_network_effect !== true) {
+    appendJsonl(paths.exports_path, {
+      ts: nowIso(),
+      type: 'memory_federation_export',
+      exported: 0,
+      fallback_local_only: true,
+      reason: 'peer_to_peer_disabled_use_master_hereditary',
+      exchange_model: policy.federation.exchange_model || null
+    });
+    return {
+      ok: true,
+      type: 'memory_federation_export',
+      exported: 0,
+      fallback_local_only: true,
+      reason: 'peer_to_peer_disabled_use_master_hereditary'
+    };
+  }
   const instanceId = normalizeToken(args['instance-id'] || args.instance_id || policy.federation.local_instance_id, 120)
     || policy.federation.local_instance_id;
   const archetypes = Array.isArray(state.local_archetypes) ? state.local_archetypes.slice(0, 500) : [];
@@ -507,6 +544,23 @@ function cmdImport(args: AnyObj) {
       imported: 0,
       fallback_local_only: true,
       reason: 'opt_in_required'
+    };
+  }
+  if (policy.federation.peer_to_peer_network_effect !== true) {
+    appendJsonl(paths.imports_path, {
+      ts: nowIso(),
+      type: 'memory_federation_import',
+      imported: 0,
+      fallback_local_only: true,
+      reason: 'peer_to_peer_disabled_use_master_hereditary',
+      exchange_model: policy.federation.exchange_model || null
+    });
+    return {
+      ok: true,
+      type: 'memory_federation_import',
+      imported: 0,
+      fallback_local_only: true,
+      reason: 'peer_to_peer_disabled_use_master_hereditary'
     };
   }
   const filePathRaw = cleanText(args.file || '', 360);
@@ -592,7 +646,9 @@ function cmdStatus(args: AnyObj) {
     ts: nowIso(),
     policy: {
       version: policy.version,
-      path: relPath(policyPath)
+      path: relPath(policyPath),
+      federation_mode: policy.federation.exchange_model || null,
+      peer_to_peer_network_effect: policy.federation.peer_to_peer_network_effect === true
     },
     counts: {
       local_archetypes: Array.isArray(state.local_archetypes) ? state.local_archetypes.length : 0,
@@ -648,4 +704,3 @@ module.exports = {
   cmdImport,
   cmdStatus
 };
-

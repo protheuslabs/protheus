@@ -769,6 +769,21 @@ Dependency notes:
 - `V3-FCH-003` depends on `V3-056`, `V2-HLX-003`, and `V2-059`.
 - `V3-FCH-004` depends on `V3-FCH-002` (shared path inventory artifacts) and `V2-FND-004`.
 
+## Master Learning Conduit + Hereditary Federation (Normalized, 2026-02-28)
+
+Objective: keep every instance’s generated learning data flowing into a sovereign master-training queue by default while enforcing hereditary/master-reviewed advancement propagation instead of uncontrolled peer-to-peer swarm drift.
+
+| ID | Class | Version | Status | Upgrade | Why | Exit Criteria |
+|---|---|---|---|---|---|---|
+| V3-MLC-001 | extension | V3 | done | Default-On Master Training Conduit Lane | Establishes an always-available upstream data moat for future master-model training without requiring immediate infrastructure cutover | `systems/workflow/learning_conduit.ts` now routes accepted rows to a policy-bound master transmit queue by default (`master_conduit.default_transmit=true`), preserves redaction/provenance receipts, supports explicit per-instance opt-out registry, and emits deterministic master-conduit + federation counters in ingest receipts |
+| V3-MLC-002 | hardening | V3 | done | Hereditary + Master-Reviewed Federation Routing | Prevents split-brain drift by preferring parent/lineage propagation and master-reviewed promotion over ad-hoc peer network effects | Learning conduit emits hereditary/master-review advancement queues; `config/memory_federation_policy.json` defaults to `exchange_model=hereditary_master_reviewed` with `peer_to_peer_network_effect=false`; `systems/memory/memory_federation_plane.ts` degrades peer export/import to local fallback when P2P is disabled |
+| V3-MLC-003 | extension | V3 | done | Spine Auto-Ingest Wiring for Learning Conduit | Ensures conduit flow happens continuously without manual operator nudges | `systems/spine/spine.ts` now invokes `learning_conduit ingest` after successful workflow-executor runs, records `spine_learning_conduit_ingest` receipts, and exposes feature-flag/strict controls for shadow rollout |
+
+Dependency notes:
+- `V3-MLC-001` depends on `V2-060`, `RM-106`, and `V3-ATTR-001`.
+- `V3-MLC-002` depends on `V2-026`, `V2-062`, and `V3-006`.
+- `V3-MLC-003` depends on `V2-054` and workflow executor runtime integration (`V2-055`/closure lanes).
+
 ## Backlog Policy
 
 - Lower-impact items (<9% estimated gain) are intentionally parked below to protect V1 focus.

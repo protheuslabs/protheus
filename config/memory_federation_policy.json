@@ -18,6 +18,10 @@
     "enabled": true,
     "opt_in_required": true,
     "attestation_required": true,
-    "local_instance_id": "local_instance"
+    "local_instance_id": "local_instance",
+    "exchange_model": "hereditary_master_reviewed",
+    "peer_to_peer_network_effect": false,
+    "hereditary_update_queue_path": "state/brain/hereditary_advancement_queue.jsonl",
+    "master_review_queue_path": "state/brain/master_review_advancement_queue.jsonl"
   }
 }

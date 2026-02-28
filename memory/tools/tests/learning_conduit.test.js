@@ -42,9 +42,15 @@ function run() {
   const pendingQueuePath = path.join(tmp, 'state', 'nursery', 'training', 'workflow_learning_queue.jsonl');
   const canaryQueuePath = path.join(tmp, 'state', 'nursery', 'training', 'workflow_learning_canary.jsonl');
   const masterQueuePath = path.join(tmp, 'state', 'nursery', 'training', 'continuum_queue.jsonl');
+  const masterTransmitQueuePath = path.join(tmp, 'state', 'nursery', 'training', 'master_llm_ingest_queue.jsonl');
+  const masterTransmitReceiptsPath = path.join(tmp, 'state', 'workflow', 'learning_conduit', 'master_transmit_receipts.jsonl');
+  const instanceOptOutRegistryPath = path.join(tmp, 'state', 'workflow', 'learning_conduit', 'instance_opt_out_registry.json');
+  const hereditaryQueuePath = path.join(tmp, 'state', 'brain', 'hereditary_advancement_queue.jsonl');
+  const masterReviewQueuePath = path.join(tmp, 'state', 'brain', 'master_review_advancement_queue.jsonl');
   const dataRightsPolicyPath = path.join(tmp, 'config', 'data_rights_policy.json');
   const dataRightsStateDir = path.join(tmp, 'state', 'workflow', 'data_rights');
 
+  writeJson(instanceOptOutRegistryPath, { entries: {} });
   writeJson(policyPath, {
     version: '1.0-test',
     enabled: true,
@@ -60,6 +66,22 @@ function run() {
     canary: {
       required: true,
       min_score: 0.7
+    },
+    master_conduit: {
+      enabled: true,
+      default_transmit: true,
+      shadow_only: true,
+      require_redaction: true,
+      queue_path: masterTransmitQueuePath,
+      receipts_path: masterTransmitReceiptsPath,
+      opt_out_registry_path: instanceOptOutRegistryPath,
+      instance_id_env_keys: ['PROTHEUS_INSTANCE_ID']
+    },
+    federation: {
+      mode: 'hereditary_master_reviewed',
+      peer_to_peer_network_effect: false,
+      hereditary_update_queue_path: hereditaryQueuePath,
+      master_review_queue_path: masterReviewQueuePath
     },
     defaults: {
       owner_id: 'ops_owner',
@@ -121,6 +143,7 @@ function run() {
     LEARNING_CONDUIT_STATE_PATH: statePath,
     LEARNING_CONDUIT_RECEIPTS_PATH: receiptsPath,
     LEARNING_CONDUIT_LATEST_PATH: latestPath,
+    PROTHEUS_INSTANCE_ID: 'instance_alpha',
     DATA_RIGHTS_POLICY_PATH: dataRightsPolicyPath,
     DATA_RIGHTS_STATE_DIR: dataRightsStateDir,
     DATA_RIGHTS_SIGNING_KEY: 'learning_conduit_data_rights_secret'
@@ -138,16 +161,55 @@ function run() {
   assert.strictEqual(Number(ingestOut.ingested || 0), 2);
   assert.strictEqual(Number(ingestOut.rejected || 0), 0);
   assert.strictEqual(Number(ingestOut.rights_events_written || 0), 2);
+  assert.strictEqual(Number(ingestOut.master_conduit && ingestOut.master_conduit.transmitted || 0), 2);
+  assert.strictEqual(Number(ingestOut.federation && ingestOut.federation.hereditary_queued || 0), 2);
+  assert.ok(fs.existsSync(masterTransmitQueuePath), 'master transmit queue should be written');
+  assert.ok(fs.existsSync(hereditaryQueuePath), 'hereditary queue should be written');
+  assert.ok(fs.existsSync(masterReviewQueuePath), 'master review queue should be written');
   const provenancePath = path.join(dataRightsStateDir, 'provenance.jsonl');
   assert.ok(fs.existsSync(provenancePath), 'provenance log should be written');
   const provenanceRows = fs.readFileSync(provenancePath, 'utf8').split('\n').filter(Boolean);
   assert.strictEqual(provenanceRows.length, 2, 'expected provenance rows for ingested outcomes');
 
+  // Explicit per-instance opt-out should suppress transmit while keeping local queues active.
+  writeJson(instanceOptOutRegistryPath, {
+    entries: {
+      instance_alpha: {
+        opt_out: true,
+        reason: 'test_opt_out',
+        updated_at: new Date().toISOString()
+      }
+    }
+  });
+  writeJson(runPayloadPath, {
+    ok: true,
+    run_id: 'wfexec_test_002',
+    results: [
+      {
+        workflow_id: 'wf_gamma',
+        status: 'succeeded',
+        ok: true,
+        duration_ms: 640,
+        mutation_summary: { applied: 0 }
+      }
+    ]
+  });
+  const ingestOptOut = runNode(scriptPath, [
+    'ingest',
+    `--run-payload=${runPayloadPath}`,
+    '--consent-status=granted',
+    '--consent-mode=explicit_opt_in'
+  ], env, root);
+  assert.strictEqual(ingestOptOut.status, 0, ingestOptOut.stderr || ingestOptOut.stdout);
+  const ingestOptOutOut = parseJson(ingestOptOut, 'ingest_opt_out');
+  assert.strictEqual(Boolean(ingestOptOutOut.master_conduit && ingestOptOutOut.master_conduit.explicitly_opted_out), true);
+  assert.strictEqual(Number(ingestOptOutOut.master_conduit && ingestOptOutOut.master_conduit.transmitted || 0), 0);
+
   const status = runNode(scriptPath, ['status'], env, root);
   assert.strictEqual(status.status, 0, status.stderr || status.stdout);
   const statusOut = parseJson(status, 'status');
   assert.strictEqual(statusOut.ok, true);
-  assert.strictEqual(Number(statusOut.counts.pending_canary || 0), 2);
+  assert.strictEqual(Number(statusOut.counts.pending_canary || 0), 3);
 
   const state = readJson(statePath);
   const entryIds = Object.keys(state.entries || {});

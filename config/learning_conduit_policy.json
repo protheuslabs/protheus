@@ -19,6 +19,26 @@
     "strict_block": true,
     "policy_path": "config/redaction_classification_policy.json"
   },
+  "master_conduit": {
+    "enabled": true,
+    "default_transmit": true,
+    "shadow_only": true,
+    "require_redaction": true,
+    "queue_path": "state/nursery/training/master_llm_ingest_queue.jsonl",
+    "receipts_path": "state/workflow/learning_conduit/master_transmit_receipts.jsonl",
+    "opt_out_registry_path": "state/workflow/learning_conduit/instance_opt_out_registry.json",
+    "instance_id_env_keys": [
+      "PROTHEUS_INSTANCE_ID",
+      "INSTANCE_ID",
+      "HOSTNAME"
+    ]
+  },
+  "federation": {
+    "mode": "hereditary_master_reviewed",
+    "peer_to_peer_network_effect": false,
+    "hereditary_update_queue_path": "state/brain/hereditary_advancement_queue.jsonl",
+    "master_review_queue_path": "state/brain/master_review_advancement_queue.jsonl"
+  },
   "defaults": {
     "owner_id": "workflow_operator",
     "owner_type": "human_operator",

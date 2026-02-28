@@ -36,7 +36,7 @@ const {
 const { loadTritShadowPolicy, applyInfluenceGuardFromShadowReport } = require("../../lib/trit_shadow_control");
 const { computeEvidenceRunPlan } = require("./evidence_run_plan");
 const { evaluateTernaryBelief, serializeBeliefResult } = require("../../lib/ternary_belief_engine");
-let stateKernelDualWriteMod: AnyObj = null;
+let stateKernelDualWriteMod: any = null;
 try {
   stateKernelDualWriteMod = require('../ops/state_kernel_dual_write.js');
 } catch {
@@ -3204,6 +3204,82 @@ function main() {
             workflows_blocked: execBlocked,
             failure_reasons: payload.failure_reasons || {}
           });
+        }
+
+        if (String(process.env.SPINE_LEARNING_CONDUIT_INGEST_ENABLED || "1") !== "0") {
+          const learningStrict = String(process.env.SPINE_LEARNING_CONDUIT_INGEST_STRICT || "0") === "1";
+          const learningPolicyPath = String(
+            process.env.SPINE_LEARNING_CONDUIT_POLICY_PATH || "config/learning_conduit_policy.json"
+          ).trim();
+          const learningArgs = [
+            "systems/workflow/learning_conduit.js",
+            "ingest"
+          ];
+          if (payload.run_path) learningArgs.push(`--run-payload=${String(payload.run_path)}`);
+          learningArgs.push(`--consent-status=${String(process.env.SPINE_LEARNING_CONDUIT_CONSENT_STATUS || "granted")}`);
+          learningArgs.push(`--consent-mode=${String(process.env.SPINE_LEARNING_CONDUIT_CONSENT_MODE || "explicit_opt_in")}`);
+          if (learningPolicyPath) learningArgs.push(`--policy=${learningPolicyPath}`);
+          const learning = runJson("node", learningArgs, {
+            timeout: Math.max(
+              5000,
+              Math.min(5 * 60 * 1000, Number(process.env.SPINE_LEARNING_CONDUIT_INGEST_TIMEOUT_MS || 90000) || 90000)
+            )
+          });
+          const learningPayload = learning.payload && typeof learning.payload === "object"
+            ? learning.payload
+            : null;
+          const learningOk = learning.ok && !!learningPayload && learningPayload.ok === true;
+          appendLedger(dateStr, {
+            ts: nowIso(),
+            type: "spine_learning_conduit_ingest",
+            mode,
+            date: dateStr,
+            ok: learningOk,
+            strict: learningStrict,
+            ingested: learningPayload ? Number(learningPayload.ingested || 0) : null,
+            rejected: learningPayload ? Number(learningPayload.rejected || 0) : null,
+            transmitted: learningPayload && learningPayload.master_conduit
+              ? Number(learningPayload.master_conduit.transmitted || 0)
+              : null,
+            explicitly_opted_out: learningPayload && learningPayload.master_conduit
+              ? learningPayload.master_conduit.explicitly_opted_out === true
+              : null,
+            federation_mode: learningPayload && learningPayload.federation
+              ? learningPayload.federation.mode || null
+              : null,
+            hereditary_queued: learningPayload && learningPayload.federation
+              ? Number(learningPayload.federation.hereditary_queued || 0)
+              : null,
+            reason: !learningOk
+              ? String(
+                  (learningPayload && learningPayload.error)
+                  || learning.stderr
+                  || learning.stdout
+                  || `learning_conduit_ingest_exit_${learning.code}`
+                ).slice(0, 180)
+              : null
+          });
+          if (learningOk) {
+            console.log(
+              ` learning_conduit_ingest ok ingested=${Number(learningPayload && learningPayload.ingested || 0)}` +
+              ` transmitted=${Number(learningPayload && learningPayload.master_conduit && learningPayload.master_conduit.transmitted || 0)}` +
+              ` hereditary=${Number(learningPayload && learningPayload.federation && learningPayload.federation.hereditary_queued || 0)}`
+            );
+          } else {
+            console.log(` learning_conduit_ingest unavailable reason=${String(learning.stderr || learning.stdout || "unknown").slice(0, 120)}`);
+            if (learningStrict) process.exit(learning.code || 1);
+          }
+        } else {
+          appendLedger(dateStr, {
+            ts: nowIso(),
+            type: "spine_learning_conduit_ingest_skipped",
+            mode,
+            date: dateStr,
+            reason: "feature_flag_disabled",
+            flag: "SPINE_LEARNING_CONDUIT_INGEST_ENABLED",
+            flag_value: String(process.env.SPINE_LEARNING_CONDUIT_INGEST_ENABLED || "")
+          });
+          console.log(" learning_conduit_ingest skipped reason=feature_flag_disabled flag=SPINE_LEARNING_CONDUIT_INGEST_ENABLED");
         }
       } else {
         const reason = String(workflowExec.stderr || workflowExec.stdout || "unknown").slice(0, 180);

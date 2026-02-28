@@ -5,6 +5,7 @@ export {};
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const os = require('os');
 const {
   buildTrainingConduitMetadata,
   validateTrainingConduitMetadata,
@@ -148,6 +149,22 @@ function defaultPolicy() {
       strict_block: true,
       policy_path: 'config/redaction_classification_policy.json'
     },
+    master_conduit: {
+      enabled: true,
+      default_transmit: true,
+      shadow_only: true,
+      require_redaction: true,
+      queue_path: 'state/nursery/training/master_llm_ingest_queue.jsonl',
+      receipts_path: 'state/workflow/learning_conduit/master_transmit_receipts.jsonl',
+      opt_out_registry_path: 'state/workflow/learning_conduit/instance_opt_out_registry.json',
+      instance_id_env_keys: ['PROTHEUS_INSTANCE_ID', 'INSTANCE_ID', 'HOSTNAME']
+    },
+    federation: {
+      mode: 'hereditary_master_reviewed',
+      peer_to_peer_network_effect: false,
+      hereditary_update_queue_path: 'state/brain/hereditary_advancement_queue.jsonl',
+      master_review_queue_path: 'state/brain/master_review_advancement_queue.jsonl'
+    },
     defaults: {
       owner_id: 'workflow_operator',
       owner_type: 'human_operator',
@@ -168,6 +185,12 @@ function loadPolicy(policyPath = POLICY_PATH) {
   const canary = raw.canary && typeof raw.canary === 'object' ? raw.canary : {};
   const redaction = raw.redaction_classification && typeof raw.redaction_classification === 'object'
     ? raw.redaction_classification
+    : {};
+  const masterConduit = raw.master_conduit && typeof raw.master_conduit === 'object'
+    ? raw.master_conduit
+    : {};
+  const federation = raw.federation && typeof raw.federation === 'object'
+    ? raw.federation
     : {};
   const defaults = raw.defaults && typeof raw.defaults === 'object' ? raw.defaults : {};
   return {
@@ -196,6 +219,40 @@ function loadPolicy(policyPath = POLICY_PATH) {
         260
       ) || base.redaction_classification.policy_path
     },
+    master_conduit: {
+      enabled: masterConduit.enabled !== false,
+      default_transmit: masterConduit.default_transmit !== false,
+      shadow_only: masterConduit.shadow_only !== false,
+      require_redaction: masterConduit.require_redaction !== false,
+      queue_path: cleanText(masterConduit.queue_path || base.master_conduit.queue_path, 260) || base.master_conduit.queue_path,
+      receipts_path: cleanText(masterConduit.receipts_path || base.master_conduit.receipts_path, 260) || base.master_conduit.receipts_path,
+      opt_out_registry_path: cleanText(
+        masterConduit.opt_out_registry_path || base.master_conduit.opt_out_registry_path,
+        260
+      ) || base.master_conduit.opt_out_registry_path,
+      instance_id_env_keys: (
+        Array.isArray(masterConduit.instance_id_env_keys)
+          ? masterConduit.instance_id_env_keys
+          : base.master_conduit.instance_id_env_keys
+      )
+        .map((row: unknown) => cleanText(row, 80))
+        .filter(Boolean)
+    },
+    federation: {
+      mode: normalizeToken(federation.mode || base.federation.mode, 80) || base.federation.mode,
+      peer_to_peer_network_effect: toBool(
+        federation.peer_to_peer_network_effect,
+        base.federation.peer_to_peer_network_effect
+      ),
+      hereditary_update_queue_path: cleanText(
+        federation.hereditary_update_queue_path || base.federation.hereditary_update_queue_path,
+        260
+      ) || base.federation.hereditary_update_queue_path,
+      master_review_queue_path: cleanText(
+        federation.master_review_queue_path || base.federation.master_review_queue_path,
+        260
+      ) || base.federation.master_review_queue_path
+    },
     defaults: {
       owner_id: normalizeToken(defaults.owner_id || base.defaults.owner_id, 120) || base.defaults.owner_id,
       owner_type: normalizeToken(defaults.owner_type || base.defaults.owner_type, 80) || base.defaults.owner_type,
@@ -212,6 +269,86 @@ function loadPolicy(policyPath = POLICY_PATH) {
 function resolveQueuePath(raw: string) {
   if (path.isAbsolute(raw)) return path.resolve(raw);
   return path.resolve(ROOT, raw);
+}
+
+function deriveInstanceId(policy: AnyObj) {
+  const keys = Array.isArray(policy && policy.master_conduit && policy.master_conduit.instance_id_env_keys)
+    ? policy.master_conduit.instance_id_env_keys
+    : [];
+  for (const keyRaw of keys) {
+    const key = cleanText(keyRaw, 80);
+    if (!key) continue;
+    const value = normalizeToken(process.env[key] || '', 120);
+    if (value) return value;
+  }
+  const host = normalizeToken(os.hostname(), 120);
+  if (host) return host;
+  return 'local_instance';
+}
+
+function loadOptOutRegistry(rawPath: string) {
+  const filePath = resolveQueuePath(rawPath);
+  const payload = readJson(filePath, {});
+  const entries = payload && payload.entries && typeof payload.entries === 'object'
+    ? payload.entries
+    : {};
+  const map: AnyObj = {};
+  for (const [idRaw, rowRaw] of Object.entries(entries)) {
+    const id = normalizeToken(idRaw, 120);
+    if (!id) continue;
+    const row = rowRaw && typeof rowRaw === 'object' ? rowRaw as AnyObj : {};
+    map[id] = {
+      opt_out: row.opt_out === true,
+      reason: cleanText(row.reason || '', 220) || null,
+      updated_at: cleanText(row.updated_at || '', 60) || null
+    };
+  }
+  return {
+    path: filePath,
+    entries: map
+  };
+}
+
+function buildMasterTransmitRow(row: AnyObj, ctx: AnyObj) {
+  return {
+    ts: nowIso(),
+    type: 'master_training_conduit_ingest',
+    entry_id: row.entry_id,
+    source_run_id: row.source_run_id || null,
+    instance_id: ctx.instance_id,
+    lineage_mode: ctx.federation_mode,
+    stage: ctx.shadow_only === true ? 'shadow_buffered' : 'ready_for_master_train',
+    training_conduit: row.training_conduit,
+    trainability: row.trainability,
+    learning_signal: row.learning_signal,
+    learning_text: row.learning_text,
+    redaction: row.redaction,
+    data_value: {
+      attribution_root: 'jay_sovereign_root',
+      route: 'master_llm_conduit_default',
+      reason_codes: ['default_transmit_enabled', 'network_generated_data']
+    }
+  };
+}
+
+function buildHereditaryAdvancementRow(row: AnyObj, ctx: AnyObj) {
+  return {
+    ts: nowIso(),
+    type: 'hereditary_advancement_candidate',
+    entry_id: row.entry_id,
+    instance_id: ctx.instance_id,
+    mode: ctx.federation_mode,
+    objective_id: row && row.trainability ? row.trainability.primary_metric_id || null : null,
+    workflow_id: row.workflow_id || null,
+    workflow_status: row.workflow_status || null,
+    mutation_applied: row.mutation_applied === true,
+    trainability_allow: row && row.trainability ? row.trainability.allow === true : null,
+    score_hint: row && row.trainability ? Number(row.trainability.signal_quality || 0) : null,
+    training_datum_ref: {
+      entry_id: row.entry_id,
+      source_run_id: row.source_run_id || null
+    }
+  };
 }
 
 function defaultState() {
@@ -421,13 +558,59 @@ function cmdIngest(args: AnyObj) {
   const state = loadState();
   const pendingQueuePath = resolveQueuePath(policy.queue_paths.pending_queue);
   const canaryQueuePath = resolveQueuePath(policy.queue_paths.canary_queue);
+  const masterTransmitQueuePath = resolveQueuePath(policy.master_conduit.queue_path);
+  const masterTransmitReceiptsPath = resolveQueuePath(policy.master_conduit.receipts_path);
+  const hereditaryQueuePath = resolveQueuePath(policy.federation.hereditary_update_queue_path);
+  const masterReviewQueuePath = resolveQueuePath(policy.federation.master_review_queue_path);
   const built = buildQueueRows(policy, payload, args);
+  const instanceId = deriveInstanceId(policy);
+  const optOutRegistry = loadOptOutRegistry(policy.master_conduit.opt_out_registry_path);
+  const optOutEntry = optOutRegistry.entries[instanceId] || null;
+  const explicitlyOptedOut = !!(optOutEntry && optOutEntry.opt_out === true);
+  const masterTransmitEnabled = (
+    policy.master_conduit.enabled === true
+    && policy.master_conduit.default_transmit === true
+    && explicitlyOptedOut !== true
+  );
+  const federationMode = policy.federation.mode || 'hereditary_master_reviewed';
   let rightsEventsWritten = 0;
+  let masterTransmitted = 0;
+  let masterSkipped = 0;
+  let hereditaryQueued = 0;
+  let masterReviewQueued = 0;
 
   for (const row of built.rows) {
     appendJsonl(pendingQueuePath, row);
     appendJsonl(canaryQueuePath, row);
     state.entries[row.entry_id] = row;
+    if (!(policy.master_conduit.require_redaction === true && row.redaction && row.redaction.blocked === true)) {
+      const transmitRow = buildMasterTransmitRow(row, {
+        instance_id: instanceId,
+        federation_mode: federationMode,
+        shadow_only: policy.master_conduit.shadow_only === true
+      });
+      if (masterTransmitEnabled) {
+        appendJsonl(masterTransmitQueuePath, transmitRow);
+        masterTransmitted += 1;
+      } else {
+        masterSkipped += 1;
+      }
+    } else {
+      masterSkipped += 1;
+    }
+    if (federationMode === 'hereditary_master_reviewed') {
+      const advancement = buildHereditaryAdvancementRow(row, {
+        instance_id: instanceId,
+        federation_mode: federationMode
+      });
+      appendJsonl(hereditaryQueuePath, advancement);
+      hereditaryQueued += 1;
+      appendJsonl(masterReviewQueuePath, {
+        ...advancement,
+        review_stage: 'queued_for_master_review'
+      });
+      masterReviewQueued += 1;
+    }
     if (typeof recordTrainingDatumProvenance === 'function') {
       try {
         const rightsOut = recordTrainingDatumProvenance(row.training_conduit, {
@@ -464,6 +647,21 @@ function cmdIngest(args: AnyObj) {
   }
   saveState(state);
 
+  appendJsonl(masterTransmitReceiptsPath, {
+    ts: nowIso(),
+    type: 'master_training_conduit_receipt',
+    run_id: cleanText(payload.run_id || '', 120) || null,
+    instance_id: instanceId,
+    transmit_enabled: masterTransmitEnabled,
+    explicitly_opted_out: explicitlyOptedOut === true,
+    transmitted: masterTransmitted,
+    skipped: masterSkipped,
+    hereditary_queued: hereditaryQueued,
+    master_review_queued: masterReviewQueued,
+    federation_mode: federationMode,
+    shadow_only: policy.master_conduit.shadow_only === true
+  });
+
   const out = {
     ok: true,
     type: 'learning_conduit_ingest',
@@ -474,6 +672,27 @@ function cmdIngest(args: AnyObj) {
     rights_events_written: rightsEventsWritten,
     pending_queue_path: relPath(pendingQueuePath),
     canary_queue_path: relPath(canaryQueuePath),
+    instance_id: instanceId,
+    master_conduit: {
+      enabled: policy.master_conduit.enabled === true,
+      default_transmit: policy.master_conduit.default_transmit === true,
+      transmit_enabled: masterTransmitEnabled,
+      shadow_only: policy.master_conduit.shadow_only === true,
+      explicitly_opted_out: explicitlyOptedOut === true,
+      transmitted: masterTransmitted,
+      skipped: masterSkipped,
+      queue_path: relPath(masterTransmitQueuePath),
+      receipts_path: relPath(masterTransmitReceiptsPath),
+      opt_out_registry_path: relPath(optOutRegistry.path)
+    },
+    federation: {
+      mode: federationMode,
+      peer_to_peer_network_effect: policy.federation.peer_to_peer_network_effect === true,
+      hereditary_queued: hereditaryQueued,
+      master_review_queued: masterReviewQueued,
+      hereditary_queue_path: relPath(hereditaryQueuePath),
+      master_review_queue_path: relPath(masterReviewQueuePath)
+    },
     redaction_summary: built && built.redaction_summary && typeof built.redaction_summary === 'object'
       ? built.redaction_summary
       : null,
@@ -553,6 +772,7 @@ function cmdPromote(args: AnyObj) {
 }
 
 function cmdStatus(args: AnyObj) {
+  const policy = loadPolicy(args.policy ? path.resolve(String(args.policy)) : POLICY_PATH);
   const state = loadState();
   const entryId = normalizeToken(args.entry_id || args['entry-id'] || '', 120);
   if (entryId) {
@@ -566,7 +786,20 @@ function cmdStatus(args: AnyObj) {
     rejected: rows.filter((row: any) => row && row.stage === 'rejected').length,
     promoted: rows.filter((row: any) => row && row.stage === 'promoted').length
   };
-  process.stdout.write(`${JSON.stringify({ ok: true, type: 'learning_conduit_status', counts })}\n`);
+  process.stdout.write(`${JSON.stringify({
+    ok: true,
+    type: 'learning_conduit_status',
+    counts,
+    master_conduit: {
+      enabled: policy.master_conduit.enabled === true,
+      default_transmit: policy.master_conduit.default_transmit === true,
+      shadow_only: policy.master_conduit.shadow_only === true
+    },
+    federation: {
+      mode: policy.federation.mode || null,
+      peer_to_peer_network_effect: policy.federation.peer_to_peer_network_effect === true
+    }
+  })}\n`);
 }
 
 function main() {
