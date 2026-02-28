@@ -111,6 +111,11 @@ function runGuard(opts = {}) {
   checks.push(runCmd('redteam_ant_colony_status', 'node', ['systems/redteam/ant_colony_controller.js', 'status']));
   checks.push(runCmd('profile_compatibility_gate', 'node', ['systems/ops/profile_compatibility_gate.js', 'run', '--strict=1']));
   checks.push(runCmd('schema_evolution_contract', 'node', ['systems/ops/schema_evolution_contract.js', 'run', '--strict=1', '--apply=0']));
+  checks.push(runCmd('state_kernel_status', 'node', ['systems/ops/state_kernel.js', 'status']));
+  checks.push(runCmd('state_kernel_parity', 'node', ['systems/ops/state_kernel.js', 'verify-parity']));
+  checks.push(runCmd('state_kernel_replay_verify', 'node', ['systems/ops/state_kernel.js', 'replay-verify', '--profiles=phone,desktop,cluster']));
+  checks.push(runCmd('state_kernel_cutover_status', 'node', ['systems/ops/state_kernel_cutover.js', 'status']));
+  checks.push(runCmd('state_kernel_dual_write_status', 'node', ['systems/ops/state_kernel_dual_write.js', 'status']));
   if (!options.skipTests) {
     checks.push(runCmd('test_ci', 'npm', ['run', 'test:ci']));
   }

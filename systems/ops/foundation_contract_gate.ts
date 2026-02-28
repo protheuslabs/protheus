@@ -138,6 +138,8 @@ function runGate() {
     'config/simplicity_baseline.json',
     'config/simplicity_budget_policy.json',
     'config/schema_evolution_policy.json',
+    'config/state_kernel_policy.json',
+    'config/state_kernel_cutover_policy.json',
     'config/siem_bridge_policy.json',
     'config/soc2_type2_policy.json',
     'config/red_team_policy.json',
@@ -196,6 +198,10 @@ function runGate() {
     'systems/ops/critical_path_policy_coverage.ts',
     'systems/ops/composite_disaster_gameday.ts',
     'systems/ops/backlog_intake_quality_gate.ts',
+    'systems/ops/state_kernel.ts',
+    'systems/ops/state_kernel_migrate.ts',
+    'systems/ops/state_kernel_cutover.ts',
+    'systems/ops/state_kernel_dual_write.ts',
     'systems/ops/soc2_type2_track.ts',
     'systems/ops/phone_seed_profile.ts',
     'systems/ops/predictive_capacity_forecast.ts',
@@ -382,6 +388,64 @@ function runGate() {
     'schema_evolution:n_minus_two_floor',
     schemaEvolutionNMinus >= 2,
     `default_n_minus_minor=${schemaEvolutionNMinus}`
+  );
+  const stateKernelPolicy = readJsonSafe(path.join(ROOT, 'config', 'state_kernel_policy.json'), {});
+  const stateKernelSqlite = stateKernelPolicy.sqlite && typeof stateKernelPolicy.sqlite === 'object'
+    ? stateKernelPolicy.sqlite
+    : {};
+  const stateKernelJournal = normalizeUpperToken(stateKernelSqlite.journal_mode || '', 24);
+  const stateKernelSync = normalizeUpperToken(stateKernelSqlite.synchronous || '', 24);
+  const stateKernelBusyTimeout = Math.max(0, Number(stateKernelSqlite.busy_timeout_ms || 0) || 0);
+  addCheck(
+    'state_kernel:sqlite_pragmas',
+    stateKernelJournal === 'WAL'
+      && stateKernelSync === 'FULL'
+      && stateKernelSqlite.foreign_keys === true
+      && stateKernelBusyTimeout >= 1000,
+    `journal_mode=${stateKernelJournal || 'missing'} synchronous=${stateKernelSync || 'missing'} foreign_keys=${stateKernelSqlite.foreign_keys === true ? '1' : '0'} busy_timeout_ms=${stateKernelBusyTimeout}`
+  );
+  const stateKernelImmutable = stateKernelPolicy.immutable && typeof stateKernelPolicy.immutable === 'object'
+    ? stateKernelPolicy.immutable
+    : {};
+  const stateKernelOutputs = stateKernelPolicy.outputs && typeof stateKernelPolicy.outputs === 'object'
+    ? stateKernelPolicy.outputs
+    : {};
+  addCheck(
+    'state_kernel:immutable_paths_present',
+    !!cleanText(stateKernelImmutable.events_path || '', 200)
+      && !!cleanText(stateKernelImmutable.receipts_path || '', 200)
+      && !!cleanText(stateKernelOutputs.latest_path || '', 200)
+      && !!cleanText(stateKernelOutputs.migration_receipts_path || '', 200)
+      && !!cleanText(stateKernelOutputs.replay_reports_path || '', 200),
+    `events=${cleanText(stateKernelImmutable.events_path || '', 80) || 'missing'} receipts=${cleanText(stateKernelImmutable.receipts_path || '', 80) || 'missing'}`
+  );
+  const stateKernelAttestation = stateKernelPolicy.attestation && typeof stateKernelPolicy.attestation === 'object'
+    ? stateKernelPolicy.attestation
+    : {};
+  const stateKernelAllowedDecisions = Array.isArray(stateKernelAttestation.allowed_decisions)
+    ? stateKernelAttestation.allowed_decisions.map((row: unknown) => normalizeLowerToken(row, 80)).filter(Boolean)
+    : [];
+  addCheck(
+    'state_kernel:attestation_enforced',
+    stateKernelAttestation.enforce_on_write === true
+      && stateKernelAllowedDecisions.includes('clear')
+      && stateKernelAllowedDecisions.includes('shadow_advisory_clear'),
+    `enforce_on_write=${stateKernelAttestation.enforce_on_write === true ? '1' : '0'} allowed_decisions=${stateKernelAllowedDecisions.join(',') || 'none'}`
+  );
+  const stateKernelCutoverPolicy = readJsonSafe(path.join(ROOT, 'config', 'state_kernel_cutover_policy.json'), {});
+  const stateKernelCutoverPhases = Array.isArray(stateKernelCutoverPolicy.phases)
+    ? stateKernelCutoverPolicy.phases.map((row: unknown) => normalizeLowerToken(row, 80)).filter(Boolean)
+    : [];
+  const stateKernelValidationDays = Math.max(0, Number(stateKernelCutoverPolicy.shadow_validation_days || 0) || 0);
+  addCheck(
+    'state_kernel:cutover_contract',
+    normalizeLowerToken(stateKernelCutoverPolicy.default_mode || '', 80) === 'dual_write'
+      && stateKernelCutoverPhases.includes('dual_write')
+      && stateKernelCutoverPhases.includes('read_cutover')
+      && stateKernelCutoverPhases.includes('legacy_retired')
+      && stateKernelCutoverPolicy.require_parity_ok === true
+      && stateKernelValidationDays >= 7,
+    `default_mode=${normalizeLowerToken(stateKernelCutoverPolicy.default_mode || '', 80) || 'missing'} phases=${stateKernelCutoverPhases.join(',') || 'none'} require_parity_ok=${stateKernelCutoverPolicy.require_parity_ok === true ? '1' : '0'} shadow_validation_days=${stateKernelValidationDays}`
   );
   const keyLifecyclePolicy = readJsonSafe(path.join(ROOT, 'config', 'key_lifecycle_policy.json'), {});
   const keyAllowedAlgorithms = Array.isArray(keyLifecyclePolicy.allowed_algorithms)
@@ -577,6 +641,17 @@ function runGate() {
       && mergeGuardSrc.includes('--strict=1')
       && mergeGuardSrc.includes('--apply=0'),
     'merge_guard should enforce schema evolution verification'
+  );
+  addCheck(
+    'state_kernel:merge_guard_hook',
+    mergeGuardSrc.includes('state_kernel.js')
+      && mergeGuardSrc.includes('state_kernel_status')
+      && mergeGuardSrc.includes('state_kernel_parity')
+      && mergeGuardSrc.includes('state_kernel_replay_verify')
+      && mergeGuardSrc.includes('state_kernel_cutover_status')
+      && mergeGuardSrc.includes('state_kernel_dual_write_status')
+      && mergeGuardSrc.includes('--profiles=phone,desktop,cluster'),
+    'merge_guard should enforce state kernel status/parity/replay/cutover/dual-write checks'
   );
   addCheck(
     'key_lifecycle:merge_guard_hook',

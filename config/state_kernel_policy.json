@@ -1,0 +1,41 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": false,
+  "strict_default": true,
+  "sqlite": {
+    "db_path": "state/kernel/state_kernel.db",
+    "journal_mode": "WAL",
+    "synchronous": "FULL",
+    "foreign_keys": true,
+    "busy_timeout_ms": 5000
+  },
+  "immutable": {
+    "events_path": "state/kernel/events.jsonl",
+    "receipts_path": "state/kernel/receipts.jsonl",
+    "parity_path": "state/kernel/parity.json"
+  },
+  "outputs": {
+    "latest_path": "state/kernel/latest.json",
+    "migration_receipts_path": "state/kernel/migrations.receipts.jsonl",
+    "replay_reports_path": "state/kernel/replay_reports.jsonl"
+  },
+  "attestation": {
+    "enforce_on_write": true,
+    "helix_latest_path": "state/helix/latest.json",
+    "max_staleness_sec": 900,
+    "allowed_decisions": [
+      "clear",
+      "shadow_advisory_clear"
+    ]
+  },
+  "context_paths": {
+    "soul_token_path": "state/security/soul_token_guard.json",
+    "soul_biometric_path": "state/security/soul_biometric/latest.json",
+    "identity_anchor_path": "state/autonomy/identity_anchor/latest.json",
+    "heroic_echo_path": "state/autonomy/echo/latest.json"
+  },
+  "migration": {
+    "strict_fail_on_unknown": true
+  }
+}

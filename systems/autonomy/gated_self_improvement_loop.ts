@@ -28,6 +28,12 @@ const DEFAULT_POLICY_PATH = process.env.GATED_SELF_IMPROVEMENT_POLICY_PATH
 const SELF_CODE_EVOLUTION_SCRIPT = path.join(ROOT, 'systems', 'autonomy', 'self_code_evolution_sandbox.js');
 const AUTONOMY_SIMULATION_SCRIPT = path.join(ROOT, 'systems', 'autonomy', 'autonomy_simulation_harness.js');
 const RED_TEAM_HARNESS_SCRIPT = path.join(ROOT, 'systems', 'autonomy', 'red_team_harness.js');
+let stateKernelDualWriteMod: AnyObj = null;
+try {
+  stateKernelDualWriteMod = require('../ops/state_kernel_dual_write.js');
+} catch {
+  stateKernelDualWriteMod = null;
+}
 
 function nowIso() {
   return new Date().toISOString();
@@ -223,12 +229,24 @@ function loadState(policy: AnyObj) {
 }
 
 function saveState(policy: AnyObj, state: AnyObj) {
-  writeJsonAtomic(policy.paths.state_path, {
+  const next = {
     schema_id: 'gated_self_improvement_state',
     schema_version: '1.0',
     updated_at: nowIso(),
     proposals: state && state.proposals && typeof state.proposals === 'object' ? state.proposals : {}
-  });
+  };
+  writeJsonAtomic(policy.paths.state_path, next);
+  if (stateKernelDualWriteMod && typeof stateKernelDualWriteMod.writeMirror === 'function') {
+    try {
+      stateKernelDualWriteMod.writeMirror({
+        'organ-id': 'gated_self_improvement',
+        'fs-path': policy.paths.state_path,
+        'payload-json': JSON.stringify(next)
+      });
+    } catch {
+      // Dual-write mirrors are best effort and must not block autonomy loops.
+    }
+  }
 }
 
 function currentStageIndex(row: AnyObj, policy: AnyObj) {
@@ -318,6 +336,16 @@ function runNodeJson(script: string, args: string[], fallbackType: string) {
 function persistLatest(policy: AnyObj, out: AnyObj) {
   writeJsonAtomic(policy.paths.latest_path, out);
   appendJsonl(policy.paths.receipts_path, out);
+  if (stateKernelDualWriteMod && typeof stateKernelDualWriteMod.enqueueMirror === 'function') {
+    try {
+      stateKernelDualWriteMod.enqueueMirror({
+        'queue-name': 'gated_self_improvement_receipts',
+        'payload-json': JSON.stringify(out)
+      });
+    } catch {
+      // queue mirror is intentionally non-blocking.
+    }
+  }
 }
 
 function cmdPropose(args: AnyObj) {
@@ -676,4 +704,3 @@ module.exports = {
   evaluateGates,
   extractSimulationMetrics
 };
-

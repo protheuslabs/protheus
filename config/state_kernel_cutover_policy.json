@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "phases": [
+    "dual_write",
+    "read_cutover",
+    "legacy_retired"
+  ],
+  "default_mode": "dual_write",
+  "shadow_validation_days": 7,
+  "require_parity_ok": true,
+  "state_path": "state/ops/state_kernel_cutover/state.json",
+  "history_path": "state/ops/state_kernel_cutover/history.jsonl",
+  "latest_path": "state/ops/state_kernel_cutover/latest.json"
+}

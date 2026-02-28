@@ -36,6 +36,12 @@ const {
 const { loadTritShadowPolicy, applyInfluenceGuardFromShadowReport } = require("../../lib/trit_shadow_control");
 const { computeEvidenceRunPlan } = require("./evidence_run_plan");
 const { evaluateTernaryBelief, serializeBeliefResult } = require("../../lib/ternary_belief_engine");
+let stateKernelDualWriteMod: AnyObj = null;
+try {
+  stateKernelDualWriteMod = require('../ops/state_kernel_dual_write.js');
+} catch {
+  stateKernelDualWriteMod = null;
+}
 
 function arg(name) {
   const pref = `--${name}=`;
@@ -112,8 +118,23 @@ function appendLedger(dateStr, evt) {
     const root = repoRoot();
     const dir = path.join(root, "state", "spine", "runs");
     const file = path.join(dir, `${dateStr}.jsonl`);
+    const latestPath = path.join(root, "state", "spine", "runs", "latest.json");
     fs.mkdirSync(dir, { recursive: true });
     fs.appendFileSync(file, JSON.stringify(evt) + "\n");
+    if (stateKernelDualWriteMod && typeof stateKernelDualWriteMod.writeMirror === 'function') {
+      try {
+        stateKernelDualWriteMod.writeMirror({
+          'organ-id': 'spine_runs',
+          'fs-path': latestPath,
+          'payload-json': JSON.stringify({
+            date: String(dateStr || '').slice(0, 10),
+            event: evt
+          })
+        });
+      } catch {
+        // Dual-write should never block spine run ledger writes.
+      }
+    }
   } catch {
     // ledger must never block spine execution
   }

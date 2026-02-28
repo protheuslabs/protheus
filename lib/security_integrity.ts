@@ -1,8 +1,8 @@
 'use strict';
 
-const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const { hashFileSha256 } = require('./integrity_hash_utility');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
 const DEFAULT_POLICY_PATH = path.join(REPO_ROOT, 'config', 'security_integrity_policy.json');
@@ -76,11 +76,6 @@ function hasAllowedExtension(rel, policy) {
   if (!exts.length) return true;
   const ext = path.extname(rel).toLowerCase();
   return exts.includes(ext);
-}
-
-function hashFileSha256(absFilePath) {
-  const buf = fs.readFileSync(absFilePath);
-  return crypto.createHash('sha256').update(buf).digest('hex');
 }
 
 function normalizeHashes(rawHashes) {

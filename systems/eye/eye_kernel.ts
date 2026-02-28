@@ -18,6 +18,12 @@ try {
 } catch {
   capabilityEnvelopeMod = null;
 }
+let stateKernelDualWriteMod: AnyObj = null;
+try {
+  stateKernelDualWriteMod = require('../ops/state_kernel_dual_write.js');
+} catch {
+  stateKernelDualWriteMod = null;
+}
 
 function usage() {
   console.log('Usage:');
@@ -510,6 +516,27 @@ function cmdRoute(args: AnyObj) {
   if (apply) writeJsonAtomic(statePath, state);
   appendJsonl(auditPath, row);
   writeJsonAtomic(latestPath, row);
+  if (stateKernelDualWriteMod && typeof stateKernelDualWriteMod.writeMirror === 'function') {
+    try {
+      stateKernelDualWriteMod.writeMirror({
+        'organ-id': 'eye_kernel',
+        'fs-path': statePath,
+        'payload-json': JSON.stringify(state)
+      });
+    } catch {
+      // state-kernel mirror must not block eye kernel routing
+    }
+  }
+  if (stateKernelDualWriteMod && typeof stateKernelDualWriteMod.enqueueMirror === 'function') {
+    try {
+      stateKernelDualWriteMod.enqueueMirror({
+        'queue-name': 'eye_kernel_route',
+        'payload-json': JSON.stringify(row)
+      });
+    } catch {
+      // state-kernel queue mirror must not block eye kernel routing
+    }
+  }
 
   const out = {
     ok: decision !== 'deny',
