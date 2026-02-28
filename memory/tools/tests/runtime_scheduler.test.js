@@ -48,6 +48,7 @@ try {
   const policyPath = path.join(tmp, 'policy.json');
   const embodimentPolicyPath = path.join(tmp, 'embodiment_policy.json');
   const surfaceBudgetPolicyPath = path.join(tmp, 'surface_budget_policy.json');
+  const backgroundPolicyPath = path.join(tmp, 'background_persistent_agent_runtime_policy.json');
   const statePath = path.join(tmp, 'state', 'scheduler', 'latest.json');
   const receiptsPath = path.join(tmp, 'state', 'scheduler', 'receipts.jsonl');
   const canonicalDir = path.join(tmp, 'state', 'runtime', 'canonical_events');
@@ -95,12 +96,41 @@ try {
       { id: 'balanced', max_score: 1, allow_modes: ['operational', 'dream', 'inversion'], inversion_depth_cap: 5, dream_intensity_cap: 5, right_brain_max_ratio: 1, fractal_breadth_cap: 8, max_parallel_workflows: 24 }
     ]
   });
+  writeJson(backgroundPolicyPath, {
+    schema_id: 'background_persistent_agent_runtime_policy',
+    schema_version: '1.0-test',
+    enabled: true,
+    shadow_only: true,
+    consume_queue_on_tick: true,
+    limits: {
+      min_tick_interval_sec: 0,
+      max_signals_per_tick: 32,
+      max_activations_per_tick: 4
+    },
+    trigger_thresholds: {
+      queue_backlog_min: 2,
+      error_rate_min: 0.2,
+      stale_age_min_sec: 300
+    },
+    trigger_task_map: {
+      queue_backlog: ['anticipation'],
+      error_pressure: ['security_vigilance'],
+      stale_runtime: ['dream_consolidation']
+    },
+    state: {
+      state_path: path.join(tmp, 'state', 'autonomy', 'background_persistent_runtime', 'state.json'),
+      queue_path: path.join(tmp, 'state', 'autonomy', 'background_persistent_runtime', 'queue.jsonl'),
+      latest_path: path.join(tmp, 'state', 'autonomy', 'background_persistent_runtime', 'latest.json'),
+      receipts_path: path.join(tmp, 'state', 'autonomy', 'background_persistent_runtime', 'receipts.jsonl')
+    }
+  });
 
   const env = {
     RUNTIME_SCHEDULER_POLICY_PATH: policyPath,
     CANONICAL_EVENT_LOG_DIR: canonicalDir,
     EMBODIMENT_LAYER_POLICY_PATH: embodimentPolicyPath,
-    SURFACE_BUDGET_POLICY_PATH: surfaceBudgetPolicyPath
+    SURFACE_BUDGET_POLICY_PATH: surfaceBudgetPolicyPath,
+    BACKGROUND_PERSISTENT_RUNTIME_POLICY_PATH: backgroundPolicyPath
   };
 
   const status1 = run(['status'], env);
@@ -109,6 +139,17 @@ try {
   assert.strictEqual(status1Payload.mode, 'operational');
   assert.ok(status1Payload.embodiment && status1Payload.embodiment.profile_id, 'status should include embodiment summary');
   assert.ok(status1Payload.surface_budget && Array.isArray(status1Payload.surface_budget.allow_modes), 'status should include surface budget summary');
+  assert.ok(status1Payload.persistent_runtime && status1Payload.persistent_runtime.ok === true, 'status should include persistent runtime summary');
+
+  const triggerPersistent = run([
+    'trigger-persistent',
+    '--source=runtime_scheduler_test',
+    '--context-json={"queue_backlog":6,"error_rate":0.01,"stale_age_sec":10}'
+  ], env);
+  assert.strictEqual(triggerPersistent.status, 0, triggerPersistent.stderr || triggerPersistent.stdout);
+  const triggerPayload = parseJson(triggerPersistent.stdout);
+  assert.strictEqual(triggerPayload.ok, true, 'trigger-persistent should pass');
+  assert.ok(triggerPayload.tick && Number(triggerPayload.tick.activation_count || 0) >= 1, 'persistent trigger should schedule activation');
 
   const toDream = run(['switch', '--mode=dream', '--reason=test', '--apply=1'], env);
   assert.strictEqual(toDream.status, 0, toDream.stderr || toDream.stdout);

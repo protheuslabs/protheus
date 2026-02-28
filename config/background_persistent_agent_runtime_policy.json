@@ -1,0 +1,37 @@
+{
+  "schema_id": "background_persistent_agent_runtime_policy",
+  "schema_version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "consume_queue_on_tick": true,
+  "limits": {
+    "min_tick_interval_sec": 120,
+    "max_signals_per_tick": 64,
+    "max_activations_per_tick": 6
+  },
+  "trigger_thresholds": {
+    "queue_backlog_min": 4,
+    "error_rate_min": 0.18,
+    "stale_age_min_sec": 1800
+  },
+  "trigger_task_map": {
+    "queue_backlog": [
+      "anticipation",
+      "value_weaving"
+    ],
+    "error_pressure": [
+      "self_improvement",
+      "security_vigilance"
+    ],
+    "stale_runtime": [
+      "dream_consolidation"
+    ]
+  },
+  "state": {
+    "state_path": "state/autonomy/background_persistent_runtime/state.json",
+    "queue_path": "state/autonomy/background_persistent_runtime/queue.jsonl",
+    "latest_path": "state/autonomy/background_persistent_runtime/latest.json",
+    "receipts_path": "state/autonomy/background_persistent_runtime/receipts.jsonl"
+  }
+}
+
