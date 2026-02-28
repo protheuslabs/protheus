@@ -42,6 +42,16 @@ try {
 } catch {
   evaluateDirectiveTask = null;
 }
+let dualityEvaluate = null;
+let registerDualityObservation = null;
+try {
+  const duality = require('../../lib/duality_seed.js');
+  dualityEvaluate = duality.duality_evaluate || duality.evaluateDualitySignal || null;
+  registerDualityObservation = duality.registerDualityObservation || null;
+} catch {
+  dualityEvaluate = null;
+  registerDualityObservation = null;
+}
 
 type AnyObj = Record<string, any>;
 
@@ -901,6 +911,22 @@ function runWeaver(dateStr: string, opts: AnyObj = {}) {
     opts.objective || opts.intent || (strategy.objective && strategy.objective.primary) || objectiveId,
     280
   );
+  const dualitySignal = typeof dualityEvaluate === 'function'
+    ? dualityEvaluate({
+      lane: 'weaver_arbitration',
+      source: 'weaver_core',
+      run_id: runId,
+      objective_id: objectiveId,
+      objective: objectiveText,
+      strategy_id: strategyId,
+      requested_metrics: opts.valueMetrics || opts.value_metrics || null
+    }, {
+      lane: 'weaver_arbitration',
+      source: 'weaver_core',
+      run_id: runId,
+      persist: true
+    })
+    : null;
 
   const regime = readJson(paths.regime_latest_path, {});
   const mirror = readJson(paths.mirror_latest_path, {});
@@ -944,12 +970,26 @@ function runWeaver(dateStr: string, opts: AnyObj = {}) {
   const context = {
     trit,
     regime: regimeName,
-    regime_confidence: regimeConfidence,
+    regime_confidence: clampNumber(
+      regimeConfidence + (
+        dualitySignal && dualitySignal.enabled === true
+          ? Number(dualitySignal.score_trit || 0) * Number(dualitySignal.effective_weight || 0) * 0.08
+          : 0
+      ),
+      0,
+      1,
+      regimeConfidence
+    ),
     autopause_active: autopauseActive,
     mirror_pressure: mirrorPressure,
     mirror_reasons: mirrorReasons,
     objective_metric_impact: objectiveMetricImpact(objectiveId, objectiveText),
     primary_metric_hint: primaryMetric || schema.primary_metric_hint || null,
+    allow_exploration: !!(
+      dualitySignal
+      && dualitySignal.enabled === true
+      && String(dualitySignal.recommended_adjustment || '') === 'increase_yang_flux'
+    ),
     currency_profiles: policy.arbitration && policy.arbitration.currency_profiles
       ? policy.arbitration.currency_profiles
       : {}
@@ -1003,6 +1043,11 @@ function runWeaver(dateStr: string, opts: AnyObj = {}) {
     .concat(Array.isArray(guarded.reason_codes) ? guarded.reason_codes : [])
     .concat(Array.isArray(constitutionalVeto.reason_codes) ? constitutionalVeto.reason_codes : [])
     .concat(Array.isArray(brainRoute.reasons) ? brainRoute.reasons.slice(0, 2) : [])
+    .concat(
+      dualitySignal && dualitySignal.enabled === true
+        ? ['duality_advisory_applied']
+        : []
+    )
     .filter(Boolean);
 
   const previousHistory = historyRows.length ? historyRows[historyRows.length - 1] : null;
@@ -1103,6 +1148,23 @@ function runWeaver(dateStr: string, opts: AnyObj = {}) {
       },
       constitutional_veto: constitutionalVeto,
       creative_route: brainRoute,
+      duality: dualitySignal
+        ? {
+          enabled: dualitySignal.enabled === true,
+          score_trit: Number(dualitySignal.score_trit || 0),
+          score_label: cleanText(dualitySignal.score_label || 'unknown', 32),
+          zero_point_harmony_potential: Number(dualitySignal.zero_point_harmony_potential || 0),
+          recommended_adjustment: cleanText(dualitySignal.recommended_adjustment || '', 120) || null,
+          confidence: Number(dualitySignal.confidence || 0),
+          effective_weight: Number(dualitySignal.effective_weight || 0),
+          indicator: dualitySignal.indicator && typeof dualitySignal.indicator === 'object'
+            ? dualitySignal.indicator
+            : null,
+          zero_point_insight: cleanText(dualitySignal.zero_point_insight || '', 220) || null
+        }
+        : {
+          enabled: false
+        },
       metric_switch: metricSwitchRequestedByUser
         ? {
             declared_by_user: true,
@@ -1182,6 +1244,19 @@ function runWeaver(dateStr: string, opts: AnyObj = {}) {
       objective_id: objectiveId,
       reason_codes: Array.isArray(guarded.reason_codes) ? guarded.reason_codes.slice(0, 8) : [],
       dominance: guarded.dominance && typeof guarded.dominance === 'object' ? guarded.dominance : {}
+    });
+  }
+  if (dualitySignal && dualitySignal.enabled === true) {
+    emitEvent(paths, policy, 'duality_advisory', {
+      run_id: runId,
+      date: dateStr,
+      objective_id: objectiveId,
+      score_trit: Number(dualitySignal.score_trit || 0),
+      zero_point_harmony_potential: Number(dualitySignal.zero_point_harmony_potential || 0),
+      recommended_adjustment: cleanText(dualitySignal.recommended_adjustment || '', 120) || null,
+      indicator: dualitySignal.indicator && typeof dualitySignal.indicator === 'object'
+        ? dualitySignal.indicator
+        : null
     });
   }
   if (metricSwitchRequestedByUser) {
@@ -1286,6 +1361,9 @@ function runWeaver(dateStr: string, opts: AnyObj = {}) {
       : {},
     constitutional_veto: constitutionalVeto,
     creative_route: brainRoute,
+    duality: payload.value_context && payload.value_context.duality
+      ? payload.value_context.duality
+      : { enabled: false },
     metric_switch: metricSwitchRequestedByUser
       ? {
           declared_by_user: true,
@@ -1335,7 +1413,10 @@ function runWeaver(dateStr: string, opts: AnyObj = {}) {
     objective_id: objectiveId,
     primary_metric_id: finalMetric || null,
     value_currency: finalCurrency || null,
-    markdown: obsidianSummaryLines.join('\n')
+    markdown: obsidianSummaryLines.join('\n'),
+    duality: payload.value_context && payload.value_context.duality
+      ? payload.value_context.duality
+      : { enabled: false }
   });
   if (metricSwitchRequestedByUser) {
     emitObsidianProjection(paths, policy, {
@@ -1349,6 +1430,21 @@ function runWeaver(dateStr: string, opts: AnyObj = {}) {
       selected_metric_id: finalMetric || null,
       accepted: metricSwitchAccepted
     });
+  }
+  if (dualitySignal && dualitySignal.enabled === true && typeof registerDualityObservation === 'function') {
+    try {
+      registerDualityObservation({
+        lane: 'weaver_arbitration',
+        source: 'weaver_core',
+        run_id: runId,
+        predicted_trit: Number(dualitySignal.score_trit || 0),
+        observed_trit: constitutionalVeto.blocked === true
+          ? -1
+          : (finalMetric ? 1 : 0)
+      });
+    } catch {
+      // Advisory telemetry must not fail the run.
+    }
   }
 
   payload.run_path = relPath(runPath);

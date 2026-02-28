@@ -1,0 +1,36 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "allow_apply": false,
+  "governance": {
+    "constitution_gate_enabled": true,
+    "block_on_constitution_deny": true
+  },
+  "inputs": {
+    "attribution_records_path": "state/assimilation/value_attribution/records.jsonl",
+    "creator_index_policy_path": "config/creator_optin_ledger_policy.json"
+  },
+  "distribution": {
+    "default_pool_usd": 100,
+    "min_payout_usd": 0.01,
+    "max_creators_per_plan": 1000,
+    "allowed_modes": [
+      "royalty",
+      "donation",
+      "hybrid"
+    ]
+  },
+  "state": {
+    "root": "state/storm/value_distribution",
+    "plans_dir": "state/storm/value_distribution/plans",
+    "latest_path": "state/storm/value_distribution/latest.json",
+    "history_path": "state/storm/value_distribution/history.jsonl",
+    "reversals_path": "state/storm/value_distribution/reversals.jsonl",
+    "receipts_path": "state/storm/value_distribution/receipts.jsonl"
+  },
+  "passport": {
+    "enabled": true,
+    "source": "storm_value_distribution"
+  }
+}

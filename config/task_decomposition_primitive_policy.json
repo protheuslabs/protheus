@@ -1,0 +1,81 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "allow_apply": false,
+  "decomposition": {
+    "max_depth": 4,
+    "max_micro_tasks": 96,
+    "max_words_per_leaf": 18,
+    "min_minutes": 1,
+    "max_minutes": 5
+  },
+  "parallel": {
+    "max_groups": 8,
+    "default_lane": "autonomous_micro_agent",
+    "storm_lane": "storm_human_lane",
+    "human_lane_keywords": [
+      "brainstorm",
+      "creative",
+      "design",
+      "negotiate",
+      "judge",
+      "taste",
+      "style",
+      "relationship",
+      "call",
+      "human review"
+    ],
+    "autonomous_lane_keywords": [
+      "fetch",
+      "parse",
+      "summarize",
+      "compile",
+      "test",
+      "verify",
+      "check",
+      "generate",
+      "transform",
+      "analyze"
+    ],
+    "min_storm_share": 0.15
+  },
+  "gates": {
+    "heroic_echo_enabled": true,
+    "constitution_enabled": true,
+    "block_on_destructive": true,
+    "block_on_constitution_deny": true
+  },
+  "attribution": {
+    "enabled": true,
+    "issue_passport": true,
+    "passport_source": "task_decomposition_primitive",
+    "actor": {
+      "actor": "task_decomposition_primitive",
+      "role": "execution",
+      "model": "task_decomposer",
+      "framework": "openclaw",
+      "org": "protheus",
+      "tenant": "local"
+    }
+  },
+  "outputs": {
+    "persist_profiles": true,
+    "emit_events": true,
+    "emit_ide_events": true,
+    "emit_obsidian_projection": false
+  },
+  "state": {
+    "root": "state/execution/task_decomposition_primitive",
+    "runs_dir": "state/execution/task_decomposition_primitive/runs",
+    "latest_path": "state/execution/task_decomposition_primitive/latest.json",
+    "history_path": "state/execution/task_decomposition_primitive/history.jsonl",
+    "events_path": "state/execution/task_decomposition_primitive/events.jsonl",
+    "ide_events_path": "state/execution/task_decomposition_primitive/ide_events.jsonl",
+    "receipts_path": "state/execution/task_decomposition_primitive/receipts.jsonl",
+    "profiles_dir": "state/execution/task_decomposition_primitive/profiles",
+    "weaver_queue_path": "state/autonomy/weaver/task_decomposition_queue.jsonl",
+    "storm_queue_path": "state/storm/micro_tasks_queue.jsonl",
+    "obsidian_queue_path": "state/execution/task_decomposition_primitive/obsidian_projection.jsonl"
+  }
+}

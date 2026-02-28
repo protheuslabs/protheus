@@ -44,6 +44,8 @@ function run() {
   const strategyDir = path.join(tmpRoot, 'strategies');
   const stateDir = path.join(tmpRoot, 'state', 'autonomy', 'weaver');
   const policyPath = path.join(tmpRoot, 'config', 'weaver_policy.json');
+  const dualityPolicyPath = path.join(tmpRoot, 'config', 'duality_seed_policy.json');
+  const dualityCodexPath = path.join(tmpRoot, 'config', 'duality_codex.txt');
   const regimePath = path.join(tmpRoot, 'state', 'autonomy', 'fractal', 'regime', 'latest.json');
   const mirrorPath = path.join(tmpRoot, 'state', 'autonomy', 'mirror_organ', 'latest.json');
   const autopausePath = path.join(tmpRoot, 'state', 'autonomy', 'budget_autopause.json');
@@ -151,6 +153,27 @@ function run() {
       emit_obsidian_projection: true
     }
   });
+  writeFile(dualityCodexPath, [
+    '[meta]',
+    'version=1.0-test',
+    '',
+    '[flux_pairs]',
+    'order|chaos|yin_attrs=structure,stability|yang_attrs=novelty,exploration'
+  ].join('\n'));
+  writeJson(dualityPolicyPath, {
+    version: '1.0-test',
+    enabled: true,
+    shadow_only: true,
+    advisory_only: true,
+    codex_path: dualityCodexPath,
+    state: {
+      latest_path: path.join(tmpRoot, 'state', 'autonomy', 'duality', 'latest.json'),
+      history_path: path.join(tmpRoot, 'state', 'autonomy', 'duality', 'history.jsonl')
+    },
+    integration: {
+      weaver_arbitration: true
+    }
+  });
 
   writeJson(regimePath, {
     selected_regime: 'constrained_budget',
@@ -216,7 +239,8 @@ function run() {
     WEAVER_MIRROR_LATEST_PATH: mirrorPath,
     WEAVER_AUTOPAUSE_PATH: autopausePath,
     ETHICAL_REASONING_POLICY_PATH: ethicalPolicyPath,
-    ETHICAL_REASONING_STATE_DIR: ethicalStateDir
+    ETHICAL_REASONING_STATE_DIR: ethicalStateDir,
+    DUALITY_SEED_POLICY_PATH: dualityPolicyPath
   };
 
   const run1 = runNode(scriptPath, [
@@ -245,6 +269,8 @@ function run() {
     'monoculture guard should trigger on revenue dominance'
   );
   assert.strictEqual(out1.veto_blocked, false, 'constitution/identity veto should not block healthy run');
+  assert.ok(out1.value_context && out1.value_context.duality, 'duality advisory should be present');
+  assert.strictEqual(typeof out1.value_context.duality.enabled, 'boolean');
   assert.ok(out1.ethical_reasoning && out1.ethical_reasoning.enabled === true, 'ethical reasoning should be attached');
   assert.ok(
     out1.ethical_reasoning.summary && typeof out1.ethical_reasoning.summary.top_metric_id === 'string',

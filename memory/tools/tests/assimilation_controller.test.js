@@ -104,6 +104,8 @@ function run() {
   const scriptPath = path.join(repoRoot, 'systems', 'assimilation', 'assimilation_controller.js');
   const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'assimilation-controller-'));
   const policyPath = path.join(tmpRoot, 'config', 'assimilation_policy.json');
+  const dualityPolicyPath = path.join(tmpRoot, 'config', 'duality_seed_policy.json');
+  const dualityCodexPath = path.join(tmpRoot, 'config', 'duality_codex.txt');
   const capabilityProfilePolicyPath = path.join(tmpRoot, 'config', 'capability_profile_policy.json');
   const capabilityProfileSchemaPath = path.join(tmpRoot, 'config', 'capability_profile_schema.json');
   const capabilityProfileStateRoot = path.join(tmpRoot, 'state', 'assimilation', 'capability_profiles');
@@ -151,13 +153,35 @@ function run() {
     }
   });
   writeJson(policyPath, basePolicy());
+  writeFile(dualityCodexPath, [
+    '[meta]',
+    'version=1.0-test',
+    '',
+    '[flux_pairs]',
+    'order|chaos|yin_attrs=structure,stability|yang_attrs=exploration,novelty'
+  ].join('\n'));
+  writeJson(dualityPolicyPath, {
+    version: '1.0-test',
+    enabled: true,
+    shadow_only: true,
+    advisory_only: true,
+    codex_path: dualityCodexPath,
+    state: {
+      latest_path: path.join(tmpRoot, 'state', 'autonomy', 'duality', 'latest.json'),
+      history_path: path.join(tmpRoot, 'state', 'autonomy', 'duality', 'history.jsonl')
+    },
+    integration: {
+      assimilation_candidacy: true
+    }
+  });
 
   const env = {
     ...process.env,
     ASSIMILATION_POLICY_PATH: policyPath,
     ASSIMILATION_STATE_DIR: stateDir,
     ASSIMILATION_WEAVER_LATEST_PATH: weaverLatestPath,
-    CAPABILITY_PROFILE_POLICY_PATH: capabilityProfilePolicyPath
+    CAPABILITY_PROFILE_POLICY_PATH: capabilityProfilePolicyPath,
+    DUALITY_SEED_POLICY_PATH: dualityPolicyPath
   };
 
   // Unified candidacy ledger must accept both local skills and external adapters.
@@ -237,6 +261,7 @@ function run() {
       row.capability_profile && row.capability_profile.ok === true,
       'capability profile should compile for ready candidates'
     );
+    assert.ok(row.duality && typeof row.duality.enabled === 'boolean', 'candidate should include duality advisory');
   }
 
   const ledgerPath = path.join(stateDir, 'ledger.json');

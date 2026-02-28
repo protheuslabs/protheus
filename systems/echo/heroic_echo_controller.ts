@@ -23,6 +23,16 @@ const {
   mergeGatePolicy,
   purifyInputs
 } = require('./input_purification_gate');
+let dualityEvaluate = null;
+let registerDualityObservation = null;
+try {
+  const duality = require('../../lib/duality_seed.js');
+  dualityEvaluate = duality.duality_evaluate || duality.evaluateDualitySignal || null;
+  registerDualityObservation = duality.registerDualityObservation || null;
+} catch {
+  dualityEvaluate = null;
+  registerDualityObservation = null;
+}
 
 type AnyObj = Record<string, any>;
 
@@ -582,6 +592,26 @@ function cmdRun(args: AnyObj, dateStr: string, policyPath: string) {
 
   const runId = normalizeToken(args['run-id'] || args.run_id || '', 120)
     || `echo_${dateStr}_${sha16(`${Date.now()}|${Math.random()}`)}`;
+  const dualitySignal = typeof dualityEvaluate === 'function'
+    ? dualityEvaluate({
+      lane: 'heroic_echo_filtering',
+      source: 'heroic_echo_controller',
+      run_id: runId,
+      objective_id: args['objective-id'] || args.objective_id || null,
+      source_id: args.source || 'manual',
+      input_preview: inputs.slice(0, 20).map((row) => ({
+        id: row.id,
+        source: row.source,
+        modality: row.modality,
+        text: cleanText(row.text || '', 180)
+      }))
+    }, {
+      lane: 'heroic_echo_filtering',
+      source: 'heroic_echo_controller',
+      run_id: runId,
+      persist: true
+    })
+    : null;
   const purified = purifyInputs(inputs, policy.gate, {
     date: dateStr,
     run_id: runId,
@@ -593,6 +623,18 @@ function cmdRun(args: AnyObj, dateStr: string, policyPath: string) {
     run_id: runId,
     shadow_only: shadowOnly
   });
+  if (dualitySignal && dualitySignal.enabled === true) {
+    routePayloads.weaverHints.push({
+      ts: nowIso(),
+      type: 'echo_weaver_duality_hint',
+      source: 'heroic_echo',
+      run_id: runId,
+      metric_id: String(dualitySignal.recommended_adjustment || 'hold_balance_near_zero_point'),
+      intensity_hint: Number(dualitySignal.zero_point_harmony_potential || 0),
+      confidence: Number(dualitySignal.confidence || 0),
+      reason_codes: ['duality_advisory']
+    });
+  }
 
   const routeAllowed = applyExecuted || policy.routes.emit_shadow_routes === true;
   let mirrorAppended = 0;
@@ -645,6 +687,23 @@ function cmdRun(args: AnyObj, dateStr: string, policyPath: string) {
         ).toFixed(6)
       )
     },
+    duality: dualitySignal
+      ? {
+        enabled: dualitySignal.enabled === true,
+        score_trit: Number(dualitySignal.score_trit || 0),
+        score_label: cleanText(dualitySignal.score_label || 'unknown', 32),
+        zero_point_harmony_potential: Number(dualitySignal.zero_point_harmony_potential || 0),
+        recommended_adjustment: cleanText(dualitySignal.recommended_adjustment || '', 120) || null,
+        confidence: Number(dualitySignal.confidence || 0),
+        effective_weight: Number(dualitySignal.effective_weight || 0),
+        indicator: dualitySignal.indicator && typeof dualitySignal.indicator === 'object'
+          ? dualitySignal.indicator
+          : null,
+        zero_point_insight: cleanText(dualitySignal.zero_point_insight || '', 220) || null
+      }
+      : {
+        enabled: false
+      },
     routes: {
       mirror_suggestions_dir: relPath(paths.mirror_suggestions_dir),
       training_quarantine_queue_path: relPath(paths.training_quarantine_queue_path),
@@ -668,22 +727,46 @@ function cmdRun(args: AnyObj, dateStr: string, policyPath: string) {
     inputs_seen: inputs.length,
     summary: payload.summary,
     route_counts: routeCounts,
-    shadow_only: shadowOnly
+    shadow_only: shadowOnly,
+    duality: payload.duality
   });
   emitIdeEvent(paths, policy, {
     event: 'echo_purification_summary',
     run_id: runId,
     summary: payload.summary,
     route_counts: routeCounts,
-    shadow_only: shadowOnly
+    shadow_only: shadowOnly,
+    duality: payload.duality
   });
   emitObsidian(paths, policy, {
     run_id: runId,
     title: 'Heroic Echo Purification Receipt',
     summary: payload.summary,
     route_counts: routeCounts,
-    decision: shadowOnly ? 'shadow_only' : 'applied'
+    decision: shadowOnly ? 'shadow_only' : 'applied',
+    duality: payload.duality
   });
+  if (dualitySignal && dualitySignal.enabled === true && typeof registerDualityObservation === 'function') {
+    try {
+      const blockedRatio = Number(payload.quality_metrics && payload.quality_metrics.blocked_ratio || 0);
+      const observedTrit = blockedRatio >= 0.5
+        ? -1
+        : (
+          Number((payload.summary && payload.summary.constructive_aligned) || 0) > 0
+            ? 1
+            : 0
+        );
+      registerDualityObservation({
+        lane: 'heroic_echo_filtering',
+        source: 'heroic_echo_controller',
+        run_id: runId,
+        predicted_trit: Number(dualitySignal.score_trit || 0),
+        observed_trit: observedTrit
+      });
+    } catch {
+      // Do not fail purification flow on advisory observation write issues.
+    }
+  }
 
   process.stdout.write(JSON.stringify({
     ...payload,

@@ -9,8 +9,21 @@ import {
   propagateTrit,
   serializeTritVector
 } from './trit';
-
 type AnyObj = Record<string, any>;
+let dualityEvaluate: null | ((context: AnyObj, opts?: AnyObj) => AnyObj) = null;
+let registerDualityObservation: null | ((input: AnyObj, opts?: AnyObj) => AnyObj) = null;
+try {
+  const duality = require('./duality_seed.js');
+  dualityEvaluate = (
+    duality.duality_evaluate
+    || duality.evaluateDualitySignal
+    || null
+  );
+  registerDualityObservation = duality.registerDualityObservation || null;
+} catch {
+  dualityEvaluate = null;
+  registerDualityObservation = null;
+}
 
 type SignalInput = {
   source?: unknown;
@@ -169,6 +182,22 @@ function classifyBeliefTrit(score: number, positiveThreshold: number, negativeTh
 function evaluateTernaryBelief(signals: SignalInput[], opts: BeliefOptions = {}) {
   const rows = Array.isArray(signals) ? signals : [];
   const label = String(opts.label == null ? 'belief' : opts.label).trim() || 'belief';
+  const dualitySignal = typeof dualityEvaluate === 'function'
+    ? dualityEvaluate({
+      lane: 'belief_formation',
+      label,
+      source: 'ternary_belief_engine',
+      signals: rows.map((row) => ({
+        source: row && typeof row === 'object' ? row.source : null,
+        trit: row && typeof row === 'object' ? row.trit : null,
+        tags: row && typeof row === 'object' ? row.tags : null
+      }))
+    }, {
+      lane: 'belief_formation',
+      source: 'ternary_belief_engine',
+      persist: true
+    })
+    : null;
   const defaultWeight = clampNumber(opts.default_weight, 0.0001, 1000, 1);
   const positiveThreshold = clampNumber(opts.positive_threshold, 0.01, 0.99, 0.2);
   const negativeThreshold = clampNumber(opts.negative_threshold, -0.99, -0.01, -0.2);
@@ -217,13 +246,22 @@ function evaluateTernaryBelief(signals: SignalInput[], opts: BeliefOptions = {})
   }
 
   const score = totalWeight > 0 ? weightedSum / totalWeight : 0;
+  const dualityInfluence = dualitySignal && dualitySignal.enabled === true
+    ? clampNumber(
+      Number(dualitySignal.score_trit || 0) * Number(dualitySignal.effective_weight || 0) * 0.08,
+      -0.08,
+      0.08,
+      0
+    )
+    : 0;
+  const adjustedScore = clampNumber(score + dualityInfluence, -1, 1, score);
   const insufficientEvidence = (
     nonNeutralCount < minNonNeutralSignals
     || nonNeutralWeight < minNonNeutralWeight
   );
   const trit = forceNeutralOnInsufficientEvidence && insufficientEvidence
     ? TRIT_UNKNOWN
-    : classifyBeliefTrit(score, positiveThreshold, negativeThreshold);
+    : classifyBeliefTrit(adjustedScore, positiveThreshold, negativeThreshold);
   const majority = majorityTrit(
     normalized.map((row) => row.trit),
     {
@@ -236,7 +274,7 @@ function evaluateTernaryBelief(signals: SignalInput[], opts: BeliefOptions = {})
   const concentration = totalWeight > 0 ? Math.max(painWeight, unknownWeight, okWeight) / totalWeight : 0;
   const confidence = Math.min(
     1,
-    (Math.abs(score) * 0.45) + (concentration * 0.35) + (evidenceCoverage * 0.2)
+    (Math.abs(adjustedScore) * 0.45) + (concentration * 0.35) + (evidenceCoverage * 0.2)
   );
 
   const topSources = normalized
@@ -250,13 +288,14 @@ function evaluateTernaryBelief(signals: SignalInput[], opts: BeliefOptions = {})
       weighted: roundTo(row.weighted, 4)
     }));
 
-  return {
+  const result = {
     schema_id: 'ternary_belief',
     schema_version: '1.0.0',
     label,
     trit,
     trit_label: tritLabel(trit),
-    score: roundTo(score, 4),
+    score: roundTo(adjustedScore, 4),
+    raw_score: roundTo(score, 4),
     confidence: roundTo(confidence, 4),
     consensus,
     majority_trit: majority,
@@ -287,6 +326,24 @@ function evaluateTernaryBelief(signals: SignalInput[], opts: BeliefOptions = {})
       min_confidence_for_non_neutral: roundTo(minConfidenceForNonNeutral, 4)
     },
     top_sources: topSources,
+    duality: dualitySignal
+      ? {
+        enabled: dualitySignal.enabled === true,
+        lane: String(dualitySignal.lane || 'belief_formation'),
+        score_trit: Number(dualitySignal.score_trit || 0),
+        score_label: String(dualitySignal.score_label || 'unknown'),
+        zero_point_harmony_potential: roundTo(dualitySignal.zero_point_harmony_potential, 4),
+        recommended_adjustment: String(dualitySignal.recommended_adjustment || 'hold_balance_near_zero_point'),
+        effective_weight: roundTo(dualitySignal.effective_weight, 4),
+        advisory_delta: roundTo(dualityInfluence, 4),
+        indicator: dualitySignal.indicator && typeof dualitySignal.indicator === 'object'
+          ? dualitySignal.indicator
+          : null
+      }
+      : {
+        enabled: false,
+        advisory_delta: 0
+      },
     signals: normalized.map((row) => ({
       source: row.source,
       trit: row.trit,
@@ -300,6 +357,19 @@ function evaluateTernaryBelief(signals: SignalInput[], opts: BeliefOptions = {})
       meta: row.meta
     }))
   };
+  if (dualitySignal && dualitySignal.enabled === true && typeof registerDualityObservation === 'function') {
+    try {
+      registerDualityObservation({
+        lane: 'belief_formation',
+        source: 'ternary_belief_engine',
+        predicted_trit: Number(dualitySignal.score_trit || 0),
+        observed_trit: trit
+      });
+    } catch {
+      // Never fail belief evaluation on advisory observation write errors.
+    }
+  }
+  return result;
 }
 
 function mergeTernaryBeliefs(parentBelief: AnyObj, childBelief: AnyObj, opts: MergeOptions = {}) {

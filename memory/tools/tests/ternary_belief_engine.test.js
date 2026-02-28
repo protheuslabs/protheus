@@ -2,6 +2,9 @@
 'use strict';
 
 const assert = require('assert');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
 const {
   evaluateTernaryBelief,
   mergeTernaryBeliefs,
@@ -9,6 +12,33 @@ const {
 } = require('../../../lib/ternary_belief_engine.js');
 
 try {
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ternary-belief-'));
+  const dualityCodexPath = path.join(tmpRoot, 'config', 'duality_codex.txt');
+  const dualityPolicyPath = path.join(tmpRoot, 'config', 'duality_seed_policy.json');
+  fs.mkdirSync(path.dirname(dualityCodexPath), { recursive: true });
+  fs.writeFileSync(dualityCodexPath, [
+    '[meta]',
+    'version=1.0-test',
+    '',
+    '[flux_pairs]',
+    'order|chaos|yin_attrs=structure,stability|yang_attrs=novelty,exploration'
+  ].join('\n'), 'utf8');
+  fs.writeFileSync(dualityPolicyPath, `${JSON.stringify({
+    version: '1.0-test',
+    enabled: true,
+    shadow_only: true,
+    advisory_only: true,
+    codex_path: dualityCodexPath,
+    state: {
+      latest_path: path.join(tmpRoot, 'state', 'autonomy', 'duality', 'latest.json'),
+      history_path: path.join(tmpRoot, 'state', 'autonomy', 'duality', 'history.jsonl')
+    },
+    integration: {
+      belief_formation: true
+    }
+  }, null, 2)}\n`, 'utf8');
+  process.env.DUALITY_SEED_POLICY_PATH = dualityPolicyPath;
+
   const stableOk = evaluateTernaryBelief([
     { source: 'signal_gate', trit: 1, weight: 3, confidence: 1 },
     { source: 'signal_slo', trit: 1, weight: 3, confidence: 1 },
@@ -17,6 +47,7 @@ try {
   assert.strictEqual(stableOk.trit, 1, 'mostly positive weighted signals should produce +1');
   assert.strictEqual(stableOk.trit_label, 'ok', 'positive belief should label as ok');
   assert.ok(stableOk.confidence > 0.6, 'positive belief should be high confidence');
+  assert.ok(stableOk.duality && typeof stableOk.duality.enabled === 'boolean', 'duality advisory should be attached');
 
   const dominatedPain = evaluateTernaryBelief([
     { source: 'integrity', trit: -1, weight: 5, confidence: 1 },
@@ -65,6 +96,7 @@ try {
   );
 
   console.log('ternary_belief_engine.test.js: OK');
+  fs.rmSync(tmpRoot, { recursive: true, force: true });
 } catch (err) {
   console.error(`ternary_belief_engine.test.js: FAIL: ${err.message}`);
   process.exit(1);

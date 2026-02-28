@@ -3,3 +3,10 @@
 2026-02-27: [01:19 MT] polymarket-arbitrage skill installed.
 
 STATUS: Monitoring active. No live trading.
+{
+  "detected_at": "2026-02-27T10:21:46.127674",
+  "min_edge": 2.0,
+  "fee_assumption": 2.0,
+  "arbitrage_count": 0,
+  "arbitrages": []
+}

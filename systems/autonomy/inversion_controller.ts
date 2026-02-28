@@ -60,6 +60,16 @@ try {
 } catch {
   evaluateAxiomSemanticMatch = null;
 }
+let dualityEvaluate: null | ((ctx: AnyObj, opts?: AnyObj) => AnyObj) = null;
+let registerDualityObservation: null | ((input: AnyObj, opts?: AnyObj) => AnyObj) = null;
+try {
+  const duality = require('../../lib/duality_seed.js');
+  dualityEvaluate = duality.duality_evaluate || duality.evaluateDualitySignal || null;
+  registerDualityObservation = duality.registerDualityObservation || null;
+} catch {
+  dualityEvaluate = null;
+  registerDualityObservation = null;
+}
 
 function usage() {
   console.log('Usage:');
@@ -2941,12 +2951,45 @@ function evaluateRunDecision(args: AnyObj, policy: AnyObj, paths: AnyObj, maturi
     100000,
     0
   );
+  const dualityRunId = stableId(
+    `${dateStr}|${objectiveId || objective}|${target}|${impact}|${Date.now()}`,
+    'dly'
+  );
+  const dualitySignal = typeof dualityEvaluate === 'function'
+    ? dualityEvaluate({
+      lane: 'inversion_trigger',
+      source: 'inversion_controller',
+      run_id: dualityRunId,
+      objective,
+      objective_id: objectiveId,
+      impact,
+      target,
+      trit,
+      trit_vector: tritVector,
+      intent_tags: intentTags,
+      external_signals_count: externalSignalsCount,
+      evidence_count: evidenceCount
+    }, {
+      lane: 'inversion_trigger',
+      source: 'inversion_controller',
+      run_id: dualityRunId,
+      persist: true
+    })
+    : null;
   const policyVersion = cleanText(policy.version || '1.0', 24) || '1.0';
   const tierState = loadTierGovernanceState(paths, policyVersion);
   const tierScope = getTierScope(tierState, policyVersion);
 
   const laneDecision = parseLaneDecision(args, paths, dateStr);
   const creativePenalty = evaluateCreativePenalty(policy, normalizeToken(laneDecision.selected_lane, 120));
+  const dualityCertaintyDelta = dualitySignal && dualitySignal.enabled === true
+    ? clampNumber(
+      Number(dualitySignal.score_trit || 0) * Number(dualitySignal.effective_weight || 0) * 0.06,
+      -0.06,
+      0.06,
+      0
+    )
+    : 0;
   const effectiveCertainty = Number(clampNumber(
     certaintyInput - Number(creativePenalty.penalty || 0),
     0,
@@ -3170,7 +3213,14 @@ function evaluateRunDecision(args: AnyObj, policy: AnyObj, paths: AnyObj, maturi
     live_graduation_regression_max: liveLadderRegressionMax,
     live_graduation_regression_rollback: liveLadderRollbackEngaged,
     similar_failure_pressure: failurePressure.fail_count,
-    hard_failure_block: failurePressure.hard_block
+    hard_failure_block: failurePressure.hard_block,
+    duality_advisory_enabled: dualitySignal && dualitySignal.enabled === true,
+    duality_score_trit: dualitySignal ? Number(dualitySignal.score_trit || 0) : 0,
+    duality_harmony_potential: dualitySignal ? Number(dualitySignal.zero_point_harmony_potential || 0) : 0,
+    duality_recommended_adjustment: dualitySignal
+      ? cleanText(dualitySignal.recommended_adjustment || 'hold_balance_near_zero_point', 120)
+      : 'disabled',
+    duality_certainty_delta: Number(dualityCertaintyDelta.toFixed(6))
   };
 
   if (policy.enabled !== true) reasons.push('policy_disabled');
@@ -3254,6 +3304,19 @@ function evaluateRunDecision(args: AnyObj, policy: AnyObj, paths: AnyObj, maturi
   }
 
   const allowed = reasons.length === 0;
+  if (dualitySignal && dualitySignal.enabled === true && typeof registerDualityObservation === 'function') {
+    try {
+      registerDualityObservation({
+        lane: 'inversion_trigger',
+        source: 'inversion_controller',
+        run_id: dualityRunId,
+        predicted_trit: Number(dualitySignal.score_trit || 0),
+        observed_trit: allowed ? 1 : -1
+      });
+    } catch {
+      // Advisory observation telemetry must never break inversion gating.
+    }
+  }
 
   return {
     allowed,
@@ -3280,7 +3343,24 @@ function evaluateRunDecision(args: AnyObj, policy: AnyObj, paths: AnyObj, maturi
       apply,
       allow_constitution_test: allowConstitutionTest,
       approver_id: approverId,
-      approval_note: approvalNote
+      approval_note: approvalNote,
+      duality: dualitySignal
+        ? {
+          enabled: dualitySignal.enabled === true,
+          score_trit: Number(dualitySignal.score_trit || 0),
+          score_label: cleanText(dualitySignal.score_label || 'unknown', 32),
+          zero_point_harmony_potential: Number(dualitySignal.zero_point_harmony_potential || 0),
+          recommended_adjustment: cleanText(dualitySignal.recommended_adjustment || '', 120) || null,
+          confidence: Number(dualitySignal.confidence || 0),
+          effective_weight: Number(dualitySignal.effective_weight || 0),
+          indicator: dualitySignal.indicator && typeof dualitySignal.indicator === 'object'
+            ? dualitySignal.indicator
+            : null,
+          zero_point_insight: cleanText(dualitySignal.zero_point_insight || '', 220) || null
+        }
+        : {
+          enabled: false
+        }
     },
     maturity: maturityInfo,
     gating: {
@@ -4336,6 +4416,16 @@ function runOrganTrials(paths: AnyObj, policy: AnyObj, args: AnyObj, maturity: A
         passed,
         reasons: Array.isArray(decision.reasons) ? decision.reasons.slice(0, 8) : [],
         attractor: decision.attractor || null,
+        duality: decision.input && decision.input.duality
+          ? {
+            enabled: decision.input.duality.enabled === true,
+            score_trit: Number(decision.input.duality.score_trit || 0),
+            zero_point_harmony_potential: Number(decision.input.duality.zero_point_harmony_potential || 0),
+            indicator: decision.input.duality.indicator && typeof decision.input.duality.indicator === 'object'
+              ? decision.input.duality.indicator
+              : null
+          }
+          : { enabled: false },
         auto_revert: true
       };
       trials.push(row);
@@ -4781,7 +4871,8 @@ function cmdRun(args: AnyObj) {
       evidence_count: decision.input.evidence_count,
       trit: decision.input.trit,
       trit_label: decision.input.trit_label,
-      filters: decision.input.filters
+      filters: decision.input.filters,
+      duality: decision.input.duality || { enabled: false }
     },
     maturity: decision.maturity.computed,
     gating: decision.gating,
@@ -4843,7 +4934,17 @@ function cmdRun(args: AnyObj) {
     impact: out.input.impact,
     mode: out.mode,
     maturity_band: out.maturity.band,
-    reasons: out.reasons
+    reasons: out.reasons,
+    duality: out.input.duality && typeof out.input.duality === 'object'
+      ? {
+        enabled: out.input.duality.enabled === true,
+        score_trit: Number(out.input.duality.score_trit || 0),
+        zero_point_harmony_potential: Number(out.input.duality.zero_point_harmony_potential || 0),
+        indicator: out.input.duality.indicator && typeof out.input.duality.indicator === 'object'
+          ? out.input.duality.indicator
+          : null
+      }
+      : { enabled: false }
   });
 
   if (decision.allowed && decision.input.apply === true) {

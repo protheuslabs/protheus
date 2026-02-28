@@ -19,6 +19,16 @@ const path = require('path');
 const crypto = require('crypto');
 const { spawnSync } = require('child_process');
 const { parseYaml } = require('../../lib/directive_resolver');
+let dualityEvaluate = null;
+let registerDualityObservation = null;
+try {
+  const duality = require('../../lib/duality_seed.js');
+  dualityEvaluate = duality.duality_evaluate || duality.evaluateDualitySignal || null;
+  registerDualityObservation = duality.registerDualityObservation || null;
+} catch {
+  dualityEvaluate = null;
+  registerDualityObservation = null;
+}
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const DIRECTIVES_DIR = path.join(REPO_ROOT, 'config', 'directives');
@@ -571,6 +581,25 @@ function cmdDecompose(args) {
     }) + '\n');
     process.exit(2);
   }
+  const dualityRunId = `dly_${crypto.createHash('sha256')
+    .update(`${parentId}|${Date.now()}|${Math.random()}`)
+    .digest('hex')
+    .slice(0, 16)}`;
+  const duality = typeof dualityEvaluate === 'function'
+    ? dualityEvaluate({
+      lane: 'task_decomposition',
+      source: 'directive_hierarchy_controller',
+      run_id: dualityRunId,
+      parent_id: parentId,
+      parent_tier: parentTier,
+      directive: parent && parent.data ? parent.data : {}
+    }, {
+      lane: 'task_decomposition',
+      source: 'directive_hierarchy_controller',
+      run_id: dualityRunId,
+      persist: true
+    })
+    : null;
 
   const nowMs = Date.now();
   const conflicts = campaignConflict(parentId);
@@ -584,7 +613,8 @@ function cmdDecompose(args) {
       ok: false,
       error: 'campaign_conflict',
       parent_id: parentId,
-      conflicts
+      conflicts,
+      duality: duality || { enabled: false }
     }) + '\n');
     process.exit(1);
   }
@@ -620,18 +650,36 @@ function cmdDecompose(args) {
     ['Irreversible external changes']
   ).slice(0, 4);
 
-  const requestedKinds = ['plan', 'execute'].filter((k) => !childKinds.has(k));
+  const baseKindOrder = ['plan', 'execute'];
+  const preferredKindOrder = duality
+    && duality.enabled === true
+    && String(duality.recommended_adjustment || '') === 'increase_yang_flux'
+    ? ['execute', 'plan']
+    : baseKindOrder;
+  const requestedKinds = preferredKindOrder.filter((k) => !childKinds.has(k));
   const availableSlots = Math.max(0, maxChildren - activeNonStale.length);
   const kinds = requestedKinds.slice(0, availableSlots);
 
   if (kinds.length === 0 && staleChildren.length === 0) {
+    if (duality && duality.enabled === true && typeof registerDualityObservation === 'function') {
+      try {
+        registerDualityObservation({
+          lane: 'task_decomposition',
+          source: 'directive_hierarchy_controller',
+          run_id: dualityRunId,
+          predicted_trit: Number(duality.score_trit || 0),
+          observed_trit: 0
+        });
+      } catch {}
+    }
     process.stdout.write(JSON.stringify({
       ok: true,
       result: 'no_change',
       reason: activeNonStale.length >= maxChildren ? 'branch_cap_reached' : 'children_already_present',
       parent_id: parentId,
       max_children: maxChildren,
-      active_children: activeNonStale.map((r) => r.id)
+      active_children: activeNonStale.map((r) => r.id),
+      duality: duality || { enabled: false }
     }) + '\n');
     return;
   }
@@ -734,7 +782,22 @@ function cmdDecompose(args) {
     created_kinds: generated.map((g) => g.kind),
     expired_count: staleChildren.length,
     expired_ids: staleChildren.map((c) => c.id),
-    conflicts
+    conflicts,
+    duality: duality
+      ? {
+        enabled: duality.enabled === true,
+        score_trit: Number(duality.score_trit || 0),
+        score_label: normalizeLower(duality.score_label || 'unknown') || 'unknown',
+        zero_point_harmony_potential: Number(duality.zero_point_harmony_potential || 0),
+        recommended_adjustment: normalizeText(duality.recommended_adjustment || ''),
+        confidence: Number(duality.confidence || 0),
+        indicator: duality.indicator && typeof duality.indicator === 'object'
+          ? duality.indicator
+          : null
+      }
+      : {
+        enabled: false
+      }
   };
 
   appendJsonl(AUDIT_PATH, {
@@ -750,8 +813,20 @@ function cmdDecompose(args) {
     max_children: maxChildren,
     ttl_days: ttlDays,
     stale_days: staleDays,
-    conflicts
+    conflicts,
+    duality: payload.duality
   });
+  if (duality && duality.enabled === true && typeof registerDualityObservation === 'function') {
+    try {
+      registerDualityObservation({
+        lane: 'task_decomposition',
+        source: 'directive_hierarchy_controller',
+        run_id: dualityRunId,
+        predicted_trit: Number(duality.score_trit || 0),
+        observed_trit: generated.length > 0 ? 1 : 0
+      });
+    } catch {}
+  }
 
   process.stdout.write(JSON.stringify(payload) + '\n');
 }

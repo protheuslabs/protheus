@@ -40,6 +40,8 @@ function run() {
   const scriptPath = path.join(repoRoot, 'systems', 'echo', 'heroic_echo_controller.js');
   const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'heroic-echo-controller-'));
   const policyPath = path.join(tmpRoot, 'config', 'echo_policy.json');
+  const dualityPolicyPath = path.join(tmpRoot, 'config', 'duality_seed_policy.json');
+  const dualityCodexPath = path.join(tmpRoot, 'config', 'duality_codex.txt');
 
   const mirrorDir = path.join(tmpRoot, 'state', 'autonomy', 'mirror_organ', 'suggestions');
   const doctorQueue = path.join(tmpRoot, 'state', 'ops', 'autotest_doctor', 'echo_intake.jsonl');
@@ -85,6 +87,28 @@ function run() {
       write_run_receipt: true
     }
   });
+  fs.mkdirSync(path.dirname(dualityCodexPath), { recursive: true });
+  fs.writeFileSync(dualityCodexPath, [
+    '[meta]',
+    'version=1.0-test',
+    '',
+    '[flux_pairs]',
+    'order|chaos|yin_attrs=structure,stability|yang_attrs=novelty,exploration'
+  ].join('\n'), 'utf8');
+  writeJson(dualityPolicyPath, {
+    version: '1.0-test',
+    enabled: true,
+    shadow_only: true,
+    advisory_only: true,
+    codex_path: dualityCodexPath,
+    state: {
+      latest_path: path.join(tmpRoot, 'state', 'autonomy', 'duality', 'latest.json'),
+      history_path: path.join(tmpRoot, 'state', 'autonomy', 'duality', 'history.jsonl')
+    },
+    integration: {
+      heroic_echo_filtering: true
+    }
+  });
 
   const inputRows = [
     {
@@ -120,13 +144,17 @@ function run() {
     `--input-json=${JSON.stringify(inputRows)}`,
     '--source=test_harness',
     '--apply=1'
-  ], process.env, repoRoot);
+  ], {
+    ...process.env,
+    DUALITY_SEED_POLICY_PATH: dualityPolicyPath
+  }, repoRoot);
   assert.strictEqual(run.status, 0, run.stderr || run.stdout);
   const runPayload = parseJsonStdout(run);
   assert.strictEqual(runPayload.ok, true);
   assert.strictEqual(runPayload.shadow_only, true, 'shadow_only should remain true');
   assert.strictEqual(runPayload.apply_executed, false, 'apply must not execute in shadow mode');
   assert.strictEqual(runPayload.summary.total, 4);
+  assert.ok(runPayload.duality && typeof runPayload.duality.enabled === 'boolean', 'run should include duality advisory');
   assert.strictEqual(runPayload.route_counts.training, 1);
   assert.strictEqual(runPayload.route_counts.mirror_support, 1);
   assert.strictEqual(runPayload.route_counts.security_review, 1);
@@ -153,7 +181,10 @@ function run() {
   const beliefUpdateRows = readJsonl(beliefUpdateQueue);
   assert.ok(beliefUpdateRows.length >= 1, 'constructive belief candidates should be proposed');
 
-  const status = runNode(scriptPath, ['status', 'latest', `--policy=${policyPath}`], process.env, repoRoot);
+  const status = runNode(scriptPath, ['status', 'latest', `--policy=${policyPath}`], {
+    ...process.env,
+    DUALITY_SEED_POLICY_PATH: dualityPolicyPath
+  }, repoRoot);
   assert.strictEqual(status.status, 0, status.stderr || status.stdout);
   const statusPayload = parseJsonStdout(status);
   assert.strictEqual(statusPayload.ok, true);

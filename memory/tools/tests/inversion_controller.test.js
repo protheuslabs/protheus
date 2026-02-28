@@ -48,6 +48,8 @@ function run() {
   const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'inversion-controller-'));
   const stateDir = path.join(tmpRoot, 'state', 'autonomy', 'inversion');
   const policyPath = path.join(tmpRoot, 'config', 'inversion_policy.json');
+  const dualityPolicyPath = path.join(tmpRoot, 'config', 'duality_seed_policy.json');
+  const dualityCodexPath = path.join(tmpRoot, 'config', 'duality_codex.txt');
   const regimeLatestPath = path.join(tmpRoot, 'state', 'autonomy', 'fractal', 'regime', 'latest.json');
   const mirrorLatestPath = path.join(tmpRoot, 'state', 'autonomy', 'mirror_organ', 'latest.json');
   const simulationDir = path.join(tmpRoot, 'state', 'autonomy', 'simulations');
@@ -284,10 +286,33 @@ function run() {
       max_reasons: 12
     }
   });
+  fs.mkdirSync(path.dirname(dualityCodexPath), { recursive: true });
+  fs.writeFileSync(dualityCodexPath, [
+    '[meta]',
+    'version=1.0-test',
+    '',
+    '[flux_pairs]',
+    'order|chaos|yin_attrs=structure,stability|yang_attrs=exploration,novelty'
+  ].join('\n'), 'utf8');
+  writeJson(dualityPolicyPath, {
+    version: '1.0-test',
+    enabled: true,
+    shadow_only: true,
+    advisory_only: true,
+    codex_path: dualityCodexPath,
+    state: {
+      latest_path: path.join(tmpRoot, 'state', 'autonomy', 'duality', 'latest.json'),
+      history_path: path.join(tmpRoot, 'state', 'autonomy', 'duality', 'history.jsonl')
+    },
+    integration: {
+      inversion_trigger: true
+    }
+  });
 
   const env = {
     ...process.env,
-    INVERSION_STATE_DIR: stateDir
+    INVERSION_STATE_DIR: stateDir,
+    DUALITY_SEED_POLICY_PATH: dualityPolicyPath
   };
 
   // Build maturity to legendary quickly.
@@ -365,6 +390,13 @@ function run() {
     organPayload.trials
     && Number(organPayload.trials.count || 0) >= 1,
     JSON.stringify(organPayload.trials || {}, null, 2)
+  );
+  const bestTrialDuality = organPayload.trials
+    && organPayload.trials.best_trial
+    && organPayload.trials.best_trial.duality;
+  assert.ok(
+    bestTrialDuality && typeof bestTrialDuality.enabled === 'boolean',
+    'organ trial receipts should include duality advisory payload'
   );
   assert.ok(fs.existsSync(path.join(stateDir, 'organ', 'latest.json')), 'organ latest artifact should exist');
   assert.ok(fs.existsSync(path.join(stateDir, 'tree', 'latest.json')), 'tree latest artifact should exist');

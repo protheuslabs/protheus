@@ -1,0 +1,37 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "allow_apply": false,
+  "privacy": {
+    "hash_salt_env": "STORM_LEDGER_SALT",
+    "expose_public_name": false
+  },
+  "partnership": {
+    "tiers": [
+      { "id": "seed", "min_influence": 0 },
+      { "id": "bronze", "min_influence": 3 },
+      { "id": "silver", "min_influence": 10 },
+      { "id": "gold", "min_influence": 25 },
+      { "id": "platinum", "min_influence": 60 }
+    ],
+    "badges": {
+      "first_optin": { "min_events": 1 },
+      "contributor": { "min_events": 5 },
+      "catalyst": { "min_events": 15 },
+      "steward": { "min_events": 40 }
+    }
+  },
+  "state": {
+    "root": "state/storm/creator_optin",
+    "index_path": "state/storm/creator_optin/index.json",
+    "latest_path": "state/storm/creator_optin/latest.json",
+    "history_path": "state/storm/creator_optin/history.jsonl",
+    "public_ledger_path": "state/storm/creator_optin/public_ledger.jsonl",
+    "receipts_path": "state/storm/creator_optin/receipts.jsonl"
+  },
+  "passport": {
+    "enabled": true,
+    "source": "creator_optin_ledger"
+  }
+}

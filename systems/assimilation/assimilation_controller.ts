@@ -28,6 +28,16 @@ const { runResearchProbe } = require('./research_probe');
 const { compileProfileFromResearch } = require('./capability_profile_compiler');
 const { buildForgeReplica } = require('./forge_replica');
 const { evaluateGraftDecision } = require('./graft_manager');
+let dualityEvaluate = null;
+let registerDualityObservation = null;
+try {
+  const duality = require('../../lib/duality_seed.js');
+  dualityEvaluate = duality.duality_evaluate || duality.evaluateDualitySignal || null;
+  registerDualityObservation = duality.registerDualityObservation || null;
+} catch {
+  dualityEvaluate = null;
+  registerDualityObservation = null;
+}
 
 type AnyObj = Record<string, any>;
 
@@ -725,12 +735,56 @@ function commandRun(args: AnyObj) {
     64,
     policy.max_candidates_per_run
   );
-  const selected = ready.slice(0, maxCandidates);
+  const rankedByDuality = ready
+    .slice(0)
+    .map((row: AnyObj) => {
+      const duality = typeof dualityEvaluate === 'function'
+        ? dualityEvaluate({
+          lane: 'assimilation_candidacy',
+          source: 'assimilation_controller',
+          run_id: runId,
+          capability_id: row && row.capability_id,
+          source_type: row && row.source_type,
+          risk_class: row && row.risk_class,
+          thresholds: row && row.thresholds
+        }, {
+          lane: 'assimilation_candidacy',
+          source: 'assimilation_controller',
+          run_id: runId,
+          persist: true
+        })
+        : null;
+      const baseline = Number(
+        row
+        && row.thresholds
+        && row.thresholds.metrics
+        && row.thresholds.metrics.pain_cost_score
+        || 0
+      );
+      const advisoryDelta = duality && duality.enabled === true
+        ? clampNumber(
+          Number(duality.score_trit || 0) * Number(duality.effective_weight || 0) * 0.1,
+          -0.1,
+          0.1,
+          0
+        )
+        : 0;
+      return {
+        ...row,
+        _duality: duality,
+        _duality_rank: Number((baseline + advisoryDelta).toFixed(6))
+      };
+    })
+    .sort((a: AnyObj, b: AnyObj) => Number(b._duality_rank || 0) - Number(a._duality_rank || 0));
+  const selected = rankedByDuality.slice(0, maxCandidates);
   const weaverGate = evaluateWeaverGate(paths);
   const results: AnyObj[] = [];
 
   for (const candidate of selected) {
     const capabilityId = String(candidate.capability_id || '');
+    const dualitySignal = candidate && candidate._duality && typeof candidate._duality === 'object'
+      ? candidate._duality
+      : null;
     const record = ledger.capabilities && ledger.capabilities[capabilityId]
       ? ledger.capabilities[capabilityId]
       : null;
@@ -840,6 +894,25 @@ function commandRun(args: AnyObj) {
       risk_class: record.risk_class || 'general',
       improvement_mode: improvementMode,
       native_equivalent_id: record.native_equivalent_id || null,
+      duality: dualitySignal
+        ? {
+          enabled: dualitySignal.enabled === true,
+          score_trit: Number(dualitySignal.score_trit || 0),
+          score_label: cleanText(dualitySignal.score_label || 'unknown', 32),
+          zero_point_harmony_potential: Number(dualitySignal.zero_point_harmony_potential || 0),
+          recommended_adjustment: cleanText(dualitySignal.recommended_adjustment || '', 120) || null,
+          confidence: Number(dualitySignal.confidence || 0),
+          effective_weight: Number(dualitySignal.effective_weight || 0),
+          advisory_rank: Number(candidate && candidate._duality_rank || 0),
+          indicator: dualitySignal.indicator && typeof dualitySignal.indicator === 'object'
+            ? dualitySignal.indicator
+            : null,
+          zero_point_insight: cleanText(dualitySignal.zero_point_insight || '', 220) || null
+        }
+        : {
+          enabled: false,
+          advisory_rank: Number(candidate && candidate._duality_rank || 0)
+        },
       thresholds: candidate.thresholds,
       legal_gate: legalGate,
       weaver_gate: weaverGate,
@@ -860,13 +933,33 @@ function commandRun(args: AnyObj) {
       outcome
     };
     results.push(row);
+    if (dualitySignal && dualitySignal.enabled === true && typeof registerDualityObservation === 'function') {
+      try {
+        registerDualityObservation({
+          lane: 'assimilation_candidacy',
+          source: 'assimilation_controller',
+          run_id: runId,
+          predicted_trit: Number(dualitySignal.score_trit || 0),
+          observed_trit: outcome === 'success' ? 1 : (outcome === 'reject' ? -1 : 0)
+        });
+      } catch {
+        // Advisory telemetry must not block candidate processing.
+      }
+    }
     emitEvent(paths, policy, 'candidate_processed', {
       run_id: runId,
       date,
       capability_id: capabilityId,
       outcome,
       improvement_mode: improvementMode,
-      reason_codes: reasonCodes.slice(0, 24)
+      reason_codes: reasonCodes.slice(0, 24),
+      duality: dualitySignal
+        ? {
+          score_trit: Number(dualitySignal.score_trit || 0),
+          zero_point_harmony_potential: Number(dualitySignal.zero_point_harmony_potential || 0),
+          recommended_adjustment: cleanText(dualitySignal.recommended_adjustment || '', 120) || null
+        }
+        : { enabled: false }
     });
   }
 
@@ -907,7 +1000,17 @@ function commandRun(args: AnyObj) {
       capability_id: row.capability_id,
       outcome: row.outcome,
       improvement_mode: row.improvement_mode,
-      risk_class: row.risk_class
+      risk_class: row.risk_class,
+      duality: row.duality && typeof row.duality === 'object'
+        ? {
+          enabled: row.duality.enabled === true,
+          score_trit: Number(row.duality.score_trit || 0),
+          zero_point_harmony_potential: Number(row.duality.zero_point_harmony_potential || 0),
+          indicator: row.duality.indicator && typeof row.duality.indicator === 'object'
+            ? row.duality.indicator
+            : null
+        }
+        : { enabled: false }
     }))
   });
   const summaryLines = [
@@ -924,7 +1027,13 @@ function commandRun(args: AnyObj) {
   emitObsidianProjection(paths, policy, {
     run_id: runId,
     date,
-    markdown: summaryLines.join('\n')
+    markdown: summaryLines.join('\n'),
+    duality: results.slice(0, 8).map((row) => ({
+      capability_id: row.capability_id,
+      score_trit: Number(row.duality && row.duality.score_trit || 0),
+      harmony: Number(row.duality && row.duality.zero_point_harmony_potential || 0),
+      recommendation: cleanText(row.duality && row.duality.recommended_adjustment || '', 120) || null
+    }))
   });
   return {
     ...payload,

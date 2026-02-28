@@ -1,0 +1,30 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "advisory_only": true,
+  "advisory_weight": 0.35,
+  "positive_threshold": 0.3,
+  "negative_threshold": -0.2,
+  "minimum_seed_confidence": 0.25,
+  "contradiction_decay_step": 0.04,
+  "support_recovery_step": 0.01,
+  "max_observation_window": 200,
+  "codex_path": "config/duality_codex.txt",
+  "state": {
+    "latest_path": "state/autonomy/duality/latest.json",
+    "history_path": "state/autonomy/duality/history.jsonl"
+  },
+  "integration": {
+    "belief_formation": true,
+    "inversion_trigger": true,
+    "assimilation_candidacy": true,
+    "task_decomposition": true,
+    "weaver_arbitration": true,
+    "heroic_echo_filtering": true
+  },
+  "outputs": {
+    "persist_shadow_receipts": true,
+    "persist_observations": true
+  }
+}

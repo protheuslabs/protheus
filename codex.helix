@@ -1,0 +1,30 @@
+{
+  "schema_id": "helix_codex_root",
+  "schema_version": "1.0",
+  "codex_id": "protheus_helix_codex",
+  "created_at": "2026-02-27T08:49:39.477Z",
+  "updated_at": "2026-02-27T08:49:39.477Z",
+  "root_hash": "aeec0f5ac97a3be2d38c5e8c98d41990d9cda1636c67666e313eb022300c44a8",
+  "signature": "",
+  "body": {
+    "codex_id": "protheus_helix_codex",
+    "bootstrap_truths": [
+      "preserve_constitutional_root",
+      "preserve_user_sovereignty",
+      "deny_unauthorized_self_rewrite",
+      "fail_secure_before_actuation"
+    ],
+    "constitution": {
+      "path": "AGENT-CONSTITUTION.md",
+      "sha256": "52c7304f790e1268e61860b9ae2bc75026bb335447afbe7c1fea60688506fe79"
+    },
+    "soul_binding": {
+      "fingerprint": null,
+      "instance_id": null,
+      "biometric_commitment_id": "sp_5890ab9d2cff451b244de263",
+      "biometric_template_id": "tpl_8148dd336fd5a87a",
+      "biometric_confidence": 0.9
+    },
+    "approval_note": "refresh helix codex after init advisory fix"
+  }
+}
