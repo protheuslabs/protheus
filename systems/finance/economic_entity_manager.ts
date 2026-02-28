@@ -17,6 +17,7 @@ export {};
  *   node systems/finance/economic_entity_manager.js classify-tax --entry-id=<id> [--apply=1|0]
  *   node systems/finance/economic_entity_manager.js tax-report [--month=YYYY-MM] [--apply=1|0] [--approval-note="..."]
  *   node systems/finance/economic_entity_manager.js contract-sign --contract-id=<id> --counterparty=<id> --value-usd=<n> --terms="<text>" [--risk=low|medium|high|critical] [--apply=1|0] [--approval-note="..."]
+ *   node systems/finance/economic_entity_manager.js contract-negotiate --contract-id=<id> --counterparty=<id> --base-amount-usd=<n> --offer-amount-usd=<n> [--profile=<id>] [--round=<n>] [--apply=1|0] [--approval-note="..."]
  *   node systems/finance/economic_entity_manager.js contract-verify --contract-id=<id>
  *   node systems/finance/economic_entity_manager.js payout-route --provider=stripe|paypal|mercury --recipient=<id> --amount-usd=<n> [--apply=1|0] [--approval-note="..."]
  *   node systems/finance/economic_entity_manager.js status [--month=YYYY-MM]
@@ -569,6 +570,111 @@ function cmdContractSign(args: AnyObj) {
   process.stdout.write(`${JSON.stringify(out, null, 2)}\n`);
 }
 
+function cmdContractNegotiate(args: AnyObj) {
+  const policy = loadPolicy(args.policy ? path.resolve(String(args.policy)) : DEFAULT_POLICY_PATH);
+  const state = loadState(policy);
+  const contractId = normalizeToken(args['contract-id'] || args.contract_id || '', 140);
+  const counterparty = normalizeToken(args.counterparty || '', 140);
+  const baseAmountUsd = clampNum(args['base-amount-usd'] ?? args.base_amount_usd, 0.01, 1_000_000_000, 0);
+  const offerAmountUsd = clampNum(args['offer-amount-usd'] ?? args.offer_amount_usd, 0.01, 1_000_000_000, 0);
+  const profile = normalizeToken(args.profile || 'balanced', 40) || 'balanced';
+  const round = Math.max(1, Math.min(12, Number(args.round || 1) || 1));
+  const apply = toBool(args.apply, false) && policy.shadow_only !== true;
+  const approvalNote = clean(args['approval-note'] || args.approval_note || '', 800);
+
+  if (!contractId) {
+    process.stdout.write(`${JSON.stringify({ ok: false, type: 'economic_entity_contract_negotiate', error: 'contract_id_required' })}\n`);
+    process.exit(2);
+  }
+  if (!counterparty) {
+    process.stdout.write(`${JSON.stringify({ ok: false, type: 'economic_entity_contract_negotiate', error: 'counterparty_required' })}\n`);
+    process.exit(2);
+  }
+  const riskGate = ensureApprovalForHighRisk(policy, 'external_contract_signing', baseAmountUsd, approvalNote);
+  if (apply && riskGate.approved !== true) {
+    const out = {
+      ok: false,
+      type: 'economic_entity_contract_negotiate',
+      error: riskGate.reason,
+      contract_id: contractId,
+      base_amount_usd: baseAmountUsd
+    };
+    appendImmutableReceipt(policy, state, 'economic_entity_contract_negotiate_blocked', out);
+    saveState(policy, state);
+    writeLatest(policy, out);
+    process.stdout.write(`${JSON.stringify(out, null, 2)}\n`);
+    process.exit(1);
+  }
+
+  const bridgeArgs = [
+    'negotiate',
+    `--deal-id=${contractId}`,
+    `--counterparty=${counterparty}`,
+    `--base-amount-usd=${baseAmountUsd}`,
+    `--offer-amount-usd=${offerAmountUsd}`,
+    `--profile=${profile}`,
+    `--round=${round}`,
+    `--apply=${apply ? 1 : 0}`
+  ];
+  if (approvalNote) bridgeArgs.push(`--approval-note=${approvalNote}`);
+  const mockNegotiationDecision = normalizeToken(process.env.EEM_MOCK_NEGOTIATION_DECISION || '', 40);
+  const bridge = mockNegotiationDecision
+    ? {
+        ok: mockNegotiationDecision !== 'deny',
+        payload: {
+          ok: mockNegotiationDecision !== 'deny',
+          type: 'payment_skills_bridge_negotiate',
+          decision: mockNegotiationDecision,
+          deal_id: contractId
+        }
+      }
+    : runNodeJson(PAYMENT_BRIDGE_SCRIPT, bridgeArgs);
+  const bridgePayload = bridge && bridge.payload && typeof bridge.payload === 'object' ? bridge.payload : null;
+  const bridgeDecision = normalizeToken(bridgePayload && bridgePayload.decision || '', 40) || null;
+  const bridgeOk = bridge.ok === true && bridgePayload && bridgePayload.ok !== false;
+
+  const negotiationRow = {
+    ts: nowIso(),
+    contract_id: contractId,
+    counterparty,
+    base_amount_usd: baseAmountUsd,
+    offer_amount_usd: offerAmountUsd,
+    profile,
+    round,
+    decision: bridgeDecision,
+    bridge_ok: bridgeOk,
+    bridge_payload: bridgePayload
+  };
+  if (apply) {
+    const existing = state.contracts[contractId] && typeof state.contracts[contractId] === 'object'
+      ? state.contracts[contractId]
+      : {};
+    state.contracts[contractId] = {
+      ...existing,
+      contract_id: contractId,
+      counterparty,
+      value_usd: baseAmountUsd,
+      negotiation: negotiationRow,
+      updated_at: nowIso()
+    };
+  }
+  const out = {
+    ok: bridgeOk,
+    type: 'economic_entity_contract_negotiate',
+    contract_id: contractId,
+    apply,
+    profile,
+    round,
+    decision: bridgeDecision,
+    bridge_result: bridgePayload
+  };
+  appendImmutableReceipt(policy, state, 'economic_entity_contract_negotiate', out);
+  saveState(policy, state);
+  writeLatest(policy, out);
+  process.stdout.write(`${JSON.stringify(out, null, 2)}\n`);
+  if (!out.ok) process.exit(1);
+}
+
 function cmdContractVerify(args: AnyObj) {
   const policy = loadPolicy(args.policy ? path.resolve(String(args.policy)) : DEFAULT_POLICY_PATH);
   const state = loadState(policy);
@@ -749,6 +855,7 @@ function cmdStatus(args: AnyObj) {
   const state = loadState(policy);
   const month = toMonth(args.month || nowIso());
   const monthEntries = Object.values(state.entries || {}).filter((row: AnyObj) => String(row.month || '').startsWith(month));
+  const negotiatedContracts = Object.values(state.contracts || {}).filter((row: AnyObj) => row && row.negotiation).length;
   const out = {
     ok: true,
     type: 'economic_entity_status',
@@ -759,6 +866,7 @@ function cmdStatus(args: AnyObj) {
     counts: {
       entries_total: Object.keys(state.entries || {}).length,
       contracts_total: Object.keys(state.contracts || {}).length,
+      negotiated_contracts_total: negotiatedContracts,
       payouts_total: Object.keys(state.payouts || {}).length,
       tax_reports_total: Object.keys(state.tax_reports || {}).length,
       entries_in_month: monthEntries.length
@@ -782,6 +890,7 @@ function usage() {
   console.log('  node systems/finance/economic_entity_manager.js classify-tax --entry-id=<id> [--apply=1|0]');
   console.log('  node systems/finance/economic_entity_manager.js tax-report [--month=YYYY-MM] [--apply=1|0] [--approval-note="..."]');
   console.log('  node systems/finance/economic_entity_manager.js contract-sign --contract-id=<id> --counterparty=<id> --value-usd=<n> --terms="<text>" [--risk=low|medium|high|critical] [--apply=1|0] [--approval-note="..."]');
+  console.log('  node systems/finance/economic_entity_manager.js contract-negotiate --contract-id=<id> --counterparty=<id> --base-amount-usd=<n> --offer-amount-usd=<n> [--profile=<id>] [--round=<n>] [--apply=1|0] [--approval-note="..."]');
   console.log('  node systems/finance/economic_entity_manager.js contract-verify --contract-id=<id>');
   console.log('  node systems/finance/economic_entity_manager.js payout-route --provider=stripe|paypal|mercury --recipient=<id> --amount-usd=<n> [--apply=1|0] [--approval-note="..."]');
   console.log('  node systems/finance/economic_entity_manager.js status [--month=YYYY-MM]');
@@ -798,6 +907,7 @@ function main() {
   if (cmd === 'classify-tax' || cmd === 'classify_tax') return cmdClassifyTax(args);
   if (cmd === 'tax-report' || cmd === 'tax_report') return cmdTaxReport(args);
   if (cmd === 'contract-sign' || cmd === 'contract_sign') return cmdContractSign(args);
+  if (cmd === 'contract-negotiate' || cmd === 'contract_negotiate') return cmdContractNegotiate(args);
   if (cmd === 'contract-verify' || cmd === 'contract_verify') return cmdContractVerify(args);
   if (cmd === 'payout-route' || cmd === 'payout_route') return cmdPayoutRoute(args);
   if (cmd === 'status') return cmdStatus(args);

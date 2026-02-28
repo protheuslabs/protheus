@@ -15,10 +15,34 @@
       "enabled": true
     }
   },
+  "negotiation": {
+    "enabled": true,
+    "default_profile": "balanced",
+    "profiles": {
+      "balanced": {
+        "min_accept_ratio": 0.9,
+        "auto_accept_ratio": 0.98,
+        "max_discount_ratio": 0.15,
+        "max_rounds": 3
+      },
+      "hardline": {
+        "min_accept_ratio": 0.95,
+        "auto_accept_ratio": 1,
+        "max_discount_ratio": 0.08,
+        "max_rounds": 2
+      },
+      "flexible": {
+        "min_accept_ratio": 0.82,
+        "auto_accept_ratio": 0.94,
+        "max_discount_ratio": 0.22,
+        "max_rounds": 4
+      }
+    }
+  },
   "paths": {
     "state": "state/workflow/payment_bridge/latest.json",
     "history": "state/workflow/payment_bridge/history.jsonl",
-    "holds": "state/workflow/payment_bridge/holds.json"
+    "holds": "state/workflow/payment_bridge/holds.json",
+    "negotiations": "state/workflow/payment_bridge/negotiations.json"
   }
 }
-
