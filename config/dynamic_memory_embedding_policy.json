@@ -1,0 +1,9 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "max_updates_per_session": 12,
+  "receipts_path": "state/memory/dynamic_embedding_adapter/receipts.jsonl",
+  "sessions_path": "state/memory/dynamic_embedding_adapter/sessions.json",
+  "latest_path": "state/memory/dynamic_embedding_adapter/latest.json"
+}

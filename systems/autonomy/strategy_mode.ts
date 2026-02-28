@@ -23,6 +23,7 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 const { loadActiveStrategy, strategyExecutionMode } = require('../../lib/strategy_resolver');
 const { evaluatePipelineSpcGate } = require('./pipeline_spc_gate');
+const { loadDynamicBurnOracleSignal } = require('../../lib/dynamic_burn_budget_signal');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const READINESS_SCRIPT = path.join(REPO_ROOT, 'systems', 'autonomy', 'strategy_readiness.js');
@@ -37,6 +38,9 @@ const STRATEGY_MODE_REQUIRE_SPC = String(process.env.AUTONOMY_STRATEGY_MODE_REQU
 const STRATEGY_MODE_SPC_BASELINE_DAYS = Number(process.env.AUTONOMY_STRATEGY_MODE_SPC_BASELINE_DAYS || 21);
 const STRATEGY_MODE_SPC_BASELINE_MIN_DAYS = Number(process.env.AUTONOMY_STRATEGY_MODE_SPC_BASELINE_MIN_DAYS || 7);
 const STRATEGY_MODE_SPC_SIGMA = Number(process.env.AUTONOMY_STRATEGY_MODE_SPC_SIGMA || 3);
+const STRATEGY_BURN_ORACLE_LATEST_PATH = process.env.AUTONOMY_STRATEGY_BURN_ORACLE_LATEST_PATH
+  ? path.resolve(process.env.AUTONOMY_STRATEGY_BURN_ORACLE_LATEST_PATH)
+  : path.join(REPO_ROOT, 'state', 'ops', 'dynamic_burn_budget_oracle', 'latest.json');
 
 function isExecuteMode(mode) {
   return mode === 'execute' || mode === 'canary_execute';
@@ -54,6 +58,49 @@ function isEscalation(fromMode, toMode) {
   const fromRank = modeRank(fromMode);
   const toRank = modeRank(toMode);
   return fromRank >= 0 && toRank >= 0 && toRank > fromRank;
+}
+
+function normalizeBurnOraclePressure(v) {
+  const raw = String(v || '').trim().toLowerCase();
+  if (raw === 'critical') return 'critical';
+  if (raw === 'high') return 'high';
+  if (raw === 'medium') return 'medium';
+  if (raw === 'low') return 'low';
+  return 'none';
+}
+
+function burnOracleExecuteGuard(mode, pressure) {
+  const p = normalizeBurnOraclePressure(pressure);
+  if (mode === 'execute') return p === 'high' || p === 'critical';
+  if (mode === 'canary_execute') return p === 'critical';
+  return false;
+}
+
+function readBurnOracleAdvisory() {
+  const signal = loadDynamicBurnOracleSignal({
+    latest_path: STRATEGY_BURN_ORACLE_LATEST_PATH
+  });
+  const pressure = normalizeBurnOraclePressure(signal && signal.pressure);
+  const recommendMode = (
+    pressure === 'critical'
+      ? 'score_only'
+      : (pressure === 'high' ? 'canary_execute' : null)
+  );
+  return {
+    available: signal && signal.available === true,
+    pressure,
+    projected_runway_days: signal && signal.projected_runway_days != null
+      ? Number(signal.projected_runway_days)
+      : null,
+    projected_days_to_reset: signal && signal.projected_days_to_reset != null
+      ? Number(signal.projected_days_to_reset)
+      : null,
+    reason_codes: Array.isArray(signal && signal.reason_codes) ? signal.reason_codes.slice(0, 12) : [],
+    source_path: signal && signal.latest_path_rel
+      ? signal.latest_path_rel
+      : path.relative(REPO_ROOT, STRATEGY_BURN_ORACLE_LATEST_PATH).replace(/\\/g, '/'),
+    recommends_mode: recommendMode
+  };
 }
 
 function usage() {
@@ -219,6 +266,7 @@ function cmdStatus(args) {
   const strategy = loadStrategy(args);
   const last = lastModeChangeEvent(strategy.id);
   const cooldown = modeChangeCooldownState(last);
+  const budgetOracle = readBurnOracleAdvisory();
   const out = {
     ok: true,
     ts: nowIso(),
@@ -236,7 +284,8 @@ function cmdStatus(args) {
         to_mode: String(last.to_mode || ''),
         force: last.force === true
       } : null,
-      mode_change_cooldown: cooldown
+      mode_change_cooldown: cooldown,
+      budget_oracle: budgetOracle
     }
   };
   process.stdout.write(JSON.stringify(out, null, 2) + '\n');
@@ -245,6 +294,7 @@ function cmdStatus(args) {
 function cmdRecommend(args) {
   const date = isDateStr(args._[1]) ? String(args._[1]) : todayStr();
   const days = args.days != null ? Number(args.days) : undefined;
+  const budgetOracle = readBurnOracleAdvisory();
   const rep = runReadiness({
     date,
     days,
@@ -259,7 +309,11 @@ function cmdRecommend(args) {
     }) + '\n');
     process.exit(1);
   }
-  process.stdout.write(JSON.stringify(rep.payload, null, 2) + '\n');
+  const out = {
+    ...(rep.payload && typeof rep.payload === 'object' ? rep.payload : {}),
+    budget_oracle: budgetOracle
+  };
+  process.stdout.write(JSON.stringify(out, null, 2) + '\n');
 }
 
 function cmdSet(args) {
@@ -345,6 +399,18 @@ function cmdSet(args) {
       }) + '\n');
       process.exit(2);
     }
+  }
+
+  const budgetOracle = readBurnOracleAdvisory();
+  if (isExecuteMode(mode) && !force && budgetOracle.available === true && burnOracleExecuteGuard(mode, budgetOracle.pressure)) {
+    process.stdout.write(JSON.stringify({
+      ok: false,
+      ts: nowIso(),
+      error: 'budget_oracle_hold',
+      mode,
+      budget_oracle: budgetOracle
+    }) + '\n');
+    process.exit(1);
   }
 
   if (isExecuteMode(mode) && !force && Number.isFinite(MODE_CHANGE_MIN_HOURS) && MODE_CHANGE_MIN_HOURS > 0) {
@@ -466,7 +532,8 @@ function cmdSet(args) {
     dual_approval_required: REQUIRE_DUAL_APPROVER_FOR_EXECUTE,
     readiness: readiness && readiness.readiness ? readiness.readiness : null,
     spc,
-    policy_root: policyRoot
+    policy_root: policyRoot,
+    budget_oracle: budgetOracle
   };
   appendJsonl(AUDIT_LOG_PATH, evt);
 

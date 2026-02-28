@@ -14,6 +14,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { loadDynamicBurnOracleSignal } = require('../../lib/dynamic_burn_budget_signal');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const POLICY_PATH = process.env.OPTIMIZATION_APERTURE_POLICY_PATH
@@ -24,6 +25,9 @@ const STATE_DIR = process.env.OPTIMIZATION_APERTURE_STATE_DIR
   : path.join(ROOT, 'state', 'autonomy', 'optimization_aperture');
 const LATEST_PATH = path.join(STATE_DIR, 'latest.json');
 const HISTORY_PATH = path.join(STATE_DIR, 'history.jsonl');
+const OPT_APERTURE_BURN_ORACLE_LATEST_PATH = process.env.OPTIMIZATION_APERTURE_BURN_ORACLE_LATEST_PATH
+  ? path.resolve(process.env.OPTIMIZATION_APERTURE_BURN_ORACLE_LATEST_PATH)
+  : path.join(ROOT, 'state', 'ops', 'dynamic_burn_budget_oracle', 'latest.json');
 
 function nowIso() {
   return new Date().toISOString();
@@ -104,6 +108,33 @@ function appendJsonl(filePath, row) {
 
 function relPath(p) {
   return path.relative(ROOT, p).replace(/\\/g, '/');
+}
+
+function normalizeBudgetPressure(v) {
+  const key = normalizeToken(v, 32);
+  if (key === 'critical') return 'critical';
+  if (key === 'high') return 'high';
+  if (key === 'medium') return 'medium';
+  if (key === 'low') return 'low';
+  if (key === 'none') return 'none';
+  return '';
+}
+
+function loadApertureBurnOracle() {
+  const signal = loadDynamicBurnOracleSignal({
+    latest_path: OPT_APERTURE_BURN_ORACLE_LATEST_PATH
+  });
+  const pressure = normalizeBudgetPressure(signal && signal.pressure) || 'none';
+  return {
+    available: signal && signal.available === true,
+    pressure,
+    projected_runway_days: signal ? signal.projected_runway_days : null,
+    projected_days_to_reset: signal ? signal.projected_days_to_reset : null,
+    reason_codes: Array.isArray(signal && signal.reason_codes) ? signal.reason_codes.slice(0, 12) : [],
+    source_path: signal && signal.latest_path_rel
+      ? signal.latest_path_rel
+      : relPath(OPT_APERTURE_BURN_ORACLE_LATEST_PATH)
+  };
 }
 
 function defaultPolicy() {
@@ -193,17 +224,23 @@ function pickBandPenalty(map, key, fallbackKey = 'medium') {
 }
 
 function computeAperture(input, policy) {
+  const oracle = loadApertureBurnOracle();
   const lane = normalizeToken(input.lane || 'autonomy', 64) || 'autonomy';
   const risk = normalizeToken(input.risk || 'medium', 32) || 'medium';
   const impact = normalizeToken(input.impact || 'medium', 32) || 'medium';
-  const budgetPressure = normalizeToken(input.budget_pressure || input.budgetPressure || 'medium', 32) || 'medium';
+  const requestedBudgetPressure = normalizeBudgetPressure(input.budget_pressure || input.budgetPressure || '');
+  const budgetPressure = requestedBudgetPressure
+    || (oracle.available === true ? normalizeBudgetPressure(oracle.pressure) : '')
+    || 'medium';
   const safetyCritical = toBool(input.safety_critical, false);
   const verificationPassRate = clampNumber(input.verification_pass_rate, 0, 1, 0.8);
   const driftRate = clampNumber(input.drift_rate, 0, 1, policy.target_drift_rate);
 
   const riskPenalty = pickBandPenalty(policy.penalties.risk, risk, 'medium');
   const impactPenalty = pickBandPenalty(policy.penalties.impact, impact, 'medium');
-  const budgetPenalty = pickBandPenalty(policy.penalties.budget_pressure, budgetPressure, 'medium');
+  const budgetPenalty = budgetPressure === 'none'
+    ? 0
+    : pickBandPenalty(policy.penalties.budget_pressure, budgetPressure, 'medium');
   const safetyPenalty = safetyCritical ? Number(policy.penalties.safety_critical || 0) : 0;
   const driftPenalty = Math.max(0, (driftRate - policy.target_drift_rate) * Number(policy.penalties.drift_multiplier || 0));
   const verificationReward = Math.max(0, verificationPassRate - 0.75) * Number(policy.rewards.verification_pass_rate_multiplier || 0);
@@ -240,6 +277,7 @@ function computeAperture(input, policy) {
       risk,
       impact,
       budget_pressure: budgetPressure,
+      budget_pressure_source: requestedBudgetPressure ? 'input' : (oracle.available === true ? 'burn_oracle' : 'default'),
       safety_critical: safetyCritical,
       verification_pass_rate: Number(verificationPassRate.toFixed(4)),
       drift_rate: Number(driftRate.toFixed(6))
@@ -254,7 +292,8 @@ function computeAperture(input, policy) {
     reward: {
       verification_pass_rate: Number(verificationReward.toFixed(4))
     },
-    recommendations
+    recommendations,
+    budget_oracle: oracle
   };
 }
 

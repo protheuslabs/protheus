@@ -92,6 +92,7 @@ function runGate() {
     'config/abstraction_debt_baseline.json',
     'config/causal_temporal_memory_policy.json',
     'config/capital_allocation_policy.json',
+    'config/cognitive_control_policy.json',
     'config/confirmed_malice_quarantine_policy.json',
     'config/client_relationship_manager_policy.json',
     'config/compression_transfer_plane_policy.json',
@@ -99,6 +100,8 @@ function runGate() {
     'config/drift_aware_revenue_optimizer_policy.json',
     'config/economic_entity_management_policy.json',
     'config/deterministic_control_plane_policy.json',
+    'config/dynamic_burn_budget_oracle_policy.json',
+    'config/dynamic_memory_embedding_policy.json',
     'config/emergent_primitive_synthesis_policy.json',
     'config/effect_type_policy.json',
     'config/embodiment_layer_policy.json',
@@ -113,7 +116,11 @@ function runGate() {
     'config/interactive_desktop_session_policy.json',
     'config/iterative_repair_primitive_policy.json',
     'config/doctor_forge_micro_debug_policy.json',
+    'config/agent_settlement_extension_policy.json',
     'config/account_creation_profile_extension_policy.json',
+    'config/motivational_state_vector_policy.json',
+    'config/source_attestation_extension_policy.json',
+    'config/trajectory_skill_distiller_policy.json',
     'config/universal_execution_profiles/code_repair.json',
     'config/universal_execution_profiles/desktop_ui.json',
     'config/helix_admission_policy.json',
@@ -169,6 +176,7 @@ function runGate() {
     'systems/helix/helix_admission_gate.ts',
     'systems/helix/reweave_doctor.ts',
     'systems/memory/causal_temporal_graph.ts',
+    'systems/memory/dynamic_memory_embedding_adapter.ts',
     'systems/distributed/deterministic_control_plane.ts',
     'systems/hardware/embodiment_layer.ts',
     'systems/hardware/compression_transfer_plane.ts',
@@ -176,6 +184,7 @@ function runGate() {
     'systems/hardware/opportunistic_offload_plane.ts',
     'systems/budget/capital_allocation_organ.ts',
     'systems/finance/economic_entity_manager.ts',
+    'systems/finance/agent_settlement_extension.ts',
     'systems/workflow/gated_account_creation_organ.ts',
     'systems/workflow/account_creation_profile_extension.ts',
     'systems/weaver/drift_aware_revenue_optimizer.ts',
@@ -183,6 +192,7 @@ function runGate() {
     'systems/primitives/effect_type_system.ts',
     'systems/primitives/emergent_primitive_synthesis.ts',
     'systems/primitives/explanation_primitive.ts',
+    'systems/primitives/cognitive_control_primitive.ts',
     'systems/primitives/iterative_repair_primitive.ts',
     'systems/primitives/interactive_desktop_session_primitive.ts',
     'systems/primitives/runtime_scheduler.ts',
@@ -203,6 +213,8 @@ function runGate() {
     'systems/security/delegated_authority_branching.ts',
     'systems/security/safety_resilience_guard.ts',
     'systems/assimilation/world_model_freshness.ts',
+    'systems/assimilation/trajectory_skill_distiller.ts',
+    'systems/assimilation/source_attestation_extension.ts',
     'systems/observability/siem_bridge.ts',
     'systems/ops/continuous_chaos_resilience.ts',
     'systems/ops/error_budget_release_gate.ts',
@@ -213,15 +225,18 @@ function runGate() {
     'systems/ops/state_kernel_migrate.ts',
     'systems/ops/state_kernel_cutover.ts',
     'systems/ops/state_kernel_dual_write.ts',
+    'systems/ops/dynamic_burn_budget_oracle.ts',
     'systems/ops/soc2_type2_track.ts',
     'systems/ops/phone_seed_profile.ts',
     'systems/ops/predictive_capacity_forecast.ts',
     'systems/actuation/full_virtual_desktop_claw_lane.ts',
+    'systems/autonomy/motivational_state_vector.ts',
     'systems/symbiosis/neural_dormant_seed.ts',
     'systems/symbiosis/pre_neuralink_interface.ts',
     'research/neural_dormant_seed/README.md',
     'research/neural_dormant_seed/governance_checklist.md',
     'systems/ops/self_hosted_bootstrap_compiler.ts',
+    'lib/dynamic_burn_budget_signal.ts',
     'lib/passport_iteration_chain.ts',
     'systems/primitives/primitive_runtime.ts',
     'systems/primitives/policy_vm.ts',
@@ -667,6 +682,35 @@ function runGate() {
     'merge_guard should enforce state kernel status/parity/replay/cutover/dual-write checks'
   );
   addCheck(
+    'dynamic_burn_budget_oracle:merge_guard_hook',
+    mergeGuardSrc.includes('dynamic_burn_budget_oracle.js')
+      && mergeGuardSrc.includes('dynamic_burn_budget_oracle_status'),
+    'merge_guard should enforce dynamic burn budget oracle status check'
+  );
+  const burnOraclePolicy = readJsonSafe(path.join(ROOT, 'config', 'dynamic_burn_budget_oracle_policy.json'), {});
+  const burnProviders = burnOraclePolicy.providers && typeof burnOraclePolicy.providers === 'object'
+    ? Object.keys(burnOraclePolicy.providers)
+    : [];
+  addCheck(
+    'dynamic_burn_budget_oracle:policy_cadence_and_providers',
+    burnOraclePolicy.enabled !== false
+      && burnOraclePolicy.shadow_only !== false
+      && Number(burnOraclePolicy.cadence && burnOraclePolicy.cadence.default_minutes || 0) >= 1
+      && burnProviders.includes('openai')
+      && burnProviders.includes('anthropic')
+      && burnProviders.includes('xai'),
+    `enabled=${burnOraclePolicy.enabled !== false ? '1' : '0'} shadow_only=${burnOraclePolicy.shadow_only !== false ? '1' : '0'} cadence_default=${Number(burnOraclePolicy.cadence && burnOraclePolicy.cadence.default_minutes || 0)} providers=${burnProviders.join(',')}`
+  );
+  const burnOracleSrc = readFileSafe(path.join(ROOT, 'systems', 'ops', 'dynamic_burn_budget_oracle.ts'));
+  addCheck(
+    'dynamic_burn_budget_oracle:egress_secret_contract',
+    burnOracleSrc.includes('issueSecretHandle(')
+      && burnOracleSrc.includes('resolveSecretHandle(')
+      && burnOracleSrc.includes('egressFetchText(')
+      && burnOracleSrc.includes('appendJsonl(policy.state.receipts_path'),
+    'dynamic burn budget oracle should resolve secrets, call egress gateway, and emit deterministic receipts'
+  );
+  addCheck(
     'key_lifecycle:merge_guard_hook',
     mergeGuardSrc.includes('key_lifecycle_governor.js')
       && mergeGuardSrc.includes('verify')
@@ -887,6 +931,88 @@ function runGate() {
       && accountRequiredPrimitives.includes('desktop_ui')
       && accountRequiredPrimitives.includes('alias_verification_vault'),
     `enabled=${accountProfilePolicy.enabled !== false ? '1' : '0'} required_primitives=${accountRequiredPrimitives.join(',')}`
+  );
+  addCheck(
+    'cognitive_control_primitive:merge_guard_hook',
+    mergeGuardSrc.includes('cognitive_control_primitive.js')
+      && mergeGuardSrc.includes('cognitive_control_primitive_status'),
+    'merge_guard should enforce cognitive control primitive status check'
+  );
+  const cognitiveControlPolicy = readJsonSafe(path.join(ROOT, 'config', 'cognitive_control_policy.json'), {});
+  addCheck(
+    'cognitive_control_primitive:policy_sufficiency_bounds',
+    cognitiveControlPolicy.enabled !== false
+      && Number(cognitiveControlPolicy.min_sufficiency || 0) >= 0
+      && Number(cognitiveControlPolicy.max_retrieval_items || 0) >= 1,
+    `enabled=${cognitiveControlPolicy.enabled !== false ? '1' : '0'} min_sufficiency=${Number(cognitiveControlPolicy.min_sufficiency || 0)} max_retrieval_items=${Number(cognitiveControlPolicy.max_retrieval_items || 0)}`
+  );
+  addCheck(
+    'dynamic_memory_embedding_adapter:merge_guard_hook',
+    mergeGuardSrc.includes('dynamic_memory_embedding_adapter.js')
+      && mergeGuardSrc.includes('dynamic_memory_embedding_adapter_status'),
+    'merge_guard should enforce dynamic memory embedding adapter status check'
+  );
+  const dynamicEmbeddingPolicy = readJsonSafe(path.join(ROOT, 'config', 'dynamic_memory_embedding_policy.json'), {});
+  addCheck(
+    'dynamic_memory_embedding_adapter:session_bounds',
+    dynamicEmbeddingPolicy.enabled !== false
+      && Number(dynamicEmbeddingPolicy.max_updates_per_session || 0) >= 1,
+    `enabled=${dynamicEmbeddingPolicy.enabled !== false ? '1' : '0'} max_updates_per_session=${Number(dynamicEmbeddingPolicy.max_updates_per_session || 0)}`
+  );
+  addCheck(
+    'trajectory_skill_distiller:merge_guard_hook',
+    mergeGuardSrc.includes('trajectory_skill_distiller.js')
+      && mergeGuardSrc.includes('trajectory_skill_distiller_status'),
+    'merge_guard should enforce trajectory skill distiller status check'
+  );
+  const trajectoryDistillerPolicy = readJsonSafe(path.join(ROOT, 'config', 'trajectory_skill_distiller_policy.json'), {});
+  addCheck(
+    'trajectory_skill_distiller:policy_min_steps',
+    trajectoryDistillerPolicy.enabled !== false
+      && Number(trajectoryDistillerPolicy.distill_min_steps || 0) >= 2,
+    `enabled=${trajectoryDistillerPolicy.enabled !== false ? '1' : '0'} distill_min_steps=${Number(trajectoryDistillerPolicy.distill_min_steps || 0)}`
+  );
+  addCheck(
+    'motivational_state_vector:merge_guard_hook',
+    mergeGuardSrc.includes('motivational_state_vector.js')
+      && mergeGuardSrc.includes('motivational_state_vector_status'),
+    'merge_guard should enforce motivational state vector status check'
+  );
+  const motivationalStatePolicy = readJsonSafe(path.join(ROOT, 'config', 'motivational_state_vector_policy.json'), {});
+  addCheck(
+    'motivational_state_vector:advisory_only',
+    motivationalStatePolicy.enabled !== false
+      && motivationalStatePolicy.advisory_only !== false,
+    `enabled=${motivationalStatePolicy.enabled !== false ? '1' : '0'} advisory_only=${motivationalStatePolicy.advisory_only !== false ? '1' : '0'}`
+  );
+  addCheck(
+    'agent_settlement_extension:merge_guard_hook',
+    mergeGuardSrc.includes('agent_settlement_extension.js')
+      && mergeGuardSrc.includes('agent_settlement_extension_status'),
+    'merge_guard should enforce agent settlement extension status check'
+  );
+  const agentSettlementPolicy = readJsonSafe(path.join(ROOT, 'config', 'agent_settlement_extension_policy.json'), {});
+  addCheck(
+    'agent_settlement_extension:policy_escrow_and_fee',
+    agentSettlementPolicy.enabled !== false
+      && Number(agentSettlementPolicy.escrow_required_threshold_usd || 0) >= 1
+      && Number(agentSettlementPolicy.max_fee_rate || 0) > 0
+      && Number(agentSettlementPolicy.max_fee_rate || 0) <= 1,
+    `enabled=${agentSettlementPolicy.enabled !== false ? '1' : '0'} escrow_required_threshold_usd=${Number(agentSettlementPolicy.escrow_required_threshold_usd || 0)} max_fee_rate=${Number(agentSettlementPolicy.max_fee_rate || 0)}`
+  );
+  addCheck(
+    'source_attestation_extension:merge_guard_hook',
+    mergeGuardSrc.includes('source_attestation_extension.js')
+      && mergeGuardSrc.includes('source_attestation_extension_status'),
+    'merge_guard should enforce source attestation extension status check'
+  );
+  const sourceAttestationPolicy = readJsonSafe(path.join(ROOT, 'config', 'source_attestation_extension_policy.json'), {});
+  addCheck(
+    'source_attestation_extension:min_trust_score',
+    sourceAttestationPolicy.enabled !== false
+      && Number(sourceAttestationPolicy.min_trust_score || 0) > 0
+      && Number(sourceAttestationPolicy.min_trust_score || 0) <= 1,
+    `enabled=${sourceAttestationPolicy.enabled !== false ? '1' : '0'} min_trust_score=${Number(sourceAttestationPolicy.min_trust_score || 0)}`
   );
   addCheck(
     'explanation_primitive:merge_guard_hook',
@@ -1583,6 +1709,54 @@ function runGate() {
       && Number(capitalPolicy.min_risk_adjusted_return || 0) >= -10
       && Number(capitalPolicy.min_risk_adjusted_return || 0) <= 10,
     `min_simulation_score=${Number(capitalPolicy.min_simulation_score || 0)} min_risk_adjusted_return=${Number(capitalPolicy.min_risk_adjusted_return || 0)}`
+  );
+  const capitalSrc = readFileSafe(path.join(ROOT, 'systems', 'budget', 'capital_allocation_organ.ts'));
+  addCheck(
+    'capital_allocation_organ:burn_oracle_integration',
+    capitalSrc.includes('loadDynamicBurnOracleSignal')
+      && capitalSrc.includes('budget_oracle_hold')
+      && capitalSrc.includes('budget_oracle'),
+    'capital allocation organ should enforce burn oracle hold with advisory receipts'
+  );
+  const strategyModeSrc = readFileSafe(path.join(ROOT, 'systems', 'autonomy', 'strategy_mode.ts'));
+  addCheck(
+    'strategy_mode:burn_oracle_integration',
+    strategyModeSrc.includes('loadDynamicBurnOracleSignal')
+      && strategyModeSrc.includes('budget_oracle_hold')
+      && strategyModeSrc.includes('readBurnOracleAdvisory'),
+    'strategy mode should ingest burn oracle advisories before execute escalation'
+  );
+  const gatedSelfImprovementSrc = readFileSafe(path.join(ROOT, 'systems', 'autonomy', 'gated_self_improvement_loop.ts'));
+  addCheck(
+    'gated_self_improvement:burn_oracle_integration',
+    gatedSelfImprovementSrc.includes('loadDynamicBurnOracleSignal')
+      && gatedSelfImprovementSrc.includes('budget_oracle_hold')
+      && gatedSelfImprovementSrc.includes('loadSelfImprovementBurnOracle'),
+    'gated self-improvement loop should enforce burn oracle hold before expensive runs'
+  );
+  const optimizationApertureSrc = readFileSafe(path.join(ROOT, 'systems', 'autonomy', 'optimization_aperture_controller.ts'));
+  addCheck(
+    'optimization_aperture:burn_oracle_integration',
+    optimizationApertureSrc.includes('loadDynamicBurnOracleSignal')
+      && optimizationApertureSrc.includes('budget_pressure_source')
+      && optimizationApertureSrc.includes('budget_oracle'),
+    'optimization aperture should consume burn oracle as default budget pressure advisory'
+  );
+  const routerSrc = readFileSafe(path.join(ROOT, 'systems', 'routing', 'model_router.ts'));
+  addCheck(
+    'model_router:burn_oracle_integration',
+    routerSrc.includes('loadDynamicBurnOracleSignal')
+      && routerSrc.includes('budget_oracle_runway_critical')
+      && routerSrc.includes('oracle_pressure'),
+    'model router should enforce oracle-aware budget gate and include runway telemetry'
+  );
+  const weaverSrc = readFileSafe(path.join(ROOT, 'systems', 'weaver', 'weaver_core.ts'));
+  addCheck(
+    'weaver_core:burn_oracle_integration',
+    weaverSrc.includes('loadDynamicBurnOracleSignal')
+      && weaverSrc.includes('budget_oracle_pressure_')
+      && weaverSrc.includes('budget_oracle:'),
+    'weaver should include burn oracle in arbitration context and receipts'
   );
   addCheck(
     'economic_entity_manager:merge_guard_hook',

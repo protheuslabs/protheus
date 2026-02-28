@@ -25,6 +25,7 @@ const {
   setSystemBudgetAutopause,
   clearSystemBudgetAutopause
 } = require("../budget/system_budget");
+const { loadDynamicBurnOracleSignal } = require('../../lib/dynamic_burn_budget_signal');
 
 type AnyObj = Record<string, any>;
 
@@ -46,6 +47,9 @@ const ROUTER_BUDGET_TODAY = process.env.ROUTER_BUDGET_TODAY || "";
 const ROUTER_BUDGET_EVENTS_PATH = process.env.ROUTER_BUDGET_EVENTS_PATH || path.join(REPO_ROOT, "state", "autonomy", "budget_events.jsonl");
 const ROUTER_BUDGET_AUTOPAUSE_PATH = process.env.ROUTER_BUDGET_AUTOPAUSE_PATH || path.join(REPO_ROOT, "state", "autonomy", "budget_autopause.json");
 const ROUTER_BUDGET_MODULE = String(process.env.ROUTER_BUDGET_MODULE || "model_router").trim() || "model_router";
+const ROUTER_BURN_ORACLE_LATEST_PATH = process.env.ROUTER_BURN_ORACLE_LATEST_PATH
+  ? path.resolve(process.env.ROUTER_BURN_ORACLE_LATEST_PATH)
+  : path.join(REPO_ROOT, "state", "ops", "dynamic_burn_budget_oracle", "latest.json");
 const ROUTER_SPEND_DIR = process.env.ROUTER_SPEND_DIR || path.join(STATE_DIR, "spend");
 const EYES_REGISTRY_PATH = path.join(REPO_ROOT, "state", "sensory", "eyes", "registry.json");
 const PROMPT_CACHE_INDEX_PATH = path.join(STATE_DIR, "prompt_cache_index.json");
@@ -1270,8 +1274,43 @@ function budgetDateStr() {
   return nowIso().slice(0, 10);
 }
 
+function pressureOrder(v: unknown) {
+  const key = normalizeKey(v || "");
+  if (key === "critical") return 4;
+  if (key === "hard" || key === "high") return 3;
+  if (key === "soft" || key === "medium") return 2;
+  if (key === "low") return 1;
+  return 0;
+}
+
+function normalizeRouterPressure(v: unknown) {
+  const key = normalizeKey(v || "");
+  if (key === "critical" || key === "hard" || key === "high") return "hard";
+  if (key === "soft" || key === "medium") return "soft";
+  return "none";
+}
+
+function routerBurnOracleSignal() {
+  const signal = loadDynamicBurnOracleSignal({
+    latest_path: ROUTER_BURN_ORACLE_LATEST_PATH
+  });
+  const pressure = normalizeRouterPressure(signal && signal.pressure);
+  return {
+    available: signal && signal.available === true,
+    pressure,
+    pressure_rank: pressureOrder(signal && signal.pressure),
+    projected_runway_days: signal ? signal.projected_runway_days : null,
+    projected_days_to_reset: signal ? signal.projected_days_to_reset : null,
+    reason_codes: Array.isArray(signal && signal.reason_codes) ? signal.reason_codes.slice(0, 10) : [],
+    source_path: signal && signal.latest_path_rel
+      ? signal.latest_path_rel
+      : path.relative(REPO_ROOT, ROUTER_BURN_ORACLE_LATEST_PATH).replace(/\\/g, '/')
+  };
+}
+
 function routerBudgetState(cfg) {
   const policy = routerBudgetPolicy(cfg);
+  const oracle = routerBurnOracleSignal();
   const out = {
     enabled: policy.enabled,
     available: false,
@@ -1280,6 +1319,7 @@ function routerBudgetState(cfg) {
     token_cap: null,
     used_est: null,
     path: null,
+    oracle,
     policy
   };
   if (!policy.enabled) return out;
@@ -1299,6 +1339,9 @@ function routerBudgetState(cfg) {
   let pressure = "none";
   if (ratio >= policy.hard_ratio) pressure = "hard";
   else if (ratio >= policy.soft_ratio) pressure = "soft";
+  if (oracle.available === true && pressureOrder(oracle.pressure) > pressureOrder(pressure)) {
+    pressure = oracle.pressure;
+  }
 
   return {
     ...out,
@@ -1429,6 +1472,24 @@ function evaluateRouterGlobalBudgetGate({ requestTokensEst, budgetPolicy, dryRun
         reason: autopause.reason || null,
         until: autopause.until || null
       },
+      guard: null
+    };
+  }
+  const oracle = routerBurnOracleSignal();
+  if (oracle.available === true && oracle.pressure === 'hard' && executionMode) {
+    return {
+      enabled: true,
+      blocked: true,
+      deferred: false,
+      bypassed: false,
+      reason: "budget_oracle_runway_critical",
+      autopause_active: autopause.active === true,
+      autopause: {
+        source: autopause.source || null,
+        reason: autopause.reason || null,
+        until: autopause.until || null
+      },
+      oracle,
       guard: null
     };
   }
@@ -3587,6 +3648,12 @@ function routeDecision({ risk, complexity, intent, task, mode, forceModel = "", 
       enabled: budgetState.enabled === true,
       available: budgetState.available === true,
       pressure: budgetState.pressure || "none",
+      oracle_pressure: budgetState.oracle && budgetState.oracle.available === true
+        ? budgetState.oracle.pressure || "none"
+        : "none",
+      oracle_projected_runway_days: budgetState.oracle && budgetState.oracle.available === true
+        ? budgetState.oracle.projected_runway_days
+        : null,
       ratio: budgetState.ratio,
       token_cap: budgetState.token_cap,
       used_est: budgetState.used_est,
@@ -3607,6 +3674,7 @@ function routeDecision({ risk, complexity, intent, task, mode, forceModel = "", 
       reason: globalBudgetGate.reason || null,
       autopause_active: globalBudgetGate.autopause_active === true,
       autopause: globalBudgetGate.autopause || null,
+      oracle: globalBudgetGate.oracle || (budgetState.oracle || null),
       guard: globalBudgetGate.guard || null
     },
     eyes_signal: {

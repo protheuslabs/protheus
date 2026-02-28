@@ -1,0 +1,9 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "advisory_only": true,
+  "min_vector": 0,
+  "max_vector": 1,
+  "receipts_path": "state/autonomy/motivational_state_vector/receipts.jsonl",
+  "latest_path": "state/autonomy/motivational_state_vector/latest.json"
+}

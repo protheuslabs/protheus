@@ -15,6 +15,7 @@ export {};
 const fs = require('fs');
 const path = require('path');
 const { loadActiveStrategy } = require('../../lib/strategy_resolver');
+const { loadDynamicBurnOracleSignal } = require('../../lib/dynamic_burn_budget_signal');
 const { buildMetricSchema } = require('./metric_schema');
 const { arbitrateMetrics, buildStrategyOverlayFromAllocation } = require('./arbitration_engine');
 const { applyMonocultureGuard } = require('./monoculture_guard');
@@ -72,6 +73,7 @@ const DEFAULT_METRIC_ADAPTERS_PATH = path.join(ROOT, 'config', 'value_metric_ada
 const DEFAULT_REGIME_LATEST_PATH = path.join(ROOT, 'state', 'autonomy', 'fractal', 'regime', 'latest.json');
 const DEFAULT_MIRROR_LATEST_PATH = path.join(ROOT, 'state', 'autonomy', 'mirror_organ', 'latest.json');
 const DEFAULT_AUTOPAUSE_PATH = path.join(ROOT, 'state', 'autonomy', 'budget_autopause.json');
+const DEFAULT_BURN_ORACLE_LATEST_PATH = path.join(ROOT, 'state', 'ops', 'dynamic_burn_budget_oracle', 'latest.json');
 
 function usage() {
   console.log('Usage:');
@@ -257,7 +259,10 @@ function runtimePaths(policyPath: string) {
     axis_ledger_path: process.env.WEAVER_AXIS_LEDGER_PATH ? path.resolve(process.env.WEAVER_AXIS_LEDGER_PATH) : defaultAxisLedgerPath,
     regime_latest_path: process.env.WEAVER_REGIME_LATEST_PATH ? path.resolve(process.env.WEAVER_REGIME_LATEST_PATH) : DEFAULT_REGIME_LATEST_PATH,
     mirror_latest_path: process.env.WEAVER_MIRROR_LATEST_PATH ? path.resolve(process.env.WEAVER_MIRROR_LATEST_PATH) : DEFAULT_MIRROR_LATEST_PATH,
-    autopause_path: process.env.WEAVER_AUTOPAUSE_PATH ? path.resolve(process.env.WEAVER_AUTOPAUSE_PATH) : DEFAULT_AUTOPAUSE_PATH
+    autopause_path: process.env.WEAVER_AUTOPAUSE_PATH ? path.resolve(process.env.WEAVER_AUTOPAUSE_PATH) : DEFAULT_AUTOPAUSE_PATH,
+    burn_oracle_latest_path: process.env.WEAVER_BURN_ORACLE_LATEST_PATH
+      ? path.resolve(process.env.WEAVER_BURN_ORACLE_LATEST_PATH)
+      : DEFAULT_BURN_ORACLE_LATEST_PATH
   };
 }
 
@@ -931,6 +936,9 @@ function runWeaver(dateStr: string, opts: AnyObj = {}) {
   const regime = readJson(paths.regime_latest_path, {});
   const mirror = readJson(paths.mirror_latest_path, {});
   const autopause = readJson(paths.autopause_path, {});
+  const burnOracle = loadDynamicBurnOracleSignal({
+    latest_path: paths.burn_oracle_latest_path
+  });
   const trit = clampNumber(
     regime && regime.context && regime.context.trit && regime.context.trit.trit,
     -1,
@@ -945,6 +953,12 @@ function runWeaver(dateStr: string, opts: AnyObj = {}) {
   );
   const mirrorPressure = clampNumber(mirror && mirror.pressure_score, 0, 1, 0);
   const mirrorReasons = Array.isArray(mirror && mirror.reasons) ? mirror.reasons.slice(0, 8) : [];
+  const burnCostPressure = clampNumber(
+    burnOracle && burnOracle.available === true ? burnOracle.cost_pressure : 0,
+    0,
+    1,
+    0
+  );
 
   const metricInput = parseMetricInput(
     opts.valueMetrics
@@ -981,6 +995,15 @@ function runWeaver(dateStr: string, opts: AnyObj = {}) {
       regimeConfidence
     ),
     autopause_active: autopauseActive,
+    cost_pressure: clampNumber(
+      Math.max(
+        autopauseActive ? 1 : 0,
+        burnCostPressure
+      ),
+      0,
+      1,
+      autopauseActive ? 1 : burnCostPressure
+    ),
     mirror_pressure: mirrorPressure,
     mirror_reasons: mirrorReasons,
     objective_metric_impact: objectiveMetricImpact(objectiveId, objectiveText),
@@ -1043,6 +1066,11 @@ function runWeaver(dateStr: string, opts: AnyObj = {}) {
     .concat(Array.isArray(guarded.reason_codes) ? guarded.reason_codes : [])
     .concat(Array.isArray(constitutionalVeto.reason_codes) ? constitutionalVeto.reason_codes : [])
     .concat(Array.isArray(brainRoute.reasons) ? brainRoute.reasons.slice(0, 2) : [])
+    .concat(
+      burnOracle && burnOracle.available === true && burnOracle.pressure !== 'none'
+        ? [`budget_oracle_pressure_${String(burnOracle.pressure)}`]
+        : []
+    )
     .concat(
       dualitySignal && dualitySignal.enabled === true
         ? ['duality_advisory_applied']
@@ -1148,6 +1176,20 @@ function runWeaver(dateStr: string, opts: AnyObj = {}) {
       },
       constitutional_veto: constitutionalVeto,
       creative_route: brainRoute,
+      budget_oracle: burnOracle && burnOracle.available === true
+        ? {
+          available: true,
+          pressure: String(burnOracle.pressure || 'none'),
+          projected_runway_days: burnOracle.projected_runway_days,
+          projected_days_to_reset: burnOracle.projected_days_to_reset,
+          providers_available: Number(burnOracle.providers_available || 0),
+          reason_codes: Array.isArray(burnOracle.reason_codes) ? burnOracle.reason_codes.slice(0, 12) : [],
+          source_path: burnOracle.latest_path_rel || relPath(paths.burn_oracle_latest_path)
+        }
+        : {
+          available: false,
+          source_path: relPath(paths.burn_oracle_latest_path)
+        },
       duality: dualitySignal
         ? {
           enabled: dualitySignal.enabled === true,
