@@ -62,6 +62,7 @@ try {
   });
 
   const selfTeacherPolicy = path.join(tmp, 'config', 'self_teacher_policy.json');
+  const burnOraclePath = path.join(tmp, 'state', 'ops', 'dynamic_burn_budget_oracle', 'latest.json');
   writeJson(selfTeacherPolicy, {
     schema_id: 'self_teacher_distillation_primitive_policy',
     schema_version: '1.0',
@@ -84,6 +85,14 @@ try {
     }
   });
 
+  writeJson(burnOraclePath, {
+    ok: true,
+    projection: {
+      pressure: 'high',
+      projected_runway_days: 4
+    }
+  });
+
   const trainerPolicy = path.join(tmp, 'config', 'redteam_self_improvement_policy.json');
   writeJson(trainerPolicy, {
     version: '1.0-test',
@@ -103,7 +112,17 @@ try {
     ],
     integration: {
       self_teacher_policy_path: selfTeacherPolicy,
-      nursery_queue_path: path.join(tmp, 'state', 'nursery', 'redteam_training_queue.jsonl')
+      nursery_queue_path: path.join(tmp, 'state', 'nursery', 'redteam_training_queue.jsonl'),
+      mirror_hint_path: path.join(tmp, 'state', 'autonomy', 'mirror', 'redteam_hints.jsonl'),
+      formal_verifier_queue_path: path.join(tmp, 'state', 'security', 'formal_verifier', 'queue.jsonl'),
+      broken_piece_lab_path: path.join(tmp, 'state', 'security', 'red_team', 'broken_piece_lab.jsonl')
+    },
+    budget: {
+      enabled: true,
+      burn_oracle_latest_path: burnOraclePath,
+      block_on_pressure: ['critical'],
+      throttle_on_pressure: ['high'],
+      throttle_candidate_multiplier: 0.5
     },
     state: {
       root: path.join(tmp, 'state', 'security', 'red_team', 'self_improvement'),
@@ -120,10 +139,16 @@ try {
   assert.ok(res.payload && res.payload.ok === true, 'trainer run should be ok');
   assert.ok(Number(res.payload.failures_scanned || 0) >= 1, 'failures should be scanned');
   assert.ok(Number(res.payload.candidates_generated || 0) >= 1, 'candidates should be generated');
+  assert.ok(Number(res.payload.promoted_candidates || 0) >= 1, 'winners should be promoted');
+  assert.ok(Number(res.payload.broken_piece_candidates || 0) >= 0, 'broken-piece count should be present');
+  assert.strictEqual(String(res.payload.budget && res.payload.budget.pressure || ''), 'high', 'budget pressure should be integrated');
   assert.ok(res.payload.distillation && res.payload.distillation.ok === true, 'distillation should run');
 
   const queuePath = path.join(tmp, 'state', 'nursery', 'redteam_training_queue.jsonl');
   assert.ok(fs.existsSync(queuePath), 'nursery queue hint should be written');
+  assert.ok(fs.existsSync(path.join(tmp, 'state', 'autonomy', 'mirror', 'redteam_hints.jsonl')), 'mirror hint should be written');
+  assert.ok(fs.existsSync(path.join(tmp, 'state', 'security', 'formal_verifier', 'queue.jsonl')), 'formal verifier queue should be written');
+  assert.ok(fs.existsSync(path.join(tmp, 'state', 'security', 'red_team', 'broken_piece_lab.jsonl')), 'broken piece lab should be written');
 
   res = run(['status', `--policy=${trainerPolicy}`, `--state-root=${stateRoot}`]);
   assert.strictEqual(res.status, 0, res.stderr || 'status should succeed');

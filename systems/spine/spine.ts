@@ -2151,6 +2151,141 @@ function main() {
       console.log(" secret_rotation_check skipped reason=feature_flag_disabled flag=SPINE_SECRET_ROTATION_CHECK_ENABLED");
     }
 
+    if (String(process.env.SPINE_DYNAMIC_BURN_ORACLE_ENABLED || "1") !== "0") {
+      const burnOracleStrict = String(process.env.SPINE_DYNAMIC_BURN_ORACLE_STRICT || "0") === "1";
+      const burnOraclePolicyPath = String(
+        process.env.SPINE_DYNAMIC_BURN_ORACLE_POLICY_PATH || "config/dynamic_burn_budget_oracle_policy.json"
+      ).trim();
+      const burnOracleArgs = ["systems/ops/dynamic_burn_budget_oracle.js", "run"];
+      if (burnOraclePolicyPath) burnOracleArgs.push(`--policy=${burnOraclePolicyPath}`);
+      const burnOracleMockFile = String(process.env.SPINE_DYNAMIC_BURN_ORACLE_MOCK_FILE || "").trim();
+      if (burnOracleMockFile) burnOracleArgs.push(`--mock-file=${burnOracleMockFile}`);
+      const burnOracleRun = runJson("node", burnOracleArgs, {
+        timeout: Math.max(
+          5000,
+          Math.min(5 * 60 * 1000, Number(process.env.SPINE_DYNAMIC_BURN_ORACLE_TIMEOUT_MS || 120000) || 120000)
+        )
+      });
+      const burnOraclePayload = burnOracleRun.payload && typeof burnOracleRun.payload === "object"
+        ? burnOracleRun.payload
+        : null;
+      const burnOracleProjection = burnOraclePayload && burnOraclePayload.projection && typeof burnOraclePayload.projection === "object"
+        ? burnOraclePayload.projection
+        : null;
+      const burnOracleOk = burnOracleRun.ok && !!burnOraclePayload && burnOraclePayload.ok === true;
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_dynamic_burn_oracle",
+        mode,
+        date: dateStr,
+        ok: burnOracleOk,
+        strict: burnOracleStrict,
+        pressure: burnOracleProjection ? burnOracleProjection.pressure || null : null,
+        projected_runway_days: burnOracleProjection ? Number(burnOracleProjection.projected_runway_days || 0) : null,
+        providers_available: burnOracleProjection ? Number(burnOracleProjection.providers_available || 0) : null,
+        next_poll_minutes: burnOraclePayload ? Number(burnOraclePayload.next_poll_minutes || 0) : null,
+        reason: !burnOracleOk
+          ? String(
+              (burnOraclePayload && burnOraclePayload.error)
+              || burnOracleRun.stderr
+              || burnOracleRun.stdout
+              || `dynamic_burn_oracle_exit_${burnOracleRun.code}`
+            ).slice(0, 180)
+          : null
+      });
+      if (burnOracleOk) {
+        console.log(
+          ` dynamic_burn_oracle ok pressure=${String(burnOracleProjection && burnOracleProjection.pressure || "none")}` +
+          ` runway=${burnOracleProjection && burnOracleProjection.projected_runway_days == null ? "n/a" : Number(burnOracleProjection.projected_runway_days).toFixed(2)}` +
+          ` providers=${Number(burnOracleProjection && burnOracleProjection.providers_available || 0)}`
+        );
+      } else {
+        console.log(` dynamic_burn_oracle unavailable reason=${String(burnOracleRun.stderr || burnOracleRun.stdout || "unknown").slice(0, 120)}`);
+        if (burnOracleStrict) process.exit(burnOracleRun.code || 1);
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_dynamic_burn_oracle_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "SPINE_DYNAMIC_BURN_ORACLE_ENABLED",
+        flag_value: String(process.env.SPINE_DYNAMIC_BURN_ORACLE_ENABLED || "")
+      });
+      console.log(" dynamic_burn_oracle skipped reason=feature_flag_disabled flag=SPINE_DYNAMIC_BURN_ORACLE_ENABLED");
+    }
+
+    if (String(process.env.SPINE_LLM_ECONOMY_ORGAN_ENABLED || "1") !== "0") {
+      const economyStrict = String(process.env.SPINE_LLM_ECONOMY_ORGAN_STRICT || "0") === "1";
+      const economyPolicyPath = String(
+        process.env.SPINE_LLM_ECONOMY_ORGAN_POLICY_PATH || "config/llm_economy_organ_policy.json"
+      ).trim();
+      const economyArgs = ["systems/ops/llm_economy_organ.js", "run"];
+      if (economyPolicyPath) economyArgs.push(`--policy=${economyPolicyPath}`);
+      if (String(process.env.SPINE_LLM_ECONOMY_ORGAN_APPLY || "0") === "1") economyArgs.push("--apply=1");
+      const economyRun = runJson("node", economyArgs, {
+        timeout: Math.max(
+          5000,
+          Math.min(5 * 60 * 1000, Number(process.env.SPINE_LLM_ECONOMY_ORGAN_TIMEOUT_MS || 90000) || 90000)
+        )
+      });
+      const economyPayload = economyRun.payload && typeof economyRun.payload === "object"
+        ? economyRun.payload
+        : null;
+      const economySummary = economyPayload && economyPayload.summary && typeof economyPayload.summary === "object"
+        ? economyPayload.summary
+        : null;
+      const economyProjection = economyPayload && economyPayload.projection && typeof economyPayload.projection === "object"
+        ? economyPayload.projection
+        : null;
+      const economyOk = economyRun.ok && !!economyPayload && economyPayload.ok === true;
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_llm_economy_organ",
+        mode,
+        date: dateStr,
+        ok: economyOk,
+        strict: economyStrict,
+        providers_ranked: economySummary ? Number(economySummary.providers_ranked || 0) : null,
+        providers_discovered: economySummary ? Number(economySummary.providers_discovered || 0) : null,
+        purchase_intents_total: economySummary ? Number(economySummary.purchase_intents_total || 0) : null,
+        auto_executable: economySummary ? Number(economySummary.auto_executable || 0) : null,
+        approval_required: economySummary ? Number(economySummary.approval_required || 0) : null,
+        pressure: economyProjection ? economyProjection.pressure || null : null,
+        reason: !economyOk
+          ? String(
+              (economyPayload && economyPayload.error)
+              || economyRun.stderr
+              || economyRun.stdout
+              || `llm_economy_organ_exit_${economyRun.code}`
+            ).slice(0, 180)
+          : null
+      });
+      if (economyOk) {
+        console.log(
+          ` llm_economy_organ ok providers=${Number(economySummary && economySummary.providers_ranked || 0)}` +
+          ` discovered=${Number(economySummary && economySummary.providers_discovered || 0)}` +
+          ` intents=${Number(economySummary && economySummary.purchase_intents_total || 0)}` +
+          ` pressure=${String(economyProjection && economyProjection.pressure || "none")}`
+        );
+      } else {
+        console.log(` llm_economy_organ unavailable reason=${String(economyRun.stderr || economyRun.stdout || "unknown").slice(0, 120)}`);
+        if (economyStrict) process.exit(economyRun.code || 1);
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_llm_economy_organ_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "SPINE_LLM_ECONOMY_ORGAN_ENABLED",
+        flag_value: String(process.env.SPINE_LLM_ECONOMY_ORGAN_ENABLED || "")
+      });
+      console.log(" llm_economy_organ skipped reason=feature_flag_disabled flag=SPINE_LLM_ECONOMY_ORGAN_ENABLED");
+    }
+
     if (String(process.env.SPINE_RED_TEAM_RUN_ENABLED || "1") !== "0") {
       const redTeamArgs = ["systems/autonomy/red_team_harness.js", "run", dateStr];
       const redMaxCasesRaw = Number(process.env.SPINE_RED_TEAM_MAX_CASES || "");

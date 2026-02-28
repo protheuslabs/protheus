@@ -35,6 +35,7 @@ try {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'llm-economy-'));
   const policyPath = path.join(tmp, 'llm_economy_policy.json');
   const burnLatestPath = path.join(tmp, 'burn_latest.json');
+  const discoveryPath = path.join(tmp, 'provider_market_feed_latest.json');
 
   writeJson(burnLatestPath, {
     ok: true,
@@ -61,6 +62,25 @@ try {
         projected_runway_days: 40,
         projected_runway_days_regime: 40,
         pressure: 'low'
+      }
+    ]
+  });
+
+  writeJson(discoveryPath, {
+    ts: new Date().toISOString(),
+    providers: [
+      {
+        provider_id: 'openai',
+        performance_index: 0.97,
+        reliability_index: 0.95,
+        pricing_index: 0.48
+      },
+      {
+        provider_id: 'mistral',
+        display_name: 'Mistral',
+        performance_index: 0.86,
+        reliability_index: 0.9,
+        pricing_index: 0.44
       }
     ]
   });
@@ -108,6 +128,19 @@ try {
       require_before_spend: true,
       reason_code: 'sovereign_root_tithe_required'
     },
+    discovery: {
+      enabled: true,
+      include_policy_disabled_candidates: true,
+      metric_override_weight: 0.4,
+      sources: [
+        {
+          id: 'market_feed',
+          enabled: true,
+          path: discoveryPath,
+          providers_path: 'providers'
+        }
+      ]
+    },
     paths: {
       burn_oracle_latest_path: burnLatestPath,
       state_path: path.join(tmp, 'state', 'llm_economy', 'state.json'),
@@ -130,6 +163,10 @@ try {
   assert.ok(Array.isArray(res.payload.provider_library), 'provider library expected');
   assert.ok(Array.isArray(res.payload.purchase_intents), 'purchase intents expected');
   assert.ok(res.payload.purchase_intents.length >= 1, 'openai should trigger purchase intent');
+  assert.ok(Number(res.payload.summary && res.payload.summary.providers_discovered || 0) >= 2, 'discovery providers should be counted');
+  const discoveredOnly = res.payload.provider_library.find((row) => row && row.provider_id === 'mistral');
+  assert.ok(discoveredOnly, 'discovered provider should appear in provider library');
+  assert.strictEqual(discoveredOnly.enabled, false, 'discovered provider should stay non-executable until onboarded');
 
   const openaiIntent = res.payload.purchase_intents.find((row) => row && row.provider_id === 'openai');
   assert.ok(openaiIntent, 'openai purchase intent missing');

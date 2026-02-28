@@ -161,6 +161,25 @@ function defaultPolicy() {
       weight_reliability: 0.35,
       weight_cost_efficiency: 0.20
     },
+    discovery: {
+      enabled: true,
+      include_policy_disabled_candidates: true,
+      metric_override_weight: 0.35,
+      sources: [
+        {
+          id: 'provider_onboarding_manifest',
+          enabled: true,
+          path: 'config/provider_onboarding_manifest.json',
+          providers_path: 'providers'
+        },
+        {
+          id: 'provider_market_feed',
+          enabled: true,
+          path: 'state/routing/provider_market_feed_latest.json',
+          providers_path: 'providers'
+        }
+      ]
+    },
     providers: {
       openai: {
         enabled: true,
@@ -221,6 +240,7 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
   const governance = raw.governance && typeof raw.governance === 'object' ? raw.governance : {};
   const purchase = raw.purchase && typeof raw.purchase === 'object' ? raw.purchase : {};
   const ranking = raw.ranking && typeof raw.ranking === 'object' ? raw.ranking : {};
+  const discovery = raw.discovery && typeof raw.discovery === 'object' ? raw.discovery : {};
   const paths = raw.paths && typeof raw.paths === 'object' ? raw.paths : {};
   const tithe = raw.sovereign_root_tithe && typeof raw.sovereign_root_tithe === 'object' ? raw.sovereign_root_tithe : {};
   const providersRaw = raw.providers && typeof raw.providers === 'object' ? raw.providers : base.providers;
@@ -265,6 +285,30 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
       weight_reliability: clampNumber(ranking.weight_reliability, 0, 1, base.ranking.weight_reliability),
       weight_cost_efficiency: clampNumber(ranking.weight_cost_efficiency, 0, 1, base.ranking.weight_cost_efficiency)
     },
+    discovery: {
+      enabled: toBool(discovery.enabled, base.discovery.enabled),
+      include_policy_disabled_candidates: toBool(
+        discovery.include_policy_disabled_candidates,
+        base.discovery.include_policy_disabled_candidates
+      ),
+      metric_override_weight: clampNumber(
+        discovery.metric_override_weight,
+        0,
+        1,
+        base.discovery.metric_override_weight
+      ),
+      sources: (
+        Array.isArray(discovery.sources) ? discovery.sources : base.discovery.sources
+      )
+        .map((row: unknown) => (row && typeof row === 'object' ? row as AnyObj : {}))
+        .map((row: AnyObj) => ({
+          id: normalizeToken(row.id || '', 120),
+          enabled: row.enabled !== false,
+          path: resolvePath(row.path || '', 'state/routing/provider_market_feed_latest.json'),
+          providers_path: cleanText(row.providers_path || 'providers', 120)
+        }))
+        .filter((row: AnyObj) => Boolean(row.id && row.path))
+    },
     providers,
     sovereign_root_tithe: {
       require_before_spend: toBool(tithe.require_before_spend, base.sovereign_root_tithe.require_before_spend),
@@ -292,13 +336,124 @@ function asFinite(v: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+function getByPath(src: AnyObj, dottedPath: string) {
+  const pathText = cleanText(dottedPath, 240);
+  if (!pathText) return undefined;
+  const parts = pathText.split('.').map((x) => x.trim()).filter(Boolean);
+  let cur: any = src;
+  for (const part of parts) {
+    if (!cur || typeof cur !== 'object') return undefined;
+    cur = cur[part];
+  }
+  return cur;
+}
+
 function riskTierForAmount(amountUsd: number, policy: AnyObj) {
   if (amountUsd <= Number(policy.purchase.max_purchase_low_usd || 100)) return 'low';
   if (amountUsd <= Number(policy.purchase.max_purchase_medium_usd || 500)) return 'medium';
   return 'high';
 }
 
-function buildProviderLibrary(policy: AnyObj, burnOracle: AnyObj) {
+function normalizeDiscoveryProvider(rowRaw: AnyObj, sourceId: string) {
+  const row = rowRaw && typeof rowRaw === 'object' ? rowRaw : {};
+  const providerId = normalizeToken(
+    row.provider_id
+    || row.providerId
+    || row.id
+    || row.provider
+    || row.provider_key
+    || '',
+    120
+  );
+  if (!providerId) return null;
+  return {
+    provider_id: providerId,
+    display_name: cleanText(row.display_name || row.name || providerId, 120) || providerId,
+    pricing_index: clampNumber(
+      row.pricing_index != null
+        ? row.pricing_index
+        : (row.cost_index != null ? row.cost_index : 0.6),
+      0,
+      2,
+      0.6
+    ),
+    performance_index: clampNumber(row.performance_index, 0, 2, 0.82),
+    reliability_index: clampNumber(row.reliability_index, 0, 2, 0.82),
+    payment_route: cleanText(row.payment_route || 'x402_or_provider_billing', 80) || 'x402_or_provider_billing',
+    source_id: normalizeToken(sourceId, 120) || 'unknown_source',
+    discovered_at: cleanText(row.discovered_at || row.ts || nowIso(), 60) || nowIso(),
+    metadata: {
+      model_ids: Array.isArray(row.model_ids) ? row.model_ids.slice(0, 24).map((v: unknown) => cleanText(v, 120)).filter(Boolean) : [],
+      notes: cleanText(row.notes || '', 260) || null
+    }
+  };
+}
+
+function readDiscoveryProvidersFromSource(src: AnyObj) {
+  const payload = readJson(src.path, null);
+  if (!payload || typeof payload !== 'object') return [];
+  const raw = src.providers_path ? getByPath(payload, String(src.providers_path)) : payload;
+  let rows: AnyObj[] = [];
+  if (Array.isArray(raw)) rows = raw as AnyObj[];
+  else if (raw && typeof raw === 'object') {
+    rows = Object.entries(raw as AnyObj).map(([idRaw, valRaw]) => {
+      const row = valRaw && typeof valRaw === 'object' ? valRaw as AnyObj : {};
+      return { provider_id: idRaw, ...row };
+    });
+  }
+  return rows
+    .map((row) => normalizeDiscoveryProvider(row, src.id || 'unknown_source'))
+    .filter(Boolean);
+}
+
+function readDiscoveryProviders(policy: AnyObj) {
+  const discovery = policy.discovery && typeof policy.discovery === 'object' ? policy.discovery : {};
+  if (discovery.enabled !== true) {
+    return {
+      providers_by_id: {},
+      source_stats: []
+    };
+  }
+  const byId: AnyObj = {};
+  const sourceStats: AnyObj[] = [];
+  for (const srcRaw of Array.isArray(discovery.sources) ? discovery.sources : []) {
+    const src = srcRaw && typeof srcRaw === 'object' ? srcRaw as AnyObj : {};
+    if (src.enabled !== true) continue;
+    const rows = readDiscoveryProvidersFromSource(src);
+    sourceStats.push({
+      source_id: src.id || 'unknown_source',
+      provider_count: rows.length,
+      path: relPath(src.path || '')
+    });
+    for (const rowRaw of rows) {
+      const row = rowRaw as AnyObj;
+      const id = row.provider_id;
+      if (!id) continue;
+      const prev = byId[id];
+      if (!prev) {
+        byId[id] = row;
+        continue;
+      }
+      // Keep the newest sample per provider to avoid stale overlays.
+      const prevTs = Date.parse(String(prev.discovered_at || ''));
+      const nextTs = Date.parse(String(row.discovered_at || ''));
+      byId[id] = (Number.isFinite(nextTs) && (!Number.isFinite(prevTs) || nextTs >= prevTs)) ? row : prev;
+    }
+  }
+  return {
+    providers_by_id: byId,
+    source_stats: sourceStats
+  };
+}
+
+function blendMetric(baseValue: number, discoveredValue: unknown, overrideWeight: number) {
+  const d = asFinite(discoveredValue);
+  if (d == null) return baseValue;
+  const w = clampNumber(overrideWeight, 0, 1, 0.35);
+  return roundTo((baseValue * (1 - w)) + (d * w), 6);
+}
+
+function buildProviderLibrary(policy: AnyObj, burnOracle: AnyObj, discovery: AnyObj = {}) {
   const providerRows = Array.isArray(burnOracle && burnOracle.providers) ? burnOracle.providers : [];
   const providerMap: AnyObj = {};
   for (const row of providerRows) {
@@ -307,39 +462,79 @@ function buildProviderLibrary(policy: AnyObj, burnOracle: AnyObj) {
     providerMap[id] = row;
   }
 
+  const discoveredById = discovery && discovery.providers_by_id && typeof discovery.providers_by_id === 'object'
+    ? discovery.providers_by_id
+    : {};
+  const discoveryEnabled = policy.discovery && policy.discovery.enabled === true;
+  const includeDiscoveryOnly = discoveryEnabled && policy.discovery.include_policy_disabled_candidates === true;
+  const providerIds = new Set<string>(Object.keys(policy.providers || {}));
+  if (includeDiscoveryOnly) {
+    for (const providerId of Object.keys(discoveredById || {})) providerIds.add(providerId);
+  }
+  for (const providerId of Object.keys(providerMap || {})) providerIds.add(providerId);
+
   const rankings: AnyObj[] = [];
   const intents: AnyObj[] = [];
   const reasons: string[] = [];
 
-  for (const [providerId, cfgRaw] of Object.entries(policy.providers || {})) {
+  for (const providerId of providerIds) {
+    const cfgRaw = (policy.providers && policy.providers[providerId]) || {};
     const cfg = cfgRaw && typeof cfgRaw === 'object' ? cfgRaw as AnyObj : {};
-    if (cfg.enabled !== true) continue;
+    const discovered = discoveredById && discoveredById[providerId] && typeof discoveredById[providerId] === 'object'
+      ? discoveredById[providerId]
+      : null;
+    const enabled = cfg.enabled === true;
+    if (!enabled && !discovered) continue;
 
     const burn = providerMap[providerId] || {};
     const available = burn.available !== false;
     const balanceUsd = asFinite(burn.balance_usd);
     const runwayDays = asFinite(burn.projected_runway_days_regime != null ? burn.projected_runway_days_regime : burn.projected_runway_days);
     const velocity = asFinite(burn.burn_velocity_usd_day);
-
-    const costEfficiency = roundTo(1 / Math.max(0.01, Number(cfg.pricing_index || 1)), 6);
+    const performanceIndex = blendMetric(
+      Number(cfg.performance_index || discovered?.performance_index || 0.82),
+      discovered && discovered.performance_index,
+      Number(policy.discovery && policy.discovery.metric_override_weight != null ? policy.discovery.metric_override_weight : 0.35)
+    );
+    const reliabilityIndex = blendMetric(
+      Number(cfg.reliability_index || discovered?.reliability_index || 0.82),
+      discovered && discovered.reliability_index,
+      Number(policy.discovery && policy.discovery.metric_override_weight != null ? policy.discovery.metric_override_weight : 0.35)
+    );
+    const pricingIndex = blendMetric(
+      Number(cfg.pricing_index || discovered?.pricing_index || 0.6),
+      discovered && discovered.pricing_index,
+      Number(policy.discovery && policy.discovery.metric_override_weight != null ? policy.discovery.metric_override_weight : 0.35)
+    );
+    const costEfficiency = roundTo(1 / Math.max(0.01, pricingIndex), 6);
     const score = roundTo(
-      (Number(policy.ranking.weight_performance || 0.45) * Number(cfg.performance_index || 0))
-      + (Number(policy.ranking.weight_reliability || 0.35) * Number(cfg.reliability_index || 0))
+      (Number(policy.ranking.weight_performance || 0.45) * performanceIndex)
+      + (Number(policy.ranking.weight_reliability || 0.35) * reliabilityIndex)
       + (Number(policy.ranking.weight_cost_efficiency || 0.2) * costEfficiency),
       6
     );
 
     const row = {
       provider_id: providerId,
-      display_name: cfg.display_name,
-      payment_route: cfg.payment_route,
+      enabled,
+      display_name: cfg.display_name || (discovered && discovered.display_name) || providerId,
+      payment_route: cfg.payment_route || (discovered && discovered.payment_route) || 'x402_or_provider_billing',
       rank_score: score,
       metrics: {
-        performance_index: Number(cfg.performance_index || 0),
-        reliability_index: Number(cfg.reliability_index || 0),
-        pricing_index: Number(cfg.pricing_index || 0),
+        performance_index: performanceIndex,
+        reliability_index: reliabilityIndex,
+        pricing_index: pricingIndex,
         cost_efficiency_index: costEfficiency
       },
+      discovery: discovered
+        ? {
+          source_id: discovered.source_id || null,
+          discovered_at: discovered.discovered_at || null,
+          model_ids: discovered.metadata && Array.isArray(discovered.metadata.model_ids)
+            ? discovered.metadata.model_ids
+            : []
+        }
+        : null,
       burn_oracle: {
         available,
         balance_usd: balanceUsd,
@@ -350,6 +545,7 @@ function buildProviderLibrary(policy: AnyObj, burnOracle: AnyObj) {
     };
     rankings.push(row);
 
+    if (!enabled) continue;
     const lowBalance = balanceUsd != null && balanceUsd < Number(policy.purchase.min_balance_usd || 10);
     const lowRunway = runwayDays != null && runwayDays < Number(policy.purchase.min_runway_days || 2);
     if (!available || (!lowBalance && !lowRunway)) continue;
@@ -398,7 +594,7 @@ function buildProviderLibrary(policy: AnyObj, burnOracle: AnyObj) {
       requires_approval: requiresApproval,
       veto_window_minutes: riskTier === 'medium' ? Number(policy.governance.medium_risk_veto_minutes || 15) : 0,
       reason_codes: reasonCodes,
-      payment_route: cfg.payment_route,
+      payment_route: cfg.payment_route || (discovered && discovered.payment_route) || 'x402_or_provider_billing',
       tithe_applies_first: policy.sovereign_root_tithe.require_before_spend === true,
       projected_post_purchase_runway_days: (
         velocity != null && velocity > 0
@@ -414,11 +610,18 @@ function buildProviderLibrary(policy: AnyObj, burnOracle: AnyObj) {
     else if (intent.auto_executable === true) reasons.push('auto_purchase_lane_available');
     else reasons.push('purchase_requires_veto_window');
   }
+  if (discoveryEnabled) reasons.push('provider_discovery_overlay_active');
+  if (includeDiscoveryOnly && Object.keys(discoveredById || {}).length > 0) reasons.push('discovery_candidates_loaded');
 
   return {
     provider_library: rankings,
     purchase_intents: intents,
-    reason_codes: Array.from(new Set(reasons)).slice(0, 24)
+    reason_codes: Array.from(new Set(reasons)).slice(0, 24),
+    discovery_summary: {
+      enabled: discoveryEnabled,
+      providers_discovered: Object.keys(discoveredById || {}).length,
+      source_stats: Array.isArray(discovery.source_stats) ? discovery.source_stats : []
+    }
   };
 }
 
@@ -467,8 +670,9 @@ function runEconomy(args: AnyObj = {}) {
   const applyRequested = toBool(args.apply, false);
   const applyExecuted = applyRequested && policy.allow_apply === true && policy.shadow_only !== true;
   const burnOracle = readJson(policy.paths.burn_oracle_latest_path, {});
+  const discovery = readDiscoveryProviders(policy);
 
-  const compiled = buildProviderLibrary(policy, burnOracle);
+  const compiled = buildProviderLibrary(policy, burnOracle, discovery);
   const intents = Array.isArray(compiled.purchase_intents) ? compiled.purchase_intents : [];
 
   const executedIntents: AnyObj[] = [];
@@ -516,9 +720,11 @@ function runEconomy(args: AnyObj = {}) {
       providers_available: clampInt(projection.providers_available, 0, 100000, 0)
     },
     provider_library: compiled.provider_library,
+    discovery_summary: compiled.discovery_summary,
     purchase_intents: applyExecuted ? queuedIntents : executedIntents,
     summary: {
       providers_ranked: compiled.provider_library.length,
+      providers_discovered: Number(compiled.discovery_summary && compiled.discovery_summary.providers_discovered || 0),
       purchase_intents_total: intents.length,
       auto_executable: intents.filter((row: AnyObj) => row.auto_executable === true).length,
       approval_required: intents.filter((row: AnyObj) => row.requires_approval === true).length,
@@ -532,7 +738,8 @@ function runEconomy(args: AnyObj = {}) {
       },
       routing: {
         provider_library_ref: relPath(policy.paths.provider_library_path),
-        pressure: normalizeToken(projection.pressure || 'none', 32) || 'none'
+        pressure: normalizeToken(projection.pressure || 'none', 32) || 'none',
+        discovered_candidates: Number(compiled.discovery_summary && compiled.discovery_summary.providers_discovered || 0)
       },
       strategy: {
         recommendation: intents.some((row: AnyObj) => row.requires_approval === true)
@@ -559,6 +766,7 @@ function runEconomy(args: AnyObj = {}) {
     ts,
     run_id: runId,
     providers: out.provider_library,
+    discovery_summary: out.discovery_summary,
     reason_codes: out.reason_codes
   });
 
@@ -570,7 +778,8 @@ function runEconomy(args: AnyObj = {}) {
     run_id: runId,
     summary: out.summary,
     reason_codes: out.reason_codes,
-    projection: out.projection
+    projection: out.projection,
+    discovery_summary: out.discovery_summary
   });
 
   const hint = {
@@ -580,6 +789,7 @@ function runEconomy(args: AnyObj = {}) {
     projection: out.projection,
     provider_rank_top: out.integration_hints.weaver.provider_rank_top,
     purchase_intents: out.summary.purchase_intents_total,
+    providers_discovered: out.summary.providers_discovered,
     reason_codes: out.reason_codes
   };
   appendJsonl(policy.paths.weaver_hint_path, hint);
@@ -616,6 +826,7 @@ function status(args: AnyObj = {}) {
         ts: latest.ts || null,
         run_id: latest.run_id || null,
         providers_ranked: latest.summary ? Number(latest.summary.providers_ranked || 0) : 0,
+        providers_discovered: latest.summary ? Number(latest.summary.providers_discovered || 0) : 0,
         purchase_intents_total: latest.summary ? Number(latest.summary.purchase_intents_total || 0) : 0,
         pressure: latest.projection ? latest.projection.pressure || 'none' : 'none'
       }

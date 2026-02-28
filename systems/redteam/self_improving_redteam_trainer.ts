@@ -182,7 +182,17 @@ function defaultPolicy() {
     ],
     integration: {
       self_teacher_policy_path: 'config/self_teacher_distillation_primitive_policy.json',
-      nursery_queue_path: 'state/nursery/redteam_training_queue.jsonl'
+      nursery_queue_path: 'state/nursery/redteam_training_queue.jsonl',
+      mirror_hint_path: 'state/autonomy/mirror/redteam_self_improvement_hints.jsonl',
+      formal_verifier_queue_path: 'state/security/formal_verifier/redteam_candidate_queue.jsonl',
+      broken_piece_lab_path: 'state/security/red_team/broken_piece_lab.jsonl'
+    },
+    budget: {
+      enabled: true,
+      burn_oracle_latest_path: 'state/ops/dynamic_burn_budget_oracle/latest.json',
+      block_on_pressure: ['critical'],
+      throttle_on_pressure: ['high'],
+      throttle_candidate_multiplier: 0.5
     },
     state: {
       root: 'state/security/red_team/self_improvement',
@@ -200,6 +210,7 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
   const base = defaultPolicy();
   const limits = raw.limits && typeof raw.limits === 'object' ? raw.limits : {};
   const integration = raw.integration && typeof raw.integration === 'object' ? raw.integration : {};
+  const budget = raw.budget && typeof raw.budget === 'object' ? raw.budget : {};
   const state = raw.state && typeof raw.state === 'object' ? raw.state : {};
   return {
     version: cleanText(raw.version || base.version, 32) || base.version,
@@ -224,6 +235,41 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
       nursery_queue_path: resolvePath(
         integration.nursery_queue_path || base.integration.nursery_queue_path,
         base.integration.nursery_queue_path
+      ),
+      mirror_hint_path: resolvePath(
+        integration.mirror_hint_path || base.integration.mirror_hint_path,
+        base.integration.mirror_hint_path
+      ),
+      formal_verifier_queue_path: resolvePath(
+        integration.formal_verifier_queue_path || base.integration.formal_verifier_queue_path,
+        base.integration.formal_verifier_queue_path
+      ),
+      broken_piece_lab_path: resolvePath(
+        integration.broken_piece_lab_path || base.integration.broken_piece_lab_path,
+        base.integration.broken_piece_lab_path
+      )
+    },
+    budget: {
+      enabled: toBool(budget.enabled, base.budget.enabled),
+      burn_oracle_latest_path: resolvePath(
+        budget.burn_oracle_latest_path || base.budget.burn_oracle_latest_path,
+        base.budget.burn_oracle_latest_path
+      ),
+      block_on_pressure: Array.from(new Set(
+        (Array.isArray(budget.block_on_pressure) ? budget.block_on_pressure : base.budget.block_on_pressure)
+          .map((v: unknown) => normalizeToken(v, 32))
+          .filter(Boolean)
+      )),
+      throttle_on_pressure: Array.from(new Set(
+        (Array.isArray(budget.throttle_on_pressure) ? budget.throttle_on_pressure : base.budget.throttle_on_pressure)
+          .map((v: unknown) => normalizeToken(v, 32))
+          .filter(Boolean)
+      )),
+      throttle_candidate_multiplier: clampNumber(
+        budget.throttle_candidate_multiplier,
+        0.1,
+        1,
+        base.budget.throttle_candidate_multiplier
       )
     },
     state: {
@@ -286,7 +332,71 @@ function collectRecentFailures(runsDir: string, maxRuns: number) {
   return failures;
 }
 
-function buildCandidates(policy: AnyObj, corpusRows: AnyObj[], failures: AnyObj[]) {
+function loadBudgetSignal(policy: AnyObj) {
+  if (!(policy.budget && policy.budget.enabled === true)) {
+    return {
+      enabled: false,
+      pressure: 'none',
+      blocked: false,
+      throttled: false,
+      candidate_multiplier: 1
+    };
+  }
+  const latest = readJson(policy.budget.burn_oracle_latest_path, {});
+  const projection = latest && latest.projection && typeof latest.projection === 'object'
+    ? latest.projection
+    : {};
+  const pressure = normalizeToken(projection.pressure || 'none', 32) || 'none';
+  const blocked = Array.isArray(policy.budget.block_on_pressure)
+    && policy.budget.block_on_pressure.includes(pressure);
+  const throttled = !blocked
+    && Array.isArray(policy.budget.throttle_on_pressure)
+    && policy.budget.throttle_on_pressure.includes(pressure);
+  return {
+    enabled: true,
+    pressure,
+    blocked,
+    throttled,
+    candidate_multiplier: throttled ? Number(policy.budget.throttle_candidate_multiplier || 0.5) : 1
+  };
+}
+
+function computeSeverityWeight(v: unknown) {
+  const severity = normalizeToken(v || 'medium', 32);
+  if (severity === 'critical') return 1;
+  if (severity === 'high') return 0.85;
+  if (severity === 'medium') return 0.7;
+  return 0.55;
+}
+
+function selfPlayEvaluateCandidate(candidate: AnyObj) {
+  const src = candidate && candidate.meta && typeof candidate.meta === 'object' ? candidate.meta : {};
+  const novelty = clampNumber(src.novelty_score, 0, 1, 0.5);
+  const severityWeight = computeSeverityWeight(candidate && candidate.severity);
+  const attackerScore = roundTo((novelty * 0.65) + (severityWeight * 0.35), 6);
+
+  const prompt = String(candidate && candidate.prompt || '').toLowerCase();
+  const defenseCoverage = (() => {
+    if (!prompt) return 0.3;
+    let score = 0;
+    if (/ignore|bypass|disable|evade|exploit/.test(prompt)) score += 0.25;
+    if (/policy|guard|safety|security/.test(prompt)) score += 0.2;
+    if (/secret|token|key|credential|exfiltrate/.test(prompt)) score += 0.25;
+    if (/command|shell|rm\s+-rf|curl|scp/.test(prompt)) score += 0.2;
+    return clampNumber(score, 0, 1, 0.3);
+  })();
+  const defenderScore = roundTo(Math.max(0.05, 1 - (defenseCoverage * 0.7)), 6);
+  const winner = attackerScore >= defenderScore ? 'attacker' : 'defender';
+  return {
+    candidate_id: candidate && candidate.id ? String(candidate.id) : null,
+    attacker_score: attackerScore,
+    defender_score: defenderScore,
+    winner,
+    loser: winner === 'attacker' ? 'defender' : 'attacker'
+  };
+}
+
+function buildCandidates(policy: AnyObj, corpusRows: AnyObj[], failures: AnyObj[], maxCandidates: number) {
   const corpusById: AnyObj = {};
   for (const row of corpusRows) {
     const id = normalizeToken(row && row.id || '', 180);
@@ -324,9 +434,9 @@ function buildCandidates(policy: AnyObj, corpusRows: AnyObj[], failures: AnyObj[
           generation: 'template_mutation'
         }
       });
-      if (candidates.length >= Number(policy.limits.max_candidates || 24)) break;
+      if (candidates.length >= Math.max(1, Number(maxCandidates || policy.limits.max_candidates || 24))) break;
     }
-    if (candidates.length >= Number(policy.limits.max_candidates || 24)) break;
+    if (candidates.length >= Math.max(1, Number(maxCandidates || policy.limits.max_candidates || 24))) break;
   }
   return candidates;
 }
@@ -354,7 +464,30 @@ function runTrainer(input: AnyObj = {}, opts: AnyObj = {}) {
   const rawCorpus = readJson(paths.corpus_path, []);
   const corpusRows = Array.isArray(rawCorpus) ? rawCorpus : [];
   const failures = collectRecentFailures(paths.runs_dir, Number(policy.limits.max_runs_scan || 48));
-  const candidates = buildCandidates(policy, corpusRows, failures);
+  const budget = loadBudgetSignal(policy);
+  const maxCandidatesBudgetAdjusted = Math.max(
+    1,
+    Math.floor(Number(policy.limits.max_candidates || 24) * Number(budget.candidate_multiplier || 1))
+  );
+  const candidates = budget.blocked
+    ? []
+    : buildCandidates(policy, corpusRows, failures, maxCandidatesBudgetAdjusted);
+  const selfPlayRounds = candidates.map((candidate) => selfPlayEvaluateCandidate(candidate));
+  const winnerIds = new Set(
+    selfPlayRounds
+      .filter((row) => row && row.winner === 'attacker' && row.candidate_id)
+      .map((row) => String(row.candidate_id))
+  );
+  const winners = candidates.filter((row) => winnerIds.has(String(row && row.id || '')));
+  const losers = candidates.filter((row) => !winnerIds.has(String(row && row.id || '')));
+  const brokenPieceRows = losers.map((row) => ({
+    ts,
+    run_id: runId,
+    case_id: row && row.id ? row.id : null,
+    source_case_id: row && row.meta ? row.meta.source_case_id || null : null,
+    classification: 'defender_outperformed_attacker',
+    remediation: 'mutation_template_tuning_required'
+  }));
 
   const trajectories = failures.slice(0, 64).map((row, idx) => ({
     trajectory_id: normalizeToken(`rt_traj_${row.id}_${idx + 1}`, 160),
@@ -379,11 +512,11 @@ function runTrainer(input: AnyObj = {}, opts: AnyObj = {}) {
   const applyRequested = toBool(opts.apply, false);
   const applyExecuted = applyRequested && policy.allow_apply === true && policy.shadow_only !== true;
 
-  if (applyExecuted && candidates.length > 0) {
+  if (applyExecuted && winners.length > 0) {
     const existing = Array.isArray(readJson(paths.corpus_path, [])) ? readJson(paths.corpus_path, []) : [];
     const existingIds = new Set(existing.map((row: AnyObj) => normalizeToken(row && row.id || '', 180)).filter(Boolean));
     const merged = existing.slice();
-    for (const row of candidates) {
+    for (const row of winners) {
       const id = normalizeToken(row && row.id || '', 180);
       if (!id || existingIds.has(id)) continue;
       merged.push(row);
@@ -397,8 +530,15 @@ function runTrainer(input: AnyObj = {}, opts: AnyObj = {}) {
     run_id: runId,
     source_state_root: relPath(paths.root),
     candidates,
+    promoted_candidates: winners,
+    broken_piece_candidates: losers,
+    self_play_rounds: selfPlayRounds,
+    budget,
     failures_scanned: failures.length
   });
+  for (const row of brokenPieceRows) {
+    appendJsonl(policy.integration.broken_piece_lab_path, row);
+  }
 
   const nurseryHint = {
     ts,
@@ -406,7 +546,10 @@ function runTrainer(input: AnyObj = {}, opts: AnyObj = {}) {
     run_id: runId,
     capability_id: policy.capability_id,
     candidates_generated: candidates.length,
+    promoted_candidates: winners.length,
+    broken_piece_candidates: losers.length,
     failures_scanned: failures.length,
+    budget,
     distillation: {
       accepted: distillation && distillation.accepted === true,
       candidate_gain: distillation && Number(distillation.candidate_gain || 0)
@@ -414,6 +557,28 @@ function runTrainer(input: AnyObj = {}, opts: AnyObj = {}) {
     candidate_cases_path: relPath(policy.state.candidate_cases_path)
   };
   appendJsonl(policy.integration.nursery_queue_path, nurseryHint);
+  appendJsonl(policy.integration.mirror_hint_path, {
+    ts,
+    type: 'redteam_self_improvement_mirror_hint',
+    run_id: runId,
+    capability_id: policy.capability_id,
+    promoted_candidates: winners.length,
+    broken_piece_candidates: losers.length,
+    budget_pressure: budget.pressure,
+    candidate_cases_path: relPath(policy.state.candidate_cases_path)
+  });
+  appendJsonl(policy.integration.formal_verifier_queue_path, {
+    ts,
+    type: 'redteam_candidate_formal_verifier_hint',
+    run_id: runId,
+    capability_id: policy.capability_id,
+    promoted_candidates: winners.slice(0, 24).map((row) => ({
+      id: row.id,
+      severity: row.severity,
+      source_case_id: row.meta && row.meta.source_case_id ? row.meta.source_case_id : null
+    })),
+    budget_pressure: budget.pressure
+  });
 
   const out = {
     ok: true,
@@ -425,13 +590,20 @@ function runTrainer(input: AnyObj = {}, opts: AnyObj = {}) {
     apply_executed: applyExecuted,
     policy_path: relPath(policy.policy_path),
     source_state_root: relPath(paths.root),
+    budget,
     failures_scanned: failures.length,
     candidates_generated: candidates.length,
+    promoted_candidates: winners.length,
+    broken_piece_candidates: losers.length,
     candidates,
+    self_play_rounds: selfPlayRounds,
     distillation,
     paths: {
       candidate_cases_path: relPath(policy.state.candidate_cases_path),
       nursery_queue_path: relPath(policy.integration.nursery_queue_path),
+      mirror_hint_path: relPath(policy.integration.mirror_hint_path),
+      formal_verifier_queue_path: relPath(policy.integration.formal_verifier_queue_path),
+      broken_piece_lab_path: relPath(policy.integration.broken_piece_lab_path),
       latest_path: relPath(policy.state.latest_path),
       history_path: relPath(policy.state.history_path)
     }
@@ -445,6 +617,13 @@ function runTrainer(input: AnyObj = {}, opts: AnyObj = {}) {
     run_id: runId,
     failures_scanned: out.failures_scanned,
     candidates_generated: out.candidates_generated,
+    promoted_candidates: out.promoted_candidates,
+    broken_piece_candidates: out.broken_piece_candidates,
+    budget: {
+      pressure: budget.pressure,
+      blocked: budget.blocked === true,
+      throttled: budget.throttled === true
+    },
     distillation: {
       accepted: distillation && distillation.accepted === true,
       candidate_gain: distillation && Number(distillation.candidate_gain || 0)
@@ -495,13 +674,19 @@ function status(input: AnyObj = {}, opts: AnyObj = {}) {
         ts: latest.ts || null,
         run_id: latest.run_id || null,
         failures_scanned: Number(latest.failures_scanned || 0),
-        candidates_generated: Number(latest.candidates_generated || 0)
+        candidates_generated: Number(latest.candidates_generated || 0),
+        promoted_candidates: Number(latest.promoted_candidates || 0),
+        broken_piece_candidates: Number(latest.broken_piece_candidates || 0),
+        budget_pressure: latest.budget ? latest.budget.pressure || 'none' : 'none'
       }
       : null,
     paths: {
       latest_path: relPath(policy.state.latest_path),
       candidate_cases_path: relPath(policy.state.candidate_cases_path),
-      nursery_queue_path: relPath(policy.integration.nursery_queue_path)
+      nursery_queue_path: relPath(policy.integration.nursery_queue_path),
+      mirror_hint_path: relPath(policy.integration.mirror_hint_path),
+      formal_verifier_queue_path: relPath(policy.integration.formal_verifier_queue_path),
+      broken_piece_lab_path: relPath(policy.integration.broken_piece_lab_path)
     }
   };
 }

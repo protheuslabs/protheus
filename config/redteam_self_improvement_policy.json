@@ -18,7 +18,21 @@
   ],
   "integration": {
     "self_teacher_policy_path": "config/self_teacher_distillation_primitive_policy.json",
-    "nursery_queue_path": "state/nursery/redteam_training_queue.jsonl"
+    "nursery_queue_path": "state/nursery/redteam_training_queue.jsonl",
+    "mirror_hint_path": "state/autonomy/mirror/redteam_self_improvement_hints.jsonl",
+    "formal_verifier_queue_path": "state/security/formal_verifier/redteam_candidate_queue.jsonl",
+    "broken_piece_lab_path": "state/security/red_team/broken_piece_lab.jsonl"
+  },
+  "budget": {
+    "enabled": true,
+    "burn_oracle_latest_path": "state/ops/dynamic_burn_budget_oracle/latest.json",
+    "block_on_pressure": [
+      "critical"
+    ],
+    "throttle_on_pressure": [
+      "high"
+    ],
+    "throttle_candidate_multiplier": 0.5
   },
   "state": {
     "root": "state/security/red_team/self_improvement",

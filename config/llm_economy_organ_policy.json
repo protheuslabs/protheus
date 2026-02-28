@@ -24,6 +24,25 @@
     "weight_reliability": 0.35,
     "weight_cost_efficiency": 0.2
   },
+  "discovery": {
+    "enabled": true,
+    "include_policy_disabled_candidates": true,
+    "metric_override_weight": 0.35,
+    "sources": [
+      {
+        "id": "provider_onboarding_manifest",
+        "enabled": true,
+        "path": "config/provider_onboarding_manifest.json",
+        "providers_path": "providers"
+      },
+      {
+        "id": "provider_market_feed",
+        "enabled": true,
+        "path": "state/routing/provider_market_feed_latest.json",
+        "providers_path": "providers"
+      }
+    ]
+  },
   "providers": {
     "openai": {
       "enabled": true,
