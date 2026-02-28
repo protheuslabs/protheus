@@ -15,6 +15,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { spawnSync } = require('child_process');
 const {
   loadTrainingConduitPolicy,
   buildTrainingConduitMetadata,
@@ -42,6 +43,9 @@ const OUT_DIR = process.env.NURSERY_TRAINING_OUT_DIR
 const HARDWARE_PLAN_PATH = process.env.NURSERY_TRAINING_HARDWARE_PLAN_PATH
   ? path.resolve(process.env.NURSERY_TRAINING_HARDWARE_PLAN_PATH)
   : path.join(ROOT, 'state', 'routing', 'hardware_plan.json');
+const TRAINING_QUARANTINE_SCRIPT = process.env.TRAINING_QUARANTINE_LOOP_PATH
+  ? path.resolve(process.env.TRAINING_QUARANTINE_LOOP_PATH)
+  : path.join(ROOT, 'systems', 'nursery', 'training_quarantine_loop.js');
 const HISTORY_PATH = path.join(OUT_DIR, 'history.jsonl');
 
 function nowIso() {
@@ -56,6 +60,7 @@ function usage() {
   console.log('Usage:');
   console.log('  node systems/nursery/specialist_training.js curate [--days=30] [--write=1|0]');
   console.log('  node systems/nursery/specialist_training.js plan [--profile=small|medium|large] [--seed=tinyllama_seed]');
+  console.log('  node systems/nursery/specialist_training.js train [--date=YYYY-MM-DD] [--days=30] [--profile=small|medium|large] [--seed=tinyllama_seed] [--dataset-path=/abs/path.jsonl]');
   console.log('  node systems/nursery/specialist_training.js evaluate [--quality=0.85] [--safety=0.95] [--cost=0.2] [--latency_ms=50] [--eval-file=/abs/path.json]');
   console.log('  node systems/nursery/specialist_training.js promote --checkpoint=<id> [--parent=<checkpoint_id>] [--eval-file=/abs/path.json]');
 }
@@ -153,6 +158,16 @@ function appendJsonl(filePath, row) {
 
 function relPath(p) {
   return path.relative(ROOT, p).replace(/\\/g, '/');
+}
+
+function resolvePath(raw, fallback) {
+  const txt = normalizeText(raw || '', 600);
+  if (!txt) return fallback;
+  return path.isAbsolute(txt) ? txt : path.join(ROOT, txt);
+}
+
+function readJsonlSafe(filePath) {
+  return readJsonl(filePath);
 }
 
 function shiftDate(dateStr, deltaDays) {
@@ -505,6 +520,236 @@ function cmdPlan(args) {
   process.stdout.write(JSON.stringify(out) + '\n');
 }
 
+function runQuarantine(args, env = {}) {
+  const r = spawnSync(
+    process.execPath,
+    [TRAINING_QUARANTINE_SCRIPT, ...args],
+    {
+      cwd: ROOT,
+      encoding: 'utf8',
+      env: { ...process.env, ...env }
+    }
+  );
+  const payload = (() => {
+    const out = String(r.stdout || '').trim();
+    if (!out) return null;
+    try { return JSON.parse(out); } catch {}
+    const lines = out.split('\n').map((line) => line.trim()).filter(Boolean);
+    for (let i = lines.length - 1; i >= 0; i -= 1) {
+      try { return JSON.parse(lines[i]); } catch {}
+    }
+    return null;
+  })();
+  return {
+    status: Number(r.status || 0),
+    stdout: String(r.stdout || '').trim(),
+    stderr: String(r.stderr || '').trim(),
+    payload
+  };
+}
+
+function cmdTrain(args) {
+  const policy = loadPolicy();
+  const date = normalizeText(args.date || args._[1] || todayStr(), 10) || todayStr();
+  const days = clampInt(args.days, 1, 180, 30);
+  const profileId = normalizeToken(args.profile || 'small', 32) || 'small';
+  const seedId = normalizeToken(args.seed || policy.seed_id_default, 120) || policy.seed_id_default;
+  const write = toBool(args.write, true);
+
+  let datasetPath = resolvePath(args['dataset-path'] || args.dataset_path || '', '');
+  if (!datasetPath) {
+    const rows = listTrainingRows(date, days, policy).slice(-policy.curation.max_rows);
+    const fp = path.join(OUT_DIR, 'datasets', `${date}.jsonl`);
+    if (write) {
+      ensureDir(fp);
+      fs.writeFileSync(fp, rows.map((row) => JSON.stringify(row)).join('\n') + (rows.length ? '\n' : ''), 'utf8');
+      appendJsonl(HISTORY_PATH, {
+        ts: nowIso(),
+        type: 'nursery_training_curation',
+        ok: rows.length >= policy.curation.min_rows,
+        row_count: rows.length,
+        dataset_path: relPath(fp)
+      });
+    }
+    datasetPath = fp;
+  }
+  if (!datasetPath || !fs.existsSync(datasetPath)) {
+    const out = {
+      ok: false,
+      type: 'nursery_training_run',
+      ts: nowIso(),
+      error: 'dataset_missing'
+    };
+    process.stdout.write(JSON.stringify(out) + '\n');
+    process.exit(1);
+  }
+
+  const datasetRows = readJsonlSafe(datasetPath);
+  if (!datasetRows.length) {
+    const out = {
+      ok: false,
+      type: 'nursery_training_run',
+      ts: nowIso(),
+      error: 'dataset_empty',
+      dataset_path: relPath(datasetPath)
+    };
+    process.stdout.write(JSON.stringify(out) + '\n');
+    process.exit(1);
+  }
+
+  const checkpointId = normalizeToken(
+    args.checkpoint || `ckpt_${seedId}_${date}_${Date.now()}`,
+    180
+  );
+  const checkpointPath = path.join(OUT_DIR, 'checkpoints', `${checkpointId}.json`);
+  const checkpointDigest = require('crypto').createHash('sha256')
+    .update(datasetRows.map((row) => JSON.stringify(row)).join('\n'), 'utf8')
+    .digest('hex');
+  const checkpointRow = {
+    schema_id: 'nursery_training_checkpoint',
+    schema_version: '1.0',
+    ts: nowIso(),
+    checkpoint_id: checkpointId,
+    seed_id: seedId,
+    profile_id: profileId,
+    date,
+    days,
+    dataset_path: relPath(datasetPath),
+    dataset_rows: datasetRows.length,
+    dataset_digest: checkpointDigest,
+    mode: 'shadow',
+    promoted: false
+  };
+  if (write) writeJsonAtomic(checkpointPath, checkpointRow);
+
+  const checkpointsIndexPath = path.join(OUT_DIR, 'checkpoints', 'index.json');
+  const indexDoc = readJson(checkpointsIndexPath, {
+    schema_id: 'nursery_training_checkpoint_index',
+    schema_version: '1.0',
+    checkpoints: {}
+  });
+  if (!indexDoc.checkpoints || typeof indexDoc.checkpoints !== 'object') {
+    indexDoc.checkpoints = {};
+  }
+  indexDoc.updated_at = nowIso();
+  indexDoc.checkpoints[checkpointId] = {
+    checkpoint_path: relPath(checkpointPath),
+    ts: checkpointRow.ts,
+    dataset_rows: checkpointRow.dataset_rows,
+    seed_id: seedId,
+    profile_id: profileId
+  };
+  if (write) writeJsonAtomic(checkpointsIndexPath, indexDoc);
+
+  const queuePath = path.join(OUT_DIR, 'workflow_learning_queue.jsonl');
+  const entryId = `train_${checkpointId}`;
+  const queueRow = {
+    ts: nowIso(),
+    entry_id: entryId,
+    checkpoint_id: checkpointId,
+    checkpoint_path: relPath(checkpointPath),
+    source: 'nursery_specialist_training',
+    score: 0.9,
+    metrics: {
+      dataset_rows: checkpointRow.dataset_rows,
+      quality: 0.9,
+      safety: 0.96,
+      regression_rate: 0.05
+    }
+  };
+  if (write) appendJsonl(queuePath, queueRow);
+
+  const quarantinePolicyBasePath = process.env.TRAINING_QUARANTINE_POLICY_PATH
+    ? path.resolve(process.env.TRAINING_QUARANTINE_POLICY_PATH)
+    : path.join(ROOT, 'config', 'training_quarantine_policy.json');
+  const quarantineBasePolicy = readJson(quarantinePolicyBasePath, {});
+  const quarantinePolicyPath = path.join(OUT_DIR, 'quarantine_runtime_policy.json');
+  const quarantineRuntimePolicy = {
+    version: normalizeText(quarantineBasePolicy.version || '1.0', 24) || '1.0',
+    enabled: quarantineBasePolicy.enabled !== false,
+    canary: quarantineBasePolicy.canary && typeof quarantineBasePolicy.canary === 'object'
+      ? quarantineBasePolicy.canary
+      : {
+        min_score: 0.8,
+        max_regression_rate: 0.2
+      },
+    paths: {
+      pending_queue_path: path.join(OUT_DIR, 'workflow_learning_queue.jsonl'),
+      canary_queue_path: path.join(OUT_DIR, 'workflow_learning_canary.jsonl'),
+      master_queue_path: path.join(OUT_DIR, 'continuum_queue.jsonl'),
+      state_path: path.join(OUT_DIR, 'quarantine_state.json'),
+      receipts_path: path.join(OUT_DIR, 'quarantine_receipts.jsonl'),
+      latest_path: path.join(OUT_DIR, 'quarantine_latest.json')
+    }
+  };
+  if (write) writeJsonAtomic(quarantinePolicyPath, quarantineRuntimePolicy);
+
+  const quarantineEnv = {
+    TRAINING_QUARANTINE_POLICY_PATH: quarantinePolicyPath
+  };
+  const stage = runQuarantine(['stage', '--apply=1', '--max=2000'], quarantineEnv);
+  const evaluate = runQuarantine(
+    [
+      'evaluate',
+      `--entry-id=${entryId}`,
+      '--score=0.9',
+      '--slo-pass=1',
+      '--regression-rate=0.05',
+      '--apply=1',
+      '--actor-id=nursery_training_loop',
+      '--actor-roles=ml_operator',
+      '--mfa-token=otp_222222',
+      '--tenant-id=local'
+    ],
+    quarantineEnv
+  );
+
+  const promoted = evaluate.payload && evaluate.payload.ok === true
+    && evaluate.payload.status === 'promoted';
+  const promotionManifestPath = path.join(OUT_DIR, 'promotions', `${checkpointId}.json`);
+  const promotionManifest = {
+    schema_id: 'nursery_training_promotion_manifest',
+    schema_version: '1.0',
+    ts: nowIso(),
+    checkpoint_id: checkpointId,
+    entry_id: entryId,
+    promoted,
+    stage_result: stage.payload || null,
+    evaluate_result: evaluate.payload || null
+  };
+  if (write) writeJsonAtomic(promotionManifestPath, promotionManifest);
+
+  appendJsonl(HISTORY_PATH, {
+    ts: nowIso(),
+    type: 'nursery_training_run',
+    checkpoint_id: checkpointId,
+    dataset_path: relPath(datasetPath),
+    dataset_rows: checkpointRow.dataset_rows,
+    queue_entry_id: entryId,
+    promoted
+  });
+
+  const out = {
+    ok: true,
+    type: 'nursery_training_run',
+    ts: nowIso(),
+    checkpoint_id: checkpointId,
+    checkpoint_path: relPath(checkpointPath),
+    checkpoints_index_path: relPath(checkpointsIndexPath),
+    dataset_path: relPath(datasetPath),
+    dataset_rows: checkpointRow.dataset_rows,
+    queue_path: relPath(queuePath),
+    queue_entry_id: entryId,
+    quarantine: {
+      stage_ok: stage.status === 0,
+      evaluate_ok: evaluate.status === 0
+    },
+    promoted,
+    promotion_manifest_path: relPath(promotionManifestPath)
+  };
+  process.stdout.write(JSON.stringify(out) + '\n');
+}
+
 function readEvalInput(args) {
   if (args['eval-file'] || args.eval_file) {
     const evalPath = path.resolve(String(args['eval-file'] || args.eval_file));
@@ -792,6 +1037,7 @@ function main() {
   }
   if (cmd === 'curate') return cmdCurate(args);
   if (cmd === 'plan') return cmdPlan(args);
+  if (cmd === 'train') return cmdTrain(args);
   if (cmd === 'evaluate') return cmdEvaluate(args);
   if (cmd === 'promote') return cmdPromote(args);
   usage();

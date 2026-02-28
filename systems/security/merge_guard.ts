@@ -76,6 +76,11 @@ function runGuard(opts = {}) {
   checks.push(runCmd('value_anchor_renewal_status', 'node', ['systems/echo/value_anchor_renewal.js', 'status']));
   checks.push(runCmd('explanation_primitive_status', 'node', ['systems/primitives/explanation_primitive.js', 'status']));
   checks.push(runCmd('gated_self_improvement_status', 'node', ['systems/autonomy/gated_self_improvement_loop.js', 'status']));
+  checks.push(runCmd('iterative_repair_primitive_status', 'node', ['systems/primitives/iterative_repair_primitive.js', 'status']));
+  checks.push(runCmd('interactive_desktop_session_status', 'node', ['systems/primitives/interactive_desktop_session_primitive.js', 'status']));
+  checks.push(runCmd('doctor_forge_micro_debug_status', 'node', ['systems/autonomy/doctor_forge_micro_debug_lane.js', 'status']));
+  checks.push(runCmd('full_virtual_desktop_claw_status', 'node', ['systems/actuation/full_virtual_desktop_claw_lane.js', 'status']));
+  checks.push(runCmd('account_creation_profile_extension_status', 'node', ['systems/workflow/account_creation_profile_extension.js', 'status']));
   checks.push(runCmd('delegated_authority_status', 'node', ['systems/security/delegated_authority_branching.js', 'status']));
   checks.push(runCmd('world_model_freshness_status', 'node', ['systems/assimilation/world_model_freshness.js', 'status']));
   checks.push(runCmd('continuous_chaos_resilience_status', 'node', ['systems/ops/continuous_chaos_resilience.js', 'status']));

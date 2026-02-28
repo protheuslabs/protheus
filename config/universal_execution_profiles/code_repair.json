@@ -1,0 +1,28 @@
+{
+  "schema_id": "capability_profile",
+  "schema_version": "1.0",
+  "profile_id": "code_repair",
+  "source": {
+    "capability_id": "code_repair",
+    "source_type": "workflow",
+    "provider": "protheus"
+  },
+  "execution": {
+    "adapter_kind": "shell_task",
+    "intent": "code_repair",
+    "parameters": {
+      "lane": "iterative_repair",
+      "sandbox_required": true,
+      "stop_conditions": [
+        "verify_pass",
+        "max_iterations",
+        "timeout"
+      ]
+    }
+  },
+  "metadata": {
+    "profile_pack": "v3_add_uep_dbg_001",
+    "risk_class": "medium",
+    "requires_human_veto_for_live": true
+  }
+}
