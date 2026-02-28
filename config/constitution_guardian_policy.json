@@ -6,5 +6,10 @@
   "min_approval_note_chars": 12,
   "require_dual_approval": true,
   "enforce_inheritance_lock": true,
-  "emergency_rollback_requires_approval": true
+  "emergency_rollback_requires_approval": true,
+  "symbiosis_recursion_invariant": {
+    "enabled": true,
+    "shadow_only": true,
+    "signal_policy_path": "config/symbiosis_coherence_policy.json"
+  }
 }

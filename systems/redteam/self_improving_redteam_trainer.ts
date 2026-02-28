@@ -19,6 +19,10 @@ export {};
 const fs = require('fs');
 const path = require('path');
 const { runSelfTeacherDistillation } = require('../assimilation/self_teacher_distillation_primitive');
+const {
+  loadSymbiosisCoherenceSignal,
+  evaluateRecursionRequest
+} = require('../../lib/symbiosis_coherence_signal');
 
 type AnyObj = Record<string, any>;
 
@@ -194,6 +198,11 @@ function defaultPolicy() {
       throttle_on_pressure: ['high'],
       throttle_candidate_multiplier: 0.5
     },
+    symbiosis_recursion_gate: {
+      enabled: true,
+      shadow_only: true,
+      signal_policy_path: 'config/symbiosis_coherence_policy.json'
+    },
     state: {
       root: 'state/security/red_team/self_improvement',
       state_path: 'state/security/red_team/self_improvement/state.json',
@@ -211,6 +220,9 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
   const limits = raw.limits && typeof raw.limits === 'object' ? raw.limits : {};
   const integration = raw.integration && typeof raw.integration === 'object' ? raw.integration : {};
   const budget = raw.budget && typeof raw.budget === 'object' ? raw.budget : {};
+  const symbiosisGate = raw.symbiosis_recursion_gate && typeof raw.symbiosis_recursion_gate === 'object'
+    ? raw.symbiosis_recursion_gate
+    : {};
   const state = raw.state && typeof raw.state === 'object' ? raw.state : {};
   return {
     version: cleanText(raw.version || base.version, 32) || base.version,
@@ -271,6 +283,16 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
         1,
         base.budget.throttle_candidate_multiplier
       )
+    },
+    symbiosis_recursion_gate: {
+      enabled: !(symbiosisGate.enabled === false),
+      shadow_only: symbiosisGate.shadow_only != null
+        ? toBool(symbiosisGate.shadow_only, true)
+        : base.symbiosis_recursion_gate.shadow_only === true,
+      signal_policy_path: cleanText(
+        symbiosisGate.signal_policy_path || base.symbiosis_recursion_gate.signal_policy_path,
+        260
+      ) || base.symbiosis_recursion_gate.signal_policy_path
     },
     state: {
       root: resolvePath(state.root || base.state.root, base.state.root),
@@ -358,6 +380,24 @@ function loadBudgetSignal(policy: AnyObj) {
     blocked,
     throttled,
     candidate_multiplier: throttled ? Number(policy.budget.throttle_candidate_multiplier || 0.5) : 1
+  };
+}
+
+function parseRecursionRequest(input: AnyObj = {}) {
+  const depthRaw = input.recursion_depth != null
+    ? input.recursion_depth
+    : (input['recursion-depth'] != null ? input['recursion-depth'] : null);
+  const unboundedRaw = input.recursion_unbounded != null
+    ? input.recursion_unbounded
+    : (input['recursion-unbounded'] != null ? input['recursion-unbounded'] : null);
+  const depthToken = normalizeToken(depthRaw, 40);
+  const unboundedByDepth = ['unbounded', 'infinite', 'max', 'none'].includes(depthToken);
+  const depthNumber = Number(depthRaw);
+  return {
+    requested_depth: unboundedByDepth
+      ? 'unbounded'
+      : (Number.isFinite(depthNumber) ? clampInt(depthNumber, 1, 1_000_000_000, 1) : 1),
+    requested_unbounded: unboundedByDepth || toBool(unboundedRaw, false)
   };
 }
 
@@ -458,6 +498,39 @@ function runTrainer(input: AnyObj = {}, opts: AnyObj = {}) {
       policy_path: relPath(policy.policy_path)
     };
   }
+  const recursionRequest = parseRecursionRequest(input);
+  let symbiosisGate: AnyObj = {
+    evaluated: false
+  };
+  if (policy.symbiosis_recursion_gate && policy.symbiosis_recursion_gate.enabled === true) {
+    const signal = loadSymbiosisCoherenceSignal({
+      policy_path: policy.symbiosis_recursion_gate.signal_policy_path,
+      refresh: true,
+      persist: true
+    });
+    const gate = evaluateRecursionRequest({
+      signal,
+      requested_depth: recursionRequest.requested_depth,
+      require_unbounded: recursionRequest.requested_unbounded,
+      shadow_only_override: policy.symbiosis_recursion_gate.shadow_only === true
+    });
+    symbiosisGate = {
+      evaluated: true,
+      request: recursionRequest,
+      ...gate
+    };
+    if (gate.blocked_hard === true) {
+      return {
+        ok: false,
+        type: 'redteam_self_improvement_run',
+        ts,
+        run_id: runId,
+        error: 'symbiosis_recursion_gate_blocked',
+        policy_path: relPath(policy.policy_path),
+        symbiosis_recursion_gate: symbiosisGate
+      };
+    }
+  }
 
   const stateRoot = cleanText(input.state_root || opts.state_root || '', 500);
   const paths = harnessPaths(stateRoot || 'state/security/red_team');
@@ -534,7 +607,8 @@ function runTrainer(input: AnyObj = {}, opts: AnyObj = {}) {
     broken_piece_candidates: losers,
     self_play_rounds: selfPlayRounds,
     budget,
-    failures_scanned: failures.length
+    failures_scanned: failures.length,
+    symbiosis_recursion_gate: symbiosisGate
   });
   for (const row of brokenPieceRows) {
     appendJsonl(policy.integration.broken_piece_lab_path, row);
@@ -550,6 +624,7 @@ function runTrainer(input: AnyObj = {}, opts: AnyObj = {}) {
     broken_piece_candidates: losers.length,
     failures_scanned: failures.length,
     budget,
+    symbiosis_recursion_gate: symbiosisGate,
     distillation: {
       accepted: distillation && distillation.accepted === true,
       candidate_gain: distillation && Number(distillation.candidate_gain || 0)
@@ -565,6 +640,9 @@ function runTrainer(input: AnyObj = {}, opts: AnyObj = {}) {
     promoted_candidates: winners.length,
     broken_piece_candidates: losers.length,
     budget_pressure: budget.pressure,
+    symbiosis_coherence_score: symbiosisGate.coherence_score != null
+      ? Number(symbiosisGate.coherence_score)
+      : null,
     candidate_cases_path: relPath(policy.state.candidate_cases_path)
   });
   appendJsonl(policy.integration.formal_verifier_queue_path, {
@@ -577,7 +655,10 @@ function runTrainer(input: AnyObj = {}, opts: AnyObj = {}) {
       severity: row.severity,
       source_case_id: row.meta && row.meta.source_case_id ? row.meta.source_case_id : null
     })),
-    budget_pressure: budget.pressure
+    budget_pressure: budget.pressure,
+    symbiosis_coherence_score: symbiosisGate.coherence_score != null
+      ? Number(symbiosisGate.coherence_score)
+      : null
   });
 
   const out = {
@@ -591,6 +672,7 @@ function runTrainer(input: AnyObj = {}, opts: AnyObj = {}) {
     policy_path: relPath(policy.policy_path),
     source_state_root: relPath(paths.root),
     budget,
+    symbiosis_recursion_gate: symbiosisGate,
     failures_scanned: failures.length,
     candidates_generated: candidates.length,
     promoted_candidates: winners.length,
@@ -623,6 +705,14 @@ function runTrainer(input: AnyObj = {}, opts: AnyObj = {}) {
       pressure: budget.pressure,
       blocked: budget.blocked === true,
       throttled: budget.throttled === true
+    },
+    symbiosis_recursion_gate: {
+      blocked: symbiosisGate.blocked === true,
+      shadow_violation: symbiosisGate.shadow_violation === true,
+      coherence_score: symbiosisGate.coherence_score != null
+        ? Number(symbiosisGate.coherence_score)
+        : null,
+      requested_depth: recursionRequest.requested_depth
     },
     distillation: {
       accepted: distillation && distillation.accepted === true,
@@ -693,7 +783,7 @@ function status(input: AnyObj = {}, opts: AnyObj = {}) {
 
 function usage() {
   console.log('Usage:');
-  console.log('  node systems/redteam/self_improving_redteam_trainer.js run [--policy=/abs/path.json] [--state-root=abs_or_rel] [--apply=1|0]');
+  console.log('  node systems/redteam/self_improving_redteam_trainer.js run [--policy=/abs/path.json] [--state-root=abs_or_rel] [--apply=1|0] [--recursion-depth=N|unbounded] [--recursion-unbounded=1|0]');
   console.log('  node systems/redteam/self_improving_redteam_trainer.js status [--policy=/abs/path.json] [--state-root=abs_or_rel]');
 }
 
@@ -710,7 +800,9 @@ function main() {
   let out: AnyObj;
   if (cmd === 'run') {
     out = runTrainer({
-      state_root: args['state-root'] || args.state_root
+      state_root: args['state-root'] || args.state_root,
+      recursion_depth: args['recursion-depth'] || args.recursion_depth,
+      recursion_unbounded: args['recursion-unbounded'] || args.recursion_unbounded
     }, {
       policyPath,
       apply: args.apply,

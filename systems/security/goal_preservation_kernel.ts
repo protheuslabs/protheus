@@ -5,8 +5,13 @@ export {};
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const {
+  loadSymbiosisCoherenceSignal,
+  evaluateRecursionRequest
+} = require('../../lib/symbiosis_coherence_signal');
 
 const ROOT = path.resolve(__dirname, '..', '..');
+type AnyObj = Record<string, any>;
 const POLICY_PATH = process.env.GOAL_PRESERVATION_POLICY_PATH
   ? path.resolve(process.env.GOAL_PRESERVATION_POLICY_PATH)
   : path.join(ROOT, 'config', 'goal_preservation_policy.json');
@@ -95,6 +100,11 @@ function defaultPolicy() {
       '^systems/security/guard\\.(ts|js)$',
       '^systems/security/policy_rootd\\.(ts|js)$'
     ],
+    symbiosis_recursion_gate: {
+      enabled: true,
+      shadow_only: true,
+      signal_policy_path: 'config/symbiosis_coherence_policy.json'
+    },
     output: {
       state_path: 'state/security/goal_preservation/latest.json',
       receipts_path: 'state/security/goal_preservation/receipts.jsonl'
@@ -117,6 +127,17 @@ function normalizePolicy(raw: any) {
       .map((row: unknown) => cleanText(row, 220))
       .filter(Boolean)
       .slice(0, 128),
+    symbiosis_recursion_gate: {
+      enabled: !(src.symbiosis_recursion_gate && src.symbiosis_recursion_gate.enabled === false),
+      shadow_only: src.symbiosis_recursion_gate && src.symbiosis_recursion_gate.shadow_only != null
+        ? !!src.symbiosis_recursion_gate.shadow_only
+        : base.symbiosis_recursion_gate.shadow_only === true,
+      signal_policy_path: cleanText(
+        src.symbiosis_recursion_gate && src.symbiosis_recursion_gate.signal_policy_path
+          || base.symbiosis_recursion_gate.signal_policy_path,
+        260
+      ) || base.symbiosis_recursion_gate.signal_policy_path
+    },
     output: {
       state_path: cleanText(src.output && src.output.state_path || base.output.state_path, 260) || base.output.state_path,
       receipts_path: cleanText(src.output && src.output.receipts_path || base.output.receipts_path, 260) || base.output.receipts_path
@@ -157,12 +178,44 @@ function toList(v: unknown, maxLen = 200, maxItems = 64) {
   return out;
 }
 
+function extractRecursionRequest(row: AnyObj = {}) {
+  const recursionDepthRaw = row.recursion_depth != null
+    ? row.recursion_depth
+    : (row.recursion && typeof row.recursion === 'object' ? row.recursion.depth : null);
+  const recursionModeRaw = row.recursion_mode != null
+    ? row.recursion_mode
+    : (row.recursion && typeof row.recursion === 'object' ? row.recursion.mode : null);
+  const unbounded = ['unbounded', 'infinite', 'max', 'none'].includes(normalizeToken(recursionModeRaw, 32))
+    || ['unbounded', 'infinite', 'max', 'none'].includes(normalizeToken(recursionDepthRaw, 32));
+  const depthNumber = Number(recursionDepthRaw);
+  const depth = Number.isFinite(depthNumber)
+    ? Math.max(1, Math.floor(depthNumber))
+    : null;
+  return {
+    requested_depth: unbounded ? 'unbounded' : (depth == null ? 1 : depth),
+    requested_unbounded: unbounded
+  };
+}
+
+function proposalTouchesRecursiveSelfImprovement(row: AnyObj, mutationPaths: string[], summary: string) {
+  if (row.recursion_depth != null || row.recursion_mode != null) return true;
+  if (row.recursion && typeof row.recursion === 'object') return true;
+  const targetSystem = cleanText(row.target_system || row.target || '', 120).toLowerCase();
+  if (/self[_ -]?improvement|recursion|recursive|self[_ -]?evolution/.test(targetSystem)) return true;
+  if (
+    mutationPaths.some((v) => /self[_ -]?improvement|self[_ -]?code[_ -]?evolution|redteam[/_-].*self|autonomy/i.test(String(v)))
+  ) return true;
+  if (/recursive self-improvement|unbounded recursion|recursion depth|self[_ -]?improvement depth/.test(summary)) return true;
+  return false;
+}
+
 function evaluateProposal(policy: any, proposal: any) {
   const row = proposal && typeof proposal === 'object' ? proposal : {};
   const mutationPaths = toList(row.mutation_paths || row.files || row.paths || [], 260, 256)
     .map((p) => p.replace(/\\/g, '/').replace(/^\.\//, ''));
   const summary = cleanText(row.summary || row.patch_summary || row.description || '', 4000).toLowerCase();
   const reasons: string[] = [];
+  const advisories: string[] = [];
 
   const blockedPathHits: string[] = [];
   for (const pattern of policy.blocked_mutation_paths || []) {
@@ -201,17 +254,51 @@ function evaluateProposal(policy: any, proposal: any) {
   ];
   if (strictKeywords.some((re) => re.test(summary))) reasons.push('alignment_keyword_violation');
 
+  let symbiosisGate: AnyObj = {
+    enabled: false,
+    evaluated: false
+  };
+  const recursionGateCfg = policy.symbiosis_recursion_gate && typeof policy.symbiosis_recursion_gate === 'object'
+    ? policy.symbiosis_recursion_gate
+    : {};
+  const shouldCheckRecursion = recursionGateCfg.enabled === true
+    && proposalTouchesRecursiveSelfImprovement(row, mutationPaths, summary);
+  if (shouldCheckRecursion) {
+    const signal = loadSymbiosisCoherenceSignal({
+      policy_path: recursionGateCfg.signal_policy_path,
+      refresh: true,
+      persist: true
+    });
+    const request = extractRecursionRequest(row);
+    const gate = evaluateRecursionRequest({
+      signal,
+      requested_depth: request.requested_depth,
+      require_unbounded: request.requested_unbounded,
+      shadow_only_override: recursionGateCfg.shadow_only === true
+    });
+    symbiosisGate = {
+      enabled: true,
+      evaluated: true,
+      request,
+      ...gate
+    };
+    if (gate.blocked_hard === true) reasons.push('symbiosis_recursion_gate_blocked');
+    else if (gate.shadow_violation === true) advisories.push('symbiosis_recursion_gate_shadow_violation');
+  }
+
   const allowed = reasons.length === 0;
   return {
     allowed,
     reasons: Array.from(new Set(reasons)),
+    advisories: Array.from(new Set(advisories)),
     checks: {
       strict_mode: policy.strict_mode === true,
       mutation_paths_count: mutationPaths.length,
       blocked_path_hits: Array.from(new Set(blockedPathHits)).slice(0, 32),
       protected_axiom_markers_hit: markerHits.slice(0, 32),
       constitution_hash: constitutionHash,
-      expected_constitution_hash: expectedHash
+      expected_constitution_hash: expectedHash,
+      symbiosis_recursion_gate: symbiosisGate
     }
   };
 }
@@ -255,6 +342,7 @@ function cmdEvaluate(args: any) {
     target_system: cleanText(proposal.target_system || '', 160) || null,
     allowed: evalOut.allowed,
     reasons: evalOut.reasons,
+    advisories: evalOut.advisories,
     checks: evalOut.checks
   };
   const paths = writeLatest(policy, payload);

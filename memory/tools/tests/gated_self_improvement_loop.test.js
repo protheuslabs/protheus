@@ -35,6 +35,72 @@ function main() {
   const statePath = path.join(tmp, 'state.json');
   const receiptsPath = path.join(tmp, 'receipts.jsonl');
   const latestPath = path.join(tmp, 'latest.json');
+  const symPolicyPath = path.join(tmp, 'symbiosis_coherence_policy.json');
+  const identityLatestPath = path.join(tmp, 'sym', 'identity', 'latest.json');
+  const preNeuralStatePath = path.join(tmp, 'sym', 'pre_neuralink', 'state.json');
+  const deepSymStatePath = path.join(tmp, 'sym', 'deep', 'state.json');
+  const observerLatestPath = path.join(tmp, 'sym', 'observer', 'latest.json');
+
+  writeJson(identityLatestPath, {
+    checked: 12,
+    blocked: 0,
+    identity_drift_score: 0.04,
+    max_identity_drift_score: 0.58
+  });
+  writeJson(preNeuralStatePath, {
+    consent_state: 'granted',
+    signals_total: 10,
+    routed_total: 9,
+    blocked_total: 1
+  });
+  writeJson(deepSymStatePath, {
+    samples: 80,
+    style: {
+      directness: 0.95,
+      brevity: 0.9,
+      proactive_delta: 0.9
+    }
+  });
+  writeJson(observerLatestPath, {
+    observer: { mood: 'stable' },
+    summary: {
+      rates: {
+        ship_rate: 0.9,
+        hold_rate: 0.05
+      }
+    }
+  });
+
+  writeJson(symPolicyPath, {
+    version: '1.0-test',
+    enabled: true,
+    shadow_only: false,
+    stale_after_minutes: 120,
+    thresholds: {
+      low_max: 0.45,
+      medium_max: 0.75,
+      high_min: 0.75,
+      unbounded_min: 0.9,
+      sustained_high_samples: 4
+    },
+    recursion: {
+      low_depth: 1,
+      medium_depth: 2,
+      high_base_depth: 4,
+      high_streak_gain_interval: 2,
+      require_granted_consent_for_unbounded: true,
+      require_identity_clear_for_unbounded: true
+    },
+    paths: {
+      state_path: path.join(tmp, 'sym', 'coherence', 'state.json'),
+      latest_path: path.join(tmp, 'sym', 'coherence', 'latest.json'),
+      receipts_path: path.join(tmp, 'sym', 'coherence', 'receipts.jsonl'),
+      identity_latest_path: identityLatestPath,
+      pre_neuralink_state_path: preNeuralStatePath,
+      deep_symbiosis_state_path: deepSymStatePath,
+      observer_mirror_latest_path: observerLatestPath
+    }
+  });
 
   writeJson(policyPath, {
     version: '1.0-test',
@@ -50,6 +116,11 @@ function main() {
       max_effective_safety_stop_rate: 0.01,
       max_red_critical_fail_cases: 0,
       max_red_fail_rate: 0.25
+    },
+    symbiosis_recursion_gate: {
+      enabled: true,
+      shadow_only: false,
+      signal_policy_path: symPolicyPath
     },
     paths: {
       state_path: statePath,
@@ -71,7 +142,8 @@ function main() {
     '--objective-id=self_improvement_objective',
     '--target-path=systems/autonomy/example.ts',
     '--summary=improve guarded rollout',
-    '--risk=medium'
+    '--risk=medium',
+    '--recursion-depth=2'
   ], env);
   assert.strictEqual(r.status, 0, r.stderr || r.stdout || 'propose should pass');
   let out = parse(r);
@@ -157,6 +229,41 @@ function main() {
   out = parse(r);
   assert.ok(out.proposal && out.proposal.status === 'rolled_back', 'status should show rolled_back');
 
+  writeJson(identityLatestPath, {
+    checked: 12,
+    blocked: 11,
+    identity_drift_score: 0.58,
+    max_identity_drift_score: 0.58
+  });
+  writeJson(preNeuralStatePath, {
+    consent_state: 'paused',
+    signals_total: 10,
+    routed_total: 1,
+    blocked_total: 8
+  });
+  writeJson(observerLatestPath, {
+    observer: { mood: 'strained' },
+    summary: {
+      rates: {
+        ship_rate: 0.2,
+        hold_rate: 0.8
+      }
+    }
+  });
+
+  r = run([
+    'propose',
+    '--objective-id=self_improvement_objective',
+    '--target-path=systems/autonomy/example.ts',
+    '--summary=attempt deep recursion under low symbiosis',
+    '--risk=high',
+    '--recursion-depth=9'
+  ], env);
+  assert.strictEqual(r.status, 1, 'deep recursion should block under low symbiosis when not shadow-only');
+  out = parse(r);
+  assert.strictEqual(out.ok, false);
+  assert.strictEqual(String(out.error || ''), 'symbiosis_recursion_gate_blocked');
+
   console.log('gated_self_improvement_loop.test.js: OK');
 }
 
@@ -166,4 +273,3 @@ try {
   console.error(`gated_self_improvement_loop.test.js: FAIL: ${err.message}`);
   process.exit(1);
 }
-

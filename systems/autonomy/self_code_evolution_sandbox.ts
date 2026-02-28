@@ -6,6 +6,10 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { spawnSync } = require('child_process');
+const {
+  loadSymbiosisCoherenceSignal,
+  evaluateRecursionRequest
+} = require('../../lib/symbiosis_coherence_signal');
 
 type AnyObj = Record<string, any>;
 
@@ -43,6 +47,14 @@ function clampInt(v: unknown, lo: number, hi: number, fallback: number) {
   if (i < lo) return lo;
   if (i > hi) return hi;
   return i;
+}
+
+function toBool(v: unknown, fallback = false) {
+  if (v == null) return fallback;
+  const raw = String(v).trim().toLowerCase();
+  if (['1', 'true', 'yes', 'on'].includes(raw)) return true;
+  if (['0', 'false', 'no', 'off'].includes(raw)) return false;
+  return fallback;
 }
 
 function parseArgs(argv: string[]) {
@@ -89,6 +101,24 @@ function hash10(seed: string) {
   return crypto.createHash('sha256').update(seed).digest('hex').slice(0, 10);
 }
 
+function parseRecursionRequest(args: AnyObj) {
+  const depthRaw = args['recursion-depth'] != null
+    ? args['recursion-depth']
+    : (args.recursion_depth != null ? args.recursion_depth : null);
+  const unboundedRaw = args['recursion-unbounded'] != null
+    ? args['recursion-unbounded']
+    : (args.recursion_unbounded != null ? args.recursion_unbounded : null);
+  const depthToken = normalizeToken(depthRaw, 40);
+  const unboundedByDepth = ['unbounded', 'infinite', 'max', 'none'].includes(depthToken);
+  const depthNumber = Number(depthRaw);
+  return {
+    requested_depth: unboundedByDepth
+      ? 'unbounded'
+      : (Number.isFinite(depthNumber) ? clampInt(depthNumber, 1, 1_000_000_000, 1) : 1),
+    requested_unbounded: unboundedByDepth || toBool(unboundedRaw, false)
+  };
+}
+
 function defaultPolicy() {
   return {
     version: '1.0',
@@ -98,6 +128,11 @@ function defaultPolicy() {
     required_approvals: 2,
     require_tests_before_merge: true,
     sandbox_branch_prefix: 'codex/evo/',
+    symbiosis_recursion_gate: {
+      enabled: true,
+      shadow_only: true,
+      signal_policy_path: 'config/symbiosis_coherence_policy.json'
+    },
     test_commands: [
       `node -e "process.exit(0)"`
     ]
@@ -115,6 +150,17 @@ function loadPolicy(policyPath = POLICY_PATH) {
     required_approvals: clampInt(raw.required_approvals, 1, 8, base.required_approvals),
     require_tests_before_merge: raw.require_tests_before_merge !== false,
     sandbox_branch_prefix: cleanText(raw.sandbox_branch_prefix || base.sandbox_branch_prefix, 120) || base.sandbox_branch_prefix,
+    symbiosis_recursion_gate: {
+      enabled: !(raw.symbiosis_recursion_gate && raw.symbiosis_recursion_gate.enabled === false),
+      shadow_only: raw.symbiosis_recursion_gate && raw.symbiosis_recursion_gate.shadow_only != null
+        ? toBool(raw.symbiosis_recursion_gate.shadow_only, true)
+        : base.symbiosis_recursion_gate.shadow_only === true,
+      signal_policy_path: cleanText(
+        raw.symbiosis_recursion_gate && raw.symbiosis_recursion_gate.signal_policy_path
+          || base.symbiosis_recursion_gate.signal_policy_path,
+        260
+      ) || base.symbiosis_recursion_gate.signal_policy_path
+    },
     test_commands: Array.from(
       new Set((Array.isArray(raw.test_commands) ? raw.test_commands : base.test_commands)
         .map((cmd: unknown) => cleanText(cmd, 500))
@@ -178,6 +224,38 @@ function cmdPropose(args: AnyObj) {
     process.stdout.write(`${JSON.stringify({ ok: false, type: 'self_code_evolution_propose', error: 'target_path_required' })}\n`);
     process.exit(1);
   }
+  const recursionRequest = parseRecursionRequest(args);
+  let symbiosisGate: AnyObj = {
+    evaluated: false
+  };
+  if (policy.symbiosis_recursion_gate && policy.symbiosis_recursion_gate.enabled === true) {
+    const signal = loadSymbiosisCoherenceSignal({
+      policy_path: policy.symbiosis_recursion_gate.signal_policy_path,
+      refresh: true,
+      persist: true
+    });
+    const gate = evaluateRecursionRequest({
+      signal,
+      requested_depth: recursionRequest.requested_depth,
+      require_unbounded: recursionRequest.requested_unbounded,
+      shadow_only_override: policy.symbiosis_recursion_gate.shadow_only === true
+    });
+    symbiosisGate = {
+      evaluated: true,
+      request: recursionRequest,
+      ...gate
+    };
+    if (gate.blocked_hard === true) {
+      process.stdout.write(`${JSON.stringify({
+        ok: false,
+        type: 'self_code_evolution_propose',
+        error: 'symbiosis_recursion_gate_blocked',
+        target_path: targetPath,
+        symbiosis_recursion_gate: symbiosisGate
+      })}\n`);
+      process.exit(1);
+    }
+  }
   const ts = nowIso();
   const sandboxId = normalizeToken(args.sandbox_id || args['sandbox-id'] || `sb_${hash10(`${targetPath}|${ts}`)}`, 120);
   const branchName = `${policy.sandbox_branch_prefix}${sandboxId}`;
@@ -189,13 +267,24 @@ function cmdPropose(args: AnyObj) {
     target_path: targetPath,
     mutation_summary: cleanText(args.summary || 'self_code_mutation_candidate', 280),
     risk: normalizeToken(args.risk || 'medium', 40) || 'medium',
+    recursion_depth_requested: recursionRequest.requested_depth,
+    recursion_unbounded_requested: recursionRequest.requested_unbounded === true,
+    symbiosis_recursion_gate: symbiosisGate,
     approvals: [],
     test_results: []
   };
   state.sandboxes[sandboxId] = record;
   saveState(state);
-  appendJsonl(RECEIPTS_PATH, { ts, type: 'self_code_evolution_propose', ok: true, sandbox_id: sandboxId, branch_name: branchName, target_path: targetPath });
-  process.stdout.write(`${JSON.stringify({ ok: true, type: 'self_code_evolution_propose', record })}\n`);
+  appendJsonl(RECEIPTS_PATH, {
+    ts,
+    type: 'self_code_evolution_propose',
+    ok: true,
+    sandbox_id: sandboxId,
+    branch_name: branchName,
+    target_path: targetPath,
+    symbiosis_recursion_gate: symbiosisGate
+  });
+  process.stdout.write(`${JSON.stringify({ ok: true, type: 'self_code_evolution_propose', record, symbiosis_recursion_gate: symbiosisGate })}\n`);
 }
 
 function cmdTest(args: AnyObj) {
@@ -258,6 +347,31 @@ function cmdMerge(args: AnyObj) {
   if (uniqueApprovals.length < policy.required_approvals) blocked.push('dual_approval_required');
   if (policy.require_tests_before_merge === true && row.status !== 'tested') blocked.push('tests_not_passed');
   if (row.status === 'rolled_back') blocked.push('sandbox_rolled_back');
+  let symbiosisGate: AnyObj = {
+    evaluated: false
+  };
+  if (policy.symbiosis_recursion_gate && policy.symbiosis_recursion_gate.enabled === true) {
+    const signal = loadSymbiosisCoherenceSignal({
+      policy_path: policy.symbiosis_recursion_gate.signal_policy_path,
+      refresh: true,
+      persist: true
+    });
+    const gate = evaluateRecursionRequest({
+      signal,
+      requested_depth: row.recursion_depth_requested != null ? row.recursion_depth_requested : 1,
+      require_unbounded: row.recursion_unbounded_requested === true,
+      shadow_only_override: policy.symbiosis_recursion_gate.shadow_only === true
+    });
+    symbiosisGate = {
+      evaluated: true,
+      request: {
+        requested_depth: row.recursion_depth_requested != null ? row.recursion_depth_requested : 1,
+        requested_unbounded: row.recursion_unbounded_requested === true
+      },
+      ...gate
+    };
+    if (gate.blocked_hard === true) blocked.push('symbiosis_recursion_gate_blocked');
+  }
 
   const out = {
     ok: blocked.length === 0,
@@ -265,7 +379,8 @@ function cmdMerge(args: AnyObj) {
     ts: nowIso(),
     sandbox_id: sandboxId,
     approvals: uniqueApprovals,
-    blocked
+    blocked,
+    symbiosis_recursion_gate: symbiosisGate
   };
   if (!blocked.length) {
     row.status = 'merged';
@@ -344,4 +459,3 @@ function main() {
 if (require.main === module) {
   main();
 }
-

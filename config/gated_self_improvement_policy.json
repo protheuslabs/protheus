@@ -17,6 +17,11 @@
     "max_red_critical_fail_cases": 0,
     "max_red_fail_rate": 0.25
   },
+  "symbiosis_recursion_gate": {
+    "enabled": true,
+    "shadow_only": true,
+    "signal_policy_path": "config/symbiosis_coherence_policy.json"
+  },
   "paths": {
     "state_path": "state/autonomy/gated_self_improvement/state.json",
     "receipts_path": "state/autonomy/gated_self_improvement/receipts.jsonl",

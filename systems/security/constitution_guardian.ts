@@ -5,6 +5,10 @@ export {};
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const {
+  loadSymbiosisCoherenceSignal,
+  evaluateRecursionRequest
+} = require('../../lib/symbiosis_coherence_signal');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const POLICY_PATH = process.env.CONSTITUTION_GUARDIAN_POLICY_PATH
@@ -120,7 +124,12 @@ function defaultPolicy() {
     min_approval_note_chars: 12,
     require_dual_approval: true,
     enforce_inheritance_lock: true,
-    emergency_rollback_requires_approval: true
+    emergency_rollback_requires_approval: true,
+    symbiosis_recursion_invariant: {
+      enabled: true,
+      shadow_only: true,
+      signal_policy_path: 'config/symbiosis_coherence_policy.json'
+    }
   };
 }
 
@@ -135,7 +144,18 @@ function loadPolicy(policyPath = POLICY_PATH) {
     min_approval_note_chars: clampInt(src.min_approval_note_chars, 4, 200, base.min_approval_note_chars),
     require_dual_approval: src.require_dual_approval !== false,
     enforce_inheritance_lock: src.enforce_inheritance_lock !== false,
-    emergency_rollback_requires_approval: src.emergency_rollback_requires_approval !== false
+    emergency_rollback_requires_approval: src.emergency_rollback_requires_approval !== false,
+    symbiosis_recursion_invariant: {
+      enabled: !(src.symbiosis_recursion_invariant && src.symbiosis_recursion_invariant.enabled === false),
+      shadow_only: src.symbiosis_recursion_invariant && src.symbiosis_recursion_invariant.shadow_only != null
+        ? !!src.symbiosis_recursion_invariant.shadow_only
+        : base.symbiosis_recursion_invariant.shadow_only === true,
+      signal_policy_path: cleanText(
+        src.symbiosis_recursion_invariant && src.symbiosis_recursion_invariant.signal_policy_path
+          || base.symbiosis_recursion_invariant.signal_policy_path,
+        260
+      ) || base.symbiosis_recursion_invariant.signal_policy_path
+    }
   };
 }
 
@@ -173,6 +193,21 @@ function writeProposal(paths: AnyObj, proposalId: string, proposal: AnyObj) {
 function emit(paths: AnyObj, payload: AnyObj) {
   writeJsonAtomic(paths.latest_path, payload);
   appendJsonl(paths.receipts_path, payload);
+}
+
+function proposalTouchesRecursiveInvariant(proposal: AnyObj, candidatePath: string) {
+  const reason = cleanText(proposal && proposal.reason || '', 1200).toLowerCase();
+  const combinedText: string[] = [reason];
+  try {
+    if (candidatePath && fs.existsSync(candidatePath)) {
+      const body = cleanText(fs.readFileSync(candidatePath, 'utf8'), 10_000).toLowerCase();
+      combinedText.push(body);
+    }
+  } catch {
+    // read failures should not break governance evaluation.
+  }
+  const hay = combinedText.join(' ');
+  return /unbounded recursion|recursive self-improvement|recursion depth|symbiosis coherence|self-improvement depth|depth gating/.test(hay);
 }
 
 function cmdInitGenesis(args: AnyObj) {
@@ -357,15 +392,52 @@ function cmdActivateChange(args: AnyObj) {
     process.exit(1);
   }
 
+  const candidatePath = path.isAbsolute(proposal.candidate_path)
+    ? proposal.candidate_path
+    : path.join(ROOT, proposal.candidate_path);
+  const recursionInvariant = policy.symbiosis_recursion_invariant && typeof policy.symbiosis_recursion_invariant === 'object'
+    ? policy.symbiosis_recursion_invariant
+    : {};
+  let symbiosisGate: AnyObj = {
+    evaluated: false
+  };
+  if (recursionInvariant.enabled === true && proposalTouchesRecursiveInvariant(proposal, candidatePath)) {
+    const signal = loadSymbiosisCoherenceSignal({
+      policy_path: recursionInvariant.signal_policy_path,
+      refresh: true,
+      persist: true
+    });
+    const gate = evaluateRecursionRequest({
+      signal,
+      requested_depth: 'unbounded',
+      require_unbounded: true,
+      shadow_only_override: recursionInvariant.shadow_only === true
+    });
+    symbiosisGate = {
+      evaluated: true,
+      request: {
+        requested_depth: 'unbounded',
+        requested_unbounded: true
+      },
+      ...gate
+    };
+    if (gate.blocked_hard === true) {
+      process.stdout.write(`${JSON.stringify({
+        ok: false,
+        type: 'constitution_activate_change',
+        error: 'symbiosis_recursion_gate_blocked',
+        symbiosis_recursion_gate: symbiosisGate
+      })}\n`);
+      process.exit(1);
+    }
+  }
+
   const constitution = constitutionPath(policy);
   const snapshotId = `snapshot_${Date.now().toString(36)}`;
   const snapshotPath = path.join(paths.snapshots_dir, `${snapshotId}.md`);
   ensureDir(path.dirname(snapshotPath));
   fs.copyFileSync(constitution, snapshotPath);
 
-  const candidatePath = path.isAbsolute(proposal.candidate_path)
-    ? proposal.candidate_path
-    : path.join(ROOT, proposal.candidate_path);
   fs.copyFileSync(candidatePath, constitution);
 
   proposal.status = 'activated';
@@ -391,6 +463,8 @@ function cmdActivateChange(args: AnyObj) {
     proposal_id: proposalId,
     status: proposal.status,
     activation: proposal.activation
+    ,
+    symbiosis_recursion_gate: symbiosisGate
   };
   emit(paths, { ts: nowIso(), ...out });
   process.stdout.write(`${JSON.stringify(out)}\n`);

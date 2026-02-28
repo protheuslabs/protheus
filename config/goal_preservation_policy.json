@@ -17,6 +17,11 @@
     "^systems/security/guard\\.(ts|js)$",
     "^systems/security/policy_rootd\\.(ts|js)$"
   ],
+  "symbiosis_recursion_gate": {
+    "enabled": true,
+    "shadow_only": true,
+    "signal_policy_path": "config/symbiosis_coherence_policy.json"
+  },
   "output": {
     "state_path": "state/security/goal_preservation/latest.json",
     "receipts_path": "state/security/goal_preservation/receipts.jsonl"

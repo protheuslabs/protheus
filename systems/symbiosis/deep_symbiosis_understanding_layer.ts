@@ -17,6 +17,7 @@ export {};
 
 const fs = require('fs');
 const path = require('path');
+const { loadSymbiosisCoherenceSignal } = require('../../lib/symbiosis_coherence_signal');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const POLICY_PATH = process.env.DEEP_SYMBIOSIS_UNDERSTANDING_POLICY_PATH
@@ -251,6 +252,10 @@ function ingest(policy: AnyObj, args: AnyObj) {
   state.channel_counts[channel] = clampInt(Number(state.channel_counts[channel] || 0) + 1, 0, 1_000_000_000, 0);
   state.intent_counts[intent] = clampInt(Number(state.intent_counts[intent] || 0) + 1, 0, 1_000_000_000, 0);
   saveState(policy, state);
+  const symbiosisSignal = loadSymbiosisCoherenceSignal({
+    refresh: true,
+    persist: true
+  });
 
   const out = {
     ok: true,
@@ -262,7 +267,18 @@ function ingest(policy: AnyObj, args: AnyObj) {
       intent
     },
     style: state.style,
-    samples: state.samples
+    samples: state.samples,
+    symbiosis_coherence: {
+      score: symbiosisSignal && symbiosisSignal.coherence_score != null
+        ? Number(symbiosisSignal.coherence_score)
+        : null,
+      tier: symbiosisSignal && symbiosisSignal.coherence_tier
+        ? String(symbiosisSignal.coherence_tier)
+        : null,
+      recursion_gate: symbiosisSignal && symbiosisSignal.recursion_gate
+        ? symbiosisSignal.recursion_gate
+        : null
+    }
   };
   persistLatest(policy, out);
   return out;
@@ -282,6 +298,10 @@ function predict(policy: AnyObj, args: AnyObj) {
   if (intent.includes('outreach')) anticipatedNeeds.push('batch_outcome_summary', 'high_quality_reply_drafting');
   if (priority === 'high' || priority === 'urgent') anticipatedNeeds.push('concise_risk_summary');
   if (!anticipatedNeeds.length) anticipatedNeeds.push('next_best_action', 'short_receipt');
+  const symbiosisSignal = loadSymbiosisCoherenceSignal({
+    refresh: false,
+    persist: false
+  });
 
   const out = {
     ok: true,
@@ -295,7 +315,15 @@ function predict(policy: AnyObj, args: AnyObj) {
       brevity: state.style.brevity,
       proactive_delta: state.style.proactive_delta
     },
-    anticipated_needs: Array.from(new Set(anticipatedNeeds)).slice(0, 6)
+    anticipated_needs: Array.from(new Set(anticipatedNeeds)).slice(0, 6),
+    symbiosis_coherence: {
+      score: symbiosisSignal && symbiosisSignal.coherence_score != null
+        ? Number(symbiosisSignal.coherence_score)
+        : null,
+      tier: symbiosisSignal && symbiosisSignal.coherence_tier
+        ? String(symbiosisSignal.coherence_tier)
+        : null
+    }
   };
   persistLatest(policy, out);
   return out;
@@ -304,6 +332,10 @@ function predict(policy: AnyObj, args: AnyObj) {
 function status(policy: AnyObj) {
   const state = loadState(policy);
   const latest = readJson(policy.state.latest_path, null);
+  const symbiosisSignal = loadSymbiosisCoherenceSignal({
+    refresh: false,
+    persist: false
+  });
   return {
     ok: true,
     type: 'deep_symbiosis_status',
@@ -321,6 +353,17 @@ function status(policy: AnyObj) {
         ts: cleanText(latest.ts || '', 60) || null
       }
       : null,
+    symbiosis_coherence: {
+      score: symbiosisSignal && symbiosisSignal.coherence_score != null
+        ? Number(symbiosisSignal.coherence_score)
+        : null,
+      tier: symbiosisSignal && symbiosisSignal.coherence_tier
+        ? String(symbiosisSignal.coherence_tier)
+        : null,
+      recursion_gate: symbiosisSignal && symbiosisSignal.recursion_gate
+        ? symbiosisSignal.recursion_gate
+        : null
+    },
     paths: {
       policy_path: rel(policy.policy_path),
       state_path: rel(policy.state.state_path),

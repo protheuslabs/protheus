@@ -18,6 +18,7 @@ export {};
 const fs = require('fs');
 const path = require('path');
 const { loadActiveDirectives } = require('../../lib/directive_resolver');
+const { loadSymbiosisCoherenceSignal } = require('../../lib/symbiosis_coherence_signal');
 const {
   loadActiveStrategy,
   resolveStrategyRankingContext
@@ -925,6 +926,10 @@ function runCmd(dateStr, args) {
     evaluations: allEvaluations,
     summary: totalSummary
   });
+  const symbiosisSignal = loadSymbiosisCoherenceSignal({
+    refresh: false,
+    persist: false
+  });
 
   const output = {
     ok: strict ? totalSummary.blocked === 0 : true,
@@ -944,6 +949,21 @@ function runCmd(dateStr, args) {
     identity_drift_score: totalSummary.identity_drift_score,
     max_identity_drift_score: totalSummary.max_identity_drift_score,
     blocking_code_counts: totalSummary.blocking_code_counts,
+    symbiosis_coherence: {
+      score: symbiosisSignal && symbiosisSignal.coherence_score != null
+        ? Number(symbiosisSignal.coherence_score)
+        : null,
+      tier: symbiosisSignal && symbiosisSignal.coherence_tier
+        ? String(symbiosisSignal.coherence_tier)
+        : null,
+      recursion_gate: symbiosisSignal && symbiosisSignal.recursion_gate
+        ? symbiosisSignal.recursion_gate
+        : null,
+      shadow_only: !!(symbiosisSignal && symbiosisSignal.shadow_only === true),
+      latest_path: symbiosisSignal && symbiosisSignal.latest_path_rel
+        ? String(symbiosisSignal.latest_path_rel)
+        : null
+    },
     receipt_path: receipt.receipt_path || null,
     latest_path: receipt.latest_path || null,
     workflow_snapshot_path: workflow.snapshot_path || null,
@@ -977,6 +997,10 @@ function statusCmd(dateStr) {
   const summary = row.summary && typeof row.summary === 'object'
     ? row.summary
     : summarizeIdentityEvaluations([], 0.58);
+  const symbiosisSignal = loadSymbiosisCoherenceSignal({
+    refresh: false,
+    persist: false
+  });
   process.stdout.write(`${JSON.stringify({
     ok: true,
     type: 'identity_anchor_status',
@@ -989,6 +1013,15 @@ function statusCmd(dateStr) {
     identity_drift_score: Number(summary.identity_drift_score || 0),
     max_identity_drift_score: Number(summary.max_identity_drift_score || 0),
     blocking_code_counts: summary.blocking_code_counts || {},
+    symbiosis_coherence_score: symbiosisSignal && symbiosisSignal.coherence_score != null
+      ? Number(symbiosisSignal.coherence_score)
+      : null,
+    symbiosis_coherence_tier: symbiosisSignal && symbiosisSignal.coherence_tier
+      ? String(symbiosisSignal.coherence_tier)
+      : null,
+    symbiosis_recursion_gate: symbiosisSignal && symbiosisSignal.recursion_gate
+      ? symbiosisSignal.recursion_gate
+      : null,
     receipt_path: row.date ? relPath(receiptPathForDate(row.date)) : null,
     latest_path: relPath(LATEST_PATH)
   })}\n`);

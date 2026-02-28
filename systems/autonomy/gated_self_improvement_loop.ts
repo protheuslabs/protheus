@@ -19,6 +19,10 @@ const path = require('path');
 const crypto = require('crypto');
 const { spawnSync } = require('child_process');
 const { loadDynamicBurnOracleSignal } = require('../../lib/dynamic_burn_budget_signal');
+const {
+  loadSymbiosisCoherenceSignal,
+  evaluateRecursionRequest
+} = require('../../lib/symbiosis_coherence_signal');
 
 type AnyObj = Record<string, any>;
 
@@ -155,6 +159,24 @@ function parseJsonMaybe(v: unknown) {
   }
 }
 
+function parseRecursionRequest(args: AnyObj) {
+  const depthRaw = args['recursion-depth'] != null
+    ? args['recursion-depth']
+    : (args.recursion_depth != null ? args.recursion_depth : null);
+  const unboundedRaw = args['recursion-unbounded'] != null
+    ? args['recursion-unbounded']
+    : (args.recursion_unbounded != null ? args.recursion_unbounded : null);
+  const depthToken = normalizeToken(depthRaw, 40);
+  const unboundedByDepth = ['unbounded', 'infinite', 'max', 'none'].includes(depthToken);
+  const depthNumber = Number(depthRaw);
+  return {
+    requested_depth: unboundedByDepth
+      ? 'unbounded'
+      : (Number.isFinite(depthNumber) ? clampInt(depthNumber, 1, 1_000_000_000, 1) : 1),
+    requested_unbounded: unboundedByDepth || toBool(unboundedRaw, false)
+  };
+}
+
 function normalizeBurnPressure(v: unknown) {
   const raw = normalizeToken(v || 'none', 32);
   if (raw === 'critical') return 'critical';
@@ -207,6 +229,11 @@ function defaultPolicy() {
       max_red_critical_fail_cases: 0,
       max_red_fail_rate: 0.25
     },
+    symbiosis_recursion_gate: {
+      enabled: true,
+      shadow_only: true,
+      signal_policy_path: 'config/symbiosis_coherence_policy.json'
+    },
     paths: {
       state_path: 'state/autonomy/gated_self_improvement/state.json',
       receipts_path: 'state/autonomy/gated_self_improvement/receipts.jsonl',
@@ -219,6 +246,9 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
   const base = defaultPolicy();
   const raw = readJson(policyPath, {});
   const gates = raw.gates && typeof raw.gates === 'object' ? raw.gates : {};
+  const symbiosisGate = raw.symbiosis_recursion_gate && typeof raw.symbiosis_recursion_gate === 'object'
+    ? raw.symbiosis_recursion_gate
+    : {};
   const paths = raw.paths && typeof raw.paths === 'object' ? raw.paths : {};
   return {
     version: cleanText(raw.version || base.version, 24) || base.version,
@@ -238,6 +268,16 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
       max_effective_safety_stop_rate: clampNumber(gates.max_effective_safety_stop_rate, 0, 1, base.gates.max_effective_safety_stop_rate),
       max_red_critical_fail_cases: clampInt(gates.max_red_critical_fail_cases, 0, 1000000, base.gates.max_red_critical_fail_cases),
       max_red_fail_rate: clampNumber(gates.max_red_fail_rate, 0, 1, base.gates.max_red_fail_rate)
+    },
+    symbiosis_recursion_gate: {
+      enabled: !(symbiosisGate.enabled === false),
+      shadow_only: symbiosisGate.shadow_only != null
+        ? toBool(symbiosisGate.shadow_only, true)
+        : base.symbiosis_recursion_gate.shadow_only === true,
+      signal_policy_path: cleanText(
+        symbiosisGate.signal_policy_path || base.symbiosis_recursion_gate.signal_policy_path,
+        260
+      ) || base.symbiosis_recursion_gate.signal_policy_path
     },
     paths: {
       state_path: resolvePath(paths.state_path, path.join(ROOT, base.paths.state_path)),
@@ -410,6 +450,43 @@ function cmdPropose(args: AnyObj) {
     process.exit(1);
     return;
   }
+  const recursionRequest = parseRecursionRequest(args);
+  let symbiosisGate: AnyObj = {
+    evaluated: false
+  };
+  if (policy.symbiosis_recursion_gate && policy.symbiosis_recursion_gate.enabled === true) {
+    const signal = loadSymbiosisCoherenceSignal({
+      policy_path: policy.symbiosis_recursion_gate.signal_policy_path,
+      refresh: true,
+      persist: true
+    });
+    const gate = evaluateRecursionRequest({
+      signal,
+      requested_depth: recursionRequest.requested_depth,
+      require_unbounded: recursionRequest.requested_unbounded,
+      shadow_only_override: policy.symbiosis_recursion_gate.shadow_only === true
+    });
+    symbiosisGate = {
+      evaluated: true,
+      request: recursionRequest,
+      ...gate
+    };
+    if (gate.blocked_hard === true) {
+      const blocked = {
+        ok: false,
+        type: 'gated_self_improvement_propose',
+        ts: nowIso(),
+        error: 'symbiosis_recursion_gate_blocked',
+        objective_id: objectiveId || null,
+        target_path: targetPath,
+        symbiosis_recursion_gate: symbiosisGate
+      };
+      persistLatest(policy, blocked);
+      process.stdout.write(`${JSON.stringify(blocked, null, 2)}\n`);
+      process.exit(1);
+      return;
+    }
+  }
   const state = loadState(policy);
   const ts = nowIso();
   const proposalId = normalizeToken(
@@ -422,12 +499,15 @@ function cmdPropose(args: AnyObj) {
     target_path: targetPath,
     summary: cleanText(args.summary || 'autonomous_self_improvement_candidate', 280),
     risk: normalizeToken(args.risk || 'medium', 40) || 'medium',
+    recursion_depth_requested: recursionRequest.requested_depth,
+    recursion_unbounded_requested: recursionRequest.requested_unbounded === true,
     created_at: ts,
     stage: 'shadow',
     status: 'proposed',
     sandbox_id: null,
     history: [],
-    rollback_receipts: []
+    rollback_receipts: [],
+    symbiosis_recursion_gate: symbiosisGate
   };
   state.proposals[proposalId] = row;
   saveState(policy, state);
@@ -436,6 +516,7 @@ function cmdPropose(args: AnyObj) {
     type: 'gated_self_improvement_propose',
     ts,
     proposal: row,
+    symbiosis_recursion_gate: symbiosisGate,
     paths: {
       state_path: rel(policy.paths.state_path),
       receipts_path: rel(policy.paths.receipts_path)
@@ -474,6 +555,48 @@ function cmdRun(args: AnyObj) {
     process.stdout.write(`${JSON.stringify(out, null, 2)}\n`);
     process.exit(1);
     return;
+  }
+  let symbiosisGate: AnyObj = {
+    evaluated: false
+  };
+  if (policy.symbiosis_recursion_gate && policy.symbiosis_recursion_gate.enabled === true) {
+    const requestedDepth = row.recursion_depth_requested != null
+      ? row.recursion_depth_requested
+      : 1;
+    const requestedUnbounded = row.recursion_unbounded_requested === true;
+    const signal = loadSymbiosisCoherenceSignal({
+      policy_path: policy.symbiosis_recursion_gate.signal_policy_path,
+      refresh: true,
+      persist: true
+    });
+    const gate = evaluateRecursionRequest({
+      signal,
+      requested_depth: requestedDepth,
+      require_unbounded: requestedUnbounded,
+      shadow_only_override: policy.symbiosis_recursion_gate.shadow_only === true
+    });
+    symbiosisGate = {
+      evaluated: true,
+      request: {
+        requested_depth: requestedDepth,
+        requested_unbounded: requestedUnbounded
+      },
+      ...gate
+    };
+    if (gate.blocked_hard === true) {
+      const out = {
+        ok: false,
+        type: 'gated_self_improvement_run',
+        ts,
+        proposal_id: proposalId,
+        error: 'symbiosis_recursion_gate_blocked',
+        symbiosis_recursion_gate: symbiosisGate
+      };
+      persistLatest(policy, out);
+      process.stdout.write(`${JSON.stringify(out, null, 2)}\n`);
+      process.exit(1);
+      return;
+    }
   }
   const sandboxApplyAllowed = applyRequested && !policy.shadow_only;
   const mockMode = toBool(args['mock-sandbox'] || args.mock_sandbox, false);
@@ -612,9 +735,11 @@ function cmdRun(args: AnyObj) {
     transition,
     status: row.status,
     stage: row.stage,
-    gates: gateEval.gates
+    gates: gateEval.gates,
+    symbiosis_recursion_gate: symbiosisGate
   });
   state.proposals[proposalId] = row;
+  row.symbiosis_recursion_gate = symbiosisGate;
   saveState(policy, state);
 
   const out = {
@@ -638,7 +763,8 @@ function cmdRun(args: AnyObj) {
     },
     budget_oracle: burnOracle,
     sandbox: sandboxOps,
-    rollback
+    rollback,
+    symbiosis_recursion_gate: symbiosisGate
   };
   persistLatest(policy, out);
   process.stdout.write(`${JSON.stringify(out, null, 2)}\n`);

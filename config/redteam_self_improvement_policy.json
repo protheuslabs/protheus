@@ -34,6 +34,11 @@
     ],
     "throttle_candidate_multiplier": 0.5
   },
+  "symbiosis_recursion_gate": {
+    "enabled": true,
+    "shadow_only": true,
+    "signal_policy_path": "config/symbiosis_coherence_policy.json"
+  },
   "state": {
     "root": "state/security/red_team/self_improvement",
     "state_path": "state/security/red_team/self_improvement/state.json",

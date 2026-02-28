@@ -1,0 +1,39 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "stale_after_minutes": 30,
+  "weights": {
+    "identity": 0.34,
+    "pre_neuralink": 0.22,
+    "behavioral": 0.22,
+    "mirror": 0.22
+  },
+  "thresholds": {
+    "low_max": 0.45,
+    "medium_max": 0.75,
+    "high_min": 0.75,
+    "unbounded_min": 0.9,
+    "sustained_high_samples": 6
+  },
+  "recursion": {
+    "low_depth": 1,
+    "medium_depth": 2,
+    "high_base_depth": 4,
+    "high_streak_gain_interval": 2,
+    "require_granted_consent_for_unbounded": true,
+    "require_identity_clear_for_unbounded": true
+  },
+  "history": {
+    "max_recent_scores": 200
+  },
+  "paths": {
+    "state_path": "state/symbiosis/coherence/state.json",
+    "latest_path": "state/symbiosis/coherence/latest.json",
+    "receipts_path": "state/symbiosis/coherence/receipts.jsonl",
+    "identity_latest_path": "state/autonomy/identity_anchor/latest.json",
+    "pre_neuralink_state_path": "state/symbiosis/pre_neuralink_interface/state.json",
+    "deep_symbiosis_state_path": "state/symbiosis/deep_understanding/state.json",
+    "observer_mirror_latest_path": "state/autonomy/observer_mirror/latest.json"
+  }
+}
