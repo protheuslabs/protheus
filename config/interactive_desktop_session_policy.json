@@ -1,0 +1,24 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "high_risk_action_classes": [
+    "filesystem",
+    "shell",
+    "auth",
+    "network_control",
+    "payment"
+  ],
+  "require_explicit_approval_for_high_risk": true,
+  "allowed_opcodes": [
+    "open",
+    "click",
+    "type",
+    "wait",
+    "assert",
+    "capture"
+  ],
+  "receipts_path": "state/primitives/interactive_desktop_session/receipts.jsonl",
+  "sessions_path": "state/primitives/interactive_desktop_session/sessions.json",
+  "latest_path": "state/primitives/interactive_desktop_session/latest.json"
+}

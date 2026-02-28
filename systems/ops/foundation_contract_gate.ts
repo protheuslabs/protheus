@@ -107,8 +107,15 @@ function runGate() {
     'config/critical_path_formal_policy.json',
     'config/execution_sandbox_envelope_policy.json',
     'config/explanation_primitive_policy.json',
+    'config/full_virtual_desktop_claw_policy.json',
     'config/formal_invariants.json',
     'config/gated_self_improvement_policy.json',
+    'config/interactive_desktop_session_policy.json',
+    'config/iterative_repair_primitive_policy.json',
+    'config/doctor_forge_micro_debug_policy.json',
+    'config/account_creation_profile_extension_policy.json',
+    'config/universal_execution_profiles/code_repair.json',
+    'config/universal_execution_profiles/desktop_ui.json',
     'config/helix_admission_policy.json',
     'config/helix_policy.json',
     'config/phone_seed_profile_policy.json',
@@ -155,6 +162,7 @@ function runGate() {
     'systems/ops/schema_evolution_contract.ts',
     'systems/continuity/resurrection_protocol.ts',
     'systems/autonomy/gated_self_improvement_loop.ts',
+    'systems/autonomy/doctor_forge_micro_debug_lane.ts',
     'systems/echo/value_anchor_renewal.ts',
     'systems/helix/confirmed_malice_quarantine.ts',
     'systems/helix/helix_controller.ts',
@@ -169,11 +177,14 @@ function runGate() {
     'systems/budget/capital_allocation_organ.ts',
     'systems/finance/economic_entity_manager.ts',
     'systems/workflow/gated_account_creation_organ.ts',
+    'systems/workflow/account_creation_profile_extension.ts',
     'systems/weaver/drift_aware_revenue_optimizer.ts',
     'systems/workflow/client_relationship_manager.ts',
     'systems/primitives/effect_type_system.ts',
     'systems/primitives/emergent_primitive_synthesis.ts',
     'systems/primitives/explanation_primitive.ts',
+    'systems/primitives/iterative_repair_primitive.ts',
+    'systems/primitives/interactive_desktop_session_primitive.ts',
     'systems/primitives/runtime_scheduler.ts',
     'systems/redteam/ant_colony_controller.ts',
     'systems/redteam/morph_manager.ts',
@@ -205,11 +216,13 @@ function runGate() {
     'systems/ops/soc2_type2_track.ts',
     'systems/ops/phone_seed_profile.ts',
     'systems/ops/predictive_capacity_forecast.ts',
+    'systems/actuation/full_virtual_desktop_claw_lane.ts',
     'systems/symbiosis/neural_dormant_seed.ts',
     'systems/symbiosis/pre_neuralink_interface.ts',
     'research/neural_dormant_seed/README.md',
     'research/neural_dormant_seed/governance_checklist.md',
     'systems/ops/self_hosted_bootstrap_compiler.ts',
+    'lib/passport_iteration_chain.ts',
     'systems/primitives/primitive_runtime.ts',
     'systems/primitives/policy_vm.ts',
     'systems/primitives/replay_verify.ts',
@@ -797,6 +810,83 @@ function runGate() {
       && gatedSelfImproveSrc.includes('autonomy_simulation_harness.js')
       && gatedSelfImproveSrc.includes('red_team_harness.js'),
     'gated_self_improvement_loop should compose simulation, red-team, and rollback-linked evolution lanes'
+  );
+  addCheck(
+    'iterative_repair_primitive:merge_guard_hook',
+    mergeGuardSrc.includes('iterative_repair_primitive.js')
+      && mergeGuardSrc.includes('iterative_repair_primitive_status'),
+    'merge_guard should enforce iterative repair primitive status check'
+  );
+  const iterativeRepairPolicy = readJsonSafe(path.join(ROOT, 'config', 'iterative_repair_primitive_policy.json'), {});
+  addCheck(
+    'iterative_repair_primitive:policy_rollbacks_and_bounds',
+    iterativeRepairPolicy.enabled !== false
+      && iterativeRepairPolicy.require_rollback_points !== false
+      && Number(iterativeRepairPolicy.max_iterations || 0) >= 1
+      && Number(iterativeRepairPolicy.max_runtime_sec || 0) >= 30,
+    `enabled=${iterativeRepairPolicy.enabled !== false ? '1' : '0'} rollback_points=${iterativeRepairPolicy.require_rollback_points !== false ? '1' : '0'} max_iterations=${Number(iterativeRepairPolicy.max_iterations || 0)} max_runtime_sec=${Number(iterativeRepairPolicy.max_runtime_sec || 0)}`
+  );
+  addCheck(
+    'interactive_desktop_session:merge_guard_hook',
+    mergeGuardSrc.includes('interactive_desktop_session_primitive.js')
+      && mergeGuardSrc.includes('interactive_desktop_session_status'),
+    'merge_guard should enforce interactive desktop session primitive status check'
+  );
+  const interactiveDesktopPolicy = readJsonSafe(path.join(ROOT, 'config', 'interactive_desktop_session_policy.json'), {});
+  const interactiveAllowedOpcodes = Array.isArray(interactiveDesktopPolicy.allowed_opcodes)
+    ? interactiveDesktopPolicy.allowed_opcodes.map((row: unknown) => normalizeLowerToken(row, 60))
+    : [];
+  addCheck(
+    'interactive_desktop_session:policy_opcode_contract',
+    interactiveDesktopPolicy.enabled !== false
+      && interactiveAllowedOpcodes.includes('open')
+      && interactiveAllowedOpcodes.includes('capture')
+      && interactiveAllowedOpcodes.includes('assert')
+      && interactiveDesktopPolicy.require_explicit_approval_for_high_risk !== false,
+    `enabled=${interactiveDesktopPolicy.enabled !== false ? '1' : '0'} opcodes=${interactiveAllowedOpcodes.join(',')} high_risk_approval=${interactiveDesktopPolicy.require_explicit_approval_for_high_risk !== false ? '1' : '0'}`
+  );
+  addCheck(
+    'doctor_forge_micro_debug:merge_guard_hook',
+    mergeGuardSrc.includes('doctor_forge_micro_debug_lane.js')
+      && mergeGuardSrc.includes('doctor_forge_micro_debug_status'),
+    'merge_guard should enforce doctor/forge micro-debug lane status check'
+  );
+  const doctorForgePolicy = readJsonSafe(path.join(ROOT, 'config', 'doctor_forge_micro_debug_policy.json'), {});
+  addCheck(
+    'doctor_forge_micro_debug:policy_shadow_first',
+    doctorForgePolicy.enabled !== false
+      && normalizeLowerToken(doctorForgePolicy.rollout_mode || 'shadow', 40) === 'shadow',
+    `enabled=${doctorForgePolicy.enabled !== false ? '1' : '0'} rollout_mode=${normalizeLowerToken(doctorForgePolicy.rollout_mode || '', 40) || 'missing'}`
+  );
+  addCheck(
+    'full_virtual_desktop_claw:merge_guard_hook',
+    mergeGuardSrc.includes('full_virtual_desktop_claw_lane.js')
+      && mergeGuardSrc.includes('full_virtual_desktop_claw_status'),
+    'merge_guard should enforce full virtual desktop claw lane status check'
+  );
+  const fullVirtualDesktopPolicy = readJsonSafe(path.join(ROOT, 'config', 'full_virtual_desktop_claw_policy.json'), {});
+  addCheck(
+    'full_virtual_desktop_claw:policy_veto_window',
+    fullVirtualDesktopPolicy.enabled !== false
+      && Number(fullVirtualDesktopPolicy.human_veto_window_sec || 0) >= 30,
+    `enabled=${fullVirtualDesktopPolicy.enabled !== false ? '1' : '0'} human_veto_window_sec=${Number(fullVirtualDesktopPolicy.human_veto_window_sec || 0)}`
+  );
+  addCheck(
+    'account_creation_profile_extension:merge_guard_hook',
+    mergeGuardSrc.includes('account_creation_profile_extension.js')
+      && mergeGuardSrc.includes('account_creation_profile_extension_status'),
+    'merge_guard should enforce account creation profile extension status check'
+  );
+  const accountProfilePolicy = readJsonSafe(path.join(ROOT, 'config', 'account_creation_profile_extension_policy.json'), {});
+  const accountRequiredPrimitives = Array.isArray(accountProfilePolicy.required_primitives)
+    ? accountProfilePolicy.required_primitives.map((row: unknown) => normalizeLowerToken(row, 80))
+    : [];
+  addCheck(
+    'account_creation_profile_extension:policy_no_bespoke_branching',
+    accountProfilePolicy.enabled !== false
+      && accountRequiredPrimitives.includes('desktop_ui')
+      && accountRequiredPrimitives.includes('alias_verification_vault'),
+    `enabled=${accountProfilePolicy.enabled !== false ? '1' : '0'} required_primitives=${accountRequiredPrimitives.join(',')}`
   );
   addCheck(
     'explanation_primitive:merge_guard_hook',

@@ -1,0 +1,25 @@
+{
+  "schema_id": "capability_profile",
+  "schema_version": "1.0",
+  "profile_id": "desktop_ui",
+  "source": {
+    "capability_id": "desktop_ui",
+    "source_type": "desktop_ui",
+    "provider": "protheus"
+  },
+  "execution": {
+    "adapter_kind": "browser_task",
+    "intent": "desktop_ui",
+    "parameters": {
+      "session_required": true,
+      "assertions_required": true,
+      "capture_required": true,
+      "screen_recording": true
+    }
+  },
+  "metadata": {
+    "profile_pack": "v3_add_uep_ui_001",
+    "risk_class": "high",
+    "requires_human_veto_for_live": true
+  }
+}

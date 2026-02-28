@@ -164,6 +164,35 @@ function runTest() {
     assert.ok(r.payload && r.payload.ok === true, 'plan should pass');
     assert.strictEqual(r.payload.plan.adapter, 'lora', 'small profile should use lora');
 
+    r = run(['train', '--date=2026-02-25', '--days=1', '--profile=small', '--seed=tinyllama_seed'], env);
+    assert.strictEqual(r.status, 0, `train should pass: ${r.stderr}`);
+    assert.ok(r.payload && r.payload.ok === true, 'train should produce checkpoint');
+    assert.ok(r.payload && r.payload.checkpoint_path, 'train should emit checkpoint path');
+    assert.ok(r.payload && r.payload.checkpoints_index_path, 'train should emit checkpoints index');
+    assert.ok(r.payload && r.payload.promotion_manifest_path, 'train should emit promotion manifest');
+    const trainCheckpointPath = path.join(ROOT, r.payload.checkpoint_path);
+    const checkpointsIndexPath = path.join(ROOT, r.payload.checkpoints_index_path);
+    const promotionManifestPath = path.join(ROOT, r.payload.promotion_manifest_path);
+    const quarantineStatePath = path.join(outDir, 'quarantine_state.json');
+    assert.ok(fs.existsSync(trainCheckpointPath), 'train checkpoint artifact should exist');
+    assert.ok(fs.existsSync(checkpointsIndexPath), 'checkpoints index should exist');
+    assert.ok(fs.existsSync(promotionManifestPath), 'promotion manifest should exist');
+    assert.ok(fs.existsSync(quarantineStatePath), 'quarantine state should be produced');
+    const checkpointsIndex = JSON.parse(fs.readFileSync(checkpointsIndexPath, 'utf8'));
+    assert.ok(
+      checkpointsIndex
+      && checkpointsIndex.checkpoints
+      && Object.keys(checkpointsIndex.checkpoints).length >= 1,
+      'checkpoints index should have at least one checkpoint'
+    );
+    const quarantineState = JSON.parse(fs.readFileSync(quarantineStatePath, 'utf8'));
+    assert.ok(
+      quarantineState
+      && quarantineState.checkpoints
+      && Object.keys(quarantineState.checkpoints).length >= 1,
+      'quarantine state should include staged checkpoints'
+    );
+
     r = run(['evaluate', `--eval-file=${evalPath}`], env);
     assert.strictEqual(r.status, 0, `evaluate should pass: ${r.stderr}`);
     assert.ok(r.payload && r.payload.ok === true, 'evaluation should pass thresholds');
