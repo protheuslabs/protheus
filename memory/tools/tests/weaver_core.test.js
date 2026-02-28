@@ -271,6 +271,18 @@ function run() {
   assert.strictEqual(out1.veto_blocked, false, 'constitution/identity veto should not block healthy run');
   assert.ok(out1.value_context && out1.value_context.duality, 'duality advisory should be present');
   assert.strictEqual(typeof out1.value_context.duality.enabled, 'boolean');
+  assert.ok(
+    out1.value_context
+      && out1.value_context.long_horizon_planning
+      && out1.value_context.long_horizon_planning.enabled === true,
+    'long-horizon planning advisory should be present'
+  );
+  assert.ok(
+    out1.value_context
+      && out1.value_context.multi_agent_debate
+      && out1.value_context.multi_agent_debate.enabled === true,
+    'multi-agent debate advisory should be present'
+  );
   assert.ok(out1.ethical_reasoning && out1.ethical_reasoning.enabled === true, 'ethical reasoning should be attached');
   assert.ok(
     out1.ethical_reasoning.summary && typeof out1.ethical_reasoning.summary.top_metric_id === 'string',

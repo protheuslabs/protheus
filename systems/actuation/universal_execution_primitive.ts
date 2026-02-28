@@ -183,6 +183,17 @@ function defaultPolicy() {
       checkpoints_path: 'state/actuation/universal_execution_primitive/checkpoints.jsonl',
       handoff_path: 'state/actuation/universal_execution_primitive/handoffs.jsonl'
     },
+    computer_use_execution_verification: {
+      enabled: true,
+      protected_adapter_kinds: ['browser_task', 'browser_action', 'api_request'],
+      max_verify_attempts: 2,
+      fail_closed: true,
+      require_success_markers: false,
+      success_markers: ['success', 'completed', 'done'],
+      failure_markers: ['blocked', 'captcha_required', 'verification_required'],
+      expected_outcome_keys: ['expected_outcome', 'verification_target', 'expected_signal'],
+      receipts_path: 'state/actuation/universal_execution_primitive/verification.jsonl'
+    },
     receipts_path: 'state/actuation/universal_execution_primitive/receipts'
   };
 }
@@ -199,8 +210,13 @@ function loadPolicy(policyPath = POLICY_PATH) {
   const hardening = src.computer_use_hardening && typeof src.computer_use_hardening === 'object'
     ? src.computer_use_hardening
     : {};
+  const verification = src.computer_use_execution_verification
+    && typeof src.computer_use_execution_verification === 'object'
+    ? src.computer_use_execution_verification
+    : {};
   const baseSynthesis = base.sub_executor_synthesis;
   const baseHardening = base.computer_use_hardening;
+  const baseVerification = base.computer_use_execution_verification;
   const synthesisErrors = Array.isArray(synthesis.auto_propose_on_errors)
     ? synthesis.auto_propose_on_errors
     : baseSynthesis.auto_propose_on_errors;
@@ -263,6 +279,37 @@ function loadPolicy(policyPath = POLICY_PATH) {
       handoff_path: path.isAbsolute(cleanText(hardening.handoff_path || baseHardening.handoff_path, 320))
         ? cleanText(hardening.handoff_path || baseHardening.handoff_path, 320)
         : path.join(ROOT, cleanText(hardening.handoff_path || baseHardening.handoff_path, 320))
+    },
+    computer_use_execution_verification: {
+      enabled: verification.enabled !== false,
+      protected_adapter_kinds: Array.isArray(verification.protected_adapter_kinds)
+        ? verification.protected_adapter_kinds.map((row: unknown) => normalizeToken(row, 80)).filter(Boolean)
+        : baseVerification.protected_adapter_kinds.slice(0),
+      max_verify_attempts: Math.max(
+        0,
+        Math.min(
+          5,
+          Number(
+            verification.max_verify_attempts != null
+              ? verification.max_verify_attempts
+              : baseVerification.max_verify_attempts
+          ) || baseVerification.max_verify_attempts
+        )
+      ),
+      fail_closed: verification.fail_closed !== false,
+      require_success_markers: verification.require_success_markers === true,
+      success_markers: Array.isArray(verification.success_markers)
+        ? verification.success_markers.map((row: unknown) => cleanText(row, 80).toLowerCase()).filter(Boolean)
+        : baseVerification.success_markers.slice(0),
+      failure_markers: Array.isArray(verification.failure_markers)
+        ? verification.failure_markers.map((row: unknown) => cleanText(row, 80).toLowerCase()).filter(Boolean)
+        : baseVerification.failure_markers.slice(0),
+      expected_outcome_keys: Array.isArray(verification.expected_outcome_keys)
+        ? verification.expected_outcome_keys.map((row: unknown) => normalizeToken(row, 80)).filter(Boolean)
+        : baseVerification.expected_outcome_keys.slice(0),
+      receipts_path: path.isAbsolute(cleanText(verification.receipts_path || baseVerification.receipts_path, 320))
+        ? cleanText(verification.receipts_path || baseVerification.receipts_path, 320)
+        : path.join(ROOT, cleanText(verification.receipts_path || baseVerification.receipts_path, 320))
     },
     receipts_path: path.isAbsolute(cleanText(src.receipts_path || base.receipts_path, 260))
       ? cleanText(src.receipts_path || base.receipts_path, 260)
@@ -377,6 +424,104 @@ function containsVerificationKeyword(hints: string, keywords: string[]) {
     if (haystack.includes(kw)) return true;
   }
   return false;
+}
+
+function gatherVerificationEvidence(payload: AnyObj) {
+  const out: string[] = [];
+  if (!payload || typeof payload !== 'object') return out;
+  const push = (v: unknown, maxLen = 240) => {
+    const txt = cleanText(v, maxLen).toLowerCase();
+    if (txt) out.push(txt);
+  };
+  push(payload.message);
+  push(payload.result);
+  push(payload.result_text);
+  push(payload.output);
+  push(payload.summary && payload.summary.reason);
+  if (payload.data != null) push(JSON.stringify(payload.data), 800);
+  if (payload.value != null) push(JSON.stringify(payload.value), 800);
+  if (payload.response != null) push(JSON.stringify(payload.response), 800);
+  return out;
+}
+
+function resolveExpectedOutcomes(cfg: AnyObj, params: AnyObj, contextRaw: AnyObj) {
+  const keys = Array.isArray(cfg.expected_outcome_keys)
+    ? cfg.expected_outcome_keys
+    : [];
+  const out: string[] = [];
+  const push = (v: unknown) => {
+    const txt = cleanText(v, 120).toLowerCase();
+    if (txt) out.push(txt);
+  };
+  for (const keyRaw of keys) {
+    const key = normalizeToken(keyRaw, 80);
+    if (!key) continue;
+    if (params && typeof params === 'object') push((params as AnyObj)[key]);
+    if (contextRaw && typeof contextRaw === 'object') push((contextRaw as AnyObj)[key]);
+  }
+  return Array.from(new Set(out)).slice(0, 12);
+}
+
+function buildExecutionVerificationProfile(policy: AnyObj, adapterKind: string, params: AnyObj, contextRaw: AnyObj) {
+  const cfg = policy && policy.computer_use_execution_verification
+    && typeof policy.computer_use_execution_verification === 'object'
+    ? policy.computer_use_execution_verification
+    : {};
+  const protectedKinds = Array.isArray(cfg.protected_adapter_kinds)
+    ? cfg.protected_adapter_kinds.map((row: unknown) => normalizeToken(row, 80)).filter(Boolean)
+    : [];
+  const protectedAdapter = cfg.enabled === true && protectedKinds.includes(normalizeToken(adapterKind, 80));
+  return {
+    enabled: protectedAdapter,
+    max_verify_attempts: Math.max(0, Number(cfg.max_verify_attempts || 0)),
+    fail_closed: cfg.fail_closed !== false,
+    require_success_markers: cfg.require_success_markers === true,
+    success_markers: Array.isArray(cfg.success_markers) ? cfg.success_markers.map((row: unknown) => cleanText(row, 80).toLowerCase()).filter(Boolean) : [],
+    failure_markers: Array.isArray(cfg.failure_markers) ? cfg.failure_markers.map((row: unknown) => cleanText(row, 80).toLowerCase()).filter(Boolean) : [],
+    expected_outcomes: resolveExpectedOutcomes(cfg, params, contextRaw),
+    receipts_path: cleanText(cfg.receipts_path || '', 320) || null
+  };
+}
+
+function evaluateExecutionVerification(profile: AnyObj, run: AnyObj, payload: AnyObj) {
+  if (!profile || profile.enabled !== true) {
+    return {
+      enabled: false,
+      passed: true,
+      reason_codes: [],
+      expected_outcomes: []
+    };
+  }
+  const reasonCodes: string[] = [];
+  if (!run || run.ok !== true) reasonCodes.push('executor_failed');
+  if (payload && payload.ok === false) reasonCodes.push('payload_not_ok');
+  const payloadError = cleanText(payload && payload.error || '', 180);
+  if (payloadError) reasonCodes.push('payload_error_present');
+
+  const evidenceRows = gatherVerificationEvidence(payload);
+  const evidenceBlob = evidenceRows.join(' ');
+  const successMatches = (Array.isArray(profile.success_markers) ? profile.success_markers : [])
+    .filter((marker: string) => marker && evidenceBlob.includes(marker));
+  const failureMatches = (Array.isArray(profile.failure_markers) ? profile.failure_markers : [])
+    .filter((marker: string) => marker && evidenceBlob.includes(marker));
+  if (failureMatches.length) reasonCodes.push('failure_marker_detected');
+  if (profile.require_success_markers === true && successMatches.length === 0) {
+    reasonCodes.push('success_marker_missing');
+  }
+  const expectedOutcomes = Array.isArray(profile.expected_outcomes) ? profile.expected_outcomes : [];
+  const missingExpected = expectedOutcomes.filter((token: string) => !evidenceBlob.includes(token));
+  if (missingExpected.length) reasonCodes.push('expected_outcome_not_observed');
+
+  return {
+    enabled: true,
+    passed: reasonCodes.length === 0,
+    reason_codes: reasonCodes,
+    payload_error: payloadError || null,
+    success_markers_matched: successMatches,
+    failure_markers_matched: failureMatches,
+    expected_outcomes: expectedOutcomes,
+    expected_outcomes_missing: missingExpected
+  };
 }
 
 function buildComputerUseHardeningProfile(policy: AnyObj, adapterKind: string, params: AnyObj, contextRaw: AnyObj, dryRun: boolean) {
@@ -735,7 +880,38 @@ function cmdRun(args: AnyObj) {
     if (run.ok) break;
   }
 
-  const payload = run.payload || {};
+  let payload = run.payload || {};
+  const executionVerificationProfile = buildExecutionVerificationProfile(policy, adapter.kind, params, contextRaw);
+  let verificationAttempts = 0;
+  let verificationApplied = false;
+  let executionVerification = evaluateExecutionVerification(executionVerificationProfile, run, payload);
+  while (
+    run.ok === true
+    && executionVerification.enabled === true
+    && executionVerification.passed !== true
+    && verificationAttempts < Number(executionVerificationProfile.max_verify_attempts || 0)
+  ) {
+    verificationAttempts += 1;
+    verificationApplied = true;
+    const verifyParams = {
+      ...params,
+      verification_retry: true,
+      verification_attempt: verificationAttempts
+    };
+    const verifyContext = {
+      ...contextWithHardening,
+      computer_use_execution_verification: {
+        enabled: true,
+        verification_attempt: verificationAttempts,
+        expected_outcomes: executionVerificationProfile.expected_outcomes
+      }
+    };
+    run = runExecutorOnce(adapter.kind, verifyParams, verifyContext, dryRun);
+    payload = run.payload || {};
+    executionVerification = evaluateExecutionVerification(executionVerificationProfile, run, payload);
+    if (run.ok !== true) break;
+  }
+
   const ok = run.ok === true;
   const failureError = payload && payload.error
     ? cleanText(payload.error, 160)
@@ -758,6 +934,30 @@ function cmdRun(args: AnyObj) {
       recovery_attempts: recoveryAttempts
     });
   }
+  const verificationFailedHard = executionVerification.enabled === true
+    && executionVerification.passed !== true
+    && executionVerificationProfile.fail_closed === true;
+  const finalOk = ok && !verificationFailedHard;
+  if (executionVerification.enabled === true && executionVerificationProfile.receipts_path) {
+    appendJsonl(executionVerificationProfile.receipts_path, {
+      ts: nowIso(),
+      type: 'computer_use_execution_verification',
+      profile_id: profileId,
+      adapter_kind: adapter.kind,
+      run_ok: ok === true,
+      verification_ok: executionVerification.passed === true,
+      verification_fail_closed: executionVerificationProfile.fail_closed === true,
+      verification_attempts: verificationAttempts,
+      verification_applied: verificationApplied,
+      reason_codes: Array.isArray(executionVerification.reason_codes)
+        ? executionVerification.reason_codes
+        : [],
+      success_markers_matched: executionVerification.success_markers_matched || [],
+      failure_markers_matched: executionVerification.failure_markers_matched || [],
+      expected_outcomes: executionVerification.expected_outcomes || [],
+      expected_outcomes_missing: executionVerification.expected_outcomes_missing || []
+    });
+  }
   const row = {
     ts: nowIso(),
     type: 'universal_execution_primitive',
@@ -771,7 +971,7 @@ function cmdRun(args: AnyObj) {
     dry_run: dryRun,
     passport_link_id: passportLink,
     params_hash: shaHex(params).slice(0, 16),
-    ok,
+    ok: finalOk,
     executor_status: Number(run.status == null ? 1 : run.status),
     executor_payload: payload,
     hardening_protected: hardening.protected_adapter === true,
@@ -780,14 +980,24 @@ function cmdRun(args: AnyObj) {
     hardening_session_id_present: !!hardening.session_id,
     recovery_attempts: recoveryAttempts,
     recovery_applied: recoveryApplied,
-    verification_handoff_required: !ok && verificationFailure
+    verification_handoff_required: !ok && verificationFailure,
+    execution_verification_enabled: executionVerification.enabled === true,
+    execution_verification_ok: executionVerification.passed === true,
+    execution_verification_reason_codes: Array.isArray(executionVerification.reason_codes)
+      ? executionVerification.reason_codes
+      : [],
+    execution_verification_attempts: verificationAttempts,
+    execution_verification_applied: verificationApplied
   };
-  if (!ok) {
+  if (!finalOk) {
+    const errorSummary = verificationFailedHard
+      ? 'execution_verification_failed'
+      : failureError;
     const synthesis = maybeProposeSubExecutor(policy, {
       error_code: 'executor_failed',
       profile_id: profileId,
       intent,
-      failure_reason: failureError
+      failure_reason: errorSummary
     });
     if (synthesis && synthesis.ok === true) {
       row.sub_executor_candidate_id = synthesis.candidate_id || null;
@@ -800,8 +1010,9 @@ function cmdRun(args: AnyObj) {
       type: 'universal_execution_primitive',
       profile_id: profileId,
       adapter_kind: adapter.kind,
-      error: failureError,
+      error: errorSummary,
       sub_executor_candidate: synthesis && synthesis.ok === true ? synthesis : null,
+      execution_verification: executionVerification,
       row
     })}\n`);
     process.exit(Number(run.status == null ? 1 : run.status) || 1);
@@ -827,6 +1038,8 @@ function cmdStatus(args: AnyObj) {
   let hardeningProtectedRuns = 0;
   let handoffRequiredRuns = 0;
   let recoveryAppliedRuns = 0;
+  let executionVerificationRuns = 0;
+  let executionVerificationFailedRuns = 0;
   for (const row of rows) {
     if (!row || typeof row !== 'object') continue;
     const adapter = normalizeToken(row.adapter_kind || '', 80) || 'unknown';
@@ -836,6 +1049,10 @@ function cmdStatus(args: AnyObj) {
     if (row.hardening_protected === true) hardeningProtectedRuns += 1;
     if (row.verification_handoff_required === true) handoffRequiredRuns += 1;
     if (row.recovery_applied === true) recoveryAppliedRuns += 1;
+    if (row.execution_verification_enabled === true) executionVerificationRuns += 1;
+    if (row.execution_verification_enabled === true && row.execution_verification_ok !== true) {
+      executionVerificationFailedRuns += 1;
+    }
   }
   const out = {
     ok: true,
@@ -850,7 +1067,9 @@ function cmdStatus(args: AnyObj) {
     adapter_counts: adapterCounts,
     hardening_protected_runs: hardeningProtectedRuns,
     verification_handoff_required_runs: handoffRequiredRuns,
-    recovery_applied_runs: recoveryAppliedRuns
+    recovery_applied_runs: recoveryAppliedRuns,
+    execution_verification_runs: executionVerificationRuns,
+    execution_verification_failed_runs: executionVerificationFailedRuns
   };
   process.stdout.write(`${JSON.stringify(out)}\n`);
 }

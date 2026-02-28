@@ -5189,7 +5189,57 @@ function main() {
       console.log(" collective_shadow skipped reason=feature_flag_disabled flag=SPINE_COLLECTIVE_SHADOW_ENABLED");
     }
 
-    // 4k) observer mirror snapshot (read-only narrative + machine summary).
+    // 4k) passive dream warden shadow observer (read-only patch proposals).
+    if (String(process.env.SPINE_DREAM_WARDEN_ENABLED || "1") !== "0") {
+      const dreamWarden = runJson("node", [
+        "systems/security/dream_warden_guard.js",
+        "run",
+        dateStr,
+        "--apply=0"
+      ]);
+      const payload = dreamWarden.payload && typeof dreamWarden.payload === "object"
+        ? dreamWarden.payload
+        : null;
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_dream_warden",
+        mode,
+        date: dateStr,
+        ok: dreamWarden.ok && !!payload && payload.ok === true,
+        run_id: payload ? payload.run_id || null : null,
+        dream_mode: payload ? payload.mode || null : null,
+        activation_ready: payload ? payload.activation_ready === true : null,
+        patch_proposals_count: payload ? Number(payload.patch_proposals_count || 0) : null,
+        shadow_only: payload ? payload.shadow_only === true : null,
+        passive_only: payload ? payload.passive_only === true : null,
+        latest_path: payload ? payload.latest_path || null : null,
+        reason: (!dreamWarden.ok || !payload || payload.ok !== true)
+          ? String(dreamWarden.stderr || dreamWarden.stdout || `dream_warden_exit_${dreamWarden.code}`).slice(0, 180)
+          : null
+      });
+      if (dreamWarden.ok && payload && payload.ok === true) {
+        console.log(
+          ` dream_warden mode=${String(payload.mode || "unknown")}` +
+          ` activation=${payload.activation_ready === true ? "1" : "0"}` +
+          ` patches=${Number(payload.patch_proposals_count || 0)}`
+        );
+      } else {
+        console.log(` dream_warden unavailable reason=${String(dreamWarden.stderr || dreamWarden.stdout || "unknown").slice(0, 120)}`);
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_dream_warden_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "SPINE_DREAM_WARDEN_ENABLED",
+        flag_value: String(process.env.SPINE_DREAM_WARDEN_ENABLED || "")
+      });
+      console.log(" dream_warden skipped reason=feature_flag_disabled flag=SPINE_DREAM_WARDEN_ENABLED");
+    }
+
+    // 4l) observer mirror snapshot (read-only narrative + machine summary).
     if (String(process.env.SPINE_OBSERVER_MIRROR_ENABLED || "1") !== "0") {
       const mirrorDays = Math.max(1, Number(process.env.SPINE_OBSERVER_MIRROR_DAYS || 1) || 1);
       const observerMirror = runJson("node", [

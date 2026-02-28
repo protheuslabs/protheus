@@ -1,0 +1,30 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "rounds": {
+    "max_rounds": 2,
+    "min_agents": 3,
+    "consensus_threshold": 0.62
+  },
+  "agent_roles": {
+    "soldier_guard": {
+      "weight": 1.1,
+      "bias": "safety"
+    },
+    "creative_probe": {
+      "weight": 1,
+      "bias": "growth"
+    },
+    "orderly_executor": {
+      "weight": 1.15,
+      "bias": "delivery"
+    }
+  },
+  "outputs": {
+    "latest_path": "state/autonomy/multi_agent_debate/latest.json",
+    "history_path": "state/autonomy/multi_agent_debate/history.jsonl",
+    "receipts_path": "state/autonomy/multi_agent_debate/receipts.jsonl"
+  }
+}
+

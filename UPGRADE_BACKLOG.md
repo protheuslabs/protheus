@@ -703,6 +703,32 @@ Dependency notes:
 - `V3-SYM-001` depends on `V3-035` and `V3-036`.
 - `V3-CRT-001` depends on `V3-TASK-001`, `V3-ATTR-001`, and `V3-DUAL-001`.
 
+## Safe Dream Warden Intake (Normalized, 2026-02-28)
+
+Objective: add an externalized containment observer that improves simulation-driven patch discovery without hidden agency or direct mutation rights.
+
+| ID | Class | Version | Status | Upgrade | Why | Exit Criteria |
+|---|---|---|---|---|---|---|
+| V3-DW-001 | hardening | V3 | done | Passive Dream Warden Guard (shadow-only, auditable) | Internal probing can miss escape-style containment assumptions; a passive observer lane improves patch discovery if it cannot take autonomous action | Implemented `systems/security/dream_warden_guard.ts` + policy `config/dream_warden_policy.json` as a passive observer/patch-proposal lane only (no mutation authority, no hidden controls), with strict `apply` violation fail-close + stasis recommendation, deterministic receipts/proposals, and scheduler/spine wiring via `systems/primitives/runtime_scheduler.ts` + `systems/spine/spine.ts` in shadow mode |
+
+Dependency notes:
+- `V3-DW-001` depends on `V3-038`, `V3-034`, `V3-SYM-001`, and existing symbiosis recursion gates (`V3-005` / `V3-001` / `V3-004`).
+
+## Frontier Capability Closure Intake (Normalized, 2026-02-28)
+
+Objective: close near-term frontier gaps in actuation reliability, long-horizon planning depth, and team-style arbitration while preserving primitive-first governance.
+
+| ID | Class | Version | Status | Upgrade | Why | Exit Criteria |
+|---|---|---|---|---|---|---|
+| V3-CU-001 | primitive-upgrade | V3 | done | Production-Grade Computer Use Reliability Loop | Existing universal execution had guardrails but limited post-execution verification for browser/desktop-style tasks | Upgraded `systems/actuation/universal_execution_primitive.ts` with policy-driven execution verification (`computer_use_execution_verification`) including expected-outcome checks, bounded re-verification retries, fail-closed enforcement, and deterministic verification receipts (`state/actuation/universal_execution_primitive/verification.jsonl`) |
+| V3-LHP-001 | primitive | V3 | done | Long-Horizon Planning Primitive (structured thinking tokens) | Complex objectives benefit from explicit test-time planning budgets and intermediate planning artifacts | Added `systems/primitives/long_horizon_planning_primitive.ts` + policy `config/long_horizon_planning_policy.json` producing complexity-scored thinking budgets and structured planning steps; integrated advisory output into Weaver context/receipts/events |
+| V3-MAC-001 | primitive | V3 | done | Native Multi-Agent Debate Orchestrator | Sequential arbitration misses specialist disagreement signal under uncertainty; bounded debate improves decision robustness | Added `systems/autonomy/multi_agent_debate_orchestrator.ts` + policy `config/multi_agent_debate_policy.json` for bounded multi-agent debate/consensus output; integrated advisory consensus signal into Weaver value context/events/ide projection |
+
+Dependency notes:
+- `V3-CU-001` depends on `V3-039`, `V3-ACT-001`, and `V3-ACT-002`.
+- `V3-LHP-001` depends on `V3-TASK-001`, `V3-DUAL-001`, and `V3-BUD-001`.
+- `V3-MAC-001` depends on `V3-LHP-001`, `V3-ASSIM-007`, and Weaver arbitration lanes.
+
 ## Binary Runtime Hardening Intake (Normalized, 2026-02-27)
 
 Objective: add reverse-engineering resistance + efficiency for distributed instances while keeping the master instance fully debuggable and source-first.

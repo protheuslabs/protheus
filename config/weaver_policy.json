@@ -136,5 +136,9 @@
     "write_preview_overlay": true,
     "emit_ide_events": true,
     "emit_obsidian_projection": true
+  },
+  "advisory_primitives": {
+    "long_horizon_planning_enabled": true,
+    "multi_agent_debate_enabled": true
   }
 }

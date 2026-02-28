@@ -1162,6 +1162,24 @@ function main() {
     ["observer_mirror.js", "run", "status", "--days"]
   );
 
+  // dream_warden_guard.js must remain passive/read-only with deterministic run/status contract.
+  checkScript(
+    "systems/security/dream_warden_guard.js",
+    ["dream_warden_guard.js", "run", "status", "--apply", "--policy"]
+  );
+
+  // long_horizon_planning_primitive.js provides structured planning budgets for complex objectives.
+  checkScript(
+    "systems/primitives/long_horizon_planning_primitive.js",
+    ["long_horizon_planning_primitive.js", "run", "status", "--objective-id"]
+  );
+
+  // multi_agent_debate_orchestrator.js coordinates bounded specialist debate rounds.
+  checkScript(
+    "systems/autonomy/multi_agent_debate_orchestrator.js",
+    ["multi_agent_debate_orchestrator.js", "run", "status", "--input-json"]
+  );
+
   // continuum_core.js runs bounded background pulse/daemon/status contracts.
   checkScript(
     "systems/continuum/continuum_core.js",

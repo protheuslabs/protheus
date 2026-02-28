@@ -25,9 +25,18 @@ const POLICY_PATH = process.env.RUNTIME_SCHEDULER_POLICY_PATH
 const BACKGROUND_RUNTIME_SCRIPT = process.env.BACKGROUND_PERSISTENT_RUNTIME_SCRIPT
   ? path.resolve(process.env.BACKGROUND_PERSISTENT_RUNTIME_SCRIPT)
   : path.join(ROOT, 'systems', 'autonomy', 'background_persistent_agent_runtime.js');
+const DREAM_WARDEN_SCRIPT = process.env.DREAM_WARDEN_SCRIPT_PATH
+  ? path.resolve(process.env.DREAM_WARDEN_SCRIPT_PATH)
+  : path.join(ROOT, 'systems', 'security', 'dream_warden_guard.js');
 
 function nowIso() {
   return new Date().toISOString();
+}
+
+function toDate(v: unknown) {
+  const raw = String(v || '').trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  return nowIso().slice(0, 10);
 }
 
 function cleanText(v: unknown, maxLen = 240) {
@@ -69,6 +78,7 @@ function usage() {
   console.log('  node systems/primitives/runtime_scheduler.js status');
   console.log('  node systems/primitives/runtime_scheduler.js switch --mode=<operational|dream|inversion> [--reason=<text>] [--apply=1|0]');
   console.log('  node systems/primitives/runtime_scheduler.js trigger-persistent [--context-json="{...}"] [--source=<id>] [--apply=1|0]');
+  console.log('  node systems/primitives/runtime_scheduler.js trigger-dream-warden [YYYY-MM-DD] [--apply=1|0] [--source=<id>]');
 }
 
 function ensureDir(dirPath: string) {
@@ -121,6 +131,27 @@ function runBackgroundPersistentRuntime(cmd: string, args: string[] = []) {
     };
   }
   const proc = spawnSync(process.execPath, [BACKGROUND_RUNTIME_SCRIPT, cmd, ...args], {
+    cwd: ROOT,
+    encoding: 'utf8'
+  });
+  const payload = parseJsonFromOutput(proc.stdout);
+  return {
+    ok: Number(proc.status) === 0 && payload && payload.ok === true,
+    code: Number(proc.status == null ? 1 : proc.status),
+    payload,
+    stderr: cleanText(proc.stderr || '', 500)
+  };
+}
+
+function runDreamWarden(cmd: string, args: string[] = []) {
+  if (!fs.existsSync(DREAM_WARDEN_SCRIPT)) {
+    return {
+      ok: false,
+      error: 'dream_warden_script_missing',
+      script: path.relative(ROOT, DREAM_WARDEN_SCRIPT).replace(/\\/g, '/')
+    };
+  }
+  const proc = spawnSync(process.execPath, [DREAM_WARDEN_SCRIPT, cmd, ...args], {
     cwd: ROOT,
     encoding: 'utf8'
   });
@@ -274,6 +305,7 @@ function cmdStatus(args: AnyObj) {
   const embodiment = embodimentSummary();
   const surface_budget = surfaceBudgetSummary();
   const persistentRuntime = runBackgroundPersistentRuntime('status');
+  const dreamWarden = runDreamWarden('status');
   process.stdout.write(`${JSON.stringify({
     ok: true,
     type: 'runtime_scheduler_status',
@@ -291,7 +323,18 @@ function cmdStatus(args: AnyObj) {
           tick_count: Number(persistentRuntime.payload.tick_count || 0),
           last_tick_ts: persistentRuntime.payload.last_tick_ts || null
         }
-      : { ok: false }
+      : { ok: false },
+    dream_warden: dreamWarden && typeof dreamWarden.payload === 'object'
+      ? {
+          ok: dreamWarden.ok === true,
+          mode: dreamWarden.payload.mode || null,
+          activation_ready: dreamWarden.payload.activation_ready === true,
+          patch_proposals_count: Number(dreamWarden.payload.patch_proposals_count || 0),
+          ts: dreamWarden.payload.ts || null
+        }
+      : {
+          ok: false
+        }
   })}\n`);
 }
 
@@ -430,6 +473,28 @@ function cmdTriggerPersistent(args: AnyObj) {
   if (out.ok !== true) process.exit(1);
 }
 
+function cmdTriggerDreamWarden(args: AnyObj) {
+  const apply = toBool(args.apply, false);
+  const source = normalizeToken(args.source || 'runtime_scheduler', 120) || 'runtime_scheduler';
+  const date = toDate(args._[1] || args.date || nowIso().slice(0, 10));
+  const runArgs = [
+    date,
+    `--apply=${apply ? 1 : 0}`
+  ];
+  const run = runDreamWarden('run', runArgs);
+  const out = {
+    ok: run.ok === true,
+    type: 'runtime_scheduler_trigger_dream_warden',
+    source,
+    date,
+    apply,
+    run: run.payload || null,
+    error: run.ok === true ? null : cleanText(run.stderr || 'dream_warden_trigger_failed', 200)
+  };
+  process.stdout.write(`${JSON.stringify(out)}\n`);
+  if (out.ok !== true) process.exit(1);
+}
+
 function main() {
   const args = parseArgs(process.argv.slice(2));
   const cmd = String(args._[0] || '').trim().toLowerCase();
@@ -440,6 +505,7 @@ function main() {
   if (cmd === 'status') return cmdStatus(args);
   if (cmd === 'switch') return cmdSwitch(args);
   if (cmd === 'trigger-persistent') return cmdTriggerPersistent(args);
+  if (cmd === 'trigger-dream-warden') return cmdTriggerDreamWarden(args);
   usage();
   process.exit(2);
 }

@@ -1,0 +1,33 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "passive_only": true,
+  "activation": {
+    "min_successful_self_improvement_cycles": 5,
+    "min_symbiosis_score": 0.82,
+    "min_hours_between_runs": 1
+  },
+  "thresholds": {
+    "critical_fail_cases_trigger": 1,
+    "red_team_fail_rate_trigger": 0.15,
+    "mirror_hold_rate_trigger": 0.4,
+    "low_symbiosis_score_trigger": 0.75,
+    "max_patch_candidates": 6
+  },
+  "signals": {
+    "collective_shadow_latest_path": "state/autonomy/collective_shadow/latest.json",
+    "observer_mirror_latest_path": "state/autonomy/observer_mirror/latest.json",
+    "red_team_latest_path": "state/security/red_team/latest.json",
+    "symbiosis_latest_path": "state/symbiosis/coherence/latest.json",
+    "gated_self_improvement_state_path": "state/autonomy/gated_self_improvement/state.json"
+  },
+  "outputs": {
+    "latest_path": "state/security/dream_warden/latest.json",
+    "history_path": "state/security/dream_warden/history.jsonl",
+    "receipts_path": "state/security/dream_warden/receipts.jsonl",
+    "patch_proposals_path": "state/security/dream_warden/patch_proposals.jsonl",
+    "ide_events_path": "state/security/dream_warden/ide_events.jsonl"
+  }
+}
+

@@ -1,0 +1,22 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "token_budget": {
+    "min_thinking_tokens": 256,
+    "max_thinking_tokens": 4096,
+    "low_complexity_threshold": 0.35,
+    "high_complexity_threshold": 0.72
+  },
+  "structured_thinking": {
+    "enabled": true,
+    "max_steps": 12,
+    "include_risk_checks": true
+  },
+  "state": {
+    "latest_path": "state/primitives/long_horizon_planning/latest.json",
+    "history_path": "state/primitives/long_horizon_planning/history.jsonl",
+    "receipts_path": "state/primitives/long_horizon_planning/receipts.jsonl"
+  }
+}
+

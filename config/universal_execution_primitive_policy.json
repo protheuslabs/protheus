@@ -59,5 +59,32 @@
     "checkpoints_path": "state/actuation/universal_execution_primitive/checkpoints.jsonl",
     "handoff_path": "state/actuation/universal_execution_primitive/handoffs.jsonl"
   },
+  "computer_use_execution_verification": {
+    "enabled": true,
+    "protected_adapter_kinds": [
+      "browser_task",
+      "browser_action",
+      "api_request"
+    ],
+    "max_verify_attempts": 2,
+    "fail_closed": true,
+    "require_success_markers": false,
+    "success_markers": [
+      "success",
+      "completed",
+      "done"
+    ],
+    "failure_markers": [
+      "blocked",
+      "captcha_required",
+      "verification_required"
+    ],
+    "expected_outcome_keys": [
+      "expected_outcome",
+      "verification_target",
+      "expected_signal"
+    ],
+    "receipts_path": "state/actuation/universal_execution_primitive/verification.jsonl"
+  },
   "receipts_path": "state/actuation/universal_execution_primitive/receipts"
 }

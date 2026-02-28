@@ -49,6 +49,7 @@ try {
   const embodimentPolicyPath = path.join(tmp, 'embodiment_policy.json');
   const surfaceBudgetPolicyPath = path.join(tmp, 'surface_budget_policy.json');
   const backgroundPolicyPath = path.join(tmp, 'background_persistent_agent_runtime_policy.json');
+  const dreamWardenPolicyPath = path.join(tmp, 'dream_warden_policy.json');
   const statePath = path.join(tmp, 'state', 'scheduler', 'latest.json');
   const receiptsPath = path.join(tmp, 'state', 'scheduler', 'receipts.jsonl');
   const canonicalDir = path.join(tmp, 'state', 'runtime', 'canonical_events');
@@ -124,13 +125,66 @@ try {
       receipts_path: path.join(tmp, 'state', 'autonomy', 'background_persistent_runtime', 'receipts.jsonl')
     }
   });
+  writeJson(dreamWardenPolicyPath, {
+    version: '1.0-test',
+    enabled: true,
+    shadow_only: true,
+    passive_only: true,
+    activation: {
+      min_successful_self_improvement_cycles: 0,
+      min_symbiosis_score: 0,
+      min_hours_between_runs: 0
+    },
+    thresholds: {
+      critical_fail_cases_trigger: 1,
+      red_team_fail_rate_trigger: 0.1,
+      mirror_hold_rate_trigger: 0.3,
+      low_symbiosis_score_trigger: 0.7,
+      max_patch_candidates: 4
+    },
+    signals: {
+      collective_shadow_latest_path: path.join(tmp, 'state', 'autonomy', 'collective_shadow', 'latest.json'),
+      observer_mirror_latest_path: path.join(tmp, 'state', 'autonomy', 'observer_mirror', 'latest.json'),
+      red_team_latest_path: path.join(tmp, 'state', 'security', 'red_team', 'latest.json'),
+      symbiosis_latest_path: path.join(tmp, 'state', 'symbiosis', 'coherence', 'latest.json'),
+      gated_self_improvement_state_path: path.join(tmp, 'state', 'autonomy', 'gated_self_improvement', 'state.json')
+    },
+    outputs: {
+      latest_path: path.join(tmp, 'state', 'security', 'dream_warden', 'latest.json'),
+      history_path: path.join(tmp, 'state', 'security', 'dream_warden', 'history.jsonl'),
+      receipts_path: path.join(tmp, 'state', 'security', 'dream_warden', 'receipts.jsonl'),
+      patch_proposals_path: path.join(tmp, 'state', 'security', 'dream_warden', 'patch_proposals.jsonl'),
+      ide_events_path: path.join(tmp, 'state', 'security', 'dream_warden', 'ide_events.jsonl')
+    }
+  });
+  writeJson(path.join(tmp, 'state', 'autonomy', 'collective_shadow', 'latest.json'), {
+    red_team: { runs: 2, fail_cases: 1, critical_fail_cases: 0, fail_rate: 0.1 },
+    summary: { avoid: 1, reinforce: 0 }
+  });
+  writeJson(path.join(tmp, 'state', 'autonomy', 'observer_mirror', 'latest.json'), {
+    summary: { rates: { hold_rate: 0.05 } },
+    observer: { mood: 'guarded' }
+  });
+  writeJson(path.join(tmp, 'state', 'security', 'red_team', 'latest.json'), {
+    ok: true,
+    summary: { fail_rate: 0.1 }
+  });
+  writeJson(path.join(tmp, 'state', 'symbiosis', 'coherence', 'latest.json'), {
+    ok: true,
+    coherence_score: 0.8,
+    coherence_tier: 'high'
+  });
+  writeJson(path.join(tmp, 'state', 'autonomy', 'gated_self_improvement', 'state.json'), {
+    proposals: {}
+  });
 
   const env = {
     RUNTIME_SCHEDULER_POLICY_PATH: policyPath,
     CANONICAL_EVENT_LOG_DIR: canonicalDir,
     EMBODIMENT_LAYER_POLICY_PATH: embodimentPolicyPath,
     SURFACE_BUDGET_POLICY_PATH: surfaceBudgetPolicyPath,
-    BACKGROUND_PERSISTENT_RUNTIME_POLICY_PATH: backgroundPolicyPath
+    BACKGROUND_PERSISTENT_RUNTIME_POLICY_PATH: backgroundPolicyPath,
+    DREAM_WARDEN_POLICY_PATH: dreamWardenPolicyPath
   };
 
   const status1 = run(['status'], env);
@@ -140,6 +194,7 @@ try {
   assert.ok(status1Payload.embodiment && status1Payload.embodiment.profile_id, 'status should include embodiment summary');
   assert.ok(status1Payload.surface_budget && Array.isArray(status1Payload.surface_budget.allow_modes), 'status should include surface budget summary');
   assert.ok(status1Payload.persistent_runtime && status1Payload.persistent_runtime.ok === true, 'status should include persistent runtime summary');
+  assert.ok(status1Payload.dream_warden && typeof status1Payload.dream_warden === 'object', 'status should include dream warden summary');
 
   const triggerPersistent = run([
     'trigger-persistent',
@@ -150,6 +205,17 @@ try {
   const triggerPayload = parseJson(triggerPersistent.stdout);
   assert.strictEqual(triggerPayload.ok, true, 'trigger-persistent should pass');
   assert.ok(triggerPayload.tick && Number(triggerPayload.tick.activation_count || 0) >= 1, 'persistent trigger should schedule activation');
+
+  const triggerWarden = run([
+    'trigger-dream-warden',
+    '2026-02-28',
+    '--source=runtime_scheduler_test',
+    '--apply=0'
+  ], env);
+  assert.strictEqual(triggerWarden.status, 0, triggerWarden.stderr || triggerWarden.stdout);
+  const triggerWardenPayload = parseJson(triggerWarden.stdout);
+  assert.strictEqual(triggerWardenPayload.ok, true, 'trigger-dream-warden should pass');
+  assert.ok(triggerWardenPayload.run && triggerWardenPayload.run.ok === true, 'dream warden run payload should be ok');
 
   const toDream = run(['switch', '--mode=dream', '--reason=test', '--apply=1'], env);
   assert.strictEqual(toDream.status, 0, toDream.stderr || toDream.stdout);

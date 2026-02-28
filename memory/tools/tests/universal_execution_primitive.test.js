@@ -63,6 +63,7 @@ try {
   const synthesisDistillDir = path.join(tmp, 'subexec', 'distilled');
   const hardeningCheckpointsPath = path.join(tmp, 'hardening', 'checkpoints.jsonl');
   const hardeningHandoffPath = path.join(tmp, 'hardening', 'handoffs.jsonl');
+  const verificationReceiptsPath = path.join(tmp, 'hardening', 'verification.jsonl');
   ensureDir(receiptsRoot);
   ensureDir(outboxRoot);
   ensureDir(fsRoot);
@@ -121,6 +122,17 @@ try {
       handoff_required_on_verification: true,
       checkpoints_path: hardeningCheckpointsPath,
       handoff_path: hardeningHandoffPath
+    },
+    computer_use_execution_verification: {
+      enabled: true,
+      protected_adapter_kinds: ['filesystem_task'],
+      max_verify_attempts: 1,
+      fail_closed: true,
+      require_success_markers: false,
+      success_markers: ['success'],
+      failure_markers: ['blocked'],
+      expected_outcome_keys: ['expected_outcome'],
+      receipts_path: verificationReceiptsPath
     },
     receipts_path: receiptsRoot
   });
@@ -195,6 +207,24 @@ try {
     failPayload.sub_executor_candidate && failPayload.sub_executor_candidate.candidate_id,
     'executor failure should enqueue sub-executor synthesis candidate'
   );
+
+  const verifyFail = run([
+    'run',
+    '--profile-id=fs_profile',
+    '--intent=write_file',
+    '--params={"action":"write_file","path":"notes/verification_fail.txt","content":"verification mismatch should fail","expected_outcome":"non_matching_expected_phrase"}'
+  ], env);
+  assert.notStrictEqual(verifyFail.status, 0, 'verification mismatch should fail closed');
+  const verifyFailPayload = parseJson(verifyFail.stdout);
+  assert.strictEqual(verifyFailPayload.ok, false, 'verification failure payload should not be ok');
+  assert.strictEqual(verifyFailPayload.error, 'execution_verification_failed');
+  assert.ok(
+    verifyFailPayload.execution_verification
+      && Array.isArray(verifyFailPayload.execution_verification.reason_codes)
+      && verifyFailPayload.execution_verification.reason_codes.includes('expected_outcome_not_observed'),
+    'verification failure should include expected_outcome_not_observed reason'
+  );
+  assert.ok(fs.existsSync(verificationReceiptsPath), 'verification receipts should be written');
 
   const synthesisState = JSON.parse(fs.readFileSync(synthesisStatePath, 'utf8'));
   const synthesisCandidates = synthesisState && synthesisState.candidates && typeof synthesisState.candidates === 'object'

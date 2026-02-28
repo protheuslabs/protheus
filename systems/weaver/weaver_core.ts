@@ -53,6 +53,18 @@ try {
   dualityEvaluate = null;
   registerDualityObservation = null;
 }
+let runLongHorizonPlanning = null;
+try {
+  ({ runLongHorizonPlanning } = require('../primitives/long_horizon_planning_primitive.js'));
+} catch {
+  runLongHorizonPlanning = null;
+}
+let runMultiAgentDebate = null;
+try {
+  ({ runMultiAgentDebate } = require('../autonomy/multi_agent_debate_orchestrator.js'));
+} catch {
+  runMultiAgentDebate = null;
+}
 
 type AnyObj = Record<string, any>;
 
@@ -338,6 +350,10 @@ function defaultPolicy() {
       write_preview_overlay: true,
       emit_ide_events: true,
       emit_obsidian_projection: true
+    },
+    advisory_primitives: {
+      long_horizon_planning_enabled: true,
+      multi_agent_debate_enabled: true
     }
   };
 }
@@ -352,6 +368,9 @@ function loadPolicy(policyPath: string) {
   const creative = raw.creative_routing && typeof raw.creative_routing === 'object' ? raw.creative_routing : {};
   const pathways = raw.pathways && typeof raw.pathways === 'object' ? raw.pathways : {};
   const outputs = raw.outputs && typeof raw.outputs === 'object' ? raw.outputs : {};
+  const advisoryPrimitives = raw.advisory_primitives && typeof raw.advisory_primitives === 'object'
+    ? raw.advisory_primitives
+    : {};
   const legacyRevenueCap = clampNumber(
     arbitration.revenue_soft_cap_share,
     0.2,
@@ -548,6 +567,10 @@ function loadPolicy(policyPath: string) {
       write_preview_overlay: outputs.write_preview_overlay !== false,
       emit_ide_events: outputs.emit_ide_events !== false,
       emit_obsidian_projection: outputs.emit_obsidian_projection !== false
+    },
+    advisory_primitives: {
+      long_horizon_planning_enabled: advisoryPrimitives.long_horizon_planning_enabled !== false,
+      multi_agent_debate_enabled: advisoryPrimitives.multi_agent_debate_enabled !== false
     }
   };
 }
@@ -916,6 +939,20 @@ function runWeaver(dateStr: string, opts: AnyObj = {}) {
     opts.objective || opts.intent || (strategy.objective && strategy.objective.primary) || objectiveId,
     280
   );
+  const longHorizonPlanning = (
+    policy.advisory_primitives
+    && policy.advisory_primitives.long_horizon_planning_enabled === true
+    && typeof runLongHorizonPlanning === 'function'
+  )
+    ? runLongHorizonPlanning({
+      date: dateStr,
+      objective_id: objectiveId,
+      objective: objectiveText,
+      risk: normalizeToken(opts.risk || opts.risk_tier || 'medium', 40) || 'medium'
+    }, {
+      persist: true
+    })
+    : null;
   const dualitySignal = typeof dualityEvaluate === 'function'
     ? dualityEvaluate({
       lane: 'weaver_arbitration',
@@ -1013,6 +1050,12 @@ function runWeaver(dateStr: string, opts: AnyObj = {}) {
       && dualitySignal.enabled === true
       && String(dualitySignal.recommended_adjustment || '') === 'increase_yang_flux'
     ),
+    planning_complexity: longHorizonPlanning && longHorizonPlanning.ok === true
+      ? Number(longHorizonPlanning.complexity_score || 0)
+      : null,
+    planning_token_budget: longHorizonPlanning && longHorizonPlanning.ok === true
+      ? Number(longHorizonPlanning.thinking_token_budget || 0)
+      : null,
     currency_profiles: policy.arbitration && policy.arbitration.currency_profiles
       ? policy.arbitration.currency_profiles
       : {}
@@ -1036,6 +1079,27 @@ function runWeaver(dateStr: string, opts: AnyObj = {}) {
   const finalPrimary = finalRows[0] || null;
   const finalCurrency = finalPrimary ? normalizeToken(finalPrimary.value_currency || '', 64) : null;
   const finalMetric = finalPrimary ? normalizeToken(finalPrimary.metric_id || '', 80) : null;
+  const multiAgentDebate = (
+    policy.advisory_primitives
+    && policy.advisory_primitives.multi_agent_debate_enabled === true
+    && typeof runMultiAgentDebate === 'function'
+  )
+    ? runMultiAgentDebate({
+      date: dateStr,
+      objective_id: objectiveId,
+      objective: objectiveText,
+      candidates: finalRows.slice(0, 8).map((row: AnyObj) => ({
+        candidate_id: normalizeToken(row.metric_id || 'unknown_metric', 120) || 'unknown_metric',
+        score: clampNumber(row.share, 0, 1, 0),
+        confidence: clampNumber(row.signals && row.signals.confidence, 0, 1, 0.5),
+        risk: clampNumber(row.signals && row.signals.drift_risk, 0, 1, 0.5) >= 0.66
+          ? 'high'
+          : (clampNumber(row.signals && row.signals.drift_risk, 0, 1, 0.5) >= 0.33 ? 'medium' : 'low')
+      }))
+    }, {
+      persist: true
+    })
+    : null;
 
   const overlayBody = buildStrategyOverlayFromAllocation(
     {
@@ -1074,6 +1138,16 @@ function runWeaver(dateStr: string, opts: AnyObj = {}) {
     .concat(
       dualitySignal && dualitySignal.enabled === true
         ? ['duality_advisory_applied']
+        : []
+    )
+    .concat(
+      longHorizonPlanning && longHorizonPlanning.ok === true
+        ? ['long_horizon_planning_advisory_applied']
+        : []
+    )
+    .concat(
+      multiAgentDebate && multiAgentDebate.ok === true
+        ? [multiAgentDebate.consensus === true ? 'multi_agent_consensus_reached' : 'multi_agent_consensus_not_reached']
         : []
     )
     .filter(Boolean);
@@ -1207,6 +1281,36 @@ function runWeaver(dateStr: string, opts: AnyObj = {}) {
         : {
           enabled: false
         },
+      long_horizon_planning: longHorizonPlanning && longHorizonPlanning.ok === true
+        ? {
+          enabled: true,
+          complexity_score: Number(longHorizonPlanning.complexity_score || 0),
+          complexity_tier: cleanText(longHorizonPlanning.complexity_tier || 'unknown', 24),
+          thinking_token_budget: Number(longHorizonPlanning.thinking_token_budget || 0),
+          structured_step_count: Number(
+            longHorizonPlanning.structured_thinking && longHorizonPlanning.structured_thinking.step_count || 0
+          ),
+          reason_codes: Array.isArray(longHorizonPlanning.reason_codes)
+            ? longHorizonPlanning.reason_codes.slice(0, 8)
+            : []
+        }
+        : {
+          enabled: false
+        },
+      multi_agent_debate: multiAgentDebate && multiAgentDebate.ok === true
+        ? {
+          enabled: true,
+          consensus: multiAgentDebate.consensus === true,
+          consensus_share: Number(multiAgentDebate.consensus_share || 0),
+          recommended_candidate_id: multiAgentDebate.recommended_candidate_id || null,
+          rounds_executed: Number(multiAgentDebate.rounds_executed || 0),
+          reason_codes: Array.isArray(multiAgentDebate.reason_codes)
+            ? multiAgentDebate.reason_codes.slice(0, 8)
+            : []
+        }
+        : {
+          enabled: false
+        },
       metric_switch: metricSwitchRequestedByUser
         ? {
             declared_by_user: true,
@@ -1299,6 +1403,29 @@ function runWeaver(dateStr: string, opts: AnyObj = {}) {
       indicator: dualitySignal.indicator && typeof dualitySignal.indicator === 'object'
         ? dualitySignal.indicator
         : null
+    });
+  }
+  if (longHorizonPlanning && longHorizonPlanning.ok === true) {
+    emitEvent(paths, policy, 'long_horizon_planning', {
+      run_id: runId,
+      date: dateStr,
+      objective_id: objectiveId,
+      complexity_score: Number(longHorizonPlanning.complexity_score || 0),
+      complexity_tier: cleanText(longHorizonPlanning.complexity_tier || 'unknown', 24),
+      thinking_token_budget: Number(longHorizonPlanning.thinking_token_budget || 0),
+      structured_step_count: Number(
+        longHorizonPlanning.structured_thinking && longHorizonPlanning.structured_thinking.step_count || 0
+      )
+    });
+  }
+  if (multiAgentDebate && multiAgentDebate.ok === true) {
+    emitEvent(paths, policy, 'multi_agent_debate', {
+      run_id: runId,
+      date: dateStr,
+      objective_id: objectiveId,
+      consensus: multiAgentDebate.consensus === true,
+      consensus_share: Number(multiAgentDebate.consensus_share || 0),
+      recommended_candidate_id: multiAgentDebate.recommended_candidate_id || null
     });
   }
   if (metricSwitchRequestedByUser) {
@@ -1406,6 +1533,12 @@ function runWeaver(dateStr: string, opts: AnyObj = {}) {
     duality: payload.value_context && payload.value_context.duality
       ? payload.value_context.duality
       : { enabled: false },
+    long_horizon_planning: payload.value_context && payload.value_context.long_horizon_planning
+      ? payload.value_context.long_horizon_planning
+      : { enabled: false },
+    multi_agent_debate: payload.value_context && payload.value_context.multi_agent_debate
+      ? payload.value_context.multi_agent_debate
+      : { enabled: false },
     metric_switch: metricSwitchRequestedByUser
       ? {
           declared_by_user: true,
@@ -1427,6 +1560,8 @@ function runWeaver(dateStr: string, opts: AnyObj = {}) {
     `- Apply executed: \`${canApply ? 'yes' : 'no'}\``,
     `- Constitutional veto: \`${constitutionalVeto.blocked === true ? 'blocked' : 'clear'}\``,
     `- Creative route: \`${brainRoute.selected_live_brain || 'left'}\` (preferred=\`${brainRoute.creative_preferred === true ? 'yes' : 'no'}\`)`,
+    `- Long-horizon planning: \`${longHorizonPlanning && longHorizonPlanning.ok === true ? 'enabled' : 'disabled'}\``,
+    `- Multi-agent debate: \`${multiAgentDebate && multiAgentDebate.ok === true ? (multiAgentDebate.consensus === true ? 'consensus' : 'no_consensus') : 'disabled'}\``,
     '',
     '## Top Allocations'
   ];
