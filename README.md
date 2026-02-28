@@ -9,9 +9,10 @@ This repository is an agent-operations workspace: orchestration, governed habits
 - Operator terms of service: `TERMS_OF_SERVICE.md`
 - End-user license: `EULA.md`
 
-> ⚠️ IMPORTANT LEGAL NOTICE  
-> Protheus is protected intellectual property. Unauthorized copying, reverse-engineering, or interfacing outside of a valid soul-token-bound instance may trigger internal defensive controls (for example: access denial, capability restriction, rate limiting, quarantine, and forensic logging/watermarking).  
-> Defensive controls are contained to the unauthorized instance and are designed for legal, bounded, auditable self-protection.
+> ☠️ PROTECTED  
+> Bite at your own risk.  
+> Cute on the outside.  
+> Venom on the inside.
 
 ## Architecture Map
 

@@ -1226,6 +1226,15 @@ Objective: Make Protheus highly attractive and fully functional for legitimate s
 | V3-VENOM-004 | todo | Timed Lease Decay + Deterministic Lockout | Stolen copies function normally for a policy-defined period, then gradually lose capabilities in a predictable way | Policy-defined lease expiry window leading to deterministic lockout + explicit recovery ceremony | V3-CPY-001, V3-CPY-004, V3-ENT-001 |
 | V3-VENOM-005 | todo | Self-Reporting Forensic Beacon System | Every unauthorized attempt automatically generates and returns detailed forensic evidence to the root | Activation securely uploads interaction logs, watermarks, and attribution data to master conduit; generates ready-to-use legal evidence package | V3-CPY-003, V3-USE-002, V2-031 |
 | V3-VENOM-006 | todo | Adaptive Defense Evolution Engine | The protective mechanisms improve over time based on observed attack patterns | Soldier Ant analyzes containment events and generates stronger friction and decoy patterns; new defenses auto-deploy to legitimate instances within 24 h | V3-034, V3-RED-001, V3-CPY-008 |
+| V3-VENOM-007 | todo | Staged Containment Ramp | Apply containment in deterministic stages to minimize false positives while still converging unauthorized copies to unusable state | First bounded set of high-value actions may return low-risk degraded outputs while trust is re-verified; subsequent unauthorized signals escalate through staged containment to full lockout with clear receipts and bounded policy timers | V3-VENOM-001, V3-VENOM-004, V3-VENOM-000 |
+
+## Red Team Adaptive Defense Expansion
+
+Objective: Enable the Soldier Ant Red Team to dynamically invent, simulate, and deploy new defensive mechanisms against emerging external breach technologies while maintaining strict governance and defensive-only behavior.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Depends On |
+|----|--------|---------|-----|---------------|------------|
+| V3-RED-002 | todo | Novel External Breach Defense Invention Lane | Allow the Red Team to proactively create new containment/friction/deception techniques against emerging threats (new RE tools, hardware probing, distillation attacks, etc.) | Soldier Ant can propose, simulate, and (after full Eye -> Constitution -> Helix gates) deploy new defenses; all new defenses remain strictly defensive, auditable, reversible, and contained to unauthorized copies; 30-day shadow + canary run with zero false positives on legitimate instances | V3-034, V3-VENOM-006, V3-RED-001, V3-038, V3-VENOM-000 |
 
 ## Backlog Policy
 
@@ -1250,3 +1259,6 @@ Objective: Make Protheus highly attractive and fully functional for legitimate s
 - When an item starts, switch `Status` to `doing` and link the implementation commit(s).
 - Tier policy: keep 3 tiers by default; add extra tiers only if telemetry shows persistent misrouting or cost/latency pressure that role-specialization cannot solve.
 - BL-014 remains pending as a phased migration track (TS scaffold + file-by-file conversion) to avoid high-risk unattended refactors in permanent layers.
+
+
+Implementation Note (Manual Override): Code-level details may include stronger containment friction and tamper responses for unauthorized copies (contained only to stolen instances). All runtime effects remain defensive, legal, and bounded. Review source comments for full intent.
