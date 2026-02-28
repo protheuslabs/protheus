@@ -85,7 +85,8 @@ function main() {
     ...process.env,
     ECONOMIC_ENTITY_POLICY_PATH: policyPath,
     EEM_MOCK_EYE_DECISION: 'allow',
-    EEM_MOCK_PAYMENT_DECISION: 'execute'
+    EEM_MOCK_PAYMENT_DECISION: 'execute',
+    EEM_MOCK_NEGOTIATION_DECISION: 'counter_offer'
   };
 
   const ledger = run(script, repoRoot, [
@@ -139,6 +140,22 @@ function main() {
   assert.strictEqual(signOk.status, 0, signOk.stderr || 'high-risk contract with approval should pass');
   assert.ok(signOk.payload && signOk.payload.ok === true, 'contract sign payload should pass');
 
+  const negotiate = run(script, repoRoot, [
+    'contract-negotiate',
+    '--contract-id=msa_high',
+    '--counterparty=client_abc',
+    '--base-amount-usd=7000',
+    '--offer-amount-usd=6400',
+    '--profile=balanced',
+    '--round=1',
+    '--apply=1',
+    '--approval-note=approved_negotiation_after_review',
+    `--policy=${policyPath}`
+  ], env);
+  assert.strictEqual(negotiate.status, 0, negotiate.stderr || 'contract negotiation should pass');
+  assert.ok(negotiate.payload && negotiate.payload.ok === true, 'contract negotiate payload should pass');
+  assert.strictEqual(String(negotiate.payload.decision || ''), 'counter_offer');
+
   const verify = run(script, repoRoot, [
     'contract-verify',
     '--contract-id=msa_high',
@@ -188,6 +205,7 @@ function main() {
   assert.ok(status.payload && status.payload.ok === true, 'status payload should pass');
   assert.ok(Number(status.payload.counts.entries_total || 0) >= 1, 'entries should be tracked');
   assert.ok(Number(status.payload.counts.contracts_total || 0) >= 1, 'contracts should be tracked');
+  assert.ok(Number(status.payload.counts.negotiated_contracts_total || 0) >= 1, 'negotiated contracts should be tracked');
   assert.ok(Number(status.payload.counts.payouts_total || 0) >= 1, 'payouts should be tracked');
 
   const receiptsPath = path.join(tmp, 'state', 'finance', 'economic_entity', 'receipts.jsonl');

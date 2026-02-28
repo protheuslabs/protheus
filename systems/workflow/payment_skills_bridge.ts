@@ -106,10 +106,35 @@ function defaultPolicy() {
       paypal: { enabled: true },
       mercury: { enabled: true }
     },
+    negotiation: {
+      enabled: true,
+      default_profile: 'balanced',
+      profiles: {
+        balanced: {
+          min_accept_ratio: 0.9,
+          auto_accept_ratio: 0.98,
+          max_discount_ratio: 0.15,
+          max_rounds: 3
+        },
+        hardline: {
+          min_accept_ratio: 0.95,
+          auto_accept_ratio: 1,
+          max_discount_ratio: 0.08,
+          max_rounds: 2
+        },
+        flexible: {
+          min_accept_ratio: 0.82,
+          auto_accept_ratio: 0.94,
+          max_discount_ratio: 0.22,
+          max_rounds: 4
+        }
+      }
+    },
     paths: {
       state: 'state/workflow/payment_bridge/latest.json',
       history: 'state/workflow/payment_bridge/history.jsonl',
-      holds: 'state/workflow/payment_bridge/holds.json'
+      holds: 'state/workflow/payment_bridge/holds.json',
+      negotiations: 'state/workflow/payment_bridge/negotiations.json'
     }
   };
 }
@@ -125,6 +150,9 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
   const base = defaultPolicy();
   const providers = raw && raw.providers && typeof raw.providers === 'object'
     ? raw.providers
+    : {};
+  const negotiation = raw && raw.negotiation && typeof raw.negotiation === 'object'
+    ? raw.negotiation
     : {};
   const pathsCfg = raw && raw.paths && typeof raw.paths === 'object'
     ? raw.paths
@@ -151,10 +179,42 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
       paypal: normalizeProvider('paypal'),
       mercury: normalizeProvider('mercury')
     },
+    negotiation: {
+      enabled: negotiation.enabled !== false,
+      default_profile: normalizeToken(
+        negotiation.default_profile || base.negotiation.default_profile,
+        40
+      ) || base.negotiation.default_profile,
+      profiles: (() => {
+        const baseProfiles = base.negotiation.profiles || {};
+        const rawProfiles = negotiation.profiles && typeof negotiation.profiles === 'object'
+          ? negotiation.profiles
+          : {};
+        const outProfiles: AnyObj = {};
+        const profileIds = Array.from(new Set([
+          ...Object.keys(baseProfiles),
+          ...Object.keys(rawProfiles)
+        ]));
+        for (const idRaw of profileIds) {
+          const id = normalizeToken(idRaw, 40);
+          if (!id) continue;
+          const baseRow = baseProfiles[idRaw] || baseProfiles[id] || baseProfiles.balanced || {};
+          const row = rawProfiles[idRaw] || rawProfiles[id] || {};
+          outProfiles[id] = {
+            min_accept_ratio: clampNumber(row.min_accept_ratio, 0, 1, baseRow.min_accept_ratio || 0.9),
+            auto_accept_ratio: clampNumber(row.auto_accept_ratio, 0, 1, baseRow.auto_accept_ratio || 0.98),
+            max_discount_ratio: clampNumber(row.max_discount_ratio, 0, 1, baseRow.max_discount_ratio || 0.15),
+            max_rounds: Math.max(1, Math.min(12, Number(row.max_rounds || baseRow.max_rounds || 3) || 3))
+          };
+        }
+        return outProfiles;
+      })()
+    },
     paths: {
       state: resolvePath(pathsCfg.state, base.paths.state),
       history: resolvePath(pathsCfg.history, base.paths.history),
-      holds: resolvePath(pathsCfg.holds, base.paths.holds)
+      holds: resolvePath(pathsCfg.holds, base.paths.holds),
+      negotiations: resolvePath(pathsCfg.negotiations, base.paths.negotiations)
     }
   };
 }
@@ -178,6 +238,28 @@ function persistHolds(holdsPath: string, holds: AnyObj) {
     schema_version: '1.0',
     updated_at: nowIso(),
     holds
+  });
+}
+
+function loadNegotiations(filePath: string) {
+  const payload = readJson(filePath, {});
+  const negotiations = payload && payload.negotiations && typeof payload.negotiations === 'object'
+    ? payload.negotiations
+    : {};
+  return {
+    schema_id: 'payment_bridge_negotiations',
+    schema_version: '1.0',
+    updated_at: payload && payload.updated_at ? String(payload.updated_at) : null,
+    negotiations
+  };
+}
+
+function persistNegotiations(filePath: string, negotiations: AnyObj) {
+  writeJsonAtomic(filePath, {
+    schema_id: 'payment_bridge_negotiations',
+    schema_version: '1.0',
+    updated_at: nowIso(),
+    negotiations
   });
 }
 
@@ -336,11 +418,152 @@ function releaseHold(args: AnyObj) {
   if (strict && payload.ok !== true) process.exit(1);
 }
 
+function runNegotiation(args: AnyObj) {
+  const policyPath = args.policy ? path.resolve(String(args.policy)) : DEFAULT_POLICY_PATH;
+  const policy = loadPolicy(policyPath);
+  const strict = toBool(args.strict, false);
+  const negotiationsState = loadNegotiations(policy.paths.negotiations);
+  const negotiations = negotiationsState.negotiations && typeof negotiationsState.negotiations === 'object'
+    ? negotiationsState.negotiations
+    : {};
+  if (policy.negotiation.enabled !== true) {
+    const out = {
+      ok: false,
+      type: 'payment_skills_bridge_negotiate',
+      error: 'negotiation_disabled'
+    };
+    process.stdout.write(`${JSON.stringify(out, null, 2)}\n`);
+    if (strict) process.exit(1);
+    return;
+  }
+
+  const dealId = clean(args['deal-id'] || args.deal_id || `deal_${Date.now().toString(36)}`, 120);
+  const counterparty = clean(args.counterparty || '', 160) || null;
+  const baseAmountUsd = Number(clampNumber(args['base-amount-usd'] ?? args.base_amount_usd, 0.01, 1_000_000_000, 0).toFixed(2));
+  const offerAmountUsd = Number(clampNumber(args['offer-amount-usd'] ?? args.offer_amount_usd, 0.01, 1_000_000_000, 0).toFixed(2));
+  const requestedProfile = normalizeToken(args.profile || policy.negotiation.default_profile, 40) || 'balanced';
+  const profile = policy.negotiation.profiles[requestedProfile]
+    || policy.negotiation.profiles[policy.negotiation.default_profile]
+    || policy.negotiation.profiles.balanced;
+  const round = Math.max(1, Math.min(12, Number(args.round || 1) || 1));
+  const applyRequested = toBool(args.apply, false);
+  const approvalNote = clean(args['approval-note'] || args.approval_note || '', 240) || null;
+
+  const blockers = [];
+  if (!dealId) blockers.push('deal_id_required');
+  if (!counterparty) blockers.push('counterparty_required');
+  if (baseAmountUsd <= 0 || offerAmountUsd <= 0) blockers.push('amount_required');
+  if (!profile || typeof profile !== 'object') blockers.push('profile_not_found');
+
+  let mode = 'shadow';
+  if (applyRequested && policy.shadow_only === true) {
+    blockers.push('shadow_only_live_blocked');
+  } else if (applyRequested) {
+    mode = 'live';
+  }
+  if (mode === 'live' && policy.require_approval_note_for_live === true && !approvalNote) {
+    blockers.push('missing_live_approval_note');
+  }
+
+  const ratio = baseAmountUsd > 0 ? (offerAmountUsd / baseAmountUsd) : 0;
+  const discountRatio = baseAmountUsd > 0 ? ((baseAmountUsd - offerAmountUsd) / baseAmountUsd) : 1;
+  let decision = 'counter_offer';
+  let recommendationUsd = baseAmountUsd;
+  if (round > Number(profile.max_rounds || 3)) {
+    decision = 'reject';
+  } else if (ratio >= Number(profile.auto_accept_ratio || 1)) {
+    decision = 'accept';
+    recommendationUsd = offerAmountUsd;
+  } else if (ratio >= Number(profile.min_accept_ratio || 0.9)) {
+    decision = 'accept';
+    recommendationUsd = offerAmountUsd;
+  } else if (discountRatio > Number(profile.max_discount_ratio || 0.15)) {
+    decision = 'reject';
+  } else {
+    decision = 'counter_offer';
+    const floor = baseAmountUsd * (1 - Number(profile.max_discount_ratio || 0.15));
+    recommendationUsd = Number((((offerAmountUsd + floor) / 2)).toFixed(2));
+  }
+  if (blockers.length) decision = 'hold';
+
+  const out = {
+    ok: decision !== 'hold' && decision !== 'reject' || strict !== true,
+    type: 'payment_skills_bridge_negotiate',
+    ts: nowIso(),
+    deal_id: dealId,
+    counterparty,
+    profile: requestedProfile,
+    round,
+    base_amount_usd: baseAmountUsd,
+    offer_amount_usd: offerAmountUsd,
+    ratio: Number(ratio.toFixed(6)),
+    discount_ratio: Number(discountRatio.toFixed(6)),
+    recommendation_amount_usd: Number(recommendationUsd.toFixed(2)),
+    decision,
+    mode,
+    blockers,
+    approval_note: approvalNote,
+    apply_requested: applyRequested
+  };
+
+  if (!negotiations[dealId] || typeof negotiations[dealId] !== 'object') {
+    negotiations[dealId] = {
+      deal_id: dealId,
+      counterparty,
+      profile: requestedProfile,
+      rounds: []
+    };
+  }
+  negotiations[dealId].counterparty = counterparty;
+  negotiations[dealId].profile = requestedProfile;
+  negotiations[dealId].last_decision = decision;
+  negotiations[dealId].last_round = round;
+  negotiations[dealId].updated_at = out.ts;
+  const rounds = Array.isArray(negotiations[dealId].rounds) ? negotiations[dealId].rounds : [];
+  rounds.push({
+    ts: out.ts,
+    round,
+    offer_amount_usd: offerAmountUsd,
+    ratio: out.ratio,
+    decision,
+    recommendation_amount_usd: out.recommendation_amount_usd,
+    mode,
+    blockers
+  });
+  negotiations[dealId].rounds = rounds.slice(-24);
+  persistNegotiations(policy.paths.negotiations, negotiations);
+
+  appendJsonl(policy.paths.history, {
+    ...out,
+    negotiations_path: relPath(policy.paths.negotiations)
+  });
+  writeJsonAtomic(policy.paths.state, {
+    schema_id: 'payment_skills_bridge',
+    schema_version: '1.0',
+    updated_at: out.ts,
+    deal_id: dealId,
+    decision,
+    round,
+    profile: requestedProfile,
+    recommendation_amount_usd: out.recommendation_amount_usd,
+    blockers,
+    negotiations_count: Object.keys(negotiations).length
+  });
+  process.stdout.write(`${JSON.stringify({
+    ...out,
+    negotiations_count: Object.keys(negotiations).length,
+    negotiations_path: relPath(policy.paths.negotiations),
+    state_path: relPath(policy.paths.state)
+  }, null, 2)}\n`);
+  if (strict && out.ok !== true) process.exit(1);
+}
+
 function statusBridge(args: AnyObj) {
   const policyPath = args.policy ? path.resolve(String(args.policy)) : DEFAULT_POLICY_PATH;
   const policy = loadPolicy(policyPath);
   const payload = readJson(policy.paths.state, null);
   const holds = loadHolds(policy.paths.holds);
+  const negotiations = loadNegotiations(policy.paths.negotiations);
   process.stdout.write(`${JSON.stringify({
     ok: true,
     type: 'payment_skills_bridge_status',
@@ -350,7 +573,9 @@ function statusBridge(args: AnyObj) {
     state_path: relPath(policy.paths.state),
     history_path: relPath(policy.paths.history),
     holds_path: relPath(policy.paths.holds),
+    negotiations_path: relPath(policy.paths.negotiations),
     holds_count: Object.keys(holds.holds || {}).length,
+    negotiations_count: Object.keys(negotiations.negotiations || {}).length,
     payload: payload && typeof payload === 'object' ? payload : null
   }, null, 2)}\n`);
 }
@@ -359,6 +584,7 @@ function usage() {
   console.log('Usage:');
   console.log('  node systems/workflow/payment_skills_bridge.js payout --provider=stripe --amount-usd=10 --recipient=user_123 [--apply=1] [--approval-note=\"...\"]');
   console.log('  node systems/workflow/payment_skills_bridge.js release --payout-id=<id> --approval-note=\"...\"');
+  console.log('  node systems/workflow/payment_skills_bridge.js negotiate --deal-id=<id> --counterparty=<id> --base-amount-usd=<n> --offer-amount-usd=<n> [--profile=<id>] [--round=<n>] [--apply=1] [--approval-note=\"...\"]');
   console.log('  node systems/workflow/payment_skills_bridge.js status');
 }
 
@@ -373,6 +599,10 @@ function main() {
     releaseHold(args);
     return;
   }
+  if (cmd === 'negotiate') {
+    runNegotiation(args);
+    return;
+  }
   if (cmd === 'status' || cmd === 'latest') {
     statusBridge(args);
     return;
@@ -382,4 +612,3 @@ function main() {
 }
 
 main();
-

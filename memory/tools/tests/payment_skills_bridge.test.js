@@ -37,6 +37,7 @@ try {
   const statePath = path.join(tmp, 'state', 'workflow', 'payment_bridge', 'latest.json');
   const historyPath = path.join(tmp, 'state', 'workflow', 'payment_bridge', 'history.jsonl');
   const holdsPath = path.join(tmp, 'state', 'workflow', 'payment_bridge', 'holds.json');
+  const negotiationsPath = path.join(tmp, 'state', 'workflow', 'payment_bridge', 'negotiations.json');
 
   writeJson(policyPath, {
     version: '1.0-test',
@@ -49,10 +50,23 @@ try {
       paypal: { enabled: true },
       mercury: { enabled: false }
     },
+    negotiation: {
+      enabled: true,
+      default_profile: 'balanced',
+      profiles: {
+        balanced: {
+          min_accept_ratio: 0.9,
+          auto_accept_ratio: 0.98,
+          max_discount_ratio: 0.15,
+          max_rounds: 3
+        }
+      }
+    },
     paths: {
       state: statePath,
       history: historyPath,
-      holds: holdsPath
+      holds: holdsPath,
+      negotiations: negotiationsPath
     }
   });
 
@@ -82,10 +96,23 @@ try {
       paypal: { enabled: true },
       mercury: { enabled: false }
     },
+    negotiation: {
+      enabled: true,
+      default_profile: 'balanced',
+      profiles: {
+        balanced: {
+          min_accept_ratio: 0.9,
+          auto_accept_ratio: 0.98,
+          max_discount_ratio: 0.15,
+          max_rounds: 3
+        }
+      }
+    },
     paths: {
       state: statePath,
       history: historyPath,
-      holds: holdsPath
+      holds: holdsPath,
+      negotiations: negotiationsPath
     }
   });
 
@@ -128,14 +155,44 @@ try {
   assert.ok(fs.existsSync(statePath), 'state should be written');
   assert.ok(fs.existsSync(historyPath), 'history should be written');
 
+  out = run([
+    'negotiate',
+    '--policy=' + policyPath,
+    '--deal-id=deal_shadow',
+    '--counterparty=client_a',
+    '--base-amount-usd=100',
+    '--offer-amount-usd=92',
+    '--apply=1'
+  ]);
+  payload = parseJson(out.stdout);
+  assert.strictEqual(payload.decision, 'hold', 'shadow-live negotiation should hold');
+  assert.ok(payload.blockers.includes('shadow_only_live_blocked') || payload.blockers.includes('missing_live_approval_note'));
+
+  out = run([
+    'negotiate',
+    '--policy=' + policyPath,
+    '--deal-id=deal_live',
+    '--counterparty=client_b',
+    '--base-amount-usd=100',
+    '--offer-amount-usd=95',
+    '--profile=balanced',
+    '--round=1',
+    '--apply=1',
+    '--approval-note=approved negotiation'
+  ]);
+  payload = parseJson(out.stdout);
+  assert.strictEqual(payload.ok, true, 'live negotiation should succeed');
+  assert.ok(['accept', 'counter_offer'].includes(payload.decision), 'negotiation should reach governed decision');
+  assert.ok(fs.existsSync(negotiationsPath), 'negotiation state should be persisted');
+
   out = run(['status', '--policy=' + policyPath]);
   payload = parseJson(out.stdout);
   assert.strictEqual(payload.ok, true, 'status should be ok');
   assert.strictEqual(payload.available, true, 'status should expose latest state');
+  assert.ok(Number(payload.negotiations_count || 0) >= 1, 'status should include negotiations count');
 
   console.log('payment_skills_bridge.test.js: OK');
 } catch (err) {
   console.error(`payment_skills_bridge.test.js: FAIL: ${err.message}`);
   process.exit(1);
 }
-
