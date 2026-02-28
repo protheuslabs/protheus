@@ -14,6 +14,17 @@
     "trust_gain": 0.04,
     "trust_penalty": 0.08
   },
+  "federation": {
+    "enabled": true,
+    "opt_in_required": true,
+    "local_instance_id": "local_instance",
+    "max_export_capabilities": 32,
+    "max_import_capabilities": 64,
+    "min_attestation_score": 0.55,
+    "import_trust_gain": 0.03,
+    "import_trust_penalty": 0.05,
+    "archive_dir": "state/assimilation/group_evolving_agents/federation"
+  },
   "state": {
     "pool_path": "state/assimilation/group_evolving_agents/pool.json",
     "latest_path": "state/assimilation/group_evolving_agents/latest.json",

@@ -4,6 +4,7 @@ export {};
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 type AnyObj = Record<string, any>;
 
@@ -74,6 +75,8 @@ function usage() {
   console.log('Usage:');
   console.log('  node systems/assimilation/group_evolving_agents_primitive.js run --input-json="{...}" [--policy=<path>] [--apply=1|0]');
   console.log('  node systems/assimilation/group_evolving_agents_primitive.js status [--policy=<path>] [--capability-id=<id>]');
+  console.log('  node systems/assimilation/group_evolving_agents_primitive.js export-archive [--policy=<path>] [--opt-in=1|0] [--capability-id=<id>] [--peer-id=<id>] [--attestation-score=0..1]');
+  console.log('  node systems/assimilation/group_evolving_agents_primitive.js import-archive --file=<path> [--policy=<path>] [--opt-in=1|0]');
 }
 
 function ensureDir(dirPath: string) {
@@ -123,6 +126,10 @@ function parseJsonArg(raw: unknown, fallback: any = {}) {
   }
 }
 
+function hashJson(value: AnyObj) {
+  return crypto.createHash('sha256').update(JSON.stringify(value), 'utf8').digest('hex');
+}
+
 function defaultPolicy() {
   return {
     schema_id: 'group_evolving_agents_primitive_policy',
@@ -140,6 +147,17 @@ function defaultPolicy() {
       trust_gain: 0.04,
       trust_penalty: 0.08
     },
+    federation: {
+      enabled: true,
+      opt_in_required: true,
+      local_instance_id: 'local_instance',
+      max_export_capabilities: 32,
+      max_import_capabilities: 64,
+      min_attestation_score: 0.55,
+      import_trust_gain: 0.03,
+      import_trust_penalty: 0.05,
+      archive_dir: 'state/assimilation/group_evolving_agents/federation'
+    },
     state: {
       pool_path: 'state/assimilation/group_evolving_agents/pool.json',
       latest_path: 'state/assimilation/group_evolving_agents/latest.json',
@@ -153,6 +171,7 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
   const base = defaultPolicy();
   const sharing = raw.sharing && typeof raw.sharing === 'object' ? raw.sharing : {};
   const trust = raw.trust && typeof raw.trust === 'object' ? raw.trust : {};
+  const federation = raw.federation && typeof raw.federation === 'object' ? raw.federation : {};
   const state = raw.state && typeof raw.state === 'object' ? raw.state : {};
   return {
     schema_id: base.schema_id,
@@ -174,6 +193,48 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
       trust_decay: clampNumber(trust.trust_decay, 0, 1, base.trust.trust_decay),
       trust_gain: clampNumber(trust.trust_gain, 0, 1, base.trust.trust_gain),
       trust_penalty: clampNumber(trust.trust_penalty, 0, 1, base.trust.trust_penalty)
+    },
+    federation: {
+      enabled: federation.enabled !== false,
+      opt_in_required: federation.opt_in_required !== false,
+      local_instance_id: normalizeToken(
+        federation.local_instance_id || base.federation.local_instance_id,
+        120
+      ) || base.federation.local_instance_id,
+      max_export_capabilities: clampInt(
+        federation.max_export_capabilities,
+        1,
+        10000,
+        base.federation.max_export_capabilities
+      ),
+      max_import_capabilities: clampInt(
+        federation.max_import_capabilities,
+        1,
+        10000,
+        base.federation.max_import_capabilities
+      ),
+      min_attestation_score: clampNumber(
+        federation.min_attestation_score,
+        0,
+        1,
+        base.federation.min_attestation_score
+      ),
+      import_trust_gain: clampNumber(
+        federation.import_trust_gain,
+        0,
+        1,
+        base.federation.import_trust_gain
+      ),
+      import_trust_penalty: clampNumber(
+        federation.import_trust_penalty,
+        0,
+        1,
+        base.federation.import_trust_penalty
+      ),
+      archive_dir: resolvePath(
+        federation.archive_dir || base.federation.archive_dir,
+        base.federation.archive_dir
+      )
     },
     state: {
       pool_path: resolvePath(state.pool_path || base.state.pool_path, base.state.pool_path),
@@ -341,6 +402,252 @@ function runGroupEvolvingAgents(inputRaw: AnyObj = {}, opts: AnyObj = {}) {
   return out;
 }
 
+function commandExportArchive(args: AnyObj) {
+  const policyPath = path.resolve(String(args.policy || process.env.GROUP_EVOLVING_AGENTS_POLICY_PATH || DEFAULT_POLICY_PATH));
+  const policy = loadPolicy(policyPath);
+  if (policy.enabled !== true) {
+    return {
+      ok: false,
+      type: 'group_evolving_agents_export_archive',
+      error: 'policy_disabled'
+    };
+  }
+  if (policy.federation.enabled !== true) {
+    return {
+      ok: false,
+      type: 'group_evolving_agents_export_archive',
+      error: 'federation_disabled'
+    };
+  }
+  const optIn = toBool(args['opt-in'] || args.opt_in, false);
+  if (policy.federation.opt_in_required === true && optIn !== true) {
+    return {
+      ok: false,
+      type: 'group_evolving_agents_export_archive',
+      error: 'opt_in_required'
+    };
+  }
+
+  const capFilter = normalizeToken(args['capability-id'] || args.capability_id || '', 160);
+  const peerId = normalizeToken(args['peer-id'] || args.peer_id || 'federated_peer', 120) || 'federated_peer';
+  const attestationScore = clampNumber(args['attestation-score'] || args.attestation_score, 0, 1, 1);
+  const pool = loadPool(policy.state.pool_path);
+  const sourceCaps = pool.capabilities && typeof pool.capabilities === 'object' ? pool.capabilities : {};
+  const selectedCaps = capFilter
+    ? (sourceCaps[capFilter] ? { [capFilter]: sourceCaps[capFilter] } : {})
+    : sourceCaps;
+  const capEntries = Object.entries(selectedCaps)
+    .slice(0, Number(policy.federation.max_export_capabilities || 32));
+
+  const capabilities: AnyObj = {};
+  for (const [capabilityId, rawCap] of capEntries) {
+    const cap = rawCap && typeof rawCap === 'object' ? rawCap : {};
+    const innovationsRaw = cap.innovations && typeof cap.innovations === 'object'
+      ? cap.innovations
+      : {};
+    const innovations: AnyObj = {};
+    for (const [innovationId, rawInnovation] of Object.entries(innovationsRaw)) {
+      const innovation = rawInnovation && typeof rawInnovation === 'object' ? rawInnovation : {};
+      innovations[innovationId] = {
+        score: clampNumber(innovation.score, 0, 10, 0),
+        confidence: clampNumber(innovation.confidence, 0, 1, 0.5),
+        uses: clampInt(innovation.uses, 0, 1_000_000_000, 0),
+        peer_id: peerId
+      };
+    }
+    capabilities[capabilityId] = {
+      innovations,
+      reuse_count: clampInt(cap.reuse_count, 0, 1_000_000_000, 0),
+      total_observations: clampInt(cap.total_observations, 0, 1_000_000_000, 0)
+    };
+  }
+
+  const pkg = {
+    schema_id: 'group_evolving_agents_exchange',
+    schema_version: '1.0',
+    exported_at: nowIso(),
+    source_instance_id: policy.federation.local_instance_id,
+    peer_id: peerId,
+    attestation_score: Number(attestationScore.toFixed(6)),
+    capabilities
+  };
+  const hash = hashJson(pkg);
+  ensureDir(policy.federation.archive_dir);
+  const fileName = `gea_exchange_${Date.now().toString(36)}_${hash.slice(0, 10)}.json`;
+  const filePath = path.join(policy.federation.archive_dir, fileName);
+  writeJsonAtomic(filePath, {
+    ...pkg,
+    package_hash: hash
+  });
+  const out = {
+    ok: true,
+    type: 'group_evolving_agents_export_archive',
+    ts: nowIso(),
+    capability_count: Object.keys(capabilities).length,
+    package_hash: hash,
+    package_path: rel(filePath),
+    source_instance_id: policy.federation.local_instance_id,
+    peer_id: peerId,
+    attestation_score: Number(attestationScore.toFixed(6)),
+    policy_path: rel(policy.policy_path)
+  };
+  appendJsonl(policy.state.receipts_path, out);
+  return out;
+}
+
+function commandImportArchive(args: AnyObj) {
+  const policyPath = path.resolve(String(args.policy || process.env.GROUP_EVOLVING_AGENTS_POLICY_PATH || DEFAULT_POLICY_PATH));
+  const policy = loadPolicy(policyPath);
+  if (policy.enabled !== true) {
+    return {
+      ok: false,
+      type: 'group_evolving_agents_import_archive',
+      error: 'policy_disabled'
+    };
+  }
+  if (policy.federation.enabled !== true) {
+    return {
+      ok: false,
+      type: 'group_evolving_agents_import_archive',
+      error: 'federation_disabled'
+    };
+  }
+  const optIn = toBool(args['opt-in'] || args.opt_in, false);
+  if (policy.federation.opt_in_required === true && optIn !== true) {
+    return {
+      ok: false,
+      type: 'group_evolving_agents_import_archive',
+      error: 'opt_in_required'
+    };
+  }
+  const filePathRaw = cleanText(args.file || '', 500);
+  if (!filePathRaw) {
+    return {
+      ok: false,
+      type: 'group_evolving_agents_import_archive',
+      error: 'file_required'
+    };
+  }
+  const filePath = path.isAbsolute(filePathRaw) ? filePathRaw : path.resolve(filePathRaw);
+  if (!fs.existsSync(filePath)) {
+    return {
+      ok: false,
+      type: 'group_evolving_agents_import_archive',
+      error: 'file_not_found',
+      file: filePathRaw
+    };
+  }
+  const pkg = readJson(filePath, null);
+  if (!pkg || typeof pkg !== 'object' || cleanText(pkg.schema_id || '', 80) !== 'group_evolving_agents_exchange') {
+    return {
+      ok: false,
+      type: 'group_evolving_agents_import_archive',
+      error: 'invalid_archive_package'
+    };
+  }
+  const attestationScore = clampNumber(pkg.attestation_score, 0, 1, 0);
+  if (attestationScore < Number(policy.federation.min_attestation_score || 0.55)) {
+    return {
+      ok: false,
+      type: 'group_evolving_agents_import_archive',
+      error: 'attestation_score_below_minimum',
+      attestation_score: Number(attestationScore.toFixed(6)),
+      min_required: Number(policy.federation.min_attestation_score || 0.55)
+    };
+  }
+  const sourceInstanceId = normalizeToken(pkg.source_instance_id || 'unknown_source', 120) || 'unknown_source';
+  const capabilities = pkg.capabilities && typeof pkg.capabilities === 'object' ? pkg.capabilities : {};
+  const pool = loadPool(policy.state.pool_path);
+  const targetCapabilities = pool.capabilities && typeof pool.capabilities === 'object' ? pool.capabilities : {};
+  const capEntries = Object.entries(capabilities).slice(0, Number(policy.federation.max_import_capabilities || 64));
+
+  let importedCapabilities = 0;
+  let importedInnovations = 0;
+  let reusedInnovations = 0;
+  for (const [capabilityIdRaw, capRaw] of capEntries) {
+    const capabilityId = normalizeToken(capabilityIdRaw, 160);
+    if (!capabilityId) continue;
+    const cap = capRaw && typeof capRaw === 'object' ? capRaw : {};
+    const innovationsRaw = cap.innovations && typeof cap.innovations === 'object' ? cap.innovations : {};
+    if (!targetCapabilities[capabilityId]) {
+      targetCapabilities[capabilityId] = {
+        innovations: {},
+        reuse_count: 0,
+        total_observations: 0,
+        updated_at: null
+      };
+    }
+    const dst = targetCapabilities[capabilityId];
+    const dstInnovations = dst.innovations && typeof dst.innovations === 'object' ? dst.innovations : {};
+    let capImported = 0;
+    for (const [innovationIdRaw, innovationRaw] of Object.entries(innovationsRaw)) {
+      const innovationId = normalizeToken(innovationIdRaw, 140);
+      if (!innovationId) continue;
+      const innovation = innovationRaw && typeof innovationRaw === 'object' ? innovationRaw : {};
+      const importedScore = clampNumber(innovation.score, 0, 10, 0);
+      const importedConfidence = clampNumber(innovation.confidence, 0, 1, 0.5);
+      const peerTrust = clampNumber(pool.peer_trust[sourceInstanceId], 0, 1, Number(policy.trust.min_peer_trust || 0.35));
+      const trustWeight = clampNumber(peerTrust * attestationScore, 0, 1, 0);
+      const prev = dstInnovations[innovationId] && typeof dstInnovations[innovationId] === 'object'
+        ? dstInnovations[innovationId]
+        : null;
+      const prevScore = clampNumber(prev && prev.score, 0, 10, 0);
+      const prevConfidence = clampNumber(prev && prev.confidence, 0, 1, 0.5);
+      const nextScore = prev
+        ? clampNumber((prevScore * 0.6) + (importedScore * trustWeight * 0.4), 0, 10, prevScore)
+        : clampNumber(importedScore * Math.max(0.4, trustWeight), 0, 10, importedScore);
+      const nextConfidence = prev
+        ? clampNumber((prevConfidence * 0.5) + (importedConfidence * 0.5), 0, 1, prevConfidence)
+        : importedConfidence;
+      dstInnovations[innovationId] = {
+        score: Number(nextScore.toFixed(6)),
+        confidence: Number(nextConfidence.toFixed(6)),
+        uses: clampInt((prev && prev.uses) || 0, 0, 1_000_000_000, 0),
+        used_by: {
+          ...(prev && prev.used_by && typeof prev.used_by === 'object' ? prev.used_by : {}),
+          [sourceInstanceId]: nowIso()
+        },
+        updated_at: nowIso()
+      };
+      capImported += 1;
+      importedInnovations += 1;
+      if (prev) reusedInnovations += 1;
+    }
+    dst.innovations = dstInnovations;
+    dst.total_observations = clampInt(dst.total_observations, 0, 1_000_000_000, 0) + capImported;
+    dst.updated_at = nowIso();
+    importedCapabilities += 1;
+  }
+
+  pool.capabilities = targetCapabilities;
+  const peerTrustPrev = clampNumber(pool.peer_trust[sourceInstanceId], 0, 1, Number(policy.trust.min_peer_trust || 0.35));
+  const trustDelta = importedInnovations > 0
+    ? Number(policy.federation.import_trust_gain || 0.03)
+    : -Number(policy.federation.import_trust_penalty || 0.05);
+  pool.peer_trust[sourceInstanceId] = clampNumber(peerTrustPrev + trustDelta, 0, 1, peerTrustPrev);
+  pool.updated_at = nowIso();
+  writeJsonAtomic(policy.state.pool_path, pool);
+
+  const out = {
+    ok: true,
+    type: 'group_evolving_agents_import_archive',
+    ts: nowIso(),
+    source_instance_id: sourceInstanceId,
+    attestation_score: Number(attestationScore.toFixed(6)),
+    imported_capability_count: importedCapabilities,
+    imported_innovation_count: importedInnovations,
+    reused_innovation_count: reusedInnovations,
+    peer_trust_before: Number(peerTrustPrev.toFixed(6)),
+    peer_trust_after: Number(pool.peer_trust[sourceInstanceId].toFixed(6)),
+    imported_file: rel(filePath),
+    state_path: rel(policy.state.pool_path),
+    policy_path: rel(policy.policy_path)
+  };
+  writeJsonAtomic(policy.state.latest_path, out);
+  appendJsonl(policy.state.receipts_path, out);
+  return out;
+}
+
 function commandRun(args: AnyObj) {
   const policyPath = path.resolve(String(args.policy || process.env.GROUP_EVOLVING_AGENTS_POLICY_PATH || DEFAULT_POLICY_PATH));
   const input = parseJsonArg(args['input-json'] || args.input_json, {});
@@ -372,6 +679,12 @@ function commandStatus(args: AnyObj) {
         ts: latest.ts || null
       }
       : null,
+    federation: {
+      enabled: policy.federation.enabled === true,
+      opt_in_required: policy.federation.opt_in_required === true,
+      local_instance_id: policy.federation.local_instance_id,
+      archive_dir: rel(policy.federation.archive_dir)
+    },
     state_path: rel(policy.state.pool_path),
     policy_path: rel(policy.policy_path)
   };
@@ -384,6 +697,8 @@ function main() {
     let out: AnyObj;
     if (cmd === 'run') out = commandRun(args);
     else if (cmd === 'status') out = commandStatus(args);
+    else if (cmd === 'export-archive') out = commandExportArchive(args);
+    else if (cmd === 'import-archive') out = commandImportArchive(args);
     else if (!cmd || cmd === '--help' || cmd === 'help') {
       usage();
       process.exit(0);
@@ -408,5 +723,7 @@ module.exports = {
   runGroupEvolvingAgents,
   commandRun,
   commandStatus,
+  commandExportArchive,
+  commandImportArchive,
   loadPolicy
 };

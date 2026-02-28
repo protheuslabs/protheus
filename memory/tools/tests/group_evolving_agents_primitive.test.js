@@ -50,6 +50,17 @@ function run() {
       trust_gain: 0.05,
       trust_penalty: 0.1
     },
+    federation: {
+      enabled: true,
+      opt_in_required: true,
+      local_instance_id: 'local_test_node',
+      max_export_capabilities: 32,
+      max_import_capabilities: 64,
+      min_attestation_score: 0.5,
+      import_trust_gain: 0.03,
+      import_trust_penalty: 0.05,
+      archive_dir: path.join(stateDir, 'federation')
+    },
     state: {
       pool_path: path.join(stateDir, 'pool.json'),
       latest_path: path.join(stateDir, 'latest.json'),
@@ -109,6 +120,54 @@ function run() {
   const statusOut = parseJson(status);
   assert.strictEqual(statusOut.ok, true);
   assert.ok(statusOut.capability_state, 'status should include capability state');
+  assert.ok(statusOut.federation && statusOut.federation.enabled === true, 'status should include federation summary');
+
+  const exported = runNode(scriptPath, [
+    'export-archive',
+    '--opt-in=1',
+    '--peer-id=peer.federated',
+    '--attestation-score=0.92'
+  ], env, repoRoot);
+  assert.strictEqual(exported.status, 0, exported.stderr || exported.stdout);
+  const exportedOut = parseJson(exported);
+  assert.strictEqual(exportedOut.ok, true, 'export archive should pass');
+  const exportedPath = path.join(repoRoot, exportedOut.package_path);
+  assert.ok(fs.existsSync(exportedPath), 'export archive file should exist');
+
+  const importPath = path.join(tmpRoot, 'incoming_exchange.json');
+  writeJson(importPath, {
+    schema_id: 'group_evolving_agents_exchange',
+    schema_version: '1.0',
+    exported_at: new Date().toISOString(),
+    source_instance_id: 'peer_cluster_a',
+    peer_id: 'peer_cluster_a',
+    attestation_score: 0.91,
+    capabilities: {
+      'cap.beta': {
+        innovations: {
+          'innovation.fast_path': {
+            score: 2.4,
+            confidence: 0.83,
+            uses: 4,
+            peer_id: 'peer_cluster_a'
+          }
+        },
+        reuse_count: 1,
+        total_observations: 1
+      }
+    }
+  });
+
+  const imported = runNode(scriptPath, [
+    'import-archive',
+    `--file=${importPath}`,
+    '--opt-in=1'
+  ], env, repoRoot);
+  assert.strictEqual(imported.status, 0, imported.stderr || imported.stdout);
+  const importedOut = parseJson(imported);
+  assert.strictEqual(importedOut.ok, true, 'import archive should pass');
+  assert.ok(Number(importedOut.imported_capability_count || 0) >= 1, 'import should include capabilities');
+  assert.ok(Number(importedOut.imported_innovation_count || 0) >= 1, 'import should include innovations');
 
   console.log('group_evolving_agents_primitive.test.js: OK');
 }
