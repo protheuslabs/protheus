@@ -642,6 +642,24 @@ Dependency notes:
 - `V3-LOOP-002` depends on `V3-038`, `V3-058`, and `V2-063`.
 - `V3-LOOP-003` depends on `V3-LOOP-001`, `V2-HLX-003`, and `V2-059`.
 
+## Sovereign Economics + Anchoring Intake (Normalized, 2026-02-28)
+
+Objective: add external permanence and real-time budget awareness as optional governed extensions without making core runtime state depend on third-party chains/providers.
+
+| ID | Class | Version | Status | Upgrade | Why | Exit Criteria |
+|---|---|---|---|---|---|---|
+| V3-BUD-001 | extension | V3 | todo | Dynamic Burn Budget Oracle | Static budget limits are useful but can be blind to real provider balance/reset state, causing avoidable stalls or overspend | Oracle polls provider usage/billing endpoints through secret broker and policy-gated cadence, computes burn velocity + projected runway/reset horizon, and feeds router/strategy/weaver throttles with reason-coded receipts; fails safe to existing static policy when upstream billing telemetry is unavailable |
+| V3-BLK-001 | extension | V3 | todo | Sovereign Blockchain Bridge Organ (SBT + ERC-8004 + x402 + selective anchoring) | Adds cryptographic permanence, trusted agent identity, and autonomous payment rails while preserving sovereign local-first control | Optional bridge organ (disabled by default) issues/validates soul-bound root attestation (SBT), registers trust/discovery identity lane (ERC-8004), enables governed x402 micropayment routing through Storm, and anchors high-stakes receipt root hashes (constitution/helix/passport/black-box rollups) on-chain; all actions remain proposal->Eye->constitution gated, passport-chained, Helix/Sentinel-cross-checked, and core runtime remains fully functional when chain endpoints are unavailable |
+
+Duplicate/hardening mapping (do not re-add as net-new parallel systems):
+- `V2-BRG-001` already provides static/dynamic budget controls; `V3-BUD-001` extends with real provider-telemetry awareness.
+- `V2-063` passport chain and `V2-031` black-box ledger remain canonical records; `V3-BLK-001` adds external hash anchoring only.
+- `V2-058` soul-token anti-clone remains primary identity authority; on-chain binding is additive attestation, not replacement.
+
+Dependency notes:
+- `V3-BUD-001` depends on `V2-BRG-001`, `V3-SK-001`, and `V2-063`.
+- `V3-BLK-001` depends on `V2-058`, `V2-063`, `V2-031`, `V3-ATTR-002`, `V3-033`, and `V3-059`.
+
 ## Binary Runtime Hardening Intake (Normalized, 2026-02-27)
 
 Objective: add reverse-engineering resistance + efficiency for distributed instances while keeping the master instance fully debuggable and source-first.
