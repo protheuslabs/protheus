@@ -22,5 +22,26 @@
   "probes": {
     "seed_boot_probe": true,
     "startup_attestation_verify": true
+  },
+  "wallet_dna": {
+    "enabled": true,
+    "version": "1.0",
+    "mode": "initialize_on_birth",
+    "kernel_live_key_forbidden": true,
+    "secret_template_id": "wallet_dna_root_v1",
+    "bootstrap_template_path": "config/bootstrap_wallet_proposal_template.json",
+    "genome_ledger_path": "state/brain/genome_ledger.jsonl",
+    "chains": {
+      "ethereum_primary": {
+        "enabled": true,
+        "network": "base",
+        "account_model": "erc4337"
+      },
+      "solana_secondary": {
+        "enabled": true,
+        "optional": true,
+        "account_model": "derived_keypair"
+      }
+    }
   }
 }

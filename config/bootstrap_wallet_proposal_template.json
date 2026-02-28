@@ -1,0 +1,29 @@
+{
+  "template_id": "wallet_birth_bootstrap_v1",
+  "version": "1.0",
+  "title": "Generate sovereign wallet for this instance",
+  "objective": "Initialize governed blockchain identity and payment lanes without exposing key material in kernel runtime.",
+  "required_gates": [
+    "eye_kernel",
+    "constitution",
+    "soul_token"
+  ],
+  "required_approvals": {
+    "min_approval_note_chars": 12,
+    "require_constitution_approval": true,
+    "require_soul_token_approval": true
+  },
+  "outputs": [
+    "erc4337_account_descriptor",
+    "solana_descriptor_optional",
+    "sbt_binding_intent",
+    "erc8004_registration_intent",
+    "helix_binding_hash"
+  ],
+  "forbidden_outputs": [
+    "raw_private_key",
+    "seed_phrase",
+    "mnemonic"
+  ],
+  "notes": "Wallet material must be generated per-instance and persisted only in secret broker + organ-state encryption plane."
+}

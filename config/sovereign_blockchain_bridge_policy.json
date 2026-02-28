@@ -1,0 +1,49 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "wallet_mode": "initialize_on_birth",
+  "dna": {
+    "prime_profile_path": "config/protheus_prime_profile.json",
+    "bootstrap_template_path": "config/bootstrap_wallet_proposal_template.json",
+    "genome_ledger_path": "state/brain/genome_ledger.jsonl",
+    "secret_template_id": "wallet_dna_root_v1",
+    "kernel_live_key_forbidden": true
+  },
+  "governance": {
+    "require_constitution_approval": true,
+    "require_soul_token_approval": true,
+    "require_eye_proposal": true,
+    "min_approval_note_chars": 12
+  },
+  "chains": {
+    "ethereum_primary": {
+      "enabled": true,
+      "network": "base",
+      "account_model": "erc4337",
+      "paymaster_ready": true
+    },
+    "solana_secondary": {
+      "enabled": true,
+      "optional": true,
+      "account_model": "derived_keypair"
+    }
+  },
+  "identity_binding": {
+    "require_sbt_binding": true,
+    "require_erc8004_registration": true,
+    "require_helix_binding_hash": true
+  },
+  "payments": {
+    "x402_enabled": true,
+    "storm_lane": "storm_value_distribution",
+    "burn_oracle_source": "state/ops/dynamic_burn_budget_oracle/latest.json"
+  },
+  "state": {
+    "state_path": "state/blockchain/sovereign_bridge/state.json",
+    "latest_path": "state/blockchain/sovereign_bridge/latest.json",
+    "proposals_path": "state/blockchain/sovereign_bridge/proposals.jsonl",
+    "bindings_path": "state/blockchain/sovereign_bridge/bindings.jsonl",
+    "receipts_path": "state/blockchain/sovereign_bridge/receipts.jsonl"
+  }
+}
