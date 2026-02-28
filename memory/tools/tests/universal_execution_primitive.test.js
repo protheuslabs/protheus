@@ -61,6 +61,8 @@ try {
   const synthesisStatePath = path.join(tmp, 'subexec', 'state.json');
   const synthesisReceiptsPath = path.join(tmp, 'subexec', 'receipts.jsonl');
   const synthesisDistillDir = path.join(tmp, 'subexec', 'distilled');
+  const hardeningCheckpointsPath = path.join(tmp, 'hardening', 'checkpoints.jsonl');
+  const hardeningHandoffPath = path.join(tmp, 'hardening', 'handoffs.jsonl');
   ensureDir(receiptsRoot);
   ensureDir(outboxRoot);
   ensureDir(fsRoot);
@@ -109,6 +111,17 @@ try {
         executor_failed: 'low'
       }
     },
+    computer_use_hardening: {
+      enabled: true,
+      protected_adapter_kinds: ['browser_task'],
+      require_session_id: true,
+      require_checkpoint_for_apply: true,
+      max_recovery_attempts: 1,
+      verification_keywords: ['captcha', 'verification_code', '2fa'],
+      handoff_required_on_verification: true,
+      checkpoints_path: hardeningCheckpointsPath,
+      handoff_path: hardeningHandoffPath
+    },
     receipts_path: receiptsRoot
   });
 
@@ -124,6 +137,13 @@ try {
     source: { source_type: 'filesystem' },
     execution: { adapter_kind: 'filesystem_task' },
     provenance: { confidence: 0.95 }
+  });
+  const browserProfilePath = path.join(profileRoot, 'browser_profile.json');
+  writeJson(browserProfilePath, {
+    profile_id: 'browser_profile',
+    source: { source_type: 'web_ui' },
+    execution: { adapter_kind: 'browser_task' },
+    provenance: { confidence: 0.92 }
   });
 
   const env = {
@@ -182,12 +202,35 @@ try {
     : [];
   assert.ok(synthesisCandidates.length >= 1, 'synthesis state should contain candidate');
 
+  const hardeningFail = run([
+    'run',
+    '--profile-id=browser_profile',
+    '--params={"action":"navigate","url":"https://example.com/dashboard"}'
+  ], env);
+  assert.notStrictEqual(hardeningFail.status, 0, 'browser task without session should fail hardening assertion');
+  const hardeningFailPayload = parseJson(hardeningFail.stdout);
+  assert.strictEqual(hardeningFailPayload.ok, false);
+  assert.ok(String(hardeningFailPayload.error || '').includes('computer_use_assertion_failed'));
+
+  const verificationFail = run([
+    'run',
+    '--profile-id=browser_profile',
+    '--params={"action":"navigate","url":"https://example.com/captcha","session_id":"sess_a"}'
+  ], env);
+  assert.notStrictEqual(verificationFail.status, 0, 'captcha-like browser task should require handoff');
+  const verificationPayload = parseJson(verificationFail.stdout);
+  assert.strictEqual(verificationPayload.ok, false);
+  assert.strictEqual(verificationPayload.error, 'verification_handoff_required');
+  assert.ok(fs.existsSync(hardeningHandoffPath), 'handoff log should be written');
+
   const status = run(['status'], env);
   assert.strictEqual(status.status, 0, `status failed: ${status.stderr || status.stdout}`);
   const statusPayload = parseJson(status.stdout);
   assert.strictEqual(statusPayload.ok, true, 'status payload not ok');
   assert.ok(Number(statusPayload.total_runs || 0) >= 2, 'status should count runs');
   assert.strictEqual(Number(statusPayload.profile_only_ratio || 0), 1, 'all runs should be profile-based');
+  assert.ok(Number(statusPayload.hardening_protected_runs || 0) >= 1, 'hardening runs should be counted');
+  assert.ok(Number(statusPayload.verification_handoff_required_runs || 0) >= 1, 'handoff runs should be counted');
 
   const receiptFile = path.join(receiptsRoot, `${new Date().toISOString().slice(0, 10)}.jsonl`);
   const receipts = readJsonl(receiptFile);

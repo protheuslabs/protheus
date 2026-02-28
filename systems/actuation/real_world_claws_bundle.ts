@@ -90,6 +90,15 @@ function defaultPolicy() {
       comms: { enabled: true, adapter: 'message_send' },
       files: { enabled: true, adapter: 'file_update' }
     },
+    computer_use_hardening: {
+      enabled: true,
+      session_resume_on_fail: true,
+      max_resume_attempts: 1,
+      require_human_handoff_on_verification: true,
+      verification_keywords: ['captcha', 'verification_code', '2fa', 'one_time_code'],
+      checkpoints_path: 'state/actuation/real_world_claws/checkpoints.jsonl',
+      handoff_path: 'state/actuation/real_world_claws/handoffs.jsonl'
+    },
     max_steps_per_plan: 8
   };
 }
@@ -98,6 +107,9 @@ function loadPolicy(policyPath = POLICY_PATH) {
   const raw = readJson(policyPath, {});
   const base = defaultPolicy();
   const channelsRaw = raw.channels && typeof raw.channels === 'object' ? raw.channels : {};
+  const hardeningRaw = raw.computer_use_hardening && typeof raw.computer_use_hardening === 'object'
+    ? raw.computer_use_hardening
+    : {};
   const outChannels: AnyObj = {};
   for (const key of Object.keys(base.channels)) {
     const src = channelsRaw[key] && typeof channelsRaw[key] === 'object' ? channelsRaw[key] : {};
@@ -113,6 +125,26 @@ function loadPolicy(policyPath = POLICY_PATH) {
     require_eye_route: raw.require_eye_route !== false,
     approval_tiers: raw.approval_tiers && typeof raw.approval_tiers === 'object' ? raw.approval_tiers : base.approval_tiers,
     channels: outChannels,
+    computer_use_hardening: {
+      enabled: hardeningRaw.enabled !== false,
+      session_resume_on_fail: hardeningRaw.session_resume_on_fail !== false,
+      max_resume_attempts: clampInt(
+        hardeningRaw.max_resume_attempts,
+        0,
+        5,
+        base.computer_use_hardening.max_resume_attempts
+      ),
+      require_human_handoff_on_verification: hardeningRaw.require_human_handoff_on_verification !== false,
+      verification_keywords: Array.isArray(hardeningRaw.verification_keywords)
+        ? hardeningRaw.verification_keywords.map((row: unknown) => cleanText(row, 80).toLowerCase()).filter(Boolean)
+        : base.computer_use_hardening.verification_keywords.slice(0),
+      checkpoints_path: path.isAbsolute(cleanText(hardeningRaw.checkpoints_path || base.computer_use_hardening.checkpoints_path, 260))
+        ? cleanText(hardeningRaw.checkpoints_path || base.computer_use_hardening.checkpoints_path, 260)
+        : path.join(ROOT, cleanText(hardeningRaw.checkpoints_path || base.computer_use_hardening.checkpoints_path, 260)),
+      handoff_path: path.isAbsolute(cleanText(hardeningRaw.handoff_path || base.computer_use_hardening.handoff_path, 260))
+        ? cleanText(hardeningRaw.handoff_path || base.computer_use_hardening.handoff_path, 260)
+        : path.join(ROOT, cleanText(hardeningRaw.handoff_path || base.computer_use_hardening.handoff_path, 260))
+    },
     max_steps_per_plan: clampInt(raw.max_steps_per_plan, 1, 64, base.max_steps_per_plan)
   };
 }
@@ -169,6 +201,16 @@ function parsePlan(arg: unknown) {
   }
 }
 
+function hasVerificationHint(input: AnyObj, keywords: string[]) {
+  const text = JSON.stringify(input || {}).toLowerCase();
+  for (const kwRaw of Array.isArray(keywords) ? keywords : []) {
+    const kw = cleanText(kwRaw, 80).toLowerCase();
+    if (!kw) continue;
+    if (text.includes(kw)) return true;
+  }
+  return false;
+}
+
 function usage() {
   console.log('Usage:');
   console.log('  node systems/actuation/real_world_claws_bundle.js plan --plan-json="{objective,risk,steps:[...]}"');
@@ -202,12 +244,13 @@ function cmdPlan(args: AnyObj) {
   process.stdout.write(`${JSON.stringify({ ok: true, type: 'real_world_claws_plan', plan: record })}\n`);
 }
 
-function runActuation(adapterKind: string, params: AnyObj, dryRun: boolean) {
+function runActuation(adapterKind: string, params: AnyObj, dryRun: boolean, context: AnyObj = {}) {
   const args = [
     ACTUATION_EXECUTOR_SCRIPT,
     'run',
     `--kind=${adapterKind}`,
-    `--params=${JSON.stringify(params || {})}`
+    `--params=${JSON.stringify(params || {})}`,
+    `--context=${JSON.stringify(context || {})}`
   ];
   if (dryRun) args.push('--dry-run');
   const proc = spawnSync(process.execPath, args, {
@@ -253,7 +296,94 @@ function cmdExecute(args: AnyObj) {
         continue;
       }
       const dryRun = policy.shadow_only === true || apply !== true || toBool(step.dry_run, false);
-      const exec = runActuation(channelCfg.adapter, step.params, dryRun);
+      const hardeningEnabled = policy.computer_use_hardening
+        && policy.computer_use_hardening.enabled === true;
+      const protectedStep = hardeningEnabled
+        && (step.channel === 'browser' || step.channel === 'api'
+          || String(channelCfg.adapter || '').toLowerCase().includes('browser')
+          || String(channelCfg.adapter || '').toLowerCase().includes('api'));
+      const checkpointId = protectedStep
+        ? (cleanText(step.params && step.params.checkpoint_id || '', 120)
+          || `claw_chk_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`)
+        : null;
+      const sessionId = protectedStep
+        ? (cleanText(step.params && step.params.session_id || '', 160) || null)
+        : null;
+      if (protectedStep) {
+        appendJsonl(policy.computer_use_hardening.checkpoints_path, {
+          ts: nowIso(),
+          type: 'real_world_claws_checkpoint',
+          plan_id: planId,
+          step_id: step.id,
+          channel: step.channel,
+          adapter: channelCfg.adapter,
+          session_id: sessionId,
+          checkpoint_id: checkpointId
+        });
+      }
+      const verificationDetected = protectedStep
+        && hasVerificationHint(
+          {
+            action: step.action,
+            params: step.params || {},
+            channel: step.channel
+          },
+          policy.computer_use_hardening.verification_keywords || []
+        );
+      if (verificationDetected && policy.computer_use_hardening.require_human_handoff_on_verification === true) {
+        appendJsonl(policy.computer_use_hardening.handoff_path, {
+          ts: nowIso(),
+          type: 'real_world_claws_handoff_required',
+          reason: 'verification_detected',
+          plan_id: planId,
+          step_id: step.id,
+          channel: step.channel,
+          adapter: channelCfg.adapter,
+          session_id: sessionId,
+          checkpoint_id: checkpointId
+        });
+        stepOutcomes.push({
+          step_id: step.id,
+          channel: step.channel,
+          adapter: channelCfg.adapter,
+          dry_run: dryRun,
+          ok: false,
+          status: 1,
+          recovery_attempts: 0,
+          checkpoint_id: checkpointId,
+          session_id: sessionId,
+          verification_handoff_required: true,
+          error: 'verification_handoff_required'
+        });
+        break;
+      }
+      const execContext = {
+        plan_id: planId,
+        step_id: step.id,
+        channel: step.channel,
+        session_id: sessionId,
+        checkpoint_id: checkpointId
+      };
+      let exec = runActuation(channelCfg.adapter, step.params, dryRun, execContext);
+      let recoveryAttempts = 0;
+      const maxResumeAttempts = protectedStep && policy.computer_use_hardening.session_resume_on_fail === true
+        ? Number(policy.computer_use_hardening.max_resume_attempts || 0)
+        : 0;
+      while (!exec.ok && recoveryAttempts < maxResumeAttempts) {
+        recoveryAttempts += 1;
+        const retryParams = {
+          ...(step.params || {}),
+          session_resume: true,
+          recovery_attempt: recoveryAttempts
+        };
+        const retryContext = {
+          ...execContext,
+          recovery_attempt: recoveryAttempts,
+          recovery_mode: 'session_resume'
+        };
+        exec = runActuation(channelCfg.adapter, retryParams, dryRun, retryContext);
+        if (exec.ok) break;
+      }
       stepOutcomes.push({
         step_id: step.id,
         channel: step.channel,
@@ -261,6 +391,10 @@ function cmdExecute(args: AnyObj) {
         dry_run: dryRun,
         ok: exec.ok,
         status: exec.status,
+        recovery_attempts: recoveryAttempts,
+        checkpoint_id: checkpointId,
+        session_id: sessionId,
+        verification_handoff_required: false,
         error: exec.ok ? null : (exec.payload && exec.payload.error) || exec.stderr || 'execution_failed'
       });
       if (!exec.ok) break;

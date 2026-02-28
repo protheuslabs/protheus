@@ -15,5 +15,19 @@
     "comms": { "enabled": true, "adapter": "message_send" },
     "files": { "enabled": true, "adapter": "file_update" }
   },
+  "computer_use_hardening": {
+    "enabled": true,
+    "session_resume_on_fail": true,
+    "max_resume_attempts": 1,
+    "require_human_handoff_on_verification": true,
+    "verification_keywords": [
+      "captcha",
+      "verification_code",
+      "2fa",
+      "one_time_code"
+    ],
+    "checkpoints_path": "state/actuation/real_world_claws/checkpoints.jsonl",
+    "handoff_path": "state/actuation/real_world_claws/handoffs.jsonl"
+  },
   "max_steps_per_plan": 8
 }

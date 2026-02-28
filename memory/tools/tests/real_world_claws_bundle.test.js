@@ -66,6 +66,8 @@ function run() {
   const policyPath = path.join(tmpRoot, 'config', 'real_world_claws_policy.json');
   const statePath = path.join(tmpRoot, 'state', 'real_world_claws_state.json');
   const receiptsPath = path.join(tmpRoot, 'state', 'real_world_claws_receipts.jsonl');
+  const hardeningCheckpointsPath = path.join(tmpRoot, 'state', 'real_world_claws_checkpoints.jsonl');
+  const hardeningHandoffPath = path.join(tmpRoot, 'state', 'real_world_claws_handoffs.jsonl');
   const fakeExecutorPath = path.join(tmpRoot, 'fake_executor.js');
 
   makeFakeExecutor(fakeExecutorPath);
@@ -85,6 +87,15 @@ function run() {
       payments: { enabled: true, adapter: 'payment_action', always_human_approval: true },
       comms: { enabled: true, adapter: 'message_send' },
       files: { enabled: true, adapter: 'file_update' }
+    },
+    computer_use_hardening: {
+      enabled: true,
+      session_resume_on_fail: true,
+      max_resume_attempts: 1,
+      require_human_handoff_on_verification: true,
+      verification_keywords: ['captcha', 'verification_code', '2fa'],
+      checkpoints_path: hardeningCheckpointsPath,
+      handoff_path: hardeningHandoffPath
     },
     max_steps_per_plan: 8
   });
@@ -152,6 +163,15 @@ function run() {
       comms: { enabled: true, adapter: 'message_send' },
       files: { enabled: true, adapter: 'file_update' }
     },
+    computer_use_hardening: {
+      enabled: true,
+      session_resume_on_fail: true,
+      max_resume_attempts: 1,
+      require_human_handoff_on_verification: true,
+      verification_keywords: ['captcha', 'verification_code', '2fa'],
+      checkpoints_path: hardeningCheckpointsPath,
+      handoff_path: hardeningHandoffPath
+    },
     max_steps_per_plan: 8
   });
 
@@ -185,6 +205,30 @@ function run() {
   const executeApprovedOut = parseJson(executeApproved, 'execute_payment_ok');
   assert.strictEqual(executeApprovedOut.ok, true);
   assert.strictEqual(executeApprovedOut.execution.success, true);
+
+  const planVerification = runNode(scriptPath, [
+    'plan',
+    '--plan-id=unit_plan_browser_verify',
+    '--plan-json={"objective":"browser verify","risk":"low","steps":[{"id":"browser_verify","channel":"browser","action":"navigate","params":{"session_id":"sess_a","prompt":"captcha challenge"}}]}'
+  ], env, repoRoot);
+  assert.strictEqual(planVerification.status, 0, planVerification.stderr || planVerification.stdout);
+
+  const executeVerification = runNode(scriptPath, [
+    'execute',
+    '--plan-id=unit_plan_browser_verify',
+    '--apply=1',
+    '--approver-id=ops_user',
+    '--approval-note=manual-check-passed'
+  ], env, repoRoot);
+  assert.notStrictEqual(executeVerification.status, 0, 'verification flow should require handoff');
+  const executeVerificationOut = parseJson(executeVerification, 'execute_browser_verify');
+  assert.strictEqual(executeVerificationOut.ok, false);
+  assert.ok(
+    Array.isArray(executeVerificationOut.execution.step_outcomes)
+      && executeVerificationOut.execution.step_outcomes.some((row) => row.error === 'verification_handoff_required'),
+    'verification plan should emit handoff-required step outcome'
+  );
+  assert.ok(fs.existsSync(hardeningHandoffPath), 'handoff path should be written');
 
   const status = runNode(scriptPath, ['status', '--plan-id=unit_plan_payment'], env, repoRoot);
   assert.strictEqual(status.status, 0, status.stderr || status.stdout);

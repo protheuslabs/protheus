@@ -172,6 +172,17 @@ function defaultPolicy() {
         executor_failed: 'low'
       }
     },
+    computer_use_hardening: {
+      enabled: true,
+      protected_adapter_kinds: ['browser_task', 'browser_action', 'api_request'],
+      require_session_id: true,
+      require_checkpoint_for_apply: true,
+      max_recovery_attempts: 1,
+      verification_keywords: ['captcha', 'verification_code', '2fa', 'one_time_code'],
+      handoff_required_on_verification: true,
+      checkpoints_path: 'state/actuation/universal_execution_primitive/checkpoints.jsonl',
+      handoff_path: 'state/actuation/universal_execution_primitive/handoffs.jsonl'
+    },
     receipts_path: 'state/actuation/universal_execution_primitive/receipts'
   };
 }
@@ -185,7 +196,11 @@ function loadPolicy(policyPath = POLICY_PATH) {
   const synthesis = src.sub_executor_synthesis && typeof src.sub_executor_synthesis === 'object'
     ? src.sub_executor_synthesis
     : {};
+  const hardening = src.computer_use_hardening && typeof src.computer_use_hardening === 'object'
+    ? src.computer_use_hardening
+    : {};
   const baseSynthesis = base.sub_executor_synthesis;
+  const baseHardening = base.computer_use_hardening;
   const synthesisErrors = Array.isArray(synthesis.auto_propose_on_errors)
     ? synthesis.auto_propose_on_errors
     : baseSynthesis.auto_propose_on_errors;
@@ -221,6 +236,33 @@ function loadPolicy(policyPath = POLICY_PATH) {
       risk_class_by_error: synthesisRiskMap && typeof synthesisRiskMap === 'object'
         ? synthesisRiskMap
         : {}
+    },
+    computer_use_hardening: {
+      enabled: hardening.enabled !== false,
+      protected_adapter_kinds: Array.isArray(hardening.protected_adapter_kinds)
+        ? hardening.protected_adapter_kinds.map((row: unknown) => normalizeToken(row, 80)).filter(Boolean)
+        : baseHardening.protected_adapter_kinds.slice(0),
+      require_session_id: hardening.require_session_id !== false,
+      require_checkpoint_for_apply: hardening.require_checkpoint_for_apply !== false,
+      max_recovery_attempts: Math.max(
+        0,
+        Math.min(
+          5,
+          Number(hardening.max_recovery_attempts != null
+            ? hardening.max_recovery_attempts
+            : baseHardening.max_recovery_attempts) || baseHardening.max_recovery_attempts
+        )
+      ),
+      verification_keywords: Array.isArray(hardening.verification_keywords)
+        ? hardening.verification_keywords.map((row: unknown) => cleanText(row, 80).toLowerCase()).filter(Boolean)
+        : baseHardening.verification_keywords.slice(0),
+      handoff_required_on_verification: hardening.handoff_required_on_verification !== false,
+      checkpoints_path: path.isAbsolute(cleanText(hardening.checkpoints_path || baseHardening.checkpoints_path, 320))
+        ? cleanText(hardening.checkpoints_path || baseHardening.checkpoints_path, 320)
+        : path.join(ROOT, cleanText(hardening.checkpoints_path || baseHardening.checkpoints_path, 320)),
+      handoff_path: path.isAbsolute(cleanText(hardening.handoff_path || baseHardening.handoff_path, 320))
+        ? cleanText(hardening.handoff_path || baseHardening.handoff_path, 320)
+        : path.join(ROOT, cleanText(hardening.handoff_path || baseHardening.handoff_path, 320))
     },
     receipts_path: path.isAbsolute(cleanText(src.receipts_path || base.receipts_path, 260))
       ? cleanText(src.receipts_path || base.receipts_path, 260)
@@ -324,6 +366,88 @@ function parseChildJson(stdout: string) {
     }
   }
   return null;
+}
+
+function containsVerificationKeyword(hints: string, keywords: string[]) {
+  const haystack = String(hints || '').toLowerCase();
+  if (!haystack) return false;
+  for (const kwRaw of Array.isArray(keywords) ? keywords : []) {
+    const kw = cleanText(kwRaw, 80).toLowerCase();
+    if (!kw) continue;
+    if (haystack.includes(kw)) return true;
+  }
+  return false;
+}
+
+function buildComputerUseHardeningProfile(policy: AnyObj, adapterKind: string, params: AnyObj, contextRaw: AnyObj, dryRun: boolean) {
+  const cfg = policy && policy.computer_use_hardening && typeof policy.computer_use_hardening === 'object'
+    ? policy.computer_use_hardening
+    : {};
+  const protectedKinds = Array.isArray(cfg.protected_adapter_kinds)
+    ? cfg.protected_adapter_kinds.map((row: unknown) => normalizeToken(row, 80)).filter(Boolean)
+    : [];
+  const protectedAdapter = cfg.enabled === true && protectedKinds.includes(normalizeToken(adapterKind, 80));
+  const contextSession = cleanText(contextRaw && contextRaw.session_id || '', 160) || null;
+  const paramSession = cleanText(params && params.session_id || '', 160) || null;
+  const sessionId = contextSession || paramSession;
+  const existingCheckpointId = cleanText(
+    contextRaw && (contextRaw.checkpoint_id || contextRaw.session_checkpoint_id)
+    || params && params.checkpoint_id
+    || '',
+    160
+  ) || null;
+  const checkpointId = existingCheckpointId || `chk_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
+  const checks = {
+    session_id_present: protectedAdapter
+      ? (cfg.require_session_id !== true || !!sessionId)
+      : true,
+    checkpoint_id_present: protectedAdapter
+      ? (cfg.require_checkpoint_for_apply !== true || dryRun === true || !!checkpointId)
+      : true
+  };
+  const verificationHints = JSON.stringify({
+    params: params || {},
+    context: contextRaw || {}
+  });
+  const verificationDetected = protectedAdapter
+    && containsVerificationKeyword(verificationHints, cfg.verification_keywords || []);
+  const assertionFailed = protectedAdapter && (!checks.session_id_present || !checks.checkpoint_id_present);
+  return {
+    enabled: cfg.enabled === true,
+    protected_adapter: protectedAdapter,
+    session_id: sessionId,
+    checkpoint_id: checkpointId,
+    verification_detected: verificationDetected,
+    checks,
+    assertion_failed: assertionFailed,
+    assertion_reason: assertionFailed
+      ? (!checks.session_id_present ? 'session_id_required' : 'checkpoint_required')
+      : null
+  };
+}
+
+function runExecutorOnce(adapterKind: string, params: AnyObj, context: AnyObj, dryRun: boolean) {
+  const execArgs = [
+    ACTUATION_EXECUTOR,
+    'run',
+    `--kind=${adapterKind}`,
+    `--params=${JSON.stringify(params)}`,
+    `--context=${JSON.stringify(context)}`
+  ];
+  if (dryRun) execArgs.push('--dry-run');
+  const proc = spawnSync('node', execArgs, {
+    cwd: ROOT,
+    encoding: 'utf8',
+    env: process.env
+  });
+  const payload = parseExecutorPayload(String(proc.stdout || '')) || {};
+  const ok = Number(proc.status || 0) === 0 && payload && payload.ok === true;
+  return {
+    ok,
+    status: Number(proc.status == null ? 1 : proc.status),
+    payload,
+    stderr: cleanText(proc.stderr || '', 500)
+  };
 }
 
 function maybeProposeSubExecutor(policy: AnyObj, input: AnyObj) {
@@ -482,21 +606,158 @@ function cmdRun(args: AnyObj) {
     },
     passport_link_id: passportLink
   };
-  const execArgs = [
-    ACTUATION_EXECUTOR,
-    'run',
-    `--kind=${adapter.kind}`,
-    `--params=${JSON.stringify(params)}`,
-    `--context=${JSON.stringify(context)}`
-  ];
-  if (dryRun) execArgs.push('--dry-run');
-  const proc = spawnSync('node', execArgs, {
-    cwd: ROOT,
-    encoding: 'utf8',
-    env: process.env
+  const hardening = buildComputerUseHardeningProfile(policy, adapter.kind, params, contextRaw, dryRun);
+  if (hardening.protected_adapter) {
+    appendJsonl(policy.computer_use_hardening.checkpoints_path, {
+      ts: nowIso(),
+      type: 'computer_use_checkpoint',
+      profile_id: profileId,
+      adapter_kind: adapter.kind,
+      checkpoint_id: hardening.checkpoint_id,
+      session_id: hardening.session_id || null,
+      assertion_failed: hardening.assertion_failed === true,
+      assertion_reason: hardening.assertion_reason || null
+    });
+  }
+  if (hardening.assertion_failed) {
+    const out = {
+      ok: false,
+      type: 'universal_execution_primitive',
+      profile_id: profileId,
+      adapter_kind: adapter.kind,
+      error: `computer_use_assertion_failed:${hardening.assertion_reason || 'unknown'}`,
+      hardening: {
+        protected_adapter: true,
+        checks: hardening.checks,
+        session_id: hardening.session_id || null,
+        checkpoint_id: hardening.checkpoint_id || null
+      }
+    };
+    appendJsonl(receiptPath(policy), {
+      ts: nowIso(),
+      type: 'universal_execution_primitive',
+      profile_id: profileId,
+      profile_hash: profileHash,
+      profile_path: profileLoad.profile_path ? relPath(String(profileLoad.profile_path)) : null,
+      profile_confidence: profileConfidence,
+      intent: intent || null,
+      adapter_kind: adapter.kind,
+      adapter_resolution_source: adapter.source,
+      dry_run: dryRun,
+      passport_link_id: passportLink,
+      params_hash: shaHex(params).slice(0, 16),
+      ok: false,
+      executor_status: 1,
+      executor_payload: null,
+      hardening_protected: true,
+      hardening_checks: hardening.checks,
+      hardening_assertion_reason: hardening.assertion_reason || null
+    });
+    process.stdout.write(`${JSON.stringify(out)}\n`);
+    process.exit(1);
+  }
+
+  const contextWithHardening = {
+    ...context,
+    computer_use_hardening: {
+      enabled: hardening.enabled,
+      protected_adapter: hardening.protected_adapter,
+      session_id: hardening.session_id || null,
+      checkpoint_id: hardening.checkpoint_id || null,
+      verification_detected: hardening.verification_detected === true,
+      max_recovery_attempts: Number(policy.computer_use_hardening.max_recovery_attempts || 0)
+    }
+  };
+  if (hardening.verification_detected && policy.computer_use_hardening.handoff_required_on_verification === true) {
+    const handoff = {
+      ts: nowIso(),
+      type: 'computer_use_handoff_required',
+      reason: 'verification_detected',
+      profile_id: profileId,
+      adapter_kind: adapter.kind,
+      session_id: hardening.session_id || null,
+      checkpoint_id: hardening.checkpoint_id || null
+    };
+    appendJsonl(policy.computer_use_hardening.handoff_path, handoff);
+    appendJsonl(receiptPath(policy), {
+      ts: nowIso(),
+      type: 'universal_execution_primitive',
+      profile_id: profileId,
+      profile_hash: profileHash,
+      profile_path: profileLoad.profile_path ? relPath(String(profileLoad.profile_path)) : null,
+      profile_confidence: profileConfidence,
+      intent: intent || null,
+      adapter_kind: adapter.kind,
+      adapter_resolution_source: adapter.source,
+      dry_run: dryRun,
+      passport_link_id: passportLink,
+      params_hash: shaHex(params).slice(0, 16),
+      ok: false,
+      executor_status: 1,
+      executor_payload: null,
+      verification_handoff_required: true,
+      hardening_protected: hardening.protected_adapter === true
+    });
+    process.stdout.write(`${JSON.stringify({
+      ok: false,
+      type: 'universal_execution_primitive',
+      profile_id: profileId,
+      adapter_kind: adapter.kind,
+      error: 'verification_handoff_required',
+      handoff
+    })}\n`);
+    process.exit(1);
+  }
+
+  const maxRecoveryAttempts = hardening.protected_adapter
+    ? Number(policy.computer_use_hardening.max_recovery_attempts || 0)
+    : 0;
+  let recoveryAttempts = 0;
+  let recoveryApplied = false;
+  let run = runExecutorOnce(adapter.kind, params, contextWithHardening, dryRun);
+  while (!run.ok && recoveryAttempts < maxRecoveryAttempts) {
+    recoveryAttempts += 1;
+    recoveryApplied = true;
+    const retryParams = {
+      ...params,
+      session_resume: true,
+      recovery_attempt: recoveryAttempts
+    };
+    const retryContext = {
+      ...contextWithHardening,
+      computer_use_hardening: {
+        ...(contextWithHardening.computer_use_hardening || {}),
+        recovery_attempt: recoveryAttempts,
+        recovery_applied: true
+      }
+    };
+    run = runExecutorOnce(adapter.kind, retryParams, retryContext, dryRun);
+    if (run.ok) break;
+  }
+
+  const payload = run.payload || {};
+  const ok = run.ok === true;
+  const failureError = payload && payload.error
+    ? cleanText(payload.error, 160)
+    : (run.stderr || 'executor_failed');
+  const failureHints = JSON.stringify({
+    payload,
+    error: failureError
   });
-  const payload = parseExecutorPayload(String(proc.stdout || '')) || {};
-  const ok = Number(proc.status || 0) === 0 && payload && payload.ok === true;
+  const verificationFailure = hardening.protected_adapter
+    && containsVerificationKeyword(failureHints, policy.computer_use_hardening.verification_keywords || []);
+  if (!ok && verificationFailure && policy.computer_use_hardening.handoff_required_on_verification === true) {
+    appendJsonl(policy.computer_use_hardening.handoff_path, {
+      ts: nowIso(),
+      type: 'computer_use_handoff_required',
+      reason: 'verification_failure',
+      profile_id: profileId,
+      adapter_kind: adapter.kind,
+      session_id: hardening.session_id || null,
+      checkpoint_id: hardening.checkpoint_id || null,
+      recovery_attempts: recoveryAttempts
+    });
+  }
   const row = {
     ts: nowIso(),
     type: 'universal_execution_primitive',
@@ -511,13 +772,17 @@ function cmdRun(args: AnyObj) {
     passport_link_id: passportLink,
     params_hash: shaHex(params).slice(0, 16),
     ok,
-    executor_status: Number(proc.status == null ? 1 : proc.status),
-    executor_payload: payload
+    executor_status: Number(run.status == null ? 1 : run.status),
+    executor_payload: payload,
+    hardening_protected: hardening.protected_adapter === true,
+    hardening_checks: hardening.checks,
+    hardening_checkpoint_id: hardening.checkpoint_id || null,
+    hardening_session_id_present: !!hardening.session_id,
+    recovery_attempts: recoveryAttempts,
+    recovery_applied: recoveryApplied,
+    verification_handoff_required: !ok && verificationFailure
   };
   if (!ok) {
-    const failureError = payload && payload.error
-      ? cleanText(payload.error, 160)
-      : 'executor_failed';
     const synthesis = maybeProposeSubExecutor(policy, {
       error_code: 'executor_failed',
       profile_id: profileId,
@@ -539,7 +804,7 @@ function cmdRun(args: AnyObj) {
       sub_executor_candidate: synthesis && synthesis.ok === true ? synthesis : null,
       row
     })}\n`);
-    process.exit(Number(proc.status == null ? 1 : proc.status) || 1);
+    process.exit(Number(run.status == null ? 1 : run.status) || 1);
   }
   appendJsonl(receiptPath(policy), row);
   process.stdout.write(`${JSON.stringify({
@@ -559,12 +824,18 @@ function cmdStatus(args: AnyObj) {
   const adapterCounts: Record<string, number> = {};
   let okCount = 0;
   let profileBased = 0;
+  let hardeningProtectedRuns = 0;
+  let handoffRequiredRuns = 0;
+  let recoveryAppliedRuns = 0;
   for (const row of rows) {
     if (!row || typeof row !== 'object') continue;
     const adapter = normalizeToken(row.adapter_kind || '', 80) || 'unknown';
     adapterCounts[adapter] = Number(adapterCounts[adapter] || 0) + 1;
     if (row.ok === true) okCount += 1;
     if (row.profile_id) profileBased += 1;
+    if (row.hardening_protected === true) hardeningProtectedRuns += 1;
+    if (row.verification_handoff_required === true) handoffRequiredRuns += 1;
+    if (row.recovery_applied === true) recoveryAppliedRuns += 1;
   }
   const out = {
     ok: true,
@@ -576,7 +847,10 @@ function cmdStatus(args: AnyObj) {
     successful_runs: okCount,
     profile_based_runs: profileBased,
     profile_only_ratio: rows.length > 0 ? Number((profileBased / rows.length).toFixed(6)) : 0,
-    adapter_counts: adapterCounts
+    adapter_counts: adapterCounts,
+    hardening_protected_runs: hardeningProtectedRuns,
+    verification_handoff_required_runs: handoffRequiredRuns,
+    recovery_applied_runs: recoveryAppliedRuns
   };
   process.stdout.write(`${JSON.stringify(out)}\n`);
 }

@@ -38,5 +38,25 @@
       "executor_failed": "low"
     }
   },
+  "computer_use_hardening": {
+    "enabled": true,
+    "protected_adapter_kinds": [
+      "browser_task",
+      "browser_action",
+      "api_request"
+    ],
+    "require_session_id": true,
+    "require_checkpoint_for_apply": true,
+    "max_recovery_attempts": 1,
+    "verification_keywords": [
+      "captcha",
+      "verification_code",
+      "2fa",
+      "one_time_code"
+    ],
+    "handoff_required_on_verification": true,
+    "checkpoints_path": "state/actuation/universal_execution_primitive/checkpoints.jsonl",
+    "handoff_path": "state/actuation/universal_execution_primitive/handoffs.jsonl"
+  },
   "receipts_path": "state/actuation/universal_execution_primitive/receipts"
 }
