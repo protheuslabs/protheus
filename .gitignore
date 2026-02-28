@@ -32,15 +32,13 @@ state/**
 !state/long_term.md
 !state/session_summary.md
 !state/approvals_queue.yaml
-!state/sensory/
-!state/sensory/eyes/
-!state/sensory/eyes/registry.json
 !state/security/
 !state/security/break_glass.jsonl
 
 # Adaptive sensory runtime catalogs (high-churn generated stores)
 adaptive/sensory/eyes/catalog.json
 adaptive/sensory/eyes/focus_triggers.json
+adaptive/sensory/eyes/*.write.lock
 
 state/daily_logs/*.json
 state/dopamine_state.json
