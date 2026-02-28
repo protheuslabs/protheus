@@ -1,0 +1,78 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "allow_apply": false,
+  "governance": {
+    "low_risk_auto_execute": true,
+    "medium_risk_auto_execute": true,
+    "medium_risk_veto_minutes": 15,
+    "high_risk_requires_approval": true,
+    "high_risk_threshold_usd": 500
+  },
+  "purchase": {
+    "target_runway_days": 14,
+    "min_balance_usd": 10,
+    "min_runway_days": 2,
+    "min_purchase_usd": 5,
+    "max_purchase_low_usd": 100,
+    "max_purchase_medium_usd": 500,
+    "max_purchase_high_usd": 5000
+  },
+  "ranking": {
+    "weight_performance": 0.45,
+    "weight_reliability": 0.35,
+    "weight_cost_efficiency": 0.2
+  },
+  "providers": {
+    "openai": {
+      "enabled": true,
+      "display_name": "OpenAI",
+      "pricing_index": 0.55,
+      "performance_index": 0.92,
+      "reliability_index": 0.94,
+      "payment_route": "x402_or_provider_billing"
+    },
+    "anthropic": {
+      "enabled": true,
+      "display_name": "Anthropic",
+      "pricing_index": 0.6,
+      "performance_index": 0.9,
+      "reliability_index": 0.93,
+      "payment_route": "x402_or_provider_billing"
+    },
+    "xai": {
+      "enabled": true,
+      "display_name": "xAI",
+      "pricing_index": 0.65,
+      "performance_index": 0.88,
+      "reliability_index": 0.9,
+      "payment_route": "x402_or_provider_billing"
+    },
+    "groq": {
+      "enabled": true,
+      "display_name": "Groq",
+      "pricing_index": 0.5,
+      "performance_index": 0.84,
+      "reliability_index": 0.87,
+      "payment_route": "x402_or_provider_billing"
+    }
+  },
+  "sovereign_root_tithe": {
+    "require_before_spend": true,
+    "reason_code": "sovereign_root_tithe_required"
+  },
+  "paths": {
+    "burn_oracle_latest_path": "state/ops/dynamic_burn_budget_oracle/latest.json",
+    "state_path": "state/ops/llm_economy_organ/state.json",
+    "latest_path": "state/ops/llm_economy_organ/latest.json",
+    "history_path": "state/ops/llm_economy_organ/history.jsonl",
+    "receipts_path": "state/ops/llm_economy_organ/receipts.jsonl",
+    "provider_library_path": "state/routing/provider_library_latest.json",
+    "weaver_hint_path": "state/autonomy/weaver/llm_economy_hints.jsonl",
+    "strategy_hint_path": "state/autonomy/llm_economy_strategy_hints.jsonl",
+    "capital_hint_path": "state/budget/llm_economy_capital_hints.jsonl",
+    "self_improvement_hint_path": "state/autonomy/self_improvement/llm_economy_hints.jsonl",
+    "purchase_intents_path": "state/blockchain/llm_purchase_intents.jsonl"
+  }
+}

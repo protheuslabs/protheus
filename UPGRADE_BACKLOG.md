@@ -660,6 +660,19 @@ Dependency notes:
 - `V3-BUD-001` depends on `V2-BRG-001`, `V3-SK-001`, and `V2-063`.
 - `V3-BLK-001` depends on `V2-058`, `V2-063`, `V2-031`, `V3-ATTR-002`, `V3-033`, and `V3-059`.
 
+## LLM Economy + Red-Team Co-Evolution Intake (Normalized, 2026-02-28)
+
+Objective: close the autonomy loop for sustained intelligence supply and continuously improving defense by extending existing burn-oracle, blockchain/storm, and soldier-ant lanes in shadow-first mode.
+
+| ID | Class | Version | Status | Upgrade | Why | Exit Criteria |
+|---|---|---|---|---|---|---|
+| V3-ECO-001 | extension | V3 | done | LLM Economy Organ (provider library + governed auto-purchase intents) | Burn telemetry exists but provider ranking and replenishment planning are still distributed/implicit across lanes | Implemented `systems/ops/llm_economy_organ.ts` (+ policy `config/llm_economy_organ_policy.json`) to rank providers from burn telemetry + policy, emit governed purchase intents (low/medium autonomous lanes, high approval lane), write routing/weaver/strategy/capital/self-improvement hints, and enforce sovereign-root-tithe-first reason codes on spend intents. |
+| V3-RED-001 | primitive-upgrade | V3 | done | Self-Improving Red-Team Trainer (Soldier Ant + Nursery + self-teacher distillation) | Red-team probing is strong but lacks an explicit recurring learning loop that evolves probes from discovered failures | Implemented `systems/redteam/self_improving_redteam_trainer.ts` (+ policy `config/redteam_self_improvement_policy.json`) to mine harness failures, synthesize novel adversarial probes, distill trajectories via self-teacher primitive, emit nursery queue hints, and integrate into `systems/autonomy/red_team_harness.ts` run/status outputs behind policy-gated shadow mode. |
+
+Dependency notes:
+- `V3-ECO-001` depends on `V3-BUD-001`, `V3-BLK-001`, `V3-ATTR-002`, and `V3-ACT-002`.
+- `V3-RED-001` depends on `V3-034`, `V3-ASSIM-012`, and nursery training lanes (`V2-052` / specialist training).
+
 ## Actuation Gap Closure Intake (Normalized, 2026-02-28)
 
 Objective: close the "brain vs hands" execution gap with primitive-first, profile-driven outreach actuation while preserving sovereignty, compliance, and rollback safety.
