@@ -1,0 +1,14 @@
+version: '3.8'
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    restart: unless-stopped
+  grafana:
+    image: grafana/grafana:latest
+    restart: unless-stopped
+  loki:
+    image: grafana/loki:latest
+    restart: unless-stopped
+  otel-collector:
+    image: otel/opentelemetry-collector:latest
+    restart: unless-stopped

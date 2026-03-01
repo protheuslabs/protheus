@@ -1,0 +1,7 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "exchange_model": "hereditary_master_reviewed",
+  "peer_to_peer_network_effect": false
+}

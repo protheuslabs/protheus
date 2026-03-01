@@ -431,6 +431,96 @@ function main() {
     ["strategy_mode_governor.js", "run", "status", "--days"]
   );
 
+  // queued backlog control-plane and governance lanes must remain callable.
+  checkScript(
+    "systems/security/governance_hardening_lane.js",
+    ["governance_hardening_lane.js", "evaluate", "bootstrap-child", "verify-child", "status"]
+  );
+  checkScript(
+    "systems/ops/protheus_control_plane.js",
+    ["protheus_control_plane.js", "start", "status", "job-submit", "incident", "release-promote", "doctor-bundle"]
+  );
+  checkScript(
+    "systems/ops/protheusd.js",
+    ["protheusd.js", "start", "status", "tick"]
+  );
+  checkScript(
+    "systems/ops/protheusctl.js",
+    ["protheusctl.js", "status", "health", "job-submit"]
+  );
+  checkScript(
+    "systems/memory/memory_efficiency_plane.js",
+    ["memory_efficiency_plane.js", "run", "query", "memoize", "status"]
+  );
+  checkScript(
+    "systems/ops/architecture_refinement_guard.js",
+    ["architecture_refinement_guard.js", "run", "status", "--strict"]
+  );
+  checkScript(
+    "systems/ops/enterprise_readiness_pack.js",
+    ["enterprise_readiness_pack.js", "run", "status", "--strict"]
+  );
+  checkScript(
+    "systems/ops/readiness_bridge_pack.js",
+    ["readiness_bridge_pack.js", "run", "status", "--strict"]
+  );
+  checkScript(
+    "systems/ops/benchmark_autonomy_gate.js",
+    ["benchmark_autonomy_gate.js", "run", "evaluate", "status"]
+  );
+  checkScript(
+    "systems/memory/rust_memory_transition_lane.js",
+    ["rust_memory_transition_lane.js", "pilot", "benchmark", "selector", "retire-check", "status"]
+  );
+  checkScript(
+    "systems/ops/openfang_parity_runtime.js",
+    ["openfang_parity_runtime.js", "install-plan", "runtime-budget", "benchmark-registry", "build-matrix", "status"]
+  );
+  checkScript(
+    "systems/security/wasm_capability_microkernel.js",
+    ["wasm_capability_microkernel.js", "run", "status"]
+  );
+  checkScript(
+    "systems/ops/event_sourced_control_plane.js",
+    ["event_sourced_control_plane.js", "append", "replay", "status"]
+  );
+  checkScript(
+    "systems/routing/model_catalog_service.js",
+    ["model_catalog_service.js", "upsert", "select", "status"]
+  );
+  checkScript(
+    "systems/observability/thought_action_trace_contract.js",
+    ["thought_action_trace_contract.js", "append", "verify", "status"]
+  );
+  checkScript(
+    "systems/autonomy/swarm_orchestration_runtime.js",
+    ["swarm_orchestration_runtime.js", "run", "status"]
+  );
+  checkScript(
+    "systems/memory/cross_cell_exchange_plane.js",
+    ["cross_cell_exchange_plane.js", "exchange", "status"]
+  );
+  checkScript(
+    "systems/symbiosis/soul_vector_substrate.js",
+    ["soul_vector_substrate.js", "refresh", "status"]
+  );
+  checkScript(
+    "systems/memory/hybrid_memory_engine.js",
+    ["hybrid_memory_engine.js", "ingest", "consolidate", "status"]
+  );
+  checkScript(
+    "systems/assimilation/habit_adapter_finetune_lane.js",
+    ["habit_adapter_finetune_lane.js", "train", "status"]
+  );
+  checkScript(
+    "systems/ops/observability_deployment_defaults.js",
+    ["observability_deployment_defaults.js", "generate", "status"]
+  );
+  checkScript(
+    "systems/ops/compatibility_conformance_program.js",
+    ["compatibility_conformance_program.js", "run", "status"]
+  );
+
   if (CONTRACT_CHECK_FAST) {
     console.log("contract_check: OK");
     return;
