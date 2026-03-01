@@ -1107,6 +1107,7 @@ Dependency notes:
 | ID | Stage | Status | Upgrade | Notes |
 |---|---|---|---|---|
 | V3-RACE-023 | Stage 1 | done | Rust memory core SQLite authoritative runtime | Moved crate to `systems/memory/rust` (`protheus-memory-core`), added SQLite runtime schema (`embeddings`, `temporal_graph_nodes`, `temporal_graph_edges`, `hot_state`, `memory_index`), switched Rust `query-index/get-node/build-index` to SQLite-first with markdown fallback, wired memory write receipts through `event_sourced_control_plane`, and kept deterministic JS fallback in `systems/memory/memory_recall.ts`. |
+| V3-RACE-023 | Stage 2 | done | Markdown export-only runtime cutover | Rust runtime read-path no longer consumes `MEMORY_INDEX.md`/`TAGS_INDEX.md`; SQLite refresh is derived from daily node scans and markdown indexes are retained as export/human artifacts while compatibility fallback remains available. |
 
 ## Enterprise Documentation Structure Intake (Deduplicated, 2026-02-28)
 Implementation (2026-03-01): Delivered `systems/ops/docs_structure_pack.ts` (+ wrapper/policy/test) and generated canonical docs artifacts (`docs/README.md`, `docs/adr/*`, `config/service_catalog.json`, `config/interface_contract_registry.json`, release templates, governance matrices) with strict validation.

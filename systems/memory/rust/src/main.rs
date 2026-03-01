@@ -625,50 +625,33 @@ fn build_tag_map_from_entries(entries: &[IndexEntry]) -> HashMap<String, HashSet
     out
 }
 
-fn merge_tag_map_into_entries(
-    entries: &mut [IndexEntry],
-    tag_map: &HashMap<String, HashSet<String>>,
-) {
-    if tag_map.is_empty() {
-        return;
-    }
-    for entry in entries {
-        let mut merged = entry.tags.clone();
-        for (tag, node_ids) in tag_map {
-            if node_ids.contains(&entry.node_id) {
-                merged.push(tag.clone());
-            }
+fn daily_scan_signature(root: &Path) -> String {
+    let memory_dir = root.join("memory");
+    let Ok(entries) = fs::read_dir(&memory_dir) else {
+        return String::new();
+    };
+    let mut rows: Vec<String> = vec![];
+    for item in entries.flatten() {
+        let name = item.file_name().to_string_lossy().to_string();
+        if !is_date_memory_file(&name) {
+            continue;
         }
-        entry.tags = dedupe_tags(&merged);
-    }
-}
-
-fn index_source_signature(root: &Path, index_sources: &[String], tag_sources: &[String]) -> String {
-    let mut lines: Vec<String> = vec![];
-    for source in index_sources.iter().chain(tag_sources.iter()) {
-        let p = root.join(source);
-        if let Ok(meta) = fs::metadata(&p) {
+        let file_path = memory_dir.join(&name);
+        if let Ok(meta) = fs::metadata(&file_path) {
             let modified = meta
                 .modified()
                 .ok()
                 .and_then(|v| v.duration_since(UNIX_EPOCH).ok())
                 .map(|dur| dur.as_millis())
                 .unwrap_or(0);
-            lines.push(format!(
-                "{}:{}:{}",
-                source,
-                meta.len(),
-                modified
-            ));
-        } else {
-            lines.push(format!("{source}:missing"));
+            rows.push(format!("{name}:{}:{modified}", meta.len()));
         }
     }
-    if lines.is_empty() {
+    if rows.is_empty() {
         return String::new();
     }
-    lines.sort();
-    sha256_hex(&lines.join("|"))
+    rows.sort();
+    sha256_hex(&rows.join("|"))
 }
 
 fn sanitize_event_token(raw: &str) -> String {
@@ -712,27 +695,34 @@ fn sync_sqlite_runtime_index(
     root: &Path,
     db: &mut MemoryDb,
 ) -> Result<(Vec<String>, Vec<String>, usize, bool, String), String> {
-    let (index_sources, mut entries) = load_memory_index(root);
-    let (tag_sources, tag_map) = load_tags_index(root);
-    merge_tag_map_into_entries(&mut entries, &tag_map);
-    let signature = index_source_signature(root, &index_sources, &tag_sources);
+    let signature = daily_scan_signature(root);
     let previous = db
-        .get_hot_state_json("index_source_signature")?
+        .get_hot_state_json("daily_scan_signature")?
         .and_then(|value| value.as_str().map(|v| v.to_string()))
         .unwrap_or_default();
     let existing_rows = db.count_index_rows()?;
     if existing_rows > 0 && !signature.is_empty() && signature == previous {
-        return Ok((index_sources, tag_sources, existing_rows, false, signature));
+        return Ok((
+            vec!["daily_scan:unchanged".to_string()],
+            vec!["daily_scan:unchanged".to_string()],
+            existing_rows,
+            false,
+            signature,
+        ));
     }
 
+    let (entries, files_scanned) = scan_daily_entries(root);
+    let index_sources = vec![format!("daily_scan:{files_scanned}_files")];
+    let tag_sources = vec!["daily_scan:frontmatter_tags".to_string()];
     let db_entries = entries
         .iter()
         .map(to_db_index_entry)
         .collect::<Vec<DbIndexEntry>>();
-    let inserted = db.replace_index_entries(&db_entries, "markdown_index")?;
-    let _ = db.set_hot_state_json("index_source_signature", &json!(signature));
+    let inserted = db.replace_index_entries(&db_entries, "daily_scan_authority")?;
+    let _ = db.set_hot_state_json("daily_scan_signature", &json!(signature));
     let _ = db.set_hot_state_json("index_row_count", &json!(inserted));
-    let _ = db.set_hot_state_json("index_sync_source", &json!("markdown_index"));
+    let _ = db.set_hot_state_json("index_sync_source", &json!("daily_scan_authority"));
+    let _ = db.set_hot_state_json("index_files_scanned", &json!(files_scanned));
     Ok((index_sources, tag_sources, inserted, true, signature))
 }
 
@@ -781,6 +771,15 @@ fn load_runtime_index(root: &Path, args: &HashMap<String, String>) -> RuntimeInd
                 return out;
             }
         }
+    }
+
+    let (entries, files_scanned) = scan_daily_entries(root);
+    if !entries.is_empty() {
+        out.index_sources = vec![format!("daily_scan_fallback:{files_scanned}_files")];
+        out.tag_map = build_tag_map_from_entries(&entries);
+        out.tag_sources = vec!["daily_scan_fallback:frontmatter_tags".to_string()];
+        out.entries = entries;
+        return out;
     }
 
     let (index_sources, entries) = load_memory_index(root);
