@@ -38,6 +38,7 @@ function usage() {
   console.log('  node systems/memory/rust_memory_transition_lane.js pilot [--policy=<path>]');
   console.log('  node systems/memory/rust_memory_transition_lane.js benchmark [--runs=5] [--policy=<path>]');
   console.log('  node systems/memory/rust_memory_transition_lane.js selector --backend=js|rust|rust_shadow|rust_live [--policy=<path>]');
+  console.log('  node systems/memory/rust_memory_transition_lane.js auto-selector [--policy=<path>]');
   console.log('  node systems/memory/rust_memory_transition_lane.js retire-check [--policy=<path>]');
   console.log('  node systems/memory/rust_memory_transition_lane.js status [--policy=<path>]');
 }
@@ -451,6 +452,47 @@ function setSelector(args, policy) {
   return out;
 }
 
+function autoSelector(policy) {
+  const history = readJson(policy.paths.benchmark_path, { rows: [] });
+  const rows = Array.isArray(history.rows) ? history.rows : [];
+  const recent = rows.slice(-policy.thresholds.min_stable_runs_for_retirement);
+  const avgSpeedup = recent.length > 0
+    ? Number((recent.reduce((acc: number, row: any) => acc + Number(row.speedup || 0), 0) / recent.length).toFixed(6))
+    : 0;
+  const maxParityErrors = recent.reduce((acc: number, row: any) => Math.max(acc, clampInt(row.parity_error_count, 0, 100000, 0)), 0);
+  const eligible = recent.length >= policy.thresholds.min_stable_runs_for_retirement
+    && avgSpeedup >= policy.thresholds.min_speedup_for_cutover
+    && maxParityErrors <= policy.thresholds.max_parity_error_count;
+
+  const backend = eligible ? 'rust_shadow' : 'js';
+  const activeEngine = backend === 'js' ? 'js' : 'rust';
+  const selector = {
+    schema_version: '1.0',
+    backend,
+    active_engine: activeEngine,
+    fallback_backend: 'js',
+    updated_at: nowIso(),
+    auto_selected: true,
+    auto_reason: eligible ? 'benchmark_gate_pass' : 'benchmark_gate_fail'
+  };
+  writeJsonAtomic(policy.paths.selector_path, selector);
+
+  const out = {
+    ts: nowIso(),
+    type: 'rust_memory_auto_selector',
+    ok: true,
+    backend,
+    active_engine: activeEngine,
+    eligible,
+    stable_runs: recent.length,
+    avg_speedup: avgSpeedup,
+    max_parity_errors: maxParityErrors
+  };
+  writeJsonAtomic(policy.paths.latest_path, out);
+  appendJsonl(policy.paths.receipts_path, out);
+  return out;
+}
+
 function retireCheck(policy) {
   const history = readJson(policy.paths.benchmark_path, { rows: [] });
   const rows = Array.isArray(history.rows) ? history.rows : [];
@@ -503,6 +545,7 @@ function main() {
   if (cmd === 'pilot') emit(runPilot(policy));
   if (cmd === 'benchmark') emit(runBenchmark(args, policy));
   if (cmd === 'selector') emit(setSelector(args, policy));
+  if (cmd === 'auto-selector') emit(autoSelector(policy));
   if (cmd === 'retire-check') emit(retireCheck(policy));
   if (cmd === 'status') emit(status(policy));
 

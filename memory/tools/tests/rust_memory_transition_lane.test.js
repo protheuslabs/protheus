@@ -46,6 +46,11 @@ process.stdout.write(JSON.stringify({ ok: true, backend_used: engine, parity_err
   writeJson(policyPath, {
     enabled: true,
     shadow_only: true,
+    thresholds: {
+      min_speedup_for_cutover: 1.1,
+      max_parity_error_count: 0,
+      min_stable_runs_for_retirement: 3
+    },
     paths: {
       state_root: stateRoot,
       latest_path: path.join(stateRoot, 'latest.json'),
@@ -85,6 +90,10 @@ process.stdout.write(JSON.stringify({ ok: true, backend_used: engine, parity_err
   assert.strictEqual(bench.rows[0].rust_get_probe_ok, true);
   assert.strictEqual(bench.rows[0].probe_node_id, 'n1');
   assert.strictEqual(bench.rows[0].parity_error_count, 0);
+
+  res = run(['auto-selector', `--policy=${policyPath}`]);
+  assert.strictEqual(res.status, 0, res.stderr);
+  assert.ok(res.payload && res.payload.backend === 'rust_shadow', 'auto-selector should promote rust_shadow when eligible');
 
   res = run(['selector', `--policy=${policyPath}`, '--backend=rust_shadow']);
   assert.strictEqual(res.status, 0, res.stderr);
