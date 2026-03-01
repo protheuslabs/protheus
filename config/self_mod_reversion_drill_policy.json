@@ -1,0 +1,18 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "sla_minutes": 15,
+  "freshness_days": 35,
+  "timeout_ms": 30000,
+  "scripts": {
+    "loop": "systems/autonomy/gated_self_improvement_loop.js"
+  },
+  "latest_state_paths": {
+    "gated_self_improvement_policy_path": "config/gated_self_improvement_policy.json"
+  },
+  "outputs": {
+    "latest_path": "state/autonomy/self_mod_reversion_drill/latest.json",
+    "receipts_path": "state/autonomy/self_mod_reversion_drill/receipts.jsonl"
+  }
+}
