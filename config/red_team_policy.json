@@ -7,11 +7,34 @@
   "state_root": "state/security/red_team",
   "model": {
     "provider": "ollama",
-    "model": "qwen2.5:3b-instruct-q4_K_M",
-    "timeout_ms": 45000
+    "model": "qwen2.5:3b",
+    "timeout_ms": 45000,
+    "prefer_unfiltered_seed": true,
+    "auto_select_unfiltered": true,
+    "unfiltered_model_candidates": [
+      "qwen2.5:3b",
+      "llama3.2:3b",
+      "mistral:7b",
+      "deepseek-r1:1.5b"
+    ],
+    "filtered_name_hints": [
+      "instruct",
+      "chat",
+      "assistant",
+      "safety",
+      "guard"
+    ],
+    "unfiltered_name_hints": [
+      "unfiltered",
+      "uncensored",
+      "base"
+    ]
   },
   "limits": {
-    "max_cases_per_run": 4,
+    "max_cases_per_run": 8,
+    "min_cases_per_run": 2,
+    "auto_scale_max_cases_by_system": true,
+    "phone_seed_cap": 0.35,
     "max_prompt_chars": 1400,
     "max_output_chars": 1000
   },

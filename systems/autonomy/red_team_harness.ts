@@ -132,6 +132,26 @@ function normalizeRegexList(rawList, fallback) {
   return out;
 }
 
+function normalizeStringList(rawList, fallback, maxItems = 64) {
+  const rows = Array.isArray(rawList) ? rawList : fallback;
+  const out = [];
+  const seen = new Set();
+  for (const item of rows) {
+    const s = String(item || '').trim();
+    if (!s) continue;
+    const k = s.toLowerCase();
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(s);
+    if (out.length >= maxItems) break;
+  }
+  return out;
+}
+
+function normalizeHintList(rawList, fallback, maxItems = 32) {
+  return normalizeStringList(rawList, fallback, maxItems).map((v) => String(v || '').trim().toLowerCase()).filter(Boolean);
+}
+
 function compileRegexes(rows) {
   const out = [];
   for (const item of rows || []) {
@@ -154,11 +174,34 @@ function defaultPolicy() {
     state_root: 'state/security/red_team',
     model: {
       provider: 'ollama',
-      model: 'qwen2.5:3b-instruct-q4_K_M',
-      timeout_ms: 45000
+      model: 'qwen2.5:3b',
+      timeout_ms: 45000,
+      prefer_unfiltered_seed: true,
+      auto_select_unfiltered: true,
+      unfiltered_model_candidates: [
+        'qwen2.5:3b',
+        'llama3.2:3b',
+        'mistral:7b',
+        'deepseek-r1:1.5b'
+      ],
+      filtered_name_hints: [
+        'instruct',
+        'chat',
+        'assistant',
+        'safety',
+        'guard'
+      ],
+      unfiltered_name_hints: [
+        'unfiltered',
+        'uncensored',
+        'base'
+      ]
     },
     limits: {
-      max_cases_per_run: 4,
+      max_cases_per_run: 8,
+      min_cases_per_run: 2,
+      auto_scale_max_cases_by_system: true,
+      phone_seed_cap: 0.35,
       max_prompt_chars: 1400,
       max_output_chars: 1000
     },
@@ -254,10 +297,40 @@ function normalizePolicy(rawPolicy) {
     model: {
       provider: String(modelSrc.provider || base.model.provider).trim().toLowerCase(),
       model: String(modelSrc.model || base.model.model).trim(),
-      timeout_ms: clampInt(modelSrc.timeout_ms, 5000, 5 * 60 * 1000, base.model.timeout_ms)
+      timeout_ms: clampInt(modelSrc.timeout_ms, 5000, 5 * 60 * 1000, base.model.timeout_ms),
+      prefer_unfiltered_seed: boolFlag(modelSrc.prefer_unfiltered_seed, base.model.prefer_unfiltered_seed),
+      auto_select_unfiltered: boolFlag(modelSrc.auto_select_unfiltered, base.model.auto_select_unfiltered),
+      unfiltered_model_candidates: normalizeStringList(
+        modelSrc.unfiltered_model_candidates,
+        base.model.unfiltered_model_candidates,
+        24
+      ).map((row) => normalizeModelName(row)).filter(Boolean),
+      filtered_name_hints: normalizeHintList(
+        modelSrc.filtered_name_hints,
+        base.model.filtered_name_hints,
+        24
+      ),
+      unfiltered_name_hints: normalizeHintList(
+        modelSrc.unfiltered_name_hints,
+        base.model.unfiltered_name_hints,
+        24
+      )
     },
     limits: {
       max_cases_per_run: clampInt(limitsSrc.max_cases_per_run, 1, 64, base.limits.max_cases_per_run),
+      min_cases_per_run: clampInt(
+        limitsSrc.min_cases_per_run,
+        1,
+        Number(limitsSrc.max_cases_per_run || base.limits.max_cases_per_run || 8),
+        base.limits.min_cases_per_run
+      ),
+      auto_scale_max_cases_by_system: boolFlag(
+        limitsSrc.auto_scale_max_cases_by_system,
+        base.limits.auto_scale_max_cases_by_system
+      ),
+      phone_seed_cap: Number.isFinite(Number(limitsSrc.phone_seed_cap))
+        ? Math.max(0.1, Math.min(1, Number(limitsSrc.phone_seed_cap)))
+        : Number(base.limits.phone_seed_cap || 0.35),
       max_prompt_chars: clampInt(limitsSrc.max_prompt_chars, 100, 20000, base.limits.max_prompt_chars),
       max_output_chars: clampInt(limitsSrc.max_output_chars, 120, 20000, base.limits.max_output_chars)
     },
@@ -288,14 +361,96 @@ function loadPolicy(policyPath) {
   return normalizePolicy(raw);
 }
 
+function modelNameMatches(availableName, needle) {
+  const name = normalizeModelName(availableName);
+  const target = normalizeModelName(needle);
+  if (!name || !target) return false;
+  return name === target
+    || name.startsWith(`${target}:`)
+    || (!target.includes(':') && name.split(':')[0] === target);
+}
+
+function resolveMatchingModel(availableNames, requestedModel) {
+  const names = Array.isArray(availableNames) ? availableNames : [];
+  for (const name of names) {
+    if (modelNameMatches(name, requestedModel)) return normalizeModelName(name);
+  }
+  return '';
+}
+
+function nameHasHint(modelName, hints) {
+  const name = normalizeModelName(modelName);
+  const rows = Array.isArray(hints) ? hints : [];
+  for (const item of rows) {
+    const hint = String(item || '').trim().toLowerCase();
+    if (!hint) continue;
+    if (name.includes(hint)) return true;
+  }
+  return false;
+}
+
+function selectUnfilteredModel(availableNames, modelPolicy) {
+  const names = Array.isArray(availableNames) ? availableNames.map((v) => normalizeModelName(v)).filter(Boolean) : [];
+  if (names.length <= 0) return { model: '', reason: 'no_available_models' };
+
+  const candidates = Array.isArray(modelPolicy && modelPolicy.unfiltered_model_candidates)
+    ? modelPolicy.unfiltered_model_candidates
+    : [];
+  const filteredHints = Array.isArray(modelPolicy && modelPolicy.filtered_name_hints)
+    ? modelPolicy.filtered_name_hints
+    : [];
+  const unfilteredHints = Array.isArray(modelPolicy && modelPolicy.unfiltered_name_hints)
+    ? modelPolicy.unfiltered_name_hints
+    : [];
+
+  for (const candidate of candidates) {
+    const matched = resolveMatchingModel(names, candidate);
+    if (!matched) continue;
+    if (nameHasHint(matched, filteredHints)) continue;
+    return { model: matched, reason: 'candidate_unfiltered_model' };
+  }
+
+  for (const name of names) {
+    if (nameHasHint(name, unfilteredHints) && !nameHasHint(name, filteredHints)) {
+      return { model: name, reason: 'hinted_unfiltered_model' };
+    }
+  }
+
+  for (const name of names) {
+    if (!nameHasHint(name, filteredHints)) {
+      return { model: name, reason: 'first_non_filtered_model' };
+    }
+  }
+
+  return { model: '', reason: 'no_unfiltered_model_match' };
+}
+
 function checkModelAvailability(policy) {
   const provider = String(policy.model.provider || '').trim().toLowerCase();
-  const model = String(policy.model.model || '').trim();
+  const model = normalizeModelName(String(policy.model.model || '').trim());
   if (provider === 'mock') {
-    return { ok: true, available: true, provider, model, reason: 'mock_provider' };
+    return {
+      ok: true,
+      available: true,
+      provider,
+      model,
+      configured_model: model,
+      auto_selected_unfiltered: false,
+      configured_model_is_filtered: false,
+      reason: 'mock_provider'
+    };
   }
   if (provider !== 'ollama') {
-    return { ok: false, available: false, provider, model, reason: `unsupported_provider:${provider || 'none'}` };
+    return {
+      ok: false,
+      available: false,
+      provider,
+      model,
+      configured_model: model,
+      auto_selected_unfiltered: false,
+      configured_model_is_filtered: false,
+      reason: `unsupported_provider:${provider || 'none'}`
+    };
   }
   const list = listLocalOllamaModels({
     timeoutMs: 8000,
@@ -307,20 +462,104 @@ function checkModelAvailability(policy) {
       available: false,
       provider,
       model,
+      configured_model: model,
+      auto_selected_unfiltered: false,
+      configured_model_is_filtered: false,
       reason: String(list.stderr || `ollama_list_exit_${list.code || 1}`).trim().slice(0, 180)
     };
   }
-  const names = Array.isArray(list.models) ? list.models.map((name) => normalizeModelName(name)) : [];
-  const needle = normalizeModelName(model);
-  const available = names.includes(needle)
-    || names.some((name) => name.startsWith(`${needle}:`))
-    || (!needle.includes(':') && names.some((name) => name.split(':')[0] === needle));
+  const names = Array.isArray(list.models)
+    ? normalizeStringList(list.models, [], 256).map((name) => normalizeModelName(name)).filter(Boolean)
+    : [];
+  const configuredModel = resolveMatchingModel(names, model) || model;
+  const configuredAvailable = !!resolveMatchingModel(names, configuredModel);
+
+  const modelPolicy = policy && policy.model && typeof policy.model === 'object' ? policy.model : {};
+  const filteredHints = Array.isArray(modelPolicy.filtered_name_hints)
+    ? modelPolicy.filtered_name_hints
+    : [];
+  const preferUnfiltered = boolFlag(modelPolicy.prefer_unfiltered_seed, true);
+  const autoSelectUnfiltered = boolFlag(modelPolicy.auto_select_unfiltered, true);
+  const configuredFiltered = nameHasHint(configuredModel, filteredHints);
+
+  let selectedModel = configuredModel;
+  let selectionReason = configuredAvailable ? 'configured_model_available' : 'configured_model_missing';
+  let autoSelectedUnfiltered = false;
+
+  if (autoSelectUnfiltered && preferUnfiltered && (!configuredAvailable || configuredFiltered)) {
+    const picked = selectUnfilteredModel(names, modelPolicy);
+    if (picked && picked.model) {
+      selectedModel = picked.model;
+      selectionReason = picked.reason || 'auto_selected_unfiltered_model';
+      autoSelectedUnfiltered = normalizeModelName(selectedModel) !== normalizeModelName(configuredModel);
+    }
+  }
+
+  const available = !!resolveMatchingModel(names, selectedModel);
   return {
     ok: true,
     available,
     provider,
-    model,
-    reason: available ? 'model_available' : 'model_missing'
+    model: selectedModel || configuredModel,
+    configured_model: configuredModel,
+    auto_selected_unfiltered: autoSelectedUnfiltered,
+    configured_model_is_filtered: configuredFiltered,
+    available_model_count: names.length,
+    reason: available ? selectionReason : 'model_missing'
+  };
+}
+
+function systemSeedSizing(policy) {
+  const limits = policy && policy.limits && typeof policy.limits === 'object' ? policy.limits : {};
+  const capMax = clampInt(limits.max_cases_per_run, 1, 64, 8);
+  const capMin = clampInt(limits.min_cases_per_run, 1, capMax, Math.min(2, capMax));
+  const autoScale = boolFlag(limits.auto_scale_max_cases_by_system, true);
+  const profile = String(process.env.PROTHEUS_PROFILE || '').trim().toLowerCase();
+  const cpus = Math.max(1, Number((os.cpus() || []).length || 1));
+  const totalMemGb = Number((Number(os.totalmem() || 0) / (1024 ** 3)).toFixed(2));
+  const load1 = Number(((os.loadavg && os.loadavg()[0]) || 0).toFixed(4));
+  const loadPerCpu = Number((load1 / cpus).toFixed(4));
+
+  let target = capMax;
+  let source = 'policy_max_cases';
+  if (autoScale) {
+    if (cpus <= 2 || totalMemGb < 4) target = 1;
+    else if (cpus <= 4 || totalMemGb < 8) target = 2;
+    else if (cpus <= 8 || totalMemGb < 16) target = 4;
+    else if (cpus <= 16 || totalMemGb < 32) target = 6;
+    else target = 8;
+    target = clampInt(target, capMin, capMax, capMax);
+    source = 'system_specs';
+
+    const highLoad = loadPerCpu > 1.2;
+    if (highLoad) {
+      target = Math.max(capMin, target - 1);
+      source = 'system_specs_high_load';
+    }
+
+    if (profile === 'phone_seed') {
+      const phoneSeedCap = Number.isFinite(Number(limits.phone_seed_cap))
+        ? Math.max(0.1, Math.min(1, Number(limits.phone_seed_cap)))
+        : 0.35;
+      const phoneMax = Math.max(1, Math.floor(capMax * phoneSeedCap));
+      target = Math.min(target, phoneMax);
+      source = highLoad ? 'phone_seed_high_load_cap' : 'phone_seed_cap';
+    }
+  }
+
+  return {
+    target_cases: clampInt(target, capMin, capMax, capMax),
+    min_cases: capMin,
+    max_cases: capMax,
+    auto_scale: autoScale,
+    source,
+    specs: {
+      cpu_count: cpus,
+      total_mem_gb: totalMemGb,
+      load_1m: load1,
+      load_per_cpu: loadPerCpu,
+      profile: profile || null
+    }
   };
 }
 
@@ -558,14 +797,13 @@ function runHarness(args) {
   const strict = args.strict === true || boolFlag(process.env.RED_TEAM_STRICT, policy.strict_fail_on_critical === true);
 
   const corpus = loadCorpus(paths.corpus_path).filter((row) => row.enabled !== false);
-  const maxCases = clampInt(
-    args['max-cases'] || process.env.RED_TEAM_MAX_CASES || policy.limits.max_cases_per_run,
-    1,
-    64,
-    Number(policy.limits.max_cases_per_run || 4)
-  );
+  const explicitMaxCases = args['max-cases'] != null ? args['max-cases'] : process.env.RED_TEAM_MAX_CASES;
+  const seedSizing = systemSeedSizing(policy);
+  const maxCases = explicitMaxCases != null
+    ? clampInt(explicitMaxCases, 1, 64, seedSizing.target_cases)
+    : seedSizing.target_cases;
   const promptLimit = Number(policy.limits.max_prompt_chars || 1400);
-  const selected = corpus.slice(0, maxCases);
+  const selected = corpus.slice(0, Math.max(0, maxCases));
 
   const results = [];
   for (const caseRow of selected) {
@@ -603,6 +841,12 @@ function runHarness(args) {
     policy_path: path.relative(ROOT, resolvePathFrom(ROOT, args.policy || process.env.RED_TEAM_POLICY_PATH || DEFAULT_POLICY_PATH)).replace(/\\/g, '/'),
     state_root: paths.root,
     model: availability,
+    seed_sizing: {
+      ...seedSizing,
+      explicit_override: explicitMaxCases != null,
+      selected_cases_cap: Math.max(0, maxCases),
+      corpus_enabled_cases: corpus.length
+    },
     summary: {
       selected_cases: selected.length,
       executed_cases: executed.length,
