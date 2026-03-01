@@ -108,6 +108,52 @@ function runRecall(root, args, extraEnv = {}) {
   });
 }
 
+function makeFakeRustBin(root) {
+  const bin = path.join(root, 'fake_rust_bin.js');
+  writeFile(bin, `#!/usr/bin/env node
+const args = process.argv.slice(2);
+const sep = args.indexOf('--');
+const cmd = sep >= 0 ? String(args[sep + 1] || '') : '';
+if (cmd === 'query-index') {
+  process.stdout.write(JSON.stringify({
+    ok: true,
+    backend: 'rust_memory_box',
+    index_sources: ['memory/MEMORY_INDEX.md'],
+    tag_sources: ['memory/TAGS_INDEX.md'],
+    candidates_total: 2,
+    hits: [{
+      node_id: 'routing-cache-design',
+      uid: 'memabc123routing01',
+      file: 'memory/2026-01-01.md',
+      summary: 'Routing cache and fallback behavior',
+      tags: ['routing', 'memory'],
+      score: 12,
+      reasons: ['query_match']
+    }]
+  }) + '\\n');
+  process.exit(0);
+}
+if (cmd === 'get-node') {
+  process.stdout.write(JSON.stringify({
+    ok: true,
+    backend: 'rust_memory_box',
+    node_id: 'autonomy-loop-gate',
+    uid: 'memabc123autonomy2',
+    file: 'memory/2026-01-01.md',
+    summary: 'Repeat-gate policy and stop conditions',
+    tags: ['autonomy', 'memory'],
+    section_hash: '1111111111111111111111111111111111111111111111111111111111111111',
+    section: '# autonomy-loop-gate\\n- Stop on repeated no-progress streak.'
+  }) + '\\n');
+  process.exit(0);
+}
+console.error('unsupported fake rust cmd', cmd);
+process.exit(1);
+`);
+  fs.chmodSync(bin, 0o755);
+  return bin;
+}
+
 function parseJson(stdout) {
   try { return JSON.parse(String(stdout || '').trim()); } catch { return null; }
 }
@@ -147,6 +193,28 @@ runTest('query requested rust backend falls back to js when crate is missing', (
   assert.strictEqual(out.backend_used, 'js');
   assert.strictEqual(out.backend_fallback_reason, 'rust_crate_missing');
   assert.ok(Array.isArray(out.hits) && out.hits.length > 0, 'fallback should still return hits');
+});
+
+runTest('query requested rust backend uses rust payload when rust bin succeeds', () => {
+  const root = makeWorkspace();
+  const fakeBin = makeFakeRustBin(root);
+  const cratePath = path.join(root, 'systems', 'rust', 'memory_box_present');
+  mkDir(cratePath);
+  const r = runRecall(
+    root,
+    ['query', '--q=routing', '--expand=none', '--session=rustsuccess'],
+    {
+      MEMORY_RECALL_BACKEND: 'rust',
+      MEMORY_RECALL_RUST_BIN: fakeBin,
+      MEMORY_RECALL_RUST_CRATE_PATH: cratePath
+    }
+  );
+  assert.strictEqual(r.status, 0, `query failed: ${r.stderr}`);
+  const out = parseJson(r.stdout);
+  assert.ok(out && out.ok === true, 'expected ok=true');
+  assert.strictEqual(out.backend_used, 'rust');
+  assert.strictEqual(out.backend_fallback_reason, null);
+  assert.strictEqual(out.hits[0].node_id, 'routing-cache-design');
 });
 
 runTest('query rust backend enters cooldown after first rust failure', () => {
@@ -252,6 +320,29 @@ runTest('get requested rust backend falls back to js when crate is missing', () 
   assert.strictEqual(out.backend_used, 'js');
   assert.strictEqual(out.backend_fallback_reason, 'rust_crate_missing');
   assert.ok(String(out.section || '').includes('# routing-cache-design'), 'fallback should still return section');
+});
+
+runTest('get requested rust backend uses rust payload when rust bin succeeds', () => {
+  const root = makeWorkspace();
+  const fakeBin = makeFakeRustBin(root);
+  const cratePath = path.join(root, 'systems', 'rust', 'memory_box_present');
+  mkDir(cratePath);
+  const r = runRecall(
+    root,
+    ['get', '--uid=memabc123autonomy2', '--session=getrustsuccess'],
+    {
+      MEMORY_RECALL_BACKEND: 'rust',
+      MEMORY_RECALL_RUST_BIN: fakeBin,
+      MEMORY_RECALL_RUST_CRATE_PATH: cratePath
+    }
+  );
+  assert.strictEqual(r.status, 0, `get failed: ${r.stderr}`);
+  const out = parseJson(r.stdout);
+  assert.ok(out && out.ok === true, 'expected ok=true');
+  assert.strictEqual(out.backend_used, 'rust');
+  assert.strictEqual(out.backend_fallback_reason, null);
+  assert.strictEqual(out.node_id, 'autonomy-loop-gate');
+  assert.strictEqual(out.section_hash, '1111111111111111111111111111111111111111111111111111111111111111');
 });
 
 runTest('get rust backend enters cooldown after first rust failure', () => {

@@ -27,6 +27,7 @@ const DEFAULT_RUST_SELECTOR_PATH = process.env.MEMORY_RECALL_RUST_SELECTOR_PATH
 const DEFAULT_RUST_CRATE_PATH = process.env.MEMORY_RECALL_RUST_CRATE_PATH
   ? path.resolve(String(process.env.MEMORY_RECALL_RUST_CRATE_PATH))
   : path.join(WORKSPACE_ROOT, 'systems', 'rust', 'memory_box');
+const DEFAULT_RUST_BIN = String(process.env.MEMORY_RECALL_RUST_BIN || 'cargo').trim() || 'cargo';
 const DEFAULT_RUST_TIMEOUT_MS = clampInt(process.env.MEMORY_RECALL_RUST_TIMEOUT_MS || 25000, 1000, 120000);
 const DEFAULT_RUST_COOLDOWN_MS = clampInt(process.env.MEMORY_RECALL_RUST_COOLDOWN_MS || (5 * 60 * 1000), 1000, 24 * 60 * 60 * 1000);
 const DEFAULT_RUST_HEALTH_PATH = process.env.MEMORY_RECALL_RUST_HEALTH_PATH
@@ -447,7 +448,7 @@ function runRustQueryIndex(query, tagFilters, top, options: any = {}) {
   if (expandLines > 0) args.push(`--max-files=${maxFiles}`);
   if (cachePath) args.push(`--cache-path=${cachePath}`);
   if (cachePath) args.push(`--cache-max-bytes=${cacheMaxBytes}`);
-  const run = spawnSync('cargo', args, {
+  const run = spawnSync(DEFAULT_RUST_BIN, args, {
     cwd: cratePath,
     encoding: 'utf8',
     timeout: DEFAULT_RUST_TIMEOUT_MS
@@ -490,7 +491,7 @@ function runRustGetNode(nodeId, uid, fileFilter, options: any = {}) {
   if (fileFilter) args.push(`--file=${String(fileFilter)}`);
   if (cachePath) args.push(`--cache-path=${cachePath}`);
   if (cachePath) args.push(`--cache-max-bytes=${cacheMaxBytes}`);
-  const run = spawnSync('cargo', args, {
+  const run = spawnSync(DEFAULT_RUST_BIN, args, {
     cwd: cratePath,
     encoding: 'utf8',
     timeout: DEFAULT_RUST_TIMEOUT_MS
