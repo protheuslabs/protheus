@@ -9,7 +9,7 @@ This document tracks the staged Rust memory migration for `V3-RACE-023`.
 - Stage 1: COMPLETE (2026-03-01)
 - Stage 2: COMPLETE (2026-03-01)
 - Stage 3: COMPLETE (2026-03-01)
-- Stage 4: Pending
+- Stage 4: COMPLETE (2026-03-01)
 
 ## Stage 1 Scope (Completed)
 
@@ -50,3 +50,11 @@ This document tracks the staged Rust memory migration for `V3-RACE-023`.
 - Added deterministic fallback to existing Rust CLI path, then JS path, so failures stay safe.
 - Added `rust_transport` response field (`daemon` or `cli`) for runtime verification.
 - Test guard: daemon mode is disabled for temp-root test workspaces to preserve deterministic fixture behavior.
+
+## Stage 4 Scope (Completed)
+
+- Established JSONL as audit-mirror-only for memory recall runtime operations.
+- Added append-only audit mirror lane at `state/memory/runtime_audit/memory_recall_audit.jsonl`.
+- Audit rows include payload hash + structured operation metadata for `query`, `get`, and `clear-cache`.
+- Runtime logic does not read from this JSONL lane; it is write-only evidence.
+- Added regression coverage proving invalid existing mirror rows do not affect runtime behavior.

@@ -46,6 +46,10 @@ const DEFAULT_RUST_DAEMON_LOG_PATH = process.env.MEMORY_RECALL_RUST_DAEMON_LOG_P
 const DEFAULT_RUST_DAEMON_BIN_PATH = process.env.MEMORY_RECALL_RUST_DAEMON_BIN_PATH
   ? path.resolve(String(process.env.MEMORY_RECALL_RUST_DAEMON_BIN_PATH))
   : path.join(DEFAULT_RUST_CRATE_PATH, 'target', 'release', 'protheus-memory-core');
+const DEFAULT_AUDIT_MIRROR_ENABLED = parseBoolFlag(process.env.MEMORY_RECALL_AUDIT_MIRROR_ENABLED, true);
+const DEFAULT_AUDIT_MIRROR_PATH = process.env.MEMORY_RECALL_AUDIT_MIRROR_PATH
+  ? path.resolve(String(process.env.MEMORY_RECALL_AUDIT_MIRROR_PATH))
+  : path.join(REPO_ROOT, 'state', 'memory', 'runtime_audit', 'memory_recall_audit.jsonl');
 const DEFAULT_RUST_HEALTH_PATH = process.env.MEMORY_RECALL_RUST_HEALTH_PATH
   ? path.resolve(String(process.env.MEMORY_RECALL_RUST_HEALTH_PATH))
   : path.join(REPO_ROOT, 'state', 'memory', 'rust_transition', 'backend_health.json');
@@ -449,6 +453,25 @@ function resolveLocalPath(rawPath, fallbackRelPath) {
   if (!raw) return path.join(REPO_ROOT, String(fallbackRelPath || '').replace(/^\/+/, ''));
   if (path.isAbsolute(raw)) return path.resolve(raw);
   return path.join(REPO_ROOT, raw);
+}
+
+function appendAuditMirror(eventType, payload) {
+  if (DEFAULT_AUDIT_MIRROR_ENABLED !== true) return;
+  try {
+    ensureDir(path.dirname(DEFAULT_AUDIT_MIRROR_PATH));
+    const rowPayload = payload && typeof payload === 'object' ? payload : {};
+    const payloadText = JSON.stringify(rowPayload);
+    const row = {
+      ts: nowIso(),
+      type: cleanCell(eventType || 'memory_recall_event') || 'memory_recall_event',
+      schema_version: '1.0',
+      payload_hash: sha256(payloadText),
+      payload: rowPayload
+    };
+    fs.appendFileSync(DEFAULT_AUDIT_MIRROR_PATH, `${JSON.stringify(row)}\n`, 'utf8');
+  } catch {
+    // Audit mirror is best-effort only; never block memory recall.
+  }
 }
 
 function autoBackendFromBenchmarkGate() {
@@ -1212,7 +1235,7 @@ async function queryCmd(args) {
 
   saveCache(session, cacheObj, cacheMaxBytes);
 
-  process.stdout.write(JSON.stringify({
+  const response = {
     ok: true,
     type: 'memory_recall_query',
     query,
@@ -1232,7 +1255,24 @@ async function queryCmd(args) {
     tag_sources: tagSources,
     metrics,
     hits
-  }, null, 2) + '\n');
+  };
+  appendAuditMirror('memory_recall_query', {
+    ok: true,
+    session,
+    query_hash: sha256(query),
+    query_length: String(query || '').length,
+    tags: tagFilters,
+    backend_requested: backendRequested,
+    backend_used: backendUsed,
+    backend_fallback_reason: backendFallbackReason,
+    rust_transport: rustTransport,
+    confidence,
+    expanded_count: expandedCount,
+    hit_count: hits.length,
+    index_sources: indexSources,
+    tag_sources: tagSources
+  });
+  process.stdout.write(JSON.stringify(response, null, 2) + '\n');
 }
 
 async function getCmd(args) {
@@ -1242,19 +1282,27 @@ async function getCmd(args) {
   const session = safeSessionName(args.session || process.env.MEMORY_RECALL_SESSION || 'default');
   const cacheMaxBytes = clampInt(args['cache-max-bytes'] == null ? DEFAULT_CACHE_MAX_BYTES : args['cache-max-bytes'], 65536, 8 * 1024 * 1024);
   const backendRequested = resolveBackendChoice(args.backend == null ? DEFAULT_BACKEND : args.backend);
-
-  if (!nodeId && !uid) {
-    process.stdout.write(JSON.stringify({
-      ok: false,
-      error: 'missing --node-id=<id> or --uid=<alnum_uid>'
-    }) + '\n');
-    process.exit(2);
-  }
-
   const metrics = { cache_hits: 0, cache_misses: 0, file_reads: 0 };
   let backendUsed = 'js';
   let backendFallbackReason = null;
   let rustTransport = null;
+
+  if (!nodeId && !uid) {
+    const response = {
+      ok: false,
+      error: 'missing --node-id=<id> or --uid=<alnum_uid>'
+    };
+    appendAuditMirror('memory_recall_get', {
+      ok: false,
+      session,
+      backend_requested: backendRequested,
+      backend_used: backendUsed,
+      backend_fallback_reason: backendFallbackReason,
+      error: 'missing_node_or_uid'
+    });
+    process.stdout.write(JSON.stringify(response) + '\n');
+    process.exit(2);
+  }
 
   if (backendRequested === 'rust') {
     if (rustCooldownActive()) {
@@ -1268,7 +1316,7 @@ async function getCmd(args) {
         clearRustFailure();
         const payload = rust.payload || {};
         const section = typeof payload.section === 'string' ? payload.section : '';
-        process.stdout.write(JSON.stringify({
+        const response = {
           ok: true,
           type: 'memory_recall_get',
           session,
@@ -1285,7 +1333,20 @@ async function getCmd(args) {
           section_hash: cleanCell(payload.section_hash || '') || sha256(section),
           metrics,
           section
-        }, null, 2) + '\n');
+        };
+        appendAuditMirror('memory_recall_get', {
+          ok: true,
+          session,
+          node_id: normalizeNodeId(payload.node_id || nodeId),
+          uid: normalizeUid(payload.uid || uid),
+          file: normalizeFileRef(payload.file || fileFilter),
+          backend_requested: backendRequested,
+          backend_used: 'rust',
+          backend_fallback_reason: null,
+          rust_transport: cleanCell(rust.transport || 'unknown') || null,
+          section_hash: cleanCell(payload.section_hash || '') || sha256(section)
+        });
+        process.stdout.write(JSON.stringify(response, null, 2) + '\n');
         return;
       }
       backendFallbackReason = rust.error || 'rust_get_failed';
@@ -1301,13 +1362,25 @@ async function getCmd(args) {
   matches = sortByDateDesc(matches);
   const entry = matches[0];
   if (!entry) {
-    process.stdout.write(JSON.stringify({
+    const response = {
       ok: false,
       error: 'node_not_found',
       node_id: nodeId || null,
       uid: uid || null,
       file: fileFilter || null
-    }) + '\n');
+    };
+    appendAuditMirror('memory_recall_get', {
+      ok: false,
+      session,
+      backend_requested: backendRequested,
+      backend_used: backendUsed,
+      backend_fallback_reason: backendFallbackReason,
+      node_id: nodeId || null,
+      uid: uid || null,
+      file: fileFilter || null,
+      error: 'node_not_found'
+    });
+    process.stdout.write(JSON.stringify(response) + '\n');
     process.exit(1);
   }
 
@@ -1316,16 +1389,28 @@ async function getCmd(args) {
   const sec = loadSection(entry, cacheObj, metrics, fileContents, cacheMaxBytes);
   saveCache(session, cacheObj, cacheMaxBytes);
   if (!sec.ok) {
-    process.stdout.write(JSON.stringify({
+    const response = {
       ok: false,
       error: sec.reason || 'section_unavailable',
       node_id: nodeId,
       file: entry.file_rel
-    }) + '\n');
+    };
+    appendAuditMirror('memory_recall_get', {
+      ok: false,
+      session,
+      backend_requested: backendRequested,
+      backend_used: backendUsed,
+      backend_fallback_reason: backendFallbackReason,
+      node_id: nodeId || null,
+      uid: uid || null,
+      file: entry.file_rel,
+      error: sec.reason || 'section_unavailable'
+    });
+    process.stdout.write(JSON.stringify(response) + '\n');
     process.exit(1);
   }
 
-  process.stdout.write(JSON.stringify({
+  const response = {
     ok: true,
     type: 'memory_recall_get',
     session,
@@ -1342,7 +1427,21 @@ async function getCmd(args) {
     section_hash: sec.section_hash,
     metrics,
     section: sec.section
-  }, null, 2) + '\n');
+  };
+  appendAuditMirror('memory_recall_get', {
+    ok: true,
+    session,
+    node_id: entry.node_id,
+    uid: entry.uid || '',
+    file: entry.file_rel,
+    backend_requested: backendRequested,
+    backend_used: backendUsed,
+    backend_fallback_reason: backendFallbackReason,
+    rust_transport: rustTransport,
+    section_hash: sec.section_hash,
+    section_source: sec.source
+  });
+  process.stdout.write(JSON.stringify(response, null, 2) + '\n');
 }
 
 function clearCacheCmd(args) {
@@ -1358,12 +1457,18 @@ function clearCacheCmd(args) {
     fs.rmSync(rp, { force: true });
     removed.push(rp);
   }
-  process.stdout.write(JSON.stringify({
+  const response = {
     ok: true,
     type: 'memory_recall_clear_cache',
     session,
     removed_files: removed
-  }) + '\n');
+  };
+  appendAuditMirror('memory_recall_clear_cache', {
+    ok: true,
+    session,
+    removed_files: removed.map((item) => path.relative(REPO_ROOT, item).replace(/\\/g, '/'))
+  });
+  process.stdout.write(JSON.stringify(response) + '\n');
 }
 
 async function main() {

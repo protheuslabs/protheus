@@ -510,5 +510,30 @@ runTest('clear-cache removes both js and rust session cache files', () => {
   assert.ok(out.removed_files.length >= 2, 'removed_files should include both cache paths');
 });
 
+runTest('query writes JSONL audit mirror without affecting runtime behavior', () => {
+  const root = makeWorkspace();
+  const mirrorPath = path.join(root, 'state', 'memory', 'runtime_audit', 'memory_recall_audit.jsonl');
+  writeFile(mirrorPath, 'not-json-line\n');
+  const r = runRecall(
+    root,
+    ['query', '--q=routing', '--expand=none', '--session=auditmirror'],
+    {
+      MEMORY_RECALL_BACKEND: 'js',
+      MEMORY_RECALL_AUDIT_MIRROR_ENABLED: '1',
+      MEMORY_RECALL_AUDIT_MIRROR_PATH: mirrorPath
+    }
+  );
+  assert.strictEqual(r.status, 0, `query failed: ${r.stderr}`);
+  const out = parseJson(r.stdout);
+  assert.ok(out && out.ok === true, 'query should still succeed');
+  assert.strictEqual(fs.existsSync(mirrorPath), true, 'audit mirror file should exist');
+  const rows = fs.readFileSync(mirrorPath, 'utf8').trim().split('\n').filter(Boolean);
+  assert.ok(rows.length >= 2, 'audit mirror should append a new row');
+  const parsed = JSON.parse(rows[rows.length - 1]);
+  assert.strictEqual(parsed.type, 'memory_recall_query');
+  assert.ok(parsed.payload && parsed.payload.ok === true, 'audit payload should mark success');
+  assert.ok(Number(parsed.payload.hit_count || 0) >= 1, 'audit payload should include hit count');
+});
+
 if (failed) process.exit(1);
 console.log('   ✅ ALL MEMORY RECALL TESTS PASS');
