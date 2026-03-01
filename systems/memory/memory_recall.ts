@@ -4,10 +4,12 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { spawnSync } = require('child_process');
 
+const WORKSPACE_ROOT = path.resolve(__dirname, '..', '..');
 const REPO_ROOT = process.env.MEMORY_RECALL_ROOT
   ? path.resolve(String(process.env.MEMORY_RECALL_ROOT))
-  : path.resolve(__dirname, '..', '..');
+  : WORKSPACE_ROOT;
 
 const MEMORY_DIR = path.join(REPO_ROOT, 'memory');
 const CACHE_DIR = process.env.MEMORY_RECALL_CACHE_DIR
@@ -18,6 +20,14 @@ const DEFAULT_MAX_FILES = clampInt(process.env.MEMORY_RECALL_MAX_FILES || 1, 1, 
 const DEFAULT_CONFIDENCE = clampNumber(process.env.MEMORY_RECALL_CONFIDENCE || 0.58, 0.05, 1);
 const DEFAULT_CACHE_MAX_BYTES = clampInt(process.env.MEMORY_RECALL_CACHE_MAX_BYTES || (1024 * 1024), 65536, 8 * 1024 * 1024);
 const DEFAULT_EXCERPT_LINES = clampInt(process.env.MEMORY_RECALL_EXCERPT_LINES || 14, 4, 100);
+const DEFAULT_BACKEND = String(process.env.MEMORY_RECALL_BACKEND || 'auto').trim().toLowerCase();
+const DEFAULT_RUST_SELECTOR_PATH = process.env.MEMORY_RECALL_RUST_SELECTOR_PATH
+  ? path.resolve(String(process.env.MEMORY_RECALL_RUST_SELECTOR_PATH))
+  : path.join(REPO_ROOT, 'state', 'memory', 'rust_transition', 'backend_selector.json');
+const DEFAULT_RUST_CRATE_PATH = process.env.MEMORY_RECALL_RUST_CRATE_PATH
+  ? path.resolve(String(process.env.MEMORY_RECALL_RUST_CRATE_PATH))
+  : path.join(WORKSPACE_ROOT, 'systems', 'rust', 'memory_box');
+const DEFAULT_RUST_TIMEOUT_MS = clampInt(process.env.MEMORY_RECALL_RUST_TIMEOUT_MS || 25000, 1000, 120000);
 
 function clampInt(v, min, max) {
   const n = Number(v);
@@ -336,6 +346,69 @@ function parseListArg(v) {
   );
 }
 
+function readJsonSafe(filePath) {
+  try {
+    if (!fs.existsSync(filePath)) return null;
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+function normalizeBackendChoice(raw) {
+  const v = String(raw || '').trim().toLowerCase();
+  if (v === 'rust' || v === 'rust_live' || v === 'rust_shadow') return 'rust';
+  if (v === 'js') return 'js';
+  return 'auto';
+}
+
+function resolveBackendChoice(raw) {
+  const desired = normalizeBackendChoice(raw);
+  if (desired === 'js' || desired === 'rust') return desired;
+  const selector = readJsonSafe(DEFAULT_RUST_SELECTOR_PATH);
+  const selectorBackend = normalizeBackendChoice(selector && selector.backend ? selector.backend : '');
+  return selectorBackend === 'rust' ? 'rust' : 'js';
+}
+
+function runRustQueryIndex(query, tagFilters, top) {
+  const cratePath = DEFAULT_RUST_CRATE_PATH;
+  if (!fs.existsSync(cratePath)) {
+    return { ok: false, error: 'rust_crate_missing', crate_path: cratePath };
+  }
+  const args = [
+    'run',
+    '--quiet',
+    '--',
+    'query-index',
+    `--root=${REPO_ROOT}`,
+    `--q=${String(query || '')}`,
+    `--top=${clampInt(top, 1, 20)}`,
+    `--tags=${(Array.isArray(tagFilters) ? tagFilters : []).join(',')}`
+  ];
+  const run = spawnSync('cargo', args, {
+    cwd: cratePath,
+    encoding: 'utf8',
+    timeout: DEFAULT_RUST_TIMEOUT_MS
+  });
+  const stdout = String(run.stdout || '').trim();
+  const stderr = String(run.stderr || '').trim();
+  let payload = null;
+  try { payload = stdout ? JSON.parse(stdout) : null; } catch {}
+  if (Number.isFinite(run.status) && run.status === 0 && payload && payload.ok === true && Array.isArray(payload.hits)) {
+    return { ok: true, payload };
+  }
+  const err = run.error
+    ? `spawn_error_${String(run.error.code || run.error.message || 'unknown')}`
+    : (payload && payload.error ? String(payload.error) : `cargo_status_${Number.isFinite(run.status) ? run.status : 1}`);
+  return {
+    ok: false,
+    error: err,
+    status: Number.isFinite(run.status) ? run.status : 1,
+    stderr: stderr.slice(0, 300),
+    stdout: stdout.slice(0, 300)
+  };
+}
+
 function safeSessionName(v) {
   const s = String(v || 'default').trim();
   if (!s) return 'default';
@@ -522,41 +595,93 @@ function queryCmd(args) {
   const session = safeSessionName(args.session || process.env.MEMORY_RECALL_SESSION || 'default');
   const cacheMaxBytes = clampInt(args['cache-max-bytes'] == null ? DEFAULT_CACHE_MAX_BYTES : args['cache-max-bytes'], 65536, 8 * 1024 * 1024);
   const excerptLines = clampInt(args['excerpt-lines'] == null ? DEFAULT_EXCERPT_LINES : args['excerpt-lines'], 4, 200);
-
-  const index = loadMemoryIndex();
-  const tagIndex = loadTagsIndex();
+  const backendRequested = resolveBackendChoice(args.backend == null ? DEFAULT_BACKEND : args.backend);
   const metrics = {
-    candidates_total: index.entries.length,
+    candidates_total: 0,
     cache_hits: 0,
     cache_misses: 0,
     file_reads: 0
   };
+  let backendUsed = 'js';
+  let backendFallbackReason = null;
+  let scoringSource = 'js';
+  let indexSources = [];
+  let tagSources = [];
+  let topScored = [];
 
-  const tagNodeIds = new Set();
-  for (const tag of tagFilters) {
-    const ids = tagIndex.tags.get(tag);
-    if (!ids) continue;
-    for (const id of ids) tagNodeIds.add(id);
+  if (backendRequested === 'rust') {
+    const rust = runRustQueryIndex(query, tagFilters, top);
+    if (rust.ok) {
+      const payload = rust.payload || {};
+      backendUsed = 'rust';
+      scoringSource = 'rust_query_index';
+      indexSources = Array.isArray(payload.index_sources) ? payload.index_sources.slice(0) : [];
+      tagSources = Array.isArray(payload.tag_sources) ? payload.tag_sources.slice(0) : [];
+      metrics.candidates_total = clampInt(payload.candidates_total, 0, 100000000);
+      const rustHits = Array.isArray(payload.hits) ? payload.hits : [];
+      topScored = rustHits.slice(0, top).map((hit) => {
+        const nodeId = normalizeNodeId(hit && hit.node_id ? hit.node_id : '');
+        const uid = normalizeUid(hit && hit.uid ? hit.uid : '');
+        const fileRel = normalizeFileRef(hit && (hit.file || hit.file_rel) ? (hit.file || hit.file_rel) : '');
+        const tags = Array.isArray(hit && hit.tags)
+          ? uniqueSorted(hit.tags.map(normalizeTag).filter(Boolean))
+          : [];
+        const summary = cleanCell(hit && hit.summary ? hit.summary : '');
+        const reasons = Array.isArray(hit && hit.reasons)
+          ? uniqueSorted(hit.reasons.map((x) => cleanCell(x)).filter(Boolean))
+          : [];
+        return {
+          entry: {
+            node_id: nodeId,
+            uid,
+            file_rel: fileRel,
+            file_abs: path.join(REPO_ROOT, fileRel),
+            summary,
+            tags
+          },
+          score: clampInt(hit && hit.score, 0, 100000000),
+          reasons
+        };
+      }).filter((row) => row.entry.node_id && row.entry.file_rel);
+    } else {
+      backendFallbackReason = rust.error || 'rust_query_failed';
+    }
   }
 
-  let candidates = index.entries.slice();
-  if (tagFilters.length && tagNodeIds.size > 0) {
-    candidates = candidates.filter(e => tagNodeIds.has(e.node_id));
+  if (backendUsed === 'js') {
+    const index = loadMemoryIndex();
+    const tagIndex = loadTagsIndex();
+    indexSources = index.source;
+    tagSources = tagIndex.source;
+    metrics.candidates_total = index.entries.length;
+
+    const tagNodeIds = new Set();
+    for (const tag of tagFilters) {
+      const ids = tagIndex.tags.get(tag);
+      if (!ids) continue;
+      for (const id of ids) tagNodeIds.add(id);
+    }
+
+    let candidates = index.entries.slice();
+    if (tagFilters.length && tagNodeIds.size > 0) {
+      candidates = candidates.filter(e => tagNodeIds.has(e.node_id));
+    }
+    metrics.candidates_total = candidates.length;
+
+    const queryTokens = uniqueSorted(tokenize(query));
+    const scored = candidates.map((entry) => {
+      const s = scoreEntry(entry, queryTokens, tagFilters, tagNodeIds);
+      return { entry, score: s.score, reasons: s.reasons };
+    });
+
+    scored.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      if (a.entry.file_rel !== b.entry.file_rel) return String(a.entry.file_rel).localeCompare(String(b.entry.file_rel));
+      return String(a.entry.node_id).localeCompare(String(b.entry.node_id));
+    });
+    topScored = scored.slice(0, top);
   }
 
-  const queryTokens = uniqueSorted(tokenize(query));
-  const scored = candidates.map((entry) => {
-    const s = scoreEntry(entry, queryTokens, tagFilters, tagNodeIds);
-    return { entry, score: s.score, reasons: s.reasons };
-  });
-
-  scored.sort((a, b) => {
-    if (b.score !== a.score) return b.score - a.score;
-    if (a.entry.file_rel !== b.entry.file_rel) return String(a.entry.file_rel).localeCompare(String(b.entry.file_rel));
-    return String(a.entry.node_id).localeCompare(String(b.entry.node_id));
-  });
-
-  const topScored = scored.slice(0, top);
   const topScore = Number(topScored[0] ? topScored[0].score : 0);
   const secondScore = Number(topScored[1] ? topScored[1].score : 0);
   const confidence = confidenceFromScores(topScore, secondScore);
@@ -611,8 +736,12 @@ function queryCmd(args) {
     expand_mode: expandMode,
     expanded_count: expandedCount,
     max_files: maxFiles,
-    index_sources: index.source,
-    tag_sources: tagIndex.source,
+    backend_requested: backendRequested,
+    backend_used: backendUsed,
+    backend_fallback_reason: backendFallbackReason,
+    scoring_source: scoringSource,
+    index_sources: indexSources,
+    tag_sources: tagSources,
     metrics,
     hits
   }, null, 2) + '\n');

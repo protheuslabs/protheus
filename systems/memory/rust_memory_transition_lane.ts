@@ -101,7 +101,13 @@ function runRustProbe(policy) {
   if (!fs.existsSync(cratePath)) {
     return { ok: false, error: 'rust_crate_missing' };
   }
-  const run = spawnSync('cargo', ['run', '--quiet', '--', 'probe'], {
+  const probeRoot = fs.existsSync(policy.paths.memory_index_path)
+    ? (() => {
+      const indexDir = path.dirname(policy.paths.memory_index_path);
+      return path.basename(indexDir) === 'memory' ? path.dirname(indexDir) : indexDir;
+    })()
+    : ROOT;
+  const run = spawnSync('cargo', ['run', '--quiet', '--', 'probe', `--root=${probeRoot}`], {
     cwd: cratePath,
     encoding: 'utf8'
   });

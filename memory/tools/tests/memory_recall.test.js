@@ -91,13 +91,14 @@ function makeWorkspace() {
   return root;
 }
 
-function runRecall(root, args) {
+function runRecall(root, args, extraEnv = {}) {
   return spawnSync('node', [SCRIPT, ...args], {
     cwd: ROOT,
     encoding: 'utf8',
     env: {
       ...process.env,
-      MEMORY_RECALL_ROOT: root
+      MEMORY_RECALL_ROOT: root,
+      ...extraEnv
     }
   });
 }
@@ -121,6 +122,26 @@ runTest('query returns ranked hits with tag filtering and no expansion', () => {
   assert.strictEqual(out.hits[0].node_id, 'routing-cache-design');
   assert.strictEqual(out.hits[0].uid, 'memabc123routing01');
   assert.strictEqual(out.hits[0].expanded, false);
+});
+
+runTest('query requested rust backend falls back to js when crate is missing', () => {
+  const root = makeWorkspace();
+  const missingCrate = path.join(root, 'systems', 'rust', 'memory_box_missing');
+  const r = runRecall(
+    root,
+    ['query', '--q=routing', '--expand=none', '--session=rustfallback'],
+    {
+      MEMORY_RECALL_BACKEND: 'rust',
+      MEMORY_RECALL_RUST_CRATE_PATH: missingCrate
+    }
+  );
+  assert.strictEqual(r.status, 0, `query failed: ${r.stderr}`);
+  const out = parseJson(r.stdout);
+  assert.ok(out && out.ok === true, 'expected ok=true');
+  assert.strictEqual(out.backend_requested, 'rust');
+  assert.strictEqual(out.backend_used, 'js');
+  assert.strictEqual(out.backend_fallback_reason, 'rust_crate_missing');
+  assert.ok(Array.isArray(out.hits) && out.hits.length > 0, 'fallback should still return hits');
 });
 
 runTest('expanded query reuses working-set cache on second run', () => {
