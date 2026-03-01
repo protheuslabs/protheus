@@ -7,6 +7,14 @@
     "min_agents": 3,
     "consensus_threshold": 0.62
   },
+  "debate_resolution": {
+    "confidence_floor": 0.58,
+    "disagreement_gap_threshold": 0.08,
+    "runoff_enabled": true,
+    "max_runoff_rounds": 1,
+    "runoff_consensus_threshold": 0.57,
+    "require_distinct_roles_for_quorum": true
+  },
   "agent_roles": {
     "soldier_guard": {
       "weight": 1.1,
@@ -27,4 +35,3 @@
     "receipts_path": "state/autonomy/multi_agent_debate/receipts.jsonl"
   }
 }
-

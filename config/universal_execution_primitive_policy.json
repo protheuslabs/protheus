@@ -86,5 +86,30 @@
     ],
     "receipts_path": "state/actuation/universal_execution_primitive/verification.jsonl"
   },
+  "computer_use_reliability_metrics": {
+    "enabled": true,
+    "tracked_adapter_kinds": [
+      "browser_task",
+      "browser_action",
+      "api_request"
+    ],
+    "suite_keys": [
+      "task_suite",
+      "suite",
+      "benchmark_suite"
+    ],
+    "case_keys": [
+      "case_id",
+      "task_id",
+      "benchmark_case_id"
+    ],
+    "rolling_window": 500,
+    "target_success_rate": 0.7,
+    "webarena_aliases": [
+      "webarena",
+      "webarena_lite"
+    ],
+    "metrics_path": "state/actuation/universal_execution_primitive/computer_use_metrics.json"
+  },
   "receipts_path": "state/actuation/universal_execution_primitive/receipts"
 }

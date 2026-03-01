@@ -62,6 +62,15 @@ try {
       max_steps: 10,
       include_risk_checks: true
     },
+    test_time_scaling: {
+      enabled: true,
+      self_critique_enabled: true,
+      max_revision_loops: 4,
+      confidence_floor: 0.7,
+      confidence_ceiling: 0.98,
+      deep_mode_threshold: 0.45,
+      debate_mode_threshold: 0.78
+    },
     state: {
       latest_path: path.join(tmp, 'state', 'primitives', 'long_horizon_planning', 'latest.json'),
       history_path: path.join(tmp, 'state', 'primitives', 'long_horizon_planning', 'history.jsonl'),
@@ -91,6 +100,20 @@ try {
       && payload.structured_thinking.steps.length >= 4,
     'structured steps should be emitted'
   );
+  assert.ok(payload.test_time_scaling && payload.test_time_scaling.enabled === true, 'test-time scaling should be enabled');
+  assert.ok(
+    Array.isArray(payload.test_time_scaling.thinking_chain)
+      && payload.test_time_scaling.thinking_chain.length >= 3,
+    'thinking chain should include critique/revision structure'
+  );
+  assert.ok(
+    Number(payload.test_time_scaling.final_confidence || 0) >= Number(payload.test_time_scaling.initial_confidence || 0),
+    'final confidence should not regress after scaling loops'
+  );
+  assert.ok(
+    ['fast_reflex', 'deep_thinking', 'multi_agent_debate'].includes(String(payload.recommended_reasoning_strategy || '')),
+    'recommended reasoning strategy should be emitted'
+  );
 
   const statusOut = run(['status'], env);
   assert.strictEqual(statusOut.status, 0, statusOut.stderr || statusOut.stdout);
@@ -98,6 +121,11 @@ try {
   assert.ok(statusPayload && statusPayload.ok === true, 'status payload should be ok');
   assert.strictEqual(statusPayload.objective_id, 'lhp_test');
   assert.ok(Number(statusPayload.structured_step_count || 0) >= 4);
+  assert.ok(Number(statusPayload.final_confidence || 0) > 0, 'status should expose final confidence');
+  assert.ok(
+    ['fast_reflex', 'deep_thinking', 'multi_agent_debate'].includes(String(statusPayload.recommended_reasoning_strategy || '')),
+    'status should include strategy recommendation'
+  );
 
   fs.rmSync(tmp, { recursive: true, force: true });
   console.log('long_horizon_planning_primitive.test.js: OK');
@@ -105,4 +133,3 @@ try {
   console.error(`long_horizon_planning_primitive.test.js: FAIL: ${err.message}`);
   process.exit(1);
 }
-

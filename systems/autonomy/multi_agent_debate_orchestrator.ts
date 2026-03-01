@@ -170,6 +170,14 @@ function defaultPolicy() {
       min_agents: 3,
       consensus_threshold: 0.62
     },
+    debate_resolution: {
+      confidence_floor: 0.58,
+      disagreement_gap_threshold: 0.08,
+      runoff_enabled: true,
+      max_runoff_rounds: 1,
+      runoff_consensus_threshold: 0.57,
+      require_distinct_roles_for_quorum: true
+    },
     agent_roles: {
       soldier_guard: { weight: 1.1, bias: 'safety' },
       creative_probe: { weight: 1.0, bias: 'growth' },
@@ -187,6 +195,9 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
   const raw = readJson(policyPath, {});
   const base = defaultPolicy();
   const rounds = raw.rounds && typeof raw.rounds === 'object' ? raw.rounds : {};
+  const resolution = raw.debate_resolution && typeof raw.debate_resolution === 'object'
+    ? raw.debate_resolution
+    : {};
   const roles = raw.agent_roles && typeof raw.agent_roles === 'object' ? raw.agent_roles : {};
   const outputs = raw.outputs && typeof raw.outputs === 'object' ? raw.outputs : {};
   const roleMap: AnyObj = {};
@@ -205,6 +216,37 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
       max_rounds: clampInt(rounds.max_rounds, 1, 8, base.rounds.max_rounds),
       min_agents: clampInt(rounds.min_agents, 1, 16, base.rounds.min_agents),
       consensus_threshold: clampNumber(rounds.consensus_threshold, 0, 1, base.rounds.consensus_threshold)
+    },
+    debate_resolution: {
+      confidence_floor: clampNumber(
+        resolution.confidence_floor,
+        0,
+        1,
+        base.debate_resolution.confidence_floor
+      ),
+      disagreement_gap_threshold: clampNumber(
+        resolution.disagreement_gap_threshold,
+        0,
+        1,
+        base.debate_resolution.disagreement_gap_threshold
+      ),
+      runoff_enabled: toBool(resolution.runoff_enabled, base.debate_resolution.runoff_enabled),
+      max_runoff_rounds: clampInt(
+        resolution.max_runoff_rounds,
+        0,
+        3,
+        base.debate_resolution.max_runoff_rounds
+      ),
+      runoff_consensus_threshold: clampNumber(
+        resolution.runoff_consensus_threshold,
+        0,
+        1,
+        base.debate_resolution.runoff_consensus_threshold
+      ),
+      require_distinct_roles_for_quorum: toBool(
+        resolution.require_distinct_roles_for_quorum,
+        base.debate_resolution.require_distinct_roles_for_quorum
+      )
     },
     agent_roles: roleMap,
     outputs: {
@@ -277,29 +319,41 @@ function runMultiAgentDebate(inputRaw: AnyObj = {}, opts: AnyObj = {}) {
   const rounds = Number(policy.rounds.max_rounds || 2);
   const transcript: AnyObj[] = [];
   const voteTotals: Record<string, number> = {};
+  const distinctRoles = new Set<string>();
+  const disagreementGap = Number(policy.debate_resolution && policy.debate_resolution.disagreement_gap_threshold || 0.08);
+  let disagreementVotes = 0;
+  let totalVotes = 0;
 
   for (let round = 1; round <= rounds; round += 1) {
     for (const agent of agents) {
       const role = normalizeToken(agent.role || 'orderly_executor', 80) || 'orderly_executor';
       const roleCfg = policy.agent_roles[role] || { weight: 1, bias: 'delivery' };
-      let top = null;
-      for (const candidate of candidates) {
-        const s = scoreCandidateForRole(role, roleCfg, candidate);
-        if (!top || s > Number(top.score || 0)) {
-          top = {
-            candidate_id: candidate.candidate_id,
-            score: s
-          };
-        }
-      }
+      distinctRoles.add(role);
+      const scored = candidates
+        .map((candidate: AnyObj) => ({
+          candidate_id: candidate.candidate_id,
+          score: scoreCandidateForRole(role, roleCfg, candidate)
+        }))
+        .sort((a: AnyObj, b: AnyObj) => Number(b.score || 0) - Number(a.score || 0));
+      const top = scored[0] || null;
       if (!top) continue;
-      voteTotals[top.candidate_id] = Number(voteTotals[top.candidate_id] || 0) + Number(top.score || 0);
+      const runnerUp = scored[1] || null;
+      const gap = runnerUp ? Number((Number(top.score || 0) - Number(runnerUp.score || 0)).toFixed(6)) : 1;
+      const contested = gap <= disagreementGap;
+      const certainty = Number(clampNumber(Math.max(0.05, gap + 0.45), 0, 1, 0.5).toFixed(6));
+      if (contested) disagreementVotes += 1;
+      totalVotes += 1;
+      voteTotals[top.candidate_id] = Number(voteTotals[top.candidate_id] || 0) + Number((Number(top.score || 0) * certainty).toFixed(6));
       transcript.push({
         round,
         agent_id: agent.agent_id,
         role,
         selected_candidate_id: top.candidate_id,
-        vote_score: Number(top.score || 0)
+        vote_score: Number(top.score || 0),
+        certainty,
+        contested,
+        gap_to_runner_up: gap,
+        runner_up_candidate_id: runnerUp ? runnerUp.candidate_id : null
       });
     }
   }
@@ -312,8 +366,85 @@ function runMultiAgentDebate(inputRaw: AnyObj = {}, opts: AnyObj = {}) {
   const consensusShare = totalScore > 0 && top
     ? Number((Number(top.score || 0) / totalScore).toFixed(6))
     : 0;
-  const quorumMet = agents.length >= Number(policy.rounds.min_agents || 1);
-  const consensus = quorumMet && consensusShare >= Number(policy.rounds.consensus_threshold || 0.62);
+  const disagreementIndex = totalVotes > 0
+    ? Number((disagreementVotes / totalVotes).toFixed(6))
+    : 0;
+  const minAgents = Number(policy.rounds.min_agents || 1);
+  const requireDistinctRoles = policy.debate_resolution
+    && policy.debate_resolution.require_distinct_roles_for_quorum === true;
+  const quorumMet = agents.length >= minAgents
+    && (!requireDistinctRoles || distinctRoles.size >= Math.min(3, minAgents));
+  const confidenceFloor = Number(policy.debate_resolution && policy.debate_resolution.confidence_floor || 0.58);
+  const confidenceScore = Number(
+    clampNumber(consensusShare * (1 - (disagreementIndex * 0.5)), 0, 1, 0).toFixed(6)
+  );
+  let consensus = quorumMet
+    && consensusShare >= Number(policy.rounds.consensus_threshold || 0.62)
+    && confidenceScore >= confidenceFloor;
+  let recommendedCandidateId = consensus && top ? top.candidate_id : null;
+  let runoffExecuted = false;
+  let runoffConsensus = false;
+  let runoffRecommendedCandidateId = null;
+  const runoffRounds = clampInt(
+    policy.debate_resolution && policy.debate_resolution.max_runoff_rounds,
+    0,
+    3,
+    1
+  );
+  if (
+    consensus !== true
+    && policy.debate_resolution
+    && policy.debate_resolution.runoff_enabled === true
+    && runoffRounds > 0
+    && ranked.length >= 2
+  ) {
+    runoffExecuted = true;
+    const candidatesTop2 = ranked.slice(0, 2).map((row: AnyObj) => row.candidate_id);
+    const runoffTotals: Record<string, number> = {};
+    for (let round = 1; round <= runoffRounds; round += 1) {
+      for (const agent of agents) {
+        const role = normalizeToken(agent.role || 'orderly_executor', 80) || 'orderly_executor';
+        const roleCfg = policy.agent_roles[role] || { weight: 1, bias: 'delivery' };
+        const scored = candidatesTop2
+          .map((candidateId: string) => {
+            const source = candidates.find((row: AnyObj) => row.candidate_id === candidateId) || { score: 0.5, confidence: 0.5, risk: 'medium' };
+            return {
+              candidate_id: candidateId,
+              score: scoreCandidateForRole(role, roleCfg, source)
+            };
+          })
+          .sort((a: AnyObj, b: AnyObj) => Number(b.score || 0) - Number(a.score || 0));
+        const pick = scored[0] || null;
+        if (!pick) continue;
+        runoffTotals[pick.candidate_id] = Number(runoffTotals[pick.candidate_id] || 0) + Number(pick.score || 0);
+        transcript.push({
+          round: rounds + round,
+          phase: 'runoff',
+          agent_id: agent.agent_id,
+          role,
+          selected_candidate_id: pick.candidate_id,
+          vote_score: Number(pick.score || 0),
+          runoff_candidates: candidatesTop2
+        });
+      }
+    }
+    const runoffRanked = Object.entries(runoffTotals)
+      .map(([candidate_id, score]) => ({ candidate_id, score: Number(score || 0) }))
+      .sort((a, b) => Number(b.score || 0) - Number(a.score || 0));
+    const runoffTop = runoffRanked[0] || null;
+    const runoffTotal = runoffRanked.reduce((acc: number, row: AnyObj) => acc + Number(row.score || 0), 0);
+    const runoffShare = runoffTop && runoffTotal > 0
+      ? Number((Number(runoffTop.score || 0) / runoffTotal).toFixed(6))
+      : 0;
+    const runoffThreshold = Number(policy.debate_resolution.runoff_consensus_threshold || 0.57);
+    const runoffConfidence = Number(clampNumber(runoffShare * (1 - (disagreementIndex * 0.35)), 0, 1, 0).toFixed(6));
+    runoffConsensus = quorumMet && runoffShare >= runoffThreshold && runoffConfidence >= confidenceFloor;
+    if (runoffConsensus && runoffTop) {
+      consensus = true;
+      recommendedCandidateId = runoffTop.candidate_id;
+      runoffRecommendedCandidateId = runoffTop.candidate_id;
+    }
+  }
 
   const out = {
     ok: true,
@@ -325,14 +456,33 @@ function runMultiAgentDebate(inputRaw: AnyObj = {}, opts: AnyObj = {}) {
     objective_text: objectiveText,
     rounds_executed: rounds,
     quorum_met: quorumMet,
+    quorum_rule: {
+      min_agents: minAgents,
+      require_distinct_roles_for_quorum: requireDistinctRoles,
+      distinct_roles: Array.from(distinctRoles).sort()
+    },
     consensus,
+    confidence_score: confidenceScore,
+    confidence_floor: confidenceFloor,
     consensus_share: consensusShare,
-    recommended_candidate_id: consensus && top ? top.candidate_id : null,
+    disagreement_index: disagreementIndex,
+    disagreement_votes: disagreementVotes,
+    total_votes: totalVotes,
+    recommended_candidate_id: recommendedCandidateId,
+    debate_resolution: {
+      runoff_executed: runoffExecuted,
+      runoff_consensus: runoffConsensus,
+      runoff_rounds: runoffExecuted ? runoffRounds : 0,
+      runoff_recommended_candidate_id: runoffRecommendedCandidateId
+    },
     ranked_candidates: ranked,
     debate_transcript: transcript,
     reason_codes: consensus
-      ? ['multi_agent_consensus_reached']
-      : ['multi_agent_consensus_not_reached']
+      ? [
+        runoffExecuted && runoffConsensus ? 'multi_agent_consensus_reached_after_runoff' : 'multi_agent_consensus_reached',
+        `confidence_score_${confidenceScore.toFixed(3)}`
+      ]
+      : ['multi_agent_consensus_not_reached', `confidence_score_${confidenceScore.toFixed(3)}`]
   };
 
   if (opts.persist !== false) {
@@ -388,7 +538,9 @@ function cmdStatus(args: AnyObj) {
     date: payload.date || null,
     objective_id: payload.objective_id || null,
     consensus: payload.consensus === true,
+    confidence_score: Number(payload.confidence_score || 0),
     consensus_share: Number(payload.consensus_share || 0),
+    disagreement_index: Number(payload.disagreement_index || 0),
     recommended_candidate_id: payload.recommended_candidate_id || null,
     rounds_executed: Number(payload.rounds_executed || 0),
     shadow_only: payload.shadow_only === true
@@ -417,4 +569,3 @@ module.exports = {
   loadPolicy,
   runMultiAgentDebate
 };
-

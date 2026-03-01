@@ -170,6 +170,15 @@ function defaultPolicy() {
       max_steps: 12,
       include_risk_checks: true
     },
+    test_time_scaling: {
+      enabled: true,
+      self_critique_enabled: true,
+      max_revision_loops: 3,
+      confidence_floor: 0.72,
+      confidence_ceiling: 0.98,
+      deep_mode_threshold: 0.55,
+      debate_mode_threshold: 0.8
+    },
     state: {
       latest_path: 'state/primitives/long_horizon_planning/latest.json',
       history_path: 'state/primitives/long_horizon_planning/history.jsonl',
@@ -183,6 +192,7 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
   const base = defaultPolicy();
   const tokenBudget = raw.token_budget && typeof raw.token_budget === 'object' ? raw.token_budget : {};
   const structured = raw.structured_thinking && typeof raw.structured_thinking === 'object' ? raw.structured_thinking : {};
+  const testTimeScaling = raw.test_time_scaling && typeof raw.test_time_scaling === 'object' ? raw.test_time_scaling : {};
   const state = raw.state && typeof raw.state === 'object' ? raw.state : {};
   return {
     version: cleanText(raw.version || base.version, 32) || base.version,
@@ -198,6 +208,15 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
       enabled: structured.enabled !== false,
       max_steps: clampInt(structured.max_steps, 3, 32, base.structured_thinking.max_steps),
       include_risk_checks: toBool(structured.include_risk_checks, base.structured_thinking.include_risk_checks)
+    },
+    test_time_scaling: {
+      enabled: toBool(testTimeScaling.enabled, base.test_time_scaling.enabled),
+      self_critique_enabled: toBool(testTimeScaling.self_critique_enabled, base.test_time_scaling.self_critique_enabled),
+      max_revision_loops: clampInt(testTimeScaling.max_revision_loops, 0, 10, base.test_time_scaling.max_revision_loops),
+      confidence_floor: clampNumber(testTimeScaling.confidence_floor, 0, 1, base.test_time_scaling.confidence_floor),
+      confidence_ceiling: clampNumber(testTimeScaling.confidence_ceiling, 0, 1, base.test_time_scaling.confidence_ceiling),
+      deep_mode_threshold: clampNumber(testTimeScaling.deep_mode_threshold, 0, 1, base.test_time_scaling.deep_mode_threshold),
+      debate_mode_threshold: clampNumber(testTimeScaling.debate_mode_threshold, 0, 1, base.test_time_scaling.debate_mode_threshold)
     },
     state: {
       latest_path: resolvePath(state.latest_path || base.state.latest_path, base.state.latest_path),
@@ -232,7 +251,92 @@ function thinkingBudget(policy: AnyObj, complexity: number) {
   return Math.round(lo + (hi - lo) * complexity);
 }
 
-function buildStructuredSteps(policy: AnyObj, objectiveId: string, objectiveText: string, riskTier: string, complexity: number) {
+function computeTestTimeScaling(policy: AnyObj, riskTier: string, complexity: number) {
+  const cfg = policy.test_time_scaling && typeof policy.test_time_scaling === 'object'
+    ? policy.test_time_scaling
+    : {};
+  const enabled = cfg.enabled === true;
+  const selfCritique = cfg.self_critique_enabled === true;
+  const confidenceFloor = Number(cfg.confidence_floor || 0.72);
+  const confidenceCeiling = Number(cfg.confidence_ceiling || 0.98);
+  const riskPenalty = riskTier === 'critical'
+    ? 0.2
+    : (riskTier === 'high' ? 0.16 : (riskTier === 'medium' ? 0.08 : 0.03));
+  const initialConfidence = Number(clampNumber(0.93 - (complexity * 0.34) - riskPenalty, 0.2, 0.95, 0.6).toFixed(6));
+  const revisionNeed = Math.max(0, confidenceFloor - initialConfidence);
+  const complexityLoops = complexity >= 0.85 ? 2 : (complexity >= 0.65 ? 1 : 0);
+  const revisionLoops = enabled
+    ? clampInt(Math.ceil(revisionNeed / 0.06) + complexityLoops, 0, Number(cfg.max_revision_loops || 3), 0)
+    : 0;
+  const gainPerLoop = selfCritique ? 0.055 : 0.04;
+  const finalConfidence = Number(
+    clampNumber(
+      initialConfidence + (revisionLoops * gainPerLoop),
+      0,
+      confidenceCeiling,
+      initialConfidence
+    ).toFixed(6)
+  );
+  const deepThreshold = Number(cfg.deep_mode_threshold || 0.55);
+  const debateThreshold = Number(cfg.debate_mode_threshold || 0.8);
+  const strategyMode = complexity >= debateThreshold
+    ? 'multi_agent_debate'
+    : (complexity >= deepThreshold ? 'deep_thinking' : 'fast_reflex');
+
+  const thinkingChain: AnyObj[] = [{
+    phase: 'initial_plan',
+    confidence_before: null,
+    confidence_after: initialConfidence,
+    note: 'initial objective decomposition and constraint framing'
+  }];
+  if (selfCritique) {
+    thinkingChain.push({
+      phase: 'self_critique',
+      confidence_before: initialConfidence,
+      confidence_after: initialConfidence,
+      note: 'identify weak assumptions and unresolved failure modes'
+    });
+  }
+  let rolling = initialConfidence;
+  for (let i = 0; i < revisionLoops; i += 1) {
+    const next = Number(clampNumber(rolling + gainPerLoop, 0, confidenceCeiling, rolling).toFixed(6));
+    thinkingChain.push({
+      phase: `revision_loop_${i + 1}`,
+      confidence_before: rolling,
+      confidence_after: next,
+      note: `revise plan against critique and policy constraints (loop ${i + 1})`
+    });
+    rolling = next;
+  }
+  thinkingChain.push({
+    phase: 'final_validation',
+    confidence_before: rolling,
+    confidence_after: finalConfidence,
+    note: 'final consistency check before execution contract handoff'
+  });
+
+  return {
+    enabled,
+    self_critique_enabled: selfCritique,
+    revision_loops: revisionLoops,
+    confidence_floor: confidenceFloor,
+    confidence_ceiling: confidenceCeiling,
+    initial_confidence: initialConfidence,
+    final_confidence: finalConfidence,
+    confidence_floor_met: finalConfidence >= confidenceFloor,
+    strategy_mode: strategyMode,
+    thinking_chain: thinkingChain
+  };
+}
+
+function buildStructuredSteps(
+  policy: AnyObj,
+  objectiveId: string,
+  objectiveText: string,
+  riskTier: string,
+  complexity: number,
+  scaling: AnyObj
+) {
   const steps: AnyObj[] = [];
   const maxSteps = Number(policy.structured_thinking.max_steps || 12);
   const push = (stage: string, task: string, expectedReceipt: string) => {
@@ -247,6 +351,17 @@ function buildStructuredSteps(policy: AnyObj, objectiveId: string, objectiveText
   push('frame_problem', `Define constraints and success invariants for ${objectiveId}`, 'planning_constraints_receipt');
   push('decompose_path', `Break objective into parallelizable lanes for "${objectiveText.slice(0, 120)}"`, 'planning_decomposition_receipt');
   push('simulate_outcomes', 'Run bounded what-if simulation for top execution branches', 'planning_simulation_receipt');
+  if (scaling && scaling.enabled === true && scaling.self_critique_enabled === true) {
+    push('self_critique', 'Critique the initial plan and enumerate highest-risk failure assumptions', 'planning_self_critique_receipt');
+  }
+  const revisionLoops = Math.max(0, Number(scaling && scaling.revision_loops || 0));
+  for (let i = 0; i < revisionLoops; i += 1) {
+    push(
+      'revise_plan',
+      `Apply critique-informed revision loop ${i + 1} with bounded scope`,
+      'planning_revision_receipt'
+    );
+  }
   if (policy.structured_thinking.include_risk_checks !== false || ['medium', 'high', 'critical'].includes(riskTier)) {
     push('risk_checks', `Run policy and failure-mode checks at ${riskTier} risk`, 'planning_risk_gate_receipt');
   }
@@ -281,8 +396,9 @@ function runLongHorizonPlanning(input: AnyObj = {}, opts: AnyObj = {}) {
   const lowCut = Number(policy.token_budget.low_complexity_threshold || 0.35);
   const highCut = Number(policy.token_budget.high_complexity_threshold || 0.72);
   const tier = complexity < lowCut ? 'low' : (complexity < highCut ? 'medium' : 'high');
+  const scaling = computeTestTimeScaling(policy, riskTier, complexity);
   const steps = policy.structured_thinking.enabled === true
-    ? buildStructuredSteps(policy, objectiveId, objectiveText, riskTier, complexity)
+    ? buildStructuredSteps(policy, objectiveId, objectiveText, riskTier, complexity, scaling)
     : [];
 
   const out = {
@@ -296,16 +412,31 @@ function runLongHorizonPlanning(input: AnyObj = {}, opts: AnyObj = {}) {
     risk_tier: riskTier,
     complexity_score: Number(complexity.toFixed(6)),
     complexity_tier: tier,
+    recommended_reasoning_strategy: scaling.strategy_mode,
     thinking_token_budget: budget,
     structured_thinking: {
       enabled: policy.structured_thinking.enabled === true,
       step_count: steps.length,
       steps
     },
+    test_time_scaling: {
+      enabled: scaling.enabled === true,
+      self_critique_enabled: scaling.self_critique_enabled === true,
+      revision_loops: Number(scaling.revision_loops || 0),
+      confidence_floor: Number(scaling.confidence_floor || 0),
+      confidence_ceiling: Number(scaling.confidence_ceiling || 0),
+      initial_confidence: Number(scaling.initial_confidence || 0),
+      final_confidence: Number(scaling.final_confidence || 0),
+      confidence_floor_met: scaling.confidence_floor_met === true,
+      thinking_chain: Array.isArray(scaling.thinking_chain) ? scaling.thinking_chain : []
+    },
     reason_codes: [
       `planning_complexity_${tier}`,
       `thinking_budget_${budget}`,
-      'structured_thinking_tokens_enabled'
+      'structured_thinking_tokens_enabled',
+      `test_time_scaling_${scaling.enabled === true ? 'enabled' : 'disabled'}`,
+      `test_time_scaling_revision_loops_${Number(scaling.revision_loops || 0)}`,
+      `reasoning_strategy_${scaling.strategy_mode}`
     ]
   };
   if (opts.persist !== false) {
@@ -366,9 +497,16 @@ function cmdStatus(args: AnyObj) {
     date: payload.date || null,
     objective_id: payload.objective_id || null,
     complexity_score: payload.complexity_score || 0,
+    recommended_reasoning_strategy: payload.recommended_reasoning_strategy || null,
     thinking_token_budget: payload.thinking_token_budget || 0,
     structured_step_count: payload.structured_thinking && payload.structured_thinking.step_count != null
       ? Number(payload.structured_thinking.step_count)
+      : 0,
+    revision_loops: payload.test_time_scaling && payload.test_time_scaling.revision_loops != null
+      ? Number(payload.test_time_scaling.revision_loops)
+      : 0,
+    final_confidence: payload.test_time_scaling && payload.test_time_scaling.final_confidence != null
+      ? Number(payload.test_time_scaling.final_confidence)
       : 0,
     shadow_only: payload.shadow_only === true
   })}\n`);
@@ -396,4 +534,3 @@ module.exports = {
   loadPolicy,
   runLongHorizonPlanning
 };
-

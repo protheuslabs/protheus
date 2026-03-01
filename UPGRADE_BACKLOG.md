@@ -746,6 +746,11 @@ Dependency notes:
 
 Objective: absorb frontier-style intelligence requirements without adding duplicate epics; keep primitives as the contract layer and attach specific behavior as profiles/extensions.
 
+Implementation (2026-03-01): upgraded canonical P0 lanes in-place instead of adding duplicate IDs.
+- `V3-LHP-001` hardening: test-time scaling now emits explicit self-critique/revision thinking chains, confidence floor tracking, and recommended reasoning strategy (`fast_reflex` / `deep_thinking` / `multi_agent_debate`) in `systems/primitives/long_horizon_planning_primitive.ts`.
+- `V3-MAC-001` hardening: debate now includes disagreement index, confidence scoring, distinct-role quorum rule, and runoff-based disagreement resolution in `systems/autonomy/multi_agent_debate_orchestrator.ts`.
+- `V3-CU-001` hardening: universal execution now tracks computer-use reliability suite/case success metrics (including WebArena-style alias rates) with target progress in `systems/actuation/universal_execution_primitive.ts`.
+
 | Proposed ID | Disposition | Canonical Backlog Coverage | Action |
 |---|---|---|---|
 | V3-TTS-001 | duplicate | `V3-LHP-001` (done) | Use existing long-horizon planning primitive and keep any model-specific "thinking token" behavior as profile/config under this primitive. |

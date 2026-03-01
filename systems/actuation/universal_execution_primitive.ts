@@ -87,6 +87,13 @@ function appendJsonl(filePath: string, row: AnyObj) {
   fs.appendFileSync(filePath, `${JSON.stringify(row)}\n`, 'utf8');
 }
 
+function writeJsonAtomic(filePath: string, value: AnyObj) {
+  ensureDir(path.dirname(filePath));
+  const tmp = `${filePath}.tmp-${Date.now()}-${process.pid}`;
+  fs.writeFileSync(tmp, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+  fs.renameSync(tmp, filePath);
+}
+
 function readJsonl(filePath: string) {
   try {
     if (!fs.existsSync(filePath)) return [];
@@ -194,6 +201,16 @@ function defaultPolicy() {
       expected_outcome_keys: ['expected_outcome', 'verification_target', 'expected_signal'],
       receipts_path: 'state/actuation/universal_execution_primitive/verification.jsonl'
     },
+    computer_use_reliability_metrics: {
+      enabled: true,
+      tracked_adapter_kinds: ['browser_task', 'browser_action', 'api_request'],
+      suite_keys: ['task_suite', 'suite', 'benchmark_suite'],
+      case_keys: ['case_id', 'task_id', 'benchmark_case_id'],
+      rolling_window: 500,
+      target_success_rate: 0.7,
+      webarena_aliases: ['webarena', 'webarena_lite'],
+      metrics_path: 'state/actuation/universal_execution_primitive/computer_use_metrics.json'
+    },
     receipts_path: 'state/actuation/universal_execution_primitive/receipts'
   };
 }
@@ -214,9 +231,14 @@ function loadPolicy(policyPath = POLICY_PATH) {
     && typeof src.computer_use_execution_verification === 'object'
     ? src.computer_use_execution_verification
     : {};
+  const reliabilityMetrics = src.computer_use_reliability_metrics
+    && typeof src.computer_use_reliability_metrics === 'object'
+    ? src.computer_use_reliability_metrics
+    : {};
   const baseSynthesis = base.sub_executor_synthesis;
   const baseHardening = base.computer_use_hardening;
   const baseVerification = base.computer_use_execution_verification;
+  const baseReliability = base.computer_use_reliability_metrics;
   const synthesisErrors = Array.isArray(synthesis.auto_propose_on_errors)
     ? synthesis.auto_propose_on_errors
     : baseSynthesis.auto_propose_on_errors;
@@ -310,6 +332,26 @@ function loadPolicy(policyPath = POLICY_PATH) {
       receipts_path: path.isAbsolute(cleanText(verification.receipts_path || baseVerification.receipts_path, 320))
         ? cleanText(verification.receipts_path || baseVerification.receipts_path, 320)
         : path.join(ROOT, cleanText(verification.receipts_path || baseVerification.receipts_path, 320))
+    },
+    computer_use_reliability_metrics: {
+      enabled: reliabilityMetrics.enabled !== false,
+      tracked_adapter_kinds: Array.isArray(reliabilityMetrics.tracked_adapter_kinds)
+        ? reliabilityMetrics.tracked_adapter_kinds.map((row: unknown) => normalizeToken(row, 80)).filter(Boolean)
+        : baseReliability.tracked_adapter_kinds.slice(0),
+      suite_keys: Array.isArray(reliabilityMetrics.suite_keys)
+        ? reliabilityMetrics.suite_keys.map((row: unknown) => normalizeToken(row, 80)).filter(Boolean)
+        : baseReliability.suite_keys.slice(0),
+      case_keys: Array.isArray(reliabilityMetrics.case_keys)
+        ? reliabilityMetrics.case_keys.map((row: unknown) => normalizeToken(row, 80)).filter(Boolean)
+        : baseReliability.case_keys.slice(0),
+      rolling_window: Math.max(10, Math.min(10_000, Number(reliabilityMetrics.rolling_window || baseReliability.rolling_window))),
+      target_success_rate: Math.max(0, Math.min(1, Number(reliabilityMetrics.target_success_rate || baseReliability.target_success_rate))),
+      webarena_aliases: Array.isArray(reliabilityMetrics.webarena_aliases)
+        ? reliabilityMetrics.webarena_aliases.map((row: unknown) => normalizeToken(row, 80)).filter(Boolean)
+        : baseReliability.webarena_aliases.slice(0),
+      metrics_path: path.isAbsolute(cleanText(reliabilityMetrics.metrics_path || baseReliability.metrics_path, 320))
+        ? cleanText(reliabilityMetrics.metrics_path || baseReliability.metrics_path, 320)
+        : path.join(ROOT, cleanText(reliabilityMetrics.metrics_path || baseReliability.metrics_path, 320))
     },
     receipts_path: path.isAbsolute(cleanText(src.receipts_path || base.receipts_path, 260))
       ? cleanText(src.receipts_path || base.receipts_path, 260)
@@ -521,6 +563,135 @@ function evaluateExecutionVerification(profile: AnyObj, run: AnyObj, payload: An
     failure_markers_matched: failureMatches,
     expected_outcomes: expectedOutcomes,
     expected_outcomes_missing: missingExpected
+  };
+}
+
+function readTokenByKeys(params: AnyObj, contextRaw: AnyObj, keys: string[]) {
+  for (const keyRaw of Array.isArray(keys) ? keys : []) {
+    const key = normalizeToken(keyRaw, 80);
+    if (!key) continue;
+    const fromParams = cleanText(params && params[key], 140);
+    if (fromParams) return normalizeToken(fromParams, 140);
+    const fromContext = cleanText(contextRaw && contextRaw[key], 140);
+    if (fromContext) return normalizeToken(fromContext, 140);
+  }
+  return null;
+}
+
+function loadComputerUseMetricsState(metricsPath: string, rollingWindow: number) {
+  const src = readJson(metricsPath, null);
+  if (!src || typeof src !== 'object') {
+    return {
+      schema_id: 'computer_use_reliability_metrics',
+      schema_version: '1.0',
+      updated_at: null,
+      rolling_window: Math.max(10, Number(rollingWindow || 500)),
+      events: []
+    };
+  }
+  return {
+    schema_id: 'computer_use_reliability_metrics',
+    schema_version: '1.0',
+    updated_at: cleanText(src.updated_at || '', 40) || null,
+    rolling_window: Math.max(10, Number(src.rolling_window || rollingWindow || 500)),
+    events: Array.isArray(src.events) ? src.events : []
+  };
+}
+
+function summarizeComputerUseMetrics(state: AnyObj, aliases: string[]) {
+  const events = Array.isArray(state && state.events) ? state.events : [];
+  const suites: Record<string, AnyObj> = {};
+  let success = 0;
+  let total = 0;
+  for (const row of events) {
+    if (!row || typeof row !== 'object') continue;
+    const suite = normalizeToken(row.suite_id || 'unknown', 120) || 'unknown';
+    if (!suites[suite]) suites[suite] = { total: 0, success: 0 };
+    suites[suite].total += 1;
+    total += 1;
+    if (row.ok === true) {
+      suites[suite].success += 1;
+      success += 1;
+    }
+  }
+  const suiteSummary = Object.entries(suites)
+    .map(([suite_id, row]: [string, AnyObj]) => ({
+      suite_id,
+      total_runs: Number(row.total || 0),
+      successful_runs: Number(row.success || 0),
+      success_rate: Number(row.total > 0 ? (row.success / row.total).toFixed(6) : 0)
+    }))
+    .sort((a, b) => b.total_runs - a.total_runs)
+    .slice(0, 50);
+  const normalizedAliases = Array.isArray(aliases)
+    ? aliases.map((row: unknown) => normalizeToken(row, 80)).filter(Boolean)
+    : [];
+  const aliasRows = suiteSummary.filter((row: AnyObj) => normalizedAliases.some((alias) => row.suite_id.includes(alias)));
+  const aliasTotal = aliasRows.reduce((acc: number, row: AnyObj) => acc + Number(row.total_runs || 0), 0);
+  const aliasSuccess = aliasRows.reduce((acc: number, row: AnyObj) => acc + Number(row.successful_runs || 0), 0);
+  return {
+    total_runs: total,
+    successful_runs: success,
+    success_rate: Number(total > 0 ? (success / total).toFixed(6) : 0),
+    suites: suiteSummary,
+    webarena_like_total_runs: aliasTotal,
+    webarena_like_success_rate: Number(aliasTotal > 0 ? (aliasSuccess / aliasTotal).toFixed(6) : 0)
+  };
+}
+
+function updateComputerUseMetrics(
+  policy: AnyObj,
+  adapterKind: string,
+  params: AnyObj,
+  contextRaw: AnyObj,
+  finalOk: boolean
+) {
+  const cfg = policy && policy.computer_use_reliability_metrics
+    && typeof policy.computer_use_reliability_metrics === 'object'
+    ? policy.computer_use_reliability_metrics
+    : {};
+  const trackedKinds = Array.isArray(cfg.tracked_adapter_kinds)
+    ? cfg.tracked_adapter_kinds.map((row: unknown) => normalizeToken(row, 80)).filter(Boolean)
+    : [];
+  const tracked = cfg.enabled === true && trackedKinds.includes(normalizeToken(adapterKind, 80));
+  if (!tracked) {
+    return {
+      tracked: false
+    };
+  }
+  const metricsPath = cleanText(cfg.metrics_path || '', 320) || path.join(ROOT, 'state', 'actuation', 'universal_execution_primitive', 'computer_use_metrics.json');
+  const rollingWindow = Math.max(10, Number(cfg.rolling_window || 500));
+  const suiteId = readTokenByKeys(params, contextRaw, cfg.suite_keys || []) || 'unspecified_suite';
+  const caseId = readTokenByKeys(params, contextRaw, cfg.case_keys || []) || null;
+  const state = loadComputerUseMetricsState(metricsPath, rollingWindow);
+  state.rolling_window = rollingWindow;
+  state.events = (Array.isArray(state.events) ? state.events : [])
+    .concat([{
+      ts: nowIso(),
+      adapter_kind: normalizeToken(adapterKind, 80),
+      suite_id: suiteId,
+      case_id: caseId,
+      ok: finalOk === true
+    }])
+    .slice(-rollingWindow);
+  state.updated_at = nowIso();
+  const summary = summarizeComputerUseMetrics(state, cfg.webarena_aliases || []);
+  state.summary = summary;
+  writeJsonAtomic(metricsPath, state);
+  const suiteRow = Array.isArray(summary.suites)
+    ? summary.suites.find((row: AnyObj) => row && row.suite_id === suiteId) || null
+    : null;
+  return {
+    tracked: true,
+    suite_id: suiteId,
+    case_id: caseId,
+    metrics_path: relPath(metricsPath),
+    target_success_rate: Number(cfg.target_success_rate || 0.7),
+    overall_success_rate: Number(summary.success_rate || 0),
+    suite_success_rate: suiteRow ? Number(suiteRow.success_rate || 0) : Number(summary.success_rate || 0),
+    webarena_like_success_rate: Number(summary.webarena_like_success_rate || 0),
+    webarena_like_total_runs: Number(summary.webarena_like_total_runs || 0),
+    meets_target: Number(summary.success_rate || 0) >= Number(cfg.target_success_rate || 0.7)
   };
 }
 
@@ -958,6 +1129,13 @@ function cmdRun(args: AnyObj) {
       expected_outcomes_missing: executionVerification.expected_outcomes_missing || []
     });
   }
+  const computerUseReliability = updateComputerUseMetrics(
+    policy,
+    adapter.kind,
+    params,
+    contextRaw,
+    finalOk
+  );
   const row = {
     ts: nowIso(),
     type: 'universal_execution_primitive',
@@ -987,7 +1165,8 @@ function cmdRun(args: AnyObj) {
       ? executionVerification.reason_codes
       : [],
     execution_verification_attempts: verificationAttempts,
-    execution_verification_applied: verificationApplied
+    execution_verification_applied: verificationApplied,
+    computer_use_reliability: computerUseReliability
   };
   if (!finalOk) {
     const errorSummary = verificationFailedHard
@@ -1013,6 +1192,7 @@ function cmdRun(args: AnyObj) {
       error: errorSummary,
       sub_executor_candidate: synthesis && synthesis.ok === true ? synthesis : null,
       execution_verification: executionVerification,
+      computer_use_reliability: computerUseReliability,
       row
     })}\n`);
     process.exit(Number(run.status == null ? 1 : run.status) || 1);
@@ -1020,11 +1200,12 @@ function cmdRun(args: AnyObj) {
   appendJsonl(receiptPath(policy), row);
   process.stdout.write(`${JSON.stringify({
     ok: true,
-    type: 'universal_execution_primitive',
-    profile_id: profileId,
-    adapter_kind: adapter.kind,
-    row
-  })}\n`);
+      type: 'universal_execution_primitive',
+      profile_id: profileId,
+      adapter_kind: adapter.kind,
+      computer_use_reliability: computerUseReliability,
+      row
+    })}\n`);
 }
 
 function cmdStatus(args: AnyObj) {
@@ -1054,6 +1235,18 @@ function cmdStatus(args: AnyObj) {
       executionVerificationFailedRuns += 1;
     }
   }
+  const metricsCfg = policy.computer_use_reliability_metrics
+    && typeof policy.computer_use_reliability_metrics === 'object'
+    ? policy.computer_use_reliability_metrics
+    : {};
+  const metricsPath = cleanText(metricsCfg.metrics_path || '', 320);
+  const metricsState = metricsPath ? readJson(metricsPath, null) : null;
+  const metricsSummary = metricsState && typeof metricsState === 'object' && metricsState.summary
+    ? metricsState.summary
+    : summarizeComputerUseMetrics(
+      loadComputerUseMetricsState(metricsPath || path.join(ROOT, 'state', 'actuation', 'universal_execution_primitive', 'computer_use_metrics.json'), Number(metricsCfg.rolling_window || 500)),
+      metricsCfg.webarena_aliases || []
+    );
   const out = {
     ok: true,
     type: 'universal_execution_primitive_status',
@@ -1069,7 +1262,17 @@ function cmdStatus(args: AnyObj) {
     verification_handoff_required_runs: handoffRequiredRuns,
     recovery_applied_runs: recoveryAppliedRuns,
     execution_verification_runs: executionVerificationRuns,
-    execution_verification_failed_runs: executionVerificationFailedRuns
+    execution_verification_failed_runs: executionVerificationFailedRuns,
+    computer_use_reliability: {
+      enabled: metricsCfg.enabled !== false,
+      target_success_rate: Number(metricsCfg.target_success_rate || 0.7),
+      metrics_path: metricsPath ? relPath(metricsPath) : null,
+      overall_success_rate: Number(metricsSummary.success_rate || 0),
+      overall_total_runs: Number(metricsSummary.total_runs || 0),
+      webarena_like_success_rate: Number(metricsSummary.webarena_like_success_rate || 0),
+      webarena_like_total_runs: Number(metricsSummary.webarena_like_total_runs || 0),
+      meets_target: Number(metricsSummary.success_rate || 0) >= Number(metricsCfg.target_success_rate || 0.7)
+    }
   };
   process.stdout.write(`${JSON.stringify(out)}\n`);
 }
