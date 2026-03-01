@@ -149,6 +149,27 @@ runTest('query requested rust backend falls back to js when crate is missing', (
   assert.ok(Array.isArray(out.hits) && out.hits.length > 0, 'fallback should still return hits');
 });
 
+runTest('query rust backend enters cooldown after first rust failure', () => {
+  const root = makeWorkspace();
+  const missingCrate = path.join(root, 'systems', 'rust', 'memory_box_missing');
+  const env = {
+    MEMORY_RECALL_BACKEND: 'rust',
+    MEMORY_RECALL_RUST_CRATE_PATH: missingCrate,
+    MEMORY_RECALL_RUST_COOLDOWN_MS: '600000'
+  };
+  const r1 = runRecall(root, ['query', '--q=routing', '--expand=none', '--session=rustcool1'], env);
+  assert.strictEqual(r1.status, 0, `first query failed: ${r1.stderr}`);
+  const out1 = parseJson(r1.stdout);
+  assert.ok(out1 && out1.ok === true, 'first query should return ok=true');
+  assert.strictEqual(out1.backend_fallback_reason, 'rust_crate_missing');
+
+  const r2 = runRecall(root, ['query', '--q=routing', '--expand=none', '--session=rustcool2'], env);
+  assert.strictEqual(r2.status, 0, `second query failed: ${r2.stderr}`);
+  const out2 = parseJson(r2.stdout);
+  assert.ok(out2 && out2.ok === true, 'second query should return ok=true');
+  assert.strictEqual(out2.backend_fallback_reason, 'rust_cooldown_active');
+});
+
 runTest('query auto backend uses selector rust then falls back to js when crate is missing', () => {
   const root = makeWorkspace();
   writeJson(path.join(root, 'state', 'memory', 'rust_transition', 'backend_selector.json'), {
@@ -231,6 +252,27 @@ runTest('get requested rust backend falls back to js when crate is missing', () 
   assert.strictEqual(out.backend_used, 'js');
   assert.strictEqual(out.backend_fallback_reason, 'rust_crate_missing');
   assert.ok(String(out.section || '').includes('# routing-cache-design'), 'fallback should still return section');
+});
+
+runTest('get rust backend enters cooldown after first rust failure', () => {
+  const root = makeWorkspace();
+  const missingCrate = path.join(root, 'systems', 'rust', 'memory_box_missing');
+  const env = {
+    MEMORY_RECALL_BACKEND: 'rust',
+    MEMORY_RECALL_RUST_CRATE_PATH: missingCrate,
+    MEMORY_RECALL_RUST_COOLDOWN_MS: '600000'
+  };
+  const r1 = runRecall(root, ['get', '--node-id=routing-cache-design', '--session=getrustcool1'], env);
+  assert.strictEqual(r1.status, 0, `first get failed: ${r1.stderr}`);
+  const out1 = parseJson(r1.stdout);
+  assert.ok(out1 && out1.ok === true, 'first get should return ok=true');
+  assert.strictEqual(out1.backend_fallback_reason, 'rust_crate_missing');
+
+  const r2 = runRecall(root, ['get', '--node-id=routing-cache-design', '--session=getrustcool2'], env);
+  assert.strictEqual(r2.status, 0, `second get failed: ${r2.stderr}`);
+  const out2 = parseJson(r2.stdout);
+  assert.ok(out2 && out2.ok === true, 'second get should return ok=true');
+  assert.strictEqual(out2.backend_fallback_reason, 'rust_cooldown_active');
 });
 
 runTest('get auto backend uses selector rust then falls back to js when crate is missing', () => {

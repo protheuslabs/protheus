@@ -28,6 +28,10 @@ const DEFAULT_RUST_CRATE_PATH = process.env.MEMORY_RECALL_RUST_CRATE_PATH
   ? path.resolve(String(process.env.MEMORY_RECALL_RUST_CRATE_PATH))
   : path.join(WORKSPACE_ROOT, 'systems', 'rust', 'memory_box');
 const DEFAULT_RUST_TIMEOUT_MS = clampInt(process.env.MEMORY_RECALL_RUST_TIMEOUT_MS || 25000, 1000, 120000);
+const DEFAULT_RUST_COOLDOWN_MS = clampInt(process.env.MEMORY_RECALL_RUST_COOLDOWN_MS || (5 * 60 * 1000), 1000, 24 * 60 * 60 * 1000);
+const DEFAULT_RUST_HEALTH_PATH = process.env.MEMORY_RECALL_RUST_HEALTH_PATH
+  ? path.resolve(String(process.env.MEMORY_RECALL_RUST_HEALTH_PATH))
+  : path.join(REPO_ROOT, 'state', 'memory', 'rust_transition', 'backend_health.json');
 
 function clampInt(v, min, max) {
   const n = Number(v);
@@ -362,6 +366,56 @@ function normalizeBackendChoice(raw) {
   return 'auto';
 }
 
+function loadRustHealthState() {
+  const raw = readJsonSafe(DEFAULT_RUST_HEALTH_PATH);
+  const cooldownUntil = raw && Number.isFinite(raw.cooldown_until_ts) ? Number(raw.cooldown_until_ts) : 0;
+  return {
+    schema_version: '1.0',
+    cooldown_until_ts: cooldownUntil,
+    last_error: raw && typeof raw.last_error === 'string' ? raw.last_error : '',
+    last_failure_ts: raw && typeof raw.last_failure_ts === 'string' ? raw.last_failure_ts : null,
+    updated_ts: raw && typeof raw.updated_ts === 'string' ? raw.updated_ts : null
+  };
+}
+
+function saveRustHealthState(state) {
+  try {
+    ensureDir(path.dirname(DEFAULT_RUST_HEALTH_PATH));
+    fs.writeFileSync(DEFAULT_RUST_HEALTH_PATH, `${JSON.stringify({
+      schema_version: '1.0',
+      cooldown_until_ts: Math.max(0, Math.trunc(Number(state && state.cooldown_until_ts ? state.cooldown_until_ts : 0))),
+      last_error: cleanCell(state && state.last_error ? state.last_error : '').slice(0, 200),
+      last_failure_ts: state && state.last_failure_ts ? String(state.last_failure_ts) : null,
+      updated_ts: nowIso()
+    }, null, 2)}\n`, 'utf8');
+  } catch {
+    // Best-effort health telemetry; never block memory recall.
+  }
+}
+
+function rustCooldownActive() {
+  const state = loadRustHealthState();
+  return Number(state.cooldown_until_ts || 0) > Date.now();
+}
+
+function noteRustFailure(errorCode) {
+  saveRustHealthState({
+    cooldown_until_ts: Date.now() + DEFAULT_RUST_COOLDOWN_MS,
+    last_error: cleanCell(errorCode || 'rust_error'),
+    last_failure_ts: nowIso()
+  });
+}
+
+function clearRustFailure() {
+  const state = loadRustHealthState();
+  if (Number(state.cooldown_until_ts || 0) <= 0 && !state.last_error) return;
+  saveRustHealthState({
+    cooldown_until_ts: 0,
+    last_error: '',
+    last_failure_ts: state.last_failure_ts || null
+  });
+}
+
 function resolveBackendChoice(raw) {
   const desired = normalizeBackendChoice(raw);
   if (desired === 'js' || desired === 'rust') return desired;
@@ -687,21 +741,27 @@ function queryCmd(args) {
   let topScored: any[] = [];
 
   if (backendRequested === 'rust') {
-    const rustExpandLinesInitial = expandMode === 'always' ? excerptLines : 0;
-    const rust = runRustQueryIndex(query, tagFilters, top, {
-      expandLines: rustExpandLinesInitial,
-      maxFiles
-    });
-    if (rust.ok) {
-      const payload = rust.payload || {};
-      backendUsed = 'rust';
-      scoringSource = 'rust_query_index';
-      indexSources = Array.isArray(payload.index_sources) ? payload.index_sources.slice(0) : [];
-      tagSources = Array.isArray(payload.tag_sources) ? payload.tag_sources.slice(0) : [];
-      metrics.candidates_total = clampInt(payload.candidates_total, 0, 100000000);
-      topScored = parseRustScoredRows(payload, top);
+    if (rustCooldownActive()) {
+      backendFallbackReason = 'rust_cooldown_active';
     } else {
-      backendFallbackReason = rust.error || 'rust_query_failed';
+      const rustExpandLinesInitial = expandMode === 'always' ? excerptLines : 0;
+      const rust = runRustQueryIndex(query, tagFilters, top, {
+        expandLines: rustExpandLinesInitial,
+        maxFiles
+      });
+      if (rust.ok) {
+        clearRustFailure();
+        const payload = rust.payload || {};
+        backendUsed = 'rust';
+        scoringSource = 'rust_query_index';
+        indexSources = Array.isArray(payload.index_sources) ? payload.index_sources.slice(0) : [];
+        tagSources = Array.isArray(payload.tag_sources) ? payload.tag_sources.slice(0) : [];
+        metrics.candidates_total = clampInt(payload.candidates_total, 0, 100000000);
+        topScored = parseRustScoredRows(payload, top);
+      } else {
+        backendFallbackReason = rust.error || 'rust_query_failed';
+        noteRustFailure(backendFallbackReason);
+      }
     }
   }
 
@@ -753,6 +813,7 @@ function queryCmd(args) {
         maxFiles
       });
       if (rustExpanded.ok) {
+        clearRustFailure();
         const expandedRows = parseRustScoredRows(rustExpanded.payload || {}, top);
         const byKey = new Map(expandedRows.map((row: any) => [`${row.entry.node_id}@${row.entry.file_rel}`, row]));
         topScored = topScored.map((row: any) => {
@@ -766,6 +827,8 @@ function queryCmd(args) {
             rust_expand_error: fromExpanded.rust_expand_error || null
           } };
         });
+      } else {
+        noteRustFailure(rustExpanded.error || 'rust_query_expand_failed');
       }
     }
   }
@@ -868,30 +931,36 @@ function getCmd(args) {
   let backendFallbackReason = null;
 
   if (backendRequested === 'rust') {
-    const rust = runRustGetNode(nodeId, uid, fileFilter);
-    if (rust.ok) {
-      const payload = rust.payload || {};
-      const section = typeof payload.section === 'string' ? payload.section : '';
-      process.stdout.write(JSON.stringify({
-        ok: true,
-        type: 'memory_recall_get',
-        session,
-        backend_requested: backendRequested,
-        backend_used: 'rust',
-        backend_fallback_reason: null,
-        node_id: normalizeNodeId(payload.node_id || nodeId),
-        uid: normalizeUid(payload.uid || uid),
-        file: normalizeFileRef(payload.file || fileFilter),
-        summary: cleanCell(payload.summary || ''),
-        tags: Array.isArray(payload.tags) ? uniqueSorted(payload.tags.map(normalizeTag).filter(Boolean)) : [],
-        section_source: 'rust',
-        section_hash: sha256(section),
-        metrics,
-        section
-      }, null, 2) + '\n');
-      return;
+    if (rustCooldownActive()) {
+      backendFallbackReason = 'rust_cooldown_active';
+    } else {
+      const rust = runRustGetNode(nodeId, uid, fileFilter);
+      if (rust.ok) {
+        clearRustFailure();
+        const payload = rust.payload || {};
+        const section = typeof payload.section === 'string' ? payload.section : '';
+        process.stdout.write(JSON.stringify({
+          ok: true,
+          type: 'memory_recall_get',
+          session,
+          backend_requested: backendRequested,
+          backend_used: 'rust',
+          backend_fallback_reason: null,
+          node_id: normalizeNodeId(payload.node_id || nodeId),
+          uid: normalizeUid(payload.uid || uid),
+          file: normalizeFileRef(payload.file || fileFilter),
+          summary: cleanCell(payload.summary || ''),
+          tags: Array.isArray(payload.tags) ? uniqueSorted(payload.tags.map(normalizeTag).filter(Boolean)) : [],
+          section_source: 'rust',
+          section_hash: sha256(section),
+          metrics,
+          section
+        }, null, 2) + '\n');
+        return;
+      }
+      backendFallbackReason = rust.error || 'rust_get_failed';
+      noteRustFailure(backendFallbackReason);
     }
-    backendFallbackReason = rust.error || 'rust_get_failed';
   }
 
   const index = loadMemoryIndex();
