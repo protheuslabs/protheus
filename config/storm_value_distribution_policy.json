@@ -36,7 +36,18 @@
     "latest_path": "state/storm/value_distribution/latest.json",
     "history_path": "state/storm/value_distribution/history.jsonl",
     "reversals_path": "state/storm/value_distribution/reversals.jsonl",
-    "receipts_path": "state/storm/value_distribution/receipts.jsonl"
+    "receipts_path": "state/storm/value_distribution/receipts.jsonl",
+    "settlements_dir": "state/storm/value_distribution/settlements",
+    "settlements_history_path": "state/storm/value_distribution/settlements/history.jsonl",
+    "settlements_latest_path": "state/storm/value_distribution/settlements/latest.json"
+  },
+  "settlement": {
+    "enabled": true,
+    "default_provider": "stripe",
+    "default_adapter": "payment_bridge",
+    "root_adapter": "blockchain",
+    "payment_bridge_policy_path": "config/payment_skills_bridge_policy.json",
+    "blockchain_bridge_policy_path": "config/sovereign_blockchain_bridge_policy.json"
   },
   "passport": {
     "enabled": true,

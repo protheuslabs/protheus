@@ -45,6 +45,7 @@ function run() {
 
   const creatorPolicyPath = path.join(tmpRoot, 'config', 'creator_optin_ledger_policy.json');
   const distributionPolicyPath = path.join(tmpRoot, 'config', 'storm_value_distribution_policy.json');
+  const paymentBridgePolicyPath = path.join(tmpRoot, 'config', 'payment_skills_bridge_policy.json');
   const attributionRecordsPath = path.join(tmpRoot, 'state', 'assimilation', 'value_attribution', 'records.jsonl');
   const latestPlanPath = path.join(tmpRoot, 'state', 'storm', 'value_distribution', 'latest.json');
 
@@ -109,11 +110,52 @@ function run() {
       latest_path: latestPlanPath,
       history_path: path.join(tmpRoot, 'state', 'storm', 'value_distribution', 'history.jsonl'),
       reversals_path: path.join(tmpRoot, 'state', 'storm', 'value_distribution', 'reversals.jsonl'),
-      receipts_path: path.join(tmpRoot, 'state', 'storm', 'value_distribution', 'receipts.jsonl')
+      receipts_path: path.join(tmpRoot, 'state', 'storm', 'value_distribution', 'receipts.jsonl'),
+      settlements_dir: path.join(tmpRoot, 'state', 'storm', 'value_distribution', 'settlements'),
+      settlements_history_path: path.join(tmpRoot, 'state', 'storm', 'value_distribution', 'settlements', 'history.jsonl'),
+      settlements_latest_path: path.join(tmpRoot, 'state', 'storm', 'value_distribution', 'settlements', 'latest.json')
+    },
+    settlement: {
+      enabled: true,
+      default_provider: 'stripe',
+      default_adapter: 'payment_bridge',
+      root_adapter: 'blockchain',
+      payment_bridge_policy_path: paymentBridgePolicyPath,
+      blockchain_bridge_policy_path: path.join(tmpRoot, 'config', 'sovereign_blockchain_bridge_policy.json')
     },
     passport: {
       enabled: false,
       source: 'storm_value_distribution'
+    }
+  });
+
+  writeJson(paymentBridgePolicyPath, {
+    version: '1.0-test',
+    enabled: true,
+    shadow_only: false,
+    require_approval_note_for_live: false,
+    max_single_payout_usd: 50,
+    providers: {
+      stripe: { enabled: true }
+    },
+    paths: {
+      state: path.join(tmpRoot, 'state', 'workflow', 'payment_bridge', 'latest.json'),
+      history: path.join(tmpRoot, 'state', 'workflow', 'payment_bridge', 'history.jsonl'),
+      holds: path.join(tmpRoot, 'state', 'workflow', 'payment_bridge', 'holds.json'),
+      negotiations: path.join(tmpRoot, 'state', 'workflow', 'payment_bridge', 'negotiations.json')
+    }
+  });
+
+  writeJson(path.join(tmpRoot, 'config', 'sovereign_blockchain_bridge_policy.json'), {
+    version: '1.0-test',
+    enabled: true,
+    shadow_only: true,
+    state: {
+      state_path: path.join(tmpRoot, 'state', 'blockchain', 'sovereign_bridge', 'state.json'),
+      latest_path: path.join(tmpRoot, 'state', 'blockchain', 'sovereign_bridge', 'latest.json'),
+      proposals_path: path.join(tmpRoot, 'state', 'blockchain', 'sovereign_bridge', 'proposals.jsonl'),
+      bindings_path: path.join(tmpRoot, 'state', 'blockchain', 'sovereign_bridge', 'bindings.jsonl'),
+      receipts_path: path.join(tmpRoot, 'state', 'blockchain', 'sovereign_bridge', 'receipts.jsonl')
     }
   });
 
@@ -223,6 +265,41 @@ function run() {
 
   const saved = readJson(path.join(tmpRoot, 'state', 'storm', 'value_distribution', 'plans', `${plan.distribution_id}.json`));
   assert.ok(saved && saved.distribution_id === plan.distribution_id, 'plan file should persist');
+
+  const shadowSettlement = parseOut(runNode(distributionScript, [
+    'settle',
+    `--policy=${distributionPolicyPath}`,
+    `--distribution-id=${plan.distribution_id}`,
+    '--apply=1'
+  ], env, repoRoot), 'settle-shadow');
+  assert.strictEqual(shadowSettlement.ok, true);
+  assert.strictEqual(shadowSettlement.status, 'shadow_only', 'shadow policy should keep settlement in shadow mode');
+  assert.ok(Number(shadowSettlement.payouts_total || 0) > 0, 'shadow settlement should still enumerate payouts');
+
+  const liveDistributionPolicyPath = path.join(tmpRoot, 'config', 'storm_value_distribution_live_policy.json');
+  const liveDistributionPolicy = JSON.parse(fs.readFileSync(distributionPolicyPath, 'utf8'));
+  liveDistributionPolicy.shadow_only = false;
+  liveDistributionPolicy.allow_apply = true;
+  liveDistributionPolicy.settlement.default_adapter = 'payment_bridge';
+  liveDistributionPolicy.settlement.root_adapter = 'payment_bridge';
+  writeJson(liveDistributionPolicyPath, liveDistributionPolicy);
+
+  const liveSettlement = parseOut(runNode(distributionScript, [
+    'settle',
+    `--policy=${liveDistributionPolicyPath}`,
+    `--distribution-id=${plan.distribution_id}`,
+    '--apply=1',
+    '--approval-note=test_settlement'
+  ], env, repoRoot), 'settle-live');
+  assert.strictEqual(liveSettlement.ok, true);
+  assert.strictEqual(liveSettlement.status, 'partial_failure', 'live settlement should report partial failure when some payouts exceed cap');
+  assert.ok(Number(liveSettlement.payouts_succeeded || 0) > 0, 'live settlement should execute at least one payout');
+  assert.ok(Number(liveSettlement.payouts_failed || 0) > 0, 'live settlement should capture failed payouts');
+  assert.ok(Array.isArray(liveSettlement.settlement_rows), 'settlement rows should be present for per-payout tracing');
+  assert.ok(
+    liveSettlement.settlement_rows.some((row) => row && row.success === false),
+    'partial failure output should include failed settlement rows'
+  );
 
   const reversed = parseOut(runNode(distributionScript, [
     'reverse',

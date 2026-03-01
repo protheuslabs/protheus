@@ -1,0 +1,35 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_first": true,
+  "cadence_minutes": 60,
+  "max_cycles_per_run": 1,
+  "proposal_cap_per_cycle": 2,
+  "apply_cap_per_cycle": 1,
+  "objective_id": "continuum_self_improvement",
+  "target_paths": [
+    "systems/autonomy/autonomy_controller.ts",
+    "systems/spine/spine.ts"
+  ],
+  "timeout_ms_per_step": 20000,
+  "quiet_hours": {
+    "enabled": false,
+    "start_hour_local": 22,
+    "end_hour_local": 7
+  },
+  "budget_guard": {
+    "max_cycles_per_day": 24,
+    "max_proposals_per_day": 64,
+    "max_applies_per_day": 12
+  },
+  "scripts": {
+    "observer": "systems/autonomy/observer_mirror.js",
+    "loop": "systems/autonomy/gated_self_improvement_loop.js",
+    "distiller": "systems/assimilation/trajectory_skill_distiller.js"
+  },
+  "outputs": {
+    "state_path": "state/autonomy/self_improvement_cadence/state.json",
+    "latest_path": "state/autonomy/self_improvement_cadence/latest.json",
+    "receipts_path": "state/autonomy/self_improvement_cadence/receipts.jsonl"
+  }
+}

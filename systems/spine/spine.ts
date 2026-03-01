@@ -24,6 +24,7 @@
 const { spawnSync } = require("child_process");
 const path = require("path");
 const fs = require("fs");
+const os = require("os");
 const crypto = require("crypto");
 const { isEmergencyStopEngaged } = require("../../lib/emergency_stop");
 const { stampGuardEnv } = require("../../lib/request_envelope");
@@ -42,6 +43,11 @@ try {
 } catch {
   stateKernelDualWriteMod = null;
 }
+let SPINE_ACTIVE_RUN: any = null;
+let SPINE_LAST_LEDGER_TYPE: string | null = null;
+let SPINE_LAST_FAILURE_REASON: string | null = null;
+let SPINE_TERMINAL_EMITTED = false;
+let SPINE_EXIT_HOOK_INSTALLED = false;
 
 function arg(name) {
   const pref = `--${name}=`;
@@ -56,7 +62,11 @@ function todayOr(dateStr) {
 
 function run(cmd, args, opts = {}) {
   const r = spawnSync(cmd, args, { stdio: "inherit", ...opts });
-  if (r.status !== 0) process.exit(r.status || 1);
+  if (r.status !== 0) {
+    const tool = path.basename(String(args && args[0] || cmd || "command"));
+    SPINE_LAST_FAILURE_REASON = `subprocess_failed:${tool}:exit_${Number(r.status || 1)}`;
+    process.exit(r.status || 1);
+  }
 }
 
 function runJson(cmd, args, opts = {}) {
@@ -121,6 +131,7 @@ function appendLedger(dateStr, evt) {
     const latestPath = path.join(root, "state", "spine", "runs", "latest.json");
     fs.mkdirSync(dir, { recursive: true });
     fs.appendFileSync(file, JSON.stringify(evt) + "\n");
+    SPINE_LAST_LEDGER_TYPE = evt && evt.type ? String(evt.type) : SPINE_LAST_LEDGER_TYPE;
     if (stateKernelDualWriteMod && typeof stateKernelDualWriteMod.writeMirror === 'function') {
       try {
         stateKernelDualWriteMod.writeMirror({
@@ -138,6 +149,71 @@ function appendLedger(dateStr, evt) {
   } catch {
     // ledger must never block spine execution
   }
+}
+
+function spineResourceSnapshot() {
+  try {
+    const mem = process.memoryUsage ? process.memoryUsage() : null;
+    const toMb = (v) => Number.isFinite(Number(v)) ? Number((Number(v) / (1024 * 1024)).toFixed(2)) : null;
+    const load = os && typeof os.loadavg === "function" ? os.loadavg() : [0, 0, 0];
+    return {
+      rss_mb: mem ? toMb(mem.rss) : null,
+      heap_used_mb: mem ? toMb(mem.heapUsed) : null,
+      heap_total_mb: mem ? toMb(mem.heapTotal) : null,
+      external_mb: mem ? toMb(mem.external) : null,
+      loadavg_1m: Number.isFinite(Number(load && load[0])) ? Number(Number(load[0]).toFixed(4)) : null,
+      uptime_sec: Number(process.uptime ? Number(process.uptime().toFixed(3)) : 0)
+    };
+  } catch {
+    return {
+      rss_mb: null,
+      heap_used_mb: null,
+      heap_total_mb: null,
+      external_mb: null,
+      loadavg_1m: null,
+      uptime_sec: null
+    };
+  }
+}
+
+function emitSpineRunTerminal(code, explicitReason = null) {
+  try {
+    if (SPINE_TERMINAL_EMITTED) return;
+    if (!SPINE_ACTIVE_RUN || typeof SPINE_ACTIVE_RUN !== "object") return;
+    const exitCode = Number(code || 0);
+    const ok = exitCode === 0;
+    const failureReason = ok
+      ? null
+      : String(
+        explicitReason
+          || SPINE_LAST_FAILURE_REASON
+          || `exit_code_${exitCode}`
+      ).replace(/\s+/g, " ").trim().slice(0, 200);
+    const elapsedMs = Math.max(0, Date.now() - Number(SPINE_ACTIVE_RUN.started_ms || Date.now()));
+    const payload = {
+      ts: nowIso(),
+      type: ok ? "spine_run_complete" : "spine_run_failed",
+      run_id: SPINE_ACTIVE_RUN.run_id || null,
+      mode: SPINE_ACTIVE_RUN.mode || null,
+      date: SPINE_ACTIVE_RUN.date || null,
+      elapsed_ms: elapsedMs,
+      terminal_step: SPINE_LAST_LEDGER_TYPE || "spine_run_started",
+      failure_reason: failureReason,
+      resource_snapshot: spineResourceSnapshot()
+    };
+    appendLedger(SPINE_ACTIVE_RUN.date, payload);
+    SPINE_TERMINAL_EMITTED = true;
+  } catch {
+    // Terminal emit must never block process exit.
+  }
+}
+
+function installSpineExitHook() {
+  if (SPINE_EXIT_HOOK_INSTALLED) return;
+  SPINE_EXIT_HOOK_INSTALLED = true;
+  process.on("exit", (code) => {
+    emitSpineRunTerminal(code, null);
+  });
 }
 
 const SYSTEM_HEALTH_EVENTS_PATH = process.env.SYSTEM_HEALTH_EVENTS_PATH
@@ -1116,6 +1192,18 @@ function main() {
     process.exit(2);
   }
 
+  const runId = `spine_${Date.now().toString(36)}_${process.pid}`;
+  SPINE_ACTIVE_RUN = {
+    run_id: runId,
+    mode,
+    date: dateStr,
+    started_ms: spineRunStartMs
+  };
+  SPINE_LAST_LEDGER_TYPE = null;
+  SPINE_LAST_FAILURE_REASON = null;
+  SPINE_TERMINAL_EMITTED = false;
+  installSpineExitHook();
+
   const emergency = isEmergencyStopEngaged("spine");
   if (emergency.engaged) {
     appendLedger(dateStr, {
@@ -1216,6 +1304,16 @@ function main() {
     "habits/scripts/proposal_queue.js",
     "config/security_integrity_policy.json"
   ];
+
+  appendLedger(dateStr, {
+    ts: nowIso(),
+    type: "spine_run_started",
+    run_id: runId,
+    mode,
+    date: dateStr,
+    max_eyes: maxEyes || null,
+    files_touched: invoked
+  });
 
   // Clearance gate
   guard(invoked);
@@ -1489,15 +1587,6 @@ function main() {
   } else {
     console.log(` collector_preflight unavailable reason=${String(collectorPreflight.reason || "unknown").slice(0, 120)}`);
   }
-
-  appendLedger(dateStr, {
-    ts: nowIso(),
-    type: "spine_run_started",
-    mode,
-    date: dateStr,
-    max_eyes: maxEyes || null,
-    files_touched: invoked
-  });
 
   // EYES PIPELINE (always included in both modes)
   const runArgs = ["habits/scripts/external_eyes.js", "run"];

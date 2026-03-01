@@ -49,6 +49,8 @@ function run() {
   const stateDir = path.join(tmpRoot, 'state', 'execution', 'task_decomposition_primitive');
   const weaverQueuePath = path.join(tmpRoot, 'state', 'autonomy', 'weaver', 'task_decomposition_queue.jsonl');
   const stormQueuePath = path.join(tmpRoot, 'state', 'storm', 'micro_tasks_queue.jsonl');
+  const executionDispatchQueuePath = path.join(tmpRoot, 'state', 'execution', 'task_decomposition_primitive', 'execution_dispatch_queue.jsonl');
+  const executionLogPath = path.join(tmpRoot, 'state', 'execution', 'task_decomposition_primitive', 'execution_log.jsonl');
   const agentPolicyPath = path.join(tmpRoot, 'config', 'agent_passport_policy.json');
   const dualityPolicyPath = path.join(tmpRoot, 'config', 'duality_seed_policy.json');
   const dualityCodexPath = path.join(tmpRoot, 'config', 'duality_codex.txt');
@@ -99,6 +101,16 @@ function run() {
       emit_events: true,
       emit_ide_events: true,
       emit_obsidian_projection: false
+    },
+    execution_handoff: {
+      enabled: true,
+      execute_immediately: false,
+      autonomous_executor: 'universal_execution_primitive',
+      storm_executor: 'storm_human_lane',
+      universal_execution_script: path.join(repoRoot, 'systems', 'actuation', 'universal_execution_primitive.js'),
+      workflow_executor_script: path.join(repoRoot, 'systems', 'workflow', 'workflow_executor.js'),
+      dispatch_queue_path: executionDispatchQueuePath,
+      execution_log_path: executionLogPath
     },
     state: {
       root: stateDir,
@@ -236,6 +248,7 @@ function run() {
   assert.ok(runPayload.micro_tasks.some((row) => row.route && row.route.lane === 'storm_human_lane'), 'should include human lane routing');
   assert.ok(runPayload.summary.blocked >= 1, 'destructive instruction should be blocked by gates');
   assert.ok(Number(runPayload.summary.weaver_queue_enqueued || 0) === runPayload.micro_tasks.length, 'all tasks should enter weaver queue');
+  assert.strictEqual(Number(runPayload.summary.execution_dispatched || 0), 0, 'shadow-only run should not dispatch execution handoff');
 
   const stormRows = readJsonl(stormQueuePath);
   assert.strictEqual(stormRows.length, Number(runPayload.summary.storm_queue_enqueued || 0), 'storm queue count should match summary');
@@ -266,6 +279,39 @@ function run() {
   assert.strictEqual(statusPayload.ok, true);
   assert.strictEqual(statusPayload.shadow_only, true);
   assert.strictEqual(Number(statusPayload.micro_tasks || 0), runPayload.micro_tasks.length);
+
+  const applyPolicyPath = path.join(tmpRoot, 'config', 'task_decomposition_apply_policy.json');
+  const applyPolicy = JSON.parse(fs.readFileSync(policyPath, 'utf8'));
+  applyPolicy.shadow_only = false;
+  applyPolicy.allow_apply = true;
+  writeJson(applyPolicyPath, applyPolicy);
+  const applyRunProc = runNode(scriptPath, [
+    'run',
+    '2026-02-28',
+    `--policy=${applyPolicyPath}`,
+    `--goal=${goal}`,
+    '--objective-id=v3_task_decomp_apply',
+    '--apply=1'
+  ], env, repoRoot);
+  assert.strictEqual(applyRunProc.status, 0, applyRunProc.stderr || applyRunProc.stdout);
+  const applyPayload = parseJsonStdout(applyRunProc);
+  assert.strictEqual(applyPayload.ok, true);
+  assert.strictEqual(applyPayload.shadow_only, false, 'apply-enabled policy should run non-shadow mode');
+  assert.strictEqual(applyPayload.apply_executed, true, 'apply-enabled policy should execute apply path');
+  assert.ok(Number(applyPayload.summary.execution_dispatched || 0) > 0, 'apply path should dispatch execution handoff rows');
+
+  const dispatchRows = readJsonl(executionDispatchQueuePath);
+  assert.ok(dispatchRows.length >= Number(applyPayload.summary.execution_dispatched || 0), 'dispatch queue should persist execution handoff rows');
+  assert.ok(dispatchRows.some((row) => row.status === 'queued' || row.status === 'blocked'), 'dispatch rows should include execution status');
+
+  const applyStatusProc = runNode(scriptPath, ['status', 'latest', `--policy=${applyPolicyPath}`], env, repoRoot);
+  assert.strictEqual(applyStatusProc.status, 0, applyStatusProc.stderr || applyStatusProc.stdout);
+  const applyStatusPayload = parseJsonStdout(applyStatusProc);
+  assert.strictEqual(applyStatusPayload.ok, true);
+  assert.ok(
+    Number(applyStatusPayload.queue_sizes && applyStatusPayload.queue_sizes.execution_dispatches || 0) >= dispatchRows.length,
+    'status should expose execution dispatch queue size'
+  );
 
   fs.rmSync(tmpRoot, { recursive: true, force: true });
   console.log('task_decomposition_primitive.test.js: OK');

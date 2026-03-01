@@ -67,5 +67,31 @@
     "consent_evidence_ref": "config/training_conduit_policy.json",
     "retention_days": 365,
     "delete_scope": "nursery_specialist_training"
+  },
+  "training_backend": {
+    "default_backend": "native",
+    "auto_select_by_hardware_class": true,
+    "allow_backend_fallback": true,
+    "backend_by_hardware_class": {
+      "phone_seed": "native",
+      "small": "native",
+      "medium": "axolotl",
+      "large": "axolotl"
+    },
+    "native": {
+      "enabled": true
+    },
+    "axolotl": {
+      "enabled": true,
+      "command": "axolotl",
+      "args": [
+        "train"
+      ],
+      "config_arg": "--config",
+      "output_arg": "--output-dir",
+      "timeout_ms": 7200000,
+      "attribution_creator_id": "axolotl",
+      "attribution_license": "apache-2.0"
+    }
   }
 }

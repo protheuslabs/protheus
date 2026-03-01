@@ -269,6 +269,16 @@ function defaultPolicy() {
       emit_ide_events: true,
       emit_obsidian_projection: false
     },
+    execution_handoff: {
+      enabled: true,
+      execute_immediately: false,
+      autonomous_executor: 'universal_execution_primitive',
+      storm_executor: 'storm_human_lane',
+      universal_execution_script: 'systems/actuation/universal_execution_primitive.js',
+      workflow_executor_script: 'systems/workflow/workflow_executor.js',
+      dispatch_queue_path: 'state/execution/task_decomposition_primitive/execution_dispatch_queue.jsonl',
+      execution_log_path: 'state/execution/task_decomposition_primitive/execution_log.jsonl'
+    },
     state: {
       root: 'state/execution/task_decomposition_primitive',
       runs_dir: 'state/execution/task_decomposition_primitive/runs',
@@ -300,6 +310,9 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
   const attribution = raw.attribution && typeof raw.attribution === 'object' ? raw.attribution : {};
   const actor = attribution.actor && typeof attribution.actor === 'object' ? attribution.actor : {};
   const outputs = raw.outputs && typeof raw.outputs === 'object' ? raw.outputs : {};
+  const executionHandoff = raw.execution_handoff && typeof raw.execution_handoff === 'object'
+    ? raw.execution_handoff
+    : {};
   const state = raw.state && typeof raw.state === 'object' ? raw.state : {};
   return {
     version: cleanText(raw.version || base.version, 32) || base.version,
@@ -349,6 +362,34 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
       emit_events: toBool(outputs.emit_events, base.outputs.emit_events),
       emit_ide_events: toBool(outputs.emit_ide_events, base.outputs.emit_ide_events),
       emit_obsidian_projection: toBool(outputs.emit_obsidian_projection, base.outputs.emit_obsidian_projection)
+    },
+    execution_handoff: {
+      enabled: toBool(executionHandoff.enabled, base.execution_handoff.enabled),
+      execute_immediately: toBool(executionHandoff.execute_immediately, base.execution_handoff.execute_immediately),
+      autonomous_executor: normalizeToken(
+        executionHandoff.autonomous_executor || base.execution_handoff.autonomous_executor,
+        80
+      ) || base.execution_handoff.autonomous_executor,
+      storm_executor: normalizeToken(
+        executionHandoff.storm_executor || base.execution_handoff.storm_executor,
+        80
+      ) || base.execution_handoff.storm_executor,
+      universal_execution_script: resolvePath(
+        executionHandoff.universal_execution_script || base.execution_handoff.universal_execution_script,
+        base.execution_handoff.universal_execution_script
+      ),
+      workflow_executor_script: resolvePath(
+        executionHandoff.workflow_executor_script || base.execution_handoff.workflow_executor_script,
+        base.execution_handoff.workflow_executor_script
+      ),
+      dispatch_queue_path: resolvePath(
+        executionHandoff.dispatch_queue_path || base.execution_handoff.dispatch_queue_path,
+        base.execution_handoff.dispatch_queue_path
+      ),
+      execution_log_path: resolvePath(
+        executionHandoff.execution_log_path || base.execution_handoff.execution_log_path,
+        base.execution_handoff.execution_log_path
+      )
     },
     state: {
       root: resolvePath(state.root || base.state.root, base.state.root),
@@ -714,6 +755,14 @@ function buildMicroTasks(goal: AnyObj, policy: AnyObj, runId: string) {
           preferred_lane: lane,
           requires_manual_review: requiresManualReview
         },
+        provenance: {
+          confidence: blocked ? 0.55 : 0.92,
+          evidence: {
+            decomposition_depth: seg.depth,
+            heroic_echo_decision: heroic.decision,
+            constitution_decision: constitution.decision
+          }
+        },
         governance: {
           heroic_echo: {
             classification: heroic.classification,
@@ -925,6 +974,132 @@ function emitQueues(policy: AnyObj, payload: AnyObj) {
   };
 }
 
+function runJsonScript(scriptPath: string, args: string[], timeoutMs = 180000) {
+  const proc = require('child_process').spawnSync(process.execPath, [scriptPath, ...args], {
+    cwd: ROOT,
+    encoding: 'utf8',
+    timeout: timeoutMs,
+    env: process.env
+  });
+  const parse = (blob: string) => {
+    const txt = String(blob || '').trim();
+    if (!txt) return null;
+    try { return JSON.parse(txt); } catch {}
+    const lines = txt.split('\n').map((line) => line.trim()).filter(Boolean);
+    for (let i = lines.length - 1; i >= 0; i -= 1) {
+      try { return JSON.parse(lines[i]); } catch {}
+    }
+    return null;
+  };
+  return {
+    status: Number(proc.status == null ? 1 : proc.status),
+    stdout: String(proc.stdout || ''),
+    stderr: String(proc.stderr || ''),
+    payload: parse(String(proc.stdout || ''))
+  };
+}
+
+function dispatchMicroTaskExecutions(policy: AnyObj, payload: AnyObj) {
+  const handoffPolicy = policy.execution_handoff && typeof policy.execution_handoff === 'object'
+    ? policy.execution_handoff
+    : defaultPolicy().execution_handoff;
+  if (handoffPolicy.enabled !== true) {
+    return {
+      dispatched: [],
+      summary: {
+        enabled: false,
+        total: 0,
+        queued: 0,
+        executed: 0,
+        failed: 0,
+        blocked: 0
+      }
+    };
+  }
+  if (payload.shadow_only === true || payload.apply_executed !== true) {
+    return {
+      dispatched: [],
+      summary: {
+        enabled: true,
+        total: 0,
+        queued: 0,
+        executed: 0,
+        failed: 0,
+        blocked: 0
+      }
+    };
+  }
+
+  const rows: AnyObj[] = [];
+  for (const task of Array.isArray(payload.micro_tasks) ? payload.micro_tasks : []) {
+    const blocked = task && task.governance && task.governance.blocked === true;
+    const lane = normalizeToken(task && task.route && task.route.lane || 'unknown', 80) || 'unknown';
+    const executor = lane === policy.parallel.storm_lane
+      ? handoffPolicy.storm_executor
+      : handoffPolicy.autonomous_executor;
+    const row: AnyObj = {
+      ts: nowIso(),
+      type: 'task_micro_execution_dispatch',
+      run_id: payload.run_id,
+      goal_id: payload.goal && payload.goal.goal_id ? payload.goal.goal_id : null,
+      objective_id: payload.goal && payload.goal.objective_id ? payload.goal.objective_id : null,
+      micro_task_id: task.micro_task_id,
+      profile_id: task.profile_id,
+      lane,
+      executor,
+      blocked,
+      shadow_only: payload.shadow_only === true,
+      apply_executed: payload.apply_executed === true,
+      status: blocked ? 'blocked' : 'queued',
+      passport_id: payload.passport_id || null
+    };
+
+    if (!blocked && executor === 'universal_execution_primitive' && handoffPolicy.execute_immediately === true) {
+      const context = {
+        objective_id: payload.goal && payload.goal.objective_id ? payload.goal.objective_id : null,
+        run_id: payload.run_id,
+        micro_task_id: task.micro_task_id,
+        passport_id: payload.passport_id || null
+      };
+      const params = {
+        task_text: task.task_text,
+        success_criteria: task.success_criteria
+      };
+      const exec = runJsonScript(handoffPolicy.universal_execution_script, [
+        'run',
+        `--profile-json=${JSON.stringify(task.profile || {})}`,
+        '--intent=micro_task_execute',
+        `--params=${JSON.stringify(params)}`,
+        `--context=${JSON.stringify(context)}`,
+        '--dry-run'
+      ]);
+      row.execution = {
+        status_code: exec.status,
+        ok: exec.payload && exec.payload.ok === true,
+        error: exec.payload && exec.payload.error ? exec.payload.error : null,
+        payload: exec.payload || null
+      };
+      row.status = row.execution.ok === true ? 'executed' : 'failed';
+    }
+
+    appendJsonl(handoffPolicy.dispatch_queue_path, row);
+    appendJsonl(handoffPolicy.execution_log_path, row);
+    rows.push(row);
+  }
+
+  return {
+    dispatched: rows,
+    summary: {
+      enabled: true,
+      total: rows.length,
+      queued: rows.filter((row) => row.status === 'queued').length,
+      executed: rows.filter((row) => row.status === 'executed').length,
+      failed: rows.filter((row) => row.status === 'failed').length,
+      blocked: rows.filter((row) => row.status === 'blocked').length
+    }
+  };
+}
+
 function summarizeTasks(tasks: AnyObj[], shadowOnly: boolean, applyExecuted: boolean) {
   const byLane: Record<string, number> = {};
   for (const row of tasks) {
@@ -1036,6 +1211,16 @@ function cmdRun(args: AnyObj, dateStr: string, policyPath: string) {
   const queueWrites = emitQueues(policy, payload);
   payload.summary.weaver_queue_enqueued = queueWrites.weaver.length;
   payload.summary.storm_queue_enqueued = queueWrites.storm.length;
+  const executionDispatch = dispatchMicroTaskExecutions(policy, payload);
+  payload.execution_dispatch = {
+    summary: executionDispatch.summary,
+    rows: executionDispatch.dispatched
+  };
+  payload.summary.execution_dispatched = Number(executionDispatch.summary.total || 0);
+  payload.summary.execution_queued = Number(executionDispatch.summary.queued || 0);
+  payload.summary.execution_started = Number(executionDispatch.summary.executed || 0);
+  payload.summary.execution_failed = Number(executionDispatch.summary.failed || 0);
+  payload.summary.execution_blocked = Number(executionDispatch.summary.blocked || 0);
 
   if (typeof registerDualityObservation === 'function') {
     for (const task of tasks) {
@@ -1072,6 +1257,22 @@ function cmdRun(args: AnyObj, dateStr: string, policyPath: string) {
     attempted: true,
     verified: shadowOnly !== true
   });
+  for (const row of executionDispatch.dispatched) {
+    writeContractReceipt(policy.state.receipts_path, {
+      ts: row.ts,
+      type: 'task_micro_execution_dispatch',
+      objective_id: goal.objective_id,
+      status: row.status,
+      summary: `task=${row.micro_task_id};executor=${row.executor};status=${row.status}`,
+      run_id: runId,
+      micro_task_id: row.micro_task_id,
+      profile_id: row.profile_id,
+      executor: row.executor
+    }, {
+      attempted: row.blocked !== true,
+      verified: row.status === 'executed'
+    });
+  }
 
   emitEvent(policy, {
     ts: nowIso(),
@@ -1119,6 +1320,7 @@ function cmdRun(args: AnyObj, dateStr: string, policyPath: string) {
 
   process.stdout.write(`${JSON.stringify({
     ...payload,
+    execution_dispatch_queue_path: relPath(policy.execution_handoff.dispatch_queue_path),
     run_path: relPath(runPath),
     latest_path: relPath(policy.state.latest_path)
   })}\n`);
@@ -1142,6 +1344,7 @@ function cmdStatus(args: AnyObj, dateArg: string, policyPath: string) {
 
   const weaverQueueRows = readJsonl(policy.state.weaver_queue_path);
   const stormQueueRows = readJsonl(policy.state.storm_queue_path);
+  const executionRows = readJsonl(policy.execution_handoff.dispatch_queue_path);
   process.stdout.write(`${JSON.stringify({
     ok: true,
     type: 'task_decomposition_status',
@@ -1153,7 +1356,8 @@ function cmdStatus(args: AnyObj, dateArg: string, policyPath: string) {
     latest_path: relPath(policy.state.latest_path),
     queue_sizes: {
       weaver_candidates: weaverQueueRows.length,
-      storm_candidates: stormQueueRows.length
+      storm_candidates: stormQueueRows.length,
+      execution_dispatches: executionRows.length
     }
   })}\n`);
 }

@@ -14,10 +14,12 @@ export {};
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { spawnSync } = require('child_process');
 const { evaluateTask: evaluateDirectiveTask } = require('../security/directive_gate.js');
 const { appendAction } = require('../security/agent_passport.js');
 const { writeContractReceipt } = require('../../lib/action_receipts.js');
 const { loadIndex: loadCreatorIndex, recordContribution } = require('./creator_optin_ledger.js');
+const { cmdStatus: blockchainBridgeStatus, loadPolicy: loadBlockchainPolicy } = require('../blockchain/sovereign_blockchain_bridge.js');
 
 type AnyObj = Record<string, any>;
 
@@ -33,6 +35,7 @@ function nowIso() {
 function usage() {
   console.log('Usage:');
   console.log('  node systems/storm/storm_value_distribution.js plan [--run-id=<id>] [--objective-id=<id>] [--days=N] [--pool-usd=N] [--apply=1|0] [--policy=path]');
+  console.log('  node systems/storm/storm_value_distribution.js settle --distribution-id=<id> [--provider=stripe] [--adapter=payment_bridge|blockchain] [--apply=1|0] [--approval-note="..."] [--policy=path]');
   console.log('  node systems/storm/storm_value_distribution.js reverse --distribution-id=<id> [--reason="..."] [--policy=path]');
   console.log('  node systems/storm/storm_value_distribution.js status [latest|<distribution_id>] [--policy=path]');
 }
@@ -200,7 +203,18 @@ function defaultPolicy() {
       latest_path: 'state/storm/value_distribution/latest.json',
       history_path: 'state/storm/value_distribution/history.jsonl',
       reversals_path: 'state/storm/value_distribution/reversals.jsonl',
-      receipts_path: 'state/storm/value_distribution/receipts.jsonl'
+      receipts_path: 'state/storm/value_distribution/receipts.jsonl',
+      settlements_dir: 'state/storm/value_distribution/settlements',
+      settlements_history_path: 'state/storm/value_distribution/settlements/history.jsonl',
+      settlements_latest_path: 'state/storm/value_distribution/settlements/latest.json'
+    },
+    settlement: {
+      enabled: true,
+      default_provider: 'stripe',
+      default_adapter: 'payment_bridge',
+      root_adapter: 'blockchain',
+      payment_bridge_policy_path: 'config/payment_skills_bridge_policy.json',
+      blockchain_bridge_policy_path: 'config/sovereign_blockchain_bridge_policy.json'
     },
     passport: {
       enabled: true,
@@ -219,6 +233,7 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
     ? raw.sovereign_root_tithe
     : {};
   const state = raw.state && typeof raw.state === 'object' ? raw.state : {};
+  const settlement = raw.settlement && typeof raw.settlement === 'object' ? raw.settlement : {};
   const passport = raw.passport && typeof raw.passport === 'object' ? raw.passport : {};
   return {
     version: cleanText(raw.version || base.version, 32) || base.version,
@@ -271,7 +286,39 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
       latest_path: resolvePath(state.latest_path || base.state.latest_path, base.state.latest_path),
       history_path: resolvePath(state.history_path || base.state.history_path, base.state.history_path),
       reversals_path: resolvePath(state.reversals_path || base.state.reversals_path, base.state.reversals_path),
-      receipts_path: resolvePath(state.receipts_path || base.state.receipts_path, base.state.receipts_path)
+      receipts_path: resolvePath(state.receipts_path || base.state.receipts_path, base.state.receipts_path),
+      settlements_dir: resolvePath(state.settlements_dir || base.state.settlements_dir, base.state.settlements_dir),
+      settlements_history_path: resolvePath(
+        state.settlements_history_path || base.state.settlements_history_path,
+        base.state.settlements_history_path
+      ),
+      settlements_latest_path: resolvePath(
+        state.settlements_latest_path || base.state.settlements_latest_path,
+        base.state.settlements_latest_path
+      )
+    },
+    settlement: {
+      enabled: toBool(settlement.enabled, base.settlement.enabled),
+      default_provider: normalizeToken(
+        settlement.default_provider || base.settlement.default_provider,
+        40
+      ) || base.settlement.default_provider,
+      default_adapter: normalizeToken(
+        settlement.default_adapter || base.settlement.default_adapter,
+        40
+      ) || base.settlement.default_adapter,
+      root_adapter: normalizeToken(
+        settlement.root_adapter || base.settlement.root_adapter,
+        40
+      ) || base.settlement.root_adapter,
+      payment_bridge_policy_path: resolvePath(
+        settlement.payment_bridge_policy_path || base.settlement.payment_bridge_policy_path,
+        base.settlement.payment_bridge_policy_path
+      ),
+      blockchain_bridge_policy_path: resolvePath(
+        settlement.blockchain_bridge_policy_path || base.settlement.blockchain_bridge_policy_path,
+        base.settlement.blockchain_bridge_policy_path
+      )
     },
     passport: {
       enabled: toBool(passport.enabled, base.passport.enabled),
@@ -618,6 +665,241 @@ function buildPlan(args: AnyObj = {}, opts: AnyObj = {}) {
   };
 }
 
+function parseJsonFromOutput(stdoutText: string) {
+  const raw = String(stdoutText || '').trim();
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch {}
+  const lines = raw.split('\n').map((line) => line.trim()).filter(Boolean);
+  for (let i = lines.length - 1; i >= 0; i -= 1) {
+    try { return JSON.parse(lines[i]); } catch {}
+  }
+  return null;
+}
+
+function settleViaPaymentBridge(policy: AnyObj, payout: AnyObj, input: AnyObj) {
+  const paymentBridgeScript = path.join(ROOT, 'systems', 'workflow', 'payment_skills_bridge.js');
+  const payoutId = normalizeToken(
+    `svd_${input.distribution_id}_${payout.creator_id || 'creator'}_${input.index + 1}`,
+    180
+  ) || `svd_${Date.now()}`;
+  const args = [
+    paymentBridgeScript,
+    'payout',
+    `--policy=${policy.settlement.payment_bridge_policy_path}`,
+    `--provider=${normalizeToken(input.provider || policy.settlement.default_provider, 40) || 'stripe'}`,
+    `--amount-usd=${Number(Number(payout.amount_usd || 0).toFixed(2))}`,
+    `--recipient=${cleanText(payout.creator_id || '', 160) || 'unknown_creator'}`,
+    `--payout-id=${payoutId}`,
+    `--apply=${input.apply_executed ? '1' : '0'}`,
+    `--approval-note=${cleanText(input.approval_note || 'storm_distribution_settlement', 240)}`
+  ];
+  const proc = spawnSync(process.execPath, args, {
+    cwd: ROOT,
+    encoding: 'utf8',
+    env: process.env
+  });
+  const payload = parseJsonFromOutput(proc.stdout || '') || null;
+  const decision = payload && payload.decision ? String(payload.decision) : null;
+  const success = Number(proc.status || 0) === 0 && decision !== 'deny';
+  return {
+    adapter: 'payment_bridge',
+    payout_id: payoutId,
+    status_code: Number(proc.status || 0),
+    success,
+    decision,
+    payload,
+    reversible_token: payload && payload.reversible_token ? payload.reversible_token : null,
+    error: success ? null : (payload && payload.blockers ? String(payload.blockers.join(',')) : String(proc.stderr || '').slice(0, 260))
+  };
+}
+
+function settleViaBlockchainBridge(policy: AnyObj, payout: AnyObj, input: AnyObj) {
+  const bridgePolicy = loadBlockchainPolicy(policy.settlement.blockchain_bridge_policy_path);
+  const status = blockchainBridgeStatus(bridgePolicy);
+  const txIntentId = normalizeToken(
+    `blk_svd_${input.distribution_id}_${payout.creator_id || 'creator'}_${input.index + 1}`,
+    180
+  ) || `blk_${Date.now()}`;
+  const success = status && status.ok === true;
+  return {
+    adapter: 'blockchain',
+    payout_id: txIntentId,
+    status_code: success ? 0 : 1,
+    success,
+    decision: input.apply_executed ? 'queued_blockchain_settlement' : 'shadow_blockchain_settlement',
+    payload: status,
+    reversible_token: `rvk_${txIntentId}`,
+    error: success ? null : 'blockchain_bridge_unavailable'
+  };
+}
+
+function settlePlan(args: AnyObj = {}, opts: AnyObj = {}) {
+  const policyPath = opts.policy
+    ? resolvePath(opts.policy, 'config/storm_value_distribution_policy.json')
+    : DEFAULT_POLICY_PATH;
+  const policy = loadPolicy(policyPath);
+  if (policy.enabled !== true) {
+    return { ok: false, type: 'storm_value_distribution_settle', error: 'policy_disabled' };
+  }
+  if (policy.settlement && policy.settlement.enabled !== true) {
+    return { ok: false, type: 'storm_value_distribution_settle', error: 'settlement_disabled' };
+  }
+
+  const distributionId = normalizeToken(args.distribution_id || args['distribution-id'] || '', 180);
+  if (!distributionId) {
+    return { ok: false, type: 'storm_value_distribution_settle', error: 'distribution_id_required' };
+  }
+  const planPath = path.join(policy.state.plans_dir, `${distributionId}.json`);
+  const plan = readJson(planPath, null);
+  if (!plan || typeof plan !== 'object') {
+    return { ok: false, type: 'storm_value_distribution_settle', error: 'distribution_not_found', distribution_id: distributionId };
+  }
+  if (String(plan.status || '') === 'reversed') {
+    return { ok: false, type: 'storm_value_distribution_settle', error: 'distribution_reversed', distribution_id: distributionId };
+  }
+  if (String(plan.status || '') === 'blocked') {
+    return { ok: false, type: 'storm_value_distribution_settle', error: 'distribution_blocked', distribution_id: distributionId };
+  }
+
+  const applyRequested = toBool(opts.apply != null ? opts.apply : args.apply, false);
+  const applyExecuted = applyRequested && policy.allow_apply === true && policy.shadow_only !== true;
+  const shadowOnly = policy.shadow_only === true || !applyExecuted;
+  const approvalNote = cleanText(args.approval_note || args['approval-note'] || '', 240) || null;
+  const provider = normalizeToken(args.provider || '', 40) || policy.settlement.default_provider || 'stripe';
+  const adapterOverride = normalizeToken(args.adapter || '', 40) || null;
+
+  const payouts = Array.isArray(plan.payouts) ? plan.payouts : [];
+  const settlementRows = payouts.map((payout: AnyObj, index: number) => {
+    const isRoot = payout && payout.is_sovereign_root_tithe === true;
+    const adapter = adapterOverride
+      || (isRoot ? normalizeToken(policy.settlement.root_adapter, 40) : normalizeToken(policy.settlement.default_adapter, 40))
+      || 'payment_bridge';
+    const base = {
+      ts: nowIso(),
+      distribution_id: distributionId,
+      payout_index: index,
+      creator_id: payout && payout.creator_id ? payout.creator_id : null,
+      amount_usd: Number(Number(payout && payout.amount_usd || 0).toFixed(6)),
+      mode: payout && payout.mode ? payout.mode : null,
+      adapter,
+      apply_requested: applyRequested,
+      apply_executed: applyExecuted,
+      shadow_only: shadowOnly
+    };
+    const settleResult = adapter === 'blockchain'
+      ? settleViaBlockchainBridge(policy, payout, {
+        distribution_id: distributionId,
+        index,
+        apply_executed: applyExecuted,
+        approval_note: approvalNote
+      })
+      : settleViaPaymentBridge(policy, payout, {
+        distribution_id: distributionId,
+        index,
+        apply_executed: applyExecuted,
+        approval_note: approvalNote,
+        provider
+      });
+    return {
+      ...base,
+      ...settleResult
+    };
+  });
+
+  const successCount = settlementRows.filter((row: AnyObj) => row.success === true).length;
+  const failureCount = settlementRows.length - successCount;
+  const statusLabel = shadowOnly
+    ? 'shadow_only'
+    : (failureCount <= 0 ? 'settled' : (successCount > 0 ? 'partial_failure' : 'failed'));
+  const settlementId = normalizeToken(`settle_${distributionId}_${Date.now()}`, 180)
+    || `settle_${Date.now()}`;
+  const settlementDoc = {
+    ok: true,
+    type: 'storm_value_distribution_settle',
+    ts: nowIso(),
+    settlement_id: settlementId,
+    distribution_id: distributionId,
+    status: statusLabel,
+    apply_requested: applyRequested,
+    apply_executed: applyExecuted,
+    shadow_only: shadowOnly,
+    provider,
+    adapter_override: adapterOverride,
+    payouts_total: settlementRows.length,
+    payouts_succeeded: successCount,
+    payouts_failed: failureCount,
+    settlement_rows: settlementRows,
+    plan_path: relPath(planPath)
+  };
+
+  const settlementPath = path.join(policy.state.settlements_dir, `${distributionId}.json`);
+  writeJsonAtomic(settlementPath, settlementDoc);
+  writeJsonAtomic(policy.state.settlements_latest_path, settlementDoc);
+  appendJsonl(policy.state.settlements_history_path, settlementDoc);
+  appendJsonl(policy.state.history_path, {
+    ts: settlementDoc.ts,
+    type: settlementDoc.type,
+    distribution_id: distributionId,
+    settlement_id: settlementId,
+    status: statusLabel,
+    payouts_total: settlementRows.length,
+    payouts_succeeded: successCount,
+    payouts_failed: failureCount
+  });
+
+  plan.settlement = {
+    ts: settlementDoc.ts,
+    settlement_id: settlementId,
+    status: statusLabel,
+    payouts_total: settlementRows.length,
+    payouts_succeeded: successCount,
+    payouts_failed: failureCount,
+    rows: settlementRows.map((row: AnyObj) => ({
+      payout_index: row.payout_index,
+      creator_id: row.creator_id,
+      amount_usd: row.amount_usd,
+      adapter: row.adapter,
+      success: row.success === true,
+      reversible_token: row.reversible_token || null,
+      error: row.error || null
+    }))
+  };
+  if (!shadowOnly && statusLabel === 'settled') {
+    plan.status = 'settled';
+  } else if (!shadowOnly && statusLabel === 'partial_failure') {
+    plan.status = 'settlement_partial_failure';
+  } else if (!shadowOnly && statusLabel === 'failed') {
+    plan.status = 'settlement_failed';
+  }
+  writeJsonAtomic(planPath, plan);
+  writeJsonAtomic(policy.state.latest_path, plan);
+
+  const receipt = writeContractReceipt(policy.state.receipts_path, {
+    ts: settlementDoc.ts,
+    type: 'storm_value_distribution_settlement',
+    status: settlementDoc.status,
+    summary: `distribution=${distributionId};ok=${successCount};fail=${failureCount}`,
+    distribution_id: distributionId,
+    settlement_id: settlementId,
+    payouts_total: settlementRows.length,
+    payouts_succeeded: successCount,
+    payouts_failed: failureCount
+  }, {
+    attempted: settlementRows.length > 0,
+    verified: !shadowOnly && failureCount <= 0
+  });
+
+  return {
+    ...settlementDoc,
+    settlement_path: relPath(settlementPath),
+    settlements_latest_path: relPath(policy.state.settlements_latest_path),
+    settlements_history_path: relPath(policy.state.settlements_history_path),
+    receipt_integrity: receipt && receipt.receipt_contract && receipt.receipt_contract.integrity
+      ? receipt.receipt_contract.integrity
+      : null
+  };
+}
+
 function reversePlan(args: AnyObj = {}, opts: AnyObj = {}) {
   const policyPath = opts.policy
     ? resolvePath(opts.policy, 'config/storm_value_distribution_policy.json')
@@ -757,6 +1039,22 @@ function main() {
     return;
   }
 
+  if (cmd === 'settle') {
+    const out = settlePlan({
+      distribution_id: args.distribution_id || args['distribution-id'],
+      provider: args.provider,
+      adapter: args.adapter,
+      approval_note: args.approval_note || args['approval-note'],
+      apply: args.apply
+    }, {
+      policy: args.policy,
+      apply: args.apply
+    });
+    process.stdout.write(`${JSON.stringify(out)}\n`);
+    process.exit(out.ok ? 0 : 1);
+    return;
+  }
+
   if (cmd === 'reverse') {
     const out = reversePlan({
       distribution_id: args.distribution_id || args['distribution-id'],
@@ -786,6 +1084,7 @@ module.exports = {
   defaultPolicy,
   loadPolicy,
   buildPlan,
+  settlePlan,
   reversePlan,
   status
 };

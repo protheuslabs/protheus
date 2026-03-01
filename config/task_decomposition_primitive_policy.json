@@ -65,6 +65,16 @@
     "emit_ide_events": true,
     "emit_obsidian_projection": false
   },
+  "execution_handoff": {
+    "enabled": true,
+    "execute_immediately": false,
+    "autonomous_executor": "universal_execution_primitive",
+    "storm_executor": "storm_human_lane",
+    "universal_execution_script": "systems/actuation/universal_execution_primitive.js",
+    "workflow_executor_script": "systems/workflow/workflow_executor.js",
+    "dispatch_queue_path": "state/execution/task_decomposition_primitive/execution_dispatch_queue.jsonl",
+    "execution_log_path": "state/execution/task_decomposition_primitive/execution_log.jsonl"
+  },
   "state": {
     "root": "state/execution/task_decomposition_primitive",
     "runs_dir": "state/execution/task_decomposition_primitive/runs",
