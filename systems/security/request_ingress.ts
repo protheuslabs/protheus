@@ -20,7 +20,7 @@ const {
   normalizeKeyId,
   secretKeyEnvVarName
 } = require('../../lib/request_envelope');
-const { evaluateContainment } = require('./venom_containment_layer');
+const { evaluateContainment, verifyChallengeProof } = require('./venom_containment_layer');
 
 function usage() {
   console.log('Usage:');
@@ -84,6 +84,24 @@ function buildStampedEnv(baseEnv, source, action, guardFiles, keyId) {
   });
 }
 
+function sleepMs(ms: number) {
+  const wait = Math.max(0, Math.floor(Number(ms) || 0));
+  if (wait <= 0) return;
+  const atomics = (global as any).Atomics;
+  const sab = (global as any).SharedArrayBuffer;
+  if (atomics && sab) {
+    const int32 = new Int32Array(new sab(4));
+    atomics.wait(int32, 0, 0, wait);
+    return;
+  }
+  const until = Date.now() + wait;
+  while (Date.now() < until) { /* bounded sync wait fallback */ }
+}
+
+function cleanToken(v, maxLen = 120) {
+  return String(v == null ? '' : v).trim().slice(0, maxLen);
+}
+
 function cmdPrintEnv(args) {
   const source = normalizeLower(args.source, 'local');
   const action = normalizeLower(args.action, 'apply');
@@ -137,20 +155,63 @@ function cmdRun(args) {
     persist: true
   });
 
-  if (containment && containment.ok === true && containment.contained === true) {
-    if (containment.shadow_only !== true && containment.allow_exec !== true) {
-      console.error(`request_ingress: execution blocked by containment stage=${containment.stage || 'unknown'} reason=${containment.unauthorized_reason || 'unauthorized'}`);
-      process.exit(3);
-    }
-  }
-
-  const env = buildStampedEnv(process.env, source, action, guardFiles, keyId);
   if (containment && containment.ok === true) {
+    const env = buildStampedEnv(process.env, source, action, guardFiles, keyId);
     env.REQUEST_CONTAINMENT_STAGE = String(containment.stage || 'none');
     env.REQUEST_CONTAINMENT_ACTIVE = containment.contained === true ? '1' : '0';
     env.REQUEST_CONTAINMENT_DECOY_LEVEL = String(containment.decoy_level || 'low');
     env.REQUEST_CONTAINMENT_WATERMARK = String(containment.decoy_watermark || '');
+    env.REQUEST_CONTAINMENT_DELAY_MS = String(Number(containment.enforced_friction_delay_ms || containment.friction_delay_ms || 0));
+    if (containment.verification_challenge && containment.verification_challenge.required === true) {
+      env.REQUEST_CONTAINMENT_CHALLENGE_REQUIRED = '1';
+      env.REQUEST_CONTAINMENT_CHALLENGE_NONCE = String(containment.verification_challenge.nonce || '');
+      env.REQUEST_CONTAINMENT_CHALLENGE_DIFFICULTY = String(Number(containment.verification_challenge.difficulty_bits || 0));
+      env.REQUEST_CONTAINMENT_CHALLENGE_EXPIRES_AT = String(containment.verification_challenge.expires_at || '');
+    } else {
+      env.REQUEST_CONTAINMENT_CHALLENGE_REQUIRED = '0';
+    }
+
+    if (containment.contained === true && containment.shadow_only !== true) {
+      const delayMs = Number(containment.enforced_friction_delay_ms || containment.friction_delay_ms || 0);
+      if (delayMs > 0) sleepMs(delayMs);
+
+      if (containment.verification_challenge && containment.verification_challenge.required === true) {
+        const proof = cleanToken(
+          args['containment-proof']
+            || args.containment_proof
+            || process.env.REQUEST_CONTAINMENT_PROOF,
+          120
+        );
+        const proofCheck = verifyChallengeProof(containment.verification_challenge, proof);
+        if (!proofCheck.ok) {
+          console.error(
+            `request_ingress: challenge proof required nonce=${containment.verification_challenge.nonce || ''} `
+            + `difficulty_bits=${containment.verification_challenge.difficulty_bits || 0} `
+            + `reason=${proofCheck.reason || 'invalid_proof'}`
+          );
+          process.exit(4);
+        }
+      }
+
+      const mode = String(containment.enforce_output_mode || 'passthrough');
+      if (mode === 'decoy_only') {
+        process.stdout.write(`${String(containment.decoy_response || '[contained] limited-fidelity response')}\n`);
+        process.exit(0);
+      }
+      if (containment.allow_exec !== true) {
+        console.error(`request_ingress: execution blocked by containment stage=${containment.stage || 'unknown'} reason=${containment.unauthorized_reason || 'unauthorized'}`);
+        process.exit(3);
+      }
+    }
+
+    const r = spawnSync(cmd[0], cmd.slice(1), {
+      stdio: 'inherit',
+      env
+    });
+    process.exit(r.status == null ? 1 : r.status);
   }
+
+  const env = buildStampedEnv(process.env, source, action, guardFiles, keyId);
   const r = spawnSync(cmd[0], cmd.slice(1), {
     stdio: 'inherit',
     env

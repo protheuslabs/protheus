@@ -49,6 +49,23 @@
     "max_lease_decay_rate": 0.8,
     "max_containment_children": 4
   },
+  "enforcement": {
+    "challenge_threshold": 0.45,
+    "min_challenge_difficulty_bits": 10,
+    "max_challenge_difficulty_bits": 20,
+    "challenge_ttl_seconds": 300,
+    "challenge_stages": [
+      "challenge",
+      "degrade",
+      "lockout"
+    ],
+    "decoy_from_stage": "challenge"
+  },
+  "adaptive_integration": {
+    "enabled": true,
+    "runtime_bias_weight": 1.0,
+    "cost_profiles_path": "state/security/red_team/adaptive_defense/cost_profiles.json"
+  },
   "forensics": {
     "enabled": true,
     "include_watermark": true,

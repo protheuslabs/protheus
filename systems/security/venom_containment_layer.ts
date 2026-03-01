@@ -183,6 +183,19 @@ function defaultPolicy() {
       max_lease_decay_rate: 0.8,
       max_containment_children: 4
     },
+    enforcement: {
+      challenge_threshold: 0.45,
+      min_challenge_difficulty_bits: 10,
+      max_challenge_difficulty_bits: 20,
+      challenge_ttl_seconds: 300,
+      challenge_stages: ['challenge', 'degrade', 'lockout'],
+      decoy_from_stage: 'challenge'
+    },
+    adaptive_integration: {
+      enabled: true,
+      runtime_bias_weight: 1,
+      cost_profiles_path: 'state/security/red_team/adaptive_defense/cost_profiles.json'
+    },
     forensics: {
       enabled: true,
       include_watermark: true,
@@ -221,6 +234,8 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
   const timedLease = raw.timed_lease && typeof raw.timed_lease === 'object' ? raw.timed_lease : {};
   const staged = raw.staged_ramp && typeof raw.staged_ramp === 'object' ? raw.staged_ramp : {};
   const bounds = raw.bounds && typeof raw.bounds === 'object' ? raw.bounds : {};
+  const enforcement = raw.enforcement && typeof raw.enforcement === 'object' ? raw.enforcement : {};
+  const adaptive = raw.adaptive_integration && typeof raw.adaptive_integration === 'object' ? raw.adaptive_integration : {};
   const forensics = raw.forensics && typeof raw.forensics === 'object' ? raw.forensics : {};
   const paths = raw.paths && typeof raw.paths === 'object' ? raw.paths : {};
   const decoy = raw.decoy && typeof raw.decoy === 'object' ? raw.decoy : {};
@@ -267,6 +282,52 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
       max_challenge_score: clampNumber(bounds.max_challenge_score, 0, 1, base.bounds.max_challenge_score),
       max_lease_decay_rate: clampNumber(bounds.max_lease_decay_rate, 0, 1, base.bounds.max_lease_decay_rate),
       max_containment_children: clampInt(bounds.max_containment_children, 0, 100, base.bounds.max_containment_children)
+    },
+    enforcement: {
+      challenge_threshold: clampNumber(
+        enforcement.challenge_threshold,
+        0,
+        1,
+        base.enforcement.challenge_threshold
+      ),
+      min_challenge_difficulty_bits: clampInt(
+        enforcement.min_challenge_difficulty_bits,
+        4,
+        26,
+        base.enforcement.min_challenge_difficulty_bits
+      ),
+      max_challenge_difficulty_bits: clampInt(
+        enforcement.max_challenge_difficulty_bits,
+        4,
+        26,
+        base.enforcement.max_challenge_difficulty_bits
+      ),
+      challenge_ttl_seconds: clampInt(
+        enforcement.challenge_ttl_seconds,
+        30,
+        60 * 60,
+        base.enforcement.challenge_ttl_seconds
+      ),
+      challenge_stages: Array.isArray(enforcement.challenge_stages)
+        ? enforcement.challenge_stages.map((v: unknown) => normalizeToken(v, 40)).filter(Boolean)
+        : base.enforcement.challenge_stages,
+      decoy_from_stage: normalizeToken(
+        enforcement.decoy_from_stage || base.enforcement.decoy_from_stage,
+        40
+      ) || base.enforcement.decoy_from_stage
+    },
+    adaptive_integration: {
+      enabled: toBool(adaptive.enabled, base.adaptive_integration.enabled),
+      runtime_bias_weight: clampNumber(
+        adaptive.runtime_bias_weight,
+        0,
+        3,
+        base.adaptive_integration.runtime_bias_weight
+      ),
+      cost_profiles_path: resolvePath(
+        adaptive.cost_profiles_path,
+        base.adaptive_integration.cost_profiles_path
+      )
     },
     forensics: {
       enabled: toBool(forensics.enabled, base.forensics.enabled),
@@ -400,6 +461,17 @@ function stageFromHits(hits: number, policy: AnyObj) {
   return 'none';
 }
 
+function stageRank(stage: string) {
+  const order: Record<string, number> = {
+    none: 0,
+    tease: 1,
+    challenge: 2,
+    degrade: 3,
+    lockout: 4
+  };
+  return order[String(stage || 'none')] || 0;
+}
+
 function selectDecoyLevel(stage: string) {
   if (stage === 'lockout' || stage === 'degrade') return 'high';
   if (stage === 'challenge') return 'medium';
@@ -407,7 +479,34 @@ function selectDecoyLevel(stage: string) {
   return 'low';
 }
 
-function computeStageProfile(stage: string, runtimeClass: string, policy: AnyObj) {
+function applyDecoyIntensity(level: string, intensity: number) {
+  if (intensity >= 1.55) return 'high';
+  if (intensity >= 1.2 && level === 'low') return 'medium';
+  return level;
+}
+
+function loadAdaptiveCostProfile(policy: AnyObj, runtimeClass: string) {
+  const fallback = {
+    challenge_multiplier: 1,
+    friction_multiplier: 1,
+    decoy_intensity: 1,
+    source: null as string | null
+  };
+  if (!policy.adaptive_integration || policy.adaptive_integration.enabled !== true) return fallback;
+  const payload = readJson(policy.adaptive_integration.cost_profiles_path, {});
+  const fp = payload && payload.fingerprint_profiles && typeof payload.fingerprint_profiles === 'object'
+    ? payload.fingerprint_profiles
+    : {};
+  const profile = (fp[runtimeClass] || fp.unknown || {}) as AnyObj;
+  return {
+    challenge_multiplier: clampNumber(profile.challenge_multiplier, 0.5, 4, 1),
+    friction_multiplier: clampNumber(profile.friction_multiplier, 0.5, 4, 1),
+    decoy_intensity: clampNumber(profile.decoy_intensity, 0.5, 3, 1),
+    source: cleanText(policy.adaptive_integration.cost_profiles_path, 520) || null
+  };
+}
+
+function computeStageProfile(stage: string, runtimeClass: string, policy: AnyObj, modifiers: AnyObj = {}) {
   const bounds = policy.bounds || {};
   const maxDelay = Number(bounds.max_friction_delay_ms || 1800);
   const maxChallenge = Number(bounds.max_challenge_score || 0.95);
@@ -420,6 +519,9 @@ function computeStageProfile(stage: string, runtimeClass: string, policy: AnyObj
       : runtimeClass === 'containerized'
         ? 1.1
         : 1;
+  const frictionMult = clampNumber(modifiers.friction_multiplier, 0.5, 4, 1);
+  const challengeMult = clampNumber(modifiers.challenge_multiplier, 0.5, 4, 1);
+  const decoyIntensity = clampNumber(modifiers.decoy_intensity, 0.5, 3, 1);
 
   if (stage === 'none') {
     return {
@@ -438,10 +540,10 @@ function computeStageProfile(stage: string, runtimeClass: string, policy: AnyObj
       stage,
       allow_exec: true,
       lockout: false,
-      friction_delay_ms: Math.round(Math.min(maxDelay, 220 * runtimeMultiplier)),
-      challenge_score: Number(Math.min(maxChallenge, 0.2 * runtimeMultiplier).toFixed(4)),
+      friction_delay_ms: Math.round(Math.min(maxDelay, 220 * runtimeMultiplier * frictionMult)),
+      challenge_score: Number(Math.min(maxChallenge, 0.2 * runtimeMultiplier * challengeMult).toFixed(4)),
       lease_decay_rate: Number(Math.min(maxDecay, 0.08 * runtimeMultiplier).toFixed(4)),
-      decoy_level: 'low'
+      decoy_level: applyDecoyIntensity('low', decoyIntensity)
     };
   }
 
@@ -450,10 +552,10 @@ function computeStageProfile(stage: string, runtimeClass: string, policy: AnyObj
       stage,
       allow_exec: true,
       lockout: false,
-      friction_delay_ms: Math.round(Math.min(maxDelay, 700 * runtimeMultiplier)),
-      challenge_score: Number(Math.min(maxChallenge, 0.48 * runtimeMultiplier).toFixed(4)),
+      friction_delay_ms: Math.round(Math.min(maxDelay, 700 * runtimeMultiplier * frictionMult)),
+      challenge_score: Number(Math.min(maxChallenge, 0.48 * runtimeMultiplier * challengeMult).toFixed(4)),
       lease_decay_rate: Number(Math.min(maxDecay, 0.25 * runtimeMultiplier).toFixed(4)),
-      decoy_level: 'medium'
+      decoy_level: applyDecoyIntensity('medium', decoyIntensity)
     };
   }
 
@@ -462,10 +564,10 @@ function computeStageProfile(stage: string, runtimeClass: string, policy: AnyObj
       stage,
       allow_exec: false,
       lockout: false,
-      friction_delay_ms: Math.round(Math.min(maxDelay, 1200 * runtimeMultiplier)),
-      challenge_score: Number(Math.min(maxChallenge, 0.72 * runtimeMultiplier).toFixed(4)),
+      friction_delay_ms: Math.round(Math.min(maxDelay, 1200 * runtimeMultiplier * frictionMult)),
+      challenge_score: Number(Math.min(maxChallenge, 0.72 * runtimeMultiplier * challengeMult).toFixed(4)),
       lease_decay_rate: Number(Math.min(maxDecay, 0.55 * runtimeMultiplier).toFixed(4)),
-      decoy_level: 'high'
+      decoy_level: applyDecoyIntensity('high', decoyIntensity)
     };
   }
 
@@ -473,10 +575,116 @@ function computeStageProfile(stage: string, runtimeClass: string, policy: AnyObj
     stage,
     allow_exec: false,
     lockout: true,
-    friction_delay_ms: Math.round(Math.min(maxDelay, 1600 * runtimeMultiplier)),
-    challenge_score: Number(Math.min(maxChallenge, 0.9 * runtimeMultiplier).toFixed(4)),
+    friction_delay_ms: Math.round(Math.min(maxDelay, 1600 * runtimeMultiplier * frictionMult)),
+    challenge_score: Number(Math.min(maxChallenge, 0.9 * runtimeMultiplier * challengeMult).toFixed(4)),
     lease_decay_rate: Number(Math.min(maxDecay, 0.8 * runtimeMultiplier).toFixed(4)),
-    decoy_level: 'high'
+    decoy_level: applyDecoyIntensity('high', decoyIntensity)
+  };
+}
+
+function leadingZeroBits(hexDigest: string) {
+  let bits = 0;
+  for (let i = 0; i < hexDigest.length; i += 1) {
+    const n = parseInt(hexDigest[i], 16);
+    if (!Number.isFinite(n)) break;
+    if (n === 0) {
+      bits += 4;
+      continue;
+    }
+    if ((n & 8) === 0) bits += 1; else return bits;
+    if ((n & 4) === 0) bits += 1; else return bits;
+    if ((n & 2) === 0) bits += 1; else return bits;
+    if ((n & 1) === 0) bits += 1;
+    return bits;
+  }
+  return bits;
+}
+
+function shouldRequireChallenge(stage: string, score: number, policy: AnyObj) {
+  const cfg = policy.enforcement || {};
+  const allowedStages = Array.isArray(cfg.challenge_stages)
+    ? new Set(cfg.challenge_stages.map((v: unknown) => normalizeToken(v, 40)))
+    : new Set(['challenge', 'degrade', 'lockout']);
+  return allowedStages.has(stage) && score >= Number(cfg.challenge_threshold || 0.45);
+}
+
+function buildVerificationChallenge(input: AnyObj, policy: AnyObj) {
+  const cfg = policy.enforcement || {};
+  const stage = normalizeToken(input.stage || 'none', 40) || 'none';
+  const challengeScore = clampNumber(input.challenge_score, 0, 1, 0);
+  if (!input.unauthorized || !shouldRequireChallenge(stage, challengeScore, policy)) {
+    return {
+      required: false,
+      nonce: null,
+      difficulty_bits: 0,
+      expires_at: null,
+      algo: 'sha256_leading_zero_bits',
+      proof_hint: null
+    };
+  }
+  const minBits = clampInt(cfg.min_challenge_difficulty_bits, 4, 26, 10);
+  const maxBitsRaw = clampInt(cfg.max_challenge_difficulty_bits, 4, 26, 20);
+  const maxBits = Math.max(minBits, maxBitsRaw);
+  const targetBits = clampInt(
+    Math.round(minBits + (maxBits - minBits) * challengeScore),
+    minBits,
+    maxBits,
+    minBits
+  );
+  const ttlSeconds = clampInt(cfg.challenge_ttl_seconds, 30, 60 * 60, 300);
+  const nonceSeed = `${input.session_id}|${stage}|${input.unauthorized_hits}|${input.action}|${targetBits}`;
+  const nonce = `vc_${hash16(nonceSeed)}${hash16(`${nonceSeed}|salt`)}`;
+  const expiresAt = new Date(Date.now() + ttlSeconds * 1000).toISOString();
+  return {
+    required: true,
+    nonce,
+    difficulty_bits: targetBits,
+    expires_at: expiresAt,
+    algo: 'sha256_leading_zero_bits',
+    proof_hint: `sha256("${nonce}:<proof>") must have >= ${targetBits} leading zero bits`
+  };
+}
+
+function verifyChallengeProof(challenge: AnyObj, proofRaw: unknown) {
+  if (!challenge || challenge.required !== true) {
+    return { ok: true, reason: 'not_required', bits: 0, difficulty_bits: 0 };
+  }
+  const proof = cleanText(proofRaw || '', 120);
+  if (!proof) return { ok: false, reason: 'missing_proof', bits: 0, difficulty_bits: Number(challenge.difficulty_bits || 0) };
+  const expiresMs = parseIsoMs(challenge.expires_at);
+  if (expiresMs != null && expiresMs <= Date.now()) {
+    return { ok: false, reason: 'challenge_expired', bits: 0, difficulty_bits: Number(challenge.difficulty_bits || 0) };
+  }
+  const digest = crypto.createHash('sha256').update(`${challenge.nonce}:${proof}`, 'utf8').digest('hex');
+  const bits = leadingZeroBits(digest);
+  const difficulty = clampInt(challenge.difficulty_bits, 1, 40, 1);
+  if (bits < difficulty) {
+    return { ok: false, reason: 'insufficient_difficulty', bits, difficulty_bits: difficulty, digest };
+  }
+  return { ok: true, reason: 'ok', bits, difficulty_bits: difficulty, digest };
+}
+
+function solveChallengeProof(challenge: AnyObj, opts: AnyObj = {}) {
+  const maxIterations = clampInt(opts.max_iterations || opts.maxIterations, 1, 8_000_000, 400_000);
+  const start = clampInt(opts.start, 0, Number.MAX_SAFE_INTEGER, 0);
+  for (let i = 0; i < maxIterations; i += 1) {
+    const proof = String(start + i);
+    const checked = verifyChallengeProof(challenge, proof);
+    if (checked.ok) {
+      return {
+        ok: true,
+        proof,
+        iterations: i + 1,
+        bits: checked.bits,
+        difficulty_bits: checked.difficulty_bits,
+        digest: checked.digest
+      };
+    }
+  }
+  return {
+    ok: false,
+    error: 'proof_not_found_within_iteration_budget',
+    iterations: maxIterations
   };
 }
 
@@ -654,6 +862,25 @@ function evaluateContainment(input: AnyObj = {}, opts: AnyObj = {}) {
   const trust = computeTrustSignals(policy);
   const unauthorizedEval = determineUnauthorized(input, trust, policy);
   const runtimeClass = classifyRuntime(input.runtime_class || input.runtimeClass || 'unknown', policy);
+  const evolvedProfiles = loadProfiles(policy);
+  const rawRuntimeBias = Number(
+    evolvedProfiles
+      && evolvedProfiles.runtime_bias
+      && typeof evolvedProfiles.runtime_bias === 'object'
+      ? evolvedProfiles.runtime_bias[runtimeClass]
+      : 1
+  );
+  const runtimeBias = clampNumber(rawRuntimeBias, 0.5, 2.5, 1);
+  const adaptiveWeight = clampNumber(
+    policy.adaptive_integration && policy.adaptive_integration.runtime_bias_weight,
+    0,
+    3,
+    1
+  );
+  const adaptiveCost = loadAdaptiveCostProfile(policy, runtimeClass);
+  const frictionMultiplier = clampNumber(runtimeBias * adaptiveWeight * Number(adaptiveCost.friction_multiplier || 1), 0.5, 6, 1);
+  const challengeMultiplier = clampNumber(runtimeBias * adaptiveWeight * Number(adaptiveCost.challenge_multiplier || 1), 0.5, 6, 1);
+  const decoyIntensity = clampNumber(Number(adaptiveCost.decoy_intensity || 1), 0.5, 3, 1);
   const action = normalizeToken(input.action || 'run', 80) || 'run';
   const riskTier = normalizeToken(input.risk || input.risk_tier || 'low', 40) || 'low';
   const sessionId = normalizeToken(input.session_id || input.session || input.request_id || `anon_${hash16(`${Date.now()}_${Math.random()}`)}`, 160) || `anon_${hash16(`${Date.now()}_${Math.random()}`)}`;
@@ -693,7 +920,11 @@ function evaluateContainment(input: AnyObj = {}, opts: AnyObj = {}) {
 
   let stage = lockoutActive ? 'lockout' : stageFromHits(unauthorizedHits, policy);
   if (stealthWindowActive && !lockoutActive) stage = 'tease';
-  const profile = computeStageProfile(stealthWindowActive ? 'none' : stage, runtimeClass, policy);
+  const profile = computeStageProfile(stealthWindowActive ? 'none' : stage, runtimeClass, policy, {
+    friction_multiplier: frictionMultiplier,
+    challenge_multiplier: challengeMultiplier,
+    decoy_intensity: decoyIntensity
+  });
 
   const finalAllowExec = unauthorizedEval.unauthorized
     ? (profile.allow_exec === true && !lockoutActive && !(isHighValue && stage !== 'tease'))
@@ -705,8 +936,20 @@ function evaluateContainment(input: AnyObj = {}, opts: AnyObj = {}) {
     ? new Date(Date.now() + Number(ramp.lockout_cooldown_minutes || 720) * 60 * 1000).toISOString()
     : null;
 
-  const decoyLevel = selectDecoyLevel(stage);
+  const decoyLevel = profile.decoy_level || selectDecoyLevel(stage);
   const decoy = generateDecoyResponse(decoyLevel, cleanText(input.prompt || input.summary || action, 600), policy);
+  const challenge = buildVerificationChallenge({
+    unauthorized: unauthorizedEval.unauthorized,
+    stage,
+    challenge_score: profile.challenge_score,
+    session_id: sessionId,
+    unauthorized_hits: unauthorizedHits,
+    action
+  }, policy);
+  const decoyFromStage = normalizeToken(policy.enforcement && policy.enforcement.decoy_from_stage || 'challenge', 40) || 'challenge';
+  const outputMode = unauthorizedEval.unauthorized && stageRank(stage) >= stageRank(decoyFromStage)
+    ? 'decoy_only'
+    : 'passthrough';
 
   const result = {
     ok: true,
@@ -727,15 +970,26 @@ function evaluateContainment(input: AnyObj = {}, opts: AnyObj = {}) {
     allow_exec: finalAllowExec,
     lockout,
     friction_delay_ms: Number(profile.friction_delay_ms || 0),
+    enforced_friction_delay_ms: unauthorizedEval.unauthorized ? Number(profile.friction_delay_ms || 0) : 0,
     challenge_score: Number(profile.challenge_score || 0),
     lease_decay_rate: Number(profile.lease_decay_rate || 0),
     decoy_level: decoyLevel,
     decoy_response: decoy.response,
     decoy_watermark: decoy.watermark,
+    enforce_output_mode: outputMode,
+    verification_challenge: challenge,
     timed_lease_stealth_active: stealthWindowActive,
     timed_lease_stealth_until_ts: stealthWindowUntilMs != null ? new Date(stealthWindowUntilMs).toISOString() : null,
     unauthorized_hits: unauthorizedHits,
     high_value_hits: highValueHits,
+    adaptive_runtime_bias: Number(runtimeBias.toFixed(4)),
+    adaptive_runtime_bias_weight: Number(adaptiveWeight.toFixed(4)),
+    adaptive_cost_profile: {
+      challenge_multiplier: Number(clampNumber(adaptiveCost.challenge_multiplier, 0.5, 4, 1).toFixed(4)),
+      friction_multiplier: Number(clampNumber(adaptiveCost.friction_multiplier, 0.5, 4, 1).toFixed(4)),
+      decoy_intensity: Number(clampNumber(adaptiveCost.decoy_intensity, 0.5, 3, 1).toFixed(4)),
+      source: adaptiveCost.source || null
+    },
     policy_path: relPath(opts.policyPath || DEFAULT_POLICY_PATH)
   };
 
@@ -810,6 +1064,7 @@ function usage() {
   console.log('Usage:');
   console.log('  node systems/security/venom_containment_layer.js evaluate [--session-id=id] [--source=local] [--action=run] [--risk=low] [--runtime-class=desktop] [--unauthorized=0|1] [--apply=0|1] [--prompt=text]');
   console.log('  node systems/security/venom_containment_layer.js decoy --level=low --prompt="text"');
+  console.log('  node systems/security/venom_containment_layer.js solve-challenge --nonce=<token> --difficulty-bits=<n> [--max-iterations=<n>] [--start=<n>]');
   console.log('  node systems/security/venom_containment_layer.js evolve');
   console.log('  node systems/security/venom_containment_layer.js status');
 }
@@ -859,6 +1114,36 @@ function main() {
     return;
   }
 
+  if (cmd === 'solve-challenge') {
+    const challenge = {
+      required: true,
+      nonce: cleanText(args.nonce || '', 120),
+      difficulty_bits: clampInt(args['difficulty-bits'] || args.difficulty_bits, 1, 40, 1),
+      expires_at: args.expires_at ? cleanText(args.expires_at, 80) : null
+    };
+    if (!challenge.nonce) {
+      process.stdout.write(`${JSON.stringify({
+        ok: false,
+        type: 'venom_solve_challenge',
+        error: 'missing_nonce'
+      })}\n`);
+      process.exitCode = 2;
+      return;
+    }
+    const solved = solveChallengeProof(challenge, {
+      max_iterations: args['max-iterations'] || args.max_iterations,
+      start: args.start
+    });
+    process.stdout.write(`${JSON.stringify({
+      type: 'venom_solve_challenge',
+      nonce: challenge.nonce,
+      difficulty_bits: challenge.difficulty_bits,
+      ...solved
+    })}\n`);
+    if (!solved.ok) process.exitCode = 1;
+    return;
+  }
+
   if (cmd === 'evolve') {
     const policy = loadPolicy(policyPath);
     const evolved = evolveProfiles(policy);
@@ -905,6 +1190,8 @@ module.exports = {
   loadPolicy,
   evaluateContainment,
   generateDecoyResponse,
+  verifyChallengeProof,
+  solveChallengeProof,
   evolveProfiles,
   statusVenom
 };

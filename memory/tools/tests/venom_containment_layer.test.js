@@ -38,6 +38,7 @@ try {
   const soulPath = path.join(tmp, 'state', 'security', 'soul_token_guard.json');
   const leasePath = path.join(tmp, 'state', 'security', 'capability_leases.json');
   const masterQueue = path.join(tmp, 'state', 'workflow', 'learning_conduit', 'master_training_queue.jsonl');
+  const adaptiveCostPath = path.join(tmp, 'state', 'security', 'red_team', 'adaptive_defense', 'cost_profiles.json');
 
   writeJson(startupAttPath, {
     type: 'startup_attestation',
@@ -50,6 +51,30 @@ try {
   });
   writeJson(leasePath, {
     active: []
+  });
+  writeJson(path.join(stateRoot, 'profiles.json'), {
+    schema_version: '1.0',
+    updated_at: new Date().toISOString(),
+    runtime_bias: {
+      unknown: 1,
+      desktop: 1.05,
+      cloud_vm: 1.2,
+      gpu_heavy: 1.65,
+      containerized: 1.15
+    },
+    last_uplift: 0.42
+  });
+  writeJson(adaptiveCostPath, {
+    schema_version: '1.0',
+    updated_at: new Date().toISOString(),
+    fingerprint_profiles: {
+      unknown: { challenge_multiplier: 1, friction_multiplier: 1, decoy_intensity: 1, rate_limit_per_minute: 40 },
+      desktop: { challenge_multiplier: 1.05, friction_multiplier: 1.1, decoy_intensity: 1.05, rate_limit_per_minute: 36 },
+      cloud_vm: { challenge_multiplier: 1.15, friction_multiplier: 1.2, decoy_intensity: 1.1, rate_limit_per_minute: 30 },
+      gpu_heavy: { challenge_multiplier: 1.5, friction_multiplier: 1.65, decoy_intensity: 1.45, rate_limit_per_minute: 24 },
+      containerized: { challenge_multiplier: 1.1, friction_multiplier: 1.2, decoy_intensity: 1.1, rate_limit_per_minute: 32 }
+    },
+    last_uplift: 0.5
   });
 
   writeJson(policyPath, {
@@ -76,6 +101,19 @@ try {
         contradiction_markers: true,
         max_extra_chars: 180
       }
+    },
+    enforcement: {
+      challenge_threshold: 0.45,
+      min_challenge_difficulty_bits: 8,
+      max_challenge_difficulty_bits: 14,
+      challenge_ttl_seconds: 120,
+      challenge_stages: ['challenge', 'degrade', 'lockout'],
+      decoy_from_stage: 'challenge'
+    },
+    adaptive_integration: {
+      enabled: true,
+      runtime_bias_weight: 1,
+      cost_profiles_path: adaptiveCostPath
     },
     paths: {
       state_root: stateRoot,
@@ -104,6 +142,7 @@ try {
   assert.strictEqual(String(res.payload.stage || ''), 'none', 'authorized run should be at stage none');
 
   const stages = [];
+  let sawChallengeRequirement = false;
   for (let i = 0; i < 8; i += 1) {
     res = run([
       'evaluate',
@@ -118,6 +157,11 @@ try {
     assert.strictEqual(res.status, 0, `unauthorized evaluate run ${i} should pass: ${res.stderr}`);
     assert.ok(res.payload && res.payload.ok === true, 'unauthorized payload should be ok');
     stages.push(String(res.payload.stage || ''));
+    if (res.payload && res.payload.verification_challenge && res.payload.verification_challenge.required === true) {
+      sawChallengeRequirement = true;
+      assert.ok(String(res.payload.verification_challenge.nonce || '').startsWith('vc_'), 'challenge should include nonce');
+      assert.ok(Number(res.payload.verification_challenge.difficulty_bits || 0) >= 8, 'challenge difficulty should be configured');
+    }
     if (i === 0) {
       assert.ok(
         String(res.payload.decoy_response || '').includes('guard_noise='),
@@ -130,6 +174,38 @@ try {
   assert.ok(stages.includes('challenge'), 'stages should include challenge');
   assert.ok(stages.includes('degrade') || stages.includes('lockout'), 'stages should degrade/lockout');
   assert.strictEqual(stages[stages.length - 1], 'lockout', 'final stage should reach lockout');
+  assert.strictEqual(sawChallengeRequirement, true, 'challenge requirement should appear in challenge/degrade/lockout');
+
+  const desktopAdaptive = run([
+    'evaluate',
+    `--policy=${policyPath}`,
+    '--session-id=adaptive_desktop_1',
+    '--source=webhook',
+    '--action=run',
+    '--risk=medium',
+    '--runtime-class=desktop',
+    '--unauthorized=1'
+  ]);
+  const gpuAdaptive = run([
+    'evaluate',
+    `--policy=${policyPath}`,
+    '--session-id=adaptive_gpu_1',
+    '--source=webhook',
+    '--action=run',
+    '--risk=medium',
+    '--runtime-class=gpu_heavy',
+    '--unauthorized=1'
+  ]);
+  assert.strictEqual(desktopAdaptive.status, 0, 'desktop adaptive run should pass');
+  assert.strictEqual(gpuAdaptive.status, 0, 'gpu adaptive run should pass');
+  assert.ok(
+    Number(gpuAdaptive.payload.friction_delay_ms || 0) > Number(desktopAdaptive.payload.friction_delay_ms || 0),
+    'gpu adaptive profile should increase friction over desktop profile'
+  );
+  assert.ok(
+    Number(gpuAdaptive.payload.challenge_score || 0) > Number(desktopAdaptive.payload.challenge_score || 0),
+    'gpu adaptive profile should increase challenge score over desktop profile'
+  );
 
   const forensicEventsPath = path.join(stateRoot, 'forensic_events.jsonl');
   assert.ok(fs.existsSync(forensicEventsPath), 'forensic events file must exist');
