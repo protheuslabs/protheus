@@ -36,7 +36,7 @@ const DEFAULT_POLICY_PATH = process.env.RUST_MEMORY_TRANSITION_POLICY_PATH
 function usage() {
   console.log('Usage:');
   console.log('  node systems/memory/rust_memory_transition_lane.js pilot [--policy=<path>]');
-  console.log('  node systems/memory/rust_memory_transition_lane.js benchmark [--runs=5] [--policy=<path>]');
+  console.log('  node systems/memory/rust_memory_transition_lane.js benchmark [--runs=5] [--auto-select=0|1] [--policy=<path>]');
   console.log('  node systems/memory/rust_memory_transition_lane.js selector --backend=js|rust|rust_shadow|rust_live [--policy=<path>]');
   console.log('  node systems/memory/rust_memory_transition_lane.js auto-selector [--policy=<path>]');
   console.log('  node systems/memory/rust_memory_transition_lane.js retire-check [--policy=<path>]');
@@ -267,6 +267,10 @@ function runPilot(policy) {
 
 function runBenchmark(args, policy) {
   const runs = clampInt(args.runs, 1, 100, 5);
+  const autoSelect = toBool(
+    args['auto-select'] != null ? args['auto-select'] : args.auto_select,
+    false
+  );
   const probeNodeId = parseProbeNodeId(policy.paths.memory_index_path);
   const history = readJson(policy.paths.benchmark_path, {
     schema_version: '1.0',
@@ -422,6 +426,21 @@ function runBenchmark(args, policy) {
     target_speedup: policy.thresholds.min_speedup_for_cutover,
     stable_runs: recent.length
   };
+  if (autoSelect) {
+    const decision = evaluateAutoSelector(policy);
+    const selectorOut = persistAutoSelector(policy, decision, {
+      persistLatest: false,
+      persistReceipt: true
+    });
+    out.auto_selector = {
+      backend: selectorOut.backend,
+      active_engine: selectorOut.active_engine,
+      eligible: selectorOut.eligible,
+      stable_runs: selectorOut.stable_runs,
+      avg_speedup: selectorOut.avg_speedup,
+      max_parity_errors: selectorOut.max_parity_errors
+    };
+  }
   writeJsonAtomic(policy.paths.latest_path, out);
   appendJsonl(policy.paths.receipts_path, out);
   return out;
@@ -452,7 +471,7 @@ function setSelector(args, policy) {
   return out;
 }
 
-function autoSelector(policy) {
+function evaluateAutoSelector(policy) {
   const history = readJson(policy.paths.benchmark_path, { rows: [] });
   const rows = Array.isArray(history.rows) ? history.rows : [];
   const recent = rows.slice(-policy.thresholds.min_stable_runs_for_retirement);
@@ -466,14 +485,28 @@ function autoSelector(policy) {
 
   const backend = eligible ? 'rust_shadow' : 'js';
   const activeEngine = backend === 'js' ? 'js' : 'rust';
-  const selector = {
-    schema_version: '1.0',
+  return {
     backend,
     active_engine: activeEngine,
+    eligible,
+    stable_runs: recent.length,
+    avg_speedup: avgSpeedup,
+    max_parity_errors: maxParityErrors,
+    auto_reason: eligible ? 'benchmark_gate_pass' : 'benchmark_gate_fail'
+  };
+}
+
+function persistAutoSelector(policy, decision, opts: any = {}) {
+  const persistLatest = toBool(opts.persistLatest, true);
+  const persistReceipt = toBool(opts.persistReceipt, true);
+  const selector = {
+    schema_version: '1.0',
+    backend: decision.backend,
+    active_engine: decision.active_engine,
     fallback_backend: 'js',
     updated_at: nowIso(),
     auto_selected: true,
-    auto_reason: eligible ? 'benchmark_gate_pass' : 'benchmark_gate_fail'
+    auto_reason: decision.auto_reason || 'benchmark_gate_fail'
   };
   writeJsonAtomic(policy.paths.selector_path, selector);
 
@@ -481,16 +514,21 @@ function autoSelector(policy) {
     ts: nowIso(),
     type: 'rust_memory_auto_selector',
     ok: true,
-    backend,
-    active_engine: activeEngine,
-    eligible,
-    stable_runs: recent.length,
-    avg_speedup: avgSpeedup,
-    max_parity_errors: maxParityErrors
+    backend: decision.backend,
+    active_engine: decision.active_engine,
+    eligible: decision.eligible === true,
+    stable_runs: clampInt(decision.stable_runs, 0, 100000, 0),
+    avg_speedup: Number(decision.avg_speedup || 0),
+    max_parity_errors: clampInt(decision.max_parity_errors, 0, 100000, 0)
   };
-  writeJsonAtomic(policy.paths.latest_path, out);
-  appendJsonl(policy.paths.receipts_path, out);
+  if (persistLatest) writeJsonAtomic(policy.paths.latest_path, out);
+  if (persistReceipt) appendJsonl(policy.paths.receipts_path, out);
   return out;
+}
+
+function autoSelector(policy) {
+  const decision = evaluateAutoSelector(policy);
+  return persistAutoSelector(policy, decision, { persistLatest: true, persistReceipt: true });
 }
 
 function retireCheck(policy) {

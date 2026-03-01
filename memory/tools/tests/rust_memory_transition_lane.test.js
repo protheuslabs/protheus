@@ -75,10 +75,11 @@ process.stdout.write(JSON.stringify({ ok: true, backend_used: engine, parity_err
   assert.strictEqual(res.status, 0, res.stderr);
   assert.ok(res.payload && res.payload.ok === true, 'pilot should pass with crate');
 
-  res = run(['benchmark', `--policy=${policyPath}`, '--runs=3']);
+  res = run(['benchmark', `--policy=${policyPath}`, '--runs=3', '--auto-select=1']);
   assert.strictEqual(res.status, 0, res.stderr);
   assert.ok(res.payload && res.payload.mode === 'probe_commands', 'benchmark should report probe_commands mode');
   assert.ok(Number(res.payload.avg_speedup || 0) > 1, 'probe benchmark should show rust faster than js');
+  assert.ok(res.payload && res.payload.auto_selector && res.payload.auto_selector.backend === 'rust_shadow', 'benchmark auto-select should set rust_shadow when eligible');
   const bench = JSON.parse(fs.readFileSync(path.join(stateRoot, 'bench.json'), 'utf8'));
   assert.ok(Array.isArray(bench.rows) && bench.rows.length >= 3, 'benchmark rows should be recorded');
   assert.strictEqual(bench.rows[0].mode, 'probe_commands');
@@ -90,6 +91,8 @@ process.stdout.write(JSON.stringify({ ok: true, backend_used: engine, parity_err
   assert.strictEqual(bench.rows[0].rust_get_probe_ok, true);
   assert.strictEqual(bench.rows[0].probe_node_id, 'n1');
   assert.strictEqual(bench.rows[0].parity_error_count, 0);
+  const selectorAfterBenchmark = JSON.parse(fs.readFileSync(path.join(stateRoot, 'selector.json'), 'utf8'));
+  assert.strictEqual(selectorAfterBenchmark.backend, 'rust_shadow', 'benchmark auto-select should persist selector');
 
   res = run(['auto-selector', `--policy=${policyPath}`]);
   assert.strictEqual(res.status, 0, res.stderr);
