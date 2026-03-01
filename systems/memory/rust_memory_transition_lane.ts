@@ -82,6 +82,7 @@ function defaultPolicy() {
         '--node-id=$NODE_ID',
         '--backend=js'
       ],
+      js_index_probe_command: [],
       rust_probe_command: [
         'node',
         'systems/memory/memory_recall.js',
@@ -97,7 +98,8 @@ function defaultPolicy() {
         'get',
         '--node-id=$NODE_ID',
         '--backend=rust'
-      ]
+      ],
+      rust_index_probe_command: []
     }
   };
 }
@@ -139,9 +141,11 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
       require_rust_backend_used: toBool(benchmark.require_rust_backend_used, base.benchmark.require_rust_backend_used),
       js_probe_command: normalizeCommand(benchmark.js_probe_command, base.benchmark.js_probe_command),
       js_get_probe_command: normalizeCommand(benchmark.js_get_probe_command, base.benchmark.js_get_probe_command),
+      js_index_probe_command: normalizeCommand(benchmark.js_index_probe_command, base.benchmark.js_index_probe_command),
       rust_probe_command: normalizeCommand(benchmark.rust_probe_command, base.benchmark.rust_probe_command)
       ,
-      rust_get_probe_command: normalizeCommand(benchmark.rust_get_probe_command, base.benchmark.rust_get_probe_command)
+      rust_get_probe_command: normalizeCommand(benchmark.rust_get_probe_command, base.benchmark.rust_get_probe_command),
+      rust_index_probe_command: normalizeCommand(benchmark.rust_index_probe_command, base.benchmark.rust_index_probe_command)
     }
   };
 }
@@ -300,13 +304,27 @@ function runBenchmark(args, policy) {
         rustGetCommand,
         policy.benchmark.timeout_ms
       );
+      const hasIndexProbeCommands = Array.isArray(policy.benchmark.js_index_probe_command)
+        && policy.benchmark.js_index_probe_command.length > 0
+        && Array.isArray(policy.benchmark.rust_index_probe_command)
+        && policy.benchmark.rust_index_probe_command.length > 0;
+      const jsIndexProbe = hasIndexProbeCommands
+        ? runTimedProbeCommand(policy.benchmark.js_index_probe_command, policy.benchmark.timeout_ms)
+        : null;
+      const rustIndexProbe = hasIndexProbeCommands
+        ? runTimedProbeCommand(policy.benchmark.rust_index_probe_command, policy.benchmark.timeout_ms)
+        : null;
 
-      const jsMs = Math.max(1, Number(jsQueryProbe.duration_ms || 1) + Number(jsGetProbe.duration_ms || 1));
-      const rustMs = Math.max(1, Number(rustQueryProbe.duration_ms || 1) + Number(rustGetProbe.duration_ms || 1));
+      const jsIndexMsForTotal = hasIndexProbeCommands ? Math.max(1, Number(jsIndexProbe && jsIndexProbe.duration_ms || 1)) : 0;
+      const rustIndexMsForTotal = hasIndexProbeCommands ? Math.max(1, Number(rustIndexProbe && rustIndexProbe.duration_ms || 1)) : 0;
+      const jsMs = Math.max(1, Number(jsQueryProbe.duration_ms || 1) + Number(jsGetProbe.duration_ms || 1) + jsIndexMsForTotal);
+      const rustMs = Math.max(1, Number(rustQueryProbe.duration_ms || 1) + Number(rustGetProbe.duration_ms || 1) + rustIndexMsForTotal);
       const jsQueryMs = Math.max(1, Number(jsQueryProbe.duration_ms || 1));
       const rustQueryMs = Math.max(1, Number(rustQueryProbe.duration_ms || 1));
       const jsGetMs = Math.max(1, Number(jsGetProbe.duration_ms || 1));
       const rustGetMs = Math.max(1, Number(rustGetProbe.duration_ms || 1));
+      const jsIndexMs = hasIndexProbeCommands ? jsIndexMsForTotal : null;
+      const rustIndexMs = hasIndexProbeCommands ? rustIndexMsForTotal : null;
 
       const rustBackendUsedQuery = normalizeToken(
         rustQueryProbe.payload && (rustQueryProbe.payload.backend_used || rustQueryProbe.payload.backend || ''),
@@ -316,12 +334,20 @@ function runBenchmark(args, policy) {
         rustGetProbe.payload && (rustGetProbe.payload.backend_used || rustGetProbe.payload.backend || ''),
         20
       ) || '';
+      const rustBackendUsedIndex = normalizeToken(
+        rustIndexProbe && rustIndexProbe.payload && (rustIndexProbe.payload.backend_used || rustIndexProbe.payload.backend || ''),
+        20
+      ) || '';
       const rustBackendMismatchQuery = policy.benchmark.require_rust_backend_used === true
         && rustBackendUsedQuery
         && rustBackendUsedQuery !== 'rust';
       const rustBackendMismatchGet = policy.benchmark.require_rust_backend_used === true
         && rustBackendUsedGet
         && rustBackendUsedGet !== 'rust';
+      const rustBackendMismatchIndex = hasIndexProbeCommands
+        && policy.benchmark.require_rust_backend_used === true
+        && rustBackendUsedIndex
+        && rustBackendUsedIndex !== 'rust';
 
       const queryParity = rustQueryProbe.ok
         ? clampInt(
@@ -343,10 +369,27 @@ function runBenchmark(args, policy) {
           rustBackendMismatchGet ? 1 : 0
         )
         : 1;
-      const parityErrorCount = Math.max(queryParity, getParity);
+      const indexParity = hasIndexProbeCommands
+        ? (
+          rustIndexProbe && rustIndexProbe.ok
+            ? clampInt(
+              rustIndexProbe.payload && Number.isFinite(rustIndexProbe.payload.parity_error_count)
+                ? rustIndexProbe.payload.parity_error_count
+                : (rustBackendMismatchIndex ? 1 : 0),
+              0,
+              100000,
+              rustBackendMismatchIndex ? 1 : 0
+            )
+            : 1
+        )
+        : 0;
+      const parityErrorCount = Math.max(queryParity, getParity, indexParity);
       const speedup = Number((jsMs / Math.max(1, rustMs)).toFixed(6));
       const querySpeedup = Number((jsQueryMs / Math.max(1, rustQueryMs)).toFixed(6));
       const getSpeedup = Number((jsGetMs / Math.max(1, rustGetMs)).toFixed(6));
+      const indexSpeedup = hasIndexProbeCommands
+        ? Number((Number(jsIndexMs || 0) / Math.max(1, Number(rustIndexMs || 1))).toFixed(6))
+        : null;
 
       history.rows.push({
         ts: nowIso(),
@@ -360,6 +403,9 @@ function runBenchmark(args, policy) {
         js_get_ms: jsGetMs,
         rust_get_ms: rustGetMs,
         get_speedup: getSpeedup,
+        js_index_ms: jsIndexMs,
+        rust_index_ms: rustIndexMs,
+        index_speedup: indexSpeedup,
         parity_error_count: parityErrorCount,
         js_probe_ok: jsQueryProbe.ok,
         rust_probe_ok: rustQueryProbe.ok,
@@ -377,6 +423,18 @@ function runBenchmark(args, policy) {
         rust_get_backend_mismatch: rustBackendMismatchGet,
         js_get_probe_error: jsGetProbe.ok ? null : jsGetProbe.stderr || 'probe_failed',
         rust_get_probe_error: rustGetProbe.ok ? null : rustGetProbe.stderr || 'probe_failed',
+        js_index_probe_ok: hasIndexProbeCommands ? (jsIndexProbe && jsIndexProbe.ok === true) : null,
+        rust_index_probe_ok: hasIndexProbeCommands ? (rustIndexProbe && rustIndexProbe.ok === true) : null,
+        js_index_probe_status: hasIndexProbeCommands ? (jsIndexProbe ? jsIndexProbe.status : 1) : null,
+        rust_index_probe_status: hasIndexProbeCommands ? (rustIndexProbe ? rustIndexProbe.status : 1) : null,
+        rust_index_backend_used: hasIndexProbeCommands ? (rustBackendUsedIndex || null) : null,
+        rust_index_backend_mismatch: hasIndexProbeCommands ? rustBackendMismatchIndex : null,
+        js_index_probe_error: hasIndexProbeCommands
+          ? ((jsIndexProbe && jsIndexProbe.ok) ? null : ((jsIndexProbe && jsIndexProbe.stderr) || 'probe_failed'))
+          : null,
+        rust_index_probe_error: hasIndexProbeCommands
+          ? ((rustIndexProbe && rustIndexProbe.ok) ? null : ((rustIndexProbe && rustIndexProbe.stderr) || 'probe_failed'))
+          : null,
         probe_node_id: probeNodeId || null,
         signature: stableHash(`${jsMs}|${rustMs}|${speedup}|${parityErrorCount}|${i}|${Date.now()}`, 24)
       });
@@ -412,6 +470,10 @@ function runBenchmark(args, policy) {
   const avgGetSpeedup = recent.length > 0
     ? Number((recent.reduce((acc: number, row: any) => acc + Number(row.get_speedup || row.speedup || 0), 0) / recent.length).toFixed(6))
     : 0;
+  const indexRows = recent.filter((row: any) => row && row.index_speedup != null && Number.isFinite(Number(row.index_speedup)));
+  const avgIndexSpeedup = indexRows.length > 0
+    ? Number((indexRows.reduce((acc: number, row: any) => acc + Number(row.index_speedup || 0), 0) / indexRows.length).toFixed(6))
+    : 0;
 
   const out = {
     ts: nowIso(),
@@ -423,6 +485,7 @@ function runBenchmark(args, policy) {
     avg_speedup: avgSpeedup,
     avg_query_speedup: avgQuerySpeedup,
     avg_get_speedup: avgGetSpeedup,
+    avg_index_speedup: avgIndexSpeedup,
     target_speedup: policy.thresholds.min_speedup_for_cutover,
     stable_runs: recent.length
   };

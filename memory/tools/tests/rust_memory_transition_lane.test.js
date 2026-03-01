@@ -33,7 +33,11 @@ try {
   fs.writeFileSync(probeScript, `
 const engineArg = process.argv.find((arg) => String(arg).startsWith('--engine=')) || '--engine=js';
 const engine = String(engineArg.split('=')[1] || 'js');
-const waitMs = engine === 'js' ? 24 : 8;
+const kindArg = process.argv.find((arg) => String(arg).startsWith('--kind=')) || '--kind=query';
+const kind = String(kindArg.split('=')[1] || 'query');
+const waitMs = engine === 'js'
+  ? (kind === 'index' ? 30 : 24)
+  : (kind === 'index' ? 12 : 8);
 const start = Date.now();
 while (Date.now() - start < waitMs) {}
 if (process.env.FAIL_PROBE_ENGINE && process.env.FAIL_PROBE_ENGINE === engine) {
@@ -64,10 +68,12 @@ process.stdout.write(JSON.stringify({ ok: true, backend_used: engine, parity_err
       mode: 'probe_commands',
       timeout_ms: 8000,
       require_rust_backend_used: true,
-      js_probe_command: [process.execPath, probeScript, '--engine=js'],
-      js_get_probe_command: [process.execPath, probeScript, '--engine=js'],
-      rust_probe_command: [process.execPath, probeScript, '--engine=rust'],
-      rust_get_probe_command: [process.execPath, probeScript, '--engine=rust']
+      js_probe_command: [process.execPath, probeScript, '--engine=js', '--kind=query'],
+      js_get_probe_command: [process.execPath, probeScript, '--engine=js', '--kind=get'],
+      js_index_probe_command: [process.execPath, probeScript, '--engine=js', '--kind=index'],
+      rust_probe_command: [process.execPath, probeScript, '--engine=rust', '--kind=query'],
+      rust_get_probe_command: [process.execPath, probeScript, '--engine=rust', '--kind=get'],
+      rust_index_probe_command: [process.execPath, probeScript, '--engine=rust', '--kind=index']
     }
   });
 
@@ -79,16 +85,20 @@ process.stdout.write(JSON.stringify({ ok: true, backend_used: engine, parity_err
   assert.strictEqual(res.status, 0, res.stderr);
   assert.ok(res.payload && res.payload.mode === 'probe_commands', 'benchmark should report probe_commands mode');
   assert.ok(Number(res.payload.avg_speedup || 0) > 1, 'probe benchmark should show rust faster than js');
+  assert.ok(Number(res.payload.avg_index_speedup || 0) > 1, 'index probe speedup should be present');
   assert.ok(res.payload && res.payload.auto_selector && res.payload.auto_selector.backend === 'rust_shadow', 'benchmark auto-select should set rust_shadow when eligible');
   const bench = JSON.parse(fs.readFileSync(path.join(stateRoot, 'bench.json'), 'utf8'));
   assert.ok(Array.isArray(bench.rows) && bench.rows.length >= 3, 'benchmark rows should be recorded');
   assert.strictEqual(bench.rows[0].mode, 'probe_commands');
   assert.ok(Number(bench.rows[0].query_speedup || 0) > 0, 'query_speedup should be present');
   assert.ok(Number(bench.rows[0].get_speedup || 0) > 0, 'get_speedup should be present');
+  assert.ok(Number(bench.rows[0].index_speedup || 0) > 0, 'index_speedup should be present');
   assert.strictEqual(bench.rows[0].js_probe_ok, true);
   assert.strictEqual(bench.rows[0].rust_probe_ok, true);
   assert.strictEqual(bench.rows[0].js_get_probe_ok, true);
   assert.strictEqual(bench.rows[0].rust_get_probe_ok, true);
+  assert.strictEqual(bench.rows[0].js_index_probe_ok, true);
+  assert.strictEqual(bench.rows[0].rust_index_probe_ok, true);
   assert.strictEqual(bench.rows[0].probe_node_id, 'n1');
   assert.strictEqual(bench.rows[0].parity_error_count, 0);
   const selectorAfterBenchmark = JSON.parse(fs.readFileSync(path.join(stateRoot, 'selector.json'), 'utf8'));
