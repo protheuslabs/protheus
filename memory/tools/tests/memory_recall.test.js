@@ -261,6 +261,30 @@ runTest('query auto backend uses selector rust then falls back to js when crate 
   assert.strictEqual(out.backend_fallback_reason, 'rust_crate_missing');
 });
 
+runTest('query auto backend honors selector active_engine=rust', () => {
+  const root = makeWorkspace();
+  writeJson(path.join(root, 'state', 'memory', 'rust_transition', 'backend_selector.json'), {
+    backend: 'unknown_mode',
+    active_engine: 'rust',
+    fallback_backend: 'js'
+  });
+  const missingCrate = path.join(root, 'systems', 'rust', 'memory_box_missing');
+  const r = runRecall(
+    root,
+    ['query', '--q=routing', '--expand=none', '--session=autoactiveengine'],
+    {
+      MEMORY_RECALL_BACKEND: 'auto',
+      MEMORY_RECALL_RUST_CRATE_PATH: missingCrate
+    }
+  );
+  assert.strictEqual(r.status, 0, `query failed: ${r.stderr}`);
+  const out = parseJson(r.stdout);
+  assert.ok(out && out.ok === true, 'expected ok=true');
+  assert.strictEqual(out.backend_requested, 'rust');
+  assert.strictEqual(out.backend_used, 'js');
+  assert.strictEqual(out.backend_fallback_reason, 'rust_crate_missing');
+});
+
 runTest('expanded query reuses working-set cache on second run', () => {
   const root = makeWorkspace();
   const args = ['query', '--q=cache fallback behavior', '--expand=always', '--session=cachetest', '--max-files=1'];

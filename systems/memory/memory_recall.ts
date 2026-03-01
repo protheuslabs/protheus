@@ -421,6 +421,8 @@ function resolveBackendChoice(raw) {
   const desired = normalizeBackendChoice(raw);
   if (desired === 'js' || desired === 'rust') return desired;
   const selector = readJsonSafe(DEFAULT_RUST_SELECTOR_PATH);
+  const selectorEngine = normalizeBackendChoice(selector && selector.active_engine ? selector.active_engine : '');
+  if (selectorEngine === 'js' || selectorEngine === 'rust') return selectorEngine;
   const selectorBackend = normalizeBackendChoice(selector && selector.backend ? selector.backend : '');
   return selectorBackend === 'rust' ? 'rust' : 'js';
 }
