@@ -696,6 +696,7 @@ function parseRustScoredRows(payload: any, top: number): any[] {
       ? uniqueSorted(hit.reasons.map((x) => cleanCell(x)).filter(Boolean))
       : [];
     const sectionExcerpt = typeof (hit && hit.section_excerpt) === 'string' ? hit.section_excerpt : null;
+    const sectionHash = cleanCell(hit && hit.section_hash ? hit.section_hash : '');
     return {
       entry: {
         node_id: nodeId,
@@ -708,6 +709,7 @@ function parseRustScoredRows(payload: any, top: number): any[] {
       score: clampInt(hit && hit.score, 0, 100000000),
       reasons,
       rust_section_excerpt: sectionExcerpt,
+      rust_section_hash: sectionHash || null,
       rust_section_source: cleanCell(hit && hit.section_source ? hit.section_source : '') || null,
       rust_expand_blocked: cleanCell(hit && hit.expand_blocked ? hit.expand_blocked : '') || null,
       rust_expand_error: cleanCell(hit && hit.expand_error ? hit.expand_error : '') || null
@@ -822,6 +824,7 @@ function queryCmd(args) {
           if (!fromExpanded) return row;
           return { ...row, ...{
             rust_section_excerpt: fromExpanded.rust_section_excerpt || null,
+            rust_section_hash: fromExpanded.rust_section_hash || null,
             rust_section_source: fromExpanded.rust_section_source || null,
             rust_expand_blocked: fromExpanded.rust_expand_blocked || null,
             rust_expand_error: fromExpanded.rust_expand_error || null
@@ -858,7 +861,7 @@ function queryCmd(args) {
           ...base,
           expanded: true,
           section_source: row.rust_section_source || 'rust',
-          section_hash: null,
+          section_hash: row.rust_section_hash || null,
           section_excerpt: row.rust_section_excerpt
         };
       }
@@ -952,7 +955,7 @@ function getCmd(args) {
           summary: cleanCell(payload.summary || ''),
           tags: Array.isArray(payload.tags) ? uniqueSorted(payload.tags.map(normalizeTag).filter(Boolean)) : [],
           section_source: 'rust',
-          section_hash: sha256(section),
+          section_hash: cleanCell(payload.section_hash || '') || sha256(section),
           metrics,
           section
         }, null, 2) + '\n');

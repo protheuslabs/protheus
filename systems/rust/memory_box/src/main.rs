@@ -1,5 +1,6 @@
 use serde::Serialize;
 use serde_json::json;
+use sha2::{Digest, Sha256};
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::env;
 use std::fs;
@@ -35,6 +36,8 @@ struct QueryHit {
     #[serde(skip_serializing_if = "Option::is_none")]
     section_excerpt: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    section_hash: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     section_source: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     expand_blocked: Option<String>,
@@ -62,6 +65,7 @@ struct GetNodeResult {
     file: String,
     summary: String,
     tags: Vec<String>,
+    section_hash: String,
     section: String,
 }
 
@@ -522,6 +526,12 @@ fn excerpt_lines(text: &str, lines: usize) -> String {
     text.lines().take(lines).collect::<Vec<&str>>().join("\n")
 }
 
+fn sha256_hex(text: &str) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(text.as_bytes());
+    hex::encode(hasher.finalize())
+}
+
 fn parse_kv_args(args: &[String]) -> HashMap<String, String> {
     let mut out: HashMap<String, String> = HashMap::new();
     let mut idx = 0usize;
@@ -724,6 +734,7 @@ fn run_query_index(args: &HashMap<String, String>) {
             score,
             reasons,
             section_excerpt: None,
+            section_hash: None,
             section_source: None,
             expand_blocked: None,
             expand_error: None,
@@ -768,6 +779,7 @@ fn run_query_index(args: &HashMap<String, String>) {
                 continue;
             }
             hit.section_source = Some("rust".to_string());
+            hit.section_hash = Some(sha256_hex(&section));
             hit.section_excerpt = Some(excerpt_lines(&section, expand_lines));
         }
     }
@@ -875,6 +887,7 @@ fn run_get_node(args: &HashMap<String, String>) {
         file: entry.file_rel.clone(),
         summary: entry.summary.clone(),
         tags: dedupe_sorted(entry.tags.clone()),
+        section_hash: sha256_hex(&section),
         section,
     };
     println!("{}", serde_json::to_string(&out).expect("serialize get-node result"));

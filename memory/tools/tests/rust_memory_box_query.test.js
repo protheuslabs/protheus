@@ -93,12 +93,14 @@ try {
   assert.strictEqual(out.status, 0, out.stderr);
   assert.ok(out.payload && out.payload.ok === true, 'expanded query-index should return ok=true');
   assert.ok(typeof out.payload.hits[0].section_excerpt === 'string', 'expanded hit should include section_excerpt');
+  assert.ok(typeof out.payload.hits[0].section_hash === 'string' && out.payload.hits[0].section_hash.length >= 64, 'expanded hit should include section_hash');
 
   out = run(['get-node', `--root=${tmp}`, '--uid=memabc123autonomy2'], CRATE);
   assert.strictEqual(out.status, 0, out.stderr);
   assert.ok(out.payload && out.payload.ok === true, 'get-node should return ok=true');
   assert.strictEqual(out.payload.node_id, 'autonomy-loop-gate', 'uid lookup should return correct node');
   assert.ok(String(out.payload.section || '').includes('# autonomy-loop-gate'), 'section should include node content');
+  assert.ok(typeof out.payload.section_hash === 'string' && out.payload.section_hash.length >= 64, 'get-node should return section_hash');
 
   fs.rmSync(tmp, { recursive: true, force: true });
   console.log('rust_memory_box_query.test.js: OK');
