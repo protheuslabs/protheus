@@ -33,6 +33,9 @@ const DEFAULT_RUST_COOLDOWN_MS = clampInt(process.env.MEMORY_RECALL_RUST_COOLDOW
 const DEFAULT_RUST_HEALTH_PATH = process.env.MEMORY_RECALL_RUST_HEALTH_PATH
   ? path.resolve(String(process.env.MEMORY_RECALL_RUST_HEALTH_PATH))
   : path.join(REPO_ROOT, 'state', 'memory', 'rust_transition', 'backend_health.json');
+const DEFAULT_RUST_POLICY_PATH = process.env.MEMORY_RECALL_RUST_POLICY_PATH
+  ? path.resolve(String(process.env.MEMORY_RECALL_RUST_POLICY_PATH))
+  : path.join(REPO_ROOT, 'config', 'rust_memory_transition_policy.json');
 
 function clampInt(v, min, max) {
   const n = Number(v);
@@ -417,6 +420,52 @@ function clearRustFailure() {
   });
 }
 
+function resolveLocalPath(rawPath, fallbackRelPath) {
+  const raw = String(rawPath || '').trim();
+  if (!raw) return path.join(REPO_ROOT, String(fallbackRelPath || '').replace(/^\/+/, ''));
+  if (path.isAbsolute(raw)) return path.resolve(raw);
+  return path.join(REPO_ROOT, raw);
+}
+
+function autoBackendFromBenchmarkGate() {
+  const policy = readJsonSafe(DEFAULT_RUST_POLICY_PATH);
+  if (!policy || typeof policy !== 'object') return 'js';
+
+  const rawThresholds = policy.thresholds && typeof policy.thresholds === 'object' ? policy.thresholds : {};
+  const minRuns = clampInt(
+    rawThresholds.min_stable_runs_for_retirement == null ? 10 : rawThresholds.min_stable_runs_for_retirement,
+    1,
+    100000
+  );
+  const minSpeedup = clampNumber(
+    rawThresholds.min_speedup_for_cutover == null ? 1.2 : rawThresholds.min_speedup_for_cutover,
+    0.1,
+    1000
+  );
+  const maxParity = clampInt(
+    rawThresholds.max_parity_error_count == null ? 0 : rawThresholds.max_parity_error_count,
+    0,
+    100000
+  );
+
+  const rawPaths = policy.paths && typeof policy.paths === 'object' ? policy.paths : {};
+  const benchmarkPath = resolveLocalPath(rawPaths.benchmark_path, 'state/memory/rust_transition/benchmark_history.json');
+  const history = readJsonSafe(benchmarkPath);
+  const rows = history && Array.isArray(history.rows) ? history.rows : [];
+  const recent = rows.slice(-minRuns);
+  const avgSpeedup = recent.length > 0
+    ? Number((recent.reduce((acc, row) => acc + Number(row && row.speedup ? row.speedup : 0), 0) / recent.length).toFixed(6))
+    : 0;
+  const maxParityErrors = recent.reduce(
+    (acc, row) => Math.max(acc, clampInt(row && row.parity_error_count != null ? row.parity_error_count : 0, 0, 100000)),
+    0
+  );
+  const eligible = recent.length >= minRuns
+    && avgSpeedup >= minSpeedup
+    && maxParityErrors <= maxParity;
+  return eligible ? 'rust' : 'js';
+}
+
 function resolveBackendChoice(raw) {
   const desired = normalizeBackendChoice(raw);
   if (desired === 'js' || desired === 'rust') return desired;
@@ -424,7 +473,9 @@ function resolveBackendChoice(raw) {
   const selectorEngine = normalizeBackendChoice(selector && selector.active_engine ? selector.active_engine : '');
   if (selectorEngine === 'js' || selectorEngine === 'rust') return selectorEngine;
   const selectorBackend = normalizeBackendChoice(selector && selector.backend ? selector.backend : '');
-  return selectorBackend === 'rust' ? 'rust' : 'js';
+  if (selectorBackend === 'rust') return 'rust';
+  if (selectorBackend === 'js') return 'js';
+  return autoBackendFromBenchmarkGate();
 }
 
 function runRustQueryIndex(query, tagFilters, top, options: any = {}) {

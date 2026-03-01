@@ -285,6 +285,82 @@ runTest('query auto backend honors selector active_engine=rust', () => {
   assert.strictEqual(out.backend_fallback_reason, 'rust_crate_missing');
 });
 
+runTest('query auto backend falls back to benchmark gate when selector is absent', () => {
+  const root = makeWorkspace();
+  writeJson(path.join(root, 'state', 'memory', 'rust_transition', 'benchmark_history.json'), {
+    schema_version: '1.0',
+    rows: [
+      { speedup: 1.3, parity_error_count: 0 },
+      { speedup: 1.25, parity_error_count: 0 },
+      { speedup: 1.22, parity_error_count: 0 }
+    ]
+  });
+  writeJson(path.join(root, 'config', 'rust_memory_transition_policy.json'), {
+    thresholds: {
+      min_speedup_for_cutover: 1.2,
+      max_parity_error_count: 0,
+      min_stable_runs_for_retirement: 3
+    },
+    paths: {
+      benchmark_path: 'state/memory/rust_transition/benchmark_history.json'
+    }
+  });
+  const missingCrate = path.join(root, 'systems', 'rust', 'memory_box_missing');
+  const r = runRecall(
+    root,
+    ['query', '--q=routing', '--expand=none', '--session=autobenchmark'],
+    {
+      MEMORY_RECALL_BACKEND: 'auto',
+      MEMORY_RECALL_RUST_CRATE_PATH: missingCrate,
+      MEMORY_RECALL_RUST_POLICY_PATH: path.join(root, 'config', 'rust_memory_transition_policy.json')
+    }
+  );
+  assert.strictEqual(r.status, 0, `query failed: ${r.stderr}`);
+  const out = parseJson(r.stdout);
+  assert.ok(out && out.ok === true, 'expected ok=true');
+  assert.strictEqual(out.backend_requested, 'rust');
+  assert.strictEqual(out.backend_used, 'js');
+  assert.strictEqual(out.backend_fallback_reason, 'rust_crate_missing');
+});
+
+runTest('query auto backend stays js when benchmark gate does not pass', () => {
+  const root = makeWorkspace();
+  writeJson(path.join(root, 'state', 'memory', 'rust_transition', 'benchmark_history.json'), {
+    schema_version: '1.0',
+    rows: [
+      { speedup: 0.95, parity_error_count: 0 },
+      { speedup: 1.01, parity_error_count: 0 },
+      { speedup: 1.0, parity_error_count: 0 }
+    ]
+  });
+  writeJson(path.join(root, 'config', 'rust_memory_transition_policy.json'), {
+    thresholds: {
+      min_speedup_for_cutover: 1.2,
+      max_parity_error_count: 0,
+      min_stable_runs_for_retirement: 3
+    },
+    paths: {
+      benchmark_path: 'state/memory/rust_transition/benchmark_history.json'
+    }
+  });
+  const missingCrate = path.join(root, 'systems', 'rust', 'memory_box_missing');
+  const r = runRecall(
+    root,
+    ['query', '--q=routing', '--expand=none', '--session=autobenchmarkjs'],
+    {
+      MEMORY_RECALL_BACKEND: 'auto',
+      MEMORY_RECALL_RUST_CRATE_PATH: missingCrate,
+      MEMORY_RECALL_RUST_POLICY_PATH: path.join(root, 'config', 'rust_memory_transition_policy.json')
+    }
+  );
+  assert.strictEqual(r.status, 0, `query failed: ${r.stderr}`);
+  const out = parseJson(r.stdout);
+  assert.ok(out && out.ok === true, 'expected ok=true');
+  assert.strictEqual(out.backend_requested, 'js');
+  assert.strictEqual(out.backend_used, 'js');
+  assert.strictEqual(out.backend_fallback_reason, null);
+});
+
 runTest('expanded query reuses working-set cache on second run', () => {
   const root = makeWorkspace();
   const args = ['query', '--q=cache fallback behavior', '--expand=always', '--session=cachetest', '--max-files=1'];
