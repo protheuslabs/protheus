@@ -370,11 +370,13 @@ function resolveBackendChoice(raw) {
   return selectorBackend === 'rust' ? 'rust' : 'js';
 }
 
-function runRustQueryIndex(query, tagFilters, top) {
+function runRustQueryIndex(query, tagFilters, top, options: any = {}) {
   const cratePath = DEFAULT_RUST_CRATE_PATH;
   if (!fs.existsSync(cratePath)) {
     return { ok: false, error: 'rust_crate_missing', crate_path: cratePath };
   }
+  const expandLines = clampInt(options && options.expandLines != null ? options.expandLines : 0, 0, 300);
+  const maxFiles = clampInt(options && options.maxFiles != null ? options.maxFiles : 1, 1, 20);
   const args = [
     'run',
     '--quiet',
@@ -385,6 +387,8 @@ function runRustQueryIndex(query, tagFilters, top) {
     `--top=${clampInt(top, 1, 20)}`,
     `--tags=${(Array.isArray(tagFilters) ? tagFilters : []).join(',')}`
   ];
+  if (expandLines > 0) args.push(`--expand-lines=${expandLines}`);
+  if (expandLines > 0) args.push(`--max-files=${maxFiles}`);
   const run = spawnSync('cargo', args, {
     cwd: cratePath,
     encoding: 'utf8',
@@ -624,6 +628,40 @@ function sortByDateDesc(entries) {
   });
 }
 
+function parseRustScoredRows(payload: any, top: number): any[] {
+  const rustHits = Array.isArray(payload && payload.hits) ? payload.hits : [];
+  const rows = rustHits.slice(0, top).map((hit) => {
+    const nodeId = normalizeNodeId(hit && hit.node_id ? hit.node_id : '');
+    const uid = normalizeUid(hit && hit.uid ? hit.uid : '');
+    const fileRel = normalizeFileRef(hit && (hit.file || hit.file_rel) ? (hit.file || hit.file_rel) : '');
+    const tags = Array.isArray(hit && hit.tags)
+      ? uniqueSorted(hit.tags.map(normalizeTag).filter(Boolean))
+      : [];
+    const summary = cleanCell(hit && hit.summary ? hit.summary : '');
+    const reasons = Array.isArray(hit && hit.reasons)
+      ? uniqueSorted(hit.reasons.map((x) => cleanCell(x)).filter(Boolean))
+      : [];
+    const sectionExcerpt = typeof (hit && hit.section_excerpt) === 'string' ? hit.section_excerpt : null;
+    return {
+      entry: {
+        node_id: nodeId,
+        uid,
+        file_rel: fileRel,
+        file_abs: path.join(REPO_ROOT, fileRel),
+        summary,
+        tags
+      },
+      score: clampInt(hit && hit.score, 0, 100000000),
+      reasons,
+      rust_section_excerpt: sectionExcerpt,
+      rust_section_source: cleanCell(hit && hit.section_source ? hit.section_source : '') || null,
+      rust_expand_blocked: cleanCell(hit && hit.expand_blocked ? hit.expand_blocked : '') || null,
+      rust_expand_error: cleanCell(hit && hit.expand_error ? hit.expand_error : '') || null
+    };
+  }).filter((row) => row.entry.node_id && row.entry.file_rel);
+  return rows;
+}
+
 function queryCmd(args) {
   const query = String(args.q || args.query || '').trim();
   const tagFilters = parseListArg(args.tags);
@@ -646,10 +684,14 @@ function queryCmd(args) {
   let scoringSource = 'js';
   let indexSources = [];
   let tagSources = [];
-  let topScored = [];
+  let topScored: any[] = [];
 
   if (backendRequested === 'rust') {
-    const rust = runRustQueryIndex(query, tagFilters, top);
+    const rustExpandLinesInitial = expandMode === 'always' ? excerptLines : 0;
+    const rust = runRustQueryIndex(query, tagFilters, top, {
+      expandLines: rustExpandLinesInitial,
+      maxFiles
+    });
     if (rust.ok) {
       const payload = rust.payload || {};
       backendUsed = 'rust';
@@ -657,31 +699,7 @@ function queryCmd(args) {
       indexSources = Array.isArray(payload.index_sources) ? payload.index_sources.slice(0) : [];
       tagSources = Array.isArray(payload.tag_sources) ? payload.tag_sources.slice(0) : [];
       metrics.candidates_total = clampInt(payload.candidates_total, 0, 100000000);
-      const rustHits = Array.isArray(payload.hits) ? payload.hits : [];
-      topScored = rustHits.slice(0, top).map((hit) => {
-        const nodeId = normalizeNodeId(hit && hit.node_id ? hit.node_id : '');
-        const uid = normalizeUid(hit && hit.uid ? hit.uid : '');
-        const fileRel = normalizeFileRef(hit && (hit.file || hit.file_rel) ? (hit.file || hit.file_rel) : '');
-        const tags = Array.isArray(hit && hit.tags)
-          ? uniqueSorted(hit.tags.map(normalizeTag).filter(Boolean))
-          : [];
-        const summary = cleanCell(hit && hit.summary ? hit.summary : '');
-        const reasons = Array.isArray(hit && hit.reasons)
-          ? uniqueSorted(hit.reasons.map((x) => cleanCell(x)).filter(Boolean))
-          : [];
-        return {
-          entry: {
-            node_id: nodeId,
-            uid,
-            file_rel: fileRel,
-            file_abs: path.join(REPO_ROOT, fileRel),
-            summary,
-            tags
-          },
-          score: clampInt(hit && hit.score, 0, 100000000),
-          reasons
-        };
-      }).filter((row) => row.entry.node_id && row.entry.file_rel);
+      topScored = parseRustScoredRows(payload, top);
     } else {
       backendFallbackReason = rust.error || 'rust_query_failed';
     }
@@ -727,6 +745,31 @@ function queryCmd(args) {
   const shouldExpand = expandMode === 'always'
     || (expandMode === 'auto' && confidence < confidenceThreshold);
 
+  if (backendUsed === 'rust' && shouldExpand) {
+    const hasRustExpansion = topScored.some((row: any) => row.rust_section_excerpt || row.rust_expand_blocked || row.rust_expand_error);
+    if (!hasRustExpansion) {
+      const rustExpanded = runRustQueryIndex(query, tagFilters, top, {
+        expandLines: excerptLines,
+        maxFiles
+      });
+      if (rustExpanded.ok) {
+        const expandedRows = parseRustScoredRows(rustExpanded.payload || {}, top);
+        const byKey = new Map(expandedRows.map((row: any) => [`${row.entry.node_id}@${row.entry.file_rel}`, row]));
+        topScored = topScored.map((row: any) => {
+          const key = `${row.entry.node_id}@${row.entry.file_rel}`;
+          const fromExpanded = byKey.get(key);
+          if (!fromExpanded) return row;
+          return { ...row, ...{
+            rust_section_excerpt: fromExpanded.rust_section_excerpt || null,
+            rust_section_source: fromExpanded.rust_section_source || null,
+            rust_expand_blocked: fromExpanded.rust_expand_blocked || null,
+            rust_expand_error: fromExpanded.rust_expand_error || null
+          } };
+        });
+      }
+    }
+  }
+
   const cacheObj = loadCache(session);
   const fileContents = new Map();
   const fileOrder = uniqueSorted(topScored.map(x => x.entry.file_rel));
@@ -745,6 +788,24 @@ function queryCmd(args) {
       reasons: row.reasons
     };
     if (!shouldExpand) return { ...base, expanded: false };
+    if (backendUsed === 'rust') {
+      if (typeof row.rust_section_excerpt === 'string' && row.rust_section_excerpt.length > 0) {
+        expandedCount += 1;
+        return {
+          ...base,
+          expanded: true,
+          section_source: row.rust_section_source || 'rust',
+          section_hash: null,
+          section_excerpt: row.rust_section_excerpt
+        };
+      }
+      if (row.rust_expand_blocked) {
+        return { ...base, expanded: false, expand_blocked: row.rust_expand_blocked };
+      }
+      if (row.rust_expand_error) {
+        return { ...base, expanded: false, expand_error: row.rust_expand_error };
+      }
+    }
     if (!expandFiles.has(row.entry.file_rel)) {
       return { ...base, expanded: false, expand_blocked: 'file_budget' };
     }

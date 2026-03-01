@@ -89,6 +89,11 @@ try {
   assert.ok(out.payload && out.payload.ok === true, 'probe should return ok=true');
   assert.ok(Number(out.payload.estimated_ms || 0) >= 1, 'probe should report elapsed ms');
 
+  out = run(['query-index', `--root=${tmp}`, '--q=cache fallback', '--top=2', '--expand-lines=6', '--max-files=1'], CRATE);
+  assert.strictEqual(out.status, 0, out.stderr);
+  assert.ok(out.payload && out.payload.ok === true, 'expanded query-index should return ok=true');
+  assert.ok(typeof out.payload.hits[0].section_excerpt === 'string', 'expanded hit should include section_excerpt');
+
   out = run(['get-node', `--root=${tmp}`, '--uid=memabc123autonomy2'], CRATE);
   assert.strictEqual(out.status, 0, out.stderr);
   assert.ok(out.payload && out.payload.ok === true, 'get-node should return ok=true');
