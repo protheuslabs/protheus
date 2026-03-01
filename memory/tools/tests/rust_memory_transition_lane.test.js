@@ -77,6 +77,8 @@ process.stdout.write(JSON.stringify({ ok: true, backend_used: engine, parity_err
   const bench = JSON.parse(fs.readFileSync(path.join(stateRoot, 'bench.json'), 'utf8'));
   assert.ok(Array.isArray(bench.rows) && bench.rows.length >= 3, 'benchmark rows should be recorded');
   assert.strictEqual(bench.rows[0].mode, 'probe_commands');
+  assert.ok(Number(bench.rows[0].query_speedup || 0) > 0, 'query_speedup should be present');
+  assert.ok(Number(bench.rows[0].get_speedup || 0) > 0, 'get_speedup should be present');
   assert.strictEqual(bench.rows[0].js_probe_ok, true);
   assert.strictEqual(bench.rows[0].rust_probe_ok, true);
   assert.strictEqual(bench.rows[0].js_get_probe_ok, true);

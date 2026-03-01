@@ -264,6 +264,10 @@ function runBenchmark(args, policy) {
 
       const jsMs = Math.max(1, Number(jsQueryProbe.duration_ms || 1) + Number(jsGetProbe.duration_ms || 1));
       const rustMs = Math.max(1, Number(rustQueryProbe.duration_ms || 1) + Number(rustGetProbe.duration_ms || 1));
+      const jsQueryMs = Math.max(1, Number(jsQueryProbe.duration_ms || 1));
+      const rustQueryMs = Math.max(1, Number(rustQueryProbe.duration_ms || 1));
+      const jsGetMs = Math.max(1, Number(jsGetProbe.duration_ms || 1));
+      const rustGetMs = Math.max(1, Number(rustGetProbe.duration_ms || 1));
 
       const rustBackendUsedQuery = normalizeToken(
         rustQueryProbe.payload && (rustQueryProbe.payload.backend_used || rustQueryProbe.payload.backend || ''),
@@ -302,6 +306,8 @@ function runBenchmark(args, policy) {
         : 1;
       const parityErrorCount = Math.max(queryParity, getParity);
       const speedup = Number((jsMs / Math.max(1, rustMs)).toFixed(6));
+      const querySpeedup = Number((jsQueryMs / Math.max(1, rustQueryMs)).toFixed(6));
+      const getSpeedup = Number((jsGetMs / Math.max(1, rustGetMs)).toFixed(6));
 
       history.rows.push({
         ts: nowIso(),
@@ -309,6 +315,12 @@ function runBenchmark(args, policy) {
         js_ms: jsMs,
         rust_ms: rustMs,
         speedup,
+        js_query_ms: jsQueryMs,
+        rust_query_ms: rustQueryMs,
+        query_speedup: querySpeedup,
+        js_get_ms: jsGetMs,
+        rust_get_ms: rustGetMs,
+        get_speedup: getSpeedup,
         parity_error_count: parityErrorCount,
         js_probe_ok: jsQueryProbe.ok,
         rust_probe_ok: rustQueryProbe.ok,
@@ -354,6 +366,12 @@ function runBenchmark(args, policy) {
   const avgSpeedup = recent.length > 0
     ? Number((recent.reduce((acc: number, row: any) => acc + Number(row.speedup || 0), 0) / recent.length).toFixed(6))
     : 0;
+  const avgQuerySpeedup = recent.length > 0
+    ? Number((recent.reduce((acc: number, row: any) => acc + Number(row.query_speedup || row.speedup || 0), 0) / recent.length).toFixed(6))
+    : 0;
+  const avgGetSpeedup = recent.length > 0
+    ? Number((recent.reduce((acc: number, row: any) => acc + Number(row.get_speedup || row.speedup || 0), 0) / recent.length).toFixed(6))
+    : 0;
 
   const out = {
     ts: nowIso(),
@@ -363,6 +381,8 @@ function runBenchmark(args, policy) {
     mode: policy.benchmark.mode,
     runs_added: runs,
     avg_speedup: avgSpeedup,
+    avg_query_speedup: avgQuerySpeedup,
+    avg_get_speedup: avgGetSpeedup,
     target_speedup: policy.thresholds.min_speedup_for_cutover,
     stable_runs: recent.length
   };
