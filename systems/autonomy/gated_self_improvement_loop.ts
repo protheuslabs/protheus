@@ -386,6 +386,64 @@ function evaluateGates(policy: AnyObj, simMetrics: AnyObj = {}, redSummary: AnyO
   };
 }
 
+function buildEvidencePack(row: AnyObj, policy: AnyObj, gateEval: AnyObj, simMetrics: AnyObj, redSummary: AnyObj, burnOracle: AnyObj, rollback: AnyObj) {
+  const drift = Number(simMetrics && simMetrics.effective_drift_rate);
+  const yieldRate = Number(simMetrics && simMetrics.effective_yield_rate);
+  const safetyStop = Number(simMetrics && simMetrics.effective_safety_stop_rate);
+  const redFailRate = Number(gateEval && gateEval.red_fail_rate);
+  const redCritical = Math.max(0, Number(redSummary && redSummary.critical_fail_cases || 0));
+  const gateRows = gateEval && gateEval.gates && typeof gateEval.gates === 'object'
+    ? gateEval.gates
+    : {};
+  const checks = Object.values(gateRows);
+  const passCount = checks.filter((v) => v === true).length;
+  const confidence = checks.length > 0
+    ? Number((passCount / checks.length).toFixed(6))
+    : (gateEval && gateEval.pass === true ? 1 : 0);
+
+  return {
+    schema_id: 'self_improvement_evidence_pack',
+    schema_version: '1.0',
+    ts: nowIso(),
+    proposal_id: row && row.proposal_id ? row.proposal_id : null,
+    risk: {
+      proposal_risk: normalizeToken(row && row.risk || 'medium', 24) || 'medium',
+      red_fail_rate: Number.isFinite(redFailRate) ? redFailRate : null,
+      red_critical_fail_cases: redCritical,
+      budget_pressure: burnOracle && burnOracle.pressure
+        ? normalizeToken(burnOracle.pressure, 24)
+        : null
+    },
+    drift: {
+      value: Number.isFinite(drift) ? drift : null,
+      threshold: Number(policy && policy.gates && policy.gates.max_effective_drift_rate || 0),
+      pass: gateRows.drift_ok === true
+    },
+    yield: {
+      value: Number.isFinite(yieldRate) ? yieldRate : null,
+      threshold: Number(policy && policy.gates && policy.gates.min_effective_yield_rate || 0),
+      pass: gateRows.yield_ok === true
+    },
+    counterfactual: {
+      if_pass: row && row.stage === 'live' ? 'merge_or_live_ready' : 'promote_stage_then_recheck',
+      if_fail: rollback && rollback.ok === true ? 'auto_rollback' : 'gated_hold',
+      safety_stop_rate: Number.isFinite(safetyStop) ? safetyStop : null,
+      red_fail_rate: Number.isFinite(redFailRate) ? redFailRate : null
+    },
+    rollback_plan: {
+      auto_rollback_enabled: policy && policy.auto_rollback_on_regression === true,
+      rollback_receipt_id: rollback && rollback.receipt_id ? rollback.receipt_id : null,
+      trigger: rollback && rollback.ok === true ? 'regression_detected' : 'manual_or_not_triggered'
+    },
+    confidence: {
+      value: confidence,
+      gate_pass: gateEval && gateEval.pass === true,
+      passed_checks: passCount,
+      total_checks: checks.length
+    }
+  };
+}
+
 function runNodeJson(script: string, args: string[], fallbackType: string) {
   const r = spawnSync(process.execPath, [script, ...args], {
     cwd: ROOT,
@@ -736,16 +794,33 @@ function cmdRun(args: AnyObj) {
     sandboxOps.blocked.push('shadow_only_mode');
   }
 
+  const evidencePack = buildEvidencePack(
+    row,
+    policy,
+    gateEval,
+    simMetrics,
+    redSummary,
+    burnOracle,
+    rollback
+  );
+
   row.history.push({
     ts,
     transition,
     status: row.status,
     stage: row.stage,
     gates: gateEval.gates,
-    symbiosis_recursion_gate: symbiosisGate
+    symbiosis_recursion_gate: symbiosisGate,
+    evidence_pack: {
+      risk: evidencePack.risk,
+      drift: evidencePack.drift,
+      yield: evidencePack.yield,
+      confidence: evidencePack.confidence
+    }
   });
   state.proposals[proposalId] = row;
   row.symbiosis_recursion_gate = symbiosisGate;
+  row.last_evidence_pack = evidencePack;
   saveState(policy, state);
 
   const out = {
@@ -770,7 +845,8 @@ function cmdRun(args: AnyObj) {
     budget_oracle: burnOracle,
     sandbox: sandboxOps,
     rollback,
-    symbiosis_recursion_gate: symbiosisGate
+    symbiosis_recursion_gate: symbiosisGate,
+    evidence_pack: evidencePack
   };
   persistLatest(policy, out);
   process.stdout.write(`${JSON.stringify(out, null, 2)}\n`);

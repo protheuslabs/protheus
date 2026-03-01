@@ -180,6 +180,9 @@ function main() {
   out = parse(r);
   assert.strictEqual(String(out.stage || ''), 'canary');
   assert.strictEqual(out.gates && out.gates.pass, true);
+  assert.ok(out.evidence_pack && out.evidence_pack.schema_id === 'self_improvement_evidence_pack');
+  assert.ok(out.evidence_pack && out.evidence_pack.risk && out.evidence_pack.drift && out.evidence_pack.yield);
+  assert.ok(out.evidence_pack && out.evidence_pack.counterfactual && out.evidence_pack.rollback_plan && out.evidence_pack.confidence);
 
   r = run([
     'run',
@@ -223,6 +226,12 @@ function main() {
   assert.strictEqual(out.gates && out.gates.pass, false);
   assert.strictEqual(String(out.status || ''), 'rolled_back');
   assert.ok(out.rollback && out.rollback.ok === true, 'automatic rollback should trigger');
+  assert.ok(
+    out.evidence_pack
+    && out.evidence_pack.rollback_plan
+    && out.evidence_pack.rollback_plan.rollback_receipt_id,
+    'evidence pack should include rollback receipt linkage when rollback triggers'
+  );
 
   r = run(['status', `--proposal-id=${proposalId}`], env);
   assert.strictEqual(r.status, 0, r.stderr || r.stdout || 'status should pass');
