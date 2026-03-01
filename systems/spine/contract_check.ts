@@ -484,6 +484,18 @@ function main() {
     "systems/ops/event_sourced_control_plane.js",
     ["event_sourced_control_plane.js", "append", "replay", "status"]
   );
+  checkSourceContains(
+    "systems/ops/event_sourced_control_plane.js",
+    ["mirrorToJetStream", "jetstream_latest_path", "jetstream_publish_ok"]
+  );
+  checkSourceContains(
+    "systems/autonomy/model_catalog_loop.js",
+    ["loadCatalogPolicy", "risk_tier_chain", "burn_oracle_advisory", "evaluateRiskTierChain"]
+  );
+  checkSourceContains(
+    "systems/autonomy/self_improvement_cadence_orchestrator.js",
+    ["cmdTrigger", "min_confidence", "trial_cells_generated"]
+  );
   checkScript(
     "systems/routing/model_catalog_service.js",
     ["model_catalog_service.js", "upsert", "select", "status"]

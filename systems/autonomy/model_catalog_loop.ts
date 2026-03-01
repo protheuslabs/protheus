@@ -22,6 +22,9 @@ const { stampGuardEnv } = require('../../lib/request_envelope');
 const { listLocalOllamaModels } = require('../routing/llm_gateway');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
+const MODEL_CATALOG_POLICY = process.env.AUTONOMY_MODEL_CATALOG_POLICY_PATH
+  ? path.resolve(process.env.AUTONOMY_MODEL_CATALOG_POLICY_PATH)
+  : path.join(REPO_ROOT, 'config', 'model_catalog_loop_policy.json');
 const ROUTING_CONFIG = path.join(REPO_ROOT, 'config', 'agent_routing_rules.json');
 const EYES_RAW_DIR = process.env.AUTONOMY_MODEL_CATALOG_EYE_DIR
   ? path.resolve(process.env.AUTONOMY_MODEL_CATALOG_EYE_DIR)
@@ -33,6 +36,9 @@ const AUDIT_PATH = path.join(REPO_ROOT, 'state', 'routing', 'model_catalog_audit
 const SNAPSHOT_DIR = path.join(REPO_ROOT, 'state', 'routing', 'model_catalog_snapshots');
 const GUARD_SCRIPT = path.join(REPO_ROOT, 'systems', 'security', 'guard.js');
 const ROUTER_SCRIPT = path.join(REPO_ROOT, 'systems', 'routing', 'model_router.js');
+const BURN_ORACLE_SCRIPT = process.env.AUTONOMY_MODEL_CATALOG_BURN_ORACLE_SCRIPT
+  ? path.resolve(process.env.AUTONOMY_MODEL_CATALOG_BURN_ORACLE_SCRIPT)
+  : path.join(REPO_ROOT, 'systems', 'ops', 'dynamic_burn_budget_oracle.js');
 const ROLLBACK_SCRIPT = path.join(REPO_ROOT, 'systems', 'autonomy', 'model_catalog_rollback.js');
 const EYE_LOOKBACK_DAYS = Number(process.env.AUTONOMY_MODEL_CATALOG_EYE_LOOKBACK_DAYS || 7);
 const EYE_MAX_CANDIDATES = Number(process.env.AUTONOMY_MODEL_CATALOG_EYE_MAX_CANDIDATES || 60);
@@ -86,6 +92,86 @@ function loadRoutingConfig() {
     throw new Error(`invalid routing config: ${ROUTING_CONFIG}`);
   }
   return cfg;
+}
+
+function boolFrom(v, fallback = false) {
+  if (v == null) return fallback;
+  const raw = String(v).trim().toLowerCase();
+  if (['1', 'true', 'yes', 'on'].includes(raw)) return true;
+  if (['0', 'false', 'no', 'off'].includes(raw)) return false;
+  return fallback;
+}
+
+function clampNumber(v, lo, hi, fallback) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return fallback;
+  if (n < lo) return lo;
+  if (n > hi) return hi;
+  return Number(n.toFixed(6));
+}
+
+function loadCatalogPolicy() {
+  const base = {
+    version: '1.0',
+    risk_tier_chain: {
+      enabled: true,
+      require_all_stages: true,
+      stages: [
+        { id: 'cheap', risk: 'low', complexity: 'low', intent: 'catalog-cheap-pass', task: 'catalog cheap pass' },
+        { id: 'deep', risk: 'high', complexity: 'high', intent: 'catalog-deep-pass', task: 'catalog deep pass' },
+        { id: 'critique', risk: 'medium', complexity: 'high', intent: 'catalog-critique-pass', task: 'catalog critique pass' }
+      ]
+    },
+    burn_oracle_advisory: {
+      enabled: true,
+      min_runway_days: 2,
+      block_on_hold: false
+    },
+    paths: {
+      burn_oracle_latest_path: 'state/ops/dynamic_burn_budget_oracle/latest.json'
+    }
+  };
+  const src = readJson(MODEL_CATALOG_POLICY, {});
+  const chain = src.risk_tier_chain && typeof src.risk_tier_chain === 'object' ? src.risk_tier_chain : {};
+  const advisory = src.burn_oracle_advisory && typeof src.burn_oracle_advisory === 'object'
+    ? src.burn_oracle_advisory
+    : {};
+  const paths = src.paths && typeof src.paths === 'object' ? src.paths : {};
+  const stages = Array.isArray(chain.stages) && chain.stages.length > 0
+    ? chain.stages
+      .map((row) => ({
+        id: normalizeModelToken(row && row.id || ''),
+        risk: String(row && row.risk || '').trim().toLowerCase() || 'medium',
+        complexity: String(row && row.complexity || '').trim().toLowerCase() || 'medium',
+        intent: String(row && row.intent || '').trim().slice(0, 160) || 'catalog-pass',
+        task: String(row && row.task || '').trim().slice(0, 160) || 'catalog pass'
+      }))
+      .filter((row) => row.id)
+    : base.risk_tier_chain.stages;
+  return {
+    version: String(src.version || base.version).trim() || base.version,
+    risk_tier_chain: {
+      enabled: boolFrom(chain.enabled, base.risk_tier_chain.enabled),
+      require_all_stages: boolFrom(chain.require_all_stages, base.risk_tier_chain.require_all_stages),
+      stages: stages.length ? stages : base.risk_tier_chain.stages
+    },
+    burn_oracle_advisory: {
+      enabled: boolFrom(advisory.enabled, base.burn_oracle_advisory.enabled),
+      min_runway_days: clampNumber(
+        advisory.min_runway_days,
+        0,
+        3650,
+        base.burn_oracle_advisory.min_runway_days
+      ),
+      block_on_hold: boolFrom(advisory.block_on_hold, base.burn_oracle_advisory.block_on_hold)
+    },
+    paths: {
+      burn_oracle_latest_path: path.isAbsolute(String(paths.burn_oracle_latest_path || ''))
+        ? String(paths.burn_oracle_latest_path)
+        : path.join(REPO_ROOT, String(paths.burn_oracle_latest_path || base.paths.burn_oracle_latest_path))
+    },
+    policy_path: MODEL_CATALOG_POLICY
+  };
 }
 
 function localOllamaModels() {
@@ -173,7 +259,23 @@ function eyeDiscoveredCloudModels() {
 }
 
 function runDoctorForModel(model) {
-  const r = spawnSync('node', [ROUTER_SCRIPT, 'doctor', '--risk=low', '--complexity=low', '--intent=chat', '--task=catalog trial', `--candidate=${model}`], {
+  return runDoctorProfileForModel(model, {
+    risk: 'low',
+    complexity: 'low',
+    intent: 'chat',
+    task: 'catalog trial'
+  });
+}
+
+function runDoctorProfileForModel(
+  model: string,
+  profile: { risk?: string; complexity?: string; intent?: string; task?: string } = {}
+) {
+  const risk = String(profile.risk || 'medium').trim().toLowerCase() || 'medium';
+  const complexity = String(profile.complexity || 'medium').trim().toLowerCase() || 'medium';
+  const intent = String(profile.intent || 'catalog trial').trim() || 'catalog trial';
+  const task = String(profile.task || 'catalog trial').trim() || 'catalog trial';
+  const r = spawnSync('node', [ROUTER_SCRIPT, 'doctor', `--risk=${risk}`, `--complexity=${complexity}`, `--intent=${intent}`, `--task=${task}`, `--candidate=${model}`], {
     cwd: REPO_ROOT,
     encoding: 'utf8'
   });
@@ -183,11 +285,97 @@ function runDoctorForModel(model) {
   if (!d) return { ok: false, error: 'diagnostic_not_found' };
   return {
     ok: true,
+    risk,
+    complexity,
+    intent,
+    task,
     eligible: d.eligible === true,
     reasons: d.reasons || [],
     rank_score: d.rank_score,
     local_health: d.local_health || null,
     outcome_score: d.outcome_score
+  };
+}
+
+function readBurnOracleAdvisory() {
+  const status = spawnSync('node', [BURN_ORACLE_SCRIPT, 'status'], {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+    timeout: 15000
+  });
+  if (status.status !== 0) return { available: false, hold: false, pressure: 'unknown', projected_runway_days: 0, reason: 'status_failed' };
+  const lines = String(status.stdout || '').split('\n').map((line) => line.trim()).filter(Boolean);
+  let payload = null;
+  for (let i = lines.length - 1; i >= 0; i -= 1) {
+    const line = lines[i];
+    if (!line.startsWith('{')) continue;
+    try {
+      payload = JSON.parse(line);
+      break;
+    } catch {}
+  }
+  if (!payload || payload.ok !== true) return { available: false, hold: false, pressure: 'unknown', projected_runway_days: 0, reason: 'status_parse_failed' };
+  const latest = payload.latest && typeof payload.latest === 'object' ? payload.latest : null;
+  if (!latest) return { available: false, hold: false, pressure: 'none', projected_runway_days: 0, reason: 'no_latest' };
+  const runway = Number(latest.global_projection && latest.global_projection.projected_runway_days);
+  const pressure = String(latest.global_projection && latest.global_projection.pressure || 'none').toLowerCase();
+  const hold = latest.global_projection && latest.global_projection.hold === true;
+  return {
+    available: true,
+    hold,
+    pressure,
+    projected_runway_days: Number.isFinite(runway) ? Number(runway.toFixed(6)) : 0,
+    reason_codes: Array.isArray(latest.global_projection && latest.global_projection.reason_codes)
+      ? latest.global_projection.reason_codes
+      : [],
+    source_ts: latest.ts || null
+  };
+}
+
+function evaluateRiskTierChain(model, policy, doctorRunner = runDoctorProfileForModel) {
+  const chain = policy && policy.risk_tier_chain && typeof policy.risk_tier_chain === 'object'
+    ? policy.risk_tier_chain
+    : { enabled: true, require_all_stages: true, stages: [] };
+  if (chain.enabled !== true || !Array.isArray(chain.stages) || chain.stages.length === 0) {
+    return {
+      enabled: false,
+      stage_results: [],
+      passed: true,
+      chain_score: 0
+    };
+  }
+
+  const stageResults = chain.stages.map((stage) => {
+    const check = doctorRunner(model, stage);
+    return {
+      stage_id: stage.id,
+      risk: stage.risk,
+      complexity: stage.complexity,
+      ok: check.ok === true,
+      eligible: check.eligible === true,
+      rank_score: Number(check.rank_score || 0),
+      outcome_score: Number(check.outcome_score || 0),
+      reasons: check.reasons || [],
+      error: check.error || null
+    };
+  });
+
+  const passedStages = stageResults.filter((row) => row.ok === true && row.eligible === true).length;
+  const total = stageResults.length;
+  const chainScore = total > 0
+    ? Number((stageResults.reduce((acc, row) => acc + Number(row.rank_score || 0), 0) / total).toFixed(6))
+    : 0;
+  const passed = chain.require_all_stages === true
+    ? passedStages === total
+    : passedStages >= 1;
+  return {
+    enabled: true,
+    require_all_stages: chain.require_all_stages === true,
+    passed_stages: passedStages,
+    total_stages: total,
+    stage_results: stageResults,
+    chain_score: chainScore,
+    passed
   };
 }
 
@@ -278,21 +466,71 @@ function cmdTrial(args) {
   if (!id) return fail(2, 'missing --id and no proposals found');
   const proposal = readJson(proposalPath(id), null);
   if (!proposal) return fail(2, `proposal not found: ${id}`);
+  const policy = loadCatalogPolicy();
+  const burnAdvisory = policy.burn_oracle_advisory.enabled === true
+    ? readBurnOracleAdvisory()
+    : { available: false, hold: false, pressure: 'none', projected_runway_days: 0, reason: 'disabled' };
 
   const checks = [];
-  for (const m of proposal.additions || []) checks.push({ model: m, ...runDoctorForModel(m) });
+  for (const m of proposal.additions || []) {
+    const primary = runDoctorForModel(m);
+    const chain = evaluateRiskTierChain(m, policy);
+    const runwayFloor = Number(policy.burn_oracle_advisory.min_runway_days || 0);
+    const burnLow = burnAdvisory.available === true && Number(burnAdvisory.projected_runway_days || 0) < runwayFloor;
+    const burnBlocks = policy.burn_oracle_advisory.block_on_hold === true && burnAdvisory.hold === true;
+    checks.push({
+      model: m,
+      ...primary,
+      risk_tier_chain: chain,
+      burn_oracle: {
+        available: burnAdvisory.available === true,
+        hold: burnAdvisory.hold === true,
+        pressure: burnAdvisory.pressure || 'none',
+        projected_runway_days: Number(burnAdvisory.projected_runway_days || 0),
+        below_runway_floor: burnLow,
+        block_on_hold_enabled: policy.burn_oracle_advisory.block_on_hold === true,
+        blocked_by_hold: burnBlocks
+      }
+    });
+  }
 
-  const passed = checks.filter(c => c.ok && c.eligible === true).map(c => c.model);
+  const passed = checks
+    .filter((c) => c.ok && c.eligible === true)
+    .filter((c) => !c.risk_tier_chain || c.risk_tier_chain.passed === true)
+    .filter((c) => !(c.burn_oracle && c.burn_oracle.blocked_by_hold === true))
+    .sort((a, b) => Number((b.risk_tier_chain && b.risk_tier_chain.chain_score) || 0) - Number((a.risk_tier_chain && a.risk_tier_chain.chain_score) || 0))
+    .map((c) => c.model);
   const failed = checks.filter(c => !c.ok || c.eligible !== true).map(c => ({ model: c.model, reason: c.error || (c.reasons || []).join(',') || 'not_eligible' }));
+  const gatedOut = checks
+    .filter((c) => c.ok && c.eligible === true)
+    .filter((c) => (c.risk_tier_chain && c.risk_tier_chain.passed !== true) || (c.burn_oracle && c.burn_oracle.blocked_by_hold === true))
+    .map((c) => ({
+      model: c.model,
+      reason: (c.burn_oracle && c.burn_oracle.blocked_by_hold === true)
+        ? 'burn_hold_gate'
+        : 'risk_tier_chain_failed'
+    }));
 
   const trial = {
     id,
     ts: nowIso(),
     type: 'model_catalog_trial',
     proposal_id: id,
+    policy: {
+      version: policy.version,
+      path: path.relative(REPO_ROOT, policy.policy_path).replace(/\\/g, '/'),
+      risk_tier_chain: {
+        enabled: policy.risk_tier_chain.enabled === true,
+        require_all_stages: policy.risk_tier_chain.require_all_stages === true,
+        stages: policy.risk_tier_chain.stages
+      },
+      burn_oracle_advisory: policy.burn_oracle_advisory
+    },
+    burn_oracle: burnAdvisory,
     checks,
     passed_models: passed,
     failed_models: failed,
+    gated_out_models: gatedOut,
     status: 'trialed'
   };
   writeJson(trialPath(id), trial);
@@ -534,5 +772,11 @@ function main() {
   }
 }
 
-main();
+if (require.main === module) {
+  main();
+}
+module.exports = {
+  loadCatalogPolicy,
+  evaluateRiskTierChain
+};
 export {};

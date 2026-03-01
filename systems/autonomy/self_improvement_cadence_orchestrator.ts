@@ -50,6 +50,14 @@ function clampInt(v: unknown, lo: number, hi: number, fallback: number) {
   return i;
 }
 
+function clampNumber(v: unknown, lo: number, hi: number, fallback: number) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return fallback;
+  if (n < lo) return lo;
+  if (n > hi) return hi;
+  return Number(n.toFixed(6));
+}
+
 function parseArgs(argv: string[]) {
   const out: AnyObj = { _: [] };
   for (let i = 0; i < argv.length; i += 1) {
@@ -185,6 +193,20 @@ function defaultPolicy() {
       loop: 'systems/autonomy/gated_self_improvement_loop.js',
       distiller: 'systems/assimilation/trajectory_skill_distiller.js'
     },
+    event_trigger: {
+      enabled: true,
+      shadow_only: true,
+      min_confidence: 0.997,
+      min_strategy_confidence: 0.9,
+      min_strategy_score: 30,
+      cooldown_minutes: 120,
+      allowed_sources: ['nightly', 'high_success_receipt', 'manual'],
+      paths: {
+        gated_loop_latest_path: 'state/autonomy/gated_self_improvement/latest.json',
+        strategy_scorecard_latest_path: 'state/adaptive/strategy/scorecards/latest.json',
+        trigger_state_path: 'state/autonomy/self_improvement_cadence/trigger_state.json'
+      }
+    },
     outputs: {
       state_path: 'state/autonomy/self_improvement_cadence/state.json',
       latest_path: 'state/autonomy/self_improvement_cadence/latest.json',
@@ -199,6 +221,8 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
   const quietHours = src.quiet_hours && typeof src.quiet_hours === 'object' ? src.quiet_hours : {};
   const budgetGuard = src.budget_guard && typeof src.budget_guard === 'object' ? src.budget_guard : {};
   const scripts = src.scripts && typeof src.scripts === 'object' ? src.scripts : {};
+  const eventTrigger = src.event_trigger && typeof src.event_trigger === 'object' ? src.event_trigger : {};
+  const eventTriggerPaths = eventTrigger.paths && typeof eventTrigger.paths === 'object' ? eventTrigger.paths : {};
   const outputs = src.outputs && typeof src.outputs === 'object' ? src.outputs : {};
   return {
     version: cleanText(src.version || base.version, 40) || base.version,
@@ -225,6 +249,36 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
       observer: resolvePath(scripts.observer || base.scripts.observer, base.scripts.observer),
       loop: resolvePath(scripts.loop || base.scripts.loop, base.scripts.loop),
       distiller: resolvePath(scripts.distiller || base.scripts.distiller, base.scripts.distiller)
+    },
+    event_trigger: {
+      enabled: toBool(eventTrigger.enabled, base.event_trigger.enabled),
+      shadow_only: toBool(eventTrigger.shadow_only, base.event_trigger.shadow_only),
+      min_confidence: clampNumber(eventTrigger.min_confidence, 0, 1, base.event_trigger.min_confidence),
+      min_strategy_confidence: clampNumber(
+        eventTrigger.min_strategy_confidence,
+        0,
+        1,
+        base.event_trigger.min_strategy_confidence
+      ),
+      min_strategy_score: clampNumber(eventTrigger.min_strategy_score, -9999, 9999, base.event_trigger.min_strategy_score),
+      cooldown_minutes: clampInt(eventTrigger.cooldown_minutes, 0, 7 * 24 * 60, base.event_trigger.cooldown_minutes),
+      allowed_sources: normalizeList(eventTrigger.allowed_sources, base.event_trigger.allowed_sources)
+        .map((row) => normalizeToken(row, 64))
+        .filter(Boolean),
+      paths: {
+        gated_loop_latest_path: resolvePath(
+          eventTriggerPaths.gated_loop_latest_path || base.event_trigger.paths.gated_loop_latest_path,
+          base.event_trigger.paths.gated_loop_latest_path
+        ),
+        strategy_scorecard_latest_path: resolvePath(
+          eventTriggerPaths.strategy_scorecard_latest_path || base.event_trigger.paths.strategy_scorecard_latest_path,
+          base.event_trigger.paths.strategy_scorecard_latest_path
+        ),
+        trigger_state_path: resolvePath(
+          eventTriggerPaths.trigger_state_path || base.event_trigger.paths.trigger_state_path,
+          base.event_trigger.paths.trigger_state_path
+        )
+      }
     },
     outputs: {
       state_path: resolvePath(outputs.state_path || base.outputs.state_path, base.outputs.state_path),
@@ -267,6 +321,39 @@ function saveState(policy: AnyObj, state: AnyObj) {
   });
 }
 
+function loadTriggerState(policy: AnyObj) {
+  const src = readJson(policy.event_trigger.paths.trigger_state_path, null);
+  if (!src || typeof src !== 'object') {
+    return {
+      schema_id: 'self_improvement_trigger_state',
+      schema_version: '1.0',
+      updated_at: nowIso(),
+      last_trigger_at: null,
+      last_source: null,
+      trigger_count: 0
+    };
+  }
+  return {
+    schema_id: 'self_improvement_trigger_state',
+    schema_version: '1.0',
+    updated_at: cleanText(src.updated_at || nowIso(), 64),
+    last_trigger_at: cleanText(src.last_trigger_at || '', 64) || null,
+    last_source: normalizeToken(src.last_source || '', 64) || null,
+    trigger_count: clampInt(src.trigger_count, 0, 10000000, 0)
+  };
+}
+
+function saveTriggerState(policy: AnyObj, state: AnyObj) {
+  writeJsonAtomic(policy.event_trigger.paths.trigger_state_path, {
+    schema_id: 'self_improvement_trigger_state',
+    schema_version: '1.0',
+    updated_at: nowIso(),
+    last_trigger_at: cleanText(state.last_trigger_at || '', 64) || null,
+    last_source: normalizeToken(state.last_source || '', 64) || null,
+    trigger_count: clampInt(state.trigger_count, 0, 10000000, 0)
+  });
+}
+
 function ensureDayCounters(state: AnyObj, dateStr: string) {
   if (!state.by_day || typeof state.by_day !== 'object') state.by_day = {};
   if (!state.by_day[dateStr] || typeof state.by_day[dateStr] !== 'object') {
@@ -287,6 +374,93 @@ function isInQuietHours(policy: AnyObj, nowDate: Date) {
   if (start === end) return false;
   if (start < end) return h >= start && h < end;
   return h >= start || h < end;
+}
+
+function asNumber(v: unknown, fallback = 0) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function buildTrialCells(dateStr: string, cycleIndex: number, cycle: AnyObj) {
+  const proposals = Array.isArray(cycle && cycle.proposals) ? cycle.proposals : [];
+  const runs = Array.isArray(cycle && cycle.runs) ? cycle.runs : [];
+  const runById: Record<string, AnyObj> = {};
+  for (const row of runs) {
+    const id = row && row.proposal_id ? String(row.proposal_id) : '';
+    if (id) runById[id] = row;
+  }
+  const out: AnyObj[] = [];
+  for (let i = 0; i < proposals.length; i += 1) {
+    const row = proposals[i];
+    if (!row || !row.proposal_id) continue;
+    const proposalId = String(row.proposal_id);
+    const run = runById[proposalId] || null;
+    out.push({
+      trial_cell_id: `trial_cell_${dateStr.replace(/-/g, '')}_${cycleIndex}_${i + 1}`,
+      proposal_id: proposalId,
+      target_path: row.target_path || null,
+      primitive_profile: 'shadow_primitive_cell',
+      stage: run && run.stage ? run.stage : 'shadow_simulated',
+      apply_requested: !!(run && run.apply_requested === true),
+      applied: !!(run && run.applied === true),
+      status: run && run.ok === true ? 'ready_for_evolutionary_trial' : 'blocked'
+    });
+  }
+  return out;
+}
+
+function evaluateTriggerGate(policy: AnyObj, source: string) {
+  const gate = policy.event_trigger || {};
+  const latestLoop = readJson(gate.paths.gated_loop_latest_path, {});
+  const latestScorecard = readJson(gate.paths.strategy_scorecard_latest_path, {});
+  const triggerState = loadTriggerState(policy);
+
+  const confidence = asNumber(
+    latestLoop
+      && latestLoop.evidence_pack
+      && latestLoop.evidence_pack.confidence
+      && latestLoop.evidence_pack.confidence.value,
+    0
+  );
+  const topStrategy = Array.isArray(latestScorecard.top_strategies) && latestScorecard.top_strategies.length > 0
+    ? latestScorecard.top_strategies[0]
+    : null;
+  const strategyConfidence = asNumber(topStrategy && topStrategy.confidence, 0);
+  const strategyScore = asNumber(topStrategy && topStrategy.score, 0);
+  const sourceAllowed = Array.isArray(gate.allowed_sources) && gate.allowed_sources.includes(source);
+
+  const cooldownMinutes = asNumber(gate.cooldown_minutes, 0);
+  let cooldownOk = true;
+  if (cooldownMinutes > 0 && triggerState.last_trigger_at) {
+    const lastMs = Date.parse(String(triggerState.last_trigger_at || ''));
+    if (Number.isFinite(lastMs)) {
+      const deltaMin = (Date.now() - lastMs) / 60000;
+      cooldownOk = deltaMin >= cooldownMinutes;
+    }
+  }
+
+  const checks = {
+    trigger_enabled: gate.enabled === true,
+    source_allowed: sourceAllowed,
+    confidence_ok: confidence >= asNumber(gate.min_confidence, 0.997),
+    strategy_confidence_ok: strategyConfidence >= asNumber(gate.min_strategy_confidence, 0.9),
+    strategy_score_ok: strategyScore >= asNumber(gate.min_strategy_score, 30),
+    cooldown_ok: cooldownOk
+  };
+
+  return {
+    pass: Object.values(checks).every((v) => v === true),
+    checks,
+    metrics: {
+      source,
+      confidence,
+      strategy_confidence: strategyConfidence,
+      strategy_score: strategyScore,
+      cooldown_minutes: cooldownMinutes,
+      last_trigger_at: triggerState.last_trigger_at || null
+    },
+    trigger_state: triggerState
+  };
 }
 
 function cmdRun(args: AnyObj) {
@@ -416,6 +590,7 @@ function cmdRun(args: AnyObj) {
         policy.timeout_ms_per_step
       );
       trajectory.push({ step: 'distill', ok: cycle.distill.ok && !!cycle.distill.payload && cycle.distill.payload.ok === true });
+      cycle.trial_cells = buildTrialCells(dateStr, i + 1, cycle);
 
       out.cycles.push(cycle);
       day.cycles = Number(day.cycles || 0) + 1;
@@ -428,6 +603,9 @@ function cmdRun(args: AnyObj) {
     : 0;
   out.applies_executed = Array.isArray(out.cycles)
     ? out.cycles.reduce((acc: number, cycle: AnyObj) => acc + Number(Array.isArray(cycle.runs) ? cycle.runs.filter((r: AnyObj) => r && r.applied === true).length : 0), 0)
+    : 0;
+  out.trial_cells_generated = Array.isArray(out.cycles)
+    ? out.cycles.reduce((acc: number, cycle: AnyObj) => acc + Number(Array.isArray(cycle.trial_cells) ? cycle.trial_cells.length : 0), 0)
     : 0;
   out.counters_after = {
     cycles: Number(day.cycles || 0),
@@ -451,6 +629,64 @@ function cmdRun(args: AnyObj) {
   process.stdout.write(`${JSON.stringify(out)}\n`);
 }
 
+function cmdTrigger(args: AnyObj) {
+  const policy = loadPolicy(args.policy ? path.resolve(String(args.policy)) : DEFAULT_POLICY_PATH);
+  const source = normalizeToken(args.source || 'manual', 64) || 'manual';
+  const evalGate = evaluateTriggerGate(policy, source);
+  const ts = nowIso();
+
+  const out: AnyObj = {
+    ok: true,
+    type: 'self_improvement_cadence_trigger',
+    ts,
+    source,
+    triggered: false,
+    policy_version: policy.version,
+    gate: evalGate,
+    run_result: null
+  };
+
+  if (!evalGate.pass) {
+    appendJsonl(policy.outputs.receipts_path, out);
+    process.stdout.write(`${JSON.stringify(out)}\n`);
+    return;
+  }
+
+  const triggerState = evalGate.trigger_state;
+  triggerState.last_trigger_at = ts;
+  triggerState.last_source = source;
+  triggerState.trigger_count = Number(triggerState.trigger_count || 0) + 1;
+  saveTriggerState(policy, triggerState);
+
+  const dateArg = /^\d{4}-\d{2}-\d{2}$/.test(String(args._[1] || '')) ? String(args._[1]) : todayStr();
+  const maxCycles = clampInt(args['max-cycles'], 1, 128, policy.max_cycles_per_run);
+  const applyRequested = toBool(args.apply, false);
+  const applyAllowed = applyRequested && policy.shadow_first !== true && policy.event_trigger.shadow_only !== true;
+
+  const runArgs = [
+    'run',
+    dateArg,
+    `--policy=${policy.policy_path}`,
+    `--max-cycles=${maxCycles}`,
+    `--apply=${applyAllowed ? '1' : '0'}`
+  ];
+  const runScript = path.join(ROOT, 'systems', 'autonomy', 'self_improvement_cadence_orchestrator.js');
+  const runOut = runJson(runScript, runArgs, policy.timeout_ms_per_step * Math.max(1, maxCycles) + 10000);
+
+  out.triggered = runOut.ok && !!runOut.payload && runOut.payload.ok === true;
+  out.apply_requested = applyRequested;
+  out.apply_allowed = applyAllowed;
+  out.run_result = runOut.payload || {
+    ok: false,
+    status: runOut.status,
+    stderr: runOut.stderr || null
+  };
+
+  appendJsonl(policy.outputs.receipts_path, out);
+  process.stdout.write(`${JSON.stringify(out)}\n`);
+  if (!out.triggered) process.exit(1);
+}
+
 function cmdStatus(args: AnyObj) {
   const policy = loadPolicy(args.policy ? path.resolve(String(args.policy)) : DEFAULT_POLICY_PATH);
   const state = loadState(policy);
@@ -465,7 +701,15 @@ function cmdStatus(args: AnyObj) {
       cadence_minutes: policy.cadence_minutes,
       max_cycles_per_run: policy.max_cycles_per_run,
       proposal_cap_per_cycle: policy.proposal_cap_per_cycle,
-      apply_cap_per_cycle: policy.apply_cap_per_cycle
+      apply_cap_per_cycle: policy.apply_cap_per_cycle,
+      event_trigger: {
+        enabled: policy.event_trigger.enabled === true,
+        shadow_only: policy.event_trigger.shadow_only === true,
+        min_confidence: policy.event_trigger.min_confidence,
+        min_strategy_confidence: policy.event_trigger.min_strategy_confidence,
+        min_strategy_score: policy.event_trigger.min_strategy_score,
+        cooldown_minutes: policy.event_trigger.cooldown_minutes
+      }
     },
     counters_today: state.by_day && state.by_day[todayStr()] ? state.by_day[todayStr()] : { cycles: 0, proposals: 0, applies: 0 },
     latest: latest && typeof latest === 'object'
@@ -490,6 +734,7 @@ function cmdStatus(args: AnyObj) {
 function usage() {
   console.log('Usage:');
   console.log('  node systems/autonomy/self_improvement_cadence_orchestrator.js run [YYYY-MM-DD] [--apply=1|0] [--max-cycles=N] [--policy=path]');
+  console.log('  node systems/autonomy/self_improvement_cadence_orchestrator.js trigger [YYYY-MM-DD] [--source=<manual|high_success_receipt|nightly>] [--apply=1|0] [--max-cycles=N] [--policy=path]');
   console.log('  node systems/autonomy/self_improvement_cadence_orchestrator.js status [--policy=path]');
 }
 
@@ -501,6 +746,7 @@ function main() {
     process.exit(0);
   }
   if (cmd === 'run') return cmdRun(args);
+  if (cmd === 'trigger') return cmdTrigger(args);
   if (cmd === 'status') return cmdStatus(args);
   usage();
   process.exit(2);
@@ -514,5 +760,7 @@ module.exports = {
   loadPolicy,
   loadState,
   saveState,
-  isInQuietHours
+  isInQuietHours,
+  evaluateTriggerGate,
+  buildTrialCells
 };

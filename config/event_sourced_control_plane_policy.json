@@ -1,5 +1,19 @@
 {
   "version": "1.0",
   "enabled": true,
-  "shadow_only": true
+  "shadow_only": true,
+  "jetstream": {
+    "enabled": false,
+    "shadow_only": true,
+    "allow_shadow_publish": false,
+    "subject_prefix": "protheus.events",
+    "publish_command": [
+      "nats",
+      "pub"
+    ],
+    "timeout_ms": 5000
+  },
+  "paths": {
+    "jetstream_latest_path": "state/ops/event_sourced_control_plane/jetstream_latest.json"
+  }
 }

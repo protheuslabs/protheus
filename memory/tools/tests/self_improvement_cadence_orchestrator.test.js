@@ -53,6 +53,7 @@ function main() {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'self-improvement-cadence-'));
   const stubs = path.join(tmp, 'stubs');
   const stateRoot = path.join(tmp, 'state');
+  const triggerRoot = path.join(tmp, 'trigger');
 
   const observerScript = path.join(stubs, 'observer_stub.js');
   mkStubScript(observerScript, `#!/usr/bin/env node\n'use strict';\nconsole.log(JSON.stringify({ ok: true, type: 'observer_mirror_run', mood: 'stable' }));\n`);
@@ -64,6 +65,26 @@ function main() {
   mkStubScript(distillerScript, `#!/usr/bin/env node\n'use strict';\nconsole.log(JSON.stringify({ ok: true, type: 'trajectory_skill_distill', profile_id: 'distill_test' }));\n`);
 
   const policyPath = path.join(tmp, 'config', 'self_improvement_cadence_policy.json');
+  const gatedLatestPath = path.join(triggerRoot, 'gated_latest.json');
+  const strategyScorecardPath = path.join(triggerRoot, 'strategy_latest.json');
+  const triggerStatePath = path.join(stateRoot, 'self_improvement_cadence', 'trigger_state.json');
+  writeJson(gatedLatestPath, {
+    ok: true,
+    evidence_pack: {
+      confidence: {
+        value: 1
+      }
+    }
+  });
+  writeJson(strategyScorecardPath, {
+    top_strategies: [
+      {
+        strategy_id: 'default_general',
+        score: 42,
+        confidence: 1
+      }
+    ]
+  });
   writeJson(policyPath, {
     version: '1.0-test',
     enabled: true,
@@ -90,6 +111,20 @@ function main() {
       loop: loopScript,
       distiller: distillerScript
     },
+    event_trigger: {
+      enabled: true,
+      shadow_only: true,
+      min_confidence: 0.997,
+      min_strategy_confidence: 0.8,
+      min_strategy_score: 30,
+      cooldown_minutes: 120,
+      allowed_sources: ['manual', 'high_success_receipt'],
+      paths: {
+        gated_loop_latest_path: gatedLatestPath,
+        strategy_scorecard_latest_path: strategyScorecardPath,
+        trigger_state_path: triggerStatePath
+      }
+    },
     outputs: {
       state_path: path.join(stateRoot, 'self_improvement_cadence', 'state.json'),
       latest_path: path.join(stateRoot, 'self_improvement_cadence', 'latest.json'),
@@ -106,6 +141,9 @@ function main() {
   assert.strictEqual(Number(out.payload.cycles_executed || 0), 1, 'should execute one cycle');
   assert.strictEqual(Number(out.payload.proposals_created || 0), 2, 'proposal cap should apply');
   assert.strictEqual(Number(out.payload.applies_executed || 0), 0, 'shadow_first should block apply');
+  assert.strictEqual(Number(out.payload.trial_cells_generated || 0), 2, 'trial cells should be generated');
+  assert.ok(Array.isArray(out.payload.cycles[0].trial_cells), 'cycle should expose trial cells');
+  assert.strictEqual(Number(out.payload.cycles[0].trial_cells.length || 0), 2, 'cycle trial cell count should match proposals');
 
   const policyApplyPath = path.join(tmp, 'config', 'self_improvement_cadence_apply_policy.json');
   writeJson(policyApplyPath, {
@@ -143,6 +181,23 @@ function main() {
   assert.strictEqual(out.status, 0, out.stderr || 'quiet-hours run should succeed');
   assert.ok(out.payload && out.payload.skipped === true, 'quiet-hours should skip cycle');
   assert.strictEqual(String(out.payload.skip_reason || ''), 'quiet_hours');
+
+  const triggerOut = run(['trigger', '2026-03-03', '--source=manual', `--policy=${policyPath}`], {
+    SELF_IMPROVEMENT_CADENCE_POLICY_PATH: policyPath,
+    SELF_IMPROVEMENT_CADENCE_NOW_ISO: '2026-03-03T12:00:00.000Z'
+  });
+  assert.strictEqual(triggerOut.status, 0, triggerOut.stderr || 'trigger should succeed');
+  assert.ok(triggerOut.payload && triggerOut.payload.triggered === true, 'trigger should execute run');
+  assert.strictEqual(triggerOut.payload.apply_allowed, false, 'trigger shadow mode should block apply');
+  assert.ok(triggerOut.payload.run_result && triggerOut.payload.run_result.ok === true, 'trigger should include run result');
+
+  const cooldownOut = run(['trigger', '2026-03-03', '--source=manual', `--policy=${policyPath}`], {
+    SELF_IMPROVEMENT_CADENCE_POLICY_PATH: policyPath,
+    SELF_IMPROVEMENT_CADENCE_NOW_ISO: '2026-03-03T12:15:00.000Z'
+  });
+  assert.strictEqual(cooldownOut.status, 0, cooldownOut.stderr || 'cooldown trigger should still return success envelope');
+  assert.ok(cooldownOut.payload && cooldownOut.payload.triggered === false, 'cooldown should block immediate re-trigger');
+  assert.strictEqual(cooldownOut.payload.gate.checks.cooldown_ok, false, 'cooldown gate should fail');
 
   const statusOut = run(['status', `--policy=${policyPath}`], {
     SELF_IMPROVEMENT_CADENCE_POLICY_PATH: policyPath

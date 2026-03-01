@@ -1,0 +1,38 @@
+{
+  "version": "1.0",
+  "risk_tier_chain": {
+    "enabled": true,
+    "require_all_stages": true,
+    "stages": [
+      {
+        "id": "cheap",
+        "risk": "low",
+        "complexity": "low",
+        "intent": "catalog-cheap-pass",
+        "task": "catalog cheap pass"
+      },
+      {
+        "id": "deep",
+        "risk": "high",
+        "complexity": "high",
+        "intent": "catalog-deep-pass",
+        "task": "catalog deep pass"
+      },
+      {
+        "id": "critique",
+        "risk": "medium",
+        "complexity": "high",
+        "intent": "catalog-critique-pass",
+        "task": "catalog critique pass"
+      }
+    ]
+  },
+  "burn_oracle_advisory": {
+    "enabled": true,
+    "min_runway_days": 2,
+    "block_on_hold": false
+  },
+  "paths": {
+    "burn_oracle_latest_path": "state/ops/dynamic_burn_budget_oracle/latest.json"
+  }
+}
