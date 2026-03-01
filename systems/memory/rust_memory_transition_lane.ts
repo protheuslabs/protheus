@@ -37,7 +37,7 @@ function usage() {
   console.log('Usage:');
   console.log('  node systems/memory/rust_memory_transition_lane.js pilot [--policy=<path>]');
   console.log('  node systems/memory/rust_memory_transition_lane.js benchmark [--runs=5] [--policy=<path>]');
-  console.log('  node systems/memory/rust_memory_transition_lane.js selector --backend=js|rust [--policy=<path>]');
+  console.log('  node systems/memory/rust_memory_transition_lane.js selector --backend=js|rust|rust_shadow|rust_live [--policy=<path>]');
   console.log('  node systems/memory/rust_memory_transition_lane.js retire-check [--policy=<path>]');
   console.log('  node systems/memory/rust_memory_transition_lane.js status [--policy=<path>]');
 }
@@ -373,10 +373,12 @@ function runBenchmark(args, policy) {
 
 function setSelector(args, policy) {
   const backend = normalizeToken(args.backend || '', 20);
-  if (!['js', 'rust'].includes(backend)) return { ok: false, error: 'invalid_backend', backend };
+  if (!['js', 'rust', 'rust_shadow', 'rust_live'].includes(backend)) return { ok: false, error: 'invalid_backend', backend };
+  const activeEngine = backend === 'js' ? 'js' : 'rust';
   const selector = {
     schema_version: '1.0',
     backend,
+    active_engine: activeEngine,
     updated_at: nowIso(),
     fallback_backend: 'js'
   };
@@ -386,6 +388,7 @@ function setSelector(args, policy) {
     type: 'rust_memory_backend_selector',
     ok: true,
     backend,
+    active_engine: activeEngine,
     fallback_backend: 'js'
   };
   writeJsonAtomic(policy.paths.latest_path, out);
@@ -426,7 +429,7 @@ function status(policy) {
     type: 'rust_memory_transition_status',
     shadow_only: policy.shadow_only,
     latest: readJson(policy.paths.latest_path, {}),
-    selector: readJson(policy.paths.selector_path, { backend: 'js', fallback_backend: 'js' })
+    selector: readJson(policy.paths.selector_path, { backend: 'js', active_engine: 'js', fallback_backend: 'js' })
   };
 }
 

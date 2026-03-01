@@ -83,8 +83,10 @@ process.stdout.write(JSON.stringify({ ok: true, backend_used: engine, parity_err
   assert.strictEqual(bench.rows[0].rust_get_probe_ok, true);
   assert.strictEqual(bench.rows[0].parity_error_count, 0);
 
-  res = run(['selector', `--policy=${policyPath}`, '--backend=rust']);
+  res = run(['selector', `--policy=${policyPath}`, '--backend=rust_shadow']);
   assert.strictEqual(res.status, 0, res.stderr);
+  assert.ok(res.payload && res.payload.backend === 'rust_shadow', 'selector should accept rust_shadow');
+  assert.strictEqual(res.payload.active_engine, 'rust', 'rust_shadow should normalize to rust active engine');
 
   res = run(['retire-check', `--policy=${policyPath}`]);
   assert.strictEqual(res.status, 0, res.stderr);
