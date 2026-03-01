@@ -17,6 +17,7 @@ secrets/*
 
 # Runtime/ops outputs (high churn, non-source artifacts)
 logs/tool_raw/
+habits/logs/*.ndjson
 tmp/
 dist/
 memory/**
