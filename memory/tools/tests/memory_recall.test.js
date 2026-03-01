@@ -299,5 +299,22 @@ runTest('get auto backend uses selector rust then falls back to js when crate is
   assert.strictEqual(out.node_id, 'autonomy-loop-gate');
 });
 
+runTest('clear-cache removes both js and rust session cache files', () => {
+  const root = makeWorkspace();
+  const session = 'clearboth';
+  const jsCache = path.join(root, 'state', 'memory', 'working_set', `${session}.json`);
+  const rustCache = path.join(root, 'state', 'memory', 'working_set', `${session}.rust.json`);
+  writeJson(jsCache, { version: 1, nodes: { a: { x: 1 } } });
+  writeJson(rustCache, { schema_version: '1.0', nodes: { b: { x: 2 } } });
+  const r = runRecall(root, ['clear-cache', `--session=${session}`]);
+  assert.strictEqual(r.status, 0, `clear-cache failed: ${r.stderr}`);
+  const out = parseJson(r.stdout);
+  assert.ok(out && out.ok === true, 'clear-cache should return ok=true');
+  assert.strictEqual(fs.existsSync(jsCache), false, 'js cache should be removed');
+  assert.strictEqual(fs.existsSync(rustCache), false, 'rust cache should be removed');
+  assert.ok(Array.isArray(out.removed_files), 'removed_files should be an array');
+  assert.ok(out.removed_files.length >= 2, 'removed_files should include both cache paths');
+});
+
 if (failed) process.exit(1);
 console.log('   ✅ ALL MEMORY RECALL TESTS PASS');

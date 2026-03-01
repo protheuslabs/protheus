@@ -1039,11 +1039,21 @@ function getCmd(args) {
 function clearCacheCmd(args) {
   const session = safeSessionName(args.session || process.env.MEMORY_RECALL_SESSION || 'default');
   const p = cachePathForSession(session);
-  if (fs.existsSync(p)) fs.rmSync(p, { force: true });
+  const rp = rustCachePathForSession(session);
+  const removed = [];
+  if (fs.existsSync(p)) {
+    fs.rmSync(p, { force: true });
+    removed.push(p);
+  }
+  if (fs.existsSync(rp)) {
+    fs.rmSync(rp, { force: true });
+    removed.push(rp);
+  }
   process.stdout.write(JSON.stringify({
     ok: true,
     type: 'memory_recall_clear_cache',
-    session
+    session,
+    removed_files: removed
   }) + '\n');
 }
 
