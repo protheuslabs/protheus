@@ -115,6 +115,27 @@ try {
   assert.ok(cache && cache.nodes && typeof cache.nodes === 'object', 'cache should include nodes map');
   assert.ok(Object.keys(cache.nodes).length >= 1, 'cache should persist at least one node');
 
+  out = run(['build-index', `--root=${tmp}`], CRATE);
+  assert.strictEqual(out.status, 0, out.stderr);
+  assert.ok(out.payload && out.payload.ok === true, 'build-index should return ok=true');
+  assert.ok(Number(out.payload.node_count || 0) >= 2, 'build-index should detect at least two nodes');
+  assert.ok(typeof out.payload.memory_index_sha256 === 'string' && out.payload.memory_index_sha256.length >= 64, 'build-index should return memory index hash');
+  assert.ok(typeof out.payload.tags_index_sha256 === 'string' && out.payload.tags_index_sha256.length >= 64, 'build-index should return tags index hash');
+
+  const rustMemoryIndexPath = path.join(tmp, 'memory', 'MEMORY_INDEX.rust.md');
+  const rustTagsIndexPath = path.join(tmp, 'memory', 'TAGS_INDEX.rust.md');
+  out = run([
+    'build-index',
+    `--root=${tmp}`,
+    '--write=1',
+    '--memory-index-path=memory/MEMORY_INDEX.rust.md',
+    '--tags-index-path=memory/TAGS_INDEX.rust.md'
+  ], CRATE);
+  assert.strictEqual(out.status, 0, out.stderr);
+  assert.ok(out.payload && out.payload.wrote_files === true, 'build-index write mode should report wrote_files=true');
+  assert.ok(fs.existsSync(rustMemoryIndexPath), 'build-index should write memory index file');
+  assert.ok(fs.existsSync(rustTagsIndexPath), 'build-index should write tags index file');
+
   fs.rmSync(tmp, { recursive: true, force: true });
   console.log('rust_memory_box_query.test.js: OK');
 } catch (err) {
