@@ -4,6 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const net = require('net');
 const { spawnSync } = require('child_process');
 
 const WORKSPACE_ROOT = path.resolve(__dirname, '..', '..');
@@ -30,6 +31,21 @@ const DEFAULT_RUST_CRATE_PATH = process.env.MEMORY_RECALL_RUST_CRATE_PATH
 const DEFAULT_RUST_BIN = String(process.env.MEMORY_RECALL_RUST_BIN || 'cargo').trim() || 'cargo';
 const DEFAULT_RUST_TIMEOUT_MS = clampInt(process.env.MEMORY_RECALL_RUST_TIMEOUT_MS || 25000, 1000, 120000);
 const DEFAULT_RUST_COOLDOWN_MS = clampInt(process.env.MEMORY_RECALL_RUST_COOLDOWN_MS || (5 * 60 * 1000), 1000, 24 * 60 * 60 * 1000);
+const DEFAULT_RUST_DAEMON_ENABLED = parseBoolFlag(process.env.MEMORY_RECALL_RUST_DAEMON_ENABLED, true);
+const DEFAULT_RUST_DAEMON_AUTOSTART = parseBoolFlag(process.env.MEMORY_RECALL_RUST_DAEMON_AUTOSTART, true);
+const DEFAULT_RUST_DAEMON_HOST = String(process.env.MEMORY_RECALL_RUST_DAEMON_HOST || '127.0.0.1').trim() || '127.0.0.1';
+const DEFAULT_RUST_DAEMON_PORT = clampInt(process.env.MEMORY_RECALL_RUST_DAEMON_PORT || 34127, 1, 65535);
+const DEFAULT_RUST_DAEMON_TIMEOUT_MS = clampInt(process.env.MEMORY_RECALL_RUST_DAEMON_TIMEOUT_MS || 1500, 100, 120000);
+const DEFAULT_RUST_DAEMON_STARTUP_TIMEOUT_MS = clampInt(process.env.MEMORY_RECALL_RUST_DAEMON_STARTUP_TIMEOUT_MS || 12000, 1000, 120000);
+const DEFAULT_RUST_DAEMON_PID_PATH = process.env.MEMORY_RECALL_RUST_DAEMON_PID_PATH
+  ? path.resolve(String(process.env.MEMORY_RECALL_RUST_DAEMON_PID_PATH))
+  : path.join(REPO_ROOT, 'state', 'memory', 'rust_transition', 'memory_daemon.pid');
+const DEFAULT_RUST_DAEMON_LOG_PATH = process.env.MEMORY_RECALL_RUST_DAEMON_LOG_PATH
+  ? path.resolve(String(process.env.MEMORY_RECALL_RUST_DAEMON_LOG_PATH))
+  : path.join(REPO_ROOT, 'state', 'memory', 'rust_transition', 'memory_daemon.log');
+const DEFAULT_RUST_DAEMON_BIN_PATH = process.env.MEMORY_RECALL_RUST_DAEMON_BIN_PATH
+  ? path.resolve(String(process.env.MEMORY_RECALL_RUST_DAEMON_BIN_PATH))
+  : path.join(DEFAULT_RUST_CRATE_PATH, 'target', 'release', 'protheus-memory-core');
 const DEFAULT_RUST_HEALTH_PATH = process.env.MEMORY_RECALL_RUST_HEALTH_PATH
   ? path.resolve(String(process.env.MEMORY_RECALL_RUST_HEALTH_PATH))
   : path.join(REPO_ROOT, 'state', 'memory', 'rust_transition', 'backend_health.json');
@@ -47,6 +63,14 @@ function clampNumber(v, min, max) {
   const n = Number(v);
   if (!Number.isFinite(n)) return min;
   return Math.max(min, Math.min(max, n));
+}
+
+function parseBoolFlag(v, fallback) {
+  if (v == null || v === '') return fallback;
+  const raw = String(v).trim().toLowerCase();
+  if (['1', 'true', 'yes', 'on'].includes(raw)) return true;
+  if (['0', 'false', 'no', 'off'].includes(raw)) return false;
+  return fallback;
 }
 
 function usage() {
@@ -478,15 +502,221 @@ function resolveBackendChoice(raw) {
   return autoBackendFromBenchmarkGate();
 }
 
-function runRustQueryIndex(query, tagFilters, top, options: any = {}) {
+function rustDaemonSupported() {
+  if (DEFAULT_RUST_DAEMON_ENABLED !== true) return false;
+  if (String(DEFAULT_RUST_BIN || '').trim() !== 'cargo') return false;
+  if (process.env.MEMORY_RECALL_ROOT) {
+    const requestedRoot = path.resolve(String(process.env.MEMORY_RECALL_ROOT));
+    if (requestedRoot !== WORKSPACE_ROOT) return false;
+  }
+  return true;
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, Math.max(1, Number(ms || 1))));
+}
+
+function daemonErrorRetryable(errCode) {
+  const raw = String(errCode || '').toLowerCase();
+  return raw.includes('econnrefused') || raw.includes('enoent') || raw.includes('ecancelled') || raw.includes('daemon_unavailable');
+}
+
+function writeDaemonPid(pid) {
+  try {
+    ensureDir(path.dirname(DEFAULT_RUST_DAEMON_PID_PATH));
+    fs.writeFileSync(DEFAULT_RUST_DAEMON_PID_PATH, `${JSON.stringify({
+      pid: Math.max(0, Math.trunc(Number(pid || 0))),
+      started_ts: nowIso(),
+      host: DEFAULT_RUST_DAEMON_HOST,
+      port: DEFAULT_RUST_DAEMON_PORT
+    }, null, 2)}\n`, 'utf8');
+  } catch {
+    // best effort only
+  }
+}
+
+function sendRustDaemonRequest(request, timeoutMs = DEFAULT_RUST_DAEMON_TIMEOUT_MS): Promise<any> {
+  return new Promise<any>((resolve) => {
+    let done = false;
+    let responseBuffer = '';
+    const socket = net.createConnection({
+      host: DEFAULT_RUST_DAEMON_HOST,
+      port: DEFAULT_RUST_DAEMON_PORT
+    });
+
+    const finish = (payload) => {
+      if (done) return;
+      done = true;
+      try { socket.destroy(); } catch {}
+      resolve(payload);
+    };
+
+    const timer = setTimeout(() => {
+      finish({ ok: false, error: 'rust_daemon_timeout' });
+    }, clampInt(timeoutMs, 100, 120000));
+
+    socket.on('connect', () => {
+      try {
+        socket.write(`${JSON.stringify(request)}\n`);
+      } catch {
+        clearTimeout(timer);
+        finish({ ok: false, error: 'rust_daemon_write_failed' });
+      }
+    });
+
+    socket.on('data', (chunk) => {
+      responseBuffer += String(chunk || '');
+      const nl = responseBuffer.indexOf('\n');
+      if (nl < 0) return;
+      clearTimeout(timer);
+      const line = responseBuffer.slice(0, nl).trim();
+      let parsed = null;
+      try { parsed = line ? JSON.parse(line) : null; } catch {}
+      if (parsed && typeof parsed === 'object') {
+        finish({ ok: true, payload: parsed });
+      } else {
+        finish({ ok: false, error: 'rust_daemon_invalid_json', raw: line.slice(0, 300) });
+      }
+    });
+
+    socket.on('error', (err) => {
+      clearTimeout(timer);
+      const code = err && (err.code || err.message) ? String(err.code || err.message) : 'daemon_unavailable';
+      finish({ ok: false, error: `rust_daemon_${code}` });
+    });
+
+    socket.on('end', () => {
+      if (done) return;
+      clearTimeout(timer);
+      const line = String(responseBuffer || '').trim();
+      let parsed = null;
+      try { parsed = line ? JSON.parse(line) : null; } catch {}
+      if (parsed && typeof parsed === 'object') {
+        finish({ ok: true, payload: parsed });
+      } else {
+        finish({ ok: false, error: 'rust_daemon_no_response' });
+      }
+    });
+  });
+}
+
+async function ensureRustDaemonRunning(): Promise<any> {
+  if (rustDaemonSupported() !== true) return { ok: false, error: 'rust_daemon_disabled' };
+  const ping: any = await sendRustDaemonRequest({ cmd: 'ping' }, 400);
+  if (ping.ok && ping.payload && ping.payload.ok === true) return { ok: true, reused: true };
+  if (DEFAULT_RUST_DAEMON_AUTOSTART !== true) return { ok: false, error: 'rust_daemon_unavailable' };
+  if (!fs.existsSync(DEFAULT_RUST_CRATE_PATH)) return { ok: false, error: 'rust_crate_missing', crate_path: DEFAULT_RUST_CRATE_PATH };
+
+  try {
+    ensureDir(path.dirname(DEFAULT_RUST_DAEMON_LOG_PATH));
+    const logFd = fs.openSync(DEFAULT_RUST_DAEMON_LOG_PATH, 'a');
+    let child = null;
+    if (fs.existsSync(DEFAULT_RUST_DAEMON_BIN_PATH)) {
+      child = require('child_process').spawn(
+        DEFAULT_RUST_DAEMON_BIN_PATH,
+        [
+          'daemon',
+          `--host=${DEFAULT_RUST_DAEMON_HOST}`,
+          `--port=${DEFAULT_RUST_DAEMON_PORT}`,
+          `--root=${REPO_ROOT}`
+        ],
+        {
+          cwd: REPO_ROOT,
+          detached: true,
+          stdio: ['ignore', logFd, logFd]
+        }
+      );
+    } else {
+      child = require('child_process').spawn(
+        DEFAULT_RUST_BIN,
+        [
+          'run',
+          '--release',
+          '--quiet',
+          '--',
+          'daemon',
+          `--host=${DEFAULT_RUST_DAEMON_HOST}`,
+          `--port=${DEFAULT_RUST_DAEMON_PORT}`,
+          `--root=${REPO_ROOT}`
+        ],
+        {
+          cwd: DEFAULT_RUST_CRATE_PATH,
+          detached: true,
+          stdio: ['ignore', logFd, logFd]
+        }
+      );
+    }
+    if (!child || !Number.isFinite(child.pid) || child.pid <= 0) {
+      return { ok: false, error: 'rust_daemon_spawn_failed' };
+    }
+    child.unref();
+    writeDaemonPid(child.pid);
+  } catch (err) {
+    return {
+      ok: false,
+      error: `rust_daemon_spawn_error_${String(err && (err.code || err.message) ? (err.code || err.message) : 'unknown')}`
+    };
+  }
+
+  const deadline = Date.now() + DEFAULT_RUST_DAEMON_STARTUP_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    await sleep(120);
+    const probe: any = await sendRustDaemonRequest({ cmd: 'ping' }, 400);
+    if (probe.ok && probe.payload && probe.payload.ok === true) {
+      return { ok: true, reused: false };
+    }
+  }
+  return { ok: false, error: 'rust_daemon_start_timeout' };
+}
+
+async function tryRustDaemonInvoke(cmd, args): Promise<any> {
+  if (rustDaemonSupported() !== true) {
+    return { ok: false, error: 'rust_daemon_disabled' };
+  }
+  let first: any = await sendRustDaemonRequest({ cmd, args }, DEFAULT_RUST_DAEMON_TIMEOUT_MS);
+  if (first.ok && first.payload && first.payload.ok === true) return { ok: true, payload: first.payload };
+  if (!daemonErrorRetryable(first && first.error ? first.error : '')) {
+    return { ok: false, error: first && first.error ? first.error : 'rust_daemon_rejected' };
+  }
+  const ensured: any = await ensureRustDaemonRunning();
+  if (!ensured.ok) {
+    return { ok: false, error: ensured.error || 'rust_daemon_unavailable' };
+  }
+  const second: any = await sendRustDaemonRequest({ cmd, args }, DEFAULT_RUST_DAEMON_TIMEOUT_MS);
+  if (second.ok && second.payload && second.payload.ok === true) return { ok: true, payload: second.payload };
+  return { ok: false, error: second && second.error ? second.error : 'rust_daemon_failed' };
+}
+
+async function runRustQueryIndex(query, tagFilters, top, options: any = {}) {
   const cratePath = DEFAULT_RUST_CRATE_PATH;
-  if (!fs.existsSync(cratePath)) {
+  if (!fs.existsSync(cratePath) && rustDaemonSupported() !== true) {
     return { ok: false, error: 'rust_crate_missing', crate_path: cratePath };
   }
   const expandLines = clampInt(options && options.expandLines != null ? options.expandLines : 0, 0, 300);
   const maxFiles = clampInt(options && options.maxFiles != null ? options.maxFiles : 1, 1, 20);
   const cachePath = options && typeof options.cachePath === 'string' ? options.cachePath : '';
   const cacheMaxBytes = clampInt(options && options.cacheMaxBytes != null ? options.cacheMaxBytes : DEFAULT_CACHE_MAX_BYTES, 65536, 16 * 1024 * 1024);
+
+  const daemonArgs: Record<string, any> = {
+    root: REPO_ROOT,
+    q: String(query || ''),
+    top: String(clampInt(top, 1, 20)),
+    tags: (Array.isArray(tagFilters) ? tagFilters : []).join(',')
+  };
+  if (expandLines > 0) daemonArgs['expand-lines'] = String(expandLines);
+  if (expandLines > 0) daemonArgs['max-files'] = String(maxFiles);
+  if (cachePath) daemonArgs['cache-path'] = cachePath;
+  if (cachePath) daemonArgs['cache-max-bytes'] = String(cacheMaxBytes);
+
+  const daemon = await tryRustDaemonInvoke('query-index', daemonArgs);
+  if (daemon.ok && daemon.payload && daemon.payload.ok === true && Array.isArray(daemon.payload.hits)) {
+    return { ok: true, payload: daemon.payload, transport: 'daemon' };
+  }
+
+  if (!fs.existsSync(cratePath)) {
+    return { ok: false, error: daemon.error || 'rust_crate_missing', crate_path: cratePath };
+  }
+
   const args = [
     'run',
     '--quiet',
@@ -511,7 +741,7 @@ function runRustQueryIndex(query, tagFilters, top, options: any = {}) {
   let payload = null;
   try { payload = stdout ? JSON.parse(stdout) : null; } catch {}
   if (Number.isFinite(run.status) && run.status === 0 && payload && payload.ok === true && Array.isArray(payload.hits)) {
-    return { ok: true, payload };
+    return { ok: true, payload, transport: 'cli' };
   }
   const err = run.error
     ? `spawn_error_${String(run.error.code || run.error.message || 'unknown')}`
@@ -525,11 +755,32 @@ function runRustQueryIndex(query, tagFilters, top, options: any = {}) {
   };
 }
 
-function runRustGetNode(nodeId, uid, fileFilter, options: any = {}) {
+async function runRustGetNode(nodeId, uid, fileFilter, options: any = {}) {
   const cratePath = DEFAULT_RUST_CRATE_PATH;
-  if (!fs.existsSync(cratePath)) {
+  if (!fs.existsSync(cratePath) && rustDaemonSupported() !== true) {
     return { ok: false, error: 'rust_crate_missing', crate_path: cratePath };
   }
+  const cachePath = options && typeof options.cachePath === 'string' ? options.cachePath : '';
+  const cacheMaxBytes = clampInt(options && options.cacheMaxBytes != null ? options.cacheMaxBytes : DEFAULT_CACHE_MAX_BYTES, 65536, 16 * 1024 * 1024);
+
+  const daemonArgs: Record<string, any> = {
+    root: REPO_ROOT
+  };
+  if (nodeId) daemonArgs['node-id'] = String(nodeId);
+  if (uid) daemonArgs.uid = String(uid);
+  if (fileFilter) daemonArgs.file = String(fileFilter);
+  if (cachePath) daemonArgs['cache-path'] = cachePath;
+  if (cachePath) daemonArgs['cache-max-bytes'] = String(cacheMaxBytes);
+
+  const daemon = await tryRustDaemonInvoke('get-node', daemonArgs);
+  if (daemon.ok && daemon.payload && daemon.payload.ok === true && typeof daemon.payload.section === 'string') {
+    return { ok: true, payload: daemon.payload, transport: 'daemon' };
+  }
+
+  if (!fs.existsSync(cratePath)) {
+    return { ok: false, error: daemon.error || 'rust_crate_missing', crate_path: cratePath };
+  }
+
   const args = [
     'run',
     '--quiet',
@@ -537,8 +788,6 @@ function runRustGetNode(nodeId, uid, fileFilter, options: any = {}) {
     'get-node',
     `--root=${REPO_ROOT}`
   ];
-  const cachePath = options && typeof options.cachePath === 'string' ? options.cachePath : '';
-  const cacheMaxBytes = clampInt(options && options.cacheMaxBytes != null ? options.cacheMaxBytes : DEFAULT_CACHE_MAX_BYTES, 65536, 16 * 1024 * 1024);
   if (nodeId) args.push(`--node-id=${String(nodeId)}`);
   if (uid) args.push(`--uid=${String(uid)}`);
   if (fileFilter) args.push(`--file=${String(fileFilter)}`);
@@ -554,7 +803,7 @@ function runRustGetNode(nodeId, uid, fileFilter, options: any = {}) {
   let payload = null;
   try { payload = stdout ? JSON.parse(stdout) : null; } catch {}
   if (Number.isFinite(run.status) && run.status === 0 && payload && payload.ok === true && typeof payload.section === 'string') {
-    return { ok: true, payload };
+    return { ok: true, payload, transport: 'cli' };
   }
   const err = run.error
     ? `spawn_error_${String(run.error.code || run.error.message || 'unknown')}`
@@ -784,7 +1033,7 @@ function parseRustScoredRows(payload: any, top: number): any[] {
   return rows;
 }
 
-function queryCmd(args) {
+async function queryCmd(args) {
   const query = String(args.q || args.query || '').trim();
   const tagFilters = parseListArg(args.tags);
   const top = clampInt(args.top == null ? DEFAULT_TOP : args.top, 1, 20);
@@ -804,6 +1053,7 @@ function queryCmd(args) {
   let backendUsed = 'js';
   let backendFallbackReason = null;
   let scoringSource = 'js';
+  let rustTransport = null;
   let indexSources = [];
   let tagSources = [];
   let topScored: any[] = [];
@@ -813,7 +1063,7 @@ function queryCmd(args) {
       backendFallbackReason = 'rust_cooldown_active';
     } else {
       const rustExpandLinesInitial = expandMode === 'always' ? excerptLines : 0;
-      const rust = runRustQueryIndex(query, tagFilters, top, {
+      const rust = await runRustQueryIndex(query, tagFilters, top, {
         expandLines: rustExpandLinesInitial,
         maxFiles,
         cachePath: rustCachePathForSession(session),
@@ -824,6 +1074,7 @@ function queryCmd(args) {
         const payload = rust.payload || {};
         backendUsed = 'rust';
         scoringSource = 'rust_query_index';
+        rustTransport = cleanCell(rust.transport || 'unknown') || null;
         indexSources = Array.isArray(payload.index_sources) ? payload.index_sources.slice(0) : [];
         tagSources = Array.isArray(payload.tag_sources) ? payload.tag_sources.slice(0) : [];
         metrics.candidates_total = clampInt(payload.candidates_total, 0, 100000000);
@@ -878,7 +1129,7 @@ function queryCmd(args) {
   if (backendUsed === 'rust' && shouldExpand) {
     const hasRustExpansion = topScored.some((row: any) => row.rust_section_excerpt || row.rust_expand_blocked || row.rust_expand_error);
     if (!hasRustExpansion) {
-      const rustExpanded = runRustQueryIndex(query, tagFilters, top, {
+      const rustExpanded = await runRustQueryIndex(query, tagFilters, top, {
         expandLines: excerptLines,
         maxFiles,
         cachePath: rustCachePathForSession(session),
@@ -975,6 +1226,7 @@ function queryCmd(args) {
     backend_requested: backendRequested,
     backend_used: backendUsed,
     backend_fallback_reason: backendFallbackReason,
+    rust_transport: rustTransport,
     scoring_source: scoringSource,
     index_sources: indexSources,
     tag_sources: tagSources,
@@ -983,7 +1235,7 @@ function queryCmd(args) {
   }, null, 2) + '\n');
 }
 
-function getCmd(args) {
+async function getCmd(args) {
   const nodeId = normalizeNodeId(args['node-id'] || args.node_id || '');
   const uid = normalizeUid(args.uid || '');
   const fileFilter = normalizeFileRef(args.file || '');
@@ -1002,12 +1254,13 @@ function getCmd(args) {
   const metrics = { cache_hits: 0, cache_misses: 0, file_reads: 0 };
   let backendUsed = 'js';
   let backendFallbackReason = null;
+  let rustTransport = null;
 
   if (backendRequested === 'rust') {
     if (rustCooldownActive()) {
       backendFallbackReason = 'rust_cooldown_active';
     } else {
-      const rust = runRustGetNode(nodeId, uid, fileFilter, {
+      const rust = await runRustGetNode(nodeId, uid, fileFilter, {
         cachePath: rustCachePathForSession(session),
         cacheMaxBytes
       });
@@ -1022,6 +1275,7 @@ function getCmd(args) {
           backend_requested: backendRequested,
           backend_used: 'rust',
           backend_fallback_reason: null,
+          rust_transport: cleanCell(rust.transport || 'unknown') || null,
           node_id: normalizeNodeId(payload.node_id || nodeId),
           uid: normalizeUid(payload.uid || uid),
           file: normalizeFileRef(payload.file || fileFilter),
@@ -1078,6 +1332,7 @@ function getCmd(args) {
     backend_requested: backendRequested,
     backend_used: backendUsed,
     backend_fallback_reason: backendFallbackReason,
+    rust_transport: rustTransport,
     node_id: entry.node_id,
     uid: entry.uid || '',
     file: entry.file_rel,
@@ -1111,7 +1366,7 @@ function clearCacheCmd(args) {
   }) + '\n');
 }
 
-function main() {
+async function main() {
   const args = parseArgs(process.argv.slice(2));
   const cmd = String(args._[0] || '').trim().toLowerCase();
 
@@ -1120,15 +1375,21 @@ function main() {
     process.exit(0);
   }
 
-  if (cmd === 'query') return queryCmd(args);
-  if (cmd === 'get') return getCmd(args);
+  if (cmd === 'query') return await queryCmd(args);
+  if (cmd === 'get') return await getCmd(args);
   if (cmd === 'clear-cache' || cmd === 'clear_cache') return clearCacheCmd(args);
 
   usage();
   process.exit(2);
 }
 
-if (require.main === module) main();
+if (require.main === module) {
+  main().catch((err) => {
+    const reason = err && err.message ? String(err.message) : 'memory_recall_unhandled_error';
+    process.stdout.write(`${JSON.stringify({ ok: false, error: reason })}\n`);
+    process.exit(1);
+  });
+}
 
 module.exports = {
   parseIndexFile,

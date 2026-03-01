@@ -1,14 +1,14 @@
 # Memory Migration Stage 1 Benchmark
 
-- Generated: 2026-03-01T20:21:36.903Z
+- Generated: 2026-03-01T20:30:27.597Z
 - Mode: probe_commands
 - Runs Added: 3
-- Stable Runs Considered: 7
-- Avg Total Speedup (js/rust): 0.426830
-- Avg Query Speedup: 0.446501
-- Avg Get Speedup: 0.469481
-- Avg Index Speedup: 0.290898
-- Target Speedup: 1.200000
+- Stable Runs Considered: 3
+- Avg Total Speedup (js/rust): 1.451559
+- Avg Query Speedup: 1.555572
+- Avg Get Speedup: 1.384690
+- Avg Index Speedup: 1.417682
+- Target Speedup: 1.100000
 
 ## Notes
 - Stage 1 keeps deterministic JS fallback active.

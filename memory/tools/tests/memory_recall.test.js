@@ -214,6 +214,7 @@ runTest('query requested rust backend uses rust payload when rust bin succeeds',
   assert.ok(out && out.ok === true, 'expected ok=true');
   assert.strictEqual(out.backend_used, 'rust');
   assert.strictEqual(out.backend_fallback_reason, null);
+  assert.strictEqual(out.rust_transport, 'cli');
   assert.strictEqual(out.hits[0].node_id, 'routing-cache-design');
 });
 
@@ -442,6 +443,7 @@ runTest('get requested rust backend uses rust payload when rust bin succeeds', (
   assert.ok(out && out.ok === true, 'expected ok=true');
   assert.strictEqual(out.backend_used, 'rust');
   assert.strictEqual(out.backend_fallback_reason, null);
+  assert.strictEqual(out.rust_transport, 'cli');
   assert.strictEqual(out.node_id, 'autonomy-loop-gate');
   assert.strictEqual(out.section_hash, '1111111111111111111111111111111111111111111111111111111111111111');
 });

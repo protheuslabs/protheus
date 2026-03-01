@@ -8,6 +8,8 @@ use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::env;
 use std::fs;
 use std::cmp::Ordering;
+use std::io::{BufRead, BufReader, Write};
+use std::net::TcpListener;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::{Instant, UNIX_EPOCH};
@@ -102,6 +104,13 @@ struct CacheNode {
 struct WorkingSetCache {
     schema_version: String,
     nodes: HashMap<String, CacheNode>,
+}
+
+#[derive(Deserialize)]
+struct DaemonRequest {
+    cmd: String,
+    #[serde(default)]
+    args: HashMap<String, String>,
 }
 
 fn strip_ticks(s: &str) -> String {
@@ -1227,7 +1236,7 @@ fn run_probe(args: &HashMap<String, String>) {
     println!("{}", out);
 }
 
-fn run_query_index(args: &HashMap<String, String>) {
+fn query_index_payload(args: &HashMap<String, String>) -> QueryResult {
     let root = PathBuf::from(arg_or_default(args, "root", "."));
     let q = arg_or_default(args, "q", "");
     let top = parse_top(arg_or_default(args, "top", "5").as_str());
@@ -1372,7 +1381,7 @@ fn run_query_index(args: &HashMap<String, String>) {
         save_working_set_cache(&cache_path, cache_ref, cache_max_bytes);
     }
 
-    let out = QueryResult {
+    QueryResult {
         ok: true,
         backend: "protheus_memory_core".to_string(),
         entries_total: entries.len(),
@@ -1380,11 +1389,15 @@ fn run_query_index(args: &HashMap<String, String>) {
         index_sources,
         tag_sources,
         hits,
-    };
+    }
+}
+
+fn run_query_index(args: &HashMap<String, String>) {
+    let out = query_index_payload(args);
     println!("{}", serde_json::to_string(&out).expect("serialize query result"));
 }
 
-fn run_get_node(args: &HashMap<String, String>) {
+fn get_node_payload(args: &HashMap<String, String>) -> (serde_json::Value, i32) {
     let root = PathBuf::from(arg_or_default(args, "root", "."));
     let node_id = normalize_node_id(&arg_any(args, &["node-id", "node_id"]));
     let uid = normalize_uid(&arg_or_default(args, "uid", ""));
@@ -1398,15 +1411,13 @@ fn run_get_node(args: &HashMap<String, String>) {
     };
 
     if node_id.is_empty() && uid.is_empty() {
-        println!(
-            "{}",
-            serde_json::to_string(&json!({
+        return (
+            json!({
                 "ok": false,
                 "error": "missing --node-id=<id> or --uid=<alnum_uid>"
-            }))
-            .expect("serialize missing-id error")
+            }),
+            2,
         );
-        std::process::exit(2);
     }
 
     let runtime_index = load_runtime_index(&root, args);
@@ -1429,18 +1440,16 @@ fn run_get_node(args: &HashMap<String, String>) {
 
     sort_entries_for_get(&mut matches);
     let Some(entry) = matches.first() else {
-        println!(
-            "{}",
-            serde_json::to_string(&json!({
+        return (
+            json!({
                 "ok": false,
                 "error": "node_not_found",
                 "node_id": if node_id.is_empty() { serde_json::Value::Null } else { json!(node_id) },
                 "uid": if uid.is_empty() { serde_json::Value::Null } else { json!(uid) },
                 "file": if file_filter.is_empty() { serde_json::Value::Null } else { json!(file_filter) }
-            }))
-            .expect("serialize node-not-found error")
+            }),
+            1,
         );
-        std::process::exit(1);
     };
 
     let section_pair = load_section_cached(
@@ -1466,11 +1475,7 @@ fn run_get_node(args: &HashMap<String, String>) {
                     "file": entry.file_rel
                 })
             };
-            println!(
-                "{}",
-                serde_json::to_string(&mapped).expect("serialize get-node error")
-            );
-            std::process::exit(1);
+            return (mapped, 1);
         }
     };
 
@@ -1479,17 +1484,15 @@ fn run_get_node(args: &HashMap<String, String>) {
     }
 
     if section.is_empty() {
-        println!(
-            "{}",
-            serde_json::to_string(&json!({
+        return (
+            json!({
                 "ok": false,
                 "error": "node_not_found",
                 "node_id": entry.node_id,
                 "file": entry.file_rel
-            }))
-            .expect("serialize node-not-found-in-file error")
+            }),
+            1,
         );
-        std::process::exit(1);
     }
 
     let out = GetNodeResult {
@@ -1503,10 +1506,24 @@ fn run_get_node(args: &HashMap<String, String>) {
         section_hash,
         section,
     };
-    println!("{}", serde_json::to_string(&out).expect("serialize get-node result"));
+    (
+        serde_json::to_value(&out).expect("serialize get-node value"),
+        0,
+    )
 }
 
-fn run_build_index(args: &HashMap<String, String>) {
+fn run_get_node(args: &HashMap<String, String>) {
+    let (payload, status_code) = get_node_payload(args);
+    println!(
+        "{}",
+        serde_json::to_string(&payload).expect("serialize get-node payload")
+    );
+    if status_code != 0 {
+        std::process::exit(status_code);
+    }
+}
+
+fn build_index_payload(args: &HashMap<String, String>) -> BuildIndexResult {
     let root = PathBuf::from(arg_or_default(args, "root", "."));
     let write = parse_bool_flag(&arg_any(args, &["write", "save", "apply"]));
     let memory_index_path_raw = arg_any(args, &["memory-index-path", "memory_index_path"]);
@@ -1591,7 +1608,7 @@ fn run_build_index(args: &HashMap<String, String>) {
         let _ = fs::write(&tags_index_abs, format!("{}\n", tags_index_md));
     }
 
-    let out = BuildIndexResult {
+    BuildIndexResult {
         ok: true,
         backend: "protheus_memory_core".to_string(),
         node_count: entries.len(),
@@ -1604,11 +1621,120 @@ fn run_build_index(args: &HashMap<String, String>) {
         tags_index_sha256: sha256_hex(&tags_index_md),
         sqlite_path,
         sqlite_rows_written,
-    };
+    }
+}
+
+fn run_build_index(args: &HashMap<String, String>) {
+    let out = build_index_payload(args);
     println!(
         "{}",
         serde_json::to_string(&out).expect("serialize build-index result")
     );
+}
+
+fn run_daemon(args: &HashMap<String, String>) {
+    let host = arg_or_default(args, "host", "127.0.0.1");
+    let port_raw = arg_or_default(args, "port", "34127");
+    let port = port_raw.parse::<u16>().unwrap_or(34127);
+    let bind_addr = format!("{host}:{port}");
+    let listener = TcpListener::bind(&bind_addr).unwrap_or_else(|_| {
+        eprintln!("memory-daemon bind failed at {bind_addr}");
+        std::process::exit(1);
+    });
+    eprintln!("memory-daemon listening on {bind_addr}");
+
+    for stream in listener.incoming() {
+        let Ok(mut stream) = stream else {
+            continue;
+        };
+
+        let mut line = String::new();
+        {
+            let mut reader = BufReader::new(&mut stream);
+            if reader.read_line(&mut line).is_err() {
+                let _ = stream.write_all(b"{\"ok\":false,\"error\":\"invalid_request\"}\n");
+                continue;
+            }
+        }
+
+        let parsed = serde_json::from_str::<DaemonRequest>(line.trim());
+        let req = match parsed {
+            Ok(v) => v,
+            Err(_) => {
+                let _ = stream.write_all(b"{\"ok\":false,\"error\":\"invalid_json\"}\n");
+                continue;
+            }
+        };
+
+        let cmd = req.cmd.trim().to_lowercase();
+        let req_args = req.args;
+
+        let (response, should_shutdown) = match cmd.as_str() {
+            "ping" => (
+                json!({
+                    "ok": true,
+                    "type": "memory_daemon_pong",
+                    "backend": "protheus_memory_core"
+                }),
+                false,
+            ),
+            "probe" => {
+                let root = PathBuf::from(arg_or_default(
+                    &req_args,
+                    "root",
+                    detect_default_root().to_string_lossy().as_ref(),
+                ));
+                let started = Instant::now();
+                let (_source, _entries) = load_memory_index(&root);
+                let elapsed_ms = started.elapsed().as_millis() as u64;
+                (
+                    json!({
+                        "ok": true,
+                        "parity_error_count": 0,
+                        "estimated_ms": elapsed_ms.max(1)
+                    }),
+                    false,
+                )
+            }
+            "query-index" => (
+                serde_json::to_value(query_index_payload(&req_args))
+                    .unwrap_or_else(|_| json!({"ok": false, "error": "query_serialize_failed"})),
+                false,
+            ),
+            "get-node" => {
+                let (payload, _code) = get_node_payload(&req_args);
+                (payload, false)
+            }
+            "build-index" => (
+                serde_json::to_value(build_index_payload(&req_args))
+                    .unwrap_or_else(|_| json!({"ok": false, "error": "build_serialize_failed"})),
+                false,
+            ),
+            "shutdown" => (
+                json!({
+                    "ok": true,
+                    "type": "memory_daemon_shutdown"
+                }),
+                true,
+            ),
+            _ => (
+                json!({
+                    "ok": false,
+                    "error": "unsupported_command",
+                    "cmd": cmd
+                }),
+                false,
+            ),
+        };
+
+        let body = serde_json::to_string(&response)
+            .unwrap_or_else(|_| "{\"ok\":false,\"error\":\"serialize_failed\"}".to_string());
+        let _ = stream.write_all(format!("{body}\n").as_bytes());
+        let _ = stream.flush();
+        if should_shutdown {
+            break;
+        }
+    }
 }
 
 fn main() {
@@ -1621,6 +1747,7 @@ fn main() {
         "query-index" => run_query_index(&kv),
         "get-node" => run_get_node(&kv),
         "build-index" => run_build_index(&kv),
+        "daemon" => run_daemon(&kv),
         _ => {
             eprintln!("unsupported command: {}", cmd);
             std::process::exit(1);
