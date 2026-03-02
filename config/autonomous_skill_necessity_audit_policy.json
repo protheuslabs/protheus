@@ -1,0 +1,17 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "days": 30,
+  "required_fields": [
+    "problem",
+    "repeat_frequency",
+    "expected_time_or_token_savings",
+    "why_existing_habits_or_skills_insufficient",
+    "risk_class"
+  ],
+  "receipts_dir": "state/security/skill_quarantine/install_receipts",
+  "outputs": {
+    "latest_path": "state/security/autonomous_skill_necessity_audit/latest.json",
+    "history_path": "state/security/autonomous_skill_necessity_audit/history.jsonl"
+  }
+}

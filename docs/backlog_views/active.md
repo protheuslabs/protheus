@@ -1,19 +1,9 @@
 # Backlog Active View
 
-Generated: 2026-03-02T21:56:14.181Z
+Generated: 2026-03-02T22:17:47.305Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
-| BL-002 | backlog | BL | queued | Skill quarantine enforcement in all install paths |  |
-| BL-013 | backlog | BL | queued | AGI security/governance hardening pack |  |
-| BL-017 | backlog | BL | queued | Autonomous skill-add with necessity justification gate |  |
-| BL-037 | backlog | BL | queued | Exception novelty classifier + recovery policy |  |
-| BL-038 | backlog | BL | queued | Global cost governor + autopause guardrails |  |
-| BL-039 | backlog | BL | queued | Dream-to-upstream signal bridge |  |
-| BL-040 | backlog | BL | queued | Adaptive dream-model failover + cooldown memory |  |
-| BL-005 | backlog | BL | queued | Habit promotion quality hardening |  |
-| BL-009 | backlog | BL | queued | Hardware-aware local model planner |  |
-| BL-010 | backlog | BL | queued | Model variant profiles (`:thinking` and base) |  |
 | BL-011 | backlog | BL | queued | Swarm verification mode for deep-thinker |  |
 | BL-012 | backlog | BL | queued | Strategy profile layer + architecture genericity guard |  |
 | BL-015 | backlog | BL | queued | Optional reflex sub-layer under habits (fast micro-routines) |  |

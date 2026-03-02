@@ -1,0 +1,14 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "thresholds": {
+    "min_sample_count": 5,
+    "min_time_saved_minutes_per_week": 45,
+    "min_effect_delta": 0.08,
+    "min_adoption_rate": 0.6
+  },
+  "outputs": {
+    "latest_path": "state/habits/habit_promotion_quality/latest.json",
+    "history_path": "state/habits/habit_promotion_quality/history.jsonl"
+  }
+}

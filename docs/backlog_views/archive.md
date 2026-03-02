@@ -1,14 +1,24 @@
 # Backlog Archive View
 
-Generated: 2026-03-02T21:56:14.181Z
+Generated: 2026-03-02T22:17:47.305Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
 | BL-001 | backlog | BL | done | External temp-data backup pipeline (outside git) |  |
+| BL-002 | backlog | BL | done | Skill quarantine enforcement in all install paths |  |
 | BL-003 | backlog | BL | done | Autonomy receipt dashboard/summary |  |
+| BL-013 | backlog | BL | done | AGI security/governance hardening pack |  |
+| BL-017 | backlog | BL | done | Autonomous skill-add with necessity justification gate |  |
 | BL-036 | backlog | BL | done | Strategic alignment oracle (weekly) |  |
+| BL-037 | backlog | BL | done | Exception novelty classifier + recovery policy |  |
+| BL-038 | backlog | BL | done | Global cost governor + autopause guardrails |  |
+| BL-039 | backlog | BL | done | Dream-to-upstream signal bridge |  |
+| BL-040 | backlog | BL | done | Adaptive dream-model failover + cooldown memory |  |
 | BL-004 | backlog | BL | done | Policy for tracked vs ignored state streams |  |
+| BL-005 | backlog | BL | done | Habit promotion quality hardening |  |
 | BL-006 | backlog | BL | done | Automated stale-state cleanup helper |  |
+| BL-009 | backlog | BL | done | Hardware-aware local model planner |  |
+| BL-010 | backlog | BL | done | Model variant profiles (`:thinking` and base) |  |
 | BL-014 | backlog | BL | done | Phased TypeScript migration for `systems/` + `lib/` |  |
 | BL-030 | backlog | BL | done | Secret broker isolation + scoped credential handles |  |
 | BL-031 | backlog | BL | done | Network egress choke point for autonomous actions |  |

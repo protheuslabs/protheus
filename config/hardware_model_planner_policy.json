@@ -1,0 +1,40 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "tiers": {
+    "nano": {
+      "max_threads": 8,
+      "max_ram_gb": 12,
+      "max_vram_gb": 4,
+      "recommended_models": [
+        "ollama/qwen3:4b"
+      ],
+      "notes": "favor lightweight local models"
+    },
+    "standard": {
+      "max_threads": 24,
+      "max_ram_gb": 48,
+      "max_vram_gb": 16,
+      "recommended_models": [
+        "ollama/qwen3:8b",
+        "ollama/llama3.1:8b"
+      ],
+      "notes": "balanced local routing"
+    },
+    "high": {
+      "max_threads": 512,
+      "max_ram_gb": 4096,
+      "max_vram_gb": 512,
+      "recommended_models": [
+        "ollama/qwen3:14b",
+        "ollama/llama3.3:70b"
+      ],
+      "notes": "high-capacity local routing"
+    }
+  },
+  "outputs": {
+    "latest_path": "state/routing/hardware_model_planner/latest.json",
+    "history_path": "state/routing/hardware_model_planner/history.jsonl",
+    "plan_path": "state/routing/hardware_model_planner/plan.json"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "thinking_suffix": ":thinking",
+  "min_quality_gain_pct": 10,
+  "max_consecutive_thinking": 3,
+  "thinking_task_types": [
+    "analysis",
+    "planning",
+    "diagnostics"
+  ],
+  "outputs": {
+    "state_path": "state/routing/model_variant_profile/state.json",
+    "latest_path": "state/routing/model_variant_profile/latest.json",
+    "history_path": "state/routing/model_variant_profile/history.jsonl"
+  }
+}

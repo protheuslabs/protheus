@@ -1,0 +1,29 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "modules": [
+    "autonomy",
+    "reflex",
+    "focus",
+    "dream",
+    "spawn"
+  ],
+  "module_daily_token_caps": {
+    "autonomy": 4500,
+    "reflex": 1200,
+    "focus": 1200,
+    "dream": 1500,
+    "spawn": 1500
+  },
+  "daily_token_cap_total": 9000,
+  "monthly_token_cap_total": 220000,
+  "burn_rate_multiplier": 1.5,
+  "min_baseline_days": 3,
+  "auto_clear_autopause": true,
+  "state_paths": {
+    "usage_path": "state/budget/global_cost_governor/usage.json",
+    "autopause_path": "state/autonomy/budget_autopause.json",
+    "latest_path": "state/budget/global_cost_governor/latest.json",
+    "history_path": "state/budget/global_cost_governor/history.jsonl"
+  }
+}
