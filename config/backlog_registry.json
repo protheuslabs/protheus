@@ -1,10 +1,10 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T18:01:53.997Z",
-  "source_hash": "6eefbd32cd5852f10898eb61",
-  "row_count": 489,
-  "active_count": 92,
+  "generated_at": "2026-03-02T18:03:14.166Z",
+  "source_hash": "93fe81fd38c15ce07bb2cfc2",
+  "row_count": 501,
+  "active_count": 104,
   "archive_count": 397,
   "rows": [
     {
@@ -6059,6 +6059,174 @@
         "V3-RACE-283",
         "V3-RACE-287",
         "V3-RACE-214"
+      ]
+    },
+    {
+      "id": "V3-RACE-291",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Meta XR Runtime Parity Pack (Quest/Horizon/OpenXR)",
+      "problem": "Meta stewardship requires first-class immersive runtime behavior for Quest/Horizon surfaces beyond generic mobile/spatial adapters.",
+      "acceptance": "Add Quest/Horizon/OpenXR adapters with deterministic runtime capability checks, require verification receipts for install/run/update parity across supported XR surfaces, and include rollback-safe fallback to baseline spatial/runtime profiles on mismatch.",
+      "dependencies": [
+        "V3-RACE-249",
+        "V3-RACE-193",
+        "V3-RACE-271"
+      ]
+    },
+    {
+      "id": "V3-RACE-292",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Open-Weight Distribution Pipeline (Meta Direct + HF Mirror + Quant Kits)",
+      "problem": "Open-weight-first stewardship needs governed acquisition/mirroring/quantization lanes with provenance and repeatability guarantees.",
+      "acceptance": "Add distribution lane for Meta/HF model artifacts with signed provenance and quantization/fine-tuning kit generation, require verification receipts for integrity and reproducibility, and include rollback-safe channel quarantine path when validation fails.",
+      "dependencies": [
+        "V3-RACE-278",
+        "V3-RACE-120",
+        "V3-RACE-300"
+      ]
+    },
+    {
+      "id": "V3-RACE-293",
+      "class": "primitive-upgrade",
+      "wave": "V3",
+      "status": "queued",
+      "title": "MTIA v2 Accelerator Adapter",
+      "problem": "Meta hardware acceleration requires a typed adapter path to keep placement and execution contracts auditable and fail closed.",
+      "acceptance": "Add MTIA adapter for scheduling/placement contracts, require verification receipts for performance and correctness parity, and include rollback-safe fallback to baseline accelerator adapters when MTIA checks fail.",
+      "dependencies": [
+        "V3-RACE-218",
+        "V3-RACE-263",
+        "V3-RACE-209"
+      ]
+    },
+    {
+      "id": "V3-RACE-294",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "ExecuTorch/TorchAO Edge Execution Lane (PyTorch-First)",
+      "problem": "Meta mobile/edge execution goals require first-class PyTorch edge tooling integration under existing governance contracts.",
+      "acceptance": "Add ExecuTorch/TorchAO execution adapters with compatibility bridges for existing inference paths, require verification receipts for latency/quality parity, and include rollback-safe framework fallback controls on regression.",
+      "dependencies": [
+        "V3-RACE-266",
+        "V3-RACE-293",
+        "V3-RACE-220"
+      ]
+    },
+    {
+      "id": "V3-RACE-295",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Open Contribution Governance Pipeline (CLA + Community Vote + Upstream Automation)",
+      "problem": "Community-driven stewardship requires auditable contribution governance and bounded promotion controls for non-proprietary lanes.",
+      "acceptance": "Add CLA enforcement, community-vote gate, and upstream automation contracts for eligible lanes, require verification receipts linking votes/approvals to promotions, and include rollback-safe hold/revert controls when governance checks fail.",
+      "dependencies": [
+        "V3-RACE-016",
+        "V3-RACE-056",
+        "V3-RACE-CONF-003"
+      ]
+    },
+    {
+      "id": "V3-RACE-296",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Meta Open-Llama Routing Profile (Local Open Default + FAIR Cluster Escalation)",
+      "problem": "Meta profile requires open Llama defaults with governed optional escalation to FAIR-scale fine-tune resources.",
+      "acceptance": "Add routing profile with open Llama local defaults and FAIR-cluster escalation adapter under policy gates, require verification receipts for routing/boundary correctness, and include rollback-safe reversion to strict local-only mode on policy mismatch.",
+      "dependencies": [
+        "V3-RACE-292",
+        "V3-RACE-294",
+        "V3-RACE-269"
+      ]
+    },
+    {
+      "id": "V3-RACE-297",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Persistent Spatial Collaboration Layer (OpenXR + Quest SDK Avatars/Shared Memory)",
+      "problem": "Persistent multi-user immersive collaboration needs explicit shared-memory/session contracts for XR environments.",
+      "acceptance": "Add spatial collaboration adapters for avatar/session/shared-memory primitives, require verification receipts for multi-user consistency and safety, and include rollback-safe fallback to non-persistent collaboration mode when stability thresholds fail.",
+      "dependencies": [
+        "V3-RACE-291",
+        "V3-RACE-149",
+        "V3-RACE-250"
+      ]
+    },
+    {
+      "id": "V3-RACE-298",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Horizon Worlds Collaboration/Test Sandbox Adapter",
+      "problem": "Social-scale environment testing requires dedicated integration with Horizon primitives under governed execution and privacy controls.",
+      "acceptance": "Add Horizon environment adapter for collaboration and digital-twin test scenarios, require verification receipts for policy-compliant execution and scenario integrity, and include rollback-safe environment disable path when moderation/safety checks fail.",
+      "dependencies": [
+        "V3-RACE-297",
+        "V3-RACE-270",
+        "V3-RACE-283"
+      ]
+    },
+    {
+      "id": "V3-RACE-299",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Quest Store / App Lab Compliance + Horizon Moderation Gate",
+      "problem": "Meta distribution channels require explicit review/moderation artifacts tied to release promotion policy.",
+      "acceptance": "Add Quest/App Lab compliance lane with safety/privacy/moderation artifact checks, require verification receipts for each required control, and include rollback-safe submission block behavior when any compliance signal regresses.",
+      "dependencies": [
+        "V3-RACE-258",
+        "V3-RACE-261",
+        "V3-RACE-291"
+      ]
+    },
+    {
+      "id": "V3-RACE-300",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Open-Source Release Automation Lane (Dual-License + SBOM Enforcement)",
+      "problem": "Open-source-first mandates require deterministic release automation with license/provenance controls and evidence trails.",
+      "acceptance": "Add release pipeline enforcing Apache/MIT dual-license policy (where eligible) plus SBOM generation/verification, require verification receipts for each release bundle, and include rollback-safe release hold when licensing or SBOM checks fail.",
+      "dependencies": [
+        "V3-RACE-016",
+        "V3-RACE-228",
+        "V3-RACE-245"
+      ]
+    },
+    {
+      "id": "V3-RACE-301",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Open-Default Governance Gate (Models/Lanes/Components)",
+      "problem": "Meta profile needs a fail-closed governance gate that defaults to open weights/components unless explicitly policy-exempted.",
+      "acceptance": "Add governance gate requiring open-default classification with explicit proprietary exceptions, require verification receipts for every exception decision, and include rollback-safe reversion to strict open-default policy when exception audit checks fail.",
+      "dependencies": [
+        "V3-RACE-300",
+        "V3-RACE-017",
+        "V3-RACE-214"
+      ]
+    },
+    {
+      "id": "V3-RACE-302",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Meta Promotion Hardening Gate (Reality Labs + FAIR Alignment + Quest HIL)",
+      "problem": "Promotion under Meta stewardship requires immersion/accessibility/alignment/HIL evidence in addition to baseline sovereignty checks.",
+      "acceptance": "Add promotion gate requiring Reality Labs immersion/accessibility reviews, FAIR-alignment evidence, and Quest hardware-in-the-loop validation where applicable, require verification receipts for every promotion, and include rollback-safe promotion hold on missing or stale evidence.",
+      "dependencies": [
+        "V3-RACE-301",
+        "V3-RACE-291",
+        "V3-RACE-290"
       ]
     },
     {

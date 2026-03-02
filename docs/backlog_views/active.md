@@ -1,6 +1,6 @@
 # Backlog Active View
 
-Generated: 2026-03-02T18:01:53.997Z
+Generated: 2026-03-02T18:03:14.166Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
@@ -96,4 +96,16 @@ Generated: 2026-03-02T18:01:53.997Z
 | V3-RACE-288 | hardening | V3 | queued | NVIDIA AI Enterprise Certification Readiness Lane | V3-RACE-279, V3-RACE-278, V3-RACE-245 |
 | V3-RACE-289 | extension | V3 | queued | DGX Cloud + NGC Hybrid Deployment Adapter (Auto-Scaling) | V3-RACE-241, V3-RACE-278, V3-RACE-285 |
 | V3-RACE-290 | hardening | V3 | queued | NVIDIA Accelerator-First Promotion Gate (Omniverse + HIL + DGX Chaos Evidence) | V3-RACE-283, V3-RACE-287, V3-RACE-214 |
+| V3-RACE-291 | extension | V3 | queued | Meta XR Runtime Parity Pack (Quest/Horizon/OpenXR) | V3-RACE-249, V3-RACE-193, V3-RACE-271 |
+| V3-RACE-292 | extension | V3 | queued | Open-Weight Distribution Pipeline (Meta Direct + HF Mirror + Quant Kits) | V3-RACE-278, V3-RACE-120, V3-RACE-300 |
+| V3-RACE-293 | primitive-upgrade | V3 | queued | MTIA v2 Accelerator Adapter | V3-RACE-218, V3-RACE-263, V3-RACE-209 |
+| V3-RACE-294 | extension | V3 | queued | ExecuTorch/TorchAO Edge Execution Lane (PyTorch-First) | V3-RACE-266, V3-RACE-293, V3-RACE-220 |
+| V3-RACE-295 | hardening | V3 | queued | Open Contribution Governance Pipeline (CLA + Community Vote + Upstream Automation) | V3-RACE-016, V3-RACE-056, V3-RACE-CONF-003 |
+| V3-RACE-296 | extension | V3 | queued | Meta Open-Llama Routing Profile (Local Open Default + FAIR Cluster Escalation) | V3-RACE-292, V3-RACE-294, V3-RACE-269 |
+| V3-RACE-297 | extension | V3 | queued | Persistent Spatial Collaboration Layer (OpenXR + Quest SDK Avatars/Shared Memory) | V3-RACE-291, V3-RACE-149, V3-RACE-250 |
+| V3-RACE-298 | extension | V3 | queued | Horizon Worlds Collaboration/Test Sandbox Adapter | V3-RACE-297, V3-RACE-270, V3-RACE-283 |
+| V3-RACE-299 | hardening | V3 | queued | Quest Store / App Lab Compliance + Horizon Moderation Gate | V3-RACE-258, V3-RACE-261, V3-RACE-291 |
+| V3-RACE-300 | hardening | V3 | queued | Open-Source Release Automation Lane (Dual-License + SBOM Enforcement) | V3-RACE-016, V3-RACE-228, V3-RACE-245 |
+| V3-RACE-301 | hardening | V3 | queued | Open-Default Governance Gate (Models/Lanes/Components) | V3-RACE-300, V3-RACE-017, V3-RACE-214 |
+| V3-RACE-302 | hardening | V3 | queued | Meta Promotion Hardening Gate (Reality Labs + FAIR Alignment + Quest HIL) | V3-RACE-301, V3-RACE-291, V3-RACE-290 |
 

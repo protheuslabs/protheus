@@ -3101,6 +3101,57 @@ Data boundary invariants for this intake:
 | Approve NVIDIA licensing/compliance policy envelope (AI Enterprise entitlements, support SLAs, indemnification scopes) | human | queued | Set enterprise policy boundaries and governance requirements before enabling certification/deployment lanes. |
 | Approve NVIDIA infrastructure trust boundaries (DGX Cloud tenancy, NGC org boundaries, hardware-in-the-loop data handling policy) | human | queued | Finalize trust-domain and data-handling constraints for NVIDIA hybrid deployment and validation workflows. |
 
+## External Requirements Intake (Google Doc `1JQiEIm9-kGGG_c6IjywgZ9PsfdClNxEfIPv2RAoro_8`, 2026-03-02)
+
+Objective: normalize Meta-specific stewardship deltas into canonical backlog lanes while preserving local-first sovereignty and reusing existing multi-provider foundations.
+
+Data boundary invariants for this intake:
+- Meta platform integrations (Quest/Horizon/OpenXR/Llama/ExecuTorch/MTIA) remain adapterized behind fail-closed policy gates
+- open-weight distribution, contribution governance, and release automation evidence artifacts remain in `state/` with reproducible receipts
+- provider-specific runtime/deployment logic remains in `systems/`, `packages/`, `config/`, and `docs/`
+
+### Requirement Mapping (from intake)
+
+| Requirement (from intake) | Canonical Backlog Handling | Status | Requirement Action |
+|---|---|---|---|
+| PSEED-140: Quest/Horizon OS parity with Reality Labs SDK + OpenXR runtime | `V3-RACE-291` | queued | Add Meta immersive runtime parity lane for Quest/Horizon/OpenXR surfaces. |
+| PSEED-141: Llama open-weight distribution pipeline + HF mirror + quantization/fine-tune kits | `V3-RACE-292` | queued | Add open-weight distribution and quantization toolkit lane for Meta model ecosystems. |
+| PSEED-142: MTIA v2 hardware-aware scheduling/kernel optimizations | `V3-RACE-293` | queued | Add MTIA accelerator adapter lane integrated with HAL and scheduling contracts. |
+| PSEED-150: PyTorch ExecuTorch + TorchAO as primary edge execution engine | `V3-RACE-294` | queued | Add Meta edge-ML execution lane with compatibility contracts for existing framework paths. |
+| PSEED-151: CLA-signed open-source contribution pipeline with community voting and upstreaming | `V3-RACE-295` | queued | Add OSS contribution governance lane with signed policy + promotion controls. |
+| PSEED-160: open Llama 3.1/4 local default with FAIR cluster fine-tune escalation | `V3-RACE-296` | queued | Add Meta open-model routing profile with optional FAIR research cluster escalation adapter. |
+| PSEED-161: OpenXR + Quest SDK persistent avatars/shared spatial memory interfaces | `V3-RACE-297` | queued | Add persistent multi-user spatial collaboration layer for Meta XR environments. |
+| PSEED-162: Horizon Worlds primitives for social-scale collaboration and digital-twin testing | `V3-RACE-298` | queued | Add Horizon-based collaboration/test environment adapter lane. |
+| PSEED-170: Quest Store / App Lab submission readiness with Horizon safety/content moderation review | `V3-RACE-299` | queued | Add Meta store compliance and moderation review lane tied to release gates. |
+| PSEED-171: automated open-source release workflow (dual-license + SBOM) | `V3-RACE-300` | queued | Add OSS release automation lane with license/SBOM enforcement and provenance receipts. |
+| Cross-cutting: open-weights/open-source-first mandate unless explicitly proprietary | `V3-RACE-301`, `V3-RACE-017`, `V3-RACE-214` | queued | Add open-default governance gate over model/lane/release paths. |
+| Cross-cutting: Reality Labs immersion/accessibility + FAIR alignment gates + Quest HIL promotion evidence | `V3-RACE-302` | queued | Add Meta promotion hardening gate with HIL and alignment/accessibility evidence requirements. |
+
+### Net-New Canonical Queue
+
+| ID | Class | Version | Status | Upgrade | Why | Exit Criteria | Depends On |
+|---|---|---|---|---|---|---|---|
+| V3-RACE-291 | extension | V3 | queued | Meta XR Runtime Parity Pack (Quest/Horizon/OpenXR) | Meta stewardship requires first-class immersive runtime behavior for Quest/Horizon surfaces beyond generic mobile/spatial adapters. | Add Quest/Horizon/OpenXR adapters with deterministic runtime capability checks, require verification receipts for install/run/update parity across supported XR surfaces, and include rollback-safe fallback to baseline spatial/runtime profiles on mismatch. | V3-RACE-249, V3-RACE-193, V3-RACE-271 |
+| V3-RACE-292 | extension | V3 | queued | Open-Weight Distribution Pipeline (Meta Direct + HF Mirror + Quant Kits) | Open-weight-first stewardship needs governed acquisition/mirroring/quantization lanes with provenance and repeatability guarantees. | Add distribution lane for Meta/HF model artifacts with signed provenance and quantization/fine-tuning kit generation, require verification receipts for integrity and reproducibility, and include rollback-safe channel quarantine path when validation fails. | V3-RACE-278, V3-RACE-120, V3-RACE-300 |
+| V3-RACE-293 | primitive-upgrade | V3 | queued | MTIA v2 Accelerator Adapter | Meta hardware acceleration requires a typed adapter path to keep placement and execution contracts auditable and fail closed. | Add MTIA adapter for scheduling/placement contracts, require verification receipts for performance and correctness parity, and include rollback-safe fallback to baseline accelerator adapters when MTIA checks fail. | V3-RACE-218, V3-RACE-263, V3-RACE-209 |
+| V3-RACE-294 | extension | V3 | queued | ExecuTorch/TorchAO Edge Execution Lane (PyTorch-First) | Meta mobile/edge execution goals require first-class PyTorch edge tooling integration under existing governance contracts. | Add ExecuTorch/TorchAO execution adapters with compatibility bridges for existing inference paths, require verification receipts for latency/quality parity, and include rollback-safe framework fallback controls on regression. | V3-RACE-266, V3-RACE-293, V3-RACE-220 |
+| V3-RACE-295 | hardening | V3 | queued | Open Contribution Governance Pipeline (CLA + Community Vote + Upstream Automation) | Community-driven stewardship requires auditable contribution governance and bounded promotion controls for non-proprietary lanes. | Add CLA enforcement, community-vote gate, and upstream automation contracts for eligible lanes, require verification receipts linking votes/approvals to promotions, and include rollback-safe hold/revert controls when governance checks fail. | V3-RACE-016, V3-RACE-056, V3-RACE-CONF-003 |
+| V3-RACE-296 | extension | V3 | queued | Meta Open-Llama Routing Profile (Local Open Default + FAIR Cluster Escalation) | Meta profile requires open Llama defaults with governed optional escalation to FAIR-scale fine-tune resources. | Add routing profile with open Llama local defaults and FAIR-cluster escalation adapter under policy gates, require verification receipts for routing/boundary correctness, and include rollback-safe reversion to strict local-only mode on policy mismatch. | V3-RACE-292, V3-RACE-294, V3-RACE-269 |
+| V3-RACE-297 | extension | V3 | queued | Persistent Spatial Collaboration Layer (OpenXR + Quest SDK Avatars/Shared Memory) | Persistent multi-user immersive collaboration needs explicit shared-memory/session contracts for XR environments. | Add spatial collaboration adapters for avatar/session/shared-memory primitives, require verification receipts for multi-user consistency and safety, and include rollback-safe fallback to non-persistent collaboration mode when stability thresholds fail. | V3-RACE-291, V3-RACE-149, V3-RACE-250 |
+| V3-RACE-298 | extension | V3 | queued | Horizon Worlds Collaboration/Test Sandbox Adapter | Social-scale environment testing requires dedicated integration with Horizon primitives under governed execution and privacy controls. | Add Horizon environment adapter for collaboration and digital-twin test scenarios, require verification receipts for policy-compliant execution and scenario integrity, and include rollback-safe environment disable path when moderation/safety checks fail. | V3-RACE-297, V3-RACE-270, V3-RACE-283 |
+| V3-RACE-299 | hardening | V3 | queued | Quest Store / App Lab Compliance + Horizon Moderation Gate | Meta distribution channels require explicit review/moderation artifacts tied to release promotion policy. | Add Quest/App Lab compliance lane with safety/privacy/moderation artifact checks, require verification receipts for each required control, and include rollback-safe submission block behavior when any compliance signal regresses. | V3-RACE-258, V3-RACE-261, V3-RACE-291 |
+| V3-RACE-300 | hardening | V3 | queued | Open-Source Release Automation Lane (Dual-License + SBOM Enforcement) | Open-source-first mandates require deterministic release automation with license/provenance controls and evidence trails. | Add release pipeline enforcing Apache/MIT dual-license policy (where eligible) plus SBOM generation/verification, require verification receipts for each release bundle, and include rollback-safe release hold when licensing or SBOM checks fail. | V3-RACE-016, V3-RACE-228, V3-RACE-245 |
+| V3-RACE-301 | hardening | V3 | queued | Open-Default Governance Gate (Models/Lanes/Components) | Meta profile needs a fail-closed governance gate that defaults to open weights/components unless explicitly policy-exempted. | Add governance gate requiring open-default classification with explicit proprietary exceptions, require verification receipts for every exception decision, and include rollback-safe reversion to strict open-default policy when exception audit checks fail. | V3-RACE-300, V3-RACE-017, V3-RACE-214 |
+| V3-RACE-302 | hardening | V3 | queued | Meta Promotion Hardening Gate (Reality Labs + FAIR Alignment + Quest HIL) | Promotion under Meta stewardship requires immersion/accessibility/alignment/HIL evidence in addition to baseline sovereignty checks. | Add promotion gate requiring Reality Labs immersion/accessibility reviews, FAIR-alignment evidence, and Quest hardware-in-the-loop validation where applicable, require verification receipts for every promotion, and include rollback-safe promotion hold on missing or stale evidence. | V3-RACE-301, V3-RACE-291, V3-RACE-290 |
+
+### Human Backlog Intake (Meta Program Commitments / Non-Automatable)
+
+| Human Item (from intake) | Owner | Status | Backlog Action |
+|---|---|---|---|
+| Approve Meta publication/commercial posture (stewardship language, Llama/Quest/Horizon claims) | human | queued | Define provider-specific public claim boundaries and legal/commercial review requirements before publication. |
+| Approve open-source policy envelope (license compatibility, CLA governance model, proprietary exception criteria) | human | queued | Set governance boundaries for open-default mandate and exception approval process. |
+| Approve Meta infrastructure/data trust boundaries (FAIR cluster usage, Horizon social-space data handling, Quest HIL privacy controls) | human | queued | Finalize trust-domain and data-handling policy constraints for Meta deployment and validation workflows. |
+
 ## Backlog Policy
 
 - Lower-impact items (<9% estimated gain) are intentionally parked below to protect V1 focus.
