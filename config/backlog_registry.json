@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T09:37:56.343Z",
-  "source_hash": "ce5ca36c65c3c4b5b750cd10",
+  "generated_at": "2026-03-02T09:37:58.278Z",
+  "source_hash": "db18e281a0240ed1d8651c7d",
   "row_count": 373,
   "active_count": 1,
-  "archive_count": 366,
+  "archive_count": 367,
   "rows": [
     {
       "id": "BL-001",
@@ -1301,7 +1301,7 @@
       "id": "RR-009",
       "class": "backlog",
       "wave": "RR",
-      "status": "open",
+      "status": "done",
       "title": "Data retention/churn bloat",
       "problem": "Storage and signal quality degrade over time",
       "acceptance": "Retention tiers, compaction policy, and \"why-kept\" tags on long-lived artifacts; linked: `V2-FND-002`, `V3-053`",
