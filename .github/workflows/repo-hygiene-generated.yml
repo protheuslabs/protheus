@@ -1,0 +1,18 @@
+name: repo-hygiene-generated
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+
+jobs:
+  generated-artifacts-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Verify generated artifacts are not staged
+        run: |
+          node systems/ops/repo_hygiene_generated_guard.js check --strict=1

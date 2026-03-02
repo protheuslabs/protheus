@@ -1,0 +1,21 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "failure_token_patterns": [
+    "failed",
+    "error",
+    "blocked",
+    "fallback",
+    "deny",
+    "timeout",
+    "revert",
+    "invalid",
+    "no_change"
+  ],
+  "paths": {
+    "runs_dir": "state/autonomy/runs",
+    "latest_path": "state/autonomy/receipt_dashboard/latest.json",
+    "history_path": "state/autonomy/receipt_dashboard/history.jsonl",
+    "reports_dir": "state/autonomy/receipt_dashboard/reports"
+  }
+}

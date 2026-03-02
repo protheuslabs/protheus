@@ -1,0 +1,17 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "require_consent": true,
+  "score_weights": {
+    "prior": 0.4,
+    "voi": 0.35,
+    "disconfirm_value": 0.25,
+    "risk_penalty": 0.15
+  },
+  "paths": {
+    "pending_signals_path": "state/science/hypothesis_forge/pending_signals.jsonl",
+    "latest_path": "state/science/hypothesis_forge/latest.json",
+    "history_path": "state/science/hypothesis_forge/history.jsonl",
+    "ranked_path": "state/science/hypothesis_forge/ranked.json"
+  }
+}

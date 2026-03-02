@@ -1,0 +1,18 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "max_age_days": 14,
+  "roots": ["state", "tmp", "logs"],
+  "allowed_suffixes": [".json", ".jsonl", ".tmp", ".log", ".ndjson", ".txt"],
+  "exclude_prefixes": [
+    "state/ops/cleanup",
+    "state/security",
+    "state/autonomy/receipt_dashboard"
+  ],
+  "dry_run_default": true,
+  "paths": {
+    "quarantine_dir": "state/ops/cleanup/quarantine",
+    "latest_path": "state/ops/cleanup/latest.json",
+    "history_path": "state/ops/cleanup/history.jsonl"
+  }
+}

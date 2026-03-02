@@ -1,40 +1,32 @@
-# State Stream Tracking Policy
+# State Stream Policy
 
-Purpose: keep repository diffs reviewable while preserving intentional audit/governance history.
+This policy defines which repository streams are source-of-truth (`tracked`) vs runtime/generated (`ignored`) and how that maps to `.gitignore`.
 
-## Tracked By Default
+## Classes
 
-These are source-of-truth or governance state files and should stay tracked:
+| Class ID | Mode | Paths | Intent |
+|---|---|---|---|
+| `source_of_truth` | tracked | `systems/**`, `lib/**`, `config/**`, `docs/**`, `memory/tools/**` | Canonical implementation, policies, and operator docs stay reviewable in git history. |
+| `runtime_state` | ignored | `state/**`, `tmp/**`, `logs/**` | High-churn local runtime outputs are instance-local and should not pollute PRs. |
+| `skills_local` | ignored | `skills/**` | Local skill installs are machine-specific; only curated MCP stubs are tracked. |
 
-- `state/long_term.md`
-- `state/session_summary.md`
-- `state/approvals_queue.yaml`
-- `state/sensory/eyes/registry.json`
-- `state/security/break_glass.jsonl`
+## .gitignore Alignment
 
-Note: legacy tracked runtime artifacts may still exist in git history. Do not mass-untrack without an explicit migration change.
+Required ignore entries:
+- `state/**`
+- `tmp/`
+- `logs/tool_raw/`
 
-Migration note (2026-02-27): legacy runtime `state/*` artifacts were explicitly untracked so only this allowlist remains tracked.
+Required unignore exceptions:
+- `!memory/tools/**`
+- `!skills/mcp/*.ts`
+- `!skills/mcp/*.js`
+- `!skills/mcp/*.json`
 
-## Ignored By Default
+## Check Command
 
-High-churn generated runtime streams are ignored:
+```bash
+node systems/ops/state_stream_policy_check.js check --strict=1
+```
 
-- sensory raw/digests/proposals/anomalies receipts
-- spine run ledgers and router health snapshots
-- routing health caches, decisions, outcomes, spend, model-catalog trial artifacts
-- autonomy runs/receipts/budgets/calibration/cooldowns/improvement queues
-- actuation receipts
-- AIE event logs
-- emergency stop runtime state and integrity violation runtime logs
-
-Authoritative patterns live in `.gitignore`.
-
-## Change Control Rules
-
-When adding a new `state/*` stream:
-
-1. Classify it as `tracked` or `ignored` in this policy.
-2. Update `.gitignore` in the same change if `ignored`.
-3. Do not ignore source code, config, or governance docs to reduce noise.
-4. If an ignored runtime stream is needed for incident review, snapshot it deliberately in a tracked artifact (handoff/report), not by permanently tracking all runtime churn.
+This command verifies that this document and `.gitignore` remain aligned with the policy contract.

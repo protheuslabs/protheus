@@ -1,15 +1,20 @@
 # Backlog Archive View
 
-Generated: 2026-03-02T21:35:23.852Z
+Generated: 2026-03-02T21:56:14.181Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
 | BL-001 | backlog | BL | done | External temp-data backup pipeline (outside git) |  |
+| BL-003 | backlog | BL | done | Autonomy receipt dashboard/summary |  |
 | BL-036 | backlog | BL | done | Strategic alignment oracle (weekly) |  |
+| BL-004 | backlog | BL | done | Policy for tracked vs ignored state streams |  |
+| BL-006 | backlog | BL | done | Automated stale-state cleanup helper |  |
 | BL-014 | backlog | BL | done | Phased TypeScript migration for `systems/` + `lib/` |  |
 | BL-030 | backlog | BL | done | Secret broker isolation + scoped credential handles |  |
 | BL-031 | backlog | BL | done | Network egress choke point for autonomous actions |  |
 | BL-042 | backlog | BL | done | Prompt/result cache with TTL + invalidation policy |  |
+| BL-007 | backlog | BL | done | Backup integrity checks |  |
+| BL-008 | backlog | BL | done | Repo hygiene CI check for generated artifacts |  |
 | V2-001 | backlog | V2 | done | Full repo TypeScript conversion (`.js` -> `.ts`) |  |
 | V2-002 | backlog | V2 | done | Explore polyglot service modules behind strict contracts |  |
 | V2-003 | backlog | V2 | done | Dist runtime cutover + legacy paired JS retirement |  |
@@ -60,6 +65,11 @@ Generated: 2026-03-02T21:35:23.852Z
 | V3-019 | backlog | V3 | done | Forge Organ (rapid temporary capability assembly) |  |
 | V3-020 | backlog | V3 | done | Protheus Prime seed profile + bounded-core manifest |  |
 | V3-021 | backlog | V3 | done | Attested hardware assimilation plane (node join + lease scheduler) |  |
+| V4-SCI-001 | scientific | V4 | done | Scientific method core primitive |  |
+| V4-SCI-002 | scientific | V4 | done | HypothesisForge background trend + hypothesis engine | V4-SCI-001, V3-RACE-080, V3-RACE-083 |
+| V4-SCI-003 | scientific | V4 | done | Reasoning mirror lane for Phase-1 UI | V4-SCI-001 |
+| V4-SCI-004 | scientific | V4 | done | Scientific mode integration + launch-safe feature flag | V4-SCI-001, V4-SCI-002, V4-SCI-003, V3-018, V3-019 |
+| V4-SCI-005 | scientific | V4 | done | Autonomous long-horizon experiment scheduler | V4-SCI-002, V4-SCI-004 |
 | RR-001 | backlog | RR | done | Config and flag fragmentation |  |
 | RR-002 | backlog | RR | done | Duplicate execution pathways |  |
 | RR-003 | backlog | RR | done | Schema drift without migration discipline |  |

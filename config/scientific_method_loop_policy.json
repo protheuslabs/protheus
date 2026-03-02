@@ -1,0 +1,17 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_contracts": true,
+  "minimum_lengths": {
+    "observation": 10,
+    "question": 8,
+    "hypothesis": 8,
+    "prediction": 8
+  },
+  "paths": {
+    "latest_path": "state/science/loop/latest.json",
+    "history_path": "state/science/loop/history.jsonl",
+    "runs_dir": "state/science/loop/runs",
+    "replay_latest_path": "state/science/loop/replay_latest.json"
+  }
+}

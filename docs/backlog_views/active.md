@@ -1,20 +1,17 @@
 # Backlog Active View
 
-Generated: 2026-03-02T21:35:23.852Z
+Generated: 2026-03-02T21:56:14.181Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
 | BL-002 | backlog | BL | queued | Skill quarantine enforcement in all install paths |  |
-| BL-003 | backlog | BL | queued | Autonomy receipt dashboard/summary |  |
 | BL-013 | backlog | BL | queued | AGI security/governance hardening pack |  |
 | BL-017 | backlog | BL | queued | Autonomous skill-add with necessity justification gate |  |
 | BL-037 | backlog | BL | queued | Exception novelty classifier + recovery policy |  |
 | BL-038 | backlog | BL | queued | Global cost governor + autopause guardrails |  |
 | BL-039 | backlog | BL | queued | Dream-to-upstream signal bridge |  |
 | BL-040 | backlog | BL | queued | Adaptive dream-model failover + cooldown memory |  |
-| BL-004 | backlog | BL | queued | Policy for tracked vs ignored state streams |  |
 | BL-005 | backlog | BL | queued | Habit promotion quality hardening |  |
-| BL-006 | backlog | BL | queued | Automated stale-state cleanup helper |  |
 | BL-009 | backlog | BL | queued | Hardware-aware local model planner |  |
 | BL-010 | backlog | BL | queued | Model variant profiles (`:thinking` and base) |  |
 | BL-011 | backlog | BL | queued | Swarm verification mode for deep-thinker |  |
@@ -39,8 +36,6 @@ Generated: 2026-03-02T21:35:23.852Z
 | BL-035 | backlog | BL | queued | Required-Checks branch protection policy |  |
 | BL-041 | backlog | BL | queued | Batch execution lane for low-urgency LLM work |  |
 | BL-043 | backlog | BL | queued | Parallel eyes execution with budget-aware concurrency |  |
-| BL-007 | backlog | BL | queued | Backup integrity checks |  |
-| BL-008 | backlog | BL | queued | Repo hygiene CI check for generated artifacts |  |
 | V1H-001 | backlog | V1H | queued | Full-pipeline integration/e2e hardening |  |
 | V1H-002 | backlog | V1H | queued | Release-gate + canary/rollback enforcement expansion |  |
 | V1H-003 | backlog | V1H | queued | Observability + SLO + runbook completion pass |  |
@@ -74,11 +69,6 @@ Generated: 2026-03-02T21:35:23.852Z
 | V4-CLEAN-003 | security | V4 | queued | Secret broker backend uplift (keychain/age additive) | V4-CLEAN-001 |
 | V4-CLEAN-004 | hygiene | V4 | queued | Root scaffolding rationalization with contract-first moves | V4-CLEAN-001, V4-CLEAN-003 |
 | V4-CLEAN-005 | governance | V4 | queued | Public repo presentation pass (non-destructive) | V4-CLEAN-002, V4-CLEAN-004 |
-| V4-SCI-001 | scientific | V4 | queued | Scientific method core primitive |  |
-| V4-SCI-002 | scientific | V4 | queued | HypothesisForge background trend + hypothesis engine | V4-SCI-001, V3-RACE-080, V3-RACE-083 |
-| V4-SCI-003 | scientific | V4 | queued | Reasoning mirror lane for Phase-1 UI | V4-SCI-001 |
-| V4-SCI-004 | scientific | V4 | queued | Scientific mode integration + launch-safe feature flag | V4-SCI-001, V4-SCI-002, V4-SCI-003, V3-018, V3-019 |
-| V4-SCI-005 | scientific | V4 | queued | Autonomous long-horizon experiment scheduler | V4-SCI-002, V4-SCI-004 |
 | V4-SCI-006 | scientific | V4 | queued | Meta-science + active learning loop | V4-SCI-001, V4-SCI-002, V4-SCI-005 |
 | V4-SCI-007 | scientific | V4 | queued | Advanced statistical extensions for scientific engine | V4-SCI-001, V4-SCI-004, V3-RACE-361 |
 | V4-SCI-008 | scientific | V4 | queued | Enhanced reasoning mirror for Phase-1 UI | V4-SCI-003, V4-SCI-005, V4-SCI-006, V4-SCI-007 |
