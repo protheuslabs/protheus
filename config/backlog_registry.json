@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T09:37:48.570Z",
-  "source_hash": "7c48a5cb853c32c9cdccb007",
+  "generated_at": "2026-03-02T09:37:50.822Z",
+  "source_hash": "07922a5d6274896a9eaaa985",
   "row_count": 373,
   "active_count": 1,
-  "archive_count": 362,
+  "archive_count": 363,
   "rows": [
     {
       "id": "BL-001",
@@ -1261,7 +1261,7 @@
       "id": "RR-005",
       "class": "backlog",
       "wave": "RR",
-      "status": "open",
+      "status": "done",
       "title": "Operational complexity debt",
       "problem": "Organ/lane growth raises MTTR and hides failure modes",
       "acceptance": "Enforce complexity budget and net-simplification gate for new organs; linked: `V3-052`, `V2-FND-004`",

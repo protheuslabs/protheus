@@ -1,6 +1,6 @@
 # Backlog Archive View
 
-Generated: 2026-03-02T09:37:48.570Z
+Generated: 2026-03-02T09:37:50.822Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
@@ -128,6 +128,7 @@ Generated: 2026-03-02T09:37:48.570Z
 | RR-002 | backlog | RR | done | Duplicate execution pathways |  |
 | RR-003 | backlog | RR | done | Schema drift without migration discipline |  |
 | RR-004 | backlog | RR | done | Determinism gaps in replay |  |
+| RR-005 | backlog | RR | done | Operational complexity debt |  |
 | V3-DUAL-001 | backlog | V3 | done | Duality Belief Engine Seed |  |
 | V3-ATTR-001 | backlog | V3 | done | Lightweight Value Attribution Primitive |  |
 | V3-ATTR-002 | backlog | V3 | done | Storm Value Distribution Layer |  |
