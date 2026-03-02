@@ -1,6 +1,6 @@
 # Backlog Archive View
 
-Generated: 2026-03-02T09:21:11.986Z
+Generated: 2026-03-02T09:21:13.963Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
@@ -334,6 +334,7 @@ Generated: 2026-03-02T09:21:11.986Z
 | V3-RACE-150 | extension | V3 | done | Spatial Computing Abstraction Layer | V3-RACE-134, V3-RACE-149 |
 | V3-RACE-151 | primitive-upgrade | V3 | done | AI-Native Multimodel Data Plane | V3-RACE-023, V3-RACE-137, V3-RACE-109 |
 | V3-RACE-152 | extension | V3 | done | WebGPU + Rust Client Compute Plane | V3-RACE-138, V3-RACE-148, V3-RACE-150 |
+| V3-RACE-153 | primitive-upgrade | V3 | done | Collective Training Orchestrator (Crowd GPU Distributed Training Plane) | V3-RACE-022, V3-RACE-133, V2-069, V3-ASSIM-019 |
 | OPT-001 | backlog | OPT | done | Eyes signal weighting retune in router ranking |  |
 | OPT-002 | backlog | OPT | done | Prompt cache policy split by lane (reflex/autonomy/dream) |  |
 | OPT-003 | backlog | OPT | done | Dream fallback quality scoring before proposal injection |  |

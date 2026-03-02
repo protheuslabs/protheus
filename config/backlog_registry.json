@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T09:21:11.986Z",
-  "source_hash": "c9f5979a4d7a3a55623892c8",
+  "generated_at": "2026-03-02T09:21:13.963Z",
+  "source_hash": "ab8c5483fd4ea11dfaaee8ff",
   "row_count": 373,
   "active_count": 1,
-  "archive_count": 336,
+  "archive_count": 337,
   "rows": [
     {
       "id": "BL-001",
@@ -4120,7 +4120,7 @@
       "id": "V3-RACE-153",
       "class": "primitive-upgrade",
       "wave": "V3",
-      "status": "open",
+      "status": "done",
       "title": "Collective Training Orchestrator (Crowd GPU Distributed Training Plane)",
       "problem": "Existing specialist training lanes are strong but not yet unified into a crowd-GPU orchestrator spanning tithe and peer-lending compute pools.",
       "acceptance": "Implement `systems/training/collective_training_orchestrator.{ts,js}` (Rust worker optional) + policy `config/collective_training_orchestrator_policy.json`; user-specific contribution preferences and participation caps persist under `memory/training/contributions/` with adaptive scheduling/allocator heuristics under `adaptive/training/contributions/`; permanent orchestration, cluster scheduling, and job governance remain in `systems/training/` + `config/` with deterministic run receipts.",
