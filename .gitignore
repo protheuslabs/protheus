@@ -20,7 +20,7 @@ logs/tool_raw/
 habits/logs/*.ndjson
 tmp/
 dist/
-systems/memory/rust/target/
+**/target/
 memory/**
 !memory/README.md
 !memory/tools/
