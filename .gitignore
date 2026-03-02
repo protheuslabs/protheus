@@ -135,6 +135,10 @@ state/eye/**
 # Local skill installs/experiments are instance-specific.
 skills/**
 !skills/README.md
+!skills/mcp/
+!skills/mcp/*.ts
+!skills/mcp/*.js
+!skills/mcp/*.json
 
 # Additional runtime churn (adaptive + memory + ops)
 .clawhub/lock.json

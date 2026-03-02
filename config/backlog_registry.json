@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T09:24:00.491Z",
-  "source_hash": "c812ee403407287b29fa4702",
+  "generated_at": "2026-03-02T09:26:33.446Z",
+  "source_hash": "f5ab82d9273335c277699f78",
   "row_count": 373,
   "active_count": 1,
-  "archive_count": 353,
+  "archive_count": 354,
   "rows": [
     {
       "id": "BL-001",
@@ -4293,7 +4293,7 @@
       "id": "V3-RACE-165",
       "class": "extension",
       "wave": "V3",
-      "status": "open",
+      "status": "done",
       "title": "MCP Interoperability + Skill Discovery Gateway",
       "problem": "Ecosystem leverage requires standards-based tool/context interoperability without weakening existing signed gate posture.",
       "acceptance": "Implement `skills/mcp/mcp_gateway.{ts,js}` + policy `config/mcp_gateway_policy.json` and CLI surface `protheusctl skills discover --mcp`; user-specific installed-skill preferences remain in `memory/skills/mcp/` with adaptive skill-quality scoring in `adaptive/skills/mcp/`; permanent protocol adapters and verification logic remain in `skills/mcp/` + `systems/security/` + `config/`.",
