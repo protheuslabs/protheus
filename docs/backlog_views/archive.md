@@ -1,6 +1,6 @@
 # Backlog Archive View
 
-Generated: 2026-03-02T02:39:43.860Z
+Generated: 2026-03-02T02:41:49.905Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
@@ -63,6 +63,7 @@ Generated: 2026-03-02T02:39:43.860Z
 | V3-RACE-076 | extension | V3 | done | Execution-to-Artifact Auto-Capture Bridge | BL-030, RM-113, V3-RACE-069 |
 | V3-RACE-077 | hardening | V3 | done | Adaptive Escalation TTL + Salvage Queue | BL-018, RM-114, V3-RACE-073 |
 | V3-RACE-078 | hardening | V3 | done | Negative-Signal Recovery & Salvage Lane | V3-RACE-069, V3-RACE-071, V3-RACE-072 |
+| V3-RACE-079 | primitive-upgrade | V3 | done | Latent Intent Inference Graph | V3-RACE-078, V3-RACE-009 |
 | V3-RACE-080 | hardening | V3 | done | Cross-Temporal Signal Delta Engine | V3-RACE-069, V3-RACE-074 |
 | V3-RACE-081 | hardening | V3 | done | Confidence Calibration & Probability Contracts | V3-RACE-069, V3-RACE-062 |
 | V3-RACE-106 | hardening | V3 | done | Unified Guard Check Registry (Manifest-Driven Gates) | V3-AEX-002, V3-RACE-CONF-008 |

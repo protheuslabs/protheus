@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T02:39:43.860Z",
-  "source_hash": "a6b9d490b9d4b33de80e8137",
+  "generated_at": "2026-03-02T02:41:49.905Z",
+  "source_hash": "4cc0a656272405991b13eeb5",
   "row_count": 127,
-  "active_count": 59,
-  "archive_count": 68,
+  "active_count": 58,
+  "archive_count": 69,
   "rows": [
     {
       "id": "V3-OPS-004",
@@ -1311,10 +1311,10 @@
       "id": "V3-RACE-079",
       "class": "primitive-upgrade",
       "wave": "V3",
-      "status": "queued",
+      "status": "done",
       "title": "Latent Intent Inference Graph",
       "problem": "First-order tagging misses implied needs, causing under-actuation on high-opportunity weak signals.",
-      "acceptance": "Inference engine emits `implied_need` edges with evidence spans + confidence; validator lane enforces false-positive ceiling and writes parity receipts.",
+      "acceptance": "Added `systems/sensory/latent_intent_inference_graph.{ts,js}` + `config/latent_intent_inference_policy.json` to emit `implied_need` edges with evidence spans/confidence from cross-signal hypotheses, enforce false-positive-ceiling validator contracts, and persist receipted outputs under `state/sensory/analysis/latent_intent/`; regression coverage in `memory/tools/tests/latent_intent_inference_graph.test.js`.",
       "dependencies": [
         "V3-RACE-078",
         "V3-RACE-009"

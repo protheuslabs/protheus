@@ -1,6 +1,6 @@
 # Backlog Active View
 
-Generated: 2026-03-02T02:39:43.860Z
+Generated: 2026-03-02T02:41:49.905Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
@@ -36,7 +36,6 @@ Generated: 2026-03-02T02:39:43.860Z
 | V3-RACE-057 | hardening | V3 | queued | Black-Swan Disaster Gamebooks & Continuous Resilience Drills | V3-RACE-040, V3-RACE-041, V3-RACE-037 |
 | V3-RACE-058 | extension | V3 | queued | Legal/Regulatory Auto-Diff Governance Router | V3-RACE-044, V3-DOC-005, V3-RACE-CONF-007 |
 | V3-RACE-059 | hardening | V3 | queued | Sovereign Decommission, Legacy & Succession Boundary Protocol | V3-RACE-037, V4-006, V3-RACE-033 |
-| V3-RACE-079 | primitive-upgrade | V3 | queued | Latent Intent Inference Graph | V3-RACE-078, V3-RACE-009 |
 | V3-RACE-082 | extension | V3 | queued | Counterfactual Signal Replay Harness | V3-RACE-003, V3-RACE-017, V3-RACE-081 |
 | V3-RACE-083 | hardening | V3 | queued | Adversarial Hypothesis Challenger Lane | V3-RACE-081, V3-RACE-042 |
 | V3-RACE-084 | primitive-upgrade | V3 | queued | Multi-Hop Objective Chain Mapper | V3-RACE-078, V3-RACE-079, V3-RACE-080, V3-RACE-081 |
