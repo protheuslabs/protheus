@@ -1,0 +1,21 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "required_fields": [
+    "artifact_id",
+    "producer",
+    "job_type",
+    "payload",
+    "signature",
+    "signing_key_id"
+  ],
+  "trusted_signing_keys": {
+    "lab_key_1": "lab_shared_secret_v1"
+  },
+  "paths": {
+    "incoming_dir": "state/sensory/offline_lab/artifacts",
+    "output_dir": "state/sensory/analysis/offline_lab_bridge",
+    "latest_path": "state/sensory/analysis/offline_lab_bridge/latest.json",
+    "receipts_path": "state/sensory/analysis/offline_lab_bridge/receipts.jsonl"
+  }
+}

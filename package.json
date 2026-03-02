@@ -643,7 +643,10 @@
     "test:sensory:causal-validation": "node memory/tools/tests/causal_validation_gate_high_impact.test.js",
     "sensory:active-learning:run": "node systems/sensory/active_learning_uncertainty_queue.js run",
     "sensory:active-learning:status": "node systems/sensory/active_learning_uncertainty_queue.js status",
-    "test:sensory:active-learning": "node memory/tools/tests/active_learning_uncertainty_queue.test.js"
+    "test:sensory:active-learning": "node memory/tools/tests/active_learning_uncertainty_queue.test.js",
+    "sensory:offline-lab-bridge:run": "node systems/sensory/offline_statistical_lab_artifact_bridge.js run",
+    "sensory:offline-lab-bridge:status": "node systems/sensory/offline_statistical_lab_artifact_bridge.js status",
+    "test:sensory:offline-lab-bridge": "node memory/tools/tests/offline_statistical_lab_artifact_bridge.test.js"
   },
   "bin": {
     "protheus": "./bin/protheus",

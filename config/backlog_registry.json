@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T04:16:54.457Z",
-  "source_hash": "be5fcb8c0b3ed6749e830228",
+  "generated_at": "2026-03-02T04:18:08.876Z",
+  "source_hash": "bc5c23a01aeb7feab3c3ca02",
   "row_count": 127,
-  "active_count": 38,
-  "archive_count": 89,
+  "active_count": 37,
+  "archive_count": 90,
   "rows": [
     {
       "id": "V3-OPS-004",
@@ -1618,10 +1618,10 @@
       "id": "V3-RACE-102",
       "class": "extension",
       "wave": "V3",
-      "status": "queued",
+      "status": "done",
       "title": "Offline Statistical Lab Artifact Bridge (R/Python Optional)",
       "problem": "Advanced calibration/causal diagnostics benefit from offline tooling while runtime should remain deterministic and fast.",
-      "acceptance": "Offline jobs emit signed/schema-validated artifacts consumed by production gates; runtime ingestion is artifact-only with strict provenance checks.",
+      "acceptance": "Added `systems/sensory/offline_statistical_lab_artifact_bridge.{ts,js}` + `config/offline_statistical_lab_artifact_bridge_policy.json` to ingest signed offline lab artifacts with required-field + trusted-key provenance checks and fail-closed behavior, persisting verified artifacts/receipts under `state/sensory/analysis/offline_lab_bridge/`; regression coverage in `memory/tools/tests/offline_statistical_lab_artifact_bridge.test.js`.",
       "dependencies": [
         "V3-RACE-086",
         "V3-RACE-096",
