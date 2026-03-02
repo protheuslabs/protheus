@@ -102,23 +102,22 @@ function parseSuccessCriteriaRows(proposal: any, opts: { capability_key?: string
   const rows = [];
   for (const row of compiledRows) {
     const metric = normalizeSpaces(row && row.metric || '').toLowerCase();
-    const target = normalizeSpaces([
-      String(row && row.target || ''),
-      String(row && row.horizon || '')
-    ].filter(Boolean).join(' | '));
+    const target = normalizeSpaces(String(row && row.target || ''));
+    const horizon = normalizeSpaces(String(row && row.horizon || ''));
     const merged = normalizeSpaces([metric, target].filter(Boolean).join(' | '));
     if (!merged) continue;
     rows.push({
       source: normalizeSpaces(row && row.source || '') || 'compiled',
       metric,
-      target: target || metric || 'execution success'
+      target: target || metric || 'execution success',
+      horizon: horizon || ''
     });
   }
 
   const seen = new Set();
   const out = [];
   for (const row of rows) {
-    const key = `${String(row.metric || '').toLowerCase()}|${String(row.target || '').toLowerCase()}`;
+    const key = `${String(row.metric || '').toLowerCase()}|${String(row.target || '').toLowerCase()}|${String(row.horizon || '').toLowerCase()}`;
     if (seen.has(key)) continue;
     seen.add(key);
     out.push(row);
@@ -229,6 +228,30 @@ function parseFirstInt(text, fallback) {
   return Number.isFinite(n) ? n : fallback;
 }
 
+function parseWindowMs(text) {
+  const t = String(text || '').toLowerCase();
+  if (!t) return null;
+  const m = t.match(/(\d+(?:\.\d+)?)\s*(min|mins|minute|minutes|h|hr|hour|hours|d|day|days|w|week|weeks|run|runs)\b/);
+  if (!m) return null;
+  let value = Number(m[1]);
+  if (!Number.isFinite(value) || value <= 0) return null;
+  const unit = String(m[2] || '');
+  if (unit === 'run' || unit === 'runs') {
+    // A run-window implies deferred verification, but does not map to wall-clock.
+    return Math.round(value * 60 * 1000);
+  }
+  if (unit === 'min' || unit === 'mins' || unit.startsWith('minute')) return Math.round(value * 60 * 1000);
+  if (unit === 'h' || unit === 'hr' || unit.startsWith('hour')) return Math.round(value * 60 * 60 * 1000);
+  if (unit === 'd' || unit.startsWith('day')) return Math.round(value * 24 * 60 * 60 * 1000);
+  if (unit === 'w' || unit.startsWith('week')) return Math.round(value * 7 * 24 * 60 * 60 * 1000);
+  return null;
+}
+
+function isPreviewPhase(context) {
+  const phase = String(context && context.phase || '').toLowerCase().trim();
+  return phase === 'preview' || phase === 'score_only' || phase === 'shadow_only';
+}
+
 function readNumericMetric(ctx, keys) {
   const names = Array.isArray(keys) ? keys.filter(Boolean).map((k) => String(k)) : [];
   if (!names.length) return null;
@@ -249,10 +272,14 @@ function readNumericMetric(ctx, keys) {
 function evaluateRow(row, context) {
   const metric = String(row && row.metric || '').toLowerCase();
   const target = String(row && row.target || '');
+  const horizon = String(row && row.horizon || '');
   const text = `${metric} ${target}`.toLowerCase();
   const textWords = text.replace(/[_-]+/g, ' ');
   const metricNorm = metric.replace(/[\s-]+/g, '_');
   const ctx = context && typeof context === 'object' ? context : {};
+  const allowDeferredPreview = ctx && ctx.allow_deferred_preview !== false;
+  const inPreview = isPreviewPhase(ctx);
+  const horizonWindowMs = parseWindowMs(`${horizon} ${target}`);
   const outcome = String(ctx.outcome || '').toLowerCase();
   const execOk = ctx.exec_ok === true;
   const dodPassed = ctx.dod_passed === true;
@@ -277,6 +304,32 @@ function evaluateRow(row, context) {
     reason,
     ...details
   });
+  const deferredPending = (reason = 'deferred_pending_window') => ({
+    evaluated: false,
+    pass: null,
+    reason,
+    deferred: true,
+    horizon: normalizeSpaces(horizon) || null,
+    target: normalizeSpaces(target) || null
+  });
+
+  if (
+    allowDeferredPreview
+    && inPreview
+    && metricNorm === 'postconditions_ok'
+  ) {
+    return deferredPending();
+  }
+  if (
+    allowDeferredPreview
+    && inPreview
+    && (metricNorm === 'reply_or_interview_count' || metricNorm === 'outreach_artifact')
+    && horizonWindowMs != null
+    && horizonWindowMs >= (2 * 60 * 60 * 1000)
+  ) {
+    return deferredPending();
+  }
+
   const evaluateByMetricNorm = () => {
     if (metricNorm === 'execution_success') {
       return boolResult(execOk, 'requires_execution_success', { value: execOk, target: true });
@@ -505,9 +558,11 @@ function evaluateSuccessCriteria(proposal, context, policy) {
       source: String(row.source || ''),
       metric: String(row.metric || ''),
       target: String(row.target || '').slice(0, 180),
+      horizon: normalizeSpaces(row && row.horizon || '') || null,
       evaluated: evald.evaluated === true,
       pass: evald.pass === true ? true : (evald.pass === false ? false : null),
       reason: String(evald.reason || ''),
+      deferred: evald.deferred === true,
       comparator: evald.comparator || null,
       value: evald.value == null ? null : evald.value,
       threshold: evald.target == null ? null : evald.target,
@@ -518,28 +573,39 @@ function evaluateSuccessCriteria(proposal, context, policy) {
   const evaluatedCount = results.filter((r) => r.evaluated === true).length;
   const passedCount = results.filter((r) => r.pass === true).length;
   const failedRows = results.filter((r) => r.pass === false);
+  const deferredRows = results.filter((r) => r.deferred === true || r.reason === 'deferred_pending_window');
+  const hardFailedRows = failedRows.filter((r) => r.deferred !== true);
   const failedCount = failedRows.length;
+  const hardFailedCount = hardFailedRows.length;
+  const deferredCount = deferredRows.length;
   const unknownCount = results.length - evaluatedCount;
   const unsupportedCount = results.filter((r) => r.reason === 'unsupported_metric').length;
   const contractNotAllowedCount = results.filter((r) => r.reason === 'metric_not_allowed_for_capability').length;
   const structurallySupportedCount = Math.max(0, results.length - unsupportedCount - contractNotAllowedCount);
   let passed = true;
   let primaryFailure = null;
+  const deferredPreviewAllowed = isPreviewPhase(context) && context && context.allow_deferred_preview !== false;
+  const deferredPending = deferredPreviewAllowed
+    && deferredCount > 0
+    && hardFailedCount === 0
+    && (passedCount + deferredCount) >= minCount;
 
   if (required) {
     if (rows.length < minCount) {
       passed = false;
       primaryFailure = 'success_criteria_count_below_min';
-    } else if (passedCount < minCount) {
+    } else if (hardFailedCount > 0) {
       passed = false;
-      primaryFailure = failedRows.length ? `success_criteria_failed:${failedRows[0].reason || 'failed'}` : 'success_criteria_pass_count_below_min';
-    } else if (failedCount > 0) {
+      primaryFailure = `success_criteria_failed:${hardFailedRows[0].reason || 'failed'}`;
+    } else if (passedCount < minCount && !deferredPending) {
       passed = false;
-      primaryFailure = `success_criteria_failed:${failedRows[0].reason || 'failed'}`;
+      primaryFailure = hardFailedRows.length
+        ? `success_criteria_failed:${hardFailedRows[0].reason || 'failed'}`
+        : 'success_criteria_pass_count_below_min';
     }
-  } else if (failedCount > 0) {
+  } else if (hardFailedCount > 0) {
     passed = false;
-    primaryFailure = `success_criteria_failed:${failedRows[0].reason || 'failed'}`;
+    primaryFailure = `success_criteria_failed:${hardFailedRows[0].reason || 'failed'}`;
   }
 
   if (enforceContract && failOnContractViolation && contractNotAllowedCount > 0) {
@@ -565,7 +631,10 @@ function evaluateSuccessCriteria(proposal, context, policy) {
     evaluated_count: evaluatedCount,
     passed_count: passedCount,
     failed_count: failedCount,
+    hard_failed_count: hardFailedCount,
     unknown_count: unknownCount,
+    deferred_count: deferredCount,
+    deferred_pending: deferredPending,
     unsupported_count: unsupportedCount,
     contract_not_allowed_count: contractNotAllowedCount,
     structurally_supported_count: structurallySupportedCount,

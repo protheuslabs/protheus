@@ -1,9 +1,14 @@
 # Backlog Archive View
 
-Generated: 2026-03-02T15:48:54.990Z
+Generated: 2026-03-02T16:08:33.506Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
+| V3-RACE-204 | hardening | V3 | done | Preview-Horizon Success Criteria Contract (Deferred Metrics in Score-Only) | V3-RACE-017, V3-RACE-019, V3-RACE-116 |
+| V3-RACE-205 | hardening | V3 | done | Deterministic Execution-Floor Bootstrap Lane (1 Shippable Outcome Minimum) | V3-RACE-017, V3-RACE-019, V3-RACE-116 |
+| V3-RACE-206 | hardening | V3 | done | Score-Only Manual-Gate Exclusion & Selector Penalty | V3-RACE-017, V3-RACE-019, V3-RACE-116 |
+| V3-RACE-207 | hardening | V3 | done | Budget Envelope Partitioning (Execution Floor vs Dream/Idle Burn) | V3-RACE-019, V3-RACE-022, V3-RACE-116 |
+| V3-RACE-208 | hardening | V3 | done | Model Health Stabilizer (Adaptive Probe Timeouts + Temporary Suppression/Rehab) | V3-RACE-017, V3-RACE-019, V3-RACE-116 |
 | BL-001 | backlog | BL | done | External temp-data backup pipeline (outside git) |  |
 | BL-002 | backlog | BL | done | Skill quarantine enforcement in all install paths |  |
 | BL-003 | backlog | BL | done | Autonomy receipt dashboard/summary |  |
@@ -396,4 +401,3 @@ Generated: 2026-03-02T15:48:54.990Z
 | OPT-004 | backlog | OPT | done | Proposal semantic dedupe (near-duplicate clustering) |  |
 | OPT-005 | backlog | OPT | done | Outcome correlation expansion (task-type x eye-source x model) |  |
 | OPT-006 | backlog | OPT | done | Focus-controller trigger adaptation cadence tuning |  |
-

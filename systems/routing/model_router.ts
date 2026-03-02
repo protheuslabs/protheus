@@ -75,6 +75,16 @@ const LOCAL_WARMUP_INTERVAL_MS = Number(process.env.ROUTER_LOCAL_WARMUP_INTERVAL
 const LOCAL_WARMUP_STALE_MS = Number(process.env.ROUTER_LOCAL_WARMUP_STALE_MS || Math.max(2 * 60 * 60 * 1000, PROBE_TTL_MS * 3));
 const LOCAL_WARMUP_MAX_PROBES = Number(process.env.ROUTER_LOCAL_WARMUP_MAX_PROBES || 2);
 const LOCAL_WARMUP_RECOVERY_ENABLED = String(process.env.ROUTER_LOCAL_WARMUP_RECOVERY_ENABLED || "1") !== "0";
+const ROUTER_PROBE_TIMEOUT_BACKOFF_ENABLED = String(process.env.ROUTER_PROBE_TIMEOUT_BACKOFF_ENABLED || "1") !== "0";
+const ROUTER_PROBE_TIMEOUT_BACKOFF_STEP_MS = Math.max(500, Number(process.env.ROUTER_PROBE_TIMEOUT_BACKOFF_STEP_MS || 2000));
+const ROUTER_PROBE_TIMEOUT_BACKOFF_MAX_MS = Math.max(
+  PROBE_TIMEOUT_MS,
+  Number(process.env.ROUTER_PROBE_TIMEOUT_BACKOFF_MAX_MS || 30000)
+);
+const ROUTER_PROBE_SUPPRESSION_ENABLED = String(process.env.ROUTER_PROBE_SUPPRESSION_ENABLED || "1") !== "0";
+const ROUTER_PROBE_SUPPRESSION_TIMEOUT_STREAK = Math.max(2, Number(process.env.ROUTER_PROBE_SUPPRESSION_TIMEOUT_STREAK || 3));
+const ROUTER_PROBE_SUPPRESSION_MINUTES = Math.max(5, Number(process.env.ROUTER_PROBE_SUPPRESSION_MINUTES || 45));
+const ROUTER_PROBE_REHAB_SUCCESS_THRESHOLD = Math.max(1, Number(process.env.ROUTER_PROBE_REHAB_SUCCESS_THRESHOLD || 2));
 
 let EYES_SIGNAL_CACHE = { ts_ms: 0, path: "", payload: null };
 
@@ -120,6 +130,53 @@ function normalizeProbeBlockedRecord(rec) {
     changed = true;
   }
   return { rec: r, changed };
+}
+
+function suppressionActive(rec, nowMs = Date.now()) {
+  const until = Number(rec && rec.suppressed_until_ms || 0);
+  return Number.isFinite(until) && until > nowMs;
+}
+
+function applyProbeHealthStabilizer(previous, current) {
+  const prev = previous && typeof previous === "object" ? previous : {};
+  const rec = current && typeof current === "object" ? { ...current } : {};
+  const nowMs = Date.now();
+  const prevTimeoutStreak = Number(prev.timeout_streak || 0);
+  const timeoutStreak = rec.timeout === true ? (prevTimeoutStreak + 1) : 0;
+  rec.timeout_streak = timeoutStreak;
+
+  if (rec.timeout === true) {
+    rec.rehab_success_streak = 0;
+  } else if (rec.available === true) {
+    rec.rehab_success_streak = Math.max(0, Number(prev.rehab_success_streak || 0)) + 1;
+  } else {
+    rec.rehab_success_streak = Math.max(0, Number(prev.rehab_success_streak || 0));
+  }
+
+  if (ROUTER_PROBE_SUPPRESSION_ENABLED && rec.timeout === true && timeoutStreak >= ROUTER_PROBE_SUPPRESSION_TIMEOUT_STREAK) {
+    rec.suppressed_until_ms = nowMs + (ROUTER_PROBE_SUPPRESSION_MINUTES * 60 * 1000);
+    rec.suppressed_reason = "timeout_streak";
+    rec.available = false;
+  }
+
+  if (rec.available === true) {
+    if (
+      Number(rec.rehab_success_streak || 0) >= ROUTER_PROBE_REHAB_SUCCESS_THRESHOLD
+      || (Number(prev.suppressed_until_ms || 0) > 0 && Number(prev.suppressed_until_ms || 0) <= nowMs)
+    ) {
+      delete rec.suppressed_until_ms;
+      delete rec.suppressed_reason;
+      delete rec.suppressed_at_ms;
+    }
+  }
+
+  if (suppressionActive(rec, nowMs)) {
+    rec.suppressed_at_ms = Number(rec.suppressed_at_ms || nowMs);
+    rec.reason = "probe_suppressed_timeout_rehab";
+    rec.available = false;
+  }
+
+  return rec;
 }
 
 function ensureDir(p) {
@@ -2185,6 +2242,30 @@ function resolveLocalProbePolicy(modelId) {
     accept_ok_token: toBool(
       mdl.accept_ok_token,
       toBool(def.accept_ok_token, PROBE_ACCEPT_OK_TOKEN)
+    ),
+    timeout_backoff_step_ms: toBoundedNumber(
+      mdl.timeout_backoff_step_ms,
+      toBoundedNumber(def.timeout_backoff_step_ms, ROUTER_PROBE_TIMEOUT_BACKOFF_STEP_MS, 500, 30000),
+      500,
+      30000
+    ),
+    timeout_backoff_max_ms: toBoundedNumber(
+      mdl.timeout_backoff_max_ms,
+      toBoundedNumber(def.timeout_backoff_max_ms, ROUTER_PROBE_TIMEOUT_BACKOFF_MAX_MS, PROBE_TIMEOUT_MS, 180000),
+      PROBE_TIMEOUT_MS,
+      180000
+    ),
+    suppression_timeout_streak: Math.max(
+      2,
+      Number.isFinite(Number(mdl.suppression_timeout_streak))
+        ? Number(mdl.suppression_timeout_streak)
+        : (Number.isFinite(Number(def.suppression_timeout_streak)) ? Number(def.suppression_timeout_streak) : ROUTER_PROBE_SUPPRESSION_TIMEOUT_STREAK)
+    ),
+    suppression_minutes: Math.max(
+      5,
+      Number.isFinite(Number(mdl.suppression_minutes))
+        ? Number(mdl.suppression_minutes)
+        : (Number.isFinite(Number(def.suppression_minutes)) ? Number(def.suppression_minutes) : ROUTER_PROBE_SUPPRESSION_MINUTES)
     )
   };
 }
@@ -2195,10 +2276,26 @@ function probeLocalModel(modelId) {
     return { model: modelId, available: null, skipped: true, reason: "not_local_ollama" };
   }
   const policy = resolveLocalProbePolicy(modelId);
+  let timeoutMs = Number(policy.timeout_ms || PROBE_TIMEOUT_MS);
+  let timeoutStreak = 0;
+  if (ROUTER_PROBE_TIMEOUT_BACKOFF_ENABLED) {
+    const cacheState = getHealthCache(false);
+    for (const alias of localAliasSet(modelId)) {
+      const rec = cacheState && cacheState.records ? cacheState.records[alias] : null;
+      if (!rec) continue;
+      const streak = Math.max(0, Number(rec.timeout_streak || 0));
+      if (streak > timeoutStreak) timeoutStreak = streak;
+    }
+    if (timeoutStreak > 0) {
+      const stepMs = Math.max(500, Number(policy.timeout_backoff_step_ms || ROUTER_PROBE_TIMEOUT_BACKOFF_STEP_MS));
+      const maxMs = Math.max(timeoutMs, Number(policy.timeout_backoff_max_ms || ROUTER_PROBE_TIMEOUT_BACKOFF_MAX_MS));
+      timeoutMs = Math.min(maxMs, timeoutMs + (timeoutStreak * stepMs));
+    }
+  }
   const prompt = "Return exactly: OK";
   const r = spawnSync("ollama", ["run", ollamaModelName(modelId), "--hidethinking", "--nowordwrap", prompt], {
     encoding: "utf8",
-    timeout: policy.timeout_ms
+    timeout: timeoutMs
   });
   const latency = Date.now() - started;
   const out = sanitizeProbeText(r.stdout || "");
@@ -2212,13 +2309,14 @@ function probeLocalModel(modelId) {
       model: modelId,
       available: partial ? true : false,
       latency_ms: latency,
-      probe_timeout_ms: policy.timeout_ms,
+      probe_timeout_ms: timeoutMs,
       max_latency_ms: policy.max_latency_ms,
       timeout: true,
       follows_instructions: partial ? followsProbeInstruction(out || sample, policy.accept_ok_token) : null,
       generic_hits: partial ? scoreGeneric(out || sample) : null,
       reason: partial ? "probe_timeout_partial" : "probe_timeout",
-      sample: sampleOneLine(sample, 120)
+      sample: sampleOneLine(sample, 120),
+      timeout_streak: timeoutStreak + 1
     };
   }
   if (r.status !== 0) {
@@ -2229,7 +2327,7 @@ function probeLocalModel(modelId) {
         skipped: true,
         probe_blocked: true,
         latency_ms: latency,
-        probe_timeout_ms: policy.timeout_ms,
+        probe_timeout_ms: timeoutMs,
         max_latency_ms: policy.max_latency_ms,
         reason: "env_probe_blocked",
         stderr: sampleOneLine(err, 160)
@@ -2242,7 +2340,7 @@ function probeLocalModel(modelId) {
       model: modelId,
       available: false,
       latency_ms: latency,
-      probe_timeout_ms: policy.timeout_ms,
+      probe_timeout_ms: timeoutMs,
       max_latency_ms: policy.max_latency_ms,
       reason: failureCode,
       stderr: sampleOneLine(err || out, 120)
@@ -2255,11 +2353,12 @@ function probeLocalModel(modelId) {
     model: modelId,
     available: true,
     latency_ms: latency,
-    probe_timeout_ms: policy.timeout_ms,
+    probe_timeout_ms: timeoutMs,
     max_latency_ms: policy.max_latency_ms,
     follows_instructions: follows,
     generic_hits: genericHits,
-    sample: sampleOneLine(out, 120)
+    sample: sampleOneLine(out, 120),
+    timeout_streak: 0
   };
 }
 
@@ -2286,9 +2385,22 @@ function health(modelId, force = false, opts: AnyObj = {}) {
   const currentRuntime = cacheState.current_runtime;
   const ent = cacheState.records[modelId];
   const entRuntime = normalizeRuntimeScope(cacheState.sources[modelId] || "") || currentRuntime;
+  const nowMs = Date.now();
+
+  if (!force && ROUTER_PROBE_SUPPRESSION_ENABLED && ent && suppressionActive(ent, nowMs)) {
+    const suppressed = {
+      ...ent,
+      available: false,
+      suppressed: true,
+      reason: "probe_suppressed_timeout_rehab"
+    };
+    const normSuppressed = normalizeProbeBlockedRecord(suppressed).rec;
+    saveHealthRecord(entRuntime, modelId, normSuppressed);
+    return { ...normSuppressed, source_runtime: entRuntime };
+  }
 
   if (!force && ent) {
-    const ageMs = Date.now() - Number(ent.checked_ms || 0);
+    const ageMs = nowMs - Number(ent.checked_ms || 0);
     const fresh = ageMs < PROBE_TTL_MS;
     if (fresh) {
       const norm = normalizeProbeBlockedRecord(ent);
@@ -2308,10 +2420,11 @@ function health(modelId, force = false, opts: AnyObj = {}) {
   const rawRecord = {
     ...res,
     ts: nowIso(),
-    checked_ms: Date.now(),
+    checked_ms: nowMs,
     runtime_scope: currentRuntime
   };
-  const record = normalizeProbeBlockedRecord(rawRecord).rec;
+  const normalized = normalizeProbeBlockedRecord(rawRecord).rec;
+  const record = applyProbeHealthStabilizer(ent, normalized);
   if (record.available === true && record.skipped !== true) {
     const genericBad = (record.generic_hits || 0) >= 2;
     const followBad = record.follows_instructions === false;

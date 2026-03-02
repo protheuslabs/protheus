@@ -5,7 +5,10 @@ type SuccessCriteriaRecord = {
   evaluated_count: number;
   passed_count: number;
   failed_count: number;
+  hard_failed_count: number;
   unknown_count: number;
+  deferred_count: number;
+  deferred_pending: boolean;
   pass_rate: number | null;
   passed: boolean;
   primary_failure: string | null;
@@ -29,6 +32,7 @@ function normalizeReasonToken(v: unknown): string {
   if (/\bpreflight_executable\b/.test(compact)) return 'preflight_not_executable';
   if (/\bpre_exec_criteria_gate\b/.test(compact)) return 'pre_exec_criteria_gate_failed';
   if (/\bqueue_accept_logged\b/.test(compact)) return 'queue_accept_not_logged';
+  if (/\bdeferred_pending_window\b/.test(compact)) return 'deferred_pending_window';
   if (/\bsuccess_criteria\b/.test(compact)) return 'success_criteria_failed';
   if (/\bpostcheck_fail\b/.test(compact)) return 'postcheck_failed';
   if (/\badapter_/.test(compact) && /\bunverified\b/.test(compact)) return 'actuation_unverified';
@@ -71,7 +75,10 @@ function toSuccessCriteriaRecord(criteria: unknown, fallback: Record<string, unk
     evaluated_count: clampCount(src.evaluated_count),
     passed_count: clampCount(src.passed_count),
     failed_count: clampCount(src.failed_count),
+    hard_failed_count: clampCount(src.hard_failed_count != null ? src.hard_failed_count : src.failed_count),
     unknown_count: clampCount(src.unknown_count),
+    deferred_count: clampCount(src.deferred_count),
+    deferred_pending: src.deferred_pending === true,
     pass_rate: Number.isFinite(Number(src.pass_rate)) ? Number(src.pass_rate) : null,
     passed: src.passed === true,
     primary_failure: src.primary_failure ? String(src.primary_failure) : null,
@@ -95,7 +102,10 @@ function synthesizeSuccessCriteria({ required, minCount, checkPass }: { required
     evaluated_count: evaluated,
     passed_count: resolvedPass ? 1 : 0,
     failed_count: resolvedPass ? 0 : 1,
+    hard_failed_count: resolvedPass ? 0 : 1,
     unknown_count: evaluated === 0 ? 1 : 0,
+    deferred_count: 0,
+    deferred_pending: false,
     pass_rate: evaluated > 0 ? (resolvedPass ? 1 : 0) : null,
     passed: resolvedPass,
     primary_failure: resolvedPass ? null : 'success_criteria_missing_in_receipt_pipeline',
@@ -109,7 +119,9 @@ function withSuccessCriteriaVerification(baseVerification: Record<string, unknow
     ? { ...baseVerification }
     : {};
   const criteria = toSuccessCriteriaRecord(successCriteria, (options.fallback as Record<string, unknown>) || {});
-  const criteriaPass = criteria.required ? criteria.passed === true : true;
+  const criteriaPass = criteria.required
+    ? (criteria.passed === true || criteria.deferred_pending === true)
+    : true;
   const checks = Array.isArray(base.checks) ? base.checks.map((row) => ({ ...(row as Record<string, unknown>) })) : [];
   const existingIdx = checks.findIndex((row) => row && row.name === 'success_criteria_met');
   if (existingIdx >= 0) checks[existingIdx] = { name: 'success_criteria_met', pass: criteriaPass };
@@ -183,7 +195,9 @@ function normalizeAutonomyReceiptForWrite(receipt: unknown) {
     criteria = synthesizeSuccessCriteria({ required, minCount, checkPass: successCheckPass });
   }
 
-  const criteriaPass = criteria.required ? criteria.passed === true : true;
+  const criteriaPass = criteria.required
+    ? (criteria.passed === true || criteria.deferred_pending === true)
+    : true;
   if (successIdx >= 0) checks[successIdx] = { name: 'success_criteria_met', pass: criteriaPass };
   else checks.push({ name: 'success_criteria_met', pass: criteriaPass });
 

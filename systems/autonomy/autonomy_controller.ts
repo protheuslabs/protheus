@@ -306,6 +306,22 @@ const AUTONOMY_BUDGET_PACING_ENABLED = String(process.env.AUTONOMY_BUDGET_PACING
 const AUTONOMY_BUDGET_PACING_MIN_REMAINING_RATIO = clampNumber(Number(process.env.AUTONOMY_BUDGET_PACING_MIN_REMAINING_RATIO || 0.2), 0, 1);
 const AUTONOMY_BUDGET_PACING_HIGH_TOKEN_THRESHOLD = Math.max(100, Number(process.env.AUTONOMY_BUDGET_PACING_HIGH_TOKEN_THRESHOLD || 900));
 const AUTONOMY_BUDGET_PACING_MIN_VALUE_SIGNAL = clampNumber(Number(process.env.AUTONOMY_BUDGET_PACING_MIN_VALUE_SIGNAL || 65), 0, 100);
+const AUTONOMY_BUDGET_EXECUTION_RESERVE_ENABLED = String(process.env.AUTONOMY_BUDGET_EXECUTION_RESERVE_ENABLED || '1') !== '0';
+const AUTONOMY_BUDGET_EXECUTION_RESERVE_RATIO = clampNumber(
+  Number(process.env.AUTONOMY_BUDGET_EXECUTION_RESERVE_RATIO || 0.12),
+  0,
+  0.9
+);
+const AUTONOMY_BUDGET_EXECUTION_RESERVE_MIN_TOKENS = Math.max(
+  0,
+  Number(process.env.AUTONOMY_BUDGET_EXECUTION_RESERVE_MIN_TOKENS || 600)
+);
+const AUTONOMY_BUDGET_EXECUTION_RESERVE_MIN_VALUE_SIGNAL = clampNumber(
+  Number(process.env.AUTONOMY_BUDGET_EXECUTION_RESERVE_MIN_VALUE_SIGNAL || 45),
+  0,
+  100
+);
+const AUTONOMY_BUDGET_EXECUTION_RESERVE_AUTOPAUSE_BYPASS_ENABLED = String(process.env.AUTONOMY_BUDGET_EXECUTION_RESERVE_AUTOPAUSE_BYPASS_ENABLED || '1') !== '0';
 const AUTONOMY_EXPLORE_FRACTION = Number(process.env.AUTONOMY_EXPLORE_FRACTION || 0.25);
 const AUTONOMY_EXPLORE_EVERY_N = Number(process.env.AUTONOMY_EXPLORE_EVERY_N || 3);
 const AUTONOMY_EXPLORE_MIN_ELIGIBLE = Number(process.env.AUTONOMY_EXPLORE_MIN_ELIGIBLE || 3);
@@ -504,6 +520,38 @@ const AUTONOMY_SCORE_ONLY_REPEAT_COOLDOWN_HOURS = Math.max(
   0,
   Number(process.env.AUTONOMY_SCORE_ONLY_REPEAT_COOLDOWN_HOURS || 12)
 );
+const AUTONOMY_SCORE_ONLY_MANUAL_GATE_PREFILTER_ENABLED = String(process.env.AUTONOMY_SCORE_ONLY_MANUAL_GATE_PREFILTER_ENABLED || '1') !== '0';
+const AUTONOMY_SCORE_ONLY_MANUAL_GATE_PREFILTER_WINDOW_HOURS = Math.max(
+  1,
+  Number(process.env.AUTONOMY_SCORE_ONLY_MANUAL_GATE_PREFILTER_WINDOW_HOURS || 24)
+);
+const AUTONOMY_SCORE_ONLY_MANUAL_GATE_PREFILTER_MAX_EVENTS = Math.max(
+  50,
+  Number(process.env.AUTONOMY_SCORE_ONLY_MANUAL_GATE_PREFILTER_MAX_EVENTS || 800)
+);
+const AUTONOMY_SCORE_ONLY_MANUAL_GATE_PREFILTER_MIN_OBSERVATIONS = Math.max(
+  1,
+  Number(process.env.AUTONOMY_SCORE_ONLY_MANUAL_GATE_PREFILTER_MIN_OBSERVATIONS || 2)
+);
+const AUTONOMY_SCORE_ONLY_MANUAL_GATE_PREFILTER_MAX_RATE = clampNumber(
+  Number(process.env.AUTONOMY_SCORE_ONLY_MANUAL_GATE_PREFILTER_MAX_RATE || 0.5),
+  0.05,
+  1
+);
+const AUTONOMY_SCORE_ONLY_EXECUTION_FLOOR_ENABLED = String(process.env.AUTONOMY_SCORE_ONLY_EXECUTION_FLOOR_ENABLED || '1') !== '0';
+const AUTONOMY_SCORE_ONLY_EXECUTION_FLOOR_MIN_SHIPPED_PER_DAY = Math.max(
+  0,
+  Number(process.env.AUTONOMY_SCORE_ONLY_EXECUTION_FLOOR_MIN_SHIPPED_PER_DAY || 1)
+);
+const AUTONOMY_SCORE_ONLY_EXECUTION_FLOOR_MAX_PER_DAY = Math.max(
+  0,
+  Number(process.env.AUTONOMY_SCORE_ONLY_EXECUTION_FLOOR_MAX_PER_DAY || 1)
+);
+const AUTONOMY_SCORE_ONLY_EXECUTION_FLOOR_MAX_TOKENS = Math.max(
+  80,
+  Number(process.env.AUTONOMY_SCORE_ONLY_EXECUTION_FLOOR_MAX_TOKENS || 1200)
+);
+const AUTONOMY_SUCCESS_CRITERIA_ALLOW_DEFERRED_PREVIEW = String(process.env.AUTONOMY_SUCCESS_CRITERIA_ALLOW_DEFERRED_PREVIEW || '1') !== '0';
 const AUTONOMY_SEMANTIC_DEDUPE_ENABLED = String(process.env.AUTONOMY_SEMANTIC_DEDUPE_ENABLED || '1') !== '0';
 const AUTONOMY_SEMANTIC_DEDUPE_THRESHOLD = clampNumber(
   Number(process.env.AUTONOMY_SEMANTIC_DEDUPE_THRESHOLD || 0.74),
@@ -5821,6 +5869,85 @@ function evaluateRouteBlockPrefilter(telemetry, capabilityKey) {
   return out;
 }
 
+function summarizeRecentManualGateTelemetry(hours, maxEvents = 800) {
+  const events = recentAutonomyRunEventsInLastHours(hours, maxEvents);
+  const byCapability = {};
+  for (const evt of events) {
+    if (!isRouteExecutionSampleEvent(evt)) continue;
+    const key = String(evt.capability_key || '').trim().toLowerCase();
+    if (!key) continue;
+    if (!byCapability[key]) {
+      byCapability[key] = { attempts: 0, manual_blocked: 0, manual_block_rate: 0 };
+    }
+    byCapability[key].attempts += 1;
+    const result = String(evt.result || '').trim();
+    const blockReason = String(
+      evt.route_block_reason
+      || evt.hold_reason
+      || evt.primary_failure
+      || ''
+    ).trim().toLowerCase();
+    if (
+      (result === 'score_only_fallback_route_block' || result === 'init_gate_blocked_route')
+      && blockReason.includes('gate_manual')
+    ) {
+      byCapability[key].manual_blocked += 1;
+    }
+  }
+  for (const key of Object.keys(byCapability)) {
+    const row = byCapability[key];
+    row.manual_block_rate = row.attempts > 0
+      ? Number((Number(row.manual_blocked || 0) / Number(row.attempts || 1)).toFixed(3))
+      : 0;
+  }
+  return {
+    window_hours: Math.max(1, Number(hours || 1)),
+    sample_events: events.length,
+    by_capability: byCapability
+  };
+}
+
+function evaluateManualGatePrefilter(telemetry, capabilityKey) {
+  const key = String(capabilityKey || '').trim().toLowerCase();
+  const out = {
+    enabled: AUTONOMY_SCORE_ONLY_MANUAL_GATE_PREFILTER_ENABLED,
+    applicable: false,
+    pass: true,
+    reason: 'disabled',
+    capability_key: key || null,
+    window_hours: AUTONOMY_SCORE_ONLY_MANUAL_GATE_PREFILTER_WINDOW_HOURS,
+    min_observations: AUTONOMY_SCORE_ONLY_MANUAL_GATE_PREFILTER_MIN_OBSERVATIONS,
+    max_manual_block_rate: AUTONOMY_SCORE_ONLY_MANUAL_GATE_PREFILTER_MAX_RATE,
+    attempts: 0,
+    manual_blocked: 0,
+    manual_block_rate: 0
+  };
+  if (!AUTONOMY_SCORE_ONLY_MANUAL_GATE_PREFILTER_ENABLED) return out;
+  out.reason = 'missing_capability_key';
+  if (!key) return out;
+  out.applicable = true;
+  const rows = telemetry && telemetry.by_capability && typeof telemetry.by_capability === 'object'
+    ? telemetry.by_capability
+    : {};
+  const row = rows[key] && typeof rows[key] === 'object' ? rows[key] : null;
+  out.reason = 'no_recent_manual_gate_samples';
+  if (!row) return out;
+  out.attempts = Math.max(0, Number(row.attempts || 0));
+  out.manual_blocked = Math.max(0, Number(row.manual_blocked || 0));
+  out.manual_block_rate = clampNumber(Number(row.manual_block_rate || 0), 0, 1);
+  if (out.attempts < AUTONOMY_SCORE_ONLY_MANUAL_GATE_PREFILTER_MIN_OBSERVATIONS) {
+    out.reason = 'insufficient_observations';
+    return out;
+  }
+  if (out.manual_block_rate >= AUTONOMY_SCORE_ONLY_MANUAL_GATE_PREFILTER_MAX_RATE) {
+    out.pass = false;
+    out.reason = 'manual_gate_rate_exceeded';
+    return out;
+  }
+  out.reason = 'pass';
+  return out;
+}
+
 function proposalStatus(overlayEnt) {
   if (!overlayEnt || !overlayEnt.decision) return 'pending';
   if (overlayEnt.decision === 'accept') return 'accepted';
@@ -6420,6 +6547,25 @@ function valueDensityScore(expectedValue, estTokens) {
   return clampNumber(Math.round(score), 0, 100);
 }
 
+function executionReserveSnapshot(cap, used) {
+  const tokenCap = Math.max(0, Number(cap || 0));
+  const usedEst = Math.max(0, Number(used || 0));
+  const reserveTarget = AUTONOMY_BUDGET_EXECUTION_RESERVE_ENABLED
+    ? Math.max(
+      Math.round(tokenCap * AUTONOMY_BUDGET_EXECUTION_RESERVE_RATIO),
+      AUTONOMY_BUDGET_EXECUTION_RESERVE_MIN_TOKENS
+    )
+    : 0;
+  const reserveTokens = Math.max(0, Math.min(tokenCap, reserveTarget));
+  const spendBeyondNonReserve = Math.max(0, usedEst - Math.max(0, tokenCap - reserveTokens));
+  const reserveRemaining = Math.max(0, reserveTokens - spendBeyondNonReserve);
+  return {
+    enabled: AUTONOMY_BUDGET_EXECUTION_RESERVE_ENABLED,
+    reserve_tokens: reserveTokens,
+    reserve_remaining: reserveRemaining
+  };
+}
+
 function budgetPacingSnapshot(dateStr) {
   const budget = loadDailyBudget(dateStr);
   const autopause = loadSystemBudgetAutopauseState();
@@ -6436,6 +6582,7 @@ function budgetPacingSnapshot(dateStr) {
   const tight = autopauseActive
     || pressure === 'hard'
     || remainingRatio <= AUTONOMY_BUDGET_PACING_MIN_REMAINING_RATIO;
+  const reserve = executionReserveSnapshot(cap, used);
   return {
     token_cap: cap,
     used_est: used,
@@ -6443,16 +6590,21 @@ function budgetPacingSnapshot(dateStr) {
     remaining_ratio: Number(remainingRatio.toFixed(4)),
     pressure,
     autopause_active: autopauseActive,
-    tight
+    tight,
+    execution_reserve_enabled: reserve.enabled === true,
+    execution_reserve_tokens: Number(reserve.reserve_tokens || 0),
+    execution_reserve_remaining: Number(reserve.reserve_remaining || 0)
   };
 }
 
-function evaluateBudgetPacingGate(cand, valueSignal, risk, snapshot) {
+function evaluateBudgetPacingGate(cand, valueSignal, risk, snapshot, opts: AnyObj = {}) {
   const estTokens = estimateTokensForCandidate(cand, cand && cand.proposal);
   const valueScore = clampNumber(Number(valueSignal && valueSignal.score || 0), 0, 100);
   const snap = snapshot && typeof snapshot === 'object'
     ? snapshot
     : { tight: false, autopause_active: false, remaining_ratio: 1, pressure: 'none' };
+  const reserveRemaining = Math.max(0, Number(snap.execution_reserve_remaining || 0));
+  const executionFloorDeficit = !!(opts && opts.execution_floor_deficit === true);
   const out = {
     pass: true,
     reason: null,
@@ -6463,13 +6615,29 @@ function evaluateBudgetPacingGate(cand, valueSignal, risk, snapshot) {
     pressure: String(snap.pressure || 'none'),
     min_remaining_ratio: AUTONOMY_BUDGET_PACING_MIN_REMAINING_RATIO,
     high_token_threshold: AUTONOMY_BUDGET_PACING_HIGH_TOKEN_THRESHOLD,
-    min_value_signal_score: AUTONOMY_BUDGET_PACING_MIN_VALUE_SIGNAL
+    min_value_signal_score: AUTONOMY_BUDGET_PACING_MIN_VALUE_SIGNAL,
+    execution_floor_deficit: executionFloorDeficit,
+    execution_reserve_enabled: AUTONOMY_BUDGET_EXECUTION_RESERVE_ENABLED,
+    execution_reserve_remaining: reserveRemaining,
+    execution_reserve_min_value_signal: AUTONOMY_BUDGET_EXECUTION_RESERVE_MIN_VALUE_SIGNAL,
+    execution_reserve_bypass: false
   };
   if (AUTONOMY_BUDGET_PACING_ENABLED !== true) return out;
   if (snap.tight !== true) return out;
   const normalized = normalizedRisk(risk);
   const highValueEscape = valueScore >= Math.max(AUTONOMY_BUDGET_PACING_MIN_VALUE_SIGNAL + 20, 85);
   if (highValueEscape) return out;
+  const reserveBypassAllowed = AUTONOMY_BUDGET_EXECUTION_RESERVE_ENABLED
+    && executionFloorDeficit
+    && normalized === 'low'
+    && valueScore >= AUTONOMY_BUDGET_EXECUTION_RESERVE_MIN_VALUE_SIGNAL
+    && reserveRemaining >= estTokens;
+  if (reserveBypassAllowed) {
+    out.pass = true;
+    out.reason = 'execution_floor_reserve_bypass';
+    out.execution_reserve_bypass = true;
+    return out;
+  }
   if (snap.autopause_active === true && normalized !== 'low') {
     out.pass = false;
     out.reason = 'budget_pacing_autopause_risk_guard';
@@ -7977,7 +8145,8 @@ function assessSuccessCriteriaQuality(criteria) {
     'entry_delta_unavailable',
     'revenue_delta_unavailable',
     'outreach_artifact_unavailable',
-    'reply_or_interview_count_unavailable'
+    'reply_or_interview_count_unavailable',
+    'deferred_pending_window'
   ]);
   const unknownExemptCount = checks.filter((row) => {
     if (!row || row.evaluated === true) return false;
@@ -10768,6 +10937,10 @@ function runCmd(dateStr, opts: AnyObj = {}) {
   const noProgressStreak = consecutiveNoProgressRuns(priorRuns);
   const gateExhaustionStreak = consecutiveGateExhaustedAttempts(priorAttempts);
   const shippedToday = shippedCount(priorRuns);
+  const executionFloorShippedDeficit = !shadowOnly
+    && AUTONOMY_SCORE_ONLY_EXECUTION_FLOOR_ENABLED
+    && Number(AUTONOMY_SCORE_ONLY_EXECUTION_FLOOR_MIN_SHIPPED_PER_DAY || 0) > 0
+    && shippedToday < Number(AUTONOMY_SCORE_ONLY_EXECUTION_FLOOR_MIN_SHIPPED_PER_DAY || 0);
   const maxRunsPerDay = Number.isFinite(Number(strategyBudget.daily_runs_cap))
     ? Number(strategyBudget.daily_runs_cap)
     : AUTONOMY_MAX_RUNS_PER_DAY;
@@ -11014,7 +11187,8 @@ function runCmd(dateStr, opts: AnyObj = {}) {
     medium_risk_guard: 0,
     medium_policy_blocked: 0,
     medium_daily_cap: 0,
-    directive_pulse_cooldown: 0
+    directive_pulse_cooldown: 0,
+    manual_gate_prefilter: 0
   };
   let sampleUnknownTypeQuarantine = null;
   let sampleLowQuality = null;
@@ -11030,11 +11204,27 @@ function runCmd(dateStr, opts: AnyObj = {}) {
   let sampleMediumPolicyBlocked = null;
   let sampleMediumDailyCap = null;
   let sampleDirectivePulseCooldown = null;
+  let sampleManualGatePrefilter = null;
+  const manualGateDeferredCandidates = [];
   const fitnessPolicy = outcomeFitnessPolicy();
   const candidateAuditLimit = clampNumber(Math.round(AUTONOMY_CANDIDATE_AUDIT_MAX_ROWS), 5, 200);
   const candidateRejectedByGate = {};
   const candidateAuditRows = [];
   const budgetPacingState = budgetPacingSnapshot(dateStr);
+  const manualGateTelemetry = (
+    !shadowOnly
+    && executionMode === 'score_only'
+    && AUTONOMY_SCORE_ONLY_MANUAL_GATE_PREFILTER_ENABLED
+  )
+    ? summarizeRecentManualGateTelemetry(
+      AUTONOMY_SCORE_ONLY_MANUAL_GATE_PREFILTER_WINDOW_HOURS,
+      AUTONOMY_SCORE_ONLY_MANUAL_GATE_PREFILTER_MAX_EVENTS
+    )
+    : {
+      window_hours: AUTONOMY_SCORE_ONLY_MANUAL_GATE_PREFILTER_WINDOW_HOURS,
+      sample_events: 0,
+      by_capability: {}
+    };
   const queuePressureState = queuePressureSnapshot(proposalDate);
   const tritProductivityState = AUTONOMY_TRIT_SHADOW_ENABLED
     ? evaluateTritShadowProductivity(loadTritShadowPolicy())
@@ -11121,7 +11311,29 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       min_remaining_ratio: AUTONOMY_BUDGET_PACING_MIN_REMAINING_RATIO,
       high_token_threshold: AUTONOMY_BUDGET_PACING_HIGH_TOKEN_THRESHOLD,
       min_value_signal_score: AUTONOMY_BUDGET_PACING_MIN_VALUE_SIGNAL,
-      snapshot: budgetPacingState
+      snapshot: budgetPacingState,
+      execution_reserve: {
+        enabled: AUTONOMY_BUDGET_EXECUTION_RESERVE_ENABLED,
+        ratio: AUTONOMY_BUDGET_EXECUTION_RESERVE_RATIO,
+        min_tokens: AUTONOMY_BUDGET_EXECUTION_RESERVE_MIN_TOKENS,
+        min_value_signal_score: AUTONOMY_BUDGET_EXECUTION_RESERVE_MIN_VALUE_SIGNAL,
+        floor_shipped_deficit: executionFloorShippedDeficit
+      }
+    },
+    score_only_manual_gate_prefilter: {
+      enabled: AUTONOMY_SCORE_ONLY_MANUAL_GATE_PREFILTER_ENABLED,
+      window_hours: AUTONOMY_SCORE_ONLY_MANUAL_GATE_PREFILTER_WINDOW_HOURS,
+      min_observations: AUTONOMY_SCORE_ONLY_MANUAL_GATE_PREFILTER_MIN_OBSERVATIONS,
+      max_manual_block_rate: AUTONOMY_SCORE_ONLY_MANUAL_GATE_PREFILTER_MAX_RATE,
+      sample_events: Number(manualGateTelemetry.sample_events || 0)
+    },
+    score_only_execution_floor: {
+      enabled: AUTONOMY_SCORE_ONLY_EXECUTION_FLOOR_ENABLED,
+      min_shipped_per_day: AUTONOMY_SCORE_ONLY_EXECUTION_FLOOR_MIN_SHIPPED_PER_DAY,
+      max_per_day: AUTONOMY_SCORE_ONLY_EXECUTION_FLOOR_MAX_PER_DAY,
+      max_tokens: AUTONOMY_SCORE_ONLY_EXECUTION_FLOOR_MAX_TOKENS,
+      shipped_today: shippedToday,
+      deficit: executionFloorShippedDeficit
     },
     campaign_scheduler: {
       enabled: Array.isArray(strategy && strategy.campaigns) && strategy.campaigns.length > 0
@@ -11507,7 +11719,9 @@ function runCmd(dateStr, opts: AnyObj = {}) {
     }
 
     if (!shadowOnly && AUTONOMY_BUDGET_PACING_ENABLED && !executionQuotaDeficit) {
-      const budgetPacingGate = evaluateBudgetPacingGate(cand, valueSignal, risk, budgetPacingState);
+      const budgetPacingGate = evaluateBudgetPacingGate(cand, valueSignal, risk, budgetPacingState, {
+        execution_floor_deficit: executionFloorShippedDeficit
+      });
       if (!budgetPacingGate.pass) {
         skipStats.budget_pacing += 1;
         bumpCount(candidateRejectedByGate, 'budget_pacing');
@@ -11541,6 +11755,48 @@ function runCmd(dateStr, opts: AnyObj = {}) {
 
     const capDescriptorCand = capabilityDescriptor(cand.proposal, parseActuationSpec(cand.proposal));
     const capKeyCand = String(capDescriptorCand && capDescriptorCand.key || '').toLowerCase();
+    if (!shadowOnly && executionMode === 'score_only' && AUTONOMY_SCORE_ONLY_MANUAL_GATE_PREFILTER_ENABLED) {
+      const manualGatePrefilter = evaluateManualGatePrefilter(manualGateTelemetry, capKeyCand);
+      if (!manualGatePrefilter.pass && manualGatePrefilter.applicable) {
+        skipStats.manual_gate_prefilter += 1;
+        bumpCount(candidateRejectedByGate, 'manual_gate_prefilter');
+        manualGateDeferredCandidates.push({
+          ...cand,
+          quality: q,
+          directive_fit: dfit,
+          actionability,
+          value_signal: valueSignal,
+          risk,
+          capability_key: capKeyCand,
+          objective_binding: objectiveBinding,
+          optimization_link: optimizationLink,
+          manual_gate_prefilter: manualGatePrefilter
+        });
+        pushCandidateAudit({
+          proposal_id: proposalId,
+          proposal_type: proposalType,
+          risk,
+          pass: false,
+          gate: 'manual_gate_prefilter',
+          score: Number(cand.score || 0),
+          capability_key: capKeyCand,
+          manual_gate_prefilter: manualGatePrefilter,
+          reasons: [manualGatePrefilter.reason || 'manual_gate_rate_exceeded']
+        });
+        if (!sampleManualGatePrefilter) {
+          sampleManualGatePrefilter = {
+            proposal_id: cand.proposal.id,
+            capability_key: capKeyCand,
+            reason: manualGatePrefilter.reason || 'manual_gate_rate_exceeded',
+            attempts: Number(manualGatePrefilter.attempts || 0),
+            manual_blocked: Number(manualGatePrefilter.manual_blocked || 0),
+            manual_block_rate: Number(manualGatePrefilter.manual_block_rate || 0)
+          };
+        }
+        continue;
+      }
+    }
+
     if (!shadowOnly && capKeyCand && capabilityCooldownActive(capKeyCand)) {
       skipStats.capability_cooldown += 1;
       bumpCount(candidateRejectedByGate, 'capability_cooldown');
@@ -12023,6 +12279,31 @@ function runCmd(dateStr, opts: AnyObj = {}) {
         source: objectiveBinding.source || null
       }
     });
+  }
+
+  if (eligible.length === 0 && manualGateDeferredCandidates.length > 0) {
+    manualGateDeferredCandidates.sort((a, b) => {
+      const sa = Number(a && a.score || 0);
+      const sb = Number(b && b.score || 0);
+      if (sb !== sa) return sb - sa;
+      return String(a && a.proposal && a.proposal.id || '').localeCompare(String(b && b.proposal && b.proposal.id || ''));
+    });
+    const revived = manualGateDeferredCandidates[0];
+    if (revived) {
+      eligible.push({
+        ...revived,
+        manual_gate_prefilter_bypass: true
+      });
+      pushCandidateAudit({
+        proposal_id: String(revived && revived.proposal && revived.proposal.id || ''),
+        proposal_type: String(revived && revived.proposal && revived.proposal.type || ''),
+        risk: String(revived && revived.risk || normalizedRisk(revived && revived.proposal && revived.proposal.risk)),
+        pass: true,
+        gate: 'manual_gate_prefilter_fallback',
+        score: Number(revived && revived.score || 0),
+        reasons: ['manual_gate_prefilter_all_candidates_filtered']
+      });
+    }
   }
 
   tierReservation = directiveTierReservationNeed(eligible, directivePulseCtx);
@@ -12714,6 +12995,40 @@ function runCmd(dateStr, opts: AnyObj = {}) {
     }
 
     if (
+      skipStats.manual_gate_prefilter > 0
+      && skipStats.eye_no_progress === 0
+      && skipStats.low_quality === 0
+      && skipStats.low_directive_fit === 0
+      && skipStats.low_actionability === 0
+      && skipStats.optimization_good_enough === 0
+      && skipStats.low_value_signal === 0
+      && skipStats.budget_pacing === 0
+      && skipStats.low_composite === 0
+      && skipStats.capability_cooldown === 0
+      && skipStats.medium_risk_guard === 0
+      && skipStats.medium_policy_blocked === 0
+      && skipStats.medium_daily_cap === 0
+      && skipStats.directive_pulse_cooldown === 0
+      && skipStats.objective_binding === 0
+    ) {
+      writeRun(dateStr, {
+        ts: nowIso(),
+        type: 'autonomy_run',
+        result: 'stop_init_gate_score_only_manual_gate_prefilter',
+        skipped_manual_gate_prefilter: skipStats.manual_gate_prefilter,
+        sample_manual_gate_prefilter: sampleManualGatePrefilter
+      });
+      process.stdout.write(JSON.stringify({
+        ok: true,
+        result: 'stop_init_gate_score_only_manual_gate_prefilter',
+        skipped_manual_gate_prefilter: skipStats.manual_gate_prefilter,
+        sample_manual_gate_prefilter: sampleManualGatePrefilter,
+        ts: nowIso()
+      }) + '\n');
+      return;
+    }
+
+    if (
       skipStats.capability_cooldown > 0
       && skipStats.eye_no_progress === 0
       && skipStats.low_quality === 0
@@ -12785,7 +13100,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       ts: nowIso(),
       type: 'autonomy_run',
       result: 'stop_repeat_gate_candidate_exhausted',
-      reason: `all_candidates_exhausted quality_or_directive_fit_or_actionability_or_optimization_good_enough_or_objective_binding_or_value_or_budget_pacing_or_composite_or_capability_cooldown_or_medium_risk_or_eye_no_progress_or_directive_pulse`,
+      reason: `all_candidates_exhausted quality_or_directive_fit_or_actionability_or_optimization_good_enough_or_objective_binding_or_value_or_budget_pacing_or_composite_or_capability_cooldown_or_medium_risk_or_eye_no_progress_or_directive_pulse_or_manual_gate_prefilter`,
       skipped_eye_no_progress: skipStats.eye_no_progress,
       skipped_low_quality: skipStats.low_quality,
       skipped_low_directive_fit: skipStats.low_directive_fit,
@@ -12800,38 +13115,7 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       skipped_medium_policy_blocked: skipStats.medium_policy_blocked,
       skipped_medium_daily_cap: skipStats.medium_daily_cap,
       skipped_directive_pulse_cooldown: skipStats.directive_pulse_cooldown,
-      sample_low_quality: sampleLowQuality,
-      sample_low_directive_fit: sampleLowDirectiveFit,
-      sample_low_actionability: sampleLowActionability,
-      sample_optimization_good_enough: sampleOptimizationGoodEnough,
-      sample_objective_binding: sampleObjectiveBinding,
-      sample_low_value_signal: sampleLowValueSignal,
-      sample_budget_pacing: sampleBudgetPacing,
-      sample_low_composite: sampleLowComposite,
-      sample_capability_cooldown: sampleCapabilityCooldown,
-      sample_medium_risk_guard: sampleMediumRiskGuard,
-      sample_medium_policy_blocked: sampleMediumPolicyBlocked,
-      sample_medium_daily_cap: sampleMediumDailyCap,
-      sample_directive_pulse_cooldown: sampleDirectivePulseCooldown
-    });
-    process.stdout.write(JSON.stringify({
-      ok: true,
-      result: 'stop_repeat_gate_candidate_exhausted',
-      reason: `all_candidates_exhausted quality_or_directive_fit_or_actionability_or_optimization_good_enough_or_objective_binding_or_value_or_budget_pacing_or_composite_or_capability_cooldown_or_medium_risk_or_eye_no_progress_or_directive_pulse`,
-      skipped_eye_no_progress: skipStats.eye_no_progress,
-      skipped_low_quality: skipStats.low_quality,
-      skipped_low_directive_fit: skipStats.low_directive_fit,
-      skipped_low_actionability: skipStats.low_actionability,
-      skipped_optimization_good_enough: skipStats.optimization_good_enough,
-      skipped_objective_binding: skipStats.objective_binding,
-      skipped_low_value_signal: skipStats.low_value_signal,
-      skipped_budget_pacing: skipStats.budget_pacing,
-      skipped_low_composite: skipStats.low_composite,
-      skipped_capability_cooldown: skipStats.capability_cooldown,
-      skipped_medium_risk_guard: skipStats.medium_risk_guard,
-      skipped_medium_policy_blocked: skipStats.medium_policy_blocked,
-      skipped_medium_daily_cap: skipStats.medium_daily_cap,
-      skipped_directive_pulse_cooldown: skipStats.directive_pulse_cooldown,
+      skipped_manual_gate_prefilter: skipStats.manual_gate_prefilter,
       sample_low_quality: sampleLowQuality,
       sample_low_directive_fit: sampleLowDirectiveFit,
       sample_low_actionability: sampleLowActionability,
@@ -12845,6 +13129,41 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       sample_medium_policy_blocked: sampleMediumPolicyBlocked,
       sample_medium_daily_cap: sampleMediumDailyCap,
       sample_directive_pulse_cooldown: sampleDirectivePulseCooldown,
+      sample_manual_gate_prefilter: sampleManualGatePrefilter
+    });
+    process.stdout.write(JSON.stringify({
+      ok: true,
+      result: 'stop_repeat_gate_candidate_exhausted',
+      reason: `all_candidates_exhausted quality_or_directive_fit_or_actionability_or_optimization_good_enough_or_objective_binding_or_value_or_budget_pacing_or_composite_or_capability_cooldown_or_medium_risk_or_eye_no_progress_or_directive_pulse_or_manual_gate_prefilter`,
+      skipped_eye_no_progress: skipStats.eye_no_progress,
+      skipped_low_quality: skipStats.low_quality,
+      skipped_low_directive_fit: skipStats.low_directive_fit,
+      skipped_low_actionability: skipStats.low_actionability,
+      skipped_optimization_good_enough: skipStats.optimization_good_enough,
+      skipped_objective_binding: skipStats.objective_binding,
+      skipped_low_value_signal: skipStats.low_value_signal,
+      skipped_budget_pacing: skipStats.budget_pacing,
+      skipped_low_composite: skipStats.low_composite,
+      skipped_capability_cooldown: skipStats.capability_cooldown,
+      skipped_medium_risk_guard: skipStats.medium_risk_guard,
+      skipped_medium_policy_blocked: skipStats.medium_policy_blocked,
+      skipped_medium_daily_cap: skipStats.medium_daily_cap,
+      skipped_directive_pulse_cooldown: skipStats.directive_pulse_cooldown,
+      skipped_manual_gate_prefilter: skipStats.manual_gate_prefilter,
+      sample_low_quality: sampleLowQuality,
+      sample_low_directive_fit: sampleLowDirectiveFit,
+      sample_low_actionability: sampleLowActionability,
+      sample_optimization_good_enough: sampleOptimizationGoodEnough,
+      sample_objective_binding: sampleObjectiveBinding,
+      sample_low_value_signal: sampleLowValueSignal,
+      sample_budget_pacing: sampleBudgetPacing,
+      sample_low_composite: sampleLowComposite,
+      sample_capability_cooldown: sampleCapabilityCooldown,
+      sample_medium_risk_guard: sampleMediumRiskGuard,
+      sample_medium_policy_blocked: sampleMediumPolicyBlocked,
+      sample_medium_daily_cap: sampleMediumDailyCap,
+      sample_directive_pulse_cooldown: sampleDirectivePulseCooldown,
+      sample_manual_gate_prefilter: sampleManualGatePrefilter,
       ts: nowIso()
     }) + '\n');
     return;
@@ -12992,6 +13311,8 @@ function runCmd(dateStr, opts: AnyObj = {}) {
     let previewVerification = null;
     let previewSummary = null;
     let previewTokenUsage = null;
+    let scoreOnlyExecutionFloorArmed = false;
+    let scoreOnlyExecutionFloorPolicy = null;
     let previewMode = shadowOnly ? 'shadow_only' : 'score_only';
     const churn = scoreOnlyProposalChurn(priorRuns, p.id, AUTONOMY_SCORE_ONLY_REPEAT_WINDOW_HOURS);
     if (
@@ -13087,11 +13408,12 @@ function runCmd(dateStr, opts: AnyObj = {}) {
         p,
         {
           phase: 'preview',
+          allow_deferred_preview: AUTONOMY_SUCCESS_CRITERIA_ALLOW_DEFERRED_PREVIEW,
           capability_key: capabilityKey,
           outcome: previewVerification.outcome,
           exec_ok: previewRes && previewRes.ok === true,
           dod_passed: previewVerification.passed === true,
-          postconditions_ok: previewVerification.passed === true,
+          postconditions_ok: !!(preSummary && preSummary.postconditions_ok === true),
           queue_outcome_logged: true,
           duration_ms: Number(previewRes && previewRes.execution_metrics && previewRes.execution_metrics.duration_ms || 0),
           token_usage: previewTokenUsage,
@@ -13109,6 +13431,54 @@ function runCmd(dateStr, opts: AnyObj = {}) {
         enforceNoChangeOnFailure: true
       });
       previewVerification = withSuccessCriteriaQualityAudit(previewVerification);
+      const scoreOnlyExecutionFloorCountToday = Array.isArray(priorRuns)
+        ? priorRuns.filter((evt) => evt && evt.type === 'autonomy_run' && evt.result === 'score_only_execution_floor_bootstrap_execute').length
+        : 0;
+      const previewGateDecision = String(preSummary && preSummary.gate_decision || 'ALLOW').trim().toUpperCase() || 'ALLOW';
+      const floorEligible = !shadowOnly
+        && AUTONOMY_SCORE_ONLY_EXECUTION_FLOOR_ENABLED
+        && executionFloorShippedDeficit
+        && proposalRisk === 'low'
+        && pick
+        && pick.actionability
+        && pick.actionability.executable === true
+        && previewVerification
+        && previewVerification.passed === true
+        && preBudgetDeferred !== true
+        && preSummary
+        && preSummary.executable === true
+        && previewGateDecision !== 'MANUAL'
+        && previewGateDecision !== 'DENY'
+        && routeTokensEst <= AUTONOMY_SCORE_ONLY_EXECUTION_FLOOR_MAX_TOKENS
+        && scoreOnlyExecutionFloorCountToday < AUTONOMY_SCORE_ONLY_EXECUTION_FLOOR_MAX_PER_DAY;
+      if (floorEligible) {
+        scoreOnlyExecutionFloorArmed = true;
+        previewMode = 'score_only_execution_floor_bootstrap';
+        scoreOnlyExecutionFloorPolicy = {
+          enabled: AUTONOMY_SCORE_ONLY_EXECUTION_FLOOR_ENABLED,
+          min_shipped_per_day: AUTONOMY_SCORE_ONLY_EXECUTION_FLOOR_MIN_SHIPPED_PER_DAY,
+          shipped_today: shippedToday,
+          max_per_day: AUTONOMY_SCORE_ONLY_EXECUTION_FLOOR_MAX_PER_DAY,
+          executions_today: scoreOnlyExecutionFloorCountToday,
+          max_tokens: AUTONOMY_SCORE_ONLY_EXECUTION_FLOOR_MAX_TOKENS,
+          route_tokens_est: routeTokensEst,
+          gate_decision: previewGateDecision
+        };
+        writeRun(dateStr, {
+          ts: nowIso(),
+          type: 'autonomy_run',
+          result: 'score_only_execution_floor_bootstrap_execute',
+          proposal_id: p.id,
+          objective_id: executionObjectiveId || null,
+          capability_key: capabilityKey,
+          execution_target: executionTarget,
+          preview_receipt_id: previewReceiptId,
+          preview_verification: previewVerification,
+          preview_summary: previewSummary,
+          token_usage: previewTokenUsage,
+          execution_floor_policy: scoreOnlyExecutionFloorPolicy
+        });
+      }
       const previewDependencies = proposalDependencySummary(
         p,
         directiveAction,
@@ -13190,69 +13560,85 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       }
     }
 
+    if (!scoreOnlyExecutionFloorArmed) {
+      writeRun(dateStr, {
+        ts: nowIso(),
+        type: 'autonomy_run',
+        result: shadowOnly ? 'score_only_evidence' : 'score_only_preview',
+        strategy_id: strategy ? strategy.id : null,
+        execution_mode: executionMode,
+        proposal_id: p.id,
+        objective_id: executionObjectiveId || null,
+        proposal_date: proposalDate,
+        proposal_type: String(p.type || ''),
+        risk: proposalRisk,
+        source_eye: sourceEyeId(p),
+        proposal_key: proposalDedupKey(p),
+        capability_key: capabilityKey,
+        score: Number(pick.score.toFixed(3)),
+        strategy_rank: pick.strategy_rank || null,
+        strategy_rank_adjusted: Number(pick.strategy_rank_adjusted || (pick.strategy_rank && pick.strategy_rank.score) || 0),
+        value_signal: pick.value_signal || null,
+        objective_binding: objectiveBinding,
+        directive_pulse: directivePulse,
+        campaign_match: campaignMatch,
+        campaign_plan: campaignPlan,
+        selection_mode: selection.mode,
+        selection_index: selection.index,
+        admission: admissionSummary,
+        execution_target: executionTarget,
+        preview_mode: previewMode,
+        preview_receipt_id: previewReceiptId,
+        preview_verification: previewVerification,
+        preview_summary: previewSummary,
+        proposal_dependencies: proposalDependencySummary(p, directiveAction, previewSummary || null) || proposalDependenciesBase,
+        token_usage: previewTokenUsage
+      });
+      process.stdout.write(JSON.stringify({
+        ok: true,
+        result: shadowOnly ? 'score_only_evidence' : 'score_only_preview',
+        strategy_id: strategy ? strategy.id : null,
+        execution_mode: executionMode,
+        proposal_id: p.id,
+        objective_id: executionObjectiveId || null,
+        proposal_date: proposalDate,
+        risk: proposalRisk,
+        score: Number(pick.score.toFixed(3)),
+        strategy_rank: pick.strategy_rank || null,
+        strategy_rank_adjusted: Number(pick.strategy_rank_adjusted || (pick.strategy_rank && pick.strategy_rank.score) || 0),
+        value_signal: pick.value_signal || null,
+        objective_binding: objectiveBinding,
+        directive_pulse: directivePulse,
+        campaign_match: campaignMatch,
+        campaign_plan: campaignPlan,
+        selection_mode: selection.mode,
+        selection_index: selection.index,
+        admission: admissionSummary,
+        execution_target: executionTarget,
+        preview_mode: previewMode,
+        preview_receipt_id: previewReceiptId,
+        preview_verification: previewVerification,
+        preview_summary: previewSummary,
+        proposal_dependencies: proposalDependencySummary(p, directiveAction, previewSummary || null) || proposalDependenciesBase,
+        token_usage: previewTokenUsage,
+        ts: nowIso()
+      }) + '\n');
+      return;
+    }
     writeRun(dateStr, {
       ts: nowIso(),
       type: 'autonomy_run',
-      result: shadowOnly ? 'score_only_evidence' : 'score_only_preview',
-      strategy_id: strategy ? strategy.id : null,
-      execution_mode: executionMode,
+      result: 'score_only_execution_floor_bootstrap_armed',
       proposal_id: p.id,
       objective_id: executionObjectiveId || null,
-      proposal_date: proposalDate,
-      proposal_type: String(p.type || ''),
-      risk: proposalRisk,
-      source_eye: sourceEyeId(p),
-      proposal_key: proposalDedupKey(p),
       capability_key: capabilityKey,
-      score: Number(pick.score.toFixed(3)),
-      strategy_rank: pick.strategy_rank || null,
-      strategy_rank_adjusted: Number(pick.strategy_rank_adjusted || (pick.strategy_rank && pick.strategy_rank.score) || 0),
-      value_signal: pick.value_signal || null,
-      objective_binding: objectiveBinding,
-      directive_pulse: directivePulse,
-      campaign_match: campaignMatch,
-      campaign_plan: campaignPlan,
-      selection_mode: selection.mode,
-      selection_index: selection.index,
-      admission: admissionSummary,
       execution_target: executionTarget,
-      preview_mode: previewMode,
       preview_receipt_id: previewReceiptId,
       preview_verification: previewVerification,
       preview_summary: previewSummary,
-      proposal_dependencies: proposalDependencySummary(p, directiveAction, previewSummary || null) || proposalDependenciesBase,
-      token_usage: previewTokenUsage
-    });
-    process.stdout.write(JSON.stringify({
-      ok: true,
-      result: shadowOnly ? 'score_only_evidence' : 'score_only_preview',
-      strategy_id: strategy ? strategy.id : null,
-      execution_mode: executionMode,
-      proposal_id: p.id,
-      objective_id: executionObjectiveId || null,
-      proposal_date: proposalDate,
-      risk: proposalRisk,
-      score: Number(pick.score.toFixed(3)),
-      strategy_rank: pick.strategy_rank || null,
-      strategy_rank_adjusted: Number(pick.strategy_rank_adjusted || (pick.strategy_rank && pick.strategy_rank.score) || 0),
-      value_signal: pick.value_signal || null,
-      objective_binding: objectiveBinding,
-      directive_pulse: directivePulse,
-      campaign_match: campaignMatch,
-      campaign_plan: campaignPlan,
-      selection_mode: selection.mode,
-      selection_index: selection.index,
-      admission: admissionSummary,
-      execution_target: executionTarget,
-      preview_mode: previewMode,
-      preview_receipt_id: previewReceiptId,
-      preview_verification: previewVerification,
-      preview_summary: previewSummary,
-      proposal_dependencies: proposalDependencySummary(p, directiveAction, previewSummary || null) || proposalDependenciesBase,
       token_usage: previewTokenUsage,
-      ts: nowIso()
-    }) + '\n');
-    return;
+      execution_floor_policy: scoreOnlyExecutionFloorPolicy
+    });
   }
 
   if (
@@ -13438,6 +13824,9 @@ function runCmd(dateStr, opts: AnyObj = {}) {
   const autopauseBypassCountToday = Array.isArray(priorRunsForPolicyHoldCooldown)
     ? priorRunsForPolicyHoldCooldown.filter((evt) => evt && evt.type === 'autonomy_run' && evt.result === 'budget_autopause_canary_bypass').length
     : 0;
+  const executionReserveBypassCountToday = Array.isArray(priorRunsForPolicyHoldCooldown)
+    ? priorRunsForPolicyHoldCooldown.filter((evt) => evt && evt.type === 'autonomy_run' && evt.result === 'budget_autopause_execution_reserve_bypass').length
+    : 0;
   const canaryBudgetAutopauseBypassAllowed = !shadowOnly
     && autopauseActive
     && AUTONOMY_BUDGET_AUTOPAUSE_CANARY_BYPASS_ENABLED
@@ -13446,6 +13835,17 @@ function runCmd(dateStr, opts: AnyObj = {}) {
     && estTokens <= AUTONOMY_BUDGET_AUTOPAUSE_CANARY_BYPASS_MAX_TOKENS
     && (budget.used_est + estTokens) <= budget.token_cap
     && autopauseBypassCountToday < AUTONOMY_BUDGET_AUTOPAUSE_CANARY_BYPASS_MAX_PER_DAY;
+  const executionReserveBypassAllowed = !shadowOnly
+    && autopauseActive
+    && executionMode === 'score_only'
+    && AUTONOMY_BUDGET_EXECUTION_RESERVE_AUTOPAUSE_BYPASS_ENABLED
+    && executionFloorShippedDeficit
+    && proposalRisk === 'low'
+    && AUTONOMY_BUDGET_EXECUTION_RESERVE_ENABLED
+    && Number(budgetPacingState.execution_reserve_remaining || 0) >= estTokens
+    && estTokens <= AUTONOMY_SCORE_ONLY_EXECUTION_FLOOR_MAX_TOKENS
+    && executionReserveBypassCountToday < AUTONOMY_SCORE_ONLY_EXECUTION_FLOOR_MAX_PER_DAY
+    && (budget.used_est + estTokens) <= budget.token_cap;
   if (autopauseActive && shadowOnly) {
     writeRun(dateStr, {
       ts: nowIso(),
@@ -13488,8 +13888,36 @@ function runCmd(dateStr, opts: AnyObj = {}) {
       }
     });
   }
+  if (executionReserveBypassAllowed) {
+    writeRun(dateStr, {
+      ts: nowIso(),
+      type: 'autonomy_run',
+      result: 'budget_autopause_execution_reserve_bypass',
+      proposal_id: p.id,
+      capability_key: capabilityKey,
+      directive_pulse: directivePulse,
+      budget_autopause: {
+        source: budgetAutopause.source || null,
+        reason: budgetAutopause.reason || null,
+        pressure: budgetAutopause.pressure || null,
+        until: budgetAutopause.until || null
+      },
+      bypass: {
+        execution_mode: executionMode,
+        proposal_risk: proposalRisk,
+        est_tokens: estTokens,
+        used_est: budget.used_est,
+        token_cap: budget.token_cap,
+        reserve_remaining: Number(budgetPacingState.execution_reserve_remaining || 0),
+        shipped_today: shippedToday,
+        min_shipped_per_day: AUTONOMY_SCORE_ONLY_EXECUTION_FLOOR_MIN_SHIPPED_PER_DAY,
+        bypass_count_today: executionReserveBypassCountToday,
+        bypass_limit_per_day: AUTONOMY_SCORE_ONLY_EXECUTION_FLOOR_MAX_PER_DAY
+      }
+    });
+  }
   if (autopauseActive && !shadowOnly) {
-    if (!canaryBudgetAutopauseBypassAllowed) {
+    if (!canaryBudgetAutopauseBypassAllowed && !executionReserveBypassAllowed) {
       writeRun(dateStr, {
         ts: nowIso(),
         type: 'autonomy_run',

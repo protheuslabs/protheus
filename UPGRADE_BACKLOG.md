@@ -2667,6 +2667,108 @@ Data boundary invariants for this intake:
 | Approve mobile battery/thermal safety policy and acceptable background behavior envelope | human | queued | Set hard limits for background execution, heat ceilings, and auto-throttle/auto-stop triggers. |
 | Approve competitor benchmark publication scope for mobile performance claims | human | queued | Define which mobile benchmark results can be publicly released versus internal-only evidence. |
 
+## External Requirements Intake (Google Doc `1qsY9ZcqDwE5R0gOd-qMl8XHajymG-mJVevICTpLnxpI`, 2026-03-02)
+
+Objective: normalize the "mobile-ready, red-team-hardened, donor-rewarding singularity seed" directive into canonical backlog lanes without replacing existing governance, contract-lane, and runtime foundations.
+
+Data boundary invariants for this intake:
+- user-specific donor payout preferences, contribution opt-in, and wallet-profile metadata live only in `memory/` + `adaptive/`
+- permanent reward routing logic, red-team propagation runtime, signed update distribution, and operator surfaces live only in `systems/`, `packages/`, `config/`, and `docs/`
+- operational reward, security update, and distribution receipts remain under `state/` and are never treated as authoritative user-memory
+
+### Requirement Mapping (from intake)
+
+| Requirement (from intake) | Canonical Backlog Handling | Status | Requirement Action |
+|---|---|---|---|
+| Rust hybrid kernel + Edge/mobile packaging and command surfaces | `V3-RACE-175..194` | done | Reuse completed Rust-hybrid and mobile runtime lanes. |
+| Red-team discoveries auto-signed, quorum-accepted, and propagated to all nodes | `V3-RACE-195`, `V3-RACE-196` | queued | Add a dedicated security-discovery propagation lane with probationary habit apply + validation contracts. |
+| Route 80-100% extra compute tithe to GPU donors with mining-share economics | `V3-RACE-197`, `V3-RACE-198` | queued | Extend compute-tithe (`V3-RACE-022`) into explicit V3-MINE reward/share + settlement contracts. |
+| Operator donor visibility (`mine dashboard`, contribution->earnings traceability) | `V3-RACE-199` | queued | Add deterministic donor earnings dashboard and receipt-backed attribution views. |
+| Keep all upgrades routed through signed venom gates + contract lanes + constitution hooks | `V3-RACE-017`, `V3-RACE-019`, `V3-038`, deltas `V3-RACE-195..199` | queued | Require all new lanes to fail closed when gate/constitution/contract checks are missing. |
+
+### Net-New Canonical Queue
+
+| ID | Class | Version | Status | Upgrade | Why | Exit Criteria | Depends On |
+|---|---|---|---|---|---|---|---|
+| V3-RACE-195 | hardening | V3 | queued | Red-Team Discovery Propagation Fabric (Quorum-Signed Global Update Broadcast) | Red-team findings currently improve local defense lanes, but there is no explicit first-class fabric that packages every validated discovery into a globally propagated update across server, edge, and swarm nodes. | Implement discovery package lane in `systems/redteam/` + `systems/distributed/` that signs findings, enforces quorum acceptance, broadcasts to all eligible nodes via provenance contracts, and emits immutable distribution receipts with replay-safe IDs and rollback hooks. | V3-RACE-017, V3-RACE-019, V3-QPROOF-002, V3-RACE-180 |
+| V3-RACE-196 | extension | V3 | queued | Probationary Security Habit Apply + Promotion Loop | Discovery broadcast alone is insufficient; nodes need deterministic probationary apply behavior with validation before promotion to active defense posture. | Add node-side probationary apply contract that stages incoming security updates as habits, runs doctor/System3 validation, auto-promotes on pass, auto-reverts on failure, and records reason-coded receipts for every transition. | V3-RACE-195, V3-RACE-019, V3-RACE-183 |
+| V3-RACE-197 | extension | V3 | queued | V3-MINE Donor Reward Ledger + Mining-Share Issuance | Compute-tithe discounts exist, but explicit donor share issuance and reward accounting needed for transparent, contribution-proportional payouts. | Extend `systems/economy/` with V3-MINE ledger lane that converts verified useful compute into bounded share issuance, tracks accrual by donor identity, emits deterministic contribution->share receipts with anti-duplication guards, and includes rollback/replay recovery contracts for mis-awards. | V3-RACE-022, V3-RACE-130, V3-RACE-136 |
+| V3-RACE-198 | hardening | V3 | queued | V3-MINE Settlement & Attribution Bridge (Auto-Payout Safety Contract) | Reward accrual without governed settlement creates trust gaps and payout ambiguity at scale. | Add settlement contract in `systems/economy/` + blockchain bridge that executes periodic payout intents, enforces double-spend/replay protection, preserves provenance linkage to compute receipts, supports reversible hold/appeal states, and provides payout rollback path under policy. | V3-RACE-197, V3-RACE-130, V3-RACE-136 |
+| V3-RACE-199 | extension | V3 | queued | Donor Mining Dashboard + CLI (`protheusctl mine dashboard`) | Donor adoption and trust depend on clear, auditable visibility into compute contribution and reward outcomes. | Ship dashboard lane + CLI command that reports donor FLOPs, accepted work units, accrued/settled rewards, and projection bands from receipted state; include JSON/human outputs, rollback state visibility, and non-regression tests. | V3-RACE-197, V3-RACE-198, V3-RACE-191 |
+
+### Human Backlog Intake (Donor Flywheel / Non-Automatable)
+
+| Human Item (from intake) | Owner | Status | Backlog Action |
+|---|---|---|---|
+| Approve V3-MINE reward policy bounds (80-100% routing range, floor/ceiling, decay schedule) | human | queued | Set final economic guardrails and emergency override policy for donor payout routing. |
+| Approve donor settlement legal/compliance posture (jurisdiction, tax/KYC requirements) | human | queued | Define legal gate before live auto-payout activation and public donor onboarding. |
+| Approve public narrative/claim scope for "mining-share appreciation" messaging | human | queued | Set marketing/legal language constraints to avoid unsupported yield promises. |
+
+## External Requirements Intake (Google Doc `1IHlaNNXYShvk83eToPgkJxOGGJ5UfbRYfYrf2iKKuGA`, 2026-03-02)
+
+Objective: normalize the decentralized co-compute mesh directive into canonical backlog lanes that extend distributed/spawn/economy foundations while preserving contract-lane governance and signed execution controls.
+
+Data boundary invariants for this intake:
+- user-specific mesh participation settings, device opt-in preferences, and payout routing preferences live only in `memory/` + `adaptive/`
+- permanent mesh broker logic, sharding protocols, quorum aggregation, and CLI/control-plane surfaces live only in `systems/`, `packages/`, `config/`, and `docs/`
+- mesh job receipts, attestation proofs, and contribution ledgers remain in `state/` and are never treated as user-memory
+
+### Requirement Mapping (from intake)
+
+| Requirement (from intake) | Canonical Backlog Handling | Status | Requirement Action |
+|---|---|---|---|
+| Global co-compute broker sharding work across server/edge/mobile/donor nodes | `V3-RACE-200` | queued | Add compute-mesh broker plane on top of existing distributed+spawn runtime. |
+| Quorum-backed result aggregation with signed provenance from all worker nodes | `V3-RACE-201` | queued | Enforce result attestation, quorum reconciliation, and deterministic reject/retry semantics. |
+| Mobile nodes participate with constrained scheduling (charging/thermal-aware) | `V3-RACE-202` | queued | Add mobile participation scheduler contracts with safety envelopes and task class limits. |
+| Operator visibility (`protheusctl mesh status` + compute map + earnings view) | `V3-RACE-203` | queued | Add mesh status telemetry surfaces and contribution-linked operator views. |
+| Tie mesh useful-work outcomes into donor reward engine | `V3-RACE-197`, `V3-RACE-198`, `V3-RACE-200` | queued | Wire mesh work-unit proofs into V3-MINE accrual and settlement lanes. |
+
+### Net-New Canonical Queue
+
+| ID | Class | Version | Status | Upgrade | Why | Exit Criteria | Depends On |
+|---|---|---|---|---|---|---|---|
+| V3-RACE-200 | primitive-upgrade | V3 | queued | Protheus Compute Mesh Broker (Network-Scale Task Sharding Plane) | Existing distributed/swarm lanes support bounded coordination, but there is no dedicated global broker for deterministic partitioning of large jobs across heterogeneous node classes. | Create `systems/compute_mesh/` broker lane that accepts governed jobs, partitions into signed work units, allocates by capability/safety profile, persists shard lifecycle receipts from enqueue->dispatch->complete/fail, and includes rollback-safe shard requeue semantics. | V3-RACE-006, V3-RACE-019, V3-RACE-192 |
+| V3-RACE-201 | hardening | V3 | queued | Mesh Result Quorum + Provenance Aggregation Contract | Distributed shards require verifiable aggregation and fail-closed reconciliation to prevent poisoned/partial outputs from entering runtime decisions. | Implement aggregation contract enforcing signature checks, provenance-chain validation, quorum acceptance thresholds, deterministic tie-break/retry policies, rejection receipts for invalid/malicious result sets, and rollback to last-good aggregate on quorum failure. | V3-RACE-200, V3-RACE-195, V3-RACE-136 |
+| V3-RACE-202 | extension | V3 | queued | Mobile Mesh Participation Scheduler (Charging/Thermal/Battery Policy Lane) | Mobile co-compute must respect strict battery/thermal limits or participation becomes unsafe and unstable. | Add scheduler in `systems/edge/` that gates eligible task classes by charge state, thermal envelope, network profile, and user opt-in policy; emit bounded participation receipts, auto-throttle/auto-suspend events, and rollback to prior participation profile on safety breach. | V3-RACE-190, V3-RACE-193, V3-RACE-200 |
+| V3-RACE-203 | extension | V3 | queued | Mesh Operator Surfaces (`protheusctl mesh *` + Contribution Topology View) | Operators need deterministic visibility into mesh health, work distribution, and reward-linked contribution traces. | Deliver `protheusctl mesh status`/`join`/`leave` surfaces with JSON/human outputs, mesh topology summary, per-node work stats, optional donor earnings overlay from V3-MINE receipts, and rollback-state telemetry; add regression coverage and docs. | V3-RACE-200, V3-RACE-201, V3-RACE-199 |
+
+### Human Backlog Intake (Compute Mesh / Non-Automatable)
+
+| Human Item (from intake) | Owner | Status | Backlog Action |
+|---|---|---|---|
+| Approve mesh node admission policy (permissioned vs open enrollment + trust thresholds) | human | queued | Set default admission mode and trust-domain requirements for production mesh participation. |
+| Approve acceptable-use policy for donated compute tasks (allowed/disallowed workload classes) | human | queued | Define workload governance boundaries before enabling broad donor participation. |
+| Approve publication scope for mesh-size and donor-earnings claims | human | queued | Decide what mesh telemetry/earnings statistics are public versus internal-only. |
+
+## Internal Optimization Intake (Autonomy Execution Throughput Deadlock, 2026-03-02)
+
+Objective: break the score-only deadlock by fixing verification semantics and execution floor behavior while preserving existing safety/constitution/contract-lane controls.
+
+Data boundary invariants for this intake:
+- user-specific execution preferences and tolerance overrides live only in `memory/` + `adaptive/`
+- permanent verification semantics, selector logic, budget partitioning, and routing health controls live only in `systems/`, `config/`, and `docs/`
+- run receipts and gate telemetry remain in `state/` and are never treated as user-memory
+
+### Requirement Mapping (from system check)
+
+| Requirement (from system check) | Canonical Backlog Handling | Status | Requirement Action |
+|---|---|---|---|
+| Score-only previews fail on deferred-horizon criteria (`postconditions_ok`, outreach reply windows) creating false negatives | `V3-RACE-204` | done | Add preview-horizon semantics so deferred metrics are tracked without failing immediate preview verdicts. |
+| Need at least one deterministic, low-risk shipped outcome/day to unlock readiness (`min_shipped`) | `V3-RACE-205` | done | Add execution-floor bootstrap lane that guarantees one bounded shippable candidate path when safe. |
+| Selector repeatedly chooses manual/high-risk paths in score-only, causing `preview_executable=false` churn | `V3-RACE-206` | done | Penalize or skip manual-gated candidates in score-only unless no safe alternative exists. |
+| Dream/autopause budget pressure starves execution floor and causes persistent defer loops | `V3-RACE-207` | done | Partition execution vs dream budget envelopes with explicit minimum execution reserve. |
+| Model pool degraded by repeated probe timeouts, reducing healthy fallback capacity | `V3-RACE-208` | done | Add adaptive probe timeout + temporary suppression/rehabilitation rules for unstable models. |
+
+### Net-New Canonical Queue
+
+| ID | Class | Version | Status | Upgrade | Why | Exit Criteria | Depends On |
+|---|---|---|---|---|---|---|---|
+| V3-RACE-204 | hardening | V3 | done | Preview-Horizon Success Criteria Contract (Deferred Metrics in Score-Only) | Score-only receipts currently fail when criteria are valid but time-windowed (e.g., postconditions/outreach replies), distorting pass-rate telemetry and readiness. | Update success-criteria verifier + receipt taxonomy so deferred-horizon checks are explicitly marked `deferred_pending_window` in score-only, counted separately from hard fails, with verification receipts and rollback-safe config toggle to restore strict legacy behavior if regressions appear. | V3-RACE-017, V3-RACE-019, V3-RACE-116 |
+| V3-RACE-205 | hardening | V3 | done | Deterministic Execution-Floor Bootstrap Lane (1 Shippable Outcome Minimum) | Readiness blocks on `min_shipped` but current candidate flow can loop indefinitely in no-change/preview-only paths. | Add low-risk execution-floor lane that guarantees at least one policy-safe, objectively verifiable shippable action per day when eligible candidates exist; emit verification receipts for shipped outcome and include rollback path that reverts to previous selection policy on miss-rate regression. | V3-RACE-017, V3-RACE-019, V3-RACE-116 |
+| V3-RACE-206 | hardening | V3 | done | Score-Only Manual-Gate Exclusion & Selector Penalty | Re-selecting manual/high-risk proposals in score-only produces predictable `preview_executable=false` outcomes and wastes attempts. | Implement selector gate that deprioritizes/blocks manual-gated candidates during score-only unless no safe alternative passes; emit decision receipts with reason codes and include rollback switch to restore prior selection ordering for comparison. | V3-RACE-017, V3-RACE-019, V3-RACE-116 |
+| V3-RACE-207 | hardening | V3 | done | Budget Envelope Partitioning (Execution Floor vs Dream/Idle Burn) | A single burn/autopause pressure lane can starve execution and trap the system in deferred preview mode despite viable low-cost actions. | Split token-economics envelopes into protected execution-floor reserve and dream/idle budget pools, enforce minimum execution share before autopause defers, emit verification receipts on reserve usage, and add rollback-safe policy fallback to unified budget mode. | V3-RACE-019, V3-RACE-022, V3-RACE-116 |
+| V3-RACE-208 | hardening | V3 | done | Model Health Stabilizer (Adaptive Probe Timeouts + Temporary Suppression/Rehab) | Repeated probe timeouts on key models degrade routing diversity and increase fallback pressure, hurting throughput reliability. | Add adaptive probe timeout policy plus temporary suppression/rehabilitation for unstable models, prove improved healthy-model availability with verification receipts, and include rollback policy to revert timeout/suppression tuning if latency or quality regresses. | V3-RACE-017, V3-RACE-019, V3-RACE-116 |
+
 ## Backlog Policy
 
 - Lower-impact items (<9% estimated gain) are intentionally parked below to protect V1 focus.

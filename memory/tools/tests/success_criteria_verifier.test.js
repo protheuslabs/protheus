@@ -194,6 +194,56 @@ function run() {
     'backfilled checks should be marked with contract_backfill source'
   );
 
+  const deferredPreviewProposal = {
+    id: 'P-SC-4',
+    type: 'opportunity_capture',
+    action_spec: {
+      success_criteria: [
+        { metric: 'postconditions_ok', target: 'postconditions pass', horizon: 'next run' },
+        { metric: 'reply_or_interview_count', target: '>=1 reply/interview signal', horizon: '7d' }
+      ]
+    }
+  };
+  const deferredPreview = evaluateSuccessCriteria(
+    deferredPreviewProposal,
+    {
+      phase: 'preview',
+      allow_deferred_preview: true,
+      capability_key: 'proposal:opportunity_capture',
+      outcome: 'no_change',
+      exec_ok: true,
+      dod_passed: true,
+      postconditions_ok: false,
+      queue_outcome_logged: true,
+      dod_diff: { artifacts_delta: 1 }
+    },
+    { required: true, min_count: 2 }
+  );
+  assert.strictEqual(deferredPreview.passed, true, 'preview deferred horizon checks should not hard-fail score-only preview');
+  assert.strictEqual(deferredPreview.deferred_pending, true);
+  assert.ok(Number(deferredPreview.deferred_count || 0) >= 1);
+  assert.ok(
+    deferredPreview.checks.some((c) => c.reason === 'deferred_pending_window'),
+    'deferred checks should be marked with deferred_pending_window'
+  );
+
+  const strictPreview = evaluateSuccessCriteria(
+    deferredPreviewProposal,
+    {
+      phase: 'preview',
+      allow_deferred_preview: false,
+      capability_key: 'proposal:opportunity_capture',
+      outcome: 'no_change',
+      exec_ok: true,
+      dod_passed: true,
+      postconditions_ok: false,
+      queue_outcome_logged: true,
+      dod_diff: { artifacts_delta: 1 }
+    },
+    { required: true, min_count: 2 }
+  );
+  assert.strictEqual(strictPreview.passed, false, 'strict preview mode should preserve legacy non-deferred behavior');
+
   console.log('success_criteria_verifier.test.js: OK');
 }
 

@@ -217,6 +217,66 @@ function testAtomicPerModelUpdateNoClobber(repoRoot, tmpRoot) {
   assert.strictEqual(hostMap['ollama/gemma3:4b'].marker, 'keep', 'unrelated model marker should be preserved');
 }
 
+function testSuppressedModelReturnsUnavailable(repoRoot, tmpRoot) {
+  const cfgPath = path.join(tmpRoot, 'config', 'agent_routing_rules.json');
+  const adaptersPath = path.join(tmpRoot, 'config', 'model_adapters.json');
+  const stateDir = path.join(tmpRoot, 'state', 'routing');
+  const healthPath = path.join(stateDir, 'model_health.json');
+  const runsDir = path.join(tmpRoot, 'state', 'autonomy', 'runs');
+
+  writeJson(cfgPath, makeRoutingConfig());
+  writeJson(adaptersPath, makeModeAdapters());
+  mkDir(runsDir);
+
+  const now = Date.now();
+  const suppressedQwen = {
+    model: 'ollama/qwen3:4b',
+    available: true,
+    follows_instructions: true,
+    latency_ms: 1300,
+    checked_ms: now,
+    suppressed_until_ms: now + (30 * 60 * 1000),
+    suppressed_reason: 'timeout_streak',
+    timeout_streak: 3
+  };
+
+  writeJson(healthPath, {
+    schema_version: 2,
+    updated_at: new Date(now).toISOString(),
+    active_runtime: 'host',
+    runtimes: {
+      host: {
+        'ollama/qwen3:4b': suppressedQwen
+      }
+    },
+    records: {
+      'ollama/qwen3:4b': suppressedQwen
+    }
+  });
+
+  const env = {
+    ...process.env,
+    ROUTER_RUNTIME_SCOPE: 'host',
+    ROUTER_CONFIG_PATH: cfgPath,
+    ROUTER_MODE_ADAPTERS_PATH: adaptersPath,
+    ROUTER_STATE_DIR: stateDir,
+    ROUTER_AUTONOMY_RUNS_DIR: runsDir,
+    ROUTER_PROBE_TTL_MS: '3600000'
+  };
+
+  const code = `
+    const router = require('./systems/routing/model_router.js');
+    const routed = router.health('ollama/qwen3:4b', false, { forRouting: true });
+    process.stdout.write(JSON.stringify({ routed }));
+  `;
+  const r = runNodeEval(repoRoot, code, env);
+  assert.strictEqual(r.status, 0, `suppression eval failed: ${r.stderr}`);
+  const out = JSON.parse(String(r.stdout || '{}'));
+  assert.strictEqual(out.routed.available, false, 'suppressed model should be unavailable during suppression window');
+  assert.strictEqual(out.routed.reason, 'probe_suppressed_timeout_rehab', 'suppressed model should surface suppression reason');
+  assert.strictEqual(out.routed.suppressed, true, 'suppressed marker should be set');
+}
+
 function run() {
   const repoRoot = path.resolve(__dirname, '..', '..', '..');
   const tmpRoot = path.join(__dirname, 'temp_model_router_health_scope');
@@ -225,6 +285,7 @@ function run() {
 
   testHostPriorityForRouting(repoRoot, path.join(tmpRoot, 'case_host_priority'));
   testAtomicPerModelUpdateNoClobber(repoRoot, path.join(tmpRoot, 'case_atomic'));
+  testSuppressedModelReturnsUnavailable(repoRoot, path.join(tmpRoot, 'case_suppressed'));
 
   console.log('model_router_health_scope.test.js: OK');
 }
@@ -235,4 +296,3 @@ try {
   console.error(`model_router_health_scope.test.js: FAIL: ${err.message}`);
   process.exit(1);
 }
-

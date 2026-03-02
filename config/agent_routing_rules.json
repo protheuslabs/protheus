@@ -50,7 +50,11 @@
       "default": {
         "timeout_ms": 15000,
         "max_latency_ms": 9000,
-        "accept_ok_token": true
+        "accept_ok_token": true,
+        "timeout_backoff_step_ms": 2000,
+        "timeout_backoff_max_ms": 30000,
+        "suppression_timeout_streak": 3,
+        "suppression_minutes": 45
       },
       "models": {
         "ollama/qwen3:4b": {
