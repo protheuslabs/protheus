@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T09:22:02.018Z",
-  "source_hash": "4efb07133b5bb60f904dc48c",
+  "generated_at": "2026-03-02T09:22:04.672Z",
+  "source_hash": "bf7b4f5ba5aed43dcea18538",
   "row_count": 373,
   "active_count": 1,
-  "archive_count": 345,
+  "archive_count": 346,
   "rows": [
     {
       "id": "BL-001",
@@ -4265,7 +4265,7 @@
       "id": "V3-RACE-163",
       "class": "primitive-upgrade",
       "wave": "V3",
-      "status": "open",
+      "status": "done",
       "title": "Agentic Memory Operation Controller (ADD/UPDATE/DELETE/NOOP)",
       "problem": "Self-evolving memory requires explicit, auditable action selection rather than implicit write behavior.",
       "acceptance": "Implement `systems/memory/agentic_memory_operation_controller.{ts,js}` + policy `config/agentic_memory_operation_policy.json`; user-specific operation candidates and approvals are stored in `memory/memory_ops/` with adaptive operation scoring in `adaptive/memory_ops/`; permanent action-selection logic and guardrails remain in `systems/memory/` + `config/`; every destructive op requires reversible receipts and rollback proof.",
