@@ -2169,7 +2169,7 @@ Objective: harden the analysis layer with explicit quality governance, reproduci
 
 | Derived Requirement | Canonical Backlog Handling | Status | Requirement Action |
 |---|---|---|---|
-| Enforce dedicated analysis-quality SLOs independent from execution SLOs | `V3-RACE-096` | queued | Add detector SLO contract (precision/recall/calibration/abstain) with merge/promotion gates separate from shipped-execution metrics. |
+| Enforce dedicated analysis-quality SLOs independent from execution SLOs | `V3-RACE-096` | done | Add detector SLO contract (precision/recall/calibration/abstain) with merge/promotion gates separate from shipped-execution metrics. |
 | Add ground-truth governance (label adjudication + agreement metrics) | `V3-RACE-097` | queued | Introduce labeling governance workflow, reviewer-agreement thresholds, and low-confidence label quarantine. |
 | Require end-to-end feature/data versioning for detector reproducibility | `V3-RACE-098` | queued | Version feature sets, schema hashes, and detector bundles so every analysis decision can be replayed exactly. |
 | Decompose distribution shift into source/topic/style components | `V3-RACE-099` | queued | Add shift-decomposition engine that identifies where drift originates and routes targeted remediation. |
@@ -2184,7 +2184,7 @@ Objective: harden the analysis layer with explicit quality governance, reproduci
 
 | ID | Class | Version | Status | Upgrade | Why | Exit Criteria | Depends On |
 |---|---|---|---|---|---|---|---|
-| V3-RACE-096 | hardening | V3 | queued | Analysis Quality SLO Contract | Analysis quality must be measured directly, not inferred from execution-only outcomes. | Dedicated detector SLO dashboards and gates are live (`precision/recall/F1/calibration/abstain`), and promotion fails on analysis-SLO regression even when execution SLO is green. | V3-RACE-086, V3-RACE-081 |
+| V3-RACE-096 | hardening | V3 | done | Analysis Quality SLO Contract | Analysis quality must be measured directly, not inferred from execution-only outcomes. | Added `systems/sensory/analysis_quality_slo_contract.{ts,js}` + `config/analysis_quality_slo_contract_policy.json` to enforce analysis-specific SLO gates (`precision/recall/F1/Brier/abstain_rate`) independently from execution-green signals, with promotion fail-closed receipts under `state/sensory/analysis/quality_slo/`; regression coverage in `memory/tools/tests/analysis_quality_slo_contract.test.js`. | V3-RACE-086, V3-RACE-081 |
 | V3-RACE-097 | hardening | V3 | queued | Ground-Truth Governance & Label Adjudication Lane | Label noise and weak adjudication can silently cap detector quality and destabilize promotion decisions. | Label workflow includes reviewer agreement metrics, confidence metadata, adjudication receipts, and quarantine of low-agreement labels from promotion corpora. | V3-RACE-086 |
 | V3-RACE-098 | primitive-upgrade | V3 | queued | Feature/Data Versioning Reproducibility Contract | Detector decisions must be exactly replayable to support safe evolution and audits. | Feature snapshots, schema hashes, and detector versions are pinned per run; replay reproduces equivalent scoring decisions with deterministic receipts. | V3-RACE-003, V3-RACE-086, BL-024 |
 | V3-RACE-099 | hardening | V3 | queued | Distribution-Shift Decomposition Engine | Aggregate drift scores hide root causes and slow effective remediation. | Drift pipeline attributes shift by source/topic/style/population components, and remediation policies trigger by component-level thresholds. | V3-RACE-080, V3-RACE-089 |

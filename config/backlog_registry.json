@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T04:08:51.407Z",
-  "source_hash": "85159ab6081d81da5a6a6e18",
+  "generated_at": "2026-03-02T04:10:16.091Z",
+  "source_hash": "5ca57f1461493c648bd4a7dd",
   "row_count": 127,
-  "active_count": 44,
-  "archive_count": 83,
+  "active_count": 43,
+  "archive_count": 84,
   "rows": [
     {
       "id": "V3-OPS-004",
@@ -1539,10 +1539,10 @@
       "id": "V3-RACE-096",
       "class": "hardening",
       "wave": "V3",
-      "status": "queued",
+      "status": "done",
       "title": "Analysis Quality SLO Contract",
       "problem": "Analysis quality must be measured directly, not inferred from execution-only outcomes.",
-      "acceptance": "Dedicated detector SLO dashboards and gates are live (`precision/recall/F1/calibration/abstain`), and promotion fails on analysis-SLO regression even when execution SLO is green.",
+      "acceptance": "Added `systems/sensory/analysis_quality_slo_contract.{ts,js}` + `config/analysis_quality_slo_contract_policy.json` to enforce analysis-specific SLO gates (`precision/recall/F1/Brier/abstain_rate`) independently from execution-green signals, with promotion fail-closed receipts under `state/sensory/analysis/quality_slo/`; regression coverage in `memory/tools/tests/analysis_quality_slo_contract.test.js`.",
       "dependencies": [
         "V3-RACE-086",
         "V3-RACE-081"
