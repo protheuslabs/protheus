@@ -597,7 +597,10 @@
     "test:sensory:multimodal-adapter": "node memory/tools/tests/multimodal_signal_adapter_plane.test.js",
     "sensory:gold-eval:run": "node systems/sensory/gold_eval_blind_scoring_lane.js run",
     "sensory:gold-eval:status": "node systems/sensory/gold_eval_blind_scoring_lane.js status",
-    "test:sensory:gold-eval": "node memory/tools/tests/gold_eval_blind_scoring_lane.test.js"
+    "test:sensory:gold-eval": "node memory/tools/tests/gold_eval_blind_scoring_lane.test.js",
+    "sensory:champion-challenger:run": "node systems/sensory/champion_challenger_detector_promotion.js run",
+    "sensory:champion-challenger:status": "node systems/sensory/champion_challenger_detector_promotion.js status",
+    "test:sensory:champion-challenger": "node memory/tools/tests/champion_challenger_detector_promotion.test.js"
   },
   "bin": {
     "protheus": "./bin/protheus",

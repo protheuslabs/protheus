@@ -1,6 +1,6 @@
 # Backlog Active View
 
-Generated: 2026-03-02T03:55:31.654Z
+Generated: 2026-03-02T03:57:06.274Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
@@ -36,7 +36,6 @@ Generated: 2026-03-02T03:55:31.654Z
 | V3-RACE-057 | hardening | V3 | queued | Black-Swan Disaster Gamebooks & Continuous Resilience Drills | V3-RACE-040, V3-RACE-041, V3-RACE-037 |
 | V3-RACE-058 | extension | V3 | queued | Legal/Regulatory Auto-Diff Governance Router | V3-RACE-044, V3-DOC-005, V3-RACE-CONF-007 |
 | V3-RACE-059 | hardening | V3 | queued | Sovereign Decommission, Legacy & Succession Boundary Protocol | V3-RACE-037, V4-006, V3-RACE-033 |
-| V3-RACE-087 | hardening | V3 | queued | Champion/Challenger Detector Promotion Pipeline | V3-RACE-086, V3-RACE-062 |
 | V3-RACE-088 | hardening | V3 | queued | Abstain/Uncertainty Output Contract | V3-RACE-081, V3-RACE-069 |
 | V3-RACE-089 | primitive-upgrade | V3 | queued | Dynamic Source Reliability Graph | V3-RACE-078, V3-RACE-081 |
 | V3-RACE-090 | hardening | V3 | queued | Causal-vs-Correlational Signal Scorer | V3-RACE-082, V3-RACE-084, V3-RACE-089 |

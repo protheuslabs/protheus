@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T03:55:31.654Z",
-  "source_hash": "35f4c47a9f7f0634f131b062",
+  "generated_at": "2026-03-02T03:57:06.274Z",
+  "source_hash": "77d3cedc80749c7ab09527a4",
   "row_count": 127,
-  "active_count": 53,
-  "archive_count": 74,
+  "active_count": 52,
+  "archive_count": 75,
   "rows": [
     {
       "id": "V3-OPS-004",
@@ -1419,10 +1419,10 @@
       "id": "V3-RACE-087",
       "class": "hardening",
       "wave": "V3",
-      "status": "queued",
+      "status": "done",
       "title": "Champion/Challenger Detector Promotion Pipeline",
       "problem": "Analysis changes need safe comparative rollout to prevent silent degradation.",
-      "acceptance": "Challenger detectors run shadow comparisons against champion; promotion requires policy-defined uplift and no critical regressions.",
+      "acceptance": "Added `systems/sensory/champion_challenger_detector_promotion.{ts,js}` + `config/champion_challenger_detector_policy.json` to run parallel champion/challenger scoring on the same gold rows, compute uplift/regression deltas (`precision/recall/F1/Brier`), and fail promotion on policy violations with receipted outputs under `state/sensory/analysis/champion_challenger/`; regression coverage in `memory/tools/tests/champion_challenger_detector_promotion.test.js`.",
       "dependencies": [
         "V3-RACE-086",
         "V3-RACE-062"
