@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T09:32:01.093Z",
-  "source_hash": "7966d5ccaff745a92a0fbe60",
+  "generated_at": "2026-03-02T09:34:06.122Z",
+  "source_hash": "9efdb75cb667300db7077eb4",
   "row_count": 373,
   "active_count": 1,
-  "archive_count": 356,
+  "archive_count": 357,
   "rows": [
     {
       "id": "BL-001",
@@ -4363,7 +4363,7 @@
       "id": "V3-RACE-170",
       "class": "hardening",
       "wave": "V3",
-      "status": "open",
+      "status": "done",
       "title": "Spine Kernel Budget Gate (<600 LOC Orchestration-Only Contract)",
       "problem": "Kernel growth erodes reliability and reasoning clarity; policy logic should live outside the orchestration spine.",
       "acceptance": "Add `systems/ops/spine_kernel_budget_check.{ts,js}` + policy `config/spine_kernel_budget_policy.json`; enforce max-size + forbidden-policy-surface checks on spine entrypoints; user-specific run preferences remain in `memory/spine/preferences/` with adaptive orchestration hints in `adaptive/spine/`; permanent checks remain in `systems/ops/` + `config/` and fail closed in CI.",
