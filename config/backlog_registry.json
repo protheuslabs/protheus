@@ -1,10 +1,10 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T04:37:39.300Z",
-  "source_hash": "f31ea48b51c53ae9cb1e59be",
-  "row_count": 127,
-  "active_count": 0,
+  "generated_at": "2026-03-02T05:06:56.721Z",
+  "source_hash": "ac322cf42f2987d827014889",
+  "row_count": 133,
+  "active_count": 6,
   "archive_count": 127,
   "rows": [
     {
@@ -1793,6 +1793,87 @@
         "V3-RACE-021",
         "V3-RACE-034",
         "V3-RACE-041"
+      ]
+    },
+    {
+      "id": "V3-RACE-115",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Command Registry + Script Surface Rationalization",
+      "problem": "Very large script surfaces increase discoverability drift, ownership ambiguity, and accidental contract break risk.",
+      "acceptance": "Add canonical command registry manifest with owner/scope/risk metadata, reduce direct root scripts to curated operator surface, preserve compatibility aliases via generated wrappers, and add CI guard that blocks unregistered scripts.",
+      "dependencies": [
+        "V3-RACE-107",
+        "V3-RACE-111"
+      ]
+    },
+    {
+      "id": "V3-RACE-116",
+      "class": "primitive-upgrade",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Entrypoint Runtime Contract Standardization",
+      "problem": "Mixed wrapper/bootstrap indirection makes runtime behavior harder to reason about and failure modes less explicit.",
+      "acceptance": "Define one production entrypoint contract (dist JS) and one development contract (`tsx`/typed runner), migrate primary entrypoints, keep `ts_bootstrap` only as explicit compatibility lane with missing-bootstrap detection + parity tests.",
+      "dependencies": [
+        "V2-003",
+        "V3-RACE-113"
+      ]
+    },
+    {
+      "id": "V3-RACE-117",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Dependency Boundary Enforcement (Layer Import Contracts)",
+      "problem": "Folder-level architecture only helps if dependency directions are machine-enforced.",
+      "acceptance": "Introduce dependency boundary manifest (allowed layer imports + forbidden edges), run contract check in CI/merge guard, and fail on cycles or boundary violations in protected paths.",
+      "dependencies": [
+        "V3-RACE-106",
+        "V3-RACE-107"
+      ]
+    },
+    {
+      "id": "V3-RACE-118",
+      "class": "primitive-upgrade",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Runtime State Tiering Contract (Hot vs Audit Paths)",
+      "problem": "Mixing operational hot-path reads with artifact-oriented JSON/JSONL contracts can add latency and semantic drift.",
+      "acceptance": "Publish state-tier manifest classifying each stream as `hot_runtime` vs `audit_mirror`; enforce hot-path reads from authoritative runtime stores (SQLite/Rust/typed stores), keep JSON/JSONL as append-only audit mirrors, and prove replay parity on sampled lanes.",
+      "dependencies": [
+        "V3-RACE-023",
+        "V3-RACE-109",
+        "V3-RACE-110"
+      ]
+    },
+    {
+      "id": "V3-RACE-119",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Unified CI Quality Scorecard & Gates",
+      "problem": "Pass/fail-only CI can hide quality erosion (flake, coverage drift, slow-path regressions).",
+      "acceptance": "Add quality scorecard artifact per CI run (`coverage`, `flake_rate`, `p95_runtime`, `critical_suite_pass`), enforce policy thresholds in required checks, and persist history for trend-based guardrails.",
+      "dependencies": [
+        "V1H-001",
+        "V1H-003",
+        "RM-004"
+      ]
+    },
+    {
+      "id": "V3-RACE-120",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Relocatable Path Contract (Absolute-Path Eradication)",
+      "problem": "Hardcoded host paths reduce portability and make fresh-instance bootstrap brittle.",
+      "acceptance": "Eliminate absolute `/Users/...`-style paths from runtime/config/tooling surfaces, add workspace-root resolver primitive (`$OPENCLAW_WORKSPACE` fallback to repo root), and enforce via CI/path-contract check with fail-closed policy allowlist for fixtures/tests only.",
+      "dependencies": [
+        "PLM-005",
+        "V3-RACE-107",
+        "V3-RACE-113"
       ]
     }
   ]

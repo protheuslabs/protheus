@@ -2285,6 +2285,32 @@ Objective: consolidate the remaining "not done / not fully ready" control-plane 
 | 2 | `V3-RACE-034`, `V3-RACE-050` |
 | 3 | `V3-RACE-114` |
 
+## Technical Quality Intake (Valid Grok-Derived Requirements, 2026-03-01)
+
+Objective: capture only the technically valid, non-duplicative engineering requirements from the latest external critique and map them into canonical queue IDs.
+
+### Valid Requirement Mapping
+
+| Derived Requirement | Canonical Backlog Handling | Status | Requirement Action |
+|---|---|---|---|
+| Script surface is too large to govern safely (`package.json` script sprawl) | `V3-RACE-115` | queued | Add command-registry and script-surface rationalization lane with compatibility aliases + CI guardrails. |
+| Entrypoint runtime contract remains over-dependent on wrapper/bootstrap indirection | `V3-RACE-116` | queued | Standardize dev/prod entrypoint runtime contracts (`tsx`/dist) and constrain bootstrap path to explicit compatibility-only fallback. |
+| Architectural layer boundaries need machine-enforced import contracts | `V3-RACE-117` | queued | Add dependency-boundary manifest + CI enforcement for cross-layer imports and cycle prevention. |
+| Runtime state still mixes hot-path and artifact-path contracts in places | `V3-RACE-118` | queued | Formalize hot-state vs audit-state tiering and enforce low-latency source-of-truth reads from runtime stores. |
+| CI quality signals need one standardized scorecard beyond pass/fail | `V3-RACE-119` | queued | Add unified CI quality scorecard (coverage + flake + duration budgets + critical-lane gates) with fail-closed thresholds. |
+| Runtime/config tooling still contains hardcoded absolute workspace paths | `V3-RACE-120` | queued | Add relocatable path contract and remove absolute host paths from runtime/config/tooling surfaces. |
+
+### Net-New Canonical Queue
+
+| ID | Class | Version | Status | Upgrade | Why | Exit Criteria | Depends On |
+|---|---|---|---|---|---|---|---|
+| V3-RACE-115 | hardening | V3 | queued | Command Registry + Script Surface Rationalization | Very large script surfaces increase discoverability drift, ownership ambiguity, and accidental contract break risk. | Add canonical command registry manifest with owner/scope/risk metadata, reduce direct root scripts to curated operator surface, preserve compatibility aliases via generated wrappers, and add CI guard that blocks unregistered scripts. | V3-RACE-107, V3-RACE-111 |
+| V3-RACE-116 | primitive-upgrade | V3 | queued | Entrypoint Runtime Contract Standardization | Mixed wrapper/bootstrap indirection makes runtime behavior harder to reason about and failure modes less explicit. | Define one production entrypoint contract (dist JS) and one development contract (`tsx`/typed runner), migrate primary entrypoints, keep `ts_bootstrap` only as explicit compatibility lane with missing-bootstrap detection + parity tests. | V2-003, V3-RACE-113 |
+| V3-RACE-117 | hardening | V3 | queued | Dependency Boundary Enforcement (Layer Import Contracts) | Folder-level architecture only helps if dependency directions are machine-enforced. | Introduce dependency boundary manifest (allowed layer imports + forbidden edges), run contract check in CI/merge guard, and fail on cycles or boundary violations in protected paths. | V3-RACE-106, V3-RACE-107 |
+| V3-RACE-118 | primitive-upgrade | V3 | queued | Runtime State Tiering Contract (Hot vs Audit Paths) | Mixing operational hot-path reads with artifact-oriented JSON/JSONL contracts can add latency and semantic drift. | Publish state-tier manifest classifying each stream as `hot_runtime` vs `audit_mirror`; enforce hot-path reads from authoritative runtime stores (SQLite/Rust/typed stores), keep JSON/JSONL as append-only audit mirrors, and prove replay parity on sampled lanes. | V3-RACE-023, V3-RACE-109, V3-RACE-110 |
+| V3-RACE-119 | hardening | V3 | queued | Unified CI Quality Scorecard & Gates | Pass/fail-only CI can hide quality erosion (flake, coverage drift, slow-path regressions). | Add quality scorecard artifact per CI run (`coverage`, `flake_rate`, `p95_runtime`, `critical_suite_pass`), enforce policy thresholds in required checks, and persist history for trend-based guardrails. | V1H-001, V1H-003, RM-004 |
+| V3-RACE-120 | hardening | V3 | queued | Relocatable Path Contract (Absolute-Path Eradication) | Hardcoded host paths reduce portability and make fresh-instance bootstrap brittle. | Eliminate absolute `/Users/...`-style paths from runtime/config/tooling surfaces, add workspace-root resolver primitive (`$OPENCLAW_WORKSPACE` fallback to repo root), and enforce via CI/path-contract check with fail-closed policy allowlist for fixtures/tests only. | PLM-005, V3-RACE-107, V3-RACE-113 |
+
 ## Backlog Policy
 
 - Lower-impact items (<9% estimated gain) are intentionally parked below to protect V1 focus.

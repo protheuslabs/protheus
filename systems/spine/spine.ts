@@ -4662,6 +4662,108 @@ function main() {
       console.log(" config_registry skipped reason=feature_flag_disabled flag=SPINE_CONFIG_REGISTRY_ENABLED");
     }
 
+    if (String(process.env.SPINE_BACKLOG_GITHUB_SYNC_ENABLED || "1") !== "0") {
+      const strict = String(process.env.SPINE_BACKLOG_GITHUB_SYNC_STRICT || "1") !== "0";
+      const apply = String(process.env.SPINE_BACKLOG_GITHUB_SYNC_APPLY || "0") === "1";
+      const limitRaw = String(process.env.SPINE_BACKLOG_GITHUB_SYNC_LIMIT || "").trim();
+      const statusesRaw = String(process.env.SPINE_BACKLOG_GITHUB_SYNC_STATUSES || "").trim();
+
+      const registrySync = runJson("node", ["systems/ops/backlog_registry.js", "sync"]);
+      const registryPayload = registrySync.payload && typeof registrySync.payload === "object"
+        ? registrySync.payload
+        : null;
+      const registryOk = registrySync.ok && !!registryPayload && registryPayload.ok === true;
+
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_backlog_registry_sync",
+        mode,
+        date: dateStr,
+        ok: registryOk,
+        row_count: registryPayload ? Number(registryPayload.row_count || 0) : null,
+        generated_at: registryPayload ? String(registryPayload.generated_at || "") : null,
+        reason: registryOk
+          ? null
+          : String(registrySync.stderr || registrySync.stdout || `backlog_registry_sync_exit_${registrySync.code}`).slice(0, 180)
+      });
+
+      if (!registryOk) {
+        appendLedger(dateStr, {
+          ts: nowIso(),
+          type: "spine_backlog_github_sync",
+          mode,
+          date: dateStr,
+          ok: false,
+          strict,
+          apply,
+          reason: "backlog_registry_sync_failed"
+        });
+        console.log(" backlog_github_sync unavailable reason=backlog_registry_sync_failed");
+      } else {
+        const syncArgs = [
+          "systems/ops/backlog_github_sync.js",
+          "sync",
+          `--strict=${strict ? "1" : "0"}`,
+          `--apply=${apply ? "1" : "0"}`
+        ];
+        if (/^\d+$/.test(limitRaw)) {
+          syncArgs.push(`--limit=${Math.max(1, Number(limitRaw))}`);
+        }
+        if (statusesRaw) {
+          syncArgs.push(`--statuses=${statusesRaw}`);
+        }
+
+        const sync = runJson("node", syncArgs);
+        const payload = sync.payload && typeof sync.payload === "object" ? sync.payload : null;
+        const ok = sync.ok && !!payload && payload.ok === true;
+
+        appendLedger(dateStr, {
+          ts: nowIso(),
+          type: "spine_backlog_github_sync",
+          mode,
+          date: dateStr,
+          ok,
+          strict,
+          apply,
+          auth_ok: payload ? payload.auth_ok === true : null,
+          target_count: payload ? Number(payload.target_count || 0) : null,
+          created: payload ? Number(payload.created || 0) : null,
+          updated: payload ? Number(payload.updated || 0) : null,
+          unchanged: payload ? Number(payload.unchanged || 0) : null,
+          skipped: payload ? Number(payload.skipped || 0) : null,
+          error_count: payload && Array.isArray(payload.errors) ? payload.errors.length : null,
+          warning_count: payload && Array.isArray(payload.warnings) ? payload.warnings.length : null,
+          reason: ok
+            ? null
+            : String(sync.stderr || sync.stdout || `backlog_github_sync_exit_${sync.code}`).slice(0, 180)
+        });
+
+        if (ok) {
+          console.log(
+            ` backlog_github_sync apply=${apply ? "1" : "0"}` +
+            ` target=${Number(payload && payload.target_count || 0)}` +
+            ` created=${Number(payload && payload.created || 0)}` +
+            ` updated=${Number(payload && payload.updated || 0)}` +
+            ` unchanged=${Number(payload && payload.unchanged || 0)}` +
+            ` skipped=${Number(payload && payload.skipped || 0)}`
+          );
+        } else {
+          console.log(` backlog_github_sync unavailable reason=${String(sync.stderr || sync.stdout || "unknown").slice(0, 120)}`);
+        }
+      }
+    } else {
+      appendLedger(dateStr, {
+        ts: nowIso(),
+        type: "spine_backlog_github_sync_skipped",
+        mode,
+        date: dateStr,
+        reason: "feature_flag_disabled",
+        flag: "SPINE_BACKLOG_GITHUB_SYNC_ENABLED",
+        flag_value: String(process.env.SPINE_BACKLOG_GITHUB_SYNC_ENABLED || "")
+      });
+      console.log(" backlog_github_sync skipped reason=feature_flag_disabled flag=SPINE_BACKLOG_GITHUB_SYNC_ENABLED");
+    }
+
     // 4e) Trit shadow divergence stability report (strategy/drift governors) + optional strict gate.
     if (String(process.env.SPINE_TRIT_SHADOW_REPORT_ENABLED || "1") !== "0") {
       const reportDays = Math.max(1, Number(process.env.SPINE_TRIT_SHADOW_REPORT_DAYS || 14) || 14);
