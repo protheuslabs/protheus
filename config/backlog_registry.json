@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T09:38:04.180Z",
-  "source_hash": "8c83db4dcf346a634396e0ca",
+  "generated_at": "2026-03-02T09:38:06.159Z",
+  "source_hash": "41ae805d152248c9dbb10737",
   "row_count": 373,
   "active_count": 1,
-  "archive_count": 370,
+  "archive_count": 371,
   "rows": [
     {
       "id": "BL-001",
@@ -1341,7 +1341,7 @@
       "id": "RR-013",
       "class": "backlog",
       "wave": "RR",
-      "status": "open",
+      "status": "done",
       "title": "Explainability debt at scale",
       "problem": "Future operators/successors may not reconstruct why critical actions occurred",
       "acceptance": "Require canonical explanation artifacts for major decisions and self-modifications; linked: `V3-058`, `V2-063`",
