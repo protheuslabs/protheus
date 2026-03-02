@@ -653,7 +653,10 @@
     "sensory:detector-rollback:snapshot": "node systems/sensory/detector_rollback_migration_safety_contract.js snapshot",
     "sensory:detector-rollback:apply": "node systems/sensory/detector_rollback_migration_safety_contract.js rollback latest",
     "sensory:detector-rollback:status": "node systems/sensory/detector_rollback_migration_safety_contract.js status",
-    "test:sensory:detector-rollback": "node memory/tools/tests/detector_rollback_migration_safety_contract.test.js"
+    "test:sensory:detector-rollback": "node memory/tools/tests/detector_rollback_migration_safety_contract.test.js",
+    "sensory:objective-interference:run": "node systems/sensory/cross_objective_interference_guard.js run",
+    "sensory:objective-interference:status": "node systems/sensory/cross_objective_interference_guard.js status",
+    "test:sensory:objective-interference": "node memory/tools/tests/cross_objective_interference_guard.test.js"
   },
   "bin": {
     "protheus": "./bin/protheus",

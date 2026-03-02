@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T04:20:43.004Z",
-  "source_hash": "b9aa8d3858728a0753429026",
+  "generated_at": "2026-03-02T04:21:53.760Z",
+  "source_hash": "feff97689f8ee605ac2b435b",
   "row_count": 127,
-  "active_count": 35,
-  "archive_count": 92,
+  "active_count": 34,
+  "archive_count": 93,
   "rows": [
     {
       "id": "V3-OPS-004",
@@ -1659,10 +1659,10 @@
       "id": "V3-RACE-105",
       "class": "hardening",
       "wave": "V3",
-      "status": "queued",
+      "status": "done",
       "title": "Cross-Objective Interference Guard for Analysis Changes",
       "problem": "Improving one objective can unintentionally degrade others without explicit non-regression controls.",
-      "acceptance": "Promotion checks include multi-objective non-regression matrix and block detector updates that exceed policy interference budgets.",
+      "acceptance": "Added `systems/sensory/cross_objective_interference_guard.{ts,js}` + `config/cross_objective_interference_guard_policy.json` to evaluate multi-objective before/after deltas against per-objective interference budgets and fail promotion when any objective exceeds allowed regression, with guard receipts under `state/sensory/analysis/objective_interference_guard/`; regression coverage in `memory/tools/tests/cross_objective_interference_guard.test.js`.",
       "dependencies": [
         "V3-RACE-084",
         "V3-RACE-096",
