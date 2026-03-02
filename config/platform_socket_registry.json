@@ -1,0 +1,84 @@
+{
+  "schema_id": "platform_socket_registry",
+  "schema_version": "1.0",
+  "sockets": [
+    {
+      "id": "generic",
+      "kind": "generic",
+      "module_type": "wasm",
+      "version": "1.0.0",
+      "module": "systems/compat/generic_socket.wasm",
+      "predicate": { "os_family": "any" },
+      "capability_claims": ["configure_security", "setup_packaging", "orchestrator_hooks", "observability_exporter"],
+      "hot_swap_safe": true,
+      "priority": 0,
+      "proof_stub": "docs/proofs/platform/socket_generic.md",
+      "attestation": { "signed_by": "platform-core", "signature": "sig_socket_generic_v1" }
+    },
+    {
+      "id": "ubuntu",
+      "kind": "specific",
+      "module_type": "wasm",
+      "version": "1.0.0",
+      "module": "systems/compat/ubuntu_socket.wasm",
+      "predicate": { "os_family": "linux", "distro": "ubuntu" },
+      "capability_claims": ["snap_core", "landscape_juju", "apparmor_seccomp", "maas_cloud_init"],
+      "hot_swap_safe": true,
+      "priority": 100,
+      "proof_stub": "docs/proofs/platform/socket_ubuntu.md",
+      "attestation": { "signed_by": "platform-core", "signature": "sig_socket_ubuntu_v1" }
+    },
+    {
+      "id": "freebsd",
+      "kind": "specific",
+      "module_type": "wasm",
+      "version": "1.0.0",
+      "module": "systems/compat/freebsd_socket.wasm",
+      "predicate": { "os_family": "freebsd" },
+      "capability_claims": ["ports_poudriere", "zfs_boot_env", "capsicum_jails", "pf_ipfw"],
+      "hot_swap_safe": true,
+      "priority": 100,
+      "proof_stub": "docs/proofs/platform/socket_freebsd.md",
+      "attestation": { "signed_by": "platform-core", "signature": "sig_socket_freebsd_v1" }
+    },
+    {
+      "id": "nixos",
+      "kind": "specific",
+      "module_type": "wasm",
+      "version": "1.0.0",
+      "module": "systems/compat/nixos_socket.wasm",
+      "predicate": { "os_family": "linux", "distro": "nixos" },
+      "capability_claims": ["modules_flakes", "impermanence", "hydra_cachix"],
+      "hot_swap_safe": true,
+      "priority": 100,
+      "proof_stub": "docs/proofs/platform/socket_nixos.md",
+      "attestation": { "signed_by": "platform-core", "signature": "sig_socket_nixos_v1" }
+    },
+    {
+      "id": "raspios",
+      "kind": "specific",
+      "module_type": "wasm",
+      "version": "1.0.0",
+      "module": "systems/compat/raspios_socket.wasm",
+      "predicate": { "os_family": "linux", "distro": "raspbian" },
+      "capability_claims": ["gpio_i2c_spi", "firmware_boot", "pi_imager"],
+      "hot_swap_safe": true,
+      "priority": 100,
+      "proof_stub": "docs/proofs/platform/socket_raspios.md",
+      "attestation": { "signed_by": "platform-core", "signature": "sig_socket_raspios_v1" }
+    },
+    {
+      "id": "alpine",
+      "kind": "specific",
+      "module_type": "wasm",
+      "version": "1.0.0",
+      "module": "systems/compat/alpine_socket.wasm",
+      "predicate": { "os_family": "linux", "distro": "alpine" },
+      "capability_claims": ["musl_apk", "rootless_scratch", "readonly_overlay"],
+      "hot_swap_safe": true,
+      "priority": 100,
+      "proof_stub": "docs/proofs/platform/socket_alpine.md",
+      "attestation": { "signed_by": "platform-core", "signature": "sig_socket_alpine_v1" }
+    }
+  ]
+}

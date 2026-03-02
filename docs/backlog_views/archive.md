@@ -1,6 +1,6 @@
 # Backlog Archive View
 
-Generated: 2026-03-02T18:12:57.548Z
+Generated: 2026-03-02T18:25:33.998Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
@@ -395,6 +395,17 @@ Generated: 2026-03-02T18:12:57.548Z
 | V3-RACE-206 | hardening | V3 | done | Score-Only Manual-Gate Exclusion & Selector Penalty | V3-RACE-017, V3-RACE-019, V3-RACE-116 |
 | V3-RACE-207 | hardening | V3 | done | Budget Envelope Partitioning (Execution Floor vs Dream/Idle Burn) | V3-RACE-019, V3-RACE-022, V3-RACE-116 |
 | V3-RACE-208 | hardening | V3 | done | Model Health Stabilizer (Adaptive Probe Timeouts + Temporary Suppression/Rehab) | V3-RACE-017, V3-RACE-019, V3-RACE-116 |
+| V3-RACE-209 | primitive-upgrade | V3 | done | Platform Oracle HostProfile Service (Burn-Limiter Expansion) | V3-RACE-034, V3-RACE-116, V3-RACE-188 |
+| V3-RACE-210 | primitive-upgrade | V3 | done | Adaptation Channel ABI (Rust Trait + WASM Guest Contract + Generic Fallback) | V3-RACE-209, V3-RACE-176, V3-RACE-185 |
+| V3-RACE-211 | extension | V3 | done | Five-System Adaptation Channel Pack (Ubuntu/FreeBSD/NixOS/RaspberryPiOS/Alpine) | V3-RACE-210, V3-RACE-175, V3-RACE-189, V3-RACE-193 |
+| V3-RACE-212 | extension | V3 | done | Universal Platform Abstraction Matrix (18 GENERAL Requirements) | V3-RACE-209, V3-RACE-210, V3-RACE-211, V3-RACE-120 |
+| V3-RACE-213 | extension | V3 | done | Host Adaptation Operator Surface (`protheusctl host adapt`) + Auto-Activation | V3-RACE-209, V3-RACE-210, V3-RACE-184 |
+| V3-RACE-214 | hardening | V3 | done | HostProfile Conformance Formal Gate (Lane-Activation Proof Contract) | V3-RACE-209, V3-RACE-210, V3-RACE-211, V3-RACE-187, V3-RACE-017 |
+| V3-RACE-356 | primitive-upgrade | V3 | done | PlatformSocket ABI + Signed Manifest Contract | V3-RACE-209, V3-RACE-210, V3-RACE-211 |
+| V3-RACE-357 | primitive-upgrade | V3 | done | Socket Discovery/Loader Runtime (Registry + Version Pin + Hot-Swap) | V3-RACE-356, V3-RACE-210, V3-RACE-176 |
+| V3-RACE-358 | extension | V3 | done | GenericSocket + Named Host Socket Refactor (Channels -> Sockets) | V3-RACE-212, V3-RACE-211, V3-RACE-356, V3-RACE-357 |
+| V3-RACE-359 | extension | V3 | done | Socket Lifecycle Operator Surface (`protheusctl socket *` + API) | V3-RACE-356, V3-RACE-357, V3-RACE-213 |
+| V3-RACE-360 | hardening | V3 | done | Socket Admission Proof Gate (Formal + Redteam + HostProfile Chaos Validation) | V3-RACE-214, V3-RACE-187, V3-RACE-356, V3-RACE-357 |
 | OPT-001 | backlog | OPT | done | Eyes signal weighting retune in router ranking |  |
 | OPT-002 | backlog | OPT | done | Prompt cache policy split by lane (reflex/autonomy/dream) |  |
 | OPT-003 | backlog | OPT | done | Dream fallback quality scoring before proposal injection |  |

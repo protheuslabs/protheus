@@ -1,0 +1,26 @@
+{
+  "schema_id": "platform_universal_abstraction_matrix",
+  "schema_version": "1.0",
+  "revision": "v1",
+  "fallback_revision": "v0",
+  "controls": {
+    "atomic_transactional_rollout": { "enforcement_mode": "core", "owner": "platform_oracle", "rollback_toggle": "ROLLBACK_ATOMIC_ROLLOUT" },
+    "capability_security_defaults": { "enforcement_mode": "core", "owner": "platform_oracle", "rollback_toggle": "ROLLBACK_CAPABILITY_DEFAULTS" },
+    "lts_posture_hooks": { "enforcement_mode": "delegated", "owner": "channel_runtime", "rollback_toggle": "ROLLBACK_LTS_HOOKS" },
+    "offline_cryptographic_verification": { "enforcement_mode": "core", "owner": "platform_oracle", "rollback_toggle": "ROLLBACK_OFFLINE_VERIFY" },
+    "declarative_config_contracts": { "enforcement_mode": "core", "owner": "platform_oracle", "rollback_toggle": "ROLLBACK_DECLARATIVE_CONFIG" },
+    "lightweight_profile_tiers": { "enforcement_mode": "core", "owner": "platform_oracle", "rollback_toggle": "ROLLBACK_PROFILE_TIERS" },
+    "observability_sla_hooks": { "enforcement_mode": "delegated", "owner": "channel_runtime", "rollback_toggle": "ROLLBACK_OBSERVABILITY_HOOKS" },
+    "hardened_default_baseline": { "enforcement_mode": "core", "owner": "platform_oracle", "rollback_toggle": "ROLLBACK_HARDENED_DEFAULTS" },
+    "rootless_container_minimization": { "enforcement_mode": "delegated", "owner": "channel_runtime", "rollback_toggle": "ROLLBACK_ROOTLESS_MINIMIZATION" },
+    "signed_delta_updates": { "enforcement_mode": "delegated", "owner": "channel_runtime", "rollback_toggle": "ROLLBACK_SIGNED_DELTA_UPDATES" },
+    "power_thermal_scheduling": { "enforcement_mode": "delegated", "owner": "channel_runtime", "rollback_toggle": "ROLLBACK_POWER_THERMAL" },
+    "reproducible_distribution": { "enforcement_mode": "delegated", "owner": "channel_runtime", "rollback_toggle": "ROLLBACK_REPRO_DISTRIBUTION" },
+    "orchestration_abstractions": { "enforcement_mode": "delegated", "owner": "channel_runtime", "rollback_toggle": "ROLLBACK_ORCHESTRATION_ABSTRACTIONS" },
+    "rollback_recovery_contracts": { "enforcement_mode": "core", "owner": "platform_oracle", "rollback_toggle": "ROLLBACK_RECOVERY_CONTRACTS" },
+    "policy_attestation_logging": { "enforcement_mode": "core", "owner": "platform_oracle", "rollback_toggle": "ROLLBACK_POLICY_ATTESTATION" },
+    "host_profile_compatibility": { "enforcement_mode": "core", "owner": "host_profile_conformance_gate", "rollback_toggle": "ROLLBACK_HOST_PROFILE_COMPAT" },
+    "promotion_gate_enforcement": { "enforcement_mode": "core", "owner": "host_profile_conformance_gate", "rollback_toggle": "ROLLBACK_PROMOTION_GATE" },
+    "governed_override_toggle": { "enforcement_mode": "core", "owner": "host_adaptation_operator", "rollback_toggle": "ROLLBACK_GOVERNED_OVERRIDE" }
+  }
+}

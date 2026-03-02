@@ -1,6 +1,6 @@
 # Backlog Active View
 
-Generated: 2026-03-02T18:12:57.548Z
+Generated: 2026-03-02T18:25:33.998Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
@@ -14,12 +14,6 @@ Generated: 2026-03-02T18:12:57.548Z
 | V3-RACE-201 | hardening | V3 | queued | Mesh Result Quorum + Provenance Aggregation Contract | V3-RACE-200, V3-RACE-195, V3-RACE-136 |
 | V3-RACE-202 | extension | V3 | queued | Mobile Mesh Participation Scheduler (Charging/Thermal/Battery Policy Lane) | V3-RACE-190, V3-RACE-193, V3-RACE-200 |
 | V3-RACE-203 | extension | V3 | queued | Mesh Operator Surfaces (`protheusctl mesh *` + Contribution Topology View) | V3-RACE-200, V3-RACE-201, V3-RACE-199 |
-| V3-RACE-209 | primitive-upgrade | V3 | queued | Platform Oracle HostProfile Service (Burn-Limiter Expansion) | V3-RACE-034, V3-RACE-116, V3-RACE-188 |
-| V3-RACE-210 | primitive-upgrade | V3 | queued | Adaptation Channel ABI (Rust Trait + WASM Guest Contract + Generic Fallback) | V3-RACE-209, V3-RACE-176, V3-RACE-185 |
-| V3-RACE-211 | extension | V3 | queued | Five-System Adaptation Channel Pack (Ubuntu/FreeBSD/NixOS/RaspberryPiOS/Alpine) | V3-RACE-210, V3-RACE-175, V3-RACE-189, V3-RACE-193 |
-| V3-RACE-212 | extension | V3 | queued | Universal Platform Abstraction Matrix (18 GENERAL Requirements) | V3-RACE-209, V3-RACE-210, V3-RACE-211, V3-RACE-120 |
-| V3-RACE-213 | extension | V3 | queued | Host Adaptation Operator Surface (`protheusctl host adapt`) + Auto-Activation | V3-RACE-209, V3-RACE-210, V3-RACE-184 |
-| V3-RACE-214 | hardening | V3 | queued | HostProfile Conformance Formal Gate (Lane-Activation Proof Contract) | V3-RACE-209, V3-RACE-210, V3-RACE-211, V3-RACE-187, V3-RACE-017 |
 | V3-RACE-215 | hardening | V3 | queued | Architecture + Formal Spec Publication Kernel | V3-RACE-187, V3-RACE-214 |
 | V3-RACE-216 | hardening | V3 | queued | Monorepo Build-Graph Modernization (Turborepo + Nx Lane Contracts) | V3-RACE-115, V3-RACE-117, V3-RACE-123 |
 | V3-RACE-217 | extension | V3 | queued | Windows Native Runtime Parity (Tauri 2 + DirectML/ONNX Local Inference) | V3-RACE-189, V3-RACE-193, V3-RACE-175 |
@@ -161,9 +155,4 @@ Generated: 2026-03-02T18:12:57.548Z
 | V3-RACE-353 | hardening | V3 | queued | Long-LTS Migration & Support Continuity Lane (Ubuntu/Enterprise Linux Focus) | V3-RACE-339, V3-RACE-341, V3-RACE-345 |
 | V3-RACE-354 | hardening | V3 | queued | Multi-Platform Linux/Unix Conformance Promotion Gate | V3-RACE-214, V3-RACE-343, V3-RACE-350, V3-RACE-352 |
 | V3-RACE-355 | hardening | V3 | queued | Neutral-Core Cross-Ecosystem Hardening Uplift (Post-Intake Consolidation) | V3-RACE-344, V3-RACE-354, V3-RACE-212 |
-| V3-RACE-356 | primitive-upgrade | V3 | queued | PlatformSocket ABI + Signed Manifest Contract | V3-RACE-209, V3-RACE-210, V3-RACE-211 |
-| V3-RACE-357 | primitive-upgrade | V3 | queued | Socket Discovery/Loader Runtime (Registry + Version Pin + Hot-Swap) | V3-RACE-356, V3-RACE-210, V3-RACE-176 |
-| V3-RACE-358 | extension | V3 | queued | GenericSocket + Named Host Socket Refactor (Channels -> Sockets) | V3-RACE-212, V3-RACE-211, V3-RACE-356, V3-RACE-357 |
-| V3-RACE-359 | extension | V3 | queued | Socket Lifecycle Operator Surface (`protheusctl socket *` + API) | V3-RACE-356, V3-RACE-357, V3-RACE-213 |
-| V3-RACE-360 | hardening | V3 | queued | Socket Admission Proof Gate (Formal + Redteam + HostProfile Chaos Validation) | V3-RACE-214, V3-RACE-187, V3-RACE-356, V3-RACE-357 |
 

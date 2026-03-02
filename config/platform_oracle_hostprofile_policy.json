@@ -1,0 +1,20 @@
+{
+  "schema_id": "platform_oracle_hostprofile_policy",
+  "schema_version": "1.0",
+  "enabled": true,
+  "min_confidence": 0.65,
+  "signing_secret": "platform_oracle_local_signing_secret",
+  "fallback_profile": {
+    "mode": "minimal",
+    "os_family": "unknown",
+    "distro": "unknown",
+    "variant": "unknown",
+    "arch": "x64",
+    "runtime": {
+      "node": "v22"
+    }
+  },
+  "state_path": "state/ops/platform_oracle_hostprofile/latest.json",
+  "history_path": "state/ops/platform_oracle_hostprofile/history.jsonl",
+  "last_known_good_path": "state/ops/platform_oracle_hostprofile/last_known_good.json"
+}

@@ -24,6 +24,10 @@ function usage() {
   console.log('  protheusctl edge swarm enroll --owner=jay --device-id=phone_01 --provenance-attested=1');
   console.log('  protheusctl edge wrapper build --owner=jay --target=android_termux --version=0.1.0');
   console.log('  protheusctl edge benchmark run --owner=jay --scenario=ci_mobile_android --target=android');
+  console.log('  protheusctl host detect');
+  console.log('  protheusctl host adapt --dry-run=1');
+  console.log('  protheusctl socket list');
+  console.log('  protheusctl socket admission');
   console.log('  protheusctl approve --rsi --owner=jay --approver=<you>');
 }
 
@@ -144,6 +148,32 @@ function main() {
 
   if (cmd === 'edge') {
     routeEdge(rest);
+    return;
+  }
+
+  if (cmd === 'host') {
+    const hostScript = path.join(__dirname, 'host_adaptation_operator_surface.js');
+    const sub = String(rest[0] || 'status').trim().toLowerCase() || 'status';
+    runScript(hostScript, [sub, ...rest.slice(1)]);
+    return;
+  }
+
+  if (cmd === 'socket') {
+    const socketScript = path.join(__dirname, 'platform_socket_runtime.js');
+    const sub = String(rest[0] || 'status').trim().toLowerCase() || 'status';
+    if (sub === 'list') {
+      runScript(socketScript, ['lifecycle', 'list', ...rest.slice(1)]);
+      return;
+    }
+    if (sub === 'install' || sub === 'update' || sub === 'test') {
+      runScript(socketScript, ['lifecycle', sub, ...rest.slice(1)]);
+      return;
+    }
+    if (sub === 'admission' || sub === 'discover' || sub === 'activate' || sub === 'status') {
+      runScript(socketScript, [sub, ...rest.slice(1)]);
+      return;
+    }
+    runScript(socketScript, ['status', ...rest]);
     return;
   }
 

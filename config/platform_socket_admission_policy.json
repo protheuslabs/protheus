@@ -1,0 +1,8 @@
+{
+  "schema_id": "platform_socket_admission_policy",
+  "schema_version": "1.0",
+  "required_chaos_checks": true,
+  "require_formal_host_predicates": true,
+  "require_signature_attestation": true,
+  "quarantine_on_failure": true
+}
