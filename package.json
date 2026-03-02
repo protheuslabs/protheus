@@ -603,7 +603,10 @@
     "test:sensory:champion-challenger": "node memory/tools/tests/champion_challenger_detector_promotion.test.js",
     "sensory:abstain-contract:run": "node systems/sensory/abstain_uncertainty_contract.js run",
     "sensory:abstain-contract:status": "node systems/sensory/abstain_uncertainty_contract.js status",
-    "test:sensory:abstain-contract": "node memory/tools/tests/abstain_uncertainty_contract.test.js"
+    "test:sensory:abstain-contract": "node memory/tools/tests/abstain_uncertainty_contract.test.js",
+    "sensory:source-reliability:run": "node systems/sensory/dynamic_source_reliability_graph.js run",
+    "sensory:source-reliability:status": "node systems/sensory/dynamic_source_reliability_graph.js status",
+    "test:sensory:source-reliability": "node memory/tools/tests/dynamic_source_reliability_graph.test.js"
   },
   "bin": {
     "protheus": "./bin/protheus",

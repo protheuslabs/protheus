@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T03:58:33.383Z",
-  "source_hash": "86f4f0e18f7efc07e3b32345",
+  "generated_at": "2026-03-02T04:00:09.656Z",
+  "source_hash": "3df4c156e3ac841956a2b9cc",
   "row_count": 127,
-  "active_count": 51,
-  "archive_count": 76,
+  "active_count": 50,
+  "archive_count": 77,
   "rows": [
     {
       "id": "V3-OPS-004",
@@ -1445,10 +1445,10 @@
       "id": "V3-RACE-089",
       "class": "primitive-upgrade",
       "wave": "V3",
-      "status": "queued",
+      "status": "done",
       "title": "Dynamic Source Reliability Graph",
       "problem": "Flat source weighting ignores reliability drift and harms analysis precision.",
-      "acceptance": "Source reliability scores (domain/author/collector) update from outcome truth signals with bounded influence and audit receipts.",
+      "acceptance": "Added `systems/sensory/dynamic_source_reliability_graph.{ts,js}` + `config/dynamic_source_reliability_graph_policy.json` to update per-source reliability scores from hypothesis truth outcomes with bounded per-event influence, neutral-decay behavior, and calibration receipts under `state/sensory/analysis/source_reliability/`; regression coverage in `memory/tools/tests/dynamic_source_reliability_graph.test.js`.",
       "dependencies": [
         "V3-RACE-078",
         "V3-RACE-081"

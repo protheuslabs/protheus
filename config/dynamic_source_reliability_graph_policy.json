@@ -1,0 +1,29 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "neutral_score": 0.5,
+  "min_score": 0.05,
+  "max_score": 0.95,
+  "learning_rate": 0.2,
+  "decay_toward_neutral": 0.03,
+  "per_event_influence_cap": 0.12,
+  "positive_outcomes": [
+    "true_positive",
+    "accepted",
+    "validated"
+  ],
+  "negative_outcomes": [
+    "false_positive",
+    "false_negative",
+    "rejected",
+    "invalidated"
+  ],
+  "paths": {
+    "hypotheses_dir": "state/sensory/cross_signal/hypotheses",
+    "outcomes_dir": "state/sensory/analysis/hypothesis_outcomes",
+    "state_path": "state/sensory/analysis/source_reliability/state.json",
+    "output_dir": "state/sensory/analysis/source_reliability",
+    "latest_path": "state/sensory/analysis/source_reliability/latest.json",
+    "receipts_path": "state/sensory/analysis/source_reliability/receipts.jsonl"
+  }
+}
