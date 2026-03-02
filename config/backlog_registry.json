@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T02:26:15.786Z",
-  "source_hash": "df163e5898993bb73c291c31",
+  "generated_at": "2026-03-02T02:39:43.860Z",
+  "source_hash": "a6b9d490b9d4b33de80e8137",
   "row_count": 127,
-  "active_count": 60,
-  "archive_count": 67,
+  "active_count": 59,
+  "archive_count": 68,
   "rows": [
     {
       "id": "V3-OPS-004",
@@ -495,10 +495,10 @@
       "id": "V3-RACE-CONF-005",
       "class": "hardening",
       "wave": "V3",
-      "status": "queued",
+      "status": "done",
       "title": "N-API Build Surface Compatibility Contract (`build:memory`/postinstall expectations)",
       "problem": "External recipes assume direct N-API build flow; current runtime is daemon-first with staged in-process lane.",
-      "acceptance": "Publish canonical build/run matrix and compatibility scripts that expose equivalent operator commands while preserving daemon-first production defaults.",
+      "acceptance": "Added `systems/memory/napi_build_surface_compat.{ts,js}` + `config/napi_build_surface_compat_policy.json`, canonical scripts (`build:memory`, `postinstall:memory`, `memory:napi-build:status`), and generated matrix artifacts (`docs/MEMORY_BUILD_SURFACE.md`, `state/memory/napi_build_surface_compat/build_matrix.json`) while keeping daemon-first production defaults; regression coverage in `memory/tools/tests/napi_build_surface_compat.test.js`.",
       "dependencies": [
         "V3-RACE-028",
         "V3-DOC-004"

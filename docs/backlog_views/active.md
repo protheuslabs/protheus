@@ -1,10 +1,9 @@
 # Backlog Active View
 
-Generated: 2026-03-02T02:26:15.786Z
+Generated: 2026-03-02T02:39:43.860Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
-| V3-RACE-CONF-005 | hardening | V3 | queued | N-API Build Surface Compatibility Contract (`build:memory`/postinstall expectations) | V3-RACE-028, V3-DOC-004 |
 | V3-RACE-DEF-025 | hardening | V3 | queued | Smart Knot Crown-Jewel Obfuscation Layer | V3-RACE-DEF-024, V3-CPY-005, V3-CPY-006 |
 | V3-RACE-DEF-026 | hardening | V3 | queued | Lockweaver Eternal Flux Field (Origin-Lock Verified Structural Flux) | V3-RACE-017, V3-RACE-019, V3-RACE-023, V3-RACE-DEF-024, V3-RACE-DEF-025 |
 | V3-RACE-DEF-027 | extension | V3 | queued | Project Jigsaw (AttackCinema Incident Replay Theater) | V3-RACE-017, V3-RACE-019, V3-RACE-020, V3-RACE-023, V3-RACE-DEF-024, V3-RACE-DEF-026 |

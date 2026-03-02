@@ -1,6 +1,6 @@
 # Backlog Archive View
 
-Generated: 2026-03-02T02:26:15.786Z
+Generated: 2026-03-02T02:39:43.860Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
@@ -39,6 +39,7 @@ Generated: 2026-03-02T02:26:15.786Z
 | V3-RACE-CONF-002 | hardening | V3 | done | Legacy Path Alias Adapters (`systems/state/event_stream.js`, `systems/autogenesis/*`) | V3-RACE-017, V3-RACE-018 |
 | V3-RACE-CONF-003 | hardening | V3 | done | Requirement Conformance Matrix + Gate (`external prompt -> canonical lane`) | V3-AEX-002, V3-DOC-004 |
 | V3-RACE-CONF-004 | hardening | V3 | done | Rust Memory Path-Contract Compatibility (`core/memory` alias docs/wrappers) | V3-RACE-023, V3-DOC-001 |
+| V3-RACE-CONF-005 | hardening | V3 | done | N-API Build Surface Compatibility Contract (`build:memory`/postinstall expectations) | V3-RACE-028, V3-DOC-004 |
 | V3-RACE-DEF-024 | hardening | V3 | done | PsycheForge Adaptive Counter-Profile Defense Organ | V3-RACE-017, V3-RACE-019, V3-RACE-023, V3-VENOM-006 |
 | V3-RACE-034 | primitive-upgrade | V3 | done | Rust Spine Microkernel (Control-Plane Core Extraction) | V3-RACE-023, V3-RACE-021, V3-OPS-005 |
 | V3-RACE-037 | extension | V3 | done | Long-Term Archival & Sovereign Resurrection Substrate | V3-BLK-001, V3-QPROOF-001, V3-RACE-020 |
