@@ -89,6 +89,7 @@ function run() {
     assert.ok(convergence, 'expected automation convergence hypothesis');
     assert.ok(Number(convergence.support_eyes || 0) >= 2, 'convergence should include multiple eyes');
     assert.ok(Number(convergence.confidence || 0) >= 1, 'convergence should have confidence');
+    assert.ok(Number(convergence.probability || 0) > 0, 'convergence should include calibrated probability');
 
     const negativeSignal = rep.hypotheses.find((h) => h && h.type === 'negative_signal' && h.topic === 'automation');
     assert.ok(negativeSignal, 'expected automation negative-signal hypothesis');
@@ -98,6 +99,9 @@ function run() {
     assert.ok(temporalDelta, 'expected automation temporal-delta hypothesis');
     assert.ok(rep.temporal_deltas && Array.isArray(rep.temporal_deltas), 'expected temporal delta report lane');
     assert.ok(rep.temporal_deltas.some((row) => row && row.topic === 'automation'), 'expected automation temporal delta entry');
+    assert.ok(rep.calibration && typeof rep.calibration === 'object', 'expected calibration artifact block');
+    assert.ok(Number(rep.calibration.brier_score || 0) >= 0, 'expected brier score');
+    assert.ok(Array.isArray(rep.calibration.reliability), 'expected reliability bins');
 
     console.log('cross_signal_engine.test.js: OK');
   } finally {

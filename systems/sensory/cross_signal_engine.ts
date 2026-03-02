@@ -181,6 +181,70 @@ function mean(nums) {
   return xs.reduce((a, b) => a + b, 0) / xs.length;
 }
 
+function clampUnit(x, fallback = 0) {
+  const n = Number(x);
+  if (!Number.isFinite(n)) return fallback;
+  if (n < 0) return 0;
+  if (n > 1) return 1;
+  return n;
+}
+
+function calibratedProbability(confidence, supportEyes, supportEvents) {
+  const base = clampUnit(Number(confidence || 0) / 100, 0);
+  const evidence = Math.min(
+    0.16,
+    (Math.log1p(Math.max(0, Number(supportEvents || 0))) / 22)
+      + (Math.min(10, Number(supportEyes || 0)) * 0.01)
+  );
+  return clampUnit((base * 0.88) + evidence, base);
+}
+
+function calibrationArtifacts(hypotheses) {
+  const rows = Array.isArray(hypotheses) ? hypotheses : [];
+  const enriched = rows.map((h) => {
+    const supportEyes = Number((h && h.support_eyes) || 0);
+    const supportEvents = Number((h && h.support_events) || 0);
+    const p = calibratedProbability((h && h.confidence) || 0, supportEyes, supportEvents);
+    const targetProxy = clampUnit(
+      (Math.min(10, supportEyes) / 10) * 0.45
+      + (Math.min(30, supportEvents) / 30) * 0.55,
+      0
+    );
+    return {
+      hypothesis: h,
+      probability: Number(p.toFixed(4)),
+      target_proxy: Number(targetProxy.toFixed(4))
+    };
+  });
+  const brier = mean(enriched.map((row) => {
+    const d = row.probability - row.target_proxy;
+    return d * d;
+  }));
+  const binMap = new Map();
+  for (const row of enriched) {
+    const bin = Math.min(0.9, Math.floor(row.probability * 10) / 10);
+    const key = bin.toFixed(1);
+    const cur = binMap.get(key) || { probability_sum: 0, target_sum: 0, count: 0 };
+    cur.probability_sum += row.probability;
+    cur.target_sum += row.target_proxy;
+    cur.count += 1;
+    binMap.set(key, cur);
+  }
+  const reliability = Array.from(binMap.entries())
+    .map(([bin, row]) => ({
+      bin,
+      count: row.count,
+      avg_probability: Number((row.probability_sum / Math.max(1, row.count)).toFixed(4)),
+      avg_target_proxy: Number((row.target_sum / Math.max(1, row.count)).toFixed(4))
+    }))
+    .sort((a, b) => String(a.bin).localeCompare(String(b.bin)));
+  return {
+    enriched,
+    brier_score: Number(brier.toFixed(6)),
+    reliability
+  };
+}
+
 function sortUnique(arr) {
   return Array.from(new Set((Array.isArray(arr) ? arr : []).map((x) => String(x || '')).filter(Boolean))).sort();
 }
@@ -328,6 +392,7 @@ function analyze(opts = {}) {
   const minDeltaTonePct = clamp(process.env.CROSS_SIGNAL_MIN_DELTA_TONE_PCT, 1, 100, 18) / 100;
   const maxHypotheses = clamp(process.env.CROSS_SIGNAL_MAX_HYPOTHESES, 10, 500, 120);
   const minConfidence = clamp(process.env.CROSS_SIGNAL_MIN_CONFIDENCE, 1, 100, 48);
+  const maxBrier = clamp(process.env.CROSS_SIGNAL_MAX_BRIER_PCT, 1, 100, 35) / 100;
   const maxPerTopic = clamp(process.env.CROSS_SIGNAL_MAX_PER_TOPIC, 1, 20, 3);
   const maxPerTopicType = clamp(process.env.CROSS_SIGNAL_MAX_PER_TOPIC_TYPE, 1, 10, 2);
   const maxTopicsPerItem = clamp(process.env.CROSS_SIGNAL_MAX_TOPICS_PER_ITEM, 1, 12, 6);
@@ -586,13 +651,23 @@ function analyze(opts = {}) {
     }
   }
 
-  hypotheses.sort((a, b) => {
+  const calibrated = calibrationArtifacts(hypotheses);
+  const calibratedHypotheses = calibrated.enriched.map((row) => ({
+    ...row.hypothesis,
+    probability: row.probability,
+    probability_contract: {
+      model: 'calibrated_v1',
+      target_proxy: row.target_proxy
+    }
+  }));
+
+  calibratedHypotheses.sort((a, b) => {
     if (Number(b.confidence || 0) !== Number(a.confidence || 0)) return Number(b.confidence || 0) - Number(a.confidence || 0);
     if (Number(b.support_eyes || 0) !== Number(a.support_eyes || 0)) return Number(b.support_eyes || 0) - Number(a.support_eyes || 0);
     return String(a.id || '').localeCompare(String(b.id || ''));
   });
-  const totalDetected = hypotheses.length;
-  const compacted = compactHypotheses(hypotheses, {
+  const totalDetected = calibratedHypotheses.length;
+  const compacted = compactHypotheses(calibratedHypotheses, {
     minConfidence,
     maxPerTopic,
     maxPerTopicType
@@ -615,7 +690,15 @@ function analyze(opts = {}) {
       ,
       min_negative_events: minNegativeEvents,
       min_delta_volume: minDeltaVolume,
-      min_delta_tone_pct: Number(minDeltaTonePct.toFixed(4))
+      min_delta_tone_pct: Number(minDeltaTonePct.toFixed(4)),
+      max_brier: Number(maxBrier.toFixed(4))
+    },
+    calibration: {
+      model: 'calibrated_v1',
+      brier_score: calibrated.brier_score,
+      max_brier: Number(maxBrier.toFixed(4)),
+      pass: calibrated.brier_score <= maxBrier,
+      reliability: calibrated.reliability
     },
     temporal_deltas: temporalDeltas
       .sort((a, b) => {
@@ -645,12 +728,14 @@ function runCli(cmd, dateStr, lookbackDays) {
   if (cmd === 'run') {
     const outPath = writeReport(report);
     process.stdout.write(JSON.stringify({
-      ok: true,
+      ok: report.calibration && report.calibration.pass === true,
       type: report.type,
       date: report.date,
       lookback_days: report.lookback_days,
       total_detected: Number(report.total_detected || report.hypothesis_count || 0),
       hypothesis_count: report.hypothesis_count,
+      calibration_pass: report.calibration && report.calibration.pass === true,
+      calibration_brier_score: report.calibration ? report.calibration.brier_score : null,
       hypotheses_path: outPath
     }, null, 2) + '\n');
     return;
@@ -667,9 +752,27 @@ function main() {
   }
   const dateStr = /^\d{4}-\d{2}-\d{2}$/.test(String(args._[1] || '')) ? String(args._[1]) : todayStr();
   const lookbackDays = clamp(args.lookback, 3, 30, 7);
+  const strict = clamp(args.strict, 0, 1, 0) === 1;
   if (cmd === 'run' || cmd === 'status') {
-    runCli(cmd, dateStr, lookbackDays);
-    process.exit(0);
+    const report = analyze({ dateStr, lookbackDays });
+    if (cmd === 'run') {
+      const outPath = writeReport(report);
+      const ok = report.calibration && report.calibration.pass === true;
+      process.stdout.write(JSON.stringify({
+        ok,
+        type: report.type,
+        date: report.date,
+        lookback_days: report.lookback_days,
+        total_detected: Number(report.total_detected || report.hypothesis_count || 0),
+        hypothesis_count: report.hypothesis_count,
+        calibration_pass: ok,
+        calibration_brier_score: report.calibration ? report.calibration.brier_score : null,
+        hypotheses_path: outPath
+      }, null, 2) + '\n');
+      process.exit(strict && !ok ? 2 : 0);
+    }
+    process.stdout.write(JSON.stringify(report, null, 2) + '\n');
+    process.exit(strict && report.calibration && report.calibration.pass !== true ? 2 : 0);
   }
   usage();
   process.exit(2);
