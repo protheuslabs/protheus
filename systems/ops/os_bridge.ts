@@ -9,7 +9,7 @@ const { Server } = require('socket.io');
 const fs = require('fs');
 const path = require('path');
 
-const WORKSPACE = process.env.OPENCLAW_WORKSPACE || '/Users/jay/.openclaw/workspace';
+const WORKSPACE = process.env.OPENCLAW_WORKSPACE || path.resolve(__dirname, '..', '..');
 const PORT = process.env.OS_BRIDGE_PORT || 8000;
 
 // Subsystem mapping from real system components

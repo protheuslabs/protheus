@@ -771,7 +771,31 @@
     "build": "npm run build:systems:verify",
     "test": "npm run test:ci",
     "lint": "npm run typecheck:systems",
-    "security:audit": "npm audit --audit-level=moderate"
+    "security:audit": "npm audit --audit-level=moderate",
+    "ops:command-registry:sync": "node systems/ops/command_registry_surface_contract.js sync --strict=0",
+    "ops:command-registry:check": "node systems/ops/command_registry_surface_contract.js check --strict=1",
+    "ops:command-registry:status": "node systems/ops/command_registry_surface_contract.js status",
+    "ops:entrypoint-contract:check": "node systems/ops/entrypoint_runtime_contract.js check --strict=1",
+    "ops:entrypoint-contract:status": "node systems/ops/entrypoint_runtime_contract.js status",
+    "ops:dependency-boundary:check": "node systems/ops/dependency_boundary_guard.js check --strict=1",
+    "ops:dependency-boundary:status": "node systems/ops/dependency_boundary_guard.js status",
+    "ops:state-tiering:check": "node systems/ops/state_tiering_contract.js check --strict=1",
+    "ops:state-tiering:status": "node systems/ops/state_tiering_contract.js status",
+    "ops:ci-quality:check": "node systems/ops/ci_quality_scorecard.js check --strict=1",
+    "ops:ci-quality:status": "node systems/ops/ci_quality_scorecard.js status",
+    "ops:path-contract:check": "node systems/ops/relocatable_path_contract.js check --strict=1",
+    "ops:path-contract:status": "node systems/ops/relocatable_path_contract.js status",
+    "ops:package-manifest:check": "node systems/ops/package_manifest_contract.js check --strict=1",
+    "ops:package-manifest:status": "node systems/ops/package_manifest_contract.js status",
+    "ops:docs-surface:check": "node systems/ops/docs_surface_contract.js check --strict=1",
+    "ops:docs-surface:status": "node systems/ops/docs_surface_contract.js status",
+    "ops:root-surface:check": "node systems/ops/root_surface_contract.js check --strict=1",
+    "ops:root-surface:status": "node systems/ops/root_surface_contract.js status",
+    "ops:legal-language:check": "node systems/ops/legal_language_contract.js check --strict=1",
+    "ops:legal-language:status": "node systems/ops/legal_language_contract.js status",
+    "ops:ci-workflow:check": "node systems/ops/ci_workflow_rationalization_contract.js check --strict=1",
+    "ops:ci-workflow:status": "node systems/ops/ci_workflow_rationalization_contract.js status",
+    "ops:race-queue:hardening": "npm run -s ops:package-manifest:check && npm run -s ops:command-registry:check && npm run -s ops:entrypoint-contract:check && npm run -s ops:dependency-boundary:check && npm run -s ops:state-tiering:check && npm run -s ops:path-contract:check && npm run -s ops:docs-surface:check && npm run -s ops:root-surface:check && npm run -s ops:legal-language:check && npm run -s ops:ci-workflow:check && npm run -s ops:ci-quality:check"
   },
   "bin": {
     "protheus": "./bin/protheus",
@@ -786,5 +810,18 @@
   "dependencies": {
     "socket.io": "^4.8.3",
     "xml2js": "^0.6.2"
-  }
+  },
+  "name": "openclaw",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Personal automation and orchestration toolkit for macOS/Linux workflows.",
+  "license": "SEE LICENSE IN LICENSE",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jakerslam/protheus.git"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "packageManager": "npm@11.10.0"
 }

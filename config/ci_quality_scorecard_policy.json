@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "thresholds": {
+    "min_coverage_pct": 0,
+    "max_flake_rate": 0.05,
+    "max_p95_runtime_ms": 360000,
+    "require_critical_suite_pass": true
+  },
+  "history_window": 50,
+  "paths": {
+    "history_path": "state/ops/ci_quality_scorecard/history.jsonl",
+    "latest_path": "state/ops/ci_quality_scorecard/latest.json",
+    "baseline_state_path": "state/ops/ci_baseline_streak.json"
+  }
+}

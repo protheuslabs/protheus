@@ -3,7 +3,7 @@
 Version: `2026-02-27.v1`
 Effective Date: `2026-02-27`
 
-This EULA governs use of the Protheus software and related materials in this repository.
+This EULA governs use of the OpenClaw software and related materials in this repository.
 
 ## 1. License Grant
 
@@ -15,13 +15,13 @@ Subject to compliance with this agreement and project policies, a limited, revoc
 - No reverse engineering or bypass of security/governance controls.
 - No use that violates applicable law, data rights, or contractual obligations.
 
-## 3. Defensive Protection Notice
+## 3. Security and Misuse Protection
 
-Protheus is protected intellectual property. Unauthorized copying, reverse-engineering, or interfacing outside of a valid soul-token-bound instance is prohibited.
+OpenClaw is protected intellectual property. Unauthorized copying, reverse engineering, or bypass of policy controls is prohibited.
 
-Unauthorized activity may trigger internal defensive controls, including access denial, capability restriction, rate limiting, quarantine, and forensic logging/watermarking.
+Detected misuse may trigger bounded security controls such as access denial, capability restriction, rate limiting, quarantine, and audit logging.
 
-These controls are bounded, auditable, and contained to the unauthorized instance. They are intended for legal self-protection and incident response.
+These controls are intended for legal self-protection and incident response.
 
 ## 4. Ownership
 

@@ -12,7 +12,7 @@ const sidecarMain = path.join(__dirname, '..', '..', 'agent-holo-viz', 'server',
 if (!fs.existsSync(sidecarMain)) {
   process.stderr.write(
     '[visualizer] sidecar repo not found at agent-holo-viz/. ' +
-    'Create/populate /Users/jay/.openclaw/workspace/agent-holo-viz first.\n'
+    'Create/populate $OPENCLAW_WORKSPACE/agent-holo-viz first.\n'
   );
   process.exit(1);
 }

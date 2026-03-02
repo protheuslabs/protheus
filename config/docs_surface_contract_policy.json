@@ -1,0 +1,20 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "required_operator_docs": [
+    "README.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md",
+    "docs/README.md",
+    "docs/OPERATOR_RUNBOOK.md"
+  ],
+  "required_internal_namespace": [
+    "docs/internal/README.md",
+    "docs/internal/persona/AGENT-CONSTITUTION.md",
+    "docs/internal/persona/IDENTITY.md"
+  ],
+  "paths": {
+    "latest_path": "state/ops/docs_surface_contract/latest.json",
+    "receipts_path": "state/ops/docs_surface_contract/receipts.jsonl"
+  }
+}

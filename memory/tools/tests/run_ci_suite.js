@@ -219,6 +219,18 @@ function main() {
   }
 
   console.log(`=== CI RESULT: passed=${passed} failed=${failed} ===`);
+  const ciDurationMs = Date.now() - ciStartedAtMs;
+  const qualityScorecard = runNode([
+    'systems/ops/ci_quality_scorecard.js',
+    'check',
+    '--strict=0',
+    `--critical-suite-pass=${failed === 0 ? '1' : '0'}`,
+    `--duration-ms=${ciDurationMs}`
+  ], { timeoutMs: 60_000 });
+  if (!qualityScorecard.ok) {
+    printOutput('  ', qualityScorecard.stdout);
+    printOutput('  ', qualityScorecard.stderr);
+  }
   const streakState = recordCiRun({
     ok: failed === 0,
     passed,

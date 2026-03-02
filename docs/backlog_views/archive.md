@@ -1,6 +1,6 @@
 # Backlog Archive View
 
-Generated: 2026-03-02T06:28:22.265Z
+Generated: 2026-03-02T06:45:47.996Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
@@ -296,6 +296,17 @@ Generated: 2026-03-02T06:28:22.265Z
 | V3-RACE-112 | primitive-upgrade | V3 | done | Analysis Kernel Stage Interface & Plugin Contracts | V3-RACE-078, V3-RACE-081, V3-RACE-083, V3-RACE-084 |
 | V3-RACE-113 | hardening | V3 | done | Compatibility Tail Retirement (TS-First Runtime) | V2-001, V2-003, BL-014, V3-RACE-068 |
 | V3-RACE-114 | hardening | V3 | done | Control-Plane Live Activation & Shadow Exit Gate | V3-RACE-017, V3-RACE-021, V3-RACE-034, V3-RACE-041 |
+| V3-RACE-115 | hardening | V3 | done | Command Registry + Script Surface Rationalization | V3-RACE-107, V3-RACE-111 |
+| V3-RACE-116 | primitive-upgrade | V3 | done | Entrypoint Runtime Contract Standardization | V2-003, V3-RACE-113 |
+| V3-RACE-117 | hardening | V3 | done | Dependency Boundary Enforcement (Layer Import Contracts) | V3-RACE-106, V3-RACE-107 |
+| V3-RACE-118 | primitive-upgrade | V3 | done | Runtime State Tiering Contract (Hot vs Audit Paths) | V3-RACE-023, V3-RACE-109, V3-RACE-110 |
+| V3-RACE-119 | hardening | V3 | done | Unified CI Quality Scorecard & Gates | V1H-001, V1H-003, RM-004 |
+| V3-RACE-120 | hardening | V3 | done | Relocatable Path Contract (Absolute-Path Eradication) | PLM-005, V3-RACE-107, V3-RACE-113 |
+| V3-RACE-121 | hardening | V3 | done | Package Manifest Standards & Release Metadata Contract | V3-RACE-115, V3-RACE-120 |
+| V3-RACE-122 | hardening | V3 | done | Public Docs Segmentation (Operator vs Persona/Internal) | V3-RACE-120, V3-DOC-008 |
+| V3-RACE-123 | hardening | V3 | done | CI Workflow Rationalization & Duplicate-Signal Elimination | V3-RACE-119, BL-035 |
+| V3-RACE-124 | hardening | V3 | done | Root Surface Curation & Artifact Namespace Contract | V3-RACE-115, V3-RACE-120 |
+| V3-RACE-125 | hardening | V3 | done | Legal/Trust Language Normalization Pack | V3-DEP-001, V3-DOC-008 |
 | OPT-001 | backlog | OPT | done | Eyes signal weighting retune in router ranking |  |
 | OPT-002 | backlog | OPT | done | Prompt cache policy split by lane (reflex/autonomy/dream) |  |
 | OPT-003 | backlog | OPT | done | Dream fallback quality scoring before proposal injection |  |

@@ -5,9 +5,9 @@ on:
   pull_request:
 
 jobs:
-  lint-and-test:
+  quality-gates:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,3 +26,6 @@ jobs:
 
       - name: Test
         run: npm run test
+
+      - name: Queue Hardening Contracts
+        run: npm run ops:race-queue:hardening

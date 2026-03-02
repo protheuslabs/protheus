@@ -5,7 +5,7 @@
  * Using previously captured Moltbook API responses
  */
 
-const { compactToolResponse } = require('/Users/jay/.openclaw/workspace/lib/tool_response_compactor.js');
+const { compactToolResponse } = require('./tool_response_compactor.js');
 const fs = require('fs');
 const path = require('path');
 

@@ -1,4 +1,4 @@
-# Protheus Terms of Service
+# OpenClaw Terms of Service
 
 Version: `2026-02-27.v1`
 Effective Date: `2026-02-27`
@@ -21,13 +21,11 @@ By running install/bootstrap workflows for this system, the operator accepts the
 - Operators must maintain incident response readiness and follow the runbook during incidents.
 - Compromise indicators must be treated as security incidents and triaged immediately.
 
-## 4. Defensive Protection Notice
+## 4. Security and Misuse Protection
 
-Protheus is protected intellectual property. Unauthorized copying, reverse-engineering, or interfacing outside of a valid soul-token-bound instance is prohibited.
+OpenClaw is protected intellectual property. Unauthorized copying, reverse engineering, or bypass of policy controls is prohibited.
 
-Unauthorized activity may trigger internal defensive controls, including access denial, capability restriction, rate limiting, quarantine, and forensic logging/watermarking.
-
-These controls are bounded, auditable, and contained to the unauthorized instance. They are intended for legal self-protection and incident response.
+Detected misuse may trigger bounded security controls, including access denial, capability restriction, rate limiting, quarantine, and forensic logging.
 
 ## 5. Data and Audit
 

@@ -8,7 +8,43 @@ const crypto = require('crypto');
 
 type AnyObj = Record<string, any>;
 
-const ROOT = path.resolve(__dirname, '..');
+function hasWorkspaceMarkers(absPath: string) {
+  try {
+    if (!absPath || !path.isAbsolute(absPath)) return false;
+    return fs.existsSync(path.join(absPath, '.git'))
+      || fs.existsSync(path.join(absPath, 'package.json'))
+      || fs.existsSync(path.join(absPath, 'AGENTS.md'));
+  } catch {
+    return false;
+  }
+}
+
+function findWorkspaceRoot(startAbsPath: string) {
+  let cursor = path.resolve(startAbsPath || process.cwd());
+  for (let i = 0; i < 12; i += 1) {
+    if (hasWorkspaceMarkers(cursor)) return cursor;
+    const next = path.dirname(cursor);
+    if (!next || next === cursor) break;
+    cursor = next;
+  }
+  return null;
+}
+
+function resolveWorkspaceRoot() {
+  const envWorkspace = String(process.env.OPENCLAW_WORKSPACE || '').trim();
+  if (envWorkspace) {
+    const resolved = path.resolve(envWorkspace);
+    if (hasWorkspaceMarkers(resolved)) return resolved;
+    if (path.isAbsolute(resolved)) return resolved;
+  }
+  const byDirname = findWorkspaceRoot(path.resolve(__dirname, '..'));
+  if (byDirname) return byDirname;
+  const byCwd = findWorkspaceRoot(process.cwd());
+  if (byCwd) return byCwd;
+  return path.resolve(__dirname, '..');
+}
+
+const ROOT = resolveWorkspaceRoot();
 
 function nowIso() {
   const override = cleanText(process.env.PROTHEUS_NOW_ISO || '', 80);
@@ -137,8 +173,11 @@ function relPath(filePath: string) {
 
 function resolvePath(raw: unknown, fallbackRel: string) {
   const txt = cleanText(raw, 520);
-  if (!txt) return path.join(ROOT, fallbackRel);
-  return path.isAbsolute(txt) ? txt : path.join(ROOT, txt);
+  const expanded = txt
+    .replace(/^\$OPENCLAW_WORKSPACE\b/, ROOT)
+    .replace(/\$\{OPENCLAW_WORKSPACE\}/g, ROOT);
+  if (!expanded) return path.join(ROOT, fallbackRel);
+  return path.isAbsolute(expanded) ? expanded : path.join(ROOT, expanded);
 }
 
 function parseIsoMs(v: unknown): number | null {
@@ -180,6 +219,7 @@ function emit(payload: AnyObj, exitCode = 0) {
 
 module.exports = {
   ROOT,
+  resolveWorkspaceRoot,
   nowIso,
   cleanText,
   normalizeToken,

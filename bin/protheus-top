@@ -1,10 +1,21 @@
 #!/usr/bin/env node
 'use strict';
 
+const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 
-const script = path.resolve(__dirname, '..', 'systems', 'ops', 'protheus_top.js');
+const sourceScript = path.resolve(__dirname, '..', 'systems', 'ops', 'protheus_top.js');
+const distScript = path.resolve(__dirname, '..', 'dist', 'systems', 'ops', 'protheus_top.js');
+const runtimeMode = String(process.env.PROTHEUS_RUNTIME_MODE || '').trim().toLowerCase();
+const preferDist = runtimeMode !== 'source';
+const script = preferDist && fs.existsSync(distScript) ? distScript : sourceScript;
+
+if (!fs.existsSync(script)) {
+  process.stderr.write(`missing entrypoint: ${script}\n`);
+  process.exit(1);
+}
+
 const run = spawnSync(process.execPath, [script, ...process.argv.slice(2)], {
   stdio: 'inherit'
 });

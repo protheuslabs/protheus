@@ -1,0 +1,53 @@
+{
+  "schema_id": "command_registry",
+  "schema_version": "1.0",
+  "updated_at": "2026-03-02T00:00:00.000Z",
+  "owners": {
+    "platform": "Core runtime + entrypoint contracts",
+    "ops": "Operational lanes and governance checks",
+    "security": "Security and compliance runtime lanes",
+    "qa": "Test and validation execution",
+    "sensory": "Detection and analysis runtime lanes",
+    "execution": "Actuation and workflow execution lanes",
+    "autonomy": "Autonomy and optimization lanes",
+    "memory": "Memory and persistence lanes",
+    "continuity": "Continuity and archival lanes",
+    "research": "Experimental and benchmark lanes",
+    "routing": "Model/provider routing lanes",
+    "assimilation": "Knowledge assimilation and adaptation lanes",
+    "race": "Backlog lane wrappers and compatibility aliases",
+    "economy": "Value and economic runtime lanes"
+  },
+  "curated_operator_surface": [
+    "dev",
+    "build",
+    "start",
+    "test",
+    "lint",
+    "security:audit",
+    "ops:command-registry:check",
+    "ops:entrypoint-contract:check",
+    "ops:dependency-boundary:check",
+    "ops:state-tiering:check",
+    "ops:ci-quality:check",
+    "ops:path-contract:check",
+    "ops:docs-surface:check",
+    "ops:root-surface:check",
+    "ops:legal-language:check",
+    "ops:package-manifest:check"
+  ],
+  "groups": [
+    { "prefix": "ops:", "owner": "ops", "scope": "operations", "risk_tier": 2 },
+    { "prefix": "security:", "owner": "security", "scope": "security", "risk_tier": 3 },
+    { "prefix": "test:", "owner": "qa", "scope": "validation", "risk_tier": 1 },
+    { "prefix": "lane:", "owner": "race", "scope": "lane", "risk_tier": 2 }
+  ],
+  "commands": {
+    "dev": { "owner": "platform", "scope": "runtime", "risk_tier": 1 },
+    "start": { "owner": "platform", "scope": "runtime", "risk_tier": 1 },
+    "build": { "owner": "platform", "scope": "build", "risk_tier": 1 },
+    "lint": { "owner": "qa", "scope": "quality", "risk_tier": 1 },
+    "test": { "owner": "qa", "scope": "quality", "risk_tier": 1 },
+    "security:audit": { "owner": "security", "scope": "dependencies", "risk_tier": 2 }
+  }
+}

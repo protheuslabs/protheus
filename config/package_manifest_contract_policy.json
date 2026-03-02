@@ -1,0 +1,19 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "required_fields": [
+    "name",
+    "version",
+    "private",
+    "description",
+    "license",
+    "repository",
+    "engines",
+    "packageManager"
+  ],
+  "paths": {
+    "package_json_path": "package.json",
+    "latest_path": "state/ops/package_manifest_contract/latest.json",
+    "receipts_path": "state/ops/package_manifest_contract/receipts.jsonl"
+  }
+}
