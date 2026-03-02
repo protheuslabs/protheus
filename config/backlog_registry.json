@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T03:53:54.404Z",
-  "source_hash": "af6d3bda2b67bbcf562ad6d9",
+  "generated_at": "2026-03-02T03:55:31.654Z",
+  "source_hash": "35f4c47a9f7f0634f131b062",
   "row_count": 127,
-  "active_count": 54,
-  "archive_count": 73,
+  "active_count": 53,
+  "archive_count": 74,
   "rows": [
     {
       "id": "V3-OPS-004",
@@ -1406,10 +1406,10 @@
       "id": "V3-RACE-086",
       "class": "hardening",
       "wave": "V3",
-      "status": "queued",
+      "status": "done",
       "title": "Gold Eval Corpus + Blind Detector Scoring Lane",
       "problem": "Detector quality cannot compound reliably without stable objective measurement artifacts.",
-      "acceptance": "Labeled eval packs and blind runner are live, with deterministic precision/recall/F1/calibration receipts used by promotion gates.",
+      "acceptance": "Added `systems/sensory/gold_eval_blind_scoring_lane.{ts,js}` + `config/gold_eval_blind_scoring_policy.json` to run deterministic blind-ordered scoring on labeled eval packs with precision/recall/F1/Brier outputs and promotion gate receipts under `state/sensory/analysis/gold_eval_blind/`; regression coverage in `memory/tools/tests/gold_eval_blind_scoring_lane.test.js`.",
       "dependencies": [
         "V3-RACE-081",
         "V3-RACE-082"

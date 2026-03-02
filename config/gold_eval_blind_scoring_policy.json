@@ -1,0 +1,20 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "prediction_key": "candidate_probability",
+  "truth_key": "truth",
+  "decision_threshold": 0.5,
+  "blind_salt": "gold_eval_blind_lane_v1",
+  "thresholds": {
+    "min_precision": 0.62,
+    "min_recall": 0.55,
+    "min_f1": 0.58,
+    "max_brier": 0.28
+  },
+  "paths": {
+    "eval_pack_dir": "state/sensory/eval/gold",
+    "output_dir": "state/sensory/analysis/gold_eval_blind",
+    "latest_path": "state/sensory/analysis/gold_eval_blind/latest.json",
+    "receipts_path": "state/sensory/analysis/gold_eval_blind/receipts.jsonl"
+  }
+}

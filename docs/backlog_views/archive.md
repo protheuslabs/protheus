@@ -1,6 +1,6 @@
 # Backlog Archive View
 
-Generated: 2026-03-02T03:53:54.404Z
+Generated: 2026-03-02T03:55:31.654Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
@@ -70,6 +70,7 @@ Generated: 2026-03-02T03:53:54.404Z
 | V3-RACE-083 | hardening | V3 | done | Adversarial Hypothesis Challenger Lane | V3-RACE-081, V3-RACE-042 |
 | V3-RACE-084 | primitive-upgrade | V3 | done | Multi-Hop Objective Chain Mapper | V3-RACE-078, V3-RACE-079, V3-RACE-080, V3-RACE-081 |
 | V3-RACE-085 | extension | V3 | done | Multimodal Signal Adapter Plane (Non-Text Features) | V3-RACE-007, V3-RACE-041, V3-RACE-084 |
+| V3-RACE-086 | hardening | V3 | done | Gold Eval Corpus + Blind Detector Scoring Lane | V3-RACE-081, V3-RACE-082 |
 | V3-RACE-106 | hardening | V3 | done | Unified Guard Check Registry (Manifest-Driven Gates) | V3-AEX-002, V3-RACE-CONF-008 |
 | V3-RACE-107 | hardening | V3 | done | Shared Policy Runtime Primitive | BL-024, V3-RACE-CONF-007 |
 | V3-RACE-108 | primitive-upgrade | V3 | done | Spawn Fan-Out Reduction Wave (Worker/Daemon Core) | V3-RACE-063, V3-RACE-064, V3-OPS-005 |
