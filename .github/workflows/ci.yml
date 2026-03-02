@@ -29,3 +29,6 @@ jobs:
 
       - name: Queue Hardening Contracts
         run: npm run ops:race-queue:hardening
+
+      - name: Mobile Benchmark Matrix (Smoke)
+        run: node systems/ops/mobile_competitive_benchmark_matrix.js run --owner=ci --scenario=ci_mobile_android --target=android --battery-drain-hour=2.4 --thermal=39 --survival-hours=72 --sync-integrity=0.998 --apply=0

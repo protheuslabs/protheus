@@ -1,6 +1,6 @@
 # Backlog Active View
 
-Generated: 2026-03-02T14:40:07.929Z
+Generated: 2026-03-02T15:05:45.057Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
@@ -19,10 +19,4 @@ Generated: 2026-03-02T14:40:07.929Z
 | V3-RACE-186 | extension | V3 | queued | Execution Sandbox Rust/WASM Coprocessor Lane (Optional, Policy-Gated) | V3-RACE-024, V3-RACE-138, V3-RACE-185 |
 | V3-RACE-187 | hardening | V3 | queued | Formal Verification Depth Pack for Critical Runtime Paths | V3-RACE-035, V3-RACE-180, V3-RACE-181, V3-RACE-043 |
 | V3-RACE-188 | hardening | V3 | queued | Hybrid Interface Stability Contract (Rust Core, TS Orchestration, Zero-Break Cutover) | V3-RACE-116, V3-RACE-185, V3-RACE-175 |
-| V3-RACE-189 | extension | V3 | queued | `protheus-edge` Lightweight Runtime Package (Reflex + MemFS Cache + Remote Spine Sync) | V3-RACE-161, V3-RACE-172, V3-RACE-176, V3-RACE-148 |
-| V3-RACE-190 | hardening | V3 | queued | Mobile Lifecycle Resilience & Power Envelope Contract (Doze/Kill Recovery) | V3-RACE-148, V3-RACE-183, V3-RACE-168 |
-| V3-RACE-191 | hardening | V3 | queued | Mobile Operator CLI Surface (`protheusctl edge *`, `protheus-top --mobile`) | V3-RACE-116, V3-RACE-189, V3-RACE-184 |
-| V3-RACE-192 | extension | V3 | queued | Mobile Edge-Node Swarm Bridge (Nursery/Spawn Enrollment with Inherited Governance) | V3-RACE-131, V3-RACE-182, V3-RACE-189 |
-| V3-RACE-193 | extension | V3 | queued | Mobile Wrapper & Runtime Distribution Pack (Android/Termux + iOS/Tauri) | V3-RACE-120, V3-RACE-189, V3-RACE-175 |
-| V3-RACE-194 | hardening | V3 | queued | Mobile Competitive Benchmark & CI Matrix (Battery/Thermal/72h Autonomy) | V3-RACE-174, V3-RACE-190, V3-RACE-193 |
 

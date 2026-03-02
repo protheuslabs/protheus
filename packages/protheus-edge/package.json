@@ -1,0 +1,13 @@
+{
+  "name": "@protheus/edge",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Lightweight mobile/edge runtime package with reflex cache, wrappers, and benchmark surfaces",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "start:edge": "node starter.js --mode=edge",
+    "status": "node starter.js --mode=status",
+    "contract": "node starter.js --mode=contract"
+  }
+}

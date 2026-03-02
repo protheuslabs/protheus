@@ -1,6 +1,6 @@
 # Backlog Archive View
 
-Generated: 2026-03-02T14:40:07.929Z
+Generated: 2026-03-02T15:05:45.057Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
@@ -370,6 +370,12 @@ Generated: 2026-03-02T14:40:07.929Z
 | V3-RACE-172 | extension | V3 | done | Hierarchical Memory View Plane (Core/Edit/Summary + Swap-Safe Summarization) | V3-RACE-161, V3-RACE-164, V3-RACE-020 |
 | V3-RACE-173 | extension | V3 | done | Role-Based Crew Spawn Orchestrator (Shared Namespace Governance) | V3-RACE-145, V3-RACE-166, V3-RACE-171 |
 | V3-RACE-174 | hardening | V3 | done | Competitive Observability + Benchmark Pack (Trace/Evals + Framework Parity) | RM-122, RM-123, V3-RACE-041, V3-RACE-168 |
+| V3-RACE-189 | extension | V3 | done | `protheus-edge` Lightweight Runtime Package (Reflex + MemFS Cache + Remote Spine Sync) | V3-RACE-161, V3-RACE-172, V3-RACE-176, V3-RACE-148 |
+| V3-RACE-190 | hardening | V3 | done | Mobile Lifecycle Resilience & Power Envelope Contract (Doze/Kill Recovery) | V3-RACE-148, V3-RACE-183, V3-RACE-168 |
+| V3-RACE-191 | hardening | V3 | done | Mobile Operator CLI Surface (`protheusctl edge *`, `protheus-top --mobile`) | V3-RACE-116, V3-RACE-189, V3-RACE-184 |
+| V3-RACE-192 | extension | V3 | done | Mobile Edge-Node Swarm Bridge (Nursery/Spawn Enrollment with Inherited Governance) | V3-RACE-131, V3-RACE-182, V3-RACE-189 |
+| V3-RACE-193 | extension | V3 | done | Mobile Wrapper & Runtime Distribution Pack (Android/Termux + iOS/Tauri) | V3-RACE-120, V3-RACE-189, V3-RACE-175 |
+| V3-RACE-194 | hardening | V3 | done | Mobile Competitive Benchmark & CI Matrix (Battery/Thermal/72h Autonomy) | V3-RACE-174, V3-RACE-190, V3-RACE-193 |
 | OPT-001 | backlog | OPT | done | Eyes signal weighting retune in router ranking |  |
 | OPT-002 | backlog | OPT | done | Prompt cache policy split by lane (reflex/autonomy/dream) |  |
 | OPT-003 | backlog | OPT | done | Dream fallback quality scoring before proposal injection |  |
