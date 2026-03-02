@@ -1,0 +1,9 @@
+{
+  "schema_id": "backlog_queue_executor_policy",
+  "schema_version": "1.0",
+  "enabled": true,
+  "registry_path": "config/backlog_registry.json",
+  "state_root": "state/ops/backlog_queue_executor",
+  "latest_path": "state/ops/backlog_queue_executor/latest.json",
+  "history_path": "state/ops/backlog_queue_executor/history.jsonl"
+}
