@@ -1,6 +1,6 @@
 mod db;
 
-use db::{DbIndexEntry, MemoryDb};
+use db::{DbIndexEntry, HotStateEnvelopeStats, MemoryDb};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sha2::{Digest, Sha256};
@@ -95,6 +95,17 @@ struct BuildIndexResult {
     sqlite_path: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     sqlite_rows_written: Option<usize>,
+}
+
+#[derive(Serialize)]
+struct VerifyEnvelopeResult {
+    ok: bool,
+    backend: String,
+    db_path: String,
+    total_rows: usize,
+    enveloped_rows: usize,
+    legacy_cipher_rows: usize,
+    plain_rows: usize,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
@@ -1807,6 +1818,32 @@ fn run_build_index(args: &HashMap<String, String>) {
     );
 }
 
+fn verify_envelope_payload(args: &HashMap<String, String>) -> VerifyEnvelopeResult {
+    let root = PathBuf::from(arg_or_default(args, "root", "."));
+    let db_path_raw = arg_or_default(args, "db-path", "");
+    let db = MemoryDb::open(&root, &db_path_raw).expect("open sqlite runtime");
+    let stats = db
+        .hot_state_envelope_stats()
+        .unwrap_or_else(|_| HotStateEnvelopeStats::default());
+    VerifyEnvelopeResult {
+        ok: stats.total_rows == stats.enveloped_rows,
+        backend: "rust_memory_box".to_string(),
+        db_path: db.rel_db_path(&root),
+        total_rows: stats.total_rows,
+        enveloped_rows: stats.enveloped_rows,
+        legacy_cipher_rows: stats.legacy_cipher_rows,
+        plain_rows: stats.plain_rows,
+    }
+}
+
+fn run_verify_envelope(args: &HashMap<String, String>) {
+    let out = verify_envelope_payload(args);
+    println!(
+        "{}",
+        serde_json::to_string(&out).expect("serialize verify-envelope result")
+    );
+}
+
 fn run_daemon(args: &HashMap<String, String>) {
     let host = arg_or_default(args, "host", "127.0.0.1");
     let port_raw = arg_or_default(args, "port", "34127");
@@ -1885,6 +1922,11 @@ fn run_daemon(args: &HashMap<String, String>) {
                     .unwrap_or_else(|_| json!({"ok": false, "error": "build_serialize_failed"})),
                 false,
             ),
+            "verify-envelope" => (
+                serde_json::to_value(verify_envelope_payload(&req_args))
+                    .unwrap_or_else(|_| json!({"ok": false, "error": "verify_envelope_serialize_failed"})),
+                false,
+            ),
             "shutdown" => (
                 json!({
                     "ok": true,
@@ -1922,6 +1964,7 @@ fn main() {
         "query-index" => run_query_index(&kv),
         "get-node" => run_get_node(&kv),
         "build-index" => run_build_index(&kv),
+        "verify-envelope" => run_verify_envelope(&kv),
         "daemon" => run_daemon(&kv),
         _ => {
             eprintln!("unsupported command: {}", cmd);

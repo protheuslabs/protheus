@@ -483,6 +483,7 @@
     "memory:rust-transition:pilot": "node systems/memory/rust_memory_transition_lane.js pilot",
     "memory:rust-transition:benchmark": "node systems/memory/rust_memory_transition_lane.js benchmark --runs=5",
     "memory:rust-transition:status": "node systems/memory/rust_memory_transition_lane.js status",
+    "memory:rust:verify-envelope": "cargo run --quiet --manifest-path systems/memory/rust/Cargo.toml -- verify-envelope --root=.",
     "memory:fallback-gate:status": "node systems/memory/memory_fallback_retirement_gate.js status",
     "memory:fallback-gate:enable-emergency": "node systems/memory/memory_fallback_retirement_gate.js enable-emergency --reason=\"manual_emergency\"",
     "memory:fallback-gate:disable-emergency": "node systems/memory/memory_fallback_retirement_gate.js disable-emergency",

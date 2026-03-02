@@ -58,3 +58,10 @@ This document tracks the staged Rust memory migration for `V3-RACE-023`.
 - Audit rows include payload hash + structured operation metadata for `query`, `get`, and `clear-cache`.
 - Runtime logic does not read from this JSONL lane; it is write-only evidence.
 - Added regression coverage proving invalid existing mirror rows do not affect runtime behavior.
+
+## Post-Stage Hardening (Completed)
+
+- `V3-RACE-026`: JS fallback retirement gate is active via `systems/memory/memory_fallback_retirement_gate.ts` with emergency-toggle-only fallback policy (`config/memory_fallback_retirement_policy.json`) and receipted fallback incidents.
+- `V3-RACE-027`: Rust `hot_state` now stores canonical organ-state envelope JSON (`schema_id: organ_state_envelope`) and auto-migrates legacy/plain rows on open.
+- `V3-RACE-027`: Added runtime verification command `verify-envelope` (`cargo run --manifest-path systems/memory/rust/Cargo.toml -- verify-envelope --root=.`) to confirm full envelope coverage.
+- `V3-RACE-110`: Rust daemon/CLI/fallback behavior is unified behind `systems/memory/memory_transport.ts` with normalized `transport_attempts` telemetry.

@@ -2,7 +2,7 @@ use aes_gcm::aead::{Aead, KeyInit};
 use aes_gcm::{Aes256Gcm, Nonce};
 use rusqlite::{params, Connection, OptionalExtension};
 use rand::RngCore;
-use serde_json::Value;
+use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::env;
 use std::fs;
@@ -23,6 +23,17 @@ pub struct MemoryDb {
     db_path: PathBuf,
     cipher_key: [u8; 32],
 }
+
+#[derive(Clone, Debug, Default)]
+pub struct HotStateEnvelopeStats {
+    pub total_rows: usize,
+    pub enveloped_rows: usize,
+    pub legacy_cipher_rows: usize,
+    pub plain_rows: usize,
+}
+
+const HOT_STATE_ENVELOPE_SCHEMA_ID: &str = "organ_state_envelope";
+const HOT_STATE_ENVELOPE_SCHEMA_VERSION: &str = "1.0";
 
 fn now_iso() -> String {
     let secs = SystemTime::now()
@@ -169,6 +180,77 @@ fn decrypt_value(cipher_key: &[u8; 32], payload: &str) -> Result<String, String>
         .decrypt(nonce, cipher_bytes.as_ref())
         .map_err(|_| "aead_decrypt_failed".to_string())?;
     String::from_utf8(plaintext).map_err(|_| "aead_invalid_utf8".to_string())
+}
+
+fn hot_state_key_ref(cipher_key: &[u8; 32]) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(cipher_key);
+    let digest = hasher.finalize();
+    format!("organ_state_encryption:key_{}", hex::encode(&digest[..8]))
+}
+
+fn parse_hot_state_envelope_ciphertext(payload: &str) -> Option<String> {
+    let parsed = serde_json::from_str::<Value>(payload).ok()?;
+    let schema_id = parsed
+        .get("schema_id")
+        .and_then(Value::as_str)
+        .unwrap_or("");
+    if schema_id != HOT_STATE_ENVELOPE_SCHEMA_ID {
+        return None;
+    }
+    let lane = parsed
+        .get("lane")
+        .and_then(Value::as_str)
+        .unwrap_or("");
+    if lane != "hot_state" {
+        return None;
+    }
+    parsed
+        .get("ciphertext")
+        .and_then(Value::as_str)
+        .map(|s| s.to_string())
+}
+
+fn wrap_hot_state_envelope(cipher_key: &[u8; 32], plaintext: &str) -> Result<String, String> {
+    let ciphertext = encrypt_value(cipher_key, plaintext)?;
+    let envelope = json!({
+        "schema_id": HOT_STATE_ENVELOPE_SCHEMA_ID,
+        "schema_version": HOT_STATE_ENVELOPE_SCHEMA_VERSION,
+        "organ": "memory",
+        "lane": "hot_state",
+        "algorithm": "aes256_gcm",
+        "key_ref": hot_state_key_ref(cipher_key),
+        "wrapped_at": now_iso(),
+        "ciphertext": ciphertext
+    });
+    serde_json::to_string(&envelope).map_err(|err| format!("hot_state_envelope_encode_failed:{err}"))
+}
+
+fn decode_hot_state_payload_for_migration(cipher_key: &[u8; 32], payload: &str) -> Result<Option<String>, String> {
+    let body = payload.trim();
+    if body.is_empty() {
+        return Ok(Some(String::new()));
+    }
+    if parse_hot_state_envelope_ciphertext(body).is_some() {
+        return Ok(None);
+    }
+    if body.starts_with("aead-v1:") {
+        let plain = decrypt_value(cipher_key, body)?;
+        return Ok(Some(plain));
+    }
+    if body.starts_with("enc-v1:") {
+        let plain = decrypt_legacy_value(cipher_key, body)?;
+        return Ok(Some(plain));
+    }
+    Ok(Some(body.to_string()))
+}
+
+fn decrypt_hot_state_envelope(cipher_key: &[u8; 32], payload: &str) -> Result<String, String> {
+    let body = payload.trim();
+    let Some(ciphertext) = parse_hot_state_envelope_ciphertext(body) else {
+        return Err("hot_state_envelope_required".to_string());
+    };
+    decrypt_value(cipher_key, &ciphertext)
 }
 
 fn parse_tags_json(raw: &str) -> Vec<String> {
@@ -319,19 +401,14 @@ CREATE INDEX IF NOT EXISTS idx_graph_edges_dst ON temporal_graph_edges(dst_node_
         for row in mapped {
             let (state_key, value_raw) =
                 row.map_err(|err| format!("db_hot_state_scan_row_failed:{err}"))?;
-            let body = value_raw.trim();
-            if body.starts_with("aead-v1:") {
+            let maybe_plain = decode_hot_state_payload_for_migration(&self.cipher_key, &value_raw)
+                .map_err(|err| format!("db_hot_state_legacy_migrate_decode_failed:{err}"))?;
+            let Some(plain) = maybe_plain else {
                 continue;
-            }
-            let plaintext = if body.starts_with("enc-v1:") {
-                decrypt_legacy_value(&self.cipher_key, body)
-                    .map_err(|err| format!("db_hot_state_legacy_migrate_decrypt_failed:{err}"))?
-            } else {
-                body.to_string()
             };
-            let encrypted = encrypt_value(&self.cipher_key, &plaintext)
-                .map_err(|err| format!("db_hot_state_legacy_migrate_encrypt_failed:{err}"))?;
-            pending.push((state_key, encrypted));
+            let envelope = wrap_hot_state_envelope(&self.cipher_key, &plain)
+                .map_err(|err| format!("db_hot_state_envelope_wrap_failed:{err}"))?;
+            pending.push((state_key, envelope));
         }
         if pending.is_empty() {
             return Ok(0);
@@ -500,8 +577,8 @@ CREATE INDEX IF NOT EXISTS idx_graph_edges_dst ON temporal_graph_edges(dst_node_
             .map_err(|err| format!("db_hot_state_query_failed:{err}"))?;
         match raw {
             Some(cipher) => {
-                let plain =
-                    decrypt_value(&self.cipher_key, &cipher).map_err(|err| format!("db_hot_state_decrypt_failed:{err}"))?;
+                let plain = decrypt_hot_state_envelope(&self.cipher_key, &cipher)
+                    .map_err(|err| format!("db_hot_state_decrypt_failed:{err}"))?;
                 let parsed =
                     serde_json::from_str::<Value>(&plain).map_err(|err| format!("db_hot_state_decode_failed:{err}"))?;
                 Ok(Some(parsed))
@@ -512,8 +589,8 @@ CREATE INDEX IF NOT EXISTS idx_graph_edges_dst ON temporal_graph_edges(dst_node_
 
     pub fn set_hot_state_json(&self, key: &str, value: &Value) -> Result<(), String> {
         let encoded = serde_json::to_string(value).map_err(|err| format!("db_hot_state_encode_failed:{err}"))?;
-        let encrypted =
-            encrypt_value(&self.cipher_key, &encoded).map_err(|err| format!("db_hot_state_encrypt_failed:{err}"))?;
+        let envelope =
+            wrap_hot_state_envelope(&self.cipher_key, &encoded).map_err(|err| format!("db_hot_state_encrypt_failed:{err}"))?;
         self.conn
             .execute(
                 "INSERT INTO hot_state (state_key, state_value_json, updated_ts)
@@ -521,16 +598,40 @@ CREATE INDEX IF NOT EXISTS idx_graph_edges_dst ON temporal_graph_edges(dst_node_
                  ON CONFLICT(state_key) DO UPDATE SET
                    state_value_json = excluded.state_value_json,
                    updated_ts = excluded.updated_ts",
-                params![key, encrypted, now_iso()],
+                params![key, envelope, now_iso()],
             )
             .map_err(|err| format!("db_hot_state_upsert_failed:{err}"))?;
         Ok(())
+    }
+
+    pub fn hot_state_envelope_stats(&self) -> Result<HotStateEnvelopeStats, String> {
+        let mut stmt = self
+            .conn
+            .prepare("SELECT state_value_json FROM hot_state")
+            .map_err(|err| format!("db_hot_state_stats_prepare_failed:{err}"))?;
+        let mapped = stmt
+            .query_map([], |row| row.get::<_, String>(0))
+            .map_err(|err| format!("db_hot_state_stats_query_failed:{err}"))?;
+        let mut stats = HotStateEnvelopeStats::default();
+        for row in mapped {
+            let raw = row.map_err(|err| format!("db_hot_state_stats_row_failed:{err}"))?;
+            stats.total_rows += 1;
+            let body = raw.trim();
+            if parse_hot_state_envelope_ciphertext(body).is_some() {
+                stats.enveloped_rows += 1;
+            } else if body.starts_with("aead-v1:") || body.starts_with("enc-v1:") {
+                stats.legacy_cipher_rows += 1;
+            } else {
+                stats.plain_rows += 1;
+            }
+        }
+        Ok(stats)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{decrypt_value, encrypt_value};
+    use super::{decrypt_hot_state_envelope, encrypt_value, wrap_hot_state_envelope};
 
     fn test_key() -> [u8; 32] {
         [7u8; 32]
@@ -540,9 +641,9 @@ mod tests {
     fn aead_round_trip() {
         let key = test_key();
         let payload = r#"{"ok":true,"k":"v"}"#;
-        let encrypted = encrypt_value(&key, payload).expect("encrypt");
-        assert!(encrypted.starts_with("aead-v1:"));
-        let decrypted = decrypt_value(&key, &encrypted).expect("decrypt");
+        let wrapped = wrap_hot_state_envelope(&key, payload).expect("envelope");
+        assert!(wrapped.contains("\"schema_id\":\"organ_state_envelope\""));
+        let decrypted = decrypt_hot_state_envelope(&key, &wrapped).expect("decrypt");
         assert_eq!(decrypted, payload);
     }
 
@@ -554,8 +655,16 @@ mod tests {
         let mut chars = encrypted.chars().collect::<Vec<char>>();
         let idx = chars.len().saturating_sub(1);
         chars[idx] = if chars[idx] == 'a' { 'b' } else { 'a' };
-        let tampered = chars.into_iter().collect::<String>();
-        let decrypted = decrypt_value(&key, &tampered);
+        let tampered_cipher = chars.into_iter().collect::<String>();
+        let wrapped = serde_json::json!({
+            "schema_id": "organ_state_envelope",
+            "schema_version": "1.0",
+            "organ": "memory",
+            "lane": "hot_state",
+            "ciphertext": tampered_cipher
+        })
+        .to_string();
+        let decrypted = decrypt_hot_state_envelope(&key, &wrapped);
         assert!(decrypted.is_err(), "tampered payload should fail decrypt");
     }
 
@@ -563,7 +672,7 @@ mod tests {
     fn legacy_cipher_is_rejected_after_retirement() {
         let key = test_key();
         let legacy = "enc-v1:0000000000000001:00";
-        let decrypted = decrypt_value(&key, legacy);
+        let decrypted = decrypt_hot_state_envelope(&key, legacy);
         assert!(decrypted.is_err(), "legacy payload should be rejected");
     }
 }
