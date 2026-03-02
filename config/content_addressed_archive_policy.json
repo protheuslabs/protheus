@@ -1,0 +1,22 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "risk": {
+    "default_tier": 2,
+    "require_explicit_approval_tier": 3
+  },
+  "event_stream": {
+    "enabled": true,
+    "publish": true,
+    "stream": "archival.content_addressed"
+  },
+  "paths": {
+    "memory_dir": "memory/archival/content_addressed",
+    "adaptive_index_path": "adaptive/archival/index.json",
+    "events_path": "state/archival/content_addressed/events.jsonl",
+    "latest_path": "state/archival/content_addressed/latest.json",
+    "receipts_path": "state/archival/content_addressed/receipts.jsonl",
+    "cid_index_path": "state/archival/content_addressed/cid_index.json"
+  }
+}

@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T09:13:48.868Z",
-  "source_hash": "5ed1ee1e5689eedcbe1502c9",
+  "generated_at": "2026-03-02T09:14:56.228Z",
+  "source_hash": "fa91bd239192b581413a053e",
   "row_count": 373,
   "active_count": 1,
-  "archive_count": 324,
+  "archive_count": 325,
   "rows": [
     {
       "id": "BL-001",
@@ -3948,7 +3948,7 @@
       "id": "V3-RACE-141",
       "class": "extension",
       "wave": "V3",
-      "status": "open",
+      "status": "done",
       "title": "Content-Addressed Archival Plane (IPFS-Compatible)",
       "problem": "Long-term continuity exists, but content-addressed retrieval proofs and pinning contracts are needed for immutable, portable archival semantics.",
       "acceptance": "Implement `systems/archival/content_addressed_archive.{ts,js}` + policy `config/content_addressed_archive_policy.json` with CID mapping, pin metadata, retrieval verification, and encrypted payload envelopes; user-specific archival payload/index references live under `memory/archival/content_addressed/` with adaptive pin/cache heuristics under `adaptive/archival/`; permanent addressing/protocol logic remains in `systems/archival/` + `config/`.",
