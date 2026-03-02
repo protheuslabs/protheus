@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T09:22:10.845Z",
-  "source_hash": "2335710a0db52e674f20ea5d",
+  "generated_at": "2026-03-02T09:22:12.954Z",
+  "source_hash": "8a23d7cdd0b2aa0d60710310",
   "row_count": 373,
   "active_count": 1,
-  "archive_count": 349,
+  "archive_count": 350,
   "rows": [
     {
       "id": "BL-001",
@@ -4377,7 +4377,7 @@
       "id": "V3-RACE-171",
       "class": "primitive-upgrade",
       "wave": "V3",
-      "status": "open",
+      "status": "done",
       "title": "Cyclic Strategy Graph Runner (Governed State-Graph Execution)",
       "problem": "Complex long-running tasks need bounded cyclic graph execution contracts rather than ad hoc step chains.",
       "acceptance": "Implement `systems/strategy/cyclic_strategy_graph_runner.{ts,js}` + policy `config/cyclic_strategy_graph_policy.json`; user-specific strategy graph preferences remain in `memory/strategy/graphs/` with adaptive transition weights in `adaptive/strategy/graphs/`; permanent graph runtime, node contracts, and guard rules remain in `systems/strategy/` + `config/`; includes deterministic cycle limits, retry budgets, and rollback receipts.",
