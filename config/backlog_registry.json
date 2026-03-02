@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T09:29:40.142Z",
-  "source_hash": "80e54781994742c424d7d9a1",
+  "generated_at": "2026-03-02T09:32:01.093Z",
+  "source_hash": "7966d5ccaff745a92a0fbe60",
   "row_count": 373,
   "active_count": 1,
-  "archive_count": 355,
+  "archive_count": 356,
   "rows": [
     {
       "id": "BL-001",
@@ -4349,7 +4349,7 @@
       "id": "V3-RACE-169",
       "class": "primitive-upgrade",
       "wave": "V3",
-      "status": "open",
+      "status": "done",
       "title": "`protheus-core` Modular Extraction (Kernel Package Contract)",
       "problem": "Core adoption and maintainability improve when the kernel is a strict minimal package and all higher layers are optional modules.",
       "acceptance": "Implement `packages/protheus-core/` extraction with explicit public APIs for spine/reflex/gates; user-specific defaults/profiles remain in `memory/core_profiles/` and adaptive auto-tuning hints in `adaptive/core_profiles/`; permanent kernel package/runtime contracts remain in `packages/protheus-core/` + `systems/` + `config/`; installation/bootstrap supports one-command starter without leaking optional heavy layers.",

@@ -1,0 +1,11 @@
+{
+  "name": "@protheus/core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Core control APIs for spine/reflex/gates with lightweight starter contract",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "start:lite": "node starter.js"
+  }
+}
