@@ -10,6 +10,7 @@ const {
   runUnifiedMemoryTransport,
   normalizeTransportTelemetry
 } = require('./memory_transport');
+const { evaluateJsFallbackGate } = require('./memory_fallback_retirement_gate');
 
 const WORKSPACE_ROOT = path.resolve(__dirname, '..', '..');
 const REPO_ROOT = process.env.MEMORY_RECALL_ROOT
@@ -1210,6 +1211,7 @@ async function queryCmd(args) {
   let rustTransport = null;
   let rustTransportDetail = null;
   let transportAttempts: any[] = [];
+  let fallbackIncidentId = null;
   let indexSources = [];
   let tagSources = [];
   let topScored: any[] = [];
@@ -1243,6 +1245,54 @@ async function queryCmd(args) {
         transportAttempts = Array.isArray(rust.transport_attempts) ? rust.transport_attempts.slice(0) : [];
         noteRustFailure(backendFallbackReason);
       }
+    }
+  }
+
+  if (backendRequested === 'rust' && backendUsed === 'js' && backendFallbackReason) {
+    const gate = evaluateJsFallbackGate({
+      operation: 'query',
+      backend_requested: backendRequested,
+      fallback_reason: backendFallbackReason
+    });
+    fallbackIncidentId = gate && gate.incident_id ? gate.incident_id : null;
+    if (!gate || gate.allow !== true) {
+      const transportTelemetry = normalizeTransportTelemetry({
+        backend_requested: backendRequested,
+        backend_used: backendUsed,
+        fallback_reason: backendFallbackReason,
+        rust_transport: rustTransport,
+        rust_transport_detail: rustTransportDetail,
+        transport_attempts: transportAttempts
+      });
+      const response = {
+        ok: false,
+        error: 'js_fallback_retired',
+        fallback_gate_reason: gate && gate.decision_reason ? gate.decision_reason : 'js_fallback_retired',
+        fallback_incident_id: fallbackIncidentId,
+        backend_requested: transportTelemetry.backend_requested,
+        backend_used: transportTelemetry.backend_used,
+        backend_fallback_reason: transportTelemetry.fallback_reason,
+        rust_transport: transportTelemetry.rust_transport,
+        rust_transport_detail: transportTelemetry.rust_transport_detail,
+        transport_attempts: transportTelemetry.transport_attempts
+      };
+      appendAuditMirror('memory_recall_query', {
+        ok: false,
+        session,
+        query_hash: sha256(query),
+        query_length: String(query || '').length,
+        tags: tagFilters,
+        backend_requested: transportTelemetry.backend_requested,
+        backend_used: transportTelemetry.backend_used,
+        backend_fallback_reason: transportTelemetry.fallback_reason,
+        rust_transport: transportTelemetry.rust_transport,
+        rust_transport_detail: transportTelemetry.rust_transport_detail,
+        transport_attempts: transportTelemetry.transport_attempts,
+        fallback_incident_id: fallbackIncidentId,
+        error: 'js_fallback_retired'
+      });
+      process.stdout.write(JSON.stringify(response, null, 2) + '\n');
+      process.exit(1);
     }
   }
 
@@ -1400,6 +1450,7 @@ async function queryCmd(args) {
     rust_transport: transportTelemetry.rust_transport,
     rust_transport_detail: transportTelemetry.rust_transport_detail,
     transport_attempts: transportTelemetry.transport_attempts,
+    fallback_incident_id: fallbackIncidentId,
     scoring_source: scoringSource,
     index_sources: indexSources,
     tag_sources: tagSources,
@@ -1418,6 +1469,7 @@ async function queryCmd(args) {
     rust_transport: transportTelemetry.rust_transport,
     rust_transport_detail: transportTelemetry.rust_transport_detail,
     transport_attempts: transportTelemetry.transport_attempts,
+    fallback_incident_id: fallbackIncidentId,
     confidence,
     expanded_count: expandedCount,
     hit_count: hits.length,
@@ -1440,6 +1492,7 @@ async function getCmd(args) {
   let rustTransport = null;
   let rustTransportDetail = null;
   let transportAttempts: any[] = [];
+  let fallbackIncidentId = null;
   const buildTransportTelemetry = () => normalizeTransportTelemetry({
     backend_requested: backendRequested,
     backend_used: backendUsed,
@@ -1533,6 +1586,47 @@ async function getCmd(args) {
     }
   }
 
+  if (backendRequested === 'rust' && backendUsed === 'js' && backendFallbackReason) {
+    const gate = evaluateJsFallbackGate({
+      operation: 'get',
+      backend_requested: backendRequested,
+      fallback_reason: backendFallbackReason
+    });
+    fallbackIncidentId = gate && gate.incident_id ? gate.incident_id : null;
+    if (!gate || gate.allow !== true) {
+      const transportTelemetry = buildTransportTelemetry();
+      const response = {
+        ok: false,
+        error: 'js_fallback_retired',
+        fallback_gate_reason: gate && gate.decision_reason ? gate.decision_reason : 'js_fallback_retired',
+        fallback_incident_id: fallbackIncidentId,
+        backend_requested: transportTelemetry.backend_requested,
+        backend_used: transportTelemetry.backend_used,
+        backend_fallback_reason: transportTelemetry.fallback_reason,
+        rust_transport: transportTelemetry.rust_transport,
+        rust_transport_detail: transportTelemetry.rust_transport_detail,
+        transport_attempts: transportTelemetry.transport_attempts
+      };
+      appendAuditMirror('memory_recall_get', {
+        ok: false,
+        session,
+        backend_requested: transportTelemetry.backend_requested,
+        backend_used: transportTelemetry.backend_used,
+        backend_fallback_reason: transportTelemetry.fallback_reason,
+        rust_transport: transportTelemetry.rust_transport,
+        rust_transport_detail: transportTelemetry.rust_transport_detail,
+        transport_attempts: transportTelemetry.transport_attempts,
+        fallback_incident_id: fallbackIncidentId,
+        node_id: nodeId || null,
+        uid: uid || null,
+        file: fileFilter || null,
+        error: 'js_fallback_retired'
+      });
+      process.stdout.write(JSON.stringify(response, null, 2) + '\n');
+      process.exit(1);
+    }
+  }
+
   const index = loadMemoryIndex();
   let matches = index.entries.slice();
   if (uid) matches = matches.filter(e => String(e.uid || '') === uid);
@@ -1608,6 +1702,7 @@ async function getCmd(args) {
     rust_transport: transportTelemetry.rust_transport,
     rust_transport_detail: transportTelemetry.rust_transport_detail,
     transport_attempts: transportTelemetry.transport_attempts,
+    fallback_incident_id: fallbackIncidentId,
     node_id: entry.node_id,
     uid: entry.uid || '',
     file: entry.file_rel,
@@ -1630,6 +1725,7 @@ async function getCmd(args) {
     rust_transport: transportTelemetry.rust_transport,
     rust_transport_detail: transportTelemetry.rust_transport_detail,
     transport_attempts: transportTelemetry.transport_attempts,
+    fallback_incident_id: fallbackIncidentId,
     section_hash: sec.section_hash,
     section_source: sec.source
   });

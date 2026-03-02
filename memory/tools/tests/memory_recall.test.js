@@ -195,6 +195,36 @@ runTest('query requested rust backend falls back to js when crate is missing', (
   assert.ok(Array.isArray(out.hits) && out.hits.length > 0, 'fallback should still return hits');
 });
 
+runTest('query denies js fallback when fallback-retirement policy is strict', () => {
+  const root = makeWorkspace();
+  const missingCrate = path.join(root, 'systems', 'memory', 'rust_missing');
+  const strictPolicyPath = path.join(root, 'config', 'memory_fallback_retirement_policy.json');
+  writeJson(strictPolicyPath, {
+    version: '1.0',
+    enabled: true,
+    allow_js_fallback: false,
+    paths: {
+      emergency_toggle_path: path.join(root, 'state', 'memory', 'rust_transition', 'emergency_toggle.json'),
+      latest_path: path.join(root, 'state', 'memory', 'rust_transition', 'fallback_gate_latest.json'),
+      receipts_path: path.join(root, 'state', 'memory', 'rust_transition', 'fallback_gate_receipts.jsonl')
+    }
+  });
+  const r = runRecall(
+    root,
+    ['query', '--q=routing', '--expand=none', '--session=ruststrict'],
+    {
+      MEMORY_RECALL_BACKEND: 'rust',
+      MEMORY_RECALL_RUST_CRATE_PATH: missingCrate,
+      MEMORY_FALLBACK_RETIREMENT_POLICY_PATH: strictPolicyPath
+    }
+  );
+  assert.strictEqual(r.status, 1, `strict policy should block js fallback: ${r.stderr}`);
+  const out = parseJson(r.stdout);
+  assert.ok(out && out.ok === false, 'expected ok=false');
+  assert.strictEqual(out.error, 'js_fallback_retired');
+  assert.ok(out.fallback_incident_id, 'expected fallback incident id');
+});
+
 runTest('query requested rust backend uses rust payload when rust bin succeeds', () => {
   const root = makeWorkspace();
   const fakeBin = makeFakeRustBin(root);
