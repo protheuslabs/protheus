@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T09:21:17.732Z",
-  "source_hash": "e4dd29974890ec901605b5ba",
+  "generated_at": "2026-03-02T09:21:19.699Z",
+  "source_hash": "b4d569c73d1b06965ac427ce",
   "row_count": 373,
   "active_count": 1,
-  "archive_count": 339,
+  "archive_count": 340,
   "rows": [
     {
       "id": "BL-001",
@@ -4163,7 +4163,7 @@
       "id": "V3-RACE-156",
       "class": "hardening",
       "wave": "V3",
-      "status": "open",
+      "status": "done",
       "title": "Sovereign Model Rollout Ladder (Tier-3 Governed + Fallback/Rollback)",
       "problem": "Community-trained model updates can introduce regressions unless rollout includes strict governance, canary proof, and guaranteed fallback availability.",
       "acceptance": "Implement `systems/training/sovereign_model_rollout_ladder.{ts,js}` + policy `config/sovereign_model_rollout_policy.json`; user-specific rollout pinning/opt-in preferences remain under `memory/training/rollout_preferences/` with adaptive risk scoring in `adaptive/training/rollout/`; permanent release/canary/rollback logic remains in `systems/training/` + `config/`; tier-3+ promotions require explicit approval receipts and automatic fallback contracts.",
