@@ -2536,6 +2536,137 @@ Data boundary invariants for this intake:
 | V3-RACE-173 | extension | V3 | done| Role-Based Crew Spawn Orchestrator (Shared Namespace Governance) | Multi-agent role execution is higher leverage when template-driven and governed by explicit shared-state/clearance boundaries. | Implement `systems/spawn/role_based_crew_orchestrator.{ts,js}` + policy `config/role_based_crew_policy.json`; user-specific crew templates and collaboration preferences remain under `memory/crews/` with adaptive role-performance scoring in `adaptive/crews/`; permanent role orchestration, shared-namespace contracts, and clearance gates stay in `systems/spawn/` + `config/` with per-role audit receipts. | V3-RACE-145, V3-RACE-166, V3-RACE-171 |
 | V3-RACE-174 | hardening | V3 | done | Competitive Observability + Benchmark Pack (Trace/Evals + Framework Parity) | Operational confidence and market credibility require explicit trace/eval UX and repeatable benchmark parity artifacts against common alternatives. | Implement `systems/ops/competitive_observability_benchmark_pack.{ts,js}` + policy `config/competitive_observability_benchmark_policy.json`; user-specific benchmark preferences remain in `memory/ops/benchmarks/` with adaptive scenario weighting in `adaptive/ops/benchmarks/`; permanent benchmark scenarios, trace/eval collectors, and parity report generators remain in `systems/ops/` + `config/`; outputs deterministic parity scorecards for Letta/Mastra/LangGraph/OpenFang lanes without storing user-private contents in benchmark fixtures. | RM-122, RM-123, V3-RACE-041, V3-RACE-168 |
 
+## External Requirements Intake (Google Doc `1u2Oh8FVHI9joij7p4FXI3cUrUqY6at8AVcHdfeLHW84`, 2026-03-02)
+
+Objective: normalize the "Superintelligence Seed" directive into canonical backlog lanes while preserving all March 2 architecture upgrades (contract lanes, System 3, MemFS, MCP gateway, and hardening paths).
+
+Data boundary invariants for this intake:
+- user-specific RSI approvals, operator preferences, and per-instance adaptation state live only in `memory/` + `adaptive/`
+- permanent runtime logic, gate orchestration, protocol adapters, and policy contracts live only in `systems/` + `config/` + `docs/`
+- non-user operational receipts remain in `state/` and are never treated as authoritative user-memory
+
+### Requirement Mapping (from intake)
+
+| Requirement (from intake) | Canonical Backlog Handling | Status | Requirement Action |
+|---|---|---|---|
+| Keep existing March 2 contract lanes, System 3, MemFS, MCP gateway, and V3-RACE hardening intact | existing `V3-RACE-161..174`, `V3-RACE-CONF-007` | already queued | Reuse existing queue and enforce no-replacement constraint via governance checks. |
+| `packages/protheus-core` extraction baseline | `V3-RACE-169` | done | Already extracted; treat as the base for stricter runtime envelope work. |
+| Tighten core runtime envelope to `<5MB` and `<200ms` cold start with optional flags for optional layers | `V3-RACE-175` | queued | Add stricter packaging/cold-start contract and optional flag matrix verification. |
+| Fully activate MemFS + sleep reflection + hierarchical memory + agentic memory controller as one lane | `V3-RACE-161..164` | done | Reuse existing queue; no duplicate lane needed. |
+| Route native MCP + A2A through venom gates and RR contract-lane checks | `V3-RACE-176` | queued | Add explicit interop-to-venom/contract-lane convergence checks and fail-closed enforcement. |
+| System 3 must act as meta-curriculum layer feeding `strategy_learner` + `model_catalog_loop` | `V3-RACE-177` | queued | Add curriculum handoff/output contracts from System 3 to strategy/model loops with receipts. |
+| Full RSI bootstrap lane under `adaptive/rsi/` using existing strategy/model executors | `V3-RACE-178` | queued | Canonicalize RSI bootstrap orchestration contracts (bootstrap/step/status/hands loop). |
+| Agent0-style dual-agent spiral (System 3 proposes harder self-tasks, loops execute + validate) | `V3-RACE-179` | queued | Add dual-agent proposal/execution pattern with policy-bounded difficulty escalation. |
+| Safe self-modification via git patches only after chaos/dopamine/constitution/habit/contract gates and optional human approval | `V3-RACE-180` | queued | Add strict self-mod patch gate requiring all named preconditions and optional `approve --rsi` quorum flow. |
+| Hash-chain every RSI step + Merkle rollback + resurrection protocol integration | `V3-RACE-181` | queued | Add RSI chain integrity + rollback/recovery verification contracts and drills. |
+| Swarm spawning via nursery + `spawn_broker` with inherited soul/constitution and supply-chain provenance gate | `V3-RACE-182` | queued | Add RSI-to-spawn bridge with inherited-governance and provenance enforcement. |
+| 24/7 idle RSI via background hands + world-model freshness loop | `V3-RACE-183` | queued | Add always-on RSI scheduler profile integrated with bounded freshness and budget gates. |
+| CLI operator surfaces: `protheusctl rsi bootstrap`, `protheusctl rsi status`, `protheusctl contract-lane status` | `V3-RACE-184` | queued | Add unified control-plane CLI commands and contract-lane status aggregation receipts. |
+
+### Net-New Canonical Queue
+
+| ID | Class | Version | Status | Upgrade | Why | Exit Criteria | Depends On |
+|---|---|---|---|---|---|---|---|
+| V3-RACE-175 | hardening | V3 | queued | `protheus-core` Runtime Envelope Tightening (`<5MB`, `<200ms`, Optional-Flag Matrix) | Current core extraction is complete, but envelope targets in this intake are stricter than existing baseline contracts. | Add strict package-size/cold-start benchmark gate for `packages/protheus-core` with optional-module flag matrix tests; fail CI on envelope drift and emit trend receipts. | V3-RACE-169, V3-RACE-174 |
+| V3-RACE-176 | hardening | V3 | queued | MCP/A2A Contract-Lane and Venom-Gate Convergence | Interop layers are live, but this intake requires explicit proof that all MCP/A2A actions traverse signed venom + RR lane gates. | Add explicit route-verification contracts for MCP/A2A paths: venom pass + RR lane pass must be present before execution; emit non-bypass receipts and fail closed on missing lane proof. | V3-RACE-165, V3-RACE-166, V3-RACE-031 |
+| V3-RACE-177 | primitive-upgrade | V3 | queued | System-3 Meta-Curriculum Bridge (`system3 -> strategy_learner/model_catalog_loop`) | System 3 exists, but a canonical curriculum-output contract into strategy/model loops is required for repeatable RSI progression. | Implement bounded curriculum artifacts and handoff APIs from `adaptive/executive/system3_executive_layer` into `systems/strategy/strategy_learner` and `systems/autonomy/model_catalog_loop`, with lineage receipts and regression checks. | V3-RACE-167, V3-RACE-171 |
+| V3-RACE-178 | primitive-upgrade | V3 | queued | RSI Bootstrap Orchestrator Canonicalization (`adaptive/rsi`) | RSI scaffolding exists, but this intake requires a first-class canonical lane with explicit lifecycle contracts and governance wiring. | Add/verify bootstrap, step, hands-loop, approve, status, and contract-lane-status commands under one policy surface, with fail-closed gate checks and deterministic receipts. | V3-RACE-161, V3-RACE-164, V3-RACE-167, V3-RACE-168 |
+| V3-RACE-179 | extension | V3 | queued | Dual-Agent RSI Spiral (Proposal/Executor Separation) | Recursive improvement quality increases when System 3 planning pressure is separated from executor loops and validated by independent checks. | Add dual-lane planner/executor cycle where System 3 proposes progressively harder bounded tasks and existing loops execute/validate with explicit non-regression evidence. | V3-RACE-177, V3-RACE-178 |
+| V3-RACE-180 | hardening | V3 | queued | Safe Git-Patch Self-Modification Gate (Chaos + Constitution + Habit + Contract + Optional Human Approval) | Direct self-modification without complete pre-gate enforcement risks irreversible drift. | Require all preconditions before any patch apply: sandbox chaos pass, dopamine floor, constitution check, habit lifecycle promotion, contract-lane pass, and optional human approval command path; block and receipt every denial reason. | V3-RACE-178, V3-RACE-055, V3-RACE-040 |
+| V3-RACE-181 | hardening | V3 | queued | RSI Integrity Chain + Merkle Rollback + Resurrection Linkage | RSI loops need cryptographic continuity and deterministic catastrophic rollback/recovery guarantees. | Persist hash-chained RSI step ledger, Merkle roots, rollback manifests, and resurrection drill linkage; include verify command and fail-closed restore simulation tests. | V3-RACE-178, V3-RACE-168, V3-RACE-160 |
+| V3-RACE-182 | extension | V3 | queued | RSI Swarm Spawn Bridge (Nursery + `spawn_broker` + Inherited Governance + Supply-Chain Gate) | Recursive lanes need governed child execution with inherited soul/constitution constraints and provenance enforcement. | Add RSI-to-spawn bridge using nursery/spawn broker profiles that carry inherited governance metadata and require supply-chain provenance verification before activation. | V3-RACE-131, V3-RACE-043, V3-RACE-178 |
+| V3-RACE-183 | extension | V3 | queued | Always-On Idle RSI Scheduler (Background Hands + Freshness Loop) | Intake requires 24/7 bounded RSI operation, but this must remain budget-safe and freshness-governed. | Add scheduler profile tying background hands execution to world-model freshness checks, quiet hours, and resource budgets; emit SLO receipts and bounded retry behavior. | V3-RACE-168, V3-RACE-162, V3-RACE-178 |
+| V3-RACE-184 | hardening | V3 | queued | RSI Control-Plane CLI Surface (`protheusctl rsi *` + `contract-lane status`) | Operator usability and governance audits require first-class CLI commands for RSI control and lane visibility. | Implement `protheusctl rsi bootstrap`, `protheusctl rsi status`, and `protheusctl contract-lane status` with deterministic JSON outputs, policy-aware auth checks, and receipted command history. | V3-RACE-116, V3-RACE-178, V3-RACE-CONF-007 |
+
+### Human Backlog Intake (Superintelligence Seed / Non-Automatable)
+
+| Human Item (from intake) | Owner | Status | Backlog Action |
+|---|---|---|---|
+| Approve RSI tier policy and explicit auto-apply limits (tier 1/2 vs tier 3+) | human | queued | Define tier thresholds and non-bypass approval requirements for high-risk self-mod lanes. |
+| Approve designated `approve --rsi` approver roster and quorum policy | human | queued | Establish human approver identities, quorum rules, and expiry/rotation policy for RSI approvals. |
+| Set always-on RSI operating windows and budget caps (including quiet hours) | human | queued | Confirm 24/7 cadence, allowable pause windows, and budget ceilings before unattended operation. |
+| Approve child-swarm inheritance policy (soul/constitution carry-forward and revocation semantics) | human | queued | Define legal/operational boundary for parent-child governance inheritance and emergency revocation. |
+| Run recurring human governance review of RSI receipts, rollback drills, and non-regression evidence | human | queued | Establish weekly review cadence and explicit go/no-go criteria for promoting stronger RSI autonomy. |
+
+## External Requirements Intake (Google Doc `1zxYaW0wNMbFnnpx_Ps0WCVgMf-uGraobSctE7cCGx80`, 2026-03-02)
+
+Objective: normalize the Rust-hybrid escalation directive into canonical backlog lanes while preserving current TS operator velocity and non-breaking control-plane interfaces.
+
+Data boundary invariants for this intake:
+- user-specific runtime preferences and migration toggles live only in `memory/` + `adaptive/`
+- permanent runtime kernels, bindings, sandbox engines, verification contracts, and packaging logic live only in `systems/`, `packages/`, `config/`, and `docs/`
+- benchmark/attestation artifacts remain in `state/` and are never treated as authoritative user-memory
+
+### Requirement Mapping (from intake)
+
+| Requirement (from intake) | Canonical Backlog Handling | Status | Requirement Action |
+|---|---|---|---|
+| Rust core runtime extraction for spine/router/spawn/security hot paths | `V3-RACE-001`, `V3-RACE-021`, `V3-RACE-034` | done | Reuse completed Rust microkernel/control-plane extraction lanes. |
+| Keep `packages/protheus-core` as minimal nucleus and tighten runtime envelope (<5MB, <200ms) | `V3-RACE-169`, `V3-RACE-175` | done + queued | Reuse extracted package baseline and keep envelope hardening queued. |
+| In-process Rust bridging (`napi`) for hot paths with deterministic fallback | `V3-RACE-028` + delta `V3-RACE-185` | partial | Extend existing memory-only NAPI lane to `protheus-core` kernel surfaces with strict API parity contracts. |
+| Optional Rust/WASM acceleration path for `execution_sandbox_envelope` | `V3-RACE-186` | queued | Add optional Rust/WASM sandbox coprocessor lane integrated into existing sandbox policy. |
+| Formal verification depth on critical live paths (venom gates, RSI self-mods, resurrection, provenance) | `V3-RACE-035` + delta `V3-RACE-187` | partial | Extend current sovereignty proofs into explicit critical-lane proof packs with CI gating. |
+| Preserve TS orchestration UX and prevent breaking changes during Rust escalation | `V3-RACE-116` + delta `V3-RACE-188` | partial | Add explicit hybrid interface compatibility contract to guarantee zero-breaking migration behavior. |
+
+### Net-New Canonical Queue
+
+| ID | Class | Version | Status | Upgrade | Why | Exit Criteria | Depends On |
+|---|---|---|---|---|---|---|---|
+| V3-RACE-185 | primitive-upgrade | V3 | queued | `protheus-core` Rust Binding Plane (NAPI/WASM API-Parity Bridge) | Rust kernel slices are mature, but core package consumers still need a canonical in-process binding contract beyond memory-only NAPI lanes. | Add Rust crate/binding surface for `packages/protheus-core` hot interfaces (spine dispatch, reflex dispatch, contract-lane executor hooks, signed gate validation) with generated API parity harness against TS exports, deterministic fallback toggles, and no-breaking-change receipts. | V3-RACE-169, V3-RACE-034, V3-RACE-028 |
+| V3-RACE-186 | extension | V3 | queued | Execution Sandbox Rust/WASM Coprocessor Lane (Optional, Policy-Gated) | `execution_sandbox_envelope` is critical-path security; optional native/WASM acceleration can reduce overhead while preserving current safety behavior. | Add optional Rust/WASM coprocessor path for `systems/security/execution_sandbox_envelope` with identical policy semantics, strict deny/allow parity tests, fallback-on-failure behavior, and bounded performance delta receipts. | V3-RACE-024, V3-RACE-138, V3-RACE-185 |
+| V3-RACE-187 | hardening | V3 | queued | Formal Verification Depth Pack for Critical Runtime Paths | Existing sovereignty verification is broad but this intake calls for explicit proofs on the highest-risk lanes where regression cost is catastrophic. | Expand formal specs/proof gates to cover venom containment transitions, RSI patch gating flows, resurrection rollback integrity, and supply-chain provenance checks; block merge on proof regressions and emit machine-verifiable proof receipts. | V3-RACE-035, V3-RACE-180, V3-RACE-181, V3-RACE-043 |
+| V3-RACE-188 | hardening | V3 | queued | Hybrid Interface Stability Contract (Rust Core, TS Orchestration, Zero-Break Cutover) | Hybrid migration can silently break operator surfaces unless interface compatibility is continuously enforced. | Add compatibility contract for CLI/control-plane/public APIs requiring semver-safe adapters, regression snapshots for command/output contracts, staged canary cutover gates, and automatic rollback triggers on API drift. | V3-RACE-116, V3-RACE-185, V3-RACE-175 |
+
+### Human Backlog Intake (Rust Hybrid / Non-Automatable)
+
+| Human Item (from intake) | Owner | Status | Backlog Action |
+|---|---|---|---|
+| Approve Rust-hybrid rollout order and blast-radius budget for core cutover | human | queued | Set phase ordering (`binding -> sandbox -> proof-depth -> full cutover`) and maximum tolerated regression envelope. |
+| Approve external benchmark publication policy for hybrid-vs-baseline performance claims | human | queued | Define what benchmark evidence may be published publicly and what remains private/internal. |
+| Approve formal-proof acceptance bar for critical-path promotion (what counts as sufficient proof) | human | queued | Establish proof confidence/coverage threshold required before promoting critical lanes to default-live. |
+| Approve release packaging posture for hybrid artifacts (single-binary vs mixed package distribution) | human | queued | Decide default artifact strategy and signing/verification expectations for operator distribution channels. |
+
+## External Requirements Intake (Google Doc `1lt6tGOofp1joh3JUQakKPvtise-3SW1pZ_qO6YOzbgE`, 2026-03-02)
+
+Objective: normalize the "mobile-ready superintelligence seed" directive into canonical backlog lanes that extend the current March 2 architecture without replacing existing governance/memory/contract layers.
+
+Data boundary invariants for this intake:
+- user-specific mobile preferences, device trust settings, and edge-node opt-in state live only in `memory/` + `adaptive/`
+- permanent edge runtime logic, sync protocols, CLI/control-plane commands, and mobile wrappers live only in `packages/`, `systems/`, `config/`, and `docs/`
+- benchmark/telemetry artifacts remain operational state under `state/` and are never treated as authoritative user-memory
+
+### Requirement Mapping (from intake)
+
+| Requirement (from intake) | Canonical Backlog Handling | Status | Requirement Action |
+|---|---|---|---|
+| Rust hybrid kernel for `protheus-core` with NAPI/WASM and formal hooks | `V3-RACE-175..188`, `V3-RACE-034` | already queued + done | Reuse queued/done rust-hybrid lanes; no duplicate ticket added. |
+| New lightweight Edge/Mobile mode package with reflex + cached MemFS + remote spine sync | `V3-RACE-189` | queued | Add first-class `packages/protheus-edge` contract with signed sync and deterministic fallback. |
+| Background 24/7 hands on mobile with contract-lane checks + low power constraints | `V3-RACE-183` + delta `V3-RACE-190` | partial | Extend always-on scheduler for mobile lifecycle constraints (Doze/background kills/wake discipline). |
+| Mobile wrappers (Android/Termux + iOS/Tauri) and install/runtime contracts | `V3-RACE-193` | queued | Add mobile wrapper/runtime lane and operator install contracts for supported targets. |
+| CLI surfaces: `protheusctl edge start` and `protheus-top --mobile` | `V3-RACE-191` | queued | Add explicit mobile operator command surfaces with status and policy gating. |
+| Phone nodes participate in nursery/swarm with inherited soul/constitution | `V3-RACE-192` | queued | Add edge-node swarm enrollment bridge preserving inheritance/provenance constraints. |
+| Benchmarks vs OpenFang/Agent0/FAOS on mobile (battery, thermal, 72h autonomy) + CI/mobile build updates | `V3-RACE-194` + `V3-RACE-174` | partial | Extend benchmark and CI lanes for mobile-specific performance/autonomy evidence. |
+
+### Net-New Canonical Queue
+
+| ID | Class | Version | Status | Upgrade | Why | Exit Criteria | Depends On |
+|---|---|---|---|---|---|---|---|
+| V3-RACE-189 | extension | V3 | queued | `protheus-edge` Lightweight Runtime Package (Reflex + MemFS Cache + Remote Spine Sync) | Current phone readiness is profile-driven, but there is no dedicated edge package contract for portable mobile runtime deployment. | Implement `packages/protheus-edge/` with bounded reflex loop, cached MemFS views, signed remote-spine sync, deterministic offline fallback, explicit verification receipts, and rollback-safe profile toggles. | V3-RACE-161, V3-RACE-172, V3-RACE-176, V3-RACE-148 |
+| V3-RACE-190 | hardening | V3 | queued | Mobile Lifecycle Resilience & Power Envelope Contract (Doze/Kill Recovery) | Mobile unattended operation fails without explicit lifecycle handling for background suspension, thermal spikes, and battery constraints. | Add lifecycle controller for wake/resume/backoff, policy-bounded battery/thermal throttling targets, background-kill recovery receipts, verification harness for 24h/72h stability, and rollback-safe disable switches. | V3-RACE-148, V3-RACE-183, V3-RACE-168 |
+| V3-RACE-191 | hardening | V3 | queued | Mobile Operator CLI Surface (`protheusctl edge *`, `protheus-top --mobile`) | Edge runtime needs first-class operator controls and telemetry parity with desktop/server control plane. | Add CLI commands for edge start/stop/status and mobile top view with deterministic JSON + human-readable output, policy-gated control actions, verification snapshots, and rollback-safe command contracts. | V3-RACE-116, V3-RACE-189, V3-RACE-184 |
+| V3-RACE-192 | extension | V3 | queued | Mobile Edge-Node Swarm Bridge (Nursery/Spawn Enrollment with Inherited Governance) | Phone hardware should contribute as governed edge nodes without weakening identity/constitution/provenance controls. | Add enrollment bridge for phone edge nodes into nursery/spawn workflows with inherited soul/constitution metadata, provenance verification, deterministic quarantine/evict path, and rollback-safe de-enrollment receipts. | V3-RACE-131, V3-RACE-182, V3-RACE-189 |
+| V3-RACE-193 | extension | V3 | queued | Mobile Wrapper & Runtime Distribution Pack (Android/Termux + iOS/Tauri) | Deployment friction remains high without canonical mobile wrapper contracts and signed distribution paths. | Deliver wrapper lane and docs/contracts for Android/Termux service mode and iOS/Tauri mode, including signed bundle manifests, verification checks, rollback-safe update path, and operator install scripts. | V3-RACE-120, V3-RACE-189, V3-RACE-175 |
+| V3-RACE-194 | hardening | V3 | queued | Mobile Competitive Benchmark & CI Matrix (Battery/Thermal/72h Autonomy) | Mobile claims require reproducible benchmark evidence and CI coverage for reliability under constrained hardware. | Extend benchmark pack and CI matrix with mobile scenario suite (battery drain/hour, thermal envelope, 72h autonomy survivability, sync integrity), competitor parity reports, verification receipts, and rollback threshold gates for failed runs. | V3-RACE-174, V3-RACE-190, V3-RACE-193 |
+
+### Human Backlog Intake (Mobile Edge / Non-Automatable)
+
+| Human Item (from intake) | Owner | Status | Backlog Action |
+|---|---|---|---|
+| Approve mobile device matrix and minimum supported hardware tiers (Android/iOS) | human | queued | Set officially supported device classes and performance/safety acceptance thresholds. |
+| Approve mobile signing/provisioning credentials workflow (keystore, Apple profiles) | human | queued | Define custody and rotation process for mobile release-signing materials. |
+| Approve mobile battery/thermal safety policy and acceptable background behavior envelope | human | queued | Set hard limits for background execution, heat ceilings, and auto-throttle/auto-stop triggers. |
+| Approve competitor benchmark publication scope for mobile performance claims | human | queued | Define which mobile benchmark results can be publicly released versus internal-only evidence. |
+
 ## Backlog Policy
 
 - Lower-impact items (<9% estimated gain) are intentionally parked below to protect V1 focus.

@@ -1,10 +1,10 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T09:38:07.980Z",
-  "source_hash": "b7d020b3bce4f340173277a5",
-  "row_count": 373,
-  "active_count": 1,
+  "generated_at": "2026-03-02T14:40:07.929Z",
+  "source_hash": "6957d83487892b71fa6bdd41",
+  "row_count": 393,
+  "active_count": 21,
   "archive_count": 372,
   "rows": [
     {
@@ -4428,6 +4428,286 @@
         "RM-123",
         "V3-RACE-041",
         "V3-RACE-168"
+      ]
+    },
+    {
+      "id": "V3-RACE-175",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "`protheus-core` Runtime Envelope Tightening (`<5MB`, `<200ms`, Optional-Flag Matrix)",
+      "problem": "Current core extraction is complete, but envelope targets in this intake are stricter than existing baseline contracts.",
+      "acceptance": "Add strict package-size/cold-start benchmark gate for `packages/protheus-core` with optional-module flag matrix tests; fail CI on envelope drift and emit trend receipts.",
+      "dependencies": [
+        "V3-RACE-169",
+        "V3-RACE-174"
+      ]
+    },
+    {
+      "id": "V3-RACE-176",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "MCP/A2A Contract-Lane and Venom-Gate Convergence",
+      "problem": "Interop layers are live, but this intake requires explicit proof that all MCP/A2A actions traverse signed venom + RR lane gates.",
+      "acceptance": "Add explicit route-verification contracts for MCP/A2A paths: venom pass + RR lane pass must be present before execution; emit non-bypass receipts and fail closed on missing lane proof.",
+      "dependencies": [
+        "V3-RACE-165",
+        "V3-RACE-166",
+        "V3-RACE-031"
+      ]
+    },
+    {
+      "id": "V3-RACE-177",
+      "class": "primitive-upgrade",
+      "wave": "V3",
+      "status": "queued",
+      "title": "System-3 Meta-Curriculum Bridge (`system3 -> strategy_learner/model_catalog_loop`)",
+      "problem": "System 3 exists, but a canonical curriculum-output contract into strategy/model loops is required for repeatable RSI progression.",
+      "acceptance": "Implement bounded curriculum artifacts and handoff APIs from `adaptive/executive/system3_executive_layer` into `systems/strategy/strategy_learner` and `systems/autonomy/model_catalog_loop`, with lineage receipts and regression checks.",
+      "dependencies": [
+        "V3-RACE-167",
+        "V3-RACE-171"
+      ]
+    },
+    {
+      "id": "V3-RACE-178",
+      "class": "primitive-upgrade",
+      "wave": "V3",
+      "status": "queued",
+      "title": "RSI Bootstrap Orchestrator Canonicalization (`adaptive/rsi`)",
+      "problem": "RSI scaffolding exists, but this intake requires a first-class canonical lane with explicit lifecycle contracts and governance wiring.",
+      "acceptance": "Add/verify bootstrap, step, hands-loop, approve, status, and contract-lane-status commands under one policy surface, with fail-closed gate checks and deterministic receipts.",
+      "dependencies": [
+        "V3-RACE-161",
+        "V3-RACE-164",
+        "V3-RACE-167",
+        "V3-RACE-168"
+      ]
+    },
+    {
+      "id": "V3-RACE-179",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Dual-Agent RSI Spiral (Proposal/Executor Separation)",
+      "problem": "Recursive improvement quality increases when System 3 planning pressure is separated from executor loops and validated by independent checks.",
+      "acceptance": "Add dual-lane planner/executor cycle where System 3 proposes progressively harder bounded tasks and existing loops execute/validate with explicit non-regression evidence.",
+      "dependencies": [
+        "V3-RACE-177",
+        "V3-RACE-178"
+      ]
+    },
+    {
+      "id": "V3-RACE-180",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Safe Git-Patch Self-Modification Gate (Chaos + Constitution + Habit + Contract + Optional Human Approval)",
+      "problem": "Direct self-modification without complete pre-gate enforcement risks irreversible drift.",
+      "acceptance": "Require all preconditions before any patch apply: sandbox chaos pass, dopamine floor, constitution check, habit lifecycle promotion, contract-lane pass, and optional human approval command path; block and receipt every denial reason.",
+      "dependencies": [
+        "V3-RACE-178",
+        "V3-RACE-055",
+        "V3-RACE-040"
+      ]
+    },
+    {
+      "id": "V3-RACE-181",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "RSI Integrity Chain + Merkle Rollback + Resurrection Linkage",
+      "problem": "RSI loops need cryptographic continuity and deterministic catastrophic rollback/recovery guarantees.",
+      "acceptance": "Persist hash-chained RSI step ledger, Merkle roots, rollback manifests, and resurrection drill linkage; include verify command and fail-closed restore simulation tests.",
+      "dependencies": [
+        "V3-RACE-178",
+        "V3-RACE-168",
+        "V3-RACE-160"
+      ]
+    },
+    {
+      "id": "V3-RACE-182",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "RSI Swarm Spawn Bridge (Nursery + `spawn_broker` + Inherited Governance + Supply-Chain Gate)",
+      "problem": "Recursive lanes need governed child execution with inherited soul/constitution constraints and provenance enforcement.",
+      "acceptance": "Add RSI-to-spawn bridge using nursery/spawn broker profiles that carry inherited governance metadata and require supply-chain provenance verification before activation.",
+      "dependencies": [
+        "V3-RACE-131",
+        "V3-RACE-043",
+        "V3-RACE-178"
+      ]
+    },
+    {
+      "id": "V3-RACE-183",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Always-On Idle RSI Scheduler (Background Hands + Freshness Loop)",
+      "problem": "Intake requires 24/7 bounded RSI operation, but this must remain budget-safe and freshness-governed.",
+      "acceptance": "Add scheduler profile tying background hands execution to world-model freshness checks, quiet hours, and resource budgets; emit SLO receipts and bounded retry behavior.",
+      "dependencies": [
+        "V3-RACE-168",
+        "V3-RACE-162",
+        "V3-RACE-178"
+      ]
+    },
+    {
+      "id": "V3-RACE-184",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "RSI Control-Plane CLI Surface (`protheusctl rsi *` + `contract-lane status`)",
+      "problem": "Operator usability and governance audits require first-class CLI commands for RSI control and lane visibility.",
+      "acceptance": "Implement `protheusctl rsi bootstrap`, `protheusctl rsi status`, and `protheusctl contract-lane status` with deterministic JSON outputs, policy-aware auth checks, and receipted command history.",
+      "dependencies": [
+        "V3-RACE-116",
+        "V3-RACE-178",
+        "V3-RACE-CONF-007"
+      ]
+    },
+    {
+      "id": "V3-RACE-185",
+      "class": "primitive-upgrade",
+      "wave": "V3",
+      "status": "queued",
+      "title": "`protheus-core` Rust Binding Plane (NAPI/WASM API-Parity Bridge)",
+      "problem": "Rust kernel slices are mature, but core package consumers still need a canonical in-process binding contract beyond memory-only NAPI lanes.",
+      "acceptance": "Add Rust crate/binding surface for `packages/protheus-core` hot interfaces (spine dispatch, reflex dispatch, contract-lane executor hooks, signed gate validation) with generated API parity harness against TS exports, deterministic fallback toggles, and no-breaking-change receipts.",
+      "dependencies": [
+        "V3-RACE-169",
+        "V3-RACE-034",
+        "V3-RACE-028"
+      ]
+    },
+    {
+      "id": "V3-RACE-186",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Execution Sandbox Rust/WASM Coprocessor Lane (Optional, Policy-Gated)",
+      "problem": "`execution_sandbox_envelope` is critical-path security; optional native/WASM acceleration can reduce overhead while preserving current safety behavior.",
+      "acceptance": "Add optional Rust/WASM coprocessor path for `systems/security/execution_sandbox_envelope` with identical policy semantics, strict deny/allow parity tests, fallback-on-failure behavior, and bounded performance delta receipts.",
+      "dependencies": [
+        "V3-RACE-024",
+        "V3-RACE-138",
+        "V3-RACE-185"
+      ]
+    },
+    {
+      "id": "V3-RACE-187",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Formal Verification Depth Pack for Critical Runtime Paths",
+      "problem": "Existing sovereignty verification is broad but this intake calls for explicit proofs on the highest-risk lanes where regression cost is catastrophic.",
+      "acceptance": "Expand formal specs/proof gates to cover venom containment transitions, RSI patch gating flows, resurrection rollback integrity, and supply-chain provenance checks; block merge on proof regressions and emit machine-verifiable proof receipts.",
+      "dependencies": [
+        "V3-RACE-035",
+        "V3-RACE-180",
+        "V3-RACE-181",
+        "V3-RACE-043"
+      ]
+    },
+    {
+      "id": "V3-RACE-188",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Hybrid Interface Stability Contract (Rust Core, TS Orchestration, Zero-Break Cutover)",
+      "problem": "Hybrid migration can silently break operator surfaces unless interface compatibility is continuously enforced.",
+      "acceptance": "Add compatibility contract for CLI/control-plane/public APIs requiring semver-safe adapters, regression snapshots for command/output contracts, staged canary cutover gates, and automatic rollback triggers on API drift.",
+      "dependencies": [
+        "V3-RACE-116",
+        "V3-RACE-185",
+        "V3-RACE-175"
+      ]
+    },
+    {
+      "id": "V3-RACE-189",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "`protheus-edge` Lightweight Runtime Package (Reflex + MemFS Cache + Remote Spine Sync)",
+      "problem": "Current phone readiness is profile-driven, but there is no dedicated edge package contract for portable mobile runtime deployment.",
+      "acceptance": "Implement `packages/protheus-edge/` with bounded reflex loop, cached MemFS views, signed remote-spine sync, deterministic offline fallback, explicit verification receipts, and rollback-safe profile toggles.",
+      "dependencies": [
+        "V3-RACE-161",
+        "V3-RACE-172",
+        "V3-RACE-176",
+        "V3-RACE-148"
+      ]
+    },
+    {
+      "id": "V3-RACE-190",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Mobile Lifecycle Resilience & Power Envelope Contract (Doze/Kill Recovery)",
+      "problem": "Mobile unattended operation fails without explicit lifecycle handling for background suspension, thermal spikes, and battery constraints.",
+      "acceptance": "Add lifecycle controller for wake/resume/backoff, policy-bounded battery/thermal throttling targets, background-kill recovery receipts, verification harness for 24h/72h stability, and rollback-safe disable switches.",
+      "dependencies": [
+        "V3-RACE-148",
+        "V3-RACE-183",
+        "V3-RACE-168"
+      ]
+    },
+    {
+      "id": "V3-RACE-191",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Mobile Operator CLI Surface (`protheusctl edge *`, `protheus-top --mobile`)",
+      "problem": "Edge runtime needs first-class operator controls and telemetry parity with desktop/server control plane.",
+      "acceptance": "Add CLI commands for edge start/stop/status and mobile top view with deterministic JSON + human-readable output, policy-gated control actions, verification snapshots, and rollback-safe command contracts.",
+      "dependencies": [
+        "V3-RACE-116",
+        "V3-RACE-189",
+        "V3-RACE-184"
+      ]
+    },
+    {
+      "id": "V3-RACE-192",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Mobile Edge-Node Swarm Bridge (Nursery/Spawn Enrollment with Inherited Governance)",
+      "problem": "Phone hardware should contribute as governed edge nodes without weakening identity/constitution/provenance controls.",
+      "acceptance": "Add enrollment bridge for phone edge nodes into nursery/spawn workflows with inherited soul/constitution metadata, provenance verification, deterministic quarantine/evict path, and rollback-safe de-enrollment receipts.",
+      "dependencies": [
+        "V3-RACE-131",
+        "V3-RACE-182",
+        "V3-RACE-189"
+      ]
+    },
+    {
+      "id": "V3-RACE-193",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Mobile Wrapper & Runtime Distribution Pack (Android/Termux + iOS/Tauri)",
+      "problem": "Deployment friction remains high without canonical mobile wrapper contracts and signed distribution paths.",
+      "acceptance": "Deliver wrapper lane and docs/contracts for Android/Termux service mode and iOS/Tauri mode, including signed bundle manifests, verification checks, rollback-safe update path, and operator install scripts.",
+      "dependencies": [
+        "V3-RACE-120",
+        "V3-RACE-189",
+        "V3-RACE-175"
+      ]
+    },
+    {
+      "id": "V3-RACE-194",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Mobile Competitive Benchmark & CI Matrix (Battery/Thermal/72h Autonomy)",
+      "problem": "Mobile claims require reproducible benchmark evidence and CI coverage for reliability under constrained hardware.",
+      "acceptance": "Extend benchmark pack and CI matrix with mobile scenario suite (battery drain/hour, thermal envelope, 72h autonomy survivability, sync integrity), competitor parity reports, verification receipts, and rollback threshold gates for failed runs.",
+      "dependencies": [
+        "V3-RACE-174",
+        "V3-RACE-190",
+        "V3-RACE-193"
       ]
     },
     {
