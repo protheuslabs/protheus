@@ -63,11 +63,12 @@
       "value": 13
     },
     {
-      "id": "merge_guard_profile_compat_hook",
+      "id": "guard_registry_profile_compat_hook",
       "type": "file_contains_all",
-      "path": "systems/security/merge_guard.ts",
+      "path": "config/guard_check_registry.json",
       "patterns": [
-        "profile_compatibility_gate.js",
+        "\"id\": \"profile_compatibility_gate\"",
+        "systems/ops/profile_compatibility_gate.js",
         "--strict=1"
       ]
     }

@@ -162,15 +162,54 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
 }
 
 function expectedMergeGuardToken(commandPath: string) {
-  const base = path.basename(String(commandPath || ''))
+  const relPath = rel(path.resolve(String(commandPath || '')));
+  return relPath
     .replace(/\.ts$/i, '.js')
     .replace(/\.mjs$/i, '.js')
     .replace(/\.cjs$/i, '.js');
-  return base;
+}
+
+function loadMergeGuardRegistryCoverage() {
+  const out = {
+    available: false,
+    registry_path: null as string | null,
+    validation_ok: false,
+    validation_errors: [] as string[],
+    command_paths: new Set<string>()
+  };
+  try {
+    // Merge guard now delegates command wiring to the generated guard registry.
+    const mod = require('./guard_check_registry');
+    const registry = mod.loadGuardCheckRegistry(process.env.GUARD_CHECK_REGISTRY_PATH);
+    const validation = mod.validateGuardCheckRegistry(registry);
+    const checks = mod.buildMergeGuardPlan(registry, { skipTests: false });
+    for (const row of checks) {
+      const command = cleanText(row && row.command ? row.command : '', 80);
+      if (command !== 'node') continue;
+      const args = Array.isArray(row && row.args) ? row.args : [];
+      if (!args.length) continue;
+      const scriptArg = cleanText(args[0], 320);
+      if (!scriptArg) continue;
+      const abs = path.isAbsolute(scriptArg) ? path.resolve(scriptArg) : path.join(ROOT, scriptArg);
+      out.command_paths.add(rel(abs));
+    }
+    out.available = true;
+    out.registry_path = rel(path.resolve(registry.path || ''));
+    out.validation_ok = validation.ok === true;
+    out.validation_errors = Array.isArray(validation.errors)
+      ? validation.errors.map((row: unknown) => cleanText(row, 200)).filter(Boolean)
+      : [];
+  } catch (err) {
+    out.available = false;
+    out.registry_path = null;
+    out.validation_ok = false;
+    out.validation_errors = [cleanText(err && (err as AnyObj).message, 200) || 'registry_load_failed'];
+  }
+  return out;
 }
 
 function evaluate(policy: AnyObj) {
-  const mergeGuardSrc = readText(path.join(ROOT, 'systems', 'security', 'merge_guard.ts'));
+  const registryCoverage = loadMergeGuardRegistryCoverage();
   const rows: AnyObj[] = [];
 
   for (const cp of policy.critical_paths) {
@@ -188,10 +227,18 @@ function evaluate(policy: AnyObj) {
     if (missingTests.length > 0) missing.push(`test_missing:${missingTests.join(',')}`);
 
     const expectedHook = expectedMergeGuardToken(cp.command_path);
-    const mergeGuardHookPresent = policy.require_merge_guard_hooks
-      ? mergeGuardSrc.includes(expectedHook)
-      : true;
-    if (!mergeGuardHookPresent) missing.push(`merge_guard_hook_missing:${expectedHook}`);
+    let mergeGuardHookPresent = true;
+    let mergeGuardHookSource = 'disabled';
+    if (policy.require_merge_guard_hooks) {
+      mergeGuardHookSource = 'guard_check_registry';
+      if (!registryCoverage.available) {
+        mergeGuardHookPresent = false;
+        missing.push('merge_guard_registry_unavailable');
+      } else {
+        mergeGuardHookPresent = registryCoverage.command_paths.has(expectedHook);
+        if (!mergeGuardHookPresent) missing.push(`merge_guard_hook_missing:${expectedHook}`);
+      }
+    }
 
     rows.push({
       id: cp.id,
@@ -202,6 +249,8 @@ function evaluate(policy: AnyObj) {
       policy_coverage_ok: missingPolicies.length === 0,
       test_coverage_ok: missingTests.length === 0,
       merge_guard_hook_ok: mergeGuardHookPresent,
+      merge_guard_hook_source: mergeGuardHookSource,
+      expected_merge_guard_command: expectedHook,
       uncovered_reasons: missing
     });
   }
@@ -216,6 +265,13 @@ function evaluate(policy: AnyObj) {
     covered_paths: rows.length - uncovered.length,
     uncovered_paths: uncovered.length,
     coverage_ratio: coverageRatio,
+    merge_guard_registry: {
+      available: registryCoverage.available,
+      registry_path: registryCoverage.registry_path,
+      validation_ok: registryCoverage.validation_ok,
+      validation_errors: registryCoverage.validation_errors,
+      command_paths_indexed: registryCoverage.command_paths.size
+    },
     rows
   };
 }
