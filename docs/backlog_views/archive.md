@@ -1,6 +1,6 @@
 # Backlog Archive View
 
-Generated: 2026-03-02T08:59:20.749Z
+Generated: 2026-03-02T09:02:00.049Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
@@ -313,6 +313,7 @@ Generated: 2026-03-02T08:59:20.749Z
 | V3-RACE-129 | primitive-upgrade | V3 | done | Soul Contracts Primitive (Immutable User Directive Ledger) | V3-RACE-008, V2-058, V3-033 |
 | V3-RACE-130 | extension | V3 | done | Sovereign Token + Global Directive Fund Layer | V3-RACE-022, V3-BLK-001, V3-BUD-001 |
 | V3-RACE-131 | extension | V3 | done | Seed Spawn Lineage + Inheritance Contracts | V3-RACE-019, V3-059, V3-RACE-129, V3-RACE-130 |
+| V3-RACE-132 | extension | V3 | done | Civic Duty Allocation Engine (User-Governed Public-Good Cycles) | V3-RACE-019, V3-RACE-130, V3-038 |
 | OPT-001 | backlog | OPT | done | Eyes signal weighting retune in router ranking |  |
 | OPT-002 | backlog | OPT | done | Prompt cache policy split by lane (reflex/autonomy/dream) |  |
 | OPT-003 | backlog | OPT | done | Dream fallback quality scoring before proposal injection |  |

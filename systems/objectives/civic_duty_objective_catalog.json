@@ -1,0 +1,22 @@
+{
+  "schema_id": "civic_duty_objective_catalog",
+  "schema_version": "1.0",
+  "updated_at": "2026-03-02T09:00:00.000Z",
+  "objectives": [
+    {
+      "id": "open_source_ai_safety",
+      "title": "Open-source AI safety and governance tooling",
+      "priority": 95
+    },
+    {
+      "id": "education_access_tooling",
+      "title": "Low-cost education access automation",
+      "priority": 82
+    },
+    {
+      "id": "public_health_coordination",
+      "title": "Public health coordination and response automation",
+      "priority": 78
+    }
+  ]
+}

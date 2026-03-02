@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T08:59:20.749Z",
-  "source_hash": "8387be55bbbf37c8472a0d4d",
+  "generated_at": "2026-03-02T09:02:00.049Z",
+  "source_hash": "36105b2c569848c4405b48ff",
   "row_count": 373,
   "active_count": 1,
-  "archive_count": 315,
+  "archive_count": 316,
   "rows": [
     {
       "id": "BL-001",
@@ -3818,7 +3818,7 @@
       "id": "V3-RACE-132",
       "class": "extension",
       "wave": "V3",
-      "status": "open",
+      "status": "done",
       "title": "Civic Duty Allocation Engine (User-Governed Public-Good Cycles)",
       "problem": "Public-good cycle allocation is not yet represented as a first-class governed planning contract.",
       "acceptance": "Added `systems/autonomy/civic_duty_allocation_engine.{ts,js}` + policy `config/civic_duty_allocation_policy.json`; per-user duty percentage/task preferences persist in `memory/civic_duty/`, adaptive scheduler state in `adaptive/civic_duty/`, and global objective catalogs/prioritization logic in `systems/objectives/` + `config/`; execution stays bounded by budget/risk-tier gates with receipts.",
