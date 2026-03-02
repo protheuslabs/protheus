@@ -1117,8 +1117,8 @@ Objective: close transition risk after `V3-RACE-023` by hardening daemon operati
 
 | ID | Class | Version | Status | Upgrade | Why | Exit Criteria | Depends On |
 |---|---|---|---|---|---|---|---|
-| V3-RACE-024 | hardening | V3 | queued | Daemon Soak Promotion Gate + Receipts (24-48h) | Stage 3 daemon path is live, but fallback retirement should be evidence-gated by sustained stability under real load. | Publish 24-48h soak artifacts (p95/p99 latency, error rate, restart count, fallback-trigger count), enforce fail-closed promotion thresholds, and persist signed promotion decision receipts. | V3-RACE-023, RM-122 |
-| V3-RACE-025 | hardening | V3 | queued | Daemon Supervision + Stale PID/Socket Reaper | Long-lived daemon operation can degrade after crashes/reboots if stale pid/socket state is not cleaned deterministically. | Add supervisor lifecycle contract (start/stop/restart/backoff), stale pid/socket cleanup before boot, healthcheck receipts, and regression tests for crash-recovery behavior. | V3-RACE-023, V3-OPS-005 |
+| V3-RACE-024 | hardening | V3 | done | Daemon Soak Promotion Gate + Receipts (24-48h) | Stage 3 daemon path is live, but fallback retirement should be evidence-gated by sustained stability under real load. | Added `soak-gate` lane to `systems/memory/rust_memory_transition_lane.ts` + policy wiring in `config/rust_memory_transition_policy.json` to evaluate 24-48h windows for p99 latency, pass rate, fallback-trigger count, and daemon restart count, with fail-closed strict mode and receipt persistence (`state/memory/rust_transition/soak_promotion_decisions.jsonl`); coverage added in `memory/tools/tests/rust_memory_transition_lane.test.js`. | V3-RACE-023, RM-122 |
+| V3-RACE-025 | hardening | V3 | done | Daemon Supervision + Stale PID/Socket Reaper | Long-lived daemon operation can degrade after crashes/reboots if stale pid/socket state is not cleaned deterministically. | Added daemon lifecycle supervisor `systems/memory/rust_memory_daemon_supervisor.{ts,js}` + policy `config/rust_memory_daemon_supervisor_policy.json` (`start/stop/restart/status/healthcheck/reap-stale`) with restart backoff, stale pid/socket reaping, and lifecycle receipts; wired stale PID preflight into `systems/memory/memory_recall.ts` autostart path; added crash-recovery regression coverage in `memory/tools/tests/rust_memory_daemon_supervisor.test.js` and refreshed transition contracts/tests. | V3-RACE-023, V3-OPS-005 |
 | V3-RACE-026 | hardening | V3 | queued | Fallback Retirement Gate (JS Emergency-Only) | Broad JS fallback keeps complexity and latency overhead high and can hide memory-kernel regressions. | Policy gate narrows JS fallback to explicit emergency lanes only, defaults runtime to daemon+SQLite, opens incident receipts on fallback activation, and preserves one-click rollback toggle. | V3-RACE-024, V3-RMEM-006 |
 | V3-RACE-027 | primitive-upgrade | V3 | queued | Direct Memory Encryption Plane Integration (Replace DB Shim) | Memory-at-rest encryption should use the canonical envelope lane for consistent key-rotation/audit behavior across organs. | Replace DB cipher shim with `organ_state_encryption_plane` envelope calls, migrate existing records without loss, and emit key-rotation + migration verification receipts. | V3-RACE-023, V3-ENT-002 |
 | V3-RACE-028 | primitive-upgrade | V3 | queued | In-Process Rust Memory Binding Lane (`napi-rs`) | Daemon/CLI transport is robust but still adds avoidable overhead on hottest memory call sites. | Ship in-process N-API bindings for query/get/store/index paths, prove parity against daemon path, and publish benchmark receipts showing lower latency while retaining daemon fallback for incompatible runtimes. | V3-RACE-024, V3-RACE-025 |
@@ -1446,9 +1446,9 @@ Objective: capture explicit implementation requirements from the external direct
 
 | ID | Class | Version | Status | Requirement Delta | Why | Exit Criteria | Depends On |
 |---|---|---|---|---|---|---|---|
-| V3-RACE-CONF-001 | extension | V3 | queued | Open Platform Path-Contract Compatibility Pack (`platform/` artifacts) | External directives expect concrete `platform/` artifacts (`README`, license carveout, badge, export CLI) even though functional release-pack capability already exists under `systems/ops/`. | Add generated/maintained `platform/` compatibility artifacts that reference canonical release-pack outputs and pass conformance checks without duplicating business logic. | V3-RACE-016, V3-DOC-001 |
-| V3-RACE-CONF-002 | hardening | V3 | queued | Legacy Path Alias Adapters (`systems/state/event_stream.js`, `systems/autogenesis/*`) | External prompts/tools may target legacy paths; absent adapters create false-negative "missing implementation" reports despite canonical coverage. | Add thin compatibility wrappers at legacy paths that forward to canonical modules, emit deprecation receipts, and maintain behavior parity under tests. | V3-RACE-017, V3-RACE-018 |
-| V3-RACE-CONF-003 | hardening | V3 | queued | Requirement Conformance Matrix + Gate (`external prompt -> canonical lane`) | Repeated external directives can trigger duplicate work unless requirements are normalized into one traceable matrix with drift checks. | Publish deterministic matrix artifact mapping external requirement IDs to canonical backlog IDs + file anchors + test evidence, and fail conformance check on unmapped requirements. | V3-AEX-002, V3-DOC-004 |
+| V3-RACE-CONF-001 | extension | V3 | done | Open Platform Path-Contract Compatibility Pack (`platform/` artifacts) | External directives expect concrete `platform/` artifacts (`README`, license carveout, badge, export CLI) even though functional release-pack capability already exists under `systems/ops/`. | Added `systems/ops/platform_path_contract_pack.{ts,js}` (`sync/verify/status`) + policy `config/platform_path_contract_policy.json` to maintain `platform/` compatibility artifacts (`README`, Apache carveout, badges index, export manifest) as references to canonical open-platform outputs, added stable `platform/export_cli.{ts,js}` shim, and landed conformance coverage in `memory/tools/tests/platform_path_contract_pack.test.js`. | V3-RACE-016, V3-DOC-001 |
+| V3-RACE-CONF-002 | hardening | V3 | done | Legacy Path Alias Adapters (`systems/state/event_stream.js`, `systems/autogenesis/*`) | External prompts/tools may target legacy paths; absent adapters create false-negative "missing implementation" reports despite canonical coverage. | Added thin compatibility wrappers at `systems/state/event_stream.{ts,js}` and `systems/autogenesis/trace_habit_{autogenesis,loop}.{ts,js}` forwarding to canonical ops lanes via `systems/compat/legacy_alias_adapter.{ts,js}` with deprecation receipts in `state/ops/legacy_path_alias_adapters/*`; parity + receipt coverage landed in `memory/tools/tests/legacy_path_alias_adapters.test.js`. | V3-RACE-017, V3-RACE-018 |
+| V3-RACE-CONF-003 | hardening | V3 | done | Requirement Conformance Matrix + Gate (`external prompt -> canonical lane`) | Repeated external directives can trigger duplicate work unless requirements are normalized into one traceable matrix with drift checks. | Added deterministic matrix artifact `config/requirement_conformance_matrix.json`, strict gate `systems/ops/requirement_conformance_gate.{ts,js}` + policy `config/requirement_conformance_gate_policy.json`, and fail-closed checks for missing/unmapped requirements/file anchors/test evidence with coverage in `memory/tools/tests/requirement_conformance_gate.test.js`. | V3-AEX-002, V3-DOC-004 |
 
 ## External Requirements Intake (Google Doc `1kIP8iiUlsGF2bBPUNA9ypWFjHX5bLorwYnxtR8yxqhc`, 2026-03-01)
 
@@ -1490,7 +1490,7 @@ Objective: normalize the external Rust-memory-core directive into canonical back
 
 | ID | Class | Version | Status | Requirement Delta | Why | Exit Criteria | Depends On |
 |---|---|---|---|---|---|---|---|
-| V3-RACE-CONF-004 | hardening | V3 | queued | Rust Memory Path-Contract Compatibility (`core/memory` alias docs/wrappers) | External directives reference `core/memory` layout and `protheus-memory` naming, while canonical implementation lives at `systems/memory/rust`. | Add compatibility mapping docs and optional non-authoritative wrappers/aliases so external instructions resolve correctly without forking the runtime substrate. | V3-RACE-023, V3-DOC-001 |
+| V3-RACE-CONF-004 | hardening | V3 | done | Rust Memory Path-Contract Compatibility (`core/memory` alias docs/wrappers) | External directives reference `core/memory` layout and `protheus-memory` naming, while canonical implementation lives at `systems/memory/rust`. | Added `core/memory` compatibility surface (`README.md`, `compat_map.json`, `compat_bridge.{ts,js}`) that deterministically maps alias -> canonical runtime/crate paths and crate-name aliases without introducing a parallel runtime; regression coverage added in `memory/tools/tests/core_memory_compat_bridge.test.js`. | V3-RACE-023, V3-DOC-001 |
 | V3-RACE-CONF-005 | hardening | V3 | queued | N-API Build Surface Compatibility Contract (`build:memory`/postinstall expectations) | External recipes assume direct N-API build flow; current runtime is daemon-first with staged in-process lane. | Publish canonical build/run matrix and compatibility scripts that expose equivalent operator commands while preserving daemon-first production defaults. | V3-RACE-028, V3-DOC-004 |
 
 ### Rust Memory Intake Decomposition (Execution Checklist)
@@ -1956,14 +1956,14 @@ Objective: capture concrete, evidence-backed gaps found during full-system audit
 | Audit-Derived Requirement | Canonical Backlog Handling | Status | Requirement Action |
 |---|---|---|---|
 | Dist-runtime migration contract must match reality (no false-green legacy-pair claims) | `V3-RACE-060` | done | Added reconciliation policy + incident emission + backlog done-status guard in `dist_runtime_cutover legacy-pairs`, wired into merge/foundation gates. |
-| Time-sensitive tests must be deterministic and date-agnostic | `V3-RACE-061` | queued | Inject controllable clock hooks for manifest age/TTL checks so CI is stable across calendar time. |
-| Benchmark artifacts must be internally consistent and policy-scoped | `V3-RACE-062` | queued | Prevent report/receipt divergence and reject stale or cross-policy benchmark artifact contamination. |
-| Rust index benchmarking should measure runtime behavior, not `cargo run` startup tax | `V3-RACE-063` | queued | Use daemon/prebuilt binary warm-path probes for benchmark gating and keep cold-build timing separate. |
-| High sync-process spawn count must be reduced in hot lanes | `V3-RACE-064` | queued | Replace `spawnSync`/`execSync` hotspots with long-lived workers/daemon calls where ROI is highest. |
-| Rust memory runtime needs active vector-similarity retrieval, not schema-only embedding storage | `V3-RACE-065` | queued | Integrate vector search into query path and prove uplift vs lexical-only baseline with receipts. |
-| Memory DB encryption must be canonical AEAD/envelope, not ad-hoc cipher shim | `V3-RACE-066` | queued | Replace custom stream cipher path with authenticated encryption using canonical key lifecycle contracts. |
-| Memory indices must satisfy freshness schedule automatically | `V3-RACE-067` | queued | Add freshness checks + scheduled rebuild receipts to enforce weekly/thresholded regeneration contract. |
-| Advisory JS holdouts should be migrated/retired under an explicit wave plan | `V3-RACE-068` | queued | Establish wave-based TS migration for `habits/scripts` + `memory/tools` with measurable burn-down gates. |
+| Time-sensitive tests must be deterministic and date-agnostic | `V3-RACE-061` | done | Added deterministic `PROTHEUS_NOW_ISO`/policy-now hooks across TTL/age-sensitive lanes (`lib/queued_backlog_runtime.ts`, `systems/ops/ci_baseline_guard.ts`, `systems/ops/post_launch_migration_readiness.ts`, `habits/scripts/queue_gc.js`) with regression coverage. |
+| Benchmark artifacts must be internally consistent and policy-scoped | `V3-RACE-062` | done | Added policy-scoped benchmark artifacts (`history` + `latest` + report meta), strict `consistency-check` validation, freshness checks, and scope-contamination blocking in `systems/memory/rust_memory_transition_lane.ts` (+ tests). |
+| Rust index benchmarking should measure runtime behavior, not `cargo run` startup tax | `V3-RACE-063` | done | Warm-path benchmark lane now enforces daemon transport for query/get probes, prewarms runtime, separates cold-build metric, and prefers prebuilt Rust binary for index/probe commands before cargo fallback. |
+| High sync-process spawn count must be reduced in hot lanes | `V3-RACE-064` | done | Memory hot lane now runs daemon-first with CLI fallback only, CLI path prefers prebuilt binary over cargo-run, and benchmark receipts now include rust p95/p99 latency telemetry for warm-path verification. |
+| Rust memory runtime needs active vector-similarity retrieval, not schema-only embedding storage | `V3-RACE-065` | done | Rust query runtime now supports lexical+vector hybrid scoring (`--score-mode=hybrid|lexical`) with `vector_enabled`/`score_mode` telemetry and SQLite embedding-map activation in hot query path. |
+| Memory DB encryption must be canonical AEAD/envelope, not ad-hoc cipher shim | `V3-RACE-066` | done | Cut over hot-state encryption to AEAD envelope (`aead-v1`), added tamper fail-closed tests, and retired runtime legacy decrypt path with automatic migration of legacy/plain rows at DB open. |
+| Memory indices must satisfy freshness schedule automatically | `V3-RACE-067` | done | Added `systems/memory/memory_index_freshness_gate.ts` + policy + tests with strict freshness enforcement, optional rebuild workflow, and merge/foundation gate wiring. |
+| Advisory JS holdouts should be migrated/retired under an explicit wave plan | `V3-RACE-068` | done | Extended `systems/ops/js_holdout_audit.ts` with churn-ranked `wave-plan`, exception-registry diff snapshots, strict/root auditing, and regression tests; merge/foundation contracts updated accordingly. |
 | Repo docs/config must reject unresolved merge-conflict markers | `V3-RACE-CONF-008` | done | Implemented `systems/security/conflict_marker_guard` + merge/foundation hooks with strict CI failure and remediation receipts. |
 
 ### Net-New Canonical Queue
@@ -1971,14 +1971,14 @@ Objective: capture concrete, evidence-backed gaps found during full-system audit
 | ID | Class | Version | Status | Upgrade | Why | Exit Criteria | Depends On |
 |---|---|---|---|---|---|---|---|
 | V3-RACE-060 | hardening | V3 | done | Dist Runtime Contract Reconciliation Gate (Legacy-Pair Truth Source) | Runtime migration confidence is degraded when backlog/test/contracts claim zero legacy pairs while live checks report active pairs. | `runtime:dist:legacy --strict=1` is green, failing pair deltas auto-open incidents, and backlog status cannot remain `done` when contract checks fail. | V2-003, BL-014, V3-AEX-002 |
-| V3-RACE-061 | hardening | V3 | queued | Deterministic Time Harness for Release/TTL Gates | Calendar-dependent tests create false regressions and hide real failures. | All TTL/age tests use injected clock (`NOW` override/fake timer), flaky date-bound fixtures are removed, and CI passes independent of wall-clock date. | V2-049, V2-050, V3-RACE-060 |
-| V3-RACE-062 | hardening | V3 | queued | Benchmark Artifact Consistency Gate (Report vs History vs Latest) | Conflicting benchmark artifacts undermine migration-go/no-go decisions. | Transition lane emits policy-scoped benchmark reports, consistency checker validates `latest`/history/report coherence, and gate fails on mismatched aggregates. | V3-RACE-024, V3-RACE-026 |
-| V3-RACE-063 | primitive-upgrade | V3 | queued | Warm-Path Rust Benchmark Lane (Daemon/Binary, No Cargo-Compile Tax) | Using `cargo run` in benchmark loops overweights compile/startup time and skews runtime performance decisions. | Bench harness measures daemon/prebuilt runtime paths, separates cold-build metrics, and retirement decisions consume warm-path SLO evidence only. | V3-RACE-024, V3-RACE-025, V3-RACE-062 |
-| V3-RACE-064 | primitive-upgrade | V3 | queued | Sync-Spawn Hotspot Reduction Wave (Worker/Daemon Shift) | High `spawnSync`/`execSync` usage raises latency, jitter, and throughput ceilings. | Top hotspot lanes are migrated to long-lived worker/daemon calls with benchmark receipts proving lower p95/p99 latency and no behavior regressions. | V3-OPS-005, V3-RACE-034, V3-RACE-063 |
-| V3-RACE-065 | primitive-upgrade | V3 | queued | Rust Memory Vector Retrieval Activation (Hot-Path Similarity Search) | Embedding tables without active vector retrieval leave hybrid-memory gains partially unrealized. | Query runtime supports vector similarity + lexical fusion, eval corpus shows measurable retrieval improvement, and parity/fallback contracts remain intact. | V3-RACE-023, V3-RACE-028, V3-RACE-052 |
-| V3-RACE-066 | hardening | V3 | queued | Memory DB AEAD/Envelope Encryption Cutover | Custom cipher shims lack authenticated encryption guarantees and standard key-lifecycle controls. | Rust memory DB uses canonical authenticated envelope/key-rotation path, migration is lossless, tamper tests fail-closed, and old cipher path is retired. | V3-RACE-027, V3-ENT-002, V3-RACE-023 |
-| V3-RACE-067 | hardening | V3 | queued | Memory Index Freshness Enforcement Gate | Stale indices drift from node reality and can degrade retrieval/navigation reliability. | Weekly/threshold-based index regeneration is automated with freshness receipts; CI fails when index age exceeds policy bounds. | V3-RACE-023, V3-RACE-062, V3-RACE-CONF-007 |
-| V3-RACE-068 | extension | V3 | queued | Advisory JS Purge Wave (`habits/scripts`, `memory/tools`) | Large JS advisory surface keeps language mix and maintenance overhead JS-heavy despite TS core migration. | Migration waves retire high-churn JS files first, update wrappers/contracts, and publish progress dashboard + exception registry diffs each wave. | V2-001, V2-003, BL-014, RM-002 |
+| V3-RACE-061 | hardening | V3 | done | Deterministic Time Harness for Release/TTL Gates | Calendar-dependent tests create false regressions and hide real failures. | Added injected-now harness wiring for TTL/age-sensitive release gates and queue lifecycle paths, with deterministic regression fixtures in `memory/tools/tests/queue_gc.test.js`, `memory/tools/tests/ci_baseline_guard.test.js`, and `memory/tools/tests/post_launch_migration_readiness.test.js`. | V2-049, V2-050, V3-RACE-060 |
+| V3-RACE-062 | hardening | V3 | done | Benchmark Artifact Consistency Gate (Report vs History vs Latest) | Conflicting benchmark artifacts undermine migration-go/no-go decisions. | Transition lane now emits policy-scoped `history/latest/report` artifacts and enforces strict coherence/freshness via `consistency-check` with scope contamination blocking (`systems/memory/rust_memory_transition_lane.ts`, `memory/tools/tests/rust_memory_transition_lane.test.js`). | V3-RACE-024, V3-RACE-026 |
+| V3-RACE-063 | primitive-upgrade | V3 | done | Warm-Path Rust Benchmark Lane (Daemon/Binary, No Cargo-Compile Tax) | Using `cargo run` in benchmark loops overweights compile/startup time and skews runtime performance decisions. | Benchmark lane now prewarms daemon transport, separates cold-build timing, and prefers prebuilt binary invocation for Rust probe/index commands before cargo fallback. | V3-RACE-024, V3-RACE-025, V3-RACE-062 |
+| V3-RACE-064 | primitive-upgrade | V3 | done | Sync-Spawn Hotspot Reduction Wave (Worker/Daemon Shift) | High `spawnSync`/`execSync` usage raises latency, jitter, and throughput ceilings. | Memory recall/runtime hot lane shifted to daemon-first transport with binary-first CLI fallback, and benchmark receipts now publish rust p95/p99 latency metrics to verify no regression in warm path. | V3-OPS-005, V3-RACE-034, V3-RACE-063 |
+| V3-RACE-065 | primitive-upgrade | V3 | done | Rust Memory Vector Retrieval Activation (Hot-Path Similarity Search) | Embedding tables without active vector retrieval leave hybrid-memory gains partially unrealized. | Query runtime now supports vector similarity + lexical fusion with explicit score mode telemetry and active SQLite embedding map usage on runtime retrieval path. | V3-RACE-023, V3-RACE-028, V3-RACE-052 |
+| V3-RACE-066 | hardening | V3 | done | Memory DB AEAD/Envelope Encryption Cutover | Custom cipher shims lack authenticated encryption guarantees and standard key-lifecycle controls. | Rust memory DB now uses AEAD envelope payloads, automatically migrates legacy/plain hot-state rows at open, fails closed on legacy decrypt attempts, and includes tamper/retirement tests in `systems/memory/rust/src/db.rs`. | V3-RACE-027, V3-ENT-002, V3-RACE-023 |
+| V3-RACE-067 | hardening | V3 | done | Memory Index Freshness Enforcement Gate | Stale indices drift from node reality and can degrade retrieval/navigation reliability. | Added policy-driven freshness gate with strict mode, optional rebuild path, persisted receipts/history, and merge/foundation contract integration (`systems/memory/memory_index_freshness_gate.ts`, `memory/tools/tests/memory_index_freshness_gate.test.js`). | V3-RACE-023, V3-RACE-062, V3-RACE-CONF-007 |
+| V3-RACE-068 | extension | V3 | done | Advisory JS Purge Wave (`habits/scripts`, `memory/tools`) | Large JS advisory surface keeps language mix and maintenance overhead JS-heavy despite TS core migration. | Added wave planner with churn weighting and exception-registry diff snapshots, plus strict holdout audit integration in merge/foundation/contract checks. | V2-001, V2-003, BL-014, RM-002 |
 | V3-RACE-CONF-008 | hardening | V3 | done | Merge-Conflict Marker CI Guard (`<<<<<<<`, `=======`, `>>>>>>>`) | Unresolved conflict markers in governance/runtime files can silently corrupt policy/behavior expectations. | Foundation/merge checks fail on conflict markers in tracked code/docs/config scopes, with remediation receipts and zero false negatives in test fixtures. | V3-RACE-CONF-007, V3-AEX-002 |
 
 ### Human Backlog Intake (Deep Audit / Non-Automatable)
@@ -2060,6 +2060,230 @@ Objective: close the live detect -> propose -> ship conversion gap (high signal 
 | Observation-only drift (Sunday included) | `V3-RACE-075` |
 | No artifact/proven-work linkage on execution | `V3-RACE-076` |
 | Fixed escalation TTL drop loss | `V3-RACE-077` |
+
+## Signal Intelligence Upgrade Intake (Second-Order Detection/Analysis, 2026-03-01)
+
+Objective: move from first-order keyword/topic detection to second-order inference quality (implication, uncertainty, disconfirmation, temporal drift, and objective-path reasoning) without weakening execution/safety gates.
+
+### Technical Requirements Mapping (Second-Order Inference)
+
+| Derived Requirement | Canonical Backlog Handling | Status | Requirement Action |
+|---|---|---|---|
+| Recover high-value negative signal (`tried X`, `failed`, `blocked`, `rejected`) instead of dropping as noise | `V3-RACE-078` | queued | Add negative-signal extraction + salvage routing lane with typed failure semantics and explicit queue admission behavior. |
+| Infer latent intent (`X implies likely need Y`) and validate implications before action | `V3-RACE-079` | queued | Add implication inference graph with evidence spans + validator contracts to control false-positive drift. |
+| Track cross-temporal pattern shifts (tone/frequency/emphasis deltas) | `V3-RACE-080` | queued | Add temporal delta engine with daily/weekly change metrics and anomaly receipts per topic/objective. |
+| Replace binary thresholds with calibrated confidence scoring | `V3-RACE-081` | queued | Add probabilistic confidence + calibration metrics (e.g., Brier/reliability) to ranking/admission paths. |
+| Support counterfactual replay (`would this have mattered 6 months ago?`) | `V3-RACE-082` | queued | Add historical replay harness for detector versions and compare signal yield/precision across time windows. |
+| Add adversarial hypothesis generation (why signal might be wrong) | `V3-RACE-083` | queued | Add disconfirmation challenger lane that generates/validates anti-hypotheses before promotion. |
+| Build multi-hop chain mapping from signal sources to T1 objective impact | `V3-RACE-084` | queued | Add chain scorer (`eye -> topic -> implication -> objective`) with explainable path receipts. |
+| Ingest non-textual signal (image/repo/market micro-activity) into the same inference plane | `V3-RACE-085` | queued | Add non-text feature adapters and normalized schema so cross-signal correlation includes non-text lanes. |
+
+### Net-New Canonical Queue
+
+| ID | Class | Version | Status | Upgrade | Why | Exit Criteria | Depends On |
+|---|---|---|---|---|---|---|---|
+| V3-RACE-078 | hardening | V3 | queued | Negative-Signal Recovery & Salvage Lane | Valuable demand/opportunity signals are often expressed as failure/friction and are currently under-captured. | Signals with explicit failure/friction language are extracted as typed events, preserved through filters, and traced to proposal outcomes with measurable salvage uplift receipts. | V3-RACE-069, V3-RACE-071, V3-RACE-072 |
+| V3-RACE-079 | primitive-upgrade | V3 | queued | Latent Intent Inference Graph | First-order tagging misses implied needs, causing under-actuation on high-opportunity weak signals. | Inference engine emits `implied_need` edges with evidence spans + confidence; validator lane enforces false-positive ceiling and writes parity receipts. | V3-RACE-078, V3-RACE-009 |
+| V3-RACE-080 | hardening | V3 | queued | Cross-Temporal Signal Delta Engine | Point-in-time snapshots hide momentum/reversal patterns that matter for prioritization. | Daily/weekly deltas for topic volume/tone/emphasis are computed and surfaced in queue ranking with anomaly receipts and drift-safe thresholds. | V3-RACE-069, V3-RACE-074 |
+| V3-RACE-081 | hardening | V3 | queued | Confidence Calibration & Probability Contracts | Binary pass/fail confidence loses ranking quality and obscures uncertainty management. | Detection/ranking outputs include calibrated probabilities; reliability/Brier artifacts are tracked, and gates can fail on calibration regression. | V3-RACE-069, V3-RACE-062 |
+| V3-RACE-082 | extension | V3 | queued | Counterfactual Signal Replay Harness | Detector changes need historical context to avoid overfitting current traffic conditions. | Replay runner can score historical windows with current detector stack, report counterfactual precision/recall deltas, and block promotions on negative uplift. | V3-RACE-003, V3-RACE-017, V3-RACE-081 |
+| V3-RACE-083 | hardening | V3 | queued | Adversarial Hypothesis Challenger Lane | Unchallenged high-confidence signals can be wrong and produce confident misallocation. | High-priority signals receive generated disconfirmation hypotheses with verification outcomes; unresolved challenger wins block promotion/apply. | V3-RACE-081, V3-RACE-042 |
+| V3-RACE-084 | primitive-upgrade | V3 | queued | Multi-Hop Objective Chain Mapper | Signal-to-objective linkage is currently shallow, limiting explainability and prioritization quality. | Path scorer emits explainable multi-hop chains (`eye -> topic -> implication -> objective`) with confidence-weighted path receipts used by admission/ranking. | V3-RACE-078, V3-RACE-079, V3-RACE-080, V3-RACE-081 |
+| V3-RACE-085 | extension | V3 | queued | Multimodal Signal Adapter Plane (Non-Text Features) | Important activity signal exists outside text and is currently weakly integrated into inference. | Repo/image/market micro-activity adapters publish normalized non-text features into cross-signal pipeline with bounded influence weights and audit receipts. | V3-RACE-007, V3-RACE-041, V3-RACE-084 |
+
+### Human Backlog Intake (Second-Order Inference / Non-Automatable)
+
+| Human Item (derived) | Owner | Status | Backlog Action |
+|---|---|---|---|
+| Define acceptable false-positive budget for implication inference | human | queued | Set precision/recall target bands and escalation policy for latent-intent classifier tuning. |
+| Approve objective-weight priors for multi-hop chain scoring | human | queued | Confirm T1 objective weighting contracts used by path scorer before live ranking impact. |
+| Curate adversarial challenge corpus for calibration/replay | human | queued | Provide/approve representative counterexamples and challenge suites for reliability validation. |
+
+### Signal Intelligence Mapping
+
+| Derived Gap | Canonical Queue Mapping |
+|---|---|
+| Negative signal loss | `V3-RACE-078` |
+| Latent intent blind spot | `V3-RACE-079` |
+| Cross-temporal pattern blindness | `V3-RACE-080` |
+| Uncalibrated confidence | `V3-RACE-081` |
+| No counterfactual visibility | `V3-RACE-082` |
+| Missing adversarial disconfirmation | `V3-RACE-083` |
+| Missing multi-hop objective linkage | `V3-RACE-084` |
+| Non-text signal under-ingestion | `V3-RACE-085` |
+
+## Analysis Learning Kernel Intake (Detector Quality Compounding, 2026-03-01)
+
+Objective: make detection/analysis quality improve over time through explicit measurement, challenger promotion logic, uncertainty contracts, and source/truth weighting.
+
+### Technical Requirements Mapping (Quality Compounding)
+
+| Derived Requirement | Canonical Backlog Handling | Status | Requirement Action |
+|---|---|---|---|
+| Build a gold evaluation corpus with blind scoring for detector quality | `V3-RACE-086` | queued | Add labeled benchmark sets + blind evaluation runner with precision/recall/F1/calibration metrics and promotion gating receipts. |
+| Add champion/challenger detector pipeline in shadow before live promotion | `V3-RACE-087` | queued | Run candidate analyzers in parallel, compare uplift vs active detector, and only promote on policy-defined non-regression evidence. |
+| Add abstain/uncertainty contract (`insufficient evidence`) to avoid forced low-confidence decisions | `V3-RACE-088` | queued | Extend detector outputs with abstain semantics, enforce abstain-aware routing in admission/ranking, and track abstain-to-resolution outcomes. |
+| Build dynamic source reliability graph (domain/author/source trust weighting over time) | `V3-RACE-089` | queued | Add source trust score lane with decay/recovery rules and calibration against downstream truth outcomes. |
+| Distinguish causal vs correlational signals in ranking | `V3-RACE-090` | queued | Add causal-evidence scorer and penalize correlation-only hypotheses unless validated by replay/outcome receipts. |
+| Add value-of-information planner to steer collection budget toward uncertainty reduction | `V3-RACE-091` | queued | Route sensing/analysis budget by expected uncertainty reduction on T1 objectives with measurable decision uplift receipts. |
+| Track full hypothesis lifecycle (`proposed -> tested -> accepted/rejected -> outcome`) as first-class ledger | `V3-RACE-092` | queued | Add hypothesis ledger schema + status transitions + closure attribution to improve detector feedback loops. |
+| Add detector error taxonomy + guarded auto-retuning | `V3-RACE-093` | queued | Classify FP/FN error classes, auto-adjust thresholds/features within bounded policy limits, and require rollback on regression. |
+| Add ensemble disagreement lane with escalation on high divergence | `V3-RACE-094` | queued | Run independent analyzers and escalate when disagreement exceeds policy thresholds instead of silently averaging. |
+| Add novelty/saturation detector to prioritize marginal-value signal | `V3-RACE-095` | queued | Compute novelty vs saturation scores and down-rank over-covered topics while preserving high-value anomaly surfacing. |
+
+### Net-New Canonical Queue
+
+| ID | Class | Version | Status | Upgrade | Why | Exit Criteria | Depends On |
+|---|---|---|---|---|---|---|---|
+| V3-RACE-086 | hardening | V3 | queued | Gold Eval Corpus + Blind Detector Scoring Lane | Detector quality cannot compound reliably without stable objective measurement artifacts. | Labeled eval packs and blind runner are live, with deterministic precision/recall/F1/calibration receipts used by promotion gates. | V3-RACE-081, V3-RACE-082 |
+| V3-RACE-087 | hardening | V3 | queued | Champion/Challenger Detector Promotion Pipeline | Analysis changes need safe comparative rollout to prevent silent degradation. | Challenger detectors run shadow comparisons against champion; promotion requires policy-defined uplift and no critical regressions. | V3-RACE-086, V3-RACE-062 |
+| V3-RACE-088 | hardening | V3 | queued | Abstain/Uncertainty Output Contract | Forced low-confidence decisions increase false positives and downstream churn. | Detector output schema supports abstain reason codes, routing honors abstain paths, and abstain-resolution outcomes are tracked. | V3-RACE-081, V3-RACE-069 |
+| V3-RACE-089 | primitive-upgrade | V3 | queued | Dynamic Source Reliability Graph | Flat source weighting ignores reliability drift and harms analysis precision. | Source reliability scores (domain/author/collector) update from outcome truth signals with bounded influence and audit receipts. | V3-RACE-078, V3-RACE-081 |
+| V3-RACE-090 | hardening | V3 | queued | Causal-vs-Correlational Signal Scorer | Correlation-heavy ranking overstates weak hypotheses and misallocates execution bandwidth. | Ranking lane includes causal evidence weighting, correlation-only penalties, and replay-backed validation receipts for promotions. | V3-RACE-082, V3-RACE-084, V3-RACE-089 |
+| V3-RACE-091 | extension | V3 | queued | Value-of-Information Collection Planner | Detection budget should prioritize uncertainty reduction, not raw volume. | Planner computes expected information gain by topic/objective and drives sensing priorities with measurable uncertainty-reduction uplift. | V3-RACE-080, V3-RACE-081, V3-RACE-084 |
+| V3-RACE-092 | primitive-upgrade | V3 | queued | Hypothesis Lifecycle Ledger | Detector learning is weak without explicit end-to-end hypothesis outcome memory. | Lifecycle ledger captures hypothesis state transitions and outcome linkage, feeding detector calibration and promotion decisions. | V3-RACE-083, V3-RACE-084 |
+| V3-RACE-093 | hardening | V3 | queued | Detector Error Taxonomy + Guarded Auto-Retuning | Manual threshold tuning does not scale with detector complexity and drift. | FP/FN taxonomy pipeline and bounded auto-retuning loop are live with rollback-on-regression and non-bypass receipts. | V3-RACE-086, V3-RACE-087, V3-RACE-092 |
+| V3-RACE-094 | hardening | V3 | queued | Ensemble Disagreement Escalation Lane | Single-analyzer certainty can mask blind spots on ambiguous/high-risk signals. | Multi-analyzer disagreement metrics are computed; high-divergence cases trigger escalate/defer flows with adjudication receipts. | V3-RACE-083, V3-RACE-087 |
+| V3-RACE-095 | extension | V3 | queued | Novelty/Saturation Prioritization Engine | Over-covered topics consume bandwidth while low-frequency novel signals are under-prioritized. | Novelty/saturation scores influence ranking, with policy bounds and measured improvement in marginal signal value capture. | V3-RACE-080, V3-RACE-091 |
+
+### Analysis Kernel Mapping
+
+| Derived Gap | Canonical Queue Mapping |
+|---|---|
+| No objective detector benchmark corpus | `V3-RACE-086` |
+| No challenger promotion discipline for analyzers | `V3-RACE-087` |
+| No abstain semantics for weak-evidence cases | `V3-RACE-088` |
+| Flat source trust weighting | `V3-RACE-089` |
+| Correlation over causal evidence bias | `V3-RACE-090` |
+| No value-of-information budget steering | `V3-RACE-091` |
+| Missing hypothesis lifecycle memory | `V3-RACE-092` |
+| No structured detector error auto-retune loop | `V3-RACE-093` |
+| No disagreement-based escalation for analysis ambiguity | `V3-RACE-094` |
+| No novelty/saturation marginal-value scoring | `V3-RACE-095` |
+
+## Analysis Governance & Reproducibility Intake (2026-03-01)
+
+Objective: harden the analysis layer with explicit quality governance, reproducibility, shift decomposition, and safe promotion/rollback contracts so detector evolution remains trustworthy at scale.
+
+### Technical Requirements Mapping (Governance + Reproducibility)
+
+| Derived Requirement | Canonical Backlog Handling | Status | Requirement Action |
+|---|---|---|---|
+| Enforce dedicated analysis-quality SLOs independent from execution SLOs | `V3-RACE-096` | queued | Add detector SLO contract (precision/recall/calibration/abstain) with merge/promotion gates separate from shipped-execution metrics. |
+| Add ground-truth governance (label adjudication + agreement metrics) | `V3-RACE-097` | queued | Introduce labeling governance workflow, reviewer-agreement thresholds, and low-confidence label quarantine. |
+| Require end-to-end feature/data versioning for detector reproducibility | `V3-RACE-098` | queued | Version feature sets, schema hashes, and detector bundles so every analysis decision can be replayed exactly. |
+| Decompose distribution shift into source/topic/style components | `V3-RACE-099` | queued | Add shift-decomposition engine that identifies where drift originates and routes targeted remediation. |
+| Require causal validation (replay/intervention evidence) for high-impact claims | `V3-RACE-100` | queued | Add causal-validation gate for analysis outputs that materially change ranking/admission behavior. |
+| Add active-learning queue for high-uncertainty/high-disagreement cases | `V3-RACE-101` | queued | Route ambiguous cases into labeling/review loop and feed accepted labels back into challenger/eval lanes. |
+| Add offline statistical lab bridge (R/Python optional, artifact-only) | `V3-RACE-102` | queued | Support offline calibration/causal diagnostics with signed artifacts consumed by production gates; keep runtime TS/Rust. |
+| Add sensitivity/privacy-aware signal scoring contract | `V3-RACE-103` | queued | Add policy-aware handling for sensitive classes with restricted usage, masking, and audit receipts. |
+| Add detector rollback/migration safety contract | `V3-RACE-104` | queued | Provide one-command detector rollback with parity replay evidence and schema compatibility checks. |
+| Add cross-objective interference guard for analysis changes | `V3-RACE-105` | queued | Prevent detector improvements for one objective from degrading other objective lanes beyond policy bounds. |
+
+### Net-New Canonical Queue
+
+| ID | Class | Version | Status | Upgrade | Why | Exit Criteria | Depends On |
+|---|---|---|---|---|---|---|---|
+| V3-RACE-096 | hardening | V3 | queued | Analysis Quality SLO Contract | Analysis quality must be measured directly, not inferred from execution-only outcomes. | Dedicated detector SLO dashboards and gates are live (`precision/recall/F1/calibration/abstain`), and promotion fails on analysis-SLO regression even when execution SLO is green. | V3-RACE-086, V3-RACE-081 |
+| V3-RACE-097 | hardening | V3 | queued | Ground-Truth Governance & Label Adjudication Lane | Label noise and weak adjudication can silently cap detector quality and destabilize promotion decisions. | Label workflow includes reviewer agreement metrics, confidence metadata, adjudication receipts, and quarantine of low-agreement labels from promotion corpora. | V3-RACE-086 |
+| V3-RACE-098 | primitive-upgrade | V3 | queued | Feature/Data Versioning Reproducibility Contract | Detector decisions must be exactly replayable to support safe evolution and audits. | Feature snapshots, schema hashes, and detector versions are pinned per run; replay reproduces equivalent scoring decisions with deterministic receipts. | V3-RACE-003, V3-RACE-086, BL-024 |
+| V3-RACE-099 | hardening | V3 | queued | Distribution-Shift Decomposition Engine | Aggregate drift scores hide root causes and slow effective remediation. | Drift pipeline attributes shift by source/topic/style/population components, and remediation policies trigger by component-level thresholds. | V3-RACE-080, V3-RACE-089 |
+| V3-RACE-100 | hardening | V3 | queued | Causal Validation Gate for High-Impact Analysis Claims | Correlational signals can drive wrong policy changes without causal validation discipline. | High-impact analysis claims require replay/intervention evidence and fail closed when causal validation confidence is below policy threshold. | V3-RACE-082, V3-RACE-090 |
+| V3-RACE-101 | extension | V3 | queued | Active-Learning Uncertainty Queue | Ambiguous/high-disagreement cases are the highest-leverage training signal and should be prioritized. | High-uncertainty/disagreement cases are auto-queued for review/labeling, and accepted labels measurably improve challenger/eval performance. | V3-RACE-088, V3-RACE-094, V3-RACE-097 |
+| V3-RACE-102 | extension | V3 | queued | Offline Statistical Lab Artifact Bridge (R/Python Optional) | Advanced calibration/causal diagnostics benefit from offline tooling while runtime should remain deterministic and fast. | Offline jobs emit signed/schema-validated artifacts consumed by production gates; runtime ingestion is artifact-only with strict provenance checks. | V3-RACE-086, V3-RACE-096, V3-RACE-098 |
+| V3-RACE-103 | hardening | V3 | queued | Sensitivity/Privacy-Aware Signal Scoring Contract | Analysis gains must not introduce governance/privacy regressions on sensitive data classes. | Sensitive classes are policy-tagged, scored under restricted rules, and audited for masking/access/use with fail-closed enforcement receipts. | V3-RACE-033, V3-RACE-044, V3-RACE-096 |
+| V3-RACE-104 | hardening | V3 | queued | Detector Rollback & Migration Safety Contract | Safe detector evolution requires fast rollback with evidence, not manual patchwork under pressure. | One-command rollback restores prior detector bundle, passes parity replay checks, and preserves schema compatibility across recent artifacts. | V3-RACE-087, V3-RACE-098 |
+| V3-RACE-105 | hardening | V3 | queued | Cross-Objective Interference Guard for Analysis Changes | Improving one objective can unintentionally degrade others without explicit non-regression controls. | Promotion checks include multi-objective non-regression matrix and block detector updates that exceed policy interference budgets. | V3-RACE-084, V3-RACE-096, V3-RACE-104 |
+
+### Analysis Governance Mapping
+
+| Derived Gap | Canonical Queue Mapping |
+|---|---|
+| No analysis-specific SLO gate | `V3-RACE-096` |
+| Weak label governance/adjudication | `V3-RACE-097` |
+| Incomplete feature/data reproducibility | `V3-RACE-098` |
+| Undecomposed drift blind spots | `V3-RACE-099` |
+| Missing causal validation gate for high-impact claims | `V3-RACE-100` |
+| No active-learning feedback queue | `V3-RACE-101` |
+| No governed offline stats-lab bridge | `V3-RACE-102` |
+| Missing sensitivity/privacy-aware scoring contracts | `V3-RACE-103` |
+| No hardened detector rollback/migration lane | `V3-RACE-104` |
+| Missing cross-objective interference protections | `V3-RACE-105` |
+
+## Architecture Simplification & Scale Intake (No-Regression Refactors, 2026-03-01)
+
+Objective: simplify structural complexity and improve scalability/operability without reducing current function, reliability, robustness, or safety posture.
+
+### Technical Requirements Mapping (Refactor/Simplify)
+
+| Derived Requirement | Canonical Backlog Handling | Status | Requirement Action |
+|---|---|---|---|
+| Remove overlap between `merge_guard`, `foundation_contract_gate`, and `contract_check` using one manifest-driven check registry | `V3-RACE-106` | done | Added canonical guard check manifest (`config/guard_check_registry.json`) + shared loader/runtime (`systems/ops/guard_check_registry.ts`) consumed by guard entrypoints with parity regression tests. |
+| Unify policy loading/validation/defaulting into one runtime primitive | `V3-RACE-107` | done | Added shared policy runtime primitive (`lib/policy_runtime.ts`) and migrated active memory/control-plane lanes to consume canonical load/merge/path behavior with regression coverage. |
+| Reduce high `spawnSync` fan-out in operational hot paths via worker/daemon shift | `V3-RACE-108` | queued | Migrate top spawn-heavy lanes to long-lived workers/daemons with CLI fallback retained only for emergency compatibility. |
+| Normalize `state/` artifact contracts (`latest/history/receipt`, retention, schema/freshness) | `V3-RACE-109` | done | Added shared state artifact contract primitive (`lib/state_artifact_contract.ts`) and migrated active memory lanes to canonical latest/history/receipt helpers with regression coverage. |
+| Simplify memory transport behavior behind one strict abstraction | `V3-RACE-110` | queued | Consolidate daemon/cli/fallback logic under one contract (`transport`, detail, retry class, cooldown semantics) with uniform telemetry. |
+| Split backlog monolith into canonical machine-readable registry + generated views | `V3-RACE-111` | queued | Keep one authoritative backlog source and generate markdown views (`active`, `archive`, `human`) to reduce manual drift. |
+| Define one pluggable analysis-kernel stage interface (`detect -> infer -> calibrate -> challenge -> score -> emit`) | `V3-RACE-112` | queued | Introduce stage contracts + adapter registry so analysis lanes evolve modularly without pipeline fragmentation. |
+| Continue TS/JS compatibility-tail retirement where parity is proven | `V3-RACE-113` | queued | Retire dual-path runtime logic and keep only explicit wrappers where compatibility is required by policy. |
+
+### Net-New Canonical Queue
+
+| ID | Class | Version | Status | Upgrade | Why | Exit Criteria | Depends On |
+|---|---|---|---|---|---|---|---|
+| V3-RACE-106 | hardening | V3 | done | Unified Guard Check Registry (Manifest-Driven Gates) | Duplicated check definitions across guard entrypoints create maintenance drag and drift risk. | Single manifest defines checks/dependencies/strictness; `merge_guard`/`foundation_contract_gate`/`contract_check` consume generated plans; non-regression harness proves parity of pass/fail outcomes. | V3-AEX-002, V3-RACE-CONF-008 |
+| V3-RACE-107 | hardening | V3 | done | Shared Policy Runtime Primitive | Repeated ad-hoc policy parsing/defaulting raises contract drift and bug surface area. | Central policy runtime handles schema/default/coercion/path resolution; migrated lanes show no behavior regressions and reduced parser duplication. | BL-024, V3-RACE-CONF-007 |
+| V3-RACE-108 | primitive-upgrade | V3 | queued | Spawn Fan-Out Reduction Wave (Worker/Daemon Core) | Sync process fan-out limits throughput and increases latency/jitter under scale. | Top high-frequency spawn lanes run through long-lived worker/daemon contracts; latency p95/p99 improves with no behavior/safety regression receipts. | V3-RACE-063, V3-RACE-064, V3-OPS-005 |
+| V3-RACE-109 | hardening | V3 | done | State Artifact Contract Normalization | Inconsistent state artifact layouts/retention rules increase operational complexity and audit ambiguity. | Shared artifact schema/layout (`latest/history/receipt`) and retention/freshness policies are enforced via contract gates across target lanes. | BL-024, V3-RACE-062, V3-RACE-CONF-007 |
+| V3-RACE-110 | primitive-upgrade | V3 | queued | Memory Transport Abstraction Unification | Mixed transport semantics increase complexity and observability inconsistency in memory runtime behavior. | One transport abstraction governs daemon/cli/fallback semantics and emits normalized telemetry; parity tests confirm no retrieval/regression drift. | V3-RACE-023, V3-RACE-024, V3-RACE-025 |
+| V3-RACE-111 | extension | V3 | queued | Canonical Backlog Registry + Generated Views | Manual monolithic backlog editing scales poorly and risks status/metadata drift. | Machine-readable canonical backlog source is authoritative; markdown views are generated with drift checks and edit policy contracts. | V3-RACE-CONF-003, V3-RACE-107 |
+| V3-RACE-112 | primitive-upgrade | V3 | queued | Analysis Kernel Stage Interface & Plugin Contracts | Analysis pipeline fragmentation slows safe evolution and increases integration overhead. | Analysis kernel stage API is live with pluggable contracts and regression harness proving equivalent outputs on baseline detector set. | V3-RACE-078, V3-RACE-081, V3-RACE-083, V3-RACE-084 |
+| V3-RACE-113 | hardening | V3 | queued | Compatibility Tail Retirement (TS-First Runtime) | Dual TS/JS paths keep unnecessary complexity once parity is proven. | Eligible JS runtime paths are retired behind parity evidence; only policy-approved compatibility wrappers remain; migration receipts prove no behavior loss. | V2-001, V2-003, BL-014, V3-RACE-068 |
+
+### Architecture Simplification Mapping
+
+| Derived Gap | Canonical Queue Mapping |
+|---|---|
+| Guard check overlap/duplication | `V3-RACE-106` |
+| Policy loader/parser drift | `V3-RACE-107` |
+| Spawn fan-out scalability bottlenecks | `V3-RACE-108` |
+| State artifact contract inconsistency | `V3-RACE-109` |
+| Memory transport complexity | `V3-RACE-110` |
+| Backlog monolith/manual drift risk | `V3-RACE-111` |
+| Analysis pipeline fragmentation | `V3-RACE-112` |
+| TS/JS dual-path maintenance drag | `V3-RACE-113` |
+
+## Control Plane OS-Readiness Delta Intake (2026-03-01)
+
+Objective: consolidate the remaining "not done / not fully ready" control-plane blockers into one explicit readiness queue so promotion to full OS-ready operation is auditable and deterministic.
+
+### Readiness Mapping (Not Done / Not Ready)
+
+| Not-Ready Requirement | Canonical Backlog Handling | Status | Requirement Action |
+|---|---|---|---|
+| Complete Rust spine extraction of remaining control-plane hot/security paths | `V3-RACE-034` | queued | Keep as first technical unlock for full control-plane readiness and remove remaining JS/V8 hot-path exposure. |
+| Add independent out-of-band safety veto plane | `V3-RACE-050` | queued | Keep as mandatory correlated-fault/supply-chain containment lane before "100% ready" claim. |
+| Remove duplicated guard check definitions across gate entrypoints | `V3-RACE-106` | done | Manifest-driven check registry is live and consumed by merge/foundation/contract guard lanes with regression coverage. |
+| Unify policy loading/default/coercion runtime | `V3-RACE-107` | done | Shared policy runtime primitive is live and migrated in active memory/control-plane lanes with regression tests. |
+| Reduce remaining spawn fan-out in operational hot paths | `V3-RACE-108` | queued | Shift target lanes to long-lived worker/daemon contracts with benchmark/SLO receipts. |
+| Normalize state artifact contracts (`latest/history/receipt`, retention/freshness) | `V3-RACE-109` | done | Canonical artifact contract helper and migrated lanes are live with receipt/history/layout checks. |
+| Unify memory transport semantics/telemetry | `V3-RACE-110` | queued | Enforce one transport abstraction (daemon/cli/fallback) with parity and normalized telemetry contracts. |
+| Retire dual TS/JS compatibility tail where parity is proven | `V3-RACE-113` | queued | Remove non-essential dual paths while preserving policy-approved compatibility wrappers only. |
+| Exit default shadow/local authority posture for control-plane policies | `V3-RACE-114` | queued | Add explicit live-activation gate with reversible emergency fallback and soak evidence before default-live promotion. |
+
+### Net-New Canonical Queue
+
+| ID | Class | Version | Status | Upgrade | Why | Exit Criteria | Depends On |
+|---|---|---|---|---|---|---|---|
+| V3-RACE-114 | hardening | V3 | queued | Control-Plane Live Activation & Shadow Exit Gate | Core control-plane policies still default to shadow/local modes, so the platform is operational but not yet default-live OS-ready. | Policy-governed live profile is promoted with deterministic rollback: `protheus_control_plane` not shadow-by-default, `event_sourced_control_plane` runs stream authority + JetStream publish in live mode, and `rust_control_plane_cutover` exits shadow with soak/SLO/parity receipts and tested emergency fallback toggle. | V3-RACE-017, V3-RACE-021, V3-RACE-034, V3-RACE-041 |
+
+### Readiness Order (Control Plane)
+
+| Sequence | Queue IDs |
+|---|---|
+| 1 | `V3-RACE-108`, `V3-RACE-110`, `V3-RACE-113` |
+| 2 | `V3-RACE-034`, `V3-RACE-050` |
+| 3 | `V3-RACE-114` |
 
 ## Backlog Policy
 

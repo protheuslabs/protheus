@@ -1,0 +1,36 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "host": "127.0.0.1",
+  "port": 43117,
+  "startup_timeout_ms": 20000,
+  "ping_timeout_ms": 500,
+  "backoff": {
+    "enabled": true,
+    "min_restart_interval_ms": 1500
+  },
+  "daemon": {
+    "command": [
+      "cargo",
+      "run",
+      "--release",
+      "--quiet",
+      "--manifest-path=${root}/systems/memory/rust/Cargo.toml",
+      "--",
+      "daemon",
+      "--host=${host}",
+      "--port=${port}",
+      "--root=${root}"
+    ],
+    "cwd": ".",
+    "env": {}
+  },
+  "paths": {
+    "pid_path": "state/memory/rust_transition/memory_daemon.pid",
+    "log_path": "state/memory/rust_transition/memory_daemon.log",
+    "stale_socket_path": "state/memory/rust_transition/memory_daemon.sock",
+    "latest_path": "state/memory/rust_transition/daemon_supervisor/latest.json",
+    "receipts_path": "state/memory/rust_transition/daemon_supervisor/receipts.jsonl",
+    "state_path": "state/memory/rust_transition/daemon_supervisor/state.json"
+  }
+}
