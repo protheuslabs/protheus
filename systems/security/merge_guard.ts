@@ -13,6 +13,11 @@
 
 const path = require('path');
 const { spawnSync } = require('child_process');
+const {
+  loadGuardCheckRegistry,
+  buildMergeGuardPlan,
+  validateGuardCheckRegistry
+} = require('../ops/guard_check_registry');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 
@@ -54,87 +59,35 @@ function runCmd(name, command, args) {
 
 function runGuard(opts = {}) {
   const options = (opts && typeof opts === 'object' ? opts : {}) as Record<string, any>;
+
+  const registry = loadGuardCheckRegistry();
+  const validation = validateGuardCheckRegistry(registry);
+  if (!validation.ok) {
+    return {
+      ok: false,
+      ts: new Date().toISOString(),
+      checks: [],
+      failed: [
+        {
+          name: 'guard_check_registry',
+          status: 1,
+          stdout: '',
+          stderr: validation.errors.join(', ')
+        }
+      ],
+      registry_errors: validation.errors,
+      registry_warnings: validation.warnings
+    };
+  }
+
+  const plan = buildMergeGuardPlan(registry, { skipTests: options.skipTests === true });
   const checks = [];
-  checks.push(runCmd('contract_check', 'node', ['systems/spine/contract_check.js']));
-  checks.push(runCmd('integrity_kernel_check', 'node', ['systems/security/integrity_kernel.js', 'run']));
-  checks.push(runCmd('skin_protection_verify', 'node', ['systems/security/skin_protection_layer.js', 'verify', '--strict=1']));
-  checks.push(runCmd('schema_contract_check', 'node', ['systems/security/schema_contract_check.js', 'run']));
-  checks.push(runCmd('adaptive_layer_guard_strict', 'node', ['systems/sensory/adaptive_layer_guard.js', 'run', '--strict']));
-  checks.push(runCmd('memory_layer_guard_strict', 'node', ['systems/memory/memory_layer_guard.js', 'run', '--strict']));
-  checks.push(runCmd('workspace_dump_guard_strict', 'node', ['systems/security/workspace_dump_guard.js', 'run', '--strict']));
-  checks.push(runCmd('conflict_marker_guard', 'node', ['systems/security/conflict_marker_guard.js', 'run', '--strict=1']));
-  checks.push(runCmd('repo_hygiene_guard_strict', 'node', ['systems/security/repo_hygiene_guard.js', 'run', '--strict', '--staged']));
-  checks.push(runCmd('dist_runtime_legacy_pairs', 'node', ['systems/ops/dist_runtime_cutover.js', 'legacy-pairs', '--strict=1']));
-  checks.push(runCmd('formal_invariant_engine', 'node', ['systems/security/formal_invariant_engine.js', 'run', '--strict=1']));
-  checks.push(runCmd('critical_path_formal_verifier', 'node', ['systems/security/critical_path_formal_verifier.js', 'run', '--strict=1']));
-  checks.push(runCmd('supply_chain_trust_plane', 'node', ['systems/security/supply_chain_trust_plane.js', 'run', '--strict=1', '--verify-only=1']));
-  checks.push(runCmd('key_lifecycle_verify', 'node', ['systems/security/key_lifecycle_governor.js', 'verify', '--strict=1']));
-  checks.push(runCmd('post_quantum_migration_status', 'node', ['systems/security/post_quantum_migration_lane.js', 'status']));
-  checks.push(runCmd('quantum_security_synthesis_status', 'node', ['systems/redteam/quantum_security_primitive_synthesis.js', 'status']));
-  checks.push(runCmd('docs_coverage_gate', 'node', ['systems/ops/docs_coverage_gate.js', 'run', '--strict=1']));
-  checks.push(runCmd('dr_gameday_gate', 'node', ['systems/ops/dr_gameday_gate.js', 'run', '--strict=1']));
-  checks.push(runCmd('simplicity_budget_gate', 'node', ['systems/ops/simplicity_budget_gate.js', 'run', '--strict=1']));
-  checks.push(runCmd('causal_temporal_graph_build', 'node', ['systems/memory/causal_temporal_graph.js', 'build', '--strict=1']));
-  checks.push(runCmd('emergent_primitive_synthesis_status', 'node', ['systems/primitives/emergent_primitive_synthesis.js', 'status']));
-  checks.push(runCmd('hardware_embodiment_parity', 'node', ['systems/hardware/embodiment_layer.js', 'verify-parity', '--profiles=phone,desktop,cluster', '--strict=1']));
-  checks.push(runCmd('resurrection_protocol_status', 'node', ['systems/continuity/resurrection_protocol.js', 'status']));
-  checks.push(runCmd('value_anchor_renewal_status', 'node', ['systems/echo/value_anchor_renewal.js', 'status']));
-  checks.push(runCmd('explanation_primitive_status', 'node', ['systems/primitives/explanation_primitive.js', 'status']));
-  checks.push(runCmd('gated_self_improvement_status', 'node', ['systems/autonomy/gated_self_improvement_loop.js', 'status']));
-  checks.push(runCmd('iterative_repair_primitive_status', 'node', ['systems/primitives/iterative_repair_primitive.js', 'status']));
-  checks.push(runCmd('interactive_desktop_session_status', 'node', ['systems/primitives/interactive_desktop_session_primitive.js', 'status']));
-  checks.push(runCmd('doctor_forge_micro_debug_status', 'node', ['systems/autonomy/doctor_forge_micro_debug_lane.js', 'status']));
-  checks.push(runCmd('full_virtual_desktop_claw_status', 'node', ['systems/actuation/full_virtual_desktop_claw_lane.js', 'status']));
-  checks.push(runCmd('account_creation_profile_extension_status', 'node', ['systems/workflow/account_creation_profile_extension.js', 'status']));
-  checks.push(runCmd('delegated_authority_status', 'node', ['systems/security/delegated_authority_branching.js', 'status']));
-  checks.push(runCmd('world_model_freshness_status', 'node', ['systems/assimilation/world_model_freshness.js', 'status']));
-  checks.push(runCmd('continuous_chaos_resilience_status', 'node', ['systems/ops/continuous_chaos_resilience.js', 'status']));
-  checks.push(runCmd('error_budget_release_gate', 'node', ['systems/ops/error_budget_release_gate.js', 'gate', '--strict=1']));
-  checks.push(runCmd('critical_path_policy_coverage', 'node', ['systems/ops/critical_path_policy_coverage.js', 'run', '--strict=1']));
-  checks.push(runCmd('backlog_intake_quality_gate', 'node', ['systems/ops/backlog_intake_quality_gate.js', 'run', '--strict=1']));
-  checks.push(runCmd('composite_disaster_gameday_status', 'node', ['systems/ops/composite_disaster_gameday.js', 'status']));
-  checks.push(runCmd('self_hosted_bootstrap_status', 'node', ['systems/ops/self_hosted_bootstrap_compiler.js', 'status']));
-  checks.push(runCmd('surface_budget_controller_status', 'node', ['systems/hardware/surface_budget_controller.js', 'status']));
-  checks.push(runCmd('compression_transfer_plane_status', 'node', ['systems/hardware/compression_transfer_plane.js', 'status']));
-  checks.push(runCmd('opportunistic_offload_plane_status', 'node', ['systems/hardware/opportunistic_offload_plane.js', 'status']));
-  checks.push(runCmd('phone_seed_profile_status', 'node', ['systems/ops/phone_seed_profile.js', 'status']));
-  checks.push(runCmd('client_relationship_manager_status', 'node', ['systems/workflow/client_relationship_manager.js', 'status', '--days=30']));
-  checks.push(runCmd('gated_account_creation_status', 'node', ['systems/workflow/gated_account_creation_organ.js', 'status']));
-  checks.push(runCmd('capital_allocation_organ_status', 'node', ['systems/budget/capital_allocation_organ.js', 'status', '--days=30']));
-  checks.push(runCmd('economic_entity_manager_status', 'node', ['systems/finance/economic_entity_manager.js', 'status']));
-  checks.push(runCmd('drift_aware_revenue_optimizer_status', 'node', ['systems/weaver/drift_aware_revenue_optimizer.js', 'status', '--days=30']));
-  checks.push(runCmd('siem_bridge_status', 'node', ['systems/observability/siem_bridge.js', 'status']));
-  checks.push(runCmd('soc2_type2_track_status', 'node', ['systems/ops/soc2_type2_track.js', 'status']));
-  checks.push(runCmd('predictive_capacity_forecast_status', 'node', ['systems/ops/predictive_capacity_forecast.js', 'status']));
-  checks.push(runCmd('neural_dormant_seed_check', 'node', ['systems/symbiosis/neural_dormant_seed.js', 'check', '--strict=1', '--profile=prod']));
-  checks.push(runCmd('pre_neuralink_interface_status', 'node', ['systems/symbiosis/pre_neuralink_interface.js', 'status']));
-  checks.push(runCmd('execution_sandbox_envelope_status', 'node', ['systems/security/execution_sandbox_envelope.js', 'status']));
-  checks.push(runCmd('organ_state_encryption_verify', 'node', ['systems/security/organ_state_encryption_plane.js', 'verify', '--strict=1']));
-  checks.push(runCmd('remote_tamper_heartbeat_verify', 'node', ['systems/security/remote_tamper_heartbeat.js', 'verify', '--strict=1']));
-  checks.push(runCmd('operator_terms_ack_status', 'node', ['systems/security/operator_terms_ack.js', 'status']));
-  checks.push(runCmd('secure_heartbeat_endpoint_verify', 'node', ['systems/security/secure_heartbeat_endpoint.js', 'verify', '--strict=1']));
-  checks.push(runCmd('repository_access_auditor_status', 'node', ['systems/security/repository_access_auditor.js', 'status', '--strict=1']));
-  checks.push(runCmd('secret_rotation_migration_status', 'node', ['systems/security/secret_rotation_migration_auditor.js', 'status', '--strict=1']));
-  checks.push(runCmd('helix_baseline_status', 'node', ['systems/helix/helix_controller.js', 'baseline']));
-  checks.push(runCmd('helix_admission_status', 'node', ['systems/helix/helix_admission_gate.js', 'status']));
-  checks.push(runCmd('helix_confirmed_malice_status', 'node', ['systems/helix/confirmed_malice_quarantine.js', 'status']));
-  checks.push(runCmd('redteam_ant_colony_status', 'node', ['systems/redteam/ant_colony_controller.js', 'status']));
-  checks.push(runCmd('profile_compatibility_gate', 'node', ['systems/ops/profile_compatibility_gate.js', 'run', '--strict=1']));
-  checks.push(runCmd('schema_evolution_contract', 'node', ['systems/ops/schema_evolution_contract.js', 'run', '--strict=1', '--apply=0']));
-  checks.push(runCmd('state_kernel_status', 'node', ['systems/ops/state_kernel.js', 'status']));
-  checks.push(runCmd('state_kernel_parity', 'node', ['systems/ops/state_kernel.js', 'verify-parity']));
-  checks.push(runCmd('state_kernel_replay_verify', 'node', ['systems/ops/state_kernel.js', 'replay-verify', '--profiles=phone,desktop,cluster']));
-  checks.push(runCmd('state_kernel_cutover_status', 'node', ['systems/ops/state_kernel_cutover.js', 'status']));
-  checks.push(runCmd('state_kernel_dual_write_status', 'node', ['systems/ops/state_kernel_dual_write.js', 'status']));
-  checks.push(runCmd('dynamic_burn_budget_oracle_status', 'node', ['systems/ops/dynamic_burn_budget_oracle.js', 'status']));
-  checks.push(runCmd('cognitive_control_primitive_status', 'node', ['systems/primitives/cognitive_control_primitive.js', 'status']));
-  checks.push(runCmd('dynamic_memory_embedding_adapter_status', 'node', ['systems/memory/dynamic_memory_embedding_adapter.js', 'status']));
-  checks.push(runCmd('trajectory_skill_distiller_status', 'node', ['systems/assimilation/trajectory_skill_distiller.js', 'status']));
-  checks.push(runCmd('motivational_state_vector_status', 'node', ['systems/autonomy/motivational_state_vector.js', 'status']));
-  checks.push(runCmd('agent_settlement_extension_status', 'node', ['systems/finance/agent_settlement_extension.js', 'status']));
-  checks.push(runCmd('source_attestation_extension_status', 'node', ['systems/assimilation/source_attestation_extension.js', 'status']));
-  if (!options.skipTests) {
-    checks.push(runCmd('test_ci', 'npm', ['run', 'test:ci']));
+  for (const step of plan) {
+    const name = String(step && step.id ? step.id : '').trim();
+    const command = String(step && step.command ? step.command : '').trim();
+    const args = Array.isArray(step && step.args) ? step.args.map((x) => String(x)) : [];
+    if (!name || !command) continue;
+    checks.push(runCmd(name, command, args));
   }
   const failed = checks.filter((c) => !c.ok);
   return {

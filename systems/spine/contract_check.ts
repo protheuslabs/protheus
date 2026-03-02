@@ -17,6 +17,11 @@
 const { spawnSync } = require("child_process");
 const path = require("path");
 const fs = require("fs");
+const {
+  loadGuardCheckRegistry,
+  buildMergeGuardPlan,
+  validateGuardCheckRegistry
+} = require('../ops/guard_check_registry');
 
 const CONTRACT_CHECK_STEP_TIMEOUT_MS = Math.max(
   1000,
@@ -233,9 +238,58 @@ function checkDistRuntimeGuardrails(root) {
   process.exit(1);
 }
 
+function checkGuardRegistryContracts(root) {
+  const registry = loadGuardCheckRegistry();
+  const validation = validateGuardCheckRegistry(registry);
+  if (!validation.ok) {
+    console.error('contract_check: FAILED');
+    console.error(' script: systems/ops/guard_check_registry.js');
+    console.error(` reason: ${validation.errors.join(', ')}`);
+    process.exit(1);
+  }
+
+  const plan = buildMergeGuardPlan(registry, { skipTests: true });
+  const idSet = new Set(
+    plan.map((row) => String(row && row.id ? row.id : '').trim()).filter(Boolean)
+  );
+  const requiredIds = registry && registry.contract_check && Array.isArray(registry.contract_check.required_merge_guard_ids)
+    ? registry.contract_check.required_merge_guard_ids
+    : [];
+  const missingIds = requiredIds.filter((id) => !idSet.has(String(id)));
+  if (missingIds.length) {
+    console.error('contract_check: FAILED');
+    console.error(' script: systems/ops/guard_check_registry.js');
+    console.error(` reason: required_merge_guard_ids_missing ${missingIds.join(', ')}`);
+    process.exit(1);
+  }
+
+  const missingScripts = [];
+  for (const step of plan) {
+    const command = String(step && step.command ? step.command : '').trim();
+    const args = Array.isArray(step && step.args) ? step.args : [];
+    if (command !== 'node') continue;
+    const rel = String(args[0] || '').trim();
+    if (!rel) {
+      missingScripts.push(`missing_path:${String(step && step.id || 'unknown')}`);
+      continue;
+    }
+    const abs = path.isAbsolute(rel) ? rel : path.join(root, rel);
+    if (!fs.existsSync(abs)) {
+      missingScripts.push(`${String(step && step.id || 'unknown')}:${rel}`);
+    }
+  }
+  if (missingScripts.length) {
+    console.error('contract_check: FAILED');
+    console.error(' script: systems/ops/guard_check_registry.js');
+    console.error(` reason: missing_registry_scripts ${missingScripts.slice(0, 20).join(', ')}`);
+    process.exit(1);
+  }
+}
+
 function main() {
   const root = repoRoot();
   checkDistRuntimeGuardrails(root);
+  checkGuardRegistryContracts(root);
   // Keep this list small and only for scripts that are hard-coupled by spine.
   // If you rename commands/flags in any of these, update tokens here.
 
@@ -497,7 +551,15 @@ function main() {
   );
   checkScript(
     "systems/memory/rust_memory_transition_lane.js",
-    ["rust_memory_transition_lane.js", "pilot", "benchmark", "index-probe", "selector", "auto-selector", "retire-check", "status"]
+    ["rust_memory_transition_lane.js", "pilot", "benchmark", "consistency-check", "index-probe", "selector", "auto-selector", "soak-gate", "retire-check", "status"]
+  );
+  checkScript(
+    "systems/memory/rust_memory_daemon_supervisor.js",
+    ["rust_memory_daemon_supervisor.js", "start", "stop", "restart", "status", "healthcheck", "reap-stale"]
+  );
+  checkScript(
+    "systems/memory/memory_index_freshness_gate.js",
+    ["memory_index_freshness_gate.js", "run", "status", "--apply", "--strict"]
   );
   checkScript(
     "systems/ops/openfang_parity_runtime.js",
@@ -1033,7 +1095,7 @@ function main() {
   // js_holdout_audit.js enforces JS->TS exception registry in strict runtime lanes.
   checkScript(
     "systems/ops/js_holdout_audit.js",
-    ["js_holdout_audit.js", "run", "status", "--registry", "--strict"]
+    ["js_holdout_audit.js", "run", "status", "wave-plan", "--registry", "--strict", "--wave-size", "--churn-days"]
   );
   checkScript(
     "systems/observability/siem_bridge.js",

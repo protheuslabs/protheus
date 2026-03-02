@@ -118,6 +118,7 @@ function runGate() {
     'config/deterministic_control_plane_policy.json',
     'config/dynamic_burn_budget_oracle_policy.json',
     'config/dynamic_memory_embedding_policy.json',
+    'config/memory_index_freshness_policy.json',
     'config/emergent_primitive_synthesis_policy.json',
     'config/effect_type_policy.json',
     'config/embodiment_layer_policy.json',
@@ -166,6 +167,7 @@ function runGate() {
     'config/readiness_bridge_pack_policy.json',
     'config/benchmark_autonomy_gate_policy.json',
     'config/rust_memory_transition_policy.json',
+    'config/rust_memory_daemon_supervisor_policy.json',
     'config/dist_runtime_reconciliation_policy.json',
     'config/openfang_parity_runtime_policy.json',
     'config/openfang_capability_pack_policy.json',
@@ -235,6 +237,7 @@ function runGate() {
     'systems/security/venom_containment_layer.ts',
     'systems/memory/causal_temporal_graph.ts',
     'systems/memory/dynamic_memory_embedding_adapter.ts',
+    'systems/memory/memory_index_freshness_gate.ts',
     'systems/distributed/deterministic_control_plane.ts',
     'systems/hardware/embodiment_layer.ts',
     'systems/hardware/compression_transfer_plane.ts',
@@ -319,6 +322,7 @@ function runGate() {
     'systems/routing/model_catalog_service.ts',
     'systems/memory/memory_efficiency_plane.ts',
     'systems/memory/rust_memory_transition_lane.ts',
+    'systems/memory/rust_memory_daemon_supervisor.ts',
     'systems/memory/cross_cell_exchange_plane.ts',
     'systems/memory/hybrid_memory_engine.ts',
     'systems/symbiosis/neural_dormant_seed.ts',
@@ -330,6 +334,10 @@ function runGate() {
     'systems/memory/rust/src/main.rs',
     'systems/ops/self_hosted_bootstrap_compiler.ts',
     'systems/obsidian/obsidian_phase_pack.ts',
+    'lib/policy_runtime.ts',
+    'lib/policy_runtime.js',
+    'lib/state_artifact_contract.ts',
+    'lib/state_artifact_contract.js',
     'lib/queued_backlog_runtime.ts',
     'lib/dynamic_burn_budget_signal.ts',
     'lib/passport_iteration_chain.ts',
@@ -721,7 +729,23 @@ function runGate() {
       && secretRotationScanPatterns >= 3,
     `enabled=${secretRotationPolicy.enabled !== false ? '1' : '0'} required_secret_ids=${secretRotationRequiredIds.length} required_flags=${secretRotationFlags.join(',')} scan_patterns=${secretRotationScanPatterns}`
   );
-  const mergeGuardSrc = readFileSafe(path.join(ROOT, 'systems', 'security', 'merge_guard.ts'));
+  const mergeGuardScriptSrc = readFileSafe(path.join(ROOT, 'systems', 'security', 'merge_guard.ts'));
+  const guardRegistrySrc = readFileSafe(path.join(ROOT, 'config', 'guard_check_registry.json'));
+  addCheck(
+    'guard_check_registry:manifest_present',
+    guardRegistrySrc.includes('"schema_id": "guard_check_registry"')
+      && guardRegistrySrc.includes('"merge_guard"')
+      && guardRegistrySrc.includes('"contract_check"'),
+    'guard check registry manifest should exist with merge_guard + contract_check sections'
+  );
+  addCheck(
+    'guard_check_registry:merge_guard_consumes_manifest',
+    mergeGuardScriptSrc.includes('buildMergeGuardPlan')
+      && mergeGuardScriptSrc.includes('guard_check_registry'),
+    'merge_guard should consume manifest-driven guard check plan'
+  );
+  // Keep legacy string hooks stable by scanning merge_guard source + manifest content.
+  const mergeGuardSrc = `${mergeGuardScriptSrc}\n${guardRegistrySrc}`;
   addCheck(
     'formal_invariant_engine:merge_guard_hook',
     mergeGuardSrc.includes('formal_invariant_engine.js') && mergeGuardSrc.includes('--strict=1'),
@@ -1139,6 +1163,24 @@ function runGate() {
       && mergeGuardSrc.includes('cognitive_control_primitive_status'),
     'merge_guard should enforce cognitive control primitive status check'
   );
+  addCheck(
+    'rust_memory_transition_lane:benchmark_consistency_hook',
+    mergeGuardSrc.includes('rust_memory_transition_lane.js')
+      && mergeGuardSrc.includes('consistency-check'),
+    'merge_guard should enforce rust memory benchmark consistency check'
+  );
+  addCheck(
+    'rust_memory_daemon_supervisor:healthcheck_hook',
+    mergeGuardSrc.includes('rust_memory_daemon_supervisor.js')
+      && mergeGuardSrc.includes('rust_memory_daemon_supervisor_healthcheck'),
+    'merge_guard should enforce rust memory daemon supervisor healthcheck'
+  );
+  addCheck(
+    'js_holdout_audit:strict_hook',
+    mergeGuardSrc.includes('js_holdout_audit.js')
+      && mergeGuardSrc.includes('js_holdout_audit_strict'),
+    'merge_guard should enforce strict JS holdout audit'
+  );
   const cognitiveControlPolicy = readJsonSafe(path.join(ROOT, 'config', 'cognitive_control_policy.json'), {});
   addCheck(
     'cognitive_control_primitive:policy_sufficiency_bounds',
@@ -1159,6 +1201,23 @@ function runGate() {
     dynamicEmbeddingPolicy.enabled !== false
       && Number(dynamicEmbeddingPolicy.max_updates_per_session || 0) >= 1,
     `enabled=${dynamicEmbeddingPolicy.enabled !== false ? '1' : '0'} max_updates_per_session=${Number(dynamicEmbeddingPolicy.max_updates_per_session || 0)}`
+  );
+  addCheck(
+    'memory_index_freshness_gate:merge_guard_hook',
+    mergeGuardSrc.includes('memory_index_freshness_gate.js')
+      && mergeGuardSrc.includes('memory_index_freshness_gate'),
+    'merge_guard should enforce memory index freshness gate check'
+  );
+  const memoryIndexFreshnessPolicy = readJsonSafe(path.join(ROOT, 'config', 'memory_index_freshness_policy.json'), {});
+  const freshnessThresholds = memoryIndexFreshnessPolicy && typeof memoryIndexFreshnessPolicy.thresholds === 'object'
+    ? memoryIndexFreshnessPolicy.thresholds
+    : {};
+  addCheck(
+    'memory_index_freshness_gate:thresholds_present',
+    memoryIndexFreshnessPolicy.enabled !== false
+      && Number(freshnessThresholds.max_index_age_hours || 0) >= 1
+      && Number(freshnessThresholds.max_daily_files_since_rebuild || 0) >= 1,
+    `enabled=${memoryIndexFreshnessPolicy.enabled !== false ? '1' : '0'} max_index_age_hours=${Number(freshnessThresholds.max_index_age_hours || 0)} max_daily_files_since_rebuild=${Number(freshnessThresholds.max_daily_files_since_rebuild || 0)}`
   );
   addCheck(
     'trajectory_skill_distiller:merge_guard_hook',
@@ -2181,6 +2240,12 @@ function runGate() {
 
   const contractCheckSrc = readFileSafe(path.join(ROOT, 'systems', 'spine', 'contract_check.ts'));
   addCheck(
+    'guard_check_registry:contract_check_consumes_manifest',
+    contractCheckSrc.includes('guard_check_registry')
+      && contractCheckSrc.includes('required_merge_guard_ids'),
+    'contract_check should validate guard registry contracts'
+  );
+  addCheck(
     'contract_check:foundation_hooks',
     contractCheckSrc.includes('foundation_contract_gate.js')
       && contractCheckSrc.includes('scale_envelope_baseline.js')
@@ -2211,6 +2276,36 @@ function runGate() {
       && contractCheckSrc.includes('economic_entity_manager.js')
       && contractCheckSrc.includes('drift_aware_revenue_optimizer.js'),
     'contract_check should validate foundation scripts'
+  );
+  const policyRuntimeSrc = readFileSafe(path.join(ROOT, 'lib', 'policy_runtime.ts'));
+  addCheck(
+    'policy_runtime:primitive_present',
+    policyRuntimeSrc.includes('loadPolicyRuntime')
+      && policyRuntimeSrc.includes('deepMerge')
+      && policyRuntimeSrc.includes('resolvePolicyPath'),
+    'policy runtime primitive should expose shared load/merge/path helpers'
+  );
+  addCheck(
+    'policy_runtime:migrated_lanes',
+    readFileSafe(path.join(ROOT, 'systems', 'memory', 'rust_memory_transition_lane.ts')).includes('loadPolicyRuntime')
+      && readFileSafe(path.join(ROOT, 'systems', 'memory', 'rust_memory_daemon_supervisor.ts')).includes('loadPolicyRuntime')
+      && readFileSafe(path.join(ROOT, 'systems', 'memory', 'memory_index_freshness_gate.ts')).includes('loadPolicyRuntime'),
+    'selected memory lanes should consume shared policy runtime primitive'
+  );
+  const stateArtifactSrc = readFileSafe(path.join(ROOT, 'lib', 'state_artifact_contract.ts'));
+  addCheck(
+    'state_artifact_contract:primitive_present',
+    stateArtifactSrc.includes('writeArtifactSet')
+      && stateArtifactSrc.includes('appendArtifactHistory')
+      && stateArtifactSrc.includes('trimJsonlRows'),
+    'state artifact contract primitive should expose latest/history/receipt helpers'
+  );
+  addCheck(
+    'state_artifact_contract:migrated_lanes',
+    readFileSafe(path.join(ROOT, 'systems', 'memory', 'rust_memory_transition_lane.ts')).includes('writeTransitionReceipt')
+      && readFileSafe(path.join(ROOT, 'systems', 'memory', 'rust_memory_daemon_supervisor.ts')).includes('writeArtifactSet')
+      && readFileSafe(path.join(ROOT, 'systems', 'memory', 'memory_index_freshness_gate.ts')).includes('appendArtifactHistory'),
+    'selected memory lanes should use shared state artifact contract helpers'
   );
 
   const strict = checks.every((row) => row.ok === true);
