@@ -86,13 +86,25 @@ function runTest() {
     assert.strictEqual(r.status, 0, `non-strict verify should return 0: ${r.stderr}`);
     assert.ok(r.payload && r.payload.violated === true, 'verify should detect violation');
     assert.ok(Number(r.payload.mismatch_count || 0) >= 1, 'mismatch should be present');
+    assert.ok(r.payload.verification && r.payload.verification.pass === false, 'verification summary should fail on mismatch');
+    assert.ok(r.payload.rollback_plan && Number(r.payload.rollback_plan.restore_count || 0) >= 1, 'rollback plan should be emitted');
+    assert.ok(String(r.payload.rollback_plan.plan_hash || '').length >= 8, 'rollback plan hash should be present');
 
     r = run(['verify', '--strict=1', '--auto-reset=1'], env);
     assert.strictEqual(r.status, 0, `auto-reset verify should pass: ${r.stderr}`);
     assert.ok(r.payload && r.payload.violated === true, 'violation should still be reported');
     assert.ok(r.payload.recovery && Array.isArray(r.payload.recovery.restored), 'recovery payload missing');
+    assert.ok(r.payload.rollback_plan && Number(r.payload.rollback_plan.quarantine_count || 0) >= 1, 'recovery should retain rollback quarantine plan');
     const restoredContent = fs.readFileSync(fooPath, 'utf8');
     assert.ok(restoredContent.includes('module.exports = 1;'), 'file should be restored to snapshot content');
+
+    const status = run(['status'], env);
+    assert.strictEqual(status.status, 0, `status should pass: ${status.stderr}`);
+    assert.ok(status.payload && status.payload.latest_incident_summary, 'status should expose latest incident summary');
+    assert.ok(
+      String(status.payload.latest_incident_summary.rollback_plan_hash || '').length >= 8,
+      'status should include rollback plan hash'
+    );
 
     console.log('anti_sabotage_shield.test.js: OK');
   } finally {

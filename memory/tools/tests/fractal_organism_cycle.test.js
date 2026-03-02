@@ -66,6 +66,8 @@ function run() {
   assert.strictEqual(runOut.ok, true);
   assert.ok(Number(runOut.pheromones || 0) >= 1);
   assert.ok(Number(runOut.archetypes || 0) >= 1);
+  assert.strictEqual(runOut.verification_pass, true, 'run output should expose passing verification bundle');
+  assert.ok(String(runOut.rollback_plan_path || '').includes('rollback_plans/'), 'run output should expose rollback plan path');
 
   const cyclePath = path.join(fractalDir, 'organism_cycle', `${dateStr}.json`);
   const cycle = JSON.parse(fs.readFileSync(cyclePath, 'utf8'));
@@ -73,6 +75,13 @@ function run() {
   assert.strictEqual(cycle.proposal_only, true);
   assert.ok(Array.isArray(cycle.symbiosis_plans));
   assert.ok(Array.isArray(cycle.predator_prey.candidates));
+  assert.ok(cycle.verification && cycle.verification.pass === true, 'cycle payload should include verification pass');
+  assert.ok(cycle.rollback_plan && cycle.rollback_plan.path, 'cycle payload should include rollback plan metadata');
+
+  const rollbackPath = path.join(repoRoot, String(cycle.rollback_plan.path || ''));
+  assert.ok(fs.existsSync(rollbackPath), 'rollback plan file should exist');
+  const rollback = JSON.parse(fs.readFileSync(rollbackPath, 'utf8'));
+  assert.ok(Array.isArray(rollback.rollback_steps) && rollback.rollback_steps.length >= 3, 'rollback plan should include deterministic steps');
 
   const statusProc = spawnSync(process.execPath, [scriptPath, 'status', dateStr], {
     cwd: repoRoot,
@@ -83,6 +92,8 @@ function run() {
   const statusOut = JSON.parse(String(statusProc.stdout || '{}').trim());
   assert.strictEqual(statusOut.ok, true);
   assert.ok(Number(statusOut.archetypes || 0) >= 1);
+  assert.strictEqual(statusOut.verification_pass, true, 'status should expose verification pass');
+  assert.ok(String(statusOut.rollback_plan_path || '').includes('rollback_plans/'), 'status should expose rollback plan path');
 
   console.log('fractal_organism_cycle.test.js: OK');
 }

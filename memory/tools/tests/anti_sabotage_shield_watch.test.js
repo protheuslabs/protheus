@@ -98,6 +98,11 @@ function runTest() {
     const watcherState = JSON.parse(fs.readFileSync(watcherStatePath, 'utf8'));
     assert.strictEqual(Number(watcherState.iterations || 0), 1, 'watcher state iterations should match');
 
+    const status = run(['status'], env);
+    assert.strictEqual(status.status, 0, `status should pass: ${status.stderr}`);
+    assert.ok(status.payload && status.payload.latest_incident_summary, 'status should include latest incident summary');
+    assert.strictEqual(status.payload.latest_incident_summary.violated, true, 'watch latest incident should record violation');
+
     console.log('anti_sabotage_shield_watch.test.js: OK');
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
@@ -110,4 +115,3 @@ try {
   console.error(`anti_sabotage_shield_watch.test.js: FAIL: ${err.message}`);
   process.exit(1);
 }
-

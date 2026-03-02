@@ -196,6 +196,8 @@ function run() {
   const out = parsePayload(runProc.stdout);
   assert.ok(out && out.ok === true, 'controller output should be ok');
   assert.strictEqual(out.orchestron_apply_effective, true, 'orchestron apply should be effective');
+  assert.strictEqual(out.orchestron_verification_pass, true, 'controller output should surface orchestron verification pass');
+  assert.ok(String(out.orchestron_rollback_strategy || '').length >= 8, 'controller output should include orchestron rollback strategy');
 
   const registry = JSON.parse(fs.readFileSync(registryPath, 'utf8'));
   const rows = Array.isArray(registry && registry.workflows) ? registry.workflows : [];

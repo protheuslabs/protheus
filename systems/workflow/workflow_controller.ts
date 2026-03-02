@@ -819,6 +819,12 @@ function runCmd(dateStr, args) {
     orchestron_promotable_drafts: Array.isArray(orchestronDraftsForApply) ? orchestronDraftsForApply.length : 0,
     orchestron_candidates: orchestronPayload && Array.isArray(orchestronPayload.candidates) ? orchestronPayload.candidates.length : 0,
     orchestron_passing: orchestronPayload && Array.isArray(orchestronPayload.passing) ? orchestronPayload.passing.length : 0,
+    orchestron_verification_pass: orchestronPayload && orchestronPayload.verification
+      ? orchestronPayload.verification.pass === true
+      : null,
+    orchestron_rollback_strategy: orchestronPayload && orchestronPayload.rollback_guidance
+      ? orchestronPayload.rollback_guidance.reason || null
+      : null,
     orchestron_value_currency: orchestronPayload && orchestronPayload.value_context
       ? orchestronPayload.value_context.value_currency || null
       : null,

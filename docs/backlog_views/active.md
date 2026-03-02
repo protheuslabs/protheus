@@ -1,20 +1,10 @@
 # Backlog Active View
 
-Generated: 2026-03-02T22:56:14.547Z
+Generated: 2026-03-02T23:09:34.946Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
-| V2-009 | backlog | V2 | queued | Exterior anti-sabotage shield + instant auto-reset |  |
 | V2-012 | backlog | V2 | blocked | External security assessment and pen-test cycle (canonical blocker) |  |
-| V2-033 | backlog | V2 | queued | Epigenetic regulation tags |  |
-| V2-034 | backlog | V2 | queued | Signed pheromone signaling lane |  |
-| V2-035 | backlog | V2 | queued | Resonance/harmony score controller |  |
-| V2-036 | backlog | V2 | queued | Collective archetype pool |  |
-| V2-038 | backlog | V2 | queued | Collective Shadow ranking lane |  |
-| V2-040 | backlog | V2 | queued | Orchestron emergence hardening pass (candidate risk + trit gates + lineage metadata + richer birth telemetry) |  |
-| V2-043 | backlog | V2 | queued | Orchestron creative-primary + trit-depth recursion pass |  |
-| V3-005 | backlog | V3 | queued | External anti-sabotage provenance net |  |
-| V3-006 | backlog | V3 | queued | Recursive mini-core instancing (nested Protheus branches) |  |
 | V3-007 | backlog | V3 | queued | Self-code evolution sandbox + guarded merge |  |
 | V3-008 | backlog | V3 | queued | Runtime symbiotic fusion execution chamber |  |
 | V3-009 | backlog | V3 | queued | Resonance field actuation gates |  |

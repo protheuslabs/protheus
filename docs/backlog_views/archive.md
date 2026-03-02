@@ -1,6 +1,6 @@
 # Backlog Archive View
 
-Generated: 2026-03-02T22:56:14.547Z
+Generated: 2026-03-02T23:09:34.946Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
@@ -61,6 +61,7 @@ Generated: 2026-03-02T22:56:14.547Z
 | V2-006 | backlog | V2 | done | Task-type outcome learning upgrade |  |
 | V2-007 | backlog | V2 | done | Self-experimentation framework with promotion gates |  |
 | V2-008 | backlog | V2 | done | Global capability switchboard (security-locked) |  |
+| V2-009 | backlog | V2 | done | Exterior anti-sabotage shield + instant auto-reset |  |
 | V2-010 | backlog | V2 | done | Chaos testing program (adaptive + orchestration lanes) |  |
 | V2-011 | backlog | V2 | done | Scale/performance benchmarking harness |  |
 | V2-013 | backlog | V2 | done | Compliance/reporting automation (optional enterprise track) |  |
@@ -83,9 +84,16 @@ Generated: 2026-03-02T22:56:14.547Z
 | V2-030 | backlog | V2 | done | Full recursive organism introspection map |  |
 | V2-031 | backlog | V2 | done | System black-box hash ledger (EU compliance fallback) |  |
 | V2-032 | backlog | V2 | done | Dream consolidation gate (bounded sleep cycle) |  |
+| V2-033 | backlog | V2 | done | Epigenetic regulation tags |  |
+| V2-034 | backlog | V2 | done | Signed pheromone signaling lane |  |
+| V2-035 | backlog | V2 | done | Resonance/harmony score controller |  |
+| V2-036 | backlog | V2 | done | Collective archetype pool |  |
 | V2-037 | backlog | V2 | done | Observer/Mirror read-only narration layer |  |
+| V2-038 | backlog | V2 | done | Collective Shadow ranking lane |  |
 | V2-039 | backlog | V2 | done | Nursery promotion hardening (lineage + cooldown + evidence floor) |  |
+| V2-040 | backlog | V2 | done | Orchestron emergence hardening pass (candidate risk + trit gates + lineage metadata + richer birth telemetry) |  |
 | V2-041 | backlog | V2 | done | Per-candidate adversarial simulation lane (sandboxed micro red-team) |  |
+| V2-043 | backlog | V2 | done | Orchestron creative-primary + trit-depth recursion pass |  |
 | V2-044 | backlog | V2 | done | In-run workflow evolution lane (step-boundary mutation apply) |  |
 | V2-045 | backlog | V2 | done | Identity Organ (alignment anchor over fractal branches) |  |
 | V2-046 | backlog | V2 | done | Regime Organ (task/environment regime sensing + morph trigger) |  |
@@ -99,6 +107,8 @@ Generated: 2026-03-02T22:56:14.547Z
 | V3-002 | backlog | V3 | done | Capability ceiling + containment envelopes |  |
 | V3-003 | backlog | V3 | done | New-model vaccine sandbox (containment pen-test lane) |  |
 | V3-004 | backlog | V3 | done | Constitution Protection Layer (epic tracker) |  |
+| V3-005 | backlog | V3 | done | External anti-sabotage provenance net |  |
+| V3-006 | backlog | V3 | done | Recursive mini-core instancing (nested Protheus branches) |  |
 | V3-010 | backlog | V3 | done | Global molt cycle (scheduled compaction/pruning) |  |
 | V3-016 | backlog | V3 | done | Central Eye kernel (`systems/eye`) with governed subsumption adapters |  |
 | V3-018 | backlog | V3 | done | Research Organ (long-horizon closed-loop research sub-organ) |  |

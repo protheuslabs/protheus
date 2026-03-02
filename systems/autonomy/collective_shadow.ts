@@ -470,6 +470,86 @@ function outputPath(dateStr) {
   return path.join(OUT_DIR, `${dateStr}.json`);
 }
 
+function verifyArchetypes(policy, archetypes) {
+  const rows = Array.isArray(archetypes) ? archetypes : [];
+  const checks = [];
+  const avoidRows = rows.filter((row) => String(row && row.kind || '') === 'avoid');
+  const reinforceRows = rows.filter((row) => String(row && row.kind || '') === 'reinforce');
+  const avoidPenaltyViolations = avoidRows.filter((row) => Number(row && row.score_impact || 0) > Number(policy.penalty_max || 0));
+  checks.push({
+    id: 'avoid_penalty_cap',
+    pass: avoidPenaltyViolations.length === 0,
+    details: avoidPenaltyViolations.length === 0
+      ? `max_penalty=${Number(policy.penalty_max || 0)}`
+      : `violations=${avoidPenaltyViolations.length}`
+  });
+  const reinforceBonusViolations = reinforceRows.filter((row) => Number(row && row.score_impact || 0) > Number(policy.bonus_max || 0));
+  checks.push({
+    id: 'reinforce_bonus_cap',
+    pass: reinforceBonusViolations.length === 0,
+    details: reinforceBonusViolations.length === 0
+      ? `max_bonus=${Number(policy.bonus_max || 0)}`
+      : `violations=${reinforceBonusViolations.length}`
+  });
+  const minConfidenceViolations = rows.filter((row) => Number(row && row.confidence || 0) < Number(policy.min_confidence || 0));
+  checks.push({
+    id: 'confidence_floor',
+    pass: minConfidenceViolations.length === 0,
+    details: minConfidenceViolations.length === 0
+      ? `min_confidence=${Number(policy.min_confidence || 0)}`
+      : `violations=${minConfidenceViolations.length}`
+  });
+  const scopeViolations = rows.filter((row) => {
+    const scope = row && row.scope && typeof row.scope === 'object' ? row.scope : {};
+    return !scope.scope_type || !scope.scope_value;
+  });
+  checks.push({
+    id: 'scope_contract',
+    pass: scopeViolations.length === 0,
+    details: scopeViolations.length === 0 ? 'all_archetypes_scoped' : `violations=${scopeViolations.length}`
+  });
+  const failures = checks.filter((row) => row.pass !== true).map((row) => row.id);
+  return {
+    schema_id: 'collective_shadow_verification',
+    schema_version: '1.0',
+    ts: nowIso(),
+    checks,
+    pass: failures.length === 0,
+    failure_ids: failures
+  };
+}
+
+function rollbackProfile(dateStr, policyPath) {
+  return {
+    schema_id: 'collective_shadow_rollback_profile',
+    schema_version: '1.0',
+    ts: nowIso(),
+    date: dateStr,
+    strategy: 'disable_lane_and_revert_latest_pointer',
+    steps: [
+      {
+        id: 'disable_collective_shadow_lane',
+        action: 'set_policy_field',
+        target_path: relPath(policyPath),
+        field: 'enabled',
+        value: false
+      },
+      {
+        id: 'disable_runtime_influence',
+        action: 'set_env',
+        key: 'AUTONOMY_COLLECTIVE_SHADOW_ENABLED',
+        value: '0'
+      },
+      {
+        id: 'revert_latest_pointer',
+        action: 'copy_file',
+        from: relPath(outputPath(dateStr)),
+        to: relPath(LATEST_PATH)
+      }
+    ]
+  };
+}
+
 function runShadow(dateStr, args) {
   const policyPath = path.resolve(String(args.policy || process.env.COLLECTIVE_SHADOW_POLICY_PATH || DEFAULT_POLICY_PATH));
   const policy = loadPolicy(policyPath);
@@ -493,6 +573,8 @@ function runShadow(dateStr, args) {
   const runs = collectRunStats(dateStr, days);
   const redTeam = redTeamSummary(dateStr, days);
   const archetypes = buildArchetypes(policy, runs, redTeam, dateStr);
+  const verification = verifyArchetypes(policy, archetypes);
+  const rollback = rollbackProfile(dateStr, policyPath);
   const payload = {
     ok: true,
     type: 'collective_shadow_run',
@@ -509,6 +591,8 @@ function runShadow(dateStr, args) {
       avoid: archetypes.filter((row) => String(row.kind) === 'avoid').length,
       reinforce: archetypes.filter((row) => String(row.kind) === 'reinforce').length
     },
+    verification,
+    rollback_profile: rollback,
     archetypes
   };
 
@@ -537,6 +621,7 @@ function runShadow(dateStr, args) {
     avoid: payload.summary.avoid,
     reinforce: payload.summary.reinforce,
     red_team_fail_rate: payload.red_team.fail_rate,
+    verification_pass: payload.verification ? payload.verification.pass === true : false,
     output_path: relPath(fp)
   })}\n`);
 }
@@ -560,7 +645,9 @@ function statusShadow(dateStr) {
     archetypes_total: payload.summary ? Number(payload.summary.archetypes_total || 0) : 0,
     avoid: payload.summary ? Number(payload.summary.avoid || 0) : 0,
     reinforce: payload.summary ? Number(payload.summary.reinforce || 0) : 0,
-    red_team_fail_rate: payload.red_team ? Number(payload.red_team.fail_rate || 0) : 0
+    red_team_fail_rate: payload.red_team ? Number(payload.red_team.fail_rate || 0) : 0,
+    verification_pass: payload.verification ? payload.verification.pass === true : false,
+    rollback_strategy: payload.rollback_profile ? String(payload.rollback_profile.strategy || '') : null
   })}\n`);
 }
 

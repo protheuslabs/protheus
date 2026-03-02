@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T22:56:14.547Z",
-  "source_hash": "9a0dff67b1522513f450c28b",
+  "generated_at": "2026-03-02T23:09:34.946Z",
+  "source_hash": "60113b99fe66421f5a86f5d7",
   "row_count": 627,
-  "active_count": 380,
-  "archive_count": 247,
+  "active_count": 370,
+  "archive_count": 257,
   "rows": [
     {
       "id": "BL-001",
@@ -581,10 +581,10 @@
       "id": "V2-009",
       "class": "backlog",
       "wave": "V2",
-      "status": "queued",
+      "status": "done",
       "title": "Exterior anti-sabotage shield + instant auto-reset",
       "problem": "Prevent rogue external AI or out-of-channel mutations from silently corrupting system behavior",
-      "acceptance": "Snapshot/verify/auto-reset + quarantine path implemented in `systems/security/anti_sabotage_shield.ts`, plus realtime `watch` loop with policy defaults/state tracking, strict-fail-on-unrecovered behavior, npm scripts, and regression coverage (`memory/tools/tests/anti_sabotage_shield*.test.js`)",
+      "acceptance": "`anti_sabotage_shield` now emits explicit verification bundles + deterministic rollback plans per verify/watch incident, surfaces latest rollback hash in status, and keeps strict auto-reset/quarantine behavior covered by regression tests (`memory/tools/tests/anti_sabotage_shield*.test.js`).",
       "dependencies": []
     },
     {
@@ -821,40 +821,40 @@
       "id": "V2-033",
       "class": "backlog",
       "wave": "V2",
-      "status": "queued",
+      "status": "done",
       "title": "Epigenetic regulation tags",
       "problem": "Add reversible fast adaptation without direct code mutation",
-      "acceptance": "`organism_cycle` now updates TTL-bound epigenetic tags in `state/autonomy/fractal/epigenetic_tags.json` using trit-shaped signals and auditable reasons",
+      "acceptance": "`organism_cycle` updates TTL-bound trit tags and now emits cycle verification checks + per-run rollback plans (`state/autonomy/fractal/rollback_plans/YYYY-MM-DD.json`) to restore epigenetic/archetype state deterministically.",
       "dependencies": []
     },
     {
       "id": "V2-034",
       "class": "backlog",
       "wave": "V2",
-      "status": "queued",
+      "status": "done",
       "title": "Signed pheromone signaling lane",
       "problem": "Reduce spine bottleneck for local coordination while preserving trust boundaries",
-      "acceptance": "`organism_cycle` now emits signed local pheromone packets with TTL into `state/autonomy/fractal/pheromones/YYYY-MM-DD.json`",
+      "acceptance": "Signed pheromone batches remain bounded and now include signature-integrity verification in cycle receipts, with rollback steps that can drop bad batches safely.",
       "dependencies": []
     },
     {
       "id": "V2-035",
       "class": "backlog",
       "wave": "V2",
-      "status": "queued",
+      "status": "done",
       "title": "Resonance/harmony score controller",
       "problem": "Detect high-consensus subsystem alignment and exploit it safely",
-      "acceptance": "`organism_cycle` now computes bounded harmony score and exposes it to summary/cockpit telemetry (`summary.fractal.harmony_score`)",
+      "acceptance": "Harmony scoring remains bounded [0,1] and is now contract-verified in cycle outputs/status (`verification_pass`) with explicit failure IDs for debugging and safe rollback guidance.",
       "dependencies": []
     },
     {
       "id": "V2-036",
       "class": "backlog",
       "wave": "V2",
-      "status": "queued",
+      "status": "done",
       "title": "Collective archetype pool",
       "problem": "Build reusable cross-objective pattern memory with provenance",
-      "acceptance": "`organism_cycle` now maintains versioned archetype pool (`state/autonomy/fractal/archetype_pool.json`) with confidence/decay metadata and provenance text",
+      "acceptance": "Archetype pool updates remain capped/provenanced and now ship with deterministic verification + rollback artifacts so pre-run archetype state can be restored without direct mutation risk.",
       "dependencies": []
     },
     {
@@ -871,10 +871,10 @@
       "id": "V2-038",
       "class": "backlog",
       "wave": "V2",
-      "status": "queued",
+      "status": "done",
       "title": "Collective Shadow ranking lane",
       "problem": "Convert non-yield + red-team outcomes into bounded avoid/reinforce archetypes that influence ranking without direct actuation",
-      "acceptance": "`systems/autonomy/collective_shadow.ts` writes `latest.json` archetypes and `autonomy_controller` applies capped penalty/bonus via `candidateCollectiveShadowSignal`",
+      "acceptance": "Collective Shadow now emits policy-bound verification (`verification_pass`) and a formal rollback profile (`disable_lane_and_revert_latest_pointer`) in run/status outputs while preserving capped ranking influence via `candidateCollectiveShadowSignal`.",
       "dependencies": []
     },
     {
@@ -891,10 +891,10 @@
       "id": "V2-040",
       "class": "backlog",
       "wave": "V2",
-      "status": "queued",
+      "status": "done",
       "title": "Orchestron emergence hardening pass (candidate risk + trit gates + lineage metadata + richer birth telemetry)",
       "problem": "Tighten adaptive workflow safety and observability while preserving generation diversity",
-      "acceptance": "Candidate-level red-team pressure now influences nursery scoring (`candidate_red_team_pressure`, `red_team_penalty`), auto-apply adds trit floor gates (`min_avg_trit_alignment`, `min_min_trit_alignment`), applied child workflows persist lineage state (`lineage` + `fractal_state`), and birth events now emit `candidate_indexed` + `graft_planned` stages",
+      "acceptance": "Emergence lane now publishes explicit verification bundles (depth caps, adversarial critical-gate propagation, trit/composite floors, promotable cap) plus rollback guidance to return to guarded shadow mode, in addition to existing lineage + birth telemetry fields.",
       "dependencies": []
     },
     {
@@ -911,10 +911,10 @@
       "id": "V2-043",
       "class": "backlog",
       "wave": "V2",
-      "status": "queued",
+      "status": "done",
       "title": "Orchestron creative-primary + trit-depth recursion pass",
       "problem": "Push novelty generation and trit-guided adaptation into first-class candidate selection",
-      "acceptance": "Creative lane now supports `primary_source` + `reserved_slots` and seed candidates, mutation ranking uses stronger trit uncertainty/exploration weighting, runtime evolution can emit multi-mutation variants under uncertainty, and fractal spawning can auto-expand depth with bounded recursive child generation",
+      "acceptance": "Creative-primary + recursive generation remains enabled (`primary_source`/`reserved_slots`, trit uncertainty weighting, depth expansion) and is now covered by surfaced verification/rollback signals in adaptive controller and workflow-controller orchestration outputs.",
       "dependencies": []
     },
     {
@@ -1051,20 +1051,20 @@
       "id": "V3-005",
       "class": "backlog",
       "wave": "V3",
-      "status": "queued",
+      "status": "done",
       "title": "External anti-sabotage provenance net",
       "problem": "Detect and instantly recover from out-of-channel system tampering attempts",
-      "acceptance": "Delivered via `systems/security/anti_sabotage_shield.ts` snapshot/verify/watch auto-reset+quarantine path with passing tests (`memory/tools/tests/anti_sabotage_shield*.test.js`)",
+      "acceptance": "Provenance net now includes per-incident verification summaries + deterministic rollback plans/hashes in `anti_sabotage_shield` status/log outputs, preserving instant recovery and quarantine semantics with regression coverage.",
       "dependencies": []
     },
     {
       "id": "V3-006",
       "class": "backlog",
       "wave": "V3",
-      "status": "queued",
+      "status": "done",
       "title": "Recursive mini-core instancing (nested Protheus branches)",
       "problem": "Unlock true fractal recursion while keeping containment envelopes intact at each depth",
-      "acceptance": "Allow controlled child instances that run full autonomy stacks in namespaced sandboxes with inherited contracts/clearance limits, depth caps, and deterministic parent-child governance receipts",
+      "acceptance": "Mini-core instancing now surfaces containment verification + rollback-readiness metadata on instantiate/tick/status and writes receipts that expose rollback safety posture for each active child instance.",
       "dependencies": []
     },
     {

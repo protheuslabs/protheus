@@ -34,6 +34,7 @@ const EPIGENETIC_PATH = path.join(FRACTAL_DIR, 'epigenetic_tags.json');
 const ARCHETYPE_POOL_PATH = path.join(FRACTAL_DIR, 'archetype_pool.json');
 const ALERTS_DIR = path.join(FRACTAL_DIR, 'alerts');
 const PHEROMONE_DIR = path.join(FRACTAL_DIR, 'pheromones');
+const ROLLBACK_DIR = path.join(FRACTAL_DIR, 'rollback_plans');
 const RUNS_DIR = process.env.FRACTAL_ORGANISM_RUNS_DIR
   ? path.resolve(process.env.FRACTAL_ORGANISM_RUNS_DIR)
   : path.join(ROOT, 'state', 'autonomy', 'runs');
@@ -498,6 +499,122 @@ function outputPath(dateStr) {
   return path.join(OUTPUT_DIR, `${dateStr}.json`);
 }
 
+function verifyCycleOutput(runSig, epigenetic, pheromones, harmony, archetypeAfter) {
+  const checks = [];
+  const tags = epigenetic && epigenetic.tags && typeof epigenetic.tags === 'object' ? epigenetic.tags : {};
+  const requiredTags = ['autonomy_selector', 'risk_governor', 'queue_scheduler'];
+  const missingTagCount = requiredTags.filter((id) => !tags[id]).length;
+  checks.push({
+    id: 'epigenetic_required_tags',
+    pass: missingTagCount === 0,
+    details: missingTagCount === 0 ? 'required_tags_present' : `missing_required_tags=${missingTagCount}`
+  });
+
+  const tritInvalidCount = requiredTags.filter((id) => {
+    const row = tags[id] && typeof tags[id] === 'object' ? tags[id] : {};
+    return ![-1, 0, 1].includes(Number(row.trit));
+  }).length;
+  checks.push({
+    id: 'epigenetic_trit_bounds',
+    pass: tritInvalidCount === 0,
+    details: tritInvalidCount === 0 ? 'all_trits_within_-1_0_1' : `invalid_trits=${tritInvalidCount}`
+  });
+
+  const badSignatures = (Array.isArray(pheromones) ? pheromones : []).filter((packet) => (
+    String(packet.signature || '') !== signPheromone({
+      schema_id: packet.schema_id,
+      schema_version: packet.schema_version,
+      ts: packet.ts,
+      date: packet.date,
+      ttl_minutes: packet.ttl_minutes,
+      id: packet.id,
+      lane: packet.lane,
+      intensity: packet.intensity,
+      message: packet.message
+    })
+  ));
+  checks.push({
+    id: 'pheromone_signature_integrity',
+    pass: badSignatures.length === 0,
+    details: badSignatures.length === 0 ? 'all_signatures_valid' : `invalid_signatures=${badSignatures.length}`
+  });
+
+  const harmonyScoreValue = Number(harmony && harmony.score);
+  checks.push({
+    id: 'harmony_score_bounds',
+    pass: Number.isFinite(harmonyScoreValue) && harmonyScoreValue >= 0 && harmonyScoreValue <= 1,
+    details: Number.isFinite(harmonyScoreValue) ? `harmony_score=${harmonyScoreValue}` : 'harmony_score_nan'
+  });
+
+  const archetypeCount = Array.isArray(archetypeAfter && archetypeAfter.archetypes) ? archetypeAfter.archetypes.length : 0;
+  checks.push({
+    id: 'archetype_pool_cap',
+    pass: archetypeCount <= 80,
+    details: `archetype_count=${archetypeCount}`
+  });
+
+  const shipped = Number(runSig && runSig.counts && runSig.counts.shipped || 0);
+  const executed = Number(runSig && runSig.counts && runSig.counts.executed || 0);
+  checks.push({
+    id: 'run_count_sanity',
+    pass: shipped <= executed,
+    details: `shipped=${shipped} executed=${executed}`
+  });
+
+  const failures = checks.filter((row) => row.pass !== true).map((row) => row.id);
+  return {
+    schema_id: 'fractal_organism_cycle_verification',
+    schema_version: '1.0.0',
+    ts: nowIso(),
+    checks,
+    pass: failures.length === 0,
+    failure_ids: failures
+  };
+}
+
+function buildRollbackPlan(dateStr, epigeneticBefore, archetypeBefore, verification) {
+  const restorePayload = {
+    schema_id: 'fractal_organism_cycle_rollback_plan',
+    schema_version: '1.0.0',
+    ts: nowIso(),
+    date: dateStr,
+    reason: 'manual_revert_or_regression_recovery',
+    proposal_only: true,
+    verification_pass: verification && verification.pass === true,
+    rollback_steps: [
+      {
+        id: 'restore_epigenetic_tags',
+        action: 'write_json',
+        target_path: path.relative(ROOT, EPIGENETIC_PATH).replace(/\\/g, '/'),
+        payload: epigeneticBefore
+      },
+      {
+        id: 'restore_archetype_pool',
+        action: 'write_json',
+        target_path: path.relative(ROOT, ARCHETYPE_POOL_PATH).replace(/\\/g, '/'),
+        payload: archetypeBefore
+      },
+      {
+        id: 'drop_pheromone_batch',
+        action: 'delete_file_if_exists',
+        target_path: path.relative(ROOT, path.join(PHEROMONE_DIR, `${dateStr}.json`)).replace(/\\/g, '/')
+      },
+      {
+        id: 'drop_cycle_output',
+        action: 'delete_file_if_exists',
+        target_path: path.relative(ROOT, outputPath(dateStr)).replace(/\\/g, '/')
+      }
+    ]
+  };
+  const planPath = path.join(ROLLBACK_DIR, `${dateStr}.json`);
+  writeJson(planPath, restorePayload);
+  return {
+    path: path.relative(ROOT, planPath).replace(/\\/g, '/'),
+    plan_hash: crypto.createHash('sha256').update(JSON.stringify(restorePayload)).digest('hex').slice(0, 20),
+    step_count: restorePayload.rollback_steps.length
+  };
+}
+
 function runCycle(dateStr) {
   const runSig = runSignals(dateStr);
   const simSig = simulationSignals(dateStr);
@@ -525,6 +642,8 @@ function runCycle(dateStr) {
   writeArchetypeAlert(dateStr, archetypeDelta, {
     run_counts: runSig && runSig.counts ? runSig.counts : {}
   });
+  const verification = verifyCycleOutput(runSig, epigenetic, pheromones, harmony, archetypeAfter);
+  const rollbackPlan = buildRollbackPlan(dateStr, epigeneticBefore, archetypeBefore, verification);
 
   const payload = {
     ok: true,
@@ -549,6 +668,8 @@ function runCycle(dateStr) {
       path: path.relative(ROOT, ARCHETYPE_POOL_PATH).replace(/\\/g, '/')
     },
     archetype_delta: archetypeDelta,
+    verification,
+    rollback_plan: rollbackPlan,
     recommendations: [
       ...symbiosis.map((s) => `symbiosis:${s.objective}`),
       ...predatorPrey.candidates.map((c) => `predator_shadow:${c.module}`)
@@ -567,6 +688,8 @@ function runCycle(dateStr) {
     archetype_novelty_alert: archetypeDelta.novelty_alert === true,
     archetype_new: Number(archetypeDelta.new_count || 0),
     archetype_confidence_shifts: Number(archetypeDelta.confidence_shift_count || 0),
+    verification_pass: verification.pass === true,
+    rollback_plan_path: rollbackPlan.path,
     output_path: path.relative(ROOT, outputPath(dateStr)).replace(/\\/g, '/')
   })}\n`);
 }
@@ -595,7 +718,9 @@ function status(dateStr) {
     archetypes: payload.archetype_pool ? safeNumber(payload.archetype_pool.count, 0) : 0,
     archetype_novelty_alert: payload.archetype_delta ? payload.archetype_delta.novelty_alert === true : false,
     archetype_new: payload.archetype_delta ? safeNumber(payload.archetype_delta.new_count, 0) : 0,
-    archetype_confidence_shifts: payload.archetype_delta ? safeNumber(payload.archetype_delta.confidence_shift_count, 0) : 0
+    archetype_confidence_shifts: payload.archetype_delta ? safeNumber(payload.archetype_delta.confidence_shift_count, 0) : 0,
+    verification_pass: payload.verification ? payload.verification.pass === true : false,
+    rollback_plan_path: payload.rollback_plan ? payload.rollback_plan.path || null : null
   })}\n`);
 }
 

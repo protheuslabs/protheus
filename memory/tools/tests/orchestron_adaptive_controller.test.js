@@ -223,6 +223,8 @@ function run() {
   assert.ok(Array.isArray(payload.scorecards) && payload.scorecards.length >= 1, 'scorecards should exist');
   assert.ok(payload.scorecards.every((row) => Number.isFinite(Number(row.adversarial_critical_failures))), 'scorecards should include adversarial critical field');
   assert.ok(Array.isArray(payload.drafts) && payload.drafts.length >= 1, 'drafts should exist');
+  assert.ok(payload.verification && payload.verification.pass === true, 'payload should include verification bundle');
+  assert.ok(payload.rollback_guidance && Array.isArray(payload.rollback_guidance.steps), 'payload should include rollback guidance');
   assert.ok(fs.existsSync(birthEventsPath), 'birth events should be emitted');
   const birthRows = fs.readFileSync(birthEventsPath, 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line));
   const stages = new Set(birthRows.map((row) => String(row.stage || '')));
@@ -243,6 +245,7 @@ function run() {
   const statusOut = parsePayload(statusProc.stdout);
   assert.ok(statusOut && statusOut.ok === true, 'status output should be ok');
   assert.strictEqual(String(statusOut.date || ''), dateStr, 'status should report latest date');
+  assert.strictEqual(statusOut.verification_pass, true, 'status should expose verification pass');
 
   fs.rmSync(tmp, { recursive: true, force: true });
   console.log('orchestron_adaptive_controller.test.js: OK');

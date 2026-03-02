@@ -104,6 +104,8 @@ function run() {
   const rootOut = parseJson(rootInst, 'instantiate_root');
   assert.strictEqual(rootOut.ok, true);
   assert.strictEqual(rootOut.record.depth, 1);
+  assert.ok(rootOut.verification && rootOut.verification.pass === true, 'root instantiate should include containment verification');
+  assert.ok(rootOut.rollback_readiness && rootOut.rollback_readiness.rollback_ready === true, 'root instantiate should include rollback readiness');
   assert.ok(rootOut.wallet_bootstrap_bridge && rootOut.wallet_bootstrap_bridge.ok === true, 'instantiate root should enqueue wallet bridge proposal');
   assert.strictEqual(String(rootOut.wallet_bootstrap_bridge.stage || ''), 'shadow_proposed', 'wallet bridge should remain shadow');
 
@@ -118,6 +120,8 @@ function run() {
   assert.strictEqual(childOut.ok, true);
   assert.strictEqual(childOut.record.depth, 2);
   assert.strictEqual(childOut.record.contracts.parent_contract_id, 'contract_a');
+  assert.ok(childOut.verification && childOut.verification.pass === true, 'child instantiate should include containment verification');
+  assert.ok(childOut.rollback_readiness && childOut.rollback_readiness.rollback_ready === true, 'child instantiate should include rollback readiness');
   assert.ok(childOut.wallet_bootstrap_bridge && childOut.wallet_bootstrap_bridge.ok === true, 'instantiate child should enqueue wallet bridge proposal');
 
   const tick = runNode(scriptPath, ['tick', '--instance-id=core_child'], env, root);
@@ -125,6 +129,8 @@ function run() {
   const tickOut = parseJson(tick, 'tick');
   assert.strictEqual(tickOut.ok, true);
   assert.strictEqual(tickOut.governance.contract_id, 'contract_a');
+  assert.ok(tickOut.verification && tickOut.verification.pass === true, 'tick should include containment verification');
+  assert.ok(tickOut.rollback_readiness && tickOut.rollback_readiness.rollback_ready === true, 'tick should include rollback readiness');
 
   const rollback = runNode(scriptPath, [
     'rollback',
@@ -145,6 +151,8 @@ function run() {
   assert.strictEqual(statusOut.ok, true);
   assert.ok(statusOut.instances.core_root, 'root should remain tracked');
   assert.ok(statusOut.instances.core_child, 'child should remain tracked');
+  assert.ok(statusOut.summary && Number(statusOut.summary.active_instances || 0) >= 1, 'status should include summary counts');
+  assert.ok(Number(statusOut.summary.rollback_ready_instances || 0) >= 1, 'status should expose rollback-ready instance count');
 
   const receipts = fs.existsSync(receiptsPath)
     ? fs.readFileSync(receiptsPath, 'utf8').split('\n').filter(Boolean)

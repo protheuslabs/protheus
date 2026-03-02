@@ -85,6 +85,24 @@ function appendJsonl(filePath, row) {
   fs.appendFileSync(filePath, `${JSON.stringify(row)}\n`, 'utf8');
 }
 
+function readLastJsonl(filePath) {
+  try {
+    if (!fs.existsSync(filePath)) return null;
+    const lines = fs.readFileSync(filePath, 'utf8').split('\n').filter(Boolean);
+    for (let i = lines.length - 1; i >= 0; i -= 1) {
+      try {
+        const parsed = JSON.parse(lines[i]);
+        if (parsed && typeof parsed === 'object') return parsed;
+      } catch {
+        // ignore malformed rows
+      }
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 function relPath(p) {
   return path.relative(ROOT, p).replace(/\\/g, '/');
 }
@@ -436,10 +454,39 @@ function evaluateSnapshot(policy, loaded) {
   }
 
   return {
+    expected_count: Object.keys(expectedHashes).length,
+    current_count: currentByRel.size,
     mismatches,
     missing,
     extra,
     violated: mismatches.length + missing.length + extra.length
+  };
+}
+
+function rollbackPlanForEvaluation(loaded, evalOut) {
+  const restoreFiles = [
+    ...(Array.isArray(evalOut.mismatches) ? evalOut.mismatches.map((row) => row.file) : []),
+    ...(Array.isArray(evalOut.missing) ? evalOut.missing.map((row) => row.file) : [])
+  ];
+  const quarantineFiles = [
+    ...(Array.isArray(evalOut.mismatches) ? evalOut.mismatches.map((row) => row.file) : []),
+    ...(Array.isArray(evalOut.extra) ? evalOut.extra.map((row) => row.file) : [])
+  ];
+  const planSeed = JSON.stringify({
+    snapshot_id: String(loaded && loaded.snapshot_id || ''),
+    restore: restoreFiles.slice().sort(),
+    quarantine: quarantineFiles.slice().sort(),
+    extra: Array.isArray(evalOut.extra) ? evalOut.extra.map((row) => row.file).sort() : []
+  });
+  return {
+    available: true,
+    snapshot_id: String(loaded && loaded.snapshot_id || ''),
+    restore_count: restoreFiles.length,
+    quarantine_count: quarantineFiles.length,
+    delete_extra_count: Array.isArray(evalOut.extra) ? evalOut.extra.length : 0,
+    restore_files: restoreFiles.slice(0, 120),
+    quarantine_files: quarantineFiles.slice(0, 120),
+    plan_hash: crypto.createHash('sha256').update(planSeed).digest('hex').slice(0, 20)
   };
 }
 
@@ -531,6 +578,7 @@ function runVerifyOnce(policy, opts = {}) {
 
   const evalOut = evaluateSnapshot(policy, loaded);
   const violated = evalOut.violated > 0;
+  const rollbackPlan = rollbackPlanForEvaluation(loaded, evalOut);
   let recovery = null;
   if (violated && autoReset) {
     recovery = restoreFromSnapshot(policy, loaded, evalOut);
@@ -547,12 +595,21 @@ function runVerifyOnce(policy, opts = {}) {
     bootstrap_snapshot_created: !!bootstrappedSnapshotId,
     bootstrap_snapshot_id: bootstrappedSnapshotId,
     violated,
+    verification: {
+      expected_files: Number(evalOut.expected_count || 0),
+      current_files: Number(evalOut.current_count || 0),
+      mismatch_count: evalOut.mismatches.length,
+      missing_count: evalOut.missing.length,
+      extra_count: evalOut.extra.length,
+      pass: violated !== true
+    },
     mismatch_count: evalOut.mismatches.length,
     missing_count: evalOut.missing.length,
     extra_count: evalOut.extra.length,
     mismatches: evalOut.mismatches,
     missing: evalOut.missing,
     extra: evalOut.extra,
+    rollback_plan: rollbackPlan,
     recovery
   };
 
@@ -689,6 +746,7 @@ function cmdStatus() {
   const policy = loadPolicy();
   const state = loadState(policy);
   const watcherState = readJson(watcherStatePath(policy), null);
+  const latestIncident = readLastJsonl(incidentLogPath(policy));
   const out = {
     ok: true,
     type: 'anti_sabotage_status',
@@ -699,6 +757,15 @@ function cmdStatus() {
     latest_incident: state.latest_incident,
     state_path: relPath(statePath(policy)),
     incident_log: relPath(incidentLogPath(policy)),
+    latest_incident_summary: latestIncident && typeof latestIncident === 'object' ? {
+      ts: normalizeText(latestIncident.ts || '', 64) || null,
+      type: normalizeText(latestIncident.type || '', 64) || null,
+      violated: latestIncident.violated === true,
+      recovery_applied: !!(latestIncident.recovery && latestIncident.recovery.incident_id),
+      rollback_plan_hash: latestIncident.rollback_plan && latestIncident.rollback_plan.plan_hash
+        ? normalizeText(latestIncident.rollback_plan.plan_hash, 40)
+        : null
+    } : null,
     watcher_state_path: relPath(watcherStatePath(policy)),
     watcher_state: watcherState
   };

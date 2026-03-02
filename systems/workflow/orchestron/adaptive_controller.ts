@@ -367,6 +367,118 @@ function flattenCandidateNodes(candidates, maxDepth = 6) {
   return out;
 }
 
+function emergenceVerificationBundle(policy, indexedNodes, adversarial, nursery, promotableDrafts) {
+  const nodes = Array.isArray(indexedNodes) ? indexedNodes : [];
+  const scorecards = Array.isArray(nursery && nursery.scorecards) ? nursery.scorecards : [];
+  const passing = Array.isArray(nursery && nursery.passing) ? nursery.passing : [];
+  const passingIds = new Set(
+    passing
+      .map((row) => String(row && row.candidate && row.candidate.id || ''))
+      .filter(Boolean)
+  );
+  const maxObservedDepth = nodes.reduce((maxDepth, row) => Math.max(maxDepth, Number(row && row.depth || 0)), 0);
+  const allowedDepth = Number(
+    policy && policy.fractal && policy.fractal.auto_depth_expansion === true
+      ? policy.fractal.auto_depth_cap
+      : policy && policy.fractal && policy.fractal.max_depth
+  ) || 0;
+  const checks = [];
+  checks.push({
+    id: 'candidate_pool_nonempty',
+    pass: nodes.length > 0,
+    details: `indexed_nodes=${nodes.length}`
+  });
+  checks.push({
+    id: 'fractal_depth_within_cap',
+    pass: maxObservedDepth <= allowedDepth,
+    details: `max_observed_depth=${maxObservedDepth} allowed_depth=${allowedDepth}`
+  });
+
+  const maxCritical = Number(
+    policy && policy.adversarial_lane && policy.adversarial_lane.max_critical_failures_per_candidate
+  );
+  const criticalViolations = (Array.isArray(adversarial && adversarial.results) ? adversarial.results : [])
+    .filter((row) => Number(row && row.critical_failures || 0) > maxCritical);
+  const criticalViolationsReachingPassing = criticalViolations
+    .filter((row) => passingIds.has(String(row && row.candidate_id || '')));
+  checks.push({
+    id: 'candidate_critical_fail_gate',
+    pass: criticalViolationsReachingPassing.length === 0,
+    details: criticalViolationsReachingPassing.length === 0
+      ? `max_critical_failures=${maxCritical} blocked_candidates=${criticalViolations.length}`
+      : `violations_reaching_passing=${criticalViolationsReachingPassing.length}`
+  });
+
+  const minTrit = Number(policy && policy.nursery && policy.nursery.min_trit_alignment || -1);
+  const tritViolations = passing.filter((row) => Number(row && row.scorecard && row.scorecard.trit_alignment || -1) < minTrit);
+  checks.push({
+    id: 'passing_trit_alignment_gate',
+    pass: tritViolations.length === 0,
+    details: tritViolations.length === 0
+      ? `min_trit_alignment=${minTrit}`
+      : `violations=${tritViolations.length}`
+  });
+
+  const minComposite = Number(policy && policy.nursery && policy.nursery.min_composite_score || 0);
+  const compositeViolations = passing
+    .filter((row) => Number(row && row.scorecard && row.scorecard.composite_score || 0) < minComposite);
+  checks.push({
+    id: 'scorecard_composite_floor',
+    pass: compositeViolations.length === 0,
+    details: `below_floor_in_passing=${compositeViolations.length} passing=${passing.length} total_scorecards=${scorecards.length}`
+  });
+
+  checks.push({
+    id: 'promotable_draft_cap',
+    pass: Array.isArray(promotableDrafts) && promotableDrafts.length <= Number(policy && policy.max_promotions_per_run || 0),
+    details: `promotable_drafts=${Array.isArray(promotableDrafts) ? promotableDrafts.length : 0} max_promotions_per_run=${Number(policy && policy.max_promotions_per_run || 0)}`
+  });
+
+  const failures = checks.filter((row) => row.pass !== true).map((row) => row.id);
+  return {
+    schema_id: 'orchestron_emergence_verification',
+    schema_version: '1.0',
+    ts: nowIso(),
+    checks,
+    pass: failures.length === 0,
+    failure_ids: failures
+  };
+}
+
+function rollbackGuidanceBundle(policy, policyPath, runId, dateStr, promotableDrafts) {
+  const policyHints = {
+    shadow_only: true,
+    auto_apply_enabled: false,
+    max_promotions_per_run: Math.max(1, Number(policy && policy.max_promotions_per_run || 1))
+  };
+  return {
+    schema_id: 'orchestron_rollback_guidance',
+    schema_version: '1.0',
+    ts: nowIso(),
+    run_id: runId,
+    date: dateStr,
+    reason: 'guarded_fallback_to_shadow_mode',
+    promoted_candidate_count: Array.isArray(promotableDrafts) ? promotableDrafts.length : 0,
+    steps: [
+      {
+        id: 'set_shadow_only_mode',
+        action: 'set_policy_fields',
+        fields: policyHints
+      },
+      {
+        id: 'rerun_shadow_validation',
+        action: 'command',
+        command: `node systems/workflow/orchestron/adaptive_controller.js run ${dateStr} --policy=${String(policyPath || DEFAULT_POLICY_PATH)}`
+      },
+      {
+        id: 'review_registry_promotions',
+        action: 'manual_gate',
+        note: 'disable or roll back newly promoted workflows if verification fails'
+      }
+    ]
+  };
+}
+
 function defaultPatternStats(scopeValue) {
   return {
     proposal_type: scopeValue,
@@ -632,7 +744,8 @@ function generateAdaptiveDrafts(dateStr, opts = {}) {
     candidates: candidates.length,
     fractal_children: fractalChildren
   });
-  for (const node of flattenCandidateNodes(candidates, policy.fractal.max_depth).slice(0, 96)) {
+  const indexedNodes = flattenCandidateNodes(candidates, policy.fractal.max_depth);
+  for (const node of indexedNodes.slice(0, 96)) {
     emitBirthEvent(policy, {
       ts: nowIso(),
       type: 'orchestron_birth_event',
@@ -831,6 +944,8 @@ function generateAdaptiveDrafts(dateStr, opts = {}) {
       promotable_drafts: promotableDrafts.length
     });
   }
+  const verification = emergenceVerificationBundle(policy, indexedNodes, adversarial, nursery, promotableDrafts);
+  const rollbackGuidance = rollbackGuidanceBundle(policy, policyPath, runId, dateStr, promotableDrafts);
 
   return {
     ok: true,
@@ -850,6 +965,8 @@ function generateAdaptiveDrafts(dateStr, opts = {}) {
     pattern_rows: patternStats.rows.length,
     principles,
     high_value_play: highValue,
+    verification,
+    rollback_guidance: rollbackGuidance,
     red_team: redTeam,
     adversarial: {
       probes_run: Number(adversarial && adversarial.probes_run || 0),
@@ -919,6 +1036,7 @@ function runCmd(dateStr, args) {
     adversarial_probes_run: Number(payload.adversarial && payload.adversarial.probes_run || 0),
     adversarial_candidates_failed: Number(payload.adversarial && payload.adversarial.candidates_failed || 0),
     adversarial_critical_failures: Number(payload.adversarial && payload.adversarial.critical_failures || 0),
+    verification_pass: payload.verification ? payload.verification.pass === true : false,
     value_currency: payload && payload.value_context ? payload.value_context.value_currency || null : null,
     birth_events_path: payload.birth_events_path || null,
     policy_path: payload.policy_path,
@@ -953,7 +1071,8 @@ function statusCmd(dateArg) {
     promotable_drafts: Array.isArray(payload.promotable_drafts) ? payload.promotable_drafts.length : 0,
     adversarial_probes_run: Number(payload.adversarial && payload.adversarial.probes_run || 0),
     adversarial_candidates_failed: Number(payload.adversarial && payload.adversarial.candidates_failed || 0),
-    adversarial_critical_failures: Number(payload.adversarial && payload.adversarial.critical_failures || 0)
+    adversarial_critical_failures: Number(payload.adversarial && payload.adversarial.critical_failures || 0),
+    verification_pass: payload.verification ? payload.verification.pass === true : false
   })}\n`);
 }
 

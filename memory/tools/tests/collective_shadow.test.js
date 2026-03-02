@@ -123,6 +123,7 @@ function run() {
   const runOut = parsePayload(runProc.stdout);
   assert.ok(runOut && runOut.ok === true, 'shadow run should return ok');
   assert.ok(Number(runOut.archetypes_total || 0) >= 2, 'shadow run should emit archetypes');
+  assert.strictEqual(runOut.verification_pass, true, 'shadow run should expose verification pass');
 
   const latestPath = path.join(outDir, 'latest.json');
   assert.ok(fs.existsSync(latestPath), 'latest snapshot should be written');
@@ -132,6 +133,8 @@ function run() {
     latest.archetypes.some((row) => String(row.kind || '') === 'avoid'),
     'snapshot should include avoid archetype'
   );
+  assert.ok(latest.verification && latest.verification.pass === true, 'snapshot should include verification bundle');
+  assert.ok(latest.rollback_profile && Array.isArray(latest.rollback_profile.steps), 'snapshot should include rollback profile');
 
   const candidate = {
     proposal: {
@@ -179,6 +182,17 @@ function run() {
     Number(rankedWithShadow.components.collective_shadow_penalty || 0) > 0,
     'strategy components should expose collective shadow penalty'
   );
+
+  const statusProc = spawnSync(process.execPath, [SHADOW_SCRIPT, 'status', dateStr], {
+    cwd: ROOT,
+    encoding: 'utf8',
+    env
+  });
+  assert.strictEqual(statusProc.status, 0, statusProc.stderr || 'collective shadow status should pass');
+  const statusOut = parsePayload(statusProc.stdout);
+  assert.ok(statusOut && statusOut.ok === true, 'status should return ok');
+  assert.strictEqual(statusOut.verification_pass, true, 'status should expose verification pass');
+  assert.strictEqual(String(statusOut.rollback_strategy || ''), 'disable_lane_and_revert_latest_pointer', 'status should expose rollback strategy');
 
   fs.rmSync(tmp, { recursive: true, force: true });
   console.log('collective_shadow.test.js: OK');

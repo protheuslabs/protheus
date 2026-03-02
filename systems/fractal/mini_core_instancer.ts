@@ -224,6 +224,64 @@ function enqueueWalletBootstrapProposal(instanceIdRaw: unknown, birthContextRaw:
   }
 }
 
+function verifyContainment(record: AnyObj, policy: AnyObj) {
+  const checks = [];
+  const depth = Number(record && record.depth || 0);
+  checks.push({
+    id: 'depth_within_policy',
+    pass: depth >= 1 && depth <= Number(policy && policy.max_depth || 0),
+    details: `depth=${depth} max_depth=${Number(policy && policy.max_depth || 0)}`
+  });
+
+  const tokenCap = Number(record && record.envelope && record.envelope.token_cap || 0);
+  const tokenCapMax = Number(policy && policy.envelopes && policy.envelopes.token_cap_max || 0);
+  checks.push({
+    id: 'token_cap_within_policy',
+    pass: tokenCap >= 1 && tokenCap <= tokenCapMax,
+    details: `token_cap=${tokenCap} token_cap_max=${tokenCapMax}`
+  });
+
+  const memoryMb = Number(record && record.envelope && record.envelope.memory_mb || 0);
+  const memoryMax = Number(policy && policy.envelopes && policy.envelopes.memory_mb_max || 0);
+  checks.push({
+    id: 'memory_cap_within_policy',
+    pass: memoryMb >= 64 && memoryMb <= memoryMax,
+    details: `memory_mb=${memoryMb} memory_mb_max=${memoryMax}`
+  });
+
+  const requiresParent = policy && policy.governance && policy.governance.require_parent_contract === true;
+  const hasParentContract = !!(record && record.contracts && record.contracts.parent_contract_id);
+  checks.push({
+    id: 'parent_contract_gate',
+    pass: !requiresParent || depth <= 1 || hasParentContract,
+    details: `require_parent_contract=${requiresParent} parent_contract_present=${hasParentContract}`
+  });
+
+  const failed = checks.filter((row) => row.pass !== true).map((row) => row.id);
+  return {
+    schema_id: 'mini_core_containment_verification',
+    schema_version: '1.0',
+    ts: nowIso(),
+    checks,
+    pass: failed.length === 0,
+    failure_ids: failed
+  };
+}
+
+function rollbackReadiness(record: AnyObj) {
+  const status = normalizeToken(record && record.status || 'unknown', 40) || 'unknown';
+  const rollbackRequired = record && record.contracts ? record.contracts.rollback_required !== false : true;
+  return {
+    schema_id: 'mini_core_rollback_readiness',
+    schema_version: '1.0',
+    ts: nowIso(),
+    status,
+    rollback_required: rollbackRequired,
+    rollback_ready: status === 'active' && rollbackRequired === true,
+    rollback_path: 'node systems/fractal/mini_core_instancer.js rollback --instance-id=<id> --reason=<reason>'
+  };
+}
+
 function usage() {
   console.log('Usage:');
   console.log('  node systems/fractal/mini_core_instancer.js instantiate --instance-id=<id> [--parent-instance-id=<id>] [--contracts-json={...}]');
@@ -292,16 +350,31 @@ function cmdInstantiate(args: AnyObj) {
     'mini_core_instantiate',
     `auto_birth_mini_core_instantiate:${instanceId}`
   );
-  appendJsonl(RECEIPTS_PATH, { ts, type: 'mini_core_instantiate', ok: true, instance_id: instanceId, parent_instance_id: parentId, depth, lineage_hash: record.lineage_hash });
+  const verification = verifyContainment(record, policy);
+  const rollback = rollbackReadiness(record);
+  appendJsonl(RECEIPTS_PATH, {
+    ts,
+    type: 'mini_core_instantiate',
+    ok: true,
+    instance_id: instanceId,
+    parent_instance_id: parentId,
+    depth,
+    lineage_hash: record.lineage_hash,
+    verification_pass: verification.pass === true,
+    rollback_ready: rollback.rollback_ready === true
+  });
   process.stdout.write(`${JSON.stringify({
     ok: true,
     type: 'mini_core_instantiate',
     record,
+    verification,
+    rollback_readiness: rollback,
     wallet_bootstrap_bridge: walletBootstrapBridge
   })}\n`);
 }
 
 function cmdTick(args: AnyObj) {
+  const policy = loadPolicy(args.policy ? path.resolve(String(args.policy)) : POLICY_PATH);
   const state = loadState();
   const instanceId = normalizeToken(args.instance_id || args['instance-id'] || '', 120);
   const row = instanceId ? state.instances[instanceId] : null;
@@ -319,11 +392,28 @@ function cmdTick(args: AnyObj) {
     inherited_clearance: row.contracts && row.contracts.inherited_clearance || null,
     lineage_hash: row.lineage_hash
   };
+  const verification = verifyContainment(row, policy);
+  const rollback = rollbackReadiness(row);
   row.last_tick_at = ts;
   state.instances[instanceId] = row;
   saveState(state);
-  appendJsonl(RECEIPTS_PATH, { ts, type: 'mini_core_tick', ok: true, instance_id: instanceId, governance: governanceReceipt });
-  process.stdout.write(`${JSON.stringify({ ok: true, type: 'mini_core_tick', instance_id: instanceId, governance: governanceReceipt })}\n`);
+  appendJsonl(RECEIPTS_PATH, {
+    ts,
+    type: 'mini_core_tick',
+    ok: true,
+    instance_id: instanceId,
+    governance: governanceReceipt,
+    verification_pass: verification.pass === true,
+    rollback_ready: rollback.rollback_ready === true
+  });
+  process.stdout.write(`${JSON.stringify({
+    ok: true,
+    type: 'mini_core_tick',
+    instance_id: instanceId,
+    governance: governanceReceipt,
+    verification,
+    rollback_readiness: rollback
+  })}\n`);
 }
 
 function cmdRollback(args: AnyObj) {
@@ -348,16 +438,31 @@ function cmdRollback(args: AnyObj) {
 }
 
 function cmdStatus(args: AnyObj) {
+  const policy = loadPolicy(args.policy ? path.resolve(String(args.policy)) : POLICY_PATH);
   const state = loadState();
   const instanceId = normalizeToken(args.instance_id || args['instance-id'] || '', 120);
+  const rows = Object.values(state.instances || {}).filter((row: any) => row && typeof row === 'object');
+  const activeRows = rows.filter((row: any) => String(row.status || '') !== 'rolled_back');
+  const rollbackReady = activeRows.filter((row: any) => rollbackReadiness(row).rollback_ready === true).length;
+  const verificationFails = activeRows.filter((row: any) => verifyContainment(row, policy).pass !== true).length;
   const out = {
     ok: true,
     type: 'mini_core_status',
     ts: nowIso(),
     instance_id: instanceId || null,
     record: instanceId ? (state.instances[instanceId] || null) : null,
+    summary: {
+      total_instances: rows.length,
+      active_instances: activeRows.length,
+      rollback_ready_instances: rollbackReady,
+      containment_failures: verificationFails
+    },
     instances: instanceId ? undefined : state.instances
   };
+  if (instanceId && out.record) {
+    out.record_verification = verifyContainment(out.record as AnyObj, policy);
+    out.record_rollback_readiness = rollbackReadiness(out.record as AnyObj);
+  }
   process.stdout.write(`${JSON.stringify(out)}\n`);
 }
 
