@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T09:37:52.687Z",
-  "source_hash": "81cb9d6f97f31c057b6d6b35",
+  "generated_at": "2026-03-02T09:37:54.493Z",
+  "source_hash": "01ba231a2bd345a74ebc8ba5",
   "row_count": 373,
   "active_count": 1,
-  "archive_count": 364,
+  "archive_count": 365,
   "rows": [
     {
       "id": "BL-001",
@@ -1281,7 +1281,7 @@
       "id": "RR-007",
       "class": "backlog",
       "wave": "RR",
-      "status": "open",
+      "status": "done",
       "title": "Supply-chain trust gap",
       "problem": "Build/dependency compromise bypasses runtime protections",
       "acceptance": "Signed reproducible builds + SBOM + provenance verification in release CI; linked: `V3-048`",
