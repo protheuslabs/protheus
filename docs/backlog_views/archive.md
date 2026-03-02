@@ -1,6 +1,6 @@
 # Backlog Archive View
 
-Generated: 2026-03-02T09:37:54.493Z
+Generated: 2026-03-02T09:37:56.343Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
@@ -131,6 +131,7 @@ Generated: 2026-03-02T09:37:54.493Z
 | RR-005 | backlog | RR | done | Operational complexity debt |  |
 | RR-006 | backlog | RR | done | Key and secret lifecycle fragility |  |
 | RR-007 | backlog | RR | done | Supply-chain trust gap |  |
+| RR-008 | backlog | RR | done | Multi-node partition and split-brain semantics |  |
 | V3-DUAL-001 | backlog | V3 | done | Duality Belief Engine Seed |  |
 | V3-ATTR-001 | backlog | V3 | done | Lightweight Value Attribution Primitive |  |
 | V3-ATTR-002 | backlog | V3 | done | Storm Value Distribution Layer |  |

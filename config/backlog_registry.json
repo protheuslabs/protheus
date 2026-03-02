@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T09:37:54.493Z",
-  "source_hash": "01ba231a2bd345a74ebc8ba5",
+  "generated_at": "2026-03-02T09:37:56.343Z",
+  "source_hash": "ce5ca36c65c3c4b5b750cd10",
   "row_count": 373,
   "active_count": 1,
-  "archive_count": 365,
+  "archive_count": 366,
   "rows": [
     {
       "id": "BL-001",
@@ -1291,7 +1291,7 @@
       "id": "RR-008",
       "class": "backlog",
       "wave": "RR",
-      "status": "open",
+      "status": "done",
       "title": "Multi-node partition and split-brain semantics",
       "problem": "Scale-out behavior can diverge and corrupt global state",
       "acceptance": "Deterministic quorum + partition simulation tests + failover receipts; linked: `V3-046`, `V2-FND-005`",
