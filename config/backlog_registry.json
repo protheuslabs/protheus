@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T09:21:15.798Z",
-  "source_hash": "c5fe4593ee170829910f2128",
+  "generated_at": "2026-03-02T09:21:17.732Z",
+  "source_hash": "e4dd29974890ec901605b5ba",
   "row_count": 373,
   "active_count": 1,
-  "archive_count": 338,
+  "archive_count": 339,
   "rows": [
     {
       "id": "BL-001",
@@ -4149,7 +4149,7 @@
       "id": "V3-RACE-155",
       "class": "primitive-upgrade",
       "wave": "V3",
-      "status": "open",
+      "status": "done",
       "title": "Fractal Curriculum + Evaluation Oversight for Collective Training",
       "problem": "Distributed training quality degrades without a governed loop for data curation, curriculum mutation, and checkpoint evidence gates.",
       "acceptance": "Implement `systems/training/fractal_training_oversight.{ts,js}` + policy `config/fractal_training_oversight_policy.json`; user-specific model preference signals remain in `memory/training/preferences/` with adaptive curriculum weighting in `adaptive/training/curriculum/`; permanent curation/eval/gating logic remains in `systems/training/` + `systems/fractal/` + `config/`; checkpoint promotions require bounded evidence packs and non-regression receipts.",
