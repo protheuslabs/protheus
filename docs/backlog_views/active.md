@@ -1,6 +1,6 @@
 # Backlog Active View
 
-Generated: 2026-03-02T21:32:43.561Z
+Generated: 2026-03-02T21:35:23.852Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
@@ -215,16 +215,6 @@ Generated: 2026-03-02T21:32:43.561Z
 | V3-RACE-078 | hardening | V3 | queued | Negative-Signal Recovery & Salvage Lane | V3-RACE-069, V3-RACE-071, V3-RACE-072 |
 | V3-RACE-080 | hardening | V3 | queued | Cross-Temporal Signal Delta Engine | V3-RACE-069, V3-RACE-074 |
 | V3-RACE-081 | hardening | V3 | queued | Confidence Calibration & Probability Contracts | V3-RACE-069, V3-RACE-062 |
-| V3-RACE-091 | extension | V3 | queued | Value-of-Information Collection Planner | V3-RACE-080, V3-RACE-081, V3-RACE-084 |
-| V3-RACE-092 | primitive-upgrade | V3 | queued | Hypothesis Lifecycle Ledger | V3-RACE-083, V3-RACE-084 |
-| V3-RACE-093 | hardening | V3 | queued | Detector Error Taxonomy + Guarded Auto-Retuning | V3-RACE-086, V3-RACE-087, V3-RACE-092 |
-| V3-RACE-094 | hardening | V3 | queued | Ensemble Disagreement Escalation Lane | V3-RACE-083, V3-RACE-087 |
-| V3-RACE-095 | extension | V3 | queued | Novelty/Saturation Prioritization Engine | V3-RACE-080, V3-RACE-091 |
-| V3-RACE-096 | hardening | V3 | queued | Analysis Quality SLO Contract | V3-RACE-086, V3-RACE-081 |
-| V3-RACE-097 | hardening | V3 | queued | Ground-Truth Governance & Label Adjudication Lane | V3-RACE-086 |
-| V3-RACE-098 | primitive-upgrade | V3 | queued | Feature/Data Versioning Reproducibility Contract | V3-RACE-003, V3-RACE-086, BL-024 |
-| V3-RACE-099 | hardening | V3 | queued | Distribution-Shift Decomposition Engine | V3-RACE-080, V3-RACE-089 |
-| V3-RACE-100 | hardening | V3 | queued | Causal Validation Gate for High-Impact Analysis Claims | V3-RACE-082, V3-RACE-090 |
 | V3-RACE-101 | extension | V3 | queued | Active-Learning Uncertainty Queue | V3-RACE-088, V3-RACE-094, V3-RACE-097 |
 | V3-RACE-102 | extension | V3 | queued | Offline Statistical Lab Artifact Bridge (R/Python Optional) | V3-RACE-086, V3-RACE-096, V3-RACE-098 |
 | V3-RACE-361 | extension | V3 | queued | Offline R Analytics Runner + Research Organ Best-Fit Integration | V3-RACE-102, V3-RACE-096, V3-RACE-098 |
