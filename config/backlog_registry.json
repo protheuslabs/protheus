@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T09:26:33.446Z",
-  "source_hash": "f5ab82d9273335c277699f78",
+  "generated_at": "2026-03-02T09:29:40.142Z",
+  "source_hash": "80e54781994742c424d7d9a1",
   "row_count": 373,
   "active_count": 1,
-  "archive_count": 354,
+  "archive_count": 355,
   "rows": [
     {
       "id": "BL-001",
@@ -4335,7 +4335,7 @@
       "id": "V3-RACE-168",
       "class": "hardening",
       "wave": "V3",
-      "status": "open",
+      "status": "done",
       "title": "Ops Hardening Pack (Audit Chain + Background Hands + Skills UX)",
       "problem": "Production-grade unattended operation needs immutable audit continuity, bounded always-on work execution, and low-friction operator tooling.",
       "acceptance": "Implement `systems/audit/hash_chain_ledger.{ts,js}`, `systems/spine/background_hands_scheduler.{ts,js}`, and CLI integration in `systems/ops/protheusctl_skills_discover.{ts,js}` with policies; user-specific operator preferences live in `memory/ops/preferences/` and adaptive cadence/queue tuning under `adaptive/ops/`; permanent audit/scheduler/CLI contracts remain in `systems/` + `config/` with non-bypass integrity checks and rollback-safe controls.",

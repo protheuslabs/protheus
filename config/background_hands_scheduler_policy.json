@@ -1,0 +1,21 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "risk": {
+    "default_tier": 2,
+    "require_explicit_approval_tier": 3
+  },
+  "event_stream": {
+    "enabled": true,
+    "publish": true,
+    "stream": "spine.background_hands"
+  },
+  "paths": {
+    "memory_dir": "memory/ops/preferences",
+    "adaptive_index_path": "adaptive/ops/index.json",
+    "events_path": "state/spine/background_hands/events.jsonl",
+    "latest_path": "state/spine/background_hands/latest.json",
+    "receipts_path": "state/spine/background_hands/receipts.jsonl"
+  }
+}

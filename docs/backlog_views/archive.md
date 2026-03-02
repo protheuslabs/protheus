@@ -1,6 +1,6 @@
 # Backlog Archive View
 
-Generated: 2026-03-02T09:26:33.446Z
+Generated: 2026-03-02T09:29:40.142Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
@@ -349,6 +349,7 @@ Generated: 2026-03-02T09:26:33.446Z
 | V3-RACE-165 | extension | V3 | done | MCP Interoperability + Skill Discovery Gateway | V3-RACE-016, V3-RACE-031, V3-RACE-146 |
 | V3-RACE-166 | extension | V3 | done | A2A Delegation Plane (Agent-to-Agent Protocol Contracts) | V3-RACE-147, V3-RACE-165, V3-RACE-031 |
 | V3-RACE-167 | primitive-upgrade | V3 | done | System-3 Executive Layer (Growth Journal + Intrinsic Goal Loop) | V3-RACE-129, V3-PRO-001, V3-LOOP-001 |
+| V3-RACE-168 | hardening | V3 | done | Ops Hardening Pack (Audit Chain + Background Hands + Skills UX) | V3-RACE-041, V3-RACE-126, V3-RACE-165 |
 | V3-RACE-171 | primitive-upgrade | V3 | done | Cyclic Strategy Graph Runner (Governed State-Graph Execution) | V2-009, V3-RACE-165, V3-RACE-167 |
 | V3-RACE-172 | extension | V3 | done | Hierarchical Memory View Plane (Core/Edit/Summary + Swap-Safe Summarization) | V3-RACE-161, V3-RACE-164, V3-RACE-020 |
 | V3-RACE-173 | extension | V3 | done | Role-Based Crew Spawn Orchestrator (Shared Namespace Governance) | V3-RACE-145, V3-RACE-166, V3-RACE-171 |
