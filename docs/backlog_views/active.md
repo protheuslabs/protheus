@@ -1,6 +1,6 @@
 # Backlog Active View
 
-Generated: 2026-03-02T18:00:23.165Z
+Generated: 2026-03-02T18:01:53.997Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
@@ -82,4 +82,18 @@ Generated: 2026-03-02T18:00:23.165Z
 | V3-RACE-274 | hardening | V3 | queued | Google Zero-Trust Network Adapter (Cloud Armor + BeyondCorp) | V3-RACE-264, V3-RACE-246, V3-RACE-017 |
 | V3-RACE-275 | hardening | V3 | queued | Google Boundary Sovereignty Gate (On-Device or Google Boundary Only) | V3-RACE-269, V3-RACE-214, V3-RACE-017 |
 | V3-RACE-276 | hardening | V3 | queued | Google Chaos Promotion Gate (GKE Fault Injection + Chaos Mesh Evidence) | V3-RACE-264, V3-RACE-270, V3-RACE-247 |
+| V3-RACE-277 | extension | V3 | queued | NVIDIA Hardware Parity Pack (DGX/HGX/Grace-Blackwell Topology Profile) | V3-RACE-218, V3-RACE-248, V3-RACE-174 |
+| V3-RACE-278 | hardening | V3 | queued | NGC + NVIDIA AI Enterprise Image/Container Distribution Adapter | V3-RACE-244, V3-RACE-228, V3-RACE-120 |
+| V3-RACE-279 | hardening | V3 | queued | NVIDIA Enterprise Licensing/Compliance Support Lane | V3-RACE-245, V3-RACE-258, V3-RACE-288 |
+| V3-RACE-280 | primitive-upgrade | V3 | queued | CUDA-Native Execution Substrate (Zero-Copy + Graphs/Streams + Multi-GPU Scheduler) | V3-RACE-220, V3-RACE-263, V3-RACE-277 |
+| V3-RACE-281 | hardening | V3 | queued | Confidential GPU Compute Guard (Hopper/Blackwell Secure Mode) | V3-RACE-280, V3-RACE-252, V3-RACE-214 |
+| V3-RACE-282 | extension | V3 | queued | Triton Inference Backend Adapter (TensorRT-LLM Acceleration) | V3-RACE-280, V3-RACE-285, V3-RACE-116 |
+| V3-RACE-283 | hardening | V3 | queued | Omniverse Simulation Promotion Gate (Autogenesis Mandatory Adapter) | V3-RACE-270, V3-RACE-180, V3-RACE-181 |
+| V3-RACE-284 | extension | V3 | queued | Isaac Sim/ROS Embodied Validation Lane (Sim2Real Guard) | V3-RACE-283, V3-RACE-121, V3-RACE-172 |
+| V3-RACE-285 | extension | V3 | queued | NVIDIA NIM Deployment + TensorRT/Nemotron Model Routing Profile | V3-RACE-269, V3-RACE-280, V3-RACE-278 |
+| V3-RACE-286 | extension | V3 | queued | Intra-Host Massive Multi-GPU Federation Lane (NVSwitch/NVLink) | V3-RACE-123, V3-RACE-277, V3-RACE-280 |
+| V3-RACE-287 | extension | V3 | queued | NVIDIA Observability Adapter (Nsight + DCGM + NVML + GPU Heatmaps) | V3-RACE-243, V3-RACE-174, V3-RACE-191 |
+| V3-RACE-288 | hardening | V3 | queued | NVIDIA AI Enterprise Certification Readiness Lane | V3-RACE-279, V3-RACE-278, V3-RACE-245 |
+| V3-RACE-289 | extension | V3 | queued | DGX Cloud + NGC Hybrid Deployment Adapter (Auto-Scaling) | V3-RACE-241, V3-RACE-278, V3-RACE-285 |
+| V3-RACE-290 | hardening | V3 | queued | NVIDIA Accelerator-First Promotion Gate (Omniverse + HIL + DGX Chaos Evidence) | V3-RACE-283, V3-RACE-287, V3-RACE-214 |
 

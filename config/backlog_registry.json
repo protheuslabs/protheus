@@ -1,10 +1,10 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T18:00:23.165Z",
-  "source_hash": "b7cfc215f4ad2bfc8b05599e",
-  "row_count": 475,
-  "active_count": 78,
+  "generated_at": "2026-03-02T18:01:53.997Z",
+  "source_hash": "6eefbd32cd5852f10898eb61",
+  "row_count": 489,
+  "active_count": 92,
   "archive_count": 397,
   "rows": [
     {
@@ -5863,6 +5863,202 @@
         "V3-RACE-264",
         "V3-RACE-270",
         "V3-RACE-247"
+      ]
+    },
+    {
+      "id": "V3-RACE-277",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "NVIDIA Hardware Parity Pack (DGX/HGX/Grace-Blackwell Topology Profile)",
+      "problem": "NVIDIA stewardship requires first-class topology-aware runtime behavior for NVLink/NVSwitch classes beyond generic accelerator support.",
+      "acceptance": "Add hardware profile adapters for DGX/HGX/Grace-Blackwell topologies with topology-aware scheduling contracts, require verification receipts for capability/throughput/thermal parity, and include rollback-safe fallback to baseline accelerator profiles on mismatch.",
+      "dependencies": [
+        "V3-RACE-218",
+        "V3-RACE-248",
+        "V3-RACE-174"
+      ]
+    },
+    {
+      "id": "V3-RACE-278",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "NGC + NVIDIA AI Enterprise Image/Container Distribution Adapter",
+      "problem": "Certified NVIDIA deployments require signed/reproducible image lanes integrated with provider registries and release gates.",
+      "acceptance": "Add NGC distribution adapters for seed images/lane containers, require verification receipts for signature/provenance and reproducibility parity, and include rollback-safe channel freeze/revert behavior when integrity checks fail.",
+      "dependencies": [
+        "V3-RACE-244",
+        "V3-RACE-228",
+        "V3-RACE-120"
+      ]
+    },
+    {
+      "id": "V3-RACE-279",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "NVIDIA Enterprise Licensing/Compliance Support Lane",
+      "problem": "Enterprise support/SLA/compliance commitments need explicit policy/evidence contracts to avoid ad-hoc process drift.",
+      "acceptance": "Add licensing/compliance support lane with auditable entitlement/evidence outputs, require verification receipts for policy coverage and support matrix completeness, and include rollback-safe disable path for unverified enterprise feature flags.",
+      "dependencies": [
+        "V3-RACE-245",
+        "V3-RACE-258",
+        "V3-RACE-288"
+      ]
+    },
+    {
+      "id": "V3-RACE-280",
+      "class": "primitive-upgrade",
+      "wave": "V3",
+      "status": "queued",
+      "title": "CUDA-Native Execution Substrate (Zero-Copy + Graphs/Streams + Multi-GPU Scheduler)",
+      "problem": "High-throughput NVIDIA-native execution requires first-class CUDA scheduling primitives under governed runtime contracts.",
+      "acceptance": "Add CUDA execution lane with zero-copy memory paths, graph/stream scheduling, and NVLink-aware multi-GPU orchestration, require verification receipts for performance and parity, and include rollback-safe fallback to existing execution backends on regression.",
+      "dependencies": [
+        "V3-RACE-220",
+        "V3-RACE-263",
+        "V3-RACE-277"
+      ]
+    },
+    {
+      "id": "V3-RACE-281",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Confidential GPU Compute Guard (Hopper/Blackwell Secure Mode)",
+      "problem": "Sensitive contract/memory lanes need hardware-rooted GPU isolation where available to reduce exposure in high-capability deployments.",
+      "acceptance": "Add confidential GPU mode adapter for sensitive lanes, require verification receipts for attestation/isolation policy enforcement, and include rollback-safe fallback to baseline secure execution path when confidential mode is unavailable or fails.",
+      "dependencies": [
+        "V3-RACE-280",
+        "V3-RACE-252",
+        "V3-RACE-214"
+      ]
+    },
+    {
+      "id": "V3-RACE-282",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Triton Inference Backend Adapter (TensorRT-LLM Acceleration)",
+      "problem": "Production inference flexibility/perf improves with Triton backend support integrated into existing typed route contracts.",
+      "acceptance": "Add Triton adapter with dynamic batching/ensemble support and TensorRT-LLM acceleration hooks, require verification receipts for latency/throughput parity and correctness, and include rollback-safe backend disable path to default inference lanes on regression.",
+      "dependencies": [
+        "V3-RACE-280",
+        "V3-RACE-285",
+        "V3-RACE-116"
+      ]
+    },
+    {
+      "id": "V3-RACE-283",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Omniverse Simulation Promotion Gate (Autogenesis Mandatory Adapter)",
+      "problem": "NVIDIA stewardship expects physics-accurate simulation evidence before high-risk self-modification promotion.",
+      "acceptance": "Add Omniverse-backed simulation gate adapter to autogenesis promotion flow, require verification receipts linking simulation outcomes to promotion decisions, and include rollback-safe promotion hold when simulation evidence is missing or fails thresholds.",
+      "dependencies": [
+        "V3-RACE-270",
+        "V3-RACE-180",
+        "V3-RACE-181"
+      ]
+    },
+    {
+      "id": "V3-RACE-284",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Isaac Sim/ROS Embodied Validation Lane (Sim2Real Guard)",
+      "problem": "Robotics-grounded validation improves confidence for physically-coupled workflows and embodied lane behavior.",
+      "acceptance": "Add Isaac Sim/ROS validation adapters with Sim2Real test contracts, require verification receipts for embodied scenario coverage and regression outcomes, and include rollback-safe embodied-lane disable path on validation failures.",
+      "dependencies": [
+        "V3-RACE-283",
+        "V3-RACE-121",
+        "V3-RACE-172"
+      ]
+    },
+    {
+      "id": "V3-RACE-285",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "NVIDIA NIM Deployment + TensorRT/Nemotron Model Routing Profile",
+      "problem": "NVIDIA deployments need a provider-native model packaging/deployment path integrated with route policy controls.",
+      "acceptance": "Add NIM deployment adapter with TensorRT-LLM optimized model profile defaults and DGX cloud escalation hooks, require verification receipts for routing correctness/performance, and include rollback-safe reversion to baseline model profile on policy mismatch.",
+      "dependencies": [
+        "V3-RACE-269",
+        "V3-RACE-280",
+        "V3-RACE-278"
+      ]
+    },
+    {
+      "id": "V3-RACE-286",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Intra-Host Massive Multi-GPU Federation Lane (NVSwitch/NVLink)",
+      "problem": "Single-host supernode orchestration requires explicit intra-host federation semantics to exploit high-bandwidth GPU fabrics safely.",
+      "acceptance": "Add intra-host federation scheduler/contracts for NVSwitch/NVLink multi-GPU nodes, require verification receipts for memory/scheduling correctness and thermal/power stability, and include rollback-safe fallback to baseline multi-node federation semantics on instability.",
+      "dependencies": [
+        "V3-RACE-123",
+        "V3-RACE-277",
+        "V3-RACE-280"
+      ]
+    },
+    {
+      "id": "V3-RACE-287",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "NVIDIA Observability Adapter (Nsight + DCGM + NVML + GPU Heatmaps)",
+      "problem": "NVIDIA runtime operations need hardware-native telemetry to maintain reliability, tuning quality, and operator awareness.",
+      "acceptance": "Add Nsight/DCGM/NVML adapters for observability pipelines and dashboard overlays, require verification receipts for telemetry parity and signal freshness, and include rollback-safe fallback to baseline observability backends on adapter failure.",
+      "dependencies": [
+        "V3-RACE-243",
+        "V3-RACE-174",
+        "V3-RACE-191"
+      ]
+    },
+    {
+      "id": "V3-RACE-288",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "NVIDIA AI Enterprise Certification Readiness Lane",
+      "problem": "Certification readiness needs deterministic evidence generation for security/performance/support commitments in enterprise NVIDIA deployments.",
+      "acceptance": "Add certification-readiness lane with required evidence/checklists and support-matrix outputs, require verification receipts for completion and freshness, and include rollback-safe release hold when certification prerequisites are unmet.",
+      "dependencies": [
+        "V3-RACE-279",
+        "V3-RACE-278",
+        "V3-RACE-245"
+      ]
+    },
+    {
+      "id": "V3-RACE-289",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "DGX Cloud + NGC Hybrid Deployment Adapter (Auto-Scaling)",
+      "problem": "Hybrid NVIDIA cloud/on-prem rollout requires one-click deployment/scaling contracts tied to existing governance and receipt semantics.",
+      "acceptance": "Add DGX Cloud + NGC hybrid deployment/scaling adapters, require verification receipts for deployment parity and scaling correctness, and include rollback-safe cluster/profile disable path when deployment checks fail.",
+      "dependencies": [
+        "V3-RACE-241",
+        "V3-RACE-278",
+        "V3-RACE-285"
+      ]
+    },
+    {
+      "id": "V3-RACE-290",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "NVIDIA Accelerator-First Promotion Gate (Omniverse + HIL + DGX Chaos Evidence)",
+      "problem": "NVIDIA-targeted operations need explicit accelerator-first and HIL/chaos evidence gates in addition to core sovereignty controls.",
+      "acceptance": "Add promotion gate enforcing accelerator-first policy, Omniverse/HIL validation evidence, and DGX-targeted chaos receipts where applicable, require verification receipts on every promotion, and include rollback-safe fallback to baseline promotion policy when NVIDIA gate stability degrades.",
+      "dependencies": [
+        "V3-RACE-283",
+        "V3-RACE-287",
+        "V3-RACE-214"
       ]
     },
     {
