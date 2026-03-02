@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T09:18:31.293Z",
-  "source_hash": "fab9f0ec4e1dcdaa634e104f",
+  "generated_at": "2026-03-02T09:19:56.601Z",
+  "source_hash": "4b103279c4a4b770cddd7d1b",
   "row_count": 373,
   "active_count": 1,
-  "archive_count": 328,
+  "archive_count": 329,
   "rows": [
     {
       "id": "BL-001",
@@ -4009,7 +4009,7 @@
       "id": "V3-RACE-145",
       "class": "primitive-upgrade",
       "wave": "V3",
-      "status": "open",
+      "status": "done",
       "title": "Actor Runtime Substrate (Isolated Swarm Message-Passing)",
       "problem": "Existing orchestration is resilient but not yet unified under one actor-model contract for isolated state and deterministic mailbox semantics.",
       "acceptance": "Implement `systems/runtime/actor_runtime_substrate.{ts,js}` (Rust-backed where appropriate) + policy `config/actor_runtime_policy.json`; user-specific actor preferences/limits persist under `memory/runtime/actors/` with adaptive scheduling heuristics under `adaptive/runtime/actors/`; permanent actor runtime/mailbox/supervisor logic remains in `systems/runtime/` + `config/` with JetStream message-flow receipts.",

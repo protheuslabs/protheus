@@ -1,0 +1,21 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "risk": {
+    "default_tier": 2,
+    "require_explicit_approval_tier": 3
+  },
+  "event_stream": {
+    "enabled": true,
+    "publish": true,
+    "stream": "runtime.actor_substrate"
+  },
+  "paths": {
+    "memory_dir": "memory/runtime/actors",
+    "adaptive_index_path": "adaptive/runtime/actors/index.json",
+    "events_path": "state/runtime\/actor_substrate/events.jsonl",
+    "latest_path": "state/runtime\/actor_substrate/latest.json",
+    "receipts_path": "state/runtime\/actor_substrate/receipts.jsonl"
+  }
+}
