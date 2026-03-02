@@ -649,7 +649,11 @@
     "test:sensory:offline-lab-bridge": "node memory/tools/tests/offline_statistical_lab_artifact_bridge.test.js",
     "sensory:privacy-scoring:run": "node systems/sensory/sensitivity_privacy_aware_scoring_contract.js run",
     "sensory:privacy-scoring:status": "node systems/sensory/sensitivity_privacy_aware_scoring_contract.js status",
-    "test:sensory:privacy-scoring": "node memory/tools/tests/sensitivity_privacy_aware_scoring_contract.test.js"
+    "test:sensory:privacy-scoring": "node memory/tools/tests/sensitivity_privacy_aware_scoring_contract.test.js",
+    "sensory:detector-rollback:snapshot": "node systems/sensory/detector_rollback_migration_safety_contract.js snapshot",
+    "sensory:detector-rollback:apply": "node systems/sensory/detector_rollback_migration_safety_contract.js rollback latest",
+    "sensory:detector-rollback:status": "node systems/sensory/detector_rollback_migration_safety_contract.js status",
+    "test:sensory:detector-rollback": "node memory/tools/tests/detector_rollback_migration_safety_contract.test.js"
   },
   "bin": {
     "protheus": "./bin/protheus",

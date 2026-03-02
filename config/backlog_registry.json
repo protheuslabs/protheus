@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T04:19:25.705Z",
-  "source_hash": "dc1657491ad92699aa6b5128",
+  "generated_at": "2026-03-02T04:20:43.004Z",
+  "source_hash": "b9aa8d3858728a0753429026",
   "row_count": 127,
-  "active_count": 36,
-  "archive_count": 91,
+  "active_count": 35,
+  "archive_count": 92,
   "rows": [
     {
       "id": "V3-OPS-004",
@@ -1646,10 +1646,10 @@
       "id": "V3-RACE-104",
       "class": "hardening",
       "wave": "V3",
-      "status": "queued",
+      "status": "done",
       "title": "Detector Rollback & Migration Safety Contract",
       "problem": "Safe detector evolution requires fast rollback with evidence, not manual patchwork under pressure.",
-      "acceptance": "One-command rollback restores prior detector bundle, passes parity replay checks, and preserves schema compatibility across recent artifacts.",
+      "acceptance": "Added `systems/sensory/detector_rollback_migration_safety_contract.{ts,js}` + `config/detector_rollback_migration_safety_policy.json` to snapshot detector bundles, enforce schema-compatibility and replay-parity checks, and perform one-command rollback with auditable history/receipts under `state/sensory/analysis/detector_rollback/`; regression coverage in `memory/tools/tests/detector_rollback_migration_safety_contract.test.js`.",
       "dependencies": [
         "V3-RACE-087",
         "V3-RACE-098"

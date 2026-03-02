@@ -1,6 +1,6 @@
 # Backlog Archive View
 
-Generated: 2026-03-02T04:19:25.705Z
+Generated: 2026-03-02T04:20:43.004Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
@@ -88,6 +88,7 @@ Generated: 2026-03-02T04:19:25.705Z
 | V3-RACE-101 | extension | V3 | done | Active-Learning Uncertainty Queue | V3-RACE-088, V3-RACE-094, V3-RACE-097 |
 | V3-RACE-102 | extension | V3 | done | Offline Statistical Lab Artifact Bridge (R/Python Optional) | V3-RACE-086, V3-RACE-096, V3-RACE-098 |
 | V3-RACE-103 | hardening | V3 | done | Sensitivity/Privacy-Aware Signal Scoring Contract | V3-RACE-033, V3-RACE-044, V3-RACE-096 |
+| V3-RACE-104 | hardening | V3 | done | Detector Rollback & Migration Safety Contract | V3-RACE-087, V3-RACE-098 |
 | V3-RACE-106 | hardening | V3 | done | Unified Guard Check Registry (Manifest-Driven Gates) | V3-AEX-002, V3-RACE-CONF-008 |
 | V3-RACE-107 | hardening | V3 | done | Shared Policy Runtime Primitive | BL-024, V3-RACE-CONF-007 |
 | V3-RACE-108 | primitive-upgrade | V3 | done | Spawn Fan-Out Reduction Wave (Worker/Daemon Core) | V3-RACE-063, V3-RACE-064, V3-OPS-005 |
