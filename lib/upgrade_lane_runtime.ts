@@ -67,6 +67,18 @@ function loadPolicy(policyPath: string, defaults: any) {
   const risk = raw.risk && typeof raw.risk === 'object' ? raw.risk : {};
   const eventStream = raw.event_stream && typeof raw.event_stream === 'object' ? raw.event_stream : {};
   const paths = raw.paths && typeof raw.paths === 'object' ? raw.paths : {};
+  const mergedPaths = {
+    ...(base.paths && typeof base.paths === 'object' ? base.paths : {}),
+    ...(paths && typeof paths === 'object' ? paths : {})
+  };
+  const resolvedPaths: Record<string, string> = {};
+  for (const [key, value] of Object.entries(mergedPaths)) {
+    const fallbackRaw = base.paths && Object.prototype.hasOwnProperty.call(base.paths, key)
+      ? String(base.paths[key])
+      : '';
+    const fallback = fallbackRaw || `state/upgrade/${normalizeToken(key, 80) || 'path'}.json`;
+    resolvedPaths[key] = resolvePath(value, fallback);
+  }
   return {
     ...merged,
     version: cleanText(raw.version || base.version || '1.0', 32) || '1.0',
@@ -89,13 +101,7 @@ function loadPolicy(policyPath: string, defaults: any) {
         120
       ) || 'upgrade.lane'
     },
-    paths: {
-      memory_dir: resolvePath(paths.memory_dir, base.paths.memory_dir),
-      adaptive_index_path: resolvePath(paths.adaptive_index_path, base.paths.adaptive_index_path),
-      events_path: resolvePath(paths.events_path, base.paths.events_path),
-      latest_path: resolvePath(paths.latest_path, base.paths.latest_path),
-      receipts_path: resolvePath(paths.receipts_path, base.paths.receipts_path)
-    },
+    paths: resolvedPaths,
     policy_path: path.resolve(policyPath)
   };
 }

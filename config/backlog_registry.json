@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T09:02:00.049Z",
-  "source_hash": "36105b2c569848c4405b48ff",
+  "generated_at": "2026-03-02T09:03:53.594Z",
+  "source_hash": "5538e08de096bd48a7156a03",
   "row_count": 373,
   "active_count": 1,
-  "archive_count": 316,
+  "archive_count": 317,
   "rows": [
     {
       "id": "BL-001",
@@ -3832,7 +3832,7 @@
       "id": "V3-RACE-133",
       "class": "extension",
       "wave": "V3",
-      "status": "open",
+      "status": "done",
       "title": "Peer GPU Lending Marketplace (Governed, Contract-Bound)",
       "problem": "Donation-based compute flywheel exists, but direct user-to-user lending terms/settlement are missing.",
       "acceptance": "Extended `systems/economy/gpu_contribution_tracker.*` with `peer_lending` lane and settlement contracts in `systems/economy/peer_lending_market.{ts,js}`; user-specific lending agreements/allowlists live in `memory/economy/peer_lending/`, adaptive matching/credit heuristics in `adaptive/economy/peer_lending/`, while pricing/risk/settlement rules live in `systems/economy/` + `config/`; all lending mutations publish event-stream receipts.",
