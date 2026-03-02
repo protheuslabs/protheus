@@ -637,7 +637,10 @@
     "test:sensory:reproducibility": "node memory/tools/tests/feature_data_reproducibility_contract.test.js",
     "sensory:distribution-shift:run": "node systems/sensory/distribution_shift_decomposition_engine.js run",
     "sensory:distribution-shift:status": "node systems/sensory/distribution_shift_decomposition_engine.js status",
-    "test:sensory:distribution-shift": "node memory/tools/tests/distribution_shift_decomposition_engine.test.js"
+    "test:sensory:distribution-shift": "node memory/tools/tests/distribution_shift_decomposition_engine.test.js",
+    "sensory:causal-validation:run": "node systems/sensory/causal_validation_gate_high_impact.js run",
+    "sensory:causal-validation:status": "node systems/sensory/causal_validation_gate_high_impact.js status",
+    "test:sensory:causal-validation": "node memory/tools/tests/causal_validation_gate_high_impact.test.js"
   },
   "bin": {
     "protheus": "./bin/protheus",

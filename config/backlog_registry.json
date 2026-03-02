@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T04:14:18.441Z",
-  "source_hash": "e79e1749ec587207bd986ab4",
+  "generated_at": "2026-03-02T04:15:36.204Z",
+  "source_hash": "c568d6f93ae56d381691c15f",
   "row_count": 127,
-  "active_count": 40,
-  "archive_count": 87,
+  "active_count": 39,
+  "archive_count": 88,
   "rows": [
     {
       "id": "V3-OPS-004",
@@ -1591,10 +1591,10 @@
       "id": "V3-RACE-100",
       "class": "hardening",
       "wave": "V3",
-      "status": "queued",
+      "status": "done",
       "title": "Causal Validation Gate for High-Impact Analysis Claims",
       "problem": "Correlational signals can drive wrong policy changes without causal validation discipline.",
-      "acceptance": "High-impact analysis claims require replay/intervention evidence and fail closed when causal validation confidence is below policy threshold.",
+      "acceptance": "Added `systems/sensory/causal_validation_gate_high_impact.{ts,js}` + `config/causal_validation_gate_policy.json` to score high-impact claims for causal confidence from replay/intervention evidence and fail closed when policy thresholds are not met, with receipts under `state/sensory/analysis/causal_validation_gate/`; regression coverage in `memory/tools/tests/causal_validation_gate_high_impact.test.js`.",
       "dependencies": [
         "V3-RACE-082",
         "V3-RACE-090"

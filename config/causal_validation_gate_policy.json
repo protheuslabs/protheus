@@ -1,0 +1,18 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "high_impact_threshold": 0.7,
+  "min_causal_confidence": 0.65,
+  "min_intervention_count": 1,
+  "weights": {
+    "replay_evidence": 0.45,
+    "intervention_evidence": 0.35,
+    "source_reliability": 0.2
+  },
+  "paths": {
+    "claims_dir": "state/sensory/analysis/high_impact_claims",
+    "output_dir": "state/sensory/analysis/causal_validation_gate",
+    "latest_path": "state/sensory/analysis/causal_validation_gate/latest.json",
+    "receipts_path": "state/sensory/analysis/causal_validation_gate/receipts.jsonl"
+  }
+}
