@@ -2769,6 +2769,46 @@ Data boundary invariants for this intake:
 | V3-RACE-207 | hardening | V3 | done | Budget Envelope Partitioning (Execution Floor vs Dream/Idle Burn) | A single burn/autopause pressure lane can starve execution and trap the system in deferred preview mode despite viable low-cost actions. | Split token-economics envelopes into protected execution-floor reserve and dream/idle budget pools, enforce minimum execution share before autopause defers, emit verification receipts on reserve usage, and add rollback-safe policy fallback to unified budget mode. | V3-RACE-019, V3-RACE-022, V3-RACE-116 |
 | V3-RACE-208 | hardening | V3 | done | Model Health Stabilizer (Adaptive Probe Timeouts + Temporary Suppression/Rehab) | Repeated probe timeouts on key models degrade routing diversity and increase fallback pressure, hurting throughput reliability. | Add adaptive probe timeout policy plus temporary suppression/rehabilitation for unstable models, prove improved healthy-model availability with verification receipts, and include rollback policy to revert timeout/suppression tuning if latency or quality regresses. | V3-RACE-017, V3-RACE-019, V3-RACE-116 |
 
+## External Requirements Intake (Google Doc `1bw6PoJqkftJhLRLjPanv4fLzSrI-h_Sht9UpxDLh0Ck`, 2026-03-02)
+
+Objective: normalize the Platform Oracle + HostProfile + Adaptation Channel architecture into canonical backlog lanes while reusing already-delivered mobile/distribution/formal foundations and preserving fail-closed governance.
+
+Data boundary invariants for this intake:
+- host probing outputs and adaptation activation receipts remain in `state/` and are never treated as user-memory
+- permanent oracle/channel runtime code, policies, and CLI surfaces live only in `systems/`, `packages/`, `config/`, and `docs/`
+- user-specific host preferences/overrides (if any) remain in `memory/` + `adaptive/` and never become global defaults
+
+### Requirement Mapping (from intake)
+
+| Requirement (from intake) | Canonical Backlog Handling | Status | Requirement Action |
+|---|---|---|---|
+| Expand the burn-limiter sensor into a boot-time Platform Oracle that emits a signed typed `HostProfile` | `V3-RACE-209` | queued | Add oracle service with deterministic probe lifecycle and signed HostProfile receipts. |
+| Add Adaptation Channel contract (Rust trait + WASM guest API) with fail-closed generic fallback | `V3-RACE-210` | queued | Define stable channel ABI/registry and enforce generic fallback when no specific host match exists. |
+| Ship 5 host-specific channels (Ubuntu, FreeBSD, NixOS, Raspberry Pi OS, Alpine) activated only on `HostProfile` match | `V3-RACE-211` | queued | Implement channel pack with strict host predicates, lightweight modules, and non-match exclusion gates. |
+| Promote the 18 cross-platform GENERAL requirements into universal core behavior | `V3-RACE-212` | queued | Add a canonical general-requirement matrix and wire mandatory universal controls into oracle + generic channel paths. |
+| Add `protheusctl host adapt` and auto activation on first run/upgrade | `V3-RACE-213` | queued | Deliver operator CLI and deterministic auto-adapt workflow with receipt-backed activation history. |
+| Add formal verification gate that blocks lanes incompatible with active `HostProfile` | `V3-RACE-214` | queued | Extend formal lane checks with host-profile conformance proofs and fail-closed enforcement. |
+| Keep formal/chaos baseline for critical runtime paths in required checks | `RM-201`, `RM-204`, `V3-RACE-187` | covered | Reuse existing formal+chaos lanes as dependencies; only add host-profile-specific proof scope in this intake. |
+
+### Net-New Canonical Queue
+
+| ID | Class | Version | Status | Upgrade | Why | Exit Criteria | Depends On |
+|---|---|---|---|---|---|---|---|
+| V3-RACE-209 | primitive-upgrade | V3 | queued | Platform Oracle HostProfile Service (Burn-Limiter Expansion) | Steward-agnostic adaptation needs one authoritative, typed host identity contract before any channel or lane can safely activate. | Implement oracle probe lifecycle (`boot`, `promotion`, periodic re-probe) that emits signed `HostProfile` receipts containing OS/distro/variant/kernel/runtime/cloud/hardware/capability bits; fail closed to minimal mode when probe confidence is insufficient; expose deterministic status artifact for downstream gates and include rollback to last-known-good profile contract on probe regression. | V3-RACE-034, V3-RACE-116, V3-RACE-188 |
+| V3-RACE-210 | primitive-upgrade | V3 | queued | Adaptation Channel ABI (Rust Trait + WASM Guest Contract + Generic Fallback) | Cross-system portability requires a governed extension interface rather than scattered per-platform conditionals in core runtime paths. | Deliver adaptation-channel trait + WASM guest API + registry contract; require attested module metadata and explicit host predicate declaration; activate generic minimal channel when no specific match passes; emit non-bypass activation receipts and rollback-safe disable switches. | V3-RACE-209, V3-RACE-176, V3-RACE-185 |
+| V3-RACE-211 | extension | V3 | queued | Five-System Adaptation Channel Pack (Ubuntu/FreeBSD/NixOS/RaspberryPiOS/Alpine) | Platform-specific capabilities must stay isolated to matched hosts to avoid drift, policy violations, and unnecessary runtime weight. | Ship five channel modules with strict HostProfile predicates and system-specific hooks (packaging, security policy adapters, provisioning/orchestration bindings, update/exporter integration); enforce non-match non-activation and fallback-to-generic behavior; add unit/contract tests per channel. | V3-RACE-210, V3-RACE-175, V3-RACE-189, V3-RACE-193 |
+| V3-RACE-212 | extension | V3 | queued | Universal Platform Abstraction Matrix (18 GENERAL Requirements) | The intake's cross-platform requirements should be encoded once as universal contracts to prevent per-channel duplication and inconsistent guarantees. | Add explicit matrix mapping all 18 GENERAL requirements to core runtime controls (atomic/transactional rollout, capability security defaults, LTS posture hooks, offline cryptographic verification, declarative config, lightweight profiles, observability/SLA hooks, hardened defaults, rootless/container minimization, signed delta updates, power/thermal scheduling, reproducible distribution, and orchestration abstractions); verify each requirement has either core enforcement or documented conditional delegation, and keep a rollback-safe policy toggle to prior matrix revisions. | V3-RACE-209, V3-RACE-210, V3-RACE-211, V3-RACE-120 |
+| V3-RACE-213 | extension | V3 | queued | Host Adaptation Operator Surface (`protheusctl host adapt`) + Auto-Activation | Operators need deterministic visibility/control over adaptation decisions at install/upgrade time without manual file edits. | Implement `protheusctl host detect|adapt|status` with JSON/human outputs, receipted activation timeline, and first-run/upgrade auto-adapt execution path; include dry-run mode, fail-closed behavior, and rollback command contract. | V3-RACE-209, V3-RACE-210, V3-RACE-184 |
+| V3-RACE-214 | hardening | V3 | queued | HostProfile Conformance Formal Gate (Lane-Activation Proof Contract) | Without machine-checkable host compatibility proofs, new lanes can bypass adaptation policy and run with invalid assumptions. | Extend formal verification suite so every adaptive lane declares host compatibility predicates and proof stubs; block activation/merge when predicates are missing or violated; add adversarial mis-detection/false-profile chaos tests and signed proof receipts in required checks, with rollback-safe reversion to last verified predicate set. | V3-RACE-209, V3-RACE-210, V3-RACE-211, V3-RACE-187, V3-RACE-017 |
+
+### Human Backlog Intake (Platform Commitments / Non-Automatable)
+
+| Human Item (from intake) | Owner | Status | Backlog Action |
+|---|---|---|---|
+| Approve tiered host support policy (Tier-1 vs Tier-2 targets and support window commitments) | human | queued | Set release/maintenance scope for Ubuntu, FreeBSD, NixOS, Raspberry Pi OS, and Alpine channels. |
+| Approve external certification and store publication commitments (Snap/Brand Store, Canonical hardware, Pi Foundation repos, etc.) | human | queued | Define which vendor programs are in scope before enabling production channel publishing. |
+| Approve signing-key custody and rotation policy for multi-channel update distribution | human | queued | Lock key-management and emergency revoke process required for signed adaptation modules and delta updates. |
+
 ## Backlog Policy
 
 - Lower-impact items (<9% estimated gain) are intentionally parked below to protect V1 focus.

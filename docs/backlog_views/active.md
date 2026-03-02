@@ -1,6 +1,6 @@
 # Backlog Active View
 
-Generated: 2026-03-02T16:08:33.506Z
+Generated: 2026-03-02T17:50:09.161Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
@@ -14,3 +14,10 @@ Generated: 2026-03-02T16:08:33.506Z
 | V3-RACE-201 | hardening | V3 | queued | Mesh Result Quorum + Provenance Aggregation Contract | V3-RACE-200, V3-RACE-195, V3-RACE-136 |
 | V3-RACE-202 | extension | V3 | queued | Mobile Mesh Participation Scheduler (Charging/Thermal/Battery Policy Lane) | V3-RACE-190, V3-RACE-193, V3-RACE-200 |
 | V3-RACE-203 | extension | V3 | queued | Mesh Operator Surfaces (`protheusctl mesh *` + Contribution Topology View) | V3-RACE-200, V3-RACE-201, V3-RACE-199 |
+| V3-RACE-209 | primitive-upgrade | V3 | queued | Platform Oracle HostProfile Service (Burn-Limiter Expansion) | V3-RACE-034, V3-RACE-116, V3-RACE-188 |
+| V3-RACE-210 | primitive-upgrade | V3 | queued | Adaptation Channel ABI (Rust Trait + WASM Guest Contract + Generic Fallback) | V3-RACE-209, V3-RACE-176, V3-RACE-185 |
+| V3-RACE-211 | extension | V3 | queued | Five-System Adaptation Channel Pack (Ubuntu/FreeBSD/NixOS/RaspberryPiOS/Alpine) | V3-RACE-210, V3-RACE-175, V3-RACE-189, V3-RACE-193 |
+| V3-RACE-212 | extension | V3 | queued | Universal Platform Abstraction Matrix (18 GENERAL Requirements) | V3-RACE-209, V3-RACE-210, V3-RACE-211, V3-RACE-120 |
+| V3-RACE-213 | extension | V3 | queued | Host Adaptation Operator Surface (`protheusctl host adapt`) + Auto-Activation | V3-RACE-209, V3-RACE-210, V3-RACE-184 |
+| V3-RACE-214 | hardening | V3 | queued | HostProfile Conformance Formal Gate (Lane-Activation Proof Contract) | V3-RACE-209, V3-RACE-210, V3-RACE-211, V3-RACE-187, V3-RACE-017 |
+

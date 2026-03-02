@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T16:08:33.506Z",
-  "source_hash": "184cc4cbe0d675dfd91da19b",
-  "row_count": 407,
-  "active_count": 15,
-  "archive_count": 392,
+  "generated_at": "2026-03-02T17:50:09.161Z",
+  "source_hash": "2dece9affc43a5d123fc3752",
+  "row_count": 413,
+  "active_count": 16,
+  "archive_count": 397,
   "rows": [
     {
       "id": "BL-001",
@@ -4714,7 +4714,7 @@
       "id": "V3-RACE-195",
       "class": "hardening",
       "wave": "V3",
-      "status": "done",
+      "status": "queued",
       "title": "Red-Team Discovery Propagation Fabric (Quorum-Signed Global Update Broadcast)",
       "problem": "Red-team findings currently improve local defense lanes, but there is no explicit first-class fabric that packages every validated discovery into a globally propagated update across server, edge, and swarm nodes.",
       "acceptance": "Implement discovery package lane in `systems/redteam/` + `systems/distributed/` that signs findings, enforces quorum acceptance, broadcasts to all eligible nodes via provenance contracts, and emits immutable distribution receipts with replay-safe IDs and rollback hooks.",
@@ -4729,7 +4729,7 @@
       "id": "V3-RACE-196",
       "class": "extension",
       "wave": "V3",
-      "status": "done",
+      "status": "queued",
       "title": "Probationary Security Habit Apply + Promotion Loop",
       "problem": "Discovery broadcast alone is insufficient; nodes need deterministic probationary apply behavior with validation before promotion to active defense posture.",
       "acceptance": "Add node-side probationary apply contract that stages incoming security updates as habits, runs doctor/System3 validation, auto-promotes on pass, auto-reverts on failure, and records reason-coded receipts for every transition.",
@@ -4743,7 +4743,7 @@
       "id": "V3-RACE-197",
       "class": "extension",
       "wave": "V3",
-      "status": "done",
+      "status": "queued",
       "title": "V3-MINE Donor Reward Ledger + Mining-Share Issuance",
       "problem": "Compute-tithe discounts exist, but explicit donor share issuance and reward accounting needed for transparent, contribution-proportional payouts.",
       "acceptance": "Extend `systems/economy/` with V3-MINE ledger lane that converts verified useful compute into bounded share issuance, tracks accrual by donor identity, emits deterministic contribution->share receipts with anti-duplication guards, and includes rollback/replay recovery contracts for mis-awards.",
@@ -4757,7 +4757,7 @@
       "id": "V3-RACE-198",
       "class": "hardening",
       "wave": "V3",
-      "status": "done",
+      "status": "queued",
       "title": "V3-MINE Settlement & Attribution Bridge (Auto-Payout Safety Contract)",
       "problem": "Reward accrual without governed settlement creates trust gaps and payout ambiguity at scale.",
       "acceptance": "Add settlement contract in `systems/economy/` + blockchain bridge that executes periodic payout intents, enforces double-spend/replay protection, preserves provenance linkage to compute receipts, supports reversible hold/appeal states, and provides payout rollback path under policy.",
@@ -4771,7 +4771,7 @@
       "id": "V3-RACE-199",
       "class": "extension",
       "wave": "V3",
-      "status": "done",
+      "status": "queued",
       "title": "Donor Mining Dashboard + CLI (`protheusctl mine dashboard`)",
       "problem": "Donor adoption and trust depend on clear, auditable visibility into compute contribution and reward outcomes.",
       "acceptance": "Ship dashboard lane + CLI command that reports donor FLOPs, accepted work units, accrued/settled rewards, and projection bands from receipted state; include JSON/human outputs, rollback state visibility, and non-regression tests.",
@@ -4905,6 +4905,94 @@
         "V3-RACE-017",
         "V3-RACE-019",
         "V3-RACE-116"
+      ]
+    },
+    {
+      "id": "V3-RACE-209",
+      "class": "primitive-upgrade",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Platform Oracle HostProfile Service (Burn-Limiter Expansion)",
+      "problem": "Steward-agnostic adaptation needs one authoritative, typed host identity contract before any channel or lane can safely activate.",
+      "acceptance": "Implement oracle probe lifecycle (`boot`, `promotion`, periodic re-probe) that emits signed `HostProfile` receipts containing OS/distro/variant/kernel/runtime/cloud/hardware/capability bits; fail closed to minimal mode when probe confidence is insufficient; expose deterministic status artifact for downstream gates and include rollback to last-known-good profile contract on probe regression.",
+      "dependencies": [
+        "V3-RACE-034",
+        "V3-RACE-116",
+        "V3-RACE-188"
+      ]
+    },
+    {
+      "id": "V3-RACE-210",
+      "class": "primitive-upgrade",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Adaptation Channel ABI (Rust Trait + WASM Guest Contract + Generic Fallback)",
+      "problem": "Cross-system portability requires a governed extension interface rather than scattered per-platform conditionals in core runtime paths.",
+      "acceptance": "Deliver adaptation-channel trait + WASM guest API + registry contract; require attested module metadata and explicit host predicate declaration; activate generic minimal channel when no specific match passes; emit non-bypass activation receipts and rollback-safe disable switches.",
+      "dependencies": [
+        "V3-RACE-209",
+        "V3-RACE-176",
+        "V3-RACE-185"
+      ]
+    },
+    {
+      "id": "V3-RACE-211",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Five-System Adaptation Channel Pack (Ubuntu/FreeBSD/NixOS/RaspberryPiOS/Alpine)",
+      "problem": "Platform-specific capabilities must stay isolated to matched hosts to avoid drift, policy violations, and unnecessary runtime weight.",
+      "acceptance": "Ship five channel modules with strict HostProfile predicates and system-specific hooks (packaging, security policy adapters, provisioning/orchestration bindings, update/exporter integration); enforce non-match non-activation and fallback-to-generic behavior; add unit/contract tests per channel.",
+      "dependencies": [
+        "V3-RACE-210",
+        "V3-RACE-175",
+        "V3-RACE-189",
+        "V3-RACE-193"
+      ]
+    },
+    {
+      "id": "V3-RACE-212",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Universal Platform Abstraction Matrix (18 GENERAL Requirements)",
+      "problem": "The intake's cross-platform requirements should be encoded once as universal contracts to prevent per-channel duplication and inconsistent guarantees.",
+      "acceptance": "Add explicit matrix mapping all 18 GENERAL requirements to core runtime controls (atomic/transactional rollout, capability security defaults, LTS posture hooks, offline cryptographic verification, declarative config, lightweight profiles, observability/SLA hooks, hardened defaults, rootless/container minimization, signed delta updates, power/thermal scheduling, reproducible distribution, and orchestration abstractions); verify each requirement has either core enforcement or documented conditional delegation, and keep a rollback-safe policy toggle to prior matrix revisions.",
+      "dependencies": [
+        "V3-RACE-209",
+        "V3-RACE-210",
+        "V3-RACE-211",
+        "V3-RACE-120"
+      ]
+    },
+    {
+      "id": "V3-RACE-213",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Host Adaptation Operator Surface (`protheusctl host adapt`) + Auto-Activation",
+      "problem": "Operators need deterministic visibility/control over adaptation decisions at install/upgrade time without manual file edits.",
+      "acceptance": "Implement `protheusctl host detect|adapt|status` with JSON/human outputs, receipted activation timeline, and first-run/upgrade auto-adapt execution path; include dry-run mode, fail-closed behavior, and rollback command contract.",
+      "dependencies": [
+        "V3-RACE-209",
+        "V3-RACE-210",
+        "V3-RACE-184"
+      ]
+    },
+    {
+      "id": "V3-RACE-214",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "HostProfile Conformance Formal Gate (Lane-Activation Proof Contract)",
+      "problem": "Without machine-checkable host compatibility proofs, new lanes can bypass adaptation policy and run with invalid assumptions.",
+      "acceptance": "Extend formal verification suite so every adaptive lane declares host compatibility predicates and proof stubs; block activation/merge when predicates are missing or violated; add adversarial mis-detection/false-profile chaos tests and signed proof receipts in required checks, with rollback-safe reversion to last verified predicate set.",
+      "dependencies": [
+        "V3-RACE-209",
+        "V3-RACE-210",
+        "V3-RACE-211",
+        "V3-RACE-187",
+        "V3-RACE-017"
       ]
     },
     {

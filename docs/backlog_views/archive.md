@@ -1,14 +1,9 @@
 # Backlog Archive View
 
-Generated: 2026-03-02T16:08:33.506Z
+Generated: 2026-03-02T17:50:09.161Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
-| V3-RACE-204 | hardening | V3 | done | Preview-Horizon Success Criteria Contract (Deferred Metrics in Score-Only) | V3-RACE-017, V3-RACE-019, V3-RACE-116 |
-| V3-RACE-205 | hardening | V3 | done | Deterministic Execution-Floor Bootstrap Lane (1 Shippable Outcome Minimum) | V3-RACE-017, V3-RACE-019, V3-RACE-116 |
-| V3-RACE-206 | hardening | V3 | done | Score-Only Manual-Gate Exclusion & Selector Penalty | V3-RACE-017, V3-RACE-019, V3-RACE-116 |
-| V3-RACE-207 | hardening | V3 | done | Budget Envelope Partitioning (Execution Floor vs Dream/Idle Burn) | V3-RACE-019, V3-RACE-022, V3-RACE-116 |
-| V3-RACE-208 | hardening | V3 | done | Model Health Stabilizer (Adaptive Probe Timeouts + Temporary Suppression/Rehab) | V3-RACE-017, V3-RACE-019, V3-RACE-116 |
 | BL-001 | backlog | BL | done | External temp-data backup pipeline (outside git) |  |
 | BL-002 | backlog | BL | done | Skill quarantine enforcement in all install paths |  |
 | BL-003 | backlog | BL | done | Autonomy receipt dashboard/summary |  |
@@ -395,9 +390,15 @@ Generated: 2026-03-02T16:08:33.506Z
 | V3-RACE-192 | extension | V3 | done | Mobile Edge-Node Swarm Bridge (Nursery/Spawn Enrollment with Inherited Governance) | V3-RACE-131, V3-RACE-182, V3-RACE-189 |
 | V3-RACE-193 | extension | V3 | done | Mobile Wrapper & Runtime Distribution Pack (Android/Termux + iOS/Tauri) | V3-RACE-120, V3-RACE-189, V3-RACE-175 |
 | V3-RACE-194 | hardening | V3 | done | Mobile Competitive Benchmark & CI Matrix (Battery/Thermal/72h Autonomy) | V3-RACE-174, V3-RACE-190, V3-RACE-193 |
+| V3-RACE-204 | hardening | V3 | done | Preview-Horizon Success Criteria Contract (Deferred Metrics in Score-Only) | V3-RACE-017, V3-RACE-019, V3-RACE-116 |
+| V3-RACE-205 | hardening | V3 | done | Deterministic Execution-Floor Bootstrap Lane (1 Shippable Outcome Minimum) | V3-RACE-017, V3-RACE-019, V3-RACE-116 |
+| V3-RACE-206 | hardening | V3 | done | Score-Only Manual-Gate Exclusion & Selector Penalty | V3-RACE-017, V3-RACE-019, V3-RACE-116 |
+| V3-RACE-207 | hardening | V3 | done | Budget Envelope Partitioning (Execution Floor vs Dream/Idle Burn) | V3-RACE-019, V3-RACE-022, V3-RACE-116 |
+| V3-RACE-208 | hardening | V3 | done | Model Health Stabilizer (Adaptive Probe Timeouts + Temporary Suppression/Rehab) | V3-RACE-017, V3-RACE-019, V3-RACE-116 |
 | OPT-001 | backlog | OPT | done | Eyes signal weighting retune in router ranking |  |
 | OPT-002 | backlog | OPT | done | Prompt cache policy split by lane (reflex/autonomy/dream) |  |
 | OPT-003 | backlog | OPT | done | Dream fallback quality scoring before proposal injection |  |
 | OPT-004 | backlog | OPT | done | Proposal semantic dedupe (near-duplicate clustering) |  |
 | OPT-005 | backlog | OPT | done | Outcome correlation expansion (task-type x eye-source x model) |  |
 | OPT-006 | backlog | OPT | done | Focus-controller trigger adaptation cadence tuning |  |
+
