@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T04:03:14.945Z",
-  "source_hash": "c9ea698bac125f0a1025b80c",
+  "generated_at": "2026-03-02T04:04:41.686Z",
+  "source_hash": "91d07a2c0590790ebc7b159b",
   "row_count": 127,
-  "active_count": 48,
-  "archive_count": 79,
+  "active_count": 47,
+  "archive_count": 80,
   "rows": [
     {
       "id": "V3-OPS-004",
@@ -1486,10 +1486,10 @@
       "id": "V3-RACE-092",
       "class": "primitive-upgrade",
       "wave": "V3",
-      "status": "queued",
+      "status": "done",
       "title": "Hypothesis Lifecycle Ledger",
       "problem": "Detector learning is weak without explicit end-to-end hypothesis outcome memory.",
-      "acceptance": "Lifecycle ledger captures hypothesis state transitions and outcome linkage, feeding detector calibration and promotion decisions.",
+      "acceptance": "Added `systems/sensory/hypothesis_lifecycle_ledger.{ts,js}` + `config/hypothesis_lifecycle_ledger_policy.json` to persist hypothesis state transitions (`proposed/tested/accepted/rejected`) with challenger/outcome linkage into a durable ledger and lifecycle state artifacts under `state/sensory/analysis/hypothesis_lifecycle/`; regression coverage in `memory/tools/tests/hypothesis_lifecycle_ledger.test.js`.",
       "dependencies": [
         "V3-RACE-083",
         "V3-RACE-084"

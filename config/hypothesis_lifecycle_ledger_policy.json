@@ -1,0 +1,14 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "paths": {
+    "hypotheses_dir": "state/sensory/cross_signal/hypotheses",
+    "challenger_dir": "state/sensory/analysis/adversarial_challenger",
+    "outcomes_dir": "state/sensory/analysis/hypothesis_outcomes",
+    "state_path": "state/sensory/analysis/hypothesis_lifecycle/state.json",
+    "ledger_path": "state/sensory/analysis/hypothesis_lifecycle/ledger.jsonl",
+    "output_dir": "state/sensory/analysis/hypothesis_lifecycle",
+    "latest_path": "state/sensory/analysis/hypothesis_lifecycle/latest.json",
+    "receipts_path": "state/sensory/analysis/hypothesis_lifecycle/receipts.jsonl"
+  }
+}

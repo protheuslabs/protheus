@@ -612,7 +612,10 @@
     "test:sensory:causal-scorer": "node memory/tools/tests/causal_vs_correlation_signal_scorer.test.js",
     "sensory:voi-planner:run": "node systems/sensory/value_of_information_collection_planner.js run",
     "sensory:voi-planner:status": "node systems/sensory/value_of_information_collection_planner.js status",
-    "test:sensory:voi-planner": "node memory/tools/tests/value_of_information_collection_planner.test.js"
+    "test:sensory:voi-planner": "node memory/tools/tests/value_of_information_collection_planner.test.js",
+    "sensory:hypothesis-ledger:run": "node systems/sensory/hypothesis_lifecycle_ledger.js run",
+    "sensory:hypothesis-ledger:status": "node systems/sensory/hypothesis_lifecycle_ledger.js status",
+    "test:sensory:hypothesis-ledger": "node memory/tools/tests/hypothesis_lifecycle_ledger.test.js"
   },
   "bin": {
     "protheus": "./bin/protheus",
