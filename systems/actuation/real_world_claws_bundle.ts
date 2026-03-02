@@ -211,10 +211,40 @@ function hasVerificationHint(input: AnyObj, keywords: string[]) {
   return false;
 }
 
+function buildExecutionVerification(plan: AnyObj, stepOutcomes: AnyObj[], reasons: string[]) {
+  const outcomes = Array.isArray(stepOutcomes) ? stepOutcomes : [];
+  const handoffRequired = outcomes.filter((row: AnyObj) => row && row.verification_handoff_required === true).length;
+  return {
+    stage: cleanText(plan && plan.status || 'unknown', 60) || 'unknown',
+    checks: {
+      approval_required: String(plan && plan.risk || 'medium') === 'high' || String(plan && plan.risk || 'medium') === 'critical',
+      steps_all_ok: outcomes.length > 0 ? outcomes.every((row: AnyObj) => row && row.ok === true) : null,
+      verification_handoff_required: handoffRequired > 0
+    },
+    totals: {
+      steps: outcomes.length,
+      succeeded: outcomes.filter((row: AnyObj) => row && row.ok === true).length,
+      failed: outcomes.filter((row: AnyObj) => row && row.ok !== true).length,
+      verification_handoff_required: handoffRequired
+    },
+    blocked_reasons: Array.isArray(reasons) ? reasons.slice(0, 16) : []
+  };
+}
+
+function buildExecutionRollbackContract(planId: string | null, executionId: string | null = null) {
+  const arg = executionId ? `--execution-id=${executionId}` : '--execution-id=<id>';
+  return {
+    available: true,
+    command: `node systems/actuation/real_world_claws_bundle.js rollback ${arg} --reason=<reason>`,
+    plan_id: planId
+  };
+}
+
 function usage() {
   console.log('Usage:');
   console.log('  node systems/actuation/real_world_claws_bundle.js plan --plan-json="{objective,risk,steps:[...]}"');
   console.log('  node systems/actuation/real_world_claws_bundle.js execute --plan-id=<id> [--apply=1|0] [--approver-id=<id>] [--approval-note="..."]');
+  console.log('  node systems/actuation/real_world_claws_bundle.js rollback --execution-id=<id> [--reason=<text>]');
   console.log('  node systems/actuation/real_world_claws_bundle.js status [--plan-id=<id>]');
 }
 
@@ -421,8 +451,53 @@ function cmdExecute(args: AnyObj) {
   state.plans[planId] = plan;
   saveState(state);
   appendJsonl(RECEIPTS_PATH, { ts: nowIso(), type: 'real_world_claws_execute', ...record });
-  process.stdout.write(`${JSON.stringify({ ok: success, type: 'real_world_claws_execute', execution: record })}\n`);
+  process.stdout.write(`${JSON.stringify({
+    ok: success,
+    type: 'real_world_claws_execute',
+    execution: record,
+    verification: buildExecutionVerification(plan, stepOutcomes, reasons),
+    rollback_contract: buildExecutionRollbackContract(planId, executionId)
+  })}\n`);
   if (!success) process.exit(1);
+}
+
+function cmdRollback(args: AnyObj) {
+  const state = loadState();
+  const executionId = normalizeToken(args.execution_id || args['execution-id'] || '', 120);
+  const record = executionId ? state.executions[executionId] : null;
+  if (!record) {
+    process.stdout.write(`${JSON.stringify({ ok: false, type: 'real_world_claws_rollback', error: 'execution_not_found' })}\n`);
+    process.exit(1);
+  }
+  const reason = cleanText(args.reason || 'manual_rollback', 220) || 'manual_rollback';
+  record.rolled_back = true;
+  record.rollback = {
+    ts: nowIso(),
+    reason
+  };
+  state.executions[executionId] = record;
+  const planId = normalizeToken(record.plan_id || '', 120);
+  if (planId && state.plans[planId]) {
+    state.plans[planId].status = 'rolled_back';
+    state.plans[planId].rollback = {
+      ts: nowIso(),
+      reason,
+      execution_id: executionId
+    };
+  }
+  saveState(state);
+  const out = {
+    ok: true,
+    type: 'real_world_claws_rollback',
+    ts: nowIso(),
+    execution_id: executionId,
+    plan_id: planId || null,
+    reason,
+    execution: record,
+    rollback_contract: buildExecutionRollbackContract(planId || null, executionId)
+  };
+  appendJsonl(RECEIPTS_PATH, out);
+  process.stdout.write(`${JSON.stringify(out)}\n`);
 }
 
 function cmdStatus(args: AnyObj) {
@@ -437,6 +512,9 @@ function cmdStatus(args: AnyObj) {
     plans: planId ? undefined : state.plans,
     executions: planId ? undefined : state.executions
   };
+  if (planId && out.plan) {
+    out.rollback_contract = buildExecutionRollbackContract(planId, normalizeToken(out.plan.last_execution_id || '', 120) || null);
+  }
   process.stdout.write(`${JSON.stringify(out)}\n`);
 }
 
@@ -449,6 +527,7 @@ function main() {
   }
   if (cmd === 'plan') return cmdPlan(args);
   if (cmd === 'execute') return cmdExecute(args);
+  if (cmd === 'rollback') return cmdRollback(args);
   if (cmd === 'status') return cmdStatus(args);
   usage();
   process.exit(2);

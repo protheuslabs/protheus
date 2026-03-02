@@ -44,7 +44,8 @@ function defaultPolicy() {
     },
     paths: {
       latest_path: 'state/ops/relocatable_path_contract/latest.json',
-      receipts_path: 'state/ops/relocatable_path_contract/receipts.jsonl'
+      receipts_path: 'state/ops/relocatable_path_contract/receipts.jsonl',
+      rewrite_inventory_path: 'state/ops/relocatable_path_contract/path_rewrite_inventory.json'
     }
   };
 }
@@ -66,7 +67,8 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
     },
     paths: {
       latest_path: resolvePath(paths.latest_path, base.paths.latest_path),
-      receipts_path: resolvePath(paths.receipts_path, base.paths.receipts_path)
+      receipts_path: resolvePath(paths.receipts_path, base.paths.receipts_path),
+      rewrite_inventory_path: resolvePath(paths.rewrite_inventory_path, base.paths.rewrite_inventory_path)
     }
   };
 }
@@ -86,13 +88,36 @@ function walk(absPath: string, exts: string[], out: string[]) {
   }
 }
 
+function extractHabitsPathRefs(line: string) {
+  const out: string[] = [];
+  const re = /(^|[^a-zA-Z0-9_.:-])(habits\/[a-zA-Z0-9_./-]+)/g;
+  let match = re.exec(String(line || ''));
+  while (match) {
+    const token = cleanText(match[2], 260);
+    if (token && !out.includes(token)) out.push(token);
+    match = re.exec(String(line || ''));
+  }
+  return out;
+}
+
+function suggestedRewritePath(legacyPath: string) {
+  if (String(legacyPath || '').startsWith('habits/')) {
+    return `systems/adaptive/${legacyPath}`;
+  }
+  return legacyPath;
+}
+
 function runCheck(policy: any, strict: boolean) {
   const files: string[] = [];
   for (const item of policy.scan.include) {
-    walk(path.join(ROOT, String(item)), policy.scan.ext, files);
+    const token = String(item || '');
+    const absPath = path.isAbsolute(token) ? path.resolve(token) : path.join(ROOT, token);
+    walk(absPath, policy.scan.ext, files);
   }
 
   const findings: any[] = [];
+  const rewriteInventoryRows: any[] = [];
+  const rewriteSeen = new Set<string>();
   for (const fileAbs of files) {
     const relPath = rel(fileAbs);
     if (policy.scan.allowlist.some((prefix: string) => relPath.startsWith(String(prefix)))) continue;
@@ -100,6 +125,19 @@ function runCheck(policy: any, strict: boolean) {
     const lines = raw.split('\n');
     for (let i = 0; i < lines.length; i += 1) {
       const line = lines[i];
+      const refs = extractHabitsPathRefs(line);
+      for (const legacyPath of refs) {
+        const key = `${legacyPath}|${relPath}|${i + 1}`;
+        if (rewriteSeen.has(key)) continue;
+        rewriteSeen.add(key);
+        rewriteInventoryRows.push({
+          legacy_path: legacyPath,
+          suggested_path: suggestedRewritePath(legacyPath),
+          source_file: relPath,
+          line: i + 1,
+          strategy: 'compat_wrapper_then_migrate'
+        });
+      }
       if (line.includes('forbidden_patterns')) continue;
       for (const pattern of policy.scan.forbidden_patterns) {
         if (!String(pattern)) continue;
@@ -113,10 +151,24 @@ function runCheck(policy: any, strict: boolean) {
       }
     }
   }
+  const rewriteInventory = {
+    schema_id: 'relocatable_path_rewrite_inventory',
+    schema_version: '1.0',
+    generated_at: nowIso(),
+    entries: rewriteInventoryRows
+      .sort((a, b) => {
+        const ka = `${String(a.legacy_path)}|${String(a.source_file)}|${Number(a.line)}`;
+        const kb = `${String(b.legacy_path)}|${String(b.source_file)}|${Number(b.line)}`;
+        return ka.localeCompare(kb);
+      })
+      .slice(0, 5000)
+  };
+  writeJsonAtomic(policy.paths.rewrite_inventory_path, rewriteInventory);
 
   const checks = {
     no_forbidden_absolute_paths: findings.length === 0,
-    workspace_root_defined: !!ROOT
+    workspace_root_defined: !!ROOT,
+    rewrite_inventory_written: fs.existsSync(policy.paths.rewrite_inventory_path)
   };
   const blocking = Object.entries(checks).filter(([, ok]) => ok !== true).map(([k]) => k);
   const pass = blocking.length === 0;
@@ -132,9 +184,11 @@ function runCheck(policy: any, strict: boolean) {
     blocking_checks: blocking,
     counts: {
       files_scanned: files.length,
-      findings: findings.length
+      findings: findings.length,
+      rewrite_inventory_entries: rewriteInventory.entries.length
     },
     findings: findings.slice(0, 500),
+    rewrite_inventory_path: rel(policy.paths.rewrite_inventory_path),
     workspace_root: rel(ROOT)
   };
 

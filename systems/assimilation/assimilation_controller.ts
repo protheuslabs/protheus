@@ -786,6 +786,32 @@ function assess(policy: AnyObj, paths: AnyObj, capabilityFilter: string | null, 
   };
 }
 
+function buildAssimilationVerification(row: AnyObj, blocked: string[] = []) {
+  const graft = row && row.graft && typeof row.graft === 'object' ? row.graft : {};
+  const legalGate = row && row.legal_gate && typeof row.legal_gate === 'object' ? row.legal_gate : {};
+  const research = row && row.research_probe && typeof row.research_probe === 'object' ? row.research_probe : {};
+  const nursery = row && row.nursery && typeof row.nursery === 'object' ? row.nursery : {};
+  const adversarial = row && row.adversarial && typeof row.adversarial === 'object' ? row.adversarial : {};
+  return {
+    stage: cleanText(row && row.outcome || 'unknown', 60) || 'unknown',
+    checks: {
+      legal_gate_allow: legalGate.allowed === true,
+      research_fit_sufficient: String(research.fit || '') === 'sufficient',
+      nursery_passed: nursery.passed === true,
+      adversarial_passed: adversarial.passed === true,
+      graft_apply_executed: graft.apply_executed === true
+    },
+    blocked_reasons: Array.isArray(blocked) ? blocked.slice(0, 24) : []
+  };
+}
+
+function buildAssimilationRollbackContract(capabilityId: string) {
+  return {
+    available: true,
+    command: `node systems/assimilation/assimilation_controller.js rollback --capability-id=${capabilityId} --reason=<reason>`
+  };
+}
+
 function commandRecordUse(args: AnyObj) {
   const policyPath = path.resolve(String(args.policy || process.env.ASSIMILATION_POLICY_PATH || DEFAULT_POLICY_PATH));
   const policy = loadPolicy(policyPath);
@@ -846,13 +872,17 @@ function commandAssess(args: AnyObj) {
     type: 'assimilation_assess',
     ts: nowTs,
     candidates_ready: out.ready.length,
-    candidates: out.ready.slice(0, 64),
+    candidates: out.ready.slice(0, 64).map((row: AnyObj) => ({
+      ...row,
+      rollback_contract: buildAssimilationRollbackContract(String(row && row.capability_id || 'unknown'))
+    })),
     ledger_path: relPath(paths.ledger_path),
     policy: {
       version: policy.version,
       shadow_only: policy.shadow_only === true,
       path: relPath(policyPath)
-    }
+    },
+    rollback_contract: buildAssimilationRollbackContract('<capability_id>')
   };
 }
 
@@ -1490,6 +1520,8 @@ function commandRun(args: AnyObj) {
       value_attribution: valueAttribution,
       outcome
     };
+    row.verification = buildAssimilationVerification(row, reasonCodes);
+    row.rollback_contract = buildAssimilationRollbackContract(capabilityId);
     results.push(row);
     if (collectiveReasoning && collectiveReasoning.ok === true) {
       appendJsonl(paths.weaver_collective_profiles_path, {
@@ -1572,6 +1604,19 @@ function commandRun(args: AnyObj) {
     candidates_considered: selected.length,
     candidates_processed: results.length,
     candidates: results,
+    verification: {
+      stage: 'run_complete',
+      checks: {
+        processed_any: results.length > 0,
+        all_apply_paths_have_rollback: results.every((row: AnyObj) => (
+          row && row.graft && row.graft.apply_executed === true
+            ? !!(row.rollback_contract && row.rollback_contract.available === true)
+            : true
+        ))
+      },
+      blocked_reasons: []
+    },
+    rollback_contract: buildAssimilationRollbackContract('<capability_id>'),
     ledger_path: relPath(paths.ledger_path),
     weaver_collective_profiles_path: relPath(paths.weaver_collective_profiles_path),
     weaver_ensemble_profiles_path: relPath(paths.weaver_ensemble_profiles_path),
@@ -1670,7 +1715,16 @@ function commandRollback(args: AnyObj) {
     ts: nowTs,
     capability_id: capabilityId,
     reason,
-    ledger_updated_at: outLedger.updated_at
+    ledger_updated_at: outLedger.updated_at,
+    verification: {
+      stage: 'rolled_back',
+      checks: {
+        capability_present: true,
+        rollback_applied: true
+      },
+      blocked_reasons: []
+    },
+    rollback_contract: buildAssimilationRollbackContract(capabilityId)
   };
 }
 
@@ -1698,7 +1752,8 @@ function commandStatus(args: AnyObj) {
     run_id: String(payload.run_id || ''),
     candidates_processed: Number(payload.candidates_processed || 0),
     shadow_only: !!(payload.policy && payload.policy.shadow_only === true),
-    apply_requested: payload.apply_requested === true
+    apply_requested: payload.apply_requested === true,
+    rollback_contract: buildAssimilationRollbackContract('<capability_id>')
   };
 }
 

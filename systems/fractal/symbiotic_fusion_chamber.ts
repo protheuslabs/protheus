@@ -96,6 +96,35 @@ function hash10(seed: string) {
   return crypto.createHash('sha256').update(seed).digest('hex').slice(0, 10);
 }
 
+function buildFusionVerification(record: AnyObj, policy: AnyObj, blocked: string[], stageRaw: unknown) {
+  const members = Array.isArray(record && record.members) ? record.members : [];
+  return {
+    stage: cleanText(stageRaw || record && record.status || 'unknown', 60) || 'unknown',
+    members_total: members.length,
+    policy_checks: {
+      min_members: Number(policy && policy.min_members || 0),
+      max_members: Number(policy && policy.max_members || 0),
+      ttl_hours: Number(record && record.ttl_hours || 0),
+      policy_approval_required: policy && policy.require_policy_approval === true,
+      policy_approval_present: record && record.policy_approval === true
+    },
+    blocked_reasons: Array.isArray(blocked) ? blocked.slice(0, 12) : []
+  };
+}
+
+function buildFusionRollbackContract(fusionId: string, record: AnyObj) {
+  const rollbackReceiptId = cleanText(
+    record && record.rollback_receipt_id || `rb_${hash10(`${fusionId}|rollback_contract`)}`,
+    80
+  );
+  return {
+    available: true,
+    command: `node systems/fractal/symbiotic_fusion_chamber.js dissolve --fusion-id=${fusionId} --reason=<reason>`,
+    rollback_receipt_id: rollbackReceiptId,
+    dissolved: record && record.status === 'dissolved'
+  };
+}
+
 function defaultPolicy() {
   return {
     version: '1.0',
@@ -217,7 +246,14 @@ function cmdForm(args: AnyObj) {
   state.fusions[fusionId] = record;
   saveState(state);
   appendJsonl(RECEIPTS_PATH, { ts, type: 'symbiotic_fusion_form', ok: blocked.length === 0, blocked, fusion_id: fusionId, members, ttl_hours: ttlHours });
-  process.stdout.write(`${JSON.stringify({ ok: blocked.length === 0, type: 'symbiotic_fusion_form', blocked, record })}\n`);
+  process.stdout.write(`${JSON.stringify({
+    ok: blocked.length === 0,
+    type: 'symbiotic_fusion_form',
+    blocked,
+    record,
+    verification: buildFusionVerification(record, policy, blocked, blocked.length ? 'form_blocked' : 'active'),
+    rollback_contract: buildFusionRollbackContract(fusionId, record)
+  })}\n`);
   if (blocked.length) process.exit(1);
 }
 
@@ -236,14 +272,29 @@ function cmdDissolve(args: AnyObj) {
   state.fusions[fusionId] = row;
   saveState(state);
   appendJsonl(RECEIPTS_PATH, { ts: nowIso(), type: 'symbiotic_fusion_dissolve', ok: true, fusion_id: fusionId, reason });
-  process.stdout.write(`${JSON.stringify({ ok: true, type: 'symbiotic_fusion_dissolve', record: row })}\n`);
+  process.stdout.write(`${JSON.stringify({
+    ok: true,
+    type: 'symbiotic_fusion_dissolve',
+    record: row,
+    verification: buildFusionVerification(row, loadPolicy(), [], 'dissolved'),
+    rollback_contract: buildFusionRollbackContract(fusionId, row)
+  })}\n`);
 }
 
 function cmdStatus(args: AnyObj) {
   const state = loadState();
+  const policy = loadPolicy(args.policy ? path.resolve(String(args.policy)) : POLICY_PATH);
   const fusionId = normalizeToken(args.fusion_id || args['fusion-id'] || '', 120);
   if (fusionId) {
-    process.stdout.write(`${JSON.stringify({ ok: true, type: 'symbiotic_fusion_status', fusion_id: fusionId, record: state.fusions[fusionId] || null })}\n`);
+    const row = state.fusions[fusionId] || null;
+    process.stdout.write(`${JSON.stringify({
+      ok: true,
+      type: 'symbiotic_fusion_status',
+      fusion_id: fusionId,
+      record: row,
+      verification: row ? buildFusionVerification(row, policy, [], row.status || 'unknown') : null,
+      rollback_contract: row ? buildFusionRollbackContract(fusionId, row) : null
+    })}\n`);
     return;
   }
   const rows = Object.values(state.fusions || {});
@@ -273,4 +324,3 @@ function main() {
 if (require.main === module) {
   main();
 }
-

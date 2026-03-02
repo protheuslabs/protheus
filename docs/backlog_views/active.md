@@ -1,20 +1,10 @@
 # Backlog Active View
 
-Generated: 2026-03-02T23:09:34.946Z
+Generated: 2026-03-02T23:25:03.061Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
 | V2-012 | backlog | V2 | blocked | External security assessment and pen-test cycle (canonical blocker) |  |
-| V3-007 | backlog | V3 | queued | Self-code evolution sandbox + guarded merge |  |
-| V3-008 | backlog | V3 | queued | Runtime symbiotic fusion execution chamber |  |
-| V3-009 | backlog | V3 | queued | Resonance field actuation gates |  |
-| V3-012 | backlog | V3 | queued | Product positioning/architecture narrative pack |  |
-| V3-013 | backlog | V3 | queued | Independent child-organ runtime stack for recursive workflows |  |
-| V3-014 | backlog | V3 | queued | In-flight workflow mutation engine (runtime step-level adaptation) |  |
-| V3-015 | backlog | V3 | queued | Consent-gated cross-workflow learning conduit to master model queue |  |
-| V3-017 | backlog | V3 | queued | Full real-world claws actuation bundle |  |
-| V3-030 | backlog | V3 | queued | Tool assimilation pipeline (Research -> Forge -> Nursery -> Doctor graft) |  |
-| V4-CLEAN-001 | hygiene | V4 | queued | Habits path migration prep (abstraction + compatibility) |  |
 | V4-CLEAN-002 | hygiene | V4 | queued | Helix codex surface hardening without runtime break | V4-CLEAN-001 |
 | V4-CLEAN-003 | security | V4 | queued | Secret broker backend uplift (keychain/age additive) | V4-CLEAN-001 |
 | V4-CLEAN-004 | hygiene | V4 | queued | Root scaffolding rationalization with contract-first moves | V4-CLEAN-001, V4-CLEAN-003 |

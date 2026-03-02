@@ -197,6 +197,8 @@ function run() {
     `without safety attestation, workflow should fail payload=${JSON.stringify(blockedOut)}`
   );
   assert.strictEqual(Number(blockedOut.runtime_mutations_applied || 0), 0, 'mutation should not apply when gate blocks');
+  assert.strictEqual(blockedOut.runtime_mutation_verification.safety_attested, false);
+  assert.ok(blockedOut.runtime_mutation_rollback_contract && blockedOut.runtime_mutation_rollback_contract.available === true);
 
   const mutationReceiptPath = path.join(mutationReceiptsDir, `${dateStr}.jsonl`);
   const blockedRows = fs.existsSync(mutationReceiptPath)
@@ -229,6 +231,8 @@ function run() {
   assert.ok(allowedOut && allowedOut.ok === true, 'allowed run payload should be returned');
   assert.strictEqual(Number(allowedOut.workflows_succeeded || 0), 1, 'safety-attested mutation run should succeed');
   assert.ok(Number(allowedOut.runtime_mutations_applied || 0) >= 1, 'mutation should apply once attested');
+  assert.strictEqual(allowedOut.runtime_mutation_verification.safety_attested, true);
+  assert.strictEqual(allowedOut.runtime_mutation_verification.rollback_ready_for_failed_workflows, true);
 }
 
 run();

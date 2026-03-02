@@ -83,3 +83,20 @@ Protheus is a governed autonomous execution system for organizations that need:
 - Practical deployment with measurable operating constraints
 
 It is designed to be inspected, audited, and operated under explicit policy contracts.
+
+## 7. Verification + Rollback Contract
+
+Positioning claims are anchored to concrete runtime evidence:
+
+- Verification signals:
+  - policy gate receipts (`state/security/`, `state/ops/`)
+  - workflow execution + mutation receipts (`state/adaptive/workflows/executor/`)
+  - actuation and learning receipts (`state/actuation/`, `state/workflow/`)
+- Rollback signals:
+  - mutation rollback receipts (`runtime_mutation_receipts_path`)
+  - lane rollback receipts (`child_organ_runtime`, `self_code_evolution_sandbox`, `real_world_claws`)
+  - canary demotion / rollout rollback guard in workflow executor
+
+Narrative constraint:
+
+- Any external claim about autonomy level, safety, or performance must map to a current repository artifact with a verifiable receipt path.

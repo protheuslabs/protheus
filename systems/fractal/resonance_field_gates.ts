@@ -127,6 +127,30 @@ function parseResonance(raw: unknown) {
   }
 }
 
+function buildVerification(policy: AnyObj, objectiveId: string, sources: string[], confidence: number, blocked: string[], fallback: boolean) {
+  const allowlistActive = Array.isArray(policy && policy.allowed_objective_prefixes)
+    && policy.allowed_objective_prefixes.length > 0;
+  const objectiveAllowlisted = !allowlistActive
+    || policy.allowed_objective_prefixes.some((prefix: string) => objectiveId.startsWith(prefix));
+  return {
+    checks: {
+      consensus_sources_met: sources.length >= Number(policy && policy.min_consensus_sources || 0),
+      confidence_met: confidence >= Number(policy && policy.min_confidence || 0),
+      objective_allowlisted: objectiveAllowlisted,
+      fallback_triggered: fallback === true
+    },
+    blocked_reasons: blocked.slice(0, 12)
+  };
+}
+
+function buildRollbackContract(objectiveId: string) {
+  return {
+    available: true,
+    strategy: 'set influence=0 and force fallback hint',
+    command: `node systems/fractal/resonance_field_gates.js evaluate --objective-id=${objectiveId} --resonance-json={\"score\":0,\"confidence\":0,\"sources\":[]}`
+  };
+}
+
 function usage() {
   console.log('Usage:');
   console.log('  node systems/fractal/resonance_field_gates.js evaluate --objective-id=<id> --resonance-json="{score,confidence,sources:[...]}"');
@@ -186,7 +210,9 @@ function cmdEvaluate(args: AnyObj) {
     hint,
     influence,
     blocked,
-    fallback
+    fallback,
+    verification: buildVerification(policy, objectiveId, sources, confidence, blocked, fallback),
+    rollback_contract: buildRollbackContract(objectiveId)
   };
   writeJsonAtomic(LATEST_PATH, out);
   appendJsonl(RECEIPTS_PATH, out);
@@ -200,7 +226,12 @@ function cmdStatus() {
     process.stdout.write(`${JSON.stringify({ ok: false, type: 'resonance_field_status', error: 'status_not_found' })}\n`);
     process.exit(1);
   }
-  process.stdout.write(`${JSON.stringify({ ok: true, type: 'resonance_field_status', latest })}\n`);
+  process.stdout.write(`${JSON.stringify({
+    ok: true,
+    type: 'resonance_field_status',
+    latest,
+    rollback_contract: latest && latest.objective_id ? buildRollbackContract(String(latest.objective_id)) : null
+  })}\n`);
 }
 
 function main() {
@@ -219,4 +250,3 @@ function main() {
 if (require.main === module) {
   main();
 }
-

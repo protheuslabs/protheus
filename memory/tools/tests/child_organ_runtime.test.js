@@ -137,6 +137,8 @@ function run() {
   assert.strictEqual(spawnedOut.ok, true);
   assert.strictEqual(spawnedOut.child.envelope.token_cap, 450);
   assert.strictEqual(spawnedOut.child.contracts.clearance_limit, 'l2');
+  assert.ok(spawnedOut.verification && spawnedOut.verification.checks.token_cap_bounded === true);
+  assert.ok(spawnedOut.rollback_contract && spawnedOut.rollback_contract.available === true);
   assert.ok(spawnedOut.wallet_bootstrap_bridge && spawnedOut.wallet_bootstrap_bridge.ok === true, 'spawn should enqueue wallet bridge proposal');
   assert.strictEqual(String(spawnedOut.wallet_bootstrap_bridge.stage || ''), 'shadow_proposed', 'wallet bridge should stay in shadow');
 
@@ -159,6 +161,7 @@ function run() {
   assert.strictEqual(runShadowOut.ok, true);
   assert.strictEqual(runShadowOut.run.lane_results.length, 3);
   assert.strictEqual(runShadowOut.child.status, 'active');
+  assert.strictEqual(runShadowOut.verification.checks.lanes_ok, true);
 
   // Force one lane failure and ensure deterministic rollback-pending state.
   writeJson(policyPath, {
@@ -197,6 +200,7 @@ function run() {
   assert.strictEqual(runFailedOut.ok, false);
   assert.strictEqual(runFailedOut.child.status, 'rollback_pending');
   assert.ok(runFailedOut.run.rollback_receipt_id, 'rollback receipt id should be emitted');
+  assert.strictEqual(runFailedOut.verification.checks.lanes_ok, false);
 
   const rollback = runNode(scriptPath, [
     'rollback',
@@ -207,6 +211,7 @@ function run() {
   const rollbackOut = parseJson(rollback, 'rollback');
   assert.strictEqual(rollbackOut.ok, true);
   assert.strictEqual(rollbackOut.child.status, 'rolled_back');
+  assert.ok(rollbackOut.rollback_contract && rollbackOut.rollback_contract.rolled_back === true);
 
   const status = runNode(scriptPath, ['status', '--child-id=child_a'], env, repoRoot);
   assert.strictEqual(status.status, 0, status.stderr || status.stdout);

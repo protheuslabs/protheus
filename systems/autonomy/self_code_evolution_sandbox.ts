@@ -101,6 +101,44 @@ function hash10(seed: string) {
   return crypto.createHash('sha256').update(seed).digest('hex').slice(0, 10);
 }
 
+function buildVerificationSummary(row: AnyObj, extra: AnyObj = {}) {
+  const tests = Array.isArray(row && row.test_results) ? row.test_results : [];
+  const approvals = Array.isArray(row && row.approvals) ? row.approvals : [];
+  const testsPassed = tests.filter((item: AnyObj) => item && item.ok === true).length;
+  return {
+    stage: cleanText(extra.stage || row && row.status || 'unknown', 60) || 'unknown',
+    tests_total: tests.length,
+    tests_passed: testsPassed,
+    tests_failed: Math.max(0, tests.length - testsPassed),
+    approvals_count: Array.from(new Set(approvals.map((item: unknown) => normalizeToken(item, 120)).filter(Boolean))).length,
+    symbiosis_gate_evaluated: !!(row
+      && row.symbiosis_recursion_gate
+      && row.symbiosis_recursion_gate.evaluated === true),
+    policy_checks: {
+      tests_required: extra.tests_required != null ? extra.tests_required === true : null,
+      approvals_required: extra.approvals_required != null ? Number(extra.approvals_required) : null,
+      apply_requested: extra.apply_requested != null ? extra.apply_requested === true : null
+    },
+    blocked_reasons: Array.isArray(extra.blocked_reasons)
+      ? extra.blocked_reasons.slice(0, 16)
+      : []
+  };
+}
+
+function buildRollbackContract(sandboxId: string, row: AnyObj) {
+  const rollbackReceiptId = cleanText(
+    row && row.rollback && row.rollback.rollback_receipt_id
+      || `rb_${hash10(`${sandboxId}|rollback_contract`)}`,
+    80
+  );
+  return {
+    available: true,
+    command: `node systems/autonomy/self_code_evolution_sandbox.js rollback --sandbox-id=${sandboxId} --reason=<reason>`,
+    rollback_receipt_id: rollbackReceiptId,
+    rolled_back: row && row.status === 'rolled_back'
+  };
+}
+
 function parseRecursionRequest(args: AnyObj) {
   const depthRaw = args['recursion-depth'] != null
     ? args['recursion-depth']
@@ -284,7 +322,18 @@ function cmdPropose(args: AnyObj) {
     target_path: targetPath,
     symbiosis_recursion_gate: symbiosisGate
   });
-  process.stdout.write(`${JSON.stringify({ ok: true, type: 'self_code_evolution_propose', record, symbiosis_recursion_gate: symbiosisGate })}\n`);
+  process.stdout.write(`${JSON.stringify({
+    ok: true,
+    type: 'self_code_evolution_propose',
+    record,
+    symbiosis_recursion_gate: symbiosisGate,
+    verification: buildVerificationSummary(record, {
+      stage: 'proposed',
+      tests_required: policy.require_tests_before_merge === true,
+      approvals_required: policy.required_approvals
+    }),
+    rollback_contract: buildRollbackContract(sandboxId, record)
+  })}\n`);
 }
 
 function cmdTest(args: AnyObj) {
@@ -321,7 +370,18 @@ function cmdTest(args: AnyObj) {
   state.sandboxes[sandboxId] = row;
   saveState(state);
   appendJsonl(RECEIPTS_PATH, { ts: nowIso(), type: 'self_code_evolution_test', ok: allOk, sandbox_id: sandboxId, tests: results.length });
-  process.stdout.write(`${JSON.stringify({ ok: allOk, type: 'self_code_evolution_test', sandbox_id: sandboxId, results })}\n`);
+  process.stdout.write(`${JSON.stringify({
+    ok: allOk,
+    type: 'self_code_evolution_test',
+    sandbox_id: sandboxId,
+    results,
+    verification: buildVerificationSummary(row, {
+      stage: allOk ? 'tested' : 'test_failed',
+      tests_required: policy.require_tests_before_merge === true,
+      approvals_required: policy.required_approvals
+    }),
+    rollback_contract: buildRollbackContract(sandboxId, row)
+  })}\n`);
   if (!allOk) process.exit(1);
 }
 
@@ -380,7 +440,14 @@ function cmdMerge(args: AnyObj) {
     sandbox_id: sandboxId,
     approvals: uniqueApprovals,
     blocked,
-    symbiosis_recursion_gate: symbiosisGate
+    symbiosis_recursion_gate: symbiosisGate,
+    verification: buildVerificationSummary(row, {
+      stage: blocked.length ? 'merge_blocked' : 'merged',
+      tests_required: policy.require_tests_before_merge === true,
+      approvals_required: policy.required_approvals,
+      apply_requested: apply === true,
+      blocked_reasons: blocked
+    })
   };
   if (!blocked.length) {
     row.status = 'merged';
@@ -388,7 +455,15 @@ function cmdMerge(args: AnyObj) {
     row.merged_at = nowIso();
     state.sandboxes[sandboxId] = row;
     saveState(state);
+    out.verification = buildVerificationSummary(row, {
+      stage: 'merged',
+      tests_required: policy.require_tests_before_merge === true,
+      approvals_required: policy.required_approvals,
+      apply_requested: apply === true,
+      blocked_reasons: []
+    });
   }
+  out.rollback_contract = buildRollbackContract(sandboxId, row);
   appendJsonl(RECEIPTS_PATH, out);
   process.stdout.write(`${JSON.stringify(out)}\n`);
   if (blocked.length) process.exit(1);
@@ -419,14 +494,31 @@ function cmdRollback(args: AnyObj) {
     reason,
     rollback_receipt_id: row.rollback.rollback_receipt_id
   });
-  process.stdout.write(`${JSON.stringify({ ok: true, type: 'self_code_evolution_rollback', record: row })}\n`);
+  process.stdout.write(`${JSON.stringify({
+    ok: true,
+    type: 'self_code_evolution_rollback',
+    record: row,
+    verification: buildVerificationSummary(row, {
+      stage: 'rolled_back',
+      blocked_reasons: ['rollback_applied']
+    }),
+    rollback_contract: buildRollbackContract(sandboxId, row)
+  })}\n`);
 }
 
 function cmdStatus(args: AnyObj) {
   const state = loadState();
   const sandboxId = normalizeToken(args.sandbox_id || args['sandbox-id'] || '', 120);
   if (sandboxId) {
-    process.stdout.write(`${JSON.stringify({ ok: true, type: 'self_code_evolution_status', sandbox_id: sandboxId, record: state.sandboxes[sandboxId] || null })}\n`);
+    const row = state.sandboxes[sandboxId] || null;
+    process.stdout.write(`${JSON.stringify({
+      ok: true,
+      type: 'self_code_evolution_status',
+      sandbox_id: sandboxId,
+      record: row,
+      verification: row ? buildVerificationSummary(row) : null,
+      rollback_contract: row ? buildRollbackContract(sandboxId, row) : null
+    })}\n`);
     return;
   }
   const rows = Object.values(state.sandboxes || {});

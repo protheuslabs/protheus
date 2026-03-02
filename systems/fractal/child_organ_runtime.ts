@@ -238,6 +238,41 @@ function parseContracts(raw: unknown) {
   }
 }
 
+function buildChildVerification(child: AnyObj, policy: AnyObj, laneResults: AnyObj[] = [], reasons: string[] = []) {
+  const envelope = child && child.envelope && typeof child.envelope === 'object' ? child.envelope : {};
+  const checks = {
+    token_cap_bounded: Number(envelope.token_cap || 0) <= Number(policy.resource_envelope.token_cap_max || 0),
+    memory_mb_bounded: Number(envelope.memory_mb || 0) <= Number(policy.resource_envelope.memory_mb_max || 0),
+    cpu_threads_bounded: Number(envelope.cpu_threads || 0) <= Number(policy.resource_envelope.cpu_threads_max || 0),
+    rollback_required: !!(child
+      && child.contracts
+      && child.contracts.rollback_required !== false),
+    lanes_ok: laneResults.length
+      ? laneResults.every((row: AnyObj) => row && row.ok === true)
+      : null
+  };
+  return {
+    stage: cleanText(child && child.status || 'unknown', 60) || 'unknown',
+    checks,
+    lane_results_total: laneResults.length,
+    lane_failures: laneResults.filter((row: AnyObj) => row && row.ok !== true).length,
+    blocked_reasons: Array.isArray(reasons) ? reasons.slice(0, 16) : []
+  };
+}
+
+function buildChildRollbackContract(childId: string, child: AnyObj) {
+  const receiptId = cleanText(
+    child && child.rollback && child.rollback.rollback_receipt_id || `rb_${sha(`${childId}|rollback_contract`).slice(0, 18)}`,
+    80
+  );
+  return {
+    available: true,
+    command: `node systems/fractal/child_organ_runtime.js rollback --child-id=${childId} --reason=<reason>`,
+    rollback_receipt_id: receiptId,
+    rolled_back: child && child.status === 'rolled_back'
+  };
+}
+
 function enqueueWalletBootstrapProposal(instanceIdRaw: unknown, birthContextRaw: unknown, approvalNoteRaw: unknown) {
   const instanceId = normalizeToken(instanceIdRaw, 160);
   if (!instanceId) return { ok: false, skipped: true, reason: 'wallet_bootstrap_instance_id_missing' };
@@ -361,7 +396,9 @@ function cmdSpawn(args: AnyObj) {
     ok: true,
     type: 'child_organ_spawn',
     child: childRecord,
-    wallet_bootstrap_bridge: walletBootstrapBridge
+    wallet_bootstrap_bridge: walletBootstrapBridge,
+    verification: buildChildVerification(childRecord, policy),
+    rollback_contract: buildChildRollbackContract(childId, childRecord)
   })}\n`);
 }
 
@@ -429,7 +466,14 @@ function cmdRun(args: AnyObj) {
   state.runs[runId] = runRecord;
   saveState(state);
   appendJsonl(RECEIPTS_PATH, { ts: nowIso(), type: 'child_organ_run', ...runRecord });
-  process.stdout.write(`${JSON.stringify({ ok, type: 'child_organ_run', run: runRecord, child: state.children[child.child_id] })}\n`);
+  process.stdout.write(`${JSON.stringify({
+    ok,
+    type: 'child_organ_run',
+    run: runRecord,
+    child: state.children[child.child_id],
+    verification: buildChildVerification(state.children[child.child_id], policy, laneResults, reasons),
+    rollback_contract: buildChildRollbackContract(child.child_id, state.children[child.child_id])
+  })}\n`);
   if (!ok) process.exit(1);
 }
 
@@ -463,7 +507,13 @@ function cmdRollback(args: AnyObj) {
     reason,
     previous_status: previousStatus
   });
-  process.stdout.write(`${JSON.stringify({ ok: true, type: 'child_organ_rollback', child })}\n`);
+  process.stdout.write(`${JSON.stringify({
+    ok: true,
+    type: 'child_organ_rollback',
+    child,
+    verification: buildChildVerification(child, loadPolicy(), [], ['rollback_applied']),
+    rollback_contract: buildChildRollbackContract(child.child_id, child)
+  })}\n`);
 }
 
 function cmdStatus(args: AnyObj) {
@@ -478,6 +528,11 @@ function cmdStatus(args: AnyObj) {
     children: childId ? undefined : state.children,
     runs: childId ? undefined : state.runs
   };
+  if (childId && out.child) {
+    const policy = loadPolicy(args.policy ? path.resolve(String(args.policy)) : POLICY_PATH);
+    out.verification = buildChildVerification(out.child, policy);
+    out.rollback_contract = buildChildRollbackContract(childId, out.child);
+  }
   process.stdout.write(`${JSON.stringify(out)}\n`);
 }
 

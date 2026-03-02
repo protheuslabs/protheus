@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T23:09:34.946Z",
-  "source_hash": "60113b99fe66421f5a86f5d7",
+  "generated_at": "2026-03-02T23:25:03.061Z",
+  "source_hash": "682553851c1694f967e33b9e",
   "row_count": 627,
-  "active_count": 370,
-  "archive_count": 257,
+  "active_count": 360,
+  "archive_count": 267,
   "rows": [
     {
       "id": "BL-001",
@@ -1071,30 +1071,30 @@
       "id": "V3-007",
       "class": "backlog",
       "wave": "V3",
-      "status": "queued",
+      "status": "done",
       "title": "Self-code evolution sandbox + guarded merge",
       "problem": "Deliver high-end adaptive autonomy without uncontrolled self-edit risk in production planes",
-      "acceptance": "Candidate code mutations run only in disposable sandbox branches with contract/security/harness gates, require dual approval for promotion, and support instant runtime rollback/hot-failover on regression",
+      "acceptance": "Sandbox propose/test/merge/rollback flows now emit explicit verification bundles + rollback contracts/receipts (including policy checks, approval/test counts, and symbiosis gate posture), with regression coverage in `memory/tools/tests/self_code_evolution_sandbox.test.js`.",
       "dependencies": []
     },
     {
       "id": "V3-008",
       "class": "backlog",
       "wave": "V3",
-      "status": "queued",
+      "status": "done",
       "title": "Runtime symbiotic fusion execution chamber",
       "problem": "Upgrade current symbiosis planning into reversible runtime capability leases only after safety/governance and replay confidence are proven",
-      "acceptance": "Implement `formSymbiosis()/dissolveSymbiosis()` with TTL, rollback receipts, and no direct mutation outside policy-root approval",
+      "acceptance": "Fusion form/dissolve/status now surface verification bundles (member/policy/TTL checks) and deterministic rollback contracts, while preserving policy-root gating and receipt trails (`memory/tools/tests/symbiotic_fusion_chamber.test.js`).",
       "dependencies": []
     },
     {
       "id": "V3-009",
       "class": "backlog",
       "wave": "V3",
-      "status": "queued",
+      "status": "done",
       "title": "Resonance field actuation gates",
       "problem": "Move from telemetry-only harmony to bounded execution influence once reliability is proven under load",
-      "acceptance": "Add consensus-triggered mode hints with strict max influence, objective gating, and automatic fallback when confidence drops",
+      "acceptance": "Resonance evaluate/status outputs now include explicit verification checks (consensus/confidence/allowlist/fallback) plus deterministic rollback contracts for immediate neutralization, with updated coverage in `memory/tools/tests/resonance_field_gates.test.js`.",
       "dependencies": []
     },
     {
@@ -1111,40 +1111,40 @@
       "id": "V3-012",
       "class": "backlog",
       "wave": "V3",
-      "status": "queued",
+      "status": "done",
       "title": "Product positioning/architecture narrative pack",
       "problem": "Convert implementation depth into clear external narrative for teams/investors/auditors without overstating autonomy claims",
-      "acceptance": "Added `docs/PRODUCT_POSITIONING_ARCHITECTURE_PACK.md` covering bounded autonomy model, governance constraints, deployment stages, and evidence-linked architecture narrative for operators/auditors",
+      "acceptance": "Expanded `docs/PRODUCT_POSITIONING_ARCHITECTURE_PACK.md` with explicit verification/rollback contract mapping and artifact-evidence claim constraints, with document contract coverage in `memory/tools/tests/product_positioning_architecture_pack.test.js`.",
       "dependencies": []
     },
     {
       "id": "V3-013",
       "class": "backlog",
       "wave": "V3",
-      "status": "queued",
+      "status": "done",
       "title": "Independent child-organ runtime stack for recursive workflows",
       "problem": "Move from structural child drafts to true autonomous child organs with isolated lifecycle and governance",
-      "acceptance": "Child workflows can run independent nursery/red-team/evolution loops with bounded resource envelopes, parent-child contracts, and deterministic rollback",
+      "acceptance": "Child spawn/run/rollback/status now emit bounded-resource verification bundles + rollback contracts per organ lifecycle while retaining deterministic rollback receipts (`memory/tools/tests/child_organ_runtime.test.js`).",
       "dependencies": []
     },
     {
       "id": "V3-014",
       "class": "backlog",
       "wave": "V3",
-      "status": "queued",
+      "status": "done",
       "title": "In-flight workflow mutation engine (runtime step-level adaptation)",
       "problem": "Achieve true live adaptation during execution rather than run-to-run mutation only",
-      "acceptance": "Runner can apply bounded step mutations mid-flight (guard add, rollback inject, retry retune), with safety gates, veto window, and automatic rollback receipts",
+      "acceptance": "Workflow executor run/status surfaces now include runtime mutation verification and explicit rollback contracts in stdout payloads + persisted run snapshots, with gating regression coverage in `memory/tools/tests/workflow_executor_mutation_gate.test.js`.",
       "dependencies": []
     },
     {
       "id": "V3-015",
       "class": "backlog",
       "wave": "V3",
-      "status": "queued",
+      "status": "done",
       "title": "Consent-gated cross-workflow learning conduit to master model queue",
       "problem": "Convert workflow outcomes into long-horizon learning advantage without policy or rights drift",
-      "acceptance": "Outcome artifacts enter trainability queue only with explicit consent/provenance policy pass (source/license/retention/delete metadata) and canary-evaluated promotion path",
+      "acceptance": "Learning conduit now exposes verification + rollback contracts across ingest/promote/status and adds explicit `rollback` command for entry-stage reversibility; coverage updated in `memory/tools/tests/learning_conduit.test.js`.",
       "dependencies": []
     },
     {
@@ -1161,10 +1161,10 @@
       "id": "V3-017",
       "class": "backlog",
       "wave": "V3",
-      "status": "queued",
+      "status": "done",
       "title": "Full real-world claws actuation bundle",
       "problem": "Close the execution gap so adaptive workflows can capture opportunities end-to-end",
-      "acceptance": "Policy-gated browser/API/payment/comms/file actuation primitives ship behind approval tiers, with sandbox dry-run proof, receipts, and strict rollback/escalation behavior",
+      "acceptance": "Actuation execute/status now emit verification bundles + rollback contracts, and a first-class `rollback` command was added for post-execution reversal receipts while preserving verification-handoff escalation (`memory/tools/tests/real_world_claws_bundle.test.js`).",
       "dependencies": []
     },
     {
@@ -1211,20 +1211,20 @@
       "id": "V3-030",
       "class": "backlog",
       "wave": "V3",
-      "status": "queued",
+      "status": "done",
       "title": "Tool assimilation pipeline (Research -> Forge -> Nursery -> Doctor graft)",
       "problem": "Reduce external dependency drag by internalizing frequently used capabilities from both local skills and external adapters under strict governance",
-      "acceptance": "Usage-triggered assimilation flow is active with unified candidacy ledger/legal gate/research/forge/graft lanes (`systems/assimilation/*.ts`, `config/assimilation_policy.json`), and workflow execution now auto-feeds capability usage into assimilation candidacy scoring (`systems/workflow/workflow_executor.ts`) with integration coverage (`memory/tools/tests/assimilation_controller.test.js`, `memory/tools/tests/assimilation_usage_integration.test.js`)",
+      "acceptance": "Assimilation assess/run/rollback/status now expose per-candidate verification and deterministic rollback contracts in addition to existing research/forge/nursery/graft pipeline, with regression coverage in `memory/tools/tests/assimilation_controller.test.js`.",
       "dependencies": []
     },
     {
       "id": "V4-CLEAN-001",
       "class": "hygiene",
       "wave": "V4",
-      "status": "queued",
+      "status": "done",
       "title": "Habits path migration prep (abstraction + compatibility)",
       "problem": "Direct `habits/` relocation would break active runtime contracts, policies, and command surfaces.",
-      "acceptance": "Introduce a central habits path contract + compat wrappers so legacy `habits/*` commands/paths continue to work while new canonical paths are added; generate deterministic path-rewrite inventory; `contract_check`, `foundation_contract_gate`, and key habits smoke flows pass with zero behavior drift.",
+      "acceptance": "`relocatable_path_contract` now emits deterministic habits path rewrite inventory (`state/ops/relocatable_path_contract/path_rewrite_inventory.json`) with absolute-include support and rewrite-contract checks, preserving compatibility wrappers and pass behavior (`memory/tools/tests/relocatable_path_contract.test.js`, `memory/tools/tests/legacy_path_alias_adapters.test.js`).",
       "dependencies": []
     },
     {

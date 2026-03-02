@@ -384,6 +384,7 @@ function usage() {
   console.log('Usage:');
   console.log('  node systems/workflow/learning_conduit.js ingest [--run-payload=path] [--consent-status=granted] [--consent-mode=explicit_opt_in]');
   console.log('  node systems/workflow/learning_conduit.js promote --entry-id=<id> [--canary-pass=1] [--canary-score=0.8] [--apply=1]');
+  console.log('  node systems/workflow/learning_conduit.js rollback --entry-id=<id> [--reason=<text>]');
   console.log('  node systems/workflow/learning_conduit.js status [--entry-id=<id>]');
 }
 
@@ -406,6 +407,38 @@ function deriveMetadataClassification(redaction: AnyObj) {
   if (set.has('license_sensitive')) return 'license_sensitive';
   if (set.has('pii')) return 'sensitive_pii';
   return 'internal_runtime';
+}
+
+function buildConduitVerification(row: AnyObj, blocked: string[] = []) {
+  const trainability = row && row.trainability && typeof row.trainability === 'object'
+    ? row.trainability
+    : {};
+  const conduit = row && row.training_conduit && typeof row.training_conduit === 'object'
+    ? row.training_conduit
+    : {};
+  const consent = conduit && conduit.consent && typeof conduit.consent === 'object'
+    ? conduit.consent
+    : {};
+  const redaction = row && row.redaction && typeof row.redaction === 'object' ? row.redaction : {};
+  return {
+    stage: cleanText(row && row.stage || 'unknown', 60) || 'unknown',
+    checks: {
+      trainability_allow: trainability.allow === true,
+      consent_granted: String(consent.status || '').toLowerCase() === 'granted',
+      redaction_blocked: redaction.blocked === true
+    },
+    blocked_reasons: Array.isArray(blocked) ? blocked.slice(0, 16) : []
+  };
+}
+
+function buildConduitRollbackContract(entryId: string | null) {
+  return {
+    available: true,
+    command: entryId
+      ? `node systems/workflow/learning_conduit.js rollback --entry-id=${entryId} --reason=<reason>`
+      : 'node systems/workflow/learning_conduit.js rollback --entry-id=<id> --reason=<reason>',
+    scope: 'entry_stage_only'
+  };
 }
 
 function buildQueueRows(policy: AnyObj, runPayload: AnyObj, args: AnyObj) {
@@ -696,7 +729,18 @@ function cmdIngest(args: AnyObj) {
     redaction_summary: built && built.redaction_summary && typeof built.redaction_summary === 'object'
       ? built.redaction_summary
       : null,
-    proposal_only: policy.proposal_only === true
+    proposal_only: policy.proposal_only === true,
+    verification: {
+      stage: 'ingest',
+      checks: {
+        policy_enabled: policy.enabled === true,
+        metadata_strict: policy.metadata_strict === true,
+        trainability_strict: policy.trainability_strict === true,
+        explicit_consent_required: policy.require_explicit_consent === true
+      },
+      blocked_reasons: []
+    },
+    rollback_contract: buildConduitRollbackContract(null)
   };
   writeJsonAtomic(LATEST_PATH, out);
   appendJsonl(RECEIPTS_PATH, out);
@@ -763,7 +807,9 @@ function cmdPromote(args: AnyObj) {
     canary_score: canaryScore,
     blocked,
     access_decision: accessDecision,
-    master_queue_path: relPath(masterQueuePath)
+    master_queue_path: relPath(masterQueuePath),
+    verification: buildConduitVerification(row, blocked),
+    rollback_contract: buildConduitRollbackContract(entryId)
   };
   writeJsonAtomic(LATEST_PATH, out);
   appendJsonl(RECEIPTS_PATH, out);
@@ -771,12 +817,54 @@ function cmdPromote(args: AnyObj) {
   if (blocked.length) process.exit(1);
 }
 
+function cmdRollback(args: AnyObj) {
+  const state = loadState();
+  const entryId = normalizeToken(args.entry_id || args['entry-id'] || '', 120);
+  const row = entryId ? state.entries[entryId] : null;
+  if (!row) {
+    process.stdout.write(`${JSON.stringify({ ok: false, type: 'learning_conduit_rollback', error: 'entry_not_found' })}\n`);
+    process.exit(1);
+  }
+  const reason = cleanText(args.reason || 'manual_rollback', 220) || 'manual_rollback';
+  const previousStage = cleanText(row.stage || 'unknown', 80) || 'unknown';
+  row.stage = 'rolled_back';
+  row.rollback = {
+    ts: nowIso(),
+    reason,
+    previous_stage: previousStage
+  };
+  state.entries[entryId] = row;
+  saveState(state);
+  const out = {
+    ok: true,
+    type: 'learning_conduit_rollback',
+    ts: nowIso(),
+    entry_id: entryId,
+    reason,
+    previous_stage: previousStage,
+    entry: row,
+    verification: buildConduitVerification(row, ['rollback_applied']),
+    rollback_contract: buildConduitRollbackContract(entryId)
+  };
+  writeJsonAtomic(LATEST_PATH, out);
+  appendJsonl(RECEIPTS_PATH, out);
+  process.stdout.write(`${JSON.stringify(out)}\n`);
+}
+
 function cmdStatus(args: AnyObj) {
   const policy = loadPolicy(args.policy ? path.resolve(String(args.policy)) : POLICY_PATH);
   const state = loadState();
   const entryId = normalizeToken(args.entry_id || args['entry-id'] || '', 120);
   if (entryId) {
-    process.stdout.write(`${JSON.stringify({ ok: true, type: 'learning_conduit_status', entry_id: entryId, entry: state.entries[entryId] || null })}\n`);
+    const row = state.entries[entryId] || null;
+    process.stdout.write(`${JSON.stringify({
+      ok: true,
+      type: 'learning_conduit_status',
+      entry_id: entryId,
+      entry: row,
+      verification: row ? buildConduitVerification(row) : null,
+      rollback_contract: row ? buildConduitRollbackContract(entryId) : null
+    })}\n`);
     return;
   }
   const rows = Object.values(state.entries || {});
@@ -784,7 +872,8 @@ function cmdStatus(args: AnyObj) {
     total: rows.length,
     pending_canary: rows.filter((row: any) => row && row.stage === 'pending_canary').length,
     rejected: rows.filter((row: any) => row && row.stage === 'rejected').length,
-    promoted: rows.filter((row: any) => row && row.stage === 'promoted').length
+    promoted: rows.filter((row: any) => row && row.stage === 'promoted').length,
+    rolled_back: rows.filter((row: any) => row && row.stage === 'rolled_back').length
   };
   process.stdout.write(`${JSON.stringify({
     ok: true,
@@ -798,7 +887,8 @@ function cmdStatus(args: AnyObj) {
     federation: {
       mode: policy.federation.mode || null,
       peer_to_peer_network_effect: policy.federation.peer_to_peer_network_effect === true
-    }
+    },
+    rollback_contract: buildConduitRollbackContract(null)
   })}\n`);
 }
 
@@ -811,6 +901,7 @@ function main() {
   }
   if (cmd === 'ingest') return cmdIngest(args);
   if (cmd === 'promote') return cmdPromote(args);
+  if (cmd === 'rollback') return cmdRollback(args);
   if (cmd === 'status') return cmdStatus(args);
   usage();
   process.exit(2);

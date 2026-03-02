@@ -61,6 +61,8 @@ function run() {
   const blockedOut = parseJson(blocked, 'evaluate_blocked');
   assert.strictEqual(blockedOut.ok, false);
   assert.ok(blockedOut.blocked.includes('consensus_sources_below_min'));
+  assert.strictEqual(blockedOut.verification.checks.consensus_sources_met, false);
+  assert.ok(blockedOut.rollback_contract && blockedOut.rollback_contract.available === true);
 
   const passed = runNode(scriptPath, [
     'evaluate',
@@ -73,12 +75,15 @@ function run() {
   assert.strictEqual(passedOut.hint, 'accelerate');
   assert.ok(Number(passedOut.influence || 0) > 0);
   assert.ok(Number(passedOut.influence || 0) <= 0.3);
+  assert.strictEqual(passedOut.verification.checks.consensus_sources_met, true);
+  assert.strictEqual(passedOut.verification.checks.objective_allowlisted, true);
 
   const status = runNode(scriptPath, ['status'], env, root);
   assert.strictEqual(status.status, 0, status.stderr || status.stdout);
   const statusOut = parseJson(status, 'status');
   assert.strictEqual(statusOut.ok, true);
   assert.strictEqual(statusOut.latest.objective_id, 'obj_alpha');
+  assert.ok(statusOut.rollback_contract && statusOut.rollback_contract.available === true);
 
   assert.ok(fs.existsSync(receiptsPath), 'resonance receipts should be written');
 }

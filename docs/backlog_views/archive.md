@@ -1,6 +1,6 @@
 # Backlog Archive View
 
-Generated: 2026-03-02T23:09:34.946Z
+Generated: 2026-03-02T23:25:03.061Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
@@ -109,12 +109,22 @@ Generated: 2026-03-02T23:09:34.946Z
 | V3-004 | backlog | V3 | done | Constitution Protection Layer (epic tracker) |  |
 | V3-005 | backlog | V3 | done | External anti-sabotage provenance net |  |
 | V3-006 | backlog | V3 | done | Recursive mini-core instancing (nested Protheus branches) |  |
+| V3-007 | backlog | V3 | done | Self-code evolution sandbox + guarded merge |  |
+| V3-008 | backlog | V3 | done | Runtime symbiotic fusion execution chamber |  |
+| V3-009 | backlog | V3 | done | Resonance field actuation gates |  |
 | V3-010 | backlog | V3 | done | Global molt cycle (scheduled compaction/pruning) |  |
+| V3-012 | backlog | V3 | done | Product positioning/architecture narrative pack |  |
+| V3-013 | backlog | V3 | done | Independent child-organ runtime stack for recursive workflows |  |
+| V3-014 | backlog | V3 | done | In-flight workflow mutation engine (runtime step-level adaptation) |  |
+| V3-015 | backlog | V3 | done | Consent-gated cross-workflow learning conduit to master model queue |  |
 | V3-016 | backlog | V3 | done | Central Eye kernel (`systems/eye`) with governed subsumption adapters |  |
+| V3-017 | backlog | V3 | done | Full real-world claws actuation bundle |  |
 | V3-018 | backlog | V3 | done | Research Organ (long-horizon closed-loop research sub-organ) |  |
 | V3-019 | backlog | V3 | done | Forge Organ (rapid temporary capability assembly) |  |
 | V3-020 | backlog | V3 | done | Protheus Prime seed profile + bounded-core manifest |  |
 | V3-021 | backlog | V3 | done | Attested hardware assimilation plane (node join + lease scheduler) |  |
+| V3-030 | backlog | V3 | done | Tool assimilation pipeline (Research -> Forge -> Nursery -> Doctor graft) |  |
+| V4-CLEAN-001 | hygiene | V4 | done | Habits path migration prep (abstraction + compatibility) |  |
 | V4-SCI-001 | scientific | V4 | done | Scientific method core primitive |  |
 | V4-SCI-002 | scientific | V4 | done | HypothesisForge background trend + hypothesis engine | V4-SCI-001, V3-RACE-080, V3-RACE-083 |
 | V4-SCI-003 | scientific | V4 | done | Reasoning mirror lane for Phase-1 UI | V4-SCI-001 |

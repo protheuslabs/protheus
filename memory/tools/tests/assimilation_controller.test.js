@@ -568,12 +568,18 @@ function run() {
   const readyIds = new Set((assess.candidates || []).map((row) => String(row.capability_id || '')));
   assert.ok(readyIds.has('cap.local.alpha'), 'local skill candidate should be ready');
   assert.ok(readyIds.has('cap.external.beta'), 'external adapter candidate should be ready');
+  assert.ok(
+    (assess.candidates || []).every((row) => row.rollback_contract && row.rollback_contract.available === true),
+    'assess should emit rollback contract for each candidate'
+  );
 
   const runShadow = assertOk(runNode(scriptPath, [
     'run',
     '2026-02-26',
     '--apply=1'
   ], env, repoRoot), 'run shadow');
+  assert.ok(runShadow.verification && runShadow.verification.checks.processed_any === true);
+  assert.ok(runShadow.rollback_contract && runShadow.rollback_contract.available === true);
   assert.ok((runShadow.candidates || []).length >= 2, 'shadow run should process ready candidates');
   for (const row of runShadow.candidates || []) {
     assert.strictEqual(row.outcome, 'shadow_only', 'shadow mode should not execute live graft');
@@ -635,6 +641,8 @@ function run() {
       'candidate should include value attribution linkage'
     );
     assert.ok(row.duality && typeof row.duality.enabled === 'boolean', 'candidate should include duality advisory');
+    assert.ok(row.verification && row.verification.checks.legal_gate_allow === true, 'candidate verification bundle should be present');
+    assert.ok(row.rollback_contract && row.rollback_contract.available === true, 'candidate rollback contract should be present');
   }
 
   const attributionRows = readJsonl(valueAttributionRecordsPath);
@@ -719,15 +727,25 @@ function run() {
   assert.strictEqual(runApproved.candidates.length, 1);
   assert.strictEqual(runApproved.candidates[0].outcome, 'success');
   assert.strictEqual(runApproved.candidates[0].graft.apply_executed, true);
+  assert.ok(runApproved.candidates[0].rollback_contract && runApproved.candidates[0].rollback_contract.available === true);
   assert.ok(
     runApproved.candidates[0].graft.helix_admission
       && runApproved.candidates[0].graft.helix_admission.apply_executed === true,
     'approved live graft should execute helix admission apply path'
   );
 
+  const rollback = assertOk(runNode(scriptPath, [
+    'rollback',
+    '--capability-id=cap.external.shell',
+    '--reason=post_apply_regression'
+  ], env, repoRoot), 'rollback shell capability');
+  assert.strictEqual(rollback.capability_id, 'cap.external.shell');
+  assert.ok(rollback.verification && rollback.verification.checks.rollback_applied === true);
+
   const status = assertOk(runNode(scriptPath, ['status', 'latest'], env, repoRoot), 'status latest');
   assert.ok(Number(status.candidates_processed || 0) >= 1, 'status should include processed count');
   assert.strictEqual(status.shadow_only, false, 'latest status should reflect live policy');
+  assert.ok(status.rollback_contract && status.rollback_contract.available === true);
 
   console.log('assimilation_controller.test.js: OK');
 }

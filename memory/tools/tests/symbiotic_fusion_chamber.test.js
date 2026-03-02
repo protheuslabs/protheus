@@ -64,6 +64,7 @@ function run() {
   const blockedOut = parseJson(blocked, 'form_blocked');
   assert.strictEqual(blockedOut.ok, false);
   assert.ok(blockedOut.blocked.includes('policy_approval_required'));
+  assert.ok(blockedOut.verification && blockedOut.verification.blocked_reasons.includes('policy_approval_required'));
 
   const formed = runNode(scriptPath, [
     'form',
@@ -77,6 +78,8 @@ function run() {
   const formedOut = parseJson(formed, 'form_ok');
   assert.strictEqual(formedOut.ok, true);
   assert.strictEqual(formedOut.record.status, 'active');
+  assert.ok(formedOut.verification && formedOut.verification.policy_checks.policy_approval_present === true);
+  assert.ok(formedOut.rollback_contract && formedOut.rollback_contract.available === true);
 
   const status = runNode(scriptPath, ['status'], env, root);
   assert.strictEqual(status.status, 0, status.stderr || status.stdout);
@@ -93,6 +96,7 @@ function run() {
   const dissolvedOut = parseJson(dissolved, 'dissolve');
   assert.strictEqual(dissolvedOut.ok, true);
   assert.strictEqual(dissolvedOut.record.status, 'dissolved');
+  assert.ok(dissolvedOut.rollback_contract && dissolvedOut.rollback_contract.dissolved === true);
 
   assert.ok(fs.existsSync(receiptsPath), 'fusion receipts should exist');
 }

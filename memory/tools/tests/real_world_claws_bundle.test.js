@@ -145,6 +145,8 @@ function run() {
   assert.strictEqual(executeShadowOut.ok, true);
   assert.strictEqual(executeShadowOut.execution.success, true);
   assert.strictEqual(executeShadowOut.execution.step_outcomes.length, 2);
+  assert.ok(executeShadowOut.verification && executeShadowOut.verification.totals.steps === 2);
+  assert.ok(executeShadowOut.rollback_contract && executeShadowOut.rollback_contract.available === true);
 
   // Enable live execution and verify payment approval gate.
   writeJson(policyPath, {
@@ -205,6 +207,7 @@ function run() {
   const executeApprovedOut = parseJson(executeApproved, 'execute_payment_ok');
   assert.strictEqual(executeApprovedOut.ok, true);
   assert.strictEqual(executeApprovedOut.execution.success, true);
+  assert.ok(executeApprovedOut.rollback_contract && executeApprovedOut.rollback_contract.available === true);
 
   const planVerification = runNode(scriptPath, [
     'plan',
@@ -229,6 +232,17 @@ function run() {
     'verification plan should emit handoff-required step outcome'
   );
   assert.ok(fs.existsSync(hardeningHandoffPath), 'handoff path should be written');
+  assert.ok(executeVerificationOut.rollback_contract && executeVerificationOut.rollback_contract.available === true);
+
+  const rollback = runNode(scriptPath, [
+    'rollback',
+    `--execution-id=${executeApprovedOut.execution.execution_id}`,
+    '--reason=operator_cancel'
+  ], env, repoRoot);
+  assert.strictEqual(rollback.status, 0, rollback.stderr || rollback.stdout);
+  const rollbackOut = parseJson(rollback, 'rollback');
+  assert.strictEqual(rollbackOut.ok, true);
+  assert.strictEqual(rollbackOut.execution.rolled_back, true);
 
   const status = runNode(scriptPath, ['status', '--plan-id=unit_plan_payment'], env, repoRoot);
   assert.strictEqual(status.status, 0, status.stderr || status.stdout);

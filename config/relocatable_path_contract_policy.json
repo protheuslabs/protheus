@@ -22,6 +22,7 @@
   },
   "paths": {
     "latest_path": "state/ops/relocatable_path_contract/latest.json",
-    "receipts_path": "state/ops/relocatable_path_contract/receipts.jsonl"
+    "receipts_path": "state/ops/relocatable_path_contract/receipts.jsonl",
+    "rewrite_inventory_path": "state/ops/relocatable_path_contract/path_rewrite_inventory.json"
   }
 }

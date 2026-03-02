@@ -163,6 +163,7 @@ function run() {
   assert.strictEqual(Number(ingestOut.rights_events_written || 0), 2);
   assert.strictEqual(Number(ingestOut.master_conduit && ingestOut.master_conduit.transmitted || 0), 2);
   assert.strictEqual(Number(ingestOut.federation && ingestOut.federation.hereditary_queued || 0), 2);
+  assert.ok(ingestOut.rollback_contract && ingestOut.rollback_contract.available === true);
   assert.ok(fs.existsSync(masterTransmitQueuePath), 'master transmit queue should be written');
   assert.ok(fs.existsSync(hereditaryQueuePath), 'hereditary queue should be written');
   assert.ok(fs.existsSync(masterReviewQueuePath), 'master review queue should be written');
@@ -246,10 +247,27 @@ function run() {
   assert.strictEqual(promote.status, 0, promote.stderr || promote.stdout);
   const promoteOut = parseJson(promote, 'promote');
   assert.strictEqual(promoteOut.ok, true);
+  assert.ok(promoteOut.verification && promoteOut.verification.checks.trainability_allow === true);
+  assert.ok(promoteOut.rollback_contract && promoteOut.rollback_contract.available === true);
 
   assert.ok(fs.existsSync(masterQueuePath), 'master queue should be written on promotion');
   const masterRows = fs.readFileSync(masterQueuePath, 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line));
   assert.ok(masterRows.some((row) => row && row.entry_id === promoteId && row.stage === 'promoted'));
+
+  const rollback = runNode(scriptPath, [
+    'rollback',
+    `--entry-id=${promoteId}`,
+    '--reason=policy_regression_guard'
+  ], env, root);
+  assert.strictEqual(rollback.status, 0, rollback.stderr || rollback.stdout);
+  const rollbackOut = parseJson(rollback, 'rollback');
+  assert.strictEqual(rollbackOut.ok, true);
+  assert.strictEqual(rollbackOut.entry.stage, 'rolled_back');
+
+  const statusAfterRollback = runNode(scriptPath, ['status'], env, root);
+  assert.strictEqual(statusAfterRollback.status, 0, statusAfterRollback.stderr || statusAfterRollback.stdout);
+  const statusAfterRollbackOut = parseJson(statusAfterRollback, 'status_after_rollback');
+  assert.ok(Number(statusAfterRollbackOut.counts.rolled_back || 0) >= 1);
 }
 
 run();

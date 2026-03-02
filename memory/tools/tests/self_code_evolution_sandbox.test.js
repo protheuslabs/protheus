@@ -137,6 +137,8 @@ function run() {
   const proposedOut = parseJson(proposed, 'propose');
   assert.strictEqual(proposedOut.ok, true);
   assert.strictEqual(proposedOut.record.status, 'proposed');
+  assert.ok(proposedOut.verification && proposedOut.verification.stage === 'proposed');
+  assert.ok(proposedOut.rollback_contract && proposedOut.rollback_contract.available === true);
 
   const mergeBlocked = runNode(scriptPath, [
     'merge',
@@ -158,6 +160,7 @@ function run() {
   const testedOut = parseJson(tested, 'test');
   assert.strictEqual(testedOut.ok, true);
   assert.ok(Array.isArray(testedOut.results) && testedOut.results.length === 1);
+  assert.strictEqual(Number(testedOut.verification.tests_passed || 0), 1);
 
   const merged = runNode(scriptPath, [
     'merge',
@@ -170,6 +173,8 @@ function run() {
   const mergedOut = parseJson(merged, 'merge');
   assert.strictEqual(mergedOut.ok, true);
   assert.strictEqual(mergedOut.blocked.length, 0);
+  assert.strictEqual(String(mergedOut.verification.stage || ''), 'merged');
+  assert.ok(mergedOut.rollback_contract && mergedOut.rollback_contract.available === true);
 
   const rolled = runNode(scriptPath, [
     'rollback',
@@ -180,6 +185,7 @@ function run() {
   const rolledOut = parseJson(rolled, 'rollback');
   assert.strictEqual(rolledOut.ok, true);
   assert.strictEqual(rolledOut.record.status, 'rolled_back');
+  assert.ok(rolledOut.rollback_contract && rolledOut.rollback_contract.rolled_back === true);
 
   const status = runNode(scriptPath, ['status', '--sandbox-id=sb_unit'], env, root);
   assert.strictEqual(status.status, 0, status.stderr || status.stdout);

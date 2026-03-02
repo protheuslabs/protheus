@@ -4288,6 +4288,24 @@ function runCmd(dateStr: string, args: AnyObj) {
     runtime_mutations_applied: mutationApplied,
     runtime_mutations_rolled_back: mutationRolledBack,
     runtime_mutation_receipts_path: mutationReceiptPathRel,
+    runtime_mutation_verification: {
+      enabled: options.runtime_mutation.enabled === true,
+      safety_attested: options.runtime_mutation_safety_attested === true,
+      veto_cleared: options.runtime_mutation_veto_cleared === true,
+      attempted: mutationAttempted,
+      applied: mutationApplied,
+      rolled_back: mutationRolledBack,
+      rollback_ready_for_failed_workflows: results.every((row: AnyObj) => (
+        row && row.ok !== true
+          ? (row.rollback_attempted === true || !!row.rollback_step_id || row.blocked_by_gate === true)
+          : true
+      ))
+    },
+    runtime_mutation_rollback_contract: {
+      available: true,
+      command: `node systems/workflow/workflow_executor.js run ${dateStr} --runtime-mutation=1 --runtime-mutation-safety-attested=1 --runtime-mutation-veto-cleared=1`,
+      receipts_path: mutationReceiptPathRel
+    },
     slo: runSlo,
     slo_window: sloWindow,
     results
@@ -4307,6 +4325,12 @@ function runCmd(dateStr: string, args: AnyObj) {
     date: payload.date,
     dry_run: payload.dry_run,
     runtime_mutation_enabled: payload.runtime_mutation_enabled,
+    runtime_mutation_verification: payload.runtime_mutation_verification && typeof payload.runtime_mutation_verification === 'object'
+      ? payload.runtime_mutation_verification
+      : null,
+    runtime_mutation_rollback_contract: payload.runtime_mutation_rollback_contract && typeof payload.runtime_mutation_rollback_contract === 'object'
+      ? payload.runtime_mutation_rollback_contract
+      : null,
     soul_token_gate: payload.soul_token_gate && typeof payload.soul_token_gate === 'object'
       ? {
           enabled: payload.soul_token_gate.enabled === true,
@@ -4497,6 +4521,12 @@ function runCmd(dateStr: string, args: AnyObj) {
     slo_pass: payload.slo ? payload.slo.pass === true : false,
     slo_window_pass: payload.slo_window ? payload.slo_window.pass === true : false,
     runtime_mutation_enabled: payload.runtime_mutation_enabled,
+    runtime_mutation_verification: payload.runtime_mutation_verification && typeof payload.runtime_mutation_verification === 'object'
+      ? payload.runtime_mutation_verification
+      : null,
+    runtime_mutation_rollback_contract: payload.runtime_mutation_rollback_contract && typeof payload.runtime_mutation_rollback_contract === 'object'
+      ? payload.runtime_mutation_rollback_contract
+      : null,
     soul_token_gate: payload.soul_token_gate && typeof payload.soul_token_gate === 'object'
       ? {
           enabled: payload.soul_token_gate.enabled === true,
@@ -4556,6 +4586,12 @@ function statusCmd(dateArg: string) {
     rollout_canary_fraction: payload.rollout_canary_fraction == null ? null : Number(payload.rollout_canary_fraction),
     rollout_last_scale_action: payload.rollout_state_after ? payload.rollout_state_after.last_scale_action || null : null,
     runtime_mutation_enabled: payload.runtime_mutation_enabled === true,
+    runtime_mutation_verification: payload.runtime_mutation_verification && typeof payload.runtime_mutation_verification === 'object'
+      ? payload.runtime_mutation_verification
+      : null,
+    runtime_mutation_rollback_contract: payload.runtime_mutation_rollback_contract && typeof payload.runtime_mutation_rollback_contract === 'object'
+      ? payload.runtime_mutation_rollback_contract
+      : null,
     soul_token_gate: payload.soul_token_gate && typeof payload.soul_token_gate === 'object'
       ? {
           enabled: payload.soul_token_gate.enabled === true,
