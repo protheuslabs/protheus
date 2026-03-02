@@ -246,7 +246,7 @@
     "continuity:vault:status": "node systems/continuity/session_continuity_vault.js status",
     "continuity:resurrection:bundle": "node systems/continuity/resurrection_protocol.js bundle",
     "continuity:resurrection:verify": "node systems/continuity/resurrection_protocol.js verify --bundle-id=latest",
-    "continuity:resurrection:status": "node systems/continuity/resurrection_protocol.js status",
+    "continuity:resurrection:status": "node systems/continuity/sovereign_resurrection_substrate.js status",
     "memory:offdevice:sync": "node systems/memory/offdevice_memory_replication.js sync",
     "memory:offdevice:verify": "node systems/memory/offdevice_memory_replication.js verify",
     "memory:offdevice:restore-drill": "node systems/memory/offdevice_memory_replication.js restore-drill",
@@ -552,7 +552,6 @@
     "ops:rust-spine:status": "node systems/ops/rust_spine_microkernel.js status",
     "continuity:resurrection:package": "node systems/continuity/sovereign_resurrection_substrate.js package --apply=1",
     "continuity:resurrection:drill": "node systems/continuity/sovereign_resurrection_substrate.js drill --apply=1",
-    "continuity:resurrection:status": "node systems/continuity/sovereign_resurrection_substrate.js status",
     "test:governance:hardening": "node memory/tools/tests/governance_hardening_lane.test.js",
     "test:ops:control-plane": "node memory/tools/tests/protheus_control_plane.test.js",
     "test:ops:backlog-registry": "node memory/tools/tests/backlog_registry.test.js",
@@ -592,7 +591,10 @@
     "test:v4:governance-distribution-pack": "node memory/tools/tests/v4_governance_distribution_pack.test.js",
     "test:visualizer:holo-overlays": "node memory/tools/tests/holo_overlay_compiler.test.js",
     "test:memory:rust-transition": "node memory/tools/tests/rust_memory_transition_lane.test.js",
-    "test:race:uplift-pack": "node memory/tools/tests/race_uplift_pack.test.js"
+    "test:race:uplift-pack": "node memory/tools/tests/race_uplift_pack.test.js",
+    "sensory:multimodal-adapter:run": "node systems/sensory/multimodal_signal_adapter_plane.js run",
+    "sensory:multimodal-adapter:status": "node systems/sensory/multimodal_signal_adapter_plane.js status",
+    "test:sensory:multimodal-adapter": "node memory/tools/tests/multimodal_signal_adapter_plane.test.js"
   },
   "bin": {
     "protheus": "./bin/protheus",

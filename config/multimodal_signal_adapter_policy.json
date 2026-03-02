@@ -1,0 +1,22 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "max_feature_weight": 0.35,
+  "default_source_weight": 0.2,
+  "source_weights": {
+    "repo_activity": 0.24,
+    "image_signal": 0.18,
+    "market_micro": 0.22
+  },
+  "required_sources": [
+    "repo_activity"
+  ],
+  "paths": {
+    "repo_activity_dir": "state/sensory/non_text/repo_activity",
+    "image_signal_dir": "state/sensory/non_text/image_signal",
+    "market_micro_dir": "state/sensory/non_text/market_micro",
+    "output_dir": "state/sensory/analysis/multimodal_adapter",
+    "latest_path": "state/sensory/analysis/multimodal_adapter/latest.json",
+    "receipts_path": "state/sensory/analysis/multimodal_adapter/receipts.jsonl"
+  }
+}

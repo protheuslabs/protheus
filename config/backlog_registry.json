@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T02:49:48.354Z",
-  "source_hash": "6bc2eb0ab042b8f749f33b69",
+  "generated_at": "2026-03-02T03:53:54.404Z",
+  "source_hash": "af6d3bda2b67bbcf562ad6d9",
   "row_count": 127,
-  "active_count": 55,
-  "archive_count": 72,
+  "active_count": 54,
+  "archive_count": 73,
   "rows": [
     {
       "id": "V3-OPS-004",
@@ -1392,10 +1392,10 @@
       "id": "V3-RACE-085",
       "class": "extension",
       "wave": "V3",
-      "status": "queued",
+      "status": "done",
       "title": "Multimodal Signal Adapter Plane (Non-Text Features)",
       "problem": "Important activity signal exists outside text and is currently weakly integrated into inference.",
-      "acceptance": "Repo/image/market micro-activity adapters publish normalized non-text features into cross-signal pipeline with bounded influence weights and audit receipts.",
+      "acceptance": "Added `systems/sensory/multimodal_signal_adapter_plane.{ts,js}` + `config/multimodal_signal_adapter_policy.json` to normalize repo/image/market non-text features into one bounded-influence adapter stream (`state/sensory/analysis/multimodal_adapter/`) with strict source requirements and audit receipts; regression coverage in `memory/tools/tests/multimodal_signal_adapter_plane.test.js`.",
       "dependencies": [
         "V3-RACE-007",
         "V3-RACE-041",
