@@ -6,6 +6,10 @@ const path = require('path');
 const crypto = require('crypto');
 const net = require('net');
 const { spawnSync } = require('child_process');
+const {
+  runUnifiedMemoryTransport,
+  normalizeTransportTelemetry
+} = require('./memory_transport');
 
 const WORKSPACE_ROOT = path.resolve(__dirname, '..', '..');
 const REPO_ROOT = process.env.MEMORY_RECALL_ROOT
@@ -765,7 +769,9 @@ function resolveRustCliInvocation(subcommandArgs: string[]) {
 
 async function runRustQueryIndex(query, tagFilters, top, options: any = {}) {
   const cratePath = DEFAULT_RUST_CRATE_PATH;
-  if (!fs.existsSync(cratePath) && rustDaemonSupported() !== true) {
+  const crateExists = fs.existsSync(cratePath);
+  const daemonEnabled = rustDaemonSupported() === true;
+  if (!crateExists && !daemonEnabled) {
     return { ok: false, error: 'rust_crate_missing', crate_path: cratePath };
   }
   const expandLines = clampInt(options && options.expandLines != null ? options.expandLines : 0, 0, 300);
@@ -786,16 +792,6 @@ async function runRustQueryIndex(query, tagFilters, top, options: any = {}) {
   if (cachePath) daemonArgs['cache-path'] = cachePath;
   if (cachePath) daemonArgs['cache-max-bytes'] = String(cacheMaxBytes);
   if (normalizedScoreMode) daemonArgs['score-mode'] = normalizedScoreMode;
-
-  const daemon = await tryRustDaemonInvoke('query-index', daemonArgs);
-  if (daemon.ok && daemon.payload && daemon.payload.ok === true && Array.isArray(daemon.payload.hits)) {
-    return { ok: true, payload: daemon.payload, transport: 'daemon' };
-  }
-
-  if (!fs.existsSync(cratePath)) {
-    return { ok: false, error: daemon.error || 'rust_crate_missing', crate_path: cratePath };
-  }
-
   const subcommandArgs = [
     'query-index',
     `--root=${REPO_ROOT}`,
@@ -808,34 +804,80 @@ async function runRustQueryIndex(query, tagFilters, top, options: any = {}) {
   if (cachePath) subcommandArgs.push(`--cache-path=${cachePath}`);
   if (cachePath) subcommandArgs.push(`--cache-max-bytes=${cacheMaxBytes}`);
   if (normalizedScoreMode) subcommandArgs.push(`--score-mode=${normalizedScoreMode}`);
-  const invocation = resolveRustCliInvocation(subcommandArgs);
-  const run = spawnSync(invocation.command, invocation.args, {
-    cwd: invocation.cwd,
-    encoding: 'utf8',
-    timeout: DEFAULT_RUST_TIMEOUT_MS
+
+  const unified = await runUnifiedMemoryTransport({
+    daemon_enabled: daemonEnabled,
+    daemon_detail: 'tcp',
+    allow_cli_fallback: crateExists,
+    invoke_daemon: async () => tryRustDaemonInvoke('query-index', daemonArgs),
+    invoke_cli: () => {
+      if (!crateExists) return { ok: false, error: 'rust_crate_missing' };
+      const invocation = resolveRustCliInvocation(subcommandArgs);
+      const run = spawnSync(invocation.command, invocation.args, {
+        cwd: invocation.cwd,
+        encoding: 'utf8',
+        timeout: DEFAULT_RUST_TIMEOUT_MS
+      });
+      const stdout = String(run.stdout || '').trim();
+      const stderr = String(run.stderr || '').trim();
+      let payload = null;
+      try { payload = stdout ? JSON.parse(stdout) : null; } catch {}
+      if (Number.isFinite(run.status) && run.status === 0 && payload && payload.ok === true && Array.isArray(payload.hits)) {
+        return {
+          ok: true,
+          payload,
+          transport: invocation.transport,
+          transport_detail: invocation.transport_detail
+        };
+      }
+      const err = run.error
+        ? `spawn_error_${String(run.error.code || run.error.message || 'unknown')}`
+        : (payload && payload.error ? String(payload.error) : `rust_cli_status_${Number.isFinite(run.status) ? run.status : 1}`);
+      return {
+        ok: false,
+        error: err,
+        status: Number.isFinite(run.status) ? run.status : 1,
+        stderr: stderr.slice(0, 300),
+        stdout: stdout.slice(0, 300),
+        transport: invocation.transport,
+        transport_detail: invocation.transport_detail
+      };
+    }
   });
-  const stdout = String(run.stdout || '').trim();
-  const stderr = String(run.stderr || '').trim();
-  let payload = null;
-  try { payload = stdout ? JSON.parse(stdout) : null; } catch {}
-  if (Number.isFinite(run.status) && run.status === 0 && payload && payload.ok === true && Array.isArray(payload.hits)) {
-    return { ok: true, payload, transport: invocation.transport, transport_detail: invocation.transport_detail };
+
+  if (unified.ok) {
+    return {
+      ok: true,
+      payload: unified.payload,
+      transport: unified.transport,
+      transport_detail: unified.transport_detail || null,
+      transport_attempts: Array.isArray(unified.attempts) ? unified.attempts : [],
+      fallback_reason: unified.fallback_reason || null
+    };
   }
-  const err = run.error
-    ? `spawn_error_${String(run.error.code || run.error.message || 'unknown')}`
-    : (payload && payload.error ? String(payload.error) : `rust_cli_status_${Number.isFinite(run.status) ? run.status : 1}`);
+  if (!crateExists) {
+    return {
+      ok: false,
+      error: unified.error || 'rust_crate_missing',
+      crate_path: cratePath,
+      transport_attempts: Array.isArray(unified.attempts) ? unified.attempts : []
+    };
+  }
   return {
     ok: false,
-    error: err,
-    status: Number.isFinite(run.status) ? run.status : 1,
-    stderr: stderr.slice(0, 300),
-    stdout: stdout.slice(0, 300)
+    error: unified.error || 'rust_query_failed',
+    status: Number.isFinite(unified.status) ? unified.status : 1,
+    stderr: cleanCell(unified.stderr || '').slice(0, 300),
+    stdout: cleanCell(unified.stdout || '').slice(0, 300),
+    transport_attempts: Array.isArray(unified.attempts) ? unified.attempts : []
   };
 }
 
 async function runRustGetNode(nodeId, uid, fileFilter, options: any = {}) {
   const cratePath = DEFAULT_RUST_CRATE_PATH;
-  if (!fs.existsSync(cratePath) && rustDaemonSupported() !== true) {
+  const crateExists = fs.existsSync(cratePath);
+  const daemonEnabled = rustDaemonSupported() === true;
+  if (!crateExists && !daemonEnabled) {
     return { ok: false, error: 'rust_crate_missing', crate_path: cratePath };
   }
   const cachePath = options && typeof options.cachePath === 'string' ? options.cachePath : '';
@@ -849,16 +891,6 @@ async function runRustGetNode(nodeId, uid, fileFilter, options: any = {}) {
   if (fileFilter) daemonArgs.file = String(fileFilter);
   if (cachePath) daemonArgs['cache-path'] = cachePath;
   if (cachePath) daemonArgs['cache-max-bytes'] = String(cacheMaxBytes);
-
-  const daemon = await tryRustDaemonInvoke('get-node', daemonArgs);
-  if (daemon.ok && daemon.payload && daemon.payload.ok === true && typeof daemon.payload.section === 'string') {
-    return { ok: true, payload: daemon.payload, transport: 'daemon' };
-  }
-
-  if (!fs.existsSync(cratePath)) {
-    return { ok: false, error: daemon.error || 'rust_crate_missing', crate_path: cratePath };
-  }
-
   const subcommandArgs = [
     'get-node',
     `--root=${REPO_ROOT}`
@@ -868,28 +900,72 @@ async function runRustGetNode(nodeId, uid, fileFilter, options: any = {}) {
   if (fileFilter) subcommandArgs.push(`--file=${String(fileFilter)}`);
   if (cachePath) subcommandArgs.push(`--cache-path=${cachePath}`);
   if (cachePath) subcommandArgs.push(`--cache-max-bytes=${cacheMaxBytes}`);
-  const invocation = resolveRustCliInvocation(subcommandArgs);
-  const run = spawnSync(invocation.command, invocation.args, {
-    cwd: invocation.cwd,
-    encoding: 'utf8',
-    timeout: DEFAULT_RUST_TIMEOUT_MS
+
+  const unified = await runUnifiedMemoryTransport({
+    daemon_enabled: daemonEnabled,
+    daemon_detail: 'tcp',
+    allow_cli_fallback: crateExists,
+    invoke_daemon: async () => tryRustDaemonInvoke('get-node', daemonArgs),
+    invoke_cli: () => {
+      if (!crateExists) return { ok: false, error: 'rust_crate_missing' };
+      const invocation = resolveRustCliInvocation(subcommandArgs);
+      const run = spawnSync(invocation.command, invocation.args, {
+        cwd: invocation.cwd,
+        encoding: 'utf8',
+        timeout: DEFAULT_RUST_TIMEOUT_MS
+      });
+      const stdout = String(run.stdout || '').trim();
+      const stderr = String(run.stderr || '').trim();
+      let payload = null;
+      try { payload = stdout ? JSON.parse(stdout) : null; } catch {}
+      if (Number.isFinite(run.status) && run.status === 0 && payload && payload.ok === true && typeof payload.section === 'string') {
+        return {
+          ok: true,
+          payload,
+          transport: invocation.transport,
+          transport_detail: invocation.transport_detail
+        };
+      }
+      const err = run.error
+        ? `spawn_error_${String(run.error.code || run.error.message || 'unknown')}`
+        : (payload && payload.error ? String(payload.error) : `rust_cli_status_${Number.isFinite(run.status) ? run.status : 1}`);
+      return {
+        ok: false,
+        error: err,
+        status: Number.isFinite(run.status) ? run.status : 1,
+        stderr: stderr.slice(0, 300),
+        stdout: stdout.slice(0, 300),
+        transport: invocation.transport,
+        transport_detail: invocation.transport_detail
+      };
+    }
   });
-  const stdout = String(run.stdout || '').trim();
-  const stderr = String(run.stderr || '').trim();
-  let payload = null;
-  try { payload = stdout ? JSON.parse(stdout) : null; } catch {}
-  if (Number.isFinite(run.status) && run.status === 0 && payload && payload.ok === true && typeof payload.section === 'string') {
-    return { ok: true, payload, transport: invocation.transport, transport_detail: invocation.transport_detail };
+
+  if (unified.ok) {
+    return {
+      ok: true,
+      payload: unified.payload,
+      transport: unified.transport,
+      transport_detail: unified.transport_detail || null,
+      transport_attempts: Array.isArray(unified.attempts) ? unified.attempts : [],
+      fallback_reason: unified.fallback_reason || null
+    };
   }
-  const err = run.error
-    ? `spawn_error_${String(run.error.code || run.error.message || 'unknown')}`
-    : (payload && payload.error ? String(payload.error) : `rust_cli_status_${Number.isFinite(run.status) ? run.status : 1}`);
+  if (!crateExists) {
+    return {
+      ok: false,
+      error: unified.error || 'rust_crate_missing',
+      crate_path: cratePath,
+      transport_attempts: Array.isArray(unified.attempts) ? unified.attempts : []
+    };
+  }
   return {
     ok: false,
-    error: err,
-    status: Number.isFinite(run.status) ? run.status : 1,
-    stderr: stderr.slice(0, 300),
-    stdout: stdout.slice(0, 300)
+    error: unified.error || 'rust_get_failed',
+    status: Number.isFinite(unified.status) ? unified.status : 1,
+    stderr: cleanCell(unified.stderr || '').slice(0, 300),
+    stdout: cleanCell(unified.stdout || '').slice(0, 300),
+    transport_attempts: Array.isArray(unified.attempts) ? unified.attempts : []
   };
 }
 
@@ -1133,6 +1209,7 @@ async function queryCmd(args) {
   let scoringSource = 'js';
   let rustTransport = null;
   let rustTransportDetail = null;
+  let transportAttempts: any[] = [];
   let indexSources = [];
   let tagSources = [];
   let topScored: any[] = [];
@@ -1156,12 +1233,14 @@ async function queryCmd(args) {
         scoringSource = 'rust_query_index';
         rustTransport = cleanCell(rust.transport || 'unknown') || null;
         rustTransportDetail = cleanCell(rust.transport_detail || '') || null;
+        transportAttempts = Array.isArray(rust.transport_attempts) ? rust.transport_attempts.slice(0) : [];
         indexSources = Array.isArray(payload.index_sources) ? payload.index_sources.slice(0) : [];
         tagSources = Array.isArray(payload.tag_sources) ? payload.tag_sources.slice(0) : [];
         metrics.candidates_total = clampInt(payload.candidates_total, 0, 100000000);
         topScored = parseRustScoredRows(payload, top);
       } else {
         backendFallbackReason = rust.error || 'rust_query_failed';
+        transportAttempts = Array.isArray(rust.transport_attempts) ? rust.transport_attempts.slice(0) : [];
         noteRustFailure(backendFallbackReason);
       }
     }
@@ -1200,6 +1279,15 @@ async function queryCmd(args) {
     });
     topScored = scored.slice(0, top);
   }
+
+  const transportTelemetry = normalizeTransportTelemetry({
+    backend_requested: backendRequested,
+    backend_used: backendUsed,
+    fallback_reason: backendFallbackReason,
+    rust_transport: rustTransport,
+    rust_transport_detail: rustTransportDetail,
+    transport_attempts: transportAttempts
+  });
 
   const topScore = Number(topScored[0] ? topScored[0].score : 0);
   const secondScore = Number(topScored[1] ? topScored[1].score : 0);
@@ -1306,11 +1394,12 @@ async function queryCmd(args) {
     score_mode: scoreMode || 'hybrid',
     expanded_count: expandedCount,
     max_files: maxFiles,
-    backend_requested: backendRequested,
-    backend_used: backendUsed,
-    backend_fallback_reason: backendFallbackReason,
-    rust_transport: rustTransport,
-    rust_transport_detail: rustTransportDetail,
+    backend_requested: transportTelemetry.backend_requested,
+    backend_used: transportTelemetry.backend_used,
+    backend_fallback_reason: transportTelemetry.fallback_reason,
+    rust_transport: transportTelemetry.rust_transport,
+    rust_transport_detail: transportTelemetry.rust_transport_detail,
+    transport_attempts: transportTelemetry.transport_attempts,
     scoring_source: scoringSource,
     index_sources: indexSources,
     tag_sources: tagSources,
@@ -1323,11 +1412,12 @@ async function queryCmd(args) {
     query_hash: sha256(query),
     query_length: String(query || '').length,
     tags: tagFilters,
-    backend_requested: backendRequested,
-    backend_used: backendUsed,
-    backend_fallback_reason: backendFallbackReason,
-    rust_transport: rustTransport,
-    rust_transport_detail: rustTransportDetail,
+    backend_requested: transportTelemetry.backend_requested,
+    backend_used: transportTelemetry.backend_used,
+    backend_fallback_reason: transportTelemetry.fallback_reason,
+    rust_transport: transportTelemetry.rust_transport,
+    rust_transport_detail: transportTelemetry.rust_transport_detail,
+    transport_attempts: transportTelemetry.transport_attempts,
     confidence,
     expanded_count: expandedCount,
     hit_count: hits.length,
@@ -1349,8 +1439,18 @@ async function getCmd(args) {
   let backendFallbackReason = null;
   let rustTransport = null;
   let rustTransportDetail = null;
+  let transportAttempts: any[] = [];
+  const buildTransportTelemetry = () => normalizeTransportTelemetry({
+    backend_requested: backendRequested,
+    backend_used: backendUsed,
+    fallback_reason: backendFallbackReason,
+    rust_transport: rustTransport,
+    rust_transport_detail: rustTransportDetail,
+    transport_attempts: transportAttempts
+  });
 
   if (!nodeId && !uid) {
+    const transportTelemetry = buildTransportTelemetry();
     const response = {
       ok: false,
       error: 'missing --node-id=<id> or --uid=<alnum_uid>'
@@ -1358,9 +1458,12 @@ async function getCmd(args) {
     appendAuditMirror('memory_recall_get', {
       ok: false,
       session,
-      backend_requested: backendRequested,
-      backend_used: backendUsed,
-      backend_fallback_reason: backendFallbackReason,
+      backend_requested: transportTelemetry.backend_requested,
+      backend_used: transportTelemetry.backend_used,
+      backend_fallback_reason: transportTelemetry.fallback_reason,
+      rust_transport: transportTelemetry.rust_transport,
+      rust_transport_detail: transportTelemetry.rust_transport_detail,
+      transport_attempts: transportTelemetry.transport_attempts,
       error: 'missing_node_or_uid'
     });
     process.stdout.write(JSON.stringify(response) + '\n');
@@ -1378,16 +1481,23 @@ async function getCmd(args) {
       if (rust.ok) {
         clearRustFailure();
         const payload = rust.payload || {};
+        backendUsed = 'rust';
+        backendFallbackReason = null;
+        rustTransport = cleanCell(rust.transport || 'unknown') || null;
+        rustTransportDetail = cleanCell(rust.transport_detail || '') || null;
+        transportAttempts = Array.isArray(rust.transport_attempts) ? rust.transport_attempts.slice(0) : [];
+        const transportTelemetry = buildTransportTelemetry();
         const section = typeof payload.section === 'string' ? payload.section : '';
         const response = {
           ok: true,
           type: 'memory_recall_get',
           session,
-          backend_requested: backendRequested,
-          backend_used: 'rust',
-          backend_fallback_reason: null,
-          rust_transport: cleanCell(rust.transport || 'unknown') || null,
-          rust_transport_detail: cleanCell(rust.transport_detail || '') || null,
+          backend_requested: transportTelemetry.backend_requested,
+          backend_used: transportTelemetry.backend_used,
+          backend_fallback_reason: transportTelemetry.fallback_reason,
+          rust_transport: transportTelemetry.rust_transport,
+          rust_transport_detail: transportTelemetry.rust_transport_detail,
+          transport_attempts: transportTelemetry.transport_attempts,
           node_id: normalizeNodeId(payload.node_id || nodeId),
           uid: normalizeUid(payload.uid || uid),
           file: normalizeFileRef(payload.file || fileFilter),
@@ -1404,17 +1514,21 @@ async function getCmd(args) {
           node_id: normalizeNodeId(payload.node_id || nodeId),
           uid: normalizeUid(payload.uid || uid),
           file: normalizeFileRef(payload.file || fileFilter),
-          backend_requested: backendRequested,
-          backend_used: 'rust',
-          backend_fallback_reason: null,
-          rust_transport: cleanCell(rust.transport || 'unknown') || null,
-          rust_transport_detail: cleanCell(rust.transport_detail || '') || null,
+          backend_requested: transportTelemetry.backend_requested,
+          backend_used: transportTelemetry.backend_used,
+          backend_fallback_reason: transportTelemetry.fallback_reason,
+          rust_transport: transportTelemetry.rust_transport,
+          rust_transport_detail: transportTelemetry.rust_transport_detail,
+          transport_attempts: transportTelemetry.transport_attempts,
           section_hash: cleanCell(payload.section_hash || '') || sha256(section)
         });
         process.stdout.write(JSON.stringify(response, null, 2) + '\n');
         return;
       }
       backendFallbackReason = rust.error || 'rust_get_failed';
+      rustTransport = cleanCell(rust.transport || '') || null;
+      rustTransportDetail = cleanCell(rust.transport_detail || '') || null;
+      transportAttempts = Array.isArray(rust.transport_attempts) ? rust.transport_attempts.slice(0) : [];
       noteRustFailure(backendFallbackReason);
     }
   }
@@ -1427,6 +1541,7 @@ async function getCmd(args) {
   matches = sortByDateDesc(matches);
   const entry = matches[0];
   if (!entry) {
+    const transportTelemetry = buildTransportTelemetry();
     const response = {
       ok: false,
       error: 'node_not_found',
@@ -1437,9 +1552,12 @@ async function getCmd(args) {
     appendAuditMirror('memory_recall_get', {
       ok: false,
       session,
-      backend_requested: backendRequested,
-      backend_used: backendUsed,
-      backend_fallback_reason: backendFallbackReason,
+      backend_requested: transportTelemetry.backend_requested,
+      backend_used: transportTelemetry.backend_used,
+      backend_fallback_reason: transportTelemetry.fallback_reason,
+      rust_transport: transportTelemetry.rust_transport,
+      rust_transport_detail: transportTelemetry.rust_transport_detail,
+      transport_attempts: transportTelemetry.transport_attempts,
       node_id: nodeId || null,
       uid: uid || null,
       file: fileFilter || null,
@@ -1454,6 +1572,7 @@ async function getCmd(args) {
   const sec = loadSection(entry, cacheObj, metrics, fileContents, cacheMaxBytes);
   saveCache(session, cacheObj, cacheMaxBytes);
   if (!sec.ok) {
+    const transportTelemetry = buildTransportTelemetry();
     const response = {
       ok: false,
       error: sec.reason || 'section_unavailable',
@@ -1463,9 +1582,12 @@ async function getCmd(args) {
     appendAuditMirror('memory_recall_get', {
       ok: false,
       session,
-      backend_requested: backendRequested,
-      backend_used: backendUsed,
-      backend_fallback_reason: backendFallbackReason,
+      backend_requested: transportTelemetry.backend_requested,
+      backend_used: transportTelemetry.backend_used,
+      backend_fallback_reason: transportTelemetry.fallback_reason,
+      rust_transport: transportTelemetry.rust_transport,
+      rust_transport_detail: transportTelemetry.rust_transport_detail,
+      transport_attempts: transportTelemetry.transport_attempts,
       node_id: nodeId || null,
       uid: uid || null,
       file: entry.file_rel,
@@ -1475,15 +1597,17 @@ async function getCmd(args) {
     process.exit(1);
   }
 
+  const transportTelemetry = buildTransportTelemetry();
   const response = {
     ok: true,
     type: 'memory_recall_get',
     session,
-    backend_requested: backendRequested,
-    backend_used: backendUsed,
-    backend_fallback_reason: backendFallbackReason,
-    rust_transport: rustTransport,
-    rust_transport_detail: rustTransportDetail,
+    backend_requested: transportTelemetry.backend_requested,
+    backend_used: transportTelemetry.backend_used,
+    backend_fallback_reason: transportTelemetry.fallback_reason,
+    rust_transport: transportTelemetry.rust_transport,
+    rust_transport_detail: transportTelemetry.rust_transport_detail,
+    transport_attempts: transportTelemetry.transport_attempts,
     node_id: entry.node_id,
     uid: entry.uid || '',
     file: entry.file_rel,
@@ -1500,11 +1624,12 @@ async function getCmd(args) {
     node_id: entry.node_id,
     uid: entry.uid || '',
     file: entry.file_rel,
-    backend_requested: backendRequested,
-    backend_used: backendUsed,
-    backend_fallback_reason: backendFallbackReason,
-    rust_transport: rustTransport,
-    rust_transport_detail: rustTransportDetail,
+    backend_requested: transportTelemetry.backend_requested,
+    backend_used: transportTelemetry.backend_used,
+    backend_fallback_reason: transportTelemetry.fallback_reason,
+    rust_transport: transportTelemetry.rust_transport,
+    rust_transport_detail: transportTelemetry.rust_transport_detail,
+    transport_attempts: transportTelemetry.transport_attempts,
     section_hash: sec.section_hash,
     section_source: sec.source
   });

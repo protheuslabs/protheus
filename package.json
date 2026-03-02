@@ -523,6 +523,7 @@
     "test:governance:hardening": "node memory/tools/tests/governance_hardening_lane.test.js",
     "test:ops:control-plane": "node memory/tools/tests/protheus_control_plane.test.js",
     "test:ops:backlog-registry": "node memory/tools/tests/backlog_registry.test.js",
+    "test:memory:transport": "node memory/tools/tests/memory_transport.test.js",
     "test:memory:efficiency": "node memory/tools/tests/memory_efficiency_plane.test.js",
     "test:ops:readiness-bridge": "node memory/tools/tests/readiness_bridge_pack.test.js",
     "test:ops:benchmark-autonomy": "node memory/tools/tests/benchmark_autonomy_gate.test.js",
