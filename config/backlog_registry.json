@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T09:37:44.464Z",
-  "source_hash": "e73b549112a27cdb06a78fa7",
+  "generated_at": "2026-03-02T09:37:46.477Z",
+  "source_hash": "eaa14d2a39f0d9a97b71326b",
   "row_count": 373,
   "active_count": 1,
-  "archive_count": 360,
+  "archive_count": 361,
   "rows": [
     {
       "id": "BL-001",
@@ -1241,7 +1241,7 @@
       "id": "RR-003",
       "class": "backlog",
       "wave": "RR",
-      "status": "open",
+      "status": "done",
       "title": "Schema drift without migration discipline",
       "problem": "Replay/federation break when events/profiles evolve ad hoc",
       "acceptance": "Enforce N-2 schema contract + migration plans for any schema change; linked: `V3-049`",

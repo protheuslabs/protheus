@@ -1,6 +1,6 @@
 # Backlog Archive View
 
-Generated: 2026-03-02T09:37:44.464Z
+Generated: 2026-03-02T09:37:46.477Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
@@ -126,6 +126,7 @@ Generated: 2026-03-02T09:37:44.464Z
 | V3-030 | backlog | V3 | done | Tool assimilation pipeline (Research -> Forge -> Nursery -> Doctor graft) |  |
 | RR-001 | backlog | RR | done | Config and flag fragmentation |  |
 | RR-002 | backlog | RR | done | Duplicate execution pathways |  |
+| RR-003 | backlog | RR | done | Schema drift without migration discipline |  |
 | V3-DUAL-001 | backlog | V3 | done | Duality Belief Engine Seed |  |
 | V3-ATTR-001 | backlog | V3 | done | Lightweight Value Attribution Primitive |  |
 | V3-ATTR-002 | backlog | V3 | done | Storm Value Distribution Layer |  |
