@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T09:03:53.594Z",
-  "source_hash": "5538e08de096bd48a7156a03",
+  "generated_at": "2026-03-02T09:05:46.895Z",
+  "source_hash": "5eb7ff766785f7ed42dac906",
   "row_count": 373,
   "active_count": 1,
-  "archive_count": 317,
+  "archive_count": 318,
   "rows": [
     {
       "id": "BL-001",
@@ -3846,7 +3846,7 @@
       "id": "V3-RACE-134",
       "class": "extension",
       "wave": "V3",
-      "status": "open",
+      "status": "done",
       "title": "Visual Dynamic Signature Engine (Identity Render Contract)",
       "problem": "Identity artifacts are textual/ledger-heavy; there is no canonical evolving visual signature contract for instances.",
       "acceptance": "Added deterministic signature generator (`systems/identity/visual_signature_engine.{ts,js}` with optional Rust helper path) and policy contracts; user-specific rendered signature state/history persists in `memory/identity/signature/` with adaptive style-tuning metadata in `adaptive/identity/signature/`; rendering algorithms, schemas, and verification logic stay in `systems/identity/` + `config/`; CLI/UI surfaces consume signed render manifests.",

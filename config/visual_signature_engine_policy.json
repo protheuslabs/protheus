@@ -1,0 +1,26 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "risk": {
+    "default_tier": 2,
+    "require_explicit_approval_tier": 3
+  },
+  "constraints": {
+    "max_render_history": 64
+  },
+  "event_stream": {
+    "enabled": true,
+    "publish": true,
+    "stream": "identity.visual_signature"
+  },
+  "paths": {
+    "memory_dir": "memory/identity/signature",
+    "adaptive_index_path": "adaptive/identity/signature/index.json",
+    "style_tuning_path": "adaptive/identity/signature/style_tuning.json",
+    "events_path": "state/identity/visual_signature/events.jsonl",
+    "latest_path": "state/identity/visual_signature/latest.json",
+    "receipts_path": "state/identity/visual_signature/receipts.jsonl",
+    "manifests_dir": "state/identity/visual_signature/manifests"
+  }
+}
