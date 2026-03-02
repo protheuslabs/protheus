@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T09:37:50.822Z",
-  "source_hash": "07922a5d6274896a9eaaa985",
+  "generated_at": "2026-03-02T09:37:52.687Z",
+  "source_hash": "81cb9d6f97f31c057b6d6b35",
   "row_count": 373,
   "active_count": 1,
-  "archive_count": 363,
+  "archive_count": 364,
   "rows": [
     {
       "id": "BL-001",
@@ -1271,7 +1271,7 @@
       "id": "RR-006",
       "class": "backlog",
       "wave": "RR",
-      "status": "open",
+      "status": "done",
       "title": "Key and secret lifecycle fragility",
       "problem": "Strong runtime guards fail if rotation/recovery paths are weak",
       "acceptance": "Rotate/revoke/recover drills with audited ceremonies and failover tests; linked: `V3-051`",
