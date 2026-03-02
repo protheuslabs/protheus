@@ -1,10 +1,10 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T18:10:23.346Z",
-  "source_hash": "6ca75322b4b67eb0cff3cbc0",
-  "row_count": 554,
-  "active_count": 157,
+  "generated_at": "2026-03-02T18:12:57.548Z",
+  "source_hash": "0bbd1f4121b422b04e2644ce",
+  "row_count": 559,
+  "active_count": 162,
   "archive_count": 397,
   "rows": [
     {
@@ -6979,6 +6979,78 @@
         "V3-RACE-344",
         "V3-RACE-354",
         "V3-RACE-212"
+      ]
+    },
+    {
+      "id": "V3-RACE-356",
+      "class": "primitive-upgrade",
+      "wave": "V3",
+      "status": "queued",
+      "title": "PlatformSocket ABI + Signed Manifest Contract",
+      "problem": "Adaptation channels provide host-aware behavior, but long-term extensibility requires one stable plugin ABI with auditable metadata and capability boundaries.",
+      "acceptance": "Define versioned `PlatformSocket` trait/ABI and manifest schema (identity, signature, HostProfile predicates, capability claims, version compatibility, rollback metadata) for WASM-first and optional native-performance modules; require verification receipts for signature/manifest validation and include rollback-safe ABI compatibility fallback on version mismatch.",
+      "dependencies": [
+        "V3-RACE-209",
+        "V3-RACE-210",
+        "V3-RACE-211"
+      ]
+    },
+    {
+      "id": "V3-RACE-357",
+      "class": "primitive-upgrade",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Socket Discovery/Loader Runtime (Registry + Version Pin + Hot-Swap)",
+      "problem": "A socket ABI alone is insufficient without governed discovery and lifecycle controls that keep runtime behavior deterministic and fail-closed.",
+      "acceptance": "Implement socket discovery across embedded + local registry paths, signed load/activate/deactivate lifecycle, version pinning and update channel policy, non-critical hot-swap contracts, and deterministic fallback to generic socket on load/validation failure; emit receipts for every lifecycle transition with rollback-safe rebind controls.",
+      "dependencies": [
+        "V3-RACE-356",
+        "V3-RACE-210",
+        "V3-RACE-176"
+      ]
+    },
+    {
+      "id": "V3-RACE-358",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "GenericSocket + Named Host Socket Refactor (Channels -> Sockets)",
+      "problem": "Existing channel modules need a controlled refactor target so universal controls remain centralized while host-specific logic remains isolated and swappable.",
+      "acceptance": "Refactor current adaptation channels into socket modules where `GenericSocket` encapsulates universal requirement matrix controls and host-specific sockets carry distro/system contracts; prove no regression of existing host activation behavior with verification receipts and provide rollback-safe compatibility layer for channel-era modules during migration.",
+      "dependencies": [
+        "V3-RACE-212",
+        "V3-RACE-211",
+        "V3-RACE-356",
+        "V3-RACE-357"
+      ]
+    },
+    {
+      "id": "V3-RACE-359",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Socket Lifecycle Operator Surface (`protheusctl socket *` + API)",
+      "problem": "Operators need deterministic governance for socket inventory, install/update policy, and pre-activation testing without direct filesystem edits.",
+      "acceptance": "Add `protheusctl socket list|install|update|test|status` with JSON/human outputs plus API endpoints for lane controllers; enforce signature/policy checks before lifecycle actions, emit receipted audit logs, and include rollback-safe uninstall/revert commands on failed updates or tests.",
+      "dependencies": [
+        "V3-RACE-356",
+        "V3-RACE-357",
+        "V3-RACE-213"
+      ]
+    },
+    {
+      "id": "V3-RACE-360",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Socket Admission Proof Gate (Formal + Redteam + HostProfile Chaos Validation)",
+      "problem": "Community-installed sockets increase attack and reliability surface unless admission is blocked by explicit proof contracts and adversarial validation.",
+      "acceptance": "Require every new/updated socket to pass formal HostProfile predicate proofs, signature/capability policy checks, and redteam chaos tests on representative hardware before promotion; block activation on missing/failed evidence, emit signed admission receipts, and include rollback-safe quarantine/fallback to last-verified socket set.",
+      "dependencies": [
+        "V3-RACE-214",
+        "V3-RACE-187",
+        "V3-RACE-356",
+        "V3-RACE-357"
       ]
     },
     {

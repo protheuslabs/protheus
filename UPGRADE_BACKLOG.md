@@ -3368,6 +3368,44 @@ Data boundary invariants for this intake:
 | Approve enterprise support posture for multi-distro ecosystem (SLA tiers, indemnification boundaries, support ownership model) | human | queued | Set commercial/support governance boundaries for cross-ecosystem adoption and lifecycle guarantees. |
 | Approve neutral-core uplift policy criteria (which steward-derived controls auto-promote to core vs remain optional adapters) | human | queued | Finalize decision framework for promoting ecosystem-specific controls into universal platform defaults. |
 
+## External Requirements Intake (Google Doc `10yHeUnXAygr6pRLknGTKF7YIhNgrVVU1wIDHo8ohMUA`, 2026-03-02)
+
+Objective: normalize the Platform Adaptation Socket architecture directive into canonical backlog lanes that refactor existing HostProfile/adaptation-channel foundations into a governed plugin model without re-opening already-queued base lanes.
+
+Data boundary invariants for this intake:
+- user-specific socket installation preferences and trust overrides live only in `memory/` + `adaptive/`
+- permanent socket ABI, loader, registry, and CLI/control-plane surfaces live only in `systems/`, `packages/`, `config/`, and `docs/`
+- socket manifests, signatures, admission receipts, and activation history remain in `state/` and are never treated as user-memory
+
+### Requirement Mapping (from intake)
+
+| Requirement (from intake) | Canonical Backlog Handling | Status | Requirement Action |
+|---|---|---|---|
+| Keep current execution order: build Platform Oracle + Adaptation Channels first, then perform socket refactor | `V3-RACE-209`, `V3-RACE-210`, `V3-RACE-211` | queued | Preserve foundation-first sequencing; socket work depends on prior adaptation lanes. |
+| Define versioned/discoverable `PlatformSocket` interface + signed manifest format for WASM/native plugins (`CORE-005`) | `V3-RACE-356` | queued | Add formal socket ABI + manifest schema with signature and capability policy contracts. |
+| Implement socket discovery/loading/version pinning/hot-swap in oracle path (`CORE-006`) | `V3-RACE-357` | queued | Add governed loader and runtime lifecycle contracts with fail-closed fallback behavior. |
+| Add built-in `GenericSocket` carrying universal/general requirements and move system-specific logic to named sockets (`CORE-007`) | `V3-RACE-358` | queued | Refactor current generic + specific channel split into socket modules without regressing controls. |
+| Add operator surface `protheusctl socket list|install|update|test` + lane API (`CORE-008`) | `V3-RACE-359` | queued | Add socket lifecycle CLI/API with receipted install/update/test flows. |
+| Add formal verification + redteam admission gate for new sockets with HostProfile match tests and chaos gameday (`CORE-009`) | `V3-RACE-360` | queued | Extend hardening gate to enforce socket admission proofs before activation/promotion. |
+
+### Net-New Canonical Queue
+
+| ID | Class | Version | Status | Upgrade | Why | Exit Criteria | Depends On |
+|---|---|---|---|---|---|---|---|
+| V3-RACE-356 | primitive-upgrade | V3 | queued | PlatformSocket ABI + Signed Manifest Contract | Adaptation channels provide host-aware behavior, but long-term extensibility requires one stable plugin ABI with auditable metadata and capability boundaries. | Define versioned `PlatformSocket` trait/ABI and manifest schema (identity, signature, HostProfile predicates, capability claims, version compatibility, rollback metadata) for WASM-first and optional native-performance modules; require verification receipts for signature/manifest validation and include rollback-safe ABI compatibility fallback on version mismatch. | V3-RACE-209, V3-RACE-210, V3-RACE-211 |
+| V3-RACE-357 | primitive-upgrade | V3 | queued | Socket Discovery/Loader Runtime (Registry + Version Pin + Hot-Swap) | A socket ABI alone is insufficient without governed discovery and lifecycle controls that keep runtime behavior deterministic and fail-closed. | Implement socket discovery across embedded + local registry paths, signed load/activate/deactivate lifecycle, version pinning and update channel policy, non-critical hot-swap contracts, and deterministic fallback to generic socket on load/validation failure; emit receipts for every lifecycle transition with rollback-safe rebind controls. | V3-RACE-356, V3-RACE-210, V3-RACE-176 |
+| V3-RACE-358 | extension | V3 | queued | GenericSocket + Named Host Socket Refactor (Channels -> Sockets) | Existing channel modules need a controlled refactor target so universal controls remain centralized while host-specific logic remains isolated and swappable. | Refactor current adaptation channels into socket modules where `GenericSocket` encapsulates universal requirement matrix controls and host-specific sockets carry distro/system contracts; prove no regression of existing host activation behavior with verification receipts and provide rollback-safe compatibility layer for channel-era modules during migration. | V3-RACE-212, V3-RACE-211, V3-RACE-356, V3-RACE-357 |
+| V3-RACE-359 | extension | V3 | queued | Socket Lifecycle Operator Surface (`protheusctl socket *` + API) | Operators need deterministic governance for socket inventory, install/update policy, and pre-activation testing without direct filesystem edits. | Add `protheusctl socket list|install|update|test|status` with JSON/human outputs plus API endpoints for lane controllers; enforce signature/policy checks before lifecycle actions, emit receipted audit logs, and include rollback-safe uninstall/revert commands on failed updates or tests. | V3-RACE-356, V3-RACE-357, V3-RACE-213 |
+| V3-RACE-360 | hardening | V3 | queued | Socket Admission Proof Gate (Formal + Redteam + HostProfile Chaos Validation) | Community-installed sockets increase attack and reliability surface unless admission is blocked by explicit proof contracts and adversarial validation. | Require every new/updated socket to pass formal HostProfile predicate proofs, signature/capability policy checks, and redteam chaos tests on representative hardware before promotion; block activation on missing/failed evidence, emit signed admission receipts, and include rollback-safe quarantine/fallback to last-verified socket set. | V3-RACE-214, V3-RACE-187, V3-RACE-356, V3-RACE-357 |
+
+### Human Backlog Intake (Socket Governance / Non-Automatable)
+
+| Human Item (from intake) | Owner | Status | Backlog Action |
+|---|---|---|---|
+| Approve socket registry trust policy (who can publish/sign, trust roots, revocation authority) | human | queued | Define governance for community socket publication and emergency revocation controls. |
+| Approve hot-swap safety policy (which lanes are eligible, maintenance window constraints, production bypass rules) | human | queued | Set operational safety boundaries for runtime socket replacement behavior. |
+| Approve external naming/branding for socket architecture (PlatformSocket vs Host Socket) before public docs | human | queued | Finalize operator-facing terminology and compatibility naming guidance for docs/tooling. |
+
 ## Backlog Policy
 
 - Lower-impact items (<9% estimated gain) are intentionally parked below to protect V1 focus.

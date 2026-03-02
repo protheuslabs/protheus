@@ -1,6 +1,6 @@
 # Backlog Active View
 
-Generated: 2026-03-02T18:10:23.346Z
+Generated: 2026-03-02T18:12:57.548Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
@@ -161,4 +161,9 @@ Generated: 2026-03-02T18:10:23.346Z
 | V3-RACE-353 | hardening | V3 | queued | Long-LTS Migration & Support Continuity Lane (Ubuntu/Enterprise Linux Focus) | V3-RACE-339, V3-RACE-341, V3-RACE-345 |
 | V3-RACE-354 | hardening | V3 | queued | Multi-Platform Linux/Unix Conformance Promotion Gate | V3-RACE-214, V3-RACE-343, V3-RACE-350, V3-RACE-352 |
 | V3-RACE-355 | hardening | V3 | queued | Neutral-Core Cross-Ecosystem Hardening Uplift (Post-Intake Consolidation) | V3-RACE-344, V3-RACE-354, V3-RACE-212 |
+| V3-RACE-356 | primitive-upgrade | V3 | queued | PlatformSocket ABI + Signed Manifest Contract | V3-RACE-209, V3-RACE-210, V3-RACE-211 |
+| V3-RACE-357 | primitive-upgrade | V3 | queued | Socket Discovery/Loader Runtime (Registry + Version Pin + Hot-Swap) | V3-RACE-356, V3-RACE-210, V3-RACE-176 |
+| V3-RACE-358 | extension | V3 | queued | GenericSocket + Named Host Socket Refactor (Channels -> Sockets) | V3-RACE-212, V3-RACE-211, V3-RACE-356, V3-RACE-357 |
+| V3-RACE-359 | extension | V3 | queued | Socket Lifecycle Operator Surface (`protheusctl socket *` + API) | V3-RACE-356, V3-RACE-357, V3-RACE-213 |
+| V3-RACE-360 | hardening | V3 | queued | Socket Admission Proof Gate (Formal + Redteam + HostProfile Chaos Validation) | V3-RACE-214, V3-RACE-187, V3-RACE-356, V3-RACE-357 |
 
