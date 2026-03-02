@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T09:21:03.521Z",
-  "source_hash": "2e03504f5ccb9dc40adb354c",
+  "generated_at": "2026-03-02T09:21:05.983Z",
+  "source_hash": "bde0244793a6650e9933a727",
   "row_count": 373,
   "active_count": 1,
-  "archive_count": 332,
+  "archive_count": 333,
   "rows": [
     {
       "id": "BL-001",
@@ -4065,7 +4065,7 @@
       "id": "V3-RACE-149",
       "class": "extension",
       "wave": "V3",
-      "status": "open",
+      "status": "done",
       "title": "Real-Time Collaboration Presence Engine",
       "problem": "Base CRDT replication does not fully cover multi-user presence/session semantics and high-frequency collaborative editing ergonomics.",
       "acceptance": "Implement `systems/collaboration/realtime_presence_engine.{ts,js}` + policy `config/realtime_presence_policy.json`; user-specific room/session membership and collaboration preferences remain in `memory/collaboration/` with adaptive collaboration QoS tuning under `adaptive/collaboration/`; permanent session orchestration, conflict semantics, and transport contracts stay in `systems/collaboration/` + `config/`.",
