@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T04:06:13.601Z",
-  "source_hash": "fa997ee97bed39c0821bfafb",
+  "generated_at": "2026-03-02T04:07:28.042Z",
+  "source_hash": "64823a7c7bd8b8a463ac9572",
   "row_count": 127,
-  "active_count": 46,
-  "archive_count": 81,
+  "active_count": 45,
+  "archive_count": 82,
   "rows": [
     {
       "id": "V3-OPS-004",
@@ -1513,10 +1513,10 @@
       "id": "V3-RACE-094",
       "class": "hardening",
       "wave": "V3",
-      "status": "queued",
+      "status": "done",
       "title": "Ensemble Disagreement Escalation Lane",
       "problem": "Single-analyzer certainty can mask blind spots on ambiguous/high-risk signals.",
-      "acceptance": "Multi-analyzer disagreement metrics are computed; high-divergence cases trigger escalate/defer flows with adjudication receipts.",
+      "acceptance": "Added `systems/sensory/ensemble_disagreement_escalation_lane.{ts,js}` + `config/ensemble_disagreement_escalation_policy.json` to compute ensemble divergence metrics (stddev/range), apply risk-tier thresholds, and route high-divergence cases to adjudication with receipts under `state/sensory/analysis/ensemble_disagreement/`; regression coverage in `memory/tools/tests/ensemble_disagreement_escalation_lane.test.js`.",
       "dependencies": [
         "V3-RACE-083",
         "V3-RACE-087"

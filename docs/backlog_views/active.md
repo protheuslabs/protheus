@@ -1,6 +1,6 @@
 # Backlog Active View
 
-Generated: 2026-03-02T04:06:13.601Z
+Generated: 2026-03-02T04:07:28.042Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
@@ -36,7 +36,6 @@ Generated: 2026-03-02T04:06:13.601Z
 | V3-RACE-057 | hardening | V3 | queued | Black-Swan Disaster Gamebooks & Continuous Resilience Drills | V3-RACE-040, V3-RACE-041, V3-RACE-037 |
 | V3-RACE-058 | extension | V3 | queued | Legal/Regulatory Auto-Diff Governance Router | V3-RACE-044, V3-DOC-005, V3-RACE-CONF-007 |
 | V3-RACE-059 | hardening | V3 | queued | Sovereign Decommission, Legacy & Succession Boundary Protocol | V3-RACE-037, V4-006, V3-RACE-033 |
-| V3-RACE-094 | hardening | V3 | queued | Ensemble Disagreement Escalation Lane | V3-RACE-083, V3-RACE-087 |
 | V3-RACE-095 | extension | V3 | queued | Novelty/Saturation Prioritization Engine | V3-RACE-080, V3-RACE-091 |
 | V3-RACE-096 | hardening | V3 | queued | Analysis Quality SLO Contract | V3-RACE-086, V3-RACE-081 |
 | V3-RACE-097 | hardening | V3 | queued | Ground-Truth Governance & Label Adjudication Lane | V3-RACE-086 |

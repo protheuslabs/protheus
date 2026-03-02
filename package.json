@@ -618,7 +618,10 @@
     "test:sensory:hypothesis-ledger": "node memory/tools/tests/hypothesis_lifecycle_ledger.test.js",
     "sensory:error-autotune:run": "node systems/sensory/detector_error_taxonomy_autotune.js run",
     "sensory:error-autotune:status": "node systems/sensory/detector_error_taxonomy_autotune.js status",
-    "test:sensory:error-autotune": "node memory/tools/tests/detector_error_taxonomy_autotune.test.js"
+    "test:sensory:error-autotune": "node memory/tools/tests/detector_error_taxonomy_autotune.test.js",
+    "sensory:ensemble-disagreement:run": "node systems/sensory/ensemble_disagreement_escalation_lane.js run",
+    "sensory:ensemble-disagreement:status": "node systems/sensory/ensemble_disagreement_escalation_lane.js status",
+    "test:sensory:ensemble-disagreement": "node memory/tools/tests/ensemble_disagreement_escalation_lane.test.js"
   },
   "bin": {
     "protheus": "./bin/protheus",
