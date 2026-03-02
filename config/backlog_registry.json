@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T18:30:43.956Z",
-  "source_hash": "8bff55d108423e724a69ec20",
-  "row_count": 559,
+  "generated_at": "2026-03-02T19:00:08.974Z",
+  "source_hash": "6624990d3537ba7c8d100e4e",
+  "row_count": 560,
   "active_count": 1,
-  "archive_count": 558,
+  "archive_count": 559,
   "rows": [
     {
       "id": "BL-001",
@@ -3414,6 +3414,20 @@
       "acceptance": "Added `systems/sensory/offline_statistical_lab_artifact_bridge.{ts,js}` + `config/offline_statistical_lab_artifact_bridge_policy.json` to ingest signed offline lab artifacts with required-field + trusted-key provenance checks and fail-closed behavior, persisting verified artifacts/receipts under `state/sensory/analysis/offline_lab_bridge/`; regression coverage in `memory/tools/tests/offline_statistical_lab_artifact_bridge.test.js`.",
       "dependencies": [
         "V3-RACE-086",
+        "V3-RACE-096",
+        "V3-RACE-098"
+      ]
+    },
+    {
+      "id": "V3-RACE-361",
+      "class": "extension",
+      "wave": "V3",
+      "status": "done",
+      "title": "Offline R Analytics Runner + Research Organ Best-Fit Integration",
+      "problem": "Optional offline R analytics can improve calibration decisions when bridged through verified artifacts, while runtime remains deterministic with TS fallback paths.",
+      "acceptance": "Added `systems/research/offline_r_analytics_runner.{ts,js}` + `config/offline_r_analytics_runner_policy.json` (with optional script `research/r/offline_research_analytics.R`) to emit signed artifacts into `state/sensory/offline_lab/artifacts/` and auto-run `offline_statistical_lab_artifact_bridge`; integrated `systems/research/research_organ.ts` + `config/research_organ_policy.json` with analytics-bridge fit criteria (`sample_size`, `brier_improvement`, `causal_precision_lift`) and bounded confidence uplift with fail-safe fallback behavior; regression test coverage in `memory/tools/tests/offline_r_analytics_runner.test.js` and `memory/tools/tests/research_organ.test.js`.",
+      "dependencies": [
+        "V3-RACE-102",
         "V3-RACE-096",
         "V3-RACE-098"
       ]

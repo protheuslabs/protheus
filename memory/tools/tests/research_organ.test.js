@@ -34,6 +34,29 @@ function run() {
   const runsDir = path.join(tmp, 'state', 'autonomy', 'research_organ', 'runs');
   const receiptsPath = path.join(tmp, 'state', 'autonomy', 'research_organ', 'receipts.jsonl');
   const latestPath = path.join(tmp, 'state', 'autonomy', 'research_organ', 'latest.json');
+  const bridgeLatestPath = path.join(tmp, 'state', 'sensory', 'analysis', 'offline_lab_bridge', 'latest.json');
+
+  writeJson(bridgeLatestPath, {
+    ok: true,
+    type: 'offline_statistical_lab_artifact_bridge',
+    ts: new Date().toISOString(),
+    date: '2026-03-02',
+    artifact_id: 'r_analytics_2026_03_02',
+    producer: 'offline_r_analytics_runner',
+    job_type: 'research_organ_calibration',
+    verification: {
+      ok: true,
+      key_id: 'lab_key_1',
+      payload_hash: 'abc123',
+      signature: 'sig123'
+    },
+    payload: {
+      sample_size: 240,
+      brier_improvement: 0.032,
+      causal_precision_lift: 0.014,
+      confidence_uplift: 0.08
+    }
+  });
 
   writeJson(policyPath, {
     version: '1.0-test',
@@ -53,6 +76,19 @@ function run() {
       min_depth: 2,
       uncertainty_weight: 0.7,
       value_weight: 0.3
+    },
+    analytics_bridge: {
+      enabled: true,
+      latest_path: bridgeLatestPath,
+      max_artifact_age_hours: 96,
+      allowed_job_types: ['research_organ_calibration'],
+      allowed_producers: ['offline_r_analytics_runner'],
+      fit_criteria: {
+        min_sample_size: 100,
+        min_brier_improvement: 0.01,
+        min_causal_precision_lift: 0.001,
+        max_confidence_uplift: 0.12
+      }
     }
   });
 
@@ -79,6 +115,12 @@ function run() {
   assert.ok(Number(runOut.scores.depth || 0) >= 2, 'depth should be scaled above min');
   assert.ok(Array.isArray(runOut.loops) && runOut.loops.length >= 2, 'loop should include multiple hops');
   assert.ok(Array.isArray(runOut.proposals), 'proposals should be present');
+  assert.ok(runOut.analytics_bridge && runOut.analytics_bridge.eligible === true, 'analytics bridge should be eligible');
+  assert.ok(Number(runOut.analytics_bridge.applied_uplift || 0) > 0, 'analytics bridge should contribute positive uplift');
+  assert.ok(
+    runOut.proposals.every((row) => Number(row.confidence || 0) >= Number(row.base_confidence || 0)),
+    'proposal confidence should include non-negative uplift'
+  );
   assert.strictEqual(runOut.proposal_only, true);
 
   const statusLatest = runNode(scriptPath, ['status', 'latest'], env, root);

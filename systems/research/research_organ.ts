@@ -81,6 +81,12 @@ function appendJsonl(filePath: string, row: AnyObj) {
   fs.appendFileSync(filePath, `${JSON.stringify(row)}\n`, 'utf8');
 }
 
+function resolvePath(raw: unknown, fallbackRel: string) {
+  const txt = cleanText(raw, 520);
+  if (!txt) return path.join(ROOT, fallbackRel);
+  return path.isAbsolute(txt) ? txt : path.join(ROOT, txt);
+}
+
 function parseArgs(argv: string[]) {
   const out: AnyObj = { _: [] };
   for (const token of argv) {
@@ -97,6 +103,16 @@ function parseArgs(argv: string[]) {
 
 function hash12(seed: string) {
   return crypto.createHash('sha256').update(seed).digest('hex').slice(0, 12);
+}
+
+function normalizeList(src: unknown, fallback: string[], maxLen = 120) {
+  if (!Array.isArray(src)) return fallback.slice();
+  return Array.from(new Set(src.map((v) => normalizeToken(v, maxLen)).filter(Boolean)));
+}
+
+function parseIsoMs(raw: unknown) {
+  const ms = Date.parse(String(raw || '').trim());
+  return Number.isFinite(ms) ? ms : null;
 }
 
 function defaultPolicy() {
@@ -122,6 +138,19 @@ function defaultPolicy() {
     adapters: {
       allowed_sources: ['internal_memory', 'research_probe', 'simulation'],
       blocked_sources: []
+    },
+    analytics_bridge: {
+      enabled: true,
+      latest_path: 'state/sensory/analysis/offline_lab_bridge/latest.json',
+      max_artifact_age_hours: 72,
+      allowed_job_types: ['research_organ_calibration', 'calibration_report'],
+      allowed_producers: ['offline_r_analytics_runner', 'offline_r_lab'],
+      fit_criteria: {
+        min_sample_size: 90,
+        min_brier_improvement: 0.015,
+        min_causal_precision_lift: 0.005,
+        max_confidence_uplift: 0.12
+      }
     }
   };
 }
@@ -133,6 +162,10 @@ function loadPolicy(policyPath = POLICY_PATH) {
   const synthesis = raw.synthesis && typeof raw.synthesis === 'object' ? raw.synthesis : {};
   const scaling = raw.uncertainty_scaling && typeof raw.uncertainty_scaling === 'object' ? raw.uncertainty_scaling : {};
   const adapters = raw.adapters && typeof raw.adapters === 'object' ? raw.adapters : {};
+  const analyticsBridge = raw.analytics_bridge && typeof raw.analytics_bridge === 'object' ? raw.analytics_bridge : {};
+  const analyticsFit = analyticsBridge.fit_criteria && typeof analyticsBridge.fit_criteria === 'object'
+    ? analyticsBridge.fit_criteria
+    : {};
   return {
     version: cleanText(raw.version || base.version, 40) || base.version,
     enabled: raw.enabled !== false,
@@ -168,6 +201,44 @@ function loadPolicy(policyPath = POLICY_PATH) {
           .map((v) => normalizeToken(v, 80))
           .filter(Boolean))
       )
+    },
+    analytics_bridge: {
+      enabled: analyticsBridge.enabled !== false,
+      latest_path: resolvePath(analyticsBridge.latest_path, base.analytics_bridge.latest_path),
+      max_artifact_age_hours: clampNumber(
+        analyticsBridge.max_artifact_age_hours,
+        1,
+        720,
+        base.analytics_bridge.max_artifact_age_hours
+      ),
+      allowed_job_types: normalizeList(analyticsBridge.allowed_job_types, base.analytics_bridge.allowed_job_types, 120),
+      allowed_producers: normalizeList(analyticsBridge.allowed_producers, base.analytics_bridge.allowed_producers, 120),
+      fit_criteria: {
+        min_sample_size: clampInt(
+          analyticsFit.min_sample_size,
+          1,
+          10000000,
+          base.analytics_bridge.fit_criteria.min_sample_size
+        ),
+        min_brier_improvement: clampNumber(
+          analyticsFit.min_brier_improvement,
+          -1,
+          1,
+          base.analytics_bridge.fit_criteria.min_brier_improvement
+        ),
+        min_causal_precision_lift: clampNumber(
+          analyticsFit.min_causal_precision_lift,
+          -1,
+          1,
+          base.analytics_bridge.fit_criteria.min_causal_precision_lift
+        ),
+        max_confidence_uplift: clampNumber(
+          analyticsFit.max_confidence_uplift,
+          0,
+          1,
+          base.analytics_bridge.fit_criteria.max_confidence_uplift
+        )
+      }
     }
   };
 }
@@ -197,6 +268,85 @@ function parseJsonArg(raw: unknown) {
   } catch {
     return {};
   }
+}
+
+function loadAnalyticsBridge(policy: AnyObj, runTs: string) {
+  const bridge = policy.analytics_bridge || {};
+  const out: AnyObj = {
+    enabled: bridge.enabled === true,
+    eligible: false,
+    applied_uplift: 0,
+    reasons: [],
+    source: null,
+    metrics: null
+  };
+  if (bridge.enabled !== true) {
+    out.reasons.push('analytics_bridge_disabled');
+    return out;
+  }
+
+  const latest = readJson(bridge.latest_path, null);
+  if (!latest || typeof latest !== 'object') {
+    out.reasons.push('analytics_bridge_missing');
+    return out;
+  }
+  if (latest.ok !== true || !latest.verification || latest.verification.ok !== true || !latest.payload || typeof latest.payload !== 'object') {
+    out.reasons.push('analytics_bridge_unverified');
+    return out;
+  }
+
+  const producer = normalizeToken(latest.producer, 120);
+  const jobType = normalizeToken(latest.job_type, 120);
+  if (Array.isArray(bridge.allowed_producers) && bridge.allowed_producers.length > 0 && !bridge.allowed_producers.includes(producer)) {
+    out.reasons.push('analytics_bridge_producer_not_allowed');
+  }
+  if (Array.isArray(bridge.allowed_job_types) && bridge.allowed_job_types.length > 0 && !bridge.allowed_job_types.includes(jobType)) {
+    out.reasons.push('analytics_bridge_job_type_not_allowed');
+  }
+
+  const runMs = parseIsoMs(runTs);
+  const sourceMs = parseIsoMs(latest.ts || latest.payload.generated_at || latest.date);
+  if (runMs != null && sourceMs != null) {
+    const ageHours = Math.max(0, (runMs - sourceMs) / (1000 * 60 * 60));
+    if (ageHours > Number(bridge.max_artifact_age_hours || 72)) {
+      out.reasons.push('analytics_bridge_stale');
+    }
+  }
+
+  const payload = latest.payload || {};
+  const sampleSize = clampInt(payload.sample_size, 0, 10000000, 0);
+  const brierImprovement = clampNumber(payload.brier_improvement, -1, 1, 0);
+  const causalPrecisionLift = clampNumber(payload.causal_precision_lift, -1, 1, 0);
+  const fit = bridge.fit_criteria || {};
+
+  if (sampleSize < Number(fit.min_sample_size || 0)) out.reasons.push('analytics_bridge_sample_too_small');
+  if (brierImprovement < Number(fit.min_brier_improvement || 0)) out.reasons.push('analytics_bridge_brier_below_threshold');
+  if (causalPrecisionLift < Number(fit.min_causal_precision_lift || 0)) out.reasons.push('analytics_bridge_causal_lift_below_threshold');
+
+  const maxUplift = Number(fit.max_confidence_uplift || 0);
+  const candidate = clampNumber(payload.confidence_uplift, 0, 1, 0);
+  const derived = clampNumber((Math.max(0, brierImprovement) * 1.6) + (Math.max(0, causalPrecisionLift) * 1.1), 0, maxUplift, 0);
+  const applied = clampNumber(candidate > 0 ? candidate : derived, 0, maxUplift, 0);
+  if (applied <= 0) out.reasons.push('analytics_bridge_zero_uplift');
+
+  out.source = {
+    path: bridge.latest_path,
+    artifact_id: cleanText(latest.artifact_id || '', 120) || null,
+    producer,
+    job_type: jobType,
+    ts: cleanText(latest.ts || '', 64) || null
+  };
+  out.metrics = {
+    sample_size: sampleSize,
+    brier_improvement: Number(brierImprovement.toFixed(6)),
+    causal_precision_lift: Number(causalPrecisionLift.toFixed(6)),
+    candidate_uplift: Number(candidate.toFixed(6)),
+    applied_uplift: Number(applied.toFixed(6))
+  };
+  out.applied_uplift = Number(applied.toFixed(6));
+  out.eligible = out.reasons.length === 0;
+  if (!out.eligible) out.applied_uplift = 0;
+  return out;
 }
 
 function cmdRun(args: AnyObj) {
@@ -248,20 +398,25 @@ function cmdRun(args: AnyObj) {
     source_type: 'research_organ',
     metadata
   }, { research_probe: { min_confidence: policy.synthesis.min_confidence_for_proposal } });
+  const analyticsBridge = loadAnalyticsBridge(policy, ts);
+  const analyticsUplift = Number(analyticsBridge.applied_uplift || 0);
 
   const proposals: AnyObj[] = [];
   const blocked: AnyObj[] = [];
   const confidenceFloor = policy.synthesis.min_confidence_for_proposal;
   for (const loop of loops) {
     if (proposals.length >= policy.synthesis.max_proposals) break;
-    const confidence = Number(loop && loop.synthesis && loop.synthesis.confidence || 0);
+    const baseConfidence = Number(loop && loop.synthesis && loop.synthesis.confidence || 0);
+    const confidence = Number(clampNumber(baseConfidence + analyticsUplift, 0, 1, baseConfidence).toFixed(6));
     const proposalId = `rprop_${hash12(`${objective}|${loop.hop}|${loop.synthesis.claim}`)}`;
     if (confidence >= confidenceFloor) {
       proposals.push({
         id: proposalId,
         type: 'research_synthesis_proposal',
         objective,
+        base_confidence: Number(baseConfidence.toFixed(6)),
         confidence,
+        analytics_uplift: Number((confidence - baseConfidence).toFixed(6)),
         claim: loop.synthesis.claim,
         proposal_only: true,
         promotion_gate: 'nursery_and_governance'
@@ -270,6 +425,7 @@ function cmdRun(args: AnyObj) {
       blocked.push({
         id: proposalId,
         reason: 'confidence_below_floor',
+        base_confidence: Number(baseConfidence.toFixed(6)),
         confidence,
         floor: confidenceFloor
       });
@@ -306,6 +462,7 @@ function cmdRun(args: AnyObj) {
     },
     loops,
     probe,
+    analytics_bridge: analyticsBridge,
     proposals,
     blocked,
     proposal_only: policy.proposal_only === true
@@ -322,7 +479,12 @@ function cmdRun(args: AnyObj) {
     depth,
     proposals: proposals.length,
     blocked: blocked.length,
-    probe_confidence: Number(probe.confidence || 0)
+    probe_confidence: Number(probe.confidence || 0),
+    analytics_bridge_eligible: analyticsBridge.eligible === true,
+    analytics_bridge_uplift: Number(analyticsBridge.applied_uplift || 0),
+    analytics_bridge_artifact_id: analyticsBridge.source && analyticsBridge.source.artifact_id
+      ? String(analyticsBridge.source.artifact_id)
+      : null
   });
 
   process.stdout.write(`${JSON.stringify({ ...payload, runs_path: path.relative(ROOT, runPath).replace(/\\/g, '/'), receipts_path: path.relative(ROOT, RECEIPTS_PATH).replace(/\\/g, '/') })}\n`);
@@ -356,4 +518,3 @@ function main() {
 if (require.main === module) {
   main();
 }
-

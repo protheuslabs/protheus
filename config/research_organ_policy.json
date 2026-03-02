@@ -20,5 +20,18 @@
   "adapters": {
     "allowed_sources": ["internal_memory", "research_probe", "simulation"],
     "blocked_sources": []
+  },
+  "analytics_bridge": {
+    "enabled": true,
+    "latest_path": "state/sensory/analysis/offline_lab_bridge/latest.json",
+    "max_artifact_age_hours": 72,
+    "allowed_job_types": ["research_organ_calibration", "calibration_report"],
+    "allowed_producers": ["offline_r_analytics_runner", "offline_r_lab"],
+    "fit_criteria": {
+      "min_sample_size": 90,
+      "min_brier_improvement": 0.015,
+      "min_causal_precision_lift": 0.005,
+      "max_confidence_uplift": 0.12
+    }
   }
 }

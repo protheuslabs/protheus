@@ -1,6 +1,6 @@
 # Backlog Archive View
 
-Generated: 2026-03-02T18:30:43.956Z
+Generated: 2026-03-02T19:00:08.974Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
@@ -298,6 +298,7 @@ Generated: 2026-03-02T18:30:43.956Z
 | V3-RACE-100 | hardening | V3 | done | Causal Validation Gate for High-Impact Analysis Claims | V3-RACE-082, V3-RACE-090 |
 | V3-RACE-101 | extension | V3 | done | Active-Learning Uncertainty Queue | V3-RACE-088, V3-RACE-094, V3-RACE-097 |
 | V3-RACE-102 | extension | V3 | done | Offline Statistical Lab Artifact Bridge (R/Python Optional) | V3-RACE-086, V3-RACE-096, V3-RACE-098 |
+| V3-RACE-361 | extension | V3 | done | Offline R Analytics Runner + Research Organ Best-Fit Integration | V3-RACE-102, V3-RACE-096, V3-RACE-098 |
 | V3-RACE-103 | hardening | V3 | done | Sensitivity/Privacy-Aware Signal Scoring Contract | V3-RACE-033, V3-RACE-044, V3-RACE-096 |
 | V3-RACE-104 | hardening | V3 | done | Detector Rollback & Migration Safety Contract | V3-RACE-087, V3-RACE-098 |
 | V3-RACE-105 | hardening | V3 | done | Cross-Objective Interference Guard for Analysis Changes | V3-RACE-084, V3-RACE-096, V3-RACE-104 |

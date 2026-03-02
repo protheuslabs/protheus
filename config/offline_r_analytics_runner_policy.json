@@ -1,0 +1,34 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "producer": "offline_r_analytics_runner",
+  "job_type": "research_organ_calibration",
+  "engine": {
+    "allow_external_r": false,
+    "command": "Rscript",
+    "script_path": "research/r/offline_research_analytics.R",
+    "timeout_ms": 10000
+  },
+  "fit_criteria": {
+    "min_sample_size": 90,
+    "min_brier_improvement": 0.015,
+    "min_causal_precision_lift": 0.005,
+    "max_confidence_uplift": 0.12
+  },
+  "signing": {
+    "signing_key_id": "lab_key_1",
+    "signing_secret": "lab_shared_secret_v1"
+  },
+  "bridge": {
+    "enabled": true,
+    "incoming_dir": "state/sensory/offline_lab/artifacts",
+    "policy_path": "config/offline_statistical_lab_artifact_bridge_policy.json",
+    "auto_run_bridge": true,
+    "require_bridge_success": false
+  },
+  "paths": {
+    "output_dir": "state/research/offline_r_analytics_runner",
+    "latest_path": "state/research/offline_r_analytics_runner/latest.json",
+    "receipts_path": "state/research/offline_r_analytics_runner/receipts.jsonl"
+  }
+}
