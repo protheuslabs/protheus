@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T09:21:01.330Z",
-  "source_hash": "092fa9d09e63490871f6ac67",
+  "generated_at": "2026-03-02T09:21:03.521Z",
+  "source_hash": "2e03504f5ccb9dc40adb354c",
   "row_count": 373,
   "active_count": 1,
-  "archive_count": 331,
+  "archive_count": 332,
   "rows": [
     {
       "id": "BL-001",
@@ -4051,7 +4051,7 @@
       "id": "V3-RACE-148",
       "class": "primitive-upgrade",
       "wave": "V3",
-      "status": "open",
+      "status": "done",
       "title": "Edge/Fog Offload Orchestrator (Edge-First Compute Placement)",
       "problem": "Heavy workloads need explicit placement contracts (local/edge/borrowed) to reduce latency and increase resilience under variable capacity.",
       "acceptance": "Implement `systems/hardware/edge_fog_offload_orchestrator.{ts,js}` + policy `config/edge_fog_offload_policy.json`; user-specific offload preferences/constraints persist under `memory/compute/offload/` and adaptive placement telemetry under `adaptive/compute/offload/`; permanent placement schedulers and admission policy stay in `systems/hardware/` + `config/` with deterministic fallback receipts.",
