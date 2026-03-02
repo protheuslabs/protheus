@@ -1,6 +1,6 @@
 # Backlog Archive View
 
-Generated: 2026-03-02T21:06:08.713Z
+Generated: 2026-03-02T21:32:43.561Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
@@ -133,10 +133,40 @@ Generated: 2026-03-02T21:06:08.713Z
 | V3-RACE-066 | hardening | V3 | done | Memory DB AEAD/Envelope Encryption Cutover | V3-RACE-027, V3-ENT-002, V3-RACE-023 |
 | V3-RACE-067 | hardening | V3 | done | Memory Index Freshness Enforcement Gate | V3-RACE-023, V3-RACE-062, V3-RACE-CONF-007 |
 | V3-RACE-069 | hardening | V3 | done | Proposal Funnel SLO + Conversion Guard | RM-113, RM-114, BL-027 |
+| V3-RACE-079 | primitive-upgrade | V3 | done | Latent Intent Inference Graph | V3-RACE-078, V3-RACE-009 |
+| V3-RACE-082 | extension | V3 | done | Counterfactual Signal Replay Harness | V3-RACE-003, V3-RACE-017, V3-RACE-081 |
+| V3-RACE-083 | hardening | V3 | done | Adversarial Hypothesis Challenger Lane | V3-RACE-081, V3-RACE-042 |
+| V3-RACE-084 | primitive-upgrade | V3 | done | Multi-Hop Objective Chain Mapper | V3-RACE-078, V3-RACE-079, V3-RACE-080, V3-RACE-081 |
+| V3-RACE-085 | extension | V3 | done | Multimodal Signal Adapter Plane (Non-Text Features) | V3-RACE-007, V3-RACE-041, V3-RACE-084 |
+| V3-RACE-086 | hardening | V3 | done | Gold Eval Corpus + Blind Detector Scoring Lane | V3-RACE-081, V3-RACE-082 |
+| V3-RACE-087 | hardening | V3 | done | Champion/Challenger Detector Promotion Pipeline | V3-RACE-086, V3-RACE-062 |
+| V3-RACE-088 | hardening | V3 | done | Abstain/Uncertainty Output Contract | V3-RACE-081, V3-RACE-069 |
+| V3-RACE-089 | primitive-upgrade | V3 | done | Dynamic Source Reliability Graph | V3-RACE-078, V3-RACE-081 |
+| V3-RACE-090 | hardening | V3 | done | Causal-vs-Correlational Signal Scorer | V3-RACE-082, V3-RACE-084, V3-RACE-089 |
+| V3-RACE-106 | hardening | V3 | done | Unified Guard Check Registry (Manifest-Driven Gates) | V3-AEX-002, V3-RACE-CONF-008 |
+| V3-RACE-107 | hardening | V3 | done | Shared Policy Runtime Primitive | BL-024, V3-RACE-CONF-007 |
+| V3-RACE-108 | primitive-upgrade | V3 | done | Spawn Fan-Out Reduction Wave (Worker/Daemon Core) | V3-RACE-063, V3-RACE-064, V3-OPS-005 |
+| V3-RACE-109 | hardening | V3 | done | State Artifact Contract Normalization | BL-024, V3-RACE-062, V3-RACE-CONF-007 |
 | V3-RACE-110 | primitive-upgrade | V3 | done | Memory Transport Abstraction Unification | V3-RACE-023, V3-RACE-024, V3-RACE-025 |
+| V3-RACE-111 | extension | V3 | done | Canonical Backlog Registry + Generated Views | V3-RACE-CONF-003, V3-RACE-107 |
 | V3-RACE-112 | primitive-upgrade | V3 | done | Analysis Kernel Stage Interface & Plugin Contracts | V3-RACE-078, V3-RACE-081, V3-RACE-083, V3-RACE-084 |
 | V3-RACE-113 | hardening | V3 | done | Compatibility Tail Retirement (TS-First Runtime) | V2-001, V2-003, BL-014, V3-RACE-068 |
+| V3-RACE-114 | hardening | V3 | done | Control-Plane Live Activation & Shadow Exit Gate | V3-RACE-017, V3-RACE-021, V3-RACE-034, V3-RACE-041 |
+| V3-RACE-115 | hardening | V3 | done | Command Registry + Script Surface Rationalization | V3-RACE-107, V3-RACE-111 |
+| V3-RACE-116 | primitive-upgrade | V3 | done | Entrypoint Runtime Contract Standardization | V2-003, V3-RACE-113 |
+| V3-RACE-117 | hardening | V3 | done | Dependency Boundary Enforcement (Layer Import Contracts) | V3-RACE-106, V3-RACE-107 |
+| V3-RACE-118 | primitive-upgrade | V3 | done | Runtime State Tiering Contract (Hot vs Audit Paths) | V3-RACE-023, V3-RACE-109, V3-RACE-110 |
+| V3-RACE-120 | hardening | V3 | done | Relocatable Path Contract (Absolute-Path Eradication) | PLM-005, V3-RACE-107, V3-RACE-113 |
+| V3-RACE-121 | hardening | V3 | done | Package Manifest Standards & Release Metadata Contract | V3-RACE-115, V3-RACE-120 |
+| V3-RACE-122 | hardening | V3 | done | Public Docs Segmentation (Operator vs Persona/Internal) | V3-RACE-120, V3-DOC-008 |
+| V3-RACE-123 | hardening | V3 | done | CI Workflow Rationalization & Duplicate-Signal Elimination | V3-RACE-119, BL-035 |
+| V3-RACE-124 | hardening | V3 | done | Root Surface Curation & Artifact Namespace Contract | V3-RACE-115, V3-RACE-120 |
+| V3-RACE-125 | hardening | V3 | done | Legal/Trust Language Normalization Pack | V3-DEP-001, V3-DOC-008 |
+| V3-RACE-126 | hardening | V3 | done | Integrity Seal Closure & Baseline Reseal | V3-RACE-106, V3-RACE-123 |
+| V3-RACE-127 | hardening | V3 | done | External Surface Tightening (Public Operator Profile) | V3-RACE-122, V3-RACE-124, V3-RACE-125 |
+| V3-RACE-128 | hardening | V3 | done | Script Surface Reduction Wave II | V3-RACE-115, V3-RACE-123 |
 | V3-RACE-169 | primitive-upgrade | V3 | done | `protheus-core` Modular Extraction (Kernel Package Contract) | V3-RACE-116, V3-RACE-124, BL-014 |
+| V3-RACE-170 | hardening | V3 | done | Spine Kernel Budget Gate (<600 LOC Orchestration-Only Contract) | V3-RACE-169, V3-RACE-117, V3-RACE-123 |
 | V3-RACE-175 | hardening | V3 | done | `protheus-core` Runtime Envelope Tightening (`<5MB`, `<200ms`, Optional-Flag Matrix) | V3-RACE-169, V3-RACE-174 |
 | V3-RACE-180 | hardening | V3 | done | Safe Git-Patch Self-Modification Gate (Chaos + Constitution + Habit + Contract + Optional Human Approval) | V3-RACE-178, V3-RACE-055, V3-RACE-040 |
 | V3-RACE-182 | extension | V3 | done | RSI Swarm Spawn Bridge (Nursery + `spawn_broker` + Inherited Governance + Supply-Chain Gate) | V3-RACE-131, V3-RACE-043, V3-RACE-178 |

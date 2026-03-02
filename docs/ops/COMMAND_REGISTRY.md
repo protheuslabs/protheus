@@ -1,6 +1,6 @@
 # Command Registry
 
-Generated: 2026-03-02T08:35:10.434Z
+Generated: 2026-03-02T21:24:04.719Z
 
 ## Curated Operator Surface
 - `dev`
@@ -413,6 +413,7 @@ Generated: 2026-03-02T08:35:10.434Z
 | `security:venom:evaluate` | security | security | 3 | registry.groups |
 | `security:venom:evolve` | security | security | 3 | registry.groups |
 | `security:wasm-microkernel:run` | security | security | 3 | registry.groups |
+| `self-audit:illusion` | platform | general | 2 | policy.default_metadata |
 | `selfhost:compile` | platform | general | 2 | policy.default_metadata |
 | `selfhost:promote` | platform | general | 2 | policy.default_metadata |
 | `selfhost:rollback` | platform | general | 2 | policy.default_metadata |
@@ -422,7 +423,6 @@ Generated: 2026-03-02T08:35:10.434Z
 | `selfimprove:run` | platform | general | 2 | policy.default_metadata |
 | `selfimprove:trigger` | platform | general | 2 | policy.default_metadata |
 | `sensory:abstain-contract:run` | sensory | analysis | 2 | policy.groups |
-| `sensory:active-learning:run` | sensory | analysis | 2 | policy.groups |
 
-Total commands: 585
+Total commands: 586
 Missing metadata: 0

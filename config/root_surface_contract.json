@@ -9,6 +9,7 @@
     ".gitignore",
     "AGENT-CONSTITUTION.md",
     "AGENTS.md",
+    "CHANGELOG.md",
     "CONTRIBUTING.md",
     "CONTRIBUTING_TERMS.md",
     "Dockerfile",

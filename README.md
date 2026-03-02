@@ -71,6 +71,7 @@ The project is operated with explicit documentation and governance contracts:
 - [History Cleanliness Program](docs/HISTORY_CLEANLINESS.md)
 - [Claim-Evidence Policy](docs/CLAIM_EVIDENCE_POLICY.md)
 - [Public Collaboration Triage Contract](docs/PUBLIC_COLLABORATION_TRIAGE.md)
+- [Public Operator Profile](docs/PUBLIC_OPERATOR_PROFILE.md)
 - [Illusion Integrity Auditor](docs/ILLUSION_INTEGRITY_AUDITOR.md)
 - [Backlog Governance](docs/BACKLOG_GOVERNANCE.md)
 - [Branch Protection Policy](docs/BRANCH_PROTECTION_POLICY.md)
