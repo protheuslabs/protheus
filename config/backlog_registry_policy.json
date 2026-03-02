@@ -1,0 +1,25 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "active_statuses": [
+    "queued",
+    "in_progress",
+    "blocked",
+    "proposed"
+  ],
+  "archive_statuses": [
+    "done",
+    "dropped",
+    "archived",
+    "obsolete"
+  ],
+  "paths": {
+    "backlog_path": "UPGRADE_BACKLOG.md",
+    "registry_path": "config/backlog_registry.json",
+    "active_view_path": "docs/backlog_views/active.md",
+    "archive_view_path": "docs/backlog_views/archive.md",
+    "latest_path": "state/ops/backlog_registry/latest.json",
+    "receipts_path": "state/ops/backlog_registry/receipts.jsonl"
+  }
+}

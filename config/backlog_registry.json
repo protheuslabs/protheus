@@ -1,0 +1,1799 @@
+{
+  "schema_id": "backlog_registry_v1",
+  "schema_version": "1.0",
+  "generated_at": "2026-03-02T01:41:28.976Z",
+  "source_hash": "da2c8cd7a3c2fb97f2efd9a5",
+  "row_count": 127,
+  "active_count": 73,
+  "archive_count": 54,
+  "rows": [
+    {
+      "id": "V3-OPS-004",
+      "class": "extension",
+      "wave": "V3",
+      "status": "done",
+      "title": "Unified Protheus Control Plane CLI (`protheus`)",
+      "problem": "Raw `node systems/...` commands make operations feel script-fragmented and increase interface drift risk",
+      "acceptance": "Ship single operator surface (`protheus start",
+      "dependencies": [
+        "stop"
+      ]
+    },
+    {
+      "id": "V3-RMEM-002",
+      "class": "primitive-upgrade",
+      "wave": "V3",
+      "status": "done",
+      "title": "Rust Index Builder Slice (Benchmark-Gated)",
+      "problem": "Index regeneration is a recurring hot path where performance and stability gains are likely high",
+      "acceptance": "Add Rust index-build/refresh implementation behind backend flag; promote only after stable-window benchmark pass + parity tests + strict health non-regression receipts. Transition lane benchmark now supports timed probe-command mode with mixed probe slots (`js_probe_command`/`rust_probe_command`, `js_get_probe_command`/`rust_get_probe_command`, and optional `js_index_probe_command`/`rust_index_probe_command`), backend-used parity enforcement to avoid synthetic speedup inflation, per-lane speedup telemetry (`query_speedup`, `get_speedup`, `index_speedup`), and dynamic get-probe node targeting via `$NODE_ID` injection from `MEMORY_INDEX.md`. Rust `systems/memory/rust` now exposes `build-index` to scan daily memory nodes and emit deterministic `MEMORY_INDEX`/`TAGS_INDEX` artifacts (hash-addressed receipts, optional write mode), and transition lane now ships first-class `index-probe --backend=js",
+      "dependencies": [
+        "rust for default benchmark policy wiring."
+      ]
+    },
+    {
+      "id": "V3-RMEM-005",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "done",
+      "title": "Memory Backend Selector + Fallback Guard (`js",
+      "problem": "rust_shadow",
+      "acceptance": "rust_live`)",
+      "dependencies": [
+        "Cross-language migration needs deterministic fail-safe behavior to avoid runtime instability"
+      ]
+    },
+    {
+      "id": "V3-RACE-024",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "done",
+      "title": "Daemon Soak Promotion Gate + Receipts (24-48h)",
+      "problem": "Stage 3 daemon path is live, but fallback retirement should be evidence-gated by sustained stability under real load.",
+      "acceptance": "Added `soak-gate` lane to `systems/memory/rust_memory_transition_lane.ts` + policy wiring in `config/rust_memory_transition_policy.json` to evaluate 24-48h windows for p99 latency, pass rate, fallback-trigger count, and daemon restart count, with fail-closed strict mode and receipt persistence (`state/memory/rust_transition/soak_promotion_decisions.jsonl`); coverage added in `memory/tools/tests/rust_memory_transition_lane.test.js`.",
+      "dependencies": [
+        "V3-RACE-023",
+        "RM-122"
+      ]
+    },
+    {
+      "id": "V3-RACE-025",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "done",
+      "title": "Daemon Supervision + Stale PID/Socket Reaper",
+      "problem": "Long-lived daemon operation can degrade after crashes/reboots if stale pid/socket state is not cleaned deterministically.",
+      "acceptance": "Added daemon lifecycle supervisor `systems/memory/rust_memory_daemon_supervisor.{ts,js}` + policy `config/rust_memory_daemon_supervisor_policy.json` (`start/stop/restart/status/healthcheck/reap-stale`) with restart backoff, stale pid/socket reaping, and lifecycle receipts; wired stale PID preflight into `systems/memory/memory_recall.ts` autostart path; added crash-recovery regression coverage in `memory/tools/tests/rust_memory_daemon_supervisor.test.js` and refreshed transition contracts/tests.",
+      "dependencies": [
+        "V3-RACE-023",
+        "V3-OPS-005"
+      ]
+    },
+    {
+      "id": "V3-RACE-026",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Fallback Retirement Gate (JS Emergency-Only)",
+      "problem": "Broad JS fallback keeps complexity and latency overhead high and can hide memory-kernel regressions.",
+      "acceptance": "Policy gate narrows JS fallback to explicit emergency lanes only, defaults runtime to daemon+SQLite, opens incident receipts on fallback activation, and preserves one-click rollback toggle.",
+      "dependencies": [
+        "V3-RACE-024",
+        "V3-RMEM-006"
+      ]
+    },
+    {
+      "id": "V3-RACE-027",
+      "class": "primitive-upgrade",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Direct Memory Encryption Plane Integration (Replace DB Shim)",
+      "problem": "Memory-at-rest encryption should use the canonical envelope lane for consistent key-rotation/audit behavior across organs.",
+      "acceptance": "Replace DB cipher shim with `organ_state_encryption_plane` envelope calls, migrate existing records without loss, and emit key-rotation + migration verification receipts.",
+      "dependencies": [
+        "V3-RACE-023",
+        "V3-ENT-002"
+      ]
+    },
+    {
+      "id": "V3-RACE-028",
+      "class": "primitive-upgrade",
+      "wave": "V3",
+      "status": "queued",
+      "title": "In-Process Rust Memory Binding Lane (`napi-rs`)",
+      "problem": "Daemon/CLI transport is robust but still adds avoidable overhead on hottest memory call sites.",
+      "acceptance": "Ship in-process N-API bindings for query/get/store/index paths, prove parity against daemon path, and publish benchmark receipts showing lower latency while retaining daemon fallback for incompatible runtimes.",
+      "dependencies": [
+        "V3-RACE-024",
+        "V3-RACE-025"
+      ]
+    },
+    {
+      "id": "V3-DEP-001",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "done",
+      "title": "Deterministic One-Line Installer + Signed Release Channel",
+      "problem": "Install friction remains too high compared to single-binary agent kernels",
+      "acceptance": "Ship deterministic installer flow (`curl",
+      "dependencies": [
+        "sh + offline script variant) that verifies signed artifact + checksum/SBOM provenance before install",
+        "supports explicit version pinning",
+        "and fails closed on verification mismatch"
+      ]
+    },
+    {
+      "id": "V3-RACE-001",
+      "class": "primitive-upgrade",
+      "wave": "V3",
+      "status": "done",
+      "title": "Rust Core Runtime Kernel Slice",
+      "problem": "Node control-plane hot paths will become a throughput and latency bottleneck under high cell concurrency and real-time actuation.",
+      "acceptance": "Rust service lane owns at least spine router + spawn broker + actuation dispatch hot paths with behavior parity harness against current TS runtime, shadow-first rollout, and deterministic rollback path.",
+      "dependencies": [
+        "V3-RMEM-001",
+        "V3-OPS-005",
+        "V3-OPS-006"
+      ]
+    },
+    {
+      "id": "V3-RACE-002",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "done",
+      "title": "Wasmtime Capability Microkernel Lane",
+      "problem": "User-space JS runtime alone is insufficient for strongest isolation of generated/untrusted execution.",
+      "acceptance": "All untrusted/generated execution can be routed through capability-scoped WASM sandbox with fuel limits, IO caps, deterministic timeout/termination receipts, and policy-gated fallback.",
+      "dependencies": [
+        "V3-OF-001",
+        "V3-CPY-006",
+        "V3-VENOM-000"
+      ]
+    },
+    {
+      "id": "V3-RACE-003",
+      "class": "primitive-upgrade",
+      "wave": "V3",
+      "status": "done",
+      "title": "Event-Sourced Control Plane + CQRS Materialized Views",
+      "problem": "Imperative mutable state limits replay/debug/audit quality at scale.",
+      "acceptance": "Append-only event log is authoritative for control-plane mutations; materialized views derive from event stream; deterministic replay reconstructs equivalent state for audited windows.",
+      "dependencies": [
+        "V3-SK-001",
+        "V3-SK-002",
+        "V3-SK-007"
+      ]
+    },
+    {
+      "id": "V3-RACE-004",
+      "class": "primitive-upgrade",
+      "wave": "V3",
+      "status": "done",
+      "title": "Model Catalog + Live Routing Scoreboard Service",
+      "problem": "Current model/provider routing lacks one canonical live score service spanning cost/latency/quality/fallback chain fitness.",
+      "acceptance": "Versioned model catalog service publishes live scorecards; router consumes scorecards for chain selection with confidence + budget-aware fallback policy; regression tests enforce decision determinism.",
+      "dependencies": [
+        "RM-121",
+        "V3-BUD-001",
+        "V3-ECO-001"
+      ]
+    },
+    {
+      "id": "V3-RACE-005",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "done",
+      "title": "Thought-to-Action Trace Contract (Intent -> Model -> Tool -> Outcome)",
+      "problem": "Incident/root-cause loops still rely on multi-file reconstruction instead of one end-to-end trace contract.",
+      "acceptance": "Mandatory trace propagation (`trace_id/request_id/run_id/job_id`) across intent, model calls, tool calls, and outcomes with auto-generated failure narrative bundles and deterministic replay links.",
+      "dependencies": [
+        "V3-OBS-002",
+        "RM-005",
+        "V2-063"
+      ]
+    },
+    {
+      "id": "V3-RACE-006",
+      "class": "primitive",
+      "wave": "V3",
+      "status": "done",
+      "title": "Swarm Orchestration Runtime (Hierarchical + Election + Consensus)",
+      "problem": "Current multi-agent coordination is bounded and useful, but not yet a full distributed task swarm runtime.",
+      "acceptance": "Add hierarchical decomposition orchestrator with dynamic team formation, leader election, bounded quorum/consensus profiles for high-risk decisions, and deterministic receipts per coordination round.",
+      "dependencies": [
+        "V3-MAC-001",
+        "BL-011",
+        "RM-202"
+      ]
+    },
+    {
+      "id": "V3-RACE-007",
+      "class": "extension",
+      "wave": "V3",
+      "status": "done",
+      "title": "Cross-Cell Memory Exchange Plane (Policy-Governed)",
+      "problem": "Cell-level intelligence sharing is still mostly hereditary/master-reviewed; high-signal exchange needs a governed fast lane.",
+      "acceptance": "Policy-governed cross-cell memory exchange with conflict-resolution strategy, consistency receipts, and strict anti-drift gates; disabled-by-default P2P unsafe paths remain blocked.",
+      "dependencies": [
+        "V3-MLC-002",
+        "V2-062",
+        "V3-GOV-002"
+      ]
+    },
+    {
+      "id": "V3-RACE-008",
+      "class": "primitive-upgrade",
+      "wave": "V3",
+      "status": "done",
+      "title": "Sovereign Personality Substrate (\"Soul Vector\")",
+      "problem": "Constitution text alone does not provide a portable, model-agnostic continuity substrate across backend swaps.",
+      "acceptance": "Encrypted/versioned personality substrate persists across model/hardware transitions, is bound to identity attestations, and is regression-tested for continuity under controlled model migrations.",
+      "dependencies": [
+        "V2-058",
+        "V3-SYM-001",
+        "V3-BLK-001"
+      ]
+    },
+    {
+      "id": "V3-RACE-009",
+      "class": "primitive-upgrade",
+      "wave": "V3",
+      "status": "done",
+      "title": "Hybrid Memory Engine (Vector + Graph + Temporal)",
+      "problem": "Current memory capabilities are strong but split across lanes without one unified retrieval primitive contract.",
+      "acceptance": "Unified retrieval primitive supports vector similarity + graph traversal + temporal constraints with benchmarked improvements and no regression to provenance/explainability receipts.",
+      "dependencies": [
+        "V3-MEM-001",
+        "V3-MEM-002",
+        "V3-053"
+      ]
+    },
+    {
+      "id": "V3-RACE-010",
+      "class": "extension",
+      "wave": "V3",
+      "status": "done",
+      "title": "Memory Consolidation + Forgetting Curves",
+      "problem": "Raw retention growth will raise token/storage burn and degrade retrieval precision over time.",
+      "acceptance": "Scheduled reflection jobs merge/prune memory using explicit forgetting curves + retention policies, with recall-quality and burn-efficiency benchmarks proving net gain.",
+      "dependencies": [
+        "V3-MEM-004",
+        "V3-MEM-008",
+        "V3-ASSIM-004"
+      ]
+    },
+    {
+      "id": "V3-RACE-011",
+      "class": "extension",
+      "wave": "V3",
+      "status": "done",
+      "title": "Habit/Objective Adapter Fine-Tuning Lane",
+      "problem": "Continual adaptation exists, but per-habit specialized adapter loops are not first-class and measurable.",
+      "acceptance": "Per-habit/per-objective adapter training/eval/promotion lane with rollback and governance gates, objective uplift metrics, and shadow/canary promotion contracts.",
+      "dependencies": [
+        "V3-ASSIM-004",
+        "V3-XAI-002",
+        "V3-038"
+      ]
+    },
+    {
+      "id": "V3-RACE-012",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "done",
+      "title": "Observability Deployment Defaults (Prometheus/Grafana/Loki/Trace)",
+      "problem": "Observability primitives exist but deployment defaults are not fully standardized for immediate production operation.",
+      "acceptance": "Deployment manifests ship production defaults for metrics/logs/traces dashboards + runbook links, with one-command bring-up and contract tests validating telemetry completeness.",
+      "dependencies": [
+        "RM-005",
+        "V3-OBS-002",
+        "V3-DEP-001"
+      ]
+    },
+    {
+      "id": "V3-RACE-013",
+      "class": "extension",
+      "wave": "V3",
+      "status": "done",
+      "title": "Compatibility Spec + Conformance Badge Program",
+      "problem": "External ecosystem leverage is limited without a public compatibility contract and verification lane.",
+      "acceptance": "Publish non-secret compatibility spec + conformance suite; implement signed pass/fail badge artifact generation for external integrations that preserve governance invariants.",
+      "dependencies": [
+        "V3-DOC-004",
+        "V3-BENCH-001",
+        "V3-OF-008"
+      ]
+    },
+    {
+      "id": "V3-RACE-014",
+      "class": "primitive-upgrade",
+      "wave": "V3",
+      "status": "done",
+      "title": "Risk-Tier Chain Bridge for Model Catalog Loop (`cheap -> deep -> critique`)",
+      "problem": "Catalog vetting should reflect risk-tier routing fitness, not only single-pass candidate eligibility",
+      "acceptance": "`systems/autonomy/model_catalog_loop.ts` now loads `config/model_catalog_loop_policy.json`, evaluates candidates across three risk-tier doctor stages, annotates chain score/pass telemetry, and applies burn-oracle advisory to gating/output receipts before promotion handoff.",
+      "dependencies": [
+        "V3-RACE-004",
+        "V3-BUD-001",
+        "V3-AEX-001"
+      ]
+    },
+    {
+      "id": "V3-RACE-015",
+      "class": "extension",
+      "wave": "V3",
+      "status": "done",
+      "title": "JetStream Mirror Adapter for Event-Sourced Control Plane",
+      "problem": "Event-sourced authority exists locally; distributed replay/fan-out needs optional transport bridge without changing source-of-truth semantics",
+      "acceptance": "`systems/ops/event_sourced_control_plane.ts` now supports optional policy-gated JetStream mirror publish (`nats pub` command adapter), writes mirror status artifacts, and keeps local JSONL event log authoritative with deterministic append receipts.",
+      "dependencies": [
+        "V3-RACE-003",
+        "V3-SK-001",
+        "RM-202"
+      ]
+    },
+    {
+      "id": "V3-RACE-016",
+      "class": "extension",
+      "wave": "V3",
+      "status": "done",
+      "title": "Open Platform Layer Release Pack (Apache 2.0 non-crown-jewel + Compatibility Launch)",
+      "problem": "Ecosystem leverage and external velocity need an explicit open-layer release policy and announcement execution, not only internal compatibility artifacts.",
+      "acceptance": "Added `systems/ops/open_platform_release_pack.ts` + `config/open_platform_release_pack_policy.json` to emit Apache-2.0 allowlist manifests, signed compatibility badge bundles, benchmark/drift/receipt launch artifacts, and reproducible checklist evidence (`memory/tools/tests/open_platform_release_pack.test.js`).",
+      "dependencies": [
+        "V3-RACE-013",
+        "V3-DOC-006",
+        "V3-BENCH-001",
+        "V3-OF-008"
+      ]
+    },
+    {
+      "id": "V3-RACE-017",
+      "class": "primitive-upgrade",
+      "wave": "V3",
+      "status": "done",
+      "title": "Authoritative Event-Stream Cutover (JetStream-First CQRS Authority)",
+      "problem": "Mirror-mode transport still leaves local append log as authority; swarm-scale deterministic replay improves when stream authority is explicit with bounded fallback.",
+      "acceptance": "Extended `systems/ops/event_sourced_control_plane.ts` + policy with authority selection (`local_authority`/`stream_authority`), deterministic rebuild/materialized views, and reconcile+partition rollback receipts (`memory/tools/tests/event_sourced_control_plane_authority.test.js`).",
+      "dependencies": [
+        "V3-RACE-003",
+        "V3-RACE-015",
+        "RM-202",
+        "V3-SK-007"
+      ]
+    },
+    {
+      "id": "V3-RACE-018",
+      "class": "extension",
+      "wave": "V3",
+      "status": "done",
+      "title": "Trace-to-Habit Autogenesis Loop",
+      "problem": "Postmortems and traces are strong, but failures still require manual synthesis into new habit candidates.",
+      "acceptance": "Added `systems/ops/trace_habit_autogenesis.ts` + policy to derive candidates from failed traces/postmortems, enforce propose->trial->report->promote gating, and require measurable failure-class regression reduction before promotion (`memory/tools/tests/trace_habit_autogenesis.test.js`).",
+      "dependencies": [
+        "V3-RACE-005",
+        "V2-020",
+        "V3-038",
+        "V3-ACT-001"
+      ]
+    },
+    {
+      "id": "V3-RACE-019",
+      "class": "primitive",
+      "wave": "V3",
+      "status": "done",
+      "title": "Persistent Fractal Engine Meta-Organ (Loop-5 Autopilot)",
+      "problem": "Trigger bridge exists, but a persistent self-evolution organ that continuously mutates habits/memory/routing under strict gates is still missing as a first-class runtime primitive.",
+      "acceptance": "Added `systems/autonomy/persistent_fractal_meta_organ.ts` + policy for nightly/high-success trigger gating, bounded domain mutations, isolated shadow trials, governed live promotion hooks, and deterministic rollback commands (`memory/tools/tests/persistent_fractal_meta_organ.test.js`). Also added TypeScript-first fractal engine substrate under `systems/fractal/` (`engine.ts`, `telemetry_aggregator.ts`, `critic.ts`, `mutator.ts`, `shadow_trial_runner.ts`, `two_gate_applier.ts`, `reversion_drill.ts`, `constitution_hooks.ts`, `fractal_state.json`, `README.md`) with hard invariants for tier gating, event-sourced mutation records, soul-anchor refresh, and tier3+ human second-gate enforcement.",
+      "dependencies": [
+        "V3-LOOP-004",
+        "V3-038",
+        "V3-RACE-004",
+        "V3-RACE-010"
+      ]
+    },
+    {
+      "id": "V3-RACE-020",
+      "class": "extension",
+      "wave": "V3",
+      "status": "done",
+      "title": "LoRA-Backed Soul Continuity Adapter",
+      "problem": "Personality substrate continuity exists, but explicit adapter-backed persistence across model swaps needs concrete contract coverage.",
+      "acceptance": "Added `systems/soul/soul_continuity_adapter.ts` + policy for export/import/versioned adapter bundles bound to soul-vector + identity attestation hashes, migration continuity scoring, and promotion blocking on regression (`memory/tools/tests/soul_continuity_adapter.test.js`).",
+      "dependencies": [
+        "V3-RACE-008",
+        "V3-ASSIM-012",
+        "V2-058",
+        "V3-BLK-001"
+      ]
+    },
+    {
+      "id": "V3-RACE-021",
+      "class": "primitive-upgrade",
+      "wave": "V3",
+      "status": "done",
+      "title": "Rust Microkernel Full Control-Plane Extraction + Default Cutover",
+      "problem": "Rust kernel slices exist, but the default runtime still retains mixed control-plane execution paths that limit race-scale throughput/safety guarantees.",
+      "acceptance": "Added `systems/ops/rust_control_plane_cutover.ts` + `systems/rust/control_plane_component_shim.ts` + policy for parity harnessing, benchmark/SLO-gated default activation, emergency-only JS fallback routing, and staged JS hot-path deprecation receipts (`memory/tools/tests/rust_control_plane_cutover.test.js`).",
+      "dependencies": [
+        "V3-RACE-001",
+        "V3-RACE-002",
+        "V3-RMEM-006",
+        "RM-122",
+        "V3-OPS-015"
+      ]
+    },
+    {
+      "id": "V3-RACE-022",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Compute-Tithe Flywheel (Tithe-as-Leverage GPU Donation System)",
+      "problem": "Add a governed economic engine where verified donated compute reduces effective tithe while feeding high-value runtime capacity for fractal/autonomy workloads.",
+      "acceptance": "Deliver `systems/economy/` lane (`tithe_engine`, `gpu_contribution_tracker`, `tithe_ledger`, `contribution_oracle`, `discount_policy`, blockchain bridge hook, public donation API) with JetStream-evented tithe accounting, donor-discount enforcement, soul continuity tagging, guarded integrations (`guard`, fractal queue priority, model/risk routing), and acceptance harness proving end-to-end simulated donation -> validated contribution -> discount apply -> receipt publish -> next-actuation effective tithe reduction.",
+      "dependencies": [
+        "V3-RACE-016",
+        "V3-RACE-017",
+        "V3-RACE-019",
+        "V3-BLK-001",
+        "V3-BUD-001"
+      ]
+    },
+    {
+      "id": "V3-RACE-CONF-001",
+      "class": "extension",
+      "wave": "V3",
+      "status": "done",
+      "title": "Open Platform Path-Contract Compatibility Pack (`platform/` artifacts)",
+      "problem": "External directives expect concrete `platform/` artifacts (`README`, license carveout, badge, export CLI) even though functional release-pack capability already exists under `systems/ops/`.",
+      "acceptance": "Added `systems/ops/platform_path_contract_pack.{ts,js}` (`sync/verify/status`) + policy `config/platform_path_contract_policy.json` to maintain `platform/` compatibility artifacts (`README`, Apache carveout, badges index, export manifest) as references to canonical open-platform outputs, added stable `platform/export_cli.{ts,js}` shim, and landed conformance coverage in `memory/tools/tests/platform_path_contract_pack.test.js`.",
+      "dependencies": [
+        "V3-RACE-016",
+        "V3-DOC-001"
+      ]
+    },
+    {
+      "id": "V3-RACE-CONF-002",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "done",
+      "title": "Legacy Path Alias Adapters (`systems/state/event_stream.js`, `systems/autogenesis/*`)",
+      "problem": "External prompts/tools may target legacy paths; absent adapters create false-negative \"missing implementation\" reports despite canonical coverage.",
+      "acceptance": "Added thin compatibility wrappers at `systems/state/event_stream.{ts,js}` and `systems/autogenesis/trace_habit_{autogenesis,loop}.{ts,js}` forwarding to canonical ops lanes via `systems/compat/legacy_alias_adapter.{ts,js}` with deprecation receipts in `state/ops/legacy_path_alias_adapters/*`; parity + receipt coverage landed in `memory/tools/tests/legacy_path_alias_adapters.test.js`.",
+      "dependencies": [
+        "V3-RACE-017",
+        "V3-RACE-018"
+      ]
+    },
+    {
+      "id": "V3-RACE-CONF-003",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "done",
+      "title": "Requirement Conformance Matrix + Gate (`external prompt -> canonical lane`)",
+      "problem": "Repeated external directives can trigger duplicate work unless requirements are normalized into one traceable matrix with drift checks.",
+      "acceptance": "Added deterministic matrix artifact `config/requirement_conformance_matrix.json`, strict gate `systems/ops/requirement_conformance_gate.{ts,js}` + policy `config/requirement_conformance_gate_policy.json`, and fail-closed checks for missing/unmapped requirements/file anchors/test evidence with coverage in `memory/tools/tests/requirement_conformance_gate.test.js`.",
+      "dependencies": [
+        "V3-AEX-002",
+        "V3-DOC-004"
+      ]
+    },
+    {
+      "id": "V3-RACE-CONF-004",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "done",
+      "title": "Rust Memory Path-Contract Compatibility (`core/memory` alias docs/wrappers)",
+      "problem": "External directives reference `core/memory` layout and `protheus-memory` naming, while canonical implementation lives at `systems/memory/rust`.",
+      "acceptance": "Added `core/memory` compatibility surface (`README.md`, `compat_map.json`, `compat_bridge.{ts,js}`) that deterministically maps alias -> canonical runtime/crate paths and crate-name aliases without introducing a parallel runtime; regression coverage added in `memory/tools/tests/core_memory_compat_bridge.test.js`.",
+      "dependencies": [
+        "V3-RACE-023",
+        "V3-DOC-001"
+      ]
+    },
+    {
+      "id": "V3-RACE-CONF-005",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "N-API Build Surface Compatibility Contract (`build:memory`/postinstall expectations)",
+      "problem": "External recipes assume direct N-API build flow; current runtime is daemon-first with staged in-process lane.",
+      "acceptance": "Publish canonical build/run matrix and compatibility scripts that expose equivalent operator commands while preserving daemon-first production defaults.",
+      "dependencies": [
+        "V3-RACE-028",
+        "V3-DOC-004"
+      ]
+    },
+    {
+      "id": "V3-RACE-DEF-024",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "PsycheForge Adaptive Counter-Profile Defense Organ",
+      "problem": "Static deception/containment responses are less effective than adaptive attacker-specific defense selection under repeated probing.",
+      "acceptance": "Deliver `systems/security/psycheforge/` with governed profile synthesis + encrypted temporal memory persistence + risk-tiered countermeasure selector integrated with guard/red-team/venom/fractal loops, with full event receipts and shadow-to-live promotion evidence.",
+      "dependencies": [
+        "V3-RACE-017",
+        "V3-RACE-019",
+        "V3-RACE-023",
+        "V3-VENOM-006"
+      ]
+    },
+    {
+      "id": "V3-RACE-DEF-025",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Smart Knot Crown-Jewel Obfuscation Layer",
+      "problem": "Reverse-engineering pressure remains high on crown-jewel modules; build-time entanglement raises attacker cost while preserving runtime correctness.",
+      "acceptance": "Deliver `build/knot/` pipeline + `knot_config.json`, apply only to configured crown-jewel lanes, require runtime capability-token resolution, and pass knot-verify + performance non-regression checks in CI.",
+      "dependencies": [
+        "V3-RACE-DEF-024",
+        "V3-CPY-005",
+        "V3-CPY-006"
+      ]
+    },
+    {
+      "id": "V3-RACE-DEF-026",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Lockweaver Eternal Flux Field (Origin-Lock Verified Structural Flux)",
+      "problem": "Static obfuscation eventually plateaus; a controlled self-mutating structural defense field raises reverse-engineering cost persistently while preserving trusted runtime behavior.",
+      "acceptance": "Deliver `systems/security/lockweaver/` daemon+policy pack with origin-lock verification, mutation traversal/reseed loop, strict exclusions, JetStream receipts, threat-adaptive cadence, and rollback drills validated by non-regression/perf tests.",
+      "dependencies": [
+        "V3-RACE-017",
+        "V3-RACE-019",
+        "V3-RACE-023",
+        "V3-RACE-DEF-024",
+        "V3-RACE-DEF-025"
+      ]
+    },
+    {
+      "id": "V3-RACE-DEF-027",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Project Jigsaw (AttackCinema Incident Replay Theater)",
+      "problem": "Defense telemetry is high value but hard to consume quickly; cinematic, indexed replay improves incident intelligence, operator training, and post-incident adaptation velocity.",
+      "acceptance": "Deliver `systems/security/jigsaw/` recorder/editor/theater pack with encrypted capture storage, clearance-4 playback controls, JetStream-linked frame manifests, deterministic highlight generation, and non-regression runtime/perf checks.",
+      "dependencies": [
+        "V3-RACE-017",
+        "V3-RACE-019",
+        "V3-RACE-020",
+        "V3-RACE-023",
+        "V3-RACE-DEF-024",
+        "V3-RACE-DEF-026"
+      ]
+    },
+    {
+      "id": "V3-RACE-DEF-028",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Phoenix Protocol (Immortal Red-Team Respawn + Continuity Inheritance)",
+      "problem": "Defensive pressure increases system resilience only if core red-team capability cannot be permanently neutralized by one successful kill/tamper action.",
+      "acceptance": "Deliver red-team down-detection + auto-respawn orchestration with inherited tactical memory, bounded sub-2s recovery target, JetStream receipts for down/revive cycles, fractal post-respawn adaptation, and non-regression coverage for spawn/security/runtime paths.",
+      "dependencies": [
+        "V3-RACE-017",
+        "V3-RACE-019",
+        "V3-RACE-020",
+        "V3-RACE-023",
+        "V3-RACE-DEF-024",
+        "V3-RACE-DEF-026",
+        "V3-RACE-DEF-027"
+      ]
+    },
+    {
+      "id": "V3-RACE-DEF-029",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "MirrorReaper Protocol (Tier-4 Resource Inversion Defense Mode)",
+      "problem": "High-intensity attacks can require temporary concentration of defensive compute; controlled inversion mode improves survivability and attacker cost asymmetry when normal lanes are saturated.",
+      "acceptance": "Deliver MirrorReaper orchestrator with Tier-4 activation contract, attack-load-proportional spawn scaling, mirror workload profiles, donor-first compute routing, emergency shutdown path, and full JetStream receipts + non-regression performance/safety tests.",
+      "dependencies": [
+        "V3-RACE-017",
+        "V3-RACE-019",
+        "V3-RACE-022",
+        "V3-RACE-DEF-024",
+        "V3-RACE-DEF-026",
+        "V3-RACE-DEF-027",
+        "V3-RACE-DEF-028"
+      ]
+    },
+    {
+      "id": "V3-RACE-030",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Legion Honor Codex (Soul-Bound Medals, Titles, and Red Legion Rank System)",
+      "problem": "Contribution and defense performance produce durable value that should be recognized with portable, verifiable identity artifacts to strengthen operator/community incentives.",
+      "acceptance": "Deliver `systems/honor/` codex lane (mint/verify/display), soul-bound badge ledger, chain medal bridge, title-selection command surface, red-legion manifest thresholds, and staged `redteam` -> `red_legion` migration with full docs/tests and backward-compatible aliases.",
+      "dependencies": [
+        "V3-RACE-019",
+        "V3-RACE-020",
+        "V3-RACE-022",
+        "V3-BLK-001",
+        "V3-RACE-DEF-024",
+        "V3-RACE-DEF-027",
+        "V3-RACE-DEF-028"
+      ]
+    },
+    {
+      "id": "V3-RACE-031",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Legion Geas Protocol (Iron Oath Self-Destruct Covenant)",
+      "problem": "As Red Legion capability scales, autonomy safety requires automatic, multi-layered containment that guarantees compromised/out-of-scope cells cannot persist.",
+      "acceptance": "Deliver geas lease manager + validation pipeline + instant self-destruct path, layered containment controls, Phoenix continuity handoff, emergency operator override, and full JetStream/Jigsaw evidence with non-regression tests across spawn/security/runtime lanes.",
+      "dependencies": [
+        "V3-RACE-017",
+        "V3-RACE-020",
+        "V3-RACE-DEF-024",
+        "V3-RACE-DEF-027",
+        "V3-RACE-DEF-028",
+        "V3-RACE-DEF-029",
+        "V3-OPS-005"
+      ]
+    },
+    {
+      "id": "V3-RACE-034",
+      "class": "primitive-upgrade",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Rust Spine Microkernel (Control-Plane Core Extraction)",
+      "problem": "Remaining JS/V8 control-plane hot paths are the largest residual runtime + sovereignty risk once memory is Rust-authoritative.",
+      "acceptance": "Guard/spawn/router/origin-lock/fractal control-paths run on Rust spine services with behavior parity, benchmark/SLO proofs, and emergency rollback path.",
+      "dependencies": [
+        "V3-RACE-023",
+        "V3-RACE-021",
+        "V3-OPS-005"
+      ]
+    },
+    {
+      "id": "V3-RACE-035",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Formal Mind-Sovereignty Verification Layer",
+      "problem": "Policy intent is insufficient without machine-checkable guarantees against merged-mind invasion vectors.",
+      "acceptance": "Add formal invariant specs + automated verification gates proving mutations cannot violate soul-vector/identity boundary contracts; block merges on proof failure.",
+      "dependencies": [
+        "V3-045",
+        "V3-RACE-031",
+        "V3-RACE-034"
+      ]
+    },
+    {
+      "id": "V3-RACE-036",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Multi-Mind Isolation & Shared-Consciousness Boundary Plane",
+      "problem": "Future guest/sub-agent/multi-operator mind scenarios require hard isolation to prevent identity bleed or coercive cross-access.",
+      "acceptance": "Ship per-mind namespaces + memory/soul partitioning + delegated trust scopes with anti-leak tests and emergency partition quarantine controls.",
+      "dependencies": [
+        "RM-109",
+        "V3-RACE-020",
+        "V3-RACE-035"
+      ]
+    },
+    {
+      "id": "V3-RACE-037",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Long-Term Archival & Sovereign Resurrection Substrate",
+      "problem": "Runtime continuity is strong, but multi-year dormancy/disaster recovery needs encrypted attestable archival + restore rituals.",
+      "acceptance": "Deliver cold-archive packaging, quantum-resilient keying, integrity attestations, and rehearsed resurrection drills with verifiable identity continuity.",
+      "dependencies": [
+        "V3-BLK-001",
+        "V3-QPROOF-001",
+        "V3-RACE-020"
+      ]
+    },
+    {
+      "id": "V3-RACE-038A",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Inter-Protheus Federation Trust Web & Temporary Merge Contracts",
+      "problem": "Secure collaboration between sovereign instances needs attestable trust exchange without collapsing identity boundaries.",
+      "acceptance": "Implement trust-web protocol (attestation, capability grant, session-bound merge/share, revocation) with full receipts and policy-governed limits.",
+      "dependencies": [
+        "V2-062",
+        "V3-RACE-036",
+        "V3-RACE-037"
+      ]
+    },
+    {
+      "id": "V3-RACE-039",
+      "class": "primitive",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Human-Machine Merge Interface Security Substrate",
+      "problem": "Merge-era interfaces require sovereign-by-design high-bandwidth IO with consent, rollback, and anti-invasion controls from day one.",
+      "acceptance": "Publish merge-interface contracts + protection lanes (consent ceremony, identity lock, kill-switch, replay-safe audit) and pass simulated hostile-interface test suite.",
+      "dependencies": [
+        "V3-RACE-035",
+        "V3-RACE-036",
+        "V3-RACE-037"
+      ]
+    },
+    {
+      "id": "V3-RACE-DEF-031A",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Thorn Swarm Protocol (Tier-4 Sacrificial Wave Defense)",
+      "problem": "Single-cell or linear response patterns can underperform under high-concurrency attack pressure; bounded sacrificial swarm waves increase attacker cost asymmetry.",
+      "acceptance": "Deliver `thorn_swarm` wave controller with attack-intensity scaling, bounded TTL/self-destruct guarantees, trap profile execution, and full Jigsaw/JetStream lifecycle receipts.",
+      "dependencies": [
+        "V3-RACE-017",
+        "V3-RACE-031",
+        "V3-RACE-DEF-024",
+        "V3-RACE-DEF-026",
+        "V3-RACE-DEF-029"
+      ]
+    },
+    {
+      "id": "V3-RACE-DEF-031B",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Crimson Wraith Protocol (Single-Mission Phoenix Variant)",
+      "problem": "Some incident windows require ultra-focused one-shot deception cells rather than persistent responders.",
+      "acceptance": "Deliver one-shot Wraith mission lane with personalized decoy/trap templates, hard timeout termination, non-respawn lineage semantics, and cinematic replay evidence outputs.",
+      "dependencies": [
+        "V3-RACE-017",
+        "V3-RACE-031",
+        "V3-RACE-DEF-024",
+        "V3-RACE-DEF-027",
+        "V3-RACE-DEF-028"
+      ]
+    },
+    {
+      "id": "V3-RACE-DEF-031C",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Irrevocable Geas Covenant (Lineage Ban Enforcement)",
+      "problem": "Base self-destruct containment is strong, but irreversible lineage penalties further reduce repeated breach vectors and enforce strict swarm discipline.",
+      "acceptance": "Extend Geas ledger and Phoenix spawn checks to enforce permanent lineage quarantine after covenant breach, with auditable deny receipts and recovery governance path only via explicit human override policy.",
+      "dependencies": [
+        "V3-RACE-017",
+        "V3-RACE-031",
+        "V3-RACE-DEF-028"
+      ]
+    },
+    {
+      "id": "V3-RACE-032",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Complexity Warden Meta-Organ (Fractal Elegance Governor)",
+      "problem": "As defense/runtime layers compound, unmanaged complexity becomes a direct reliability and sovereignty risk; proactive complexity governance is required to prevent self-conflict and degradation.",
+      "acceptance": "Deliver `systems/fractal/warden/` with scoring engine, budget enforcement, integration-contract validation, harmony verifier CI gate, weekly simplification cycle, and full JetStream/Jigsaw telemetry proving complexity trend stabilization without runtime regression.",
+      "dependencies": [
+        "V3-RACE-017",
+        "V3-RACE-019",
+        "V3-RACE-020",
+        "V3-RACE-023",
+        "V3-RACE-DEF-026",
+        "V3-AEX-002"
+      ]
+    },
+    {
+      "id": "V3-RACE-033",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Mind Fortress Principle (Mind Sovereignty Covenant Anchor)",
+      "problem": "Without an explicit top-level covenant and enforcement path, growing capability layers can drift from the core mission of merged-mind sovereignty and safety.",
+      "acceptance": "Covenant text is canonical in constitution/docs/code headers, compliance fields are enforced in organ contracts, warden/fractal scoring includes sovereignty-first priority, and CI drift gates fail any mutation that weakens covenant guarantees.",
+      "dependencies": [
+        "V3-RACE-017",
+        "V3-RACE-019",
+        "V3-RACE-020",
+        "V3-RACE-032",
+        "V3-AEX-002"
+      ]
+    },
+    {
+      "id": "V3-RACE-040",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Continuous Chaos Engineering + Auto-Remediation Suite",
+      "problem": "Complex autonomous defense stacks degrade silently without continuous adversarial reliability pressure tests and deterministic repair lanes.",
+      "acceptance": "Ship policy-governed chaos scenario engine (fault/network/process/event corruption classes), scheduled gamedays, and bounded auto-remediation workflows with fail-safe rollback receipts.",
+      "dependencies": [
+        "V3-RACE-017",
+        "V3-RACE-019",
+        "V3-RACE-032",
+        "V3-OPS-003"
+      ]
+    },
+    {
+      "id": "V3-RACE-041",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Enterprise SLO + Observability Command Dashboard",
+      "problem": "Fortune-grade operation requires explicit SLOs, first-class telemetry contracts, and actionable incident narratives rather than raw logs.",
+      "acceptance": "Deliver OTel-first metrics/logs/traces pack with SLO definitions, burn alerts, dashboard defaults, and auto-generated runbooks tied to live incident signatures.",
+      "dependencies": [
+        "V3-RACE-005",
+        "V3-RACE-040",
+        "V3-OBS-002"
+      ]
+    },
+    {
+      "id": "V3-RACE-042",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Formal Threat Modeling Engine (STRIDE/ATT&CK Contractization)",
+      "problem": "Security organs evolve quickly; without continuous threat-model regeneration, defensive assumptions drift and coverage gaps accumulate.",
+      "acceptance": "Build threat-model generator that maps each organ/contract to STRIDE/ATT&CK controls, produces deltas on code/policy changes, and blocks high-risk unmapped surfaces in CI.",
+      "dependencies": [
+        "V3-RACE-017",
+        "V3-RACE-031",
+        "V3-RACE-032"
+      ]
+    },
+    {
+      "id": "V3-RACE-043",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Supply-Chain Security & Reproducible Build Plane",
+      "problem": "Sovereign assurance depends on deterministic artifact reproducibility and cryptographically attestable provenance across releases.",
+      "acceptance": "Implement reproducible build profiles, SBOM generation, signed provenance attestations, and strict release verification gates for all crown-jewel artifacts.",
+      "dependencies": [
+        "V3-BLD-001",
+        "V3-048",
+        "V3-RACE-034"
+      ]
+    },
+    {
+      "id": "V3-RACE-044",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Automated Compliance Mapping & Evidence Engine",
+      "problem": "Manual evidence assembly does not scale; policy-to-control traceability must be continuously generated for audit readiness.",
+      "acceptance": "Deliver continuous control-evidence mapper across SOC2/ISO27001/GDPR/export-control domains with machine-readable artifacts, freshness checks, and exception tracking dashboards.",
+      "dependencies": [
+        "V3-DOC-005",
+        "V3-DOC-007",
+        "V3-RACE-041",
+        "V3-RACE-042"
+      ]
+    },
+    {
+      "id": "V3-RACE-CONF-007",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Permanent Guidelines Drift Gate + Ticket Output Contract",
+      "problem": "Operator prompt/governance drift can silently weaken sovereignty and containment rules even when core code paths remain intact.",
+      "acceptance": "Publish canonical permanent-guidelines artifact, enforce checksum/drift checks against referenced policy docs, require ticket output contract markers, and fail CI on divergence from covenant-first governance baseline.",
+      "dependencies": [
+        "V3-RACE-CONF-006",
+        "V3-RACE-033",
+        "V3-RACE-032",
+        "V3-AEX-002"
+      ]
+    },
+    {
+      "id": "V3-RACE-050",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Independent Safety Coprocessor & Out-of-Band Veto Plane",
+      "problem": "Single-plane governance can fail catastrophically under correlated faults or supply-chain compromise.",
+      "acceptance": "Ship isolated guardian plane with independent policy root, kill/revert authority, and verified communication channel to main runtime with non-bypass tests.",
+      "dependencies": [
+        "V3-RACE-034",
+        "V3-RACE-035",
+        "V3-RACE-033"
+      ]
+    },
+    {
+      "id": "V3-RACE-051",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Hardware Root-of-Trust Attestation Mesh",
+      "problem": "Runtime assurances are stronger when every participating node/cell proves hardware-backed identity and integrity continuously.",
+      "acceptance": "Enforce TPM/TEE attestation enrollment, session-bound trust tokens, auto-quarantine on attestation drift, and audit receipts for all trust transitions.",
+      "dependencies": [
+        "V3-RACE-034",
+        "V3-CPY-001",
+        "V3-051"
+      ]
+    },
+    {
+      "id": "V3-RACE-052",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Data Poisoning Immunity + Causal Rollback Plane",
+      "problem": "Long-lived autonomous memory is vulnerable to subtle poisoning without provenance-sensitive controls and targeted rollback.",
+      "acceptance": "Add poisoning detector, confidence decay by provenance, taint graph lineage, and reversible rollback toolchain with replay-safe receipts.",
+      "dependencies": [
+        "V3-RACE-023",
+        "V3-RACE-042",
+        "V3-RACE-035"
+      ]
+    },
+    {
+      "id": "V3-RACE-053",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Model Behavior Drift Containment Shield",
+      "problem": "Upstream model/provider updates can silently alter behavior despite stable code and policy inputs.",
+      "acceptance": "Continuous model fingerprinting + canary corpus + deviation thresholds; automatic provider/model fallback and incident receipts on drift breaches.",
+      "dependencies": [
+        "RM-121",
+        "V3-RACE-041",
+        "V3-RACE-035"
+      ]
+    },
+    {
+      "id": "V3-RACE-054",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Adversarial Goal-Drift Auditor",
+      "problem": "Primary objective scoring can be gamed over time; independent adversarial auditing reduces hidden optimization drift.",
+      "acceptance": "Add second-pass adversarial evaluator with explicit go/no-go veto for promotion/apply when Goodhart or covenant misalignment signals exceed bounds.",
+      "dependencies": [
+        "V3-RACE-035",
+        "V3-RACE-032",
+        "V3-RACE-033"
+      ]
+    },
+    {
+      "id": "V3-RACE-055",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Insider-Threat Split-Trust Command Governance",
+      "problem": "High-trust operator pathways remain a residual risk without thresholded approvals and out-of-band confirmation for irreversible actions.",
+      "acceptance": "Enforce split-trust approvals for designated commands, independent confirmation channel, and denial-by-default on missing quorum receipts.",
+      "dependencies": [
+        "RM-109",
+        "V3-ENT-001",
+        "V3-RACE-031"
+      ]
+    },
+    {
+      "id": "V3-RACE-056",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Signed Plugin Trust Marketplace & Revocation Plane",
+      "problem": "Ecosystem scale requires safe extension distribution with cryptographic provenance and rapid compromise response.",
+      "acceptance": "Deliver signed extension manifests, sandbox attestation requirements, scoped capability grants, and global revocation propagation with CI enforcement.",
+      "dependencies": [
+        "V3-RACE-043",
+        "V3-DOC-004",
+        "V3-CPY-005"
+      ]
+    },
+    {
+      "id": "V3-RACE-057",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Black-Swan Disaster Gamebooks & Continuous Resilience Drills",
+      "problem": "Rare but severe events (region loss, key compromise, legal shutdown pressure) require rehearsed, measurable recovery playbooks.",
+      "acceptance": "Add disaster scenario library, scheduled drills, recovery SLO measurement, and mandatory remediation closure tracking per scenario class.",
+      "dependencies": [
+        "V3-RACE-040",
+        "V3-RACE-041",
+        "V3-RACE-037"
+      ]
+    },
+    {
+      "id": "V3-RACE-058",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Legal/Regulatory Auto-Diff Governance Router",
+      "problem": "Policy/legal landscapes shift continuously; delayed updates create hidden compliance and governance risk.",
+      "acceptance": "Implement legal-source diff ingestion, control impact classification, and policy/workflow update routing with human approval checkpoints and evidence trails.",
+      "dependencies": [
+        "V3-RACE-044",
+        "V3-DOC-005",
+        "V3-RACE-CONF-007"
+      ]
+    },
+    {
+      "id": "V3-RACE-059",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Sovereign Decommission, Legacy & Succession Boundary Protocol",
+      "problem": "Long-lived merged-mind systems need explicit end-of-life and transfer boundaries to avoid identity/control ambiguity.",
+      "acceptance": "Deliver governed retirement/succession protocol with cryptographic handoff, archival lock/freeze modes, and verified decommission receipts.",
+      "dependencies": [
+        "V3-RACE-037",
+        "V4-006",
+        "V3-RACE-033"
+      ]
+    },
+    {
+      "id": "V3-RACE-060",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "done",
+      "title": "Dist Runtime Contract Reconciliation Gate (Legacy-Pair Truth Source)",
+      "problem": "Runtime migration confidence is degraded when backlog/test/contracts claim zero legacy pairs while live checks report active pairs.",
+      "acceptance": "`runtime:dist:legacy --strict=1` is green, failing pair deltas auto-open incidents, and backlog status cannot remain `done` when contract checks fail.",
+      "dependencies": [
+        "V2-003",
+        "BL-014",
+        "V3-AEX-002"
+      ]
+    },
+    {
+      "id": "V3-RACE-061",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "done",
+      "title": "Deterministic Time Harness for Release/TTL Gates",
+      "problem": "Calendar-dependent tests create false regressions and hide real failures.",
+      "acceptance": "Added injected-now harness wiring for TTL/age-sensitive release gates and queue lifecycle paths, with deterministic regression fixtures in `memory/tools/tests/queue_gc.test.js`, `memory/tools/tests/ci_baseline_guard.test.js`, and `memory/tools/tests/post_launch_migration_readiness.test.js`.",
+      "dependencies": [
+        "V2-049",
+        "V2-050",
+        "V3-RACE-060"
+      ]
+    },
+    {
+      "id": "V3-RACE-062",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "done",
+      "title": "Benchmark Artifact Consistency Gate (Report vs History vs Latest)",
+      "problem": "Conflicting benchmark artifacts undermine migration-go/no-go decisions.",
+      "acceptance": "Transition lane now emits policy-scoped `history/latest/report` artifacts and enforces strict coherence/freshness via `consistency-check` with scope contamination blocking (`systems/memory/rust_memory_transition_lane.ts`, `memory/tools/tests/rust_memory_transition_lane.test.js`).",
+      "dependencies": [
+        "V3-RACE-024",
+        "V3-RACE-026"
+      ]
+    },
+    {
+      "id": "V3-RACE-063",
+      "class": "primitive-upgrade",
+      "wave": "V3",
+      "status": "done",
+      "title": "Warm-Path Rust Benchmark Lane (Daemon/Binary, No Cargo-Compile Tax)",
+      "problem": "Using `cargo run` in benchmark loops overweights compile/startup time and skews runtime performance decisions.",
+      "acceptance": "Benchmark lane now prewarms daemon transport, separates cold-build timing, and prefers prebuilt binary invocation for Rust probe/index commands before cargo fallback.",
+      "dependencies": [
+        "V3-RACE-024",
+        "V3-RACE-025",
+        "V3-RACE-062"
+      ]
+    },
+    {
+      "id": "V3-RACE-064",
+      "class": "primitive-upgrade",
+      "wave": "V3",
+      "status": "done",
+      "title": "Sync-Spawn Hotspot Reduction Wave (Worker/Daemon Shift)",
+      "problem": "High `spawnSync`/`execSync` usage raises latency, jitter, and throughput ceilings.",
+      "acceptance": "Memory recall/runtime hot lane shifted to daemon-first transport with binary-first CLI fallback, and benchmark receipts now publish rust p95/p99 latency metrics to verify no regression in warm path.",
+      "dependencies": [
+        "V3-OPS-005",
+        "V3-RACE-034",
+        "V3-RACE-063"
+      ]
+    },
+    {
+      "id": "V3-RACE-065",
+      "class": "primitive-upgrade",
+      "wave": "V3",
+      "status": "done",
+      "title": "Rust Memory Vector Retrieval Activation (Hot-Path Similarity Search)",
+      "problem": "Embedding tables without active vector retrieval leave hybrid-memory gains partially unrealized.",
+      "acceptance": "Query runtime now supports vector similarity + lexical fusion with explicit score mode telemetry and active SQLite embedding map usage on runtime retrieval path.",
+      "dependencies": [
+        "V3-RACE-023",
+        "V3-RACE-028",
+        "V3-RACE-052"
+      ]
+    },
+    {
+      "id": "V3-RACE-066",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "done",
+      "title": "Memory DB AEAD/Envelope Encryption Cutover",
+      "problem": "Custom cipher shims lack authenticated encryption guarantees and standard key-lifecycle controls.",
+      "acceptance": "Rust memory DB now uses AEAD envelope payloads, automatically migrates legacy/plain hot-state rows at open, fails closed on legacy decrypt attempts, and includes tamper/retirement tests in `systems/memory/rust/src/db.rs`.",
+      "dependencies": [
+        "V3-RACE-027",
+        "V3-ENT-002",
+        "V3-RACE-023"
+      ]
+    },
+    {
+      "id": "V3-RACE-067",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "done",
+      "title": "Memory Index Freshness Enforcement Gate",
+      "problem": "Stale indices drift from node reality and can degrade retrieval/navigation reliability.",
+      "acceptance": "Added policy-driven freshness gate with strict mode, optional rebuild path, persisted receipts/history, and merge/foundation contract integration (`systems/memory/memory_index_freshness_gate.ts`, `memory/tools/tests/memory_index_freshness_gate.test.js`).",
+      "dependencies": [
+        "V3-RACE-023",
+        "V3-RACE-062",
+        "V3-RACE-CONF-007"
+      ]
+    },
+    {
+      "id": "V3-RACE-068",
+      "class": "extension",
+      "wave": "V3",
+      "status": "done",
+      "title": "Advisory JS Purge Wave (`habits/scripts`, `memory/tools`)",
+      "problem": "Large JS advisory surface keeps language mix and maintenance overhead JS-heavy despite TS core migration.",
+      "acceptance": "Added wave planner with churn weighting and exception-registry diff snapshots, plus strict holdout audit integration in merge/foundation/contract checks.",
+      "dependencies": [
+        "V2-001",
+        "V2-003",
+        "BL-014",
+        "RM-002"
+      ]
+    },
+    {
+      "id": "V3-RACE-CONF-008",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "done",
+      "title": "Merge-Conflict Marker CI Guard (`<<<<<<<`, `=======`, `>>>>>>>`)",
+      "problem": "Unresolved conflict markers in governance/runtime files can silently corrupt policy/behavior expectations.",
+      "acceptance": "Foundation/merge checks fail on conflict markers in tracked code/docs/config scopes, with remediation receipts and zero false negatives in test fixtures.",
+      "dependencies": [
+        "V3-RACE-CONF-007",
+        "V3-AEX-002"
+      ]
+    },
+    {
+      "id": "V3-RACE-069",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "done",
+      "title": "Proposal Funnel SLO + Conversion Guard",
+      "problem": "Strong observation with weak execution can hide long zero-ship dead zones and stall objective progress.",
+      "acceptance": "Implemented in `systems/ops/execution_yield_recovery.ts` with persisted funnel metrics + dead-window alert detection and latest/history receipts.",
+      "dependencies": [
+        "RM-113",
+        "RM-114",
+        "BL-027"
+      ]
+    },
+    {
+      "id": "V3-RACE-070",
+      "class": "primitive-upgrade",
+      "wave": "V3",
+      "status": "done",
+      "title": "Top-K Execution Reservation Lane",
+      "problem": "High-worth proposals can starve while queue churn/aging consumes execution bandwidth.",
+      "acceptance": "Implemented top-K reservation under apply mode (`proposal_accepted` + queue decision accept events) from highest-worth open proposals.",
+      "dependencies": [
+        "BL-027",
+        "BL-018",
+        "V3-AEX-001"
+      ]
+    },
+    {
+      "id": "V3-RACE-071",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "done",
+      "title": "Filter Pressure Rebalancer (High-Score Exemption Contracts)",
+      "problem": "Hard filters (`action_spec_missing`, `stale_open_age_sweep`, `composite_low`) can over-suppress actionable work.",
+      "acceptance": "High-score filtered proposals are routed to `rewrite/defer/escalate` lanes with deterministic queue/decision receipts.",
+      "dependencies": [
+        "BL-018",
+        "BL-027",
+        "RM-118"
+      ]
+    },
+    {
+      "id": "V3-RACE-072",
+      "class": "extension",
+      "wave": "V3",
+      "status": "done",
+      "title": "Action-Spec Auto-Enrichment Lane",
+      "problem": "Many proposals fail because intent is present but executable structure is incomplete.",
+      "acceptance": "Missing-`action_spec` proposals are auto-enriched with synthesized command/verify/rollback structure and re-queued for execution.",
+      "dependencies": [
+        "BL-018",
+        "V3-017",
+        "V3-AEX-002"
+      ]
+    },
+    {
+      "id": "V3-RACE-073",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "done",
+      "title": "Queue Debt Backpressure + Intake Throttle Mode",
+      "problem": "Open proposal debt accumulates when intake outpaces execution and causes quality decay/aging.",
+      "acceptance": "Backpressure throttle state is published and enforced at ingest (`intake_throttle_low_priority`) when open-count/age pressure breaches policy.",
+      "dependencies": [
+        "RM-114",
+        "BL-018",
+        "V3-RACE-069"
+      ]
+    },
+    {
+      "id": "V3-RACE-074",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "done",
+      "title": "Eye Health SLO + Auto-Heal Escalation Lane",
+      "problem": "Persistent preflight failures in collectors reduce signal quality and skew planning confidence.",
+      "acceptance": "Eye health classifier emits bounded auto-heal/escalation action receipts for degraded eyes based on failure streak/quarantine/error-rate policy.",
+      "dependencies": [
+        "BL-026",
+        "V3-OPS-003",
+        "RM-118"
+      ]
+    },
+    {
+      "id": "V3-RACE-075",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "done",
+      "title": "Execution Floor Contract (Sunday Included, Explicit Observation Override)",
+      "problem": "Defaulting to observation-only days can normalize non-execution drift during critical objective windows.",
+      "acceptance": "Execution-floor contract enforces min shipped/day and schedules catch-up reservation receipts when floor is missed without override.",
+      "dependencies": [
+        "RM-113",
+        "V3-RACE-069",
+        "V3-AEX-001"
+      ]
+    },
+    {
+      "id": "V3-RACE-076",
+      "class": "extension",
+      "wave": "V3",
+      "status": "done",
+      "title": "Execution-to-Artifact Auto-Capture Bridge",
+      "problem": "Successful execution without artifact capture underreports value and weakens reinforcement loops.",
+      "acceptance": "Shipped outcomes now trigger artifact bridge capture (`proposal_queue` bridge + yield recovery state) with deterministic bridge receipts.",
+      "dependencies": [
+        "BL-030",
+        "RM-113",
+        "V3-RACE-069"
+      ]
+    },
+    {
+      "id": "V3-RACE-077",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "done",
+      "title": "Adaptive Escalation TTL + Salvage Queue",
+      "problem": "Fixed escalation TTL can drop still-valuable escalations and reduce recovery effectiveness.",
+      "acceptance": "Escalation TTL now adapts by score; expired high-score escalations are salvaged (snooze/park + salvage ledger) while low-score rows are rejected.",
+      "dependencies": [
+        "BL-018",
+        "RM-114",
+        "V3-RACE-073"
+      ]
+    },
+    {
+      "id": "V3-RACE-078",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Negative-Signal Recovery & Salvage Lane",
+      "problem": "Valuable demand/opportunity signals are often expressed as failure/friction and are currently under-captured.",
+      "acceptance": "Signals with explicit failure/friction language are extracted as typed events, preserved through filters, and traced to proposal outcomes with measurable salvage uplift receipts.",
+      "dependencies": [
+        "V3-RACE-069",
+        "V3-RACE-071",
+        "V3-RACE-072"
+      ]
+    },
+    {
+      "id": "V3-RACE-079",
+      "class": "primitive-upgrade",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Latent Intent Inference Graph",
+      "problem": "First-order tagging misses implied needs, causing under-actuation on high-opportunity weak signals.",
+      "acceptance": "Inference engine emits `implied_need` edges with evidence spans + confidence; validator lane enforces false-positive ceiling and writes parity receipts.",
+      "dependencies": [
+        "V3-RACE-078",
+        "V3-RACE-009"
+      ]
+    },
+    {
+      "id": "V3-RACE-080",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Cross-Temporal Signal Delta Engine",
+      "problem": "Point-in-time snapshots hide momentum/reversal patterns that matter for prioritization.",
+      "acceptance": "Daily/weekly deltas for topic volume/tone/emphasis are computed and surfaced in queue ranking with anomaly receipts and drift-safe thresholds.",
+      "dependencies": [
+        "V3-RACE-069",
+        "V3-RACE-074"
+      ]
+    },
+    {
+      "id": "V3-RACE-081",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Confidence Calibration & Probability Contracts",
+      "problem": "Binary pass/fail confidence loses ranking quality and obscures uncertainty management.",
+      "acceptance": "Detection/ranking outputs include calibrated probabilities; reliability/Brier artifacts are tracked, and gates can fail on calibration regression.",
+      "dependencies": [
+        "V3-RACE-069",
+        "V3-RACE-062"
+      ]
+    },
+    {
+      "id": "V3-RACE-082",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Counterfactual Signal Replay Harness",
+      "problem": "Detector changes need historical context to avoid overfitting current traffic conditions.",
+      "acceptance": "Replay runner can score historical windows with current detector stack, report counterfactual precision/recall deltas, and block promotions on negative uplift.",
+      "dependencies": [
+        "V3-RACE-003",
+        "V3-RACE-017",
+        "V3-RACE-081"
+      ]
+    },
+    {
+      "id": "V3-RACE-083",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Adversarial Hypothesis Challenger Lane",
+      "problem": "Unchallenged high-confidence signals can be wrong and produce confident misallocation.",
+      "acceptance": "High-priority signals receive generated disconfirmation hypotheses with verification outcomes; unresolved challenger wins block promotion/apply.",
+      "dependencies": [
+        "V3-RACE-081",
+        "V3-RACE-042"
+      ]
+    },
+    {
+      "id": "V3-RACE-084",
+      "class": "primitive-upgrade",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Multi-Hop Objective Chain Mapper",
+      "problem": "Signal-to-objective linkage is currently shallow, limiting explainability and prioritization quality.",
+      "acceptance": "Path scorer emits explainable multi-hop chains (`eye -> topic -> implication -> objective`) with confidence-weighted path receipts used by admission/ranking.",
+      "dependencies": [
+        "V3-RACE-078",
+        "V3-RACE-079",
+        "V3-RACE-080",
+        "V3-RACE-081"
+      ]
+    },
+    {
+      "id": "V3-RACE-085",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Multimodal Signal Adapter Plane (Non-Text Features)",
+      "problem": "Important activity signal exists outside text and is currently weakly integrated into inference.",
+      "acceptance": "Repo/image/market micro-activity adapters publish normalized non-text features into cross-signal pipeline with bounded influence weights and audit receipts.",
+      "dependencies": [
+        "V3-RACE-007",
+        "V3-RACE-041",
+        "V3-RACE-084"
+      ]
+    },
+    {
+      "id": "V3-RACE-086",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Gold Eval Corpus + Blind Detector Scoring Lane",
+      "problem": "Detector quality cannot compound reliably without stable objective measurement artifacts.",
+      "acceptance": "Labeled eval packs and blind runner are live, with deterministic precision/recall/F1/calibration receipts used by promotion gates.",
+      "dependencies": [
+        "V3-RACE-081",
+        "V3-RACE-082"
+      ]
+    },
+    {
+      "id": "V3-RACE-087",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Champion/Challenger Detector Promotion Pipeline",
+      "problem": "Analysis changes need safe comparative rollout to prevent silent degradation.",
+      "acceptance": "Challenger detectors run shadow comparisons against champion; promotion requires policy-defined uplift and no critical regressions.",
+      "dependencies": [
+        "V3-RACE-086",
+        "V3-RACE-062"
+      ]
+    },
+    {
+      "id": "V3-RACE-088",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Abstain/Uncertainty Output Contract",
+      "problem": "Forced low-confidence decisions increase false positives and downstream churn.",
+      "acceptance": "Detector output schema supports abstain reason codes, routing honors abstain paths, and abstain-resolution outcomes are tracked.",
+      "dependencies": [
+        "V3-RACE-081",
+        "V3-RACE-069"
+      ]
+    },
+    {
+      "id": "V3-RACE-089",
+      "class": "primitive-upgrade",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Dynamic Source Reliability Graph",
+      "problem": "Flat source weighting ignores reliability drift and harms analysis precision.",
+      "acceptance": "Source reliability scores (domain/author/collector) update from outcome truth signals with bounded influence and audit receipts.",
+      "dependencies": [
+        "V3-RACE-078",
+        "V3-RACE-081"
+      ]
+    },
+    {
+      "id": "V3-RACE-090",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Causal-vs-Correlational Signal Scorer",
+      "problem": "Correlation-heavy ranking overstates weak hypotheses and misallocates execution bandwidth.",
+      "acceptance": "Ranking lane includes causal evidence weighting, correlation-only penalties, and replay-backed validation receipts for promotions.",
+      "dependencies": [
+        "V3-RACE-082",
+        "V3-RACE-084",
+        "V3-RACE-089"
+      ]
+    },
+    {
+      "id": "V3-RACE-091",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Value-of-Information Collection Planner",
+      "problem": "Detection budget should prioritize uncertainty reduction, not raw volume.",
+      "acceptance": "Planner computes expected information gain by topic/objective and drives sensing priorities with measurable uncertainty-reduction uplift.",
+      "dependencies": [
+        "V3-RACE-080",
+        "V3-RACE-081",
+        "V3-RACE-084"
+      ]
+    },
+    {
+      "id": "V3-RACE-092",
+      "class": "primitive-upgrade",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Hypothesis Lifecycle Ledger",
+      "problem": "Detector learning is weak without explicit end-to-end hypothesis outcome memory.",
+      "acceptance": "Lifecycle ledger captures hypothesis state transitions and outcome linkage, feeding detector calibration and promotion decisions.",
+      "dependencies": [
+        "V3-RACE-083",
+        "V3-RACE-084"
+      ]
+    },
+    {
+      "id": "V3-RACE-093",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Detector Error Taxonomy + Guarded Auto-Retuning",
+      "problem": "Manual threshold tuning does not scale with detector complexity and drift.",
+      "acceptance": "FP/FN taxonomy pipeline and bounded auto-retuning loop are live with rollback-on-regression and non-bypass receipts.",
+      "dependencies": [
+        "V3-RACE-086",
+        "V3-RACE-087",
+        "V3-RACE-092"
+      ]
+    },
+    {
+      "id": "V3-RACE-094",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Ensemble Disagreement Escalation Lane",
+      "problem": "Single-analyzer certainty can mask blind spots on ambiguous/high-risk signals.",
+      "acceptance": "Multi-analyzer disagreement metrics are computed; high-divergence cases trigger escalate/defer flows with adjudication receipts.",
+      "dependencies": [
+        "V3-RACE-083",
+        "V3-RACE-087"
+      ]
+    },
+    {
+      "id": "V3-RACE-095",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Novelty/Saturation Prioritization Engine",
+      "problem": "Over-covered topics consume bandwidth while low-frequency novel signals are under-prioritized.",
+      "acceptance": "Novelty/saturation scores influence ranking, with policy bounds and measured improvement in marginal signal value capture.",
+      "dependencies": [
+        "V3-RACE-080",
+        "V3-RACE-091"
+      ]
+    },
+    {
+      "id": "V3-RACE-096",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Analysis Quality SLO Contract",
+      "problem": "Analysis quality must be measured directly, not inferred from execution-only outcomes.",
+      "acceptance": "Dedicated detector SLO dashboards and gates are live (`precision/recall/F1/calibration/abstain`), and promotion fails on analysis-SLO regression even when execution SLO is green.",
+      "dependencies": [
+        "V3-RACE-086",
+        "V3-RACE-081"
+      ]
+    },
+    {
+      "id": "V3-RACE-097",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Ground-Truth Governance & Label Adjudication Lane",
+      "problem": "Label noise and weak adjudication can silently cap detector quality and destabilize promotion decisions.",
+      "acceptance": "Label workflow includes reviewer agreement metrics, confidence metadata, adjudication receipts, and quarantine of low-agreement labels from promotion corpora.",
+      "dependencies": [
+        "V3-RACE-086"
+      ]
+    },
+    {
+      "id": "V3-RACE-098",
+      "class": "primitive-upgrade",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Feature/Data Versioning Reproducibility Contract",
+      "problem": "Detector decisions must be exactly replayable to support safe evolution and audits.",
+      "acceptance": "Feature snapshots, schema hashes, and detector versions are pinned per run; replay reproduces equivalent scoring decisions with deterministic receipts.",
+      "dependencies": [
+        "V3-RACE-003",
+        "V3-RACE-086",
+        "BL-024"
+      ]
+    },
+    {
+      "id": "V3-RACE-099",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Distribution-Shift Decomposition Engine",
+      "problem": "Aggregate drift scores hide root causes and slow effective remediation.",
+      "acceptance": "Drift pipeline attributes shift by source/topic/style/population components, and remediation policies trigger by component-level thresholds.",
+      "dependencies": [
+        "V3-RACE-080",
+        "V3-RACE-089"
+      ]
+    },
+    {
+      "id": "V3-RACE-100",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Causal Validation Gate for High-Impact Analysis Claims",
+      "problem": "Correlational signals can drive wrong policy changes without causal validation discipline.",
+      "acceptance": "High-impact analysis claims require replay/intervention evidence and fail closed when causal validation confidence is below policy threshold.",
+      "dependencies": [
+        "V3-RACE-082",
+        "V3-RACE-090"
+      ]
+    },
+    {
+      "id": "V3-RACE-101",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Active-Learning Uncertainty Queue",
+      "problem": "Ambiguous/high-disagreement cases are the highest-leverage training signal and should be prioritized.",
+      "acceptance": "High-uncertainty/disagreement cases are auto-queued for review/labeling, and accepted labels measurably improve challenger/eval performance.",
+      "dependencies": [
+        "V3-RACE-088",
+        "V3-RACE-094",
+        "V3-RACE-097"
+      ]
+    },
+    {
+      "id": "V3-RACE-102",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Offline Statistical Lab Artifact Bridge (R/Python Optional)",
+      "problem": "Advanced calibration/causal diagnostics benefit from offline tooling while runtime should remain deterministic and fast.",
+      "acceptance": "Offline jobs emit signed/schema-validated artifacts consumed by production gates; runtime ingestion is artifact-only with strict provenance checks.",
+      "dependencies": [
+        "V3-RACE-086",
+        "V3-RACE-096",
+        "V3-RACE-098"
+      ]
+    },
+    {
+      "id": "V3-RACE-103",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Sensitivity/Privacy-Aware Signal Scoring Contract",
+      "problem": "Analysis gains must not introduce governance/privacy regressions on sensitive data classes.",
+      "acceptance": "Sensitive classes are policy-tagged, scored under restricted rules, and audited for masking/access/use with fail-closed enforcement receipts.",
+      "dependencies": [
+        "V3-RACE-033",
+        "V3-RACE-044",
+        "V3-RACE-096"
+      ]
+    },
+    {
+      "id": "V3-RACE-104",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Detector Rollback & Migration Safety Contract",
+      "problem": "Safe detector evolution requires fast rollback with evidence, not manual patchwork under pressure.",
+      "acceptance": "One-command rollback restores prior detector bundle, passes parity replay checks, and preserves schema compatibility across recent artifacts.",
+      "dependencies": [
+        "V3-RACE-087",
+        "V3-RACE-098"
+      ]
+    },
+    {
+      "id": "V3-RACE-105",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Cross-Objective Interference Guard for Analysis Changes",
+      "problem": "Improving one objective can unintentionally degrade others without explicit non-regression controls.",
+      "acceptance": "Promotion checks include multi-objective non-regression matrix and block detector updates that exceed policy interference budgets.",
+      "dependencies": [
+        "V3-RACE-084",
+        "V3-RACE-096",
+        "V3-RACE-104"
+      ]
+    },
+    {
+      "id": "V3-RACE-106",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "done",
+      "title": "Unified Guard Check Registry (Manifest-Driven Gates)",
+      "problem": "Duplicated check definitions across guard entrypoints create maintenance drag and drift risk.",
+      "acceptance": "Single manifest defines checks/dependencies/strictness; `merge_guard`/`foundation_contract_gate`/`contract_check` consume generated plans; non-regression harness proves parity of pass/fail outcomes.",
+      "dependencies": [
+        "V3-AEX-002",
+        "V3-RACE-CONF-008"
+      ]
+    },
+    {
+      "id": "V3-RACE-107",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "done",
+      "title": "Shared Policy Runtime Primitive",
+      "problem": "Repeated ad-hoc policy parsing/defaulting raises contract drift and bug surface area.",
+      "acceptance": "Central policy runtime handles schema/default/coercion/path resolution; migrated lanes show no behavior regressions and reduced parser duplication.",
+      "dependencies": [
+        "BL-024",
+        "V3-RACE-CONF-007"
+      ]
+    },
+    {
+      "id": "V3-RACE-108",
+      "class": "primitive-upgrade",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Spawn Fan-Out Reduction Wave (Worker/Daemon Core)",
+      "problem": "Sync process fan-out limits throughput and increases latency/jitter under scale.",
+      "acceptance": "Top high-frequency spawn lanes run through long-lived worker/daemon contracts; latency p95/p99 improves with no behavior/safety regression receipts.",
+      "dependencies": [
+        "V3-RACE-063",
+        "V3-RACE-064",
+        "V3-OPS-005"
+      ]
+    },
+    {
+      "id": "V3-RACE-109",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "done",
+      "title": "State Artifact Contract Normalization",
+      "problem": "Inconsistent state artifact layouts/retention rules increase operational complexity and audit ambiguity.",
+      "acceptance": "Shared artifact schema/layout (`latest/history/receipt`) and retention/freshness policies are enforced via contract gates across target lanes.",
+      "dependencies": [
+        "BL-024",
+        "V3-RACE-062",
+        "V3-RACE-CONF-007"
+      ]
+    },
+    {
+      "id": "V3-RACE-110",
+      "class": "primitive-upgrade",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Memory Transport Abstraction Unification",
+      "problem": "Mixed transport semantics increase complexity and observability inconsistency in memory runtime behavior.",
+      "acceptance": "One transport abstraction governs daemon/cli/fallback semantics and emits normalized telemetry; parity tests confirm no retrieval/regression drift.",
+      "dependencies": [
+        "V3-RACE-023",
+        "V3-RACE-024",
+        "V3-RACE-025"
+      ]
+    },
+    {
+      "id": "V3-RACE-111",
+      "class": "extension",
+      "wave": "V3",
+      "status": "done",
+      "title": "Canonical Backlog Registry + Generated Views",
+      "problem": "Manual monolithic backlog editing scales poorly and risks status/metadata drift.",
+      "acceptance": "Added `systems/ops/backlog_registry.ts` (+ runtime `backlog_registry.js`) with `sync/check/status`, canonical registry output (`config/backlog_registry.json`), generated views (`docs/backlog_views/active.md`, `archive.md`), strict drift receipts, policy contract, and regression test `memory/tools/tests/backlog_registry.test.js`.",
+      "dependencies": [
+        "V3-RACE-CONF-003",
+        "V3-RACE-107"
+      ]
+    },
+    {
+      "id": "V3-RACE-112",
+      "class": "primitive-upgrade",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Analysis Kernel Stage Interface & Plugin Contracts",
+      "problem": "Analysis pipeline fragmentation slows safe evolution and increases integration overhead.",
+      "acceptance": "Analysis kernel stage API is live with pluggable contracts and regression harness proving equivalent outputs on baseline detector set.",
+      "dependencies": [
+        "V3-RACE-078",
+        "V3-RACE-081",
+        "V3-RACE-083",
+        "V3-RACE-084"
+      ]
+    },
+    {
+      "id": "V3-RACE-113",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Compatibility Tail Retirement (TS-First Runtime)",
+      "problem": "Dual TS/JS paths keep unnecessary complexity once parity is proven.",
+      "acceptance": "Eligible JS runtime paths are retired behind parity evidence; only policy-approved compatibility wrappers remain; migration receipts prove no behavior loss.",
+      "dependencies": [
+        "V2-001",
+        "V2-003",
+        "BL-014",
+        "V3-RACE-068"
+      ]
+    },
+    {
+      "id": "V3-RACE-114",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Control-Plane Live Activation & Shadow Exit Gate",
+      "problem": "Core control-plane policies still default to shadow/local modes, so the platform is operational but not yet default-live OS-ready.",
+      "acceptance": "Policy-governed live profile is promoted with deterministic rollback: `protheus_control_plane` not shadow-by-default, `event_sourced_control_plane` runs stream authority + JetStream publish in live mode, and `rust_control_plane_cutover` exits shadow with soak/SLO/parity receipts and tested emergency fallback toggle.",
+      "dependencies": [
+        "V3-RACE-017",
+        "V3-RACE-021",
+        "V3-RACE-034",
+        "V3-RACE-041"
+      ]
+    }
+  ]
+}
