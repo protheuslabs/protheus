@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "scan_roots": [
+    "systems"
+  ],
+  "approved_non_wrapper_js": [],
+  "wrapper_patterns": [
+    "ts_bootstrap').bootstrap(__filename, module);"
+  ],
+  "paths": {
+    "latest_path": "state/ops/compatibility_tail_retirement/latest.json",
+    "receipts_path": "state/ops/compatibility_tail_retirement/receipts.jsonl"
+  }
+}
