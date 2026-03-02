@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T02:20:38.320Z",
-  "source_hash": "5f9ac0d1631b5ea859b68e35",
+  "generated_at": "2026-03-02T02:23:50.096Z",
+  "source_hash": "2b3df9620d7ffe535a2dd699",
   "row_count": 127,
-  "active_count": 62,
-  "archive_count": 65,
+  "active_count": 61,
+  "archive_count": 66,
   "rows": [
     {
       "id": "V3-OPS-004",
@@ -642,10 +642,10 @@
       "id": "V3-RACE-034",
       "class": "primitive-upgrade",
       "wave": "V3",
-      "status": "queued",
+      "status": "done",
       "title": "Rust Spine Microkernel (Control-Plane Core Extraction)",
       "problem": "Remaining JS/V8 control-plane hot paths are the largest residual runtime + sovereignty risk once memory is Rust-authoritative.",
-      "acceptance": "Guard/spawn/router/origin-lock/fractal control-paths run on Rust spine services with behavior parity, benchmark/SLO proofs, and emergency rollback path.",
+      "acceptance": "Added `systems/ops/rust_spine_microkernel.{ts,js}` + `config/rust_spine_microkernel_policy.json` to enforce explicit guard/spawn/router/origin-lock/fractal parity checks, benchmark/SLO gates, staged rust-spine cutover, deterministic emergency rollback, and routing guardrails; verification coverage landed in `memory/tools/tests/rust_spine_microkernel.test.js` with operator docs in `docs/RUST_SPINE_MICROKERNEL.md`.",
       "dependencies": [
         "V3-RACE-023",
         "V3-RACE-021",

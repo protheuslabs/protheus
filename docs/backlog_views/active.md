@@ -1,6 +1,6 @@
 # Backlog Active View
 
-Generated: 2026-03-02T02:20:38.320Z
+Generated: 2026-03-02T02:23:50.096Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
@@ -12,7 +12,6 @@ Generated: 2026-03-02T02:20:38.320Z
 | V3-RACE-DEF-029 | hardening | V3 | queued | MirrorReaper Protocol (Tier-4 Resource Inversion Defense Mode) | V3-RACE-017, V3-RACE-019, V3-RACE-022, V3-RACE-DEF-024, V3-RACE-DEF-026, V3-RACE-DEF-027, V3-RACE-DEF-028 |
 | V3-RACE-030 | extension | V3 | queued | Legion Honor Codex (Soul-Bound Medals, Titles, and Red Legion Rank System) | V3-RACE-019, V3-RACE-020, V3-RACE-022, V3-BLK-001, V3-RACE-DEF-024, V3-RACE-DEF-027, V3-RACE-DEF-028 |
 | V3-RACE-031 | hardening | V3 | queued | Legion Geas Protocol (Iron Oath Self-Destruct Covenant) | V3-RACE-017, V3-RACE-020, V3-RACE-DEF-024, V3-RACE-DEF-027, V3-RACE-DEF-028, V3-RACE-DEF-029, V3-OPS-005 |
-| V3-RACE-034 | primitive-upgrade | V3 | queued | Rust Spine Microkernel (Control-Plane Core Extraction) | V3-RACE-023, V3-RACE-021, V3-OPS-005 |
 | V3-RACE-035 | hardening | V3 | queued | Formal Mind-Sovereignty Verification Layer | V3-045, V3-RACE-031, V3-RACE-034 |
 | V3-RACE-036 | hardening | V3 | queued | Multi-Mind Isolation & Shared-Consciousness Boundary Plane | RM-109, V3-RACE-020, V3-RACE-035 |
 | V3-RACE-037 | extension | V3 | queued | Long-Term Archival & Sovereign Resurrection Substrate | V3-BLK-001, V3-QPROOF-001, V3-RACE-020 |
