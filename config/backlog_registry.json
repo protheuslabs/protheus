@@ -1,10 +1,10 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T17:58:45.282Z",
-  "source_hash": "c456f40cf5b472e31f02a07b",
-  "row_count": 460,
-  "active_count": 63,
+  "generated_at": "2026-03-02T18:00:23.165Z",
+  "source_hash": "b7cfc215f4ad2bfc8b05599e",
+  "row_count": 475,
+  "active_count": 78,
   "archive_count": 397,
   "rows": [
     {
@@ -5653,6 +5653,216 @@
         "V3-RACE-258",
         "V3-RACE-257",
         "V3-RACE-214"
+      ]
+    },
+    {
+      "id": "V3-RACE-262",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Google Ecosystem Runtime Parity Pack (Android/ChromeOS/Fuchsia Surface Matrix)",
+      "problem": "Google stewardship requires a native runtime/deployment profile across Android and adjacent surfaces beyond generic mobile wrappers.",
+      "acceptance": "Add Android/ChromeOS/Fuchsia profile adapters with privileged-service policy gates where permitted, require verification receipts for install/run/update parity by surface class, and include rollback-safe fallback to baseline mobile/runtime profiles on mismatch.",
+      "dependencies": [
+        "V3-RACE-189",
+        "V3-RACE-191",
+        "V3-RACE-193"
+      ]
+    },
+    {
+      "id": "V3-RACE-263",
+      "class": "primitive-upgrade",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Google TPU/Tensor Accelerator Adapter (TPU v5p/Trillium/EdgeTPU/Coral + Vertex Path)",
+      "problem": "Google hardware/runtime lanes require typed adapter contracts so placement and deployment stay auditable and fail closed.",
+      "acceptance": "Add Tensor/TPU adapter contracts with JAX/XLA deployment hooks, require verification receipts for placement correctness and performance targets, and include rollback-safe fallback to non-TPU acceleration lanes on adapter regression.",
+      "dependencies": [
+        "V3-RACE-218",
+        "V3-RACE-174",
+        "V3-RACE-209"
+      ]
+    },
+    {
+      "id": "V3-RACE-264",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "GKE Autopilot + Anthos Federation Adapter",
+      "problem": "Google-native zero-ops federation should extend existing mesh contracts without introducing provider-specific control-plane drift.",
+      "acceptance": "Implement GKE/Anthos adapter over mesh lease/quorum contracts, require verification receipts for federation parity and hybrid failover behavior, and include rollback-safe adapter disable path when parity checks fail.",
+      "dependencies": [
+        "V3-RACE-200",
+        "V3-RACE-201",
+        "V3-RACE-203"
+      ]
+    },
+    {
+      "id": "V3-RACE-265",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Capability-Handle IPC Hardening Lane (Zircon-Inspired Contract)",
+      "problem": "Lane IPC safety improves with explicit capability-handle semantics that prevent ambient authority and ad hoc trust expansion.",
+      "acceptance": "Add handle-capability IPC contract for selected lane boundaries, require verification receipts proving capability-scoped communication and denied bypass paths, and include rollback-safe fallback to existing IPC path with strict deny-by-default policy gates.",
+      "dependencies": [
+        "V3-RACE-210",
+        "V3-RACE-214",
+        "V3-RACE-017"
+      ]
+    },
+    {
+      "id": "V3-RACE-266",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Google ML Framework Lane (JAX + Paxml/Flax Compatibility Pack)",
+      "problem": "Google-oriented model development/deployment needs first-class JAX family support under existing governance/runtime boundaries.",
+      "acceptance": "Add JAX/Paxml/Flax execution adapters with compatibility bridge contracts for existing framework lanes, require verification receipts for parity and reproducibility, and include rollback-safe framework disable toggles when regressions appear.",
+      "dependencies": [
+        "V3-RACE-263",
+        "V3-RACE-220",
+        "V3-RACE-115"
+      ]
+    },
+    {
+      "id": "V3-RACE-267",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Federated Learning + Privacy Sandbox Guarded Lane",
+      "problem": "Privacy-preserving model improvement requires explicit no-raw-data lanes rather than optional best-effort controls.",
+      "acceptance": "Add federated-learning/privacy-sandbox lane with enforceable no-raw-data-export contracts, require verification receipts for aggregation/privacy guarantees, and include rollback-safe suspension path when privacy or quality thresholds fail.",
+      "dependencies": [
+        "V3-RACE-222",
+        "V3-RACE-236",
+        "V3-RACE-275"
+      ]
+    },
+    {
+      "id": "V3-RACE-268",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "DeepMind-Style Oversight Review Gate (Typed Control Plane)",
+      "problem": "Provider-specific alignment expectations require an explicit oversight gate layered onto existing sovereignty controls.",
+      "acceptance": "Add oversight gate consuming typed control-plane proposals and policy evidence, require verification receipts for review outcomes and blocked unsafe promotions, and include rollback-safe return to baseline review policy if oversight adapter regresses.",
+      "dependencies": [
+        "V3-RACE-215",
+        "V3-RACE-223",
+        "V3-RACE-214"
+      ]
+    },
+    {
+      "id": "V3-RACE-269",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Google Sovereign Model Routing Profile (Gemini Local -> Vertex PSC)",
+      "problem": "Google deployments need an explicit routing profile where on-device Gemini paths remain primary and cloud escalation stays boundary constrained.",
+      "acceptance": "Add routing profile with local Gemini default and Vertex Private Service Connect escalation rules, require verification receipts for boundary enforcement and fallback correctness, and include rollback-safe reversion to strict local-only profile on policy mismatch.",
+      "dependencies": [
+        "V3-RACE-224",
+        "V3-RACE-239",
+        "V3-RACE-263"
+      ]
+    },
+    {
+      "id": "V3-RACE-270",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Digital-Twin Simulation Pre-Promotion Gate (Autogenesis Mandatory)",
+      "problem": "Autogenesis safety improves when high-risk candidate changes pass simulation evidence before promotion.",
+      "acceptance": "Add mandatory simulation gate before autogenesis promotion with deterministic pass/fail criteria, require verification receipts linking simulation artifacts to promotion decisions, and include rollback-safe rejection path on simulation uncertainty or failure.",
+      "dependencies": [
+        "V3-RACE-180",
+        "V3-RACE-181",
+        "V3-RACE-182"
+      ]
+    },
+    {
+      "id": "V3-RACE-271",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Jetpack Compose + Material You + ARCore/Starline Interaction Adapter",
+      "problem": "Google-native user surfaces require dedicated design/runtime adapters that preserve governance while enabling platform-specific UX patterns.",
+      "acceptance": "Add UI/spatial adapters for Compose/Material/ARCore-style interactions, require verification receipts for platform consistency and performance, and include rollback-safe fallback to existing non-Google UI lanes on incompatibility.",
+      "dependencies": [
+        "V3-RACE-262",
+        "V3-RACE-249",
+        "V3-RACE-253"
+      ]
+    },
+    {
+      "id": "V3-RACE-272",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Google Play Safety/Privacy Submission Compliance Lane",
+      "problem": "Play ecosystem distribution requires deterministic privacy/safety evidence and store-readiness validation tied to release gates.",
+      "acceptance": "Add Google Play compliance lane with safety/privacy artifact generation and review checks, require verification receipts for each required control, and include rollback-safe submission block behavior when any compliance signal regresses.",
+      "dependencies": [
+        "V3-RACE-258",
+        "V3-RACE-271",
+        "V3-RACE-261"
+      ]
+    },
+    {
+      "id": "V3-RACE-273",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "ChromeOS/Fuchsia Distribution & OTA Adapter",
+      "problem": "Google deployment channels need explicit packaging/update contracts for ChromeOS/Fuchsia alongside existing distribution lanes.",
+      "acceptance": "Add ChromeOS/Fuchsia distribution adapters with OTA update contracts, require verification receipts for package integrity and update rollback behavior, and include rollback-safe channel freeze/revert controls.",
+      "dependencies": [
+        "V3-RACE-262",
+        "V3-RACE-228",
+        "V3-RACE-244"
+      ]
+    },
+    {
+      "id": "V3-RACE-274",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Google Zero-Trust Network Adapter (Cloud Armor + BeyondCorp)",
+      "problem": "Federated Google deployments need provider-specific zero-trust enforcement integrated with sovereignty/network policy controls.",
+      "acceptance": "Add Cloud Armor/BeyondCorp adapter contracts for federated lanes, require verification receipts for trust-boundary and access-policy enforcement, and include rollback-safe adapter isolation when network policy checks fail.",
+      "dependencies": [
+        "V3-RACE-264",
+        "V3-RACE-246",
+        "V3-RACE-017"
+      ]
+    },
+    {
+      "id": "V3-RACE-275",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Google Boundary Sovereignty Gate (On-Device or Google Boundary Only)",
+      "problem": "Google stewardship requires an explicit boundary contract that blocks non-approved egress or routing paths.",
+      "acceptance": "Enforce routing/data boundary gate requiring on-device execution or approved in-boundary Google paths only, require verification receipts for blocked out-of-boundary attempts, and include rollback-safe return to strict local-only mode when boundary attestations degrade.",
+      "dependencies": [
+        "V3-RACE-269",
+        "V3-RACE-214",
+        "V3-RACE-017"
+      ]
+    },
+    {
+      "id": "V3-RACE-276",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Google Chaos Promotion Gate (GKE Fault Injection + Chaos Mesh Evidence)",
+      "problem": "Promotion quality requires provider-specific chaos evidence in Google federated environments beyond generic chaos controls.",
+      "acceptance": "Add promotion gate requiring Google-targeted fault injection/chaos evidence for relevant lanes, require verification receipts tying chaos runs to promotion decisions, and include rollback-safe promotion hold when chaos evidence is missing or stale.",
+      "dependencies": [
+        "V3-RACE-264",
+        "V3-RACE-270",
+        "V3-RACE-247"
       ]
     },
     {

@@ -1,6 +1,6 @@
 # Backlog Active View
 
-Generated: 2026-03-02T17:58:45.282Z
+Generated: 2026-03-02T18:00:23.165Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
@@ -67,4 +67,19 @@ Generated: 2026-03-02T17:58:45.282Z
 | V3-RACE-259 | extension | V3 | queued | TestFlight + Apple Business Manager/MDM Distribution Adapter | V3-RACE-250, V3-RACE-258, V3-RACE-231 |
 | V3-RACE-260 | hardening | V3 | queued | Apple On-Device-First Sovereignty Gate (PCC-Only Cloud Exception) | V3-RACE-255, V3-RACE-214, V3-RACE-017 |
 | V3-RACE-261 | hardening | V3 | queued | Apple Release Security Gate (App Sandbox/TCC + Notarization/Gatekeeper + Privacy Manifest) | V3-RACE-258, V3-RACE-257, V3-RACE-214 |
+| V3-RACE-262 | extension | V3 | queued | Google Ecosystem Runtime Parity Pack (Android/ChromeOS/Fuchsia Surface Matrix) | V3-RACE-189, V3-RACE-191, V3-RACE-193 |
+| V3-RACE-263 | primitive-upgrade | V3 | queued | Google TPU/Tensor Accelerator Adapter (TPU v5p/Trillium/EdgeTPU/Coral + Vertex Path) | V3-RACE-218, V3-RACE-174, V3-RACE-209 |
+| V3-RACE-264 | extension | V3 | queued | GKE Autopilot + Anthos Federation Adapter | V3-RACE-200, V3-RACE-201, V3-RACE-203 |
+| V3-RACE-265 | hardening | V3 | queued | Capability-Handle IPC Hardening Lane (Zircon-Inspired Contract) | V3-RACE-210, V3-RACE-214, V3-RACE-017 |
+| V3-RACE-266 | extension | V3 | queued | Google ML Framework Lane (JAX + Paxml/Flax Compatibility Pack) | V3-RACE-263, V3-RACE-220, V3-RACE-115 |
+| V3-RACE-267 | hardening | V3 | queued | Federated Learning + Privacy Sandbox Guarded Lane | V3-RACE-222, V3-RACE-236, V3-RACE-275 |
+| V3-RACE-268 | hardening | V3 | queued | DeepMind-Style Oversight Review Gate (Typed Control Plane) | V3-RACE-215, V3-RACE-223, V3-RACE-214 |
+| V3-RACE-269 | extension | V3 | queued | Google Sovereign Model Routing Profile (Gemini Local -> Vertex PSC) | V3-RACE-224, V3-RACE-239, V3-RACE-263 |
+| V3-RACE-270 | hardening | V3 | queued | Digital-Twin Simulation Pre-Promotion Gate (Autogenesis Mandatory) | V3-RACE-180, V3-RACE-181, V3-RACE-182 |
+| V3-RACE-271 | extension | V3 | queued | Jetpack Compose + Material You + ARCore/Starline Interaction Adapter | V3-RACE-262, V3-RACE-249, V3-RACE-253 |
+| V3-RACE-272 | hardening | V3 | queued | Google Play Safety/Privacy Submission Compliance Lane | V3-RACE-258, V3-RACE-271, V3-RACE-261 |
+| V3-RACE-273 | extension | V3 | queued | ChromeOS/Fuchsia Distribution & OTA Adapter | V3-RACE-262, V3-RACE-228, V3-RACE-244 |
+| V3-RACE-274 | hardening | V3 | queued | Google Zero-Trust Network Adapter (Cloud Armor + BeyondCorp) | V3-RACE-264, V3-RACE-246, V3-RACE-017 |
+| V3-RACE-275 | hardening | V3 | queued | Google Boundary Sovereignty Gate (On-Device or Google Boundary Only) | V3-RACE-269, V3-RACE-214, V3-RACE-017 |
+| V3-RACE-276 | hardening | V3 | queued | Google Chaos Promotion Gate (GKE Fault Injection + Chaos Mesh Evidence) | V3-RACE-264, V3-RACE-270, V3-RACE-247 |
 
