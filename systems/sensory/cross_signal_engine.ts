@@ -324,6 +324,8 @@ function analyze(opts = {}) {
   const maxLeadLagHours = clamp(process.env.CROSS_SIGNAL_MAX_LEAD_LAG_HOURS, 1, 168, 48);
   const minDivergenceToday = clamp(process.env.CROSS_SIGNAL_MIN_DIVERGENCE_TODAY, 2, 100, 2);
   const minNegativeEvents = clamp(process.env.CROSS_SIGNAL_MIN_NEGATIVE_EVENTS, 1, 20, 2);
+  const minDeltaVolume = clamp(process.env.CROSS_SIGNAL_MIN_DELTA_VOLUME, 1, 50, 2);
+  const minDeltaTonePct = clamp(process.env.CROSS_SIGNAL_MIN_DELTA_TONE_PCT, 1, 100, 18) / 100;
   const maxHypotheses = clamp(process.env.CROSS_SIGNAL_MAX_HYPOTHESES, 10, 500, 120);
   const minConfidence = clamp(process.env.CROSS_SIGNAL_MIN_CONFIDENCE, 1, 100, 48);
   const maxPerTopic = clamp(process.env.CROSS_SIGNAL_MAX_PER_TOPIC, 1, 20, 3);
@@ -333,6 +335,7 @@ function analyze(opts = {}) {
   const minTopicLength = clamp(process.env.CROSS_SIGNAL_MIN_TOPIC_LENGTH, 3, 16, 4);
 
   const hypotheses = [];
+  const temporalDeltas = [];
   const topicObs = collectObservations(dates, {
     maxTopicsPerItem,
     maxObsPerEyeTopicPerDay,
@@ -459,6 +462,88 @@ function analyze(opts = {}) {
         negative_terms: extractNegativeTerms(row.title || '')
       }))
       .filter((row) => Array.isArray(row.negative_terms) && row.negative_terms.length > 0);
+
+    const yesterdayDate = baselineDates.length ? baselineDates[baselineDates.length - 1] : null;
+    const yesterdayCount = yesterdayDate ? Number(daily[yesterdayDate] || 0) : 0;
+    const volumeDeltaDay = Number(todayCount - yesterdayCount);
+    const volumeDeltaBaseline = Number(todayCount - baselineAvg);
+    const activeEyesToday = perEyeToday.filter((row) => Number(row.today_count || 0) > 0).length;
+    const baselineActiveEyesAvg = mean(
+      baselineDates.map((d) => {
+        const active = supportEyes.filter((eyeId) => obs.some((o) => o.eye_id === eyeId && o.date === d)).length;
+        return active;
+      })
+    );
+    const emphasisDelta = Number(activeEyesToday - baselineActiveEyesAvg);
+    const negativeToday = negativeObs.filter((row) => row.date === dateStr).length;
+    const toneToday = todayCount > 0 ? (negativeToday / todayCount) : 0;
+    const baselineToneAvg = mean(
+      baselineDates.map((d) => {
+        const dayVol = Number(daily[d] || 0);
+        if (dayVol <= 0) return 0;
+        const dayNeg = negativeObs.filter((row) => row.date === d).length;
+        return dayNeg / dayVol;
+      })
+    );
+    const toneDelta = Number(toneToday - baselineToneAvg);
+
+    const deltaRecord = {
+      topic,
+      today_count: todayCount,
+      yesterday_count: yesterdayCount,
+      baseline_avg: Number(baselineAvg.toFixed(3)),
+      volume_delta_day: Number(volumeDeltaDay.toFixed(3)),
+      volume_delta_baseline: Number(volumeDeltaBaseline.toFixed(3)),
+      active_eyes_today: activeEyesToday,
+      active_eyes_baseline_avg: Number(baselineActiveEyesAvg.toFixed(3)),
+      emphasis_delta: Number(emphasisDelta.toFixed(3)),
+      tone_today: Number(toneToday.toFixed(4)),
+      tone_baseline_avg: Number(baselineToneAvg.toFixed(4)),
+      tone_delta: Number(toneDelta.toFixed(4)),
+      anomaly: (
+        Math.abs(volumeDeltaDay) >= minDeltaVolume
+        || Math.abs(volumeDeltaBaseline) >= minDeltaVolume
+        || Math.abs(toneDelta) >= minDeltaTonePct
+      )
+    };
+    temporalDeltas.push(deltaRecord);
+    if (deltaRecord.anomaly) {
+      const deltaConfidence = clamp(
+        Math.round(
+          44
+          + Math.min(20, Math.abs(volumeDeltaDay) * 3)
+          + Math.min(14, Math.abs(volumeDeltaBaseline) * 2)
+          + Math.min(12, Math.abs(toneDelta) * 40)
+        ),
+        1,
+        100,
+        54
+      );
+      hypotheses.push({
+        id: buildHypothesisId('HYP', ['temporal_delta', topic, dateStr]),
+        type: 'temporal_delta',
+        topic,
+        summary: `Topic "${topic}" shows cross-temporal delta (day ${volumeDeltaDay.toFixed(1)}, baseline ${volumeDeltaBaseline.toFixed(1)}, tone ${toneDelta.toFixed(2)})`,
+        confidence: deltaConfidence,
+        support_eyes: supportEyes.length,
+        support_events: obs.length,
+        temporal_delta: deltaRecord,
+        evidence: [
+          {
+            date: dateStr,
+            count: todayCount,
+            negative_count: negativeToday
+          },
+          {
+            date: yesterdayDate || null,
+            count: yesterdayCount,
+            baseline_avg: Number(baselineAvg.toFixed(3))
+          }
+        ],
+        window: { lookback_days: lookbackDays }
+      });
+    }
+
     if (negativeObs.length >= minNegativeEvents) {
       const negativeEyes = sortUnique(negativeObs.map((row) => row.eye_id).filter(Boolean));
       const termCounts = new Map();
@@ -528,8 +613,17 @@ function analyze(opts = {}) {
       max_obs_per_eye_topic_day: maxObsPerEyeTopicPerDay,
       min_topic_length: minTopicLength
       ,
-      min_negative_events: minNegativeEvents
+      min_negative_events: minNegativeEvents,
+      min_delta_volume: minDeltaVolume,
+      min_delta_tone_pct: Number(minDeltaTonePct.toFixed(4))
     },
+    temporal_deltas: temporalDeltas
+      .sort((a, b) => {
+        const scoreA = Math.abs(Number(a.volume_delta_day || 0)) + Math.abs(Number(a.tone_delta || 0) * 10);
+        const scoreB = Math.abs(Number(b.volume_delta_day || 0)) + Math.abs(Number(b.tone_delta || 0) * 10);
+        return scoreB - scoreA;
+      })
+      .slice(0, 60),
     total_detected: totalDetected,
     compacted_count: compacted.hypotheses.length,
     compacted_dropped: compacted.dropped,

@@ -94,6 +94,11 @@ function run() {
     assert.ok(negativeSignal, 'expected automation negative-signal hypothesis');
     assert.ok(Array.isArray(negativeSignal.negative_terms) && negativeSignal.negative_terms.length >= 1, 'negative-signal should include extracted terms');
 
+    const temporalDelta = rep.hypotheses.find((h) => h && h.type === 'temporal_delta' && h.topic === 'automation');
+    assert.ok(temporalDelta, 'expected automation temporal-delta hypothesis');
+    assert.ok(rep.temporal_deltas && Array.isArray(rep.temporal_deltas), 'expected temporal delta report lane');
+    assert.ok(rep.temporal_deltas.some((row) => row && row.topic === 'automation'), 'expected automation temporal delta entry');
+
     console.log('cross_signal_engine.test.js: OK');
   } finally {
     if (envBefore == null) delete process.env.CROSS_SIGNAL_SENSORY_DIR;
