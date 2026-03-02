@@ -1,6 +1,6 @@
 # Backlog Active View
 
-Generated: 2026-03-02T17:54:31.128Z
+Generated: 2026-03-02T17:57:00.442Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
@@ -37,4 +37,20 @@ Generated: 2026-03-02T17:54:31.128Z
 | V3-RACE-229 | hardening | V3 | queued | Enterprise Identity/Compliance Bridge (SOC2 Type II + Defender + Entra Sovereignty) | V3-RACE-044, V3-RACE-058, V3-RACE-224 |
 | V3-RACE-230 | extension | V3 | queued | Type-Derived Lane Docs Autogeneration (`typedoc` + `cargo-doc`) | V3-RACE-115, V3-RACE-121, V3-RACE-215 |
 | V3-RACE-231 | extension | V3 | queued | Public Roadmap Publication Contract (Backlog-Synchronized) | V3-RACE-127, V3-RACE-230, V3-RACE-CONF-003 |
+| V3-RACE-232 | extension | V3 | queued | AWS Linux/ARM Runtime Parity Pack (AL2023 + Graviton4 + Bottlerocket) | V3-RACE-217, V3-RACE-189, V3-RACE-193 |
+| V3-RACE-233 | primitive-upgrade | V3 | queued | AWS Accelerator HAL Adapter (Neuron/Trainium/Inferentia + Nitro Metadata Placement) | V3-RACE-218, V3-RACE-209, V3-RACE-174 |
+| V3-RACE-234 | extension | V3 | queued | AWS CI/CD Mirror Plane (CodePipeline/Build/Deploy + FIS Gate Parity) | V3-RACE-219, V3-RACE-126, V3-RACE-017 |
+| V3-RACE-235 | hardening | V3 | queued | Firecracker + Nitro Enclave Containment Lane for WASM Execution | V3-RACE-220, V3-RACE-186, V3-RACE-017 |
+| V3-RACE-236 | extension | V3 | queued | AWS Federated Memory Backend Profile (Aurora/DynamoDB + Neptune + OpenSearch) | V3-RACE-222, V3-RACE-137, V3-RACE-172 |
+| V3-RACE-237 | extension | V3 | queued | Greengrass Edge Continual-Learning Adapter (Neuron-Aware) | V3-RACE-236, V3-RACE-239, V3-RACE-190 |
+| V3-RACE-238 | extension | V3 | queued | Bedrock AgentCore + SageMaker Tool Interop Adapter | V3-RACE-223, V3-RACE-210, V3-RACE-184 |
+| V3-RACE-239 | extension | V3 | queued | Sovereign AWS Model Routing Profile (PrivateLink/VPC Default Boundaries) | V3-RACE-224, V3-RACE-218, V3-RACE-116 |
+| V3-RACE-240 | hardening | V3 | queued | Nitro/KMS Autogenesis Attestation Bridge | V3-RACE-180, V3-RACE-181, V3-RACE-182, V3-RACE-235 |
+| V3-RACE-241 | extension | V3 | queued | EKS/Fargate Federation Adapter (Serverless Lane Execution) | V3-RACE-225, V3-RACE-200, V3-RACE-201 |
+| V3-RACE-242 | extension | V3 | queued | AWS Compute-Market Optimizer (Lambda Contracts + Spot/Savings Frugality) | V3-RACE-197, V3-RACE-198, V3-RACE-199, V3-RACE-241 |
+| V3-RACE-243 | extension | V3 | queued | CloudWatch/X-Ray Observability Bridge + Tauri Dashboard Embed | V3-RACE-227, V3-RACE-191, V3-RACE-174 |
+| V3-RACE-244 | hardening | V3 | queued | AWS Reproducible Artifact Profile (AMI/ECR/Serverless via Nix + Image Builder) | V3-RACE-228, V3-RACE-232, V3-RACE-120 |
+| V3-RACE-245 | hardening | V3 | queued | AWS Compliance Evidence Bridge (Audit Manager/Artifact/Well-Architected/Access Analyzer) | V3-RACE-229, V3-RACE-044, V3-RACE-058 |
+| V3-RACE-246 | hardening | V3 | queued | AWS Enterprise Identity Binding Adapter (IRSA + AWS SSO + KMS) | V3-RACE-239, V3-RACE-245, V3-RACE-017 |
+| V3-RACE-247 | hardening | V3 | queued | AWS Frugality + Well-Architected Review Gate (Graviton/Spot Preference, No-Egress Defaults) | V3-RACE-232, V3-RACE-239, V3-RACE-243, V3-RACE-214 |
 

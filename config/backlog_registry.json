@@ -1,10 +1,10 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T17:54:31.128Z",
-  "source_hash": "788fd5f2b023024b3ca8fe6f",
-  "row_count": 430,
-  "active_count": 33,
+  "generated_at": "2026-03-02T17:57:00.442Z",
+  "source_hash": "dcdf2919a11cf651fd92edc6",
+  "row_count": 446,
+  "active_count": 49,
   "archive_count": 397,
   "rows": [
     {
@@ -5230,6 +5230,233 @@
         "V3-RACE-127",
         "V3-RACE-230",
         "V3-RACE-CONF-003"
+      ]
+    },
+    {
+      "id": "V3-RACE-232",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "AWS Linux/ARM Runtime Parity Pack (AL2023 + Graviton4 + Bottlerocket)",
+      "problem": "Amazon stewardship requires first-class Linux/ARM runtime parity and packaging contracts beyond generic cross-platform support.",
+      "acceptance": "Deliver AL2023/Bottlerocket runtime profiles with deterministic capability checks for Graviton/Neuron targets, publish verification receipts for install/run/upgrade parity, and include rollback-safe fallback to existing generic runtime profiles.",
+      "dependencies": [
+        "V3-RACE-217",
+        "V3-RACE-189",
+        "V3-RACE-193"
+      ]
+    },
+    {
+      "id": "V3-RACE-233",
+      "class": "primitive-upgrade",
+      "wave": "V3",
+      "status": "queued",
+      "title": "AWS Accelerator HAL Adapter (Neuron/Trainium/Inferentia + Nitro Metadata Placement)",
+      "problem": "AWS hardware classes need explicit HAL contracts so placement decisions remain typed, auditable, and fail closed.",
+      "acceptance": "Extend HAL with AWS accelerator and Nitro metadata adapters, require verification receipts for placement decisions and capability mismatches, and include rollback-safe fallback to CPU/default placement on adapter regression.",
+      "dependencies": [
+        "V3-RACE-218",
+        "V3-RACE-209",
+        "V3-RACE-174"
+      ]
+    },
+    {
+      "id": "V3-RACE-234",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "AWS CI/CD Mirror Plane (CodePipeline/Build/Deploy + FIS Gate Parity)",
+      "problem": "Enterprise delivery on AWS needs deterministic gate parity with canonical GitHub workflows and explicit divergence handling.",
+      "acceptance": "Add AWS mirror pipeline orchestration with formal/chaos/FIS parity checks, signed verification receipts for gate equivalence, and rollback-safe mirror disable/reseed path when drift is detected.",
+      "dependencies": [
+        "V3-RACE-219",
+        "V3-RACE-126",
+        "V3-RACE-017"
+      ]
+    },
+    {
+      "id": "V3-RACE-235",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Firecracker + Nitro Enclave Containment Lane for WASM Execution",
+      "problem": "Zero-trust AWS execution requires enclave/microVM containment layered under existing WASM/runtime gates.",
+      "acceptance": "Add Firecracker/Nitro execution adapters for governed WASM lanes, require verification receipts for policy parity and enclave attestation, and include rollback-safe reversion to baseline execution sandbox lanes when enclave gates fail.",
+      "dependencies": [
+        "V3-RACE-220",
+        "V3-RACE-186",
+        "V3-RACE-017"
+      ]
+    },
+    {
+      "id": "V3-RACE-236",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "AWS Federated Memory Backend Profile (Aurora/DynamoDB + Neptune + OpenSearch)",
+      "problem": "AWS deployments may require provider-native data services while preserving local-first correctness and sovereignty guarantees.",
+      "acceptance": "Add optional federated memory backend profile with CRDT reconciliation over AWS stores, require verification receipts for parity against local authoritative behavior, and include rollback-safe fallback to local memory substrate by policy default.",
+      "dependencies": [
+        "V3-RACE-222",
+        "V3-RACE-137",
+        "V3-RACE-172"
+      ]
+    },
+    {
+      "id": "V3-RACE-237",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Greengrass Edge Continual-Learning Adapter (Neuron-Aware)",
+      "problem": "Edge deployments need a governed learning adapter that composes with existing memory/learning loops on AWS hardware.",
+      "acceptance": "Implement Greengrass learning adapter using local Neuron-aware summarization hooks, require verification receipts for learning quality/resource budgets, and include rollback-safe disable path to baseline continual-learning loop.",
+      "dependencies": [
+        "V3-RACE-236",
+        "V3-RACE-239",
+        "V3-RACE-190"
+      ]
+    },
+    {
+      "id": "V3-RACE-238",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Bedrock AgentCore + SageMaker Tool Interop Adapter",
+      "problem": "Provider interop should extend orchestration capability without replacing existing typed-lane and governance contracts.",
+      "acceptance": "Add Bedrock/SageMaker adapter mapping lane contracts to provider-compatible typed tools and orchestration patterns (ToT/GoT/Debate/Weaver compatibility), require verification receipts for contract parity, and include rollback-safe adapter quarantine path.",
+      "dependencies": [
+        "V3-RACE-223",
+        "V3-RACE-210",
+        "V3-RACE-184"
+      ]
+    },
+    {
+      "id": "V3-RACE-239",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Sovereign AWS Model Routing Profile (PrivateLink/VPC Default Boundaries)",
+      "problem": "AWS fallback paths must remain private-network-bound and subordinate to local-first routing guarantees.",
+      "acceptance": "Add AWS routing profile with private-link/VPC boundary checks, require verification receipts for egress-deny-by-default behavior and fallback correctness, and include rollback-safe return to local-only profile on policy mismatch.",
+      "dependencies": [
+        "V3-RACE-224",
+        "V3-RACE-218",
+        "V3-RACE-116"
+      ]
+    },
+    {
+      "id": "V3-RACE-240",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "Nitro/KMS Autogenesis Attestation Bridge",
+      "problem": "Existing autogenesis safeguards need provider-specific attestation/signing adapters for AWS enterprise environments.",
+      "acceptance": "Extend autogenesis promotion lane with Nitro enclave attestation and KMS-backed signing integration, require verification receipts for full gate-chain parity, and include rollback-safe reversion to baseline signing/attestation path when provider checks fail.",
+      "dependencies": [
+        "V3-RACE-180",
+        "V3-RACE-181",
+        "V3-RACE-182",
+        "V3-RACE-235"
+      ]
+    },
+    {
+      "id": "V3-RACE-241",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "EKS/Fargate Federation Adapter (Serverless Lane Execution)",
+      "problem": "AWS-native cluster/serverless orchestration should be adapterized over existing mesh contracts to avoid architecture drift.",
+      "acceptance": "Add EKS/Fargate orchestration adapter with parity checks against mesh lease/quorum semantics, require verification receipts for schedule/execution correctness, and include rollback-safe cluster profile disable path on regression.",
+      "dependencies": [
+        "V3-RACE-225",
+        "V3-RACE-200",
+        "V3-RACE-201"
+      ]
+    },
+    {
+      "id": "V3-RACE-242",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "AWS Compute-Market Optimizer (Lambda Contracts + Spot/Savings Frugality)",
+      "problem": "Amazon-specific market primitives can improve compute economics if integrated without weakening settlement and attribution safety.",
+      "acceptance": "Add optimizer adapter that applies Spot/Savings and Lambda-triggered contract automation to queued donor/mesh lanes, require verification receipts for settlement correctness + cost delta, and include rollback-safe optimizer off-switch reverting to baseline lending logic.",
+      "dependencies": [
+        "V3-RACE-197",
+        "V3-RACE-198",
+        "V3-RACE-199",
+        "V3-RACE-241"
+      ]
+    },
+    {
+      "id": "V3-RACE-243",
+      "class": "extension",
+      "wave": "V3",
+      "status": "queued",
+      "title": "CloudWatch/X-Ray Observability Bridge + Tauri Dashboard Embed",
+      "problem": "AWS operations need provider-native telemetry/trace adapters while preserving existing observability contract semantics.",
+      "acceptance": "Add CloudWatch/X-Ray adapters and dashboard embed profile for `protheus-top`, require verification receipts for OTel signal parity and trace continuity, and include rollback-safe fallback to existing observability backends.",
+      "dependencies": [
+        "V3-RACE-227",
+        "V3-RACE-191",
+        "V3-RACE-174"
+      ]
+    },
+    {
+      "id": "V3-RACE-244",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "AWS Reproducible Artifact Profile (AMI/ECR/Serverless via Nix + Image Builder)",
+      "problem": "Enterprise AWS rollout credibility depends on deterministic artifact reproducibility across AMI/container/serverless targets.",
+      "acceptance": "Add AWS artifact pipeline profile using Nix + EC2 Image Builder/Bottlerocket surfaces, require verification receipts for reproducibility/provenance parity, and include rollback-safe artifact channel revoke/restore contracts.",
+      "dependencies": [
+        "V3-RACE-228",
+        "V3-RACE-232",
+        "V3-RACE-120"
+      ]
+    },
+    {
+      "id": "V3-RACE-245",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "AWS Compliance Evidence Bridge (Audit Manager/Artifact/Well-Architected/Access Analyzer)",
+      "problem": "Provider-specific compliance signals need to feed existing control/evidence systems without introducing parallel compliance truth sources.",
+      "acceptance": "Add AWS evidence ingestion/normalization bridge tied to existing compliance control lanes, require verification receipts for control mapping completeness and freshness, and include rollback-safe adapter isolation on evidence integrity failures.",
+      "dependencies": [
+        "V3-RACE-229",
+        "V3-RACE-044",
+        "V3-RACE-058"
+      ]
+    },
+    {
+      "id": "V3-RACE-246",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "AWS Enterprise Identity Binding Adapter (IRSA + AWS SSO + KMS)",
+      "problem": "Enterprise deployments require identity-binding primitives that align cloud identity planes with sovereignty and contract-lane controls.",
+      "acceptance": "Add IRSA/SSO/KMS identity-binding adapters with policy-scoped role contracts, require verification receipts for authz boundary enforcement, and include rollback-safe disable/revert path to baseline identity contracts.",
+      "dependencies": [
+        "V3-RACE-239",
+        "V3-RACE-245",
+        "V3-RACE-017"
+      ]
+    },
+    {
+      "id": "V3-RACE-247",
+      "class": "hardening",
+      "wave": "V3",
+      "status": "queued",
+      "title": "AWS Frugality + Well-Architected Review Gate (Graviton/Spot Preference, No-Egress Defaults)",
+      "problem": "Amazon-targeted operations require explicit cost/sustainability and architecture-quality gates in addition to security/sovereignty controls.",
+      "acceptance": "Add gate enforcing Graviton/Spot preference rules, Well-Architected checklist coverage, and PrivateLink/no-egress defaults where configured, require verification receipts per promotion, and include rollback-safe fallback to baseline policy profile on gate instability.",
+      "dependencies": [
+        "V3-RACE-232",
+        "V3-RACE-239",
+        "V3-RACE-243",
+        "V3-RACE-214"
       ]
     },
     {
