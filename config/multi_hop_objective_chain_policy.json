@@ -1,0 +1,36 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "min_path_confidence": 0.58,
+  "max_paths_per_objective": 24,
+  "max_paths_total": 300,
+  "objective_weights": {
+    "T1_make_jay_billionaire_v1": 1,
+    "T1_generational_wealth_v1": 0.9
+  },
+  "objective_hints": {
+    "T1_make_jay_billionaire_v1": [
+      "revenue",
+      "pricing",
+      "sales",
+      "growth",
+      "infrastructure",
+      "automation"
+    ],
+    "T1_generational_wealth_v1": [
+      "wealth",
+      "compounding",
+      "portfolio",
+      "equity",
+      "cashflow",
+      "revenue"
+    ]
+  },
+  "paths": {
+    "hypotheses_dir": "state/sensory/cross_signal/hypotheses",
+    "latent_intent_dir": "state/sensory/analysis/latent_intent",
+    "output_dir": "state/sensory/analysis/objective_chain_mapper",
+    "latest_path": "state/sensory/analysis/objective_chain_mapper/latest.json",
+    "receipts_path": "state/sensory/analysis/objective_chain_mapper/receipts.jsonl"
+  }
+}

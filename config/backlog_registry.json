@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T02:47:04.008Z",
-  "source_hash": "78420206889b65b83948b331",
+  "generated_at": "2026-03-02T02:49:48.354Z",
+  "source_hash": "6bc2eb0ab042b8f749f33b69",
   "row_count": 127,
-  "active_count": 56,
-  "archive_count": 71,
+  "active_count": 55,
+  "archive_count": 72,
   "rows": [
     {
       "id": "V3-OPS-004",
@@ -1377,10 +1377,10 @@
       "id": "V3-RACE-084",
       "class": "primitive-upgrade",
       "wave": "V3",
-      "status": "queued",
+      "status": "done",
       "title": "Multi-Hop Objective Chain Mapper",
       "problem": "Signal-to-objective linkage is currently shallow, limiting explainability and prioritization quality.",
-      "acceptance": "Path scorer emits explainable multi-hop chains (`eye -> topic -> implication -> objective`) with confidence-weighted path receipts used by admission/ranking.",
+      "acceptance": "Added `systems/sensory/multi_hop_objective_chain_mapper.{ts,js}` + `config/multi_hop_objective_chain_policy.json` to fuse cross-signal hypotheses and latent-intent edges into explainable four-hop paths (`eye -> topic -> implication -> objective`) with confidence-weighted ranking receipts under `state/sensory/analysis/objective_chain_mapper/`; regression coverage in `memory/tools/tests/multi_hop_objective_chain_mapper.test.js`.",
       "dependencies": [
         "V3-RACE-078",
         "V3-RACE-079",
