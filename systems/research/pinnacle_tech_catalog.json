@@ -1,0 +1,55 @@
+{
+  "schema_id": "pinnacle_tech_catalog",
+  "schema_version": "1.0",
+  "updated_at": "2026-03-02T09:06:00.000Z",
+  "classes": [
+    {
+      "id": "crdt",
+      "title": "Conflict-free replicated data types",
+      "readiness": "pilot",
+      "guardrails": ["replay_parity", "merge_conflict_budget"]
+    },
+    {
+      "id": "zk",
+      "title": "Zero-knowledge proofs",
+      "readiness": "research",
+      "guardrails": ["bounded_disclosure", "deterministic_verifier"]
+    },
+    {
+      "id": "fhe",
+      "title": "Fully homomorphic encryption",
+      "readiness": "research",
+      "guardrails": ["latency_budget", "allowlist_operations"]
+    },
+    {
+      "id": "did_vc",
+      "title": "DID and verifiable credentials",
+      "readiness": "pilot",
+      "guardrails": ["revocation_path", "private_field_minimization"]
+    },
+    {
+      "id": "ipfs_archive",
+      "title": "Content-addressed archival",
+      "readiness": "pilot",
+      "guardrails": ["cid_verification", "encrypted_payloads"]
+    },
+    {
+      "id": "wasm_components",
+      "title": "WASM capability-scoped components",
+      "readiness": "pilot",
+      "guardrails": ["signature_verification", "deny_by_default_bindings"]
+    },
+    {
+      "id": "intent_plane",
+      "title": "Intent declaration and translation",
+      "readiness": "pilot",
+      "guardrails": ["risk_tier_translation", "explainability_receipts"]
+    },
+    {
+      "id": "time_lock_contracts",
+      "title": "Time-lock and delayed activation contracts",
+      "readiness": "research",
+      "guardrails": ["veto_window", "rollback_contract"]
+    }
+  ]
+}

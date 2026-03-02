@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-02T09:05:46.895Z",
-  "source_hash": "5eb7ff766785f7ed42dac906",
+  "generated_at": "2026-03-02T09:07:09.949Z",
+  "source_hash": "358e2e2570d98a5f3c5ce628",
   "row_count": 373,
   "active_count": 1,
-  "archive_count": 318,
+  "archive_count": 319,
   "rows": [
     {
       "id": "BL-001",
@@ -3860,7 +3860,7 @@
       "id": "V3-RACE-135",
       "class": "extension",
       "wave": "V3",
-      "status": "open",
+      "status": "done",
       "title": "Pinnacle Tech Integration Engine (Research + Governed Proposal Lane)",
       "problem": "Frontier-technology scouting is currently ad hoc and not codified as an explicit recurring research/proposal substrate.",
       "acceptance": "Added `systems/research/pinnacle_tech_integration_engine.{ts,js}` + policy `config/pinnacle_tech_integration_policy.json` to continuously scan CRDT/ZK/FHE/DID/IPFS/WASM/intent/time-lock classes and emit governed integration proposals only; non-user canonical research catalogs/proposals remain in `systems/research/` + `state/research/`; optional user adoption preferences persist under `memory/research/preferences/` + `adaptive/research/preferences/`.",
