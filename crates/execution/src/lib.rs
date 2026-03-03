@@ -27,9 +27,10 @@ pub use blob::{
 pub use decompose::{
     apply_governance, apply_governance_json, build_dispatch_rows, build_queue_rows,
     compose_micro_tasks, compose_micro_tasks_json, decompose_goal, decompose_goal_json,
-    dispatch_rows_json, queue_rows_json, summarize_dispatch, summarize_dispatch_json,
-    summarize_tasks, summarize_tasks_json, BaseTask, Capability, ComposePolicy, ComposeRequest,
-    ComposeResponse, DecomposePolicy, DecomposeRequest, DecomposeResponse, DispatchRowsRequest,
+    dispatch_rows_json, evaluate_directive_gate, evaluate_directive_gate_json, queue_rows_json,
+    summarize_dispatch, summarize_dispatch_json, summarize_tasks, summarize_tasks_json, BaseTask,
+    Capability, ComposePolicy, ComposeRequest, ComposeResponse, DecomposePolicy, DecomposeRequest,
+    DecomposeResponse, DirectiveGateRequest, DirectiveGateResponse, DispatchRowsRequest,
     DispatchRowsResponse, DispatchSummaryRequest, DispatchSummaryResponse, GovernanceApplyPolicy,
     GovernanceApplyRequest, GovernanceApplyResponse, QueueRowsRequest, QueueRowsResponse,
     TaskSummaryRequest, TaskSummaryResponse,

@@ -667,6 +667,64 @@ function runRustApplyGovernance(payload: AnyObj) {
   return runApplyGovernanceViaCargo(payloadText);
 }
 
+function runDirectiveGateViaRustBinary(payloadText: string) {
+  const payloadB64 = Buffer.from(String(payloadText || ''), 'utf8').toString('base64');
+  for (const candidate of executionBinaryCandidates()) {
+    try {
+      if (!fs.existsSync(candidate)) continue;
+      const out = spawnSync(candidate, ['directive-gate', `--payload-base64=${payloadB64}`], {
+        cwd: ROOT,
+        encoding: 'utf8',
+        maxBuffer: 10 * 1024 * 1024
+      });
+      const payload = parseJsonPayload(out.stdout);
+      if (Number(out.status) === 0 && payload && typeof payload === 'object') {
+        return { ok: true, engine: 'rust_bin', binary_path: candidate, payload };
+      }
+    } catch {
+      // try next candidate
+    }
+  }
+  return { ok: false, error: 'rust_binary_unavailable' };
+}
+
+function runDirectiveGateViaCargo(payloadText: string) {
+  const payloadB64 = Buffer.from(String(payloadText || ''), 'utf8').toString('base64');
+  const args = [
+    'run',
+    '--quiet',
+    '--manifest-path',
+    EXECUTION_MANIFEST,
+    '--bin',
+    'execution_core',
+    '--',
+    'directive-gate',
+    `--payload-base64=${payloadB64}`
+  ];
+  const out = spawnSync('cargo', args, {
+    cwd: ROOT,
+    encoding: 'utf8',
+    maxBuffer: 10 * 1024 * 1024
+  });
+  const payload = parseJsonPayload(out.stdout);
+  if (Number(out.status) === 0 && payload && typeof payload === 'object') {
+    return { ok: true, engine: 'rust_cargo', payload };
+  }
+  return {
+    ok: false,
+    error: `cargo_directive_gate_failed:${cleanText(out.stderr || out.stdout || '', 220)}`
+  };
+}
+
+function runRustDirectiveGate(taskText: string) {
+  const payloadText = JSON.stringify({
+    task_text: String(taskText || '')
+  });
+  const bin = runDirectiveGateViaRustBinary(payloadText);
+  if (bin.ok) return bin;
+  return runDirectiveGateViaCargo(payloadText);
+}
+
 function defaultPolicy() {
   return {
     version: '1.0',
@@ -950,6 +1008,14 @@ function evaluateConstitutionGate(taskText: string, policy: AnyObj) {
       decision: 'ALLOW',
       risk: 'low',
       reasons: ['constitution_gate_disabled']
+    };
+  }
+  const rustGate = runRustDirectiveGate(taskText);
+  if (rustGate && rustGate.ok === true && rustGate.payload && typeof rustGate.payload === 'object') {
+    return {
+      decision: String(rustGate.payload.decision || 'ALLOW'),
+      risk: String(rustGate.payload.risk || 'low'),
+      reasons: Array.isArray(rustGate.payload.reasons) ? rustGate.payload.reasons.slice(0, 8) : []
     };
   }
   try {

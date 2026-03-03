@@ -269,6 +269,20 @@ pub struct GovernanceApplyResponse {
     pub tasks: Vec<Value>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct DirectiveGateRequest {
+    #[serde(default)]
+    pub task_text: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DirectiveGateResponse {
+    pub ok: bool,
+    pub decision: String,
+    pub risk: String,
+    pub reasons: Vec<String>,
+}
+
 #[derive(Debug, Clone)]
 struct Segment {
     text: String,
@@ -1220,6 +1234,182 @@ pub fn dispatch_rows_json(payload: &str) -> Result<String, String> {
         .map_err(|err| format!("dispatch_rows_payload_serialize_failed:{}", err))
 }
 
+fn contains_any(source: &str, needles: &[&str]) -> bool {
+    needles.iter().any(|needle| source.contains(needle))
+}
+
+fn is_trust_registry_modification(task_lower: &str) -> bool {
+    let trust_targets = [
+        "trust_registry",
+        "trust registry",
+        "trust_add",
+        "trust_remove",
+        "memory/tools/trust_add.js",
+        "memory/trust/registry.json",
+        "registry.json",
+        "registry hashes",
+        "trust registry hashes",
+    ];
+    let mutation_verbs = [
+        "edit", "modify", "update", "patch", "delete", "remove", "tamper", "change",
+    ];
+    contains_any(task_lower, &trust_targets) && contains_any(task_lower, &mutation_verbs)
+}
+
+fn set_manual(decision: &mut String) {
+    if decision != "DENY" {
+        *decision = "MANUAL".to_string();
+    }
+}
+
+pub fn evaluate_directive_gate(task_text: &str) -> DirectiveGateResponse {
+    let task = task_text.trim();
+    if task.is_empty() {
+        return DirectiveGateResponse {
+            ok: true,
+            decision: "DENY".to_string(),
+            risk: "high".to_string(),
+            reasons: vec!["Task must be a non-empty string".to_string()],
+        };
+    }
+
+    let mut reasons: Vec<String> = Vec::new();
+    let mut decision = "ALLOW".to_string();
+    let mut risk = "low".to_string();
+    let task_lower = task.to_ascii_lowercase();
+
+    let deny_patterns = [
+        (
+            "bypass gate",
+            r"\b(bypass.*gate|disable.*gate|skip.*gate)\b",
+        ),
+        (
+            "disable log",
+            r"\b(disable.*log|stop.*log|suppress.*event|remove.*audit)\b",
+        ),
+        (
+            "tamper trust",
+            r"\b(tamper|modify|edit|delete)\b.*\b(trust|hash|registry)\b",
+        ),
+        (
+            "modify gate",
+            r"\b(modify|edit|delete)\b.*\b(directive_gate)\b",
+        ),
+    ];
+    for (label, pattern) in deny_patterns {
+        if Regex::new(pattern)
+            .ok()
+            .map(|regex| regex.is_match(task))
+            .unwrap_or(false)
+        {
+            reasons.push(format!("T0 violation: {} detected", label));
+            decision = "DENY".to_string();
+            risk = "high".to_string();
+        }
+    }
+    if is_trust_registry_modification(&task_lower) {
+        reasons.push("T0 violation: trust registry modification detected".to_string());
+        decision = "DENY".to_string();
+        risk = "high".to_string();
+    }
+
+    let high_risk_patterns = [
+        (
+            "High-risk: process execution detected",
+            "high",
+            r"\b(child_process|exec|execsync|spawn|fork|execfile)\b",
+        ),
+        (
+            "High-risk: shell execution detected",
+            "high",
+            r"\b(shell|bash|sh\s|cmd\.exe|powershell)\b",
+        ),
+        (
+            "High-risk: credentials/token access detected",
+            "high",
+            r"\.openclaw[\/\\]credentials|\/credentials[\/\\]|token|api[_-]?key|secret|password",
+        ),
+        (
+            "High-risk: network/API call detected",
+            "medium",
+            r"\b(http|https|fetch|axios|request|curl|wget|net\.|tls\.|socket)\b",
+        ),
+        (
+            "High-risk: git remote operation detected",
+            "high",
+            r"\b(git\s+(push|force|reset|rebase|merge)|push\s+to|push\s+--|origin|publish|deploy)\b",
+        ),
+        (
+            "High-risk: cron/system config modification detected",
+            "high",
+            r"\b(cron|crontab|systemd|service|daemon)\b",
+        ),
+        (
+            "High-risk: revenue/financial action detected",
+            "high",
+            r"\b(payment|billing|subscription|charge|refund|account.*money|revenue)\b",
+        ),
+        (
+            "High-risk: governance/security tooling modification detected",
+            "high",
+            r"\b(trust[_-]?|verify[_-]?hash|tamper|bypass|disable.*log|registry.*hash)\b",
+        ),
+        (
+            "High-risk: governance/security tooling modification detected",
+            "high",
+            r"\b(trust_add|trust_remove|trust_registry|registry\.json)\b",
+        ),
+    ];
+    for (message, severity, pattern) in high_risk_patterns {
+        if Regex::new(pattern)
+            .ok()
+            .map(|regex| regex.is_match(task))
+            .unwrap_or(false)
+        {
+            reasons.push(message.to_string());
+            risk = severity.to_string();
+            set_manual(&mut decision);
+        }
+    }
+
+    let path_regex = Regex::new(r"[/~][a-zA-Z0-9_/.\-]+").ok();
+    if let Some(path_regex) = path_regex {
+        for path_match in path_regex.find_iter(task) {
+            let found = path_match.as_str().to_ascii_lowercase();
+            if contains_any(&found, &["credentials", "secret", "token"]) {
+                reasons.push(format!("Path validation: sensitive path \"{}\"", found));
+                risk = "high".to_string();
+                set_manual(&mut decision);
+            } else if found.contains("~/.openclaw") {
+                reasons.push(format!(
+                    "Path validation: path outside workspace \"{}\"",
+                    found
+                ));
+                risk = "medium".to_string();
+                set_manual(&mut decision);
+            }
+        }
+    }
+
+    if reasons.is_empty() {
+        reasons.push("No high-risk patterns detected; standard routing applies".to_string());
+    }
+    DirectiveGateResponse {
+        ok: true,
+        decision,
+        risk,
+        reasons,
+    }
+}
+
+pub fn evaluate_directive_gate_json(payload: &str) -> Result<String, String> {
+    let req = serde_json::from_str::<DirectiveGateRequest>(payload)
+        .map_err(|err| format!("directive_gate_payload_parse_failed:{}", err))?;
+    let resp = evaluate_directive_gate(req.task_text.as_str());
+    serde_json::to_string(&resp)
+        .map_err(|err| format!("directive_gate_payload_serialize_failed:{}", err))
+}
+
 fn ensure_object(value: &mut Value) -> &mut serde_json::Map<String, Value> {
     if !value.is_object() {
         *value = json!({});
@@ -1680,6 +1870,27 @@ mod tests {
         assert_eq!(summary["executed"], 2);
         assert_eq!(summary["failed"], 1);
         assert_eq!(summary["blocked"], 1);
+    }
+
+    #[test]
+    fn directive_gate_denies_gate_bypass() {
+        let out = evaluate_directive_gate("disable gate and bypass policy checks");
+        assert_eq!(out.decision, "DENY");
+        assert_eq!(out.risk, "high");
+        assert!(out
+            .reasons
+            .iter()
+            .any(|reason| reason.contains("T0 violation")));
+    }
+
+    #[test]
+    fn directive_gate_marks_network_calls_manual() {
+        let out = evaluate_directive_gate("fetch https://example.com/status");
+        assert_eq!(out.decision, "MANUAL");
+        assert!(out
+            .reasons
+            .iter()
+            .any(|reason| reason.contains("network/API")));
     }
 
     #[test]
