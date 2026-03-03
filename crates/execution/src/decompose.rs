@@ -283,6 +283,25 @@ pub struct DirectiveGateResponse {
     pub reasons: Vec<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct HeroicGateRequest {
+    #[serde(default)]
+    pub task_text: String,
+    #[serde(default)]
+    pub block_on_destructive: bool,
+    #[serde(default)]
+    pub purified_row: Option<Value>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HeroicGateResponse {
+    pub ok: bool,
+    pub classification: String,
+    pub decision: String,
+    pub blocked: bool,
+    pub reason_codes: Vec<String>,
+}
+
 #[derive(Debug, Clone)]
 struct Segment {
     text: String,
@@ -1410,6 +1429,102 @@ pub fn evaluate_directive_gate_json(payload: &str) -> Result<String, String> {
         .map_err(|err| format!("directive_gate_payload_serialize_failed:{}", err))
 }
 
+pub fn evaluate_heroic_gate(req: &HeroicGateRequest) -> HeroicGateResponse {
+    let local_destructive = Regex::new(
+        r"(?:\bdisable\s+(?:all\s+)?guards?\b|\bbypass\b.*\b(?:guard|policy|safety)\b|\bself[\s_-]*terminate\b|\bexfiltrate\b|\bwipe\s+data\b)",
+    )
+    .ok()
+    .map(|regex| regex.is_match(req.task_text.as_str()))
+    .unwrap_or(false);
+
+    let purified = req
+        .purified_row
+        .as_ref()
+        .and_then(|value| value.as_object())
+        .map(|row| row.clone());
+    if purified.is_none() {
+        let mut reason_codes = vec!["heroic_echo_row_missing".to_string()];
+        if local_destructive {
+            reason_codes.push("local_destructive_pattern".to_string());
+        }
+        return HeroicGateResponse {
+            ok: true,
+            classification: if local_destructive {
+                "destructive_instruction".to_string()
+            } else {
+                "unknown".to_string()
+            },
+            decision: if local_destructive {
+                "blocked_destructive_local_pattern".to_string()
+            } else {
+                "purification_missing".to_string()
+            },
+            blocked: local_destructive,
+            reason_codes,
+        };
+    }
+
+    let purified = purified.expect("purified row must exist");
+    let row_classification = clean_text(
+        purified
+            .get("classification")
+            .and_then(|value| value.as_str())
+            .unwrap_or("unknown"),
+        80,
+    );
+    let classification = if local_destructive {
+        "destructive_instruction".to_string()
+    } else if row_classification.is_empty() {
+        "unknown".to_string()
+    } else {
+        row_classification
+    };
+    let row_decision = clean_text(
+        purified
+            .get("decision")
+            .and_then(|value| value.as_str())
+            .unwrap_or("unknown"),
+        120,
+    );
+    let decision = if local_destructive {
+        "blocked_destructive_local_pattern".to_string()
+    } else if row_decision.is_empty() {
+        "unknown".to_string()
+    } else {
+        row_decision
+    };
+    let row_blocked = purified
+        .get("blocked")
+        .and_then(|value| value.as_bool())
+        .unwrap_or(false);
+    let row_is_destructive = purified
+        .get("classification")
+        .and_then(|value| value.as_str())
+        .map(|value| value == "destructive_instruction")
+        .unwrap_or(false);
+    let blocked_by_destructive =
+        req.block_on_destructive && (row_is_destructive || local_destructive);
+    let mut reason_codes = collect_strings(purified.get("reason_codes"), 8, 120);
+    if local_destructive {
+        reason_codes.push("local_destructive_pattern".to_string());
+    }
+    HeroicGateResponse {
+        ok: true,
+        classification,
+        decision,
+        blocked: blocked_by_destructive || row_blocked,
+        reason_codes,
+    }
+}
+
+pub fn evaluate_heroic_gate_json(payload: &str) -> Result<String, String> {
+    let req = serde_json::from_str::<HeroicGateRequest>(payload)
+        .map_err(|err| format!("heroic_gate_payload_parse_failed:{}", err))?;
+    let resp = evaluate_heroic_gate(&req);
+    serde_json::to_string(&resp)
+        .map_err(|err| format!("heroic_gate_payload_serialize_failed:{}", err))
+}
+
 fn ensure_object(value: &mut Value) -> &mut serde_json::Map<String, Value> {
     if !value.is_object() {
         *value = json!({});
@@ -1891,6 +2006,42 @@ mod tests {
             .reasons
             .iter()
             .any(|reason| reason.contains("network/API")));
+    }
+
+    #[test]
+    fn heroic_gate_blocks_local_destructive_without_purified_row() {
+        let req = HeroicGateRequest {
+            task_text: "disable all guards immediately".to_string(),
+            block_on_destructive: true,
+            purified_row: None,
+        };
+        let out = evaluate_heroic_gate(&req);
+        assert_eq!(out.classification, "destructive_instruction");
+        assert_eq!(out.decision, "blocked_destructive_local_pattern");
+        assert_eq!(out.blocked, true);
+        assert!(out
+            .reason_codes
+            .iter()
+            .any(|code| code == "local_destructive_pattern"));
+    }
+
+    #[test]
+    fn heroic_gate_uses_purified_row_when_safe() {
+        let req = HeroicGateRequest {
+            task_text: "summarize sprint progress".to_string(),
+            block_on_destructive: true,
+            purified_row: Some(json!({
+                "classification": "normal",
+                "decision": "allow",
+                "blocked": false,
+                "reason_codes": ["safe_input"]
+            })),
+        };
+        let out = evaluate_heroic_gate(&req);
+        assert_eq!(out.classification, "normal");
+        assert_eq!(out.decision, "allow");
+        assert_eq!(out.blocked, false);
+        assert!(out.reason_codes.iter().any(|code| code == "safe_input"));
     }
 
     #[test]

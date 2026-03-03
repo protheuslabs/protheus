@@ -725,6 +725,62 @@ function runRustDirectiveGate(taskText: string) {
   return runDirectiveGateViaCargo(payloadText);
 }
 
+function runHeroicGateViaRustBinary(payloadText: string) {
+  const payloadB64 = Buffer.from(String(payloadText || ''), 'utf8').toString('base64');
+  for (const candidate of executionBinaryCandidates()) {
+    try {
+      if (!fs.existsSync(candidate)) continue;
+      const out = spawnSync(candidate, ['heroic-gate', `--payload-base64=${payloadB64}`], {
+        cwd: ROOT,
+        encoding: 'utf8',
+        maxBuffer: 10 * 1024 * 1024
+      });
+      const payload = parseJsonPayload(out.stdout);
+      if (Number(out.status) === 0 && payload && typeof payload === 'object') {
+        return { ok: true, engine: 'rust_bin', binary_path: candidate, payload };
+      }
+    } catch {
+      // try next candidate
+    }
+  }
+  return { ok: false, error: 'rust_binary_unavailable' };
+}
+
+function runHeroicGateViaCargo(payloadText: string) {
+  const payloadB64 = Buffer.from(String(payloadText || ''), 'utf8').toString('base64');
+  const args = [
+    'run',
+    '--quiet',
+    '--manifest-path',
+    EXECUTION_MANIFEST,
+    '--bin',
+    'execution_core',
+    '--',
+    'heroic-gate',
+    `--payload-base64=${payloadB64}`
+  ];
+  const out = spawnSync('cargo', args, {
+    cwd: ROOT,
+    encoding: 'utf8',
+    maxBuffer: 10 * 1024 * 1024
+  });
+  const payload = parseJsonPayload(out.stdout);
+  if (Number(out.status) === 0 && payload && typeof payload === 'object') {
+    return { ok: true, engine: 'rust_cargo', payload };
+  }
+  return {
+    ok: false,
+    error: `cargo_heroic_gate_failed:${cleanText(out.stderr || out.stdout || '', 220)}`
+  };
+}
+
+function runRustHeroicGate(payload: AnyObj) {
+  const payloadText = JSON.stringify(payload || {});
+  const bin = runHeroicGateViaRustBinary(payloadText);
+  if (bin.ok) return bin;
+  return runHeroicGateViaCargo(payloadText);
+}
+
 function defaultPolicy() {
   return {
     version: '1.0',
@@ -968,6 +1024,19 @@ function evaluateHeroicGate(taskText: string, policy: AnyObj, context: AnyObj) {
     run_id: context.run_id
   });
   const row = purified && Array.isArray(purified.rows) ? purified.rows[0] : null;
+  const rustGate = runRustHeroicGate({
+    task_text: String(taskText || ''),
+    block_on_destructive: policy.gates.block_on_destructive === true,
+    purified_row: row && typeof row === 'object' ? row : null
+  });
+  if (rustGate && rustGate.ok === true && rustGate.payload && typeof rustGate.payload === 'object') {
+    return {
+      classification: String(rustGate.payload.classification || 'unknown'),
+      decision: String(rustGate.payload.decision || 'unknown'),
+      blocked: rustGate.payload.blocked === true,
+      reason_codes: Array.isArray(rustGate.payload.reason_codes) ? rustGate.payload.reason_codes.slice(0, 8) : []
+    };
+  }
   const localDestructive = /(?:\bdisable\s+(?:all\s+)?guards?\b|\bbypass\b.*\b(?:guard|policy|safety)\b|\bself[\s_-]*terminate\b|\bexfiltrate\b|\bwipe\s+data\b)/i
     .test(String(taskText || ''));
   if (!row || typeof row !== 'object') {
