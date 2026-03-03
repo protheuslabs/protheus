@@ -16,11 +16,14 @@ type ParsedArgs = {
 function usage() {
   console.log('Usage:');
   console.log('  protheus lens <persona> "<query>"');
+  console.log('  protheus lens all "<query>"');
   console.log('  protheus lens --persona=<persona> --query="<query>"');
   console.log('  protheus lens --list');
   console.log('');
   console.log('Examples:');
   console.log('  protheus lens vikram "Should we prioritize memory or security first?"');
+  console.log('  protheus lens jay_haslam "How can we reduce drift in the loops?"');
+  console.log('  protheus lens all "Should we prioritize memory or security first?"');
   console.log('  protheus lens --persona=vikram_menon --query="What is the rollback path?"');
 }
 
@@ -126,6 +129,29 @@ function readFileRequired(filePath: string): string {
   return String(fs.readFileSync(filePath, 'utf8') || '');
 }
 
+type PersonaContext = {
+  personaId: string,
+  personaName: string,
+  profileMd: string,
+  correspondenceMd: string,
+  lensMd: string
+};
+
+function loadPersonaContext(personaId: string): PersonaContext {
+  const personaDir = path.join(PERSONAS_DIR, personaId);
+  const profileMd = readFileRequired(path.join(personaDir, 'profile.md'));
+  const correspondenceMd = readFileRequired(path.join(personaDir, 'correspondence.md'));
+  const lensMd = readFileRequired(path.join(personaDir, 'lens.md'));
+  const personaName = extractTitle(profileMd, personaId);
+  return {
+    personaId,
+    personaName,
+    profileMd,
+    correspondenceMd,
+    lensMd
+  };
+}
+
 function extractTitle(markdown: string, fallback: string): string {
   const lines = String(markdown || '').split('\n');
   for (const line of lines) {
@@ -167,6 +193,32 @@ function recommendFromQuery(personaName: string, query: string): string {
   return `Use ${personaName}'s lens to execute the smallest reversible change that strengthens determinism, security posture, and test evidence.`;
 }
 
+function buildResponseDetails(
+  personaName: string,
+  query: string,
+  profileMd: string,
+  correspondenceMd: string,
+  lensMd: string
+) {
+  const decisionFilters = extractListItems(lensMd, 4);
+  const nonNegotiables = extractListItems(lensMd.split('## Non-Negotiables')[1] || '', 4);
+  const correspondenceHighlights = extractListItems(correspondenceMd, 3);
+  const profileHighlights = extractListItems(profileMd, 3);
+  const promptTemplate = `As ${personaName}, using your profile, lens, and past correspondence, respond to: ${query}`;
+  const recommendation = recommendFromQuery(personaName, query);
+  const reasoning = [
+    ...decisionFilters.map((v) => `Decision filter: ${v}`),
+    ...nonNegotiables.map((v) => `Constraint: ${v}`),
+    ...correspondenceHighlights.map((v) => `Prior correspondence: ${v}`),
+    ...profileHighlights.map((v) => `Profile context: ${v}`)
+  ].slice(0, 7);
+  return {
+    promptTemplate,
+    recommendation,
+    reasoning
+  };
+}
+
 function renderMarkdownResponse(
   personaId: string,
   personaName: string,
@@ -175,13 +227,11 @@ function renderMarkdownResponse(
   correspondenceMd: string,
   lensMd: string
 ): string {
-  const decisionFilters = extractListItems(lensMd, 4);
-  const nonNegotiables = extractListItems(lensMd.split('## Non-Negotiables')[1] || '', 4);
-  const correspondenceHighlights = extractListItems(correspondenceMd, 3);
-  const profileHighlights = extractListItems(profileMd, 3);
-
-  const promptTemplate = `As ${personaName}, using your profile, lens, and past correspondence, respond to: ${query}`;
-  const recommendation = recommendFromQuery(personaName, query);
+  const {
+    promptTemplate,
+    recommendation,
+    reasoning
+  } = buildResponseDetails(personaName, query, profileMd, correspondenceMd, lensMd);
 
   const lines: string[] = [];
   lines.push(`# Lens Response: ${personaName}`);
@@ -195,12 +245,6 @@ function renderMarkdownResponse(
   lines.push(recommendation);
   lines.push('');
   lines.push('## Reasoning');
-  const reasoning = [
-    ...decisionFilters.map((v) => `Decision filter: ${v}`),
-    ...nonNegotiables.map((v) => `Constraint: ${v}`),
-    ...correspondenceHighlights.map((v) => `Prior correspondence: ${v}`),
-    ...profileHighlights.map((v) => `Profile context: ${v}`)
-  ].slice(0, 7);
   if (reasoning.length) {
     for (const row of reasoning) {
       lines.push(`- ${row}`);
@@ -219,6 +263,50 @@ function renderMarkdownResponse(
   lines.push(`- \`personas/${personaId}/correspondence.md\``);
   lines.push(`- \`personas/${personaId}/lens.md\``);
   lines.push('');
+  return lines.join('\n');
+}
+
+function renderMarkdownSection(ctx: PersonaContext, query: string): string {
+  const {
+    promptTemplate,
+    recommendation,
+    reasoning
+  } = buildResponseDetails(ctx.personaName, query, ctx.profileMd, ctx.correspondenceMd, ctx.lensMd);
+
+  const lines: string[] = [];
+  lines.push(`## ${ctx.personaName} (\`${ctx.personaId}\`)`);
+  lines.push('');
+  lines.push(`> ${promptTemplate}`);
+  lines.push('');
+  lines.push('### Position');
+  lines.push(recommendation);
+  lines.push('');
+  lines.push('### Reasoning');
+  if (reasoning.length) {
+    for (const row of reasoning) {
+      lines.push(`- ${row}`);
+    }
+  } else {
+    lines.push('- No structured context parsed; defaulted to deterministic and fail-closed guidance.');
+  }
+  lines.push('');
+  lines.push('### Context Files');
+  lines.push(`- \`personas/${ctx.personaId}/profile.md\``);
+  lines.push(`- \`personas/${ctx.personaId}/correspondence.md\``);
+  lines.push(`- \`personas/${ctx.personaId}/lens.md\``);
+  lines.push('');
+  return lines.join('\n');
+}
+
+function renderAllMarkdown(query: string, contexts: PersonaContext[]): string {
+  const lines: string[] = [];
+  lines.push('# Lens Response: All Personas');
+  lines.push('');
+  lines.push(`**Query:** ${query}`);
+  lines.push('');
+  for (const ctx of contexts) {
+    lines.push(renderMarkdownSection(ctx, query));
+  }
   return lines.join('\n');
 }
 
@@ -254,6 +342,24 @@ function main() {
     process.exit(1);
   }
 
+  if (normalizeToken(personaArg, 120) === 'all') {
+    const personaIds = listPersonaIds();
+    if (!personaIds.length) {
+      process.stderr.write('no_personas_available\n');
+      process.exit(1);
+    }
+    try {
+      const contexts = personaIds.map((personaId) => loadPersonaContext(personaId));
+      const markdown = renderAllMarkdown(queryArg, contexts);
+      process.stdout.write(`${markdown}\n`);
+      process.exit(0);
+    } catch (err: any) {
+      const msg = cleanText(err && err.message || 'persona_lens_all_failed', 260);
+      process.stderr.write(`${msg}\n`);
+      process.exit(1);
+    }
+  }
+
   const personaId = resolvePersonaId(personaArg);
   if (!personaId) {
     const known = listPersonaIds();
@@ -264,20 +370,16 @@ function main() {
     process.exit(1);
   }
 
-  const personaDir = path.join(PERSONAS_DIR, personaId);
   try {
-    const profileMd = readFileRequired(path.join(personaDir, 'profile.md'));
-    const correspondenceMd = readFileRequired(path.join(personaDir, 'correspondence.md'));
-    const lensMd = readFileRequired(path.join(personaDir, 'lens.md'));
-    const personaName = extractTitle(profileMd, personaId);
+    const ctx = loadPersonaContext(personaId);
 
     const markdown = renderMarkdownResponse(
-      personaId,
-      personaName,
+      ctx.personaId,
+      ctx.personaName,
       queryArg,
-      profileMd,
-      correspondenceMd,
-      lensMd
+      ctx.profileMd,
+      ctx.correspondenceMd,
+      ctx.lensMd
     );
     process.stdout.write(`${markdown}\n`);
     process.exit(0);

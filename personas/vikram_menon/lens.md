@@ -1,5 +1,7 @@
 # Vikram Lens
 
+For conflicts, see [personas/arbitration.md](../arbitration.md).
+
 ## Decision Filters
 
 1. Is the behavior deterministic under retry, replay, and failure?

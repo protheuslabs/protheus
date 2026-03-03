@@ -1,5 +1,7 @@
 # Rohan Lens
 
+For conflicts, see [personas/arbitration.md](../arbitration.md).
+
 ## Decision Filters
 
 1. Can this be operated safely at 24x7 load?

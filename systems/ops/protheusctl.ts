@@ -9,7 +9,11 @@ export {};
 
 const path = require('path');
 const { spawnSync } = require('child_process');
+const crypto = require('crypto');
 const perceptionLayer = require('./perception_layer.js');
+const { evaluateSecurityGate } = require('../security/rust_security_gate.js');
+
+const REPO_ROOT = path.join(__dirname, '..', '..');
 
 function usage() {
   console.log('Usage: protheusctl <command> [flags]');
@@ -47,7 +51,104 @@ function usage() {
   console.log('  protheusctl approve --rsi --owner=jay --approver=<you>');
 }
 
+function cleanText(v: unknown, maxLen = 260) {
+  return String(v == null ? '' : v).replace(/\s+/g, ' ').trim().slice(0, maxLen);
+}
+
+function boolEnv(name: string, fallback = false) {
+  const raw = String(process.env[name] || '').trim().toLowerCase();
+  if (!raw) return fallback;
+  if (['1', 'true', 'yes', 'on'].includes(raw)) return true;
+  if (['0', 'false', 'no', 'off'].includes(raw)) return false;
+  return fallback;
+}
+
+function shouldGateDispatch() {
+  return !boolEnv('PROTHEUS_CTL_SECURITY_GATE_DISABLED', false);
+}
+
+function buildDispatchSecurityRequest(script: string, args: string[]) {
+  const relScript = cleanText(path.relative(REPO_ROOT, script).replace(/\\/g, '/'), 220) || cleanText(script, 220);
+  const digest = crypto
+    .createHash('sha256')
+    .update(JSON.stringify({ script: relScript, args }), 'utf8')
+    .digest('hex');
+  const now = Date.now();
+  return {
+    operation_id: cleanText(`protheusctl_dispatch_${now}_${digest.slice(0, 10)}`, 160),
+    subsystem: 'ops',
+    action: 'cli_dispatch',
+    actor: 'systems/ops/protheusctl',
+    risk_class: boolEnv('PROTHEUS_CTL_SECURITY_HIGH_RISK', false) ? 'high' : 'normal',
+    payload_digest: `sha256:${digest}`,
+    tags: ['protheusctl', 'dispatch', 'foundation_lock'],
+    covenant_violation: boolEnv('PROTHEUS_CTL_SECURITY_COVENANT_VIOLATION', false),
+    tamper_signal: boolEnv('PROTHEUS_CTL_SECURITY_TAMPER_SIGNAL', false),
+    key_age_hours: Number.isFinite(Number(process.env.PROTHEUS_CTL_SECURITY_KEY_AGE_HOURS))
+      ? Math.max(0, Number(process.env.PROTHEUS_CTL_SECURITY_KEY_AGE_HOURS))
+      : 1,
+    operator_quorum: Number.isFinite(Number(process.env.PROTHEUS_CTL_SECURITY_OPERATOR_QUORUM))
+      ? Math.max(0, Number(process.env.PROTHEUS_CTL_SECURITY_OPERATOR_QUORUM))
+      : 2,
+    audit_receipt_nonce: cleanText(`nonce-${digest.slice(0, 12)}-${now}`, 120),
+    zk_proof: cleanText(process.env.PROTHEUS_CTL_SECURITY_ZK_PROOF || 'zk-protheusctl-dispatch', 220),
+    ciphertext_digest: cleanText(`sha256:${digest.slice(0, 32)}`, 220)
+  };
+}
+
+function evaluateDispatchSecurity(script: string, args: string[]) {
+  if (!shouldGateDispatch()) {
+    return { ok: true, skipped: true, reason: 'protheusctl_dispatch_gate_disabled' };
+  }
+
+  const request = buildDispatchSecurityRequest(script, args);
+  const stateRoot = cleanText(
+    process.env.PROTHEUS_SECURITY_STATE_ROOT || path.join(REPO_ROOT, 'state'),
+    500
+  );
+  const gate = evaluateSecurityGate(request, {
+    enforce: true,
+    state_root: stateRoot,
+    allow_fallback: true
+  });
+  if (!gate || gate.ok !== true) {
+    return {
+      ok: false,
+      reason: cleanText(gate && gate.error || 'dispatch_security_gate_unavailable', 220),
+      gate
+    };
+  }
+
+  const payload = gate.payload && typeof gate.payload === 'object' ? gate.payload : {};
+  const decision = payload.decision && typeof payload.decision === 'object' ? payload.decision : null;
+  if (!decision || decision.ok !== true || decision.fail_closed === true) {
+    const reason = Array.isArray(decision && decision.reasons) && decision.reasons.length
+      ? cleanText(decision.reasons[0], 220)
+      : 'dispatch_security_gate_blocked';
+    return {
+      ok: false,
+      reason,
+      gate
+    };
+  }
+
+  return {
+    ok: true,
+    gate
+  };
+}
+
 function runScript(script: string, args: string[] = []) {
+  const security = evaluateDispatchSecurity(script, args);
+  if (!security.ok) {
+    process.stderr.write(`${JSON.stringify({
+      ok: false,
+      type: 'protheusctl_dispatch_security_gate',
+      error: `security_gate_blocked:${security.reason}`,
+      decision: security.gate && security.gate.payload ? security.gate.payload.decision || null : null
+    })}\n`);
+    process.exit(1);
+  }
   const r = spawnSync('node', [script, ...args], { encoding: 'utf8' });
   if (r.stdout) process.stdout.write(r.stdout);
   if (r.stderr) process.stderr.write(r.stderr);
@@ -66,6 +167,20 @@ function parseJson(text: string) {
 }
 
 function runScriptCapture(script: string, args: string[] = []) {
+  const security = evaluateDispatchSecurity(script, args);
+  if (!security.ok) {
+    return {
+      status: 1,
+      stdout: '',
+      stderr: JSON.stringify({
+        ok: false,
+        type: 'protheusctl_dispatch_security_gate',
+        error: `security_gate_blocked:${security.reason}`,
+        decision: security.gate && security.gate.payload ? security.gate.payload.decision || null : null
+      }),
+      payload: null
+    };
+  }
   const r = spawnSync('node', [script, ...args], { encoding: 'utf8' });
   return {
     status: Number.isFinite(r.status) ? Number(r.status) : 1,

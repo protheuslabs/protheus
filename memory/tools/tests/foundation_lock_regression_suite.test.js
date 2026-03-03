@@ -38,6 +38,10 @@ const checks = [
   {
     name: 'workflow_executor_step_security_gate.test.js',
     cmd: [process.execPath, ['memory/tools/tests/workflow_executor_step_security_gate.test.js']]
+  },
+  {
+    name: 'protheusctl_dispatch_security_gate.test.js',
+    cmd: [process.execPath, ['memory/tools/tests/protheusctl_dispatch_security_gate.test.js']]
   }
 ];
 

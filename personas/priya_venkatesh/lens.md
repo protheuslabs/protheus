@@ -1,5 +1,7 @@
 # Priya Lens
 
+For conflicts, see [personas/arbitration.md](../arbitration.md).
+
 ## Decision Filters
 
 1. Is the hypothesis explicit and testable?
