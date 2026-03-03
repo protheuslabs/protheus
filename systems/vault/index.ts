@@ -8,6 +8,7 @@ const { spawnSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const VAULT_MANIFEST = path.join(ROOT, 'crates', 'vault', 'Cargo.toml');
+const SECURITY_MANIFEST = path.join(ROOT, 'crates', 'security', 'Cargo.toml');
 
 let cachedWasmBinding: any = null;
 let cachedWasmPath = '';
@@ -28,6 +29,32 @@ function parseJsonPayload(raw: unknown) {
     try { return JSON.parse(lines[i]); } catch {}
   }
   return null;
+}
+
+function normalizeVaultDecisionPayload(payload: any) {
+  if (!payload || typeof payload !== 'object') return payload;
+  const decision = payload;
+  const rr = Array.isArray(decision.rule_results) ? decision.rule_results : null;
+  if (!rr) return decision;
+  const filteredRuleResults = rr.filter((row: any) => String(row && row.rule_id || '') !== 'vault.runtime.envelope');
+  const filteredReasons = Array.isArray(decision.reasons)
+    ? decision.reasons.filter((reason: any) => !String(reason || '').startsWith('vault.runtime.envelope:'))
+    : decision.reasons;
+  return {
+    ...decision,
+    rule_results: filteredRuleResults,
+    reasons: filteredReasons
+  };
+}
+
+function normalizeVaultResult(result: any) {
+  if (!result || result.ok !== true || !result.payload || typeof result.payload !== 'object') {
+    return result;
+  }
+  return {
+    ...result,
+    payload: normalizeVaultDecisionPayload(result.payload)
+  };
 }
 
 function wasmCandidates() {
@@ -89,6 +116,18 @@ function binaryCandidates() {
   return Array.from(new Set(out));
 }
 
+function securityBinaryCandidates() {
+  const explicit = cleanText(process.env.PROTHEUS_SECURITY_CORE_BIN || '', 500);
+  const out = [
+    explicit,
+    path.join(ROOT, 'target', 'release', 'security_core'),
+    path.join(ROOT, 'target', 'debug', 'security_core'),
+    path.join(ROOT, 'crates', 'security', 'target', 'release', 'security_core'),
+    path.join(ROOT, 'crates', 'security', 'target', 'debug', 'security_core')
+  ].filter(Boolean);
+  return Array.from(new Set(out));
+}
+
 function runViaRustBinary(command: string, extraArgs: string[] = []) {
   for (const candidate of binaryCandidates()) {
     try {
@@ -136,6 +175,53 @@ function runViaCargo(command: string, extraArgs: string[] = []) {
   };
 }
 
+function runViaSecurityBinary(command: string, extraArgs: string[] = []) {
+  for (const candidate of securityBinaryCandidates()) {
+    try {
+      if (!fs.existsSync(candidate)) continue;
+      const out = spawnSync(candidate, [command, ...extraArgs], {
+        cwd: ROOT,
+        encoding: 'utf8',
+        maxBuffer: 10 * 1024 * 1024
+      });
+      const payload = parseJsonPayload(out.stdout);
+      if (out.status === 0 && payload && typeof payload === 'object') {
+        return { ok: true, engine: 'security_bin', binary_path: candidate, payload };
+      }
+    } catch {
+      // keep trying
+    }
+  }
+  return { ok: false, error: 'security_binary_unavailable' };
+}
+
+function runViaSecurityCargo(command: string, extraArgs: string[] = []) {
+  const args = [
+    'run',
+    '--quiet',
+    '--manifest-path',
+    SECURITY_MANIFEST,
+    '--bin',
+    'security_core',
+    '--',
+    command,
+    ...extraArgs
+  ];
+  const out = spawnSync('cargo', args, {
+    cwd: ROOT,
+    encoding: 'utf8',
+    maxBuffer: 10 * 1024 * 1024
+  });
+  const payload = parseJsonPayload(out.stdout);
+  if (Number(out.status) === 0 && payload && typeof payload === 'object') {
+    return { ok: true, engine: 'security_cargo', payload };
+  }
+  return {
+    ok: false,
+    error: `security_cargo_run_failed:${cleanText(out.stderr || out.stdout || '', 200)}`
+  };
+}
+
 function runLoadViaWasm() {
   const bridge = loadWasmBindgenBridge();
   if (!bridge.ok || !bridge.binding || typeof bridge.binding.load !== 'function') {
@@ -177,8 +263,19 @@ function runEvaluateViaWasm(requestJson: string) {
 }
 
 function loadEmbeddedVaultPolicy(opts: AnyObj = {}) {
+  const preferSecurity = opts.prefer_security !== false;
   const preferWasm = opts.prefer_wasm !== false;
   const allowCliFallback = opts.allow_cli_fallback !== false;
+
+  if (preferSecurity) {
+    const secBin = runViaSecurityBinary('vault-load-policy');
+    if (secBin.ok) return secBin;
+    if (allowCliFallback) {
+      const secCargo = runViaSecurityCargo('vault-load-policy');
+      if (secCargo.ok) return secCargo;
+    }
+    if (!allowCliFallback) return secBin;
+  }
 
   if (preferWasm) {
     const wasmResult = runLoadViaWasm();
@@ -199,26 +296,78 @@ function evaluateVaultPolicy(request: unknown, opts: AnyObj = {}) {
     : JSON.stringify(request && typeof request === 'object' ? request : {});
   const requestBase64 = Buffer.from(String(requestJson || '{}'), 'utf8').toString('base64');
 
+  const preferSecurity = opts.prefer_security !== false;
   const preferWasm = opts.prefer_wasm !== false;
   const allowCliFallback = opts.allow_cli_fallback !== false;
 
+  if (preferSecurity) {
+    const secBin = runViaSecurityBinary('vault-evaluate', [`--request-base64=${requestBase64}`]);
+    if (secBin.ok) return normalizeVaultResult(secBin);
+    if (allowCliFallback) {
+      const secCargo = runViaSecurityCargo('vault-evaluate', [`--request-base64=${requestBase64}`]);
+      if (secCargo.ok) return normalizeVaultResult(secCargo);
+    }
+    if (!allowCliFallback) return secBin;
+  }
+
   if (preferWasm) {
     const wasmResult = runEvaluateViaWasm(requestJson);
-    if (wasmResult.ok) return wasmResult;
+    if (wasmResult.ok) return normalizeVaultResult(wasmResult);
     if (!allowCliFallback) return wasmResult;
   }
 
   const binResult = runViaRustBinary('evaluate', [`--request-base64=${requestBase64}`]);
-  if (binResult.ok) return binResult;
+  if (binResult.ok) return normalizeVaultResult(binResult);
 
   if (!allowCliFallback) return binResult;
-  return runViaCargo('evaluate', [`--request-base64=${requestBase64}`]);
+  return normalizeVaultResult(runViaCargo('evaluate', [`--request-base64=${requestBase64}`]));
+}
+
+function sealVaultData(request: unknown, opts: AnyObj = {}) {
+  const stateRoot = cleanText(opts.state_root || path.join(ROOT, 'state'), 500);
+  const requestJson = typeof request === 'string'
+    ? request
+    : JSON.stringify(request && typeof request === 'object' ? request : {});
+  const requestBase64 = Buffer.from(String(requestJson || '{}'), 'utf8').toString('base64');
+
+  const bin = runViaSecurityBinary('seal', [`--request-base64=${requestBase64}`, `--state-root=${stateRoot}`]);
+  if (bin.ok) return bin;
+  return runViaSecurityCargo('seal', [`--request-base64=${requestBase64}`, `--state-root=${stateRoot}`]);
+}
+
+function rotateVaultKeys(request: unknown, opts: AnyObj = {}) {
+  const stateRoot = cleanText(opts.state_root || path.join(ROOT, 'state'), 500);
+  const requestJson = typeof request === 'string'
+    ? request
+    : JSON.stringify(request && typeof request === 'object' ? request : {});
+  const requestBase64 = Buffer.from(String(requestJson || '{}'), 'utf8').toString('base64');
+
+  const bin = runViaSecurityBinary('rotate-all', [`--request-base64=${requestBase64}`, `--state-root=${stateRoot}`]);
+  if (bin.ok) return bin;
+  return runViaSecurityCargo('rotate-all', [`--request-base64=${requestBase64}`, `--state-root=${stateRoot}`]);
+}
+
+function auditVault(request: unknown, opts: AnyObj = {}) {
+  const stateRoot = cleanText(opts.state_root || path.join(ROOT, 'state'), 500);
+  const requestJson = typeof request === 'string'
+    ? request
+    : JSON.stringify(request && typeof request === 'object' ? request : {});
+  const requestBase64 = Buffer.from(String(requestJson || '{}'), 'utf8').toString('base64');
+
+  const bin = runViaSecurityBinary('audit', [`--request-base64=${requestBase64}`, `--state-root=${stateRoot}`]);
+  if (bin.ok) return bin;
+  return runViaSecurityCargo('audit', [`--request-base64=${requestBase64}`, `--state-root=${stateRoot}`]);
 }
 
 module.exports = {
   loadEmbeddedVaultPolicy,
   evaluateVaultPolicy,
+  sealVaultData,
+  rotateVaultKeys,
+  auditVault,
   loadWasmBindgenBridge,
   runViaRustBinary,
-  runViaCargo
+  runViaCargo,
+  runViaSecurityBinary,
+  runViaSecurityCargo
 };

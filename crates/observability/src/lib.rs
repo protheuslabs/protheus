@@ -1,3 +1,5 @@
+mod blob;
+
 use protheus_memory_core_v6::{
     load_embedded_observability_profile as load_embedded_profile_from_memory,
     EmbeddedChaosHook,
@@ -8,6 +10,11 @@ use sha2::{Digest, Sha256};
 use std::ffi::{CStr, CString};
 use std::fmt::{Display, Formatter};
 use std::os::raw::c_char;
+
+pub use blob::{
+    load_embedded_observability_runtime_envelope, BlobError, ObservabilityRuntimeEnvelope,
+    OBS_RUNTIME_BLOB_ID,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct TraceEvent {
@@ -372,6 +379,7 @@ pub fn run_chaos_resilience(
     request: &ChaosScenarioRequest,
 ) -> Result<ChaosResilienceReport, ObservabilityError> {
     let profile = load_embedded_observability_profile()?;
+    let runtime_envelope = load_embedded_observability_runtime_envelope().ok();
 
     let trace_report = evaluate_trace_window(&profile, &request.events);
     let sovereignty = compute_sovereignty_index(
@@ -415,9 +423,35 @@ pub fn run_chaos_resilience(
             + 0.25,
     );
 
+    let telemetry_cap = runtime_envelope
+        .as_ref()
+        .map(|v| v.max_telemetry_overhead_ms)
+        .unwrap_or(1.0);
+    let battery_cap = runtime_envelope
+        .as_ref()
+        .map(|v| v.max_battery_pct_24h)
+        .unwrap_or(3.0);
+    let drift_cap = runtime_envelope
+        .as_ref()
+        .map(|v| v.max_drift_pct)
+        .unwrap_or(2.0);
+
+    let drift_exceeded = trace_report.drift_score_pct > drift_cap;
+    let envelope_fail_closed = runtime_envelope
+        .as_ref()
+        .map(|v| {
+            v.enforce_fail_closed
+                && (drift_exceeded
+                    || telemetry_overhead_ms > telemetry_cap
+                    || chaos_battery_pct_24h > battery_cap)
+        })
+        .unwrap_or(false);
+
     let resilient = !sovereignty.fail_closed
-        && telemetry_overhead_ms <= 1.0
-        && chaos_battery_pct_24h <= 3.0;
+        && !envelope_fail_closed
+        && !drift_exceeded
+        && telemetry_overhead_ms <= telemetry_cap
+        && chaos_battery_pct_24h <= battery_cap;
 
     Ok(ChaosResilienceReport {
         profile_id: profile.profile_id,

@@ -1,9 +1,16 @@
+mod blob;
+
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
+
+pub use blob::{
+    decode_manifest, fold_blob, load_embedded_execution_profile, unfold_blob, BlobError,
+    ExecutionRuntimeProfile, EXECUTION_PROFILE_BLOB_ID,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct WorkflowStep {
@@ -150,6 +157,7 @@ fn failure_receipt(workflow_id: &str, reason: &str) -> ExecutionReceipt {
 }
 
 fn run_workflow_definition(def: WorkflowDefinition) -> ExecutionReceipt {
+    let profile = load_embedded_execution_profile().ok();
     let workflow_id = if def.workflow_id.trim().is_empty() {
         format!(
             "wf_{}",
@@ -167,6 +175,14 @@ fn run_workflow_definition(def: WorkflowDefinition) -> ExecutionReceipt {
     };
 
     let mut warnings: Vec<String> = Vec::new();
+    if let Some(profile) = &profile {
+        if def.steps.len() > profile.max_steps {
+            warnings.push("execution_profile_max_steps_exceeded".to_string());
+        }
+    } else {
+        warnings.push("execution_profile_unavailable".to_string());
+    }
+
     let mut state = def.resume.unwrap_or_default();
     let step_count = def.steps.len() as u32;
     if state.cursor > step_count {

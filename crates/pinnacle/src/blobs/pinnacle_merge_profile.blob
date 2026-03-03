@@ -1,0 +1,1 @@
+{"profile_id":"pinnacle_merge_profile_v1","convergence_floor_pct":72.0,"conflict_penalty_pct":18.0,"unsigned_penalty_pct":6.0,"deterministic_tie_breaker":"sha256_payload"}

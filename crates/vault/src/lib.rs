@@ -1,3 +1,5 @@
+mod blob;
+
 use protheus_memory_core_v6::{
     load_embedded_vault_policy as load_embedded_vault_policy_from_memory,
     EmbeddedVaultPolicy,
@@ -9,6 +11,8 @@ use std::fmt::{Display, Formatter};
 use std::os::raw::c_char;
 
 const MIN_FHE_NOISE_BUDGET: u32 = 12;
+
+pub use blob::{load_embedded_vault_runtime_envelope, BlobError, VaultRuntimeEnvelope, VAULT_RUNTIME_BLOB_ID};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct VaultOperationRequest {
@@ -146,6 +150,7 @@ pub fn evaluate_vault_policy(
     policy: &EmbeddedVaultPolicy,
     request: &VaultOperationRequest,
 ) -> VaultDecision {
+    let runtime_envelope = load_embedded_vault_runtime_envelope().ok();
     let action = normalize_text(&request.action, 64).to_ascii_lowercase();
     let (rotate_due, rotate_reason) = auto_rotate_signal(policy, request);
     let mut should_rotate = rotate_due;
@@ -238,6 +243,47 @@ pub fn evaluate_vault_policy(
             passed,
             fail_closed: rule.fail_closed,
             reason,
+        });
+    }
+
+    if let Some(envelope) = runtime_envelope {
+        let quorum_ok = request.operator_quorum >= envelope.min_operator_quorum;
+        let key_age_ok = request.key_age_hours <= envelope.max_key_age_hours;
+        let audit_ok = !envelope.require_audit_nonce || has_value(&request.audit_receipt_nonce);
+        let passed = quorum_ok && key_age_ok && audit_ok;
+        let reason = if passed {
+            "runtime_envelope_satisfied".to_string()
+        } else if !quorum_ok {
+            format!(
+                "runtime_envelope_quorum_insufficient:{}<{}",
+                request.operator_quorum, envelope.min_operator_quorum
+            )
+        } else if !key_age_ok {
+            format!(
+                "runtime_envelope_key_age_exceeded:{}>{}",
+                request.key_age_hours, envelope.max_key_age_hours
+            )
+        } else {
+            "runtime_envelope_audit_nonce_missing".to_string()
+        };
+
+        if !passed {
+            reasons.push(format!("vault.runtime.envelope:{}", reason));
+        }
+
+        rule_results.push(RuleEvaluation {
+            rule_id: "vault.runtime.envelope".to_string(),
+            passed,
+            fail_closed: envelope.enforce_fail_closed,
+            reason,
+        });
+    } else {
+        reasons.push("vault.runtime.envelope:missing_runtime_envelope_blob".to_string());
+        rule_results.push(RuleEvaluation {
+            rule_id: "vault.runtime.envelope".to_string(),
+            passed: false,
+            fail_closed: true,
+            reason: "missing_runtime_envelope_blob".to_string(),
         });
     }
 

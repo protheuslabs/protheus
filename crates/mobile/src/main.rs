@@ -1,0 +1,72 @@
+use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
+use base64::Engine;
+use protheus_mobile_core_v1::{run_mobile_cycle, run_mobile_cycle_json};
+use std::env;
+use std::fs;
+
+fn parse_arg(args: &[String], key: &str) -> Option<String> {
+    for arg in args {
+        if let Some((k, v)) = arg.split_once('=') {
+            if k == key {
+                return Some(v.to_string());
+            }
+        }
+    }
+    None
+}
+
+fn load_request(args: &[String]) -> Result<String, String> {
+    if let Some(v) = parse_arg(args, "--request-json") {
+        return Ok(v);
+    }
+    if let Some(v) = parse_arg(args, "--request-base64") {
+        let bytes = BASE64_STANDARD
+            .decode(v.as_bytes())
+            .map_err(|e| format!("base64_decode_failed:{e}"))?;
+        let text = String::from_utf8(bytes).map_err(|e| format!("utf8_decode_failed:{e}"))?;
+        return Ok(text);
+    }
+    if let Some(v) = parse_arg(args, "--request-file") {
+        return fs::read_to_string(v.as_str()).map_err(|e| format!("request_file_read_failed:{e}"));
+    }
+    Err("missing_request_payload".to_string())
+}
+
+fn usage() {
+    eprintln!("Usage:");
+    eprintln!("  mobile_core run --request-json=<payload>");
+    eprintln!("  mobile_core run --request-base64=<payload>");
+    eprintln!("  mobile_core demo");
+}
+
+fn main() {
+    let args: Vec<String> = env::args().skip(1).collect();
+    let command = args.first().map(String::as_str).unwrap_or("demo");
+
+    match command {
+        "run" => match load_request(&args[1..]) {
+            Ok(payload) => match run_mobile_cycle_json(&payload) {
+                Ok(v) => println!("{}", v),
+                Err(err) => {
+                    eprintln!("{}", serde_json::json!({"ok": false, "error": err}));
+                    std::process::exit(1);
+                }
+            },
+            Err(err) => {
+                eprintln!("{}", serde_json::json!({"ok": false, "error": err}));
+                std::process::exit(1);
+            }
+        },
+        "demo" => {
+            let report = run_mobile_cycle(None).expect("demo");
+            println!(
+                "{}",
+                serde_json::to_string(&report).unwrap_or_else(|_| "{}".to_string())
+            );
+        }
+        _ => {
+            usage();
+            std::process::exit(1);
+        }
+    }
+}

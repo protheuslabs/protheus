@@ -9,6 +9,7 @@ export {};
 
 const { spawnSync } = require('child_process');
 const fs = require('fs');
+const crypto = require('crypto');
 const {
   ROOT,
   nowIso,
@@ -22,6 +23,7 @@ const {
   resolvePath,
   emit
 } = require('../../lib/queued_backlog_runtime');
+const { assertOperationAllowed } = require('../security/rust_security_gate');
 
 const path = require('path');
 const POLICY_PATH = process.env.HYBRID_MEMORY_ENGINE_POLICY_PATH
@@ -71,6 +73,26 @@ function parseJson(rawText: string) {
 
 function runRust(args: string[], p: any) {
   const started = Date.now();
+  const operationDigest = crypto
+    .createHash('sha256')
+    .update(JSON.stringify(args || []), 'utf8')
+    .digest('hex');
+
+  assertOperationAllowed({
+    operation_id: `hybrid_memory_${started}`,
+    subsystem: 'memory',
+    action: cleanText(args[0] || 'memory_op', 64),
+    actor: 'systems/memory/hybrid_memory_engine',
+    risk_class: 'high',
+    payload_digest: `sha256:${operationDigest}`,
+    tags: ['memory', 'hybrid', 'foundation_lock'],
+    key_age_hours: 1,
+    operator_quorum: 2
+  }, {
+    enforce: true,
+    state_root: path.join(ROOT, 'state')
+  });
+
   const preferredBin = cleanText(process.env.PROTHEUS_MEMORY_CORE_BIN || p.rust_bin_path || '', 520);
   const hasPreferredBin = !!(preferredBin && fs.existsSync(preferredBin));
   const command = hasPreferredBin

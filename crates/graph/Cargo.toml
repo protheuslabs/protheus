@@ -1,0 +1,30 @@
+[package]
+name = "protheus-graph-core-v1"
+version = "0.1.0"
+edition = "2021"
+license = "SEE LICENSE IN LICENSE"
+description = "Rust deterministic graph orchestration engine with visualization output."
+
+[lib]
+name = "protheus_graph_core_v1"
+crate-type = ["cdylib", "staticlib", "rlib"]
+
+[[bin]]
+name = "graph_core"
+path = "src/main.rs"
+
+[dependencies]
+base64 = "0.22"
+hex = "0.4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml = "0.9"
+sha2 = "0.10"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen = "0.2"
+
+[package.metadata.protheus]
+wasm_target = "wasm32-unknown-unknown"
+ios_targets = ["aarch64-apple-ios", "x86_64-apple-ios"]
+android_targets = ["aarch64-linux-android", "x86_64-linux-android"]

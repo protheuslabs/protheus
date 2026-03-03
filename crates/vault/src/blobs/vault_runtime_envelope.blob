@@ -1,0 +1,1 @@
+{"envelope_id":"vault_runtime_envelope_v1","min_operator_quorum":2,"max_key_age_hours":72,"require_audit_nonce":true,"enforce_fail_closed":true}

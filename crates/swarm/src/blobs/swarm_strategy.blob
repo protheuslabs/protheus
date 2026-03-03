@@ -1,0 +1,1 @@
+{"profile_id":"swarm_strategy_v1","max_tasks_per_agent":5,"reliability_weight_pct":0.62,"fairness_weight_pct":0.38,"consensus_floor_pct":65.0}

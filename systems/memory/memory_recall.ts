@@ -9,6 +9,7 @@ export {};
 
 const path = require('path');
 const { spawnSync } = require('child_process');
+const crypto = require('crypto');
 const {
   ROOT,
   nowIso,
@@ -21,6 +22,7 @@ const {
   resolvePath,
   emit
 } = require('../../lib/queued_backlog_runtime');
+const { assertOperationAllowed } = require('../security/rust_security_gate');
 
 const POLICY_PATH = process.env.MEMORY_RECALL_POLICY_PATH
   ? path.resolve(process.env.MEMORY_RECALL_POLICY_PATH)
@@ -72,6 +74,26 @@ function parseJson(text: string) {
 
 function runRust(args: string[], p: any, timeoutMs = 180000) {
   const started = Date.now();
+  const operationDigest = crypto
+    .createHash('sha256')
+    .update(JSON.stringify(args || []), 'utf8')
+    .digest('hex');
+
+  assertOperationAllowed({
+    operation_id: `memory_recall_${started}`,
+    subsystem: 'memory',
+    action: cleanText(args[0] || 'memory_op', 64),
+    actor: 'systems/memory/memory_recall',
+    risk_class: 'normal',
+    payload_digest: `sha256:${operationDigest}`,
+    tags: ['memory', 'recall', 'foundation_lock'],
+    key_age_hours: 1,
+    operator_quorum: 2
+  }, {
+    enforce: true,
+    state_root: path.join(ROOT, 'state')
+  });
+
   const preferredBin = cleanText(process.env.PROTHEUS_MEMORY_CORE_BIN || p.rust_bin_path || '', 520);
   const hasPreferredBin = !!(preferredBin && require('fs').existsSync(preferredBin));
   const cmd = hasPreferredBin

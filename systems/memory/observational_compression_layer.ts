@@ -10,6 +10,7 @@ export {};
 const path = require('path');
 const { spawnSync } = require('child_process');
 const fs = require('fs');
+const crypto = require('crypto');
 const {
   ROOT,
   nowIso,
@@ -24,6 +25,7 @@ const {
   resolvePath,
   emit
 } = require(path.join(__dirname, '..', '..', 'lib', 'queued_backlog_runtime.js'));
+const { assertOperationAllowed } = require('../security/rust_security_gate');
 
 const POLICY_PATH = process.env.V3_RACE_164_POLICY_PATH
   ? path.resolve(process.env.V3_RACE_164_POLICY_PATH)
@@ -96,6 +98,26 @@ function parseJson(rawText: string) {
 
 function runRust(args: string[], p: any, timeoutMs = 180000) {
   const started = Date.now();
+  const operationDigest = crypto
+    .createHash('sha256')
+    .update(JSON.stringify(args || []), 'utf8')
+    .digest('hex');
+
+  assertOperationAllowed({
+    operation_id: `observational_compression_${started}`,
+    subsystem: 'memory',
+    action: cleanText(args[0] || 'memory_op', 64),
+    actor: 'systems/memory/observational_compression_layer',
+    risk_class: 'high',
+    payload_digest: `sha256:${operationDigest}`,
+    tags: ['memory', 'compression', 'foundation_lock'],
+    key_age_hours: 1,
+    operator_quorum: 2
+  }, {
+    enforce: true,
+    state_root: path.join(ROOT, 'state')
+  });
+
   const possibleBins = [
     cleanText(process.env.PROTHEUS_MEMORY_CORE_BIN || '', 520),
     cleanText(process.env.PROTHEUS_MEMORY_RUST_BIN || '', 520),

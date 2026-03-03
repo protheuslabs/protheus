@@ -1,0 +1,1 @@
+{"envelope_id":"observability_runtime_envelope_v1","max_telemetry_overhead_ms":1.0,"max_battery_pct_24h":3.0,"max_drift_pct":2.0,"enforce_fail_closed":true}

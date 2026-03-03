@@ -1,0 +1,1 @@
+{"doctrine_id":"red_legion_doctrine_v1","min_sovereignty_pct":57.5,"max_telemetry_overhead_ms":1.0,"max_battery_pct_24h":3.0,"fail_closed_on_violation":true,"max_drift_pct":2.0}

@@ -1,0 +1,1 @@
+{"profile_id":"execution_runtime_profile_v1","max_steps":4096,"allow_resume":true,"pause_gate_enabled":true,"deterministic_receipts_only":true}

@@ -1,10 +1,10 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-03T05:36:11.099Z",
-  "source_hash": "4451053021d2245f0e74aafa",
-  "row_count": 761,
-  "active_count": 0,
+  "generated_at": "2026-03-03T08:35:46.807Z",
+  "source_hash": "e3e0ed5e3a234a7f12637dee",
+  "row_count": 765,
+  "active_count": 4,
   "archive_count": 761,
   "rows": [
     {
@@ -9586,6 +9586,67 @@
         "V6-RUST50-005",
         "V6-RUST50-006",
         "V5-RUST-PROD-012"
+      ]
+    },
+    {
+      "id": "V6-RUST50-CONF-001",
+      "class": "primitive-upgrade",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Execution Crate Public-Language-Bar Rust Cutover (No Weighted Tricks)",
+      "problem": "Prior execution migration evidence can satisfy weighted governance while still under-delivering public repository language-bar impact and keeping too much logic outside `crates/execution/`.",
+      "acceptance": "Implement real `crates/execution/` crate (`cdylib` + `wasm32-unknown-unknown` target) that owns deterministic workflow runner, receipt generation, and state machine logic; retain only a thin TS wrapper in `systems/execution/index.ts` through stable FFI. Verify with full parity tests, successful `cargo build --target wasm32-unknown-unknown --release`, full git diff evidence, and tracked line-count delta showing Rust increase and TypeScript decrease (`git ls-files | xargs wc -l` baseline vs after). Rollback by feature-flagged runtime selector restoring previous execution lane and preserving replay compatibility receipts. Completion is blocked until explicit human approval after proof bundle review.",
+      "dependencies": [
+        "V6-RUST50-002",
+        "V6-RUST50-007"
+      ]
+    },
+    {
+      "id": "V6-RUST50-CONF-002",
+      "class": "hardening",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Sprint-Mode Enforcer + Batch Audit Contract",
+      "problem": "Repeated micro-prompt execution increases orchestration drift and weakens enforcement traceability for high-stakes migration sprints.",
+      "acceptance": "Implement sprint-mode contract requiring: enforcer preamble acknowledgment, single-batch ordered execution plan, immutable no-skip/no-premature-done rule, and end-of-sprint audit artifact summarizing completion, blockers, and proof references. Verify via sprint contract receipts and policy-gate tests; rollback by reverting to existing per-item lane execution flow with advisory-only sprint hints.",
+      "dependencies": [
+        "V6-RUST50-CONF-001",
+        "V6-RUST50-007"
+      ]
+    },
+    {
+      "id": "V6-RUST50-CONF-003",
+      "class": "primitive-upgrade",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Sprint 1 Visible Rust Migration Batch (Execution/Pinnacle/Vault/Red Legion)",
+      "problem": "Existing migration evidence can pass internal gates while under-delivering visible public repository Rust share changes and complete crate-first ownership across critical modules.",
+      "acceptance": "Execute Sprint 1 strict sequence across four crate-first migrations (`execution`, `pinnacle`, `vault`, `red_legion`), blob integration in all crates, thin TS wrappers, full parity + WASM + battery receipts, and workspace updates. Completion proof must include full `crates/` + `systems/` diffs, successful WASM builds for each migrated crate, and tracked/public Rust language increase evidence with TS decrease. Commit contract: `feat(rust-migration): Sprint 1 - visible Rust increase + 4 core crates + blob integration`. Completion blocked until explicit human audit approval.",
+      "dependencies": [
+        "V6-RUST50-CONF-002",
+        "V6-RUST50-CONF-001",
+        "V6-RUST50-003",
+        "V6-RUST50-004",
+        "V6-RUST50-005",
+        "V6-RUST50-007"
+      ]
+    },
+    {
+      "id": "V6-RUST50-CONF-004",
+      "class": "primitive-upgrade",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Mega Sprint 1 Public 50 Percent Rust Migration (8 Crates + Blobized Core Paths)",
+      "problem": "Public repository language composition remains overwhelmingly TypeScript, and prior internal/weighted migration signals do not guarantee externally visible Rust ownership at the required threshold.",
+      "acceptance": "Execute all eleven mega-sprint steps in strict sequence: migrate `execution`, `pinnacle`, `vault`, `red_legion`, `observability`, `graph`, `swarm`, and `mobile` to crate-first Rust ownership; integrate blob fold/unfold + manifest in all eight crates; maintain thin backward-compatible TS wrappers; update root Cargo workspace; and complete full parity + WASM + battery proof suite. Completion requires deterministic artifact bundle: git diff summary for `crates/` and `systems/`, successful `wasm32-unknown-unknown --release` builds for each migrated crate, and public GitHub language-bar evidence showing Rust `>=50%` with TypeScript decrease. Completion is hard-blocked pending explicit human approval after audit. Commit contract: `feat(rust-migration): Mega Sprint 1 - visible 50% Rust + 8 core crates + blob integration`.",
+      "dependencies": [
+        "V6-RUST50-CONF-002",
+        "V6-RUST50-CONF-003",
+        "V6-RUST50-007",
+        "V6-RUST50-003",
+        "V6-RUST50-004",
+        "V6-RUST50-005",
+        "V5-RUST-HYB-009"
       ]
     }
   ]
