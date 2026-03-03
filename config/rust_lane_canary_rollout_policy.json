@@ -1,0 +1,30 @@
+{
+  "schema_id": "rust_lane_canary_rollout_policy",
+  "schema_version": "1.0",
+  "ts": "2026-03-03T02:31:16.040Z",
+  "rollout_phases": [
+    "shadow",
+    "canary_5pct",
+    "canary_25pct",
+    "canary_50pct",
+    "default"
+  ],
+  "promotion_requirements": {
+    "min_success_rate": 0.98,
+    "max_error_rate": 0.02,
+    "max_p95_regression_pct": 10
+  },
+  "auto_rollback": {
+    "enabled": true,
+    "triggers": [
+      "error_rate_threshold",
+      "latency_threshold",
+      "crash_threshold"
+    ],
+    "rollback_target": "previous_stable_profile"
+  },
+  "feature_flag_contract": {
+    "gate_key": "rust_lane_rollout_profile",
+    "default": "shadow"
+  }
+}

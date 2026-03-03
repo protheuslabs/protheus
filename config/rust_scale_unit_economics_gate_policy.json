@@ -1,0 +1,14 @@
+{
+  "schema_id": "rust_scale_unit_economics_gate_policy",
+  "schema_version": "1.0",
+  "ts": "2026-03-03T02:31:16.045Z",
+  "thresholds": {
+    "max_cost_growth_pct_per_stage": 15,
+    "max_p95_regression_pct_per_stage": 10,
+    "required_receipts": [
+      "scale_benchmark",
+      "token_economics",
+      "capacity_review"
+    ]
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "schema_id": "rust_observability_parity_contract",
+  "schema_version": "1.0",
+  "ts": "2026-03-03T02:31:16.041Z",
+  "required_dimensions": [
+    "service",
+    "lane_id",
+    "route",
+    "error_code",
+    "rollout_profile"
+  ],
+  "required_metrics": [
+    "latency_p95_ms",
+    "latency_p99_ms",
+    "throughput_ops_sec",
+    "error_rate",
+    "cpu_pct",
+    "memory_mb"
+  ],
+  "required_trace_fields": [
+    "trace_id",
+    "span_id",
+    "parent_span_id",
+    "lane_id"
+  ]
+}

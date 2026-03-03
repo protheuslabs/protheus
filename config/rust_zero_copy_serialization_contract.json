@@ -1,0 +1,36 @@
+{
+  "schema_id": "rust_zero_copy_serialization_contract",
+  "schema_version": "1.0",
+  "ts": "2026-03-03T02:31:16.034Z",
+  "domains": [
+    {
+      "id": "memory_payload",
+      "encoding": "serde_json_or_bincode",
+      "copy_budget": "single_copy_max"
+    },
+    {
+      "id": "queue_message",
+      "encoding": "postcard",
+      "copy_budget": "zero_copy_preferred"
+    },
+    {
+      "id": "trace_span",
+      "encoding": "protobuf",
+      "copy_budget": "single_copy_max"
+    },
+    {
+      "id": "vector_block",
+      "encoding": "binary_blob",
+      "copy_budget": "zero_copy_required"
+    }
+  ],
+  "invariants": {
+    "schema_versioning_required": true,
+    "backward_compatibility_required": true,
+    "no_unbounded_copy_loops": true
+  },
+  "rollback": {
+    "command": "revert to prior serializer adapter profile",
+    "type": "feature_flag_revert"
+  }
+}

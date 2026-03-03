@@ -1,0 +1,26 @@
+{
+  "schema_id": "rust_supply_chain_governance_policy",
+  "schema_version": "1.0",
+  "ts": "2026-03-03T02:31:16.042Z",
+  "toolchain": {
+    "msrv_file": "rust-toolchain.toml",
+    "lockfile_required": true,
+    "cargo_lock_path": "Cargo.lock"
+  },
+  "required_checks": [
+    "cargo_metadata",
+    "cargo_fmt",
+    "cargo_clippy",
+    "cargo_test",
+    "cargo_audit",
+    "license_audit"
+  ],
+  "reproducibility": {
+    "deterministic_build_required": true,
+    "receipt_required": true
+  },
+  "rollback": {
+    "command": "revert to last attested Rust artifact set",
+    "allow_emergency_bypass": false
+  }
+}

@@ -1,6 +1,6 @@
 # Backlog Archive View
 
-Generated: 2026-03-03T02:07:40.721Z
+Generated: 2026-03-03T02:30:32.576Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
@@ -697,4 +697,16 @@ Generated: 2026-03-03T02:07:40.721Z
 | OPT-004 | backlog | OPT | done | Proposal semantic dedupe (near-duplicate clustering) |  |
 | OPT-005 | backlog | OPT | done | Outcome correlation expansion (task-type x eye-source x model) |  |
 | OPT-006 | backlog | OPT | done | Focus-controller trigger adaptation cadence tuning |  |
+| V5-RUST-PROD-001 | scale-readiness | V5 | done | Rust Hotspot Baseline + ROI Prioritization Contract | V4-SCALE-001, V4-RUST-001 |
+| V5-RUST-PROD-002 | hardening | V5 | done | TS/Rust Boundary Contract + ABI/Schema Stability Gate | V5-RUST-PROD-001 |
+| V5-RUST-PROD-003 | primitive-upgrade | V5 | done | Scheduler + Queue Worker Rust Migration (High-Contention Paths) | V5-RUST-PROD-001, V5-RUST-PROD-002, V4-SCALE-003 |
+| V5-RUST-PROD-004 | primitive-upgrade | V5 | done | Memory Retrieval/Index Hot Path Rust Cutover | V5-RUST-PROD-001, V5-RUST-PROD-002, V3-RACE-065 |
+| V5-RUST-PROD-005 | extension | V5 | done | Transform/Scoring Pipeline Rust Offload (CPU-Bound Stages) | V5-RUST-PROD-001, V5-RUST-PROD-002 |
+| V5-RUST-PROD-006 | hardening | V5 | done | Zero-Copy Serialization/Data Movement Contract | V5-RUST-PROD-002, V5-RUST-PROD-004, V5-RUST-PROD-005 |
+| V5-RUST-PROD-007 | hardening | V5 | done | Rust Perf Regression CI Gate (Latency/Throughput/Cost Budgets) | V5-RUST-PROD-001, V5-RUST-PROD-003, V5-RUST-PROD-004, V5-RUST-PROD-005 |
+| V5-RUST-PROD-008 | scale-readiness | V5 | done | Canary Rollout + Auto-Rollback for Rust Lanes | V5-RUST-PROD-003, V5-RUST-PROD-004, V5-RUST-PROD-005, V4-SCALE-007 |
+| V5-RUST-PROD-009 | hardening | V5 | done | Rust Observability + SRE Runbook Parity Pack | V5-RUST-PROD-003, V5-RUST-PROD-004, V5-RUST-PROD-008, V4-SCALE-008 |
+| V5-RUST-PROD-010 | hardening | V5 | done | Rust Supply-Chain + Reproducible Build Governance | V5-RUST-PROD-002, V4-RUST-003 |
+| V5-RUST-PROD-011 | extension | V5 | done | Rust Workspace DX + Standards Program (Enterprise Team Workflow) | V5-RUST-PROD-002, V5-RUST-PROD-007, V5-RUST-PROD-010 |
+| V5-RUST-PROD-012 | scale-readiness | V5 | done | Rust-at-Scale Capacity + Unit Economics Validation | V5-RUST-PROD-008, V5-RUST-PROD-009, V5-RUST-PROD-010, V4-SCALE-010 |
 

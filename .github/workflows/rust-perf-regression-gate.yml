@@ -1,0 +1,13 @@
+name: rust-perf-regression-gate
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  rust-perf-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run rust perf regression policy check
+        run: node systems/ops/rust_enterprise_productivity_program.js run --id=V5-RUST-PROD-007 --strict=1 --apply=0

@@ -1,0 +1,19 @@
+{
+  "schema_id": "rust_memory_hotpath_cutover_contract",
+  "schema_version": "1.0",
+  "ts": "2026-03-03T02:31:16.030Z",
+  "domains": [
+    "vector_search",
+    "similarity_scoring",
+    "index_update",
+    "retrieval_filtering"
+  ],
+  "parity_harness": {
+    "command": "npm run -s memory:rust-transition:benchmark",
+    "required": true
+  },
+  "rollback": {
+    "selector_command": "npm run -s memory:fallback-gate:enable-emergency",
+    "policy": "fail_closed_to_js_backend"
+  }
+}

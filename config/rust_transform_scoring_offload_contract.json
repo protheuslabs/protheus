@@ -1,0 +1,26 @@
+{
+  "schema_id": "rust_transform_scoring_offload_contract",
+  "schema_version": "1.0",
+  "ts": "2026-03-03T02:31:16.031Z",
+  "stages": [
+    "token_preprocess",
+    "feature_transform",
+    "score_aggregation",
+    "ranking",
+    "post_filtering"
+  ],
+  "migration_policy": {
+    "offload_only_cpu_bound_stages": true,
+    "keep_io_bound_in_ts": true,
+    "bounded_allocation": true
+  },
+  "verification": {
+    "metrics": [
+      "p95_latency_ms",
+      "throughput_ops_sec",
+      "cpu_pct",
+      "rss_mb"
+    ],
+    "regression_budget_pct": 5
+  }
+}

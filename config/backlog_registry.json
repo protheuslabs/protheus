@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-03T02:07:40.721Z",
-  "source_hash": "d1748e4a675cce9fe37af125",
-  "row_count": 693,
+  "generated_at": "2026-03-03T02:30:32.576Z",
+  "source_hash": "530ed053fe86c5e2867c5105",
+  "row_count": 705,
   "active_count": 0,
-  "archive_count": 693,
+  "archive_count": 705,
   "rows": [
     {
       "id": "BL-001",
@@ -8631,6 +8631,173 @@
       "problem": "4%",
       "acceptance": "Focus controller now computes adaptive cadence (`systems/sensory/focus_controller.ts`) from recent focus pressure + realized outcome score, applies effective refresh windows (trigger + lens) with min-interval anti-thrash guards, and emits cadence telemetry in refresh/status payloads. Policy/store defaults were extended in `systems/adaptive/sensory/eyes/focus_trigger_store.ts` and regression coverage added in `memory/tools/tests/focus_controller.test.js`.",
       "dependencies": []
+    },
+    {
+      "id": "V5-RUST-PROD-001",
+      "class": "scale-readiness",
+      "wave": "V5",
+      "status": "done",
+      "title": "Rust Hotspot Baseline + ROI Prioritization Contract",
+      "problem": "Rust migration effort is currently broad but not explicitly ranked by measurable runtime/cost impact, which risks spending effort on low-yield components.",
+      "acceptance": "Produce a canonical hotspot inventory (CPU/heap/queue-lag/p95/p99), ranked by expected ROI and risk; include ADR receipts for top candidates, explicit no-migrate list for I/O-bound paths, and verify via reproducible benchmark/check receipts with rollback path to baseline prioritization profile.",
+      "dependencies": [
+        "V4-SCALE-001",
+        "V4-RUST-001"
+      ]
+    },
+    {
+      "id": "V5-RUST-PROD-002",
+      "class": "hardening",
+      "wave": "V5",
+      "status": "done",
+      "title": "TS/Rust Boundary Contract + ABI/Schema Stability Gate",
+      "problem": "Cross-language boundaries can drift silently, causing correctness and operability regressions at scale.",
+      "acceptance": "Define and enforce versioned Rust/TS ABI + schema contracts (N-API/WASM/FFI), add compatibility tests and schema drift CI gate, and verify via contract-check receipts with rollback path to previous interface version.",
+      "dependencies": [
+        "V5-RUST-PROD-001"
+      ]
+    },
+    {
+      "id": "V5-RUST-PROD-003",
+      "class": "primitive-upgrade",
+      "wave": "V5",
+      "status": "done",
+      "title": "Scheduler + Queue Worker Rust Migration (High-Contention Paths)",
+      "problem": "Event-loop pressure and queue contention remain core throughput/latency risk for scale tiers.",
+      "acceptance": "Migrate scheduler/worker hot paths to Rust with parity harness, backpressure invariants, and benchmark proof (throughput, p95/p99, CPU/memory); verify canary promotion receipts and tested rollback to TS worker path.",
+      "dependencies": [
+        "V5-RUST-PROD-001",
+        "V5-RUST-PROD-002",
+        "V4-SCALE-003"
+      ]
+    },
+    {
+      "id": "V5-RUST-PROD-004",
+      "class": "primitive-upgrade",
+      "wave": "V5",
+      "status": "done",
+      "title": "Memory Retrieval/Index Hot Path Rust Cutover",
+      "problem": "Retrieval/indexing loops remain high-frequency cost centers and can dominate latency under load.",
+      "acceptance": "Move retrieval/index hot loops to Rust (vector/ANN/search/transform), require correctness parity + latency/cost receipts under production-like load, and include rollback-safe fallback to prior retrieval implementation.",
+      "dependencies": [
+        "V5-RUST-PROD-001",
+        "V5-RUST-PROD-002",
+        "V3-RACE-065"
+      ]
+    },
+    {
+      "id": "V5-RUST-PROD-005",
+      "class": "extension",
+      "wave": "V5",
+      "status": "done",
+      "title": "Transform/Scoring Pipeline Rust Offload (CPU-Bound Stages)",
+      "problem": "Pre/post-processing stages still consume disproportionate CPU and GC overhead in hot paths.",
+      "acceptance": "Migrate CPU-bound transform/scoring stages to Rust with bounded allocation policy, prove non-regression via parity/perf receipts, and ensure deterministic rollback to TS pipeline stage when thresholds fail.",
+      "dependencies": [
+        "V5-RUST-PROD-001",
+        "V5-RUST-PROD-002"
+      ]
+    },
+    {
+      "id": "V5-RUST-PROD-006",
+      "class": "hardening",
+      "wave": "V5",
+      "status": "done",
+      "title": "Zero-Copy Serialization/Data Movement Contract",
+      "problem": "Repeated encode/decode and copy-heavy data movement increases latency and cost at high throughput.",
+      "acceptance": "Implement zero-copy/low-copy serialization boundaries for migrated lanes, enforce schema compatibility and memory safety checks, verify via perf + correctness receipts, and provide rollback to prior serialization path.",
+      "dependencies": [
+        "V5-RUST-PROD-002",
+        "V5-RUST-PROD-004",
+        "V5-RUST-PROD-005"
+      ]
+    },
+    {
+      "id": "V5-RUST-PROD-007",
+      "class": "hardening",
+      "wave": "V5",
+      "status": "done",
+      "title": "Rust Perf Regression CI Gate (Latency/Throughput/Cost Budgets)",
+      "problem": "Migrations can regress over time without hard CI performance budgets and automated guardrails.",
+      "acceptance": "Add CI gate enforcing component-specific p95/p99/throughput/cost budgets for migrated lanes, fail promotion on budget regression, verify with benchmark receipts, and include rollback-safe gate bypass policy for emergency recovery only.",
+      "dependencies": [
+        "V5-RUST-PROD-001",
+        "V5-RUST-PROD-003",
+        "V5-RUST-PROD-004",
+        "V5-RUST-PROD-005"
+      ]
+    },
+    {
+      "id": "V5-RUST-PROD-008",
+      "class": "scale-readiness",
+      "wave": "V5",
+      "status": "done",
+      "title": "Canary Rollout + Auto-Rollback for Rust Lanes",
+      "problem": "Rust migrations need controlled production exposure with automatic safety response to protect SLO/error budgets.",
+      "acceptance": "Ship Rust lanes behind feature flags with staged canary rollout and automatic rollback triggers (SLO/error/crash), verify release receipts across canary stages, and provide one-command rollback to previous stable profile.",
+      "dependencies": [
+        "V5-RUST-PROD-003",
+        "V5-RUST-PROD-004",
+        "V5-RUST-PROD-005",
+        "V4-SCALE-007"
+      ]
+    },
+    {
+      "id": "V5-RUST-PROD-009",
+      "class": "hardening",
+      "wave": "V5",
+      "status": "done",
+      "title": "Rust Observability + SRE Runbook Parity Pack",
+      "problem": "Mixed-language runtime is harder to operate unless telemetry and incident playbooks are equivalent across paths.",
+      "acceptance": "Ensure Rust lanes emit parity metrics/traces/log fields, update incident/runbook coverage, verify via ops drills and telemetry parity receipts, and include rollback to baseline observability profile if parity fails.",
+      "dependencies": [
+        "V5-RUST-PROD-003",
+        "V5-RUST-PROD-004",
+        "V5-RUST-PROD-008",
+        "V4-SCALE-008"
+      ]
+    },
+    {
+      "id": "V5-RUST-PROD-010",
+      "class": "hardening",
+      "wave": "V5",
+      "status": "done",
+      "title": "Rust Supply-Chain + Reproducible Build Governance",
+      "problem": "Enterprise Rust adoption is high risk without crate governance, reproducibility, and vulnerability/license control.",
+      "acceptance": "Enforce crate pinning/MSRV/toolchain policy, cargo audit/license checks, reproducible build attestations, and verify via signed governance receipts with rollback to prior trusted artifact set when checks fail.",
+      "dependencies": [
+        "V5-RUST-PROD-002",
+        "V4-RUST-003"
+      ]
+    },
+    {
+      "id": "V5-RUST-PROD-011",
+      "class": "extension",
+      "wave": "V5",
+      "status": "done",
+      "title": "Rust Workspace DX + Standards Program (Enterprise Team Workflow)",
+      "problem": "Migration velocity stalls without shared crate templates, ownership rules, and disciplined developer workflow standards.",
+      "acceptance": "Deliver workspace standards (crate templates, codeowners, lint/test profiles, migration playbook), verify adoption via CI/ownership checks, and maintain rollback path to previous workflow profile if standards rollout causes release friction.",
+      "dependencies": [
+        "V5-RUST-PROD-002",
+        "V5-RUST-PROD-007",
+        "V5-RUST-PROD-010"
+      ]
+    },
+    {
+      "id": "V5-RUST-PROD-012",
+      "class": "scale-readiness",
+      "wave": "V5",
+      "status": "done",
+      "title": "Rust-at-Scale Capacity + Unit Economics Validation",
+      "problem": "Performance wins are incomplete unless they translate into lower cost per user and sustainable million-user operations.",
+      "acceptance": "Validate migrated lanes against capacity and cost-per-user targets, publish stage-gated receipts for throughput/latency/unit-economics, and enforce rollback to prior runtime profile if economics or reliability regress.",
+      "dependencies": [
+        "V5-RUST-PROD-008",
+        "V5-RUST-PROD-009",
+        "V5-RUST-PROD-010",
+        "V4-SCALE-010"
+      ]
     }
   ]
 }

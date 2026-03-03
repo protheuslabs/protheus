@@ -1,0 +1,24 @@
+{
+  "schema_id": "rust_perf_regression_ci_gate_policy",
+  "schema_version": "1.0",
+  "ts": "2026-03-03T02:31:16.038Z",
+  "budgets": {
+    "p95_latency_regression_pct_max": 10,
+    "throughput_regression_pct_max": 5,
+    "error_rate_delta_pct_max": 2,
+    "cpu_regression_pct_max": 8,
+    "memory_regression_pct_max": 8
+  },
+  "required_receipts": [
+    "state/ops/rust_control_plane_cutover/benchmark_history.jsonl",
+    "state/ops/scale_benchmark/latest.json"
+  ],
+  "ci_gate": {
+    "workflow": ".github/workflows/rust-perf-regression-gate.yml",
+    "fail_closed": true
+  },
+  "rollback": {
+    "action": "block_promotion_and_revert_feature_flag",
+    "operator_ack_required": true
+  }
+}

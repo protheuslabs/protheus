@@ -1,0 +1,34 @@
+{
+  "schema_id": "rust_scheduler_queue_migration_contract",
+  "schema_version": "1.0",
+  "ts": "2026-03-03T02:31:16.029Z",
+  "components": [
+    "runtime_scheduler",
+    "queue_worker_pool",
+    "retry_backoff_controller",
+    "idempotency_guard"
+  ],
+  "rollout": {
+    "phases": [
+      "shadow",
+      "canary",
+      "partial",
+      "default"
+    ],
+    "canary_fraction_start": 0.05,
+    "canary_fraction_max": 0.5,
+    "rollback_trigger": {
+      "p95_latency_regression_pct": 10,
+      "error_rate_delta_pct": 5,
+      "queue_lag_regression_pct": 15
+    }
+  },
+  "verification": {
+    "required_receipts": [
+      "parity",
+      "throughput",
+      "latency",
+      "rollback_drill"
+    ]
+  }
+}
