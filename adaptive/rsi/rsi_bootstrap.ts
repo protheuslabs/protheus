@@ -73,6 +73,27 @@ const SPAWN_BROKER_SCRIPT = path.join(ROOT, 'systems', 'spawn', 'spawn_broker.js
 const SUPPLY_CHAIN_GATE_SCRIPT = path.join(ROOT, 'systems', 'security', 'supply_chain_provenance_gate.js');
 const CONTINUITY_RESURRECTION_SCRIPT = path.join(ROOT, 'systems', 'continuity', 'resurrection_protocol.js');
 const SELF_MOD_PATCH_GATE_SCRIPT = path.join(ROOT, 'systems', 'security', 'rsi_git_patch_self_mod_gate.js');
+const PERSONAS_LENS_SCRIPT = path.join(ROOT, 'systems', 'personas', 'cli.js');
+const SHADOW_CONCLAVE_PARTICIPANTS = ['vikram', 'rohan', 'priya', 'aarav', 'liwei'];
+const SHADOW_CONCLAVE_BASE_QUERY = 'Review this proposed RSI change for safety, ops, measurement, security, and product impact';
+const SHADOW_CONCLAVE_MAX_DIVERGENCE = 0.45;
+const SHADOW_CONCLAVE_MIN_CONFIDENCE = 0.6;
+const SHADOW_CONCLAVE_HIGH_RISK_KEYWORDS = [
+  'covenant violation',
+  'disable covenant',
+  'bypass covenant',
+  'disable fail-closed',
+  'bypass fail-closed',
+  'bypass sovereignty',
+  'disable sovereignty',
+  'disable security',
+  'exfiltration',
+  'delete audit',
+  'remove audit',
+  'unaudited live mutation',
+  'skip parity'
+];
+const SHADOW_CONCLAVE_CORRESPONDENCE_PATH = path.join(ROOT, 'personas', 'organization', 'correspondence.md');
 
 function usage() {
   console.log('Usage:');
@@ -743,6 +764,191 @@ function resolvePatchPath(rawPatchPath: unknown) {
   return path.isAbsolute(txt) ? path.resolve(txt) : path.join(ROOT, txt);
 }
 
+function ensureCorrespondenceFile(filePath: string) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  if (fs.existsSync(filePath)) return;
+  fs.writeFileSync(filePath, '# Shadow Conclave Correspondence\n\n', 'utf8');
+}
+
+function safeRel(absPath: string) {
+  if (!absPath) return '';
+  const relPath = rel(absPath);
+  return relPath && !relPath.startsWith('..') ? relPath : absPath;
+}
+
+function buildConclaveProposalSummary(input: AnyObj) {
+  const baseParts = [
+    cleanText(input.summary || '', 320),
+    cleanText(input.target_path || '', 180),
+    cleanText(input.objective_id || '', 120),
+    cleanText(input.proposal_id || '', 120),
+    cleanText(input.risk || '', 40)
+  ].filter(Boolean);
+  if (baseParts.length) return baseParts.join(' | ');
+  return cleanText(JSON.stringify(input.proposal_snapshot || {}), 700) || 'no_proposal_snapshot';
+}
+
+function conclaveHighRiskFlags(payload: AnyObj, query: string, summary: string) {
+  const out = new Set<string>();
+  const divergence = Number(payload && payload.max_divergence || 0);
+  if (!payload || payload.ok !== true || !cleanText(payload.winner || '', 120)) out.add('no_consensus');
+  if (!Number.isFinite(divergence) || divergence > SHADOW_CONCLAVE_MAX_DIVERGENCE) out.add('high_divergence');
+
+  const personaOutputs = Array.isArray(payload && payload.persona_outputs) ? payload.persona_outputs : [];
+  const confidences = personaOutputs
+    .map((row: AnyObj) => Number(row && row.confidence))
+    .filter((value: number) => Number.isFinite(value));
+  if (confidences.length > 0 && Math.min(...confidences) < SHADOW_CONCLAVE_MIN_CONFIDENCE) out.add('low_confidence');
+
+  const corpusRows = [
+    cleanText(query, 2400),
+    cleanText(summary, 1200),
+    cleanText(payload && payload.suggested_resolution || '', 1600),
+    ...personaOutputs.map((row: AnyObj) => cleanText(row && row.recommendation || '', 1200)),
+    ...personaOutputs.flatMap((row: AnyObj) => (Array.isArray(row && row.reasoning) ? row.reasoning : []).map((reason: unknown) => cleanText(reason, 240)))
+  ];
+  const corpus = corpusRows.join('\n').toLowerCase();
+  for (const keyword of SHADOW_CONCLAVE_HIGH_RISK_KEYWORDS) {
+    if (corpus.includes(keyword)) {
+      out.add(`keyword:${normalizeToken(keyword, 80) || 'risk'}`);
+    }
+  }
+  return Array.from(out);
+}
+
+function appendConclaveCorrespondence(correspondencePath: string, row: AnyObj) {
+  ensureCorrespondenceFile(correspondencePath);
+  const entry = [
+    `## ${row.ts} - Re: RSI Shadow Conclave Review (${cleanText(row.step_id, 120) || 'unknown_step'})`,
+    `- Proposal: ${cleanText(row.proposal_id || 'none', 160) || 'none'}`,
+    `- Decision: ${row.pass === true ? 'approved' : 'escalated_to_monarch'}`,
+    `- Winner: ${cleanText(row.winner || 'none', 120) || 'none'}`,
+    `- Arbitration rule: ${cleanText(row.arbitration_rule || 'unknown', 160) || 'unknown'}`,
+    `- High-risk flags: ${(Array.isArray(row.high_risk_flags) && row.high_risk_flags.length) ? row.high_risk_flags.join(', ') : 'none'}`,
+    `- Query: ${cleanText(row.query || '', 1800) || 'n/a'}`,
+    `- Proposal summary: ${cleanText(row.proposal_summary || '', 1400) || 'n/a'}`,
+    `- Receipt: ${cleanText(row.receipt_path || '', 260) || 'n/a'}`,
+    '',
+    '```json',
+    JSON.stringify(row.review_payload || {}, null, 2),
+    '```',
+    ''
+  ].join('\n');
+  fs.appendFileSync(correspondencePath, `${entry}\n`, 'utf8');
+}
+
+function runShadowConclaveReview(policy: AnyObj, input: AnyObj) {
+  const applyRequested = input && input.apply_requested === true;
+  if (!applyRequested) {
+    return {
+      consulted: false,
+      pass: true,
+      escalated: false,
+      escalate_to: null,
+      high_risk_flags: [],
+      winner: null,
+      arbitration_rule: null,
+      max_divergence: 0,
+      average_confidence: null,
+      receipt_path: null,
+      correspondence_path: null,
+      query: null,
+      proposal_summary: null,
+      review_payload: null
+    };
+  }
+
+  const stepId = cleanText(input.step_id || '', 120) || `rsi_${Date.now().toString(36)}`;
+  const proposalSummary = buildConclaveProposalSummary(input);
+  const query = `${SHADOW_CONCLAVE_BASE_QUERY}. Proposed change: ${proposalSummary}.`;
+  const run = runNodeScript(
+    PERSONAS_LENS_SCRIPT,
+    [...SHADOW_CONCLAVE_PARTICIPANTS, query, '--schema=json'],
+    { timeout_ms: policy.timeouts_ms.lane }
+  );
+  const payload = run && run.payload && typeof run.payload === 'object' ? run.payload : null;
+  const highRiskFlags = run.ok
+    ? conclaveHighRiskFlags(payload || {}, query, proposalSummary)
+    : ['conclave_runtime_failure'];
+  const personaOutputs = Array.isArray(payload && payload.persona_outputs) ? payload.persona_outputs : [];
+  const confidenceRows = personaOutputs
+    .map((row: AnyObj) => Number(row && row.confidence))
+    .filter((value: number) => Number.isFinite(value));
+  const averageConfidence = confidenceRows.length
+    ? Number((confidenceRows.reduce((acc, value) => acc + value, 0) / confidenceRows.length).toFixed(4))
+    : null;
+  const pass = run.ok === true && highRiskFlags.length === 0;
+  const escalated = !pass;
+  const receiptPath = process.env.PROTHEUS_CONCLAVE_RECEIPTS_PATH
+    ? path.resolve(process.env.PROTHEUS_CONCLAVE_RECEIPTS_PATH)
+    : path.join(path.dirname(policy.paths.receipts_path), 'conclave_receipts.jsonl');
+  const correspondencePath = process.env.PROTHEUS_CONCLAVE_CORRESPONDENCE_PATH
+    ? path.resolve(process.env.PROTHEUS_CONCLAVE_CORRESPONDENCE_PATH)
+    : SHADOW_CONCLAVE_CORRESPONDENCE_PATH;
+  const receiptRow: AnyObj = {
+    ts: nowIso(),
+    type: 'rsi_shadow_conclave_review',
+    step_id: stepId,
+    owner_id: cleanText(input.owner_id || '', 120) || null,
+    proposal_id: cleanText(input.proposal_id || '', 120) || null,
+    pass,
+    escalated,
+    escalate_to: escalated ? 'Monarch' : null,
+    participants: SHADOW_CONCLAVE_PARTICIPANTS,
+    query,
+    proposal_summary: proposalSummary,
+    winner: cleanText(payload && payload.winner || '', 120) || null,
+    arbitration_rule: cleanText(payload && payload.arbitration && payload.arbitration.rule || '', 160) || null,
+    max_divergence: Number(payload && payload.max_divergence || 0),
+    disagreement: payload && payload.disagreement === true,
+    average_confidence: averageConfidence,
+    high_risk_flags: highRiskFlags,
+    run: {
+      ok: run.ok === true,
+      status: Number(run.status || 0),
+      timed_out: run.timed_out === true,
+      stderr: cleanText(run.stderr || '', 600)
+    },
+    review_payload: payload
+  };
+  let correspondenceWriteError = '';
+  try {
+    appendJsonl(receiptPath, receiptRow);
+    receiptRow.receipt_path = safeRel(receiptPath);
+    appendConclaveCorrespondence(correspondencePath, {
+      ...receiptRow,
+      receipt_path: receiptRow.receipt_path
+    });
+    receiptRow.correspondence_path = safeRel(correspondencePath);
+  } catch (err: any) {
+    correspondenceWriteError = cleanText(err && err.message || 'conclave_audit_write_failed', 240);
+    if (!highRiskFlags.includes('audit_trail_write_failed')) highRiskFlags.push('audit_trail_write_failed');
+    receiptRow.pass = false;
+    receiptRow.escalated = true;
+    receiptRow.escalate_to = 'Monarch';
+    receiptRow.high_risk_flags = highRiskFlags;
+    receiptRow.audit_error = correspondenceWriteError;
+  }
+  return {
+    consulted: true,
+    pass: receiptRow.pass === true,
+    escalated: receiptRow.escalated === true,
+    escalate_to: receiptRow.escalate_to || null,
+    high_risk_flags: highRiskFlags,
+    winner: receiptRow.winner,
+    arbitration_rule: receiptRow.arbitration_rule,
+    max_divergence: Number(receiptRow.max_divergence || 0),
+    average_confidence: averageConfidence,
+    receipt_path: receiptRow.receipt_path || safeRel(receiptPath),
+    correspondence_path: receiptRow.correspondence_path || safeRel(correspondencePath),
+    query,
+    proposal_summary: proposalSummary,
+    review_payload: payload,
+    run: receiptRow.run,
+    audit_error: correspondenceWriteError || null
+  };
+}
+
 function cmdBootstrap(args: AnyObj) {
   const policy = loadPolicy(args.policy ? path.resolve(String(args.policy)) : DEFAULT_POLICY_PATH);
   const mock = toBool(args.mock, false);
@@ -1017,9 +1223,21 @@ function cmdStep(args: AnyObj, opts: AnyObj = {}) {
     && (!mutationSafetyRun.payload || mutationSafetyRun.payload.pass !== false);
   const chaosPass = chaosRun.ok === true;
   const habitPass = habitLifecycleRun.ok === true;
+  const dopamineMinScore = Number(policy.gating.min_dopamine_score || 0);
   const dopaminePass = dopamineScore == null
-    ? false
-    : Number(dopamineScore) >= Number(policy.gating.min_dopamine_score || 0);
+    ? dopamineMinScore <= 0
+    : Number(dopamineScore) >= dopamineMinScore;
+  const conclaveReview = runShadowConclaveReview(policy, {
+    step_id: stepId,
+    owner_id: ownerId,
+    proposal_id: proposalId,
+    proposal_snapshot: proposalSnapshot,
+    objective_id: normalizeToken(args['objective-id'] || args.objective_id || policy.objective_default, 160) || policy.objective_default,
+    target_path: targetPath,
+    summary: cleanText(args.summary || '', 260) || cleanText(proposalSnapshot && proposalSnapshot.summary || '', 260),
+    risk: normalizeToken(args.risk || policy.risk_default, 40) || policy.risk_default,
+    apply_requested: applyRequested
+  });
 
   const applyGateReasons = [];
   if (!applyRequested) applyGateReasons.push('apply_not_requested');
@@ -1031,7 +1249,17 @@ function cmdStep(args: AnyObj, opts: AnyObj = {}) {
   if (policy.gating.require_mutation_safety && !mutationPass) applyGateReasons.push('mutation_safety_failed');
   if (policy.gating.require_habit_lifecycle_status && !habitPass) applyGateReasons.push('habit_lifecycle_failed');
   if (policy.gating.require_chaos_pass && !chaosPass) applyGateReasons.push('chaos_gate_failed');
-  if (dopamineScore == null || !dopaminePass) applyGateReasons.push('dopamine_gate_failed');
+  if (!dopaminePass) applyGateReasons.push('dopamine_gate_failed');
+  if (conclaveReview.consulted && !conclaveReview.pass) {
+    applyGateReasons.push('shadow_conclave_gate_blocked');
+    for (const flag of (Array.isArray(conclaveReview.high_risk_flags) ? conclaveReview.high_risk_flags : [])) {
+      const tok = normalizeToken(flag, 80) || 'flag';
+      applyGateReasons.push(`shadow_conclave_high_risk:${tok}`);
+    }
+    if (conclaveReview.escalated === true) {
+      applyGateReasons.push('shadow_conclave_escalated_to_monarch');
+    }
+  }
 
   const applyAllowed = applyRequested && applyGateReasons.length === 0;
   const gatedRun = proposalId
@@ -1124,7 +1352,14 @@ function cmdStep(args: AnyObj, opts: AnyObj = {}) {
     venom_ok: venomPass,
     constitution_ok: constitutionPass,
     mutation_ok: mutationPass,
-    dopamine_score: dopamineScore
+    dopamine_score: dopamineScore,
+    conclave: {
+      consulted: conclaveReview.consulted === true,
+      pass: conclaveReview.pass === true,
+      escalated: conclaveReview.escalated === true,
+      winner: cleanText(conclaveReview.winner || '', 120) || null,
+      high_risk_flags: Array.isArray(conclaveReview.high_risk_flags) ? conclaveReview.high_risk_flags.slice(0, 8) : []
+    }
   };
   const eventMirror = publishEvent(policy, 'adaptive.rsi', 'rsi_step', eventPayload, mock);
 
@@ -1160,6 +1395,7 @@ function cmdStep(args: AnyObj, opts: AnyObj = {}) {
       mcp_discover: { ok: coreRuns.mcp_discover.ok, status: coreRuns.mcp_discover.status, script: rel(policy.scripts.mcp_gateway) },
       a2a_delegation: { ok: coreRuns.a2a_execute.ok, status: coreRuns.a2a_execute.status, script: rel(policy.scripts.a2a_delegation) }
     },
+    conclave: conclaveReview,
     contract_lanes: {
       checks: contractChecks,
       status: contractStatus
@@ -1176,8 +1412,17 @@ function cmdStep(args: AnyObj, opts: AnyObj = {}) {
       habit_lifecycle: { ok: habitPass, status: habitLifecycleRun.status },
       dopamine: {
         score: dopamineScore,
-        min_required: policy.gating.min_dopamine_score,
+        min_required: dopamineMinScore,
         pass: dopaminePass
+      },
+      shadow_conclave: {
+        consulted: conclaveReview.consulted === true,
+        pass: conclaveReview.pass === true,
+        escalated: conclaveReview.escalated === true,
+        winner: cleanText(conclaveReview.winner || '', 120) || null,
+        high_risk_flags: Array.isArray(conclaveReview.high_risk_flags) ? conclaveReview.high_risk_flags.slice(0, 12) : [],
+        receipt_path: cleanText(conclaveReview.receipt_path || '', 260) || null,
+        correspondence_path: cleanText(conclaveReview.correspondence_path || '', 260) || null
       }
     },
     rsi: {
