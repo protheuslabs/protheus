@@ -53,6 +53,26 @@ This directory stores internal operator lenses used for planning, audits, and de
   - Push internal insights via `protheus lens feed <persona> "<snippet>" --tags=...`.
   - Use `protheus lens checkin` to append tagged memory nodes automatically.
 
+## Orchestration Guide
+
+- Run control-plane status:
+  - `protheus orchestrate status`
+- Run a meeting (deterministic attendee selection + arbitration + hash-chained artifact):
+  - `protheus orchestrate meeting "Prioritize memory or security first?" --approval-note="operator-reviewed"`
+- Create a project (state machine starts at `proposed`):
+  - `protheus orchestrate project "foundation-lock" "Finish memory + security parity" --approval-note="operator-reviewed"`
+- Transition a project:
+  - `protheus orchestrate project --id=<project_id> --transition=active --approval-note="operator-reviewed"`
+- Override path (explicitly audited):
+  - Add `--override-reason=... --override-actor=... --override-expiry=<ISO8601>`
+
+Artifacts are append-only and hash-chained:
+- Meetings: `personas/organization/meetings/ledger.jsonl`
+- Projects: `personas/organization/projects/ledger.jsonl`
+- Telemetry: `personas/organization/telemetry.jsonl`
+
+Shadow mode starts enabled and exits only after metric thresholds in `personas/organization/risk_policy.json` are met.
+
 ## Current Personas
 
 - Persona roster is intentionally broad and evolves over time.

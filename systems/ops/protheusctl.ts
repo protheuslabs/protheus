@@ -46,6 +46,10 @@ function usage() {
   console.log('  protheusctl fluxlattice list|run|run-all|status');
   console.log('  protheusctl lensmap init|template add|simplify|polish|import|sync|expose|status');
   console.log('  protheus lens <persona> [decision|strategic|full] [--gap=<seconds>] [--active=1] [--emotion=on|off] [--values=on|off] [--intercept="<override>"] "<query>"');
+  console.log('  protheus orchestrate status');
+  console.log('  protheus orchestrate meeting "<topic>" [--approval-note="..."] [--override-reason=...] [--override-actor=...] [--override-expiry=ISO8601]');
+  console.log('  protheus orchestrate project "<name>" "<goal>" [--approval-note="..."] [--override-reason=...] [--override-actor=...] [--override-expiry=ISO8601]');
+  console.log('  protheus orchestrate project --id=<project_id> --transition=<active|blocked|completed|cancelled> [--approval-note="..."] [--override-reason=...] [--override-actor=...] [--override-expiry=ISO8601]');
   console.log('  protheus lens update-stream <persona> [--dry-run=1]');
   console.log('  protheus lens checkin [--persona=jay_haslam] [--heartbeat=HEARTBEAT.md] [--emotion=on|off] [--dry-run=1]');
   console.log('  protheus lens feed <persona> "<snippet>" [--source=master_llm] [--tags=tag1,tag2] [--dry-run=1]');
@@ -481,6 +485,13 @@ function main() {
   if (cmd === 'lens') {
     const personaScript = path.join(__dirname, '..', 'personas', 'cli.js');
     runScript(personaScript, rest, { forwardStdin: true });
+    return;
+  }
+
+  if (cmd === 'orchestrate') {
+    const orchestrationScript = path.join(__dirname, '..', 'personas', 'orchestration.js');
+    const routed = rest.length ? rest : ['status'];
+    runScript(orchestrationScript, routed, { forwardStdin: true });
     return;
   }
 

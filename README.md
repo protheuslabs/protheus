@@ -61,6 +61,13 @@ protheus-top
 - Emotion toggle: `--emotion=on|off` (default `on`).
 - Daily internal check-in: `protheus lens checkin --persona=jay_haslam --heartbeat=HEARTBEAT.md`.
 
+### Persona Orchestration Command
+
+- `protheus orchestrate status` validates policy/schema state and prints artifact counters.
+- `protheus orchestrate meeting "<topic>" [--approval-note="..."]` runs role-based attendee selection, deterministic arbitration, and writes hash-chained artifacts.
+- `protheus orchestrate project "<name>" "<goal>" [--approval-note="..."]` opens a project state machine lane (`proposed -> active/blocked/completed/cancelled`).
+- `protheus orchestrate project --id=<project_id> --transition=<state> [--approval-note="..."]` advances project state with receipts.
+
 ## Architecture Map
 
 | Path | Responsibility |
