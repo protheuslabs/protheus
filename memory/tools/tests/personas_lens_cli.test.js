@@ -49,8 +49,15 @@ try {
   assert.strictEqual(out.status, 0, out.stderr || out.stdout);
   assert.ok(out.stdout.includes('# Lens Response: Li Wei'), 'li wei persona should render markdown title');
   assert.ok(out.stdout.includes('personas/li_wei/profile.md'), 'li wei persona should include context files');
+  assert.ok(out.stdout.includes('**Emotion Lens:** `on`'), 'emotion lens should default to on');
   assert.ok(out.stdout.includes('personas/li_wei/emotion_lens.md'), 'li wei persona should include emotion lens context');
   assert.ok(out.stdout.includes('Emotion signal:'), 'li wei persona should include emotion signal reasoning');
+
+  out = run(['lens', 'li_wei', '--emotion=off', 'How can we make the personas viral?']);
+  assert.strictEqual(out.status, 0, out.stderr || out.stdout);
+  assert.ok(out.stdout.includes('**Emotion Lens:** `off`'), 'emotion flag should disable emotion lens');
+  assert.ok(!out.stdout.includes('Emotion signal:'), 'emotion-off run should not include emotion signals');
+  assert.ok(!out.stdout.includes('personas/li_wei/emotion_lens.md'), 'emotion-off run should hide emotion lens context file');
 
   out = run(['lens', 'aarav_singh', 'How should we harden security gates?']);
   assert.strictEqual(out.status, 0, out.stderr || out.stdout);
@@ -93,6 +100,18 @@ try {
   const updatedCorrespondence = fs.readFileSync(path.join(dstPersona, 'correspondence.md'), 'utf8');
   assert.ok(updatedCorrespondence.includes('Re: persona intercept'), 'intercept should append correspondence entry');
   assert.ok(updatedCorrespondence.includes('Security first, but keep memory parity checks strict.'), 'intercept text should persist in correspondence');
+
+  const checkinRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'protheus-lens-checkin-'));
+  fs.mkdirSync(path.join(checkinRoot, 'personas'), { recursive: true });
+  fs.cpSync(path.join(ROOT, 'personas', 'jay_haslam'), path.join(checkinRoot, 'personas', 'jay_haslam'), { recursive: true });
+  fs.writeFileSync(path.join(checkinRoot, 'HEARTBEAT.md'), '# HEARTBEAT\n- stabilize inversion drift below 2%\n', 'utf8');
+  out = run(['lens', 'checkin', '--persona=jay_haslam', '--heartbeat=HEARTBEAT.md', '--emotion=off'], { OPENCLAW_WORKSPACE: checkinRoot });
+  assert.strictEqual(out.status, 0, out.stderr || out.stdout);
+  assert.ok(out.stdout.includes('"type": "persona_checkin"'), 'checkin command should return persona_checkin payload');
+  assert.ok(out.stdout.includes('"emotion": "off"'), 'checkin payload should include emotion mode');
+  const checkinCorrespondence = fs.readFileSync(path.join(checkinRoot, 'personas', 'jay_haslam', 'correspondence.md'), 'utf8');
+  assert.ok(checkinCorrespondence.includes('Re: daily checkin'), 'checkin should append daily checkin entry');
+  assert.ok(checkinCorrespondence.includes('Heartbeat snapshot:'), 'checkin should persist heartbeat snapshot');
 
   out = run(['lens', 'vikram_menon', '--gap=4', 'Prioritize memory or security first?'], null, 'a\n');
   assert.strictEqual(out.status, 0, out.stderr || out.stdout);

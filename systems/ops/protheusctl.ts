@@ -45,8 +45,9 @@ function usage() {
   console.log('  protheusctl perception list|run|run-all|status');
   console.log('  protheusctl fluxlattice list|run|run-all|status');
   console.log('  protheusctl lensmap init|template add|simplify|polish|import|sync|expose|status');
-  console.log('  protheus lens <persona> [decision|strategic|full] [--gap=<seconds>] [--active=1] [--intercept="<override>"] "<query>"');
+  console.log('  protheus lens <persona> [decision|strategic|full] [--gap=<seconds>] [--active=1] [--emotion=on|off] [--intercept="<override>"] "<query>"');
   console.log('  protheus lens update-stream <persona> [--dry-run=1]');
+  console.log('  protheus lens checkin [--persona=jay_haslam] [--heartbeat=HEARTBEAT.md] [--emotion=on|off] [--dry-run=1]');
   console.log('  protheusctl hold admit|rehydrate|simulate|status');
   console.log('  protheusctl suite list|run|run-all|status');
   console.log('  protheusctl audit illusion --strict=1');

@@ -643,6 +643,19 @@
       "require_explicit_emit": true
     }
   },
+  "persona_lens_gate": {
+    "enabled": true,
+    "persona_id": "vikram_menon",
+    "mode": "auto",
+    "require_parity_confidence": true,
+    "parity_confidence_min": 0.9,
+    "drift_threshold": 0.02,
+    "fail_closed_on_missing": false,
+    "paths": {
+      "parity_confidence_path": "state/autonomy/inversion/parity_confidence.json",
+      "receipts_path": "state/autonomy/inversion/lens_gate_receipts.jsonl"
+    }
+  },
   "telemetry": {
     "emit_events": true,
     "max_reasons": 12

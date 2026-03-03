@@ -773,6 +773,19 @@ function defaultPolicy() {
         require_explicit_emit: true
       }
     },
+    persona_lens_gate: {
+      enabled: true,
+      persona_id: 'vikram_menon',
+      mode: 'auto',
+      require_parity_confidence: true,
+      parity_confidence_min: 0.9,
+      drift_threshold: 0.02,
+      fail_closed_on_missing: false,
+      paths: {
+        parity_confidence_path: 'state/autonomy/inversion/parity_confidence.json',
+        receipts_path: 'state/autonomy/inversion/lens_gate_receipts.jsonl'
+      }
+    },
     telemetry: {
       emit_events: true,
       max_reasons: 12
@@ -856,6 +869,9 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
   const attractorRaw = raw.attractor && typeof raw.attractor === 'object' ? raw.attractor : {};
   const organRaw = raw.organ && typeof raw.organ === 'object' ? raw.organ : {};
   const outputsRaw = raw.output_interfaces && typeof raw.output_interfaces === 'object' ? raw.output_interfaces : {};
+  const personaLensRaw = raw.persona_lens_gate && typeof raw.persona_lens_gate === 'object'
+    ? raw.persona_lens_gate
+    : {};
 
   function normalizeOutputChannel(name: string) {
     const baseOut = base.output_interfaces[name] || {};
@@ -1704,6 +1720,51 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
       strategy_hint: normalizeOutputChannel('strategy_hint'),
       workflow_hint: normalizeOutputChannel('workflow_hint'),
       code_change_proposal: normalizeOutputChannel('code_change_proposal')
+    },
+    persona_lens_gate: {
+      enabled: toBool(personaLensRaw.enabled, base.persona_lens_gate.enabled),
+      persona_id: normalizeToken(personaLensRaw.persona_id || base.persona_lens_gate.persona_id, 120) || 'vikram_menon',
+      mode: (() => {
+        const next = normalizeToken(personaLensRaw.mode || base.persona_lens_gate.mode, 32);
+        if (next === 'shadow' || next === 'enforce' || next === 'auto') return next;
+        return 'auto';
+      })(),
+      require_parity_confidence: toBool(
+        personaLensRaw.require_parity_confidence,
+        base.persona_lens_gate.require_parity_confidence
+      ),
+      parity_confidence_min: clampNumber(
+        personaLensRaw.parity_confidence_min,
+        0,
+        1,
+        base.persona_lens_gate.parity_confidence_min
+      ),
+      drift_threshold: clampNumber(
+        personaLensRaw.drift_threshold,
+        0,
+        1,
+        base.persona_lens_gate.drift_threshold
+      ),
+      fail_closed_on_missing: toBool(
+        personaLensRaw.fail_closed_on_missing,
+        base.persona_lens_gate.fail_closed_on_missing
+      ),
+      paths: {
+        parity_confidence_path: normalizeRepoPath(
+          personaLensRaw.paths && personaLensRaw.paths.parity_confidence_path,
+          normalizeRepoPath(
+            base.persona_lens_gate.paths.parity_confidence_path,
+            path.join(ROOT, 'state', 'autonomy', 'inversion', 'parity_confidence.json')
+          )
+        ),
+        receipts_path: normalizeRepoPath(
+          personaLensRaw.paths && personaLensRaw.paths.receipts_path,
+          normalizeRepoPath(
+            base.persona_lens_gate.paths.receipts_path,
+            path.join(ROOT, 'state', 'autonomy', 'inversion', 'lens_gate_receipts.jsonl')
+          )
+        )
+      }
     },
     telemetry: {
       emit_events: toBool(raw.telemetry && raw.telemetry.emit_events, base.telemetry.emit_events),
@@ -2921,6 +2982,270 @@ function computeKnownFailurePressure(candidates: AnyObj[], policy: AnyObj) {
   };
 }
 
+function readText(filePath: string, fallback = '') {
+  try {
+    if (!filePath || !fs.existsSync(filePath)) return fallback;
+    return String(fs.readFileSync(filePath, 'utf8') || '');
+  } catch {
+    return fallback;
+  }
+}
+
+function extractBullets(markdown: string, maxItems = 4) {
+  const out: string[] = [];
+  const lines = String(markdown || '').split('\n');
+  for (const line of lines) {
+    const trimmed = String(line || '').trim();
+    const m = trimmed.match(/^[-*]\s+(.+)$/) || trimmed.match(/^\d+\.\s+(.+)$/);
+    const item = cleanText(m && m[1] ? m[1] : '', 220);
+    if (!item) continue;
+    out.push(item);
+    if (out.length >= maxItems) break;
+  }
+  return out;
+}
+
+function extractNumeric(v: unknown): number | null {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return null;
+  return n;
+}
+
+function pickFirstNumeric(candidates: unknown[]) {
+  for (const item of candidates) {
+    const n = extractNumeric(item);
+    if (n != null) return n;
+  }
+  return null;
+}
+
+function readDriftFromStateFile(filePath: string) {
+  const payload = readJson(filePath, null);
+  if (!payload || typeof payload !== 'object') {
+    return { value: 0, source: filePath ? relPath(filePath) : 'none' };
+  }
+  const value = pickFirstNumeric([
+    (payload as AnyObj).drift_rate,
+    (payload as AnyObj).predicted_drift,
+    (payload as AnyObj).effective_drift_rate,
+    (payload as AnyObj).checks_effective && (payload as AnyObj).checks_effective.drift_rate && (payload as AnyObj).checks_effective.drift_rate.value,
+    (payload as AnyObj).checks && (payload as AnyObj).checks.drift_rate && (payload as AnyObj).checks.drift_rate.value,
+    (payload as AnyObj).last_decision && (payload as AnyObj).last_decision.drift_rate,
+    (payload as AnyObj).last_decision && (payload as AnyObj).last_decision.effective_drift_rate,
+    (payload as AnyObj).last_decision && (payload as AnyObj).last_decision.checks_effective
+      && (payload as AnyObj).last_decision.checks_effective.drift_rate
+      && (payload as AnyObj).last_decision.checks_effective.drift_rate.value
+  ]);
+  return {
+    value: Number(clampNumber(value, 0, 1, 0).toFixed(6)),
+    source: filePath ? relPath(filePath) : 'none'
+  };
+}
+
+function resolveLensGateDrift(args: AnyObj, policy: AnyObj) {
+  const argValue = pickFirstNumeric([
+    args.drift_rate,
+    args['drift-rate'],
+    args.predicted_drift,
+    args['predicted-drift'],
+    args.drift
+  ]);
+  if (argValue != null) {
+    return {
+      value: Number(clampNumber(argValue, 0, 1, 0).toFixed(6)),
+      source: 'arg'
+    };
+  }
+  const cfg = policy.persona_lens_gate && typeof policy.persona_lens_gate === 'object'
+    ? policy.persona_lens_gate
+    : {};
+  const explicitPath = cfg.paths && cfg.paths.drift_source_path
+    ? String(cfg.paths.drift_source_path)
+    : '';
+  const fallbackPath = policy.organ
+    && policy.organ.trigger_detection
+    && policy.organ.trigger_detection.paths
+    && policy.organ.trigger_detection.paths.drift_governor_path
+    ? String(policy.organ.trigger_detection.paths.drift_governor_path)
+    : '';
+  const probePath = explicitPath || fallbackPath;
+  if (probePath) return readDriftFromStateFile(probePath);
+  return { value: 0, source: 'none' };
+}
+
+function resolveParityConfidence(args: AnyObj, policy: AnyObj) {
+  const argValue = pickFirstNumeric([
+    args.parity_confidence,
+    args['parity-confidence'],
+    args.parity_score,
+    args['parity-score']
+  ]);
+  if (argValue != null) {
+    return {
+      value: Number(clampNumber(argValue, 0, 1, 0).toFixed(6)),
+      source: 'arg'
+    };
+  }
+  const cfg = policy.persona_lens_gate && typeof policy.persona_lens_gate === 'object'
+    ? policy.persona_lens_gate
+    : {};
+  const pathHint = cfg.paths && cfg.paths.parity_confidence_path
+    ? String(cfg.paths.parity_confidence_path)
+    : '';
+  if (!pathHint) return { value: 0, source: 'none' };
+  const payload = readJson(pathHint, null);
+  if (!payload || typeof payload !== 'object') {
+    return { value: 0, source: relPath(pathHint) };
+  }
+  const value = pickFirstNumeric([
+    (payload as AnyObj).confidence,
+    (payload as AnyObj).parity_confidence,
+    (payload as AnyObj).pass_rate,
+    (payload as AnyObj).score
+  ]);
+  return {
+    value: Number(clampNumber(value, 0, 1, 0).toFixed(6)),
+    source: relPath(pathHint)
+  };
+}
+
+function buildLensPosition(objective: string, target: string, impact: string) {
+  const lower = String(objective || '').toLowerCase();
+  if (lower.includes('memory') && lower.includes('security')) {
+    return 'Preserve memory determinism sequencing while keeping security fail-closed at dispatch boundaries.';
+  }
+  if (lower.includes('drift')) {
+    return 'Treat drift above tolerance as a hard stop and require rollback-ready proof before apply.';
+  }
+  if (target === 'identity' || impact === 'high' || impact === 'critical') {
+    return 'Use strict reversible slices with explicit receipts before any live apply.';
+  }
+  return 'Keep the smallest reversible path and preserve fail-closed controls before mutation.';
+}
+
+function evaluatePersonaLensGate(args: AnyObj, policy: AnyObj, objective: string, target: string, impact: string) {
+  const cfg = policy.persona_lens_gate && typeof policy.persona_lens_gate === 'object'
+    ? policy.persona_lens_gate
+    : {};
+  if (cfg.enabled !== true) {
+    return {
+      enabled: false,
+      consulted: false,
+      persona_id: null,
+      mode: 'disabled',
+      effective_mode: 'disabled',
+      parity_confidence: 0,
+      parity_source: 'disabled',
+      parity_confidence_min: 0,
+      parity_confident: false,
+      drift_rate: 0,
+      drift_source: 'disabled',
+      drift_threshold: 0.02,
+      fail_closed: false,
+      status: 'disabled',
+      reasons: []
+    };
+  }
+
+  const personaId = normalizeToken(cfg.persona_id || 'vikram_menon', 120) || 'vikram_menon';
+  const personaDir = path.join(ROOT, 'personas', personaId);
+  const decisionLensMd = readText(path.join(personaDir, 'decision_lens.md'), readText(path.join(personaDir, 'lens.md'), ''));
+  const emotionLensMd = readText(path.join(personaDir, 'emotion_lens.md'), '');
+  const personaAvailable = Boolean(decisionLensMd);
+  const decisionSignals = extractBullets(decisionLensMd, 4);
+  const emotionSignals = extractBullets(emotionLensMd, 2);
+
+  const parity = resolveParityConfidence(args, policy);
+  const parityMin = Number(clampNumber(cfg.parity_confidence_min, 0, 1, 0.9).toFixed(6));
+  const parityConfident = parity.value >= parityMin;
+  const drift = resolveLensGateDrift(args, policy);
+  const driftThreshold = Number(clampNumber(cfg.drift_threshold, 0, 1, 0.02).toFixed(6));
+
+  const mode = (() => {
+    const token = normalizeToken(cfg.mode || 'auto', 24);
+    if (token === 'shadow' || token === 'enforce' || token === 'auto') return token;
+    return 'auto';
+  })();
+
+  let effectiveMode = mode;
+  if (mode === 'auto') {
+    effectiveMode = parityConfident ? 'enforce' : 'shadow';
+  } else if (mode === 'enforce' && cfg.require_parity_confidence === true && !parityConfident) {
+    effectiveMode = 'shadow';
+  }
+
+  const reasons: string[] = [];
+  if (!personaAvailable) reasons.push('persona_lens_unavailable');
+  const failClosedOnMissing = cfg.fail_closed_on_missing === true;
+  const missingBlock = !personaAvailable && failClosedOnMissing;
+  const driftExceeded = drift.value > driftThreshold;
+  const enforceBlock = effectiveMode === 'enforce' && driftExceeded;
+  const failClosed = missingBlock || enforceBlock;
+  if (missingBlock) reasons.push('persona_lens_missing_fail_closed');
+  if (enforceBlock) reasons.push('drift_threshold_exceeded');
+
+  const status = failClosed
+    ? 'blocked'
+    : (effectiveMode === 'enforce' ? 'enforced' : 'shadow_observe');
+  return {
+    enabled: true,
+    consulted: true,
+    persona_id: personaId,
+    mode,
+    effective_mode: effectiveMode,
+    parity_confidence: parity.value,
+    parity_source: parity.source,
+    parity_confidence_min: parityMin,
+    parity_confident: parityConfident,
+    drift_rate: drift.value,
+    drift_source: drift.source,
+    drift_threshold: driftThreshold,
+    fail_closed: failClosed,
+    status,
+    reasons,
+    query: {
+      objective: cleanText(objective, 260),
+      target,
+      impact
+    },
+    position: buildLensPosition(objective, target, impact),
+    reasoning: [
+      ...decisionSignals.map((row) => `Decision filter: ${row}`),
+      ...emotionSignals.map((row) => `Emotion signal: ${row}`)
+    ].slice(0, 6)
+  };
+}
+
+function appendPersonaLensGateReceipt(paths: AnyObj, policy: AnyObj, payload: AnyObj, decision: AnyObj) {
+  if (!payload || payload.enabled !== true) return null;
+  const cfg = policy.persona_lens_gate && typeof policy.persona_lens_gate === 'object'
+    ? policy.persona_lens_gate
+    : {};
+  const targetPath = cfg.paths && cfg.paths.receipts_path
+    ? String(cfg.paths.receipts_path)
+    : path.join(paths.state_dir, 'lens_gate_receipts.jsonl');
+  const row = {
+    ts: nowIso(),
+    type: 'inversion_persona_lens_gate',
+    persona_id: cleanText(payload.persona_id || '', 120) || null,
+    mode: cleanText(payload.mode || 'auto', 24) || 'auto',
+    effective_mode: cleanText(payload.effective_mode || 'shadow', 24) || 'shadow',
+    status: cleanText(payload.status || 'unknown', 32) || 'unknown',
+    fail_closed: payload.fail_closed === true,
+    drift_rate: Number(payload.drift_rate || 0),
+    drift_threshold: Number(payload.drift_threshold || 0.02),
+    parity_confidence: Number(payload.parity_confidence || 0),
+    parity_confident: payload.parity_confident === true,
+    reasons: Array.isArray(payload.reasons) ? payload.reasons.slice(0, 8) : [],
+    objective: cleanText(decision && decision.input && decision.input.objective || '', 260) || null,
+    target: cleanText(decision && decision.input && decision.input.target || '', 40) || null,
+    impact: cleanText(decision && decision.input && decision.input.impact || '', 40) || null,
+    allowed: decision && decision.allowed === true
+  };
+  appendJsonl(targetPath, row);
+  return relPath(targetPath);
+}
+
 function evaluateRunDecision(args: AnyObj, policy: AnyObj, paths: AnyObj, maturityInfo: AnyObj, dateStr: string) {
   const objective = cleanText(args.objective || args.task || '', 420);
   const objectiveId = cleanText(args.objective_id || args['objective-id'] || '', 140) || null;
@@ -3303,6 +3628,28 @@ function evaluateRunDecision(args: AnyObj, policy: AnyObj, paths: AnyObj, maturi
     if (!approverId || !approvalNote) reasons.push('human_veto_required_for_target');
   }
 
+  const personaLensGate = evaluatePersonaLensGate(args, policy, objective, target, impact);
+  checks.persona_lens_gate_enabled = personaLensGate.enabled === true;
+  checks.persona_lens_gate_consulted = personaLensGate.consulted === true;
+  checks.persona_lens_gate_mode = cleanText(personaLensGate.mode || 'disabled', 24) || 'disabled';
+  checks.persona_lens_gate_effective_mode = cleanText(personaLensGate.effective_mode || 'disabled', 24) || 'disabled';
+  checks.persona_lens_gate_status = cleanText(personaLensGate.status || 'disabled', 32) || 'disabled';
+  checks.persona_lens_gate_parity_confidence = Number(personaLensGate.parity_confidence || 0);
+  checks.persona_lens_gate_parity_confidence_min = Number(personaLensGate.parity_confidence_min || 0);
+  checks.persona_lens_gate_parity_confident = personaLensGate.parity_confident === true;
+  checks.persona_lens_gate_drift_rate = Number(personaLensGate.drift_rate || 0);
+  checks.persona_lens_gate_drift_threshold = Number(personaLensGate.drift_threshold || 0.02);
+  checks.persona_lens_gate_fail_closed = personaLensGate.fail_closed === true;
+  if (personaLensGate.enabled === true && personaLensGate.fail_closed === true) {
+    if ((personaLensGate.reasons || []).includes('drift_threshold_exceeded')) {
+      reasons.push('persona_lens_gate_fail_closed_drift_threshold_exceeded');
+    } else if ((personaLensGate.reasons || []).includes('persona_lens_missing_fail_closed')) {
+      reasons.push('persona_lens_gate_missing_fail_closed');
+    } else {
+      reasons.push('persona_lens_gate_fail_closed');
+    }
+  }
+
   const allowed = reasons.length === 0;
   if (dualitySignal && dualitySignal.enabled === true && typeof registerDualityObservation === 'function') {
     try {
@@ -3404,6 +3751,7 @@ function evaluateRunDecision(args: AnyObj, policy: AnyObj, paths: AnyObj, maturi
     },
     creative_lane: creativePenalty,
     attractor: attractorScore,
+    persona_lens_gate: personaLensGate,
     lane_route: laneDecision.route,
     immutable_axioms: immutableAxiomHits,
     tier_state: {
@@ -4878,6 +5226,7 @@ function cmdRun(args: AnyObj) {
     gating: decision.gating,
     attractor: decision.attractor || null,
     immutable_axioms: decision.immutable_axioms || [],
+    persona_lens_gate: decision.persona_lens_gate || null,
     creative_lane: decision.creative_lane,
     fallback: decision.fallback,
     library_summary: decision.library_summary,
@@ -4944,8 +5293,23 @@ function cmdRun(args: AnyObj) {
           ? out.input.duality.indicator
           : null
       }
-      : { enabled: false }
+      : { enabled: false },
+    persona_lens_gate: out.persona_lens_gate && typeof out.persona_lens_gate === 'object'
+      ? {
+        status: cleanText(out.persona_lens_gate.status || 'unknown', 32) || 'unknown',
+        effective_mode: cleanText(out.persona_lens_gate.effective_mode || 'disabled', 24) || 'disabled',
+        fail_closed: out.persona_lens_gate.fail_closed === true,
+        drift_rate: Number(out.persona_lens_gate.drift_rate || 0),
+        drift_threshold: Number(out.persona_lens_gate.drift_threshold || 0.02),
+        parity_confidence: Number(out.persona_lens_gate.parity_confidence || 0),
+        parity_confident: out.persona_lens_gate.parity_confident === true
+      }
+      : { status: 'disabled' }
   });
+  const lensGateReceiptPath = appendPersonaLensGateReceipt(paths, policy, out.persona_lens_gate, decision);
+  if (lensGateReceiptPath) {
+    out.persona_lens_gate_receipts_path = lensGateReceiptPath;
+  }
 
   if (decision.allowed && decision.input.apply === true) {
     const created = createSession(paths, policy, decision, args);

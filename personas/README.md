@@ -19,10 +19,26 @@ This directory stores internal operator lenses used for planning, audits, and de
 - Use personas as analysis lenses, not as authority replacement.
 - Use `protheus lens <persona> --lens=decision|strategic|full "<query>"` for targeted mode selection.
 - Use `protheus lens <persona> --gap=<seconds> [--active=1] [--intercept="<override>"] "<query>"` for control-mode simulation (`e`=edit, `a`=approve early during gap).
+- Use `--emotion=on|off` to include or suppress emotion lens signals (default `on`).
 - Use `protheus lens update-stream <persona>` to simulate stream sync and append correspondence updates.
+- Use `protheus lens checkin --persona=jay_haslam --heartbeat=HEARTBEAT.md` for daily drift/alignment logging.
 - Record significant decisions in correspondence logs.
 - Keep language concise, technical, and auditable.
 - Do not put secrets in this directory.
+
+## Internal Usage Guide
+
+- Daily check-in:
+  - Run `protheus lens checkin --persona=jay_haslam --heartbeat=HEARTBEAT.md`.
+  - Review recommendation + signals.
+  - Confirm correspondence log updated.
+- Red-team a decision:
+  - Run `protheus lens all "<decision or plan>"`.
+  - Compare hard constraints across personas before implementation.
+- Suppress emotional cues for strict technical review:
+  - Run `protheus lens <persona> --emotion=off "<query>"`.
+- Use intercept controls when stakes are high:
+  - Run with `--gap`, then `e` to override or `a` to approve early.
 
 ## Current Personas
 

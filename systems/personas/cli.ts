@@ -35,8 +35,9 @@ function usage() {
   console.log('Usage:');
   console.log('  protheus lens <persona> "<query>"');
   console.log('  protheus lens <persona> <decision|strategic|full> "<query>"');
-  console.log('  protheus lens <persona> [decision|strategic|full] --gap=<seconds> [--active=1] [--intercept="<override>"] "<query>"');
+  console.log('  protheus lens <persona> [decision|strategic|full] --gap=<seconds> [--active=1] [--emotion=on|off] [--intercept="<override>"] "<query>"');
   console.log('  protheus lens update-stream <persona> [--dry-run=1]');
+  console.log('  protheus lens checkin [--persona=jay_haslam] [--heartbeat=HEARTBEAT.md] [--emotion=on|off] [--dry-run=1]');
   console.log('  protheus lens all "<query>"');
   console.log('  protheus lens --persona=<persona> --lens=<decision|strategic|full> --query="<query>"');
   console.log('  protheus lens --list');
@@ -45,8 +46,9 @@ function usage() {
   console.log('  protheus lens vikram "Should we prioritize memory or security first?"');
   console.log('  protheus lens vikram strategic "How does this sprint support the singularity seed?"');
   console.log('  protheus lens jay_haslam "How can we reduce drift in the loops?"');
-  console.log('  protheus lens vikram --gap=10 --active=1 --intercept="Prioritize memory first, with security gate pre-dispatch." "Prioritize memory or security?"');
+  console.log('  protheus lens vikram --gap=10 --active=1 --emotion=off --intercept="Prioritize memory first, with security gate pre-dispatch." "Prioritize memory or security?"');
   console.log('  protheus lens update-stream vikram_menon');
+  console.log('  protheus lens checkin --persona=jay_haslam --heartbeat=HEARTBEAT.md');
   console.log('  protheus lens all "Should we prioritize memory or security first?"');
   console.log('  protheus lens --persona=vikram_menon --lens=decision --query="What is the rollback path?"');
   console.log('');
@@ -82,6 +84,10 @@ function cleanText(v: unknown, maxLen = 500): string {
   return String(v == null ? '' : v).replace(/\s+/g, ' ').trim().slice(0, maxLen);
 }
 
+function nowIso() {
+  return new Date().toISOString();
+}
+
 function normalizeToken(v: unknown, maxLen = 120): string {
   return cleanText(v, maxLen)
     .toLowerCase()
@@ -102,6 +108,14 @@ function toBool(v: unknown, fallback = false) {
   if (!raw) return fallback;
   if (['1', 'true', 'yes', 'on'].includes(raw)) return true;
   if (['0', 'false', 'no', 'off'].includes(raw)) return false;
+  return fallback;
+}
+
+function parseEmotionEnabled(v: unknown, fallback = true) {
+  const raw = cleanText(v, 20).toLowerCase();
+  if (!raw) return fallback;
+  if (['on', 'true', '1', 'yes'].includes(raw)) return true;
+  if (['off', 'false', '0', 'no'].includes(raw)) return false;
   return fallback;
 }
 
@@ -687,6 +701,64 @@ function appendInterceptionToCorrespondence(
   };
 }
 
+function resolveHeartbeatPath(rawPath: unknown) {
+  const token = cleanText(rawPath, 420);
+  if (!token) return path.join(ROOT, 'HEARTBEAT.md');
+  return path.isAbsolute(token) ? token : path.join(ROOT, token);
+}
+
+function buildCheckinQuery(heartbeatSnapshot: string) {
+  const clipped = cleanText(heartbeatSnapshot, 900) || 'No heartbeat notes available.';
+  return `Daily alignment check-in: review current heartbeat context and identify drift risks, priority actions, and one safety invariant to preserve. Heartbeat snapshot: ${clipped}`;
+}
+
+function appendCheckinToCorrespondence(
+  ctx: PersonaContext,
+  heartbeatPathAbs: string,
+  heartbeatSnapshot: string,
+  recommendation: string,
+  reasoning: string[],
+  emotionEnabled: boolean
+) {
+  const stamp = nowIso();
+  const day = stamp.slice(0, 10);
+  const relHeartbeat = path.relative(ROOT, heartbeatPathAbs).replace(/\\/g, '/');
+  const signals = (Array.isArray(reasoning) ? reasoning : [])
+    .map((row) => cleanText(row, 220))
+    .filter(Boolean)
+    .slice(0, 4);
+  const entry = [
+    '',
+    `## ${day} - Re: daily checkin`,
+    '',
+    `Checkin source: ${relHeartbeat || 'HEARTBEAT.md'}`,
+    `Emotion lens: ${emotionEnabled ? 'on' : 'off'}`,
+    '',
+    `Heartbeat snapshot: ${cleanText(heartbeatSnapshot || 'none', 700)}`,
+    '',
+    `Assessment: ${cleanText(recommendation || '', 700)}`,
+    '',
+    'Signals:',
+    ...signals.map((row) => `- ${row}`),
+    '',
+    `Timestamp: ${stamp}`,
+    ''
+  ].join('\n');
+
+  const correspondenceAbs = path.join(ROOT, ctx.correspondencePath);
+  const base = String(fs.readFileSync(correspondenceAbs, 'utf8') || '').replace(/\s+$/, '');
+  fs.writeFileSync(correspondenceAbs, `${base}\n${entry}`, 'utf8');
+
+  const refreshed = loadPersonaContext(ctx.personaId);
+  const newHash = refreshSoulTokenBundleHash(refreshed);
+  return {
+    correspondencePath: refreshed.correspondencePath,
+    soulTokenPath: refreshed.soulTokenPath,
+    bundleHash: newHash,
+    heartbeatPath: relHeartbeat || 'HEARTBEAT.md'
+  };
+}
+
 function extractTitle(markdown: string, fallback: string): string {
   const lines = String(markdown || '').split('\n');
   for (const line of lines) {
@@ -786,7 +858,8 @@ function renderMarkdownResponse(
   emotionLensMd = '',
   controls: LensControls | null = null,
   overridePosition = '',
-  interceptReceiptPath = ''
+  interceptReceiptPath = '',
+  emotionEnabled = true
 ): string {
   const {
     promptTemplate,
@@ -809,6 +882,7 @@ function renderMarkdownResponse(
   lines.push('');
   lines.push(`**Persona ID:** \`${personaId}\``);
   lines.push(`**Lens Mode:** \`${lensMode}\``);
+  lines.push(`**Emotion Lens:** \`${emotionEnabled ? 'on' : 'off'}\``);
   if (controls) {
     lines.push(`**Alignment Indicator:** ${alignmentBadge(controls.alignmentMode)}`);
     lines.push(`**Cognizance-Gap:** \`${controls.gapSeconds}s\``);
@@ -858,7 +932,8 @@ function renderMarkdownResponse(
   return lines.join('\n');
 }
 
-function renderMarkdownSection(ctx: PersonaContext, query: string, lensMode: LensMode): string {
+function renderMarkdownSection(ctx: PersonaContext, query: string, lensMode: LensMode, emotionEnabled = true): string {
+  const emotionMd = emotionEnabled ? ctx.emotionLensMd : '';
   const {
     promptTemplate,
     recommendation,
@@ -871,7 +946,7 @@ function renderMarkdownSection(ctx: PersonaContext, query: string, lensMode: Len
     ctx.decisionLensMd,
     ctx.strategicLensMd,
     lensMode,
-    ctx.emotionLensMd
+    emotionMd
   );
 
   const lines: string[] = [];
@@ -900,7 +975,7 @@ function renderMarkdownSection(ctx: PersonaContext, query: string, lensMode: Len
   if (lensMode !== 'decision' && cleanText(ctx.strategicLensMd, 8)) {
     lines.push(`- \`personas/${ctx.personaId}/strategic_lens.md\``);
   }
-  if (cleanText(ctx.emotionLensMd, 8)) {
+  if (emotionEnabled && cleanText(ctx.emotionLensMd, 8)) {
     lines.push(`- \`personas/${ctx.personaId}/emotion_lens.md\``);
   }
   lines.push(`- \`personas/${ctx.personaId}/data_streams.md\``);
@@ -909,7 +984,13 @@ function renderMarkdownSection(ctx: PersonaContext, query: string, lensMode: Len
   return lines.join('\n');
 }
 
-function renderAllMarkdown(query: string, contexts: PersonaContext[], lensMode: LensMode, controls: LensControls | null = null): string {
+function renderAllMarkdown(
+  query: string,
+  contexts: PersonaContext[],
+  lensMode: LensMode,
+  controls: LensControls | null = null,
+  emotionEnabled = true
+): string {
   const lines: string[] = [];
   lines.push('# Lens Response: All Personas');
   lines.push('');
@@ -920,9 +1001,10 @@ function renderAllMarkdown(query: string, contexts: PersonaContext[], lensMode: 
   }
   lines.push('');
   lines.push(`**Query:** ${query}`);
+  lines.push(`**Emotion Lens:** \`${emotionEnabled ? 'on' : 'off'}\``);
   lines.push('');
   for (const ctx of contexts) {
-    lines.push(renderMarkdownSection(ctx, query, lensMode));
+    lines.push(renderMarkdownSection(ctx, query, lensMode, emotionEnabled));
   }
   return lines.join('\n');
 }
@@ -947,8 +1029,10 @@ async function main() {
     process.exit(0);
   }
 
+  const emotionEnabled = parseEmotionEnabled(args.emotion, true);
   const personaArg = cleanText(args.persona || args._[0] || '', 120);
   const isUpdateStream = normalizeToken(args._[0] || '', 40) === 'update_stream' || normalizeToken(args._[0] || '', 40) === 'update-stream';
+  const isCheckin = normalizeToken(args._[0] || '', 40) === 'checkin';
   const updatePersonaRaw = cleanText(args.persona || args._[1] || '', 120);
   if (isUpdateStream) {
     const updatePersonaId = resolvePersonaId(updatePersonaRaw);
@@ -962,6 +1046,66 @@ async function main() {
       process.exit(0);
     } catch (err: any) {
       const msg = cleanText(err && err.message || 'persona_stream_update_failed', 260);
+      process.stderr.write(`${msg}\n`);
+      process.exit(1);
+    }
+  }
+  if (isCheckin) {
+    const checkinPersonaRaw = cleanText(args.persona || 'jay_haslam', 120);
+    const checkinPersonaId = resolvePersonaId(checkinPersonaRaw);
+    if (!checkinPersonaId) {
+      process.stderr.write(`unknown_persona:${checkinPersonaRaw}\n`);
+      process.exit(1);
+    }
+    try {
+      const ctx = loadPersonaContext(checkinPersonaId);
+      const heartbeatPathAbs = resolveHeartbeatPath(args.heartbeat || args['heartbeat-path'] || args.heartbeat_path);
+      const heartbeatSnapshot = readFileOptional(heartbeatPathAbs);
+      const query = buildCheckinQuery(heartbeatSnapshot);
+      const gate = evaluateSoulTokenAccess(ctx, query);
+      if (!gate.ok) {
+        process.stderr.write(`${gate.reason}\n`);
+        process.stderr.write(`persona:${ctx.personaId}\n`);
+        process.exit(1);
+      }
+      const details = buildResponseDetails(
+        ctx.personaName,
+        query,
+        ctx.profileMd,
+        ctx.correspondenceMd,
+        ctx.decisionLensMd,
+        ctx.strategicLensMd,
+        'decision',
+        emotionEnabled ? ctx.emotionLensMd : ''
+      );
+      const dryRun = toBool(args['dry-run'], false);
+      const payload: any = {
+        ok: true,
+        type: 'persona_checkin',
+        persona_id: ctx.personaId,
+        heartbeat_path: path.relative(ROOT, heartbeatPathAbs).replace(/\\/g, '/') || 'HEARTBEAT.md',
+        emotion: emotionEnabled ? 'on' : 'off',
+        dry_run: dryRun,
+        recommendation: details.recommendation,
+        reasoning: details.reasoning.slice(0, 5)
+      };
+      if (!dryRun) {
+        const receipt = appendCheckinToCorrespondence(
+          ctx,
+          heartbeatPathAbs,
+          heartbeatSnapshot,
+          details.recommendation,
+          details.reasoning,
+          emotionEnabled
+        );
+        payload.updated_correspondence = receipt.correspondencePath;
+        payload.updated_soul_token = receipt.soulTokenPath;
+        payload.bundle_hash = receipt.bundleHash;
+      }
+      process.stdout.write(`${JSON.stringify(payload, null, 2)}\n`);
+      process.exit(0);
+    } catch (err: any) {
+      const msg = cleanText(err && err.message || 'persona_checkin_failed', 260);
       process.stderr.write(`${msg}\n`);
       process.exit(1);
     }
@@ -1011,13 +1155,13 @@ async function main() {
           probe.decisionLensMd,
           probe.strategicLensMd,
           lensMode,
-          probe.emotionLensMd
+          emotionEnabled ? probe.emotionLensMd : ''
         );
         const preview = renderStreamPreview('All Personas', queryArg, details.reasoning, controls);
         process.stdout.write(`${preview}\n\n`);
         sleepMs(controls.gapSeconds * 1000);
       }
-      const markdown = renderAllMarkdown(queryArg, contexts, lensMode, controls);
+      const markdown = renderAllMarkdown(queryArg, contexts, lensMode, controls, emotionEnabled);
       process.stdout.write(`${markdown}\n`);
       process.exit(0);
     } catch (err: any) {
@@ -1054,7 +1198,7 @@ async function main() {
       ctx.decisionLensMd,
       ctx.strategicLensMd,
       lensMode,
-      ctx.emotionLensMd
+      emotionEnabled ? ctx.emotionLensMd : ''
     );
 
     const gapResult = await runCognizanceGap(
@@ -1087,10 +1231,11 @@ async function main() {
       ctx.decisionLensMd,
       ctx.strategicLensMd,
       lensMode,
-      ctx.emotionLensMd,
+      emotionEnabled ? ctx.emotionLensMd : '',
       renderControls,
       gapResult.finalOverride,
-      interceptLogPath
+      interceptLogPath,
+      emotionEnabled
     );
     process.stdout.write(`${markdown}\n`);
     process.exit(0);
