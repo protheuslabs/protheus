@@ -8,6 +8,7 @@ export {};
  */
 
 const path = require('path');
+const fs = require('fs');
 const { spawnSync } = require('child_process');
 const crypto = require('crypto');
 const perceptionLayer = require('./perception_layer.js');
@@ -44,7 +45,8 @@ function usage() {
   console.log('  protheusctl perception list|run|run-all|status');
   console.log('  protheusctl fluxlattice list|run|run-all|status');
   console.log('  protheusctl lensmap init|template add|simplify|polish|import|sync|expose|status');
-  console.log('  protheus lens <persona> "<query>"');
+  console.log('  protheus lens <persona> [decision|strategic|full] [--gap=<seconds>] [--active=1] [--intercept="<override>"] "<query>"');
+  console.log('  protheus lens update-stream <persona> [--dry-run=1]');
   console.log('  protheusctl hold admit|rehydrate|simulate|status');
   console.log('  protheusctl suite list|run|run-all|status');
   console.log('  protheusctl audit illusion --strict=1');
@@ -138,7 +140,7 @@ function evaluateDispatchSecurity(script: string, args: string[]) {
   };
 }
 
-function runScript(script: string, args: string[] = []) {
+function runScript(script: string, args: string[] = [], options: { forwardStdin?: boolean } = {}) {
   const security = evaluateDispatchSecurity(script, args);
   if (!security.ok) {
     process.stderr.write(`${JSON.stringify({
@@ -149,7 +151,24 @@ function runScript(script: string, args: string[] = []) {
     })}\n`);
     process.exit(1);
   }
-  const r = spawnSync('node', [script, ...args], { encoding: 'utf8' });
+  let childInput: any = undefined;
+  let childStdio: any = undefined;
+  if (options.forwardStdin) {
+    if (process.stdin.isTTY) {
+      childStdio = ['inherit', 'pipe', 'pipe'];
+    } else {
+      try {
+        childInput = fs.readFileSync(0);
+      } catch {
+        childInput = undefined;
+      }
+    }
+  }
+  const r = spawnSync('node', [script, ...args], {
+    encoding: 'utf8',
+    stdio: childStdio,
+    input: childInput
+  });
   if (r.stdout) process.stdout.write(r.stdout);
   if (r.stderr) process.stderr.write(r.stderr);
   process.exit(Number.isFinite(r.status) ? r.status : 1);
@@ -456,7 +475,7 @@ function main() {
 
   if (cmd === 'lens') {
     const personaScript = path.join(__dirname, '..', 'personas', 'cli.js');
-    runScript(personaScript, rest);
+    runScript(personaScript, rest, { forwardStdin: true });
     return;
   }
 

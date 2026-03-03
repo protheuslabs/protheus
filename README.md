@@ -57,6 +57,7 @@ protheus-top
 
 - `protheus lens <persona> "<query>"` loads `personas/<persona>/{profile.md,correspondence.md,lens.md}` and returns a Markdown response using that persona lens.
 - Example: `protheus lens vikram "Should we prioritize memory or security first?"`
+- Control mode: `protheus lens <persona> --gap=<seconds> [--active=1] [--intercept="<override>"] "<query>"` for cognizance-gap + intercept simulation (`e`=edit, `a`=approve early during gap).
 
 ## Architecture Map
 
