@@ -1,10 +1,10 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-03T02:30:32.576Z",
-  "source_hash": "530ed053fe86c5e2867c5105",
-  "row_count": 705,
-  "active_count": 0,
+  "generated_at": "2026-03-03T03:15:13.205Z",
+  "source_hash": "7d64c7800ef2845e15f33e9a",
+  "row_count": 744,
+  "active_count": 39,
   "archive_count": 705,
   "rows": [
     {
@@ -8797,6 +8797,545 @@
         "V5-RUST-PROD-009",
         "V5-RUST-PROD-010",
         "V4-SCALE-010"
+      ]
+    },
+    {
+      "id": "V5-HOLD-001",
+      "class": "hardening",
+      "wave": "V5",
+      "status": "queued",
+      "title": "Unchanged-State Admission Gate",
+      "problem": "Repeated `stop_repeat_gate_unchanged_state` holds are consuming attempt budget without producing net-new actionability.",
+      "acceptance": "Add pre-admission state-delta checks and semantic dedupe so unchanged proposals are parked before attempt accounting, with explicit reason receipts and configurable freshness windows. Verify with 30-day replay and hold-taxonomy receipts; success criteria: reduce unchanged-state holds by >=50% while preserving shipped yield. Rollback by disabling admission delta gate and reverting to baseline queue policy profile.",
+      "dependencies": [
+        "V4-SELF-001",
+        "V4-SCALE-003"
+      ]
+    },
+    {
+      "id": "V5-HOLD-002",
+      "class": "hardening",
+      "wave": "V5",
+      "status": "queued",
+      "title": "Confidence Routing Calibration + Canary Execute Band",
+      "problem": "`score_only_fallback_low_execution_confidence` holds are blocking potentially actionable work because routing thresholds are too conservative for current signal quality.",
+      "acceptance": "Implement calibrated confidence thresholds with a bounded canary-execute band for mid-confidence proposals, plus replay-backed precision/recall receipts and automatic rollback to prior thresholds on safety regressions. Success criteria: cut low-confidence holds by >=40% while keeping safety-stop rate within existing warn band.",
+      "dependencies": [
+        "V5-HOLD-001",
+        "V4-SCALE-007"
+      ]
+    },
+    {
+      "id": "V5-HOLD-003",
+      "class": "scale-readiness",
+      "wave": "V5",
+      "status": "queued",
+      "title": "Cap-Aware Deferred Queue Scheduler",
+      "problem": "Daily/canary cap holds are being counted as policy holds instead of being deferred cleanly, inflating hold rate and wasting attempt slots.",
+      "acceptance": "Introduce cap-aware scheduling that defers excess runnable work to a parked queue without consuming attempts, with deterministic rehydration when caps reopen and queue-aging SLO receipts. Verify with queue-drain simulation receipts; success criteria: reduce cap-related holds by >=60% and stale-pending backlog by >=30% over 30 days. Rollback by restoring baseline scheduler cap-handling policy.",
+      "dependencies": [
+        "V4-SCALE-003",
+        "V4-SCALE-007"
+      ]
+    },
+    {
+      "id": "V5-HOLD-004",
+      "class": "hardening",
+      "wave": "V5",
+      "status": "queued",
+      "title": "Routeability Preflight Lint (`not_executable` / `gate_manual`)",
+      "problem": "`init_gate_blocked_route` events from `not_executable` and manual-gate requirements are entering execution flow too late and turning into avoidable holds.",
+      "acceptance": "Add a preflight routeability lint that classifies proposals as executable/defer/manual before admission; auto-route manual items to human queue and emit structured reasons without attempt burn. Verify with routeability replay receipts and manual-queue routing checks; success criteria: reduce route-block holds by >=70% with zero increase in unsafe executions. Rollback by bypassing preflight lint and restoring legacy admission routing.",
+      "dependencies": [
+        "V5-HOLD-001",
+        "V4-SCALE-008"
+      ]
+    },
+    {
+      "id": "V5-HOLD-005",
+      "class": "hardening",
+      "wave": "V5",
+      "status": "queued",
+      "title": "Budget Burst Smoothing + Autopause Prevention",
+      "problem": "Autopause-triggered budget holds still appear in the window when burn bursts exceed pacing controls, increasing hold churn and forcing hard stops.",
+      "acceptance": "Add token-burst smoothing and budget preflight pacing in the route path, with proactive deferral when projected burn crosses guard bands; emit budget-pressure receipts and enforce rollback-safe bypass policy for emergency-only mode. Success criteria: keep budget-hold rate below 0.05 for 30 consecutive days.",
+      "dependencies": [
+        "V5-HOLD-003",
+        "V4-SCALE-010"
+      ]
+    },
+    {
+      "id": "V4-ETH-001",
+      "class": "primitive-upgrade",
+      "wave": "V4",
+      "status": "queued",
+      "title": "Dynamic Blob Morphing",
+      "problem": "Settled runtime blobs are currently treated as static units, limiting live optimization and preventing fluid in-place reconfiguration.",
+      "acceptance": "Extend modular settling so active blobs can partially dissolve, reshape hot-path structure, and re-coalesce at runtime without restart; integrate autogenesis-triggered morph intents, require signed morph receipts, and enforce deterministic rollback to last stable blob image.",
+      "dependencies": [
+        "V4-SETTLE-006",
+        "V4-SETTLE-007",
+        "V4-SETTLE-010"
+      ]
+    },
+    {
+      "id": "V4-ETH-002",
+      "class": "primitive-upgrade",
+      "wave": "V4",
+      "status": "queued",
+      "title": "Flux-State Memory Substrate",
+      "problem": "Memory remains predominantly static/hierarchical, which limits adaptive reconfiguration and dynamic topology optimization under changing workload patterns.",
+      "acceptance": "Implement flux-state memory operations (migrate/merge/split/dissolve) with inversion-engine-guided policies, preserve auditability via lineage receipts, and enforce correctness parity against baseline retrieval semantics under replay tests. Rollback by restoring canonical hierarchical memory adapter profile and disabling flux transitions behind feature flag.",
+      "dependencies": [
+        "V3-RACE-065",
+        "V4-SCI-008",
+        "V4-SELF-001"
+      ]
+    },
+    {
+      "id": "V4-ETH-003",
+      "class": "extension",
+      "wave": "V4",
+      "status": "queued",
+      "title": "Shadow Self + Instant Reconfiguration",
+      "problem": "Runtime changes currently rely on in-place transitions that increase switch risk and slow major-form updates.",
+      "acceptance": "Maintain a parallel shadow coalesced state and support instant active/shadow swap on demand or policy triggers, with full consent-gated receipts, health checks, and one-command rollback/failback to prior active state.",
+      "dependencies": [
+        "V4-SETTLE-006",
+        "V4-SETTLE-008",
+        "V4-SETTLE-010"
+      ]
+    },
+    {
+      "id": "V4-ETH-004",
+      "class": "extension",
+      "wave": "V4",
+      "status": "queued",
+      "title": "Probabilistic Execution Weave",
+      "problem": "Hot-path execution is still predominantly fixed-graph, reducing adaptive path selection under uncertainty and signal divergence.",
+      "acceptance": "Introduce an inversion-managed probabilistic execution weave for designated hot paths, with resolved-path receipts, coherence scoring, and strict fallback to deterministic path when confidence or safety checks fail.",
+      "dependencies": [
+        "V4-ETH-002",
+        "V4-SCI-008",
+        "V4-SCALE-007"
+      ]
+    },
+    {
+      "id": "V4-ETH-005",
+      "class": "launch-polish",
+      "wave": "V4",
+      "status": "queued",
+      "title": "Idle Dissolution + On-Demand Coalescence",
+      "problem": "Idle modules retain active footprint and do not rehydrate through a governed dissolve/coalesce lifecycle, leaving efficiency and fluid-runtime goals under-realized.",
+      "acceptance": "Add policy-driven idle dissolution of non-critical modules into encrypted vault snapshots and on-demand re-coalescence with bounded wake latency, operator-visible flux status in `protheus-top`, and complete receipt trail for every dissolve/restore cycle. Rollback by forcing always-coalesced mode and disabling idle-dissolution policy flag.",
+      "dependencies": [
+        "V4-ETH-001",
+        "V4-SETTLE-002",
+        "V4-SETTLE-008"
+      ]
+    },
+    {
+      "id": "V4-SEC-014",
+      "class": "hardening",
+      "wave": "V4",
+      "status": "queued",
+      "title": "Covenant Enforcement Across Flux/Morph/Shadow Operations",
+      "problem": "Dynamic runtime operations (flux changes, blob morphing, shadow swaps) are not yet uniformly blocked by Covenant checks at the operation boundary, risking inconsistent sovereignty enforcement.",
+      "acceptance": "Enforce Mind Sovereignty Covenant checks for every flux node move, blob reshape, and shadow swap; on deny emit deterministic `Covenant denied.` receipt and abort operation, on allow emit `Covenant affirmed.` receipt visible in Reasoning Mirror + `protheus-top`. Verify via operation replay tests and signed receipt-chain checks covering both allow/deny paths. Rollback by feature-flagging operation-level Covenant hooks off and reverting to baseline policy gate path.",
+      "dependencies": [
+        "V4-ETH-001",
+        "V4-ETH-002",
+        "V4-ETH-003",
+        "V4-FORT-006"
+      ]
+    },
+    {
+      "id": "V4-SEC-015",
+      "class": "hardening",
+      "wave": "V4",
+      "status": "queued",
+      "title": "Tamper Self-Revocation + Vault Re-Coalesce",
+      "problem": "Blob integrity violations currently rely on external detection paths and do not guarantee immediate local self-revocation semantics at the compromised form boundary.",
+      "acceptance": "Add blob-local tamper detection (hash mismatch, unauthorized mutation/injection signals) that triggers self-revocation, incident receipt emission, and automatic re-coalesce from last valid vault snapshot before resuming service. Verify with adversarial tamper simulation tests and deterministic recovery receipts proving fail-closed behavior. Rollback by disabling self-revocation trigger policy and restoring prior integrity-response lane while preserving incident logging.",
+      "dependencies": [
+        "V4-ETH-001",
+        "V4-SETTLE-002",
+        "V4-SCALE-009"
+      ]
+    },
+    {
+      "id": "V4-SEC-016",
+      "class": "launch-polish",
+      "wave": "V4",
+      "status": "queued",
+      "title": "Live Security Mirror Panel in `protheus-top`",
+      "problem": "Operators cannot currently see covenant/integrity/receipt-chain security posture in one continuous surface, reducing situational confidence during dynamic runtime transitions.",
+      "acceptance": "Add Security State panel to `protheus-top` showing Covenant state, latest receipt-chain hash, active integrity checks, and anomaly status (`No anomalies detected` vs alert state) with trace links. Verify via UI contract checks and receipt linkage tests under normal and tamper simulation scenarios. Rollback by feature-gating panel visibility while preserving underlying security telemetry emitters.",
+      "dependencies": [
+        "V4-SEC-014",
+        "V4-SEC-015",
+        "V4-OBS-011"
+      ]
+    },
+    {
+      "id": "V4-PKG-001",
+      "class": "extension",
+      "wave": "V4",
+      "status": "queued",
+      "title": "FluxLattice Standalone Crate + CLI Surface",
+      "problem": "Core settle/flux capabilities are currently embedded in the monorepo runtime, which limits reuse, external adoption, and clean substrate packaging.",
+      "acceptance": "Create `crates/fluxlattice` with stable APIs for settle/morph/flux ops and ship `fluxlattice` CLI (`init`, `settle`, `morph`, `status`) wired to existing receipt and covenant contracts. Verify via cargo workspace build/tests plus parity checks against equivalent `protheusctl` flows with signed receipts. Rollback by disabling crate integration paths and restoring canonical runtime-only command surface.",
+      "dependencies": [
+        "V4-SETTLE-006",
+        "V4-SETTLE-007",
+        "V4-RUST-003"
+      ]
+    },
+    {
+      "id": "V4-PKG-002",
+      "class": "launch-polish",
+      "wave": "V4",
+      "status": "queued",
+      "title": "Internal Tool Framing Pack (`README` + `CHANGELOG` + `internal-ci`)",
+      "problem": "Packaging currently lacks coherent \"mature internal tool\" release artifacts, weakening perception and onboarding clarity for FluxLattice as a reusable substrate.",
+      "acceptance": "Add FluxLattice packaging docs/artifacts: standalone README positioning, multi-version CHANGELOG timeline, and `.github/workflows/internal-ci.yml` placeholder aligned with repository standards. Verify via docs-surface contract checks and link integrity tests with receipt output. Rollback by reverting to neutral/public framing profile while preserving technical packaging structure.",
+      "dependencies": [
+        "V4-PKG-001",
+        "V4-FORT-007",
+        "V4-AESTHETIC-002"
+      ]
+    },
+    {
+      "id": "V4-PKG-003",
+      "class": "extension",
+      "wave": "V4",
+      "status": "queued",
+      "title": "FluxLattice Migration & Adoption Bridge (`protheusctl migrate`)",
+      "problem": "Without an explicit migration/adoption bridge, operators cannot safely move between legacy runtime paths and FluxLattice substrate features.",
+      "acceptance": "Extend `protheusctl migrate` with FluxLattice-aware migration profiles, dry-run diff output, and rollback checkpoints; publish migration runbook for standalone and in-repo adoption modes. Verify with migration simulation tests, compatibility receipts, and reversible checkpoint drills. Rollback by forcing legacy migration profile and disabling FluxLattice migration adapters.",
+      "dependencies": [
+        "V4-PKG-001",
+        "V4-SCALE-007",
+        "V4-SETTLE-002"
+      ]
+    },
+    {
+      "id": "V4-LENS-006",
+      "class": "launch-polish",
+      "wave": "V4",
+      "status": "queued",
+      "title": "Optional Hidden Lens Mode + Selective Exposure",
+      "problem": "Lens documentation currently risks either cluttering public source views or withholding useful context entirely, with no first-class control over selective visibility.",
+      "acceptance": "Implement `lens-mode` profiles (`hidden` default, `minimal`, `full`) with private lens storage (`.private-lenses/`), selective expose/sync commands, and documented build toggles that leave runtime untouched. Verify via source-diff tests (hidden mode emits zero inline lens tags), lens validation checks for private/public stores, and receipt logs for expose/sync operations. Rollback by forcing global hidden mode and disabling lens exposure/sync commands.",
+      "dependencies": [
+        "V4-AESTHETIC-002",
+        "V4-ILLUSION-001"
+      ]
+    },
+    {
+      "id": "V4-PKG-004",
+      "class": "launch-polish",
+      "wave": "V4",
+      "status": "queued",
+      "title": "LensMap Standalone Internal Tool Repository",
+      "problem": "Lens capabilities are currently coupled to the main repository, limiting org-level tool separation and reducing the appearance of a mature multi-repo internal platform.",
+      "acceptance": "Package LensMap as standalone repo-grade artifact set (`lensmap` CLI + docs/policies/examples), with internal-tool framing assets (`README`, `CHANGELOG`, CI placeholder, contributing guide) and compatibility contracts for private/public lens modes. Verify via CLI contract tests (`init/add/show/validate/insert/expose`) plus docs-surface checks and signed receipt outputs for lens operations. Rollback by disabling standalone wrapper integration and preserving in-repo lens path as canonical fallback.",
+      "dependencies": [
+        "V4-LENS-006",
+        "V4-PKG-003",
+        "V4-FORT-007"
+      ]
+    },
+    {
+      "id": "V4-PKG-005",
+      "class": "extension",
+      "wave": "V4",
+      "status": "queued",
+      "title": "LensMap Boilerplate Simplification Suite",
+      "problem": "LensMap does not yet provide project scaffolding and template acceleration expected of a mature internal toolchain utility.",
+      "acceptance": "Add scaffold/template workflow (`lensmap init <project>`, `lensmap template add <type>`, `lensmap simplify`, `lensmap polish`) with generated lens files, policy-aware defaults, and non-breaking output contracts. Verify via scaffold golden tests, template parity checks, and receipt-linked simplification runs under hidden/minimal/full modes. Rollback by feature-gating scaffold/template commands off and reverting to baseline LensMap core command set.",
+      "dependencies": [
+        "V4-PKG-004",
+        "V4-LENS-006"
+      ]
+    },
+    {
+      "id": "V4-PKG-006",
+      "class": "launch-polish",
+      "wave": "V4",
+      "status": "queued",
+      "title": "LensMap Internal Narrative + Release Polish",
+      "problem": "Without cohesive narrative/release polish, LensMap packaging can appear ad hoc and fail to project consistent organization-level maturity signals.",
+      "acceptance": "Produce polished narrative/release artifacts (internal-history README framing, staged changelog timeline, internal CI/workflow placeholders, issue/PR templates) while preserving factual technical contracts. Verify via docs/lint/link checks and consistency snapshots across repo metadata surfaces. Rollback by switching to neutral external-facing docs profile while retaining functional toolchain code paths.",
+      "dependencies": [
+        "V4-PKG-004",
+        "V4-PKG-005",
+        "V4-AESTHETIC-002"
+      ]
+    },
+    {
+      "id": "V4-PKG-007",
+      "class": "extension",
+      "wave": "V4",
+      "status": "queued",
+      "title": "LensMap Adoption Bridge (Import + Sync + Toolchain Fit)",
+      "problem": "Teams need a deterministic migration path from existing comment-heavy repositories into LensMap to avoid manual conversion cost and drift.",
+      "acceptance": "Add adoption bridge commands for import/sync/mapping (`import`, `sync`, compatibility adapters) with OpenClaw/legacy comment migration support, diff receipts, and reversible checkpoints. Verify via migration simulation suites and round-trip parity tests between source comments and generated lenses. Rollback by forcing read-only compatibility mode and disabling write-path migration adapters.",
+      "dependencies": [
+        "V4-PKG-004",
+        "V4-PKG-005",
+        "V4-PKG-003"
+      ]
+    },
+    {
+      "id": "V4-SUITE-001",
+      "class": "extension",
+      "wave": "V4",
+      "status": "queued",
+      "title": "`protheus-graph` Deterministic Workflow Engine",
+      "problem": "Workflow orchestration capabilities are distributed across lanes without a standalone deterministic graph execution surface for external or modular adoption.",
+      "acceptance": "Deliver `protheus-graph` CLI (`run`, `validate`, `viz`, `export-receipt`) with covenant fail-closed checks, immutable execution receipts, and chaos-mode drift validation. Verify via deterministic replay tests + contract checks for receipt lineage and rollback by reverting to existing in-repo workflow controller path.",
+      "dependencies": [
+        "V4-SCALE-003",
+        "V4-SEC-014",
+        "V4-PKG-003"
+      ]
+    },
+    {
+      "id": "V4-SUITE-002",
+      "class": "extension",
+      "wave": "V4",
+      "status": "queued",
+      "title": "`protheus-mem` Long-Memory CLI Surface",
+      "problem": "Memory runtime exists but lacks a first-class standalone operator/developer CLI for recall, compression, and sync primitives.",
+      "acceptance": "Deliver `protheus-mem` CLI (`recall`, `compress`, `sync`) as a thin governed layer over canonical memory runtime with Ebbinghaus scheduling hooks and audit receipts. Verify via memory parity tests and compression non-regression checks; rollback by disabling wrapper and preserving canonical memory lane commands.",
+      "dependencies": [
+        "V3-RACE-023",
+        "V4-SCI-008",
+        "V4-PKG-003"
+      ]
+    },
+    {
+      "id": "V4-SUITE-003",
+      "class": "launch-polish",
+      "wave": "V4",
+      "status": "queued",
+      "title": "`protheus-telemetry` Trace + Sovereignty Export CLI",
+      "problem": "Observability exists across lanes but lacks a unified standalone telemetry CLI that exposes signed traces and sovereignty score outputs.",
+      "acceptance": "Deliver `protheus-telemetry` CLI (`live`, `export`, `sovereignty`) with signed trace exports, retention controls, and `protheus-top` bridge panel integration. Verify via telemetry parity tests and receipt consistency checks; rollback by feature-gating standalone telemetry interface while preserving current observability pipeline.",
+      "dependencies": [
+        "V4-OBS-011",
+        "V4-SCALE-008",
+        "V4-PKG-003"
+      ]
+    },
+    {
+      "id": "V4-SUITE-004",
+      "class": "hardening",
+      "wave": "V4",
+      "status": "queued",
+      "title": "`protheus-vault` Zero-Knowledge Secrets CLI",
+      "problem": "Secret-management primitives are present but not exposed as a cohesive standalone CLI with rotate/audit operator workflows.",
+      "acceptance": "Deliver `protheus-vault` CLI (`seal`, `rotate`, `audit`) with strict non-plaintext policies, signed audit receipts, and policy-gated recovery controls. Verify via secret-handling tests and fail-closed policy checks; rollback by disabling standalone vault CLI and reverting to existing secrets lane entry points.",
+      "dependencies": [
+        "V4-SCALE-009",
+        "V4-SEC-015",
+        "V4-PKG-003"
+      ]
+    },
+    {
+      "id": "V4-SUITE-005",
+      "class": "extension",
+      "wave": "V4",
+      "status": "queued",
+      "title": "`protheus-swarm` Multi-Agent Coordination CLI",
+      "problem": "Swarm orchestration behavior lacks a dedicated standalone interface for coordinating and observing multi-agent execution contracts.",
+      "acceptance": "Deliver `protheus-swarm` CLI with deterministic swarm plan/run/status primitives, quorum receipts, and governance guardrails for delegated actions. Verify via swarm simulation tests and receipt quorum checks; rollback by routing all swarm orchestration back through existing autonomy controller surfaces.",
+      "dependencies": [
+        "V4-SCALE-003",
+        "V4-SCALE-007",
+        "V4-PKG-003"
+      ]
+    },
+    {
+      "id": "V4-SUITE-006",
+      "class": "hardening",
+      "wave": "V4",
+      "status": "queued",
+      "title": "`protheus-redlegion` Adversarial Operations CLI",
+      "problem": "Adversarial/red-team capabilities are fragmented across defense lanes without a unified operator CLI for controlled mission lifecycle management.",
+      "acceptance": "Deliver `protheus-redlegion` CLI for mission launch/observe/terminate with strict covenant gating, blast-radius limits, and cinematic evidence receipts. Verify via red-team simulation suites and mission rollback drills; rollback by feature-gating standalone interface and preserving existing defense lane triggers.",
+      "dependencies": [
+        "V3-RACE-DEF-027",
+        "V3-RACE-DEF-031B",
+        "V4-PKG-003"
+      ]
+    },
+    {
+      "id": "V4-SUITE-007",
+      "class": "extension",
+      "wave": "V4",
+      "status": "queued",
+      "title": "`protheus-forge` Productization Uplift",
+      "problem": "Forge capabilities exist but are not packaged as a consistent standalone productized CLI with contract and policy parity to the rest of the suite.",
+      "acceptance": "Enhance forge lane into `protheus-forge` CLI with stable command surface, receipt output schema, and package-quality docs/tests/contracts aligned to suite standards. Verify via command-registry contract tests and forge workflow regression checks; rollback by retaining existing forge entrypoints as canonical fallback.",
+      "dependencies": [
+        "V4-SCI-006",
+        "V4-PKG-001",
+        "V4-PKG-003"
+      ]
+    },
+    {
+      "id": "V4-SUITE-008",
+      "class": "launch-polish",
+      "wave": "V4",
+      "status": "queued",
+      "title": "`protheus-bootstrap` Scaffolding CLI",
+      "problem": "New-project bootstrapping is not yet exposed as a polished standalone command path, increasing setup friction and inconsistency across projects.",
+      "acceptance": "Deliver `protheus-bootstrap` CLI that generates policy-compliant project skeletons (contracts/tests/CI/hooks) with configurable templates and receipt-logged initialization. Verify via golden-template tests and bootstrap reproducibility checks; rollback by disabling standalone bootstrap and reverting to existing onboarding scaffolds.",
+      "dependencies": [
+        "V4-UX-001",
+        "V4-PKG-003",
+        "V4-PKG-005"
+      ]
+    },
+    {
+      "id": "V4-SUITE-009",
+      "class": "extension",
+      "wave": "V4",
+      "status": "queued",
+      "title": "`protheus-econ` Unit-Economics CLI",
+      "problem": "Economic governance logic exists but lacks a standalone product-facing CLI for budgeting, efficiency scoring, and economics receipts.",
+      "acceptance": "Deliver `protheus-econ` CLI for budget/efficiency forecasting and unit-economics scoring with policy guards and signed outputs consumable by release gates. Verify via economics simulation tests and threshold contract checks; rollback by routing economy evaluation through current ops lanes only.",
+      "dependencies": [
+        "V4-SCALE-010",
+        "V5-RUST-PROD-012",
+        "V4-PKG-003"
+      ]
+    },
+    {
+      "id": "V4-SUITE-010",
+      "class": "launch-polish",
+      "wave": "V4",
+      "status": "queued",
+      "title": "`protheus-soul` Public Export Mode",
+      "problem": "Soul/identity outputs are internal-first and lack a governed public export mode for controlled external-facing narrative surfaces.",
+      "acceptance": "Add `protheus-soul` export modes with strict redaction policies, provenance receipts, and configurable disclosure levels that preserve covenant/security constraints. Verify via redaction snapshot tests and policy compliance checks; rollback by forcing internal-only soul output mode.",
+      "dependencies": [
+        "V4-ILLUSION-001",
+        "V4-AESTHETIC-002",
+        "V4-PKG-003"
+      ]
+    },
+    {
+      "id": "V4-SUITE-011",
+      "class": "launch-polish",
+      "wave": "V4",
+      "status": "queued",
+      "title": "`protheus-pinnacle` CLI Polish + Operability Pack",
+      "problem": "Pinnacle capabilities lack a polished standalone CLI operator experience aligned with the proposed product suite ergonomics.",
+      "acceptance": "Deliver `protheus-pinnacle` CLI polish pass (help surfaces, command taxonomy, receipt exports, status UX consistency) with non-breaking compatibility to existing pinnacle state stores. Verify via CLI snapshot tests and command-registry parity checks; rollback by restoring prior pinnacle CLI profile.",
+      "dependencies": [
+        "V4-OBS-011",
+        "V4-PKG-003",
+        "V4-SCALE-008"
+      ]
+    },
+    {
+      "id": "V4-SUITE-012",
+      "class": "hardening",
+      "wave": "V4",
+      "status": "queued",
+      "title": "Suite Governance Pack (Naming, Contracts, npm Hooks, CI Gates)",
+      "problem": "A multi-tool suite without unified naming/contract/CI policy risks drift, broken optics, and inconsistent operator behavior across binaries.",
+      "acceptance": "Add suite-wide governance contracts enforcing `protheus-*` naming, shared `--help` structure, contract templates, npm hook conventions, and CI gate matrix for every suite tool. Verify via command-registry audits and CI conformance receipts; rollback by scoping governance pack to advisory mode while preserving existing tool behavior.",
+      "dependencies": [
+        "V4-SUITE-001",
+        "V4-SUITE-011",
+        "V4-PKG-002"
+      ]
+    },
+    {
+      "id": "V4-BRAND-001",
+      "class": "launch-polish",
+      "wave": "V4",
+      "status": "queued",
+      "title": "Protheus Labs Org Identity Sweep",
+      "problem": "Branding and author voice are inconsistent across repository surfaces (README, CLI help, contracts, package metadata), which weakens credibility and onboarding clarity.",
+      "acceptance": "Perform a full-surface identity sweep to standardize org naming (`Protheus Labs`), team voice, and legal metadata across docs/CLI/contracts/packages with snapshot tests for key user-facing surfaces. Verify via docs/CLI snapshot receipts and link-integrity checks; rollback by restoring prior branding profile from versioned baselines.",
+      "dependencies": [
+        "V4-FORT-007",
+        "V4-PKG-002"
+      ]
+    },
+    {
+      "id": "V4-BRAND-002",
+      "class": "hardening",
+      "wave": "V4",
+      "status": "queued",
+      "title": "Legacy Identity Purge Gate",
+      "problem": "Legacy personal/old-org references can silently re-enter through new commits and dependency metadata, creating recurring identity drift.",
+      "acceptance": "Add deterministic scanners and CI gates that block legacy identity references on tracked surfaces (`README*`, `package.json`, CLI output snapshots, contracts), with explicit allowlist exceptions and remediation hints. Verify via gate test fixtures and false-positive calibration receipts; rollback by moving gate to warn-only mode while preserving scanner coverage.",
+      "dependencies": [
+        "V4-BRAND-001",
+        "V4-SUITE-012"
+      ]
+    },
+    {
+      "id": "V4-TRUST-001",
+      "class": "hardening",
+      "wave": "V4",
+      "status": "queued",
+      "title": "Git Provenance Integrity Guardrail (No History Rewrite on Protected Branches)",
+      "problem": "Rewriting commit dates/history or forcing rewritten timelines on protected branches undermines repository trust, auditability, and legal/compliance posture.",
+      "acceptance": "Enforce provenance guardrails: protected branch no-force-push policy, signed commits/tags where configured, CI checks for rewritten-history attempts, and documented emergency override procedure with audited approvals only. Verify with policy simulation tests and branch-protection receipts; rollback by temporarily relaxing enforcement to advisory mode for incident recovery with explicit expiry.",
+      "dependencies": [
+        "V4-SUITE-012",
+        "V4-SEC-014"
+      ]
+    },
+    {
+      "id": "V4-REL-001",
+      "class": "extension",
+      "wave": "V4",
+      "status": "queued",
+      "title": "Release Provenance Pipeline (Signed Tags + Changelog Evidence)",
+      "problem": "Release process can appear ad hoc without deterministic tag/changelog generation tied to actual commit history and verification artifacts.",
+      "acceptance": "Build release pipeline that creates signed semantic tags from current HEAD, generates changelog entries from real commit ranges, and emits provenance receipts (tag hash, signer, commit span, timestamp). Verify via release dry-run contracts and reproducibility checks; rollback by using manual release workflow with mandatory verification checklist.",
+      "dependencies": [
+        "V4-TRUST-001",
+        "V4-PKG-002",
+        "V4-OBS-011"
+      ]
+    },
+    {
+      "id": "V4-ROLL-001",
+      "class": "scale-readiness",
+      "wave": "V4",
+      "status": "queued",
+      "title": "First-Wave Tool Rollout Sequencer (`graph/mem/telemetry/vault`)",
+      "problem": "Initial suite rollout lacks a formal execution order and readiness criteria, increasing risk of inconsistent quality across first-wave deliverables.",
+      "acceptance": "Define and automate first-wave rollout plan for `protheus-graph`, `protheus-mem`, `protheus-telemetry`, and `protheus-vault` with readiness gates, dependency checks, and release receipts per tool. Verify via rollout simulation run + gate conformance report; rollback by pausing the sequencer and reverting to manual per-tool launch checklist.",
+      "dependencies": [
+        "V4-SUITE-001",
+        "V4-SUITE-002",
+        "V4-SUITE-003",
+        "V4-SUITE-004",
+        "V4-SUITE-012"
+      ]
+    },
+    {
+      "id": "V4-DOC-ORG-001",
+      "class": "launch-polish",
+      "wave": "V4",
+      "status": "queued",
+      "title": "Org-Level README + Onboarding Narrative Refresh",
+      "problem": "Top-level onboarding narrative does not yet consistently present architecture, ownership, and operating model at enterprise-team quality.",
+      "acceptance": "Publish a polished org README package (system map, quickstart, governance links, contribution workflow, release/process references) with consistency checks against CLI/docs contracts and maintainable update workflow. Verify via docs lint/link/snapshot checks and onboarding dry-run receipt; rollback by restoring prior README and keeping new docs in a staged branch.",
+      "dependencies": [
+        "V4-BRAND-001",
+        "V4-FORT-007",
+        "V4-SUITE-012"
       ]
     }
   ]
