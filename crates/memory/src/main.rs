@@ -1,6 +1,7 @@
 use protheus_memory_core_v6::{
     clear_cache, compress_store, crdt_exchange_json, ebbinghaus_curve, get_json, ingest_memory,
-    load_embedded_heartbeat, pack_embedded_heartbeat_assets, recall_json, set_hot_state,
+    load_embedded_execution_replay, load_embedded_heartbeat, load_embedded_vault_policy,
+    pack_embedded_blob_assets, recall_json, set_hot_state,
 };
 use serde::Deserialize;
 use serde_json::json;
@@ -343,6 +344,9 @@ fn main() {
                 "ebbinghaus-score --age-days=<n> [--repetitions=1] [--lambda=0.02]",
                 "crdt-exchange --payload=<json>",
                 "load-embedded-heartbeat",
+                "load-embedded-execution-replay",
+                "load-embedded-vault-policy",
+                "pack-memory-blobs [--heartbeat=<text>]",
                 "pack-heartbeat-blob [--content=<text>]"
               ]
             }));
@@ -528,19 +532,38 @@ fn main() {
               "error": err.to_string()
             })),
         },
-        "pack-heartbeat-blob" => {
+        "load-embedded-execution-replay" => match load_embedded_execution_replay() {
+            Ok(replay) => print_json(json!({
+              "ok": true,
+              "embedded_execution_replay": replay
+            })),
+            Err(err) => print_json(json!({
+              "ok": false,
+              "error": err.to_string()
+            })),
+        },
+        "load-embedded-vault-policy" => match load_embedded_vault_policy() {
+            Ok(vault_policy) => print_json(json!({
+              "ok": true,
+              "embedded_vault_policy": vault_policy
+            })),
+            Err(err) => print_json(json!({
+              "ok": false,
+              "error": err.to_string()
+            })),
+        },
+        "pack-memory-blobs" | "pack-heartbeat-blob" => {
             let content = flags
-                .get("content")
+                .get("heartbeat")
+                .or_else(|| flags.get("content"))
                 .cloned()
                 .unwrap_or_default();
-            match pack_embedded_heartbeat_assets(&content) {
+            match pack_embedded_blob_assets(&content) {
                 Ok(report) => print_json(json!({
                   "ok": true,
-                  "blob_path": report.blob_path,
                   "manifest_path": report.manifest_path,
-                  "blob_bytes": report.blob_bytes,
                   "manifest_bytes": report.manifest_bytes,
-                  "blob_hash": report.blob_hash
+                  "artifacts": report.artifacts
                 })),
                 Err(err) => print_json(json!({
                   "ok": false,

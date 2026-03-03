@@ -11,7 +11,10 @@ use std::os::raw::c_char;
 pub use crdt::{merge as crdt_merge, CrdtCell, CrdtMap};
 pub use blob::{
     decode_manifest, encode_manifest, fold_blob, generate_manifest, sha256_hex, unfold_blob,
-    BlobError, BlobManifest, BlobPackReport, HEARTBEAT_BLOB_ID,
+    BlobArtifactDigest, BlobError, BlobManifest, BlobPackReport, EmbeddedExecutionReceiptModel,
+    EmbeddedExecutionReplay, EmbeddedExecutionStep, EmbeddedVaultAutoRotatePolicy,
+    EmbeddedVaultPolicy, EmbeddedVaultPolicyRule, EXECUTION_REPLAY_BLOB_ID, HEARTBEAT_BLOB_ID,
+    VAULT_POLICY_BLOB_ID,
 };
 pub use sqlite_store::MemoryRow;
 
@@ -100,8 +103,20 @@ pub fn load_embedded_heartbeat() -> Result<String, BlobError> {
     blob::load_embedded_heartbeat()
 }
 
+pub fn load_embedded_execution_replay() -> Result<EmbeddedExecutionReplay, BlobError> {
+    blob::load_embedded_execution_replay()
+}
+
+pub fn load_embedded_vault_policy() -> Result<EmbeddedVaultPolicy, BlobError> {
+    blob::load_embedded_vault_policy()
+}
+
+pub fn pack_embedded_blob_assets(sample: &str) -> Result<BlobPackReport, BlobError> {
+    blob::write_embedded_blob_assets(sample)
+}
+
 pub fn pack_embedded_heartbeat_assets(sample: &str) -> Result<BlobPackReport, BlobError> {
-    blob::write_embedded_heartbeat_assets(sample)
+    pack_embedded_blob_assets(sample)
 }
 
 pub fn ebbinghaus_curve(age_days: f64, repetitions: u32, lambda: f64) -> serde_json::Value {
