@@ -1,0 +1,22 @@
+{
+  "version": "1.0.0",
+  "default_domain": "general",
+  "tie_break_priority": [
+    "vikram_menon",
+    "priya_venkatesh",
+    "rohan_kapoor",
+    "li_wei",
+    "aarav_singh",
+    "jay_haslam"
+  ],
+  "domain_winners": {
+    "security": "aarav_singh",
+    "safety": "vikram_menon",
+    "measurement": "priya_venkatesh",
+    "rollout": "rohan_kapoor",
+    "product": "li_wei",
+    "general": "vikram_menon"
+  },
+  "conflicting_rules_fail_closed": true
+}
+

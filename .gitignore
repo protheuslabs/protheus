@@ -169,6 +169,8 @@ state/ops/cleanup/*.jsonl
 # Local sibling/sidecar repos (kept separate from workspace repo)
 agent-holo-viz/
 projects/
+!personas/organization/projects/
+!personas/organization/projects/**
 
 # Local transient runtime artifacts (non-canonical)
 sleep

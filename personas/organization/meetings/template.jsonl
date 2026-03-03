@@ -1,0 +1,2 @@
+{"type":"meeting_result","meeting_id":"meet_template","topic":"template topic","domain":"general","participants":["vikram_menon","priya_venkatesh"],"decision":"Template decision","winning_persona":"vikram_menon","rejected_options":["Alternative option"],"rule_applied":"domain:general|winner:vikram_menon","confidence":0.9,"fail_closed_reason":"","policy_version":"1.0.0","persona_snapshot_hash":"templatehash","selection_seed":"templateseed","timestamp":"2026-03-03T00:00:00.000Z","engine_version":"persona_orchestration_v1"}
+

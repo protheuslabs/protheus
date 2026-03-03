@@ -1,0 +1,38 @@
+{
+  "type": "object",
+  "required": [
+    "type",
+    "project_id",
+    "project_name",
+    "goal",
+    "status",
+    "transition",
+    "timestamp",
+    "engine_version"
+  ],
+  "properties": {
+    "type": { "type": "string" },
+    "project_id": { "type": "string" },
+    "project_name": { "type": "string" },
+    "goal": { "type": "string" },
+    "status": { "type": "string" },
+    "previous_status": { "type": "string" },
+    "transition": { "type": "string" },
+    "owner": { "type": "string" },
+    "escalation_chain": { "type": "array", "items": { "type": "string" } },
+    "risk_tier": { "type": "string" },
+    "approval_note": { "type": "string" },
+    "override_reason": { "type": "string" },
+    "override_actor": { "type": "string" },
+    "override_expiry": { "type": "string" },
+    "estimated_tokens": { "type": "integer" },
+    "estimated_runtime_ms": { "type": "integer" },
+    "max_tokens_estimate": { "type": "integer" },
+    "max_runtime_ms": { "type": "integer" },
+    "shadow_mode_active": { "type": "boolean" },
+    "selection_receipt_hash": { "type": "string" },
+    "arbitration_receipt_hash": { "type": "string" },
+    "timestamp": { "type": "string" },
+    "engine_version": { "type": "string" }
+  }
+}

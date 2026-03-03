@@ -1,0 +1,40 @@
+{
+  "version": "1.0.0",
+  "default_domain": "general",
+  "core_personas": [
+    "jay_haslam",
+    "vikram_menon",
+    "priya_venkatesh",
+    "rohan_kapoor",
+    "li_wei",
+    "aarav_singh"
+  ],
+  "topic_routes": [
+    {
+      "domain": "security",
+      "match_any": ["security", "covenant", "vault", "tamper", "fail-closed"],
+      "specialists": ["aarav_singh", "vikram_menon", "wu_jie", "kavya_reddy"]
+    },
+    {
+      "domain": "measurement",
+      "match_any": ["metric", "measurement", "drift", "experiment", "evaluation"],
+      "specialists": ["priya_venkatesh", "li_ming", "riya_mittal", "liu_ying"]
+    },
+    {
+      "domain": "rollout",
+      "match_any": ["rollout", "release", "deploy", "operations", "incident"],
+      "specialists": ["rohan_kapoor", "wang_jun", "gao_yang", "zhao_ming"]
+    },
+    {
+      "domain": "product",
+      "match_any": ["product", "adoption", "growth", "user", "market"],
+      "specialists": ["li_wei", "priyanka_singh", "zhang_hao", "isha_das"]
+    },
+    {
+      "domain": "general",
+      "match_any": ["memory", "execution", "orchestration", "foundation", "rust"],
+      "specialists": ["vikram_menon", "priya_venkatesh", "rohan_kapoor"]
+    }
+  ]
+}
+

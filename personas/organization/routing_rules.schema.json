@@ -1,0 +1,30 @@
+{
+  "type": "object",
+  "required": [
+    "version",
+    "core_personas",
+    "default_domain",
+    "topic_routes"
+  ],
+  "properties": {
+    "version": { "type": "string" },
+    "core_personas": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "default_domain": { "type": "string" },
+    "topic_routes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["domain", "match_any", "specialists"],
+        "properties": {
+          "domain": { "type": "string" },
+          "match_any": { "type": "array", "items": { "type": "string" } },
+          "specialists": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    }
+  }
+}
+

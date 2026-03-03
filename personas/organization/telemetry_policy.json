@@ -1,0 +1,14 @@
+{
+  "version": "1.0.0",
+  "formulas": {
+    "latency_ms": "latency_ms = end_ms - start_ms",
+    "disagreement_rate": "disagreement_rate = (unique_positions - 1) / max(1, participants - 1)",
+    "arbitration_overrides": "arbitration_overrides = overrides_count / max(1, orchestration_events)",
+    "adoption_rate": "adoption_rate = adopted_decisions / max(1, total_decisions)",
+    "post_outcome_success": "post_outcome_success = successful_outcomes / max(1, tracked_outcomes)"
+  },
+  "denominator_guards": {
+    "minimum_denominator": 1
+  }
+}
+

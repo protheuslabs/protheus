@@ -20,9 +20,20 @@ This layer defines organizational structure, ownership boundaries, and reporting
 
 ## Governance
 
-- Arbitration policy source: `personas/arbitration.md`
+- Arbitration policy source: `personas/organization/arbitration_rules.json`
+- Routing policy source: `personas/organization/routing_rules.json`
+- Risk policy source: `personas/organization/risk_policy.json`
+- Telemetry formulas source: `personas/organization/telemetry_policy.json`
+- Retention policy source: `personas/organization/retention_policy.json`
 - Pre-sprint checks: `personas/pre-sprint.md`
 - Trigger prompt template: `personas/trigger_prompt.md`
+
+## Control Plane Artifacts
+
+- Meeting artifacts: `personas/organization/meetings/ledger.jsonl` (hash-chained rows)
+- Project artifacts: `personas/organization/projects/ledger.jsonl` (hash-chained rows)
+- Telemetry artifacts: `personas/organization/telemetry.jsonl` (formula-bound metrics)
+- Shadow mode state: `personas/organization/shadow_mode_state.json`
 
 ## Feature Gates
 

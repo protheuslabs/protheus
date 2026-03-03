@@ -1,0 +1,14 @@
+{
+  "version": "1.0.0",
+  "ttl_days": 90,
+  "redaction_rules": [
+    "remove direct credentials/tokens/keys",
+    "remove regulated identifiers",
+    "preserve decision metadata and hashes"
+  ],
+  "external_sync": {
+    "enabled": false,
+    "reason": "internal_only_default"
+  }
+}
+

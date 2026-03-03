@@ -1,0 +1,38 @@
+{
+  "version": "1.0.0",
+  "approval_required_tiers": ["medium", "high"],
+  "tier_keywords": {
+    "high": [
+      "security",
+      "covenant",
+      "key rotation",
+      "delete",
+      "break glass",
+      "override"
+    ],
+    "medium": [
+      "migration",
+      "rollout",
+      "deployment",
+      "project",
+      "schema",
+      "queue"
+    ]
+  },
+  "budgets": {
+    "max_personas": 5,
+    "core_fallback_personas": 3,
+    "max_tokens_estimate": 1600,
+    "max_runtime_ms": 12000
+  },
+  "shadow_mode": {
+    "enabled": true,
+    "metrics_exit": {
+      "disagreement_rate_lte": 0.35,
+      "arbitration_overrides_lte": 0.2,
+      "policy_validation_failures_eq": 0,
+      "min_samples": 3
+    }
+  }
+}
+

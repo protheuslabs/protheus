@@ -1,0 +1,22 @@
+{
+  "type": "object",
+  "required": [
+    "version",
+    "tie_break_priority",
+    "domain_winners",
+    "default_domain"
+  ],
+  "properties": {
+    "version": { "type": "string" },
+    "tie_break_priority": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "domain_winners": {
+      "type": "object"
+    },
+    "default_domain": { "type": "string" },
+    "conflicting_rules_fail_closed": { "type": "boolean" }
+  }
+}
+
