@@ -6,7 +6,6 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..', '..', '..');
-const { runWorkflow } = require(path.join(ROOT, 'systems', 'execution', 'index.js'));
 const { runWorkflowLegacySpec } = require(path.join(ROOT, 'systems', 'execution', 'legacy_runtime.js'));
 
 function fail(msg) {
@@ -39,12 +38,29 @@ function normalizeReceipt(raw) {
   };
 }
 
-function runRust(spec) {
-  const result = runWorkflow(spec, { prefer_wasm: true, allow_cli_fallback: true });
-  if (!result || result.ok !== true || !result.payload || typeof result.payload !== 'object') {
-    fail(`rust runner failed: ${JSON.stringify(result || {})}`);
+function parsePayload(raw) {
+  const text = String(raw || '').trim();
+  if (!text) return null;
+  try { return JSON.parse(text); } catch {}
+  const lines = text.split('\n').map((line) => line.trim()).filter(Boolean);
+  for (let i = lines.length - 1; i >= 0; i -= 1) {
+    try { return JSON.parse(lines[i]); } catch {}
   }
-  return normalizeReceipt(result.payload);
+  return null;
+}
+
+function runRust(spec) {
+  const bin = path.join(ROOT, 'target', 'release', 'execution_core');
+  const encoded = Buffer.from(JSON.stringify(spec || {}), 'utf8').toString('base64');
+  const out = spawnSync(bin, ['run', `--yaml-base64=${encoded}`], {
+    cwd: ROOT,
+    encoding: 'utf8'
+  });
+  const payload = parsePayload(out.stdout);
+  if (Number(out.status) !== 0 || !payload || typeof payload !== 'object') {
+    fail(`rust runner failed: ${(out.stderr || out.stdout || '').slice(0, 260)}`);
+  }
+  return normalizeReceipt(payload);
 }
 
 function runLegacy(spec) {

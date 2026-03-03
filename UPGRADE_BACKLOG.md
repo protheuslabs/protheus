@@ -72,6 +72,7 @@ Status legend:
 | BL-007 | done | Backup integrity checks | Catch silent backup corruption | Scheduled hash verification and alert on mismatch Evidence: `systems/ops/backlog_runtime_anchors/bl_007_anchor.ts`. |
 | BL-008 | done | Repo hygiene CI check for generated artifacts | Prevent noisy files slipping into PRs | CI fails if generated paths are staged unexpectedly Evidence: `systems/ops/backlog_runtime_anchors/bl_008_anchor.ts`. |
 | BL-050 | in_progress | Queue SQLite migration rollout/spec runbook | Concurrent queue cutover needs explicit rollback/playbook evidence for operators before full production lock-in | `systems/ops/queue_sqlite_migration.md` defines staged cutover, rollback, validation checkpoints, and concurrency/retention notes; linked to BL-046 implementation. Awaiting audit approval before `done`. |
+| BL-051 | in_progress | Execution legacy runtime authority cutover (TS -> Rust wrapper) | Duplicate TS execution core logic keeps drift risk high and slows real Rust ownership progress. | `systems/execution/legacy_runtime.ts` is now a thin compatibility wrapper delegating to Rust `execution_core`; parity test now compares legacy wrapper output against direct Rust binary receipts (`memory/tools/tests/execution_phase2_rust_parity.test.js`). Awaiting audit approval before `done`. |
 
 ## V1 Hardening (Required for 6-Month Autopilot)
 
