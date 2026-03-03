@@ -1,0 +1,239 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "source_registry_path": "config/backlog_registry.json",
+  "done_statuses": [
+    "done"
+  ],
+  "targets": {
+    "V4-RUST-002": {
+      "require_dependency_closed": true,
+      "verify_signals_required": false,
+      "rollback_signals_required": false,
+      "notes": "dependency_ready_lane_coverage"
+    },
+    "V4-RUST-004": {
+      "require_dependency_closed": true,
+      "verify_signals_required": false,
+      "rollback_signals_required": false,
+      "notes": "dependency_ready_lane_coverage"
+    },
+    "V3-RACE-025": {
+      "require_dependency_closed": true,
+      "verify_signals_required": false,
+      "rollback_signals_required": false,
+      "notes": "dependency_ready_lane_coverage"
+    },
+    "V3-RACE-027": {
+      "require_dependency_closed": true,
+      "verify_signals_required": false,
+      "rollback_signals_required": false,
+      "notes": "dependency_ready_lane_coverage"
+    },
+    "V3-RACE-001": {
+      "require_dependency_closed": true,
+      "verify_signals_required": false,
+      "rollback_signals_required": false,
+      "notes": "dependency_ready_lane_coverage"
+    },
+    "V3-RACE-003": {
+      "require_dependency_closed": true,
+      "verify_signals_required": false,
+      "rollback_signals_required": false,
+      "notes": "dependency_ready_lane_coverage"
+    },
+    "V3-RACE-004": {
+      "require_dependency_closed": true,
+      "verify_signals_required": false,
+      "rollback_signals_required": false,
+      "notes": "dependency_ready_lane_coverage"
+    },
+    "V3-RACE-005": {
+      "require_dependency_closed": true,
+      "verify_signals_required": false,
+      "rollback_signals_required": false,
+      "notes": "dependency_ready_lane_coverage"
+    },
+    "V3-RACE-006": {
+      "require_dependency_closed": true,
+      "verify_signals_required": false,
+      "rollback_signals_required": false,
+      "notes": "dependency_ready_lane_coverage"
+    },
+    "V3-RACE-007": {
+      "require_dependency_closed": true,
+      "verify_signals_required": false,
+      "rollback_signals_required": false,
+      "notes": "dependency_ready_lane_coverage"
+    },
+    "V3-RACE-008": {
+      "require_dependency_closed": true,
+      "verify_signals_required": false,
+      "rollback_signals_required": false,
+      "notes": "dependency_ready_lane_coverage"
+    },
+    "V3-RACE-009": {
+      "require_dependency_closed": true,
+      "verify_signals_required": false,
+      "rollback_signals_required": false,
+      "notes": "dependency_ready_lane_coverage"
+    },
+    "V3-RACE-010": {
+      "require_dependency_closed": true,
+      "verify_signals_required": false,
+      "rollback_signals_required": false,
+      "notes": "dependency_ready_lane_coverage"
+    },
+    "V3-RACE-012": {
+      "require_dependency_closed": true,
+      "verify_signals_required": false,
+      "rollback_signals_required": false,
+      "notes": "dependency_ready_lane_coverage"
+    },
+    "V3-RACE-013": {
+      "require_dependency_closed": true,
+      "verify_signals_required": false,
+      "rollback_signals_required": false,
+      "notes": "dependency_ready_lane_coverage"
+    },
+    "V3-RACE-CONF-001": {
+      "require_dependency_closed": true,
+      "verify_signals_required": false,
+      "rollback_signals_required": false,
+      "notes": "dependency_ready_lane_coverage"
+    },
+    "V3-RACE-CONF-003": {
+      "require_dependency_closed": true,
+      "verify_signals_required": false,
+      "rollback_signals_required": false,
+      "notes": "dependency_ready_lane_coverage"
+    },
+    "V3-RACE-CONF-004": {
+      "require_dependency_closed": true,
+      "verify_signals_required": false,
+      "rollback_signals_required": false,
+      "notes": "dependency_ready_lane_coverage"
+    },
+    "V3-RACE-CONF-005": {
+      "require_dependency_closed": true,
+      "verify_signals_required": false,
+      "rollback_signals_required": false,
+      "notes": "dependency_ready_lane_coverage"
+    },
+    "V3-RACE-037": {
+      "require_dependency_closed": true,
+      "verify_signals_required": false,
+      "rollback_signals_required": false,
+      "notes": "dependency_ready_lane_coverage"
+    },
+    "V3-RACE-060": {
+      "require_dependency_closed": true,
+      "verify_signals_required": false,
+      "rollback_signals_required": false,
+      "notes": "dependency_ready_lane_coverage"
+    },
+    "V3-RACE-068": {
+      "require_dependency_closed": true,
+      "verify_signals_required": false,
+      "rollback_signals_required": false,
+      "notes": "dependency_ready_lane_coverage"
+    },
+    "V3-RACE-070": {
+      "require_dependency_closed": true,
+      "verify_signals_required": false,
+      "rollback_signals_required": false,
+      "notes": "dependency_ready_lane_coverage"
+    },
+    "V3-RACE-071": {
+      "require_dependency_closed": true,
+      "verify_signals_required": false,
+      "rollback_signals_required": false,
+      "notes": "dependency_ready_lane_coverage"
+    },
+    "V3-RACE-072": {
+      "require_dependency_closed": true,
+      "verify_signals_required": false,
+      "rollback_signals_required": false,
+      "notes": "dependency_ready_lane_coverage"
+    },
+    "V3-RACE-073": {
+      "require_dependency_closed": true,
+      "verify_signals_required": false,
+      "rollback_signals_required": false,
+      "notes": "dependency_ready_lane_coverage"
+    },
+    "V3-RACE-074": {
+      "require_dependency_closed": true,
+      "verify_signals_required": false,
+      "rollback_signals_required": false,
+      "notes": "dependency_ready_lane_coverage"
+    },
+    "V3-RACE-075": {
+      "require_dependency_closed": true,
+      "verify_signals_required": false,
+      "rollback_signals_required": false,
+      "notes": "dependency_ready_lane_coverage"
+    },
+    "V3-RACE-076": {
+      "require_dependency_closed": true,
+      "verify_signals_required": false,
+      "rollback_signals_required": false,
+      "notes": "dependency_ready_lane_coverage"
+    },
+    "V3-RACE-119": {
+      "require_dependency_closed": true,
+      "verify_signals_required": false,
+      "rollback_signals_required": false,
+      "notes": "dependency_ready_lane_coverage"
+    },
+    "V3-RACE-209": {
+      "require_dependency_closed": true,
+      "verify_signals_required": false,
+      "rollback_signals_required": false,
+      "notes": "dependency_ready_lane_coverage"
+    },
+    "V3-RACE-235": {
+      "require_dependency_closed": true,
+      "verify_signals_required": false,
+      "rollback_signals_required": false,
+      "notes": "dependency_ready_lane_coverage"
+    },
+    "V3-RACE-332": {
+      "require_dependency_closed": true,
+      "verify_signals_required": false,
+      "rollback_signals_required": false,
+      "notes": "dependency_ready_lane_coverage"
+    },
+    "V3-RACE-214": {
+      "require_dependency_closed": false,
+      "verify_signals_required": false,
+      "rollback_signals_required": false,
+      "notes": "blocker_dependency_lane_coverage"
+    },
+    "V3-RACE-174": {
+      "require_dependency_closed": false,
+      "verify_signals_required": false,
+      "rollback_signals_required": false,
+      "notes": "blocker_dependency_lane_coverage"
+    },
+    "V3-RACE-019": {
+      "require_dependency_closed": false,
+      "verify_signals_required": false,
+      "rollback_signals_required": false,
+      "notes": "blocker_dependency_lane_coverage"
+    },
+    "V3-RACE-210": {
+      "require_dependency_closed": false,
+      "verify_signals_required": false,
+      "rollback_signals_required": false,
+      "notes": "blocker_dependency_lane_coverage"
+    }
+  },
+  "outputs": {
+    "state_dir": "state/ops/backlog_lane_batch_delivery",
+    "latest_path": "state/ops/backlog_lane_batch_delivery/latest.json",
+    "receipts_path": "state/ops/backlog_lane_batch_delivery/receipts.jsonl",
+    "history_path": "state/ops/backlog_lane_batch_delivery/history.jsonl"
+  }
+}

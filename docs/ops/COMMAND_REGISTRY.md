@@ -1,6 +1,6 @@
 # Command Registry
 
-Generated: 2026-03-03T01:41:45.799Z
+Generated: 2026-03-03T01:54:20.940Z
 
 ## Curated Operator Surface
 - `dev`
@@ -186,12 +186,27 @@ Generated: 2026-03-03T01:41:45.799Z
 | `key:lifecycle:revoke` | security | crypto | 3 | policy.groups |
 | `key:lifecycle:rotate` | security | crypto | 3 | policy.groups |
 | `key:lifecycle:verify` | security | crypto | 3 | policy.groups |
+| `lane:v3-race-001:run` | race | lane | 2 | registry.groups |
+| `lane:v3-race-003:run` | race | lane | 2 | registry.groups |
+| `lane:v3-race-004:run` | race | lane | 2 | registry.groups |
+| `lane:v3-race-005:run` | race | lane | 2 | registry.groups |
+| `lane:v3-race-006:run` | race | lane | 2 | registry.groups |
+| `lane:v3-race-007:run` | race | lane | 2 | registry.groups |
+| `lane:v3-race-008:run` | race | lane | 2 | registry.groups |
+| `lane:v3-race-009:run` | race | lane | 2 | registry.groups |
+| `lane:v3-race-010:run` | race | lane | 2 | registry.groups |
+| `lane:v3-race-012:run` | race | lane | 2 | registry.groups |
+| `lane:v3-race-013:run` | race | lane | 2 | registry.groups |
+| `lane:v3-race-019:run` | race | lane | 2 | registry.groups |
+| `lane:v3-race-025:run` | race | lane | 2 | registry.groups |
+| `lane:v3-race-027:run` | race | lane | 2 | registry.groups |
 | `lane:v3-race-030:run` | race | lane | 2 | registry.groups |
 | `lane:v3-race-031:run` | race | lane | 2 | registry.groups |
 | `lane:v3-race-032:run` | race | lane | 2 | registry.groups |
 | `lane:v3-race-033:run` | race | lane | 2 | registry.groups |
 | `lane:v3-race-035:run` | race | lane | 2 | registry.groups |
 | `lane:v3-race-036:run` | race | lane | 2 | registry.groups |
+| `lane:v3-race-037:run` | race | lane | 2 | registry.groups |
 | `lane:v3-race-038a:run` | race | lane | 2 | registry.groups |
 | `lane:v3-race-039:run` | race | lane | 2 | registry.groups |
 | `lane:v3-race-040:run` | race | lane | 2 | registry.groups |
@@ -209,8 +224,28 @@ Generated: 2026-03-03T01:41:45.799Z
 | `lane:v3-race-057:run` | race | lane | 2 | registry.groups |
 | `lane:v3-race-058:run` | race | lane | 2 | registry.groups |
 | `lane:v3-race-059:run` | race | lane | 2 | registry.groups |
+| `lane:v3-race-060:run` | race | lane | 2 | registry.groups |
+| `lane:v3-race-068:run` | race | lane | 2 | registry.groups |
+| `lane:v3-race-070:run` | race | lane | 2 | registry.groups |
+| `lane:v3-race-071:run` | race | lane | 2 | registry.groups |
+| `lane:v3-race-072:run` | race | lane | 2 | registry.groups |
+| `lane:v3-race-073:run` | race | lane | 2 | registry.groups |
+| `lane:v3-race-074:run` | race | lane | 2 | registry.groups |
+| `lane:v3-race-075:run` | race | lane | 2 | registry.groups |
+| `lane:v3-race-076:run` | race | lane | 2 | registry.groups |
 | `lane:v3-race-112:run` | race | lane | 2 | registry.groups |
 | `lane:v3-race-114:run` | race | lane | 2 | registry.groups |
+| `lane:v3-race-119:run` | race | lane | 2 | registry.groups |
+| `lane:v3-race-174:run` | race | lane | 2 | registry.groups |
+| `lane:v3-race-209:run` | race | lane | 2 | registry.groups |
+| `lane:v3-race-210:run` | race | lane | 2 | registry.groups |
+| `lane:v3-race-214:run` | race | lane | 2 | registry.groups |
+| `lane:v3-race-235:run` | race | lane | 2 | registry.groups |
+| `lane:v3-race-332:run` | race | lane | 2 | registry.groups |
+| `lane:v3-race-conf-001:run` | race | lane | 2 | registry.groups |
+| `lane:v3-race-conf-003:run` | race | lane | 2 | registry.groups |
+| `lane:v3-race-conf-004:run` | race | lane | 2 | registry.groups |
+| `lane:v3-race-conf-005:run` | race | lane | 2 | registry.groups |
 | `lane:v3-race-conf-007:run` | race | lane | 2 | registry.groups |
 | `lane:v3-race-def-025:run` | race | lane | 2 | registry.groups |
 | `lane:v3-race-def-026:run` | race | lane | 2 | registry.groups |
@@ -220,6 +255,8 @@ Generated: 2026-03-03T01:41:45.799Z
 | `lane:v3-race-def-031a:run` | race | lane | 2 | registry.groups |
 | `lane:v3-race-def-031b:run` | race | lane | 2 | registry.groups |
 | `lane:v3-race-def-031c:run` | race | lane | 2 | registry.groups |
+| `lane:v4-rust-002:run` | race | lane | 2 | registry.groups |
+| `lane:v4-rust-004:run` | race | lane | 2 | registry.groups |
 | `learning:ingest` | platform | general | 2 | policy.default_metadata |
 | `learning:promote` | platform | general | 2 | policy.default_metadata |
 | `lint` | qa | quality | 1 | registry.commands |
@@ -248,6 +285,8 @@ Generated: 2026-03-03T01:41:45.799Z
 | `ops:backlog:github:check` | ops | operations | 2 | registry.groups |
 | `ops:backlog:github:status` | ops | operations | 2 | registry.groups |
 | `ops:backlog:github:sync` | ops | operations | 2 | registry.groups |
+| `ops:backlog:lane-batch:list` | ops | operations | 2 | registry.groups |
+| `ops:backlog:lane-batch:status` | ops | operations | 2 | registry.groups |
 | `ops:backlog:pathfinder:run` | ops | operations | 2 | registry.groups |
 | `ops:backlog:pathfinder:status` | ops | operations | 2 | registry.groups |
 | `ops:backlog:registry:check` | ops | operations | 2 | registry.groups |
@@ -384,45 +423,6 @@ Generated: 2026-03-03T01:41:45.799Z
 | `redteam:quantum-synthesis:run` | platform | general | 2 | policy.default_metadata |
 | `redteam:quantum-synthesis:verify` | platform | general | 2 | policy.default_metadata |
 | `research:run` | platform | general | 2 | policy.default_metadata |
-| `resonance:evaluate` | platform | general | 2 | policy.default_metadata |
-| `routing:llm-failures:classify` | routing | routing | 2 | policy.groups |
-| `routing:model-catalog:trial` | routing | routing | 2 | policy.groups |
-| `routing:model-catalog:upsert` | routing | routing | 2 | policy.groups |
-| `routing:provider-onboard` | routing | routing | 2 | policy.groups |
-| `routing:provider-onboard:list` | routing | routing | 2 | policy.groups |
-| `runtime:dist:legacy` | platform | runtime | 2 | policy.groups |
-| `runtime:dist:verify` | platform | runtime | 2 | policy.groups |
-| `runtime:mode:dist` | platform | runtime | 2 | policy.groups |
-| `runtime:mode:source` | platform | runtime | 2 | policy.groups |
-| `runtime:scheduler:switch` | platform | runtime | 2 | policy.groups |
-| `safety:resilience:evaluate` | platform | general | 2 | policy.default_metadata |
-| `schema:evolution:run` | ops | schema | 2 | policy.groups |
-| `security:audit` | security | dependencies | 2 | registry.commands |
-| `security:critical-path:run` | security | security | 3 | registry.groups |
-| `security:heartbeat-endpoint:issue-key` | security | security | 3 | registry.groups |
-| `security:heartbeat-endpoint:receive` | security | security | 3 | registry.groups |
-| `security:heartbeat-endpoint:revoke-key` | security | security | 3 | registry.groups |
-| `security:heartbeat-endpoint:serve` | security | security | 3 | registry.groups |
-| `security:heartbeat-endpoint:verify` | security | security | 3 | registry.groups |
-| `security:ip-posture:draft` | security | security | 3 | registry.groups |
-| `security:ip-posture:evidence-pack` | security | security | 3 | registry.groups |
-| `security:ip-posture:record-counsel` | security | security | 3 | registry.groups |
-| `security:logs:redaction:check` | security | security | 3 | registry.groups |
-| `security:logs:redaction:scrub` | security | security | 3 | registry.groups |
-| `security:organ-state:decrypt` | security | security | 3 | registry.groups |
-| `security:organ-state:encrypt` | security | security | 3 | registry.groups |
-| `security:organ-state:rotate` | security | security | 3 | registry.groups |
-| `security:organ-state:verify` | security | security | 3 | registry.groups |
-| `security:post-quantum:run` | security | security | 3 | registry.groups |
-| `security:post-quantum:verify` | security | security | 3 | registry.groups |
-| `security:psycheforge:evaluate` | security | security | 3 | registry.groups |
-| `security:psycheforge:promote` | security | security | 3 | registry.groups |
-| `security:remote-heartbeat:clear-quarantine` | security | security | 3 | registry.groups |
-| `security:remote-heartbeat:emit` | security | security | 3 | registry.groups |
-| `security:remote-heartbeat:verify` | security | security | 3 | registry.groups |
-| `security:repo-access:review-plan` | security | security | 3 | registry.groups |
-| `security:repo-access:status` | security | security | 3 | registry.groups |
-| `security:sandbox:evaluate-actuation` | security | security | 3 | registry.groups |
 
-Total commands: 619
+Total commands: 696
 Missing metadata: 0

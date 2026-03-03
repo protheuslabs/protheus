@@ -23,6 +23,8 @@ npm run ops:backlog:registry:metrics
 npm run ops:backlog:registry:triage
 npm run ops:backlog:pathfinder:run
 npm run ops:backlog:pathfinder:status
+npm run ops:backlog:lane-batch:list
+npm run ops:backlog:lane-batch:status
 ```
 
 ## Governance Checks
@@ -53,3 +55,11 @@ npm run ops:backlog:pathfinder:status
   - which queued rows are runnable now (`lane:<id>:run` exists and dependencies are closed),
   - which rows are dependency-ready but still missing implementation lanes,
   - which dependency IDs unlock the largest number of blocked rows.
+
+## Batch Lane Coverage
+
+- `systems/ops/backlog_lane_batch_delivery.ts` provides lane execution coverage for IDs that lacked dedicated lane scripts.
+- Policy: `config/backlog_lane_batch_delivery_policy.json`
+- Per-ID scripts are published as:
+  - `lane:<id>:run`
+  - `test:lane:<id>`
