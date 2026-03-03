@@ -7,6 +7,7 @@ This directory stores internal operator lenses used for planning, audits, and de
 - `personas/<name>/profile.md` - background, strengths, failure modes, communication style
 - `personas/<name>/lens.md` - how to evaluate a proposal through that persona's priorities
 - `personas/<name>/correspondence.md` - timestamped notes and decision history
+- `personas/<name>/emotion_lens.md` (optional) - emotional response patterns used to enrich lens output
 
 ## Operating Rules
 
@@ -17,6 +18,9 @@ This directory stores internal operator lenses used for planning, audits, and de
 
 ## Current Personas
 
-- `vikram_menon`
+- `aarav_singh`
+- `jay_haslam`
+- `li_wei`
 - `priya_venkatesh`
 - `rohan_kapoor`
+- `vikram_menon`

@@ -129,12 +129,18 @@ function readFileRequired(filePath: string): string {
   return String(fs.readFileSync(filePath, 'utf8') || '');
 }
 
+function readFileOptional(filePath: string): string {
+  if (!fs.existsSync(filePath)) return '';
+  return String(fs.readFileSync(filePath, 'utf8') || '');
+}
+
 type PersonaContext = {
   personaId: string,
   personaName: string,
   profileMd: string,
   correspondenceMd: string,
-  lensMd: string
+  lensMd: string,
+  emotionLensMd: string
 };
 
 function loadPersonaContext(personaId: string): PersonaContext {
@@ -142,13 +148,15 @@ function loadPersonaContext(personaId: string): PersonaContext {
   const profileMd = readFileRequired(path.join(personaDir, 'profile.md'));
   const correspondenceMd = readFileRequired(path.join(personaDir, 'correspondence.md'));
   const lensMd = readFileRequired(path.join(personaDir, 'lens.md'));
+  const emotionLensMd = readFileOptional(path.join(personaDir, 'emotion_lens.md'));
   const personaName = extractTitle(profileMd, personaId);
   return {
     personaId,
     personaName,
     profileMd,
     correspondenceMd,
-    lensMd
+    lensMd,
+    emotionLensMd
   };
 }
 
@@ -198,20 +206,23 @@ function buildResponseDetails(
   query: string,
   profileMd: string,
   correspondenceMd: string,
-  lensMd: string
+  lensMd: string,
+  emotionLensMd = ''
 ) {
   const decisionFilters = extractListItems(lensMd, 4);
   const nonNegotiables = extractListItems(lensMd.split('## Non-Negotiables')[1] || '', 4);
   const correspondenceHighlights = extractListItems(correspondenceMd, 3);
   const profileHighlights = extractListItems(profileMd, 3);
+  const emotionSignals = extractListItems(emotionLensMd, 2);
   const promptTemplate = `As ${personaName}, using your profile, lens, and past correspondence, respond to: ${query}`;
   const recommendation = recommendFromQuery(personaName, query);
   const reasoning = [
     ...decisionFilters.map((v) => `Decision filter: ${v}`),
+    ...emotionSignals.map((v) => `Emotion signal: ${v}`),
     ...nonNegotiables.map((v) => `Constraint: ${v}`),
     ...correspondenceHighlights.map((v) => `Prior correspondence: ${v}`),
     ...profileHighlights.map((v) => `Profile context: ${v}`)
-  ].slice(0, 7);
+  ].slice(0, 9);
   return {
     promptTemplate,
     recommendation,
@@ -225,13 +236,14 @@ function renderMarkdownResponse(
   query: string,
   profileMd: string,
   correspondenceMd: string,
-  lensMd: string
+  lensMd: string,
+  emotionLensMd = ''
 ): string {
   const {
     promptTemplate,
     recommendation,
     reasoning
-  } = buildResponseDetails(personaName, query, profileMd, correspondenceMd, lensMd);
+  } = buildResponseDetails(personaName, query, profileMd, correspondenceMd, lensMd, emotionLensMd);
 
   const lines: string[] = [];
   lines.push(`# Lens Response: ${personaName}`);
@@ -262,6 +274,9 @@ function renderMarkdownResponse(
   lines.push(`- \`personas/${personaId}/profile.md\``);
   lines.push(`- \`personas/${personaId}/correspondence.md\``);
   lines.push(`- \`personas/${personaId}/lens.md\``);
+  if (cleanText(emotionLensMd, 8)) {
+    lines.push(`- \`personas/${personaId}/emotion_lens.md\``);
+  }
   lines.push('');
   return lines.join('\n');
 }
@@ -271,7 +286,14 @@ function renderMarkdownSection(ctx: PersonaContext, query: string): string {
     promptTemplate,
     recommendation,
     reasoning
-  } = buildResponseDetails(ctx.personaName, query, ctx.profileMd, ctx.correspondenceMd, ctx.lensMd);
+  } = buildResponseDetails(
+    ctx.personaName,
+    query,
+    ctx.profileMd,
+    ctx.correspondenceMd,
+    ctx.lensMd,
+    ctx.emotionLensMd
+  );
 
   const lines: string[] = [];
   lines.push(`## ${ctx.personaName} (\`${ctx.personaId}\`)`);
@@ -294,6 +316,9 @@ function renderMarkdownSection(ctx: PersonaContext, query: string): string {
   lines.push(`- \`personas/${ctx.personaId}/profile.md\``);
   lines.push(`- \`personas/${ctx.personaId}/correspondence.md\``);
   lines.push(`- \`personas/${ctx.personaId}/lens.md\``);
+  if (cleanText(ctx.emotionLensMd, 8)) {
+    lines.push(`- \`personas/${ctx.personaId}/emotion_lens.md\``);
+  }
   lines.push('');
   return lines.join('\n');
 }
@@ -379,7 +404,8 @@ function main() {
       queryArg,
       ctx.profileMd,
       ctx.correspondenceMd,
-      ctx.lensMd
+      ctx.lensMd,
+      ctx.emotionLensMd
     );
     process.stdout.write(`${markdown}\n`);
     process.exit(0);

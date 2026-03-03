@@ -7,9 +7,12 @@ Thanks for contributing.
 1. Create a feature branch from `main`.
 2. Make focused changes with tests.
 3. Run local checks before opening a PR:
+   - `npm run ops:format:check:staged` (code enforcer on staged files)
    - `npm run lint`
    - `npm run test`
 4. Open a pull request and wait for CI + review.
+
+For full-repository enforcement (same scope as CI), run `npm run ops:format:check`.
 
 ## Required Reading
 
@@ -23,6 +26,7 @@ Thanks for contributing.
 - [Empty Fort Integrity Checklist](docs/EMPTY_FORT_INTEGRITY_CHECKLIST.md)
 - [Org Code Format Standard](docs/ORG_CODE_FORMAT_STANDARD.md)
 - [Perception Audit Program](docs/PERCEPTION_AUDIT_PROGRAM.md)
+- [Code Enforcer Engine](systems/ops/org_code_format_guard.ts)
 - [Public Collaboration Triage Contract](docs/PUBLIC_COLLABORATION_TRIAGE.md)
 - [Public Collaboration Surface](docs/PUBLIC_COLLABORATION_SURFACE.md)
 - [Changelog](CHANGELOG.md)
