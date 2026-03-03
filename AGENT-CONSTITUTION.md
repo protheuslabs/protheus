@@ -1,4 +1,4 @@
-# AGENT-CONSTITUTION.md
+## AGENT-CONSTITUTION.md
 
 ## Mind Sovereignty Covenant (Immutable)
 
