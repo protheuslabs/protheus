@@ -7,227 +7,221 @@
     "done"
   ],
   "targets": {
-    "V4-RUST-002": {
+    "V4-OBS-011": {
       "require_dependency_closed": true,
       "verify_signals_required": false,
       "rollback_signals_required": false,
-      "notes": "dependency_ready_lane_coverage"
+      "notes": "next_wave3_dependency_ready_lane_coverage"
     },
-    "V4-RUST-004": {
+    "V4-SETTLE-001": {
       "require_dependency_closed": true,
       "verify_signals_required": false,
       "rollback_signals_required": false,
-      "notes": "dependency_ready_lane_coverage"
+      "notes": "next_wave3_dependency_ready_lane_coverage"
     },
-    "V3-RACE-025": {
+    "V4-SCALE-002": {
       "require_dependency_closed": true,
       "verify_signals_required": false,
       "rollback_signals_required": false,
-      "notes": "dependency_ready_lane_coverage"
+      "notes": "next_wave3_dependency_ready_lane_coverage"
     },
-    "V3-RACE-027": {
+    "V4-SCALE-003": {
       "require_dependency_closed": true,
       "verify_signals_required": false,
       "rollback_signals_required": false,
-      "notes": "dependency_ready_lane_coverage"
+      "notes": "next_wave3_dependency_ready_lane_coverage"
     },
-    "V3-RACE-001": {
+    "V4-SCALE-004": {
       "require_dependency_closed": true,
       "verify_signals_required": false,
       "rollback_signals_required": false,
-      "notes": "dependency_ready_lane_coverage"
+      "notes": "next_wave3_dependency_ready_lane_coverage"
     },
-    "V3-RACE-003": {
+    "V4-SCALE-005": {
       "require_dependency_closed": true,
       "verify_signals_required": false,
       "rollback_signals_required": false,
-      "notes": "dependency_ready_lane_coverage"
+      "notes": "next_wave3_dependency_ready_lane_coverage"
     },
-    "V3-RACE-004": {
+    "V4-SCALE-007": {
       "require_dependency_closed": true,
       "verify_signals_required": false,
       "rollback_signals_required": false,
-      "notes": "dependency_ready_lane_coverage"
+      "notes": "next_wave3_dependency_ready_lane_coverage"
     },
-    "V3-RACE-005": {
+    "V4-SCALE-008": {
       "require_dependency_closed": true,
       "verify_signals_required": false,
       "rollback_signals_required": false,
-      "notes": "dependency_ready_lane_coverage"
+      "notes": "next_wave3_dependency_ready_lane_coverage"
     },
-    "V3-RACE-006": {
+    "V4-SCALE-009": {
       "require_dependency_closed": true,
       "verify_signals_required": false,
       "rollback_signals_required": false,
-      "notes": "dependency_ready_lane_coverage"
+      "notes": "next_wave3_dependency_ready_lane_coverage"
     },
-    "V3-RACE-007": {
+    "V4-SCALE-010": {
       "require_dependency_closed": true,
       "verify_signals_required": false,
       "rollback_signals_required": false,
-      "notes": "dependency_ready_lane_coverage"
+      "notes": "next_wave3_dependency_ready_lane_coverage"
     },
-    "V3-RACE-008": {
+    "V3-RACE-064": {
       "require_dependency_closed": true,
       "verify_signals_required": false,
       "rollback_signals_required": false,
-      "notes": "dependency_ready_lane_coverage"
+      "notes": "next_wave3_dependency_ready_lane_coverage"
     },
-    "V3-RACE-009": {
+    "V3-RACE-103": {
       "require_dependency_closed": true,
       "verify_signals_required": false,
       "rollback_signals_required": false,
-      "notes": "dependency_ready_lane_coverage"
+      "notes": "next_wave3_dependency_ready_lane_coverage"
     },
-    "V3-RACE-010": {
+    "V3-RACE-131": {
       "require_dependency_closed": true,
       "verify_signals_required": false,
       "rollback_signals_required": false,
-      "notes": "dependency_ready_lane_coverage"
+      "notes": "next_wave3_dependency_ready_lane_coverage"
     },
-    "V3-RACE-012": {
+    "V3-RACE-132": {
       "require_dependency_closed": true,
       "verify_signals_required": false,
       "rollback_signals_required": false,
-      "notes": "dependency_ready_lane_coverage"
+      "notes": "next_wave3_dependency_ready_lane_coverage"
     },
-    "V3-RACE-013": {
+    "V3-RACE-133": {
       "require_dependency_closed": true,
       "verify_signals_required": false,
       "rollback_signals_required": false,
-      "notes": "dependency_ready_lane_coverage"
+      "notes": "next_wave3_dependency_ready_lane_coverage"
     },
-    "V3-RACE-CONF-001": {
+    "V3-RACE-137": {
       "require_dependency_closed": true,
       "verify_signals_required": false,
       "rollback_signals_required": false,
-      "notes": "dependency_ready_lane_coverage"
+      "notes": "next_wave3_dependency_ready_lane_coverage"
     },
-    "V3-RACE-CONF-003": {
+    "V3-RACE-139": {
       "require_dependency_closed": true,
       "verify_signals_required": false,
       "rollback_signals_required": false,
-      "notes": "dependency_ready_lane_coverage"
+      "notes": "next_wave3_dependency_ready_lane_coverage"
     },
-    "V3-RACE-CONF-004": {
+    "V3-RACE-140": {
       "require_dependency_closed": true,
       "verify_signals_required": false,
       "rollback_signals_required": false,
-      "notes": "dependency_ready_lane_coverage"
+      "notes": "next_wave3_dependency_ready_lane_coverage"
     },
-    "V3-RACE-CONF-005": {
+    "V3-RACE-167": {
       "require_dependency_closed": true,
       "verify_signals_required": false,
       "rollback_signals_required": false,
-      "notes": "dependency_ready_lane_coverage"
+      "notes": "next_wave3_dependency_ready_lane_coverage"
     },
-    "V3-RACE-037": {
+    "V3-RACE-207": {
       "require_dependency_closed": true,
       "verify_signals_required": false,
       "rollback_signals_required": false,
-      "notes": "dependency_ready_lane_coverage"
+      "notes": "next_wave3_dependency_ready_lane_coverage"
     },
-    "V3-RACE-060": {
+    "V3-RACE-212": {
       "require_dependency_closed": true,
       "verify_signals_required": false,
       "rollback_signals_required": false,
-      "notes": "dependency_ready_lane_coverage"
+      "notes": "next_wave3_dependency_ready_lane_coverage"
     },
-    "V3-RACE-068": {
+    "V3-RACE-224": {
       "require_dependency_closed": true,
       "verify_signals_required": false,
       "rollback_signals_required": false,
-      "notes": "dependency_ready_lane_coverage"
+      "notes": "next_wave3_dependency_ready_lane_coverage"
     },
-    "V3-RACE-070": {
+    "V3-RACE-233": {
       "require_dependency_closed": true,
       "verify_signals_required": false,
       "rollback_signals_required": false,
-      "notes": "dependency_ready_lane_coverage"
+      "notes": "next_wave3_dependency_ready_lane_coverage"
     },
-    "V3-RACE-071": {
+    "V3-RACE-243": {
       "require_dependency_closed": true,
       "verify_signals_required": false,
       "rollback_signals_required": false,
-      "notes": "dependency_ready_lane_coverage"
+      "notes": "next_wave3_dependency_ready_lane_coverage"
     },
-    "V3-RACE-072": {
+    "V3-RACE-248": {
       "require_dependency_closed": true,
       "verify_signals_required": false,
       "rollback_signals_required": false,
-      "notes": "dependency_ready_lane_coverage"
+      "notes": "next_wave3_dependency_ready_lane_coverage"
     },
-    "V3-RACE-073": {
+    "V3-RACE-263": {
       "require_dependency_closed": true,
       "verify_signals_required": false,
       "rollback_signals_required": false,
-      "notes": "dependency_ready_lane_coverage"
+      "notes": "next_wave3_dependency_ready_lane_coverage"
     },
-    "V3-RACE-074": {
+    "V3-RACE-303": {
       "require_dependency_closed": true,
       "verify_signals_required": false,
       "rollback_signals_required": false,
-      "notes": "dependency_ready_lane_coverage"
+      "notes": "next_wave3_dependency_ready_lane_coverage"
     },
-    "V3-RACE-075": {
+    "V3-RACE-308": {
       "require_dependency_closed": true,
       "verify_signals_required": false,
       "rollback_signals_required": false,
-      "notes": "dependency_ready_lane_coverage"
+      "notes": "next_wave3_dependency_ready_lane_coverage"
     },
-    "V3-RACE-076": {
+    "V3-RACE-333": {
       "require_dependency_closed": true,
       "verify_signals_required": false,
       "rollback_signals_required": false,
-      "notes": "dependency_ready_lane_coverage"
+      "notes": "next_wave3_dependency_ready_lane_coverage"
     },
-    "V3-RACE-119": {
+    "V3-RACE-347": {
       "require_dependency_closed": true,
       "verify_signals_required": false,
       "rollback_signals_required": false,
-      "notes": "dependency_ready_lane_coverage"
+      "notes": "next_wave3_dependency_ready_lane_coverage"
     },
-    "V3-RACE-209": {
+    "V3-RACE-348": {
       "require_dependency_closed": true,
       "verify_signals_required": false,
       "rollback_signals_required": false,
-      "notes": "dependency_ready_lane_coverage"
+      "notes": "next_wave3_dependency_ready_lane_coverage"
     },
-    "V3-RACE-235": {
+    "V3-RACE-349": {
       "require_dependency_closed": true,
       "verify_signals_required": false,
       "rollback_signals_required": false,
-      "notes": "dependency_ready_lane_coverage"
+      "notes": "next_wave3_dependency_ready_lane_coverage"
     },
-    "V3-RACE-332": {
+    "V3-RACE-356": {
       "require_dependency_closed": true,
       "verify_signals_required": false,
       "rollback_signals_required": false,
-      "notes": "dependency_ready_lane_coverage"
+      "notes": "next_wave3_dependency_ready_lane_coverage"
     },
-    "V3-RACE-214": {
+    "V3-RACE-031": {
       "require_dependency_closed": false,
       "verify_signals_required": false,
       "rollback_signals_required": false,
-      "notes": "blocker_dependency_lane_coverage"
+      "notes": "next_wave3_blocker_dependency_lane_coverage"
     },
-    "V3-RACE-174": {
+    "V3-RACE-200": {
       "require_dependency_closed": false,
       "verify_signals_required": false,
       "rollback_signals_required": false,
-      "notes": "blocker_dependency_lane_coverage"
+      "notes": "next_wave3_blocker_dependency_lane_coverage"
     },
-    "V3-RACE-019": {
+    "V3-RACE-223": {
       "require_dependency_closed": false,
       "verify_signals_required": false,
       "rollback_signals_required": false,
-      "notes": "blocker_dependency_lane_coverage"
-    },
-    "V3-RACE-210": {
-      "require_dependency_closed": false,
-      "verify_signals_required": false,
-      "rollback_signals_required": false,
-      "notes": "blocker_dependency_lane_coverage"
+      "notes": "next_wave3_blocker_dependency_lane_coverage"
     }
   },
   "outputs": {
