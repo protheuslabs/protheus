@@ -1,6 +1,6 @@
 # Backlog Archive View
 
-Generated: 2026-03-03T19:24:03.304Z
+Generated: 2026-03-03T19:31:48.591Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
@@ -769,4 +769,5 @@ Generated: 2026-03-03T19:24:03.304Z
 | V6-PERS-SEAM-002 | hardening | V6 | done | Pre-Commit Persona Safety Lens Gate | V3-FCH-002, V3-RACE-060 |
 | V6-PERS-SEAM-003 | extension | V6 | done | Inversion Persona Feed Auto-Push (Policy-Gated) | V4-SELF-001, V6-PERS-SEAM-001 |
 | V6-PERS-SEAM-004 | launch-polish | V6 | done | Trigger Playbook + Operator Docs Wiring | V6-PERS-SEAM-001 |
+| V6-PERS-SEAM-005 | extension | V6 | done | Multi-Persona Lens Query + Deterministic Arbitration + Surprise/Recall Signal | V6-PERS-SEAM-001, V6-PERS-SEAM-004 |
 

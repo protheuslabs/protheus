@@ -84,6 +84,23 @@ try {
   assert.ok(out.stdout.includes('## Li Wei (`li_wei`)'), 'all command should include li wei section');
   assert.ok(out.stdout.includes('## Aarav Singh (`aarav_singh`)'), 'all command should include aarav section');
 
+  out = run([
+    'lens',
+    'vikram',
+    'rohan',
+    'Prioritize memory or security first?',
+    '--expected=Prioritize memory core determinism first.'
+  ]);
+  assert.strictEqual(out.status, 0, out.stderr || out.stdout);
+  assert.ok(out.stdout.includes('# Lens Response: Multi Persona'), 'multi-persona run should render multi heading');
+  assert.ok(out.stdout.includes('## Persona Positions'), 'multi-persona run should include position section');
+  assert.ok(out.stdout.includes('## Arbitration'), 'multi-persona run should include arbitration section');
+  assert.ok(out.stdout.includes('Rule file:'), 'multi-persona run should reference arbitration rule file');
+  assert.ok(out.stdout.includes('**Disagreement:** `yes`'), 'multi-persona run should detect disagreement when divergence exceeds threshold');
+  assert.ok(out.stdout.includes('Winner: `vikram_menon`'), 'multi-persona arbitration should pick vikram by deterministic tie-break for this query');
+  assert.ok(out.stdout.includes('## Surprise Check'), 'multi-persona run should include surprise check section');
+  assert.ok(out.stdout.includes('Recall signals:'), 'multi-persona run should include memory/feed recall context');
+
   out = run(['lens', 'trigger', 'pre-sprint', 'Foundation Lock sprint planning review']);
   assert.strictEqual(out.status, 0, out.stderr || out.stdout);
   assert.ok(out.stdout.includes('# Trigger: pre-sprint'), 'pre-sprint trigger should render trigger heading');

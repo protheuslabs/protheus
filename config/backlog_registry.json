@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-03T19:24:03.304Z",
-  "source_hash": "7c905fd1aa5a361a20106013",
-  "row_count": 781,
+  "generated_at": "2026-03-03T19:31:48.591Z",
+  "source_hash": "d5dd024eb2a47712d2e2989c",
+  "row_count": 782,
   "active_count": 16,
-  "archive_count": 765,
+  "archive_count": 766,
   "rows": [
     {
       "id": "BL-001",
@@ -9851,6 +9851,19 @@
       "acceptance": "Added `personas/organization/triggers.md` and linked trigger/dashboard operations in `personas/README.md` plus CLI usage surfaces (`systems/ops/protheusctl.ts`, `systems/personas/cli.ts`). Verified through `personas_lens_cli` command-path tests and help-surface coverage in existing CLI suite. Rollback by removing docs references and restoring previous CLI usage text.",
       "dependencies": [
         "V6-PERS-SEAM-001"
+      ]
+    },
+    {
+      "id": "V6-PERS-SEAM-005",
+      "class": "extension",
+      "wave": "V6",
+      "status": "done",
+      "title": "Multi-Persona Lens Query + Deterministic Arbitration + Surprise/Recall Signal",
+      "problem": "Manual persona synthesis created projection bias and reduced scalability for conflict-based reasoning across personas.",
+      "acceptance": "Added native multi-persona CLI path `protheus lens <persona1> <persona2> [personaN...] \"<query>\" [--expected=\"...\"]` in `systems/personas/cli.ts` with divergence-based disagreement detection (`>20%`), deterministic arbitration driven by `personas/organization/arbitration_rules.json`, memory/feed recall surfacing, and surprise scoring versus expected baseline. Updated operator help surfaces (`systems/ops/protheusctl.ts`, `personas/README.md`) and regression coverage in `memory/tools/tests/personas_lens_cli.test.js` (`multi persona`, conflict detection, arbitration winner, surprise section). Verify via `node memory/tools/tests/personas_lens_cli.test.js` plus command proof `node systems/personas/cli.js vikram rohan \"Prioritize memory or security first?\" --expected=\"Prioritize memory core determinism first.\"`; rollback by removing multi-persona branch and restoring single/all persona routing semantics.",
+      "dependencies": [
+        "V6-PERS-SEAM-001",
+        "V6-PERS-SEAM-004"
       ]
     }
   ]

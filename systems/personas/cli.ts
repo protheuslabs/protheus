@@ -14,6 +14,7 @@ const PERSONAS_DIR = path.join(ROOT, 'personas');
 const PERSONA_ORG_DIR = path.join(PERSONAS_DIR, 'organization');
 const PERSONA_TELEMETRY_PATH = path.join(PERSONA_ORG_DIR, 'telemetry.jsonl');
 const PERSONA_TRIGGERS_PATH = path.join(PERSONA_ORG_DIR, 'triggers.md');
+const PERSONA_ARBITRATION_RULES_PATH = path.join(PERSONA_ORG_DIR, 'arbitration_rules.json');
 let runLocalOllamaPrompt: null | ((opts: Record<string, unknown>) => Record<string, unknown>) = null;
 try {
   ({ runLocalOllamaPrompt } = require('../routing/llm_gateway.js'));
@@ -43,6 +44,7 @@ type GapSessionResult = {
 function usage() {
   console.log('Usage:');
   console.log('  protheus lens <persona> "<query>"');
+  console.log('  protheus lens <persona1> <persona2> [personaN...] "<query>" [--expected="<text>"]');
   console.log('  protheus lens <persona> <decision|strategic|full> "<query>"');
   console.log('  protheus lens <persona> [decision|strategic|full] --gap=<seconds> [--active=1] [--emotion=on|off] [--values=on|off] [--include-feed=1] [--intercept="<override>"] "<query>"');
   console.log('  protheus lens trigger <pre-sprint|drift-alert|weekly-checkin> ["<query>"] [--persona=<id>] [--heartbeat=HEARTBEAT.md] [--dry-run=1]');
@@ -56,6 +58,7 @@ function usage() {
   console.log('');
   console.log('Examples:');
   console.log('  protheus lens vikram "Should we prioritize memory or security first?"');
+  console.log('  protheus lens vikram rohan "Prioritize memory or security first?" --expected="Prioritize memory core determinism first."');
   console.log('  protheus lens vikram strategic "How does this sprint support the singularity seed?"');
   console.log('  protheus lens jay_haslam "How can we reduce drift in the loops?"');
   console.log('  protheus lens trigger pre-sprint "Foundation Lock sprint planning review"');
@@ -328,6 +331,14 @@ type PersonaContext = {
   memoryPath: string | null
 };
 
+type ArbitrationRules = {
+  version: string,
+  default_domain: string,
+  tie_break_priority: string[],
+  domain_winners: Record<string, string>,
+  conflicting_rules_fail_closed: boolean
+};
+
 function loadPersonaContext(personaId: string): PersonaContext {
   const personaDir = path.join(PERSONAS_DIR, personaId);
   const profileMd = readFileRequired(path.join(personaDir, 'profile.md'));
@@ -409,6 +420,123 @@ function loadPersonaContext(personaId: string): PersonaContext {
     feedPath: feedPath ? path.relative(ROOT, feedPath).replace(/\\/g, '/') : null,
     memoryMd: memoryResolved,
     memoryPath: memoryPath ? path.relative(ROOT, memoryPath).replace(/\\/g, '/') : null
+  };
+}
+
+function loadArbitrationRules(): ArbitrationRules {
+  const fallback: ArbitrationRules = {
+    version: '1.0.0',
+    default_domain: 'general',
+    tie_break_priority: ['vikram_menon', 'priya_venkatesh', 'rohan_kapoor', 'li_wei', 'aarav_singh', 'jay_haslam'],
+    domain_winners: {
+      security: 'aarav_singh',
+      safety: 'vikram_menon',
+      measurement: 'priya_venkatesh',
+      rollout: 'rohan_kapoor',
+      product: 'li_wei',
+      general: 'vikram_menon'
+    },
+    conflicting_rules_fail_closed: true
+  };
+  try {
+    if (!fs.existsSync(PERSONA_ARBITRATION_RULES_PATH)) return fallback;
+    const payload = JSON.parse(String(fs.readFileSync(PERSONA_ARBITRATION_RULES_PATH, 'utf8') || '{}'));
+    const tieBreak = Array.isArray(payload && payload.tie_break_priority)
+      ? payload.tie_break_priority.map((v: unknown) => normalizeToken(v, 120)).filter(Boolean)
+      : fallback.tie_break_priority.slice();
+    const domainWinnersRaw = payload && typeof payload.domain_winners === 'object'
+      ? payload.domain_winners
+      : {};
+    const domainWinners: Record<string, string> = {};
+    for (const [key, value] of Object.entries(domainWinnersRaw || {})) {
+      const k = normalizeToken(key, 80);
+      const v = normalizeToken(value, 120);
+      if (!k || !v) continue;
+      domainWinners[k] = v;
+    }
+    return {
+      version: cleanText(payload && payload.version || fallback.version, 30) || fallback.version,
+      default_domain: normalizeToken(payload && payload.default_domain || fallback.default_domain, 60) || 'general',
+      tie_break_priority: tieBreak.length ? tieBreak : fallback.tie_break_priority.slice(),
+      domain_winners: Object.keys(domainWinners).length ? domainWinners : fallback.domain_winners,
+      conflicting_rules_fail_closed: toBool(payload && payload.conflicting_rules_fail_closed, fallback.conflicting_rules_fail_closed)
+    };
+  } catch {
+    return fallback;
+  }
+}
+
+function inferArbitrationDomain(query: string): string {
+  const lower = String(query || '').toLowerCase();
+  const map: Array<{ domain: string, terms: string[] }> = [
+    { domain: 'security', terms: ['security', 'threat', 'tamper', 'vault', 'fail-closed', 'fail closed', 'covenant'] },
+    { domain: 'safety', terms: ['safety', 'guardrail', 'rollback', 'risk', 'drift'] },
+    { domain: 'measurement', terms: ['metric', 'measurement', 'benchmark', 'parity', 'evidence'] },
+    { domain: 'rollout', terms: ['rollout', 'release', 'deploy', 'operations', 'on-call', 'schedule'] },
+    { domain: 'product', terms: ['user', 'adoption', 'pmf', 'product', 'growth'] }
+  ];
+  for (const row of map) {
+    if (row.terms.some((term) => lower.includes(term))) {
+      return row.domain;
+    }
+  }
+  return 'general';
+}
+
+function tokenSet(text: string): Set<string> {
+  return new Set(
+    String(text || '')
+      .toLowerCase()
+      .split(/[^a-z0-9]+/)
+      .map((token) => token.trim())
+      .filter((token) => token.length >= 4)
+  );
+}
+
+function textDivergence(a: string, b: string): number {
+  const as = tokenSet(a);
+  const bs = tokenSet(b);
+  if (!as.size && !bs.size) return 0;
+  let intersection = 0;
+  for (const token of as) {
+    if (bs.has(token)) intersection += 1;
+  }
+  const union = new Set([...Array.from(as), ...Array.from(bs)]).size || 1;
+  const similarity = intersection / union;
+  return Number((1 - similarity).toFixed(4));
+}
+
+function pickArbitrationWinner(
+  domain: string,
+  participants: string[],
+  rules: ArbitrationRules
+): { winner: string | null, rule: string } {
+  const participantSet = new Set((Array.isArray(participants) ? participants : []).map((v) => normalizeToken(v, 120)).filter(Boolean));
+  const domainWinner = normalizeToken(rules.domain_winners && rules.domain_winners[domain] || '', 120);
+  if (domainWinner && participantSet.has(domainWinner)) {
+    return {
+      winner: domainWinner,
+      rule: `domain_winner:${domain}`
+    };
+  }
+  for (const personaId of rules.tie_break_priority || []) {
+    const normalized = normalizeToken(personaId, 120);
+    if (participantSet.has(normalized)) {
+      return {
+        winner: normalized,
+        rule: `tie_break_priority:${normalized}`
+      };
+    }
+  }
+  if (rules.conflicting_rules_fail_closed) {
+    return {
+      winner: null,
+      rule: 'fail_closed:no_arbitration_winner'
+    };
+  }
+  return {
+    winner: participants.length ? normalizeToken(participants[0], 120) : null,
+    rule: 'fallback:first_participant'
   };
 }
 
@@ -1691,6 +1819,16 @@ function extractListItems(markdown: string, maxItems = 4): string[] {
 function recommendFromQuery(personaName: string, query: string): string {
   const lower = String(query || '').toLowerCase();
   if (lower.includes('memory') && lower.includes('security') && (lower.includes('first') || lower.includes('priorit'))) {
+    const persona = normalizeToken(personaName, 80);
+    if (persona.includes('rohan')) {
+      return 'Prioritize security gate readiness first at rollout boundaries, then sequence memory migration in constrained, parity-verified slices.';
+    }
+    if (persona.includes('aarav')) {
+      return 'Prioritize security invariants first: enforce fail-closed checks globally, then continue memory migration behind audited gates.';
+    }
+    if (persona.includes('priya')) {
+      return 'Do not hard-order memory vs security until parity and drift evidence is current; run a measurement checkpoint before sequencing.';
+    }
     return 'Prioritize memory core determinism first, but keep security enforcement in pre-dispatch path from day one.';
   }
   if (lower.includes('rust') && (lower.includes('migrate') || lower.includes('migration') || lower.includes('cutover'))) {
@@ -2030,6 +2168,134 @@ function renderAllMarkdown(
   return lines.join('\n');
 }
 
+function recallSignals(reasoning: string[]) {
+  return (Array.isArray(reasoning) ? reasoning : [])
+    .filter((row) => {
+      const normalized = String(row || '').toLowerCase();
+      return normalized.startsWith('memory recall:')
+        || normalized.startsWith('feed:')
+        || normalized.startsWith('systempassed:');
+    })
+    .slice(0, 3);
+}
+
+function renderMultiPersonaMarkdown(
+  query: string,
+  contexts: PersonaContext[],
+  lensMode: LensMode,
+  emotionEnabled: boolean,
+  valuesEnabled: boolean,
+  includeFeed: boolean,
+  expected: string
+) {
+  const rules = loadArbitrationRules();
+  const domain = inferArbitrationDomain(query);
+  const details = contexts.map((ctx) => {
+    const info = buildResponseDetails(
+      ctx.personaName,
+      query,
+      ctx.profileMd,
+      ctx.correspondenceMd,
+      ctx.decisionLensMd,
+      ctx.strategicLensMd,
+      lensMode,
+      emotionEnabled ? ctx.emotionLensMd : '',
+      valuesEnabled ? ctx.valuesLensMd : '',
+      ctx.feedMd,
+      ctx.memoryMd,
+      includeFeed
+    );
+    return {
+      persona_id: ctx.personaId,
+      persona_name: ctx.personaName,
+      recommendation: info.recommendation,
+      reasoning: info.reasoning,
+      recall: recallSignals(info.reasoning)
+    };
+  });
+
+  let maxDivergence = 0;
+  const pairwise: Array<{ pair: string, divergence: number }> = [];
+  for (let i = 0; i < details.length; i += 1) {
+    for (let j = i + 1; j < details.length; j += 1) {
+      const d = textDivergence(details[i].recommendation, details[j].recommendation);
+      if (d > maxDivergence) maxDivergence = d;
+      pairwise.push({
+        pair: `${details[i].persona_id}<->${details[j].persona_id}`,
+        divergence: d
+      });
+    }
+  }
+  const disagreementThreshold = 0.2;
+  const disagreement = maxDivergence > disagreementThreshold;
+  const arbitration = pickArbitrationWinner(domain, details.map((d) => d.persona_id), rules);
+  const winner = details.find((row) => row.persona_id === arbitration.winner) || null;
+  const expectedText = cleanText(expected, 1200)
+    || recommendFromQuery('baseline', query);
+  const surpriseScore = winner
+    ? textDivergence(winner.recommendation, expectedText)
+    : 1;
+  const surprising = surpriseScore > 0.2;
+
+  const lines: string[] = [];
+  lines.push('# Lens Response: Multi Persona');
+  lines.push('');
+  lines.push(`**Lens Mode:** \`${lensMode}\``);
+  lines.push(`**Participants:** ${details.map((row) => `\`${row.persona_id}\``).join(', ')}`);
+  lines.push(`**Query:** ${query}`);
+  lines.push(`**Domain:** \`${domain}\``);
+  lines.push(`**Disagreement:** \`${disagreement ? 'yes' : 'no'}\` (max divergence \`${maxDivergence.toFixed(3)}\`, threshold \`0.200\`)`);
+  lines.push('');
+  lines.push('## Persona Positions');
+  for (const row of details) {
+    lines.push(`### ${row.persona_name} (\`${row.persona_id}\`)`);
+    lines.push(`- Position: ${row.recommendation}`);
+    if (row.recall.length) {
+      lines.push('- Recall signals:');
+      for (const signal of row.recall) {
+        lines.push(`  - ${signal}`);
+      }
+    } else {
+      lines.push('- Recall signals: none');
+    }
+    lines.push('');
+  }
+  lines.push('## Arbitration');
+  lines.push(`- Rule file: \`${path.relative(ROOT, PERSONA_ARBITRATION_RULES_PATH).replace(/\\/g, '/')}\``);
+  lines.push(`- Rule applied: \`${arbitration.rule}\``);
+  lines.push(`- Winner: ${winner ? `\`${winner.persona_id}\`` : '`none` (fail-closed)'}`);
+  if (winner) {
+    lines.push(`- Final position: ${winner.recommendation}`);
+  } else {
+    lines.push('- Final position: blocked (no deterministic winner)');
+  }
+  lines.push('');
+  lines.push('## Surprise Check');
+  lines.push(`- Expected baseline: ${expectedText}`);
+  lines.push(`- Surprise score: \`${surpriseScore.toFixed(3)}\``);
+  lines.push(`- Surprising: \`${surprising ? 'yes' : 'no'}\``);
+  lines.push('');
+  lines.push('## Pairwise Divergence');
+  if (!pairwise.length) {
+    lines.push('- Not enough participants for pairwise divergence.');
+  } else {
+    for (const row of pairwise) {
+      lines.push(`- ${row.pair}: ${row.divergence.toFixed(3)}`);
+    }
+  }
+  lines.push('');
+
+  return {
+    markdown: lines.join('\n'),
+    disagreement,
+    maxDivergence,
+    arbitration,
+    winner: winner ? winner.persona_id : null,
+    surpriseScore,
+    surprising
+  };
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   if (args.help || args.h || args._.includes('help') || args._.includes('--help') || args._.includes('-h')) {
@@ -2318,6 +2584,106 @@ async function main() {
     process.stdout.write(`${JSON.stringify(payload, null, 2)}\n`);
     process.exit(0);
   }
+
+  if (!args.persona) {
+    const tokens = Array.isArray(args._) ? args._.map((row) => cleanText(row, 120)).filter(Boolean) : [];
+    const multiPersonaIds: string[] = [];
+    let tokenIdx = 0;
+    while (tokenIdx < tokens.length) {
+      const token = tokens[tokenIdx];
+      const normalized = normalizeToken(token, 80);
+      if (['decision', 'strategic', 'full'].includes(normalized)) break;
+      const resolved = resolvePersonaId(token);
+      if (!resolved) break;
+      if (!multiPersonaIds.includes(resolved)) {
+        multiPersonaIds.push(resolved);
+      }
+      tokenIdx += 1;
+    }
+
+    if (multiPersonaIds.length >= 2) {
+      const modeToken = normalizeToken(tokens[tokenIdx] || '', 40);
+      const modeFromPositional = ['decision', 'strategic', 'full'].includes(modeToken);
+      const multiLensMode = normalizeLensMode(args.lens || args.mode || (modeFromPositional ? modeToken : 'decision'));
+      const queryArg = cleanText(
+        args.query
+          || args.q
+          || (modeFromPositional ? tokens.slice(tokenIdx + 1).join(' ') : tokens.slice(tokenIdx).join(' ')),
+        2000
+      );
+      if (!queryArg) {
+        usage();
+        process.exit(1);
+      }
+      const expected = cleanText(args.expected || '', 1200);
+      const includeFeedRequested = (args['include-feed'] != null || args.include_feed != null)
+        ? includeFeedFlag
+        : true;
+      try {
+        const contexts = multiPersonaIds.map((id) => loadPersonaContext(id));
+        for (const ctx of contexts) {
+          const gate = evaluateSoulTokenAccess(ctx, queryArg);
+          if (!gate.ok) {
+            process.stderr.write(`${gate.reason}\n`);
+            process.stderr.write(`persona:${ctx.personaId}\n`);
+            process.exit(1);
+          }
+        }
+        let includeSystemPassed = includeFeedRequested;
+        const includeFailures: Array<{ persona_id: string, reason: string }> = [];
+        if (includeSystemPassed) {
+          for (const ctx of contexts) {
+            const access = evaluateSystemPassedAccess(ctx, true);
+            if (!access.ok) {
+              includeSystemPassed = false;
+              includeFailures.push({
+                persona_id: ctx.personaId,
+                reason: cleanText(access.reason || 'system_pass_blocked', 120)
+              });
+            }
+          }
+        }
+        const rendered = renderMultiPersonaMarkdown(
+          queryArg,
+          contexts,
+          multiLensMode,
+          emotionEnabled,
+          valuesEnabled,
+          includeSystemPassed,
+          expected
+        );
+        const prelude: string[] = [];
+        if (includeFailures.length) {
+          prelude.push(`> System-passed feed auto-disabled for this run: ${includeFailures.map((row) => `${row.persona_id}(${row.reason})`).join(', ')}`);
+          prelude.push('');
+        }
+        const markdown = `${prelude.join('\n')}${rendered.markdown}`;
+        appendPersonaTelemetry({
+          metric: 'multi_persona_disagreement_rate',
+          persona_id: multiPersonaIds.join(','),
+          disagreement: rendered.disagreement ? 1 : 0,
+          max_divergence: Number(rendered.maxDivergence.toFixed(4)),
+          arbitration_winner: rendered.winner || 'none',
+          arbitration_rule: cleanText(rendered.arbitration.rule || 'unknown', 120),
+          surprise_score: Number(rendered.surpriseScore.toFixed(4)),
+          surprising: rendered.surprising ? 1 : 0,
+          include_feed: includeSystemPassed ? 1 : 0,
+          query_hash: crypto.createHash('sha256').update(queryArg, 'utf8').digest('hex').slice(0, 16)
+        });
+        process.stdout.write(`${markdown}\n`);
+        if (!rendered.winner && loadArbitrationRules().conflicting_rules_fail_closed) {
+          process.stderr.write('multi_persona_arbitration_fail_closed\n');
+          process.exit(1);
+        }
+        process.exit(0);
+      } catch (err: any) {
+        const msg = cleanText(err && err.message || 'persona_lens_multi_failed', 260);
+        process.stderr.write(`${msg}\n`);
+        process.exit(1);
+      }
+    }
+  }
+
   const positionalLens = normalizeToken(args._[1] || '', 40);
   const positionalHasLens = ['decision', 'strategic', 'full'].includes(positionalLens);
   const lensMode = normalizeLensMode(args.lens || args.mode || (positionalHasLens ? positionalLens : 'decision'));

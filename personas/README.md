@@ -27,6 +27,7 @@ This directory stores internal operator lenses used for planning, audits, and de
 
 - Use personas as analysis lenses, not as authority replacement.
 - Use `protheus lens <persona> --lens=decision|strategic|full "<query>"` for targeted mode selection.
+- Use `protheus lens <persona1> <persona2> "<query>" [--expected="<baseline>"]` for deterministic multi-persona conflict + arbitration output.
 - Use `protheus lens <persona> --gap=<seconds> [--active=1] [--intercept="<override>"] "<query>"` for control-mode simulation (`e`=edit, `a`=approve early during gap).
 - Use `--emotion=on|off` and `--values=on|off` to include or suppress emotion/values signals (defaults `on`).
 - Use `--include-feed=1` to include hash-verified `## System Passed` feed payloads in response reasoning.
