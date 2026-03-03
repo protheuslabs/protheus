@@ -60,6 +60,12 @@ try {
 } catch {
   evaluateWorkflowSandbox = null;
 }
+let assertOperationAllowed = null;
+try {
+  ({ assertOperationAllowed } = require('../security/rust_security_gate.js'));
+} catch {
+  assertOperationAllowed = null;
+}
 let candidateMutationOrderExternal = null;
 let applyMutationKindExternal = null;
 let evaluateMutationGateExternal = null;
@@ -151,7 +157,7 @@ const ASSIMILATION_LEDGER_PATH = process.env.ASSIMILATION_LEDGER_PATH
 
 function usage() {
   console.log('Usage:');
-  console.log('  node systems/workflow/workflow_executor.js run [YYYY-MM-DD] [--id=<workflow_id>] [--max=N] [--include-draft=1|0] [--dry-run=1|0] [--continue-on-error=1|0] [--receipt-strict=1|0] [--runtime-mutation=1|0] [--runtime-mutation-safety-attested=1|0] [--runtime-mutation-veto-cleared=1|0] [--enforce-eligibility=1|0] [--policy=path]');
+  console.log('  node systems/workflow/workflow_executor.js run [YYYY-MM-DD] [--id=<workflow_id>] [--max=N] [--include-draft=1|0] [--dry-run=1|0] [--continue-on-error=1|0] [--receipt-strict=1|0] [--runtime-mutation=1|0] [--runtime-mutation-safety-attested=1|0] [--runtime-mutation-veto-cleared=1|0] [--enforce-eligibility=1|0] [--step-security-gate=1|0] [--security-covenant-violation=1|0] [--security-tamper-signal=1|0] [--security-key-age-hours=N] [--security-operator-quorum=N] [--state-root=path] [--policy=path]');
   console.log('  node systems/workflow/workflow_executor.js status [YYYY-MM-DD|latest|latest-live]');
 }
 
@@ -2269,6 +2275,80 @@ function resolveWorkflowSignals(executionContext: AnyObj, step: AnyObj, external
   };
 }
 
+function workflowStepSecurityGateEnabled(options: AnyObj) {
+  const explicit = options && options.step_security_gate_enabled;
+  if (explicit != null) return boolFlag(explicit, true);
+  return boolFlag(process.env.PROTHEUS_WORKFLOW_STEP_SECURITY_GATE, true);
+}
+
+function evaluateStepSecurityGate(step: AnyObj, command: string, executionContext: AnyObj, options: AnyObj) {
+  if (!workflowStepSecurityGateEnabled(options)) {
+    return {
+      ok: true,
+      checked: false,
+      reason: 'workflow_step_security_gate_disabled'
+    };
+  }
+  if (typeof assertOperationAllowed !== 'function') {
+    return {
+      ok: false,
+      checked: false,
+      reason: 'workflow_step_security_gate_unavailable'
+    };
+  }
+
+  const workflowId = cleanText(executionContext && executionContext.workflow_id || executionContext && executionContext.objective_id || 'workflow', 120) || 'workflow';
+  const runId = cleanText(executionContext && executionContext.run_id || '', 120);
+  const stepId = cleanText(step && step.id || '', 120) || 'step';
+  const stateRoot = cleanText(
+    options && options.state_root
+      ? options.state_root
+      : path.join(REPO_ROOT, 'state'),
+    500
+  );
+  const request = {
+    operation_id: stableId(`${workflowId}|${runId}|${stepId}|${command}`, 'step'),
+    subsystem: 'workflow',
+    action: 'execute_step',
+    actor: cleanText(options && options.actor || 'workflow_executor', 80),
+    risk_class: cleanText(step && step.risk || 'normal', 32) || 'normal',
+    payload_digest: `sha256:${stableId(command || '', 'cmd')}`,
+    tags: [
+      'workflow_step',
+      `step_type:${cleanText(step && step.type || 'command', 40)}`,
+      `workflow:${workflowId}`
+    ],
+    covenant_violation: Boolean(options && options.covenant_violation),
+    tamper_signal: Boolean(options && options.tamper_signal),
+    key_age_hours: clampInt(options && options.key_age_hours, 0, 1000000, 1),
+    operator_quorum: clampInt(options && options.operator_quorum, 0, 255, 2),
+    audit_receipt_nonce: cleanText(options && options.audit_receipt_nonce || stableId(`${workflowId}|${stepId}`, 'nonce'), 120),
+    zk_proof: cleanText(options && options.zk_proof || 'zk-workflow-step', 180),
+    ciphertext_digest: `sha256:${stableId(`${command}|cipher`, 'cipher')}`
+  };
+
+  try {
+    const gate = assertOperationAllowed(request, {
+      enforce: options && options.dry_run === true ? false : true,
+      state_root: stateRoot,
+      allow_fallback: true
+    });
+    return {
+      ok: true,
+      checked: true,
+      request,
+      gate
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      checked: true,
+      request,
+      reason: cleanText(err && err.message ? err.message : err || 'workflow_step_security_gate_blocked', 220)
+    };
+  }
+}
+
 function executeStep(step: AnyObj, context: AnyObj, options: AnyObj) {
   let executionContext = { ...(context && typeof context === 'object' ? context : {}) };
   let command = interpolateTemplate(step.command, executionContext);
@@ -2293,6 +2373,7 @@ function executeStep(step: AnyObj, context: AnyObj, options: AnyObj) {
   const externalGate = evaluateExternalOrchestrationGate(step, command, executionContext, options);
   let rateLimitGate = null;
   let communicationGate = null;
+  let securityGate = null;
   if (externalGate && externalGate.applicable === true && externalGate.metadata && typeof externalGate.metadata === 'object') {
     executionContext = { ...executionContext, ...externalGate.metadata };
     command = interpolateTemplate(step.command, executionContext);
@@ -2489,6 +2570,44 @@ function executeStep(step: AnyObj, context: AnyObj, options: AnyObj) {
       }
     }
   }
+  securityGate = evaluateStepSecurityGate(step, command, executionContext, options);
+  if (securityGate && securityGate.ok !== true) {
+    const ts = nowIso();
+    const reason = cleanText(securityGate.reason || 'workflow_step_security_gate_blocked', 180) || 'workflow_step_security_gate_blocked';
+    return {
+      ok: false,
+      attempts: 1,
+      dry_run: options && options.dry_run === true,
+      step: {
+        id: step.id,
+        type: step.type,
+        command
+      },
+      records: [{
+        attempt: 1,
+        ok: false,
+        criteria_pass: false,
+        criteria_fail_reasons: [reason],
+        tokens_est: tokensPerAttempt,
+        exit_code: 1,
+        started_at: ts,
+        ended_at: ts,
+        duration_ms: 0,
+        timed_out: false,
+        stdout: '',
+        stderr: reason,
+        error: null
+      }],
+      tokens_est_per_attempt: tokensPerAttempt,
+      tokens_est_total: tokensPerAttempt,
+      success_criteria: criteria,
+      failure_reason: reason,
+      external_gate: externalGate && externalGate.applicable === true ? externalGate : null,
+      rate_limit_gate: rateLimitGate && rateLimitGate.applicable === true ? rateLimitGate : null,
+      communication_gate: communicationGate && communicationGate.applicable === true ? communicationGate : null,
+      security_gate: securityGate
+    };
+  }
   const finalizeExternalTelemetry = (ok: boolean, failureReason = '') => {
     if (
       rateLimitGate
@@ -2600,6 +2719,7 @@ function executeStep(step: AnyObj, context: AnyObj, options: AnyObj) {
       external_gate: externalGate && externalGate.applicable === true ? externalGate : null,
       rate_limit_gate: rateLimitGate && rateLimitGate.applicable === true ? rateLimitGate : null,
       communication_gate: communicationGate && communicationGate.applicable === true ? communicationGate : null,
+      security_gate: securityGate,
       sandbox_gate: sandboxGate
     };
   }
@@ -2623,6 +2743,7 @@ function executeStep(step: AnyObj, context: AnyObj, options: AnyObj) {
       external_gate: externalGate && externalGate.applicable === true ? externalGate : null,
       rate_limit_gate: rateLimitGate && rateLimitGate.applicable === true ? rateLimitGate : null,
       communication_gate: communicationGate && communicationGate.applicable === true ? communicationGate : null,
+      security_gate: securityGate,
       sandbox_gate: sandboxGate
     };
   }
@@ -2667,6 +2788,7 @@ function executeStep(step: AnyObj, context: AnyObj, options: AnyObj) {
       external_gate: externalGate && externalGate.applicable === true ? externalGate : null,
       rate_limit_gate: rateLimitGate && rateLimitGate.applicable === true ? rateLimitGate : null,
       communication_gate: communicationGate && communicationGate.applicable === true ? communicationGate : null,
+      security_gate: securityGate,
       sandbox_gate: sandboxGate
     };
   }
@@ -2723,6 +2845,7 @@ function executeStep(step: AnyObj, context: AnyObj, options: AnyObj) {
         external_gate: externalGate && externalGate.applicable === true ? externalGate : null,
         rate_limit_gate: rateLimitGate && rateLimitGate.applicable === true ? rateLimitGate : null,
         communication_gate: communicationGate && communicationGate.applicable === true ? communicationGate : null,
+        security_gate: securityGate,
         sandbox_gate: sandboxGate
       };
     }
@@ -2751,6 +2874,7 @@ function executeStep(step: AnyObj, context: AnyObj, options: AnyObj) {
     external_gate: externalGate && externalGate.applicable === true ? externalGate : null,
     rate_limit_gate: rateLimitGate && rateLimitGate.applicable === true ? rateLimitGate : null,
     communication_gate: communicationGate && communicationGate.applicable === true ? communicationGate : null,
+    security_gate: securityGate,
     sandbox_gate: sandboxGate
   };
 }
@@ -3866,6 +3990,18 @@ function runCmd(dateStr: string, args: AnyObj) {
     dry_run: effectiveDryRun,
     continue_on_error: boolFlag(args['continue-on-error'], false),
     receipt_strict: boolFlag(args['receipt-strict'], true),
+    step_security_gate_enabled: boolFlag(args['step-security-gate'], true),
+    covenant_violation: boolFlag(args['security-covenant-violation'], false),
+    tamper_signal: boolFlag(args['security-tamper-signal'], false),
+    key_age_hours: clampInt(args['security-key-age-hours'], 0, 1_000_000, 1),
+    operator_quorum: clampInt(args['security-operator-quorum'], 0, 255, 2),
+    state_root: path.resolve(
+      String(
+        args['state-root']
+        || process.env.PROTHEUS_SECURITY_STATE_ROOT
+        || path.join(REPO_ROOT, 'state')
+      )
+    ),
     policy,
     runtime_mutation: {
       ...(policy && policy.runtime_mutation && typeof policy.runtime_mutation === 'object'

@@ -5,6 +5,8 @@ export {};
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const crypto = require('crypto');
+const { evaluateSecurityGate } = require('../security/rust_security_gate.js');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const EXECUTION_MANIFEST = path.join(ROOT, 'crates', 'execution', 'Cargo.toml');
@@ -28,6 +30,126 @@ function parseJsonPayload(raw: unknown) {
     try { return JSON.parse(lines[i]); } catch {}
   }
   return null;
+}
+
+function stableHash(v: unknown, len = 24) {
+  return crypto.createHash('sha256').update(String(v == null ? '' : v), 'utf8').digest('hex').slice(0, len);
+}
+
+function boolOpt(raw: unknown, fallback: boolean) {
+  if (raw == null) return fallback;
+  if (typeof raw === 'boolean') return raw;
+  const txt = cleanText(raw, 16).toLowerCase();
+  if (txt === '1' || txt === 'true' || txt === 'yes' || txt === 'on') return true;
+  if (txt === '0' || txt === 'false' || txt === 'no' || txt === 'off') return false;
+  return fallback;
+}
+
+function executionSecurityGateEnabled(opts: AnyObj = {}) {
+  if (opts.security_gate_enabled === false) return false;
+  const env = process.env.PROTHEUS_EXECUTION_SECURITY_GATE;
+  return boolOpt(env, true);
+}
+
+function buildSecurityGateRequest(yaml: string, opts: AnyObj = {}) {
+  const digest = `sha256:${stableHash(yaml, 32)}`;
+  return {
+    operation_id: cleanText(opts.operation_id || `execution_run_${stableHash(`${Date.now()}_${yaml}`, 18)}`, 160),
+    subsystem: 'execution',
+    action: cleanText(opts.action || 'run_workflow', 80),
+    actor: cleanText(opts.actor || 'systems/execution/index.ts', 120),
+    risk_class: cleanText(opts.risk_class || 'normal', 40),
+    payload_digest: digest,
+    tags: ['execution', 'workflow', 'rust_core'],
+    covenant_violation: Boolean(opts.covenant_violation),
+    tamper_signal: Boolean(opts.tamper_signal),
+    key_age_hours: Number.isFinite(Number(opts.key_age_hours)) ? Math.max(0, Number(opts.key_age_hours)) : 1,
+    operator_quorum: Number.isFinite(Number(opts.operator_quorum)) ? Math.max(0, Number(opts.operator_quorum)) : 2,
+    audit_receipt_nonce: cleanText(opts.audit_receipt_nonce || `nonce-${stableHash(`${digest}_${Date.now()}`, 12)}`, 120),
+    zk_proof: cleanText(opts.zk_proof || 'zk-execution-default', 220),
+    ciphertext_digest: cleanText(opts.ciphertext_digest || digest, 220)
+  };
+}
+
+function securityBlockedReceipt(yaml: string, reason: string, gateResult: any = null) {
+  let workflowId = 'security_gate_blocked';
+  try {
+    const parsed = JSON.parse(String(yaml || '{}'));
+    if (parsed && typeof parsed === 'object' && parsed.workflow_id) {
+      workflowId = cleanText(parsed.workflow_id, 160) || workflowId;
+    }
+  } catch {
+    // best-effort workflow id extraction only
+  }
+  const eventDigest = stableHash(`${workflowId}|${reason}|deny`, 64);
+  return {
+    workflow_id: workflowId,
+    status: 'failed',
+    deterministic: true,
+    replayable: false,
+    processed_steps: 0,
+    pause_reason: reason,
+    event_digest: eventDigest,
+    events: [`error:${reason}`],
+    state: {
+      cursor: 0,
+      paused: false,
+      completed: false,
+      last_step_id: null,
+      processed_step_ids: [],
+      processed_events: 0,
+      digest: eventDigest
+    },
+    metadata: {},
+    warnings: [reason],
+    security_gate: gateResult && gateResult.payload && gateResult.payload.decision
+      ? gateResult.payload.decision
+      : null
+  };
+}
+
+function evaluateExecutionSecurityGate(yaml: string, opts: AnyObj = {}) {
+  if (!executionSecurityGateEnabled(opts)) {
+    return { ok: true, skipped: true, reason: 'execution_security_gate_disabled' };
+  }
+
+  const stateRoot = cleanText(
+    opts.state_root
+      || process.env.PROTHEUS_SECURITY_STATE_ROOT
+      || path.join(ROOT, 'state'),
+    500
+  );
+  const request = buildSecurityGateRequest(yaml, opts);
+  const result = evaluateSecurityGate(request, {
+    enforce: opts.security_enforce !== false,
+    state_root: stateRoot,
+    allow_fallback: opts.security_allow_fallback !== false
+  });
+  if (!result || result.ok !== true) {
+    return {
+      ok: false,
+      reason: cleanText(result && result.error || 'security_gate_execution_failed', 220),
+      result
+    };
+  }
+
+  const payload = result.payload && typeof result.payload === 'object' ? result.payload : {};
+  const decision = payload.decision && typeof payload.decision === 'object' ? payload.decision : null;
+  if (!decision || decision.ok !== true || decision.fail_closed === true) {
+    const denyReason = Array.isArray(decision && decision.reasons) && decision.reasons.length
+      ? cleanText(decision.reasons[0], 220)
+      : 'security_gate_blocked';
+    return {
+      ok: false,
+      reason: denyReason || 'security_gate_blocked',
+      result
+    };
+  }
+
+  return {
+    ok: true,
+    result
+  };
 }
 
 function wasmCandidates() {
@@ -169,18 +291,32 @@ function runWorkflow(yamlOrSpec: unknown, opts: AnyObj = {}) {
 
   const preferWasm = opts.prefer_wasm !== false;
   const allowCliFallback = opts.allow_cli_fallback !== false;
+  const securityGate = evaluateExecutionSecurityGate(yaml, opts);
+  if (!securityGate.ok) {
+    const reason = cleanText(securityGate.reason || 'security_gate_blocked', 220);
+    return {
+      ok: true,
+      engine: 'security_gate_fail_closed',
+      security_gate: securityGate.result || null,
+      payload: securityBlockedReceipt(yaml, reason, securityGate.result || null)
+    };
+  }
 
   if (preferWasm) {
     const wasmResult = runViaWasm(yaml);
-    if (wasmResult.ok) return wasmResult;
+    if (wasmResult.ok) return { ...wasmResult, security_gate: securityGate.result || null };
     if (!allowCliFallback) return wasmResult;
   }
 
   const binResult = runViaRustBinary(yaml);
-  if (binResult.ok) return binResult;
+  if (binResult.ok) return { ...binResult, security_gate: securityGate.result || null };
 
   if (!allowCliFallback) return binResult;
-  return runViaCargo(yaml);
+  const cargoResult = runViaCargo(yaml);
+  if (cargoResult && cargoResult.ok === true) {
+    return { ...cargoResult, security_gate: securityGate.result || null };
+  }
+  return cargoResult;
 }
 
 module.exports = {
