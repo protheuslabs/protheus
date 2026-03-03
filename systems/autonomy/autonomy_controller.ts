@@ -1572,6 +1572,39 @@ function adaptiveExecutionCaps(input: AnyObj = {}) {
     reasons: []
   };
 
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'dynamic_caps',
+      {
+        enabled: AUTONOMY_DYNAMIC_IO_CAP_ENABLED,
+        base_daily_cap: baseDailyCap,
+        base_canary_cap: baseCanaryCap,
+        candidate_pool_size: candidatePoolSize,
+        queue_pressure: queuePressure.pressure,
+        policy_hold_level: String(policyHold.level || 'normal'),
+        policy_hold_applicable: policyHold.applicable === true,
+        spawn_boost_enabled: spawnCapacityBoost.enabled === true,
+        spawn_boost_active: spawnCapacityBoost.active === true,
+        shipped_today: Number(input.shippedToday || 0),
+        no_progress_streak: Number(input.noProgressStreak || 0),
+        gate_exhaustion_streak: Number(input.gateExhaustionStreak || 0),
+        warn_factor: AUTONOMY_DYNAMIC_IO_CAP_WARN_FACTOR,
+        critical_factor: AUTONOMY_DYNAMIC_IO_CAP_CRITICAL_FACTOR,
+        min_input_pool: AUTONOMY_DYNAMIC_IO_CAP_MIN_INPUT_POOL
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const payload = rust.payload.payload;
+      return {
+        ...payload,
+        inputCandidateCap: payload.inputCandidateCap != null
+          ? payload.inputCandidateCap
+          : payload.input_candidate_cap_alias
+      };
+    }
+  }
+
   const markLowYield = (reason: string) => {
     out.low_yield = true;
     if (!out.reasons.includes(reason)) out.reasons.push(reason);

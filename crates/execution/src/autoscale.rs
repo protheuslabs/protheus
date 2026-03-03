@@ -61,12 +61,50 @@ pub struct BatchMaxOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct DynamicCapsInput {
+    pub enabled: bool,
+    pub base_daily_cap: u32,
+    #[serde(default)]
+    pub base_canary_cap: Option<u32>,
+    pub candidate_pool_size: u32,
+    pub queue_pressure: String,
+    pub policy_hold_level: String,
+    pub policy_hold_applicable: bool,
+    pub spawn_boost_enabled: bool,
+    pub spawn_boost_active: bool,
+    pub shipped_today: f64,
+    pub no_progress_streak: f64,
+    pub gate_exhaustion_streak: f64,
+    pub warn_factor: f64,
+    pub critical_factor: f64,
+    pub min_input_pool: u32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct DynamicCapsOutput {
+    pub enabled: bool,
+    pub daily_runs_cap: u32,
+    pub canary_daily_exec_cap: Option<u32>,
+    pub input_candidates_cap: Option<u32>,
+    #[serde(rename = "inputCandidateCap")]
+    pub input_candidate_cap_alias: Option<u32>,
+    pub low_yield: bool,
+    pub high_yield: bool,
+    pub spawn_reset_active: bool,
+    pub queue_pressure: String,
+    pub policy_hold_level: String,
+    pub reasons: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AutoscaleRequest {
     pub mode: String,
     #[serde(default)]
     pub plan_input: Option<PlanInput>,
     #[serde(default)]
     pub batch_input: Option<BatchMaxInput>,
+    #[serde(default)]
+    pub dynamic_caps_input: Option<DynamicCapsInput>,
 }
 
 fn clamp_ratio(v: f64) -> f64 {
@@ -303,6 +341,88 @@ pub fn compute_batch_max(input: &BatchMaxInput) -> BatchMaxOutput {
     }
 }
 
+pub fn compute_dynamic_caps(input: &DynamicCapsInput) -> DynamicCapsOutput {
+    let mut out = DynamicCapsOutput {
+        enabled: input.enabled,
+        daily_runs_cap: input.base_daily_cap.max(1),
+        canary_daily_exec_cap: input.base_canary_cap,
+        input_candidates_cap: None,
+        input_candidate_cap_alias: None,
+        low_yield: false,
+        high_yield: false,
+        spawn_reset_active: false,
+        queue_pressure: input.queue_pressure.to_ascii_lowercase(),
+        policy_hold_level: input.policy_hold_level.to_ascii_lowercase(),
+        reasons: Vec::new(),
+    };
+
+    let mark_low_yield = |reason: &str, out: &mut DynamicCapsOutput| {
+        out.low_yield = true;
+        if !out.reasons.iter().any(|r| r == reason) {
+            out.reasons.push(reason.to_string());
+        }
+    };
+
+    if input.enabled {
+        let pressure = out.queue_pressure.as_str();
+        let mut factor = 1.0_f64;
+        if pressure == "critical" {
+            factor = input.critical_factor;
+            mark_low_yield("downshift_queue_backlog_critical", &mut out);
+        } else if pressure == "warning" {
+            factor = input.warn_factor;
+            mark_low_yield("downshift_queue_backlog_warning", &mut out);
+        }
+        if factor < 1.0 {
+            let lowered_runs = ((input.base_daily_cap as f64) * factor).floor() as u32;
+            out.daily_runs_cap = out.daily_runs_cap.min(lowered_runs.max(1));
+            if input.candidate_pool_size > 0 {
+                let lowered_pool =
+                    ((input.candidate_pool_size as f64) * factor).floor() as u32;
+                let lowered_pool = lowered_pool.max(input.min_input_pool.max(1));
+                if lowered_pool < input.candidate_pool_size {
+                    out.input_candidates_cap = Some(lowered_pool);
+                    out.input_candidate_cap_alias = Some(lowered_pool);
+                }
+            }
+        }
+    }
+
+    let hold_level = out.policy_hold_level.as_str();
+    if input.policy_hold_applicable && hold_level == "hard" {
+        out.daily_runs_cap = out.daily_runs_cap.min(1);
+        out.high_yield = false;
+        mark_low_yield("downshift_policy_hold_hard", &mut out);
+    } else if input.policy_hold_applicable && hold_level == "warn" {
+        let warn_cap = ((input.base_daily_cap as f64) * 0.6).floor() as u32;
+        out.daily_runs_cap = out.daily_runs_cap.min(warn_cap.max(1));
+        out.high_yield = false;
+        mark_low_yield("downshift_policy_hold_warn", &mut out);
+    }
+
+    if input.spawn_boost_enabled && input.spawn_boost_active {
+        out.daily_runs_cap = input.base_daily_cap.max(1);
+        out.input_candidates_cap = None;
+        out.input_candidate_cap_alias = None;
+        out.low_yield = false;
+        out.spawn_reset_active = true;
+        if !out
+            .reasons
+            .iter()
+            .any(|r| r == "reset_caps_spawn_capacity")
+        {
+            out.reasons.push("reset_caps_spawn_capacity".to_string());
+        }
+    }
+
+    if !out.low_yield {
+        out.high_yield =
+            input.shipped_today > 0.0 && input.no_progress_streak <= 0.0 && input.gate_exhaustion_streak <= 0.0;
+    }
+
+    out
+}
+
 pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
     let request: AutoscaleRequest =
         serde_json::from_str(payload_json).map_err(|e| format!("autoscale_request_parse_failed:{e}"))?;
@@ -330,6 +450,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_batch_encode_failed:{e}"));
+    }
+    if mode == "dynamic_caps" {
+        let input = request
+            .dynamic_caps_input
+            .ok_or_else(|| "autoscale_missing_dynamic_caps_input".to_string())?;
+        let out = compute_dynamic_caps(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "dynamic_caps",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_dynamic_caps_encode_failed:{e}"));
     }
     Err(format!("autoscale_mode_unsupported:{mode}"))
 }
@@ -392,5 +524,33 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale");
         assert!(out.contains("\"mode\":\"batch_max\""));
+    }
+
+    #[test]
+    fn dynamic_caps_warn_downshift_works() {
+        let out = compute_dynamic_caps(&DynamicCapsInput {
+            enabled: true,
+            base_daily_cap: 6,
+            base_canary_cap: None,
+            candidate_pool_size: 24,
+            queue_pressure: "warning".to_string(),
+            policy_hold_level: "normal".to_string(),
+            policy_hold_applicable: false,
+            spawn_boost_enabled: false,
+            spawn_boost_active: false,
+            shipped_today: 0.0,
+            no_progress_streak: 0.0,
+            gate_exhaustion_streak: 0.0,
+            warn_factor: 0.75,
+            critical_factor: 0.5,
+            min_input_pool: 8,
+        });
+        assert!(out.low_yield);
+        assert!(out.daily_runs_cap < 6);
+        assert!(out.input_candidates_cap.is_some());
+        assert!(out
+            .reasons
+            .iter()
+            .any(|r| r == "downshift_queue_backlog_warning"));
     }
 }
