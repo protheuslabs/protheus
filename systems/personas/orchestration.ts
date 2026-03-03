@@ -23,6 +23,7 @@ const PROJECTS_DIR = path.join(ORG_DIR, 'projects');
 const LOCKS_DIR = path.join(ORG_DIR, '.locks');
 const TELEMETRY_PATH = path.join(ORG_DIR, 'telemetry.jsonl');
 const SHADOW_STATE_PATH = path.join(ORG_DIR, 'shadow_mode_state.json');
+const SHADOW_DEPLOYMENT_POLICY_PATH = path.join(ORG_DIR, 'shadow_deployment_policy.json');
 const MEETINGS_LEDGER = path.join(MEETINGS_DIR, 'ledger.jsonl');
 const PROJECTS_LEDGER = path.join(PROJECTS_DIR, 'ledger.jsonl');
 const HARD_RETENTION_TTL_DAYS = 90;
@@ -176,7 +177,8 @@ function policyPaths() {
     breakerPolicy: path.join(ORG_DIR, 'breaker_policy.json'),
     soulTokenPolicy: path.join(ORG_DIR, 'soul_token_policy.json'),
     telemetryPolicy: path.join(ORG_DIR, 'telemetry_policy.json'),
-    retentionPolicy: path.join(ORG_DIR, 'retention_policy.json')
+    retentionPolicy: path.join(ORG_DIR, 'retention_policy.json'),
+    shadowDeploymentPolicy: SHADOW_DEPLOYMENT_POLICY_PATH
   };
 }
 
@@ -266,7 +268,8 @@ function validatePoliciesAndSchemas() {
       breakerPolicy: readJson(pPaths.breakerPolicy),
       soulTokenPolicy: readJson(pPaths.soulTokenPolicy),
       telemetryPolicy: readJson(pPaths.telemetryPolicy),
-      retentionPolicy: readJson(pPaths.retentionPolicy)
+      retentionPolicy: readJson(pPaths.retentionPolicy),
+      shadowDeploymentPolicy: readJson(pPaths.shadowDeploymentPolicy)
     };
   } catch (err: any) {
     return {
@@ -426,6 +429,41 @@ function validatePoliciesAndSchemas() {
       failures.push('soul_token_policy_invalid:overrides_missing');
     } else if (!cleanText(overrides.actor || '', 120)) {
       failures.push('soul_token_policy_invalid:overrides_actor');
+    }
+  }
+
+  const shadowDeploymentPolicy = policies.shadowDeploymentPolicy && typeof policies.shadowDeploymentPolicy === 'object'
+    ? policies.shadowDeploymentPolicy
+    : null;
+  if (!shadowDeploymentPolicy) {
+    failures.push('shadow_deployment_policy_invalid:not_an_object');
+  } else {
+    const featureFlags = shadowDeploymentPolicy.feature_flags && typeof shadowDeploymentPolicy.feature_flags === 'object'
+      ? shadowDeploymentPolicy.feature_flags
+      : null;
+    const killSwitch = shadowDeploymentPolicy.kill_switch && typeof shadowDeploymentPolicy.kill_switch === 'object'
+      ? shadowDeploymentPolicy.kill_switch
+      : null;
+    const resourceIsolation = shadowDeploymentPolicy.resource_isolation && typeof shadowDeploymentPolicy.resource_isolation === 'object'
+      ? shadowDeploymentPolicy.resource_isolation
+      : null;
+    if (!featureFlags) {
+      failures.push('shadow_deployment_policy_invalid:feature_flags_missing');
+    }
+    if (!killSwitch) {
+      failures.push('shadow_deployment_policy_invalid:kill_switch_missing');
+    }
+    if (!resourceIsolation) {
+      failures.push('shadow_deployment_policy_invalid:resource_isolation_missing');
+    } else {
+      const maxMeeting = Number(resourceIsolation.max_concurrent_meetings);
+      const maxProject = Number(resourceIsolation.max_concurrent_projects);
+      if (!Number.isFinite(maxMeeting) || maxMeeting < 1) {
+        failures.push('shadow_deployment_policy_invalid:max_concurrent_meetings');
+      }
+      if (!Number.isFinite(maxProject) || maxProject < 1) {
+        failures.push('shadow_deployment_policy_invalid:max_concurrent_projects');
+      }
     }
   }
 
@@ -763,6 +801,154 @@ function boolFlag(value: unknown, fallback = false) {
 
 function emotionEnabled(args: Record<string, any>) {
   return boolFlag(args.emotion, false);
+}
+
+function defaultShadowDeploymentPolicy() {
+  return {
+    version: '1.0.0',
+    enabled: true,
+    feature_flags: {
+      meeting: true,
+      project: true,
+      telemetry: true
+    },
+    kill_switch: {
+      enabled: false,
+      reason: ''
+    },
+    resource_isolation: {
+      enforce: true,
+      max_concurrent_meetings: 2,
+      max_concurrent_projects: 2,
+      max_estimated_tokens: 1800,
+      max_estimated_runtime_ms: 15000
+    }
+  };
+}
+
+function loadShadowDeploymentPolicy(policies: any) {
+  const merged = {
+    ...defaultShadowDeploymentPolicy(),
+    ...(policies && policies.shadowDeploymentPolicy && typeof policies.shadowDeploymentPolicy === 'object'
+      ? policies.shadowDeploymentPolicy
+      : {})
+  };
+  const featureFlags = merged.feature_flags && typeof merged.feature_flags === 'object'
+    ? merged.feature_flags
+    : {};
+  const killSwitch = merged.kill_switch && typeof merged.kill_switch === 'object'
+    ? merged.kill_switch
+    : {};
+  const resourceIsolation = merged.resource_isolation && typeof merged.resource_isolation === 'object'
+    ? merged.resource_isolation
+    : {};
+  return {
+    version: cleanText(merged.version || '1.0.0', 30) || '1.0.0',
+    enabled: merged.enabled !== false,
+    feature_flags: {
+      meeting: boolFlag(featureFlags.meeting, true),
+      project: boolFlag(featureFlags.project, true),
+      telemetry: boolFlag(featureFlags.telemetry, true)
+    },
+    kill_switch: {
+      enabled: boolFlag(killSwitch.enabled, false) || boolFlag(process.env.PROTHEUS_SHADOW_KILL_SWITCH, false),
+      reason: cleanText(killSwitch.reason || process.env.PROTHEUS_SHADOW_KILL_SWITCH_REASON || '', 200)
+    },
+    resource_isolation: {
+      enforce: boolFlag(resourceIsolation.enforce, true),
+      max_concurrent_meetings: Number.isFinite(Number(resourceIsolation.max_concurrent_meetings))
+        ? Math.max(1, Math.floor(Number(resourceIsolation.max_concurrent_meetings)))
+        : 2,
+      max_concurrent_projects: Number.isFinite(Number(resourceIsolation.max_concurrent_projects))
+        ? Math.max(1, Math.floor(Number(resourceIsolation.max_concurrent_projects)))
+        : 2,
+      max_estimated_tokens: Number.isFinite(Number(resourceIsolation.max_estimated_tokens))
+        ? Math.max(60, Math.floor(Number(resourceIsolation.max_estimated_tokens)))
+        : 1800,
+      max_estimated_runtime_ms: Number.isFinite(Number(resourceIsolation.max_estimated_runtime_ms))
+        ? Math.max(500, Math.floor(Number(resourceIsolation.max_estimated_runtime_ms)))
+        : 15000
+    }
+  };
+}
+
+function countActiveLocks(kind: 'meeting' | 'project') {
+  if (!fs.existsSync(LOCKS_DIR)) return 0;
+  const prefix = `${kind}_`;
+  const lockFiles = fs.readdirSync(LOCKS_DIR, { withFileTypes: true })
+    .filter((entry: any) => entry && entry.isFile() && String(entry.name || '').startsWith(prefix))
+    .map((entry: any) => path.join(LOCKS_DIR, String(entry.name || '')));
+  const now = Date.now();
+  let active = 0;
+  for (const lockPathFile of lockFiles) {
+    try {
+      const stat = fs.statSync(lockPathFile);
+      // Treat stale lock files older than 15 minutes as dead.
+      if ((now - Number(stat.mtimeMs || now)) > 15 * 60 * 1000) {
+        try { fs.unlinkSync(lockPathFile); } catch {}
+        continue;
+      }
+      active += 1;
+    } catch {}
+  }
+  return active;
+}
+
+function enforceShadowDeploymentPolicy(
+  kind: 'meeting' | 'project',
+  deployment: any,
+  selection: any | null
+) {
+  if (!deployment.enabled) {
+    throw new Error(`shadow_deployment_disabled:${kind}`);
+  }
+  if (deployment.kill_switch && deployment.kill_switch.enabled) {
+    const reason = cleanText(deployment.kill_switch.reason || 'manual_fail_closed', 200) || 'manual_fail_closed';
+    throw new Error(`shadow_kill_switch_engaged:${reason}`);
+  }
+  const featureEnabled = deployment.feature_flags && deployment.feature_flags[kind] === true;
+  if (!featureEnabled) {
+    throw new Error(`shadow_feature_disabled:${kind}`);
+  }
+
+  const isolation = deployment.resource_isolation && typeof deployment.resource_isolation === 'object'
+    ? deployment.resource_isolation
+    : null;
+  if (!isolation || isolation.enforce !== true) {
+    return {
+      policy_version: deployment.version,
+      kill_switch: false,
+      isolation_enforced: false,
+      active_locks: 0
+    };
+  }
+
+  const activeLocks = countActiveLocks(kind);
+  const maxConcurrent = kind === 'meeting'
+    ? Number(isolation.max_concurrent_meetings || 2)
+    : Number(isolation.max_concurrent_projects || 2);
+  if (activeLocks >= maxConcurrent) {
+    throw new Error(`resource_isolation_concurrency_exceeded:${kind}:${activeLocks}/${maxConcurrent}`);
+  }
+
+  if (selection && typeof selection === 'object') {
+    const estimatedTokens = Number(selection.estimated_tokens || 0);
+    const estimatedRuntimeMs = Number(selection.estimated_runtime_ms || 0);
+    if (estimatedTokens > Number(isolation.max_estimated_tokens || 1800)) {
+      throw new Error(`resource_isolation_tokens_exceeded:${estimatedTokens}/${Number(isolation.max_estimated_tokens || 1800)}`);
+    }
+    if (estimatedRuntimeMs > Number(isolation.max_estimated_runtime_ms || 15000)) {
+      throw new Error(`resource_isolation_runtime_exceeded:${estimatedRuntimeMs}/${Number(isolation.max_estimated_runtime_ms || 15000)}`);
+    }
+  }
+
+  return {
+    policy_version: deployment.version,
+    kill_switch: false,
+    isolation_enforced: true,
+    max_concurrent: maxConcurrent,
+    active_locks: activeLocks
+  };
 }
 
 function driftRateFromArgs(args: Record<string, any>) {
@@ -1149,6 +1335,12 @@ function renderTelemetryMarkdown(windowSize: number) {
 
 function telemetry(windowSize: number) {
   ensureOrgFolders();
+  const deployment = loadShadowDeploymentPolicy({
+    shadowDeploymentPolicy: readJsonOptional(SHADOW_DEPLOYMENT_POLICY_PATH, defaultShadowDeploymentPolicy())
+  });
+  if (!deployment.enabled || deployment.feature_flags.telemetry !== true) {
+    throw new Error('shadow_feature_disabled:telemetry');
+  }
   const rows = readJsonl(TELEMETRY_PATH).slice(-Math.max(1, windowSize));
   return {
     ok: true,
@@ -1387,6 +1579,7 @@ function runMeeting(topic: string, args: Record<string, any>) {
   const breakerPolicy = policies.breakerPolicy;
   const soulTokenPolicy = loadSoulTokenPolicy(policies);
   const telemetryPolicy = policies.telemetryPolicy;
+  const shadowDeployment = loadShadowDeploymentPolicy(policies);
   const includeEmotion = emotionEnabled(args);
 
   const selection = applyBudgetControls(topic, selectAttendees(topic, routingRules, riskPolicy), riskPolicy);
@@ -1396,6 +1589,7 @@ function runMeeting(topic: string, args: Record<string, any>) {
   if (selection.runtime_budget_exceeded) {
     throw new Error(`budget_runtime_exceeded:max_runtime_ms=${selection.max_runtime_ms},estimated_runtime_ms=${selection.estimated_runtime_ms}`);
   }
+  const deploymentGuard = enforceShadowDeploymentPolicy('meeting', shadowDeployment, selection);
 
   const id = meetingId(topic, selection.selected);
   const existing = readJsonl(MEETINGS_LEDGER).find((row: any) => row && row.type === 'meeting_result' && row.meeting_id === id);
@@ -1446,6 +1640,9 @@ function runMeeting(topic: string, args: Record<string, any>) {
       max_runtime_ms: selection.max_runtime_ms,
       selection_seed: selection.selection_seed,
       policy_version: cleanText(routingRules.version || '1.0', 80),
+      deployment_policy_version: cleanText(deploymentGuard.policy_version || '', 40) || null,
+      deployment_isolation_enforced: deploymentGuard.isolation_enforced === true,
+      deployment_active_locks: Number(deploymentGuard.active_locks || 0),
       persona_snapshot_hash: sha256Hex(selection.selected.join('|')).slice(0, 16),
       timestamp: new Date().toISOString(),
       engine_version: 'persona_orchestration_v1'
@@ -1537,6 +1734,9 @@ function runMeeting(topic: string, args: Record<string, any>) {
           selection_receipt_hash: cleanText(selectionReceipt.hash || '', 90),
           arbitration_receipt_hash: cleanText(arbitrationReceipt.hash || '', 90),
           policy_version: cleanText(`${routingRules.version || '1.0'}|${arbitrationRules.version || '1.0'}`, 120),
+          deployment_policy_version: cleanText(deploymentGuard.policy_version || '', 40) || null,
+          deployment_isolation_enforced: deploymentGuard.isolation_enforced === true,
+          deployment_active_locks: Number(deploymentGuard.active_locks || 0),
           persona_snapshot_hash: sha256Hex(stableStringify(responses)).slice(0, 16),
           selection_seed: selection.selection_seed,
           timestamp: new Date().toISOString(),
@@ -1590,6 +1790,9 @@ function runMeeting(topic: string, args: Record<string, any>) {
       selection_receipt_hash: cleanText(selectionReceipt.hash || '', 90),
       arbitration_receipt_hash: cleanText(arbitrationReceipt.hash || '', 90),
       policy_version: cleanText(`${routingRules.version || '1.0'}|${arbitrationRules.version || '1.0'}`, 120),
+      deployment_policy_version: cleanText(deploymentGuard.policy_version || '', 40) || null,
+      deployment_isolation_enforced: deploymentGuard.isolation_enforced === true,
+      deployment_active_locks: Number(deploymentGuard.active_locks || 0),
       persona_snapshot_hash: sha256Hex(stableStringify(responses)).slice(0, 16),
       selection_seed: selection.selection_seed,
       timestamp: new Date().toISOString(),
@@ -1659,6 +1862,7 @@ function runProject(name: string, goal: string, args: Record<string, any>) {
   const breakerPolicy = policies.breakerPolicy;
   const soulTokenPolicy = loadSoulTokenPolicy(policies);
   const telemetryPolicy = policies.telemetryPolicy;
+  const shadowDeployment = loadShadowDeploymentPolicy(policies);
   const rawId = cleanText(args.id || '', 120);
   const includeEmotion = emotionEnabled(args);
 
@@ -1670,6 +1874,7 @@ function runProject(name: string, goal: string, args: Record<string, any>) {
   const overrideExpiry = cleanText(args['override-expiry'] || '', 120);
 
   if (isTransition) {
+    const transitionDeploymentGuard = enforceShadowDeploymentPolicy('project', shadowDeployment, null);
     const current = latestProjectState(rawId);
     if (!current) throw new Error(`project_not_found:${rawId}`);
     const from = normalizeToken(current.status || 'proposed', 40) || 'proposed';
@@ -1728,6 +1933,9 @@ function runProject(name: string, goal: string, args: Record<string, any>) {
           ...nextTimestamps,
           reviewed: nowIso
         },
+        deployment_policy_version: cleanText(transitionDeploymentGuard.policy_version || '', 40) || null,
+        deployment_isolation_enforced: transitionDeploymentGuard.isolation_enforced === true,
+        deployment_active_locks: Number(transitionDeploymentGuard.active_locks || 0),
         timestamp: nowIso,
         engine_version: 'persona_orchestration_v1',
         gate_engine: sec.gate_engine
@@ -1777,6 +1985,9 @@ function runProject(name: string, goal: string, args: Record<string, any>) {
       override_expiry: overrideExpiry || '',
       drift_rate: Number.isFinite(driftRate) ? Number(Number(driftRate).toFixed(4)) : null,
       status_timestamps: nextTimestamps,
+      deployment_policy_version: cleanText(transitionDeploymentGuard.policy_version || '', 40) || null,
+      deployment_isolation_enforced: transitionDeploymentGuard.isolation_enforced === true,
+      deployment_active_locks: Number(transitionDeploymentGuard.active_locks || 0),
       emotion_enrichment: transitionEmotion,
       timestamp: new Date().toISOString(),
       engine_version: 'persona_orchestration_v1',
@@ -1808,6 +2019,7 @@ function runProject(name: string, goal: string, args: Record<string, any>) {
   if (selection.runtime_budget_exceeded) {
     throw new Error(`budget_runtime_exceeded:max_runtime_ms=${selection.max_runtime_ms},estimated_runtime_ms=${selection.estimated_runtime_ms}`);
   }
+  const deploymentGuard = enforceShadowDeploymentPolicy('project', shadowDeployment, selection);
   const id = projectId(name, goal);
   const current = latestProjectState(id);
   if (current) {
@@ -1850,6 +2062,9 @@ function runProject(name: string, goal: string, args: Record<string, any>) {
       max_runtime_ms: selection.max_runtime_ms,
       selection_seed: selection.selection_seed,
       policy_version: cleanText(routingRules.version || '1.0', 80),
+      deployment_policy_version: cleanText(deploymentGuard.policy_version || '', 40) || null,
+      deployment_isolation_enforced: deploymentGuard.isolation_enforced === true,
+      deployment_active_locks: Number(deploymentGuard.active_locks || 0),
       timestamp: new Date().toISOString(),
       engine_version: 'persona_orchestration_v1'
     });
@@ -1918,6 +2133,9 @@ function runProject(name: string, goal: string, args: Record<string, any>) {
         selection_receipt_hash: cleanText(selectionReceipt.hash || '', 90),
         arbitration_receipt_hash: cleanText(arbitrationReceipt.hash || '', 90),
         breaker_receipt_hash: cleanText(breakerReceipt.hash || '', 90),
+        deployment_policy_version: cleanText(deploymentGuard.policy_version || '', 40) || null,
+        deployment_isolation_enforced: deploymentGuard.isolation_enforced === true,
+        deployment_active_locks: Number(deploymentGuard.active_locks || 0),
         timestamp: new Date().toISOString(),
         engine_version: 'persona_orchestration_v1',
         gate_engine: sec.gate_engine
@@ -1965,6 +2183,9 @@ function runProject(name: string, goal: string, args: Record<string, any>) {
       shadow_mode_active: shadow.shadow_active,
       selection_receipt_hash: cleanText(selectionReceipt.hash || '', 90),
       arbitration_receipt_hash: cleanText(arbitrationReceipt.hash || '', 90),
+      deployment_policy_version: cleanText(deploymentGuard.policy_version || '', 40) || null,
+      deployment_isolation_enforced: deploymentGuard.isolation_enforced === true,
+      deployment_active_locks: Number(deploymentGuard.active_locks || 0),
       timestamp: new Date().toISOString(),
       engine_version: 'persona_orchestration_v1',
       status_timestamps: {
@@ -2002,6 +2223,7 @@ function status() {
   const telemetry = readJsonl(TELEMETRY_PATH);
   const retention = readJsonOptional(path.join(ORG_DIR, 'retention_policy.json'), {});
   const breaker = readJsonOptional(path.join(ORG_DIR, 'breaker_policy.json'), {});
+  const deployment = readJsonOptional(SHADOW_DEPLOYMENT_POLICY_PATH, defaultShadowDeploymentPolicy());
   return {
     ok: validation.ok,
     policy_validation_failures: validation.ok ? [] : validation.failures,
@@ -2015,7 +2237,8 @@ function status() {
     breaker_policy: {
       enabled: breaker && breaker.enabled === true,
       thresholds: breaker && breaker.thresholds ? breaker.thresholds : {}
-    }
+    },
+    shadow_deployment_policy: deployment
   };
 }
 

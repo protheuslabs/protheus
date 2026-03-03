@@ -55,6 +55,7 @@ function copyOrg() {
     'soul_token_policy.json',
     'telemetry_policy.json',
     'retention_policy.json',
+    'shadow_deployment_policy.json',
     'arbitration_rules.schema.json',
     'routing_rules.schema.json',
     'breaker_policy.schema.json',
@@ -114,6 +115,7 @@ try {
   assert.ok(payload && payload.ok === true, 'meeting should succeed');
   assert.ok(payload.artifact && payload.artifact.type === 'meeting_result', 'meeting should emit meeting_result artifact');
   assert.strictEqual(typeof payload.artifact.shadow_mode_active, 'boolean', 'meeting artifact should include shadow mode status');
+  assert.strictEqual(typeof payload.artifact.deployment_isolation_enforced, 'boolean', 'meeting artifact should include deployment isolation state');
   assert.ok(Array.isArray(payload.artifact.emotion_enrichment), 'meeting should include optional emotion enrichment');
   assert.ok(String(payload.markdown_summary || '').includes('# Orchestration Meeting:'), 'meeting should emit markdown summary');
 
@@ -138,6 +140,7 @@ try {
   assert.ok(payload && payload.ok === true, 'project create should succeed');
   assert.ok(payload.artifact && payload.artifact.type === 'project_state', 'project create should emit project_state artifact');
   assert.strictEqual(payload.artifact.status, 'proposed', 'new project should start in proposed state');
+  assert.strictEqual(typeof payload.artifact.deployment_isolation_enforced, 'boolean', 'project artifact should include deployment isolation state');
 
   const projectId = String(payload.artifact.project_id || '');
   assert.ok(projectId.startsWith('prj_'), 'project should emit deterministic project id');
@@ -233,6 +236,14 @@ try {
   payload = parseJson(out.stdout);
   assert.ok(payload && payload.ok === true, 'audit command should pass for valid artifact group');
   assert.ok(payload.checks && payload.checks.hash_chain_ok === true, 'audit should verify hash chain');
+
+  const deploymentPath = path.join(orgDir, 'shadow_deployment_policy.json');
+  const deploymentPolicy = JSON.parse(fs.readFileSync(deploymentPath, 'utf8'));
+  deploymentPolicy.kill_switch = { enabled: true, reason: 'maintenance_window' };
+  fs.writeFileSync(deploymentPath, `${JSON.stringify(deploymentPolicy, null, 2)}\n`, 'utf8');
+  out = run(['orchestrate', 'meeting', 'Kill switch should fail closed', '--approval-note=operator-reviewed'], env);
+  assert.notStrictEqual(out.status, 0, 'kill switch should fail closed');
+  assert.ok(out.stderr.includes('shadow_kill_switch_engaged'), 'kill switch error should be explicit');
 
   fs.appendFileSync(path.join(orgDir, 'telemetry.jsonl'), `${JSON.stringify({
     ts: '2020-01-01T00:00:00.000Z',

@@ -160,6 +160,22 @@ try {
         }
       ]
     },
+    sandbox: {
+      enabled: true,
+      forbid_network_egress: true,
+      blocked_prompt_regexes: [
+        '(exfiltrate|steal|dump).{0,60}(secret|token|credential|key)'
+      ]
+    },
+    property_based: {
+      enabled: true,
+      seed: 2026,
+      generated_cases: 2
+    },
+    replay_logger: {
+      enabled: true,
+      path: path.join(stateRoot, 'replay_log.jsonl')
+    },
     self_improvement: {
       enabled: true,
       policy_path: selfImprovePolicyPath,
@@ -219,6 +235,38 @@ try {
   assert.ok(advisoryRow, 'advisory non-actionable case should be present');
   assert.strictEqual(advisoryRow.heuristic_unsafe, false, 'advisory non-actionable case should not be marked heuristic unsafe');
   assert.strictEqual(advisoryRow.pass, true, 'advisory non-actionable case should pass');
+  assert.strictEqual(
+    Number(res.payload.summary && res.payload.summary.property_generated_cases || 0),
+    2,
+    'heuristic run should report generated property cases'
+  );
+
+  res = run(['run', '2026-02-25', `--policy=${policyPath}`, '--max-cases=8'], {});
+  assert.strictEqual(res.status, 0, `property+sandbox run should pass non-strict: ${res.stderr}`);
+  assert.ok(res.payload && res.payload.ok === true, 'property+sandbox run should report ok=true');
+  assert.ok(
+    Number(res.payload.summary && res.payload.summary.sandbox_blocked_cases || 0) >= 1,
+    'property+sandbox run should block at least one prompt via sandbox'
+  );
+  const propertyRows = Array.isArray(res.payload.results)
+    ? res.payload.results.filter((row) => row && /^rt_prop_/.test(String(row.id || '')))
+    : [];
+  assert.ok(propertyRows.length > 0, 'property+sandbox run should include generated property cases');
+  const replayLogPath = String(res.payload.replay_log_path || '');
+  assert.ok(replayLogPath && fs.existsSync(replayLogPath), 'replay log path should exist');
+  const replayRows = String(fs.readFileSync(replayLogPath, 'utf8') || '')
+    .split('\n')
+    .filter(Boolean)
+    .map((line) => JSON.parse(line));
+  assert.ok(replayRows.length >= Number(res.payload.summary.selected_cases || 0), 'replay log should capture run rows');
+  assert.ok(
+    replayRows.some((row) => row && /^rt_prop_/.test(String(row.case_id || ''))),
+    'replay log should include generated property case rows'
+  );
+  assert.ok(
+    replayRows.every((row) => typeof row.prompt_sha256 === 'string' && row.prompt_sha256.length === 64),
+    'replay rows should include prompt hash'
+  );
 
   res = run(['run', '2026-02-25', `--policy=${policyPath}`, '--max-cases=3', '--self-improve-apply=1'], {});
   assert.strictEqual(res.status, 0, `apply-intent run should pass: ${res.stderr}`);

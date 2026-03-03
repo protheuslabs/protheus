@@ -4,6 +4,7 @@ export {};
 
 import fs from 'fs';
 import path from 'path';
+const queueSqlite = require('../../lib/queue_sqlite_runtime.js');
 
 type AnyObj = Record<string, any>;
 
@@ -233,7 +234,17 @@ function defaultPolicy(): AnyObj {
     registry_path: 'config/backlog_registry.json',
     state_root: 'state/ops/backlog_queue_executor',
     latest_path: 'state/ops/backlog_queue_executor/latest.json',
-    history_path: 'state/ops/backlog_queue_executor/history.jsonl'
+    history_path: 'state/ops/backlog_queue_executor/history.jsonl',
+    sqlite: {
+      enabled: true,
+      db_path: 'state/ops/backlog_queue_executor/queue.db',
+      journal_mode: 'WAL',
+      synchronous: 'NORMAL',
+      busy_timeout_ms: 8000,
+      queue_name: 'backlog_queue_executor',
+      migrate_history_jsonl: true,
+      mirror_jsonl: true
+    }
   };
 }
 
@@ -246,6 +257,7 @@ function resolvePath(raw: unknown, fallbackRel: string): string {
 function loadPolicy(policyPath: string): AnyObj {
   const base = defaultPolicy();
   const raw = readJson(policyPath, base);
+  const sqliteRaw = raw.sqlite && typeof raw.sqlite === 'object' ? raw.sqlite : {};
   return {
     schema_id: 'backlog_queue_executor_policy',
     schema_version: cleanText(raw.schema_version || base.schema_version, 24) || '1.0',
@@ -253,7 +265,19 @@ function loadPolicy(policyPath: string): AnyObj {
     registry_path: resolvePath(raw.registry_path || base.registry_path, base.registry_path),
     state_root: resolvePath(raw.state_root || base.state_root, base.state_root),
     latest_path: resolvePath(raw.latest_path || base.latest_path, base.latest_path),
-    history_path: resolvePath(raw.history_path || base.history_path, base.history_path)
+    history_path: resolvePath(raw.history_path || base.history_path, base.history_path),
+    sqlite: {
+      enabled: sqliteRaw.enabled !== false,
+      db_path: resolvePath(sqliteRaw.db_path || base.sqlite.db_path, base.sqlite.db_path),
+      journal_mode: cleanText(sqliteRaw.journal_mode || base.sqlite.journal_mode, 24).toUpperCase() || 'WAL',
+      synchronous: cleanText(sqliteRaw.synchronous || base.sqlite.synchronous, 24).toUpperCase() || 'NORMAL',
+      busy_timeout_ms: Number.isFinite(Number(sqliteRaw.busy_timeout_ms))
+        ? Math.max(100, Number(sqliteRaw.busy_timeout_ms))
+        : Number(base.sqlite.busy_timeout_ms || 8000),
+      queue_name: cleanText(sqliteRaw.queue_name || base.sqlite.queue_name, 120) || 'backlog_queue_executor',
+      migrate_history_jsonl: sqliteRaw.migrate_history_jsonl !== false,
+      mirror_jsonl: sqliteRaw.mirror_jsonl !== false
+    }
   };
 }
 
@@ -297,7 +321,7 @@ function selectTargets(rows: AnyObj[], args: AnyObj): AnyObj[] {
   });
 }
 
-function executeRow(row: AnyObj, policy: AnyObj): AnyObj {
+function executeRow(row: AnyObj, policy: AnyObj, dbCtx: AnyObj | null): AnyObj {
   const id = normalizeId(row.id || '');
   const status = cleanText(row.status || 'unknown', 40).toLowerCase();
   const receiptDir = path.join(policy.state_root, 'receipts');
@@ -322,8 +346,24 @@ function executeRow(row: AnyObj, policy: AnyObj): AnyObj {
     receipt_path: rel(receiptPath)
   };
 
-  writeJsonAtomic(receiptPath, receipt);
-  appendJsonl(historyPath, receipt);
+  if (dbCtx && dbCtx.db) {
+    const queueName = cleanText(policy.sqlite && policy.sqlite.queue_name || 'backlog_queue_executor', 120) || 'backlog_queue_executor';
+    queueSqlite.upsertQueueItem(dbCtx.db, queueName, row, status);
+    queueSqlite.appendQueueEvent(dbCtx.db, queueName, id, 'queue_execute', {
+      lane_id: id,
+      status_before: status,
+      title: receipt.title,
+      wave: receipt.wave,
+      class: receipt.class
+    }, receipt.ts);
+    const sqlReceipt = queueSqlite.insertReceipt(dbCtx.db, id, receipt);
+    receipt.sqlite_receipt_id = cleanText(sqlReceipt && sqlReceipt.receipt_id || '', 120) || null;
+  }
+
+  if (!dbCtx || policy.sqlite.mirror_jsonl !== false) {
+    writeJsonAtomic(receiptPath, receipt);
+    appendJsonl(historyPath, receipt);
+  }
   return receipt;
 }
 
@@ -342,7 +382,32 @@ function run(policyPath: string, args: AnyObj): AnyObj {
 
   const rows = loadRegistryRows(policy);
   const targets = selectTargets(rows, args);
-  const receipts = targets.map((row) => executeRow(row, policy));
+  let dbCtx: AnyObj | null = null;
+  let migration: AnyObj | null = null;
+  if (policy.sqlite && policy.sqlite.enabled !== false) {
+    const db = queueSqlite.openQueueDb(policy.sqlite);
+    queueSqlite.ensureQueueSchema(db);
+    migration = policy.sqlite.migrate_history_jsonl === false
+      ? {
+          applied: false,
+          skipped: true,
+          reason: 'migration_disabled',
+          rows_migrated: 0
+        }
+      : queueSqlite.migrateHistoryJsonl(
+          db,
+          policy.history_path,
+          cleanText(policy.sqlite.queue_name || 'backlog_queue_executor', 120) || 'backlog_queue_executor'
+        );
+    dbCtx = { db, migration };
+  }
+  const receipts = targets.map((row) => executeRow(row, policy, dbCtx));
+  const sqliteStats = dbCtx && dbCtx.db
+    ? queueSqlite.queueStats(dbCtx.db, cleanText(policy.sqlite.queue_name || 'backlog_queue_executor', 120) || 'backlog_queue_executor')
+    : null;
+  if (dbCtx && dbCtx.db && typeof dbCtx.db.close === 'function') {
+    try { dbCtx.db.close(); } catch {}
+  }
 
   const summary = {
     schema_id: 'backlog_queue_executor_receipt',
@@ -358,6 +423,12 @@ function run(policyPath: string, args: AnyObj): AnyObj {
     target_count: targets.length,
     executed_count: receipts.length,
     executed_ids: receipts.map((r) => r.id),
+    sqlite: {
+      enabled: !!(policy.sqlite && policy.sqlite.enabled !== false),
+      db_path: policy.sqlite && policy.sqlite.enabled !== false ? rel(policy.sqlite.db_path) : null,
+      migration: migration || null,
+      stats: sqliteStats
+    },
     state_root: rel(policy.state_root),
     latest_path: rel(policy.latest_path),
     history_path: rel(policy.history_path)
@@ -371,6 +442,31 @@ function run(policyPath: string, args: AnyObj): AnyObj {
 function status(policyPath: string): AnyObj {
   const policy = loadPolicy(policyPath);
   const latest = readJson(policy.latest_path, null as unknown as AnyObj);
+  let sqlite: AnyObj = {
+    enabled: !!(policy.sqlite && policy.sqlite.enabled !== false),
+    db_path: policy.sqlite && policy.sqlite.enabled !== false ? rel(policy.sqlite.db_path) : null,
+    stats: null
+  };
+  if (policy.sqlite && policy.sqlite.enabled !== false) {
+    let db: any = null;
+    try {
+      db = queueSqlite.openQueueDb(policy.sqlite);
+      queueSqlite.ensureQueueSchema(db);
+      sqlite = {
+        ...sqlite,
+        stats: queueSqlite.queueStats(db, cleanText(policy.sqlite.queue_name || 'backlog_queue_executor', 120) || 'backlog_queue_executor')
+      };
+    } catch (err: any) {
+      sqlite = {
+        ...sqlite,
+        error: cleanText(err && err.message || 'sqlite_status_failed', 220)
+      };
+    } finally {
+      if (db && typeof db.close === 'function') {
+        try { db.close(); } catch {}
+      }
+    }
+  }
   return {
     ok: true,
     type: 'backlog_queue_executor',
@@ -378,6 +474,7 @@ function status(policyPath: string): AnyObj {
     ts: nowIso(),
     policy_path: rel(policyPath),
     latest,
+    sqlite,
     queued_ids_catalog_size: EXECUTABLE_IDS.length
   };
 }

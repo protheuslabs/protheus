@@ -13,6 +13,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { spawnSync } = require('child_process');
+const { evaluateSecurityGate } = require('../security/rust_security_gate.js');
 const {
   ROOT,
   nowIso,
@@ -98,6 +99,66 @@ function runRustCommand(args: string[], timeoutMs = 180000) {
 function runNodeScript(relScriptPath: string, args: string[], timeoutMs = 180000) {
   const nodeBin = process.execPath || 'node';
   return runCommand([nodeBin, relScriptPath, ...args], timeoutMs);
+}
+
+function buildRustSecurityRequest(laneId: string, laneTitle: string) {
+  const laneToken = normalizeToken(laneId, 80) || 'lane';
+  const titleToken = cleanText(laneTitle, 200);
+  const digest = crypto
+    .createHash('sha256')
+    .update(`${laneToken}|${titleToken}`, 'utf8')
+    .digest('hex');
+  const highRisk = laneId === 'V6-RUST50-004' || laneId === 'V6-RUST50-007';
+  return {
+    operation_id: `rust50_lane_${laneToken}_${Date.now()}`,
+    subsystem: 'ops',
+    action: 'rust_migration_lane_preflight',
+    actor: 'systems/ops/rust50_migration_program',
+    risk_class: highRisk ? 'high' : 'medium',
+    payload_digest: `sha256:${digest}`,
+    tags: ['rust50', 'migration', laneToken],
+    covenant_violation: false,
+    tamper_signal: false,
+    key_age_hours: 1,
+    operator_quorum: 2,
+    audit_receipt_nonce: `nonce-${digest.slice(0, 12)}-${Date.now()}`,
+    zk_proof: `zk-rust50-${laneToken}`,
+    ciphertext_digest: `sha256:${digest.slice(0, 32)}`
+  };
+}
+
+function runRustSecurityAuditGate(laneId: string, laneTitle: string) {
+  const request = buildRustSecurityRequest(laneId, laneTitle);
+  const gate = evaluateSecurityGate(request, {
+    enforce: true,
+    state_root: path.join(ROOT, 'state'),
+    allow_fallback: true
+  });
+  if (!gate || gate.ok !== true) {
+    return {
+      ok: false,
+      reason: cleanText(gate && gate.error || 'security_gate_unavailable', 220),
+      gate: gate || null
+    };
+  }
+  const decision = gate.payload && gate.payload.decision && typeof gate.payload.decision === 'object'
+    ? gate.payload.decision
+    : null;
+  if (!decision || decision.ok !== true || decision.fail_closed === true) {
+    const reason = Array.isArray(decision && decision.reasons) && decision.reasons.length
+      ? cleanText(decision.reasons[0], 220)
+      : 'security_gate_blocked';
+    return {
+      ok: false,
+      reason,
+      gate
+    };
+  }
+  return {
+    ok: true,
+    reason: '',
+    gate
+  };
 }
 
 function defaultPolicy() {
@@ -365,6 +426,46 @@ function listFilesRecursive(startPath: string, ignoreDirs: Set<string>) {
     }
   }
   return out;
+}
+
+function profileRustHotspots(policy: AnyObj, laneId: string, maxFiles = 12) {
+  const refs = Array.isArray(policy.required_refs_by_lane[laneId]) ? policy.required_refs_by_lane[laneId] : [];
+  const ignoreDirs = new Set<string>(
+    (policy.critical_weight_model.ignore_dirs || []).map((v: string) => cleanText(v, 120)).filter(Boolean)
+  );
+  const tsLike: AnyObj[] = [];
+  const seen = new Set<string>();
+
+  for (const refPath of refs) {
+    if (!fs.existsSync(refPath)) continue;
+    let files: string[] = [];
+    const stat = fs.statSync(refPath);
+    if (stat.isDirectory()) files = listFilesRecursive(refPath, ignoreDirs);
+    else if (stat.isFile()) files = [refPath];
+    for (const filePath of files) {
+      if (!/\.(ts|tsx|js|jsx)$/i.test(filePath)) continue;
+      const abs = path.resolve(filePath);
+      if (seen.has(abs)) continue;
+      seen.add(abs);
+      let bytes = 0;
+      try { bytes = Number(fs.statSync(abs).size || 0); } catch { bytes = 0; }
+      tsLike.push({
+        path: rel(abs),
+        bytes
+      });
+    }
+  }
+
+  const hotspots = tsLike
+    .sort((a, b) => Number(b.bytes || 0) - Number(a.bytes || 0))
+    .slice(0, Math.max(1, maxFiles));
+  const totalBytes = tsLike.reduce((acc, row) => acc + Number(row.bytes || 0), 0);
+  return {
+    lane_id: laneId,
+    source_file_count: tsLike.length,
+    source_total_bytes: totalBytes,
+    top_hotspots: hotspots
+  };
 }
 
 function accumulateModuleStats(pathsList: string[], ignoreDirs: Set<string>): ModuleStats {
@@ -928,7 +1029,36 @@ function runLaneById(policy: AnyObj, id: string, apply: boolean, strict: boolean
     artifactDir: policy.paths.artifact_dir
   };
 
+  const securityAudit = runRustSecurityAuditGate(id, item.title);
+  if (!securityAudit.ok) {
+    return {
+      ok: false,
+      type: 'rust50_migration_program',
+      action: 'run',
+      ts: nowIso(),
+      lane_id: id,
+      title: item.title,
+      error: `security_audit_gate_blocked:${securityAudit.reason}`,
+      security_audit: securityAudit
+    };
+  }
+
+  const hotspotProfile = profileRustHotspots(policy, id, 12);
+  const hotspotArtifactPath = path.join(policy.paths.artifact_dir, `${normalizeToken(id, 80)}_hotspots.json`);
+  writeArtifact(hotspotArtifactPath, hotspotProfile, apply);
+
   const laneOut = handler(ctx);
+  laneOut.checks = laneOut.checks || {};
+  laneOut.checks.preflight_security_audit_ok = securityAudit.ok === true;
+  laneOut.checks.preflight_hotspot_profile_generated = Array.isArray(hotspotProfile.top_hotspots)
+    && hotspotProfile.top_hotspots.length > 0;
+  laneOut.artifacts = laneOut.artifacts || {};
+  laneOut.artifacts.hotspot_profile_path = rel(hotspotArtifactPath);
+  laneOut.summary = laneOut.summary || {};
+  laneOut.summary.hotspot_top_file = hotspotProfile.top_hotspots && hotspotProfile.top_hotspots[0]
+    ? hotspotProfile.top_hotspots[0].path
+    : null;
+
   const receipt = {
     schema_id: 'rust50_migration_receipt',
     schema_version: '1.0',
@@ -943,7 +1073,12 @@ function runLaneById(policy: AnyObj, id: string, apply: boolean, strict: boolean
     strict,
     apply,
     checks: laneOut.checks || {},
+    security_audit: {
+      ok: securityAudit.ok === true,
+      engine: securityAudit.gate && securityAudit.gate.engine || null
+    },
     refs: laneOut.refs || null,
+    hotspot_profile: hotspotProfile,
     summary: laneOut.summary || null,
     artifacts: laneOut.artifacts || {},
     error: laneOut.error || null

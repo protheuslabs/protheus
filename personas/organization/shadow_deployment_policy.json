@@ -1,0 +1,20 @@
+{
+  "version": "1.0.0",
+  "enabled": true,
+  "feature_flags": {
+    "meeting": true,
+    "project": true,
+    "telemetry": true
+  },
+  "kill_switch": {
+    "enabled": false,
+    "reason": ""
+  },
+  "resource_isolation": {
+    "enforce": true,
+    "max_concurrent_meetings": 2,
+    "max_concurrent_projects": 2,
+    "max_estimated_tokens": 1800,
+    "max_estimated_runtime_ms": 15000
+  }
+}

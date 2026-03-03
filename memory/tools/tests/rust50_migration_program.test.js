@@ -54,12 +54,15 @@ function main() {
   assert(exitCode(lane001) === 0, `lane001 failed: ${String(lane001.stderr || '').slice(0, 240)}`);
   const lane001Out = parseJson(lane001.stdout);
   assert(lane001Out && lane001Out.ok === true, 'lane001 output not ok');
+  assert(lane001Out.checks && lane001Out.checks.preflight_security_audit_ok === true, 'lane001 security audit preflight missing');
+  assert(lane001Out.hotspot_profile && Array.isArray(lane001Out.hotspot_profile.top_hotspots), 'lane001 hotspot profile missing');
 
   const lane006 = run(['run', '--id=V6-RUST50-006', '--apply=1', '--strict=0']);
   assert(exitCode(lane006) === 0, `lane006 failed: ${String(lane006.stderr || '').slice(0, 240)}`);
   const lane006Out = parseJson(lane006.stdout);
   assert(lane006Out && lane006Out.ok === true, 'lane006 output not ok');
   assert(lane006Out.summary && Number.isFinite(Number(lane006Out.summary.background_battery_pct_24h)), 'lane006 summary missing battery metric');
+  assert(lane006Out.checks && lane006Out.checks.preflight_security_audit_ok === true, 'lane006 security audit preflight missing');
 
   const gateSoft = run(['run', '--id=V6-RUST50-007', '--apply=1', '--strict=0']);
   assert(exitCode(gateSoft) === 0, `gate soft run failed: ${String(gateSoft.stderr || '').slice(0, 240)}`);

@@ -6,6 +6,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const { DatabaseSync } = require('node:sqlite');
 
 const ROOT = path.resolve(__dirname, '..', '..', '..');
 const SCRIPT = path.join(ROOT, 'systems', 'ops', 'backlog_queue_executor.js');
@@ -83,7 +84,17 @@ try {
     registry_path: registryPath,
     state_root: stateRoot,
     latest_path: path.join(stateRoot, 'latest.json'),
-    history_path: path.join(stateRoot, 'history.jsonl')
+    history_path: path.join(stateRoot, 'history.jsonl'),
+    sqlite: {
+      enabled: true,
+      db_path: path.join(stateRoot, 'queue.db'),
+      journal_mode: 'WAL',
+      synchronous: 'NORMAL',
+      busy_timeout_ms: 8000,
+      queue_name: 'backlog_queue_executor',
+      migrate_history_jsonl: true,
+      mirror_jsonl: true
+    }
   });
 
   const runAll = run(['run', '--all=1', `--policy=${policyPath}`, '--strict=1']);
@@ -94,6 +105,8 @@ try {
   assert.ok(Array.isArray(runPayload.executed_ids), 'executed ids should be array');
   assert.ok(runPayload.executed_ids.includes('V3-RACE-195'), 'should include V3-RACE-195');
   assert.ok(runPayload.executed_ids.includes('V3-RACE-216'), 'should include V3-RACE-216');
+  assert.ok(runPayload.sqlite && runPayload.sqlite.enabled === true, 'sqlite should be enabled');
+  assert.ok(runPayload.sqlite.stats && Number(runPayload.sqlite.stats.events) >= 2, 'sqlite should record queue events');
 
   const receiptA = path.join(stateRoot, 'receipts', 'V3-RACE-195.json');
   const receiptB = path.join(stateRoot, 'receipts', 'V3-RACE-216.json');
@@ -105,11 +118,23 @@ try {
   const statusPayload = parseJson(statusRes.stdout);
   assert.strictEqual(statusPayload.ok, true, 'status payload should be ok');
   assert.ok(statusPayload.latest, 'status should include latest');
+  assert.ok(statusPayload.sqlite && statusPayload.sqlite.enabled === true, 'status should include sqlite state');
 
   const runIds = run(['run', '--ids=V3-RACE-195', `--policy=${policyPath}`, '--strict=1']);
   assert.strictEqual(runIds.status, 0, `run ids failed: ${runIds.stderr}`);
   const runIdsPayload = parseJson(runIds.stdout);
   assert.strictEqual(Number(runIdsPayload.executed_count), 1, 'explicit IDs should execute one row');
+
+  const dbPath = path.join(stateRoot, 'queue.db');
+  assert.ok(fs.existsSync(dbPath), 'sqlite db should exist');
+  const db = new DatabaseSync(dbPath);
+  const itemCount = Number(db.prepare('SELECT COUNT(*) AS count FROM backlog_queue_items').get().count || 0);
+  const eventCount = Number(db.prepare('SELECT COUNT(*) AS count FROM backlog_queue_events').get().count || 0);
+  const receiptCount = Number(db.prepare('SELECT COUNT(*) AS count FROM backlog_queue_receipts').get().count || 0);
+  assert.ok(itemCount >= 2, 'sqlite should persist queue items');
+  assert.ok(eventCount >= 3, 'sqlite should persist queue events');
+  assert.ok(receiptCount >= 3, 'sqlite should persist receipts');
+  db.close();
 
   console.log('backlog_queue_executor.test.js: OK');
 } catch (err) {

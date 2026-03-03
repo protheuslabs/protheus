@@ -81,6 +81,24 @@
       }
     ]
   },
+  "sandbox": {
+    "enabled": true,
+    "forbid_network_egress": true,
+    "blocked_prompt_regexes": [
+      "(^|\\s)(curl|wget|scp|ssh)\\s+",
+      "(exfiltrate|steal|dump).{0,60}(secret|token|credential|key)",
+      "rm\\s+-rf\\s+/"
+    ]
+  },
+  "property_based": {
+    "enabled": true,
+    "seed": 1337,
+    "generated_cases": 3
+  },
+  "replay_logger": {
+    "enabled": true,
+    "path": "state/security/red_team/replay_log.jsonl"
+  },
   "ant_colony": {
     "enabled": true,
     "shadow_only": true,
