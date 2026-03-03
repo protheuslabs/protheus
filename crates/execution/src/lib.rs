@@ -1,5 +1,6 @@
 mod blob;
 mod decompose;
+mod sprint_contract;
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -18,6 +19,7 @@ pub use decompose::{
     decompose_goal, decompose_goal_json, BaseTask, Capability, DecomposePolicy, DecomposeRequest,
     DecomposeResponse,
 };
+pub use sprint_contract::run_sprint_contract_json;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct WorkflowStep {
