@@ -257,7 +257,14 @@ function main() {
   }
   
   // v1.1: Evaluate task through directive gate
+  const priorGateMode = process.env.DIRECTIVE_GATE_RUST_MODE;
+  if (!priorGateMode) process.env.DIRECTIVE_GATE_RUST_MODE = 'prefer';
   const gateResult = evaluateTask(task);
+  if (priorGateMode == null) {
+    delete process.env.DIRECTIVE_GATE_RUST_MODE;
+  } else {
+    process.env.DIRECTIVE_GATE_RUST_MODE = priorGateMode;
+  }
   const gateEvent = logGateDecision(task, gateResult, { tokens_est: tokensEst, source: 'route_task' });
   
   // Print gate summary line
