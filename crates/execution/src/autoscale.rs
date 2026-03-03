@@ -533,8 +533,7 @@ pub fn compute_dynamic_caps(input: &DynamicCapsInput) -> DynamicCapsOutput {
             let lowered_runs = ((input.base_daily_cap as f64) * factor).floor() as u32;
             out.daily_runs_cap = out.daily_runs_cap.min(lowered_runs.max(1));
             if input.candidate_pool_size > 0 {
-                let lowered_pool =
-                    ((input.candidate_pool_size as f64) * factor).floor() as u32;
+                let lowered_pool = ((input.candidate_pool_size as f64) * factor).floor() as u32;
                 let lowered_pool = lowered_pool.max(input.min_input_pool.max(1));
                 if lowered_pool < input.candidate_pool_size {
                     out.input_candidates_cap = Some(lowered_pool);
@@ -562,18 +561,15 @@ pub fn compute_dynamic_caps(input: &DynamicCapsInput) -> DynamicCapsOutput {
         out.input_candidate_cap_alias = None;
         out.low_yield = false;
         out.spawn_reset_active = true;
-        if !out
-            .reasons
-            .iter()
-            .any(|r| r == "reset_caps_spawn_capacity")
-        {
+        if !out.reasons.iter().any(|r| r == "reset_caps_spawn_capacity") {
             out.reasons.push("reset_caps_spawn_capacity".to_string());
         }
     }
 
     if !out.low_yield {
-        out.high_yield =
-            input.shipped_today > 0.0 && input.no_progress_streak <= 0.0 && input.gate_exhaustion_streak <= 0.0;
+        out.high_yield = input.shipped_today > 0.0
+            && input.no_progress_streak <= 0.0
+            && input.gate_exhaustion_streak <= 0.0;
     }
 
     out
@@ -662,13 +658,10 @@ pub fn compute_normalize_queue(input: &NormalizeQueueInput) -> NormalizeQueueOut
         .to_ascii_lowercase();
     if pressure != "critical" && pressure != "warning" && pressure != "normal" {
         pressure = "normal".to_string();
-        if pending >= input.critical_pending_count
-            || pending_ratio >= input.critical_pending_ratio
+        if pending >= input.critical_pending_count || pending_ratio >= input.critical_pending_ratio
         {
             pressure = "critical".to_string();
-        } else if pending >= input.warn_pending_count
-            || pending_ratio >= input.warn_pending_ratio
-        {
+        } else if pending >= input.warn_pending_count || pending_ratio >= input.warn_pending_ratio {
             pressure = "warning".to_string();
         }
     }
@@ -900,8 +893,8 @@ pub fn compute_receipt_verdict(input: &ReceiptVerdictInput) -> ReceiptVerdictOut
 }
 
 pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
-    let request: AutoscaleRequest =
-        serde_json::from_str(payload_json).map_err(|e| format!("autoscale_request_parse_failed:{e}"))?;
+    let request: AutoscaleRequest = serde_json::from_str(payload_json)
+        .map_err(|e| format!("autoscale_request_parse_failed:{e}"))?;
     let mode = request.mode.to_ascii_lowercase();
     if mode == "plan" {
         let input = request

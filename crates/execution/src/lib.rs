@@ -1,5 +1,5 @@
-mod blob;
 mod autoscale;
+mod blob;
 mod decompose;
 mod sprint_contract;
 
@@ -12,26 +12,27 @@ use std::os::raw::c_char;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 
+pub use autoscale::{
+    compute_batch_max, compute_criteria_gate, compute_dynamic_caps, compute_normalize_queue,
+    compute_plan, compute_policy_hold, compute_receipt_verdict, compute_token_usage,
+    run_autoscale_json, BatchMaxInput, BatchMaxOutput, CriteriaGateInput, CriteriaGateOutput,
+    DynamicCapsInput, DynamicCapsOutput, NormalizeQueueInput, NormalizeQueueOutput, PlanInput,
+    PlanOutput, PolicyHoldInput, PolicyHoldOutput, QueuePressure, ReceiptCheck,
+    ReceiptVerdictInput, ReceiptVerdictOutput, TokenUsageInput, TokenUsageOutput,
+};
 pub use blob::{
     decode_manifest, fold_blob, load_embedded_execution_profile, unfold_blob, BlobError,
     ExecutionRuntimeProfile, EXECUTION_PROFILE_BLOB_ID,
 };
-pub use autoscale::{
-    compute_batch_max, compute_criteria_gate, compute_dynamic_caps, compute_normalize_queue,
-    compute_plan, compute_policy_hold, compute_receipt_verdict, compute_token_usage,
-    CriteriaGateInput, CriteriaGateOutput,
-    NormalizeQueueInput, NormalizeQueueOutput,
-    PolicyHoldInput, PolicyHoldOutput, ReceiptCheck, ReceiptVerdictInput, ReceiptVerdictOutput,
-    run_autoscale_json, BatchMaxInput, BatchMaxOutput, DynamicCapsInput, DynamicCapsOutput,
-    PlanInput, PlanOutput, QueuePressure, TokenUsageInput, TokenUsageOutput,
-};
 pub use decompose::{
-    compose_micro_tasks, compose_micro_tasks_json, BaseTask, Capability, ComposePolicy,
-    ComposeRequest, ComposeResponse, DecomposePolicy, DecomposeRequest, DecomposeResponse,
-    DispatchRowsRequest, DispatchRowsResponse, DispatchSummaryRequest, DispatchSummaryResponse,
-    QueueRowsRequest, QueueRowsResponse, TaskSummaryRequest, TaskSummaryResponse, build_dispatch_rows,
-    build_queue_rows, decompose_goal, decompose_goal_json, dispatch_rows_json, queue_rows_json,
-    summarize_dispatch, summarize_dispatch_json, summarize_tasks, summarize_tasks_json,
+    apply_governance, apply_governance_json, build_dispatch_rows, build_queue_rows,
+    compose_micro_tasks, compose_micro_tasks_json, decompose_goal, decompose_goal_json,
+    dispatch_rows_json, queue_rows_json, summarize_dispatch, summarize_dispatch_json,
+    summarize_tasks, summarize_tasks_json, BaseTask, Capability, ComposePolicy, ComposeRequest,
+    ComposeResponse, DecomposePolicy, DecomposeRequest, DecomposeResponse, DispatchRowsRequest,
+    DispatchRowsResponse, DispatchSummaryRequest, DispatchSummaryResponse, GovernanceApplyPolicy,
+    GovernanceApplyRequest, GovernanceApplyResponse, QueueRowsRequest, QueueRowsResponse,
+    TaskSummaryRequest, TaskSummaryResponse,
 };
 pub use sprint_contract::run_sprint_contract_json;
 
@@ -410,7 +411,10 @@ mod tests {
         let yaml = CString::new(sample_yaml()).unwrap();
         let out_ptr = run_workflow_ffi(yaml.as_ptr());
         assert!(!out_ptr.is_null());
-        let text = unsafe { CStr::from_ptr(out_ptr) }.to_str().unwrap().to_string();
+        let text = unsafe { CStr::from_ptr(out_ptr) }
+            .to_str()
+            .unwrap()
+            .to_string();
         execution_core_string_free(out_ptr);
         let parsed: serde_json::Value = serde_json::from_str(&text).unwrap();
         assert_eq!(parsed["status"], "completed");
@@ -421,7 +425,10 @@ mod tests {
     fn ffi_null_pointer_returns_failed_payload() {
         let out_ptr = run_workflow_ffi(std::ptr::null());
         assert!(!out_ptr.is_null());
-        let text = unsafe { CStr::from_ptr(out_ptr) }.to_str().unwrap().to_string();
+        let text = unsafe { CStr::from_ptr(out_ptr) }
+            .to_str()
+            .unwrap()
+            .to_string();
         execution_core_string_free(out_ptr);
         let parsed: serde_json::Value = serde_json::from_str(&text).unwrap();
         assert_eq!(parsed["status"], "failed");

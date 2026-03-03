@@ -68,7 +68,9 @@ struct SprintContractOutput {
 
 fn now_iso() -> String {
     use std::time::{SystemTime, UNIX_EPOCH};
-    let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default();
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default();
     format!("unix_ms:{}", now.as_millis())
 }
 
@@ -161,15 +163,14 @@ pub fn run_sprint_contract_json(payload: &str) -> Result<String, String> {
         serde_json::from_str(payload).map_err(|e| format!("payload_parse_failed:{e}"))?;
 
     let sprint_id = clean_text(
-        parsed
-            .sprint_id
-            .as_deref()
-            .unwrap_or("V6-RUST50-CONF-002"),
+        parsed.sprint_id.as_deref().unwrap_or("V6-RUST50-CONF-002"),
         80,
     );
     let batch_id = normalize_token(parsed.batch_id.as_deref().unwrap_or(""), 120);
-    let requested_status =
-        normalize_token(parsed.requested_status.as_deref().unwrap_or("in_progress"), 40);
+    let requested_status = normalize_token(
+        parsed.requested_status.as_deref().unwrap_or("in_progress"),
+        40,
+    );
     let approval_recorded = parsed.approval_recorded.unwrap_or(false);
     let enforcer_active = parsed.enforcer_active.unwrap_or(false);
     let preamble_text = clean_text(parsed.preamble_text.as_deref().unwrap_or(""), 220);
@@ -319,7 +320,8 @@ mod tests {
             }
         })
         .to_string();
-        let out: Value = serde_json::from_str(&run_sprint_contract_json(&payload).unwrap()).unwrap();
+        let out: Value =
+            serde_json::from_str(&run_sprint_contract_json(&payload).unwrap()).unwrap();
         assert_eq!(out["ok"], Value::Bool(false));
         assert!(out["violations"]
             .as_array()
@@ -348,8 +350,12 @@ mod tests {
             }
         })
         .to_string();
-        let out: Value = serde_json::from_str(&run_sprint_contract_json(&payload).unwrap()).unwrap();
+        let out: Value =
+            serde_json::from_str(&run_sprint_contract_json(&payload).unwrap()).unwrap();
         assert_eq!(out["ok"], Value::Bool(true));
-        assert_eq!(out["effective_status"], Value::String("DONE_READY_FOR_HUMAN_AUDIT".to_string()));
+        assert_eq!(
+            out["effective_status"],
+            Value::String("DONE_READY_FOR_HUMAN_AUDIT".to_string())
+        );
     }
 }

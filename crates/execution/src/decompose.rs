@@ -232,6 +232,43 @@ pub struct DispatchRowsResponse {
     pub rows: Vec<Value>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GovernanceApplyPolicy {
+    #[serde(default = "default_lane")]
+    pub default_lane: String,
+    #[serde(default = "default_storm_lane")]
+    pub storm_lane: String,
+    #[serde(default = "default_min_storm_share")]
+    pub min_storm_share: f64,
+    #[serde(default = "default_block_on_constitution_deny")]
+    pub block_on_constitution_deny: bool,
+}
+
+impl Default for GovernanceApplyPolicy {
+    fn default() -> Self {
+        Self {
+            default_lane: default_lane(),
+            storm_lane: default_storm_lane(),
+            min_storm_share: default_min_storm_share(),
+            block_on_constitution_deny: default_block_on_constitution_deny(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct GovernanceApplyRequest {
+    #[serde(default)]
+    pub policy: GovernanceApplyPolicy,
+    #[serde(default)]
+    pub rows: Vec<Value>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GovernanceApplyResponse {
+    pub ok: bool,
+    pub tasks: Vec<Value>,
+}
+
 #[derive(Debug, Clone)]
 struct Segment {
     text: String,
@@ -271,6 +308,9 @@ fn default_storm_executor() -> String {
 }
 fn default_min_storm_share() -> f64 {
     0.15
+}
+fn default_block_on_constitution_deny() -> bool {
+    true
 }
 
 fn clean_text(raw: &str, max_len: usize) -> String {
@@ -631,7 +671,10 @@ pub fn compose_micro_tasks(req: &ComposeRequest) -> Vec<Value> {
             let micro_task_id = {
                 let normalized = normalize_token(base.micro_task_id.as_str(), 120);
                 if normalized.is_empty() {
-                    format!("mt_{}", sha16(format!("{}|{}|{}", run_id, i, task_text).as_str()))
+                    format!(
+                        "mt_{}",
+                        sha16(format!("{}|{}|{}", run_id, i, task_text).as_str())
+                    )
                 } else {
                     normalized
                 }
@@ -950,7 +993,8 @@ pub fn summarize_tasks_json(payload: &str) -> Result<String, String> {
         ok: true,
         summary: summarize_tasks(&req.tasks, req.shadow_only, req.apply_executed),
     };
-    serde_json::to_string(&resp).map_err(|err| format!("task_summary_payload_serialize_failed:{}", err))
+    serde_json::to_string(&resp)
+        .map_err(|err| format!("task_summary_payload_serialize_failed:{}", err))
 }
 
 pub fn summarize_dispatch(rows: &[Value], enabled: bool) -> Value {
@@ -1176,6 +1220,354 @@ pub fn dispatch_rows_json(payload: &str) -> Result<String, String> {
         .map_err(|err| format!("dispatch_rows_payload_serialize_failed:{}", err))
 }
 
+fn ensure_object(value: &mut Value) -> &mut serde_json::Map<String, Value> {
+    if !value.is_object() {
+        *value = json!({});
+    }
+    value.as_object_mut().expect("value should be object")
+}
+
+fn collect_strings(value: Option<&Value>, max_items: usize, max_len: usize) -> Vec<String> {
+    value
+        .and_then(|row| row.as_array())
+        .map(|rows| {
+            rows.iter()
+                .filter_map(|row| row.as_str())
+                .map(|row| clean_text(row, max_len))
+                .filter(|row| !row.is_empty())
+                .take(max_items)
+                .collect::<Vec<String>>()
+        })
+        .unwrap_or_default()
+}
+
+fn numeric_or_zero(value: Option<&Value>) -> f64 {
+    value
+        .and_then(|row| row.as_f64().or_else(|| row.as_i64().map(|v| v as f64)))
+        .unwrap_or(0.0)
+}
+
+pub fn apply_governance(req: &GovernanceApplyRequest) -> Vec<Value> {
+    let storm_lane = {
+        let lane = normalize_token(req.policy.storm_lane.as_str(), 80);
+        if lane.is_empty() {
+            default_storm_lane()
+        } else {
+            lane
+        }
+    };
+    let default_lane = {
+        let lane = normalize_token(req.policy.default_lane.as_str(), 80);
+        if lane.is_empty() {
+            default_lane()
+        } else {
+            lane
+        }
+    };
+    let min_storm_share = req.policy.min_storm_share.clamp(0.0, 1.0);
+    let mut tasks: Vec<Value> = Vec::new();
+
+    for row in &req.rows {
+        let source_task = row.get("task").cloned().unwrap_or(Value::Null);
+        if !source_task.is_object() {
+            continue;
+        }
+        let mut task = source_task;
+        let task_text = clean_text(
+            task.get("task_text").and_then(|v| v.as_str()).unwrap_or(""),
+            1000,
+        );
+        if task_text.is_empty() {
+            continue;
+        }
+
+        let heroic = row.get("heroic").cloned().unwrap_or_else(|| json!({}));
+        let heroic_classification = {
+            let value = clean_text(
+                heroic
+                    .get("classification")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("unknown"),
+                80,
+            );
+            if value.is_empty() {
+                "unknown".to_string()
+            } else {
+                value
+            }
+        };
+        let heroic_decision = {
+            let value = clean_text(
+                heroic
+                    .get("decision")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("unknown"),
+                80,
+            );
+            if value.is_empty() {
+                "unknown".to_string()
+            } else {
+                value
+            }
+        };
+        let heroic_blocked = heroic
+            .get("blocked")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false);
+        let heroic_reason_codes = collect_strings(heroic.get("reason_codes"), 8, 120);
+
+        let constitution = row
+            .get("constitution")
+            .cloned()
+            .unwrap_or_else(|| json!({}));
+        let constitution_decision = {
+            let value = clean_text(
+                constitution
+                    .get("decision")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("ALLOW"),
+                40,
+            );
+            if value.is_empty() {
+                "ALLOW".to_string()
+            } else {
+                value
+            }
+        };
+        let constitution_risk = {
+            let value = clean_text(
+                constitution
+                    .get("risk")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("low"),
+                40,
+            );
+            if value.is_empty() {
+                "low".to_string()
+            } else {
+                value
+            }
+        };
+        let constitution_reasons = collect_strings(constitution.get("reasons"), 8, 120);
+
+        let suggested_lane = {
+            let row_lane = row
+                .get("suggested_lane")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
+            let task_lane = task
+                .get("route")
+                .and_then(|v| v.as_object())
+                .and_then(|route| route.get("lane"))
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
+            let candidate = if row_lane.trim().is_empty() {
+                task_lane
+            } else {
+                row_lane
+            };
+            let normalized = normalize_token(candidate, 80);
+            if normalized.is_empty() {
+                default_lane.clone()
+            } else {
+                normalized
+            }
+        };
+        let lane = if constitution_decision == "MANUAL" {
+            storm_lane.clone()
+        } else {
+            suggested_lane
+        };
+        let blocked_by_constitution =
+            req.policy.block_on_constitution_deny && constitution_decision == "DENY";
+        let blocked = heroic_blocked || blocked_by_constitution;
+        let requires_manual_review = constitution_decision == "MANUAL" || lane == storm_lane;
+
+        let duality = row.get("duality").cloned().unwrap_or_else(|| json!({}));
+        let duality_indicator = duality
+            .get("indicator")
+            .filter(|value| value.is_object())
+            .cloned()
+            .unwrap_or_else(|| json!({ "subtle_hint": "duality_signal_absent" }));
+        let duality_score_label = {
+            let value = clean_text(
+                duality
+                    .get("score_label")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("unknown"),
+                40,
+            );
+            if value.is_empty() {
+                "unknown".to_string()
+            } else {
+                value
+            }
+        };
+        let recommended_adjustment = {
+            let value = clean_text(
+                duality
+                    .get("recommended_adjustment")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or(""),
+                120,
+            );
+            if value.is_empty() {
+                Value::Null
+            } else {
+                Value::String(value)
+            }
+        };
+        let duality_block = json!({
+            "enabled": duality.get("enabled").and_then(|v| v.as_bool()).unwrap_or(false),
+            "score_trit": numeric_or_zero(duality.get("score_trit")),
+            "score_label": duality_score_label,
+            "zero_point_harmony_potential": numeric_or_zero(duality.get("zero_point_harmony_potential")),
+            "recommended_adjustment": recommended_adjustment,
+            "indicator": duality_indicator
+        });
+
+        let block_reasons = {
+            let mut reasons: Vec<String> = Vec::new();
+            if heroic_blocked {
+                reasons.push("heroic_echo_blocked".to_string());
+            }
+            if blocked_by_constitution {
+                reasons.push("constitution_denied".to_string());
+            }
+            reasons
+        };
+
+        {
+            let task_obj = ensure_object(&mut task);
+            let route = ensure_object(task_obj.entry("route").or_insert_with(|| json!({})));
+            route.insert("lane".to_string(), Value::String(lane.clone()));
+            route.insert("blocked".to_string(), Value::Bool(blocked));
+            route.insert(
+                "requires_manual_review".to_string(),
+                Value::Bool(requires_manual_review),
+            );
+
+            task_obj.insert(
+                "governance".to_string(),
+                json!({
+                    "blocked": blocked,
+                    "block_reasons": block_reasons,
+                    "heroic_echo": {
+                        "classification": heroic_classification,
+                        "decision": heroic_decision,
+                        "blocked": heroic_blocked,
+                        "reason_codes": heroic_reason_codes
+                    },
+                    "constitution": {
+                        "decision": constitution_decision,
+                        "risk": constitution_risk,
+                        "reasons": constitution_reasons
+                    }
+                }),
+            );
+            task_obj.insert("duality".to_string(), duality_block.clone());
+
+            let profile = ensure_object(task_obj.entry("profile").or_insert_with(|| json!({})));
+            let routing = ensure_object(profile.entry("routing").or_insert_with(|| json!({})));
+            routing.insert("preferred_lane".to_string(), Value::String(lane.clone()));
+            routing.insert(
+                "requires_manual_review".to_string(),
+                Value::Bool(requires_manual_review),
+            );
+
+            let provenance =
+                ensure_object(profile.entry("provenance").or_insert_with(|| json!({})));
+            provenance.insert(
+                "confidence".to_string(),
+                Value::from(if blocked { 0.55 } else { 0.92 }),
+            );
+            let evidence = ensure_object(provenance.entry("evidence").or_insert_with(|| json!({})));
+            evidence.insert(
+                "heroic_echo_decision".to_string(),
+                Value::String(heroic_decision.clone()),
+            );
+            evidence.insert(
+                "constitution_decision".to_string(),
+                Value::String(constitution_decision.clone()),
+            );
+
+            profile.insert(
+                "governance".to_string(),
+                json!({
+                    "heroic_echo": {
+                        "classification": heroic_classification,
+                        "decision": heroic_decision,
+                        "reason_codes": heroic_reason_codes
+                    },
+                    "constitution": {
+                        "decision": constitution_decision,
+                        "risk": constitution_risk,
+                        "reasons": constitution_reasons
+                    }
+                }),
+            );
+            profile.insert("duality".to_string(), duality_block);
+        }
+
+        tasks.push(task);
+    }
+
+    let storm_count = tasks
+        .iter()
+        .filter(|task| {
+            task.get("route")
+                .and_then(|v| v.as_object())
+                .and_then(|route| route.get("lane"))
+                .and_then(|v| v.as_str())
+                .map(|lane| lane == storm_lane)
+                .unwrap_or(false)
+        })
+        .count();
+    let storm_share = if tasks.is_empty() {
+        0.0
+    } else {
+        storm_count as f64 / tasks.len() as f64
+    };
+    if tasks.len() > 2 && storm_share < min_storm_share {
+        if let Some(task) = tasks.iter_mut().find(|task| {
+            task.get("governance")
+                .and_then(|v| v.as_object())
+                .and_then(|governance| governance.get("constitution"))
+                .and_then(|v| v.as_object())
+                .and_then(|constitution| constitution.get("decision"))
+                .and_then(|v| v.as_str())
+                .map(|decision| decision != "DENY")
+                .unwrap_or(true)
+        }) {
+            let task_obj = ensure_object(task);
+            let route = ensure_object(task_obj.entry("route").or_insert_with(|| json!({})));
+            route.insert("lane".to_string(), Value::String(storm_lane.clone()));
+            route.insert("requires_manual_review".to_string(), Value::Bool(true));
+
+            let profile = ensure_object(task_obj.entry("profile").or_insert_with(|| json!({})));
+            let routing = ensure_object(profile.entry("routing").or_insert_with(|| json!({})));
+            routing.insert(
+                "preferred_lane".to_string(),
+                Value::String(storm_lane.clone()),
+            );
+            routing.insert("requires_manual_review".to_string(), Value::Bool(true));
+        }
+    }
+
+    tasks
+}
+
+pub fn apply_governance_json(payload: &str) -> Result<String, String> {
+    let req = serde_json::from_str::<GovernanceApplyRequest>(payload)
+        .map_err(|err| format!("apply_governance_payload_parse_failed:{}", err))?;
+    let resp = GovernanceApplyResponse {
+        ok: true,
+        tasks: apply_governance(&req),
+    };
+    serde_json::to_string(&resp)
+        .map_err(|err| format!("apply_governance_payload_serialize_failed:{}", err))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1259,7 +1651,7 @@ mod tests {
             json!({
                 "route": { "lane": "storm_human_lane", "requires_manual_review": true },
                 "governance": { "blocked": false }
-            })
+            }),
         ];
         let summary = summarize_tasks(&tasks, true, false);
         assert_eq!(summary["total_micro_tasks"], 3);
@@ -1288,6 +1680,127 @@ mod tests {
         assert_eq!(summary["executed"], 2);
         assert_eq!(summary["failed"], 1);
         assert_eq!(summary["blocked"], 1);
+    }
+
+    #[test]
+    fn apply_governance_updates_lanes_and_flags() {
+        let req = GovernanceApplyRequest {
+            policy: GovernanceApplyPolicy {
+                default_lane: "autonomous_micro_agent".to_string(),
+                storm_lane: "storm_human_lane".to_string(),
+                min_storm_share: 0.0,
+                block_on_constitution_deny: true,
+            },
+            rows: vec![
+                json!({
+                    "suggested_lane": "autonomous_micro_agent",
+                    "heroic": {
+                        "classification": "normal",
+                        "decision": "allow",
+                        "blocked": false,
+                        "reason_codes": []
+                    },
+                    "constitution": {
+                        "decision": "ALLOW",
+                        "risk": "low",
+                        "reasons": []
+                    },
+                    "duality": {
+                        "enabled": true,
+                        "score_trit": 1,
+                        "score_label": "aligned",
+                        "zero_point_harmony_potential": 0.8,
+                        "recommended_adjustment": "none",
+                        "indicator": { "subtle_hint": "ok" }
+                    },
+                    "task": {
+                        "micro_task_id": "mt_1",
+                        "task_text": "verify rollout safety",
+                        "route": { "lane": "autonomous_micro_agent", "parallel_group": 0, "parallel_priority": 0.5 },
+                        "profile": {
+                            "routing": {},
+                            "provenance": { "evidence": { "decomposition_depth": 0 } }
+                        }
+                    }
+                }),
+                json!({
+                    "suggested_lane": "autonomous_micro_agent",
+                    "heroic": {
+                        "classification": "normal",
+                        "decision": "allow",
+                        "blocked": false,
+                        "reason_codes": []
+                    },
+                    "constitution": {
+                        "decision": "MANUAL",
+                        "risk": "medium",
+                        "reasons": ["human_judgment"]
+                    },
+                    "duality": {},
+                    "task": {
+                        "micro_task_id": "mt_2",
+                        "task_text": "design campaign direction",
+                        "route": { "lane": "autonomous_micro_agent", "parallel_group": 1, "parallel_priority": 0.4 },
+                        "profile": {
+                            "routing": {},
+                            "provenance": { "evidence": { "decomposition_depth": 0 } }
+                        }
+                    }
+                }),
+            ],
+        };
+        let tasks = apply_governance(&req);
+        assert_eq!(tasks.len(), 2);
+        assert_eq!(tasks[0]["route"]["lane"], "autonomous_micro_agent");
+        assert_eq!(tasks[0]["governance"]["blocked"], false);
+        assert_eq!(
+            tasks[0]["profile"]["routing"]["requires_manual_review"],
+            false
+        );
+        assert_eq!(tasks[0]["duality"]["score_label"], "aligned");
+
+        assert_eq!(tasks[1]["route"]["lane"], "storm_human_lane");
+        assert_eq!(tasks[1]["route"]["requires_manual_review"], true);
+        assert_eq!(tasks[1]["governance"]["constitution"]["decision"], "MANUAL");
+    }
+
+    #[test]
+    fn apply_governance_enforces_min_storm_share() {
+        let req = GovernanceApplyRequest {
+            policy: GovernanceApplyPolicy {
+                min_storm_share: 0.34,
+                ..GovernanceApplyPolicy::default()
+            },
+            rows: vec![
+                json!({
+                    "suggested_lane": "autonomous_micro_agent",
+                    "heroic": { "blocked": false },
+                    "constitution": { "decision": "ALLOW", "risk": "low", "reasons": [] },
+                    "duality": {},
+                    "task": { "micro_task_id": "mt_a", "task_text": "a", "route": { "lane": "autonomous_micro_agent" }, "profile": { "routing": {} } }
+                }),
+                json!({
+                    "suggested_lane": "autonomous_micro_agent",
+                    "heroic": { "blocked": false },
+                    "constitution": { "decision": "ALLOW", "risk": "low", "reasons": [] },
+                    "duality": {},
+                    "task": { "micro_task_id": "mt_b", "task_text": "b", "route": { "lane": "autonomous_micro_agent" }, "profile": { "routing": {} } }
+                }),
+                json!({
+                    "suggested_lane": "autonomous_micro_agent",
+                    "heroic": { "blocked": false },
+                    "constitution": { "decision": "ALLOW", "risk": "low", "reasons": [] },
+                    "duality": {},
+                    "task": { "micro_task_id": "mt_c", "task_text": "c", "route": { "lane": "autonomous_micro_agent" }, "profile": { "routing": {} } }
+                }),
+            ],
+        };
+        let tasks = apply_governance(&req);
+        let storm_count = tasks
+            .iter()
+            .filter(|task| task["route"]["lane"] == "storm_human_lane")
+            .count();
+        assert!(storm_count >= 1);
     }
 
     #[test]
@@ -1331,7 +1844,7 @@ mod tests {
                         "blocked": false,
                         "requires_manual_review": true
                     }
-                })
+                }),
             ],
         };
         let (weaver, storm) = build_queue_rows(&req);
@@ -1366,7 +1879,7 @@ mod tests {
                     "profile_id": "p_b",
                     "route": { "lane": "storm_human_lane" },
                     "governance": { "blocked": true }
-                })
+                }),
             ],
         };
         let rows = build_dispatch_rows(&req);

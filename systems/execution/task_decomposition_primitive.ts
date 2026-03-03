@@ -611,6 +611,62 @@ function runRustDispatchRows(payload: AnyObj) {
   return runDispatchRowsViaCargo(payloadText);
 }
 
+function runApplyGovernanceViaRustBinary(payloadText: string) {
+  const payloadB64 = Buffer.from(String(payloadText || ''), 'utf8').toString('base64');
+  for (const candidate of executionBinaryCandidates()) {
+    try {
+      if (!fs.existsSync(candidate)) continue;
+      const out = spawnSync(candidate, ['apply-governance', `--payload-base64=${payloadB64}`], {
+        cwd: ROOT,
+        encoding: 'utf8',
+        maxBuffer: 10 * 1024 * 1024
+      });
+      const payload = parseJsonPayload(out.stdout);
+      if (Number(out.status) === 0 && payload && typeof payload === 'object') {
+        return { ok: true, engine: 'rust_bin', binary_path: candidate, payload };
+      }
+    } catch {
+      // try next candidate
+    }
+  }
+  return { ok: false, error: 'rust_binary_unavailable' };
+}
+
+function runApplyGovernanceViaCargo(payloadText: string) {
+  const payloadB64 = Buffer.from(String(payloadText || ''), 'utf8').toString('base64');
+  const args = [
+    'run',
+    '--quiet',
+    '--manifest-path',
+    EXECUTION_MANIFEST,
+    '--bin',
+    'execution_core',
+    '--',
+    'apply-governance',
+    `--payload-base64=${payloadB64}`
+  ];
+  const out = spawnSync('cargo', args, {
+    cwd: ROOT,
+    encoding: 'utf8',
+    maxBuffer: 10 * 1024 * 1024
+  });
+  const payload = parseJsonPayload(out.stdout);
+  if (Number(out.status) === 0 && payload && typeof payload === 'object') {
+    return { ok: true, engine: 'rust_cargo', payload };
+  }
+  return {
+    ok: false,
+    error: `cargo_apply_governance_failed:${cleanText(out.stderr || out.stdout || '', 220)}`
+  };
+}
+
+function runRustApplyGovernance(payload: AnyObj) {
+  const payloadText = JSON.stringify(payload || {});
+  const bin = runApplyGovernanceViaRustBinary(payloadText);
+  if (bin.ok) return bin;
+  return runApplyGovernanceViaCargo(payloadText);
+}
+
 function defaultPolicy() {
   return {
     version: '1.0',
@@ -799,17 +855,6 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
   };
 }
 
-function normalizeCapability(raw: AnyObj) {
-  const capabilityId = normalizeToken(raw && raw.capability_id || '', 80) || 'general_task';
-  const adapterKind = normalizeToken(raw && raw.adapter_kind || '', 80) || 'shell_task';
-  const sourceType = normalizeToken(raw && raw.source_type || '', 80) || 'analysis';
-  return {
-    capability_id: capabilityId,
-    adapter_kind: adapterKind,
-    source_type: sourceType
-  };
-}
-
 function collectGoalInput(args: AnyObj, dateStr: string) {
   const payload = parseJsonArg(args.goal_json || args['goal-json'] || '', null)
     || readGoalFile(args.goal_file || args['goal-file'])
@@ -982,15 +1027,12 @@ function buildMicroTasks(goal: AnyObj, policy: AnyObj, runId: string) {
     throw new Error(`rust_task_compose_failed:${cleanText(composed && composed.error || 'unknown', 220)}`);
   }
   const composedTasks = Array.isArray(composed.payload.tasks) ? composed.payload.tasks : [];
-  const tasks = [];
+  const rows: AnyObj[] = [];
   for (let i = 0; i < composedTasks.length; i += 1) {
     const draft = composedTasks[i] && typeof composedTasks[i] === 'object' ? composedTasks[i] : {};
     const taskText = cleanText(draft.task_text, 1000);
     if (!taskText) continue;
-
     const microTaskId = normalizeToken(draft.micro_task_id, 120) || `mt_${sha16(`${runId}|${i}|${taskText}`)}`;
-    const profileId = normalizeToken(draft.profile_id, 120) || `task_micro_${sha16(`${goal.goal_id}|${microTaskId}`)}`;
-    const capability = normalizeCapability(draft.capability && typeof draft.capability === 'object' ? draft.capability : {});
     const constitution = evaluateConstitutionGate(taskText, policy);
     const heroic = evaluateHeroicGate(taskText, policy, {
       run_id: runId,
@@ -1002,152 +1044,37 @@ function buildMicroTasks(goal: AnyObj, policy: AnyObj, runId: string) {
       80
     ) || normalizeToken(policy.parallel.default_lane, 80)
       || 'autonomous_micro_agent';
-    const lane = constitution.decision === 'MANUAL'
-      ? policy.parallel.storm_lane
-      : suggestedLane;
     const duality = dualitySignalForTask(goal, {
       micro_task_id: microTaskId,
       task_text: taskText,
-      route: { lane }
-    });
-    const blockedByConstitution = policy.gates.block_on_constitution_deny === true
-      && constitution.decision === 'DENY';
-    const blocked = heroic.blocked === true || blockedByConstitution;
-    const requiresManualReview = constitution.decision === 'MANUAL' || lane === policy.parallel.storm_lane;
-
-    const minutes = clampInt(draft.estimated_minutes, Number(policy.decomposition.min_minutes || 1), Number(policy.decomposition.max_minutes || 5), 1);
-    const successCriteria = Array.isArray(draft.success_criteria) && draft.success_criteria.length
-      ? draft.success_criteria.map((row: unknown) => cleanText(row, 220)).filter(Boolean)
-      : [
-        `Execute: ${cleanText(taskText, 180)}`,
-        'Capture a receipt and link outcome to objective context.'
-      ];
-
-    const draftRoute = draft.route && typeof draft.route === 'object' ? draft.route : {};
-    const microTask = {
-      ...draft,
-      micro_task_id: microTaskId,
-      goal_id: goal.goal_id,
-      objective_id: goal.objective_id,
-      parent_id: draft.parent_id ? cleanText(draft.parent_id, 120) : null,
-      depth: clampInt(draft.depth, 0, 24, 0),
-      index: clampInt(draft.index, 0, 100000, i),
-      title: cleanText(draft.title || 'Micro Task', 220) || 'Micro Task',
-      task_text: taskText,
-      estimated_minutes: minutes,
-      success_criteria: successCriteria,
-      required_capability: capability.capability_id,
-      profile_id: profileId,
-      profile: {
-        schema_id: 'task_micro_profile',
-        schema_version: '1.0',
-        profile_id: profileId,
-        source: {
-          source_type: capability.source_type,
-          capability_id: capability.capability_id,
-          objective_id: goal.objective_id,
-          origin_lane: 'task_decomposition_primitive'
-        },
-        intent: {
-          id: 'micro_task_execute',
-          description: taskText,
-          success_criteria: successCriteria
-        },
-        execution: {
-          adapter_kind: capability.adapter_kind,
-          estimated_minutes: minutes,
-          dry_run_default: true
-        },
-        routing: {
-          preferred_lane: lane,
-          requires_manual_review: requiresManualReview
-        },
-        provenance: {
-          confidence: blocked ? 0.55 : 0.92,
-          evidence: {
-            decomposition_depth: clampInt(draft.depth, 0, 24, 0),
-            heroic_echo_decision: heroic.decision,
-            constitution_decision: constitution.decision
-          }
-        },
-        governance: {
-          heroic_echo: {
-            classification: heroic.classification,
-            decision: heroic.decision,
-            reason_codes: heroic.reason_codes
-          },
-          constitution: {
-            decision: constitution.decision,
-            risk: constitution.risk,
-            reasons: constitution.reasons
-          }
-        },
-        attribution: {
-          source_goal_id: goal.goal_id,
-          source_goal_hash: sha16(goal.goal_text),
-          creator_id: goal.creator_id,
-          influence_score: 1,
-          lineage: [goal.goal_id, microTaskId]
-        },
-        duality: {
-          enabled: duality.enabled === true,
-          score_trit: Number(duality.score_trit || 0),
-          score_label: cleanText(duality.score_label || 'unknown', 40) || 'unknown',
-          zero_point_harmony_potential: Number(duality.zero_point_harmony_potential || 0),
-          recommended_adjustment: cleanText(duality.recommended_adjustment || '', 120) || null,
-          indicator: duality.indicator && typeof duality.indicator === 'object'
-            ? duality.indicator
-            : { subtle_hint: 'duality_signal_absent' }
-        }
-      },
       route: {
-        lane,
-        parallel_group: clampInt(draftRoute.parallel_group, 0, 4096, i % Math.max(1, Number(policy.parallel.max_groups || 8))),
-        parallel_priority: Number.isFinite(Number(draftRoute.parallel_priority))
-          ? Number(Number(draftRoute.parallel_priority).toFixed(4))
-          : Number((1 / Math.max(1, minutes)).toFixed(4)),
-        blocked,
-        requires_manual_review: requiresManualReview
-      },
-      governance: {
-        blocked,
-        block_reasons: [
-          ...(heroic.blocked ? ['heroic_echo_blocked'] : []),
-          ...(blockedByConstitution ? ['constitution_denied'] : [])
-        ],
-        heroic_echo: heroic,
-        constitution
-      },
-      duality: {
-        enabled: duality.enabled === true,
-        score_trit: Number(duality.score_trit || 0),
-        score_label: cleanText(duality.score_label || 'unknown', 40) || 'unknown',
-        zero_point_harmony_potential: Number(duality.zero_point_harmony_potential || 0),
-        recommended_adjustment: cleanText(duality.recommended_adjustment || '', 120) || null,
-        indicator: duality.indicator && typeof duality.indicator === 'object'
-          ? duality.indicator
-          : { subtle_hint: 'duality_signal_absent' }
+        lane: constitution.decision === 'MANUAL'
+          ? policy.parallel.storm_lane
+          : suggestedLane
       }
-    };
-    tasks.push(microTask);
+    });
+    rows.push({
+      task: draft,
+      suggested_lane: suggestedLane,
+      heroic,
+      constitution,
+      duality
+    });
   }
 
-  const minStormShare = Number(policy.parallel.min_storm_share || 0);
-  const humanShare = tasks.length
-    ? tasks.filter((row) => row.route && row.route.lane === policy.parallel.storm_lane).length / tasks.length
-    : 0;
-  if (tasks.length > 2 && humanShare < minStormShare) {
-    const best = tasks.find((row) => row.governance && row.governance.constitution
-      && row.governance.constitution.decision !== 'DENY');
-    if (best) {
-      best.route.lane = policy.parallel.storm_lane;
-      best.route.requires_manual_review = true;
-      best.profile.routing.preferred_lane = policy.parallel.storm_lane;
-      best.profile.routing.requires_manual_review = true;
-    }
+  const governed = runRustApplyGovernance({
+    policy: {
+      default_lane: String(policy.parallel && policy.parallel.default_lane || 'autonomous_micro_agent'),
+      storm_lane: String(policy.parallel && policy.parallel.storm_lane || 'storm_human_lane'),
+      min_storm_share: Number(policy.parallel && policy.parallel.min_storm_share || 0),
+      block_on_constitution_deny: policy.gates && policy.gates.block_on_constitution_deny === true
+    },
+    rows
+  });
+  if (!governed || governed.ok !== true || !governed.payload || governed.payload.ok !== true) {
+    throw new Error(`rust_apply_governance_failed:${cleanText(governed && governed.error || 'unknown', 220)}`);
   }
-
-  return tasks;
+  return Array.isArray(governed.payload.tasks) ? governed.payload.tasks : [];
 }
 
 function ensurePassport(policy: AnyObj, goal: AnyObj) {
