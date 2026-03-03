@@ -27,6 +27,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Persona Docs Validation
+        run: node systems/ops/personas_docs_validation.js --strict=1 --allow-empty=1
+
       - name: Test
         run: npm run test
 
