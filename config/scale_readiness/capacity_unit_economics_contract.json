@@ -1,8 +1,8 @@
 {
   "schema_id": "capacity_unit_economics_contract",
   "schema_version": "1.0",
-  "p95_latency_ms": 0.015875,
-  "p99_latency_ms": 0.03,
+  "p95_latency_ms": 0.011166,
+  "p99_latency_ms": 0.02,
   "cost_per_user_usd": 0.122,
   "budget_limits": {
     "max_cost_per_user_usd": 0.18,
