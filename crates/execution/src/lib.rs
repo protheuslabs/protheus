@@ -17,8 +17,8 @@ pub use blob::{
     ExecutionRuntimeProfile, EXECUTION_PROFILE_BLOB_ID,
 };
 pub use autoscale::{
-    compute_batch_max, compute_dynamic_caps, compute_normalize_queue, compute_plan,
-    compute_token_usage,
+    compute_batch_max, compute_criteria_gate, compute_dynamic_caps, compute_normalize_queue,
+    compute_plan, compute_token_usage, CriteriaGateInput, CriteriaGateOutput,
     NormalizeQueueInput, NormalizeQueueOutput,
     run_autoscale_json, BatchMaxInput, BatchMaxOutput, DynamicCapsInput, DynamicCapsOutput,
     PlanInput, PlanOutput, QueuePressure, TokenUsageInput, TokenUsageOutput,

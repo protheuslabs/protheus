@@ -158,6 +158,33 @@ pub struct NormalizeQueueOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct CriteriaGateInput {
+    #[serde(default)]
+    pub min_count: Option<f64>,
+    #[serde(default)]
+    pub total_count: Option<f64>,
+    #[serde(default)]
+    pub contract_not_allowed_count: Option<f64>,
+    #[serde(default)]
+    pub unsupported_count: Option<f64>,
+    #[serde(default)]
+    pub structurally_supported_count: Option<f64>,
+    #[serde(default)]
+    pub contract_violation_count: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct CriteriaGateOutput {
+    pub pass: bool,
+    pub reasons: Vec<String>,
+    pub min_count: f64,
+    pub total_count: f64,
+    pub supported_count: f64,
+    pub unsupported_count: f64,
+    pub contract_violation_count: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AutoscaleRequest {
     pub mode: String,
     #[serde(default)]
@@ -170,6 +197,8 @@ pub struct AutoscaleRequest {
     pub token_usage_input: Option<TokenUsageInput>,
     #[serde(default)]
     pub normalize_queue_input: Option<NormalizeQueueInput>,
+    #[serde(default)]
+    pub criteria_gate_input: Option<CriteriaGateInput>,
 }
 
 fn clamp_ratio(v: f64) -> f64 {
@@ -590,6 +619,40 @@ pub fn compute_normalize_queue(input: &NormalizeQueueInput) -> NormalizeQueueOut
     }
 }
 
+pub fn compute_criteria_gate(input: &CriteriaGateInput) -> CriteriaGateOutput {
+    let min_count = input.min_count.unwrap_or(0.0).max(0.0);
+    let total_count = input.total_count.unwrap_or(0.0).max(0.0);
+    let unsupported_count = (input.contract_not_allowed_count.unwrap_or(0.0).max(0.0)
+        + input.unsupported_count.unwrap_or(0.0).max(0.0))
+    .max(0.0);
+    let supported_count = input
+        .structurally_supported_count
+        .unwrap_or(total_count - unsupported_count)
+        .max(0.0);
+    let contract_violation_count = input.contract_violation_count.unwrap_or(0.0).max(0.0);
+
+    let mut reasons: Vec<String> = Vec::new();
+    if total_count < min_count {
+        reasons.push("criteria_count_below_min".to_string());
+    }
+    if contract_violation_count > 0.0 {
+        reasons.push("criteria_contract_violation".to_string());
+    }
+    if supported_count < min_count {
+        reasons.push("criteria_supported_count_below_min".to_string());
+    }
+
+    CriteriaGateOutput {
+        pass: reasons.is_empty(),
+        reasons,
+        min_count,
+        total_count,
+        supported_count,
+        unsupported_count,
+        contract_violation_count,
+    }
+}
+
 pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
     let request: AutoscaleRequest =
         serde_json::from_str(payload_json).map_err(|e| format!("autoscale_request_parse_failed:{e}"))?;
@@ -653,6 +716,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_normalize_queue_encode_failed:{e}"));
+    }
+    if mode == "criteria_gate" {
+        let input = request
+            .criteria_gate_input
+            .ok_or_else(|| "autoscale_missing_criteria_gate_input".to_string())?;
+        let out = compute_criteria_gate(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "criteria_gate",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_criteria_gate_encode_failed:{e}"));
     }
     Err(format!("autoscale_mode_unsupported:{mode}"))
 }
@@ -819,5 +894,40 @@ mod tests {
         });
         assert_eq!(out.pressure, "critical");
         assert_eq!(out.pending_ratio, 0.01);
+    }
+
+    #[test]
+    fn criteria_gate_fails_on_contract_or_support_gaps() {
+        let out = compute_criteria_gate(&CriteriaGateInput {
+            min_count: Some(2.0),
+            total_count: Some(2.0),
+            contract_not_allowed_count: Some(1.0),
+            unsupported_count: Some(0.0),
+            structurally_supported_count: None,
+            contract_violation_count: Some(1.0),
+        });
+        assert!(!out.pass);
+        assert!(out
+            .reasons
+            .iter()
+            .any(|r| r == "criteria_contract_violation"));
+        assert!(out
+            .reasons
+            .iter()
+            .any(|r| r == "criteria_supported_count_below_min"));
+    }
+
+    #[test]
+    fn criteria_gate_passes_when_counts_are_satisfied() {
+        let out = compute_criteria_gate(&CriteriaGateInput {
+            min_count: Some(2.0),
+            total_count: Some(3.0),
+            contract_not_allowed_count: Some(0.0),
+            unsupported_count: Some(0.0),
+            structurally_supported_count: Some(3.0),
+            contract_violation_count: Some(0.0),
+        });
+        assert!(out.pass);
+        assert!(out.reasons.is_empty());
     }
 }

@@ -8323,6 +8323,27 @@ function preExecCriteriaGateDecision(criteria, policy) {
   );
   const contract = src.contract && typeof src.contract === 'object' ? src.contract : {};
   const violationCount = Math.max(0, Number(contract.violation_count || 0));
+
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'criteria_gate',
+      {
+        min_count: minCount,
+        total_count: totalCount,
+        contract_not_allowed_count: Number(src.contract_not_allowed_count || 0),
+        unsupported_count: Number(src.unsupported_count || 0),
+        structurally_supported_count: src.structurally_supported_count != null
+          ? Number(src.structurally_supported_count)
+          : null,
+        contract_violation_count: violationCount
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return rust.payload.payload;
+    }
+  }
+
   const reasons = [];
   if (totalCount < minCount) reasons.push('criteria_count_below_min');
   if (violationCount > 0) reasons.push('criteria_contract_violation');
@@ -15789,6 +15810,7 @@ module.exports = {
   readModelCatalogCanary,
   runPostconditions,
   computeExecutionTokenUsage,
+  preExecCriteriaGateDecision,
   proposalSemanticFingerprint,
   semanticTokenSimilarity,
   semanticNearDuplicateMatch

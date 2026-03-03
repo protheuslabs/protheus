@@ -133,6 +133,24 @@ function main() {
   assert.strictEqual(Number(normalizedQueue.total), 120);
   assert.ok(Number(normalizedQueue.pending_ratio) >= 0.7);
 
+  const criteriaGate = getPayload(
+    runBacklogAutoscalePrimitive(
+      'criteria_gate',
+      {
+        min_count: 2,
+        total_count: 2,
+        contract_not_allowed_count: 1,
+        unsupported_count: 0,
+        structurally_supported_count: 1,
+        contract_violation_count: 1
+      },
+      { allow_cli_fallback: true }
+    ),
+    'criteria_gate'
+  );
+  assert.strictEqual(criteriaGate.pass, false);
+  assert.ok(Array.isArray(criteriaGate.reasons) && criteriaGate.reasons.includes('criteria_contract_violation'));
+
   console.log('autonomy_backlog_autoscale_rust_bridge.test.js: OK');
 }
 
