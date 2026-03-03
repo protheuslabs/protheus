@@ -2,7 +2,7 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DecomposePolicy {
@@ -145,6 +145,22 @@ pub struct ComposeRequest {
 pub struct ComposeResponse {
     pub ok: bool,
     pub tasks: Vec<Value>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct TaskSummaryRequest {
+    #[serde(default)]
+    pub tasks: Vec<Value>,
+    #[serde(default)]
+    pub shadow_only: bool,
+    #[serde(default)]
+    pub apply_executed: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TaskSummaryResponse {
+    pub ok: bool,
+    pub summary: Value,
 }
 
 #[derive(Debug, Clone)]
@@ -796,6 +812,72 @@ pub fn compose_micro_tasks_json(payload: &str) -> Result<String, String> {
     serde_json::to_string(&resp).map_err(|err| format!("compose_payload_serialize_failed:{}", err))
 }
 
+pub fn summarize_tasks(tasks: &[Value], shadow_only: bool, apply_executed: bool) -> Value {
+    let mut lane_breakdown: BTreeMap<String, u64> = BTreeMap::new();
+    let mut ready = 0u64;
+    let mut blocked = 0u64;
+    let mut manual_review = 0u64;
+    let mut autonomous_lane = 0u64;
+    let mut storm_lane = 0u64;
+
+    for task in tasks {
+        let route = task.get("route").and_then(|v| v.as_object());
+        let governance = task.get("governance").and_then(|v| v.as_object());
+
+        let lane = route
+            .and_then(|row| row.get("lane"))
+            .and_then(|v| v.as_str())
+            .unwrap_or("unknown")
+            .to_string();
+        let is_blocked = governance
+            .and_then(|row| row.get("blocked"))
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false);
+        let is_manual = route
+            .and_then(|row| row.get("requires_manual_review"))
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false);
+
+        *lane_breakdown.entry(lane.clone()).or_insert(0) += 1;
+        if is_blocked {
+            blocked += 1;
+        } else {
+            ready += 1;
+        }
+        if is_manual {
+            manual_review += 1;
+        }
+        if lane == "autonomous_micro_agent" {
+            autonomous_lane += 1;
+        }
+        if lane == "storm_human_lane" {
+            storm_lane += 1;
+        }
+    }
+
+    json!({
+        "total_micro_tasks": tasks.len(),
+        "ready": ready,
+        "blocked": blocked,
+        "manual_review": manual_review,
+        "autonomous_lane": autonomous_lane,
+        "storm_lane": storm_lane,
+        "lane_breakdown": lane_breakdown,
+        "shadow_only": shadow_only,
+        "apply_executed": apply_executed
+    })
+}
+
+pub fn summarize_tasks_json(payload: &str) -> Result<String, String> {
+    let req = serde_json::from_str::<TaskSummaryRequest>(payload)
+        .map_err(|err| format!("task_summary_payload_parse_failed:{}", err))?;
+    let resp = TaskSummaryResponse {
+        ok: true,
+        summary: summarize_tasks(&req.tasks, req.shadow_only, req.apply_executed),
+    };
+    serde_json::to_string(&resp).map_err(|err| format!("task_summary_payload_serialize_failed:{}", err))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -863,5 +945,32 @@ mod tests {
         );
         assert!(row.get("profile").is_some());
         assert!(row.get("route").is_some());
+    }
+
+    #[test]
+    fn summarize_tasks_reports_expected_counts() {
+        let tasks = vec![
+            json!({
+                "route": { "lane": "autonomous_micro_agent", "requires_manual_review": false },
+                "governance": { "blocked": false }
+            }),
+            json!({
+                "route": { "lane": "storm_human_lane", "requires_manual_review": true },
+                "governance": { "blocked": true }
+            }),
+            json!({
+                "route": { "lane": "storm_human_lane", "requires_manual_review": true },
+                "governance": { "blocked": false }
+            })
+        ];
+        let summary = summarize_tasks(&tasks, true, false);
+        assert_eq!(summary["total_micro_tasks"], 3);
+        assert_eq!(summary["ready"], 2);
+        assert_eq!(summary["blocked"], 1);
+        assert_eq!(summary["manual_review"], 2);
+        assert_eq!(summary["autonomous_lane"], 1);
+        assert_eq!(summary["storm_lane"], 2);
+        assert_eq!(summary["shadow_only"], true);
+        assert_eq!(summary["apply_executed"], false);
     }
 }
