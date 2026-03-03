@@ -8630,7 +8630,7 @@ function verifyExecutionReceipt(execRes, dod, outcomeRes, postconditions, succes
   const criteria = toSuccessCriteriaRecord(successCriteria, { required: false, min_count: 0 });
   const criteriaRequired = criteria.required === true;
   const criteriaPass = criteriaRequired ? criteria.passed === true : true;
-  const checks = [
+  let checks = [
     { name: execCheckName, pass: !!(execRes && execRes.ok === true) },
     { name: 'postconditions_ok', pass: !!(postconditions && postconditions.passed === true) },
     { name: 'dod_passed', pass: !!(dod && dod.passed === true) },
@@ -8638,22 +8638,61 @@ function verifyExecutionReceipt(execRes, dod, outcomeRes, postconditions, succes
     { name: 'queue_outcome_logged', pass: !!(outcomeRes && outcomeRes.ok === true) },
     { name: 'route_model_attested', pass: !routeAttestationMismatch }
   ];
-  const checkMap = Object.create(null);
-  for (const check of checks) checkMap[check.name] = check.pass === true;
+  let failed = checks.filter(c => !c.pass).map(c => c.name);
   let outcome = 'shipped';
-  if (!checkMap[execCheckName] || !checkMap.postconditions_ok || !checkMap.queue_outcome_logged || !checkMap.route_model_attested) outcome = 'reverted';
-  else if (!checkMap.dod_passed || !checkMap.success_criteria_met) outcome = 'no_change';
-  const failed = checks.filter(c => !c.pass).map(c => c.name);
+  let primaryFailure = failed.length
+    ? (failed[0] === 'success_criteria_met' && criteria.primary_failure
+      ? String(criteria.primary_failure)
+      : failed[0])
+    : null;
+
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'receipt_verdict',
+      {
+        decision,
+        exec_ok: !!(execRes && execRes.ok === true),
+        postconditions_ok: !!(postconditions && postconditions.passed === true),
+        dod_passed: !!(dod && dod.passed === true),
+        success_criteria_required: criteriaRequired === true,
+        success_criteria_passed: criteria.passed === true,
+        queue_outcome_logged: !!(outcomeRes && outcomeRes.ok === true),
+        route_attestation_status: routeAttestationStatus,
+        route_attestation_expected_model: routeExpectedModel,
+        success_criteria_primary_failure: criteria.primary_failure ? String(criteria.primary_failure) : null
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const payload = rust.payload.payload;
+      if (Array.isArray(payload.checks)) checks = payload.checks.map((row) => ({
+        name: String(row && row.name || ''),
+        pass: row && row.pass === true
+      }));
+      failed = Array.isArray(payload.failed)
+        ? payload.failed.map((row) => String(row || '')).filter(Boolean)
+        : failed;
+      outcome = String(payload.outcome || outcome);
+      primaryFailure = payload.primary_failure != null ? String(payload.primary_failure) : primaryFailure;
+    } else {
+      const checkMap = Object.create(null);
+      for (const check of checks) checkMap[check.name] = check.pass === true;
+      if (!checkMap[execCheckName] || !checkMap.postconditions_ok || !checkMap.queue_outcome_logged || !checkMap.route_model_attested) outcome = 'reverted';
+      else if (!checkMap.dod_passed || !checkMap.success_criteria_met) outcome = 'no_change';
+    }
+  } else {
+    const checkMap = Object.create(null);
+    for (const check of checks) checkMap[check.name] = check.pass === true;
+    if (!checkMap[execCheckName] || !checkMap.postconditions_ok || !checkMap.queue_outcome_logged || !checkMap.route_model_attested) outcome = 'reverted';
+    else if (!checkMap.dod_passed || !checkMap.success_criteria_met) outcome = 'no_change';
+  }
+
   const verification = withSuccessCriteriaVerification({
     checks,
     failed,
     passed: failed.length === 0,
     outcome,
-    primary_failure: failed.length
-      ? (failed[0] === 'success_criteria_met' && criteria.primary_failure
-        ? String(criteria.primary_failure)
-        : failed[0])
-      : null
+    primary_failure: primaryFailure
   }, criteria);
   verification.route_model_attestation = routeAttestation
     ? {
@@ -15849,6 +15888,7 @@ module.exports = {
   evaluateModelCatalogCanary,
   readModelCatalogCanary,
   runPostconditions,
+  verifyExecutionReceipt,
   computeExecutionTokenUsage,
   preExecCriteriaGateDecision,
   routeExecutionPolicyHold,

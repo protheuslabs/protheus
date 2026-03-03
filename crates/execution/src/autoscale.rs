@@ -209,6 +209,40 @@ pub struct PolicyHoldOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ReceiptVerdictInput {
+    pub decision: String,
+    pub exec_ok: bool,
+    pub postconditions_ok: bool,
+    pub dod_passed: bool,
+    pub success_criteria_required: bool,
+    pub success_criteria_passed: bool,
+    pub queue_outcome_logged: bool,
+    #[serde(default)]
+    pub route_attestation_status: String,
+    #[serde(default)]
+    pub route_attestation_expected_model: String,
+    #[serde(default)]
+    pub success_criteria_primary_failure: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ReceiptCheck {
+    pub name: String,
+    pub pass: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ReceiptVerdictOutput {
+    pub exec_check_name: String,
+    pub checks: Vec<ReceiptCheck>,
+    pub failed: Vec<String>,
+    pub passed: bool,
+    pub outcome: String,
+    pub primary_failure: Option<String>,
+    pub route_attestation_mismatch: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AutoscaleRequest {
     pub mode: String,
     #[serde(default)]
@@ -225,6 +259,8 @@ pub struct AutoscaleRequest {
     pub criteria_gate_input: Option<CriteriaGateInput>,
     #[serde(default)]
     pub policy_hold_input: Option<PolicyHoldInput>,
+    #[serde(default)]
+    pub receipt_verdict_input: Option<ReceiptVerdictInput>,
 }
 
 fn clamp_ratio(v: f64) -> f64 {
@@ -743,6 +779,126 @@ pub fn compute_policy_hold(input: &PolicyHoldInput) -> PolicyHoldOutput {
     }
 }
 
+pub fn compute_receipt_verdict(input: &ReceiptVerdictInput) -> ReceiptVerdictOutput {
+    let decision = input.decision.trim().to_ascii_uppercase();
+    let exec_check_name = if decision == "ACTUATE" {
+        "actuation_execute_ok".to_string()
+    } else if decision == "DIRECTIVE_VALIDATE" {
+        "directive_validate_ok".to_string()
+    } else if decision == "DIRECTIVE_DECOMPOSE" {
+        "directive_decompose_ok".to_string()
+    } else {
+        "route_execute_ok".to_string()
+    };
+
+    let route_attestation_status = input.route_attestation_status.trim().to_ascii_lowercase();
+    let route_expected_model = input.route_attestation_expected_model.trim();
+    let route_attestation_mismatch =
+        !route_expected_model.is_empty() && route_attestation_status == "mismatch";
+
+    let criteria_pass = if input.success_criteria_required {
+        input.success_criteria_passed
+    } else {
+        true
+    };
+    let checks = vec![
+        ReceiptCheck {
+            name: exec_check_name.clone(),
+            pass: input.exec_ok,
+        },
+        ReceiptCheck {
+            name: "postconditions_ok".to_string(),
+            pass: input.postconditions_ok,
+        },
+        ReceiptCheck {
+            name: "dod_passed".to_string(),
+            pass: input.dod_passed,
+        },
+        ReceiptCheck {
+            name: "success_criteria_met".to_string(),
+            pass: criteria_pass,
+        },
+        ReceiptCheck {
+            name: "queue_outcome_logged".to_string(),
+            pass: input.queue_outcome_logged,
+        },
+        ReceiptCheck {
+            name: "route_model_attested".to_string(),
+            pass: !route_attestation_mismatch,
+        },
+    ];
+
+    let failed: Vec<String> = checks
+        .iter()
+        .filter(|row| !row.pass)
+        .map(|row| row.name.clone())
+        .collect();
+    let passed = failed.is_empty();
+    let mut outcome = "shipped".to_string();
+    let exec_check_pass = checks
+        .iter()
+        .find(|row| row.name == exec_check_name)
+        .map(|row| row.pass)
+        .unwrap_or(false);
+    let postconditions_ok = checks
+        .iter()
+        .find(|row| row.name == "postconditions_ok")
+        .map(|row| row.pass)
+        .unwrap_or(false);
+    let queue_outcome_logged = checks
+        .iter()
+        .find(|row| row.name == "queue_outcome_logged")
+        .map(|row| row.pass)
+        .unwrap_or(false);
+    let route_model_attested = checks
+        .iter()
+        .find(|row| row.name == "route_model_attested")
+        .map(|row| row.pass)
+        .unwrap_or(false);
+    let dod_passed = checks
+        .iter()
+        .find(|row| row.name == "dod_passed")
+        .map(|row| row.pass)
+        .unwrap_or(false);
+    let success_criteria_met = checks
+        .iter()
+        .find(|row| row.name == "success_criteria_met")
+        .map(|row| row.pass)
+        .unwrap_or(false);
+
+    if !exec_check_pass || !postconditions_ok || !queue_outcome_logged || !route_model_attested {
+        outcome = "reverted".to_string();
+    } else if !dod_passed || !success_criteria_met {
+        outcome = "no_change".to_string();
+    }
+
+    let primary_failure = if let Some(first_failed) = failed.first() {
+        if first_failed == "success_criteria_met"
+            && input
+                .success_criteria_primary_failure
+                .as_ref()
+                .map(|s| !s.trim().is_empty())
+                .unwrap_or(false)
+        {
+            input.success_criteria_primary_failure.clone()
+        } else {
+            Some(first_failed.clone())
+        }
+    } else {
+        None
+    };
+
+    ReceiptVerdictOutput {
+        exec_check_name,
+        checks,
+        failed,
+        passed,
+        outcome,
+        primary_failure,
+        route_attestation_mismatch,
+    }
+}
+
 pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
     let request: AutoscaleRequest =
         serde_json::from_str(payload_json).map_err(|e| format!("autoscale_request_parse_failed:{e}"))?;
@@ -830,6 +986,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_policy_hold_encode_failed:{e}"));
+    }
+    if mode == "receipt_verdict" {
+        let input = request
+            .receipt_verdict_input
+            .ok_or_else(|| "autoscale_missing_receipt_verdict_input".to_string())?;
+        let out = compute_receipt_verdict(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "receipt_verdict",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_receipt_verdict_encode_failed:{e}"));
     }
     Err(format!("autoscale_mode_unsupported:{mode}"))
 }
@@ -1068,5 +1236,46 @@ mod tests {
         assert!(out.hold);
         assert_eq!(out.hold_scope, Some("proposal".to_string()));
         assert_eq!(out.hold_reason, Some("gate_manual".to_string()));
+    }
+
+    #[test]
+    fn receipt_verdict_reverts_when_exec_fails() {
+        let out = compute_receipt_verdict(&ReceiptVerdictInput {
+            decision: "ACTUATE".to_string(),
+            exec_ok: false,
+            postconditions_ok: true,
+            dod_passed: true,
+            success_criteria_required: true,
+            success_criteria_passed: true,
+            queue_outcome_logged: true,
+            route_attestation_status: "ok".to_string(),
+            route_attestation_expected_model: "gpt-5".to_string(),
+            success_criteria_primary_failure: None,
+        });
+        assert_eq!(out.exec_check_name, "actuation_execute_ok");
+        assert_eq!(out.outcome, "reverted");
+        assert!(!out.passed);
+        assert!(out.failed.iter().any(|f| f == "actuation_execute_ok"));
+    }
+
+    #[test]
+    fn receipt_verdict_uses_criteria_primary_failure_when_present() {
+        let out = compute_receipt_verdict(&ReceiptVerdictInput {
+            decision: "ROUTE".to_string(),
+            exec_ok: true,
+            postconditions_ok: true,
+            dod_passed: true,
+            success_criteria_required: true,
+            success_criteria_passed: false,
+            queue_outcome_logged: true,
+            route_attestation_status: "ok".to_string(),
+            route_attestation_expected_model: "gpt-5".to_string(),
+            success_criteria_primary_failure: Some("insufficient_supported_metrics".to_string()),
+        });
+        assert_eq!(out.outcome, "no_change");
+        assert_eq!(
+            out.primary_failure,
+            Some("insufficient_supported_metrics".to_string())
+        );
     }
 }

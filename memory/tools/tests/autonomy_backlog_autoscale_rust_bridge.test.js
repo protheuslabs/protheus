@@ -173,6 +173,29 @@ function main() {
   assert.strictEqual(policyHold.hold, true);
   assert.strictEqual(policyHold.hold_scope, 'budget');
 
+  const receiptVerdict = getPayload(
+    runBacklogAutoscalePrimitive(
+      'receipt_verdict',
+      {
+        decision: 'ACTUATE',
+        exec_ok: false,
+        postconditions_ok: true,
+        dod_passed: true,
+        success_criteria_required: true,
+        success_criteria_passed: true,
+        queue_outcome_logged: true,
+        route_attestation_status: 'ok',
+        route_attestation_expected_model: 'gpt-5',
+        success_criteria_primary_failure: null
+      },
+      { allow_cli_fallback: true }
+    ),
+    'receipt_verdict'
+  );
+  assert.strictEqual(String(receiptVerdict.exec_check_name), 'actuation_execute_ok');
+  assert.strictEqual(String(receiptVerdict.outcome), 'reverted');
+  assert.ok(Array.isArray(receiptVerdict.failed) && receiptVerdict.failed.includes('actuation_execute_ok'));
+
   console.log('autonomy_backlog_autoscale_rust_bridge.test.js: OK');
 }
 

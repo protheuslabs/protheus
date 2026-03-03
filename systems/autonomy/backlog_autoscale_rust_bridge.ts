@@ -96,7 +96,8 @@ function runBacklogAutoscalePrimitive(mode: string, data: AnyObj = {}, opts: Any
     token_usage: 'token_usage_input',
     normalize_queue: 'normalize_queue_input',
     criteria_gate: 'criteria_gate_input',
-    policy_hold: 'policy_hold_input'
+    policy_hold: 'policy_hold_input',
+    receipt_verdict: 'receipt_verdict_input'
   };
   const field = fieldByMode[normalizedMode];
   if (!field) return { ok: false, error: `autoscale_mode_unsupported:${normalizedMode}` };

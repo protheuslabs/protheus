@@ -18,9 +18,10 @@ pub use blob::{
 };
 pub use autoscale::{
     compute_batch_max, compute_criteria_gate, compute_dynamic_caps, compute_normalize_queue,
-    compute_plan, compute_policy_hold, compute_token_usage, CriteriaGateInput, CriteriaGateOutput,
+    compute_plan, compute_policy_hold, compute_receipt_verdict, compute_token_usage,
+    CriteriaGateInput, CriteriaGateOutput,
     NormalizeQueueInput, NormalizeQueueOutput,
-    PolicyHoldInput, PolicyHoldOutput,
+    PolicyHoldInput, PolicyHoldOutput, ReceiptCheck, ReceiptVerdictInput, ReceiptVerdictOutput,
     run_autoscale_json, BatchMaxInput, BatchMaxOutput, DynamicCapsInput, DynamicCapsOutput,
     PlanInput, PlanOutput, QueuePressure, TokenUsageInput, TokenUsageOutput,
 };
