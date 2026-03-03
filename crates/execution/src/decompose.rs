@@ -1,5 +1,6 @@
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::collections::HashSet;
 
@@ -94,6 +95,56 @@ pub struct BaseTask {
 pub struct DecomposeResponse {
     pub ok: bool,
     pub tasks: Vec<BaseTask>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ComposePolicy {
+    #[serde(default = "default_min_minutes")]
+    pub min_minutes: usize,
+    #[serde(default = "default_max_minutes")]
+    pub max_minutes: usize,
+    #[serde(default = "default_max_groups")]
+    pub max_groups: usize,
+    #[serde(default = "default_lane")]
+    pub default_lane: String,
+    #[serde(default = "default_storm_lane")]
+    pub storm_lane: String,
+}
+
+impl Default for ComposePolicy {
+    fn default() -> Self {
+        Self {
+            min_minutes: default_min_minutes(),
+            max_minutes: default_max_minutes(),
+            max_groups: default_max_groups(),
+            default_lane: default_lane(),
+            storm_lane: default_storm_lane(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct ComposeRequest {
+    #[serde(default)]
+    pub run_id: String,
+    #[serde(default)]
+    pub goal_id: String,
+    #[serde(default)]
+    pub goal_text: String,
+    #[serde(default)]
+    pub objective_id: Option<String>,
+    #[serde(default)]
+    pub creator_id: Option<String>,
+    #[serde(default)]
+    pub policy: ComposePolicy,
+    #[serde(default)]
+    pub tasks: Vec<BaseTask>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ComposeResponse {
+    pub ok: bool,
+    pub tasks: Vec<Value>,
 }
 
 #[derive(Debug, Clone)]
@@ -435,6 +486,225 @@ fn lane_for_task(task_text: &str, policy: &DecomposePolicy) -> String {
     }
 }
 
+fn normalize_capability(raw: &Capability) -> Capability {
+    let capability_id = normalize_token(raw.capability_id.as_str(), 80);
+    let adapter_kind = normalize_token(raw.adapter_kind.as_str(), 80);
+    let source_type = normalize_token(raw.source_type.as_str(), 80);
+    Capability {
+        capability_id: if capability_id.is_empty() {
+            "general_task".to_string()
+        } else {
+            capability_id
+        },
+        adapter_kind: if adapter_kind.is_empty() {
+            "shell_task".to_string()
+        } else {
+            adapter_kind
+        },
+        source_type: if source_type.is_empty() {
+            "analysis".to_string()
+        } else {
+            source_type
+        },
+    }
+}
+
+pub fn compose_micro_tasks(req: &ComposeRequest) -> Vec<Value> {
+    let run_id = if req.run_id.trim().is_empty() {
+        format!(
+            "tdp_compose_{}",
+            sha16(format!("{}|{}", req.goal_id, req.goal_text).as_str())
+        )
+    } else {
+        req.run_id.trim().to_string()
+    };
+    let max_groups = req.policy.max_groups.max(1);
+    let default_lane = {
+        let lane = normalize_token(req.policy.default_lane.as_str(), 80);
+        if lane.is_empty() {
+            "autonomous_micro_agent".to_string()
+        } else {
+            lane
+        }
+    };
+
+    req.tasks
+        .iter()
+        .enumerate()
+        .filter_map(|(i, base)| {
+            let task_text = clean_text(base.task_text.as_str(), 1000);
+            if task_text.is_empty() {
+                return None;
+            }
+
+            let micro_task_id = {
+                let normalized = normalize_token(base.micro_task_id.as_str(), 120);
+                if normalized.is_empty() {
+                    format!("mt_{}", sha16(format!("{}|{}|{}", run_id, i, task_text).as_str()))
+                } else {
+                    normalized
+                }
+            };
+            let profile_id = {
+                let normalized = normalize_token(base.profile_id.as_str(), 120);
+                if normalized.is_empty() {
+                    format!(
+                        "task_micro_{}",
+                        sha16(format!("{}|{}", req.goal_id, micro_task_id).as_str())
+                    )
+                } else {
+                    normalized
+                }
+            };
+            let capability = normalize_capability(&base.capability);
+            let suggested_lane = {
+                let lane = normalize_token(base.suggested_lane.as_str(), 80);
+                if lane.is_empty() {
+                    default_lane.clone()
+                } else {
+                    lane
+                }
+            };
+            let minutes = base
+                .estimated_minutes
+                .clamp(req.policy.min_minutes.max(1), req.policy.max_minutes.max(1));
+            let success_criteria = if base.success_criteria.is_empty() {
+                success_criteria(task_text.as_str())
+            } else {
+                base.success_criteria
+                    .iter()
+                    .map(|row| clean_text(row.as_str(), 220))
+                    .filter(|row| !row.is_empty())
+                    .collect::<Vec<String>>()
+            };
+            let parallel_priority = if base.parallel_priority.is_finite() {
+                (base.parallel_priority * 10_000f64).round() / 10_000f64
+            } else {
+                (1f64 / minutes.max(1) as f64 * 10_000f64).round() / 10_000f64
+            };
+            let title = {
+                let normalized = clean_text(base.title.as_str(), 220);
+                if normalized.is_empty() {
+                    title_for_task(task_text.as_str())
+                } else {
+                    normalized
+                }
+            };
+            let objective_id = req.objective_id.clone();
+            let creator_id = req.creator_id.clone();
+            Some(json!({
+                "micro_task_id": micro_task_id,
+                "goal_id": req.goal_id,
+                "objective_id": objective_id,
+                "parent_id": base.parent_id,
+                "depth": base.depth,
+                "index": base.index,
+                "title": title,
+                "task_text": task_text,
+                "estimated_minutes": minutes,
+                "success_criteria": success_criteria,
+                "required_capability": capability.capability_id,
+                "profile_id": profile_id,
+                "capability": capability,
+                "route": {
+                    "lane": suggested_lane,
+                    "parallel_group": base.parallel_group.min(max_groups.saturating_sub(1)),
+                    "parallel_priority": parallel_priority,
+                    "blocked": false,
+                    "requires_manual_review": false
+                },
+                "profile": {
+                    "schema_id": "task_micro_profile",
+                    "schema_version": "1.0",
+                    "profile_id": profile_id,
+                    "source": {
+                        "source_type": capability.source_type,
+                        "capability_id": capability.capability_id,
+                        "objective_id": objective_id,
+                        "origin_lane": "task_decomposition_primitive"
+                    },
+                    "intent": {
+                        "id": "micro_task_execute",
+                        "description": task_text,
+                        "success_criteria": success_criteria
+                    },
+                    "execution": {
+                        "adapter_kind": capability.adapter_kind,
+                        "estimated_minutes": minutes,
+                        "dry_run_default": true
+                    },
+                    "routing": {
+                        "preferred_lane": suggested_lane,
+                        "requires_manual_review": false
+                    },
+                    "provenance": {
+                        "confidence": 0.92,
+                        "evidence": {
+                            "decomposition_depth": base.depth,
+                            "heroic_echo_decision": "allow",
+                            "constitution_decision": "ALLOW"
+                        }
+                    },
+                    "governance": {
+                        "heroic_echo": {
+                            "classification": "normal",
+                            "decision": "allow",
+                            "reason_codes": []
+                        },
+                        "constitution": {
+                            "decision": "ALLOW",
+                            "risk": "low",
+                            "reasons": []
+                        }
+                    },
+                    "attribution": {
+                        "source_goal_id": req.goal_id,
+                        "source_goal_hash": sha16(req.goal_text.as_str()),
+                        "creator_id": creator_id,
+                        "influence_score": 1,
+                        "lineage": [req.goal_id, micro_task_id]
+                    },
+                    "duality": {
+                        "enabled": false,
+                        "score_trit": 0,
+                        "score_label": "unknown",
+                        "zero_point_harmony_potential": 0,
+                        "recommended_adjustment": Value::Null,
+                        "indicator": {
+                            "subtle_hint": "duality_signal_pending"
+                        }
+                    }
+                },
+                "governance": {
+                    "blocked": false,
+                    "block_reasons": [],
+                    "heroic_echo": {
+                        "classification": "normal",
+                        "decision": "allow",
+                        "blocked": false,
+                        "reason_codes": []
+                    },
+                    "constitution": {
+                        "decision": "ALLOW",
+                        "risk": "low",
+                        "reasons": []
+                    }
+                },
+                "duality": {
+                    "enabled": false,
+                    "score_trit": 0,
+                    "score_label": "unknown",
+                    "zero_point_harmony_potential": 0,
+                    "recommended_adjustment": Value::Null,
+                    "indicator": {
+                        "subtle_hint": "duality_signal_pending"
+                    }
+                }
+            }))
+        })
+        .collect()
+}
+
 pub fn decompose_goal(req: &DecomposeRequest) -> Vec<BaseTask> {
     let run_id = if req.run_id.trim().is_empty() {
         format!(
@@ -516,6 +786,16 @@ pub fn decompose_goal_json(payload: &str) -> Result<String, String> {
         .map_err(|err| format!("decompose_payload_serialize_failed:{}", err))
 }
 
+pub fn compose_micro_tasks_json(payload: &str) -> Result<String, String> {
+    let req = serde_json::from_str::<ComposeRequest>(payload)
+        .map_err(|err| format!("compose_payload_parse_failed:{}", err))?;
+    let resp = ComposeResponse {
+        ok: true,
+        tasks: compose_micro_tasks(&req),
+    };
+    serde_json::to_string(&resp).map_err(|err| format!("compose_payload_serialize_failed:{}", err))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -538,5 +818,50 @@ mod tests {
         assert!(!out.is_empty());
         assert!(out.iter().all(|row| !row.micro_task_id.is_empty()));
         assert!(out.iter().all(|row| !row.profile_id.is_empty()));
+    }
+
+    #[test]
+    fn compose_materializes_profiles_and_routes() {
+        let req = ComposeRequest {
+            run_id: "tdp_compose_test".to_string(),
+            goal_id: "goal_compose".to_string(),
+            goal_text: "Build and verify rollout checklist".to_string(),
+            objective_id: Some("obj_compose".to_string()),
+            creator_id: Some("jay".to_string()),
+            policy: ComposePolicy::default(),
+            tasks: vec![BaseTask {
+                micro_task_id: "mt_a".to_string(),
+                goal_id: "goal_compose".to_string(),
+                objective_id: Some("obj_compose".to_string()),
+                parent_id: None,
+                depth: 0,
+                index: 0,
+                title: "Verify checklist".to_string(),
+                task_text: "Verify checklist integrity and publish summary".to_string(),
+                estimated_minutes: 3,
+                success_criteria: vec!["Execute verification".to_string()],
+                required_capability: "quality_check".to_string(),
+                profile_id: "task_micro_mt_a".to_string(),
+                capability: Capability {
+                    capability_id: "quality_check".to_string(),
+                    adapter_kind: "shell_task".to_string(),
+                    source_type: "analysis".to_string(),
+                },
+                suggested_lane: "autonomous_micro_agent".to_string(),
+                parallel_group: 0,
+                parallel_priority: 0.3333,
+            }],
+        };
+        let out = compose_micro_tasks(&req);
+        assert_eq!(out.len(), 1);
+        let row = out[0].as_object().expect("row should be object");
+        assert_eq!(
+            row.get("micro_task_id")
+                .and_then(|v| v.as_str())
+                .unwrap_or(""),
+            "mt_a"
+        );
+        assert!(row.get("profile").is_some());
+        assert!(row.get("route").is_some());
     }
 }

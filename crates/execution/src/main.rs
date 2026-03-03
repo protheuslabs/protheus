@@ -1,7 +1,7 @@
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use base64::Engine;
 use execution_core::{
-    decompose_goal_json, run_autoscale_json, run_sprint_contract_json, run_workflow,
+    compose_micro_tasks_json, decompose_goal_json, run_autoscale_json, run_sprint_contract_json, run_workflow,
     run_workflow_json,
 };
 use std::env;
@@ -15,6 +15,9 @@ fn usage() {
     eprintln!("  execution_core decompose --payload=<json_payload>");
     eprintln!("  execution_core decompose --payload-base64=<base64_json_payload>");
     eprintln!("  execution_core decompose --payload-file=<path>");
+    eprintln!("  execution_core compose --payload=<json_payload>");
+    eprintln!("  execution_core compose --payload-base64=<base64_json_payload>");
+    eprintln!("  execution_core compose --payload-file=<path>");
     eprintln!("  execution_core sprint-contract --payload=<json_payload>");
     eprintln!("  execution_core sprint-contract --payload-base64=<base64_json_payload>");
     eprintln!("  execution_core sprint-contract --payload-file=<path>");
@@ -90,6 +93,21 @@ fn main() {
         },
         "decompose" => match load_payload(&args[1..]) {
             Ok(payload) => match decompose_goal_json(&payload) {
+                Ok(out) => println!("{}", out),
+                Err(err) => {
+                    let payload = serde_json::json!({ "ok": false, "error": err });
+                    eprintln!("{}", payload);
+                    std::process::exit(1);
+                }
+            },
+            Err(err) => {
+                let payload = serde_json::json!({ "ok": false, "error": err });
+                eprintln!("{}", payload);
+                std::process::exit(1);
+            }
+        },
+        "compose" => match load_payload(&args[1..]) {
+            Ok(payload) => match compose_micro_tasks_json(&payload) {
                 Ok(out) => println!("{}", out),
                 Err(err) => {
                     let payload = serde_json::json!({ "ok": false, "error": err });

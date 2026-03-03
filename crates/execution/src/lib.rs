@@ -26,8 +26,9 @@ pub use autoscale::{
     PlanInput, PlanOutput, QueuePressure, TokenUsageInput, TokenUsageOutput,
 };
 pub use decompose::{
-    decompose_goal, decompose_goal_json, BaseTask, Capability, DecomposePolicy, DecomposeRequest,
-    DecomposeResponse,
+    compose_micro_tasks, compose_micro_tasks_json, BaseTask, Capability, ComposePolicy,
+    ComposeRequest, ComposeResponse, DecomposePolicy, DecomposeRequest, DecomposeResponse,
+    decompose_goal, decompose_goal_json,
 };
 pub use sprint_contract::run_sprint_contract_json;
 

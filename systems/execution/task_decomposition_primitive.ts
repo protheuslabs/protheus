@@ -307,6 +307,77 @@ function runRustTaskDecompose(goal: AnyObj, policy: AnyObj, runId: string) {
   return runTaskDecomposeViaCargo(payloadText);
 }
 
+function runTaskComposeViaRustBinary(payloadText: string) {
+  const payloadB64 = Buffer.from(String(payloadText || ''), 'utf8').toString('base64');
+  for (const candidate of executionBinaryCandidates()) {
+    try {
+      if (!fs.existsSync(candidate)) continue;
+      const out = spawnSync(candidate, ['compose', `--payload-base64=${payloadB64}`], {
+        cwd: ROOT,
+        encoding: 'utf8',
+        maxBuffer: 10 * 1024 * 1024
+      });
+      const payload = parseJsonPayload(out.stdout);
+      if (Number(out.status) === 0 && payload && typeof payload === 'object') {
+        return { ok: true, engine: 'rust_bin', binary_path: candidate, payload };
+      }
+    } catch {
+      // try next candidate
+    }
+  }
+  return { ok: false, error: 'rust_binary_unavailable' };
+}
+
+function runTaskComposeViaCargo(payloadText: string) {
+  const payloadB64 = Buffer.from(String(payloadText || ''), 'utf8').toString('base64');
+  const args = [
+    'run',
+    '--quiet',
+    '--manifest-path',
+    EXECUTION_MANIFEST,
+    '--bin',
+    'execution_core',
+    '--',
+    'compose',
+    `--payload-base64=${payloadB64}`
+  ];
+  const out = spawnSync('cargo', args, {
+    cwd: ROOT,
+    encoding: 'utf8',
+    maxBuffer: 10 * 1024 * 1024
+  });
+  const payload = parseJsonPayload(out.stdout);
+  if (Number(out.status) === 0 && payload && typeof payload === 'object') {
+    return { ok: true, engine: 'rust_cargo', payload };
+  }
+  return {
+    ok: false,
+    error: `cargo_compose_failed:${cleanText(out.stderr || out.stdout || '', 220)}`
+  };
+}
+
+function runRustTaskCompose(goal: AnyObj, policy: AnyObj, runId: string, tasks: AnyObj[]) {
+  const payload = {
+    run_id: runId,
+    goal_id: goal.goal_id,
+    goal_text: goal.goal_text,
+    objective_id: goal.objective_id || null,
+    creator_id: goal.creator_id || null,
+    policy: {
+      min_minutes: Number(policy.decomposition && policy.decomposition.min_minutes || 1),
+      max_minutes: Number(policy.decomposition && policy.decomposition.max_minutes || 5),
+      max_groups: Number(policy.parallel && policy.parallel.max_groups || 8),
+      default_lane: String(policy.parallel && policy.parallel.default_lane || 'autonomous_micro_agent'),
+      storm_lane: String(policy.parallel && policy.parallel.storm_lane || 'storm_human_lane')
+    },
+    tasks: Array.isArray(tasks) ? tasks : []
+  };
+  const payloadText = JSON.stringify(payload);
+  const bin = runTaskComposeViaRustBinary(payloadText);
+  if (bin.ok) return bin;
+  return runTaskComposeViaCargo(payloadText);
+}
+
 function defaultPolicy() {
   return {
     version: '1.0',
@@ -673,23 +744,30 @@ function buildMicroTasks(goal: AnyObj, policy: AnyObj, runId: string) {
   }
 
   const baseTasks = Array.isArray(decompose.payload.tasks) ? decompose.payload.tasks : [];
+  const composed = runRustTaskCompose(goal, policy, runId, baseTasks);
+  if (!composed || composed.ok !== true || !composed.payload || composed.payload.ok !== true) {
+    throw new Error(`rust_task_compose_failed:${cleanText(composed && composed.error || 'unknown', 220)}`);
+  }
+  const composedTasks = Array.isArray(composed.payload.tasks) ? composed.payload.tasks : [];
   const tasks = [];
-  for (let i = 0; i < baseTasks.length; i += 1) {
-    const base = baseTasks[i] && typeof baseTasks[i] === 'object' ? baseTasks[i] : {};
-    const taskText = cleanText(base.task_text, 1000);
+  for (let i = 0; i < composedTasks.length; i += 1) {
+    const draft = composedTasks[i] && typeof composedTasks[i] === 'object' ? composedTasks[i] : {};
+    const taskText = cleanText(draft.task_text, 1000);
     if (!taskText) continue;
 
-    const microTaskId = normalizeToken(base.micro_task_id, 120) || `mt_${sha16(`${runId}|${i}|${taskText}`)}`;
-    const profileId = normalizeToken(base.profile_id, 120) || `task_micro_${sha16(`${goal.goal_id}|${microTaskId}`)}`;
-    const capability = normalizeCapability(base.capability && typeof base.capability === 'object' ? base.capability : {});
+    const microTaskId = normalizeToken(draft.micro_task_id, 120) || `mt_${sha16(`${runId}|${i}|${taskText}`)}`;
+    const profileId = normalizeToken(draft.profile_id, 120) || `task_micro_${sha16(`${goal.goal_id}|${microTaskId}`)}`;
+    const capability = normalizeCapability(draft.capability && typeof draft.capability === 'object' ? draft.capability : {});
     const constitution = evaluateConstitutionGate(taskText, policy);
     const heroic = evaluateHeroicGate(taskText, policy, {
       run_id: runId,
       task_id: microTaskId,
       objective_id: goal.objective_id
     });
-    const suggestedLane = normalizeToken(base.suggested_lane, 80)
-      || normalizeToken(policy.parallel.default_lane, 80)
+    const suggestedLane = normalizeToken(
+      draft.route && draft.route.lane || draft.suggested_lane || '',
+      80
+    ) || normalizeToken(policy.parallel.default_lane, 80)
       || 'autonomous_micro_agent';
     const lane = constitution.decision === 'MANUAL'
       ? policy.parallel.storm_lane
@@ -704,22 +782,24 @@ function buildMicroTasks(goal: AnyObj, policy: AnyObj, runId: string) {
     const blocked = heroic.blocked === true || blockedByConstitution;
     const requiresManualReview = constitution.decision === 'MANUAL' || lane === policy.parallel.storm_lane;
 
-    const minutes = clampInt(base.estimated_minutes, Number(policy.decomposition.min_minutes || 1), Number(policy.decomposition.max_minutes || 5), 1);
-    const successCriteria = Array.isArray(base.success_criteria) && base.success_criteria.length
-      ? base.success_criteria.map((row: unknown) => cleanText(row, 220)).filter(Boolean)
+    const minutes = clampInt(draft.estimated_minutes, Number(policy.decomposition.min_minutes || 1), Number(policy.decomposition.max_minutes || 5), 1);
+    const successCriteria = Array.isArray(draft.success_criteria) && draft.success_criteria.length
+      ? draft.success_criteria.map((row: unknown) => cleanText(row, 220)).filter(Boolean)
       : [
         `Execute: ${cleanText(taskText, 180)}`,
         'Capture a receipt and link outcome to objective context.'
       ];
 
+    const draftRoute = draft.route && typeof draft.route === 'object' ? draft.route : {};
     const microTask = {
+      ...draft,
       micro_task_id: microTaskId,
       goal_id: goal.goal_id,
       objective_id: goal.objective_id,
-      parent_id: base.parent_id ? cleanText(base.parent_id, 120) : null,
-      depth: clampInt(base.depth, 0, 24, 0),
-      index: clampInt(base.index, 0, 100000, i),
-      title: cleanText(base.title || 'Micro Task', 220) || 'Micro Task',
+      parent_id: draft.parent_id ? cleanText(draft.parent_id, 120) : null,
+      depth: clampInt(draft.depth, 0, 24, 0),
+      index: clampInt(draft.index, 0, 100000, i),
+      title: cleanText(draft.title || 'Micro Task', 220) || 'Micro Task',
       task_text: taskText,
       estimated_minutes: minutes,
       success_criteria: successCriteria,
@@ -752,7 +832,7 @@ function buildMicroTasks(goal: AnyObj, policy: AnyObj, runId: string) {
         provenance: {
           confidence: blocked ? 0.55 : 0.92,
           evidence: {
-            decomposition_depth: clampInt(base.depth, 0, 24, 0),
+            decomposition_depth: clampInt(draft.depth, 0, 24, 0),
             heroic_echo_decision: heroic.decision,
             constitution_decision: constitution.decision
           }
@@ -789,9 +869,9 @@ function buildMicroTasks(goal: AnyObj, policy: AnyObj, runId: string) {
       },
       route: {
         lane,
-        parallel_group: clampInt(base.parallel_group, 0, 4096, i % Math.max(1, Number(policy.parallel.max_groups || 8))),
-        parallel_priority: Number.isFinite(Number(base.parallel_priority))
-          ? Number(Number(base.parallel_priority).toFixed(4))
+        parallel_group: clampInt(draftRoute.parallel_group, 0, 4096, i % Math.max(1, Number(policy.parallel.max_groups || 8))),
+        parallel_priority: Number.isFinite(Number(draftRoute.parallel_priority))
+          ? Number(Number(draftRoute.parallel_priority).toFixed(4))
           : Number((1 / Math.max(1, minutes)).toFixed(4)),
         blocked,
         requires_manual_review: requiresManualReview
