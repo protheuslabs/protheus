@@ -1217,6 +1217,21 @@ pub struct BuildOutputInterfacesOutput {
     pub channels: Value,
 }
 
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct BuildCodeChangeProposalDraftInput {
+    #[serde(default)]
+    pub base: Option<Value>,
+    #[serde(default)]
+    pub args: Option<Value>,
+    #[serde(default)]
+    pub opts: Option<Value>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct BuildCodeChangeProposalDraftOutput {
+    pub proposal: Value,
+}
+
 fn normalize_token(raw: &str, max_len: usize) -> String {
     let collapsed = raw
         .split_whitespace()
@@ -3585,6 +3600,195 @@ pub fn compute_build_output_interfaces(
     }
 }
 
+pub fn compute_build_code_change_proposal_draft(
+    input: &BuildCodeChangeProposalDraftInput,
+) -> BuildCodeChangeProposalDraftOutput {
+    let base = input.base.as_ref().and_then(|v| v.as_object());
+    let args = input.args.as_ref().and_then(|v| v.as_object());
+    let opts = input.opts.as_ref().and_then(|v| v.as_object());
+
+    let read_text = |root: Option<&serde_json::Map<String, Value>>, keys: &[&str], max_len: usize| {
+        keys.iter()
+            .find_map(|key| root.and_then(|m| m.get(*key)).map(|v| value_to_string(Some(v))))
+            .map(|value| clean_text_runtime(&value, max_len))
+            .unwrap_or_default()
+    };
+    let read_value = |root: Option<&serde_json::Map<String, Value>>, keys: &[&str]| {
+        keys.iter()
+            .find_map(|key| root.and_then(|m| m.get(*key)))
+            .cloned()
+    };
+
+    let objective = clean_text_runtime(
+        &value_to_string(base.and_then(|m| m.get("objective"))),
+        260,
+    );
+    let objective_id = clean_text_runtime(
+        &value_to_string(base.and_then(|m| m.get("objective_id"))),
+        140,
+    );
+    let objective_id_value = if objective_id.is_empty() {
+        Value::Null
+    } else {
+        Value::String(objective_id.clone())
+    };
+
+    let title = {
+        let explicit = read_text(args, &["code_change_title", "code-change-title"], 180);
+        if !explicit.is_empty() {
+            explicit
+        } else {
+            clean_text_runtime(
+                &format!(
+                    "Inversion-driven code-change proposal: {}",
+                    if objective.is_empty() {
+                        "unknown objective"
+                    } else {
+                        &objective
+                    }
+                ),
+                180,
+            )
+        }
+    };
+    let summary = {
+        let explicit = read_text(args, &["code_change_summary", "code-change-summary"], 420);
+        if !explicit.is_empty() {
+            explicit
+        } else {
+            clean_text_runtime(
+                &format!(
+                    "Use guarded inversion outputs to propose a reversible code change for objective \"{}\".",
+                    if objective.is_empty() {
+                        "unknown"
+                    } else {
+                        &objective
+                    }
+                ),
+                420,
+            )
+        }
+    };
+    let proposed_files = compute_normalize_text_list(&NormalizeTextListInput {
+        value: read_value(args, &["code_change_files", "code-change-files"]),
+        max_len: Some(220),
+        max_items: Some(32),
+    })
+    .items;
+    let proposed_tests = compute_normalize_text_list(&NormalizeTextListInput {
+        value: read_value(args, &["code_change_tests", "code-change-tests"]),
+        max_len: Some(220),
+        max_items: Some(32),
+    })
+    .items;
+
+    let ts = {
+        let value = clean_text_runtime(&value_to_string(base.and_then(|m| m.get("ts"))), 64);
+        if value.is_empty() {
+            chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true)
+        } else {
+            value
+        }
+    };
+    let risk_note = {
+        let value = read_text(args, &["code_change_risk", "code-change-risk"], 320);
+        if value.is_empty() {
+            Value::Null
+        } else {
+            Value::String(value)
+        }
+    };
+    let proposal_id_seed = format!(
+        "{}|{}|{}",
+        if objective_id.is_empty() {
+            objective.as_str()
+        } else {
+            objective_id.as_str()
+        },
+        title,
+        ts
+    );
+    let proposal_id = stable_id_runtime(&proposal_id_seed, "icp");
+    let mode = {
+        let value = clean_text_runtime(&value_to_string(base.and_then(|m| m.get("mode"))), 24);
+        if value.is_empty() {
+            "test".to_string()
+        } else {
+            value
+        }
+    };
+    let shadow_mode = to_bool_like(base.and_then(|m| m.get("shadow_mode")), true);
+    let impact = compute_normalize_impact(&NormalizeImpactInput {
+        value: Some(value_to_string(base.and_then(|m| m.get("impact")))),
+    })
+    .value;
+    let target = compute_normalize_target(&NormalizeTargetInput {
+        value: Some(value_to_string(base.and_then(|m| m.get("target")))),
+    })
+    .value;
+    let certainty = round6(clamp_number(
+        parse_number_like(base.and_then(|m| m.get("certainty"))).unwrap_or(0.0),
+        0.0,
+        1.0,
+    ));
+    let maturity_band = {
+        let value = clean_text_runtime(
+            &value_to_string(base.and_then(|m| m.get("maturity_band"))),
+            24,
+        );
+        if value.is_empty() {
+            "novice".to_string()
+        } else {
+            value
+        }
+    };
+    let reasons = base
+        .and_then(|m| m.get("reasons"))
+        .and_then(|v| v.as_array())
+        .map(|rows| rows.iter().take(8).cloned().collect::<Vec<_>>())
+        .unwrap_or_default();
+    let session_id_value = {
+        let value = clean_text_runtime(&value_to_string(opts.and_then(|m| m.get("session_id"))), 120);
+        if value.is_empty() {
+            Value::Null
+        } else {
+            Value::String(value)
+        }
+    };
+    let sandbox_verified = to_bool_like(opts.and_then(|m| m.get("sandbox_verified")), false);
+
+    BuildCodeChangeProposalDraftOutput {
+        proposal: json!({
+            "proposal_id": proposal_id,
+            "ts": ts,
+            "type": "code_change_proposal",
+            "source": "inversion_controller",
+            "mode": mode,
+            "shadow_mode": shadow_mode,
+            "status": "proposal_only",
+            "title": title,
+            "summary": summary,
+            "objective": objective,
+            "objective_id": objective_id_value,
+            "impact": impact,
+            "target": target,
+            "certainty": certainty,
+            "maturity_band": maturity_band,
+            "reasons": reasons,
+            "session_id": session_id_value,
+            "sandbox_verified": sandbox_verified,
+            "proposed_files": proposed_files,
+            "proposed_tests": proposed_tests,
+            "risk_note": risk_note,
+            "governance": {
+                "require_mirror_simulation": true,
+                "require_human_approval": true,
+                "live_apply_locked": true
+            }
+        }),
+    }
+}
+
 pub fn compute_creative_penalty(input: &CreativePenaltyInput) -> CreativePenaltyOutput {
     let preferred = input
         .preferred_creative_lane_ids
@@ -5130,6 +5334,17 @@ pub fn run_inversion_json(payload_json: &str) -> Result<String, String> {
         }))
         .map_err(|e| format!("inversion_encode_build_output_interfaces_failed:{e}"));
     }
+    if mode == "build_code_change_proposal_draft" {
+        let input: BuildCodeChangeProposalDraftInput =
+            decode_input(&payload, "build_code_change_proposal_draft_input")?;
+        let out = compute_build_code_change_proposal_draft(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "build_code_change_proposal_draft",
+            "payload": out.proposal
+        }))
+        .map_err(|e| format!("inversion_encode_build_code_change_proposal_draft_failed:{e}"));
+    }
     Err(format!("inversion_mode_unsupported:{mode}"))
 }
 
@@ -6033,5 +6248,54 @@ mod tests {
             .and_then(|v| v.as_array())
             .map(|rows| rows.iter().any(|row| row.as_str() == Some("sandbox_verification_required")))
             .unwrap_or(false));
+    }
+
+    #[test]
+    fn helper_primitives_batch11_match_contract() {
+        let out = compute_build_code_change_proposal_draft(&BuildCodeChangeProposalDraftInput {
+            base: Some(json!({
+                "objective": "Harden inversion lane",
+                "objective_id": "BL-214",
+                "ts": "2026-03-04T00:00:00.000Z",
+                "mode": "test",
+                "impact": "high",
+                "target": "directive",
+                "certainty": 0.7333333,
+                "maturity_band": "developing",
+                "reasons": ["one", "two"],
+                "shadow_mode": true
+            })),
+            args: Some(json!({
+                "code_change_title": "Migrate proposal draft builder",
+                "code_change_summary": "Rust-first proposal generation with parity fallback.",
+                "code_change_files": ["systems/autonomy/inversion_controller.ts"],
+                "code_change_tests": ["memory/tools/tests/inversion_helper_batch11_rust_parity.test.js"],
+                "code_change_risk": "low"
+            })),
+            opts: Some(json!({
+                "session_id": "ivs_123",
+                "sandbox_verified": true
+            })),
+        });
+        let proposal = out.proposal.as_object().expect("proposal object");
+        assert_eq!(
+            proposal
+                .get("type")
+                .and_then(|v| v.as_str())
+                .unwrap_or(""),
+            "code_change_proposal"
+        );
+        assert!(proposal
+            .get("proposal_id")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .starts_with("icp_"));
+        assert_eq!(
+            proposal
+                .get("sandbox_verified")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false),
+            true
+        );
     }
 }

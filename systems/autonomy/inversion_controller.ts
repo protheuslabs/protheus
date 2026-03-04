@@ -5551,6 +5551,20 @@ function persistInterfaceEnvelope(paths: AnyObj, envelope: AnyObj) {
 }
 
 function buildCodeChangeProposalDraft(base: AnyObj, args: AnyObj, opts: AnyObj = {}) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'build_code_change_proposal_draft',
+      {
+        base: base && typeof base === 'object' ? base : {},
+        args: args && typeof args === 'object' ? args : {},
+        opts: opts && typeof opts === 'object' ? opts : {}
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return rust.payload.payload;
+    }
+  }
   const objective = cleanText(base.objective || '', 260);
   const objectiveId = cleanText(base.objective_id || '', 140) || null;
   const title = cleanText(
@@ -7707,6 +7721,7 @@ module.exports = {
   currentRuntimeMode,
   maturityBandOrder,
   normalizeObjectiveArg,
+  buildCodeChangeProposalDraft,
   normalizeAxiomPattern,
   normalizeAxiomSignalTerms,
   normalizeObserverId,
