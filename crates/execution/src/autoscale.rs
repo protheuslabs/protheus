@@ -1101,6 +1101,19 @@ pub struct DirectiveTierWeightOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct NormalizeDirectiveTierInput {
+    #[serde(default)]
+    pub raw_tier: Option<f64>,
+    #[serde(default)]
+    pub fallback: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct NormalizeDirectiveTierOutput {
+    pub tier: u32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct DirectiveTierMinShareInput {
     #[serde(default)]
     pub tier: Option<f64>,
@@ -1897,6 +1910,8 @@ pub struct AutoscaleRequest {
     pub time_to_value_score_input: Option<TimeToValueScoreInput>,
     #[serde(default)]
     pub value_density_score_input: Option<ValueDensityScoreInput>,
+    #[serde(default)]
+    pub normalize_directive_tier_input: Option<NormalizeDirectiveTierInput>,
     #[serde(default)]
     pub directive_tier_weight_input: Option<DirectiveTierWeightInput>,
     #[serde(default)]
@@ -3920,6 +3935,23 @@ pub fn compute_value_density_score(input: &ValueDensityScoreInput) -> ValueDensi
         rounded as u32
     };
     ValueDensityScoreOutput { score: clamped }
+}
+
+pub fn compute_normalize_directive_tier(
+    input: &NormalizeDirectiveTierInput,
+) -> NormalizeDirectiveTierOutput {
+    let fallback = input
+        .fallback
+        .filter(|v| v.is_finite())
+        .unwrap_or(3.0);
+    let raw = input
+        .raw_tier
+        .filter(|v| v.is_finite())
+        .unwrap_or(fallback);
+    let tier = raw.round().max(1.0);
+    NormalizeDirectiveTierOutput {
+        tier: tier as u32,
+    }
 }
 
 pub fn compute_directive_tier_weight(
@@ -6282,6 +6314,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_value_density_score_encode_failed:{e}"));
+    }
+    if mode == "normalize_directive_tier" {
+        let input = request
+            .normalize_directive_tier_input
+            .ok_or_else(|| "autoscale_missing_normalize_directive_tier_input".to_string())?;
+        let out = compute_normalize_directive_tier(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "normalize_directive_tier",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_normalize_directive_tier_encode_failed:{e}"));
     }
     if mode == "directive_tier_weight" {
         let input = request
@@ -8802,6 +8846,36 @@ mod tests {
             fallback: Some(2.0),
         });
         assert!((fallback.weight - 1.0).abs() < 0.000001);
+    }
+
+    #[test]
+    fn normalize_directive_tier_clamps_and_rounds() {
+        let out = compute_normalize_directive_tier(&NormalizeDirectiveTierInput {
+            raw_tier: Some(0.4),
+            fallback: Some(3.0),
+        });
+        assert_eq!(out.tier, 1);
+
+        let rounded = compute_normalize_directive_tier(&NormalizeDirectiveTierInput {
+            raw_tier: Some(2.6),
+            fallback: Some(3.0),
+        });
+        assert_eq!(rounded.tier, 3);
+    }
+
+    #[test]
+    fn autoscale_json_normalize_directive_tier_path_works() {
+        let payload = serde_json::json!({
+            "mode": "normalize_directive_tier",
+            "normalize_directive_tier_input": {
+                "raw_tier": 2.4,
+                "fallback": 3
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale normalize_directive_tier");
+        assert!(out.contains("\"mode\":\"normalize_directive_tier\""));
+        assert!(out.contains("\"tier\":2"));
     }
 
     #[test]

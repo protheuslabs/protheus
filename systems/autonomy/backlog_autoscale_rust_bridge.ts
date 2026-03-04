@@ -162,6 +162,7 @@ function runBacklogAutoscalePrimitive(mode: string, data: AnyObj = {}, opts: Any
     composite_eligibility_score: 'composite_eligibility_score_input',
     time_to_value_score: 'time_to_value_score_input',
     value_density_score: 'value_density_score_input',
+    normalize_directive_tier: 'normalize_directive_tier_input',
     directive_tier_weight: 'directive_tier_weight_input',
     directive_tier_min_share: 'directive_tier_min_share_input',
     directive_tier_coverage_bonus: 'directive_tier_coverage_bonus_input',

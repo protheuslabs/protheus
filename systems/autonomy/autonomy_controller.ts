@@ -2829,6 +2829,8 @@ const TIME_TO_VALUE_SCORE_CACHE = new Map();
 const TIME_TO_VALUE_SCORE_CACHE_MAX = 1024;
 const VALUE_DENSITY_SCORE_CACHE = new Map();
 const VALUE_DENSITY_SCORE_CACHE_MAX = 1024;
+const NORMALIZE_DIRECTIVE_TIER_CACHE = new Map();
+const NORMALIZE_DIRECTIVE_TIER_CACHE_MAX = 512;
 const DIRECTIVE_TIER_WEIGHT_CACHE = new Map();
 const DIRECTIVE_TIER_WEIGHT_CACHE_MAX = 256;
 const DIRECTIVE_TIER_MIN_SHARE_CACHE = new Map();
@@ -5467,6 +5469,34 @@ function loadDirectiveFitProfile() {
 }
 
 function normalizeDirectiveTier(rawTier, fallback = 3) {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const raw = Number(rawTier);
+    const fallbackRaw = Number(fallback);
+    const cacheKey = [
+      Number.isFinite(raw) ? String(raw) : 'NaN',
+      Number.isFinite(fallbackRaw) ? String(fallbackRaw) : 'NaN'
+    ].join('\u0000');
+    if (NORMALIZE_DIRECTIVE_TIER_CACHE.has(cacheKey)) {
+      return NORMALIZE_DIRECTIVE_TIER_CACHE.get(cacheKey);
+    }
+    const rust = runBacklogAutoscalePrimitive(
+      'normalize_directive_tier',
+      {
+        raw_tier: Number.isFinite(raw) ? raw : null,
+        fallback: Number.isFinite(fallbackRaw) ? fallbackRaw : 3
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const tier = Math.max(1, Math.round(Number(rust.payload.payload.tier || 0)));
+      if (NORMALIZE_DIRECTIVE_TIER_CACHE.size >= NORMALIZE_DIRECTIVE_TIER_CACHE_MAX) {
+        const oldest = NORMALIZE_DIRECTIVE_TIER_CACHE.keys().next();
+        if (!oldest.done) NORMALIZE_DIRECTIVE_TIER_CACHE.delete(oldest.value);
+      }
+      NORMALIZE_DIRECTIVE_TIER_CACHE.set(cacheKey, tier);
+      return tier;
+    }
+  }
   const n = Number(rawTier);
   if (!Number.isFinite(n)) return fallback;
   return Math.max(1, Math.round(n));
@@ -18717,6 +18747,7 @@ module.exports = {
   computeCalibrationDeltas,
   compileDirectivePulseObjectives,
   buildDirectivePulseContext,
+  normalizeDirectiveTier,
   pulseTierCoverageBonus,
   directiveTierReservationNeed,
   assessDirectivePulse,
