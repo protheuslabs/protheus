@@ -84,6 +84,35 @@ function runRoutePrimitivesViaRust(task, tokensEst, repeats14d, errors30d) {
   return null;
 }
 
+function runRouteMatchViaRust(intentKey, habits, skipHabitId) {
+  const payload = JSON.stringify({
+    intent_key: String(intentKey || ''),
+    skip_habit_id: String(skipHabitId || ''),
+    habits: Array.isArray(habits)
+      ? habits.map((h) => ({ id: String(h && h.id || '') }))
+      : []
+  });
+  const payloadB64 = Buffer.from(payload, 'utf8').toString('base64');
+  for (const candidate of executionBinaryCandidates()) {
+    try {
+      if (!fs.existsSync(candidate)) continue;
+      const out = spawnSync(candidate, ['route-match', `--payload-base64=${payloadB64}`], {
+        cwd: REPO_ROOT,
+        encoding: 'utf8',
+        maxBuffer: 10 * 1024 * 1024
+      });
+      const parsed = parseJsonPayload(out.stdout);
+      if (Number(out.status) !== 0 || !parsed || typeof parsed !== 'object') continue;
+      const matchedId = String(parsed.matched_habit_id || '').trim();
+      if (!matchedId) return null;
+      return matchedId;
+    } catch {
+      // try next candidate
+    }
+  }
+  return null;
+}
+
 function normalizeIntent(text) {
   if (!text) return '';
   return text
@@ -160,6 +189,15 @@ function pickBestMatch(habits, intentKey, skipHabitId = '') {
   const tokenMatch = habits.find(h => h.id !== skipHabitId && intentKey.includes(h.id));
   if (tokenMatch) return tokenMatch;
   return null;
+}
+
+function pickBestMatchRustAware(habits, intentKey, skipHabitId = '') {
+  const rustId = runRouteMatchViaRust(intentKey, habits, skipHabitId);
+  if (rustId) {
+    const found = habits.find((h) => String(h && h.id || '') === rustId);
+    if (found) return found;
+  }
+  return pickBestMatch(habits, intentKey, skipHabitId);
 }
 
 function pickReflexMatch(routinesMap, intentKey, task) {
@@ -389,7 +427,7 @@ function main() {
   const registry = loadRegistry();
   const habits = registry.habits || [];
   const trusted = loadTrustedHabits();
-  const match = pickBestMatch(habits, intentKey, skipHabitId);
+  const match = pickBestMatchRustAware(habits, intentKey, skipHabitId);
   
   // A/B/C triggers per Governance v1.0
   const triggerA = routePrimitives.trigger_a;

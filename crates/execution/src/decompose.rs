@@ -339,6 +339,29 @@ pub struct RoutePrimitivesResponse {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct RouteMatchHabit {
+    #[serde(default)]
+    pub id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct RouteMatchRequest {
+    #[serde(default)]
+    pub intent_key: String,
+    #[serde(default)]
+    pub skip_habit_id: String,
+    #[serde(default)]
+    pub habits: Vec<RouteMatchHabit>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RouteMatchResponse {
+    pub ok: bool,
+    pub matched_habit_id: Option<String>,
+    pub match_strategy: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct HeroicGateRequest {
     #[serde(default)]
     pub task_text: String,
@@ -1423,12 +1446,69 @@ pub fn evaluate_route_primitives(req: &RoutePrimitivesRequest) -> RoutePrimitive
     }
 }
 
+pub fn evaluate_route_match(req: &RouteMatchRequest) -> RouteMatchResponse {
+    let intent_key = normalize_token(req.intent_key.as_str(), 120);
+    let skip_habit_id = normalize_token(req.skip_habit_id.as_str(), 120);
+    if intent_key.is_empty() {
+        return RouteMatchResponse {
+            ok: true,
+            matched_habit_id: None,
+            match_strategy: "none".to_string(),
+        };
+    }
+
+    let exact = req
+        .habits
+        .iter()
+        .find(|habit| {
+            let id = normalize_token(habit.id.as_str(), 120);
+            !id.is_empty() && id == intent_key && id != skip_habit_id
+        })
+        .map(|habit| clean_text(habit.id.as_str(), 160));
+    if let Some(matched_habit_id) = exact {
+        return RouteMatchResponse {
+            ok: true,
+            matched_habit_id: Some(matched_habit_id),
+            match_strategy: "exact".to_string(),
+        };
+    }
+
+    let token_match = req
+        .habits
+        .iter()
+        .find(|habit| {
+            let id = normalize_token(habit.id.as_str(), 120);
+            !id.is_empty() && id != skip_habit_id && intent_key.contains(id.as_str())
+        })
+        .map(|habit| clean_text(habit.id.as_str(), 160));
+    if let Some(matched_habit_id) = token_match {
+        return RouteMatchResponse {
+            ok: true,
+            matched_habit_id: Some(matched_habit_id),
+            match_strategy: "token".to_string(),
+        };
+    }
+
+    RouteMatchResponse {
+        ok: true,
+        matched_habit_id: None,
+        match_strategy: "none".to_string(),
+    }
+}
+
 pub fn evaluate_route_primitives_json(payload: &str) -> Result<String, String> {
     let req = serde_json::from_str::<RoutePrimitivesRequest>(payload)
         .map_err(|err| format!("route_primitives_payload_parse_failed:{}", err))?;
     let resp = evaluate_route_primitives(&req);
     serde_json::to_string(&resp)
         .map_err(|err| format!("route_primitives_payload_serialize_failed:{}", err))
+}
+
+pub fn evaluate_route_match_json(payload: &str) -> Result<String, String> {
+    let req = serde_json::from_str::<RouteMatchRequest>(payload)
+        .map_err(|err| format!("route_match_payload_parse_failed:{}", err))?;
+    let resp = evaluate_route_match(&req);
+    serde_json::to_string(&resp).map_err(|err| format!("route_match_payload_serialize_failed:{}", err))
 }
 
 fn is_trust_registry_modification(task_lower: &str) -> bool {
@@ -2216,6 +2296,53 @@ mod tests {
         assert!(!out.trigger_b);
         assert!(out.trigger_c);
         assert_eq!(out.which_met, vec!["C".to_string()]);
+    }
+
+    #[test]
+    fn route_match_prefers_exact_id() {
+        let req = RouteMatchRequest {
+            intent_key: "security_scan".to_string(),
+            skip_habit_id: String::new(),
+            habits: vec![
+                RouteMatchHabit {
+                    id: "daily_ops".to_string(),
+                },
+                RouteMatchHabit {
+                    id: "security_scan".to_string(),
+                },
+            ],
+        };
+        let out = evaluate_route_match(&req);
+        assert_eq!(out.matched_habit_id, Some("security_scan".to_string()));
+        assert_eq!(out.match_strategy, "exact");
+    }
+
+    #[test]
+    fn route_match_uses_token_when_exact_missing() {
+        let req = RouteMatchRequest {
+            intent_key: "please_run_daily_ops_now".to_string(),
+            skip_habit_id: String::new(),
+            habits: vec![RouteMatchHabit {
+                id: "daily_ops".to_string(),
+            }],
+        };
+        let out = evaluate_route_match(&req);
+        assert_eq!(out.matched_habit_id, Some("daily_ops".to_string()));
+        assert_eq!(out.match_strategy, "token");
+    }
+
+    #[test]
+    fn route_match_respects_skip_habit() {
+        let req = RouteMatchRequest {
+            intent_key: "daily_ops".to_string(),
+            skip_habit_id: "daily_ops".to_string(),
+            habits: vec![RouteMatchHabit {
+                id: "daily_ops".to_string(),
+            }],
+        };
+        let out = evaluate_route_match(&req);
+        assert_eq!(out.matched_habit_id, None);
+        assert_eq!(out.match_strategy, "none");
     }
 
     #[test]
