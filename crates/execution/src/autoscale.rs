@@ -3335,6 +3335,18 @@ pub struct NormalizeModelIdsOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct SelectedModelFromRunEventInput {
+    #[serde(default)]
+    pub route_summary: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct SelectedModelFromRunEventOutput {
+    #[serde(default)]
+    pub model: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ParseDirectiveFileArgInput {
     #[serde(default)]
     pub command: Option<String>,
@@ -4546,6 +4558,8 @@ pub struct AutoscaleRequest {
     pub uniq_sorted_input: Option<UniqSortedInput>,
     #[serde(default)]
     pub normalize_model_ids_input: Option<NormalizeModelIdsInput>,
+    #[serde(default)]
+    pub selected_model_from_run_event_input: Option<SelectedModelFromRunEventInput>,
     #[serde(default)]
     pub parse_directive_file_arg_input: Option<ParseDirectiveFileArgInput>,
     #[serde(default)]
@@ -10521,6 +10535,30 @@ pub fn compute_normalize_model_ids(input: &NormalizeModelIdsInput) -> NormalizeM
     NormalizeModelIdsOutput { models: out }
 }
 
+pub fn compute_selected_model_from_run_event(
+    input: &SelectedModelFromRunEventInput,
+) -> SelectedModelFromRunEventOutput {
+    let Some(summary) = input.route_summary.as_ref().and_then(|v| v.as_object()) else {
+        return SelectedModelFromRunEventOutput { model: None };
+    };
+    let keys = ["selected_model", "model", "selectedModel", "chosen_model"];
+    for key in keys {
+        let Some(v) = summary.get(key) else {
+            continue;
+        };
+        let text = match v {
+            serde_json::Value::String(s) => s.trim().to_string(),
+            _ => v.to_string().trim().to_string(),
+        };
+        if !text.is_empty() {
+            return SelectedModelFromRunEventOutput {
+                model: Some(text),
+            };
+        }
+    }
+    SelectedModelFromRunEventOutput { model: None }
+}
+
 pub fn compute_parse_directive_file_arg(input: &ParseDirectiveFileArgInput) -> ParseDirectiveFileArgOutput {
     let text = input.command.as_deref().unwrap_or("").trim();
     if text.is_empty() {
@@ -14540,6 +14578,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_normalize_model_ids_encode_failed:{e}"));
+    }
+    if mode == "selected_model_from_run_event" {
+        let input = request
+            .selected_model_from_run_event_input
+            .ok_or_else(|| "autoscale_missing_selected_model_from_run_event_input".to_string())?;
+        let out = compute_selected_model_from_run_event(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "selected_model_from_run_event",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_selected_model_from_run_event_encode_failed:{e}"));
     }
     if mode == "parse_directive_file_arg" {
         let input = request

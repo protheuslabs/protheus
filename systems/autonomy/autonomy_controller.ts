@@ -14446,6 +14446,20 @@ function startModelCatalogCanary(proposalId, applyPayload) {
 }
 
 function selectedModelFromRunEvent(evt) {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'selected_model_from_run_event',
+      {
+        route_summary: evt && evt.route_summary && typeof evt.route_summary === 'object'
+          ? evt.route_summary
+          : null
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return rust.payload.payload.model == null ? null : String(rust.payload.payload.model || '');
+    }
+  }
   const s = evt && evt.route_summary;
   if (!s || typeof s !== 'object') return null;
   const direct = String(s.selected_model || s.model || s.selectedModel || s.chosen_model || '').trim();
@@ -21361,6 +21375,7 @@ module.exports = {
   asStringArray,
   uniqSorted,
   normalizeModelIds,
+  selectedModelFromRunEvent,
   startModelCatalogCanary,
   evaluateModelCatalogCanary,
   readModelCatalogCanary,
