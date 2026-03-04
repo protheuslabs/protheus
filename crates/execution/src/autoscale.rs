@@ -235,6 +235,19 @@ pub struct NoProgressResultOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct AttemptRunEventInput {
+    #[serde(default)]
+    pub event_type: Option<String>,
+    #[serde(default)]
+    pub result: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct AttemptRunEventOutput {
+    pub is_attempt: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct RouteExecutionPolicyHoldInput {
     #[serde(default)]
     pub target: Option<String>,
@@ -472,6 +485,8 @@ pub struct AutoscaleRequest {
     pub policy_hold_result_input: Option<PolicyHoldResultInput>,
     #[serde(default)]
     pub no_progress_result_input: Option<NoProgressResultInput>,
+    #[serde(default)]
+    pub attempt_run_event_input: Option<AttemptRunEventInput>,
     #[serde(default)]
     pub route_execution_policy_hold_input: Option<RouteExecutionPolicyHoldInput>,
     #[serde(default)]
@@ -1130,6 +1145,45 @@ pub fn compute_no_progress_result(input: &NoProgressResultInput) -> NoProgressRe
     NoProgressResultOutput { is_no_progress }
 }
 
+pub fn compute_attempt_run_event(input: &AttemptRunEventInput) -> AttemptRunEventOutput {
+    let event_type = input
+        .event_type
+        .as_ref()
+        .map(|v| v.trim().to_ascii_lowercase())
+        .unwrap_or_default();
+    if event_type != "autonomy_run" {
+        return AttemptRunEventOutput { is_attempt: false };
+    }
+
+    let result = input
+        .result
+        .as_ref()
+        .map(|v| v.trim().to_string())
+        .unwrap_or_default();
+    let is_attempt = result == "executed"
+        || result == "init_gate_stub"
+        || result == "init_gate_low_score"
+        || result == "init_gate_blocked_route"
+        || result == "stop_repeat_gate_directive_pulse_cooldown"
+        || result == "stop_repeat_gate_directive_pulse_tier_reservation"
+        || result == "stop_repeat_gate_human_escalation_pending"
+        || result == "stop_repeat_gate_capability_cap"
+        || result == "stop_repeat_gate_stale_signal"
+        || result == "stop_init_gate_quality_exhausted"
+        || result == "stop_init_gate_directive_fit_exhausted"
+        || result == "stop_init_gate_actionability_exhausted"
+        || result == "stop_init_gate_optimization_good_enough"
+        || result == "stop_init_gate_value_signal_exhausted"
+        || result == "stop_init_gate_tier1_governance"
+        || result == "stop_init_gate_composite_exhausted"
+        || result == "stop_repeat_gate_capability_cooldown"
+        || result == "stop_repeat_gate_capability_no_change_cooldown"
+        || result == "stop_repeat_gate_preview_churn_cooldown"
+        || result == "stop_repeat_gate_exhaustion_cooldown"
+        || result == "stop_repeat_gate_candidate_exhausted";
+    AttemptRunEventOutput { is_attempt }
+}
+
 pub fn compute_policy_hold_pressure(input: &PolicyHoldPressureInput) -> PolicyHoldPressureOutput {
     let window_hours = input.window_hours.unwrap_or(24.0).max(1.0);
     let min_samples = input.min_samples.unwrap_or(1.0).max(1.0);
@@ -1673,6 +1727,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
         }))
         .map_err(|e| format!("autoscale_no_progress_result_encode_failed:{e}"));
     }
+    if mode == "attempt_run_event" {
+        let input = request
+            .attempt_run_event_input
+            .ok_or_else(|| "autoscale_missing_attempt_run_event_input".to_string())?;
+        let out = compute_attempt_run_event(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "attempt_run_event",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_attempt_run_event_encode_failed:{e}"));
+    }
     if mode == "route_execution_policy_hold" {
         let input = request
             .route_execution_policy_hold_input
@@ -2047,6 +2113,41 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale no_progress_result");
         assert!(out.contains("\"mode\":\"no_progress_result\""));
+    }
+
+    #[test]
+    fn attempt_run_event_classifies_core_cases() {
+        let executed = compute_attempt_run_event(&AttemptRunEventInput {
+            event_type: Some("autonomy_run".to_string()),
+            result: Some("executed".to_string()),
+        });
+        assert!(executed.is_attempt);
+
+        let blocked = compute_attempt_run_event(&AttemptRunEventInput {
+            event_type: Some("autonomy_run".to_string()),
+            result: Some("stop_repeat_gate_candidate_exhausted".to_string()),
+        });
+        assert!(blocked.is_attempt);
+
+        let non_attempt = compute_attempt_run_event(&AttemptRunEventInput {
+            event_type: Some("autonomy_run".to_string()),
+            result: Some("stop_repeat_gate_no_progress".to_string()),
+        });
+        assert!(!non_attempt.is_attempt);
+    }
+
+    #[test]
+    fn autoscale_json_attempt_run_event_path_works() {
+        let payload = serde_json::json!({
+            "mode": "attempt_run_event",
+            "attempt_run_event_input": {
+                "event_type": "autonomy_run",
+                "result": "stop_init_gate_quality_exhausted"
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale attempt_run_event");
+        assert!(out.contains("\"mode\":\"attempt_run_event\""));
     }
 
     #[test]

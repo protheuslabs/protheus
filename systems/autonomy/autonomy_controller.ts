@@ -2689,6 +2689,8 @@ const POLICY_HOLD_RESULT_CACHE = new Map();
 const POLICY_HOLD_RESULT_CACHE_MAX = 256;
 const NO_PROGRESS_RESULT_CACHE = new Map();
 const NO_PROGRESS_RESULT_CACHE_MAX = 512;
+const ATTEMPT_RUN_EVENT_CACHE = new Map();
+const ATTEMPT_RUN_EVENT_CACHE_MAX = 512;
 
 function isPolicyHoldResult(result): boolean {
   const r = String(result || '').trim();
@@ -3214,6 +3216,29 @@ function runsSinceReset(events) {
 
 function isAttemptRunEvent(evt) {
   if (!evt || evt.type !== 'autonomy_run') return false;
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const result = String(evt.result || '');
+    if (ATTEMPT_RUN_EVENT_CACHE.has(result)) {
+      return ATTEMPT_RUN_EVENT_CACHE.get(result) === true;
+    }
+    const rust = runBacklogAutoscalePrimitive(
+      'attempt_run_event',
+      {
+        event_type: String(evt.type || ''),
+        result
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const val = rust.payload.payload.is_attempt === true;
+      if (ATTEMPT_RUN_EVENT_CACHE.size >= ATTEMPT_RUN_EVENT_CACHE_MAX) {
+        const oldest = ATTEMPT_RUN_EVENT_CACHE.keys().next();
+        if (!oldest.done) ATTEMPT_RUN_EVENT_CACHE.delete(oldest.value);
+      }
+      ATTEMPT_RUN_EVENT_CACHE.set(result, val);
+      return val;
+    }
+  }
   return evt.result === 'executed'
     || evt.result === 'init_gate_stub'
     || evt.result === 'init_gate_low_score'
@@ -16083,5 +16108,6 @@ module.exports = {
   proposalSemanticFingerprint,
   semanticTokenSimilarity,
   semanticNearDuplicateMatch,
-  isNoProgressRun
+  isNoProgressRun,
+  isAttemptRunEvent
 };

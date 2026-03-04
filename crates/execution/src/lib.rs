@@ -13,11 +13,12 @@ use std::os::raw::c_char;
 use wasm_bindgen::prelude::*;
 
 pub use autoscale::{
-    compute_batch_max, compute_criteria_gate, compute_dynamic_caps, compute_normalize_queue,
-    compute_no_progress_result, compute_plan, compute_policy_hold, compute_policy_hold_cooldown,
-    compute_policy_hold_latest_event, compute_policy_hold_pattern, compute_policy_hold_pressure,
-    compute_policy_hold_result, compute_receipt_verdict, compute_route_execution_policy_hold,
-    compute_token_usage, run_autoscale_json, BatchMaxInput, BatchMaxOutput, CriteriaGateInput,
+    compute_attempt_run_event, compute_batch_max, compute_criteria_gate, compute_dynamic_caps,
+    compute_no_progress_result, compute_normalize_queue, compute_plan, compute_policy_hold,
+    compute_policy_hold_cooldown, compute_policy_hold_latest_event, compute_policy_hold_pattern,
+    compute_policy_hold_pressure, compute_policy_hold_result, compute_receipt_verdict,
+    compute_route_execution_policy_hold, compute_token_usage, run_autoscale_json,
+    AttemptRunEventInput, AttemptRunEventOutput, BatchMaxInput, BatchMaxOutput, CriteriaGateInput,
     CriteriaGateOutput, DynamicCapsInput, DynamicCapsOutput, NoProgressResultInput,
     NoProgressResultOutput, NormalizeQueueInput, NormalizeQueueOutput, PlanInput, PlanOutput,
     PolicyHoldCooldownInput, PolicyHoldCooldownOutput, PolicyHoldInput,
