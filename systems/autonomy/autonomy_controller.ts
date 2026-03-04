@@ -8344,6 +8344,28 @@ function successCriteriaRequirement() {
       || []
   );
   const fromEnv = parseLowerList(process.env.AUTONOMY_SUCCESS_CRITERIA_EXEMPT_TYPES || '');
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'success_criteria_requirement',
+      {
+        require_success_criteria: src.require_success_criteria !== false,
+        min_success_criteria_count: Number(src.min_success_criteria_count),
+        policy_exempt_types: fromPolicy,
+        env_exempt_types: fromEnv
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const payload = rust.payload.payload;
+      return {
+        required: payload.required !== false,
+        min_count: clampNumber(Number(payload.min_count || 0), 0, 5),
+        exempt_types: Array.isArray(payload.exempt_types)
+          ? payload.exempt_types.map((x) => String(x || '').toLowerCase()).filter(Boolean)
+          : []
+      };
+    }
+  }
   const exemptTypes = Array.from(new Set([...fromPolicy, ...fromEnv]));
   return {
     required: src.require_success_criteria !== false,
@@ -21076,6 +21098,8 @@ module.exports = {
   runEventProposalId,
   isCapacityCountedAttemptEvent,
   capacityCountedAttemptEvents,
+  successCriteriaRequirement,
+  successCriteriaPolicyForProposal,
   deriveRepeatGateAnchor,
   isScoreOnlyResult,
   isScoreOnlyFailureLikeEvent,

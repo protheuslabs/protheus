@@ -305,6 +305,7 @@ function runBacklogAutoscalePrimitive(mode: string, data: AnyObj = {}, opts: Any
     policy_hold_objective_context: 'policy_hold_objective_context_input',
     proposal_semantic_objective_id: 'proposal_semantic_objective_id_input',
     criteria_pattern_keys: 'criteria_pattern_keys_input',
+    success_criteria_requirement: 'success_criteria_requirement_input',
     directive_pulse_context: 'directive_pulse_context_input',
     is_directive_clarification_proposal: 'is_directive_clarification_proposal_input',
     is_directive_decomposition_proposal: 'is_directive_decomposition_proposal_input',

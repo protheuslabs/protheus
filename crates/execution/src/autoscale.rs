@@ -3057,6 +3057,25 @@ pub struct CriteriaPatternKeysOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct SuccessCriteriaRequirementInput {
+    #[serde(default)]
+    pub require_success_criteria: Option<bool>,
+    #[serde(default)]
+    pub min_success_criteria_count: Option<f64>,
+    #[serde(default)]
+    pub policy_exempt_types: Vec<String>,
+    #[serde(default)]
+    pub env_exempt_types: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct SuccessCriteriaRequirementOutput {
+    pub required: bool,
+    pub min_count: f64,
+    pub exempt_types: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct IsDirectiveClarificationProposalInput {
     #[serde(default)]
     pub proposal_type: Option<String>,
@@ -4263,6 +4282,8 @@ pub struct AutoscaleRequest {
     pub proposal_semantic_objective_id_input: Option<ProposalSemanticObjectiveIdInput>,
     #[serde(default)]
     pub criteria_pattern_keys_input: Option<CriteriaPatternKeysInput>,
+    #[serde(default)]
+    pub success_criteria_requirement_input: Option<SuccessCriteriaRequirementInput>,
     #[serde(default)]
     pub is_directive_clarification_proposal_input: Option<IsDirectiveClarificationProposalInput>,
     #[serde(default)]
@@ -9811,6 +9832,37 @@ pub fn compute_criteria_pattern_keys(input: &CriteriaPatternKeysInput) -> Criter
     }
 }
 
+pub fn compute_success_criteria_requirement(
+    input: &SuccessCriteriaRequirementInput,
+) -> SuccessCriteriaRequirementOutput {
+    let mut exempt_types = Vec::<String>::new();
+    let mut seen = std::collections::BTreeSet::<String>::new();
+    for raw in input
+        .policy_exempt_types
+        .iter()
+        .chain(input.env_exempt_types.iter())
+    {
+        let value = normalize_spaces(raw).to_ascii_lowercase();
+        if value.is_empty() || !seen.insert(value.clone()) {
+            continue;
+        }
+        exempt_types.push(value);
+    }
+    let raw_min = input.min_success_criteria_count.unwrap_or(1.0);
+    let min_count = if !raw_min.is_finite() || raw_min < 0.0 {
+        0.0
+    } else if raw_min > 5.0 {
+        5.0
+    } else {
+        raw_min
+    };
+    SuccessCriteriaRequirementOutput {
+        required: input.require_success_criteria.unwrap_or(true),
+        min_count,
+        exempt_types,
+    }
+}
+
 pub fn compute_is_directive_clarification_proposal(
     input: &IsDirectiveClarificationProposalInput,
 ) -> IsDirectiveClarificationProposalOutput {
@@ -13638,6 +13690,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_criteria_pattern_keys_encode_failed:{e}"));
+    }
+    if mode == "success_criteria_requirement" {
+        let input = request
+            .success_criteria_requirement_input
+            .ok_or_else(|| "autoscale_missing_success_criteria_requirement_input".to_string())?;
+        let out = compute_success_criteria_requirement(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "success_criteria_requirement",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_success_criteria_requirement_encode_failed:{e}"));
     }
     if mode == "directive_pulse_context" {
         let input = request
@@ -19739,6 +19803,38 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale criteria_pattern_keys");
         assert!(out.contains("\"mode\":\"criteria_pattern_keys\""));
+    }
+
+    #[test]
+    fn success_criteria_requirement_merges_exempt_types() {
+        let out = compute_success_criteria_requirement(&SuccessCriteriaRequirementInput {
+            require_success_criteria: Some(true),
+            min_success_criteria_count: Some(2.0),
+            policy_exempt_types: vec!["directive_clarification".to_string()],
+            env_exempt_types: vec!["directive_clarification".to_string(), "remediation".to_string()],
+        });
+        assert_eq!(out.required, true);
+        assert_eq!(out.min_count, 2.0);
+        assert_eq!(
+            out.exempt_types,
+            vec!["directive_clarification".to_string(), "remediation".to_string()]
+        );
+    }
+
+    #[test]
+    fn autoscale_json_success_criteria_requirement_path_works() {
+        let payload = serde_json::json!({
+            "mode": "success_criteria_requirement",
+            "success_criteria_requirement_input": {
+                "require_success_criteria": true,
+                "min_success_criteria_count": 1,
+                "policy_exempt_types": ["directive_clarification"],
+                "env_exempt_types": ["remediation"]
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale success_criteria_requirement");
+        assert!(out.contains("\"mode\":\"success_criteria_requirement\""));
     }
 
     #[test]
