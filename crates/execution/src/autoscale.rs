@@ -629,6 +629,19 @@ pub struct QueueUnderflowBackfillOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ProposalRiskScoreInput {
+    #[serde(default)]
+    pub explicit_risk_score: Option<f64>,
+    #[serde(default)]
+    pub risk: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ProposalRiskScoreOutput {
+    pub risk_score: u32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct QosLaneUsageEventInput {
     #[serde(default)]
     pub event_type: Option<String>,
@@ -1192,6 +1205,8 @@ pub struct AutoscaleRequest {
     pub proposal_outcome_status_input: Option<ProposalOutcomeStatusInput>,
     #[serde(default)]
     pub queue_underflow_backfill_input: Option<QueueUnderflowBackfillInput>,
+    #[serde(default)]
+    pub proposal_risk_score_input: Option<ProposalRiskScoreInput>,
     #[serde(default)]
     pub no_progress_result_input: Option<NoProgressResultInput>,
     #[serde(default)]
@@ -2303,6 +2318,32 @@ pub fn compute_queue_underflow_backfill(
     QueueUnderflowBackfillOutput {
         allow: out.is_none(),
     }
+}
+
+pub fn compute_proposal_risk_score(input: &ProposalRiskScoreInput) -> ProposalRiskScoreOutput {
+    if let Some(explicit) = input.explicit_risk_score {
+        if explicit.is_finite() {
+            let rounded = explicit.round();
+            if rounded <= 0.0 {
+                return ProposalRiskScoreOutput { risk_score: 0 };
+            }
+            if rounded >= 100.0 {
+                return ProposalRiskScoreOutput { risk_score: 100 };
+            }
+            return ProposalRiskScoreOutput {
+                risk_score: rounded as u32,
+            };
+        }
+    }
+    let risk = normalize_risk_level(input.risk.as_deref().unwrap_or(""));
+    let risk_score = if risk == "high" {
+        90
+    } else if risk == "medium" {
+        60
+    } else {
+        25
+    };
+    ProposalRiskScoreOutput { risk_score }
 }
 
 pub fn compute_proposal_status_for_queue_pressure(
@@ -3939,6 +3980,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
         }))
         .map_err(|e| format!("autoscale_queue_underflow_backfill_encode_failed:{e}"));
     }
+    if mode == "proposal_risk_score" {
+        let input = request
+            .proposal_risk_score_input
+            .ok_or_else(|| "autoscale_missing_proposal_risk_score_input".to_string())?;
+        let out = compute_proposal_risk_score(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "proposal_risk_score",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_proposal_risk_score_encode_failed:{e}"));
+    }
     if mode == "proposal_status_for_queue_pressure" {
         let input = request.proposal_status_for_queue_pressure_input.ok_or_else(|| {
             "autoscale_missing_proposal_status_for_queue_pressure_input".to_string()
@@ -5334,6 +5387,35 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale queue_underflow_backfill");
         assert!(out.contains("\"mode\":\"queue_underflow_backfill\""));
+    }
+
+    #[test]
+    fn proposal_risk_score_prefers_explicit_then_maps_risk() {
+        let explicit = compute_proposal_risk_score(&ProposalRiskScoreInput {
+            explicit_risk_score: Some(61.8),
+            risk: Some("low".to_string()),
+        });
+        assert_eq!(explicit.risk_score, 62);
+
+        let high = compute_proposal_risk_score(&ProposalRiskScoreInput {
+            explicit_risk_score: None,
+            risk: Some("high".to_string()),
+        });
+        assert_eq!(high.risk_score, 90);
+    }
+
+    #[test]
+    fn autoscale_json_proposal_risk_score_path_works() {
+        let payload = serde_json::json!({
+            "mode": "proposal_risk_score",
+            "proposal_risk_score_input": {
+                "explicit_risk_score": null,
+                "risk": "medium"
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale proposal_risk_score");
+        assert!(out.contains("\"mode\":\"proposal_risk_score\""));
     }
 
     #[test]

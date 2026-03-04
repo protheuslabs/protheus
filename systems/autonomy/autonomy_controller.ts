@@ -2722,6 +2722,8 @@ const PROPOSAL_OUTCOME_STATUS_CACHE = new Map();
 const PROPOSAL_OUTCOME_STATUS_CACHE_MAX = 1024;
 const QUEUE_UNDERFLOW_BACKFILL_CACHE = new Map();
 const QUEUE_UNDERFLOW_BACKFILL_CACHE_MAX = 1024;
+const PROPOSAL_RISK_SCORE_CACHE = new Map();
+const PROPOSAL_RISK_SCORE_CACHE_MAX = 1024;
 const MINUTES_SINCE_TS_CACHE = new Map();
 const MINUTES_SINCE_TS_CACHE_MAX = 512;
 const DATE_WINDOW_CACHE = new Map();
@@ -7441,6 +7443,31 @@ function semanticNearDuplicateMatch(fingerprint, seenFingerprints, minSimilarity
 function proposalRiskScore(p) {
   const meta = p && p.meta && typeof p.meta === 'object' ? p.meta : {};
   const explicit = Number(meta.risk_score);
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const riskRaw = String(p && p.risk || '');
+    const explicitKey = Number.isFinite(explicit) ? String(explicit) : 'NaN';
+    const cacheKey = `${explicitKey}\u0000${riskRaw}`;
+    if (PROPOSAL_RISK_SCORE_CACHE.has(cacheKey)) {
+      return PROPOSAL_RISK_SCORE_CACHE.get(cacheKey);
+    }
+    const rust = runBacklogAutoscalePrimitive(
+      'proposal_risk_score',
+      {
+        explicit_risk_score: Number.isFinite(explicit) ? explicit : null,
+        risk: riskRaw
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const val = clampNumber(Math.round(Number(rust.payload.payload.risk_score || 0)), 0, 100);
+      if (PROPOSAL_RISK_SCORE_CACHE.size >= PROPOSAL_RISK_SCORE_CACHE_MAX) {
+        const oldest = PROPOSAL_RISK_SCORE_CACHE.keys().next();
+        if (!oldest.done) PROPOSAL_RISK_SCORE_CACHE.delete(oldest.value);
+      }
+      PROPOSAL_RISK_SCORE_CACHE.set(cacheKey, val);
+      return val;
+    }
+  }
   if (Number.isFinite(explicit)) return clampNumber(Math.round(explicit), 0, 100);
   const risk = normalizedRisk(p && p.risk);
   if (risk === 'high') return 90;
@@ -17296,6 +17323,7 @@ module.exports = {
   proposalStatus,
   proposalOutcomeStatus,
   canQueueUnderflowBackfill,
+  proposalRiskScore,
   proposalScore,
   proposalAdmissionPreview,
   hasAdaptiveMutationSignal,
