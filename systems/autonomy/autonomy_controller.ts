@@ -7043,7 +7043,32 @@ function compileDirectivePulseObjectives(directives) {
 }
 
 function loadDirectivePulseObjectives() {
+  const profileFromRust = (enabled, loadError, objectives) => {
+    const rust = runBacklogAutoscalePrimitive(
+      'directive_pulse_objectives_profile',
+      {
+        enabled: enabled === true,
+        load_error: loadError ? String(loadError) : null,
+        objectives: Array.isArray(objectives) ? objectives : []
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const payload = rust.payload.payload;
+      return {
+        enabled: payload.enabled === true,
+        available: payload.available === true,
+        objectives: Array.isArray(payload.objectives) ? payload.objectives : [],
+        error: payload.error ? String(payload.error) : null
+      };
+    }
+    return null;
+  };
   if (!AUTONOMY_DIRECTIVE_PULSE_ENABLED) {
+    if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+      const viaRust = profileFromRust(false, null, []);
+      if (viaRust) return viaRust;
+    }
     return {
       enabled: false,
       available: false,
@@ -7055,6 +7080,10 @@ function loadDirectivePulseObjectives() {
   try {
     directives = loadActiveDirectives({ allowMissing: true });
   } catch (err) {
+    if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+      const viaRust = profileFromRust(true, String(err && err.message ? err.message : err).slice(0, 200), []);
+      if (viaRust) return viaRust;
+    }
     return {
       enabled: true,
       available: false,
@@ -7063,6 +7092,10 @@ function loadDirectivePulseObjectives() {
     };
   }
   const objectives = compileDirectivePulseObjectives(directives);
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const viaRust = profileFromRust(true, null, objectives);
+    if (viaRust) return viaRust;
+  }
   return {
     enabled: true,
     available: objectives.length > 0,
@@ -20836,6 +20869,7 @@ module.exports = {
   inExecWindow,
   hasStructuralPreviewCriteriaFailure,
   computeCalibrationDeltas,
+  loadDirectivePulseObjectives,
   compileDirectivePulseObjectives,
   buildDirectivePulseStats,
   buildDirectivePulseContext,

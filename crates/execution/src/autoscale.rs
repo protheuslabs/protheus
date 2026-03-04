@@ -2928,6 +2928,26 @@ pub struct CompileDirectivePulseObjectivesOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct DirectivePulseObjectivesProfileInput {
+    #[serde(default)]
+    pub enabled: bool,
+    #[serde(default)]
+    pub load_error: Option<String>,
+    #[serde(default)]
+    pub objectives: Vec<serde_json::Value>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct DirectivePulseObjectivesProfileOutput {
+    pub enabled: bool,
+    pub available: bool,
+    #[serde(default)]
+    pub objectives: Vec<serde_json::Value>,
+    #[serde(default)]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct IsDirectiveClarificationProposalInput {
     #[serde(default)]
     pub proposal_type: Option<String>,
@@ -4120,6 +4140,8 @@ pub struct AutoscaleRequest {
     pub directive_pulse_stats_input: Option<DirectivePulseStatsInput>,
     #[serde(default)]
     pub compile_directive_pulse_objectives_input: Option<CompileDirectivePulseObjectivesInput>,
+    #[serde(default)]
+    pub directive_pulse_objectives_profile_input: Option<DirectivePulseObjectivesProfileInput>,
     #[serde(default)]
     pub is_directive_clarification_proposal_input: Option<IsDirectiveClarificationProposalInput>,
     #[serde(default)]
@@ -9337,6 +9359,45 @@ pub fn compute_compile_directive_pulse_objectives(
     CompileDirectivePulseObjectivesOutput { objectives: out }
 }
 
+pub fn compute_directive_pulse_objectives_profile(
+    input: &DirectivePulseObjectivesProfileInput,
+) -> DirectivePulseObjectivesProfileOutput {
+    if !input.enabled {
+        return DirectivePulseObjectivesProfileOutput {
+            enabled: false,
+            available: false,
+            objectives: Vec::new(),
+            error: Some("directive_pulse_disabled".to_string()),
+        };
+    }
+    let load_error = input
+        .load_error
+        .as_ref()
+        .map(|v| v.trim().to_string())
+        .filter(|v| !v.is_empty())
+        .map(|v| v.chars().take(200).collect::<String>());
+    if let Some(err) = load_error {
+        return DirectivePulseObjectivesProfileOutput {
+            enabled: true,
+            available: false,
+            objectives: Vec::new(),
+            error: Some(err),
+        };
+    }
+    let objectives = input.objectives.clone();
+    let available = !objectives.is_empty();
+    DirectivePulseObjectivesProfileOutput {
+        enabled: true,
+        available,
+        objectives,
+        error: if available {
+            None
+        } else {
+            Some("no_objectives".to_string())
+        },
+    }
+}
+
 pub fn compute_is_directive_clarification_proposal(
     input: &IsDirectiveClarificationProposalInput,
 ) -> IsDirectiveClarificationProposalOutput {
@@ -13080,6 +13141,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_compile_directive_pulse_objectives_encode_failed:{e}"));
+    }
+    if mode == "directive_pulse_objectives_profile" {
+        let input = request
+            .directive_pulse_objectives_profile_input
+            .ok_or_else(|| "autoscale_missing_directive_pulse_objectives_profile_input".to_string())?;
+        let out = compute_directive_pulse_objectives_profile(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "directive_pulse_objectives_profile",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_directive_pulse_objectives_profile_encode_failed:{e}"));
     }
     if mode == "directive_pulse_context" {
         let input = request
@@ -18915,6 +18988,43 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale compile_directive_pulse_objectives");
         assert!(out.contains("\"mode\":\"compile_directive_pulse_objectives\""));
+    }
+
+    #[test]
+    fn directive_pulse_objectives_profile_handles_disabled_and_error() {
+        let disabled = compute_directive_pulse_objectives_profile(&DirectivePulseObjectivesProfileInput {
+            enabled: false,
+            load_error: None,
+            objectives: vec![],
+        });
+        assert_eq!(disabled.enabled, false);
+        assert_eq!(disabled.available, false);
+        assert_eq!(disabled.error.as_deref(), Some("directive_pulse_disabled"));
+
+        let errored = compute_directive_pulse_objectives_profile(&DirectivePulseObjectivesProfileInput {
+            enabled: true,
+            load_error: Some(" boom ".to_string()),
+            objectives: vec![serde_json::json!({"id":"T1"})],
+        });
+        assert_eq!(errored.enabled, true);
+        assert_eq!(errored.available, false);
+        assert_eq!(errored.objectives.len(), 0);
+        assert_eq!(errored.error.as_deref(), Some("boom"));
+    }
+
+    #[test]
+    fn autoscale_json_directive_pulse_objectives_profile_path_works() {
+        let payload = serde_json::json!({
+            "mode": "directive_pulse_objectives_profile",
+            "directive_pulse_objectives_profile_input": {
+                "enabled": true,
+                "load_error": null,
+                "objectives": [{"id":"T1_MEMORY"}]
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale directive_pulse_objectives_profile");
+        assert!(out.contains("\"mode\":\"directive_pulse_objectives_profile\""));
     }
 
     #[test]
