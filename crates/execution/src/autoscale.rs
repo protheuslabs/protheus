@@ -333,6 +333,29 @@ pub struct AttemptEventIndicesOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct CapacityCountedAttemptIndexEventInput {
+    #[serde(default)]
+    pub event_type: Option<String>,
+    #[serde(default)]
+    pub result: Option<String>,
+    #[serde(default)]
+    pub policy_hold: Option<bool>,
+    #[serde(default)]
+    pub proposal_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct CapacityCountedAttemptIndicesInput {
+    #[serde(default)]
+    pub events: Vec<CapacityCountedAttemptIndexEventInput>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct CapacityCountedAttemptIndicesOutput {
+    pub indices: Vec<u32>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct NoProgressResultInput {
     #[serde(default)]
     pub event_type: Option<String>,
@@ -780,6 +803,8 @@ pub struct AutoscaleRequest {
     pub runs_since_reset_index_input: Option<RunsSinceResetIndexInput>,
     #[serde(default)]
     pub attempt_event_indices_input: Option<AttemptEventIndicesInput>,
+    #[serde(default)]
+    pub capacity_counted_attempt_indices_input: Option<CapacityCountedAttemptIndicesInput>,
     #[serde(default)]
     pub no_progress_result_input: Option<NoProgressResultInput>,
     #[serde(default)]
@@ -1633,6 +1658,25 @@ pub fn compute_attempt_event_indices(input: &AttemptEventIndicesInput) -> Attemp
         }
     }
     AttemptEventIndicesOutput { indices }
+}
+
+pub fn compute_capacity_counted_attempt_indices(
+    input: &CapacityCountedAttemptIndicesInput,
+) -> CapacityCountedAttemptIndicesOutput {
+    let mut indices: Vec<u32> = Vec::new();
+    for (idx, evt) in input.events.iter().enumerate() {
+        let counted = compute_capacity_counted_attempt_event(&CapacityCountedAttemptEventInput {
+            event_type: evt.event_type.clone(),
+            result: evt.result.clone(),
+            policy_hold: evt.policy_hold,
+            proposal_id: evt.proposal_id.clone(),
+        })
+        .capacity_counted;
+        if counted {
+            indices.push(idx as u32);
+        }
+    }
+    CapacityCountedAttemptIndicesOutput { indices }
 }
 
 pub fn compute_no_progress_result(input: &NoProgressResultInput) -> NoProgressResultOutput {
@@ -2675,6 +2719,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
         }))
         .map_err(|e| format!("autoscale_attempt_event_indices_encode_failed:{e}"));
     }
+    if mode == "capacity_counted_attempt_indices" {
+        let input = request
+            .capacity_counted_attempt_indices_input
+            .ok_or_else(|| "autoscale_missing_capacity_counted_attempt_indices_input".to_string())?;
+        let out = compute_capacity_counted_attempt_indices(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "capacity_counted_attempt_indices",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_capacity_counted_attempt_indices_encode_failed:{e}"));
+    }
     if mode == "no_progress_result" {
         let input = request
             .no_progress_result_input
@@ -3390,6 +3446,59 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale attempt_event_indices");
         assert!(out.contains("\"mode\":\"attempt_event_indices\""));
+    }
+
+    #[test]
+    fn capacity_counted_attempt_indices_filters_expected_rows() {
+        let out = compute_capacity_counted_attempt_indices(&CapacityCountedAttemptIndicesInput {
+            events: vec![
+                CapacityCountedAttemptIndexEventInput {
+                    event_type: Some("autonomy_run".to_string()),
+                    result: Some("executed".to_string()),
+                    policy_hold: Some(false),
+                    proposal_id: Some("p1".to_string()),
+                },
+                CapacityCountedAttemptIndexEventInput {
+                    event_type: Some("autonomy_run".to_string()),
+                    result: Some("lock_busy".to_string()),
+                    policy_hold: Some(false),
+                    proposal_id: Some("p2".to_string()),
+                },
+                CapacityCountedAttemptIndexEventInput {
+                    event_type: Some("autonomy_run".to_string()),
+                    result: Some("stop_repeat_gate_candidate_exhausted".to_string()),
+                    policy_hold: Some(false),
+                    proposal_id: Some("p3".to_string()),
+                },
+            ],
+        });
+        assert_eq!(out.indices, vec![0, 2]);
+    }
+
+    #[test]
+    fn autoscale_json_capacity_counted_attempt_indices_path_works() {
+        let payload = serde_json::json!({
+            "mode": "capacity_counted_attempt_indices",
+            "capacity_counted_attempt_indices_input": {
+                "events": [
+                    {
+                        "event_type": "autonomy_run",
+                        "result": "executed",
+                        "policy_hold": false,
+                        "proposal_id": "p1"
+                    },
+                    {
+                        "event_type": "autonomy_run",
+                        "result": "lock_busy",
+                        "policy_hold": false,
+                        "proposal_id": "p2"
+                    }
+                ]
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale capacity_counted_attempt_indices");
+        assert!(out.contains("\"mode\":\"capacity_counted_attempt_indices\""));
     }
 
     #[test]

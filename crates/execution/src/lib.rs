@@ -15,6 +15,7 @@ use wasm_bindgen::prelude::*;
 pub use autoscale::{
     compute_attempt_run_event, compute_batch_max, compute_capacity_counted_attempt_event,
     compute_attempt_event_indices,
+    compute_capacity_counted_attempt_indices,
     compute_consecutive_gate_exhausted_attempts,
     compute_criteria_gate, compute_dynamic_caps,
     compute_gate_exhausted_attempt,
@@ -33,6 +34,8 @@ pub use autoscale::{
     compute_safety_stop_run_event, compute_token_usage, run_autoscale_json,
     AttemptEventIndexEventInput, AttemptEventIndicesInput, AttemptEventIndicesOutput,
     AttemptRunEventInput, AttemptRunEventOutput, BatchMaxInput, BatchMaxOutput,
+    CapacityCountedAttemptIndexEventInput, CapacityCountedAttemptIndicesInput,
+    CapacityCountedAttemptIndicesOutput,
     CapacityCountedAttemptEventInput, CapacityCountedAttemptEventOutput, CriteriaGateInput,
     ConsecutiveGateExhaustedAttemptEventInput, ConsecutiveGateExhaustedAttemptsInput,
     ConsecutiveGateExhaustedAttemptsOutput, CriteriaGateOutput, DynamicCapsInput,

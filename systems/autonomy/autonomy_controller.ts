@@ -2721,6 +2721,8 @@ const RUNS_SINCE_RESET_INDEX_CACHE = new Map();
 const RUNS_SINCE_RESET_INDEX_CACHE_MAX = 256;
 const ATTEMPT_EVENT_INDICES_CACHE = new Map();
 const ATTEMPT_EVENT_INDICES_CACHE_MAX = 256;
+const CAPACITY_COUNTED_ATTEMPT_INDICES_CACHE = new Map();
+const CAPACITY_COUNTED_ATTEMPT_INDICES_CACHE_MAX = 256;
 
 function isPolicyHoldResult(result): boolean {
   const r = String(result || '').trim();
@@ -3545,7 +3547,54 @@ function isCapacityCountedAttemptEvent(evt): boolean {
 }
 
 function capacityCountedAttemptEvents(events) {
-  return (events || []).filter(isCapacityCountedAttemptEvent);
+  const rows = Array.isArray(events) ? events : [];
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rustEvents = [];
+    for (const evt of rows) {
+      if (!evt || typeof evt !== 'object') continue;
+      rustEvents.push({
+        event_type: String(evt.type || ''),
+        result: String(evt.result || ''),
+        policy_hold: evt.policy_hold === true,
+        proposal_id: runEventProposalId(evt)
+      });
+    }
+    const key = rustEvents
+      .map((row) => [
+        row.event_type,
+        row.result,
+        row.policy_hold ? '1' : '0',
+        row.proposal_id
+      ].join('\u0000'))
+      .join('\u0001');
+    if (CAPACITY_COUNTED_ATTEMPT_INDICES_CACHE.has(key)) {
+      const cached = CAPACITY_COUNTED_ATTEMPT_INDICES_CACHE.get(key);
+      const indices = Array.isArray(cached) ? cached : [];
+      return indices
+        .map((idx) => rows[Number(idx)])
+        .filter(Boolean);
+    }
+    const rust = runBacklogAutoscalePrimitive(
+      'capacity_counted_attempt_indices',
+      { events: rustEvents },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const indicesRaw = Array.isArray(rust.payload.payload.indices) ? rust.payload.payload.indices : [];
+      const indices = indicesRaw
+        .map((idx) => Math.max(0, Math.floor(Number(idx))))
+        .filter((idx) => Number.isFinite(idx) && idx < rows.length);
+      if (CAPACITY_COUNTED_ATTEMPT_INDICES_CACHE.size >= CAPACITY_COUNTED_ATTEMPT_INDICES_CACHE_MAX) {
+        const oldest = CAPACITY_COUNTED_ATTEMPT_INDICES_CACHE.keys().next();
+        if (!oldest.done) CAPACITY_COUNTED_ATTEMPT_INDICES_CACHE.delete(oldest.value);
+      }
+      CAPACITY_COUNTED_ATTEMPT_INDICES_CACHE.set(key, indices);
+      return indices
+        .map((idx) => rows[idx])
+        .filter(Boolean);
+    }
+  }
+  return rows.filter(isCapacityCountedAttemptEvent);
 }
 
 function deriveRepeatGateAnchor(evt) {
@@ -16629,6 +16678,7 @@ module.exports = {
   runEventObjectiveId,
   runEventProposalId,
   isCapacityCountedAttemptEvent,
+  capacityCountedAttemptEvents,
   deriveRepeatGateAnchor,
   isScoreOnlyResult,
   isScoreOnlyFailureLikeEvent,
