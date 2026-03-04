@@ -2833,6 +2833,8 @@ const TO_STEM_CACHE = new Map();
 const TO_STEM_CACHE_MAX = 4096;
 const NORMALIZE_DIRECTIVE_TEXT_CACHE = new Map();
 const NORMALIZE_DIRECTIVE_TEXT_CACHE_MAX = 4096;
+const TOKENIZE_DIRECTIVE_TEXT_CACHE = new Map();
+const TOKENIZE_DIRECTIVE_TEXT_CACHE_MAX = 4096;
 const NORMALIZE_DIRECTIVE_TIER_CACHE = new Map();
 const NORMALIZE_DIRECTIVE_TIER_CACHE_MAX = 512;
 const DIRECTIVE_TIER_WEIGHT_CACHE = new Map();
@@ -5358,7 +5360,33 @@ function normalizeDirectiveText(s) {
 }
 
 function tokenizeDirectiveText(s) {
-  const norm = normalizeDirectiveText(s);
+  const raw = String(s || '');
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const cacheKey = raw;
+    if (TOKENIZE_DIRECTIVE_TEXT_CACHE.has(cacheKey)) {
+      return TOKENIZE_DIRECTIVE_TEXT_CACHE.get(cacheKey);
+    }
+    const rust = runBacklogAutoscalePrimitive(
+      'tokenize_directive_text',
+      {
+        text: raw || null,
+        stopwords: Array.from(DIRECTIVE_FIT_STOPWORDS)
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const tokens = Array.isArray(rust.payload.payload.tokens)
+        ? rust.payload.payload.tokens.map((t) => String(t || '')).filter(Boolean)
+        : [];
+      if (TOKENIZE_DIRECTIVE_TEXT_CACHE.size >= TOKENIZE_DIRECTIVE_TEXT_CACHE_MAX) {
+        const oldest = TOKENIZE_DIRECTIVE_TEXT_CACHE.keys().next();
+        if (!oldest.done) TOKENIZE_DIRECTIVE_TEXT_CACHE.delete(oldest.value);
+      }
+      TOKENIZE_DIRECTIVE_TEXT_CACHE.set(cacheKey, tokens);
+      return tokens;
+    }
+  }
+  const norm = normalizeDirectiveText(raw);
   if (!norm) return [];
   return norm
     .split(' ')
@@ -18786,6 +18814,7 @@ module.exports = {
   assessActionability,
   assessValueSignal,
   normalizeDirectiveText,
+  tokenizeDirectiveText,
   toStem,
   directiveTokenHits,
   expectedValueScore,

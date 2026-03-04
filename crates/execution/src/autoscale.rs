@@ -1245,6 +1245,20 @@ pub struct NormalizeDirectiveTextOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TokenizeDirectiveTextInput {
+    #[serde(default)]
+    pub text: Option<String>,
+    #[serde(default)]
+    pub stopwords: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TokenizeDirectiveTextOutput {
+    #[serde(default)]
+    pub tokens: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ExecutionReserveSnapshotInput {
     pub cap: f64,
     pub used: f64,
@@ -1985,6 +1999,8 @@ pub struct AutoscaleRequest {
     pub to_stem_input: Option<ToStemInput>,
     #[serde(default)]
     pub normalize_directive_text_input: Option<NormalizeDirectiveTextInput>,
+    #[serde(default)]
+    pub tokenize_directive_text_input: Option<TokenizeDirectiveTextInput>,
     #[serde(default)]
     pub execution_reserve_snapshot_input: Option<ExecutionReserveSnapshotInput>,
     #[serde(default)]
@@ -4309,6 +4325,33 @@ pub fn compute_normalize_directive_text(
     NormalizeDirectiveTextOutput { normalized }
 }
 
+pub fn compute_tokenize_directive_text(
+    input: &TokenizeDirectiveTextInput,
+) -> TokenizeDirectiveTextOutput {
+    let normalized = compute_normalize_directive_text(&NormalizeDirectiveTextInput {
+        text: input.text.clone(),
+    })
+    .normalized;
+    if normalized.is_empty() {
+        return TokenizeDirectiveTextOutput { tokens: Vec::new() };
+    }
+    let stopwords = input
+        .stopwords
+        .iter()
+        .map(|word| word.trim().to_string())
+        .filter(|word| !word.is_empty())
+        .collect::<std::collections::BTreeSet<_>>();
+
+    let tokens = normalized
+        .split(' ')
+        .filter(|token| token.len() >= 3)
+        .filter(|token| !token.chars().all(|ch| ch.is_ascii_digit()))
+        .filter(|token| !stopwords.contains(*token))
+        .map(|token| token.to_string())
+        .collect::<Vec<_>>();
+    TokenizeDirectiveTextOutput { tokens }
+}
+
 pub fn compute_execution_reserve_snapshot(
     input: &ExecutionReserveSnapshotInput,
 ) -> ExecutionReserveSnapshotOutput {
@@ -6589,6 +6632,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_normalize_directive_text_encode_failed:{e}"));
+    }
+    if mode == "tokenize_directive_text" {
+        let input = request
+            .tokenize_directive_text_input
+            .ok_or_else(|| "autoscale_missing_tokenize_directive_text_input".to_string())?;
+        let out = compute_tokenize_directive_text(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "tokenize_directive_text",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_tokenize_directive_text_encode_failed:{e}"));
     }
     if mode == "execution_reserve_snapshot" {
         let input = request
@@ -9361,6 +9416,37 @@ mod tests {
         let out = run_autoscale_json(&payload).expect("autoscale normalize_directive_text");
         assert!(out.contains("\"mode\":\"normalize_directive_text\""));
         assert!(out.contains("\"normalized\":\"safety first always\""));
+    }
+
+    #[test]
+    fn tokenize_directive_text_matches_ts_filters() {
+        let out = compute_tokenize_directive_text(&TokenizeDirectiveTextInput {
+            text: Some("The memory plan 123 avoids drift".to_string()),
+            stopwords: vec!["the".to_string(), "plan".to_string()],
+        });
+        assert_eq!(
+            out.tokens,
+            vec![
+                "memory".to_string(),
+                "avoids".to_string(),
+                "drift".to_string()
+            ]
+        );
+    }
+
+    #[test]
+    fn autoscale_json_tokenize_directive_text_path_works() {
+        let payload = serde_json::json!({
+            "mode": "tokenize_directive_text",
+            "tokenize_directive_text_input": {
+                "text": "The memory plan 123 avoids drift",
+                "stopwords": ["the", "plan"]
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale tokenize_directive_text");
+        assert!(out.contains("\"mode\":\"tokenize_directive_text\""));
+        assert!(out.contains("\"tokens\":[\"memory\",\"avoids\",\"drift\"]"));
     }
 
     #[test]
