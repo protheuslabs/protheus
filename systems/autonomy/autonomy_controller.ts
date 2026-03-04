@@ -2807,6 +2807,8 @@ const NON_YIELD_PENALTY_SCORE_CACHE = new Map();
 const NON_YIELD_PENALTY_SCORE_CACHE_MAX = 1024;
 const COLLECTIVE_SHADOW_ADJUSTMENTS_CACHE = new Map();
 const COLLECTIVE_SHADOW_ADJUSTMENTS_CACHE_MAX = 1024;
+const STRATEGY_TRIT_SHADOW_RANKING_SUMMARY_CACHE = new Map();
+const STRATEGY_TRIT_SHADOW_RANKING_SUMMARY_CACHE_MAX = 512;
 const VALUE_SIGNAL_SCORE_CACHE = new Map();
 const VALUE_SIGNAL_SCORE_CACHE_MAX = 1024;
 const COMPOSITE_ELIGIBILITY_SCORE_CACHE = new Map();
@@ -9181,20 +9183,21 @@ function strategyTritShadowForCandidate(cand) {
 function strategyTritShadowRankingSummary(eligible, selectedProposalId = null, selectionMode = null) {
   if (!AUTONOMY_TRIT_SHADOW_ENABLED) return null;
   const rows = Array.isArray(eligible) ? eligible : [];
+  const selected = String(selectedProposalId || '');
   if (!rows.length) {
     return {
       enabled: true,
       considered: 0,
       diverged_from_legacy_top: false,
       diverged_from_selected: false,
-      selected_proposal_id: selectedProposalId || null,
+      selected_proposal_id: selected || null,
       selection_mode: selectionMode || null,
       legacy_top_proposal_id: null,
       trit_top_proposal_id: null,
       top: []
     };
   }
-  const ranked = rows.map((cand, idx) => {
+  const rankingRows = rows.map((cand, idx) => {
     const proposalId = String(cand && cand.proposal && cand.proposal.id || '');
     const legacy = Number(cand && (cand.strategy_rank_adjusted != null
       ? cand.strategy_rank_adjusted
@@ -9216,15 +9219,68 @@ function strategyTritShadowRankingSummary(eligible, selectedProposalId = null, s
         : 0),
       trit_top_sources: tritShadow && Array.isArray(tritShadow.top_sources) ? tritShadow.top_sources.slice(0, 3) : []
     };
-  }).sort((a, b) => {
+  });
+
+  const legacyTop = String(rows[0] && rows[0].proposal && rows[0].proposal.id || '');
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const key = [
+      selected,
+      String(selectionMode || ''),
+      AUTONOMY_TRIT_SHADOW_TOP_K,
+      legacyTop,
+      rankingRows
+        .map((row) => [
+          row.index,
+          row.proposal_id,
+          row.legacy_rank,
+          row.trit_rank,
+          row.trit_label,
+          row.trit_confidence,
+          Array.isArray(row.trit_top_sources) ? row.trit_top_sources.join('\u0004') : ''
+        ].join('\u0003'))
+        .join('\u0002')
+    ].join('\u0001');
+    if (STRATEGY_TRIT_SHADOW_RANKING_SUMMARY_CACHE.has(key)) {
+      return STRATEGY_TRIT_SHADOW_RANKING_SUMMARY_CACHE.get(key);
+    }
+    const rust = runBacklogAutoscalePrimitive(
+      'strategy_trit_shadow_ranking_summary',
+      {
+        rows: rankingRows,
+        selected_proposal_id: selected || null,
+        selection_mode: selectionMode || null,
+        top_k: AUTONOMY_TRIT_SHADOW_TOP_K
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const payload = rust.payload.payload;
+      const out = {
+        enabled: true,
+        considered: Number(payload.considered || rows.length),
+        selection_mode: payload.selection_mode || selectionMode || null,
+        selected_proposal_id: payload.selected_proposal_id || selected || null,
+        legacy_top_proposal_id: payload.legacy_top_proposal_id || legacyTop || null,
+        trit_top_proposal_id: payload.trit_top_proposal_id || null,
+        diverged_from_legacy_top: payload.diverged_from_legacy_top === true,
+        diverged_from_selected: payload.diverged_from_selected === true,
+        top: Array.isArray(payload.top) ? payload.top : []
+      };
+      if (STRATEGY_TRIT_SHADOW_RANKING_SUMMARY_CACHE.size >= STRATEGY_TRIT_SHADOW_RANKING_SUMMARY_CACHE_MAX) {
+        const oldest = STRATEGY_TRIT_SHADOW_RANKING_SUMMARY_CACHE.keys().next();
+        if (!oldest.done) STRATEGY_TRIT_SHADOW_RANKING_SUMMARY_CACHE.delete(oldest.value);
+      }
+      STRATEGY_TRIT_SHADOW_RANKING_SUMMARY_CACHE.set(key, out);
+      return out;
+    }
+  }
+
+  const ranked = rankingRows.sort((a, b) => {
     if (b.trit_rank !== a.trit_rank) return b.trit_rank - a.trit_rank;
     if (b.legacy_rank !== a.legacy_rank) return b.legacy_rank - a.legacy_rank;
     return String(a.proposal_id || '').localeCompare(String(b.proposal_id || ''));
   });
-
-  const legacyTop = String(rows[0] && rows[0].proposal && rows[0].proposal.id || '');
   const tritTop = String(ranked[0] && ranked[0].proposal_id || '');
-  const selected = String(selectedProposalId || '');
   return {
     enabled: true,
     considered: rows.length,

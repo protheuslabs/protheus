@@ -858,6 +858,46 @@ pub struct CollectiveShadowAdjustmentsOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct StrategyTritShadowRankRowInput {
+    pub index: u32,
+    pub proposal_id: String,
+    pub legacy_rank: f64,
+    pub trit_rank: f64,
+    pub trit_label: String,
+    pub trit_confidence: f64,
+    #[serde(default)]
+    pub trit_top_sources: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct StrategyTritShadowRankingSummaryInput {
+    #[serde(default)]
+    pub rows: Vec<StrategyTritShadowRankRowInput>,
+    #[serde(default)]
+    pub selected_proposal_id: Option<String>,
+    #[serde(default)]
+    pub selection_mode: Option<String>,
+    pub top_k: u32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct StrategyTritShadowRankingSummaryOutput {
+    pub considered: u32,
+    #[serde(default)]
+    pub selection_mode: Option<String>,
+    #[serde(default)]
+    pub selected_proposal_id: Option<String>,
+    #[serde(default)]
+    pub legacy_top_proposal_id: Option<String>,
+    #[serde(default)]
+    pub trit_top_proposal_id: Option<String>,
+    pub diverged_from_legacy_top: bool,
+    pub diverged_from_selected: bool,
+    #[serde(default)]
+    pub top: Vec<StrategyTritShadowRankRowInput>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct CompositeEligibilityScoreInput {
     pub quality_score: f64,
     pub directive_fit_score: f64,
@@ -1549,6 +1589,8 @@ pub struct AutoscaleRequest {
     pub non_yield_penalty_score_input: Option<NonYieldPenaltyScoreInput>,
     #[serde(default)]
     pub collective_shadow_adjustments_input: Option<CollectiveShadowAdjustmentsInput>,
+    #[serde(default)]
+    pub strategy_trit_shadow_ranking_summary_input: Option<StrategyTritShadowRankingSummaryInput>,
     #[serde(default)]
     pub value_signal_score_input: Option<ValueSignalScoreInput>,
     #[serde(default)]
@@ -2980,6 +3022,70 @@ pub fn compute_collective_shadow_adjustments(
     CollectiveShadowAdjustmentsOutput {
         penalty: to_fixed3(input.penalty_raw.clamp(0.0, input.max_penalty.max(0.0))),
         bonus: to_fixed3(input.bonus_raw.clamp(0.0, input.max_bonus.max(0.0))),
+    }
+}
+
+pub fn compute_strategy_trit_shadow_ranking_summary(
+    input: &StrategyTritShadowRankingSummaryInput,
+) -> StrategyTritShadowRankingSummaryOutput {
+    let mut ranked = input.rows.clone();
+    ranked.sort_by(|a, b| {
+        b.trit_rank
+            .partial_cmp(&a.trit_rank)
+            .unwrap_or(std::cmp::Ordering::Equal)
+            .then_with(|| {
+                b.legacy_rank
+                    .partial_cmp(&a.legacy_rank)
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            })
+            .then_with(|| a.proposal_id.cmp(&b.proposal_id))
+    });
+
+    let legacy_top = input
+        .rows
+        .first()
+        .map(|row| row.proposal_id.trim().to_string())
+        .filter(|s| !s.is_empty());
+    let trit_top = ranked
+        .first()
+        .map(|row| row.proposal_id.trim().to_string())
+        .filter(|s| !s.is_empty());
+    let selected = input
+        .selected_proposal_id
+        .as_deref()
+        .unwrap_or("")
+        .trim()
+        .to_string();
+    let selected_opt = if selected.is_empty() {
+        None
+    } else {
+        Some(selected)
+    };
+    let mode = input
+        .selection_mode
+        .as_deref()
+        .unwrap_or("")
+        .trim()
+        .to_string();
+    let mode_opt = if mode.is_empty() { None } else { Some(mode) };
+
+    let top_k = input.top_k.max(1) as usize;
+    let top = ranked.into_iter().take(top_k).collect::<Vec<_>>();
+    StrategyTritShadowRankingSummaryOutput {
+        considered: input.rows.len() as u32,
+        selection_mode: mode_opt,
+        selected_proposal_id: selected_opt.clone(),
+        legacy_top_proposal_id: legacy_top.clone(),
+        trit_top_proposal_id: trit_top.clone(),
+        diverged_from_legacy_top: match (&legacy_top, &trit_top) {
+            (Some(a), Some(b)) => a != b,
+            _ => false,
+        },
+        diverged_from_selected: match (&selected_opt, &trit_top) {
+            (Some(a), Some(b)) => a != b,
+            _ => false,
+        },
+        top,
     }
 }
 
@@ -5018,6 +5124,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
         }))
         .map_err(|e| format!("autoscale_collective_shadow_adjustments_encode_failed:{e}"));
     }
+    if mode == "strategy_trit_shadow_ranking_summary" {
+        let input = request
+            .strategy_trit_shadow_ranking_summary_input
+            .ok_or_else(|| "autoscale_missing_strategy_trit_shadow_ranking_summary_input".to_string())?;
+        let out = compute_strategy_trit_shadow_ranking_summary(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "strategy_trit_shadow_ranking_summary",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_strategy_trit_shadow_ranking_summary_encode_failed:{e}"));
+    }
     if mode == "value_signal_score" {
         let input = request
             .value_signal_score_input
@@ -7015,6 +7133,77 @@ mod tests {
         assert!(out.contains("\"mode\":\"collective_shadow_adjustments\""));
         assert!(out.contains("\"penalty\":12.0"));
         assert!(out.contains("\"bonus\":2.718"));
+    }
+
+    #[test]
+    fn strategy_trit_shadow_ranking_summary_orders_and_flags_divergence() {
+        let out = compute_strategy_trit_shadow_ranking_summary(&StrategyTritShadowRankingSummaryInput {
+            rows: vec![
+                StrategyTritShadowRankRowInput {
+                    index: 0,
+                    proposal_id: "a".to_string(),
+                    legacy_rank: 92.0,
+                    trit_rank: 71.0,
+                    trit_label: "neutral".to_string(),
+                    trit_confidence: 0.4,
+                    trit_top_sources: vec!["x".to_string()],
+                },
+                StrategyTritShadowRankRowInput {
+                    index: 1,
+                    proposal_id: "b".to_string(),
+                    legacy_rank: 80.0,
+                    trit_rank: 95.0,
+                    trit_label: "positive".to_string(),
+                    trit_confidence: 0.8,
+                    trit_top_sources: vec!["y".to_string()],
+                },
+            ],
+            selected_proposal_id: Some("a".to_string()),
+            selection_mode: Some("qos_standard_legacy".to_string()),
+            top_k: 3,
+        });
+        assert_eq!(out.legacy_top_proposal_id.as_deref(), Some("a"));
+        assert_eq!(out.trit_top_proposal_id.as_deref(), Some("b"));
+        assert!(out.diverged_from_legacy_top);
+        assert!(out.diverged_from_selected);
+        assert_eq!(out.top.first().map(|row| row.proposal_id.as_str()), Some("b"));
+    }
+
+    #[test]
+    fn autoscale_json_strategy_trit_shadow_ranking_summary_path_works() {
+        let payload = serde_json::json!({
+            "mode": "strategy_trit_shadow_ranking_summary",
+            "strategy_trit_shadow_ranking_summary_input": {
+                "rows": [
+                    {
+                        "index": 0,
+                        "proposal_id": "a",
+                        "legacy_rank": 92,
+                        "trit_rank": 71,
+                        "trit_label": "neutral",
+                        "trit_confidence": 0.4,
+                        "trit_top_sources": ["x"]
+                    },
+                    {
+                        "index": 1,
+                        "proposal_id": "b",
+                        "legacy_rank": 80,
+                        "trit_rank": 95,
+                        "trit_label": "positive",
+                        "trit_confidence": 0.8,
+                        "trit_top_sources": ["y"]
+                    }
+                ],
+                "selected_proposal_id": "a",
+                "selection_mode": "qos_standard_legacy",
+                "top_k": 3
+            }
+        })
+        .to_string();
+        let out =
+            run_autoscale_json(&payload).expect("autoscale strategy_trit_shadow_ranking_summary");
+        assert!(out.contains("\"mode\":\"strategy_trit_shadow_ranking_summary\""));
+        assert!(out.contains("\"trit_top_proposal_id\":\"b\""));
     }
 
     #[test]
