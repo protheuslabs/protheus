@@ -180,6 +180,7 @@ function runBacklogAutoscalePrimitive(mode: string, data: AnyObj = {}, opts: Any
     optimization_min_delta_percent: 'optimization_min_delta_percent_input',
     source_eye_ref: 'source_eye_ref_input',
     normalized_risk: 'normalized_risk_input',
+    parse_iso_ts: 'parse_iso_ts_input',
     execution_reserve_snapshot: 'execution_reserve_snapshot_input',
     qos_lane_share_cap_exceeded: 'qos_lane_share_cap_exceeded_input',
     qos_lane_from_candidate: 'qos_lane_from_candidate_input',

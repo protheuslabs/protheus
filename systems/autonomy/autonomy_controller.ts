@@ -2978,6 +2978,32 @@ function normalizedRisk(v) {
 }
 
 function parseIsoTs(ts) {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const raw = String(ts || '');
+    const cache = globalThis.__PROTHEUS_PARSE_ISO_TS_CACHE instanceof Map
+      ? globalThis.__PROTHEUS_PARSE_ISO_TS_CACHE
+      : (globalThis.__PROTHEUS_PARSE_ISO_TS_CACHE = new Map());
+    if (cache.has(raw)) {
+      const cached = cache.get(raw);
+      return cached == null ? null : new Date(Number(cached));
+    }
+    const rust = runBacklogAutoscalePrimitive(
+      'parse_iso_ts',
+      { ts: raw || null },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const tsMs = rust.payload.payload.timestamp_ms;
+      const parsed = tsMs == null ? NaN : Number(tsMs);
+      const normalized = Number.isFinite(parsed) ? parsed : null;
+      if (cache.size >= 2048) {
+        const oldest = cache.keys().next();
+        if (!oldest.done) cache.delete(oldest.value);
+      }
+      cache.set(raw, normalized);
+      return normalized == null ? null : new Date(normalized);
+    }
+  }
   const d = new Date(String(ts || ''));
   return isNaN(d.getTime()) ? null : d;
 }
@@ -19042,6 +19068,7 @@ module.exports = {
   optimizationMinDeltaPercent,
   sourceEyeRef,
   normalizedRisk,
+  parseIsoTs,
   toStem,
   directiveTokenHits,
   expectedValueScore,

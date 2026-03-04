@@ -1380,6 +1380,18 @@ pub struct NormalizedRiskOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ParseIsoTsInput {
+    #[serde(default)]
+    pub ts: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ParseIsoTsOutput {
+    #[serde(default)]
+    pub timestamp_ms: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ExecutionReserveSnapshotInput {
     pub cap: f64,
     pub used: f64,
@@ -2138,6 +2150,8 @@ pub struct AutoscaleRequest {
     pub source_eye_ref_input: Option<SourceEyeRefInput>,
     #[serde(default)]
     pub normalized_risk_input: Option<NormalizedRiskInput>,
+    #[serde(default)]
+    pub parse_iso_ts_input: Option<ParseIsoTsInput>,
     #[serde(default)]
     pub execution_reserve_snapshot_input: Option<ExecutionReserveSnapshotInput>,
     #[serde(default)]
@@ -4659,6 +4673,12 @@ pub fn compute_normalized_risk(input: &NormalizedRiskInput) -> NormalizedRiskOut
     NormalizedRiskOutput { risk: normalized }
 }
 
+pub fn compute_parse_iso_ts(input: &ParseIsoTsInput) -> ParseIsoTsOutput {
+    let ts = input.ts.as_deref().unwrap_or("").trim();
+    let timestamp_ms = parse_rfc3339_ts_ms(ts).map(|value| value as f64);
+    ParseIsoTsOutput { timestamp_ms }
+}
+
 pub fn compute_execution_reserve_snapshot(
     input: &ExecutionReserveSnapshotInput,
 ) -> ExecutionReserveSnapshotOutput {
@@ -7047,6 +7067,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_normalized_risk_encode_failed:{e}"));
+    }
+    if mode == "parse_iso_ts" {
+        let input = request
+            .parse_iso_ts_input
+            .ok_or_else(|| "autoscale_missing_parse_iso_ts_input".to_string())?;
+        let out = compute_parse_iso_ts(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "parse_iso_ts",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_parse_iso_ts_encode_failed:{e}"));
     }
     if mode == "execution_reserve_snapshot" {
         let input = request
@@ -10097,6 +10129,33 @@ mod tests {
         let out = run_autoscale_json(&payload).expect("autoscale normalized_risk");
         assert!(out.contains("\"mode\":\"normalized_risk\""));
         assert!(out.contains("\"risk\":\"medium\""));
+    }
+
+    #[test]
+    fn parse_iso_ts_returns_timestamp_when_valid() {
+        let valid = compute_parse_iso_ts(&ParseIsoTsInput {
+            ts: Some("2026-03-01T00:00:00.000Z".to_string()),
+        });
+        assert!(valid.timestamp_ms.is_some());
+
+        let invalid = compute_parse_iso_ts(&ParseIsoTsInput {
+            ts: Some("not-a-date".to_string()),
+        });
+        assert!(invalid.timestamp_ms.is_none());
+    }
+
+    #[test]
+    fn autoscale_json_parse_iso_ts_path_works() {
+        let payload = serde_json::json!({
+            "mode": "parse_iso_ts",
+            "parse_iso_ts_input": {
+                "ts": "2026-03-01T00:00:00.000Z"
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale parse_iso_ts");
+        assert!(out.contains("\"mode\":\"parse_iso_ts\""));
+        assert!(out.contains("\"timestamp_ms\":"));
     }
 
     #[test]
