@@ -3095,6 +3095,20 @@ pub struct SuccessCriteriaPolicyForProposalOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct CapabilityDescriptorInput {
+    #[serde(default)]
+    pub actuation_kind: Option<String>,
+    #[serde(default)]
+    pub proposal_type: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct CapabilityDescriptorOutput {
+    pub key: String,
+    pub aliases: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct IsDirectiveClarificationProposalInput {
     #[serde(default)]
     pub proposal_type: Option<String>,
@@ -4305,6 +4319,8 @@ pub struct AutoscaleRequest {
     pub success_criteria_requirement_input: Option<SuccessCriteriaRequirementInput>,
     #[serde(default)]
     pub success_criteria_policy_for_proposal_input: Option<SuccessCriteriaPolicyForProposalInput>,
+    #[serde(default)]
+    pub capability_descriptor_input: Option<CapabilityDescriptorInput>,
     #[serde(default)]
     pub is_directive_clarification_proposal_input: Option<IsDirectiveClarificationProposalInput>,
     #[serde(default)]
@@ -9903,6 +9919,26 @@ pub fn compute_success_criteria_policy_for_proposal(
     }
 }
 
+pub fn compute_capability_descriptor(input: &CapabilityDescriptorInput) -> CapabilityDescriptorOutput {
+    let kind = normalize_spaces(input.actuation_kind.as_deref().unwrap_or("")).to_ascii_lowercase();
+    if !kind.is_empty() {
+        return CapabilityDescriptorOutput {
+            key: format!("actuation:{kind}"),
+            aliases: vec!["actuation".to_string()],
+        };
+    }
+    let proposal_type = normalize_spaces(input.proposal_type.as_deref().unwrap_or("")).to_ascii_lowercase();
+    let typ = if proposal_type.is_empty() {
+        "unknown".to_string()
+    } else {
+        proposal_type
+    };
+    CapabilityDescriptorOutput {
+        key: format!("proposal:{typ}"),
+        aliases: vec!["proposal".to_string()],
+    }
+}
+
 pub fn compute_is_directive_clarification_proposal(
     input: &IsDirectiveClarificationProposalInput,
 ) -> IsDirectiveClarificationProposalOutput {
@@ -13754,6 +13790,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_success_criteria_policy_for_proposal_encode_failed:{e}"));
+    }
+    if mode == "capability_descriptor" {
+        let input = request
+            .capability_descriptor_input
+            .ok_or_else(|| "autoscale_missing_capability_descriptor_input".to_string())?;
+        let out = compute_capability_descriptor(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "capability_descriptor",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_capability_descriptor_encode_failed:{e}"));
     }
     if mode == "directive_pulse_context" {
         let input = request
@@ -19916,6 +19964,30 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale success_criteria_policy_for_proposal");
         assert!(out.contains("\"mode\":\"success_criteria_policy_for_proposal\""));
+    }
+
+    #[test]
+    fn capability_descriptor_prefers_actuation_kind() {
+        let out = compute_capability_descriptor(&CapabilityDescriptorInput {
+            actuation_kind: Some("route_execute".to_string()),
+            proposal_type: Some("optimization".to_string()),
+        });
+        assert_eq!(out.key, "actuation:route_execute");
+        assert_eq!(out.aliases, vec!["actuation".to_string()]);
+    }
+
+    #[test]
+    fn autoscale_json_capability_descriptor_path_works() {
+        let payload = serde_json::json!({
+            "mode": "capability_descriptor",
+            "capability_descriptor_input": {
+                "actuation_kind": null,
+                "proposal_type": "optimization"
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale capability_descriptor");
+        assert!(out.contains("\"mode\":\"capability_descriptor\""));
     }
 
     #[test]

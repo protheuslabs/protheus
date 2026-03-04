@@ -10176,6 +10176,25 @@ function strategyAdmissionDecision(p, strategy, opts: AnyObj = {}) {
 }
 
 function capabilityDescriptor(p, actuationSpec) {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'capability_descriptor',
+      {
+        actuation_kind: actuationSpec && actuationSpec.kind != null ? String(actuationSpec.kind) : null,
+        proposal_type: p && p.type != null ? String(p.type) : null
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const payload = rust.payload.payload;
+      return {
+        key: String(payload.key || 'proposal:unknown'),
+        aliases: Array.isArray(payload.aliases)
+          ? payload.aliases.map((x) => String(x || '')).filter(Boolean)
+          : []
+      };
+    }
+  }
   if (actuationSpec && actuationSpec.kind) {
     const kind = String(actuationSpec.kind).trim().toLowerCase();
     return {
@@ -21092,6 +21111,7 @@ module.exports = {
   readModelCatalogCanary,
   runPostconditions,
   verifyExecutionReceipt,
+  capabilityDescriptor,
   computeExecutionTokenUsage,
   preExecCriteriaGateDecision,
   routeExecutionPolicyHold,
