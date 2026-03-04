@@ -3178,6 +3178,20 @@ pub struct SanitizeDirectiveObjectiveIdOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct SanitizedDirectiveIdListInput {
+    #[serde(default)]
+    pub rows: Vec<String>,
+    #[serde(default)]
+    pub limit: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct SanitizedDirectiveIdListOutput {
+    #[serde(default)]
+    pub ids: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ParseDirectiveFileArgInput {
     #[serde(default)]
     pub command: Option<String>,
@@ -4365,6 +4379,8 @@ pub struct AutoscaleRequest {
     pub is_directive_decomposition_proposal_input: Option<IsDirectiveDecompositionProposalInput>,
     #[serde(default)]
     pub sanitize_directive_objective_id_input: Option<SanitizeDirectiveObjectiveIdInput>,
+    #[serde(default)]
+    pub sanitized_directive_id_list_input: Option<SanitizedDirectiveIdListInput>,
     #[serde(default)]
     pub parse_directive_file_arg_input: Option<ParseDirectiveFileArgInput>,
     #[serde(default)]
@@ -10056,6 +10072,36 @@ pub fn compute_sanitize_directive_objective_id(
     }
 }
 
+pub fn compute_sanitized_directive_id_list(
+    input: &SanitizedDirectiveIdListInput,
+) -> SanitizedDirectiveIdListOutput {
+    let limit = input
+        .limit
+        .filter(|v| v.is_finite())
+        .map(|v| v.max(0.0).floor() as usize)
+        .unwrap_or(12usize)
+        .min(200usize);
+    if limit == 0 {
+        return SanitizedDirectiveIdListOutput { ids: Vec::new() };
+    }
+    let mut out = Vec::<String>::new();
+    let mut seen = std::collections::BTreeSet::<String>::new();
+    for row in input.rows.iter() {
+        if out.len() >= limit {
+            break;
+        }
+        let sanitized = compute_sanitize_directive_objective_id(&SanitizeDirectiveObjectiveIdInput {
+            value: Some(row.clone()),
+        })
+        .objective_id;
+        if sanitized.is_empty() || !seen.insert(sanitized.clone()) {
+            continue;
+        }
+        out.push(sanitized);
+    }
+    SanitizedDirectiveIdListOutput { ids: out }
+}
+
 pub fn compute_parse_directive_file_arg(input: &ParseDirectiveFileArgInput) -> ParseDirectiveFileArgOutput {
     let text = input.command.as_deref().unwrap_or("").trim();
     if text.is_empty() {
@@ -13931,6 +13977,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_sanitize_directive_objective_id_encode_failed:{e}"));
+    }
+    if mode == "sanitized_directive_id_list" {
+        let input = request
+            .sanitized_directive_id_list_input
+            .ok_or_else(|| "autoscale_missing_sanitized_directive_id_list_input".to_string())?;
+        let out = compute_sanitized_directive_id_list(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "sanitized_directive_id_list",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_sanitized_directive_id_list_encode_failed:{e}"));
     }
     if mode == "parse_directive_file_arg" {
         let input = request

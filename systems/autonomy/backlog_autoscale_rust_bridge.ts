@@ -313,6 +313,7 @@ function runBacklogAutoscalePrimitive(mode: string, data: AnyObj = {}, opts: Any
     is_directive_clarification_proposal: 'is_directive_clarification_proposal_input',
     is_directive_decomposition_proposal: 'is_directive_decomposition_proposal_input',
     sanitize_directive_objective_id: 'sanitize_directive_objective_id_input',
+    sanitized_directive_id_list: 'sanitized_directive_id_list_input',
     parse_directive_file_arg: 'parse_directive_file_arg_input',
     parse_directive_objective_arg: 'parse_directive_objective_arg_input',
     parse_objective_id_from_evidence_refs: 'parse_objective_id_from_evidence_refs_input',

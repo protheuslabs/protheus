@@ -12870,6 +12870,21 @@ function preexecVerdictFromSignals(blockers, signals, nextRunnableAt) {
 }
 
 function sanitizedDirectiveIdList(rows, limit = 12) {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'sanitized_directive_id_list',
+      {
+        rows: Array.isArray(rows) ? rows.map((x) => String(x || '')) : [],
+        limit: Number(limit)
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return Array.isArray(rust.payload.payload.ids)
+        ? rust.payload.payload.ids.map((x) => String(x || ''))
+        : [];
+    }
+  }
   const out = [];
   const seen = new Set();
   for (const raw of Array.isArray(rows) ? rows : []) {
@@ -21261,6 +21276,7 @@ module.exports = {
   parseDirectiveObjectiveArgFromCommand,
   parseObjectiveIdFromEvidenceRefs,
   parseObjectiveIdFromCommand,
+  sanitizedDirectiveIdList,
   candidateObjectiveId,
   objectiveIdForExecution,
   shortText,
