@@ -3076,6 +3076,25 @@ pub struct SuccessCriteriaRequirementOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct SuccessCriteriaPolicyForProposalInput {
+    #[serde(default)]
+    pub base_required: bool,
+    #[serde(default)]
+    pub base_min_count: f64,
+    #[serde(default)]
+    pub base_exempt_types: Vec<String>,
+    #[serde(default)]
+    pub proposal_type: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct SuccessCriteriaPolicyForProposalOutput {
+    pub required: bool,
+    pub min_count: f64,
+    pub exempt: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct IsDirectiveClarificationProposalInput {
     #[serde(default)]
     pub proposal_type: Option<String>,
@@ -4284,6 +4303,8 @@ pub struct AutoscaleRequest {
     pub criteria_pattern_keys_input: Option<CriteriaPatternKeysInput>,
     #[serde(default)]
     pub success_criteria_requirement_input: Option<SuccessCriteriaRequirementInput>,
+    #[serde(default)]
+    pub success_criteria_policy_for_proposal_input: Option<SuccessCriteriaPolicyForProposalInput>,
     #[serde(default)]
     pub is_directive_clarification_proposal_input: Option<IsDirectiveClarificationProposalInput>,
     #[serde(default)]
@@ -9863,6 +9884,25 @@ pub fn compute_success_criteria_requirement(
     }
 }
 
+pub fn compute_success_criteria_policy_for_proposal(
+    input: &SuccessCriteriaPolicyForProposalInput,
+) -> SuccessCriteriaPolicyForProposalOutput {
+    let proposal_type = normalize_spaces(input.proposal_type.as_deref().unwrap_or("")).to_ascii_lowercase();
+    let mut exempt = false;
+    for raw in &input.base_exempt_types {
+        let value = normalize_spaces(raw).to_ascii_lowercase();
+        if !value.is_empty() && !proposal_type.is_empty() && value == proposal_type {
+            exempt = true;
+            break;
+        }
+    }
+    SuccessCriteriaPolicyForProposalOutput {
+        required: input.base_required && !exempt,
+        min_count: input.base_min_count,
+        exempt,
+    }
+}
+
 pub fn compute_is_directive_clarification_proposal(
     input: &IsDirectiveClarificationProposalInput,
 ) -> IsDirectiveClarificationProposalOutput {
@@ -13702,6 +13742,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_success_criteria_requirement_encode_failed:{e}"));
+    }
+    if mode == "success_criteria_policy_for_proposal" {
+        let input = request
+            .success_criteria_policy_for_proposal_input
+            .ok_or_else(|| "autoscale_missing_success_criteria_policy_for_proposal_input".to_string())?;
+        let out = compute_success_criteria_policy_for_proposal(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "success_criteria_policy_for_proposal",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_success_criteria_policy_for_proposal_encode_failed:{e}"));
     }
     if mode == "directive_pulse_context" {
         let input = request
@@ -19835,6 +19887,35 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale success_criteria_requirement");
         assert!(out.contains("\"mode\":\"success_criteria_requirement\""));
+    }
+
+    #[test]
+    fn success_criteria_policy_for_proposal_applies_exemptions() {
+        let out = compute_success_criteria_policy_for_proposal(&SuccessCriteriaPolicyForProposalInput {
+            base_required: true,
+            base_min_count: 1.0,
+            base_exempt_types: vec!["directive_clarification".to_string()],
+            proposal_type: Some("directive_clarification".to_string()),
+        });
+        assert_eq!(out.required, false);
+        assert_eq!(out.exempt, true);
+        assert_eq!(out.min_count, 1.0);
+    }
+
+    #[test]
+    fn autoscale_json_success_criteria_policy_for_proposal_path_works() {
+        let payload = serde_json::json!({
+            "mode": "success_criteria_policy_for_proposal",
+            "success_criteria_policy_for_proposal_input": {
+                "base_required": true,
+                "base_min_count": 1,
+                "base_exempt_types": ["directive_clarification"],
+                "proposal_type": "directive_clarification"
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale success_criteria_policy_for_proposal");
+        assert!(out.contains("\"mode\":\"success_criteria_policy_for_proposal\""));
     }
 
     #[test]

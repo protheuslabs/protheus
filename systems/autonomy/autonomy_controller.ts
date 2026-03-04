@@ -8379,6 +8379,26 @@ function successCriteriaRequirement() {
 function successCriteriaPolicyForProposal(proposal) {
   const base = successCriteriaRequirement();
   const proposalType = normalizeSpaces(proposal && proposal.type || '').toLowerCase();
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'success_criteria_policy_for_proposal',
+      {
+        base_required: base.required !== false,
+        base_min_count: Number(base.min_count || 0),
+        base_exempt_types: Array.isArray(base.exempt_types) ? base.exempt_types : [],
+        proposal_type: proposalType || null
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const payload = rust.payload.payload;
+      return {
+        required: payload.required === true,
+        min_count: Number(payload.min_count || 0),
+        exempt: payload.exempt === true
+      };
+    }
+  }
   const exempt = proposalType
     && Array.isArray(base.exempt_types)
     && base.exempt_types.includes(proposalType);
