@@ -748,6 +748,19 @@ pub struct StrategyRankScoreOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ValueSignalScoreInput {
+    pub expected_value: f64,
+    pub time_to_value: f64,
+    pub actionability: f64,
+    pub directive_fit: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ValueSignalScoreOutput {
+    pub score: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct CompositeEligibilityScoreInput {
     pub quality_score: f64,
     pub directive_fit_score: f64,
@@ -1427,6 +1440,8 @@ pub struct AutoscaleRequest {
     pub proposal_dedup_key_input: Option<ProposalDedupKeyInput>,
     #[serde(default)]
     pub strategy_rank_score_input: Option<StrategyRankScoreInput>,
+    #[serde(default)]
+    pub value_signal_score_input: Option<ValueSignalScoreInput>,
     #[serde(default)]
     pub composite_eligibility_score_input: Option<CompositeEligibilityScoreInput>,
     #[serde(default)]
@@ -2722,6 +2737,16 @@ pub fn compute_strategy_rank_score(input: &StrategyRankScoreInput) -> StrategyRa
         - input.collective_shadow_penalty
         + input.collective_shadow_bonus;
     StrategyRankScoreOutput {
+        score: (raw * 1000.0).round() / 1000.0,
+    }
+}
+
+pub fn compute_value_signal_score(input: &ValueSignalScoreInput) -> ValueSignalScoreOutput {
+    let raw = (input.expected_value * 0.52)
+        + (input.time_to_value * 0.22)
+        + (input.actionability * 0.18)
+        + (input.directive_fit * 0.08);
+    ValueSignalScoreOutput {
         score: (raw * 1000.0).round() / 1000.0,
     }
 }
@@ -4679,6 +4704,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
         }))
         .map_err(|e| format!("autoscale_strategy_rank_score_encode_failed:{e}"));
     }
+    if mode == "value_signal_score" {
+        let input = request
+            .value_signal_score_input
+            .ok_or_else(|| "autoscale_missing_value_signal_score_input".to_string())?;
+        let out = compute_value_signal_score(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "value_signal_score",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_value_signal_score_encode_failed:{e}"));
+    }
     if mode == "composite_eligibility_score" {
         let input = request
             .composite_eligibility_score_input
@@ -6481,6 +6518,34 @@ mod tests {
         let out = run_autoscale_json(&payload).expect("autoscale strategy_rank_score");
         assert!(out.contains("\"mode\":\"strategy_rank_score\""));
         assert!(out.contains("\"score\":67.45"));
+    }
+
+    #[test]
+    fn value_signal_score_matches_weighted_formula() {
+        let out = compute_value_signal_score(&ValueSignalScoreInput {
+            expected_value: 55.0,
+            time_to_value: 50.0,
+            actionability: 70.0,
+            directive_fit: 60.0,
+        });
+        assert!((out.score - 57.0).abs() < 0.000001);
+    }
+
+    #[test]
+    fn autoscale_json_value_signal_score_path_works() {
+        let payload = serde_json::json!({
+            "mode": "value_signal_score",
+            "value_signal_score_input": {
+                "expected_value": 55,
+                "time_to_value": 50,
+                "actionability": 70,
+                "directive_fit": 60
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale value_signal_score");
+        assert!(out.contains("\"mode\":\"value_signal_score\""));
+        assert!(out.contains("\"score\":57.0"));
     }
 
     #[test]

@@ -2795,6 +2795,8 @@ const PROPOSAL_DEDUP_KEY_CACHE = new Map();
 const PROPOSAL_DEDUP_KEY_CACHE_MAX = 1024;
 const STRATEGY_RANK_SCORE_CACHE = new Map();
 const STRATEGY_RANK_SCORE_CACHE_MAX = 2048;
+const VALUE_SIGNAL_SCORE_CACHE = new Map();
+const VALUE_SIGNAL_SCORE_CACHE_MAX = 1024;
 const COMPOSITE_ELIGIBILITY_SCORE_CACHE = new Map();
 const COMPOSITE_ELIGIBILITY_SCORE_CACHE_MAX = 1024;
 const TIME_TO_VALUE_SCORE_CACHE = new Map();
@@ -6737,11 +6739,44 @@ function assessValueSignal(p, actionability, directiveFit) {
   const timeToValue = timeToValueScore(p);
   const actionabilityScore = clampNumber(Number(actionability && actionability.score || 0), 0, 100);
   const directiveFitScore = clampNumber(Number(directiveFit && directiveFit.score || 0), 0, 100);
-  let score = 0;
-  score += expectedValue * 0.52;
-  score += timeToValue * 0.22;
-  score += actionabilityScore * 0.18;
-  score += directiveFitScore * 0.08;
+  let score = NaN;
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const key = [
+      expectedValue,
+      timeToValue,
+      actionabilityScore,
+      directiveFitScore
+    ].join('\u0000');
+    if (VALUE_SIGNAL_SCORE_CACHE.has(key)) {
+      score = Number(VALUE_SIGNAL_SCORE_CACHE.get(key));
+    } else {
+      const rust = runBacklogAutoscalePrimitive(
+        'value_signal_score',
+        {
+          expected_value: expectedValue,
+          time_to_value: timeToValue,
+          actionability: actionabilityScore,
+          directive_fit: directiveFitScore
+        },
+        { allow_cli_fallback: true }
+      );
+      if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+        score = Number(rust.payload.payload.score || 0);
+        if (VALUE_SIGNAL_SCORE_CACHE.size >= VALUE_SIGNAL_SCORE_CACHE_MAX) {
+          const oldest = VALUE_SIGNAL_SCORE_CACHE.keys().next();
+          if (!oldest.done) VALUE_SIGNAL_SCORE_CACHE.delete(oldest.value);
+        }
+        VALUE_SIGNAL_SCORE_CACHE.set(key, score);
+      }
+    }
+  }
+  if (!Number.isFinite(score)) {
+    score = 0;
+    score += expectedValue * 0.52;
+    score += timeToValue * 0.22;
+    score += actionabilityScore * 0.18;
+    score += directiveFitScore * 0.08;
+  }
   const reasons = [];
   if (expectedValue < 35) reasons.push('low_expected_value');
   if (timeToValue < 35) reasons.push('slow_time_to_value');
@@ -17786,6 +17821,7 @@ module.exports = {
   adaptiveMutationExecutionGuardDecision,
   strategyAdmissionDecision,
   assessActionability,
+  assessValueSignal,
   expectedValueScore,
   timeToValueScore,
   valueDensityScore,
