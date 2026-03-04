@@ -2745,6 +2745,18 @@ pub struct RecentRunEventsOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct AllDecisionEventsInput {
+    #[serde(default)]
+    pub day_events: Vec<Vec<serde_json::Value>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct AllDecisionEventsOutput {
+    #[serde(default)]
+    pub events: Vec<serde_json::Value>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ManualGatePrefilterInput {
     #[serde(default)]
     pub enabled: bool,
@@ -4767,6 +4779,8 @@ pub struct AutoscaleRequest {
     pub outcome_buckets_input: Option<OutcomeBucketsInput>,
     #[serde(default)]
     pub recent_run_events_input: Option<RecentRunEventsInput>,
+    #[serde(default)]
+    pub all_decision_events_input: Option<AllDecisionEventsInput>,
     #[serde(default)]
     pub manual_gate_prefilter_input: Option<ManualGatePrefilterInput>,
     #[serde(default)]
@@ -9628,6 +9642,16 @@ pub fn compute_recent_run_events(input: &RecentRunEventsInput) -> RecentRunEvent
         }
     }
     RecentRunEventsOutput { events }
+}
+
+pub fn compute_all_decision_events(input: &AllDecisionEventsInput) -> AllDecisionEventsOutput {
+    let mut events = Vec::<serde_json::Value>::new();
+    for bucket in input.day_events.iter() {
+        for evt in bucket.iter() {
+            events.push(evt.clone());
+        }
+    }
+    AllDecisionEventsOutput { events }
 }
 
 pub fn compute_manual_gate_prefilter(input: &ManualGatePrefilterInput) -> ManualGatePrefilterOutput {
@@ -14907,6 +14931,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_recent_run_events_encode_failed:{e}"));
+    }
+    if mode == "all_decision_events" {
+        let input = request
+            .all_decision_events_input
+            .ok_or_else(|| "autoscale_missing_all_decision_events_input".to_string())?;
+        let out = compute_all_decision_events(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "all_decision_events",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_all_decision_events_encode_failed:{e}"));
     }
     if mode == "manual_gate_prefilter" {
         let input = request
@@ -21126,6 +21162,49 @@ mod tests {
         assert!(out.contains("\"mode\":\"recent_run_events\""));
         assert!(out.contains("\"id\":\"a\""));
         assert!(out.contains("\"id\":\"b\""));
+    }
+
+    #[test]
+    fn all_decision_events_flattens_day_buckets_in_order() {
+        let out = compute_all_decision_events(&AllDecisionEventsInput {
+            day_events: vec![
+                vec![serde_json::json!({"proposal_id":"p1"})],
+                vec![serde_json::json!({"proposal_id":"p2"})],
+            ],
+        });
+        assert_eq!(out.events.len(), 2);
+        assert_eq!(
+            out.events[0]
+                .get("proposal_id")
+                .and_then(|v| v.as_str())
+                .unwrap_or(""),
+            "p1"
+        );
+        assert_eq!(
+            out.events[1]
+                .get("proposal_id")
+                .and_then(|v| v.as_str())
+                .unwrap_or(""),
+            "p2"
+        );
+    }
+
+    #[test]
+    fn autoscale_json_all_decision_events_path_works() {
+        let payload = serde_json::json!({
+            "mode": "all_decision_events",
+            "all_decision_events_input": {
+                "day_events": [
+                    [{"proposal_id":"p1"}],
+                    [{"proposal_id":"p2"}]
+                ]
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale all_decision_events");
+        assert!(out.contains("\"mode\":\"all_decision_events\""));
+        assert!(out.contains("\"proposal_id\":\"p1\""));
+        assert!(out.contains("\"proposal_id\":\"p2\""));
     }
 
     #[test]

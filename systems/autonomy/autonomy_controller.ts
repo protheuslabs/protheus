@@ -2667,9 +2667,23 @@ function allDecisionEvents() {
   const files = fs.readdirSync(QUEUE_DECISIONS_DIR)
     .filter(f => /^\d{4}-\d{2}-\d{2}\.jsonl$/.test(f))
     .sort();
-  const out = [];
+  const buckets = [];
   for (const f of files) {
-    out.push(...readJsonl(path.join(QUEUE_DECISIONS_DIR, f)));
+    buckets.push(readJsonl(path.join(QUEUE_DECISIONS_DIR, f)));
+  }
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'all_decision_events',
+      { day_events: buckets },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return Array.isArray(rust.payload.payload.events) ? rust.payload.payload.events : [];
+    }
+  }
+  const out = [];
+  for (const bucket of buckets) {
+    out.push(...bucket);
   }
   return out;
 }
