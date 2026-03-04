@@ -1234,6 +1234,17 @@ pub struct ToStemOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct NormalizeDirectiveTextInput {
+    #[serde(default)]
+    pub text: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct NormalizeDirectiveTextOutput {
+    pub normalized: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ExecutionReserveSnapshotInput {
     pub cap: f64,
     pub used: f64,
@@ -1972,6 +1983,8 @@ pub struct AutoscaleRequest {
     pub directive_token_hits_input: Option<DirectiveTokenHitsInput>,
     #[serde(default)]
     pub to_stem_input: Option<ToStemInput>,
+    #[serde(default)]
+    pub normalize_directive_text_input: Option<NormalizeDirectiveTextInput>,
     #[serde(default)]
     pub execution_reserve_snapshot_input: Option<ExecutionReserveSnapshotInput>,
     #[serde(default)]
@@ -4279,6 +4292,23 @@ pub fn compute_to_stem(input: &ToStemInput) -> ToStemOutput {
     ToStemOutput { stem }
 }
 
+pub fn compute_normalize_directive_text(
+    input: &NormalizeDirectiveTextInput,
+) -> NormalizeDirectiveTextOutput {
+    let text = input.text.as_deref().unwrap_or("");
+    let lowered = text.to_ascii_lowercase();
+    let mut scrubbed = String::with_capacity(lowered.len());
+    for ch in lowered.chars() {
+        if ch.is_ascii_alphanumeric() {
+            scrubbed.push(ch);
+        } else {
+            scrubbed.push(' ');
+        }
+    }
+    let normalized = scrubbed.split_whitespace().collect::<Vec<_>>().join(" ");
+    NormalizeDirectiveTextOutput { normalized }
+}
+
 pub fn compute_execution_reserve_snapshot(
     input: &ExecutionReserveSnapshotInput,
 ) -> ExecutionReserveSnapshotOutput {
@@ -6547,6 +6577,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_to_stem_encode_failed:{e}"));
+    }
+    if mode == "normalize_directive_text" {
+        let input = request
+            .normalize_directive_text_input
+            .ok_or_else(|| "autoscale_missing_normalize_directive_text_input".to_string())?;
+        let out = compute_normalize_directive_text(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "normalize_directive_text",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_normalize_directive_text_encode_failed:{e}"));
     }
     if mode == "execution_reserve_snapshot" {
         let input = request
@@ -9297,6 +9339,28 @@ mod tests {
         let out = run_autoscale_json(&payload).expect("autoscale to_stem");
         assert!(out.contains("\"mode\":\"to_stem\""));
         assert!(out.contains("\"stem\":\"secur\""));
+    }
+
+    #[test]
+    fn normalize_directive_text_matches_ts_semantics() {
+        let out = compute_normalize_directive_text(&NormalizeDirectiveTextInput {
+            text: Some(" Memory++ Drift\nPlan! ".to_string()),
+        });
+        assert_eq!(out.normalized, "memory drift plan");
+    }
+
+    #[test]
+    fn autoscale_json_normalize_directive_text_path_works() {
+        let payload = serde_json::json!({
+            "mode": "normalize_directive_text",
+            "normalize_directive_text_input": {
+                "text": " Safety-first, always. "
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale normalize_directive_text");
+        assert!(out.contains("\"mode\":\"normalize_directive_text\""));
+        assert!(out.contains("\"normalized\":\"safety first always\""));
     }
 
     #[test]
