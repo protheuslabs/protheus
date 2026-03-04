@@ -1,0 +1,26 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "notes": "Fail closed when migrated lanes re-introduce broad TS fallback branches in rust-authoritative paths.",
+  "checks": [
+    {
+      "id": "route_task_no_ts_fallback_toggle",
+      "path": "systems/routing/route_task.ts",
+      "deny_regex": "ROUTE_TASK_TS_FALLBACK\\s*=",
+      "description": "route_task must remain rust-authoritative by default."
+    },
+    {
+      "id": "route_task_no_fallback_branch",
+      "path": "systems/routing/route_task.ts",
+      "deny_regex": "legacy fallback",
+      "description": "legacy fallback markers are not allowed to reappear in route_task."
+    },
+    {
+      "id": "task_decomposition_no_js_gate_fallback",
+      "path": "systems/execution/task_decomposition_primitive.ts",
+      "deny_regex": "constitution_gate_fallback|heroic_gate_fallback",
+      "description": "task decomposition gates must stay rust fail-closed."
+    }
+  ]
+}
