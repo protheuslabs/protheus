@@ -13541,6 +13541,24 @@ function extractSuccessCriteriaMetricValues(proposal, opts: AnyObj = {}) {
 function assessSuccessCriteriaQuality(criteria) {
   const src = criteria && typeof criteria === 'object' ? criteria : {};
   const checks = Array.isArray(src.checks) ? src.checks : [];
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'assess_success_criteria_quality',
+      {
+        checks: checks.map((row) => ({
+          evaluated: row && row.evaluated === true,
+          reason: row && row.reason == null ? null : String(row && row.reason || '')
+        })),
+        total_count: Number(src.total_count || 0),
+        unknown_count: Number(src.unknown_count || 0),
+        synthesized: src.synthesized === true
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return rust.payload.payload;
+    }
+  }
   const totalCount = Number(src.total_count || 0);
   const unknownExemptReasons = new Set([
     'artifact_delta_unavailable',

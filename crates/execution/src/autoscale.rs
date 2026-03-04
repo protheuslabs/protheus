@@ -2808,6 +2808,40 @@ pub struct HashObjOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct AssessSuccessCriteriaQualityCheckInput {
+    #[serde(default)]
+    pub evaluated: bool,
+    #[serde(default)]
+    pub reason: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct AssessSuccessCriteriaQualityInput {
+    #[serde(default)]
+    pub checks: Vec<AssessSuccessCriteriaQualityCheckInput>,
+    #[serde(default)]
+    pub total_count: f64,
+    #[serde(default)]
+    pub unknown_count: f64,
+    #[serde(default)]
+    pub synthesized: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct AssessSuccessCriteriaQualityOutput {
+    pub insufficient: bool,
+    pub reasons: Vec<String>,
+    pub total_count: f64,
+    pub unknown_count_raw: f64,
+    pub unknown_exempt_count: f64,
+    pub unknown_count: f64,
+    pub unknown_rate: f64,
+    pub unsupported_count: f64,
+    pub unsupported_rate: f64,
+    pub synthesized: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ManualGatePrefilterInput {
     #[serde(default)]
     pub enabled: bool,
@@ -4840,6 +4874,8 @@ pub struct AutoscaleRequest {
     pub lock_age_minutes_input: Option<LockAgeMinutesInput>,
     #[serde(default)]
     pub hash_obj_input: Option<HashObjInput>,
+    #[serde(default)]
+    pub assess_success_criteria_quality_input: Option<AssessSuccessCriteriaQualityInput>,
     #[serde(default)]
     pub manual_gate_prefilter_input: Option<ManualGatePrefilterInput>,
     #[serde(default)]
@@ -9771,6 +9807,84 @@ pub fn compute_hash_obj(input: &HashObjInput) -> HashObjOutput {
     let digest = hasher.finalize();
     HashObjOutput {
         hash: Some(format!("{:x}", digest)),
+    }
+}
+
+fn round4(v: f64) -> f64 {
+    (v * 10_000.0).round() / 10_000.0
+}
+
+pub fn compute_assess_success_criteria_quality(
+    input: &AssessSuccessCriteriaQualityInput,
+) -> AssessSuccessCriteriaQualityOutput {
+    let checks = &input.checks;
+    let total_count = input.total_count;
+    let unknown_exempt_reasons = [
+        "artifact_delta_unavailable",
+        "entry_delta_unavailable",
+        "revenue_delta_unavailable",
+        "outreach_artifact_unavailable",
+        "reply_or_interview_count_unavailable",
+        "deferred_pending_window",
+    ];
+    let unknown_exempt_count = checks
+        .iter()
+        .filter(|row| {
+            if row.evaluated {
+                return false;
+            }
+            let reason = row.reason.as_deref().unwrap_or("").trim();
+            unknown_exempt_reasons.contains(&reason)
+        })
+        .count() as f64;
+
+    let unknown_count_raw = input.unknown_count;
+    let unknown_count = (unknown_count_raw - unknown_exempt_count).max(0.0);
+    let unknown_rate = if total_count > 0.0 {
+        unknown_count / total_count
+    } else if !checks.is_empty() {
+        let unevaluated = checks.iter().filter(|row| !row.evaluated).count() as f64;
+        (unevaluated - unknown_exempt_count).max(0.0) / (checks.len() as f64)
+    } else {
+        1.0
+    };
+
+    let unsupported_count = checks
+        .iter()
+        .filter(|row| {
+            let reason = row.reason.as_deref().unwrap_or("").trim();
+            reason == "unsupported_metric" || reason == "metric_not_allowed_for_capability"
+        })
+        .count() as f64;
+    let unsupported_rate = if checks.is_empty() {
+        0.0
+    } else {
+        unsupported_count / (checks.len() as f64)
+    };
+
+    let synthesized = input.synthesized;
+    let mut reasons = Vec::<String>::new();
+    if synthesized {
+        reasons.push("synthesized_criteria".to_string());
+    }
+    if unknown_rate > 0.4 {
+        reasons.push("high_unknown_rate".to_string());
+    }
+    if unsupported_rate > 0.5 {
+        reasons.push("high_unsupported_rate".to_string());
+    }
+
+    AssessSuccessCriteriaQualityOutput {
+        insufficient: !reasons.is_empty(),
+        reasons,
+        total_count,
+        unknown_count_raw,
+        unknown_exempt_count,
+        unknown_count,
+        unknown_rate: round4(unknown_rate),
+        unsupported_count,
+        unsupported_rate: round4(unsupported_rate),
+        synthesized,
     }
 }
 
@@ -15111,6 +15225,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_hash_obj_encode_failed:{e}"));
+    }
+    if mode == "assess_success_criteria_quality" {
+        let input = request
+            .assess_success_criteria_quality_input
+            .ok_or_else(|| "autoscale_missing_assess_success_criteria_quality_input".to_string())?;
+        let out = compute_assess_success_criteria_quality(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "assess_success_criteria_quality",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_assess_success_criteria_quality_encode_failed:{e}"));
     }
     if mode == "manual_gate_prefilter" {
         let input = request
@@ -21494,6 +21620,54 @@ mod tests {
         let out = run_autoscale_json(&payload).expect("autoscale hash_obj");
         assert!(out.contains("\"mode\":\"hash_obj\""));
         assert!(out.contains("\"hash\":\""));
+    }
+
+    #[test]
+    fn assess_success_criteria_quality_flags_unknown_and_unsupported() {
+        let out = compute_assess_success_criteria_quality(&AssessSuccessCriteriaQualityInput {
+            checks: vec![
+                AssessSuccessCriteriaQualityCheckInput {
+                    evaluated: false,
+                    reason: Some("unsupported_metric".to_string()),
+                },
+                AssessSuccessCriteriaQualityCheckInput {
+                    evaluated: false,
+                    reason: Some("artifact_delta_unavailable".to_string()),
+                },
+                AssessSuccessCriteriaQualityCheckInput {
+                    evaluated: true,
+                    reason: Some("ok".to_string()),
+                },
+            ],
+            total_count: 3.0,
+            unknown_count: 2.0,
+            synthesized: true,
+        });
+        assert!(out.insufficient);
+        assert!(out.reasons.contains(&"synthesized_criteria".to_string()));
+        assert_eq!(out.unknown_exempt_count, 1.0);
+        assert_eq!(out.unknown_count, 1.0);
+        assert_eq!(out.unsupported_count, 1.0);
+    }
+
+    #[test]
+    fn autoscale_json_assess_success_criteria_quality_path_works() {
+        let payload = serde_json::json!({
+            "mode": "assess_success_criteria_quality",
+            "assess_success_criteria_quality_input": {
+                "checks": [
+                    {"evaluated": false, "reason": "unsupported_metric"},
+                    {"evaluated": true, "reason": "ok"}
+                ],
+                "total_count": 2,
+                "unknown_count": 1,
+                "synthesized": false
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale assess_success_criteria_quality");
+        assert!(out.contains("\"mode\":\"assess_success_criteria_quality\""));
+        assert!(out.contains("\"insufficient\":false") || out.contains("\"insufficient\":true"));
     }
 
     #[test]
