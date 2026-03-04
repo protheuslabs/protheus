@@ -423,6 +423,25 @@ pub struct ExecutedCountByRiskOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct RunResultTallyEventInput {
+    #[serde(default)]
+    pub event_type: Option<String>,
+    #[serde(default)]
+    pub result: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct RunResultTallyInput {
+    #[serde(default)]
+    pub events: Vec<RunResultTallyEventInput>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct RunResultTallyOutput {
+    pub counts: std::collections::BTreeMap<String, u32>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct NoProgressResultInput {
     #[serde(default)]
     pub event_type: Option<String>,
@@ -878,6 +897,8 @@ pub struct AutoscaleRequest {
     pub shipped_count_input: Option<ShippedCountInput>,
     #[serde(default)]
     pub executed_count_by_risk_input: Option<ExecutedCountByRiskInput>,
+    #[serde(default)]
+    pub run_result_tally_input: Option<RunResultTallyInput>,
     #[serde(default)]
     pub no_progress_result_input: Option<NoProgressResultInput>,
     #[serde(default)]
@@ -1857,6 +1878,29 @@ pub fn compute_executed_count_by_risk(input: &ExecutedCountByRiskInput) -> Execu
         }
     }
     ExecutedCountByRiskOutput { count }
+}
+
+pub fn compute_run_result_tally(input: &RunResultTallyInput) -> RunResultTallyOutput {
+    let mut counts: std::collections::BTreeMap<String, u32> = std::collections::BTreeMap::new();
+    for evt in &input.events {
+        let event_type = evt
+            .event_type
+            .as_ref()
+            .map(|v| v.trim().to_ascii_lowercase())
+            .unwrap_or_default();
+        if event_type != "autonomy_run" {
+            continue;
+        }
+        let key = evt
+            .result
+            .as_ref()
+            .map(|v| v.trim().to_string())
+            .filter(|v| !v.is_empty())
+            .unwrap_or_else(|| "unknown".to_string());
+        let next = counts.get(&key).copied().unwrap_or(0).saturating_add(1);
+        counts.insert(key, next);
+    }
+    RunResultTallyOutput { counts }
 }
 
 pub fn compute_no_progress_result(input: &NoProgressResultInput) -> NoProgressResultOutput {
@@ -2947,6 +2991,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
         }))
         .map_err(|e| format!("autoscale_executed_count_by_risk_encode_failed:{e}"));
     }
+    if mode == "run_result_tally" {
+        let input = request
+            .run_result_tally_input
+            .ok_or_else(|| "autoscale_missing_run_result_tally_input".to_string())?;
+        let out = compute_run_result_tally(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "run_result_tally",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_run_result_tally_encode_failed:{e}"));
+    }
     if mode == "no_progress_result" {
         let input = request
             .no_progress_result_input
@@ -3856,6 +3912,52 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale executed_count_by_risk");
         assert!(out.contains("\"mode\":\"executed_count_by_risk\""));
+    }
+
+    #[test]
+    fn run_result_tally_counts_autonomy_run_results() {
+        let out = compute_run_result_tally(&RunResultTallyInput {
+            events: vec![
+                RunResultTallyEventInput {
+                    event_type: Some("autonomy_run".to_string()),
+                    result: Some("executed".to_string()),
+                },
+                RunResultTallyEventInput {
+                    event_type: Some("autonomy_run".to_string()),
+                    result: Some("stop_repeat_gate_no_progress".to_string()),
+                },
+                RunResultTallyEventInput {
+                    event_type: Some("autonomy_run".to_string()),
+                    result: Some("executed".to_string()),
+                },
+                RunResultTallyEventInput {
+                    event_type: Some("outcome".to_string()),
+                    result: Some("executed".to_string()),
+                },
+            ],
+        });
+        assert_eq!(out.counts.get("executed").copied().unwrap_or(0), 2);
+        assert_eq!(
+            out.counts.get("stop_repeat_gate_no_progress").copied().unwrap_or(0),
+            1
+        );
+    }
+
+    #[test]
+    fn autoscale_json_run_result_tally_path_works() {
+        let payload = serde_json::json!({
+            "mode": "run_result_tally",
+            "run_result_tally_input": {
+                "events": [
+                    {"event_type": "autonomy_run", "result": "executed"},
+                    {"event_type": "autonomy_run", "result": "executed"},
+                    {"event_type": "autonomy_run", "result": "stop_repeat_gate_no_progress"}
+                ]
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale run_result_tally");
+        assert!(out.contains("\"mode\":\"run_result_tally\""));
     }
 
     #[test]

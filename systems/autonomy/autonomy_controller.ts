@@ -2729,6 +2729,8 @@ const SHIPPED_COUNT_CACHE = new Map();
 const SHIPPED_COUNT_CACHE_MAX = 256;
 const EXECUTED_COUNT_BY_RISK_CACHE = new Map();
 const EXECUTED_COUNT_BY_RISK_CACHE_MAX = 512;
+const RUN_RESULT_TALLY_CACHE = new Map();
+const RUN_RESULT_TALLY_CACHE_MAX = 256;
 
 function isPolicyHoldResult(result): boolean {
   const r = String(result || '').trim();
@@ -4015,8 +4017,46 @@ function executedCountByRisk(events, risk) {
 }
 
 function tallyByResult(events) {
+  const rows = Array.isArray(events) ? events : [];
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rustEvents = [];
+    for (const evt of rows) {
+      if (!evt || typeof evt !== 'object') continue;
+      rustEvents.push({
+        event_type: String(evt.type || ''),
+        result: String(evt.result || '')
+      });
+    }
+    const key = rustEvents
+      .map((row) => `${row.event_type}\u0000${row.result}`)
+      .join('\u0001');
+    if (RUN_RESULT_TALLY_CACHE.has(key)) {
+      const cached = RUN_RESULT_TALLY_CACHE.get(key);
+      return cached && typeof cached === 'object' ? { ...cached } : {};
+    }
+    const rust = runBacklogAutoscalePrimitive(
+      'run_result_tally',
+      { events: rustEvents },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const src = rust.payload.payload.counts && typeof rust.payload.payload.counts === 'object'
+        ? rust.payload.payload.counts
+        : {};
+      const out = {};
+      for (const [result, count] of Object.entries(src)) {
+        out[String(result)] = Math.max(0, Number(count || 0));
+      }
+      if (RUN_RESULT_TALLY_CACHE.size >= RUN_RESULT_TALLY_CACHE_MAX) {
+        const oldest = RUN_RESULT_TALLY_CACHE.keys().next();
+        if (!oldest.done) RUN_RESULT_TALLY_CACHE.delete(oldest.value);
+      }
+      RUN_RESULT_TALLY_CACHE.set(key, out);
+      return out;
+    }
+  }
   const out = {};
-  for (const e of events) {
+  for (const e of rows) {
     if (!e || e.type !== 'autonomy_run') continue;
     const k = String(e.result || 'unknown');
     out[k] = Number(out[k] || 0) + 1;
@@ -16794,5 +16834,6 @@ module.exports = {
   consecutiveGateExhaustedAttempts,
   consecutiveNoProgressRuns,
   shippedCount,
-  executedCountByRisk
+  executedCountByRisk,
+  tallyByResult
 };
