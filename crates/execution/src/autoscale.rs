@@ -690,6 +690,18 @@ pub struct ProposalScoreOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ProposalAdmissionPreviewInput {
+    #[serde(default)]
+    pub admission_preview: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ProposalAdmissionPreviewOutput {
+    #[serde(default)]
+    pub preview: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ImpactWeightInput {
     #[serde(default)]
     pub expected_impact: Option<String>,
@@ -2117,6 +2129,8 @@ pub struct AutoscaleRequest {
     #[serde(default)]
     pub proposal_score_input: Option<ProposalScoreInput>,
     #[serde(default)]
+    pub proposal_admission_preview_input: Option<ProposalAdmissionPreviewInput>,
+    #[serde(default)]
     pub impact_weight_input: Option<ImpactWeightInput>,
     #[serde(default)]
     pub risk_penalty_input: Option<RiskPenaltyInput>,
@@ -3415,6 +3429,17 @@ pub fn compute_proposal_score(input: &ProposalScoreInput) -> ProposalScoreOutput
             - no_change_penalty
             - reverted_penalty,
     }
+}
+
+pub fn compute_proposal_admission_preview(
+    input: &ProposalAdmissionPreviewInput,
+) -> ProposalAdmissionPreviewOutput {
+    let preview = input
+        .admission_preview
+        .as_ref()
+        .filter(|v| v.is_object() || v.is_array())
+        .cloned();
+    ProposalAdmissionPreviewOutput { preview }
 }
 
 pub fn compute_impact_weight(input: &ImpactWeightInput) -> ImpactWeightOutput {
@@ -6752,6 +6777,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
         }))
         .map_err(|e| format!("autoscale_proposal_score_encode_failed:{e}"));
     }
+    if mode == "proposal_admission_preview" {
+        let input = request
+            .proposal_admission_preview_input
+            .ok_or_else(|| "autoscale_missing_proposal_admission_preview_input".to_string())?;
+        let out = compute_proposal_admission_preview(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "proposal_admission_preview",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_proposal_admission_preview_encode_failed:{e}"));
+    }
     if mode == "impact_weight" {
         let input = request
             .impact_weight_input
@@ -8912,6 +8949,40 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale proposal_score");
         assert!(out.contains("\"mode\":\"proposal_score\""));
+    }
+
+    #[test]
+    fn proposal_admission_preview_returns_object_only() {
+        let object_preview = compute_proposal_admission_preview(&ProposalAdmissionPreviewInput {
+            admission_preview: Some(serde_json::json!({"allow": true, "reason": "ok"})),
+        });
+        assert!(object_preview.preview.is_some());
+
+        let array_preview = compute_proposal_admission_preview(&ProposalAdmissionPreviewInput {
+            admission_preview: Some(serde_json::json!(["ok"])),
+        });
+        assert!(array_preview.preview.is_some());
+
+        let scalar_preview = compute_proposal_admission_preview(&ProposalAdmissionPreviewInput {
+            admission_preview: Some(serde_json::json!("not-an-object")),
+        });
+        assert!(scalar_preview.preview.is_none());
+    }
+
+    #[test]
+    fn autoscale_json_proposal_admission_preview_path_works() {
+        let payload = serde_json::json!({
+            "mode": "proposal_admission_preview",
+            "proposal_admission_preview_input": {
+                "admission_preview": {
+                    "allow": true,
+                    "reason": "ok"
+                }
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale proposal_admission_preview");
+        assert!(out.contains("\"mode\":\"proposal_admission_preview\""));
     }
 
     #[test]

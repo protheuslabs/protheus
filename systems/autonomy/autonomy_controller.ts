@@ -8455,6 +8455,18 @@ function proposalAdmissionPreview(p) {
   const preview = meta && meta.admission_preview && typeof meta.admission_preview === 'object'
     ? meta.admission_preview
     : null;
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'proposal_admission_preview',
+      { admission_preview: preview },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const payloadPreview = rust.payload.payload.preview;
+      if (payloadPreview && typeof payloadPreview === 'object') return payloadPreview;
+      return null;
+    }
+  }
   return preview;
 }
 
