@@ -2794,6 +2794,8 @@ const QOS_LANE_USAGE_CACHE = new Map();
 const QOS_LANE_USAGE_CACHE_MAX = 256;
 const QOS_LANE_WEIGHTS_CACHE = new Map();
 const QOS_LANE_WEIGHTS_CACHE_MAX = 256;
+const QOS_LANE_SHARE_CAP_EXCEEDED_CACHE = new Map();
+const QOS_LANE_SHARE_CAP_EXCEEDED_CACHE_MAX = 256;
 const EYE_OUTCOME_COUNT_WINDOW_CACHE = new Map();
 const EYE_OUTCOME_COUNT_WINDOW_CACHE_MAX = 256;
 const EYE_OUTCOME_COUNT_LAST_HOURS_CACHE = new Map();
@@ -11460,6 +11462,44 @@ function qosLaneUsageFromRuns(priorRuns) {
 }
 
 function qosLaneShareCapExceeded(lane, usage, executedCount) {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const laneRaw = String(lane || '');
+    const exploreUsage = Number(usage && usage.explore || 0);
+    const quarantineUsage = Number(usage && usage.quarantine || 0);
+    const executed = Number(executedCount || 0);
+    const key = [
+      laneRaw,
+      exploreUsage,
+      quarantineUsage,
+      executed,
+      AUTONOMY_QOS_EXPLORE_MAX_SHARE,
+      AUTONOMY_QOS_QUARANTINE_MAX_SHARE
+    ].join('\u0000');
+    if (QOS_LANE_SHARE_CAP_EXCEEDED_CACHE.has(key)) {
+      return QOS_LANE_SHARE_CAP_EXCEEDED_CACHE.get(key) === true;
+    }
+    const rust = runBacklogAutoscalePrimitive(
+      'qos_lane_share_cap_exceeded',
+      {
+        lane: laneRaw,
+        explore_usage: exploreUsage,
+        quarantine_usage: quarantineUsage,
+        executed_count: executed,
+        explore_max_share: AUTONOMY_QOS_EXPLORE_MAX_SHARE,
+        quarantine_max_share: AUTONOMY_QOS_QUARANTINE_MAX_SHARE
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const val = rust.payload.payload.exceeded === true;
+      if (QOS_LANE_SHARE_CAP_EXCEEDED_CACHE.size >= QOS_LANE_SHARE_CAP_EXCEEDED_CACHE_MAX) {
+        const oldest = QOS_LANE_SHARE_CAP_EXCEEDED_CACHE.keys().next();
+        if (!oldest.done) QOS_LANE_SHARE_CAP_EXCEEDED_CACHE.delete(oldest.value);
+      }
+      QOS_LANE_SHARE_CAP_EXCEEDED_CACHE.set(key, val);
+      return val;
+    }
+  }
   if (!executedCount || executedCount <= 0) return false;
   if (lane === 'explore') {
     return (Number(usage.explore || 0) / executedCount) >= AUTONOMY_QOS_EXPLORE_MAX_SHARE;
@@ -17477,6 +17517,7 @@ module.exports = {
   qosLaneFromCandidate,
   chooseQosLaneSelection,
   qosLaneWeights,
+  qosLaneShareCapExceeded,
   queuePressureSnapshot,
   proposalStatusForQueuePressure,
   spawnCapacityBoostSnapshot,

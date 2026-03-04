@@ -718,6 +718,22 @@ pub struct QosLaneUsageOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct QosLaneShareCapExceededInput {
+    #[serde(default)]
+    pub lane: Option<String>,
+    pub explore_usage: f64,
+    pub quarantine_usage: f64,
+    pub executed_count: f64,
+    pub explore_max_share: f64,
+    pub quarantine_max_share: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct QosLaneShareCapExceededOutput {
+    pub exceeded: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct EyeOutcomeEventInput {
     #[serde(default)]
     pub event_type: Option<String>,
@@ -1227,6 +1243,8 @@ pub struct AutoscaleRequest {
     pub run_result_tally_input: Option<RunResultTallyInput>,
     #[serde(default)]
     pub qos_lane_usage_input: Option<QosLaneUsageInput>,
+    #[serde(default)]
+    pub qos_lane_share_cap_exceeded_input: Option<QosLaneShareCapExceededInput>,
     #[serde(default)]
     pub eye_outcome_count_window_input: Option<EyeOutcomeWindowCountInput>,
     #[serde(default)]
@@ -2796,6 +2814,27 @@ pub fn compute_qos_lane_usage(input: &QosLaneUsageInput) -> QosLaneUsageOutput {
     out
 }
 
+pub fn compute_qos_lane_share_cap_exceeded(
+    input: &QosLaneShareCapExceededInput,
+) -> QosLaneShareCapExceededOutput {
+    if input.executed_count <= 0.0 {
+        return QosLaneShareCapExceededOutput { exceeded: false };
+    }
+    let lane = input
+        .lane
+        .as_ref()
+        .map(|v| v.trim().to_ascii_lowercase())
+        .unwrap_or_default();
+    let exceeded = if lane == "explore" {
+        (input.explore_usage / input.executed_count) >= input.explore_max_share
+    } else if lane == "quarantine" {
+        (input.quarantine_usage / input.executed_count) >= input.quarantine_max_share
+    } else {
+        false
+    };
+    QosLaneShareCapExceededOutput { exceeded }
+}
+
 fn parse_rfc3339_ts_ms(raw: &str) -> Option<i64> {
     DateTime::parse_from_rfc3339(raw)
         .ok()
@@ -4067,6 +4106,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
         }))
         .map_err(|e| format!("autoscale_qos_lane_usage_encode_failed:{e}"));
     }
+    if mode == "qos_lane_share_cap_exceeded" {
+        let input = request
+            .qos_lane_share_cap_exceeded_input
+            .ok_or_else(|| "autoscale_missing_qos_lane_share_cap_exceeded_input".to_string())?;
+        let out = compute_qos_lane_share_cap_exceeded(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "qos_lane_share_cap_exceeded",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_qos_lane_share_cap_exceeded_encode_failed:{e}"));
+    }
     if mode == "eye_outcome_count_window" {
         let input = request
             .eye_outcome_count_window_input
@@ -5335,6 +5386,47 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale qos_lane_usage");
         assert!(out.contains("\"mode\":\"qos_lane_usage\""));
+    }
+
+    #[test]
+    fn qos_lane_share_cap_exceeded_checks_explore_and_quarantine() {
+        let explore = compute_qos_lane_share_cap_exceeded(&QosLaneShareCapExceededInput {
+            lane: Some("explore".to_string()),
+            explore_usage: 4.0,
+            quarantine_usage: 1.0,
+            executed_count: 10.0,
+            explore_max_share: 0.35,
+            quarantine_max_share: 0.2,
+        });
+        assert!(explore.exceeded);
+
+        let quarantine = compute_qos_lane_share_cap_exceeded(&QosLaneShareCapExceededInput {
+            lane: Some("quarantine".to_string()),
+            explore_usage: 1.0,
+            quarantine_usage: 1.0,
+            executed_count: 10.0,
+            explore_max_share: 0.35,
+            quarantine_max_share: 0.2,
+        });
+        assert!(!quarantine.exceeded);
+    }
+
+    #[test]
+    fn autoscale_json_qos_lane_share_cap_exceeded_path_works() {
+        let payload = serde_json::json!({
+            "mode": "qos_lane_share_cap_exceeded",
+            "qos_lane_share_cap_exceeded_input": {
+                "lane": "explore",
+                "explore_usage": 4,
+                "quarantine_usage": 1,
+                "executed_count": 10,
+                "explore_max_share": 0.35,
+                "quarantine_max_share": 0.2
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale qos_lane_share_cap_exceeded");
+        assert!(out.contains("\"mode\":\"qos_lane_share_cap_exceeded\""));
     }
 
     #[test]
