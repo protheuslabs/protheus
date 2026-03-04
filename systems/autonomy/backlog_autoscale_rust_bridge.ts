@@ -96,6 +96,7 @@ function runBacklogAutoscalePrimitive(mode: string, data: AnyObj = {}, opts: Any
     token_usage: 'token_usage_input',
     normalize_queue: 'normalize_queue_input',
     criteria_gate: 'criteria_gate_input',
+    structural_preview_criteria_failure: 'structural_preview_criteria_failure_input',
     policy_hold: 'policy_hold_input',
     policy_hold_result: 'policy_hold_result_input',
     no_progress_result: 'no_progress_result_input',

@@ -187,6 +187,23 @@ pub struct CriteriaGateOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct StructuralPreviewCriteriaFailureInput {
+    #[serde(default)]
+    pub primary_failure: Option<String>,
+    #[serde(default)]
+    pub contract_not_allowed_count: Option<f64>,
+    #[serde(default)]
+    pub unsupported_count: Option<f64>,
+    #[serde(default)]
+    pub total_count: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct StructuralPreviewCriteriaFailureOutput {
+    pub has_failure: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct PolicyHoldInput {
     pub target: String,
     pub gate_decision: String,
@@ -2028,6 +2045,8 @@ pub struct AutoscaleRequest {
     #[serde(default)]
     pub criteria_gate_input: Option<CriteriaGateInput>,
     #[serde(default)]
+    pub structural_preview_criteria_failure_input: Option<StructuralPreviewCriteriaFailureInput>,
+    #[serde(default)]
     pub policy_hold_input: Option<PolicyHoldInput>,
     #[serde(default)]
     pub policy_hold_result_input: Option<PolicyHoldResultInput>,
@@ -2668,6 +2687,27 @@ pub fn compute_criteria_gate(input: &CriteriaGateInput) -> CriteriaGateOutput {
         unsupported_count,
         contract_violation_count,
     }
+}
+
+pub fn compute_structural_preview_criteria_failure(
+    input: &StructuralPreviewCriteriaFailureInput,
+) -> StructuralPreviewCriteriaFailureOutput {
+    let primary = input
+        .primary_failure
+        .as_ref()
+        .map(|v| v.trim().to_ascii_lowercase())
+        .unwrap_or_default();
+    if primary.contains("metric_not_allowed_for_capability")
+        || primary.contains("insufficient_supported_metrics")
+    {
+        return StructuralPreviewCriteriaFailureOutput { has_failure: true };
+    }
+
+    let not_allowed = input.contract_not_allowed_count.unwrap_or(0.0).max(0.0);
+    let unsupported = input.unsupported_count.unwrap_or(0.0).max(0.0);
+    let total = input.total_count.unwrap_or(0.0).max(1.0);
+    let has_failure = not_allowed > 0.0 || (unsupported > 0.0 && (unsupported / total) >= 0.5);
+    StructuralPreviewCriteriaFailureOutput { has_failure }
 }
 
 fn normalize_spaces(s: &str) -> String {
@@ -6370,6 +6410,22 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
         }))
         .map_err(|e| format!("autoscale_criteria_gate_encode_failed:{e}"));
     }
+    if mode == "structural_preview_criteria_failure" {
+        let input = request
+            .structural_preview_criteria_failure_input
+            .ok_or_else(|| {
+                "autoscale_missing_structural_preview_criteria_failure_input".to_string()
+            })?;
+        let out = compute_structural_preview_criteria_failure(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "structural_preview_criteria_failure",
+            "payload": out
+        }))
+        .map_err(|e| {
+            format!("autoscale_structural_preview_criteria_failure_encode_failed:{e}")
+        });
+    }
     if mode == "policy_hold" {
         let input = request
             .policy_hold_input
@@ -7748,6 +7804,56 @@ mod tests {
         });
         assert!(out.pass);
         assert!(out.reasons.is_empty());
+    }
+
+    #[test]
+    fn structural_preview_criteria_failure_detects_blocking_patterns() {
+        let primary = compute_structural_preview_criteria_failure(
+            &StructuralPreviewCriteriaFailureInput {
+                primary_failure: Some("metric_not_allowed_for_capability".to_string()),
+                contract_not_allowed_count: Some(0.0),
+                unsupported_count: Some(0.0),
+                total_count: Some(0.0),
+            },
+        );
+        assert!(primary.has_failure);
+
+        let unsupported = compute_structural_preview_criteria_failure(
+            &StructuralPreviewCriteriaFailureInput {
+                primary_failure: Some(String::new()),
+                contract_not_allowed_count: Some(0.0),
+                unsupported_count: Some(2.0),
+                total_count: Some(3.0),
+            },
+        );
+        assert!(unsupported.has_failure);
+
+        let pass = compute_structural_preview_criteria_failure(
+            &StructuralPreviewCriteriaFailureInput {
+                primary_failure: Some(String::new()),
+                contract_not_allowed_count: Some(0.0),
+                unsupported_count: Some(1.0),
+                total_count: Some(4.0),
+            },
+        );
+        assert!(!pass.has_failure);
+    }
+
+    #[test]
+    fn autoscale_json_structural_preview_criteria_failure_path_works() {
+        let payload = serde_json::json!({
+            "mode": "structural_preview_criteria_failure",
+            "structural_preview_criteria_failure_input": {
+                "primary_failure": "",
+                "contract_not_allowed_count": 0,
+                "unsupported_count": 2,
+                "total_count": 3
+            }
+        })
+        .to_string();
+        let out =
+            run_autoscale_json(&payload).expect("autoscale structural_preview_criteria_failure");
+        assert!(out.contains("\"mode\":\"structural_preview_criteria_failure\""));
     }
 
     #[test]

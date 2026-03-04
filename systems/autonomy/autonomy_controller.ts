@@ -11296,12 +11296,28 @@ function assessSuccessCriteriaQuality(criteria) {
 
 function hasStructuralPreviewCriteriaFailure(verification) {
   const src = verification && typeof verification === 'object' ? verification : {};
-  const primary = String(src.primary_failure || '').toLowerCase();
-  if (primary.includes('metric_not_allowed_for_capability')) return true;
-  if (primary.includes('insufficient_supported_metrics')) return true;
   const criteria = src.success_criteria && typeof src.success_criteria === 'object'
     ? src.success_criteria
     : {};
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'structural_preview_criteria_failure',
+      {
+        primary_failure: String(src.primary_failure || ''),
+        contract_not_allowed_count: Number(criteria.contract_not_allowed_count || 0),
+        unsupported_count: Number(criteria.unsupported_count || 0),
+        total_count: Number(criteria.total_count || 0)
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return rust.payload.payload.has_failure === true;
+    }
+  }
+
+  const primary = String(src.primary_failure || '').toLowerCase();
+  if (primary.includes('metric_not_allowed_for_capability')) return true;
+  if (primary.includes('insufficient_supported_metrics')) return true;
   const notAllowed = Math.max(0, Number(criteria.contract_not_allowed_count || 0));
   const unsupported = Math.max(0, Number(criteria.unsupported_count || 0));
   const total = Math.max(1, Number(criteria.total_count || 0));
