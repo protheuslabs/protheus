@@ -113,6 +113,40 @@ function runRouteMatchViaRust(intentKey, habits, skipHabitId) {
   return null;
 }
 
+function runRouteReflexMatchViaRust(intentKey, task, routinesMap) {
+  const routines = Array.isArray(Object.values(routinesMap || {}))
+    ? Object.values(routinesMap || {})
+    : [];
+  const payload = JSON.stringify({
+    intent_key: String(intentKey || ''),
+    task_text: String(task || ''),
+    routines: routines.map((r) => ({
+      id: String(r && r.id || ''),
+      status: String(r && r.status || ''),
+      tags: Array.isArray(r && r.tags) ? r.tags.map((t) => String(t || '')) : []
+    }))
+  });
+  const payloadB64 = Buffer.from(payload, 'utf8').toString('base64');
+  for (const candidate of executionBinaryCandidates()) {
+    try {
+      if (!fs.existsSync(candidate)) continue;
+      const out = spawnSync(candidate, ['route-reflex-match', `--payload-base64=${payloadB64}`], {
+        cwd: REPO_ROOT,
+        encoding: 'utf8',
+        maxBuffer: 10 * 1024 * 1024
+      });
+      const parsed = parseJsonPayload(out.stdout);
+      if (Number(out.status) !== 0 || !parsed || typeof parsed !== 'object') continue;
+      const matchedId = String(parsed.matched_reflex_id || '').trim();
+      if (!matchedId) return null;
+      return routines.find((r) => String(r && r.id || '') === matchedId) || null;
+    } catch {
+      // try next candidate
+    }
+  }
+  return null;
+}
+
 function normalizeIntent(text) {
   if (!text) return '';
   return text
@@ -215,6 +249,12 @@ function pickReflexMatch(routinesMap, intentKey, task) {
     const tags = Array.isArray(r.tags) ? r.tags.map((t) => String(t || '').toLowerCase()) : [];
     return tags.some((t) => t && text.includes(t));
   }) || null;
+}
+
+function pickReflexMatchRustAware(routinesMap, intentKey, task) {
+  const rustMatch = runRouteReflexMatchViaRust(intentKey, task, routinesMap);
+  if (rustMatch) return rustMatch;
+  return pickReflexMatch(routinesMap, intentKey, task);
 }
 
 function makeRunInputs(task, intentKey) {
@@ -466,7 +506,7 @@ function main() {
   const reflexMaxTokens = Number(process.env.ROUTE_TASK_REFLEX_MAX_TOKENS || 420);
   const reflexRoutines = loadReflexRoutines();
   const reflexMatch = reflexPreferred && gateResult.risk === 'low' && tokensEst <= reflexMaxTokens
-    ? pickReflexMatch(reflexRoutines, intentKey, task)
+    ? pickReflexMatchRustAware(reflexRoutines, intentKey, task)
     : null;
   
   // Build triggers_met array

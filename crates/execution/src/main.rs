@@ -3,9 +3,9 @@ use base64::Engine;
 use execution_core::{
     apply_governance_json, compose_micro_tasks_json, decompose_goal_json, dispatch_rows_json,
     evaluate_directive_gate_json, evaluate_heroic_gate_json, evaluate_route_match_json,
-    evaluate_route_primitives_json, queue_rows_json, run_autoscale_json,
-    run_sprint_contract_json, run_workflow, run_workflow_json, summarize_dispatch_json,
-    summarize_tasks_json,
+    evaluate_route_primitives_json, evaluate_route_reflex_match_json, queue_rows_json,
+    run_autoscale_json, run_sprint_contract_json, run_workflow, run_workflow_json,
+    summarize_dispatch_json, summarize_tasks_json,
 };
 use std::env;
 use std::fs;
@@ -42,6 +42,9 @@ fn usage() {
     eprintln!("  execution_core route-match --payload=<json_payload>");
     eprintln!("  execution_core route-match --payload-base64=<base64_json_payload>");
     eprintln!("  execution_core route-match --payload-file=<path>");
+    eprintln!("  execution_core route-reflex-match --payload=<json_payload>");
+    eprintln!("  execution_core route-reflex-match --payload-base64=<base64_json_payload>");
+    eprintln!("  execution_core route-reflex-match --payload-file=<path>");
     eprintln!("  execution_core heroic-gate --payload=<json_payload>");
     eprintln!("  execution_core heroic-gate --payload-base64=<base64_json_payload>");
     eprintln!("  execution_core heroic-gate --payload-file=<path>");
@@ -243,6 +246,21 @@ fn main() {
         },
         "route-match" => match load_payload(&args[1..]) {
             Ok(payload) => match evaluate_route_match_json(&payload) {
+                Ok(out) => println!("{}", out),
+                Err(err) => {
+                    let payload = serde_json::json!({ "ok": false, "error": err });
+                    eprintln!("{}", payload);
+                    std::process::exit(1);
+                }
+            },
+            Err(err) => {
+                let payload = serde_json::json!({ "ok": false, "error": err });
+                eprintln!("{}", payload);
+                std::process::exit(1);
+            }
+        },
+        "route-reflex-match" => match load_payload(&args[1..]) {
+            Ok(payload) => match evaluate_route_reflex_match_json(&payload) {
                 Ok(out) => println!("{}", out),
                 Err(err) => {
                     let payload = serde_json::json!({ "ok": false, "error": err });

@@ -362,6 +362,33 @@ pub struct RouteMatchResponse {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct RouteReflexRoutine {
+    #[serde(default)]
+    pub id: String,
+    #[serde(default)]
+    pub status: String,
+    #[serde(default)]
+    pub tags: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct RouteReflexMatchRequest {
+    #[serde(default)]
+    pub intent_key: String,
+    #[serde(default)]
+    pub task_text: String,
+    #[serde(default)]
+    pub routines: Vec<RouteReflexRoutine>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RouteReflexMatchResponse {
+    pub ok: bool,
+    pub matched_reflex_id: Option<String>,
+    pub match_strategy: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct HeroicGateRequest {
     #[serde(default)]
     pub task_text: String,
@@ -1496,6 +1523,57 @@ pub fn evaluate_route_match(req: &RouteMatchRequest) -> RouteMatchResponse {
     }
 }
 
+pub fn evaluate_route_reflex_match(req: &RouteReflexMatchRequest) -> RouteReflexMatchResponse {
+    let intent_key = normalize_token(req.intent_key.as_str(), 200);
+    let task_text = clean_text(req.task_text.as_str(), 2000).to_ascii_lowercase();
+    let intent_key_lower = intent_key.to_ascii_lowercase();
+
+    for routine in &req.routines {
+        if normalize_token(routine.status.as_str(), 32) != "enabled" {
+            continue;
+        }
+        let id = normalize_token(routine.id.as_str(), 120);
+        if id.is_empty() {
+            continue;
+        }
+        if id == intent_key_lower || intent_key_lower.contains(id.as_str()) {
+            return RouteReflexMatchResponse {
+                ok: true,
+                matched_reflex_id: Some(clean_text(routine.id.as_str(), 160)),
+                match_strategy: "direct_id".to_string(),
+            };
+        }
+    }
+
+    for routine in &req.routines {
+        if normalize_token(routine.status.as_str(), 32) != "enabled" {
+            continue;
+        }
+        let tags = routine
+            .tags
+            .iter()
+            .map(|tag| normalize_token(tag.as_str(), 120))
+            .filter(|tag| !tag.is_empty())
+            .collect::<Vec<String>>();
+        if tags.is_empty() {
+            continue;
+        }
+        if tags.iter().any(|tag| task_text.contains(tag.as_str())) {
+            return RouteReflexMatchResponse {
+                ok: true,
+                matched_reflex_id: Some(clean_text(routine.id.as_str(), 160)),
+                match_strategy: "tag".to_string(),
+            };
+        }
+    }
+
+    RouteReflexMatchResponse {
+        ok: true,
+        matched_reflex_id: None,
+        match_strategy: "none".to_string(),
+    }
+}
+
 pub fn evaluate_route_primitives_json(payload: &str) -> Result<String, String> {
     let req = serde_json::from_str::<RoutePrimitivesRequest>(payload)
         .map_err(|err| format!("route_primitives_payload_parse_failed:{}", err))?;
@@ -1509,6 +1587,14 @@ pub fn evaluate_route_match_json(payload: &str) -> Result<String, String> {
         .map_err(|err| format!("route_match_payload_parse_failed:{}", err))?;
     let resp = evaluate_route_match(&req);
     serde_json::to_string(&resp).map_err(|err| format!("route_match_payload_serialize_failed:{}", err))
+}
+
+pub fn evaluate_route_reflex_match_json(payload: &str) -> Result<String, String> {
+    let req = serde_json::from_str::<RouteReflexMatchRequest>(payload)
+        .map_err(|err| format!("route_reflex_match_payload_parse_failed:{}", err))?;
+    let resp = evaluate_route_reflex_match(&req);
+    serde_json::to_string(&resp)
+        .map_err(|err| format!("route_reflex_match_payload_serialize_failed:{}", err))
 }
 
 fn is_trust_registry_modification(task_lower: &str) -> bool {
@@ -2343,6 +2429,52 @@ mod tests {
         let out = evaluate_route_match(&req);
         assert_eq!(out.matched_habit_id, None);
         assert_eq!(out.match_strategy, "none");
+    }
+
+    #[test]
+    fn route_reflex_match_prefers_direct_id() {
+        let req = RouteReflexMatchRequest {
+            intent_key: "nightly_backup".to_string(),
+            task_text: "backup database now".to_string(),
+            routines: vec![
+                RouteReflexRoutine {
+                    id: "database_repair".to_string(),
+                    status: "enabled".to_string(),
+                    tags: vec!["repair".to_string()],
+                },
+                RouteReflexRoutine {
+                    id: "nightly_backup".to_string(),
+                    status: "enabled".to_string(),
+                    tags: vec!["backup".to_string()],
+                },
+            ],
+        };
+        let out = evaluate_route_reflex_match(&req);
+        assert_eq!(out.matched_reflex_id, Some("nightly_backup".to_string()));
+        assert_eq!(out.match_strategy, "direct_id");
+    }
+
+    #[test]
+    fn route_reflex_match_uses_tag_when_direct_missing() {
+        let req = RouteReflexMatchRequest {
+            intent_key: "unrelated_key".to_string(),
+            task_text: "run emergency drift remediation playbook".to_string(),
+            routines: vec![
+                RouteReflexRoutine {
+                    id: "drift_guard".to_string(),
+                    status: "enabled".to_string(),
+                    tags: vec!["drift".to_string(), "remediation".to_string()],
+                },
+                RouteReflexRoutine {
+                    id: "nightly_backup".to_string(),
+                    status: "disabled".to_string(),
+                    tags: vec!["backup".to_string()],
+                },
+            ],
+        };
+        let out = evaluate_route_reflex_match(&req);
+        assert_eq!(out.matched_reflex_id, Some("drift_guard".to_string()));
+        assert_eq!(out.match_strategy, "tag");
     }
 
     #[test]
