@@ -1207,6 +1207,22 @@ pub struct PulseObjectiveCooldownActiveOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct DirectiveTokenHitsInput {
+    #[serde(default)]
+    pub text_tokens: Vec<String>,
+    #[serde(default)]
+    pub text_stems: Vec<String>,
+    #[serde(default)]
+    pub directive_tokens: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct DirectiveTokenHitsOutput {
+    #[serde(default)]
+    pub hits: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ExecutionReserveSnapshotInput {
     pub cap: f64,
     pub used: f64,
@@ -1941,6 +1957,8 @@ pub struct AutoscaleRequest {
     pub directive_tier_reservation_need_input: Option<DirectiveTierReservationNeedInput>,
     #[serde(default)]
     pub pulse_objective_cooldown_active_input: Option<PulseObjectiveCooldownActiveInput>,
+    #[serde(default)]
+    pub directive_token_hits_input: Option<DirectiveTokenHitsInput>,
     #[serde(default)]
     pub execution_reserve_snapshot_input: Option<ExecutionReserveSnapshotInput>,
     #[serde(default)]
@@ -4199,6 +4217,41 @@ pub fn compute_pulse_objective_cooldown_active(
     }
 }
 
+pub fn compute_directive_token_hits(input: &DirectiveTokenHitsInput) -> DirectiveTokenHitsOutput {
+    let text_tokens = input
+        .text_tokens
+        .iter()
+        .map(|token| token.trim().to_string())
+        .filter(|token| !token.is_empty())
+        .collect::<std::collections::BTreeSet<_>>();
+    let text_stems = input
+        .text_stems
+        .iter()
+        .map(|token| token.trim().to_string())
+        .filter(|token| !token.is_empty())
+        .collect::<std::collections::BTreeSet<_>>();
+    let mut hits = Vec::new();
+    for token in &input.directive_tokens {
+        let token = token.trim().to_string();
+        if token.is_empty() {
+            continue;
+        }
+        if text_tokens.contains(&token) {
+            hits.push(token);
+            continue;
+        }
+        let stem = if token.len() <= 5 {
+            token.clone()
+        } else {
+            token[..5].to_string()
+        };
+        if !stem.is_empty() && text_stems.contains(&stem) {
+            hits.push(token);
+        }
+    }
+    DirectiveTokenHitsOutput { hits }
+}
+
 pub fn compute_execution_reserve_snapshot(
     input: &ExecutionReserveSnapshotInput,
 ) -> ExecutionReserveSnapshotOutput {
@@ -6443,6 +6496,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_pulse_objective_cooldown_active_encode_failed:{e}"));
+    }
+    if mode == "directive_token_hits" {
+        let input = request
+            .directive_token_hits_input
+            .ok_or_else(|| "autoscale_missing_directive_token_hits_input".to_string())?;
+        let out = compute_directive_token_hits(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "directive_token_hits",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_directive_token_hits_encode_failed:{e}"));
     }
     if mode == "execution_reserve_snapshot" {
         let input = request
@@ -9133,6 +9198,39 @@ mod tests {
         let out = run_autoscale_json(&payload).expect("autoscale pulse_objective_cooldown_active");
         assert!(out.contains("\"mode\":\"pulse_objective_cooldown_active\""));
         assert!(out.contains("\"active\":true"));
+    }
+
+    #[test]
+    fn directive_token_hits_matches_token_and_stem_logic() {
+        let out = compute_directive_token_hits(&DirectiveTokenHitsInput {
+            text_tokens: vec!["memory".to_string(), "drift".to_string()],
+            text_stems: vec!["memor".to_string(), "drift".to_string()],
+            directive_tokens: vec![
+                "memory".to_string(),
+                "memorize".to_string(),
+                "security".to_string(),
+            ],
+        });
+        assert_eq!(
+            out.hits,
+            vec!["memory".to_string(), "memorize".to_string()]
+        );
+    }
+
+    #[test]
+    fn autoscale_json_directive_token_hits_path_works() {
+        let payload = serde_json::json!({
+            "mode": "directive_token_hits",
+            "directive_token_hits_input": {
+                "text_tokens": ["memory", "drift"],
+                "text_stems": ["memor", "drift"],
+                "directive_tokens": ["memory", "memorize", "security"]
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale directive_token_hits");
+        assert!(out.contains("\"mode\":\"directive_token_hits\""));
+        assert!(out.contains("\"hits\":[\"memory\",\"memorize\"]"));
     }
 
     #[test]

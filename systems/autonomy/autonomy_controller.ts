@@ -6241,6 +6241,23 @@ function proposalDirectiveText(p) {
 }
 
 function directiveTokenHits(textTokensSet, textStemSet, directiveTokens) {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'directive_token_hits',
+      {
+        text_tokens: Array.from(textTokensSet || []),
+        text_stems: Array.from(textStemSet || []),
+        directive_tokens: Array.isArray(directiveTokens) ? directiveTokens : []
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const hits = Array.isArray(rust.payload.payload.hits)
+        ? rust.payload.payload.hits.map((t) => String(t || '')).filter(Boolean)
+        : [];
+      return hits;
+    }
+  }
   const hits = [];
   for (const tok of directiveTokens) {
     if (textTokensSet.has(tok)) {
@@ -18729,6 +18746,7 @@ module.exports = {
   capabilityCap,
   assessActionability,
   assessValueSignal,
+  directiveTokenHits,
   expectedValueScore,
   timeToValueScore,
   valueDensityScore,
