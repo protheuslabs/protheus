@@ -2726,6 +2726,44 @@ pub struct CriteriaPatternPenaltyOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct StrategyThresholdOverridesInput {
+    #[serde(default)]
+    pub min_signal_quality: Option<f64>,
+    #[serde(default)]
+    pub min_sensory_signal_score: Option<f64>,
+    #[serde(default)]
+    pub min_sensory_relevance_score: Option<f64>,
+    #[serde(default)]
+    pub min_directive_fit: Option<f64>,
+    #[serde(default)]
+    pub min_actionability_score: Option<f64>,
+    #[serde(default)]
+    pub min_eye_score_ema: Option<f64>,
+    #[serde(default)]
+    pub override_min_signal_quality: Option<f64>,
+    #[serde(default)]
+    pub override_min_sensory_signal_score: Option<f64>,
+    #[serde(default)]
+    pub override_min_sensory_relevance_score: Option<f64>,
+    #[serde(default)]
+    pub override_min_directive_fit: Option<f64>,
+    #[serde(default)]
+    pub override_min_actionability_score: Option<f64>,
+    #[serde(default)]
+    pub override_min_eye_score_ema: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct StrategyThresholdOverridesOutput {
+    pub min_signal_quality: f64,
+    pub min_sensory_signal_score: f64,
+    pub min_sensory_relevance_score: f64,
+    pub min_directive_fit: f64,
+    pub min_actionability_score: f64,
+    pub min_eye_score_ema: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct IsDirectiveClarificationProposalInput {
     #[serde(default)]
     pub proposal_type: Option<String>,
@@ -3908,6 +3946,8 @@ pub struct AutoscaleRequest {
     pub top_biases_summary_input: Option<TopBiasesSummaryInput>,
     #[serde(default)]
     pub criteria_pattern_penalty_input: Option<CriteriaPatternPenaltyInput>,
+    #[serde(default)]
+    pub strategy_threshold_overrides_input: Option<StrategyThresholdOverridesInput>,
     #[serde(default)]
     pub is_directive_clarification_proposal_input: Option<IsDirectiveClarificationProposalInput>,
     #[serde(default)]
@@ -8634,6 +8674,36 @@ pub fn compute_criteria_pattern_penalty(input: &CriteriaPatternPenaltyInput) -> 
     }
 }
 
+pub fn compute_strategy_threshold_overrides(
+    input: &StrategyThresholdOverridesInput,
+) -> StrategyThresholdOverridesOutput {
+    let choose = |base: Option<f64>, override_val: Option<f64>| -> f64 {
+        if let Some(v) = override_val {
+            if v.is_finite() {
+                return v;
+            }
+        }
+        base.filter(|v| v.is_finite()).unwrap_or(0.0)
+    };
+    StrategyThresholdOverridesOutput {
+        min_signal_quality: choose(input.min_signal_quality, input.override_min_signal_quality),
+        min_sensory_signal_score: choose(
+            input.min_sensory_signal_score,
+            input.override_min_sensory_signal_score,
+        ),
+        min_sensory_relevance_score: choose(
+            input.min_sensory_relevance_score,
+            input.override_min_sensory_relevance_score,
+        ),
+        min_directive_fit: choose(input.min_directive_fit, input.override_min_directive_fit),
+        min_actionability_score: choose(
+            input.min_actionability_score,
+            input.override_min_actionability_score,
+        ),
+        min_eye_score_ema: choose(input.min_eye_score_ema, input.override_min_eye_score_ema),
+    }
+}
+
 pub fn compute_is_directive_clarification_proposal(
     input: &IsDirectiveClarificationProposalInput,
 ) -> IsDirectiveClarificationProposalOutput {
@@ -12329,6 +12399,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_criteria_pattern_penalty_encode_failed:{e}"));
+    }
+    if mode == "strategy_threshold_overrides" {
+        let input = request
+            .strategy_threshold_overrides_input
+            .ok_or_else(|| "autoscale_missing_strategy_threshold_overrides_input".to_string())?;
+        let out = compute_strategy_threshold_overrides(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "strategy_threshold_overrides",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_strategy_threshold_overrides_encode_failed:{e}"));
     }
     if mode == "is_directive_clarification_proposal" {
         let input = request
@@ -17861,6 +17943,46 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale criteria_pattern_penalty");
         assert!(out.contains("\"mode\":\"criteria_pattern_penalty\""));
+    }
+
+    #[test]
+    fn strategy_threshold_overrides_prefers_override_values() {
+        let out = compute_strategy_threshold_overrides(&StrategyThresholdOverridesInput {
+            min_signal_quality: Some(55.0),
+            min_sensory_signal_score: Some(60.0),
+            min_sensory_relevance_score: Some(62.0),
+            min_directive_fit: Some(45.0),
+            min_actionability_score: Some(50.0),
+            min_eye_score_ema: Some(48.0),
+            override_min_signal_quality: Some(70.0),
+            override_min_sensory_signal_score: None,
+            override_min_sensory_relevance_score: None,
+            override_min_directive_fit: Some(52.0),
+            override_min_actionability_score: None,
+            override_min_eye_score_ema: None,
+        });
+        assert_eq!(out.min_signal_quality, 70.0);
+        assert_eq!(out.min_directive_fit, 52.0);
+        assert_eq!(out.min_sensory_signal_score, 60.0);
+    }
+
+    #[test]
+    fn autoscale_json_strategy_threshold_overrides_path_works() {
+        let payload = serde_json::json!({
+            "mode": "strategy_threshold_overrides",
+            "strategy_threshold_overrides_input": {
+                "min_signal_quality": 55,
+                "min_sensory_signal_score": 60,
+                "min_sensory_relevance_score": 62,
+                "min_directive_fit": 45,
+                "min_actionability_score": 50,
+                "min_eye_score_ema": 48,
+                "override_min_signal_quality": 70
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale strategy_threshold_overrides");
+        assert!(out.contains("\"mode\":\"strategy_threshold_overrides\""));
     }
 
     #[test]

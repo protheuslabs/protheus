@@ -5906,7 +5906,34 @@ function baseThresholds(strategyOverride = null) {
     min_actionability_score: AUTONOMY_MIN_ACTIONABILITY_SCORE,
     min_eye_score_ema: AUTONOMY_MIN_EYE_SCORE_EMA
   };
-  return applyThresholdOverrides(base, strategyOverride || strategyProfile());
+  const strategy = strategyOverride || strategyProfile();
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const overrides = strategy && strategy.threshold_overrides && typeof strategy.threshold_overrides === 'object'
+      ? strategy.threshold_overrides
+      : {};
+    const rust = runBacklogAutoscalePrimitive(
+      'strategy_threshold_overrides',
+      {
+        min_signal_quality: Number(base.min_signal_quality || 0),
+        min_sensory_signal_score: Number(base.min_sensory_signal_score || 0),
+        min_sensory_relevance_score: Number(base.min_sensory_relevance_score || 0),
+        min_directive_fit: Number(base.min_directive_fit || 0),
+        min_actionability_score: Number(base.min_actionability_score || 0),
+        min_eye_score_ema: Number(base.min_eye_score_ema || 0),
+        override_min_signal_quality: Number(overrides.min_signal_quality),
+        override_min_sensory_signal_score: Number(overrides.min_sensory_signal_score),
+        override_min_sensory_relevance_score: Number(overrides.min_sensory_relevance_score),
+        override_min_directive_fit: Number(overrides.min_directive_fit),
+        override_min_actionability_score: Number(overrides.min_actionability_score),
+        override_min_eye_score_ema: Number(overrides.min_eye_score_ema)
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return rust.payload.payload;
+    }
+  }
+  return applyThresholdOverrides(base, strategy);
 }
 
 function effectiveAllowedRisksSet(strategyOverride = null) {
@@ -20609,6 +20636,7 @@ module.exports = {
   compositeEligibilityMin,
   mediumRiskThresholds,
   mediumRiskGateDecision,
+  baseThresholds,
   qosLaneWeights,
   qosLaneShareCapExceeded,
   normalizeQueuePressure,
