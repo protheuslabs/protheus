@@ -2701,6 +2701,8 @@ const PROPOSAL_TYPE_FROM_RUN_EVENT_CACHE = new Map();
 const PROPOSAL_TYPE_FROM_RUN_EVENT_CACHE_MAX = 1024;
 const RUN_EVENT_OBJECTIVE_ID_CACHE = new Map();
 const RUN_EVENT_OBJECTIVE_ID_CACHE_MAX = 1024;
+const RUN_EVENT_PROPOSAL_ID_CACHE = new Map();
+const RUN_EVENT_PROPOSAL_ID_CACHE_MAX = 1024;
 
 function isPolicyHoldResult(result): boolean {
   const r = String(result || '').trim();
@@ -3281,6 +3283,43 @@ function runEventProposalId(evt) {
   const topEscalation = evt.top_escalation && typeof evt.top_escalation === 'object'
     ? evt.top_escalation
     : {};
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const proposalRaw = evt.proposal_id;
+    const selectedRaw = evt.selected_proposal_id;
+    const topEscalationRaw = topEscalation.proposal_id;
+    const key = [
+      proposalRaw ? '1' : '0',
+      String(proposalRaw || ''),
+      selectedRaw ? '1' : '0',
+      String(selectedRaw || ''),
+      topEscalationRaw ? '1' : '0',
+      String(topEscalationRaw || '')
+    ].join('\u0000');
+    if (RUN_EVENT_PROPOSAL_ID_CACHE.has(key)) {
+      return String(RUN_EVENT_PROPOSAL_ID_CACHE.get(key) || '');
+    }
+    const rust = runBacklogAutoscalePrimitive(
+      'run_event_proposal_id',
+      {
+        proposal_id_present: !!proposalRaw,
+        proposal_id: String(proposalRaw || ''),
+        selected_proposal_id_present: !!selectedRaw,
+        selected_proposal_id: String(selectedRaw || ''),
+        top_escalation_present: !!topEscalationRaw,
+        top_escalation_proposal_id: String(topEscalationRaw || '')
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const proposalVal = String(rust.payload.payload.proposal_id || '');
+      if (RUN_EVENT_PROPOSAL_ID_CACHE.size >= RUN_EVENT_PROPOSAL_ID_CACHE_MAX) {
+        const oldest = RUN_EVENT_PROPOSAL_ID_CACHE.keys().next();
+        if (!oldest.done) RUN_EVENT_PROPOSAL_ID_CACHE.delete(oldest.value);
+      }
+      RUN_EVENT_PROPOSAL_ID_CACHE.set(key, proposalVal);
+      return proposalVal;
+    }
+  }
   return normalizeSpaces(
     evt.proposal_id
     || evt.selected_proposal_id
@@ -16285,5 +16324,6 @@ module.exports = {
   classifyNonYieldCategory,
   nonYieldReasonFromRun,
   runEventProposalType,
-  runEventObjectiveId
+  runEventObjectiveId,
+  runEventProposalId
 };

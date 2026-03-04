@@ -343,6 +343,27 @@ pub struct RunEventObjectiveIdOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct RunEventProposalIdInput {
+    #[serde(default)]
+    pub proposal_id_present: Option<bool>,
+    #[serde(default)]
+    pub proposal_id: Option<String>,
+    #[serde(default)]
+    pub selected_proposal_id_present: Option<bool>,
+    #[serde(default)]
+    pub selected_proposal_id: Option<String>,
+    #[serde(default)]
+    pub top_escalation_present: Option<bool>,
+    #[serde(default)]
+    pub top_escalation_proposal_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct RunEventProposalIdOutput {
+    pub proposal_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct RouteExecutionPolicyHoldInput {
     #[serde(default)]
     pub target: Option<String>,
@@ -592,6 +613,8 @@ pub struct AutoscaleRequest {
     pub proposal_type_from_run_event_input: Option<ProposalTypeFromRunEventInput>,
     #[serde(default)]
     pub run_event_objective_id_input: Option<RunEventObjectiveIdInput>,
+    #[serde(default)]
+    pub run_event_proposal_id_input: Option<RunEventProposalIdInput>,
     #[serde(default)]
     pub route_execution_policy_hold_input: Option<RouteExecutionPolicyHoldInput>,
     #[serde(default)]
@@ -1525,6 +1548,30 @@ pub fn compute_run_event_objective_id(input: &RunEventObjectiveIdInput) -> RunEv
     }
 }
 
+pub fn compute_run_event_proposal_id(input: &RunEventProposalIdInput) -> RunEventProposalIdOutput {
+    let selected = if input.proposal_id_present.unwrap_or(false) {
+        input.proposal_id.as_ref().map(|v| v.as_str()).unwrap_or("")
+    } else if input.selected_proposal_id_present.unwrap_or(false) {
+        input
+            .selected_proposal_id
+            .as_ref()
+            .map(|v| v.as_str())
+            .unwrap_or("")
+    } else if input.top_escalation_present.unwrap_or(false) {
+        input
+            .top_escalation_proposal_id
+            .as_ref()
+            .map(|v| v.as_str())
+            .unwrap_or("")
+    } else {
+        ""
+    };
+
+    RunEventProposalIdOutput {
+        proposal_id: normalize_spaces(selected),
+    }
+}
+
 pub fn compute_policy_hold_pressure(input: &PolicyHoldPressureInput) -> PolicyHoldPressureOutput {
     let window_hours = input.window_hours.unwrap_or(24.0).max(1.0);
     let min_samples = input.min_samples.unwrap_or(1.0).max(1.0);
@@ -2139,6 +2186,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_run_event_objective_id_encode_failed:{e}"));
+    }
+    if mode == "run_event_proposal_id" {
+        let input = request
+            .run_event_proposal_id_input
+            .ok_or_else(|| "autoscale_missing_run_event_proposal_id_input".to_string())?;
+        let out = compute_run_event_proposal_id(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "run_event_proposal_id",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_run_event_proposal_id_encode_failed:{e}"));
     }
     if mode == "route_execution_policy_hold" {
         let input = request
@@ -2762,6 +2821,47 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale run_event_objective_id");
         assert!(out.contains("\"mode\":\"run_event_objective_id\""));
+    }
+
+    #[test]
+    fn run_event_proposal_id_uses_truthy_priority_then_normalizes_spaces() {
+        let from_direct = compute_run_event_proposal_id(&RunEventProposalIdInput {
+            proposal_id_present: Some(true),
+            proposal_id: Some("  p-001  ".to_string()),
+            selected_proposal_id_present: Some(true),
+            selected_proposal_id: Some("p-002".to_string()),
+            top_escalation_present: Some(true),
+            top_escalation_proposal_id: Some("p-003".to_string()),
+        });
+        assert_eq!(from_direct.proposal_id, "p-001".to_string());
+
+        let from_selected = compute_run_event_proposal_id(&RunEventProposalIdInput {
+            proposal_id_present: Some(false),
+            proposal_id: Some(String::new()),
+            selected_proposal_id_present: Some(true),
+            selected_proposal_id: Some(" selected   proposal ".to_string()),
+            top_escalation_present: Some(true),
+            top_escalation_proposal_id: Some("p-003".to_string()),
+        });
+        assert_eq!(from_selected.proposal_id, "selected proposal".to_string());
+    }
+
+    #[test]
+    fn autoscale_json_run_event_proposal_id_path_works() {
+        let payload = serde_json::json!({
+            "mode": "run_event_proposal_id",
+            "run_event_proposal_id_input": {
+                "proposal_id_present": false,
+                "proposal_id": "",
+                "selected_proposal_id_present": true,
+                "selected_proposal_id": "p-009",
+                "top_escalation_present": false,
+                "top_escalation_proposal_id": ""
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale run_event_proposal_id");
+        assert!(out.contains("\"mode\":\"run_event_proposal_id\""));
     }
 
     #[test]

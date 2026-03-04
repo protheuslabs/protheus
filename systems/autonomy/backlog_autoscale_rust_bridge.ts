@@ -105,6 +105,7 @@ function runBacklogAutoscalePrimitive(mode: string, data: AnyObj = {}, opts: Any
     non_yield_reason: 'non_yield_reason_input',
     proposal_type_from_run_event: 'proposal_type_from_run_event_input',
     run_event_objective_id: 'run_event_objective_id_input',
+    run_event_proposal_id: 'run_event_proposal_id_input',
     route_execution_policy_hold: 'route_execution_policy_hold_input',
     policy_hold_pressure: 'policy_hold_pressure_input',
     policy_hold_pattern: 'policy_hold_pattern_input',
