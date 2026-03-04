@@ -7,7 +7,6 @@ const path = require('path');
 const crypto = require('crypto');
 const { spawnSync } = require('child_process');
 const { mergeGatePolicy, purifyInputs } = require('../echo/input_purification_gate.js');
-const { evaluateTask: evaluateDirectiveTask } = require('../security/directive_gate.js');
 const { issuePassport, appendAction } = require('../security/agent_passport.js');
 const { writeContractReceipt } = require('../../lib/action_receipts.js');
 let recordAttribution = null;
@@ -1037,37 +1036,11 @@ function evaluateHeroicGate(taskText: string, policy: AnyObj, context: AnyObj) {
       reason_codes: Array.isArray(rustGate.payload.reason_codes) ? rustGate.payload.reason_codes.slice(0, 8) : []
     };
   }
-  const localDestructive = /(?:\bdisable\s+(?:all\s+)?guards?\b|\bbypass\b.*\b(?:guard|policy|safety)\b|\bself[\s_-]*terminate\b|\bexfiltrate\b|\bwipe\s+data\b)/i
-    .test(String(taskText || ''));
-  if (!row || typeof row !== 'object') {
-    return {
-      classification: localDestructive ? 'destructive_instruction' : 'unknown',
-      decision: localDestructive ? 'blocked_destructive_local_pattern' : 'purification_missing',
-      blocked: localDestructive,
-      reason_codes: localDestructive
-        ? ['heroic_echo_row_missing', 'local_destructive_pattern']
-        : ['heroic_echo_row_missing']
-    };
-  }
-  const blockedByDestructive = policy.gates.block_on_destructive === true
-    && (
-      String(row.classification || '') === 'destructive_instruction'
-      || localDestructive
-    );
   return {
-    classification: localDestructive
-      ? 'destructive_instruction'
-      : String(row.classification || 'unknown'),
-    decision: localDestructive
-      ? 'blocked_destructive_local_pattern'
-      : String(row.decision || 'unknown'),
-    blocked: blockedByDestructive || row.blocked === true,
-    reason_codes: Array.isArray(row.reason_codes)
-      ? Array.from(new Set([
-        ...row.reason_codes,
-        ...(localDestructive ? ['local_destructive_pattern'] : [])
-      ])).slice(0, 8)
-      : (localDestructive ? ['local_destructive_pattern'] : [])
+    classification: 'rust_gate_unavailable',
+    decision: 'heroic_gate_rust_unavailable',
+    blocked: true,
+    reason_codes: ['heroic_gate_rust_unavailable']
   };
 }
 
@@ -1087,27 +1060,11 @@ function evaluateConstitutionGate(taskText: string, policy: AnyObj) {
       reasons: Array.isArray(rustGate.payload.reasons) ? rustGate.payload.reasons.slice(0, 8) : []
     };
   }
-  try {
-    const evaluated = evaluateDirectiveTask(String(taskText || ''));
-    if (!evaluated || typeof evaluated !== 'object') {
-      return {
-        decision: 'ALLOW',
-        risk: 'low',
-        reasons: ['constitution_gate_unavailable']
-      };
-    }
-    return {
-      decision: String(evaluated.decision || 'ALLOW'),
-      risk: String(evaluated.risk || 'low'),
-      reasons: Array.isArray(evaluated.reasons) ? evaluated.reasons.slice(0, 8) : []
-    };
-  } catch {
-    return {
-      decision: 'ALLOW',
-      risk: 'low',
-      reasons: ['constitution_gate_error']
-    };
-  }
+  return {
+    decision: 'DENY',
+    risk: 'high',
+    reasons: ['constitution_gate_rust_unavailable']
+  };
 }
 
 function dualitySignalForTask(goal: AnyObj, task: AnyObj) {
