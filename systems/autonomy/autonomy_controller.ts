@@ -2709,6 +2709,8 @@ const REPEAT_GATE_ANCHOR_CACHE = new Map();
 const REPEAT_GATE_ANCHOR_CACHE_MAX = 1024;
 const SCORE_ONLY_RESULT_CACHE = new Map();
 const SCORE_ONLY_RESULT_CACHE_MAX = 1024;
+const SCORE_ONLY_FAILURE_LIKE_CACHE = new Map();
+const SCORE_ONLY_FAILURE_LIKE_CACHE_MAX = 1024;
 
 function isPolicyHoldResult(result): boolean {
   const r = String(result || '').trim();
@@ -3547,6 +3549,41 @@ function isScoreOnlyResult(result): boolean {
 
 function isScoreOnlyFailureLikeEvent(evt): boolean {
   if (!evt || evt.type !== 'autonomy_run') return false;
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const verification = evt.preview_verification && typeof evt.preview_verification === 'object'
+      ? evt.preview_verification
+      : null;
+    const key = [
+      String(evt.type || ''),
+      String(evt.result || ''),
+      verification ? '1' : '0',
+      verification && verification.passed === false ? '0' : '1',
+      String(verification && verification.outcome || '')
+    ].join('\u0000');
+    if (SCORE_ONLY_FAILURE_LIKE_CACHE.has(key)) {
+      return SCORE_ONLY_FAILURE_LIKE_CACHE.get(key) === true;
+    }
+    const rust = runBacklogAutoscalePrimitive(
+      'score_only_failure_like',
+      {
+        event_type: String(evt.type || ''),
+        result: String(evt.result || ''),
+        preview_verification_present: !!verification,
+        preview_verification_passed: verification ? verification.passed === true : null,
+        preview_verification_outcome: verification ? String(verification.outcome || '') : ''
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const val = rust.payload.payload.is_failure_like === true;
+      if (SCORE_ONLY_FAILURE_LIKE_CACHE.size >= SCORE_ONLY_FAILURE_LIKE_CACHE_MAX) {
+        const oldest = SCORE_ONLY_FAILURE_LIKE_CACHE.keys().next();
+        if (!oldest.done) SCORE_ONLY_FAILURE_LIKE_CACHE.delete(oldest.value);
+      }
+      SCORE_ONLY_FAILURE_LIKE_CACHE.set(key, val);
+      return val;
+    }
+  }
   if (!isScoreOnlyResult(evt.result)) return false;
   if (evt.result === 'stop_repeat_gate_preview_structural_cooldown') return true;
   if (evt.result === 'stop_repeat_gate_preview_churn_cooldown') return true;
@@ -16436,5 +16473,6 @@ module.exports = {
   runEventProposalId,
   isCapacityCountedAttemptEvent,
   deriveRepeatGateAnchor,
-  isScoreOnlyResult
+  isScoreOnlyResult,
+  isScoreOnlyFailureLikeEvent
 };

@@ -231,6 +231,25 @@ pub struct ScoreOnlyResultOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ScoreOnlyFailureLikeInput {
+    #[serde(default)]
+    pub event_type: Option<String>,
+    #[serde(default)]
+    pub result: Option<String>,
+    #[serde(default)]
+    pub preview_verification_present: Option<bool>,
+    #[serde(default)]
+    pub preview_verification_passed: Option<bool>,
+    #[serde(default)]
+    pub preview_verification_outcome: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ScoreOnlyFailureLikeOutput {
+    pub is_failure_like: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct NoProgressResultInput {
     #[serde(default)]
     pub event_type: Option<String>,
@@ -666,6 +685,8 @@ pub struct AutoscaleRequest {
     pub policy_hold_result_input: Option<PolicyHoldResultInput>,
     #[serde(default)]
     pub score_only_result_input: Option<ScoreOnlyResultInput>,
+    #[serde(default)]
+    pub score_only_failure_like_input: Option<ScoreOnlyFailureLikeInput>,
     #[serde(default)]
     pub no_progress_result_input: Option<NoProgressResultInput>,
     #[serde(default)]
@@ -1328,6 +1349,63 @@ pub fn compute_score_only_result(input: &ScoreOnlyResultInput) -> ScoreOnlyResul
             || result == "score_only_evidence"
             || result == "stop_repeat_gate_preview_structural_cooldown"
             || result == "stop_repeat_gate_preview_churn_cooldown",
+    }
+}
+
+pub fn compute_score_only_failure_like(
+    input: &ScoreOnlyFailureLikeInput,
+) -> ScoreOnlyFailureLikeOutput {
+    let event_type = input
+        .event_type
+        .as_ref()
+        .map(|v| v.trim().to_ascii_lowercase())
+        .unwrap_or_default();
+    if event_type != "autonomy_run" {
+        return ScoreOnlyFailureLikeOutput {
+            is_failure_like: false,
+        };
+    }
+
+    let result = input
+        .result
+        .as_ref()
+        .map(|v| v.trim().to_string())
+        .unwrap_or_default();
+    if !compute_score_only_result(&ScoreOnlyResultInput {
+        result: Some(result.clone()),
+    })
+    .is_score_only
+    {
+        return ScoreOnlyFailureLikeOutput {
+            is_failure_like: false,
+        };
+    }
+
+    if result == "stop_repeat_gate_preview_structural_cooldown"
+        || result == "stop_repeat_gate_preview_churn_cooldown"
+    {
+        return ScoreOnlyFailureLikeOutput {
+            is_failure_like: true,
+        };
+    }
+
+    if !input.preview_verification_present.unwrap_or(false) {
+        return ScoreOnlyFailureLikeOutput {
+            is_failure_like: false,
+        };
+    }
+    if input.preview_verification_passed == Some(false) {
+        return ScoreOnlyFailureLikeOutput {
+            is_failure_like: true,
+        };
+    }
+    let outcome = input
+        .preview_verification_outcome
+        .as_ref()
+        .map(|v| v.trim().to_ascii_lowercase())
+        .unwrap_or_default();
+    ScoreOnlyFailureLikeOutput {
+        is_failure_like: outcome == "no_change",
     }
 }
 
@@ -2297,6 +2375,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
         }))
         .map_err(|e| format!("autoscale_score_only_result_encode_failed:{e}"));
     }
+    if mode == "score_only_failure_like" {
+        let input = request
+            .score_only_failure_like_input
+            .ok_or_else(|| "autoscale_missing_score_only_failure_like_input".to_string())?;
+        let out = compute_score_only_failure_like(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "score_only_failure_like",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_score_only_failure_like_encode_failed:{e}"));
+    }
     if mode == "no_progress_result" {
         let input = request
             .no_progress_result_input
@@ -2778,6 +2868,53 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale score_only_result");
         assert!(out.contains("\"mode\":\"score_only_result\""));
+    }
+
+    #[test]
+    fn score_only_failure_like_classifies_expected_values() {
+        let structural = compute_score_only_failure_like(&ScoreOnlyFailureLikeInput {
+            event_type: Some("autonomy_run".to_string()),
+            result: Some("stop_repeat_gate_preview_structural_cooldown".to_string()),
+            preview_verification_present: Some(false),
+            preview_verification_passed: None,
+            preview_verification_outcome: None,
+        });
+        assert!(structural.is_failure_like);
+
+        let no_change = compute_score_only_failure_like(&ScoreOnlyFailureLikeInput {
+            event_type: Some("autonomy_run".to_string()),
+            result: Some("score_only_preview".to_string()),
+            preview_verification_present: Some(true),
+            preview_verification_passed: Some(true),
+            preview_verification_outcome: Some("no_change".to_string()),
+        });
+        assert!(no_change.is_failure_like);
+
+        let clean = compute_score_only_failure_like(&ScoreOnlyFailureLikeInput {
+            event_type: Some("autonomy_run".to_string()),
+            result: Some("score_only_preview".to_string()),
+            preview_verification_present: Some(true),
+            preview_verification_passed: Some(true),
+            preview_verification_outcome: Some("shipped".to_string()),
+        });
+        assert!(!clean.is_failure_like);
+    }
+
+    #[test]
+    fn autoscale_json_score_only_failure_like_path_works() {
+        let payload = serde_json::json!({
+            "mode": "score_only_failure_like",
+            "score_only_failure_like_input": {
+                "event_type": "autonomy_run",
+                "result": "score_only_preview",
+                "preview_verification_present": true,
+                "preview_verification_passed": true,
+                "preview_verification_outcome": "no_change"
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale score_only_failure_like");
+        assert!(out.contains("\"mode\":\"score_only_failure_like\""));
     }
 
     #[test]
