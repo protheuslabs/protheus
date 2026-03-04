@@ -98,6 +98,7 @@ function runBacklogAutoscalePrimitive(mode: string, data: AnyObj = {}, opts: Any
     criteria_gate: 'criteria_gate_input',
     policy_hold: 'policy_hold_input',
     policy_hold_pressure: 'policy_hold_pressure_input',
+    policy_hold_pattern: 'policy_hold_pattern_input',
     receipt_verdict: 'receipt_verdict_input'
   };
   const field = fieldByMode[normalizedMode];

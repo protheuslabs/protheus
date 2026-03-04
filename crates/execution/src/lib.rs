@@ -14,10 +14,11 @@ use wasm_bindgen::prelude::*;
 
 pub use autoscale::{
     compute_batch_max, compute_criteria_gate, compute_dynamic_caps, compute_normalize_queue,
-    compute_plan, compute_policy_hold, compute_policy_hold_pressure, compute_receipt_verdict,
-    compute_token_usage, run_autoscale_json, BatchMaxInput, BatchMaxOutput, CriteriaGateInput,
-    CriteriaGateOutput, DynamicCapsInput, DynamicCapsOutput, NormalizeQueueInput,
-    NormalizeQueueOutput, PlanInput, PlanOutput, PolicyHoldInput, PolicyHoldOutput,
+    compute_plan, compute_policy_hold, compute_policy_hold_pattern, compute_policy_hold_pressure,
+    compute_receipt_verdict, compute_token_usage, run_autoscale_json, BatchMaxInput,
+    BatchMaxOutput, CriteriaGateInput, CriteriaGateOutput, DynamicCapsInput, DynamicCapsOutput,
+    NormalizeQueueInput, NormalizeQueueOutput, PlanInput, PlanOutput, PolicyHoldInput,
+    PolicyHoldOutput, PolicyHoldPatternEventInput, PolicyHoldPatternInput, PolicyHoldPatternOutput,
     PolicyHoldPressureEventInput, PolicyHoldPressureInput, PolicyHoldPressureOutput, QueuePressure,
     ReceiptCheck, ReceiptVerdictInput, ReceiptVerdictOutput, TokenUsageInput, TokenUsageOutput,
 };

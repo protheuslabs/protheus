@@ -2858,6 +2858,39 @@ function objectivePolicyHoldPattern(events, objectiveId, opts: AnyObj = {}) {
     should_dampen: false
   };
   if (!oid) return out;
+
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rows = Array.isArray(events) ? events : [];
+    const rustEvents = [];
+    for (const evt of rows) {
+      if (!evt || typeof evt !== 'object') continue;
+      const parsedTs = parseIsoTs(evt.ts);
+      rustEvents.push({
+        event_type: String(evt.type || ''),
+        result: String(evt.result || ''),
+        objective_id: normalizeSpaces(evt.objective_id || ''),
+        hold_reason: normalizeSpaces(evt.hold_reason || ''),
+        route_block_reason: normalizeSpaces(evt.route_block_reason || ''),
+        policy_hold: evt.policy_hold === true,
+        ts_ms: parsedTs ? parsedTs.getTime() : null
+      });
+    }
+    const rust = runBacklogAutoscalePrimitive(
+      'policy_hold_pattern',
+      {
+        events: rustEvents,
+        objective_id: oid,
+        window_hours: windowHours,
+        repeat_threshold: repeatThreshold,
+        now_ms: Date.now()
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return rust.payload.payload;
+    }
+  }
+
   const rows = Array.isArray(events) ? events : [];
   const cutoffMs = Date.now() - (windowHours * 3600000);
   const counts = {};
@@ -15908,6 +15941,7 @@ module.exports = {
   isPolicyHoldResult,
   isPolicyHoldRunEvent,
   latestPolicyHoldRunEvent,
+  objectivePolicyHoldPattern,
   policyHoldPressureSnapshot,
   policyHoldCooldownMinutesForPressure,
   policyHoldCooldownMinutesForResult,

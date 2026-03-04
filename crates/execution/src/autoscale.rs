@@ -248,6 +248,50 @@ pub struct PolicyHoldPressureOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct PolicyHoldPatternEventInput {
+    #[serde(default)]
+    pub event_type: Option<String>,
+    #[serde(default)]
+    pub result: Option<String>,
+    #[serde(default)]
+    pub objective_id: Option<String>,
+    #[serde(default)]
+    pub hold_reason: Option<String>,
+    #[serde(default)]
+    pub route_block_reason: Option<String>,
+    #[serde(default)]
+    pub policy_hold: Option<bool>,
+    #[serde(default)]
+    pub ts_ms: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct PolicyHoldPatternInput {
+    #[serde(default)]
+    pub events: Vec<PolicyHoldPatternEventInput>,
+    #[serde(default)]
+    pub objective_id: Option<String>,
+    #[serde(default)]
+    pub window_hours: Option<f64>,
+    #[serde(default)]
+    pub repeat_threshold: Option<f64>,
+    #[serde(default)]
+    pub now_ms: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct PolicyHoldPatternOutput {
+    pub objective_id: Option<String>,
+    pub window_hours: f64,
+    pub repeat_threshold: f64,
+    pub total_holds: u32,
+    pub top_reason: Option<String>,
+    pub top_count: u32,
+    pub by_reason: std::collections::BTreeMap<String, u32>,
+    pub should_dampen: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ReceiptVerdictInput {
     pub decision: String,
     pub exec_ok: bool,
@@ -300,6 +344,8 @@ pub struct AutoscaleRequest {
     pub policy_hold_input: Option<PolicyHoldInput>,
     #[serde(default)]
     pub policy_hold_pressure_input: Option<PolicyHoldPressureInput>,
+    #[serde(default)]
+    pub policy_hold_pattern_input: Option<PolicyHoldPatternInput>,
     #[serde(default)]
     pub receipt_verdict_input: Option<ReceiptVerdictInput>,
 }
@@ -899,6 +945,98 @@ pub fn compute_policy_hold_pressure(input: &PolicyHoldPressureInput) -> PolicyHo
     }
 }
 
+fn policy_hold_reason_from_event_input(evt: &PolicyHoldPatternEventInput) -> String {
+    let explicit = normalize_spaces(
+        &evt.hold_reason
+            .as_ref()
+            .or(evt.route_block_reason.as_ref())
+            .map(|v| v.as_str())
+            .unwrap_or(""),
+    )
+    .to_ascii_lowercase();
+    if !explicit.is_empty() {
+        return explicit;
+    }
+    normalize_spaces(evt.result.as_ref().map(|v| v.as_str()).unwrap_or("")).to_ascii_lowercase()
+}
+
+pub fn compute_policy_hold_pattern(input: &PolicyHoldPatternInput) -> PolicyHoldPatternOutput {
+    let objective_id = normalize_spaces(input.objective_id.as_ref().map(|v| v.as_str()).unwrap_or(""));
+    let window_hours = input.window_hours.unwrap_or(24.0).max(1.0);
+    let repeat_threshold = input.repeat_threshold.unwrap_or(2.0).max(2.0);
+    let now_ms = non_negative_number(input.now_ms).unwrap_or_else(|| {
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|v| v.as_millis() as f64)
+            .unwrap_or(0.0)
+    });
+    let cutoff_ms = now_ms - (window_hours * 3_600_000.0);
+
+    let mut total_holds: u32 = 0;
+    let mut by_reason: std::collections::BTreeMap<String, u32> = std::collections::BTreeMap::new();
+    for evt in &input.events {
+        let event_type = evt
+            .event_type
+            .as_ref()
+            .map(|v| v.trim().to_ascii_lowercase())
+            .unwrap_or_default();
+        if event_type != "autonomy_run" {
+            continue;
+        }
+        let result = evt
+            .result
+            .as_ref()
+            .map(|v| v.trim().to_string())
+            .unwrap_or_default();
+        let evt_objective = normalize_spaces(evt.objective_id.as_ref().map(|v| v.as_str()).unwrap_or(""));
+        if objective_id.is_empty() || evt_objective != objective_id {
+            continue;
+        }
+        if !evt.policy_hold.unwrap_or(false) && !is_policy_hold_result(&result) {
+            continue;
+        }
+        if let Some(ts_ms) = non_negative_number(evt.ts_ms) {
+            if ts_ms < cutoff_ms {
+                continue;
+            }
+        }
+        let reason = policy_hold_reason_from_event_input(evt);
+        let key = if reason.is_empty() {
+            "policy_hold_unknown".to_string()
+        } else {
+            reason
+        };
+        let current = by_reason.get(&key).copied().unwrap_or(0);
+        by_reason.insert(key, current + 1);
+        total_holds += 1;
+    }
+
+    let mut top_reason: Option<String> = None;
+    let mut top_count: u32 = 0;
+    for (reason, count) in &by_reason {
+        if *count > top_count {
+            top_reason = Some(reason.clone());
+            top_count = *count;
+        }
+    }
+    let should_dampen = (top_count as f64) >= repeat_threshold;
+
+    PolicyHoldPatternOutput {
+        objective_id: if objective_id.is_empty() {
+            None
+        } else {
+            Some(objective_id)
+        },
+        window_hours: round3(window_hours),
+        repeat_threshold: round3(repeat_threshold),
+        total_holds,
+        top_reason,
+        top_count,
+        by_reason,
+        should_dampen,
+    }
+}
+
 pub fn compute_receipt_verdict(input: &ReceiptVerdictInput) -> ReceiptVerdictOutput {
     let decision = input.decision.trim().to_ascii_uppercase();
     let exec_check_name = if decision == "ACTUATE" {
@@ -1118,6 +1256,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_policy_hold_pressure_encode_failed:{e}"));
+    }
+    if mode == "policy_hold_pattern" {
+        let input = request
+            .policy_hold_pattern_input
+            .ok_or_else(|| "autoscale_missing_policy_hold_pattern_input".to_string())?;
+        let out = compute_policy_hold_pattern(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "policy_hold_pattern",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_policy_hold_pattern_encode_failed:{e}"));
     }
     if mode == "receipt_verdict" {
         let input = request
@@ -1425,6 +1575,75 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale policy_hold_pressure");
         assert!(out.contains("\"mode\":\"policy_hold_pressure\""));
+    }
+
+    #[test]
+    fn policy_hold_pattern_detects_repeat_reason() {
+        let out = compute_policy_hold_pattern(&PolicyHoldPatternInput {
+            events: vec![
+                PolicyHoldPatternEventInput {
+                    event_type: Some("autonomy_run".to_string()),
+                    result: Some("stop_init_gate_readiness".to_string()),
+                    objective_id: Some("T1_alpha".to_string()),
+                    hold_reason: Some("gate_manual".to_string()),
+                    route_block_reason: None,
+                    policy_hold: Some(true),
+                    ts_ms: Some(1_100_000.0),
+                },
+                PolicyHoldPatternEventInput {
+                    event_type: Some("autonomy_run".to_string()),
+                    result: Some("stop_init_gate_readiness".to_string()),
+                    objective_id: Some("T1_alpha".to_string()),
+                    hold_reason: Some("gate_manual".to_string()),
+                    route_block_reason: None,
+                    policy_hold: Some(true),
+                    ts_ms: Some(1_200_000.0),
+                },
+                PolicyHoldPatternEventInput {
+                    event_type: Some("autonomy_run".to_string()),
+                    result: Some("executed".to_string()),
+                    objective_id: Some("T1_alpha".to_string()),
+                    hold_reason: None,
+                    route_block_reason: None,
+                    policy_hold: Some(false),
+                    ts_ms: Some(1_300_000.0),
+                },
+            ],
+            objective_id: Some("T1_alpha".to_string()),
+            window_hours: Some(24.0),
+            repeat_threshold: Some(2.0),
+            now_ms: Some(1_500_000.0),
+        });
+        assert_eq!(out.total_holds, 2);
+        assert_eq!(out.top_reason, Some("gate_manual".to_string()));
+        assert_eq!(out.top_count, 2);
+        assert!(out.should_dampen);
+    }
+
+    #[test]
+    fn autoscale_json_policy_hold_pattern_path_works() {
+        let payload = serde_json::json!({
+            "mode": "policy_hold_pattern",
+            "policy_hold_pattern_input": {
+                "events": [
+                    {
+                        "event_type": "autonomy_run",
+                        "result": "stop_init_gate_readiness",
+                        "objective_id": "T1_alpha",
+                        "hold_reason": "gate_manual",
+                        "policy_hold": true,
+                        "ts_ms": 1200000.0
+                    }
+                ],
+                "objective_id": "T1_alpha",
+                "window_hours": 24,
+                "repeat_threshold": 2,
+                "now_ms": 1500000
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale policy_hold_pattern");
+        assert!(out.contains("\"mode\":\"policy_hold_pattern\""));
     }
 
     #[test]
