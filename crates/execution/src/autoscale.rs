@@ -2723,6 +2723,16 @@ pub struct NewLogEventsOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct OutcomeBucketsInput {}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct OutcomeBucketsOutput {
+    pub shipped: f64,
+    pub no_change: f64,
+    pub reverted: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ManualGatePrefilterInput {
     #[serde(default)]
     pub enabled: bool,
@@ -4741,6 +4751,8 @@ pub struct AutoscaleRequest {
     pub proposal_meta_index_input: Option<ProposalMetaIndexInput>,
     #[serde(default)]
     pub new_log_events_input: Option<NewLogEventsInput>,
+    #[serde(default)]
+    pub outcome_buckets_input: Option<OutcomeBucketsInput>,
     #[serde(default)]
     pub manual_gate_prefilter_input: Option<ManualGatePrefilterInput>,
     #[serde(default)]
@@ -9583,6 +9595,14 @@ pub fn compute_new_log_events(input: &NewLogEventsInput) -> NewLogEventsOutput {
     NewLogEventsOutput {
         runs: input.after_runs[run_start..].to_vec(),
         errors: input.after_errors[err_start..].to_vec(),
+    }
+}
+
+pub fn compute_outcome_buckets(_input: &OutcomeBucketsInput) -> OutcomeBucketsOutput {
+    OutcomeBucketsOutput {
+        shipped: 0.0,
+        no_change: 0.0,
+        reverted: 0.0,
     }
 }
 
@@ -14839,6 +14859,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_new_log_events_encode_failed:{e}"));
+    }
+    if mode == "outcome_buckets" {
+        let input = request
+            .outcome_buckets_input
+            .unwrap_or(OutcomeBucketsInput {});
+        let out = compute_outcome_buckets(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "outcome_buckets",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_outcome_buckets_encode_failed:{e}"));
     }
     if mode == "manual_gate_prefilter" {
         let input = request
@@ -21001,6 +21033,26 @@ mod tests {
         let out = run_autoscale_json(&payload).expect("autoscale new_log_events");
         assert!(out.contains("\"mode\":\"new_log_events\""));
         assert!(out.contains("\"runs\":[{\"id\":\"r2\"}]"));
+    }
+
+    #[test]
+    fn outcome_buckets_returns_zeroed_counts() {
+        let out = compute_outcome_buckets(&OutcomeBucketsInput {});
+        assert_eq!(out.shipped, 0.0);
+        assert_eq!(out.no_change, 0.0);
+        assert_eq!(out.reverted, 0.0);
+    }
+
+    #[test]
+    fn autoscale_json_outcome_buckets_path_works() {
+        let payload = serde_json::json!({
+            "mode": "outcome_buckets",
+            "outcome_buckets_input": {}
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale outcome_buckets");
+        assert!(out.contains("\"mode\":\"outcome_buckets\""));
+        assert!(out.contains("\"shipped\":0.0"));
     }
 
     #[test]

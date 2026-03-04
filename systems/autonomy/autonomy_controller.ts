@@ -6322,6 +6322,20 @@ function extractEyeFromEvidenceRef(ref) {
 }
 
 function outcomeBuckets() {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'outcome_buckets',
+      {},
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return {
+        shipped: Number(rust.payload.payload.shipped || 0),
+        no_change: Number(rust.payload.payload.no_change || 0),
+        reverted: Number(rust.payload.payload.reverted || 0)
+      };
+    }
+  }
   return { shipped: 0, no_change: 0, reverted: 0 };
 }
 
