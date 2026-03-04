@@ -813,6 +813,19 @@ pub struct StrategyCircuitCooldownOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct StrategyTritShadowAdjustedInput {
+    pub base_score: f64,
+    pub bonus_raw: f64,
+    pub bonus_blend: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct StrategyTritShadowAdjustedOutput {
+    pub adjusted_score: f64,
+    pub bonus_applied: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct CompositeEligibilityScoreInput {
     pub quality_score: f64,
     pub directive_fit_score: f64,
@@ -1498,6 +1511,8 @@ pub struct AutoscaleRequest {
     pub trit_shadow_rank_score_input: Option<TritShadowRankScoreInput>,
     #[serde(default)]
     pub strategy_circuit_cooldown_input: Option<StrategyCircuitCooldownInput>,
+    #[serde(default)]
+    pub strategy_trit_shadow_adjusted_input: Option<StrategyTritShadowAdjustedInput>,
     #[serde(default)]
     pub value_signal_score_input: Option<ValueSignalScoreInput>,
     #[serde(default)]
@@ -2888,6 +2903,20 @@ pub fn compute_strategy_circuit_cooldown(
     }
 
     StrategyCircuitCooldownOutput { cooldown_hours: 0.0 }
+}
+
+pub fn compute_strategy_trit_shadow_adjusted(
+    input: &StrategyTritShadowAdjustedInput,
+) -> StrategyTritShadowAdjustedOutput {
+    let to_fixed3 = |value: f64| -> f64 {
+        format!("{value:.3}").parse::<f64>().unwrap_or(value)
+    };
+    let bonus_applied = to_fixed3(input.bonus_raw * input.bonus_blend);
+    let adjusted_score = to_fixed3(input.base_score + bonus_applied);
+    StrategyTritShadowAdjustedOutput {
+        adjusted_score,
+        bonus_applied,
+    }
 }
 
 pub fn compute_value_signal_score(input: &ValueSignalScoreInput) -> ValueSignalScoreOutput {
@@ -4889,6 +4918,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
         }))
         .map_err(|e| format!("autoscale_strategy_circuit_cooldown_encode_failed:{e}"));
     }
+    if mode == "strategy_trit_shadow_adjusted" {
+        let input = request
+            .strategy_trit_shadow_adjusted_input
+            .ok_or_else(|| "autoscale_missing_strategy_trit_shadow_adjusted_input".to_string())?;
+        let out = compute_strategy_trit_shadow_adjusted(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "strategy_trit_shadow_adjusted",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_strategy_trit_shadow_adjusted_encode_failed:{e}"));
+    }
     if mode == "value_signal_score" {
         let input = request
             .value_signal_score_input
@@ -6790,6 +6831,34 @@ mod tests {
         let out = run_autoscale_json(&payload).expect("autoscale strategy_circuit_cooldown");
         assert!(out.contains("\"mode\":\"strategy_circuit_cooldown\""));
         assert!(out.contains("\"cooldown_hours\":2.0"));
+    }
+
+    #[test]
+    fn strategy_trit_shadow_adjusted_applies_bonus_blend() {
+        let out = compute_strategy_trit_shadow_adjusted(&StrategyTritShadowAdjustedInput {
+            base_score: 68.75,
+            bonus_raw: 12.345,
+            bonus_blend: 0.4,
+        });
+        assert!((out.bonus_applied - 4.938).abs() < 0.000001);
+        assert!((out.adjusted_score - 73.688).abs() < 0.000001);
+    }
+
+    #[test]
+    fn autoscale_json_strategy_trit_shadow_adjusted_path_works() {
+        let payload = serde_json::json!({
+            "mode": "strategy_trit_shadow_adjusted",
+            "strategy_trit_shadow_adjusted_input": {
+                "base_score": 68.75,
+                "bonus_raw": 12.345,
+                "bonus_blend": 0.4
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale strategy_trit_shadow_adjusted");
+        assert!(out.contains("\"mode\":\"strategy_trit_shadow_adjusted\""));
+        assert!(out.contains("\"bonus_applied\":4.938"));
+        assert!(out.contains("\"adjusted_score\":73.688"));
     }
 
     #[test]

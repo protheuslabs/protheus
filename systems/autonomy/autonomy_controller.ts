@@ -2801,6 +2801,8 @@ const TRIT_SHADOW_RANK_SCORE_CACHE = new Map();
 const TRIT_SHADOW_RANK_SCORE_CACHE_MAX = 1024;
 const STRATEGY_CIRCUIT_COOLDOWN_CACHE = new Map();
 const STRATEGY_CIRCUIT_COOLDOWN_CACHE_MAX = 512;
+const STRATEGY_TRIT_SHADOW_ADJUSTED_CACHE = new Map();
+const STRATEGY_TRIT_SHADOW_ADJUSTED_CACHE_MAX = 1024;
 const VALUE_SIGNAL_SCORE_CACHE = new Map();
 const VALUE_SIGNAL_SCORE_CACHE_MAX = 1024;
 const COMPOSITE_ELIGIBILITY_SCORE_CACHE = new Map();
@@ -8916,6 +8918,45 @@ function tritShadowRankScoreFromBelief(belief) {
   return Number(clampNumber(normalized, 0, 100).toFixed(3));
 }
 
+function strategyTritShadowAdjustedScore(baseScore, bonusRaw, bonusBlend = AUTONOMY_TRIT_SHADOW_BONUS_BLEND) {
+  const base = Number(baseScore || 0);
+  const raw = Number(bonusRaw || 0);
+  const blend = Number(bonusBlend || 0);
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const key = [base, raw, blend].join('\u0000');
+    if (STRATEGY_TRIT_SHADOW_ADJUSTED_CACHE.has(key)) {
+      return STRATEGY_TRIT_SHADOW_ADJUSTED_CACHE.get(key);
+    }
+    const rust = runBacklogAutoscalePrimitive(
+      'strategy_trit_shadow_adjusted',
+      {
+        base_score: base,
+        bonus_raw: raw,
+        bonus_blend: blend
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const payload = rust.payload.payload;
+      const out = {
+        adjusted_score: Number(Number(payload.adjusted_score || 0).toFixed(3)),
+        bonus_applied: Number(Number(payload.bonus_applied || 0).toFixed(3))
+      };
+      if (STRATEGY_TRIT_SHADOW_ADJUSTED_CACHE.size >= STRATEGY_TRIT_SHADOW_ADJUSTED_CACHE_MAX) {
+        const oldest = STRATEGY_TRIT_SHADOW_ADJUSTED_CACHE.keys().next();
+        if (!oldest.done) STRATEGY_TRIT_SHADOW_ADJUSTED_CACHE.delete(oldest.value);
+      }
+      STRATEGY_TRIT_SHADOW_ADJUSTED_CACHE.set(key, out);
+      return out;
+    }
+  }
+  const bonusApplied = Number((raw * blend).toFixed(3));
+  return {
+    adjusted_score: Number((base + bonusApplied).toFixed(3)),
+    bonus_applied: bonusApplied
+  };
+}
+
 function tritShadowBeliefOptions() {
   const policy = loadTritShadowPolicy();
   const trustState = loadTritShadowTrustState(policy);
@@ -9011,8 +9052,9 @@ function strategyTritShadowForCandidate(cand) {
   });
   const baseScore = tritShadowRankScoreFromBelief(belief);
   const bonusRaw = Number(row.strategy_rank_bonus && row.strategy_rank_bonus.total || 0);
-  const blendedBonus = Number((bonusRaw * AUTONOMY_TRIT_SHADOW_BONUS_BLEND).toFixed(3));
-  const adjustedScore = Number((baseScore + blendedBonus).toFixed(3));
+  const blended = strategyTritShadowAdjustedScore(baseScore, bonusRaw, AUTONOMY_TRIT_SHADOW_BONUS_BLEND);
+  const blendedBonus = Number(blended.bonus_applied || 0);
+  const adjustedScore = Number(blended.adjusted_score || 0);
   const topSignals = Array.isArray(belief.top_sources) ? belief.top_sources.slice(0, 5) : [];
   return {
     score: baseScore,
@@ -17940,6 +17982,7 @@ module.exports = {
   strategyRankForCandidate,
   strategyRankAdjustedForCandidate,
   tritShadowRankScoreFromBelief,
+  strategyTritShadowAdjustedScore,
   strategyCircuitCooldownHours,
   strategyTritShadowForCandidate,
   strategyTritShadowRankingSummary,
