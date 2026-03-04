@@ -5547,6 +5547,24 @@ function newLogEvents(beforeEvidence, afterEvidence) {
   const a = afterEvidence && afterEvidence.logs ? afterEvidence.logs : { runs: [], errors: [] };
   const runStart = Number(b.run_len || 0);
   const errStart = Number(b.error_len || 0);
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'new_log_events',
+      {
+        before_run_len: runStart,
+        before_error_len: errStart,
+        after_runs: Array.isArray(a.runs) ? a.runs : [],
+        after_errors: Array.isArray(a.errors) ? a.errors : []
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return {
+        runs: Array.isArray(rust.payload.payload.runs) ? rust.payload.payload.runs : [],
+        errors: Array.isArray(rust.payload.payload.errors) ? rust.payload.payload.errors : []
+      };
+    }
+  }
   return {
     runs: Array.isArray(a.runs) ? a.runs.slice(runStart) : [],
     errors: Array.isArray(a.errors) ? a.errors.slice(errStart) : []

@@ -2703,6 +2703,26 @@ pub struct ProposalMetaIndexOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct NewLogEventsInput {
+    #[serde(default)]
+    pub before_run_len: Option<f64>,
+    #[serde(default)]
+    pub before_error_len: Option<f64>,
+    #[serde(default)]
+    pub after_runs: Vec<serde_json::Value>,
+    #[serde(default)]
+    pub after_errors: Vec<serde_json::Value>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct NewLogEventsOutput {
+    #[serde(default)]
+    pub runs: Vec<serde_json::Value>,
+    #[serde(default)]
+    pub errors: Vec<serde_json::Value>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ManualGatePrefilterInput {
     #[serde(default)]
     pub enabled: bool,
@@ -4719,6 +4739,8 @@ pub struct AutoscaleRequest {
     pub recent_autonomy_run_events_input: Option<RecentAutonomyRunEventsInput>,
     #[serde(default)]
     pub proposal_meta_index_input: Option<ProposalMetaIndexInput>,
+    #[serde(default)]
+    pub new_log_events_input: Option<NewLogEventsInput>,
     #[serde(default)]
     pub manual_gate_prefilter_input: Option<ManualGatePrefilterInput>,
     #[serde(default)]
@@ -9533,6 +9555,35 @@ pub fn compute_proposal_meta_index(input: &ProposalMetaIndexInput) -> ProposalMe
         });
     }
     ProposalMetaIndexOutput { entries: out }
+}
+
+fn js_slice_start(len: usize, raw: Option<f64>) -> usize {
+    let Some(raw) = raw else {
+        return 0;
+    };
+    if !raw.is_finite() {
+        return 0;
+    }
+    let trunc = raw.trunc() as i64;
+    if trunc >= 0 {
+        (trunc as usize).min(len)
+    } else {
+        let idx = (len as i64) + trunc;
+        if idx <= 0 {
+            0
+        } else {
+            idx as usize
+        }
+    }
+}
+
+pub fn compute_new_log_events(input: &NewLogEventsInput) -> NewLogEventsOutput {
+    let run_start = js_slice_start(input.after_runs.len(), input.before_run_len);
+    let err_start = js_slice_start(input.after_errors.len(), input.before_error_len);
+    NewLogEventsOutput {
+        runs: input.after_runs[run_start..].to_vec(),
+        errors: input.after_errors[err_start..].to_vec(),
+    }
 }
 
 pub fn compute_manual_gate_prefilter(input: &ManualGatePrefilterInput) -> ManualGatePrefilterOutput {
@@ -14776,6 +14827,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_proposal_meta_index_encode_failed:{e}"));
+    }
+    if mode == "new_log_events" {
+        let input = request
+            .new_log_events_input
+            .ok_or_else(|| "autoscale_missing_new_log_events_input".to_string())?;
+        let out = compute_new_log_events(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "new_log_events",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_new_log_events_encode_failed:{e}"));
     }
     if mode == "manual_gate_prefilter" {
         let input = request
@@ -20897,6 +20960,47 @@ mod tests {
         let out = run_autoscale_json(&payload).expect("autoscale proposal_meta_index");
         assert!(out.contains("\"mode\":\"proposal_meta_index\""));
         assert!(out.contains("\"proposal_id\":\"p1\""));
+    }
+
+    #[test]
+    fn new_log_events_slices_runs_and_errors_from_before_lengths() {
+        let out = compute_new_log_events(&NewLogEventsInput {
+            before_run_len: Some(1.0),
+            before_error_len: Some(2.0),
+            after_runs: vec![
+                serde_json::json!({"id":"r1"}),
+                serde_json::json!({"id":"r2"}),
+            ],
+            after_errors: vec![
+                serde_json::json!("e1"),
+                serde_json::json!("e2"),
+                serde_json::json!("e3"),
+            ],
+        });
+        assert_eq!(out.runs.len(), 1);
+        assert_eq!(
+            out.runs[0].get("id").and_then(|v| v.as_str()).unwrap_or(""),
+            "r2"
+        );
+        assert_eq!(out.errors.len(), 1);
+        assert_eq!(out.errors[0].as_str().unwrap_or(""), "e3");
+    }
+
+    #[test]
+    fn autoscale_json_new_log_events_path_works() {
+        let payload = serde_json::json!({
+            "mode": "new_log_events",
+            "new_log_events_input": {
+                "before_run_len": 1,
+                "before_error_len": 0,
+                "after_runs": [{"id":"r1"},{"id":"r2"}],
+                "after_errors": ["e1"]
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale new_log_events");
+        assert!(out.contains("\"mode\":\"new_log_events\""));
+        assert!(out.contains("\"runs\":[{\"id\":\"r2\"}]"));
     }
 
     #[test]
