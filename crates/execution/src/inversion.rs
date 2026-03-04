@@ -1,5 +1,7 @@
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
 
 #[derive(Debug, Clone, Deserialize, Default)]
@@ -128,6 +130,157 @@ pub struct MaxTargetRankInput {
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct MaxTargetRankOutput {
     pub rank: i64,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct CreativePenaltyInput {
+    #[serde(default)]
+    pub enabled: Option<bool>,
+    #[serde(default)]
+    pub preferred_creative_lane_ids: Vec<String>,
+    #[serde(default)]
+    pub non_creative_certainty_penalty: Option<f64>,
+    #[serde(default)]
+    pub selected_lane: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct CreativePenaltyOutput {
+    pub creative_lane_preferred: bool,
+    pub selected_lane: Option<String>,
+    pub preferred_lanes: Vec<String>,
+    pub penalty: f64,
+    pub applied: bool,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct ExtractBulletsInput {
+    #[serde(default)]
+    pub markdown: Option<String>,
+    #[serde(default)]
+    pub max_items: Option<i64>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct ExtractBulletsOutput {
+    pub items: Vec<String>,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct ExtractListItemsInput {
+    #[serde(default)]
+    pub markdown: Option<String>,
+    #[serde(default)]
+    pub max_items: Option<i64>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct ExtractListItemsOutput {
+    pub items: Vec<String>,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct ParseSystemInternalPermissionInput {
+    #[serde(default)]
+    pub markdown: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct ParseSystemInternalPermissionOutput {
+    pub enabled: bool,
+    pub sources: Vec<String>,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct ParseSoulTokenDataPassRulesInput {
+    #[serde(default)]
+    pub markdown: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct ParseSoulTokenDataPassRulesOutput {
+    pub rules: Vec<String>,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct EnsureSystemPassedSectionInput {
+    #[serde(default)]
+    pub feed_text: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct EnsureSystemPassedSectionOutput {
+    pub text: String,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct SystemPassedPayloadHashInput {
+    #[serde(default)]
+    pub source: Option<String>,
+    #[serde(default)]
+    pub tags: Vec<String>,
+    #[serde(default)]
+    pub payload: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct SystemPassedPayloadHashOutput {
+    pub hash: String,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct BuildLensPositionInput {
+    #[serde(default)]
+    pub objective: Option<String>,
+    #[serde(default)]
+    pub target: Option<String>,
+    #[serde(default)]
+    pub impact: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct BuildLensPositionOutput {
+    pub position: String,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct BuildConclaveProposalSummaryInput {
+    #[serde(default)]
+    pub objective: Option<String>,
+    #[serde(default)]
+    pub objective_id: Option<String>,
+    #[serde(default)]
+    pub target: Option<String>,
+    #[serde(default)]
+    pub impact: Option<String>,
+    #[serde(default)]
+    pub mode: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct BuildConclaveProposalSummaryOutput {
+    pub summary: String,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct ConclaveHighRiskFlagsInput {
+    #[serde(default)]
+    pub payload: Option<Value>,
+    #[serde(default)]
+    pub query: Option<String>,
+    #[serde(default)]
+    pub summary: Option<String>,
+    #[serde(default)]
+    pub max_divergence: Option<f64>,
+    #[serde(default)]
+    pub min_confidence: Option<f64>,
+    #[serde(default)]
+    pub high_risk_keywords: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct ConclaveHighRiskFlagsOutput {
+    pub flags: Vec<String>,
 }
 
 fn normalize_token(raw: &str, max_len: usize) -> String {
@@ -378,6 +531,388 @@ pub fn compute_max_target_rank(input: &MaxTargetRankInput) -> MaxTargetRankOutpu
     MaxTargetRankOutput { rank }
 }
 
+fn clean_text_runtime(raw: &str, max_len: usize) -> String {
+    raw.split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+        .trim()
+        .chars()
+        .take(max_len)
+        .collect::<String>()
+}
+
+fn normalize_token_runtime(raw: &str, max_len: usize) -> String {
+    let src = clean_text_runtime(raw, max_len).to_lowercase();
+    let mut out = String::new();
+    let mut prev_underscore = false;
+    for ch in src.chars() {
+        let keep = ch.is_ascii_lowercase()
+            || ch.is_ascii_digit()
+            || ch == '_'
+            || ch == '.'
+            || ch == ':'
+            || ch == '-';
+        if keep {
+            out.push(ch);
+            prev_underscore = false;
+        } else if !prev_underscore {
+            out.push('_');
+            prev_underscore = true;
+        }
+    }
+    out.trim_matches('_').to_string()
+}
+
+fn parse_number_like(value: Option<&Value>) -> Option<f64> {
+    let Some(v) = value else {
+        return None;
+    };
+    if let Some(n) = v.as_f64() {
+        return Some(n);
+    }
+    if let Some(s) = v.as_str() {
+        return s.trim().parse::<f64>().ok();
+    }
+    if let Some(b) = v.as_bool() {
+        return Some(if b { 1.0 } else { 0.0 });
+    }
+    None
+}
+
+fn value_to_string(value: Option<&Value>) -> String {
+    let Some(v) = value else {
+        return String::new();
+    };
+    if let Some(s) = v.as_str() {
+        return s.to_string();
+    }
+    if v.is_null() {
+        return String::new();
+    }
+    v.to_string()
+}
+
+fn push_unique(values: &mut Vec<String>, next: String) {
+    if !values.iter().any(|item| item == &next) {
+        values.push(next);
+    }
+}
+
+pub fn compute_creative_penalty(input: &CreativePenaltyInput) -> CreativePenaltyOutput {
+    let preferred = input
+        .preferred_creative_lane_ids
+        .iter()
+        .map(|row| normalize_token_runtime(row, 120))
+        .filter(|row| !row.is_empty())
+        .collect::<Vec<_>>();
+    let selected_lane = input
+        .selected_lane
+        .as_deref()
+        .map(|v| v.to_string())
+        .filter(|v| !v.is_empty());
+    if input.enabled.unwrap_or(false) != true {
+        return CreativePenaltyOutput {
+            creative_lane_preferred: false,
+            selected_lane,
+            preferred_lanes: preferred,
+            penalty: 0.0,
+            applied: false,
+        };
+    }
+    let Some(selected) = selected_lane.clone() else {
+        return CreativePenaltyOutput {
+            creative_lane_preferred: false,
+            selected_lane: None,
+            preferred_lanes: preferred,
+            penalty: 0.0,
+            applied: false,
+        };
+    };
+    let is_preferred = preferred.iter().any(|row| row == &selected);
+    let penalty = if is_preferred {
+        0.0
+    } else {
+        input.non_creative_certainty_penalty.unwrap_or(0.0)
+    };
+    let penalty = clamp_number(penalty, 0.0, 0.5);
+    let penalty = (penalty * 1_000_000.0).round() / 1_000_000.0;
+    CreativePenaltyOutput {
+        creative_lane_preferred: is_preferred,
+        selected_lane: Some(selected),
+        preferred_lanes: preferred,
+        penalty,
+        applied: penalty > 0.0,
+    }
+}
+
+pub fn compute_extract_bullets(input: &ExtractBulletsInput) -> ExtractBulletsOutput {
+    let max_items = input.max_items.unwrap_or(4).max(0) as usize;
+    let markdown = input.markdown.as_deref().unwrap_or("");
+    let mut out = Vec::new();
+    let bullet_re = Regex::new(r"^[-*]\s+(.+)$").expect("valid bullet regex");
+    let ordered_re = Regex::new(r"^\d+\.\s+(.+)$").expect("valid ordered regex");
+    for line in markdown.lines() {
+        let trimmed = line.trim();
+        let capture = bullet_re
+            .captures(trimmed)
+            .or_else(|| ordered_re.captures(trimmed));
+        let Some(cap) = capture else {
+            continue;
+        };
+        let item = clean_text_runtime(cap.get(1).map(|m| m.as_str()).unwrap_or(""), 220);
+        if item.is_empty() {
+            continue;
+        }
+        out.push(item);
+        if out.len() >= max_items {
+            break;
+        }
+    }
+    ExtractBulletsOutput { items: out }
+}
+
+pub fn compute_extract_list_items(input: &ExtractListItemsInput) -> ExtractListItemsOutput {
+    let max_items = input.max_items.unwrap_or(8).max(0) as usize;
+    let markdown = input.markdown.as_deref().unwrap_or("");
+    let mut out = Vec::new();
+    let bullet_re = Regex::new(r"^[-*]\s+(.+)$").expect("valid list regex");
+    for line in markdown.lines() {
+        let trimmed = line.trim();
+        let Some(cap) = bullet_re.captures(trimmed) else {
+            continue;
+        };
+        let item = clean_text_runtime(cap.get(1).map(|m| m.as_str()).unwrap_or(""), 160);
+        if item.is_empty() {
+            continue;
+        }
+        out.push(item);
+        if out.len() >= max_items {
+            break;
+        }
+    }
+    ExtractListItemsOutput { items: out }
+}
+
+pub fn compute_parse_system_internal_permission(
+    input: &ParseSystemInternalPermissionInput,
+) -> ParseSystemInternalPermissionOutput {
+    let markdown = input.markdown.as_deref().unwrap_or("");
+    let permission_re = Regex::new(
+        r"(?i)^-+\s*system_internal\s*:\s*\{\s*enabled:\s*(true|false)\s*,\s*sources:\s*\[([^\]]*)\]\s*\}\s*$",
+    )
+    .expect("valid system_internal regex");
+    for line in markdown.lines() {
+        let trimmed = line.trim();
+        let Some(cap) = permission_re.captures(trimmed) else {
+            continue;
+        };
+        let enabled = cap
+            .get(1)
+            .map(|m| m.as_str().to_lowercase() == "true")
+            .unwrap_or(false);
+        let sources = cap
+            .get(2)
+            .map(|m| {
+                m.as_str()
+                    .split(',')
+                    .map(|row| normalize_token_runtime(row, 40))
+                    .filter(|row| !row.is_empty())
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default();
+        return ParseSystemInternalPermissionOutput { enabled, sources };
+    }
+    ParseSystemInternalPermissionOutput {
+        enabled: false,
+        sources: Vec::new(),
+    }
+}
+
+pub fn compute_parse_soul_token_data_pass_rules(
+    input: &ParseSoulTokenDataPassRulesInput,
+) -> ParseSoulTokenDataPassRulesOutput {
+    let markdown = input.markdown.as_deref().unwrap_or("");
+    let section = markdown.split("## Data Pass Rules").nth(1).unwrap_or("");
+    let list = compute_extract_list_items(&ExtractListItemsInput {
+        markdown: Some(section.to_string()),
+        max_items: Some(12),
+    });
+    let rules = list
+        .items
+        .iter()
+        .map(|row| normalize_token_runtime(row, 80))
+        .filter(|row| !row.is_empty())
+        .collect::<Vec<_>>();
+    ParseSoulTokenDataPassRulesOutput { rules }
+}
+
+pub fn compute_ensure_system_passed_section(
+    input: &EnsureSystemPassedSectionInput,
+) -> EnsureSystemPassedSectionOutput {
+    let body = input
+        .feed_text
+        .as_deref()
+        .unwrap_or("")
+        .trim_end_matches(|c: char| c.is_whitespace())
+        .to_string();
+    if body.contains("\n## System Passed") {
+        return EnsureSystemPassedSectionOutput { text: body };
+    }
+    let text = vec![
+        body,
+        String::new(),
+        "## System Passed".to_string(),
+        String::new(),
+        "Hash-verified system payloads pushed from internal sources (memory, loops, analytics)."
+            .to_string(),
+        "Entries are JSON payload records with deterministic hash verification.".to_string(),
+        String::new(),
+    ]
+    .join("\n");
+    EnsureSystemPassedSectionOutput { text }
+}
+
+pub fn compute_system_passed_payload_hash(
+    input: &SystemPassedPayloadHashInput,
+) -> SystemPassedPayloadHashOutput {
+    let source = normalize_token_runtime(input.source.as_deref().unwrap_or(""), 80);
+    let tags = input.tags.join(",");
+    let payload = clean_text_runtime(input.payload.as_deref().unwrap_or(""), 2000);
+    let seed = format!("v1|{source}|{tags}|{payload}");
+    let mut hasher = Sha256::new();
+    hasher.update(seed.as_bytes());
+    let hash = hex::encode(hasher.finalize());
+    SystemPassedPayloadHashOutput { hash }
+}
+
+pub fn compute_build_lens_position(input: &BuildLensPositionInput) -> BuildLensPositionOutput {
+    let objective = input.objective.as_deref().unwrap_or("");
+    let lower = objective.to_lowercase();
+    let target = input.target.as_deref().unwrap_or("");
+    let impact = input.impact.as_deref().unwrap_or("");
+    let position = if lower.contains("memory") && lower.contains("security") {
+        "Preserve memory determinism sequencing while keeping security fail-closed at dispatch boundaries.".to_string()
+    } else if lower.contains("drift") {
+        "Treat drift above tolerance as a hard stop and require rollback-ready proof before apply.".to_string()
+    } else if target == "identity" || impact == "high" || impact == "critical" {
+        "Use strict reversible slices with explicit receipts before any live apply.".to_string()
+    } else {
+        "Keep the smallest reversible path and preserve fail-closed controls before mutation.".to_string()
+    };
+    BuildLensPositionOutput { position }
+}
+
+pub fn compute_build_conclave_proposal_summary(
+    input: &BuildConclaveProposalSummaryInput,
+) -> BuildConclaveProposalSummaryOutput {
+    let mut parts = Vec::new();
+    for (value, max_len) in [
+        (input.objective.as_deref().unwrap_or(""), 320usize),
+        (input.objective_id.as_deref().unwrap_or(""), 120usize),
+        (input.target.as_deref().unwrap_or(""), 40usize),
+        (input.impact.as_deref().unwrap_or(""), 40usize),
+        (input.mode.as_deref().unwrap_or(""), 24usize),
+    ] {
+        let clean = clean_text_runtime(value, max_len);
+        if !clean.is_empty() {
+            parts.push(clean);
+        }
+    }
+    let summary = if parts.is_empty() {
+        "inversion_self_modification_request".to_string()
+    } else {
+        parts.join(" | ")
+    };
+    BuildConclaveProposalSummaryOutput { summary }
+}
+
+pub fn compute_conclave_high_risk_flags(
+    input: &ConclaveHighRiskFlagsInput,
+) -> ConclaveHighRiskFlagsOutput {
+    let payload = input.payload.as_ref().and_then(|v| v.as_object());
+    let max_divergence = input.max_divergence.unwrap_or(0.45);
+    let min_confidence = input.min_confidence.unwrap_or(0.6);
+    let mut flags: Vec<String> = Vec::new();
+
+    let winner = clean_text_runtime(
+        &value_to_string(payload.and_then(|row| row.get("winner"))),
+        120,
+    );
+    if payload.is_none()
+        || payload
+            .and_then(|row| row.get("ok"))
+            .and_then(|v| v.as_bool())
+            != Some(true)
+        || winner.is_empty()
+    {
+        push_unique(&mut flags, "no_consensus".to_string());
+    }
+
+    let divergence = parse_number_like(payload.and_then(|row| row.get("max_divergence"))).unwrap_or(0.0);
+    if !divergence.is_finite() || divergence > max_divergence {
+        push_unique(&mut flags, "high_divergence".to_string());
+    }
+
+    let persona_outputs = payload
+        .and_then(|row| row.get("persona_outputs"))
+        .and_then(|v| v.as_array())
+        .cloned()
+        .unwrap_or_default();
+    let confidences = persona_outputs
+        .iter()
+        .filter_map(|row| row.as_object())
+        .filter_map(|row| parse_number_like(row.get("confidence")))
+        .filter(|n| n.is_finite())
+        .collect::<Vec<_>>();
+    if !confidences.is_empty()
+        && confidences
+            .iter()
+            .fold(f64::INFINITY, |acc, n| acc.min(*n))
+            < min_confidence
+    {
+        push_unique(&mut flags, "low_confidence".to_string());
+    }
+
+    let mut corpus_rows = vec![
+        clean_text_runtime(input.query.as_deref().unwrap_or(""), 2400),
+        clean_text_runtime(input.summary.as_deref().unwrap_or(""), 1200),
+        clean_text_runtime(
+            &value_to_string(payload.and_then(|row| row.get("suggested_resolution"))),
+            1600,
+        ),
+    ];
+    for row in &persona_outputs {
+        if let Some(map) = row.as_object() {
+            corpus_rows.push(clean_text_runtime(
+                &value_to_string(map.get("recommendation")),
+                1200,
+            ));
+            if let Some(reasoning) = map.get("reasoning").and_then(|v| v.as_array()) {
+                for reason in reasoning {
+                    corpus_rows.push(clean_text_runtime(&value_to_string(Some(reason)), 240));
+                }
+            }
+        }
+    }
+    let corpus = corpus_rows.join("\n").to_lowercase();
+    for keyword in &input.high_risk_keywords {
+        if keyword.is_empty() {
+            continue;
+        }
+        if corpus.contains(&keyword.to_lowercase()) {
+            let token = normalize_token_runtime(keyword, 80);
+            let flag = if token.is_empty() {
+                "keyword:risk".to_string()
+            } else {
+                format!("keyword:{token}")
+            };
+            push_unique(&mut flags, flag);
+        }
+    }
+
+    ConclaveHighRiskFlagsOutput { flags }
+}
+
 fn decode_input<T>(payload: &Value, key: &str) -> Result<T, String>
 where
     T: for<'de> Deserialize<'de> + Default,
@@ -499,6 +1034,112 @@ pub fn run_inversion_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("inversion_encode_max_target_rank_failed:{e}"));
+    }
+    if mode == "creative_penalty" {
+        let input: CreativePenaltyInput = decode_input(&payload, "creative_penalty_input")?;
+        let out = compute_creative_penalty(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "creative_penalty",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_creative_penalty_failed:{e}"));
+    }
+    if mode == "extract_bullets" {
+        let input: ExtractBulletsInput = decode_input(&payload, "extract_bullets_input")?;
+        let out = compute_extract_bullets(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "extract_bullets",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_extract_bullets_failed:{e}"));
+    }
+    if mode == "extract_list_items" {
+        let input: ExtractListItemsInput = decode_input(&payload, "extract_list_items_input")?;
+        let out = compute_extract_list_items(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "extract_list_items",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_extract_list_items_failed:{e}"));
+    }
+    if mode == "parse_system_internal_permission" {
+        let input: ParseSystemInternalPermissionInput =
+            decode_input(&payload, "parse_system_internal_permission_input")?;
+        let out = compute_parse_system_internal_permission(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "parse_system_internal_permission",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_parse_system_internal_permission_failed:{e}"));
+    }
+    if mode == "parse_soul_token_data_pass_rules" {
+        let input: ParseSoulTokenDataPassRulesInput =
+            decode_input(&payload, "parse_soul_token_data_pass_rules_input")?;
+        let out = compute_parse_soul_token_data_pass_rules(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "parse_soul_token_data_pass_rules",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_parse_soul_token_data_pass_rules_failed:{e}"));
+    }
+    if mode == "ensure_system_passed_section" {
+        let input: EnsureSystemPassedSectionInput =
+            decode_input(&payload, "ensure_system_passed_section_input")?;
+        let out = compute_ensure_system_passed_section(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "ensure_system_passed_section",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_ensure_system_passed_section_failed:{e}"));
+    }
+    if mode == "system_passed_payload_hash" {
+        let input: SystemPassedPayloadHashInput =
+            decode_input(&payload, "system_passed_payload_hash_input")?;
+        let out = compute_system_passed_payload_hash(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "system_passed_payload_hash",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_system_passed_payload_hash_failed:{e}"));
+    }
+    if mode == "build_lens_position" {
+        let input: BuildLensPositionInput = decode_input(&payload, "build_lens_position_input")?;
+        let out = compute_build_lens_position(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "build_lens_position",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_build_lens_position_failed:{e}"));
+    }
+    if mode == "build_conclave_proposal_summary" {
+        let input: BuildConclaveProposalSummaryInput =
+            decode_input(&payload, "build_conclave_proposal_summary_input")?;
+        let out = compute_build_conclave_proposal_summary(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "build_conclave_proposal_summary",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_build_conclave_proposal_summary_failed:{e}"));
+    }
+    if mode == "conclave_high_risk_flags" {
+        let input: ConclaveHighRiskFlagsInput =
+            decode_input(&payload, "conclave_high_risk_flags_input")?;
+        let out = compute_conclave_high_risk_flags(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "conclave_high_risk_flags",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_conclave_high_risk_flags_failed:{e}"));
     }
     Err(format!("inversion_mode_unsupported:{mode}"))
 }
@@ -665,5 +1306,107 @@ mod tests {
             impact: Some("high".to_string()),
         });
         assert_eq!(out.rank, 2);
+    }
+
+    #[test]
+    fn extractors_and_permission_parsers_match_contract() {
+        let bullets = compute_extract_bullets(&ExtractBulletsInput {
+            markdown: Some("- a\n2. b\nnope".to_string()),
+            max_items: Some(4),
+        });
+        assert_eq!(bullets.items, vec!["a".to_string(), "b".to_string()]);
+
+        let list = compute_extract_list_items(&ExtractListItemsInput {
+            markdown: Some("- one\n- two\n3. no".to_string()),
+            max_items: Some(8),
+        });
+        assert_eq!(list.items, vec!["one".to_string(), "two".to_string()]);
+
+        let parsed = compute_parse_system_internal_permission(&ParseSystemInternalPermissionInput {
+            markdown: Some("- system_internal: {enabled: true, sources: [memory, loops]}".to_string()),
+        });
+        assert_eq!(
+            parsed,
+            ParseSystemInternalPermissionOutput {
+                enabled: true,
+                sources: vec!["memory".to_string(), "loops".to_string()]
+            }
+        );
+
+        let rules = compute_parse_soul_token_data_pass_rules(&ParseSoulTokenDataPassRulesInput {
+            markdown: Some("## Data Pass Rules\n- allow-system-internal-passed-data\n- Non Runtime".to_string()),
+        });
+        assert_eq!(
+            rules.rules,
+            vec![
+                "allow-system-internal-passed-data".to_string(),
+                "non_runtime".to_string()
+            ]
+        );
+    }
+
+    #[test]
+    fn system_passed_helpers_are_deterministic() {
+        let ensured = compute_ensure_system_passed_section(&EnsureSystemPassedSectionInput {
+            feed_text: Some("# Feed".to_string()),
+        });
+        assert!(ensured.text.contains("## System Passed"));
+
+        let hash = compute_system_passed_payload_hash(&SystemPassedPayloadHashInput {
+            source: Some("loop.inversion".to_string()),
+            tags: vec!["loops".to_string(), "drift_alert".to_string()],
+            payload: Some("drift=0.05".to_string()),
+        });
+        assert_eq!(hash.hash.len(), 64);
+    }
+
+    #[test]
+    fn conclave_summary_and_flags_match_expectations() {
+        let summary = compute_build_conclave_proposal_summary(&BuildConclaveProposalSummaryInput {
+            objective: Some("Improve memory safety".to_string()),
+            objective_id: Some("T1_abc".to_string()),
+            target: Some("identity".to_string()),
+            impact: Some("high".to_string()),
+            mode: Some("live".to_string()),
+        });
+        assert!(summary.summary.contains("Improve memory safety"));
+
+        let position = compute_build_lens_position(&BuildLensPositionInput {
+            objective: Some("memory and security flow".to_string()),
+            target: Some("tactical".to_string()),
+            impact: Some("medium".to_string()),
+        });
+        assert!(position.position.contains("security fail-closed"));
+
+        let flags = compute_conclave_high_risk_flags(&ConclaveHighRiskFlagsInput {
+            payload: Some(json!({
+                "ok": true,
+                "winner": "vikram",
+                "max_divergence": 0.9,
+                "persona_outputs": [{ "confidence": 0.4, "recommendation": "disable covenant" }]
+            })),
+            query: Some("test".to_string()),
+            summary: Some("skip parity".to_string()),
+            max_divergence: Some(0.45),
+            min_confidence: Some(0.6),
+            high_risk_keywords: vec!["disable covenant".to_string(), "skip parity".to_string()],
+        });
+        assert!(flags.flags.contains(&"high_divergence".to_string()));
+        assert!(flags.flags.contains(&"low_confidence".to_string()));
+        assert!(flags.flags.contains(&"keyword:disable_covenant".to_string()));
+        assert!(flags.flags.contains(&"keyword:skip_parity".to_string()));
+    }
+
+    #[test]
+    fn creative_penalty_enforces_bounds() {
+        let out = compute_creative_penalty(&CreativePenaltyInput {
+            enabled: Some(true),
+            preferred_creative_lane_ids: vec!["creative_lane".to_string()],
+            non_creative_certainty_penalty: Some(0.7),
+            selected_lane: Some("other_lane".to_string()),
+        });
+        assert!(!out.creative_lane_preferred);
+        assert!(out.applied);
+        assert!((out.penalty - 0.5).abs() < 1e-9);
     }
 }

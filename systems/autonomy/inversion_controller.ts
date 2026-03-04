@@ -3087,6 +3087,30 @@ function evaluateCreativePenalty(policy: AnyObj, selectedLane: string) {
   const preferred = Array.isArray(pref.preferred_creative_lane_ids)
     ? pref.preferred_creative_lane_ids.map((x: unknown) => normalizeToken(x, 120)).filter(Boolean)
     : [];
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'creative_penalty',
+      {
+        enabled: pref.enabled === true,
+        preferred_creative_lane_ids: preferred,
+        non_creative_certainty_penalty: Number(pref.non_creative_certainty_penalty || 0),
+        selected_lane: selectedLane || null
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const payload = rust.payload.payload;
+      return {
+        creative_lane_preferred: payload.creative_lane_preferred === true,
+        selected_lane: payload.selected_lane ? String(payload.selected_lane) : null,
+        preferred_lanes: Array.isArray(payload.preferred_lanes)
+          ? payload.preferred_lanes.map((row: unknown) => normalizeToken(row, 120)).filter(Boolean)
+          : preferred,
+        penalty: Number(clampNumber(payload.penalty, 0, 0.5, 0).toFixed(6)),
+        applied: payload.applied === true
+      };
+    }
+  }
   if (pref.enabled !== true) {
     return {
       creative_lane_preferred: false,
@@ -3229,6 +3253,21 @@ function readText(filePath: string, fallback = '') {
 }
 
 function extractBullets(markdown: string, maxItems = 4) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'extract_bullets',
+      {
+        markdown: markdown == null ? '' : String(markdown),
+        max_items: Number(maxItems)
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return Array.isArray(rust.payload.payload.items)
+        ? rust.payload.payload.items.map((row: unknown) => cleanText(row, 220)).filter(Boolean)
+        : [];
+    }
+  }
   const out: string[] = [];
   const lines = String(markdown || '').split('\n');
   for (const line of lines) {
@@ -3243,6 +3282,21 @@ function extractBullets(markdown: string, maxItems = 4) {
 }
 
 function extractListItems(markdown: string, maxItems = 8) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'extract_list_items',
+      {
+        markdown: markdown == null ? '' : String(markdown),
+        max_items: Number(maxItems)
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return Array.isArray(rust.payload.payload.items)
+        ? rust.payload.payload.items.map((row: unknown) => cleanText(row, 160)).filter(Boolean)
+        : [];
+    }
+  }
   const out: string[] = [];
   const lines = String(markdown || '').split('\n');
   for (const line of lines) {
@@ -3256,6 +3310,24 @@ function extractListItems(markdown: string, maxItems = 8) {
 }
 
 function parseSystemInternalPermission(markdown: string) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'parse_system_internal_permission',
+      {
+        markdown: markdown == null ? '' : String(markdown)
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const payload = rust.payload.payload;
+      return {
+        enabled: payload.enabled === true,
+        sources: Array.isArray(payload.sources)
+          ? payload.sources.map((row: unknown) => normalizeToken(row, 40)).filter(Boolean)
+          : []
+      };
+    }
+  }
   for (const line of String(markdown || '').split('\n')) {
     const trimmed = String(line || '').trim();
     const m = trimmed.match(/^-+\s*system_internal\s*:\s*\{\s*enabled:\s*(true|false)\s*,\s*sources:\s*\[([^\]]*)\]\s*\}\s*$/i);
@@ -3271,11 +3343,40 @@ function parseSystemInternalPermission(markdown: string) {
 }
 
 function parseSoulTokenDataPassRules(markdown: string) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'parse_soul_token_data_pass_rules',
+      {
+        markdown: markdown == null ? '' : String(markdown)
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return Array.isArray(rust.payload.payload.rules)
+        ? rust.payload.payload.rules.map((row: unknown) => normalizeToken(row, 80)).filter(Boolean)
+        : [];
+    }
+  }
   const section = String(markdown || '').split('## Data Pass Rules')[1] || '';
   return extractListItems(section, 12).map((row) => normalizeToken(row, 80)).filter(Boolean);
 }
 
 function systemPassedPayloadHash(source: string, tags: string[], payload: string) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'system_passed_payload_hash',
+      {
+        source: source == null ? '' : String(source),
+        tags: Array.isArray(tags) ? tags.map((row) => String(row || '')) : [],
+        payload: payload == null ? '' : String(payload)
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const hash = cleanText(rust.payload.payload.hash || '', 128).toLowerCase();
+      if (/^[a-f0-9]{64}$/.test(hash)) return hash;
+    }
+  }
   return crypto
     .createHash('sha256')
     .update(`v1|${normalizeToken(source, 80)}|${(Array.isArray(tags) ? tags : []).join(',')}|${cleanText(payload, 2000)}`, 'utf8')
@@ -3283,6 +3384,19 @@ function systemPassedPayloadHash(source: string, tags: string[], payload: string
 }
 
 function ensureSystemPassedSection(feedText: string) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'ensure_system_passed_section',
+      {
+        feed_text: feedText == null ? '' : String(feedText)
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const text = String(rust.payload.payload.text || '');
+      if (text) return text;
+    }
+  }
   const body = String(feedText || '').replace(/\s+$/, '');
   if (body.includes('\n## System Passed')) return body;
   return [
@@ -3484,6 +3598,21 @@ function resolveParityConfidence(args: AnyObj, policy: AnyObj) {
 }
 
 function buildLensPosition(objective: string, target: string, impact: string) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'build_lens_position',
+      {
+        objective: objective == null ? '' : String(objective),
+        target: target == null ? '' : String(target),
+        impact: impact == null ? '' : String(impact)
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const position = cleanText(rust.payload.payload.position || '', 220);
+      if (position) return position;
+    }
+  }
   const lower = String(objective || '').toLowerCase();
   if (lower.includes('memory') && lower.includes('security')) {
     return 'Preserve memory determinism sequencing while keeping security fail-closed at dispatch boundaries.';
@@ -3656,6 +3785,23 @@ function safeRelPath(filePath: string) {
 }
 
 function buildConclaveProposalSummary(input: AnyObj) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'build_conclave_proposal_summary',
+      {
+        objective: input && input.objective != null ? String(input.objective) : '',
+        objective_id: input && input.objective_id != null ? String(input.objective_id) : '',
+        target: input && input.target != null ? String(input.target) : '',
+        impact: input && input.impact != null ? String(input.impact) : '',
+        mode: input && input.mode != null ? String(input.mode) : ''
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const summary = cleanText(rust.payload.payload.summary || '', 1400);
+      if (summary) return summary;
+    }
+  }
   const parts = [
     cleanText(input.objective || '', 320),
     cleanText(input.objective_id || '', 120),
@@ -3667,6 +3813,27 @@ function buildConclaveProposalSummary(input: AnyObj) {
 }
 
 function conclaveHighRiskFlags(payload: AnyObj, query: string, summary: string) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'conclave_high_risk_flags',
+      {
+        payload: payload && typeof payload === 'object' ? payload : null,
+        query: query == null ? '' : String(query),
+        summary: summary == null ? '' : String(summary),
+        max_divergence: Number(SHADOW_CONCLAVE_MAX_DIVERGENCE || 0.45),
+        min_confidence: Number(SHADOW_CONCLAVE_MIN_CONFIDENCE || 0.6),
+        high_risk_keywords: Array.isArray(SHADOW_CONCLAVE_HIGH_RISK_KEYWORDS)
+          ? SHADOW_CONCLAVE_HIGH_RISK_KEYWORDS.map((row) => String(row || ''))
+          : []
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return Array.isArray(rust.payload.payload.flags)
+        ? rust.payload.payload.flags.map((row: unknown) => cleanText(row, 120)).filter(Boolean)
+        : [];
+    }
+  }
   const out = new Set<string>();
   const divergence = Number(payload && payload.max_divergence || 0);
   if (!payload || payload.ok !== true || !cleanText(payload.winner || '', 120)) out.add('no_consensus');
@@ -6399,5 +6566,15 @@ module.exports = {
   jaccardSimilarity,
   tritSimilarity,
   certaintyThreshold,
-  maxTargetRankForDecision
+  maxTargetRankForDecision,
+  evaluateCreativePenalty,
+  extractBullets,
+  extractListItems,
+  parseSystemInternalPermission,
+  parseSoulTokenDataPassRules,
+  ensureSystemPassedSection,
+  systemPassedPayloadHash,
+  buildLensPosition,
+  buildConclaveProposalSummary,
+  conclaveHighRiskFlags
 };
