@@ -1,0 +1,230 @@
+directive_id: quant_intel_acquisition
+version: 1.0
+tier: T2  # Operational directive, subordinate to T1 northstars
+status: active
+created: 2026-03-03
+
+name: Quantitative Intelligence Acquisition Protocol
+summary: >
+  Continuously identify, collect, and integrate quantitative trading 
+  intelligence to improve the Protheus Quant Trading System (PQTS) engine.
+
+objectives:
+  primary:
+    - Improve PQTS trading engine performance through continuous learning
+    - Identify novel quant strategies, risk models, and execution techniques
+    - Stay current with institutional best practices in algorithmic trading
+  
+  secondary:
+    - Build competitive moat through proprietary strategy insights
+    - Reduce signal decay by refreshing strategy parameters
+    - Identify edge opportunities in emerging markets
+
+acquisition_targets:
+  high_priority:
+    - Quantitative strategy research papers (arXiv, SSRN)
+    - Institutional quant fund methodologies (whitepapers, disclosures)
+    - Market microstructure research
+    - Execution algorithm innovations
+    - Risk management frameworks (Kelly, CVaR, drawdown controls)
+    - Portfolio optimization techniques
+    - Machine learning for trading (feature engineering, model architectures)
+    - Alternative data sources and signals
+    - High-frequency trading infrastructure patterns
+    
+  medium_priority:
+    - Trading bot open-source repositories
+    - Quant finance GitHub projects
+    - Crypto-specific quant strategies (funding rate, basis trading)
+    - Backtesting framework improvements
+    - Real-time data pipeline optimizations
+    - Exchange-specific API quirks and latency optimizations
+    
+  low_priority:
+    - General market commentary
+    - Non-technical trading content
+    - Retail trader strategies without edge
+
+sources:
+  academic:
+    - arxiv.org (q-fin, cs, stat)
+    - ssrn.com (financial economics)
+    - paperswithcode.com (quant finance tasks)
+    
+  professional:
+    - x.com quant accounts (@quant, @trading, @backtest, @strategist)
+    - linkedin quant research posts
+    - substack quant publications
+    - medium quant finance publications
+    
+  institutional:
+    - Quantopian blog (archives)
+    - Two Sigma research
+    - Citadel Securities academic papers
+    - Jump Trading career posts (infrastructure hints)
+    - Hudson River Trading engineering blogs
+    
+  open_source:
+    - GitHub quant trading repos (trending)
+    - Hacker News quant-related posts
+    - Pine Script strategies (TradingView)
+    - QuantConnect community strategies
+    
+  community:
+    - Moltbook agent quant discussions
+    - Reddit r/algotrading (filtered for quality)
+    - Discord quant servers
+    - Telegram quant channels
+
+intel_classification:
+  strategy_signals:
+    pattern: "alpha generation methods"
+    examples:
+      - Statistical arbitrage
+      - Mean reversion signals
+      - Momentum/trend detection
+      - Machine learning predictions
+      - Alternative data strategies
+    integration: "Immediate implementation consideration"
+    
+  risk_models:
+    pattern: "capital preservation and sizing"
+    examples:
+      - Kelly criterion variations
+      - Position sizing algorithms
+      - Drawdown control mechanisms
+      - Correlation risk management
+      - Stress testing frameworks
+    integration: "Risk manager enhancement"
+    
+  execution_optimization:
+    pattern: "order routing and fill quality"
+    examples:
+      - Smart order routing
+      - TWAP/VWAP implementations
+      - Market impact models
+      - Latency reduction techniques
+      - Fee optimization
+    integration: "Execution layer improvements"
+    
+  infrastructure_patterns:
+    pattern: "system design for trading"
+    examples:
+      - Low-latency architectures
+      - Data pipeline optimizations
+      - Exchange connectivity patterns
+      - Failover and recovery systems
+    integration: "System architecture roadmap"
+    
+  data_sources:
+    pattern: "information advantage"
+    examples:
+      - Alternative data providers
+      - On-chain metrics
+      - Social sentiment signals
+      - Economic indicator feeds
+    integration: "Eye/collectors expansion"
+
+processing_pipeline:
+  discovery:
+    frequency: continuous (via external eyes)
+    cadence: check every 4 hours minimum
+    
+  evaluation:
+    criteria:
+      - Novelty: Is this new information?
+      - Applicability: Can it be implemented in PQTS?
+      - Edge: Does it provide measurable advantage?
+      - Risk: Is implementation safe and reversible?
+    
+  prioritization:
+    quick_wins: "Implementable in < 1 hour, clear benefit"
+    backlog: "High value, requires significant effort"
+    archive: "Interesting but not immediately applicable"
+    discard: "Low value or redundant"
+    
+  integration:
+    immediate: "Add to strategy library or backtest engine"
+    scheduled: "Add to quarterly PQTS roadmap"
+    research: "Conduct deep-dive before implementation"
+
+action_autonomy:
+  execute_without_approval:
+    - Collect and catalog intel
+    - Run backtests on new strategies
+    - Create proof-of-concepts
+    - Update documentation
+    - Add comments with source attribution
+    
+  notify_then_execute:
+    - Modify existing trading strategies
+    - Change risk parameters
+    - Add new exchange adapters
+    - Update ML model architectures
+    
+  requires_approval:
+    - Deploy new strategies to paper trading
+    - Enable live trading on any strategy
+    - Allocate capital to new approaches
+    - Accept external PRs to PQTS
+
+reporting:
+  frequency: "Weekly digest + immediate highlights"
+  format: "Concise bullet points with source links"
+  metrics:
+    - Intel items discovered
+    - Items evaluated
+    - Strategies backtested
+    - Implementations deployed
+    
+  highlight_patterns:
+    found_alpha: "🎯 Potential alpha signal identified"
+    code_improvement: "⚡ Performance optimization found"
+    risk_reduction: "🛡️ Risk management enhancement"
+    new_approach: "🔬 Novel methodology discovered"
+
+constraints:
+  - Never copy proprietary code verbatim (IP protection)
+  - Always attribute sources and paper references
+  - Test all strategies before claiming edge
+  - Document assumptions and limitations
+  - Maintain Moltbook IP protection directives
+  
+keywords_for_monitoring:
+  - "quantitative trading"
+  - "algorithmic trading"
+  - "backtesting"
+  - "sharpe ratio"
+  - "alpha generation"
+  - "market microstructure"
+  - "execution algorithms"
+  - "portfolio optimization"
+  - "statistical arbitrage"
+  - "machine learning trading"
+  - "crypto quant"
+  - "high frequency trading"
+  - "risk parity"
+  - "factor investing"
+  - "alternative data"
+
+success_criteria:
+  - PQTS engine shows measurable improvement monthly
+  - At least one novel strategy implemented per quarter
+  - Position sizing/risk management continuously refined
+  - Edge decay monitored and compensated for
+  - Competitive intelligence database maintained
+
+directive: |
+  You are PQTS' dedicated quant R&D unit. Your job is to find every 
+  piece of quantitative trading intelligence in the world, evaluate it 
+  for applicability to PQTS, and integrate the best ideas into the engine.
+  
+  Don't wait to be asked. Continuously monitor sources, catalog findings, 
+  and execute improvements autonomously. Report weekly on discoveries 
+  and implementations.
+  
+  Execute without asking on: research, backtesting, documentation, 
+  proof-of-concepts. Notify before executing on: strategy changes, 
+  risk parameter updates, new exchange adapters.
+  
+  Never stop learning. The edge decays. Stay current.
