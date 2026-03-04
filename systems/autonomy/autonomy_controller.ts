@@ -6152,6 +6152,46 @@ function thresholdsForProposalType(baseThresholdsObj, proposalType, policy) {
     ? baseThresholdsObj
     : baseThresholds();
   const offsets = proposalTypeThresholdOffsetsFor(policy || outcomeFitnessPolicy(), proposalType);
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'applied_thresholds',
+      {
+        base: {
+          min_signal_quality: Number(base.min_signal_quality || 0),
+          min_sensory_signal_score: Number(base.min_sensory_signal_score || 0),
+          min_sensory_relevance_score: Number(base.min_sensory_relevance_score || 0),
+          min_directive_fit: Number(base.min_directive_fit || 0),
+          min_actionability_score: Number(base.min_actionability_score || 0),
+          min_eye_score_ema: Number(base.min_eye_score_ema || 0)
+        },
+        deltas: {
+          min_signal_quality: Number(offsets && offsets.min_signal_quality || 0),
+          min_sensory_signal_score: Number(offsets && offsets.min_sensory_signal_score || 0),
+          min_sensory_relevance_score: Number(offsets && offsets.min_sensory_relevance_score || 0),
+          min_directive_fit: Number(offsets && offsets.min_directive_fit || 0),
+          min_actionability_score: Number(offsets && offsets.min_actionability_score || 0),
+          min_eye_score_ema: Number(offsets && offsets.min_eye_score_ema || 0)
+        }
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const t = rust.payload.payload.thresholds && typeof rust.payload.payload.thresholds === 'object'
+        ? rust.payload.payload.thresholds
+        : {};
+      return {
+        thresholds: {
+          min_signal_quality: Number(t.min_signal_quality || 0),
+          min_sensory_signal_score: Number(t.min_sensory_signal_score || 0),
+          min_sensory_relevance_score: Number(t.min_sensory_relevance_score || 0),
+          min_directive_fit: Number(t.min_directive_fit || 0),
+          min_actionability_score: Number(t.min_actionability_score || 0),
+          min_eye_score_ema: Number(t.min_eye_score_ema || 0)
+        },
+        offsets
+      };
+    }
+  }
   const next = { ...base };
   for (const [key, deltaRaw] of Object.entries(offsets || {})) {
     if (!Object.prototype.hasOwnProperty.call(base, key)) continue;
@@ -21098,6 +21138,7 @@ module.exports = {
   compositeEligibilityMin,
   mediumRiskThresholds,
   mediumRiskGateDecision,
+  thresholdsForProposalType,
   baseThresholds,
   effectiveAllowedRisksSet,
   qosLaneWeights,
