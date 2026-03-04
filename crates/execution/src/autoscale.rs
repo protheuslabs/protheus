@@ -552,6 +552,20 @@ pub struct StartOfNextUtcDayOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct IsoAfterMinutesInput {
+    #[serde(default)]
+    pub minutes: Option<f64>,
+    #[serde(default)]
+    pub now_ms: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct IsoAfterMinutesOutput {
+    #[serde(default)]
+    pub iso_ts: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct QosLaneUsageEventInput {
     #[serde(default)]
     pub event_type: Option<String>,
@@ -1105,6 +1119,8 @@ pub struct AutoscaleRequest {
     pub in_window_input: Option<InWindowInput>,
     #[serde(default)]
     pub start_of_next_utc_day_input: Option<StartOfNextUtcDayInput>,
+    #[serde(default)]
+    pub iso_after_minutes_input: Option<IsoAfterMinutesInput>,
     #[serde(default)]
     pub no_progress_result_input: Option<NoProgressResultInput>,
     #[serde(default)]
@@ -2329,6 +2345,29 @@ pub fn compute_start_of_next_utc_day(
     let next = date + Duration::days(1);
     StartOfNextUtcDayOutput {
         iso_ts: Some(format!("{}T00:00:00.000Z", next.format("%Y-%m-%d"))),
+    }
+}
+
+pub fn compute_iso_after_minutes(input: &IsoAfterMinutesInput) -> IsoAfterMinutesOutput {
+    let minutes = input.minutes.filter(|v| v.is_finite());
+    let Some(minutes) = minutes else {
+        return IsoAfterMinutesOutput { iso_ts: None };
+    };
+    let safe_minutes = if minutes < 0.0 { 0.0 } else { minutes };
+    let now_ms = input
+        .now_ms
+        .filter(|v| v.is_finite())
+        .unwrap_or_else(|| Utc::now().timestamp_millis() as f64);
+    let target_ms = now_ms + (safe_minutes * 60_000.0);
+    if !target_ms.is_finite() || target_ms < i64::MIN as f64 || target_ms > i64::MAX as f64 {
+        return IsoAfterMinutesOutput { iso_ts: None };
+    }
+    let target = DateTime::<Utc>::from_timestamp_millis(target_ms as i64);
+    let Some(target) = target else {
+        return IsoAfterMinutesOutput { iso_ts: None };
+    };
+    IsoAfterMinutesOutput {
+        iso_ts: Some(target.format("%Y-%m-%dT%H:%M:%S%.3fZ").to_string()),
     }
 }
 
@@ -3750,6 +3789,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
         }))
         .map_err(|e| format!("autoscale_start_of_next_utc_day_encode_failed:{e}"));
     }
+    if mode == "iso_after_minutes" {
+        let input = request
+            .iso_after_minutes_input
+            .ok_or_else(|| "autoscale_missing_iso_after_minutes_input".to_string())?;
+        let out = compute_iso_after_minutes(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "iso_after_minutes",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_iso_after_minutes_encode_failed:{e}"));
+    }
     if mode == "no_progress_result" {
         let input = request
             .no_progress_result_input
@@ -5075,6 +5126,35 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale start_of_next_utc_day");
         assert!(out.contains("\"mode\":\"start_of_next_utc_day\""));
+    }
+
+    #[test]
+    fn iso_after_minutes_builds_iso_and_clamps_negative() {
+        let out = compute_iso_after_minutes(&IsoAfterMinutesInput {
+            minutes: Some(30.0),
+            now_ms: Some(1_772_539_200_000.0),
+        });
+        assert_eq!(out.iso_ts, Some("2026-03-03T12:30:00.000Z".to_string()));
+
+        let clamped = compute_iso_after_minutes(&IsoAfterMinutesInput {
+            minutes: Some(-15.0),
+            now_ms: Some(1_772_539_200_000.0),
+        });
+        assert_eq!(clamped.iso_ts, Some("2026-03-03T12:00:00.000Z".to_string()));
+    }
+
+    #[test]
+    fn autoscale_json_iso_after_minutes_path_works() {
+        let payload = serde_json::json!({
+            "mode": "iso_after_minutes",
+            "iso_after_minutes_input": {
+                "minutes": 5,
+                "now_ms": 1772539200000.0
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale iso_after_minutes");
+        assert!(out.contains("\"mode\":\"iso_after_minutes\""));
     }
 
     #[test]

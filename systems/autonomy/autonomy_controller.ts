@@ -2726,6 +2726,8 @@ const IN_WINDOW_CACHE = new Map();
 const IN_WINDOW_CACHE_MAX = 1024;
 const START_OF_NEXT_UTC_DAY_CACHE = new Map();
 const START_OF_NEXT_UTC_DAY_CACHE_MAX = 512;
+const ISO_AFTER_MINUTES_CACHE = new Map();
+const ISO_AFTER_MINUTES_CACHE_MAX = 1024;
 const POLICY_HOLD_RESULT_CACHE = new Map();
 const POLICY_HOLD_RESULT_CACHE_MAX = 256;
 const NO_PROGRESS_RESULT_CACHE = new Map();
@@ -4677,6 +4679,33 @@ function startOfNextUtcDay(dateStr) {
 }
 
 function isoAfterMinutes(minutes) {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const safeMinutes = Number(minutes);
+    const nowMs = Date.now();
+    const key = `${safeMinutes}\u0000${nowMs}`;
+    if (ISO_AFTER_MINUTES_CACHE.has(key)) {
+      return ISO_AFTER_MINUTES_CACHE.get(key);
+    }
+    const rust = runBacklogAutoscalePrimitive(
+      'iso_after_minutes',
+      {
+        minutes: safeMinutes,
+        now_ms: nowMs
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const raw = rust.payload.payload.iso_ts;
+      const val = raw == null ? null : String(raw || '').trim();
+      const normalized = val || null;
+      if (ISO_AFTER_MINUTES_CACHE.size >= ISO_AFTER_MINUTES_CACHE_MAX) {
+        const oldest = ISO_AFTER_MINUTES_CACHE.keys().next();
+        if (!oldest.done) ISO_AFTER_MINUTES_CACHE.delete(oldest.value);
+      }
+      ISO_AFTER_MINUTES_CACHE.set(key, normalized);
+      return normalized;
+    }
+  }
   const n = Number(minutes);
   if (!Number.isFinite(n)) return null;
   const ms = Date.now() + Math.max(0, n) * 60 * 1000;
@@ -17197,6 +17226,7 @@ module.exports = {
   dateWindow,
   inWindow,
   startOfNextUtcDay,
+  isoAfterMinutes,
   runEventProposalType,
   runEventObjectiveId,
   runEventProposalId,
