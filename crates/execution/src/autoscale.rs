@@ -318,6 +318,31 @@ pub struct ProposalTypeFromRunEventOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct RunEventObjectiveIdInput {
+    #[serde(default)]
+    pub directive_pulse_present: Option<bool>,
+    #[serde(default)]
+    pub directive_pulse_objective_id: Option<String>,
+    #[serde(default)]
+    pub objective_id_present: Option<bool>,
+    #[serde(default)]
+    pub objective_id: Option<String>,
+    #[serde(default)]
+    pub objective_binding_present: Option<bool>,
+    #[serde(default)]
+    pub objective_binding_objective_id: Option<String>,
+    #[serde(default)]
+    pub top_escalation_present: Option<bool>,
+    #[serde(default)]
+    pub top_escalation_objective_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct RunEventObjectiveIdOutput {
+    pub objective_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct RouteExecutionPolicyHoldInput {
     #[serde(default)]
     pub target: Option<String>,
@@ -565,6 +590,8 @@ pub struct AutoscaleRequest {
     pub non_yield_reason_input: Option<NonYieldReasonInput>,
     #[serde(default)]
     pub proposal_type_from_run_event_input: Option<ProposalTypeFromRunEventInput>,
+    #[serde(default)]
+    pub run_event_objective_id_input: Option<RunEventObjectiveIdInput>,
     #[serde(default)]
     pub route_execution_policy_hold_input: Option<RouteExecutionPolicyHoldInput>,
     #[serde(default)]
@@ -1028,6 +1055,35 @@ fn normalize_spaces(s: &str) -> String {
     s.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
+fn sanitize_directive_objective_id(raw: &str) -> String {
+    let value = raw.trim();
+    if value.is_empty() {
+        return String::new();
+    }
+    let bytes = value.as_bytes();
+    if bytes.first().copied() != Some(b'T') {
+        return String::new();
+    }
+    let mut idx: usize = 1;
+    while idx < bytes.len() && bytes[idx].is_ascii_digit() {
+        idx += 1;
+    }
+    if idx == 1 || idx >= bytes.len() || bytes[idx] != b'_' {
+        return String::new();
+    }
+    idx += 1;
+    if idx >= bytes.len() {
+        return String::new();
+    }
+    if !bytes[idx..]
+        .iter()
+        .all(|b| b.is_ascii_alphanumeric() || *b == b'_')
+    {
+        return String::new();
+    }
+    value.to_string()
+}
+
 pub fn compute_policy_hold(input: &PolicyHoldInput) -> PolicyHoldOutput {
     let target = input.target.trim().to_ascii_lowercase();
     if target != "route" {
@@ -1436,6 +1492,36 @@ pub fn compute_proposal_type_from_run_event(
 
     ProposalTypeFromRunEventOutput {
         proposal_type: String::new(),
+    }
+}
+
+pub fn compute_run_event_objective_id(input: &RunEventObjectiveIdInput) -> RunEventObjectiveIdOutput {
+    let selected = if input.directive_pulse_present.unwrap_or(false) {
+        input
+            .directive_pulse_objective_id
+            .as_ref()
+            .map(|v| v.as_str())
+            .unwrap_or("")
+    } else if input.objective_id_present.unwrap_or(false) {
+        input.objective_id.as_ref().map(|v| v.as_str()).unwrap_or("")
+    } else if input.objective_binding_present.unwrap_or(false) {
+        input
+            .objective_binding_objective_id
+            .as_ref()
+            .map(|v| v.as_str())
+            .unwrap_or("")
+    } else if input.top_escalation_present.unwrap_or(false) {
+        input
+            .top_escalation_objective_id
+            .as_ref()
+            .map(|v| v.as_str())
+            .unwrap_or("")
+    } else {
+        ""
+    };
+
+    RunEventObjectiveIdOutput {
+        objective_id: sanitize_directive_objective_id(selected),
     }
 }
 
@@ -2042,6 +2128,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
         }))
         .map_err(|e| format!("autoscale_proposal_type_from_run_event_encode_failed:{e}"));
     }
+    if mode == "run_event_objective_id" {
+        let input = request
+            .run_event_objective_id_input
+            .ok_or_else(|| "autoscale_missing_run_event_objective_id_input".to_string())?;
+        let out = compute_run_event_objective_id(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "run_event_objective_id",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_run_event_objective_id_encode_failed:{e}"));
+    }
     if mode == "route_execution_policy_hold" {
         let input = request
             .route_execution_policy_hold_input
@@ -2617,6 +2715,53 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale proposal_type_from_run_event");
         assert!(out.contains("\"mode\":\"proposal_type_from_run_event\""));
+    }
+
+    #[test]
+    fn run_event_objective_id_uses_truthy_priority_then_sanitizes() {
+        let from_objective = compute_run_event_objective_id(&RunEventObjectiveIdInput {
+            directive_pulse_present: Some(false),
+            directive_pulse_objective_id: Some(String::new()),
+            objective_id_present: Some(true),
+            objective_id: Some("T1_alpha".to_string()),
+            objective_binding_present: Some(true),
+            objective_binding_objective_id: Some("T1_beta".to_string()),
+            top_escalation_present: Some(true),
+            top_escalation_objective_id: Some("T1_gamma".to_string()),
+        });
+        assert_eq!(from_objective.objective_id, "T1_alpha".to_string());
+
+        let blocked_by_truthy_invalid = compute_run_event_objective_id(&RunEventObjectiveIdInput {
+            directive_pulse_present: Some(true),
+            directive_pulse_objective_id: Some("   ".to_string()),
+            objective_id_present: Some(true),
+            objective_id: Some("T1_valid".to_string()),
+            objective_binding_present: Some(false),
+            objective_binding_objective_id: Some(String::new()),
+            top_escalation_present: Some(false),
+            top_escalation_objective_id: Some(String::new()),
+        });
+        assert_eq!(blocked_by_truthy_invalid.objective_id, String::new());
+    }
+
+    #[test]
+    fn autoscale_json_run_event_objective_id_path_works() {
+        let payload = serde_json::json!({
+            "mode": "run_event_objective_id",
+            "run_event_objective_id_input": {
+                "directive_pulse_present": false,
+                "directive_pulse_objective_id": "",
+                "objective_id_present": true,
+                "objective_id": "T1_alpha",
+                "objective_binding_present": false,
+                "objective_binding_objective_id": "",
+                "top_escalation_present": false,
+                "top_escalation_objective_id": ""
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale run_event_objective_id");
+        assert!(out.contains("\"mode\":\"run_event_objective_id\""));
     }
 
     #[test]

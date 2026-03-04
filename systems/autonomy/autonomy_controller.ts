@@ -2699,6 +2699,8 @@ const NON_YIELD_REASON_CACHE = new Map();
 const NON_YIELD_REASON_CACHE_MAX = 1024;
 const PROPOSAL_TYPE_FROM_RUN_EVENT_CACHE = new Map();
 const PROPOSAL_TYPE_FROM_RUN_EVENT_CACHE_MAX = 1024;
+const RUN_EVENT_OBJECTIVE_ID_CACHE = new Map();
+const RUN_EVENT_OBJECTIVE_ID_CACHE_MAX = 1024;
 
 function isPolicyHoldResult(result): boolean {
   const r = String(result || '').trim();
@@ -3298,6 +3300,48 @@ function runEventObjectiveId(evt) {
   const topEscalation = evt.top_escalation && typeof evt.top_escalation === 'object'
     ? evt.top_escalation
     : {};
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const directivePulseRaw = pulse.objective_id;
+    const objectiveRaw = evt.objective_id;
+    const bindingRaw = binding.objective_id;
+    const topEscalationRaw = topEscalation.objective_id;
+    const key = [
+      directivePulseRaw ? '1' : '0',
+      String(directivePulseRaw || ''),
+      objectiveRaw ? '1' : '0',
+      String(objectiveRaw || ''),
+      bindingRaw ? '1' : '0',
+      String(bindingRaw || ''),
+      topEscalationRaw ? '1' : '0',
+      String(topEscalationRaw || '')
+    ].join('\u0000');
+    if (RUN_EVENT_OBJECTIVE_ID_CACHE.has(key)) {
+      return String(RUN_EVENT_OBJECTIVE_ID_CACHE.get(key) || '');
+    }
+    const rust = runBacklogAutoscalePrimitive(
+      'run_event_objective_id',
+      {
+        directive_pulse_present: !!directivePulseRaw,
+        directive_pulse_objective_id: String(directivePulseRaw || ''),
+        objective_id_present: !!objectiveRaw,
+        objective_id: String(objectiveRaw || ''),
+        objective_binding_present: !!bindingRaw,
+        objective_binding_objective_id: String(bindingRaw || ''),
+        top_escalation_present: !!topEscalationRaw,
+        top_escalation_objective_id: String(topEscalationRaw || '')
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const objectiveVal = String(rust.payload.payload.objective_id || '');
+      if (RUN_EVENT_OBJECTIVE_ID_CACHE.size >= RUN_EVENT_OBJECTIVE_ID_CACHE_MAX) {
+        const oldest = RUN_EVENT_OBJECTIVE_ID_CACHE.keys().next();
+        if (!oldest.done) RUN_EVENT_OBJECTIVE_ID_CACHE.delete(oldest.value);
+      }
+      RUN_EVENT_OBJECTIVE_ID_CACHE.set(key, objectiveVal);
+      return objectiveVal;
+    }
+  }
   return sanitizeDirectiveObjectiveId(
     pulse.objective_id
     || evt.objective_id
@@ -16240,5 +16284,6 @@ module.exports = {
   isSafetyStopRunEvent,
   classifyNonYieldCategory,
   nonYieldReasonFromRun,
-  runEventProposalType
+  runEventProposalType,
+  runEventObjectiveId
 };
