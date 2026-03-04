@@ -446,6 +446,37 @@ pub struct RouteEvaluateResponse {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct RouteDecisionRequest {
+    #[serde(default)]
+    pub matched_habit_id: String,
+    #[serde(default)]
+    pub matched_habit_state: String,
+    #[serde(default)]
+    pub matched_reflex_id: String,
+    #[serde(default)]
+    pub reflex_eligible: bool,
+    #[serde(default)]
+    pub has_required_inputs: bool,
+    #[serde(default)]
+    pub required_input_count: i64,
+    #[serde(default)]
+    pub trusted_entrypoint: bool,
+    #[serde(default)]
+    pub any_trigger: bool,
+    #[serde(default)]
+    pub predicted_habit_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RouteDecisionResponse {
+    pub ok: bool,
+    pub decision: String,
+    pub reason_code: String,
+    pub suggested_habit_id: Option<String>,
+    pub auto_habit_flow: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct HeroicGateRequest {
     #[serde(default)]
     pub task_text: String,
@@ -1715,6 +1746,97 @@ pub fn evaluate_route(req: &RouteEvaluateRequest) -> RouteEvaluateResponse {
     }
 }
 
+fn normalize_route_state(raw: &str) -> String {
+    match raw.trim().to_ascii_lowercase().as_str() {
+        "active" => "active".to_string(),
+        "candidate" => "candidate".to_string(),
+        _ => "other".to_string(),
+    }
+}
+
+pub fn evaluate_route_decision(req: &RouteDecisionRequest) -> RouteDecisionResponse {
+    let matched_reflex_id = req.matched_reflex_id.trim();
+    if req.reflex_eligible && !matched_reflex_id.is_empty() {
+        return RouteDecisionResponse {
+            ok: true,
+            decision: "RUN_REFLEX".to_string(),
+            reason_code: "reflex_match".to_string(),
+            suggested_habit_id: None,
+            auto_habit_flow: false,
+        };
+    }
+
+    let matched_habit_id = req.matched_habit_id.trim();
+    if !matched_habit_id.is_empty() {
+        let state = normalize_route_state(req.matched_habit_state.as_str());
+        if state == "active" || state == "candidate" {
+            if req.has_required_inputs || req.required_input_count > 0 {
+                return RouteDecisionResponse {
+                    ok: true,
+                    decision: "MANUAL".to_string(),
+                    reason_code: "required_inputs".to_string(),
+                    suggested_habit_id: Some(matched_habit_id.to_string()),
+                    auto_habit_flow: false,
+                };
+            }
+            if !req.trusted_entrypoint {
+                return RouteDecisionResponse {
+                    ok: true,
+                    decision: "MANUAL".to_string(),
+                    reason_code: "untrusted_entrypoint".to_string(),
+                    suggested_habit_id: Some(matched_habit_id.to_string()),
+                    auto_habit_flow: false,
+                };
+            }
+            return RouteDecisionResponse {
+                ok: true,
+                decision: if state == "active" {
+                    "RUN_HABIT".to_string()
+                } else {
+                    "RUN_CANDIDATE_FOR_VERIFICATION".to_string()
+                },
+                reason_code: if state == "active" {
+                    "active_match".to_string()
+                } else {
+                    "candidate_match".to_string()
+                },
+                suggested_habit_id: Some(matched_habit_id.to_string()),
+                auto_habit_flow: false,
+            };
+        }
+        return RouteDecisionResponse {
+            ok: true,
+            decision: "MANUAL".to_string(),
+            reason_code: "matched_state_not_runnable".to_string(),
+            suggested_habit_id: Some(matched_habit_id.to_string()),
+            auto_habit_flow: false,
+        };
+    }
+
+    if req.any_trigger {
+        let predicted = req.predicted_habit_id.trim();
+        return RouteDecisionResponse {
+            ok: true,
+            decision: "RUN_CANDIDATE_FOR_VERIFICATION".to_string(),
+            reason_code: "trigger_autocrystallize".to_string(),
+            suggested_habit_id: if predicted.is_empty() {
+                None
+            } else {
+                Some(predicted.to_string())
+            },
+            auto_habit_flow: true,
+        };
+    }
+
+    RouteDecisionResponse {
+        ok: true,
+        decision: "MANUAL".to_string(),
+        reason_code: "no_match_no_trigger".to_string(),
+        suggested_habit_id: None,
+        auto_habit_flow: false,
+    }
+}
+
 pub fn evaluate_route_primitives_json(payload: &str) -> Result<String, String> {
     let req = serde_json::from_str::<RoutePrimitivesRequest>(payload)
         .map_err(|err| format!("route_primitives_payload_parse_failed:{}", err))?;
@@ -1752,6 +1874,14 @@ pub fn evaluate_route_json(payload: &str) -> Result<String, String> {
     let resp = evaluate_route(&req);
     serde_json::to_string(&resp)
         .map_err(|err| format!("route_evaluate_payload_serialize_failed:{}", err))
+}
+
+pub fn evaluate_route_decision_json(payload: &str) -> Result<String, String> {
+    let req = serde_json::from_str::<RouteDecisionRequest>(payload)
+        .map_err(|err| format!("route_decision_payload_parse_failed:{}", err))?;
+    let resp = evaluate_route_decision(&req);
+    serde_json::to_string(&resp)
+        .map_err(|err| format!("route_decision_payload_serialize_failed:{}", err))
 }
 
 fn is_trust_registry_modification(task_lower: &str) -> bool {
@@ -2695,6 +2825,72 @@ mod tests {
         assert_eq!(out.complexity_reason, "tokens_est_medium");
         assert!(out.trigger_a);
         assert!(!out.trigger_c);
+    }
+
+    #[test]
+    fn route_decision_prefers_reflex_when_eligible() {
+        let req = RouteDecisionRequest {
+            matched_reflex_id: "drift_guard".to_string(),
+            reflex_eligible: true,
+            ..Default::default()
+        };
+        let out = evaluate_route_decision(&req);
+        assert_eq!(out.decision, "RUN_REFLEX");
+        assert_eq!(out.reason_code, "reflex_match");
+        assert_eq!(out.suggested_habit_id, None);
+    }
+
+    #[test]
+    fn route_decision_requires_inputs_for_active_habit() {
+        let req = RouteDecisionRequest {
+            matched_habit_id: "nightly_backup".to_string(),
+            matched_habit_state: "active".to_string(),
+            has_required_inputs: true,
+            required_input_count: 2,
+            trusted_entrypoint: true,
+            ..Default::default()
+        };
+        let out = evaluate_route_decision(&req);
+        assert_eq!(out.decision, "MANUAL");
+        assert_eq!(out.reason_code, "required_inputs");
+        assert_eq!(out.suggested_habit_id, Some("nightly_backup".to_string()));
+    }
+
+    #[test]
+    fn route_decision_runs_active_habit_when_ready() {
+        let req = RouteDecisionRequest {
+            matched_habit_id: "nightly_backup".to_string(),
+            matched_habit_state: "active".to_string(),
+            trusted_entrypoint: true,
+            ..Default::default()
+        };
+        let out = evaluate_route_decision(&req);
+        assert_eq!(out.decision, "RUN_HABIT");
+        assert_eq!(out.reason_code, "active_match");
+    }
+
+    #[test]
+    fn route_decision_auto_crystallizes_when_triggered_without_match() {
+        let req = RouteDecisionRequest {
+            any_trigger: true,
+            predicted_habit_id: "spawn_a_child_process".to_string(),
+            ..Default::default()
+        };
+        let out = evaluate_route_decision(&req);
+        assert_eq!(out.decision, "RUN_CANDIDATE_FOR_VERIFICATION");
+        assert_eq!(out.reason_code, "trigger_autocrystallize");
+        assert!(out.auto_habit_flow);
+        assert_eq!(
+            out.suggested_habit_id,
+            Some("spawn_a_child_process".to_string())
+        );
+    }
+
+    #[test]
+    fn route_decision_defaults_manual_without_match_or_trigger() {
+        let out = evaluate_route_decision(&RouteDecisionRequest::default());
+        assert_eq!(out.decision, "MANUAL");
+        assert_eq!(out.reason_code, "no_match_no_trigger");
     }
 
     #[test]

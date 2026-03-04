@@ -252,6 +252,37 @@ function runRouteEvaluateViaRust(task, tokensEst, repeats14d, errors30d, skipHab
   };
 }
 
+function runRouteDecisionViaRust(payloadObj) {
+  const payload = JSON.stringify(payloadObj || {});
+  const payloadB64 = Buffer.from(payload, 'utf8').toString('base64');
+  let sawBinary = false;
+  for (const candidate of executionBinaryCandidates()) {
+    try {
+      if (!fs.existsSync(candidate)) continue;
+      sawBinary = true;
+      const out = spawnSync(candidate, ['route-decision', `--payload-base64=${payloadB64}`], {
+        cwd: REPO_ROOT,
+        encoding: 'utf8',
+        maxBuffer: 10 * 1024 * 1024
+      });
+      const parsed = parseJsonPayload(out.stdout);
+      if (Number(out.status) !== 0 || !parsed || typeof parsed !== 'object') continue;
+      const decision = String(parsed.decision || '').trim();
+      if (!['RUN_REFLEX', 'RUN_HABIT', 'RUN_CANDIDATE_FOR_VERIFICATION', 'MANUAL'].includes(decision)) {
+        continue;
+      }
+      return { ok: true, payload: parsed };
+    } catch {
+      // try next candidate
+    }
+  }
+  return {
+    ok: false,
+    error: sawBinary ? 'route_decision_invalid_output' : 'route_decision_rust_unavailable',
+    payload: null
+  };
+}
+
 function normalizeIntent(text) {
   if (!text) return '';
   return text
@@ -730,8 +761,60 @@ function main() {
     process.exit(0);
   }
   
-  // 1) If it matches an ACTIVE habit → RUN it.
-  if (reflexMatch) {
+  const matchState = match && match.governance ? match.governance.state : (match ? match.status : '');
+  const requiredInputs = match ? requiredInputKeys(match) : [];
+  const trustedEntrypoint = match ? isTrustedEntrypoint(match, trusted) : false;
+  const routeDecision = runRouteDecisionViaRust({
+    matched_habit_id: match ? String(match.id || '') : '',
+    matched_habit_state: String(matchState || ''),
+    matched_reflex_id: reflexMatch ? String(reflexMatch.id || '') : '',
+    reflex_eligible: !!reflexMatch,
+    has_required_inputs: requiredInputs.length > 0,
+    required_input_count: requiredInputs.length,
+    trusted_entrypoint: trustedEntrypoint,
+    any_trigger: anyTrigger === true,
+    predicted_habit_id: String(routePrimitives.predicted_habit_id || '')
+  });
+  if (routeDecision.ok !== true || !routeDecision.payload || typeof routeDecision.payload !== 'object') {
+    const out = {
+      decision: 'MANUAL',
+      reason: `Rust route decision unavailable: ${String(routeDecision.error || 'unknown')}`,
+      executor: null,
+      route_error: String(routeDecision.error || 'route_decision_rust_unavailable'),
+      gate_decision: gateResult.decision,
+      gate_risk: gateResult.risk,
+      gate_reasons: gateResult.reasons,
+      gate_event: gateEvent,
+      route: {
+        type: 'route_blocked',
+        reason: 'route_decision_rust_unavailable'
+      }
+    };
+    console.log(JSON.stringify(out, null, 2));
+    process.exit(0);
+  }
+
+  const routeDecisionPayload = routeDecision.payload || {};
+  const decision = String(routeDecisionPayload.decision || 'MANUAL');
+  const reasonCode = String(routeDecisionPayload.reason_code || '');
+  const suggestedHabitId = String(routeDecisionPayload.suggested_habit_id || '').trim();
+
+  if (decision === 'RUN_REFLEX') {
+    if (!reflexMatch || !String(reflexMatch.id || '').trim()) {
+      const out = {
+        decision: 'MANUAL',
+        reason: 'Rust route decision requested reflex without eligible routine.',
+        executor: null,
+        route_error: 'route_decision_inconsistent_reflex',
+        gate_decision: gateResult.decision,
+        gate_risk: gateResult.risk,
+        gate_reasons: gateResult.reasons,
+        gate_event: gateEvent,
+        route: routeOut
+      };
+      console.log(JSON.stringify(out, null, 2));
+      process.exit(0);
+    }
     const reflexId = String(reflexMatch.id || '').trim();
     const runArgs = [
       'systems/reflex/reflex_dispatcher.js',
@@ -756,42 +839,22 @@ function main() {
     process.exit(0);
   }
 
-  // 1) If it matches an ACTIVE habit → RUN it.
-  if (match && (match.governance && match.governance.state === 'active' || match.status === 'active')) {
-    const req = requiredInputKeys(match);
-    if (req.length > 0) {
+  if (decision === 'RUN_HABIT') {
+    if (!match) {
       const out = {
         decision: 'MANUAL',
-        suggested_habit_id: match.id,
-        reason: `Matched active habit requires explicit inputs: ${req.join(', ')}`,
-        required_inputs: req,
+        reason: 'Rust route decision requested habit run without match context.',
         executor: null,
-        which_met: whichMet,
-        thresholds: thresholds,
+        route_error: 'route_decision_inconsistent_habit',
         gate_decision: gateResult.decision,
         gate_risk: gateResult.risk,
+        gate_reasons: gateResult.reasons,
+        gate_event: gateEvent,
         route: routeOut
       };
       console.log(JSON.stringify(out, null, 2));
       process.exit(0);
     }
-
-    if (!isTrustedEntrypoint(match, trusted)) {
-      const out = {
-        decision: 'MANUAL',
-        suggested_habit_id: match.id,
-        reason: `Matched active habit is not trusted: ${match.entrypoint}`,
-        executor: null,
-        which_met: whichMet,
-        thresholds: thresholds,
-        gate_decision: gateResult.decision,
-        gate_risk: gateResult.risk,
-        route: routeOut
-      };
-      console.log(JSON.stringify(out, null, 2));
-      process.exit(0);
-    }
-
     const inputs = makeRunInputs(task, intentKey);
     const inputsArg = jsonArg(inputs);
     const runArgs = ['habits/scripts/run_habit.js', '--id', match.id, '--json', inputsArg];
@@ -810,17 +873,35 @@ function main() {
     console.log(JSON.stringify(out, null, 2));
     process.exit(0);
   }
-  
-  // 2) If it matches a CANDIDATE habit → recommend running it (testing)
-  if (match && (match.governance && match.governance.state === 'candidate' || match.status === 'candidate')) {
-    const req = requiredInputKeys(match);
-    if (req.length > 0) {
+
+  if (decision === 'RUN_CANDIDATE_FOR_VERIFICATION') {
+    const autoHabitFlow = routeDecisionPayload.auto_habit_flow === true;
+    if (autoHabitFlow) {
+      const escapedTask = task.replace(/"/g, '\\"');
+      const crystallizerPath = path.join(REPO_ROOT, 'habits', 'scripts', 'habit_crystallizer.js');
+      const proposeScript = fs.existsSync(crystallizerPath)
+        ? 'habits/scripts/habit_crystallizer.js'
+        : 'habits/scripts/propose_habit.js';
+      const autoTrust = String(process.env.ROUTE_TASK_AUTO_TRUST_CANDIDATE || '1') !== '0';
+      const predictedHabitId = suggestedHabitId || String(routePrimitives.predicted_habit_id || '');
+      const proposeArgs = [
+        proposeScript,
+        '--from', task,
+        '--tokens_est', String(tokensEst),
+        '--repeats_14d', String(repeats14d),
+        '--errors_30d', String(errors30d),
+        '--intent_key', intentKey,
+        '--auto_trust', autoTrust ? '1' : '0'
+      ];
+      const crystallizeCommand = `node ${proposeScript} --from "${escapedTask}" --tokens_est ${tokensEst} --repeats_14d ${repeats14d} --errors_30d ${errors30d} --intent_key "${intentKey}" --auto_trust ${autoTrust ? 1 : 0}`;
       const out = {
-        decision: 'MANUAL',
-        suggested_habit_id: match.id,
-        reason: `Matched candidate habit requires explicit inputs: ${req.join(', ')}`,
-        required_inputs: req,
-        executor: null,
+        decision: 'RUN_CANDIDATE_FOR_VERIFICATION',
+        reason: `No matching habit. Triggers met: ${whichMet.join(',')}. Auto-crystallize candidate and verify.`,
+        suggested_habit_id: predictedHabitId,
+        auto_habit_flow: true,
+        crystallize_command: crystallizeCommand,
+        propose_command: crystallizeCommand,
+        executor: { cmd: 'node', args: proposeArgs },
         which_met: whichMet,
         thresholds: thresholds,
         gate_decision: gateResult.decision,
@@ -831,16 +912,16 @@ function main() {
       process.exit(0);
     }
 
-    if (!isTrustedEntrypoint(match, trusted)) {
+    if (!match) {
       const out = {
         decision: 'MANUAL',
-        suggested_habit_id: match.id,
-        reason: `Matched candidate habit is not trusted yet: ${match.entrypoint}`,
+        reason: 'Rust route decision requested candidate run without match context.',
         executor: null,
-        which_met: whichMet,
-        thresholds: thresholds,
+        route_error: 'route_decision_inconsistent_candidate',
         gate_decision: gateResult.decision,
         gate_risk: gateResult.risk,
+        gate_reasons: gateResult.reasons,
+        gate_event: gateEvent,
         route: routeOut
       };
       console.log(JSON.stringify(out, null, 2));
@@ -865,34 +946,19 @@ function main() {
     console.log(JSON.stringify(out, null, 2));
     process.exit(0);
   }
-  
-  // 3) If no match exists, but triggers say "worth it" → auto-crystallize candidate + verify run.
-  if (!match && anyTrigger) {
-    const escapedTask = task.replace(/"/g, '\\"');
-    const crystallizerPath = path.join(REPO_ROOT, 'habits', 'scripts', 'habit_crystallizer.js');
-    const proposeScript = fs.existsSync(crystallizerPath)
-      ? 'habits/scripts/habit_crystallizer.js'
-      : 'habits/scripts/propose_habit.js';
-    const autoTrust = String(process.env.ROUTE_TASK_AUTO_TRUST_CANDIDATE || '1') !== '0';
-    const predictedHabitId = routePrimitives.predicted_habit_id;
-    const proposeArgs = [
-      proposeScript,
-      '--from', task,
-      '--tokens_est', String(tokensEst),
-      '--repeats_14d', String(repeats14d),
-      '--errors_30d', String(errors30d),
-      '--intent_key', intentKey,
-      '--auto_trust', autoTrust ? '1' : '0'
-    ];
-    const crystallizeCommand = `node ${proposeScript} --from "${escapedTask}" --tokens_est ${tokensEst} --repeats_14d ${repeats14d} --errors_30d ${errors30d} --intent_key "${intentKey}" --auto_trust ${autoTrust ? 1 : 0}`;
+
+  const state = matchState || 'unknown';
+  if (reasonCode === 'required_inputs' && match) {
+    const stateLower = String(state).toLowerCase();
+    const reason = stateLower === 'active'
+      ? `Matched active habit requires explicit inputs: ${requiredInputs.join(', ')}`
+      : `Matched candidate habit requires explicit inputs: ${requiredInputs.join(', ')}`;
     const out = {
-      decision: 'RUN_CANDIDATE_FOR_VERIFICATION',
-      reason: `No matching habit. Triggers met: ${whichMet.join(',')}. Auto-crystallize candidate and verify.`,
-      suggested_habit_id: predictedHabitId,
-      auto_habit_flow: true,
-      crystallize_command: crystallizeCommand,
-      propose_command: crystallizeCommand,
-      executor: { cmd: 'node', args: proposeArgs },
+      decision: 'MANUAL',
+      suggested_habit_id: match.id,
+      reason,
+      required_inputs: requiredInputs,
+      executor: null,
       which_met: whichMet,
       thresholds: thresholds,
       gate_decision: gateResult.decision,
@@ -902,9 +968,26 @@ function main() {
     console.log(JSON.stringify(out, null, 2));
     process.exit(0);
   }
-  
-  // 4) Otherwise: manual.
-  const state = match && match.governance ? match.governance.state : (match ? match.status : 'unknown');
+  if (reasonCode === 'untrusted_entrypoint' && match) {
+    const stateLower = String(state).toLowerCase();
+    const reason = stateLower === 'active'
+      ? `Matched active habit is not trusted: ${match.entrypoint}`
+      : `Matched candidate habit is not trusted yet: ${match.entrypoint}`;
+    const out = {
+      decision: 'MANUAL',
+      suggested_habit_id: match.id,
+      reason,
+      executor: null,
+      which_met: whichMet,
+      thresholds: thresholds,
+      gate_decision: gateResult.decision,
+      gate_risk: gateResult.risk,
+      route: routeOut
+    };
+    console.log(JSON.stringify(out, null, 2));
+    process.exit(0);
+  }
+
   const out = {
     decision: 'MANUAL',
     reason: match
