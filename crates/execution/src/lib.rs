@@ -1,6 +1,7 @@
 mod autoscale;
 mod blob;
 mod decompose;
+mod inversion;
 mod sprint_contract;
 
 use serde::{Deserialize, Serialize};
@@ -177,6 +178,7 @@ pub use decompose::{
     RoutePrimitivesResponse, RouteReflexMatchRequest, RouteReflexMatchResponse, RouteReflexRoutine,
     TaskSummaryRequest, TaskSummaryResponse,
 };
+pub use inversion::run_inversion_json;
 pub use sprint_contract::run_sprint_contract_json;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]

@@ -27,7 +27,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { spawnSync } = require('child_process');
-const { runBacklogAutoscalePrimitive } = require('./backlog_autoscale_rust_bridge.js');
+const { runBacklogAutoscalePrimitive, runInversionPrimitive } = require('./backlog_autoscale_rust_bridge.js');
 const {
   normalizeTrit,
   tritLabel,
@@ -2736,23 +2736,69 @@ function saveMaturityState(paths: AnyObj, policy: AnyObj, state: AnyObj) {
 }
 
 function normalizeImpact(v: unknown) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'normalize_impact',
+      { value: v == null ? 'medium' : v },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return normalizeToken(rust.payload.payload.value || 'medium', 24) || 'medium';
+    }
+  }
   const raw = normalizeToken(v || 'medium', 24);
   if (raw === 'low' || raw === 'medium' || raw === 'high' || raw === 'critical') return raw;
   return 'medium';
 }
 
 function normalizeMode(v: unknown) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'normalize_mode',
+      { value: v == null ? 'live' : v },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return normalizeToken(rust.payload.payload.value || 'live', 16) === 'test' ? 'test' : 'live';
+    }
+  }
   const raw = normalizeToken(v || 'live', 16);
   return raw === 'test' ? 'test' : 'live';
 }
 
 function normalizeTarget(v: unknown) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'normalize_target',
+      { value: v == null ? 'tactical' : v },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const normalized = normalizeToken(rust.payload.payload.value || 'tactical', 24);
+      if (['tactical', 'belief', 'identity', 'directive', 'constitution'].includes(normalized)) return normalized;
+      return 'tactical';
+    }
+  }
   const raw = normalizeToken(v || 'tactical', 24);
   if (['tactical', 'belief', 'identity', 'directive', 'constitution'].includes(raw)) return raw;
   return 'tactical';
 }
 
 function normalizeResult(v: unknown) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'normalize_result',
+      { value: v == null ? '' : v },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const normalized = normalizeToken(rust.payload.payload.value || '', 24);
+      if (normalized === 'success' || normalized === 'neutral' || normalized === 'fail' || normalized === 'destructive') {
+        return normalized;
+      }
+      return '';
+    }
+  }
   const raw = normalizeToken(v || '', 24);
   if (raw === 'success' || raw === 'neutral' || raw === 'fail' || raw === 'destructive') return raw;
   return '';
@@ -6249,5 +6295,9 @@ if (require.main === module) {
 module.exports = {
   loadPolicy,
   computeMaturityScore,
-  evaluateRunDecision
+  evaluateRunDecision,
+  normalizeImpact,
+  normalizeMode,
+  normalizeTarget,
+  normalizeResult
 };

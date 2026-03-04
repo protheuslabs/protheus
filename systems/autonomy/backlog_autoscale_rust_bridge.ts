@@ -85,6 +85,53 @@ function runViaCargo(payloadBase64: string) {
   };
 }
 
+function runViaRustBinaryInversion(payloadBase64: string) {
+  for (const candidate of binaryCandidates()) {
+    try {
+      if (!fs.existsSync(candidate)) continue;
+      const out = spawnSync(candidate, ['inversion', `--payload-base64=${payloadBase64}`], {
+        cwd: ROOT,
+        encoding: 'utf8',
+        maxBuffer: 10 * 1024 * 1024
+      });
+      const payload = parseJsonPayload(out.stdout);
+      if (out.status === 0 && payload && typeof payload === 'object') {
+        return { ok: true, engine: 'rust_bin', binary_path: candidate, payload };
+      }
+    } catch {
+      // continue
+    }
+  }
+  return { ok: false, error: 'rust_binary_unavailable' };
+}
+
+function runViaCargoInversion(payloadBase64: string) {
+  const args = [
+    'run',
+    '--quiet',
+    '--manifest-path',
+    MANIFEST,
+    '--bin',
+    'execution_core',
+    '--',
+    'inversion',
+    `--payload-base64=${payloadBase64}`
+  ];
+  const out = spawnSync('cargo', args, {
+    cwd: ROOT,
+    encoding: 'utf8',
+    maxBuffer: 10 * 1024 * 1024
+  });
+  const payload = parseJsonPayload(out.stdout);
+  if (Number(out.status) === 0 && payload && typeof payload === 'object') {
+    return { ok: true, engine: 'rust_cargo', payload };
+  }
+  return {
+    ok: false,
+    error: `cargo_run_failed:${cleanText(out.stderr || out.stdout || '', 260)}`
+  };
+}
+
 function runBacklogAutoscalePrimitive(mode: string, data: AnyObj = {}, opts: AnyObj = {}) {
   const normalizedMode = cleanText(mode || '', 80).toLowerCase();
   if (!normalizedMode) return { ok: false, error: 'autoscale_mode_missing' };
@@ -217,8 +264,32 @@ function runBacklogAutoscalePrimitive(mode: string, data: AnyObj = {}, opts: Any
   return runViaCargo(payloadBase64);
 }
 
+function runInversionPrimitive(mode: string, data: AnyObj = {}, opts: AnyObj = {}) {
+  const normalizedMode = cleanText(mode || '', 80).toLowerCase();
+  if (!normalizedMode) return { ok: false, error: 'inversion_mode_missing' };
+  const fieldByMode: AnyObj = {
+    normalize_impact: 'normalize_impact_input',
+    normalize_mode: 'normalize_mode_input',
+    normalize_target: 'normalize_target_input',
+    normalize_result: 'normalize_result_input'
+  };
+  const field = fieldByMode[normalizedMode];
+  if (!field) return { ok: false, error: `inversion_mode_unsupported:${normalizedMode}` };
+  const request: AnyObj = { mode: normalizedMode };
+  request[field] = data && typeof data === 'object' ? data : {};
+  const payloadBase64 = Buffer.from(JSON.stringify(request), 'utf8').toString('base64');
+
+  const bin = runViaRustBinaryInversion(payloadBase64);
+  if (bin.ok) return bin;
+  if (opts.allow_cli_fallback === false) return bin;
+  return runViaCargoInversion(payloadBase64);
+}
+
 module.exports = {
   runBacklogAutoscalePrimitive,
   runViaRustBinary,
-  runViaCargo
+  runViaCargo,
+  runInversionPrimitive,
+  runViaRustBinaryInversion,
+  runViaCargoInversion
 };
