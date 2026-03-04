@@ -14374,6 +14374,21 @@ function modelCatalogCanaryThresholds() {
 }
 
 function normalizeModelIds(input, limit = 128) {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'normalize_model_ids',
+      {
+        models: Array.isArray(input) ? input.map((x) => String(x || '')) : [],
+        limit: Number(limit)
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return Array.isArray(rust.payload.payload.models)
+        ? rust.payload.payload.models.map((x) => String(x || ''))
+        : [];
+    }
+  }
   const out = [];
   const seen = new Set();
   const arr = Array.isArray(input) ? input : [];
@@ -21345,6 +21360,7 @@ module.exports = {
   executeConfidenceCooldownActive,
   asStringArray,
   uniqSorted,
+  normalizeModelIds,
   startModelCatalogCanary,
   evaluateModelCatalogCanary,
   readModelCatalogCanary,

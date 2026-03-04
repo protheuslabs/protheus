@@ -3321,6 +3321,20 @@ pub struct UniqSortedOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct NormalizeModelIdsInput {
+    #[serde(default)]
+    pub models: Vec<String>,
+    #[serde(default)]
+    pub limit: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct NormalizeModelIdsOutput {
+    #[serde(default)]
+    pub models: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ParseDirectiveFileArgInput {
     #[serde(default)]
     pub command: Option<String>,
@@ -4530,6 +4544,8 @@ pub struct AutoscaleRequest {
     pub as_string_array_input: Option<AsStringArrayInput>,
     #[serde(default)]
     pub uniq_sorted_input: Option<UniqSortedInput>,
+    #[serde(default)]
+    pub normalize_model_ids_input: Option<NormalizeModelIdsInput>,
     #[serde(default)]
     pub parse_directive_file_arg_input: Option<ParseDirectiveFileArgInput>,
     #[serde(default)]
@@ -10480,6 +10496,31 @@ pub fn compute_uniq_sorted(input: &UniqSortedInput) -> UniqSortedOutput {
     }
 }
 
+pub fn compute_normalize_model_ids(input: &NormalizeModelIdsInput) -> NormalizeModelIdsOutput {
+    let limit = input
+        .limit
+        .filter(|v| v.is_finite())
+        .map(|v| v.max(0.0).floor() as usize)
+        .unwrap_or(128usize)
+        .min(2000usize);
+    if limit == 0 {
+        return NormalizeModelIdsOutput { models: Vec::new() };
+    }
+    let mut out = Vec::<String>::new();
+    let mut seen = std::collections::BTreeSet::<String>::new();
+    for raw in input.models.iter() {
+        let value = raw.trim().to_string();
+        if value.is_empty() || !seen.insert(value.clone()) {
+            continue;
+        }
+        out.push(value);
+        if out.len() >= limit {
+            break;
+        }
+    }
+    NormalizeModelIdsOutput { models: out }
+}
+
 pub fn compute_parse_directive_file_arg(input: &ParseDirectiveFileArgInput) -> ParseDirectiveFileArgOutput {
     let text = input.command.as_deref().unwrap_or("").trim();
     if text.is_empty() {
@@ -14487,6 +14528,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_uniq_sorted_encode_failed:{e}"));
+    }
+    if mode == "normalize_model_ids" {
+        let input = request
+            .normalize_model_ids_input
+            .ok_or_else(|| "autoscale_missing_normalize_model_ids_input".to_string())?;
+        let out = compute_normalize_model_ids(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "normalize_model_ids",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_normalize_model_ids_encode_failed:{e}"));
     }
     if mode == "parse_directive_file_arg" {
         let input = request
