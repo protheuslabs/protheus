@@ -3218,6 +3218,20 @@ pub struct ParseJsonObjectsFromTextOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ReadPathValueInput {
+    #[serde(default)]
+    pub obj: Option<serde_json::Value>,
+    #[serde(default)]
+    pub path_expr: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ReadPathValueOutput {
+    #[serde(default)]
+    pub value: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ParseDirectiveFileArgInput {
     #[serde(default)]
     pub command: Option<String>,
@@ -4411,6 +4425,8 @@ pub struct AutoscaleRequest {
     pub parse_first_json_line_input: Option<ParseFirstJsonLineInput>,
     #[serde(default)]
     pub parse_json_objects_from_text_input: Option<ParseJsonObjectsFromTextInput>,
+    #[serde(default)]
+    pub read_path_value_input: Option<ReadPathValueInput>,
     #[serde(default)]
     pub parse_directive_file_arg_input: Option<ParseDirectiveFileArgInput>,
     #[serde(default)]
@@ -10189,6 +10205,35 @@ pub fn compute_parse_json_objects_from_text(
     ParseJsonObjectsFromTextOutput { objects: out }
 }
 
+pub fn compute_read_path_value(input: &ReadPathValueInput) -> ReadPathValueOutput {
+    let Some(mut cur) = input.obj.as_ref() else {
+        return ReadPathValueOutput { value: None };
+    };
+    let parts: Vec<&str> = input
+        .path_expr
+        .as_deref()
+        .unwrap_or("")
+        .split('.')
+        .map(|p| p.trim())
+        .filter(|p| !p.is_empty())
+        .collect();
+    if parts.is_empty() {
+        return ReadPathValueOutput { value: None };
+    }
+    for key in parts {
+        let Some(map) = cur.as_object() else {
+            return ReadPathValueOutput { value: None };
+        };
+        let Some(next) = map.get(key) else {
+            return ReadPathValueOutput { value: None };
+        };
+        cur = next;
+    }
+    ReadPathValueOutput {
+        value: Some(cur.clone()),
+    }
+}
+
 pub fn compute_parse_directive_file_arg(input: &ParseDirectiveFileArgInput) -> ParseDirectiveFileArgOutput {
     let text = input.command.as_deref().unwrap_or("").trim();
     if text.is_empty() {
@@ -14100,6 +14145,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_parse_json_objects_from_text_encode_failed:{e}"));
+    }
+    if mode == "read_path_value" {
+        let input = request
+            .read_path_value_input
+            .ok_or_else(|| "autoscale_missing_read_path_value_input".to_string())?;
+        let out = compute_read_path_value(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "read_path_value",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_read_path_value_encode_failed:{e}"));
     }
     if mode == "parse_directive_file_arg" {
         let input = request

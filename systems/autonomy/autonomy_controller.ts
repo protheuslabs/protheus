@@ -13019,6 +13019,19 @@ function parseJsonObjectsFromText(text, maxObjects = 40) {
 }
 
 function readPathValue(obj, pathExpr) {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'read_path_value',
+      {
+        obj: obj && typeof obj === 'object' ? obj : null,
+        path_expr: pathExpr == null ? null : String(pathExpr)
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return rust.payload.payload.value == null ? null : rust.payload.payload.value;
+    }
+  }
   const src = obj && typeof obj === 'object' ? obj : null;
   if (!src) return null;
   const parts = String(pathExpr || '').split('.').filter(Boolean);
@@ -21302,6 +21315,7 @@ module.exports = {
   parseDirectiveObjectiveArgFromCommand,
   parseFirstJsonLine,
   parseJsonObjectsFromText,
+  readPathValue,
   parseObjectiveIdFromEvidenceRefs,
   parseObjectiveIdFromCommand,
   sanitizedDirectiveIdList,

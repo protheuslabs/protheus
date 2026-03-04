@@ -316,6 +316,7 @@ function runBacklogAutoscalePrimitive(mode: string, data: AnyObj = {}, opts: Any
     sanitized_directive_id_list: 'sanitized_directive_id_list_input',
     parse_first_json_line: 'parse_first_json_line_input',
     parse_json_objects_from_text: 'parse_json_objects_from_text_input',
+    read_path_value: 'read_path_value_input',
     parse_directive_file_arg: 'parse_directive_file_arg_input',
     parse_directive_objective_arg: 'parse_directive_objective_arg_input',
     parse_objective_id_from_evidence_refs: 'parse_objective_id_from_evidence_refs_input',
