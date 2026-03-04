@@ -15286,6 +15286,26 @@ function chooseSelectionMode(eligible, priorRuns) {
 }
 
 function chooseEvidenceSelectionMode(eligible, priorRuns, modePrefix) {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'choose_evidence_selection_mode',
+      {
+        eligible_len: Array.isArray(eligible) ? eligible.length : 0,
+        prior_runs: Array.isArray(priorRuns)
+          ? priorRuns.map((row) => ({
+            event_type: row && row.type == null ? null : String(row && row.type || ''),
+            result: row && row.result == null ? null : String(row && row.result || '')
+          }))
+          : [],
+        evidence_sample_window: Number(AUTONOMY_EVIDENCE_SAMPLE_WINDOW || 1),
+        mode_prefix: modePrefix == null ? null : String(modePrefix)
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return rust.payload.payload;
+    }
+  }
   const evidenceAttempts = (priorRuns || []).filter(e =>
     e
     && e.type === 'autonomy_run'
@@ -21221,6 +21241,7 @@ module.exports = {
   assessDirectiveFit,
   qosLaneFromCandidate,
   chooseQosLaneSelection,
+  chooseEvidenceSelectionMode,
   compositeEligibilityMin,
   mediumRiskThresholds,
   mediumRiskGateDecision,

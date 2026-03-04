@@ -3244,6 +3244,35 @@ pub struct NumberOrNullOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ChooseEvidenceSelectionModeRunInput {
+    #[serde(default)]
+    pub event_type: Option<String>,
+    #[serde(default)]
+    pub result: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ChooseEvidenceSelectionModeInput {
+    #[serde(default)]
+    pub eligible_len: Option<f64>,
+    #[serde(default)]
+    pub prior_runs: Vec<ChooseEvidenceSelectionModeRunInput>,
+    #[serde(default)]
+    pub evidence_sample_window: Option<f64>,
+    #[serde(default)]
+    pub mode_prefix: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ChooseEvidenceSelectionModeOutput {
+    pub mode: String,
+    pub index: u32,
+    pub sample_window: u32,
+    pub sample_cursor: u32,
+    pub prior_evidence_attempts: u32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ParseDirectiveFileArgInput {
     #[serde(default)]
     pub command: Option<String>,
@@ -4441,6 +4470,8 @@ pub struct AutoscaleRequest {
     pub read_path_value_input: Option<ReadPathValueInput>,
     #[serde(default)]
     pub number_or_null_input: Option<NumberOrNullInput>,
+    #[serde(default)]
+    pub choose_evidence_selection_mode_input: Option<ChooseEvidenceSelectionModeInput>,
     #[serde(default)]
     pub parse_directive_file_arg_input: Option<ParseDirectiveFileArgInput>,
     #[serde(default)]
@@ -10253,6 +10284,57 @@ pub fn compute_number_or_null(input: &NumberOrNullInput) -> NumberOrNullOutput {
     NumberOrNullOutput { value }
 }
 
+pub fn compute_choose_evidence_selection_mode(
+    input: &ChooseEvidenceSelectionModeInput,
+) -> ChooseEvidenceSelectionModeOutput {
+    let eligible_len = input
+        .eligible_len
+        .filter(|v| v.is_finite())
+        .unwrap_or(0.0)
+        .max(0.0)
+        .floor() as u32;
+    let sample_window_raw = input
+        .evidence_sample_window
+        .filter(|v| v.is_finite())
+        .unwrap_or(1.0)
+        .max(1.0)
+        .floor() as u32;
+    let window = std::cmp::max(1u32, std::cmp::min(eligible_len.max(1u32), sample_window_raw));
+    let prior_evidence_attempts = input
+        .prior_runs
+        .iter()
+        .filter(|e| {
+            e.event_type
+                .as_deref()
+                .unwrap_or("")
+                .trim()
+                .eq("autonomy_run")
+                && matches!(
+                    e.result.as_deref().unwrap_or("").trim(),
+                    "score_only_preview" | "score_only_evidence"
+                )
+        })
+        .count() as u32;
+    let cursor = if window > 0 {
+        prior_evidence_attempts % window
+    } else {
+        0
+    };
+    let prefix = input
+        .mode_prefix
+        .as_deref()
+        .map(|v| v.trim())
+        .filter(|v| !v.is_empty())
+        .unwrap_or("evidence");
+    ChooseEvidenceSelectionModeOutput {
+        mode: format!("{prefix}_sample"),
+        index: cursor,
+        sample_window: window,
+        sample_cursor: cursor,
+        prior_evidence_attempts,
+    }
+}
+
 pub fn compute_parse_directive_file_arg(input: &ParseDirectiveFileArgInput) -> ParseDirectiveFileArgOutput {
     let text = input.command.as_deref().unwrap_or("").trim();
     if text.is_empty() {
@@ -14188,6 +14270,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_number_or_null_encode_failed:{e}"));
+    }
+    if mode == "choose_evidence_selection_mode" {
+        let input = request
+            .choose_evidence_selection_mode_input
+            .ok_or_else(|| "autoscale_missing_choose_evidence_selection_mode_input".to_string())?;
+        let out = compute_choose_evidence_selection_mode(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "choose_evidence_selection_mode",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_choose_evidence_selection_mode_encode_failed:{e}"));
     }
     if mode == "parse_directive_file_arg" {
         let input = request
