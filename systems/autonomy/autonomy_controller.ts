@@ -2691,6 +2691,8 @@ const NO_PROGRESS_RESULT_CACHE = new Map();
 const NO_PROGRESS_RESULT_CACHE_MAX = 512;
 const ATTEMPT_RUN_EVENT_CACHE = new Map();
 const ATTEMPT_RUN_EVENT_CACHE_MAX = 512;
+const SAFETY_STOP_RUN_EVENT_CACHE = new Map();
+const SAFETY_STOP_RUN_EVENT_CACHE_MAX = 512;
 
 function isPolicyHoldResult(result): boolean {
   const r = String(result || '').trim();
@@ -8932,6 +8934,29 @@ function writeExperiment(dateStr, card) {
 
 function isSafetyStopRunEvent(evt): boolean {
   if (!evt || evt.type !== 'autonomy_run') return false;
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const result = String(evt.result || '');
+    if (SAFETY_STOP_RUN_EVENT_CACHE.has(result)) {
+      return SAFETY_STOP_RUN_EVENT_CACHE.get(result) === true;
+    }
+    const rust = runBacklogAutoscalePrimitive(
+      'safety_stop_run_event',
+      {
+        event_type: String(evt.type || ''),
+        result
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const val = rust.payload.payload.is_safety_stop === true;
+      if (SAFETY_STOP_RUN_EVENT_CACHE.size >= SAFETY_STOP_RUN_EVENT_CACHE_MAX) {
+        const oldest = SAFETY_STOP_RUN_EVENT_CACHE.keys().next();
+        if (!oldest.done) SAFETY_STOP_RUN_EVENT_CACHE.delete(oldest.value);
+      }
+      SAFETY_STOP_RUN_EVENT_CACHE.set(result, val);
+      return val;
+    }
+  }
   const result = String(evt.result || '');
   return result.includes('human_escalation')
     || result.includes('tier1_governance')
@@ -16109,5 +16134,6 @@ module.exports = {
   semanticTokenSimilarity,
   semanticNearDuplicateMatch,
   isNoProgressRun,
-  isAttemptRunEvent
+  isAttemptRunEvent,
+  isSafetyStopRunEvent
 };
