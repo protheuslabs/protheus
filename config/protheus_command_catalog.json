@@ -1,0 +1,249 @@
+{
+  "version": "1.0",
+  "category_order": [
+    "Core Commands",
+    "Personas",
+    "Orchestration",
+    "Migration and Programs",
+    "Tools",
+    "Runtime and Ops",
+    "Other Commands"
+  ],
+  "commands": {
+    "status": {
+      "category": "Core Commands",
+      "usage": "protheus status",
+      "summary": "Show operator health dashboard (Rust %, drift, shadows, heartbeat)."
+    },
+    "debug": {
+      "category": "Core Commands",
+      "usage": "protheus debug [--deep=1]",
+      "summary": "Run parity/security diagnostics with log summaries."
+    },
+    "version": {
+      "category": "Core Commands",
+      "usage": "protheus version",
+      "summary": "Show CLI version and update availability."
+    },
+    "update": {
+      "category": "Core Commands",
+      "usage": "protheus update",
+      "summary": "Check updates and print one-line changelog."
+    },
+    "health": {
+      "category": "Core Commands",
+      "usage": "protheus health",
+      "summary": "Run control-plane health checks."
+    },
+    "list": {
+      "category": "Core Commands",
+      "usage": "protheus list",
+      "summary": "List available CLI commands with summaries."
+    },
+    "help": {
+      "category": "Core Commands",
+      "usage": "protheus help",
+      "summary": "Show command guide."
+    },
+    "setup": {
+      "category": "Core Commands",
+      "usage": "protheus setup",
+      "summary": "Run optional first-run setup wizard."
+    },
+    "--help": {
+      "category": "Core Commands",
+      "usage": "protheus --help",
+      "summary": "Show command guide."
+    },
+    "-h": {
+      "category": "Core Commands",
+      "usage": "protheus -h",
+      "summary": "Show command guide."
+    },
+    "lens": {
+      "category": "Personas",
+      "usage": "protheus lens <persona> \"<query>\"",
+      "summary": "Consult persona lenses."
+    },
+    "arbitrate": {
+      "category": "Personas",
+      "usage": "protheus arbitrate --between=persona1,persona2 --issue=\"<query>\"",
+      "summary": "Resolve persona conflicts deterministically."
+    },
+    "persona": {
+      "category": "Personas",
+      "usage": "protheus persona <subcommand>",
+      "summary": "Persona feed/checkin/stream operations."
+    },
+    "orchestrate": {
+      "category": "Orchestration",
+      "usage": "protheus orchestrate <meeting|project|telemetry|status> ...",
+      "summary": "Run deterministic orchestration workflows."
+    },
+    "shadow": {
+      "category": "Orchestration",
+      "usage": "protheus shadow <list|arise|pause|review|status> ...",
+      "summary": "Operate shadow personas (activation, pause, review, state)."
+    },
+    "assimilate": {
+      "category": "Tools",
+      "usage": "protheus assimilate <path|url> [--dry-run=1]",
+      "summary": "Ingest source and emit governed sprint prompt."
+    },
+    "research": {
+      "category": "Tools",
+      "usage": "protheus research \"<query>\" [--dry-run=1]",
+      "summary": "Run research organ with Core-5 review."
+    },
+    "tutorial": {
+      "category": "Tools",
+      "usage": "protheus tutorial [status|on|off]",
+      "summary": "Control context-aware suggestion tutorial mode."
+    },
+    "completion": {
+      "category": "Tools",
+      "usage": "protheus completion <bash|zsh|fish>",
+      "summary": "Generate shell auto-completion scripts."
+    },
+    "examples": {
+      "category": "Tools",
+      "usage": "protheus examples [<command>]",
+      "summary": "Show copy-ready command examples."
+    },
+    "demo": {
+      "category": "Tools",
+      "usage": "protheus demo",
+      "summary": "Run an interactive safe walkthrough of core commands."
+    },
+    "diagram": {
+      "category": "Tools",
+      "usage": "protheus diagram [cli|personas|rsi]",
+      "summary": "Render lightweight Mermaid architecture diagrams."
+    },
+    "repl": {
+      "category": "Tools",
+      "usage": "protheus",
+      "summary": "Start interactive REPL mode (no-arg TTY)."
+    },
+    "toolkit": {
+      "category": "Tools",
+      "usage": "protheus toolkit list",
+      "summary": "List and route cognitive toolkit tools."
+    },
+    "migrate": {
+      "category": "Migration and Programs",
+      "usage": "protheus migrate [run|status|rollback]",
+      "summary": "Run core migration bridge operations."
+    },
+    "import": {
+      "category": "Migration and Programs",
+      "usage": "protheus import [run|status]",
+      "summary": "Run universal importer flows."
+    },
+    "rust": {
+      "category": "Migration and Programs",
+      "usage": "protheus rust [run|report|status]",
+      "summary": "Rust migration acceleration lane."
+    },
+    "rust-hybrid": {
+      "category": "Migration and Programs",
+      "usage": "protheus rust-hybrid [list|run|run-all|status]",
+      "summary": "Hybrid Rust migration program."
+    },
+    "fluxlattice": {
+      "category": "Migration and Programs",
+      "usage": "protheus fluxlattice [list|run|run-all|status]",
+      "summary": "Fluxlattice migration/execution program."
+    },
+    "suite": {
+      "category": "Migration and Programs",
+      "usage": "protheus suite [list|run|run-all|status]",
+      "summary": "Productized suite rollout program."
+    },
+    "scale": {
+      "category": "Migration and Programs",
+      "usage": "protheus scale [list|run|run-all|status]",
+      "summary": "Scale readiness program."
+    },
+    "perception": {
+      "category": "Migration and Programs",
+      "usage": "protheus perception [list|run|run-all|status]",
+      "summary": "Perception polish program."
+    },
+    "wasi2": {
+      "category": "Migration and Programs",
+      "usage": "protheus wasi2 [status|run]",
+      "summary": "WASI2 execution completeness gate."
+    },
+    "settle": {
+      "category": "Migration and Programs",
+      "usage": "protheus settle [settle|status|list|run|run-all|revert]",
+      "summary": "Settlement program operations."
+    },
+    "edit-core": {
+      "category": "Migration and Programs",
+      "usage": "protheus edit-core ...",
+      "summary": "Edit core settlement config."
+    },
+    "edit": {
+      "category": "Migration and Programs",
+      "usage": "protheus edit ...",
+      "summary": "Edit settlement module config."
+    },
+    "edge": {
+      "category": "Runtime and Ops",
+      "usage": "protheus edge <subcommand>",
+      "summary": "Edge runtime controls."
+    },
+    "host": {
+      "category": "Runtime and Ops",
+      "usage": "protheus host <subcommand>",
+      "summary": "Host adaptation operations."
+    },
+    "socket": {
+      "category": "Runtime and Ops",
+      "usage": "protheus socket <subcommand>",
+      "summary": "Platform socket runtime controls."
+    },
+    "mine": {
+      "category": "Runtime and Ops",
+      "usage": "protheus mine <subcommand>",
+      "summary": "Donor mining dashboard."
+    },
+    "spine": {
+      "category": "Runtime and Ops",
+      "usage": "protheus spine [status|run]",
+      "summary": "Spine lifecycle operations."
+    },
+    "hold": {
+      "category": "Runtime and Ops",
+      "usage": "protheus hold [status|admit|rehydrate|simulate]",
+      "summary": "Hold remediation lane."
+    },
+    "rsi": {
+      "category": "Runtime and Ops",
+      "usage": "protheus rsi [status|run|approve]",
+      "summary": "RSI bootstrap controls."
+    },
+    "contract-lane": {
+      "category": "Runtime and Ops",
+      "usage": "protheus contract-lane status",
+      "summary": "Contract lane status view."
+    },
+    "approve": {
+      "category": "Runtime and Ops",
+      "usage": "protheus approve --rsi ...",
+      "summary": "Approval bridge for RSI actions."
+    },
+    "lensmap": {
+      "category": "Runtime and Ops",
+      "usage": "protheus lensmap <subcommand>",
+      "summary": "Lensmap package CLI."
+    },
+    "skills": {
+      "category": "Runtime and Ops",
+      "usage": "protheus skills discover",
+      "summary": "Discover available skills."
+    }
+  }
+}

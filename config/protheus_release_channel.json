@@ -1,0 +1,6 @@
+{
+  "channel": "stable",
+  "latest_version": "0.1.1",
+  "released_at": "2026-03-03",
+  "changelog_line": "CLI polish release: setup wizard, completion upgrades, and demo/examples."
+}

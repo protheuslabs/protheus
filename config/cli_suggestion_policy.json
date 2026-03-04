@@ -1,0 +1,14 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "tutorial_mode_default_new_users": true,
+  "cooldown_seconds": 30,
+  "max_suggestions_per_hour": 20,
+  "core5_review_required": true,
+  "triggers": {
+    "drift_keywords": ["drift", "regression", "violation", "fail", "degrade", "downgrade"],
+    "planning_keywords": ["plan", "sprint", "next", "roadmap", "backlog"],
+    "external_detection_enabled": true,
+    "first_use_orchestration_hint": true
+  }
+}

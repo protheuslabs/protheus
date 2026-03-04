@@ -1,0 +1,19 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "proposal_only": true,
+  "require_human_confirmation_for_execute": true,
+  "query_budget": {
+    "max_query_tokens": 2000,
+    "mode": "trim"
+  },
+  "extraction": {
+    "max_local_hits": 12,
+    "max_tokens_per_summary": 900
+  },
+  "logging": {
+    "append_to_persona_correspondence": true,
+    "append_to_persona_feed": true,
+    "write_state_receipts": true
+  }
+}

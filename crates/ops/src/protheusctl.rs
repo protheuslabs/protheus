@@ -3,6 +3,7 @@ use base64::Engine;
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::env;
+use std::io::IsTerminal;
 use std::path::Path;
 use std::process::{Command, Stdio};
 
@@ -30,6 +31,28 @@ fn bool_env(name: &str, fallback: bool) -> bool {
         },
         Err(_) => fallback,
     }
+}
+
+fn should_offer_setup(root: &Path, skip_setup: bool) -> bool {
+    if skip_setup || bool_env("PROTHEUS_SKIP_SETUP", false) || bool_env("PROTHEUS_SETUP_DISABLE", false) {
+        return false;
+    }
+    if bool_env("PROTHEUS_SETUP_FORCE", false) {
+        return true;
+    }
+    let latest_path = root
+        .join("state")
+        .join("ops")
+        .join("protheus_setup_wizard")
+        .join("latest.json");
+    let Ok(raw) = std::fs::read_to_string(latest_path) else {
+        return true;
+    };
+    let parsed: Value = serde_json::from_str(&raw).unwrap_or(Value::Null);
+    !parsed
+        .get("completed")
+        .and_then(Value::as_bool)
+        .unwrap_or(false)
 }
 
 fn node_bin() -> String {
@@ -217,6 +240,81 @@ fn run_node_script(root: &Path, script_rel: &str, args: &[String], forward_stdin
     }
 }
 
+fn maybe_run_cli_suggestion_engine(root: &Path, cmd: &str, rest: &[String]) {
+    if bool_env("PROTHEUS_GLOBAL_QUIET", false) {
+        return;
+    }
+    if !bool_env("PROTHEUS_CLI_SUGGESTIONS", true) {
+        return;
+    }
+    if matches!(
+        cmd,
+        "assimilate"
+            | "research"
+            | "tutorial"
+            | "list"
+            | "help"
+            | "--help"
+            | "-h"
+            | "demo"
+            | "examples"
+            | "version"
+            | "update"
+            | "diagram"
+            | "shadow"
+            | "debug"
+            | "setup"
+            | "completion"
+            | "repl"
+    ) {
+        return;
+    }
+    let suggestion_script = root.join("systems/tools/cli_suggestion_engine.js");
+    if !suggestion_script.exists() {
+        return;
+    }
+    let request_json = serde_json::to_string(&json!({
+        "cmd": cmd,
+        "args": rest
+    }))
+    .unwrap_or_else(|_| "{}".to_string());
+    let _ = Command::new(node_bin())
+        .arg(suggestion_script)
+        .arg("suggest")
+        .arg("--origin=main_cli")
+        .arg(format!("--cmd={}", clean(cmd, 60)))
+        .arg(format!("--argv-json={request_json}"))
+        .current_dir(root)
+        .stdin(Stdio::inherit())
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
+        .status();
+}
+
+fn maybe_run_update_checker(root: &Path, cmd: &str) {
+    if bool_env("PROTHEUS_GLOBAL_QUIET", false) {
+        return;
+    }
+    if bool_env("PROTHEUS_UPDATE_CHECKER_DISABLED", false) {
+        return;
+    }
+    if matches!(cmd, "version" | "update" | "help" | "--help" | "-h") {
+        return;
+    }
+    let script = root.join("systems/ops/protheus_version_cli.js");
+    if !script.exists() {
+        return;
+    }
+    let _ = Command::new(node_bin())
+        .arg(script)
+        .arg("check-quiet")
+        .current_dir(root)
+        .stdin(Stdio::null())
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
+        .status();
+}
+
 fn route_edge(rest: &[String]) -> Route {
     let sub = rest
         .first()
@@ -293,33 +391,214 @@ fn route_edge(rest: &[String]) -> Route {
 }
 
 pub fn usage() {
-    println!("Usage: protheusctl <command> [flags]");
-    println!("Examples:");
-    println!("  protheus status");
-    println!("  protheus health");
-    println!("  protheusctl job-submit --kind=reconcile");
-    println!("  protheusctl edge start --owner=jay --profile=mobile_seed");
-    println!("  protheusctl rust run|report|status");
-    println!("  protheusctl lens <persona> <query>");
-    println!("  protheusctl orchestrate meeting \"topic\"");
+    println!("Usage: protheus <command> [flags]");
+    println!("Try:");
+    println!("  protheus list");
+    println!("  protheus --help");
+    println!("  protheus setup");
 }
 
 pub fn run(root: &Path, argv: &[String]) -> i32 {
-    let cmd = argv
-        .first()
-        .cloned()
-        .unwrap_or_else(|| "status".to_string());
-    let rest = argv.iter().skip(1).cloned().collect::<Vec<_>>();
-
-    if matches!(cmd.as_str(), "help" | "--help" | "-h") {
-        usage();
-        return 0;
+    let mut skip_setup_flag = false;
+    let mut global_json = false;
+    let mut global_quiet = false;
+    let mut global_help = false;
+    let mut global_version = false;
+    let mut global_example = false;
+    let mut filtered_argv = Vec::new();
+    for arg in argv {
+        match arg.as_str() {
+            "--skip-setup" => skip_setup_flag = true,
+            "--json" | "--json=1" => global_json = true,
+            "--quiet" | "--quiet=1" => global_quiet = true,
+            "--help" | "-h" => global_help = true,
+            "--version" => global_version = true,
+            "--example" => global_example = true,
+            _ => filtered_argv.push(arg.clone()),
+        }
     }
 
-    let route = match cmd.as_str() {
+    if global_json {
+        env::set_var("PROTHEUS_GLOBAL_JSON", "1");
+    }
+    if global_quiet {
+        env::set_var("PROTHEUS_GLOBAL_QUIET", "1");
+    }
+
+    let mut cmd = if filtered_argv.is_empty() {
+        if global_version {
+            "version".to_string()
+        } else if global_help {
+            "help".to_string()
+        } else {
+        let force_repl = bool_env("PROTHEUS_FORCE_REPL", false);
+        let repl_disabled = bool_env("PROTHEUS_REPL_DISABLED", false);
+        if !repl_disabled && (force_repl || std::io::stdin().is_terminal()) {
+            if should_offer_setup(root, skip_setup_flag) {
+                let setup_route = Route {
+                    script_rel: "systems/ops/protheus_setup_wizard.js".to_string(),
+                    args: vec!["run".to_string()],
+                    forward_stdin: true,
+                };
+                let setup_gate =
+                    evaluate_dispatch_security(root, &setup_route.script_rel, &setup_route.args);
+                if !setup_gate.ok {
+                    eprintln!(
+                        "{}",
+                        json!({
+                            "ok": false,
+                            "type": "protheusctl_dispatch_security_gate",
+                            "error": setup_gate.reason
+                        })
+                    );
+                    return 1;
+                }
+                let setup_status = run_node_script(
+                    root,
+                    &setup_route.script_rel,
+                    &setup_route.args,
+                    setup_route.forward_stdin,
+                );
+                if setup_status != 0 {
+                    return setup_status;
+                }
+            }
+            "repl".to_string()
+        } else {
+            "status".to_string()
+        }
+        }
+    } else {
+        filtered_argv.first()
+            .cloned()
+            .unwrap_or_else(|| "status".to_string())
+    };
+    let mut rest = filtered_argv.iter().skip(1).cloned().collect::<Vec<_>>();
+
+    if global_version {
+        cmd = "version".to_string();
+        rest.clear();
+    }
+
+    if global_help
+        && !matches!(cmd.as_str(), "help" | "--help" | "-h")
+        && !rest.iter().any(|arg| matches!(arg.as_str(), "--help" | "-h"))
+    {
+        rest.push("--help".to_string());
+    }
+
+    if global_example && !matches!(cmd.as_str(), "examples" | "demo") {
+        let target = cmd.clone();
+        cmd = "examples".to_string();
+        rest = vec![target];
+    }
+
+    maybe_run_update_checker(root, &cmd);
+    maybe_run_cli_suggestion_engine(root, &cmd, &rest);
+
+    let mut route = match cmd.as_str() {
+        "list" => Route {
+            script_rel: "systems/ops/protheus_command_list.js".to_string(),
+            args: std::iter::once("--mode=list".to_string())
+                .chain(rest)
+                .collect(),
+            forward_stdin: false,
+        },
+        "completion" => Route {
+            script_rel: "systems/ops/protheus_completion.js".to_string(),
+            args: if rest.is_empty() {
+                vec!["--help".to_string()]
+            } else {
+                rest
+            },
+            forward_stdin: false,
+        },
+        "repl" => Route {
+            script_rel: "systems/ops/protheus_repl.js".to_string(),
+            args: rest,
+            forward_stdin: true,
+        },
+        "setup" => Route {
+            script_rel: "systems/ops/protheus_setup_wizard.js".to_string(),
+            args: if rest.is_empty() {
+                vec!["run".to_string()]
+            } else {
+                rest
+            },
+            forward_stdin: true,
+        },
+        "demo" => Route {
+            script_rel: "systems/ops/protheus_demo.js".to_string(),
+            args: rest,
+            forward_stdin: false,
+        },
+        "examples" => Route {
+            script_rel: "systems/ops/protheus_examples.js".to_string(),
+            args: rest,
+            forward_stdin: false,
+        },
+        "version" => Route {
+            script_rel: "systems/ops/protheus_version_cli.js".to_string(),
+            args: std::iter::once("version".to_string())
+                .chain(rest)
+                .collect(),
+            forward_stdin: false,
+        },
+        "update" => Route {
+            script_rel: "systems/ops/protheus_version_cli.js".to_string(),
+            args: std::iter::once("update".to_string())
+                .chain(rest)
+                .collect(),
+            forward_stdin: false,
+        },
+        "diagram" => Route {
+            script_rel: "systems/ops/protheus_diagram.js".to_string(),
+            args: rest,
+            forward_stdin: false,
+        },
+        "shadow" => Route {
+            script_rel: "systems/personas/shadow_cli.js".to_string(),
+            args: if rest.is_empty() {
+                vec!["status".to_string()]
+            } else {
+                rest
+            },
+            forward_stdin: false,
+        },
+        "help" => Route {
+            script_rel: "systems/ops/protheus_command_list.js".to_string(),
+            args: std::iter::once("--mode=help".to_string())
+                .chain(rest)
+                .collect(),
+            forward_stdin: false,
+        },
+        "--help" => Route {
+            script_rel: "systems/ops/protheus_command_list.js".to_string(),
+            args: std::iter::once("--mode=help".to_string())
+                .chain(rest)
+                .collect(),
+            forward_stdin: false,
+        },
+        "-h" => Route {
+            script_rel: "systems/ops/protheus_command_list.js".to_string(),
+            args: std::iter::once("--mode=help".to_string())
+                .chain(rest)
+                .collect(),
+            forward_stdin: false,
+        },
         "status" => Route {
+            script_rel: "systems/ops/protheus_status_dashboard.js".to_string(),
+            args: rest,
+            forward_stdin: false,
+        },
+        "debug" => Route {
+            script_rel: "systems/ops/protheus_debug_diagnostics.js".to_string(),
+            args: rest,
+            forward_stdin: false,
+        },
+        "health" => Route {
             script_rel: "systems/ops/protheus_control_plane.js".to_string(),
-            args: std::iter::once("status".to_string()).chain(rest).collect(),
+            args: std::iter::once("health".to_string()).chain(rest).collect(),
             forward_stdin: false,
         },
         "skills" if rest.first().map(String::as_str) == Some("discover") => Route {
@@ -580,6 +859,35 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
             },
             forward_stdin: true,
         },
+        "assimilate" => Route {
+            script_rel: "systems/tools/assimilate.js".to_string(),
+            args: if rest.is_empty() {
+                vec!["--help".to_string()]
+            } else {
+                rest
+            },
+            forward_stdin: false,
+        },
+        "research" => Route {
+            script_rel: "systems/tools/research.js".to_string(),
+            args: if rest.is_empty() {
+                vec!["--help".to_string()]
+            } else {
+                rest
+            },
+            forward_stdin: false,
+        },
+        "tutorial" => Route {
+            script_rel: "systems/tools/cli_suggestion_engine.js".to_string(),
+            args: if rest.is_empty() {
+                vec!["tutorial".to_string(), "status".to_string()]
+            } else {
+                std::iter::once("tutorial".to_string())
+                    .chain(rest)
+                    .collect()
+            },
+            forward_stdin: false,
+        },
         "toolkit" => Route {
             script_rel: "systems/ops/cognitive_toolkit_cli.js".to_string(),
             args: if rest.is_empty() {
@@ -696,11 +1004,51 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
             forward_stdin: false,
         },
         _ => Route {
-            script_rel: "systems/ops/protheus_control_plane.js".to_string(),
+            script_rel: "systems/ops/protheus_unknown_guard.js".to_string(),
             args: std::iter::once(cmd).chain(rest).collect(),
             forward_stdin: false,
         },
     };
+
+    let supports_json_flag = matches!(
+        route.script_rel.as_str(),
+        "systems/ops/protheus_command_list.js"
+            | "systems/ops/protheus_setup_wizard.js"
+            | "systems/ops/protheus_demo.js"
+            | "systems/ops/protheus_examples.js"
+            | "systems/ops/protheus_version_cli.js"
+            | "systems/ops/protheus_diagram.js"
+            | "systems/ops/protheus_completion.js"
+            | "systems/ops/protheus_status_dashboard.js"
+            | "systems/ops/protheus_debug_diagnostics.js"
+            | "systems/personas/shadow_cli.js"
+            | "systems/tools/cli_suggestion_engine.js"
+    );
+    if global_json
+        && supports_json_flag
+        && !route
+            .args
+            .iter()
+            .any(|arg| arg == "--json" || arg.starts_with("--json="))
+    {
+        route.args.push("--json=1".to_string());
+    }
+
+    let supports_quiet_flag = matches!(
+        route.script_rel.as_str(),
+        "systems/ops/protheus_demo.js"
+            | "systems/ops/protheus_examples.js"
+            | "systems/ops/protheus_version_cli.js"
+    );
+    if global_quiet
+        && supports_quiet_flag
+        && !route
+            .args
+            .iter()
+            .any(|arg| arg == "--quiet" || arg.starts_with("--quiet="))
+    {
+        route.args.push("--quiet=1".to_string());
+    }
 
     let gate = evaluate_dispatch_security(root, &route.script_rel, &route.args);
     if !gate.ok {

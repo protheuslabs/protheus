@@ -53,6 +53,42 @@ protheus-top
 | `protheusctl` | Job and control-plane operations |
 | `protheus-top` | Live operator observability surface |
 
+Run `protheus list` (or `protheus --help`) for a categorized command index.
+
+### CLI Discoverability and UX
+
+- `protheus list` and `protheus --help` provide a categorized command index.
+- `protheus setup` runs an optional, lightweight first-run wizard (covenant confirmation, interaction mode, notification preference).
+- `protheus completion <bash|zsh|fish>` generates shell auto-completion scripts.
+- Global flags work across CLI entrypoints: `--json`, `--quiet`, `--help`, `--version`, `--example`.
+- Running `protheus` with no args in a TTY opens interactive REPL mode with guided shortcuts/wizards.
+  - On first run, setup executes once before REPL unless `--skip-setup` is passed.
+- Unknown commands return suggestion hints plus a `protheus list` prompt.
+- Long-running research/assimilation flows support spinner/progress indicators in interactive terminals.
+- `protheus demo` runs a safe walkthrough (`list`, `version`, examples, setup status).
+- `protheus version` and `protheus update` provide version + update channel information.
+- Internal operator commands:
+  - `protheus status` -> health dashboard (`Rust %`, drift, shadows, heartbeat)
+  - `protheus debug` -> parity/security diagnostics + recent log summary
+  - `protheus shadow <list|arise|pause|review|status>` -> direct shadow-army operations
+  - `protheus diagram ...` -> Mermaid diagram generator
+
+Completion setup examples:
+
+```bash
+protheus completion bash > ~/.local/share/bash-completion/completions/protheus
+protheus completion zsh > ~/.zfunc/_protheus
+protheus completion fish > ~/.config/fish/completions/protheus.fish
+protheus setup
+protheus --skip-setup
+protheus demo
+protheus research --example
+protheus --version
+protheus status --json=1
+protheus debug --json=1
+protheus shadow list --json=1
+```
+
 ### Persona Lens Command
 
 - `protheus lens <persona> "<query>"` loads `personas/<persona>/{profile.md,correspondence.md,lens.md}` and returns a Markdown response using that persona lens.
@@ -73,6 +109,55 @@ protheus-top
 - `protheus orchestrate project "<name>" "<goal>" [--approval-note="..."]` opens a project state machine lane (`proposed -> active/blocked/paused_on_breaker/reviewed/resumed/rolled_back/completed/cancelled`).
 - `protheus orchestrate project --id=<project_id> --transition=<state> [--approval-note="..."]` advances project state with receipts.
 
+### Shadow Operator Command
+
+- `protheus shadow status` shows active/paused shadows and governance snapshot.
+- `protheus shadow list` shows available personas plus current shadow state.
+- `protheus shadow arise <persona>` activates a persona shadow with telemetry receipt.
+- `protheus shadow pause <persona>` pauses a persona shadow with telemetry receipt.
+- `protheus shadow review [persona] [--note="..."]` queues review checkpoints for audit and memory.
+
+### Assimilation Command
+
+- `protheus assimilate <path|url>` ingests a local file or allowlisted web page, runs research-organ probe + Core-5 persona review, and emits a Codex-ready sprint prompt.
+- Safety gates are fail-closed: blocked domains/private hosts are rejected, covenant violation signals stop execution, and `--apply` requires `--confirm-execution=1`.
+- Default mode is proposal-only with auditable receipts at `state/tools/assimilate/`.
+- Example: `protheus assimilate ./docs/cognitive_toolkit.md --dry-run=1`
+- Example: `protheus assimilate https://github.com/example/repo`
+- Programmatic use for loops/shadows:
+  ```js
+  const { systemAssimilate } = require('./systems/tools/assimilate_api.js');
+  const result = systemAssimilate('./docs/cognitive_toolkit.md', { dryRun: true, format: 'json' });
+  ```
+
+### Research Command
+
+- `protheus research "<query>"` runs research-organ routing (query intake, local hybrid evidence grading, synthesis) and Core-5 review/arbitration.
+- Includes covenant fail-closed checks and query token-budget guard (`trim` or `reject` mode).
+- Implementation-intent queries automatically include an optional Codex sprint prompt.
+- Proactive suggestion mode: when tool/path/URL mentions are detected, the system can suggest assimilation with a natural prompt and optional auto-confirm flags.
+- Example: `protheus research "creating a quant trading software" --dry-run=1`
+- Example proactive flow: `protheus research "I just used docs/cognitive_toolkit.md for this workflow" --dry-run=1 --auto-confirm-assimilate=1`
+- Programmatic use for loops/shadows:
+  ```js
+  const { systemResearch } = require('./systems/tools/research_api.js');
+  const result = systemResearch('creating a quant trading software', { dryRun: true, format: 'json' });
+  ```
+
+### Context-Aware CLI Suggestions (Tutorial Mode)
+
+- The CLI can suggest next commands using context triggers (external tool/path mentions, drift-like signals, and planning intent).
+- Suggestions run a light Core-5 safety review before prompting.
+- Prompt format: `Would you like to run \`protheus <command>\`? (y/n) — <why>`
+- Toggle tutorial mode:
+  - `protheus tutorial status`
+  - `protheus tutorial on`
+  - `protheus tutorial off`
+- Example contexts (JSON mode for deterministic output):
+  - `node systems/tools/cli_suggestion_engine.js suggest --cmd=status --text="I just used docs/cognitive_toolkit.md for this workflow." --auto-reject=1 --dry-run=1 --json=1`
+  - `node systems/tools/cli_suggestion_engine.js suggest --cmd=status --text="drift regression detected in memory lane" --auto-reject=1 --dry-run=1 --json=1`
+  - `node systems/tools/cli_suggestion_engine.js suggest --cmd=status --text="plan next sprint backlog for rust migration" --auto-reject=1 --dry-run=1 --json=1`
+
 ### Cognitive Toolkit Suite
 
 Introducing the Cognitive Toolkit Suite: internal operators tooling for red-teaming and alignment workflows.
@@ -83,6 +168,8 @@ Introducing the Cognitive Toolkit Suite: internal operators tooling for red-team
 - `protheus toolkit orchestration ...` routes to deterministic meeting/project operations.
 - `protheus toolkit blob-morphing [status|verify]` validates blob assets used by fold/unfold paths.
 - `protheus toolkit comment-mapper --persona=<id> --query="<text>" [--gap=<seconds>] [--active=1] [--intercept="<override>"]` runs stream-of-thought mapping with optional intercept controls.
+- `protheus toolkit assimilate <path|url>` runs the same assimilation flow through the toolkit wrapper.
+- `protheus toolkit research "<query>"` runs the research command through the toolkit wrapper.
 
 See [Cognitive Toolkit Suite](docs/cognitive_toolkit.md) and `examples/*-demo/` for runnable examples.
 

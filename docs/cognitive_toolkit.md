@@ -21,6 +21,19 @@ Purpose: Validate binary blob assets used by fold/unfold logic.
 5. Comment Mapper  
 Purpose: Stream-of-thought mapping with optional intercept controls.
 
+6. Assimilate  
+Purpose: Ingest local/web sources into a deterministic sprint prompt with Core-5 review and safety gates.
+Also available as a programmatic API (`systems/tools/assimilate_api.js`) for loop/shadow self-use.
+
+7. Research  
+Purpose: Run natural-language research queries through hybrid evidence grading + Core-5 arbitration.
+Also available as a programmatic API (`systems/tools/research_api.js`) for loop/shadow self-use.
+Includes proactive assimilation suggestions when tool/path/URL mentions are detected in query text.
+
+8. Tutorial Suggestions
+Purpose: Context-aware command nudges in the main CLI loop (external tool, drift, planning signals) with light Core-5 safety review.
+Control via `protheus tutorial status|on|off`.
+
 ## CLI Entry
 
 Use the suite wrapper:
@@ -37,6 +50,8 @@ protheus toolkit dictionary term "Binary Blobs"
 protheus toolkit orchestration status
 protheus toolkit blob-morphing status
 protheus toolkit comment-mapper --persona=vikram_menon --query="Should we prioritize memory or security first?" --gap=1 --active=1
+protheus toolkit assimilate ./docs/cognitive_toolkit.md --dry-run=1
+protheus toolkit research "creating a quant trading software" --dry-run=1
 ```
 
 ## Examples
@@ -46,6 +61,8 @@ protheus toolkit comment-mapper --persona=vikram_menon --query="Should we priori
 - `examples/orchestration-demo/`
 - `examples/blob-morphing-demo/`
 - `examples/comment-mapper-demo/`
+- `examples/assimilate-demo/`
+- `examples/research-demo/`
 
 ## Internal Positioning
 
@@ -55,4 +72,3 @@ This is an internal operators toolkit. It is optimized for:
 - quick auditability
 - behavior-preserving workflows
 - sovereignty gate compatibility
-

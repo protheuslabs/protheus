@@ -10,6 +10,8 @@ const { spawnSync } = require('child_process');
 const ROOT = path.resolve(__dirname, '..', '..');
 const PERSONA_CLI = path.join(ROOT, 'systems', 'personas', 'cli.js');
 const ORCHESTRATION_CLI = path.join(ROOT, 'systems', 'personas', 'orchestration.js');
+const ASSIMILATE_CLI = path.join(ROOT, 'systems', 'tools', 'assimilate.js');
+const RESEARCH_CLI = path.join(ROOT, 'systems', 'tools', 'research.js');
 const DICTIONARY_MD = path.join(ROOT, 'docs', 'dictionary', 'dictionary.md');
 const BLOB_DIR = path.join(ROOT, 'crates', 'memory', 'src', 'blobs');
 
@@ -69,6 +71,8 @@ function usage() {
   console.log('  protheus toolkit orchestration [<orchestrate args...>]');
   console.log('  protheus toolkit blob-morphing [status|verify]');
   console.log('  protheus toolkit comment-mapper --persona=<id> --query="<text>" [--lens=decision|strategic|full] [--gap=<seconds>] [--active=1] [--intercept="<override>"] [--emotion=on|off] [--values=on|off]');
+  console.log('  protheus toolkit assimilate <path|url> [--dry-run=1]');
+  console.log('  protheus toolkit research "<query>" [--dry-run=1]');
 }
 
 function relayNode(script: string, args: string[], options: { forwardStdin?: boolean } = {}) {
@@ -310,6 +314,18 @@ function toolManifest() {
       label: 'Comment Mapper',
       route: 'protheus toolkit comment-mapper',
       summary: 'Stream-of-thought mapping with optional intercept controls.'
+    },
+    {
+      id: 'assimilate',
+      label: 'Assimilate',
+      route: 'protheus toolkit assimilate',
+      summary: 'Ingest local/web source, run Core-5 review, and emit a Codex-ready sprint prompt.'
+    },
+    {
+      id: 'research',
+      label: 'Research',
+      route: 'protheus toolkit research',
+      summary: 'Run research organ + Core-5 arbitration for a natural-language query.'
     }
   ];
 }
@@ -356,6 +372,16 @@ function main() {
 
   if (sub === 'comment-mapper') {
     routeCommentMapper(rawRest);
+  }
+
+  if (sub === 'assimilate') {
+    const routed = rawRest.length ? rawRest : ['--help'];
+    relayNode(ASSIMILATE_CLI, routed);
+  }
+
+  if (sub === 'research') {
+    const routed = rawRest.length ? rawRest : ['--help'];
+    relayNode(RESEARCH_CLI, routed);
   }
 
   emit({

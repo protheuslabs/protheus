@@ -1,0 +1,35 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "proposal_only": true,
+  "require_human_confirmation_for_execute": true,
+  "targets": {
+    "allow_local_paths": true,
+    "allow_web_urls": true,
+    "allowed_domains": [
+      "github.com",
+      "raw.githubusercontent.com",
+      "x.com",
+      "news.ycombinator.com",
+      "example.com"
+    ],
+    "blocked_domains": [
+      "localhost",
+      "127.0.0.1",
+      "0.0.0.0",
+      "::1"
+    ],
+    "max_fetch_bytes": 220000,
+    "fetch_timeout_ms": 12000
+  },
+  "extraction": {
+    "max_requirements": 10,
+    "min_requirement_len": 16,
+    "max_requirement_len": 320
+  },
+  "logging": {
+    "append_to_persona_correspondence": true,
+    "append_to_persona_feed": true,
+    "write_state_receipts": true
+  }
+}

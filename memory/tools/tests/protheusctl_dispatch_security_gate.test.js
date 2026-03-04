@@ -14,6 +14,7 @@ function run(args, env = {}) {
     encoding: 'utf8',
     env: {
       ...process.env,
+      PROTHEUS_UPDATE_CHECKER_DISABLED: '1',
       ...env
     }
   });
