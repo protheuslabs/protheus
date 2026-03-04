@@ -2990,6 +2990,21 @@ pub struct ProposalDirectiveTextOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ObjectiveIdsFromPulseContextInput {
+    #[serde(default)]
+    pub objectives: Vec<serde_json::Value>,
+    #[serde(default)]
+    pub fallback_enabled: bool,
+    #[serde(default)]
+    pub fallback_ids: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ObjectiveIdsFromPulseContextOutput {
+    pub ids: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct IsDirectiveClarificationProposalInput {
     #[serde(default)]
     pub proposal_type: Option<String>,
@@ -4188,6 +4203,8 @@ pub struct AutoscaleRequest {
     pub recent_directive_pulse_cooldown_count_input: Option<RecentDirectivePulseCooldownCountInput>,
     #[serde(default)]
     pub proposal_directive_text_input: Option<ProposalDirectiveTextInput>,
+    #[serde(default)]
+    pub objective_ids_from_pulse_context_input: Option<ObjectiveIdsFromPulseContextInput>,
     #[serde(default)]
     pub is_directive_clarification_proposal_input: Option<IsDirectiveClarificationProposalInput>,
     #[serde(default)]
@@ -9588,6 +9605,35 @@ pub fn compute_proposal_directive_text(input: &ProposalDirectiveTextInput) -> Pr
     ProposalDirectiveTextOutput { text: normalized }
 }
 
+pub fn compute_objective_ids_from_pulse_context(
+    input: &ObjectiveIdsFromPulseContextInput,
+) -> ObjectiveIdsFromPulseContextOutput {
+    let mut ids = Vec::<String>::new();
+    let mut seen = std::collections::BTreeSet::<String>::new();
+
+    for row in &input.objectives {
+        let id = js_like_string(json_path(row, &["id"]).unwrap_or(&serde_json::Value::Null))
+            .trim()
+            .to_string();
+        if id.is_empty() || !seen.insert(id.clone()) {
+            continue;
+        }
+        ids.push(id);
+    }
+
+    if ids.is_empty() && input.fallback_enabled {
+        for raw in &input.fallback_ids {
+            let id = raw.trim().to_string();
+            if id.is_empty() || !seen.insert(id.clone()) {
+                continue;
+            }
+            ids.push(id);
+        }
+    }
+
+    ObjectiveIdsFromPulseContextOutput { ids }
+}
+
 pub fn compute_is_directive_clarification_proposal(
     input: &IsDirectiveClarificationProposalInput,
 ) -> IsDirectiveClarificationProposalOutput {
@@ -13367,6 +13413,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_proposal_directive_text_encode_failed:{e}"));
+    }
+    if mode == "objective_ids_from_pulse_context" {
+        let input = request
+            .objective_ids_from_pulse_context_input
+            .ok_or_else(|| "autoscale_missing_objective_ids_from_pulse_context_input".to_string())?;
+        let out = compute_objective_ids_from_pulse_context(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "objective_ids_from_pulse_context",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_objective_ids_from_pulse_context_encode_failed:{e}"));
     }
     if mode == "directive_pulse_context" {
         let input = request
@@ -19336,6 +19394,42 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale proposal_directive_text");
         assert!(out.contains("\"mode\":\"proposal_directive_text\""));
+    }
+
+    #[test]
+    fn objective_ids_from_pulse_context_prefers_objectives_then_fallback() {
+        let out = compute_objective_ids_from_pulse_context(&ObjectiveIdsFromPulseContextInput {
+            objectives: vec![
+                serde_json::json!({"id":"OBJ-A"}),
+                serde_json::json!({"id":"OBJ-B"}),
+                serde_json::json!({"id":"OBJ-A"}),
+            ],
+            fallback_enabled: true,
+            fallback_ids: vec!["OBJ-C".to_string()],
+        });
+        assert_eq!(out.ids, vec!["OBJ-A".to_string(), "OBJ-B".to_string()]);
+
+        let fallback = compute_objective_ids_from_pulse_context(&ObjectiveIdsFromPulseContextInput {
+            objectives: vec![],
+            fallback_enabled: true,
+            fallback_ids: vec!["OBJ-C".to_string(), "OBJ-C".to_string(), "OBJ-D".to_string()],
+        });
+        assert_eq!(fallback.ids, vec!["OBJ-C".to_string(), "OBJ-D".to_string()]);
+    }
+
+    #[test]
+    fn autoscale_json_objective_ids_from_pulse_context_path_works() {
+        let payload = serde_json::json!({
+            "mode": "objective_ids_from_pulse_context",
+            "objective_ids_from_pulse_context_input": {
+                "objectives": [{"id":"OBJ-A"}, {"id":"OBJ-B"}],
+                "fallback_enabled": true,
+                "fallback_ids": ["OBJ-C"]
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale objective_ids_from_pulse_context");
+        assert!(out.contains("\"mode\":\"objective_ids_from_pulse_context\""));
     }
 
     #[test]

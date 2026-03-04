@@ -12103,6 +12103,35 @@ function loadFallbackDirectiveObjectiveIds() {
 }
 
 function objectiveIdsFromPulseContext(pulseCtx) {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const objectives = pulseCtx && Array.isArray(pulseCtx.objectives)
+      ? pulseCtx.objectives
+      : [];
+    const fallbackIds = AUTONOMY_OBJECTIVE_BINDING_FALLBACK_DIRECTIVES
+      ? loadFallbackDirectiveObjectiveIds()
+      : [];
+    const rust = runBacklogAutoscalePrimitive(
+      'objective_ids_from_pulse_context',
+      {
+        objectives,
+        fallback_enabled: AUTONOMY_OBJECTIVE_BINDING_FALLBACK_DIRECTIVES === true,
+        fallback_ids: fallbackIds
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const set = new Set();
+      const ids = Array.isArray(rust.payload.payload.ids)
+        ? rust.payload.payload.ids
+        : [];
+      for (const raw of ids) {
+        const id = String(raw || '').trim();
+        if (!id) continue;
+        set.add(id);
+      }
+      return set;
+    }
+  }
   const set = new Set();
   const objectives = pulseCtx && Array.isArray(pulseCtx.objectives)
     ? pulseCtx.objectives
@@ -20952,6 +20981,8 @@ module.exports = {
   isPolicyHoldRunEvent,
   latestPolicyHoldRunEvent,
   objectivePolicyHoldPattern,
+  objectiveIdsFromPulseContext,
+  policyHoldObjectiveContext,
   policyHoldPressureSnapshot,
   policyHoldCooldownMinutesForPressure,
   policyHoldCooldownMinutesForResult,
