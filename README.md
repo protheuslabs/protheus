@@ -22,6 +22,27 @@ npm run build
 npm run start
 ```
 
+## npm Installation (Primary Distribution)
+
+Install the CLI globally:
+
+```bash
+npm install -g protheus
+```
+
+For local source installs from this repository:
+
+```bash
+cd npm
+npm install -g .
+protheus --help
+```
+
+The npm package is a thin wrapper around the Rust `protheus-ops` binary and includes:
+- release-binary download on install (when available)
+- local Cargo build fallback
+- a `protheus` command entrypoint for operator workflows
+
 Then verify the runtime surface:
 
 ```bash
