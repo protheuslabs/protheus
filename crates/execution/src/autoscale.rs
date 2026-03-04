@@ -220,6 +220,17 @@ pub struct PolicyHoldResultOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ScoreOnlyResultInput {
+    #[serde(default)]
+    pub result: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ScoreOnlyResultOutput {
+    pub is_score_only: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct NoProgressResultInput {
     #[serde(default)]
     pub event_type: Option<String>,
@@ -653,6 +664,8 @@ pub struct AutoscaleRequest {
     pub policy_hold_input: Option<PolicyHoldInput>,
     #[serde(default)]
     pub policy_hold_result_input: Option<PolicyHoldResultInput>,
+    #[serde(default)]
+    pub score_only_result_input: Option<ScoreOnlyResultInput>,
     #[serde(default)]
     pub no_progress_result_input: Option<NoProgressResultInput>,
     #[serde(default)]
@@ -1304,6 +1317,20 @@ pub fn compute_policy_hold_result(input: &PolicyHoldResultInput) -> PolicyHoldRe
     }
 }
 
+pub fn compute_score_only_result(input: &ScoreOnlyResultInput) -> ScoreOnlyResultOutput {
+    let result = input
+        .result
+        .as_ref()
+        .map(|v| v.trim())
+        .unwrap_or_default();
+    ScoreOnlyResultOutput {
+        is_score_only: result == "score_only_preview"
+            || result == "score_only_evidence"
+            || result == "stop_repeat_gate_preview_structural_cooldown"
+            || result == "stop_repeat_gate_preview_churn_cooldown",
+    }
+}
+
 pub fn compute_no_progress_result(input: &NoProgressResultInput) -> NoProgressResultOutput {
     let event_type = input
         .event_type
@@ -1631,10 +1658,10 @@ pub fn compute_run_event_proposal_id(input: &RunEventProposalIdInput) -> RunEven
 }
 
 fn is_score_only_result_for_capacity(result: &str) -> bool {
-    result == "score_only_preview"
-        || result == "score_only_evidence"
-        || result == "stop_repeat_gate_preview_structural_cooldown"
-        || result == "stop_repeat_gate_preview_churn_cooldown"
+    compute_score_only_result(&ScoreOnlyResultInput {
+        result: Some(result.to_string()),
+    })
+    .is_score_only
 }
 
 pub fn compute_capacity_counted_attempt_event(
@@ -2258,6 +2285,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
         }))
         .map_err(|e| format!("autoscale_policy_hold_result_encode_failed:{e}"));
     }
+    if mode == "score_only_result" {
+        let input = request
+            .score_only_result_input
+            .ok_or_else(|| "autoscale_missing_score_only_result_input".to_string())?;
+        let out = compute_score_only_result(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "score_only_result",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_score_only_result_encode_failed:{e}"));
+    }
     if mode == "no_progress_result" {
         let input = request
             .no_progress_result_input
@@ -2713,6 +2752,32 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale policy_hold_result");
         assert!(out.contains("\"mode\":\"policy_hold_result\""));
+    }
+
+    #[test]
+    fn score_only_result_classifies_expected_values() {
+        let score_only = compute_score_only_result(&ScoreOnlyResultInput {
+            result: Some("score_only_preview".to_string()),
+        });
+        assert!(score_only.is_score_only);
+
+        let non_score_only = compute_score_only_result(&ScoreOnlyResultInput {
+            result: Some("executed".to_string()),
+        });
+        assert!(!non_score_only.is_score_only);
+    }
+
+    #[test]
+    fn autoscale_json_score_only_result_path_works() {
+        let payload = serde_json::json!({
+            "mode": "score_only_result",
+            "score_only_result_input": {
+                "result": "score_only_evidence"
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale score_only_result");
+        assert!(out.contains("\"mode\":\"score_only_result\""));
     }
 
     #[test]

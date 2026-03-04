@@ -2707,6 +2707,8 @@ const CAPACITY_COUNTED_ATTEMPT_EVENT_CACHE = new Map();
 const CAPACITY_COUNTED_ATTEMPT_EVENT_CACHE_MAX = 1024;
 const REPEAT_GATE_ANCHOR_CACHE = new Map();
 const REPEAT_GATE_ANCHOR_CACHE_MAX = 1024;
+const SCORE_ONLY_RESULT_CACHE = new Map();
+const SCORE_ONLY_RESULT_CACHE_MAX = 1024;
 
 function isPolicyHoldResult(result): boolean {
   const r = String(result || '').trim();
@@ -3518,6 +3520,25 @@ function deriveRepeatGateAnchor(evt) {
 
 function isScoreOnlyResult(result): boolean {
   const r = String(result || '');
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    if (SCORE_ONLY_RESULT_CACHE.has(r)) {
+      return SCORE_ONLY_RESULT_CACHE.get(r) === true;
+    }
+    const rust = runBacklogAutoscalePrimitive(
+      'score_only_result',
+      { result: r },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const val = rust.payload.payload.is_score_only === true;
+      if (SCORE_ONLY_RESULT_CACHE.size >= SCORE_ONLY_RESULT_CACHE_MAX) {
+        const oldest = SCORE_ONLY_RESULT_CACHE.keys().next();
+        if (!oldest.done) SCORE_ONLY_RESULT_CACHE.delete(oldest.value);
+      }
+      SCORE_ONLY_RESULT_CACHE.set(r, val);
+      return val;
+    }
+  }
   return r === 'score_only_preview'
     || r === 'score_only_evidence'
     || r === 'stop_repeat_gate_preview_structural_cooldown'
@@ -16414,5 +16435,6 @@ module.exports = {
   runEventObjectiveId,
   runEventProposalId,
   isCapacityCountedAttemptEvent,
-  deriveRepeatGateAnchor
+  deriveRepeatGateAnchor,
+  isScoreOnlyResult
 };
