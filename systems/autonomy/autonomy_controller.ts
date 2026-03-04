@@ -2714,6 +2714,8 @@ function parseIsoTs(ts) {
 
 const NORMALIZE_PROPOSAL_STATUS_CACHE = new Map();
 const NORMALIZE_PROPOSAL_STATUS_CACHE_MAX = 1024;
+const PROPOSAL_STATUS_FOR_QUEUE_PRESSURE_CACHE = new Map();
+const PROPOSAL_STATUS_FOR_QUEUE_PRESSURE_CACHE_MAX = 1024;
 const POLICY_HOLD_RESULT_CACHE = new Map();
 const POLICY_HOLD_RESULT_CACHE_MAX = 256;
 const NO_PROGRESS_RESULT_CACHE = new Map();
@@ -10821,6 +10823,33 @@ function candidatePool(dateStr, strategyOverride = null) {
 }
 
 function proposalStatusForQueuePressure(proposal, overlayEntry) {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const overlayDecision = String((overlayEntry && overlayEntry.decision) || '');
+    const proposalStatusRaw = String((proposal && proposal.status) || '');
+    const cacheKey = `${overlayDecision}\u0000${proposalStatusRaw}`;
+    if (PROPOSAL_STATUS_FOR_QUEUE_PRESSURE_CACHE.has(cacheKey)) {
+      return PROPOSAL_STATUS_FOR_QUEUE_PRESSURE_CACHE.get(cacheKey);
+    }
+    const rust = runBacklogAutoscalePrimitive(
+      'proposal_status_for_queue_pressure',
+      {
+        overlay_decision: overlayDecision,
+        proposal_status: proposalStatusRaw
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const val = String(rust.payload.payload.status || '').trim().toLowerCase();
+      if (val) {
+        if (PROPOSAL_STATUS_FOR_QUEUE_PRESSURE_CACHE.size >= PROPOSAL_STATUS_FOR_QUEUE_PRESSURE_CACHE_MAX) {
+          const oldest = PROPOSAL_STATUS_FOR_QUEUE_PRESSURE_CACHE.keys().next();
+          if (!oldest.done) PROPOSAL_STATUS_FOR_QUEUE_PRESSURE_CACHE.delete(oldest.value);
+        }
+        PROPOSAL_STATUS_FOR_QUEUE_PRESSURE_CACHE.set(cacheKey, val);
+        return val;
+      }
+    }
+  }
   const hasOverlayDecision = !!(overlayEntry && overlayEntry.decision);
   let status = proposalStatus(overlayEntry);
   if (hasOverlayDecision) return status;
@@ -16986,6 +17015,7 @@ module.exports = {
   qosLaneFromCandidate,
   chooseQosLaneSelection,
   queuePressureSnapshot,
+  proposalStatusForQueuePressure,
   spawnCapacityBoostSnapshot,
   adaptiveExecutionCaps,
   defaultBacklogAutoscaleState,
