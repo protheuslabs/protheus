@@ -7074,6 +7074,80 @@ function buildDirectivePulseStats(dateStr, windowDays) {
 function buildDirectivePulseContext(dateStr) {
   const cfg = loadDirectivePulseObjectives();
   const hist = buildDirectivePulseStats(dateStr, AUTONOMY_DIRECTIVE_PULSE_WINDOW_DAYS);
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const objectiveStatsRows = hist && hist.stats instanceof Map
+      ? Array.from(hist.stats.entries()).map(([objectiveId, stat]) => {
+        const row = stat && typeof stat === 'object' ? stat : {};
+        const objective_id = String(objectiveId || row.objective_id || '').trim();
+        return {
+          objective_id,
+          tier: Number(row.tier || 0),
+          attempts: Number(row.attempts || 0),
+          shipped: Number(row.shipped || 0),
+          no_change: Number(row.no_change || 0),
+          reverted: Number(row.reverted || 0),
+          no_progress_streak: Number(row.no_progress_streak || 0),
+          last_attempt_ts: row.last_attempt_ts ? String(row.last_attempt_ts) : null,
+          last_shipped_ts: row.last_shipped_ts ? String(row.last_shipped_ts) : null
+        };
+      })
+      : [];
+    const rust = runBacklogAutoscalePrimitive(
+      'directive_pulse_context',
+      {
+        enabled: cfg.enabled === true,
+        available: cfg.available === true,
+        objectives: Array.isArray(cfg.objectives) ? cfg.objectives : [],
+        error: cfg.error || null,
+        window_days: Number(AUTONOMY_DIRECTIVE_PULSE_WINDOW_DAYS || 14),
+        urgency_hours: Number(AUTONOMY_DIRECTIVE_PULSE_URGENCY_HOURS || 24),
+        no_progress_limit: Number(AUTONOMY_DIRECTIVE_PULSE_NO_PROGRESS_LIMIT || 3),
+        cooldown_hours: Number(AUTONOMY_DIRECTIVE_PULSE_COOLDOWN_HOURS || 6),
+        tier_attempts_today: hist && hist.tier_attempts_today && typeof hist.tier_attempts_today === 'object'
+          ? hist.tier_attempts_today
+          : {},
+        attempts_today: Number(hist && hist.attempts_today || 0),
+        objective_stats: objectiveStatsRows
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const payload = rust.payload.payload;
+      const objectiveStats = new Map();
+      const rows = Array.isArray(payload.objective_stats) ? payload.objective_stats : [];
+      for (const rawRow of rows) {
+        const row = rawRow && typeof rawRow === 'object' ? rawRow : {};
+        const objectiveId = String(row.objective_id || '').trim();
+        if (!objectiveId) continue;
+        objectiveStats.set(objectiveId, {
+          objective_id: objectiveId,
+          tier: Number(row.tier || 0),
+          attempts: Number(row.attempts || 0),
+          shipped: Number(row.shipped || 0),
+          no_change: Number(row.no_change || 0),
+          reverted: Number(row.reverted || 0),
+          no_progress_streak: Number(row.no_progress_streak || 0),
+          last_attempt_ts: row.last_attempt_ts ? String(row.last_attempt_ts) : null,
+          last_shipped_ts: row.last_shipped_ts ? String(row.last_shipped_ts) : null
+        });
+      }
+      return {
+        enabled: payload.enabled === true,
+        available: payload.available === true,
+        objectives: Array.isArray(payload.objectives) ? payload.objectives : [],
+        error: payload.error ? String(payload.error) : null,
+        window_days: Number(payload.window_days || 0),
+        urgency_hours: Number(payload.urgency_hours || 0),
+        no_progress_limit: Number(payload.no_progress_limit || 0),
+        cooldown_hours: Number(payload.cooldown_hours || 0),
+        tier_attempts_today: payload.tier_attempts_today && typeof payload.tier_attempts_today === 'object'
+          ? payload.tier_attempts_today
+          : {},
+        attempts_today: Number(payload.attempts_today || 0),
+        objective_stats: objectiveStats
+      };
+    }
+  }
   return {
     enabled: cfg.enabled === true,
     available: cfg.available === true,
