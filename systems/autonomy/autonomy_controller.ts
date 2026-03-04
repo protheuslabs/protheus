@@ -2725,6 +2725,8 @@ const CAPACITY_COUNTED_ATTEMPT_INDICES_CACHE = new Map();
 const CAPACITY_COUNTED_ATTEMPT_INDICES_CACHE_MAX = 256;
 const CONSECUTIVE_NO_PROGRESS_RUNS_CACHE = new Map();
 const CONSECUTIVE_NO_PROGRESS_RUNS_CACHE_MAX = 256;
+const SHIPPED_COUNT_CACHE = new Map();
+const SHIPPED_COUNT_CACHE_MAX = 256;
 
 function isPolicyHoldResult(result): boolean {
   const r = String(result || '').trim();
@@ -3926,7 +3928,39 @@ function consecutiveNoProgressRuns(events) {
 }
 
 function shippedCount(events) {
-  return events.filter(e => e && e.type === 'autonomy_run' && e.result === 'executed' && e.outcome === 'shipped').length;
+  const rows = Array.isArray(events) ? events : [];
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rustEvents = [];
+    for (const evt of rows) {
+      if (!evt || typeof evt !== 'object') continue;
+      rustEvents.push({
+        event_type: String(evt.type || ''),
+        result: String(evt.result || ''),
+        outcome: String(evt.outcome || '')
+      });
+    }
+    const key = rustEvents
+      .map((row) => `${row.event_type}\u0000${row.result}\u0000${row.outcome}`)
+      .join('\u0001');
+    if (SHIPPED_COUNT_CACHE.has(key)) {
+      return Number(SHIPPED_COUNT_CACHE.get(key) || 0);
+    }
+    const rust = runBacklogAutoscalePrimitive(
+      'shipped_count',
+      { events: rustEvents },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const val = Math.max(0, Number(rust.payload.payload.count || 0));
+      if (SHIPPED_COUNT_CACHE.size >= SHIPPED_COUNT_CACHE_MAX) {
+        const oldest = SHIPPED_COUNT_CACHE.keys().next();
+        if (!oldest.done) SHIPPED_COUNT_CACHE.delete(oldest.value);
+      }
+      SHIPPED_COUNT_CACHE.set(key, val);
+      return val;
+    }
+  }
+  return rows.filter((e) => e && e.type === 'autonomy_run' && e.result === 'executed' && e.outcome === 'shipped').length;
 }
 
 function executedCountByRisk(events, risk) {
@@ -16718,5 +16752,6 @@ module.exports = {
   isScoreOnlyFailureLikeEvent,
   isGateExhaustedAttempt,
   consecutiveGateExhaustedAttempts,
-  consecutiveNoProgressRuns
+  consecutiveNoProgressRuns,
+  shippedCount
 };

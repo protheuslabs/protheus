@@ -377,6 +377,27 @@ pub struct ConsecutiveNoProgressRunsOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ShippedCountEventInput {
+    #[serde(default)]
+    pub event_type: Option<String>,
+    #[serde(default)]
+    pub result: Option<String>,
+    #[serde(default)]
+    pub outcome: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ShippedCountInput {
+    #[serde(default)]
+    pub events: Vec<ShippedCountEventInput>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ShippedCountOutput {
+    pub count: u32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct NoProgressResultInput {
     #[serde(default)]
     pub event_type: Option<String>,
@@ -828,6 +849,8 @@ pub struct AutoscaleRequest {
     pub capacity_counted_attempt_indices_input: Option<CapacityCountedAttemptIndicesInput>,
     #[serde(default)]
     pub consecutive_no_progress_runs_input: Option<ConsecutiveNoProgressRunsInput>,
+    #[serde(default)]
+    pub shipped_count_input: Option<ShippedCountInput>,
     #[serde(default)]
     pub no_progress_result_input: Option<NoProgressResultInput>,
     #[serde(default)]
@@ -1741,6 +1764,31 @@ pub fn compute_consecutive_no_progress_runs(
         count += 1;
     }
     ConsecutiveNoProgressRunsOutput { count }
+}
+
+pub fn compute_shipped_count(input: &ShippedCountInput) -> ShippedCountOutput {
+    let mut count: u32 = 0;
+    for evt in &input.events {
+        let event_type = evt
+            .event_type
+            .as_ref()
+            .map(|v| v.trim().to_ascii_lowercase())
+            .unwrap_or_default();
+        let result = evt
+            .result
+            .as_ref()
+            .map(|v| v.trim().to_ascii_lowercase())
+            .unwrap_or_default();
+        let outcome = evt
+            .outcome
+            .as_ref()
+            .map(|v| v.trim().to_ascii_lowercase())
+            .unwrap_or_default();
+        if event_type == "autonomy_run" && result == "executed" && outcome == "shipped" {
+            count += 1;
+        }
+    }
+    ShippedCountOutput { count }
 }
 
 pub fn compute_no_progress_result(input: &NoProgressResultInput) -> NoProgressResultOutput {
@@ -2807,6 +2855,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
         }))
         .map_err(|e| format!("autoscale_consecutive_no_progress_runs_encode_failed:{e}"));
     }
+    if mode == "shipped_count" {
+        let input = request
+            .shipped_count_input
+            .ok_or_else(|| "autoscale_missing_shipped_count_input".to_string())?;
+        let out = compute_shipped_count(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "shipped_count",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_shipped_count_encode_failed:{e}"));
+    }
     if mode == "no_progress_result" {
         let input = request
             .no_progress_result_input
@@ -3631,6 +3691,46 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale consecutive_no_progress_runs");
         assert!(out.contains("\"mode\":\"consecutive_no_progress_runs\""));
+    }
+
+    #[test]
+    fn shipped_count_counts_executed_shipped_rows() {
+        let out = compute_shipped_count(&ShippedCountInput {
+            events: vec![
+                ShippedCountEventInput {
+                    event_type: Some("autonomy_run".to_string()),
+                    result: Some("executed".to_string()),
+                    outcome: Some("shipped".to_string()),
+                },
+                ShippedCountEventInput {
+                    event_type: Some("autonomy_run".to_string()),
+                    result: Some("executed".to_string()),
+                    outcome: Some("reverted".to_string()),
+                },
+                ShippedCountEventInput {
+                    event_type: Some("outcome".to_string()),
+                    result: Some("executed".to_string()),
+                    outcome: Some("shipped".to_string()),
+                },
+            ],
+        });
+        assert_eq!(out.count, 1);
+    }
+
+    #[test]
+    fn autoscale_json_shipped_count_path_works() {
+        let payload = serde_json::json!({
+            "mode": "shipped_count",
+            "shipped_count_input": {
+                "events": [
+                    {"event_type": "autonomy_run", "result": "executed", "outcome": "shipped"},
+                    {"event_type": "autonomy_run", "result": "executed", "outcome": "reverted"}
+                ]
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale shipped_count");
+        assert!(out.contains("\"mode\":\"shipped_count\""));
     }
 
     #[test]
