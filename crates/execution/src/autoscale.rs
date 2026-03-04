@@ -2609,6 +2609,43 @@ pub struct RouteExecutionSampleEventOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct RouteBlockTelemetryEventInput {
+    #[serde(default)]
+    pub event_type: Option<String>,
+    #[serde(default)]
+    pub result: Option<String>,
+    #[serde(default)]
+    pub execution_target: Option<String>,
+    #[serde(default)]
+    pub route_summary_present: bool,
+    #[serde(default)]
+    pub capability_key: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct RouteBlockTelemetrySummaryInput {
+    #[serde(default)]
+    pub events: Vec<RouteBlockTelemetryEventInput>,
+    #[serde(default)]
+    pub window_hours: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct RouteBlockTelemetryCapabilityOutput {
+    pub key: String,
+    pub attempts: f64,
+    pub route_blocked: f64,
+    pub route_block_rate: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct RouteBlockTelemetrySummaryOutput {
+    pub window_hours: f64,
+    pub sample_events: f64,
+    pub by_capability: Vec<RouteBlockTelemetryCapabilityOutput>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ManualGatePrefilterInput {
     #[serde(default)]
     pub enabled: bool,
@@ -4617,6 +4654,8 @@ pub struct AutoscaleRequest {
     pub route_block_prefilter_input: Option<RouteBlockPrefilterInput>,
     #[serde(default)]
     pub route_execution_sample_event_input: Option<RouteExecutionSampleEventInput>,
+    #[serde(default)]
+    pub route_block_telemetry_summary_input: Option<RouteBlockTelemetrySummaryInput>,
     #[serde(default)]
     pub manual_gate_prefilter_input: Option<ManualGatePrefilterInput>,
     #[serde(default)]
@@ -9295,6 +9334,61 @@ pub fn compute_route_execution_sample_event(
     }
     RouteExecutionSampleEventOutput {
         is_sample_event: result == "executed" && input.route_summary_present,
+    }
+}
+
+pub fn compute_route_block_telemetry_summary(
+    input: &RouteBlockTelemetrySummaryInput,
+) -> RouteBlockTelemetrySummaryOutput {
+    let mut rows = std::collections::HashMap::<String, RouteBlockTelemetryCapabilityOutput>::new();
+    for evt in input.events.iter() {
+        let sample = compute_route_execution_sample_event(&RouteExecutionSampleEventInput {
+            event_type: evt.event_type.clone(),
+            result: evt.result.clone(),
+            execution_target: evt.execution_target.clone(),
+            route_summary_present: evt.route_summary_present,
+        });
+        if !sample.is_sample_event {
+            continue;
+        }
+        let key = evt
+            .capability_key
+            .as_deref()
+            .unwrap_or("")
+            .trim()
+            .to_lowercase();
+        if key.is_empty() {
+            continue;
+        }
+        let row = rows
+            .entry(key.clone())
+            .or_insert_with(|| RouteBlockTelemetryCapabilityOutput {
+                key: key.clone(),
+                attempts: 0.0,
+                route_blocked: 0.0,
+                route_block_rate: 0.0,
+            });
+        row.attempts += 1.0;
+        let result = evt.result.as_deref().unwrap_or("").trim();
+        if result == "score_only_fallback_route_block" || result == "init_gate_blocked_route" {
+            row.route_blocked += 1.0;
+        }
+    }
+
+    let mut by_capability = rows.into_values().collect::<Vec<_>>();
+    by_capability.sort_by(|a, b| a.key.cmp(&b.key));
+    for row in by_capability.iter_mut() {
+        row.route_block_rate = if row.attempts > 0.0 {
+            ((row.route_blocked / row.attempts) * 1000.0).round() / 1000.0
+        } else {
+            0.0
+        };
+    }
+
+    RouteBlockTelemetrySummaryOutput {
+        window_hours: input.window_hours.max(1.0),
+        sample_events: input.events.len() as f64,
+        by_capability,
     }
 }
 
@@ -14491,6 +14585,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_route_execution_sample_event_encode_failed:{e}"));
+    }
+    if mode == "route_block_telemetry_summary" {
+        let input = request
+            .route_block_telemetry_summary_input
+            .ok_or_else(|| "autoscale_missing_route_block_telemetry_summary_input".to_string())?;
+        let out = compute_route_block_telemetry_summary(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "route_block_telemetry_summary",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_route_block_telemetry_summary_encode_failed:{e}"));
     }
     if mode == "manual_gate_prefilter" {
         let input = request
@@ -20435,6 +20541,59 @@ mod tests {
         let out = run_autoscale_json(&payload).expect("autoscale route_execution_sample_event");
         assert!(out.contains("\"mode\":\"route_execution_sample_event\""));
         assert!(out.contains("\"is_sample_event\":true"));
+    }
+
+    #[test]
+    fn route_block_telemetry_summary_aggregates_by_capability() {
+        let out = compute_route_block_telemetry_summary(&RouteBlockTelemetrySummaryInput {
+            events: vec![
+                RouteBlockTelemetryEventInput {
+                    event_type: Some("autonomy_run".to_string()),
+                    result: Some("executed".to_string()),
+                    execution_target: Some("route".to_string()),
+                    route_summary_present: false,
+                    capability_key: Some("deploy".to_string()),
+                },
+                RouteBlockTelemetryEventInput {
+                    event_type: Some("autonomy_run".to_string()),
+                    result: Some("score_only_fallback_route_block".to_string()),
+                    execution_target: Some("cell".to_string()),
+                    route_summary_present: false,
+                    capability_key: Some("deploy".to_string()),
+                },
+            ],
+            window_hours: 12.0,
+        });
+        assert_eq!(out.sample_events, 2.0);
+        assert_eq!(out.by_capability.len(), 1);
+        assert_eq!(out.by_capability[0].key, "deploy");
+        assert_eq!(out.by_capability[0].attempts, 2.0);
+        assert_eq!(out.by_capability[0].route_blocked, 1.0);
+        assert!((out.by_capability[0].route_block_rate - 0.5).abs() < 1e-6);
+    }
+
+    #[test]
+    fn autoscale_json_route_block_telemetry_summary_path_works() {
+        let payload = serde_json::json!({
+            "mode": "route_block_telemetry_summary",
+            "route_block_telemetry_summary_input": {
+                "events": [
+                    {
+                        "event_type": "autonomy_run",
+                        "result": "executed",
+                        "execution_target": "route",
+                        "route_summary_present": false,
+                        "capability_key": "deploy"
+                    }
+                ],
+                "window_hours": 6
+            }
+        })
+        .to_string();
+        let out =
+            run_autoscale_json(&payload).expect("autoscale route_block_telemetry_summary");
+        assert!(out.contains("\"mode\":\"route_block_telemetry_summary\""));
+        assert!(out.contains("\"sample_events\":1"));
     }
 
     #[test]

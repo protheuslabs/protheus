@@ -9315,6 +9315,46 @@ function recentAutonomyRunEventsInLastHours(hours, maxEvents = 800) {
 
 function summarizeRecentRouteBlockTelemetry(hours, maxEvents = 800) {
   const events = recentAutonomyRunEventsInLastHours(hours, maxEvents);
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'route_block_telemetry_summary',
+      {
+        events: events.map((evt) => ({
+          event_type: evt && evt.type == null ? null : String(evt && evt.type || ''),
+          result: evt && evt.result == null ? null : String(evt && evt.result || ''),
+          execution_target: evt && evt.execution_target == null ? null : String(evt && evt.execution_target || ''),
+          route_summary_present: !!(evt && evt.route_summary && typeof evt.route_summary === 'object'),
+          capability_key: evt && evt.capability_key == null ? null : String(evt && evt.capability_key || '')
+        })),
+        window_hours: Number(hours || 1)
+      },
+      { allow_cli_fallback: true }
+    );
+    if (
+      rust
+      && rust.ok === true
+      && rust.payload
+      && rust.payload.ok === true
+      && rust.payload.payload
+      && Array.isArray(rust.payload.payload.by_capability)
+    ) {
+      const byCapability = {};
+      for (const row of rust.payload.payload.by_capability) {
+        const key = String(row && row.key || '').trim().toLowerCase();
+        if (!key) continue;
+        byCapability[key] = {
+          attempts: Math.max(0, Number(row && row.attempts || 0)),
+          route_blocked: Math.max(0, Number(row && row.route_blocked || 0)),
+          route_block_rate: Math.max(0, Math.min(1, Number(row && row.route_block_rate || 0)))
+        };
+      }
+      return {
+        window_hours: Math.max(1, Number(rust.payload.payload.window_hours || hours || 1)),
+        sample_events: Math.max(0, Number(rust.payload.payload.sample_events || events.length || 0)),
+        by_capability: byCapability
+      };
+    }
+  }
   const byCapability = {};
   for (const evt of events) {
     if (!isRouteExecutionSampleEvent(evt)) continue;
