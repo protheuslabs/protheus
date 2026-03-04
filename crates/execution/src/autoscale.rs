@@ -734,6 +734,22 @@ pub struct QosLaneShareCapExceededOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct QosLaneFromCandidateInput {
+    pub queue_underflow_backfill: bool,
+    pub pulse_tier: i64,
+    #[serde(default)]
+    pub proposal_type: Option<String>,
+    pub deprioritized_source: bool,
+    #[serde(default)]
+    pub risk: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct QosLaneFromCandidateOutput {
+    pub lane: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct EyeOutcomeEventInput {
     #[serde(default)]
     pub event_type: Option<String>,
@@ -1245,6 +1261,8 @@ pub struct AutoscaleRequest {
     pub qos_lane_usage_input: Option<QosLaneUsageInput>,
     #[serde(default)]
     pub qos_lane_share_cap_exceeded_input: Option<QosLaneShareCapExceededInput>,
+    #[serde(default)]
+    pub qos_lane_from_candidate_input: Option<QosLaneFromCandidateInput>,
     #[serde(default)]
     pub eye_outcome_count_window_input: Option<EyeOutcomeWindowCountInput>,
     #[serde(default)]
@@ -2835,6 +2853,45 @@ pub fn compute_qos_lane_share_cap_exceeded(
     QosLaneShareCapExceededOutput { exceeded }
 }
 
+pub fn compute_qos_lane_from_candidate(
+    input: &QosLaneFromCandidateInput,
+) -> QosLaneFromCandidateOutput {
+    if input.queue_underflow_backfill {
+        return QosLaneFromCandidateOutput {
+            lane: "quarantine".to_string(),
+        };
+    }
+    if input.pulse_tier <= 1 {
+        return QosLaneFromCandidateOutput {
+            lane: "critical".to_string(),
+        };
+    }
+    let proposal_type = input
+        .proposal_type
+        .as_ref()
+        .map(|v| v.trim().to_ascii_lowercase())
+        .unwrap_or_default();
+    if proposal_type == "directive_clarification" || proposal_type == "directive_decomposition" {
+        return QosLaneFromCandidateOutput {
+            lane: "critical".to_string(),
+        };
+    }
+    if input.deprioritized_source {
+        return QosLaneFromCandidateOutput {
+            lane: "quarantine".to_string(),
+        };
+    }
+    let risk = normalize_risk_level(input.risk.as_deref().unwrap_or(""));
+    if risk == "medium" {
+        return QosLaneFromCandidateOutput {
+            lane: "explore".to_string(),
+        };
+    }
+    QosLaneFromCandidateOutput {
+        lane: "standard".to_string(),
+    }
+}
+
 fn parse_rfc3339_ts_ms(raw: &str) -> Option<i64> {
     DateTime::parse_from_rfc3339(raw)
         .ok()
@@ -4117,6 +4174,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_qos_lane_share_cap_exceeded_encode_failed:{e}"));
+    }
+    if mode == "qos_lane_from_candidate" {
+        let input = request
+            .qos_lane_from_candidate_input
+            .ok_or_else(|| "autoscale_missing_qos_lane_from_candidate_input".to_string())?;
+        let out = compute_qos_lane_from_candidate(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "qos_lane_from_candidate",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_qos_lane_from_candidate_encode_failed:{e}"));
     }
     if mode == "eye_outcome_count_window" {
         let input = request
@@ -5427,6 +5496,44 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale qos_lane_share_cap_exceeded");
         assert!(out.contains("\"mode\":\"qos_lane_share_cap_exceeded\""));
+    }
+
+    #[test]
+    fn qos_lane_from_candidate_routes_expected_lane() {
+        let quarantine = compute_qos_lane_from_candidate(&QosLaneFromCandidateInput {
+            queue_underflow_backfill: true,
+            pulse_tier: 2,
+            proposal_type: Some("directive_clarification".to_string()),
+            deprioritized_source: false,
+            risk: Some("medium".to_string()),
+        });
+        assert_eq!(quarantine.lane, "quarantine");
+
+        let explore = compute_qos_lane_from_candidate(&QosLaneFromCandidateInput {
+            queue_underflow_backfill: false,
+            pulse_tier: 5,
+            proposal_type: Some("other".to_string()),
+            deprioritized_source: false,
+            risk: Some("medium".to_string()),
+        });
+        assert_eq!(explore.lane, "explore");
+    }
+
+    #[test]
+    fn autoscale_json_qos_lane_from_candidate_path_works() {
+        let payload = serde_json::json!({
+            "mode": "qos_lane_from_candidate",
+            "qos_lane_from_candidate_input": {
+                "queue_underflow_backfill": false,
+                "pulse_tier": 1,
+                "proposal_type": "directive_decomposition",
+                "deprioritized_source": false,
+                "risk": "low"
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale qos_lane_from_candidate");
+        assert!(out.contains("\"mode\":\"qos_lane_from_candidate\""));
     }
 
     #[test]

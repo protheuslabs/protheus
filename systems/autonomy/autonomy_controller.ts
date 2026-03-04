@@ -2796,6 +2796,8 @@ const QOS_LANE_WEIGHTS_CACHE = new Map();
 const QOS_LANE_WEIGHTS_CACHE_MAX = 256;
 const QOS_LANE_SHARE_CAP_EXCEEDED_CACHE = new Map();
 const QOS_LANE_SHARE_CAP_EXCEEDED_CACHE_MAX = 256;
+const QOS_LANE_FROM_CANDIDATE_CACHE = new Map();
+const QOS_LANE_FROM_CANDIDATE_CACHE_MAX = 512;
 const EYE_OUTCOME_COUNT_WINDOW_CACHE = new Map();
 const EYE_OUTCOME_COUNT_WINDOW_CACHE_MAX = 256;
 const EYE_OUTCOME_COUNT_LAST_HOURS_CACHE = new Map();
@@ -11331,10 +11333,46 @@ function qosLaneFromCandidate(cand) {
   const proposalType = String(proposal && proposal.type || '').trim().toLowerCase();
   const pulseTier = normalizeDirectiveTier(c && c.directive_pulse && c.directive_pulse.tier, 99);
   const risk = String(c.risk || normalizedRisk(proposal && proposal.risk)).trim().toLowerCase();
+  const deprioritizedSource = isDeprioritizedSourceProposal(proposal);
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const key = [
+      c.queue_underflow_backfill === true ? '1' : '0',
+      pulseTier,
+      proposalType,
+      deprioritizedSource ? '1' : '0',
+      risk
+    ].join('\u0000');
+    if (QOS_LANE_FROM_CANDIDATE_CACHE.has(key)) {
+      return QOS_LANE_FROM_CANDIDATE_CACHE.get(key);
+    }
+    const rust = runBacklogAutoscalePrimitive(
+      'qos_lane_from_candidate',
+      {
+        queue_underflow_backfill: c.queue_underflow_backfill === true,
+        pulse_tier: pulseTier,
+        proposal_type: proposalType,
+        deprioritized_source: deprioritizedSource,
+        risk
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const lane = String(rust.payload.payload.lane || '').trim().toLowerCase();
+      const val = lane === 'critical' || lane === 'standard' || lane === 'explore' || lane === 'quarantine'
+        ? lane
+        : 'standard';
+      if (QOS_LANE_FROM_CANDIDATE_CACHE.size >= QOS_LANE_FROM_CANDIDATE_CACHE_MAX) {
+        const oldest = QOS_LANE_FROM_CANDIDATE_CACHE.keys().next();
+        if (!oldest.done) QOS_LANE_FROM_CANDIDATE_CACHE.delete(oldest.value);
+      }
+      QOS_LANE_FROM_CANDIDATE_CACHE.set(key, val);
+      return val;
+    }
+  }
   if (c.queue_underflow_backfill === true) return 'quarantine';
   if (pulseTier <= 1) return 'critical';
   if (proposalType === 'directive_clarification' || proposalType === 'directive_decomposition') return 'critical';
-  if (isDeprioritizedSourceProposal(proposal)) return 'quarantine';
+  if (deprioritizedSource) return 'quarantine';
   if (risk === 'medium') return 'explore';
   return 'standard';
 }
