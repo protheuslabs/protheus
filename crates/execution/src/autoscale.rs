@@ -2771,6 +2771,17 @@ pub struct CooldownActiveStateOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct BumpCountInput {
+    #[serde(default)]
+    pub current_count: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct BumpCountOutput {
+    pub count: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ManualGatePrefilterInput {
     #[serde(default)]
     pub enabled: bool,
@@ -4797,6 +4808,8 @@ pub struct AutoscaleRequest {
     pub all_decision_events_input: Option<AllDecisionEventsInput>,
     #[serde(default)]
     pub cooldown_active_state_input: Option<CooldownActiveStateInput>,
+    #[serde(default)]
+    pub bump_count_input: Option<BumpCountInput>,
     #[serde(default)]
     pub manual_gate_prefilter_input: Option<ManualGatePrefilterInput>,
     #[serde(default)]
@@ -9689,6 +9702,12 @@ pub fn compute_cooldown_active_state(input: &CooldownActiveStateInput) -> Cooldo
         active: true,
         expired: false,
     }
+}
+
+pub fn compute_bump_count(input: &BumpCountInput) -> BumpCountOutput {
+    let current = input.current_count.unwrap_or(0.0);
+    let base = if current.is_finite() { current } else { 0.0 };
+    BumpCountOutput { count: base + 1.0 }
 }
 
 pub fn compute_manual_gate_prefilter(input: &ManualGatePrefilterInput) -> ManualGatePrefilterOutput {
@@ -14992,6 +15011,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_cooldown_active_state_encode_failed:{e}"));
+    }
+    if mode == "bump_count" {
+        let input = request
+            .bump_count_input
+            .ok_or_else(|| "autoscale_missing_bump_count_input".to_string())?;
+        let out = compute_bump_count(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "bump_count",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_bump_count_encode_failed:{e}"));
     }
     if mode == "manual_gate_prefilter" {
         let input = request
@@ -21293,6 +21324,28 @@ mod tests {
         let out = run_autoscale_json(&payload).expect("autoscale cooldown_active_state");
         assert!(out.contains("\"mode\":\"cooldown_active_state\""));
         assert!(out.contains("\"active\":true"));
+    }
+
+    #[test]
+    fn bump_count_increments_from_current() {
+        let out = compute_bump_count(&BumpCountInput {
+            current_count: Some(3.0),
+        });
+        assert_eq!(out.count, 4.0);
+    }
+
+    #[test]
+    fn autoscale_json_bump_count_path_works() {
+        let payload = serde_json::json!({
+            "mode": "bump_count",
+            "bump_count_input": {
+                "current_count": 7
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale bump_count");
+        assert!(out.contains("\"mode\":\"bump_count\""));
+        assert!(out.contains("\"count\":8.0"));
     }
 
     #[test]

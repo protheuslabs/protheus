@@ -5314,6 +5314,17 @@ function sortedCounts(mapObj) {
 
 function bumpCount(mapObj, key) {
   if (!mapObj || !key) return;
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'bump_count',
+      { current_count: Number(mapObj[key] || 0) },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      mapObj[key] = Number(rust.payload.payload.count || 0);
+      return;
+    }
+  }
   mapObj[key] = Number(mapObj[key] || 0) + 1;
 }
 
