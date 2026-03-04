@@ -642,6 +642,18 @@ pub struct ProposalRiskScoreOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct CompositeEligibilityScoreInput {
+    pub quality_score: f64,
+    pub directive_fit_score: f64,
+    pub actionability_score: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct CompositeEligibilityScoreOutput {
+    pub score: u32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct QosLaneUsageEventInput {
     #[serde(default)]
     pub event_type: Option<String>,
@@ -1207,6 +1219,8 @@ pub struct AutoscaleRequest {
     pub queue_underflow_backfill_input: Option<QueueUnderflowBackfillInput>,
     #[serde(default)]
     pub proposal_risk_score_input: Option<ProposalRiskScoreInput>,
+    #[serde(default)]
+    pub composite_eligibility_score_input: Option<CompositeEligibilityScoreInput>,
     #[serde(default)]
     pub no_progress_result_input: Option<NoProgressResultInput>,
     #[serde(default)]
@@ -2344,6 +2358,33 @@ pub fn compute_proposal_risk_score(input: &ProposalRiskScoreInput) -> ProposalRi
         25
     };
     ProposalRiskScoreOutput { risk_score }
+}
+
+pub fn compute_composite_eligibility_score(
+    input: &CompositeEligibilityScoreInput,
+) -> CompositeEligibilityScoreOutput {
+    let clamp = |v: f64| -> f64 {
+        if !v.is_finite() || v < 0.0 {
+            0.0
+        } else if v > 100.0 {
+            100.0
+        } else {
+            v
+        }
+    };
+    let q = clamp(input.quality_score);
+    let d = clamp(input.directive_fit_score);
+    let a = clamp(input.actionability_score);
+    let weighted = (q * 0.42) + (d * 0.26) + (a * 0.32);
+    let rounded = weighted.round();
+    let score = if rounded <= 0.0 {
+        0
+    } else if rounded >= 100.0 {
+        100
+    } else {
+        rounded as u32
+    };
+    CompositeEligibilityScoreOutput { score }
 }
 
 pub fn compute_proposal_status_for_queue_pressure(
@@ -3992,6 +4033,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
         }))
         .map_err(|e| format!("autoscale_proposal_risk_score_encode_failed:{e}"));
     }
+    if mode == "composite_eligibility_score" {
+        let input = request
+            .composite_eligibility_score_input
+            .ok_or_else(|| "autoscale_missing_composite_eligibility_score_input".to_string())?;
+        let out = compute_composite_eligibility_score(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "composite_eligibility_score",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_composite_eligibility_score_encode_failed:{e}"));
+    }
     if mode == "proposal_status_for_queue_pressure" {
         let input = request.proposal_status_for_queue_pressure_input.ok_or_else(|| {
             "autoscale_missing_proposal_status_for_queue_pressure_input".to_string()
@@ -5416,6 +5469,31 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale proposal_risk_score");
         assert!(out.contains("\"mode\":\"proposal_risk_score\""));
+    }
+
+    #[test]
+    fn composite_eligibility_score_applies_weighted_formula() {
+        let out = compute_composite_eligibility_score(&CompositeEligibilityScoreInput {
+            quality_score: 80.0,
+            directive_fit_score: 50.0,
+            actionability_score: 90.0,
+        });
+        assert_eq!(out.score, 75);
+    }
+
+    #[test]
+    fn autoscale_json_composite_eligibility_score_path_works() {
+        let payload = serde_json::json!({
+            "mode": "composite_eligibility_score",
+            "composite_eligibility_score_input": {
+                "quality_score": 80,
+                "directive_fit_score": 50,
+                "actionability_score": 90
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale composite_eligibility_score");
+        assert!(out.contains("\"mode\":\"composite_eligibility_score\""));
     }
 
     #[test]

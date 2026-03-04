@@ -2724,6 +2724,8 @@ const QUEUE_UNDERFLOW_BACKFILL_CACHE = new Map();
 const QUEUE_UNDERFLOW_BACKFILL_CACHE_MAX = 1024;
 const PROPOSAL_RISK_SCORE_CACHE = new Map();
 const PROPOSAL_RISK_SCORE_CACHE_MAX = 1024;
+const COMPOSITE_ELIGIBILITY_SCORE_CACHE = new Map();
+const COMPOSITE_ELIGIBILITY_SCORE_CACHE_MAX = 1024;
 const MINUTES_SINCE_TS_CACHE = new Map();
 const MINUTES_SINCE_TS_CACHE_MAX = 512;
 const DATE_WINDOW_CACHE = new Map();
@@ -6679,6 +6681,33 @@ function assessValueSignal(p, actionability, directiveFit) {
 }
 
 function compositeEligibilityScore(qualityScore, directiveFitScore, actionabilityScore) {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const qRaw = Number(qualityScore || 0);
+    const dRaw = Number(directiveFitScore || 0);
+    const aRaw = Number(actionabilityScore || 0);
+    const cacheKey = `${qRaw}\u0000${dRaw}\u0000${aRaw}`;
+    if (COMPOSITE_ELIGIBILITY_SCORE_CACHE.has(cacheKey)) {
+      return COMPOSITE_ELIGIBILITY_SCORE_CACHE.get(cacheKey);
+    }
+    const rust = runBacklogAutoscalePrimitive(
+      'composite_eligibility_score',
+      {
+        quality_score: qRaw,
+        directive_fit_score: dRaw,
+        actionability_score: aRaw
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const val = clampNumber(Math.round(Number(rust.payload.payload.score || 0)), 0, 100);
+      if (COMPOSITE_ELIGIBILITY_SCORE_CACHE.size >= COMPOSITE_ELIGIBILITY_SCORE_CACHE_MAX) {
+        const oldest = COMPOSITE_ELIGIBILITY_SCORE_CACHE.keys().next();
+        if (!oldest.done) COMPOSITE_ELIGIBILITY_SCORE_CACHE.delete(oldest.value);
+      }
+      COMPOSITE_ELIGIBILITY_SCORE_CACHE.set(cacheKey, val);
+      return val;
+    }
+  }
   const q = clampNumber(Number(qualityScore || 0), 0, 100);
   const d = clampNumber(Number(directiveFitScore || 0), 0, 100);
   const a = clampNumber(Number(actionabilityScore || 0), 0, 100);
@@ -17324,6 +17353,7 @@ module.exports = {
   proposalOutcomeStatus,
   canQueueUnderflowBackfill,
   proposalRiskScore,
+  compositeEligibilityScore,
   proposalScore,
   proposalAdmissionPreview,
   hasAdaptiveMutationSignal,
