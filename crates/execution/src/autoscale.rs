@@ -2126,6 +2126,86 @@ pub struct CalibrationDeltasOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct StrategyAdmissionMutationGuardInput {
+    #[serde(default)]
+    pub required: bool,
+    #[serde(default)]
+    pub applies: bool,
+    #[serde(default)]
+    pub pass: bool,
+    #[serde(default)]
+    pub reason: Option<String>,
+    #[serde(default)]
+    pub reasons: Vec<String>,
+    #[serde(default)]
+    pub controls: serde_json::Value,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct StrategyAdmissionDecisionInput {
+    #[serde(default)]
+    pub require_admission_preview: bool,
+    #[serde(default)]
+    pub preview_eligible: bool,
+    #[serde(default)]
+    pub preview_blocked_by: Vec<String>,
+    #[serde(default)]
+    pub mutation_guard: Option<StrategyAdmissionMutationGuardInput>,
+    #[serde(default)]
+    pub strategy_type_allowed: bool,
+    #[serde(default)]
+    pub max_risk_per_action: Option<f64>,
+    #[serde(default)]
+    pub strategy_max_risk_per_action: Option<f64>,
+    #[serde(default)]
+    pub hard_max_risk_per_action: Option<f64>,
+    #[serde(default)]
+    pub risk_score: Option<f64>,
+    #[serde(default)]
+    pub remediation_check_required: bool,
+    #[serde(default)]
+    pub remediation_depth: Option<f64>,
+    #[serde(default)]
+    pub remediation_max_depth: Option<f64>,
+    #[serde(default)]
+    pub dedup_key: Option<String>,
+    #[serde(default)]
+    pub duplicate_window_hours: Option<f64>,
+    #[serde(default)]
+    pub recent_count: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct StrategyAdmissionPreviewOutput {
+    pub eligible: bool,
+    #[serde(default)]
+    pub blocked_by: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct StrategyAdmissionDecisionOutput {
+    pub allow: bool,
+    #[serde(default)]
+    pub reason: Option<String>,
+    #[serde(default)]
+    pub admission_preview: Option<StrategyAdmissionPreviewOutput>,
+    #[serde(default)]
+    pub mutation_guard: Option<StrategyAdmissionMutationGuardInput>,
+    #[serde(default)]
+    pub risk_score: Option<f64>,
+    #[serde(default)]
+    pub max_risk_per_action: Option<f64>,
+    #[serde(default)]
+    pub strategy_max_risk_per_action: Option<f64>,
+    #[serde(default)]
+    pub hard_max_risk_per_action: Option<f64>,
+    #[serde(default)]
+    pub duplicate_window_hours: Option<f64>,
+    #[serde(default)]
+    pub recent_count: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct IsDirectiveClarificationProposalInput {
     #[serde(default)]
     pub proposal_type: Option<String>,
@@ -3268,6 +3348,8 @@ pub struct AutoscaleRequest {
     pub strategy_selection_input: Option<StrategySelectionInput>,
     #[serde(default)]
     pub calibration_deltas_input: Option<CalibrationDeltasInput>,
+    #[serde(default)]
+    pub strategy_admission_decision_input: Option<StrategyAdmissionDecisionInput>,
     #[serde(default)]
     pub is_directive_clarification_proposal_input: Option<IsDirectiveClarificationProposalInput>,
     #[serde(default)]
@@ -7094,6 +7176,145 @@ pub fn compute_calibration_deltas(input: &CalibrationDeltasInput) -> Calibration
     out
 }
 
+pub fn compute_strategy_admission_decision(
+    input: &StrategyAdmissionDecisionInput,
+) -> StrategyAdmissionDecisionOutput {
+    let preview_blocked: Vec<String> = input
+        .preview_blocked_by
+        .iter()
+        .map(|row| normalize_spaces(row))
+        .filter(|row| !row.is_empty())
+        .take(6)
+        .collect();
+    if input.require_admission_preview && !input.preview_eligible {
+        return StrategyAdmissionDecisionOutput {
+            allow: false,
+            reason: Some(
+                preview_blocked
+                    .first()
+                    .cloned()
+                    .unwrap_or_else(|| "admission_preview_blocked".to_string()),
+            ),
+            admission_preview: Some(StrategyAdmissionPreviewOutput {
+                eligible: false,
+                blocked_by: preview_blocked,
+            }),
+            mutation_guard: None,
+            risk_score: None,
+            max_risk_per_action: None,
+            strategy_max_risk_per_action: None,
+            hard_max_risk_per_action: None,
+            duplicate_window_hours: None,
+            recent_count: None,
+        };
+    }
+
+    if let Some(guard) = input.mutation_guard.as_ref() {
+        if guard.applies && !guard.pass {
+            return StrategyAdmissionDecisionOutput {
+                allow: false,
+                reason: Some(
+                    normalize_spaces(guard.reason.as_deref().unwrap_or(""))
+                        .chars()
+                        .collect::<String>(),
+                )
+                .filter(|row| !row.is_empty())
+                .or_else(|| Some("adaptive_mutation_execution_guard_blocked".to_string())),
+                admission_preview: None,
+                mutation_guard: Some(guard.clone()),
+                risk_score: None,
+                max_risk_per_action: None,
+                strategy_max_risk_per_action: None,
+                hard_max_risk_per_action: None,
+                duplicate_window_hours: None,
+                recent_count: None,
+            };
+        }
+    }
+
+    if !input.strategy_type_allowed {
+        return StrategyAdmissionDecisionOutput {
+            allow: false,
+            reason: Some("strategy_type_filtered".to_string()),
+            admission_preview: None,
+            mutation_guard: None,
+            risk_score: None,
+            max_risk_per_action: None,
+            strategy_max_risk_per_action: None,
+            hard_max_risk_per_action: None,
+            duplicate_window_hours: None,
+            recent_count: None,
+        };
+    }
+
+    if let Some(max_risk) = input.max_risk_per_action {
+        let risk_score = input.risk_score.unwrap_or(0.0);
+        if risk_score > max_risk {
+            return StrategyAdmissionDecisionOutput {
+                allow: false,
+                reason: Some("strategy_risk_cap_exceeded".to_string()),
+                admission_preview: None,
+                mutation_guard: None,
+                risk_score: Some(risk_score),
+                max_risk_per_action: Some(max_risk),
+                strategy_max_risk_per_action: input.strategy_max_risk_per_action,
+                hard_max_risk_per_action: input.hard_max_risk_per_action,
+                duplicate_window_hours: None,
+                recent_count: None,
+            };
+        }
+    }
+
+    if input.remediation_check_required {
+        let depth = input.remediation_depth.unwrap_or(0.0);
+        let max_depth = input.remediation_max_depth.unwrap_or(f64::INFINITY);
+        if depth > max_depth {
+            return StrategyAdmissionDecisionOutput {
+                allow: false,
+                reason: Some("strategy_remediation_depth_exceeded".to_string()),
+                admission_preview: None,
+                mutation_guard: None,
+                risk_score: None,
+                max_risk_per_action: None,
+                strategy_max_risk_per_action: None,
+                hard_max_risk_per_action: None,
+                duplicate_window_hours: None,
+                recent_count: None,
+            };
+        }
+    }
+
+    let dedup_key = normalize_spaces(input.dedup_key.as_deref().unwrap_or(""));
+    let recent_count = input.recent_count.unwrap_or(0.0);
+    if !dedup_key.is_empty() && recent_count > 0.0 {
+        return StrategyAdmissionDecisionOutput {
+            allow: false,
+            reason: Some("strategy_duplicate_window".to_string()),
+            admission_preview: None,
+            mutation_guard: None,
+            risk_score: None,
+            max_risk_per_action: None,
+            strategy_max_risk_per_action: None,
+            hard_max_risk_per_action: None,
+            duplicate_window_hours: input.duplicate_window_hours,
+            recent_count: Some(recent_count),
+        };
+    }
+
+    StrategyAdmissionDecisionOutput {
+        allow: true,
+        reason: None,
+        admission_preview: None,
+        mutation_guard: None,
+        risk_score: None,
+        max_risk_per_action: None,
+        strategy_max_risk_per_action: None,
+        hard_max_risk_per_action: None,
+        duplicate_window_hours: None,
+        recent_count: None,
+    }
+}
+
 pub fn compute_is_directive_clarification_proposal(
     input: &IsDirectiveClarificationProposalInput,
 ) -> IsDirectiveClarificationProposalOutput {
@@ -10549,6 +10770,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_calibration_deltas_encode_failed:{e}"));
+    }
+    if mode == "strategy_admission_decision" {
+        let input = request
+            .strategy_admission_decision_input
+            .ok_or_else(|| "autoscale_missing_strategy_admission_decision_input".to_string())?;
+        let out = compute_strategy_admission_decision(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "strategy_admission_decision",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_strategy_admission_decision_encode_failed:{e}"));
     }
     if mode == "is_directive_clarification_proposal" {
         let input = request
@@ -15369,6 +15602,54 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale calibration_deltas");
         assert!(out.contains("\"mode\":\"calibration_deltas\""));
+    }
+
+    #[test]
+    fn strategy_admission_decision_blocks_duplicate_window() {
+        let out = compute_strategy_admission_decision(&StrategyAdmissionDecisionInput {
+            require_admission_preview: false,
+            preview_eligible: true,
+            preview_blocked_by: vec![],
+            mutation_guard: None,
+            strategy_type_allowed: true,
+            max_risk_per_action: Some(0.8),
+            strategy_max_risk_per_action: Some(0.8),
+            hard_max_risk_per_action: None,
+            risk_score: Some(0.2),
+            remediation_check_required: false,
+            remediation_depth: None,
+            remediation_max_depth: None,
+            dedup_key: Some("proposal:key".to_string()),
+            duplicate_window_hours: Some(24.0),
+            recent_count: Some(2.0),
+        });
+        assert!(!out.allow);
+        assert_eq!(out.reason.as_deref(), Some("strategy_duplicate_window"));
+        assert_eq!(out.recent_count, Some(2.0));
+    }
+
+    #[test]
+    fn autoscale_json_strategy_admission_decision_path_works() {
+        let payload = serde_json::json!({
+            "mode": "strategy_admission_decision",
+            "strategy_admission_decision_input": {
+                "require_admission_preview": true,
+                "preview_eligible": false,
+                "preview_blocked_by": ["preview_gate"],
+                "mutation_guard": {
+                    "applies": false,
+                    "pass": true,
+                    "reason": null,
+                    "reasons": [],
+                    "controls": {}
+                },
+                "strategy_type_allowed": true
+            }
+        })
+        .to_string();
+        let out =
+            run_autoscale_json(&payload).expect("autoscale strategy_admission_decision");
+        assert!(out.contains("\"mode\":\"strategy_admission_decision\""));
     }
 
     #[test]

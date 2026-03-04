@@ -9370,10 +9370,69 @@ function recentProposalKeyCounts(dateStr, hours) {
 
 function strategyAdmissionDecision(p, strategy, opts: AnyObj = {}) {
   const preview = proposalAdmissionPreview(p);
+  const blocked = Array.isArray(preview && preview.blocked_by) && preview.blocked_by.length
+    ? preview.blocked_by.map((r) => String(r || '').trim()).filter(Boolean)
+    : [];
+  const mutationGuard = adaptiveMutationExecutionGuardDecision(p);
+  const type = String(p && p.type || '').toLowerCase();
+  const strategyTypeAllowed = strategyAllowsProposalType(strategy, type);
+  const strategyMax = strategyMaxRiskPerAction(strategy, null);
+  const hardMax = Number.isFinite(Number(AUTONOMY_HARD_MAX_RISK_PER_ACTION)) && Number(AUTONOMY_HARD_MAX_RISK_PER_ACTION) >= 0
+    ? Number(AUTONOMY_HARD_MAX_RISK_PER_ACTION)
+    : null;
+  let maxRisk = strategyMax;
+  if (hardMax != null) {
+    maxRisk = maxRisk == null ? hardMax : Math.min(maxRisk, hardMax);
+  }
+  const riskScore = maxRisk != null ? proposalRiskScore(p) : null;
+  const maxDepth = strategy
+    && strategy.admission_policy
+    && Number.isFinite(Number(strategy.admission_policy.max_remediation_depth))
+      ? Number(strategy.admission_policy.max_remediation_depth)
+      : null;
+  const remediationCheckRequired = Number.isFinite(maxDepth) && type.includes('remediation');
+  const remediationDepth = remediationCheckRequired ? proposalRemediationDepth(p) : 0;
+  const dedupKey = String(opts.dedup_key || '').trim();
+  const keyCounts = opts.recent_key_counts instanceof Map ? opts.recent_key_counts : null;
+  const duplicateWindowHours = strategyDuplicateWindowHours(strategy, 24);
+  const seen = dedupKey && keyCounts ? Number(keyCounts.get(dedupKey) || 0) : 0;
+
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'strategy_admission_decision',
+      {
+        require_admission_preview: AUTONOMY_REQUIRE_ADMISSION_PREVIEW,
+        preview_eligible: !(preview && preview.eligible === false),
+        preview_blocked_by: blocked.slice(0, 6),
+        mutation_guard: mutationGuard,
+        strategy_type_allowed: strategyTypeAllowed,
+        max_risk_per_action: maxRisk,
+        strategy_max_risk_per_action: strategyMax,
+        hard_max_risk_per_action: hardMax,
+        risk_score: riskScore,
+        remediation_check_required: remediationCheckRequired,
+        remediation_depth: remediationDepth,
+        remediation_max_depth: maxDepth,
+        dedup_key: dedupKey || null,
+        duplicate_window_hours: duplicateWindowHours,
+        recent_count: seen
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const payload = rust.payload.payload;
+      if (payload && payload.mutation_guard && mutationGuard) {
+        payload.mutation_guard = {
+          ...mutationGuard,
+          ...payload.mutation_guard,
+          required: mutationGuard.required
+        };
+      }
+      return payload;
+    }
+  }
+
   if (AUTONOMY_REQUIRE_ADMISSION_PREVIEW && preview && preview.eligible === false) {
-    const blocked = Array.isArray(preview.blocked_by) && preview.blocked_by.length
-      ? preview.blocked_by.map((r) => String(r || '').trim()).filter(Boolean)
-      : [];
     return {
       allow: false,
       reason: blocked[0] || 'admission_preview_blocked',
@@ -9384,7 +9443,6 @@ function strategyAdmissionDecision(p, strategy, opts: AnyObj = {}) {
     };
   }
 
-  const mutationGuard = adaptiveMutationExecutionGuardDecision(p);
   if (mutationGuard.applies && !mutationGuard.pass) {
     return {
       allow: false,
@@ -9393,20 +9451,10 @@ function strategyAdmissionDecision(p, strategy, opts: AnyObj = {}) {
     };
   }
 
-  const type = String(p && p.type || '').toLowerCase();
-  if (!strategyAllowsProposalType(strategy, type)) {
+  if (!strategyTypeAllowed) {
     return { allow: false, reason: 'strategy_type_filtered' };
   }
-  const strategyMax = strategyMaxRiskPerAction(strategy, null);
-  const hardMax = Number.isFinite(Number(AUTONOMY_HARD_MAX_RISK_PER_ACTION)) && Number(AUTONOMY_HARD_MAX_RISK_PER_ACTION) >= 0
-    ? Number(AUTONOMY_HARD_MAX_RISK_PER_ACTION)
-    : null;
-  let maxRisk = strategyMax;
-  if (hardMax != null) {
-    maxRisk = maxRisk == null ? hardMax : Math.min(maxRisk, hardMax);
-  }
   if (maxRisk != null) {
-    const riskScore = proposalRiskScore(p);
     if (riskScore > maxRisk) {
       return {
         allow: false,
@@ -9418,20 +9466,10 @@ function strategyAdmissionDecision(p, strategy, opts: AnyObj = {}) {
       };
     }
   }
-  const maxDepth = strategy
-    && strategy.admission_policy
-    && Number.isFinite(Number(strategy.admission_policy.max_remediation_depth))
-      ? Number(strategy.admission_policy.max_remediation_depth)
-      : null;
-  if (Number.isFinite(maxDepth) && type.includes('remediation')) {
-    const depth = proposalRemediationDepth(p);
-    if (depth > maxDepth) return { allow: false, reason: 'strategy_remediation_depth_exceeded' };
+  if (remediationCheckRequired) {
+    if (remediationDepth > maxDepth) return { allow: false, reason: 'strategy_remediation_depth_exceeded' };
   }
-  const dedupKey = String(opts.dedup_key || '').trim();
-  const keyCounts = opts.recent_key_counts instanceof Map ? opts.recent_key_counts : null;
-  const duplicateWindowHours = strategyDuplicateWindowHours(strategy, 24);
   if (dedupKey && keyCounts) {
-    const seen = Number(keyCounts.get(dedupKey) || 0);
     if (seen > 0) {
       return {
         allow: false,

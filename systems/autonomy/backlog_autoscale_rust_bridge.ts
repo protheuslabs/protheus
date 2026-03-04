@@ -274,6 +274,7 @@ function runBacklogAutoscalePrimitive(mode: string, data: AnyObj = {}, opts: Any
     adaptive_mutation_execution_guard: 'adaptive_mutation_execution_guard_input',
     strategy_selection: 'strategy_selection_input',
     calibration_deltas: 'calibration_deltas_input',
+    strategy_admission_decision: 'strategy_admission_decision_input',
     is_directive_clarification_proposal: 'is_directive_clarification_proposal_input',
     is_directive_decomposition_proposal: 'is_directive_decomposition_proposal_input',
     sanitize_directive_objective_id: 'sanitize_directive_objective_id_input',
