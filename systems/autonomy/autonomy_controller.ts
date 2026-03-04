@@ -2724,6 +2724,8 @@ const QUEUE_UNDERFLOW_BACKFILL_CACHE = new Map();
 const QUEUE_UNDERFLOW_BACKFILL_CACHE_MAX = 1024;
 const PROPOSAL_RISK_SCORE_CACHE = new Map();
 const PROPOSAL_RISK_SCORE_CACHE_MAX = 1024;
+const PROPOSAL_SCORE_CACHE = new Map();
+const PROPOSAL_SCORE_CACHE_MAX = 1024;
 const COMPOSITE_ELIGIBILITY_SCORE_CACHE = new Map();
 const COMPOSITE_ELIGIBILITY_SCORE_CACHE_MAX = 1024;
 const TIME_TO_VALUE_SCORE_CACHE = new Map();
@@ -7357,18 +7359,51 @@ function canQueueUnderflowBackfill(status, overlayEnt) {
 }
 
 function proposalScore(p, overlayEnt, dateStr) {
-  const agePenalty = ageHours(dateStr) / 24 * 0.6;
-  const stubPenalty = isStubProposal(p) ? 2.5 : 0;
-  const noChangePenalty = (overlayEnt?.outcomes?.no_change || 0) * 1.5;
-  const revertedPenalty = (overlayEnt?.outcomes?.reverted || 0) * 3.0;
-  return (
-    impactWeight(p) * 2.0
-    - riskPenalty(p) * 1.0
-    - agePenalty
-    - stubPenalty
-    - noChangePenalty
-    - revertedPenalty
-  );
+  const impact = impactWeight(p);
+  const risk = riskPenalty(p);
+  const age = ageHours(dateStr);
+  const stub = isStubProposal(p) === true;
+  const noChange = Number(overlayEnt?.outcomes?.no_change || 0);
+  const reverted = Number(overlayEnt?.outcomes?.reverted || 0);
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const key = [
+      impact,
+      risk,
+      age,
+      stub ? 1 : 0,
+      noChange,
+      reverted
+    ].join('\u0000');
+    if (PROPOSAL_SCORE_CACHE.has(key)) {
+      return PROPOSAL_SCORE_CACHE.get(key);
+    }
+    const rust = runBacklogAutoscalePrimitive(
+      'proposal_score',
+      {
+        impact_weight: impact,
+        risk_penalty: risk,
+        age_hours: age,
+        is_stub: stub,
+        no_change_count: noChange,
+        reverted_count: reverted
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const val = Number(rust.payload.payload.score || 0);
+      if (PROPOSAL_SCORE_CACHE.size >= PROPOSAL_SCORE_CACHE_MAX) {
+        const oldest = PROPOSAL_SCORE_CACHE.keys().next();
+        if (!oldest.done) PROPOSAL_SCORE_CACHE.delete(oldest.value);
+      }
+      PROPOSAL_SCORE_CACHE.set(key, val);
+      return val;
+    }
+  }
+  const agePenalty = age / 24 * 0.6;
+  const stubPenalty = stub ? 2.5 : 0;
+  const noChangePenalty = noChange * 1.5;
+  const revertedPenalty = reverted * 3.0;
+  return (impact * 2.0) - (risk * 1.0) - agePenalty - stubPenalty - noChangePenalty - revertedPenalty;
 }
 
 function proposalRemediationDepth(p) {

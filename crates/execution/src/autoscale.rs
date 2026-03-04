@@ -642,6 +642,21 @@ pub struct ProposalRiskScoreOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ProposalScoreInput {
+    pub impact_weight: f64,
+    pub risk_penalty: f64,
+    pub age_hours: f64,
+    pub is_stub: bool,
+    pub no_change_count: f64,
+    pub reverted_count: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ProposalScoreOutput {
+    pub score: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct CompositeEligibilityScoreInput {
     pub quality_score: f64,
     pub directive_fit_score: f64,
@@ -1307,6 +1322,8 @@ pub struct AutoscaleRequest {
     pub queue_underflow_backfill_input: Option<QueueUnderflowBackfillInput>,
     #[serde(default)]
     pub proposal_risk_score_input: Option<ProposalRiskScoreInput>,
+    #[serde(default)]
+    pub proposal_score_input: Option<ProposalScoreInput>,
     #[serde(default)]
     pub composite_eligibility_score_input: Option<CompositeEligibilityScoreInput>,
     #[serde(default)]
@@ -2454,6 +2471,21 @@ pub fn compute_proposal_risk_score(input: &ProposalRiskScoreInput) -> ProposalRi
         25
     };
     ProposalRiskScoreOutput { risk_score }
+}
+
+pub fn compute_proposal_score(input: &ProposalScoreInput) -> ProposalScoreOutput {
+    let age_penalty = (input.age_hours / 24.0) * 0.6;
+    let stub_penalty = if input.is_stub { 2.5 } else { 0.0 };
+    let no_change_penalty = input.no_change_count * 1.5;
+    let reverted_penalty = input.reverted_count * 3.0;
+    ProposalScoreOutput {
+        score: (input.impact_weight * 2.0)
+            - (input.risk_penalty * 1.0)
+            - age_penalty
+            - stub_penalty
+            - no_change_penalty
+            - reverted_penalty,
+    }
 }
 
 pub fn compute_composite_eligibility_score(
@@ -4325,6 +4357,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
         }))
         .map_err(|e| format!("autoscale_proposal_risk_score_encode_failed:{e}"));
     }
+    if mode == "proposal_score" {
+        let input = request
+            .proposal_score_input
+            .ok_or_else(|| "autoscale_missing_proposal_score_input".to_string())?;
+        let out = compute_proposal_score(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "proposal_score",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_proposal_score_encode_failed:{e}"));
+    }
     if mode == "composite_eligibility_score" {
         let input = request
             .composite_eligibility_score_input
@@ -5888,6 +5932,37 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale proposal_risk_score");
         assert!(out.contains("\"mode\":\"proposal_risk_score\""));
+    }
+
+    #[test]
+    fn proposal_score_applies_weighted_penalties() {
+        let out = compute_proposal_score(&ProposalScoreInput {
+            impact_weight: 3.0,
+            risk_penalty: 2.0,
+            age_hours: 24.0,
+            is_stub: false,
+            no_change_count: 1.0,
+            reverted_count: 0.0,
+        });
+        assert!((out.score - 1.9).abs() < 0.000001);
+    }
+
+    #[test]
+    fn autoscale_json_proposal_score_path_works() {
+        let payload = serde_json::json!({
+            "mode": "proposal_score",
+            "proposal_score_input": {
+                "impact_weight": 3,
+                "risk_penalty": 2,
+                "age_hours": 24,
+                "is_stub": false,
+                "no_change_count": 1,
+                "reverted_count": 0
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale proposal_score");
+        assert!(out.contains("\"mode\":\"proposal_score\""));
     }
 
     #[test]
