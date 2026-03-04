@@ -902,6 +902,23 @@ function defaultPolicy() {
 }
 
 function normalizeBandMap(raw: AnyObj, base: AnyObj, lo: number, hi: number) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'normalize_band_map',
+      { raw, base, lo: Number(lo), hi: Number(hi) },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const payload = rust.payload.payload;
+      return {
+        novice: clampNumber(payload.novice, lo, hi, base.novice),
+        developing: clampNumber(payload.developing, lo, hi, base.developing),
+        mature: clampNumber(payload.mature, lo, hi, base.mature),
+        seasoned: clampNumber(payload.seasoned, lo, hi, base.seasoned),
+        legendary: clampNumber(payload.legendary, lo, hi, base.legendary)
+      };
+    }
+  }
   const src = raw && typeof raw === 'object' ? raw : {};
   return {
     novice: clampNumber(src.novice, lo, hi, base.novice),
@@ -913,6 +930,22 @@ function normalizeBandMap(raw: AnyObj, base: AnyObj, lo: number, hi: number) {
 }
 
 function normalizeImpactMap(raw: AnyObj, base: AnyObj, lo: number, hi: number) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'normalize_impact_map',
+      { raw, base, lo: Number(lo), hi: Number(hi) },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const payload = rust.payload.payload;
+      return {
+        low: clampNumber(payload.low, lo, hi, base.low),
+        medium: clampNumber(payload.medium, lo, hi, base.medium),
+        high: clampNumber(payload.high, lo, hi, base.high),
+        critical: clampNumber(payload.critical, lo, hi, base.critical)
+      };
+    }
+  }
   const src = raw && typeof raw === 'object' ? raw : {};
   return {
     low: clampNumber(src.low, lo, hi, base.low),
@@ -923,6 +956,23 @@ function normalizeImpactMap(raw: AnyObj, base: AnyObj, lo: number, hi: number) {
 }
 
 function normalizeTargetMap(raw: AnyObj, base: AnyObj, lo: number, hi: number) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'normalize_target_map',
+      { raw, base, lo: Number(lo), hi: Number(hi) },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const payload = rust.payload.payload;
+      return {
+        tactical: clampNumber(payload.tactical, lo, hi, base.tactical),
+        belief: clampNumber(payload.belief, lo, hi, base.belief),
+        identity: clampNumber(payload.identity, lo, hi, base.identity),
+        directive: clampNumber(payload.directive, lo, hi, base.directive),
+        constitution: clampNumber(payload.constitution, lo, hi, base.constitution)
+      };
+    }
+  }
   const src = raw && typeof raw === 'object' ? raw : {};
   return {
     tactical: clampNumber(src.tactical, lo, hi, base.tactical),
@@ -934,6 +984,23 @@ function normalizeTargetMap(raw: AnyObj, base: AnyObj, lo: number, hi: number) {
 }
 
 function normalizeTargetPolicy(raw: AnyObj, base: AnyObj) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'normalize_target_policy',
+      { raw, base },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const payload = rust.payload.payload;
+      return {
+        rank: clampInt(payload.rank, 1, 10, base.rank),
+        live_enabled: toBool(payload.live_enabled, base.live_enabled),
+        test_enabled: toBool(payload.test_enabled, base.test_enabled),
+        require_human_veto_live: toBool(payload.require_human_veto_live, base.require_human_veto_live),
+        min_shadow_hours: clampInt(payload.min_shadow_hours, 0, 24 * 365, base.min_shadow_hours)
+      };
+    }
+  }
   const src = raw && typeof raw === 'object' ? raw : {};
   return {
     rank: clampInt(src.rank, 1, 10, base.rank),
@@ -2146,6 +2213,16 @@ function pushTierEvent(scopeMap: AnyObj, target: string, ts: string) {
 }
 
 function tierRetentionDays(policy: AnyObj) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'tier_retention_days',
+      { policy },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return clampInt(rust.payload.payload.days, 30, 3650, 365);
+    }
+  }
   const transition = policy && policy.tier_transition && policy.tier_transition.window_days_by_target
     ? policy.tier_transition.window_days_by_target
     : {};
@@ -2194,6 +2271,20 @@ function countTierEvents(scope: AnyObj, metric: string, target: string, windowDa
 }
 
 function windowDaysForTarget(windowMap: AnyObj, target: string, fallback: number) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'window_days_for_target',
+      {
+        window_map: windowMap && typeof windowMap === 'object' ? windowMap : {},
+        target: target == null ? 'tactical' : String(target),
+        fallback: Number(fallback)
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return clampInt(rust.payload.payload.days, 1, 3650, fallback);
+    }
+  }
   return clampInt(windowMap && windowMap[normalizeTarget(target || 'tactical')], 1, 3650, fallback);
 }
 
@@ -5319,6 +5410,29 @@ function evaluateImpossibilityTrigger(policy: AnyObj, signals: AnyObj, force = f
 }
 
 function parseCandidateListFromLlmPayload(payload: AnyObj) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'parse_candidate_list_from_llm_payload',
+      { payload },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const rows = Array.isArray(rust.payload.payload.candidates) ? rust.payload.payload.candidates : [];
+      return rows
+        .map((row: AnyObj, idx: number) => {
+          const filters = normalizeList(row && row.filters || '', 120).slice(0, 8);
+          if (!filters.length) return null;
+          return {
+            id: normalizeToken(row && row.id || `llm_${idx + 1}`, 80) || `llm_${idx + 1}`,
+            filters,
+            source: 'right_brain_llm',
+            probability: Number(clampNumber(row && row.probability, 0, 1, 0.55).toFixed(6)),
+            rationale: cleanText(row && row.rationale || row && row.reason || '', 220)
+          };
+        })
+        .filter(Boolean);
+    }
+  }
   const rows = Array.isArray(payload)
     ? payload
     : (payload && Array.isArray(payload.candidates) ? payload.candidates : []);
@@ -5425,6 +5539,25 @@ function generateTreeCandidatesWithLlm(policy: AnyObj, paths: AnyObj, args: AnyO
 }
 
 function heuristicFilterCandidates(objective: string) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'heuristic_filter_candidates',
+      { objective: objective == null ? '' : String(objective) },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const rows = Array.isArray(rust.payload.payload.candidates) ? rust.payload.payload.candidates : [];
+      return rows
+        .map((row: AnyObj, idx: number) => ({
+          id: normalizeToken(row && row.id || `heur_${idx + 1}`, 80) || `heur_${idx + 1}`,
+          filters: normalizeList(row && row.filters || [], 120).slice(0, 8),
+          source: cleanText(row && row.source || 'heuristic', 80) || 'heuristic',
+          probability: Number(clampNumber(row && row.probability, 0, 1, 0.5).toFixed(6)),
+          rationale: cleanText(row && row.rationale || 'heuristic seed', 220)
+        }))
+        .filter((row: AnyObj) => Array.isArray(row.filters) && row.filters.length > 0);
+    }
+  }
   const tags = tokenize(objective);
   const base = [
     ['assumption_inversion', 'constraint_reframe'],
@@ -5585,6 +5718,21 @@ function buildProbabilisticSearchTree(paths: AnyObj, policy: AnyObj, args: AnyOb
 }
 
 function scoreTrial(decision: AnyObj, candidate: AnyObj, trialCfg: AnyObj, runtimeProbePass: boolean) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'score_trial',
+      {
+        decision: decision && typeof decision === 'object' ? decision : {},
+        candidate: candidate && typeof candidate === 'object' ? candidate : {},
+        trial_cfg: trialCfg && typeof trialCfg === 'object' ? trialCfg : {},
+        runtime_probe_pass: runtimeProbePass === true
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return Number(clampNumber(rust.payload.payload.score, 0, 1, 0).toFixed(6));
+    }
+  }
   const weights = trialCfg.score_weights && typeof trialCfg.score_weights === 'object'
     ? trialCfg.score_weights
     : {};
@@ -5613,6 +5761,34 @@ function scoreTrial(decision: AnyObj, candidate: AnyObj, trialCfg: AnyObj, runti
 }
 
 function mutateTrialCandidates(rows: AnyObj[]) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'mutate_trial_candidates',
+      { rows: Array.isArray(rows) ? rows : [] },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const outRows = Array.isArray(rust.payload.payload.rows) ? rust.payload.payload.rows : [];
+      const srcRows = Array.isArray(rows) ? rows : [];
+      return outRows.map((row: AnyObj, idx: number) => {
+        const srcRow = srcRows[idx] && typeof srcRows[idx] === 'object' ? srcRows[idx] : {};
+        const baseId = (srcRow && srcRow.id)
+          ? String(srcRow.id)
+          : stableId(JSON.stringify(srcRow || {}), 'mut');
+        const baseSource = (srcRow && srcRow.source)
+          ? String(srcRow.source)
+          : 'trial';
+        return {
+          ...(row && typeof row === 'object' ? row : {}),
+          id: `${baseId}_m${idx + 1}`,
+          filters: normalizeList(row && row.filters || [], 120).slice(0, 8),
+          source: `${baseSource}_mutated`,
+          probability: Number(clampNumber(Number(srcRow && srcRow.probability || 0.4) * 0.92, 0, 1, 0.3).toFixed(6)),
+          score_hint: Number(clampNumber(Number(srcRow && srcRow.score_hint || 0) * 0.94, 0, 1, 0.3).toFixed(6))
+        };
+      });
+    }
+  }
   const mutationStack = ['constraint_reframe', 'goal_decomposition', 'fallback_pathing', 'risk_guard_compaction'];
   const out: AnyObj[] = [];
   let idx = 0;
@@ -6748,6 +6924,16 @@ module.exports = {
   tokenize,
   normalizeList,
   normalizeTextList,
+  normalizeBandMap,
+  normalizeImpactMap,
+  normalizeTargetMap,
+  normalizeTargetPolicy,
+  windowDaysForTarget,
+  tierRetentionDays,
+  parseCandidateListFromLlmPayload,
+  heuristicFilterCandidates,
+  scoreTrial,
+  mutateTrialCandidates,
   computeLibraryMatchScore,
   computeKnownFailurePressure,
   hasSignalTermMatch,

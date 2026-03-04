@@ -442,6 +442,170 @@ pub struct EffectiveFirstNHumanVetoUsesOutput {
     pub uses: i64,
 }
 
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct NormalizeBandMapInput {
+    #[serde(default)]
+    pub raw: Option<Value>,
+    #[serde(default)]
+    pub base: Option<Value>,
+    #[serde(default)]
+    pub lo: Option<f64>,
+    #[serde(default)]
+    pub hi: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct NormalizeBandMapOutput {
+    pub novice: f64,
+    pub developing: f64,
+    pub mature: f64,
+    pub seasoned: f64,
+    pub legendary: f64,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct NormalizeImpactMapInput {
+    #[serde(default)]
+    pub raw: Option<Value>,
+    #[serde(default)]
+    pub base: Option<Value>,
+    #[serde(default)]
+    pub lo: Option<f64>,
+    #[serde(default)]
+    pub hi: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct NormalizeImpactMapOutput {
+    pub low: f64,
+    pub medium: f64,
+    pub high: f64,
+    pub critical: f64,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct NormalizeTargetMapInput {
+    #[serde(default)]
+    pub raw: Option<Value>,
+    #[serde(default)]
+    pub base: Option<Value>,
+    #[serde(default)]
+    pub lo: Option<f64>,
+    #[serde(default)]
+    pub hi: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct NormalizeTargetMapOutput {
+    pub tactical: f64,
+    pub belief: f64,
+    pub identity: f64,
+    pub directive: f64,
+    pub constitution: f64,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct NormalizeTargetPolicyInput {
+    #[serde(default)]
+    pub raw: Option<Value>,
+    #[serde(default)]
+    pub base: Option<Value>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct NormalizeTargetPolicyOutput {
+    pub rank: i64,
+    pub live_enabled: bool,
+    pub test_enabled: bool,
+    pub require_human_veto_live: bool,
+    pub min_shadow_hours: i64,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct WindowDaysForTargetInput {
+    #[serde(default)]
+    pub window_map: Option<Value>,
+    #[serde(default)]
+    pub target: Option<String>,
+    #[serde(default)]
+    pub fallback: Option<i64>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct WindowDaysForTargetOutput {
+    pub days: i64,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct TierRetentionDaysInput {
+    #[serde(default)]
+    pub policy: Option<Value>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct TierRetentionDaysOutput {
+    pub days: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct InversionCandidateRow {
+    pub id: String,
+    pub filters: Vec<String>,
+    pub source: String,
+    pub probability: f64,
+    pub rationale: String,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct ParseCandidateListFromLlmPayloadInput {
+    #[serde(default)]
+    pub payload: Option<Value>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct ParseCandidateListFromLlmPayloadOutput {
+    pub candidates: Vec<InversionCandidateRow>,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct HeuristicFilterCandidatesInput {
+    #[serde(default)]
+    pub objective: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct HeuristicFilterCandidatesOutput {
+    pub candidates: Vec<InversionCandidateRow>,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct ScoreTrialInput {
+    #[serde(default)]
+    pub decision: Option<Value>,
+    #[serde(default)]
+    pub candidate: Option<Value>,
+    #[serde(default)]
+    pub trial_cfg: Option<Value>,
+    #[serde(default)]
+    pub runtime_probe_pass: Option<bool>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct ScoreTrialOutput {
+    pub score: f64,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct MutateTrialCandidatesInput {
+    #[serde(default)]
+    pub rows: Vec<Value>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct MutateTrialCandidatesOutput {
+    pub rows: Vec<Value>,
+}
+
 fn normalize_token(raw: &str, max_len: usize) -> String {
     let collapsed = raw
         .split_whitespace()
@@ -544,7 +708,9 @@ fn normalize_trit_value(value: &Value) -> i32 {
     0
 }
 
-pub fn compute_trit_vector_from_input(input: &TritVectorFromInputInput) -> TritVectorFromInputOutput {
+pub fn compute_trit_vector_from_input(
+    input: &TritVectorFromInputInput,
+) -> TritVectorFromInputOutput {
     if let Some(vec) = &input.trit_vector {
         let out = vec.iter().map(normalize_trit_value).collect::<Vec<_>>();
         return TritVectorFromInputOutput { vector: out };
@@ -757,6 +923,594 @@ fn push_unique(values: &mut Vec<String>, next: String) {
     }
 }
 
+fn round6(value: f64) -> f64 {
+    (value * 1_000_000.0).round() / 1_000_000.0
+}
+
+fn js_truthy(value: Option<&Value>) -> bool {
+    let Some(v) = value else {
+        return false;
+    };
+    match v {
+        Value::Null => false,
+        Value::Bool(b) => *b,
+        Value::Number(n) => n
+            .as_f64()
+            .map(|x| x != 0.0 && x.is_finite())
+            .unwrap_or(false),
+        Value::String(s) => !s.is_empty(),
+        Value::Array(arr) => !arr.is_empty(),
+        Value::Object(map) => !map.is_empty(),
+    }
+}
+
+fn js_or_number(value: Option<&Value>, fallback: f64) -> f64 {
+    let Some(v) = value else {
+        return fallback;
+    };
+    if !js_truthy(Some(v)) {
+        return fallback;
+    }
+    parse_number_like(Some(v)).unwrap_or(fallback)
+}
+
+fn to_bool_like(value: Option<&Value>, fallback: bool) -> bool {
+    let Some(v) = value else {
+        return fallback;
+    };
+    let raw = match v {
+        Value::String(s) => s.clone(),
+        Value::Bool(b) => {
+            if *b {
+                "true".to_string()
+            } else {
+                "false".to_string()
+            }
+        }
+        _ => v.to_string(),
+    }
+    .trim()
+    .to_lowercase();
+    if ["1", "true", "yes", "on"].contains(&raw.as_str()) {
+        return true;
+    }
+    if ["0", "false", "no", "off"].contains(&raw.as_str()) {
+        return false;
+    }
+    fallback
+}
+
+fn clamp_int_value(value: Option<&Value>, lo: i64, hi: i64, fallback: i64) -> i64 {
+    let parsed = parse_number_like(value).unwrap_or(fallback as f64).floor() as i64;
+    parsed.clamp(lo, hi)
+}
+
+fn map_number_key(map_value: Option<&Value>, key: &str, lo: f64, hi: f64, fallback: f64) -> f64 {
+    let v = map_value
+        .and_then(|v| v.as_object())
+        .and_then(|m| m.get(key))
+        .and_then(|row| parse_number_like(Some(row)))
+        .unwrap_or(fallback);
+    clamp_number(v, lo, hi)
+}
+
+fn map_int_key(map_value: Option<&Value>, key: &str, lo: i64, hi: i64, fallback: i64) -> i64 {
+    clamp_int_value(
+        map_value
+            .and_then(|v| v.as_object())
+            .and_then(|m| m.get(key)),
+        lo,
+        hi,
+        fallback,
+    )
+}
+
+fn map_bool_key(map_value: Option<&Value>, key: &str, fallback: bool) -> bool {
+    to_bool_like(
+        map_value
+            .and_then(|v| v.as_object())
+            .and_then(|m| m.get(key)),
+        fallback,
+    )
+}
+
+fn normalize_target_for_key(target: &str) -> String {
+    compute_normalize_target(&NormalizeTargetInput {
+        value: Some(target.to_string()),
+    })
+    .value
+}
+
+fn number_path(root: Option<&Value>, path: &[&str], fallback: f64) -> f64 {
+    let mut cursor = root;
+    for key in path {
+        cursor = cursor.and_then(|v| v.as_object()).and_then(|m| m.get(*key));
+    }
+    parse_number_like(cursor).unwrap_or(fallback)
+}
+
+fn value_path<'a>(root: Option<&'a Value>, path: &[&str]) -> Option<&'a Value> {
+    let mut cursor = root;
+    for key in path {
+        cursor = cursor.and_then(|v| v.as_object()).and_then(|m| m.get(*key));
+    }
+    cursor
+}
+
+fn stable_id_runtime(seed: &str, prefix: &str) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(seed.as_bytes());
+    let digest = format!("{:x}", hasher.finalize());
+    format!("{}_{}", prefix, &digest[..16])
+}
+
+pub fn compute_normalize_band_map(input: &NormalizeBandMapInput) -> NormalizeBandMapOutput {
+    let lo = input.lo.unwrap_or(0.0);
+    let hi = input.hi.unwrap_or(1.0);
+    let base = input.base.as_ref();
+    let raw = input.raw.as_ref();
+    NormalizeBandMapOutput {
+        novice: map_number_key(
+            raw,
+            "novice",
+            lo,
+            hi,
+            map_number_key(base, "novice", lo, hi, lo),
+        ),
+        developing: map_number_key(
+            raw,
+            "developing",
+            lo,
+            hi,
+            map_number_key(base, "developing", lo, hi, lo),
+        ),
+        mature: map_number_key(
+            raw,
+            "mature",
+            lo,
+            hi,
+            map_number_key(base, "mature", lo, hi, lo),
+        ),
+        seasoned: map_number_key(
+            raw,
+            "seasoned",
+            lo,
+            hi,
+            map_number_key(base, "seasoned", lo, hi, lo),
+        ),
+        legendary: map_number_key(
+            raw,
+            "legendary",
+            lo,
+            hi,
+            map_number_key(base, "legendary", lo, hi, lo),
+        ),
+    }
+}
+
+pub fn compute_normalize_impact_map(input: &NormalizeImpactMapInput) -> NormalizeImpactMapOutput {
+    let lo = input.lo.unwrap_or(0.0);
+    let hi = input.hi.unwrap_or(1.0);
+    let base = input.base.as_ref();
+    let raw = input.raw.as_ref();
+    NormalizeImpactMapOutput {
+        low: map_number_key(raw, "low", lo, hi, map_number_key(base, "low", lo, hi, lo)),
+        medium: map_number_key(
+            raw,
+            "medium",
+            lo,
+            hi,
+            map_number_key(base, "medium", lo, hi, lo),
+        ),
+        high: map_number_key(
+            raw,
+            "high",
+            lo,
+            hi,
+            map_number_key(base, "high", lo, hi, lo),
+        ),
+        critical: map_number_key(
+            raw,
+            "critical",
+            lo,
+            hi,
+            map_number_key(base, "critical", lo, hi, lo),
+        ),
+    }
+}
+
+pub fn compute_normalize_target_map(input: &NormalizeTargetMapInput) -> NormalizeTargetMapOutput {
+    let lo = input.lo.unwrap_or(0.0);
+    let hi = input.hi.unwrap_or(1.0);
+    let base = input.base.as_ref();
+    let raw = input.raw.as_ref();
+    NormalizeTargetMapOutput {
+        tactical: map_number_key(
+            raw,
+            "tactical",
+            lo,
+            hi,
+            map_number_key(base, "tactical", lo, hi, lo),
+        ),
+        belief: map_number_key(
+            raw,
+            "belief",
+            lo,
+            hi,
+            map_number_key(base, "belief", lo, hi, lo),
+        ),
+        identity: map_number_key(
+            raw,
+            "identity",
+            lo,
+            hi,
+            map_number_key(base, "identity", lo, hi, lo),
+        ),
+        directive: map_number_key(
+            raw,
+            "directive",
+            lo,
+            hi,
+            map_number_key(base, "directive", lo, hi, lo),
+        ),
+        constitution: map_number_key(
+            raw,
+            "constitution",
+            lo,
+            hi,
+            map_number_key(base, "constitution", lo, hi, lo),
+        ),
+    }
+}
+
+pub fn compute_normalize_target_policy(
+    input: &NormalizeTargetPolicyInput,
+) -> NormalizeTargetPolicyOutput {
+    let raw = input.raw.as_ref();
+    let base = input.base.as_ref();
+    NormalizeTargetPolicyOutput {
+        rank: map_int_key(raw, "rank", 1, 10, map_int_key(base, "rank", 1, 10, 1)),
+        live_enabled: map_bool_key(
+            raw,
+            "live_enabled",
+            map_bool_key(base, "live_enabled", false),
+        ),
+        test_enabled: map_bool_key(
+            raw,
+            "test_enabled",
+            map_bool_key(base, "test_enabled", true),
+        ),
+        require_human_veto_live: map_bool_key(
+            raw,
+            "require_human_veto_live",
+            map_bool_key(base, "require_human_veto_live", false),
+        ),
+        min_shadow_hours: map_int_key(
+            raw,
+            "min_shadow_hours",
+            0,
+            24 * 365,
+            map_int_key(base, "min_shadow_hours", 0, 24 * 365, 0),
+        ),
+    }
+}
+
+pub fn compute_window_days_for_target(
+    input: &WindowDaysForTargetInput,
+) -> WindowDaysForTargetOutput {
+    let target = normalize_target_for_key(input.target.as_deref().unwrap_or("tactical"));
+    let fallback = input.fallback.unwrap_or(90).clamp(1, 3650);
+    let days = map_int_key(input.window_map.as_ref(), &target, 1, 3650, fallback);
+    WindowDaysForTargetOutput { days }
+}
+
+pub fn compute_tier_retention_days(input: &TierRetentionDaysInput) -> TierRetentionDaysOutput {
+    let policy = input.policy.as_ref();
+    let transition = value_path(policy, &["tier_transition", "window_days_by_target"])
+        .and_then(|v| v.as_object())
+        .cloned()
+        .unwrap_or_default();
+    let transition_min = value_path(
+        policy,
+        &["tier_transition", "minimum_window_days_by_target"],
+    )
+    .and_then(|v| v.as_object())
+    .cloned()
+    .unwrap_or_default();
+    let shadow = value_path(policy, &["shadow_pass_gate", "window_days_by_target"])
+        .and_then(|v| v.as_object())
+        .cloned()
+        .unwrap_or_default();
+    let mut all = Vec::new();
+    for map in [transition, transition_min, shadow] {
+        for value in map.values() {
+            all.push(clamp_int_value(Some(value), 1, 3650, 1));
+        }
+    }
+    let mut max_days = 365i64;
+    for days in all {
+        if days > max_days {
+            max_days = days;
+        }
+    }
+    if max_days < 30 {
+        max_days = 30;
+    }
+    TierRetentionDaysOutput { days: max_days }
+}
+
+pub fn compute_parse_candidate_list_from_llm_payload(
+    input: &ParseCandidateListFromLlmPayloadInput,
+) -> ParseCandidateListFromLlmPayloadOutput {
+    let rows = match input.payload.as_ref() {
+        Some(Value::Array(arr)) => arr.clone(),
+        Some(Value::Object(obj)) => obj
+            .get("candidates")
+            .and_then(|v| v.as_array())
+            .cloned()
+            .unwrap_or_default(),
+        _ => Vec::new(),
+    };
+    let mut out = Vec::new();
+    for (idx, row) in rows.iter().enumerate() {
+        let row_obj = row.as_object();
+        let filters_src = row_obj
+            .and_then(|obj| obj.get("filters"))
+            .cloned()
+            .or_else(|| row_obj.and_then(|obj| obj.get("filter_stack")).cloned())
+            .or_else(|| row_obj.and_then(|obj| obj.get("filterStack")).cloned())
+            .unwrap_or_else(|| Value::String(String::new()));
+        let mut filters = compute_normalize_list(&NormalizeListInput {
+            value: Some(filters_src),
+            max_len: Some(120),
+        })
+        .items;
+        filters.truncate(8);
+        if filters.is_empty() {
+            continue;
+        }
+        let fallback_id = format!("llm_{}", idx + 1);
+        let id_raw = row_obj
+            .and_then(|obj| obj.get("id"))
+            .map(|v| value_to_string(Some(v)))
+            .unwrap_or_else(|| fallback_id.clone());
+        let id = {
+            let token = normalize_token_runtime(&id_raw, 80);
+            if token.is_empty() {
+                fallback_id.clone()
+            } else {
+                token
+            }
+        };
+        let probability = round6(clamp_number(
+            parse_number_like(row_obj.and_then(|obj| obj.get("probability"))).unwrap_or(0.55),
+            0.0,
+            1.0,
+        ));
+        let rationale = clean_text_runtime(
+            &row_obj
+                .and_then(|obj| obj.get("rationale"))
+                .or_else(|| row_obj.and_then(|obj| obj.get("reason")))
+                .map(|v| value_to_string(Some(v)))
+                .unwrap_or_default(),
+            220,
+        );
+        out.push(InversionCandidateRow {
+            id,
+            filters,
+            source: "right_brain_llm".to_string(),
+            probability,
+            rationale,
+        });
+    }
+    ParseCandidateListFromLlmPayloadOutput { candidates: out }
+}
+
+pub fn compute_heuristic_filter_candidates(
+    input: &HeuristicFilterCandidatesInput,
+) -> HeuristicFilterCandidatesOutput {
+    let objective = input.objective.as_deref().unwrap_or("");
+    let tags = compute_tokenize_text(&TokenizeTextInput {
+        value: Some(objective.to_string()),
+        max_tokens: Some(64),
+    })
+    .tokens;
+    let has_tag = |needle: &str| tags.iter().any(|tag| tag == needle);
+    let mut base: Vec<Vec<String>> = vec![
+        vec![
+            "assumption_inversion".to_string(),
+            "constraint_reframe".to_string(),
+        ],
+        vec!["resource_rebalance".to_string(), "path_split".to_string()],
+        vec![
+            "goal_decomposition".to_string(),
+            "fallback_pathing".to_string(),
+        ],
+        vec![
+            "evidence_intensification".to_string(),
+            "risk_guard_compaction".to_string(),
+        ],
+        vec![
+            "time_horizon_reframe".to_string(),
+            "bounded_parallel_probe".to_string(),
+        ],
+        vec![
+            "negative_space_scan".to_string(),
+            "safe_counterfactual".to_string(),
+        ],
+    ];
+    if has_tag("budget") || has_tag("cost") {
+        base.push(vec![
+            "cost_lane_swap".to_string(),
+            "constraint_reframe".to_string(),
+        ]);
+    }
+    if has_tag("yield") || has_tag("quality") {
+        base.push(vec![
+            "yield_reframe".to_string(),
+            "verification_gate".to_string(),
+        ]);
+    }
+    if has_tag("drift") {
+        base.push(vec![
+            "drift_anchor".to_string(),
+            "identity_guard".to_string(),
+        ]);
+    }
+    let mut out = Vec::new();
+    for (idx, filters) in base.iter().enumerate() {
+        let mut normalized = compute_normalize_list(&NormalizeListInput {
+            value: Some(Value::Array(
+                filters
+                    .iter()
+                    .map(|row| Value::String(row.clone()))
+                    .collect::<Vec<_>>(),
+            )),
+            max_len: Some(120),
+        })
+        .items;
+        normalized.truncate(8);
+        let probability = round6(clamp_number(0.42 + (idx as f64 * 0.03), 0.0, 1.0));
+        out.push(InversionCandidateRow {
+            id: format!("heur_{}", idx + 1),
+            filters: normalized,
+            source: "heuristic".to_string(),
+            probability,
+            rationale: "heuristic seed".to_string(),
+        });
+    }
+    HeuristicFilterCandidatesOutput { candidates: out }
+}
+
+pub fn compute_score_trial(input: &ScoreTrialInput) -> ScoreTrialOutput {
+    let decision = input.decision.as_ref();
+    let candidate = input.candidate.as_ref();
+    let trial_cfg = input.trial_cfg.as_ref();
+    let weights = value_path(trial_cfg, &["score_weights"]);
+    let w_allowed = js_or_number(value_path(weights, &["decision_allowed"]), 0.35);
+    let w_attractor = js_or_number(value_path(weights, &["attractor"]), 0.2);
+    let w_certainty = js_or_number(value_path(weights, &["certainty_margin"]), 0.15);
+    let w_library = js_or_number(value_path(weights, &["library_similarity"]), 0.1);
+    let w_probe = js_or_number(value_path(weights, &["runtime_probe"]), 0.2);
+    let weight_total = (w_allowed + w_attractor + w_certainty + w_library + w_probe).max(0.0001);
+    let certainty_margin = clamp_number(
+        number_path(decision, &["input", "effective_certainty"], 0.0)
+            - number_path(decision, &["gating", "required_certainty"], 0.0),
+        -1.0,
+        1.0,
+    );
+    let certainty_score = if certainty_margin <= 0.0 {
+        0.0
+    } else {
+        clamp_number(certainty_margin, 0.0, 1.0)
+    };
+    let allowed_score = if js_truthy(value_path(decision, &["allowed"])) {
+        1.0
+    } else {
+        0.0
+    };
+    let attractor_score = number_path(decision, &["attractor", "score"], 0.0);
+    let library_score = number_path(candidate, &["score_hint"], 0.0);
+    let probe_score = if input.runtime_probe_pass.unwrap_or(false) {
+        1.0
+    } else {
+        0.0
+    };
+    let score = ((allowed_score * w_allowed)
+        + (attractor_score * w_attractor)
+        + (certainty_score * w_certainty)
+        + (library_score * w_library)
+        + (probe_score * w_probe))
+        / weight_total;
+    ScoreTrialOutput {
+        score: round6(clamp_number(score, 0.0, 1.0)),
+    }
+}
+
+pub fn compute_mutate_trial_candidates(
+    input: &MutateTrialCandidatesInput,
+) -> MutateTrialCandidatesOutput {
+    let mutation_stack = [
+        "constraint_reframe",
+        "goal_decomposition",
+        "fallback_pathing",
+        "risk_guard_compaction",
+    ];
+    let mut out = Vec::new();
+    let mut idx = 0usize;
+    for row in &input.rows {
+        let row_obj = row.as_object();
+        let mut filters = compute_normalize_list(&NormalizeListInput {
+            value: row_obj
+                .and_then(|obj| obj.get("filters"))
+                .cloned()
+                .or_else(|| Some(json!([]))),
+            max_len: Some(120),
+        })
+        .items;
+        let extra = mutation_stack[idx % mutation_stack.len()].to_string();
+        idx += 1;
+        filters.push(extra);
+        let mut merged = compute_normalize_list(&NormalizeListInput {
+            value: Some(Value::Array(
+                filters.into_iter().map(Value::String).collect::<Vec<_>>(),
+            )),
+            max_len: Some(120),
+        })
+        .items;
+        merged.truncate(8);
+
+        let fallback_seed = if row.is_null() {
+            "{}".to_string()
+        } else {
+            serde_json::to_string(row).unwrap_or_else(|_| "{}".to_string())
+        };
+        let id_prefix = row_obj
+            .and_then(|obj| obj.get("id"))
+            .map(|v| value_to_string(Some(v)))
+            .filter(|v| !v.is_empty())
+            .unwrap_or_else(|| stable_id_runtime(&fallback_seed, "mut"));
+        let source_prefix = row_obj
+            .and_then(|obj| obj.get("source"))
+            .map(|v| value_to_string(Some(v)))
+            .filter(|v| !v.is_empty())
+            .unwrap_or_else(|| "trial".to_string());
+        let probability = round6(clamp_number(
+            js_or_number(row_obj.and_then(|obj| obj.get("probability")), 0.4) * 0.92,
+            0.0,
+            1.0,
+        ));
+        let score_hint = round6(clamp_number(
+            parse_number_like(row_obj.and_then(|obj| obj.get("score_hint"))).unwrap_or(0.0) * 0.94,
+            0.0,
+            1.0,
+        ));
+
+        let mut next = row_obj.cloned().unwrap_or_default();
+        next.insert(
+            "id".to_string(),
+            Value::String(format!("{id_prefix}_m{idx}")),
+        );
+        next.insert(
+            "filters".to_string(),
+            Value::Array(
+                merged
+                    .iter()
+                    .map(|row| Value::String(row.clone()))
+                    .collect::<Vec<_>>(),
+            ),
+        );
+        next.insert(
+            "source".to_string(),
+            Value::String(format!("{source_prefix}_mutated")),
+        );
+        next.insert("probability".to_string(), json!(probability));
+        next.insert("score_hint".to_string(), json!(score_hint));
+        out.push(Value::Object(next));
+    }
+    MutateTrialCandidatesOutput { rows: out }
+}
+
 pub fn compute_creative_penalty(input: &CreativePenaltyInput) -> CreativePenaltyOutput {
     let preferred = input
         .preferred_creative_lane_ids
@@ -952,11 +1706,13 @@ pub fn compute_build_lens_position(input: &BuildLensPositionInput) -> BuildLensP
     let position = if lower.contains("memory") && lower.contains("security") {
         "Preserve memory determinism sequencing while keeping security fail-closed at dispatch boundaries.".to_string()
     } else if lower.contains("drift") {
-        "Treat drift above tolerance as a hard stop and require rollback-ready proof before apply.".to_string()
+        "Treat drift above tolerance as a hard stop and require rollback-ready proof before apply."
+            .to_string()
     } else if target == "identity" || impact == "high" || impact == "critical" {
         "Use strict reversible slices with explicit receipts before any live apply.".to_string()
     } else {
-        "Keep the smallest reversible path and preserve fail-closed controls before mutation.".to_string()
+        "Keep the smallest reversible path and preserve fail-closed controls before mutation."
+            .to_string()
     };
     BuildLensPositionOutput { position }
 }
@@ -1007,7 +1763,8 @@ pub fn compute_conclave_high_risk_flags(
         push_unique(&mut flags, "no_consensus".to_string());
     }
 
-    let divergence = parse_number_like(payload.and_then(|row| row.get("max_divergence"))).unwrap_or(0.0);
+    let divergence =
+        parse_number_like(payload.and_then(|row| row.get("max_divergence"))).unwrap_or(0.0);
     if !divergence.is_finite() || divergence > max_divergence {
         push_unique(&mut flags, "high_divergence".to_string());
     }
@@ -1024,10 +1781,7 @@ pub fn compute_conclave_high_risk_flags(
         .filter(|n| n.is_finite())
         .collect::<Vec<_>>();
     if !confidences.is_empty()
-        && confidences
-            .iter()
-            .fold(f64::INFINITY, |acc, n| acc.min(*n))
-            < min_confidence
+        && confidences.iter().fold(f64::INFINITY, |acc, n| acc.min(*n)) < min_confidence
     {
         push_unique(&mut flags, "low_confidence".to_string());
     }
@@ -1159,13 +1913,17 @@ pub fn compute_normalize_text_list(input: &NormalizeTextListInput) -> NormalizeT
     NormalizeTextListOutput { items: out }
 }
 
-pub fn compute_parse_json_from_stdout(input: &ParseJsonFromStdoutInput) -> ParseJsonFromStdoutOutput {
+pub fn compute_parse_json_from_stdout(
+    input: &ParseJsonFromStdoutInput,
+) -> ParseJsonFromStdoutOutput {
     let text = input.raw.as_deref().unwrap_or("").trim();
     if text.is_empty() {
         return ParseJsonFromStdoutOutput { parsed: None };
     }
     if let Ok(value) = serde_json::from_str::<Value>(text) {
-        return ParseJsonFromStdoutOutput { parsed: Some(value) };
+        return ParseJsonFromStdoutOutput {
+            parsed: Some(value),
+        };
     }
     let lines = text
         .split('\n')
@@ -1174,7 +1932,9 @@ pub fn compute_parse_json_from_stdout(input: &ParseJsonFromStdoutInput) -> Parse
         .collect::<Vec<_>>();
     for line in lines.iter().rev() {
         if let Ok(value) = serde_json::from_str::<Value>(line) {
-            return ParseJsonFromStdoutOutput { parsed: Some(value) };
+            return ParseJsonFromStdoutOutput {
+                parsed: Some(value),
+            };
         }
     }
     ParseJsonFromStdoutOutput { parsed: None }
@@ -1210,7 +1970,12 @@ pub fn compute_parse_args(input: &ParseArgsInput) -> ParseArgsOutput {
     }
     map.insert(
         "_".to_string(),
-        Value::Array(positional.into_iter().map(Value::String).collect::<Vec<_>>()),
+        Value::Array(
+            positional
+                .into_iter()
+                .map(Value::String)
+                .collect::<Vec<_>>(),
+        ),
     );
     ParseArgsOutput {
         args: Value::Object(map),
@@ -1235,18 +2000,19 @@ pub fn compute_library_match_score(input: &LibraryMatchScoreInput) -> LibraryMat
     let trit_weight = input.trit_weight.unwrap_or(0.0);
     let target_weight = input.target_weight.unwrap_or(0.0);
     let total_weight = (token_weight + trit_weight + target_weight).max(0.0001);
-    let score =
-        ((token_score * token_weight) + (trit_score * trit_weight) + (target_score * target_weight))
-            / total_weight;
+    let score = ((token_score * token_weight)
+        + (trit_score * trit_weight)
+        + (target_score * target_weight))
+        / total_weight;
     let score = clamp_number(score, 0.0, 1.0);
     let score = (score * 1_000_000.0).round() / 1_000_000.0;
     LibraryMatchScoreOutput { score }
 }
 
-pub fn compute_known_failure_pressure(input: &KnownFailurePressureInput) -> KnownFailurePressureOutput {
-    let block_similarity = input
-        .failed_repetition_similarity_block
-        .unwrap_or(0.72);
+pub fn compute_known_failure_pressure(
+    input: &KnownFailurePressureInput,
+) -> KnownFailurePressureOutput {
+    let block_similarity = input.failed_repetition_similarity_block.unwrap_or(0.72);
     let mut fail_count = 0i64;
     let mut hard_block = false;
     let mut max_similarity = 0.0f64;
@@ -1255,8 +2021,9 @@ pub fn compute_known_failure_pressure(input: &KnownFailurePressureInput) -> Know
             .as_object()
             .and_then(|obj| obj.get("row"))
             .and_then(|v| v.as_object());
-        let similarity = parse_number_like(candidate.as_object().and_then(|obj| obj.get("similarity")))
-            .unwrap_or(0.0);
+        let similarity =
+            parse_number_like(candidate.as_object().and_then(|obj| obj.get("similarity")))
+                .unwrap_or(0.0);
         if let Some(row_obj) = row {
             let outcome = parse_number_like(row_obj.get("outcome_trit")).unwrap_or(0.0);
             if outcome < 0.0 {
@@ -1370,8 +2137,8 @@ pub fn compute_effective_first_n_human_veto_uses(
     input: &EffectiveFirstNHumanVetoUsesInput,
 ) -> EffectiveFirstNHumanVetoUsesOutput {
     let key = normalize_token(input.target.as_deref().unwrap_or("tactical"), 24);
-    let configured = read_rank_key(input.first_live_uses_require_human_veto.as_ref(), &key, 0)
-        .clamp(0, 100_000);
+    let configured =
+        read_rank_key(input.first_live_uses_require_human_veto.as_ref(), &key, 0).clamp(0, 100_000);
     let minimum = read_rank_key(
         input.minimum_first_live_uses_require_human_veto.as_ref(),
         &key,
@@ -1387,16 +2154,13 @@ fn decode_input<T>(payload: &Value, key: &str) -> Result<T, String>
 where
     T: for<'de> Deserialize<'de> + Default,
 {
-    let value = payload
-        .get(key)
-        .cloned()
-        .unwrap_or_else(|| json!({}));
+    let value = payload.get(key).cloned().unwrap_or_else(|| json!({}));
     serde_json::from_value(value).map_err(|e| format!("inversion_decode_{key}_failed:{e}"))
 }
 
 pub fn run_inversion_json(payload_json: &str) -> Result<String, String> {
-    let payload: Value =
-        serde_json::from_str(payload_json).map_err(|e| format!("inversion_payload_parse_failed:{e}"))?;
+    let payload: Value = serde_json::from_str(payload_json)
+        .map_err(|e| format!("inversion_payload_parse_failed:{e}"))?;
     let mode = payload
         .get("mode")
         .and_then(|v| v.as_str())
@@ -1456,7 +2220,8 @@ pub fn run_inversion_json(payload_json: &str) -> Result<String, String> {
         .map_err(|e| format!("inversion_encode_objective_id_valid_failed:{e}"));
     }
     if mode == "trit_vector_from_input" {
-        let input: TritVectorFromInputInput = decode_input(&payload, "trit_vector_from_input_input")?;
+        let input: TritVectorFromInputInput =
+            decode_input(&payload, "trit_vector_from_input_input")?;
         let out = compute_trit_vector_from_input(&input);
         return serde_json::to_string(&json!({
             "ok": true,
@@ -1642,7 +2407,8 @@ pub fn run_inversion_json(payload_json: &str) -> Result<String, String> {
         .map_err(|e| format!("inversion_encode_normalize_text_list_failed:{e}"));
     }
     if mode == "parse_json_from_stdout" {
-        let input: ParseJsonFromStdoutInput = decode_input(&payload, "parse_json_from_stdout_input")?;
+        let input: ParseJsonFromStdoutInput =
+            decode_input(&payload, "parse_json_from_stdout_input")?;
         let out = compute_parse_json_from_stdout(&input);
         return serde_json::to_string(&json!({
             "ok": true,
@@ -1672,7 +2438,8 @@ pub fn run_inversion_json(payload_json: &str) -> Result<String, String> {
         .map_err(|e| format!("inversion_encode_library_match_score_failed:{e}"));
     }
     if mode == "known_failure_pressure" {
-        let input: KnownFailurePressureInput = decode_input(&payload, "known_failure_pressure_input")?;
+        let input: KnownFailurePressureInput =
+            decode_input(&payload, "known_failure_pressure_input")?;
         let out = compute_known_failure_pressure(&input);
         return serde_json::to_string(&json!({
             "ok": true,
@@ -1712,6 +2479,111 @@ pub fn run_inversion_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("inversion_encode_effective_first_n_human_veto_uses_failed:{e}"));
+    }
+    if mode == "normalize_band_map" {
+        let input: NormalizeBandMapInput = decode_input(&payload, "normalize_band_map_input")?;
+        let out = compute_normalize_band_map(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "normalize_band_map",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_normalize_band_map_failed:{e}"));
+    }
+    if mode == "normalize_impact_map" {
+        let input: NormalizeImpactMapInput = decode_input(&payload, "normalize_impact_map_input")?;
+        let out = compute_normalize_impact_map(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "normalize_impact_map",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_normalize_impact_map_failed:{e}"));
+    }
+    if mode == "normalize_target_map" {
+        let input: NormalizeTargetMapInput = decode_input(&payload, "normalize_target_map_input")?;
+        let out = compute_normalize_target_map(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "normalize_target_map",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_normalize_target_map_failed:{e}"));
+    }
+    if mode == "normalize_target_policy" {
+        let input: NormalizeTargetPolicyInput =
+            decode_input(&payload, "normalize_target_policy_input")?;
+        let out = compute_normalize_target_policy(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "normalize_target_policy",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_normalize_target_policy_failed:{e}"));
+    }
+    if mode == "window_days_for_target" {
+        let input: WindowDaysForTargetInput =
+            decode_input(&payload, "window_days_for_target_input")?;
+        let out = compute_window_days_for_target(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "window_days_for_target",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_window_days_for_target_failed:{e}"));
+    }
+    if mode == "tier_retention_days" {
+        let input: TierRetentionDaysInput = decode_input(&payload, "tier_retention_days_input")?;
+        let out = compute_tier_retention_days(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "tier_retention_days",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_tier_retention_days_failed:{e}"));
+    }
+    if mode == "parse_candidate_list_from_llm_payload" {
+        let input: ParseCandidateListFromLlmPayloadInput =
+            decode_input(&payload, "parse_candidate_list_from_llm_payload_input")?;
+        let out = compute_parse_candidate_list_from_llm_payload(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "parse_candidate_list_from_llm_payload",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_parse_candidate_list_from_llm_payload_failed:{e}"));
+    }
+    if mode == "heuristic_filter_candidates" {
+        let input: HeuristicFilterCandidatesInput =
+            decode_input(&payload, "heuristic_filter_candidates_input")?;
+        let out = compute_heuristic_filter_candidates(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "heuristic_filter_candidates",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_heuristic_filter_candidates_failed:{e}"));
+    }
+    if mode == "score_trial" {
+        let input: ScoreTrialInput = decode_input(&payload, "score_trial_input")?;
+        let out = compute_score_trial(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "score_trial",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_score_trial_failed:{e}"));
+    }
+    if mode == "mutate_trial_candidates" {
+        let input: MutateTrialCandidatesInput =
+            decode_input(&payload, "mutate_trial_candidates_input")?;
+        let out = compute_mutate_trial_candidates(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "mutate_trial_candidates",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_mutate_trial_candidates_failed:{e}"));
     }
     Err(format!("inversion_mode_unsupported:{mode}"))
 }
@@ -1894,9 +2766,12 @@ mod tests {
         });
         assert_eq!(list.items, vec!["one".to_string(), "two".to_string()]);
 
-        let parsed = compute_parse_system_internal_permission(&ParseSystemInternalPermissionInput {
-            markdown: Some("- system_internal: {enabled: true, sources: [memory, loops]}".to_string()),
-        });
+        let parsed =
+            compute_parse_system_internal_permission(&ParseSystemInternalPermissionInput {
+                markdown: Some(
+                    "- system_internal: {enabled: true, sources: [memory, loops]}".to_string(),
+                ),
+            });
         assert_eq!(
             parsed,
             ParseSystemInternalPermissionOutput {
@@ -1906,7 +2781,10 @@ mod tests {
         );
 
         let rules = compute_parse_soul_token_data_pass_rules(&ParseSoulTokenDataPassRulesInput {
-            markdown: Some("## Data Pass Rules\n- allow-system-internal-passed-data\n- Non Runtime".to_string()),
+            markdown: Some(
+                "## Data Pass Rules\n- allow-system-internal-passed-data\n- Non Runtime"
+                    .to_string(),
+            ),
         });
         assert_eq!(
             rules.rules,
@@ -1965,7 +2843,9 @@ mod tests {
         });
         assert!(flags.flags.contains(&"high_divergence".to_string()));
         assert!(flags.flags.contains(&"low_confidence".to_string()));
-        assert!(flags.flags.contains(&"keyword:disable_covenant".to_string()));
+        assert!(flags
+            .flags
+            .contains(&"keyword:disable_covenant".to_string()));
         assert!(flags.flags.contains(&"keyword:skip_parity".to_string()));
     }
 
@@ -2007,10 +2887,7 @@ mod tests {
             max_len: Some(180),
             max_items: Some(64),
         });
-        assert_eq!(
-            text_list.items,
-            vec!["one".to_string(), "two".to_string()]
-        );
+        assert_eq!(text_list.items, vec!["one".to_string(), "two".to_string()]);
 
         let parsed = compute_parse_json_from_stdout(&ParseJsonFromStdoutInput {
             raw: Some("noise\n{\"ok\":true}".to_string()),
@@ -2057,7 +2934,11 @@ mod tests {
 
         let has_term = compute_has_signal_term_match(&HasSignalTermMatchInput {
             haystack: Some("optimize memory safety gate".to_string()),
-            token_set: vec!["optimize".to_string(), "memory".to_string(), "safety".to_string()],
+            token_set: vec![
+                "optimize".to_string(),
+                "memory".to_string(),
+                "safety".to_string(),
+            ],
             term: Some("memory safety".to_string()),
         });
         assert!(has_term.matched);
@@ -2085,5 +2966,123 @@ mod tests {
             target: Some("identity".to_string()),
         });
         assert_eq!(veto.uses, 5);
+    }
+
+    #[test]
+    fn tree_and_trial_helpers_match_contract() {
+        let band = compute_normalize_band_map(&NormalizeBandMapInput {
+            raw: Some(json!({"novice": 0.7, "mature": -1})),
+            base: Some(
+                json!({"novice": 0.4, "developing": 0.5, "mature": 0.6, "seasoned": 0.7, "legendary": 0.8}),
+            ),
+            lo: Some(0.0),
+            hi: Some(1.0),
+        });
+        assert!((band.novice - 0.7).abs() < 1e-9);
+        assert!((band.mature - 0.0).abs() < 1e-9);
+
+        let impact = compute_normalize_impact_map(&NormalizeImpactMapInput {
+            raw: Some(json!({"critical": 1.5})),
+            base: Some(json!({"low": 0.2, "medium": 0.4, "high": 0.6, "critical": 0.8})),
+            lo: Some(0.0),
+            hi: Some(1.0),
+        });
+        assert!((impact.critical - 1.0).abs() < 1e-9);
+
+        let target_map = compute_normalize_target_map(&NormalizeTargetMapInput {
+            raw: Some(json!({"identity": 0.9})),
+            base: Some(
+                json!({"tactical": 0.1, "belief": 0.2, "identity": 0.3, "directive": 0.4, "constitution": 0.5}),
+            ),
+            lo: Some(0.0),
+            hi: Some(1.0),
+        });
+        assert!((target_map.identity - 0.9).abs() < 1e-9);
+
+        let target_policy = compute_normalize_target_policy(&NormalizeTargetPolicyInput {
+            raw: Some(
+                json!({"rank": 12, "live_enabled": "yes", "test_enabled": "off", "require_human_veto_live": "1", "min_shadow_hours": 3}),
+            ),
+            base: Some(
+                json!({"rank": 2, "live_enabled": false, "test_enabled": true, "require_human_veto_live": false, "min_shadow_hours": 1}),
+            ),
+        });
+        assert_eq!(target_policy.rank, 10);
+        assert!(target_policy.live_enabled);
+        assert!(!target_policy.test_enabled);
+        assert!(target_policy.require_human_veto_live);
+        assert_eq!(target_policy.min_shadow_hours, 3);
+
+        let retention = compute_tier_retention_days(&TierRetentionDaysInput {
+            policy: Some(json!({
+                "tier_transition": { "window_days_by_target": { "tactical": 60 }, "minimum_window_days_by_target": { "identity": 120 } },
+                "shadow_pass_gate": { "window_days_by_target": { "belief": 45 } }
+            })),
+        });
+        assert_eq!(retention.days, 365);
+
+        let window = compute_window_days_for_target(&WindowDaysForTargetInput {
+            window_map: Some(json!({"identity": 30})),
+            target: Some("identity".to_string()),
+            fallback: Some(90),
+        });
+        assert_eq!(window.days, 30);
+
+        let parsed = compute_parse_candidate_list_from_llm_payload(
+            &ParseCandidateListFromLlmPayloadInput {
+                payload: Some(json!({
+                    "candidates": [
+                        { "id": "c1", "filters": ["risk_guard_compaction", "fallback_pathing"], "probability": 0.8, "rationale": "ok" },
+                        { "id": "c2", "filters": [], "probability": 0.4, "rationale": "skip" }
+                    ]
+                })),
+            },
+        );
+        assert_eq!(parsed.candidates.len(), 1);
+        assert_eq!(parsed.candidates[0].id, "c1");
+
+        let heuristic = compute_heuristic_filter_candidates(&HeuristicFilterCandidatesInput {
+            objective: Some("reduce budget drift".to_string()),
+        });
+        assert!(heuristic.candidates.len() >= 7);
+
+        let score = compute_score_trial(&ScoreTrialInput {
+            decision: Some(json!({
+                "allowed": true,
+                "attractor": { "score": 0.7 },
+                "input": { "effective_certainty": 0.9 },
+                "gating": { "required_certainty": 0.5 }
+            })),
+            candidate: Some(json!({ "score_hint": 0.8 })),
+            trial_cfg: Some(json!({
+                "score_weights": {
+                    "decision_allowed": 0.35,
+                    "attractor": 0.2,
+                    "certainty_margin": 0.15,
+                    "library_similarity": 0.1,
+                    "runtime_probe": 0.2
+                }
+            })),
+            runtime_probe_pass: Some(true),
+        });
+        assert!(score.score > 0.8);
+
+        let mutated = compute_mutate_trial_candidates(&MutateTrialCandidatesInput {
+            rows: vec![
+                json!({"id":"n1","filters":["constraint_reframe"],"source":"heuristic","probability":0.5,"score_hint":0.4}),
+            ],
+        });
+        assert_eq!(mutated.rows.len(), 1);
+        let row = mutated.rows[0].as_object().expect("mutated row object");
+        assert!(row
+            .get("id")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .contains("_m1"));
+        assert!(row
+            .get("source")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .contains("_mutated"));
     }
 }
