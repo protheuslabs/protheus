@@ -2341,6 +2341,21 @@ pub struct InferOptimizationDeltaOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct OptimizationIntentProposalInput {
+    #[serde(default)]
+    pub proposal_type: Option<String>,
+    #[serde(default)]
+    pub blob: Option<String>,
+    #[serde(default)]
+    pub has_actuation_meta: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct OptimizationIntentProposalOutput {
+    pub intent: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct IsDirectiveClarificationProposalInput {
     #[serde(default)]
     pub proposal_type: Option<String>,
@@ -3497,6 +3512,8 @@ pub struct AutoscaleRequest {
     pub unknown_type_quarantine_decision_input: Option<UnknownTypeQuarantineDecisionInput>,
     #[serde(default)]
     pub infer_optimization_delta_input: Option<InferOptimizationDeltaInput>,
+    #[serde(default)]
+    pub optimization_intent_proposal_input: Option<OptimizationIntentProposalInput>,
     #[serde(default)]
     pub is_directive_clarification_proposal_input: Option<IsDirectiveClarificationProposalInput>,
     #[serde(default)]
@@ -7642,6 +7659,46 @@ pub fn compute_infer_optimization_delta(
     }
 }
 
+pub fn compute_optimization_intent_proposal(
+    input: &OptimizationIntentProposalInput,
+) -> OptimizationIntentProposalOutput {
+    let proposal_type = input
+        .proposal_type
+        .as_ref()
+        .map(|v| v.trim().to_lowercase())
+        .unwrap_or_default();
+    let blob = input.blob.as_deref().unwrap_or("");
+    let canary_smoke_re = Regex::new(r"(?i)\bcanary\b|\bsmoke\s*test\b").expect("valid regex");
+    let type_is_actuation =
+        proposal_type.starts_with("actuation_") || proposal_type == "actuation" || input.has_actuation_meta;
+    if type_is_actuation && canary_smoke_re.is_match(blob) {
+        return OptimizationIntentProposalOutput { intent: false };
+    }
+    let intent_re = Regex::new(
+        r"(?i)\b(optimi[sz]e|optimization|improv(?:e|ement)|tune|polish|streamlin|efficien(?:cy|t)|latency|throughput|cost|token(?:s)?|performance)\b",
+    )
+    .expect("valid regex");
+    let has_intent = intent_re.is_match(&proposal_type) || intent_re.is_match(blob);
+    if !has_intent {
+        return OptimizationIntentProposalOutput { intent: false };
+    }
+    let exempt_re = Regex::new(
+        r"(?i)\b(fail(?:ure)?|error|outage|broken|incident|security|integrity|violation|breach|timeout|rate\s*limit|dns|connection|recover|restore|rollback|revert|remediation)\b",
+    )
+    .expect("valid regex");
+    if exempt_re.is_match(&proposal_type) || exempt_re.is_match(blob) {
+        return OptimizationIntentProposalOutput { intent: false };
+    }
+    let opportunity_re = Regex::new(
+        r"(?i)\b(opportunity|freelance|job|jobs|hiring|contract|contractor|gig|client|rfp|request for proposal|seeking|looking for)\b",
+    )
+    .expect("valid regex");
+    if opportunity_re.is_match(blob) {
+        return OptimizationIntentProposalOutput { intent: false };
+    }
+    OptimizationIntentProposalOutput { intent: true }
+}
+
 pub fn compute_is_directive_clarification_proposal(
     input: &IsDirectiveClarificationProposalInput,
 ) -> IsDirectiveClarificationProposalOutput {
@@ -11181,6 +11238,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_infer_optimization_delta_encode_failed:{e}"));
+    }
+    if mode == "optimization_intent_proposal" {
+        let input = request
+            .optimization_intent_proposal_input
+            .ok_or_else(|| "autoscale_missing_optimization_intent_proposal_input".to_string())?;
+        let out = compute_optimization_intent_proposal(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "optimization_intent_proposal",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_optimization_intent_proposal_encode_failed:{e}"));
     }
     if mode == "is_directive_clarification_proposal" {
         let input = request
@@ -16250,6 +16319,32 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale infer_optimization_delta");
         assert!(out.contains("\"mode\":\"infer_optimization_delta\""));
+    }
+
+    #[test]
+    fn optimization_intent_proposal_detects_expected_terms() {
+        let out = compute_optimization_intent_proposal(&OptimizationIntentProposalInput {
+            proposal_type: Some("automation".to_string()),
+            blob: Some("optimize latency and throughput".to_string()),
+            has_actuation_meta: false,
+        });
+        assert!(out.intent);
+    }
+
+    #[test]
+    fn autoscale_json_optimization_intent_proposal_path_works() {
+        let payload = serde_json::json!({
+            "mode": "optimization_intent_proposal",
+            "optimization_intent_proposal_input": {
+                "proposal_type": "actuation",
+                "blob": "canary smoke test rollout",
+                "has_actuation_meta": true
+            }
+        })
+        .to_string();
+        let out =
+            run_autoscale_json(&payload).expect("autoscale optimization_intent_proposal");
+        assert!(out.contains("\"mode\":\"optimization_intent_proposal\""));
     }
 
     #[test]

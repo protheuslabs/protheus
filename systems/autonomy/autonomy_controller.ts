@@ -3070,6 +3070,20 @@ function isOptimizationIntentProposal(p) {
   const meta = proposal.meta && typeof proposal.meta === 'object' ? proposal.meta : {};
   const actuationMeta = meta.actuation && typeof meta.actuation === 'object' ? meta.actuation : null;
   const blob = proposalTextBlob(proposal);
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'optimization_intent_proposal',
+      {
+        proposal_type: type || null,
+        blob,
+        has_actuation_meta: !!actuationMeta
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return rust.payload.payload.intent === true;
+    }
+  }
   const canaryActuation =
     (type.startsWith('actuation_') || type === 'actuation' || !!actuationMeta)
     && /\bcanary\b|\bsmoke\s*test\b/i.test(blob);
@@ -20269,6 +20283,7 @@ module.exports = {
   percentMentionsFromText,
   optimizationMinDeltaPercent,
   inferOptimizationDeltaForProposal,
+  isOptimizationIntentProposal,
   sourceEyeRef,
   escapeRegExp,
   toolTokenMentioned,
