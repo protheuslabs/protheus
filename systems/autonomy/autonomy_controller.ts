@@ -945,22 +945,75 @@ function effectiveStrategyExploration(strategyOverride = null) {
 }
 
 function isExecuteMode(mode) {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'is_execute_mode',
+      { execution_mode: mode == null ? null : String(mode) },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return rust.payload.payload.execute_mode === true;
+    }
+  }
   return mode === 'execute' || mode === 'canary_execute';
 }
 
 function executionAllowedByFeatureFlag(executionMode, shadowOnly = false) {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'execution_allowed_by_feature_flag',
+      {
+        execution_mode: executionMode == null ? null : String(executionMode),
+        shadow_only: shadowOnly === true,
+        autonomy_enabled: String(process.env.AUTONOMY_ENABLED || '') === '1',
+        canary_allow_with_flag_off: AUTONOMY_CANARY_ALLOW_WITH_FLAG_OFF === true
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return rust.payload.payload.allowed === true;
+    }
+  }
   if (shadowOnly) return true;
   if (String(process.env.AUTONOMY_ENABLED || '') === '1') return true;
   return AUTONOMY_CANARY_ALLOW_WITH_FLAG_OFF && String(executionMode || '') === 'canary_execute';
 }
 
 function isTier1ObjectiveId(objectiveId) {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'is_tier1_objective_id',
+      { objective_id: objectiveId == null ? null : String(objectiveId) },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return rust.payload.payload.tier1 === true;
+    }
+  }
   const id = String(objectiveId || '').trim();
   if (!id) return false;
   return /^T1(?:\b|[_:-])/i.test(id);
 }
 
 function isTier1CandidateObjective(candidate) {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const c = candidate && typeof candidate === 'object' ? candidate : {};
+    const binding = c.objective_binding && typeof c.objective_binding === 'object' ? c.objective_binding : {};
+    const pulse = c.directive_pulse && typeof c.directive_pulse === 'object' ? c.directive_pulse : {};
+    const pulseTierRaw = Number(pulse.tier);
+    const rust = runBacklogAutoscalePrimitive(
+      'is_tier1_candidate_objective',
+      {
+        objective_binding_objective_id: binding.objective_id == null ? null : String(binding.objective_id),
+        directive_pulse_tier: Number.isFinite(pulseTierRaw) ? pulseTierRaw : null,
+        directive_pulse_objective_id: pulse.objective_id == null ? null : String(pulse.objective_id)
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return rust.payload.payload.tier1 === true;
+    }
+  }
   const c = candidate && typeof candidate === 'object' ? candidate : {};
   const binding = c.objective_binding && typeof c.objective_binding === 'object' ? c.objective_binding : {};
   const pulse = c.directive_pulse && typeof c.directive_pulse === 'object' ? c.directive_pulse : {};
@@ -972,6 +1025,22 @@ function isTier1CandidateObjective(candidate) {
 }
 
 function needsExecutionQuota(executionMode, shadowOnly, executedToday) {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const minDailyExecutions = Number(AUTONOMY_MIN_DAILY_EXECUTIONS);
+    const rust = runBacklogAutoscalePrimitive(
+      'needs_execution_quota',
+      {
+        execution_mode: executionMode == null ? null : String(executionMode),
+        shadow_only: shadowOnly === true,
+        executed_today: Number(executedToday || 0),
+        min_daily_executions: Number.isFinite(minDailyExecutions) ? minDailyExecutions : Number.NaN
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return rust.payload.payload.required === true;
+    }
+  }
   if (shadowOnly) return false;
   if (!isExecuteMode(executionMode)) return false;
   if (!Number.isFinite(Number(AUTONOMY_MIN_DAILY_EXECUTIONS)) || Number(AUTONOMY_MIN_DAILY_EXECUTIONS) <= 0) return false;
@@ -1067,6 +1136,16 @@ function saveCriteriaPatternMemory(memory) {
 }
 
 function normalizeCriteriaMetric(v) {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'normalize_criteria_metric',
+      { value: v == null ? null : String(v) },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return String(rust.payload.payload.metric || '');
+    }
+  }
   return normalizeSpaces(v).toLowerCase().replace(/[\s-]+/g, '_');
 }
 
@@ -3039,10 +3118,33 @@ function assessOptimizationGoodEnough(p, risk) {
 }
 
 function escapeRegExp(s) {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'escape_reg_exp',
+      { value: s == null ? null : String(s) },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return String(rust.payload.payload.escaped || '');
+    }
+  }
   return String(s == null ? '' : s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function toolTokenMentioned(blob, token) {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'tool_token_mentioned',
+      {
+        blob: blob == null ? null : String(blob),
+        token: token == null ? null : String(token)
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return rust.payload.payload.mentioned === true;
+    }
+  }
   const text = String(blob || '');
   const tok = String(token || '').trim().toLowerCase();
   if (!text || !tok) return false;
@@ -3639,6 +3741,21 @@ function policyHoldCooldownMinutesForResult(baseMinutes, pressure, lastPolicyHol
 }
 
 function policyHoldReasonFromEvent(evt) {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const row = evt && typeof evt === 'object' ? evt : {};
+    const rust = runBacklogAutoscalePrimitive(
+      'policy_hold_reason_from_event',
+      {
+        hold_reason: row.hold_reason == null ? null : String(row.hold_reason),
+        route_block_reason: row.route_block_reason == null ? null : String(row.route_block_reason),
+        result: row.result == null ? null : String(row.result)
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return String(rust.payload.payload.reason || '');
+    }
+  }
   const row = evt && typeof evt === 'object' ? evt : {};
   const explicit = normalizeSpaces(row.hold_reason || row.route_block_reason).toLowerCase();
   if (explicit) return explicit;
@@ -5972,6 +6089,26 @@ function asStringArray(v) {
 }
 
 function strategyMarkerTokens(strategy) {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const s = strategy && typeof strategy === 'object' ? strategy : {};
+    const objective = s.objective && typeof s.objective === 'object' ? s.objective : {};
+    const rust = runBacklogAutoscalePrimitive(
+      'strategy_marker_tokens',
+      {
+        objective_primary: objective.primary == null ? null : String(objective.primary),
+        objective_fitness_metric: objective.fitness_metric == null ? null : String(objective.fitness_metric),
+        objective_secondary: Array.isArray(objective.secondary) ? objective.secondary.map(v => String(v || '')) : [],
+        tags: Array.isArray(s.tags) ? s.tags.map(v => String(v || '')) : []
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const out = Array.isArray(rust.payload.payload.tokens)
+        ? rust.payload.payload.tokens.map(v => String(v || '')).filter(Boolean)
+        : [];
+      return uniqSorted(out);
+    }
+  }
   const s = strategy && typeof strategy === 'object' ? strategy : {};
   const objective = s.objective && typeof s.objective === 'object' ? s.objective : {};
   const textParts = [
@@ -19471,12 +19608,15 @@ module.exports = {
   normalizeDirectiveText,
   tokenizeDirectiveText,
   normalizeSpaces,
+  normalizeCriteriaMetric,
   parseLowerList,
   canaryFailedChecksAllowed,
   proposalTextBlob,
   percentMentionsFromText,
   optimizationMinDeltaPercent,
   sourceEyeRef,
+  escapeRegExp,
+  toolTokenMentioned,
   urlDomain,
   domainAllowed,
   normalizedRisk,
@@ -19485,6 +19625,13 @@ module.exports = {
   hasLinkedObjectiveEntry,
   isVerifiedEntryOutcome,
   isVerifiedRevenueAction,
+  isExecuteMode,
+  executionAllowedByFeatureFlag,
+  isTier1ObjectiveId,
+  isTier1CandidateObjective,
+  needsExecutionQuota,
+  policyHoldReasonFromEvent,
+  strategyMarkerTokens,
   toStem,
   directiveTokenHits,
   expectedValueScore,
