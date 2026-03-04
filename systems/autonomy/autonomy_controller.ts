@@ -2718,6 +2718,8 @@ const PROPOSAL_STATUS_CACHE = new Map();
 const PROPOSAL_STATUS_CACHE_MAX = 1024;
 const PROPOSAL_STATUS_FOR_QUEUE_PRESSURE_CACHE = new Map();
 const PROPOSAL_STATUS_FOR_QUEUE_PRESSURE_CACHE_MAX = 1024;
+const MINUTES_SINCE_TS_CACHE = new Map();
+const MINUTES_SINCE_TS_CACHE_MAX = 512;
 const POLICY_HOLD_RESULT_CACHE = new Map();
 const POLICY_HOLD_RESULT_CACHE_MAX = 256;
 const NO_PROGRESS_RESULT_CACHE = new Map();
@@ -3923,6 +3925,34 @@ function consecutiveGateExhaustedAttempts(events) {
 }
 
 function minutesSinceTs(ts) {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const tsRaw = String(ts || '');
+    const nowMs = Date.now();
+    const key = `${tsRaw}\u0000${nowMs}`;
+    if (MINUTES_SINCE_TS_CACHE.has(key)) {
+      return MINUTES_SINCE_TS_CACHE.get(key);
+    }
+    const rust = runBacklogAutoscalePrimitive(
+      'minutes_since_ts',
+      {
+        ts: tsRaw,
+        now_ms: nowMs
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const rawVal = rust.payload.payload.minutes_since;
+      const val = rawVal == null ? null : Number(rawVal);
+      if (val == null || Number.isFinite(val)) {
+        if (MINUTES_SINCE_TS_CACHE.size >= MINUTES_SINCE_TS_CACHE_MAX) {
+          const oldest = MINUTES_SINCE_TS_CACHE.keys().next();
+          if (!oldest.done) MINUTES_SINCE_TS_CACHE.delete(oldest.value);
+        }
+        MINUTES_SINCE_TS_CACHE.set(key, val);
+        return val;
+      }
+    }
+  }
   const d = parseIsoTs(ts);
   if (!d) return null;
   return (Date.now() - d.getTime()) / (1000 * 60);
@@ -17080,6 +17110,7 @@ module.exports = {
   isSafetyStopRunEvent,
   classifyNonYieldCategory,
   nonYieldReasonFromRun,
+  minutesSinceTs,
   runEventProposalType,
   runEventObjectiveId,
   runEventProposalId,

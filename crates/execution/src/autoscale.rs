@@ -497,6 +497,20 @@ pub struct ProposalStatusOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct MinutesSinceTsInput {
+    #[serde(default)]
+    pub ts: Option<String>,
+    #[serde(default)]
+    pub now_ms: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct MinutesSinceTsOutput {
+    #[serde(default)]
+    pub minutes_since: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct QosLaneUsageEventInput {
     #[serde(default)]
     pub event_type: Option<String>,
@@ -1042,6 +1056,8 @@ pub struct AutoscaleRequest {
     pub proposal_status_for_queue_pressure_input: Option<ProposalStatusForQueuePressureInput>,
     #[serde(default)]
     pub proposal_status_input: Option<ProposalStatusInput>,
+    #[serde(default)]
+    pub minutes_since_ts_input: Option<MinutesSinceTsInput>,
     #[serde(default)]
     pub no_progress_result_input: Option<NoProgressResultInput>,
     #[serde(default)]
@@ -2150,6 +2166,36 @@ pub fn compute_proposal_status_for_queue_pressure(
         status = explicit;
     }
     ProposalStatusForQueuePressureOutput { status }
+}
+
+pub fn compute_minutes_since_ts(input: &MinutesSinceTsInput) -> MinutesSinceTsOutput {
+    let ts_text = input
+        .ts
+        .as_ref()
+        .map(|v| v.trim())
+        .filter(|v| !v.is_empty());
+    let Some(ts_text) = ts_text else {
+        return MinutesSinceTsOutput {
+            minutes_since: None,
+        };
+    };
+    let parsed = DateTime::parse_from_rfc3339(ts_text)
+        .ok()
+        .map(|dt| dt.with_timezone(&Utc));
+    let Some(parsed) = parsed else {
+        return MinutesSinceTsOutput {
+            minutes_since: None,
+        };
+    };
+    let now_ms = input
+        .now_ms
+        .filter(|v| v.is_finite())
+        .unwrap_or_else(|| Utc::now().timestamp_millis() as f64);
+    let ts_ms = parsed.timestamp_millis() as f64;
+    let minutes_since = (now_ms - ts_ms) / 60000.0;
+    MinutesSinceTsOutput {
+        minutes_since: Some(minutes_since),
+    }
 }
 
 pub fn compute_qos_lane_usage(input: &QosLaneUsageInput) -> QosLaneUsageOutput {
@@ -3522,6 +3568,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
         }))
         .map_err(|e| format!("autoscale_proposal_status_for_queue_pressure_encode_failed:{e}"));
     }
+    if mode == "minutes_since_ts" {
+        let input = request
+            .minutes_since_ts_input
+            .ok_or_else(|| "autoscale_missing_minutes_since_ts_input".to_string())?;
+        let out = compute_minutes_since_ts(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "minutes_since_ts",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_minutes_since_ts_encode_failed:{e}"));
+    }
     if mode == "no_progress_result" {
         let input = request
             .no_progress_result_input
@@ -4733,6 +4791,37 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale proposal_status");
         assert!(out.contains("\"mode\":\"proposal_status\""));
+    }
+
+    #[test]
+    fn minutes_since_ts_uses_now_and_preserves_sign() {
+        let out = compute_minutes_since_ts(&MinutesSinceTsInput {
+            ts: Some("2026-03-03T11:00:00.000Z".to_string()),
+            now_ms: Some(1_772_539_200_000.0),
+        });
+        let minutes = out.minutes_since.expect("minutes_since");
+        assert!((minutes - 60.0).abs() < 0.000001);
+
+        let future = compute_minutes_since_ts(&MinutesSinceTsInput {
+            ts: Some("2026-03-03T13:00:00.000Z".to_string()),
+            now_ms: Some(1_772_539_200_000.0),
+        });
+        let future_minutes = future.minutes_since.expect("future minutes");
+        assert!((future_minutes + 60.0).abs() < 0.000001);
+    }
+
+    #[test]
+    fn autoscale_json_minutes_since_ts_path_works() {
+        let payload = serde_json::json!({
+            "mode": "minutes_since_ts",
+            "minutes_since_ts_input": {
+                "ts": "2026-03-03T11:00:00.000Z",
+                "now_ms": 1772539200000.0
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale minutes_since_ts");
+        assert!(out.contains("\"mode\":\"minutes_since_ts\""));
     }
 
     #[test]
