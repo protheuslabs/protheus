@@ -14467,10 +14467,29 @@ function chooseSelectionMode(eligible, priorRuns) {
   const executed = (priorRuns || []).filter(e => e && e.type === 'autonomy_run' && e.result === 'executed');
   const executedCount = executed.length;
   const exploreUsed = executed.filter(e => e.selection_mode === 'explore').length;
+  const exploitUsed = executed.filter(e => e.selection_mode === 'exploit').length;
   const quota = exploreQuotaForDay();
   const exp = effectiveStrategyExploration();
   const everyN = Math.max(1, Number(exp.every_n || AUTONOMY_EXPLORE_EVERY_N));
   const minEligible = Math.max(2, Number(exp.min_eligible || AUTONOMY_EXPLORE_MIN_ELIGIBLE));
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'choose_selection_mode',
+      {
+        eligible_len: Math.max(0, Number(eligible && eligible.length || 0)),
+        executed_count: executedCount,
+        explore_used: exploreUsed,
+        exploit_used: exploitUsed,
+        explore_quota: quota,
+        every_n: everyN,
+        min_eligible: minEligible
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return rust.payload.payload;
+    }
+  }
 
   let mode = 'exploit';
   let idx = 0;
@@ -14489,7 +14508,7 @@ function chooseSelectionMode(eligible, priorRuns) {
     index: idx,
     explore_used: exploreUsed,
     explore_quota: quota,
-    exploit_used: executed.filter(e => e.selection_mode === 'exploit').length
+    exploit_used: exploitUsed
   };
 }
 
@@ -20351,6 +20370,7 @@ module.exports = {
   assessUnlinkedOptimizationAdmission,
   assessOptimizationGoodEnough,
   proposalDependencySummary,
+  chooseSelectionMode,
   sourceEyeRef,
   escapeRegExp,
   toolTokenMentioned,

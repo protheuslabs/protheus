@@ -2467,6 +2467,26 @@ pub struct ProposalDependencySummaryOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ChooseSelectionModeInput {
+    pub eligible_len: u32,
+    pub executed_count: u32,
+    pub explore_used: u32,
+    pub exploit_used: u32,
+    pub explore_quota: u32,
+    pub every_n: u32,
+    pub min_eligible: u32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ChooseSelectionModeOutput {
+    pub mode: String,
+    pub index: u32,
+    pub explore_used: u32,
+    pub explore_quota: u32,
+    pub exploit_used: u32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct IsDirectiveClarificationProposalInput {
     #[serde(default)]
     pub proposal_type: Option<String>,
@@ -3631,6 +3651,8 @@ pub struct AutoscaleRequest {
     pub optimization_good_enough_input: Option<OptimizationGoodEnoughInput>,
     #[serde(default)]
     pub proposal_dependency_summary_input: Option<ProposalDependencySummaryInput>,
+    #[serde(default)]
+    pub choose_selection_mode_input: Option<ChooseSelectionModeInput>,
     #[serde(default)]
     pub is_directive_clarification_proposal_input: Option<IsDirectiveClarificationProposalInput>,
     #[serde(default)]
@@ -8044,6 +8066,30 @@ pub fn compute_proposal_dependency_summary(
     }
 }
 
+pub fn compute_choose_selection_mode(input: &ChooseSelectionModeInput) -> ChooseSelectionModeOutput {
+    let mut mode = "exploit".to_string();
+    let mut index: u32 = 0;
+    let eligible_len = input.eligible_len;
+    let min_eligible = input.min_eligible.max(2);
+    let every_n = input.every_n.max(1);
+    if eligible_len >= min_eligible
+        && input.explore_used < input.explore_quota
+        && input.executed_count > 0
+        && (input.executed_count % every_n) == 0
+    {
+        mode = "explore".to_string();
+        let middle = ((eligible_len as f64) / 2.0).floor() as u32;
+        index = middle.clamp(1, eligible_len.saturating_sub(1));
+    }
+    ChooseSelectionModeOutput {
+        mode,
+        index,
+        explore_used: input.explore_used,
+        explore_quota: input.explore_quota,
+        exploit_used: input.exploit_used,
+    }
+}
+
 pub fn compute_is_directive_clarification_proposal(
     input: &IsDirectiveClarificationProposalInput,
 ) -> IsDirectiveClarificationProposalOutput {
@@ -11631,6 +11677,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_proposal_dependency_summary_encode_failed:{e}"));
+    }
+    if mode == "choose_selection_mode" {
+        let input = request
+            .choose_selection_mode_input
+            .ok_or_else(|| "autoscale_missing_choose_selection_mode_input".to_string())?;
+        let out = compute_choose_selection_mode(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "choose_selection_mode",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_choose_selection_mode_encode_failed:{e}"));
     }
     if mode == "is_directive_clarification_proposal" {
         let input = request
@@ -16838,6 +16896,40 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale proposal_dependency_summary");
         assert!(out.contains("\"mode\":\"proposal_dependency_summary\""));
+    }
+
+    #[test]
+    fn choose_selection_mode_switches_to_explore_on_cadence() {
+        let out = compute_choose_selection_mode(&ChooseSelectionModeInput {
+            eligible_len: 6,
+            executed_count: 4,
+            explore_used: 1,
+            exploit_used: 3,
+            explore_quota: 5,
+            every_n: 2,
+            min_eligible: 2,
+        });
+        assert_eq!(out.mode, "explore");
+        assert!(out.index >= 1);
+    }
+
+    #[test]
+    fn autoscale_json_choose_selection_mode_path_works() {
+        let payload = serde_json::json!({
+            "mode": "choose_selection_mode",
+            "choose_selection_mode_input": {
+                "eligible_len": 3,
+                "executed_count": 1,
+                "explore_used": 0,
+                "exploit_used": 1,
+                "explore_quota": 2,
+                "every_n": 1,
+                "min_eligible": 2
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale choose_selection_mode");
+        assert!(out.contains("\"mode\":\"choose_selection_mode\""));
     }
 
     #[test]
