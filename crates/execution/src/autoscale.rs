@@ -679,6 +679,17 @@ pub struct RiskPenaltyOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct EstimateTokensInput {
+    #[serde(default)]
+    pub expected_impact: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct EstimateTokensOutput {
+    pub est_tokens: u32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct CompositeEligibilityScoreInput {
     pub quality_score: f64,
     pub directive_fit_score: f64,
@@ -1350,6 +1361,8 @@ pub struct AutoscaleRequest {
     pub impact_weight_input: Option<ImpactWeightInput>,
     #[serde(default)]
     pub risk_penalty_input: Option<RiskPenaltyInput>,
+    #[serde(default)]
+    pub estimate_tokens_input: Option<EstimateTokensInput>,
     #[serde(default)]
     pub composite_eligibility_score_input: Option<CompositeEligibilityScoreInput>,
     #[serde(default)]
@@ -2544,6 +2557,22 @@ pub fn compute_risk_penalty(input: &RiskPenaltyInput) -> RiskPenaltyOutput {
         0
     };
     RiskPenaltyOutput { penalty }
+}
+
+pub fn compute_estimate_tokens(input: &EstimateTokensInput) -> EstimateTokensOutput {
+    let impact = input
+        .expected_impact
+        .as_ref()
+        .map(|v| v.trim().to_ascii_lowercase())
+        .unwrap_or_default();
+    let est_tokens = if impact == "high" {
+        1400
+    } else if impact == "medium" {
+        800
+    } else {
+        300
+    };
+    EstimateTokensOutput { est_tokens }
 }
 
 pub fn compute_composite_eligibility_score(
@@ -4451,6 +4480,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
         }))
         .map_err(|e| format!("autoscale_risk_penalty_encode_failed:{e}"));
     }
+    if mode == "estimate_tokens" {
+        let input = request
+            .estimate_tokens_input
+            .ok_or_else(|| "autoscale_missing_estimate_tokens_input".to_string())?;
+        let out = compute_estimate_tokens(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "estimate_tokens",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_estimate_tokens_encode_failed:{e}"));
+    }
     if mode == "composite_eligibility_score" {
         let input = request
             .composite_eligibility_score_input
@@ -6095,6 +6136,31 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale risk_penalty");
         assert!(out.contains("\"mode\":\"risk_penalty\""));
+    }
+
+    #[test]
+    fn estimate_tokens_maps_expected_impact() {
+        let high = compute_estimate_tokens(&EstimateTokensInput {
+            expected_impact: Some("high".to_string()),
+        });
+        assert_eq!(high.est_tokens, 1400);
+        let low = compute_estimate_tokens(&EstimateTokensInput {
+            expected_impact: Some("low".to_string()),
+        });
+        assert_eq!(low.est_tokens, 300);
+    }
+
+    #[test]
+    fn autoscale_json_estimate_tokens_path_works() {
+        let payload = serde_json::json!({
+            "mode": "estimate_tokens",
+            "estimate_tokens_input": {
+                "expected_impact": "medium"
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale estimate_tokens");
+        assert!(out.contains("\"mode\":\"estimate_tokens\""));
     }
 
     #[test]

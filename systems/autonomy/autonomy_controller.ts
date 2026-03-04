@@ -2433,6 +2433,25 @@ function riskPenalty(p) {
 
 function estimateTokens(p) {
   const impact = String(p && p.expected_impact || '').toLowerCase();
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    if (ESTIMATE_TOKENS_CACHE.has(impact)) {
+      return ESTIMATE_TOKENS_CACHE.get(impact);
+    }
+    const rust = runBacklogAutoscalePrimitive(
+      'estimate_tokens',
+      { expected_impact: impact },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const val = Math.max(80, Math.round(Number(rust.payload.payload.est_tokens || 300)));
+      if (ESTIMATE_TOKENS_CACHE.size >= ESTIMATE_TOKENS_CACHE_MAX) {
+        const oldest = ESTIMATE_TOKENS_CACHE.keys().next();
+        if (!oldest.done) ESTIMATE_TOKENS_CACHE.delete(oldest.value);
+      }
+      ESTIMATE_TOKENS_CACHE.set(impact, val);
+      return val;
+    }
+  }
   if (impact === 'high') return 1400;
   if (impact === 'medium') return 800;
   return 300;
@@ -2768,6 +2787,8 @@ const IMPACT_WEIGHT_CACHE = new Map();
 const IMPACT_WEIGHT_CACHE_MAX = 512;
 const RISK_PENALTY_CACHE = new Map();
 const RISK_PENALTY_CACHE_MAX = 512;
+const ESTIMATE_TOKENS_CACHE = new Map();
+const ESTIMATE_TOKENS_CACHE_MAX = 512;
 const COMPOSITE_ELIGIBILITY_SCORE_CACHE = new Map();
 const COMPOSITE_ELIGIBILITY_SCORE_CACHE_MAX = 1024;
 const TIME_TO_VALUE_SCORE_CACHE = new Map();
