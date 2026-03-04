@@ -2193,6 +2193,37 @@ pub struct SpawnAllocatedCellsOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct SpawnCapacityBoostRowInput {
+    #[serde(default)]
+    pub r#type: Option<String>,
+    #[serde(default)]
+    pub ts: Option<String>,
+    #[serde(default)]
+    pub granted_cells: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct SpawnCapacityBoostSnapshotInput {
+    pub enabled: bool,
+    pub lookback_minutes: f64,
+    pub min_granted_cells: f64,
+    pub now_ms: f64,
+    #[serde(default)]
+    pub rows: Vec<SpawnCapacityBoostRowInput>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct SpawnCapacityBoostSnapshotOutput {
+    pub enabled: bool,
+    pub active: bool,
+    pub lookback_minutes: f64,
+    pub min_granted_cells: f64,
+    pub grant_count: i64,
+    pub granted_cells: f64,
+    pub latest_ts: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AutoscaleRequest {
     pub mode: String,
     #[serde(default)]
@@ -2419,6 +2450,8 @@ pub struct AutoscaleRequest {
     pub normalize_backlog_autoscale_state_input: Option<NormalizeBacklogAutoscaleStateInput>,
     #[serde(default)]
     pub spawn_allocated_cells_input: Option<SpawnAllocatedCellsInput>,
+    #[serde(default)]
+    pub spawn_capacity_boost_snapshot_input: Option<SpawnCapacityBoostSnapshotInput>,
 }
 
 fn clamp_ratio(v: f64) -> f64 {
@@ -6735,6 +6768,69 @@ pub fn compute_spawn_allocated_cells(input: &SpawnAllocatedCellsInput) -> SpawnA
     }
 }
 
+pub fn compute_spawn_capacity_boost_snapshot(
+    input: &SpawnCapacityBoostSnapshotInput,
+) -> SpawnCapacityBoostSnapshotOutput {
+    let base = SpawnCapacityBoostSnapshotOutput {
+        enabled: input.enabled,
+        active: false,
+        lookback_minutes: input.lookback_minutes.max(0.0),
+        min_granted_cells: input.min_granted_cells.max(0.0),
+        grant_count: 0,
+        granted_cells: 0.0,
+        latest_ts: None,
+    };
+    if !input.enabled {
+        return base;
+    }
+    if input.rows.is_empty() {
+        return base;
+    }
+    let now_ms = if input.now_ms.is_finite() {
+        input.now_ms
+    } else {
+        Utc::now().timestamp_millis() as f64
+    };
+    let cutoff_ms = now_ms - (base.lookback_minutes * 60000.0);
+    let mut grant_count: i64 = 0;
+    let mut granted_cells: f64 = 0.0;
+    let mut latest_ts: Option<String> = None;
+
+    for row in input.rows.iter().rev() {
+        let row_type = row.r#type.as_deref().unwrap_or("").trim().to_ascii_lowercase();
+        if row_type != "spawn_request" {
+            continue;
+        }
+        let Some(ts_raw) = row.ts.as_deref() else {
+            continue;
+        };
+        let Some(ts_ms) = parse_rfc3339_ts_ms(ts_raw.trim()) else {
+            continue;
+        };
+        if (ts_ms as f64) < cutoff_ms {
+            break;
+        }
+        let granted = row.granted_cells.unwrap_or(0.0);
+        if !granted.is_finite() || granted < base.min_granted_cells {
+            continue;
+        }
+        grant_count += 1;
+        granted_cells += granted;
+        if latest_ts.is_none() {
+            latest_ts = Some(ts_raw.trim().to_string());
+        }
+    }
+    SpawnCapacityBoostSnapshotOutput {
+        enabled: base.enabled,
+        active: grant_count > 0,
+        lookback_minutes: base.lookback_minutes,
+        min_granted_cells: base.min_granted_cells,
+        grant_count,
+        granted_cells: (granted_cells * 1000.0).round() / 1000.0,
+        latest_ts,
+    }
+}
+
 pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
     let request: AutoscaleRequest = serde_json::from_str(payload_json)
         .map_err(|e| format!("autoscale_request_parse_failed:{e}"))?;
@@ -6774,6 +6870,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_spawn_allocated_cells_encode_failed:{e}"));
+    }
+    if mode == "spawn_capacity_boost_snapshot" {
+        let input = request
+            .spawn_capacity_boost_snapshot_input
+            .ok_or_else(|| "autoscale_missing_spawn_capacity_boost_snapshot_input".to_string())?;
+        let out = compute_spawn_capacity_boost_snapshot(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "spawn_capacity_boost_snapshot",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_spawn_capacity_boost_snapshot_encode_failed:{e}"));
     }
     if mode == "plan" {
         let input = request
@@ -12337,5 +12445,55 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale spawn_allocated_cells");
         assert!(out.contains("\"mode\":\"spawn_allocated_cells\""));
+    }
+
+    #[test]
+    fn spawn_capacity_boost_snapshot_counts_recent_spawn_grants() {
+        let out = compute_spawn_capacity_boost_snapshot(&SpawnCapacityBoostSnapshotInput {
+            enabled: true,
+            lookback_minutes: 30.0,
+            min_granted_cells: 1.0,
+            now_ms: 1_700_000_000_000.0,
+            rows: vec![
+                SpawnCapacityBoostRowInput {
+                    r#type: Some("spawn_request".to_string()),
+                    ts: Some("2023-11-14T22:13:20.000Z".to_string()),
+                    granted_cells: Some(2.0),
+                },
+                SpawnCapacityBoostRowInput {
+                    r#type: Some("spawn_request".to_string()),
+                    ts: Some("2023-11-14T22:12:20.000Z".to_string()),
+                    granted_cells: Some(1.0),
+                },
+            ],
+        });
+        assert!(out.active);
+        assert_eq!(out.grant_count, 2);
+        assert_eq!(out.granted_cells, 3.0);
+        assert_eq!(out.latest_ts, Some("2023-11-14T22:12:20.000Z".to_string()));
+    }
+
+    #[test]
+    fn autoscale_json_spawn_capacity_boost_snapshot_path_works() {
+        let payload = serde_json::json!({
+            "mode": "spawn_capacity_boost_snapshot",
+            "spawn_capacity_boost_snapshot_input": {
+                "enabled": true,
+                "lookback_minutes": 30,
+                "min_granted_cells": 1,
+                "now_ms": 1700000000000i64,
+                "rows": [
+                    {
+                        "type": "spawn_request",
+                        "ts": "2023-11-14T22:13:20.000Z",
+                        "granted_cells": 1
+                    }
+                ]
+            }
+        })
+        .to_string();
+        let out =
+            run_autoscale_json(&payload).expect("autoscale spawn_capacity_boost_snapshot");
+        assert!(out.contains("\"mode\":\"spawn_capacity_boost_snapshot\""));
     }
 }

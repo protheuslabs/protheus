@@ -1434,6 +1434,22 @@ function spawnCapacityBoostSnapshot(nowMs = Date.now()) {
   if (!AUTONOMY_DYNAMIC_IO_CAP_RESET_ON_SPAWN) return base;
   const rows = readJsonl(SPAWN_EVENTS_PATH);
   if (!rows.length) return base;
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'spawn_capacity_boost_snapshot',
+      {
+        enabled: AUTONOMY_DYNAMIC_IO_CAP_RESET_ON_SPAWN,
+        lookback_minutes: AUTONOMY_DYNAMIC_IO_CAP_SPAWN_LOOKBACK_MINUTES,
+        min_granted_cells: AUTONOMY_DYNAMIC_IO_CAP_SPAWN_MIN_GRANTED_CELLS,
+        now_ms: Number(nowMs),
+        rows
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return rust.payload.payload;
+    }
+  }
   const cutoffMs = Number(nowMs) - (AUTONOMY_DYNAMIC_IO_CAP_SPAWN_LOOKBACK_MINUTES * 60000);
   let grantCount = 0;
   let grantedCells = 0;
