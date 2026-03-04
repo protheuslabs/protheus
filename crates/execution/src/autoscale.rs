@@ -1101,6 +1101,23 @@ pub struct DirectiveTierWeightOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct DirectiveTierMinShareInput {
+    #[serde(default)]
+    pub tier: Option<f64>,
+    #[serde(default)]
+    pub fallback: Option<f64>,
+    #[serde(default)]
+    pub t1_min_share: f64,
+    #[serde(default)]
+    pub t2_min_share: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct DirectiveTierMinShareOutput {
+    pub min_share: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ExecutionReserveSnapshotInput {
     pub cap: f64,
     pub used: f64,
@@ -1825,6 +1842,8 @@ pub struct AutoscaleRequest {
     pub value_density_score_input: Option<ValueDensityScoreInput>,
     #[serde(default)]
     pub directive_tier_weight_input: Option<DirectiveTierWeightInput>,
+    #[serde(default)]
+    pub directive_tier_min_share_input: Option<DirectiveTierMinShareInput>,
     #[serde(default)]
     pub execution_reserve_snapshot_input: Option<ExecutionReserveSnapshotInput>,
     #[serde(default)]
@@ -3864,6 +3883,35 @@ pub fn compute_directive_tier_weight(
         0.7
     };
     DirectiveTierWeightOutput { weight }
+}
+
+pub fn compute_directive_tier_min_share(
+    input: &DirectiveTierMinShareInput,
+) -> DirectiveTierMinShareOutput {
+    let fallback = input
+        .fallback
+        .filter(|v| v.is_finite())
+        .unwrap_or(3.0);
+    let raw = input
+        .tier
+        .filter(|v| v.is_finite())
+        .unwrap_or(fallback);
+    let normalized_tier = raw.round().max(1.0);
+    let clamp_ratio = |value: f64| -> f64 {
+        if !value.is_finite() {
+            0.0
+        } else {
+            value.clamp(0.0, 1.0)
+        }
+    };
+    let min_share = if normalized_tier <= 1.0 {
+        clamp_ratio(input.t1_min_share)
+    } else if normalized_tier <= 2.0 {
+        clamp_ratio(input.t2_min_share)
+    } else {
+        0.0
+    };
+    DirectiveTierMinShareOutput { min_share }
 }
 
 pub fn compute_execution_reserve_snapshot(
@@ -6050,6 +6098,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_directive_tier_weight_encode_failed:{e}"));
+    }
+    if mode == "directive_tier_min_share" {
+        let input = request
+            .directive_tier_min_share_input
+            .ok_or_else(|| "autoscale_missing_directive_tier_min_share_input".to_string())?;
+        let out = compute_directive_tier_min_share(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "directive_tier_min_share",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_directive_tier_min_share_encode_failed:{e}"));
     }
     if mode == "execution_reserve_snapshot" {
         let input = request
@@ -8537,6 +8597,50 @@ mod tests {
         let out = run_autoscale_json(&payload).expect("autoscale directive_tier_weight");
         assert!(out.contains("\"mode\":\"directive_tier_weight\""));
         assert!(out.contains("\"weight\":0.7"));
+    }
+
+    #[test]
+    fn directive_tier_min_share_matches_tier_policy() {
+        let t1 = compute_directive_tier_min_share(&DirectiveTierMinShareInput {
+            tier: Some(1.0),
+            fallback: Some(3.0),
+            t1_min_share: 0.35,
+            t2_min_share: 0.2,
+        });
+        assert!((t1.min_share - 0.35).abs() < 0.000001);
+
+        let t2 = compute_directive_tier_min_share(&DirectiveTierMinShareInput {
+            tier: Some(2.0),
+            fallback: Some(3.0),
+            t1_min_share: 0.35,
+            t2_min_share: 0.2,
+        });
+        assert!((t2.min_share - 0.2).abs() < 0.000001);
+
+        let t3 = compute_directive_tier_min_share(&DirectiveTierMinShareInput {
+            tier: Some(3.0),
+            fallback: Some(3.0),
+            t1_min_share: 0.35,
+            t2_min_share: 0.2,
+        });
+        assert!((t3.min_share - 0.0).abs() < 0.000001);
+    }
+
+    #[test]
+    fn autoscale_json_directive_tier_min_share_path_works() {
+        let payload = serde_json::json!({
+            "mode": "directive_tier_min_share",
+            "directive_tier_min_share_input": {
+                "tier": 2,
+                "fallback": 3,
+                "t1_min_share": 0.35,
+                "t2_min_share": 0.2
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale directive_tier_min_share");
+        assert!(out.contains("\"mode\":\"directive_tier_min_share\""));
+        assert!(out.contains("\"min_share\":0.2"));
     }
 
     #[test]

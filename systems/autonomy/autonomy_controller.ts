@@ -2831,6 +2831,8 @@ const VALUE_DENSITY_SCORE_CACHE = new Map();
 const VALUE_DENSITY_SCORE_CACHE_MAX = 1024;
 const DIRECTIVE_TIER_WEIGHT_CACHE = new Map();
 const DIRECTIVE_TIER_WEIGHT_CACHE_MAX = 256;
+const DIRECTIVE_TIER_MIN_SHARE_CACHE = new Map();
+const DIRECTIVE_TIER_MIN_SHARE_CACHE_MAX = 256;
 const EXECUTION_RESERVE_SNAPSHOT_CACHE = new Map();
 const EXECUTION_RESERVE_SNAPSHOT_CACHE_MAX = 512;
 const BUDGET_PACING_GATE_CACHE = new Map();
@@ -5501,6 +5503,38 @@ function directiveTierWeight(tier) {
 }
 
 function directiveTierMinShare(tier) {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const tierRaw = Number(tier);
+    const t1 = Number(AUTONOMY_DIRECTIVE_PULSE_T1_MIN_SHARE || 0);
+    const t2 = Number(AUTONOMY_DIRECTIVE_PULSE_T2_MIN_SHARE || 0);
+    const cacheKey = [
+      Number.isFinite(tierRaw) ? String(tierRaw) : 'NaN',
+      String(t1),
+      String(t2)
+    ].join('\u0000');
+    if (DIRECTIVE_TIER_MIN_SHARE_CACHE.has(cacheKey)) {
+      return DIRECTIVE_TIER_MIN_SHARE_CACHE.get(cacheKey);
+    }
+    const rust = runBacklogAutoscalePrimitive(
+      'directive_tier_min_share',
+      {
+        tier: Number.isFinite(tierRaw) ? tierRaw : null,
+        fallback: 3,
+        t1_min_share: t1,
+        t2_min_share: t2
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const minShare = clampNumber(Number(rust.payload.payload.min_share || 0), 0, 1);
+      if (DIRECTIVE_TIER_MIN_SHARE_CACHE.size >= DIRECTIVE_TIER_MIN_SHARE_CACHE_MAX) {
+        const oldest = DIRECTIVE_TIER_MIN_SHARE_CACHE.keys().next();
+        if (!oldest.done) DIRECTIVE_TIER_MIN_SHARE_CACHE.delete(oldest.value);
+      }
+      DIRECTIVE_TIER_MIN_SHARE_CACHE.set(cacheKey, minShare);
+      return minShare;
+    }
+  }
   const t = normalizeDirectiveTier(tier, 3);
   if (t <= 1) return clampNumber(Number(AUTONOMY_DIRECTIVE_PULSE_T1_MIN_SHARE || 0), 0, 1);
   if (t === 2) return clampNumber(Number(AUTONOMY_DIRECTIVE_PULSE_T2_MIN_SHARE || 0), 0, 1);
@@ -18569,6 +18603,7 @@ module.exports = {
   strategyTritShadowAdjustedScore,
   strategyCircuitCooldownHours,
   directiveTierWeight,
+  directiveTierMinShare,
   strategyTritShadowForCandidate,
   strategyTritShadowRankingSummary,
   candidateNonYieldPenaltySignal,
