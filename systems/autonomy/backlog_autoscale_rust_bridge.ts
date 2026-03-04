@@ -495,7 +495,17 @@ function runInversionPrimitive(mode: string, data: AnyObj = {}, opts: AnyObj = {
     normalize_observer_id: 'normalize_observer_id_input',
     extract_numeric: 'extract_numeric_input',
     pick_first_numeric: 'pick_first_numeric_input',
-    safe_rel_path: 'safe_rel_path_input'
+    safe_rel_path: 'safe_rel_path_input',
+    now_iso: 'now_iso_input',
+    default_tier_event_map: 'default_tier_event_map_input',
+    coerce_tier_event_map: 'coerce_tier_event_map_input',
+    default_harness_state: 'default_harness_state_input',
+    default_first_principle_lock_state: 'default_first_principle_lock_state_input',
+    default_maturity_state: 'default_maturity_state_input',
+    principle_key_for_session: 'principle_key_for_session_input',
+    normalize_objective_arg: 'normalize_objective_arg_input',
+    maturity_band_order: 'maturity_band_order_input',
+    current_runtime_mode: 'current_runtime_mode_input'
   };
   const field = fieldByMode[normalizedMode];
   if (!field) return { ok: false, error: `inversion_mode_unsupported:${normalizedMode}` };

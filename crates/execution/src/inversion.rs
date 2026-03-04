@@ -997,6 +997,120 @@ pub struct SafeRelPathOutput {
     pub value: String,
 }
 
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct NowIsoInput {}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct NowIsoOutput {
+    pub value: String,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct DefaultTierEventMapInput {}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct DefaultTierEventMapOutput {
+    pub map: Value,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct CoerceTierEventMapInput {
+    #[serde(default)]
+    pub map: Option<Value>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct CoerceTierEventMapOutput {
+    pub map: Value,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct GetTierScopeInput {
+    #[serde(default)]
+    pub state: Option<Value>,
+    #[serde(default)]
+    pub policy_version: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct GetTierScopeOutput {
+    pub state: Value,
+    pub scope: Value,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct DefaultHarnessStateInput {}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct DefaultHarnessStateOutput {
+    pub state: Value,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct DefaultFirstPrincipleLockStateInput {}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct DefaultFirstPrincipleLockStateOutput {
+    pub state: Value,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct DefaultMaturityStateInput {}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct DefaultMaturityStateOutput {
+    pub state: Value,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct PrincipleKeyForSessionInput {
+    #[serde(default)]
+    pub objective_id: Option<String>,
+    #[serde(default)]
+    pub objective: Option<String>,
+    #[serde(default)]
+    pub target: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct PrincipleKeyForSessionOutput {
+    pub key: String,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct NormalizeObjectiveArgInput {
+    #[serde(default)]
+    pub value: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct NormalizeObjectiveArgOutput {
+    pub value: String,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct MaturityBandOrderInput {}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct MaturityBandOrderOutput {
+    pub bands: Vec<String>,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct CurrentRuntimeModeInput {
+    #[serde(default)]
+    pub env_mode: Option<String>,
+    #[serde(default)]
+    pub args_mode: Option<String>,
+    #[serde(default)]
+    pub policy_runtime_mode: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct CurrentRuntimeModeOutput {
+    pub mode: String,
+}
+
 fn normalize_token(raw: &str, max_len: usize) -> String {
     let collapsed = raw
         .split_whitespace()
@@ -2600,6 +2714,205 @@ pub fn compute_safe_rel_path(input: &SafeRelPathInput) -> SafeRelPathOutput {
     SafeRelPathOutput { value }
 }
 
+pub fn compute_now_iso(_input: &NowIsoInput) -> NowIsoOutput {
+    NowIsoOutput {
+        value: now_iso_runtime(),
+    }
+}
+
+pub fn compute_default_tier_event_map(
+    _input: &DefaultTierEventMapInput,
+) -> DefaultTierEventMapOutput {
+    DefaultTierEventMapOutput {
+        map: default_tier_event_map_value(),
+    }
+}
+
+pub fn compute_coerce_tier_event_map(input: &CoerceTierEventMapInput) -> CoerceTierEventMapOutput {
+    let src = input.map.as_ref().and_then(|v| v.as_object()).cloned();
+    let mut map = serde_json::Map::new();
+    for target in TIER_TARGETS {
+        let rows = src
+            .as_ref()
+            .and_then(|obj| obj.get(target))
+            .and_then(|v| v.as_array())
+            .cloned()
+            .unwrap_or_default()
+            .iter()
+            .map(|row| value_to_string(Some(row)))
+            .collect::<Vec<_>>();
+        map.insert(
+            target.to_string(),
+            Value::Array(rows.into_iter().map(Value::String).collect::<Vec<_>>()),
+        );
+    }
+    CoerceTierEventMapOutput {
+        map: Value::Object(map),
+    }
+}
+
+pub fn compute_get_tier_scope(input: &GetTierScopeInput) -> GetTierScopeOutput {
+    let safe_version = clean_text_runtime(input.policy_version.as_deref().unwrap_or("1.0"), 24);
+    let policy_version = if safe_version.is_empty() {
+        "1.0".to_string()
+    } else {
+        safe_version
+    };
+    let mut state = input
+        .state
+        .as_ref()
+        .and_then(|v| v.as_object())
+        .cloned()
+        .unwrap_or_default();
+
+    let mut scopes = state
+        .get("scopes")
+        .and_then(|v| v.as_object())
+        .cloned()
+        .unwrap_or_default();
+    if !scopes
+        .get(&policy_version)
+        .map(|v| v.is_object())
+        .unwrap_or(false)
+    {
+        scopes.insert(
+            policy_version.clone(),
+            compute_default_tier_scope(&DefaultTierScopeInput::default()).scope,
+        );
+    }
+    let scope = scopes
+        .get(&policy_version)
+        .cloned()
+        .unwrap_or_else(|| compute_default_tier_scope(&DefaultTierScopeInput::default()).scope);
+    state.insert("scopes".to_string(), Value::Object(scopes));
+    GetTierScopeOutput {
+        state: Value::Object(state),
+        scope,
+    }
+}
+
+pub fn compute_default_harness_state(
+    _input: &DefaultHarnessStateInput,
+) -> DefaultHarnessStateOutput {
+    DefaultHarnessStateOutput {
+        state: json!({
+            "schema_id": "inversion_maturity_harness_state",
+            "schema_version": "1.0",
+            "updated_at": now_iso_runtime(),
+            "last_run_ts": Value::Null,
+            "cursor": 0
+        }),
+    }
+}
+
+pub fn compute_default_first_principle_lock_state(
+    _input: &DefaultFirstPrincipleLockStateInput,
+) -> DefaultFirstPrincipleLockStateOutput {
+    DefaultFirstPrincipleLockStateOutput {
+        state: json!({
+            "schema_id": "inversion_first_principle_lock_state",
+            "schema_version": "1.0",
+            "updated_at": now_iso_runtime(),
+            "locks": {}
+        }),
+    }
+}
+
+pub fn compute_default_maturity_state(
+    _input: &DefaultMaturityStateInput,
+) -> DefaultMaturityStateOutput {
+    DefaultMaturityStateOutput {
+        state: json!({
+            "schema_id": "inversion_maturity_state",
+            "schema_version": "1.0",
+            "updated_at": now_iso_runtime(),
+            "stats": {
+                "total_tests": 0,
+                "passed_tests": 0,
+                "failed_tests": 0,
+                "safe_failures": 0,
+                "destructive_failures": 0
+            },
+            "recent_tests": [],
+            "score": 0,
+            "band": "novice"
+        }),
+    }
+}
+
+pub fn compute_principle_key_for_session(
+    input: &PrincipleKeyForSessionInput,
+) -> PrincipleKeyForSessionOutput {
+    let objective_part = clean_text_runtime(
+        input
+            .objective_id
+            .as_deref()
+            .or(input.objective.as_deref())
+            .unwrap_or(""),
+        240,
+    )
+    .to_lowercase();
+    let mut hasher = Sha256::new();
+    hasher.update(objective_part.as_bytes());
+    let digest = format!("{:x}", hasher.finalize());
+    let key = format!(
+        "{}::{}",
+        compute_normalize_target(&NormalizeTargetInput {
+            value: Some(input.target.clone().unwrap_or_else(|| "tactical".to_string())),
+        })
+        .value,
+        &digest[..16]
+    );
+    PrincipleKeyForSessionOutput { key }
+}
+
+pub fn compute_normalize_objective_arg(
+    input: &NormalizeObjectiveArgInput,
+) -> NormalizeObjectiveArgOutput {
+    NormalizeObjectiveArgOutput {
+        value: clean_text_runtime(input.value.as_deref().unwrap_or(""), 420),
+    }
+}
+
+pub fn compute_maturity_band_order(_input: &MaturityBandOrderInput) -> MaturityBandOrderOutput {
+    MaturityBandOrderOutput {
+        bands: vec![
+            "novice".to_string(),
+            "developing".to_string(),
+            "mature".to_string(),
+            "seasoned".to_string(),
+            "legendary".to_string(),
+        ],
+    }
+}
+
+pub fn compute_current_runtime_mode(input: &CurrentRuntimeModeInput) -> CurrentRuntimeModeOutput {
+    let env_mode = compute_normalize_mode(&NormalizeModeInput {
+        value: input.env_mode.clone(),
+    })
+    .value;
+    if input
+        .env_mode
+        .as_deref()
+        .map(|row| !row.is_empty())
+        .unwrap_or(false)
+    {
+        return CurrentRuntimeModeOutput { mode: env_mode };
+    }
+    let args_mode = compute_normalize_mode(&NormalizeModeInput {
+        value: input.args_mode.clone(),
+    })
+    .value;
+    if input.args_mode.is_some() {
+        return CurrentRuntimeModeOutput { mode: args_mode };
+    }
+    let mode = compute_normalize_mode(&NormalizeModeInput {
+        value: input.policy_runtime_mode.clone(),
+    })
+    .value;
+    CurrentRuntimeModeOutput { mode }
+}
+
 pub fn compute_creative_penalty(input: &CreativePenaltyInput) -> CreativePenaltyOutput {
     let preferred = input
         .preferred_creative_lane_ids
@@ -3979,6 +4292,117 @@ pub fn run_inversion_json(payload_json: &str) -> Result<String, String> {
         }))
         .map_err(|e| format!("inversion_encode_safe_rel_path_failed:{e}"));
     }
+    if mode == "now_iso" {
+        let input: NowIsoInput = decode_input(&payload, "now_iso_input")?;
+        let out = compute_now_iso(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "now_iso",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_now_iso_failed:{e}"));
+    }
+    if mode == "default_tier_event_map" {
+        let input: DefaultTierEventMapInput = decode_input(&payload, "default_tier_event_map_input")?;
+        let out = compute_default_tier_event_map(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "default_tier_event_map",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_default_tier_event_map_failed:{e}"));
+    }
+    if mode == "coerce_tier_event_map" {
+        let input: CoerceTierEventMapInput = decode_input(&payload, "coerce_tier_event_map_input")?;
+        let out = compute_coerce_tier_event_map(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "coerce_tier_event_map",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_coerce_tier_event_map_failed:{e}"));
+    }
+    if mode == "get_tier_scope" {
+        let input: GetTierScopeInput = decode_input(&payload, "get_tier_scope_input")?;
+        let out = compute_get_tier_scope(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "get_tier_scope",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_get_tier_scope_failed:{e}"));
+    }
+    if mode == "default_harness_state" {
+        let input: DefaultHarnessStateInput = decode_input(&payload, "default_harness_state_input")?;
+        let out = compute_default_harness_state(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "default_harness_state",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_default_harness_state_failed:{e}"));
+    }
+    if mode == "default_first_principle_lock_state" {
+        let input: DefaultFirstPrincipleLockStateInput =
+            decode_input(&payload, "default_first_principle_lock_state_input")?;
+        let out = compute_default_first_principle_lock_state(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "default_first_principle_lock_state",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_default_first_principle_lock_state_failed:{e}"));
+    }
+    if mode == "default_maturity_state" {
+        let input: DefaultMaturityStateInput = decode_input(&payload, "default_maturity_state_input")?;
+        let out = compute_default_maturity_state(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "default_maturity_state",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_default_maturity_state_failed:{e}"));
+    }
+    if mode == "principle_key_for_session" {
+        let input: PrincipleKeyForSessionInput = decode_input(&payload, "principle_key_for_session_input")?;
+        let out = compute_principle_key_for_session(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "principle_key_for_session",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_principle_key_for_session_failed:{e}"));
+    }
+    if mode == "normalize_objective_arg" {
+        let input: NormalizeObjectiveArgInput = decode_input(&payload, "normalize_objective_arg_input")?;
+        let out = compute_normalize_objective_arg(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "normalize_objective_arg",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_normalize_objective_arg_failed:{e}"));
+    }
+    if mode == "maturity_band_order" {
+        let input: MaturityBandOrderInput = decode_input(&payload, "maturity_band_order_input")?;
+        let out = compute_maturity_band_order(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "maturity_band_order",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_maturity_band_order_failed:{e}"));
+    }
+    if mode == "current_runtime_mode" {
+        let input: CurrentRuntimeModeInput = decode_input(&payload, "current_runtime_mode_input")?;
+        let out = compute_current_runtime_mode(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "current_runtime_mode",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_current_runtime_mode_failed:{e}"));
+    }
     Err(format!("inversion_mode_unsupported:{mode}"))
 }
 
@@ -4686,5 +5110,69 @@ mod tests {
             file_path: Some("/tmp/other/a.json".to_string()),
         });
         assert_eq!(safe.value, "/tmp/other/a.json".to_string());
+    }
+
+    #[test]
+    fn helper_primitives_batch7_match_contract() {
+        let now = compute_now_iso(&NowIsoInput::default());
+        assert!(now.value.contains('T'));
+
+        let default_map = compute_default_tier_event_map(&DefaultTierEventMapInput::default());
+        assert!(default_map.map["tactical"].is_array());
+
+        let coerced = compute_coerce_tier_event_map(&CoerceTierEventMapInput {
+            map: Some(json!({"tactical":[1, "x"], "belief":["y"]})),
+        });
+        assert_eq!(coerced.map["tactical"][0], json!("1"));
+
+        let got = compute_get_tier_scope(&GetTierScopeInput {
+            state: Some(json!({"scopes": {}})),
+            policy_version: Some("2.0".to_string()),
+        });
+        assert!(got.state["scopes"]["2.0"].is_object());
+        assert!(got.scope.is_object());
+
+        let harness = compute_default_harness_state(&DefaultHarnessStateInput::default());
+        assert_eq!(harness.state["schema_id"], json!("inversion_maturity_harness_state"));
+
+        let lock = compute_default_first_principle_lock_state(
+            &DefaultFirstPrincipleLockStateInput::default(),
+        );
+        assert_eq!(lock.state["schema_id"], json!("inversion_first_principle_lock_state"));
+
+        let maturity = compute_default_maturity_state(&DefaultMaturityStateInput::default());
+        assert_eq!(maturity.state["band"], json!("novice"));
+
+        let key = compute_principle_key_for_session(&PrincipleKeyForSessionInput {
+            objective_id: Some("BL-209".to_string()),
+            objective: Some("fallback".to_string()),
+            target: Some("directive".to_string()),
+        });
+        assert!(key.key.starts_with("directive::"));
+        assert_eq!(key.key.len(), "directive::".len() + 16);
+
+        let objective = compute_normalize_objective_arg(&NormalizeObjectiveArgInput {
+            value: Some("  ship   lane  ".to_string()),
+        });
+        assert_eq!(objective.value, "ship lane".to_string());
+
+        let order = compute_maturity_band_order(&MaturityBandOrderInput::default());
+        assert_eq!(
+            order.bands,
+            vec![
+                "novice".to_string(),
+                "developing".to_string(),
+                "mature".to_string(),
+                "seasoned".to_string(),
+                "legendary".to_string()
+            ]
+        );
+
+        let mode = compute_current_runtime_mode(&CurrentRuntimeModeInput {
+            env_mode: Some("".to_string()),
+            args_mode: Some("test".to_string()),
+            policy_runtime_mode: Some("live".to_string()),
+        });
+        assert_eq!(mode.mode, "test".to_string());
     }
 }

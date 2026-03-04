@@ -149,6 +149,17 @@ function parseArgs(argv: string[]) {
 }
 
 function nowIso() {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'now_iso',
+      {},
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const out = cleanText(rust.payload.payload.value || '', 64);
+      if (out) return out;
+    }
+  }
   return new Date().toISOString();
 }
 
@@ -2213,6 +2224,25 @@ function bandToIndex(band: string) {
 const TIER_TARGETS = ['tactical', 'belief', 'identity', 'directive', 'constitution'];
 
 function coerceTierEventMap(v: AnyObj) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'coerce_tier_event_map',
+      { map: v && typeof v === 'object' ? v : {} },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const out = rust.payload.payload.map && typeof rust.payload.payload.map === 'object'
+        ? rust.payload.payload.map
+        : {};
+      return {
+        tactical: Array.isArray(out.tactical) ? out.tactical.map((row: unknown) => String(row || '')) : [],
+        belief: Array.isArray(out.belief) ? out.belief.map((row: unknown) => String(row || '')) : [],
+        identity: Array.isArray(out.identity) ? out.identity.map((row: unknown) => String(row || '')) : [],
+        directive: Array.isArray(out.directive) ? out.directive.map((row: unknown) => String(row || '')) : [],
+        constitution: Array.isArray(out.constitution) ? out.constitution.map((row: unknown) => String(row || '')) : []
+      };
+    }
+  }
   const src = v && typeof v === 'object' ? v : {};
   return {
     tactical: Array.isArray(src.tactical) ? src.tactical.map((row: unknown) => String(row || '')) : [],
@@ -2225,6 +2255,17 @@ function coerceTierEventMap(v: AnyObj) {
 
 function defaultTierEventMap() {
   if (INVERSION_RUST_ENABLED) {
+    const direct = runInversionPrimitive(
+      'default_tier_event_map',
+      {},
+      { allow_cli_fallback: true }
+    );
+    if (direct && direct.ok === true && direct.payload && direct.payload.ok === true && direct.payload.payload) {
+      const payload = direct.payload.payload.map && typeof direct.payload.payload.map === 'object'
+        ? direct.payload.payload.map
+        : {};
+      return coerceTierEventMap(payload);
+    }
     const rust = runInversionPrimitive(
       'normalize_tier_event_map',
       {
@@ -2501,6 +2542,26 @@ function pruneTierScopeEvents(scope: AnyObj, retentionDays: number) {
 }
 
 function getTierScope(state: AnyObj, policyVersion: string) {
+  if (INVERSION_RUST_ENABLED) {
+    const sourceState = state && typeof state === 'object' ? state : {};
+    const rust = runInversionPrimitive(
+      'get_tier_scope',
+      {
+        state: sourceState,
+        policy_version: policyVersion == null ? '1.0' : String(policyVersion)
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const payload = rust.payload.payload;
+      const stateOut = payload.state && typeof payload.state === 'object' ? payload.state : null;
+      if (stateOut && state && typeof state === 'object') {
+        for (const key of Object.keys(state)) delete state[key];
+        Object.assign(state, stateOut);
+      }
+      if (payload.scope && typeof payload.scope === 'object') return payload.scope;
+    }
+  }
   const safeVersion = cleanText(policyVersion || '1.0', 24) || '1.0';
   if (!state.scopes || typeof state.scopes !== 'object') state.scopes = {};
   if (!state.scopes[safeVersion] || typeof state.scopes[safeVersion] !== 'object') {
@@ -2748,6 +2809,24 @@ function updateShadowTrialCounters(paths: AnyObj, policy: AnyObj, session: AnyOb
 }
 
 function defaultHarnessState() {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'default_harness_state',
+      {},
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return rust.payload.payload.state && typeof rust.payload.payload.state === 'object'
+        ? rust.payload.payload.state
+        : {
+            schema_id: 'inversion_maturity_harness_state',
+            schema_version: '1.0',
+            updated_at: nowIso(),
+            last_run_ts: null,
+            cursor: 0
+          };
+    }
+  }
   return {
     schema_id: 'inversion_maturity_harness_state',
     schema_version: '1.0',
@@ -2783,6 +2862,23 @@ function saveHarnessState(paths: AnyObj, state: AnyObj) {
 }
 
 function defaultFirstPrincipleLockState() {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'default_first_principle_lock_state',
+      {},
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return rust.payload.payload.state && typeof rust.payload.payload.state === 'object'
+        ? rust.payload.payload.state
+        : {
+            schema_id: 'inversion_first_principle_lock_state',
+            schema_version: '1.0',
+            updated_at: nowIso(),
+            locks: {}
+          };
+    }
+  }
   return {
     schema_id: 'inversion_first_principle_lock_state',
     schema_version: '1.0',
@@ -2816,6 +2912,21 @@ function saveFirstPrincipleLockState(paths: AnyObj, state: AnyObj) {
 }
 
 function principleKeyForSession(session: AnyObj) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'principle_key_for_session',
+      {
+        objective_id: session && session.objective_id != null ? String(session.objective_id) : '',
+        objective: session && session.objective != null ? String(session.objective) : '',
+        target: session && session.target != null ? String(session.target) : 'tactical'
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const key = cleanText(rust.payload.payload.key || '', 260);
+      if (key) return key;
+    }
+  }
   const objectivePart = cleanText(session.objective_id || session.objective || '', 240).toLowerCase();
   const hashed = crypto.createHash('sha256').update(objectivePart, 'utf8').digest('hex').slice(0, 16);
   return `${normalizeTarget(session.target || 'tactical')}::${hashed}`;
@@ -3271,6 +3382,32 @@ function computeAttractorScore(policy: AnyObj, input: AnyObj) {
 }
 
 function defaultMaturityState() {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'default_maturity_state',
+      {},
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return rust.payload.payload.state && typeof rust.payload.payload.state === 'object'
+        ? rust.payload.payload.state
+        : {
+            schema_id: 'inversion_maturity_state',
+            schema_version: '1.0',
+            updated_at: nowIso(),
+            stats: {
+              total_tests: 0,
+              passed_tests: 0,
+              failed_tests: 0,
+              safe_failures: 0,
+              destructive_failures: 0
+            },
+            recent_tests: [],
+            score: 0,
+            band: 'novice'
+          };
+    }
+  }
   return {
     schema_id: 'inversion_maturity_state',
     schema_version: '1.0',
@@ -3632,6 +3769,22 @@ function selectLibraryCandidates(paths: AnyObj, policy: AnyObj, query: AnyObj) {
 }
 
 function currentRuntimeMode(args: AnyObj, policy: AnyObj) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'current_runtime_mode',
+      {
+        env_mode: process.env.INVERSION_RUNTIME_MODE || '',
+        args_mode: args && args.mode != null ? String(args.mode) : null,
+        policy_runtime_mode: policy && policy.runtime && policy.runtime.mode != null
+          ? String(policy.runtime.mode)
+          : null
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return normalizeMode(rust.payload.payload.mode || 'live');
+    }
+  }
   const envMode = normalizeMode(process.env.INVERSION_RUNTIME_MODE || '');
   if (process.env.INVERSION_RUNTIME_MODE) return envMode;
   if (args.mode != null) return normalizeMode(args.mode);
@@ -3672,6 +3825,18 @@ function certaintyThreshold(policy: AnyObj, band: string, impact: string) {
 }
 
 function maturityBandOrder() {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'maturity_band_order',
+      {},
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return Array.isArray(rust.payload.payload.bands)
+        ? rust.payload.payload.bands.map((row: unknown) => normalizeToken(row, 24)).filter(Boolean).slice(0, 8)
+        : ['novice', 'developing', 'mature', 'seasoned', 'legendary'];
+    }
+  }
   return ['novice', 'developing', 'mature', 'seasoned', 'legendary'];
 }
 
@@ -5642,6 +5807,16 @@ function latestJsonFileInDir(dirPath: string) {
 }
 
 function normalizeObjectiveArg(v: unknown) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'normalize_objective_arg',
+      { value: v == null ? '' : String(v) },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return cleanText(rust.payload.payload.value || '', 420);
+    }
+  }
   return cleanText(v, 420);
 }
 
@@ -7351,6 +7526,7 @@ if (require.main === module) {
 }
 
 module.exports = {
+  nowIso,
   loadPolicy,
   computeMaturityScore,
   evaluateRunDecision,
@@ -7389,6 +7565,15 @@ module.exports = {
   relPath,
   safeRelPath,
   bandToIndex,
+  coerceTierEventMap,
+  getTierScope,
+  defaultHarnessState,
+  defaultFirstPrincipleLockState,
+  principleKeyForSession,
+  defaultMaturityState,
+  currentRuntimeMode,
+  maturityBandOrder,
+  normalizeObjectiveArg,
   normalizeAxiomPattern,
   normalizeAxiomSignalTerms,
   normalizeObserverId,
