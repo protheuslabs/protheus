@@ -2167,6 +2167,30 @@ function buildOutputInterfaces(policy: AnyObj, mode: string, basePayload: AnyObj
   const channelPayloads = opts.channel_payloads && typeof opts.channel_payloads === 'object'
     ? opts.channel_payloads
     : {};
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'build_output_interfaces',
+      {
+        outputs,
+        mode: mode == null ? '' : String(mode),
+        sandbox_verified: sandboxVerified,
+        explicit_code_proposal_emit: explicitCodeProposalEmit,
+        channel_payloads: channelPayloads,
+        base_payload: basePayload && typeof basePayload === 'object' ? basePayload : {}
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const payload = rust.payload.payload && typeof rust.payload.payload === 'object'
+        ? rust.payload.payload
+        : {};
+      return {
+        default_channel: normalizeToken(payload.default_channel || 'strategy_hint', 64) || 'strategy_hint',
+        active_channel: cleanText(payload.active_channel || '', 64) || null,
+        channels: payload.channels && typeof payload.channels === 'object' ? payload.channels : {}
+      };
+    }
+  }
   const map: AnyObj = {};
   const channelNames = ['belief_update', 'strategy_hint', 'workflow_hint', 'code_change_proposal'];
   for (const name of channelNames) {
@@ -7635,6 +7659,7 @@ if (require.main === module) {
 module.exports = {
   nowIso,
   loadPolicy,
+  buildOutputInterfaces,
   computeAttractorScore,
   computeMaturityScore,
   evaluateRunDecision,

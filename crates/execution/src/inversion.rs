@@ -1194,6 +1194,29 @@ pub struct ComputeAttractorScoreOutput {
     pub components: Value,
 }
 
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct BuildOutputInterfacesInput {
+    #[serde(default)]
+    pub outputs: Option<Value>,
+    #[serde(default)]
+    pub mode: Option<String>,
+    #[serde(default)]
+    pub sandbox_verified: Option<Value>,
+    #[serde(default)]
+    pub explicit_code_proposal_emit: Option<Value>,
+    #[serde(default)]
+    pub channel_payloads: Option<Value>,
+    #[serde(default)]
+    pub base_payload: Option<Value>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct BuildOutputInterfacesOutput {
+    pub default_channel: String,
+    pub active_channel: Option<String>,
+    pub channels: Value,
+}
+
 fn normalize_token(raw: &str, max_len: usize) -> String {
     let collapsed = raw
         .split_whitespace()
@@ -3433,6 +3456,135 @@ pub fn compute_attractor_score(input: &ComputeAttractorScoreInput) -> ComputeAtt
     }
 }
 
+pub fn compute_build_output_interfaces(
+    input: &BuildOutputInterfacesInput,
+) -> BuildOutputInterfacesOutput {
+    let outputs = input.outputs.as_ref().and_then(|v| v.as_object());
+    let mode = compute_normalize_mode(&NormalizeModeInput {
+        value: input.mode.clone(),
+    })
+    .value;
+    let sandbox_verified = to_bool_like(input.sandbox_verified.as_ref(), false);
+    let explicit_code_proposal_emit = to_bool_like(input.explicit_code_proposal_emit.as_ref(), false);
+    let channel_payloads = input.channel_payloads.as_ref().and_then(|v| v.as_object());
+    let base_payload = input.base_payload.clone().unwrap_or_else(|| json!({}));
+    let channel_names = [
+        "belief_update",
+        "strategy_hint",
+        "workflow_hint",
+        "code_change_proposal",
+    ];
+
+    let mut channels = serde_json::Map::new();
+    for name in channel_names {
+        let cfg = outputs.and_then(|m| m.get(name));
+        let cfg_enabled = map_bool_key(cfg, "enabled", false);
+        let test_enabled = map_bool_key(cfg, "test_enabled", false);
+        let live_enabled = map_bool_key(cfg, "live_enabled", false);
+        let require_sandbox = map_bool_key(cfg, "require_sandbox_verification", false);
+        let require_explicit_emit = map_bool_key(cfg, "require_explicit_emit", false);
+
+        let gate_mode = if mode == "test" {
+            test_enabled
+        } else {
+            live_enabled
+        };
+        let gate_sandbox = if require_sandbox {
+            sandbox_verified
+        } else {
+            true
+        };
+        let gate_explicit = if require_explicit_emit {
+            if name == "code_change_proposal" {
+                explicit_code_proposal_emit
+            } else {
+                true
+            }
+        } else {
+            true
+        };
+        let enabled = cfg_enabled && gate_mode && gate_sandbox && gate_explicit;
+
+        let mut reasons = Vec::<Value>::new();
+        if !cfg_enabled {
+            reasons.push(json!("channel_disabled"));
+        }
+        if !gate_mode {
+            reasons.push(json!(if mode == "test" {
+                "test_mode_disabled"
+            } else {
+                "live_mode_disabled"
+            }));
+        }
+        if !gate_sandbox {
+            reasons.push(json!("sandbox_verification_required"));
+        }
+        if !gate_explicit {
+            reasons.push(json!("explicit_emit_required"));
+        }
+
+        let payload = if enabled {
+            let candidate = channel_payloads.and_then(|m| m.get(name));
+            if js_truthy(candidate) {
+                candidate.cloned().unwrap_or_else(|| base_payload.clone())
+            } else {
+                base_payload.clone()
+            }
+        } else {
+            Value::Null
+        };
+
+        channels.insert(
+            name.to_string(),
+            json!({
+                "enabled": enabled,
+                "gated_reasons": reasons,
+                "payload": payload
+            }),
+        );
+    }
+
+    let default_channel = normalize_token_runtime(
+        outputs
+            .and_then(|m| m.get("default_channel"))
+            .and_then(|v| v.as_str())
+            .unwrap_or("strategy_hint"),
+        64,
+    );
+    let default_channel = if default_channel.is_empty() {
+        "strategy_hint".to_string()
+    } else {
+        default_channel
+    };
+    let active_channel = if channels
+        .get(&default_channel)
+        .and_then(|v| v.as_object())
+        .and_then(|m| m.get("enabled"))
+        .and_then(|v| v.as_bool())
+        == Some(true)
+    {
+        Some(default_channel.clone())
+    } else {
+        channel_names
+            .iter()
+            .find(|name| {
+                channels
+                    .get(**name)
+                    .and_then(|v| v.as_object())
+                    .and_then(|m| m.get("enabled"))
+                    .and_then(|v| v.as_bool())
+                    == Some(true)
+            })
+            .map(|name| (*name).to_string())
+    };
+
+    BuildOutputInterfacesOutput {
+        default_channel,
+        active_channel,
+        channels: Value::Object(channels),
+    }
+}
+
 pub fn compute_creative_penalty(input: &CreativePenaltyInput) -> CreativePenaltyOutput {
     let preferred = input
         .preferred_creative_lane_ids
@@ -4967,6 +5119,17 @@ pub fn run_inversion_json(payload_json: &str) -> Result<String, String> {
         }))
         .map_err(|e| format!("inversion_encode_compute_attractor_score_failed:{e}"));
     }
+    if mode == "build_output_interfaces" {
+        let input: BuildOutputInterfacesInput =
+            decode_input(&payload, "build_output_interfaces_input")?;
+        let out = compute_build_output_interfaces(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "build_output_interfaces",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_build_output_interfaces_failed:{e}"));
+    }
     Err(format!("inversion_mode_unsupported:{mode}"))
 }
 
@@ -5829,5 +5992,46 @@ mod tests {
             .and_then(|v| v.as_i64())
             .unwrap_or(-1);
         assert!(word_count >= 0);
+    }
+
+    #[test]
+    fn helper_primitives_batch10_match_contract() {
+        let out = compute_build_output_interfaces(&BuildOutputInterfacesInput {
+            outputs: Some(json!({
+                "default_channel": "strategy_hint",
+                "belief_update": { "enabled": true, "test_enabled": true, "live_enabled": false, "require_sandbox_verification": false, "require_explicit_emit": false },
+                "strategy_hint": { "enabled": true, "test_enabled": true, "live_enabled": true, "require_sandbox_verification": false, "require_explicit_emit": false },
+                "workflow_hint": { "enabled": false, "test_enabled": true, "live_enabled": true, "require_sandbox_verification": false, "require_explicit_emit": false },
+                "code_change_proposal": { "enabled": true, "test_enabled": true, "live_enabled": true, "require_sandbox_verification": true, "require_explicit_emit": true }
+            })),
+            mode: Some("test".to_string()),
+            sandbox_verified: Some(json!(false)),
+            explicit_code_proposal_emit: Some(json!(false)),
+            channel_payloads: Some(json!({
+                "strategy_hint": { "hint": "x" }
+            })),
+            base_payload: Some(json!({ "base": true })),
+        });
+
+        assert_eq!(out.default_channel, "strategy_hint".to_string());
+        assert_eq!(out.active_channel, Some("strategy_hint".to_string()));
+        let channels = out.channels.as_object().expect("channels object");
+        assert_eq!(channels.len(), 4);
+        let proposal = channels
+            .get("code_change_proposal")
+            .and_then(|v| v.as_object())
+            .expect("proposal object");
+        assert_eq!(
+            proposal
+                .get("enabled")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(true),
+            false
+        );
+        assert!(proposal
+            .get("gated_reasons")
+            .and_then(|v| v.as_array())
+            .map(|rows| rows.iter().any(|row| row.as_str() == Some("sandbox_verification_required")))
+            .unwrap_or(false));
     }
 }
