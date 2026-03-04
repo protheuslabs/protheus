@@ -6187,8 +6187,39 @@ function deriveEntityBias(buckets, minTotal) {
 }
 
 function summarizeTopBiases(mapObj, limit = 8) {
-  const out = [];
   const entries = Object.entries((mapObj || {}) as AnyObj);
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'top_biases_summary',
+      {
+        entries: entries.map(([key, val]) => {
+          const row = (val || {}) as AnyObj;
+          return {
+            key,
+            bias: Number(row.bias || 0),
+            total: Number(row.total || 0),
+            shipped: Number(row.shipped || 0),
+            no_change: Number(row.no_change || 0),
+            reverted: Number(row.reverted || 0)
+          };
+        }),
+        limit: Math.max(1, Math.floor(Number(limit || 8)))
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const rows = Array.isArray(rust.payload.payload.rows) ? rust.payload.payload.rows : [];
+      return rows.map((row) => ({
+        key: String(row && row.key || ''),
+        bias: Number(row && row.bias || 0),
+        total: Number(row && row.total || 0),
+        shipped: Number(row && row.shipped || 0),
+        no_change: Number(row && row.no_change || 0),
+        reverted: Number(row && row.reverted || 0)
+      }));
+    }
+  }
+  const out = [];
   for (const [key, val] of entries) {
     const row = (val || {}) as AnyObj;
     out.push({
@@ -20480,6 +20511,7 @@ module.exports = {
   chooseSelectionMode,
   evaluateRouteBlockPrefilter,
   evaluateManualGatePrefilter,
+  summarizeTopBiases,
   sourceEyeRef,
   escapeRegExp,
   toolTokenMentioned,

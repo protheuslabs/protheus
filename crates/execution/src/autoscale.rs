@@ -2642,6 +2642,45 @@ pub struct ExecuteConfidenceCooldownActiveOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TopBiasSummaryEntryInput {
+    #[serde(default)]
+    pub key: Option<String>,
+    #[serde(default)]
+    pub bias: f64,
+    #[serde(default)]
+    pub total: f64,
+    #[serde(default)]
+    pub shipped: f64,
+    #[serde(default)]
+    pub no_change: f64,
+    #[serde(default)]
+    pub reverted: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TopBiasesSummaryInput {
+    #[serde(default)]
+    pub entries: Vec<TopBiasSummaryEntryInput>,
+    #[serde(default)]
+    pub limit: u32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TopBiasSummaryEntryOutput {
+    pub key: String,
+    pub bias: f64,
+    pub total: f64,
+    pub shipped: f64,
+    pub no_change: f64,
+    pub reverted: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TopBiasesSummaryOutput {
+    pub rows: Vec<TopBiasSummaryEntryOutput>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct IsDirectiveClarificationProposalInput {
     #[serde(default)]
     pub proposal_type: Option<String>,
@@ -3820,6 +3859,8 @@ pub struct AutoscaleRequest {
     pub manual_gate_prefilter_input: Option<ManualGatePrefilterInput>,
     #[serde(default)]
     pub execute_confidence_cooldown_active_input: Option<ExecuteConfidenceCooldownActiveInput>,
+    #[serde(default)]
+    pub top_biases_summary_input: Option<TopBiasesSummaryInput>,
     #[serde(default)]
     pub is_directive_clarification_proposal_input: Option<IsDirectiveClarificationProposalInput>,
     #[serde(default)]
@@ -8448,6 +8489,40 @@ pub fn compute_execute_confidence_cooldown_active(
     }
 }
 
+pub fn compute_top_biases_summary(input: &TopBiasesSummaryInput) -> TopBiasesSummaryOutput {
+    let mut rows = input
+        .entries
+        .iter()
+        .map(|row| TopBiasSummaryEntryOutput {
+            key: row
+                .key
+                .as_ref()
+                .map(|v| v.trim().to_string())
+                .unwrap_or_default(),
+            bias: row.bias,
+            total: row.total,
+            shipped: row.shipped,
+            no_change: row.no_change,
+            reverted: row.reverted,
+        })
+        .collect::<Vec<_>>();
+    rows.sort_by(|a, b| {
+        b.bias
+            .abs()
+            .partial_cmp(&a.bias.abs())
+            .unwrap_or(std::cmp::Ordering::Equal)
+            .then_with(|| {
+                b.total
+                    .partial_cmp(&a.total)
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            })
+            .then_with(|| a.key.cmp(&b.key))
+    });
+    let limit = input.limit.max(1) as usize;
+    rows.truncate(limit);
+    TopBiasesSummaryOutput { rows }
+}
+
 pub fn compute_is_directive_clarification_proposal(
     input: &IsDirectiveClarificationProposalInput,
 ) -> IsDirectiveClarificationProposalOutput {
@@ -12119,6 +12194,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_execute_confidence_cooldown_active_encode_failed:{e}"));
+    }
+    if mode == "top_biases_summary" {
+        let input = request
+            .top_biases_summary_input
+            .ok_or_else(|| "autoscale_missing_top_biases_summary_input".to_string())?;
+        let out = compute_top_biases_summary(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "top_biases_summary",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_top_biases_summary_encode_failed:{e}"));
     }
     if mode == "is_directive_clarification_proposal" {
         let input = request
@@ -17565,6 +17652,50 @@ mod tests {
         let out =
             run_autoscale_json(&payload).expect("autoscale execute_confidence_cooldown_active");
         assert!(out.contains("\"mode\":\"execute_confidence_cooldown_active\""));
+    }
+
+    #[test]
+    fn top_biases_summary_sorts_by_abs_bias_then_total() {
+        let out = compute_top_biases_summary(&TopBiasesSummaryInput {
+            entries: vec![
+                TopBiasSummaryEntryInput {
+                    key: Some("a".to_string()),
+                    bias: 2.0,
+                    total: 10.0,
+                    shipped: 3.0,
+                    no_change: 4.0,
+                    reverted: 3.0,
+                },
+                TopBiasSummaryEntryInput {
+                    key: Some("b".to_string()),
+                    bias: -5.0,
+                    total: 2.0,
+                    shipped: 1.0,
+                    no_change: 1.0,
+                    reverted: 0.0,
+                },
+            ],
+            limit: 2,
+        });
+        assert_eq!(out.rows.len(), 2);
+        assert_eq!(out.rows[0].key, "b");
+    }
+
+    #[test]
+    fn autoscale_json_top_biases_summary_path_works() {
+        let payload = serde_json::json!({
+            "mode": "top_biases_summary",
+            "top_biases_summary_input": {
+                "entries": [
+                    {"key":"x","bias":3,"total":5,"shipped":2,"no_change":2,"reverted":1},
+                    {"key":"y","bias":1,"total":8,"shipped":4,"no_change":3,"reverted":1}
+                ],
+                "limit": 1
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale top_biases_summary");
+        assert!(out.contains("\"mode\":\"top_biases_summary\""));
     }
 
     #[test]
