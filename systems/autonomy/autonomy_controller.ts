@@ -2631,6 +2631,31 @@ function optimizationMinDeltaPercent() {
 function percentMentionsFromText(text) {
   const blob = String(text || '');
   if (!blob) return [];
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const cache = globalThis.__PROTHEUS_PERCENT_MENTIONS_CACHE instanceof Map
+      ? globalThis.__PROTHEUS_PERCENT_MENTIONS_CACHE
+      : (globalThis.__PROTHEUS_PERCENT_MENTIONS_CACHE = new Map());
+    if (cache.has(blob)) return cache.get(blob);
+    const rust = runBacklogAutoscalePrimitive(
+      'percent_mentions_from_text',
+      { text: blob },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const values = Array.isArray(rust.payload.payload.values)
+        ? rust.payload.payload.values
+          .map((v) => Number(v))
+          .filter((v) => Number.isFinite(v) && v > 0)
+          .map((v) => clampNumber(v, 0, 100))
+        : [];
+      if (cache.size >= 2048) {
+        const oldest = cache.keys().next();
+        if (!oldest.done) cache.delete(oldest.value);
+      }
+      cache.set(blob, values);
+      return values;
+    }
+  }
   const out = [];
   const re = new RegExp(PERCENT_VALUE_RE.source, 'g');
   let m;
@@ -18946,6 +18971,7 @@ module.exports = {
   parseLowerList,
   canaryFailedChecksAllowed,
   proposalTextBlob,
+  percentMentionsFromText,
   toStem,
   directiveTokenHits,
   expectedValueScore,

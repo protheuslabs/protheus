@@ -1,4 +1,5 @@
 use chrono::{DateTime, Duration, NaiveDate, Utc};
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -1328,6 +1329,18 @@ pub struct ProposalTextBlobOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct PercentMentionsFromTextInput {
+    #[serde(default)]
+    pub text: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct PercentMentionsFromTextOutput {
+    #[serde(default)]
+    pub values: Vec<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ExecutionReserveSnapshotInput {
     pub cap: f64,
     pub used: f64,
@@ -2078,6 +2091,8 @@ pub struct AutoscaleRequest {
     pub canary_failed_checks_allowed_input: Option<CanaryFailedChecksAllowedInput>,
     #[serde(default)]
     pub proposal_text_blob_input: Option<ProposalTextBlobInput>,
+    #[serde(default)]
+    pub percent_mentions_from_text_input: Option<PercentMentionsFromTextInput>,
     #[serde(default)]
     pub execution_reserve_snapshot_input: Option<ExecutionReserveSnapshotInput>,
     #[serde(default)]
@@ -4521,6 +4536,30 @@ pub fn compute_proposal_text_blob(input: &ProposalTextBlobInput) -> ProposalText
     ProposalTextBlobOutput { blob: normalized }
 }
 
+pub fn compute_percent_mentions_from_text(
+    input: &PercentMentionsFromTextInput,
+) -> PercentMentionsFromTextOutput {
+    let text = input.text.as_deref().unwrap_or("");
+    if text.is_empty() {
+        return PercentMentionsFromTextOutput { values: Vec::new() };
+    }
+    let regex = Regex::new(r"(-?\d+(?:\.\d+)?)\s*%").expect("valid percent regex");
+    let mut values = Vec::new();
+    for capture in regex.captures_iter(text) {
+        let raw = capture
+            .get(1)
+            .and_then(|value| value.as_str().parse::<f64>().ok());
+        let Some(raw) = raw else {
+            continue;
+        };
+        if !raw.is_finite() || raw <= 0.0 {
+            continue;
+        }
+        values.push(raw.clamp(0.0, 100.0));
+    }
+    PercentMentionsFromTextOutput { values }
+}
+
 pub fn compute_execution_reserve_snapshot(
     input: &ExecutionReserveSnapshotInput,
 ) -> ExecutionReserveSnapshotOutput {
@@ -6861,6 +6900,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_proposal_text_blob_encode_failed:{e}"));
+    }
+    if mode == "percent_mentions_from_text" {
+        let input = request
+            .percent_mentions_from_text_input
+            .ok_or_else(|| "autoscale_missing_percent_mentions_from_text_input".to_string())?;
+        let out = compute_percent_mentions_from_text(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "percent_mentions_from_text",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_percent_mentions_from_text_encode_failed:{e}"));
     }
     if mode == "execution_reserve_snapshot" {
         let input = request
@@ -9793,6 +9844,28 @@ mod tests {
         let out = run_autoscale_json(&payload).expect("autoscale proposal_text_blob");
         assert!(out.contains("\"mode\":\"proposal_text_blob\""));
         assert!(out.contains("\"blob\":\"fix drift | improve safety | run checks | urgent | ref://a | docs/a.md | doc a\""));
+    }
+
+    #[test]
+    fn percent_mentions_from_text_matches_extraction_rules() {
+        let out = compute_percent_mentions_from_text(&PercentMentionsFromTextInput {
+            text: Some("improve by 12.5% then -2% then 140%".to_string()),
+        });
+        assert_eq!(out.values, vec![12.5, 100.0]);
+    }
+
+    #[test]
+    fn autoscale_json_percent_mentions_from_text_path_works() {
+        let payload = serde_json::json!({
+            "mode": "percent_mentions_from_text",
+            "percent_mentions_from_text_input": {
+                "text": "gain 10% and 25%"
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale percent_mentions_from_text");
+        assert!(out.contains("\"mode\":\"percent_mentions_from_text\""));
+        assert!(out.contains("\"values\":[10.0,25.0]"));
     }
 
     #[test]
