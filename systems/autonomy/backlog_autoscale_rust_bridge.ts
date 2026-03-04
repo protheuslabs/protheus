@@ -475,7 +475,17 @@ function runInversionPrimitive(mode: string, data: AnyObj = {}, opts: AnyObj = {
     clone_tier_scope: 'clone_tier_scope_input',
     prune_tier_scope_events: 'prune_tier_scope_events_input',
     count_tier_events: 'count_tier_events_input',
-    effective_window_days_for_target: 'effective_window_days_for_target_input'
+    effective_window_days_for_target: 'effective_window_days_for_target_input',
+    to_date: 'to_date_input',
+    parse_ts_ms: 'parse_ts_ms_input',
+    add_minutes: 'add_minutes_input',
+    clamp_int: 'clamp_int_input',
+    clamp_number: 'clamp_number_input',
+    to_bool: 'to_bool_input',
+    clean_text: 'clean_text_input',
+    normalize_token: 'normalize_token_input',
+    normalize_word_token: 'normalize_word_token_input',
+    band_to_index: 'band_to_index_input'
   };
   const field = fieldByMode[normalizedMode];
   if (!field) return { ok: false, error: `inversion_mode_unsupported:${normalizedMode}` };

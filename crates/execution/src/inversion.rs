@@ -1,4 +1,4 @@
-use chrono::{SecondsFormat, Utc};
+use chrono::{SecondsFormat, TimeZone, Utc};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -745,6 +745,138 @@ pub struct EffectiveWindowDaysForTargetInput {
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct EffectiveWindowDaysForTargetOutput {
     pub days: i64,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct ToDateInput {
+    #[serde(default)]
+    pub value: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct ToDateOutput {
+    pub value: String,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct ParseTsMsInput {
+    #[serde(default)]
+    pub value: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct ParseTsMsOutput {
+    pub ts_ms: i64,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct AddMinutesInput {
+    #[serde(default)]
+    pub iso_ts: Option<String>,
+    #[serde(default)]
+    pub minutes: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct AddMinutesOutput {
+    pub iso_ts: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct ClampIntInput {
+    #[serde(default)]
+    pub value: Option<Value>,
+    #[serde(default)]
+    pub lo: Option<i64>,
+    #[serde(default)]
+    pub hi: Option<i64>,
+    #[serde(default)]
+    pub fallback: Option<i64>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct ClampIntOutput {
+    pub value: i64,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct ClampNumberInput {
+    #[serde(default)]
+    pub value: Option<Value>,
+    #[serde(default)]
+    pub lo: Option<f64>,
+    #[serde(default)]
+    pub hi: Option<f64>,
+    #[serde(default)]
+    pub fallback: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct ClampNumberOutput {
+    pub value: f64,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct ToBoolInput {
+    #[serde(default)]
+    pub value: Option<Value>,
+    #[serde(default)]
+    pub fallback: Option<bool>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct ToBoolOutput {
+    pub value: bool,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct CleanTextInput {
+    #[serde(default)]
+    pub value: Option<String>,
+    #[serde(default)]
+    pub max_len: Option<i64>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct CleanTextOutput {
+    pub value: String,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct NormalizeTokenInput {
+    #[serde(default)]
+    pub value: Option<String>,
+    #[serde(default)]
+    pub max_len: Option<i64>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct NormalizeTokenOutput {
+    pub value: String,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct NormalizeWordTokenInput {
+    #[serde(default)]
+    pub value: Option<String>,
+    #[serde(default)]
+    pub max_len: Option<i64>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct NormalizeWordTokenOutput {
+    pub value: String,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct BandToIndexInput {
+    #[serde(default)]
+    pub band: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct BandToIndexOutput {
+    pub index: i64,
 }
 
 fn normalize_token(raw: &str, max_len: usize) -> String {
@@ -2035,6 +2167,118 @@ pub fn compute_effective_window_days_for_target(
     }
 }
 
+pub fn compute_to_date(input: &ToDateInput) -> ToDateOutput {
+    let raw = input.value.as_deref().unwrap_or("").trim().to_string();
+    let valid = Regex::new(r"^\d{4}-\d{2}-\d{2}$")
+        .ok()
+        .map(|re| re.is_match(&raw))
+        .unwrap_or(false);
+    if valid {
+        return ToDateOutput { value: raw };
+    }
+    ToDateOutput {
+        value: now_iso_runtime().chars().take(10).collect::<String>(),
+    }
+}
+
+pub fn compute_parse_ts_ms(input: &ParseTsMsInput) -> ParseTsMsOutput {
+    ParseTsMsOutput {
+        ts_ms: parse_ts_ms_runtime(input.value.as_deref().unwrap_or("")),
+    }
+}
+
+pub fn compute_add_minutes(input: &AddMinutesInput) -> AddMinutesOutput {
+    let base = parse_ts_ms_runtime(input.iso_ts.as_deref().unwrap_or(""));
+    if base <= 0 {
+        return AddMinutesOutput { iso_ts: None };
+    }
+    let minutes = input.minutes.unwrap_or(0.0).max(0.0);
+    let out_ms = base + (minutes * 60.0 * 1000.0) as i64;
+    let out = Utc
+        .timestamp_millis_opt(out_ms)
+        .single()
+        .map(|dt| dt.to_rfc3339_opts(SecondsFormat::Millis, true).to_string());
+    AddMinutesOutput { iso_ts: out }
+}
+
+pub fn compute_clamp_int(input: &ClampIntInput) -> ClampIntOutput {
+    let lo = input.lo.unwrap_or(i64::MIN);
+    let hi = input.hi.unwrap_or(i64::MAX);
+    let fallback = input.fallback.unwrap_or(0);
+    ClampIntOutput {
+        value: clamp_int_value(input.value.as_ref(), lo, hi, fallback),
+    }
+}
+
+pub fn compute_clamp_number(input: &ClampNumberInput) -> ClampNumberOutput {
+    let lo = input.lo.unwrap_or(f64::NEG_INFINITY);
+    let hi = input.hi.unwrap_or(f64::INFINITY);
+    let fallback = input.fallback.unwrap_or(0.0);
+    let value = parse_number_like(input.value.as_ref()).unwrap_or(fallback);
+    ClampNumberOutput {
+        value: clamp_number(value, lo, hi),
+    }
+}
+
+pub fn compute_to_bool(input: &ToBoolInput) -> ToBoolOutput {
+    ToBoolOutput {
+        value: to_bool_like(input.value.as_ref(), input.fallback.unwrap_or(false)),
+    }
+}
+
+pub fn compute_clean_text(input: &CleanTextInput) -> CleanTextOutput {
+    let max_len = input.max_len.unwrap_or(240).clamp(0, 10000) as usize;
+    CleanTextOutput {
+        value: clean_text_runtime(input.value.as_deref().unwrap_or(""), max_len),
+    }
+}
+
+pub fn compute_normalize_token(input: &NormalizeTokenInput) -> NormalizeTokenOutput {
+    let max_len = input.max_len.unwrap_or(80).clamp(1, 10000) as usize;
+    NormalizeTokenOutput {
+        value: normalize_token_runtime(input.value.as_deref().unwrap_or(""), max_len),
+    }
+}
+
+pub fn compute_normalize_word_token(input: &NormalizeWordTokenInput) -> NormalizeWordTokenOutput {
+    let max_len = input.max_len.unwrap_or(80).clamp(1, 10000) as usize;
+    let src = clean_text_runtime(input.value.as_deref().unwrap_or(""), max_len).to_lowercase();
+    let mut out = String::new();
+    let mut prev_underscore = false;
+    for ch in src.chars() {
+        if ch.is_ascii_lowercase() || ch.is_ascii_digit() {
+            out.push(ch);
+            prev_underscore = false;
+        } else if !prev_underscore {
+            out.push('_');
+            prev_underscore = true;
+        }
+    }
+    NormalizeWordTokenOutput {
+        value: out.trim_matches('_').to_string(),
+    }
+}
+
+pub fn compute_band_to_index(input: &BandToIndexInput) -> BandToIndexOutput {
+    let b = compute_normalize_token(&NormalizeTokenInput {
+        value: input.band.clone(),
+        max_len: Some(24),
+    })
+    .value;
+    let index = if b == "novice" {
+        0
+    } else if b == "developing" {
+        1
+    } else if b == "mature" {
+        2
+    } else if b == "seasoned" {
+        3
+    } else {
+        4
+    };
+    BandToIndexOutput { index }
+}
+
 pub fn compute_creative_penalty(input: &CreativePenaltyInput) -> CreativePenaltyOutput {
     let preferred = input
         .preferred_creative_lane_ids
@@ -3214,6 +3458,106 @@ pub fn run_inversion_json(payload_json: &str) -> Result<String, String> {
         }))
         .map_err(|e| format!("inversion_encode_effective_window_days_for_target_failed:{e}"));
     }
+    if mode == "to_date" {
+        let input: ToDateInput = decode_input(&payload, "to_date_input")?;
+        let out = compute_to_date(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "to_date",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_to_date_failed:{e}"));
+    }
+    if mode == "parse_ts_ms" {
+        let input: ParseTsMsInput = decode_input(&payload, "parse_ts_ms_input")?;
+        let out = compute_parse_ts_ms(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "parse_ts_ms",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_parse_ts_ms_failed:{e}"));
+    }
+    if mode == "add_minutes" {
+        let input: AddMinutesInput = decode_input(&payload, "add_minutes_input")?;
+        let out = compute_add_minutes(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "add_minutes",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_add_minutes_failed:{e}"));
+    }
+    if mode == "clamp_int" {
+        let input: ClampIntInput = decode_input(&payload, "clamp_int_input")?;
+        let out = compute_clamp_int(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "clamp_int",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_clamp_int_failed:{e}"));
+    }
+    if mode == "clamp_number" {
+        let input: ClampNumberInput = decode_input(&payload, "clamp_number_input")?;
+        let out = compute_clamp_number(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "clamp_number",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_clamp_number_failed:{e}"));
+    }
+    if mode == "to_bool" {
+        let input: ToBoolInput = decode_input(&payload, "to_bool_input")?;
+        let out = compute_to_bool(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "to_bool",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_to_bool_failed:{e}"));
+    }
+    if mode == "clean_text" {
+        let input: CleanTextInput = decode_input(&payload, "clean_text_input")?;
+        let out = compute_clean_text(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "clean_text",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_clean_text_failed:{e}"));
+    }
+    if mode == "normalize_token" {
+        let input: NormalizeTokenInput = decode_input(&payload, "normalize_token_input")?;
+        let out = compute_normalize_token(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "normalize_token",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_normalize_token_failed:{e}"));
+    }
+    if mode == "normalize_word_token" {
+        let input: NormalizeWordTokenInput = decode_input(&payload, "normalize_word_token_input")?;
+        let out = compute_normalize_word_token(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "normalize_word_token",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_normalize_word_token_failed:{e}"));
+    }
+    if mode == "band_to_index" {
+        let input: BandToIndexInput = decode_input(&payload, "band_to_index_input")?;
+        let out = compute_band_to_index(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "band_to_index",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_band_to_index_failed:{e}"));
+    }
     Err(format!("inversion_mode_unsupported:{mode}"))
 }
 
@@ -3796,5 +4140,73 @@ mod tests {
                 fallback: Some(90),
             });
         assert_eq!(effective.days, 45);
+    }
+
+    #[test]
+    fn foundational_scalar_helpers_match_contract() {
+        let date = compute_to_date(&ToDateInput {
+            value: Some("2026-03-04".to_string()),
+        });
+        assert_eq!(date.value, "2026-03-04".to_string());
+
+        let ts = compute_parse_ts_ms(&ParseTsMsInput {
+            value: Some("2026-03-04T00:00:00.000Z".to_string()),
+        });
+        assert!(ts.ts_ms > 0);
+
+        let plus = compute_add_minutes(&AddMinutesInput {
+            iso_ts: Some("2026-03-04T00:00:00.000Z".to_string()),
+            minutes: Some(15.0),
+        });
+        assert!(plus
+            .iso_ts
+            .as_deref()
+            .unwrap_or("")
+            .contains("2026-03-04T00:15:00"));
+
+        let ci = compute_clamp_int(&ClampIntInput {
+            value: Some(json!(12)),
+            lo: Some(0),
+            hi: Some(10),
+            fallback: Some(3),
+        });
+        assert_eq!(ci.value, 10);
+
+        let cn = compute_clamp_number(&ClampNumberInput {
+            value: Some(json!(1.7)),
+            lo: Some(0.0),
+            hi: Some(1.0),
+            fallback: Some(0.5),
+        });
+        assert!((cn.value - 1.0).abs() < 1e-9);
+
+        let b = compute_to_bool(&ToBoolInput {
+            value: Some(json!("yes")),
+            fallback: Some(false),
+        });
+        assert!(b.value);
+
+        let clean = compute_clean_text(&CleanTextInput {
+            value: Some("  a   b  ".to_string()),
+            max_len: Some(16),
+        });
+        assert_eq!(clean.value, "a b".to_string());
+
+        let token = compute_normalize_token(&NormalizeTokenInput {
+            value: Some("A B+C".to_string()),
+            max_len: Some(80),
+        });
+        assert_eq!(token.value, "a_b_c".to_string());
+
+        let word = compute_normalize_word_token(&NormalizeWordTokenInput {
+            value: Some("A B+C".to_string()),
+            max_len: Some(80),
+        });
+        assert_eq!(word.value, "a_b_c".to_string());
+
+        let band = compute_band_to_index(&BandToIndexInput {
+            band: Some("seasoned".to_string()),
+        });
+        assert_eq!(band.index, 3);
     }
 }

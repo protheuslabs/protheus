@@ -153,17 +153,51 @@ function nowIso() {
 }
 
 function toDate(v: unknown) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'to_date',
+      { value: v == null ? '' : String(v) },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const out = String(rust.payload.payload.value || '').trim();
+      if (/^\\d{4}-\\d{2}-\\d{2}$/.test(out)) return out;
+    }
+  }
   const s = String(v || '').trim();
   if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
   return nowIso().slice(0, 10);
 }
 
 function parseTsMs(v: unknown) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'parse_ts_ms',
+      { value: v == null ? '' : String(v) },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return clampInt(rust.payload.payload.ts_ms, 0, Number.MAX_SAFE_INTEGER, 0);
+    }
+  }
   const ts = Date.parse(String(v || ''));
   return Number.isFinite(ts) ? ts : 0;
 }
 
 function addMinutes(isoTs: string, minutes: number) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'add_minutes',
+      {
+        iso_ts: isoTs == null ? '' : String(isoTs),
+        minutes: Number(minutes)
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return rust.payload.payload.iso_ts == null ? null : String(rust.payload.payload.iso_ts);
+    }
+  }
   const base = parseTsMs(isoTs);
   if (!base) return null;
   const out = new Date(base + Math.max(0, Number(minutes || 0)) * 60 * 1000);
@@ -171,6 +205,18 @@ function addMinutes(isoTs: string, minutes: number) {
 }
 
 function clampInt(v: unknown, lo: number, hi: number, fallback: number) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'clamp_int',
+      { value: v, lo: Number(lo), hi: Number(hi), fallback: Number(fallback) },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return Number.isFinite(Number(rust.payload.payload.value))
+        ? Number(rust.payload.payload.value)
+        : Number(fallback);
+    }
+  }
   const n = Number(v);
   if (!Number.isFinite(n)) return fallback;
   const i = Math.floor(n);
@@ -180,6 +226,17 @@ function clampInt(v: unknown, lo: number, hi: number, fallback: number) {
 }
 
 function clampNumber(v: unknown, lo: number, hi: number, fallback: number) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'clamp_number',
+      { value: v, lo: Number(lo), hi: Number(hi), fallback: Number(fallback) },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const out = Number(rust.payload.payload.value);
+      return Number.isFinite(out) ? out : Number(fallback);
+    }
+  }
   const n = Number(v);
   if (!Number.isFinite(n)) return fallback;
   if (n < lo) return lo;
@@ -188,6 +245,16 @@ function clampNumber(v: unknown, lo: number, hi: number, fallback: number) {
 }
 
 function toBool(v: unknown, fallback = false) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'to_bool',
+      { value: v, fallback: fallback === true },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return rust.payload.payload.value === true;
+    }
+  }
   if (v == null) return fallback;
   const raw = String(v).trim().toLowerCase();
   if (['1', 'true', 'yes', 'on'].includes(raw)) return true;
@@ -196,10 +263,36 @@ function toBool(v: unknown, fallback = false) {
 }
 
 function cleanText(v: unknown, maxLen = 240) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'clean_text',
+      {
+        value: v == null ? '' : String(v),
+        max_len: Number(maxLen)
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return String(rust.payload.payload.value || '');
+    }
+  }
   return String(v == null ? '' : v).replace(/\s+/g, ' ').trim().slice(0, maxLen);
 }
 
 function normalizeToken(v: unknown, maxLen = 80) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'normalize_token',
+      {
+        value: v == null ? '' : String(v),
+        max_len: Number(maxLen)
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return String(rust.payload.payload.value || '');
+    }
+  }
   return cleanText(v, maxLen)
     .toLowerCase()
     .replace(/[^a-z0-9_.:-]+/g, '_')
@@ -208,6 +301,19 @@ function normalizeToken(v: unknown, maxLen = 80) {
 }
 
 function normalizeWordToken(v: unknown, maxLen = 80) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'normalize_word_token',
+      {
+        value: v == null ? '' : String(v),
+        max_len: Number(maxLen)
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return String(rust.payload.payload.value || '');
+    }
+  }
   return cleanText(v, maxLen)
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '_')
@@ -2033,6 +2139,16 @@ function buildOutputInterfaces(policy: AnyObj, mode: string, basePayload: AnyObj
 }
 
 function bandToIndex(band: string) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'band_to_index',
+      { band: band == null ? 'novice' : String(band) },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return clampInt(rust.payload.payload.index, 0, 4, 4);
+    }
+  }
   const b = normalizeToken(band || 'novice', 24);
   if (b === 'novice') return 0;
   if (b === 'developing') return 1;
@@ -7138,6 +7254,16 @@ module.exports = {
   buildLensPosition,
   buildConclaveProposalSummary,
   conclaveHighRiskFlags,
+  toDate,
+  parseTsMs,
+  addMinutes,
+  clampInt,
+  clampNumber,
+  toBool,
+  cleanText,
+  normalizeToken,
+  normalizeWordToken,
+  bandToIndex,
   parseArgs,
   parseJsonFromStdout,
   tokenize,
