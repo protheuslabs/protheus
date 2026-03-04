@@ -2178,15 +2178,27 @@ function backlogAutoscaleSnapshot(dateStr, opts: AnyObj = {}) {
     idleReleaseMinutes: AUTONOMY_BACKLOG_AUTOSCALE_IDLE_RELEASE_MINUTES,
     tritProductivity
   });
-  return {
+  const queue = normalizeQueuePressure(queuePressure);
+  const output = {
     enabled: AUTONOMY_BACKLOG_AUTOSCALE_ENABLED,
     module: AUTONOMY_BACKLOG_AUTOSCALE_MODULE,
     state,
-    queue: normalizeQueuePressure(queuePressure),
+    queue,
     current_cells: Number(plan.current_cells || 0),
     plan,
     trit_productivity: tritProductivity
   };
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'backlog_autoscale_snapshot',
+      output,
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return rust.payload.payload;
+    }
+  }
+  return output;
 }
 
 function runBacklogAutoscaler(dateStr, opts: AnyObj = {}) {

@@ -2240,6 +2240,35 @@ pub struct SuggestRunBatchMaxOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct BacklogAutoscaleSnapshotInput {
+    #[serde(default)]
+    pub enabled: bool,
+    #[serde(default)]
+    pub module: Option<String>,
+    #[serde(default)]
+    pub state: serde_json::Value,
+    #[serde(default)]
+    pub queue: serde_json::Value,
+    #[serde(default)]
+    pub current_cells: f64,
+    #[serde(default)]
+    pub plan: serde_json::Value,
+    #[serde(default)]
+    pub trit_productivity: serde_json::Value,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct BacklogAutoscaleSnapshotOutput {
+    pub enabled: bool,
+    pub module: String,
+    pub state: serde_json::Value,
+    pub queue: serde_json::Value,
+    pub current_cells: f64,
+    pub plan: serde_json::Value,
+    pub trit_productivity: serde_json::Value,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct IsDirectiveClarificationProposalInput {
     #[serde(default)]
     pub proposal_type: Option<String>,
@@ -3388,6 +3417,8 @@ pub struct AutoscaleRequest {
     pub expected_value_score_input: Option<ExpectedValueScoreInput>,
     #[serde(default)]
     pub suggest_run_batch_max_input: Option<SuggestRunBatchMaxInput>,
+    #[serde(default)]
+    pub backlog_autoscale_snapshot_input: Option<BacklogAutoscaleSnapshotInput>,
     #[serde(default)]
     pub is_directive_clarification_proposal_input: Option<IsDirectiveClarificationProposalInput>,
     #[serde(default)]
@@ -7376,6 +7407,24 @@ pub fn compute_suggest_run_batch_max(input: &SuggestRunBatchMaxInput) -> Suggest
     }
 }
 
+pub fn compute_backlog_autoscale_snapshot(
+    input: &BacklogAutoscaleSnapshotInput,
+) -> BacklogAutoscaleSnapshotOutput {
+    BacklogAutoscaleSnapshotOutput {
+        enabled: input.enabled,
+        module: normalize_spaces(input.module.as_deref().unwrap_or("")),
+        state: input.state.clone(),
+        queue: input.queue.clone(),
+        current_cells: if input.current_cells.is_finite() {
+            input.current_cells
+        } else {
+            0.0
+        },
+        plan: input.plan.clone(),
+        trit_productivity: input.trit_productivity.clone(),
+    }
+}
+
 pub fn compute_is_directive_clarification_proposal(
     input: &IsDirectiveClarificationProposalInput,
 ) -> IsDirectiveClarificationProposalOutput {
@@ -10867,6 +10916,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_suggest_run_batch_max_encode_failed:{e}"));
+    }
+    if mode == "backlog_autoscale_snapshot" {
+        let input = request
+            .backlog_autoscale_snapshot_input
+            .ok_or_else(|| "autoscale_missing_backlog_autoscale_snapshot_input".to_string())?;
+        let out = compute_backlog_autoscale_snapshot(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "backlog_autoscale_snapshot",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_backlog_autoscale_snapshot_encode_failed:{e}"));
     }
     if mode == "is_directive_clarification_proposal" {
         let input = request
@@ -15786,6 +15847,41 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale suggest_run_batch_max");
         assert!(out.contains("\"mode\":\"suggest_run_batch_max\""));
+    }
+
+    #[test]
+    fn backlog_autoscale_snapshot_normalizes_payload() {
+        let out = compute_backlog_autoscale_snapshot(&BacklogAutoscaleSnapshotInput {
+            enabled: true,
+            module: Some(" autonomy_backlog_autoscale ".to_string()),
+            state: serde_json::json!({"current_cells": 2}),
+            queue: serde_json::json!({"pressure": "warning"}),
+            current_cells: 3.8,
+            plan: serde_json::json!({"action": "scale_up"}),
+            trit_productivity: serde_json::json!({"hold": false}),
+        });
+        assert!(out.enabled);
+        assert_eq!(out.module, "autonomy_backlog_autoscale");
+        assert_eq!(out.current_cells, 3.8);
+    }
+
+    #[test]
+    fn autoscale_json_backlog_autoscale_snapshot_path_works() {
+        let payload = serde_json::json!({
+            "mode": "backlog_autoscale_snapshot",
+            "backlog_autoscale_snapshot_input": {
+                "enabled": true,
+                "module": "autonomy_backlog_autoscale",
+                "state": {"current_cells": 1},
+                "queue": {"pressure": "normal"},
+                "current_cells": 1,
+                "plan": {"action": "hold"},
+                "trit_productivity": {"hold": false}
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale backlog_autoscale_snapshot");
+        assert!(out.contains("\"mode\":\"backlog_autoscale_snapshot\""));
     }
 
     #[test]
