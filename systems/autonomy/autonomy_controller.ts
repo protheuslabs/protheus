@@ -2805,6 +2805,8 @@ const STRATEGY_TRIT_SHADOW_ADJUSTED_CACHE = new Map();
 const STRATEGY_TRIT_SHADOW_ADJUSTED_CACHE_MAX = 1024;
 const NON_YIELD_PENALTY_SCORE_CACHE = new Map();
 const NON_YIELD_PENALTY_SCORE_CACHE_MAX = 1024;
+const COLLECTIVE_SHADOW_ADJUSTMENTS_CACHE = new Map();
+const COLLECTIVE_SHADOW_ADJUSTMENTS_CACHE_MAX = 1024;
 const VALUE_SIGNAL_SCORE_CACHE = new Map();
 const VALUE_SIGNAL_SCORE_CACHE_MAX = 1024;
 const COMPOSITE_ELIGIBILITY_SCORE_CACHE = new Map();
@@ -8615,6 +8617,49 @@ function shadowScopeMatchesCandidate(scope, candidateCtx) {
   return false;
 }
 
+function computeCollectiveShadowAdjustments(penaltyRaw, bonusRaw) {
+  const penalty = Number(penaltyRaw || 0);
+  const bonus = Number(bonusRaw || 0);
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const key = [
+      penalty,
+      bonus,
+      AUTONOMY_COLLECTIVE_SHADOW_MAX_PENALTY,
+      AUTONOMY_COLLECTIVE_SHADOW_MAX_BONUS
+    ].join('\u0000');
+    if (COLLECTIVE_SHADOW_ADJUSTMENTS_CACHE.has(key)) {
+      return COLLECTIVE_SHADOW_ADJUSTMENTS_CACHE.get(key);
+    }
+    const rust = runBacklogAutoscalePrimitive(
+      'collective_shadow_adjustments',
+      {
+        penalty_raw: penalty,
+        bonus_raw: bonus,
+        max_penalty: Number(AUTONOMY_COLLECTIVE_SHADOW_MAX_PENALTY || 0),
+        max_bonus: Number(AUTONOMY_COLLECTIVE_SHADOW_MAX_BONUS || 0)
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const payload = rust.payload.payload;
+      const out = {
+        penalty: Number(Number(payload.penalty || 0).toFixed(3)),
+        bonus: Number(Number(payload.bonus || 0).toFixed(3))
+      };
+      if (COLLECTIVE_SHADOW_ADJUSTMENTS_CACHE.size >= COLLECTIVE_SHADOW_ADJUSTMENTS_CACHE_MAX) {
+        const oldest = COLLECTIVE_SHADOW_ADJUSTMENTS_CACHE.keys().next();
+        if (!oldest.done) COLLECTIVE_SHADOW_ADJUSTMENTS_CACHE.delete(oldest.value);
+      }
+      COLLECTIVE_SHADOW_ADJUSTMENTS_CACHE.set(key, out);
+      return out;
+    }
+  }
+  return {
+    penalty: Number(clampNumber(penalty, 0, AUTONOMY_COLLECTIVE_SHADOW_MAX_PENALTY).toFixed(3)),
+    bonus: Number(clampNumber(bonus, 0, AUTONOMY_COLLECTIVE_SHADOW_MAX_BONUS).toFixed(3))
+  };
+}
+
 function candidateCollectiveShadowSignal(cand) {
   const out = {
     applied: false,
@@ -8691,9 +8736,9 @@ function candidateCollectiveShadowSignal(cand) {
   const bonusRaw = matched
     .filter((row) => row.kind === 'reinforce')
     .reduce((acc, row) => acc + (Number(row.score_impact || 0) * Number(row.confidence || 0)), 0);
-
-  out.penalty = Number(clampNumber(penaltyRaw, 0, AUTONOMY_COLLECTIVE_SHADOW_MAX_PENALTY).toFixed(3));
-  out.bonus = Number(clampNumber(bonusRaw, 0, AUTONOMY_COLLECTIVE_SHADOW_MAX_BONUS).toFixed(3));
+  const adjusted = computeCollectiveShadowAdjustments(penaltyRaw, bonusRaw);
+  out.penalty = Number(adjusted.penalty || 0);
+  out.bonus = Number(adjusted.bonus || 0);
   return out;
 }
 
@@ -18049,6 +18094,7 @@ module.exports = {
   strategyTritShadowRankingSummary,
   candidateNonYieldPenaltySignal,
   computeNonYieldPenaltyScore,
+  computeCollectiveShadowAdjustments,
   candidateCollectiveShadowSignal,
   selectStrategyForRun,
   impactWeight,

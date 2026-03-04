@@ -844,6 +844,20 @@ pub struct NonYieldPenaltyScoreOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct CollectiveShadowAdjustmentsInput {
+    pub penalty_raw: f64,
+    pub bonus_raw: f64,
+    pub max_penalty: f64,
+    pub max_bonus: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct CollectiveShadowAdjustmentsOutput {
+    pub penalty: f64,
+    pub bonus: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct CompositeEligibilityScoreInput {
     pub quality_score: f64,
     pub directive_fit_score: f64,
@@ -1533,6 +1547,8 @@ pub struct AutoscaleRequest {
     pub strategy_trit_shadow_adjusted_input: Option<StrategyTritShadowAdjustedInput>,
     #[serde(default)]
     pub non_yield_penalty_score_input: Option<NonYieldPenaltyScoreInput>,
+    #[serde(default)]
+    pub collective_shadow_adjustments_input: Option<CollectiveShadowAdjustmentsInput>,
     #[serde(default)]
     pub value_signal_score_input: Option<ValueSignalScoreInput>,
     #[serde(default)]
@@ -2952,6 +2968,18 @@ pub fn compute_non_yield_penalty_score(
     let penalty = raw.clamp(0.0, input.max_penalty.max(0.0));
     NonYieldPenaltyScoreOutput {
         penalty: to_fixed3(penalty),
+    }
+}
+
+pub fn compute_collective_shadow_adjustments(
+    input: &CollectiveShadowAdjustmentsInput,
+) -> CollectiveShadowAdjustmentsOutput {
+    let to_fixed3 = |value: f64| -> f64 {
+        format!("{value:.3}").parse::<f64>().unwrap_or(value)
+    };
+    CollectiveShadowAdjustmentsOutput {
+        penalty: to_fixed3(input.penalty_raw.clamp(0.0, input.max_penalty.max(0.0))),
+        bonus: to_fixed3(input.bonus_raw.clamp(0.0, input.max_bonus.max(0.0))),
     }
 }
 
@@ -4978,6 +5006,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
         }))
         .map_err(|e| format!("autoscale_non_yield_penalty_score_encode_failed:{e}"));
     }
+    if mode == "collective_shadow_adjustments" {
+        let input = request
+            .collective_shadow_adjustments_input
+            .ok_or_else(|| "autoscale_missing_collective_shadow_adjustments_input".to_string())?;
+        let out = compute_collective_shadow_adjustments(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "collective_shadow_adjustments",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_collective_shadow_adjustments_encode_failed:{e}"));
+    }
     if mode == "value_signal_score" {
         let input = request
             .value_signal_score_input
@@ -6945,6 +6985,36 @@ mod tests {
         let out = run_autoscale_json(&payload).expect("autoscale non_yield_penalty_score");
         assert!(out.contains("\"mode\":\"non_yield_penalty_score\""));
         assert!(out.contains("\"penalty\":4.9"));
+    }
+
+    #[test]
+    fn collective_shadow_adjustments_clamps_penalty_and_bonus() {
+        let out = compute_collective_shadow_adjustments(&CollectiveShadowAdjustmentsInput {
+            penalty_raw: 18.4,
+            bonus_raw: 2.718,
+            max_penalty: 12.0,
+            max_bonus: 6.0,
+        });
+        assert!((out.penalty - 12.0).abs() < 0.000001);
+        assert!((out.bonus - 2.718).abs() < 0.000001);
+    }
+
+    #[test]
+    fn autoscale_json_collective_shadow_adjustments_path_works() {
+        let payload = serde_json::json!({
+            "mode": "collective_shadow_adjustments",
+            "collective_shadow_adjustments_input": {
+                "penalty_raw": 18.4,
+                "bonus_raw": 2.718,
+                "max_penalty": 12,
+                "max_bonus": 6
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale collective_shadow_adjustments");
+        assert!(out.contains("\"mode\":\"collective_shadow_adjustments\""));
+        assert!(out.contains("\"penalty\":12.0"));
+        assert!(out.contains("\"bonus\":2.718"));
     }
 
     #[test]
