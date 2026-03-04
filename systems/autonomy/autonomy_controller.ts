@@ -2718,6 +2718,8 @@ const PROPOSAL_STATUS_CACHE = new Map();
 const PROPOSAL_STATUS_CACHE_MAX = 1024;
 const PROPOSAL_STATUS_FOR_QUEUE_PRESSURE_CACHE = new Map();
 const PROPOSAL_STATUS_FOR_QUEUE_PRESSURE_CACHE_MAX = 1024;
+const PROPOSAL_OUTCOME_STATUS_CACHE = new Map();
+const PROPOSAL_OUTCOME_STATUS_CACHE_MAX = 1024;
 const MINUTES_SINCE_TS_CACHE = new Map();
 const MINUTES_SINCE_TS_CACHE_MAX = 512;
 const DATE_WINDOW_CACHE = new Map();
@@ -7248,6 +7250,28 @@ function proposalStatus(overlayEnt) {
 }
 
 function proposalOutcomeStatus(overlayEnt) {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const overlayOutcome = String((overlayEnt && overlayEnt.outcome) || '');
+    if (PROPOSAL_OUTCOME_STATUS_CACHE.has(overlayOutcome)) {
+      return PROPOSAL_OUTCOME_STATUS_CACHE.get(overlayOutcome);
+    }
+    const rust = runBacklogAutoscalePrimitive(
+      'proposal_outcome_status',
+      { overlay_outcome: overlayOutcome },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const raw = rust.payload.payload.outcome;
+      const val = raw == null ? null : String(raw || '').trim().toLowerCase();
+      const normalized = val || null;
+      if (PROPOSAL_OUTCOME_STATUS_CACHE.size >= PROPOSAL_OUTCOME_STATUS_CACHE_MAX) {
+        const oldest = PROPOSAL_OUTCOME_STATUS_CACHE.keys().next();
+        if (!oldest.done) PROPOSAL_OUTCOME_STATUS_CACHE.delete(oldest.value);
+      }
+      PROPOSAL_OUTCOME_STATUS_CACHE.set(overlayOutcome, normalized);
+      return normalized;
+    }
+  }
   if (!overlayEnt || !overlayEnt.outcome) return null;
   const out = String(overlayEnt.outcome || '').trim().toLowerCase();
   if (!out) return null;
@@ -17242,6 +17266,7 @@ if (require.main === module) main();
 module.exports = {
   buildOverlay,
   proposalStatus,
+  proposalOutcomeStatus,
   proposalScore,
   proposalAdmissionPreview,
   hasAdaptiveMutationSignal,

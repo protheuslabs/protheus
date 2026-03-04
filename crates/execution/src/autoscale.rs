@@ -603,6 +603,18 @@ pub struct QosLaneWeightsOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ProposalOutcomeStatusInput {
+    #[serde(default)]
+    pub overlay_outcome: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ProposalOutcomeStatusOutput {
+    #[serde(default)]
+    pub outcome: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct QosLaneUsageEventInput {
     #[serde(default)]
     pub event_type: Option<String>,
@@ -1162,6 +1174,8 @@ pub struct AutoscaleRequest {
     pub execute_confidence_history_match_input: Option<ExecuteConfidenceHistoryMatchInput>,
     #[serde(default)]
     pub qos_lane_weights_input: Option<QosLaneWeightsInput>,
+    #[serde(default)]
+    pub proposal_outcome_status_input: Option<ProposalOutcomeStatusInput>,
     #[serde(default)]
     pub no_progress_result_input: Option<NoProgressResultInput>,
     #[serde(default)]
@@ -2239,6 +2253,17 @@ pub fn compute_proposal_status(input: &ProposalStatusInput) -> ProposalStatusOut
         "pending".to_string()
     };
     ProposalStatusOutput { status }
+}
+
+pub fn compute_proposal_outcome_status(
+    input: &ProposalOutcomeStatusInput,
+) -> ProposalOutcomeStatusOutput {
+    let outcome = input
+        .overlay_outcome
+        .as_ref()
+        .map(|v| v.trim().to_ascii_lowercase())
+        .filter(|v| !v.is_empty());
+    ProposalOutcomeStatusOutput { outcome }
 }
 
 pub fn compute_proposal_status_for_queue_pressure(
@@ -3851,6 +3876,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
         }))
         .map_err(|e| format!("autoscale_proposal_status_encode_failed:{e}"));
     }
+    if mode == "proposal_outcome_status" {
+        let input = request
+            .proposal_outcome_status_input
+            .ok_or_else(|| "autoscale_missing_proposal_outcome_status_input".to_string())?;
+        let out = compute_proposal_outcome_status(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "proposal_outcome_status",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_proposal_outcome_status_encode_failed:{e}"));
+    }
     if mode == "proposal_status_for_queue_pressure" {
         let input = request.proposal_status_for_queue_pressure_input.ok_or_else(|| {
             "autoscale_missing_proposal_status_for_queue_pressure_input".to_string()
@@ -5188,6 +5225,32 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale proposal_status");
         assert!(out.contains("\"mode\":\"proposal_status\""));
+    }
+
+    #[test]
+    fn proposal_outcome_status_normalizes_or_none() {
+        let out = compute_proposal_outcome_status(&ProposalOutcomeStatusInput {
+            overlay_outcome: Some(" SHIPPED ".to_string()),
+        });
+        assert_eq!(out.outcome, Some("shipped".to_string()));
+
+        let out2 = compute_proposal_outcome_status(&ProposalOutcomeStatusInput {
+            overlay_outcome: Some("   ".to_string()),
+        });
+        assert_eq!(out2.outcome, None);
+    }
+
+    #[test]
+    fn autoscale_json_proposal_outcome_status_path_works() {
+        let payload = serde_json::json!({
+            "mode": "proposal_outcome_status",
+            "proposal_outcome_status_input": {
+                "overlay_outcome": "shipped"
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale proposal_outcome_status");
+        assert!(out.contains("\"mode\":\"proposal_outcome_status\""));
     }
 
     #[test]
