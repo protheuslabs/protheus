@@ -2782,6 +2782,20 @@ pub struct BumpCountOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct LockAgeMinutesInput {
+    #[serde(default)]
+    pub lock_ts: Option<String>,
+    #[serde(default)]
+    pub now_ms: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct LockAgeMinutesOutput {
+    #[serde(default)]
+    pub age_minutes: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ManualGatePrefilterInput {
     #[serde(default)]
     pub enabled: bool,
@@ -4810,6 +4824,8 @@ pub struct AutoscaleRequest {
     pub cooldown_active_state_input: Option<CooldownActiveStateInput>,
     #[serde(default)]
     pub bump_count_input: Option<BumpCountInput>,
+    #[serde(default)]
+    pub lock_age_minutes_input: Option<LockAgeMinutesInput>,
     #[serde(default)]
     pub manual_gate_prefilter_input: Option<ManualGatePrefilterInput>,
     #[serde(default)]
@@ -9708,6 +9724,27 @@ pub fn compute_bump_count(input: &BumpCountInput) -> BumpCountOutput {
     let current = input.current_count.unwrap_or(0.0);
     let base = if current.is_finite() { current } else { 0.0 };
     BumpCountOutput { count: base + 1.0 }
+}
+
+pub fn compute_lock_age_minutes(input: &LockAgeMinutesInput) -> LockAgeMinutesOutput {
+    let ts_raw = input.lock_ts.as_deref().unwrap_or("").trim();
+    if ts_raw.is_empty() {
+        return LockAgeMinutesOutput { age_minutes: None };
+    }
+    let parsed = DateTime::parse_from_rfc3339(ts_raw)
+        .map(|v| v.with_timezone(&Utc))
+        .ok();
+    let Some(parsed) = parsed else {
+        return LockAgeMinutesOutput { age_minutes: None };
+    };
+    let now_ms = input.now_ms.unwrap_or_else(|| Utc::now().timestamp_millis() as f64);
+    if !now_ms.is_finite() {
+        return LockAgeMinutesOutput { age_minutes: None };
+    }
+    let diff_ms = (now_ms - parsed.timestamp_millis() as f64).max(0.0);
+    LockAgeMinutesOutput {
+        age_minutes: Some(diff_ms / 60_000.0),
+    }
 }
 
 pub fn compute_manual_gate_prefilter(input: &ManualGatePrefilterInput) -> ManualGatePrefilterOutput {
@@ -15023,6 +15060,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_bump_count_encode_failed:{e}"));
+    }
+    if mode == "lock_age_minutes" {
+        let input = request
+            .lock_age_minutes_input
+            .ok_or_else(|| "autoscale_missing_lock_age_minutes_input".to_string())?;
+        let out = compute_lock_age_minutes(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "lock_age_minutes",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_lock_age_minutes_encode_failed:{e}"));
     }
     if mode == "manual_gate_prefilter" {
         let input = request
@@ -21346,6 +21395,37 @@ mod tests {
         let out = run_autoscale_json(&payload).expect("autoscale bump_count");
         assert!(out.contains("\"mode\":\"bump_count\""));
         assert!(out.contains("\"count\":8.0"));
+    }
+
+    #[test]
+    fn lock_age_minutes_returns_none_for_invalid_and_minutes_for_valid_ts() {
+        let invalid = compute_lock_age_minutes(&LockAgeMinutesInput {
+            lock_ts: Some("bad-ts".to_string()),
+            now_ms: Some(1_000_000.0),
+        });
+        assert!(invalid.age_minutes.is_none());
+
+        let valid = compute_lock_age_minutes(&LockAgeMinutesInput {
+            lock_ts: Some("2026-03-04T00:00:00.000Z".to_string()),
+            now_ms: Some(chrono::DateTime::parse_from_rfc3339("2026-03-04T01:00:00.000Z").unwrap().timestamp_millis() as f64),
+        });
+        assert!(valid.age_minutes.is_some());
+        assert!((valid.age_minutes.unwrap_or(0.0) - 60.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn autoscale_json_lock_age_minutes_path_works() {
+        let payload = serde_json::json!({
+            "mode": "lock_age_minutes",
+            "lock_age_minutes_input": {
+                "lock_ts": "2026-03-04T00:00:00.000Z",
+                "now_ms": chrono::DateTime::parse_from_rfc3339("2026-03-04T00:30:00.000Z").unwrap().timestamp_millis()
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale lock_age_minutes");
+        assert!(out.contains("\"mode\":\"lock_age_minutes\""));
+        assert!(out.contains("\"age_minutes\":30.0"));
     }
 
     #[test]

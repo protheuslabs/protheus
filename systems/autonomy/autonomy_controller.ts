@@ -21321,9 +21321,25 @@ function readRunLockState() {
 }
 
 function lockAgeMinutes(lock) {
-  const ts = Date.parse(String(lock && lock.ts || ''));
+  const lockTs = String(lock && lock.ts || '');
+  const nowMs = Date.now();
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'lock_age_minutes',
+      {
+        lock_ts: lockTs,
+        now_ms: nowMs
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const age = rust.payload.payload.age_minutes;
+      return age == null ? null : Number(age);
+    }
+  }
+  const ts = Date.parse(lockTs);
   if (!Number.isFinite(ts)) return null;
-  return Math.max(0, (Date.now() - ts) / (60 * 1000));
+  return Math.max(0, (nowMs - ts) / (60 * 1000));
 }
 
 function pidAlive(pid) {

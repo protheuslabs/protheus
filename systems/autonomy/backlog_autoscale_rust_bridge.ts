@@ -301,6 +301,7 @@ function runBacklogAutoscalePrimitive(mode: string, data: AnyObj = {}, opts: Any
     all_decision_events: 'all_decision_events_input',
     cooldown_active_state: 'cooldown_active_state_input',
     bump_count: 'bump_count_input',
+    lock_age_minutes: 'lock_age_minutes_input',
     manual_gate_prefilter: 'manual_gate_prefilter_input',
     execute_confidence_cooldown_active: 'execute_confidence_cooldown_active_input',
     top_biases_summary: 'top_biases_summary_input',
