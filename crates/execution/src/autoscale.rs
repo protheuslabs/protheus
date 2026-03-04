@@ -694,6 +694,18 @@ pub struct ExecutionReserveSnapshotOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct EstimateTokensForCandidateInput {
+    pub direct_est_tokens: f64,
+    pub route_tokens_est: f64,
+    pub fallback_estimate: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct EstimateTokensForCandidateOutput {
+    pub est_tokens: u32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct QosLaneUsageEventInput {
     #[serde(default)]
     pub event_type: Option<String>,
@@ -1303,6 +1315,8 @@ pub struct AutoscaleRequest {
     pub value_density_score_input: Option<ValueDensityScoreInput>,
     #[serde(default)]
     pub execution_reserve_snapshot_input: Option<ExecutionReserveSnapshotInput>,
+    #[serde(default)]
+    pub estimate_tokens_for_candidate_input: Option<EstimateTokensForCandidateInput>,
     #[serde(default)]
     pub no_progress_result_input: Option<NoProgressResultInput>,
     #[serde(default)]
@@ -2550,6 +2564,34 @@ pub fn compute_execution_reserve_snapshot(
         enabled: input.reserve_enabled,
         reserve_tokens,
         reserve_remaining,
+    }
+}
+
+pub fn compute_estimate_tokens_for_candidate(
+    input: &EstimateTokensForCandidateInput,
+) -> EstimateTokensForCandidateOutput {
+    let clamp = |v: f64| -> u32 {
+        let rounded = if v.is_finite() { v.round() } else { 80.0 };
+        if rounded <= 80.0 {
+            80
+        } else if rounded >= 12000.0 {
+            12000
+        } else {
+            rounded as u32
+        }
+    };
+    if input.direct_est_tokens.is_finite() && input.direct_est_tokens > 0.0 {
+        return EstimateTokensForCandidateOutput {
+            est_tokens: clamp(input.direct_est_tokens),
+        };
+    }
+    if input.route_tokens_est.is_finite() && input.route_tokens_est > 0.0 {
+        return EstimateTokensForCandidateOutput {
+            est_tokens: clamp(input.route_tokens_est),
+        };
+    }
+    EstimateTokensForCandidateOutput {
+        est_tokens: clamp(input.fallback_estimate),
     }
 }
 
@@ -4331,6 +4373,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
         }))
         .map_err(|e| format!("autoscale_execution_reserve_snapshot_encode_failed:{e}"));
     }
+    if mode == "estimate_tokens_for_candidate" {
+        let input = request
+            .estimate_tokens_for_candidate_input
+            .ok_or_else(|| "autoscale_missing_estimate_tokens_for_candidate_input".to_string())?;
+        let out = compute_estimate_tokens_for_candidate(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "estimate_tokens_for_candidate",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_estimate_tokens_for_candidate_encode_failed:{e}"));
+    }
     if mode == "proposal_status_for_queue_pressure" {
         let input = request.proposal_status_for_queue_pressure_input.ok_or_else(|| {
             "autoscale_missing_proposal_status_for_queue_pressure_input".to_string()
@@ -5948,6 +6002,38 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale execution_reserve_snapshot");
         assert!(out.contains("\"mode\":\"execution_reserve_snapshot\""));
+    }
+
+    #[test]
+    fn estimate_tokens_for_candidate_prefers_direct_then_route_then_fallback() {
+        let direct = compute_estimate_tokens_for_candidate(&EstimateTokensForCandidateInput {
+            direct_est_tokens: 700.0,
+            route_tokens_est: 300.0,
+            fallback_estimate: 200.0,
+        });
+        assert_eq!(direct.est_tokens, 700);
+
+        let route = compute_estimate_tokens_for_candidate(&EstimateTokensForCandidateInput {
+            direct_est_tokens: 0.0,
+            route_tokens_est: 320.0,
+            fallback_estimate: 200.0,
+        });
+        assert_eq!(route.est_tokens, 320);
+    }
+
+    #[test]
+    fn autoscale_json_estimate_tokens_for_candidate_path_works() {
+        let payload = serde_json::json!({
+            "mode": "estimate_tokens_for_candidate",
+            "estimate_tokens_for_candidate_input": {
+                "direct_est_tokens": 0,
+                "route_tokens_est": 340,
+                "fallback_estimate": 200
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale estimate_tokens_for_candidate");
+        assert!(out.contains("\"mode\":\"estimate_tokens_for_candidate\""));
     }
 
     #[test]

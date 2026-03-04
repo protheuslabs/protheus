@@ -2732,6 +2732,8 @@ const VALUE_DENSITY_SCORE_CACHE = new Map();
 const VALUE_DENSITY_SCORE_CACHE_MAX = 1024;
 const EXECUTION_RESERVE_SNAPSHOT_CACHE = new Map();
 const EXECUTION_RESERVE_SNAPSHOT_CACHE_MAX = 512;
+const ESTIMATE_TOKENS_FOR_CANDIDATE_CACHE = new Map();
+const ESTIMATE_TOKENS_FOR_CANDIDATE_CACHE_MAX = 1024;
 const MINUTES_SINCE_TS_CACHE = new Map();
 const MINUTES_SINCE_TS_CACHE_MAX = 512;
 const DATE_WINDOW_CACHE = new Map();
@@ -7967,10 +7969,35 @@ function estimateTokensForCandidate(cand, proposal) {
   const p = proposal && typeof proposal === 'object' ? proposal : {};
   const meta = p.meta && typeof p.meta === 'object' ? p.meta : {};
   const direct = Number(cand && cand.est_tokens);
-  if (Number.isFinite(direct) && direct > 0) return clampNumber(Math.round(direct), 80, 12000);
   const routeEst = Number(meta.route_tokens_est);
+  const fallbackEstimate = Number(estimateTokens(p));
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const key = `${direct}\u0000${routeEst}\u0000${fallbackEstimate}`;
+    if (ESTIMATE_TOKENS_FOR_CANDIDATE_CACHE.has(key)) {
+      return ESTIMATE_TOKENS_FOR_CANDIDATE_CACHE.get(key);
+    }
+    const rust = runBacklogAutoscalePrimitive(
+      'estimate_tokens_for_candidate',
+      {
+        direct_est_tokens: direct,
+        route_tokens_est: routeEst,
+        fallback_estimate: fallbackEstimate
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const val = clampNumber(Math.round(Number(rust.payload.payload.est_tokens || 0)), 80, 12000);
+      if (ESTIMATE_TOKENS_FOR_CANDIDATE_CACHE.size >= ESTIMATE_TOKENS_FOR_CANDIDATE_CACHE_MAX) {
+        const oldest = ESTIMATE_TOKENS_FOR_CANDIDATE_CACHE.keys().next();
+        if (!oldest.done) ESTIMATE_TOKENS_FOR_CANDIDATE_CACHE.delete(oldest.value);
+      }
+      ESTIMATE_TOKENS_FOR_CANDIDATE_CACHE.set(key, val);
+      return val;
+    }
+  }
+  if (Number.isFinite(direct) && direct > 0) return clampNumber(Math.round(direct), 80, 12000);
   if (Number.isFinite(routeEst) && routeEst > 0) return clampNumber(Math.round(routeEst), 80, 12000);
-  return clampNumber(estimateTokens(p), 80, 12000);
+  return clampNumber(fallbackEstimate, 80, 12000);
 }
 
 function valueDensityScore(expectedValue, estTokens) {
@@ -17544,6 +17571,7 @@ module.exports = {
   candidateCollectiveShadowSignal,
   selectStrategyForRun,
   estimateTokens,
+  estimateTokensForCandidate,
   candidatePool,
   evaluateDoD,
   diffDoDEvidence,

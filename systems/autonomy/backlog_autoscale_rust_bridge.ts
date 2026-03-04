@@ -142,6 +142,7 @@ function runBacklogAutoscalePrimitive(mode: string, data: AnyObj = {}, opts: Any
     execution_reserve_snapshot: 'execution_reserve_snapshot_input',
     qos_lane_share_cap_exceeded: 'qos_lane_share_cap_exceeded_input',
     qos_lane_from_candidate: 'qos_lane_from_candidate_input',
+    estimate_tokens_for_candidate: 'estimate_tokens_for_candidate_input',
     route_execution_policy_hold: 'route_execution_policy_hold_input',
     policy_hold_pressure: 'policy_hold_pressure_input',
     policy_hold_pattern: 'policy_hold_pattern_input',
