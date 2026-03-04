@@ -1358,6 +1358,21 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
   }
 
   function normalizeAxiomList(rawAxioms: unknown, baseAxioms: unknown[]) {
+    if (INVERSION_RUST_ENABLED) {
+      const rust = runInversionPrimitive(
+        'normalize_axiom_list',
+        {
+          raw_axioms: Array.isArray(rawAxioms) ? rawAxioms : [],
+          base_axioms: Array.isArray(baseAxioms) ? baseAxioms : []
+        },
+        { allow_cli_fallback: true }
+      );
+      if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+        return Array.isArray(rust.payload.payload.axioms)
+          ? rust.payload.payload.axioms.filter((row: unknown) => row && typeof row === 'object')
+          : [];
+      }
+    }
     const src = Array.isArray(rawAxioms) ? rawAxioms : [];
     const fallback = Array.isArray(baseAxioms) ? baseAxioms : [];
     const out = src.length ? src : fallback;
@@ -1422,6 +1437,21 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
   }
 
   function normalizeHarnessSuite(rawSuite: unknown, baseSuite: unknown[]) {
+    if (INVERSION_RUST_ENABLED) {
+      const rust = runInversionPrimitive(
+        'normalize_harness_suite',
+        {
+          raw_suite: Array.isArray(rawSuite) ? rawSuite : [],
+          base_suite: Array.isArray(baseSuite) ? baseSuite : []
+        },
+        { allow_cli_fallback: true }
+      );
+      if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+        return Array.isArray(rust.payload.payload.suite)
+          ? rust.payload.payload.suite.filter((row: unknown) => row && typeof row === 'object')
+          : [];
+      }
+    }
     const src = Array.isArray(rawSuite) ? rawSuite : [];
     const fallback = Array.isArray(baseSuite) ? baseSuite : [];
     const rows = src.length ? src : fallback;
@@ -2974,6 +3004,28 @@ function defaultHarnessState() {
 }
 
 function loadHarnessState(paths: AnyObj) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'load_harness_state',
+      {
+        file_path: paths && paths.harness_state_path ? String(paths.harness_state_path) : '',
+        now_iso: nowIso()
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const row = rust.payload.payload.state && typeof rust.payload.payload.state === 'object'
+        ? rust.payload.payload.state
+        : {};
+      return {
+        schema_id: 'inversion_maturity_harness_state',
+        schema_version: '1.0',
+        updated_at: String(row.updated_at || nowIso()),
+        last_run_ts: row.last_run_ts ? String(row.last_run_ts) : null,
+        cursor: clampInt(row.cursor, 0, 1000000, 0)
+      };
+    }
+  }
   const src = readJson(paths.harness_state_path, null);
   const base = defaultHarnessState();
   if (!src || typeof src !== 'object') return base;
@@ -2987,6 +3039,29 @@ function loadHarnessState(paths: AnyObj) {
 }
 
 function saveHarnessState(paths: AnyObj, state: AnyObj) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'save_harness_state',
+      {
+        file_path: paths && paths.harness_state_path ? String(paths.harness_state_path) : '',
+        state: state && typeof state === 'object' ? state : {},
+        now_iso: nowIso()
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const row = rust.payload.payload.state && typeof rust.payload.payload.state === 'object'
+        ? rust.payload.payload.state
+        : {};
+      return {
+        schema_id: 'inversion_maturity_harness_state',
+        schema_version: '1.0',
+        updated_at: String(row.updated_at || nowIso()),
+        last_run_ts: row.last_run_ts ? String(row.last_run_ts) : null,
+        cursor: clampInt(row.cursor, 0, 1000000, 0)
+      };
+    }
+  }
   const out = {
     schema_id: 'inversion_maturity_harness_state',
     schema_version: '1.0',
@@ -3025,6 +3100,27 @@ function defaultFirstPrincipleLockState() {
 }
 
 function loadFirstPrincipleLockState(paths: AnyObj) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'load_first_principle_lock_state',
+      {
+        file_path: paths && paths.first_principles_lock_path ? String(paths.first_principles_lock_path) : '',
+        now_iso: nowIso()
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const row = rust.payload.payload.state && typeof rust.payload.payload.state === 'object'
+        ? rust.payload.payload.state
+        : {};
+      return {
+        schema_id: 'inversion_first_principle_lock_state',
+        schema_version: '1.0',
+        updated_at: String(row.updated_at || nowIso()),
+        locks: row.locks && typeof row.locks === 'object' ? row.locks : {}
+      };
+    }
+  }
   const src = readJson(paths.first_principles_lock_path, null);
   const base = defaultFirstPrincipleLockState();
   if (!src || typeof src !== 'object') return base;
@@ -3038,6 +3134,28 @@ function loadFirstPrincipleLockState(paths: AnyObj) {
 }
 
 function saveFirstPrincipleLockState(paths: AnyObj, state: AnyObj) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'save_first_principle_lock_state',
+      {
+        file_path: paths && paths.first_principles_lock_path ? String(paths.first_principles_lock_path) : '',
+        state: state && typeof state === 'object' ? state : {},
+        now_iso: nowIso()
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const row = rust.payload.payload.state && typeof rust.payload.payload.state === 'object'
+        ? rust.payload.payload.state
+        : {};
+      return {
+        schema_id: 'inversion_first_principle_lock_state',
+        schema_version: '1.0',
+        updated_at: String(row.updated_at || nowIso()),
+        locks: row.locks && typeof row.locks === 'object' ? row.locks : {}
+      };
+    }
+  }
   const out = {
     schema_id: 'inversion_first_principle_lock_state',
     schema_version: '1.0',
@@ -3255,6 +3373,27 @@ function normalizeObserverId(v: unknown) {
 }
 
 function loadObserverApprovals(paths: AnyObj) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'load_observer_approvals',
+      {
+        file_path: paths && paths.observer_approvals_path ? String(paths.observer_approvals_path) : ''
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return Array.isArray(rust.payload.payload.rows)
+        ? rust.payload.payload.rows
+          .map((row: AnyObj) => ({
+            ts: cleanText(row && row.ts || '', 64),
+            target: normalizeTarget(row && row.target || 'tactical'),
+            observer_id: normalizeObserverId(row && row.observer_id || row && row.observerId || ''),
+            note: cleanText(row && row.note || '', 280)
+          }))
+          .filter((row: AnyObj) => !!row.ts && !!row.observer_id)
+        : [];
+    }
+  }
   const rows = readJsonl(paths.observer_approvals_path || '');
   return rows
     .map((row: AnyObj) => ({
@@ -3267,6 +3406,32 @@ function loadObserverApprovals(paths: AnyObj) {
 }
 
 function appendObserverApproval(paths: AnyObj, payload: AnyObj) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'append_observer_approval',
+      {
+        file_path: paths && paths.observer_approvals_path ? String(paths.observer_approvals_path) : '',
+        target: payload && payload.target != null ? String(payload.target) : 'tactical',
+        observer_id: payload && payload.observer_id != null ? String(payload.observer_id) : '',
+        note: payload && payload.note != null ? String(payload.note) : '',
+        now_iso: nowIso()
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const row = rust.payload.payload.row && typeof rust.payload.payload.row === 'object'
+        ? rust.payload.payload.row
+        : {};
+      return {
+        ts: cleanText(row.ts || '', 64),
+        type: cleanText(row.type || 'inversion_live_graduation_observer_approval', 120)
+          || 'inversion_live_graduation_observer_approval',
+        target: normalizeTarget(row.target || 'tactical'),
+        observer_id: normalizeObserverId(row.observer_id || ''),
+        note: cleanText(row.note || '', 280)
+      };
+    }
+  }
   const row = {
     ts: nowIso(),
     type: 'inversion_live_graduation_observer_approval',
@@ -3279,6 +3444,20 @@ function appendObserverApproval(paths: AnyObj, payload: AnyObj) {
 }
 
 function countObserverApprovals(paths: AnyObj, target: string, windowDays: number) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'count_observer_approvals',
+      {
+        file_path: paths && paths.observer_approvals_path ? String(paths.observer_approvals_path) : '',
+        target: target == null ? 'tactical' : String(target),
+        window_days: Number(windowDays)
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return clampInt(rust.payload.payload.count, 0, 100000, 0);
+    }
+  }
   const cutoff = Date.now() - (clampInt(windowDays, 1, 3650, 90) * 24 * 60 * 60 * 1000);
   const seen = new Set<string>();
   for (const row of loadObserverApprovals(paths)) {
@@ -4907,6 +5086,19 @@ function appendPersonaLensGateReceipt(paths: AnyObj, policy: AnyObj, payload: An
 }
 
 function ensureCorrespondenceFile(filePath: string) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'ensure_correspondence_file',
+      {
+        file_path: filePath == null ? '' : String(filePath),
+        header: '# Shadow Conclave Correspondence\n\n'
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return;
+    }
+  }
   ensureDir(path.dirname(filePath));
   if (fs.existsSync(filePath)) return;
   fs.writeFileSync(filePath, '# Shadow Conclave Correspondence\n\n', 'utf8');
@@ -7877,6 +8069,14 @@ module.exports = {
   normalizeAxiomPattern,
   normalizeAxiomSignalTerms,
   normalizeObserverId,
+  loadHarnessState,
+  saveHarnessState,
+  loadFirstPrincipleLockState,
+  saveFirstPrincipleLockState,
+  loadObserverApprovals,
+  appendObserverApproval,
+  countObserverApprovals,
+  ensureCorrespondenceFile,
   extractNumeric,
   pickFirstNumeric,
   readDriftFromStateFile,

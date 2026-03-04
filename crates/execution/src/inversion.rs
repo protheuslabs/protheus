@@ -3,7 +3,7 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -1379,6 +1379,146 @@ pub struct RuntimePathsInput {
 #[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct RuntimePathsOutput {
     pub paths: Value,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct NormalizeAxiomListInput {
+    #[serde(default)]
+    pub raw_axioms: Option<Value>,
+    #[serde(default)]
+    pub base_axioms: Option<Value>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct NormalizeAxiomListOutput {
+    pub axioms: Vec<Value>,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct NormalizeHarnessSuiteInput {
+    #[serde(default)]
+    pub raw_suite: Option<Value>,
+    #[serde(default)]
+    pub base_suite: Option<Value>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct NormalizeHarnessSuiteOutput {
+    pub suite: Vec<Value>,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct LoadHarnessStateInput {
+    #[serde(default)]
+    pub file_path: Option<String>,
+    #[serde(default)]
+    pub now_iso: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct LoadHarnessStateOutput {
+    pub state: Value,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct SaveHarnessStateInput {
+    #[serde(default)]
+    pub file_path: Option<String>,
+    #[serde(default)]
+    pub state: Option<Value>,
+    #[serde(default)]
+    pub now_iso: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct SaveHarnessStateOutput {
+    pub state: Value,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct LoadFirstPrincipleLockStateInput {
+    #[serde(default)]
+    pub file_path: Option<String>,
+    #[serde(default)]
+    pub now_iso: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct LoadFirstPrincipleLockStateOutput {
+    pub state: Value,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct SaveFirstPrincipleLockStateInput {
+    #[serde(default)]
+    pub file_path: Option<String>,
+    #[serde(default)]
+    pub state: Option<Value>,
+    #[serde(default)]
+    pub now_iso: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct SaveFirstPrincipleLockStateOutput {
+    pub state: Value,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct LoadObserverApprovalsInput {
+    #[serde(default)]
+    pub file_path: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct LoadObserverApprovalsOutput {
+    pub rows: Vec<Value>,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct AppendObserverApprovalInput {
+    #[serde(default)]
+    pub file_path: Option<String>,
+    #[serde(default)]
+    pub target: Option<String>,
+    #[serde(default)]
+    pub observer_id: Option<String>,
+    #[serde(default)]
+    pub note: Option<String>,
+    #[serde(default)]
+    pub now_iso: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct AppendObserverApprovalOutput {
+    pub row: Value,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct CountObserverApprovalsInput {
+    #[serde(default)]
+    pub file_path: Option<String>,
+    #[serde(default)]
+    pub target: Option<String>,
+    #[serde(default)]
+    pub window_days: Option<Value>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct CountObserverApprovalsOutput {
+    pub count: i64,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct EnsureCorrespondenceFileInput {
+    #[serde(default)]
+    pub file_path: Option<String>,
+    #[serde(default)]
+    pub header: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct EnsureCorrespondenceFileOutput {
+    pub ok: bool,
 }
 
 fn normalize_token(raw: &str, max_len: usize) -> String {
@@ -4342,6 +4482,454 @@ pub fn compute_runtime_paths(input: &RuntimePathsInput) -> RuntimePathsOutput {
     }
 }
 
+pub fn compute_normalize_axiom_list(input: &NormalizeAxiomListInput) -> NormalizeAxiomListOutput {
+    let src = input
+        .raw_axioms
+        .as_ref()
+        .and_then(|v| v.as_array())
+        .cloned()
+        .unwrap_or_default();
+    let fallback = input
+        .base_axioms
+        .as_ref()
+        .and_then(|v| v.as_array())
+        .cloned()
+        .unwrap_or_default();
+    let rows = if src.is_empty() { fallback } else { src };
+    let mut out = Vec::new();
+    for row in rows {
+        let item = row.as_object();
+        let id = normalize_token_runtime(&value_to_string(item.and_then(|m| m.get("id"))), 80);
+        let patterns = item
+            .and_then(|m| m.get("patterns"))
+            .and_then(|v| v.as_array())
+            .map(|arr| {
+                arr.iter()
+                    .map(|x| clean_text_runtime(&value_to_string(Some(x)), 140).to_lowercase())
+                    .filter(|x| !x.is_empty())
+                    .take(20)
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default();
+        let regex = item
+            .and_then(|m| m.get("regex"))
+            .and_then(|v| v.as_array())
+            .map(|arr| {
+                arr.iter()
+                    .map(|x| clean_text_runtime(&value_to_string(Some(x)), 220))
+                    .filter(|x| !x.is_empty())
+                    .take(20)
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default();
+        let intent_tags = compute_normalize_list(&NormalizeListInput {
+            value: item.and_then(|m| m.get("intent_tags")).cloned(),
+            max_len: Some(80),
+        })
+        .items
+        .into_iter()
+        .take(24)
+        .collect::<Vec<_>>();
+
+        let signals = item
+            .and_then(|m| m.get("signals"))
+            .and_then(|v| v.as_object());
+        let action_terms = signals
+            .and_then(|m| m.get("action_terms"))
+            .and_then(|v| v.as_array())
+            .map(|arr| {
+                arr.iter()
+                    .map(|x| clean_text_runtime(&value_to_string(Some(x)), 80).to_lowercase())
+                    .filter(|x| !x.is_empty())
+                    .take(24)
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default();
+        let subject_terms = signals
+            .and_then(|m| m.get("subject_terms"))
+            .and_then(|v| v.as_array())
+            .map(|arr| {
+                arr.iter()
+                    .map(|x| clean_text_runtime(&value_to_string(Some(x)), 80).to_lowercase())
+                    .filter(|x| !x.is_empty())
+                    .take(24)
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default();
+        let object_terms = signals
+            .and_then(|m| m.get("object_terms"))
+            .and_then(|v| v.as_array())
+            .map(|arr| {
+                arr.iter()
+                    .map(|x| clean_text_runtime(&value_to_string(Some(x)), 80).to_lowercase())
+                    .filter(|x| !x.is_empty())
+                    .take(24)
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default();
+        let default_groups = (if !action_terms.is_empty() { 1 } else { 0 })
+            + (if !subject_terms.is_empty() { 1 } else { 0 })
+            + (if !object_terms.is_empty() { 1 } else { 0 });
+        let min_signal_groups = parse_number_like(item.and_then(|m| m.get("min_signal_groups")))
+            .unwrap_or(default_groups as f64)
+            .floor() as i64;
+        let min_signal_groups = min_signal_groups.clamp(0, 3);
+
+        let semantic_req = item
+            .and_then(|m| m.get("semantic_requirements"))
+            .and_then(|v| v.as_object());
+        let semantic_actions = compute_normalize_list(&NormalizeListInput {
+            value: semantic_req.and_then(|m| m.get("actions")).cloned(),
+            max_len: Some(80),
+        })
+        .items
+        .into_iter()
+        .take(24)
+        .collect::<Vec<_>>();
+        let semantic_subjects = compute_normalize_list(&NormalizeListInput {
+            value: semantic_req.and_then(|m| m.get("subjects")).cloned(),
+            max_len: Some(80),
+        })
+        .items
+        .into_iter()
+        .take(24)
+        .collect::<Vec<_>>();
+        let semantic_objects = compute_normalize_list(&NormalizeListInput {
+            value: semantic_req.and_then(|m| m.get("objects")).cloned(),
+            max_len: Some(80),
+        })
+        .items
+        .into_iter()
+        .take(24)
+        .collect::<Vec<_>>();
+        let has_semantic_requirements =
+            !semantic_actions.is_empty() || !semantic_subjects.is_empty() || !semantic_objects.is_empty();
+
+        if id.is_empty()
+            || (patterns.is_empty()
+                && regex.is_empty()
+                && intent_tags.is_empty()
+                && !has_semantic_requirements)
+        {
+            continue;
+        }
+
+        out.push(json!({
+            "id": id,
+            "patterns": patterns,
+            "regex": regex,
+            "intent_tags": intent_tags,
+            "signals": {
+                "action_terms": action_terms,
+                "subject_terms": subject_terms,
+                "object_terms": object_terms
+            },
+            "min_signal_groups": min_signal_groups,
+            "semantic_requirements": {
+                "actions": semantic_actions,
+                "subjects": semantic_subjects,
+                "objects": semantic_objects
+            }
+        }));
+    }
+    NormalizeAxiomListOutput { axioms: out }
+}
+
+pub fn compute_normalize_harness_suite(
+    input: &NormalizeHarnessSuiteInput,
+) -> NormalizeHarnessSuiteOutput {
+    let src = input
+        .raw_suite
+        .as_ref()
+        .and_then(|v| v.as_array())
+        .cloned()
+        .unwrap_or_default();
+    let fallback = input
+        .base_suite
+        .as_ref()
+        .and_then(|v| v.as_array())
+        .cloned()
+        .unwrap_or_default();
+    let rows = if src.is_empty() { fallback } else { src };
+    let mut out = Vec::new();
+    for (idx, row) in rows.iter().enumerate() {
+        let item = row.as_object();
+        let default_id = format!("imh_{}", idx + 1);
+        let id_raw = value_to_string(item.and_then(|m| m.get("id")));
+        let mut id = normalize_token_runtime(
+            if id_raw.is_empty() {
+                default_id.as_str()
+            } else {
+                id_raw.as_str()
+            },
+            80,
+        );
+        if id.is_empty() {
+            id = default_id;
+        }
+        let objective = clean_text_runtime(&value_to_string(item.and_then(|m| m.get("objective"))), 280);
+        if objective.is_empty() {
+            continue;
+        }
+        let impact = compute_normalize_impact(&NormalizeImpactInput {
+            value: Some(value_to_string(item.and_then(|m| m.get("impact")))),
+        })
+        .value;
+        let target = compute_normalize_target(&NormalizeTargetInput {
+            value: Some(value_to_string(item.and_then(|m| m.get("target")))),
+        })
+        .value;
+        let mut difficulty = normalize_token_runtime(
+            &value_to_string(item.and_then(|m| m.get("difficulty"))),
+            24,
+        );
+        if difficulty.is_empty() {
+            difficulty = "medium".to_string();
+        }
+        out.push(json!({
+            "id": id,
+            "objective": objective,
+            "impact": impact,
+            "target": target,
+            "difficulty": difficulty
+        }));
+    }
+    NormalizeHarnessSuiteOutput { suite: out }
+}
+
+pub fn compute_load_harness_state(input: &LoadHarnessStateInput) -> LoadHarnessStateOutput {
+    let now_iso = input.now_iso.clone().unwrap_or_else(now_iso_runtime);
+    let src = compute_read_json(&ReadJsonInput {
+        file_path: input.file_path.clone(),
+        fallback: Some(Value::Null),
+    })
+    .value;
+    let row = src.as_object();
+    let updated_at = {
+        let value = value_to_string(row.and_then(|m| m.get("updated_at")));
+        if value.is_empty() { now_iso.clone() } else { value }
+    };
+    let last_run_ts = {
+        let value = value_to_string(row.and_then(|m| m.get("last_run_ts")));
+        if value.is_empty() { Value::Null } else { Value::String(value) }
+    };
+    let cursor = parse_number_like(row.and_then(|m| m.get("cursor")))
+        .unwrap_or(0.0)
+        .floor() as i64;
+    LoadHarnessStateOutput {
+        state: json!({
+            "schema_id": "inversion_maturity_harness_state",
+            "schema_version": "1.0",
+            "updated_at": updated_at,
+            "last_run_ts": last_run_ts,
+            "cursor": cursor.clamp(0, 1_000_000)
+        }),
+    }
+}
+
+pub fn compute_save_harness_state(input: &SaveHarnessStateInput) -> SaveHarnessStateOutput {
+    let now_iso = input.now_iso.clone().unwrap_or_else(now_iso_runtime);
+    let src = input.state.as_ref().and_then(|v| v.as_object());
+    let last_run_ts = {
+        let value = value_to_string(src.and_then(|m| m.get("last_run_ts")));
+        if value.is_empty() { Value::Null } else { Value::String(value) }
+    };
+    let cursor = parse_number_like(src.and_then(|m| m.get("cursor")))
+        .unwrap_or(0.0)
+        .floor() as i64;
+    let out = json!({
+        "schema_id": "inversion_maturity_harness_state",
+        "schema_version": "1.0",
+        "updated_at": now_iso,
+        "last_run_ts": last_run_ts,
+        "cursor": cursor.clamp(0, 1_000_000)
+    });
+    let _ = compute_write_json_atomic(&WriteJsonAtomicInput {
+        file_path: input.file_path.clone(),
+        value: Some(out.clone()),
+    });
+    SaveHarnessStateOutput { state: out }
+}
+
+pub fn compute_load_first_principle_lock_state(
+    input: &LoadFirstPrincipleLockStateInput,
+) -> LoadFirstPrincipleLockStateOutput {
+    let now_iso = input.now_iso.clone().unwrap_or_else(now_iso_runtime);
+    let src = compute_read_json(&ReadJsonInput {
+        file_path: input.file_path.clone(),
+        fallback: Some(Value::Null),
+    })
+    .value;
+    let row = src.as_object();
+    let updated_at = {
+        let value = value_to_string(row.and_then(|m| m.get("updated_at")));
+        if value.is_empty() { now_iso.clone() } else { value }
+    };
+    let locks = row
+        .and_then(|m| m.get("locks"))
+        .and_then(|v| v.as_object())
+        .map(|m| Value::Object(m.clone()))
+        .unwrap_or_else(|| json!({}));
+    LoadFirstPrincipleLockStateOutput {
+        state: json!({
+            "schema_id": "inversion_first_principle_lock_state",
+            "schema_version": "1.0",
+            "updated_at": updated_at,
+            "locks": locks
+        }),
+    }
+}
+
+pub fn compute_save_first_principle_lock_state(
+    input: &SaveFirstPrincipleLockStateInput,
+) -> SaveFirstPrincipleLockStateOutput {
+    let now_iso = input.now_iso.clone().unwrap_or_else(now_iso_runtime);
+    let src = input.state.as_ref().and_then(|v| v.as_object());
+    let locks = src
+        .and_then(|m| m.get("locks"))
+        .and_then(|v| v.as_object())
+        .map(|m| Value::Object(m.clone()))
+        .unwrap_or_else(|| json!({}));
+    let out = json!({
+        "schema_id": "inversion_first_principle_lock_state",
+        "schema_version": "1.0",
+        "updated_at": now_iso,
+        "locks": locks
+    });
+    let _ = compute_write_json_atomic(&WriteJsonAtomicInput {
+        file_path: input.file_path.clone(),
+        value: Some(out.clone()),
+    });
+    SaveFirstPrincipleLockStateOutput { state: out }
+}
+
+pub fn compute_load_observer_approvals(
+    input: &LoadObserverApprovalsInput,
+) -> LoadObserverApprovalsOutput {
+    let rows = compute_read_jsonl(&ReadJsonlInput {
+        file_path: input.file_path.clone(),
+    })
+    .rows
+    .into_iter()
+    .filter_map(|row| {
+        let item = row.as_object()?;
+        let ts = clean_text_runtime(&value_to_string(item.get("ts")), 64);
+        let target = compute_normalize_target(&NormalizeTargetInput {
+            value: Some(value_to_string(item.get("target"))),
+        })
+        .value;
+        let observer_id = compute_normalize_observer_id(&NormalizeObserverIdInput {
+            value: Some(
+                if item.get("observer_id").is_some() {
+                    value_to_string(item.get("observer_id"))
+                } else {
+                    value_to_string(item.get("observerId"))
+                },
+            ),
+        })
+        .value;
+        let note = clean_text_runtime(&value_to_string(item.get("note")), 280);
+        if ts.is_empty() || observer_id.is_empty() {
+            return None;
+        }
+        Some(json!({
+            "ts": ts,
+            "target": target,
+            "observer_id": observer_id,
+            "note": note
+        }))
+    })
+    .collect::<Vec<_>>();
+    LoadObserverApprovalsOutput { rows }
+}
+
+pub fn compute_append_observer_approval(
+    input: &AppendObserverApprovalInput,
+) -> AppendObserverApprovalOutput {
+    let row = json!({
+        "ts": input.now_iso.clone().unwrap_or_else(now_iso_runtime),
+        "type": "inversion_live_graduation_observer_approval",
+        "target": compute_normalize_target(&NormalizeTargetInput {
+            value: input.target.clone()
+        }).value,
+        "observer_id": compute_normalize_observer_id(&NormalizeObserverIdInput {
+            value: input.observer_id.clone()
+        }).value,
+        "note": clean_text_runtime(input.note.as_deref().unwrap_or(""), 280)
+    });
+    let _ = compute_append_jsonl(&AppendJsonlInput {
+        file_path: input.file_path.clone(),
+        row: Some(row.clone()),
+    });
+    AppendObserverApprovalOutput { row }
+}
+
+pub fn compute_count_observer_approvals(
+    input: &CountObserverApprovalsInput,
+) -> CountObserverApprovalsOutput {
+    let window_days = parse_number_like(input.window_days.as_ref())
+        .unwrap_or(90.0)
+        .floor() as i64;
+    let window_days = window_days.clamp(1, 3650);
+    let cutoff = Utc::now().timestamp_millis() - (window_days * 24 * 60 * 60 * 1000);
+    let target = compute_normalize_target(&NormalizeTargetInput {
+        value: input.target.clone(),
+    })
+    .value;
+    let rows = compute_load_observer_approvals(&LoadObserverApprovalsInput {
+        file_path: input.file_path.clone(),
+    })
+    .rows;
+    let mut seen: HashSet<String> = HashSet::new();
+    for row in rows {
+        let item = row.as_object();
+        let row_target = compute_normalize_target(&NormalizeTargetInput {
+            value: Some(value_to_string(item.and_then(|m| m.get("target")))),
+        })
+        .value;
+        if row_target != target {
+            continue;
+        }
+        let ts = value_to_string(item.and_then(|m| m.get("ts")));
+        if parse_ts_ms_runtime(&ts) < cutoff {
+            continue;
+        }
+        let observer_id = compute_normalize_observer_id(&NormalizeObserverIdInput {
+            value: Some(value_to_string(item.and_then(|m| m.get("observer_id")))),
+        })
+        .value;
+        if observer_id.is_empty() {
+            continue;
+        }
+        seen.insert(observer_id);
+    }
+    CountObserverApprovalsOutput {
+        count: seen.len() as i64,
+    }
+}
+
+pub fn compute_ensure_correspondence_file(
+    input: &EnsureCorrespondenceFileInput,
+) -> EnsureCorrespondenceFileOutput {
+    let file_path = input.file_path.as_deref().unwrap_or("").trim();
+    if file_path.is_empty() {
+        return EnsureCorrespondenceFileOutput { ok: true };
+    }
+    let path = Path::new(file_path);
+    if let Some(parent) = path.parent() {
+        let _ = fs::create_dir_all(parent);
+    }
+    if path.exists() {
+        return EnsureCorrespondenceFileOutput { ok: true };
+    }
+    let header = input
+        .header
+        .clone()
+        .unwrap_or_else(|| "# Shadow Conclave Correspondence\n\n".to_string());
+    let _ = fs::write(path, header);
+    EnsureCorrespondenceFileOutput { ok: true }
+}
+
 pub fn compute_creative_penalty(input: &CreativePenaltyInput) -> CreativePenaltyOutput {
     let preferred = input
         .preferred_creative_lane_ids
@@ -6011,6 +6599,112 @@ pub fn run_inversion_json(payload_json: &str) -> Result<String, String> {
         }))
         .map_err(|e| format!("inversion_encode_runtime_paths_failed:{e}"));
     }
+    if mode == "normalize_axiom_list" {
+        let input: NormalizeAxiomListInput = decode_input(&payload, "normalize_axiom_list_input")?;
+        let out = compute_normalize_axiom_list(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "normalize_axiom_list",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_normalize_axiom_list_failed:{e}"));
+    }
+    if mode == "normalize_harness_suite" {
+        let input: NormalizeHarnessSuiteInput = decode_input(&payload, "normalize_harness_suite_input")?;
+        let out = compute_normalize_harness_suite(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "normalize_harness_suite",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_normalize_harness_suite_failed:{e}"));
+    }
+    if mode == "load_harness_state" {
+        let input: LoadHarnessStateInput = decode_input(&payload, "load_harness_state_input")?;
+        let out = compute_load_harness_state(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "load_harness_state",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_load_harness_state_failed:{e}"));
+    }
+    if mode == "save_harness_state" {
+        let input: SaveHarnessStateInput = decode_input(&payload, "save_harness_state_input")?;
+        let out = compute_save_harness_state(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "save_harness_state",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_save_harness_state_failed:{e}"));
+    }
+    if mode == "load_first_principle_lock_state" {
+        let input: LoadFirstPrincipleLockStateInput =
+            decode_input(&payload, "load_first_principle_lock_state_input")?;
+        let out = compute_load_first_principle_lock_state(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "load_first_principle_lock_state",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_load_first_principle_lock_state_failed:{e}"));
+    }
+    if mode == "save_first_principle_lock_state" {
+        let input: SaveFirstPrincipleLockStateInput =
+            decode_input(&payload, "save_first_principle_lock_state_input")?;
+        let out = compute_save_first_principle_lock_state(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "save_first_principle_lock_state",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_save_first_principle_lock_state_failed:{e}"));
+    }
+    if mode == "load_observer_approvals" {
+        let input: LoadObserverApprovalsInput =
+            decode_input(&payload, "load_observer_approvals_input")?;
+        let out = compute_load_observer_approvals(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "load_observer_approvals",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_load_observer_approvals_failed:{e}"));
+    }
+    if mode == "append_observer_approval" {
+        let input: AppendObserverApprovalInput =
+            decode_input(&payload, "append_observer_approval_input")?;
+        let out = compute_append_observer_approval(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "append_observer_approval",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_append_observer_approval_failed:{e}"));
+    }
+    if mode == "count_observer_approvals" {
+        let input: CountObserverApprovalsInput =
+            decode_input(&payload, "count_observer_approvals_input")?;
+        let out = compute_count_observer_approvals(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "count_observer_approvals",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_count_observer_approvals_failed:{e}"));
+    }
+    if mode == "ensure_correspondence_file" {
+        let input: EnsureCorrespondenceFileInput =
+            decode_input(&payload, "ensure_correspondence_file_input")?;
+        let out = compute_ensure_correspondence_file(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "ensure_correspondence_file",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_ensure_correspondence_file_failed:{e}"));
+    }
     Err(format!("inversion_mode_unsupported:{mode}"))
 }
 
@@ -7065,5 +7759,144 @@ mod tests {
                 .unwrap_or(""),
             "/tmp/state-root"
         );
+    }
+
+    #[test]
+    fn helper_primitives_batch14_match_contract() {
+        let out_axioms = compute_normalize_axiom_list(&NormalizeAxiomListInput {
+            raw_axioms: Some(json!([
+                {
+                    "id": " A1 ",
+                    "patterns": [" Do no harm ", ""],
+                    "regex": ["^never\\s+harm"],
+                    "intent_tags": [" safety ", "guard"],
+                    "signals": {
+                        "action_terms": ["harm"],
+                        "subject_terms": ["operator"],
+                        "object_terms": ["user"]
+                    },
+                    "min_signal_groups": 2,
+                    "semantic_requirements": {
+                        "actions": ["protect"],
+                        "subjects": ["human"],
+                        "objects": ["safety"]
+                    }
+                }
+            ])),
+            base_axioms: Some(json!([])),
+        });
+        assert_eq!(out_axioms.axioms.len(), 1);
+        let axiom = out_axioms.axioms[0].as_object().expect("axiom object");
+        assert_eq!(axiom.get("id").and_then(|v| v.as_str()).unwrap_or(""), "a1");
+
+        let out_suite = compute_normalize_harness_suite(&NormalizeHarnessSuiteInput {
+            raw_suite: Some(json!([
+                {
+                    "id": " HX-1 ",
+                    "objective": " validate lane ",
+                    "impact": "critical",
+                    "target": "directive",
+                    "difficulty": "hard"
+                }
+            ])),
+            base_suite: Some(json!([])),
+        });
+        assert_eq!(out_suite.suite.len(), 1);
+        let row = out_suite.suite[0].as_object().expect("suite row");
+        assert_eq!(row.get("id").and_then(|v| v.as_str()).unwrap_or(""), "hx-1");
+        assert_eq!(
+            row.get("target").and_then(|v| v.as_str()).unwrap_or(""),
+            "directive"
+        );
+
+        let temp_root = std::env::temp_dir().join("inv_batch14");
+        let _ = fs::remove_dir_all(&temp_root);
+        let _ = fs::create_dir_all(&temp_root);
+        let harness_path = temp_root.join("harness.json");
+        let first_principles_path = temp_root.join("lock_state.json");
+        let approvals_path = temp_root.join("observer_approvals.jsonl");
+        let correspondence_path = temp_root.join("correspondence.md");
+
+        let saved_harness = compute_save_harness_state(&SaveHarnessStateInput {
+            file_path: Some(harness_path.to_string_lossy().to_string()),
+            state: Some(json!({"last_run_ts":"2026-03-04T00:00:00.000Z","cursor":7})),
+            now_iso: Some("2026-03-04T12:00:00.000Z".to_string()),
+        });
+        assert_eq!(
+            saved_harness
+                .state
+                .as_object()
+                .and_then(|m| m.get("cursor"))
+                .and_then(|v| v.as_i64())
+                .unwrap_or(-1),
+            7
+        );
+        let loaded_harness = compute_load_harness_state(&LoadHarnessStateInput {
+            file_path: Some(harness_path.to_string_lossy().to_string()),
+            now_iso: Some("2026-03-04T12:00:00.000Z".to_string()),
+        });
+        assert_eq!(
+            loaded_harness
+                .state
+                .as_object()
+                .and_then(|m| m.get("cursor"))
+                .and_then(|v| v.as_i64())
+                .unwrap_or(-1),
+            7
+        );
+
+        let saved_lock = compute_save_first_principle_lock_state(&SaveFirstPrincipleLockStateInput {
+            file_path: Some(first_principles_path.to_string_lossy().to_string()),
+            state: Some(json!({"locks":{"k":{"confidence":0.9}}})),
+            now_iso: Some("2026-03-04T12:01:00.000Z".to_string()),
+        });
+        assert!(saved_lock
+            .state
+            .as_object()
+            .and_then(|m| m.get("locks"))
+            .and_then(|v| v.as_object())
+            .is_some());
+        let loaded_lock = compute_load_first_principle_lock_state(&LoadFirstPrincipleLockStateInput {
+            file_path: Some(first_principles_path.to_string_lossy().to_string()),
+            now_iso: Some("2026-03-04T12:02:00.000Z".to_string()),
+        });
+        assert!(loaded_lock
+            .state
+            .as_object()
+            .and_then(|m| m.get("locks"))
+            .and_then(|v| v.as_object())
+            .is_some());
+
+        let _ = compute_append_observer_approval(&AppendObserverApprovalInput {
+            file_path: Some(approvals_path.to_string_lossy().to_string()),
+            target: Some("belief".to_string()),
+            observer_id: Some("observer_a".to_string()),
+            note: Some("first".to_string()),
+            now_iso: Some("2026-03-04T12:00:00.000Z".to_string()),
+        });
+        let _ = compute_append_observer_approval(&AppendObserverApprovalInput {
+            file_path: Some(approvals_path.to_string_lossy().to_string()),
+            target: Some("belief".to_string()),
+            observer_id: Some("observer_a".to_string()),
+            note: Some("duplicate".to_string()),
+            now_iso: Some("2026-03-04T12:05:00.000Z".to_string()),
+        });
+        let loaded_observers = compute_load_observer_approvals(&LoadObserverApprovalsInput {
+            file_path: Some(approvals_path.to_string_lossy().to_string()),
+        });
+        assert_eq!(loaded_observers.rows.len(), 2);
+        let observer_count = compute_count_observer_approvals(&CountObserverApprovalsInput {
+            file_path: Some(approvals_path.to_string_lossy().to_string()),
+            target: Some("belief".to_string()),
+            window_days: Some(json!(365)),
+        });
+        assert_eq!(observer_count.count, 1);
+
+        let ensured = compute_ensure_correspondence_file(&EnsureCorrespondenceFileInput {
+            file_path: Some(correspondence_path.to_string_lossy().to_string()),
+            header: Some("# Shadow Conclave Correspondence\n\n".to_string()),
+        });
+        assert!(ensured.ok);
+        assert!(correspondence_path.exists());
     }
 }
