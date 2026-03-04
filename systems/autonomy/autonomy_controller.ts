@@ -2733,6 +2733,8 @@ const RUN_RESULT_TALLY_CACHE = new Map();
 const RUN_RESULT_TALLY_CACHE_MAX = 256;
 const QOS_LANE_USAGE_CACHE = new Map();
 const QOS_LANE_USAGE_CACHE_MAX = 256;
+const EYE_OUTCOME_COUNT_WINDOW_CACHE = new Map();
+const EYE_OUTCOME_COUNT_WINDOW_CACHE_MAX = 256;
 
 function isPolicyHoldResult(result): boolean {
   const r = String(result || '').trim();
@@ -6512,8 +6514,54 @@ function inWindow(ts, endDateStr, days) {
 
 function countEyeOutcomesInWindow(events, eyeRef, outcome, endDateStr, days) {
   if (!eyeRef) return 0;
+  const rows = Array.isArray(events) ? events : [];
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const safeDays = Math.max(1, Math.floor(Number(days || 1)));
+    const rustEvents = [];
+    for (const evt of rows) {
+      if (!evt || typeof evt !== 'object') continue;
+      rustEvents.push({
+        event_type: String(evt.type || ''),
+        outcome: String(evt.outcome || ''),
+        evidence_ref: String(evt.evidence_ref || ''),
+        ts: String(evt.ts || '')
+      });
+    }
+    const key = [
+      String(eyeRef || ''),
+      String(outcome || ''),
+      String(endDateStr || ''),
+      String(safeDays),
+      rustEvents
+        .map((row) => `${row.event_type}\u0000${row.outcome}\u0000${row.evidence_ref}\u0000${row.ts}`)
+        .join('\u0001')
+    ].join('\u0002');
+    if (EYE_OUTCOME_COUNT_WINDOW_CACHE.has(key)) {
+      return Number(EYE_OUTCOME_COUNT_WINDOW_CACHE.get(key) || 0);
+    }
+    const rust = runBacklogAutoscalePrimitive(
+      'eye_outcome_count_window',
+      {
+        events: rustEvents,
+        eye_ref: String(eyeRef || ''),
+        outcome: String(outcome || ''),
+        end_date_str: String(endDateStr || ''),
+        days: safeDays
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const val = Math.max(0, Number(rust.payload.payload.count || 0));
+      if (EYE_OUTCOME_COUNT_WINDOW_CACHE.size >= EYE_OUTCOME_COUNT_WINDOW_CACHE_MAX) {
+        const oldest = EYE_OUTCOME_COUNT_WINDOW_CACHE.keys().next();
+        if (!oldest.done) EYE_OUTCOME_COUNT_WINDOW_CACHE.delete(oldest.value);
+      }
+      EYE_OUTCOME_COUNT_WINDOW_CACHE.set(key, val);
+      return val;
+    }
+  }
   let count = 0;
-  for (const e of events) {
+  for (const e of rows) {
     if (!e || e.type !== 'outcome') continue;
     if (String(e.outcome || '') !== String(outcome || '')) continue;
     if (!inWindow(e.ts, endDateStr, days)) continue;
@@ -16878,5 +16926,6 @@ module.exports = {
   shippedCount,
   executedCountByRisk,
   tallyByResult,
-  qosLaneUsageFromRuns
+  qosLaneUsageFromRuns,
+  countEyeOutcomesInWindow
 };

@@ -1,3 +1,4 @@
+use chrono::{DateTime, Duration, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -466,6 +467,37 @@ pub struct QosLaneUsageOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct EyeOutcomeEventInput {
+    #[serde(default)]
+    pub event_type: Option<String>,
+    #[serde(default)]
+    pub outcome: Option<String>,
+    #[serde(default)]
+    pub evidence_ref: Option<String>,
+    #[serde(default)]
+    pub ts: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct EyeOutcomeWindowCountInput {
+    #[serde(default)]
+    pub events: Vec<EyeOutcomeEventInput>,
+    #[serde(default)]
+    pub eye_ref: Option<String>,
+    #[serde(default)]
+    pub outcome: Option<String>,
+    #[serde(default)]
+    pub end_date_str: Option<String>,
+    #[serde(default)]
+    pub days: Option<i64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct EyeOutcomeWindowCountOutput {
+    pub count: u32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct NoProgressResultInput {
     #[serde(default)]
     pub event_type: Option<String>,
@@ -925,6 +957,8 @@ pub struct AutoscaleRequest {
     pub run_result_tally_input: Option<RunResultTallyInput>,
     #[serde(default)]
     pub qos_lane_usage_input: Option<QosLaneUsageInput>,
+    #[serde(default)]
+    pub eye_outcome_count_window_input: Option<EyeOutcomeWindowCountInput>,
     #[serde(default)]
     pub no_progress_result_input: Option<NoProgressResultInput>,
     #[serde(default)]
@@ -1966,6 +2000,88 @@ pub fn compute_qos_lane_usage(input: &QosLaneUsageInput) -> QosLaneUsageOutput {
         }
     }
     out
+}
+
+fn parse_rfc3339_ts_ms(raw: &str) -> Option<i64> {
+    DateTime::parse_from_rfc3339(raw)
+        .ok()
+        .map(|dt| dt.with_timezone(&Utc).timestamp_millis())
+}
+
+pub fn compute_eye_outcome_count_window(
+    input: &EyeOutcomeWindowCountInput,
+) -> EyeOutcomeWindowCountOutput {
+    let eye_ref = input
+        .eye_ref
+        .as_ref()
+        .map(|v| v.trim().to_string())
+        .unwrap_or_default();
+    if eye_ref.is_empty() {
+        return EyeOutcomeWindowCountOutput { count: 0 };
+    }
+    let outcome = input
+        .outcome
+        .as_ref()
+        .map(|v| v.trim().to_string())
+        .unwrap_or_default();
+    let end_date_raw = input
+        .end_date_str
+        .as_ref()
+        .map(|v| v.trim().to_string())
+        .unwrap_or_default();
+    let end_date = NaiveDate::parse_from_str(&end_date_raw, "%Y-%m-%d").ok();
+    let Some(end_date) = end_date else {
+        return EyeOutcomeWindowCountOutput { count: 0 };
+    };
+    let days = input.days.unwrap_or(1).max(1);
+    let end_dt = end_date.and_hms_milli_opt(23, 59, 59, 999);
+    let start_date = end_date - Duration::days(days - 1);
+    let start_dt = start_date.and_hms_milli_opt(0, 0, 0, 0);
+    let (Some(end_dt), Some(start_dt)) = (end_dt, start_dt) else {
+        return EyeOutcomeWindowCountOutput { count: 0 };
+    };
+    let end_ms = end_dt.and_utc().timestamp_millis();
+    let start_ms = start_dt.and_utc().timestamp_millis();
+
+    let mut count: u32 = 0;
+    for evt in &input.events {
+        let event_type = evt
+            .event_type
+            .as_ref()
+            .map(|v| v.trim().to_ascii_lowercase())
+            .unwrap_or_default();
+        if event_type != "outcome" {
+            continue;
+        }
+        let event_outcome = evt
+            .outcome
+            .as_ref()
+            .map(|v| v.trim().to_string())
+            .unwrap_or_default();
+        if event_outcome != outcome {
+            continue;
+        }
+        let evidence_ref = evt
+            .evidence_ref
+            .as_ref()
+            .map(|v| v.to_string())
+            .unwrap_or_default();
+        if !evidence_ref.contains(&eye_ref) {
+            continue;
+        }
+        let ts_ms = evt
+            .ts
+            .as_ref()
+            .and_then(|v| parse_rfc3339_ts_ms(v.trim()));
+        let Some(ts_ms) = ts_ms else {
+            continue;
+        };
+        if ts_ms < start_ms || ts_ms > end_ms {
+            continue;
+        }
+        count += 1;
+    }
+    EyeOutcomeWindowCountOutput { count }
 }
 
 pub fn compute_no_progress_result(input: &NoProgressResultInput) -> NoProgressResultOutput {
@@ -3080,6 +3196,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
         }))
         .map_err(|e| format!("autoscale_qos_lane_usage_encode_failed:{e}"));
     }
+    if mode == "eye_outcome_count_window" {
+        let input = request
+            .eye_outcome_count_window_input
+            .ok_or_else(|| "autoscale_missing_eye_outcome_count_window_input".to_string())?;
+        let out = compute_eye_outcome_count_window(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "eye_outcome_count_window",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_eye_outcome_count_window_encode_failed:{e}"));
+    }
     if mode == "no_progress_result" {
         let input = request
             .no_progress_result_input
@@ -4078,6 +4206,61 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale qos_lane_usage");
         assert!(out.contains("\"mode\":\"qos_lane_usage\""));
+    }
+
+    #[test]
+    fn eye_outcome_count_window_counts_matching_rows() {
+        let out = compute_eye_outcome_count_window(&EyeOutcomeWindowCountInput {
+            events: vec![
+                EyeOutcomeEventInput {
+                    event_type: Some("outcome".to_string()),
+                    outcome: Some("success".to_string()),
+                    evidence_ref: Some("eye:foo".to_string()),
+                    ts: Some("2026-03-03T10:00:00.000Z".to_string()),
+                },
+                EyeOutcomeEventInput {
+                    event_type: Some("outcome".to_string()),
+                    outcome: Some("success".to_string()),
+                    evidence_ref: Some("eye:bar".to_string()),
+                    ts: Some("2026-03-03T10:00:00.000Z".to_string()),
+                },
+                EyeOutcomeEventInput {
+                    event_type: Some("outcome".to_string()),
+                    outcome: Some("success".to_string()),
+                    evidence_ref: Some("eye:foo".to_string()),
+                    ts: Some("2026-02-20T10:00:00.000Z".to_string()),
+                },
+            ],
+            eye_ref: Some("eye:foo".to_string()),
+            outcome: Some("success".to_string()),
+            end_date_str: Some("2026-03-03".to_string()),
+            days: Some(7),
+        });
+        assert_eq!(out.count, 1);
+    }
+
+    #[test]
+    fn autoscale_json_eye_outcome_count_window_path_works() {
+        let payload = serde_json::json!({
+            "mode": "eye_outcome_count_window",
+            "eye_outcome_count_window_input": {
+                "eye_ref": "eye:foo",
+                "outcome": "success",
+                "end_date_str": "2026-03-03",
+                "days": 3,
+                "events": [
+                    {
+                        "event_type": "outcome",
+                        "outcome": "success",
+                        "evidence_ref": "eye:foo",
+                        "ts": "2026-03-03T10:00:00.000Z"
+                    }
+                ]
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale eye_outcome_count_window");
+        assert!(out.contains("\"mode\":\"eye_outcome_count_window\""));
     }
 
     #[test]
