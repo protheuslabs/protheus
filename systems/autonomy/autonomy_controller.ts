@@ -4191,8 +4191,27 @@ function cooldownEntry(proposalId) {
   const cooldowns = getCooldowns();
   const ent = cooldowns[proposalId];
   if (!ent) return null;
+  const nowMs = Date.now();
   const untilMs = Number(ent.until_ms || 0);
-  if (!untilMs || Date.now() > untilMs) {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'cooldown_active_state',
+      {
+        until_ms: untilMs,
+        now_ms: nowMs
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      if (rust.payload.payload.expired === true) {
+        delete cooldowns[proposalId];
+        saveJson(COOLDOWNS_PATH, cooldowns);
+        return null;
+      }
+      return rust.payload.payload.active === true ? ent : null;
+    }
+  }
+  if (!untilMs || nowMs > untilMs) {
     delete cooldowns[proposalId];
     saveJson(COOLDOWNS_PATH, cooldowns);
     return null;
@@ -4204,8 +4223,27 @@ function cooldownActive(proposalId) {
   const cooldowns = getCooldowns();
   const ent = cooldowns[proposalId];
   if (!ent) return false;
+  const nowMs = Date.now();
   const untilMs = Number(ent.until_ms || 0);
-  if (!untilMs || Date.now() > untilMs) {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'cooldown_active_state',
+      {
+        until_ms: untilMs,
+        now_ms: nowMs
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      if (rust.payload.payload.expired === true) {
+        delete cooldowns[proposalId];
+        saveJson(COOLDOWNS_PATH, cooldowns);
+        return false;
+      }
+      return rust.payload.payload.active === true;
+    }
+  }
+  if (!untilMs || nowMs > untilMs) {
     delete cooldowns[proposalId];
     saveJson(COOLDOWNS_PATH, cooldowns);
     return false;

@@ -2757,6 +2757,20 @@ pub struct AllDecisionEventsOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct CooldownActiveStateInput {
+    #[serde(default)]
+    pub until_ms: Option<f64>,
+    #[serde(default)]
+    pub now_ms: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct CooldownActiveStateOutput {
+    pub active: bool,
+    pub expired: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ManualGatePrefilterInput {
     #[serde(default)]
     pub enabled: bool,
@@ -4781,6 +4795,8 @@ pub struct AutoscaleRequest {
     pub recent_run_events_input: Option<RecentRunEventsInput>,
     #[serde(default)]
     pub all_decision_events_input: Option<AllDecisionEventsInput>,
+    #[serde(default)]
+    pub cooldown_active_state_input: Option<CooldownActiveStateInput>,
     #[serde(default)]
     pub manual_gate_prefilter_input: Option<ManualGatePrefilterInput>,
     #[serde(default)]
@@ -9652,6 +9668,27 @@ pub fn compute_all_decision_events(input: &AllDecisionEventsInput) -> AllDecisio
         }
     }
     AllDecisionEventsOutput { events }
+}
+
+pub fn compute_cooldown_active_state(input: &CooldownActiveStateInput) -> CooldownActiveStateOutput {
+    let now_ms = input.now_ms.unwrap_or(0.0);
+    let until_ms = input.until_ms.unwrap_or(f64::NAN);
+    if !until_ms.is_finite() || until_ms <= 0.0 || !now_ms.is_finite() {
+        return CooldownActiveStateOutput {
+            active: false,
+            expired: true,
+        };
+    }
+    if now_ms > until_ms {
+        return CooldownActiveStateOutput {
+            active: false,
+            expired: true,
+        };
+    }
+    CooldownActiveStateOutput {
+        active: true,
+        expired: false,
+    }
 }
 
 pub fn compute_manual_gate_prefilter(input: &ManualGatePrefilterInput) -> ManualGatePrefilterOutput {
@@ -14943,6 +14980,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_all_decision_events_encode_failed:{e}"));
+    }
+    if mode == "cooldown_active_state" {
+        let input = request
+            .cooldown_active_state_input
+            .ok_or_else(|| "autoscale_missing_cooldown_active_state_input".to_string())?;
+        let out = compute_cooldown_active_state(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "cooldown_active_state",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_cooldown_active_state_encode_failed:{e}"));
     }
     if mode == "manual_gate_prefilter" {
         let input = request
@@ -21205,6 +21254,45 @@ mod tests {
         assert!(out.contains("\"mode\":\"all_decision_events\""));
         assert!(out.contains("\"proposal_id\":\"p1\""));
         assert!(out.contains("\"proposal_id\":\"p2\""));
+    }
+
+    #[test]
+    fn cooldown_active_state_matches_threshold_behavior() {
+        let active = compute_cooldown_active_state(&CooldownActiveStateInput {
+            until_ms: Some(1100.0),
+            now_ms: Some(1000.0),
+        });
+        assert!(active.active);
+        assert!(!active.expired);
+
+        let boundary = compute_cooldown_active_state(&CooldownActiveStateInput {
+            until_ms: Some(1000.0),
+            now_ms: Some(1000.0),
+        });
+        assert!(boundary.active);
+        assert!(!boundary.expired);
+
+        let expired = compute_cooldown_active_state(&CooldownActiveStateInput {
+            until_ms: Some(999.0),
+            now_ms: Some(1000.0),
+        });
+        assert!(!expired.active);
+        assert!(expired.expired);
+    }
+
+    #[test]
+    fn autoscale_json_cooldown_active_state_path_works() {
+        let payload = serde_json::json!({
+            "mode": "cooldown_active_state",
+            "cooldown_active_state_input": {
+                "until_ms": 1200,
+                "now_ms": 1000
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale cooldown_active_state");
+        assert!(out.contains("\"mode\":\"cooldown_active_state\""));
+        assert!(out.contains("\"active\":true"));
     }
 
     #[test]
