@@ -2738,6 +2738,33 @@ function getTierScope(state: AnyObj, policyVersion: string) {
 }
 
 function loadTierGovernanceState(paths: AnyObj, policyVersion = '1.0') {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'load_tier_governance_state',
+      {
+        file_path: paths && paths.tier_governance_path ? String(paths.tier_governance_path) : '',
+        policy_version: policyVersion == null ? '1.0' : String(policyVersion),
+        now_iso: nowIso()
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const row = rust.payload.payload.state && typeof rust.payload.payload.state === 'object'
+        ? rust.payload.payload.state
+        : {};
+      const activeScope = row.active_scope && typeof row.active_scope === 'object'
+        ? row.active_scope
+        : defaultTierScope();
+      return {
+        schema_id: 'inversion_tier_governance_state',
+        schema_version: '1.0',
+        active_policy_version: cleanText(row.active_policy_version || policyVersion || '1.0', 24) || '1.0',
+        updated_at: String(row.updated_at || nowIso()),
+        scopes: row.scopes && typeof row.scopes === 'object' ? row.scopes : {},
+        active_scope: activeScope
+      };
+    }
+  }
   const src = readJson(paths.tier_governance_path, null);
   const safeVersion = cleanText(policyVersion || '1.0', 24) || '1.0';
   const base = defaultTierGovernanceState(safeVersion);
@@ -2768,6 +2795,32 @@ function loadTierGovernanceState(paths: AnyObj, policyVersion = '1.0') {
 }
 
 function saveTierGovernanceState(paths: AnyObj, state: AnyObj, policyVersion = '1.0', retentionDays = 365) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'save_tier_governance_state',
+      {
+        file_path: paths && paths.tier_governance_path ? String(paths.tier_governance_path) : '',
+        state: state && typeof state === 'object' ? state : {},
+        policy_version: policyVersion == null ? '1.0' : String(policyVersion),
+        retention_days: Number(retentionDays),
+        now_iso: nowIso()
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const row = rust.payload.payload.state && typeof rust.payload.payload.state === 'object'
+        ? rust.payload.payload.state
+        : {};
+      return {
+        schema_id: 'inversion_tier_governance_state',
+        schema_version: '1.0',
+        active_policy_version: cleanText(row.active_policy_version || policyVersion || '1.0', 24) || '1.0',
+        updated_at: String(row.updated_at || nowIso()),
+        scopes: row.scopes && typeof row.scopes === 'object' ? row.scopes : {},
+        active_scope: row.active_scope && typeof row.active_scope === 'object' ? row.active_scope : defaultTierScope()
+      };
+    }
+  }
   const safeVersion = cleanText(policyVersion || '1.0', 24) || '1.0';
   const src = state && typeof state === 'object' ? state : {};
   const scopesSrc = src.scopes && typeof src.scopes === 'object' ? src.scopes : {};
@@ -2791,6 +2844,27 @@ function saveTierGovernanceState(paths: AnyObj, state: AnyObj, policyVersion = '
 }
 
 function pushTierEvent(scopeMap: AnyObj, target: string, ts: string) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'push_tier_event',
+      {
+        scope_map: scopeMap && typeof scopeMap === 'object' ? scopeMap : {},
+        target: target == null ? 'tactical' : String(target),
+        ts: ts == null ? nowIso() : String(ts)
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const map = rust.payload.payload.map && typeof rust.payload.payload.map === 'object'
+        ? rust.payload.payload.map
+        : {};
+      if (scopeMap && typeof scopeMap === 'object') {
+        for (const key of Object.keys(scopeMap)) delete scopeMap[key];
+        Object.assign(scopeMap, map);
+      }
+      return;
+    }
+  }
   const key = normalizeTarget(target || 'tactical');
   if (!scopeMap || typeof scopeMap !== 'object') return;
   if (!Array.isArray(scopeMap[key])) scopeMap[key] = [];
@@ -2829,6 +2903,25 @@ function tierRetentionDays(policy: AnyObj) {
 }
 
 function addTierEvent(paths: AnyObj, policy: AnyObj, metric: string, target: string, ts = nowIso()) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'add_tier_event',
+      {
+        file_path: paths && paths.tier_governance_path ? String(paths.tier_governance_path) : '',
+        policy: policy && typeof policy === 'object' ? policy : {},
+        metric: metric == null ? '' : String(metric),
+        target: target == null ? 'tactical' : String(target),
+        ts: ts == null ? nowIso() : String(ts)
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const row = rust.payload.payload.state && typeof rust.payload.payload.state === 'object'
+        ? rust.payload.payload.state
+        : {};
+      return row;
+    }
+  }
   const policyVersion = cleanText(policy && policy.version || '1.0', 24) || '1.0';
   const state = loadTierGovernanceState(paths, policyVersion);
   const scope = getTierScope(state, policyVersion);
@@ -2947,18 +3040,87 @@ function effectiveFirstNHumanVetoUses(tierTransition: AnyObj, target: string) {
 }
 
 function incrementLiveApplyAttempt(paths: AnyObj, policy: AnyObj, target: string) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'increment_live_apply_attempt',
+      {
+        file_path: paths && paths.tier_governance_path ? String(paths.tier_governance_path) : '',
+        policy: policy && typeof policy === 'object' ? policy : {},
+        target: target == null ? 'tactical' : String(target),
+        now_iso: nowIso()
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return rust.payload.payload.state && typeof rust.payload.payload.state === 'object'
+        ? rust.payload.payload.state
+        : null;
+    }
+  }
   return addTierEvent(paths, policy, 'live_apply_attempts', target, nowIso());
 }
 
 function incrementLiveApplySuccess(paths: AnyObj, policy: AnyObj, target: string) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'increment_live_apply_success',
+      {
+        file_path: paths && paths.tier_governance_path ? String(paths.tier_governance_path) : '',
+        policy: policy && typeof policy === 'object' ? policy : {},
+        target: target == null ? 'tactical' : String(target),
+        now_iso: nowIso()
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return rust.payload.payload.state && typeof rust.payload.payload.state === 'object'
+        ? rust.payload.payload.state
+        : null;
+    }
+  }
   return addTierEvent(paths, policy, 'live_apply_successes', target, nowIso());
 }
 
 function incrementLiveApplySafeAbort(paths: AnyObj, policy: AnyObj, target: string) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'increment_live_apply_safe_abort',
+      {
+        file_path: paths && paths.tier_governance_path ? String(paths.tier_governance_path) : '',
+        policy: policy && typeof policy === 'object' ? policy : {},
+        target: target == null ? 'tactical' : String(target),
+        now_iso: nowIso()
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return rust.payload.payload.state && typeof rust.payload.payload.state === 'object'
+        ? rust.payload.payload.state
+        : null;
+    }
+  }
   return addTierEvent(paths, policy, 'live_apply_safe_aborts', target, nowIso());
 }
 
 function updateShadowTrialCounters(paths: AnyObj, policy: AnyObj, session: AnyObj, result: string, destructive: boolean) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'update_shadow_trial_counters',
+      {
+        file_path: paths && paths.tier_governance_path ? String(paths.tier_governance_path) : '',
+        policy: policy && typeof policy === 'object' ? policy : {},
+        session: session && typeof session === 'object' ? session : {},
+        result: result == null ? '' : String(result),
+        destructive: destructive === true,
+        now_iso: nowIso()
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const row = rust.payload.payload.state;
+      return row && typeof row === 'object' ? row : null;
+    }
+  }
   const mode = normalizeMode(session && session.mode || 'live');
   const applyRequested = toBool(session && session.apply_requested, false);
   const isShadowTrial = mode === 'test' || applyRequested !== true;
@@ -3188,6 +3350,28 @@ function principleKeyForSession(session: AnyObj) {
 }
 
 function checkFirstPrincipleDowngrade(paths: AnyObj, policy: AnyObj, session: AnyObj, confidence: number) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'check_first_principle_downgrade',
+      {
+        file_path: paths && paths.first_principles_lock_path ? String(paths.first_principles_lock_path) : '',
+        policy: policy && typeof policy === 'object' ? policy : {},
+        session: session && typeof session === 'object' ? session : {},
+        confidence: Number(confidence),
+        now_iso: nowIso()
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const row = rust.payload.payload;
+      return {
+        allowed: row.allowed !== false,
+        reason: row.reason ? String(row.reason) : null,
+        key: cleanText(row.key || '', 260),
+        lockState: row.lock_state && typeof row.lock_state === 'object' ? row.lock_state : null
+      };
+    }
+  }
   const anti = policy.first_principles && policy.first_principles.anti_downgrade
     ? policy.first_principles.anti_downgrade
     : {};
@@ -3231,6 +3415,19 @@ function checkFirstPrincipleDowngrade(paths: AnyObj, policy: AnyObj, session: An
 }
 
 function upsertFirstPrincipleLock(paths: AnyObj, session: AnyObj, principle: AnyObj) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'upsert_first_principle_lock',
+      {
+        file_path: paths && paths.first_principles_lock_path ? String(paths.first_principles_lock_path) : '',
+        session: session && typeof session === 'object' ? session : {},
+        principle: principle && typeof principle === 'object' ? principle : {},
+        now_iso: nowIso()
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true) return;
+  }
   const lockState = loadFirstPrincipleLockState(paths);
   const key = principleKeyForSession(session);
   const existing = lockState.locks && typeof lockState.locks === 'object' ? lockState.locks[key] : null;
@@ -8245,6 +8442,8 @@ module.exports = {
   saveMaturityState,
   loadFirstPrincipleLockState,
   saveFirstPrincipleLockState,
+  checkFirstPrincipleDowngrade,
+  upsertFirstPrincipleLock,
   loadObserverApprovals,
   appendObserverApproval,
   countObserverApprovals,
@@ -8288,6 +8487,14 @@ module.exports = {
   defaultTierGovernanceState,
   cloneTierScope,
   pruneTierScopeEvents,
+  loadTierGovernanceState,
+  saveTierGovernanceState,
+  pushTierEvent,
+  addTierEvent,
+  incrementLiveApplyAttempt,
+  incrementLiveApplySuccess,
+  incrementLiveApplySafeAbort,
+  updateShadowTrialCounters,
   countTierEvents,
   effectiveWindowDaysForTarget,
   windowDaysForTarget,

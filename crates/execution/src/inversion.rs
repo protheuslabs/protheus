@@ -1041,6 +1041,148 @@ pub struct GetTierScopeOutput {
 }
 
 #[derive(Debug, Clone, Deserialize, Default)]
+pub struct LoadTierGovernanceStateInput {
+    #[serde(default)]
+    pub file_path: Option<String>,
+    #[serde(default)]
+    pub policy_version: Option<String>,
+    #[serde(default)]
+    pub now_iso: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct LoadTierGovernanceStateOutput {
+    pub state: Value,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct SaveTierGovernanceStateInput {
+    #[serde(default)]
+    pub file_path: Option<String>,
+    #[serde(default)]
+    pub state: Option<Value>,
+    #[serde(default)]
+    pub policy_version: Option<String>,
+    #[serde(default)]
+    pub retention_days: Option<i64>,
+    #[serde(default)]
+    pub now_iso: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct SaveTierGovernanceStateOutput {
+    pub state: Value,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct PushTierEventInput {
+    #[serde(default)]
+    pub scope_map: Option<Value>,
+    #[serde(default)]
+    pub target: Option<String>,
+    #[serde(default)]
+    pub ts: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct PushTierEventOutput {
+    pub map: Value,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct AddTierEventInput {
+    #[serde(default)]
+    pub file_path: Option<String>,
+    #[serde(default)]
+    pub policy: Option<Value>,
+    #[serde(default)]
+    pub metric: Option<String>,
+    #[serde(default)]
+    pub target: Option<String>,
+    #[serde(default)]
+    pub ts: Option<String>,
+    #[serde(default)]
+    pub now_iso: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct AddTierEventOutput {
+    pub state: Value,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct IncrementLiveApplyAttemptInput {
+    #[serde(default)]
+    pub file_path: Option<String>,
+    #[serde(default)]
+    pub policy: Option<Value>,
+    #[serde(default)]
+    pub target: Option<String>,
+    #[serde(default)]
+    pub now_iso: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct IncrementLiveApplyAttemptOutput {
+    pub state: Value,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct IncrementLiveApplySuccessInput {
+    #[serde(default)]
+    pub file_path: Option<String>,
+    #[serde(default)]
+    pub policy: Option<Value>,
+    #[serde(default)]
+    pub target: Option<String>,
+    #[serde(default)]
+    pub now_iso: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct IncrementLiveApplySuccessOutput {
+    pub state: Value,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct IncrementLiveApplySafeAbortInput {
+    #[serde(default)]
+    pub file_path: Option<String>,
+    #[serde(default)]
+    pub policy: Option<Value>,
+    #[serde(default)]
+    pub target: Option<String>,
+    #[serde(default)]
+    pub now_iso: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct IncrementLiveApplySafeAbortOutput {
+    pub state: Value,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct UpdateShadowTrialCountersInput {
+    #[serde(default)]
+    pub file_path: Option<String>,
+    #[serde(default)]
+    pub policy: Option<Value>,
+    #[serde(default)]
+    pub session: Option<Value>,
+    #[serde(default)]
+    pub result: Option<String>,
+    #[serde(default)]
+    pub destructive: Option<bool>,
+    #[serde(default)]
+    pub now_iso: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct UpdateShadowTrialCountersOutput {
+    pub state: Option<Value>,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
 pub struct DefaultHarnessStateInput {}
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -1461,6 +1603,46 @@ pub struct SaveFirstPrincipleLockStateInput {
 #[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct SaveFirstPrincipleLockStateOutput {
     pub state: Value,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct CheckFirstPrincipleDowngradeInput {
+    #[serde(default)]
+    pub file_path: Option<String>,
+    #[serde(default)]
+    pub policy: Option<Value>,
+    #[serde(default)]
+    pub session: Option<Value>,
+    #[serde(default)]
+    pub confidence: Option<f64>,
+    #[serde(default)]
+    pub now_iso: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct CheckFirstPrincipleDowngradeOutput {
+    pub allowed: bool,
+    pub reason: Option<String>,
+    pub key: String,
+    pub lock_state: Option<Value>,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct UpsertFirstPrincipleLockInput {
+    #[serde(default)]
+    pub file_path: Option<String>,
+    #[serde(default)]
+    pub session: Option<Value>,
+    #[serde(default)]
+    pub principle: Option<Value>,
+    #[serde(default)]
+    pub now_iso: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct UpsertFirstPrincipleLockOutput {
+    pub state: Value,
+    pub key: String,
 }
 
 #[derive(Debug, Clone, Deserialize, Default)]
@@ -3362,6 +3544,378 @@ pub fn compute_get_tier_scope(input: &GetTierScopeInput) -> GetTierScopeOutput {
     }
 }
 
+pub fn compute_load_tier_governance_state(
+    input: &LoadTierGovernanceStateInput,
+) -> LoadTierGovernanceStateOutput {
+    let now_iso = input.now_iso.clone().unwrap_or_else(now_iso_runtime);
+    let safe_version = clean_text_runtime(input.policy_version.as_deref().unwrap_or("1.0"), 24);
+    let policy_version = if safe_version.is_empty() {
+        "1.0".to_string()
+    } else {
+        safe_version
+    };
+    let src = compute_read_json(&ReadJsonInput {
+        file_path: input.file_path.clone(),
+        fallback: Some(Value::Null),
+    })
+    .value;
+    let payload = src.as_object();
+    let updated_at = {
+        let value = value_to_string(payload.and_then(|m| m.get("updated_at")));
+        if value.is_empty() {
+            now_iso.clone()
+        } else {
+            value
+        }
+    };
+    let legacy_scope = compute_default_tier_scope(&DefaultTierScopeInput {
+        legacy: Some(json!({
+            "live_apply_counts": payload.and_then(|m| m.get("live_apply_counts")).cloned().unwrap_or_else(|| json!({})),
+            "shadow_pass_counts": payload.and_then(|m| m.get("shadow_pass_counts")).cloned().unwrap_or_else(|| json!({})),
+            "live_apply_safe_aborts": payload.and_then(|m| m.get("live_apply_safe_aborts")).cloned().unwrap_or_else(|| json!({})),
+            "shadow_critical_failures": payload.and_then(|m| m.get("shadow_critical_failures")).cloned().unwrap_or_else(|| json!({}))
+        })),
+        legacy_ts: Some(updated_at.clone()),
+    })
+    .scope;
+    let scopes_src = payload
+        .and_then(|m| m.get("scopes"))
+        .and_then(|v| v.as_object())
+        .cloned()
+        .unwrap_or_default();
+    let mut scopes = serde_json::Map::new();
+    for (version, scope) in scopes_src {
+        scopes.insert(
+            version.to_string(),
+            compute_normalize_tier_scope(&NormalizeTierScopeInput {
+                scope: Some(scope),
+                legacy: None,
+                legacy_ts: Some(updated_at.clone()),
+            })
+            .scope,
+        );
+    }
+    if !scopes
+        .get(&policy_version)
+        .map(|v| v.is_object())
+        .unwrap_or(false)
+    {
+        scopes.insert(
+            policy_version.clone(),
+            compute_normalize_tier_scope(&NormalizeTierScopeInput {
+                scope: Some(legacy_scope),
+                legacy: None,
+                legacy_ts: Some(updated_at.clone()),
+            })
+            .scope,
+        );
+    }
+    let mut out = serde_json::Map::new();
+    out.insert(
+        "schema_id".to_string(),
+        Value::String("inversion_tier_governance_state".to_string()),
+    );
+    out.insert(
+        "schema_version".to_string(),
+        Value::String("1.0".to_string()),
+    );
+    out.insert(
+        "active_policy_version".to_string(),
+        Value::String(policy_version.clone()),
+    );
+    out.insert("updated_at".to_string(), Value::String(updated_at));
+    out.insert("scopes".to_string(), Value::Object(scopes));
+
+    let got = compute_get_tier_scope(&GetTierScopeInput {
+        state: Some(Value::Object(out)),
+        policy_version: Some(policy_version),
+    });
+    let mut state_out = got.state.as_object().cloned().unwrap_or_default();
+    state_out.insert("active_scope".to_string(), got.scope);
+    LoadTierGovernanceStateOutput {
+        state: Value::Object(state_out),
+    }
+}
+
+pub fn compute_save_tier_governance_state(
+    input: &SaveTierGovernanceStateInput,
+) -> SaveTierGovernanceStateOutput {
+    let now_iso = input.now_iso.clone().unwrap_or_else(now_iso_runtime);
+    let safe_version = clean_text_runtime(input.policy_version.as_deref().unwrap_or("1.0"), 24);
+    let policy_version = if safe_version.is_empty() {
+        "1.0".to_string()
+    } else {
+        safe_version
+    };
+    let retention_days = input.retention_days.unwrap_or(365).clamp(1, 3650);
+    let src = input
+        .state
+        .as_ref()
+        .and_then(|v| v.as_object())
+        .cloned()
+        .unwrap_or_default();
+    let scopes_src = src
+        .get("scopes")
+        .and_then(|v| v.as_object())
+        .cloned()
+        .unwrap_or_default();
+    let mut scopes = serde_json::Map::new();
+    for (version, scope) in scopes_src {
+        scopes.insert(
+            version.to_string(),
+            compute_prune_tier_scope_events(&PruneTierScopeEventsInput {
+                scope: Some(scope),
+                retention_days: Some(retention_days),
+            })
+            .scope,
+        );
+    }
+    if !scopes
+        .get(&policy_version)
+        .map(|v| v.is_object())
+        .unwrap_or(false)
+    {
+        scopes.insert(
+            policy_version.clone(),
+            compute_default_tier_scope(&DefaultTierScopeInput::default()).scope,
+        );
+    }
+    let out = json!({
+        "schema_id": "inversion_tier_governance_state",
+        "schema_version": "1.0",
+        "active_policy_version": policy_version,
+        "updated_at": now_iso,
+        "scopes": scopes
+    });
+    let _ = compute_write_json_atomic(&WriteJsonAtomicInput {
+        file_path: input.file_path.clone(),
+        value: Some(out.clone()),
+    });
+    let active_policy = value_to_string(value_path(Some(&out), &["active_policy_version"]));
+    let got = compute_get_tier_scope(&GetTierScopeInput {
+        state: Some(out),
+        policy_version: Some(active_policy),
+    });
+    let mut state_out = got.state.as_object().cloned().unwrap_or_default();
+    state_out.insert("active_scope".to_string(), got.scope);
+    SaveTierGovernanceStateOutput {
+        state: Value::Object(state_out),
+    }
+}
+
+pub fn compute_push_tier_event(input: &PushTierEventInput) -> PushTierEventOutput {
+    let mut map = input
+        .scope_map
+        .as_ref()
+        .and_then(|v| v.as_object())
+        .cloned()
+        .unwrap_or_default();
+    let target = compute_normalize_target(&NormalizeTargetInput {
+        value: input.target.clone(),
+    })
+    .value;
+    let mut rows = map
+        .get(&target)
+        .and_then(|v| v.as_array())
+        .cloned()
+        .unwrap_or_default();
+    rows.push(Value::String(
+        input.ts.clone().unwrap_or_else(now_iso_runtime),
+    ));
+    let normalized = compute_normalize_iso_events(&NormalizeIsoEventsInput {
+        src: rows,
+        max_rows: Some(10000),
+    })
+    .events;
+    map.insert(
+        target,
+        Value::Array(normalized.into_iter().map(Value::String).collect::<Vec<_>>()),
+    );
+    PushTierEventOutput {
+        map: Value::Object(map),
+    }
+}
+
+pub fn compute_add_tier_event(input: &AddTierEventInput) -> AddTierEventOutput {
+    let now_iso = input.now_iso.clone().unwrap_or_else(now_iso_runtime);
+    let policy = input.policy.as_ref();
+    let policy_version = {
+        let value = clean_text_runtime(
+            value_path(policy, &["version"])
+                .and_then(|v| v.as_str())
+                .unwrap_or("1.0"),
+            24,
+        );
+        if value.is_empty() {
+            "1.0".to_string()
+        } else {
+            value
+        }
+    };
+    let mut state = compute_load_tier_governance_state(&LoadTierGovernanceStateInput {
+        file_path: input.file_path.clone(),
+        policy_version: Some(policy_version.clone()),
+        now_iso: Some(now_iso.clone()),
+    })
+    .state;
+    let got_scope = compute_get_tier_scope(&GetTierScopeInput {
+        state: Some(state.clone()),
+        policy_version: Some(policy_version.clone()),
+    });
+    state = got_scope.state;
+    let mut scope = got_scope.scope;
+
+    let metric = clean_text_runtime(input.metric.as_deref().unwrap_or(""), 80);
+    if matches!(
+        metric.as_str(),
+        "live_apply_attempts"
+            | "live_apply_successes"
+            | "live_apply_safe_aborts"
+            | "shadow_passes"
+            | "shadow_critical_failures"
+    ) {
+        let map_src = value_path(Some(&scope), &[metric.as_str()])
+            .cloned()
+            .unwrap_or_else(default_tier_event_map_value);
+        let pushed = compute_push_tier_event(&PushTierEventInput {
+            scope_map: Some(map_src),
+            target: input.target.clone(),
+            ts: Some(input.ts.clone().unwrap_or_else(|| now_iso.clone())),
+        })
+        .map;
+        if let Some(scope_obj) = scope.as_object_mut() {
+            scope_obj.insert(metric, pushed);
+        }
+    }
+
+    let mut state_obj = state.as_object().cloned().unwrap_or_default();
+    let mut scopes = state_obj
+        .get("scopes")
+        .and_then(|v| v.as_object())
+        .cloned()
+        .unwrap_or_default();
+    scopes.insert(policy_version.clone(), scope);
+    state_obj.insert("scopes".to_string(), Value::Object(scopes));
+
+    let retention_days = compute_tier_retention_days(&TierRetentionDaysInput {
+        policy: input.policy.clone(),
+    })
+    .days;
+    let saved = compute_save_tier_governance_state(&SaveTierGovernanceStateInput {
+        file_path: input.file_path.clone(),
+        state: Some(Value::Object(state_obj)),
+        policy_version: Some(policy_version),
+        retention_days: Some(retention_days),
+        now_iso: Some(now_iso),
+    });
+    AddTierEventOutput { state: saved.state }
+}
+
+pub fn compute_increment_live_apply_attempt(
+    input: &IncrementLiveApplyAttemptInput,
+) -> IncrementLiveApplyAttemptOutput {
+    let out = compute_add_tier_event(&AddTierEventInput {
+        file_path: input.file_path.clone(),
+        policy: input.policy.clone(),
+        metric: Some("live_apply_attempts".to_string()),
+        target: input.target.clone(),
+        ts: Some(input.now_iso.clone().unwrap_or_else(now_iso_runtime)),
+        now_iso: input.now_iso.clone(),
+    });
+    IncrementLiveApplyAttemptOutput { state: out.state }
+}
+
+pub fn compute_increment_live_apply_success(
+    input: &IncrementLiveApplySuccessInput,
+) -> IncrementLiveApplySuccessOutput {
+    let out = compute_add_tier_event(&AddTierEventInput {
+        file_path: input.file_path.clone(),
+        policy: input.policy.clone(),
+        metric: Some("live_apply_successes".to_string()),
+        target: input.target.clone(),
+        ts: Some(input.now_iso.clone().unwrap_or_else(now_iso_runtime)),
+        now_iso: input.now_iso.clone(),
+    });
+    IncrementLiveApplySuccessOutput { state: out.state }
+}
+
+pub fn compute_increment_live_apply_safe_abort(
+    input: &IncrementLiveApplySafeAbortInput,
+) -> IncrementLiveApplySafeAbortOutput {
+    let out = compute_add_tier_event(&AddTierEventInput {
+        file_path: input.file_path.clone(),
+        policy: input.policy.clone(),
+        metric: Some("live_apply_safe_aborts".to_string()),
+        target: input.target.clone(),
+        ts: Some(input.now_iso.clone().unwrap_or_else(now_iso_runtime)),
+        now_iso: input.now_iso.clone(),
+    });
+    IncrementLiveApplySafeAbortOutput { state: out.state }
+}
+
+pub fn compute_update_shadow_trial_counters(
+    input: &UpdateShadowTrialCountersInput,
+) -> UpdateShadowTrialCountersOutput {
+    let session = input
+        .session
+        .as_ref()
+        .and_then(|v| v.as_object())
+        .cloned()
+        .unwrap_or_default();
+    let mode = compute_normalize_mode(&NormalizeModeInput {
+        value: Some(value_to_string(session.get("mode"))),
+    })
+    .value;
+    let apply_requested = to_bool_like(session.get("apply_requested"), false);
+    let is_shadow_trial = mode == "test" || apply_requested != true;
+    if !is_shadow_trial {
+        return UpdateShadowTrialCountersOutput { state: None };
+    }
+    let target = compute_normalize_target(&NormalizeTargetInput {
+        value: Some(value_to_string(session.get("target"))),
+    })
+    .value;
+    let result = compute_normalize_result(&NormalizeResultInput {
+        value: input.result.clone(),
+    })
+    .value;
+    let now_iso = input.now_iso.clone().unwrap_or_else(now_iso_runtime);
+    let mut state = compute_load_tier_governance_state(&LoadTierGovernanceStateInput {
+        file_path: input.file_path.clone(),
+        policy_version: Some(clean_text_runtime(
+            value_path(input.policy.as_ref(), &["version"])
+                .and_then(|v| v.as_str())
+                .unwrap_or("1.0"),
+            24,
+        )),
+        now_iso: Some(now_iso.clone()),
+    })
+    .state;
+    if result == "success" {
+        state = compute_add_tier_event(&AddTierEventInput {
+            file_path: input.file_path.clone(),
+            policy: input.policy.clone(),
+            metric: Some("shadow_passes".to_string()),
+            target: Some(target.clone()),
+            ts: Some(now_iso.clone()),
+            now_iso: Some(now_iso.clone()),
+        })
+        .state;
+    }
+    if input.destructive == Some(true) || result == "destructive" {
+        state = compute_add_tier_event(&AddTierEventInput {
+            file_path: input.file_path.clone(),
+            policy: input.policy.clone(),
+            metric: Some("shadow_critical_failures".to_string()),
+            target: Some(target),
+            ts: Some(now_iso.clone()),
+            now_iso: Some(now_iso),
+        })
+        .state;
+    }
+    UpdateShadowTrialCountersOutput { state: Some(state) }
+}
+
 pub fn compute_default_harness_state(
     _input: &DefaultHarnessStateInput,
 ) -> DefaultHarnessStateOutput {
@@ -3435,6 +3989,260 @@ pub fn compute_principle_key_for_session(
         &digest[..16]
     );
     PrincipleKeyForSessionOutput { key }
+}
+
+pub fn compute_check_first_principle_downgrade(
+    input: &CheckFirstPrincipleDowngradeInput,
+) -> CheckFirstPrincipleDowngradeOutput {
+    let session = input
+        .session
+        .as_ref()
+        .and_then(|v| v.as_object())
+        .cloned()
+        .unwrap_or_default();
+    let key = compute_principle_key_for_session(&PrincipleKeyForSessionInput {
+        objective_id: session
+            .get("objective_id")
+            .and_then(|v| v.as_str())
+            .map(|v| v.to_string()),
+        objective: session
+            .get("objective")
+            .and_then(|v| v.as_str())
+            .map(|v| v.to_string()),
+        target: session
+            .get("target")
+            .and_then(|v| v.as_str())
+            .map(|v| v.to_string()),
+    })
+    .key;
+    let anti = value_path(input.policy.as_ref(), &["first_principles", "anti_downgrade"])
+        .and_then(|v| v.as_object())
+        .cloned()
+        .unwrap_or_default();
+    if !to_bool_like(anti.get("enabled"), false) {
+        return CheckFirstPrincipleDowngradeOutput {
+            allowed: true,
+            reason: None,
+            key,
+            lock_state: None,
+        };
+    }
+
+    let lock_state = compute_load_first_principle_lock_state(&LoadFirstPrincipleLockStateInput {
+        file_path: input.file_path.clone(),
+        now_iso: input.now_iso.clone(),
+    })
+    .state;
+    let existing = value_path(Some(&lock_state), &["locks", key.as_str()]).and_then(|v| v.as_object());
+    if existing.is_none() {
+        return CheckFirstPrincipleDowngradeOutput {
+            allowed: true,
+            reason: None,
+            key,
+            lock_state: Some(lock_state),
+        };
+    }
+    let existing_obj = existing.cloned().unwrap_or_default();
+
+    let existing_band = compute_normalize_token(&NormalizeTokenInput {
+        value: Some(value_to_string(existing_obj.get("maturity_band"))),
+        max_len: Some(24),
+    })
+    .value;
+    let session_band = compute_normalize_token(&NormalizeTokenInput {
+        value: Some(value_to_string(session.get("maturity_band"))),
+        max_len: Some(24),
+    })
+    .value;
+    let existing_idx = compute_band_to_index(&BandToIndexInput {
+        band: Some(if existing_band.is_empty() {
+            "novice".to_string()
+        } else {
+            existing_band
+        }),
+    })
+    .index;
+    let session_idx = compute_band_to_index(&BandToIndexInput {
+        band: Some(if session_band.is_empty() {
+            "novice".to_string()
+        } else {
+            session_band
+        }),
+    })
+    .index;
+
+    if to_bool_like(anti.get("require_same_or_higher_maturity"), false) && session_idx < existing_idx
+    {
+        return CheckFirstPrincipleDowngradeOutput {
+            allowed: false,
+            reason: Some("first_principle_downgrade_blocked_lower_maturity".to_string()),
+            key,
+            lock_state: Some(lock_state),
+        };
+    }
+
+    if to_bool_like(anti.get("prevent_lower_confidence_same_band"), false)
+        && session_idx == existing_idx
+    {
+        let floor_ratio = compute_clamp_number(&ClampNumberInput {
+            value: anti.get("same_band_confidence_floor_ratio").cloned(),
+            lo: Some(0.1),
+            hi: Some(1.0),
+            fallback: Some(0.92),
+        })
+        .value;
+        let existing_confidence = js_number_for_extract(existing_obj.get("confidence")).unwrap_or(0.0);
+        let floor = existing_confidence * floor_ratio;
+        let confidence = if input.confidence.unwrap_or(0.0).is_finite() {
+            input.confidence.unwrap_or(0.0)
+        } else {
+            0.0
+        };
+        if confidence < floor {
+            return CheckFirstPrincipleDowngradeOutput {
+                allowed: false,
+                reason: Some("first_principle_downgrade_blocked_lower_confidence".to_string()),
+                key,
+                lock_state: Some(lock_state),
+            };
+        }
+    }
+
+    CheckFirstPrincipleDowngradeOutput {
+        allowed: true,
+        reason: None,
+        key,
+        lock_state: Some(lock_state),
+    }
+}
+
+pub fn compute_upsert_first_principle_lock(
+    input: &UpsertFirstPrincipleLockInput,
+) -> UpsertFirstPrincipleLockOutput {
+    let now_iso = input.now_iso.clone().unwrap_or_else(now_iso_runtime);
+    let session = input
+        .session
+        .as_ref()
+        .and_then(|v| v.as_object())
+        .cloned()
+        .unwrap_or_default();
+    let principle = input
+        .principle
+        .as_ref()
+        .and_then(|v| v.as_object())
+        .cloned()
+        .unwrap_or_default();
+    let key = compute_principle_key_for_session(&PrincipleKeyForSessionInput {
+        objective_id: session
+            .get("objective_id")
+            .and_then(|v| v.as_str())
+            .map(|v| v.to_string()),
+        objective: session
+            .get("objective")
+            .and_then(|v| v.as_str())
+            .map(|v| v.to_string()),
+        target: session
+            .get("target")
+            .and_then(|v| v.as_str())
+            .map(|v| v.to_string()),
+    })
+    .key;
+
+    let mut lock_state = compute_load_first_principle_lock_state(&LoadFirstPrincipleLockStateInput {
+        file_path: input.file_path.clone(),
+        now_iso: Some(now_iso.clone()),
+    })
+    .state;
+
+    let existing = value_path(Some(&lock_state), &["locks", key.as_str()])
+        .and_then(|v| v.as_object())
+        .cloned();
+    let next_band = compute_normalize_token(&NormalizeTokenInput {
+        value: Some(value_to_string(session.get("maturity_band"))),
+        max_len: Some(24),
+    })
+    .value;
+    let next_band = if next_band.is_empty() {
+        "novice".to_string()
+    } else {
+        next_band
+    };
+    let next_idx = compute_band_to_index(&BandToIndexInput {
+        band: Some(next_band.clone()),
+    })
+    .index;
+
+    let confidence_raw = js_number_for_extract(principle.get("confidence")).unwrap_or(0.0);
+    let confidence = if confidence_raw.is_finite() {
+        confidence_raw
+    } else {
+        0.0
+    };
+    let prev_idx = existing
+        .as_ref()
+        .map(|row| {
+            compute_band_to_index(&BandToIndexInput {
+                band: Some(value_to_string(row.get("maturity_band"))),
+            })
+            .index
+        })
+        .unwrap_or(-1);
+    let merged_band = if prev_idx > next_idx {
+        compute_normalize_token(&NormalizeTokenInput {
+            value: Some(
+                existing
+                    .as_ref()
+                    .and_then(|row| row.get("maturity_band"))
+                    .map(|v| value_to_string(Some(v)))
+                    .unwrap_or_else(|| next_band.clone()),
+            ),
+            max_len: Some(24),
+        })
+        .value
+    } else {
+        next_band.clone()
+    };
+    let existing_confidence = existing
+        .as_ref()
+        .and_then(|row| js_number_for_extract(row.get("confidence")))
+        .unwrap_or(0.0);
+    let merged_confidence = existing_confidence.max(confidence);
+    let clamped_confidence = compute_clamp_number(&ClampNumberInput {
+        value: Some(json!(merged_confidence)),
+        lo: Some(0.0),
+        hi: Some(1.0),
+        fallback: Some(0.0),
+    })
+    .value;
+    let rounded_confidence = (clamped_confidence * 1_000_000.0).round() / 1_000_000.0;
+
+    let lock_row = json!({
+        "key": key.clone(),
+        "principle_id": clean_text_runtime(
+            principle.get("id").and_then(|v| v.as_str()).unwrap_or(""),
+            120
+        ),
+        "maturity_band": if merged_band.is_empty() { "novice".to_string() } else { merged_band },
+        "confidence": rounded_confidence,
+        "ts": now_iso.clone()
+    });
+    if lock_state.get("locks").and_then(|v| v.as_object()).is_none() {
+        if let Some(obj) = lock_state.as_object_mut() {
+            obj.insert("locks".to_string(), json!({}));
+        }
+    }
+    if let Some(locks) = lock_state.get_mut("locks").and_then(|v| v.as_object_mut()) {
+        locks.insert(key.clone(), lock_row);
+    }
+    let saved = compute_save_first_principle_lock_state(&SaveFirstPrincipleLockStateInput {
+        file_path: input.file_path.clone(),
+        state: Some(lock_state),
+        now_iso: Some(now_iso),
+    });
+    UpsertFirstPrincipleLockOutput {
+        state: saved.state,
+        key,
+    }
 }
 
 pub fn compute_normalize_objective_arg(
@@ -6901,6 +7709,92 @@ pub fn run_inversion_json(payload_json: &str) -> Result<String, String> {
         }))
         .map_err(|e| format!("inversion_encode_prune_tier_scope_events_failed:{e}"));
     }
+    if mode == "load_tier_governance_state" {
+        let input: LoadTierGovernanceStateInput =
+            decode_input(&payload, "load_tier_governance_state_input")?;
+        let out = compute_load_tier_governance_state(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "load_tier_governance_state",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_load_tier_governance_state_failed:{e}"));
+    }
+    if mode == "save_tier_governance_state" {
+        let input: SaveTierGovernanceStateInput =
+            decode_input(&payload, "save_tier_governance_state_input")?;
+        let out = compute_save_tier_governance_state(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "save_tier_governance_state",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_save_tier_governance_state_failed:{e}"));
+    }
+    if mode == "push_tier_event" {
+        let input: PushTierEventInput = decode_input(&payload, "push_tier_event_input")?;
+        let out = compute_push_tier_event(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "push_tier_event",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_push_tier_event_failed:{e}"));
+    }
+    if mode == "add_tier_event" {
+        let input: AddTierEventInput = decode_input(&payload, "add_tier_event_input")?;
+        let out = compute_add_tier_event(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "add_tier_event",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_add_tier_event_failed:{e}"));
+    }
+    if mode == "increment_live_apply_attempt" {
+        let input: IncrementLiveApplyAttemptInput =
+            decode_input(&payload, "increment_live_apply_attempt_input")?;
+        let out = compute_increment_live_apply_attempt(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "increment_live_apply_attempt",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_increment_live_apply_attempt_failed:{e}"));
+    }
+    if mode == "increment_live_apply_success" {
+        let input: IncrementLiveApplySuccessInput =
+            decode_input(&payload, "increment_live_apply_success_input")?;
+        let out = compute_increment_live_apply_success(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "increment_live_apply_success",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_increment_live_apply_success_failed:{e}"));
+    }
+    if mode == "increment_live_apply_safe_abort" {
+        let input: IncrementLiveApplySafeAbortInput =
+            decode_input(&payload, "increment_live_apply_safe_abort_input")?;
+        let out = compute_increment_live_apply_safe_abort(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "increment_live_apply_safe_abort",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_increment_live_apply_safe_abort_failed:{e}"));
+    }
+    if mode == "update_shadow_trial_counters" {
+        let input: UpdateShadowTrialCountersInput =
+            decode_input(&payload, "update_shadow_trial_counters_input")?;
+        let out = compute_update_shadow_trial_counters(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "update_shadow_trial_counters",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_update_shadow_trial_counters_failed:{e}"));
+    }
     if mode == "count_tier_events" {
         let input: CountTierEventsInput = decode_input(&payload, "count_tier_events_input")?;
         let out = compute_count_tier_events(&input);
@@ -7473,6 +8367,28 @@ pub fn run_inversion_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("inversion_encode_save_first_principle_lock_state_failed:{e}"));
+    }
+    if mode == "check_first_principle_downgrade" {
+        let input: CheckFirstPrincipleDowngradeInput =
+            decode_input(&payload, "check_first_principle_downgrade_input")?;
+        let out = compute_check_first_principle_downgrade(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "check_first_principle_downgrade",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_check_first_principle_downgrade_failed:{e}"));
+    }
+    if mode == "upsert_first_principle_lock" {
+        let input: UpsertFirstPrincipleLockInput =
+            decode_input(&payload, "upsert_first_principle_lock_input")?;
+        let out = compute_upsert_first_principle_lock(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "upsert_first_principle_lock",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_upsert_first_principle_lock_failed:{e}"));
     }
     if mode == "load_observer_approvals" {
         let input: LoadObserverApprovalsInput =
@@ -8983,5 +9899,190 @@ mod tests {
             max_entries: Some(json!(2)),
         });
         assert_eq!(trimmed.rows.len(), 3);
+    }
+
+    #[test]
+    fn helper_primitives_batch16_match_contract() {
+        let temp_root = std::env::temp_dir().join("inv_batch16");
+        let _ = fs::remove_dir_all(&temp_root);
+        let _ = fs::create_dir_all(temp_root.join("first_principles"));
+        let tier_path = temp_root.join("tier_governance.json");
+        let lock_path = temp_root.join("first_principles").join("lock_state.json");
+
+        let base_state = json!({
+            "schema_id": "inversion_tier_governance_state",
+            "schema_version": "1.0",
+            "active_policy_version": "1.7",
+            "scopes": {
+                "1.7": {
+                    "live_apply_attempts": {"tactical": ["2026-03-04T00:00:00.000Z"]},
+                    "live_apply_successes": {"tactical": []},
+                    "live_apply_safe_aborts": {"tactical": []},
+                    "shadow_passes": {"tactical": []},
+                    "shadow_critical_failures": {"tactical": []}
+                }
+            }
+        });
+        let policy = json!({
+            "version": "1.7",
+            "tier_transition": {
+                "window_days_by_target": {"tactical": 45, "directive": 90},
+                "minimum_window_days_by_target": {"tactical": 30, "directive": 60}
+            },
+            "shadow_pass_gate": {
+                "window_days_by_target": {"tactical": 60, "directive": 120}
+            },
+            "first_principles": {
+                "anti_downgrade": {
+                    "enabled": true,
+                    "require_same_or_higher_maturity": true,
+                    "prevent_lower_confidence_same_band": true,
+                    "same_band_confidence_floor_ratio": 0.92
+                }
+            }
+        });
+
+        let saved = compute_save_tier_governance_state(&SaveTierGovernanceStateInput {
+            file_path: Some(tier_path.to_string_lossy().to_string()),
+            state: Some(base_state),
+            policy_version: Some("1.7".to_string()),
+            retention_days: Some(3650),
+            now_iso: Some("2026-03-04T12:00:00.000Z".to_string()),
+        });
+        assert_eq!(
+            value_path(Some(&saved.state), &["active_policy_version"])
+                .and_then(|v| v.as_str())
+                .unwrap_or(""),
+            "1.7"
+        );
+        let loaded = compute_load_tier_governance_state(&LoadTierGovernanceStateInput {
+            file_path: Some(tier_path.to_string_lossy().to_string()),
+            policy_version: Some("1.7".to_string()),
+            now_iso: Some("2026-03-04T12:01:00.000Z".to_string()),
+        });
+        assert!(value_path(Some(&loaded.state), &["active_scope"]).is_some());
+
+        let pushed = compute_push_tier_event(&PushTierEventInput {
+            scope_map: Some(json!({"tactical": []})),
+            target: Some("directive".to_string()),
+            ts: Some("2026-03-04T12:00:00.000Z".to_string()),
+        });
+        assert_eq!(
+            pushed
+                .map
+                .as_object()
+                .and_then(|m| m.get("directive"))
+                .and_then(|v| v.as_array())
+                .map(|rows| rows.len())
+                .unwrap_or(0),
+            1
+        );
+
+        let added = compute_add_tier_event(&AddTierEventInput {
+            file_path: Some(tier_path.to_string_lossy().to_string()),
+            policy: Some(policy.clone()),
+            metric: Some("live_apply_attempts".to_string()),
+            target: Some("belief".to_string()),
+            ts: Some("2026-03-04T12:00:00.000Z".to_string()),
+            now_iso: Some("2026-03-04T12:00:00.000Z".to_string()),
+        });
+        assert!(
+            value_path(
+                Some(&added.state),
+                &["scopes", "1.7", "live_apply_attempts", "belief"]
+            )
+            .and_then(|v| v.as_array())
+            .map(|rows| !rows.is_empty())
+            .unwrap_or(false)
+        );
+
+        let inc_attempt = compute_increment_live_apply_attempt(&IncrementLiveApplyAttemptInput {
+            file_path: Some(tier_path.to_string_lossy().to_string()),
+            policy: Some(policy.clone()),
+            target: Some("identity".to_string()),
+            now_iso: Some("2026-03-04T12:02:00.000Z".to_string()),
+        });
+        assert!(
+            value_path(
+                Some(&inc_attempt.state),
+                &["scopes", "1.7", "live_apply_attempts", "identity"]
+            )
+            .and_then(|v| v.as_array())
+            .map(|rows| !rows.is_empty())
+            .unwrap_or(false)
+        );
+
+        let inc_success = compute_increment_live_apply_success(&IncrementLiveApplySuccessInput {
+            file_path: Some(tier_path.to_string_lossy().to_string()),
+            policy: Some(policy.clone()),
+            target: Some("identity".to_string()),
+            now_iso: Some("2026-03-04T12:03:00.000Z".to_string()),
+        });
+        assert!(
+            value_path(
+                Some(&inc_success.state),
+                &["scopes", "1.7", "live_apply_successes", "identity"]
+            )
+            .and_then(|v| v.as_array())
+            .map(|rows| !rows.is_empty())
+            .unwrap_or(false)
+        );
+
+        let inc_abort = compute_increment_live_apply_safe_abort(&IncrementLiveApplySafeAbortInput {
+            file_path: Some(tier_path.to_string_lossy().to_string()),
+            policy: Some(policy.clone()),
+            target: Some("identity".to_string()),
+            now_iso: Some("2026-03-04T12:04:00.000Z".to_string()),
+        });
+        assert!(
+            value_path(
+                Some(&inc_abort.state),
+                &["scopes", "1.7", "live_apply_safe_aborts", "identity"]
+            )
+            .and_then(|v| v.as_array())
+            .map(|rows| !rows.is_empty())
+            .unwrap_or(false)
+        );
+
+        let shadow = compute_update_shadow_trial_counters(&UpdateShadowTrialCountersInput {
+            file_path: Some(tier_path.to_string_lossy().to_string()),
+            policy: Some(policy.clone()),
+            session: Some(json!({"mode":"test","apply_requested": false,"target":"directive"})),
+            result: Some("success".to_string()),
+            destructive: Some(false),
+            now_iso: Some("2026-03-04T12:05:00.000Z".to_string()),
+        });
+        assert!(shadow.state.is_some());
+
+        let upsert = compute_upsert_first_principle_lock(&UpsertFirstPrincipleLockInput {
+            file_path: Some(lock_path.to_string_lossy().to_string()),
+            session: Some(json!({
+                "objective_id":"BL-246",
+                "objective":"Guard principle quality",
+                "target":"directive",
+                "maturity_band":"mature"
+            })),
+            principle: Some(json!({"id":"fp_guard","confidence":0.91})),
+            now_iso: Some("2026-03-04T12:06:00.000Z".to_string()),
+        });
+        assert!(value_path(Some(&upsert.state), &["locks", upsert.key.as_str()]).is_some());
+
+        let check = compute_check_first_principle_downgrade(&CheckFirstPrincipleDowngradeInput {
+            file_path: Some(lock_path.to_string_lossy().to_string()),
+            policy: Some(policy),
+            session: Some(json!({
+                "objective_id":"BL-246",
+                "objective":"Guard principle quality",
+                "target":"directive",
+                "maturity_band":"developing"
+            })),
+            confidence: Some(0.5),
+            now_iso: Some("2026-03-04T12:07:00.000Z".to_string()),
+        });
+        assert!(!check.allowed);
+        assert_eq!(
+            check.reason.as_deref().unwrap_or(""),
+            "first_principle_downgrade_blocked_lower_maturity"
+        );
     }
 }
