@@ -2629,6 +2629,19 @@ pub struct ManualGatePrefilterOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ExecuteConfidenceCooldownActiveInput {
+    #[serde(default)]
+    pub cooldown_key: Option<String>,
+    #[serde(default)]
+    pub cooldown_active: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ExecuteConfidenceCooldownActiveOutput {
+    pub active: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct IsDirectiveClarificationProposalInput {
     #[serde(default)]
     pub proposal_type: Option<String>,
@@ -3805,6 +3818,8 @@ pub struct AutoscaleRequest {
     pub route_block_prefilter_input: Option<RouteBlockPrefilterInput>,
     #[serde(default)]
     pub manual_gate_prefilter_input: Option<ManualGatePrefilterInput>,
+    #[serde(default)]
+    pub execute_confidence_cooldown_active_input: Option<ExecuteConfidenceCooldownActiveInput>,
     #[serde(default)]
     pub is_directive_clarification_proposal_input: Option<IsDirectiveClarificationProposalInput>,
     #[serde(default)]
@@ -8420,6 +8435,19 @@ pub fn compute_manual_gate_prefilter(input: &ManualGatePrefilterInput) -> Manual
     out
 }
 
+pub fn compute_execute_confidence_cooldown_active(
+    input: &ExecuteConfidenceCooldownActiveInput,
+) -> ExecuteConfidenceCooldownActiveOutput {
+    let key_present = input
+        .cooldown_key
+        .as_ref()
+        .map(|v| !v.trim().is_empty())
+        .unwrap_or(false);
+    ExecuteConfidenceCooldownActiveOutput {
+        active: key_present && input.cooldown_active,
+    }
+}
+
 pub fn compute_is_directive_clarification_proposal(
     input: &IsDirectiveClarificationProposalInput,
 ) -> IsDirectiveClarificationProposalOutput {
@@ -12079,6 +12107,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_manual_gate_prefilter_encode_failed:{e}"));
+    }
+    if mode == "execute_confidence_cooldown_active" {
+        let input = request
+            .execute_confidence_cooldown_active_input
+            .ok_or_else(|| "autoscale_missing_execute_confidence_cooldown_active_input".to_string())?;
+        let out = compute_execute_confidence_cooldown_active(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "execute_confidence_cooldown_active",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_execute_confidence_cooldown_active_encode_failed:{e}"));
     }
     if mode == "is_directive_clarification_proposal" {
         let input = request
@@ -17496,6 +17536,35 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale manual_gate_prefilter");
         assert!(out.contains("\"mode\":\"manual_gate_prefilter\""));
+    }
+
+    #[test]
+    fn execute_confidence_cooldown_active_requires_key_and_active_state() {
+        let out = compute_execute_confidence_cooldown_active(&ExecuteConfidenceCooldownActiveInput {
+            cooldown_key: Some("exec:cooldown:key".to_string()),
+            cooldown_active: true,
+        });
+        assert!(out.active);
+        let out = compute_execute_confidence_cooldown_active(&ExecuteConfidenceCooldownActiveInput {
+            cooldown_key: Some("".to_string()),
+            cooldown_active: true,
+        });
+        assert!(!out.active);
+    }
+
+    #[test]
+    fn autoscale_json_execute_confidence_cooldown_active_path_works() {
+        let payload = serde_json::json!({
+            "mode": "execute_confidence_cooldown_active",
+            "execute_confidence_cooldown_active_input": {
+                "cooldown_key": "exec:cooldown:key",
+                "cooldown_active": true
+            }
+        })
+        .to_string();
+        let out =
+            run_autoscale_json(&payload).expect("autoscale execute_confidence_cooldown_active");
+        assert!(out.contains("\"mode\":\"execute_confidence_cooldown_active\""));
     }
 
     #[test]

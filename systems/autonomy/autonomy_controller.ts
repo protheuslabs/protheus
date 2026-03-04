@@ -4202,7 +4202,21 @@ function readinessRetryCooldownKey(strategyId, executionMode) {
 function executeConfidenceCooldownActive(capabilityKey, objectiveId, proposalType) {
   const key = executeConfidenceCooldownKey(capabilityKey, objectiveId, proposalType);
   if (!key) return false;
-  return cooldownActive(key);
+  const active = cooldownActive(key);
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'execute_confidence_cooldown_active',
+      {
+        cooldown_key: key,
+        cooldown_active: active === true
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return rust.payload.payload.active === true;
+    }
+  }
+  return active;
 }
 
 function dailyBudgetPath(dateStr) {
