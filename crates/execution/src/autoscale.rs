@@ -615,6 +615,20 @@ pub struct ProposalOutcomeStatusOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct QueueUnderflowBackfillInput {
+    pub underflow_backfill_max: f64,
+    #[serde(default)]
+    pub status: Option<String>,
+    #[serde(default)]
+    pub overlay_outcome: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct QueueUnderflowBackfillOutput {
+    pub allow: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct QosLaneUsageEventInput {
     #[serde(default)]
     pub event_type: Option<String>,
@@ -1176,6 +1190,8 @@ pub struct AutoscaleRequest {
     pub qos_lane_weights_input: Option<QosLaneWeightsInput>,
     #[serde(default)]
     pub proposal_outcome_status_input: Option<ProposalOutcomeStatusInput>,
+    #[serde(default)]
+    pub queue_underflow_backfill_input: Option<QueueUnderflowBackfillInput>,
     #[serde(default)]
     pub no_progress_result_input: Option<NoProgressResultInput>,
     #[serde(default)]
@@ -2264,6 +2280,29 @@ pub fn compute_proposal_outcome_status(
         .map(|v| v.trim().to_ascii_lowercase())
         .filter(|v| !v.is_empty());
     ProposalOutcomeStatusOutput { outcome }
+}
+
+pub fn compute_queue_underflow_backfill(
+    input: &QueueUnderflowBackfillInput,
+) -> QueueUnderflowBackfillOutput {
+    if input.underflow_backfill_max <= 0.0 {
+        return QueueUnderflowBackfillOutput { allow: false };
+    }
+    let status = input
+        .status
+        .as_ref()
+        .map(|v| v.trim().to_ascii_lowercase())
+        .unwrap_or_default();
+    if status != "accepted" {
+        return QueueUnderflowBackfillOutput { allow: false };
+    }
+    let out = compute_proposal_outcome_status(&ProposalOutcomeStatusInput {
+        overlay_outcome: input.overlay_outcome.clone(),
+    })
+    .outcome;
+    QueueUnderflowBackfillOutput {
+        allow: out.is_none(),
+    }
 }
 
 pub fn compute_proposal_status_for_queue_pressure(
@@ -3888,6 +3927,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
         }))
         .map_err(|e| format!("autoscale_proposal_outcome_status_encode_failed:{e}"));
     }
+    if mode == "queue_underflow_backfill" {
+        let input = request
+            .queue_underflow_backfill_input
+            .ok_or_else(|| "autoscale_missing_queue_underflow_backfill_input".to_string())?;
+        let out = compute_queue_underflow_backfill(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "queue_underflow_backfill",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_queue_underflow_backfill_encode_failed:{e}"));
+    }
     if mode == "proposal_status_for_queue_pressure" {
         let input = request.proposal_status_for_queue_pressure_input.ok_or_else(|| {
             "autoscale_missing_proposal_status_for_queue_pressure_input".to_string()
@@ -5251,6 +5302,38 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale proposal_outcome_status");
         assert!(out.contains("\"mode\":\"proposal_outcome_status\""));
+    }
+
+    #[test]
+    fn queue_underflow_backfill_allows_only_accepted_without_outcome() {
+        let allow = compute_queue_underflow_backfill(&QueueUnderflowBackfillInput {
+            underflow_backfill_max: 2.0,
+            status: Some("accepted".to_string()),
+            overlay_outcome: Some(String::new()),
+        });
+        assert!(allow.allow);
+
+        let deny = compute_queue_underflow_backfill(&QueueUnderflowBackfillInput {
+            underflow_backfill_max: 2.0,
+            status: Some("accepted".to_string()),
+            overlay_outcome: Some("shipped".to_string()),
+        });
+        assert!(!deny.allow);
+    }
+
+    #[test]
+    fn autoscale_json_queue_underflow_backfill_path_works() {
+        let payload = serde_json::json!({
+            "mode": "queue_underflow_backfill",
+            "queue_underflow_backfill_input": {
+                "underflow_backfill_max": 2,
+                "status": "accepted",
+                "overlay_outcome": ""
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale queue_underflow_backfill");
+        assert!(out.contains("\"mode\":\"queue_underflow_backfill\""));
     }
 
     #[test]

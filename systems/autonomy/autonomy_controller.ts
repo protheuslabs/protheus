@@ -2720,6 +2720,8 @@ const PROPOSAL_STATUS_FOR_QUEUE_PRESSURE_CACHE = new Map();
 const PROPOSAL_STATUS_FOR_QUEUE_PRESSURE_CACHE_MAX = 1024;
 const PROPOSAL_OUTCOME_STATUS_CACHE = new Map();
 const PROPOSAL_OUTCOME_STATUS_CACHE_MAX = 1024;
+const QUEUE_UNDERFLOW_BACKFILL_CACHE = new Map();
+const QUEUE_UNDERFLOW_BACKFILL_CACHE_MAX = 1024;
 const MINUTES_SINCE_TS_CACHE = new Map();
 const MINUTES_SINCE_TS_CACHE_MAX = 512;
 const DATE_WINDOW_CACHE = new Map();
@@ -7280,7 +7282,33 @@ function proposalOutcomeStatus(overlayEnt) {
 
 function canQueueUnderflowBackfill(status, overlayEnt) {
   if (AUTONOMY_QUEUE_UNDERFLOW_BACKFILL_MAX <= 0) return false;
-  if (String(status || '') !== 'accepted') return false;
+  const statusRaw = String(status || '');
+  if (statusRaw !== 'accepted') return false;
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const overlayOutcome = String((overlayEnt && overlayEnt.outcome) || '');
+    const cacheKey = `${String(AUTONOMY_QUEUE_UNDERFLOW_BACKFILL_MAX)}\u0000${statusRaw}\u0000${overlayOutcome}`;
+    if (QUEUE_UNDERFLOW_BACKFILL_CACHE.has(cacheKey)) {
+      return QUEUE_UNDERFLOW_BACKFILL_CACHE.get(cacheKey) === true;
+    }
+    const rust = runBacklogAutoscalePrimitive(
+      'queue_underflow_backfill',
+      {
+        underflow_backfill_max: Number(AUTONOMY_QUEUE_UNDERFLOW_BACKFILL_MAX) || 0,
+        status: statusRaw,
+        overlay_outcome: overlayOutcome
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const val = rust.payload.payload.allow === true;
+      if (QUEUE_UNDERFLOW_BACKFILL_CACHE.size >= QUEUE_UNDERFLOW_BACKFILL_CACHE_MAX) {
+        const oldest = QUEUE_UNDERFLOW_BACKFILL_CACHE.keys().next();
+        if (!oldest.done) QUEUE_UNDERFLOW_BACKFILL_CACHE.delete(oldest.value);
+      }
+      QUEUE_UNDERFLOW_BACKFILL_CACHE.set(cacheKey, val);
+      return val;
+    }
+  }
   const out = proposalOutcomeStatus(overlayEnt);
   return !out;
 }
@@ -17267,6 +17295,7 @@ module.exports = {
   buildOverlay,
   proposalStatus,
   proposalOutcomeStatus,
+  canQueueUnderflowBackfill,
   proposalScore,
   proposalAdmissionPreview,
   hasAdaptiveMutationSignal,
