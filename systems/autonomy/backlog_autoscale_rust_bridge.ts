@@ -181,6 +181,7 @@ function runBacklogAutoscalePrimitive(mode: string, data: AnyObj = {}, opts: Any
     source_eye_ref: 'source_eye_ref_input',
     normalized_risk: 'normalized_risk_input',
     parse_iso_ts: 'parse_iso_ts_input',
+    extract_objective_id_token: 'extract_objective_id_token_input',
     execution_reserve_snapshot: 'execution_reserve_snapshot_input',
     qos_lane_share_cap_exceeded: 'qos_lane_share_cap_exceeded_input',
     qos_lane_from_candidate: 'qos_lane_from_candidate_input',

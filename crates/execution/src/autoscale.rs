@@ -1392,6 +1392,18 @@ pub struct ParseIsoTsOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ExtractObjectiveIdTokenInput {
+    #[serde(default)]
+    pub value: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ExtractObjectiveIdTokenOutput {
+    #[serde(default)]
+    pub objective_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ExecutionReserveSnapshotInput {
     pub cap: f64,
     pub used: f64,
@@ -2152,6 +2164,8 @@ pub struct AutoscaleRequest {
     pub normalized_risk_input: Option<NormalizedRiskInput>,
     #[serde(default)]
     pub parse_iso_ts_input: Option<ParseIsoTsInput>,
+    #[serde(default)]
+    pub extract_objective_id_token_input: Option<ExtractObjectiveIdTokenInput>,
     #[serde(default)]
     pub execution_reserve_snapshot_input: Option<ExecutionReserveSnapshotInput>,
     #[serde(default)]
@@ -4679,6 +4693,30 @@ pub fn compute_parse_iso_ts(input: &ParseIsoTsInput) -> ParseIsoTsOutput {
     ParseIsoTsOutput { timestamp_ms }
 }
 
+pub fn compute_extract_objective_id_token(
+    input: &ExtractObjectiveIdTokenInput,
+) -> ExtractObjectiveIdTokenOutput {
+    let text = compute_normalize_spaces(&NormalizeSpacesInput {
+        text: input.value.clone(),
+    })
+    .normalized;
+    if text.is_empty() {
+        return ExtractObjectiveIdTokenOutput { objective_id: None };
+    }
+    let direct = Regex::new(r"^T[0-9]+_[A-Za-z0-9_]+$").expect("valid direct objective regex");
+    if direct.is_match(&text) {
+        return ExtractObjectiveIdTokenOutput {
+            objective_id: Some(text),
+        };
+    }
+    let token = Regex::new(r"\b(T[0-9]+_[A-Za-z0-9_]+)\b").expect("valid token objective regex");
+    let objective_id = token
+        .captures(&text)
+        .and_then(|capture| capture.get(1))
+        .map(|match_| match_.as_str().to_string());
+    ExtractObjectiveIdTokenOutput { objective_id }
+}
+
 pub fn compute_execution_reserve_snapshot(
     input: &ExecutionReserveSnapshotInput,
 ) -> ExecutionReserveSnapshotOutput {
@@ -7079,6 +7117,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_parse_iso_ts_encode_failed:{e}"));
+    }
+    if mode == "extract_objective_id_token" {
+        let input = request
+            .extract_objective_id_token_input
+            .ok_or_else(|| "autoscale_missing_extract_objective_id_token_input".to_string())?;
+        let out = compute_extract_objective_id_token(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "extract_objective_id_token",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_extract_objective_id_token_encode_failed:{e}"));
     }
     if mode == "execution_reserve_snapshot" {
         let input = request
@@ -10156,6 +10206,38 @@ mod tests {
         let out = run_autoscale_json(&payload).expect("autoscale parse_iso_ts");
         assert!(out.contains("\"mode\":\"parse_iso_ts\""));
         assert!(out.contains("\"timestamp_ms\":"));
+    }
+
+    #[test]
+    fn extract_objective_id_token_matches_expected_patterns() {
+        let direct = compute_extract_objective_id_token(&ExtractObjectiveIdTokenInput {
+            value: Some("T12_build_router".to_string()),
+        });
+        assert_eq!(direct.objective_id.as_deref(), Some("T12_build_router"));
+
+        let embedded = compute_extract_objective_id_token(&ExtractObjectiveIdTokenInput {
+            value: Some("objective: T8_fix_drift soon".to_string()),
+        });
+        assert_eq!(embedded.objective_id.as_deref(), Some("T8_fix_drift"));
+
+        let none = compute_extract_objective_id_token(&ExtractObjectiveIdTokenInput {
+            value: Some("no token".to_string()),
+        });
+        assert!(none.objective_id.is_none());
+    }
+
+    #[test]
+    fn autoscale_json_extract_objective_id_token_path_works() {
+        let payload = serde_json::json!({
+            "mode": "extract_objective_id_token",
+            "extract_objective_id_token_input": {
+                "value": "objective: T8_fix_drift soon"
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale extract_objective_id_token");
+        assert!(out.contains("\"mode\":\"extract_objective_id_token\""));
+        assert!(out.contains("\"objective_id\":\"T8_fix_drift\""));
     }
 
     #[test]

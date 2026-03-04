@@ -2740,6 +2740,29 @@ function isOptimizationIntentProposal(p) {
 }
 
 function extractObjectiveIdToken(value) {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const raw = String(value == null ? '' : value);
+    const cache = globalThis.__PROTHEUS_EXTRACT_OBJECTIVE_ID_TOKEN_CACHE instanceof Map
+      ? globalThis.__PROTHEUS_EXTRACT_OBJECTIVE_ID_TOKEN_CACHE
+      : (globalThis.__PROTHEUS_EXTRACT_OBJECTIVE_ID_TOKEN_CACHE = new Map());
+    if (cache.has(raw)) return cache.get(raw);
+    const rust = runBacklogAutoscalePrimitive(
+      'extract_objective_id_token',
+      { value: raw || null },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const objectiveId = rust.payload.payload.objective_id == null
+        ? null
+        : String(rust.payload.payload.objective_id || '');
+      if (cache.size >= 2048) {
+        const oldest = cache.keys().next();
+        if (!oldest.done) cache.delete(oldest.value);
+      }
+      cache.set(raw, objectiveId);
+      return objectiveId;
+    }
+  }
   const text = normalizeSpaces(value);
   if (!text) return null;
   const direct = text.match(/^T[0-9]+_[A-Za-z0-9_]+$/);
@@ -19069,6 +19092,7 @@ module.exports = {
   sourceEyeRef,
   normalizedRisk,
   parseIsoTs,
+  extractObjectiveIdToken,
   toStem,
   directiveTokenHits,
   expectedValueScore,
