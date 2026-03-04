@@ -129,6 +129,7 @@ function runBacklogAutoscalePrimitive(mode: string, data: AnyObj = {}, opts: Any
     minutes_since_ts: 'minutes_since_ts_input',
     date_window: 'date_window_input',
     in_window: 'in_window_input',
+    start_of_next_utc_day: 'start_of_next_utc_day_input',
     route_execution_policy_hold: 'route_execution_policy_hold_input',
     policy_hold_pressure: 'policy_hold_pressure_input',
     policy_hold_pattern: 'policy_hold_pattern_input',

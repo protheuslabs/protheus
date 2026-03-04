@@ -540,6 +540,18 @@ pub struct InWindowOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct StartOfNextUtcDayInput {
+    #[serde(default)]
+    pub date_str: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct StartOfNextUtcDayOutput {
+    #[serde(default)]
+    pub iso_ts: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct QosLaneUsageEventInput {
     #[serde(default)]
     pub event_type: Option<String>,
@@ -1091,6 +1103,8 @@ pub struct AutoscaleRequest {
     pub date_window_input: Option<DateWindowInput>,
     #[serde(default)]
     pub in_window_input: Option<InWindowInput>,
+    #[serde(default)]
+    pub start_of_next_utc_day_input: Option<StartOfNextUtcDayInput>,
     #[serde(default)]
     pub no_progress_result_input: Option<NoProgressResultInput>,
     #[serde(default)]
@@ -2294,6 +2308,27 @@ pub fn compute_in_window(input: &InWindowInput) -> InWindowOutput {
     let start = DateTime::<Utc>::from_naive_utc_and_offset(start_naive, Utc);
     InWindowOutput {
         in_window: ts >= start && ts <= end,
+    }
+}
+
+pub fn compute_start_of_next_utc_day(
+    input: &StartOfNextUtcDayInput,
+) -> StartOfNextUtcDayOutput {
+    let date_str = input
+        .date_str
+        .as_ref()
+        .map(|v| v.trim())
+        .filter(|v| !v.is_empty());
+    let Some(date_str) = date_str else {
+        return StartOfNextUtcDayOutput { iso_ts: None };
+    };
+    let date = NaiveDate::parse_from_str(date_str, "%Y-%m-%d").ok();
+    let Some(date) = date else {
+        return StartOfNextUtcDayOutput { iso_ts: None };
+    };
+    let next = date + Duration::days(1);
+    StartOfNextUtcDayOutput {
+        iso_ts: Some(format!("{}T00:00:00.000Z", next.format("%Y-%m-%d"))),
     }
 }
 
@@ -3703,6 +3738,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
         }))
         .map_err(|e| format!("autoscale_in_window_encode_failed:{e}"));
     }
+    if mode == "start_of_next_utc_day" {
+        let input = request
+            .start_of_next_utc_day_input
+            .ok_or_else(|| "autoscale_missing_start_of_next_utc_day_input".to_string())?;
+        let out = compute_start_of_next_utc_day(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "start_of_next_utc_day",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_start_of_next_utc_day_encode_failed:{e}"));
+    }
     if mode == "no_progress_result" {
         let input = request
             .no_progress_result_input
@@ -5007,6 +5054,27 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale in_window");
         assert!(out.contains("\"mode\":\"in_window\""));
+    }
+
+    #[test]
+    fn start_of_next_utc_day_returns_next_day_iso() {
+        let out = compute_start_of_next_utc_day(&StartOfNextUtcDayInput {
+            date_str: Some("2026-03-03".to_string()),
+        });
+        assert_eq!(out.iso_ts, Some("2026-03-04T00:00:00.000Z".to_string()));
+    }
+
+    #[test]
+    fn autoscale_json_start_of_next_utc_day_path_works() {
+        let payload = serde_json::json!({
+            "mode": "start_of_next_utc_day",
+            "start_of_next_utc_day_input": {
+                "date_str": "2026-03-03"
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale start_of_next_utc_day");
+        assert!(out.contains("\"mode\":\"start_of_next_utc_day\""));
     }
 
     #[test]

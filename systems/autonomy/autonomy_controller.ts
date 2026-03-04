@@ -2724,6 +2724,8 @@ const DATE_WINDOW_CACHE = new Map();
 const DATE_WINDOW_CACHE_MAX = 256;
 const IN_WINDOW_CACHE = new Map();
 const IN_WINDOW_CACHE_MAX = 1024;
+const START_OF_NEXT_UTC_DAY_CACHE = new Map();
+const START_OF_NEXT_UTC_DAY_CACHE_MAX = 512;
 const POLICY_HOLD_RESULT_CACHE = new Map();
 const POLICY_HOLD_RESULT_CACHE_MAX = 256;
 const NO_PROGRESS_RESULT_CACHE = new Map();
@@ -4646,6 +4648,28 @@ function dateWindow(endDateStr, days) {
 }
 
 function startOfNextUtcDay(dateStr) {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const safeDateStr = String(dateStr || '').trim();
+    if (START_OF_NEXT_UTC_DAY_CACHE.has(safeDateStr)) {
+      return START_OF_NEXT_UTC_DAY_CACHE.get(safeDateStr);
+    }
+    const rust = runBacklogAutoscalePrimitive(
+      'start_of_next_utc_day',
+      { date_str: safeDateStr },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const raw = rust.payload.payload.iso_ts;
+      const val = raw == null ? null : String(raw || '').trim();
+      const normalized = val || null;
+      if (START_OF_NEXT_UTC_DAY_CACHE.size >= START_OF_NEXT_UTC_DAY_CACHE_MAX) {
+        const oldest = START_OF_NEXT_UTC_DAY_CACHE.keys().next();
+        if (!oldest.done) START_OF_NEXT_UTC_DAY_CACHE.delete(oldest.value);
+      }
+      START_OF_NEXT_UTC_DAY_CACHE.set(safeDateStr, normalized);
+      return normalized;
+    }
+  }
   const base = new Date(`${String(dateStr || '')}T00:00:00.000Z`);
   if (isNaN(base.getTime())) return null;
   base.setUTCDate(base.getUTCDate() + 1);
@@ -17172,6 +17196,7 @@ module.exports = {
   minutesSinceTs,
   dateWindow,
   inWindow,
+  startOfNextUtcDay,
   runEventProposalType,
   runEventObjectiveId,
   runEventProposalId,
