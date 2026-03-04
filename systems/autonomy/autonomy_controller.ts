@@ -2730,6 +2730,8 @@ const TIME_TO_VALUE_SCORE_CACHE = new Map();
 const TIME_TO_VALUE_SCORE_CACHE_MAX = 1024;
 const VALUE_DENSITY_SCORE_CACHE = new Map();
 const VALUE_DENSITY_SCORE_CACHE_MAX = 1024;
+const EXECUTION_RESERVE_SNAPSHOT_CACHE = new Map();
+const EXECUTION_RESERVE_SNAPSHOT_CACHE_MAX = 512;
 const MINUTES_SINCE_TS_CACHE = new Map();
 const MINUTES_SINCE_TS_CACHE_MAX = 512;
 const DATE_WINDOW_CACHE = new Map();
@@ -8001,6 +8003,44 @@ function valueDensityScore(expectedValue, estTokens) {
 }
 
 function executionReserveSnapshot(cap, used) {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const tokenCap = Math.max(0, Number(cap || 0));
+    const usedEst = Math.max(0, Number(used || 0));
+    const cacheKey = [
+      tokenCap,
+      usedEst,
+      AUTONOMY_BUDGET_EXECUTION_RESERVE_ENABLED ? 1 : 0,
+      AUTONOMY_BUDGET_EXECUTION_RESERVE_RATIO,
+      AUTONOMY_BUDGET_EXECUTION_RESERVE_MIN_TOKENS
+    ].join('\u0000');
+    if (EXECUTION_RESERVE_SNAPSHOT_CACHE.has(cacheKey)) {
+      return EXECUTION_RESERVE_SNAPSHOT_CACHE.get(cacheKey);
+    }
+    const rust = runBacklogAutoscalePrimitive(
+      'execution_reserve_snapshot',
+      {
+        cap: tokenCap,
+        used: usedEst,
+        reserve_enabled: AUTONOMY_BUDGET_EXECUTION_RESERVE_ENABLED,
+        reserve_ratio: AUTONOMY_BUDGET_EXECUTION_RESERVE_RATIO,
+        reserve_min_tokens: AUTONOMY_BUDGET_EXECUTION_RESERVE_MIN_TOKENS
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const val = {
+        enabled: rust.payload.payload.enabled === true,
+        reserve_tokens: Math.max(0, Number(rust.payload.payload.reserve_tokens || 0)),
+        reserve_remaining: Math.max(0, Number(rust.payload.payload.reserve_remaining || 0))
+      };
+      if (EXECUTION_RESERVE_SNAPSHOT_CACHE.size >= EXECUTION_RESERVE_SNAPSHOT_CACHE_MAX) {
+        const oldest = EXECUTION_RESERVE_SNAPSHOT_CACHE.keys().next();
+        if (!oldest.done) EXECUTION_RESERVE_SNAPSHOT_CACHE.delete(oldest.value);
+      }
+      EXECUTION_RESERVE_SNAPSHOT_CACHE.set(cacheKey, val);
+      return val;
+    }
+  }
   const tokenCap = Math.max(0, Number(cap || 0));
   const usedEst = Math.max(0, Number(used || 0));
   const reserveTarget = AUTONOMY_BUDGET_EXECUTION_RESERVE_ENABLED
@@ -17417,6 +17457,7 @@ module.exports = {
   expectedValueScore,
   timeToValueScore,
   valueDensityScore,
+  executionReserveSnapshot,
   expectedValueSignalForProposal,
   strategyRankForCandidate,
   strategyTritShadowForCandidate,

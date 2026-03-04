@@ -678,6 +678,22 @@ pub struct ValueDensityScoreOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ExecutionReserveSnapshotInput {
+    pub cap: f64,
+    pub used: f64,
+    pub reserve_enabled: bool,
+    pub reserve_ratio: f64,
+    pub reserve_min_tokens: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ExecutionReserveSnapshotOutput {
+    pub enabled: bool,
+    pub reserve_tokens: f64,
+    pub reserve_remaining: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct QosLaneUsageEventInput {
     #[serde(default)]
     pub event_type: Option<String>,
@@ -1249,6 +1265,8 @@ pub struct AutoscaleRequest {
     pub time_to_value_score_input: Option<TimeToValueScoreInput>,
     #[serde(default)]
     pub value_density_score_input: Option<ValueDensityScoreInput>,
+    #[serde(default)]
+    pub execution_reserve_snapshot_input: Option<ExecutionReserveSnapshotInput>,
     #[serde(default)]
     pub no_progress_result_input: Option<NoProgressResultInput>,
     #[serde(default)]
@@ -2475,6 +2493,28 @@ pub fn compute_value_density_score(input: &ValueDensityScoreInput) -> ValueDensi
         rounded as u32
     };
     ValueDensityScoreOutput { score: clamped }
+}
+
+pub fn compute_execution_reserve_snapshot(
+    input: &ExecutionReserveSnapshotInput,
+) -> ExecutionReserveSnapshotOutput {
+    let token_cap = input.cap.max(0.0);
+    let used_est = input.used.max(0.0);
+    let reserve_target = if input.reserve_enabled {
+        (token_cap * input.reserve_ratio)
+            .round()
+            .max(input.reserve_min_tokens)
+    } else {
+        0.0
+    };
+    let reserve_tokens = reserve_target.max(0.0).min(token_cap);
+    let spend_beyond_non_reserve = (used_est - (token_cap - reserve_tokens).max(0.0)).max(0.0);
+    let reserve_remaining = (reserve_tokens - spend_beyond_non_reserve).max(0.0);
+    ExecutionReserveSnapshotOutput {
+        enabled: input.reserve_enabled,
+        reserve_tokens,
+        reserve_remaining,
+    }
 }
 
 pub fn compute_proposal_status_for_queue_pressure(
@@ -4159,6 +4199,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
         }))
         .map_err(|e| format!("autoscale_value_density_score_encode_failed:{e}"));
     }
+    if mode == "execution_reserve_snapshot" {
+        let input = request
+            .execution_reserve_snapshot_input
+            .ok_or_else(|| "autoscale_missing_execution_reserve_snapshot_input".to_string())?;
+        let out = compute_execution_reserve_snapshot(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "execution_reserve_snapshot",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_execution_reserve_snapshot_encode_failed:{e}"));
+    }
     if mode == "proposal_status_for_queue_pressure" {
         let input = request.proposal_status_for_queue_pressure_input.ok_or_else(|| {
             "autoscale_missing_proposal_status_for_queue_pressure_input".to_string()
@@ -5666,6 +5718,37 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale value_density_score");
         assert!(out.contains("\"mode\":\"value_density_score\""));
+    }
+
+    #[test]
+    fn execution_reserve_snapshot_applies_reserve_math() {
+        let out = compute_execution_reserve_snapshot(&ExecutionReserveSnapshotInput {
+            cap: 1000.0,
+            used: 950.0,
+            reserve_enabled: true,
+            reserve_ratio: 0.12,
+            reserve_min_tokens: 600.0,
+        });
+        assert!(out.enabled);
+        assert_eq!(out.reserve_tokens, 600.0);
+        assert_eq!(out.reserve_remaining, 50.0);
+    }
+
+    #[test]
+    fn autoscale_json_execution_reserve_snapshot_path_works() {
+        let payload = serde_json::json!({
+            "mode": "execution_reserve_snapshot",
+            "execution_reserve_snapshot_input": {
+                "cap": 1000,
+                "used": 950,
+                "reserve_enabled": true,
+                "reserve_ratio": 0.12,
+                "reserve_min_tokens": 600
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale execution_reserve_snapshot");
+        assert!(out.contains("\"mode\":\"execution_reserve_snapshot\""));
     }
 
     #[test]
