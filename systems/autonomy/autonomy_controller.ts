@@ -12986,6 +12986,21 @@ function numberOrNull(v) {
 }
 
 function parseJsonObjectsFromText(text, maxObjects = 40) {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'parse_json_objects_from_text',
+      {
+        text: text == null ? null : String(text),
+        max_objects: Number(maxObjects)
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return Array.isArray(rust.payload.payload.objects)
+        ? rust.payload.payload.objects.filter((row) => row && typeof row === 'object')
+        : [];
+    }
+  }
   const lines = String(text || '')
     .split('\n')
     .map((l) => l.trim())
@@ -21286,6 +21301,7 @@ module.exports = {
   parseDirectiveFileArgFromCommand,
   parseDirectiveObjectiveArgFromCommand,
   parseFirstJsonLine,
+  parseJsonObjectsFromText,
   parseObjectiveIdFromEvidenceRefs,
   parseObjectiveIdFromCommand,
   sanitizedDirectiveIdList,

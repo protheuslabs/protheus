@@ -3204,6 +3204,20 @@ pub struct ParseFirstJsonLineOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ParseJsonObjectsFromTextInput {
+    #[serde(default)]
+    pub text: Option<String>,
+    #[serde(default)]
+    pub max_objects: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ParseJsonObjectsFromTextOutput {
+    #[serde(default)]
+    pub objects: Vec<serde_json::Value>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ParseDirectiveFileArgInput {
     #[serde(default)]
     pub command: Option<String>,
@@ -4395,6 +4409,8 @@ pub struct AutoscaleRequest {
     pub sanitized_directive_id_list_input: Option<SanitizedDirectiveIdListInput>,
     #[serde(default)]
     pub parse_first_json_line_input: Option<ParseFirstJsonLineInput>,
+    #[serde(default)]
+    pub parse_json_objects_from_text_input: Option<ParseJsonObjectsFromTextInput>,
     #[serde(default)]
     pub parse_directive_file_arg_input: Option<ParseDirectiveFileArgInput>,
     #[serde(default)]
@@ -10140,6 +10156,39 @@ pub fn compute_parse_first_json_line(input: &ParseFirstJsonLineInput) -> ParseFi
     ParseFirstJsonLineOutput { value: None }
 }
 
+pub fn compute_parse_json_objects_from_text(
+    input: &ParseJsonObjectsFromTextInput,
+) -> ParseJsonObjectsFromTextOutput {
+    let text = input.text.as_deref().unwrap_or("");
+    let max_objects = input
+        .max_objects
+        .filter(|v| v.is_finite())
+        .map(|v| v.max(0.0).floor() as usize)
+        .unwrap_or(40usize)
+        .min(500usize);
+    if max_objects == 0 {
+        return ParseJsonObjectsFromTextOutput {
+            objects: Vec::new(),
+        };
+    }
+    let mut out = Vec::<serde_json::Value>::new();
+    for line in text.lines() {
+        if out.len() >= max_objects {
+            break;
+        }
+        let trimmed = line.trim();
+        if trimmed.is_empty() || !trimmed.starts_with('{') || !trimmed.ends_with('}') {
+            continue;
+        }
+        if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(trimmed) {
+            if parsed.is_object() {
+                out.push(parsed);
+            }
+        }
+    }
+    ParseJsonObjectsFromTextOutput { objects: out }
+}
+
 pub fn compute_parse_directive_file_arg(input: &ParseDirectiveFileArgInput) -> ParseDirectiveFileArgOutput {
     let text = input.command.as_deref().unwrap_or("").trim();
     if text.is_empty() {
@@ -14039,6 +14088,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_parse_first_json_line_encode_failed:{e}"));
+    }
+    if mode == "parse_json_objects_from_text" {
+        let input = request
+            .parse_json_objects_from_text_input
+            .ok_or_else(|| "autoscale_missing_parse_json_objects_from_text_input".to_string())?;
+        let out = compute_parse_json_objects_from_text(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "parse_json_objects_from_text",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_parse_json_objects_from_text_encode_failed:{e}"));
     }
     if mode == "parse_directive_file_arg" {
         let input = request
