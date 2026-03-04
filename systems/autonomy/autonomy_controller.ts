@@ -2713,6 +2713,8 @@ const SCORE_ONLY_FAILURE_LIKE_CACHE = new Map();
 const SCORE_ONLY_FAILURE_LIKE_CACHE_MAX = 1024;
 const GATE_EXHAUSTED_ATTEMPT_CACHE = new Map();
 const GATE_EXHAUSTED_ATTEMPT_CACHE_MAX = 1024;
+const CONSECUTIVE_GATE_EXHAUSTED_ATTEMPTS_CACHE = new Map();
+const CONSECUTIVE_GATE_EXHAUSTED_ATTEMPTS_CACHE_MAX = 512;
 
 function isPolicyHoldResult(result): boolean {
   const r = String(result || '').trim();
@@ -3682,6 +3684,37 @@ function isGateExhaustedAttempt(evt) {
 }
 
 function consecutiveGateExhaustedAttempts(events) {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rows = Array.isArray(events) ? events : [];
+    const rustEvents = [];
+    for (const evt of rows) {
+      if (!evt || typeof evt !== 'object') continue;
+      rustEvents.push({
+        event_type: String(evt.type || ''),
+        result: String(evt.result || '')
+      });
+    }
+    const key = rustEvents
+      .map((row) => `${row.event_type}\u0000${row.result}`)
+      .join('\u0001');
+    if (CONSECUTIVE_GATE_EXHAUSTED_ATTEMPTS_CACHE.has(key)) {
+      return Number(CONSECUTIVE_GATE_EXHAUSTED_ATTEMPTS_CACHE.get(key) || 0);
+    }
+    const rust = runBacklogAutoscalePrimitive(
+      'consecutive_gate_exhausted_attempts',
+      { events: rustEvents },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const val = Math.max(0, Number(rust.payload.payload.count || 0));
+      if (CONSECUTIVE_GATE_EXHAUSTED_ATTEMPTS_CACHE.size >= CONSECUTIVE_GATE_EXHAUSTED_ATTEMPTS_CACHE_MAX) {
+        const oldest = CONSECUTIVE_GATE_EXHAUSTED_ATTEMPTS_CACHE.keys().next();
+        if (!oldest.done) CONSECUTIVE_GATE_EXHAUSTED_ATTEMPTS_CACHE.delete(oldest.value);
+      }
+      CONSECUTIVE_GATE_EXHAUSTED_ATTEMPTS_CACHE.set(key, val);
+      return val;
+    }
+  }
   let count = 0;
   for (let i = events.length - 1; i >= 0; i--) {
     const e = events[i];
@@ -16499,5 +16532,6 @@ module.exports = {
   deriveRepeatGateAnchor,
   isScoreOnlyResult,
   isScoreOnlyFailureLikeEvent,
-  isGateExhaustedAttempt
+  isGateExhaustedAttempt,
+  consecutiveGateExhaustedAttempts
 };

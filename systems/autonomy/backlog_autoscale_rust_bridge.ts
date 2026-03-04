@@ -111,6 +111,7 @@ function runBacklogAutoscalePrimitive(mode: string, data: AnyObj = {}, opts: Any
     score_only_result: 'score_only_result_input',
     score_only_failure_like: 'score_only_failure_like_input',
     gate_exhausted_attempt: 'gate_exhausted_attempt_input',
+    consecutive_gate_exhausted_attempts: 'consecutive_gate_exhausted_attempts_input',
     route_execution_policy_hold: 'route_execution_policy_hold_input',
     policy_hold_pressure: 'policy_hold_pressure_input',
     policy_hold_pattern: 'policy_hold_pattern_input',

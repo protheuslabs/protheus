@@ -263,6 +263,25 @@ pub struct GateExhaustedAttemptOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ConsecutiveGateExhaustedAttemptEventInput {
+    #[serde(default)]
+    pub event_type: Option<String>,
+    #[serde(default)]
+    pub result: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ConsecutiveGateExhaustedAttemptsInput {
+    #[serde(default)]
+    pub events: Vec<ConsecutiveGateExhaustedAttemptEventInput>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ConsecutiveGateExhaustedAttemptsOutput {
+    pub count: u32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct NoProgressResultInput {
     #[serde(default)]
     pub event_type: Option<String>,
@@ -702,6 +721,8 @@ pub struct AutoscaleRequest {
     pub score_only_failure_like_input: Option<ScoreOnlyFailureLikeInput>,
     #[serde(default)]
     pub gate_exhausted_attempt_input: Option<GateExhaustedAttemptInput>,
+    #[serde(default)]
+    pub consecutive_gate_exhausted_attempts_input: Option<ConsecutiveGateExhaustedAttemptsInput>,
     #[serde(default)]
     pub no_progress_result_input: Option<NoProgressResultInput>,
     #[serde(default)]
@@ -1465,6 +1486,47 @@ pub fn compute_gate_exhausted_attempt(
             || result == "stop_repeat_gate_medium_canary_cap"
             || result == "stop_repeat_gate_candidate_exhausted",
     }
+}
+
+pub fn compute_consecutive_gate_exhausted_attempts(
+    input: &ConsecutiveGateExhaustedAttemptsInput,
+) -> ConsecutiveGateExhaustedAttemptsOutput {
+    let mut count: u32 = 0;
+    for evt in input.events.iter().rev() {
+        let event_type = evt
+            .event_type
+            .as_ref()
+            .map(|v| v.trim().to_ascii_lowercase())
+            .unwrap_or_default();
+        if event_type != "autonomy_run" {
+            continue;
+        }
+
+        let result = evt
+            .result
+            .as_ref()
+            .map(|v| v.trim().to_string())
+            .unwrap_or_default();
+        let is_attempt = compute_attempt_run_event(&AttemptRunEventInput {
+            event_type: Some(event_type),
+            result: Some(result.clone()),
+        })
+        .is_attempt;
+        if !is_attempt {
+            continue;
+        }
+
+        let is_gate_exhausted = compute_gate_exhausted_attempt(&GateExhaustedAttemptInput {
+            event_type: Some("autonomy_run".to_string()),
+            result: Some(result),
+        })
+        .is_gate_exhausted;
+        if !is_gate_exhausted {
+            break;
+        }
+        count += 1;
+    }
+    ConsecutiveGateExhaustedAttemptsOutput { count }
 }
 
 pub fn compute_no_progress_result(input: &NoProgressResultInput) -> NoProgressResultOutput {
@@ -2457,6 +2519,20 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
         }))
         .map_err(|e| format!("autoscale_gate_exhausted_attempt_encode_failed:{e}"));
     }
+    if mode == "consecutive_gate_exhausted_attempts" {
+        let input = request
+            .consecutive_gate_exhausted_attempts_input
+            .ok_or_else(|| {
+                "autoscale_missing_consecutive_gate_exhausted_attempts_input".to_string()
+            })?;
+        let out = compute_consecutive_gate_exhausted_attempts(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "consecutive_gate_exhausted_attempts",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_consecutive_gate_exhausted_attempts_encode_failed:{e}"));
+    }
     if mode == "no_progress_result" {
         let input = request
             .no_progress_result_input
@@ -3014,6 +3090,47 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale gate_exhausted_attempt");
         assert!(out.contains("\"mode\":\"gate_exhausted_attempt\""));
+    }
+
+    #[test]
+    fn consecutive_gate_exhausted_attempts_counts_tail_streak() {
+        let out = compute_consecutive_gate_exhausted_attempts(&ConsecutiveGateExhaustedAttemptsInput {
+            events: vec![
+                ConsecutiveGateExhaustedAttemptEventInput {
+                    event_type: Some("autonomy_run".to_string()),
+                    result: Some("executed".to_string()),
+                },
+                ConsecutiveGateExhaustedAttemptEventInput {
+                    event_type: Some("autonomy_run".to_string()),
+                    result: Some("stop_repeat_gate_stale_signal".to_string()),
+                },
+                ConsecutiveGateExhaustedAttemptEventInput {
+                    event_type: Some("autonomy_run".to_string()),
+                    result: Some("stop_repeat_gate_candidate_exhausted".to_string()),
+                },
+                ConsecutiveGateExhaustedAttemptEventInput {
+                    event_type: Some("autonomy_run".to_string()),
+                    result: Some("lock_busy".to_string()),
+                },
+            ],
+        });
+        assert_eq!(out.count, 2);
+    }
+
+    #[test]
+    fn autoscale_json_consecutive_gate_exhausted_attempts_path_works() {
+        let payload = serde_json::json!({
+            "mode": "consecutive_gate_exhausted_attempts",
+            "consecutive_gate_exhausted_attempts_input": {
+                "events": [
+                    {"event_type": "autonomy_run", "result": "stop_repeat_gate_stale_signal"},
+                    {"event_type": "autonomy_run", "result": "stop_repeat_gate_candidate_exhausted"}
+                ]
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale consecutive_gate_exhausted_attempts");
+        assert!(out.contains("\"mode\":\"consecutive_gate_exhausted_attempts\""));
     }
 
     #[test]

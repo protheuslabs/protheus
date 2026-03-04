@@ -14,6 +14,7 @@ use wasm_bindgen::prelude::*;
 
 pub use autoscale::{
     compute_attempt_run_event, compute_batch_max, compute_capacity_counted_attempt_event,
+    compute_consecutive_gate_exhausted_attempts,
     compute_criteria_gate, compute_dynamic_caps,
     compute_gate_exhausted_attempt,
     compute_no_progress_result, compute_non_yield_category, compute_normalize_queue, compute_plan,
@@ -29,7 +30,9 @@ pub use autoscale::{
     compute_safety_stop_run_event, compute_token_usage, run_autoscale_json,
     AttemptRunEventInput, AttemptRunEventOutput, BatchMaxInput, BatchMaxOutput,
     CapacityCountedAttemptEventInput, CapacityCountedAttemptEventOutput, CriteriaGateInput,
-    CriteriaGateOutput, DynamicCapsInput, DynamicCapsOutput, NoProgressResultInput,
+    ConsecutiveGateExhaustedAttemptEventInput, ConsecutiveGateExhaustedAttemptsInput,
+    ConsecutiveGateExhaustedAttemptsOutput, CriteriaGateOutput, DynamicCapsInput,
+    DynamicCapsOutput, NoProgressResultInput,
     NoProgressResultOutput, GateExhaustedAttemptInput, GateExhaustedAttemptOutput,
     NonYieldCategoryInput, NonYieldCategoryOutput, NonYieldReasonInput,
     NonYieldReasonOutput, NormalizeQueueInput, NormalizeQueueOutput, PlanInput, PlanOutput,
