@@ -6418,17 +6418,58 @@ function recentRunEvents(endDateStr, days) {
 }
 
 function proposalMetaIndex(endDateStr, days) {
-  const idx = new Map();
+  const rows = [];
   for (const d of dateWindow(endDateStr, days)) {
     const proposals = loadProposalsForDate(d);
     for (const p of proposals) {
       if (!p || !p.id) continue;
-      if (idx.has(p.id)) continue;
-      idx.set(p.id, {
-        eye_id: sourceEyeId(p),
-        topics: Array.isArray(p && p.meta && p.meta.topics) ? p.meta.topics.map(t => String(t || '').toLowerCase()).filter(Boolean) : []
+      rows.push({
+        proposal_id: String(p.id || ''),
+        eye_id: String(sourceEyeId(p) || ''),
+        topics: Array.isArray(p && p.meta && p.meta.topics)
+          ? p.meta.topics.map(t => String(t || '').toLowerCase()).filter(Boolean)
+          : []
       });
     }
+  }
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'proposal_meta_index',
+      { entries: rows },
+      { allow_cli_fallback: true }
+    );
+    if (
+      rust
+      && rust.ok === true
+      && rust.payload
+      && rust.payload.ok === true
+      && rust.payload.payload
+      && Array.isArray(rust.payload.payload.entries)
+    ) {
+      const idx = new Map();
+      for (const row of rust.payload.payload.entries) {
+        const proposalId = String(row && row.proposal_id || '');
+        if (!proposalId || idx.has(proposalId)) continue;
+        idx.set(proposalId, {
+          eye_id: String(row && row.eye_id || ''),
+          topics: Array.isArray(row && row.topics)
+            ? row.topics.map(t => String(t || '').toLowerCase()).filter(Boolean)
+            : []
+        });
+      }
+      return idx;
+    }
+  }
+  const idx = new Map();
+  for (const row of rows) {
+    const proposalId = String(row && row.proposal_id || '');
+    if (!proposalId || idx.has(proposalId)) continue;
+    idx.set(proposalId, {
+      eye_id: String(row && row.eye_id || ''),
+      topics: Array.isArray(row && row.topics)
+        ? row.topics.map(t => String(t || '').toLowerCase()).filter(Boolean)
+        : []
+    });
   }
   return idx;
 }

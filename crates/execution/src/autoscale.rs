@@ -2673,6 +2673,36 @@ pub struct RecentAutonomyRunEventsOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ProposalMetaIndexEntryInput {
+    #[serde(default)]
+    pub proposal_id: Option<String>,
+    #[serde(default)]
+    pub eye_id: Option<String>,
+    #[serde(default)]
+    pub topics: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ProposalMetaIndexInput {
+    #[serde(default)]
+    pub entries: Vec<ProposalMetaIndexEntryInput>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ProposalMetaIndexEntryOutput {
+    pub proposal_id: String,
+    pub eye_id: String,
+    #[serde(default)]
+    pub topics: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ProposalMetaIndexOutput {
+    #[serde(default)]
+    pub entries: Vec<ProposalMetaIndexEntryOutput>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ManualGatePrefilterInput {
     #[serde(default)]
     pub enabled: bool,
@@ -4687,6 +4717,8 @@ pub struct AutoscaleRequest {
     pub is_stub_proposal_input: Option<IsStubProposalInput>,
     #[serde(default)]
     pub recent_autonomy_run_events_input: Option<RecentAutonomyRunEventsInput>,
+    #[serde(default)]
+    pub proposal_meta_index_input: Option<ProposalMetaIndexInput>,
     #[serde(default)]
     pub manual_gate_prefilter_input: Option<ManualGatePrefilterInput>,
     #[serde(default)]
@@ -9471,6 +9503,36 @@ pub fn compute_recent_autonomy_run_events(
     }
 
     RecentAutonomyRunEventsOutput { events: out }
+}
+
+pub fn compute_proposal_meta_index(input: &ProposalMetaIndexInput) -> ProposalMetaIndexOutput {
+    let mut seen = std::collections::HashSet::<String>::new();
+    let mut out = Vec::<ProposalMetaIndexEntryOutput>::new();
+    for row in input.entries.iter() {
+        let proposal_id = row
+            .proposal_id
+            .as_deref()
+            .unwrap_or("")
+            .trim()
+            .to_string();
+        if proposal_id.is_empty() || seen.contains(&proposal_id) {
+            continue;
+        }
+        seen.insert(proposal_id.clone());
+        let eye_id = row.eye_id.as_deref().unwrap_or("").trim().to_string();
+        let topics = row
+            .topics
+            .iter()
+            .map(|v| v.trim().to_lowercase())
+            .filter(|v| !v.is_empty())
+            .collect::<Vec<String>>();
+        out.push(ProposalMetaIndexEntryOutput {
+            proposal_id,
+            eye_id,
+            topics,
+        });
+    }
+    ProposalMetaIndexOutput { entries: out }
 }
 
 pub fn compute_manual_gate_prefilter(input: &ManualGatePrefilterInput) -> ManualGatePrefilterOutput {
@@ -14702,6 +14764,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_recent_autonomy_run_events_encode_failed:{e}"));
+    }
+    if mode == "proposal_meta_index" {
+        let input = request
+            .proposal_meta_index_input
+            .ok_or_else(|| "autoscale_missing_proposal_meta_index_input".to_string())?;
+        let out = compute_proposal_meta_index(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "proposal_meta_index",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_proposal_meta_index_encode_failed:{e}"));
     }
     if mode == "manual_gate_prefilter" {
         let input = request
@@ -20775,6 +20849,54 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale recent_autonomy_run_events");
         assert!(out.contains("\"mode\":\"recent_autonomy_run_events\""));
+    }
+
+    #[test]
+    fn proposal_meta_index_dedupes_first_seen_rows() {
+        let out = compute_proposal_meta_index(&ProposalMetaIndexInput {
+            entries: vec![
+                ProposalMetaIndexEntryInput {
+                    proposal_id: Some("p1".to_string()),
+                    eye_id: Some("eye_a".to_string()),
+                    topics: vec!["A".to_string(), "b".to_string()],
+                },
+                ProposalMetaIndexEntryInput {
+                    proposal_id: Some("p1".to_string()),
+                    eye_id: Some("eye_b".to_string()),
+                    topics: vec!["c".to_string()],
+                },
+                ProposalMetaIndexEntryInput {
+                    proposal_id: Some("p2".to_string()),
+                    eye_id: Some("eye_c".to_string()),
+                    topics: vec!["X".to_string()],
+                },
+            ],
+        });
+        assert_eq!(out.entries.len(), 2);
+        assert_eq!(out.entries[0].proposal_id, "p1");
+        assert_eq!(out.entries[0].eye_id, "eye_a");
+        assert_eq!(
+            out.entries[0].topics,
+            vec!["a".to_string(), "b".to_string()]
+        );
+        assert_eq!(out.entries[1].proposal_id, "p2");
+    }
+
+    #[test]
+    fn autoscale_json_proposal_meta_index_path_works() {
+        let payload = serde_json::json!({
+            "mode": "proposal_meta_index",
+            "proposal_meta_index_input": {
+                "entries": [
+                    { "proposal_id": "p1", "eye_id": "eye_a", "topics": ["One"] },
+                    { "proposal_id": "p1", "eye_id": "eye_b", "topics": ["Two"] }
+                ]
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale proposal_meta_index");
+        assert!(out.contains("\"mode\":\"proposal_meta_index\""));
+        assert!(out.contains("\"proposal_id\":\"p1\""));
     }
 
     #[test]
