@@ -2731,6 +2731,8 @@ const EXECUTED_COUNT_BY_RISK_CACHE = new Map();
 const EXECUTED_COUNT_BY_RISK_CACHE_MAX = 512;
 const RUN_RESULT_TALLY_CACHE = new Map();
 const RUN_RESULT_TALLY_CACHE_MAX = 256;
+const QOS_LANE_USAGE_CACHE = new Map();
+const QOS_LANE_USAGE_CACHE_MAX = 256;
 
 function isPolicyHoldResult(result): boolean {
   const r = String(result || '').trim();
@@ -10756,13 +10758,53 @@ function qosLaneWeights(queuePressure: AnyObj = {}) {
 }
 
 function qosLaneUsageFromRuns(priorRuns) {
+  const rows = Array.isArray(priorRuns) ? priorRuns : [];
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rustEvents = [];
+    for (const evt of rows) {
+      if (!evt || typeof evt !== 'object') continue;
+      rustEvents.push({
+        event_type: String(evt.type || ''),
+        result: String(evt.result || ''),
+        selection_mode: String(evt.selection_mode || '')
+      });
+    }
+    const key = rustEvents
+      .map((row) => `${row.event_type}\u0000${row.result}\u0000${row.selection_mode}`)
+      .join('\u0001');
+    if (QOS_LANE_USAGE_CACHE.has(key)) {
+      const cached = QOS_LANE_USAGE_CACHE.get(key);
+      return cached && typeof cached === 'object'
+        ? { ...cached }
+        : { critical: 0, standard: 0, explore: 0, quarantine: 0 };
+    }
+    const rust = runBacklogAutoscalePrimitive(
+      'qos_lane_usage',
+      { events: rustEvents },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const out = {
+        critical: Math.max(0, Number(rust.payload.payload.critical || 0)),
+        standard: Math.max(0, Number(rust.payload.payload.standard || 0)),
+        explore: Math.max(0, Number(rust.payload.payload.explore || 0)),
+        quarantine: Math.max(0, Number(rust.payload.payload.quarantine || 0))
+      };
+      if (QOS_LANE_USAGE_CACHE.size >= QOS_LANE_USAGE_CACHE_MAX) {
+        const oldest = QOS_LANE_USAGE_CACHE.keys().next();
+        if (!oldest.done) QOS_LANE_USAGE_CACHE.delete(oldest.value);
+      }
+      QOS_LANE_USAGE_CACHE.set(key, out);
+      return out;
+    }
+  }
   const out = {
     critical: 0,
     standard: 0,
     explore: 0,
     quarantine: 0
   };
-  for (const evt of Array.isArray(priorRuns) ? priorRuns : []) {
+  for (const evt of rows) {
     if (!evt || evt.type !== 'autonomy_run' || evt.result !== 'executed') continue;
     const mode = String(evt.selection_mode || '').toLowerCase();
     const m = mode.match(/qos_(critical|standard|explore|quarantine)_/);
@@ -16835,5 +16877,6 @@ module.exports = {
   consecutiveNoProgressRuns,
   shippedCount,
   executedCountByRisk,
-  tallyByResult
+  tallyByResult,
+  qosLaneUsageFromRuns
 };

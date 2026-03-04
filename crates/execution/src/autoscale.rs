@@ -442,6 +442,30 @@ pub struct RunResultTallyOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct QosLaneUsageEventInput {
+    #[serde(default)]
+    pub event_type: Option<String>,
+    #[serde(default)]
+    pub result: Option<String>,
+    #[serde(default)]
+    pub selection_mode: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct QosLaneUsageInput {
+    #[serde(default)]
+    pub events: Vec<QosLaneUsageEventInput>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct QosLaneUsageOutput {
+    pub critical: u32,
+    pub standard: u32,
+    pub explore: u32,
+    pub quarantine: u32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct NoProgressResultInput {
     #[serde(default)]
     pub event_type: Option<String>,
@@ -899,6 +923,8 @@ pub struct AutoscaleRequest {
     pub executed_count_by_risk_input: Option<ExecutedCountByRiskInput>,
     #[serde(default)]
     pub run_result_tally_input: Option<RunResultTallyInput>,
+    #[serde(default)]
+    pub qos_lane_usage_input: Option<QosLaneUsageInput>,
     #[serde(default)]
     pub no_progress_result_input: Option<NoProgressResultInput>,
     #[serde(default)]
@@ -1901,6 +1927,45 @@ pub fn compute_run_result_tally(input: &RunResultTallyInput) -> RunResultTallyOu
         counts.insert(key, next);
     }
     RunResultTallyOutput { counts }
+}
+
+pub fn compute_qos_lane_usage(input: &QosLaneUsageInput) -> QosLaneUsageOutput {
+    let mut out = QosLaneUsageOutput {
+        critical: 0,
+        standard: 0,
+        explore: 0,
+        quarantine: 0,
+    };
+    for evt in &input.events {
+        let event_type = evt
+            .event_type
+            .as_ref()
+            .map(|v| v.trim().to_ascii_lowercase())
+            .unwrap_or_default();
+        let result = evt
+            .result
+            .as_ref()
+            .map(|v| v.trim().to_ascii_lowercase())
+            .unwrap_or_default();
+        if event_type != "autonomy_run" || result != "executed" {
+            continue;
+        }
+        let mode = evt
+            .selection_mode
+            .as_ref()
+            .map(|v| v.trim().to_ascii_lowercase())
+            .unwrap_or_default();
+        if mode.contains("qos_critical_") {
+            out.critical += 1;
+        } else if mode.contains("qos_standard_") {
+            out.standard += 1;
+        } else if mode.contains("qos_explore_") {
+            out.explore += 1;
+        } else if mode.contains("qos_quarantine_") {
+            out.quarantine += 1;
+        }
+    }
+    out
 }
 
 pub fn compute_no_progress_result(input: &NoProgressResultInput) -> NoProgressResultOutput {
@@ -3003,6 +3068,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
         }))
         .map_err(|e| format!("autoscale_run_result_tally_encode_failed:{e}"));
     }
+    if mode == "qos_lane_usage" {
+        let input = request
+            .qos_lane_usage_input
+            .ok_or_else(|| "autoscale_missing_qos_lane_usage_input".to_string())?;
+        let out = compute_qos_lane_usage(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "qos_lane_usage",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_qos_lane_usage_encode_failed:{e}"));
+    }
     if mode == "no_progress_result" {
         let input = request
             .no_progress_result_input
@@ -3958,6 +4035,49 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale run_result_tally");
         assert!(out.contains("\"mode\":\"run_result_tally\""));
+    }
+
+    #[test]
+    fn qos_lane_usage_counts_modes() {
+        let out = compute_qos_lane_usage(&QosLaneUsageInput {
+            events: vec![
+                QosLaneUsageEventInput {
+                    event_type: Some("autonomy_run".to_string()),
+                    result: Some("executed".to_string()),
+                    selection_mode: Some("qos_critical_exploit".to_string()),
+                },
+                QosLaneUsageEventInput {
+                    event_type: Some("autonomy_run".to_string()),
+                    result: Some("executed".to_string()),
+                    selection_mode: Some("qos_explore_explore".to_string()),
+                },
+                QosLaneUsageEventInput {
+                    event_type: Some("autonomy_run".to_string()),
+                    result: Some("stop_repeat_gate_no_progress".to_string()),
+                    selection_mode: Some("qos_standard_exploit".to_string()),
+                },
+            ],
+        });
+        assert_eq!(out.critical, 1);
+        assert_eq!(out.explore, 1);
+        assert_eq!(out.standard, 0);
+        assert_eq!(out.quarantine, 0);
+    }
+
+    #[test]
+    fn autoscale_json_qos_lane_usage_path_works() {
+        let payload = serde_json::json!({
+            "mode": "qos_lane_usage",
+            "qos_lane_usage_input": {
+                "events": [
+                    {"event_type": "autonomy_run", "result": "executed", "selection_mode": "qos_standard_exploit"},
+                    {"event_type": "autonomy_run", "result": "executed", "selection_mode": "qos_quarantine_explore"}
+                ]
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale qos_lane_usage");
+        assert!(out.contains("\"mode\":\"qos_lane_usage\""));
     }
 
     #[test]
