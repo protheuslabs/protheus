@@ -3667,6 +3667,21 @@ function countObserverApprovals(paths: AnyObj, target: string, windowDays: numbe
 }
 
 function detectImmutableAxiomViolation(policy: AnyObj, decisionInput: AnyObj) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'detect_immutable_axiom_violation',
+      {
+        policy: policy && typeof policy === 'object' ? policy : {},
+        decision_input: decisionInput && typeof decisionInput === 'object' ? decisionInput : {}
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return Array.isArray(rust.payload.payload.hits)
+        ? rust.payload.payload.hits.map((row: unknown) => normalizeToken(row, 80)).filter(Boolean)
+        : [];
+    }
+  }
   const axiomsPolicy = policy.immutable_axioms || {};
   if (axiomsPolicy.enabled !== true) return [];
   const rows = Array.isArray(axiomsPolicy.axioms) ? axiomsPolicy.axioms : [];
@@ -3988,6 +4003,26 @@ function defaultMaturityState() {
 }
 
 function computeMaturityScore(state: AnyObj, policy: AnyObj) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'compute_maturity_score',
+      {
+        state: state && typeof state === 'object' ? state : {},
+        policy: policy && typeof policy === 'object' ? policy : {}
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const row = rust.payload.payload;
+      return {
+        score: Number(clampNumber(row.score, 0, 1, 0).toFixed(6)),
+        band: normalizeToken(row.band || 'novice', 24) || 'novice',
+        pass_rate: Number(clampNumber(row.pass_rate, 0, 1, 0).toFixed(6)),
+        non_destructive_rate: Number(clampNumber(row.non_destructive_rate, 0, 1, 0).toFixed(6)),
+        experience: Number(clampNumber(row.experience, 0, 1, 0).toFixed(6))
+      };
+    }
+  }
   const stats = state && state.stats && typeof state.stats === 'object'
     ? state.stats
     : defaultMaturityState().stats;
@@ -4373,6 +4408,27 @@ function computeLibraryMatchScore(query: AnyObj, row: AnyObj, policy: AnyObj) {
 }
 
 function selectLibraryCandidates(paths: AnyObj, policy: AnyObj, query: AnyObj) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'select_library_candidates',
+      {
+        file_path: paths && paths.library_path ? String(paths.library_path) : '',
+        policy: policy && typeof policy === 'object' ? policy : {},
+        query: query && typeof query === 'object' ? query : {}
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const rows = Array.isArray(rust.payload.payload.candidates) ? rust.payload.payload.candidates : [];
+      return rows
+        .map((entry: AnyObj) => ({
+          row: normalizeLibraryRow(entry && entry.row && typeof entry.row === 'object' ? entry.row : {}),
+          similarity: Number(clampNumber(entry && entry.similarity, 0, 1, 0).toFixed(6)),
+          candidate_certainty: Number(clampNumber(entry && entry.candidate_certainty, 0, 1, 0).toFixed(6))
+        }))
+        .filter((entry: AnyObj) => entry && entry.row && typeof entry.row === 'object');
+    }
+  }
   const rows = readJsonl(paths.library_path).map(normalizeLibraryRow);
   const minSimilarity = Number(policy.library.min_similarity_for_reuse || 0.35);
   const scored = rows
@@ -4504,6 +4560,31 @@ function maxTargetRankForDecision(policy: AnyObj, maturityBand: string, impact: 
 }
 
 function parseLaneDecision(args: AnyObj, paths: AnyObj, dateStr: string) {
+  if (INVERSION_RUST_ENABLED) {
+    const rawLane = normalizeToken(
+      args.brain_lane || args['brain-lane'] || args.generation_lane || args['generation-lane'],
+      120
+    );
+    const canDelegate = !!rawLane || typeof decideBrainRoute !== 'function';
+    if (canDelegate) {
+      const rust = runInversionPrimitive(
+        'parse_lane_decision',
+        {
+          args: args && typeof args === 'object' ? args : {},
+          date_str: dateStr == null ? '' : String(dateStr)
+        },
+        { allow_cli_fallback: true }
+      );
+      if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+        const row = rust.payload.payload;
+        return {
+          selected_lane: normalizeToken(row.selected_lane || '', 120),
+          source: normalizeToken(row.source || 'none', 24) || 'none',
+          route: row.route && typeof row.route === 'object' ? row.route : null
+        };
+      }
+    }
+  }
   const lane = normalizeToken(
     args.brain_lane || args['brain-lane'] || args.generation_lane || args['generation-lane'],
     120
@@ -4694,6 +4775,25 @@ function emitEvent(paths: AnyObj, policy: AnyObj, dateStr: string, eventType: st
 }
 
 function sweepExpiredSessions(paths: AnyObj, policy: AnyObj, dateStr: string) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'sweep_expired_sessions',
+      {
+        paths: paths && typeof paths === 'object' ? paths : {},
+        policy: policy && typeof policy === 'object' ? policy : {},
+        date_str: dateStr == null ? '' : String(dateStr),
+        now_iso: nowIso()
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const row = rust.payload.payload;
+      return {
+        expired_count: clampInt(row.expired_count, 0, 1000000, 0),
+        sessions: Array.isArray(row.sessions) ? row.sessions.filter((x: unknown) => x && typeof x === 'object') : []
+      };
+    }
+  }
   const store = loadActiveSessions(paths);
   const nowMs = Date.now();
   const expired: AnyObj[] = [];
@@ -6676,6 +6776,27 @@ function normalizeObjectiveArg(v: unknown) {
 }
 
 function loadImpossibilitySignals(policy: AnyObj, dateStr: string) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'load_impossibility_signals',
+      {
+        policy: policy && typeof policy === 'object' ? policy : {},
+        date_str: dateStr == null ? '' : String(dateStr),
+        root: process.cwd()
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const row = rust.payload.payload;
+      return row && typeof row === 'object' ? row : {
+        regime: { path: null, selected_regime: 'unknown', confidence: 0, constrained: false },
+        mirror: { path: null, pressure_score: 0, confidence: 0, reasons: [] },
+        simulation: { path: null, predicted_drift: 0, predicted_yield: 0 },
+        red_team: { path: null, critical_fail_cases: 0, pass_cases: 0, fail_cases: 0 },
+        trit: { value: 0, label: 'unknown' }
+      };
+    }
+  }
   const organ = policy.organ && typeof policy.organ === 'object' ? policy.organ : {};
   const trigger = organ.trigger_detection && typeof organ.trigger_detection === 'object'
     ? organ.trigger_detection
@@ -6785,6 +6906,31 @@ function loadImpossibilitySignals(policy: AnyObj, dateStr: string) {
 }
 
 function evaluateImpossibilityTrigger(policy: AnyObj, signals: AnyObj, force = false) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'evaluate_impossibility_trigger',
+      {
+        policy: policy && typeof policy === 'object' ? policy : {},
+        signals: signals && typeof signals === 'object' ? signals : {},
+        force: force === true
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const row = rust.payload.payload;
+      return {
+        triggered: row.triggered === true,
+        forced: row.forced === true,
+        enabled: row.enabled === true,
+        score: Number(clampNumber(row.score, 0, 1, 0).toFixed(6)),
+        threshold: Number(clampNumber(row.threshold, 0, 1, 0.58).toFixed(6)),
+        signal_count: clampInt(row.signal_count, 0, 32, 0),
+        min_signal_count: clampInt(row.min_signal_count, 1, 12, 2),
+        reasons: Array.isArray(row.reasons) ? row.reasons.map((x: unknown) => cleanText(x, 80)).filter(Boolean) : [],
+        components: row.components && typeof row.components === 'object' ? row.components : {}
+      };
+    }
+  }
   const organ = policy.organ && typeof policy.organ === 'object' ? policy.organ : {};
   const cfg = organ.trigger_detection && typeof organ.trigger_detection === 'object'
     ? organ.trigger_detection
@@ -7675,6 +7821,24 @@ function maybeAutoRunHarness(paths: AnyObj, policy: AnyObj, dateStr: string, arg
 }
 
 function extractFirstPrinciple(paths: AnyObj, policy: AnyObj, session: AnyObj, args: AnyObj, result: string) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'extract_first_principle',
+      {
+        policy: policy && typeof policy === 'object' ? policy : {},
+        session: session && typeof session === 'object' ? session : {},
+        args: args && typeof args === 'object' ? args : {},
+        result: result == null ? '' : String(result),
+        now_iso: nowIso()
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const row = rust.payload.payload.principle;
+      if (!row || typeof row !== 'object') return null;
+      return row;
+    }
+  }
   if (policy.first_principles && policy.first_principles.enabled !== true) return null;
   if (result !== 'success') return null;
 
@@ -7722,6 +7886,23 @@ function extractFirstPrinciple(paths: AnyObj, policy: AnyObj, session: AnyObj, a
 }
 
 function extractFailureClusterPrinciple(paths: AnyObj, policy: AnyObj, session: AnyObj) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'extract_failure_cluster_principle',
+      {
+        paths: paths && typeof paths === 'object' ? paths : {},
+        policy: policy && typeof policy === 'object' ? policy : {},
+        session: session && typeof session === 'object' ? session : {},
+        now_iso: nowIso()
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const row = rust.payload.payload.principle;
+      if (!row || typeof row !== 'object') return null;
+      return row;
+    }
+  }
   if (policy.first_principles && policy.first_principles.enabled !== true) return null;
   if (policy.first_principles.allow_failure_cluster_extraction !== true) return null;
   const query = {
@@ -7764,6 +7945,22 @@ function extractFailureClusterPrinciple(paths: AnyObj, policy: AnyObj, session: 
 }
 
 function persistFirstPrinciple(paths: AnyObj, session: AnyObj, principle: AnyObj) {
+  if (INVERSION_RUST_ENABLED) {
+    const rust = runInversionPrimitive(
+      'persist_first_principle',
+      {
+        paths: paths && typeof paths === 'object' ? paths : {},
+        session: session && typeof session === 'object' ? session : {},
+        principle: principle && typeof principle === 'object' ? principle : {},
+        now_iso: nowIso()
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const row = rust.payload.payload.principle;
+      if (row && typeof row === 'object') return row;
+    }
+  }
   writeJsonAtomic(paths.first_principles_latest_path, principle);
   appendJsonl(paths.first_principles_history_path, principle);
   upsertFirstPrincipleLock(paths, session, principle);
@@ -8386,6 +8583,7 @@ module.exports = {
   buildOutputInterfaces,
   computeAttractorScore,
   computeMaturityScore,
+  detectImmutableAxiomViolation,
   evaluateRunDecision,
   normalizeImpact,
   normalizeMode,
@@ -8508,4 +8706,13 @@ module.exports = {
   hasSignalTermMatch,
   countAxiomSignalGroups,
   effectiveFirstNHumanVetoUses
+  ,
+  selectLibraryCandidates,
+  parseLaneDecision,
+  sweepExpiredSessions,
+  loadImpossibilitySignals,
+  evaluateImpossibilityTrigger,
+  extractFirstPrinciple,
+  extractFailureClusterPrinciple,
+  persistFirstPrinciple
 };

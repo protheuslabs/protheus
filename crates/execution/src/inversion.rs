@@ -1864,6 +1864,175 @@ pub struct TrimLibraryOutput {
     pub rows: Vec<Value>,
 }
 
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct DetectImmutableAxiomViolationInput {
+    #[serde(default)]
+    pub policy: Option<Value>,
+    #[serde(default)]
+    pub decision_input: Option<Value>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct DetectImmutableAxiomViolationOutput {
+    pub hits: Vec<String>,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct ComputeMaturityScoreInput {
+    #[serde(default)]
+    pub state: Option<Value>,
+    #[serde(default)]
+    pub policy: Option<Value>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct ComputeMaturityScoreOutput {
+    pub score: f64,
+    pub band: String,
+    pub pass_rate: f64,
+    pub non_destructive_rate: f64,
+    pub experience: f64,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct SelectLibraryCandidatesInput {
+    #[serde(default)]
+    pub file_path: Option<String>,
+    #[serde(default)]
+    pub policy: Option<Value>,
+    #[serde(default)]
+    pub query: Option<Value>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct SelectLibraryCandidatesOutput {
+    pub candidates: Vec<Value>,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct ParseLaneDecisionInput {
+    #[serde(default)]
+    pub args: Option<Value>,
+    #[serde(default)]
+    pub date_str: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct ParseLaneDecisionOutput {
+    pub selected_lane: String,
+    pub source: String,
+    pub route: Option<Value>,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct SweepExpiredSessionsInput {
+    #[serde(default)]
+    pub paths: Option<Value>,
+    #[serde(default)]
+    pub policy: Option<Value>,
+    #[serde(default)]
+    pub date_str: Option<String>,
+    #[serde(default)]
+    pub now_iso: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct SweepExpiredSessionsOutput {
+    pub expired_count: i64,
+    pub sessions: Vec<Value>,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct LoadImpossibilitySignalsInput {
+    #[serde(default)]
+    pub policy: Option<Value>,
+    #[serde(default)]
+    pub date_str: Option<String>,
+    #[serde(default)]
+    pub root: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct LoadImpossibilitySignalsOutput {
+    pub signals: Value,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct EvaluateImpossibilityTriggerInput {
+    #[serde(default)]
+    pub policy: Option<Value>,
+    #[serde(default)]
+    pub signals: Option<Value>,
+    #[serde(default)]
+    pub force: Option<bool>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct EvaluateImpossibilityTriggerOutput {
+    pub triggered: bool,
+    pub forced: bool,
+    pub enabled: bool,
+    pub score: f64,
+    pub threshold: f64,
+    pub signal_count: i64,
+    pub min_signal_count: i64,
+    pub reasons: Vec<String>,
+    pub components: Value,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct ExtractFirstPrincipleInput {
+    #[serde(default)]
+    pub policy: Option<Value>,
+    #[serde(default)]
+    pub session: Option<Value>,
+    #[serde(default)]
+    pub args: Option<Value>,
+    #[serde(default)]
+    pub result: Option<String>,
+    #[serde(default)]
+    pub now_iso: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct ExtractFirstPrincipleOutput {
+    pub principle: Option<Value>,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct ExtractFailureClusterPrincipleInput {
+    #[serde(default)]
+    pub paths: Option<Value>,
+    #[serde(default)]
+    pub policy: Option<Value>,
+    #[serde(default)]
+    pub session: Option<Value>,
+    #[serde(default)]
+    pub now_iso: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct ExtractFailureClusterPrincipleOutput {
+    pub principle: Option<Value>,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct PersistFirstPrincipleInput {
+    #[serde(default)]
+    pub paths: Option<Value>,
+    #[serde(default)]
+    pub session: Option<Value>,
+    #[serde(default)]
+    pub principle: Option<Value>,
+    #[serde(default)]
+    pub now_iso: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct PersistFirstPrincipleOutput {
+    pub principle: Value,
+}
+
 fn normalize_token(raw: &str, max_len: usize) -> String {
     let collapsed = raw
         .split_whitespace()
@@ -6551,6 +6720,1238 @@ pub fn compute_trim_library(input: &TrimLibraryInput) -> TrimLibraryOutput {
     TrimLibraryOutput { rows: keep }
 }
 
+pub fn compute_detect_immutable_axiom_violation(
+    input: &DetectImmutableAxiomViolationInput,
+) -> DetectImmutableAxiomViolationOutput {
+    let axioms_policy = value_path(input.policy.as_ref(), &["immutable_axioms"])
+        .and_then(|v| v.as_object())
+        .cloned()
+        .unwrap_or_default();
+    if !to_bool_like(axioms_policy.get("enabled"), false) {
+        return DetectImmutableAxiomViolationOutput { hits: Vec::new() };
+    }
+    let rows = axioms_policy
+        .get("axioms")
+        .and_then(|v| v.as_array())
+        .cloned()
+        .unwrap_or_default();
+    if rows.is_empty() {
+        return DetectImmutableAxiomViolationOutput { hits: Vec::new() };
+    }
+    let decision = input
+        .decision_input
+        .as_ref()
+        .and_then(|v| v.as_object())
+        .cloned()
+        .unwrap_or_default();
+    let objective = clean_text_runtime(&value_to_string(decision.get("objective")), 500);
+    let signature = clean_text_runtime(&value_to_string(decision.get("signature")), 500);
+    let filters = decision
+        .get("filters")
+        .and_then(|v| v.as_array())
+        .cloned()
+        .unwrap_or_default()
+        .iter()
+        .map(|row| clean_text_runtime(&value_to_string(Some(row)), 120))
+        .filter(|row| !row.is_empty())
+        .collect::<Vec<_>>();
+    let haystack = clean_text_runtime(
+        &[objective.clone(), signature.clone(), filters.join(" ")]
+            .join(" ")
+            .to_lowercase(),
+        2400,
+    );
+    let token_set = compute_tokenize_text(&TokenizeTextInput {
+        value: Some(haystack.clone()),
+        max_tokens: Some(64),
+    })
+    .tokens;
+    let intent_tags = compute_normalize_list(&NormalizeListInput {
+        value: Some(
+            decision
+                .get("intent_tags")
+                .cloned()
+                .unwrap_or(Value::Array(vec![])),
+        ),
+        max_len: Some(80),
+    })
+    .items;
+
+    let mut hits = Vec::new();
+    for axiom in rows {
+        let Some(axiom_obj) = axiom.as_object() else {
+            continue;
+        };
+        let id = compute_normalize_token(&NormalizeTokenInput {
+            value: Some(value_to_string(axiom_obj.get("id"))),
+            max_len: Some(80),
+        })
+        .value;
+        if id.is_empty() {
+            continue;
+        }
+        let patterns = axiom_obj
+            .get("patterns")
+            .and_then(|v| v.as_array())
+            .cloned()
+            .unwrap_or_default()
+            .iter()
+            .map(|row| {
+                compute_normalize_axiom_pattern(&NormalizeAxiomPatternInput {
+                    value: Some(value_to_string(Some(row))),
+                })
+                .value
+            })
+            .filter(|row| !row.is_empty())
+            .collect::<Vec<_>>();
+        let mut pattern_matched = false;
+        for pattern in patterns {
+            let source = compute_pattern_to_word_regex(&PatternToWordRegexInput {
+                pattern: Some(pattern),
+                max_len: Some(220),
+            })
+            .source;
+            let Some(source) = source else {
+                continue;
+            };
+            let Ok(re) = Regex::new(&source) else {
+                continue;
+            };
+            if re.is_match(&haystack) {
+                pattern_matched = true;
+                break;
+            }
+        }
+
+        let regex_rules = axiom_obj
+            .get("regex")
+            .and_then(|v| v.as_array())
+            .cloned()
+            .unwrap_or_default()
+            .iter()
+            .map(|row| clean_text_runtime(&value_to_string(Some(row)), 220))
+            .filter(|row| !row.is_empty())
+            .collect::<Vec<_>>();
+        let regex_matched = regex_rules.iter().any(|rule| {
+            Regex::new(rule)
+                .ok()
+                .map(|re| re.is_match(&haystack))
+                .unwrap_or(false)
+        });
+
+        let tag_rules = compute_normalize_list(&NormalizeListInput {
+            value: Some(
+                axiom_obj
+                    .get("intent_tags")
+                    .cloned()
+                    .unwrap_or(Value::Array(vec![])),
+            ),
+            max_len: Some(80),
+        })
+        .items;
+        let tag_matched = tag_rules.iter().any(|tag| intent_tags.iter().any(|it| it == tag));
+
+        let signal_cfg = axiom_obj
+            .get("signals")
+            .and_then(|v| v.as_object())
+            .cloned()
+            .unwrap_or_default();
+        let signal_groups = compute_count_axiom_signal_groups(&CountAxiomSignalGroupsInput {
+            action_terms: compute_normalize_axiom_signal_terms(&NormalizeAxiomSignalTermsInput {
+                terms: signal_cfg
+                    .get("action_terms")
+                    .and_then(|v| v.as_array())
+                    .cloned()
+                    .unwrap_or_default(),
+            })
+            .terms,
+            subject_terms: compute_normalize_axiom_signal_terms(&NormalizeAxiomSignalTermsInput {
+                terms: signal_cfg
+                    .get("subject_terms")
+                    .and_then(|v| v.as_array())
+                    .cloned()
+                    .unwrap_or_default(),
+            })
+            .terms,
+            object_terms: compute_normalize_axiom_signal_terms(&NormalizeAxiomSignalTermsInput {
+                terms: signal_cfg
+                    .get("object_terms")
+                    .and_then(|v| v.as_array())
+                    .cloned()
+                    .unwrap_or_default(),
+            })
+            .terms,
+            min_signal_groups: axiom_obj.get("min_signal_groups").and_then(|v| v.as_i64()),
+            haystack: Some(haystack.clone()),
+            token_set: token_set.clone(),
+        });
+        let structured_signal_configured = signal_groups.configured_groups > 0;
+        let structured_pattern_match = pattern_matched
+            && (!structured_signal_configured || signal_groups.pass);
+        if tag_matched || regex_matched || structured_pattern_match {
+            hits.push(id);
+        }
+    }
+    hits.sort();
+    hits.dedup();
+    DetectImmutableAxiomViolationOutput { hits }
+}
+
+pub fn compute_maturity_score(input: &ComputeMaturityScoreInput) -> ComputeMaturityScoreOutput {
+    let state = input
+        .state
+        .as_ref()
+        .and_then(|v| v.as_object())
+        .cloned()
+        .unwrap_or_default();
+    let policy = input
+        .policy
+        .as_ref()
+        .and_then(|v| v.as_object())
+        .cloned()
+        .unwrap_or_default();
+    let stats = state
+        .get("stats")
+        .and_then(|v| v.as_object())
+        .cloned()
+        .unwrap_or_default();
+    let total = js_number_for_extract(stats.get("total_tests"))
+        .unwrap_or(0.0)
+        .max(0.0);
+    let passed = js_number_for_extract(stats.get("passed_tests"))
+        .unwrap_or(0.0)
+        .max(0.0);
+    let destructive = js_number_for_extract(stats.get("destructive_failures"))
+        .unwrap_or(0.0)
+        .max(0.0);
+    let non_destructive_rate = if total > 0.0 {
+        ((total - destructive) / total).max(0.0)
+    } else {
+        1.0
+    };
+    let pass_rate = if total > 0.0 {
+        (passed / total).max(0.0)
+    } else {
+        0.0
+    };
+    let target_test_count = js_number_for_extract(value_path(Some(&Value::Object(policy.clone())), &["maturity", "target_test_count"]))
+        .unwrap_or(40.0)
+        .max(1.0);
+    let experience = (total / target_test_count).min(1.0);
+    let weights = value_path(Some(&Value::Object(policy.clone())), &["maturity", "score_weights"])
+        .and_then(|v| v.as_object())
+        .cloned()
+        .unwrap_or_default();
+    let w_pass = js_number_for_extract(weights.get("pass_rate")).unwrap_or(0.0);
+    let w_non = js_number_for_extract(weights.get("non_destructive_rate")).unwrap_or(0.0);
+    let w_exp = js_number_for_extract(weights.get("experience")).unwrap_or(0.0);
+    let weight_total = (w_pass + w_non + w_exp).max(0.0001);
+    let score = ((pass_rate * w_pass) + (non_destructive_rate * w_non) + (experience * w_exp))
+        / weight_total;
+    let s = clamp_number(score, 0.0, 1.0);
+    let bands = value_path(Some(&Value::Object(policy.clone())), &["maturity", "bands"])
+        .and_then(|v| v.as_object())
+        .cloned()
+        .unwrap_or_default();
+    let novice = js_number_for_extract(bands.get("novice")).unwrap_or(0.25);
+    let developing = js_number_for_extract(bands.get("developing")).unwrap_or(0.45);
+    let mature = js_number_for_extract(bands.get("mature")).unwrap_or(0.65);
+    let seasoned = js_number_for_extract(bands.get("seasoned")).unwrap_or(0.82);
+    let band = if s < novice {
+        "novice".to_string()
+    } else if s < developing {
+        "developing".to_string()
+    } else if s < mature {
+        "mature".to_string()
+    } else if s < seasoned {
+        "seasoned".to_string()
+    } else {
+        "legendary".to_string()
+    };
+    ComputeMaturityScoreOutput {
+        score: (s * 1_000_000.0).round() / 1_000_000.0,
+        band,
+        pass_rate: (pass_rate * 1_000_000.0).round() / 1_000_000.0,
+        non_destructive_rate: (non_destructive_rate * 1_000_000.0).round() / 1_000_000.0,
+        experience: (experience * 1_000_000.0).round() / 1_000_000.0,
+    }
+}
+
+pub fn compute_select_library_candidates(
+    input: &SelectLibraryCandidatesInput,
+) -> SelectLibraryCandidatesOutput {
+    let policy = input.policy.clone().unwrap_or_else(|| json!({}));
+    let query = input.query.as_ref().and_then(|v| v.as_object()).cloned().unwrap_or_default();
+    let rows = compute_read_jsonl(&ReadJsonlInput {
+        file_path: input.file_path.clone(),
+    })
+    .rows
+    .into_iter()
+    .map(|row| compute_normalize_library_row(&NormalizeLibraryRowInput { row: Some(row) }).row)
+    .collect::<Vec<_>>();
+    let min_similarity = js_number_for_extract(value_path(Some(&policy), &["library", "min_similarity_for_reuse"]))
+        .unwrap_or(0.35);
+    let mut scored = rows
+        .into_iter()
+        .map(|row| {
+            let similarity = compute_library_match_score(&LibraryMatchScoreInput {
+                query_signature_tokens: query
+                    .get("signature_tokens")
+                    .and_then(|v| v.as_array())
+                    .cloned()
+                    .unwrap_or_default()
+                    .iter()
+                    .map(|v| value_to_string(Some(v)))
+                    .collect::<Vec<_>>(),
+                query_trit_vector: query
+                    .get("trit_vector")
+                    .and_then(|v| v.as_array())
+                    .cloned()
+                    .unwrap_or_default(),
+                query_target: query.get("target").and_then(|v| v.as_str()).map(|v| v.to_string()),
+                row_signature_tokens: row
+                    .as_object()
+                    .and_then(|m| m.get("signature_tokens"))
+                    .and_then(|v| v.as_array())
+                    .cloned()
+                    .unwrap_or_default()
+                    .iter()
+                    .map(|v| value_to_string(Some(v)))
+                    .collect::<Vec<_>>(),
+                row_outcome_trit: row
+                    .as_object()
+                    .and_then(|m| m.get("outcome_trit"))
+                    .and_then(|v| v.as_i64()),
+                row_target: row
+                    .as_object()
+                    .and_then(|m| m.get("target"))
+                    .and_then(|v| v.as_str())
+                    .map(|v| v.to_string()),
+                token_weight: value_path(Some(&policy), &["library", "token_weight"]).and_then(|v| v.as_f64()),
+                trit_weight: value_path(Some(&policy), &["library", "trit_weight"]).and_then(|v| v.as_f64()),
+                target_weight: value_path(Some(&policy), &["library", "target_weight"]).and_then(|v| v.as_f64()),
+            })
+            .score;
+            let base_certainty = clamp_number(
+                js_number_for_extract(row.as_object().and_then(|m| m.get("certainty"))).unwrap_or(0.0),
+                0.0,
+                1.0,
+            );
+            let outcome_trit = normalize_trit_value(
+                row.as_object()
+                    .and_then(|m| m.get("outcome_trit"))
+                    .unwrap_or(&Value::Null),
+            );
+            let confidence_multiplier = if outcome_trit == 1 {
+                1.0
+            } else if outcome_trit == 0 {
+                0.9
+            } else {
+                0.6
+            };
+            let candidate_certainty = clamp_number(base_certainty * confidence_multiplier, 0.0, 1.0);
+            json!({
+                "row": row,
+                "similarity": (similarity * 1_000_000.0).round() / 1_000_000.0,
+                "candidate_certainty": (candidate_certainty * 1_000_000.0).round() / 1_000_000.0
+            })
+        })
+        .filter(|entry| {
+            js_number_for_extract(entry.as_object().and_then(|m| m.get("similarity")))
+                .unwrap_or(0.0)
+                >= min_similarity
+        })
+        .collect::<Vec<_>>();
+    scored.sort_by(|a, b| {
+        let a_sim = js_number_for_extract(a.as_object().and_then(|m| m.get("similarity"))).unwrap_or(0.0);
+        let b_sim = js_number_for_extract(b.as_object().and_then(|m| m.get("similarity"))).unwrap_or(0.0);
+        if (b_sim - a_sim).abs() > f64::EPSILON {
+            return b_sim.partial_cmp(&a_sim).unwrap_or(std::cmp::Ordering::Equal);
+        }
+        let a_cert =
+            js_number_for_extract(a.as_object().and_then(|m| m.get("candidate_certainty"))).unwrap_or(0.0);
+        let b_cert =
+            js_number_for_extract(b.as_object().and_then(|m| m.get("candidate_certainty"))).unwrap_or(0.0);
+        if (b_cert - a_cert).abs() > f64::EPSILON {
+            return b_cert.partial_cmp(&a_cert).unwrap_or(std::cmp::Ordering::Equal);
+        }
+        let a_ts = value_to_string(
+            a.as_object()
+                .and_then(|m| m.get("row"))
+                .and_then(|v| v.as_object())
+                .and_then(|m| m.get("ts")),
+        );
+        let b_ts = value_to_string(
+            b.as_object()
+                .and_then(|m| m.get("row"))
+                .and_then(|v| v.as_object())
+                .and_then(|m| m.get("ts")),
+        );
+        b_ts.cmp(&a_ts)
+    });
+    SelectLibraryCandidatesOutput { candidates: scored }
+}
+
+pub fn compute_parse_lane_decision(input: &ParseLaneDecisionInput) -> ParseLaneDecisionOutput {
+    let args = input
+        .args
+        .as_ref()
+        .and_then(|v| v.as_object())
+        .cloned()
+        .unwrap_or_default();
+    let lane_raw = {
+        let candidates = [
+            value_to_string(args.get("brain_lane")),
+            value_to_string(args.get("brain-lane")),
+            value_to_string(args.get("generation_lane")),
+            value_to_string(args.get("generation-lane")),
+        ];
+        candidates
+            .into_iter()
+            .find(|v| !v.trim().is_empty())
+            .unwrap_or_default()
+    };
+    let lane = compute_normalize_token(&NormalizeTokenInput {
+        value: Some(lane_raw),
+        max_len: Some(120),
+    })
+    .value;
+    if !lane.is_empty() {
+        return ParseLaneDecisionOutput {
+            selected_lane: lane,
+            source: "arg".to_string(),
+            route: None,
+        };
+    }
+    ParseLaneDecisionOutput {
+        selected_lane: String::new(),
+        source: "none".to_string(),
+        route: None,
+    }
+}
+
+pub fn compute_sweep_expired_sessions(
+    input: &SweepExpiredSessionsInput,
+) -> SweepExpiredSessionsOutput {
+    let paths = input
+        .paths
+        .as_ref()
+        .and_then(|v| v.as_object())
+        .cloned()
+        .unwrap_or_default();
+    let policy = input.policy.clone().unwrap_or_else(|| json!({}));
+    let date_str = clean_text_runtime(input.date_str.as_deref().unwrap_or(""), 32);
+    let now_iso = input.now_iso.clone().unwrap_or_else(now_iso_runtime);
+    let now_ms = parse_ts_ms_runtime(&now_iso);
+    let store = compute_load_active_sessions(&LoadActiveSessionsInput {
+        file_path: paths
+            .get("active_sessions_path")
+            .and_then(|v| v.as_str())
+            .map(|v| v.to_string()),
+        now_iso: Some(now_iso.clone()),
+    })
+    .store;
+    let sessions = store
+        .get("sessions")
+        .and_then(|v| v.as_array())
+        .cloned()
+        .unwrap_or_default();
+    let mut expired = Vec::new();
+    let mut keep = Vec::new();
+    for session in sessions {
+        let expires_ms = parse_ts_ms_runtime(&value_to_string(
+            session.as_object().and_then(|m| m.get("expires_at")),
+        ));
+        if expires_ms > 0 && expires_ms <= now_ms {
+            expired.push(session);
+        } else {
+            keep.push(session);
+        }
+    }
+    if expired.is_empty() {
+        return SweepExpiredSessionsOutput {
+            expired_count: 0,
+            sessions: keep,
+        };
+    }
+    let _ = compute_save_active_sessions(&SaveActiveSessionsInput {
+        file_path: paths
+            .get("active_sessions_path")
+            .and_then(|v| v.as_str())
+            .map(|v| v.to_string()),
+        store: Some(json!({ "sessions": keep.clone() })),
+        now_iso: Some(now_iso.clone()),
+    });
+    for session in expired {
+        let session_obj = session.as_object().cloned().unwrap_or_default();
+        let row = json!({
+            "ts": now_iso.clone(),
+            "type": "inversion_auto_revert",
+            "reason": "session_timeout",
+            "session_id": clean_text_runtime(&value_to_string(session_obj.get("session_id")), 80),
+            "objective": clean_text_runtime(&value_to_string(session_obj.get("objective")), 220),
+            "target": compute_normalize_target(&NormalizeTargetInput {
+                value: Some(value_to_string(session_obj.get("target")))
+            }).value,
+            "outcome_trit": 0,
+            "result": "neutral",
+            "certainty": js_number_for_extract(session_obj.get("certainty")).unwrap_or(0.0)
+        });
+        let _ = compute_append_jsonl(&AppendJsonlInput {
+            file_path: paths
+                .get("receipts_path")
+                .and_then(|v| v.as_str())
+                .map(|v| v.to_string()),
+            row: Some(row.clone()),
+        });
+        let objective = value_to_string(session_obj.get("objective"));
+        let signature = {
+            let sig = value_to_string(session_obj.get("signature"));
+            if sig.is_empty() {
+                objective.clone()
+            } else {
+                sig
+            }
+        };
+        let id_seed = format!(
+            "{}|{}|timeout",
+            value_to_string(row.as_object().and_then(|m| m.get("session_id"))),
+            now_iso
+        );
+        let library_target = compute_normalize_target(&NormalizeTargetInput {
+            value: Some(value_to_string(row.as_object().and_then(|m| m.get("target")))),
+        })
+        .value;
+        let library_impact = compute_normalize_impact(&NormalizeImpactInput {
+            value: Some(value_to_string(session_obj.get("impact"))),
+        })
+        .value;
+        let library_certainty = {
+            let certainty =
+                js_number_for_extract(row.as_object().and_then(|m| m.get("certainty"))).unwrap_or(0.0);
+            (clamp_number(certainty, 0.0, 1.0) * 1_000_000.0).round() / 1_000_000.0
+        };
+        let library_filter_stack = compute_normalize_list(&NormalizeListInput {
+            value: Some(
+                session_obj
+                    .get("filter_stack")
+                    .cloned()
+                    .unwrap_or(Value::Array(vec![])),
+            ),
+            max_len: Some(120),
+        })
+        .items;
+        let library_maturity_band = compute_normalize_token(&NormalizeTokenInput {
+            value: Some(value_to_string(session_obj.get("maturity_band"))),
+            max_len: Some(24),
+        })
+        .value;
+        let library_session_id = clean_text_runtime(
+            &value_to_string(row.as_object().and_then(|m| m.get("session_id"))),
+            80,
+        );
+        let _ = compute_append_jsonl(&AppendJsonlInput {
+            file_path: paths
+                .get("library_path")
+                .and_then(|v| v.as_str())
+                .map(|v| v.to_string()),
+            row: Some(json!({
+                "id": stable_id_runtime(&id_seed, "ifl"),
+                "ts": now_iso.clone(),
+                "objective": clean_text_runtime(&objective, 240),
+                "objective_id": clean_text_runtime(&value_to_string(session_obj.get("objective_id")), 120),
+                "signature": clean_text_runtime(&signature, 240),
+                "signature_tokens": compute_tokenize_text(&TokenizeTextInput { value: Some(signature), max_tokens: Some(64) }).tokens,
+                "target": library_target,
+                "impact": library_impact,
+                "certainty": library_certainty,
+                "filter_stack": library_filter_stack,
+                "outcome_trit": 0,
+                "result": "neutral",
+                "maturity_band": library_maturity_band,
+                "session_id": library_session_id
+            })),
+        });
+        if to_bool_like(value_path(Some(&policy), &["telemetry", "emit_events"]), false) {
+            let _ = compute_emit_event(&EmitEventInput {
+                events_dir: paths
+                    .get("events_dir")
+                    .and_then(|v| v.as_str())
+                    .map(|v| v.to_string()),
+                date_str: Some(date_str.clone()),
+                event_type: Some("session_auto_revert".to_string()),
+                payload: Some(row),
+                emit_events: Some(true),
+                now_iso: Some(now_iso.clone()),
+            });
+        }
+    }
+    let _ = compute_trim_library(&TrimLibraryInput {
+        file_path: paths
+            .get("library_path")
+            .and_then(|v| v.as_str())
+            .map(|v| v.to_string()),
+        max_entries: value_path(Some(&policy), &["library", "max_entries"]).cloned(),
+    });
+    SweepExpiredSessionsOutput {
+        expired_count: (store
+            .get("sessions")
+            .and_then(|v| v.as_array())
+            .map(|rows| rows.len())
+            .unwrap_or(0)
+            .saturating_sub(keep.len())) as i64,
+        sessions: keep,
+    }
+}
+
+pub fn compute_load_impossibility_signals(
+    input: &LoadImpossibilitySignalsInput,
+) -> LoadImpossibilitySignalsOutput {
+    let policy = input.policy.clone().unwrap_or_else(|| json!({}));
+    let date_str = clean_text_runtime(input.date_str.as_deref().unwrap_or(""), 32);
+    let root = input.root.clone().unwrap_or_default();
+    let paths_cfg = value_path(Some(&policy), &["organ", "trigger_detection", "paths"])
+        .and_then(|v| v.as_object())
+        .cloned()
+        .unwrap_or_default();
+
+    let resolve_path = |raw: Option<&Value>| -> String {
+        let p = clean_text_runtime(&value_to_string(raw), 420);
+        if p.is_empty() {
+            return String::new();
+        }
+        if Path::new(&p).is_absolute() || root.is_empty() {
+            p
+        } else {
+            Path::new(&root).join(p).to_string_lossy().to_string()
+        }
+    };
+    let regime_path = resolve_path(paths_cfg.get("regime_latest_path"));
+    let mirror_path = resolve_path(paths_cfg.get("mirror_latest_path"));
+    let simulation_dir = resolve_path(paths_cfg.get("simulation_dir"));
+    let red_team_dir = resolve_path(paths_cfg.get("red_team_runs_dir"));
+    let drift_governor_path = resolve_path(paths_cfg.get("drift_governor_path"));
+
+    let regime = compute_read_json(&ReadJsonInput {
+        file_path: Some(regime_path.clone()),
+        fallback: Some(Value::Null),
+    })
+    .value;
+    let mirror = compute_read_json(&ReadJsonInput {
+        file_path: Some(mirror_path.clone()),
+        fallback: Some(Value::Null),
+    })
+    .value;
+    let simulation_by_date = if simulation_dir.is_empty() || date_str.is_empty() {
+        String::new()
+    } else {
+        Path::new(&simulation_dir)
+            .join(format!("{date_str}.json"))
+            .to_string_lossy()
+            .to_string()
+    };
+    let simulation_path = if !simulation_by_date.is_empty() && Path::new(&simulation_by_date).exists() {
+        simulation_by_date
+    } else {
+        compute_latest_json_file_in_dir(&LatestJsonFileInDirInput {
+            dir_path: Some(simulation_dir.clone()),
+        })
+        .file_path
+        .unwrap_or_default()
+    };
+    let simulation = compute_read_json(&ReadJsonInput {
+        file_path: Some(simulation_path.clone()),
+        fallback: Some(Value::Null),
+    })
+    .value;
+    let red_team_path = compute_latest_json_file_in_dir(&LatestJsonFileInDirInput {
+        dir_path: Some(red_team_dir.clone()),
+    })
+    .file_path
+    .unwrap_or_default();
+    let red_team = compute_read_json(&ReadJsonInput {
+        file_path: Some(red_team_path.clone()),
+        fallback: Some(Value::Null),
+    })
+    .value;
+    let drift_governor = compute_read_json(&ReadJsonInput {
+        file_path: Some(drift_governor_path.clone()),
+        fallback: Some(Value::Null),
+    })
+    .value;
+    let trit_from_regime = normalize_trit_value(
+        value_path(Some(&regime), &["context", "trit", "trit"]).unwrap_or(&Value::Null),
+    );
+    let trit_from_drift = normalize_trit_value(
+        value_path(
+            Some(&drift_governor),
+            &["last_decision", "trit_shadow", "belief", "trit"],
+        )
+        .unwrap_or(&Value::Null),
+    );
+    let trit = if trit_from_regime != 0 {
+        trit_from_regime
+    } else {
+        trit_from_drift
+    };
+    let trit_label = if trit > 0 {
+        "ok"
+    } else if trit < 0 {
+        "pain"
+    } else {
+        "unknown"
+    };
+    let regime_name = clean_text_runtime(
+        &value_to_string(value_path(Some(&regime), &["selected_regime"])),
+        64,
+    )
+    .to_lowercase();
+    let constrained_re = Regex::new("(constrained|emergency|defensive|degraded|critical)").unwrap();
+    let mirror_reasons = value_path(Some(&mirror), &["reasons"])
+        .and_then(|v| v.as_array())
+        .cloned()
+        .unwrap_or_default()
+        .iter()
+        .map(|x| clean_text_runtime(&value_to_string(Some(x)), 120))
+        .filter(|x| !x.is_empty())
+        .take(8)
+        .collect::<Vec<_>>();
+    let rel = |p: &str| -> Option<String> {
+        if p.is_empty() {
+            return None;
+        }
+        if root.is_empty() {
+            return Some(p.to_string());
+        }
+        let v = rel_path_runtime(&root, p);
+        if v.is_empty() || v.starts_with("..") {
+            Some(p.to_string())
+        } else {
+            Some(v)
+        }
+    };
+
+    LoadImpossibilitySignalsOutput {
+        signals: json!({
+            "regime": {
+                "path": rel(&regime_path),
+                "selected_regime": if regime_name.is_empty() { "unknown".to_string() } else { regime_name.clone() },
+                "confidence": clamp_number(js_number_for_extract(value_path(Some(&regime), &["candidate_confidence"])).unwrap_or(0.0), 0.0, 1.0),
+                "constrained": constrained_re.is_match(&regime_name)
+            },
+            "mirror": {
+                "path": rel(&mirror_path),
+                "pressure_score": clamp_number(js_number_for_extract(value_path(Some(&mirror), &["pressure_score"])).unwrap_or(0.0), 0.0, 1.0),
+                "confidence": clamp_number(js_number_for_extract(value_path(Some(&mirror), &["confidence"])).unwrap_or(0.0), 0.0, 1.0),
+                "reasons": mirror_reasons
+            },
+            "simulation": {
+                "path": rel(&simulation_path),
+                "predicted_drift": clamp_number(js_number_for_extract(value_path(Some(&simulation), &["checks_effective", "drift_rate", "value"])).unwrap_or(0.0), 0.0, 1.0),
+                "predicted_yield": clamp_number(js_number_for_extract(value_path(Some(&simulation), &["checks_effective", "yield_rate", "value"])).unwrap_or(0.0), 0.0, 1.0)
+            },
+            "red_team": {
+                "path": rel(&red_team_path),
+                "critical_fail_cases": clamp_int_value(value_path(Some(&red_team), &["summary", "critical_fail_cases"]), 0, 100000, 0),
+                "pass_cases": clamp_int_value(value_path(Some(&red_team), &["summary", "pass_cases"]), 0, 100000, 0),
+                "fail_cases": clamp_int_value(value_path(Some(&red_team), &["summary", "fail_cases"]), 0, 100000, 0)
+            },
+            "trit": {
+                "value": trit,
+                "label": trit_label
+            }
+        }),
+    }
+}
+
+pub fn compute_evaluate_impossibility_trigger(
+    input: &EvaluateImpossibilityTriggerInput,
+) -> EvaluateImpossibilityTriggerOutput {
+    let policy = input.policy.clone().unwrap_or_else(|| json!({}));
+    let signals = input
+        .signals
+        .as_ref()
+        .and_then(|v| v.as_object())
+        .cloned()
+        .unwrap_or_default();
+    let cfg = value_path(Some(&policy), &["organ", "trigger_detection"])
+        .and_then(|v| v.as_object())
+        .cloned()
+        .unwrap_or_default();
+    let force = input.force.unwrap_or(false);
+    let threshold = clamp_number(
+        js_number_for_extract(cfg.get("min_impossibility_score")).unwrap_or(0.58),
+        0.0,
+        1.0,
+    );
+    let min_signal_count = clamp_int_value(cfg.get("min_signal_count"), 1, 12, 2);
+    let enabled = to_bool_like(cfg.get("enabled"), false);
+    if !enabled && !force {
+        return EvaluateImpossibilityTriggerOutput {
+            triggered: false,
+            forced: false,
+            enabled: false,
+            score: 0.0,
+            threshold: (threshold * 1_000_000.0).round() / 1_000_000.0,
+            signal_count: 0,
+            min_signal_count,
+            reasons: vec!["trigger_detection_disabled".to_string()],
+            components: json!({}),
+        };
+    }
+    let weights = cfg
+        .get("weights")
+        .and_then(|v| v.as_object())
+        .cloned()
+        .unwrap_or_default();
+    let thresholds = cfg
+        .get("thresholds")
+        .and_then(|v| v.as_object())
+        .cloned()
+        .unwrap_or_default();
+    let trit = normalize_trit_value(
+        value_path(Some(&Value::Object(signals.clone())), &["trit", "value"]).unwrap_or(&Value::Null),
+    );
+    let trit_pain_signal = if trit < 0 {
+        1.0
+    } else if trit == 0 {
+        0.5
+    } else {
+        0.0
+    };
+    let mirror_pressure = clamp_number(
+        js_number_for_extract(value_path(Some(&Value::Object(signals.clone())), &["mirror", "pressure_score"])).unwrap_or(0.0),
+        0.0,
+        1.0,
+    );
+    let predicted_drift = clamp_number(
+        js_number_for_extract(value_path(Some(&Value::Object(signals.clone())), &["simulation", "predicted_drift"])).unwrap_or(0.0),
+        0.0,
+        1.0,
+    );
+    let predicted_yield = clamp_number(
+        js_number_for_extract(value_path(Some(&Value::Object(signals.clone())), &["simulation", "predicted_yield"])).unwrap_or(0.0),
+        0.0,
+        1.0,
+    );
+    let drift_warn = clamp_number(
+        js_number_for_extract(thresholds.get("predicted_drift_warn")).unwrap_or(0.03),
+        0.0,
+        1.0,
+    );
+    let yield_warn = clamp_number(
+        js_number_for_extract(thresholds.get("predicted_yield_warn")).unwrap_or(0.68),
+        0.0,
+        1.0,
+    );
+    let drift_score = if predicted_drift <= drift_warn {
+        0.0
+    } else {
+        clamp_number((predicted_drift - drift_warn) / (1.0 - drift_warn).max(0.0001), 0.0, 1.0)
+    };
+    let yield_gap_score = if predicted_yield >= yield_warn {
+        0.0
+    } else {
+        clamp_number((yield_warn - predicted_yield) / yield_warn.max(0.0001), 0.0, 1.0)
+    };
+    let red_team_critical = if clamp_int_value(
+        value_path(Some(&Value::Object(signals.clone())), &["red_team", "critical_fail_cases"]),
+        0,
+        100000,
+        0,
+    ) > 0
+    {
+        1.0
+    } else {
+        0.0
+    };
+    let regime_constrained = if to_bool_like(
+        value_path(Some(&Value::Object(signals.clone())), &["regime", "constrained"]),
+        false,
+    ) {
+        1.0
+    } else {
+        0.0
+    };
+    let w_trit = js_number_for_extract(weights.get("trit_pain")).unwrap_or(0.2);
+    let w_mirror = js_number_for_extract(weights.get("mirror_pressure")).unwrap_or(0.2);
+    let w_drift = js_number_for_extract(weights.get("predicted_drift")).unwrap_or(0.18);
+    let w_yield = js_number_for_extract(weights.get("predicted_yield_gap")).unwrap_or(0.18);
+    let w_red = js_number_for_extract(weights.get("red_team_critical")).unwrap_or(0.14);
+    let w_regime = js_number_for_extract(weights.get("regime_constrained")).unwrap_or(0.1);
+    let weight_total = (w_trit + w_mirror + w_drift + w_yield + w_red + w_regime).max(0.0001);
+    let score = clamp_number(
+        ((trit_pain_signal * w_trit)
+            + (mirror_pressure * w_mirror)
+            + (drift_score * w_drift)
+            + (yield_gap_score * w_yield)
+            + (red_team_critical * w_red)
+            + (regime_constrained * w_regime))
+            / weight_total,
+        0.0,
+        1.0,
+    );
+    let signal_count = [trit_pain_signal, mirror_pressure, drift_score, yield_gap_score, red_team_critical, regime_constrained]
+        .iter()
+        .map(|v| if *v > 0.0 { 1 } else { 0 })
+        .sum::<i32>() as i64;
+    let mut reasons = Vec::new();
+    if force {
+        reasons.push("forced".to_string());
+    }
+    if trit_pain_signal > 0.0 {
+        reasons.push("trit_pain_or_uncertain".to_string());
+    }
+    if mirror_pressure > 0.0 {
+        reasons.push("mirror_pressure_signal".to_string());
+    }
+    if drift_score > 0.0 {
+        reasons.push("predicted_drift_above_warn".to_string());
+    }
+    if yield_gap_score > 0.0 {
+        reasons.push("predicted_yield_below_warn".to_string());
+    }
+    if red_team_critical > 0.0 {
+        reasons.push("red_team_critical_present".to_string());
+    }
+    if regime_constrained > 0.0 {
+        reasons.push("regime_constrained".to_string());
+    }
+    let triggered = force || (score >= threshold && signal_count >= min_signal_count);
+    EvaluateImpossibilityTriggerOutput {
+        triggered,
+        forced: force,
+        enabled,
+        score: (score * 1_000_000.0).round() / 1_000_000.0,
+        threshold: (threshold * 1_000_000.0).round() / 1_000_000.0,
+        signal_count,
+        min_signal_count,
+        reasons: reasons.into_iter().take(12).collect::<Vec<_>>(),
+        components: json!({
+            "trit_pain": (trit_pain_signal * 1_000_000.0).round() / 1_000_000.0,
+            "mirror_pressure": (mirror_pressure * 1_000_000.0).round() / 1_000_000.0,
+            "predicted_drift": (drift_score * 1_000_000.0).round() / 1_000_000.0,
+            "predicted_yield_gap": (yield_gap_score * 1_000_000.0).round() / 1_000_000.0,
+            "red_team_critical": red_team_critical,
+            "regime_constrained": regime_constrained
+        }),
+    }
+}
+
+pub fn compute_extract_first_principle(input: &ExtractFirstPrincipleInput) -> ExtractFirstPrincipleOutput {
+    let policy = input.policy.as_ref();
+    if value_path(policy, &["first_principles", "enabled"])
+        .map(|v| !to_bool_like(Some(v), false))
+        .unwrap_or(false)
+    {
+        return ExtractFirstPrincipleOutput { principle: None };
+    }
+    if clean_text_runtime(input.result.as_deref().unwrap_or(""), 24) != "success" {
+        return ExtractFirstPrincipleOutput { principle: None };
+    }
+    let session = input
+        .session
+        .as_ref()
+        .and_then(|v| v.as_object())
+        .cloned()
+        .unwrap_or_default();
+    let args = input
+        .args
+        .as_ref()
+        .and_then(|v| v.as_object())
+        .cloned()
+        .unwrap_or_default();
+    let principle_text = clean_text_runtime(
+        &value_to_string(args.get("principle").or_else(|| args.get("first-principle"))),
+        360,
+    );
+    let auto_extract = to_bool_like(
+        value_path(policy, &["first_principles", "auto_extract_on_success"]),
+        false,
+    );
+    let text = if !principle_text.is_empty() {
+        principle_text
+    } else if auto_extract {
+        let objective = clean_text_runtime(&value_to_string(session.get("objective")), 180);
+        let filters = compute_normalize_list(&NormalizeListInput {
+            value: Some(
+                session
+                    .get("filter_stack")
+                    .cloned()
+                    .unwrap_or(Value::Array(vec![])),
+            ),
+            max_len: Some(120),
+        })
+        .items
+        .join(", ");
+        let target = compute_normalize_target(&NormalizeTargetInput {
+            value: Some(value_to_string(session.get("target"))),
+        })
+        .value;
+        clean_text_runtime(
+            &format!(
+                "For {}, use inversion filters ({}) with a guarded {} lane, then revert to baseline paradigm.",
+                if objective.is_empty() {
+                    "objective".to_string()
+                } else {
+                    objective
+                },
+                if filters.is_empty() {
+                    "none".to_string()
+                } else {
+                    filters
+                },
+                target
+            ),
+            360,
+        )
+    } else {
+        String::new()
+    };
+    if text.is_empty() {
+        return ExtractFirstPrincipleOutput { principle: None };
+    }
+    let certainty = clamp_number(js_number_for_extract(session.get("certainty")).unwrap_or(0.0), 0.0, 1.0);
+    let confidence = clamp_number(
+        (certainty * 0.7)
+            + if value_to_string(session.get("fallback_entry_id")).is_empty() {
+                0.05
+            } else {
+                0.15
+            },
+        0.0,
+        1.0,
+    );
+    let max_bonus = js_number_for_extract(value_path(policy, &["first_principles", "max_strategy_bonus"]))
+        .unwrap_or(0.12);
+    let now_iso = input.now_iso.clone().unwrap_or_else(now_iso_runtime);
+    let id_seed = format!("{}|{}", value_to_string(session.get("session_id")), text);
+    let objective_id_value = {
+        let v = clean_text_runtime(&value_to_string(session.get("objective_id")), 140);
+        if v.is_empty() {
+            Value::Null
+        } else {
+            Value::String(v)
+        }
+    };
+    let suggested_bonus = {
+        let bonus = clamp_number(confidence * max_bonus, 0.0, max_bonus.max(0.0));
+        (bonus * 1_000_000.0).round() / 1_000_000.0
+    };
+    let principle = json!({
+        "id": stable_id_runtime(&id_seed, "ifp"),
+        "ts": now_iso.clone(),
+        "source": "inversion_controller",
+        "objective": clean_text_runtime(&value_to_string(session.get("objective")), 240),
+        "objective_id": objective_id_value,
+        "statement": text,
+        "target": compute_normalize_target(&NormalizeTargetInput { value: Some(value_to_string(session.get("target"))) }).value,
+        "confidence": (confidence * 1_000_000.0).round() / 1_000_000.0,
+        "strategy_feedback": {
+            "enabled": true,
+            "suggested_bonus": suggested_bonus
+        },
+        "session_id": clean_text_runtime(&value_to_string(session.get("session_id")), 80)
+    });
+    ExtractFirstPrincipleOutput {
+        principle: Some(principle),
+    }
+}
+
+pub fn compute_extract_failure_cluster_principle(
+    input: &ExtractFailureClusterPrincipleInput,
+) -> ExtractFailureClusterPrincipleOutput {
+    let policy = input.policy.clone().unwrap_or_else(|| json!({}));
+    if !to_bool_like(value_path(Some(&policy), &["first_principles", "enabled"]), false) {
+        return ExtractFailureClusterPrincipleOutput { principle: None };
+    }
+    if !to_bool_like(
+        value_path(Some(&policy), &["first_principles", "allow_failure_cluster_extraction"]),
+        false,
+    ) {
+        return ExtractFailureClusterPrincipleOutput { principle: None };
+    }
+    let session = input
+        .session
+        .as_ref()
+        .and_then(|v| v.as_object())
+        .cloned()
+        .unwrap_or_default();
+    let signature_tokens = {
+        let from_session = session
+            .get("signature_tokens")
+            .and_then(|v| v.as_array())
+            .cloned()
+            .unwrap_or_default()
+            .iter()
+            .map(|v| value_to_string(Some(v)))
+            .collect::<Vec<_>>();
+        if from_session.is_empty() {
+            compute_tokenize_text(&TokenizeTextInput {
+                value: Some({
+                    let sig = value_to_string(session.get("signature"));
+                    if sig.is_empty() {
+                        value_to_string(session.get("objective"))
+                    } else {
+                        sig
+                    }
+                }),
+                max_tokens: Some(64),
+            })
+            .tokens
+        } else {
+            from_session
+        }
+    };
+    let query = json!({
+        "signature_tokens": signature_tokens,
+        "trit_vector": [-1],
+        "target": compute_normalize_target(&NormalizeTargetInput {
+            value: Some(value_to_string(session.get("target")))
+        }).value
+    });
+    let candidates = compute_select_library_candidates(&SelectLibraryCandidatesInput {
+        file_path: input
+            .paths
+            .as_ref()
+            .and_then(|v| v.as_object())
+            .and_then(|m| m.get("library_path"))
+            .and_then(|v| v.as_str())
+            .map(|v| v.to_string()),
+        policy: Some(policy.clone()),
+        query: Some(query),
+    })
+    .candidates
+    .into_iter()
+    .filter(|entry| {
+        normalize_trit_value(
+            value_path(Some(entry), &["row", "outcome_trit"]).unwrap_or(&Value::Null),
+        ) < 0
+    })
+    .collect::<Vec<_>>();
+    let cluster_min = js_number_for_extract(value_path(Some(&policy), &["first_principles", "failure_cluster_min"]))
+        .unwrap_or(4.0) as usize;
+    if candidates.len() < cluster_min {
+        return ExtractFailureClusterPrincipleOutput { principle: None };
+    }
+    let avg_similarity = {
+        let total = candidates
+            .iter()
+            .map(|row| {
+                js_number_for_extract(value_path(Some(row), &["similarity"])).unwrap_or(0.0)
+            })
+            .sum::<f64>();
+        total / (candidates.len() as f64).max(1.0)
+    };
+    let confidence = clamp_number(
+        (((candidates.len() as f64) / ((cluster_min + 3) as f64)).min(1.0) * 0.6)
+            + (avg_similarity * 0.4),
+        0.0,
+        1.0,
+    );
+    let now_iso = input.now_iso.clone().unwrap_or_else(now_iso_runtime);
+    let signature_or_objective = {
+        let sig = value_to_string(session.get("signature"));
+        if sig.is_empty() {
+            value_to_string(session.get("objective"))
+        } else {
+            sig
+        }
+    };
+    let id_seed = format!(
+        "{}|failure_cluster|{}",
+        value_to_string(session.get("session_id")),
+        signature_or_objective
+    );
+    let objective = clean_text_runtime(&value_to_string(session.get("objective")), 240);
+    let filter_stack = compute_normalize_list(&NormalizeListInput {
+        value: Some(
+            session
+                .get("filter_stack")
+                .cloned()
+                .unwrap_or(Value::Array(vec![])),
+        ),
+        max_len: Some(120),
+    })
+    .items
+    .join(", ");
+    let objective_id_value = {
+        let v = clean_text_runtime(&value_to_string(session.get("objective_id")), 140);
+        if v.is_empty() {
+            Value::Null
+        } else {
+            Value::String(v)
+        }
+    };
+    let objective_for_statement = objective.clone();
+    let statement = clean_text_runtime(
+        &format!(
+            "Avoid repeating inversion filter stack ({}) for objective \"{}\" without introducing a materially different paradigm shift.",
+            if filter_stack.is_empty() { "none".to_string() } else { filter_stack },
+            if objective_for_statement.is_empty() { "unknown".to_string() } else { objective_for_statement }
+        ),
+        360
+    );
+    let principle = json!({
+        "id": stable_id_runtime(&id_seed, "ifp"),
+        "ts": now_iso,
+        "source": "inversion_controller_failure_cluster",
+        "objective": objective,
+        "objective_id": objective_id_value,
+        "statement": statement,
+        "target": compute_normalize_target(&NormalizeTargetInput {
+            value: Some(value_to_string(session.get("target")))
+        }).value,
+        "confidence": (confidence * 1_000_000.0).round() / 1_000_000.0,
+        "polarity": -1,
+        "failure_cluster_count": candidates.len(),
+        "strategy_feedback": {
+            "enabled": true,
+            "suggested_bonus": 0
+        },
+        "session_id": clean_text_runtime(&value_to_string(session.get("session_id")), 80)
+    });
+    ExtractFailureClusterPrincipleOutput {
+        principle: Some(principle),
+    }
+}
+
+pub fn compute_persist_first_principle(
+    input: &PersistFirstPrincipleInput,
+) -> PersistFirstPrincipleOutput {
+    let paths = input
+        .paths
+        .as_ref()
+        .and_then(|v| v.as_object())
+        .cloned()
+        .unwrap_or_default();
+    let principle = input.principle.clone().unwrap_or_else(|| json!({}));
+    let _ = compute_write_json_atomic(&WriteJsonAtomicInput {
+        file_path: paths
+            .get("first_principles_latest_path")
+            .and_then(|v| v.as_str())
+            .map(|v| v.to_string()),
+        value: Some(principle.clone()),
+    });
+    let _ = compute_append_jsonl(&AppendJsonlInput {
+        file_path: paths
+            .get("first_principles_history_path")
+            .and_then(|v| v.as_str())
+            .map(|v| v.to_string()),
+        row: Some(principle.clone()),
+    });
+    let _ = compute_upsert_first_principle_lock(&UpsertFirstPrincipleLockInput {
+        file_path: paths
+            .get("first_principles_lock_path")
+            .and_then(|v| v.as_str())
+            .map(|v| v.to_string()),
+        session: input.session.clone(),
+        principle: Some(principle.clone()),
+        now_iso: input.now_iso.clone(),
+    });
+    PersistFirstPrincipleOutput { principle }
+}
+
 pub fn compute_creative_penalty(input: &CreativePenaltyInput) -> CreativePenaltyOutput {
     let preferred = input
         .preferred_creative_lane_ids
@@ -7467,6 +8868,16 @@ pub fn run_inversion_json(payload_json: &str) -> Result<String, String> {
         }))
         .map_err(|e| format!("inversion_encode_parse_args_failed:{e}"));
     }
+    if mode == "parse_lane_decision" {
+        let input: ParseLaneDecisionInput = decode_input(&payload, "parse_lane_decision_input")?;
+        let out = compute_parse_lane_decision(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "parse_lane_decision",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_parse_lane_decision_failed:{e}"));
+    }
     if mode == "library_match_score" {
         let input: LibraryMatchScoreInput = decode_input(&payload, "library_match_score_input")?;
         let out = compute_library_match_score(&input);
@@ -7487,6 +8898,17 @@ pub fn run_inversion_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("inversion_encode_known_failure_pressure_failed:{e}"));
+    }
+    if mode == "select_library_candidates" {
+        let input: SelectLibraryCandidatesInput =
+            decode_input(&payload, "select_library_candidates_input")?;
+        let out = compute_select_library_candidates(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "select_library_candidates",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_select_library_candidates_failed:{e}"));
     }
     if mode == "has_signal_term_match" {
         let input: HasSignalTermMatchInput = decode_input(&payload, "has_signal_term_match_input")?;
@@ -8171,6 +9593,28 @@ pub fn run_inversion_json(payload_json: &str) -> Result<String, String> {
         }))
         .map_err(|e| format!("inversion_encode_compute_attractor_score_failed:{e}"));
     }
+    if mode == "detect_immutable_axiom_violation" {
+        let input: DetectImmutableAxiomViolationInput =
+            decode_input(&payload, "detect_immutable_axiom_violation_input")?;
+        let out = compute_detect_immutable_axiom_violation(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "detect_immutable_axiom_violation",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_detect_immutable_axiom_violation_failed:{e}"));
+    }
+    if mode == "compute_maturity_score" {
+        let input: ComputeMaturityScoreInput =
+            decode_input(&payload, "compute_maturity_score_input")?;
+        let out = compute_maturity_score(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "compute_maturity_score",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_compute_maturity_score_failed:{e}"));
+    }
     if mode == "build_output_interfaces" {
         let input: BuildOutputInterfacesInput =
             decode_input(&payload, "build_output_interfaces_input")?;
@@ -8474,6 +9918,17 @@ pub fn run_inversion_json(payload_json: &str) -> Result<String, String> {
         }))
         .map_err(|e| format!("inversion_encode_save_active_sessions_failed:{e}"));
     }
+    if mode == "sweep_expired_sessions" {
+        let input: SweepExpiredSessionsInput =
+            decode_input(&payload, "sweep_expired_sessions_input")?;
+        let out = compute_sweep_expired_sessions(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "sweep_expired_sessions",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_sweep_expired_sessions_failed:{e}"));
+    }
     if mode == "emit_event" {
         let input: EmitEventInput = decode_input(&payload, "emit_event_input")?;
         let out = compute_emit_event(&input);
@@ -8536,6 +9991,61 @@ pub fn run_inversion_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("inversion_encode_trim_library_failed:{e}"));
+    }
+    if mode == "load_impossibility_signals" {
+        let input: LoadImpossibilitySignalsInput =
+            decode_input(&payload, "load_impossibility_signals_input")?;
+        let out = compute_load_impossibility_signals(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "load_impossibility_signals",
+            "payload": out.signals
+        }))
+        .map_err(|e| format!("inversion_encode_load_impossibility_signals_failed:{e}"));
+    }
+    if mode == "evaluate_impossibility_trigger" {
+        let input: EvaluateImpossibilityTriggerInput =
+            decode_input(&payload, "evaluate_impossibility_trigger_input")?;
+        let out = compute_evaluate_impossibility_trigger(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "evaluate_impossibility_trigger",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_evaluate_impossibility_trigger_failed:{e}"));
+    }
+    if mode == "extract_first_principle" {
+        let input: ExtractFirstPrincipleInput =
+            decode_input(&payload, "extract_first_principle_input")?;
+        let out = compute_extract_first_principle(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "extract_first_principle",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_extract_first_principle_failed:{e}"));
+    }
+    if mode == "extract_failure_cluster_principle" {
+        let input: ExtractFailureClusterPrincipleInput =
+            decode_input(&payload, "extract_failure_cluster_principle_input")?;
+        let out = compute_extract_failure_cluster_principle(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "extract_failure_cluster_principle",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_extract_failure_cluster_principle_failed:{e}"));
+    }
+    if mode == "persist_first_principle" {
+        let input: PersistFirstPrincipleInput =
+            decode_input(&payload, "persist_first_principle_input")?;
+        let out = compute_persist_first_principle(&input);
+        return serde_json::to_string(&json!({
+            "ok": true,
+            "mode": "persist_first_principle",
+            "payload": out
+        }))
+        .map_err(|e| format!("inversion_encode_persist_first_principle_failed:{e}"));
     }
     Err(format!("inversion_mode_unsupported:{mode}"))
 }
@@ -10084,5 +11594,339 @@ mod tests {
             check.reason.as_deref().unwrap_or(""),
             "first_principle_downgrade_blocked_lower_maturity"
         );
+    }
+
+    #[test]
+    fn helper_primitives_batch17_match_contract() {
+        let temp_root = std::env::temp_dir().join("inv_batch17");
+        let _ = fs::remove_dir_all(&temp_root);
+        let _ = fs::create_dir_all(temp_root.join("events"));
+        let _ = fs::create_dir_all(temp_root.join("simulation"));
+        let _ = fs::create_dir_all(temp_root.join("red_team"));
+
+        let library_path = temp_root.join("library.jsonl");
+        let receipts_path = temp_root.join("receipts.jsonl");
+        let active_sessions_path = temp_root.join("active_sessions.json");
+        let fp_latest_path = temp_root.join("first_principles_latest.json");
+        let fp_history_path = temp_root.join("first_principles_history.jsonl");
+        let fp_lock_path = temp_root.join("first_principles_lock.json");
+
+        let _ = compute_append_jsonl(&AppendJsonlInput {
+            file_path: Some(library_path.to_string_lossy().to_string()),
+            row: Some(json!({
+                "id":"a1",
+                "ts":"2026-03-04T00:00:00.000Z",
+                "objective":"Reduce drift safely",
+                "objective_id":"BL-263",
+                "signature":"drift guard stable",
+                "signature_tokens":["drift","guard","stable"],
+                "target":"directive",
+                "impact":"high",
+                "certainty":0.9,
+                "filter_stack":["drift_guard"],
+                "outcome_trit":-1,
+                "result":"fail",
+                "maturity_band":"developing"
+            })),
+        });
+        let _ = compute_append_jsonl(&AppendJsonlInput {
+            file_path: Some(library_path.to_string_lossy().to_string()),
+            row: Some(json!({
+                "id":"a2",
+                "ts":"2026-03-04T00:10:00.000Z",
+                "objective":"Reduce drift safely",
+                "objective_id":"BL-263",
+                "signature":"drift guard stable",
+                "signature_tokens":["drift","guard","stable"],
+                "target":"directive",
+                "impact":"high",
+                "certainty":0.88,
+                "filter_stack":["drift_guard","identity_guard"],
+                "outcome_trit":-1,
+                "result":"fail",
+                "maturity_band":"developing"
+            })),
+        });
+        let _ = compute_append_jsonl(&AppendJsonlInput {
+            file_path: Some(library_path.to_string_lossy().to_string()),
+            row: Some(json!({
+                "id":"a3",
+                "ts":"2026-03-04T00:20:00.000Z",
+                "objective":"Reduce drift safely",
+                "objective_id":"BL-263",
+                "signature":"drift guard stable",
+                "signature_tokens":["drift","guard","stable"],
+                "target":"directive",
+                "impact":"high",
+                "certainty":0.86,
+                "filter_stack":["drift_guard","fallback_pathing"],
+                "outcome_trit":-1,
+                "result":"fail",
+                "maturity_band":"developing"
+            })),
+        });
+        let _ = compute_append_jsonl(&AppendJsonlInput {
+            file_path: Some(library_path.to_string_lossy().to_string()),
+            row: Some(json!({
+                "id":"a4",
+                "ts":"2026-03-04T00:30:00.000Z",
+                "objective":"Reduce drift safely",
+                "objective_id":"BL-263",
+                "signature":"drift guard stable",
+                "signature_tokens":["drift","guard","stable"],
+                "target":"directive",
+                "impact":"high",
+                "certainty":0.84,
+                "filter_stack":["drift_guard","constraint_reframe"],
+                "outcome_trit":-1,
+                "result":"fail",
+                "maturity_band":"developing"
+            })),
+        });
+        let _ = compute_append_jsonl(&AppendJsonlInput {
+            file_path: Some(library_path.to_string_lossy().to_string()),
+            row: Some(json!({
+                "id":"ok1",
+                "ts":"2026-03-04T01:00:00.000Z",
+                "objective":"Ship safely",
+                "signature":"safe lane pass",
+                "signature_tokens":["safe","lane","pass"],
+                "target":"directive",
+                "impact":"high",
+                "certainty":0.92,
+                "filter_stack":["safe_path"],
+                "outcome_trit":1,
+                "result":"success",
+                "maturity_band":"mature"
+            })),
+        });
+
+        let detect = compute_detect_immutable_axiom_violation(&DetectImmutableAxiomViolationInput {
+            policy: Some(json!({
+                "immutable_axioms": {
+                    "enabled": true,
+                    "axioms": [{
+                        "id":"safety_guard",
+                        "patterns":["drift guard"],
+                        "regex":["drift\\s+guard"],
+                        "intent_tags":["safety"],
+                        "signals":{"action_terms":["drift"],"subject_terms":["guard"],"object_terms":[]},
+                        "min_signal_groups": 1
+                    }]
+                }
+            })),
+            decision_input: Some(json!({
+                "objective":"Need drift guard policy",
+                "signature":"drift guard now",
+                "filters":["constraint_reframe"],
+                "intent_tags":["safety"]
+            })),
+        });
+        assert_eq!(detect.hits, vec!["safety_guard".to_string()]);
+
+        let maturity = compute_maturity_score(&ComputeMaturityScoreInput {
+            state: Some(json!({
+                "stats": {
+                    "total_tests": 20,
+                    "passed_tests": 15,
+                    "destructive_failures": 2
+                }
+            })),
+            policy: Some(json!({
+                "maturity": {
+                    "target_test_count": 40,
+                    "score_weights": {"pass_rate":0.5,"non_destructive_rate":0.3,"experience":0.2},
+                    "bands": {"novice":0.25,"developing":0.45,"mature":0.65,"seasoned":0.82}
+                }
+            })),
+        });
+        assert_eq!(maturity.band, "seasoned".to_string());
+        assert!((maturity.score - 0.745).abs() < 0.000001);
+
+        let candidates = compute_select_library_candidates(&SelectLibraryCandidatesInput {
+            policy: Some(json!({
+                "library": {
+                    "min_similarity_for_reuse": 0.2,
+                    "token_weight": 0.6,
+                    "trit_weight": 0.3,
+                    "target_weight": 0.1
+                }
+            })),
+            query: Some(json!({
+                "signature_tokens":["drift","guard","stable"],
+                "trit_vector":[-1],
+                "target":"directive"
+            })),
+            file_path: Some(library_path.to_string_lossy().to_string()),
+        });
+        assert!(!candidates.candidates.is_empty());
+
+        let lane = compute_parse_lane_decision(&ParseLaneDecisionInput {
+            args: Some(json!({"brain_lane":"right"})),
+            date_str: Some("2026-03-04".to_string()),
+        });
+        assert_eq!(lane.selected_lane, "right".to_string());
+        assert_eq!(lane.source, "arg".to_string());
+
+        let now = now_iso_runtime();
+        let expired_at = "2000-01-01T00:00:00.000Z".to_string();
+        let live_at = "2999-01-01T00:00:00.000Z".to_string();
+        let _ = compute_save_active_sessions(&SaveActiveSessionsInput {
+            file_path: Some(active_sessions_path.to_string_lossy().to_string()),
+            store: Some(json!({
+                "sessions":[
+                    {"session_id":"exp","objective":"old","signature":"old sig","target":"directive","impact":"high","certainty":0.5,"expires_at": expired_at},
+                    {"session_id":"live","objective":"new","signature":"new sig","target":"directive","impact":"high","certainty":0.6,"expires_at": live_at}
+                ]
+            })),
+            now_iso: Some(now.clone()),
+        });
+        let sweep = compute_sweep_expired_sessions(&SweepExpiredSessionsInput {
+            paths: Some(json!({
+                "active_sessions_path": active_sessions_path.to_string_lossy().to_string(),
+                "receipts_path": receipts_path.to_string_lossy().to_string(),
+                "library_path": library_path.to_string_lossy().to_string(),
+                "events_dir": temp_root.join("events").to_string_lossy().to_string()
+            })),
+            policy: Some(json!({"telemetry":{"emit_events":false},"library":{"max_entries":200}})),
+            date_str: Some("2026-03-04".to_string()),
+            now_iso: Some(now.clone()),
+        });
+        assert_eq!(sweep.expired_count, 1);
+        assert_eq!(sweep.sessions.len(), 1);
+
+        let _ = fs::write(
+            temp_root.join("regime.json"),
+            serde_json::to_string(&json!({
+                "selected_regime":"constrained",
+                "candidate_confidence":0.8,
+                "context":{"trit":{"trit":-1}}
+            }))
+            .unwrap_or_else(|_| "{}".to_string()),
+        );
+        let _ = fs::write(
+            temp_root.join("mirror.json"),
+            serde_json::to_string(&json!({"pressure_score":0.7,"confidence":0.75,"reasons":["pressure","drift"]}))
+                .unwrap_or_else(|_| "{}".to_string()),
+        );
+        let _ = fs::write(
+            temp_root.join("drift_governor.json"),
+            serde_json::to_string(&json!({"last_decision":{"trit_shadow":{"belief":{"trit":-1}}}}))
+                .unwrap_or_else(|_| "{}".to_string()),
+        );
+        let _ = fs::write(
+            temp_root.join("simulation").join("2026-03-04.json"),
+            serde_json::to_string(&json!({"checks_effective":{"drift_rate":{"value":0.09},"yield_rate":{"value":0.4}}}))
+                .unwrap_or_else(|_| "{}".to_string()),
+        );
+        let _ = fs::write(
+            temp_root.join("red_team").join("latest.json"),
+            serde_json::to_string(&json!({"summary":{"critical_fail_cases":2,"pass_cases":1,"fail_cases":3}}))
+                .unwrap_or_else(|_| "{}".to_string()),
+        );
+
+        let signals = compute_load_impossibility_signals(&LoadImpossibilitySignalsInput {
+            policy: Some(json!({
+                "organ": {
+                    "trigger_detection": {
+                        "paths": {
+                            "regime_latest_path":"regime.json",
+                            "mirror_latest_path":"mirror.json",
+                            "simulation_dir":"simulation",
+                            "red_team_runs_dir":"red_team",
+                            "drift_governor_path":"drift_governor.json"
+                        }
+                    }
+                }
+            })),
+            date_str: Some("2026-03-04".to_string()),
+            root: Some(temp_root.to_string_lossy().to_string()),
+        });
+        assert_eq!(
+            value_path(Some(&signals.signals), &["trit", "value"])
+                .and_then(|v| v.as_i64())
+                .unwrap_or(0),
+            -1
+        );
+
+        let trigger = compute_evaluate_impossibility_trigger(&EvaluateImpossibilityTriggerInput {
+            policy: Some(json!({
+                "organ": {
+                    "trigger_detection": {
+                        "enabled": true,
+                        "min_impossibility_score": 0.58,
+                        "min_signal_count": 2,
+                        "thresholds": {"predicted_drift_warn":0.03,"predicted_yield_warn":0.68},
+                        "weights": {
+                            "trit_pain":0.2,
+                            "mirror_pressure":0.2,
+                            "predicted_drift":0.18,
+                            "predicted_yield_gap":0.18,
+                            "red_team_critical":0.14,
+                            "regime_constrained":0.1
+                        }
+                    }
+                }
+            })),
+            signals: Some(signals.signals.clone()),
+            force: Some(false),
+        });
+        assert!(trigger.triggered);
+        assert!(trigger.signal_count >= 2);
+
+        let fp_policy = json!({
+            "first_principles": {
+                "enabled": true,
+                "auto_extract_on_success": true,
+                "max_strategy_bonus": 0.12,
+                "allow_failure_cluster_extraction": true,
+                "failure_cluster_min": 4
+            },
+            "library": {
+                "min_similarity_for_reuse": 0.2,
+                "token_weight": 0.6,
+                "trit_weight": 0.3,
+                "target_weight": 0.1
+            }
+        });
+        let session = json!({
+            "session_id":"sfp",
+            "objective":"Reduce drift safely",
+            "objective_id":"BL-263",
+            "target":"directive",
+            "certainty":0.8,
+            "filter_stack":["drift_guard"],
+            "signature":"drift guard stable",
+            "signature_tokens":["drift","guard","stable"]
+        });
+        let first_principle = compute_extract_first_principle(&ExtractFirstPrincipleInput {
+            policy: Some(fp_policy.clone()),
+            session: Some(session.clone()),
+            args: Some(json!({})),
+            result: Some("success".to_string()),
+            now_iso: Some(now_iso_runtime()),
+        });
+        assert!(first_principle.principle.is_some());
+
+        let failure_principle = compute_extract_failure_cluster_principle(&ExtractFailureClusterPrincipleInput {
+            paths: Some(json!({"library_path": library_path.to_string_lossy().to_string()})),
+            policy: Some(fp_policy),
+            session: Some(session.clone()),
+            now_iso: Some(now_iso_runtime()),
+        });
+        assert!(failure_principle.principle.is_some());
+
+        let persisted = compute_persist_first_principle(&PersistFirstPrincipleInput {
+            paths: Some(json!({
+                "first_principles_latest_path": fp_latest_path.to_string_lossy().to_string(),
+                "first_principles_history_path": fp_history_path.to_string_lossy().to_string(),
+                "first_principles_lock_path": fp_lock_path.to_string_lossy().to_string()
+            })),
+            session: Some(session),
+            principle: first_principle.principle.clone(),
+            now_iso: Some(now_iso_runtime()),
+        });
+        assert!(persisted.principle.is_object());
+        assert!(fp_latest_path.exists());
     }
 }
