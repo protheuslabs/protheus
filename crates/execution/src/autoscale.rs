@@ -3416,6 +3416,21 @@ pub struct CoalesceNumericOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ClampNumberInput {
+    #[serde(default)]
+    pub value: Option<f64>,
+    #[serde(default)]
+    pub min: Option<f64>,
+    #[serde(default)]
+    pub max: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ClampNumberOutput {
+    pub value: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ParseDirectiveFileArgInput {
     #[serde(default)]
     pub command: Option<String>,
@@ -4639,6 +4654,8 @@ pub struct AutoscaleRequest {
     pub has_env_numeric_override_input: Option<HasEnvNumericOverrideInput>,
     #[serde(default)]
     pub coalesce_numeric_input: Option<CoalesceNumericInput>,
+    #[serde(default)]
+    pub clamp_number_input: Option<ClampNumberInput>,
     #[serde(default)]
     pub parse_directive_file_arg_input: Option<ParseDirectiveFileArgInput>,
     #[serde(default)]
@@ -10735,6 +10752,21 @@ pub fn compute_coalesce_numeric(input: &CoalesceNumericInput) -> CoalesceNumeric
     }
 }
 
+pub fn compute_clamp_number(input: &ClampNumberInput) -> ClampNumberOutput {
+    let min = input.min.filter(|v| v.is_finite()).unwrap_or(0.0);
+    let max = input.max.filter(|v| v.is_finite()).unwrap_or(min);
+    let value = input.value.filter(|v| v.is_finite()).unwrap_or(min);
+    ClampNumberOutput {
+        value: if value < min {
+            min
+        } else if value > max {
+            max
+        } else {
+            value
+        },
+    }
+}
+
 pub fn compute_parse_directive_file_arg(input: &ParseDirectiveFileArgInput) -> ParseDirectiveFileArgOutput {
     let text = input.command.as_deref().unwrap_or("").trim();
     if text.is_empty() {
@@ -14826,6 +14858,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_coalesce_numeric_encode_failed:{e}"));
+    }
+    if mode == "clamp_number" {
+        let input = request
+            .clamp_number_input
+            .ok_or_else(|| "autoscale_missing_clamp_number_input".to_string())?;
+        let out = compute_clamp_number(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "clamp_number",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_clamp_number_encode_failed:{e}"));
     }
     if mode == "parse_directive_file_arg" {
         let input = request

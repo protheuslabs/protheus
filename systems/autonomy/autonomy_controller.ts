@@ -6608,6 +6608,16 @@ function computeCalibrationProfile(dateStr, persist = true) {
 }
 
 function clampNumber(n, min, max) {
+  if (String(process.env.AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED || '0') === '1') {
+    const rust = runBacklogAutoscalePrimitive(
+      'clamp_number',
+      { value: Number(n), min: Number(min), max: Number(max) },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return Number(rust.payload.payload.value || 0);
+    }
+  }
   if (!Number.isFinite(n)) return min;
   if (n < min) return min;
   if (n > max) return max;
@@ -21448,6 +21458,7 @@ module.exports = {
   dateArgOrToday,
   hasEnvNumericOverride,
   coalesceNumeric,
+  clampNumber,
   startModelCatalogCanary,
   evaluateModelCatalogCanary,
   readModelCatalogCanary,
