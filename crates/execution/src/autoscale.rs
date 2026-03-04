@@ -1,4 +1,4 @@
-use chrono::{DateTime, Duration, NaiveDate, Utc};
+use chrono::{DateTime, Duration, NaiveDate, SecondsFormat, Utc};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -3729,6 +3729,175 @@ pub struct ParseDirectiveObjectiveArgOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct NowIsoInput {
+    #[serde(default)]
+    pub now_iso: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct NowIsoOutput {
+    pub value: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TodayStrInput {
+    #[serde(default)]
+    pub now_iso: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TodayStrOutput {
+    pub value: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct HumanCanaryOverrideApprovalPhraseInput {
+    #[serde(default)]
+    pub prefix: Option<String>,
+    #[serde(default)]
+    pub date_str: Option<String>,
+    #[serde(default)]
+    pub nonce: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct HumanCanaryOverrideApprovalPhraseOutput {
+    pub phrase: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ParseHumanCanaryOverrideStateInput {
+    #[serde(default)]
+    pub record: Option<serde_json::Value>,
+    #[serde(default)]
+    pub now_ms: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ParseHumanCanaryOverrideStateOutput {
+    pub active: bool,
+    pub reason: String,
+    #[serde(default)]
+    pub expired: Option<bool>,
+    #[serde(default)]
+    pub remaining: Option<f64>,
+    #[serde(default)]
+    pub expires_at: Option<String>,
+    #[serde(default)]
+    pub date: Option<String>,
+    #[serde(default)]
+    pub require_execution_mode: Option<String>,
+    #[serde(default)]
+    pub id: Option<String>,
+    #[serde(default)]
+    pub r#type: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct DailyBudgetPathInput {
+    #[serde(default)]
+    pub state_dir: Option<String>,
+    #[serde(default)]
+    pub date_str: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct DailyBudgetPathOutput {
+    pub path: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct RunsPathForInput {
+    #[serde(default)]
+    pub runs_dir: Option<String>,
+    #[serde(default)]
+    pub date_str: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct RunsPathForOutput {
+    pub path: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct EffectiveTier1PolicyInput {
+    #[serde(default)]
+    pub execution_mode: Option<String>,
+    pub tier1_burn_rate_multiplier: f64,
+    pub tier1_canary_burn_rate_multiplier: f64,
+    pub tier1_min_projected_tokens_for_burn_check: f64,
+    pub tier1_canary_min_projected_tokens_for_burn_check: f64,
+    pub tier1_drift_min_samples: f64,
+    pub tier1_canary_drift_min_samples: f64,
+    pub tier1_alignment_threshold: f64,
+    pub tier1_canary_alignment_threshold: f64,
+    pub tier1_canary_suppress_alignment_blocker: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct EffectiveTier1PolicyOutput {
+    #[serde(default)]
+    pub execution_mode: Option<String>,
+    pub canary_relaxed: bool,
+    pub burn_rate_multiplier: f64,
+    pub min_projected_tokens_for_burn_check: f64,
+    pub drift_min_samples: f64,
+    pub alignment_threshold: f64,
+    pub suppress_alignment_blocker: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct CompactTier1ExceptionInput {
+    #[serde(default)]
+    pub tracked: Option<bool>,
+    #[serde(default)]
+    pub novel: Option<bool>,
+    #[serde(default)]
+    pub stage: Option<String>,
+    #[serde(default)]
+    pub error_code: Option<String>,
+    #[serde(default)]
+    pub signature: Option<String>,
+    #[serde(default)]
+    pub count: Option<f64>,
+    #[serde(default)]
+    pub recovery: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct CompactTier1ExceptionOutput {
+    pub has_value: bool,
+    #[serde(default)]
+    pub value: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct NextHumanEscalationClearAtInput {
+    #[serde(default)]
+    pub rows: Vec<serde_json::Value>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct NextHumanEscalationClearAtOutput {
+    #[serde(default)]
+    pub value: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ModelCatalogCanaryThresholdsInput {
+    pub min_samples: f64,
+    pub max_fail_rate: f64,
+    pub max_route_block_rate: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ModelCatalogCanaryThresholdsOutput {
+    pub min_samples: f64,
+    pub max_fail_rate: f64,
+    pub max_route_block_rate: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct DirectiveClarificationExecSpecInput {
     #[serde(default)]
     pub proposal_type: Option<String>,
@@ -5083,6 +5252,26 @@ pub struct AutoscaleRequest {
     pub parse_directive_file_arg_input: Option<ParseDirectiveFileArgInput>,
     #[serde(default)]
     pub parse_directive_objective_arg_input: Option<ParseDirectiveObjectiveArgInput>,
+    #[serde(default)]
+    pub now_iso_input: Option<NowIsoInput>,
+    #[serde(default)]
+    pub today_str_input: Option<TodayStrInput>,
+    #[serde(default)]
+    pub human_canary_override_approval_phrase_input: Option<HumanCanaryOverrideApprovalPhraseInput>,
+    #[serde(default)]
+    pub parse_human_canary_override_state_input: Option<ParseHumanCanaryOverrideStateInput>,
+    #[serde(default)]
+    pub daily_budget_path_input: Option<DailyBudgetPathInput>,
+    #[serde(default)]
+    pub runs_path_for_input: Option<RunsPathForInput>,
+    #[serde(default)]
+    pub effective_tier1_policy_input: Option<EffectiveTier1PolicyInput>,
+    #[serde(default)]
+    pub compact_tier1_exception_input: Option<CompactTier1ExceptionInput>,
+    #[serde(default)]
+    pub next_human_escalation_clear_at_input: Option<NextHumanEscalationClearAtInput>,
+    #[serde(default)]
+    pub model_catalog_canary_thresholds_input: Option<ModelCatalogCanaryThresholdsInput>,
     #[serde(default)]
     pub directive_clarification_exec_spec_input: Option<DirectiveClarificationExecSpecInput>,
     #[serde(default)]
@@ -11646,6 +11835,327 @@ pub fn compute_parse_directive_objective_arg(
     }
 }
 
+pub fn compute_now_iso(input: &NowIsoInput) -> NowIsoOutput {
+    if let Some(raw) = input.now_iso.as_deref() {
+        let text = normalize_spaces(raw);
+        if !text.is_empty() {
+            if let Ok(dt) = DateTime::parse_from_rfc3339(&text) {
+                return NowIsoOutput {
+                    value: dt
+                        .with_timezone(&Utc)
+                        .to_rfc3339_opts(SecondsFormat::Millis, true),
+                };
+            }
+        }
+    }
+    NowIsoOutput {
+        value: Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true),
+    }
+}
+
+pub fn compute_today_str(input: &TodayStrInput) -> TodayStrOutput {
+    if let Some(raw) = input.now_iso.as_deref() {
+        let text = normalize_spaces(raw);
+        if !text.is_empty() {
+            if let Ok(dt) = DateTime::parse_from_rfc3339(&text) {
+                return TodayStrOutput {
+                    value: dt.with_timezone(&Utc).format("%Y-%m-%d").to_string(),
+                };
+            }
+        }
+    }
+    TodayStrOutput {
+        value: Utc::now().format("%Y-%m-%d").to_string(),
+    }
+}
+
+pub fn compute_human_canary_override_approval_phrase(
+    input: &HumanCanaryOverrideApprovalPhraseInput,
+) -> HumanCanaryOverrideApprovalPhraseOutput {
+    let prefix = input
+        .prefix
+        .as_deref()
+        .map(normalize_spaces)
+        .filter(|v| !v.is_empty())
+        .unwrap_or_else(|| "I_APPROVE_ONE_SHOT_CANARY_OVERRIDE".to_string());
+    let date_str = input.date_str.as_deref().unwrap_or("");
+    let nonce = input.nonce.as_deref().unwrap_or("");
+    HumanCanaryOverrideApprovalPhraseOutput {
+        phrase: format!("{prefix}:{date_str}:{nonce}"),
+    }
+}
+
+pub fn compute_parse_human_canary_override_state(
+    input: &ParseHumanCanaryOverrideStateInput,
+) -> ParseHumanCanaryOverrideStateOutput {
+    let Some(record) = input.record.as_ref().and_then(|v| v.as_object()) else {
+        return ParseHumanCanaryOverrideStateOutput {
+            active: false,
+            reason: "missing".to_string(),
+            expired: None,
+            remaining: None,
+            expires_at: None,
+            date: None,
+            require_execution_mode: None,
+            id: None,
+            r#type: None,
+        };
+    };
+    let now_ms = input
+        .now_ms
+        .filter(|v| v.is_finite())
+        .unwrap_or_else(|| Utc::now().timestamp_millis() as f64);
+    let expires_at = record
+        .get("expires_at")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
+    let exp_ms = DateTime::parse_from_rfc3339(expires_at.trim())
+        .map(|dt| dt.timestamp_millis() as f64)
+        .ok();
+    let remaining = match record.get("remaining_uses") {
+        Some(serde_json::Value::Number(n)) => n.as_f64().unwrap_or(0.0),
+        Some(serde_json::Value::String(s)) => s.trim().parse::<f64>().unwrap_or(0.0),
+        Some(serde_json::Value::Bool(v)) => {
+            if *v { 1.0 } else { 0.0 }
+        }
+        _ => 0.0,
+    };
+    let expired = exp_ms.map(|v| now_ms > v).unwrap_or(true);
+    if remaining <= 0.0 {
+        return ParseHumanCanaryOverrideStateOutput {
+            active: false,
+            reason: "depleted".to_string(),
+            expired: Some(expired),
+            remaining: Some(remaining),
+            expires_at: None,
+            date: None,
+            require_execution_mode: None,
+            id: None,
+            r#type: None,
+        };
+    }
+    if expired {
+        return ParseHumanCanaryOverrideStateOutput {
+            active: false,
+            reason: "expired".to_string(),
+            expired: Some(true),
+            remaining: Some(remaining),
+            expires_at: None,
+            date: None,
+            require_execution_mode: None,
+            id: None,
+            r#type: None,
+        };
+    }
+    ParseHumanCanaryOverrideStateOutput {
+        active: true,
+        reason: "ok".to_string(),
+        expired: Some(false),
+        remaining: Some(remaining),
+        expires_at: Some(expires_at),
+        date: Some(
+            record
+                .get("date")
+                .map(|v| v.as_str().unwrap_or("").to_string())
+                .unwrap_or_default(),
+        ),
+        require_execution_mode: Some(
+            record
+                .get("require_execution_mode")
+                .map(|v| v.as_str().unwrap_or("").to_string())
+                .unwrap_or_default(),
+        ),
+        id: Some(
+            record
+                .get("id")
+                .map(|v| v.as_str().unwrap_or("").to_string())
+                .unwrap_or_default(),
+        ),
+        r#type: Some(
+            record
+                .get("type")
+                .map(|v| v.as_str().unwrap_or("").to_string())
+                .unwrap_or_default(),
+        ),
+    }
+}
+
+pub fn compute_daily_budget_path(input: &DailyBudgetPathInput) -> DailyBudgetPathOutput {
+    let state_dir = input.state_dir.as_deref().unwrap_or("").trim();
+    let date_str = input.date_str.as_deref().unwrap_or("").trim();
+    let path = std::path::Path::new(state_dir)
+        .join(format!("{date_str}.json"))
+        .to_string_lossy()
+        .to_string();
+    DailyBudgetPathOutput { path }
+}
+
+pub fn compute_runs_path_for(input: &RunsPathForInput) -> RunsPathForOutput {
+    let runs_dir = input.runs_dir.as_deref().unwrap_or("").trim();
+    let date_str = input.date_str.as_deref().unwrap_or("").trim();
+    let path = std::path::Path::new(runs_dir)
+        .join(format!("{date_str}.jsonl"))
+        .to_string_lossy()
+        .to_string();
+    RunsPathForOutput { path }
+}
+
+pub fn compute_effective_tier1_policy(input: &EffectiveTier1PolicyInput) -> EffectiveTier1PolicyOutput {
+    let mode = normalize_spaces(input.execution_mode.as_deref().unwrap_or("")).to_ascii_lowercase();
+    let canary_relaxed = mode == "canary_execute";
+    EffectiveTier1PolicyOutput {
+        execution_mode: if mode.is_empty() { None } else { Some(mode.clone()) },
+        canary_relaxed,
+        burn_rate_multiplier: if canary_relaxed {
+            input
+                .tier1_burn_rate_multiplier
+                .max(input.tier1_canary_burn_rate_multiplier)
+        } else {
+            input.tier1_burn_rate_multiplier
+        },
+        min_projected_tokens_for_burn_check: if canary_relaxed {
+            input
+                .tier1_min_projected_tokens_for_burn_check
+                .max(input.tier1_canary_min_projected_tokens_for_burn_check)
+        } else {
+            input.tier1_min_projected_tokens_for_burn_check
+        },
+        drift_min_samples: if canary_relaxed {
+            input.tier1_drift_min_samples.max(input.tier1_canary_drift_min_samples)
+        } else {
+            input.tier1_drift_min_samples
+        },
+        alignment_threshold: if canary_relaxed {
+            input
+                .tier1_alignment_threshold
+                .min(input.tier1_canary_alignment_threshold)
+        } else {
+            input.tier1_alignment_threshold
+        },
+        suppress_alignment_blocker: canary_relaxed && input.tier1_canary_suppress_alignment_blocker,
+    }
+}
+
+pub fn compute_compact_tier1_exception(
+    input: &CompactTier1ExceptionInput,
+) -> CompactTier1ExceptionOutput {
+    if input.tracked != Some(true) {
+        return CompactTier1ExceptionOutput {
+            has_value: false,
+            value: None,
+        };
+    }
+    let recovery = input.recovery.as_ref().and_then(|v| v.as_object());
+    let stage = input
+        .stage
+        .as_deref()
+        .map(|v| v.to_string())
+        .filter(|v| !v.is_empty());
+    let error_code = input
+        .error_code
+        .as_deref()
+        .map(|v| v.to_string())
+        .filter(|v| !v.is_empty());
+    let signature = input
+        .signature
+        .as_deref()
+        .map(|v| v.to_string())
+        .filter(|v| !v.is_empty());
+    let recovery_action = recovery.and_then(|r| {
+        r.get("action")
+            .and_then(|v| v.as_str())
+            .map(|v| v.to_string())
+    });
+    let recovery_cooldown_hours = recovery.and_then(|r| r.get("cooldown_hours")).and_then(|v| {
+        if let Some(n) = v.as_f64() {
+            Some(n)
+        } else if let Some(s) = v.as_str() {
+            s.trim().parse::<f64>().ok()
+        } else {
+            None
+        }
+    });
+    let recovery_playbook = recovery.and_then(|r| {
+        r.get("playbook")
+            .and_then(|v| v.as_str())
+            .map(|v| v.to_string())
+    });
+    let recovery_reason = recovery.and_then(|r| {
+        r.get("reason")
+            .and_then(|v| v.as_str())
+            .map(|v| v.to_string())
+    });
+    let recovery_should_escalate =
+        recovery.and_then(|r| r.get("should_escalate")).and_then(|v| v.as_bool());
+    let value = serde_json::json!({
+        "novel": input.novel == Some(true),
+        "stage": stage,
+        "error_code": error_code,
+        "signature": signature,
+        "count": input.count.unwrap_or(0.0),
+        "recovery_action": recovery_action,
+        "recovery_cooldown_hours": recovery_cooldown_hours,
+        "recovery_playbook": recovery_playbook,
+        "recovery_reason": recovery_reason,
+        "recovery_should_escalate": recovery_should_escalate
+    });
+    CompactTier1ExceptionOutput {
+        has_value: true,
+        value: Some(value),
+    }
+}
+
+pub fn compute_next_human_escalation_clear_at(
+    input: &NextHumanEscalationClearAtInput,
+) -> NextHumanEscalationClearAtOutput {
+    let mut min_dt: Option<DateTime<Utc>> = None;
+    for row in input.rows.iter() {
+        let Some(obj) = row.as_object() else {
+            continue;
+        };
+        let expires_at = obj
+            .get("expires_at")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .trim()
+            .to_string();
+        if expires_at.is_empty() {
+            continue;
+        }
+        let Ok(dt) = DateTime::parse_from_rfc3339(&expires_at) else {
+            continue;
+        };
+        let dt_utc = dt.with_timezone(&Utc);
+        min_dt = Some(match min_dt {
+            Some(prev) => {
+                if dt_utc < prev {
+                    dt_utc
+                } else {
+                    prev
+                }
+            }
+            None => dt_utc,
+        });
+    }
+    NextHumanEscalationClearAtOutput {
+        value: min_dt.map(|dt| dt.to_rfc3339_opts(SecondsFormat::Millis, true)),
+    }
+}
+
+pub fn compute_model_catalog_canary_thresholds(
+    input: &ModelCatalogCanaryThresholdsInput,
+) -> ModelCatalogCanaryThresholdsOutput {
+    let min_samples = input.min_samples.round().clamp(1.0, 50.0);
+    let max_fail_rate = input.max_fail_rate.clamp(0.0, 1.0);
+    let max_route_block_rate = input.max_route_block_rate.clamp(0.0, 1.0);
+    ModelCatalogCanaryThresholdsOutput {
+        min_samples,
+        max_fail_rate,
+        max_route_block_rate,
+    }
+}
+
 pub fn compute_directive_clarification_exec_spec(
     input: &DirectiveClarificationExecSpecInput,
 ) -> DirectiveClarificationExecSpecOutput {
@@ -16243,6 +16753,126 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_latest_proposal_date_encode_failed:{e}"));
+    }
+    if mode == "now_iso" {
+        let input = request
+            .now_iso_input
+            .ok_or_else(|| "autoscale_missing_now_iso_input".to_string())?;
+        let out = compute_now_iso(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "now_iso",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_now_iso_encode_failed:{e}"));
+    }
+    if mode == "today_str" {
+        let input = request
+            .today_str_input
+            .ok_or_else(|| "autoscale_missing_today_str_input".to_string())?;
+        let out = compute_today_str(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "today_str",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_today_str_encode_failed:{e}"));
+    }
+    if mode == "human_canary_override_approval_phrase" {
+        let input = request
+            .human_canary_override_approval_phrase_input
+            .ok_or_else(|| "autoscale_missing_human_canary_override_approval_phrase_input".to_string())?;
+        let out = compute_human_canary_override_approval_phrase(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "human_canary_override_approval_phrase",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_human_canary_override_approval_phrase_encode_failed:{e}"));
+    }
+    if mode == "parse_human_canary_override_state" {
+        let input = request
+            .parse_human_canary_override_state_input
+            .ok_or_else(|| "autoscale_missing_parse_human_canary_override_state_input".to_string())?;
+        let out = compute_parse_human_canary_override_state(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "parse_human_canary_override_state",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_parse_human_canary_override_state_encode_failed:{e}"));
+    }
+    if mode == "daily_budget_path" {
+        let input = request
+            .daily_budget_path_input
+            .ok_or_else(|| "autoscale_missing_daily_budget_path_input".to_string())?;
+        let out = compute_daily_budget_path(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "daily_budget_path",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_daily_budget_path_encode_failed:{e}"));
+    }
+    if mode == "runs_path_for" {
+        let input = request
+            .runs_path_for_input
+            .ok_or_else(|| "autoscale_missing_runs_path_for_input".to_string())?;
+        let out = compute_runs_path_for(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "runs_path_for",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_runs_path_for_encode_failed:{e}"));
+    }
+    if mode == "effective_tier1_policy" {
+        let input = request
+            .effective_tier1_policy_input
+            .ok_or_else(|| "autoscale_missing_effective_tier1_policy_input".to_string())?;
+        let out = compute_effective_tier1_policy(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "effective_tier1_policy",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_effective_tier1_policy_encode_failed:{e}"));
+    }
+    if mode == "compact_tier1_exception" {
+        let input = request
+            .compact_tier1_exception_input
+            .ok_or_else(|| "autoscale_missing_compact_tier1_exception_input".to_string())?;
+        let out = compute_compact_tier1_exception(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "compact_tier1_exception",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_compact_tier1_exception_encode_failed:{e}"));
+    }
+    if mode == "next_human_escalation_clear_at" {
+        let input = request
+            .next_human_escalation_clear_at_input
+            .ok_or_else(|| "autoscale_missing_next_human_escalation_clear_at_input".to_string())?;
+        let out = compute_next_human_escalation_clear_at(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "next_human_escalation_clear_at",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_next_human_escalation_clear_at_encode_failed:{e}"));
+    }
+    if mode == "model_catalog_canary_thresholds" {
+        let input = request
+            .model_catalog_canary_thresholds_input
+            .ok_or_else(|| "autoscale_missing_model_catalog_canary_thresholds_input".to_string())?;
+        let out = compute_model_catalog_canary_thresholds(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "model_catalog_canary_thresholds",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_model_catalog_canary_thresholds_encode_failed:{e}"));
     }
     if mode == "parse_directive_file_arg" {
         let input = request

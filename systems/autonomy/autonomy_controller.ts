@@ -1125,10 +1125,32 @@ function ensureState() {
 }
 
 function nowIso() {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'now_iso',
+      { now_iso: null },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const value = String(rust.payload.payload.value || '').trim();
+      if (value) return value;
+    }
+  }
   return new Date().toISOString();
 }
 
 function todayStr() {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'today_str',
+      { now_iso: null },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const value = String(rust.payload.payload.value || '').trim();
+      if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+    }
+  }
   return new Date().toISOString().slice(0, 10);
 }
 
@@ -1253,6 +1275,21 @@ function deleteFileIfExists(filePath) {
 }
 
 function humanCanaryOverrideApprovalPhrase(dateStr, nonce) {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'human_canary_override_approval_phrase',
+      {
+        prefix: HUMAN_CANARY_OVERRIDE_PREFIX,
+        date_str: dateStr == null ? null : String(dateStr),
+        nonce: nonce == null ? null : String(nonce)
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const phrase = String(rust.payload.payload.phrase || '');
+      if (phrase) return phrase;
+    }
+  }
   return `${HUMAN_CANARY_OVERRIDE_PREFIX}:${String(dateStr || '')}:${String(nonce || '')}`;
 }
 
@@ -1275,6 +1312,40 @@ function auditHumanCanaryOverride(type, payload) {
 }
 
 function parseHumanCanaryOverrideState(rec) {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'parse_human_canary_override_state',
+      {
+        record: rec && typeof rec === 'object' ? rec : null,
+        now_ms: Date.now()
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const payload = rust.payload.payload;
+      const active = payload.active === true;
+      const reason = String(payload.reason || (active ? 'ok' : 'missing'));
+      const expired = payload.expired === true;
+      const remaining = Number(payload.remaining || 0);
+      if (!active) {
+        if (reason === 'depleted' || reason === 'expired') {
+          return { active: false, reason, expired, remaining };
+        }
+        return { active: false, reason };
+      }
+      return {
+        active: true,
+        reason,
+        expired: payload.expired === true,
+        remaining: Number(payload.remaining || 0),
+        expires_at: String(payload.expires_at || ''),
+        date: String(payload.date || ''),
+        require_execution_mode: String(payload.require_execution_mode || ''),
+        id: String(payload.id || ''),
+        type: String(payload.type || '')
+      };
+    }
+  }
   const o = rec && typeof rec === 'object' ? rec : null;
   if (!o) return { active: false, reason: 'missing' };
   const expMs = Date.parse(String(o.expires_at || ''));
@@ -4352,6 +4423,20 @@ function executeConfidenceCooldownActive(capabilityKey, objectiveId, proposalTyp
 }
 
 function dailyBudgetPath(dateStr) {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'daily_budget_path',
+      {
+        state_dir: DAILY_BUDGET_DIR,
+        date_str: dateStr == null ? null : String(dateStr)
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const value = String(rust.payload.payload.path || '').trim();
+      if (value) return value;
+    }
+  }
   return path.join(DAILY_BUDGET_DIR, `${dateStr}.json`);
 }
 
@@ -4381,6 +4466,20 @@ function saveDailyBudget(b) {
 }
 
 function runsPathFor(dateStr) {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'runs_path_for',
+      {
+        runs_dir: RUNS_DIR,
+        date_str: dateStr == null ? null : String(dateStr)
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const value = String(rust.payload.payload.path || '').trim();
+      if (value) return value;
+    }
+  }
   return path.join(RUNS_DIR, `${dateStr}.jsonl`);
 }
 
@@ -14422,6 +14521,27 @@ function writeReceipt(dateStr, receipt) {
 }
 
 function effectiveTier1Policy(executionMode) {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'effective_tier1_policy',
+      {
+        execution_mode: executionMode == null ? null : String(executionMode),
+        tier1_burn_rate_multiplier: Number(AUTONOMY_TIER1_BURN_RATE_MULTIPLIER),
+        tier1_canary_burn_rate_multiplier: Number(AUTONOMY_TIER1_CANARY_BURN_RATE_MULTIPLIER),
+        tier1_min_projected_tokens_for_burn_check: Number(AUTONOMY_TIER1_MIN_PROJECTED_TOKENS_FOR_BURN_CHECK),
+        tier1_canary_min_projected_tokens_for_burn_check: Number(AUTONOMY_TIER1_CANARY_MIN_PROJECTED_TOKENS_FOR_BURN_CHECK),
+        tier1_drift_min_samples: Number(AUTONOMY_TIER1_DRIFT_MIN_SAMPLES),
+        tier1_canary_drift_min_samples: Number(AUTONOMY_TIER1_CANARY_DRIFT_MIN_SAMPLES),
+        tier1_alignment_threshold: Number(AUTONOMY_TIER1_ALIGNMENT_THRESHOLD),
+        tier1_canary_alignment_threshold: Number(AUTONOMY_TIER1_CANARY_ALIGNMENT_THRESHOLD),
+        tier1_canary_suppress_alignment_blocker: AUTONOMY_TIER1_CANARY_SUPPRESS_ALIGNMENT_BLOCKER === true
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return rust.payload.payload;
+    }
+  }
   const mode = String(executionMode || '').trim().toLowerCase();
   const isCanary = mode === 'canary_execute';
   return {
@@ -14579,6 +14699,28 @@ function evaluateTier1GovernanceSnapshot(dateStr, attemptsToday, estActionTokens
 }
 
 function compactTier1Exception(info) {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const src = info && typeof info === 'object' ? info : {};
+    const rust = runBacklogAutoscalePrimitive(
+      'compact_tier1_exception',
+      {
+        tracked: src.tracked === true,
+        novel: src.novel === true,
+        stage: src.stage == null ? null : String(src.stage),
+        error_code: src.error_code == null ? null : String(src.error_code),
+        signature: src.signature == null ? null : String(src.signature),
+        count: Number(src.count || 0),
+        recovery: src.recovery && typeof src.recovery === 'object' ? src.recovery : null
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const payload = rust.payload.payload;
+      if (payload.has_value !== true) return null;
+      if (payload.value && typeof payload.value === 'object') return payload.value;
+      return null;
+    }
+  }
   if (!info || info.tracked !== true) return null;
   const recovery = info.recovery && typeof info.recovery === 'object' ? info.recovery : null;
   return {
@@ -14676,6 +14818,19 @@ function activeHumanEscalations(holdHours = AUTONOMY_HUMAN_ESCALATION_HOLD_HOURS
 }
 
 function nextHumanEscalationClearAt(activeRows) {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'next_human_escalation_clear_at',
+      {
+        rows: Array.isArray(activeRows) ? activeRows : []
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const value = rust.payload.payload.value;
+      return value == null ? null : String(value || '');
+    }
+  }
   const rows = Array.isArray(activeRows) ? activeRows : [];
   const ms = rows
     .map(r => Date.parse(String(r && r.expires_at || '')))
@@ -14892,6 +15047,20 @@ function runModelCatalogLoop(cmd, extraArgs = []) {
 }
 
 function modelCatalogCanaryThresholds() {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'model_catalog_canary_thresholds',
+      {
+        min_samples: Number(AUTONOMY_MODEL_CATALOG_CANARY_MIN_SAMPLES),
+        max_fail_rate: Number(AUTONOMY_MODEL_CATALOG_CANARY_MAX_FAIL_RATE),
+        max_route_block_rate: Number(AUTONOMY_MODEL_CATALOG_CANARY_MAX_ROUTE_BLOCK_RATE)
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return rust.payload.payload;
+    }
+  }
   return {
     min_samples: clampNumber(Math.round(AUTONOMY_MODEL_CATALOG_CANARY_MIN_SAMPLES), 1, 50),
     max_fail_rate: clampNumber(AUTONOMY_MODEL_CATALOG_CANARY_MAX_FAIL_RATE, 0, 1),
