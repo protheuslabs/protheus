@@ -1526,6 +1526,24 @@ function saveBacklogAutoscaleState(state, filePath = BACKLOG_AUTOSCALE_STATE_PAT
 
 function spawnAllocatedCells() {
   const allocations = loadJson(path.join(SPAWN_STATE_DIR, 'allocations.json'), {});
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'spawn_allocated_cells',
+      {
+        active_cells: allocations && allocations.active_cells != null ? Number(allocations.active_cells) : null,
+        current_cells: allocations && allocations.current_cells != null ? Number(allocations.current_cells) : null,
+        allocated_cells: allocations && allocations.allocated_cells != null ? Number(allocations.allocated_cells) : null
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const payload = rust.payload.payload;
+      if (payload.active_cells != null) {
+        const resolved = Number(payload.active_cells);
+        if (Number.isFinite(resolved)) return Math.max(0, Math.floor(resolved));
+      }
+    }
+  }
   const active = Number(
     allocations && allocations.active_cells != null
       ? allocations.active_cells

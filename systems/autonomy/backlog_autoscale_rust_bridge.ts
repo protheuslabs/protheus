@@ -92,6 +92,7 @@ function runBacklogAutoscalePrimitive(mode: string, data: AnyObj = {}, opts: Any
   const fieldByMode: AnyObj = {
     default_backlog_autoscale_state: 'default_backlog_autoscale_state_input',
     normalize_backlog_autoscale_state: 'normalize_backlog_autoscale_state_input',
+    spawn_allocated_cells: 'spawn_allocated_cells_input',
     plan: 'plan_input',
     batch_max: 'batch_input',
     dynamic_caps: 'dynamic_caps_input',

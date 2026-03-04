@@ -2178,6 +2178,21 @@ pub struct NormalizeBacklogAutoscaleStateOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct SpawnAllocatedCellsInput {
+    #[serde(default)]
+    pub active_cells: Option<f64>,
+    #[serde(default)]
+    pub current_cells: Option<f64>,
+    #[serde(default)]
+    pub allocated_cells: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct SpawnAllocatedCellsOutput {
+    pub active_cells: Option<i64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AutoscaleRequest {
     pub mode: String,
     #[serde(default)]
@@ -2402,6 +2417,8 @@ pub struct AutoscaleRequest {
     pub default_backlog_autoscale_state_input: Option<DefaultBacklogAutoscaleStateInput>,
     #[serde(default)]
     pub normalize_backlog_autoscale_state_input: Option<NormalizeBacklogAutoscaleStateInput>,
+    #[serde(default)]
+    pub spawn_allocated_cells_input: Option<SpawnAllocatedCellsInput>,
 }
 
 fn clamp_ratio(v: f64) -> f64 {
@@ -6706,6 +6723,18 @@ pub fn compute_normalize_backlog_autoscale_state(
     }
 }
 
+pub fn compute_spawn_allocated_cells(input: &SpawnAllocatedCellsInput) -> SpawnAllocatedCellsOutput {
+    let resolved = input
+        .active_cells
+        .or(input.current_cells)
+        .or(input.allocated_cells)
+        .filter(|value| value.is_finite())
+        .map(|value| value.max(0.0).floor() as i64);
+    SpawnAllocatedCellsOutput {
+        active_cells: resolved,
+    }
+}
+
 pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
     let request: AutoscaleRequest = serde_json::from_str(payload_json)
         .map_err(|e| format!("autoscale_request_parse_failed:{e}"))?;
@@ -6733,6 +6762,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_normalize_backlog_autoscale_state_encode_failed:{e}"));
+    }
+    if mode == "spawn_allocated_cells" {
+        let input = request
+            .spawn_allocated_cells_input
+            .ok_or_else(|| "autoscale_missing_spawn_allocated_cells_input".to_string())?;
+        let out = compute_spawn_allocated_cells(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "spawn_allocated_cells",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_spawn_allocated_cells_encode_failed:{e}"));
     }
     if mode == "plan" {
         let input = request
@@ -12259,5 +12300,42 @@ mod tests {
         let out =
             run_autoscale_json(&payload).expect("autoscale normalize_backlog_autoscale_state");
         assert!(out.contains("\"mode\":\"normalize_backlog_autoscale_state\""));
+    }
+
+    #[test]
+    fn spawn_allocated_cells_prefers_active_then_current_then_allocated() {
+        let out = compute_spawn_allocated_cells(&SpawnAllocatedCellsInput {
+            active_cells: Some(4.2),
+            current_cells: Some(7.0),
+            allocated_cells: Some(9.0),
+        });
+        assert_eq!(out.active_cells, Some(4));
+        let out = compute_spawn_allocated_cells(&SpawnAllocatedCellsInput {
+            active_cells: None,
+            current_cells: Some(7.8),
+            allocated_cells: Some(9.0),
+        });
+        assert_eq!(out.active_cells, Some(7));
+        let out = compute_spawn_allocated_cells(&SpawnAllocatedCellsInput {
+            active_cells: None,
+            current_cells: None,
+            allocated_cells: Some(2.0),
+        });
+        assert_eq!(out.active_cells, Some(2));
+    }
+
+    #[test]
+    fn autoscale_json_spawn_allocated_cells_path_works() {
+        let payload = serde_json::json!({
+            "mode": "spawn_allocated_cells",
+            "spawn_allocated_cells_input": {
+                "active_cells": null,
+                "current_cells": 3.4,
+                "allocated_cells": 8
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale spawn_allocated_cells");
+        assert!(out.contains("\"mode\":\"spawn_allocated_cells\""));
     }
 }
