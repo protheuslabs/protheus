@@ -2291,6 +2291,32 @@ pub struct AdmissionSummaryOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct UnknownTypeQuarantineDecisionInput {
+    #[serde(default)]
+    pub enabled: bool,
+    #[serde(default)]
+    pub proposal_type: Option<String>,
+    #[serde(default)]
+    pub type_in_quarantine_set: bool,
+    #[serde(default)]
+    pub allow_directive: bool,
+    #[serde(default)]
+    pub allow_tier1: bool,
+    #[serde(default)]
+    pub objective_id: Option<String>,
+    #[serde(default)]
+    pub tier1_objective: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct UnknownTypeQuarantineDecisionOutput {
+    pub block: bool,
+    pub proposal_type: Option<String>,
+    pub reason: Option<String>,
+    pub objective_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct IsDirectiveClarificationProposalInput {
     #[serde(default)]
     pub proposal_type: Option<String>,
@@ -3443,6 +3469,8 @@ pub struct AutoscaleRequest {
     pub backlog_autoscale_snapshot_input: Option<BacklogAutoscaleSnapshotInput>,
     #[serde(default)]
     pub admission_summary_input: Option<AdmissionSummaryInput>,
+    #[serde(default)]
+    pub unknown_type_quarantine_decision_input: Option<UnknownTypeQuarantineDecisionInput>,
     #[serde(default)]
     pub is_directive_clarification_proposal_input: Option<IsDirectiveClarificationProposalInput>,
     #[serde(default)]
@@ -7478,6 +7506,63 @@ pub fn compute_admission_summary(input: &AdmissionSummaryInput) -> AdmissionSumm
     }
 }
 
+pub fn compute_unknown_type_quarantine_decision(
+    input: &UnknownTypeQuarantineDecisionInput,
+) -> UnknownTypeQuarantineDecisionOutput {
+    let proposal_type = input
+        .proposal_type
+        .as_ref()
+        .map(|v| v.split_whitespace().collect::<Vec<_>>().join(" ").to_lowercase())
+        .filter(|v| !v.is_empty());
+    if !input.enabled {
+        return UnknownTypeQuarantineDecisionOutput {
+            block: false,
+            proposal_type,
+            reason: None,
+            objective_id: None,
+        };
+    }
+    if !input.type_in_quarantine_set {
+        return UnknownTypeQuarantineDecisionOutput {
+            block: false,
+            proposal_type,
+            reason: None,
+            objective_id: None,
+        };
+    }
+    let is_directive = matches!(
+        proposal_type.as_deref(),
+        Some("directive_clarification") | Some("directive_decomposition")
+    );
+    if input.allow_directive && is_directive {
+        return UnknownTypeQuarantineDecisionOutput {
+            block: false,
+            proposal_type,
+            reason: Some("directive_exempt".to_string()),
+            objective_id: None,
+        };
+    }
+    let objective_id = input
+        .objective_id
+        .as_ref()
+        .map(|v| v.split_whitespace().collect::<Vec<_>>().join(" "))
+        .filter(|v| !v.is_empty());
+    if input.allow_tier1 && input.tier1_objective {
+        return UnknownTypeQuarantineDecisionOutput {
+            block: false,
+            proposal_type,
+            reason: Some("tier1_objective_exempt".to_string()),
+            objective_id,
+        };
+    }
+    UnknownTypeQuarantineDecisionOutput {
+        block: true,
+        proposal_type,
+        reason: Some("unknown_type_quarantine".to_string()),
+        objective_id,
+    }
+}
+
 pub fn compute_is_directive_clarification_proposal(
     input: &IsDirectiveClarificationProposalInput,
 ) -> IsDirectiveClarificationProposalOutput {
@@ -10993,6 +11078,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_admission_summary_encode_failed:{e}"));
+    }
+    if mode == "unknown_type_quarantine_decision" {
+        let input = request
+            .unknown_type_quarantine_decision_input
+            .ok_or_else(|| "autoscale_missing_unknown_type_quarantine_decision_input".to_string())?;
+        let out = compute_unknown_type_quarantine_decision(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "unknown_type_quarantine_decision",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_unknown_type_quarantine_decision_encode_failed:{e}"));
     }
     if mode == "is_directive_clarification_proposal" {
         let input = request
@@ -15989,6 +16086,42 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale admission_summary");
         assert!(out.contains("\"mode\":\"admission_summary\""));
+    }
+
+    #[test]
+    fn unknown_type_quarantine_decision_blocks_unknown_type() {
+        let out = compute_unknown_type_quarantine_decision(&UnknownTypeQuarantineDecisionInput {
+            enabled: true,
+            proposal_type: Some("unknown_type".to_string()),
+            type_in_quarantine_set: true,
+            allow_directive: true,
+            allow_tier1: true,
+            objective_id: Some("T1_OBJ".to_string()),
+            tier1_objective: false,
+        });
+        assert!(out.block);
+        assert_eq!(out.reason.as_deref(), Some("unknown_type_quarantine"));
+        assert_eq!(out.proposal_type.as_deref(), Some("unknown_type"));
+    }
+
+    #[test]
+    fn autoscale_json_unknown_type_quarantine_decision_path_works() {
+        let payload = serde_json::json!({
+            "mode": "unknown_type_quarantine_decision",
+            "unknown_type_quarantine_decision_input": {
+                "enabled": true,
+                "proposal_type": "directive_decomposition",
+                "type_in_quarantine_set": true,
+                "allow_directive": true,
+                "allow_tier1": true,
+                "objective_id": "T1_demo",
+                "tier1_objective": false
+            }
+        })
+        .to_string();
+        let out =
+            run_autoscale_json(&payload).expect("autoscale unknown_type_quarantine_decision");
+        assert!(out.contains("\"mode\":\"unknown_type_quarantine_decision\""));
     }
 
     #[test]

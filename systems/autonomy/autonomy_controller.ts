@@ -5737,6 +5737,32 @@ function isDeprioritizedSourceProposal(p) {
 function proposalUnknownTypeQuarantineDecision(proposal, objectiveBinding = null) {
   const p = proposal && typeof proposal === 'object' ? proposal : {};
   const type = String(p.type || '').trim().toLowerCase();
+  const binding = objectiveBinding && typeof objectiveBinding === 'object' ? objectiveBinding : {};
+  const meta = p.meta && typeof p.meta === 'object' ? p.meta : {};
+  const objectiveId = sanitizeDirectiveObjectiveId(
+    binding.objective_id
+    || meta.objective_id
+    || meta.directive_objective_id
+    || ''
+  );
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'unknown_type_quarantine_decision',
+      {
+        enabled: AUTONOMY_UNKNOWN_TYPE_QUARANTINE_ENABLED === true,
+        proposal_type: type || null,
+        type_in_quarantine_set: !!(type && AUTONOMY_UNKNOWN_TYPE_QUARANTINE_TYPES.has(type)),
+        allow_directive: AUTONOMY_UNKNOWN_TYPE_QUARANTINE_ALLOW_DIRECTIVE === true,
+        allow_tier1: AUTONOMY_UNKNOWN_TYPE_QUARANTINE_ALLOW_TIER1 === true,
+        objective_id: objectiveId || null,
+        tier1_objective: isTier1ObjectiveId(objectiveId)
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return rust.payload.payload;
+    }
+  }
   if (!AUTONOMY_UNKNOWN_TYPE_QUARANTINE_ENABLED) {
     return { block: false, proposal_type: type || null, reason: null };
   }
@@ -5749,14 +5775,6 @@ function proposalUnknownTypeQuarantineDecision(proposal, objectiveBinding = null
   ) {
     return { block: false, proposal_type: type, reason: 'directive_exempt' };
   }
-  const binding = objectiveBinding && typeof objectiveBinding === 'object' ? objectiveBinding : {};
-  const meta = p.meta && typeof p.meta === 'object' ? p.meta : {};
-  const objectiveId = sanitizeDirectiveObjectiveId(
-    binding.objective_id
-    || meta.objective_id
-    || meta.directive_objective_id
-    || ''
-  );
   if (AUTONOMY_UNKNOWN_TYPE_QUARANTINE_ALLOW_TIER1 && isTier1ObjectiveId(objectiveId)) {
     return {
       block: false,
@@ -20361,6 +20379,7 @@ module.exports = {
   sourceEyeId,
   isDeprioritizedSourceProposal,
   admissionSummaryFromProposals,
+  proposalUnknownTypeQuarantineDecision,
   extractEyeFromEvidenceRef,
   clampThreshold,
   appliedThresholds,
