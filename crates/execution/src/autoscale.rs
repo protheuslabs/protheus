@@ -209,6 +209,45 @@ pub struct PolicyHoldOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct PolicyHoldPressureEventInput {
+    #[serde(default)]
+    pub event_type: Option<String>,
+    #[serde(default)]
+    pub result: Option<String>,
+    #[serde(default)]
+    pub policy_hold: Option<bool>,
+    #[serde(default)]
+    pub ts_ms: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct PolicyHoldPressureInput {
+    #[serde(default)]
+    pub events: Vec<PolicyHoldPressureEventInput>,
+    #[serde(default)]
+    pub window_hours: Option<f64>,
+    #[serde(default)]
+    pub min_samples: Option<f64>,
+    #[serde(default)]
+    pub now_ms: Option<f64>,
+    #[serde(default)]
+    pub warn_rate: Option<f64>,
+    #[serde(default)]
+    pub hard_rate: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct PolicyHoldPressureOutput {
+    pub window_hours: f64,
+    pub min_samples: f64,
+    pub samples: u32,
+    pub policy_holds: u32,
+    pub rate: f64,
+    pub level: String,
+    pub applicable: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ReceiptVerdictInput {
     pub decision: String,
     pub exec_ok: bool,
@@ -259,6 +298,8 @@ pub struct AutoscaleRequest {
     pub criteria_gate_input: Option<CriteriaGateInput>,
     #[serde(default)]
     pub policy_hold_input: Option<PolicyHoldInput>,
+    #[serde(default)]
+    pub policy_hold_pressure_input: Option<PolicyHoldPressureInput>,
     #[serde(default)]
     pub receipt_verdict_input: Option<ReceiptVerdictInput>,
 }
@@ -772,6 +813,92 @@ pub fn compute_policy_hold(input: &PolicyHoldInput) -> PolicyHoldOutput {
     }
 }
 
+fn round3(v: f64) -> f64 {
+    (v * 1_000.0).round() / 1_000.0
+}
+
+fn is_policy_hold_result(result: &str) -> bool {
+    !result.is_empty()
+        && (result.starts_with("no_candidates_policy_")
+            || result == "stop_init_gate_budget_autopause"
+            || result == "stop_init_gate_readiness"
+            || result == "stop_init_gate_readiness_blocked"
+            || result == "stop_init_gate_criteria_quality_insufficient"
+            || result == "stop_repeat_gate_mutation_guard"
+            || result == "score_only_fallback_route_block"
+            || result == "score_only_fallback_low_execution_confidence")
+}
+
+pub fn compute_policy_hold_pressure(input: &PolicyHoldPressureInput) -> PolicyHoldPressureOutput {
+    let window_hours = input.window_hours.unwrap_or(24.0).max(1.0);
+    let min_samples = input.min_samples.unwrap_or(1.0).max(1.0);
+    let now_ms = non_negative_number(input.now_ms).unwrap_or_else(|| {
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|v| v.as_millis() as f64)
+            .unwrap_or(0.0)
+    });
+    let cutoff_ms = now_ms - (window_hours * 3_600_000.0);
+
+    let mut attempts: u32 = 0;
+    let mut policy_holds: u32 = 0;
+    for evt in &input.events {
+        let event_type = evt
+            .event_type
+            .as_ref()
+            .map(|v| v.trim().to_ascii_lowercase())
+            .unwrap_or_default();
+        if event_type != "autonomy_run" {
+            continue;
+        }
+        let result = evt
+            .result
+            .as_ref()
+            .map(|v| v.trim().to_string())
+            .unwrap_or_default();
+        if result.is_empty() || result == "lock_busy" || result == "stop_repeat_gate_interval" {
+            continue;
+        }
+        if let Some(ts_ms) = non_negative_number(evt.ts_ms) {
+            if ts_ms < cutoff_ms {
+                continue;
+            }
+        }
+        attempts += 1;
+        if evt.policy_hold.unwrap_or(false) || is_policy_hold_result(&result) {
+            policy_holds += 1;
+        }
+    }
+
+    let rate = if attempts > 0 {
+        clamp_ratio((policy_holds as f64) / (attempts as f64))
+    } else {
+        0.0
+    };
+    let applicable = (attempts as f64) >= min_samples;
+    let warn_rate = clamp_ratio(input.warn_rate.unwrap_or(0.25));
+    let hard_rate = clamp_ratio(input.hard_rate.unwrap_or(0.4).max(warn_rate));
+    let level = if !applicable {
+        "normal".to_string()
+    } else if rate >= hard_rate {
+        "hard".to_string()
+    } else if rate >= warn_rate {
+        "warn".to_string()
+    } else {
+        "normal".to_string()
+    };
+
+    PolicyHoldPressureOutput {
+        window_hours: round3(window_hours),
+        min_samples: round3(min_samples),
+        samples: attempts,
+        policy_holds,
+        rate: round3(rate),
+        level,
+        applicable,
+    }
+}
+
 pub fn compute_receipt_verdict(input: &ReceiptVerdictInput) -> ReceiptVerdictOutput {
     let decision = input.decision.trim().to_ascii_uppercase();
     let exec_check_name = if decision == "ACTUATE" {
@@ -979,6 +1106,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_policy_hold_encode_failed:{e}"));
+    }
+    if mode == "policy_hold_pressure" {
+        let input = request
+            .policy_hold_pressure_input
+            .ok_or_else(|| "autoscale_missing_policy_hold_pressure_input".to_string())?;
+        let out = compute_policy_hold_pressure(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "policy_hold_pressure",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_policy_hold_pressure_encode_failed:{e}"));
     }
     if mode == "receipt_verdict" {
         let input = request
@@ -1229,6 +1368,63 @@ mod tests {
         assert!(out.hold);
         assert_eq!(out.hold_scope, Some("proposal".to_string()));
         assert_eq!(out.hold_reason, Some("gate_manual".to_string()));
+    }
+
+    #[test]
+    fn policy_hold_pressure_classifies_hard_when_rate_crosses_threshold() {
+        let out = compute_policy_hold_pressure(&PolicyHoldPressureInput {
+            events: vec![
+                PolicyHoldPressureEventInput {
+                    event_type: Some("autonomy_run".to_string()),
+                    result: Some("no_candidates_policy_daily_cap".to_string()),
+                    policy_hold: Some(true),
+                    ts_ms: Some(1_000_000.0),
+                },
+                PolicyHoldPressureEventInput {
+                    event_type: Some("autonomy_run".to_string()),
+                    result: Some("stop_init_gate_budget_autopause".to_string()),
+                    policy_hold: Some(true),
+                    ts_ms: Some(1_100_000.0),
+                },
+                PolicyHoldPressureEventInput {
+                    event_type: Some("autonomy_run".to_string()),
+                    result: Some("executed".to_string()),
+                    policy_hold: Some(false),
+                    ts_ms: Some(1_200_000.0),
+                },
+            ],
+            window_hours: Some(24.0),
+            min_samples: Some(2.0),
+            now_ms: Some(1_500_000.0),
+            warn_rate: Some(0.25),
+            hard_rate: Some(0.4),
+        });
+        assert!(out.applicable);
+        assert_eq!(out.samples, 3);
+        assert_eq!(out.policy_holds, 2);
+        assert_eq!(out.level, "hard");
+        assert!(out.rate >= 0.66 && out.rate <= 0.667);
+    }
+
+    #[test]
+    fn autoscale_json_policy_hold_pressure_path_works() {
+        let payload = serde_json::json!({
+            "mode": "policy_hold_pressure",
+            "policy_hold_pressure_input": {
+                "events": [
+                    { "event_type": "autonomy_run", "result": "no_candidates_policy_daily_cap", "policy_hold": true, "ts_ms": 1100000.0 },
+                    { "event_type": "autonomy_run", "result": "executed", "policy_hold": false, "ts_ms": 1200000.0 }
+                ],
+                "window_hours": 24,
+                "min_samples": 1,
+                "now_ms": 1500000,
+                "warn_rate": 0.25,
+                "hard_rate": 0.4
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale policy_hold_pressure");
+        assert!(out.contains("\"mode\":\"policy_hold_pressure\""));
     }
 
     #[test]

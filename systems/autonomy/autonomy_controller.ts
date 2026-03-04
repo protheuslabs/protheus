@@ -2725,6 +2725,35 @@ function policyHoldPressureSnapshot(events, opts: AnyObj = {}) {
     1,
     Number(opts.min_samples || AUTONOMY_POLICY_HOLD_PRESSURE_MIN_SAMPLES || 1)
   );
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rustEvents = [];
+    for (const evt of rows) {
+      if (!evt || typeof evt !== 'object') continue;
+      const parsedTs = parseIsoTs(evt.ts);
+      rustEvents.push({
+        event_type: String(evt.type || ''),
+        result: String(evt.result || ''),
+        policy_hold: evt.policy_hold === true,
+        ts_ms: parsedTs ? parsedTs.getTime() : null
+      });
+    }
+    const rust = runBacklogAutoscalePrimitive(
+      'policy_hold_pressure',
+      {
+        events: rustEvents,
+        window_hours: windowHours,
+        min_samples: minSamples,
+        now_ms: Date.now(),
+        warn_rate: AUTONOMY_POLICY_HOLD_PRESSURE_WARN_RATE,
+        hard_rate: AUTONOMY_POLICY_HOLD_PRESSURE_HARD_RATE
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return rust.payload.payload;
+    }
+  }
+
   const cutoffMs = Date.now() - (windowHours * 3600000);
   let attempts = 0;
   let policyHolds = 0;
