@@ -10,6 +10,7 @@ fn usage() {
     println!("  protheus-ops runtime-efficiency-floor run [--strict=1|0] [--policy=<path>]");
     println!("  protheus-ops runtime-efficiency-floor status [--policy=<path>]");
     println!("  protheus-ops protheusctl <command> [flags]");
+    println!("  protheus-ops fluxlattice-program <list|run|run-all|status> [flags]");
     println!("  protheus-ops perception-polish-program <list|run|run-all|status> [flags]");
     println!("  protheus-ops scale-readiness-program <list|run|run-all|status> [flags]");
 }
@@ -70,6 +71,11 @@ fn main() {
         "protheusctl" => {
             let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
             let exit = protheus_ops_core::protheusctl::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "fluxlattice-program" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::fluxlattice_program::run(&cwd, &rest);
             std::process::exit(exit);
         }
         "perception-polish-program" => {

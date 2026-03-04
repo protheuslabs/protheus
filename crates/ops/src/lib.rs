@@ -14,6 +14,7 @@ use walkdir::WalkDir;
 pub mod perception_polish;
 pub mod protheusctl;
 pub mod scale_readiness;
+pub mod fluxlattice_program;
 
 #[derive(Debug, Clone)]
 pub struct ParsedArgs {
