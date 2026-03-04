@@ -220,6 +220,21 @@ pub struct PolicyHoldResultOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct NoProgressResultInput {
+    #[serde(default)]
+    pub event_type: Option<String>,
+    #[serde(default)]
+    pub result: Option<String>,
+    #[serde(default)]
+    pub outcome: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct NoProgressResultOutput {
+    pub is_no_progress: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct RouteExecutionPolicyHoldInput {
     #[serde(default)]
     pub target: Option<String>,
@@ -455,6 +470,8 @@ pub struct AutoscaleRequest {
     pub policy_hold_input: Option<PolicyHoldInput>,
     #[serde(default)]
     pub policy_hold_result_input: Option<PolicyHoldResultInput>,
+    #[serde(default)]
+    pub no_progress_result_input: Option<NoProgressResultInput>,
     #[serde(default)]
     pub route_execution_policy_hold_input: Option<RouteExecutionPolicyHoldInput>,
     #[serde(default)]
@@ -1057,6 +1074,62 @@ pub fn compute_policy_hold_result(input: &PolicyHoldResultInput) -> PolicyHoldRe
     }
 }
 
+pub fn compute_no_progress_result(input: &NoProgressResultInput) -> NoProgressResultOutput {
+    let event_type = input
+        .event_type
+        .as_ref()
+        .map(|v| v.trim().to_ascii_lowercase())
+        .unwrap_or_default();
+    if event_type != "autonomy_run" {
+        return NoProgressResultOutput {
+            is_no_progress: false,
+        };
+    }
+
+    let result = input
+        .result
+        .as_ref()
+        .map(|v| v.trim().to_string())
+        .unwrap_or_default();
+    if result == "executed" {
+        let outcome = input
+            .outcome
+            .as_ref()
+            .map(|v| v.trim().to_string())
+            .unwrap_or_default();
+        return NoProgressResultOutput {
+            is_no_progress: outcome != "shipped",
+        };
+    }
+
+    let is_no_progress = result == "init_gate_stub"
+        || result == "init_gate_low_score"
+        || result == "init_gate_blocked_route"
+        || result == "stop_repeat_gate_capability_cap"
+        || result == "stop_repeat_gate_directive_pulse_cooldown"
+        || result == "stop_repeat_gate_directive_pulse_tier_reservation"
+        || result == "stop_repeat_gate_human_escalation_pending"
+        || result == "stop_repeat_gate_stale_signal"
+        || result == "stop_init_gate_quality_exhausted"
+        || result == "stop_init_gate_directive_fit_exhausted"
+        || result == "stop_init_gate_actionability_exhausted"
+        || result == "stop_init_gate_optimization_good_enough"
+        || result == "stop_init_gate_value_signal_exhausted"
+        || result == "stop_init_gate_tier1_governance"
+        || result == "stop_init_gate_medium_risk_guard"
+        || result == "stop_init_gate_medium_requires_canary"
+        || result == "stop_init_gate_composite_exhausted"
+        || result == "stop_repeat_gate_capability_cooldown"
+        || result == "stop_repeat_gate_capability_no_change_cooldown"
+        || result == "stop_repeat_gate_medium_canary_cap"
+        || result == "stop_repeat_gate_candidate_exhausted"
+        || result == "stop_repeat_gate_preview_churn_cooldown"
+        || result == "stop_repeat_gate_exhaustion_cooldown"
+        || result == "stop_repeat_gate_no_progress"
+        || result == "stop_repeat_gate_dopamine";
+    NoProgressResultOutput { is_no_progress }
+}
+
 pub fn compute_policy_hold_pressure(input: &PolicyHoldPressureInput) -> PolicyHoldPressureOutput {
     let window_hours = input.window_hours.unwrap_or(24.0).max(1.0);
     let min_samples = input.min_samples.unwrap_or(1.0).max(1.0);
@@ -1588,6 +1661,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
         }))
         .map_err(|e| format!("autoscale_policy_hold_result_encode_failed:{e}"));
     }
+    if mode == "no_progress_result" {
+        let input = request
+            .no_progress_result_input
+            .ok_or_else(|| "autoscale_missing_no_progress_result_input".to_string())?;
+        let out = compute_no_progress_result(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "no_progress_result",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_no_progress_result_encode_failed:{e}"));
+    }
     if mode == "route_execution_policy_hold" {
         let input = request
             .route_execution_policy_hold_input
@@ -1923,6 +2008,45 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale policy_hold_result");
         assert!(out.contains("\"mode\":\"policy_hold_result\""));
+    }
+
+    #[test]
+    fn no_progress_result_classifies_core_cases() {
+        let executed_no_change = compute_no_progress_result(&NoProgressResultInput {
+            event_type: Some("autonomy_run".to_string()),
+            result: Some("executed".to_string()),
+            outcome: Some("no_change".to_string()),
+        });
+        assert!(executed_no_change.is_no_progress);
+
+        let executed_shipped = compute_no_progress_result(&NoProgressResultInput {
+            event_type: Some("autonomy_run".to_string()),
+            result: Some("executed".to_string()),
+            outcome: Some("shipped".to_string()),
+        });
+        assert!(!executed_shipped.is_no_progress);
+
+        let blocked = compute_no_progress_result(&NoProgressResultInput {
+            event_type: Some("autonomy_run".to_string()),
+            result: Some("stop_init_gate_quality_exhausted".to_string()),
+            outcome: None,
+        });
+        assert!(blocked.is_no_progress);
+    }
+
+    #[test]
+    fn autoscale_json_no_progress_result_path_works() {
+        let payload = serde_json::json!({
+            "mode": "no_progress_result",
+            "no_progress_result_input": {
+                "event_type": "autonomy_run",
+                "result": "stop_repeat_gate_no_progress",
+                "outcome": ""
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale no_progress_result");
+        assert!(out.contains("\"mode\":\"no_progress_result\""));
     }
 
     #[test]

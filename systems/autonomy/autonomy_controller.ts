@@ -2687,6 +2687,8 @@ function parseIsoTs(ts) {
 
 const POLICY_HOLD_RESULT_CACHE = new Map();
 const POLICY_HOLD_RESULT_CACHE_MAX = 256;
+const NO_PROGRESS_RESULT_CACHE = new Map();
+const NO_PROGRESS_RESULT_CACHE_MAX = 512;
 
 function isPolicyHoldResult(result): boolean {
   const r = String(result || '').trim();
@@ -3144,6 +3146,32 @@ function readRuns(dateStr) {
 
 function isNoProgressRun(evt) {
   if (!evt || evt.type !== 'autonomy_run') return false;
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const result = String(evt.result || '');
+    const outcome = String(evt.outcome || '');
+    const key = `${result}\u0000${outcome}`;
+    if (NO_PROGRESS_RESULT_CACHE.has(key)) {
+      return NO_PROGRESS_RESULT_CACHE.get(key) === true;
+    }
+    const rust = runBacklogAutoscalePrimitive(
+      'no_progress_result',
+      {
+        event_type: String(evt.type || ''),
+        result,
+        outcome
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const val = rust.payload.payload.is_no_progress === true;
+      if (NO_PROGRESS_RESULT_CACHE.size >= NO_PROGRESS_RESULT_CACHE_MAX) {
+        const oldest = NO_PROGRESS_RESULT_CACHE.keys().next();
+        if (!oldest.done) NO_PROGRESS_RESULT_CACHE.delete(oldest.value);
+      }
+      NO_PROGRESS_RESULT_CACHE.set(key, val);
+      return val;
+    }
+  }
   if (evt.result === 'executed') return evt.outcome !== 'shipped';
   return evt.result === 'init_gate_stub'
     || evt.result === 'init_gate_low_score'
@@ -16054,5 +16082,6 @@ module.exports = {
   routeExecutionPolicyHold,
   proposalSemanticFingerprint,
   semanticTokenSimilarity,
-  semanticNearDuplicateMatch
+  semanticNearDuplicateMatch,
+  isNoProgressRun
 };
