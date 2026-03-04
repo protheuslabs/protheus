@@ -12,6 +12,7 @@ use sysinfo::System;
 use walkdir::WalkDir;
 
 pub mod protheusctl;
+pub mod scale_readiness;
 
 #[derive(Debug, Clone)]
 pub struct ParsedArgs {
