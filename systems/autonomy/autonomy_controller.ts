@@ -2720,6 +2720,8 @@ const PROPOSAL_STATUS_FOR_QUEUE_PRESSURE_CACHE = new Map();
 const PROPOSAL_STATUS_FOR_QUEUE_PRESSURE_CACHE_MAX = 1024;
 const MINUTES_SINCE_TS_CACHE = new Map();
 const MINUTES_SINCE_TS_CACHE_MAX = 512;
+const DATE_WINDOW_CACHE = new Map();
+const DATE_WINDOW_CACHE_MAX = 256;
 const POLICY_HOLD_RESULT_CACHE = new Map();
 const POLICY_HOLD_RESULT_CACHE_MAX = 256;
 const NO_PROGRESS_RESULT_CACHE = new Map();
@@ -4602,6 +4604,34 @@ function evaluateDoD({ summary, execRes, beforeEvidence, afterEvidence, execWind
 }
 
 function dateWindow(endDateStr, days) {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const safeEndDateStr = String(endDateStr || '').trim();
+    const safeDays = Number(days);
+    const key = `${safeEndDateStr}\u0000${safeDays}`;
+    if (DATE_WINDOW_CACHE.has(key)) {
+      const cached = DATE_WINDOW_CACHE.get(key);
+      return Array.isArray(cached) ? cached.slice() : [];
+    }
+    const rust = runBacklogAutoscalePrimitive(
+      'date_window',
+      {
+        end_date_str: safeEndDateStr,
+        days: safeDays
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const dates = Array.isArray(rust.payload.payload.dates)
+        ? rust.payload.payload.dates.map((d) => String(d || '')).filter(Boolean)
+        : [];
+      if (DATE_WINDOW_CACHE.size >= DATE_WINDOW_CACHE_MAX) {
+        const oldest = DATE_WINDOW_CACHE.keys().next();
+        if (!oldest.done) DATE_WINDOW_CACHE.delete(oldest.value);
+      }
+      DATE_WINDOW_CACHE.set(key, dates.slice());
+      return dates;
+    }
+  }
   const out = [];
   const end = new Date(`${endDateStr}T00:00:00.000Z`);
   if (isNaN(end.getTime())) return out;
@@ -17111,6 +17141,7 @@ module.exports = {
   classifyNonYieldCategory,
   nonYieldReasonFromRun,
   minutesSinceTs,
+  dateWindow,
   runEventProposalType,
   runEventObjectiveId,
   runEventProposalId,

@@ -511,6 +511,20 @@ pub struct MinutesSinceTsOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct DateWindowInput {
+    #[serde(default)]
+    pub end_date_str: Option<String>,
+    #[serde(default)]
+    pub days: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct DateWindowOutput {
+    #[serde(default)]
+    pub dates: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct QosLaneUsageEventInput {
     #[serde(default)]
     pub event_type: Option<String>,
@@ -1058,6 +1072,8 @@ pub struct AutoscaleRequest {
     pub proposal_status_input: Option<ProposalStatusInput>,
     #[serde(default)]
     pub minutes_since_ts_input: Option<MinutesSinceTsInput>,
+    #[serde(default)]
+    pub date_window_input: Option<DateWindowInput>,
     #[serde(default)]
     pub no_progress_result_input: Option<NoProgressResultInput>,
     #[serde(default)]
@@ -2196,6 +2212,33 @@ pub fn compute_minutes_since_ts(input: &MinutesSinceTsInput) -> MinutesSinceTsOu
     MinutesSinceTsOutput {
         minutes_since: Some(minutes_since),
     }
+}
+
+pub fn compute_date_window(input: &DateWindowInput) -> DateWindowOutput {
+    let end_date_str = input
+        .end_date_str
+        .as_ref()
+        .map(|v| v.trim())
+        .filter(|v| !v.is_empty());
+    let Some(end_date_str) = end_date_str else {
+        return DateWindowOutput { dates: Vec::new() };
+    };
+    let end = NaiveDate::parse_from_str(end_date_str, "%Y-%m-%d").ok();
+    let Some(end) = end else {
+        return DateWindowOutput { dates: Vec::new() };
+    };
+    let days = input.days.filter(|v| v.is_finite()).unwrap_or(0.0);
+    if days <= 0.0 {
+        return DateWindowOutput { dates: Vec::new() };
+    }
+    let mut dates: Vec<String> = Vec::new();
+    let mut i = 0.0_f64;
+    while i < days {
+        let d = end - Duration::days(i as i64);
+        dates.push(d.format("%Y-%m-%d").to_string());
+        i += 1.0;
+    }
+    DateWindowOutput { dates }
 }
 
 pub fn compute_qos_lane_usage(input: &QosLaneUsageInput) -> QosLaneUsageOutput {
@@ -3580,6 +3623,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
         }))
         .map_err(|e| format!("autoscale_minutes_since_ts_encode_failed:{e}"));
     }
+    if mode == "date_window" {
+        let input = request
+            .date_window_input
+            .ok_or_else(|| "autoscale_missing_date_window_input".to_string())?;
+        let out = compute_date_window(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "date_window",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_date_window_encode_failed:{e}"));
+    }
     if mode == "no_progress_result" {
         let input = request
             .no_progress_result_input
@@ -4822,6 +4877,36 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale minutes_since_ts");
         assert!(out.contains("\"mode\":\"minutes_since_ts\""));
+    }
+
+    #[test]
+    fn date_window_builds_descending_iso_dates() {
+        let out = compute_date_window(&DateWindowInput {
+            end_date_str: Some("2026-03-03".to_string()),
+            days: Some(3.0),
+        });
+        assert_eq!(
+            out.dates,
+            vec![
+                "2026-03-03".to_string(),
+                "2026-03-02".to_string(),
+                "2026-03-01".to_string()
+            ]
+        );
+    }
+
+    #[test]
+    fn autoscale_json_date_window_path_works() {
+        let payload = serde_json::json!({
+            "mode": "date_window",
+            "date_window_input": {
+                "end_date_str": "2026-03-03",
+                "days": 2
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale date_window");
+        assert!(out.contains("\"mode\":\"date_window\""));
     }
 
     #[test]

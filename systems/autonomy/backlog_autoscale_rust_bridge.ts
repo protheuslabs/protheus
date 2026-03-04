@@ -127,6 +127,7 @@ function runBacklogAutoscalePrimitive(mode: string, data: AnyObj = {}, opts: Any
     proposal_status: 'proposal_status_input',
     proposal_status_for_queue_pressure: 'proposal_status_for_queue_pressure_input',
     minutes_since_ts: 'minutes_since_ts_input',
+    date_window: 'date_window_input',
     route_execution_policy_hold: 'route_execution_policy_hold_input',
     policy_hold_pressure: 'policy_hold_pressure_input',
     policy_hold_pattern: 'policy_hold_pattern_input',
