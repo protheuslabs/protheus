@@ -1,0 +1,48 @@
+#!/usr/bin/env node
+'use strict';
+
+const path = require('path');
+const assert = require('assert');
+
+const REPO_ROOT = path.resolve(__dirname, '..', '..', '..');
+const controllerPath = path.join(REPO_ROOT, 'systems', 'autonomy', 'autonomy_controller.js');
+const bridgePath = path.join(REPO_ROOT, 'systems', 'autonomy', 'backlog_autoscale_rust_bridge.js');
+
+function loadController(rustEnabled) {
+  process.env.AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED = rustEnabled ? '1' : '0';
+  delete require.cache[controllerPath];
+  delete require.cache[bridgePath];
+  return require(controllerPath);
+}
+
+function run() {
+  const beliefs = [
+    { score: 0.8, confidence: 0.95 },
+    { score: -0.3, confidence: 0.4 },
+    { score: 1.3, confidence: 0.7 },
+    { score: -2.0, confidence: -0.1 },
+    { score: 0, confidence: 0 }
+  ];
+
+  const tsController = loadController(false);
+  const rustController = loadController(true);
+
+  for (const belief of beliefs) {
+    const tsOut = tsController.tritShadowRankScoreFromBelief(belief);
+    const rustOut = rustController.tritShadowRankScoreFromBelief(belief);
+    assert.strictEqual(
+      rustOut,
+      tsOut,
+      `tritShadowRankScoreFromBelief parity mismatch for ${JSON.stringify(belief)}`
+    );
+  }
+
+  console.log('autonomy_trit_shadow_rank_score_rust_parity.test.js: OK');
+}
+
+try {
+  run();
+} catch (err) {
+  console.error(`autonomy_trit_shadow_rank_score_rust_parity.test.js: FAIL: ${err.message}`);
+  process.exit(1);
+}

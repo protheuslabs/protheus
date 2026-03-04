@@ -144,6 +144,7 @@ function runBacklogAutoscalePrimitive(mode: string, data: AnyObj = {}, opts: Any
     proposal_dedup_key: 'proposal_dedup_key_input',
     strategy_rank_score: 'strategy_rank_score_input',
     strategy_rank_adjusted: 'strategy_rank_adjusted_input',
+    trit_shadow_rank_score: 'trit_shadow_rank_score_input',
     value_signal_score: 'value_signal_score_input',
     composite_eligibility_score: 'composite_eligibility_score_input',
     time_to_value_score: 'time_to_value_score_input',

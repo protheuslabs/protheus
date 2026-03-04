@@ -786,6 +786,17 @@ pub struct StrategyRankAdjustedOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TritShadowRankScoreInput {
+    pub score: f64,
+    pub confidence: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TritShadowRankScoreOutput {
+    pub score: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct CompositeEligibilityScoreInput {
     pub quality_score: f64,
     pub directive_fit_score: f64,
@@ -1467,6 +1478,8 @@ pub struct AutoscaleRequest {
     pub strategy_rank_score_input: Option<StrategyRankScoreInput>,
     #[serde(default)]
     pub strategy_rank_adjusted_input: Option<StrategyRankAdjustedInput>,
+    #[serde(default)]
+    pub trit_shadow_rank_score_input: Option<TritShadowRankScoreInput>,
     #[serde(default)]
     pub value_signal_score_input: Option<ValueSignalScoreInput>,
     #[serde(default)]
@@ -2797,6 +2810,21 @@ pub fn compute_strategy_rank_adjusted(
             objective_allocation_score,
             total,
         },
+    }
+}
+
+pub fn compute_trit_shadow_rank_score(
+    input: &TritShadowRankScoreInput,
+) -> TritShadowRankScoreOutput {
+    let to_fixed3 = |value: f64| -> f64 {
+        format!("{value:.3}").parse::<f64>().unwrap_or(value)
+    };
+    let score = input.score.clamp(-1.0, 1.0);
+    let confidence = input.confidence.clamp(0.0, 1.0);
+    let normalized = ((score + 1.0) * 50.0) + (confidence * 10.0);
+    let clamped = normalized.clamp(0.0, 100.0);
+    TritShadowRankScoreOutput {
+        score: to_fixed3(clamped),
     }
 }
 
@@ -4775,6 +4803,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
         }))
         .map_err(|e| format!("autoscale_strategy_rank_adjusted_encode_failed:{e}"));
     }
+    if mode == "trit_shadow_rank_score" {
+        let input = request
+            .trit_shadow_rank_score_input
+            .ok_or_else(|| "autoscale_missing_trit_shadow_rank_score_input".to_string())?;
+        let out = compute_trit_shadow_rank_score(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "trit_shadow_rank_score",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_trit_shadow_rank_score_encode_failed:{e}"));
+    }
     if mode == "value_signal_score" {
         let input = request
             .value_signal_score_input
@@ -6623,6 +6663,30 @@ mod tests {
         let out = run_autoscale_json(&payload).expect("autoscale strategy_rank_adjusted");
         assert!(out.contains("\"mode\":\"strategy_rank_adjusted\""));
         assert!(out.contains("\"adjusted\":93.25"));
+    }
+
+    #[test]
+    fn trit_shadow_rank_score_normalizes_belief_with_confidence_bonus() {
+        let out = compute_trit_shadow_rank_score(&TritShadowRankScoreInput {
+            score: 0.35,
+            confidence: 0.6,
+        });
+        assert!((out.score - 73.5).abs() < 0.000001);
+    }
+
+    #[test]
+    fn autoscale_json_trit_shadow_rank_score_path_works() {
+        let payload = serde_json::json!({
+            "mode": "trit_shadow_rank_score",
+            "trit_shadow_rank_score_input": {
+                "score": 0.35,
+                "confidence": 0.6
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale trit_shadow_rank_score");
+        assert!(out.contains("\"mode\":\"trit_shadow_rank_score\""));
+        assert!(out.contains("\"score\":73.5"));
     }
 
     #[test]

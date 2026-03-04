@@ -2797,6 +2797,8 @@ const STRATEGY_RANK_SCORE_CACHE = new Map();
 const STRATEGY_RANK_SCORE_CACHE_MAX = 2048;
 const STRATEGY_RANK_ADJUSTED_CACHE = new Map();
 const STRATEGY_RANK_ADJUSTED_CACHE_MAX = 2048;
+const TRIT_SHADOW_RANK_SCORE_CACHE = new Map();
+const TRIT_SHADOW_RANK_SCORE_CACHE_MAX = 1024;
 const VALUE_SIGNAL_SCORE_CACHE = new Map();
 const VALUE_SIGNAL_SCORE_CACHE_MAX = 1024;
 const COMPOSITE_ELIGIBILITY_SCORE_CACHE = new Map();
@@ -8885,6 +8887,29 @@ function tritShadowRankScoreFromBelief(belief) {
   const src = belief && typeof belief === 'object' ? belief : {};
   const score = clampNumber(Number(src.score || 0), -1, 1);
   const confidence = clampNumber(Number(src.confidence || 0), 0, 1);
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const key = [score, confidence].join('\u0000');
+    if (TRIT_SHADOW_RANK_SCORE_CACHE.has(key)) {
+      return Number(TRIT_SHADOW_RANK_SCORE_CACHE.get(key));
+    }
+    const rust = runBacklogAutoscalePrimitive(
+      'trit_shadow_rank_score',
+      {
+        score,
+        confidence
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const out = Number(rust.payload.payload.score || 0);
+      if (TRIT_SHADOW_RANK_SCORE_CACHE.size >= TRIT_SHADOW_RANK_SCORE_CACHE_MAX) {
+        const oldest = TRIT_SHADOW_RANK_SCORE_CACHE.keys().next();
+        if (!oldest.done) TRIT_SHADOW_RANK_SCORE_CACHE.delete(oldest.value);
+      }
+      TRIT_SHADOW_RANK_SCORE_CACHE.set(key, out);
+      return out;
+    }
+  }
   const normalized = ((score + 1) * 50) + (confidence * 10);
   return Number(clampNumber(normalized, 0, 100).toFixed(3));
 }
@@ -17881,6 +17906,7 @@ module.exports = {
   expectedValueSignalForProposal,
   strategyRankForCandidate,
   strategyRankAdjustedForCandidate,
+  tritShadowRankScoreFromBelief,
   strategyTritShadowForCandidate,
   strategyTritShadowRankingSummary,
   candidateNonYieldPenaltySignal,
