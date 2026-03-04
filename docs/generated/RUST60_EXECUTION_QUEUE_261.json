@@ -1,0 +1,2622 @@
+{
+  "schema_id": "rust60_execution_queue",
+  "schema_version": "1.0",
+  "generated_at": "2026-03-04T07:44:21.923Z",
+  "source": "state/ops/rust_hotpath_inventory/ts_hotpaths_ranked_full.json",
+  "target_rust_percent": 60,
+  "current_rust_percent": 1.163,
+  "ts_lines_to_migrate_for_target": 225545,
+  "queue_size": 261,
+  "lanes": [
+    {
+      "lane_id": "R60-0001",
+      "rank": 1,
+      "path": "systems/autonomy/autonomy_controller.ts",
+      "loc": 17810,
+      "impact_score": 76583,
+      "cumulative_migrated_ts_lines": 17810,
+      "projected_rust_percent_after_lane": 5.809,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0002",
+      "rank": 2,
+      "path": "systems/autonomy/inversion_controller.ts",
+      "loc": 6229,
+      "impact_score": 26784.7,
+      "cumulative_migrated_ts_lines": 24039,
+      "projected_rust_percent_after_lane": 7.434,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0003",
+      "rank": 3,
+      "path": "systems/spine/spine.ts",
+      "loc": 6237,
+      "impact_score": 23700.6,
+      "cumulative_migrated_ts_lines": 30276,
+      "projected_rust_percent_after_lane": 9.061,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0004",
+      "rank": 4,
+      "path": "systems/routing/model_router.ts",
+      "loc": 4421,
+      "impact_score": 15915.6,
+      "cumulative_migrated_ts_lines": 34697,
+      "projected_rust_percent_after_lane": 10.214,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0005",
+      "rank": 5,
+      "path": "systems/workflow/workflow_executor.ts",
+      "loc": 4847,
+      "impact_score": 15510.4,
+      "cumulative_migrated_ts_lines": 39544,
+      "projected_rust_percent_after_lane": 11.479,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0006",
+      "rank": 6,
+      "path": "systems/autonomy/proposal_enricher.ts",
+      "loc": 2912,
+      "impact_score": 8736,
+      "cumulative_migrated_ts_lines": 42456,
+      "projected_rust_percent_after_lane": 12.238,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0007",
+      "rank": 7,
+      "path": "systems/personas/cli.ts",
+      "loc": 3926,
+      "impact_score": 8244.6,
+      "cumulative_migrated_ts_lines": 46382,
+      "projected_rust_percent_after_lane": 13.263,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0008",
+      "rank": 8,
+      "path": "systems/autonomy/health_status.ts",
+      "loc": 2570,
+      "impact_score": 7196,
+      "cumulative_migrated_ts_lines": 48952,
+      "projected_rust_percent_after_lane": 13.933,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0009",
+      "rank": 9,
+      "path": "systems/ops/autotest_doctor.ts",
+      "loc": 2729,
+      "impact_score": 6003.8,
+      "cumulative_migrated_ts_lines": 51681,
+      "projected_rust_percent_after_lane": 14.645,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0010",
+      "rank": 10,
+      "path": "systems/ops/foundation_contract_gate.ts",
+      "loc": 2369,
+      "impact_score": 5685.6,
+      "cumulative_migrated_ts_lines": 54050,
+      "projected_rust_percent_after_lane": 15.263,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0011",
+      "rank": 11,
+      "path": "systems/memory/idle_dream_cycle.ts",
+      "loc": 2290,
+      "impact_score": 5267,
+      "cumulative_migrated_ts_lines": 56340,
+      "projected_rust_percent_after_lane": 15.86,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0012",
+      "rank": 12,
+      "path": "systems/ops/autotest_controller.ts",
+      "loc": 2103,
+      "impact_score": 5257.5,
+      "cumulative_migrated_ts_lines": 58443,
+      "projected_rust_percent_after_lane": 16.409,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0013",
+      "rank": 13,
+      "path": "systems/personas/orchestration.ts",
+      "loc": 2325,
+      "impact_score": 4882.5,
+      "cumulative_migrated_ts_lines": 60768,
+      "projected_rust_percent_after_lane": 17.015,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0014",
+      "rank": 14,
+      "path": "systems/spine/contract_check.ts",
+      "loc": 1684,
+      "impact_score": 4715.2,
+      "cumulative_migrated_ts_lines": 62452,
+      "projected_rust_percent_after_lane": 17.455,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0015",
+      "rank": 15,
+      "path": "systems/execution/task_decomposition_primitive.ts",
+      "loc": 1735,
+      "impact_score": 4684.5,
+      "cumulative_migrated_ts_lines": 64187,
+      "projected_rust_percent_after_lane": 17.907,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0016",
+      "rank": 16,
+      "path": "systems/autonomy/strategy_mode_governor.ts",
+      "loc": 1403,
+      "impact_score": 4209,
+      "cumulative_migrated_ts_lines": 65590,
+      "projected_rust_percent_after_lane": 18.273,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0017",
+      "rank": 17,
+      "path": "systems/assimilation/assimilation_controller.ts",
+      "loc": 1801,
+      "impact_score": 4142.3,
+      "cumulative_migrated_ts_lines": 67391,
+      "projected_rust_percent_after_lane": 18.743,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0018",
+      "rank": 18,
+      "path": "systems/sensory/focus_controller.ts",
+      "loc": 1782,
+      "impact_score": 4098.6,
+      "cumulative_migrated_ts_lines": 69173,
+      "projected_rust_percent_after_lane": 19.208,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0019",
+      "rank": 19,
+      "path": "systems/autonomy/outcome_fitness_loop.ts",
+      "loc": 1262,
+      "impact_score": 3786,
+      "cumulative_migrated_ts_lines": 70435,
+      "projected_rust_percent_after_lane": 19.537,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0020",
+      "rank": 20,
+      "path": "systems/continuum/continuum_core.ts",
+      "loc": 1792,
+      "impact_score": 3763.2,
+      "cumulative_migrated_ts_lines": 72227,
+      "projected_rust_percent_after_lane": 20.005,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0021",
+      "rank": 21,
+      "path": "systems/weaver/weaver_core.ts",
+      "loc": 1735,
+      "impact_score": 3643.5,
+      "cumulative_migrated_ts_lines": 73962,
+      "projected_rust_percent_after_lane": 20.457,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0022",
+      "rank": 22,
+      "path": "systems/autonomy/improvement_controller.ts",
+      "loc": 1068,
+      "impact_score": 3524.4,
+      "cumulative_migrated_ts_lines": 75030,
+      "projected_rust_percent_after_lane": 20.736,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0023",
+      "rank": 23,
+      "path": "systems/ops/execution_yield_recovery.ts",
+      "loc": 1438,
+      "impact_score": 3451.2,
+      "cumulative_migrated_ts_lines": 76468,
+      "projected_rust_percent_after_lane": 21.111,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0024",
+      "rank": 24,
+      "path": "systems/autonomy/red_team_harness.ts",
+      "loc": 1227,
+      "impact_score": 3435.6,
+      "cumulative_migrated_ts_lines": 77695,
+      "projected_rust_percent_after_lane": 21.431,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0025",
+      "rank": 25,
+      "path": "systems/ops/state_kernel.ts",
+      "loc": 1390,
+      "impact_score": 3336,
+      "cumulative_migrated_ts_lines": 79085,
+      "projected_rust_percent_after_lane": 21.794,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0026",
+      "rank": 26,
+      "path": "systems/memory/rust_memory_transition_lane.ts",
+      "loc": 1422,
+      "impact_score": 3270.6,
+      "cumulative_migrated_ts_lines": 80507,
+      "projected_rust_percent_after_lane": 22.165,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0027",
+      "rank": 27,
+      "path": "systems/autonomy/mirror_organ.ts",
+      "loc": 1059,
+      "impact_score": 3177,
+      "cumulative_migrated_ts_lines": 81566,
+      "projected_rust_percent_after_lane": 22.441,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0028",
+      "rank": 28,
+      "path": "systems/autonomy/runtime_stability_soak.ts",
+      "loc": 1057,
+      "impact_score": 3171,
+      "cumulative_migrated_ts_lines": 82623,
+      "projected_rust_percent_after_lane": 22.717,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0029",
+      "rank": 29,
+      "path": "systems/ops/protheus_control_plane.ts",
+      "loc": 1256,
+      "impact_score": 3014.4,
+      "cumulative_migrated_ts_lines": 83879,
+      "projected_rust_percent_after_lane": 23.044,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0030",
+      "rank": 30,
+      "path": "systems/security/venom_containment_layer.ts",
+      "loc": 1198,
+      "impact_score": 2995,
+      "cumulative_migrated_ts_lines": 85077,
+      "projected_rust_percent_after_lane": 23.357,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0031",
+      "rank": 31,
+      "path": "systems/autonomy/autonomy_simulation_harness.ts",
+      "loc": 1068,
+      "impact_score": 2990.4,
+      "cumulative_migrated_ts_lines": 86145,
+      "projected_rust_percent_after_lane": 23.635,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0032",
+      "rank": 32,
+      "path": "systems/workflow/orchestron/candidate_generator.ts",
+      "loc": 1354,
+      "impact_score": 2978.8,
+      "cumulative_migrated_ts_lines": 87499,
+      "projected_rust_percent_after_lane": 23.989,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0033",
+      "rank": 33,
+      "path": "systems/autonomy/gated_self_improvement_loop.ts",
+      "loc": 975,
+      "impact_score": 2925,
+      "cumulative_migrated_ts_lines": 88474,
+      "projected_rust_percent_after_lane": 24.243,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0034",
+      "rank": 34,
+      "path": "systems/ops/rust50_migration_program.ts",
+      "loc": 1215,
+      "impact_score": 2916,
+      "cumulative_migrated_ts_lines": 89689,
+      "projected_rust_percent_after_lane": 24.56,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0035",
+      "rank": 35,
+      "path": "systems/workflow/orchestron/adaptive_controller.ts",
+      "loc": 1109,
+      "impact_score": 2772.5,
+      "cumulative_migrated_ts_lines": 90798,
+      "projected_rust_percent_after_lane": 24.849,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0036",
+      "rank": 36,
+      "path": "systems/autonomy/pain_signal.ts",
+      "loc": 914,
+      "impact_score": 2742,
+      "cumulative_migrated_ts_lines": 91712,
+      "projected_rust_percent_after_lane": 25.088,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0037",
+      "rank": 37,
+      "path": "systems/workflow/workflow_controller.ts",
+      "loc": 1061,
+      "impact_score": 2652.5,
+      "cumulative_migrated_ts_lines": 92773,
+      "projected_rust_percent_after_lane": 25.364,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0038",
+      "rank": 38,
+      "path": "systems/ops/dynamic_burn_budget_oracle.ts",
+      "loc": 1105,
+      "impact_score": 2652,
+      "cumulative_migrated_ts_lines": 93878,
+      "projected_rust_percent_after_lane": 25.653,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0039",
+      "rank": 39,
+      "path": "systems/workflow/universal_outreach_primitive.ts",
+      "loc": 1200,
+      "impact_score": 2640,
+      "cumulative_migrated_ts_lines": 95078,
+      "projected_rust_percent_after_lane": 25.966,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0040",
+      "rank": 40,
+      "path": "systems/ops/organ_atrophy_controller.ts",
+      "loc": 969,
+      "impact_score": 2616.3,
+      "cumulative_migrated_ts_lines": 96047,
+      "projected_rust_percent_after_lane": 26.219,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0041",
+      "rank": 41,
+      "path": "systems/autonomy/drift_target_governor.ts",
+      "loc": 859,
+      "impact_score": 2577,
+      "cumulative_migrated_ts_lines": 96906,
+      "projected_rust_percent_after_lane": 26.443,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0042",
+      "rank": 42,
+      "path": "systems/actuation/universal_execution_primitive.ts",
+      "loc": 1296,
+      "impact_score": 2462.4,
+      "cumulative_migrated_ts_lines": 98202,
+      "projected_rust_percent_after_lane": 26.781,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0043",
+      "rank": 43,
+      "path": "systems/routing/route_execute.ts",
+      "loc": 945,
+      "impact_score": 2457,
+      "cumulative_migrated_ts_lines": 99147,
+      "projected_rust_percent_after_lane": 27.027,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0044",
+      "rank": 44,
+      "path": "systems/ops/rust_enterprise_productivity_program.ts",
+      "loc": 1022,
+      "impact_score": 2452.8,
+      "cumulative_migrated_ts_lines": 100169,
+      "projected_rust_percent_after_lane": 27.294,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0045",
+      "rank": 45,
+      "path": "systems/security/directive_hierarchy_controller.ts",
+      "loc": 874,
+      "impact_score": 2447.2,
+      "cumulative_migrated_ts_lines": 101043,
+      "projected_rust_percent_after_lane": 27.522,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0046",
+      "rank": 46,
+      "path": "systems/ops/backlog_registry.ts",
+      "loc": 1016,
+      "impact_score": 2438.4,
+      "cumulative_migrated_ts_lines": 102059,
+      "projected_rust_percent_after_lane": 27.787,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0047",
+      "rank": 47,
+      "path": "systems/ops/backlog_github_sync.ts",
+      "loc": 999,
+      "impact_score": 2397.6,
+      "cumulative_migrated_ts_lines": 103058,
+      "projected_rust_percent_after_lane": 28.047,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0048",
+      "rank": 48,
+      "path": "systems/security/agent_passport.ts",
+      "loc": 950,
+      "impact_score": 2375,
+      "cumulative_migrated_ts_lines": 104008,
+      "projected_rust_percent_after_lane": 28.295,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0049",
+      "rank": 49,
+      "path": "systems/autonomy/adaptive_crystallizer.ts",
+      "loc": 791,
+      "impact_score": 2373,
+      "cumulative_migrated_ts_lines": 104799,
+      "projected_rust_percent_after_lane": 28.502,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0050",
+      "rank": 50,
+      "path": "systems/autonomy/model_catalog_loop.ts",
+      "loc": 783,
+      "impact_score": 2349,
+      "cumulative_migrated_ts_lines": 105582,
+      "projected_rust_percent_after_lane": 28.706,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0051",
+      "rank": 51,
+      "path": "systems/routing/llm_gateway.ts",
+      "loc": 893,
+      "impact_score": 2321.8,
+      "cumulative_migrated_ts_lines": 106475,
+      "projected_rust_percent_after_lane": 28.939,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0052",
+      "rank": 52,
+      "path": "systems/autonomy/self_improvement_cadence_orchestrator.ts",
+      "loc": 767,
+      "impact_score": 2301,
+      "cumulative_migrated_ts_lines": 107242,
+      "projected_rust_percent_after_lane": 29.139,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0053",
+      "rank": 53,
+      "path": "systems/autonomy/improvement_orchestrator.ts",
+      "loc": 766,
+      "impact_score": 2298,
+      "cumulative_migrated_ts_lines": 108008,
+      "projected_rust_percent_after_lane": 29.339,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0054",
+      "rank": 54,
+      "path": "systems/security/guard.ts",
+      "loc": 896,
+      "impact_score": 2240,
+      "cumulative_migrated_ts_lines": 108904,
+      "projected_rust_percent_after_lane": 29.572,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0055",
+      "rank": 55,
+      "path": "systems/autonomy/receipt_summary.ts",
+      "loc": 721,
+      "impact_score": 2163,
+      "cumulative_migrated_ts_lines": 109625,
+      "projected_rust_percent_after_lane": 29.761,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0056",
+      "rank": 56,
+      "path": "systems/ops/llm_economy_organ.ts",
+      "loc": 885,
+      "impact_score": 2124,
+      "cumulative_migrated_ts_lines": 110510,
+      "projected_rust_percent_after_lane": 29.991,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0057",
+      "rank": 57,
+      "path": "systems/security/remote_emergency_halt.ts",
+      "loc": 849,
+      "impact_score": 2122.5,
+      "cumulative_migrated_ts_lines": 111359,
+      "projected_rust_percent_after_lane": 30.213,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0058",
+      "rank": 58,
+      "path": "systems/autonomy/pain_adaptive_router.ts",
+      "loc": 702,
+      "impact_score": 2106,
+      "cumulative_migrated_ts_lines": 112061,
+      "projected_rust_percent_after_lane": 30.396,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0059",
+      "rank": 59,
+      "path": "systems/autonomy/hold_remediation_engine.ts",
+      "loc": 632,
+      "impact_score": 2085.6,
+      "cumulative_migrated_ts_lines": 112693,
+      "projected_rust_percent_after_lane": 30.561,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0060",
+      "rank": 60,
+      "path": "systems/autonomy/collective_shadow.ts",
+      "loc": 687,
+      "impact_score": 2061,
+      "cumulative_migrated_ts_lines": 113380,
+      "projected_rust_percent_after_lane": 30.74,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0061",
+      "rank": 61,
+      "path": "systems/autonomy/tier1_governance.ts",
+      "loc": 670,
+      "impact_score": 2010,
+      "cumulative_migrated_ts_lines": 114050,
+      "projected_rust_percent_after_lane": 30.915,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0062",
+      "rank": 62,
+      "path": "systems/workflow/learning_conduit.ts",
+      "loc": 913,
+      "impact_score": 2008.6,
+      "cumulative_migrated_ts_lines": 114963,
+      "projected_rust_percent_after_lane": 31.153,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0063",
+      "rank": 63,
+      "path": "systems/security/anti_sabotage_shield.ts",
+      "loc": 802,
+      "impact_score": 2005,
+      "cumulative_migrated_ts_lines": 115765,
+      "projected_rust_percent_after_lane": 31.362,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0064",
+      "rank": 64,
+      "path": "systems/security/alias_verification_vault.ts",
+      "loc": 792,
+      "impact_score": 1980,
+      "cumulative_migrated_ts_lines": 116557,
+      "projected_rust_percent_after_lane": 31.569,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0065",
+      "rank": 65,
+      "path": "systems/ops/offsite_backup.ts",
+      "loc": 820,
+      "impact_score": 1968,
+      "cumulative_migrated_ts_lines": 117377,
+      "projected_rust_percent_after_lane": 31.783,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0066",
+      "rank": 66,
+      "path": "systems/routing/route_task.ts",
+      "loc": 756,
+      "impact_score": 1965.6,
+      "cumulative_migrated_ts_lines": 118133,
+      "projected_rust_percent_after_lane": 31.98,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0067",
+      "rank": 67,
+      "path": "systems/workflow/data_rights_engine.ts",
+      "loc": 773,
+      "impact_score": 1932.5,
+      "cumulative_migrated_ts_lines": 118906,
+      "projected_rust_percent_after_lane": 32.182,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0068",
+      "rank": 68,
+      "path": "systems/autonomy/lever_experiment_gate.ts",
+      "loc": 642,
+      "impact_score": 1926,
+      "cumulative_migrated_ts_lines": 119548,
+      "projected_rust_percent_after_lane": 32.349,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0069",
+      "rank": 69,
+      "path": "systems/security/soul_token_guard.ts",
+      "loc": 763,
+      "impact_score": 1907.5,
+      "cumulative_migrated_ts_lines": 120311,
+      "projected_rust_percent_after_lane": 32.548,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0070",
+      "rank": 70,
+      "path": "systems/autonomy/autonomy_rollout_controller.ts",
+      "loc": 573,
+      "impact_score": 1890.9,
+      "cumulative_migrated_ts_lines": 120884,
+      "projected_rust_percent_after_lane": 32.698,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0071",
+      "rank": 71,
+      "path": "systems/autonomy/self_documentation_closeout.ts",
+      "loc": 621,
+      "impact_score": 1863,
+      "cumulative_migrated_ts_lines": 121505,
+      "projected_rust_percent_after_lane": 32.86,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0072",
+      "rank": 72,
+      "path": "systems/security/delegated_authority_branching.ts",
+      "loc": 740,
+      "impact_score": 1850,
+      "cumulative_migrated_ts_lines": 122245,
+      "projected_rust_percent_after_lane": 33.053,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0073",
+      "rank": 73,
+      "path": "systems/ops/settlement_program.ts",
+      "loc": 770,
+      "impact_score": 1848,
+      "cumulative_migrated_ts_lines": 123015,
+      "projected_rust_percent_after_lane": 33.254,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0074",
+      "rank": 74,
+      "path": "systems/routing/router_budget_calibration.ts",
+      "loc": 708,
+      "impact_score": 1840.8,
+      "cumulative_migrated_ts_lines": 123723,
+      "projected_rust_percent_after_lane": 33.438,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0075",
+      "rank": 75,
+      "path": "systems/sensory/cross_signal_engine.ts",
+      "loc": 789,
+      "impact_score": 1814.7,
+      "cumulative_migrated_ts_lines": 124512,
+      "projected_rust_percent_after_lane": 33.644,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0076",
+      "rank": 76,
+      "path": "systems/memory/creative_links.ts",
+      "loc": 788,
+      "impact_score": 1812.4,
+      "cumulative_migrated_ts_lines": 125300,
+      "projected_rust_percent_after_lane": 33.85,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0077",
+      "rank": 77,
+      "path": "systems/ops/narrow_agent_parity_harness.ts",
+      "loc": 813,
+      "impact_score": 1788.6,
+      "cumulative_migrated_ts_lines": 126113,
+      "projected_rust_percent_after_lane": 34.062,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0078",
+      "rank": 78,
+      "path": "systems/memory/cryonics_tier.ts",
+      "loc": 773,
+      "impact_score": 1777.9,
+      "cumulative_migrated_ts_lines": 126886,
+      "projected_rust_percent_after_lane": 34.263,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0079",
+      "rank": 79,
+      "path": "systems/strategy/strategy_controller.ts",
+      "loc": 1103,
+      "impact_score": 1764.8,
+      "cumulative_migrated_ts_lines": 127989,
+      "projected_rust_percent_after_lane": 34.551,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0080",
+      "rank": 80,
+      "path": "systems/security/secure_heartbeat_endpoint.ts",
+      "loc": 697,
+      "impact_score": 1742.5,
+      "cumulative_migrated_ts_lines": 128686,
+      "projected_rust_percent_after_lane": 34.733,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0081",
+      "rank": 81,
+      "path": "systems/autonomy/multi_agent_debate_orchestrator.ts",
+      "loc": 572,
+      "impact_score": 1716,
+      "cumulative_migrated_ts_lines": 129258,
+      "projected_rust_percent_after_lane": 34.882,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0082",
+      "rank": 82,
+      "path": "systems/autonomy/background_persistent_agent_runtime.ts",
+      "loc": 571,
+      "impact_score": 1713,
+      "cumulative_migrated_ts_lines": 129829,
+      "projected_rust_percent_after_lane": 35.031,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0083",
+      "rank": 83,
+      "path": "systems/tools/assimilate.ts",
+      "loc": 951,
+      "impact_score": 1711.8,
+      "cumulative_migrated_ts_lines": 130780,
+      "projected_rust_percent_after_lane": 35.279,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0084",
+      "rank": 84,
+      "path": "systems/routing/provider_readiness.ts",
+      "loc": 658,
+      "impact_score": 1710.8,
+      "cumulative_migrated_ts_lines": 131438,
+      "projected_rust_percent_after_lane": 35.451,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0085",
+      "rank": 85,
+      "path": "systems/autonomy/strategy_mode.ts",
+      "loc": 568,
+      "impact_score": 1704,
+      "cumulative_migrated_ts_lines": 132006,
+      "projected_rust_percent_after_lane": 35.599,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0086",
+      "rank": 86,
+      "path": "systems/tools/cli_suggestion_engine.ts",
+      "loc": 804,
+      "impact_score": 1688.4,
+      "cumulative_migrated_ts_lines": 132810,
+      "projected_rust_percent_after_lane": 35.809,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0087",
+      "rank": 87,
+      "path": "systems/autonomy/self_code_evolution_sandbox.ts",
+      "loc": 554,
+      "impact_score": 1662,
+      "cumulative_migrated_ts_lines": 133364,
+      "projected_rust_percent_after_lane": 35.953,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0088",
+      "rank": 88,
+      "path": "systems/security/organ_state_encryption_plane.ts",
+      "loc": 664,
+      "impact_score": 1660,
+      "cumulative_migrated_ts_lines": 134028,
+      "projected_rust_percent_after_lane": 36.126,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0089",
+      "rank": 89,
+      "path": "systems/autonomy/proactive_t1_initiative_engine.ts",
+      "loc": 503,
+      "impact_score": 1659.9,
+      "cumulative_migrated_ts_lines": 134531,
+      "projected_rust_percent_after_lane": 36.258,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0090",
+      "rank": 90,
+      "path": "systems/nursery/specialist_training.ts",
+      "loc": 1654,
+      "impact_score": 1654,
+      "cumulative_migrated_ts_lines": 136185,
+      "projected_rust_percent_after_lane": 36.689,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0091",
+      "rank": 91,
+      "path": "systems/actuation/disposable_infrastructure_organ.ts",
+      "loc": 861,
+      "impact_score": 1635.9,
+      "cumulative_migrated_ts_lines": 137046,
+      "projected_rust_percent_after_lane": 36.914,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0092",
+      "rank": 92,
+      "path": "systems/memory/memory_federation_plane.ts",
+      "loc": 707,
+      "impact_score": 1626.1,
+      "cumulative_migrated_ts_lines": 137753,
+      "projected_rust_percent_after_lane": 37.098,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0093",
+      "rank": 93,
+      "path": "systems/ops/productized_suite_program.ts",
+      "loc": 664,
+      "impact_score": 1593.6,
+      "cumulative_migrated_ts_lines": 138417,
+      "projected_rust_percent_after_lane": 37.271,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0094",
+      "rank": 94,
+      "path": "systems/autonomy/trit_shadow_report.ts",
+      "loc": 568,
+      "impact_score": 1590.4,
+      "cumulative_migrated_ts_lines": 138985,
+      "projected_rust_percent_after_lane": 37.42,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0095",
+      "rank": 95,
+      "path": "systems/security/dream_warden_guard.ts",
+      "loc": 628,
+      "impact_score": 1570,
+      "cumulative_migrated_ts_lines": 139613,
+      "projected_rust_percent_after_lane": 37.583,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0096",
+      "rank": 96,
+      "path": "systems/autonomy/ethical_reasoning_organ.ts",
+      "loc": 516,
+      "impact_score": 1548,
+      "cumulative_migrated_ts_lines": 140129,
+      "projected_rust_percent_after_lane": 37.718,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0097",
+      "rank": 97,
+      "path": "systems/ops/rust_hybrid_migration_program.ts",
+      "loc": 644,
+      "impact_score": 1545.6,
+      "cumulative_migrated_ts_lines": 140773,
+      "projected_rust_percent_after_lane": 37.886,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0098",
+      "rank": 98,
+      "path": "systems/security/skin_protection_layer.ts",
+      "loc": 618,
+      "impact_score": 1545,
+      "cumulative_migrated_ts_lines": 141391,
+      "projected_rust_percent_after_lane": 38.047,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0099",
+      "rank": 99,
+      "path": "systems/fractal/regime_organ.ts",
+      "loc": 905,
+      "impact_score": 1538.5,
+      "cumulative_migrated_ts_lines": 142296,
+      "projected_rust_percent_after_lane": 38.283,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0100",
+      "rank": 100,
+      "path": "systems/tools/research.ts",
+      "loc": 838,
+      "impact_score": 1508.4,
+      "cumulative_migrated_ts_lines": 143134,
+      "projected_rust_percent_after_lane": 38.502,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0101",
+      "rank": 101,
+      "path": "systems/memory/failure_memory_bridge.ts",
+      "loc": 652,
+      "impact_score": 1499.6,
+      "cumulative_migrated_ts_lines": 143786,
+      "projected_rust_percent_after_lane": 38.672,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0102",
+      "rank": 102,
+      "path": "systems/autonomy/objective_runtime_governor.ts",
+      "loc": 493,
+      "impact_score": 1479,
+      "cumulative_migrated_ts_lines": 144279,
+      "projected_rust_percent_after_lane": 38.801,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0103",
+      "rank": 103,
+      "path": "systems/autonomy/canary_scheduler.ts",
+      "loc": 491,
+      "impact_score": 1473,
+      "cumulative_migrated_ts_lines": 144770,
+      "projected_rust_percent_after_lane": 38.929,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0104",
+      "rank": 104,
+      "path": "systems/security/constitution_guardian.ts",
+      "loc": 589,
+      "impact_score": 1472.5,
+      "cumulative_migrated_ts_lines": 145359,
+      "projected_rust_percent_after_lane": 39.082,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0105",
+      "rank": 105,
+      "path": "systems/ops/rust_control_plane_cutover.ts",
+      "loc": 609,
+      "impact_score": 1461.6,
+      "cumulative_migrated_ts_lines": 145968,
+      "projected_rust_percent_after_lane": 39.241,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0106",
+      "rank": 106,
+      "path": "systems/assimilation/group_evolving_agents_primitive.ts",
+      "loc": 730,
+      "impact_score": 1460,
+      "cumulative_migrated_ts_lines": 146698,
+      "projected_rust_percent_after_lane": 39.432,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0107",
+      "rank": 107,
+      "path": "systems/memory/causal_temporal_graph.ts",
+      "loc": 633,
+      "impact_score": 1455.9,
+      "cumulative_migrated_ts_lines": 147331,
+      "projected_rust_percent_after_lane": 39.597,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0108",
+      "rank": 108,
+      "path": "lib/secret_broker.ts",
+      "loc": 1211,
+      "impact_score": 1453.2,
+      "cumulative_migrated_ts_lines": 148542,
+      "projected_rust_percent_after_lane": 39.913,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0109",
+      "rank": 109,
+      "path": "systems/security/remote_tamper_heartbeat.ts",
+      "loc": 581,
+      "impact_score": 1452.5,
+      "cumulative_migrated_ts_lines": 149123,
+      "projected_rust_percent_after_lane": 40.064,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0110",
+      "rank": 110,
+      "path": "systems/ops/backlog_implementation_review.ts",
+      "loc": 602,
+      "impact_score": 1444.8,
+      "cumulative_migrated_ts_lines": 149725,
+      "projected_rust_percent_after_lane": 40.221,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0111",
+      "rank": 111,
+      "path": "systems/autonomy/batch_lane.ts",
+      "loc": 480,
+      "impact_score": 1440,
+      "cumulative_migrated_ts_lines": 150205,
+      "projected_rust_percent_after_lane": 40.346,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0112",
+      "rank": 112,
+      "path": "systems/ops/cleanup_orchestrator.ts",
+      "loc": 598,
+      "impact_score": 1435.2,
+      "cumulative_migrated_ts_lines": 150803,
+      "projected_rust_percent_after_lane": 40.502,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0113",
+      "rank": 113,
+      "path": "systems/ops/top50_roi_sweep.ts",
+      "loc": 593,
+      "impact_score": 1423.2,
+      "cumulative_migrated_ts_lines": 151396,
+      "projected_rust_percent_after_lane": 40.657,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0114",
+      "rank": 114,
+      "path": "systems/security/supply_chain_trust_plane.ts",
+      "loc": 564,
+      "impact_score": 1410,
+      "cumulative_migrated_ts_lines": 151960,
+      "projected_rust_percent_after_lane": 40.804,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0115",
+      "rank": 115,
+      "path": "systems/memory/offdevice_memory_replication.ts",
+      "loc": 609,
+      "impact_score": 1400.7,
+      "cumulative_migrated_ts_lines": 152569,
+      "projected_rust_percent_after_lane": 40.963,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0116",
+      "rank": 116,
+      "path": "systems/spawn/spawn_broker.ts",
+      "loc": 996,
+      "impact_score": 1394.4,
+      "cumulative_migrated_ts_lines": 153565,
+      "projected_rust_percent_after_lane": 41.223,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0117",
+      "rank": 117,
+      "path": "systems/ops/workflow_execution_closure.ts",
+      "loc": 579,
+      "impact_score": 1389.6,
+      "cumulative_migrated_ts_lines": 154144,
+      "projected_rust_percent_after_lane": 41.374,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0118",
+      "rank": 118,
+      "path": "systems/security/secret_rotation_migration_auditor.ts",
+      "loc": 555,
+      "impact_score": 1387.5,
+      "cumulative_migrated_ts_lines": 154699,
+      "projected_rust_percent_after_lane": 41.519,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0119",
+      "rank": 119,
+      "path": "systems/ops/trace_habit_autogenesis.ts",
+      "loc": 573,
+      "impact_score": 1375.2,
+      "cumulative_migrated_ts_lines": 155272,
+      "projected_rust_percent_after_lane": 41.668,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0120",
+      "rank": 120,
+      "path": "systems/autonomy/skill_generation_pipeline.ts",
+      "loc": 454,
+      "impact_score": 1362,
+      "cumulative_migrated_ts_lines": 155726,
+      "projected_rust_percent_after_lane": 41.787,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0121",
+      "rank": 121,
+      "path": "systems/ops/compliance_reports.ts",
+      "loc": 616,
+      "impact_score": 1355.2,
+      "cumulative_migrated_ts_lines": 156342,
+      "projected_rust_percent_after_lane": 41.947,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0122",
+      "rank": 122,
+      "path": "systems/workflow/payment_skills_bridge.ts",
+      "loc": 615,
+      "impact_score": 1353,
+      "cumulative_migrated_ts_lines": 156957,
+      "projected_rust_percent_after_lane": 42.108,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0123",
+      "rank": 123,
+      "path": "systems/memory/memory_dream.ts",
+      "loc": 581,
+      "impact_score": 1336.3,
+      "cumulative_migrated_ts_lines": 157538,
+      "projected_rust_percent_after_lane": 42.259,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0124",
+      "rank": 124,
+      "path": "systems/ops/execution_reliability_slo.ts",
+      "loc": 547,
+      "impact_score": 1312.8,
+      "cumulative_migrated_ts_lines": 158085,
+      "projected_rust_percent_after_lane": 42.402,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0125",
+      "rank": 125,
+      "path": "systems/routing/provider_onboarding_manifest.ts",
+      "loc": 502,
+      "impact_score": 1305.2,
+      "cumulative_migrated_ts_lines": 158587,
+      "projected_rust_percent_after_lane": 42.533,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0126",
+      "rank": 126,
+      "path": "systems/security/capability_switchboard.ts",
+      "loc": 522,
+      "impact_score": 1305,
+      "cumulative_migrated_ts_lines": 159109,
+      "projected_rust_percent_after_lane": 42.669,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0127",
+      "rank": 127,
+      "path": "systems/fractal/organism_cycle.ts",
+      "loc": 750,
+      "impact_score": 1275,
+      "cumulative_migrated_ts_lines": 159859,
+      "projected_rust_percent_after_lane": 42.865,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0128",
+      "rank": 128,
+      "path": "systems/autonomy/zero_permission_conversational_layer.ts",
+      "loc": 425,
+      "impact_score": 1275,
+      "cumulative_migrated_ts_lines": 160284,
+      "projected_rust_percent_after_lane": 42.976,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0129",
+      "rank": 129,
+      "path": "systems/autonomy/ops_dashboard.ts",
+      "loc": 424,
+      "impact_score": 1272,
+      "cumulative_migrated_ts_lines": 160708,
+      "projected_rust_percent_after_lane": 43.086,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0130",
+      "rank": 130,
+      "path": "systems/security/key_lifecycle_governor.ts",
+      "loc": 508,
+      "impact_score": 1270,
+      "cumulative_migrated_ts_lines": 161216,
+      "projected_rust_percent_after_lane": 43.219,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0131",
+      "rank": 131,
+      "path": "systems/ops/predictive_capacity_forecast.ts",
+      "loc": 529,
+      "impact_score": 1269.6,
+      "cumulative_migrated_ts_lines": 161745,
+      "projected_rust_percent_after_lane": 43.357,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0132",
+      "rank": 132,
+      "path": "systems/security/black_box_ledger.ts",
+      "loc": 505,
+      "impact_score": 1262.5,
+      "cumulative_migrated_ts_lines": 162250,
+      "projected_rust_percent_after_lane": 43.489,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0133",
+      "rank": 133,
+      "path": "systems/security/post_quantum_migration_lane.ts",
+      "loc": 505,
+      "impact_score": 1262.5,
+      "cumulative_migrated_ts_lines": 162755,
+      "projected_rust_percent_after_lane": 43.62,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0134",
+      "rank": 134,
+      "path": "systems/ops/soc2_type2_track.ts",
+      "loc": 525,
+      "impact_score": 1260,
+      "cumulative_migrated_ts_lines": 163280,
+      "projected_rust_percent_after_lane": 43.757,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0135",
+      "rank": 135,
+      "path": "systems/ops/v1_hardening_checkpoint.ts",
+      "loc": 525,
+      "impact_score": 1260,
+      "cumulative_migrated_ts_lines": 163805,
+      "projected_rust_percent_after_lane": 43.894,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0136",
+      "rank": 136,
+      "path": "systems/autonomy/trit_shadow_replay_calibration.ts",
+      "loc": 419,
+      "impact_score": 1257,
+      "cumulative_migrated_ts_lines": 164224,
+      "projected_rust_percent_after_lane": 44.003,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0137",
+      "rank": 137,
+      "path": "systems/autonomy/persistent_fractal_meta_organ.ts",
+      "loc": 418,
+      "impact_score": 1254,
+      "cumulative_migrated_ts_lines": 164642,
+      "projected_rust_percent_after_lane": 44.113,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0138",
+      "rank": 138,
+      "path": "systems/memory/eyes_memory_bridge.ts",
+      "loc": 544,
+      "impact_score": 1251.2,
+      "cumulative_migrated_ts_lines": 165186,
+      "projected_rust_percent_after_lane": 44.254,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0139",
+      "rank": 139,
+      "path": "systems/assimilation/capability_profile_compiler.ts",
+      "loc": 625,
+      "impact_score": 1250,
+      "cumulative_migrated_ts_lines": 165811,
+      "projected_rust_percent_after_lane": 44.417,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0140",
+      "rank": 140,
+      "path": "lib/trit_shadow_control.ts",
+      "loc": 1040,
+      "impact_score": 1248,
+      "cumulative_migrated_ts_lines": 166851,
+      "projected_rust_percent_after_lane": 44.689,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0141",
+      "rank": 141,
+      "path": "systems/workflow/client_communication_organ.ts",
+      "loc": 566,
+      "impact_score": 1245.2,
+      "cumulative_migrated_ts_lines": 167417,
+      "projected_rust_percent_after_lane": 44.836,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0142",
+      "rank": 142,
+      "path": "systems/ops/backlog_queue_executor.ts",
+      "loc": 518,
+      "impact_score": 1243.2,
+      "cumulative_migrated_ts_lines": 167935,
+      "projected_rust_percent_after_lane": 44.972,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0143",
+      "rank": 143,
+      "path": "systems/ops/blank_slate_reset.ts",
+      "loc": 518,
+      "impact_score": 1243.2,
+      "cumulative_migrated_ts_lines": 168453,
+      "projected_rust_percent_after_lane": 45.107,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0144",
+      "rank": 144,
+      "path": "systems/ops/self_hosted_bootstrap_compiler.ts",
+      "loc": 514,
+      "impact_score": 1233.6,
+      "cumulative_migrated_ts_lines": 168967,
+      "projected_rust_percent_after_lane": 45.241,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0145",
+      "rank": 145,
+      "path": "systems/ops/global_molt_cycle.ts",
+      "loc": 511,
+      "impact_score": 1226.4,
+      "cumulative_migrated_ts_lines": 169478,
+      "projected_rust_percent_after_lane": 45.374,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0146",
+      "rank": 146,
+      "path": "systems/ops/rust_spine_microkernel.ts",
+      "loc": 508,
+      "impact_score": 1219.2,
+      "cumulative_migrated_ts_lines": 169986,
+      "projected_rust_percent_after_lane": 45.507,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0147",
+      "rank": 147,
+      "path": "systems/autonomy/optimization_aperture_controller.ts",
+      "loc": 368,
+      "impact_score": 1214.4,
+      "cumulative_migrated_ts_lines": 170354,
+      "projected_rust_percent_after_lane": 45.603,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0148",
+      "rank": 148,
+      "path": "systems/ops/schema_evolution_contract.ts",
+      "loc": 505,
+      "impact_score": 1212,
+      "cumulative_migrated_ts_lines": 170859,
+      "projected_rust_percent_after_lane": 45.734,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0149",
+      "rank": 149,
+      "path": "systems/security/copy_hardening_pack.ts",
+      "loc": 482,
+      "impact_score": 1205,
+      "cumulative_migrated_ts_lines": 171341,
+      "projected_rust_percent_after_lane": 45.86,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0150",
+      "rank": 150,
+      "path": "systems/ops/continuous_chaos_resilience.ts",
+      "loc": 499,
+      "impact_score": 1197.6,
+      "cumulative_migrated_ts_lines": 171840,
+      "projected_rust_percent_after_lane": 45.99,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0151",
+      "rank": 151,
+      "path": "systems/ops/open_platform_release_pack.ts",
+      "loc": 497,
+      "impact_score": 1192.8,
+      "cumulative_migrated_ts_lines": 172337,
+      "projected_rust_percent_after_lane": 46.12,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0152",
+      "rank": 152,
+      "path": "systems/ops/openfang_capability_pack.ts",
+      "loc": 497,
+      "impact_score": 1192.8,
+      "cumulative_migrated_ts_lines": 172834,
+      "projected_rust_percent_after_lane": 46.25,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0153",
+      "rank": 153,
+      "path": "systems/workflow/workflow_generator.ts",
+      "loc": 542,
+      "impact_score": 1192.4,
+      "cumulative_migrated_ts_lines": 173376,
+      "projected_rust_percent_after_lane": 46.391,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0154",
+      "rank": 154,
+      "path": "systems/autonomy/dream_signal_bridge.ts",
+      "loc": 397,
+      "impact_score": 1191,
+      "cumulative_migrated_ts_lines": 173773,
+      "projected_rust_percent_after_lane": 46.494,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0155",
+      "rank": 155,
+      "path": "systems/autonomy/receipt_dashboard.ts",
+      "loc": 397,
+      "impact_score": 1191,
+      "cumulative_migrated_ts_lines": 174170,
+      "projected_rust_percent_after_lane": 46.598,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0156",
+      "rank": 156,
+      "path": "systems/workflow/gated_account_creation_organ.ts",
+      "loc": 539,
+      "impact_score": 1185.8,
+      "cumulative_migrated_ts_lines": 174709,
+      "projected_rust_percent_after_lane": 46.739,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0157",
+      "rank": 157,
+      "path": "systems/ops/model_health_auto_recovery.ts",
+      "loc": 492,
+      "impact_score": 1180.8,
+      "cumulative_migrated_ts_lines": 175201,
+      "projected_rust_percent_after_lane": 46.867,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0158",
+      "rank": 158,
+      "path": "systems/ops/platform_socket_runtime.ts",
+      "loc": 492,
+      "impact_score": 1180.8,
+      "cumulative_migrated_ts_lines": 175693,
+      "projected_rust_percent_after_lane": 46.995,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0159",
+      "rank": 159,
+      "path": "lib/strategy_resolver.ts",
+      "loc": 983,
+      "impact_score": 1179.6,
+      "cumulative_migrated_ts_lines": 176676,
+      "projected_rust_percent_after_lane": 47.252,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0160",
+      "rank": 160,
+      "path": "systems/ops/postmortem_loop.ts",
+      "loc": 491,
+      "impact_score": 1178.4,
+      "cumulative_migrated_ts_lines": 177167,
+      "projected_rust_percent_after_lane": 47.38,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0161",
+      "rank": 161,
+      "path": "systems/reflex/reflex_dispatcher.ts",
+      "loc": 1176,
+      "impact_score": 1176,
+      "cumulative_migrated_ts_lines": 178343,
+      "projected_rust_percent_after_lane": 47.687,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0162",
+      "rank": 162,
+      "path": "systems/memory/memory_efficiency_plane.ts",
+      "loc": 511,
+      "impact_score": 1175.3,
+      "cumulative_migrated_ts_lines": 178854,
+      "projected_rust_percent_after_lane": 47.82,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0163",
+      "rank": 163,
+      "path": "systems/autonomy/observer_mirror.ts",
+      "loc": 391,
+      "impact_score": 1173,
+      "cumulative_migrated_ts_lines": 179245,
+      "projected_rust_percent_after_lane": 47.922,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0164",
+      "rank": 164,
+      "path": "systems/security/governance_hardening_pack.ts",
+      "loc": 465,
+      "impact_score": 1162.5,
+      "cumulative_migrated_ts_lines": 179710,
+      "projected_rust_percent_after_lane": 48.043,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0165",
+      "rank": 165,
+      "path": "systems/security/jigsaw/attackcinema_replay_theater.ts",
+      "loc": 463,
+      "impact_score": 1157.5,
+      "cumulative_migrated_ts_lines": 180173,
+      "projected_rust_percent_after_lane": 48.164,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0166",
+      "rank": 166,
+      "path": "systems/ops/event_sourced_control_plane.ts",
+      "loc": 481,
+      "impact_score": 1154.4,
+      "cumulative_migrated_ts_lines": 180654,
+      "projected_rust_percent_after_lane": 48.29,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0167",
+      "rank": 167,
+      "path": "systems/ops/dist_runtime_cutover.ts",
+      "loc": 478,
+      "impact_score": 1147.2,
+      "cumulative_migrated_ts_lines": 181132,
+      "projected_rust_percent_after_lane": 48.414,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0168",
+      "rank": 168,
+      "path": "systems/workflow/rate_limit_intelligence.ts",
+      "loc": 520,
+      "impact_score": 1144,
+      "cumulative_migrated_ts_lines": 181652,
+      "projected_rust_percent_after_lane": 48.55,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0169",
+      "rank": 169,
+      "path": "lib/duality_seed.ts",
+      "loc": 952,
+      "impact_score": 1142.4,
+      "cumulative_migrated_ts_lines": 182604,
+      "projected_rust_percent_after_lane": 48.798,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0170",
+      "rank": 170,
+      "path": "systems/ops/deployment_packaging.ts",
+      "loc": 471,
+      "impact_score": 1130.4,
+      "cumulative_migrated_ts_lines": 183075,
+      "projected_rust_percent_after_lane": 48.921,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0171",
+      "rank": 171,
+      "path": "systems/ops/backup_integrity_check.ts",
+      "loc": 470,
+      "impact_score": 1128,
+      "cumulative_migrated_ts_lines": 183545,
+      "projected_rust_percent_after_lane": 49.044,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0172",
+      "rank": 172,
+      "path": "systems/ops/protheus_setup_wizard.ts",
+      "loc": 468,
+      "impact_score": 1123.2,
+      "cumulative_migrated_ts_lines": 184013,
+      "projected_rust_percent_after_lane": 49.166,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0173",
+      "rank": 173,
+      "path": "systems/autonomy/pipeline_spc_gate.ts",
+      "loc": 373,
+      "impact_score": 1119,
+      "cumulative_migrated_ts_lines": 184386,
+      "projected_rust_percent_after_lane": 49.263,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0174",
+      "rank": 174,
+      "path": "systems/security/critical_path_formal_verifier.ts",
+      "loc": 446,
+      "impact_score": 1115,
+      "cumulative_migrated_ts_lines": 184832,
+      "projected_rust_percent_after_lane": 49.379,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0175",
+      "rank": 175,
+      "path": "systems/ops/type_derived_lane_docs_autogen.ts",
+      "loc": 463,
+      "impact_score": 1111.2,
+      "cumulative_migrated_ts_lines": 185295,
+      "projected_rust_percent_after_lane": 49.5,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0176",
+      "rank": 176,
+      "path": "systems/autonomy/inversion_readiness_cert.ts",
+      "loc": 369,
+      "impact_score": 1107,
+      "cumulative_migrated_ts_lines": 185664,
+      "projected_rust_percent_after_lane": 49.596,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0177",
+      "rank": 177,
+      "path": "systems/spine/spine_safe_launcher.ts",
+      "loc": 394,
+      "impact_score": 1103.2,
+      "cumulative_migrated_ts_lines": 186058,
+      "projected_rust_percent_after_lane": 49.699,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0178",
+      "rank": 178,
+      "path": "systems/ops/operational_maturity_closure.ts",
+      "loc": 459,
+      "impact_score": 1101.6,
+      "cumulative_migrated_ts_lines": 186517,
+      "projected_rust_percent_after_lane": 49.819,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0179",
+      "rank": 179,
+      "path": "systems/ops/protheus_prime_seed.ts",
+      "loc": 458,
+      "impact_score": 1099.2,
+      "cumulative_migrated_ts_lines": 186975,
+      "projected_rust_percent_after_lane": 49.938,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0180",
+      "rank": 180,
+      "path": "systems/security/safety_resilience_guard.ts",
+      "loc": 439,
+      "impact_score": 1097.5,
+      "cumulative_migrated_ts_lines": 187414,
+      "projected_rust_percent_after_lane": 50.053,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0181",
+      "rank": 181,
+      "path": "systems/echo/heroic_echo_controller.ts",
+      "loc": 842,
+      "impact_score": 1094.6,
+      "cumulative_migrated_ts_lines": 188256,
+      "projected_rust_percent_after_lane": 50.273,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0182",
+      "rank": 182,
+      "path": "systems/autonomy/suggestion_lane.ts",
+      "loc": 364,
+      "impact_score": 1092,
+      "cumulative_migrated_ts_lines": 188620,
+      "projected_rust_percent_after_lane": 50.368,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0183",
+      "rank": 183,
+      "path": "systems/storm/storm_value_distribution.ts",
+      "loc": 1091,
+      "impact_score": 1091,
+      "cumulative_migrated_ts_lines": 189711,
+      "projected_rust_percent_after_lane": 50.652,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0184",
+      "rank": 184,
+      "path": "systems/workflow/high_value_play_detector.ts",
+      "loc": 493,
+      "impact_score": 1084.6,
+      "cumulative_migrated_ts_lines": 190204,
+      "projected_rust_percent_after_lane": 50.781,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0185",
+      "rank": 185,
+      "path": "systems/identity/identity_anchor.ts",
+      "loc": 1073,
+      "impact_score": 1073,
+      "cumulative_migrated_ts_lines": 191277,
+      "projected_rust_percent_after_lane": 51.061,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0186",
+      "rank": 186,
+      "path": "systems/ops/environment_promotion_gate.ts",
+      "loc": 447,
+      "impact_score": 1072.8,
+      "cumulative_migrated_ts_lines": 191724,
+      "projected_rust_percent_after_lane": 51.177,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0187",
+      "rank": 187,
+      "path": "systems/autonomy/mutation_safety_kernel.ts",
+      "loc": 354,
+      "impact_score": 1062,
+      "cumulative_migrated_ts_lines": 192078,
+      "projected_rust_percent_after_lane": 51.27,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0188",
+      "rank": 188,
+      "path": "systems/autonomy/non_yield_ledger_backfill.ts",
+      "loc": 353,
+      "impact_score": 1059,
+      "cumulative_migrated_ts_lines": 192431,
+      "projected_rust_percent_after_lane": 51.362,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0189",
+      "rank": 189,
+      "path": "systems/autonomy/non_yield_replay.ts",
+      "loc": 353,
+      "impact_score": 1059,
+      "cumulative_migrated_ts_lines": 192784,
+      "projected_rust_percent_after_lane": 51.454,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0190",
+      "rank": 190,
+      "path": "systems/ops/docs_structure_pack.ts",
+      "loc": 441,
+      "impact_score": 1058.4,
+      "cumulative_migrated_ts_lines": 193225,
+      "projected_rust_percent_after_lane": 51.569,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0191",
+      "rank": 191,
+      "path": "systems/ops/explain_decision.ts",
+      "loc": 441,
+      "impact_score": 1058.4,
+      "cumulative_migrated_ts_lines": 193666,
+      "projected_rust_percent_after_lane": 51.684,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0192",
+      "rank": 192,
+      "path": "systems/ops/system_health_audit_runner.ts",
+      "loc": 441,
+      "impact_score": 1058.4,
+      "cumulative_migrated_ts_lines": 194107,
+      "projected_rust_percent_after_lane": 51.799,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0193",
+      "rank": 193,
+      "path": "systems/security/execution_sandbox_envelope.ts",
+      "loc": 417,
+      "impact_score": 1042.5,
+      "cumulative_migrated_ts_lines": 194524,
+      "projected_rust_percent_after_lane": 51.908,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0194",
+      "rank": 194,
+      "path": "systems/sensory/temporal_patterns.ts",
+      "loc": 518,
+      "impact_score": 1036,
+      "cumulative_migrated_ts_lines": 195042,
+      "projected_rust_percent_after_lane": 52.043,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0195",
+      "rank": 195,
+      "path": "systems/primitives/explanation_primitive.ts",
+      "loc": 647,
+      "impact_score": 1035.2,
+      "cumulative_migrated_ts_lines": 195689,
+      "projected_rust_percent_after_lane": 52.212,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0196",
+      "rank": 196,
+      "path": "systems/ops/backlog_execution_pathfinder.ts",
+      "loc": 431,
+      "impact_score": 1034.4,
+      "cumulative_migrated_ts_lines": 196120,
+      "projected_rust_percent_after_lane": 52.324,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0197",
+      "rank": 197,
+      "path": "systems/helix/helix_controller.ts",
+      "loc": 794,
+      "impact_score": 1032.2,
+      "cumulative_migrated_ts_lines": 196914,
+      "projected_rust_percent_after_lane": 52.531,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0198",
+      "rank": 198,
+      "path": "systems/ops/alert_transport_health.ts",
+      "loc": 430,
+      "impact_score": 1032,
+      "cumulative_migrated_ts_lines": 197344,
+      "projected_rust_percent_after_lane": 52.643,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0199",
+      "rank": 199,
+      "path": "systems/memory/rust_memory_daemon_supervisor.ts",
+      "loc": 448,
+      "impact_score": 1030.4,
+      "cumulative_migrated_ts_lines": 197792,
+      "projected_rust_percent_after_lane": 52.76,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0200",
+      "rank": 200,
+      "path": "systems/ops/config_registry.ts",
+      "loc": 428,
+      "impact_score": 1027.2,
+      "cumulative_migrated_ts_lines": 198220,
+      "projected_rust_percent_after_lane": 52.872,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0201",
+      "rank": 201,
+      "path": "systems/actuation/real_world_claws_bundle.ts",
+      "loc": 539,
+      "impact_score": 1024.1,
+      "cumulative_migrated_ts_lines": 198759,
+      "projected_rust_percent_after_lane": 53.012,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0202",
+      "rank": 202,
+      "path": "systems/autonomy/genuine_creative_breakthrough_organ.ts",
+      "loc": 341,
+      "impact_score": 1023,
+      "cumulative_migrated_ts_lines": 199100,
+      "projected_rust_percent_after_lane": 53.101,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0203",
+      "rank": 203,
+      "path": "systems/ops/compliance_posture.ts",
+      "loc": 422,
+      "impact_score": 1012.8,
+      "cumulative_migrated_ts_lines": 199522,
+      "projected_rust_percent_after_lane": 53.212,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0204",
+      "rank": 204,
+      "path": "systems/memory/uid_connections.ts",
+      "loc": 440,
+      "impact_score": 1012,
+      "cumulative_migrated_ts_lines": 199962,
+      "projected_rust_percent_after_lane": 53.326,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0205",
+      "rank": 205,
+      "path": "systems/dual_brain/coordinator.ts",
+      "loc": 1010,
+      "impact_score": 1010,
+      "cumulative_migrated_ts_lines": 200972,
+      "projected_rust_percent_after_lane": 53.59,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0206",
+      "rank": 206,
+      "path": "systems/ops/config_plane_pilot.ts",
+      "loc": 417,
+      "impact_score": 1000.8,
+      "cumulative_migrated_ts_lines": 201389,
+      "projected_rust_percent_after_lane": 53.699,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0207",
+      "rank": 207,
+      "path": "systems/autonomy/self_mod_reversion_drill.ts",
+      "loc": 331,
+      "impact_score": 993,
+      "cumulative_migrated_ts_lines": 201720,
+      "projected_rust_percent_after_lane": 53.785,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0208",
+      "rank": 208,
+      "path": "systems/ops/token_economics_engine.ts",
+      "loc": 366,
+      "impact_score": 988.2,
+      "cumulative_migrated_ts_lines": 202086,
+      "projected_rust_percent_after_lane": 53.88,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0209",
+      "rank": 209,
+      "path": "systems/autonomy/non_yield_cycle.ts",
+      "loc": 327,
+      "impact_score": 981,
+      "cumulative_migrated_ts_lines": 202413,
+      "projected_rust_percent_after_lane": 53.966,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0210",
+      "rank": 210,
+      "path": "systems/fractal/mini_core_instancer.ts",
+      "loc": 487,
+      "impact_score": 974,
+      "cumulative_migrated_ts_lines": 202900,
+      "projected_rust_percent_after_lane": 54.093,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0211",
+      "rank": 211,
+      "path": "systems/security/goal_preservation_kernel.ts",
+      "loc": 389,
+      "impact_score": 972.5,
+      "cumulative_migrated_ts_lines": 203289,
+      "projected_rust_percent_after_lane": 54.194,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0212",
+      "rank": 212,
+      "path": "systems/self_audit/illusion_integrity_lane.ts",
+      "loc": 966,
+      "impact_score": 966,
+      "cumulative_migrated_ts_lines": 204255,
+      "projected_rust_percent_after_lane": 54.446,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0213",
+      "rank": 213,
+      "path": "systems/ops/cognitive_toolkit_cli.ts",
+      "loc": 398,
+      "impact_score": 955.2,
+      "cumulative_migrated_ts_lines": 204653,
+      "projected_rust_percent_after_lane": 54.55,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0214",
+      "rank": 214,
+      "path": "systems/ops/js_holdout_audit.ts",
+      "loc": 398,
+      "impact_score": 955.2,
+      "cumulative_migrated_ts_lines": 205051,
+      "projected_rust_percent_after_lane": 54.654,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0215",
+      "rank": 215,
+      "path": "systems/ops/platform_oracle_hostprofile.ts",
+      "loc": 398,
+      "impact_score": 955.2,
+      "cumulative_migrated_ts_lines": 205449,
+      "projected_rust_percent_after_lane": 54.758,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0216",
+      "rank": 216,
+      "path": "systems/ops/compliance_retention_uplift.ts",
+      "loc": 397,
+      "impact_score": 952.8,
+      "cumulative_migrated_ts_lines": 205846,
+      "projected_rust_percent_after_lane": 54.861,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0217",
+      "rank": 217,
+      "path": "systems/autonomy/trit_shadow_weekly_adaptation.ts",
+      "loc": 317,
+      "impact_score": 951,
+      "cumulative_migrated_ts_lines": 206163,
+      "projected_rust_percent_after_lane": 54.944,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0218",
+      "rank": 218,
+      "path": "systems/ops/simplicity_budget_gate.ts",
+      "loc": 396,
+      "impact_score": 950.4,
+      "cumulative_migrated_ts_lines": 206559,
+      "projected_rust_percent_after_lane": 55.047,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0219",
+      "rank": 219,
+      "path": "systems/workflow/orchestron/nursery_tester.ts",
+      "loc": 475,
+      "impact_score": 950,
+      "cumulative_migrated_ts_lines": 207034,
+      "projected_rust_percent_after_lane": 55.171,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0220",
+      "rank": 220,
+      "path": "systems/fractal/child_organ_runtime.ts",
+      "loc": 557,
+      "impact_score": 946.9,
+      "cumulative_migrated_ts_lines": 207591,
+      "projected_rust_percent_after_lane": 55.316,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0221",
+      "rank": 221,
+      "path": "systems/autonomy/physiology_opportunity_map.ts",
+      "loc": 315,
+      "impact_score": 945,
+      "cumulative_migrated_ts_lines": 207906,
+      "projected_rust_percent_after_lane": 55.399,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0222",
+      "rank": 222,
+      "path": "systems/routing/llm_gateway_failure_classifier.ts",
+      "loc": 363,
+      "impact_score": 943.8,
+      "cumulative_migrated_ts_lines": 208269,
+      "projected_rust_percent_after_lane": 55.493,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0223",
+      "rank": 223,
+      "path": "systems/personas/shadow_cli.ts",
+      "loc": 449,
+      "impact_score": 942.9,
+      "cumulative_migrated_ts_lines": 208718,
+      "projected_rust_percent_after_lane": 55.61,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0224",
+      "rank": 224,
+      "path": "systems/ops/rust50_sprint_contract.ts",
+      "loc": 391,
+      "impact_score": 938.4,
+      "cumulative_migrated_ts_lines": 209109,
+      "projected_rust_percent_after_lane": 55.712,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0225",
+      "rank": 225,
+      "path": "systems/autonomy/non_yield_harvest.ts",
+      "loc": 310,
+      "impact_score": 930,
+      "cumulative_migrated_ts_lines": 209419,
+      "projected_rust_percent_after_lane": 55.793,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0226",
+      "rank": 226,
+      "path": "systems/autonomy/strategy_readiness.ts",
+      "loc": 310,
+      "impact_score": 930,
+      "cumulative_migrated_ts_lines": 209729,
+      "projected_rust_percent_after_lane": 55.874,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0227",
+      "rank": 227,
+      "path": "systems/finance/economic_entity_manager.ts",
+      "loc": 927,
+      "impact_score": 927,
+      "cumulative_migrated_ts_lines": 210656,
+      "projected_rust_percent_after_lane": 56.116,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0228",
+      "rank": 228,
+      "path": "systems/autonomy/exception_recovery_classifier.ts",
+      "loc": 309,
+      "impact_score": 927,
+      "cumulative_migrated_ts_lines": 210965,
+      "projected_rust_percent_after_lane": 56.197,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0229",
+      "rank": 229,
+      "path": "systems/ops/state_backup.ts",
+      "loc": 386,
+      "impact_score": 926.4,
+      "cumulative_migrated_ts_lines": 211351,
+      "projected_rust_percent_after_lane": 56.297,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0230",
+      "rank": 230,
+      "path": "systems/security/legion_geas_protocol.ts",
+      "loc": 369,
+      "impact_score": 922.5,
+      "cumulative_migrated_ts_lines": 211720,
+      "projected_rust_percent_after_lane": 56.394,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0231",
+      "rank": 231,
+      "path": "systems/security/lockweaver/eternal_flux_field.ts",
+      "loc": 369,
+      "impact_score": 922.5,
+      "cumulative_migrated_ts_lines": 212089,
+      "projected_rust_percent_after_lane": 56.49,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0232",
+      "rank": 232,
+      "path": "systems/assimilation/memory_evolution_primitive.ts",
+      "loc": 461,
+      "impact_score": 922,
+      "cumulative_migrated_ts_lines": 212550,
+      "projected_rust_percent_after_lane": 56.61,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0233",
+      "rank": 233,
+      "path": "systems/actuation/sub_executor_synthesis.ts",
+      "loc": 485,
+      "impact_score": 921.5,
+      "cumulative_migrated_ts_lines": 213035,
+      "projected_rust_percent_after_lane": 56.737,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0234",
+      "rank": 234,
+      "path": "systems/security/repository_access_auditor.ts",
+      "loc": 368,
+      "impact_score": 920,
+      "cumulative_migrated_ts_lines": 213403,
+      "projected_rust_percent_after_lane": 56.833,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0235",
+      "rank": 235,
+      "path": "systems/tools/proactive_assimilation.ts",
+      "loc": 511,
+      "impact_score": 919.8,
+      "cumulative_migrated_ts_lines": 213914,
+      "projected_rust_percent_after_lane": 56.966,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0236",
+      "rank": 236,
+      "path": "systems/sensory/multi_hop_objective_chain_mapper.ts",
+      "loc": 459,
+      "impact_score": 918,
+      "cumulative_migrated_ts_lines": 214373,
+      "projected_rust_percent_after_lane": 57.086,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0237",
+      "rank": 237,
+      "path": "systems/security/directive_intake.ts",
+      "loc": 365,
+      "impact_score": 912.5,
+      "cumulative_migrated_ts_lines": 214738,
+      "projected_rust_percent_after_lane": 57.181,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0238",
+      "rank": 238,
+      "path": "systems/security/operator_terms_ack.ts",
+      "loc": 365,
+      "impact_score": 912.5,
+      "cumulative_migrated_ts_lines": 215103,
+      "projected_rust_percent_after_lane": 57.276,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0239",
+      "rank": 239,
+      "path": "systems/actuation/actuation_executor.ts",
+      "loc": 480,
+      "impact_score": 912,
+      "cumulative_migrated_ts_lines": 215583,
+      "projected_rust_percent_after_lane": 57.401,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0240",
+      "rank": 240,
+      "path": "systems/weaver/arbitration_engine.ts",
+      "loc": 433,
+      "impact_score": 909.3,
+      "cumulative_migrated_ts_lines": 216016,
+      "projected_rust_percent_after_lane": 57.514,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0241",
+      "rank": 241,
+      "path": "systems/memory/dream_model_failover.ts",
+      "loc": 395,
+      "impact_score": 908.5,
+      "cumulative_migrated_ts_lines": 216411,
+      "projected_rust_percent_after_lane": 57.617,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0242",
+      "rank": 242,
+      "path": "systems/assimilation/world_model_freshness.ts",
+      "loc": 453,
+      "impact_score": 906,
+      "cumulative_migrated_ts_lines": 216864,
+      "projected_rust_percent_after_lane": 57.735,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0243",
+      "rank": 243,
+      "path": "systems/budget/system_budget.ts",
+      "loc": 904,
+      "impact_score": 904,
+      "cumulative_migrated_ts_lines": 217768,
+      "projected_rust_percent_after_lane": 57.971,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0244",
+      "rank": 244,
+      "path": "systems/ops/first_run_onboarding_wizard.ts",
+      "loc": 375,
+      "impact_score": 900,
+      "cumulative_migrated_ts_lines": 218143,
+      "projected_rust_percent_after_lane": 58.069,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0245",
+      "rank": 245,
+      "path": "systems/autonomy/strategy_execute_guard.ts",
+      "loc": 300,
+      "impact_score": 900,
+      "cumulative_migrated_ts_lines": 218443,
+      "projected_rust_percent_after_lane": 58.147,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0246",
+      "rank": 246,
+      "path": "systems/primitives/effect_type_system.ts",
+      "loc": 562,
+      "impact_score": 899.2,
+      "cumulative_migrated_ts_lines": 219005,
+      "projected_rust_percent_after_lane": 58.294,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0247",
+      "rank": 247,
+      "path": "systems/primitives/emergent_primitive_synthesis.ts",
+      "loc": 561,
+      "impact_score": 897.6,
+      "cumulative_migrated_ts_lines": 219566,
+      "projected_rust_percent_after_lane": 58.44,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0248",
+      "rank": 248,
+      "path": "systems/ops/public_docs_developer_experience_overhaul.ts",
+      "loc": 374,
+      "impact_score": 897.6,
+      "cumulative_migrated_ts_lines": 219940,
+      "projected_rust_percent_after_lane": 58.538,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0249",
+      "rank": 249,
+      "path": "systems/autonomy/non_yield_enqueue.ts",
+      "loc": 299,
+      "impact_score": 897,
+      "cumulative_migrated_ts_lines": 220239,
+      "projected_rust_percent_after_lane": 58.616,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0250",
+      "rank": 250,
+      "path": "systems/workflow/client_relationship_manager.ts",
+      "loc": 407,
+      "impact_score": 895.4,
+      "cumulative_migrated_ts_lines": 220646,
+      "projected_rust_percent_after_lane": 58.722,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0251",
+      "rank": 251,
+      "path": "systems/ops/error_budget_release_gate.ts",
+      "loc": 373,
+      "impact_score": 895.2,
+      "cumulative_migrated_ts_lines": 221019,
+      "projected_rust_percent_after_lane": 58.819,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0252",
+      "rank": 252,
+      "path": "systems/security/governance_hardening_lane.ts",
+      "loc": 357,
+      "impact_score": 892.5,
+      "cumulative_migrated_ts_lines": 221376,
+      "projected_rust_percent_after_lane": 58.912,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0253",
+      "rank": 253,
+      "path": "systems/ops/reproducible_distribution_artifact_pack.ts",
+      "loc": 370,
+      "impact_score": 888,
+      "cumulative_migrated_ts_lines": 221746,
+      "projected_rust_percent_after_lane": 59.009,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0254",
+      "rank": 254,
+      "path": "systems/security/skill_install_path_enforcer.ts",
+      "loc": 355,
+      "impact_score": 887.5,
+      "cumulative_migrated_ts_lines": 222101,
+      "projected_rust_percent_after_lane": 59.102,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0255",
+      "rank": 255,
+      "path": "systems/fractal/engine.ts",
+      "loc": 519,
+      "impact_score": 882.3,
+      "cumulative_migrated_ts_lines": 222620,
+      "projected_rust_percent_after_lane": 59.237,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0256",
+      "rank": 256,
+      "path": "systems/autonomy/escalation_resolver.ts",
+      "loc": 293,
+      "impact_score": 879,
+      "cumulative_migrated_ts_lines": 222913,
+      "projected_rust_percent_after_lane": 59.313,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0257",
+      "rank": 257,
+      "path": "systems/ops/binary_runtime_hardening.ts",
+      "loc": 365,
+      "impact_score": 876,
+      "cumulative_migrated_ts_lines": 223278,
+      "projected_rust_percent_after_lane": 59.409,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0258",
+      "rank": 258,
+      "path": "systems/security/schema_contract_check.ts",
+      "loc": 349,
+      "impact_score": 872.5,
+      "cumulative_migrated_ts_lines": 223627,
+      "projected_rust_percent_after_lane": 59.5,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0259",
+      "rank": 259,
+      "path": "systems/adaptive/strategy/strategy_store.ts",
+      "loc": 872,
+      "impact_score": 872,
+      "cumulative_migrated_ts_lines": 224499,
+      "projected_rust_percent_after_lane": 59.727,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0260",
+      "rank": 260,
+      "path": "systems/sensory/eyes_intake.ts",
+      "loc": 436,
+      "impact_score": 872,
+      "cumulative_migrated_ts_lines": 224935,
+      "projected_rust_percent_after_lane": 59.841,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0261",
+      "rank": 261,
+      "path": "systems/redteam/adaptive_defense_expansion.ts",
+      "loc": 870,
+      "impact_score": 870,
+      "cumulative_migrated_ts_lines": 225805,
+      "projected_rust_percent_after_lane": 60.068,
+      "status": "queued"
+    }
+  ]
+}
