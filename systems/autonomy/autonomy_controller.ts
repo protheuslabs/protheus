@@ -2328,6 +2328,22 @@ function suggestAutonomyRunBatchMax(dateStr, opts: AnyObj = {}) {
     autoscaleSnapshot: autoscale,
     dailyRemaining
   });
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rust = runBacklogAutoscalePrimitive(
+      'suggest_run_batch_max',
+      {
+        enabled: AUTONOMY_BACKLOG_AUTOSCALE_BATCH_ON_RUN,
+        batch_max: Number(batch.max || 1),
+        batch_reason: batch.reason || 'no_pressure',
+        daily_remaining: dailyRemaining,
+        autoscale_hint: autoscale
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return rust.payload.payload;
+    }
+  }
   return {
     enabled: AUTONOMY_BACKLOG_AUTOSCALE_BATCH_ON_RUN,
     max: Number(batch.max || 1),

@@ -2217,6 +2217,29 @@ pub struct ExpectedValueScoreOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct SuggestRunBatchMaxInput {
+    #[serde(default)]
+    pub enabled: bool,
+    #[serde(default)]
+    pub batch_max: f64,
+    #[serde(default)]
+    pub batch_reason: Option<String>,
+    #[serde(default)]
+    pub daily_remaining: f64,
+    #[serde(default)]
+    pub autoscale_hint: serde_json::Value,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct SuggestRunBatchMaxOutput {
+    pub enabled: bool,
+    pub max: f64,
+    pub reason: String,
+    pub daily_remaining: f64,
+    pub autoscale_hint: serde_json::Value,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct IsDirectiveClarificationProposalInput {
     #[serde(default)]
     pub proposal_type: Option<String>,
@@ -3363,6 +3386,8 @@ pub struct AutoscaleRequest {
     pub strategy_admission_decision_input: Option<StrategyAdmissionDecisionInput>,
     #[serde(default)]
     pub expected_value_score_input: Option<ExpectedValueScoreInput>,
+    #[serde(default)]
+    pub suggest_run_batch_max_input: Option<SuggestRunBatchMaxInput>,
     #[serde(default)]
     pub is_directive_clarification_proposal_input: Option<IsDirectiveClarificationProposalInput>,
     #[serde(default)]
@@ -7333,6 +7358,24 @@ pub fn compute_expected_value_score(input: &ExpectedValueScoreInput) -> Expected
     ExpectedValueScoreOutput { score }
 }
 
+pub fn compute_suggest_run_batch_max(input: &SuggestRunBatchMaxInput) -> SuggestRunBatchMaxOutput {
+    SuggestRunBatchMaxOutput {
+        enabled: input.enabled,
+        max: if input.batch_max.is_finite() {
+            input.batch_max.max(1.0).floor()
+        } else {
+            1.0
+        },
+        reason: normalize_spaces(input.batch_reason.as_deref().unwrap_or("no_pressure")),
+        daily_remaining: if input.daily_remaining.is_finite() {
+            input.daily_remaining.max(0.0).floor()
+        } else {
+            0.0
+        },
+        autoscale_hint: input.autoscale_hint.clone(),
+    }
+}
+
 pub fn compute_is_directive_clarification_proposal(
     input: &IsDirectiveClarificationProposalInput,
 ) -> IsDirectiveClarificationProposalOutput {
@@ -10812,6 +10855,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_expected_value_score_encode_failed:{e}"));
+    }
+    if mode == "suggest_run_batch_max" {
+        let input = request
+            .suggest_run_batch_max_input
+            .ok_or_else(|| "autoscale_missing_suggest_run_batch_max_input".to_string())?;
+        let out = compute_suggest_run_batch_max(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "suggest_run_batch_max",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_suggest_run_batch_max_encode_failed:{e}"));
     }
     if mode == "is_directive_clarification_proposal" {
         let input = request
@@ -15699,6 +15754,38 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale expected_value_score");
         assert!(out.contains("\"mode\":\"expected_value_score\""));
+    }
+
+    #[test]
+    fn suggest_run_batch_max_normalizes_values() {
+        let out = compute_suggest_run_batch_max(&SuggestRunBatchMaxInput {
+            enabled: true,
+            batch_max: 3.8,
+            batch_reason: Some(" backlog_autoscale ".to_string()),
+            daily_remaining: 4.2,
+            autoscale_hint: serde_json::json!({"current_cells": 2}),
+        });
+        assert!(out.enabled);
+        assert_eq!(out.max, 3.0);
+        assert_eq!(out.reason, "backlog_autoscale");
+        assert_eq!(out.daily_remaining, 4.0);
+    }
+
+    #[test]
+    fn autoscale_json_suggest_run_batch_max_path_works() {
+        let payload = serde_json::json!({
+            "mode": "suggest_run_batch_max",
+            "suggest_run_batch_max_input": {
+                "enabled": true,
+                "batch_max": 2,
+                "batch_reason": "no_pressure",
+                "daily_remaining": 6,
+                "autoscale_hint": {"state": {"current_cells": 1}}
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale suggest_run_batch_max");
+        assert!(out.contains("\"mode\":\"suggest_run_batch_max\""));
     }
 
     #[test]
