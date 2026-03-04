@@ -16,7 +16,9 @@
       "impact_score": 76583,
       "cumulative_migrated_ts_lines": 17810,
       "projected_rust_percent_after_lane": 5.809,
-      "status": "queued"
+      "status": "in_progress",
+      "progress_note": "BL-137 complete: strategy_rank_score primitive migrated; continue decomposing autonomy_controller.ts",
+      "last_updated": "2026-03-04T07:47:23.631Z"
     },
     {
       "lane_id": "R60-0002",
@@ -2618,5 +2620,6 @@
       "projected_rust_percent_after_lane": 60.068,
       "status": "queued"
     }
-  ]
+  ],
+  "updated_at": "2026-03-04T07:47:23.632Z"
 }

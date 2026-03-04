@@ -2793,6 +2793,8 @@ const PROPOSAL_REMEDIATION_DEPTH_CACHE = new Map();
 const PROPOSAL_REMEDIATION_DEPTH_CACHE_MAX = 512;
 const PROPOSAL_DEDUP_KEY_CACHE = new Map();
 const PROPOSAL_DEDUP_KEY_CACHE_MAX = 1024;
+const STRATEGY_RANK_SCORE_CACHE = new Map();
+const STRATEGY_RANK_SCORE_CACHE_MAX = 2048;
 const COMPOSITE_ELIGIBILITY_SCORE_CACHE = new Map();
 const COMPOSITE_ELIGIBILITY_SCORE_CACHE_MAX = 1024;
 const TIME_TO_VALUE_SCORE_CACHE = new Map();
@@ -8662,19 +8664,93 @@ function strategyRankForCandidate(cand, strategy, opts: AnyObj = {}) {
       ? rankingContext.applied_overrides.slice(0, 4)
       : []
   };
-  const raw = (
-    Number(weights.composite || 0) * components.composite
-    + Number(weights.actionability || 0) * components.actionability
-    + Number(weights.directive_fit || 0) * components.directive_fit
-    + Number(weights.signal_quality || 0) * components.signal_quality
-    + Number(weights.expected_value || 0) * components.expected_value
-    + valueDensityWeight * components.value_density
-    - Number(weights.risk_penalty || 0) * components.risk_penalty
-    + Number(weights.time_to_value || 0) * components.time_to_value
-    - Number(nonYieldPenalty.penalty || 0)
-    - Number(collectiveShadow.penalty || 0)
-    + Number(collectiveShadow.bonus || 0)
-  );
+  const compositeWeight = Number(weights.composite || 0);
+  const actionabilityWeight = Number(weights.actionability || 0);
+  const directiveFitWeight = Number(weights.directive_fit || 0);
+  const signalQualityWeight = Number(weights.signal_quality || 0);
+  const expectedValueWeight = Number(weights.expected_value || 0);
+  const riskPenaltyWeight = Number(weights.risk_penalty || 0);
+  const timeToValueWeight = Number(weights.time_to_value || 0);
+  const nonYieldPenaltyValue = Number(nonYieldPenalty.penalty || 0);
+  const collectiveShadowPenaltyValue = Number(collectiveShadow.penalty || 0);
+  const collectiveShadowBonusValue = Number(collectiveShadow.bonus || 0);
+
+  let raw = NaN;
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const key = [
+      compositeWeight,
+      actionabilityWeight,
+      directiveFitWeight,
+      signalQualityWeight,
+      expectedValueWeight,
+      valueDensityWeight,
+      riskPenaltyWeight,
+      timeToValueWeight,
+      components.composite,
+      components.actionability,
+      components.directive_fit,
+      components.signal_quality,
+      components.expected_value,
+      components.value_density,
+      components.risk_penalty,
+      components.time_to_value,
+      nonYieldPenaltyValue,
+      collectiveShadowPenaltyValue,
+      collectiveShadowBonusValue
+    ].join('\u0000');
+    if (STRATEGY_RANK_SCORE_CACHE.has(key)) {
+      raw = Number(STRATEGY_RANK_SCORE_CACHE.get(key));
+    } else {
+      const rust = runBacklogAutoscalePrimitive(
+        'strategy_rank_score',
+        {
+          composite_weight: compositeWeight,
+          actionability_weight: actionabilityWeight,
+          directive_fit_weight: directiveFitWeight,
+          signal_quality_weight: signalQualityWeight,
+          expected_value_weight: expectedValueWeight,
+          value_density_weight: valueDensityWeight,
+          risk_penalty_weight: riskPenaltyWeight,
+          time_to_value_weight: timeToValueWeight,
+          composite: Number(components.composite || 0),
+          actionability: Number(components.actionability || 0),
+          directive_fit: Number(components.directive_fit || 0),
+          signal_quality: Number(components.signal_quality || 0),
+          expected_value: Number(components.expected_value || 0),
+          value_density: Number(components.value_density || 0),
+          risk_penalty: Number(components.risk_penalty || 0),
+          time_to_value: Number(components.time_to_value || 0),
+          non_yield_penalty: nonYieldPenaltyValue,
+          collective_shadow_penalty: collectiveShadowPenaltyValue,
+          collective_shadow_bonus: collectiveShadowBonusValue
+        },
+        { allow_cli_fallback: true }
+      );
+      if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+        raw = Number(rust.payload.payload.score || 0);
+        if (STRATEGY_RANK_SCORE_CACHE.size >= STRATEGY_RANK_SCORE_CACHE_MAX) {
+          const oldest = STRATEGY_RANK_SCORE_CACHE.keys().next();
+          if (!oldest.done) STRATEGY_RANK_SCORE_CACHE.delete(oldest.value);
+        }
+        STRATEGY_RANK_SCORE_CACHE.set(key, raw);
+      }
+    }
+  }
+  if (!Number.isFinite(raw)) {
+    raw = (
+      compositeWeight * components.composite
+      + actionabilityWeight * components.actionability
+      + directiveFitWeight * components.directive_fit
+      + signalQualityWeight * components.signal_quality
+      + expectedValueWeight * components.expected_value
+      + valueDensityWeight * components.value_density
+      - riskPenaltyWeight * components.risk_penalty
+      + timeToValueWeight * components.time_to_value
+      - nonYieldPenaltyValue
+      - collectiveShadowPenaltyValue
+      + collectiveShadowBonusValue
+    );
+  }
   return {
     score: Number(raw.toFixed(3)),
     components,

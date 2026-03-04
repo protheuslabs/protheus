@@ -2,6 +2,8 @@
 
 Generated: 2026-03-04T07:44:21.923Z
 
+Updated: 2026-03-04T07:47:23.632Z
+
 Queue size: 261 lanes
 
 Current Rust %: 1.163
@@ -12,7 +14,7 @@ TS LOC needed: 225545
 
 | Lane | Rank | Path | LOC | Impact | Projected Rust % | Status |
 |---|---:|---|---:|---:|---:|---|
-| R60-0001 | 1 | systems/autonomy/autonomy_controller.ts | 17810 | 76583 | 5.809 | queued |
+| R60-0001 | 1 | systems/autonomy/autonomy_controller.ts | 17810 | 76583 | 5.809 | in_progress |
 | R60-0002 | 2 | systems/autonomy/inversion_controller.ts | 6229 | 26784.7 | 7.434 | queued |
 | R60-0003 | 3 | systems/spine/spine.ts | 6237 | 23700.6 | 9.061 | queued |
 | R60-0004 | 4 | systems/routing/model_router.ts | 4421 | 15915.6 | 10.214 | queued |

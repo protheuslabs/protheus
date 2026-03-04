@@ -720,6 +720,34 @@ pub struct ProposalDedupKeyOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct StrategyRankScoreInput {
+    pub composite_weight: f64,
+    pub actionability_weight: f64,
+    pub directive_fit_weight: f64,
+    pub signal_quality_weight: f64,
+    pub expected_value_weight: f64,
+    pub value_density_weight: f64,
+    pub risk_penalty_weight: f64,
+    pub time_to_value_weight: f64,
+    pub composite: f64,
+    pub actionability: f64,
+    pub directive_fit: f64,
+    pub signal_quality: f64,
+    pub expected_value: f64,
+    pub value_density: f64,
+    pub risk_penalty: f64,
+    pub time_to_value: f64,
+    pub non_yield_penalty: f64,
+    pub collective_shadow_penalty: f64,
+    pub collective_shadow_bonus: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct StrategyRankScoreOutput {
+    pub score: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct CompositeEligibilityScoreInput {
     pub quality_score: f64,
     pub directive_fit_score: f64,
@@ -1397,6 +1425,8 @@ pub struct AutoscaleRequest {
     pub proposal_remediation_depth_input: Option<ProposalRemediationDepthInput>,
     #[serde(default)]
     pub proposal_dedup_key_input: Option<ProposalDedupKeyInput>,
+    #[serde(default)]
+    pub strategy_rank_score_input: Option<StrategyRankScoreInput>,
     #[serde(default)]
     pub composite_eligibility_score_input: Option<CompositeEligibilityScoreInput>,
     #[serde(default)]
@@ -2677,6 +2707,23 @@ pub fn compute_proposal_dedup_key(input: &ProposalDedupKeyInput) -> ProposalDedu
         )
     };
     ProposalDedupKeyOutput { dedup_key }
+}
+
+pub fn compute_strategy_rank_score(input: &StrategyRankScoreInput) -> StrategyRankScoreOutput {
+    let raw = (input.composite_weight * input.composite)
+        + (input.actionability_weight * input.actionability)
+        + (input.directive_fit_weight * input.directive_fit)
+        + (input.signal_quality_weight * input.signal_quality)
+        + (input.expected_value_weight * input.expected_value)
+        + (input.value_density_weight * input.value_density)
+        - (input.risk_penalty_weight * input.risk_penalty)
+        + (input.time_to_value_weight * input.time_to_value)
+        - input.non_yield_penalty
+        - input.collective_shadow_penalty
+        + input.collective_shadow_bonus;
+    StrategyRankScoreOutput {
+        score: (raw * 1000.0).round() / 1000.0,
+    }
 }
 
 pub fn compute_composite_eligibility_score(
@@ -4620,6 +4667,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
         }))
         .map_err(|e| format!("autoscale_proposal_dedup_key_encode_failed:{e}"));
     }
+    if mode == "strategy_rank_score" {
+        let input = request
+            .strategy_rank_score_input
+            .ok_or_else(|| "autoscale_missing_strategy_rank_score_input".to_string())?;
+        let out = compute_strategy_rank_score(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "strategy_rank_score",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_strategy_rank_score_encode_failed:{e}"));
+    }
     if mode == "composite_eligibility_score" {
         let input = request
             .composite_eligibility_score_input
@@ -6364,6 +6423,64 @@ mod tests {
         let out = run_autoscale_json(&payload).expect("autoscale proposal_dedup_key");
         assert!(out.contains("\"mode\":\"proposal_dedup_key\""));
         assert!(out.contains("\"dedup_key\":\"ops_remediation|github_release|transport\""));
+    }
+
+    #[test]
+    fn strategy_rank_score_matches_weighted_formula() {
+        let out = compute_strategy_rank_score(&StrategyRankScoreInput {
+            composite_weight: 0.35,
+            actionability_weight: 0.2,
+            directive_fit_weight: 0.15,
+            signal_quality_weight: 0.15,
+            expected_value_weight: 0.1,
+            value_density_weight: 0.08,
+            risk_penalty_weight: 0.05,
+            time_to_value_weight: 0.0,
+            composite: 80.0,
+            actionability: 70.0,
+            directive_fit: 60.0,
+            signal_quality: 75.0,
+            expected_value: 55.0,
+            value_density: 50.0,
+            risk_penalty: 50.0,
+            time_to_value: 40.0,
+            non_yield_penalty: 1.5,
+            collective_shadow_penalty: 0.5,
+            collective_shadow_bonus: 0.2,
+        });
+        assert!((out.score - 67.45).abs() < 0.000001);
+    }
+
+    #[test]
+    fn autoscale_json_strategy_rank_score_path_works() {
+        let payload = serde_json::json!({
+            "mode": "strategy_rank_score",
+            "strategy_rank_score_input": {
+                "composite_weight": 0.35,
+                "actionability_weight": 0.2,
+                "directive_fit_weight": 0.15,
+                "signal_quality_weight": 0.15,
+                "expected_value_weight": 0.1,
+                "value_density_weight": 0.08,
+                "risk_penalty_weight": 0.05,
+                "time_to_value_weight": 0.0,
+                "composite": 80,
+                "actionability": 70,
+                "directive_fit": 60,
+                "signal_quality": 75,
+                "expected_value": 55,
+                "value_density": 50,
+                "risk_penalty": 50,
+                "time_to_value": 40,
+                "non_yield_penalty": 1.5,
+                "collective_shadow_penalty": 0.5,
+                "collective_shadow_bonus": 0.2
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale strategy_rank_score");
+        assert!(out.contains("\"mode\":\"strategy_rank_score\""));
+        assert!(out.contains("\"score\":67.45"));
     }
 
     #[test]
