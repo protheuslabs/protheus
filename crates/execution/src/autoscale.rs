@@ -2224,6 +2224,30 @@ pub struct SpawnCapacityBoostSnapshotOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct InversionMaturityScoreInput {
+    pub total_tests: f64,
+    pub passed_tests: f64,
+    pub destructive_failures: f64,
+    pub target_test_count: f64,
+    pub weight_pass_rate: f64,
+    pub weight_non_destructive_rate: f64,
+    pub weight_experience: f64,
+    pub band_novice: f64,
+    pub band_developing: f64,
+    pub band_mature: f64,
+    pub band_seasoned: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct InversionMaturityScoreOutput {
+    pub score: f64,
+    pub band: String,
+    pub pass_rate: f64,
+    pub non_destructive_rate: f64,
+    pub experience: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AutoscaleRequest {
     pub mode: String,
     #[serde(default)]
@@ -2452,6 +2476,8 @@ pub struct AutoscaleRequest {
     pub spawn_allocated_cells_input: Option<SpawnAllocatedCellsInput>,
     #[serde(default)]
     pub spawn_capacity_boost_snapshot_input: Option<SpawnCapacityBoostSnapshotInput>,
+    #[serde(default)]
+    pub inversion_maturity_score_input: Option<InversionMaturityScoreInput>,
 }
 
 fn clamp_ratio(v: f64) -> f64 {
@@ -6831,6 +6857,62 @@ pub fn compute_spawn_capacity_boost_snapshot(
     }
 }
 
+pub fn compute_inversion_maturity_score(
+    input: &InversionMaturityScoreInput,
+) -> InversionMaturityScoreOutput {
+    let total = non_negative_number(Some(input.total_tests)).unwrap_or(0.0);
+    let passed = non_negative_number(Some(input.passed_tests)).unwrap_or(0.0);
+    let destructive = non_negative_number(Some(input.destructive_failures)).unwrap_or(0.0);
+    let target_test_count = non_negative_number(Some(input.target_test_count)).unwrap_or(40.0);
+    let weight_pass_rate = non_negative_number(Some(input.weight_pass_rate)).unwrap_or(0.0);
+    let weight_non_destructive_rate =
+        non_negative_number(Some(input.weight_non_destructive_rate)).unwrap_or(0.0);
+    let weight_experience = non_negative_number(Some(input.weight_experience)).unwrap_or(0.0);
+    let band_novice = non_negative_number(Some(input.band_novice)).unwrap_or(0.25);
+    let band_developing = non_negative_number(Some(input.band_developing)).unwrap_or(0.45);
+    let band_mature = non_negative_number(Some(input.band_mature)).unwrap_or(0.65);
+    let band_seasoned = non_negative_number(Some(input.band_seasoned)).unwrap_or(0.82);
+
+    let non_destructive_rate = if total > 0.0 {
+        ((total - destructive) / total).max(0.0)
+    } else {
+        1.0
+    };
+    let pass_rate = if total > 0.0 {
+        (passed / total).max(0.0)
+    } else {
+        0.0
+    };
+    let experience = (total / target_test_count.max(1.0)).min(1.0);
+
+    let weight_total =
+        (weight_pass_rate + weight_non_destructive_rate + weight_experience).max(0.0001);
+    let raw_score = ((pass_rate * weight_pass_rate)
+        + (non_destructive_rate * weight_non_destructive_rate)
+        + (experience * weight_experience))
+        / weight_total;
+    let score = raw_score.max(0.0).min(1.0);
+    let band = if score < band_novice {
+        "novice"
+    } else if score < band_developing {
+        "developing"
+    } else if score < band_mature {
+        "mature"
+    } else if score < band_seasoned {
+        "seasoned"
+    } else {
+        "legendary"
+    };
+
+    InversionMaturityScoreOutput {
+        score: ((score * 1_000_000.0).round()) / 1_000_000.0,
+        band: band.to_string(),
+        pass_rate: ((pass_rate * 1_000_000.0).round()) / 1_000_000.0,
+        non_destructive_rate: ((non_destructive_rate * 1_000_000.0).round()) / 1_000_000.0,
+        experience: ((experience * 1_000_000.0).round()) / 1_000_000.0,
+    }
+}
+
 pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
     let request: AutoscaleRequest = serde_json::from_str(payload_json)
         .map_err(|e| format!("autoscale_request_parse_failed:{e}"))?;
@@ -6882,6 +6964,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
             "payload": out
         }))
         .map_err(|e| format!("autoscale_spawn_capacity_boost_snapshot_encode_failed:{e}"));
+    }
+    if mode == "inversion_maturity_score" {
+        let input = request
+            .inversion_maturity_score_input
+            .ok_or_else(|| "autoscale_missing_inversion_maturity_score_input".to_string())?;
+        let out = compute_inversion_maturity_score(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "inversion_maturity_score",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_inversion_maturity_score_encode_failed:{e}"));
     }
     if mode == "plan" {
         let input = request
@@ -12495,5 +12589,49 @@ mod tests {
         let out =
             run_autoscale_json(&payload).expect("autoscale spawn_capacity_boost_snapshot");
         assert!(out.contains("\"mode\":\"spawn_capacity_boost_snapshot\""));
+    }
+
+    #[test]
+    fn inversion_maturity_score_matches_expected_banding() {
+        let out = compute_inversion_maturity_score(&InversionMaturityScoreInput {
+            total_tests: 40.0,
+            passed_tests: 32.0,
+            destructive_failures: 1.0,
+            target_test_count: 40.0,
+            weight_pass_rate: 0.5,
+            weight_non_destructive_rate: 0.3,
+            weight_experience: 0.2,
+            band_novice: 0.25,
+            band_developing: 0.45,
+            band_mature: 0.65,
+            band_seasoned: 0.82,
+        });
+        assert_eq!(out.band, "legendary");
+        assert!(out.score >= 0.82);
+        assert!(out.pass_rate >= 0.8 && out.pass_rate <= 0.81);
+        assert!(out.non_destructive_rate >= 0.97 && out.non_destructive_rate <= 0.98);
+    }
+
+    #[test]
+    fn autoscale_json_inversion_maturity_score_path_works() {
+        let payload = serde_json::json!({
+            "mode": "inversion_maturity_score",
+            "inversion_maturity_score_input": {
+                "total_tests": 10,
+                "passed_tests": 6,
+                "destructive_failures": 1,
+                "target_test_count": 40,
+                "weight_pass_rate": 0.5,
+                "weight_non_destructive_rate": 0.3,
+                "weight_experience": 0.2,
+                "band_novice": 0.25,
+                "band_developing": 0.45,
+                "band_mature": 0.65,
+                "band_seasoned": 0.82
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale inversion_maturity_score");
+        assert!(out.contains("\"mode\":\"inversion_maturity_score\""));
     }
 }

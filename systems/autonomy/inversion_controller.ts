@@ -27,6 +27,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { spawnSync } = require('child_process');
+const { runBacklogAutoscalePrimitive } = require('./backlog_autoscale_rust_bridge.js');
 const {
   normalizeTrit,
   tritLabel,
@@ -65,6 +66,7 @@ const SHADOW_CONCLAVE_HIGH_RISK_KEYWORDS = [
   'skip parity'
 ];
 const SHADOW_CONCLAVE_CORRESPONDENCE_PATH = path.join(ROOT, 'personas', 'organization', 'correspondence.md');
+const INVERSION_RUST_ENABLED = String(process.env.INVERSION_RUST_ENABLED || '1') !== '0';
 
 type AnyObj = Record<string, any>;
 
@@ -2660,6 +2662,29 @@ function computeMaturityScore(state: AnyObj, policy: AnyObj) {
   const experience = Math.min(1, total / Math.max(1, Number(policy.maturity.target_test_count || 40)));
 
   const weights = policy.maturity.score_weights || {};
+  if (INVERSION_RUST_ENABLED) {
+    const bands = policy.maturity.bands || {};
+    const rust = runBacklogAutoscalePrimitive(
+      'inversion_maturity_score',
+      {
+        total_tests: total,
+        passed_tests: passed,
+        destructive_failures: destructive,
+        target_test_count: Number(policy.maturity.target_test_count || 40),
+        weight_pass_rate: Number(weights.pass_rate || 0),
+        weight_non_destructive_rate: Number(weights.non_destructive_rate || 0),
+        weight_experience: Number(weights.experience || 0),
+        band_novice: Number(bands.novice || 0.25),
+        band_developing: Number(bands.developing || 0.45),
+        band_mature: Number(bands.mature || 0.65),
+        band_seasoned: Number(bands.seasoned || 0.82)
+      },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      return rust.payload.payload;
+    }
+  }
   const weightTotal = Math.max(
     0.0001,
     Number(weights.pass_rate || 0) + Number(weights.non_destructive_rate || 0) + Number(weights.experience || 0)

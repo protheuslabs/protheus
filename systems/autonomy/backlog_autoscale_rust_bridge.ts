@@ -94,6 +94,7 @@ function runBacklogAutoscalePrimitive(mode: string, data: AnyObj = {}, opts: Any
     normalize_backlog_autoscale_state: 'normalize_backlog_autoscale_state_input',
     spawn_allocated_cells: 'spawn_allocated_cells_input',
     spawn_capacity_boost_snapshot: 'spawn_capacity_boost_snapshot_input',
+    inversion_maturity_score: 'inversion_maturity_score_input',
     plan: 'plan_input',
     batch_max: 'batch_input',
     dynamic_caps: 'dynamic_caps_input',
