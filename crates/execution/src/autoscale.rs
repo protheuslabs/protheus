@@ -486,6 +486,17 @@ pub struct ProposalStatusForQueuePressureOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ProposalStatusInput {
+    #[serde(default)]
+    pub overlay_decision: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ProposalStatusOutput {
+    pub status: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct QosLaneUsageEventInput {
     #[serde(default)]
     pub event_type: Option<String>,
@@ -1029,6 +1040,8 @@ pub struct AutoscaleRequest {
     pub normalize_proposal_status_input: Option<NormalizeProposalStatusInput>,
     #[serde(default)]
     pub proposal_status_for_queue_pressure_input: Option<ProposalStatusForQueuePressureInput>,
+    #[serde(default)]
+    pub proposal_status_input: Option<ProposalStatusInput>,
     #[serde(default)]
     pub no_progress_result_input: Option<NoProgressResultInput>,
     #[serde(default)]
@@ -2090,16 +2103,13 @@ pub fn compute_normalize_proposal_status(
     NormalizeProposalStatusOutput { normalized_status }
 }
 
-pub fn compute_proposal_status_for_queue_pressure(
-    input: &ProposalStatusForQueuePressureInput,
-) -> ProposalStatusForQueuePressureOutput {
+pub fn compute_proposal_status(input: &ProposalStatusInput) -> ProposalStatusOutput {
     let overlay_decision = input
         .overlay_decision
         .as_ref()
         .map(|v| v.trim().to_ascii_lowercase())
         .unwrap_or_default();
-    let has_overlay_decision = !overlay_decision.is_empty();
-    let mut status = if overlay_decision == "accept" {
+    let status = if overlay_decision == "accept" {
         "accepted".to_string()
     } else if overlay_decision == "reject" {
         "rejected".to_string()
@@ -2108,6 +2118,21 @@ pub fn compute_proposal_status_for_queue_pressure(
     } else {
         "pending".to_string()
     };
+    ProposalStatusOutput { status }
+}
+
+pub fn compute_proposal_status_for_queue_pressure(
+    input: &ProposalStatusForQueuePressureInput,
+) -> ProposalStatusForQueuePressureOutput {
+    let has_overlay_decision = input
+        .overlay_decision
+        .as_ref()
+        .map(|v| !v.trim().is_empty())
+        .unwrap_or(false);
+    let mut status = compute_proposal_status(&ProposalStatusInput {
+        overlay_decision: input.overlay_decision.clone(),
+    })
+    .status;
     if has_overlay_decision {
         return ProposalStatusForQueuePressureOutput { status };
     }
@@ -3473,6 +3498,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
         }))
         .map_err(|e| format!("autoscale_normalize_proposal_status_encode_failed:{e}"));
     }
+    if mode == "proposal_status" {
+        let input = request
+            .proposal_status_input
+            .ok_or_else(|| "autoscale_missing_proposal_status_input".to_string())?;
+        let out = compute_proposal_status(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "proposal_status",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_proposal_status_encode_failed:{e}"));
+    }
     if mode == "proposal_status_for_queue_pressure" {
         let input = request.proposal_status_for_queue_pressure_input.ok_or_else(|| {
             "autoscale_missing_proposal_status_for_queue_pressure_input".to_string()
@@ -4660,6 +4697,42 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale normalize_proposal_status");
         assert!(out.contains("\"mode\":\"normalize_proposal_status\""));
+    }
+
+    #[test]
+    fn proposal_status_maps_overlay_decision_values() {
+        let accepted = compute_proposal_status(&ProposalStatusInput {
+            overlay_decision: Some("accept".to_string()),
+        });
+        assert_eq!(accepted.status, "accepted");
+
+        let rejected = compute_proposal_status(&ProposalStatusInput {
+            overlay_decision: Some("reject".to_string()),
+        });
+        assert_eq!(rejected.status, "rejected");
+
+        let parked = compute_proposal_status(&ProposalStatusInput {
+            overlay_decision: Some("park".to_string()),
+        });
+        assert_eq!(parked.status, "parked");
+
+        let pending = compute_proposal_status(&ProposalStatusInput {
+            overlay_decision: Some("other".to_string()),
+        });
+        assert_eq!(pending.status, "pending");
+    }
+
+    #[test]
+    fn autoscale_json_proposal_status_path_works() {
+        let payload = serde_json::json!({
+            "mode": "proposal_status",
+            "proposal_status_input": {
+                "overlay_decision": "accept"
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale proposal_status");
+        assert!(out.contains("\"mode\":\"proposal_status\""));
     }
 
     #[test]

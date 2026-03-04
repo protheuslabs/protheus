@@ -2714,6 +2714,8 @@ function parseIsoTs(ts) {
 
 const NORMALIZE_PROPOSAL_STATUS_CACHE = new Map();
 const NORMALIZE_PROPOSAL_STATUS_CACHE_MAX = 1024;
+const PROPOSAL_STATUS_CACHE = new Map();
+const PROPOSAL_STATUS_CACHE_MAX = 1024;
 const PROPOSAL_STATUS_FOR_QUEUE_PRESSURE_CACHE = new Map();
 const PROPOSAL_STATUS_FOR_QUEUE_PRESSURE_CACHE_MAX = 1024;
 const POLICY_HOLD_RESULT_CACHE = new Map();
@@ -7033,6 +7035,28 @@ function evaluateManualGatePrefilter(telemetry, capabilityKey) {
 }
 
 function proposalStatus(overlayEnt) {
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const overlayDecision = String((overlayEnt && overlayEnt.decision) || '');
+    if (PROPOSAL_STATUS_CACHE.has(overlayDecision)) {
+      return PROPOSAL_STATUS_CACHE.get(overlayDecision);
+    }
+    const rust = runBacklogAutoscalePrimitive(
+      'proposal_status',
+      { overlay_decision: overlayDecision },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const val = String(rust.payload.payload.status || '').trim().toLowerCase();
+      if (val) {
+        if (PROPOSAL_STATUS_CACHE.size >= PROPOSAL_STATUS_CACHE_MAX) {
+          const oldest = PROPOSAL_STATUS_CACHE.keys().next();
+          if (!oldest.done) PROPOSAL_STATUS_CACHE.delete(oldest.value);
+        }
+        PROPOSAL_STATUS_CACHE.set(overlayDecision, val);
+        return val;
+      }
+    }
+  }
   if (!overlayEnt || !overlayEnt.decision) return 'pending';
   if (overlayEnt.decision === 'accept') return 'accepted';
   if (overlayEnt.decision === 'reject') return 'rejected';
