@@ -398,6 +398,31 @@ pub struct ShippedCountOutput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ExecutedCountByRiskEventInput {
+    #[serde(default)]
+    pub event_type: Option<String>,
+    #[serde(default)]
+    pub result: Option<String>,
+    #[serde(default)]
+    pub risk: Option<String>,
+    #[serde(default)]
+    pub proposal_risk: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ExecutedCountByRiskInput {
+    #[serde(default)]
+    pub events: Vec<ExecutedCountByRiskEventInput>,
+    #[serde(default)]
+    pub risk: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ExecutedCountByRiskOutput {
+    pub count: u32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct NoProgressResultInput {
     #[serde(default)]
     pub event_type: Option<String>,
@@ -851,6 +876,8 @@ pub struct AutoscaleRequest {
     pub consecutive_no_progress_runs_input: Option<ConsecutiveNoProgressRunsInput>,
     #[serde(default)]
     pub shipped_count_input: Option<ShippedCountInput>,
+    #[serde(default)]
+    pub executed_count_by_risk_input: Option<ExecutedCountByRiskInput>,
     #[serde(default)]
     pub no_progress_result_input: Option<NoProgressResultInput>,
     #[serde(default)]
@@ -1789,6 +1816,47 @@ pub fn compute_shipped_count(input: &ShippedCountInput) -> ShippedCountOutput {
         }
     }
     ShippedCountOutput { count }
+}
+
+fn normalize_risk_level(raw: &str) -> String {
+    let level = raw.trim().to_ascii_lowercase();
+    if level == "high" || level == "medium" || level == "low" {
+        level
+    } else {
+        "low".to_string()
+    }
+}
+
+pub fn compute_executed_count_by_risk(input: &ExecutedCountByRiskInput) -> ExecutedCountByRiskOutput {
+    let target = normalize_risk_level(input.risk.as_deref().unwrap_or(""));
+    let mut count: u32 = 0;
+    for evt in &input.events {
+        let event_type = evt
+            .event_type
+            .as_ref()
+            .map(|v| v.trim().to_ascii_lowercase())
+            .unwrap_or_default();
+        if event_type != "autonomy_run" {
+            continue;
+        }
+        let result = evt
+            .result
+            .as_ref()
+            .map(|v| v.trim().to_ascii_lowercase())
+            .unwrap_or_default();
+        if result != "executed" {
+            continue;
+        }
+        let run_risk = if let Some(risk) = evt.risk.as_ref() {
+            normalize_risk_level(risk)
+        } else {
+            normalize_risk_level(evt.proposal_risk.as_deref().unwrap_or(""))
+        };
+        if run_risk == target {
+            count += 1;
+        }
+    }
+    ExecutedCountByRiskOutput { count }
 }
 
 pub fn compute_no_progress_result(input: &NoProgressResultInput) -> NoProgressResultOutput {
@@ -2867,6 +2935,18 @@ pub fn run_autoscale_json(payload_json: &str) -> Result<String, String> {
         }))
         .map_err(|e| format!("autoscale_shipped_count_encode_failed:{e}"));
     }
+    if mode == "executed_count_by_risk" {
+        let input = request
+            .executed_count_by_risk_input
+            .ok_or_else(|| "autoscale_missing_executed_count_by_risk_input".to_string())?;
+        let out = compute_executed_count_by_risk(&input);
+        return serde_json::to_string(&serde_json::json!({
+            "ok": true,
+            "mode": "executed_count_by_risk",
+            "payload": out
+        }))
+        .map_err(|e| format!("autoscale_executed_count_by_risk_encode_failed:{e}"));
+    }
     if mode == "no_progress_result" {
         let input = request
             .no_progress_result_input
@@ -3731,6 +3811,51 @@ mod tests {
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale shipped_count");
         assert!(out.contains("\"mode\":\"shipped_count\""));
+    }
+
+    #[test]
+    fn executed_count_by_risk_counts_expected_rows() {
+        let out = compute_executed_count_by_risk(&ExecutedCountByRiskInput {
+            events: vec![
+                ExecutedCountByRiskEventInput {
+                    event_type: Some("autonomy_run".to_string()),
+                    result: Some("executed".to_string()),
+                    risk: Some("medium".to_string()),
+                    proposal_risk: None,
+                },
+                ExecutedCountByRiskEventInput {
+                    event_type: Some("autonomy_run".to_string()),
+                    result: Some("executed".to_string()),
+                    risk: None,
+                    proposal_risk: Some("high".to_string()),
+                },
+                ExecutedCountByRiskEventInput {
+                    event_type: Some("autonomy_run".to_string()),
+                    result: Some("stop_repeat_gate_no_progress".to_string()),
+                    risk: Some("medium".to_string()),
+                    proposal_risk: None,
+                },
+            ],
+            risk: Some("medium".to_string()),
+        });
+        assert_eq!(out.count, 1);
+    }
+
+    #[test]
+    fn autoscale_json_executed_count_by_risk_path_works() {
+        let payload = serde_json::json!({
+            "mode": "executed_count_by_risk",
+            "executed_count_by_risk_input": {
+                "risk": "high",
+                "events": [
+                    {"event_type": "autonomy_run", "result": "executed", "risk": "high"},
+                    {"event_type": "autonomy_run", "result": "executed", "risk": "medium"}
+                ]
+            }
+        })
+        .to_string();
+        let out = run_autoscale_json(&payload).expect("autoscale executed_count_by_risk");
+        assert!(out.contains("\"mode\":\"executed_count_by_risk\""));
     }
 
     #[test]

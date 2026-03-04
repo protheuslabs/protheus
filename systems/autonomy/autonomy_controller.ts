@@ -2727,6 +2727,8 @@ const CONSECUTIVE_NO_PROGRESS_RUNS_CACHE = new Map();
 const CONSECUTIVE_NO_PROGRESS_RUNS_CACHE_MAX = 256;
 const SHIPPED_COUNT_CACHE = new Map();
 const SHIPPED_COUNT_CACHE_MAX = 256;
+const EXECUTED_COUNT_BY_RISK_CACHE = new Map();
+const EXECUTED_COUNT_BY_RISK_CACHE_MAX = 512;
 
 function isPolicyHoldResult(result): boolean {
   const r = String(result || '').trim();
@@ -3964,9 +3966,47 @@ function shippedCount(events) {
 }
 
 function executedCountByRisk(events, risk) {
+  const rows = Array.isArray(events) ? events : [];
   const target = normalizedRisk(risk);
+  if (AUTONOMY_BACKLOG_AUTOSCALE_RUST_ENABLED) {
+    const rustEvents = [];
+    for (const evt of rows) {
+      if (!evt || typeof evt !== 'object') continue;
+      rustEvents.push({
+        event_type: String(evt.type || ''),
+        result: String(evt.result || ''),
+        risk: evt.risk != null ? String(evt.risk || '') : null,
+        proposal_risk: evt.proposal_risk != null ? String(evt.proposal_risk || '') : null
+      });
+    }
+    const key = [target].concat(
+      rustEvents.map((row) => [
+        row.event_type,
+        row.result,
+        String(row.risk || ''),
+        String(row.proposal_risk || '')
+      ].join('\u0000'))
+    ).join('\u0001');
+    if (EXECUTED_COUNT_BY_RISK_CACHE.has(key)) {
+      return Number(EXECUTED_COUNT_BY_RISK_CACHE.get(key) || 0);
+    }
+    const rust = runBacklogAutoscalePrimitive(
+      'executed_count_by_risk',
+      { events: rustEvents, risk: target },
+      { allow_cli_fallback: true }
+    );
+    if (rust && rust.ok === true && rust.payload && rust.payload.ok === true && rust.payload.payload) {
+      const val = Math.max(0, Number(rust.payload.payload.count || 0));
+      if (EXECUTED_COUNT_BY_RISK_CACHE.size >= EXECUTED_COUNT_BY_RISK_CACHE_MAX) {
+        const oldest = EXECUTED_COUNT_BY_RISK_CACHE.keys().next();
+        if (!oldest.done) EXECUTED_COUNT_BY_RISK_CACHE.delete(oldest.value);
+      }
+      EXECUTED_COUNT_BY_RISK_CACHE.set(key, val);
+      return val;
+    }
+  }
   let count = 0;
-  for (const e of events || []) {
+  for (const e of rows) {
     if (!e || e.type !== 'autonomy_run' || e.result !== 'executed') continue;
     const runRisk = normalizedRisk((e.risk != null ? e.risk : e.proposal_risk) || '');
     if (runRisk === target) count += 1;
@@ -16753,5 +16793,6 @@ module.exports = {
   isGateExhaustedAttempt,
   consecutiveGateExhaustedAttempts,
   consecutiveNoProgressRuns,
-  shippedCount
+  shippedCount,
+  executedCountByRisk
 };
