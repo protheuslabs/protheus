@@ -306,6 +306,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d9c4f5dac5e15c24eb999c26181a6ca40b39fe946cbe4c263c7209467bc83af2"
 
 [[package]]
+name = "foundation_hook_enforcer"
+version = "0.1.0"
+
+[[package]]
 name = "generic-array"
 version = "0.14.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -779,6 +783,7 @@ dependencies = [
  "base64",
  "burn_oracle_budget_gate",
  "chrono",
+ "foundation_hook_enforcer",
  "hex",
  "num_cpus",
  "persona_dispatch_security_gate",
