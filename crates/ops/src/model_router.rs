@@ -20,6 +20,13 @@ pub const ROUTER_MAX_REQUEST_TOKENS: i64 = 12_000;
 pub const ROUTER_PROBE_SUPPRESSION_TIMEOUT_STREAK_DEFAULT: i64 = 3;
 pub const ROUTER_PROBE_SUPPRESSION_MINUTES_DEFAULT: i64 = 45;
 pub const ROUTER_PROBE_REHAB_SUCCESS_THRESHOLD_DEFAULT: i64 = 2;
+pub const DEFAULT_FAST_PATH_DISALLOW_REGEXES: [&str; 5] = [
+    "https?:\\/\\/",
+    "(^|\\s)--?[a-z0-9][a-z0-9_-]*\\b",
+    "\\b(node|npm|pnpm|yarn|git|curl|python|bash|zsh|ollama)\\b",
+    "[`{}\\[\\]<>$;=]",
+    "(^|\\s)(~\\/|\\.\\.?\\/|\\/users\\/|[a-z]:\\\\)",
+];
 
 pub fn is_local_ollama_model(model_id: &str) -> bool {
     let model = model_id.trim();
@@ -356,6 +363,94 @@ fn to_bool_like_value(value: Option<&Value>, fallback: bool) -> bool {
     }
 }
 
+fn to_bounded_number_like(value: Option<&Value>, fallback: i64, min: i64, max: i64) -> i64 {
+    let number = finite_number(value).unwrap_or(fallback as f64);
+    let clamped = number.clamp(min as f64, max as f64);
+    clamped as i64
+}
+
+fn string_or(value: Option<&Value>, fallback: &str) -> String {
+    value
+        .and_then(Value::as_str)
+        .map(ToString::to_string)
+        .unwrap_or_else(|| fallback.to_string())
+}
+
+fn value_string_array(value: Option<&Value>) -> Vec<String> {
+    value
+        .and_then(Value::as_array)
+        .map(|rows| {
+            rows.iter()
+                .map(|row| {
+                    row.as_str()
+                        .map(ToString::to_string)
+                        .unwrap_or_else(|| row.to_string().trim_matches('"').to_string())
+                })
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default()
+}
+
+fn contains_cli_flag(raw_text: &str) -> bool {
+    raw_text.split_whitespace().any(|token| {
+        let tok = token.trim();
+        if tok.len() < 2 || !tok.starts_with('-') {
+            return false;
+        }
+        let tail = tok.trim_start_matches('-');
+        if tail.is_empty() {
+            return false;
+        }
+        let mut chars = tail.chars();
+        let first = chars.next().unwrap_or_default();
+        if !first.is_ascii_lowercase() && !first.is_ascii_digit() {
+            return false;
+        }
+        chars.all(|ch| ch.is_ascii_lowercase() || ch.is_ascii_digit() || ch == '_' || ch == '-')
+    })
+}
+
+fn contains_shell_or_path_marker(raw_text: &str) -> bool {
+    let lower = raw_text.to_ascii_lowercase();
+    if lower.contains("~/") || lower.contains("../") || lower.contains("./") || lower.contains("/users/") {
+        return true;
+    }
+    lower
+        .as_bytes()
+        .windows(3)
+        .any(|w| w[0].is_ascii_lowercase() && w[1] == b':' && w[2] == b'\\')
+}
+
+fn pattern_match_ci(pattern: &str, text: &str, raw_text: &str) -> bool {
+    let pattern_key = pattern.trim().to_ascii_lowercase();
+    let raw_lower = raw_text.to_ascii_lowercase();
+    match pattern_key.as_str() {
+        "https?:\\/\\/" => raw_lower.contains("http://") || raw_lower.contains("https://"),
+        "(^|\\s)--?[a-z0-9][a-z0-9_-]*\\b" => contains_cli_flag(raw_text),
+        "\\b(node|npm|pnpm|yarn|git|curl|python|bash|zsh|ollama)\\b" => {
+            let tokens = tokenize(raw_text);
+            [
+                "node", "npm", "pnpm", "yarn", "git", "curl", "python", "bash", "zsh", "ollama",
+            ]
+            .iter()
+            .any(|token| tokens.contains(*token))
+        }
+        "[`{}\\[\\]<>$;=]" => raw_text
+            .chars()
+            .any(|ch| matches!(ch, '`' | '{' | '}' | '[' | ']' | '<' | '>' | '$' | ';' | '=')),
+        "(^|\\s)(~\\/|\\.\\.?\\/|\\/users\\/|[a-z]:\\\\)" => contains_shell_or_path_marker(raw_text),
+        _ => {
+            let simplified = pattern_key
+                .replace("\\b", "")
+                .replace("\\s", " ")
+                .replace("\\/", "/")
+                .replace("\\\\", "\\");
+            let needle = simplified.trim_matches(|ch| ch == '^' || ch == '$' || ch == '(' || ch == ')' || ch == '?');
+            !needle.is_empty() && text.to_ascii_lowercase().contains(needle)
+        }
+    }
+}
+
 pub fn estimate_request_tokens(tokens_est: Option<f64>, intent: &str, task: &str) -> i64 {
     if let Some(direct) = tokens_est {
         if direct.is_finite() && direct > 0.0 {
@@ -417,6 +512,35 @@ pub struct ModeAdjustment {
     pub mode_adjusted: bool,
     pub mode_reason: Option<String>,
     pub mode_policy_source: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CommunicationFastPathPolicy {
+    pub enabled: bool,
+    pub match_mode: String,
+    pub max_chars: i64,
+    pub max_words: i64,
+    pub max_newlines: i64,
+    pub patterns: Vec<String>,
+    pub disallow_regexes: Vec<String>,
+    pub slot: String,
+    pub prefer_model: String,
+    pub fallback_slot: String,
+    pub skip_outcome_scan: bool,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct CommunicationFastPathResult {
+    pub matched: bool,
+    pub reason: String,
+    pub policy: CommunicationFastPathPolicy,
+    pub blocked_pattern: Option<String>,
+    pub matched_pattern: Option<String>,
+    pub text: Option<String>,
+    pub slot: Option<String>,
+    pub prefer_model: Option<String>,
+    pub fallback_slot: Option<String>,
+    pub skip_outcome_scan: Option<bool>,
 }
 
 fn js_truthy_value(value: &Value) -> bool {
@@ -665,6 +789,158 @@ pub fn apply_probe_health_stabilizer(
     }
 
     Value::Object(rec)
+}
+
+pub fn communication_fast_path_policy(cfg: &Value) -> CommunicationFastPathPolicy {
+    let src = cfg
+        .as_object()
+        .and_then(|v| v.get("routing"))
+        .and_then(Value::as_object)
+        .and_then(|v| v.get("communication_fast_path"))
+        .and_then(Value::as_object);
+
+    let patterns = value_string_array(src.and_then(|v| v.get("patterns")));
+    let disallow_regexes = value_string_array(src.and_then(|v| v.get("disallow_regexes")));
+    let disallow_regexes = if disallow_regexes.is_empty() {
+        DEFAULT_FAST_PATH_DISALLOW_REGEXES
+            .iter()
+            .map(|row| row.to_string())
+            .collect::<Vec<_>>()
+    } else {
+        disallow_regexes
+    };
+
+    CommunicationFastPathPolicy {
+        enabled: to_bool_like_value(src.and_then(|v| v.get("enabled")), true),
+        match_mode: string_or(src.and_then(|v| v.get("match_mode")), "heuristic"),
+        max_chars: to_bounded_number_like(src.and_then(|v| v.get("max_chars")), 48, 8, 220),
+        max_words: to_bounded_number_like(src.and_then(|v| v.get("max_words")), 8, 1, 32),
+        max_newlines: to_bounded_number_like(src.and_then(|v| v.get("max_newlines")), 0, 0, 8),
+        patterns,
+        disallow_regexes,
+        slot: string_or(src.and_then(|v| v.get("slot")), "grunt"),
+        prefer_model: string_or(
+            src.and_then(|v| v.get("prefer_model")),
+            "ollama/smallthinker",
+        ),
+        fallback_slot: string_or(src.and_then(|v| v.get("fallback_slot")), "fallback"),
+        skip_outcome_scan: to_bool_like_value(src.and_then(|v| v.get("skip_outcome_scan")), true),
+    }
+}
+
+pub fn detect_communication_fast_path(
+    cfg: &Value,
+    risk: &str,
+    complexity: &str,
+    intent: &str,
+    task: &str,
+    mode: &str,
+    allow_generic_medium: bool,
+) -> CommunicationFastPathResult {
+    let policy = communication_fast_path_policy(cfg);
+
+    let make_nomatch = |reason: &str, blocked_pattern: Option<String>| CommunicationFastPathResult {
+        matched: false,
+        reason: reason.to_string(),
+        policy: policy.clone(),
+        blocked_pattern,
+        matched_pattern: None,
+        text: None,
+        slot: None,
+        prefer_model: None,
+        fallback_slot: None,
+        skip_outcome_scan: None,
+    };
+
+    if !policy.enabled {
+        return make_nomatch("disabled", None);
+    }
+
+    let m = normalize_key(if mode.is_empty() { "normal" } else { mode });
+    if m == "deep-thinker" || m == "deep_thinker" || m == "hyper-creative" || m == "hyper_creative" {
+        return make_nomatch("mode_disallowed", None);
+    }
+
+    if !allow_generic_medium {
+        if normalize_key(risk) != "low" {
+            return make_nomatch("risk_not_low", None);
+        }
+        let cx = normalize_key(if complexity.is_empty() {
+            "medium"
+        } else {
+            complexity
+        });
+        if !(cx == "low" || cx == "medium") {
+            return make_nomatch("complexity_not_eligible", None);
+        }
+    }
+
+    let raw_text = if !task.is_empty() { task } else { intent }.to_string();
+    let newline_count = raw_text.matches('\n').count() as i64;
+    if newline_count > policy.max_newlines {
+        return make_nomatch("too_many_newlines", None);
+    }
+
+    let text = raw_text.split_whitespace().collect::<Vec<_>>().join(" ");
+    if text.is_empty() {
+        return make_nomatch("empty_text", None);
+    }
+
+    let words = text.split(' ').filter(|row| !row.is_empty()).count() as i64;
+    if text.len() as i64 > policy.max_chars {
+        return make_nomatch("text_too_long", None);
+    }
+    if words > policy.max_words {
+        return make_nomatch("word_count_too_high", None);
+    }
+
+    for raw in &policy.disallow_regexes {
+        if pattern_match_ci(raw, &text, &raw_text) {
+            return make_nomatch("contains_structured_intent", Some(raw.clone()));
+        }
+    }
+
+    let structural_role = infer_role(&text, &text);
+    if matches!(
+        normalize_key(&structural_role).as_str(),
+        "coding" | "tools" | "swarm" | "planning" | "logic"
+    ) {
+        return make_nomatch("role_not_chat_like", None);
+    }
+
+    let match_mode = normalize_key(&policy.match_mode);
+    if match_mode == "patterns" {
+        for raw in &policy.patterns {
+            if pattern_match_ci(raw, &text, &raw_text) {
+                return CommunicationFastPathResult {
+                    matched: true,
+                    reason: "communication_fast_path_pattern".to_string(),
+                    policy: policy.clone(),
+                    blocked_pattern: None,
+                    matched_pattern: Some(raw.clone()),
+                    text: Some(text),
+                    slot: Some(policy.slot.clone()),
+                    prefer_model: Some(policy.prefer_model.clone()),
+                    fallback_slot: Some(policy.fallback_slot.clone()),
+                    skip_outcome_scan: Some(policy.skip_outcome_scan),
+                };
+            }
+        }
+        return make_nomatch("no_pattern_match", None);
+    }
+
+    CommunicationFastPathResult {
+        matched: true,
+        reason: "communication_fast_path_heuristic".to_string(),
+        policy: policy.clone(),
+        blocked_pattern: None,
+        matched_pattern: None,
+        text: Some(text),
+        slot: Some(policy.slot.clone()),
+        prefer_model: Some(policy.prefer_model.clone()),
+        fallback_slot: Some(policy.fallback_slot.clone()),
+        skip_outcome_scan: Some(policy.skip_outcome_scan),
+    }
 }
 
 fn normalized_optional_string(value: Option<&Value>) -> Option<String> {
@@ -1242,6 +1518,173 @@ mod tests {
         assert_eq!(none.source, "none");
         assert_eq!(none.tokens_est, None);
         assert_eq!(none.multiplier, None);
+    }
+
+    #[test]
+    fn communication_fast_path_policy_matches_defaults_and_overrides() {
+        let defaults = communication_fast_path_policy(&json!({}));
+        assert!(defaults.enabled);
+        assert_eq!(defaults.match_mode, "heuristic");
+        assert_eq!(defaults.max_chars, 48);
+        assert_eq!(defaults.max_words, 8);
+        assert_eq!(defaults.max_newlines, 0);
+        assert!(defaults.patterns.is_empty());
+        assert_eq!(
+            defaults.disallow_regexes,
+            DEFAULT_FAST_PATH_DISALLOW_REGEXES
+                .iter()
+                .map(|row| row.to_string())
+                .collect::<Vec<_>>()
+        );
+        assert_eq!(defaults.slot, "grunt");
+        assert_eq!(defaults.prefer_model, "ollama/smallthinker");
+        assert_eq!(defaults.fallback_slot, "fallback");
+        assert!(defaults.skip_outcome_scan);
+
+        let cfg = json!({
+            "routing": {
+                "communication_fast_path": {
+                    "enabled": "off",
+                    "match_mode": "patterns",
+                    "max_chars": 999,
+                    "max_words": "3",
+                    "max_newlines": -5,
+                    "patterns": ["status", 7],
+                    "disallow_regexes": ["foo", "bar"],
+                    "slot": "smalltalk",
+                    "prefer_model": "openai/gpt-4.1-mini",
+                    "fallback_slot": "default",
+                    "skip_outcome_scan": "no"
+                }
+            }
+        });
+        let overridden = communication_fast_path_policy(&cfg);
+        assert!(!overridden.enabled);
+        assert_eq!(overridden.match_mode, "patterns");
+        assert_eq!(overridden.max_chars, 220);
+        assert_eq!(overridden.max_words, 3);
+        assert_eq!(overridden.max_newlines, 0);
+        assert_eq!(
+            overridden.patterns,
+            vec!["status".to_string(), "7".to_string()]
+        );
+        assert_eq!(
+            overridden.disallow_regexes,
+            vec!["foo".to_string(), "bar".to_string()]
+        );
+        assert_eq!(overridden.slot, "smalltalk");
+        assert_eq!(overridden.prefer_model, "openai/gpt-4.1-mini");
+        assert_eq!(overridden.fallback_slot, "default");
+        assert!(!overridden.skip_outcome_scan);
+    }
+
+    #[test]
+    fn communication_fast_path_detection_rejects_structured_or_disallowed_modes() {
+        let empty = json!({});
+        let mode_blocked = detect_communication_fast_path(
+            &empty,
+            "low",
+            "low",
+            "hello",
+            "",
+            "deep-thinker",
+            false,
+        );
+        assert!(!mode_blocked.matched);
+        assert_eq!(mode_blocked.reason, "mode_disallowed");
+        assert!(mode_blocked.blocked_pattern.is_none());
+
+        let structured = detect_communication_fast_path(
+            &empty,
+            "low",
+            "low",
+            "",
+            "run git status",
+            "normal",
+            false,
+        );
+        assert!(!structured.matched);
+        assert_eq!(structured.reason, "contains_structured_intent");
+        assert_eq!(
+            structured.blocked_pattern.as_deref(),
+            Some("\\b(node|npm|pnpm|yarn|git|curl|python|bash|zsh|ollama)\\b")
+        );
+
+        let risk_blocked = detect_communication_fast_path(
+            &empty,
+            "medium",
+            "low",
+            "hello there",
+            "",
+            "normal",
+            false,
+        );
+        assert!(!risk_blocked.matched);
+        assert_eq!(risk_blocked.reason, "risk_not_low");
+    }
+
+    #[test]
+    fn communication_fast_path_detection_matches_pattern_and_heuristic_paths() {
+        let pattern_cfg = json!({
+            "routing": {
+                "communication_fast_path": {
+                    "match_mode": "patterns",
+                    "patterns": ["status"],
+                    "disallow_regexes": [],
+                    "slot": "grunt",
+                    "prefer_model": "ollama/smallthinker",
+                    "fallback_slot": "fallback",
+                    "skip_outcome_scan": true
+                }
+            }
+        });
+        let by_pattern = detect_communication_fast_path(
+            &pattern_cfg,
+            "low",
+            "medium",
+            "status",
+            "",
+            "normal",
+            false,
+        );
+        assert!(by_pattern.matched);
+        assert_eq!(by_pattern.reason, "communication_fast_path_pattern");
+        assert_eq!(by_pattern.matched_pattern.as_deref(), Some("status"));
+        assert_eq!(by_pattern.text.as_deref(), Some("status"));
+        assert_eq!(by_pattern.slot.as_deref(), Some("grunt"));
+        assert_eq!(
+            by_pattern.prefer_model.as_deref(),
+            Some("ollama/smallthinker")
+        );
+        assert_eq!(by_pattern.fallback_slot.as_deref(), Some("fallback"));
+        assert_eq!(by_pattern.skip_outcome_scan, Some(true));
+
+        let no_pattern = detect_communication_fast_path(
+            &pattern_cfg,
+            "low",
+            "medium",
+            "hello there",
+            "",
+            "normal",
+            false,
+        );
+        assert!(!no_pattern.matched);
+        assert_eq!(no_pattern.reason, "no_pattern_match");
+
+        let heuristic = detect_communication_fast_path(
+            &json!({}),
+            "medium",
+            "high",
+            "how are you",
+            "",
+            "normal",
+            true,
+        );
+        assert!(heuristic.matched);
+        assert_eq!(heuristic.reason, "communication_fast_path_heuristic");
+        assert_eq!(heuristic.text.as_deref(), Some("how are you"));
+        assert_eq!(heuristic.slot.as_deref(), Some("grunt"));
+        assert_eq!(heuristic.skip_outcome_scan, Some(true));
     }
 
     #[test]
