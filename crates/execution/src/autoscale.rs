@@ -27543,7 +27543,11 @@ mod tests {
     fn extract_dispatch_modes(text: &str) -> std::collections::BTreeSet<String> {
         let re =
             Regex::new(r#"(?m)^\s*(?:if|else if) mode == "([^"]+)""#).expect("valid dispatch regex");
-        re.captures_iter(text)
+        let block_comment_re = Regex::new(r"(?s)/\*.*?\*/").expect("valid block comment regex");
+        let line_comment_re = Regex::new(r"(?m)//.*$").expect("valid line comment regex");
+        let without_block = block_comment_re.replace_all(text, "");
+        let cleaned = line_comment_re.replace_all(&without_block, "");
+        re.captures_iter(cleaned.as_ref())
             .filter_map(|cap| cap.get(1).map(|m| m.as_str().trim().to_string()))
             .filter(|mode| !mode.is_empty())
             .collect()
@@ -27676,6 +27680,24 @@ if another == "gamma" {
 "#;
         let parsed = extract_dispatch_modes(text);
         let expected = ["alpha", "beta"]
+            .iter()
+            .map(|value| value.to_string())
+            .collect::<std::collections::BTreeSet<_>>();
+        assert_eq!(parsed, expected);
+    }
+
+    #[test]
+    fn extract_dispatch_modes_ignores_commented_branches() {
+        let text = r#"
+// if mode == "ignored_line" {
+// }
+/* else if mode == "ignored_block" {
+} */
+if mode == "alpha" {
+}
+"#;
+        let parsed = extract_dispatch_modes(text);
+        let expected = ["alpha"]
             .iter()
             .map(|value| value.to_string())
             .collect::<std::collections::BTreeSet<_>>();
