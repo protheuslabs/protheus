@@ -239,3 +239,73 @@ Persistent lane-by-lane migration log so progress is preserved outside chat cont
 | 198 | `systems/ops/alert_transport_health.ts` | `51ff3803` |
 | 199 | `systems/memory/rust_memory_daemon_supervisor.ts` | `5cef9198` |
 | 200 | `systems/ops/config_registry.ts` | `89d459f6` |
+
+## Completed In This Continuation (Remaining Ranked Queue 201-261 Eligible Cutover)
+- Timestamp: 2026-03-05 14:43 
+- Result: Migrated all eligible `.ts + .js` pairs in ranks `201-261`.
+- Non-eligible ranks:
+  - `R224 systems/ops/rust50_sprint_contract.ts` already had no `.ts` file (already migrated).
+  - `R255 systems/fractal/engine.ts` has `.ts` present but no `.js` sibling (requires non-wrapper migration path).
+- Execution mode: lane-by-lane (`test` + `clippy` + `invariants` + commit + push per lane).
+
+| Rank | Path | Commit |
+|---:|---|---|
+| 201 | `systems/actuation/real_world_claws_bundle.ts` | `6f591e12` |
+| 202 | `systems/autonomy/genuine_creative_breakthrough_organ.ts` | `7b3cbc4d` |
+| 203 | `systems/ops/compliance_posture.ts` | `ae883079` |
+| 204 | `systems/memory/uid_connections.ts` | `4928cf53` |
+| 205 | `systems/dual_brain/coordinator.ts` | `afdd109a` |
+| 206 | `systems/ops/config_plane_pilot.ts` | `8bae0f3c` |
+| 207 | `systems/autonomy/self_mod_reversion_drill.ts` | `8a878aa5` |
+| 208 | `systems/ops/token_economics_engine.ts` | `62316933` |
+| 209 | `systems/autonomy/non_yield_cycle.ts` | `9865a578` |
+| 210 | `systems/fractal/mini_core_instancer.ts` | `c8062949` |
+| 211 | `systems/security/goal_preservation_kernel.ts` | `8ce50f0b` |
+| 212 | `systems/self_audit/illusion_integrity_lane.ts` | `21fb75ad` |
+| 213 | `systems/ops/cognitive_toolkit_cli.ts` | `cf986870` |
+| 214 | `systems/ops/js_holdout_audit.ts` | `4e6e5b3a` |
+| 215 | `systems/ops/platform_oracle_hostprofile.ts` | `c565f020` |
+| 216 | `systems/ops/compliance_retention_uplift.ts` | `9578117d` |
+| 217 | `systems/autonomy/trit_shadow_weekly_adaptation.ts` | `5bc00d02` |
+| 218 | `systems/ops/simplicity_budget_gate.ts` | `21359620` |
+| 219 | `systems/workflow/orchestron/nursery_tester.ts` | `b9fcd2e8` |
+| 220 | `systems/fractal/child_organ_runtime.ts` | `e7b50da2` |
+| 221 | `systems/autonomy/physiology_opportunity_map.ts` | `e37c02aa` |
+| 222 | `systems/routing/llm_gateway_failure_classifier.ts` | `e58e23ae` |
+| 223 | `systems/personas/shadow_cli.ts` | `28cef62e` |
+| 225 | `systems/autonomy/non_yield_harvest.ts` | `fba1b98d` |
+| 226 | `systems/autonomy/strategy_readiness.ts` | `aadd21b2` |
+| 227 | `systems/finance/economic_entity_manager.ts` | `273813c6` |
+| 228 | `systems/autonomy/exception_recovery_classifier.ts` | `dc151d2d` |
+| 229 | `systems/ops/state_backup.ts` | `3ac40b20` |
+| 230 | `systems/security/legion_geas_protocol.ts` | `7dad72f9` |
+| 231 | `systems/security/lockweaver/eternal_flux_field.ts` | `9ee1045f` |
+| 232 | `systems/assimilation/memory_evolution_primitive.ts` | `32930323` |
+| 233 | `systems/actuation/sub_executor_synthesis.ts` | `0dc6d361` |
+| 234 | `systems/security/repository_access_auditor.ts` | `1eaec1e6` |
+| 235 | `systems/tools/proactive_assimilation.ts` | `e20922e7` |
+| 236 | `systems/sensory/multi_hop_objective_chain_mapper.ts` | `75697e7e` |
+| 237 | `systems/security/directive_intake.ts` | `1ae33fc1` |
+| 238 | `systems/security/operator_terms_ack.ts` | `1a6b7adc` |
+| 239 | `systems/actuation/actuation_executor.ts` | `51236603` |
+| 240 | `systems/weaver/arbitration_engine.ts` | `ef4d5f2e` |
+| 241 | `systems/memory/dream_model_failover.ts` | `315d666b` |
+| 242 | `systems/assimilation/world_model_freshness.ts` | `afc506b3` |
+| 243 | `systems/budget/system_budget.ts` | `f62d7e48` |
+| 244 | `systems/ops/first_run_onboarding_wizard.ts` | `18e2bb53` |
+| 245 | `systems/autonomy/strategy_execute_guard.ts` | `62c9b087` |
+| 246 | `systems/primitives/effect_type_system.ts` | `55509a65` |
+| 247 | `systems/primitives/emergent_primitive_synthesis.ts` | `fda1dbd5` |
+| 248 | `systems/ops/public_docs_developer_experience_overhaul.ts` | `c5a413f5` |
+| 249 | `systems/autonomy/non_yield_enqueue.ts` | `501db62e` |
+| 250 | `systems/workflow/client_relationship_manager.ts` | `3f45b277` |
+| 251 | `systems/ops/error_budget_release_gate.ts` | `f7d71c78` |
+| 252 | `systems/security/governance_hardening_lane.ts` | `697556d5` |
+| 253 | `systems/ops/reproducible_distribution_artifact_pack.ts` | `d72eed8e` |
+| 254 | `systems/security/skill_install_path_enforcer.ts` | `7003ff24` |
+| 256 | `systems/autonomy/escalation_resolver.ts` | `be114d1a` |
+| 257 | `systems/ops/binary_runtime_hardening.ts` | `2089f8b1` |
+| 258 | `systems/security/schema_contract_check.ts` | `57e2e2a3` |
+| 259 | `systems/adaptive/strategy/strategy_store.ts` | `f363b5c2` |
+| 260 | `systems/sensory/eyes_intake.ts` | `5880f2ab` |
+| 261 | `systems/redteam/adaptive_defense_expansion.ts` | `4d361c7d` |
