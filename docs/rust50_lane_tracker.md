@@ -342,3 +342,4 @@ Persistent lane-by-lane migration log so progress is preserved outside chat cont
 - [x] N27 | systems/obsidian/obsidian_bridge.ts | LOC=494 | 2026-03-05T21:50:26Z
 - [x] N28 | systems/helix/confirmed_malice_quarantine.ts | LOC=491 | 2026-03-05T21:50:28Z
 - [x] N29 | systems/adaptive/core/layer_store.ts | LOC=485 | 2026-03-05T21:50:31Z
+- [x] N30 | systems/eye/subsumption_registry.ts | LOC=484 | 2026-03-05T21:50:33Z
