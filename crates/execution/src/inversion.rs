@@ -10146,6 +10146,20 @@ mod tests {
     }
 
     #[test]
+    fn inversion_json_get_tier_scope_routes_with_constitution_bucket() {
+        let payload = json!({
+            "mode": "get_tier_scope",
+            "get_tier_scope_input": {
+                "state": { "scopes": {} },
+                "policy_version": "1.0"
+            }
+        });
+        let out = run_inversion_json(&payload.to_string()).expect("inversion get_tier_scope");
+        assert!(out.contains("\"mode\":\"get_tier_scope\""));
+        assert!(out.contains("\"constitution\":[]"));
+    }
+
+    #[test]
     fn objective_id_validation_matches_expected_pattern() {
         let valid = compute_objective_id_valid(&ObjectiveIdValidInput {
             value: Some("T1_objective-alpha".to_string()),
@@ -10775,6 +10789,22 @@ mod tests {
         });
         assert!(got.state["scopes"]["2.0"].is_object());
         assert!(got.scope.is_object());
+        for metric in [
+            "live_apply_attempts",
+            "live_apply_successes",
+            "live_apply_safe_aborts",
+            "shadow_passes",
+            "shadow_critical_failures",
+        ] {
+            assert!(
+                got.scope
+                    .get(metric)
+                    .and_then(|v| v.get("constitution"))
+                    .and_then(Value::as_array)
+                    .is_some(),
+                "missing constitution bucket for metric {metric}"
+            );
+        }
 
         let harness = compute_default_harness_state(&DefaultHarnessStateInput::default());
         assert_eq!(harness.state["schema_id"], json!("inversion_maturity_harness_state"));
@@ -11359,6 +11389,46 @@ mod tests {
             now_iso: Some("2026-03-04T12:05:00.000Z".to_string()),
         });
         assert!(receipt.rel_path.is_some());
+        let receipt_again = compute_append_persona_lens_gate_receipt(
+            &AppendPersonaLensGateReceiptInput {
+                state_dir: Some(temp_root.to_string_lossy().to_string()),
+                root: Some(temp_root.to_string_lossy().to_string()),
+                cfg_receipts_path: Some(receipts_path.to_string_lossy().to_string()),
+                payload: Some(json!({
+                    "enabled": true,
+                    "persona_id": "vikram",
+                    "mode": "auto",
+                    "effective_mode": "enforce",
+                    "status": "enforced",
+                    "fail_closed": false,
+                    "drift_rate": 0.01,
+                    "drift_threshold": 0.02,
+                    "parity_confidence": 0.9,
+                    "parity_confident": true,
+                    "reasons": ["ok"]
+                })),
+                decision: Some(json!({
+                    "allowed": true,
+                    "input": {"objective":"x","target":"belief","impact":"high"}
+                })),
+                now_iso: Some("2026-03-04T12:05:00.000Z".to_string()),
+            },
+        );
+        assert_eq!(receipt.rel_path, receipt_again.rel_path);
+        let receipts_raw = fs::read_to_string(&receipts_path).expect("read persona lens receipts");
+        let rows = receipts_raw
+            .lines()
+            .filter(|line| !line.trim().is_empty())
+            .collect::<Vec<_>>();
+        assert!(rows.len() >= 2);
+        assert_eq!(rows[rows.len() - 1], rows[rows.len() - 2]);
+        let parsed: Value =
+            serde_json::from_str(rows[rows.len() - 1]).expect("parse persona lens receipt");
+        assert_eq!(parsed.get("target").and_then(Value::as_str), Some("belief"));
+        assert_eq!(
+            parsed.get("type").and_then(Value::as_str),
+            Some("inversion_persona_lens_gate")
+        );
 
         let conclave = compute_append_conclave_correspondence(&AppendConclaveCorrespondenceInput {
             correspondence_path: Some(correspondence_path.to_string_lossy().to_string()),
