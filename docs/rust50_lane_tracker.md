@@ -480,3 +480,4 @@ Persistent lane-by-lane migration log so progress is preserved outside chat cont
 - [x] N61 | systems/sensory/latent_intent_inference_graph.ts | LOC=309 | 2026-03-05T22:01:54Z
 - [x] N62 | systems/ops/script_surface_reduction_wave2.ts | LOC=309 | 2026-03-05T22:01:57Z
 - [x] N63 | systems/ops/guided_recovery_error_ux.ts | LOC=309 | 2026-03-05T22:02:00Z
+- [x] N64 | systems/routing/model_variant_profile.ts | LOC=308 | 2026-03-05T22:02:03Z
