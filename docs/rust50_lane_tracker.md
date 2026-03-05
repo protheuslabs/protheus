@@ -329,3 +329,4 @@ Persistent lane-by-lane migration log so progress is preserved outside chat cont
 - [x] N14 | systems/continuity/resurrection_protocol.ts | LOC=619 | 2026-03-05T21:49:55Z
 - [x] N15 | systems/nursery/nursery_bootstrap.ts | LOC=617 | 2026-03-05T21:49:57Z
 - [x] N16 | systems/eye/eye_kernel.ts | LOC=617 | 2026-03-05T21:50:00Z
+- [x] N17 | systems/continuity/session_continuity_vault.ts | LOC=607 | 2026-03-05T21:50:02Z
