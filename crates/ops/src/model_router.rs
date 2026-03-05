@@ -1414,6 +1414,81 @@ fn rounded_4(value: f64) -> f64 {
     (value * 10_000.0).round() / 10_000.0
 }
 
+fn sha1_hex(text: &str) -> String {
+    let mut bytes = text.as_bytes().to_vec();
+    let bit_len = (bytes.len() as u64) * 8;
+    bytes.push(0x80);
+    while bytes.len() % 64 != 56 {
+        bytes.push(0);
+    }
+    bytes.extend_from_slice(&bit_len.to_be_bytes());
+
+    let mut h0: u32 = 0x6745_2301;
+    let mut h1: u32 = 0xEFCD_AB89;
+    let mut h2: u32 = 0x98BA_DCFE;
+    let mut h3: u32 = 0x1032_5476;
+    let mut h4: u32 = 0xC3D2_E1F0;
+
+    for chunk in bytes.chunks(64) {
+        let mut w = [0u32; 80];
+        let mut i = 0usize;
+        while i < 16 {
+            let j = i * 4;
+            w[i] = u32::from_be_bytes([chunk[j], chunk[j + 1], chunk[j + 2], chunk[j + 3]]);
+            i += 1;
+        }
+        while i < 80 {
+            w[i] = (w[i - 3] ^ w[i - 8] ^ w[i - 14] ^ w[i - 16]).rotate_left(1);
+            i += 1;
+        }
+
+        let mut a = h0;
+        let mut b = h1;
+        let mut c = h2;
+        let mut d = h3;
+        let mut e = h4;
+
+        i = 0;
+        while i < 80 {
+            let (f, k) = if i < 20 {
+                ((b & c) | ((!b) & d), 0x5A82_7999)
+            } else if i < 40 {
+                (b ^ c ^ d, 0x6ED9_EBA1)
+            } else if i < 60 {
+                ((b & c) | (b & d) | (c & d), 0x8F1B_BCDC)
+            } else {
+                (b ^ c ^ d, 0xCA62_C1D6)
+            };
+            let temp = a
+                .rotate_left(5)
+                .wrapping_add(f)
+                .wrapping_add(e)
+                .wrapping_add(k)
+                .wrapping_add(w[i]);
+            e = d;
+            d = c;
+            c = b.rotate_left(30);
+            b = a;
+            a = temp;
+            i += 1;
+        }
+
+        h0 = h0.wrapping_add(a);
+        h1 = h1.wrapping_add(b);
+        h2 = h2.wrapping_add(c);
+        h3 = h3.wrapping_add(d);
+        h4 = h4.wrapping_add(e);
+    }
+
+    let mut digest = [0u8; 20];
+    digest[..4].copy_from_slice(&h0.to_be_bytes());
+    digest[4..8].copy_from_slice(&h1.to_be_bytes());
+    digest[8..12].copy_from_slice(&h2.to_be_bytes());
+    digest[12..16].copy_from_slice(&h3.to_be_bytes());
+    digest[16..20].copy_from_slice(&h4.to_be_bytes());
+    hex::encode(digest)
+}
+
 fn number_value(value: f64) -> Value {
     serde_json::Number::from_f64(value)
         .map(Value::Number)
@@ -1684,6 +1759,18 @@ pub fn normalize_prompt_for_cache(text: &str) -> String {
         .collect::<Vec<_>>()
         .join(" ");
     compact.chars().take(1200).collect()
+}
+
+pub fn prompt_cache_key(intent: &str, task: &str, capability: &str, role: &str, lane: &str) -> String {
+    let base = [
+        normalize_key(lane),
+        normalize_capability_key(capability),
+        normalize_key(role),
+        normalize_prompt_for_cache(intent),
+        normalize_prompt_for_cache(task),
+    ]
+    .join("|");
+    sha1_hex(&base)
 }
 
 pub fn budget_date_str(today_override: &str, now_iso: &str) -> String {
@@ -3597,6 +3684,19 @@ mod tests {
         let out = normalize_prompt_for_cache(&long);
         assert_eq!(out.chars().count(), 1200);
         assert!(out.chars().all(|ch| ch == 'x'));
+    }
+
+    #[test]
+    fn prompt_cache_key_matches_legacy_sha1_contract() {
+        let key = prompt_cache_key(
+            "Status 2026-03-05",
+            "Run 42 checks",
+            "Proposal:Decision@Tier!Alpha",
+            " Planning ",
+            "Dream-Weave",
+        );
+        assert_eq!(key, "baa9b389aa4cfa8d4656afc5435f298c36fbb9e9");
+        assert_eq!(key.len(), 40);
     }
 
     #[test]
