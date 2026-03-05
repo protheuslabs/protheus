@@ -12027,11 +12027,16 @@ mod tests {
     }
 
     #[test]
-    fn bridge_maps_all_inversion_controller_modes() {
-        let ts = include_str!("../../../systems/autonomy/inversion_controller.ts");
+    fn bridge_maps_all_inversion_primitive_callsite_modes() {
+        let ts_autonomy = include_str!("../../../systems/autonomy/autonomy_controller.ts");
+        let ts_inversion = include_str!("../../../systems/autonomy/inversion_controller.ts");
         let bridge = include_str!("../../../systems/autonomy/backlog_autoscale_rust_bridge.ts");
-        let called = extract_mode_literals(ts, "runInversionPrimitive");
-        assert!(!called.is_empty(), "expected inversion mode calls in inversion_controller.ts");
+        let mut called = extract_mode_literals(ts_inversion, "runInversionPrimitive");
+        called.extend(extract_mode_literals(ts_autonomy, "runInversionPrimitive"));
+        assert!(
+            !called.is_empty(),
+            "expected runInversionPrimitive mode calls in controller TS sources"
+        );
         let mapped = extract_bridge_modes(bridge, "runInversionPrimitive");
         assert!(!mapped.is_empty(), "expected inversion fieldByMode map in backlog_autoscale_rust_bridge.ts");
 
@@ -12041,7 +12046,7 @@ mod tests {
             .collect::<Vec<_>>();
         assert!(
             missing.is_empty(),
-            "inversion_controller uses modes missing from Rust inversion bridge map: {:?}",
+            "controller TS sources use modes missing from Rust inversion bridge map: {:?}",
             missing
         );
     }
