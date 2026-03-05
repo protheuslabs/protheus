@@ -409,3 +409,4 @@ Persistent lane-by-lane migration log so progress is preserved outside chat cont
 - [x] N94 | systems/ops/mobile_wrapper_distribution_pack.ts | LOC=352 | 2026-03-05T21:53:08Z
 - [x] N95 | systems/ops/critical_path_policy_coverage.ts | LOC=352 | 2026-03-05T21:53:10Z
 - [x] N96 | systems/migration/universal_importers.ts | LOC=352 | 2026-03-05T21:53:12Z
+- [x] N97 | systems/ops/signal_slo_deadlock_breaker.ts | LOC=351 | 2026-03-05T21:53:15Z
