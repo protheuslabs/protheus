@@ -12,13 +12,15 @@ use sysinfo::System;
 use walkdir::WalkDir;
 
 pub mod fluxlattice_program;
-pub mod perception_polish;
-pub mod protheusctl;
-pub mod scale_readiness;
+pub mod foundation_contract_gate;
 pub mod legacy_bridge;
 pub mod model_router;
 pub mod contract_check;
 pub mod strategy_mode_governor;
+pub mod perception_polish;
+pub mod protheusctl;
+pub mod scale_readiness;
+pub mod state_kernel;
 
 #[derive(Debug, Clone)]
 pub struct ParsedArgs {
