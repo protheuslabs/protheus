@@ -141,7 +141,7 @@ pub fn split_legacy_fallback_flag(argv: &[String], module_env_key: &str) -> (boo
         let tok = argv[i].trim().to_string();
         if let Some((k, v)) = tok.split_once('=') {
             if k == "--legacy-fallback" {
-                fallback_from_arg = Some(parse_bool_flag(Some(v)));
+                fallback_from_arg = Some(parse_bool_literal(v).unwrap_or(true));
                 i += 1;
                 continue;
             }
@@ -327,6 +327,22 @@ mod tests {
         ];
         let (fallback, cleaned) = split_legacy_fallback_flag(&args, "NO_SUCH_ENV");
         assert!(!fallback);
+        assert_eq!(cleaned, vec!["run".to_string()]);
+    }
+
+    #[test]
+    fn split_legacy_flag_inline_false_is_respected() {
+        let args = vec!["--legacy-fallback=false".to_string(), "run".to_string()];
+        let (fallback, cleaned) = split_legacy_fallback_flag(&args, "NO_SUCH_ENV");
+        assert!(!fallback);
+        assert_eq!(cleaned, vec!["run".to_string()]);
+    }
+
+    #[test]
+    fn split_legacy_flag_inline_invalid_defaults_true() {
+        let args = vec!["--legacy-fallback=latest".to_string(), "run".to_string()];
+        let (fallback, cleaned) = split_legacy_fallback_flag(&args, "NO_SUCH_ENV");
+        assert!(fallback);
         assert_eq!(cleaned, vec!["run".to_string()]);
     }
 }
