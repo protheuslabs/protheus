@@ -12004,7 +12004,9 @@ mod tests {
             regex::escape(fn_name)
         ))
         .expect("valid section regex");
-        let keys_re = Regex::new(r#"(?m)^\s*([a-zA-Z0-9_]+):\s*['"]"#).expect("valid key regex");
+        let keys_re =
+            Regex::new(r#"(?m)^\s*(?:([a-zA-Z0-9_]+)|['"]([^'"]+)['"])\s*:\s*['"]"#)
+                .expect("valid key regex");
         let Some(section) = section_re
             .captures(text)
             .and_then(|cap| cap.get(1).map(|m| m.as_str()))
@@ -12013,7 +12015,11 @@ mod tests {
         };
         keys_re
             .captures_iter(section)
-            .filter_map(|cap| cap.get(1).map(|m| m.as_str().trim().to_string()))
+            .filter_map(|cap| {
+                cap.get(1)
+                    .or_else(|| cap.get(2))
+                    .map(|m| m.as_str().trim().to_string())
+            })
             .filter(|key| !key.is_empty())
             .collect()
     }
