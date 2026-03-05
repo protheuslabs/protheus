@@ -122,4 +122,16 @@ mod tests {
         let compacted = compact_json_spacing(token);
         assert_eq!(compacted, token);
     }
+
+    #[test]
+    fn missing_tokens_preserves_duplicate_missing_entries() {
+        let text = "run";
+        let tokens = vec![
+            "missing".to_string(),
+            "run".to_string(),
+            "missing".to_string(),
+        ];
+        let missing = missing_tokens(text, &tokens);
+        assert_eq!(missing, vec!["missing".to_string(), "missing".to_string()]);
+    }
 }
