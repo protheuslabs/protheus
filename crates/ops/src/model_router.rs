@@ -748,4 +748,31 @@ mod tests {
         assert_eq!(out["budget_enforcement"]["reason"], "string-flag");
         assert_eq!(out["budget_enforcement"]["blocked"], false);
     }
+
+    #[test]
+    fn handoff_packet_fast_path_and_model_changed_require_true_bools() {
+        let payload = json!({
+            "tier": 2,
+            "fast_path": {
+                "matched": "true"
+            },
+            "model_changed": "true"
+        });
+        let out = build_handoff_packet(&payload);
+        assert!(out.get("fast_path").is_none());
+        assert_eq!(out["model_changed"], false);
+    }
+
+    #[test]
+    fn handoff_packet_post_task_return_model_requires_truthy_value() {
+        let payload = json!({
+            "tier": 3,
+            "deep_thinker": 1,
+            "post_task_return_model": 0
+        });
+        let out = build_handoff_packet(&payload);
+        assert_eq!(out["guardrails"]["deep_thinker"], true);
+        assert_eq!(out["guardrails"]["verification_required"], true);
+        assert!(out.get("post_task_return_model").is_none());
+    }
 }
