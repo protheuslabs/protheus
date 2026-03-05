@@ -23,6 +23,17 @@ pub const ROUTER_PROBE_REHAB_SUCCESS_THRESHOLD_DEFAULT: i64 = 2;
 pub const ROUTER_BUDGET_DIR_DEFAULT: &str = "state/autonomy/daily_budget";
 pub const ROUTER_BURN_ORACLE_LATEST_PATH_REL_DEFAULT: &str =
     "state/ops/dynamic_burn_budget_oracle/latest.json";
+pub const ROUTER_GENERIC_MARKERS: [&str; 9] = [
+    "as an ai",
+    "i'm an ai",
+    "i cannot",
+    "i can't access",
+    "i don't have access",
+    "i'd be happy to",
+    "here's a step-by-step guide",
+    "to assist you effectively",
+    "agilenix",
+];
 pub const DEFAULT_FAST_PATH_DISALLOW_REGEXES: [&str; 5] = [
     "https?:\\/\\/",
     "(^|\\s)--?[a-z0-9][a-z0-9_-]*\\b",
@@ -312,6 +323,14 @@ pub fn normalize_router_pressure(value: &str) -> String {
         "soft" | "medium" => "soft".to_string(),
         _ => "none".to_string(),
     }
+}
+
+pub fn score_generic(output: &str) -> i64 {
+    let lower = output.to_ascii_lowercase();
+    ROUTER_GENERIC_MARKERS
+        .iter()
+        .filter(|marker| lower.contains(**marker))
+        .count() as i64
 }
 
 pub fn is_env_probe_blocked_text(text: &str) -> bool {
@@ -2400,6 +2419,17 @@ mod tests {
         assert_eq!(normalize_router_pressure("high"), "hard");
         assert_eq!(normalize_router_pressure("medium"), "soft");
         assert_eq!(normalize_router_pressure("unknown"), "none");
+    }
+
+    #[test]
+    fn generic_output_scoring_matches_legacy_markers() {
+        let sample = "As an AI, I'd be happy to help. To assist you effectively, here's a step-by-step guide.";
+        assert_eq!(score_generic(sample), 4);
+        assert_eq!(score_generic("Focused, specific answer with no filler."), 0);
+        assert_eq!(
+            score_generic("I cannot run that. I can't access your private environment."),
+            2
+        );
     }
 
     #[test]
