@@ -121,6 +121,24 @@ pub fn run_legacy_script(
     }
 }
 
+pub fn run_legacy_script_rel(root: &Path, script_rel: &str, argv: &[String], domain: &str) -> i32 {
+    let script_path = root.join(script_rel);
+    if !script_path.exists() {
+        eprintln!(
+            "{}",
+            json!({
+                "ok": false,
+                "type": "legacy_bridge",
+                "domain": clean(domain, 120),
+                "script": clean(script_rel, 220),
+                "error": "legacy_script_missing"
+            })
+        );
+        return 1;
+    }
+    run_legacy_script(root, domain, &script_path, argv, true)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -201,5 +219,12 @@ exit 7
         assert_eq!(out.status.code(), Some(7));
         let stderr = String::from_utf8_lossy(&out.stderr);
         assert!(stderr.contains("boom"));
+    }
+
+    #[test]
+    fn run_legacy_script_rel_missing_returns_error() {
+        let root = tempdir().expect("tempdir");
+        let exit = run_legacy_script_rel(root.path(), "systems/missing.js", &[], "bridge_test");
+        assert_eq!(exit, 1);
     }
 }

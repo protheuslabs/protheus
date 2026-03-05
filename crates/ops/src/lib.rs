@@ -11,6 +11,8 @@ use std::time::Instant;
 use sysinfo::System;
 use walkdir::WalkDir;
 
+pub mod autotest_controller;
+pub mod autotest_doctor;
 pub mod fluxlattice_program;
 pub mod foundation_contract_gate;
 pub mod legacy_bridge;
@@ -19,6 +21,7 @@ pub mod contract_check;
 pub mod perception_polish;
 pub mod protheusctl;
 pub mod scale_readiness;
+pub mod spine;
 pub mod strategy_mode_governor;
 pub mod state_kernel;
 
