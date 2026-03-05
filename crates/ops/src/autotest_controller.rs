@@ -1,4 +1,3 @@
-use crate::legacy_bridge::{run_legacy_script, split_legacy_fallback_flag};
 use crate::{deterministic_receipt_hash, now_iso};
 use chrono::Timelike;
 use serde::{Deserialize, Serialize};
@@ -13,7 +12,6 @@ use std::time::{Duration, Instant};
 use sysinfo::System;
 use walkdir::WalkDir;
 
-const LEGACY_SCRIPT_REL: &str = "systems/ops/autotest_controller_legacy.js";
 const DEFAULT_POLICY_REL: &str = "config/autotest_policy.json";
 
 #[derive(Debug, Clone)]
@@ -2627,22 +2625,10 @@ fn usage() {
     println!("  protheus-ops autotest-controller status [--policy=path]");
     println!("  protheus-ops autotest-controller pulse [--policy=path] [--scope=changed|critical|all] [--max-tests=N] [--strict=1|0] [--force=1|0] [--run-timeout-ms=N]");
     println!("  protheus-ops autotest-controller daemon [--policy=path] [--interval-sec=N] [--max-cycles=N] [--scope=changed|critical|all] [--max-tests=N] [--strict=1|0] [--run-timeout-ms=N]");
-    println!("  add --legacy-fallback=1 to execute systems/ops/autotest_controller_legacy.js");
 }
 
 pub fn run(root: &Path, argv: &[String]) -> i32 {
-    let (use_legacy, cleaned_argv) =
-        split_legacy_fallback_flag(argv, "PROTHEUS_OPS_AUTOTEST_CONTROLLER_LEGACY");
-    if use_legacy {
-        return run_legacy_script(
-            root,
-            LEGACY_SCRIPT_REL,
-            &cleaned_argv,
-            "autotest_controller",
-        );
-    }
-
-    let cli = parse_cli(&cleaned_argv);
+    let cli = parse_cli(argv);
     let cmd = cli
         .positional
         .first()
@@ -2804,10 +2790,8 @@ mod tests {
     }
 
     #[test]
-    fn split_fallback_is_opt_in() {
-        let (fallback, cleaned) =
-            split_legacy_fallback_flag(&["run".to_string()], "NO_SUCH_ENV_KEY");
-        assert!(!fallback);
-        assert_eq!(cleaned, vec!["run".to_string()]);
+    fn parse_cli_preserves_run_command() {
+        let cli = parse_cli(&["run".to_string()]);
+        assert_eq!(cli.positional.first().map(String::as_str), Some("run"));
     }
 }

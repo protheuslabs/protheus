@@ -1,4 +1,3 @@
-use crate::legacy_bridge::{run_legacy_script, split_legacy_fallback_flag};
 use crate::{deterministic_receipt_hash, now_iso};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
@@ -6,8 +5,6 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
-
-const LEGACY_SCRIPT_REL: &str = "systems/spine/spine_legacy.js";
 
 #[derive(Debug, Clone)]
 struct CliArgs {
@@ -124,7 +121,6 @@ fn usage() {
     eprintln!("  protheus-ops spine eyes [YYYY-MM-DD] [--max-eyes=N]");
     eprintln!("  protheus-ops spine daily [YYYY-MM-DD] [--max-eyes=N]");
     eprintln!("  protheus-ops spine run [eyes|daily] [YYYY-MM-DD] [--max-eyes=N]");
-    eprintln!("  add --legacy-fallback=1 to execute systems/spine/spine_legacy.js");
 }
 
 fn print_json_line(value: &Value) {
@@ -846,14 +842,9 @@ fn execute_native(root: &Path, cli: &CliArgs) -> i32 {
 }
 
 pub fn run(root: &Path, argv: &[String]) -> i32 {
-    let (use_legacy, cleaned_argv) = split_legacy_fallback_flag(argv, "PROTHEUS_OPS_SPINE_LEGACY");
-    if use_legacy {
-        return run_legacy_script(root, LEGACY_SCRIPT_REL, &cleaned_argv, "spine");
-    }
-
-    let Some(cli) = parse_cli(&cleaned_argv) else {
+    let Some(cli) = parse_cli(argv) else {
         usage();
-        print_json_line(&cli_error_receipt(&cleaned_argv, "invalid_args", 2));
+        print_json_line(&cli_error_receipt(argv, "invalid_args", 2));
         return 2;
     };
 

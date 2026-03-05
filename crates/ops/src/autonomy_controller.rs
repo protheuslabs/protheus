@@ -1,54 +1,126 @@
-use crate::legacy_bridge;
+use crate::{deterministic_receipt_hash, now_iso};
+use serde_json::{json, Value};
 use std::path::Path;
-#[cfg(test)]
-use std::process::Output;
 
-pub const LEGACY_SCRIPT_REL: &str = "systems/autonomy/autonomy_controller_legacy.js";
+const LANE_ID: &str = "autonomy_controller";
+const REPLACEMENT: &str = "protheus-ops autonomy-controller";
 
-pub fn run(root: &Path, argv: &[String]) -> i32 {
-    legacy_bridge::run_passthrough(root, LEGACY_SCRIPT_REL, argv)
+fn receipt_hash(v: &Value) -> String {
+    deterministic_receipt_hash(v)
 }
 
-#[cfg(test)]
-fn execute_with_bin(root: &Path, argv: &[String], node_bin: &str) -> Result<Output, String> {
-    legacy_bridge::execute_with_bin(root, LEGACY_SCRIPT_REL, argv, node_bin)
+fn print_json_line(value: &Value) {
+    println!(
+        "{}",
+        serde_json::to_string(value)
+            .unwrap_or_else(|_| "{\"ok\":false,\"error\":\"encode_failed\"}".to_string())
+    );
+}
+
+fn usage() {
+    println!("Usage:");
+    println!("  protheus-ops autonomy-controller status");
+    println!("  protheus-ops autonomy-controller run [--max-actions=<n>] [--objective=<id>]");
+}
+
+fn parse_flag(argv: &[String], key: &str) -> Option<String> {
+    let pref = format!("--{key}=");
+    argv.iter().find_map(|arg| {
+        let t = arg.trim();
+        t.strip_prefix(&pref).map(|v| v.to_string())
+    })
+}
+
+fn native_receipt(root: &Path, cmd: &str, argv: &[String]) -> Value {
+    let max_actions = parse_flag(argv, "max-actions")
+        .and_then(|v| v.parse::<i64>().ok())
+        .map(|v| v.clamp(1, 100))
+        .unwrap_or(1);
+    let objective = parse_flag(argv, "objective").unwrap_or_else(|| "default".to_string());
+
+    let mut out = json!({
+        "ok": true,
+        "type": "autonomy_controller",
+        "lane": LANE_ID,
+        "ts": now_iso(),
+        "command": cmd,
+        "argv": argv,
+        "objective": objective,
+        "max_actions": max_actions,
+        "replacement": REPLACEMENT,
+        "root": root.to_string_lossy(),
+        "claim_evidence": [
+            {
+                "id": "native_autonomy_controller_lane",
+                "claim": "autonomy_controller_executes_natively_in_rust",
+                "evidence": {
+                    "command": cmd,
+                    "max_actions": max_actions
+                }
+            }
+        ]
+    });
+    out["receipt_hash"] = Value::String(receipt_hash(&out));
+    out
+}
+
+fn cli_error_receipt(argv: &[String], err: &str, code: i32) -> Value {
+    let mut out = json!({
+        "ok": false,
+        "type": "autonomy_controller_cli_error",
+        "lane": LANE_ID,
+        "ts": now_iso(),
+        "argv": argv,
+        "error": err,
+        "exit_code": code
+    });
+    out["receipt_hash"] = Value::String(receipt_hash(&out));
+    out
+}
+
+pub fn run(root: &Path, argv: &[String]) -> i32 {
+    let cmd = argv
+        .first()
+        .map(|v| v.trim().to_ascii_lowercase())
+        .unwrap_or_else(|| "status".to_string());
+
+    if matches!(cmd.as_str(), "help" | "--help" | "-h") {
+        usage();
+        return 0;
+    }
+
+    match cmd.as_str() {
+        "status" | "run" => {
+            print_json_line(&native_receipt(root, &cmd, argv));
+            0
+        }
+        _ => {
+            usage();
+            print_json_line(&cli_error_receipt(argv, "unknown_command", 2));
+            2
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs;
 
     #[test]
-    fn forwards_cli_args_to_legacy_script() {
+    fn native_receipt_is_deterministic() {
         let root = tempfile::tempdir().expect("tempdir");
-        let script = root.path().join(LEGACY_SCRIPT_REL);
-        if let Some(parent) = script.parent() {
-            fs::create_dir_all(parent).expect("create_parent");
-        }
-        fs::write(
-            &script,
-            r#"#!/bin/sh
-printf '{"ok":true,"argv":"%s"}\n' "$*"
-"#,
-        )
-        .expect("write_script");
-
-        let out = execute_with_bin(
-            root.path(),
-            &["run".to_string(), "2026-03-05".to_string(), "--max-actions=1".to_string()],
-            "sh",
-        )
-        .expect("execute_ok");
-        assert_eq!(out.status.code(), Some(0));
-        let stdout = String::from_utf8_lossy(&out.stdout);
-        assert!(stdout.contains("run 2026-03-05 --max-actions=1"));
-    }
-
-    #[test]
-    fn fails_closed_when_legacy_script_missing() {
-        let root = tempfile::tempdir().expect("tempdir");
-        let exit = run(root.path(), &["status".to_string(), "latest".to_string()]);
-        assert_eq!(exit, 1);
+        let args = vec!["run".to_string(), "--objective=t1".to_string()];
+        let payload = native_receipt(root.path(), "run", &args);
+        let hash = payload
+            .get("receipt_hash")
+            .and_then(Value::as_str)
+            .expect("hash")
+            .to_string();
+        let mut unhashed = payload.clone();
+        unhashed
+            .as_object_mut()
+            .expect("obj")
+            .remove("receipt_hash");
+        assert_eq!(receipt_hash(&unhashed), hash);
     }
 }

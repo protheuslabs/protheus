@@ -1,14 +1,117 @@
-use crate::legacy_bridge::{resolve_script_path, run_legacy_script_compat};
+use crate::{deterministic_receipt_hash, now_iso};
 use serde_json::{json, Map, Value};
 use std::collections::HashSet;
 use std::path::Path;
 
-const LEGACY_SCRIPT_ENV: &str = "PROTHEUS_MODEL_ROUTER_LEGACY_SCRIPT";
-const LEGACY_SCRIPT_DEFAULT: &str = "systems/routing/model_router_legacy.js";
+fn receipt_hash(v: &Value) -> String {
+    deterministic_receipt_hash(v)
+}
+
+fn print_json_line(value: &Value) {
+    println!(
+        "{}",
+        serde_json::to_string(value)
+            .unwrap_or_else(|_| "{\"ok\":false,\"error\":\"encode_failed\"}".to_string())
+    );
+}
+
+fn flag_value(argv: &[String], key: &str) -> Option<String> {
+    let pref = format!("--{key}=");
+    let mut i = 0usize;
+    while i < argv.len() {
+        let tok = argv[i].trim();
+        if let Some(v) = tok.strip_prefix(&pref) {
+            return Some(v.to_string());
+        }
+        if tok == format!("--{key}") {
+            if let Some(next) = argv.get(i + 1) {
+                if !next.starts_with("--") {
+                    return Some(next.clone());
+                }
+            }
+        }
+        i += 1;
+    }
+    None
+}
 
 pub fn run(root: &Path, args: &[String]) -> i32 {
-    let script = resolve_script_path(root, LEGACY_SCRIPT_ENV, LEGACY_SCRIPT_DEFAULT);
-    run_legacy_script_compat(root, "model_router", &script, args, false)
+    let cmd = args
+        .first()
+        .map(|v| v.trim().to_ascii_lowercase())
+        .unwrap_or_else(|| "status".to_string());
+
+    if matches!(cmd.as_str(), "help" | "--help" | "-h") {
+        println!("Usage:");
+        println!("  protheus-ops model-router status");
+        println!("  protheus-ops model-router infer --intent=<text> --task=<text> [--risk=low|medium|high] [--complexity=low|medium|high]");
+        return 0;
+    }
+
+    if !matches!(cmd.as_str(), "status" | "infer" | "run") {
+        let mut out = json!({
+            "ok": false,
+            "type": "model_router_cli_error",
+            "ts": now_iso(),
+            "command": cmd,
+            "argv": args,
+            "error": "unknown_command",
+            "exit_code": 2
+        });
+        out["receipt_hash"] = Value::String(receipt_hash(&out));
+        print_json_line(&out);
+        return 2;
+    }
+
+    let intent = flag_value(args, "intent").unwrap_or_default();
+    let task = flag_value(args, "task").unwrap_or_else(|| {
+        args.iter()
+            .skip(1)
+            .filter(|v| !v.starts_with("--"))
+            .cloned()
+            .collect::<Vec<_>>()
+            .join(" ")
+    });
+    let risk = flag_value(args, "risk").unwrap_or_else(|| "low".to_string());
+    let complexity = flag_value(args, "complexity").unwrap_or_else(|| "low".to_string());
+    let role = infer_role(&intent, &task);
+    let capability = infer_capability(&intent, &task, &role);
+    let tier = infer_tier(&risk, &complexity);
+
+    let mut out = json!({
+        "ok": true,
+        "type": "model_router",
+        "ts": now_iso(),
+        "command": cmd,
+        "argv": args,
+        "root": root.to_string_lossy(),
+        "intent": intent,
+        "task": task,
+        "risk": risk,
+        "complexity": complexity,
+        "role": role,
+        "capability": capability,
+        "tier": tier,
+        "claim_evidence": [
+            {
+                "id": "native_model_router_lane",
+                "claim": "model_router inference runs natively in rust",
+                "evidence": {
+                    "role": role,
+                    "capability": capability,
+                    "tier": tier
+                }
+            }
+        ],
+        "persona_lenses": {
+            "router": {
+                "mode": cmd
+            }
+        }
+    });
+    out["receipt_hash"] = Value::String(receipt_hash(&out));
+    print_json_line(&out);
+    0
 }
 
 fn normalize_key(raw: &str) -> String {

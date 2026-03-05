@@ -1,43 +1,62 @@
 #!/usr/bin/env node
 'use strict';
 Object.defineProperty(exports, "__esModule", { value: true });
-/**
- * Rust cutover wrapper for state_kernel.
- *
- * CLI invocations route through Rust.
- * Module imports keep using the legacy bridge API for compatibility
- * until dependent TS callers are fully migrated.
- */
+
 const path = require('path');
 const { spawnSync } = require('child_process');
+
 const ROOT = path.resolve(__dirname, '..', '..');
-function main() {
-    const args = process.argv.slice(2);
-    const cargoArgs = [
-        'run',
-        '--quiet',
-        '--manifest-path',
-        'crates/ops/Cargo.toml',
-        '--bin',
-        'protheus-ops',
-        '--',
-        'state-kernel',
-        ...args
-    ];
-    const run = spawnSync('cargo', cargoArgs, {
-        cwd: ROOT,
-        encoding: 'utf8',
-        stdio: 'inherit',
-        env: {
-            ...process.env,
-            PROTHEUS_NODE_BINARY: process.execPath || 'node'
-        }
-    });
-    process.exit(Number.isFinite(run.status) ? run.status : 1);
+const LANE = 'state_kernel';
+
+function runRust(args = []) {
+  const cargoArgs = [
+    'run',
+    '--quiet',
+    '--manifest-path',
+    'crates/ops/Cargo.toml',
+    '--bin',
+    'protheus-ops',
+    '--',
+    'state-kernel',
+    ...args
+  ];
+  const run = spawnSync('cargo', cargoArgs, {
+    cwd: ROOT,
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      PROTHEUS_NODE_BINARY: process.execPath || 'node'
+    }
+  });
+
+  const status = Number.isFinite(run.status) ? run.status : 1;
+  const stdout = run.stdout || '';
+  const stderr = run.stderr || '';
+  let payload = null;
+  const lines = stdout.trim().split(/\n+/).reverse();
+  for (const line of lines) {
+    if (!line || line[0] !== '{') continue;
+    try {
+      payload = JSON.parse(line);
+      break;
+    } catch (_) {}
+  }
+
+  return { ok: status === 0, status, stdout, stderr, payload };
 }
+
+function runRustCli() {
+  const out = runRust(process.argv.slice(2));
+  if (out.stdout) process.stdout.write(out.stdout);
+  if (out.stderr) process.stderr.write(out.stderr);
+  process.exit(out.status);
+}
+
 if (require.main === module) {
-    main();
+  runRustCli();
 }
-else {
-    module.exports = require('./state_kernel_legacy');
-}
+
+module.exports = {
+  lane: LANE,
+  run: runRust
+};

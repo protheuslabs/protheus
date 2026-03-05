@@ -1,13 +1,23 @@
-use crate::legacy_bridge::{resolve_script_path, run_legacy_script_compat};
+use crate::{deterministic_receipt_hash, now_iso};
 use foundation_hook_enforcer::{
     evaluate_source_hook_coverage, HookCoverageReceipt, CHECK_ID_FOUNDATION_HOOKS,
     CHECK_ID_GUARD_REGISTRY_CONSUMPTION,
 };
+use serde_json::{json, Value};
+use std::collections::HashSet;
+use std::fs;
 use std::path::Path;
+use std::process::Command;
+use walkdir::WalkDir;
 
-const LEGACY_SCRIPT_ENV: &str = "PROTHEUS_CONTRACT_CHECK_LEGACY_SCRIPT";
-const LEGACY_SCRIPT_DEFAULT: &str = "systems/spine/contract_check_legacy.js";
 const CHECK_IDS_FLAG_PREFIX: &str = "--rust-contract-check-ids=";
+const GUARD_REGISTRY_REL: &str = "config/guard_check_registry.json";
+const CONTRACT_CHECK_SOURCE_REL: &str = "crates/ops/src/contract_check.rs";
+const RUNTIME_MODE_STATE_REL: &str = "state/ops/runtime_mode.json";
+const PROBE_EYES_INTAKE_HELP_TOKENS: &[&str] =
+    &["eyes_intake.js", "create", "validate", "list-directives"];
+const PROBE_CONFLICT_MARKER_HELP_TOKENS: &[&str] =
+    &["conflict_marker_guard.js", "run", "status"];
 pub const GUARD_REGISTRY_REQUIRED_TOKENS: &[&str] =
     &["guard_check_registry", "required_merge_guard_ids"];
 pub const FOUNDATION_HOOK_REQUIRED_TOKENS: &[&str] = &[
@@ -42,9 +52,40 @@ pub const FOUNDATION_HOOK_REQUIRED_TOKENS: &[&str] = &[
 ];
 
 pub fn run(root: &Path, args: &[String]) -> i32 {
-    let script = resolve_script_path(root, LEGACY_SCRIPT_ENV, LEGACY_SCRIPT_DEFAULT);
     let args = with_contract_check_ids(args);
-    run_legacy_script_compat(root, "contract_check", &script, &args, false)
+    if args.iter().any(|arg| arg == "--help" || arg == "-h") {
+        print_usage();
+        return 0;
+    }
+
+    match execute_contract_checks(root, &args) {
+        Ok(mut receipt) => {
+            println!("contract_check: OK");
+            receipt["receipt_hash"] = Value::String(deterministic_receipt_hash(&receipt));
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&receipt).unwrap_or_else(|_| "{}".to_string())
+            );
+            0
+        }
+        Err(error) => {
+            eprintln!("contract_check: FAILED");
+            eprintln!(" reason: {error}");
+            let mut receipt = json!({
+                "ok": false,
+                "type": "contract_check",
+                "error": error,
+                "ts": now_iso(),
+                "required_check_ids": contract_check_ids_from_args(&args),
+            });
+            receipt["receipt_hash"] = Value::String(deterministic_receipt_hash(&receipt));
+            eprintln!(
+                "{}",
+                serde_json::to_string_pretty(&receipt).unwrap_or_else(|_| "{}".to_string())
+            );
+            1
+        }
+    }
 }
 
 pub fn with_contract_check_ids(args: &[String]) -> Vec<String> {
@@ -77,6 +118,393 @@ pub fn foundation_hook_coverage_receipt(source: &str) -> HookCoverageReceipt {
         FOUNDATION_HOOK_REQUIRED_TOKENS,
         source,
     )
+}
+
+fn print_usage() {
+    println!("Usage:");
+    println!("  protheus-ops contract-check [status] [--help] [--rust-contract-check-ids=<ids>]");
+    println!("Environment:");
+    println!("  PROTHEUS_RUNTIME_MODE=dist|source");
+    println!("  PROTHEUS_RUNTIME_DIST_REQUIRED=1 (required when mode=dist)");
+    println!("  CONTRACT_CHECK_DIST_WRAPPER_STRICT=1 (enable dist wrapper existence checks)");
+    println!("  CONTRACT_CHECK_DEEP_PROBES=1 (run runtime help probes)");
+}
+
+fn contract_check_ids_from_args(args: &[String]) -> Vec<String> {
+    args.iter()
+        .find_map(|arg| arg.strip_prefix(CHECK_IDS_FLAG_PREFIX))
+        .map(|raw| {
+            raw.split(',')
+                .map(|id| id.trim())
+                .filter(|id| !id.is_empty())
+                .map(|id| id.to_string())
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default()
+}
+
+fn execute_contract_checks(root: &Path, args: &[String]) -> Result<Value, String> {
+    let status_only = args.iter().any(|arg| arg == "status");
+    let deep_probes = env_flag("CONTRACT_CHECK_DEEP_PROBES", false);
+    let mut checks = vec![
+        check_dist_runtime_guardrails(root)?,
+        check_guard_registry_contracts(root)?,
+        check_source_tokens(
+            root,
+            CONTRACT_CHECK_SOURCE_REL,
+            GUARD_REGISTRY_REQUIRED_TOKENS,
+            CHECK_ID_GUARD_REGISTRY_CONSUMPTION,
+        )?,
+        check_source_tokens(
+            root,
+            CONTRACT_CHECK_SOURCE_REL,
+            FOUNDATION_HOOK_REQUIRED_TOKENS,
+            CHECK_ID_FOUNDATION_HOOKS,
+        )?,
+    ];
+
+    if !status_only && deep_probes {
+        checks.push(check_script_help_tokens(
+            root,
+            "systems/sensory/eyes_intake.js",
+            PROBE_EYES_INTAKE_HELP_TOKENS,
+        )?);
+        checks.push(check_script_help_tokens(
+            root,
+            "systems/security/conflict_marker_guard.js",
+            PROBE_CONFLICT_MARKER_HELP_TOKENS,
+        )?);
+    }
+
+    Ok(json!({
+        "ok": true,
+        "type": "contract_check",
+        "mode": if status_only { "status" } else { "run" },
+        "deep_probes": deep_probes,
+        "ts": now_iso(),
+        "required_check_ids": contract_check_ids_from_args(args),
+        "checks": checks,
+    }))
+}
+
+fn env_flag(name: &str, fallback: bool) -> bool {
+    let Ok(raw) = std::env::var(name) else {
+        return fallback;
+    };
+    match raw.trim().to_ascii_lowercase().as_str() {
+        "1" | "true" | "yes" | "on" => true,
+        "0" | "false" | "no" | "off" => false,
+        _ => fallback,
+    }
+}
+
+fn check_source_tokens(
+    root: &Path,
+    rel_path: &str,
+    required_tokens: &[&str],
+    check_id: &str,
+) -> Result<Value, String> {
+    let path = root.join(rel_path);
+    let source = resolve_contract_source(&path)?;
+    let tokens = required_tokens
+        .iter()
+        .map(|token| token.to_string())
+        .collect::<Vec<_>>();
+    let missing = missing_tokens(&source, &tokens);
+    if !missing.is_empty() {
+        return Err(format!(
+            "missing_source_tokens:{}:{}",
+            rel_path,
+            missing.join(",")
+        ));
+    }
+
+    Ok(json!({
+        "id": check_id,
+        "ok": true,
+        "path": rel_path,
+        "required_tokens": required_tokens.len(),
+    }))
+}
+
+fn resolve_contract_source(path: &Path) -> Result<String, String> {
+    let source = fs::read_to_string(path)
+        .map_err(|err| format!("read_source_failed:{}:{err}", path.display()))?;
+    if !is_ts_bootstrap_wrapper(&source) {
+        return Ok(source);
+    }
+    if path.extension().and_then(|ext| ext.to_str()) != Some("js") {
+        return Ok(source);
+    }
+    let ts_path = path.with_extension("ts");
+    if !ts_path.exists() {
+        return Ok(source);
+    }
+    fs::read_to_string(&ts_path).map_err(|err| {
+        format!(
+            "read_bootstrap_ts_source_failed:{}:{err}",
+            ts_path.display()
+        )
+    })
+}
+
+fn is_ts_bootstrap_wrapper(source: &str) -> bool {
+    let mut normalized = source.replace("\r\n", "\n");
+    if normalized.starts_with("#!") {
+        if let Some((_, rest)) = normalized.split_once('\n') {
+            normalized = rest.to_string();
+        }
+    }
+    let trimmed = normalized.trim();
+    let without_use_strict = trimmed
+        .strip_prefix("\"use strict\";")
+        .or_else(|| trimmed.strip_prefix("'use strict';"))
+        .unwrap_or(trimmed)
+        .trim();
+    without_use_strict.contains("ts_bootstrap")
+        && without_use_strict.contains(".bootstrap(__filename, module)")
+}
+
+fn effective_runtime_mode(root: &Path) -> String {
+    let env_mode = std::env::var("PROTHEUS_RUNTIME_MODE")
+        .unwrap_or_default()
+        .trim()
+        .to_ascii_lowercase();
+    if env_mode == "dist" || env_mode == "source" {
+        return env_mode;
+    }
+
+    let state_path = std::env::var("PROTHEUS_RUNTIME_MODE_STATE_PATH")
+        .map(|v| root.join(v))
+        .unwrap_or_else(|_| root.join(RUNTIME_MODE_STATE_REL));
+    let Ok(raw) = fs::read_to_string(&state_path) else {
+        return "source".to_string();
+    };
+    let Ok(parsed) = serde_json::from_str::<Value>(&raw) else {
+        return "source".to_string();
+    };
+    let mode = parsed
+        .get("mode")
+        .and_then(Value::as_str)
+        .unwrap_or("source")
+        .trim()
+        .to_ascii_lowercase();
+    if mode == "dist" || mode == "source" {
+        return mode;
+    }
+    "source".to_string()
+}
+
+fn check_dist_runtime_guardrails(root: &Path) -> Result<Value, String> {
+    let mode = effective_runtime_mode(root);
+    if mode != "dist" {
+        return Ok(json!({
+            "id": "dist_runtime_guardrails",
+            "ok": true,
+            "mode": mode,
+            "strict_wrapper_check": false,
+            "wrappers_checked": 0,
+        }));
+    }
+
+    if std::env::var("PROTHEUS_RUNTIME_DIST_REQUIRED").unwrap_or_default() != "1" {
+        return Err(
+            "dist_mode_requires_PROTHEUS_RUNTIME_DIST_REQUIRED=1_to_prevent_source_fallback"
+                .to_string(),
+        );
+    }
+
+    if !env_flag("CONTRACT_CHECK_DIST_WRAPPER_STRICT", false) {
+        return Ok(json!({
+            "id": "dist_runtime_guardrails",
+            "ok": true,
+            "mode": mode,
+            "strict_wrapper_check": false,
+            "wrappers_checked": 0,
+        }));
+    }
+
+    let mut wrappers_checked = 0usize;
+    let mut missing = Vec::<String>::new();
+    for root_dir in ["systems", "lib"] {
+        let walk_root = root.join(root_dir);
+        if !walk_root.exists() {
+            continue;
+        }
+        for entry in WalkDir::new(&walk_root)
+            .into_iter()
+            .filter_entry(|entry| {
+                let name = entry.file_name().to_string_lossy();
+                name != "node_modules" && name != ".git" && name != "dist"
+            })
+            .flatten()
+        {
+            if !entry.file_type().is_file() {
+                continue;
+            }
+            if entry.path().extension().and_then(|ext| ext.to_str()) != Some("js") {
+                continue;
+            }
+            let Ok(source) = fs::read_to_string(entry.path()) else {
+                continue;
+            };
+            if !is_ts_bootstrap_wrapper(&source) {
+                continue;
+            }
+            wrappers_checked += 1;
+            let Ok(rel) = entry.path().strip_prefix(root) else {
+                continue;
+            };
+            let dist_path = root.join("dist").join(rel);
+            if !dist_path.exists() {
+                missing.push(rel.to_string_lossy().to_string());
+            }
+        }
+    }
+
+    if !missing.is_empty() {
+        missing.sort();
+        return Err(format!(
+            "missing_dist_wrappers:{}:{}",
+            missing.len(),
+            missing
+                .iter()
+                .take(10)
+                .cloned()
+                .collect::<Vec<_>>()
+                .join(",")
+        ));
+    }
+
+    Ok(json!({
+        "id": "dist_runtime_guardrails",
+        "ok": true,
+        "mode": mode,
+        "strict_wrapper_check": true,
+        "wrappers_checked": wrappers_checked,
+    }))
+}
+
+fn check_guard_registry_contracts(root: &Path) -> Result<Value, String> {
+    let path = root.join(GUARD_REGISTRY_REL);
+    let raw = fs::read_to_string(&path)
+        .map_err(|err| format!("read_guard_registry_failed:{}:{err}", path.display()))?;
+    let parsed = serde_json::from_str::<Value>(&raw)
+        .map_err(|err| format!("parse_guard_registry_failed:{}:{err}", path.display()))?;
+    let checks = parsed
+        .pointer("/merge_guard/checks")
+        .and_then(Value::as_array)
+        .ok_or_else(|| "guard_registry_missing_merge_guard_checks".to_string())?;
+
+    let mut merge_guard_ids = HashSet::<String>::new();
+    let mut node_script_count = 0usize;
+    for check in checks {
+        if let Some(id) = check.get("id").and_then(Value::as_str) {
+            let id = id.trim();
+            if !id.is_empty() {
+                merge_guard_ids.insert(id.to_string());
+            }
+        }
+        if check.get("command").and_then(Value::as_str) != Some("node") {
+            continue;
+        }
+        let rel_script = check
+            .get("args")
+            .and_then(Value::as_array)
+            .and_then(|args| args.first())
+            .and_then(Value::as_str)
+            .unwrap_or("")
+            .trim()
+            .to_string();
+        if rel_script.is_empty() {
+            return Err("guard_registry_node_check_missing_script_path".to_string());
+        }
+        let script_path = root.join(&rel_script);
+        if !script_path.exists() {
+            return Err(format!(
+                "guard_registry_missing_script:{}:{}",
+                check
+                    .get("id")
+                    .and_then(Value::as_str)
+                    .unwrap_or("unknown"),
+                rel_script
+            ));
+        }
+        node_script_count += 1;
+    }
+
+    let required_ids = parsed
+        .pointer("/contract_check/required_merge_guard_ids")
+        .and_then(Value::as_array)
+        .ok_or_else(|| "guard_registry_missing_contract_check_required_ids".to_string())?
+        .iter()
+        .filter_map(Value::as_str)
+        .map(|id| id.trim().to_string())
+        .filter(|id| !id.is_empty())
+        .collect::<Vec<_>>();
+
+    let mut missing_ids = required_ids
+        .iter()
+        .filter(|id| !merge_guard_ids.contains((*id).as_str()))
+        .cloned()
+        .collect::<Vec<_>>();
+    if !missing_ids.is_empty() {
+        missing_ids.sort();
+        return Err(format!(
+            "required_merge_guard_ids_missing:{}",
+            missing_ids.join(",")
+        ));
+    }
+
+    Ok(json!({
+        "id": "guard_registry_contracts",
+        "ok": true,
+        "required_merge_guard_ids": required_ids,
+        "node_script_checks": node_script_count,
+    }))
+}
+
+fn check_script_help_tokens(
+    root: &Path,
+    rel_path: &str,
+    required_tokens: &[&str],
+) -> Result<Value, String> {
+    let script_path = root.join(rel_path);
+    if !script_path.exists() {
+        return Err(format!("missing_probe_script:{rel_path}"));
+    }
+    let node_bin = std::env::var("PROTHEUS_NODE_BINARY").unwrap_or_else(|_| "node".to_string());
+    let output = Command::new(&node_bin)
+        .arg(&script_path)
+        .arg("--help")
+        .current_dir(root)
+        .output()
+        .map_err(|err| format!("probe_spawn_failed:{rel_path}:{err}"))?;
+
+    let mut text = String::new();
+    text.push_str(&String::from_utf8_lossy(&output.stdout));
+    text.push(' ');
+    text.push_str(&String::from_utf8_lossy(&output.stderr));
+    let tokens = required_tokens
+        .iter()
+        .map(|token| token.to_string())
+        .collect::<Vec<_>>();
+    let missing = missing_tokens(&text, &tokens);
+    if !output.status.success() || !missing.is_empty() {
+        return Err(format!(
+            "probe_failed:{}:exit={}:missing={}",
+            rel_path,
+            output.status.code().unwrap_or(1),
+            missing.join(",")
+        ));
+    }
+
+    Ok(json!({
+        "id": format!("probe:{rel_path}"),
+        "ok": true,
+        "path": rel_path,
+        "required_tokens": required_tokens.len(),
+    }))
 }
 
 fn compact_json_spacing(token: &str) -> String {

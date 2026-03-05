@@ -75,6 +75,40 @@ Persistent lane-by-lane migration log so progress is preserved outside chat cont
 - Full functional replacement for those lanes requires replacing `legacy_bridge::run_passthrough` / `run_legacy_script_compat` in Rust entrypoints.
 - Wrapper source `.ts` files for the above lanes have been removed and replaced by committed `.js` runtime wrappers.
 
+## Completed In This Continuation (Real Native Lane Migration)
+- Timestamp: 2026-03-05 22:30 (America/Denver)
+- Execution mode: native Rust replacement of retired legacy-bridge lanes.
+- Result: `cargo test` + `cargo clippy -D warnings` + formal invariants all green after migration.
+
+### Native Rust Lanes Migrated
+- `crates/ops/src/contract_check.rs` (legacy bridge removed; native checks + receipts)
+- `crates/ops/src/foundation_contract_gate.rs` (legacy passthrough removed; native hook coverage receipts)
+- `crates/ops/src/model_router.rs` (`run` migrated to native inference path)
+- `crates/ops/src/strategy_mode_governor.rs` (`run` migrated to native transition evaluation)
+- `crates/ops/src/autotest_controller.rs` (legacy fallback path removed)
+- `crates/ops/src/autotest_doctor.rs` (legacy fallback path removed)
+- `crates/ops/src/spine.rs` (legacy fallback path removed)
+- `crates/ops/src/health_status.rs` (legacy passthrough replaced with native handler)
+- `crates/ops/src/workflow_executor.rs` (legacy passthrough replaced with native handler)
+- `crates/ops/src/autonomy_controller.rs` (legacy passthrough replaced with native handler)
+- `crates/ops/src/inversion_controller.rs` (legacy passthrough replaced with native handler)
+- `crates/ops/src/proposal_enricher.rs` (legacy passthrough replaced with native handler)
+- `crates/ops/src/personas_cli.rs` (legacy passthrough replaced with native handler)
+- `crates/ops/src/state_kernel.rs` (legacy passthrough replaced with native handler)
+- `systems/memory/rust/src/bin/idle_dream_cycle.rs` (legacy bridge fallback removed)
+- `systems/memory/rust/src/bin/rust_memory_transition_lane.rs` (legacy bridge fallback removed)
+
+### JS Wrappers Cut Over To Native Rust Exports
+- `systems/autonomy/health_status.js`
+- `systems/workflow/workflow_executor.js`
+- `systems/autonomy/autonomy_controller.js`
+- `systems/autonomy/inversion_controller.js`
+- `systems/autonomy/proposal_enricher.js`
+- `systems/personas/cli.js`
+- `systems/ops/state_kernel.js`
+- `systems/routing/model_router.js`
+- `systems/autonomy/strategy_mode_governor.js`
+
 ## Completed In This Continuation (Top-100 Wrapper Source Cutover)
 - Timestamp: 2026-03-05 14:05 
 - Result: Ranked top-100 queue now has `0` remaining `.ts + .js` wrapper pairs.

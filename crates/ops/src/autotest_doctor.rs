@@ -1,4 +1,3 @@
-use crate::legacy_bridge::{run_legacy_script, split_legacy_fallback_flag};
 use crate::{deterministic_receipt_hash, now_iso};
 use chrono::Timelike;
 use serde::{Deserialize, Serialize};
@@ -8,7 +7,6 @@ use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
-const LEGACY_SCRIPT_REL: &str = "systems/ops/autotest_doctor_legacy.js";
 const DEFAULT_POLICY_REL: &str = "config/autotest_doctor_policy.json";
 
 #[derive(Debug, Clone)]
@@ -1572,17 +1570,10 @@ fn usage() {
     println!("Usage:");
     println!("  protheus-ops autotest-doctor run [YYYY-MM-DD|latest] [--policy=path] [--apply=1|0] [--max-actions=N] [--force=1|0] [--reset-kill-switch=1]");
     println!("  protheus-ops autotest-doctor status [latest|YYYY-MM-DD] [--policy=path]");
-    println!("  add --legacy-fallback=1 to execute systems/ops/autotest_doctor_legacy.js");
 }
 
 pub fn run(root: &Path, argv: &[String]) -> i32 {
-    let (use_legacy, cleaned_argv) =
-        split_legacy_fallback_flag(argv, "PROTHEUS_OPS_AUTOTEST_DOCTOR_LEGACY");
-    if use_legacy {
-        return run_legacy_script(root, LEGACY_SCRIPT_REL, &cleaned_argv, "autotest_doctor");
-    }
-
-    let cli = parse_cli(&cleaned_argv);
+    let cli = parse_cli(argv);
     let cmd = cli
         .positional
         .first()
