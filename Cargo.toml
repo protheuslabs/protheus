@@ -3,6 +3,7 @@ resolver = "2"
 members = [
   "crates/blob_test",
   "crates/execution",
+  "crates/foundation_hook_enforcer",
   "crates/fluxlattice",
   "crates/graph",
   "crates/memory",
