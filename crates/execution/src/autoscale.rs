@@ -6112,13 +6112,7 @@ pub struct AutoscaleRequest {
 }
 
 fn clamp_ratio(v: f64) -> f64 {
-    if v < 0.0 {
-        0.0
-    } else if v > 1.0 {
-        1.0
-    } else {
-        v
-    }
+    v.clamp(0.0, 1.0)
 }
 
 pub fn compute_plan(input: &PlanInput) -> PlanOutput {
@@ -7981,7 +7975,7 @@ pub fn compute_collective_shadow_aggregate(
     let confidence_sum = input
         .entries
         .iter()
-        .map(|row| row.confidence.max(0.0).min(1.0))
+        .map(|row| row.confidence.clamp(0.0, 1.0))
         .sum::<f64>();
     let confidence_avg = to_fixed4(confidence_sum / (matches as f64));
 
@@ -7995,7 +7989,7 @@ pub fn compute_collective_shadow_aggregate(
                 .trim()
                 .eq_ignore_ascii_case("avoid")
         })
-        .map(|row| row.score_impact.max(0.0) * row.confidence.max(0.0).min(1.0))
+        .map(|row| row.score_impact.max(0.0) * row.confidence.clamp(0.0, 1.0))
         .sum::<f64>();
     let bonus_raw = input
         .entries
@@ -8007,7 +8001,7 @@ pub fn compute_collective_shadow_aggregate(
                 .trim()
                 .eq_ignore_ascii_case("reinforce")
         })
-        .map(|row| row.score_impact.max(0.0) * row.confidence.max(0.0).min(1.0))
+        .map(|row| row.score_impact.max(0.0) * row.confidence.clamp(0.0, 1.0))
         .sum::<f64>();
 
     CollectiveShadowAggregateOutput {
@@ -8024,12 +8018,8 @@ pub fn compute_expected_value_signal(
     let clamp_score = |value: f64| -> f64 {
         if !value.is_finite() {
             0.0
-        } else if value <= 0.0 {
-            0.0
-        } else if value >= 100.0 {
-            100.0
         } else {
-            value
+            value.clamp(0.0, 100.0)
         }
     };
     let round_score = |value: f64| -> f64 { clamp_score(value.round()) };
@@ -8219,12 +8209,8 @@ pub fn compute_value_density_score(input: &ValueDensityScoreInput) -> ValueDensi
     };
     let tokens = if !input.est_tokens.is_finite() {
         80.0
-    } else if input.est_tokens < 80.0 {
-        80.0
-    } else if input.est_tokens > 12000.0 {
-        12000.0
     } else {
-        input.est_tokens
+        input.est_tokens.clamp(80.0, 12000.0)
     };
     if value <= 0.0 {
         return ValueDensityScoreOutput { score: 0 };
@@ -9763,7 +9749,7 @@ pub fn compute_strategy_selection(input: &StrategySelectionInput) -> StrategySel
     let canary_due = input.canary_enabled
         && !canary_pool.is_empty()
         && canary_every
-            .map(|every| every > 0 && attempt_index % every == 0)
+            .map(|every| attempt_index.is_multiple_of(every))
             .unwrap_or(false);
     let selected_strategy_id = if canary_due {
         let pool_ids: Vec<String> = canary_pool
@@ -10488,7 +10474,7 @@ pub fn compute_choose_selection_mode(
     if eligible_len >= min_eligible
         && input.explore_used < input.explore_quota
         && input.executed_count > 0
-        && (input.executed_count % every_n) == 0
+        && input.executed_count.is_multiple_of(every_n)
     {
         mode = "explore".to_string();
         let middle = ((eligible_len as f64) / 2.0).floor() as u32;
@@ -11229,12 +11215,8 @@ pub fn compute_directive_pulse_context(
     let clamp_number = |value: f64, min: f64, max: f64| -> f64 {
         if !value.is_finite() {
             min
-        } else if value < min {
-            min
-        } else if value > max {
-            max
         } else {
-            value
+            value.clamp(min, max)
         }
     };
     let to_count = |value: Option<f64>| -> u32 {
@@ -11495,9 +11477,7 @@ fn js_array_to_strings(value: Option<&serde_json::Value>) -> Vec<String> {
 }
 
 fn js_like_number(value: Option<&serde_json::Value>) -> Option<f64> {
-    let Some(v) = value else {
-        return None;
-    };
+    let v = value?;
     match v {
         serde_json::Value::Number(n) => n.as_f64(),
         serde_json::Value::String(s) => s.trim().parse::<f64>().ok(),
@@ -11811,42 +11791,27 @@ pub fn compute_proposal_directive_text(
     input: &ProposalDirectiveTextInput,
 ) -> ProposalDirectiveTextOutput {
     let proposal = input.proposal.as_ref().unwrap_or(&serde_json::Value::Null);
-    let mut parts = Vec::<String>::new();
-    parts.push(js_like_string(
-        json_path(proposal, &["title"]).unwrap_or(&serde_json::Value::Null),
-    ));
-    parts.push(js_like_string(
-        json_path(proposal, &["type"]).unwrap_or(&serde_json::Value::Null),
-    ));
-    parts.push(js_like_string(
-        json_path(proposal, &["summary"]).unwrap_or(&serde_json::Value::Null),
-    ));
-    parts.push(js_like_string(
-        json_path(proposal, &["notes"]).unwrap_or(&serde_json::Value::Null),
-    ));
-    parts.push(js_like_string(
-        json_path(proposal, &["expected_impact"]).unwrap_or(&serde_json::Value::Null),
-    ));
-    parts.push(js_like_string(
-        json_path(proposal, &["risk"]).unwrap_or(&serde_json::Value::Null),
-    ));
-    parts.push(js_like_string(
-        json_path(proposal, &["meta", "preview"]).unwrap_or(&serde_json::Value::Null),
-    ));
-    parts.push(js_like_string(
-        json_path(proposal, &["meta", "url"]).unwrap_or(&serde_json::Value::Null),
-    ));
-    parts.push(js_like_string(
-        json_path(proposal, &["meta", "normalized_objective"]).unwrap_or(&serde_json::Value::Null),
-    ));
-    parts.push(js_like_string(
-        json_path(proposal, &["meta", "normalized_expected_outcome"])
-            .unwrap_or(&serde_json::Value::Null),
-    ));
-    parts.push(js_like_string(
-        json_path(proposal, &["meta", "normalized_validation_metric"])
-            .unwrap_or(&serde_json::Value::Null),
-    ));
+    let mut parts = vec![
+        js_like_string(json_path(proposal, &["title"]).unwrap_or(&serde_json::Value::Null)),
+        js_like_string(json_path(proposal, &["type"]).unwrap_or(&serde_json::Value::Null)),
+        js_like_string(json_path(proposal, &["summary"]).unwrap_or(&serde_json::Value::Null)),
+        js_like_string(json_path(proposal, &["notes"]).unwrap_or(&serde_json::Value::Null)),
+        js_like_string(json_path(proposal, &["expected_impact"]).unwrap_or(&serde_json::Value::Null)),
+        js_like_string(json_path(proposal, &["risk"]).unwrap_or(&serde_json::Value::Null)),
+        js_like_string(json_path(proposal, &["meta", "preview"]).unwrap_or(&serde_json::Value::Null)),
+        js_like_string(json_path(proposal, &["meta", "url"]).unwrap_or(&serde_json::Value::Null)),
+        js_like_string(
+            json_path(proposal, &["meta", "normalized_objective"]).unwrap_or(&serde_json::Value::Null),
+        ),
+        js_like_string(
+            json_path(proposal, &["meta", "normalized_expected_outcome"])
+                .unwrap_or(&serde_json::Value::Null),
+        ),
+        js_like_string(
+            json_path(proposal, &["meta", "normalized_validation_metric"])
+                .unwrap_or(&serde_json::Value::Null),
+        ),
+    ];
 
     let hint_tokens = js_array_to_strings(json_path(proposal, &["meta", "normalized_hint_tokens"]));
     if !hint_tokens.is_empty() {
@@ -14423,11 +14388,11 @@ pub fn compute_non_yield_reason(input: &NonYieldReasonInput) -> NonYieldReasonOu
         return NonYieldReasonOutput { reason: explicit };
     }
 
-    let result = normalize_spaces(input.result.as_ref().map(|v| v.as_str()).unwrap_or(""))
+    let result = normalize_spaces(input.result.as_deref().unwrap_or(""))
         .to_ascii_lowercase();
-    let outcome = normalize_spaces(input.outcome.as_ref().map(|v| v.as_str()).unwrap_or(""))
+    let outcome = normalize_spaces(input.outcome.as_deref().unwrap_or(""))
         .to_ascii_lowercase();
-    let category = normalize_spaces(input.category.as_ref().map(|v| v.as_str()).unwrap_or(""))
+    let category = normalize_spaces(input.category.as_deref().unwrap_or(""))
         .to_ascii_lowercase();
 
     if category == "no_progress" && result == "executed" {
@@ -14503,26 +14468,22 @@ pub fn compute_run_event_objective_id(
     let selected = if input.directive_pulse_present.unwrap_or(false) {
         input
             .directive_pulse_objective_id
-            .as_ref()
-            .map(|v| v.as_str())
+            .as_deref()
             .unwrap_or("")
     } else if input.objective_id_present.unwrap_or(false) {
         input
             .objective_id
-            .as_ref()
-            .map(|v| v.as_str())
+            .as_deref()
             .unwrap_or("")
     } else if input.objective_binding_present.unwrap_or(false) {
         input
             .objective_binding_objective_id
-            .as_ref()
-            .map(|v| v.as_str())
+            .as_deref()
             .unwrap_or("")
     } else if input.top_escalation_present.unwrap_or(false) {
         input
             .top_escalation_objective_id
-            .as_ref()
-            .map(|v| v.as_str())
+            .as_deref()
             .unwrap_or("")
     } else {
         ""
@@ -14535,18 +14496,16 @@ pub fn compute_run_event_objective_id(
 
 pub fn compute_run_event_proposal_id(input: &RunEventProposalIdInput) -> RunEventProposalIdOutput {
     let selected = if input.proposal_id_present.unwrap_or(false) {
-        input.proposal_id.as_ref().map(|v| v.as_str()).unwrap_or("")
+        input.proposal_id.as_deref().unwrap_or("")
     } else if input.selected_proposal_id_present.unwrap_or(false) {
         input
             .selected_proposal_id
-            .as_ref()
-            .map(|v| v.as_str())
+            .as_deref()
             .unwrap_or("")
     } else if input.top_escalation_present.unwrap_or(false) {
         input
             .top_escalation_proposal_id
-            .as_ref()
-            .map(|v| v.as_str())
+            .as_deref()
             .unwrap_or("")
     } else {
         ""
@@ -14728,7 +14687,7 @@ pub fn compute_policy_hold_pressure(input: &PolicyHoldPressureInput) -> PolicyHo
 
 fn policy_hold_reason_from_event_input(evt: &PolicyHoldPatternEventInput) -> String {
     let explicit = normalize_spaces(
-        &evt.hold_reason
+        evt.hold_reason
             .as_ref()
             .or(evt.route_block_reason.as_ref())
             .map(|v| v.as_str())
@@ -14738,15 +14697,14 @@ fn policy_hold_reason_from_event_input(evt: &PolicyHoldPatternEventInput) -> Str
     if !explicit.is_empty() {
         return explicit;
     }
-    normalize_spaces(evt.result.as_ref().map(|v| v.as_str()).unwrap_or("")).to_ascii_lowercase()
+    normalize_spaces(evt.result.as_deref().unwrap_or("")).to_ascii_lowercase()
 }
 
 pub fn compute_policy_hold_pattern(input: &PolicyHoldPatternInput) -> PolicyHoldPatternOutput {
     let objective_id = normalize_spaces(
         input
             .objective_id
-            .as_ref()
-            .map(|v| v.as_str())
+            .as_deref()
             .unwrap_or(""),
     );
     let window_hours = input.window_hours.unwrap_or(24.0).max(1.0);
@@ -14775,8 +14733,7 @@ pub fn compute_policy_hold_pattern(input: &PolicyHoldPatternInput) -> PolicyHold
             .as_ref()
             .map(|v| v.trim().to_string())
             .unwrap_or_default();
-        let evt_objective =
-            normalize_spaces(evt.objective_id.as_ref().map(|v| v.as_str()).unwrap_or(""));
+        let evt_objective = normalize_spaces(evt.objective_id.as_deref().unwrap_or(""));
         if objective_id.is_empty() || evt_objective != objective_id {
             continue;
         }
@@ -15146,9 +15103,7 @@ fn parse_non_negative_number(value: Option<&serde_json::Value>) -> Option<f64> {
 }
 
 fn parse_clean_optional_string(value: Option<&serde_json::Value>) -> Option<String> {
-    let Some(raw) = value.and_then(|v| v.as_str()) else {
-        return None;
-    };
+    let raw = value.and_then(|v| v.as_str())?;
     let trimmed = raw.trim();
     if trimmed.is_empty() {
         None
@@ -15313,7 +15268,7 @@ pub fn compute_inversion_maturity_score(
         + (non_destructive_rate * weight_non_destructive_rate)
         + (experience * weight_experience))
         / weight_total;
-    let score = raw_score.max(0.0).min(1.0);
+    let score = raw_score.clamp(0.0, 1.0);
     let band = if score < band_novice {
         "novice"
     } else if score < band_developing {
@@ -15785,6 +15740,7 @@ pub fn compute_detect_eyes_terminology_drift(
 ) -> DetectEyesTerminologyDriftOutput {
     let mut warnings = Vec::<DetectEyesTerminologyDriftWarning>::new();
     let mut seen = std::collections::BTreeSet::<String>::new();
+    let eye_terms_re = Regex::new(r"\beye\b|\beyes\b").expect("valid eye regex");
     for proposal in &input.proposals {
         let proposal_obj = proposal.as_object();
         if proposal_obj.is_none() {
@@ -15816,11 +15772,7 @@ pub fn compute_detect_eyes_terminology_drift(
             evidence,
         })
         .blob;
-        if blob.is_empty()
-            || !Regex::new(r"\beye\b|\beyes\b")
-                .expect("valid eye regex")
-                .is_match(&blob)
-        {
+        if blob.is_empty() || !eye_terms_re.is_match(&blob) {
             continue;
         }
         let mut matched_tools = Vec::<String>::new();
@@ -16844,7 +16796,7 @@ pub fn compute_active_strategy_variants(
         }
     }
 
-    out.sort_by(|a, b| autoscale_row_id(a).cmp(&autoscale_row_id(b)));
+    out.sort_by_key(autoscale_row_id);
     ActiveStrategyVariantsOutput { variants: out }
 }
 
@@ -22638,24 +22590,25 @@ mod tests {
     fn collective_shadow_adjustments_clamps_penalty_and_bonus() {
         let out = compute_collective_shadow_adjustments(&CollectiveShadowAdjustmentsInput {
             penalty_raw: 18.4,
-            bonus_raw: 2.718,
+            bonus_raw: std::f64::consts::E,
             max_penalty: 12.0,
             max_bonus: 6.0,
         });
         assert!((out.penalty - 12.0).abs() < 0.000001);
-        assert!((out.bonus - 2.718).abs() < 0.000001);
+        let expected_bonus = (std::f64::consts::E * 1000.0).round() / 1000.0;
+        assert!((out.bonus - expected_bonus).abs() < 0.000001);
     }
 
     #[test]
     fn autoscale_json_collective_shadow_adjustments_path_works() {
         let payload = serde_json::json!({
-            "mode": "collective_shadow_adjustments",
-            "collective_shadow_adjustments_input": {
-                "penalty_raw": 18.4,
-                "bonus_raw": 2.718,
-                "max_penalty": 12,
-                "max_bonus": 6
-            }
+                "mode": "collective_shadow_adjustments",
+                "collective_shadow_adjustments_input": {
+                    "penalty_raw": 18.4,
+                    "bonus_raw": std::f64::consts::E,
+                    "max_penalty": 12,
+                    "max_bonus": 6
+                }
         })
         .to_string();
         let out = run_autoscale_json(&payload).expect("autoscale collective_shadow_adjustments");
@@ -26946,8 +26899,8 @@ mod tests {
                 load_error: None,
                 objectives: vec![],
             });
-        assert_eq!(disabled.enabled, false);
-        assert_eq!(disabled.available, false);
+        assert!(!disabled.enabled);
+        assert!(!disabled.available);
         assert_eq!(disabled.error.as_deref(), Some("directive_pulse_disabled"));
 
         let errored =
@@ -26956,8 +26909,8 @@ mod tests {
                 load_error: Some(" boom ".to_string()),
                 objectives: vec![serde_json::json!({"id":"T1"})],
             });
-        assert_eq!(errored.enabled, true);
-        assert_eq!(errored.available, false);
+        assert!(errored.enabled);
+        assert!(!errored.available);
         assert_eq!(errored.objectives.len(), 0);
         assert_eq!(errored.error.as_deref(), Some("boom"));
     }
@@ -27229,7 +27182,7 @@ mod tests {
                 "remediation".to_string(),
             ],
         });
-        assert_eq!(out.required, true);
+        assert!(out.required);
         assert_eq!(out.min_count, 2.0);
         assert_eq!(
             out.exempt_types,
@@ -27265,8 +27218,8 @@ mod tests {
                 base_exempt_types: vec!["directive_clarification".to_string()],
                 proposal_type: Some("directive_clarification".to_string()),
             });
-        assert_eq!(out.required, false);
-        assert_eq!(out.exempt, true);
+        assert!(!out.required);
+        assert!(out.exempt);
         assert_eq!(out.min_count, 1.0);
     }
 
@@ -27322,7 +27275,7 @@ mod tests {
             tokens_used: None,
             source: Some("route_execute_metrics".to_string()),
         });
-        assert_eq!(out.has_value, true);
+        assert!(out.has_value);
         let usage = out.usage.expect("usage");
         assert_eq!(usage.prompt_tokens, Some(11.0));
         assert_eq!(usage.completion_tokens, Some(5.0));
