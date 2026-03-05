@@ -47,6 +47,13 @@ mod tests {
     use super::*;
 
     #[test]
+    fn compact_json_spacing_only_compacts_key_colon_whitespace() {
+        let token = r#""schema":   {"id": "x"} value:  keep"#;
+        let compacted = compact_json_spacing(token);
+        assert_eq!(compacted, r#""schema":{"id":"x"} value:  keep"#);
+    }
+
+    #[test]
     fn missing_tokens_accepts_compact_json_variant() {
         let text = r#"{"schema":{"id":"x"}}"#;
         let tokens = vec!["\"schema\": {".to_string()];
@@ -60,5 +67,17 @@ mod tests {
         let tokens = vec!["status".to_string(), "run".to_string()];
         let missing = missing_tokens(text, &tokens);
         assert_eq!(missing, vec!["status".to_string()]);
+    }
+
+    #[test]
+    fn missing_tokens_preserves_missing_order() {
+        let text = "run --help";
+        let tokens = vec![
+            "status".to_string(),
+            "run".to_string(),
+            "contract".to_string(),
+        ];
+        let missing = missing_tokens(text, &tokens);
+        assert_eq!(missing, vec!["status".to_string(), "contract".to_string()]);
     }
 }

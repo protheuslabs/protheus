@@ -220,6 +220,22 @@ mod tests {
     }
 
     #[test]
+    fn readiness_state_execute_mode_stays_fail_closed_without_strict_ready() {
+        let allow = HashSet::from(["success_criteria_pass_rate".to_string()]);
+        let state = readiness_state(
+            "execute",
+            false,
+            &["success_criteria_pass_rate".to_string()],
+            true,
+            &allow,
+        );
+        assert!(state.canary_relaxed);
+        assert!(state.ready_for_canary);
+        assert!(!state.ready_for_execute);
+        assert!(!state.effective_ready);
+    }
+
+    #[test]
     fn transition_promotes_score_only_to_canary_when_evidence_passes() {
         let policy = base_policy();
         let readiness = ReadinessState {
@@ -324,6 +340,74 @@ mod tests {
             &streak,
         );
 
+        assert!(tr.is_none());
+    }
+
+    #[test]
+    fn transition_blocks_promotion_when_spc_holds_escalation() {
+        let policy = base_policy();
+        let readiness = ReadinessState {
+            strict_ready: true,
+            canary_relaxed: false,
+            ready_for_canary: true,
+            ready_for_execute: true,
+            effective_ready: true,
+            failed_checks: vec![],
+        };
+        let canary = CanaryState {
+            preview_ready_for_canary: true,
+            ready_for_execute: true,
+            quality_lock_active: true,
+        };
+        let streak = StreakState {
+            escalate_ready_streak: 5,
+            demote_not_ready_streak: 0,
+        };
+
+        let tr = decide_transition(
+            "score_only",
+            &readiness,
+            &canary,
+            &policy,
+            true,
+            true,
+            &streak,
+        );
+        assert!(tr.is_none());
+    }
+
+    #[test]
+    fn transition_skips_demotion_when_policy_disables_demote() {
+        let mut policy = base_policy();
+        policy.demote_not_ready = false;
+
+        let readiness = ReadinessState {
+            strict_ready: false,
+            canary_relaxed: false,
+            ready_for_canary: false,
+            ready_for_execute: false,
+            effective_ready: false,
+            failed_checks: vec!["verified_rate".to_string()],
+        };
+        let canary = CanaryState {
+            preview_ready_for_canary: false,
+            ready_for_execute: false,
+            quality_lock_active: false,
+        };
+        let streak = StreakState {
+            escalate_ready_streak: 0,
+            demote_not_ready_streak: 10,
+        };
+
+        let tr = decide_transition(
+            "canary_execute",
+            &readiness,
+            &canary,
+            &policy,
+            false,
+            false,
+            &streak,
+        );
         assert!(tr.is_none());
     }
 }
