@@ -405,3 +405,4 @@ Persistent lane-by-lane migration log so progress is preserved outside chat cont
 - [x] N90 | lib/approval_gate.ts | LOC=354 | 2026-03-05T21:52:57Z
 - [x] N91 | systems/ops/rm_progress_dashboard.ts | LOC=353 | 2026-03-05T21:53:01Z
 - [x] N92 | systems/migration/self_healing_migration_daemon.ts | LOC=353 | 2026-03-05T21:53:03Z
+- [x] N93 | systems/assimilation/candidacy_ledger.ts | LOC=353 | 2026-03-05T21:53:05Z
