@@ -1036,4 +1036,57 @@ mod tests {
         );
         assert!(tr.is_none());
     }
+
+    #[test]
+    fn readiness_state_does_not_relax_when_flag_disabled_even_if_checks_allowed() {
+        let allow = HashSet::from(["success_criteria_pass_rate".to_string()]);
+        let state = readiness_state(
+            "score_only",
+            false,
+            &["success_criteria_pass_rate".to_string()],
+            false,
+            &allow,
+        );
+        assert!(!state.canary_relaxed);
+        assert!(!state.ready_for_canary);
+        assert!(!state.effective_ready);
+    }
+
+    #[test]
+    fn transition_canary_execute_promotes_when_spc_disabled_even_if_hold_is_true() {
+        let mut policy = base_policy();
+        policy.require_spc = false;
+
+        let readiness = ReadinessState {
+            strict_ready: true,
+            canary_relaxed: false,
+            ready_for_canary: true,
+            ready_for_execute: true,
+            effective_ready: true,
+            failed_checks: vec![],
+        };
+        let canary = CanaryState {
+            preview_ready_for_canary: true,
+            ready_for_execute: true,
+            quality_lock_active: true,
+        };
+        let streak = StreakState {
+            escalate_ready_streak: 3,
+            demote_not_ready_streak: 0,
+        };
+
+        let tr = decide_transition(
+            "canary_execute",
+            &readiness,
+            &canary,
+            &policy,
+            false,
+            true,
+            &streak,
+        )
+        .expect("transition");
+        assert_eq!(tr.to_mode, "execute");
+        assert_eq!(tr.reason, "canary_metrics_pass_promote_execute");
+        assert!(!tr.cooldown_exempt);
+    }
 }
