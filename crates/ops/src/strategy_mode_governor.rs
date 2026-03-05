@@ -453,4 +453,75 @@ mod tests {
         .expect("transition");
         assert_eq!(tr.to_mode, "canary_execute");
     }
+
+    #[test]
+    fn transition_demotes_canary_execute_when_not_ready_and_streak_met() {
+        let policy = base_policy();
+        let readiness = ReadinessState {
+            strict_ready: false,
+            canary_relaxed: false,
+            ready_for_canary: false,
+            ready_for_execute: false,
+            effective_ready: false,
+            failed_checks: vec!["verified_rate".to_string()],
+        };
+        let canary = CanaryState {
+            preview_ready_for_canary: false,
+            ready_for_execute: false,
+            quality_lock_active: false,
+        };
+        let streak = StreakState {
+            escalate_ready_streak: 0,
+            demote_not_ready_streak: 1,
+        };
+
+        let tr = decide_transition(
+            "canary_execute",
+            &readiness,
+            &canary,
+            &policy,
+            true,
+            false,
+            &streak,
+        )
+        .expect("transition");
+        assert_eq!(tr.to_mode, "score_only");
+        assert_eq!(tr.reason, "readiness_fail_demote_score_only");
+        assert!(tr.cooldown_exempt);
+    }
+
+    #[test]
+    fn transition_execute_skips_quality_lock_demotion_when_not_required() {
+        let mut policy = base_policy();
+        policy.canary_require_quality_lock_for_execute = false;
+
+        let readiness = ReadinessState {
+            strict_ready: true,
+            canary_relaxed: false,
+            ready_for_canary: true,
+            ready_for_execute: true,
+            effective_ready: true,
+            failed_checks: vec![],
+        };
+        let canary = CanaryState {
+            preview_ready_for_canary: true,
+            ready_for_execute: true,
+            quality_lock_active: false,
+        };
+        let streak = StreakState {
+            escalate_ready_streak: 0,
+            demote_not_ready_streak: 2,
+        };
+
+        let tr = decide_transition(
+            "execute",
+            &readiness,
+            &canary,
+            &policy,
+            true,
+            false,
+            &streak,
+        );
+        assert!(tr.is_none());
+    }
 }
