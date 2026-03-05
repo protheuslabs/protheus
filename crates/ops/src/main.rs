@@ -9,6 +9,9 @@ fn usage() {
     println!("Usage:");
     println!("  protheus-ops runtime-efficiency-floor run [--strict=1|0] [--policy=<path>]");
     println!("  protheus-ops runtime-efficiency-floor status [--policy=<path>]");
+    println!("  protheus-ops autotest-controller <command> [flags]");
+    println!("  protheus-ops autotest-doctor <command> [flags]");
+    println!("  protheus-ops spine <mode> [date] [flags]");
     println!("  protheus-ops protheusctl <command> [flags]");
     println!("  protheus-ops fluxlattice-program <list|run|run-all|status> [flags]");
     println!("  protheus-ops perception-polish-program <list|run|run-all|status> [flags]");
@@ -67,6 +70,21 @@ fn main() {
                     std::process::exit(1);
                 }
             }
+        }
+        "autotest-controller" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::autotest_controller::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "autotest-doctor" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::autotest_doctor::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "spine" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::spine::run(&cwd, &rest);
+            std::process::exit(exit);
         }
         "protheusctl" => {
             let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();

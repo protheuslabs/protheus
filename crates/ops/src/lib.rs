@@ -11,10 +11,14 @@ use std::time::Instant;
 use sysinfo::System;
 use walkdir::WalkDir;
 
+pub mod autotest_controller;
+pub mod autotest_doctor;
+pub mod fluxlattice_program;
+pub mod legacy_bridge;
 pub mod perception_polish;
 pub mod protheusctl;
 pub mod scale_readiness;
-pub mod fluxlattice_program;
+pub mod spine;
 
 #[derive(Debug, Clone)]
 pub struct ParsedArgs {
