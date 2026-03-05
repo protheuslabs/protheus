@@ -490,3 +490,4 @@ Persistent lane-by-lane migration log so progress is preserved outside chat cont
 - [x] N71 | systems/memory/cross_domain_mapper.ts | LOC=305 | 2026-03-05T22:02:22Z
 - [x] N72 | lib/redaction_classification.ts | LOC=305 | 2026-03-05T22:02:24Z
 - [x] N73 | systems/sensory/multimodal_signal_adapter_plane.ts | LOC=304 | 2026-03-05T22:02:27Z
+- [x] N74 | systems/sensory/ground_truth_label_adjudication_lane.ts | LOC=304 | 2026-03-05T22:02:29Z
