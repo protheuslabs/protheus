@@ -1030,3 +1030,64 @@ Persistent lane-by-lane migration log so progress is preserved outside chat cont
 - systems/sensory/sensitivity_privacy_aware_scoring_contract.ts
 - systems/strategy/weekly_strategy_synthesis.ts
 - systems/symbiosis/neural_dormant_seed.ts
+
+## Completed In This Continuation (Non-Anchor Legacy Batch J)
+- Timestamp: 2026-03-05T23:02:00Z
+- Mode: migrate next 50 high-ROI non-anchor TypeScript lanes to Rust runtime (legacy-retired-lane).
+- Scope: 50 lane source files rewired to native Rust receipt path via shared bridge.
+- Gates:
+  - CARGO_TARGET_DIR=/tmp/pc-nextbatch-j cargo test --manifest-path crates/ops/Cargo.toml ✅ (147 passed, 0 failed)
+  - CARGO_TARGET_DIR=/tmp/pc-nextbatch-j cargo clippy --manifest-path crates/ops/Cargo.toml --all-targets -- -D warnings ✅
+  - NODE_PATH=/Users/jay/.openclaw/workspace/node_modules npm run -s formal:invariants:run ✅ (ok: true, failed_invariants: 0)
+
+### Lanes Migrated (50)
+- systems/execution/index.ts
+- systems/sensory/analysis_quality_slo_contract.ts
+- systems/ops/docs_coverage_gate.ts
+- systems/ops/openfang_parity_runtime.ts
+- systems/helix/reweave_doctor.ts
+- systems/hardware/surface_embodiment_freshness_guard.ts
+- systems/helix/codex_root.ts
+- systems/sensory/active_learning_uncertainty_queue.ts
+- systems/ops/queue_hygiene_summary.ts
+- systems/ops/host_profile_conformance_formal_gate.ts
+- systems/personas/pre_commit_lens_gate.ts
+- systems/ops/mobile_competitive_benchmark_matrix.ts
+- systems/autonomy/two_phase_change_execution.ts
+- systems/sensory/offline_statistical_lab_artifact_bridge.ts
+- systems/ops/wasi2_execution_completeness_gate.ts
+- systems/security/workspace_dump_guard.ts
+- systems/security/external_security_cycle.ts
+- systems/ops/memory_snapshot_ignore_gate.ts
+- systems/spawn/rsi_swarm_spawn_bridge.ts
+- systems/sensory/cross_objective_interference_guard.ts
+- systems/security/directive_gate.ts
+- systems/memory/observational_compression_layer.ts
+- systems/spine/rsi_idle_hands_scheduler.ts
+- systems/ops/scale_envelope_baseline.ts
+- systems/fractal/resonance_field_gates.ts
+- systems/primitives/primitive_catalog.ts
+- systems/habits/habit_promotion_quality_gate.ts
+- systems/strategy/strategy_profile_layer_guard.ts
+- systems/ops/personal_protheus_installer.ts
+- systems/autonomy/alignment_oracle.ts
+- systems/security/architecture_guard.ts
+- systems/ops/simplicity_offset_backfill.ts
+- systems/autonomy/proposal_type_outcome_calibrator.ts
+- systems/autonomy/proposal_admission_hygiene.ts
+- systems/spawn/mobile_edge_swarm_bridge.ts
+- systems/security/log_redaction_guard.ts
+- systems/security/rsi_git_patch_self_mod_gate.ts
+- systems/autonomy/swarm_verification_mode.ts
+- systems/ops/data_scope_boundary_check.ts
+- systems/ops/platform_universal_abstraction_matrix.ts
+- systems/ops/empty_fort_integrity_guard.ts
+- systems/ops/compatibility_tail_retirement.ts
+- systems/autonomy/execution_worthiness_gate.ts
+- systems/ops/protheus_core_rust_binding_plane.ts
+- systems/ops/dr_gameday_gate.ts
+- systems/security/request_ingress.ts
+- systems/actuation/eyes_create_adapter.ts
+- systems/strategy/weekly_executed_outcomes_synthesis.ts
+- systems/security/psycheforge/psycheforge_organ.ts
+- systems/security/startup_attestation_boot_gate.ts
