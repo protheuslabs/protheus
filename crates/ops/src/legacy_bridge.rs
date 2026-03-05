@@ -90,7 +90,19 @@ pub(crate) fn run_legacy_script_with_node(
     }
 
     match cmd.status() {
-        Ok(status) => status.code().unwrap_or(1),
+        Ok(status) => {
+            if let Some(code) = status.code() {
+                code
+            } else {
+                print_json(&bridge_error_receipt(
+                    domain,
+                    script_rel,
+                    "legacy_exit_by_signal",
+                    Some(&format!("{status:?}")),
+                ));
+                1
+            }
+        }
         Err(err) => {
             print_json(&bridge_error_receipt(
                 domain,
@@ -344,5 +356,24 @@ mod tests {
         let (fallback, cleaned) = split_legacy_fallback_flag(&args, "NO_SUCH_ENV");
         assert!(fallback);
         assert_eq!(cleaned, vec!["run".to_string()]);
+    }
+
+    #[test]
+    fn signal_terminated_script_fails_closed() {
+        let dir = tempdir().expect("tempdir");
+        write_script(
+            dir.path(),
+            "systems/ops/autotest_controller_legacy.js",
+            "kill -9 $$\n",
+        );
+        let exit = run_legacy_script_with_node(
+            dir.path(),
+            "systems/ops/autotest_controller_legacy.js",
+            &[],
+            "autotest_controller",
+            "/bin/sh",
+            &[],
+        );
+        assert_eq!(exit, 1);
     }
 }
