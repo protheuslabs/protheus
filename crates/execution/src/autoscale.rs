@@ -27544,6 +27544,40 @@ mod tests {
     }
 
     #[test]
+    fn extract_mode_literals_accepts_all_quote_styles() {
+        let text = r#"
+const a = runBacklogAutoscalePrimitive("alpha", {});
+const b = runBacklogAutoscalePrimitive('beta', {});
+const c = runBacklogAutoscalePrimitive(`gamma`, {});
+"#;
+        let parsed = extract_mode_literals(text, "runBacklogAutoscalePrimitive");
+        let expected = ["alpha", "beta", "gamma"]
+            .iter()
+            .map(|value| value.to_string())
+            .collect::<std::collections::BTreeSet<_>>();
+        assert_eq!(parsed, expected);
+    }
+
+    #[test]
+    fn extract_bridge_modes_accepts_quoted_and_unquoted_keys() {
+        let bridge = r#"
+function runBacklogAutoscalePrimitive(mode: string, data: AnyObj = {}, opts: AnyObj = {}) {
+  const fieldByMode: AnyObj = {
+    alpha: "payload_alpha",
+    "beta-mode": "payload_beta",
+    'gamma_mode': "payload_gamma"
+  };
+}
+"#;
+        let parsed = extract_bridge_modes(bridge, "runBacklogAutoscalePrimitive");
+        let expected = ["alpha", "beta-mode", "gamma_mode"]
+            .iter()
+            .map(|value| value.to_string())
+            .collect::<std::collections::BTreeSet<_>>();
+        assert_eq!(parsed, expected);
+    }
+
+    #[test]
     fn bridge_maps_all_backlog_primitive_callsite_modes() {
         let ts_autonomy = include_str!("../../../systems/autonomy/autonomy_controller.ts");
         let ts_inversion = include_str!("../../../systems/autonomy/inversion_controller.ts");
