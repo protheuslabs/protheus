@@ -1,0 +1,8 @@
+name: rust50-tcb-gate
+on: [push]
+jobs:
+  tcb:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo test --manifest-path crates/tcb_enforce/Cargo.toml
