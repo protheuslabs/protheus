@@ -22,6 +22,7 @@ fn usage() {
     println!("  protheus-ops spine <mode> [date] [flags]");
     println!("  protheus-ops protheusctl <command> [flags]");
     println!("  protheus-ops personas-cli <command> [flags]");
+    println!("  protheus-ops workflow-executor <command> [flags]");
     println!("  protheus-ops fluxlattice-program <list|run|run-all|status> [flags]");
     println!("  protheus-ops perception-polish-program <list|run|run-all|status> [flags]");
     println!("  protheus-ops scale-readiness-program <list|run|run-all|status> [flags]");
@@ -187,6 +188,11 @@ fn main() {
         "personas-cli" => {
             let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
             let exit = protheus_ops_core::personas_cli::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "workflow-executor" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::workflow_executor::run(&cwd, &rest);
             std::process::exit(exit);
         }
         "fluxlattice-program" => {
