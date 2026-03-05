@@ -477,3 +477,4 @@ Persistent lane-by-lane migration log so progress is preserved outside chat cont
 - [x] N58 | adaptive/sensory/eyes/collectors/hn_rss.ts | LOC=311 | 2026-03-05T22:01:46Z
 - [x] N59 | systems/ops/autonomy_health_visibility_dashboard.ts | LOC=310 | 2026-03-05T22:01:49Z
 - [x] N60 | adaptive/sensory/eyes/collectors/medium_rss.ts | LOC=310 | 2026-03-05T22:01:52Z
+- [x] N61 | systems/sensory/latent_intent_inference_graph.ts | LOC=309 | 2026-03-05T22:01:54Z
