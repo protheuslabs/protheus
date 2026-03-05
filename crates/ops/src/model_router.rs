@@ -1740,6 +1740,84 @@ pub fn evaluate_router_global_budget_gate(
     }
 }
 
+fn date_from_json_filename(path: &str) -> String {
+    Path::new(path)
+        .file_stem()
+        .and_then(|stem| stem.to_str())
+        .map(ToString::to_string)
+        .unwrap_or_default()
+}
+
+pub fn router_spend_path_for_date(
+    date_str: &str,
+    spend_dir: &Path,
+    today_override: &str,
+    now_iso: &str,
+) -> String {
+    let day = if is_budget_date(date_str) {
+        date_str.to_string()
+    } else {
+        budget_date_str(today_override, now_iso)
+    };
+    spend_dir.join(format!("{day}.json")).to_string_lossy().to_string()
+}
+
+pub fn accumulate_router_spend(
+    previous: Option<&Value>,
+    entry: &Value,
+    spend_path: &str,
+    now_iso: &str,
+) -> Option<Value> {
+    let model = normalized_optional_string(entry.as_object().and_then(|v| v.get("model")))?;
+    let req_tokens = finite_number(entry.as_object().and_then(|v| v.get("request_tokens_est")))
+        .unwrap_or(0.0)
+        .max(0.0);
+    let model_tokens = finite_number(entry.as_object().and_then(|v| v.get("model_tokens_est")))
+        .unwrap_or(0.0)
+        .max(0.0);
+
+    let mut base = object_or_empty(previous);
+    if base.is_empty() {
+        base.insert(
+            "date".to_string(),
+            Value::String(date_from_json_filename(spend_path)),
+        );
+        base.insert("requests".to_string(), number_value(0.0));
+        base.insert("request_tokens_est_total".to_string(), number_value(0.0));
+        base.insert("model_tokens_est_total".to_string(), number_value(0.0));
+        base.insert("by_model".to_string(), Value::Object(Map::new()));
+    }
+
+    let mut by_model = object_or_empty(base.get("by_model"));
+    let model_prev = by_model.get(&model).and_then(Value::as_object);
+    let mut model_row = model_prev.cloned().unwrap_or_default();
+    let model_requests = finite_number(model_row.get("requests")).unwrap_or(0.0) + 1.0;
+    let model_req_total =
+        finite_number(model_row.get("request_tokens_est_total")).unwrap_or(0.0) + req_tokens;
+    let model_token_total =
+        finite_number(model_row.get("model_tokens_est_total")).unwrap_or(0.0) + model_tokens;
+    model_row.insert("requests".to_string(), number_value(model_requests));
+    model_row.insert(
+        "request_tokens_est_total".to_string(),
+        number_value(model_req_total),
+    );
+    model_row.insert(
+        "model_tokens_est_total".to_string(),
+        number_value(model_token_total),
+    );
+    by_model.insert(model, Value::Object(model_row));
+    base.insert("by_model".to_string(), Value::Object(by_model));
+
+    let requests = finite_number(base.get("requests")).unwrap_or(0.0) + 1.0;
+    let req_total = finite_number(base.get("request_tokens_est_total")).unwrap_or(0.0) + req_tokens;
+    let token_total = finite_number(base.get("model_tokens_est_total")).unwrap_or(0.0) + model_tokens;
+    base.insert("requests".to_string(), number_value(requests));
+    base.insert("request_tokens_est_total".to_string(), number_value(req_total));
+    base.insert("model_tokens_est_total".to_string(), number_value(token_total));
+    base.insert("updated_at".to_string(), Value::String(now_iso.to_string()));
+    Some(Value::Object(base))
+}
+
 pub fn project_budget_state(budget_state: Option<&Value>, request_tokens: Option<f64>) -> Value {
     let safe_req = request_tokens
         .filter(|value| value.is_finite() && *value > 0.0)
@@ -3054,6 +3132,92 @@ mod tests {
             enforced.autopause.reason.as_deref(),
             Some("daily_usd_cap_exceeded")
         );
+    }
+
+    #[test]
+    fn router_spend_path_for_date_uses_explicit_or_budget_fallback_day() {
+        let spend_dir = Path::new("/repo/state/routing/spend");
+        let explicit = router_spend_path_for_date(
+            "2026-03-09",
+            spend_dir,
+            "2020-01-01",
+            "2026-03-05T00:00:00.000Z",
+        );
+        assert_eq!(explicit, "/repo/state/routing/spend/2026-03-09.json");
+
+        let fallback = router_spend_path_for_date(
+            "not-a-day",
+            spend_dir,
+            "2026-03-05",
+            "2026-03-04T00:00:00.000Z",
+        );
+        assert_eq!(fallback, "/repo/state/routing/spend/2026-03-05.json");
+    }
+
+    #[test]
+    fn accumulate_router_spend_matches_legacy_aggregation_contract() {
+        let spend_path = "/repo/state/routing/spend/2026-03-05.json";
+        let now_iso = "2026-03-05T10:11:12.000Z";
+        let first = accumulate_router_spend(
+            None,
+            &json!({
+                "model": "openai/gpt-4.1",
+                "request_tokens_est": 10,
+                "model_tokens_est": 24
+            }),
+            spend_path,
+            now_iso,
+        )
+        .expect("first record should be present");
+        assert_eq!(first["date"], "2026-03-05");
+        assert_eq!(first["requests"], 1.0);
+        assert_eq!(first["request_tokens_est_total"], 10.0);
+        assert_eq!(first["model_tokens_est_total"], 24.0);
+        assert_eq!(first["by_model"]["openai/gpt-4.1"]["requests"], 1.0);
+        assert_eq!(
+            first["by_model"]["openai/gpt-4.1"]["request_tokens_est_total"],
+            10.0
+        );
+        assert_eq!(
+            first["by_model"]["openai/gpt-4.1"]["model_tokens_est_total"],
+            24.0
+        );
+        assert_eq!(first["updated_at"], now_iso);
+
+        let second = accumulate_router_spend(
+            Some(&first),
+            &json!({
+                "model": "openai/gpt-4.1",
+                "request_tokens_est": "3.6",
+                "model_tokens_est": -5
+            }),
+            spend_path,
+            "2026-03-05T11:00:00.000Z",
+        )
+        .expect("second record should be present");
+        assert_eq!(second["requests"], 2.0);
+        assert_eq!(second["request_tokens_est_total"], 13.6);
+        assert_eq!(second["model_tokens_est_total"], 24.0);
+        assert_eq!(second["by_model"]["openai/gpt-4.1"]["requests"], 2.0);
+        assert_eq!(
+            second["by_model"]["openai/gpt-4.1"]["request_tokens_est_total"],
+            13.6
+        );
+        assert_eq!(
+            second["by_model"]["openai/gpt-4.1"]["model_tokens_est_total"],
+            24.0
+        );
+
+        let ignored = accumulate_router_spend(
+            Some(&second),
+            &json!({
+                "model": "   ",
+                "request_tokens_est": 5
+            }),
+            spend_path,
+            now_iso,
+        );
+        assert!(ignored.is_none());
     }
 
     #[test]
