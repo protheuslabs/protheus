@@ -369,6 +369,10 @@ fn to_bounded_number_like(value: Option<&Value>, fallback: i64, min: i64, max: i
     clamped as i64
 }
 
+fn to_bounded_number_like_f64(value: Option<&Value>, fallback: f64, min: f64, max: f64) -> f64 {
+    finite_number(value).unwrap_or(fallback).clamp(min, max)
+}
+
 fn string_or(value: Option<&Value>, fallback: &str) -> String {
     value
         .and_then(Value::as_str)
@@ -541,6 +545,41 @@ pub struct CommunicationFastPathResult {
     pub prefer_model: Option<String>,
     pub fallback_slot: Option<String>,
     pub skip_outcome_scan: Option<bool>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct FallbackClassificationPolicy {
+    pub enabled: bool,
+    pub only_when_medium_medium: bool,
+    pub prefer_chat_fast_path: bool,
+    pub low_chars_max: f64,
+    pub low_newlines_max: f64,
+    pub high_chars_min: f64,
+    pub high_newlines_min: f64,
+    pub high_tokens_min: f64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FallbackRouteClassification {
+    pub enabled: bool,
+    pub applied: bool,
+    pub reason: String,
+    pub risk: String,
+    pub complexity: String,
+    pub role: String,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct FallbackRouteClassificationInput<'a> {
+    pub cfg: &'a Value,
+    pub requested_risk: &'a str,
+    pub requested_complexity: &'a str,
+    pub intent: &'a str,
+    pub task: &'a str,
+    pub mode: &'a str,
+    pub role: &'a str,
+    pub tokens_est: Option<f64>,
+    pub class_policy: Option<&'a RouteClassPolicy>,
 }
 
 fn js_truthy_value(value: &Value) -> bool {
@@ -949,6 +988,208 @@ fn normalized_optional_string(value: Option<&Value>) -> Option<String> {
         .map(str::trim)
         .filter(|v| !v.is_empty())
         .map(ToString::to_string)
+}
+
+fn contains_code_like_markers(raw_text: &str) -> bool {
+    if raw_text.contains("```") {
+        return true;
+    }
+    if raw_text
+        .chars()
+        .any(|ch| matches!(ch, '`' | '{' | '}' | '[' | ']' | '<' | '>' | '$' | ';' | '='))
+    {
+        return true;
+    }
+    if contains_cli_flag(raw_text) {
+        return true;
+    }
+    let tokens = tokenize(raw_text);
+    [
+        "node", "npm", "pnpm", "yarn", "git", "curl", "python", "bash", "zsh", "ollama",
+    ]
+    .iter()
+    .any(|token| tokens.contains(*token))
+}
+
+pub fn fallback_classification_policy(cfg: &Value) -> FallbackClassificationPolicy {
+    let src = cfg
+        .as_object()
+        .and_then(|v| v.get("routing"))
+        .and_then(Value::as_object)
+        .and_then(|v| v.get("fallback_classification_policy"))
+        .and_then(Value::as_object);
+
+    FallbackClassificationPolicy {
+        enabled: to_bool_like_value(src.and_then(|v| v.get("enabled")), true),
+        only_when_medium_medium: to_bool_like_value(
+            src.and_then(|v| v.get("only_when_medium_medium")),
+            true,
+        ),
+        prefer_chat_fast_path: to_bool_like_value(
+            src.and_then(|v| v.get("prefer_chat_fast_path")),
+            true,
+        ),
+        low_chars_max: to_bounded_number_like_f64(
+            src.and_then(|v| v.get("low_chars_max")),
+            220.0,
+            32.0,
+            600.0,
+        ),
+        low_newlines_max: to_bounded_number_like_f64(
+            src.and_then(|v| v.get("low_newlines_max")),
+            1.0,
+            0.0,
+            6.0,
+        ),
+        high_chars_min: to_bounded_number_like_f64(
+            src.and_then(|v| v.get("high_chars_min")),
+            1200.0,
+            240.0,
+            12_000.0,
+        ),
+        high_newlines_min: to_bounded_number_like_f64(
+            src.and_then(|v| v.get("high_newlines_min")),
+            8.0,
+            1.0,
+            80.0,
+        ),
+        high_tokens_min: to_bounded_number_like_f64(
+            src.and_then(|v| v.get("high_tokens_min")),
+            2200.0,
+            200.0,
+            30_000.0,
+        ),
+    }
+}
+
+pub fn fallback_route_classification(
+    input: FallbackRouteClassificationInput<'_>,
+) -> FallbackRouteClassification {
+    let policy = fallback_classification_policy(input.cfg);
+    let base_risk = normalize_risk_level(input.requested_risk);
+    let base_complexity = normalize_complexity_level(input.requested_complexity);
+    let fallback = FallbackRouteClassification {
+        enabled: policy.enabled,
+        applied: false,
+        reason: "disabled".to_string(),
+        risk: base_risk.clone(),
+        complexity: base_complexity.clone(),
+        role: {
+            let role_key = normalize_key(if input.role.is_empty() {
+                "general"
+            } else {
+                input.role
+            });
+            if role_key.is_empty() {
+                "general".to_string()
+            } else {
+                role_key
+            }
+        },
+    };
+    if !policy.enabled {
+        return fallback;
+    }
+    if let Some(class_policy) = input.class_policy {
+        if class_policy.force_risk.is_some()
+            || class_policy.force_complexity.is_some()
+            || !class_policy.force_role.is_empty()
+        {
+            return FallbackRouteClassification {
+                reason: "route_class_forced".to_string(),
+                ..fallback
+            };
+        }
+    }
+    if policy.only_when_medium_medium && !(base_risk == "medium" && base_complexity == "medium") {
+        return FallbackRouteClassification {
+            reason: "not_generic_medium".to_string(),
+            ..fallback
+        };
+    }
+
+    let inferred_role = {
+        let candidate = if input.role.is_empty() {
+            infer_role(input.intent, input.task)
+        } else {
+            input.role.to_string()
+        };
+        let normalized = normalize_key(&candidate);
+        if normalized.is_empty() {
+            "general".to_string()
+        } else {
+            normalized
+        }
+    };
+
+    let raw_text = format!("{} {}", input.intent, input.task);
+    let raw_text = raw_text.trim().to_string();
+    let char_count = raw_text.chars().count() as f64;
+    let newline_count = input.task.matches('\n').count() as f64;
+    let code_like = contains_code_like_markers(&raw_text);
+    let token_count = input.tokens_est.filter(|value| value.is_finite());
+
+    if policy.prefer_chat_fast_path {
+        let candidate = detect_communication_fast_path(
+            input.cfg,
+            &base_risk,
+            &base_complexity,
+            input.intent,
+            input.task,
+            input.mode,
+            true,
+        );
+        if candidate.matched {
+            return FallbackRouteClassification {
+                enabled: fallback.enabled,
+                applied: true,
+                reason: "generic_medium_fast_path".to_string(),
+                risk: "low".to_string(),
+                complexity: "low".to_string(),
+                role: "chat".to_string(),
+            };
+        }
+    }
+
+    if token_count
+        .map(|value| value >= policy.high_tokens_min)
+        .unwrap_or(false)
+        || char_count >= policy.high_chars_min
+        || newline_count >= policy.high_newlines_min
+    {
+        return FallbackRouteClassification {
+            enabled: fallback.enabled,
+            applied: true,
+            reason: "generic_medium_complexity_escalation".to_string(),
+            risk: "medium".to_string(),
+            complexity: "high".to_string(),
+            role: if inferred_role == "chat" {
+                "general".to_string()
+            } else {
+                inferred_role
+            },
+        };
+    }
+
+    if !code_like
+        && char_count <= policy.low_chars_max
+        && newline_count <= policy.low_newlines_max
+        && (inferred_role == "chat" || inferred_role == "general")
+    {
+        return FallbackRouteClassification {
+            enabled: fallback.enabled,
+            applied: true,
+            reason: "generic_medium_short_text".to_string(),
+            risk: "low".to_string(),
+            complexity: "low".to_string(),
+            role: "chat".to_string(),
+        };
+    }
+
+    FallbackRouteClassification {
+        reason: "no_override".to_string(),
+        ..fallback
+    }
 }
 
 pub fn route_class_policy(cfg: &Value, route_class_raw: &str) -> RouteClassPolicy {
@@ -1685,6 +1926,193 @@ mod tests {
         assert_eq!(heuristic.text.as_deref(), Some("how are you"));
         assert_eq!(heuristic.slot.as_deref(), Some("grunt"));
         assert_eq!(heuristic.skip_outcome_scan, Some(true));
+    }
+
+    #[test]
+    fn fallback_classification_policy_matches_defaults_and_bounds() {
+        let defaults = fallback_classification_policy(&json!({}));
+        assert!(defaults.enabled);
+        assert!(defaults.only_when_medium_medium);
+        assert!(defaults.prefer_chat_fast_path);
+        assert!((defaults.low_chars_max - 220.0).abs() < 1e-9);
+        assert!((defaults.low_newlines_max - 1.0).abs() < 1e-9);
+        assert!((defaults.high_chars_min - 1200.0).abs() < 1e-9);
+        assert!((defaults.high_newlines_min - 8.0).abs() < 1e-9);
+        assert!((defaults.high_tokens_min - 2200.0).abs() < 1e-9);
+
+        let cfg = json!({
+            "routing": {
+                "fallback_classification_policy": {
+                    "enabled": "off",
+                    "only_when_medium_medium": "0",
+                    "prefer_chat_fast_path": "false",
+                    "low_chars_max": 9999,
+                    "low_newlines_max": -4,
+                    "high_chars_min": 9,
+                    "high_newlines_min": 222,
+                    "high_tokens_min": "30123"
+                }
+            }
+        });
+        let overridden = fallback_classification_policy(&cfg);
+        assert!(!overridden.enabled);
+        assert!(!overridden.only_when_medium_medium);
+        assert!(!overridden.prefer_chat_fast_path);
+        assert!((overridden.low_chars_max - 600.0).abs() < 1e-9);
+        assert!((overridden.low_newlines_max - 0.0).abs() < 1e-9);
+        assert!((overridden.high_chars_min - 240.0).abs() < 1e-9);
+        assert!((overridden.high_newlines_min - 80.0).abs() < 1e-9);
+        assert!((overridden.high_tokens_min - 30000.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn fallback_route_classification_respects_disable_force_and_generic_medium_gate() {
+        let disabled_cfg = json!({
+            "routing": {
+                "fallback_classification_policy": {
+                    "enabled": false
+                }
+            }
+        });
+        let disabled = fallback_route_classification(FallbackRouteClassificationInput {
+            cfg: &disabled_cfg,
+            requested_risk: "unknown",
+            requested_complexity: "unknown",
+            intent: "hello",
+            task: "",
+            mode: "normal",
+            role: "",
+            tokens_est: None,
+            class_policy: None,
+        });
+        assert!(!disabled.enabled);
+        assert!(!disabled.applied);
+        assert_eq!(disabled.reason, "disabled");
+        assert_eq!(disabled.risk, "medium");
+        assert_eq!(disabled.complexity, "medium");
+        assert_eq!(disabled.role, "general");
+
+        let forced_class = route_class_policy(&json!({}), "reflex");
+        let forced = fallback_route_classification(FallbackRouteClassificationInput {
+            cfg: &json!({}),
+            requested_risk: "medium",
+            requested_complexity: "medium",
+            intent: "hello",
+            task: "",
+            mode: "normal",
+            role: "general",
+            tokens_est: None,
+            class_policy: Some(&forced_class),
+        });
+        assert!(forced.enabled);
+        assert!(!forced.applied);
+        assert_eq!(forced.reason, "route_class_forced");
+
+        let not_generic = fallback_route_classification(FallbackRouteClassificationInput {
+            cfg: &json!({}),
+            requested_risk: "low",
+            requested_complexity: "medium",
+            intent: "hello",
+            task: "",
+            mode: "normal",
+            role: "general",
+            tokens_est: None,
+            class_policy: None,
+        });
+        assert!(not_generic.enabled);
+        assert!(!not_generic.applied);
+        assert_eq!(not_generic.reason, "not_generic_medium");
+    }
+
+    #[test]
+    fn fallback_route_classification_matches_fast_path_escalation_and_short_text_paths() {
+        let fast_path = fallback_route_classification(FallbackRouteClassificationInput {
+            cfg: &json!({}),
+            requested_risk: "medium",
+            requested_complexity: "medium",
+            intent: "quick status",
+            task: "",
+            mode: "normal",
+            role: "general",
+            tokens_est: None,
+            class_policy: None,
+        });
+        assert!(fast_path.applied);
+        assert_eq!(fast_path.reason, "generic_medium_fast_path");
+        assert_eq!(fast_path.risk, "low");
+        assert_eq!(fast_path.complexity, "low");
+        assert_eq!(fast_path.role, "chat");
+
+        let escalation_cfg = json!({
+            "routing": {
+                "fallback_classification_policy": {
+                    "prefer_chat_fast_path": false,
+                    "high_chars_min": 30,
+                    "high_newlines_min": 5,
+                    "high_tokens_min": 1000
+                }
+            }
+        });
+        let escalated = fallback_route_classification(FallbackRouteClassificationInput {
+            cfg: &escalation_cfg,
+            requested_risk: "medium",
+            requested_complexity: "medium",
+            intent: "a fairly long request body that should escalate by character count",
+            task: "",
+            mode: "normal",
+            role: "chat",
+            tokens_est: Some(1200.0),
+            class_policy: None,
+        });
+        assert!(escalated.applied);
+        assert_eq!(escalated.reason, "generic_medium_complexity_escalation");
+        assert_eq!(escalated.risk, "medium");
+        assert_eq!(escalated.complexity, "high");
+        assert_eq!(escalated.role, "general");
+
+        let short_cfg = json!({
+            "routing": {
+                "fallback_classification_policy": {
+                    "prefer_chat_fast_path": false,
+                    "high_chars_min": 5000,
+                    "high_newlines_min": 99,
+                    "high_tokens_min": 5000
+                }
+            }
+        });
+        let short = fallback_route_classification(FallbackRouteClassificationInput {
+            cfg: &short_cfg,
+            requested_risk: "medium",
+            requested_complexity: "medium",
+            intent: "thanks",
+            task: "",
+            mode: "normal",
+            role: "general",
+            tokens_est: None,
+            class_policy: None,
+        });
+        assert!(short.applied);
+        assert_eq!(short.reason, "generic_medium_short_text");
+        assert_eq!(short.risk, "low");
+        assert_eq!(short.complexity, "low");
+        assert_eq!(short.role, "chat");
+
+        let no_override = fallback_route_classification(FallbackRouteClassificationInput {
+            cfg: &short_cfg,
+            requested_risk: "medium",
+            requested_complexity: "medium",
+            intent: "",
+            task: "git status",
+            mode: "normal",
+            role: "general",
+            tokens_est: None,
+            class_policy: None,
+        });
+        assert!(!no_override.applied);
+        assert_eq!(no_override.reason, "no_override");
+        assert_eq!(no_override.risk, "medium");
+        assert_eq!(no_override.complexity, "medium");
+        assert_eq!(no_override.role, "general");
     }
 
     #[test]
