@@ -735,6 +735,17 @@ pub struct PromptCacheSignalResult {
 }
 
 #[derive(Debug, Clone, Copy)]
+pub struct PromptCacheWriteInput<'a> {
+    pub signal: &'a PromptCacheSignalResult,
+    pub state_raw: Option<&'a Value>,
+    pub capability: &'a str,
+    pub role: &'a str,
+    pub lane: &'a str,
+    pub now_ms: i64,
+    pub now_iso: &'a str,
+}
+
+#[derive(Debug, Clone, Copy)]
 pub struct PromptCacheSignalInput<'a> {
     pub cfg: &'a Value,
     pub intent: &'a str,
@@ -1873,6 +1884,114 @@ pub fn prompt_cache_signal(input: PromptCacheSignalInput<'_>) -> PromptCacheSign
         reason: "ok".to_string(),
         ..base
     }
+}
+
+pub fn write_prompt_cache_signal_state(input: PromptCacheWriteInput<'_>) -> Option<PromptCacheIndex> {
+    if !input.signal.enabled {
+        return None;
+    }
+    let key = input.signal.key.as_deref().map(str::trim).filter(|v| !v.is_empty())?;
+
+    let mut state = load_prompt_cache_index(input.state_raw);
+    let mut entries = state.entries;
+    let mut entry = entries
+        .get(key)
+        .and_then(Value::as_object)
+        .cloned()
+        .unwrap_or_else(|| {
+            let mut init = Map::<String, Value>::new();
+            init.insert("hits_total".to_string(), number_value(0.0));
+            init.insert("timestamps_ms".to_string(), Value::Array(Vec::new()));
+            init.insert("first_seen_ms".to_string(), number_value(input.now_ms as f64));
+            init
+        });
+
+    let window_ms = input.signal.policy.window_minutes.max(0) * 60 * 1000;
+    let max_stamps = input.signal.policy.max_timestamps_per_key.max(1) as usize;
+    let mut kept = entry
+        .get("timestamps_ms")
+        .and_then(Value::as_array)
+        .map(|rows| {
+            rows.iter()
+                .filter_map(|row| finite_number(Some(row)))
+                .filter(|stamp| stamp.is_finite())
+                .map(|stamp| stamp as i64)
+                .filter(|stamp| (input.now_ms - *stamp) <= window_ms)
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default();
+    let keep_window = max_stamps.saturating_sub(1).max(1);
+    if kept.len() > keep_window {
+        kept = kept.split_off(kept.len() - keep_window);
+    }
+    kept.push(input.now_ms);
+    let timestamps = kept.into_iter().map(|v| number_value(v as f64)).collect::<Vec<_>>();
+    entry.insert("timestamps_ms".to_string(), Value::Array(timestamps));
+    let hits_total = finite_number(entry.get("hits_total")).unwrap_or(0.0) + 1.0;
+    entry.insert("hits_total".to_string(), number_value(hits_total));
+    entry.insert("last_seen_ms".to_string(), number_value(input.now_ms as f64));
+    entry.insert("last_seen".to_string(), Value::String(input.now_iso.to_string()));
+    let role_key = normalize_key(input.role);
+    entry.insert(
+        "role".to_string(),
+        if role_key.is_empty() {
+            Value::Null
+        } else {
+            Value::String(role_key)
+        },
+    );
+    let capability_key = normalize_capability_key(input.capability);
+    entry.insert(
+        "capability".to_string(),
+        if capability_key.is_empty() {
+            Value::Null
+        } else {
+            Value::String(capability_key)
+        },
+    );
+    let lane_source = if input.lane.trim().is_empty() {
+        if input.signal.lane.trim().is_empty() {
+            input.signal.policy.lane.as_str()
+        } else {
+            input.signal.lane.as_str()
+        }
+    } else {
+        input.lane
+    };
+    let lane_key = normalize_key(lane_source);
+    entry.insert(
+        "lane".to_string(),
+        if lane_key.is_empty() {
+            Value::Null
+        } else {
+            Value::String(lane_key)
+        },
+    );
+    entries.insert(key.to_string(), Value::Object(entry));
+
+    let max_entries = input.signal.policy.max_entries.max(1) as usize;
+    if entries.len() > max_entries {
+        let mut pairs = entries.into_iter().collect::<Vec<_>>();
+        pairs.sort_by(|a, b| {
+            let b_last = b
+                .1
+                .as_object()
+                .and_then(|v| finite_number(v.get("last_seen_ms")))
+                .unwrap_or(0.0);
+            let a_last = a
+                .1
+                .as_object()
+                .and_then(|v| finite_number(v.get("last_seen_ms")))
+                .unwrap_or(0.0);
+            b_last.total_cmp(&a_last)
+        });
+        pairs.truncate(max_entries);
+        entries = pairs.into_iter().collect::<Map<String, Value>>();
+    }
+
+    state.entries = entries;
+    state.updated_at = Some(input.now_iso.to_string());
+    Some(state)
 }
 
 pub fn budget_date_str(today_override: &str, now_iso: &str) -> String {
@@ -3887,6 +4006,100 @@ mod tests {
         assert_eq!(enabled.key.as_deref(), Some(key.as_str()));
         assert_eq!(enabled.hits_recent, 3);
         assert!(enabled.eligible);
+    }
+
+    #[test]
+    fn write_prompt_cache_signal_state_matches_mutation_and_pruning_contract() {
+        let signal_disabled = PromptCacheSignalResult {
+            enabled: false,
+            lane: "autonomy".to_string(),
+            key: Some("abc".to_string()),
+            eligible: false,
+            hits_recent: 0,
+            min_hits: 2,
+            window_minutes: 10,
+            reason: "disabled".to_string(),
+            policy: prompt_cache_policy(
+                &json!({}),
+                "autonomy",
+                Path::new("/repo"),
+                PROMPT_CACHE_INDEX_PATH_REL_DEFAULT,
+            ),
+        };
+        assert!(write_prompt_cache_signal_state(PromptCacheWriteInput {
+            signal: &signal_disabled,
+            state_raw: None,
+            capability: "chat",
+            role: "general",
+            lane: "autonomy",
+            now_ms: 1_000_000,
+            now_iso: "2026-03-05T00:00:00.000Z",
+        })
+        .is_none());
+
+        let signal = PromptCacheSignalResult {
+            enabled: true,
+            lane: "autonomy".to_string(),
+            key: Some("key-1".to_string()),
+            eligible: false,
+            hits_recent: 0,
+            min_hits: 2,
+            window_minutes: 10,
+            reason: "ok".to_string(),
+            policy: prompt_cache_policy(
+                &json!({
+                    "routing": {
+                        "prompt_cache_policy": {
+                            "max_timestamps_per_key": 3,
+                            "max_entries": 2
+                        }
+                    }
+                }),
+                "autonomy",
+                Path::new("/repo"),
+                PROMPT_CACHE_INDEX_PATH_REL_DEFAULT,
+            ),
+        };
+
+        let out = write_prompt_cache_signal_state(PromptCacheWriteInput {
+            signal: &signal,
+            state_raw: Some(&json!({
+                "entries": {
+                    "key-1": {
+                        "hits_total": 1,
+                        "timestamps_ms": [100000, 400000, 999000],
+                        "last_seen_ms": 999000
+                    },
+                    "old-1": { "last_seen_ms": 10 },
+                    "old-2": { "last_seen_ms": 20 }
+                }
+            })),
+            capability: "Proposal:Decision@Tier!Alpha",
+            role: " Planning ",
+            lane: "",
+            now_ms: 1_000_000,
+            now_iso: "2026-03-05T12:00:00.000Z",
+        })
+        .expect("state should be produced");
+
+        assert_eq!(out.schema_version, 1);
+        assert_eq!(out.updated_at.as_deref(), Some("2026-03-05T12:00:00.000Z"));
+        assert_eq!(out.entries.len(), 3);
+        let row = out.entries.get("key-1").expect("entry present");
+        assert_eq!(row["hits_total"], 2.0);
+        assert_eq!(
+            row["timestamps_ms"]
+                .as_array()
+                .map(|rows| rows.len()),
+            Some(3)
+        );
+        assert_eq!(row["last_seen_ms"], 1_000_000.0);
+        assert_eq!(row["last_seen"], "2026-03-05T12:00:00.000Z");
+        assert_eq!(row["role"], "planning");
+        assert_eq!(row["capability"], "proposal:decision_tier_alpha");
+        assert_eq!(row["lane"], "autonomy");
+        assert!(out.entries.get("old-2").is_some());
+        assert!(out.entries.get("old-1").is_some());
     }
 
     #[test]
