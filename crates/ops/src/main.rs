@@ -33,10 +33,12 @@ fn cli_error_receipt(
     domain: Option<&str>,
     command: Option<&str>,
 ) -> Value {
+    let ts = protheus_ops_core::now_iso();
     let mut out = json!({
         "ok": false,
         "type": "protheus_ops_cli_error",
-        "ts": protheus_ops_core::now_iso(),
+        "ts": ts,
+        "date": ts[..10].to_string(),
         "error": error,
         "exit_code": exit_code,
         "domain": domain,
@@ -175,6 +177,15 @@ mod tests {
         );
         assert!(out.get("claim_evidence").is_some());
         assert!(out.get("persona_lenses").is_some());
+        let ts = out
+            .get("ts")
+            .and_then(Value::as_str)
+            .expect("ts");
+        let date = out
+            .get("date")
+            .and_then(Value::as_str)
+            .expect("date");
+        assert!(ts.starts_with(date));
 
         let expected_hash = out
             .get("receipt_hash")
