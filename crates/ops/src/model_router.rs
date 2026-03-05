@@ -640,4 +640,53 @@ mod tests {
         assert_eq!(out["capability"], "chat");
         assert_eq!(out["fallback_slot"], "fallback");
     }
+
+    #[test]
+    fn handoff_packet_default_shape_is_fail_closed_for_non_object_input() {
+        let out = build_handoff_packet(&json!(null));
+        assert_eq!(out["selected_model"], Value::Null);
+        assert_eq!(out["previous_model"], Value::Null);
+        assert_eq!(out["model_changed"], false);
+        assert_eq!(out["reason"], Value::Null);
+        assert_eq!(out["tier"], 2);
+        assert_eq!(out["role"], Value::Null);
+        assert_eq!(out["route_class"], "default");
+        assert_eq!(out["mode"], Value::Null);
+        assert_eq!(out["slot"], Value::Null);
+        assert_eq!(out["escalation_chain"], json!([]));
+    }
+
+    #[test]
+    fn handoff_packet_budget_tokens_require_numeric_conversion() {
+        let falsey_tokens = json!({
+            "tier": 2,
+            "budget": {
+                "pressure": "soft",
+                "request_tokens_est": ""
+            }
+        });
+        let out_falsey = build_handoff_packet(&falsey_tokens);
+        assert_eq!(out_falsey["budget"]["request_tokens_est"], Value::Null);
+
+        let truthy_non_numeric_tokens = json!({
+            "tier": 2,
+            "budget": {
+                "pressure": "hard",
+                "request_tokens_est": "not-a-number"
+            }
+        });
+        let out_truthy_non_numeric = build_handoff_packet(&truthy_non_numeric_tokens);
+        assert_eq!(out_truthy_non_numeric["budget"]["request_tokens_est"], Value::Null);
+        assert_eq!(out_truthy_non_numeric["budget"]["projected_pressure"], "hard");
+
+        let bool_numeric_tokens = json!({
+            "tier": 2,
+            "budget": {
+                "pressure": "soft",
+                "request_tokens_est": true
+            }
+        });
+        let out_bool_numeric = build_handoff_packet(&bool_numeric_tokens);
+        assert_eq!(out_bool_numeric["budget"]["request_tokens_est"], 1.0);
+    }
 }
