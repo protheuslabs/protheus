@@ -1519,6 +1519,38 @@ fn print_json_line(value: &Value) {
     );
 }
 
+fn cli_failure_receipt(cmd: &str, error: &str, code: i32) -> Value {
+    let mut out = json!({
+        "ok": false,
+        "type": "autotest_doctor_cli_error",
+        "ts": now_iso(),
+        "command": cmd,
+        "error": error,
+        "exit_code": code,
+        "claim_evidence": [
+            {
+                "id": "fail_closed_cli",
+                "claim": "doctor_cli_failures_emit_deterministic_receipts",
+                "evidence": {
+                    "command": cmd,
+                    "error": error
+                }
+            }
+        ],
+        "persona_lenses": {
+            "operator": {
+                "mode": "cli",
+                "exit_code": code
+            },
+            "auditor": {
+                "deterministic_receipt": true
+            }
+        }
+    });
+    out["receipt_hash"] = Value::String(receipt_hash(&out));
+    out
+}
+
 fn usage() {
     println!("Usage:");
     println!("  protheus-ops autotest-doctor run [YYYY-MM-DD|latest] [--policy=path] [--apply=1|0] [--max-actions=N] [--force=1|0] [--reset-kill-switch=1]");
@@ -1565,6 +1597,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
         )
     } else {
         usage();
+        print_json_line(&cli_failure_receipt(&cmd, "unknown_command", 2));
         return 2;
     };
 
@@ -1643,5 +1676,29 @@ mod tests {
         let h2 = receipt_hash(&payload);
         assert_eq!(h1, h2);
         assert_eq!(h1.len(), 64);
+    }
+
+    #[test]
+    fn cli_failure_receipt_includes_hash_and_invariants() {
+        let out = cli_failure_receipt("runx", "unknown_command", 2);
+        assert_eq!(out.get("ok").and_then(Value::as_bool), Some(false));
+        assert_eq!(
+            out.get("type").and_then(Value::as_str),
+            Some("autotest_doctor_cli_error")
+        );
+        assert!(out.get("claim_evidence").is_some());
+        assert!(out.get("persona_lenses").is_some());
+
+        let expected_hash = out
+            .get("receipt_hash")
+            .and_then(Value::as_str)
+            .expect("hash")
+            .to_string();
+        let mut unhashed = out.clone();
+        unhashed
+            .as_object_mut()
+            .expect("object")
+            .remove("receipt_hash");
+        assert_eq!(receipt_hash(&unhashed), expected_hash);
     }
 }

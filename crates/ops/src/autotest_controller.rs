@@ -2531,6 +2531,38 @@ fn print_json_line(value: &Value) {
     );
 }
 
+fn cli_failure_receipt(cmd: &str, error: &str, code: i32) -> Value {
+    let mut out = json!({
+        "ok": false,
+        "type": "autotest_cli_error",
+        "ts": now_iso(),
+        "command": cmd,
+        "error": error,
+        "exit_code": code,
+        "claim_evidence": [
+            {
+                "id": "fail_closed_cli",
+                "claim": "controller_cli_failures_emit_deterministic_receipts",
+                "evidence": {
+                    "command": cmd,
+                    "error": error
+                }
+            }
+        ],
+        "persona_lenses": {
+            "operator": {
+                "mode": "cli",
+                "exit_code": code
+            },
+            "auditor": {
+                "deterministic_receipt": true
+            }
+        }
+    });
+    out["receipt_hash"] = Value::String(receipt_hash(&out));
+    out
+}
+
 fn usage() {
     println!("Usage:");
     println!("  protheus-ops autotest-controller sync [--policy=path] [--strict=1|0]");
@@ -2574,11 +2606,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
     let policy = load_policy(root, &paths.policy_path);
 
     if let Err(err) = ensure_state_dirs(&paths) {
-        print_json_line(&json!({
-            "ok": false,
-            "type": "autotest",
-            "error": err
-        }));
+        print_json_line(&cli_failure_receipt(&cmd, &err, 1));
         return 1;
     }
 
@@ -2642,6 +2670,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
         "daemon" => cmd_daemon(root, &cli, &policy, &paths),
         _ => {
             usage();
+            print_json_line(&cli_failure_receipt(&cmd, "unknown_command", 2));
             return 2;
         }
     };
@@ -2692,6 +2721,30 @@ mod tests {
         let h2 = receipt_hash(&payload);
         assert_eq!(h1, h2);
         assert_eq!(h1.len(), 64);
+    }
+
+    #[test]
+    fn cli_failure_receipt_includes_hash_and_invariants() {
+        let out = cli_failure_receipt("daemonx", "unknown_command", 2);
+        assert_eq!(out.get("ok").and_then(Value::as_bool), Some(false));
+        assert_eq!(
+            out.get("type").and_then(Value::as_str),
+            Some("autotest_cli_error")
+        );
+        assert!(out.get("claim_evidence").is_some());
+        assert!(out.get("persona_lenses").is_some());
+
+        let expected_hash = out
+            .get("receipt_hash")
+            .and_then(Value::as_str)
+            .expect("hash")
+            .to_string();
+        let mut unhashed = out.clone();
+        unhashed
+            .as_object_mut()
+            .expect("object")
+            .remove("receipt_hash");
+        assert_eq!(receipt_hash(&unhashed), expected_hash);
     }
 
     #[test]
