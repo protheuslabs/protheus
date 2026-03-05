@@ -12009,7 +12009,7 @@ mod tests {
 
     fn extract_bridge_modes(text: &str, fn_name: &str) -> std::collections::BTreeSet<String> {
         let section_re = Regex::new(&format!(
-            r#"(?s)function {}\s*\([^)]*\)\s*\{{.*?const fieldByMode:\s*AnyObj\s*=\s*\{{(.*?)\}}\s*;?"#,
+            r#"(?s)function {}\s*\([^)]*\)\s*\{{.*?const fieldByMode:\s*AnyObj\s*=\s*\{{(.*?)\}}\s*(?:;|\r?\n)?"#,
             regex::escape(fn_name)
         ))
         .expect("valid section regex");
@@ -12156,6 +12156,17 @@ function runOtherPrimitive(mode: string, data: AnyObj = {}, opts: AnyObj = {}) {
 "#;
         let parsed = extract_bridge_modes(bridge, "runInversionPrimitive");
         assert!(parsed.is_empty());
+    }
+
+    #[test]
+    fn extract_bridge_modes_supports_crlf_lines() {
+        let bridge = "function runInversionPrimitive(mode: string, data: AnyObj = {}, opts: AnyObj = {}) {\r\n  const fieldByMode: AnyObj = {\r\n    alpha: \"payload_alpha\",\r\n    beta: \"payload_beta\"\r\n  }\r\n}\r\n";
+        let parsed = extract_bridge_modes(bridge, "runInversionPrimitive");
+        let expected = ["alpha", "beta"]
+            .iter()
+            .map(|value| value.to_string())
+            .collect::<std::collections::BTreeSet<_>>();
+        assert_eq!(parsed, expected);
     }
 
     #[test]
