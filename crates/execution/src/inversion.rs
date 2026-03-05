@@ -3606,8 +3606,7 @@ pub fn compute_normalize_observer_id(
 }
 
 pub fn compute_extract_numeric(input: &ExtractNumericInput) -> ExtractNumericOutput {
-    let value = js_number_for_extract(Some(&input.value))
-        .filter(|n| n.is_finite());
+    let value = js_number_for_extract(Some(&input.value)).filter(|n| n.is_finite());
     ExtractNumericOutput { value }
 }
 
@@ -3898,7 +3897,12 @@ pub fn compute_push_tier_event(input: &PushTierEventInput) -> PushTierEventOutpu
     .events;
     map.insert(
         target,
-        Value::Array(normalized.into_iter().map(Value::String).collect::<Vec<_>>()),
+        Value::Array(
+            normalized
+                .into_iter()
+                .map(Value::String)
+                .collect::<Vec<_>>(),
+        ),
     );
     PushTierEventOutput {
         map: Value::Object(map),
@@ -4152,7 +4156,12 @@ pub fn compute_principle_key_for_session(
     let key = format!(
         "{}::{}",
         compute_normalize_target(&NormalizeTargetInput {
-            value: Some(input.target.clone().unwrap_or_else(|| "tactical".to_string())),
+            value: Some(
+                input
+                    .target
+                    .clone()
+                    .unwrap_or_else(|| "tactical".to_string())
+            ),
         })
         .value,
         &digest[..16]
@@ -4184,10 +4193,13 @@ pub fn compute_check_first_principle_downgrade(
             .map(|v| v.to_string()),
     })
     .key;
-    let anti = value_path(input.policy.as_ref(), &["first_principles", "anti_downgrade"])
-        .and_then(|v| v.as_object())
-        .cloned()
-        .unwrap_or_default();
+    let anti = value_path(
+        input.policy.as_ref(),
+        &["first_principles", "anti_downgrade"],
+    )
+    .and_then(|v| v.as_object())
+    .cloned()
+    .unwrap_or_default();
     if !to_bool_like(anti.get("enabled"), false) {
         return CheckFirstPrincipleDowngradeOutput {
             allowed: true,
@@ -4202,7 +4214,8 @@ pub fn compute_check_first_principle_downgrade(
         now_iso: input.now_iso.clone(),
     })
     .state;
-    let existing = value_path(Some(&lock_state), &["locks", key.as_str()]).and_then(|v| v.as_object());
+    let existing =
+        value_path(Some(&lock_state), &["locks", key.as_str()]).and_then(|v| v.as_object());
     if existing.is_none() {
         return CheckFirstPrincipleDowngradeOutput {
             allowed: true,
@@ -4240,7 +4253,8 @@ pub fn compute_check_first_principle_downgrade(
     })
     .index;
 
-    if to_bool_like(anti.get("require_same_or_higher_maturity"), false) && session_idx < existing_idx
+    if to_bool_like(anti.get("require_same_or_higher_maturity"), false)
+        && session_idx < existing_idx
     {
         return CheckFirstPrincipleDowngradeOutput {
             allowed: false,
@@ -4260,7 +4274,8 @@ pub fn compute_check_first_principle_downgrade(
             fallback: Some(0.92),
         })
         .value;
-        let existing_confidence = js_number_for_extract(existing_obj.get("confidence")).unwrap_or(0.0);
+        let existing_confidence =
+            js_number_for_extract(existing_obj.get("confidence")).unwrap_or(0.0);
         let floor = existing_confidence * floor_ratio;
         let confidence = if input.confidence.unwrap_or(0.0).is_finite() {
             input.confidence.unwrap_or(0.0)
@@ -4317,11 +4332,12 @@ pub fn compute_upsert_first_principle_lock(
     })
     .key;
 
-    let mut lock_state = compute_load_first_principle_lock_state(&LoadFirstPrincipleLockStateInput {
-        file_path: input.file_path.clone(),
-        now_iso: Some(now_iso.clone()),
-    })
-    .state;
+    let mut lock_state =
+        compute_load_first_principle_lock_state(&LoadFirstPrincipleLockStateInput {
+            file_path: input.file_path.clone(),
+            now_iso: Some(now_iso.clone()),
+        })
+        .state;
 
     let existing = value_path(Some(&lock_state), &["locks", key.as_str()])
         .and_then(|v| v.as_object())
@@ -4395,7 +4411,11 @@ pub fn compute_upsert_first_principle_lock(
         "confidence": rounded_confidence,
         "ts": now_iso.clone()
     });
-    if lock_state.get("locks").and_then(|v| v.as_object()).is_none() {
+    if lock_state
+        .get("locks")
+        .and_then(|v| v.as_object())
+        .is_none()
+    {
         if let Some(obj) = lock_state.as_object_mut() {
             obj.insert("locks".to_string(), json!({}));
         }
@@ -4660,8 +4680,10 @@ pub fn compute_attractor_score(input: &ComputeAttractorScoreInput) -> ComputeAtt
         Regex::new(r"(?i)\bexternal\b").expect("valid external regex"),
     ];
 
-    let number_markers = token_set.iter().filter(|tok| tok.chars().any(|ch| ch.is_ascii_digit())).count()
-        as f64;
+    let number_markers = token_set
+        .iter()
+        .filter(|tok| tok.chars().any(|ch| ch.is_ascii_digit()))
+        .count() as f64;
     let constraint_hits = constraint_markers
         .iter()
         .filter(|re| re.is_match(&joined))
@@ -4684,7 +4706,11 @@ pub fn compute_attractor_score(input: &ComputeAttractorScoreInput) -> ComputeAtt
     let evidence_count = clamp_int_value(input.evidence_count.as_ref(), 0, 100000, 0) as f64;
     let word_count = (token_rows.len() as i64).clamp(0, 4000);
     let lexical_diversity = if word_count > 0 {
-        clamp_number(token_set.len() as f64 / (word_count.max(1) as f64), 0.0, 1.0)
+        clamp_number(
+            token_set.len() as f64 / (word_count.max(1) as f64),
+            0.0,
+            1.0,
+        )
     } else {
         0.0
     };
@@ -4721,10 +4747,16 @@ pub fn compute_attractor_score(input: &ComputeAttractorScoreInput) -> ComputeAtt
         0.95,
     );
 
-    let constraint_evidence =
-        clamp_number((constraint_hits * 0.55 + number_markers.min(3.0) * 0.45) / 4.0, 0.0, 1.0);
-    let measurable_evidence =
-        clamp_number((measurable_hits * 0.6 + comparison_hits * 0.4) / 4.0, 0.0, 1.0);
+    let constraint_evidence = clamp_number(
+        (constraint_hits * 0.55 + number_markers.min(3.0) * 0.45) / 4.0,
+        0.0,
+        1.0,
+    );
+    let measurable_evidence = clamp_number(
+        (measurable_hits * 0.6 + comparison_hits * 0.4) / 4.0,
+        0.0,
+        1.0,
+    );
     let external_grounding = clamp_number(
         (external_hits * 0.6 + external_signals_count.min(4.0) * 0.4) / 3.0,
         0.0,
@@ -4778,39 +4810,63 @@ pub fn compute_attractor_score(input: &ComputeAttractorScoreInput) -> ComputeAtt
         1.0,
     ));
 
-    let objective_specificity_weight =
-        js_or_number(value_path(input.attractor.as_ref(), &["weights", "objective_specificity"]), 0.0);
-    let evidence_backing_weight =
-        js_or_number(value_path(input.attractor.as_ref(), &["weights", "evidence_backing"]), 0.0);
-    let constraint_weight = if value_path(input.attractor.as_ref(), &["weights", "constraint_evidence"])
-        .is_some()
+    let objective_specificity_weight = js_or_number(
+        value_path(
+            input.attractor.as_ref(),
+            &["weights", "objective_specificity"],
+        ),
+        0.0,
+    );
+    let evidence_backing_weight = js_or_number(
+        value_path(input.attractor.as_ref(), &["weights", "evidence_backing"]),
+        0.0,
+    );
+    let constraint_weight = if value_path(
+        input.attractor.as_ref(),
+        &["weights", "constraint_evidence"],
+    )
+    .is_some()
     {
-        parse_number_like(value_path(input.attractor.as_ref(), &["weights", "constraint_evidence"]))
-            .unwrap_or(0.0)
+        parse_number_like(value_path(
+            input.attractor.as_ref(),
+            &["weights", "constraint_evidence"],
+        ))
+        .unwrap_or(0.0)
     } else {
         objective_specificity_weight * 0.4
     };
-    let measurable_weight = if value_path(input.attractor.as_ref(), &["weights", "measurable_outcome"])
-        .is_some()
-    {
-        parse_number_like(value_path(input.attractor.as_ref(), &["weights", "measurable_outcome"]))
+    let measurable_weight =
+        if value_path(input.attractor.as_ref(), &["weights", "measurable_outcome"]).is_some() {
+            parse_number_like(value_path(
+                input.attractor.as_ref(),
+                &["weights", "measurable_outcome"],
+            ))
             .unwrap_or(0.0)
-    } else {
-        objective_specificity_weight * 0.35
-    };
-    let external_weight = if value_path(input.attractor.as_ref(), &["weights", "external_grounding"])
-        .is_some()
-    {
-        parse_number_like(value_path(input.attractor.as_ref(), &["weights", "external_grounding"]))
+        } else {
+            objective_specificity_weight * 0.35
+        };
+    let external_weight =
+        if value_path(input.attractor.as_ref(), &["weights", "external_grounding"]).is_some() {
+            parse_number_like(value_path(
+                input.attractor.as_ref(),
+                &["weights", "external_grounding"],
+            ))
             .unwrap_or(0.0)
-    } else {
-        objective_specificity_weight * 0.25
-    };
-    let certainty_weight = js_or_number(value_path(input.attractor.as_ref(), &["weights", "certainty"]), 0.0);
-    let trit_alignment_weight =
-        js_or_number(value_path(input.attractor.as_ref(), &["weights", "trit_alignment"]), 0.0);
-    let impact_alignment_weight =
-        js_or_number(value_path(input.attractor.as_ref(), &["weights", "impact_alignment"]), 0.0);
+        } else {
+            objective_specificity_weight * 0.25
+        };
+    let certainty_weight = js_or_number(
+        value_path(input.attractor.as_ref(), &["weights", "certainty"]),
+        0.0,
+    );
+    let trit_alignment_weight = js_or_number(
+        value_path(input.attractor.as_ref(), &["weights", "trit_alignment"]),
+        0.0,
+    );
+    let impact_alignment_weight = js_or_number(
+        value_path(input.attractor.as_ref(), &["weights", "impact_alignment"]),
+        0.0,
+    );
     let positive_weight_total = (objective_specificity_weight
         + evidence_backing_weight
         + constraint_weight
@@ -4820,10 +4876,16 @@ pub fn compute_attractor_score(input: &ComputeAttractorScoreInput) -> ComputeAtt
         + trit_alignment_weight
         + impact_alignment_weight)
         .max(0.0001);
-    let verbosity_penalty_weight =
-        js_or_number(value_path(input.attractor.as_ref(), &["weights", "verbosity_penalty"]), 0.0);
+    let verbosity_penalty_weight = js_or_number(
+        value_path(input.attractor.as_ref(), &["weights", "verbosity_penalty"]),
+        0.0,
+    );
 
-    let certainty = clamp_number(parse_number_like(input.effective_certainty.as_ref()).unwrap_or(0.0), 0.0, 1.0);
+    let certainty = clamp_number(
+        parse_number_like(input.effective_certainty.as_ref()).unwrap_or(0.0),
+        0.0,
+        1.0,
+    );
     let trit = clamp_int_value(input.trit.as_ref(), -1, 1, 0);
     let trit_alignment = if trit == 1 {
         1.0
@@ -4864,7 +4926,8 @@ pub fn compute_attractor_score(input: &ComputeAttractorScoreInput) -> ComputeAtt
     let target = normalize_target_for_key(input.target.as_deref().unwrap_or("tactical"));
     let required = clamp_number(
         parse_number_like(
-            input.attractor
+            input
+                .attractor
                 .as_ref()
                 .and_then(|v| v.as_object())
                 .and_then(|m| m.get("min_alignment_by_target"))
@@ -4907,7 +4970,8 @@ pub fn compute_build_output_interfaces(
     })
     .value;
     let sandbox_verified = to_bool_like(input.sandbox_verified.as_ref(), false);
-    let explicit_code_proposal_emit = to_bool_like(input.explicit_code_proposal_emit.as_ref(), false);
+    let explicit_code_proposal_emit =
+        to_bool_like(input.explicit_code_proposal_emit.as_ref(), false);
     let channel_payloads = input.channel_payloads.as_ref().and_then(|v| v.as_object());
     let base_payload = input.base_payload.clone().unwrap_or_else(|| json!({}));
     let channel_names = [
@@ -5034,22 +5098,24 @@ pub fn compute_build_code_change_proposal_draft(
     let args = input.args.as_ref().and_then(|v| v.as_object());
     let opts = input.opts.as_ref().and_then(|v| v.as_object());
 
-    let read_text = |root: Option<&serde_json::Map<String, Value>>, keys: &[&str], max_len: usize| {
-        keys.iter()
-            .find_map(|key| root.and_then(|m| m.get(*key)).map(|v| value_to_string(Some(v))))
-            .map(|value| clean_text_runtime(&value, max_len))
-            .unwrap_or_default()
-    };
+    let read_text =
+        |root: Option<&serde_json::Map<String, Value>>, keys: &[&str], max_len: usize| {
+            keys.iter()
+                .find_map(|key| {
+                    root.and_then(|m| m.get(*key))
+                        .map(|v| value_to_string(Some(v)))
+                })
+                .map(|value| clean_text_runtime(&value, max_len))
+                .unwrap_or_default()
+        };
     let read_value = |root: Option<&serde_json::Map<String, Value>>, keys: &[&str]| {
         keys.iter()
             .find_map(|key| root.and_then(|m| m.get(*key)))
             .cloned()
     };
 
-    let objective = clean_text_runtime(
-        &value_to_string(base.and_then(|m| m.get("objective"))),
-        260,
-    );
+    let objective =
+        clean_text_runtime(&value_to_string(base.and_then(|m| m.get("objective"))), 260);
     let objective_id = clean_text_runtime(
         &value_to_string(base.and_then(|m| m.get("objective_id"))),
         140,
@@ -5175,7 +5241,10 @@ pub fn compute_build_code_change_proposal_draft(
         .map(|rows| rows.iter().take(8).cloned().collect::<Vec<_>>())
         .unwrap_or_default();
     let session_id_value = {
-        let value = clean_text_runtime(&value_to_string(opts.and_then(|m| m.get("session_id"))), 120);
+        let value = clean_text_runtime(
+            &value_to_string(opts.and_then(|m| m.get("session_id"))),
+            120,
+        );
         if value.is_empty() {
             Value::Null
         } else {
@@ -5216,14 +5285,18 @@ pub fn compute_build_code_change_proposal_draft(
     }
 }
 
-pub fn compute_normalize_library_row(input: &NormalizeLibraryRowInput) -> NormalizeLibraryRowOutput {
+pub fn compute_normalize_library_row(
+    input: &NormalizeLibraryRowInput,
+) -> NormalizeLibraryRowOutput {
     let src = input.row.as_ref().and_then(|v| v.as_object());
 
     let id = clean_text_runtime(&value_to_string(src.and_then(|m| m.get("id"))), 80);
     let ts = clean_text_runtime(&value_to_string(src.and_then(|m| m.get("ts"))), 40);
     let objective = clean_text_runtime(&value_to_string(src.and_then(|m| m.get("objective"))), 280);
-    let objective_id =
-        clean_text_runtime(&value_to_string(src.and_then(|m| m.get("objective_id"))), 120);
+    let objective_id = clean_text_runtime(
+        &value_to_string(src.and_then(|m| m.get("objective_id"))),
+        120,
+    );
     let signature = clean_text_runtime(&value_to_string(src.and_then(|m| m.get("signature"))), 240);
 
     let signature_tokens = if let Some(tokens) = src
@@ -5292,7 +5365,10 @@ pub fn compute_normalize_library_row(input: &NormalizeLibraryRowInput) -> Normal
     })
     .value;
     let principle_id = {
-        let v = clean_text_runtime(&value_to_string(src.and_then(|m| m.get("principle_id"))), 80);
+        let v = clean_text_runtime(
+            &value_to_string(src.and_then(|m| m.get("principle_id"))),
+            80,
+        );
         if v.is_empty() {
             Value::Null
         } else {
@@ -5494,15 +5570,18 @@ pub fn compute_normalize_output_channel(
     let src = input.src_out.as_ref();
     NormalizeOutputChannelOutput {
         enabled: to_bool_like(
-            src.and_then(|v| v.as_object()).and_then(|m| m.get("enabled")),
+            src.and_then(|v| v.as_object())
+                .and_then(|m| m.get("enabled")),
             map_bool_key(base, "enabled", false),
         ),
         live_enabled: to_bool_like(
-            src.and_then(|v| v.as_object()).and_then(|m| m.get("live_enabled")),
+            src.and_then(|v| v.as_object())
+                .and_then(|m| m.get("live_enabled")),
             map_bool_key(base, "live_enabled", false),
         ),
         test_enabled: to_bool_like(
-            src.and_then(|v| v.as_object()).and_then(|m| m.get("test_enabled")),
+            src.and_then(|v| v.as_object())
+                .and_then(|m| m.get("test_enabled")),
             map_bool_key(base, "test_enabled", false),
         ),
         require_sandbox_verification: to_bool_like(
@@ -5740,8 +5819,9 @@ pub fn compute_normalize_axiom_list(input: &NormalizeAxiomListInput) -> Normaliz
         .into_iter()
         .take(24)
         .collect::<Vec<_>>();
-        let has_semantic_requirements =
-            !semantic_actions.is_empty() || !semantic_subjects.is_empty() || !semantic_objects.is_empty();
+        let has_semantic_requirements = !semantic_actions.is_empty()
+            || !semantic_subjects.is_empty()
+            || !semantic_objects.is_empty();
 
         if id.is_empty()
             || (patterns.is_empty()
@@ -5805,7 +5885,8 @@ pub fn compute_normalize_harness_suite(
         if id.is_empty() {
             id = default_id;
         }
-        let objective = clean_text_runtime(&value_to_string(item.and_then(|m| m.get("objective"))), 280);
+        let objective =
+            clean_text_runtime(&value_to_string(item.and_then(|m| m.get("objective"))), 280);
         if objective.is_empty() {
             continue;
         }
@@ -5817,10 +5898,8 @@ pub fn compute_normalize_harness_suite(
             value: Some(value_to_string(item.and_then(|m| m.get("target")))),
         })
         .value;
-        let mut difficulty = normalize_token_runtime(
-            &value_to_string(item.and_then(|m| m.get("difficulty"))),
-            24,
-        );
+        let mut difficulty =
+            normalize_token_runtime(&value_to_string(item.and_then(|m| m.get("difficulty"))), 24);
         if difficulty.is_empty() {
             difficulty = "medium".to_string();
         }
@@ -5845,11 +5924,19 @@ pub fn compute_load_harness_state(input: &LoadHarnessStateInput) -> LoadHarnessS
     let row = src.as_object();
     let updated_at = {
         let value = value_to_string(row.and_then(|m| m.get("updated_at")));
-        if value.is_empty() { now_iso.clone() } else { value }
+        if value.is_empty() {
+            now_iso.clone()
+        } else {
+            value
+        }
     };
     let last_run_ts = {
         let value = value_to_string(row.and_then(|m| m.get("last_run_ts")));
-        if value.is_empty() { Value::Null } else { Value::String(value) }
+        if value.is_empty() {
+            Value::Null
+        } else {
+            Value::String(value)
+        }
     };
     let cursor = parse_number_like(row.and_then(|m| m.get("cursor")))
         .unwrap_or(0.0)
@@ -5870,7 +5957,11 @@ pub fn compute_save_harness_state(input: &SaveHarnessStateInput) -> SaveHarnessS
     let src = input.state.as_ref().and_then(|v| v.as_object());
     let last_run_ts = {
         let value = value_to_string(src.and_then(|m| m.get("last_run_ts")));
-        if value.is_empty() { Value::Null } else { Value::String(value) }
+        if value.is_empty() {
+            Value::Null
+        } else {
+            Value::String(value)
+        }
     };
     let cursor = parse_number_like(src.and_then(|m| m.get("cursor")))
         .unwrap_or(0.0)
@@ -5901,7 +5992,11 @@ pub fn compute_load_first_principle_lock_state(
     let row = src.as_object();
     let updated_at = {
         let value = value_to_string(row.and_then(|m| m.get("updated_at")));
-        if value.is_empty() { now_iso.clone() } else { value }
+        if value.is_empty() {
+            now_iso.clone()
+        } else {
+            value
+        }
     };
     let locks = row
         .and_then(|m| m.get("locks"))
@@ -5957,13 +6052,11 @@ pub fn compute_load_observer_approvals(
         })
         .value;
         let observer_id = compute_normalize_observer_id(&NormalizeObserverIdInput {
-            value: Some(
-                if item.get("observer_id").is_some() {
-                    value_to_string(item.get("observer_id"))
-                } else {
-                    value_to_string(item.get("observerId"))
-                },
-            ),
+            value: Some(if item.get("observer_id").is_some() {
+                value_to_string(item.get("observer_id"))
+            } else {
+                value_to_string(item.get("observerId"))
+            }),
         })
         .value;
         let note = clean_text_runtime(&value_to_string(item.get("note")), 280);
@@ -6170,12 +6263,13 @@ pub fn compute_load_maturity_state(input: &LoadMaturityStateInput) -> LoadMaturi
                 .chars()
                 .take(64)
                 .collect::<String>();
-            if value.is_empty() { now_iso.clone() } else { value }
+            if value.is_empty() {
+                now_iso.clone()
+            } else {
+                value
+            }
         };
-        obj.insert(
-            "updated_at".to_string(),
-            Value::String(updated_at_value),
-        );
+        obj.insert("updated_at".to_string(), Value::String(updated_at_value));
         obj.insert(
             "score".to_string(),
             computed.get("score").cloned().unwrap_or_else(|| json!(0)),
@@ -6345,7 +6439,10 @@ pub fn compute_append_persona_lens_gate_receipt(
         .and_then(|m| m.get("feed_push"))
         .and_then(|v| v.as_object());
     let persona_id = {
-        let value = clean_text_runtime(&value_to_string(payload.and_then(|m| m.get("persona_id"))), 120);
+        let value = clean_text_runtime(
+            &value_to_string(payload.and_then(|m| m.get("persona_id"))),
+            120,
+        );
         if value.is_empty() {
             Value::Null
         } else {
@@ -6567,29 +6664,26 @@ pub fn compute_append_conclave_correspondence(
                 "escalated_to_monarch"
             }
         ),
-        format!(
-            "- Winner: {}",
-            {
-                let value = clean_text_runtime(&value_to_string(row.and_then(|m| m.get("winner"))), 120);
-                if value.is_empty() {
-                    "none".to_string()
-                } else {
-                    value
-                }
+        format!("- Winner: {}", {
+            let value =
+                clean_text_runtime(&value_to_string(row.and_then(|m| m.get("winner"))), 120);
+            if value.is_empty() {
+                "none".to_string()
+            } else {
+                value
             }
-        ),
-        format!(
-            "- Arbitration rule: {}",
-            {
-                let value =
-                    clean_text_runtime(&value_to_string(row.and_then(|m| m.get("arbitration_rule"))), 160);
-                if value.is_empty() {
-                    "unknown".to_string()
-                } else {
-                    value
-                }
+        }),
+        format!("- Arbitration rule: {}", {
+            let value = clean_text_runtime(
+                &value_to_string(row.and_then(|m| m.get("arbitration_rule"))),
+                160,
+            );
+            if value.is_empty() {
+                "unknown".to_string()
+            } else {
+                value
             }
-        ),
+        }),
         format!(
             "- High-risk flags: {}",
             if high_risk_flags.is_empty() {
@@ -6598,40 +6692,37 @@ pub fn compute_append_conclave_correspondence(
                 high_risk_flags.join(", ")
             }
         ),
-        format!(
-            "- Query: {}",
-            {
-                let value = clean_text_runtime(&value_to_string(row.and_then(|m| m.get("query"))), 1800);
-                if value.is_empty() {
-                    "n/a".to_string()
-                } else {
-                    value
-                }
+        format!("- Query: {}", {
+            let value =
+                clean_text_runtime(&value_to_string(row.and_then(|m| m.get("query"))), 1800);
+            if value.is_empty() {
+                "n/a".to_string()
+            } else {
+                value
             }
-        ),
-        format!(
-            "- Proposal summary: {}",
-            {
-                let value =
-                    clean_text_runtime(&value_to_string(row.and_then(|m| m.get("proposal_summary"))), 1400);
-                if value.is_empty() {
-                    "n/a".to_string()
-                } else {
-                    value
-                }
+        }),
+        format!("- Proposal summary: {}", {
+            let value = clean_text_runtime(
+                &value_to_string(row.and_then(|m| m.get("proposal_summary"))),
+                1400,
+            );
+            if value.is_empty() {
+                "n/a".to_string()
+            } else {
+                value
             }
-        ),
-        format!(
-            "- Receipt: {}",
-            {
-                let value = clean_text_runtime(&value_to_string(row.and_then(|m| m.get("receipt_path"))), 260);
-                if value.is_empty() {
-                    "n/a".to_string()
-                } else {
-                    value
-                }
+        }),
+        format!("- Receipt: {}", {
+            let value = clean_text_runtime(
+                &value_to_string(row.and_then(|m| m.get("receipt_path"))),
+                260,
+            );
+            if value.is_empty() {
+                "n/a".to_string()
+            } else {
+                value
             }
-        ),
+        }),
         String::new(),
         "```json".to_string(),
         serde_json::to_string_pretty(&review_payload).unwrap_or_else(|_| "{}".to_string()),
@@ -6684,11 +6775,15 @@ pub fn compute_trim_library(input: &TrimLibraryInput) -> TrimLibraryOutput {
     .rows
     .into_iter()
     .map(|row| {
-        let mut normalized = compute_normalize_library_row(&NormalizeLibraryRowInput { row: Some(row) }).row;
+        let mut normalized =
+            compute_normalize_library_row(&NormalizeLibraryRowInput { row: Some(row) }).row;
         if let Some(obj) = normalized.as_object_mut() {
             let maturity_band = value_to_string(obj.get("maturity_band"));
             if maturity_band.is_empty() {
-                obj.insert("maturity_band".to_string(), Value::String("novice".to_string()));
+                obj.insert(
+                    "maturity_band".to_string(),
+                    Value::String("novice".to_string()),
+                );
             }
         }
         normalized
@@ -6849,7 +6944,9 @@ pub fn compute_detect_immutable_axiom_violation(
             max_len: Some(80),
         })
         .items;
-        let tag_matched = tag_rules.iter().any(|tag| intent_tags.iter().any(|it| it == tag));
+        let tag_matched = tag_rules
+            .iter()
+            .any(|tag| intent_tags.iter().any(|it| it == tag));
 
         let signal_cfg = axiom_obj
             .get("signals")
@@ -6886,8 +6983,8 @@ pub fn compute_detect_immutable_axiom_violation(
             token_set: token_set.clone(),
         });
         let structured_signal_configured = signal_groups.configured_groups > 0;
-        let structured_pattern_match = pattern_matched
-            && (!structured_signal_configured || signal_groups.pass);
+        let structured_pattern_match =
+            pattern_matched && (!structured_signal_configured || signal_groups.pass);
         if tag_matched || regex_matched || structured_pattern_match {
             hits.push(id);
         }
@@ -6934,14 +7031,20 @@ pub fn compute_maturity_score(input: &ComputeMaturityScoreInput) -> ComputeMatur
     } else {
         0.0
     };
-    let target_test_count = js_number_for_extract(value_path(Some(&Value::Object(policy.clone())), &["maturity", "target_test_count"]))
-        .unwrap_or(40.0)
-        .max(1.0);
+    let target_test_count = js_number_for_extract(value_path(
+        Some(&Value::Object(policy.clone())),
+        &["maturity", "target_test_count"],
+    ))
+    .unwrap_or(40.0)
+    .max(1.0);
     let experience = (total / target_test_count).min(1.0);
-    let weights = value_path(Some(&Value::Object(policy.clone())), &["maturity", "score_weights"])
-        .and_then(|v| v.as_object())
-        .cloned()
-        .unwrap_or_default();
+    let weights = value_path(
+        Some(&Value::Object(policy.clone())),
+        &["maturity", "score_weights"],
+    )
+    .and_then(|v| v.as_object())
+    .cloned()
+    .unwrap_or_default();
     let w_pass = js_number_for_extract(weights.get("pass_rate")).unwrap_or(0.0);
     let w_non = js_number_for_extract(weights.get("non_destructive_rate")).unwrap_or(0.0);
     let w_exp = js_number_for_extract(weights.get("experience")).unwrap_or(0.0);
@@ -6981,7 +7084,12 @@ pub fn compute_select_library_candidates(
     input: &SelectLibraryCandidatesInput,
 ) -> SelectLibraryCandidatesOutput {
     let policy = input.policy.clone().unwrap_or_else(|| json!({}));
-    let query = input.query.as_ref().and_then(|v| v.as_object()).cloned().unwrap_or_default();
+    let query = input
+        .query
+        .as_ref()
+        .and_then(|v| v.as_object())
+        .cloned()
+        .unwrap_or_default();
     let rows = compute_read_jsonl(&ReadJsonlInput {
         file_path: input.file_path.clone(),
     })
@@ -6989,8 +7097,11 @@ pub fn compute_select_library_candidates(
     .into_iter()
     .map(|row| compute_normalize_library_row(&NormalizeLibraryRowInput { row: Some(row) }).row)
     .collect::<Vec<_>>();
-    let min_similarity = js_number_for_extract(value_path(Some(&policy), &["library", "min_similarity_for_reuse"]))
-        .unwrap_or(0.35);
+    let min_similarity = js_number_for_extract(value_path(
+        Some(&policy),
+        &["library", "min_similarity_for_reuse"],
+    ))
+    .unwrap_or(0.35);
     let mut scored = rows
         .into_iter()
         .map(|row| {
@@ -7008,7 +7119,10 @@ pub fn compute_select_library_candidates(
                     .and_then(|v| v.as_array())
                     .cloned()
                     .unwrap_or_default(),
-                query_target: query.get("target").and_then(|v| v.as_str()).map(|v| v.to_string()),
+                query_target: query
+                    .get("target")
+                    .and_then(|v| v.as_str())
+                    .map(|v| v.to_string()),
                 row_signature_tokens: row
                     .as_object()
                     .and_then(|m| m.get("signature_tokens"))
@@ -7027,13 +7141,17 @@ pub fn compute_select_library_candidates(
                     .and_then(|m| m.get("target"))
                     .and_then(|v| v.as_str())
                     .map(|v| v.to_string()),
-                token_weight: value_path(Some(&policy), &["library", "token_weight"]).and_then(|v| v.as_f64()),
-                trit_weight: value_path(Some(&policy), &["library", "trit_weight"]).and_then(|v| v.as_f64()),
-                target_weight: value_path(Some(&policy), &["library", "target_weight"]).and_then(|v| v.as_f64()),
+                token_weight: value_path(Some(&policy), &["library", "token_weight"])
+                    .and_then(|v| v.as_f64()),
+                trit_weight: value_path(Some(&policy), &["library", "trit_weight"])
+                    .and_then(|v| v.as_f64()),
+                target_weight: value_path(Some(&policy), &["library", "target_weight"])
+                    .and_then(|v| v.as_f64()),
             })
             .score;
             let base_certainty = clamp_number(
-                js_number_for_extract(row.as_object().and_then(|m| m.get("certainty"))).unwrap_or(0.0),
+                js_number_for_extract(row.as_object().and_then(|m| m.get("certainty")))
+                    .unwrap_or(0.0),
                 0.0,
                 1.0,
             );
@@ -7049,7 +7167,8 @@ pub fn compute_select_library_candidates(
             } else {
                 0.6
             };
-            let candidate_certainty = clamp_number(base_certainty * confidence_multiplier, 0.0, 1.0);
+            let candidate_certainty =
+                clamp_number(base_certainty * confidence_multiplier, 0.0, 1.0);
             json!({
                 "row": row,
                 "similarity": (similarity * 1_000_000.0).round() / 1_000_000.0,
@@ -7063,17 +7182,25 @@ pub fn compute_select_library_candidates(
         })
         .collect::<Vec<_>>();
     scored.sort_by(|a, b| {
-        let a_sim = js_number_for_extract(a.as_object().and_then(|m| m.get("similarity"))).unwrap_or(0.0);
-        let b_sim = js_number_for_extract(b.as_object().and_then(|m| m.get("similarity"))).unwrap_or(0.0);
+        let a_sim =
+            js_number_for_extract(a.as_object().and_then(|m| m.get("similarity"))).unwrap_or(0.0);
+        let b_sim =
+            js_number_for_extract(b.as_object().and_then(|m| m.get("similarity"))).unwrap_or(0.0);
         if (b_sim - a_sim).abs() > f64::EPSILON {
-            return b_sim.partial_cmp(&a_sim).unwrap_or(std::cmp::Ordering::Equal);
+            return b_sim
+                .partial_cmp(&a_sim)
+                .unwrap_or(std::cmp::Ordering::Equal);
         }
         let a_cert =
-            js_number_for_extract(a.as_object().and_then(|m| m.get("candidate_certainty"))).unwrap_or(0.0);
+            js_number_for_extract(a.as_object().and_then(|m| m.get("candidate_certainty")))
+                .unwrap_or(0.0);
         let b_cert =
-            js_number_for_extract(b.as_object().and_then(|m| m.get("candidate_certainty"))).unwrap_or(0.0);
+            js_number_for_extract(b.as_object().and_then(|m| m.get("candidate_certainty")))
+                .unwrap_or(0.0);
         if (b_cert - a_cert).abs() > f64::EPSILON {
-            return b_cert.partial_cmp(&a_cert).unwrap_or(std::cmp::Ordering::Equal);
+            return b_cert
+                .partial_cmp(&a_cert)
+                .unwrap_or(std::cmp::Ordering::Equal);
         }
         let a_ts = value_to_string(
             a.as_object()
@@ -7219,7 +7346,9 @@ pub fn compute_sweep_expired_sessions(
             now_iso
         );
         let library_target = compute_normalize_target(&NormalizeTargetInput {
-            value: Some(value_to_string(row.as_object().and_then(|m| m.get("target")))),
+            value: Some(value_to_string(
+                row.as_object().and_then(|m| m.get("target")),
+            )),
         })
         .value;
         let library_impact = compute_normalize_impact(&NormalizeImpactInput {
@@ -7227,8 +7356,8 @@ pub fn compute_sweep_expired_sessions(
         })
         .value;
         let library_certainty = {
-            let certainty =
-                js_number_for_extract(row.as_object().and_then(|m| m.get("certainty"))).unwrap_or(0.0);
+            let certainty = js_number_for_extract(row.as_object().and_then(|m| m.get("certainty")))
+                .unwrap_or(0.0);
             (clamp_number(certainty, 0.0, 1.0) * 1_000_000.0).round() / 1_000_000.0
         };
         let library_filter_stack = compute_normalize_list(&NormalizeListInput {
@@ -7272,7 +7401,10 @@ pub fn compute_sweep_expired_sessions(
                 "session_id": library_session_id
             })),
         });
-        if to_bool_like(value_path(Some(&policy), &["telemetry", "emit_events"]), false) {
+        if to_bool_like(
+            value_path(Some(&policy), &["telemetry", "emit_events"]),
+            false,
+        ) {
             let _ = compute_emit_event(&EmitEventInput {
                 events_dir: paths
                     .get("events_dir")
@@ -7350,15 +7482,16 @@ pub fn compute_load_impossibility_signals(
             .to_string_lossy()
             .to_string()
     };
-    let simulation_path = if !simulation_by_date.is_empty() && Path::new(&simulation_by_date).exists() {
-        simulation_by_date
-    } else {
-        compute_latest_json_file_in_dir(&LatestJsonFileInDirInput {
-            dir_path: Some(simulation_dir.clone()),
-        })
-        .file_path
-        .unwrap_or_default()
-    };
+    let simulation_path =
+        if !simulation_by_date.is_empty() && Path::new(&simulation_by_date).exists() {
+            simulation_by_date
+        } else {
+            compute_latest_json_file_in_dir(&LatestJsonFileInDirInput {
+                dir_path: Some(simulation_dir.clone()),
+            })
+            .file_path
+            .unwrap_or_default()
+        };
     let simulation = compute_read_json(&ReadJsonInput {
         file_path: Some(simulation_path.clone()),
         fallback: Some(Value::Null),
@@ -7510,7 +7643,8 @@ pub fn compute_evaluate_impossibility_trigger(
         .cloned()
         .unwrap_or_default();
     let trit = normalize_trit_value(
-        value_path(Some(&Value::Object(signals.clone())), &["trit", "value"]).unwrap_or(&Value::Null),
+        value_path(Some(&Value::Object(signals.clone())), &["trit", "value"])
+            .unwrap_or(&Value::Null),
     );
     let trit_pain_signal = if trit < 0 {
         1.0
@@ -7520,17 +7654,29 @@ pub fn compute_evaluate_impossibility_trigger(
         0.0
     };
     let mirror_pressure = clamp_number(
-        js_number_for_extract(value_path(Some(&Value::Object(signals.clone())), &["mirror", "pressure_score"])).unwrap_or(0.0),
+        js_number_for_extract(value_path(
+            Some(&Value::Object(signals.clone())),
+            &["mirror", "pressure_score"],
+        ))
+        .unwrap_or(0.0),
         0.0,
         1.0,
     );
     let predicted_drift = clamp_number(
-        js_number_for_extract(value_path(Some(&Value::Object(signals.clone())), &["simulation", "predicted_drift"])).unwrap_or(0.0),
+        js_number_for_extract(value_path(
+            Some(&Value::Object(signals.clone())),
+            &["simulation", "predicted_drift"],
+        ))
+        .unwrap_or(0.0),
         0.0,
         1.0,
     );
     let predicted_yield = clamp_number(
-        js_number_for_extract(value_path(Some(&Value::Object(signals.clone())), &["simulation", "predicted_yield"])).unwrap_or(0.0),
+        js_number_for_extract(value_path(
+            Some(&Value::Object(signals.clone())),
+            &["simulation", "predicted_yield"],
+        ))
+        .unwrap_or(0.0),
         0.0,
         1.0,
     );
@@ -7547,15 +7693,26 @@ pub fn compute_evaluate_impossibility_trigger(
     let drift_score = if predicted_drift <= drift_warn {
         0.0
     } else {
-        clamp_number((predicted_drift - drift_warn) / (1.0 - drift_warn).max(0.0001), 0.0, 1.0)
+        clamp_number(
+            (predicted_drift - drift_warn) / (1.0 - drift_warn).max(0.0001),
+            0.0,
+            1.0,
+        )
     };
     let yield_gap_score = if predicted_yield >= yield_warn {
         0.0
     } else {
-        clamp_number((yield_warn - predicted_yield) / yield_warn.max(0.0001), 0.0, 1.0)
+        clamp_number(
+            (yield_warn - predicted_yield) / yield_warn.max(0.0001),
+            0.0,
+            1.0,
+        )
     };
     let red_team_critical = if clamp_int_value(
-        value_path(Some(&Value::Object(signals.clone())), &["red_team", "critical_fail_cases"]),
+        value_path(
+            Some(&Value::Object(signals.clone())),
+            &["red_team", "critical_fail_cases"],
+        ),
         0,
         100000,
         0,
@@ -7566,7 +7723,10 @@ pub fn compute_evaluate_impossibility_trigger(
         0.0
     };
     let regime_constrained = if to_bool_like(
-        value_path(Some(&Value::Object(signals.clone())), &["regime", "constrained"]),
+        value_path(
+            Some(&Value::Object(signals.clone())),
+            &["regime", "constrained"],
+        ),
         false,
     ) {
         1.0
@@ -7591,10 +7751,17 @@ pub fn compute_evaluate_impossibility_trigger(
         0.0,
         1.0,
     );
-    let signal_count = [trit_pain_signal, mirror_pressure, drift_score, yield_gap_score, red_team_critical, regime_constrained]
-        .iter()
-        .map(|v| if *v > 0.0 { 1 } else { 0 })
-        .sum::<i32>() as i64;
+    let signal_count = [
+        trit_pain_signal,
+        mirror_pressure,
+        drift_score,
+        yield_gap_score,
+        red_team_critical,
+        regime_constrained,
+    ]
+    .iter()
+    .map(|v| if *v > 0.0 { 1 } else { 0 })
+    .sum::<i32>() as i64;
     let mut reasons = Vec::new();
     if force {
         reasons.push("forced".to_string());
@@ -7638,7 +7805,9 @@ pub fn compute_evaluate_impossibility_trigger(
     }
 }
 
-pub fn compute_extract_first_principle(input: &ExtractFirstPrincipleInput) -> ExtractFirstPrincipleOutput {
+pub fn compute_extract_first_principle(
+    input: &ExtractFirstPrincipleInput,
+) -> ExtractFirstPrincipleOutput {
     let policy = input.policy.as_ref();
     if value_path(policy, &["first_principles", "enabled"])
         .map(|v| !to_bool_like(Some(v), false))
@@ -7662,7 +7831,10 @@ pub fn compute_extract_first_principle(input: &ExtractFirstPrincipleInput) -> Ex
         .cloned()
         .unwrap_or_default();
     let principle_text = clean_text_runtime(
-        &value_to_string(args.get("principle").or_else(|| args.get("first-principle"))),
+        &value_to_string(
+            args.get("principle")
+                .or_else(|| args.get("first-principle")),
+        ),
         360,
     );
     let auto_extract = to_bool_like(
@@ -7711,7 +7883,11 @@ pub fn compute_extract_first_principle(input: &ExtractFirstPrincipleInput) -> Ex
     if text.is_empty() {
         return ExtractFirstPrincipleOutput { principle: None };
     }
-    let certainty = clamp_number(js_number_for_extract(session.get("certainty")).unwrap_or(0.0), 0.0, 1.0);
+    let certainty = clamp_number(
+        js_number_for_extract(session.get("certainty")).unwrap_or(0.0),
+        0.0,
+        1.0,
+    );
     let confidence = clamp_number(
         (certainty * 0.7)
             + if value_to_string(session.get("fallback_entry_id")).is_empty() {
@@ -7722,8 +7898,11 @@ pub fn compute_extract_first_principle(input: &ExtractFirstPrincipleInput) -> Ex
         0.0,
         1.0,
     );
-    let max_bonus = js_number_for_extract(value_path(policy, &["first_principles", "max_strategy_bonus"]))
-        .unwrap_or(0.12);
+    let max_bonus = js_number_for_extract(value_path(
+        policy,
+        &["first_principles", "max_strategy_bonus"],
+    ))
+    .unwrap_or(0.12);
     let now_iso = input.now_iso.clone().unwrap_or_else(now_iso_runtime);
     let id_seed = format!("{}|{}", value_to_string(session.get("session_id")), text);
     let objective_id_value = {
@@ -7762,11 +7941,17 @@ pub fn compute_extract_failure_cluster_principle(
     input: &ExtractFailureClusterPrincipleInput,
 ) -> ExtractFailureClusterPrincipleOutput {
     let policy = input.policy.clone().unwrap_or_else(|| json!({}));
-    if !to_bool_like(value_path(Some(&policy), &["first_principles", "enabled"]), false) {
+    if !to_bool_like(
+        value_path(Some(&policy), &["first_principles", "enabled"]),
+        false,
+    ) {
         return ExtractFailureClusterPrincipleOutput { principle: None };
     }
     if !to_bool_like(
-        value_path(Some(&policy), &["first_principles", "allow_failure_cluster_extraction"]),
+        value_path(
+            Some(&policy),
+            &["first_principles", "allow_failure_cluster_extraction"],
+        ),
         false,
     ) {
         return ExtractFailureClusterPrincipleOutput { principle: None };
@@ -7829,17 +8014,18 @@ pub fn compute_extract_failure_cluster_principle(
         ) < 0
     })
     .collect::<Vec<_>>();
-    let cluster_min = js_number_for_extract(value_path(Some(&policy), &["first_principles", "failure_cluster_min"]))
-        .unwrap_or(4.0) as usize;
+    let cluster_min = js_number_for_extract(value_path(
+        Some(&policy),
+        &["first_principles", "failure_cluster_min"],
+    ))
+    .unwrap_or(4.0) as usize;
     if candidates.len() < cluster_min {
         return ExtractFailureClusterPrincipleOutput { principle: None };
     }
     let avg_similarity = {
         let total = candidates
             .iter()
-            .map(|row| {
-                js_number_for_extract(value_path(Some(row), &["similarity"])).unwrap_or(0.0)
-            })
+            .map(|row| js_number_for_extract(value_path(Some(row), &["similarity"])).unwrap_or(0.0))
             .sum::<f64>();
         total / (candidates.len() as f64).max(1.0)
     };
@@ -9379,7 +9565,8 @@ pub fn run_inversion_json(payload_json: &str) -> Result<String, String> {
         .map_err(|e| format!("inversion_encode_rel_path_failed:{e}"));
     }
     if mode == "normalize_axiom_pattern" {
-        let input: NormalizeAxiomPatternInput = decode_input(&payload, "normalize_axiom_pattern_input")?;
+        let input: NormalizeAxiomPatternInput =
+            decode_input(&payload, "normalize_axiom_pattern_input")?;
         let out = compute_normalize_axiom_pattern(&input);
         return serde_json::to_string(&json!({
             "ok": true,
@@ -9389,7 +9576,8 @@ pub fn run_inversion_json(payload_json: &str) -> Result<String, String> {
         .map_err(|e| format!("inversion_encode_normalize_axiom_pattern_failed:{e}"));
     }
     if mode == "normalize_axiom_signal_terms" {
-        let input: NormalizeAxiomSignalTermsInput = decode_input(&payload, "normalize_axiom_signal_terms_input")?;
+        let input: NormalizeAxiomSignalTermsInput =
+            decode_input(&payload, "normalize_axiom_signal_terms_input")?;
         let out = compute_normalize_axiom_signal_terms(&input);
         return serde_json::to_string(&json!({
             "ok": true,
@@ -9399,7 +9587,8 @@ pub fn run_inversion_json(payload_json: &str) -> Result<String, String> {
         .map_err(|e| format!("inversion_encode_normalize_axiom_signal_terms_failed:{e}"));
     }
     if mode == "normalize_observer_id" {
-        let input: NormalizeObserverIdInput = decode_input(&payload, "normalize_observer_id_input")?;
+        let input: NormalizeObserverIdInput =
+            decode_input(&payload, "normalize_observer_id_input")?;
         let out = compute_normalize_observer_id(&input);
         return serde_json::to_string(&json!({
             "ok": true,
@@ -9449,7 +9638,8 @@ pub fn run_inversion_json(payload_json: &str) -> Result<String, String> {
         .map_err(|e| format!("inversion_encode_now_iso_failed:{e}"));
     }
     if mode == "default_tier_event_map" {
-        let input: DefaultTierEventMapInput = decode_input(&payload, "default_tier_event_map_input")?;
+        let input: DefaultTierEventMapInput =
+            decode_input(&payload, "default_tier_event_map_input")?;
         let out = compute_default_tier_event_map(&input);
         return serde_json::to_string(&json!({
             "ok": true,
@@ -9479,7 +9669,8 @@ pub fn run_inversion_json(payload_json: &str) -> Result<String, String> {
         .map_err(|e| format!("inversion_encode_get_tier_scope_failed:{e}"));
     }
     if mode == "default_harness_state" {
-        let input: DefaultHarnessStateInput = decode_input(&payload, "default_harness_state_input")?;
+        let input: DefaultHarnessStateInput =
+            decode_input(&payload, "default_harness_state_input")?;
         let out = compute_default_harness_state(&input);
         return serde_json::to_string(&json!({
             "ok": true,
@@ -9500,7 +9691,8 @@ pub fn run_inversion_json(payload_json: &str) -> Result<String, String> {
         .map_err(|e| format!("inversion_encode_default_first_principle_lock_state_failed:{e}"));
     }
     if mode == "default_maturity_state" {
-        let input: DefaultMaturityStateInput = decode_input(&payload, "default_maturity_state_input")?;
+        let input: DefaultMaturityStateInput =
+            decode_input(&payload, "default_maturity_state_input")?;
         let out = compute_default_maturity_state(&input);
         return serde_json::to_string(&json!({
             "ok": true,
@@ -9510,7 +9702,8 @@ pub fn run_inversion_json(payload_json: &str) -> Result<String, String> {
         .map_err(|e| format!("inversion_encode_default_maturity_state_failed:{e}"));
     }
     if mode == "principle_key_for_session" {
-        let input: PrincipleKeyForSessionInput = decode_input(&payload, "principle_key_for_session_input")?;
+        let input: PrincipleKeyForSessionInput =
+            decode_input(&payload, "principle_key_for_session_input")?;
         let out = compute_principle_key_for_session(&input);
         return serde_json::to_string(&json!({
             "ok": true,
@@ -9520,7 +9713,8 @@ pub fn run_inversion_json(payload_json: &str) -> Result<String, String> {
         .map_err(|e| format!("inversion_encode_principle_key_for_session_failed:{e}"));
     }
     if mode == "normalize_objective_arg" {
-        let input: NormalizeObjectiveArgInput = decode_input(&payload, "normalize_objective_arg_input")?;
+        let input: NormalizeObjectiveArgInput =
+            decode_input(&payload, "normalize_objective_arg_input")?;
         let out = compute_normalize_objective_arg(&input);
         return serde_json::to_string(&json!({
             "ok": true,
@@ -9761,7 +9955,8 @@ pub fn run_inversion_json(payload_json: &str) -> Result<String, String> {
         .map_err(|e| format!("inversion_encode_normalize_axiom_list_failed:{e}"));
     }
     if mode == "normalize_harness_suite" {
-        let input: NormalizeHarnessSuiteInput = decode_input(&payload, "normalize_harness_suite_input")?;
+        let input: NormalizeHarnessSuiteInput =
+            decode_input(&payload, "normalize_harness_suite_input")?;
         let out = compute_normalize_harness_suite(&input);
         return serde_json::to_string(&json!({
             "ok": true,
@@ -10143,6 +10338,20 @@ mod tests {
         let out = run_inversion_json(&payload.to_string()).expect("inversion normalize_target");
         assert!(out.contains("\"mode\":\"normalize_target\""));
         assert!(out.contains("\"value\":\"belief\""));
+    }
+
+    #[test]
+    fn inversion_json_get_tier_scope_routes_with_constitution_bucket() {
+        let payload = json!({
+            "mode": "get_tier_scope",
+            "get_tier_scope_input": {
+                "state": { "scopes": {} },
+                "policy_version": "1.0"
+            }
+        });
+        let out = run_inversion_json(&payload.to_string()).expect("inversion get_tier_scope");
+        assert!(out.contains("\"mode\":\"get_tier_scope\""));
+        assert!(out.contains("\"constitution\":[]"));
     }
 
     #[test]
@@ -10775,14 +10984,36 @@ mod tests {
         });
         assert!(got.state["scopes"]["2.0"].is_object());
         assert!(got.scope.is_object());
+        for metric in [
+            "live_apply_attempts",
+            "live_apply_successes",
+            "live_apply_safe_aborts",
+            "shadow_passes",
+            "shadow_critical_failures",
+        ] {
+            assert!(
+                got.scope
+                    .get(metric)
+                    .and_then(|v| v.get("constitution"))
+                    .and_then(Value::as_array)
+                    .is_some(),
+                "missing constitution bucket for metric {metric}"
+            );
+        }
 
         let harness = compute_default_harness_state(&DefaultHarnessStateInput::default());
-        assert_eq!(harness.state["schema_id"], json!("inversion_maturity_harness_state"));
+        assert_eq!(
+            harness.state["schema_id"],
+            json!("inversion_maturity_harness_state")
+        );
 
         let lock = compute_default_first_principle_lock_state(
             &DefaultFirstPrincipleLockStateInput::default(),
         );
-        assert_eq!(lock.state["schema_id"], json!("inversion_first_principle_lock_state"));
+        assert_eq!(
+            lock.state["schema_id"],
+            json!("inversion_first_principle_lock_state")
+        );
 
         let maturity = compute_default_maturity_state(&DefaultMaturityStateInput::default());
         assert_eq!(maturity.state["band"], json!("novice"));
@@ -10886,10 +11117,13 @@ mod tests {
                     "directive": 0.2
                 }
             })),
-            objective: Some("Must reduce drift below 2% within 7 days with measurable latency impact."
-                .to_string()),
+            objective: Some(
+                "Must reduce drift below 2% within 7 days with measurable latency impact."
+                    .to_string(),
+            ),
             signature: Some(
-                "Use github telemetry and external api evidence to improve throughput by 20%.".to_string(),
+                "Use github telemetry and external api evidence to improve throughput by 20%."
+                    .to_string(),
             ),
             external_signals_count: Some(json!(3)),
             evidence_count: Some(json!(4)),
@@ -10948,7 +11182,9 @@ mod tests {
         assert!(proposal
             .get("gated_reasons")
             .and_then(|v| v.as_array())
-            .map(|rows| rows.iter().any(|row| row.as_str() == Some("sandbox_verification_required")))
+            .map(|rows| rows
+                .iter()
+                .any(|row| row.as_str() == Some("sandbox_verification_required")))
             .unwrap_or(false));
     }
 
@@ -10981,10 +11217,7 @@ mod tests {
         });
         let proposal = out.proposal.as_object().expect("proposal object");
         assert_eq!(
-            proposal
-                .get("type")
-                .and_then(|v| v.as_str())
-                .unwrap_or(""),
+            proposal.get("type").and_then(|v| v.as_str()).unwrap_or(""),
             "code_change_proposal"
         );
         assert!(proposal
@@ -11023,9 +11256,20 @@ mod tests {
         });
         let row = out.row.as_object().expect("row object");
         assert_eq!(row.get("id").and_then(|v| v.as_str()).unwrap_or(""), "abc");
-        assert_eq!(row.get("target").and_then(|v| v.as_str()).unwrap_or(""), "directive");
-        assert_eq!(row.get("impact").and_then(|v| v.as_str()).unwrap_or(""), "high");
-        assert_eq!(row.get("outcome_trit").and_then(|v| v.as_i64()).unwrap_or(0), 1);
+        assert_eq!(
+            row.get("target").and_then(|v| v.as_str()).unwrap_or(""),
+            "directive"
+        );
+        assert_eq!(
+            row.get("impact").and_then(|v| v.as_str()).unwrap_or(""),
+            "high"
+        );
+        assert_eq!(
+            row.get("outcome_trit")
+                .and_then(|v| v.as_i64())
+                .unwrap_or(0),
+            1
+        );
     }
 
     #[test]
@@ -11187,21 +11431,23 @@ mod tests {
             7
         );
 
-        let saved_lock = compute_save_first_principle_lock_state(&SaveFirstPrincipleLockStateInput {
-            file_path: Some(first_principles_path.to_string_lossy().to_string()),
-            state: Some(json!({"locks":{"k":{"confidence":0.9}}})),
-            now_iso: Some("2026-03-04T12:01:00.000Z".to_string()),
-        });
+        let saved_lock =
+            compute_save_first_principle_lock_state(&SaveFirstPrincipleLockStateInput {
+                file_path: Some(first_principles_path.to_string_lossy().to_string()),
+                state: Some(json!({"locks":{"k":{"confidence":0.9}}})),
+                now_iso: Some("2026-03-04T12:01:00.000Z".to_string()),
+            });
         assert!(saved_lock
             .state
             .as_object()
             .and_then(|m| m.get("locks"))
             .and_then(|v| v.as_object())
             .is_some());
-        let loaded_lock = compute_load_first_principle_lock_state(&LoadFirstPrincipleLockStateInput {
-            file_path: Some(first_principles_path.to_string_lossy().to_string()),
-            now_iso: Some("2026-03-04T12:02:00.000Z".to_string()),
-        });
+        let loaded_lock =
+            compute_load_first_principle_lock_state(&LoadFirstPrincipleLockStateInput {
+                file_path: Some(first_principles_path.to_string_lossy().to_string()),
+                now_iso: Some("2026-03-04T12:02:00.000Z".to_string()),
+            });
         assert!(loaded_lock
             .state
             .as_object()
@@ -11335,30 +11581,70 @@ mod tests {
         });
         assert!(emitted.emitted);
 
-        let receipt = compute_append_persona_lens_gate_receipt(&AppendPersonaLensGateReceiptInput {
-            state_dir: Some(temp_root.to_string_lossy().to_string()),
-            root: Some(temp_root.to_string_lossy().to_string()),
-            cfg_receipts_path: Some(receipts_path.to_string_lossy().to_string()),
-            payload: Some(json!({
-                "enabled": true,
-                "persona_id": "vikram",
-                "mode": "auto",
-                "effective_mode": "enforce",
-                "status": "enforced",
-                "fail_closed": false,
-                "drift_rate": 0.01,
-                "drift_threshold": 0.02,
-                "parity_confidence": 0.9,
-                "parity_confident": true,
-                "reasons": ["ok"]
-            })),
-            decision: Some(json!({
-                "allowed": true,
-                "input": {"objective":"x","target":"belief","impact":"high"}
-            })),
-            now_iso: Some("2026-03-04T12:05:00.000Z".to_string()),
-        });
+        let receipt =
+            compute_append_persona_lens_gate_receipt(&AppendPersonaLensGateReceiptInput {
+                state_dir: Some(temp_root.to_string_lossy().to_string()),
+                root: Some(temp_root.to_string_lossy().to_string()),
+                cfg_receipts_path: Some(receipts_path.to_string_lossy().to_string()),
+                payload: Some(json!({
+                    "enabled": true,
+                    "persona_id": "vikram",
+                    "mode": "auto",
+                    "effective_mode": "enforce",
+                    "status": "enforced",
+                    "fail_closed": false,
+                    "drift_rate": 0.01,
+                    "drift_threshold": 0.02,
+                    "parity_confidence": 0.9,
+                    "parity_confident": true,
+                    "reasons": ["ok"]
+                })),
+                decision: Some(json!({
+                    "allowed": true,
+                    "input": {"objective":"x","target":"belief","impact":"high"}
+                })),
+                now_iso: Some("2026-03-04T12:05:00.000Z".to_string()),
+            });
         assert!(receipt.rel_path.is_some());
+        let receipt_again =
+            compute_append_persona_lens_gate_receipt(&AppendPersonaLensGateReceiptInput {
+                state_dir: Some(temp_root.to_string_lossy().to_string()),
+                root: Some(temp_root.to_string_lossy().to_string()),
+                cfg_receipts_path: Some(receipts_path.to_string_lossy().to_string()),
+                payload: Some(json!({
+                    "enabled": true,
+                    "persona_id": "vikram",
+                    "mode": "auto",
+                    "effective_mode": "enforce",
+                    "status": "enforced",
+                    "fail_closed": false,
+                    "drift_rate": 0.01,
+                    "drift_threshold": 0.02,
+                    "parity_confidence": 0.9,
+                    "parity_confident": true,
+                    "reasons": ["ok"]
+                })),
+                decision: Some(json!({
+                    "allowed": true,
+                    "input": {"objective":"x","target":"belief","impact":"high"}
+                })),
+                now_iso: Some("2026-03-04T12:05:00.000Z".to_string()),
+            });
+        assert_eq!(receipt.rel_path, receipt_again.rel_path);
+        let receipts_raw = fs::read_to_string(&receipts_path).expect("read persona lens receipts");
+        let rows = receipts_raw
+            .lines()
+            .filter(|line| !line.trim().is_empty())
+            .collect::<Vec<_>>();
+        assert!(rows.len() >= 2);
+        assert_eq!(rows[rows.len() - 1], rows[rows.len() - 2]);
+        let parsed: Value =
+            serde_json::from_str(rows[rows.len() - 1]).expect("parse persona lens receipt");
+        assert_eq!(parsed.get("target").and_then(Value::as_str), Some("belief"));
+        assert_eq!(
+            parsed.get("type").and_then(Value::as_str),
+            Some("inversion_persona_lens_gate")
+        );
 
         let conclave = compute_append_conclave_correspondence(&AppendConclaveCorrespondenceInput {
             correspondence_path: Some(correspondence_path.to_string_lossy().to_string()),
@@ -11496,15 +11782,13 @@ mod tests {
             ts: Some("2026-03-04T12:00:00.000Z".to_string()),
             now_iso: Some("2026-03-04T12:00:00.000Z".to_string()),
         });
-        assert!(
-            value_path(
-                Some(&added.state),
-                &["scopes", "1.7", "live_apply_attempts", "belief"]
-            )
-            .and_then(|v| v.as_array())
-            .map(|rows| !rows.is_empty())
-            .unwrap_or(false)
-        );
+        assert!(value_path(
+            Some(&added.state),
+            &["scopes", "1.7", "live_apply_attempts", "belief"]
+        )
+        .and_then(|v| v.as_array())
+        .map(|rows| !rows.is_empty())
+        .unwrap_or(false));
 
         let inc_attempt = compute_increment_live_apply_attempt(&IncrementLiveApplyAttemptInput {
             file_path: Some(tier_path.to_string_lossy().to_string()),
@@ -11512,15 +11796,13 @@ mod tests {
             target: Some("identity".to_string()),
             now_iso: Some("2026-03-04T12:02:00.000Z".to_string()),
         });
-        assert!(
-            value_path(
-                Some(&inc_attempt.state),
-                &["scopes", "1.7", "live_apply_attempts", "identity"]
-            )
-            .and_then(|v| v.as_array())
-            .map(|rows| !rows.is_empty())
-            .unwrap_or(false)
-        );
+        assert!(value_path(
+            Some(&inc_attempt.state),
+            &["scopes", "1.7", "live_apply_attempts", "identity"]
+        )
+        .and_then(|v| v.as_array())
+        .map(|rows| !rows.is_empty())
+        .unwrap_or(false));
 
         let inc_success = compute_increment_live_apply_success(&IncrementLiveApplySuccessInput {
             file_path: Some(tier_path.to_string_lossy().to_string()),
@@ -11528,31 +11810,28 @@ mod tests {
             target: Some("identity".to_string()),
             now_iso: Some("2026-03-04T12:03:00.000Z".to_string()),
         });
-        assert!(
-            value_path(
-                Some(&inc_success.state),
-                &["scopes", "1.7", "live_apply_successes", "identity"]
-            )
-            .and_then(|v| v.as_array())
-            .map(|rows| !rows.is_empty())
-            .unwrap_or(false)
-        );
+        assert!(value_path(
+            Some(&inc_success.state),
+            &["scopes", "1.7", "live_apply_successes", "identity"]
+        )
+        .and_then(|v| v.as_array())
+        .map(|rows| !rows.is_empty())
+        .unwrap_or(false));
 
-        let inc_abort = compute_increment_live_apply_safe_abort(&IncrementLiveApplySafeAbortInput {
-            file_path: Some(tier_path.to_string_lossy().to_string()),
-            policy: Some(policy.clone()),
-            target: Some("identity".to_string()),
-            now_iso: Some("2026-03-04T12:04:00.000Z".to_string()),
-        });
-        assert!(
-            value_path(
-                Some(&inc_abort.state),
-                &["scopes", "1.7", "live_apply_safe_aborts", "identity"]
-            )
-            .and_then(|v| v.as_array())
-            .map(|rows| !rows.is_empty())
-            .unwrap_or(false)
-        );
+        let inc_abort =
+            compute_increment_live_apply_safe_abort(&IncrementLiveApplySafeAbortInput {
+                file_path: Some(tier_path.to_string_lossy().to_string()),
+                policy: Some(policy.clone()),
+                target: Some("identity".to_string()),
+                now_iso: Some("2026-03-04T12:04:00.000Z".to_string()),
+            });
+        assert!(value_path(
+            Some(&inc_abort.state),
+            &["scopes", "1.7", "live_apply_safe_aborts", "identity"]
+        )
+        .and_then(|v| v.as_array())
+        .map(|rows| !rows.is_empty())
+        .unwrap_or(false));
 
         let shadow = compute_update_shadow_trial_counters(&UpdateShadowTrialCountersInput {
             file_path: Some(tier_path.to_string_lossy().to_string()),
@@ -11701,27 +11980,29 @@ mod tests {
             })),
         });
 
-        let detect = compute_detect_immutable_axiom_violation(&DetectImmutableAxiomViolationInput {
-            policy: Some(json!({
-                "immutable_axioms": {
-                    "enabled": true,
-                    "axioms": [{
-                        "id":"safety_guard",
-                        "patterns":["drift guard"],
-                        "regex":["drift\\s+guard"],
-                        "intent_tags":["safety"],
-                        "signals":{"action_terms":["drift"],"subject_terms":["guard"],"object_terms":[]},
-                        "min_signal_groups": 1
-                    }]
-                }
-            })),
-            decision_input: Some(json!({
-                "objective":"Need drift guard policy",
-                "signature":"drift guard now",
-                "filters":["constraint_reframe"],
-                "intent_tags":["safety"]
-            })),
-        });
+        let detect = compute_detect_immutable_axiom_violation(
+            &DetectImmutableAxiomViolationInput {
+                policy: Some(json!({
+                    "immutable_axioms": {
+                        "enabled": true,
+                        "axioms": [{
+                            "id":"safety_guard",
+                            "patterns":["drift guard"],
+                            "regex":["drift\\s+guard"],
+                            "intent_tags":["safety"],
+                            "signals":{"action_terms":["drift"],"subject_terms":["guard"],"object_terms":[]},
+                            "min_signal_groups": 1
+                        }]
+                    }
+                })),
+                decision_input: Some(json!({
+                    "objective":"Need drift guard policy",
+                    "signature":"drift guard now",
+                    "filters":["constraint_reframe"],
+                    "intent_tags":["safety"]
+                })),
+            },
+        );
         assert_eq!(detect.hits, vec!["safety_guard".to_string()]);
 
         let maturity = compute_maturity_score(&ComputeMaturityScoreInput {
@@ -11806,8 +12087,10 @@ mod tests {
         );
         let _ = fs::write(
             temp_root.join("mirror.json"),
-            serde_json::to_string(&json!({"pressure_score":0.7,"confidence":0.75,"reasons":["pressure","drift"]}))
-                .unwrap_or_else(|_| "{}".to_string()),
+            serde_json::to_string(
+                &json!({"pressure_score":0.7,"confidence":0.75,"reasons":["pressure","drift"]}),
+            )
+            .unwrap_or_else(|_| "{}".to_string()),
         );
         let _ = fs::write(
             temp_root.join("drift_governor.json"),
@@ -11821,8 +12104,10 @@ mod tests {
         );
         let _ = fs::write(
             temp_root.join("red_team").join("latest.json"),
-            serde_json::to_string(&json!({"summary":{"critical_fail_cases":2,"pass_cases":1,"fail_cases":3}}))
-                .unwrap_or_else(|_| "{}".to_string()),
+            serde_json::to_string(
+                &json!({"summary":{"critical_fail_cases":2,"pass_cases":1,"fail_cases":3}}),
+            )
+            .unwrap_or_else(|_| "{}".to_string()),
         );
 
         let signals = compute_load_impossibility_signals(&LoadImpossibilitySignalsInput {
@@ -11908,12 +12193,13 @@ mod tests {
         });
         assert!(first_principle.principle.is_some());
 
-        let failure_principle = compute_extract_failure_cluster_principle(&ExtractFailureClusterPrincipleInput {
-            paths: Some(json!({"library_path": library_path.to_string_lossy().to_string()})),
-            policy: Some(fp_policy),
-            session: Some(session.clone()),
-            now_iso: Some(now_iso_runtime()),
-        });
+        let failure_principle =
+            compute_extract_failure_cluster_principle(&ExtractFailureClusterPrincipleInput {
+                paths: Some(json!({"library_path": library_path.to_string_lossy().to_string()})),
+                policy: Some(fp_policy),
+                session: Some(session.clone()),
+                now_iso: Some(now_iso_runtime()),
+            });
         assert!(failure_principle.principle.is_some());
 
         let persisted = compute_persist_first_principle(&PersistFirstPrincipleInput {

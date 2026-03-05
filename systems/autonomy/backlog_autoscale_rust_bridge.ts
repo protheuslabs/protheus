@@ -507,6 +507,7 @@ function runInversionPrimitive(mode: string, data: AnyObj = {}, opts: AnyObj = {
     now_iso: 'now_iso_input',
     default_tier_event_map: 'default_tier_event_map_input',
     coerce_tier_event_map: 'coerce_tier_event_map_input',
+    get_tier_scope: 'get_tier_scope_input',
     default_harness_state: 'default_harness_state_input',
     default_first_principle_lock_state: 'default_first_principle_lock_state_input',
     default_maturity_state: 'default_maturity_state_input',
