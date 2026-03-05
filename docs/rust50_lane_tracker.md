@@ -326,3 +326,4 @@ Persistent lane-by-lane migration log so progress is preserved outside chat cont
 - [x] N11 | systems/redteam/ant_colony_controller.ts | LOC=655 | 2026-03-05T21:49:48Z
 - [x] N12 | lib/symbiosis_coherence_signal.ts | LOC=652 | 2026-03-05T21:49:51Z
 - [x] N13 | systems/attribution/value_attribution_primitive.ts | LOC=634 | 2026-03-05T21:49:53Z
+- [x] N14 | systems/continuity/resurrection_protocol.ts | LOC=619 | 2026-03-05T21:49:55Z
