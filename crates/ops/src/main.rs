@@ -16,6 +16,7 @@ fn usage() {
     println!("  protheus-ops state-kernel <command> [flags]");
     println!("  protheus-ops autotest-controller <command> [flags]");
     println!("  protheus-ops autotest-doctor <command> [flags]");
+    println!("  protheus-ops autonomy-proposal-enricher <command> [flags]");
     println!("  protheus-ops spine <mode> [date] [flags]");
     println!("  protheus-ops protheusctl <command> [flags]");
     println!("  protheus-ops fluxlattice-program <list|run|run-all|status> [flags]");
@@ -109,6 +110,11 @@ fn main() {
         "autotest-doctor" => {
             let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
             let exit = protheus_ops_core::autotest_doctor::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "autonomy-proposal-enricher" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::proposal_enricher::run(&cwd, &rest);
             std::process::exit(exit);
         }
         "spine" => {
