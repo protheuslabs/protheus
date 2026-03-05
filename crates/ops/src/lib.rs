@@ -25,7 +25,6 @@ pub mod model_router;
 pub mod perception_polish;
 pub mod personas_cli;
 pub mod proposal_enricher;
-pub mod personas_cli;
 pub mod protheusctl;
 pub mod scale_readiness;
 pub mod spine;
