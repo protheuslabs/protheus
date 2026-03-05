@@ -428,3 +428,4 @@ Persistent lane-by-lane migration log so progress is preserved outside chat cont
 - [x] N9 | systems/sensory/value_of_information_collection_planner.ts | LOC=343 | 2026-03-05T21:59:35Z
 - [x] N10 | systems/fractal/introspection_map.ts | LOC=342 | 2026-03-05T21:59:38Z
 - [x] N11 | adaptive/sensory/eyes/collectors/google_trends.ts | LOC=342 | 2026-03-05T21:59:40Z
+- [x] N12 | systems/sensory/gold_eval_blind_scoring_lane.ts | LOC=341 | 2026-03-05T21:59:42Z
