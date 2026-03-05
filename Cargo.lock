@@ -127,6 +127,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5d20789868f4b01b2f2caec9f5c4e0213b41e3e5702a50157d699ae31ced2fcb"
 
 [[package]]
+name = "burn_oracle_budget_gate"
+version = "0.1.0"
+
+[[package]]
 name = "cc"
 version = "1.2.56"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -629,6 +633,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c08d65885ee38876c4f86fa503fb49d7b507c2b62552df7c70b2fce627e06381"
 
 [[package]]
+name = "persona_dispatch_security_gate"
+version = "0.1.0"
+
+[[package]]
 name = "pkg-config"
 version = "0.3.32"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -769,9 +777,11 @@ name = "protheus-ops-core"
 version = "0.1.0"
 dependencies = [
  "base64",
+ "burn_oracle_budget_gate",
  "chrono",
  "hex",
  "num_cpus",
+ "persona_dispatch_security_gate",
  "serde",
  "serde_json",
  "sha2",
