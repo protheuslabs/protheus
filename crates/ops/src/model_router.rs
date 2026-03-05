@@ -17,6 +17,9 @@ fn normalize_key(raw: &str) -> String {
 
 pub const ROUTER_MIN_REQUEST_TOKENS: i64 = 120;
 pub const ROUTER_MAX_REQUEST_TOKENS: i64 = 12_000;
+pub const ROUTER_PROBE_SUPPRESSION_TIMEOUT_STREAK_DEFAULT: i64 = 3;
+pub const ROUTER_PROBE_SUPPRESSION_MINUTES_DEFAULT: i64 = 45;
+pub const ROUTER_PROBE_REHAB_SUCCESS_THRESHOLD_DEFAULT: i64 = 2;
 
 pub fn is_local_ollama_model(model_id: &str) -> bool {
     let model = model_id.trim();
@@ -301,6 +304,41 @@ pub fn normalize_router_pressure(value: &str) -> String {
     }
 }
 
+pub fn is_env_probe_blocked_text(text: &str) -> bool {
+    let lower = text.to_ascii_lowercase();
+    if lower.is_empty() {
+        return false;
+    }
+    (lower.contains("operation not permitted") && lower.contains("11434"))
+        || (lower.contains("permission denied") && lower.contains("11434"))
+        || (lower.contains("sandbox") && lower.contains("11434"))
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct ProbeBlockedNormalization {
+    pub rec: Option<Value>,
+    pub changed: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProbeHealthStabilizerPolicy {
+    pub suppression_enabled: bool,
+    pub suppression_timeout_streak: i64,
+    pub suppression_minutes: i64,
+    pub rehab_success_threshold: i64,
+}
+
+impl Default for ProbeHealthStabilizerPolicy {
+    fn default() -> Self {
+        Self {
+            suppression_enabled: true,
+            suppression_timeout_streak: ROUTER_PROBE_SUPPRESSION_TIMEOUT_STREAK_DEFAULT,
+            suppression_minutes: ROUTER_PROBE_SUPPRESSION_MINUTES_DEFAULT,
+            rehab_success_threshold: ROUTER_PROBE_REHAB_SUCCESS_THRESHOLD_DEFAULT,
+        }
+    }
+}
+
 fn clamp_request_tokens(value: i64) -> i64 {
     value.clamp(ROUTER_MIN_REQUEST_TOKENS, ROUTER_MAX_REQUEST_TOKENS)
 }
@@ -393,6 +431,24 @@ fn first_truthy_value<'a>(candidates: &[Option<&'a Value>]) -> Option<&'a Value>
         .find(|value| js_truthy_value(value))
 }
 
+fn object_or_empty(value: Option<&Value>) -> Map<String, Value> {
+    value
+        .and_then(Value::as_object)
+        .cloned()
+        .unwrap_or_else(Map::new)
+}
+
+fn number_or_default(value: Option<&Value>, fallback: i64) -> i64 {
+    finite_number(value).map_or(fallback, |v| v as i64)
+}
+
+fn js_number_with_or_zero(value: Option<&Value>) -> f64 {
+    if !js_truthy(value) {
+        return 0.0;
+    }
+    finite_number(value).unwrap_or(f64::NAN)
+}
+
 pub fn resolve_model_token_multiplier(
     model_id: &str,
     profile_class: &str,
@@ -473,6 +529,142 @@ pub fn estimate_model_request_tokens(
         multiplier: Some(rounded_multiplier),
         source: detail.source,
     }
+}
+
+pub fn normalize_probe_blocked_record(rec: Option<&Value>) -> ProbeBlockedNormalization {
+    let mut row = match rec.and_then(Value::as_object).cloned() {
+        Some(value) => value,
+        None => {
+            return ProbeBlockedNormalization {
+                rec: None,
+                changed: false,
+            };
+        }
+    };
+
+    let txt = format!(
+        "{} {}",
+        row.get("reason").and_then(Value::as_str).unwrap_or_default(),
+        row.get("stderr").and_then(Value::as_str).unwrap_or_default()
+    );
+    let blocked = matches!(row.get("probe_blocked"), Some(Value::Bool(true)))
+        || is_env_probe_blocked_text(&txt);
+    if !blocked {
+        return ProbeBlockedNormalization {
+            rec: Some(Value::Object(row)),
+            changed: false,
+        };
+    }
+
+    let mut changed = false;
+    if !matches!(row.get("probe_blocked"), Some(Value::Bool(true))) {
+        row.insert("probe_blocked".to_string(), Value::Bool(true));
+        changed = true;
+    }
+    if !matches!(row.get("reason"), Some(Value::String(reason)) if reason == "env_probe_blocked") {
+        row.insert(
+            "reason".to_string(),
+            Value::String("env_probe_blocked".to_string()),
+        );
+        changed = true;
+    }
+    if !matches!(row.get("available"), Some(Value::Null)) {
+        row.insert("available".to_string(), Value::Null);
+        changed = true;
+    }
+
+    ProbeBlockedNormalization {
+        rec: Some(Value::Object(row)),
+        changed,
+    }
+}
+
+pub fn suppression_active(rec: Option<&Value>, now_ms: i64) -> bool {
+    let until = js_number_with_or_zero(
+        rec.and_then(Value::as_object)
+            .and_then(|row| row.get("suppressed_until_ms")),
+    );
+    until.is_finite() && until > now_ms as f64
+}
+
+pub fn apply_probe_health_stabilizer(
+    previous: Option<&Value>,
+    current: Option<&Value>,
+    now_ms: i64,
+    policy: &ProbeHealthStabilizerPolicy,
+) -> Value {
+    let prev = object_or_empty(previous);
+    let mut rec = object_or_empty(current);
+
+    let prev_timeout_streak = number_or_default(prev.get("timeout_streak"), 0);
+    let timeout_streak = if matches!(rec.get("timeout"), Some(Value::Bool(true))) {
+        prev_timeout_streak + 1
+    } else {
+        0
+    };
+    rec.insert(
+        "timeout_streak".to_string(),
+        Value::Number(serde_json::Number::from(timeout_streak)),
+    );
+
+    let prev_rehab_success = number_or_default(prev.get("rehab_success_streak"), 0).max(0);
+    let rehab_success_streak = if matches!(rec.get("timeout"), Some(Value::Bool(true))) {
+        0
+    } else if matches!(rec.get("available"), Some(Value::Bool(true))) {
+        prev_rehab_success + 1
+    } else {
+        prev_rehab_success
+    };
+    rec.insert(
+        "rehab_success_streak".to_string(),
+        Value::Number(serde_json::Number::from(rehab_success_streak)),
+    );
+
+    if policy.suppression_enabled
+        && matches!(rec.get("timeout"), Some(Value::Bool(true)))
+        && timeout_streak >= policy.suppression_timeout_streak
+    {
+        let until = now_ms + (policy.suppression_minutes * 60 * 1000);
+        rec.insert(
+            "suppressed_until_ms".to_string(),
+            Value::Number(serde_json::Number::from(until)),
+        );
+        rec.insert(
+            "suppressed_reason".to_string(),
+            Value::String("timeout_streak".to_string()),
+        );
+        rec.insert("available".to_string(), Value::Bool(false));
+    }
+
+    if matches!(rec.get("available"), Some(Value::Bool(true))) {
+        let prev_suppressed_until = js_number_with_or_zero(prev.get("suppressed_until_ms"));
+        if rehab_success_streak >= policy.rehab_success_threshold
+            || (prev_suppressed_until > 0.0 && prev_suppressed_until <= now_ms as f64)
+        {
+            rec.remove("suppressed_until_ms");
+            rec.remove("suppressed_reason");
+            rec.remove("suppressed_at_ms");
+        }
+    }
+
+    if suppression_active(Some(&Value::Object(rec.clone())), now_ms) {
+        let existing = rec.get("suppressed_at_ms");
+        let suppressed_at = if js_truthy(existing) {
+            finite_number(existing).unwrap_or(now_ms as f64)
+        } else {
+            now_ms as f64
+        };
+        let suppressed_at_number = serde_json::Number::from_f64(suppressed_at)
+            .unwrap_or_else(|| serde_json::Number::from(now_ms));
+        rec.insert("suppressed_at_ms".to_string(), Value::Number(suppressed_at_number));
+        rec.insert(
+            "reason".to_string(),
+            Value::String("probe_suppressed_timeout_rehab".to_string()),
+        );
+        rec.insert("available".to_string(), Value::Bool(false));
+    }
+
+    Value::Object(rec)
 }
 
 fn normalized_optional_string(value: Option<&Value>) -> Option<String> {
@@ -1161,6 +1353,93 @@ mod tests {
         let creative = apply_mode_adjustments("creative", &base, &json!({}));
         assert_eq!(creative.role, "chat");
         assert_eq!(creative.mode_reason.as_deref(), Some("creative_bias_chat"));
+    }
+
+    #[test]
+    fn env_probe_blocked_text_and_normalization_match_contract() {
+        assert!(is_env_probe_blocked_text(
+            "operation not permitted while probing 127.0.0.1:11434"
+        ));
+        assert!(is_env_probe_blocked_text(
+            "sandbox denied outbound connect 11434"
+        ));
+        assert!(!is_env_probe_blocked_text("timeout while probing localhost"));
+
+        let raw = json!({
+            "reason": "Permission denied on socket 11434",
+            "stderr": "sandbox restrictions",
+            "probe_blocked": false
+        });
+        let normalized = normalize_probe_blocked_record(Some(&raw));
+        assert!(normalized.changed);
+        let rec = normalized
+            .rec
+            .expect("record should be present after normalization");
+        assert_eq!(rec["probe_blocked"], true);
+        assert_eq!(rec["reason"], "env_probe_blocked");
+        assert_eq!(rec["available"], Value::Null);
+
+        let passthrough = normalize_probe_blocked_record(Some(&json!({
+            "reason": "timeout",
+            "stderr": "no response",
+            "probe_blocked": false,
+            "available": true
+        })));
+        assert!(!passthrough.changed);
+    }
+
+    #[test]
+    fn suppression_active_matches_contract() {
+        assert!(suppression_active(
+            Some(&json!({"suppressed_until_ms": 2000})),
+            1_000
+        ));
+        assert!(!suppression_active(
+            Some(&json!({"suppressed_until_ms": 500})),
+            1_000
+        ));
+        assert!(!suppression_active(None, 1_000));
+    }
+
+    #[test]
+    fn probe_health_stabilizer_applies_timeout_suppression_and_rehab_clearance() {
+        let policy = ProbeHealthStabilizerPolicy::default();
+        let now_ms = 1_000_000_i64;
+
+        let suppressed = apply_probe_health_stabilizer(
+            Some(&json!({"timeout_streak": 2, "rehab_success_streak": 5})),
+            Some(&json!({"timeout": true, "available": true})),
+            now_ms,
+            &policy,
+        );
+        assert_eq!(suppressed["timeout_streak"], 3);
+        assert_eq!(suppressed["rehab_success_streak"], 0);
+        assert_eq!(suppressed["suppressed_reason"], "timeout_streak");
+        assert_eq!(
+            suppressed["suppressed_until_ms"],
+            json!(now_ms + (ROUTER_PROBE_SUPPRESSION_MINUTES_DEFAULT * 60 * 1000))
+        );
+        assert_eq!(suppressed["reason"], "probe_suppressed_timeout_rehab");
+        assert_eq!(suppressed["available"], false);
+        assert_eq!(suppressed["suppressed_at_ms"].as_f64(), Some(now_ms as f64));
+
+        let cleared = apply_probe_health_stabilizer(
+            Some(&json!({"suppressed_until_ms": 900, "rehab_success_streak": 1})),
+            Some(&json!({
+                "timeout": false,
+                "available": true,
+                "suppressed_until_ms": 2_000,
+                "suppressed_reason": "timeout_streak",
+                "suppressed_at_ms": 111
+            })),
+            1_000,
+            &policy,
+        );
+        assert_eq!(cleared["rehab_success_streak"], 2);
+        assert!(cleared.get("suppressed_until_ms").is_none());
+        assert!(cleared.get("suppressed_reason").is_none());
+        assert!(cleared.get("suppressed_at_ms").is_none());
+        assert_eq!(cleared["available"], true);
     }
 
     #[test]
