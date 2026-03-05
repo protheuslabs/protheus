@@ -12030,7 +12030,8 @@ mod tests {
     }
 
     fn extract_dispatch_modes(text: &str) -> std::collections::BTreeSet<String> {
-        let re = Regex::new(r#"(?m)^\s*if mode == "([^"]+)""#).expect("valid dispatch regex");
+        let re =
+            Regex::new(r#"(?m)^\s*(?:if|else if) mode == "([^"]+)""#).expect("valid dispatch regex");
         re.captures_iter(text)
             .filter_map(|cap| cap.get(1).map(|m| m.as_str().trim().to_string()))
             .filter(|mode| !mode.is_empty())
@@ -12080,6 +12081,24 @@ const c = runInversionPrimitive(modeName, {});
 "#;
         let parsed = extract_mode_literals(text, "runInversionPrimitive");
         let expected = ["alpha"]
+            .iter()
+            .map(|value| value.to_string())
+            .collect::<std::collections::BTreeSet<_>>();
+        assert_eq!(parsed, expected);
+    }
+
+    #[test]
+    fn extract_dispatch_modes_accepts_if_and_else_if() {
+        let text = r#"
+if mode == "alpha" {
+}
+else if mode == "beta" {
+}
+if another == "gamma" {
+}
+"#;
+        let parsed = extract_dispatch_modes(text);
+        let expected = ["alpha", "beta"]
             .iter()
             .map(|value| value.to_string())
             .collect::<std::collections::BTreeSet<_>>();
