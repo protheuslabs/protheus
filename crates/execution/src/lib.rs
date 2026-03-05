@@ -198,7 +198,6 @@ pub struct WorkflowStep {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[derive(Default)]
 pub struct ExecutionState {
     #[serde(default)]
     pub cursor: u32,
@@ -216,6 +215,19 @@ pub struct ExecutionState {
     pub digest: String,
 }
 
+impl Default for ExecutionState {
+    fn default() -> Self {
+        Self {
+            cursor: 0,
+            paused: false,
+            completed: false,
+            last_step_id: None,
+            processed_step_ids: Vec::new(),
+            processed_events: 0,
+            digest: String::new(),
+        }
+    }
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
 pub struct WorkflowDefinition {
@@ -318,9 +330,11 @@ fn run_workflow_definition(def: WorkflowDefinition) -> ExecutionReceipt {
     let workflow_id = if def.workflow_id.trim().is_empty() {
         format!(
             "wf_{}",
-            stable_hash(&[def.steps.len().to_string(),
+            stable_hash(&vec![
+                def.steps.len().to_string(),
                 def.deterministic_seed.clone(),
-                serde_json::to_string(&def.metadata).unwrap_or_else(|_| "{}".to_string())])
+                serde_json::to_string(&def.metadata).unwrap_or_else(|_| "{}".to_string())
+            ])
             .chars()
             .take(12)
             .collect::<String>()

@@ -4036,7 +4036,7 @@ pub fn compute_update_shadow_trial_counters(
     })
     .value;
     let apply_requested = to_bool_like(session.get("apply_requested"), false);
-    let is_shadow_trial = mode == "test" || !apply_requested;
+    let is_shadow_trial = mode == "test" || apply_requested != true;
     if !is_shadow_trial {
         return UpdateShadowTrialCountersOutput { state: None };
     }
@@ -5550,10 +5550,12 @@ pub fn compute_runtime_paths(input: &RuntimePathsInput) -> RuntimePathsOutput {
             .to_string();
         if env.is_empty() {
             default_state_dir.to_string()
-        } else if Path::new(&env).is_absolute() {
-            env
         } else {
-            Path::new(root).join(env).to_string_lossy().to_string()
+            if Path::new(&env).is_absolute() {
+                env
+            } else {
+                Path::new(root).join(env).to_string_lossy().to_string()
+            }
         }
     };
     let dual_brain_policy_path = {
@@ -6284,7 +6286,7 @@ pub fn compute_save_active_sessions(input: &SaveActiveSessionsInput) -> SaveActi
 }
 
 pub fn compute_emit_event(input: &EmitEventInput) -> EmitEventOutput {
-    if !input.emit_events.unwrap_or(false) {
+    if input.emit_events.unwrap_or(false) != true {
         return EmitEventOutput {
             emitted: false,
             file_path: None,
@@ -6327,7 +6329,7 @@ pub fn compute_append_persona_lens_gate_receipt(
     input: &AppendPersonaLensGateReceiptInput,
 ) -> AppendPersonaLensGateReceiptOutput {
     let payload = input.payload.as_ref().and_then(|v| v.as_object());
-    if !to_bool_like(payload.and_then(|m| m.get("enabled")), false) {
+    if to_bool_like(payload.and_then(|m| m.get("enabled")), false) != true {
         return AppendPersonaLensGateReceiptOutput { rel_path: None };
     }
     let mut target_path = clean_text_runtime(input.cfg_receipts_path.as_deref().unwrap_or(""), 420);
@@ -7962,7 +7964,7 @@ pub fn compute_creative_penalty(input: &CreativePenaltyInput) -> CreativePenalty
         .as_deref()
         .map(|v| v.to_string())
         .filter(|v| !v.is_empty());
-    if !input.enabled.unwrap_or(false) {
+    if input.enabled.unwrap_or(false) != true {
         return CreativePenaltyOutput {
             creative_lane_preferred: false,
             selected_lane,
@@ -8110,14 +8112,16 @@ pub fn compute_ensure_system_passed_section(
     if body.contains("\n## System Passed") {
         return EnsureSystemPassedSectionOutput { text: body };
     }
-    let text = [body,
+    let text = vec![
+        body,
         String::new(),
         "## System Passed".to_string(),
         String::new(),
         "Hash-verified system payloads pushed from internal sources (memory, loops, analytics)."
             .to_string(),
         "Entries are JSON payload records with deterministic hash verification.".to_string(),
-        String::new()]
+        String::new(),
+    ]
     .join("\n");
     EnsureSystemPassedSectionOutput { text }
 }
@@ -8495,7 +8499,7 @@ pub fn compute_has_signal_term_match(input: &HasSignalTermMatchInput) -> HasSign
     }
     let words = term
         .split_whitespace()
-        .map(regex::escape)
+        .map(|row| regex::escape(row))
         .filter(|row| !row.is_empty())
         .collect::<Vec<_>>();
     if words.is_empty() {
