@@ -444,3 +444,4 @@ Persistent lane-by-lane migration log so progress is preserved outside chat cont
 - [x] N25 | adaptive/sensory/eyes/collectors/ollama_search.ts | LOC=333 | 2026-03-05T22:00:14Z
 - [x] N26 | systems/security/skill_quarantine.ts | LOC=332 | 2026-03-05T22:00:17Z
 - [x] N27 | systems/ops/ci_baseline_guard.ts | LOC=332 | 2026-03-05T22:00:19Z
+- [x] N28 | systems/ops/rust50_sprint1_batch.ts | LOC=330 | 2026-03-05T22:00:22Z
