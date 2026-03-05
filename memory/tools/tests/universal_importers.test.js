@@ -51,6 +51,13 @@ try {
     prompts: [{ id: 'p1' }, { id: 'p2' }],
     settings: { retries: 3 }
   });
+  const yamlPath = path.join(tmp, 'source', 'common.yaml');
+  fs.mkdirSync(path.dirname(yamlPath), { recursive: true });
+  fs.writeFileSync(
+    yamlPath,
+    'enabled: true\\nretries: 3\\nname: \"alpha\"\\n',
+    'utf8'
+  );
 
   const policy = {
     enabled: true,
@@ -91,6 +98,18 @@ try {
   assert.strictEqual(res.status, 0, `crewai alias run should pass: ${res.stderr}`);
   assert.ok(res.payload && res.payload.source_engine === 'generic_json', 'alias should resolve to generic_json');
   assert.strictEqual(res.payload.no_loss_transform, true, 'generic_json import should be no-loss');
+
+  res = run(workspaceRoot, [
+    'run',
+    '--from=yaml',
+    `--path=${yamlPath}`,
+    '--apply=1',
+    '--strict=1',
+    `--policy=${policyPath}`
+  ]);
+  assert.strictEqual(res.status, 0, `yaml alias run should pass: ${res.stderr}`);
+  assert.ok(res.payload && res.payload.source_engine === 'generic_yaml', 'yaml alias should resolve to generic_yaml');
+  assert.strictEqual(res.payload.no_loss_transform, true, 'generic_yaml import should be no-loss');
 
   res = run(workspaceRoot, ['status', `--policy=${policyPath}`]);
   assert.strictEqual(res.status, 0, `status should pass: ${res.stderr}`);

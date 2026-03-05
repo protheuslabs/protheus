@@ -180,7 +180,7 @@ pub use decompose::{
     TaskSummaryRequest, TaskSummaryResponse,
 };
 pub use inversion::run_inversion_json;
-pub use importers::run_importer_generic_json_json;
+pub use importers::{run_importer_generic_json_json, run_importer_generic_yaml_json};
 pub use sprint_contract::run_sprint_contract_json;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
