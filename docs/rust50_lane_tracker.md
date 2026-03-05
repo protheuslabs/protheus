@@ -392,3 +392,4 @@ Persistent lane-by-lane migration log so progress is preserved outside chat cont
 - [x] N77 | systems/assimilation/adaptive_ensemble_routing_primitive.ts | LOC=362 | 2026-03-05T21:52:24Z
 - [x] N78 | systems/economy/protheus_token_engine.ts | LOC=360 | 2026-03-05T21:52:26Z
 - [x] N79 | systems/assimilation/self_teacher_distillation_primitive.ts | LOC=360 | 2026-03-05T21:52:28Z
+- [x] N80 | systems/sensory/hypothesis_lifecycle_ledger.ts | LOC=359 | 2026-03-05T21:52:31Z
