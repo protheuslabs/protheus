@@ -143,6 +143,7 @@ mod tests {
         assert_eq!(resolved, args);
     }
 
+    #[test]
     fn missing_tokens_accepts_compact_json_variant() {
         let text = r#"{"schema":{"id":"x"}}"#;
         let tokens = vec!["\"schema\": {".to_string()];
