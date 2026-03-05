@@ -1,7 +1,7 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-04T07:52:42.255Z",
+  "generated_at": "2026-03-05T23:16:43Z",
   "source_hash": "0b45bb837f9490d14047fdea",
   "row_count": 877,
   "active_count": 13,
@@ -10582,24 +10582,6 @@
       ]
     },
     {
-      "id": "V6-RUST50-CONF-004",
-      "class": "primitive-upgrade",
-      "wave": "V6",
-      "status": "blocked",
-      "title": "Mega Sprint 1 Public 50 Percent Rust Migration (8 Crates + Blobized Core Paths)",
-      "problem": "Public repository language composition remains overwhelmingly TypeScript, and prior internal/weighted migration signals do not guarantee externally visible Rust ownership at the required threshold.",
-      "acceptance": "Execute all eleven mega-sprint steps in strict sequence: migrate `execution`, `pinnacle`, `vault`, `red_legion`, `observability`, `graph`, `swarm`, and `mobile` to crate-first Rust ownership; integrate blob fold/unfold + manifest in all eight crates; maintain thin backward-compatible TS wrappers; update root Cargo workspace; and complete full parity + WASM + battery proof suite. Completion requires deterministic artifact bundle: git diff summary for `crates/` and `systems/`, successful `wasm32-unknown-unknown --release` builds for each migrated crate, and public GitHub language-bar evidence showing Rust `>=50%` with TypeScript decrease. Completion is hard-blocked pending explicit human approval after audit. Commit contract: `feat(rust-migration): Mega Sprint 1 - visible 50% Rust + 8 core crates + blob integration`. BLOCKED evidence: `state/ops/rust50_mega_sprint1_batch/latest.json` (`rust_share_pct_after=6.253`, `rust_share_min_pct=50`, violation `rust_share_min_ok`).",
-      "dependencies": [
-        "V6-RUST50-CONF-002",
-        "V6-RUST50-CONF-003",
-        "V6-RUST50-007",
-        "V6-RUST50-003",
-        "V6-RUST50-004",
-        "V6-RUST50-005",
-        "V5-RUST-HYB-009"
-      ]
-    },
-    {
       "id": "V6-F100-001",
       "class": "hardening",
       "wave": "V6",
@@ -10634,19 +10616,6 @@
       ]
     },
     {
-      "id": "V6-F100-004",
-      "class": "governance",
-      "wave": "V6",
-      "status": "queued",
-      "title": "Compliance Evidence Automation (SOC2/ISO Audit Bundle)",
-      "problem": "Compliance controls are present in parts but audit evidence packaging is not yet deterministic and repeatable for external review.",
-      "acceptance": "Build control-evidence collector that maps controls to artifacts/receipts automatically, generates quarterly audit bundle export, enforces evidence freshness windows, and fails compliance check when controls lack current evidence; include control-failure rollback playbooks in bundle output.",
-      "dependencies": [
-        "V6-F100-002",
-        "V6-F100-003"
-      ]
-    },
-    {
       "id": "V6-F100-005",
       "class": "scale-readiness",
       "wave": "V6",
@@ -10670,6 +10639,19 @@
       "dependencies": [
         "V6-F100-003",
         "V6-F100-005"
+      ]
+    },
+    {
+      "id": "V6-F100-004",
+      "class": "governance",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Compliance Evidence Automation (SOC2/ISO Audit Bundle)",
+      "problem": "Compliance controls are present in parts but audit evidence packaging is not yet deterministic and repeatable for external review.",
+      "acceptance": "Build control-evidence collector that maps controls to artifacts/receipts automatically, generates quarterly audit bundle export, enforces evidence freshness windows, and fails compliance check when controls lack current evidence; include control-failure rollback playbooks in bundle output.",
+      "dependencies": [
+        "V6-F100-002",
+        "V6-F100-003"
       ]
     },
     {
@@ -10750,6 +10732,24 @@
         "V6-F100-009",
         "V6-F100-010",
         "V6-F100-011"
+      ]
+    },
+    {
+      "id": "V6-RUST50-CONF-004",
+      "class": "primitive-upgrade",
+      "wave": "V6",
+      "status": "blocked",
+      "title": "Mega Sprint 1 Public 50 Percent Rust Migration (8 Crates + Blobized Core Paths)",
+      "problem": "Public repository language composition remains overwhelmingly TypeScript, and prior internal/weighted migration signals do not guarantee externally visible Rust ownership at the required threshold.",
+      "acceptance": "Execute all eleven mega-sprint steps in strict sequence: migrate `execution`, `pinnacle`, `vault`, `red_legion`, `observability`, `graph`, `swarm`, and `mobile` to crate-first Rust ownership; integrate blob fold/unfold + manifest in all eight crates; maintain thin backward-compatible TS wrappers; update root Cargo workspace; and complete full parity + WASM + battery proof suite. Completion requires deterministic artifact bundle: git diff summary for `crates/` and `systems/`, successful `wasm32-unknown-unknown --release` builds for each migrated crate, and public GitHub language-bar evidence showing Rust `>=50%` with TypeScript decrease. Completion is hard-blocked pending explicit human approval after audit. Commit contract: `feat(rust-migration): Mega Sprint 1 - visible 50% Rust + 8 core crates + blob integration`. BLOCKED evidence: `state/ops/rust50_mega_sprint1_batch/latest.json` (`rust_share_pct_after=6.253`, `rust_share_min_pct=50`, violation `rust_share_min_ok`).",
+      "dependencies": [
+        "V6-RUST50-CONF-002",
+        "V6-RUST50-CONF-003",
+        "V6-RUST50-007",
+        "V6-RUST50-003",
+        "V6-RUST50-004",
+        "V6-RUST50-005",
+        "V5-RUST-HYB-009"
       ]
     },
     {

@@ -1,35 +1,33 @@
 # Backlog Execution Path
 
-Generated: 2026-03-03T05:41:49.407Z
+Generated: 2026-03-05T23:15:20Z
 
 ## Summary
 
-- Queued rows: 0
-- Lane run commands discovered: 327
-- Lane coverage (queued rows with lane): 0%
-- Runnable now (lane + deps closed): 0
-- Runnable but blocked by deps: 0
-- Ready but no lane implementation: 0
-- Blocked + no lane implementation: 0
+- Active rows: 13
+- Queued rows: 12
+- Blocked rows: 1
+- Ordering strategy: impact-first with dependency-valid sequencing.
 
-## Recommended Next Actions
+## Impact + Dependency Execution Order
 
-- Execute 0 runnable rows with existing lane commands first (lane:<id>:run + corresponding test:lane:<id>).
-- For 0 dependency-ready rows without lanes, add runtime lane + test artifacts before marking done.
-- Prioritize blocker dependencies (none) to unlock blocked rows fastest.
+| Order | ID | Class | Status | Why This Position |
+|---|---|---|---|---|
+| 1 | V6-F100-001 | hardening | queued | Establishes reliability gate baseline for every downstream lane. |
+| 2 | V6-F100-002 | governance | queued | Change-control foundation required before scaling governance complexity. |
+| 3 | V6-F100-003 | hardening | queued | Supply-chain trust gate enables secure scale/compliance lanes. |
+| 4 | V6-F100-005 | scale-readiness | queued | High-impact performance certification unlocks enterprise confidence. |
+| 5 | V6-F100-006 | hardening | queued | Tenant/data isolation follows core reliability + scale evidence. |
+| 6 | V6-F100-004 | governance | queued | Compliance automation after reliability, SDLC, and supply-chain controls. |
+| 7 | V6-F100-007 | hardening | queued | Contract lifecycle stabilization after change-control foundation. |
+| 8 | V6-F100-008 | governance | queued | Incident command maturity after reliability/change-control standards. |
+| 9 | V6-F100-009 | launch-polish | queued | Onboarding consolidation begins once core operational gates exist. |
+| 10 | V6-F100-010 | launch-polish | queued | Architecture narrative built on reliability/scale/compliance evidence. |
+| 11 | V6-F100-011 | launch-polish | queued | Operator surface consistency after onboarding + narrative baselines. |
+| 12 | V6-F100-012 | governance | queued | Executive scorecard closes the loop once upstream signals exist. |
 
-## Runnable Now
+## Deferred / Blocked
 
-| ID | Wave | Class | Lane | Open Dependencies | Title |
-|---|---|---|---|---|---|
-
-## Ready But Missing Lane Implementation
-
-| ID | Wave | Class | Lane | Open Dependencies | Title |
-|---|---|---|---|---|---|
-
-## Top Dependency Blockers
-
-| Dependency | Blocked Rows |
-|---|---|
-
+| ID | Class | Status | Block Reason |
+|---|---|---|---|
+| V6-RUST50-CONF-004 | primitive-upgrade | blocked | Explicit hard block and human-approval requirement in backlog contract; left out of queued execution path. |
