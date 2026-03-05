@@ -857,4 +857,10 @@ mod tests {
             "role:coding lead"
         );
     }
+
+    #[test]
+    fn prefix_inference_paths_match_tools_and_planning_contracts() {
+        assert_eq!(infer_role("integrating services", "sync adapters"), "tools");
+        assert_eq!(infer_capability("prioritization sweep", "", ""), "planning");
+    }
 }
