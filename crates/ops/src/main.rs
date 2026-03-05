@@ -9,6 +9,8 @@ fn usage() {
     println!("Usage:");
     println!("  protheus-ops runtime-efficiency-floor run [--strict=1|0] [--policy=<path>]");
     println!("  protheus-ops runtime-efficiency-floor status [--policy=<path>]");
+    println!("  protheus-ops foundation-contract-gate <run|status> [flags]");
+    println!("  protheus-ops state-kernel <command> [flags]");
     println!("  protheus-ops protheusctl <command> [flags]");
     println!("  protheus-ops fluxlattice-program <list|run|run-all|status> [flags]");
     println!("  protheus-ops perception-polish-program <list|run|run-all|status> [flags]");
@@ -67,6 +69,16 @@ fn main() {
                     std::process::exit(1);
                 }
             }
+        }
+        "foundation-contract-gate" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::foundation_contract_gate::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "state-kernel" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::state_kernel::run(&cwd, &rest);
+            std::process::exit(exit);
         }
         "protheusctl" => {
             let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
