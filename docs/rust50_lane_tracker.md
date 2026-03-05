@@ -453,3 +453,4 @@ Persistent lane-by-lane migration log so progress is preserved outside chat cont
 - [x] N34 | systems/ops/state_stream_policy_check.ts | LOC=326 | 2026-03-05T22:00:40Z
 - [x] N35 | systems/ops/state_backup_integrity.ts | LOC=326 | 2026-03-05T22:00:43Z
 - [x] N36 | systems/fractal/symbiotic_fusion_chamber.ts | LOC=326 | 2026-03-05T22:00:45Z
+- [x] N37 | systems/budget/unified_global_budget_governor.ts | LOC=326 | 2026-03-05T22:00:48Z
