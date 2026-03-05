@@ -338,3 +338,4 @@ Persistent lane-by-lane migration log so progress is preserved outside chat cont
 - [x] N23 | systems/redteam/quantum_security_primitive_synthesis.ts | LOC=519 | 2026-03-05T21:50:17Z
 - [x] N24 | systems/primitives/runtime_scheduler.ts | LOC=515 | 2026-03-05T21:50:19Z
 - [x] N25 | systems/soul/soul_continuity_adapter.ts | LOC=498 | 2026-03-05T21:50:21Z
+- [x] N26 | systems/research/offline_r_analytics_runner.ts | LOC=497 | 2026-03-05T21:50:24Z
