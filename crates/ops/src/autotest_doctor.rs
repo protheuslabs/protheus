@@ -1454,13 +1454,30 @@ fn status_cmd(root: &Path, date_arg: &str, cli: &CliArgs) -> Value {
     prune_history(&mut state, 24, 200_000);
 
     if !payload.is_object() {
-        return json!({
+        let mut out = json!({
             "ok": false,
             "type": "autotest_doctor_status",
             "error": "autotest_doctor_snapshot_missing",
             "kill_switch": serde_json::to_value(&state.kill_switch).unwrap_or(Value::Null),
-            "state_path": rel_path(root, &paths.state_path)
+            "state_path": rel_path(root, &paths.state_path),
+            "claim_evidence": [
+                {
+                    "id": "status_snapshot_missing",
+                    "claim": "doctor_status_fails_closed_when_snapshot_missing",
+                    "evidence": {
+                        "date_arg": key,
+                        "latest_path": rel_path(root, &paths.latest_path)
+                    }
+                }
+            ],
+            "persona_lenses": {
+                "auditor": {
+                    "kill_switch": state.kill_switch.engaged
+                }
+            }
         });
+        out["receipt_hash"] = Value::String(receipt_hash(&out));
+        return out;
     }
 
     let mut out = json!({
@@ -1685,6 +1702,35 @@ mod tests {
         assert_eq!(
             out.get("type").and_then(Value::as_str),
             Some("autotest_doctor_cli_error")
+        );
+        assert!(out.get("claim_evidence").is_some());
+        assert!(out.get("persona_lenses").is_some());
+
+        let expected_hash = out
+            .get("receipt_hash")
+            .and_then(Value::as_str)
+            .expect("hash")
+            .to_string();
+        let mut unhashed = out.clone();
+        unhashed
+            .as_object_mut()
+            .expect("object")
+            .remove("receipt_hash");
+        assert_eq!(receipt_hash(&unhashed), expected_hash);
+    }
+
+    #[test]
+    fn status_missing_snapshot_receipt_is_hashed() {
+        let root = tempfile::tempdir().expect("tempdir");
+        let cli = CliArgs {
+            positional: vec!["status".to_string()],
+            flags: HashMap::new(),
+        };
+        let out = status_cmd(root.path(), "latest", &cli);
+        assert_eq!(out.get("ok").and_then(Value::as_bool), Some(false));
+        assert_eq!(
+            out.get("error").and_then(Value::as_str),
+            Some("autotest_doctor_snapshot_missing")
         );
         assert!(out.get("claim_evidence").is_some());
         assert!(out.get("persona_lenses").is_some());
