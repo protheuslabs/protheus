@@ -717,4 +717,35 @@ mod tests {
         assert_eq!(out["capability"], "file_edit");
         assert_eq!(out["fallback_slot"], "fallback");
     }
+
+    #[test]
+    fn handoff_packet_budget_projected_pressure_falls_back_to_pressure() {
+        let payload = json!({
+            "tier": 2,
+            "budget": {
+                "pressure": "hard",
+                "request_tokens_est": 250
+            }
+        });
+        let out = build_handoff_packet(&payload);
+        assert_eq!(out["budget"]["pressure"], "hard");
+        assert_eq!(out["budget"]["projected_pressure"], "hard");
+        assert_eq!(out["budget"]["request_tokens_est"], 250.0);
+    }
+
+    #[test]
+    fn handoff_packet_budget_enforcement_blocked_requires_true_bool() {
+        let payload = json!({
+            "tier": 2,
+            "budget_enforcement": {
+                "action": "allow",
+                "reason": "string-flag",
+                "blocked": "true"
+            }
+        });
+        let out = build_handoff_packet(&payload);
+        assert_eq!(out["budget_enforcement"]["action"], "allow");
+        assert_eq!(out["budget_enforcement"]["reason"], "string-flag");
+        assert_eq!(out["budget_enforcement"]["blocked"], false);
+    }
 }
