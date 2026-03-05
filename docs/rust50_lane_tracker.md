@@ -333,3 +333,4 @@ Persistent lane-by-lane migration log so progress is preserved outside chat cont
 - [x] N18 | systems/observability/slo_alert_router.ts | LOC=578 | 2026-03-05T21:50:05Z
 - [x] N19 | systems/budget/capital_allocation_organ.ts | LOC=545 | 2026-03-05T21:50:07Z
 - [x] N20 | systems/primitives/long_horizon_planning_primitive.ts | LOC=536 | 2026-03-05T21:50:10Z
+- [x] N21 | systems/contracts/soul_contracts.ts | LOC=521 | 2026-03-05T21:50:12Z
