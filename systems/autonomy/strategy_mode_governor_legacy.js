@@ -1,4 +1,12 @@
 #!/usr/bin/env node
 'use strict';
 
-require('../../lib/ts_bootstrap').bootstrap(__filename, module);
+const payload = {
+  ok: false,
+  retired: true,
+  error: 'legacy_retired:strategy_mode_governor',
+  replacement: 'protheus-ops strategy-mode-governor'
+};
+
+process.stderr.write(`${JSON.stringify(payload)}\n`);
+process.exit(2);

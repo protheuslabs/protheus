@@ -24,7 +24,7 @@ Persistent lane-by-lane migration log so progress is preserved outside chat cont
 - [x] `e6b73a53` retire memory-transition legacy TypeScript lane
 
 ## Remaining Legacy TS Lanes (Current Queue)
-- [ ] `systems/autonomy/strategy_mode_governor_legacy.ts`
+- [x] `systems/autonomy/strategy_mode_governor_legacy.ts`
 - [ ] `systems/spine/contract_check_legacy.ts`
 - [ ] `systems/routing/model_router_legacy.ts`
 - [ ] `systems/ops/foundation_contract_gate_legacy.ts`
