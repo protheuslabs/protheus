@@ -12018,6 +12018,14 @@ mod tests {
             .collect()
     }
 
+    fn extract_dispatch_modes(text: &str) -> std::collections::BTreeSet<String> {
+        let re = Regex::new(r#"(?m)^\s*if mode == "([^"]+)""#).expect("valid dispatch regex");
+        re.captures_iter(text)
+            .filter_map(|cap| cap.get(1).map(|m| m.as_str().trim().to_string()))
+            .filter(|mode| !mode.is_empty())
+            .collect()
+    }
+
     #[test]
     fn bridge_maps_all_inversion_controller_modes() {
         let ts = include_str!("../../../systems/autonomy/inversion_controller.ts");
@@ -12034,6 +12042,23 @@ mod tests {
         assert!(
             missing.is_empty(),
             "inversion_controller uses modes missing from Rust inversion bridge map: {:?}",
+            missing
+        );
+    }
+
+    #[test]
+    fn rust_dispatch_covers_all_inversion_bridge_modes() {
+        let bridge = include_str!("../../../systems/autonomy/backlog_autoscale_rust_bridge.ts");
+        let rust_src = include_str!("inversion.rs");
+        let mapped = extract_bridge_modes(bridge, "runInversionPrimitive");
+        let dispatched = extract_dispatch_modes(rust_src);
+        let missing = mapped
+            .difference(&dispatched)
+            .cloned()
+            .collect::<Vec<_>>();
+        assert!(
+            missing.is_empty(),
+            "inversion bridge maps modes not dispatched by Rust inversion_json: {:?}",
             missing
         );
     }

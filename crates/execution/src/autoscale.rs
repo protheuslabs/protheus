@@ -27526,6 +27526,14 @@ mod tests {
             .collect()
     }
 
+    fn extract_dispatch_modes(text: &str) -> std::collections::BTreeSet<String> {
+        let re = Regex::new(r#"(?m)^\s*if mode == "([^"]+)""#).expect("valid dispatch regex");
+        re.captures_iter(text)
+            .filter_map(|cap| cap.get(1).map(|m| m.as_str().trim().to_string()))
+            .filter(|mode| !mode.is_empty())
+            .collect()
+    }
+
     #[test]
     fn bridge_maps_all_autonomy_controller_modes() {
         let ts = include_str!("../../../systems/autonomy/autonomy_controller.ts");
@@ -27542,6 +27550,23 @@ mod tests {
         assert!(
             missing.is_empty(),
             "autonomy_controller uses autoscale modes missing from Rust bridge map: {:?}",
+            missing
+        );
+    }
+
+    #[test]
+    fn rust_dispatch_covers_all_backlog_bridge_modes() {
+        let bridge = include_str!("../../../systems/autonomy/backlog_autoscale_rust_bridge.ts");
+        let rust_src = include_str!("autoscale.rs");
+        let mapped = extract_bridge_modes(bridge, "runBacklogAutoscalePrimitive");
+        let dispatched = extract_dispatch_modes(rust_src);
+        let missing = mapped
+            .difference(&dispatched)
+            .cloned()
+            .collect::<Vec<_>>();
+        assert!(
+            missing.is_empty(),
+            "backlog bridge maps modes not dispatched by Rust autoscale_json: {:?}",
             missing
         );
     }
