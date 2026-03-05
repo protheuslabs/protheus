@@ -362,3 +362,4 @@ Persistent lane-by-lane migration log so progress is preserved outside chat cont
 - [x] N47 | systems/obsidian/obsidian_phase_pack.ts | LOC=421 | 2026-03-05T21:51:14Z
 - [x] N48 | systems/assimilation/test_time_memory_evolution_primitive.ts | LOC=421 | 2026-03-05T21:51:16Z
 - [x] N49 | systems/symbiosis/deep_symbiosis_understanding_layer.ts | LOC=416 | 2026-03-05T21:51:18Z
+- [x] N50 | systems/hardware/surface_budget_controller.ts | LOC=416 | 2026-03-05T21:51:21Z
