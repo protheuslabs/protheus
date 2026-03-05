@@ -345,3 +345,4 @@ Persistent lane-by-lane migration log so progress is preserved outside chat cont
 - [x] N30 | systems/eye/subsumption_registry.ts | LOC=484 | 2026-03-05T21:50:33Z
 - [x] N31 | systems/habits/habit_cell_pool_executor.ts | LOC=479 | 2026-03-05T21:50:35Z
 - [x] N32 | systems/nursery/training_quarantine_loop.ts | LOC=477 | 2026-03-05T21:50:38Z
+- [x] N33 | systems/science/scientific_mode_v4.ts | LOC=473 | 2026-03-05T21:50:40Z
