@@ -100,4 +100,19 @@ mod tests {
         let missing = missing_tokens(text, &tokens);
         assert!(missing.is_empty());
     }
+
+    #[test]
+    fn compact_json_spacing_removes_all_whitespace_after_json_key_colon() {
+        let token = "\"schema\":\n\t  {\"id\":\n \"x\"}";
+        let compacted = compact_json_spacing(token);
+        assert_eq!(compacted, "\"schema\":{\"id\":\"x\"}");
+    }
+
+    #[test]
+    fn missing_tokens_treats_empty_token_as_present_like_str_contains() {
+        let text = "anything";
+        let tokens = vec!["".to_string(), "absent".to_string()];
+        let missing = missing_tokens(text, &tokens);
+        assert_eq!(missing, vec!["absent".to_string()]);
+    }
 }
