@@ -197,7 +197,7 @@ pub struct WorkflowStep {
     pub params: BTreeMap<String, String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
 pub struct ExecutionState {
     #[serde(default)]
     pub cursor: u32,
@@ -213,20 +213,6 @@ pub struct ExecutionState {
     pub processed_events: u32,
     #[serde(default)]
     pub digest: String,
-}
-
-impl Default for ExecutionState {
-    fn default() -> Self {
-        Self {
-            cursor: 0,
-            paused: false,
-            completed: false,
-            last_step_id: None,
-            processed_step_ids: Vec::new(),
-            processed_events: 0,
-            digest: String::new(),
-        }
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
@@ -330,7 +316,7 @@ fn run_workflow_definition(def: WorkflowDefinition) -> ExecutionReceipt {
     let workflow_id = if def.workflow_id.trim().is_empty() {
         format!(
             "wf_{}",
-            stable_hash(&vec![
+            stable_hash(&[
                 def.steps.len().to_string(),
                 def.deterministic_seed.clone(),
                 serde_json::to_string(&def.metadata).unwrap_or_else(|_| "{}".to_string())
@@ -460,7 +446,10 @@ pub fn run_workflow_wasm(yaml: &str) -> String {
 }
 
 #[no_mangle]
-pub extern "C" fn run_workflow_ffi(yaml_ptr: *const c_char) -> *mut c_char {
+/// # Safety
+/// `yaml_ptr` must be either null or a valid pointer to a NUL-terminated C string.
+/// The returned pointer must be freed with `execution_core_string_free`.
+pub unsafe extern "C" fn run_workflow_ffi(yaml_ptr: *const c_char) -> *mut c_char {
     let payload = if yaml_ptr.is_null() {
         run_workflow_json_internal("workflow_id: [invalid")
     } else {
@@ -476,7 +465,9 @@ pub extern "C" fn run_workflow_ffi(yaml_ptr: *const c_char) -> *mut c_char {
 }
 
 #[no_mangle]
-pub extern "C" fn execution_core_string_free(ptr: *mut c_char) {
+/// # Safety
+/// `ptr` must be a pointer returned by `run_workflow_ffi` that has not already been freed.
+pub unsafe extern "C" fn execution_core_string_free(ptr: *mut c_char) {
     if ptr.is_null() {
         return;
     }
@@ -554,13 +545,13 @@ mod tests {
     #[test]
     fn ffi_roundtrip_returns_json_receipt() {
         let yaml = CString::new(sample_yaml()).unwrap();
-        let out_ptr = run_workflow_ffi(yaml.as_ptr());
+        let out_ptr = unsafe { run_workflow_ffi(yaml.as_ptr()) };
         assert!(!out_ptr.is_null());
         let text = unsafe { CStr::from_ptr(out_ptr) }
             .to_str()
             .unwrap()
             .to_string();
-        execution_core_string_free(out_ptr);
+        unsafe { execution_core_string_free(out_ptr) };
         let parsed: serde_json::Value = serde_json::from_str(&text).unwrap();
         assert_eq!(parsed["status"], "completed");
         assert_eq!(parsed["workflow_id"], "phase2_parity_demo");
@@ -568,13 +559,13 @@ mod tests {
 
     #[test]
     fn ffi_null_pointer_returns_failed_payload() {
-        let out_ptr = run_workflow_ffi(std::ptr::null());
+        let out_ptr = unsafe { run_workflow_ffi(std::ptr::null()) };
         assert!(!out_ptr.is_null());
         let text = unsafe { CStr::from_ptr(out_ptr) }
             .to_str()
             .unwrap()
             .to_string();
-        execution_core_string_free(out_ptr);
+        unsafe { execution_core_string_free(out_ptr) };
         let parsed: serde_json::Value = serde_json::from_str(&text).unwrap();
         assert_eq!(parsed["status"], "failed");
     }
