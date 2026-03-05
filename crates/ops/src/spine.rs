@@ -273,6 +273,108 @@ fn compute_evidence_run_plan(
     })
 }
 
+fn default_evidence_plan() -> Value {
+    json!({
+        "configured_runs": 0,
+        "budget_pressure": "none",
+        "projected_pressure": "none",
+        "pressure_throttle": false,
+        "evidence_runs": 0
+    })
+}
+
+fn build_claim_evidence(
+    constitution_hash: &Option<String>,
+    constitution_ok: bool,
+    evidence_plan: &Value,
+    evidence_ok: i64,
+) -> Value {
+    json!([
+        {
+            "id": "constitution_integrity",
+            "claim": "agent_constitution_integrity_verified",
+            "evidence": {
+                "constitution_hash": constitution_hash.clone(),
+                "integrity_ok": constitution_ok
+            }
+        },
+        {
+            "id": "evidence_loop",
+            "claim": "autonomy_evidence_loop_respected_budget_plan",
+            "evidence": {
+                "plan": evidence_plan,
+                "evidence_ok": evidence_ok
+            }
+        }
+    ])
+}
+
+fn build_persona_lenses(cli: &CliArgs, constitution_ok: bool, evidence_plan: &Value) -> Value {
+    json!({
+        "guardian": {
+            "clearance": std::env::var("CLEARANCE").ok().unwrap_or_else(|| "3".to_string()),
+            "constitution_integrity_ok": constitution_ok
+        },
+        "strategist": {
+            "mode": cli.mode,
+            "evidence_runs": evidence_plan.get("evidence_runs").and_then(Value::as_i64).unwrap_or(0)
+        }
+    })
+}
+
+struct TerminalReceiptContext<'a> {
+    run_id: &'a str,
+    cli: &'a CliArgs,
+    constitution_hash: &'a Option<String>,
+    constitution_ok: bool,
+    evidence_plan: &'a Value,
+    evidence_ok: i64,
+}
+
+fn emit_terminal_receipt(
+    ledger: &mut LedgerWriter,
+    context: &TerminalReceiptContext<'_>,
+    ok: bool,
+    failure_reason: Option<&str>,
+) -> i32 {
+    let mut receipt = json!({
+        "ok": ok,
+        "type": if ok { "spine_run_complete" } else { "spine_run_failed" },
+        "ts": now_iso(),
+        "run_id": context.run_id,
+        "mode": context.cli.mode,
+        "date": context.cli.date,
+        "claim_evidence": build_claim_evidence(
+            context.constitution_hash,
+            context.constitution_ok,
+            context.evidence_plan,
+            context.evidence_ok
+        ),
+        "persona_lenses": build_persona_lenses(
+            context.cli,
+            context.constitution_ok,
+            context.evidence_plan
+        ),
+        "evidence_plan": context.evidence_plan,
+        "evidence_ok": context.evidence_ok
+    });
+
+    if let Some(reason) = failure_reason {
+        receipt["failure_reason"] = Value::String(reason.to_string());
+    }
+
+    receipt["receipt_hash"] = Value::String(receipt_hash(&receipt));
+    ledger.append(receipt.clone());
+
+    println!(
+        "{}",
+        serde_json::to_string(&receipt)
+            .unwrap_or_else(|_| "{\"ok\":false,\"error\":\"encode_failed\"}".to_string())
+    );
+
+    if ok { 0 } else { 1 }
+}
+
 fn run_guard(root: &Path, files: &[&str]) -> StepResult {
     let file_list = files.join(",");
     run_node_json(
@@ -352,6 +454,9 @@ fn execute_native(root: &Path, cli: &CliArgs) -> i32 {
     ];
 
     let (constitution_ok, constitution_hash, expected_hash) = constitution_hash(root);
+    let mut evidence_ok = 0i64;
+    let mut evidence_plan = default_evidence_plan();
+
     ledger.append(json!({
         "type": "spine_run_started",
         "mode": cli.mode,
@@ -364,13 +469,19 @@ fn execute_native(root: &Path, cli: &CliArgs) -> i32 {
     }));
 
     if !constitution_ok {
-        ledger.append(json!({
-            "type": "spine_run_failed",
-            "mode": cli.mode,
-            "date": cli.date,
-            "failure_reason": "constitution_integrity_failed"
-        }));
-        return 1;
+        return emit_terminal_receipt(
+            &mut ledger,
+            &TerminalReceiptContext {
+                run_id: &run_id,
+                cli,
+                constitution_hash: &constitution_hash,
+                constitution_ok,
+                evidence_plan: &evidence_plan,
+                evidence_ok,
+            },
+            false,
+            Some("constitution_integrity_failed"),
+        );
     }
 
     let guard_res = run_guard(root, &invoked);
@@ -383,13 +494,19 @@ fn execute_native(root: &Path, cli: &CliArgs) -> i32 {
         "reason": if guard_res.ok { Value::Null } else { Value::String(clean_reason(&guard_res.stderr, &guard_res.stdout)) }
     }));
     if !guard_res.ok {
-        ledger.append(json!({
-            "type": "spine_run_failed",
-            "mode": cli.mode,
-            "date": cli.date,
-            "failure_reason": "guard_failed"
-        }));
-        return 1;
+        return emit_terminal_receipt(
+            &mut ledger,
+            &TerminalReceiptContext {
+                run_id: &run_id,
+                cli,
+                constitution_hash: &constitution_hash,
+                constitution_ok,
+                evidence_plan: &evidence_plan,
+                evidence_ok,
+            },
+            false,
+            Some("guard_failed"),
+        );
     }
 
     let mut step_args = vec![
@@ -407,13 +524,19 @@ fn execute_native(root: &Path, cli: &CliArgs) -> i32 {
         &cli.mode,
         &cli.date,
     ) {
-        ledger.append(json!({
-            "type": "spine_run_failed",
-            "mode": cli.mode,
-            "date": cli.date,
-            "failure_reason": reason
-        }));
-        return 1;
+        return emit_terminal_receipt(
+            &mut ledger,
+            &TerminalReceiptContext {
+                run_id: &run_id,
+                cli,
+                constitution_hash: &constitution_hash,
+                constitution_ok,
+                evidence_plan: &evidence_plan,
+                evidence_ok,
+            },
+            false,
+            Some(&reason),
+        );
     }
 
     if cli.mode == "daily" {
@@ -434,13 +557,19 @@ fn execute_native(root: &Path, cli: &CliArgs) -> i32 {
             ),
         ] {
             if let Err(reason) = step(root, name, args, &mut ledger, &cli.mode, &cli.date) {
-                ledger.append(json!({
-                    "type": "spine_run_failed",
-                    "mode": cli.mode,
-                    "date": cli.date,
-                    "failure_reason": reason
-                }));
-                return 1;
+                return emit_terminal_receipt(
+                    &mut ledger,
+                    &TerminalReceiptContext {
+                        run_id: &run_id,
+                        cli,
+                        constitution_hash: &constitution_hash,
+                        constitution_ok,
+                        evidence_plan: &evidence_plan,
+                        evidence_ok,
+                    },
+                    false,
+                    Some(&reason),
+                );
             }
         }
     }
@@ -496,18 +625,23 @@ fn execute_native(root: &Path, cli: &CliArgs) -> i32 {
         ),
     ] {
         if let Err(reason) = step(root, name, args, &mut ledger, &cli.mode, &cli.date) {
-            ledger.append(json!({
-                "type": "spine_run_failed",
-                "mode": cli.mode,
-                "date": cli.date,
-                "failure_reason": reason
-            }));
-            return 1;
+            return emit_terminal_receipt(
+                &mut ledger,
+                &TerminalReceiptContext {
+                    run_id: &run_id,
+                    cli,
+                    constitution_hash: &constitution_hash,
+                    constitution_ok,
+                    evidence_plan: &evidence_plan,
+                    evidence_ok,
+                },
+                false,
+                Some(&reason),
+            );
         }
     }
 
-    let mut evidence_ok = 0i64;
-    let evidence_plan = if cli.mode == "daily" {
+    if cli.mode == "daily" {
         let configured = std::env::var("AUTONOMY_EVIDENCE_RUNS")
             .ok()
             .and_then(|v| v.parse::<i64>().ok());
@@ -582,16 +716,8 @@ fn execute_native(root: &Path, cli: &CliArgs) -> i32 {
             }));
         }
 
-        plan
-    } else {
-        json!({
-            "configured_runs": 0,
-            "budget_pressure": "none",
-            "projected_pressure": "none",
-            "pressure_throttle": false,
-            "evidence_runs": 0
-        })
-    };
+        evidence_plan = plan;
+    }
 
     if cli.mode == "daily" {
         for (name, args) in [
@@ -629,70 +755,36 @@ fn execute_native(root: &Path, cli: &CliArgs) -> i32 {
             ),
         ] {
             if let Err(reason) = step(root, name, args, &mut ledger, &cli.mode, &cli.date) {
-                ledger.append(json!({
-                    "type": "spine_run_failed",
-                    "mode": cli.mode,
-                    "date": cli.date,
-                    "failure_reason": reason
-                }));
-                return 1;
+                return emit_terminal_receipt(
+                    &mut ledger,
+                    &TerminalReceiptContext {
+                        run_id: &run_id,
+                        cli,
+                        constitution_hash: &constitution_hash,
+                        constitution_ok,
+                        evidence_plan: &evidence_plan,
+                        evidence_ok,
+                    },
+                    false,
+                    Some(&reason),
+                );
             }
         }
     }
 
-    let claim_evidence = json!([
-        {
-            "id": "constitution_integrity",
-            "claim": "agent_constitution_integrity_verified",
-            "evidence": {
-                "constitution_hash": constitution_hash,
-                "integrity_ok": constitution_ok
-            }
+    emit_terminal_receipt(
+        &mut ledger,
+        &TerminalReceiptContext {
+            run_id: &run_id,
+            cli,
+            constitution_hash: &constitution_hash,
+            constitution_ok,
+            evidence_plan: &evidence_plan,
+            evidence_ok,
         },
-        {
-            "id": "evidence_loop",
-            "claim": "autonomy_evidence_loop_respected_budget_plan",
-            "evidence": {
-                "plan": evidence_plan,
-                "evidence_ok": evidence_ok
-            }
-        }
-    ]);
-
-    let persona_lenses = json!({
-        "guardian": {
-            "clearance": std::env::var("CLEARANCE").ok().unwrap_or_else(|| "3".to_string()),
-            "constitution_integrity_ok": constitution_ok
-        },
-        "strategist": {
-            "mode": cli.mode,
-            "evidence_runs": evidence_plan.get("evidence_runs").and_then(Value::as_i64).unwrap_or(0)
-        }
-    });
-
-    let mut receipt = json!({
-        "ok": true,
-        "type": "spine_run_complete",
-        "ts": now_iso(),
-        "run_id": run_id,
-        "mode": cli.mode,
-        "date": cli.date,
-        "claim_evidence": claim_evidence,
-        "persona_lenses": persona_lenses,
-        "evidence_plan": evidence_plan,
-        "evidence_ok": evidence_ok
-    });
-    receipt["receipt_hash"] = Value::String(receipt_hash(&receipt));
-
-    ledger.append(receipt.clone());
-
-    println!(
-        "{}",
-        serde_json::to_string(&receipt)
-            .unwrap_or_else(|_| "{\"ok\":false,\"error\":\"encode_failed\"}".to_string())
-    );
-
-    0
+        true,
+        None,
+    )
 }
 
 pub fn run(root: &Path, argv: &[String]) -> i32 {
@@ -712,6 +804,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tempfile::tempdir;
 
     #[test]
     fn parity_fixture_evidence_plan_matches_ts_rules() {
@@ -739,6 +832,59 @@ mod tests {
         let h2 = receipt_hash(&payload);
         assert_eq!(h1, h2);
         assert_eq!(h1.len(), 64);
+    }
+
+    #[test]
+    fn terminal_failure_receipt_is_emitted_with_claim_evidence_and_hash() {
+        let root = tempdir().expect("tempdir");
+        let cli = CliArgs {
+            mode: "eyes".to_string(),
+            date: "2026-03-04".to_string(),
+            max_eyes: None,
+        };
+        let run_id = "spine_test_1";
+        let mut ledger = LedgerWriter::new(root.path(), &cli.date, run_id);
+        let evidence_plan = default_evidence_plan();
+        let constitution_hash = Some("abc123".to_string());
+        let context = TerminalReceiptContext {
+            run_id,
+            cli: &cli,
+            constitution_hash: &constitution_hash,
+            constitution_ok: true,
+            evidence_plan: &evidence_plan,
+            evidence_ok: 0,
+        };
+
+        let code = emit_terminal_receipt(&mut ledger, &context, false, Some("guard_failed"));
+        assert_eq!(code, 1);
+
+        let latest_path = root.path().join("state/spine/runs/latest.json");
+        let latest_raw = std::fs::read_to_string(latest_path).expect("latest json");
+        let latest = serde_json::from_str::<Value>(&latest_raw).expect("valid json");
+
+        assert_eq!(
+            latest.get("type").and_then(Value::as_str),
+            Some("spine_run_failed")
+        );
+        assert_eq!(latest.get("ok").and_then(Value::as_bool), Some(false));
+        assert!(latest.get("claim_evidence").is_some());
+        assert!(latest.get("persona_lenses").is_some());
+        assert_eq!(
+            latest.get("failure_reason").and_then(Value::as_str),
+            Some("guard_failed")
+        );
+
+        let expected_hash = latest
+            .get("receipt_hash")
+            .and_then(Value::as_str)
+            .expect("hash")
+            .to_string();
+        let mut unhashed = latest.clone();
+        let unhashed_obj = unhashed.as_object_mut().expect("object");
+        unhashed_obj.remove("receipt_hash");
+        // Ledger metadata is added after hash calculation for the terminal payload.
+        unhashed_obj.remove("ledger_seq");
+        assert_eq!(receipt_hash(&unhashed), expected_hash);
     }
 
     #[test]
