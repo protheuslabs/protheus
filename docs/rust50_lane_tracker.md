@@ -426,3 +426,4 @@ Persistent lane-by-lane migration log so progress is preserved outside chat cont
 - [x] N7 | systems/weaver/drift_aware_revenue_optimizer.ts | LOC=344 | 2026-03-05T21:59:31Z
 - [x] N8 | systems/ops/chromeos_fuchsia_distribution_ota_adapter.ts | LOC=344 | 2026-03-05T21:59:33Z
 - [x] N9 | systems/sensory/value_of_information_collection_planner.ts | LOC=343 | 2026-03-05T21:59:35Z
+- [x] N10 | systems/fractal/introspection_map.ts | LOC=342 | 2026-03-05T21:59:38Z
