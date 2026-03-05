@@ -467,3 +467,4 @@ Persistent lane-by-lane migration log so progress is preserved outside chat cont
 - [x] N48 | systems/workflow/orchestron/adversarial_lane.ts | LOC=318 | 2026-03-05T22:01:18Z
 - [x] N49 | systems/security/autonomous_skill_necessity_audit.ts | LOC=318 | 2026-03-05T22:01:20Z
 - [x] N50 | systems/continuity/active_state_continuity_layer.ts | LOC=318 | 2026-03-05T22:01:23Z
+- [x] N51 | systems/primitives/explanation_auto_emit.ts | LOC=316 | 2026-03-05T22:01:26Z
