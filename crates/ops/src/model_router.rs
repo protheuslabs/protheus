@@ -825,4 +825,27 @@ mod tests {
         assert!(out.get("capability").is_none());
         assert!(out.get("fallback_slot").is_none());
     }
+
+    #[test]
+    fn handoff_packet_tier_chain_limits_clamp_to_js_bounds() {
+        let low_payload = json!({
+            "tier": -1,
+            "role": "general",
+            "escalation_chain": ["a", "b", "c", "d"]
+        });
+        let low = build_handoff_packet(&low_payload);
+        assert_eq!(low["tier"], -1);
+        assert_eq!(low["escalation_chain"].as_array().map(|v| v.len()), Some(2));
+        assert!(low.get("capability").is_none());
+
+        let high_payload = json!({
+            "tier": 99,
+            "role": "general",
+            "escalation_chain": ["a", "b", "c", "d", "e", "f"]
+        });
+        let high = build_handoff_packet(&high_payload);
+        assert_eq!(high["tier"], 99);
+        assert_eq!(high["escalation_chain"].as_array().map(|v| v.len()), Some(4));
+        assert_eq!(high["guardrails"]["verification_required"], true);
+    }
 }
