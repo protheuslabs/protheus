@@ -378,3 +378,4 @@ Persistent lane-by-lane migration log so progress is preserved outside chat cont
 - [x] N63 | systems/ops/execution_doctor_ga.ts | LOC=390 | 2026-03-05T21:51:50Z
 - [x] N64 | lib/upgrade_lane_runtime.ts | LOC=390 | 2026-03-05T21:51:52Z
 - [x] N65 | systems/sensory/dynamic_source_reliability_graph.ts | LOC=384 | 2026-03-05T21:51:55Z
+- [x] N66 | systems/strategy/strategy_learner.ts | LOC=382 | 2026-03-05T21:51:57Z
