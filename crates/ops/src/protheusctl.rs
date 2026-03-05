@@ -1,5 +1,8 @@
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use base64::Engine;
+use persona_dispatch_security_gate::{
+    evaluate_persona_dispatch_gate, CHECK_ID as PERSONA_DISPATCH_SECURITY_GATE_CHECK_ID,
+};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::env;
@@ -22,6 +25,10 @@ pub struct DispatchSecurity {
     pub reason: String,
 }
 
+const PERSONA_VALID_LENSES_ENV: &str = "PROTHEUS_CTL_PERSONA_VALID_LENSES";
+const PERSONA_VALID_LENSES_DEFAULT: &str = "operator,guardian,analyst";
+const PERSONA_BLOCKED_PATHS_ENV: &str = "PROTHEUS_CTL_PERSONA_BLOCKED_PATHS";
+
 fn bool_env(name: &str, fallback: bool) -> bool {
     match env::var(name) {
         Ok(v) => match v.trim().to_ascii_lowercase().as_str() {
@@ -31,6 +38,40 @@ fn bool_env(name: &str, fallback: bool) -> bool {
         },
         Err(_) => fallback,
     }
+}
+
+fn csv_list_env(name: &str, fallback_csv: &str) -> Vec<String> {
+    env::var(name)
+        .unwrap_or_else(|_| fallback_csv.to_string())
+        .split(',')
+        .map(|row| row.trim())
+        .filter(|row| !row.is_empty())
+        .map(ToString::to_string)
+        .collect()
+}
+
+fn requested_lens_arg(args: &[String]) -> Option<String> {
+    let mut idx = 0usize;
+    while idx < args.len() {
+        let token = args[idx].trim();
+        if let Some((_, value)) = token.split_once('=') {
+            if token.starts_with("--lens=") || token.starts_with("--persona-lens=") {
+                let lens = value.trim();
+                if !lens.is_empty() {
+                    return Some(lens.to_string());
+                }
+            }
+        } else if token == "--lens" || token == "--persona-lens" {
+            if let Some(value) = args.get(idx + 1) {
+                let lens = value.trim();
+                if !lens.is_empty() {
+                    return Some(lens.to_string());
+                }
+            }
+        }
+        idx += 1;
+    }
+    None
 }
 
 fn should_offer_setup(root: &Path, skip_setup: bool) -> bool {
@@ -113,6 +154,49 @@ fn security_request(root: &Path, script_rel: &str, args: &[String]) -> Value {
     })
 }
 
+fn evaluate_persona_dispatch_security(
+    script_rel: &str,
+    args: &[String],
+    req: &Value,
+) -> DispatchSecurity {
+    let requested_lens = requested_lens_arg(args);
+    let valid_lenses = csv_list_env(PERSONA_VALID_LENSES_ENV, PERSONA_VALID_LENSES_DEFAULT);
+    let blocked_paths = csv_list_env(PERSONA_BLOCKED_PATHS_ENV, "");
+    let valid_lens_refs = valid_lenses.iter().map(String::as_str).collect::<Vec<_>>();
+    let blocked_path_refs = blocked_paths.iter().map(String::as_str).collect::<Vec<_>>();
+    let covenant_violation = req
+        .get("covenant_violation")
+        .and_then(Value::as_bool)
+        .unwrap_or(false);
+    let tamper_signal = req
+        .get("tamper_signal")
+        .and_then(Value::as_bool)
+        .unwrap_or(false);
+
+    let decision = evaluate_persona_dispatch_gate(
+        script_rel,
+        requested_lens.as_deref(),
+        &valid_lens_refs,
+        &blocked_path_refs,
+        covenant_violation,
+        tamper_signal,
+    );
+    if !decision.ok {
+        return DispatchSecurity {
+            ok: false,
+            reason: format!(
+                "security_gate_blocked:{PERSONA_DISPATCH_SECURITY_GATE_CHECK_ID}:{}",
+                decision.code
+            ),
+        };
+    }
+
+    DispatchSecurity {
+        ok: true,
+        reason: "ok".to_string(),
+    }
+}
+
 pub fn evaluate_dispatch_security(
     root: &Path,
     script_rel: &str,
@@ -126,6 +210,10 @@ pub fn evaluate_dispatch_security(
     }
 
     let req = security_request(root, script_rel, args);
+    let persona_gate = evaluate_persona_dispatch_security(script_rel, args, &req);
+    if !persona_gate.ok {
+        return persona_gate;
+    }
     if req
         .get("covenant_violation")
         .and_then(Value::as_bool)
@@ -1075,6 +1163,14 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
 mod tests {
     use super::*;
     use std::path::PathBuf;
+    use std::sync::{Mutex, OnceLock};
+
+    fn env_guard() -> std::sync::MutexGuard<'static, ()> {
+        static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+        LOCK.get_or_init(|| Mutex::new(()))
+            .lock()
+            .expect("lock_env")
+    }
 
     #[test]
     fn route_edge_swarm_maps_correctly() {
@@ -1092,6 +1188,7 @@ mod tests {
 
     #[test]
     fn local_fail_closed_signal_blocks_dispatch() {
+        let _guard = env_guard();
         std::env::set_var("PROTHEUS_CTL_SECURITY_GATE_DISABLED", "0");
         std::env::set_var("PROTHEUS_CTL_SECURITY_COVENANT_VIOLATION", "1");
         let root = PathBuf::from(".");
@@ -1100,5 +1197,35 @@ mod tests {
         assert!(!verdict.ok);
         assert!(verdict.reason.contains("fail_closed"));
         std::env::remove_var("PROTHEUS_CTL_SECURITY_COVENANT_VIOLATION");
+        std::env::remove_var("PROTHEUS_CTL_SECURITY_GATE_DISABLED");
+    }
+
+    #[test]
+    fn persona_blocked_path_fails_closed_before_security_core() {
+        let _guard = env_guard();
+        std::env::set_var("PROTHEUS_CTL_SECURITY_GATE_DISABLED", "0");
+        std::env::set_var(
+            "PROTHEUS_CTL_PERSONA_BLOCKED_PATHS",
+            "systems/ops/protheus_control_plane.js",
+        );
+        let root = PathBuf::from(".");
+        let verdict =
+            evaluate_dispatch_security(&root, "systems/ops/protheus_control_plane.js", &[]);
+        assert!(!verdict.ok);
+        assert!(verdict
+            .reason
+            .contains(PERSONA_DISPATCH_SECURITY_GATE_CHECK_ID));
+        assert!(verdict.reason.contains("blocked_dispatch_path"));
+        std::env::remove_var("PROTHEUS_CTL_PERSONA_BLOCKED_PATHS");
+        std::env::remove_var("PROTHEUS_CTL_SECURITY_GATE_DISABLED");
+    }
+
+    #[test]
+    fn requested_lens_arg_supports_inline_and_pair_forms() {
+        let inline = requested_lens_arg(&["--lens=guardian".to_string()]);
+        assert_eq!(inline.as_deref(), Some("guardian"));
+
+        let paired = requested_lens_arg(&["--persona-lens".to_string(), "operator".to_string()]);
+        assert_eq!(paired.as_deref(), Some("operator"));
     }
 }

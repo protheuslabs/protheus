@@ -3,10 +3,28 @@ use std::path::Path;
 
 const LEGACY_SCRIPT_ENV: &str = "PROTHEUS_CONTRACT_CHECK_LEGACY_SCRIPT";
 const LEGACY_SCRIPT_DEFAULT: &str = "systems/spine/contract_check_legacy.js";
+const CHECK_IDS_FLAG_PREFIX: &str = "--rust-contract-check-ids=";
 
 pub fn run(root: &Path, args: &[String]) -> i32 {
     let script = resolve_script_path(root, LEGACY_SCRIPT_ENV, LEGACY_SCRIPT_DEFAULT);
-    run_legacy_script_compat(root, "contract_check", &script, args, false)
+    let args = with_contract_check_ids(args);
+    run_legacy_script_compat(root, "contract_check", &script, &args, false)
+}
+
+pub fn with_contract_check_ids(args: &[String]) -> Vec<String> {
+    if args
+        .iter()
+        .any(|arg| arg.starts_with(CHECK_IDS_FLAG_PREFIX))
+    {
+        return args.to_vec();
+    }
+
+    let mut out = args.to_vec();
+    out.push(format!(
+        "{CHECK_IDS_FLAG_PREFIX}{}",
+        crate::foundation_contract_gate::FOUNDATION_CONTRACT_CHECK_IDS.join(",")
+    ));
+    out
 }
 
 fn compact_json_spacing(token: &str) -> String {
@@ -51,6 +69,26 @@ mod tests {
         let token = r#""schema":   {"id": "x"} value:  keep"#;
         let compacted = compact_json_spacing(token);
         assert_eq!(compacted, r#""schema":{"id":"x"} value:  keep"#);
+    }
+
+    #[test]
+    fn injects_contract_check_ids_when_missing() {
+        let args = vec!["run".to_string()];
+        let resolved = with_contract_check_ids(&args);
+        assert_eq!(resolved.len(), 2);
+        assert!(resolved[1].starts_with(CHECK_IDS_FLAG_PREFIX));
+        assert!(resolved[1].contains("burn_oracle_budget_gate"));
+        assert!(resolved[1].contains("persona_dispatch_security_gate"));
+    }
+
+    #[test]
+    fn respects_existing_contract_check_id_flag() {
+        let args = vec![
+            "run".to_string(),
+            format!("{CHECK_IDS_FLAG_PREFIX}already-set"),
+        ];
+        let resolved = with_contract_check_ids(&args);
+        assert_eq!(resolved, args);
     }
 
     #[test]
