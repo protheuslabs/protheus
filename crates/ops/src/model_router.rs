@@ -863,4 +863,35 @@ mod tests {
         assert_eq!(infer_role("integrating services", "sync adapters"), "tools");
         assert_eq!(infer_capability("prioritization sweep", "", ""), "planning");
     }
+
+    #[test]
+    fn handoff_packet_tier_one_planning_keeps_capability_fields() {
+        let payload = json!({
+            "tier": 1,
+            "role": "Planning",
+            "capability": "planning",
+            "fallback_slot": "fallback"
+        });
+        let out = build_handoff_packet(&payload);
+        assert_eq!(out["tier"], 1);
+        assert_eq!(out["role"], "planning");
+        assert_eq!(out["capability"], "planning");
+        assert_eq!(out["fallback_slot"], "fallback");
+    }
+
+    #[test]
+    fn handoff_packet_budget_enforcement_non_string_fields_map_to_null() {
+        let payload = json!({
+            "tier": 2,
+            "budget_enforcement": {
+                "action": 42,
+                "reason": true,
+                "blocked": true
+            }
+        });
+        let out = build_handoff_packet(&payload);
+        assert_eq!(out["budget_enforcement"]["action"], Value::Null);
+        assert_eq!(out["budget_enforcement"]["reason"], Value::Null);
+        assert_eq!(out["budget_enforcement"]["blocked"], true);
+    }
 }
