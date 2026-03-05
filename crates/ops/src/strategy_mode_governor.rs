@@ -702,4 +702,37 @@ mod tests {
         assert!(state.canary_relaxed);
         assert!(state.ready_for_canary);
     }
+
+    #[test]
+    fn transition_unknown_mode_is_fail_closed_no_transition() {
+        let policy = base_policy();
+        let readiness = ReadinessState {
+            strict_ready: true,
+            canary_relaxed: false,
+            ready_for_canary: true,
+            ready_for_execute: true,
+            effective_ready: true,
+            failed_checks: vec![],
+        };
+        let canary = CanaryState {
+            preview_ready_for_canary: true,
+            ready_for_execute: true,
+            quality_lock_active: true,
+        };
+        let streak = StreakState {
+            escalate_ready_streak: 10,
+            demote_not_ready_streak: 10,
+        };
+
+        let tr = decide_transition(
+            "unexpected_mode",
+            &readiness,
+            &canary,
+            &policy,
+            true,
+            false,
+            &streak,
+        );
+        assert!(tr.is_none());
+    }
 }
