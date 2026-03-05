@@ -112,10 +112,15 @@ fn parse_bool_flag(v: Option<&str>) -> bool {
     let Some(raw) = v else {
         return false;
     };
-    matches!(
-        raw.trim().to_ascii_lowercase().as_str(),
-        "1" | "true" | "yes" | "on"
-    )
+    parse_bool_literal(raw).unwrap_or(false)
+}
+
+fn parse_bool_literal(raw: &str) -> Option<bool> {
+    match raw.trim().to_ascii_lowercase().as_str() {
+        "1" | "true" | "yes" | "on" => Some(true),
+        "0" | "false" | "no" | "off" => Some(false),
+        _ => None,
+    }
 }
 
 fn resolve_fallback_choice(
@@ -144,9 +149,11 @@ pub fn split_legacy_fallback_flag(argv: &[String], module_env_key: &str) -> (boo
         if tok == "--legacy-fallback" {
             if let Some(next) = argv.get(i + 1) {
                 if !next.starts_with("--") {
-                    fallback_from_arg = Some(parse_bool_flag(Some(next)));
-                    i += 2;
-                    continue;
+                    if let Some(v) = parse_bool_literal(next) {
+                        fallback_from_arg = Some(v);
+                        i += 2;
+                        continue;
+                    }
                 }
             }
             fallback_from_arg = Some(true);
@@ -297,5 +304,29 @@ mod tests {
     fn resolve_fallback_defaults_to_false() {
         let fallback = resolve_fallback_choice(None, None, None);
         assert!(!fallback);
+    }
+
+    #[test]
+    fn split_legacy_flag_does_not_consume_positional_command() {
+        let args = vec![
+            "--legacy-fallback".to_string(),
+            "run".to_string(),
+            "latest".to_string(),
+        ];
+        let (fallback, cleaned) = split_legacy_fallback_flag(&args, "NO_SUCH_ENV");
+        assert!(fallback);
+        assert_eq!(cleaned, vec!["run".to_string(), "latest".to_string()]);
+    }
+
+    #[test]
+    fn split_legacy_flag_consumes_explicit_boolean_value() {
+        let args = vec![
+            "--legacy-fallback".to_string(),
+            "0".to_string(),
+            "run".to_string(),
+        ];
+        let (fallback, cleaned) = split_legacy_fallback_flag(&args, "NO_SUCH_ENV");
+        assert!(!fallback);
+        assert_eq!(cleaned, vec!["run".to_string()]);
     }
 }
