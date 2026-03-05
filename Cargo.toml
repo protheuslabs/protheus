@@ -20,7 +20,7 @@ members = [
   "systems/memory/rust",
   "systems/self_audit/rust",
   "systems/hybrid/rust"
-, "crates/task", "crates/resource", "crates/isolation", "crates/ipc", "crates/storage", "crates/update"]
+, "crates/task", "crates/resource", "crates/isolation", "crates/ipc", "crates/storage", "crates/update", "crates/conduit"]
 
 [workspace.package]
 edition = "2021"
