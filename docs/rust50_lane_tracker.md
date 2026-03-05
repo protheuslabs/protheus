@@ -423,3 +423,4 @@ Persistent lane-by-lane migration log so progress is preserved outside chat cont
 - [x] N4 | systems/ops/handoff_pack.ts | LOC=347 | 2026-03-05T21:59:24Z
 - [x] N5 | systems/ops/autotest_doctor_watchdog.ts | LOC=346 | 2026-03-05T21:59:26Z
 - [x] N6 | systems/fractal/evolution_arena.ts | LOC=345 | 2026-03-05T21:59:28Z
+- [x] N7 | systems/weaver/drift_aware_revenue_optimizer.ts | LOC=344 | 2026-03-05T21:59:31Z
