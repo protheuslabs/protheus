@@ -859,6 +859,13 @@ mod tests {
             Some(true)
         );
         assert_eq!(b.get("evidence_runs").and_then(Value::as_i64), Some(1));
+
+        let c = compute_evidence_run_plan(Some(4), Some("none"), Some("hard"));
+        assert_eq!(
+            c.get("pressure_throttle").and_then(Value::as_bool),
+            Some(true)
+        );
+        assert_eq!(c.get("evidence_runs").and_then(Value::as_i64), Some(1));
     }
 
     #[test]
