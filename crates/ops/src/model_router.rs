@@ -15,6 +15,9 @@ fn normalize_key(raw: &str) -> String {
     raw.trim().to_ascii_lowercase()
 }
 
+pub const ROUTER_MIN_REQUEST_TOKENS: i64 = 120;
+pub const ROUTER_MAX_REQUEST_TOKENS: i64 = 12_000;
+
 pub fn is_local_ollama_model(model_id: &str) -> bool {
     let model = model_id.trim();
     !model.is_empty() && model.starts_with("ollama/") && !model.contains(":cloud")
@@ -298,6 +301,136 @@ pub fn normalize_router_pressure(value: &str) -> String {
     }
 }
 
+fn clamp_request_tokens(value: i64) -> i64 {
+    value.clamp(ROUTER_MIN_REQUEST_TOKENS, ROUTER_MAX_REQUEST_TOKENS)
+}
+
+pub fn estimate_request_tokens(tokens_est: Option<f64>, intent: &str, task: &str) -> i64 {
+    if let Some(direct) = tokens_est {
+        if direct.is_finite() && direct > 0.0 {
+            return clamp_request_tokens(direct.round() as i64);
+        }
+    }
+
+    let text = format!("{intent} {task}");
+    let text = text.trim();
+    let chars = text.chars().count() as f64;
+    let words = if text.is_empty() {
+        0.0
+    } else {
+        text.split_whitespace().count() as f64
+    };
+    let heuristic = ((chars / 3.6) + (words * 1.6) + 80.0).round() as i64;
+    clamp_request_tokens(heuristic)
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct ModelTokenMultiplier {
+    pub multiplier: f64,
+    pub source: &'static str,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct ModelTokenEstimate {
+    pub tokens_est: Option<i64>,
+    pub multiplier: Option<f64>,
+    pub source: &'static str,
+}
+
+fn js_truthy_value(value: &Value) -> bool {
+    js_truthy(Some(value))
+}
+
+fn first_truthy_value<'a>(candidates: &[Option<&'a Value>]) -> Option<&'a Value> {
+    candidates
+        .iter()
+        .flatten()
+        .copied()
+        .find(|value| js_truthy_value(value))
+}
+
+pub fn resolve_model_token_multiplier(
+    model_id: &str,
+    profile_class: &str,
+    policy: &Value,
+) -> ModelTokenMultiplier {
+    let key = normalize_key(model_id);
+    let by_model = policy
+        .as_object()
+        .and_then(|obj| obj.get("model_token_multipliers"))
+        .and_then(Value::as_object);
+
+    if let Some(by_model_map) = by_model {
+        for (model, raw_multiplier) in by_model_map {
+            if normalize_key(model) != key {
+                continue;
+            }
+            let multiplier = finite_number(Some(raw_multiplier)).unwrap_or(f64::NAN);
+            if multiplier.is_finite() && multiplier > 0.0 {
+                return ModelTokenMultiplier {
+                    multiplier,
+                    source: "model",
+                };
+            }
+        }
+    }
+
+    let class_multipliers = policy
+        .as_object()
+        .and_then(|obj| obj.get("class_token_multipliers"))
+        .and_then(Value::as_object);
+    let class_key = normalize_key(profile_class);
+    let fallback_class = if is_local_ollama_model(model_id) {
+        "local"
+    } else {
+        "cloud"
+    };
+    let selected = class_multipliers.and_then(|map| {
+        first_truthy_value(&[
+            map.get(&class_key),
+            map.get(fallback_class),
+            map.get("default"),
+        ])
+    });
+    let class_value = finite_number(selected).unwrap_or(1.0);
+    if class_value.is_finite() && class_value > 0.0 {
+        return ModelTokenMultiplier {
+            multiplier: class_value,
+            source: "class",
+        };
+    }
+
+    ModelTokenMultiplier {
+        multiplier: 1.0,
+        source: "default",
+    }
+}
+
+pub fn estimate_model_request_tokens(
+    model_id: &str,
+    request_tokens: Option<f64>,
+    profile_class: &str,
+    policy: &Value,
+) -> ModelTokenEstimate {
+    let req = request_tokens.unwrap_or(f64::NAN);
+    if !req.is_finite() || req <= 0.0 {
+        return ModelTokenEstimate {
+            tokens_est: None,
+            multiplier: None,
+            source: "none",
+        };
+    }
+
+    let detail = resolve_model_token_multiplier(model_id, profile_class, policy);
+    let est = clamp_request_tokens((req * detail.multiplier).round() as i64);
+    let rounded_multiplier = ((detail.multiplier * 10_000.0).round()) / 10_000.0;
+    ModelTokenEstimate {
+        tokens_est: Some(est),
+        multiplier: Some(rounded_multiplier),
+        source: detail.source,
+    }
+}
+
 fn finite_number(value: Option<&Value>) -> Option<f64> {
     let raw = value?;
     match raw {
@@ -569,6 +702,75 @@ mod tests {
         assert_eq!(normalize_router_pressure("high"), "hard");
         assert_eq!(normalize_router_pressure("medium"), "soft");
         assert_eq!(normalize_router_pressure("unknown"), "none");
+    }
+
+    #[test]
+    fn request_token_estimation_matches_contract() {
+        assert_eq!(estimate_request_tokens(Some(42.2), "", ""), 120);
+        assert_eq!(estimate_request_tokens(Some(130.6), "", ""), 131);
+        assert_eq!(estimate_request_tokens(Some(14_000.0), "", ""), 12_000);
+        assert_eq!(estimate_request_tokens(None, "", ""), 120);
+
+        let text = "x".repeat(1_000);
+        assert_eq!(estimate_request_tokens(None, "", &text), 359);
+    }
+
+    #[test]
+    fn model_multiplier_resolution_matches_contract() {
+        let policy = json!({
+            "model_token_multipliers": {
+                "OpenAI/GPT-4.1": "1.8"
+            },
+            "class_token_multipliers": {
+                "cheap_local": 0.42,
+                "local": 0.5,
+                "cloud": 1.4,
+                "default": 1.1
+            }
+        });
+
+        let by_model = resolve_model_token_multiplier("openai/gpt-4.1", "cheap_local", &policy);
+        assert_eq!(by_model.source, "model");
+        assert!((by_model.multiplier - 1.8).abs() < 1e-9);
+
+        let by_class = resolve_model_token_multiplier("ollama/llama3", "cheap_local", &policy);
+        assert_eq!(by_class.source, "class");
+        assert!((by_class.multiplier - 0.42).abs() < 1e-9);
+
+        let cloud_class = resolve_model_token_multiplier("anthropic/claude-3-5", "", &policy);
+        assert_eq!(cloud_class.source, "class");
+        assert!((cloud_class.multiplier - 1.4).abs() < 1e-9);
+    }
+
+    #[test]
+    fn model_multiplier_uses_js_truthy_fallback_chain() {
+        let policy = json!({
+            "class_token_multipliers": {
+                "cheap_local": 0,
+                "local": 0.5
+            }
+        });
+        let detail = resolve_model_token_multiplier("ollama/llama3", "cheap_local", &policy);
+        assert_eq!(detail.source, "class");
+        assert!((detail.multiplier - 0.5).abs() < 1e-9);
+    }
+
+    #[test]
+    fn model_request_token_estimate_matches_contract() {
+        let policy = json!({
+            "model_token_multipliers": {
+                "openai/gpt-4.1": 1.23456
+            }
+        });
+        let out = estimate_model_request_tokens("openai/gpt-4.1", Some(1_000.0), "", &policy);
+        assert_eq!(out.source, "model");
+        assert_eq!(out.tokens_est, Some(1_235));
+        assert_eq!(out.multiplier, Some(1.2346));
+
+        let none = estimate_model_request_tokens("openai/gpt-4.1", Some(0.0), "", &policy);
+        assert_eq!(none.source, "none");
+        assert_eq!(none.tokens_est, None);
+        assert_eq!(none.multiplier, None);
     }
 
     #[test]
