@@ -430,3 +430,4 @@ Persistent lane-by-lane migration log so progress is preserved outside chat cont
 - [x] N11 | adaptive/sensory/eyes/collectors/google_trends.ts | LOC=342 | 2026-03-05T21:59:40Z
 - [x] N12 | systems/sensory/gold_eval_blind_scoring_lane.ts | LOC=341 | 2026-03-05T21:59:42Z
 - [x] N13 | adaptive/rsi/rsi_integrity_chain_guard.ts | LOC=341 | 2026-03-05T21:59:44Z
+- [x] N14 | systems/weaver/monoculture_guard.ts | LOC=339 | 2026-03-05T21:59:46Z
