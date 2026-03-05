@@ -589,3 +589,64 @@ Persistent lane-by-lane migration log so progress is preserved outside chat cont
 - `systems/ops/backlog_runtime_anchors/v2_035_anchor.ts`
 - `systems/ops/backlog_runtime_anchors/v2_036_anchor.ts`
 - `systems/ops/backlog_runtime_anchors/v2_038_anchor.ts`
+
+## Completed In This Continuation (Backlog Anchor Native Batch B)
+- Timestamp: 2026-03-05T22:39:00Z
+- Mode: continue TS backlog anchor native cutover through shared Rust anchor runtime.
+- Scope: 50 additional lanes migrated.
+- Gates:
+  - `CARGO_TARGET_DIR=/tmp/pc-next50b-ops cargo test --manifest-path crates/ops/Cargo.toml` ✅
+  - `CARGO_TARGET_DIR=/tmp/pc-next50b-ops cargo clippy --manifest-path crates/ops/Cargo.toml --all-targets -- -D warnings` ✅
+  - `NODE_PATH=/Users/jay/.openclaw/workspace/node_modules npm run -s formal:invariants:run` ✅ (`ok: true`, `failed_invariants: 0`)
+
+### New Anchor Lanes Migrated (50)
+- `systems/ops/backlog_runtime_anchors/v2_040_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v2_043_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v2_058_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v2_062_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v2_063_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v2_069_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_005_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_006_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_012_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_013_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_017_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_030_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_033_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_038_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_048_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_051_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_053_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_059_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_act_002_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_aex_002_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_assim_023_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_assim_024_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_assim_025_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_bud_001_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_cpy_001_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_cpy_005_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_cpy_006_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_doc_004_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_doc_005_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_doc_007_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_eco_001_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_ent_002_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_loop_001_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_loop_004_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_mac_001_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_mem_001_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_mem_002_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_mem_004_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_mem_008_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_mlc_002_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_of_008_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_ops_003_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_ops_005_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_ops_006_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_pro_001_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_race_034_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_race_038_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_race_081_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_race_106_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_race_108_anchor.ts`
