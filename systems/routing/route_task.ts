@@ -63,10 +63,23 @@ function executionBinaryCandidates() {
   ].filter(Boolean)));
 }
 
+function asRecord(value) {
+  return value && typeof value === 'object' ? value : {};
+}
+
+function recordString(value, key) {
+  const row = asRecord(value);
+  return String(row[key] || '');
+}
+
+function recordStringArray(value, key) {
+  const row = asRecord(value);
+  const items = row[key];
+  return Array.isArray(items) ? items.map((item) => String(item || '')) : [];
+}
+
 function runRouteEvaluateViaRust(task, tokensEst, repeats14d, errors30d, skipHabitId, habits, reflexRoutines) {
-  const routines = Array.isArray(Object.values(reflexRoutines || {}))
-    ? Object.values(reflexRoutines || {})
-    : [];
+  const routines = Object.values(reflexRoutines || {});
   const payload = JSON.stringify({
     task_text: String(task || ''),
     tokens_est: Number(tokensEst || 0),
@@ -77,9 +90,9 @@ function runRouteEvaluateViaRust(task, tokensEst, repeats14d, errors30d, skipHab
       ? habits.map((h) => ({ id: String(h && h.id || '') }))
       : [],
     reflex_routines: routines.map((r) => ({
-      id: String(r && r.id || ''),
-      status: String(r && r.status || ''),
-      tags: Array.isArray(r && r.tags) ? r.tags.map((t) => String(t || '')) : []
+      id: recordString(r, 'id'),
+      status: recordString(r, 'status'),
+      tags: recordStringArray(r, 'tags')
     }))
   });
   const payloadB64 = Buffer.from(payload, 'utf8').toString('base64');
@@ -433,7 +446,7 @@ function main() {
   const reflexMaxTokens = Number(process.env.ROUTE_TASK_REFLEX_MAX_TOKENS || 420);
   const matchedReflexId = String(routePrimitives.matched_reflex_id || '');
   const reflexMatch = reflexPreferred && gateResult.risk === 'low' && tokensEst <= reflexMaxTokens && matchedReflexId
-    ? (routeEval.routines.find((r) => String(r && r.id || '') === matchedReflexId) || null)
+    ? (routeEval.routines.find((r) => recordString(r, 'id') === matchedReflexId) || null)
     : null;
   
   // Build triggers_met array
@@ -513,7 +526,7 @@ function main() {
   const routeDecision = runRouteDecisionViaRust({
     matched_habit_id: match ? String(match.id || '') : '',
     matched_habit_state: String(matchState || ''),
-    matched_reflex_id: reflexMatch ? String(reflexMatch.id || '') : '',
+    matched_reflex_id: reflexMatch ? recordString(reflexMatch, 'id') : '',
     reflex_eligible: !!reflexMatch,
     has_required_inputs: requiredInputs.length > 0,
     required_input_count: requiredInputs.length,
@@ -546,7 +559,7 @@ function main() {
   const suggestedHabitId = String(routeDecisionPayload.suggested_habit_id || '').trim();
 
   if (decision === 'RUN_REFLEX') {
-    if (!reflexMatch || !String(reflexMatch.id || '').trim()) {
+    if (!reflexMatch || !recordString(reflexMatch, 'id').trim()) {
       const out = {
         decision: 'MANUAL',
         reason: 'Rust route decision requested reflex without eligible routine.',
@@ -561,7 +574,7 @@ function main() {
       console.log(JSON.stringify(out, null, 2));
       process.exit(0);
     }
-    const reflexId = String(reflexMatch.id || '').trim();
+    const reflexId = recordString(reflexMatch, 'id').trim();
     const runArgs = [
       'systems/reflex/reflex_dispatcher.js',
       'routine-run',

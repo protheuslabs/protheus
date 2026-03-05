@@ -9144,9 +9144,9 @@ function recordCriteriaPatternOutcome(p, capabilityKeyHint, criteria) {
   const windowMs = AUTONOMY_CRITERIA_PATTERN_WINDOW_DAYS * 24 * 3600 * 1000;
   const now = Date.now();
   for (const [key, row] of Object.entries(patterns)) {
-    const r = row && typeof row === 'object' ? row : {};
-    const failTs = Date.parse(String(r.last_failure_ts || ''));
-    const passTs = Date.parse(String(r.last_pass_ts || ''));
+    const r: Record<string, unknown> = row && typeof row === 'object' ? row as Record<string, unknown> : {};
+    const failTs = Date.parse(String(r['last_failure_ts'] || ''));
+    const passTs = Date.parse(String(r['last_pass_ts'] || ''));
     const latestTs = Number.isFinite(failTs) && Number.isFinite(passTs)
       ? Math.max(failTs, passTs)
       : (Number.isFinite(failTs) ? failTs : (Number.isFinite(passTs) ? passTs : null));

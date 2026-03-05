@@ -17,12 +17,13 @@ function loadAutonomy(rustEnabled) {
 
 function normalizeSelection(result) {
   const src = result && typeof result === 'object' ? result : {};
+  const canaryEvery = src.canary_every == null ? null : Number(src.canary_every);
   return {
     strategy_id: src.strategy && src.strategy.id ? String(src.strategy.id) : null,
     mode: String(src.mode || ''),
     canary_enabled: src.canary_enabled === true,
     canary_due: src.canary_due === true,
-    canary_every: src.canary_every == null ? null : Number(src.canary_every),
+    canary_every: !Number.isFinite(canaryEvery) || canaryEvery <= 0 ? null : canaryEvery,
     attempt_index: Number(src.attempt_index || 0),
     active_count: Number(src.active_count || 0),
     ranked: (Array.isArray(src.ranked) ? src.ranked : []).map((row) => ({

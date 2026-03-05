@@ -3691,7 +3691,11 @@ function detectImmutableAxiomViolation(policy: AnyObj, decisionInput: AnyObj) {
     cleanText(decisionInput.signature || '', 500),
     ...(Array.isArray(decisionInput.filters) ? decisionInput.filters.map((x: unknown) => cleanText(x, 120)) : [])
   ].join(' ').toLowerCase();
-  const tokenSet = new Set(tokenize(haystack));
+  const tokenSet = new Set<string>(
+    tokenize(haystack)
+      .map((token: unknown) => String(token || '').trim().toLowerCase())
+      .filter(Boolean)
+  );
   const intentTags = normalizeList(decisionInput.intent_tags || [], 80);
   const hits: string[] = [];
   const semanticCfg = axiomsPolicy.semantic && typeof axiomsPolicy.semantic === 'object'

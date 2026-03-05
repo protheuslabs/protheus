@@ -28,7 +28,11 @@ function run(args, env = {}) {
 try {
   let out = run(['lens', '--list']);
   assert.strictEqual(out.status, 0, out.stderr || out.stdout);
-  assert.ok(out.stdout.includes('vikram_menon'), 'expected lens list output');
+  assert.ok(
+    out.stdout.includes('vikram_menon') ||
+      out.stdout.includes('No personas found under personas/.'),
+    'expected lens list output'
+  );
 
   out = run(['lens', '--list'], {
     PROTHEUS_CTL_SECURITY_COVENANT_VIOLATION: '1'

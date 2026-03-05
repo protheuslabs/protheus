@@ -205,7 +205,9 @@ function evaluateTask(task) {
 }
 
 function logGateDecision(task, result, metadata = {}) {
-  const meta = (metadata && typeof metadata === 'object' ? metadata : {});
+  const meta: Record<string, unknown> = (metadata && typeof metadata === 'object'
+    ? metadata as Record<string, unknown>
+    : {});
   return {
     ts: new Date().toISOString(),
     type: result.decision === 'DENY' ? 'violation_blocked' : 'approval_queued',
@@ -214,8 +216,8 @@ function logGateDecision(task, result, metadata = {}) {
     gate_risk: result.risk,
     gate_reasons: Array.isArray(result.reasons) ? result.reasons : [],
     metadata: {
-      tokens_est: Number(meta.tokens_est || 0),
-      source: meta.source || 'route_task'
+      tokens_est: Number(meta['tokens_est'] || 0),
+      source: String(meta['source'] || 'route_task')
     }
   };
 }
