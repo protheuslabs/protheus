@@ -2134,7 +2134,7 @@ pub fn evaluate_heroic_gate(req: &HeroicGateRequest) -> HeroicGateResponse {
         .purified_row
         .as_ref()
         .and_then(|value| value.as_object())
-        .map(|row| row.clone());
+        .cloned();
     if purified.is_none() {
         let mut reason_codes = vec!["heroic_echo_row_missing".to_string()];
         if local_destructive {
@@ -3021,7 +3021,7 @@ mod tests {
         let out = evaluate_heroic_gate(&req);
         assert_eq!(out.classification, "destructive_instruction");
         assert_eq!(out.decision, "blocked_destructive_local_pattern");
-        assert_eq!(out.blocked, true);
+        assert!(out.blocked);
         assert!(out
             .reason_codes
             .iter()
@@ -3043,7 +3043,7 @@ mod tests {
         let out = evaluate_heroic_gate(&req);
         assert_eq!(out.classification, "normal");
         assert_eq!(out.decision, "allow");
-        assert_eq!(out.blocked, false);
+        assert!(!out.blocked);
         assert!(out.reason_codes.iter().any(|code| code == "safe_input"));
     }
 
