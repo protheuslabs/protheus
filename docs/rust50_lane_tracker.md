@@ -833,3 +833,64 @@ Persistent lane-by-lane migration log so progress is preserved outside chat cont
 - `systems/ops/backlog_runtime_anchors/v3_race_328_anchor.ts`
 - `systems/ops/backlog_runtime_anchors/v3_race_329_anchor.ts`
 - `systems/ops/backlog_runtime_anchors/v3_race_330_anchor.ts`
+
+## Completed In This Continuation (Backlog Anchor Native Batch F)
+- Timestamp: 2026-03-05T22:45:00Z
+- Mode: continue TS backlog anchor native cutover through shared Rust anchor runtime.
+- Scope: 50 additional lanes migrated.
+- Gates:
+  - `CARGO_TARGET_DIR=/tmp/pc-next50f-ops cargo test --manifest-path crates/ops/Cargo.toml` ✅
+  - `CARGO_TARGET_DIR=/tmp/pc-next50f-ops cargo clippy --manifest-path crates/ops/Cargo.toml --all-targets -- -D warnings` ✅
+  - `NODE_PATH=/Users/jay/.openclaw/workspace/node_modules npm run -s formal:invariants:run` ✅ (`ok: true`, `failed_invariants: 0`)
+
+### New Anchor Lanes Migrated (50)
+- `systems/ops/backlog_runtime_anchors/v3_race_331_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_race_333_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_race_335_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_race_336_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_race_337_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_race_338_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_race_339_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_race_340_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_race_341_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_race_343_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_race_344_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_race_345_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_race_346_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_race_347_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_race_348_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_race_349_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_race_350_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_race_351_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_race_352_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_race_353_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_race_354_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_race_355_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_race_356_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_race_357_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_race_358_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_race_360_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_race_conf_006_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_race_def_027_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_race_def_031b_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_red_esc_001_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_red_esc_002_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_red_esc_003_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_red_esc_004_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_red_hall_001_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_red_hall_002_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_red_hall_003_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_red_nasty_001_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_red_nasty_002_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_red_nasty_003_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_red_nasty_004_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_rmem_001_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_sk_001_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_sk_002_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_skin_002_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_venom_003_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_venom_004_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_venom_005_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_venom_006_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_venom_007_anchor.ts`
+- `systems/ops/backlog_runtime_anchors/v3_xai_002_anchor.ts`
