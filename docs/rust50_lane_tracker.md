@@ -315,3 +315,4 @@ Persistent lane-by-lane migration log so progress is preserved outside chat cont
 - Rule: each lane runs test + clippy + invariants, then commit + push, with tracker update in same commit.
 - [x] N1 | adaptive/rsi/rsi_bootstrap.ts | LOC=1597 | 2026-03-05T21:49:21Z
 - [x] N2 | systems/redteam/self_improving_redteam_trainer.ts | LOC=843 | 2026-03-05T21:49:23Z
+- [x] N3 | systems/blockchain/sovereign_blockchain_bridge.ts | LOC=823 | 2026-03-05T21:49:26Z
