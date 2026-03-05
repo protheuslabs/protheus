@@ -403,3 +403,4 @@ Persistent lane-by-lane migration log so progress is preserved outside chat cont
 - [x] N88 | systems/security/startup_attestation.ts | LOC=355 | 2026-03-05T21:52:51Z
 - [x] N89 | systems/ops/backlog_lane_batch_delivery.ts | LOC=355 | 2026-03-05T21:52:54Z
 - [x] N90 | lib/approval_gate.ts | LOC=354 | 2026-03-05T21:52:57Z
+- [x] N91 | systems/ops/rm_progress_dashboard.ts | LOC=353 | 2026-03-05T21:53:01Z
