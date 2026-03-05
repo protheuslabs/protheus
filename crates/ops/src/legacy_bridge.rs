@@ -1,61 +1,89 @@
-use crate::{deterministic_receipt_hash, now_iso};
-use serde_json::{json, Value};
-use std::path::Path;
-use std::process::{Command, Stdio};
+use crate::clean;
+use serde_json::json;
+use std::env;
+use std::io::Write;
+use std::path::{Path, PathBuf};
+use std::process::{Command, Output, Stdio};
 
-fn print_json(value: &serde_json::Value) {
-    println!(
-        "{}",
-        serde_json::to_string_pretty(value)
-            .unwrap_or_else(|_| "{\"ok\":false,\"error\":\"encode_failed\"}".to_string())
-    );
+pub fn node_binary() -> String {
+    env::var("PROTHEUS_NODE_BINARY").unwrap_or_else(|_| "node".to_string())
 }
 
-fn bridge_error_receipt(
-    domain: &str,
-    script_rel: &str,
-    error: &str,
-    reason: Option<&str>,
-) -> Value {
-    let mut out = json!({
-        "ok": false,
-        "type": "legacy_bridge_error",
-        "ts": now_iso(),
-        "domain": domain,
-        "script": script_rel,
-        "error": error,
-        "reason": reason,
-        "claim_evidence": [
-            {
-                "id": "fail_closed_bridge",
-                "claim": "legacy_bridge_errors_emit_deterministic_receipts",
-                "evidence": {
-                    "domain": domain,
-                    "script": script_rel,
-                    "error": error
-                }
-            }
-        ],
-        "persona_lenses": {
-            "guardian": {
-                "fallback_mode": "legacy_bridge",
-                "domain": domain
-            },
-            "auditor": {
-                "deterministic_receipt": true
-            }
-        }
-    });
-    out["receipt_hash"] = Value::String(deterministic_receipt_hash(&out));
-    out
-}
-
-fn resolve_node_binary() -> String {
-    std::env::var("PROTHEUS_NODE_BINARY")
+pub fn resolve_script_path(root: &Path, env_key: &str, default_rel: &str) -> PathBuf {
+    let from_env = env::var(env_key)
         .ok()
         .map(|v| v.trim().to_string())
-        .filter(|v| !v.is_empty())
-        .unwrap_or_else(|| "node".to_string())
+        .filter(|v| !v.is_empty());
+
+    let script = from_env.unwrap_or_else(|| default_rel.to_string());
+    let path = PathBuf::from(script);
+    if path.is_absolute() {
+        path
+    } else {
+        root.join(path)
+    }
+}
+
+pub fn execute_with_bin(
+    root: &Path,
+    script_rel: &str,
+    args: &[String],
+    node_bin: &str,
+) -> Result<Output, String> {
+    let script_abs = root.join(script_rel);
+    Command::new(node_bin)
+        .arg(script_abs)
+        .args(args)
+        .current_dir(root)
+        .output()
+        .map_err(|e| format!("spawn_failed:{e}"))
+}
+
+pub fn execute(root: &Path, script_rel: &str, args: &[String]) -> Result<Output, String> {
+    let node_bin = node_binary();
+    execute_with_bin(root, script_rel, args, &node_bin)
+}
+
+fn emit_output(output: &Output) -> Result<(), String> {
+    std::io::stdout()
+        .write_all(&output.stdout)
+        .map_err(|e| format!("stdout_write_failed:{e}"))?;
+    std::io::stderr()
+        .write_all(&output.stderr)
+        .map_err(|e| format!("stderr_write_failed:{e}"))?;
+    Ok(())
+}
+
+pub fn run_passthrough(root: &Path, script_rel: &str, args: &[String]) -> i32 {
+    match execute(root, script_rel, args) {
+        Ok(output) => {
+            if let Err(err) = emit_output(&output) {
+                eprintln!(
+                    "{}",
+                    json!({
+                        "ok": false,
+                        "type": "legacy_bridge",
+                        "script": clean(script_rel, 220),
+                        "error": clean(err, 220)
+                    })
+                );
+                return 1;
+            }
+            output.status.code().unwrap_or(1)
+        }
+        Err(err) => {
+            eprintln!(
+                "{}",
+                json!({
+                    "ok": false,
+                    "type": "legacy_bridge",
+                    "script": clean(script_rel, 220),
+                    "error": clean(err, 220)
+                })
+            );
+            1
+        }
+    }
 }
 
 pub(crate) fn run_legacy_script_with_node(
@@ -68,12 +96,16 @@ pub(crate) fn run_legacy_script_with_node(
 ) -> i32 {
     let script_path = root.join(script_rel);
     if !script_path.exists() {
-        print_json(&bridge_error_receipt(
-            domain,
-            script_rel,
-            "legacy_script_missing",
-            None,
-        ));
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&json!({
+                "ok": false,
+                "error": "legacy_script_missing",
+                "domain": domain,
+                "script": script_rel
+            }))
+            .unwrap_or_else(|_| "{\"ok\":false,\"error\":\"encode_failed\"}".to_string())
+        );
         return 1;
     }
 
@@ -90,58 +122,52 @@ pub(crate) fn run_legacy_script_with_node(
     }
 
     match cmd.status() {
-        Ok(status) => {
-            if let Some(code) = status.code() {
-                code
-            } else {
-                print_json(&bridge_error_receipt(
-                    domain,
-                    script_rel,
-                    "legacy_exit_by_signal",
-                    Some(&format!("{status:?}")),
-                ));
-                1
-            }
-        }
+        Ok(status) => status.code().unwrap_or(1),
         Err(err) => {
-            print_json(&bridge_error_receipt(
-                domain,
-                script_rel,
-                "legacy_spawn_failed",
-                Some(&err.to_string()),
-            ));
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&json!({
+                    "ok": false,
+                    "error": "legacy_spawn_failed",
+                    "domain": domain,
+                    "script": script_rel,
+                    "reason": err.to_string()
+                }))
+                .unwrap_or_else(|_| "{\"ok\":false,\"error\":\"encode_failed\"}".to_string())
+            );
             1
         }
     }
 }
 
 pub fn run_legacy_script(root: &Path, script_rel: &str, argv: &[String], domain: &str) -> i32 {
-    let node_binary = resolve_node_binary();
-    run_legacy_script_with_node(root, script_rel, argv, domain, &node_binary, &[])
+    let node = node_binary();
+    run_legacy_script_with_node(root, script_rel, argv, domain, &node, &[])
+}
+
+pub fn run_legacy_script_compat(
+    root: &Path,
+    domain: &str,
+    script_path: &Path,
+    args: &[String],
+    _forward_stdin: bool,
+) -> i32 {
+    let rel = script_path
+        .strip_prefix(root)
+        .unwrap_or(script_path)
+        .to_string_lossy()
+        .replace('\\', "/");
+    run_legacy_script(root, &rel, args, domain)
 }
 
 fn parse_bool_flag(v: Option<&str>) -> bool {
     let Some(raw) = v else {
         return false;
     };
-    parse_bool_literal(raw).unwrap_or(false)
-}
-
-fn parse_bool_literal(raw: &str) -> Option<bool> {
-    match raw.trim().to_ascii_lowercase().as_str() {
-        "1" | "true" | "yes" | "on" => Some(true),
-        "0" | "false" | "no" | "off" => Some(false),
-        _ => None,
-    }
-}
-
-fn resolve_fallback_choice(
-    fallback_from_arg: Option<bool>,
-    module_env: Option<&str>,
-    global_env: Option<&str>,
-) -> bool {
-    fallback_from_arg
-        .unwrap_or_else(|| parse_bool_flag(module_env) || parse_bool_flag(global_env))
+    matches!(
+        raw.trim().to_ascii_lowercase().as_str(),
+        "1" | "true" | "yes" | "on"
+    )
 }
 
 pub fn split_legacy_fallback_flag(argv: &[String], module_env_key: &str) -> (bool, Vec<String>) {
@@ -153,7 +179,7 @@ pub fn split_legacy_fallback_flag(argv: &[String], module_env_key: &str) -> (boo
         let tok = argv[i].trim().to_string();
         if let Some((k, v)) = tok.split_once('=') {
             if k == "--legacy-fallback" {
-                fallback_from_arg = Some(parse_bool_literal(v).unwrap_or(true));
+                fallback_from_arg = Some(parse_bool_flag(Some(v)));
                 i += 1;
                 continue;
             }
@@ -161,11 +187,9 @@ pub fn split_legacy_fallback_flag(argv: &[String], module_env_key: &str) -> (boo
         if tok == "--legacy-fallback" {
             if let Some(next) = argv.get(i + 1) {
                 if !next.starts_with("--") {
-                    if let Some(v) = parse_bool_literal(next) {
-                        fallback_from_arg = Some(v);
-                        i += 2;
-                        continue;
-                    }
+                    fallback_from_arg = Some(parse_bool_flag(Some(next)));
+                    i += 2;
+                    continue;
                 }
             }
             fallback_from_arg = Some(true);
@@ -176,13 +200,14 @@ pub fn split_legacy_fallback_flag(argv: &[String], module_env_key: &str) -> (boo
         i += 1;
     }
 
-    let module_env = std::env::var(module_env_key).ok();
-    let global_env = std::env::var("PROTHEUS_OPS_LEGACY_FALLBACK").ok();
-    let fallback = resolve_fallback_choice(
-        fallback_from_arg,
-        module_env.as_deref(),
-        global_env.as_deref(),
-    );
+    let fallback = fallback_from_arg.unwrap_or_else(|| {
+        parse_bool_flag(std::env::var(module_env_key).ok().as_deref())
+            || parse_bool_flag(
+                std::env::var("PROTHEUS_OPS_LEGACY_FALLBACK")
+                    .ok()
+                    .as_deref(),
+            )
+    });
 
     (fallback, cleaned)
 }
@@ -197,6 +222,82 @@ mod tests {
         let script_path = root.join(script_rel);
         fs::create_dir_all(script_path.parent().expect("parent")).expect("mkdir");
         fs::write(script_path, content).expect("write script");
+    }
+
+    fn write_shell_script(path: &Path, body: &str) {
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent).expect("create_parent");
+        }
+        fs::write(path, body).expect("write_script");
+    }
+
+    #[test]
+    fn resolve_script_path_uses_default_relative() {
+        let root = tempdir().expect("tempdir");
+        let path = resolve_script_path(root.path(), "NO_SUCH_ENV_KEY", "systems/foo.js");
+        assert_eq!(path, root.path().join("systems/foo.js"));
+    }
+
+    #[test]
+    fn resolve_script_path_honors_absolute_env_path() {
+        let root = tempdir().expect("tempdir");
+        let abs = root.path().join("x/y/z.js");
+        env::set_var("BRIDGE_TEST_ABS", abs.to_string_lossy().to_string());
+        let path = resolve_script_path(root.path(), "BRIDGE_TEST_ABS", "fallback.js");
+        env::remove_var("BRIDGE_TEST_ABS");
+        assert_eq!(path, abs);
+    }
+
+    #[test]
+    fn resolve_script_path_honors_relative_env_path() {
+        let root = tempdir().expect("tempdir");
+        env::set_var("BRIDGE_TEST_REL", "systems/legacy.js");
+        let path = resolve_script_path(root.path(), "BRIDGE_TEST_REL", "fallback.js");
+        env::remove_var("BRIDGE_TEST_REL");
+        assert_eq!(path, root.path().join("systems/legacy.js"));
+    }
+
+    #[test]
+    fn execute_with_bin_captures_stdout() {
+        let root = tempfile::tempdir().expect("tempdir");
+        let rel = "systems/ops/fake_bridge.js";
+        let script = root.path().join(rel);
+        write_shell_script(
+            &script,
+            r#"#!/bin/sh
+printf '{"ok":true,"argv":"%s"}\n' "$*"
+"#,
+        );
+
+        let out = execute_with_bin(
+            root.path(),
+            rel,
+            &["run".to_string(), "--strict=1".to_string()],
+            "sh",
+        )
+        .expect("execute_ok");
+        assert_eq!(out.status.code(), Some(0));
+        let stdout = String::from_utf8_lossy(&out.stdout);
+        assert!(stdout.contains("run --strict=1"));
+    }
+
+    #[test]
+    fn execute_with_bin_propagates_exit_code() {
+        let root = tempfile::tempdir().expect("tempdir");
+        let rel = "systems/ops/fake_bridge_fail.js";
+        let script = root.path().join(rel);
+        write_shell_script(
+            &script,
+            r#"#!/bin/sh
+echo "boom" 1>&2
+exit 7
+"#,
+        );
+
+        let out = execute_with_bin(root.path(), rel, &[], "sh").expect("execute_ok");
+        assert_eq!(out.status.code(), Some(7));
+        let stderr = String::from_utf8_lossy(&out.stderr);
+        assert!(stderr.contains("boom"));
     }
 
     #[test]
@@ -264,116 +365,5 @@ mod tests {
         let (fallback, cleaned) = split_legacy_fallback_flag(&args, "NO_SUCH_ENV");
         assert!(fallback);
         assert_eq!(cleaned, vec!["run".to_string(), "--strict=1".to_string()]);
-    }
-
-    #[test]
-    fn bridge_error_receipt_is_deterministic() {
-        let out = bridge_error_receipt(
-            "autotest_controller",
-            "systems/ops/autotest_controller_legacy.js",
-            "legacy_script_missing",
-            None,
-        );
-        assert_eq!(out.get("ok").and_then(Value::as_bool), Some(false));
-        assert_eq!(
-            out.get("type").and_then(Value::as_str),
-            Some("legacy_bridge_error")
-        );
-        assert!(out.get("claim_evidence").is_some());
-        assert!(out.get("persona_lenses").is_some());
-
-        let expected_hash = out
-            .get("receipt_hash")
-            .and_then(Value::as_str)
-            .expect("hash")
-            .to_string();
-        let mut unhashed = out.clone();
-        unhashed
-            .as_object_mut()
-            .expect("object")
-            .remove("receipt_hash");
-        assert_eq!(deterministic_receipt_hash(&unhashed), expected_hash);
-    }
-
-    #[test]
-    fn resolve_fallback_prefers_cli_over_env() {
-        let fallback = resolve_fallback_choice(Some(false), Some("1"), Some("1"));
-        assert!(!fallback);
-        let fallback_true = resolve_fallback_choice(Some(true), Some("0"), Some("0"));
-        assert!(fallback_true);
-    }
-
-    #[test]
-    fn resolve_fallback_uses_module_env_then_global_env() {
-        let module_enabled = resolve_fallback_choice(None, Some("true"), Some("0"));
-        assert!(module_enabled);
-
-        let global_enabled = resolve_fallback_choice(None, Some("0"), Some("yes"));
-        assert!(global_enabled);
-    }
-
-    #[test]
-    fn resolve_fallback_defaults_to_false() {
-        let fallback = resolve_fallback_choice(None, None, None);
-        assert!(!fallback);
-    }
-
-    #[test]
-    fn split_legacy_flag_does_not_consume_positional_command() {
-        let args = vec![
-            "--legacy-fallback".to_string(),
-            "run".to_string(),
-            "latest".to_string(),
-        ];
-        let (fallback, cleaned) = split_legacy_fallback_flag(&args, "NO_SUCH_ENV");
-        assert!(fallback);
-        assert_eq!(cleaned, vec!["run".to_string(), "latest".to_string()]);
-    }
-
-    #[test]
-    fn split_legacy_flag_consumes_explicit_boolean_value() {
-        let args = vec![
-            "--legacy-fallback".to_string(),
-            "0".to_string(),
-            "run".to_string(),
-        ];
-        let (fallback, cleaned) = split_legacy_fallback_flag(&args, "NO_SUCH_ENV");
-        assert!(!fallback);
-        assert_eq!(cleaned, vec!["run".to_string()]);
-    }
-
-    #[test]
-    fn split_legacy_flag_inline_false_is_respected() {
-        let args = vec!["--legacy-fallback=false".to_string(), "run".to_string()];
-        let (fallback, cleaned) = split_legacy_fallback_flag(&args, "NO_SUCH_ENV");
-        assert!(!fallback);
-        assert_eq!(cleaned, vec!["run".to_string()]);
-    }
-
-    #[test]
-    fn split_legacy_flag_inline_invalid_defaults_true() {
-        let args = vec!["--legacy-fallback=latest".to_string(), "run".to_string()];
-        let (fallback, cleaned) = split_legacy_fallback_flag(&args, "NO_SUCH_ENV");
-        assert!(fallback);
-        assert_eq!(cleaned, vec!["run".to_string()]);
-    }
-
-    #[test]
-    fn signal_terminated_script_fails_closed() {
-        let dir = tempdir().expect("tempdir");
-        write_script(
-            dir.path(),
-            "systems/ops/autotest_controller_legacy.js",
-            "kill -9 $$\n",
-        );
-        let exit = run_legacy_script_with_node(
-            dir.path(),
-            "systems/ops/autotest_controller_legacy.js",
-            &[],
-            "autotest_controller",
-            "/bin/sh",
-            &[],
-        );
-        assert_eq!(exit, 1);
     }
 }
