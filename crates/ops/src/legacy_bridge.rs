@@ -160,6 +160,58 @@ pub fn run_legacy_script_compat(
     run_legacy_script(root, &rel, args, domain)
 }
 
+fn parse_bool_flag(v: Option<&str>) -> bool {
+    let Some(raw) = v else {
+        return false;
+    };
+    matches!(
+        raw.trim().to_ascii_lowercase().as_str(),
+        "1" | "true" | "yes" | "on"
+    )
+}
+
+pub fn split_legacy_fallback_flag(argv: &[String], module_env_key: &str) -> (bool, Vec<String>) {
+    let mut fallback_from_arg = None::<bool>;
+    let mut cleaned = Vec::with_capacity(argv.len());
+
+    let mut i = 0usize;
+    while i < argv.len() {
+        let tok = argv[i].trim().to_string();
+        if let Some((k, v)) = tok.split_once('=') {
+            if k == "--legacy-fallback" {
+                fallback_from_arg = Some(parse_bool_flag(Some(v)));
+                i += 1;
+                continue;
+            }
+        }
+        if tok == "--legacy-fallback" {
+            if let Some(next) = argv.get(i + 1) {
+                if !next.starts_with("--") {
+                    fallback_from_arg = Some(parse_bool_flag(Some(next)));
+                    i += 2;
+                    continue;
+                }
+            }
+            fallback_from_arg = Some(true);
+            i += 1;
+            continue;
+        }
+        cleaned.push(argv[i].clone());
+        i += 1;
+    }
+
+    let fallback = fallback_from_arg.unwrap_or_else(|| {
+        parse_bool_flag(std::env::var(module_env_key).ok().as_deref())
+            || parse_bool_flag(
+                std::env::var("PROTHEUS_OPS_LEGACY_FALLBACK")
+                    .ok()
+                    .as_deref(),
+            )
+    });
+
+    (fallback, cleaned)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -301,5 +353,17 @@ exit 7
             .map(|line| line.to_string())
             .collect::<Vec<_>>();
         assert_eq!(got, argv);
+    }
+
+    #[test]
+    fn splits_and_detects_fallback_flag() {
+        let args = vec![
+            "run".to_string(),
+            "--legacy-fallback=1".to_string(),
+            "--strict=1".to_string(),
+        ];
+        let (fallback, cleaned) = split_legacy_fallback_flag(&args, "NO_SUCH_ENV");
+        assert!(fallback);
+        assert_eq!(cleaned, vec!["run".to_string(), "--strict=1".to_string()]);
     }
 }
