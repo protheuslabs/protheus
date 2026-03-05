@@ -14,6 +14,7 @@ fn usage() {
     println!("  protheus-ops strategy-mode-governor <args>");
     println!("  protheus-ops foundation-contract-gate <run|status> [flags]");
     println!("  protheus-ops state-kernel <command> [flags]");
+    println!("  protheus-ops autonomy-controller <command> [flags]");
     println!("  protheus-ops autotest-controller <command> [flags]");
     println!("  protheus-ops autotest-doctor <command> [flags]");
     println!("  protheus-ops spine <mode> [date] [flags]");
@@ -99,6 +100,11 @@ fn main() {
         "state-kernel" => {
             let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
             let exit = protheus_ops_core::state_kernel::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "autonomy-controller" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::autonomy_controller::run(&cwd, &rest);
             std::process::exit(exit);
         }
         "autotest-controller" => {
