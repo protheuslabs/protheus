@@ -19,6 +19,7 @@ pub mod foundation_contract_gate;
 pub mod legacy_bridge;
 pub mod model_router;
 pub mod perception_polish;
+pub mod personas_cli;
 pub mod protheusctl;
 pub mod scale_readiness;
 pub mod spine;
