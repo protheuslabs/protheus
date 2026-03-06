@@ -1,6 +1,6 @@
 # Backlog Archive View
 
-Generated: 2026-03-06T16:36:56.320Z
+Generated: 2026-03-06T16:58:27.669Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
@@ -20,9 +20,13 @@ Generated: 2026-03-06T16:36:56.320Z
 | V6-F100-033 | backlog | V6 | done | Release/security automation baseline uplift |  |
 | V6-F100-037 | backlog | V6 | done | README governance links + repo hygiene ownership fences |  |
 | V6-F100-038 | backlog | V6 | done | Backlog canonical rename to SRS with compatibility alias |  |
+| V6-F100-039 | backlog | V6 | done | F100 baseline reconciliation gate with deterministic receipts |  |
+| V6-F100-040 | backlog | V6 | done | Enterprise deployment packaging baseline (Helm + Terraform) |  |
 | V6-ARCH-001 | backlog | V6 | done | Layered kernel shedding feature topology (`layer0` -> `layer3`) |  |
 | V6-ARCH-002 | backlog | V6 | done | Layered profile CI/build verification matrix |  |
 | V6-EDGE-001 | backlog | V6 | done | Conduit edge provider adapter (`edge_inference`/`edge_status`) |  |
+| V6-EDGE-002 | backlog | V6 | done | Resource-tier backend auto-selection for constrained hardware |  |
+| V6-EDGE-003 | backlog | V6 | done | Edge backend feature-gated build profile integration |  |
 | V6-COMP-004 | backlog | V6 | done | Security-layer inventory with evidence links |  |
 | V6-RUNTIME-001 | backlog | V6 | done | Strict schema enforcement for persona/lens outputs |  |
 | V6-RUNTIME-002 | backlog | V6 | done | Per-shadow budget governance layer |  |
@@ -1038,4 +1042,6 @@ Generated: 2026-03-06T16:36:56.320Z
 | V6-GAP-001 | launch-polish | V6 | done | One-Line Installer Parity (`curl ... | sh` + PowerShell) | V6-CONDUIT-003 |
 | V6-GAP-002 | hardening | V6 | done | Coverage Uplift + Badge Gate | V6-GAP-001 |
 | V6-GAP-003 | launch-polish | V6 | done | Architecture + Quickstart Story Refresh | V6-GAP-001 |
+| V6-GAP-004 | launch-polish | V6 | done | Community Starter Issue Pack + Seeder | V6-GAP-003 |
+| V6-GAP-005 | launch-polish | V6 | done | InfRing Launch Announcement Template Pack | V6-GAP-003 |
 

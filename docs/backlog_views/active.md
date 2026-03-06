@@ -1,6 +1,6 @@
 # Backlog Active View
 
-Generated: 2026-03-06T16:36:56.320Z
+Generated: 2026-03-06T16:58:27.669Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
@@ -11,8 +11,11 @@ Generated: 2026-03-06T16:36:56.320Z
 | V6-F100-034 | backlog | V6 | blocked | First public semantic release + npm publish |  |
 | V6-F100-035 | backlog | V6 | queued | SPDX header sweep across source tree |  |
 | V6-F100-036 | backlog | V6 | queued | Root experimental folder rationalization |  |
-| V6-EDGE-002 | backlog | V6 | queued | Resource-tier backend auto-selection for constrained hardware |  |
-| V6-EDGE-003 | backlog | V6 | queued | Edge backend feature-gated build profile integration |  |
+| V6-F100-041 | backlog | V6 | queued | Identity federation adapters (SSO/OAuth2/SCIM) for enterprise control plane |  |
+| V6-F100-042 | backlog | V6 | queued | Audit-log export adapters for SIEM pipelines (Splunk/ELK/Datadog) |  |
+| V6-F100-043 | backlog | V6 | blocked | External certification and attestation program (SOC2/ISO/FedRAMP/GDPR) |  |
+| V6-F100-044 | backlog | V6 | blocked | Commercial support/SLA contract lane (enterprise readiness) |  |
+| V6-F100-045 | backlog | V6 | blocked | Public compliance report publication lane |  |
 | V6-EDGE-004 | backlog | V6 | queued | Edge lifecycle validation + substrate-swap proof |  |
 | V6-EDGE-005 | backlog | V6 | blocked | Third-party license and source-ingest decision for edge backend |  |
 | V6-SWARM-001 | backlog | V6 | queued | Swarm router primitive crate |  |
@@ -102,4 +105,5 @@ Generated: 2026-03-06T16:36:56.320Z
 | V6-PRIM-006 | primitive-upgrade | V6 | in_progress | Observability Primitive Rust Completion | REQ-08-001 |
 | V6-PRIM-008 | hardening | V6 | in_progress | Primitive TS Wrapper Contract Enforcement | REQ-08-002, REQ-08-004 |
 | V6-PRIM-009 | governance | V6 | in_progress | Primitive Migration Residual Audit | REQ-08-005 |
+| V6-GAP-006 | backlog | V6 | blocked | Public Release + Announcement Publication Authority |  |
 

@@ -1248,7 +1248,9 @@
     "ops:f100-enterprise-baseline:status": "node systems/ops/f100_enterprise_baseline_gate.js status",
     "test:ops:f100-enterprise-baseline": "node memory/tools/tests/f100_enterprise_baseline_gate.test.js",
     "ops:good-first-issues:seed": "node systems/ops/good_first_issue_seed.js --apply=0",
-    "ops:good-first-issues:publish": "node systems/ops/good_first_issue_seed.js --apply=1"
+    "ops:good-first-issues:publish": "node systems/ops/good_first_issue_seed.js --apply=1",
+    "ops:conduit:edge-matrix": "cargo test -p conduit --no-default-features && cargo test -p conduit --no-default-features --features edge",
+    "test:resource:edge-selector": "cargo test -p resource"
   },
   "bin": {
     "protheus": "./bin/protheus",

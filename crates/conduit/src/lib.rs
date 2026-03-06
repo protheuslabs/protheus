@@ -821,9 +821,7 @@ fn summarize_for_edge_backend(prompt: &str, token_cap: usize) -> String {
     if tokens.len() <= token_cap {
         return tokens.join(" ");
     }
-    let mut clipped = tokens.into_iter().take(token_cap).collect::<Vec<_>>().join(" ");
-    clipped.push_str(" …");
-    clipped
+    tokens.into_iter().take(token_cap).collect::<Vec<_>>().join(" ")
 }
 
 fn clean_lane_id(raw: &str) -> String {

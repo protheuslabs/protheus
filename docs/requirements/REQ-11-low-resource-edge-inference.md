@@ -80,3 +80,13 @@ Out of scope:
 
 - Resource primitive hardware-profile selector for edge fallback routing (`REQ-11-003`).
 - Edge-on/edge-off build matrix proof (`REQ-11-004`).
+
+## Phase-2 Implementation (2026-03-06)
+
+- Implemented in `crates/resource`:
+  - Added constrained-hardware selector (`is_constrained_hardware`) with deterministic thresholds.
+  - Added backend routing receipt (`select_inference_backend`) with explicit override modes for deterministic testing.
+  - Added coverage for constrained/unconstrained/no-MMU and override paths.
+- Added feature-matrix CI:
+  - `.github/workflows/conduit-edge-matrix.yml` now runs conduit tests in both edge-off and edge-on profiles.
+  - Local matrix script added: `npm run -s ops:conduit:edge-matrix`.

@@ -1,0 +1,29 @@
+name: Conduit Edge Feature Matrix
+
+on:
+  pull_request:
+    branches: [main, rust50]
+  push:
+    branches: [main, rust50]
+
+jobs:
+  conduit-feature-matrix:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        profile:
+          - name: edge_off
+            args: "--no-default-features"
+          - name: edge_on
+            args: "--no-default-features --features edge"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Test conduit (${{ matrix.profile.name }})
+        run: cargo test -p conduit ${{ matrix.profile.args }}

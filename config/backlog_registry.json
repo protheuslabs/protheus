@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-06T16:36:56.320Z",
-  "source_hash": "0e661d306ef1fcb287c2472d",
-  "row_count": 1132,
-  "active_count": 98,
-  "archive_count": 1034,
+  "generated_at": "2026-03-06T16:58:27.669Z",
+  "source_hash": "17ea9f034c69e5c152e553a5",
+  "row_count": 1142,
+  "active_count": 102,
+  "archive_count": 1040,
   "rows": [
     {
       "id": "V6-F100-016",
@@ -238,6 +238,76 @@
       "dependencies": []
     },
     {
+      "id": "V6-F100-039",
+      "class": "backlog",
+      "wave": "V6",
+      "status": "done",
+      "title": "F100 baseline reconciliation gate with deterministic receipts",
+      "problem": "External evaluations drift quickly without one executable contract proving which claims are currently true.",
+      "acceptance": "Added `config/f100_enterprise_baseline_contract.json` and `systems/ops/f100_enterprise_baseline_gate.js` (strict/status modes) with state receipt output + markdown status, CI workflow `.github/workflows/f100-enterprise-baseline.yml`, npm scripts, and regression test `memory/tools/tests/f100_enterprise_baseline_gate.test.js`.",
+      "dependencies": []
+    },
+    {
+      "id": "V6-F100-040",
+      "class": "backlog",
+      "wave": "V6",
+      "status": "done",
+      "title": "Enterprise deployment packaging baseline (Helm + Terraform)",
+      "problem": "Raw manifests alone were insufficient for enterprise packaging expectations during procurement review.",
+      "acceptance": "Added Helm chart under `deploy/helm/protheus/` and Terraform Helm module under `deploy/terraform/protheus_helm/` with install/apply docs.",
+      "dependencies": []
+    },
+    {
+      "id": "V6-F100-041",
+      "class": "backlog",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Identity federation adapters (SSO/OAuth2/SCIM) for enterprise control plane",
+      "problem": "Enterprise identity posture requires typed federation adapters and provisioning contracts beyond local-only auth assumptions.",
+      "acceptance": "Implement provider-agnostic identity federation policy + adapters with fail-closed authorization receipts and SCIM lifecycle tests.",
+      "dependencies": []
+    },
+    {
+      "id": "V6-F100-042",
+      "class": "backlog",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Audit-log export adapters for SIEM pipelines (Splunk/ELK/Datadog)",
+      "problem": "Large operators need deterministic export paths to existing observability/compliance systems.",
+      "acceptance": "Implement export contracts + conformance tests for Splunk HEC, Elasticsearch bulk, and Datadog intake with replay-safe receipt pointers.",
+      "dependencies": []
+    },
+    {
+      "id": "V6-F100-043",
+      "class": "backlog",
+      "wave": "V6",
+      "status": "blocked",
+      "title": "External certification and attestation program (SOC2/ISO/FedRAMP/GDPR)",
+      "problem": "Certification evidence requires third-party organizations and legal authority outside autonomous execution.",
+      "acceptance": "Human-governed certification artifacts are attached under `state/ops/evidence/` and linked from `SECURITY.md`; see `HMAN-026` and `HMAN-027`.",
+      "dependencies": []
+    },
+    {
+      "id": "V6-F100-044",
+      "class": "backlog",
+      "wave": "V6",
+      "status": "blocked",
+      "title": "Commercial support/SLA contract lane (enterprise readiness)",
+      "problem": "Support promises and indemnification terms require executive/legal authorization and cannot be auto-issued.",
+      "acceptance": "Approved support envelope evidence exists and is published; see `HMAN-028`.",
+      "dependencies": []
+    },
+    {
+      "id": "V6-F100-045",
+      "class": "backlog",
+      "wave": "V6",
+      "status": "blocked",
+      "title": "Public compliance report publication lane",
+      "problem": "Public certification claims require legal approval plus externally issued evidence artifacts.",
+      "acceptance": "Publish compliance posture report with linked third-party artifacts once `HMAN-026` and `HMAN-027` are complete.",
+      "dependencies": []
+    },
+    {
       "id": "V6-ARCH-001",
       "class": "backlog",
       "wave": "V6",
@@ -271,20 +341,20 @@
       "id": "V6-EDGE-002",
       "class": "backlog",
       "wave": "V6",
-      "status": "queued",
+      "status": "done",
       "title": "Resource-tier backend auto-selection for constrained hardware",
       "problem": "Low-resource deployments need deterministic backend routing without adding runtime compatibility-mode sprawl.",
-      "acceptance": "Implement `REQ-11-003` detection + routing in resource layer with explicit override path and audited selection receipts.",
+      "acceptance": "Implemented `REQ-11-003` in `crates/resource/src/lib.rs` with constrained hardware detection, deterministic backend selection receipts, and explicit override modes (`ForcePrimary`/`ForceEdge`) plus regression tests for low-memory/no-MMU/override paths.",
       "dependencies": []
     },
     {
       "id": "V6-EDGE-003",
       "class": "backlog",
       "wave": "V6",
-      "status": "queued",
+      "status": "done",
       "title": "Edge backend feature-gated build profile integration",
       "problem": "Optional edge backend must remain compile-time controllable and deterministic when disabled.",
-      "acceptance": "Implement `REQ-11-004` feature flags/build matrix with edge-on and edge-off profile checks.",
+      "acceptance": "Implemented `REQ-11-004` by preserving `conduit` feature gate default-off and adding CI matrix `.github/workflows/conduit-edge-matrix.yml` that validates edge-off (`--no-default-features`) and edge-on (`--features edge`) profiles; local script `ops:conduit:edge-matrix` added.",
       "dependencies": []
     },
     {
@@ -13409,7 +13479,7 @@
       "status": "done",
       "title": "Coverage Uplift + Badge Gate",
       "problem": "Test credibility lacked a visible and automated coverage signal.",
-      "acceptance": "Vitest + `cargo llvm-cov` scripts and coverage CI workflow produce combined coverage artifact + badge with threshold gate (`>=70`).",
+      "acceptance": "Vitest + `cargo llvm-cov` scripts and coverage CI workflow produce combined coverage artifact + badge with threshold gate (`>=75`).",
       "dependencies": [
         "V6-GAP-001"
       ]
@@ -13425,6 +13495,40 @@
       "dependencies": [
         "V6-GAP-001"
       ]
+    },
+    {
+      "id": "V6-GAP-004",
+      "class": "launch-polish",
+      "wave": "V6",
+      "status": "done",
+      "title": "Community Starter Issue Pack + Seeder",
+      "problem": "Contributor onboarding still lacked a deterministic “first PR” path with maintainable starter issue definitions.",
+      "acceptance": "Added `docs/community/GOOD_FIRST_ISSUES.md` (10 starter tasks with acceptance criteria/labels), `systems/ops/good_first_issue_seed.js` (dry-run/apply seeding with receipt output), and `CONTRIBUTING.md` wiring.",
+      "dependencies": [
+        "V6-GAP-003"
+      ]
+    },
+    {
+      "id": "V6-GAP-005",
+      "class": "launch-polish",
+      "wave": "V6",
+      "status": "done",
+      "title": "InfRing Launch Announcement Template Pack",
+      "problem": "Launch communication quality was inconsistent and not codified into reusable artifacts.",
+      "acceptance": "Added `docs/announcements/INFRING_LAUNCH_TEMPLATE.md` with X/HN/Reddit templates and internal launch checklist; linked from `README.md`.",
+      "dependencies": [
+        "V6-GAP-003"
+      ]
+    },
+    {
+      "id": "V6-GAP-006",
+      "class": "backlog",
+      "wave": "V6",
+      "status": "blocked",
+      "title": "Public Release + Announcement Publication Authority",
+      "problem": "Final publication (GitHub release, npm publish, public posting) requires maintainer account authority and legal/commercial approval outside autonomous execution.",
+      "acceptance": "Human-owned publication evidence is attached via authority artifacts (`HMAN-028`, `HMAN-029`) and corresponding release/post links are recorded in state evidence.",
+      "dependencies": []
     }
   ]
 }
