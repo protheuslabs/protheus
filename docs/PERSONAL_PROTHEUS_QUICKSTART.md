@@ -30,6 +30,6 @@ Start in `score_only` execution mode until readiness/guard checks are healthy.
 Before contributing or deploying commercially, review:
 
 - `LICENSE`
-- `CONTRIBUTING_TERMS.md`
-- `TERMS_OF_SERVICE.md`
-- `EULA.md`
+- `SECURITY.md`
+- `CONTRIBUTING.md`
+- `legal/archive/` (historical terms retained for audit context)

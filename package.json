@@ -1258,10 +1258,10 @@
     "xml2js": "^0.6.2"
   },
   "name": "openclaw",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Personal automation and orchestration toolkit for macOS/Linux workflows.",
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/protheuslabs/protheus.git"

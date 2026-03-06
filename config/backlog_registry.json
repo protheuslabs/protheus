@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-06T08:06:30Z",
-  "source_hash": "0b45bb837f9490d14047fdea",
-  "row_count": 899,
-  "active_count": 5,
-  "archive_count": 894,
+  "generated_at": "2026-03-06T08:26:26Z",
+  "source_hash": "3573bf42ba412805ff0a4732",
+  "row_count": 909,
+  "active_count": 8,
+  "archive_count": 901,
   "rows": [
     {
       "id": "BL-001",
@@ -11091,6 +11091,133 @@
       "dependencies": [
         "V6-F100-010",
         "V6-CONDUIT-006"
+      ]
+    },
+    {
+      "id": "V6-F100-027",
+      "class": "f100-hardening",
+      "wave": "V6",
+      "status": "done",
+      "title": "Observability metrics hardening (p99 + escalation + cost attribution)",
+      "problem": "Operational dashboard coverage was missing explicit p99 latency, human-escalation pressure, and token-burn cost attribution signals.",
+      "acceptance": "`crates/ops/src/health_status.rs` now emits `receipt_latency_p99_ms`, `human_escalation_open_rate`, and `token_burn_cost_attribution` plus metric-alert wiring in `protheus-ops status --dashboard`.",
+      "dependencies": [
+        "V6-F100-017",
+        "V6-F100-001"
+      ]
+    },
+    {
+      "id": "V6-F100-028",
+      "class": "f100-hardening",
+      "wave": "V6",
+      "status": "done",
+      "title": "Progressive rollout ring evaluator (Rust-authoritative)",
+      "problem": "Rollout phases existed in policy but lacked one deterministic Rust evaluator to decide promote/hold/rollback from ring signals.",
+      "acceptance": "`crates/ops/src/rollout_rings.rs` adds `protheus-ops rollout-rings status|evaluate` with policy-backed progression and rollback actions from `config/rust_lane_canary_rollout_policy.json`.",
+      "dependencies": [
+        "V6-F100-001",
+        "V6-F100-005"
+      ]
+    },
+    {
+      "id": "V6-F100-029",
+      "class": "f100-hardening",
+      "wave": "V6",
+      "status": "done",
+      "title": "Golden dataset + property-style router regression pack",
+      "problem": "Regression safety relied on sparse unit tests without a dedicated golden corpus and invariant checks for router behavior.",
+      "acceptance": "`crates/ops/tests/golden/model_router_cases.json` and `crates/ops/tests/model_router_golden_regression.rs` enforce golden outputs and property-style invariants for role/capability/tier contracts.",
+      "dependencies": [
+        "V6-F100-007",
+        "V6-F100-017"
+      ]
+    },
+    {
+      "id": "V6-F100-030",
+      "class": "f100-hardening",
+      "wave": "V6",
+      "status": "done",
+      "title": "Deterministic router offline fallback plan output",
+      "problem": "Model fallback behavior was implicit and not surfaced as a deterministic contract in router receipts.",
+      "acceptance": "`crates/ops/src/model_router.rs` now emits `route_plan` (`provider_online`, `preferred_model`, `fallback_model`, `selected_model`, `fallback_applied`) in model-router receipts.",
+      "dependencies": [
+        "V6-F100-018"
+      ]
+    },
+    {
+      "id": "V6-F100-031",
+      "class": "f100-hardening",
+      "wave": "V6",
+      "status": "done",
+      "title": "Loop/persona A/B trial evaluator with promotion receipts",
+      "problem": "Variant iteration lacked a dedicated Rust-native evaluator for promote/hold decisions with deterministic receipts.",
+      "acceptance": "`crates/ops/src/ab_lane_eval.rs` adds `protheus-ops ab-lane-eval status|run` with weighted score evaluation, winner selection, and receipts persisted in `state/ops/ab_lane_eval`.",
+      "dependencies": [
+        "V2-027",
+        "V6-F100-001"
+      ]
+    },
+    {
+      "id": "V6-F100-032",
+      "class": "f100-hardening",
+      "wave": "V6",
+      "status": "done",
+      "title": "OSS legal/governance baseline completion",
+      "problem": "Enterprise adoption was blocked by non-OSI licensing and missing standard community governance artifacts.",
+      "acceptance": "Switched to Apache-2.0 (`LICENSE`, `package.json`), added `.github/CODE_OF_CONDUCT.md`, added structured issue/PR templates, and archived legacy proprietary legal docs under `legal/archive/` with config/docs path updates.",
+      "dependencies": [
+        "V6-F100-003",
+        "V6-SEC-006"
+      ]
+    },
+    {
+      "id": "V6-F100-033",
+      "class": "f100-hardening",
+      "wave": "V6",
+      "status": "done",
+      "title": "Release/security automation baseline uplift",
+      "problem": "Release and vulnerability checks were present in parts but lacked a single deterministic baseline for draft release and dependency audits.",
+      "acceptance": "Added `.github/workflows/release.yml` (draft release automation) and `.github/workflows/security-audit.yml` (`npm audit` + `cargo audit`) while preserving SBOM release workflow.",
+      "dependencies": [
+        "V6-F100-003",
+        "V6-F100-007"
+      ]
+    },
+    {
+      "id": "V6-F100-034",
+      "class": "f100-hardening",
+      "wave": "V6",
+      "status": "blocked",
+      "title": "First public semantic release + npm publish",
+      "problem": "Public semantic release remains incomplete without maintainer-side publish credentials and release token execution.",
+      "acceptance": "Tag and publish `v0.2.0` (or next) with release assets and npm package publication visible on GitHub Releases and npm registry.",
+      "dependencies": [
+        "V6-F100-032",
+        "V6-F100-033"
+      ]
+    },
+    {
+      "id": "V6-F100-035",
+      "class": "f100-hardening",
+      "wave": "V6",
+      "status": "queued",
+      "title": "SPDX header sweep across source tree",
+      "problem": "Apache adoption is incomplete without machine-checkable SPDX headers across source files.",
+      "acceptance": "Apply `SPDX-License-Identifier: Apache-2.0` across source files via automated header tool and enforce via CI check.",
+      "dependencies": [
+        "V6-F100-032"
+      ]
+    },
+    {
+      "id": "V6-F100-036",
+      "class": "f100-hardening",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Root experimental folder rationalization",
+      "problem": "Top-level non-production folders still reduce enterprise perception of production readiness.",
+      "acceptance": "Rationalize top-level experimental folders into explicit research/archive zones and update root-surface contracts and docs accordingly.",
+      "dependencies": [
+        "V6-F100-032"
       ]
     }
   ]

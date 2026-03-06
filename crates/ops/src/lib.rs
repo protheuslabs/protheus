@@ -13,6 +13,7 @@ use walkdir::WalkDir;
 
 pub mod autotest_controller;
 pub mod autotest_doctor;
+pub mod ab_lane_eval;
 pub mod autonomy_controller;
 pub mod backlog_runtime_anchor;
 pub mod benchmark_matrix;
@@ -28,6 +29,7 @@ pub mod perception_polish;
 pub mod personas_cli;
 pub mod proposal_enricher;
 pub mod protheusctl;
+pub mod rollout_rings;
 pub mod scale_readiness;
 pub mod spine;
 pub mod state_kernel;

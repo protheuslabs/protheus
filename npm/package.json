@@ -1,8 +1,8 @@
 {
   "name": "protheus",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Thin npm distribution wrapper for the Protheus Rust CLI binary.",
-  "license": "SEE LICENSE IN ../LICENSE",
+  "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/protheuslabs/protheus.git"

@@ -35,6 +35,29 @@ fn flag_value(argv: &[String], key: &str) -> Option<String> {
     None
 }
 
+fn parse_bool_flag(raw: Option<String>, fallback: bool) -> bool {
+    let Some(value) = raw else {
+        return fallback;
+    };
+    match value.trim().to_ascii_lowercase().as_str() {
+        "1" | "true" | "yes" | "on" => true,
+        "0" | "false" | "no" | "off" => false,
+        _ => fallback,
+    }
+}
+
+fn select_route_model(
+    provider_online: bool,
+    preferred_model: &str,
+    fallback_model: &str,
+) -> (String, bool) {
+    if provider_online {
+        (preferred_model.to_string(), false)
+    } else {
+        (fallback_model.to_string(), true)
+    }
+}
+
 pub fn run(root: &Path, args: &[String]) -> i32 {
     let cmd = args
         .first()
@@ -77,6 +100,15 @@ pub fn run(root: &Path, args: &[String]) -> i32 {
     let role = infer_role(&intent, &task);
     let capability = infer_capability(&intent, &task, &role);
     let tier = infer_tier(&risk, &complexity);
+    let provider_online = parse_bool_flag(flag_value(args, "provider-online"), true);
+    let preferred_model = flag_value(args, "preferred-model")
+        .filter(|v| !v.trim().is_empty())
+        .unwrap_or_else(|| "ollama/llama3.2:latest".to_string());
+    let fallback_model = flag_value(args, "fallback-model")
+        .filter(|v| !v.trim().is_empty())
+        .unwrap_or_else(|| "ollama/kimi-k2.5:cloud".to_string());
+    let (selected_model, fallback_applied) =
+        select_route_model(provider_online, &preferred_model, &fallback_model);
 
     let mut out = json!({
         "ok": true,
@@ -92,6 +124,13 @@ pub fn run(root: &Path, args: &[String]) -> i32 {
         "role": role,
         "capability": capability,
         "tier": tier,
+        "route_plan": {
+            "provider_online": provider_online,
+            "preferred_model": preferred_model,
+            "fallback_model": fallback_model,
+            "selected_model": selected_model,
+            "fallback_applied": fallback_applied
+        },
         "claim_evidence": [
             {
                 "id": "native_model_router_lane",
@@ -100,6 +139,14 @@ pub fn run(root: &Path, args: &[String]) -> i32 {
                     "role": role,
                     "capability": capability,
                     "tier": tier
+                }
+            },
+            {
+                "id": "router_offline_fallback_contract",
+                "claim": "router emits deterministic fallback model selection when provider degrades",
+                "evidence": {
+                    "provider_online": provider_online,
+                    "fallback_applied": fallback_applied
                 }
             }
         ],
@@ -3747,5 +3794,25 @@ mod tests {
         assert_eq!(out["guardrails"]["deep_thinker"], true);
         assert_eq!(out["guardrails"]["verification_required"], true);
         assert_eq!(out["post_task_return_model"], 7);
+    }
+
+    #[test]
+    fn parse_bool_flag_matches_truthy_and_falsey_contract() {
+        assert!(parse_bool_flag(Some("1".to_string()), false));
+        assert!(!parse_bool_flag(Some("off".to_string()), true));
+        assert!(parse_bool_flag(Some("unexpected".to_string()), true));
+    }
+
+    #[test]
+    fn select_route_model_applies_fallback_when_provider_offline() {
+        let (preferred, used_fallback_preferred) =
+            select_route_model(true, "ollama/llama3.2:latest", "ollama/kimi-k2.5:cloud");
+        assert_eq!(preferred, "ollama/llama3.2:latest");
+        assert!(!used_fallback_preferred);
+
+        let (fallback, used_fallback) =
+            select_route_model(false, "ollama/llama3.2:latest", "ollama/kimi-k2.5:cloud");
+        assert_eq!(fallback, "ollama/kimi-k2.5:cloud");
+        assert!(used_fallback);
     }
 }

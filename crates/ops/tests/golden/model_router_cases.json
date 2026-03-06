@@ -1,0 +1,38 @@
+[
+  {
+    "intent": "Patch CI bug and refactor rust test",
+    "task": "edit failing file and run test",
+    "risk": "low",
+    "complexity": "medium",
+    "expected_role": "coding",
+    "expected_capability": "file_edit",
+    "expected_tier": 2
+  },
+  {
+    "intent": "Plan quarterly backlog prioritization",
+    "task": "roadmap and ROI sort",
+    "risk": "medium",
+    "complexity": "low",
+    "expected_role": "planning",
+    "expected_capability": "planning",
+    "expected_tier": 2
+  },
+  {
+    "intent": "Parallel agent coordination",
+    "task": "delegate work across swarm",
+    "risk": "high",
+    "complexity": "high",
+    "expected_role": "swarm",
+    "expected_capability": "role:swarm",
+    "expected_tier": 3
+  },
+  {
+    "intent": "Summarize this architecture for chat",
+    "task": "reply with concise explanation",
+    "risk": "low",
+    "complexity": "low",
+    "expected_role": "chat",
+    "expected_capability": "chat",
+    "expected_tier": 1
+  }
+]

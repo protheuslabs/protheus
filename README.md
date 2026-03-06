@@ -2,6 +2,10 @@
 
 [![CI](https://github.com/protheuslabs/protheus/actions/workflows/ci.yml/badge.svg)](https://github.com/protheuslabs/protheus/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/protheuslabs/protheus/actions/workflows/codeql.yml/badge.svg)](https://github.com/protheuslabs/protheus/actions/workflows/codeql.yml)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/protheuslabs/protheus?display_name=tag)](https://github.com/protheuslabs/protheus/releases)
+[![npm version](https://img.shields.io/npm/v/protheus)](https://www.npmjs.com/package/protheus)
+[![Docker](https://img.shields.io/badge/docker-ghcr.io%2Fprotheuslabs%2Fprotheus-blue)](https://github.com/protheuslabs/protheus/pkgs/container/protheus)
 ![Coverage](docs/badges/coverage.svg)
 ![Dependabot](https://img.shields.io/badge/dependabot-enabled-025E8C?logo=dependabot)
 
@@ -300,10 +304,12 @@ The project is operated with explicit documentation and governance contracts:
 ## Contribution Workflow
 
 1. Read [CONTRIBUTING.md](CONTRIBUTING.md).
-2. Keep changes scoped and test-backed.
-3. Run quality gates before PR.
-4. Link measurable claims to evidence per [Claim-Evidence Policy](docs/CLAIM_EVIDENCE_POLICY.md).
-5. Update [CHANGELOG.md](CHANGELOG.md) for user-visible behavior/docs changes.
+2. Follow the [Code of Conduct](.github/CODE_OF_CONDUCT.md).
+3. Keep changes scoped and test-backed.
+4. Run quality gates before PR.
+5. Link measurable claims to evidence per [Claim-Evidence Policy](docs/CLAIM_EVIDENCE_POLICY.md).
+6. Update [CHANGELOG.md](CHANGELOG.md) for user-visible behavior/docs changes.
+7. Use [Bug report](.github/ISSUE_TEMPLATE/bug_report.yml), [Feature request](.github/ISSUE_TEMPLATE/feature_request.yml), and [Pull request](.github/PULL_REQUEST_TEMPLATE.md) templates.
 
 ## Security
 
@@ -313,6 +319,5 @@ The project is operated with explicit documentation and governance contracts:
 ## Legal
 
 - License: [LICENSE](LICENSE)
-- Contribution terms: [CONTRIBUTING_TERMS.md](CONTRIBUTING_TERMS.md)
-- Terms of service: [TERMS_OF_SERVICE.md](TERMS_OF_SERVICE.md)
-- End-user license: [EULA.md](EULA.md)
+- License details: Apache-2.0
+- Archived historical legal docs: [legal/archive](legal/archive)

@@ -1,0 +1,44 @@
+name: Release Draft
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  draft-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve version
+        id: version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Build release binaries
+        run: |
+          cargo build --release --manifest-path crates/ops/Cargo.toml --bin protheus-ops
+
+      - name: Create draft release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Protheus ${{ steps.version.outputs.tag }}
+          body: |
+            Automated draft release generated from `main`.
+
+            Includes:
+            - Rust `protheus-ops` release binary build
+            - CI/checkpoint validation from required workflows
+            - See `CHANGELOG.md` for detailed lane-level deltas

@@ -12,6 +12,10 @@ Thanks for contributing.
    - `npm run test`
 4. Open a pull request and wait for CI + review.
 
+## Community Standards
+
+- [Code of Conduct](.github/CODE_OF_CONDUCT.md)
+
 For full-repository enforcement (same scope as CI), run `npm run ops:format:check`.
 
 ## Required Reading

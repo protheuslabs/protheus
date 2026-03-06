@@ -20,6 +20,10 @@ This project follows a strict evidence-backed changelog model:
 
 ### Changed
 - Replaced root `README.md` with an evidence-first control-plane overview aligned to the Empty Fort artifact standard (operator onboarding, governance surfaces, and quality/security gates mapped to real scripts/docs).
+- OSS readiness uplift:
+  - Apache-2.0 legal posture finalized across root/npm package manifests.
+  - Governance links surfaced in `README.md` (Code of Conduct + issue/PR templates).
+  - Added release-prep version bump to `0.2.0` for first public semantic release gating.
 
 ## [2026-03-02]
 

@@ -1,5 +1,9 @@
 # Security Policy
 
+## License Context
+
+This repository is distributed under Apache-2.0 (`LICENSE`). Archived legacy legal artifacts are kept in `legal/archive/` for historical audit context.
+
 ## Supported Versions
 
 Security maintenance follows the default branch (`main`) and active release artifacts generated from it.

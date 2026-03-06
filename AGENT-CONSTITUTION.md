@@ -1,5 +1,10 @@
 ## AGENT-CONSTITUTION.md
 
+## Licensing
+
+- Repository license: Apache-2.0 (see `LICENSE`)
+- Historical proprietary terms are archived under `legal/archive/` for audit context only.
+
 ## Mind Sovereignty Covenant (Immutable)
 
 1. Mind sovereignty is the highest operational principle.

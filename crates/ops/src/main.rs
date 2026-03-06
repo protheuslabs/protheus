@@ -12,8 +12,10 @@ fn usage() {
     println!("  protheus-ops runtime-efficiency-floor status [--policy=<path>]");
     println!("  protheus-ops benchmark-matrix <run|status> [--snapshot=<path>] [--refresh-runtime=1|0] [--bar-width=44]");
     println!("  protheus-ops model-router <args>");
+    println!("  protheus-ops ab-lane-eval <status|run> [flags]");
     println!("  protheus-ops contract-check <args>");
     println!("  protheus-ops enterprise-hardening <run|status> [--strict=1|0] [--policy=<path>]");
+    println!("  protheus-ops rollout-rings <status|evaluate> [flags]");
     println!("  protheus-ops strategy-mode-governor <args>");
     println!("  protheus-ops status [--dashboard]");
     println!("  protheus-ops backlog-runtime-anchor <build|verify> --lane-id=<V3-RACE-XXX>");
@@ -142,6 +144,11 @@ fn main() {
             let exit = protheus_ops_core::model_router::run(&cwd, &rest);
             std::process::exit(exit);
         }
+        "ab-lane-eval" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::ab_lane_eval::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
         "benchmark-matrix" => {
             let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
             let exit = protheus_ops_core::benchmark_matrix::run(&cwd, &rest);
@@ -155,6 +162,11 @@ fn main() {
         "enterprise-hardening" => {
             let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
             let exit = protheus_ops_core::enterprise_hardening::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "rollout-rings" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::rollout_rings::run(&cwd, &rest);
             std::process::exit(exit);
         }
         "strategy-mode-governor" => {

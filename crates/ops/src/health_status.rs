@@ -508,15 +508,24 @@ fn audit_cron_delivery(root: &Path) -> Value {
     })
 }
 
-fn percentile_95(values: &[f64]) -> Option<f64> {
+fn percentile(values: &[f64], q: f64) -> Option<f64> {
     if values.is_empty() {
         return None;
     }
+    let quantile = if q.is_finite() { q.clamp(0.0, 1.0) } else { 0.5 };
     let mut sorted = values.to_vec();
     sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
-    let idx = ((sorted.len() as f64) * 0.95).ceil() as usize;
+    let idx = ((sorted.len() as f64) * quantile).ceil() as usize;
     let idx = idx.saturating_sub(1).min(sorted.len().saturating_sub(1));
     sorted.get(idx).copied()
+}
+
+fn percentile_95(values: &[f64]) -> Option<f64> {
+    percentile(values, 0.95)
+}
+
+fn percentile_99(values: &[f64]) -> Option<f64> {
+    percentile(values, 0.99)
 }
 
 fn collect_spine_dashboard_metrics(root: &Path) -> Value {
@@ -572,10 +581,16 @@ fn collect_spine_dashboard_metrics(root: &Path) -> Value {
         1.0
     };
     let p95_latency = percentile_95(&latency_ms);
+    let p99_latency = percentile_99(&latency_ms);
 
     let success_status = if success_rate >= 0.999 { "pass" } else { "warn" };
     let latency_status = match p95_latency {
         Some(v) if v < 100.0 => "pass",
+        Some(_) => "warn",
+        None => "warn",
+    };
+    let latency_p99_status = match p99_latency {
+        Some(v) if v < 150.0 => "pass",
         Some(_) => "warn",
         None => "warn",
     };
@@ -594,6 +609,14 @@ fn collect_spine_dashboard_metrics(root: &Path) -> Value {
             "value": p95_latency,
             "target_max": 100.0,
             "status": latency_status,
+            "samples": latency_ms.len(),
+            "files_scanned": files_scanned,
+            "source": "state/spine/runs/*.jsonl"
+        },
+        "receipt_latency_p99_ms": {
+            "value": p99_latency,
+            "target_max": 150.0,
+            "status": latency_p99_status,
             "samples": latency_ms.len(),
             "files_scanned": files_scanned,
             "source": "state/spine/runs/*.jsonl"
@@ -680,6 +703,186 @@ fn collect_assimilation_pain_dashboard_metric(root: &Path) -> Value {
             "samples": total_count,
             "top_sources": top_sources,
             "source": "state/autonomy/pain_signals.jsonl"
+        }
+    })
+}
+
+fn collect_human_escalation_dashboard_metric(root: &Path) -> Value {
+    let escalation_path = root.join("state/security/autonomy_human_escalations.jsonl");
+    let mut latest_status_by_id = BTreeMap::<String, String>::new();
+    let mut total_events = 0usize;
+
+    if let Ok(raw) = fs::read_to_string(&escalation_path) {
+        for line in raw.lines() {
+            let trimmed = line.trim();
+            if trimmed.is_empty() {
+                continue;
+            }
+            let Ok(row) = serde_json::from_str::<Value>(trimmed) else {
+                continue;
+            };
+            if row.get("type").and_then(Value::as_str) != Some("autonomy_human_escalation") {
+                continue;
+            }
+            let escalation_id = row
+                .get("escalation_id")
+                .and_then(Value::as_str)
+                .unwrap_or("")
+                .trim();
+            if escalation_id.is_empty() {
+                continue;
+            }
+            total_events += 1;
+            let status = row
+                .get("status")
+                .and_then(Value::as_str)
+                .unwrap_or("unknown")
+                .to_ascii_lowercase();
+            latest_status_by_id.insert(escalation_id.to_string(), status);
+        }
+    }
+
+    let mut open_count = 0usize;
+    let mut resolved_count = 0usize;
+    for status in latest_status_by_id.values() {
+        match status.as_str() {
+            "open" => open_count += 1,
+            "resolved" => resolved_count += 1,
+            _ => {}
+        }
+    }
+    let total_unique = latest_status_by_id.len();
+    let open_rate = if total_unique > 0 {
+        open_count as f64 / total_unique as f64
+    } else {
+        0.0
+    };
+    let status = if open_rate <= 0.10 { "pass" } else { "warn" };
+
+    json!({
+        "human_escalation_open_rate": {
+            "value": open_rate,
+            "target_max": 0.10,
+            "status": status,
+            "open_count": open_count,
+            "resolved_count": resolved_count,
+            "unique_escalations": total_unique,
+            "events_scanned": total_events,
+            "source": "state/security/autonomy_human_escalations.jsonl"
+        }
+    })
+}
+
+fn value_as_f64(value: Option<&Value>) -> Option<f64> {
+    match value {
+        Some(Value::Number(n)) => n.as_f64(),
+        Some(Value::String(raw)) => raw.trim().parse::<f64>().ok(),
+        _ => None,
+    }
+}
+
+fn collect_token_burn_cost_dashboard_metric(root: &Path) -> Value {
+    let budget_path = root.join("state/autonomy/budget_events.jsonl");
+    let mut latest_day = String::new();
+    let mut tokens_by_day = BTreeMap::<String, f64>::new();
+    let mut module_tokens = BTreeMap::<String, f64>::new();
+    let mut deny_count = 0usize;
+    let mut scanned = 0usize;
+
+    if let Ok(raw) = fs::read_to_string(&budget_path) {
+        for line in raw.lines() {
+            let trimmed = line.trim();
+            if trimmed.is_empty() {
+                continue;
+            }
+            let Ok(row) = serde_json::from_str::<Value>(trimmed) else {
+                continue;
+            };
+            let row_type = row.get("type").and_then(Value::as_str).unwrap_or("");
+            if row_type != "system_budget_record" && row_type != "system_budget_decision" {
+                continue;
+            }
+            scanned += 1;
+            if row_type == "system_budget_decision"
+                && row
+                    .get("decision")
+                    .and_then(Value::as_str)
+                    .map(|v| v.eq_ignore_ascii_case("deny"))
+                    .unwrap_or(false)
+            {
+                deny_count += 1;
+            }
+
+            if row_type != "system_budget_record" {
+                continue;
+            }
+
+            let Some(tokens) = value_as_f64(row.get("tokens_est")) else {
+                continue;
+            };
+            if !tokens.is_finite() || tokens < 0.0 {
+                continue;
+            }
+            let module = row
+                .get("module")
+                .and_then(Value::as_str)
+                .unwrap_or("unknown")
+                .to_string();
+            *module_tokens.entry(module).or_insert(0.0) += tokens;
+
+            if let Some(date) = row.get("date").and_then(Value::as_str) {
+                let date = date.trim();
+                if !date.is_empty() {
+                    *tokens_by_day.entry(date.to_string()).or_insert(0.0) += tokens;
+                    if date > latest_day.as_str() {
+                        latest_day = date.to_string();
+                    }
+                }
+            }
+        }
+    }
+
+    let latest_day_tokens = if latest_day.is_empty() {
+        0.0
+    } else {
+        *tokens_by_day.get(&latest_day).unwrap_or(&0.0)
+    };
+    let assumed_usd_per_million_tokens = 2.0f64;
+    let estimated_cost_usd = (latest_day_tokens / 1_000_000.0) * assumed_usd_per_million_tokens;
+    let status = if latest_day_tokens <= 200_000.0 {
+        "pass"
+    } else {
+        "warn"
+    };
+
+    let mut top_modules = module_tokens
+        .iter()
+        .map(|(module, tokens)| {
+            json!({
+                "module": module,
+                "tokens": (*tokens).round() as i64
+            })
+        })
+        .collect::<Vec<_>>();
+    top_modules.sort_by(|a, b| {
+        let av = a.get("tokens").and_then(Value::as_i64).unwrap_or(0);
+        let bv = b.get("tokens").and_then(Value::as_i64).unwrap_or(0);
+        bv.cmp(&av)
+    });
+    top_modules.truncate(5);
+
+    json!({
+        "token_burn_cost_attribution": {
+            "status": status,
+            "latest_day": if latest_day.is_empty() { Value::Null } else { Value::String(latest_day) },
+            "latest_day_tokens": latest_day_tokens.round() as i64,
+            "target_max_tokens_per_day": 200000,
+            "assumed_usd_per_million_tokens": assumed_usd_per_million_tokens,
+            "estimated_cost_usd": estimated_cost_usd,
+            "deny_decisions": deny_count,
+            "events_scanned": scanned,
+            "top_modules": top_modules,
+            "source": "state/autonomy/budget_events.jsonl"
         }
     })
 }
@@ -797,6 +1000,16 @@ fn collect_dashboard_metrics(root: &Path, cron_audit: &Value) -> Value {
             metrics.insert(k.clone(), v.clone());
         }
     }
+    if let Some(obj) = collect_human_escalation_dashboard_metric(root).as_object() {
+        for (k, v) in obj {
+            metrics.insert(k.clone(), v.clone());
+        }
+    }
+    if let Some(obj) = collect_token_burn_cost_dashboard_metric(root).as_object() {
+        for (k, v) in obj {
+            metrics.insert(k.clone(), v.clone());
+        }
+    }
     if let Some(obj) = collect_pqts_slippage_dashboard_metric(root).as_object() {
         for (k, v) in obj {
             metrics.insert(k.clone(), v.clone());
@@ -852,6 +1065,17 @@ fn status_receipt(root: &Path, cmd: &str, args: &[String], dashboard: bool) -> V
             let status = v.get("status").and_then(Value::as_str).unwrap_or("unknown");
             if status != "pass" {
                 alert_checks.push(k.to_string());
+            }
+        }
+    }
+    if let Some(metric_map) = dashboard_metrics.as_object() {
+        for (metric, payload) in metric_map {
+            let status = payload
+                .get("status")
+                .and_then(Value::as_str)
+                .unwrap_or("unknown");
+            if status != "pass" {
+                alert_checks.push(format!("metric:{metric}"));
             }
         }
     }
@@ -1156,5 +1380,56 @@ mod tests {
                 .unwrap_or("")
                 .contains("missing_delivery_for_enabled_job")
         }));
+    }
+
+    #[test]
+    fn percentile_helpers_cover_p99_path() {
+        let values = vec![10.0, 20.0, 30.0, 40.0, 50.0];
+        assert_eq!(percentile_95(&values), Some(50.0));
+        assert_eq!(percentile_99(&values), Some(50.0));
+        assert_eq!(percentile(&[], 0.50), None);
+    }
+
+    #[test]
+    fn escalation_dashboard_metric_tracks_open_rate() {
+        let root = tempfile::tempdir().expect("tempdir");
+        write_text(
+            root.path(),
+            "state/security/autonomy_human_escalations.jsonl",
+            r#"{"type":"autonomy_human_escalation","escalation_id":"e1","status":"open"}
+{"type":"autonomy_human_escalation","escalation_id":"e2","status":"resolved"}
+"#,
+        );
+        let metric = collect_human_escalation_dashboard_metric(root.path());
+        let payload = metric
+            .get("human_escalation_open_rate")
+            .expect("metric payload");
+        assert_eq!(payload.get("open_count").and_then(Value::as_u64), Some(1));
+        assert_eq!(payload.get("resolved_count").and_then(Value::as_u64), Some(1));
+        assert_eq!(payload.get("status").and_then(Value::as_str), Some("warn"));
+    }
+
+    #[test]
+    fn token_burn_cost_metric_summarizes_budget_events() {
+        let root = tempfile::tempdir().expect("tempdir");
+        write_text(
+            root.path(),
+            "state/autonomy/budget_events.jsonl",
+            r#"{"type":"system_budget_record","date":"2026-03-06","module":"sensory_focus","tokens_est":120}
+{"type":"system_budget_record","date":"2026-03-06","module":"sensory_focus","tokens_est":80}
+{"type":"system_budget_record","date":"2026-03-06","module":"reflex","tokens_est":50}
+{"type":"system_budget_decision","decision":"deny","module":"sensory_focus"}
+"#,
+        );
+        let metric = collect_token_burn_cost_dashboard_metric(root.path());
+        let payload = metric
+            .get("token_burn_cost_attribution")
+            .expect("metric payload");
+        assert_eq!(
+            payload.get("latest_day_tokens").and_then(Value::as_i64),
+            Some(250)
+        );
+        assert_eq!(payload.get("deny_decisions").and_then(Value::as_u64), Some(1));
+        assert_eq!(payload.get("status").and_then(Value::as_str), Some("pass"));
     }
 }

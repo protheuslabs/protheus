@@ -1,11 +1,11 @@
 blank_issues_enabled: false
 contact_links:
   - name: Private security disclosure
-    url: https://github.com/jakerslam/protheus/security/policy
+    url: https://github.com/protheuslabs/protheus/security/policy
     about: Report vulnerabilities privately per SECURITY.md guidance.
   - name: Documentation hub
-    url: https://github.com/jakerslam/protheus/blob/main/docs/README.md
+    url: https://github.com/protheuslabs/protheus/blob/main/docs/README.md
     about: Start here for architecture, runbooks, governance, and policies.
   - name: Public collaboration triage contract
-    url: https://github.com/jakerslam/protheus/blob/main/docs/PUBLIC_COLLABORATION_TRIAGE.md
+    url: https://github.com/protheuslabs/protheus/blob/main/docs/PUBLIC_COLLABORATION_TRIAGE.md
     about: Label taxonomy, triage workflow, and response expectations.
