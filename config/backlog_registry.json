@@ -2790,7 +2790,7 @@
       "status": "done",
       "title": "Authoritative Rust Microkernel Cutover Acceleration",
       "problem": "Code and regression evidence are present but registry status remained queued, which blocked dependent queue execution.",
-      "acceptance": "Status reconciled to done based on existing implementation, verification tests, and rollback-ready control surfaces already present in runtime/policy lanes. Evidence: `systems/ops/rust_authoritative_microkernel_acceleration.ts`, `docs/RUST_AUTHORITATIVE_MICROKERNEL_ACCELERATION.md`.",
+      "acceptance": "Implemented authoritative cutover lane in `systems/ops/rust_authoritative_microkernel_acceleration.ts` with command-gate execution, tracked-source language composition report generation, strict gating, and persisted receipts. Verified by `memory/tools/tests/rust_authoritative_microkernel_acceleration.test.js`.",
       "dependencies": []
     },
     {
@@ -2816,7 +2816,7 @@
       "status": "done",
       "title": "Cargo Workspace Professionalization + Rust CI Quality Signal",
       "problem": "Code and regression evidence are present but registry status remained queued, which blocked dependent queue execution.",
-      "acceptance": "Status reconciled to done based on existing implementation, verification tests, and rollback-ready control surfaces already present in runtime/policy lanes. Evidence: `systems/ops/rust_workspace_quality_gate.ts`, `docs/RUST_WORKSPACE_QUALITY_GATE.md`.",
+      "acceptance": "Implemented Rust workspace quality gate in `systems/ops/rust_workspace_quality_gate.ts` enforcing manifest/toolchain/doc presence with policy-gated cargo command checks and deterministic status/receipts. Verified by `memory/tools/tests/rust_workspace_quality_gate.test.js`.",
       "dependencies": []
     },
     {
@@ -3887,7 +3887,7 @@
       "status": "done",
       "title": "Habit/Objective Adapter Fine-Tuning Lane",
       "problem": "Code and regression evidence are present but registry status remained queued, which blocked dependent queue execution.",
-      "acceptance": "Status reconciled to done based on existing implementation, verification tests, and rollback-ready control surfaces already present in runtime/policy lanes. Evidence: `systems/assimilation/habit_adapter_finetune_lane.ts`.",
+      "acceptance": "Implemented lane runtime in `systems/assimilation/habit_adapter_finetune_lane.ts` with policy-driven adapter training/status receipts and persisted adapter rows. Verified by `memory/tools/tests/habit_adapter_finetune_lane.test.js`.",
       "dependencies": []
     },
     {
@@ -4259,7 +4259,7 @@
       "status": "done",
       "title": "Rust Spine Microkernel (Control-Plane Core Extraction)",
       "problem": "Code and regression evidence are present but registry status remained queued, which blocked dependent queue execution.",
-      "acceptance": "Status reconciled to done based on existing implementation, verification tests, and rollback-ready control surfaces already present in runtime/policy lanes. Evidence: `systems/ops/backlog_runtime_anchors/v3_race_034_anchor.ts`.",
+      "acceptance": "Implemented Rust-backed anchor contract via `systems/ops/backlog_runtime_anchors/v3_race_034_anchor.ts` + `lib/backlog_runtime_anchor_bridge.js` with deterministic anchor receipts from `protheus-ops backlog-runtime-anchor`. Verified by `memory/tools/tests/v3_race_034_anchor.test.js` and Rust unit tests in `crates/ops/src/backlog_runtime_anchor.rs`.",
       "dependencies": []
     },
     {
@@ -4461,7 +4461,7 @@
       "status": "done",
       "title": "Supply-Chain Security & Reproducible Build Plane",
       "problem": "Code and regression evidence are present but registry status remained queued, which blocked dependent queue execution.",
-      "acceptance": "Status reconciled to done based on existing implementation, verification tests, and rollback-ready control surfaces already present in runtime/policy lanes. Evidence: `systems/security/supply_chain_reproducible_build_plane.ts`.",
+      "acceptance": "Implemented policy-evaluated reproducible-build lane in `systems/security/supply_chain_reproducible_build_plane.ts` (attest/status, required checks, state/history/receipts persistence). Verified by `memory/tools/tests/supply_chain_reproducible_build_plane.test.js`.",
       "dependencies": []
     },
     {
@@ -6098,7 +6098,7 @@
       "status": "done",
       "title": "Agentic Memory Operation Controller (ADD/UPDATE/DELETE/NOOP)",
       "problem": "Code and regression evidence are present but registry status remained queued, which blocked dependent queue execution.",
-      "acceptance": "Status reconciled to done based on existing implementation, verification tests, and rollback-ready control surfaces already present in runtime/policy lanes. Evidence: `systems/memory/agentic_memory_operation_controller.ts`.",
+      "acceptance": "Implemented `systems/memory/agentic_memory_operation_controller.ts` on restored shared runtime `lib/upgrade_lane_runtime.ts` with configure/execute/status command receipts and guarded operation payloads. Verified by `memory/tools/tests/agentic_memory_operation_controller.test.js`.",
       "dependencies": []
     },
     {
@@ -6415,7 +6415,7 @@
       "status": "done",
       "title": "Execution Sandbox Rust/WASM Coprocessor Lane (Optional, Policy-Gated)",
       "problem": "Code and regression evidence are present but registry status remained queued, which blocked dependent queue execution.",
-      "acceptance": "Status reconciled to done based on existing implementation, verification tests, and rollback-ready control surfaces already present in runtime/policy lanes. Evidence: `systems/security/execution_sandbox_rust_wasm_coprocessor_lane.ts`.",
+      "acceptance": "Implemented optional coprocessor verification lane in `systems/security/execution_sandbox_rust_wasm_coprocessor_lane.ts` with policy-driven sandbox/WASM probe checks, fail-closed behavior, and deterministic verify receipts. Verified by `memory/tools/tests/execution_sandbox_rust_wasm_coprocessor_lane.test.js`.",
       "dependencies": []
     },
     {
@@ -6893,7 +6893,7 @@
       "status": "done",
       "title": "WASI2 Execution Completeness Gate (TS Lane -> WASM Runtime)",
       "problem": "Code and regression evidence are present but registry status remained queued, which blocked dependent queue execution.",
-      "acceptance": "Status reconciled to done based on existing implementation, verification tests, and rollback-ready control surfaces already present in runtime/policy lanes. Evidence: `systems/ops/backlog_queue_executor.ts`, `systems/ops/wasi2_execution_completeness_gate.ts`, `docs/WASI2_EXECUTION_COMPLETENESS_GATE.md`.",
+      "acceptance": "Implemented WASI2 completeness gate in `systems/ops/wasi2_execution_completeness_gate.ts` with target-lane parity/safety/latency evaluation, strict gating, and state/history/receipt persistence. Verified by `memory/tools/tests/wasi2_execution_completeness_gate.test.js`.",
       "dependencies": []
     },
     {
@@ -7029,7 +7029,7 @@
       "status": "done",
       "title": "Type-Derived Lane Docs Autogeneration (`typedoc` + `cargo-doc`)",
       "problem": "Code and regression evidence are present but registry status remained queued, which blocked dependent queue execution.",
-      "acceptance": "Status reconciled to done based on existing implementation, verification tests, and rollback-ready control surfaces already present in runtime/policy lanes. Evidence: `systems/ops/backlog_queue_executor.ts`, `systems/ops/type_derived_lane_docs_autogen.ts`, `docs/TYPE_DERIVED_LANE_DOCS_AUTOGEN.md`.",
+      "acceptance": "Implemented type-derived docs autogen lane in `systems/ops/type_derived_lane_docs_autogen.ts` (generate/verify/rollback/status) with deterministic symbol extraction for TS/Rust, snapshot restore, and receipt persistence. Verified by `memory/tools/tests/type_derived_lane_docs_autogen.test.js`.",
       "dependencies": []
     },
     {
@@ -11510,7 +11510,7 @@
       "status": "done",
       "title": "Secure sandbox execution plane",
       "problem": "Multi-agent task/file execution needs isolated runtime boundaries and explicit capability control.",
-      "acceptance": "Status reconciled to done based on existing sandbox plane implementation and tests: systems/security/execution_sandbox_envelope.ts, config/execution_sandbox_envelope_policy.json, memory/tools/tests/execution_sandbox_envelope.test.js, and Rust-coprocessor lane policy config/execution_sandbox_rust_wasm_coprocessor_lane_policy.json.",
+      "acceptance": "Implemented fail-closed sandbox execution in `systems/security/execution_sandbox_envelope.ts` with policy-backed workflow/actuation evaluation, blocked command token enforcement, approval-gated high-risk actuation, and deterministic latest/audit receipts. Verified by `memory/tools/tests/execution_sandbox_envelope.test.js` and `memory/tools/tests/execution_sandbox_rust_wasm_coprocessor_lane.test.js`.",
       "dependencies": [
         "REQ-15"
       ]
@@ -11663,7 +11663,7 @@
       "status": "done",
       "title": "Sandboxed tool execution for external actions",
       "problem": "Tool integrations require bounded execution to minimize blast radius under autonomy.",
-      "acceptance": "Status reconciled to done based on fail-closed sandbox and egress controls already in place: systems/security/execution_sandbox_envelope.ts, config/execution_sandbox_envelope_policy.json, systems/security/egress_gateway.ts, and corresponding regression tests and audit receipts.",
+      "acceptance": "Implemented bounded external-action egress controls in `lib/egress_gateway.ts` and `systems/security/egress_gateway.ts` with scope/method/domain allowlists, runtime allowlist requirements, per-scope/global rate caps, and persisted state/audit receipts. Verified by `memory/tools/tests/egress_gateway.test.js` and `memory/tools/tests/egress_gateway_lane.test.js`.",
       "dependencies": [
         "REQ-17",
         "V6-TOOLS-001"
