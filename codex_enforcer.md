@@ -34,6 +34,8 @@ Completion requires all of the following:
 - Report `.rs` vs `.ts` lines from tracked files.
 - Treat the 50% Rust target as repository-wide source composition, not core-only subsets.
 - Do not inflate Rust percentage with stubs/scaffolding.
+- Do not migrate `adaptive/**` into Rust unless the path is under `systems/adaptive/**`.
+- Keep user-flex surfaces (`habits`, `reflexes`, `eyes` user-specific paths) non-Rust by default unless explicitly approved.
 
 ## Behavior-Preserving Migration Rules
 - Preserve existing behavior unless a breaking change is explicitly requested.

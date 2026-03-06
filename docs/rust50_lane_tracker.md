@@ -1274,3 +1274,51 @@ Persistent lane-by-lane migration log so progress is preserved outside chat cont
 - systems/ops/low_urgency_batch_execution_lane.ts
 - systems/fractal/mutator.ts
 - systems/security/wasm_capability_microkernel.ts
+
+## Completed In This Continuation (Top-40 Kernel TS Lanes -> Rust Runtime Delegation)
+- Timestamp: 2026-03-06 (America/Denver)
+- Scope guard: no migration in adaptive/ root; only systems/adaptive allowed; user-flex surfaces remain non-Rust by policy.
+- Execution mode: each lane converted to Rust `legacy-retired-lane` runtime delegation wrapper with deterministic receipts.
+- Gate evidence: cargo test/clippy + formal invariants + live lane receipt samples.
+
+### Lanes
+- `systems/assimilation/assimilation_controller.ts`
+- `systems/continuum/continuum_core.ts`
+- `systems/sensory/focus_controller.ts`
+- `systems/weaver/weaver_core.ts`
+- `systems/identity/identity_anchor.ts`
+- `systems/dual_brain/coordinator.ts`
+- `lib/strategy_resolver.ts`
+- `lib/duality_seed.ts`
+- `systems/autonomy/pain_signal.ts`
+- `systems/budget/system_budget.ts`
+- `systems/security/guard.ts`
+- `systems/echo/heroic_echo_controller.ts`
+- `systems/helix/helix_controller.ts`
+- `systems/assimilation/group_evolving_agents_primitive.ts`
+- `systems/autonomy/self_documentation_closeout.ts`
+- `lib/directive_resolver.ts`
+- `systems/redteam/ant_colony_controller.ts`
+- `systems/attribution/value_attribution_primitive.ts`
+- `systems/assimilation/capability_profile_compiler.ts`
+- `systems/autonomy/multi_agent_debate_orchestrator.ts`
+- `systems/primitives/long_horizon_planning_primitive.ts`
+- `systems/sensory/temporal_patterns.ts`
+- `systems/autonomy/ethical_reasoning_organ.ts`
+- `systems/adaptive/core/layer_store.ts`
+- `systems/adaptive/sensory/eyes/focus_trigger_store.ts`
+- `systems/assimilation/memory_evolution_primitive.ts`
+- `systems/weaver/arbitration_engine.ts`
+- `systems/echo/input_purification_gate.ts`
+- `systems/assimilation/test_time_memory_evolution_primitive.ts`
+- `systems/assimilation/collective_reasoning_primitive.ts`
+- `systems/assimilation/context_navigation_primitive.ts`
+- `systems/assimilation/environment_evolution_layer.ts`
+- `systems/assimilation/generative_meta_model_primitive.ts`
+- `systems/spine/spine_safe_launcher.ts`
+- `systems/assimilation/generative_simulation_mode.ts`
+- `systems/sensory/collector_driver.ts`
+- `systems/assimilation/adaptive_ensemble_routing_primitive.ts`
+- `systems/assimilation/self_teacher_distillation_primitive.ts`
+- `systems/assimilation/candidacy_ledger.ts`
+- `systems/weaver/monoculture_guard.ts`
