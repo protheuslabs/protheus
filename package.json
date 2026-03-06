@@ -1246,7 +1246,9 @@
     "coverage:all": "npm run -s coverage:ts && npm run -s coverage:rust && npm run -s coverage:merge",
     "ops:f100-enterprise-baseline": "node systems/ops/f100_enterprise_baseline_gate.js run --strict=1 --write=1",
     "ops:f100-enterprise-baseline:status": "node systems/ops/f100_enterprise_baseline_gate.js status",
-    "test:ops:f100-enterprise-baseline": "node memory/tools/tests/f100_enterprise_baseline_gate.test.js"
+    "test:ops:f100-enterprise-baseline": "node memory/tools/tests/f100_enterprise_baseline_gate.test.js",
+    "ops:good-first-issues:seed": "node systems/ops/good_first_issue_seed.js --apply=0",
+    "ops:good-first-issues:publish": "node systems/ops/good_first_issue_seed.js --apply=1"
   },
   "bin": {
     "protheus": "./bin/protheus",

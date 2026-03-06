@@ -40,6 +40,25 @@ For full-repository enforcement (same scope as CI), run `npm run ops:format:chec
 - [Bug Report Template](.github/ISSUE_TEMPLATE/bug_report.md)
 - [Feature Request Template](.github/ISSUE_TEMPLATE/feature_request.md)
 - [Security Report Template](.github/ISSUE_TEMPLATE/security_report.md)
+- [Good First Issues Pack](docs/community/GOOD_FIRST_ISSUES.md)
+
+## Good First Issues
+
+If you are new to the repo, start with the curated starter pack:
+
+- [Good First Issues (10 scoped tasks)](docs/community/GOOD_FIRST_ISSUES.md)
+
+Maintainers can seed GitHub issues from this pack with labels:
+
+```bash
+node systems/ops/good_first_issue_seed.js --apply=1
+```
+
+Dry-run (no GitHub writes):
+
+```bash
+node systems/ops/good_first_issue_seed.js --apply=0
+```
 
 ## Commit Style
 

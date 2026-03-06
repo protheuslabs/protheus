@@ -41,6 +41,8 @@ Purpose: capture high-impact tasks that cannot be executed autonomously from bac
 | HMAN-027 | Approve regulated-market certification strategy (FedRAMP/GDPR attestation scope) | Requires legal/compliance ownership over jurisdictional obligations and external filing commitments | `state/ops/evidence/regulated_certification_scope_<date>.md` | `V6-F100-043`, `V6-F100-045` |
 | HMAN-028 | Approve enterprise commercial support envelope (SLA tiers, indemnity, support contact) | Requires executive and legal authority for contractual promises and liability boundaries | `state/ops/evidence/enterprise_support_envelope_<date>.md` | `V6-F100-044` |
 | HMAN-029 | Approve release authority model for public cadence (tagging, notes, emergency revocation) | Requires maintainer identity custody and governance sign-off for public release ownership | `state/ops/evidence/release_authority_model_<date>.md` | `V6-F100-034`, `V6-COMP-005` |
+| HMAN-030 | Publish `v0.2.0` release artifacts to GitHub Releases and npm | Requires maintainer token custody, package publication authority, and public release accountability | `state/ops/evidence/v0_2_0_public_release_links_<date>.md` | `V6-F100-034`, `V6-SEC-001`, `V6-GAP-006` |
+| HMAN-031 | Post public launch announcements (X/HN/Reddit) using approved messaging | Requires brand/legal authority and external account ownership | `state/ops/evidence/infring_launch_posts_<date>.md` | `V6-GAP-005`, `V6-GAP-006` |
 
 ## Non-Negotiable Constraint
 

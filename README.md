@@ -268,6 +268,8 @@ The project is operated with explicit documentation and governance contracts:
 - [Getting Started](docs/GETTING_STARTED.md)
 - [Security Posture](docs/SECURITY_POSTURE.md)
 - [Security Policy](SECURITY.md)
+- [Good First Issues](docs/community/GOOD_FIRST_ISSUES.md)
+- [InfRing Launch Announcement Template](docs/announcements/INFRING_LAUNCH_TEMPLATE.md)
 - [Onboarding Playbook](docs/ONBOARDING_PLAYBOOK.md)
 - [Developer Lane Quickstart](docs/DEVELOPER_LANE_QUICKSTART.md)
 - [Help](docs/HELP.md)

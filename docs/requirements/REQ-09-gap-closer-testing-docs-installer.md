@@ -24,6 +24,7 @@ Close the highest-visibility completeness gaps with a focused implementation wav
   - Vitest coverage and Rust `cargo llvm-cov` are wired in scripts/CI.
   - Combined coverage artifact is generated with a coverage badge.
   - README displays a coverage badge.
+  - CI coverage gate enforces `combined_lines_pct >= 75`.
 
 3. `REQ-09-003` Architecture and onboarding polish
 - Acceptance:
