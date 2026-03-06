@@ -10,6 +10,7 @@ fn usage() {
     println!("Usage:");
     println!("  protheus-ops runtime-efficiency-floor run [--strict=1|0] [--policy=<path>]");
     println!("  protheus-ops runtime-efficiency-floor status [--policy=<path>]");
+    println!("  protheus-ops benchmark-matrix <run|status> [--snapshot=<path>] [--refresh-runtime=1|0] [--bar-width=44]");
     println!("  protheus-ops model-router <args>");
     println!("  protheus-ops contract-check <args>");
     println!("  protheus-ops enterprise-hardening <run|status> [--strict=1|0] [--policy=<path>]");
@@ -139,6 +140,11 @@ fn main() {
         "model-router" => {
             let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
             let exit = protheus_ops_core::model_router::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "benchmark-matrix" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::benchmark_matrix::run(&cwd, &rest);
             std::process::exit(exit);
         }
         "contract-check" => {

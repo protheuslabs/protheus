@@ -16,6 +16,7 @@ pub mod autotest_controller;
 pub mod autotest_doctor;
 pub mod autonomy_controller;
 pub mod backlog_runtime_anchor;
+pub mod benchmark_matrix;
 pub mod enterprise_hardening;
 pub mod legacy_retired_lane;
 pub mod contract_check;

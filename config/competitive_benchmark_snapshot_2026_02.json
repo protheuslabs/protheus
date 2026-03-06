@@ -1,0 +1,59 @@
+{
+  "schema_id": "competitive_benchmark_snapshot",
+  "schema_version": "1.0",
+  "reference_month": "2026-02",
+  "generated_from": "official documentation and public repositories",
+  "benchmark_context": "All external competitor values are reference snapshot values from February 2026.",
+  "projects": {
+    "ZeroClaw": {
+      "cold_start_ms": 10.0,
+      "idle_memory_mb": 5.0,
+      "install_size_mb": 8.8,
+      "security_systems": 6.0,
+      "channel_adapters": 15.0,
+      "llm_providers": 28.0
+    },
+    "OpenFang": {
+      "cold_start_ms": 180.0,
+      "idle_memory_mb": 40.0,
+      "install_size_mb": 32.0,
+      "security_systems": 16.0,
+      "channel_adapters": 40.0,
+      "llm_providers": 27.0,
+      "highlight": true
+    },
+    "LangGraph": {
+      "cold_start_ms": 2500.0,
+      "idle_memory_mb": 180.0,
+      "install_size_mb": 150.0,
+      "security_systems": 2.0,
+      "channel_adapters": 0.0,
+      "llm_providers": 15.0
+    },
+    "CrewAI": {
+      "cold_start_ms": 3000.0,
+      "idle_memory_mb": 200.0,
+      "install_size_mb": 100.0,
+      "security_systems": 1.0,
+      "channel_adapters": 0.0,
+      "llm_providers": 10.0
+    },
+    "AutoGen": {
+      "cold_start_ms": 4000.0,
+      "idle_memory_mb": 250.0,
+      "install_size_mb": 200.0,
+      "security_systems": 2.0,
+      "channel_adapters": 0.0,
+      "llm_providers": 8.0
+    },
+    "OpenClaw": {
+      "cold_start_ms": 5980.0,
+      "idle_memory_mb": 394.0,
+      "install_size_mb": 500.0,
+      "security_systems": 3.0,
+      "channel_adapters": 13.0,
+      "llm_providers": 10.0,
+      "reference_only": true
+    }
+  }
+}
