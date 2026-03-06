@@ -1,0 +1,39 @@
+{
+  "schema_id": "distributed_runtime_proof_contract",
+  "schema_version": "1.0",
+  "mode": "fail_closed",
+  "profiles": {
+    "active_passive": {
+      "enabled": true,
+      "description": "Primary/standby failover profile with deterministic replay validation."
+    },
+    "active_active": {
+      "enabled": true,
+      "description": "Dual-active profile with quorum conflict protection and deterministic merge policy."
+    }
+  },
+  "objectives": {
+    "rto_seconds_max": 300,
+    "rpo_seconds_max": 60
+  },
+  "gates": {
+    "p95_ms_max": 120,
+    "p99_ms_max": 250,
+    "error_budget_burn_ratio_max": 1.0,
+    "consistency_violations_max": 0
+  },
+  "drills": {
+    "node_loss_monthly": true,
+    "failback_monthly": true,
+    "split_brain_quorum_drill_monthly": true
+  },
+  "outputs": {
+    "latest_path": "state/ops/distributed_runtime_proof/latest.json",
+    "history_path": "state/ops/distributed_runtime_proof/history.jsonl"
+  },
+  "rollback": {
+    "fallback_profile": "single_node_safe",
+    "command": "protheus-ops scale-readiness run --strict=1 --profile=single_node_safe",
+    "verification_required": true
+  }
+}

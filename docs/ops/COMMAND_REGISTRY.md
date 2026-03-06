@@ -134,6 +134,7 @@ Generated: 2026-03-05T04:02:38.454Z
 | `forge:dissolve` | platform | general | 2 | policy.default_metadata |
 | `forge:promote` | platform | general | 2 | policy.default_metadata |
 | `forge:run` | platform | general | 2 | policy.default_metadata |
+| `formal:invariants:ensure-typescript` | security | formal | 3 | policy.groups |
 | `formal:invariants:run` | security | formal | 3 | policy.groups |
 | `foundation:contract` | platform | governance | 2 | policy.groups |
 | `foundation:scale-envelope` | platform | governance | 2 | policy.groups |

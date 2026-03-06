@@ -419,13 +419,12 @@ fn audit_cron_delivery(root: &Path) -> Value {
 
         let delivery = job.get("delivery").and_then(Value::as_object);
         if delivery.is_none() {
-            if session_target == "isolated" {
-                issues.push(json!({
-                    "id": id,
-                    "name": name,
-                    "reason": "missing_delivery_for_isolated"
-                }));
-            }
+            issues.push(json!({
+                "id": id,
+                "name": name,
+                "reason": "missing_delivery_for_enabled_job",
+                "session_target": session_target
+            }));
             continue;
         }
 
@@ -831,6 +830,29 @@ mod tests {
                 .and_then(Value::as_str)
                 .unwrap_or("")
                 .contains("delivery_mode_none_forbidden")
+        }));
+    }
+
+    #[test]
+    fn cron_missing_delivery_is_rejected_for_enabled_jobs() {
+        let root = tempfile::tempdir().expect("tempdir");
+        write_text(
+            root.path(),
+            CRON_JOBS_REL,
+            r#"{"jobs":[{"id":"j1","name":"job","enabled":true,"sessionTarget":"main"}]}"#,
+        );
+
+        let audit = audit_cron_delivery(root.path());
+        assert_eq!(audit.get("ok").and_then(Value::as_bool), Some(false));
+        let issues = audit
+            .get("issues")
+            .and_then(Value::as_array)
+            .expect("issues");
+        assert!(issues.iter().any(|row| {
+            row.get("reason")
+                .and_then(Value::as_str)
+                .unwrap_or("")
+                .contains("missing_delivery_for_enabled_job")
         }));
     }
 }

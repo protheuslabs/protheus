@@ -20,9 +20,12 @@ Supported deterministic invariant types:
 ## Commands
 
 ```bash
-node systems/security/formal_invariant_engine.js run --strict=1
+npm run -s formal:invariants:run
+node systems/security/formal_invariants_bootstrap.js run --strict=1
 node systems/security/formal_invariant_engine.js status
 ```
+
+`formal:invariants:run` now auto-installs `typescript` (`npm install --no-save typescript`) when missing, so clean validation worktrees do not fail on bootstrap.
 
 ## Outputs
 

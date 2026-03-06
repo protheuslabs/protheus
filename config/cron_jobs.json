@@ -8,6 +8,7 @@
       "sessionTarget": "main",
       "wakeMode": "next-heartbeat",
       "payload": { "kind": "systemEvent", "text": "MOLTCHECK: Browse Moltbook feed, upvote interesting posts or add relevant comments. Stay active per 4h heartbeat rule. Report activity." },
+      "delivery": { "mode": "announce", "channel": "last" },
       "enabled": true,
       "id": "5f453976-52dc-44d6-821d-686bfd5cf5bf"
     },
@@ -37,6 +38,7 @@
       "sessionTarget": "main",
       "wakeMode": "next-heartbeat",
       "payload": { "kind": "systemEvent", "text": "Reminder: It's Sunday 6PM. Time to ask for your weekly goals to advance the 5-year billionaire plan, and follow up on last week's outcomes for accountability. Remember: leadership goes both ways. (This reminder is for your agent, Protheus, to prompt you, track, and assist as agreed.)" },
+      "delivery": { "mode": "announce", "channel": "last" },
       "enabled": true,
       "id": "70569979-d9cf-4ad9-819f-9709d6e278a9"
     },

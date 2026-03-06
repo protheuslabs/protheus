@@ -107,4 +107,4 @@ Expected output contract:
 
 ## Backlog Mapping
 
-This requirement document operationalizes the queued Fortune controls `V6-F100-001..V6-F100-012` by converting them into one enforceable hardening surface while preserving existing lane-specific implementations.
+This requirement document operationalizes the queued Fortune controls `V6-F100-001..V6-F100-015` by converting them into one enforceable hardening surface while preserving existing lane-specific implementations.

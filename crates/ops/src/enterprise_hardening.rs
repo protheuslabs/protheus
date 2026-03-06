@@ -89,11 +89,12 @@ fn check_cron_delivery_integrity(root: &Path, path_rel: &str) -> Result<(bool, V
             .to_ascii_lowercase();
         let delivery = job.get("delivery").and_then(Value::as_object);
 
-        if target == "isolated" && delivery.is_none() {
+        if delivery.is_none() {
             issues.push(json!({
                 "id": id,
                 "name": name,
-                "reason": "isolated_missing_delivery"
+                "reason": "missing_delivery_for_enabled_job",
+                "session_target": target
             }));
             continue;
         }
@@ -486,6 +487,22 @@ mod tests {
             .expect("audit");
         assert!(!ok);
         assert!(details.to_string().contains("delivery_mode_none_forbidden"));
+    }
+
+    #[test]
+    fn cron_integrity_rejects_missing_delivery_for_enabled_jobs() {
+        let tmp = tempfile::tempdir().expect("tmp");
+        write_text(
+            tmp.path(),
+            "config/cron_jobs.json",
+            r#"{"jobs":[{"id":"j1","name":"x","enabled":true,"sessionTarget":"main"}]}"#,
+        );
+        let (ok, details) = check_cron_delivery_integrity(tmp.path(), "config/cron_jobs.json")
+            .expect("audit");
+        assert!(!ok);
+        assert!(details
+            .to_string()
+            .contains("missing_delivery_for_enabled_job"));
     }
 
     #[test]

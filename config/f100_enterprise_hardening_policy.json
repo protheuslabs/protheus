@@ -236,6 +236,75 @@
         "bridge_message_budget_max",
         "rate_limit.per_client_max"
       ]
+    },
+    {
+      "id": "f100_distributed_runtime_proof_contract",
+      "title": "Distributed runtime proof contract defines failover and soak release gates",
+      "type": "json_fields",
+      "path": "config/scale_readiness/distributed_runtime_proof_contract.json",
+      "required_fields": [
+        "mode",
+        "profiles.active_passive.enabled",
+        "profiles.active_active.enabled",
+        "objectives.rto_seconds_max",
+        "objectives.rpo_seconds_max",
+        "gates.p95_ms_max",
+        "gates.p99_ms_max",
+        "gates.error_budget_burn_ratio_max",
+        "gates.consistency_violations_max",
+        "drills.node_loss_monthly",
+        "drills.failback_monthly",
+        "outputs.latest_path",
+        "outputs.history_path"
+      ]
+    },
+    {
+      "id": "f100_formal_security_review_program",
+      "title": "Formal security review program defines independent cadence and closure SLAs",
+      "type": "json_fields",
+      "path": "config/security_review_program_policy.json",
+      "required_fields": [
+        "cadence_days",
+        "threat_model.path",
+        "independent_review.minimum_reviewers",
+        "independent_review.checklist_path",
+        "remediation_sla_days.critical",
+        "remediation_sla_days.high",
+        "release_block.block_on_open_severity",
+        "release_block.exception_expiry_days",
+        "outputs.latest_path",
+        "outputs.history_path"
+      ]
+    },
+    {
+      "id": "f100_adr_enforcement_gate",
+      "title": "ADR enforcement policy binds architecture-impacting changes to traceable decisions",
+      "type": "json_fields",
+      "path": "config/adr_enforcement_policy.json",
+      "required_fields": [
+        "adr_index_path",
+        "adr_directory",
+        "enforcement.require_for_paths",
+        "enforcement.required_sections",
+        "enforcement.allowed_statuses",
+        "enforcement.fail_on_missing_adr_link",
+        "enforcement.fail_on_stale_adr",
+        "outputs.latest_path",
+        "outputs.history_path"
+      ]
+    },
+    {
+      "id": "f100_adr_enforcement_runbook",
+      "title": "ADR enforcement runbook documents status transitions and CI gate behavior",
+      "type": "file_contains_all",
+      "path": "docs/ADR_ENFORCEMENT_POLICY.md",
+      "required_tokens": [
+        "proposed",
+        "accepted",
+        "superseded",
+        "fail-closed",
+        "architecture-impacting changes"
+      ]
     }
   ]
 }
