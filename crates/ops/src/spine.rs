@@ -28,6 +28,7 @@ struct LedgerWriter {
     date: String,
     run_id: String,
     seq: u64,
+    last_type: Option<String>,
 }
 
 fn stable_hash(seed: &str, len: usize) -> String {
@@ -248,12 +249,21 @@ impl LedgerWriter {
             date: date.to_string(),
             run_id: run_id.to_string(),
             seq: 0,
+            last_type: None,
         }
+    }
+
+    fn last_type(&self) -> Option<&str> {
+        self.last_type.as_deref()
     }
 
     fn append(&mut self, mut evt: Value) {
         self.seq = self.seq.saturating_add(1);
         if let Some(map) = evt.as_object_mut() {
+            let evt_type = map
+                .get("type")
+                .and_then(Value::as_str)
+                .map(|s| s.to_string());
             map.insert("run_id".to_string(), Value::String(self.run_id.clone()));
             map.insert("ledger_seq".to_string(), Value::Number(self.seq.into()));
             if !map.contains_key("ts") {
@@ -261,6 +271,9 @@ impl LedgerWriter {
             }
             if !map.contains_key("date") {
                 map.insert("date".to_string(), Value::String(self.date.clone()));
+            }
+            if let Some(t) = evt_type {
+                self.last_type = Some(t);
             }
         }
 
@@ -383,6 +396,16 @@ struct TerminalReceiptContext<'a> {
     constitution_ok: bool,
     evidence_plan: &'a Value,
     evidence_ok: i64,
+    started_ms: i64,
+}
+
+fn build_resource_snapshot(started_ms: i64) -> Value {
+    let now_ms = chrono::Utc::now().timestamp_millis();
+    let elapsed_ms = (now_ms - started_ms).max(0);
+    json!({
+        "pid": std::process::id(),
+        "uptime_sec": (elapsed_ms as f64) / 1000.0
+    })
 }
 
 fn emit_terminal_receipt(
@@ -391,6 +414,9 @@ fn emit_terminal_receipt(
     ok: bool,
     failure_reason: Option<&str>,
 ) -> i32 {
+    let now_ms = chrono::Utc::now().timestamp_millis();
+    let elapsed_ms = (now_ms - context.started_ms).max(0);
+    let terminal_step = ledger.last_type().unwrap_or("spine_run_started").to_string();
     let mut receipt = json!({
         "ok": ok,
         "type": if ok { "spine_run_complete" } else { "spine_run_failed" },
@@ -398,6 +424,9 @@ fn emit_terminal_receipt(
         "run_id": context.run_id,
         "mode": context.cli.mode,
         "date": context.cli.date,
+        "elapsed_ms": elapsed_ms,
+        "terminal_step": terminal_step,
+        "resource_snapshot": build_resource_snapshot(context.started_ms),
         "claim_evidence": build_claim_evidence(
             context.constitution_hash,
             context.constitution_ok,
@@ -530,9 +559,10 @@ fn execute_native(root: &Path, cli: &CliArgs) -> i32 {
         std::env::set_var("CLEARANCE", "3");
     }
 
+    let run_started_ms = chrono::Utc::now().timestamp_millis();
     let run_id = format!(
         "spine_{}_{}",
-        to_base36(chrono::Utc::now().timestamp_millis() as u64),
+        to_base36(run_started_ms as u64),
         std::process::id()
     );
 
@@ -575,6 +605,7 @@ fn execute_native(root: &Path, cli: &CliArgs) -> i32 {
                 constitution_ok,
                 evidence_plan: &evidence_plan,
                 evidence_ok,
+                started_ms: run_started_ms,
             },
             false,
             Some("constitution_integrity_failed"),
@@ -601,6 +632,7 @@ fn execute_native(root: &Path, cli: &CliArgs) -> i32 {
                 constitution_ok,
                 evidence_plan: &evidence_plan,
                 evidence_ok,
+                started_ms: run_started_ms,
             },
             false,
             Some("guard_failed"),
@@ -632,6 +664,7 @@ fn execute_native(root: &Path, cli: &CliArgs) -> i32 {
                 constitution_ok,
                 evidence_plan: &evidence_plan,
                 evidence_ok,
+                started_ms: run_started_ms,
             },
             false,
             Some(&reason),
@@ -666,6 +699,7 @@ fn execute_native(root: &Path, cli: &CliArgs) -> i32 {
                         constitution_ok,
                         evidence_plan: &evidence_plan,
                         evidence_ok,
+                        started_ms: run_started_ms,
                     },
                     false,
                     Some(&reason),
@@ -735,6 +769,7 @@ fn execute_native(root: &Path, cli: &CliArgs) -> i32 {
                     constitution_ok,
                     evidence_plan: &evidence_plan,
                     evidence_ok,
+                    started_ms: run_started_ms,
                 },
                 false,
                 Some(&reason),
@@ -866,6 +901,7 @@ fn execute_native(root: &Path, cli: &CliArgs) -> i32 {
                         constitution_ok,
                         evidence_plan: &evidence_plan,
                         evidence_ok,
+                        started_ms: run_started_ms,
                     },
                     false,
                     Some(&reason),
@@ -884,6 +920,7 @@ fn execute_native(root: &Path, cli: &CliArgs) -> i32 {
             constitution_ok,
             evidence_plan: &evidence_plan,
             evidence_ok,
+            started_ms: run_started_ms,
         },
         true,
         None,

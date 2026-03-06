@@ -1,36 +1,250 @@
 #!/usr/bin/env node
 'use strict';
+export {};
 
 /**
- * Runtime lane for SYSTEMS-OPS-PERSONAL-PROTHEUS-INSTALLER.
- * Native execution delegated to Rust legacy-retired-lane runtime.
+ * personal_protheus_installer.js
+ *
+ * One-command bootstrap for a local "Personal Protheus" experience.
+ * Installs config/state scaffolding without shipping model artifacts.
+ *
+ * Usage:
+ *   node systems/ops/personal_protheus_installer.js install [--profile=personal_default] [--workspace=/abs/path] [--dry-run] [--accept-terms=1] [--operator-id=<id>] [--approval-note="..."]
+ *   node systems/ops/personal_protheus_installer.js status
  */
 
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
+const { cmdCheck: termsCheckCmd, cmdAccept: termsAcceptCmd, cmdStatus: termsStatusCmd } = require('../security/operator_terms_ack.js');
 
-function findRepoRoot(startDir) {
-  let dir = path.resolve(startDir || process.cwd());
-  while (true) {
-    if (fs.existsSync(path.join(dir, 'Cargo.toml')) && fs.existsSync(path.join(dir, 'crates', 'ops', 'Cargo.toml'))) {
-      return dir;
+const ROOT = path.resolve(__dirname, '..', '..');
+const OUT_DIR = process.env.PERSONAL_PROTHEUS_STATE_DIR
+  ? path.resolve(process.env.PERSONAL_PROTHEUS_STATE_DIR)
+  : path.join(ROOT, 'state', 'ops', 'personal_protheus');
+const MANIFEST_PATH = path.join(OUT_DIR, 'install_manifest.json');
+const PROFILE_PATH = path.join(OUT_DIR, 'profile.json');
+
+function usage() {
+  console.log('Usage:');
+  console.log('  node systems/ops/personal_protheus_installer.js install [--profile=personal_default] [--workspace=/abs/path] [--dry-run] [--accept-terms=1] [--operator-id=<id>] [--approval-note="..."]');
+  console.log('  node systems/ops/personal_protheus_installer.js status');
+}
+
+function parseArgs(argv) {
+  const out = { _: [] };
+  for (const arg of argv) {
+    if (!String(arg || '').startsWith('--')) {
+      out._.push(String(arg || ''));
+      continue;
     }
-    const parent = path.dirname(dir);
-    if (parent === dir) return process.cwd();
-    dir = parent;
+    const idx = arg.indexOf('=');
+    if (idx === -1) out[String(arg || '').slice(2)] = true;
+    else out[String(arg || '').slice(2, idx)] = String(arg || '').slice(idx + 1);
+  }
+  return out;
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function cleanText(v, maxLen = 180) {
+  return String(v == null ? '' : v).replace(/\s+/g, ' ').trim().slice(0, maxLen);
+}
+
+function normalizeToken(v, maxLen = 80) {
+  return String(v == null ? '' : v)
+    .trim()
+    .toLowerCase()
+    .slice(0, maxLen)
+    .replace(/[^a-z0-9_.:-]+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
+
+function boolFlag(v, fallback = false) {
+  if (v == null) return fallback;
+  const raw = String(v).trim().toLowerCase();
+  if (['1', 'true', 'yes', 'on'].includes(raw)) return true;
+  if (['0', 'false', 'no', 'off'].includes(raw)) return false;
+  return fallback;
+}
+
+function ensureDir(dirPath) {
+  fs.mkdirSync(dirPath, { recursive: true });
+}
+
+function readJson(filePath, fallback) {
+  try {
+    if (!fs.existsSync(filePath)) return fallback;
+    const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    return parsed == null ? fallback : parsed;
+  } catch {
+    return fallback;
   }
 }
 
-const ROOT = findRepoRoot(__dirname);
-const { createLaneModule } = require(path.join(ROOT, 'lib', 'legacy_retired_lane_bridge.js'));
-
-const lane = createLaneModule('SYSTEMS-OPS-PERSONAL-PROTHEUS-INSTALLER', ROOT);
-const { LANE_ID, buildLaneReceipt, verifyLaneReceipt } = lane;
-
-module.exports = lane;
-
-if (require.main === module) {
-  console.log(JSON.stringify(buildLaneReceipt(), null, 2));
+function writeJsonAtomic(filePath, value) {
+  ensureDir(path.dirname(filePath));
+  const tmpPath = `${filePath}.tmp-${process.pid}-${Date.now()}`;
+  fs.writeFileSync(tmpPath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+  fs.renameSync(tmpPath, filePath);
 }
 
-export {};
+function relPath(filePath) {
+  return path.relative(ROOT, filePath).replace(/\\/g, '/');
+}
+
+function checks(workspace) {
+  const required = [
+    'systems/spine/spine.js',
+    'systems/autonomy/autonomy_controller.js',
+    'systems/security/guard.js',
+    'config/strategies/default.json',
+    'package.json'
+  ];
+  const rows = required.map((relativePath) => ({
+    path: relativePath,
+    exists: fs.existsSync(path.join(workspace, relativePath))
+  }));
+  const passed = rows.every((row) => row.exists === true);
+  return { passed, rows };
+}
+
+function profileTemplate(profileId, workspace) {
+  return {
+    schema_id: 'personal_protheus_profile',
+    schema_version: '1.0.0',
+    profile_id: profileId,
+    workspace,
+    user: process.env.USER || null,
+    host: os.hostname(),
+    created_at: nowIso(),
+    startup: {
+      command: 'node systems/spine/spine.js daily',
+      notes: 'Use score_only until readiness + guard checks are green.'
+    },
+    defaults: {
+      strategy_mode: 'score_only',
+      workflow_layer_enabled: true,
+      observer_mirror_enabled: true,
+      collective_shadow_enabled: true
+    }
+  };
+}
+
+function installCmd(args) {
+  const workspace = path.resolve(String(args.workspace || ROOT));
+  const profileId = normalizeToken(args.profile || 'personal_default', 80) || 'personal_default';
+  const dryRun = args['dry-run'] === true || boolFlag(args.dry_run, false);
+  const acceptTerms = boolFlag(args['accept-terms'] || args.accept_terms, false);
+  const operatorId = normalizeToken(args['operator-id'] || args.operator_id || process.env.USER || os.hostname(), 120) || 'unknown_operator';
+  const approvalNote = cleanText(args['approval-note'] || args.approval_note || '', 220) || null;
+  const termsPolicy = cleanText(args['terms-policy'] || args.terms_policy || '', 320) || null;
+  const preflight = checks(workspace);
+  const termsCheckInitial = termsCheckCmd({
+    strict: false,
+    policy: termsPolicy || undefined
+  });
+  let termsAcceptance = null;
+  let termsCheckFinal = termsCheckInitial;
+  if (termsCheckInitial && termsCheckInitial.ok !== true && acceptTerms) {
+    termsAcceptance = termsAcceptCmd({
+      apply: dryRun ? 0 : 1,
+      policy: termsPolicy || undefined,
+      'operator-id': operatorId,
+      'approval-note': approvalNote || 'installer_terms_accept'
+    });
+    termsCheckFinal = termsCheckCmd({
+      strict: false,
+      policy: termsPolicy || undefined
+    });
+  }
+  const manifest = {
+    ok: preflight.passed && termsCheckFinal && termsCheckFinal.ok === true,
+    type: 'personal_protheus_install',
+    ts: nowIso(),
+    profile_id: profileId,
+    workspace,
+    dry_run: dryRun,
+    preflight,
+    terms: {
+      accepted: termsCheckFinal && termsCheckFinal.ok === true,
+      check: termsCheckFinal || null,
+      acceptance: termsAcceptance
+    }
+  };
+
+  if (!preflight.passed || !(termsCheckFinal && termsCheckFinal.ok === true)) {
+    process.stdout.write(`${JSON.stringify({
+      ...manifest,
+      error: !preflight.passed ? 'preflight_failed' : 'operator_terms_ack_required',
+      next_command: !preflight.passed
+        ? null
+        : 'node systems/security/operator_terms_ack.js accept --operator-id=<id> --approval-note="..."'
+    })}\n`);
+    process.exit(1);
+  }
+
+  if (!dryRun) {
+    ensureDir(OUT_DIR);
+    const profile = profileTemplate(profileId, workspace);
+    writeJsonAtomic(PROFILE_PATH, profile);
+    writeJsonAtomic(MANIFEST_PATH, {
+      ...manifest,
+      profile_path: relPath(PROFILE_PATH)
+    });
+  }
+
+  process.stdout.write(`${JSON.stringify({
+    ...manifest,
+    profile_path: dryRun ? null : relPath(PROFILE_PATH),
+    manifest_path: dryRun ? null : relPath(MANIFEST_PATH)
+  })}\n`);
+}
+
+function statusCmd() {
+  const profile = readJson(PROFILE_PATH, null);
+  const manifest = readJson(MANIFEST_PATH, null);
+  const terms = termsStatusCmd({});
+  process.stdout.write(`${JSON.stringify({
+    ok: true,
+    type: 'personal_protheus_status',
+    installed: !!(profile && manifest),
+    profile_id: profile ? profile.profile_id || null : null,
+    workspace: profile ? profile.workspace || null : null,
+    created_at: profile ? profile.created_at || null : null,
+    manifest_ts: manifest ? manifest.ts || null : null,
+    terms: terms && typeof terms === 'object' ? {
+      accepted: terms.accepted === true,
+      current_terms_version: terms.current_terms_version || null
+    } : null
+  })}\n`);
+}
+
+function main() {
+  const args = parseArgs(process.argv.slice(2));
+  const cmd = String(args._[0] || '').trim().toLowerCase();
+  if (!cmd || cmd === 'help' || cmd === '--help' || cmd === '-h') {
+    usage();
+    return;
+  }
+  if (cmd === 'install') return installCmd(args);
+  if (cmd === 'status') return statusCmd();
+  usage();
+  process.exitCode = 2;
+}
+
+if (require.main === module) {
+  try {
+    main();
+  } catch (err) {
+    process.stdout.write(`${JSON.stringify({
+      ok: false,
+      type: 'personal_protheus_installer',
+      error: cleanText(err && err.message ? err.message : err || 'personal_protheus_installer_failed', 240)
+    })}\n`);
+    process.exit(1);
+  }
+}

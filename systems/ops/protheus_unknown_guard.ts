@@ -1,36 +1,95 @@
 #!/usr/bin/env node
 'use strict';
+export {};
 
-/**
- * Runtime lane for SYSTEMS-OPS-PROTHEUS-UNKNOWN-GUARD.
- * Native execution delegated to Rust legacy-retired-lane runtime.
- */
-
-const fs = require('fs');
 const path = require('path');
+const { spawnSync } = require('child_process');
+const { buildManifest } = require('./protheus_command_list.js');
+const { bestSuggestions, colorize, supportsColor } = require('./cli_ui.js');
 
-function findRepoRoot(startDir) {
-  let dir = path.resolve(startDir || process.cwd());
-  while (true) {
-    if (fs.existsSync(path.join(dir, 'Cargo.toml')) && fs.existsSync(path.join(dir, 'crates', 'ops', 'Cargo.toml'))) {
-      return dir;
-    }
-    const parent = path.dirname(dir);
-    if (parent === dir) return process.cwd();
-    dir = parent;
-  }
+const ROOT = path.resolve(__dirname, '..', '..');
+const CONTROL_PLANE = path.join(ROOT, 'systems', 'ops', 'protheus_control_plane.js');
+
+function cleanText(v: unknown, maxLen = 240) {
+  return String(v == null ? '' : v).replace(/\s+/g, ' ').trim().slice(0, maxLen);
 }
 
-const ROOT = findRepoRoot(__dirname);
-const { createLaneModule } = require(path.join(ROOT, 'lib', 'legacy_retired_lane_bridge.js'));
+function extractKnownCommands() {
+  const manifest = buildManifest();
+  const fromManifest = Array.from(new Set(
+    (manifest.categories || [])
+      .flatMap((category: any) => (category.commands || []).map((row: any) => String(row.command || '').trim()))
+      .filter(Boolean)
+  ));
+  const passthrough = [
+    'start',
+    'stop',
+    'restart',
+    'top',
+    'job-submit',
+    'job-runner',
+    'job-cancel',
+    'incident',
+    'release-promote',
+    'release-rollback',
+    'registry-install',
+    'registry-uninstall',
+    'registry-enable',
+    'registry-disable',
+    'registry-list',
+    'auth-guard',
+    'reseal-auto',
+    'event-guard',
+    'routing-reconcile',
+    'deprecations-check',
+    'backlog-validate',
+    'backlog-allocate',
+    'doctor-init',
+    'doctor-bundle',
+    'cli-contract',
+    'warm-snapshot',
+    'idle-governor',
+    'audit'
+  ];
+  return Array.from(new Set([...fromManifest, ...passthrough]));
+}
 
-const lane = createLaneModule('SYSTEMS-OPS-PROTHEUS-UNKNOWN-GUARD', ROOT);
-const { LANE_ID, buildLaneReceipt, verifyLaneReceipt } = lane;
+function printSuggestion(cmd: string, known: string[]) {
+  const suggestions = bestSuggestions(cmd, known, 3);
+  if (suggestions.length) {
+    const header = supportsColor()
+      ? colorize('warn', `Unknown command \`${cmd}\`.`)
+      : `Unknown command \`${cmd}\`.`;
+    process.stderr.write(`${header} Did you mean: ${suggestions.map((s: string) => `\`${s}\``).join(', ')}?\n`);
+  } else if (cmd) {
+    process.stderr.write(`Unknown command \`${cmd}\`.\n`);
+  }
+  process.stderr.write('Try `protheus list` to view all available commands.\n');
+}
 
-module.exports = lane;
+function main() {
+  const argv = process.argv.slice(2);
+  const cmd = cleanText(argv[0] || '', 120);
+  const rest = argv.slice(1);
+  const known = extractKnownCommands();
+  if (cmd && !known.includes(cmd)) {
+    printSuggestion(cmd, known);
+    process.exit(2);
+  }
+
+  const run = spawnSync(process.execPath, [CONTROL_PLANE, cmd, ...rest], {
+    cwd: ROOT,
+    encoding: 'utf8'
+  });
+  if (run.stdout) process.stdout.write(run.stdout);
+  if (run.stderr) process.stderr.write(run.stderr);
+
+  const status = Number.isFinite(run.status) ? Number(run.status) : 1;
+  if (status === 0) process.exit(0);
+  printSuggestion(cmd, known);
+  process.exit(status);
+}
 
 if (require.main === module) {
-  console.log(JSON.stringify(buildLaneReceipt(), null, 2));
+  main();
 }
-
-export {};
