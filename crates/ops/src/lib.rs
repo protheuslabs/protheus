@@ -26,6 +26,7 @@ pub mod inversion_controller;
 pub mod health_status;
 pub mod model_router;
 pub mod perception_polish;
+pub mod persona_schema_contract;
 pub mod personas_cli;
 pub mod proposal_enricher;
 pub mod protheusctl;

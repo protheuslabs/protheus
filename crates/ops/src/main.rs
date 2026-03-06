@@ -29,6 +29,7 @@ fn usage() {
     println!("  protheus-ops autotest-doctor <command> [flags]");
     println!("  protheus-ops autonomy-proposal-enricher <command> [flags]");
     println!("  protheus-ops spine <mode> [date] [flags]");
+    println!("  protheus-ops persona-schema-contract <validate|status> [--strict=1|0] [--schema-mode=<id>] [--payload=<json>|--input=<path>]");
     println!("  protheus-ops protheusctl <command> [flags]");
     println!("  protheus-ops personas-cli <command> [flags]");
     println!("  protheus-ops workflow-executor <command> [flags]");
@@ -232,6 +233,11 @@ fn main() {
         "spine" => {
             let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
             let exit = protheus_ops_core::spine::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "persona-schema-contract" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::persona_schema_contract::run(&cwd, &rest);
             std::process::exit(exit);
         }
         "protheusctl" => {

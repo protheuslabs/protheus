@@ -11457,10 +11457,10 @@
       "id": "V6-RUNTIME-001",
       "class": "runtime-hardening",
       "wave": "V6",
-      "status": "queued",
+      "status": "done",
       "title": "Strict schema enforcement for persona/lens outputs",
       "problem": "Structured output support exists but still needs strict fail-closed validation coverage across all persona/lens paths.",
-      "acceptance": "Implement REQ-14-001 strict output contracts with deterministic reject receipts on schema violations.",
+      "acceptance": "Implement REQ-14-001 strict output contracts with deterministic reject receipts on schema violations. Delivered via crates/ops/src/persona_schema_contract.rs and CLI integration in protheus-ops main entrypoint.",
       "dependencies": [
         "REQ-14"
       ]

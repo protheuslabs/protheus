@@ -26,6 +26,11 @@ Out of scope:
   - Persona/lens command outputs are validated against explicit schemas in strict mode.
   - Invalid outputs fail closed with deterministic error receipts.
   - CLI exposes schema mode and validation result metadata.
+- Implementation (2026-03-06):
+  - Rust lane: `crates/ops/src/persona_schema_contract.rs`
+  - CLI surface: `protheus-ops persona-schema-contract <validate|status>`
+  - Deterministic fail-closed receipts + state artifact at `state/ops/persona_schema_contract/latest.json`
+  - Coverage: unit tests in `crates/ops/src/persona_schema_contract.rs`
 
 2. `REQ-14-002` Per-shadow budget governance
 - Acceptance:
