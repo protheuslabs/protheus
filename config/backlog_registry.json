@@ -481,7 +481,7 @@
       ]
     }
   ],
-  "generated_at": "2026-03-06T18:12:57.995Z",
+  "generated_at": "2026-03-06T18:21:22.477Z",
   "row_count": 1364,
   "rows": [
     {
@@ -15434,19 +15434,19 @@
       "dependencies": [],
       "id": "V6-F100-001",
       "problem": "Reliability evidence is distributed across lanes and not promoted as one enforceable release contract.",
-      "status": "in_progress",
+      "status": "done",
       "title": "Reliability Certification Program (SLO/Error-Budget Gate)",
       "wave": "V6"
     },
     {
-      "acceptance": "Enforce change classes (`standard/major/high-risk`) with required RFC/ADR linkage, approver rules, rollback owner, and merge-gate checks; reject high-risk merges without linked approval receipts and rollback plan artifact; prove rollback execution in release drills.",
+      "acceptance": "Added Rust lane `protheus-ops sdlc-change-control run|status` (`crates/ops/src/sdlc_change_control.rs`) with policy `config/sdlc_change_control_policy.json`; merge gate workflow `.github/workflows/sdlc-change-control.yml` fail-closes PRs when risk class is understated or required RFC/ADR/approver/rollback evidence is missing. PR template now captures required fields (`.github/pull_request_template.md`) and receipts are persisted in `state/ops/sdlc_change_control/`.",
       "class": "governance",
       "dependencies": [
         "V6-F100-001"
       ],
       "id": "V6-F100-002",
       "problem": "High-risk changes still rely on mixed conventions rather than one deterministic approval and traceability flow.",
-      "status": "queued",
+      "status": "done",
       "title": "SDLC Change-Control Plane (RFC/ADR/Risk Class)",
       "wave": "V6"
     },

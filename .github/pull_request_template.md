@@ -12,8 +12,14 @@
 
 ## Risk + Rollback
 
-- Risk class: `standard` / `major` / `high-risk`
+- Risk class: standard
+- RFC link:
+- ADR link:
+- Rollback owner:
 - Rollback plan:
+- Approvers:
+- Approval receipts:
+- Rollback drill receipt:
 
 ## Evidence
 

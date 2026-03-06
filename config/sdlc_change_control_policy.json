@@ -1,0 +1,32 @@
+{
+  "schema_id": "sdlc_change_control_policy",
+  "schema_version": "1.0",
+  "strict_default": true,
+  "required_approvers_major": 1,
+  "required_approvers_high_risk": 2,
+  "require_rfc_for_major": true,
+  "require_adr_for_high_risk": true,
+  "require_rollback_drill_for_high_risk": true,
+  "require_approval_receipts_for_major": true,
+  "high_risk_path_prefixes": [
+    "crates/security/",
+    "crates/conduit/",
+    "systems/security/",
+    "systems/autonomy/",
+    "systems/memory/",
+    "config/protheus_conduit_policy.json",
+    "config/rust_source_of_truth_policy.json",
+    ".github/workflows/"
+  ],
+  "major_path_prefixes": [
+    "crates/ops/",
+    "systems/ops/",
+    "systems/assimilation/",
+    "config/",
+    "docs/requirements/"
+  ],
+  "outputs": {
+    "latest_path": "state/ops/sdlc_change_control/latest.json",
+    "history_path": "state/ops/sdlc_change_control/history.jsonl"
+  }
+}

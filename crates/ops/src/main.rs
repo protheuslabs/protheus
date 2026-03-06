@@ -12,6 +12,7 @@ fn usage() {
     println!("  protheus-ops runtime-efficiency-floor status [--policy=<path>]");
     println!("  protheus-ops benchmark-matrix <run|status> [--snapshot=<path>] [--refresh-runtime=1|0] [--bar-width=44]");
     println!("  protheus-ops f100-reliability-certification <run|status> [--strict=1|0] [--policy=<path>]");
+    println!("  protheus-ops sdlc-change-control <run|status> [--strict=1|0] [--policy=<path>] [--pr-body-path=<path>] [--changed-paths-path=<path>]");
     println!("  protheus-ops model-router <args>");
     println!("  protheus-ops ab-lane-eval <status|run> [flags]");
     println!("  protheus-ops contract-check <args>");
@@ -172,6 +173,11 @@ fn main() {
         "f100-reliability-certification" => {
             let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
             let exit = protheus_ops_core::f100_reliability_certification::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "sdlc-change-control" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::sdlc_change_control::run(&cwd, &rest);
             std::process::exit(exit);
         }
         "contract-check" => {

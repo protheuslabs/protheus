@@ -1,6 +1,6 @@
 # Backlog Active View
 
-Generated: 2026-03-06T18:12:57.995Z
+Generated: 2026-03-06T18:21:22.477Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
@@ -33,8 +33,6 @@ Generated: 2026-03-06T18:12:57.995Z
 | V6-COMP-005 | backlog | V6 | blocked | Public multi-release cadence target (9+ tags) |  |
 | V6-EDGE-004 | backlog | V6 | queued | Edge lifecycle validation + substrate-swap proof |  |
 | V6-EDGE-005 | backlog | V6 | blocked | Third-party license and source-ingest decision for edge backend |  |
-| V6-F100-001 | hardening | V6 | in_progress | Reliability Certification Program (SLO/Error-Budget Gate) |  |
-| V6-F100-002 | governance | V6 | queued | SDLC Change-Control Plane (RFC/ADR/Risk Class) | V6-F100-001 |
 | V6-F100-003 | hardening | V6 | queued | Secure Supply-Chain Provenance v2 (SBOM + Signed Artifacts) | V6-F100-002 |
 | V6-F100-004 | governance | V6 | queued | Compliance Evidence Automation (SOC2/ISO Audit Bundle) | V6-F100-002, V6-F100-003 |
 | V6-F100-005 | scale-readiness | V6 | queued | 1M-User Performance Certification Harness | V6-F100-001, V6-F100-003 |

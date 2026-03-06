@@ -1,6 +1,6 @@
 # Backlog Archive View
 
-Generated: 2026-03-06T18:12:57.995Z
+Generated: 2026-03-06T18:21:22.477Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
@@ -1000,6 +1000,8 @@ Generated: 2026-03-06T18:12:57.995Z
 | V6-EDGE-001 | backlog | V6 | done | Conduit edge provider adapter (`edge_inference`/`edge_status`) |  |
 | V6-EDGE-002 | backlog | V6 | done | Resource-tier backend auto-selection for constrained hardware |  |
 | V6-EDGE-003 | backlog | V6 | done | Edge backend feature-gated build profile integration |  |
+| V6-F100-001 | hardening | V6 | done | Reliability Certification Program (SLO/Error-Budget Gate) |  |
+| V6-F100-002 | governance | V6 | done | SDLC Change-Control Plane (RFC/ADR/Risk Class) | V6-F100-001 |
 | V6-F100-016 | backlog | V6 | done | Cron delivery announce/main hardening |  |
 | V6-F100-017 | backlog | V6 | done | Rust status dashboard SLO metrics expansion |  |
 | V6-F100-018 | backlog | V6 | done | Model recovery fallback policy for degraded families |  |

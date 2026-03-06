@@ -1,0 +1,44 @@
+name: SDLC Change Control
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+jobs:
+  sdlc-change-control:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build changed-path + PR-body inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p state/ops/sdlc_change_control
+
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+
+          git diff --name-only "$BASE_SHA" "$HEAD_SHA" > state/ops/sdlc_change_control/changed_paths.txt
+
+          cat > state/ops/sdlc_change_control/pr_body.md <<'PRBODY'
+${{ github.event.pull_request.body }}
+PRBODY
+
+      - name: Enforce SDLC change-control gate
+        run: |
+          cargo run --quiet --manifest-path crates/ops/Cargo.toml --bin protheus-ops -- \
+            sdlc-change-control run --strict=1 \
+            --policy=config/sdlc_change_control_policy.json \
+            --pr-body-path=state/ops/sdlc_change_control/pr_body.md \
+            --changed-paths-path=state/ops/sdlc_change_control/changed_paths.txt

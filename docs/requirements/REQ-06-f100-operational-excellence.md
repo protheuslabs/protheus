@@ -104,11 +104,15 @@ Acceptance: scheduled secret-rotation attestation job exists in `config/cron_job
 26. `REQ-06-026` Memory continuity index maintenance must be operationalized.
 Acceptance: `memory/tools/rebuild_exclusive.js` is part of the recurring operational schedule and produces refreshed index artifacts without archive leakage.
 
+27. `REQ-06-027` SDLC risk-class governance must be fail-closed at merge time.
+Acceptance: `protheus-ops sdlc-change-control run --strict=1` rejects PRs that understate risk class or lack required RFC/ADR/approver/rollback evidence for `major`/`high-risk` changes.
+
 ## Enforcement
 
 Runtime gate:
 - `protheus-ops enterprise-hardening run --strict=1`
 - `protheus-ops f100-reliability-certification run --strict=1`
+- `protheus-ops sdlc-change-control run --strict=1`
 
 Policy file:
 - `config/f100_enterprise_hardening_policy.json`
@@ -123,6 +127,7 @@ Expected output contract:
 
 `Required Checks` must execute this gate on every protected merge path:
 - `cargo run --quiet --manifest-path crates/ops/Cargo.toml --bin protheus-ops -- enterprise-hardening run --strict=1`
+- `cargo run --quiet --manifest-path crates/ops/Cargo.toml --bin protheus-ops -- sdlc-change-control run --strict=1 --policy=config/sdlc_change_control_policy.json --pr-body-path=state/ops/sdlc_change_control/pr_body.md --changed-paths-path=state/ops/sdlc_change_control/changed_paths.txt`
 
 ## Backlog Mapping
 
