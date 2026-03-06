@@ -11469,10 +11469,10 @@
       "id": "V6-RUNTIME-002",
       "class": "runtime-hardening",
       "wave": "V6",
-      "status": "queued",
+      "status": "done",
       "title": "Per-shadow budget governance layer",
       "problem": "Global budgets exist, but fairness and isolation require shadow-level token/compute quota enforcement.",
-      "acceptance": "Implement REQ-14-002 per-shadow budget policy plus runtime enforcement plus receipt telemetry.",
+      "acceptance": "Implement REQ-14-002 per-shadow budget policy plus runtime enforcement plus receipt telemetry. Delivered via config/shadow_budget_governance_policy.json and crates/ops/src/shadow_budget_governance.rs with CLI integration.",
       "dependencies": [
         "REQ-14",
         "BL-023"

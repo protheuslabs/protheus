@@ -1,0 +1,26 @@
+{
+  "schema_id": "shadow_budget_governance_policy",
+  "schema_version": "1.0",
+  "global_token_budget": 100000,
+  "global_compute_budget_ms": 60000,
+  "system_reserved_token_budget": 12000,
+  "system_reserved_compute_budget_ms": 8000,
+  "default_shadow_token_budget": 18000,
+  "default_shadow_compute_budget_ms": 12000,
+  "burst_multiplier": 1.5,
+  "shadow_overrides": {
+    "research_shadow": {
+      "token_budget": 22000,
+      "compute_budget_ms": 15000
+    },
+    "execution_shadow": {
+      "token_budget": 26000,
+      "compute_budget_ms": 18000
+    },
+    "system_critical": {
+      "token_budget": 40000,
+      "compute_budget_ms": 25000
+    }
+  },
+  "state_path": "state/ops/shadow_budget_governance/usage.json"
+}

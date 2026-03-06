@@ -34,6 +34,7 @@ pub mod rollout_rings;
 pub mod scale_readiness;
 pub mod spine;
 pub mod state_kernel;
+pub mod shadow_budget_governance;
 pub mod strategy_mode_governor;
 pub mod workflow_executor;
 

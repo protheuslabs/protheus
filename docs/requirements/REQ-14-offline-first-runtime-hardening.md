@@ -37,6 +37,11 @@ Out of scope:
   - Define per-shadow token/compute budget policy limits and burst controls.
   - Runtime enforces shadow-level quotas without starving system-critical lanes.
   - Budget decisions are receipt-logged with policy references.
+- Implementation (2026-03-06):
+  - Policy contract: `config/shadow_budget_governance_policy.json`
+  - Runtime lane: `crates/ops/src/shadow_budget_governance.rs`
+  - CLI surface: `protheus-ops shadow-budget-governance <evaluate|status>`
+  - Deterministic decision receipts include fairness/reserve metadata and policy path references.
 
 3. `REQ-14-003` Offline mode detection + degraded execution
 - Acceptance:
