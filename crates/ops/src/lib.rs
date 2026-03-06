@@ -339,8 +339,7 @@ pub fn default_policy(root: &Path) -> Policy {
         cold_start_probe: ColdStartProbe {
             command: vec![
                 "node".to_string(),
-                "systems/workflow/workflow_controller.js".to_string(),
-                "status".to_string(),
+                "systems/sensory/focus_controller.js".to_string(),
             ],
             samples: 5,
             max_ms: 300.0,
@@ -558,15 +557,17 @@ fn run_cmd(root: &Path, cmd: &[String]) -> Result<f64, String> {
     let program = &cmd[0];
     let args = &cmd[1..];
     let start = Instant::now();
-    let status = Command::new(program)
+    let out = Command::new(program)
         .args(args)
         .current_dir(root)
-        .status()
+        .output()
         .map_err(|e| format!("command_spawn_failed:{program}:{e}"))?;
-    if !status.success() {
+    if !out.status.success() {
+        let detail = String::from_utf8_lossy(&out.stderr).trim().to_string();
         return Err(format!(
-            "command_failed:{program}:exit={}"
-            ,status.code().unwrap_or(1)
+            "command_failed:{program}:exit={}:{}",
+            out.status.code().unwrap_or(1),
+            clean(&detail, 200)
         ));
     }
     Ok(start.elapsed().as_secs_f64() * 1000.0)
@@ -626,8 +627,14 @@ fn dir_size_mb(root: &Path, rel_path: &str) -> f64 {
 fn system_idle_rss_mb() -> f64 {
     let mut sys = System::new_all();
     sys.refresh_all();
-    let total_kib: u64 = sys.processes().values().map(|p| p.memory()).sum();
-    total_kib as f64 / 1024.0
+    let total = sys.processes().values().map(|p| p.memory()).sum::<u64>() as f64;
+    // sysinfo versions differ on process memory units (KiB vs bytes).
+    // Normalize to MiB fail-closed using a conservative heuristic.
+    if total > 10_000_000.0 {
+        total / (1024.0 * 1024.0)
+    } else {
+        total / 1024.0
+    }
 }
 
 pub fn run_runtime_efficiency_floor(root: &Path, parsed: &ParsedArgs) -> Result<RunOutput, String> {
@@ -704,6 +711,11 @@ pub fn run_runtime_efficiency_floor(root: &Path, parsed: &ParsedArgs) -> Result<
         "date": &now[..10],
         "pass": pass,
         "strict": strict,
+        "metrics": {
+            "cold_start_p95_ms": (p95_ms * 1000.0).round() / 1000.0,
+            "idle_rss_p95_mb": (idle_rss_mb * 1000.0).round() / 1000.0,
+            "install_artifact_total_mb": (install_total * 1000.0).round() / 1000.0
+        },
         "cold_start": {
             "samples": policy.cold_start_probe.samples,
             "max_ms": policy.cold_start_probe.max_ms,
@@ -752,6 +764,7 @@ pub fn run_runtime_efficiency_floor(root: &Path, parsed: &ParsedArgs) -> Result<
         "hold_streak_days": hold_streak_days,
         "target_hold_days": policy.target_hold_days,
         "enforce_hold_streak_strict": policy.enforce_hold_streak_strict,
+        "metrics": row["metrics"],
         "cold_start": row["cold_start"],
         "idle_rss": row["idle_rss"],
         "install_artifact": row["install_artifact"],

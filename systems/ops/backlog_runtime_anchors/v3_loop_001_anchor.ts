@@ -16,3 +16,5 @@ module.exports = lane;
 if (require.main === module) {
   console.log(JSON.stringify(buildAnchor(), null, 2));
 }
+
+export {};

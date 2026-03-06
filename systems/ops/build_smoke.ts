@@ -9,10 +9,10 @@ const ROOT = path.resolve(__dirname, '..', '..');
 
 const REQUIRED_DIST_FILES = [
   'dist/lib/directive_resolver.js',
-  'dist/systems/autonomy/autonomy_controller.js',
-  'dist/systems/memory/idle_dream_cycle.js',
-  'dist/systems/routing/model_router.js',
-  'dist/systems/security/directive_gate.js'
+  'dist/systems/security/directive_gate.js',
+  'dist/systems/sensory/focus_controller.js',
+  'dist/systems/autonomy/self_documentation_closeout.js',
+  'dist/systems/budget/system_budget.js'
 ];
 
 function main() {
