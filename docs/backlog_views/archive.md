@@ -1,9 +1,34 @@
 # Backlog Archive View
 
-Generated: 2026-03-04T07:52:42.255Z
+Generated: 2026-03-06T16:27:26.230Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
+| V6-F100-016 | backlog | V6 | done | Cron delivery announce/main hardening |  |
+| V6-F100-017 | backlog | V6 | done | Rust status dashboard SLO metrics expansion |  |
+| V6-F100-018 | backlog | V6 | done | Model recovery fallback policy for degraded families |  |
+| V6-F100-019 | backlog | V6 | done | Release-build path hardening for conduit launchers |  |
+| V6-F100-020 | backlog | V6 | done | Secret rotation weekly attestation cadence |  |
+| V6-F100-021 | backlog | V6 | done | Memory continuity index rebuild run |  |
+| V6-F100-026 | backlog | V6 | done | Optional pip installation wrapper (thin Python CLI) |  |
+| V6-F100-027 | backlog | V6 | done | Observability metrics hardening (p99 + escalation + cost attribution) |  |
+| V6-F100-028 | backlog | V6 | done | Progressive rollout ring evaluator (Rust-authoritative) |  |
+| V6-F100-029 | backlog | V6 | done | Golden dataset + property-style router regression pack |  |
+| V6-F100-030 | backlog | V6 | done | Deterministic router offline fallback plan output |  |
+| V6-F100-031 | backlog | V6 | done | Loop/persona A/B trial evaluator with promotion receipts |  |
+| V6-F100-032 | backlog | V6 | done | OSS legal/governance baseline completion |  |
+| V6-F100-033 | backlog | V6 | done | Release/security automation baseline uplift |  |
+| V6-F100-037 | backlog | V6 | done | README governance links + repo hygiene ownership fences |  |
+| V6-F100-038 | backlog | V6 | done | Backlog canonical rename to SRS with compatibility alias |  |
+| V6-ARCH-001 | backlog | V6 | done | Layered kernel shedding feature topology (`layer0` -> `layer3`) |  |
+| V6-ARCH-002 | backlog | V6 | done | Layered profile CI/build verification matrix |  |
+| V6-COMP-004 | backlog | V6 | done | Security-layer inventory with evidence links |  |
+| V6-RUNTIME-001 | backlog | V6 | done | Strict schema enforcement for persona/lens outputs |  |
+| V6-RUNTIME-002 | backlog | V6 | done | Per-shadow budget governance layer |  |
+| V6-RUNTIME-003 | backlog | V6 | done | Offline-mode degraded-path hardening |  |
+| V6-RUNTIME-004 | backlog | V6 | done | Hardware-aware local routing hardening |  |
+| V6-SBOX-001 | backlog | V6 | done | Secure sandbox execution plane |  |
+| V6-TOOLS-002 | backlog | V6 | done | Sandboxed tool execution for external actions |  |
 | BL-001 | backlog | BL | done | External temp-data backup pipeline (outside git) |  |
 | BL-002 | backlog | BL | done | Skill quarantine enforcement in all install paths |  |
 | BL-003 | backlog | BL | done | Autonomy receipt dashboard/summary |  |
@@ -142,6 +167,133 @@ Generated: 2026-03-04T07:52:42.255Z
 | BL-136 | backlog | BL | done | Child lane: Autonomy proposal dedupe-key builder Rust migration (`proposalDedupKey`) |  |
 | BL-137 | backlog | BL | done | Child lane: Autonomy strategy-rank score arithmetic Rust migration (`strategyRankForCandidate`) |  |
 | BL-138 | backlog | BL | done | Child lane: Autonomy value-signal score arithmetic Rust migration (`assessValueSignal`) |  |
+| BL-139 | backlog | BL | done | Inversion creative-lane penalty primitive Rust migration (`evaluateCreativePenalty`) |  |
+| BL-140 | backlog | BL | done | Inversion bullet-extraction primitive Rust migration (`extractBullets`) |  |
+| BL-141 | backlog | BL | done | Inversion list-item extraction primitive Rust migration (`extractListItems`) |  |
+| BL-142 | backlog | BL | done | Inversion system-internal permission parser Rust migration (`parseSystemInternalPermission`) |  |
+| BL-143 | backlog | BL | done | Inversion soul-token data-pass rules parser Rust migration (`parseSoulTokenDataPassRules`) |  |
+| BL-144 | backlog | BL | done | Inversion system-passed feed section normalizer Rust migration (`ensureSystemPassedSection`) |  |
+| BL-145 | backlog | BL | done | Inversion system-passed payload hash primitive Rust migration (`systemPassedPayloadHash`) |  |
+| BL-146 | backlog | BL | done | Inversion persona-lens position builder Rust migration (`buildLensPosition`) |  |
+| BL-147 | backlog | BL | done | Inversion conclave proposal summary primitive Rust migration (`buildConclaveProposalSummary`) |  |
+| BL-148 | backlog | BL | done | Inversion conclave high-risk flag classifier Rust migration (`conclaveHighRiskFlags`) |  |
+| BL-149 | backlog | BL | done | Inversion CLI arg parser primitive Rust migration (`parseArgs`) |  |
+| BL-150 | backlog | BL | done | Inversion stdout JSON parser primitive Rust migration (`parseJsonFromStdout`) |  |
+| BL-151 | backlog | BL | done | Inversion tokenizer primitive Rust migration (`tokenize`) |  |
+| BL-152 | backlog | BL | done | Inversion normalized-id list primitive Rust migration (`normalizeList`) |  |
+| BL-153 | backlog | BL | done | Inversion normalized-text list primitive Rust migration (`normalizeTextList`) |  |
+| BL-154 | backlog | BL | done | Inversion library match score primitive Rust migration (`computeLibraryMatchScore`) |  |
+| BL-155 | backlog | BL | done | Inversion known-failure pressure primitive Rust migration (`computeKnownFailurePressure`) |  |
+| BL-156 | backlog | BL | done | Inversion signal-term match primitive Rust migration (`hasSignalTermMatch`) |  |
+| BL-157 | backlog | BL | done | Inversion axiom signal-group evaluator Rust migration (`countAxiomSignalGroups`) |  |
+| BL-158 | backlog | BL | done | Inversion first-live veto quota primitive Rust migration (`effectiveFirstNHumanVetoUses`) |  |
+| BL-159 | backlog | BL | done | Inversion maturity certainty-band map normalizer Rust migration (`normalizeBandMap`) |  |
+| BL-160 | backlog | BL | done | Inversion impact map normalizer Rust migration (`normalizeImpactMap`) |  |
+| BL-161 | backlog | BL | done | Inversion target map normalizer Rust migration (`normalizeTargetMap`) |  |
+| BL-162 | backlog | BL | done | Inversion target policy normalizer Rust migration (`normalizeTargetPolicy`) |  |
+| BL-163 | backlog | BL | done | Inversion target-window resolver Rust migration (`windowDaysForTarget`) |  |
+| BL-164 | backlog | BL | done | Inversion tier-retention window resolver Rust migration (`tierRetentionDays`) |  |
+| BL-165 | backlog | BL | done | Inversion LLM candidate payload parser Rust migration (`parseCandidateListFromLlmPayload`) |  |
+| BL-166 | backlog | BL | done | Inversion heuristic candidate seeding Rust migration (`heuristicFilterCandidates`) |  |
+| BL-167 | backlog | BL | done | Inversion trial score primitive Rust migration (`scoreTrial`) |  |
+| BL-168 | backlog | BL | done | Inversion trial mutation primitive Rust migration (`mutateTrialCandidates`) |  |
+| BL-169 | backlog | BL | done | Inversion tier-event timestamp normalizer Rust migration (`normalizeIsoEvents`) |  |
+| BL-170 | backlog | BL | done | Inversion legacy-count expansion Rust migration (`expandLegacyCountToEvents`) |  |
+| BL-171 | backlog | BL | done | Inversion tier-event map normalizer Rust migration (`normalizeTierEventMap`) |  |
+| BL-172 | backlog | BL | done | Inversion default tier-scope constructor Rust migration (`defaultTierScope`) |  |
+| BL-173 | backlog | BL | done | Inversion tier-scope normalizer Rust migration (`normalizeTierScope`) |  |
+| BL-174 | backlog | BL | done | Inversion default governance-state constructor Rust migration (`defaultTierGovernanceState`) |  |
+| BL-175 | backlog | BL | done | Inversion tier-scope clone primitive Rust migration (`cloneTierScope`) |  |
+| BL-176 | backlog | BL | done | Inversion tier-scope retention prune primitive Rust migration (`pruneTierScopeEvents`) |  |
+| BL-177 | backlog | BL | done | Inversion tier-event counter Rust migration (`countTierEvents`) |  |
+| BL-178 | backlog | BL | done | Inversion effective target-window resolver Rust migration (`effectiveWindowDaysForTarget`) |  |
+| BL-179 | backlog | BL | done | Inversion date-token resolver Rust migration (`toDate`) |  |
+| BL-180 | backlog | BL | done | Inversion timestamp parser Rust migration (`parseTsMs`) |  |
+| BL-181 | backlog | BL | done | Inversion minutes-offset time helper Rust migration (`addMinutes`) |  |
+| BL-182 | backlog | BL | done | Inversion integer clamp primitive Rust migration (`clampInt`) |  |
+| BL-183 | backlog | BL | done | Inversion number clamp primitive Rust migration (`clampNumber`) |  |
+| BL-184 | backlog | BL | done | Inversion boolean coercion primitive Rust migration (`toBool`) |  |
+| BL-185 | backlog | BL | done | Inversion clean-text primitive Rust migration (`cleanText`) |  |
+| BL-186 | backlog | BL | done | Inversion normalized-token primitive Rust migration (`normalizeToken`) |  |
+| BL-187 | backlog | BL | done | Inversion normalized-word-token primitive Rust migration (`normalizeWordToken`) |  |
+| BL-188 | backlog | BL | done | Inversion maturity-band index resolver Rust migration (`bandToIndex`) |  |
+| BL-189 | backlog | BL | done | Inversion regex-escape helper Rust migration (`escapeRegex`) |  |
+| BL-190 | backlog | BL | done | Inversion word-pattern regex builder Rust migration (`patternToWordRegex`) |  |
+| BL-191 | backlog | BL | done | Inversion stable-id builder Rust migration (`stableId`) |  |
+| BL-192 | backlog | BL | done | Inversion runtime-relative path helper Rust migration (`relPath`) |  |
+| BL-193 | backlog | BL | done | Inversion axiom-pattern normalizer Rust migration (`normalizeAxiomPattern`) |  |
+| BL-194 | backlog | BL | done | Inversion axiom-signal term list normalizer Rust migration (`normalizeAxiomSignalTerms`) |  |
+| BL-195 | backlog | BL | done | Inversion observer-id normalizer Rust migration (`normalizeObserverId`) |  |
+| BL-196 | backlog | BL | done | Inversion numeric extractor Rust migration (`extractNumeric`) |  |
+| BL-197 | backlog | BL | done | Inversion first-numeric picker Rust migration (`pickFirstNumeric`) |  |
+| BL-198 | backlog | BL | done | Inversion safe-relative path helper Rust migration (`safeRelPath`) |  |
+| BL-199 | backlog | BL | done | Inversion ISO timestamp helper Rust migration (`nowIso`) |  |
+| BL-200 | backlog | BL | done | Inversion default tier-event map constructor Rust migration (`defaultTierEventMap`) |  |
+| BL-201 | backlog | BL | done | Inversion tier-event map coercer Rust migration (`coerceTierEventMap`) |  |
+| BL-202 | backlog | BL | done | Inversion tier-scope accessor Rust migration (`getTierScope`) |  |
+| BL-203 | backlog | BL | done | Inversion default harness-state constructor Rust migration (`defaultHarnessState`) |  |
+| BL-204 | backlog | BL | done | Inversion default first-principle lock-state constructor Rust migration (`defaultFirstPrincipleLockState`) |  |
+| BL-205 | backlog | BL | done | Inversion default maturity-state constructor Rust migration (`defaultMaturityState`) |  |
+| BL-206 | backlog | BL | done | Inversion principle-key derivation Rust migration (`principleKeyForSession`) |  |
+| BL-207 | backlog | BL | done | Inversion objective-arg normalizer Rust migration (`normalizeObjectiveArg`) |  |
+| BL-208 | backlog | BL | done | Inversion maturity band order/runtime mode helpers Rust migration (`maturityBandOrder`, `currentRuntimeMode`) |  |
+| BL-209 | backlog | BL | done | Inversion drift-file payload reader Rust migration (`readDriftFromStateFile`) |  |
+| BL-210 | backlog | BL | done | Inversion lens-gate drift resolver Rust migration (`resolveLensGateDrift`) |  |
+| BL-211 | backlog | BL | done | Inversion parity-confidence resolver Rust migration (`resolveParityConfidence`) |  |
+| BL-212 | backlog | BL | done | Inversion attractor-score evaluator Rust migration (`computeAttractorScore`) |  |
+| BL-213 | backlog | BL | done | Inversion output-interface gating primitive Rust migration (`buildOutputInterfaces`) |  |
+| BL-214 | backlog | BL | done | Inversion code-change proposal draft builder Rust migration (`buildCodeChangeProposalDraft`) |  |
+| BL-215 | backlog | BL | done | Inversion library-row normalizer Rust migration (`normalizeLibraryRow`) |  |
+| BL-216 | backlog | BL | done | Inversion ensure-dir helper Rust migration (`ensureDir`) |  |
+| BL-217 | backlog | BL | done | Inversion JSON reader helper Rust migration (`readJson`) |  |
+| BL-218 | backlog | BL | done | Inversion JSONL reader helper Rust migration (`readJsonl`) |  |
+| BL-219 | backlog | BL | done | Inversion atomic JSON writer helper Rust migration (`writeJsonAtomic`) |  |
+| BL-220 | backlog | BL | done | Inversion JSONL append helper Rust migration (`appendJsonl`) |  |
+| BL-221 | backlog | BL | done | Inversion text reader helper Rust migration (`readText`) |  |
+| BL-222 | backlog | BL | done | Inversion latest-JSON selector Rust migration (`latestJsonFileInDir`) |  |
+| BL-223 | backlog | BL | done | Inversion output-channel normalizer Rust migration (`normalizeOutputChannel`) |  |
+| BL-224 | backlog | BL | done | Inversion repo-path normalizer Rust migration (`normalizeRepoPath`) |  |
+| BL-225 | backlog | BL | done | Inversion runtime-paths resolver Rust migration (`runtimePaths`) |  |
+| BL-226 | backlog | BL | done | Inversion immutable-axiom list normalizer Rust migration (`normalizeAxiomList`) |  |
+| BL-227 | backlog | BL | done | Inversion maturity-harness suite normalizer Rust migration (`normalizeHarnessSuite`) |  |
+| BL-228 | backlog | BL | done | Inversion harness-state loader Rust migration (`loadHarnessState`) |  |
+| BL-229 | backlog | BL | done | Inversion harness-state saver Rust migration (`saveHarnessState`) |  |
+| BL-230 | backlog | BL | done | Inversion first-principle lock-state loader Rust migration (`loadFirstPrincipleLockState`) |  |
+| BL-231 | backlog | BL | done | Inversion first-principle lock-state saver Rust migration (`saveFirstPrincipleLockState`) |  |
+| BL-232 | backlog | BL | done | Inversion observer-approval loader Rust migration (`loadObserverApprovals`) |  |
+| BL-233 | backlog | BL | done | Inversion observer-approval append Rust migration (`appendObserverApproval`) |  |
+| BL-234 | backlog | BL | done | Inversion observer-approval quorum counter Rust migration (`countObserverApprovals`) |  |
+| BL-235 | backlog | BL | done | Inversion correspondence bootstrap file guard Rust migration (`ensureCorrespondenceFile`) |  |
+| BL-236 | backlog | BL | done | Inversion maturity-state loader Rust migration (`loadMaturityState`) |  |
+| BL-237 | backlog | BL | done | Inversion maturity-state saver Rust migration (`saveMaturityState`) |  |
+| BL-238 | backlog | BL | done | Inversion active-session loader Rust migration (`loadActiveSessions`) |  |
+| BL-239 | backlog | BL | done | Inversion active-session saver Rust migration (`saveActiveSessions`) |  |
+| BL-240 | backlog | BL | done | Inversion event emitter Rust migration (`emitEvent`) |  |
+| BL-241 | backlog | BL | done | Inversion persona lens-gate receipt append Rust migration (`appendPersonaLensGateReceipt`) |  |
+| BL-242 | backlog | BL | done | Inversion conclave correspondence append Rust migration (`appendConclaveCorrespondence`) |  |
+| BL-243 | backlog | BL | done | Inversion decision persistence Rust migration (`persistDecision`) |  |
+| BL-244 | backlog | BL | done | Inversion interface-envelope persistence Rust migration (`persistInterfaceEnvelope`) |  |
+| BL-245 | backlog | BL | done | Inversion library trim primitive Rust migration (`trimLibrary`) |  |
+| BL-246 | backlog | BL | done | Inversion tier-governance loader Rust migration (`loadTierGovernanceState`) |  |
+| BL-247 | backlog | BL | done | Inversion tier-governance saver Rust migration (`saveTierGovernanceState`) |  |
+| BL-248 | backlog | BL | done | Inversion tier-event map append Rust migration (`pushTierEvent`) |  |
+| BL-249 | backlog | BL | done | Inversion tier-event persistence Rust migration (`addTierEvent`) |  |
+| BL-250 | backlog | BL | done | Inversion live-apply attempt counter Rust migration (`incrementLiveApplyAttempt`) |  |
+| BL-251 | backlog | BL | done | Inversion live-apply success counter Rust migration (`incrementLiveApplySuccess`) |  |
+| BL-252 | backlog | BL | done | Inversion live-apply safe-abort counter Rust migration (`incrementLiveApplySafeAbort`) |  |
+| BL-253 | backlog | BL | done | Inversion shadow-trial counter updater Rust migration (`updateShadowTrialCounters`) |  |
+| BL-254 | backlog | BL | done | Inversion first-principle downgrade gate Rust migration (`checkFirstPrincipleDowngrade`) |  |
+| BL-255 | backlog | BL | done | Inversion first-principle lock upsert Rust migration (`upsertFirstPrincipleLock`) |  |
+| BL-256 | backlog | BL | done | Inversion immutable-axiom violation detector Rust migration (`detectImmutableAxiomViolation`) |  |
+| BL-257 | backlog | BL | done | Inversion maturity-score primitive Rust migration (`computeMaturityScore`) |  |
+| BL-258 | backlog | BL | done | Inversion library candidate selector Rust migration (`selectLibraryCandidates`) |  |
+| BL-259 | backlog | BL | done | Inversion lane parse helper Rust migration (`parseLaneDecision`) |  |
+| BL-260 | backlog | BL | done | Inversion session sweep helper Rust migration (`sweepExpiredSessions`) |  |
+| BL-261 | backlog | BL | done | Inversion impossibility-signal loader Rust migration (`loadImpossibilitySignals`) |  |
+| BL-262 | backlog | BL | done | Inversion impossibility-trigger evaluator Rust migration (`evaluateImpossibilityTrigger`) |  |
+| BL-263 | backlog | BL | done | Inversion first-principle extraction Rust migration (`extractFirstPrinciple`) |  |
+| BL-264 | backlog | BL | done | Inversion failure-cluster principle extraction Rust migration (`extractFailureClusterPrinciple`) |  |
+| BL-265 | backlog | BL | done | Inversion first-principle persistence Rust migration (`persistFirstPrinciple`) |  |
 | V1H-001 | backlog | V1H | done | Full-pipeline integration/e2e hardening |  |
 | V1H-002 | backlog | V1H | done | Release-gate + canary/rollback enforcement expansion |  |
 | V1H-003 | backlog | V1H | done | Observability + SLO + runbook completion pass |  |
@@ -868,4 +1020,21 @@ Generated: 2026-03-04T07:52:42.255Z
 | V6-PERS-SEAM-003 | extension | V6 | done | Inversion Persona Feed Auto-Push (Policy-Gated) | V4-SELF-001, V6-PERS-SEAM-001 |
 | V6-PERS-SEAM-004 | launch-polish | V6 | done | Trigger Playbook + Operator Docs Wiring | V6-PERS-SEAM-001 |
 | V6-PERS-SEAM-005 | extension | V6 | done | Multi-Persona Lens Query + Deterministic Arbitration + Surprise/Recall Signal | V6-PERS-SEAM-001, V6-PERS-SEAM-004 |
+| V6-CONDUIT-001 | primitive-upgrade | V6 | done | Conduit Core Scaffold + Typed Message Schema | V6-RUST50-007 |
+| V6-CONDUIT-002 | hardening | V6 | done | Constitution and Policy Gate Binding for Conduit | V6-CONDUIT-001 |
+| V6-CONDUIT-003 | extension | V6 | done | Conduit Feature Migration: Agent Lifecycle Path | V6-CONDUIT-001, V6-CONDUIT-002 |
+| V6-CONDUIT-004 | scale-readiness | V6 | done | Substrate-Swap and Performance Certification Gate | V6-CONDUIT-003 |
+| V6-CONDUIT-005 | hardening | V6 | done | Message Signing for Every Crossing | V6-CONDUIT-002 |
+| V6-CONDUIT-006 | hardening | V6 | done | Capability Token Enforcement | V6-CONDUIT-002, V6-CONDUIT-005 |
+| V6-CONDUIT-007 | hardening | V6 | done | Conduit Rate Limiting + Backpressure | V6-CONDUIT-002 |
+| V6-CONDUIT-008 | governance | V6 | done | Conduit Regression Rebuild Ledger | V6-CONDUIT-001, V6-CONDUIT-007 |
+| V6-SEC-002 | governance | V6 | done | Public Security Posture Page |  |
+| V6-SEC-003 | hardening | V6 | done | Dependabot + CodeQL Baseline |  |
+| V6-SEC-006 | governance | V6 | done | CVE-Ready Disclosure + Bug Bounty Policy |  |
+| V6-PRIM-004 | primitive-upgrade | V6 | done | IPC Primitive Rust Completion | REQ-08-001 |
+| V6-PRIM-005 | primitive-upgrade | V6 | done | Storage Primitive Rust Completion | REQ-08-001 |
+| V6-PRIM-007 | primitive-upgrade | V6 | done | Update Primitive Rust Completion | REQ-08-001 |
+| V6-GAP-001 | launch-polish | V6 | done | One-Line Installer Parity (`curl ... | sh` + PowerShell) | V6-CONDUIT-003 |
+| V6-GAP-002 | hardening | V6 | done | Coverage Uplift + Badge Gate | V6-GAP-001 |
+| V6-GAP-003 | launch-polish | V6 | done | Architecture + Quickstart Story Refresh | V6-GAP-001 |
 

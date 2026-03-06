@@ -51,6 +51,5 @@ This document is evidence-only: no claims without shipped artifacts.
 ## Evidence Hooks
 
 - Changelog entry references: `CHANGELOG.md`
-- Backlog IDs: `UPGRADE_BACKLOG.md`
+- Backlog IDs: `SRS.md` (`UPGRADE_BACKLOG.md` compatibility alias)
 - Generated backlog views: `docs/backlog_views/active.md`
-

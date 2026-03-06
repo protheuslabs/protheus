@@ -88,6 +88,7 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
       ),
       exclude_paths: asList(
         search.exclude_paths || [
+          'SRS.md',
           'UPGRADE_BACKLOG.md',
           'docs/backlog_views/active.md',
           'docs/backlog_views/archive.md',
@@ -126,6 +127,7 @@ function looksLikePath(raw: string) {
     || plain.startsWith('docs/')
     || plain.startsWith('memory/')
     || plain.startsWith('tests/')
+    || plain === 'SRS.md'
     || plain === 'UPGRADE_BACKLOG.md'
   ) {
     return plain;

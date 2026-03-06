@@ -59,7 +59,7 @@
     ]
   },
   "paths": {
-    "backlog_path": "UPGRADE_BACKLOG.md",
+    "backlog_path": "SRS.md",
     "registry_path": "config/backlog_registry.json",
     "active_view_path": "docs/backlog_views/active.md",
     "archive_view_path": "docs/backlog_views/archive.md",

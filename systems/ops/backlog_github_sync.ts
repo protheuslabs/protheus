@@ -376,7 +376,7 @@ function formatIssueBody(row: AnyObj, rowHash: string, policy: AnyObj) {
     '',
     String(row.acceptance || '(missing)').trim(),
     '',
-    '_Source of truth: `config/backlog_registry.json` (generated from `UPGRADE_BACKLOG.md`)_',
+    '_Source of truth: `config/backlog_registry.json` (generated from `SRS.md`, compatibility alias `UPGRADE_BACKLOG.md`)_',
     ''
   ];
   return lines.join('\n');

@@ -10,6 +10,7 @@
       "memory/",
       "state/",
       "docs/backlog_views/",
+      "SRS.md",
       "UPGRADE_BACKLOG.md",
       "config/trusted_skills.json",
       "config/trusted_habits.json",

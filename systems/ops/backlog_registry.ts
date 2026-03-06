@@ -66,7 +66,7 @@ function defaultPolicy() {
       rollback_signals: ['rollback', 'revert', 'fallback', 'undo']
     },
     paths: {
-      backlog_path: 'UPGRADE_BACKLOG.md',
+      backlog_path: 'SRS.md',
       registry_path: 'config/backlog_registry.json',
       active_view_path: 'docs/backlog_views/active.md',
       archive_view_path: 'docs/backlog_views/archive.md',
@@ -597,18 +597,28 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
 }
 
 function buildArtifacts(policy: any) {
-  if (!fs.existsSync(policy.paths.backlog_path)) {
+  let backlogPath = policy.paths.backlog_path;
+  if (!fs.existsSync(backlogPath)) {
+    const compatPath = path.join(ROOT, 'UPGRADE_BACKLOG.md');
+    if (
+      path.basename(String(backlogPath || '')).toLowerCase() === 'srs.md'
+      && fs.existsSync(compatPath)
+    ) {
+      backlogPath = compatPath;
+    }
+  }
+  if (!fs.existsSync(backlogPath)) {
     return {
       ok: false,
       error: 'backlog_missing',
-      backlog_path: rel(policy.paths.backlog_path)
+      backlog_path: rel(backlogPath)
     };
   }
   let generatedAt = nowIso();
   try {
-    generatedAt = new Date(fs.statSync(policy.paths.backlog_path).mtimeMs).toISOString();
+    generatedAt = new Date(fs.statSync(backlogPath).mtimeMs).toISOString();
   } catch {}
-  const markdown = fs.readFileSync(policy.paths.backlog_path, 'utf8');
+  const markdown = fs.readFileSync(backlogPath, 'utf8');
   const sourceHash = stableHash(markdown, 24);
   const rows = parseBacklogRows(markdown);
   const activeSet = new Set(policy.active_statuses || []);
@@ -632,6 +642,7 @@ function buildArtifacts(policy: any) {
   return {
     ok: true,
     generated_at: generatedAt,
+    source_backlog_path: rel(backlogPath),
     rows,
     active_rows: activeRows,
     archive_rows: archiveRows,

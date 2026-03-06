@@ -4,7 +4,7 @@
 
 ## Source Of Truth
 
-- Authoritative human source: `UPGRADE_BACKLOG.md`
+- Authoritative human source: `SRS.md` (`UPGRADE_BACKLOG.md` compatibility alias retained)
 - Generated artifacts:
   - `config/backlog_registry.json`
   - `docs/backlog_views/active.md`

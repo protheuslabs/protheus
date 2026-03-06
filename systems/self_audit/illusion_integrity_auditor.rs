@@ -253,7 +253,13 @@ fn main() {
         }
     }
 
-    let backlog_path = root.join("UPGRADE_BACKLOG.md");
+    let canonical_backlog_path = root.join("SRS.md");
+    let compat_backlog_path = root.join("UPGRADE_BACKLOG.md");
+    let backlog_path = if canonical_backlog_path.exists() {
+        canonical_backlog_path
+    } else {
+        compat_backlog_path
+    };
     if backlog_path.exists() {
         let text = safe_read(&backlog_path);
         let mut hit = 0usize;
@@ -316,4 +322,3 @@ fn main() {
 
     println!("{}", serde_json::to_string(&out).unwrap_or_else(|_| String::from("{\"ok\":false,\"error\":\"serialize_failed\"}")));
 }
-

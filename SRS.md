@@ -1,6 +1,6 @@
-# Upgrade Backlog (SRS Canonical)
+# SRS
 
-> Canonical backlog name is `SRS` (`SRS.md`). `UPGRADE_BACKLOG.md` is retained as a compatibility alias for existing tooling.
+> This is the canonical System Requirements Specification backlog. `UPGRADE_BACKLOG.md` remains as a compatibility alias.
 
 Purpose: track future upgrades without mixing them into active implementation threads.
 

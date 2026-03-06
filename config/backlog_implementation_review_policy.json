@@ -33,6 +33,7 @@
       "tests"
     ],
     "exclude_paths": [
+      "SRS.md",
       "UPGRADE_BACKLOG.md",
       "docs/backlog_views/active.md",
       "docs/backlog_views/archive.md",

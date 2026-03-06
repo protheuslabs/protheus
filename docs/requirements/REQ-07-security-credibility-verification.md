@@ -55,4 +55,4 @@ Rust remains the only kernel source of truth for constitution, policy, claim-evi
   - `REQ-07-003`
   - `REQ-07-006`
   - `REQ-07-008` (initial scheduled workflow baseline)
-- Remaining items tracked in `UPGRADE_BACKLOG.md` under the Security Credibility section.
+- Remaining items tracked in `SRS.md` (compatibility alias: `UPGRADE_BACKLOG.md`) under the Security Credibility section.

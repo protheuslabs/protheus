@@ -953,7 +953,9 @@ function deprecationsCheck(args, policy) {
 }
 
 function parseBacklogRows() {
-  const backlogPath = path.join(ROOT, 'UPGRADE_BACKLOG.md');
+  const canonical = path.join(ROOT, 'SRS.md');
+  const compat = path.join(ROOT, 'UPGRADE_BACKLOG.md');
+  const backlogPath = fs.existsSync(canonical) ? canonical : compat;
   const text = fs.readFileSync(backlogPath, 'utf8');
   const lines = text.split(/\r?\n/);
   const ids: string[] = [];

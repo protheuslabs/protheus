@@ -110,7 +110,7 @@ function defaultPolicy() {
     schema_version: '1.0',
     enabled: true,
     strict_default: true,
-    backlog_path: 'UPGRADE_BACKLOG.md',
+    backlog_path: 'SRS.md',
     target_sections: [],
     required_class_values: ['primitive', 'primitive-upgrade', 'extension', 'hardening'],
     require_dependency_notes: true,
