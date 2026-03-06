@@ -1,59 +1,26 @@
 # Backlog Archive View
 
-Generated: 2026-03-06T16:58:27.669Z
+Generated: 2026-03-06T17:52:53.549Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
-| V6-F100-016 | backlog | V6 | done | Cron delivery announce/main hardening |  |
-| V6-F100-017 | backlog | V6 | done | Rust status dashboard SLO metrics expansion |  |
-| V6-F100-018 | backlog | V6 | done | Model recovery fallback policy for degraded families |  |
-| V6-F100-019 | backlog | V6 | done | Release-build path hardening for conduit launchers |  |
-| V6-F100-020 | backlog | V6 | done | Secret rotation weekly attestation cadence |  |
-| V6-F100-021 | backlog | V6 | done | Memory continuity index rebuild run |  |
-| V6-F100-026 | backlog | V6 | done | Optional pip installation wrapper (thin Python CLI) |  |
-| V6-F100-027 | backlog | V6 | done | Observability metrics hardening (p99 + escalation + cost attribution) |  |
-| V6-F100-028 | backlog | V6 | done | Progressive rollout ring evaluator (Rust-authoritative) |  |
-| V6-F100-029 | backlog | V6 | done | Golden dataset + property-style router regression pack |  |
-| V6-F100-030 | backlog | V6 | done | Deterministic router offline fallback plan output |  |
-| V6-F100-031 | backlog | V6 | done | Loop/persona A/B trial evaluator with promotion receipts |  |
-| V6-F100-032 | backlog | V6 | done | OSS legal/governance baseline completion |  |
-| V6-F100-033 | backlog | V6 | done | Release/security automation baseline uplift |  |
-| V6-F100-037 | backlog | V6 | done | README governance links + repo hygiene ownership fences |  |
-| V6-F100-038 | backlog | V6 | done | Backlog canonical rename to SRS with compatibility alias |  |
-| V6-F100-039 | backlog | V6 | done | F100 baseline reconciliation gate with deterministic receipts |  |
-| V6-F100-040 | backlog | V6 | done | Enterprise deployment packaging baseline (Helm + Terraform) |  |
-| V6-ARCH-001 | backlog | V6 | done | Layered kernel shedding feature topology (`layer0` -> `layer3`) |  |
-| V6-ARCH-002 | backlog | V6 | done | Layered profile CI/build verification matrix |  |
-| V6-EDGE-001 | backlog | V6 | done | Conduit edge provider adapter (`edge_inference`/`edge_status`) |  |
-| V6-EDGE-002 | backlog | V6 | done | Resource-tier backend auto-selection for constrained hardware |  |
-| V6-EDGE-003 | backlog | V6 | done | Edge backend feature-gated build profile integration |  |
-| V6-COMP-004 | backlog | V6 | done | Security-layer inventory with evidence links |  |
-| V6-RUNTIME-001 | backlog | V6 | done | Strict schema enforcement for persona/lens outputs |  |
-| V6-RUNTIME-002 | backlog | V6 | done | Per-shadow budget governance layer |  |
-| V6-RUNTIME-003 | backlog | V6 | done | Offline-mode degraded-path hardening |  |
-| V6-RUNTIME-004 | backlog | V6 | done | Hardware-aware local routing hardening |  |
-| V6-SBOX-001 | backlog | V6 | done | Secure sandbox execution plane |  |
-| V6-TOOLS-002 | backlog | V6 | done | Sandboxed tool execution for external actions |  |
 | BL-001 | backlog | BL | done | External temp-data backup pipeline (outside git) |  |
 | BL-002 | backlog | BL | done | Skill quarantine enforcement in all install paths |  |
 | BL-003 | backlog | BL | done | Autonomy receipt dashboard/summary |  |
-| BL-013 | backlog | BL | done | AGI security/governance hardening pack |  |
-| BL-017 | backlog | BL | done | Autonomous skill-add with necessity justification gate |  |
-| BL-036 | backlog | BL | done | Strategic alignment oracle (weekly) |  |
-| BL-037 | backlog | BL | done | Exception novelty classifier + recovery policy |  |
-| BL-038 | backlog | BL | done | Global cost governor + autopause guardrails |  |
-| BL-039 | backlog | BL | done | Dream-to-upstream signal bridge |  |
-| BL-040 | backlog | BL | done | Adaptive dream-model failover + cooldown memory |  |
 | BL-004 | backlog | BL | done | Policy for tracked vs ignored state streams |  |
 | BL-005 | backlog | BL | done | Habit promotion quality hardening |  |
 | BL-006 | backlog | BL | done | Automated stale-state cleanup helper |  |
+| BL-007 | backlog | BL | done | Backup integrity checks |  |
+| BL-008 | backlog | BL | done | Repo hygiene CI check for generated artifacts |  |
 | BL-009 | backlog | BL | done | Hardware-aware local model planner |  |
 | BL-010 | backlog | BL | done | Model variant profiles (`:thinking` and base) |  |
 | BL-011 | backlog | BL | done | Swarm verification mode for deep-thinker |  |
 | BL-012 | backlog | BL | done | Strategy profile layer + architecture genericity guard |  |
+| BL-013 | backlog | BL | done | AGI security/governance hardening pack |  |
 | BL-014 | backlog | BL | done | Phased TypeScript migration for `systems/` + `lib/` |  |
 | BL-015 | backlog | BL | done | Optional reflex sub-layer under habits (fast micro-routines) |  |
 | BL-016 | backlog | BL | done | Cross-device active-state continuity layer |  |
+| BL-017 | backlog | BL | done | Autonomous skill-add with necessity justification gate |  |
 | BL-018 | backlog | BL | done | Proposal admission + queue hygiene hardening |  |
 | BL-019 | backlog | BL | done | Optional habit cell-pool executor (parallelized by demand + hardware caps) |  |
 | BL-020 | backlog | BL | done | Ignore memory snapshots after backup channels are verified |  |
@@ -72,6 +39,11 @@ Generated: 2026-03-06T16:58:27.669Z
 | BL-033 | backlog | BL | done | Quorum validator for high-tier self-modification proposals |  |
 | BL-034 | backlog | BL | done | Operator runbook for incidents + rollback drills |  |
 | BL-035 | backlog | BL | done | Required-Checks branch protection policy |  |
+| BL-036 | backlog | BL | done | Strategic alignment oracle (weekly) |  |
+| BL-037 | backlog | BL | done | Exception novelty classifier + recovery policy |  |
+| BL-038 | backlog | BL | done | Global cost governor + autopause guardrails |  |
+| BL-039 | backlog | BL | done | Dream-to-upstream signal bridge |  |
+| BL-040 | backlog | BL | done | Adaptive dream-model failover + cooldown memory |  |
 | BL-041 | backlog | BL | done | Batch execution lane for low-urgency LLM work |  |
 | BL-042 | backlog | BL | done | Prompt/result cache with TTL + invalidation policy |  |
 | BL-043 | backlog | BL | done | Parallel eyes execution with budget-aware concurrency |  |
@@ -81,11 +53,9 @@ Generated: 2026-03-06T16:58:27.669Z
 | BL-047 | backlog | BL | done | Rust migration hotspot profiling + preflight security audit gate |  |
 | BL-048 | backlog | BL | done | Shadow deployment infrastructure hardening (feature flags + kill switch + resource isolation) |  |
 | BL-049 | backlog | BL | done | Red-team harness expansion (sandbox + property-based probes + replay logger) |  |
-| BL-050 | backlog | BL | done | Queue SQLite migration rollout/spec runbook |  |
+| BL-050 | backlog | BL | done | Context-aware CLI suggestion engine + tutorial mode |  |
 | BL-051 | backlog | BL | done | Execution legacy runtime authority cutover (TS -> Rust wrapper) |  |
-| BL-052 | backlog | BL | done | Task decomposition profile composition moved into Rust execution crate |  |
-| BL-007 | backlog | BL | done | Backup integrity checks |  |
-| BL-008 | backlog | BL | done | Repo hygiene CI check for generated artifacts |  |
+| BL-052 | backlog | BL | done | Pro-grade CLI UX pass (completion + REPL + smart unknown hints + progress UI) |  |
 | BL-053 | backlog | BL | done | Vault wrapper collapse to security-core authority |  |
 | BL-054 | backlog | BL | done | Observability wrapper collapse to Rust-core authority |  |
 | BL-055 | backlog | BL | done | Vault legacy policy engine collapse to Rust-core compatibility wrapper |  |
@@ -299,6 +269,38 @@ Generated: 2026-03-06T16:58:27.669Z
 | BL-263 | backlog | BL | done | Inversion first-principle extraction Rust migration (`extractFirstPrinciple`) |  |
 | BL-264 | backlog | BL | done | Inversion failure-cluster principle extraction Rust migration (`extractFailureClusterPrinciple`) |  |
 | BL-265 | backlog | BL | done | Inversion first-principle persistence Rust migration (`persistFirstPrinciple`) |  |
+| OPT-001 | backlog | OPT | done | Eyes signal weighting retune in router ranking |  |
+| OPT-002 | backlog | OPT | done | Prompt cache policy split by lane (reflex/autonomy/dream) |  |
+| OPT-003 | backlog | OPT | done | Dream fallback quality scoring before proposal injection |  |
+| OPT-004 | backlog | OPT | done | Proposal semantic dedupe (near-duplicate clustering) |  |
+| OPT-005 | backlog | OPT | done | Outcome correlation expansion (task-type x eye-source x model) |  |
+| OPT-006 | backlog | OPT | done | Focus-controller trigger adaptation cadence tuning |  |
+| RM-002 | dependency-anchor | RM | done | Legacy dependency anchor (RM-002) |  |
+| RM-004 | dependency-anchor | RM | done | Legacy dependency anchor (RM-004) |  |
+| RM-005 | dependency-anchor | RM | done | Legacy dependency anchor (RM-005) |  |
+| RM-104 | dependency-anchor | RM | done | Legacy dependency anchor (RM-104) |  |
+| RM-109 | dependency-anchor | RM | done | Legacy dependency anchor (RM-109) |  |
+| RM-113 | dependency-anchor | RM | done | Legacy dependency anchor (RM-113) |  |
+| RM-114 | dependency-anchor | RM | done | Legacy dependency anchor (RM-114) |  |
+| RM-118 | dependency-anchor | RM | done | Legacy dependency anchor (RM-118) |  |
+| RM-121 | dependency-anchor | RM | done | Legacy dependency anchor (RM-121) |  |
+| RM-122 | dependency-anchor | RM | done | Legacy dependency anchor (RM-122) |  |
+| RM-123 | dependency-anchor | RM | done | Legacy dependency anchor (RM-123) |  |
+| RM-202 | dependency-anchor | RM | done | Legacy dependency anchor (RM-202) |  |
+| RR-001 | backlog | RR | done | Config and flag fragmentation |  |
+| RR-002 | backlog | RR | done | Duplicate execution pathways |  |
+| RR-003 | backlog | RR | done | Schema drift without migration discipline |  |
+| RR-004 | backlog | RR | done | Determinism gaps in replay |  |
+| RR-005 | backlog | RR | done | Operational complexity debt |  |
+| RR-006 | backlog | RR | done | Key and secret lifecycle fragility |  |
+| RR-007 | backlog | RR | done | Supply-chain trust gap |  |
+| RR-008 | backlog | RR | done | Multi-node partition and split-brain semantics |  |
+| RR-009 | backlog | RR | done | Data retention/churn bloat |  |
+| RR-010 | backlog | RR | done | Human override ergonomics under incident stress |  |
+| RR-011 | backlog | RR | done | Catastrophic recovery gap |  |
+| RR-012 | backlog | RR | done | Long-horizon value drift in Heroic Echo |  |
+| RR-013 | backlog | RR | done | Explainability debt at scale |  |
+| RR-014 | backlog | RR | done | External world-model staleness |  |
 | V1H-001 | backlog | V1H | done | Full-pipeline integration/e2e hardening |  |
 | V1H-002 | backlog | V1H | done | Release-gate + canary/rollback enforcement expansion |  |
 | V1H-003 | backlog | V1H | done | Observability + SLO + runbook completion pass |  |
@@ -356,10 +358,20 @@ Generated: 2026-03-06T16:58:27.669Z
 | V2-050 | backlog | V2 | done | Per-recipe sandbox verification and canary promotion for doctor actions |  |
 | V2-051 | backlog | V2 | done | Broken-piece lab pipeline (rollback bundles -> dormant study queue -> safe reimplementation proposals) |  |
 | V2-052 | backlog | V2 | done | Independent repair-plane watchdog (out-of-band verifier) |  |
+| V2-058 | dependency-anchor | V2 | done | Legacy dependency anchor (V2-058) |  |
+| V2-062 | dependency-anchor | V2 | done | Legacy dependency anchor (V2-062) |  |
+| V2-063 | dependency-anchor | V2 | done | Legacy dependency anchor (V2-063) |  |
+| V2-069 | dependency-anchor | V2 | done | Legacy dependency anchor (V2-069) |  |
 | V3-001 | backlog | V3 | done | Recursive goal-preservation kernel |  |
 | V3-002 | backlog | V3 | done | Capability ceiling + containment envelopes |  |
 | V3-003 | backlog | V3 | done | New-model vaccine sandbox (containment pen-test lane) |  |
 | V3-004 | backlog | V3 | done | Constitution Protection Layer (epic tracker) |  |
+| V3-004A | backlog | V3 | done | Immutable constitutional genesis anchor |  |
+| V3-004B | backlog | V3 | done | Dual-signature constitutional change gate |  |
+| V3-004C | backlog | V3 | done | Delayed activation + veto window |  |
+| V3-004D | backlog | V3 | done | Nursery red-team constitutional gauntlet |  |
+| V3-004E | backlog | V3 | done | Fractal inheritance lock enforcement |  |
+| V3-004F | backlog | V3 | done | Emergency constitutional rollback switch |  |
 | V3-005 | backlog | V3 | done | External anti-sabotage provenance net |  |
 | V3-006 | backlog | V3 | done | Recursive mini-core instancing (nested Protheus branches) |  |
 | V3-007 | backlog | V3 | done | Self-code evolution sandbox + guarded merge |  |
@@ -377,85 +389,15 @@ Generated: 2026-03-06T16:58:27.669Z
 | V3-020 | backlog | V3 | done | Protheus Prime seed profile + bounded-core manifest |  |
 | V3-021 | backlog | V3 | done | Attested hardware assimilation plane (node join + lease scheduler) |  |
 | V3-030 | backlog | V3 | done | Tool assimilation pipeline (Research -> Forge -> Nursery -> Doctor graft) |  |
-| V4-CLEAN-001 | hygiene | V4 | done | Habits path migration prep (abstraction + compatibility) |  |
-| V4-CLEAN-002 | hygiene | V4 | done | Helix codex surface hardening without runtime break | V4-CLEAN-001 |
-| V4-CLEAN-003 | security | V4 | done | Secret broker backend uplift (keychain/age additive) | V4-CLEAN-001 |
-| V4-CLEAN-004 | hygiene | V4 | done | Root scaffolding rationalization with contract-first moves | V4-CLEAN-001, V4-CLEAN-003 |
-| V4-CLEAN-005 | governance | V4 | done | Public repo presentation pass (non-destructive) | V4-CLEAN-002, V4-CLEAN-004 |
-| V4-SCI-001 | scientific | V4 | done | Scientific method core primitive |  |
-| V4-SCI-002 | scientific | V4 | done | HypothesisForge background trend + hypothesis engine | V4-SCI-001, V3-RACE-080, V3-RACE-083 |
-| V4-SCI-003 | scientific | V4 | done | Reasoning mirror lane for Phase-1 UI | V4-SCI-001 |
-| V4-SCI-004 | scientific | V4 | done | Scientific mode integration + launch-safe feature flag | V4-SCI-001, V4-SCI-002, V4-SCI-003, V3-018, V3-019 |
-| V4-SCI-005 | scientific | V4 | done | Autonomous long-horizon experiment scheduler | V4-SCI-002, V4-SCI-004 |
-| V4-SCI-006 | scientific | V4 | done | Meta-science + active learning loop | V4-SCI-001, V4-SCI-002, V4-SCI-005 |
-| V4-SCI-007 | scientific | V4 | done | Advanced statistical extensions for scientific engine | V4-SCI-001, V4-SCI-004, V3-RACE-361 |
-| V4-SCI-008 | scientific | V4 | done | Enhanced reasoning mirror for Phase-1 UI | V4-SCI-003, V4-SCI-005, V4-SCI-006, V4-SCI-007 |
-| V4-UX-001 | launch-polish | V4 | done | World-class first-run onboarding wizard | V4-SCI-004 |
-| V4-UX-002 | launch-polish | V4 | done | Phase-1 traditional UI polish + consistency pass | V4-UX-001 |
-| V4-UX-003 | launch-polish | V4 | done | Public docs + developer experience overhaul | V4-UX-001, V3-RACE-127 |
-| V4-AUTO-010 | launch-polish | V4 | done | Autogenesis trust + reversibility UX layer | V4-UX-002, V3-007, V3-RACE-019 |
-| V4-OBS-011 | launch-polish | V4 | done | Advanced `protheus-top` observability dashboard polish | V4-UX-002, V3-RACE-227, V4-SCI-008 |
-| V4-ERR-012 | launch-polish | V4 | done | World-class error handling + guided recovery UX | V4-UX-002, V4-UX-003 |
-| V4-FORT-001 | launch-polish | V4 | done | UI Surface Maturity Pack (Design System + View Contracts) | V4-UX-002 |
-| V4-FORT-002 | launch-polish | V4 | done | Enterprise Onboarding Pack (Operator/Engineer/Contributor Paths) | V4-UX-001, V4-UX-003 |
-| V4-FORT-003 | governance | V4 | done | Documentation Program Hardening (Ownership + Cadence + Decision Trails) | V3-RACE-127, V4-UX-003 |
-| V4-FORT-004 | governance | V4 | done | History Cleanliness Program (Changelog + Release Discipline + Commit Hygiene) | V4-UX-003, V1H-002 |
-| V4-FORT-005 | launch-polish | V4 | done | Public Collaboration Surface Pack (Issue/PR Templates + Triage Contracts) | V4-UX-003, V4-FORT-002 |
-| V4-FORT-006 | hardening | V4 | done | Empty Fort Integrity Guard (No Fabricated Claims) | V4-FORT-003, V4-FORT-004, V4-FORT-005 |
-| V4-FORT-007 | launch-polish | V4 | done | Polish/Perception Program (Org Code Format + Repo Professionalism Standard) | V4-FORT-001, V4-FORT-003, V4-FORT-004, V4-FORT-005, V4-FORT-006 |
-| V4-SELF-001 | hardening | V4 | done | Internal Illusion & Integrity Auditor | V4-FORT-006, V4-FORT-007 |
-| V4-ILLUSION-001 | launch-polish | V4 | done | Optional Subtle Reinforcement Layer (`--illusion-mode`) | V4-FORT-006, V4-FORT-007, V4-SETTLE-005 |
-| V4-AESTHETIC-001 | launch-polish | V4 | done | Alien Technology Aesthetic Layer (`alien_aesthetic=1`) | V4-ILLUSION-001, V4-SETTLE-011, V4-UX-002, V4-FORT-006 |
-| V4-AESTHETIC-002 | launch-polish | V4 | done | Selective Ethereal Language Layer | V4-AESTHETIC-001, V4-SETTLE-011, V4-FORT-006 |
-| V4-MIGR-001 | migration | V4 | done | Core Migration Bridge + Workspace Port Command | V4-FORT-006, V4-SELF-001 |
-| V4-MIGR-002 | migration | V4 | done | Community Repo Graduation Pack (Banner + Redirect + Pinned Issue) | V4-MIGR-001, V4-FORT-005, V4-FORT-006 |
-| V4-MIGR-003 | interoperability | V4 | done | Universal Importers (OpenFang/CrewAI/AutoGen/LangGraph/Common Dumps) | V4-MIGR-001, V3-RACE-127 |
-| V4-MIGR-004 | migration | V4 | done | Self-Healing Migration Daemon | V4-MIGR-001, V4-SELF-001 |
-| V4-MIGR-005 | launch-polish | V4 | done | Post-Migration Verification + Premium Completion Report | V4-MIGR-001, V4-MIGR-003, V4-MIGR-004 |
-| V4-SETTLE-001 | primitive-upgrade | V4 | done | Core Settling Engine (Compile + Memory-Map + Re-exec) | V4-RUST-001, V4-SCI-004, V3-RACE-044 |
-| V4-SETTLE-002 | hardening | V4 | done | Signed Snapshot Vault + Revert/Edit-Core Round Trip | V4-SETTLE-001, V3-RACE-163, V4-FORT-006 |
-| V4-SETTLE-003 | extension | V4 | done | Target Abstraction for Binary + Ternary/Exotic Compile Flags | V4-SETTLE-001, V4-RUST-003 |
-| V4-SETTLE-004 | hardening | V4 | done | Promotion-Coupled Re-Settlement Policy | V4-SETTLE-001, V3-007, V4-SELF-001 |
-| V4-SETTLE-005 | launch-polish | V4 | done | Settled-State Operator Surface in `protheus-top` | V4-SETTLE-001, V4-OBS-011 |
-| V4-SETTLE-006 | primitive-upgrade | V4 | done | Modular System-Wide Settling + Rust BlobLoader | V4-SETTLE-001, V4-RUST-001, V3-RACE-044 |
-| V4-SETTLE-007 | hardening | V4 | done | Per-Module Edit + Re-Settle Workflow (`protheusctl edit <module>`) | V4-SETTLE-002, V4-SETTLE-006, V3-RACE-163 |
-| V4-SETTLE-008 | launch-polish | V4 | done | Multi-Module Settle Status Dashboard (`protheus-top`) | V4-SETTLE-005, V4-SETTLE-006, V4-SETTLE-007 |
-| V4-SETTLE-009 | extension | V4 | done | Pluggable Ternary + Future Architecture Module Settle Support | V4-SETTLE-003, V4-SETTLE-006, V4-SETTLE-011 |
-| V4-SETTLE-010 | hardening | V4 | done | Autogenesis/Promotion-Coupled Differential Module Re-Settlement | V4-SETTLE-004, V4-SETTLE-006, V4-SETTLE-007, V4-SELF-001 |
-| V4-SETTLE-011 | extension | V4 | done | Preferred Advanced Substrate Detection + Graceful Binary Fallback | V4-SETTLE-001, V4-SETTLE-003, V4-SETTLE-005 |
-| V4-RUST-001 | status-reconciliation | V4 | done | Authoritative Rust Microkernel Cutover Acceleration |  |
-| V4-RUST-002 | scientific | V4 | done | Scientific Stack Rust Orchestration + R Bridge Hardening | V4-SCI-001, V4-SCI-002, V4-SCI-004, V3-RACE-361, V4-RUST-001 |
-| V4-RUST-003 | status-reconciliation | V4 | done | Cargo Workspace Professionalization + Rust CI Quality Signal |  |
-| V4-RUST-004 | extension | V4 | done | Habits/Vault/Adaptive Core Rust Migration Wave (Phased) | V4-RUST-001, V4-RUST-003, V3-RACE-011, V3-RACE-163 |
-| V4-SCALE-001 | scale-readiness | V4 | done | Load Model + SLO Contract (1k -> 10k -> 100k -> 1M) | V4-RUST-001, V3-RACE-221, V3-RACE-309 |
-| V4-SCALE-002 | scale-readiness | V4 | done | Stateless App-Tier + Horizontal Autoscaling Contract | V4-SCALE-001, V3-RACE-202, V3-RACE-034 |
-| V4-SCALE-003 | scale-readiness | V4 | done | Durable Async Pipeline (Queue/Retry/Idempotency/Backpressure) | V4-SCALE-001, V3-RACE-078, V3-RACE-044 |
-| V4-SCALE-004 | scale-readiness | V4 | done | Data Plane Scale Program (Partitioning + Read/Write Split + Online Migration) | V4-SCALE-001, V3-RACE-118, V3-RACE-044 |
-| V4-SCALE-005 | scale-readiness | V4 | done | Caching + Edge Delivery Contract (CDN + Hot-Key + Invalidation) | V4-SCALE-001, V3-RACE-174, V3-RACE-127 |
-| V4-SCALE-006 | scale-readiness | V4 | done | Multi-Region Resilience + Disaster Recovery Drill Program | V4-SCALE-001, V3-RACE-057, V2-019, V4-002 |
-| V4-SCALE-007 | scale-readiness | V4 | done | Release Safety at Scale (Canary + Feature Flags + Schema Compatibility) | V4-SCALE-001, V1H-002, V3-RACE-114 |
-| V4-SCALE-008 | scale-readiness | V4 | done | Observability + SRE Operations Maturity Pack | V4-SCALE-001, V1H-003, V3-RACE-012 |
-| V4-SCALE-009 | scale-readiness | V4 | done | Abuse/Security Hardening at Scale (Rate-Limit + Tenant Isolation + Auth) | V4-SCALE-001, V1H-004, V3-RACE-051 |
-| V4-SCALE-010 | scale-readiness | V4 | done | Capacity + Unit Economics Governance (p95/p99 + Cost per User) | V4-SCALE-001, BL-038, V3-RACE-221 |
-| RR-001 | backlog | RR | done | Config and flag fragmentation |  |
-| RR-002 | backlog | RR | done | Duplicate execution pathways |  |
-| RR-003 | backlog | RR | done | Schema drift without migration discipline |  |
-| RR-004 | backlog | RR | done | Determinism gaps in replay |  |
-| RR-005 | backlog | RR | done | Operational complexity debt |  |
-| RR-006 | backlog | RR | done | Key and secret lifecycle fragility |  |
-| RR-007 | backlog | RR | done | Supply-chain trust gap |  |
-| RR-008 | backlog | RR | done | Multi-node partition and split-brain semantics |  |
-| RR-009 | backlog | RR | done | Data retention/churn bloat |  |
-| RR-010 | backlog | RR | done | Human override ergonomics under incident stress |  |
-| RR-011 | backlog | RR | done | Catastrophic recovery gap |  |
-| RR-012 | backlog | RR | done | Long-horizon value drift in Heroic Echo |  |
-| RR-013 | backlog | RR | done | Explainability debt at scale |  |
-| RR-014 | backlog | RR | done | External world-model staleness |  |
-| V3-DUAL-001 | backlog | V3 | done | Duality Belief Engine Seed |  |
-| V3-ATTR-001 | backlog | V3 | done | Lightweight Value Attribution Primitive |  |
-| V3-ATTR-002 | backlog | V3 | done | Storm Value Distribution Layer |  |
-| V3-ATTR-003 | backlog | V3 | done | Creator Opt-In & Public Assimilation Ledger |  |
-| V3-TASK-001 | backlog | V3 | done | Task Decomposition Primitive + Parallel Micro-Task Execution |  |
+| V3-033 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-033) |  |
+| V3-038 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-038) |  |
+| V3-048 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-048) |  |
+| V3-051 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-051) |  |
+| V3-053 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-053) |  |
+| V3-059 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-059) |  |
+| V3-ACT-002 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-ACT-002) |  |
+| V3-AEX-001 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-AEX-001) |  |
+| V3-AEX-002 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-AEX-002) |  |
 | V3-ASSIM-004 | backlog | V3 | done | Memory Evolution Primitive (MemRL-inspired) |  |
 | V3-ASSIM-005 | backlog | V3 | done | Context Navigation Primitive (RLM-inspired) |  |
 | V3-ASSIM-006 | backlog | V3 | done | Generative Simulation Mode |  |
@@ -479,39 +421,43 @@ Generated: 2026-03-06T16:58:27.669Z
 | V3-ASSIM-024 | backlog | V3 | done | Hidden Evaluation Execution Lane + Outcome Wiring |  |
 | V3-ASSIM-025 | backlog | V3 | done | Assimilation Policy Enforcement Closure (Wire or Retire Dead Knobs) |  |
 | V3-ASSIM-026 | backlog | V3 | done | Weaver Gate Strict Mode (Missing Snapshot Fail-Closed by Risk) |  |
-| V3-RED-003 | backlog | V3 | done | Harness Apply Path for Self-Improving Red-Team |  |
-| V3-TASK-002 | backlog | V3 | done | Task Decomposition Live Execution Handoff |  |
+| V3-ATTR-001 | backlog | V3 | done | Lightweight Value Attribution Primitive |  |
+| V3-ATTR-002 | backlog | V3 | done | Storm Value Distribution Layer |  |
+| V3-ATTR-003 | backlog | V3 | done | Creator Opt-In & Public Assimilation Ledger |  |
 | V3-ATTR-004 | backlog | V3 | done | Storm Distribution Settlement Executor Lane |  |
-| V3-RACE-024 | hardening | V3 | done | Daemon Soak Promotion Gate + Receipts (24-48h) | V3-RACE-023, RM-122 |
-| V3-RACE-025 | hardening | V3 | done | Daemon Supervision + Stale PID/Socket Reaper | V3-RACE-023, V3-OPS-005 |
-| V3-RACE-026 | hardening | V3 | done | Fallback Retirement Gate (JS Emergency-Only) | V3-RACE-024, V3-RMEM-006 |
-| V3-RACE-027 | primitive-upgrade | V3 | done | Direct Memory Encryption Plane Integration (Replace DB Shim) | V3-RACE-023, V3-ENT-002 |
-| V3-RACE-028 | primitive-upgrade | V3 | done | In-Process Rust Memory Binding Lane (`napi-rs`) | V3-RACE-024, V3-RACE-025 |
-| V3-SKIN-001 | backlog | V3 | done | Contract-Coupled Defense Dependency Mesh |  |
-| V3-SKIN-002 | backlog | V3 | done | Runtime Tamper Attestation + Self-Containment |  |
-| V3-SKIN-003 | backlog | V3 | done | Binary Hardening Profile + Anti-RE Telemetry |  |
-| V3-VENOM-000 | backlog | V3 | done | No Offensive Behavior Invariant |  |
-| V3-VENOM-001 | backlog | V3 | done | Attractive Full-Capability Facade + Triggered Containment Escalation |  |
-| V3-VENOM-002 | backlog | V3 | done | Defensive Decoy Response Layer (Non-Destructive) |  |
-| V3-VENOM-003 | backlog | V3 | done | Bounded Verification Friction Escalation |  |
-| V3-VENOM-004 | backlog | V3 | done | Timed Lease Decay + Deterministic Lockout |  |
-| V3-VENOM-005 | backlog | V3 | done | Self-Reporting Forensic Beacon System |  |
-| V3-VENOM-006 | backlog | V3 | done | Adaptive Defense Evolution Engine |  |
-| V3-VENOM-007 | backlog | V3 | done | Staged Containment Ramp |  |
-| V3-RED-002 | backlog | V3 | done | Open-Ended Defensive Tool Discovery + Evolution Lane |  |
-| V3-RED-ESC-001 | backlog | V3 | done | Adaptive Cost-Escalation Profiles + Runtime Fingerprint Classes |  |
-| V3-RED-ESC-002 | backlog | V3 | done | Dynamic Friction Scaling Controller |  |
-| V3-RED-ESC-003 | backlog | V3 | done | Bounded Resource-Sink Decoy Paths |  |
-| V3-RED-ESC-004 | backlog | V3 | done | Evolutionary Cost Model Trainer (Stack-Adaptive + Category Expansion) |  |
-| V3-RED-HALL-001 | backlog | V3 | done | Governed Defensive Exemption Primitive |  |
-| V3-RED-HALL-002 | backlog | V3 | done | Exemption Registry + Expiry/Audit Enforcement |  |
-| V3-RED-HALL-003 | backlog | V3 | done | Adaptive Exemption Calibration Loop |  |
-| V3-RED-NASTY-001 | backlog | V3 | done | Adaptive "Tease & Trap" Deception |  |
-| V3-RED-NASTY-002 | backlog | V3 | done | Stack-Specific Resource Poisoning |  |
-| V3-RED-NASTY-003 | backlog | V3 | done | Psychological Decay Tease |  |
-| V3-RED-NASTY-004 | backlog | V3 | done | Self-Replicating Containment Children |  |
-| V3-QPROOF-001 | backlog | V3 | done | Post-Quantum Hash + Signing Migration Lane |  |
-| V3-QPROOF-002 | backlog | V3 | done | Self-Learning Quantum Security Primitive Synthesis |  |
+| V3-BENCH-001 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-BENCH-001) |  |
+| V3-BLD-001 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-BLD-001) |  |
+| V3-BLK-001 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-BLK-001) |  |
+| V3-BUD-001 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-BUD-001) |  |
+| V3-CPY-001 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-CPY-001) |  |
+| V3-CPY-005 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-CPY-005) |  |
+| V3-CPY-006 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-CPY-006) |  |
+| V3-DEP-001 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-DEP-001) |  |
+| V3-DOC-001 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-DOC-001) |  |
+| V3-DOC-004 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-DOC-004) |  |
+| V3-DOC-005 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-DOC-005) |  |
+| V3-DOC-007 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-DOC-007) |  |
+| V3-DUAL-001 | backlog | V3 | done | Duality Belief Engine Seed |  |
+| V3-ECO-001 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-ECO-001) |  |
+| V3-ENT-001 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-ENT-001) |  |
+| V3-ENT-002 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-ENT-002) |  |
+| V3-GOV-002 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-GOV-002) |  |
+| V3-LOOP-001 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-LOOP-001) |  |
+| V3-LOOP-004 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-LOOP-004) |  |
+| V3-MAC-001 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-MAC-001) |  |
+| V3-MEM-001 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-MEM-001) |  |
+| V3-MEM-002 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-MEM-002) |  |
+| V3-MEM-004 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-MEM-004) |  |
+| V3-MEM-008 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-MEM-008) |  |
+| V3-MLC-002 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-MLC-002) |  |
+| V3-OBS-002 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-OBS-002) |  |
+| V3-OF-008 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-OF-008) |  |
+| V3-OPS-003 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-OPS-003) |  |
+| V3-OPS-005 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-OPS-005) |  |
+| V3-OPS-006 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-OPS-006) |  |
+| V3-PRO-001 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-PRO-001) |  |
+| V3-QPROOF-001 | backlog | V3 | done | Post-Quantum Hash + Signing Migration Lane | V3-051, V3-SK-001, V3-VENOM-000 |
+| V3-QPROOF-002 | backlog | V3 | done | Self-Learning Quantum Security Primitive Synthesis | V3-RED-002, V3-VENOM-006, V3-QPROOF-001 |
 | V3-RACE-001 | primitive-upgrade | V3 | done | Rust Core Runtime Kernel Slice | V3-RMEM-001, V3-OPS-005, V3-OPS-006 |
 | V3-RACE-002 | hardening | V3 | done | Wasmtime Capability Microkernel Lane | V3-OF-001, V3-CPY-006, V3-VENOM-000 |
 | V3-RACE-003 | primitive-upgrade | V3 | done | Event-Sourced Control Plane + CQRS Materialized Views | V3-SK-001, V3-SK-002, V3-SK-007 |
@@ -534,36 +480,28 @@ Generated: 2026-03-06T16:58:27.669Z
 | V3-RACE-020 | extension | V3 | done | LoRA-Backed Soul Continuity Adapter | V3-RACE-008, V3-ASSIM-012, V2-058, V3-BLK-001 |
 | V3-RACE-021 | primitive-upgrade | V3 | done | Rust Microkernel Full Control-Plane Extraction + Default Cutover | V3-RACE-001, V3-RACE-002, V3-RMEM-006, RM-122, V3-OPS-015 |
 | V3-RACE-022 | extension | V3 | done | Compute-Tithe Flywheel (Tithe-as-Leverage GPU Donation System) | V3-RACE-016, V3-RACE-017, V3-RACE-019, V3-BLK-001, V3-BUD-001 |
-| V3-RACE-CONF-001 | extension | V3 | done | Open Platform Path-Contract Compatibility Pack (`platform/` artifacts) | V3-RACE-016, V3-DOC-001 |
-| V3-RACE-CONF-002 | hardening | V3 | done | Legacy Path Alias Adapters (`systems/state/event_stream.js`, `systems/autogenesis/*`) | V3-RACE-017, V3-RACE-018 |
-| V3-RACE-CONF-003 | hardening | V3 | done | Requirement Conformance Matrix + Gate (`external prompt -> canonical lane`) | V3-AEX-002, V3-DOC-004 |
-| V3-RACE-CONF-004 | hardening | V3 | done | Rust Memory Path-Contract Compatibility (`core/memory` alias docs/wrappers) | V3-RACE-023, V3-DOC-001 |
-| V3-RACE-CONF-005 | hardening | V3 | done | N-API Build Surface Compatibility Contract (`build:memory`/postinstall expectations) | V3-RACE-028, V3-DOC-004 |
-| V3-RACE-DEF-024 | hardening | V3 | done | PsycheForge Adaptive Counter-Profile Defense Organ | V3-RACE-017, V3-RACE-019, V3-RACE-023, V3-VENOM-006 |
-| V3-RACE-DEF-025 | hardening | V3 | done | Smart Knot Crown-Jewel Obfuscation Layer | V3-RACE-DEF-024, V3-CPY-005, V3-CPY-006 |
-| V3-RACE-DEF-026 | hardening | V3 | done | Lockweaver Eternal Flux Field (Origin-Lock Verified Structural Flux) | V3-RACE-017, V3-RACE-019, V3-RACE-023, V3-RACE-DEF-024, V3-RACE-DEF-025 |
-| V3-RACE-DEF-027 | extension | V3 | done | Project Jigsaw (AttackCinema Incident Replay Theater) | V3-RACE-017, V3-RACE-019, V3-RACE-020, V3-RACE-023, V3-RACE-DEF-024, V3-RACE-DEF-026 |
-| V3-RACE-DEF-028 | hardening | V3 | done | Phoenix Protocol (Immortal Red-Team Respawn + Continuity Inheritance) | V3-RACE-017, V3-RACE-019, V3-RACE-020, V3-RACE-023, V3-RACE-DEF-024, V3-RACE-DEF-026, V3-RACE-DEF-027 |
-| V3-RACE-DEF-029 | hardening | V3 | done | MirrorReaper Protocol (Tier-4 Resource Inversion Defense Mode) | V3-RACE-017, V3-RACE-019, V3-RACE-022, V3-RACE-DEF-024, V3-RACE-DEF-026, V3-RACE-DEF-027, V3-RACE-DEF-028 |
+| V3-RACE-023 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-RACE-023) |  |
+| V3-RACE-024 | hardening | V3 | done | Daemon Soak Promotion Gate + Receipts (24-48h) | V3-RACE-023, RM-122 |
+| V3-RACE-025 | hardening | V3 | done | Daemon Supervision + Stale PID/Socket Reaper | V3-RACE-023, V3-OPS-005 |
+| V3-RACE-026 | hardening | V3 | done | Fallback Retirement Gate (JS Emergency-Only) | V3-RACE-024, V3-RMEM-006 |
+| V3-RACE-027 | primitive-upgrade | V3 | done | Direct Memory Encryption Plane Integration (Replace DB Shim) | V3-RACE-023, V3-ENT-002 |
+| V3-RACE-028 | primitive-upgrade | V3 | done | In-Process Rust Memory Binding Lane (`napi-rs`) | V3-RACE-024, V3-RACE-025 |
 | V3-RACE-030 | extension | V3 | done | Legion Honor Codex (Soul-Bound Medals, Titles, and Red Legion Rank System) | V3-RACE-019, V3-RACE-020, V3-RACE-022, V3-BLK-001, V3-RACE-DEF-024, V3-RACE-DEF-027, V3-RACE-DEF-028 |
 | V3-RACE-031 | hardening | V3 | done | Legion Geas Protocol (Iron Oath Self-Destruct Covenant) | V3-RACE-017, V3-RACE-020, V3-RACE-DEF-024, V3-RACE-DEF-027, V3-RACE-DEF-028, V3-RACE-DEF-029, V3-OPS-005 |
+| V3-RACE-032 | hardening | V3 | done | Complexity Warden Meta-Organ (Fractal Elegance Governor) | V3-RACE-017, V3-RACE-019, V3-RACE-020, V3-RACE-023, V3-RACE-DEF-026, V3-AEX-002 |
+| V3-RACE-033 | hardening | V3 | done | Mind Fortress Principle (Mind Sovereignty Covenant Anchor) | V3-RACE-017, V3-RACE-019, V3-RACE-020, V3-RACE-032, V3-AEX-002 |
 | V3-RACE-034 | status-reconciliation | V3 | done | Rust Spine Microkernel (Control-Plane Core Extraction) |  |
 | V3-RACE-035 | hardening | V3 | done | Formal Mind-Sovereignty Verification Layer | V3-045, V3-RACE-031, V3-RACE-034 |
 | V3-RACE-036 | hardening | V3 | done | Multi-Mind Isolation & Shared-Consciousness Boundary Plane | RM-109, V3-RACE-020, V3-RACE-035 |
 | V3-RACE-037 | extension | V3 | done | Long-Term Archival & Sovereign Resurrection Substrate | V3-BLK-001, V3-QPROOF-001, V3-RACE-020 |
+| V3-RACE-038 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-RACE-038) |  |
 | V3-RACE-038A | extension | V3 | done | Inter-Protheus Federation Trust Web & Temporary Merge Contracts | V2-062, V3-RACE-036, V3-RACE-037 |
 | V3-RACE-039 | primitive | V3 | done | Human-Machine Merge Interface Security Substrate | V3-RACE-035, V3-RACE-036, V3-RACE-037 |
-| V3-RACE-DEF-031A | hardening | V3 | done | Thorn Swarm Protocol (Tier-4 Sacrificial Wave Defense) | V3-RACE-017, V3-RACE-031, V3-RACE-DEF-024, V3-RACE-DEF-026, V3-RACE-DEF-029 |
-| V3-RACE-DEF-031B | hardening | V3 | done | Crimson Wraith Protocol (Single-Mission Phoenix Variant) | V3-RACE-017, V3-RACE-031, V3-RACE-DEF-024, V3-RACE-DEF-027, V3-RACE-DEF-028 |
-| V3-RACE-DEF-031C | hardening | V3 | done | Irrevocable Geas Covenant (Lineage Ban Enforcement) | V3-RACE-017, V3-RACE-031, V3-RACE-DEF-028 |
-| V3-RACE-032 | hardening | V3 | done | Complexity Warden Meta-Organ (Fractal Elegance Governor) | V3-RACE-017, V3-RACE-019, V3-RACE-020, V3-RACE-023, V3-RACE-DEF-026, V3-AEX-002 |
-| V3-RACE-033 | hardening | V3 | done | Mind Fortress Principle (Mind Sovereignty Covenant Anchor) | V3-RACE-017, V3-RACE-019, V3-RACE-020, V3-RACE-032, V3-AEX-002 |
 | V3-RACE-040 | hardening | V3 | done | Continuous Chaos Engineering + Auto-Remediation Suite | V3-RACE-017, V3-RACE-019, V3-RACE-032, V3-OPS-003 |
 | V3-RACE-041 | hardening | V3 | done | Enterprise SLO + Observability Command Dashboard | V3-RACE-005, V3-RACE-040, V3-OBS-002 |
 | V3-RACE-042 | hardening | V3 | done | Formal Threat Modeling Engine (STRIDE/ATT&CK Contractization) | V3-RACE-017, V3-RACE-031, V3-RACE-032 |
 | V3-RACE-043 | status-reconciliation | V3 | done | Supply-Chain Security & Reproducible Build Plane |  |
 | V3-RACE-044 | extension | V3 | done | Automated Compliance Mapping & Evidence Engine | V3-DOC-005, V3-DOC-007, V3-RACE-041, V3-RACE-042 |
-| V3-RACE-CONF-007 | hardening | V3 | done | Permanent Guidelines Drift Gate + Ticket Output Contract | V3-RACE-CONF-006, V3-RACE-033, V3-RACE-032, V3-AEX-002 |
 | V3-RACE-050 | hardening | V3 | done | Independent Safety Coprocessor & Out-of-Band Veto Plane | V3-RACE-034, V3-RACE-035, V3-RACE-033 |
 | V3-RACE-051 | hardening | V3 | done | Hardware Root-of-Trust Attestation Mesh | V3-RACE-034, V3-CPY-001, V3-051 |
 | V3-RACE-052 | hardening | V3 | done | Data Poisoning Immunity + Causal Rollback Plane | V3-RACE-023, V3-RACE-042, V3-RACE-035 |
@@ -583,7 +521,6 @@ Generated: 2026-03-06T16:58:27.669Z
 | V3-RACE-066 | hardening | V3 | done | Memory DB AEAD/Envelope Encryption Cutover | V3-RACE-027, V3-ENT-002, V3-RACE-023 |
 | V3-RACE-067 | hardening | V3 | done | Memory Index Freshness Enforcement Gate | V3-RACE-023, V3-RACE-062, V3-RACE-CONF-007 |
 | V3-RACE-068 | extension | V3 | done | Advisory JS Purge Wave (`habits/scripts`, `memory/tools`) | V2-001, V2-003, BL-014, RM-002 |
-| V3-RACE-CONF-008 | hardening | V3 | done | Merge-Conflict Marker CI Guard (`<<<<<<<`, `=======`, `>>>>>>>`) | V3-RACE-CONF-007, V3-AEX-002 |
 | V3-RACE-069 | hardening | V3 | done | Proposal Funnel SLO + Conversion Guard | RM-113, RM-114, BL-027 |
 | V3-RACE-070 | primitive-upgrade | V3 | done | Top-K Execution Reservation Lane | BL-027, BL-018, V3-AEX-001 |
 | V3-RACE-071 | hardening | V3 | done | Filter Pressure Rebalancer (High-Score Exemption Contracts) | BL-018, BL-027, RM-118 |
@@ -618,7 +555,6 @@ Generated: 2026-03-06T16:58:27.669Z
 | V3-RACE-100 | hardening | V3 | done | Causal Validation Gate for High-Impact Analysis Claims | V3-RACE-082, V3-RACE-090 |
 | V3-RACE-101 | extension | V3 | done | Active-Learning Uncertainty Queue | V3-RACE-088, V3-RACE-094, V3-RACE-097 |
 | V3-RACE-102 | extension | V3 | done | Offline Statistical Lab Artifact Bridge (R/Python Optional) | V3-RACE-086, V3-RACE-096, V3-RACE-098 |
-| V3-RACE-361 | extension | V3 | done | Offline R Analytics Runner + Research Organ Best-Fit Integration | V3-RACE-102, V3-RACE-096, V3-RACE-098 |
 | V3-RACE-103 | hardening | V3 | done | Sensitivity/Privacy-Aware Signal Scoring Contract | V3-RACE-033, V3-RACE-044, V3-RACE-096 |
 | V3-RACE-104 | hardening | V3 | done | Detector Rollback & Migration Safety Contract | V3-RACE-087, V3-RACE-098 |
 | V3-RACE-105 | hardening | V3 | done | Cross-Objective Interference Guard for Analysis Changes | V3-RACE-084, V3-RACE-096, V3-RACE-104 |
@@ -877,111 +813,136 @@ Generated: 2026-03-06T16:58:27.669Z
 | V3-RACE-358 | extension | V3 | done | GenericSocket + Named Host Socket Refactor (Channels -> Sockets) | V3-RACE-212, V3-RACE-211, V3-RACE-356, V3-RACE-357 |
 | V3-RACE-359 | extension | V3 | done | Socket Lifecycle Operator Surface (`protheusctl socket *` + API) | V3-RACE-356, V3-RACE-357, V3-RACE-213 |
 | V3-RACE-360 | hardening | V3 | done | Socket Admission Proof Gate (Formal + Redteam + HostProfile Chaos Validation) | V3-RACE-214, V3-RACE-187, V3-RACE-356, V3-RACE-357 |
-| RM-002 | dependency-anchor | RM | done | Legacy dependency anchor (RM-002) |  |
-| RM-004 | dependency-anchor | RM | done | Legacy dependency anchor (RM-004) |  |
-| RM-005 | dependency-anchor | RM | done | Legacy dependency anchor (RM-005) |  |
-| RM-104 | dependency-anchor | RM | done | Legacy dependency anchor (RM-104) |  |
-| RM-109 | dependency-anchor | RM | done | Legacy dependency anchor (RM-109) |  |
-| RM-113 | dependency-anchor | RM | done | Legacy dependency anchor (RM-113) |  |
-| RM-114 | dependency-anchor | RM | done | Legacy dependency anchor (RM-114) |  |
-| RM-118 | dependency-anchor | RM | done | Legacy dependency anchor (RM-118) |  |
-| RM-121 | dependency-anchor | RM | done | Legacy dependency anchor (RM-121) |  |
-| RM-122 | dependency-anchor | RM | done | Legacy dependency anchor (RM-122) |  |
-| RM-123 | dependency-anchor | RM | done | Legacy dependency anchor (RM-123) |  |
-| RM-202 | dependency-anchor | RM | done | Legacy dependency anchor (RM-202) |  |
-| V2-058 | dependency-anchor | V2 | done | Legacy dependency anchor (V2-058) |  |
-| V2-062 | dependency-anchor | V2 | done | Legacy dependency anchor (V2-062) |  |
-| V2-063 | dependency-anchor | V2 | done | Legacy dependency anchor (V2-063) |  |
-| V2-069 | dependency-anchor | V2 | done | Legacy dependency anchor (V2-069) |  |
-| V3-033 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-033) |  |
-| V3-038 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-038) |  |
-| V3-048 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-048) |  |
-| V3-051 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-051) |  |
-| V3-053 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-053) |  |
-| V3-059 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-059) |  |
-| V3-ACT-002 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-ACT-002) |  |
-| V3-AEX-001 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-AEX-001) |  |
-| V3-AEX-002 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-AEX-002) |  |
-| V3-BENCH-001 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-BENCH-001) |  |
-| V3-BLD-001 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-BLD-001) |  |
-| V3-BLK-001 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-BLK-001) |  |
-| V3-BUD-001 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-BUD-001) |  |
-| V3-CPY-001 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-CPY-001) |  |
-| V3-CPY-005 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-CPY-005) |  |
-| V3-CPY-006 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-CPY-006) |  |
-| V3-DEP-001 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-DEP-001) |  |
-| V3-DOC-001 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-DOC-001) |  |
-| V3-DOC-004 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-DOC-004) |  |
-| V3-DOC-005 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-DOC-005) |  |
-| V3-DOC-007 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-DOC-007) |  |
-| V3-ECO-001 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-ECO-001) |  |
-| V3-ENT-001 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-ENT-001) |  |
-| V3-ENT-002 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-ENT-002) |  |
-| V3-GOV-002 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-GOV-002) |  |
-| V3-LOOP-001 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-LOOP-001) |  |
-| V3-LOOP-004 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-LOOP-004) |  |
-| V3-MAC-001 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-MAC-001) |  |
-| V3-MEM-001 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-MEM-001) |  |
-| V3-MEM-002 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-MEM-002) |  |
-| V3-MEM-004 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-MEM-004) |  |
-| V3-MEM-008 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-MEM-008) |  |
-| V3-MLC-002 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-MLC-002) |  |
-| V3-OBS-002 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-OBS-002) |  |
-| V3-OF-008 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-OF-008) |  |
-| V3-OPS-003 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-OPS-003) |  |
-| V3-OPS-005 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-OPS-005) |  |
-| V3-OPS-006 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-OPS-006) |  |
-| V3-PRO-001 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-PRO-001) |  |
-| V3-RACE-023 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-RACE-023) |  |
-| V3-RACE-038 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-RACE-038) |  |
+| V3-RACE-361 | extension | V3 | done | Offline R Analytics Runner + Research Organ Best-Fit Integration | V3-RACE-102, V3-RACE-096, V3-RACE-098 |
+| V3-RACE-CONF-001 | extension | V3 | done | Open Platform Path-Contract Compatibility Pack (`platform/` artifacts) | V3-RACE-016, V3-DOC-001 |
+| V3-RACE-CONF-002 | hardening | V3 | done | Legacy Path Alias Adapters (`systems/state/event_stream.js`, `systems/autogenesis/*`) | V3-RACE-017, V3-RACE-018 |
+| V3-RACE-CONF-003 | hardening | V3 | done | Requirement Conformance Matrix + Gate (`external prompt -> canonical lane`) | V3-AEX-002, V3-DOC-004 |
+| V3-RACE-CONF-004 | hardening | V3 | done | Rust Memory Path-Contract Compatibility (`core/memory` alias docs/wrappers) | V3-RACE-023, V3-DOC-001 |
+| V3-RACE-CONF-005 | hardening | V3 | done | N-API Build Surface Compatibility Contract (`build:memory`/postinstall expectations) | V3-RACE-028, V3-DOC-004 |
 | V3-RACE-CONF-006 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-RACE-CONF-006) |  |
+| V3-RACE-CONF-007 | hardening | V3 | done | Permanent Guidelines Drift Gate + Ticket Output Contract | V3-RACE-CONF-006, V3-RACE-033, V3-RACE-032, V3-AEX-002 |
+| V3-RACE-CONF-008 | hardening | V3 | done | Merge-Conflict Marker CI Guard (`<<<<<<<`, `=======`, `>>>>>>>`) | V3-RACE-CONF-007, V3-AEX-002 |
+| V3-RACE-DEF-024 | hardening | V3 | done | PsycheForge Adaptive Counter-Profile Defense Organ | V3-RACE-017, V3-RACE-019, V3-RACE-023, V3-VENOM-006 |
+| V3-RACE-DEF-025 | hardening | V3 | done | Smart Knot Crown-Jewel Obfuscation Layer | V3-RACE-DEF-024, V3-CPY-005, V3-CPY-006 |
+| V3-RACE-DEF-026 | hardening | V3 | done | Lockweaver Eternal Flux Field (Origin-Lock Verified Structural Flux) | V3-RACE-017, V3-RACE-019, V3-RACE-023, V3-RACE-DEF-024, V3-RACE-DEF-025 |
+| V3-RACE-DEF-027 | extension | V3 | done | Project Jigsaw (AttackCinema Incident Replay Theater) | V3-RACE-017, V3-RACE-019, V3-RACE-020, V3-RACE-023, V3-RACE-DEF-024, V3-RACE-DEF-026 |
+| V3-RACE-DEF-028 | hardening | V3 | done | Phoenix Protocol (Immortal Red-Team Respawn + Continuity Inheritance) | V3-RACE-017, V3-RACE-019, V3-RACE-020, V3-RACE-023, V3-RACE-DEF-024, V3-RACE-DEF-026, V3-RACE-DEF-027 |
+| V3-RACE-DEF-029 | hardening | V3 | done | MirrorReaper Protocol (Tier-4 Resource Inversion Defense Mode) | V3-RACE-017, V3-RACE-019, V3-RACE-022, V3-RACE-DEF-024, V3-RACE-DEF-026, V3-RACE-DEF-027, V3-RACE-DEF-028 |
+| V3-RACE-DEF-031A | hardening | V3 | done | Thorn Swarm Protocol (Tier-4 Sacrificial Wave Defense) | V3-RACE-017, V3-RACE-031, V3-RACE-DEF-024, V3-RACE-DEF-026, V3-RACE-DEF-029 |
+| V3-RACE-DEF-031B | hardening | V3 | done | Crimson Wraith Protocol (Single-Mission Phoenix Variant) | V3-RACE-017, V3-RACE-031, V3-RACE-DEF-024, V3-RACE-DEF-027, V3-RACE-DEF-028 |
+| V3-RACE-DEF-031C | hardening | V3 | done | Irrevocable Geas Covenant (Lineage Ban Enforcement) | V3-RACE-017, V3-RACE-031, V3-RACE-DEF-028 |
+| V3-RED-002 | backlog | V3 | done | Open-Ended Defensive Tool Discovery + Evolution Lane | V3-034, V3-VENOM-006, V3-RED-001, V3-038, V3-VENOM-000 |
+| V3-RED-003 | backlog | V3 | done | Harness Apply Path for Self-Improving Red-Team |  |
+| V3-RED-ESC-001 | backlog | V3 | done | Adaptive Cost-Escalation Profiles + Runtime Fingerprint Classes | V3-RED-002, V3-VENOM-003, V3-VENOM-006, V3-VENOM-000 |
+| V3-RED-ESC-002 | backlog | V3 | done | Dynamic Friction Scaling Controller | V3-RED-ESC-001, V3-VENOM-003, V3-CPY-001, V3-BUD-001 |
+| V3-RED-ESC-003 | backlog | V3 | done | Bounded Resource-Sink Decoy Paths | V3-RED-ESC-001, V3-VENOM-003, V3-VENOM-007, V3-VENOM-000 |
+| V3-RED-ESC-004 | backlog | V3 | done | Evolutionary Cost Model Trainer (Stack-Adaptive + Category Expansion) | V3-RED-001, V3-RED-002, V3-RED-ESC-001, V3-VENOM-006 |
+| V3-RED-HALL-001 | backlog | V3 | done | Governed Defensive Exemption Primitive | V3-RED-002, V3-VENOM-000, V3-038, V3-031, V2-058 |
+| V3-RED-HALL-002 | backlog | V3 | done | Exemption Registry + Expiry/Audit Enforcement | V3-RED-HALL-001, V2-063, V3-SK-004, V2-FND-004 |
+| V3-RED-HALL-003 | backlog | V3 | done | Adaptive Exemption Calibration Loop | V3-RED-001, V3-RED-HALL-001, V3-RED-ESC-004, V3-VENOM-006 |
+| V3-RED-NASTY-001 | backlog | V3 | done | Adaptive "Tease & Trap" Deception | V3-VENOM-002, V3-RED-HALL-001, V3-RED-ESC-001 |
+| V3-RED-NASTY-002 | backlog | V3 | done | Stack-Specific Resource Poisoning | V3-RED-ESC-002, V3-RED-002, V3-BUD-001 |
+| V3-RED-NASTY-003 | backlog | V3 | done | Psychological Decay Tease | V3-VENOM-004, V3-RED-HALL-001, V3-VENOM-006 |
+| V3-RED-NASTY-004 | backlog | V3 | done | Self-Replicating Containment Children | V3-VENOM-003, V3-RED-ESC-003, V3-RED-HALL-001 |
 | V3-RMEM-001 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-RMEM-001) |  |
 | V3-SK-001 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-SK-001) |  |
 | V3-SK-002 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-SK-002) |  |
 | V3-SK-007 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-SK-007) |  |
+| V3-SKIN-001 | backlog | V3 | done | Contract-Coupled Defense Dependency Mesh | V3-SK-001, V3-FCH-002, V3-033, V3-034, V3-VENOM-000 |
+| V3-SKIN-002 | backlog | V3 | done | Runtime Tamper Attestation + Self-Containment | V3-BIN-003, V3-CPY-006, V3-VENOM-005 |
+| V3-SKIN-003 | backlog | V3 | done | Binary Hardening Profile + Anti-RE Telemetry | V3-BIN-002, V3-BIN-004, V3-CPY-002, V3-VENOM-000 |
 | V3-SYM-001 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-SYM-001) |  |
+| V3-TASK-001 | backlog | V3 | done | Task Decomposition Primitive + Parallel Micro-Task Execution |  |
+| V3-TASK-002 | backlog | V3 | done | Task Decomposition Live Execution Handoff |  |
+| V3-VENOM-000 | backlog | V3 | done | No Offensive Behavior Invariant | V3-VENOM |
+| V3-VENOM-001 | backlog | V3 | done | Attractive Full-Capability Facade + Triggered Containment Escalation | V3-CPY-001, V3-033, V2-058, V3-BLK-001 |
+| V3-VENOM-002 | backlog | V3 | done | Defensive Decoy Response Layer (Non-Destructive) | V3-CPY-003, V3-CPY-007, V2-063 |
+| V3-VENOM-003 | backlog | V3 | done | Bounded Verification Friction Escalation | V3-CPY-001, V3-OPS-014, V3-BUD-001 |
+| V3-VENOM-004 | backlog | V3 | done | Timed Lease Decay + Deterministic Lockout | V3-CPY-001, V3-CPY-004, V3-ENT-001 |
+| V3-VENOM-005 | backlog | V3 | done | Self-Reporting Forensic Beacon System | V3-CPY-003, V3-USE-002, V2-031 |
+| V3-VENOM-006 | backlog | V3 | done | Adaptive Defense Evolution Engine | V3-034, V3-RED-001, V3-CPY-008 |
+| V3-VENOM-007 | backlog | V3 | done | Staged Containment Ramp | V3-VENOM-001, V3-VENOM-004, V3-VENOM-000 |
 | V3-XAI-002 | dependency-anchor | V3 | done | Legacy dependency anchor (V3-XAI-002) |  |
 | V4-002 | dependency-anchor | V4 | done | Legacy dependency anchor (V4-002) |  |
 | V4-006 | dependency-anchor | V4 | done | Legacy dependency anchor (V4-006) |  |
-| OPT-001 | backlog | OPT | done | Eyes signal weighting retune in router ranking |  |
-| OPT-002 | backlog | OPT | done | Prompt cache policy split by lane (reflex/autonomy/dream) |  |
-| OPT-003 | backlog | OPT | done | Dream fallback quality scoring before proposal injection |  |
-| OPT-004 | backlog | OPT | done | Proposal semantic dedupe (near-duplicate clustering) |  |
-| OPT-005 | backlog | OPT | done | Outcome correlation expansion (task-type x eye-source x model) |  |
-| OPT-006 | backlog | OPT | done | Focus-controller trigger adaptation cadence tuning |  |
-| V5-RUST-PROD-001 | scale-readiness | V5 | done | Rust Hotspot Baseline + ROI Prioritization Contract | V4-SCALE-001, V4-RUST-001 |
-| V5-RUST-PROD-002 | hardening | V5 | done | TS/Rust Boundary Contract + ABI/Schema Stability Gate | V5-RUST-PROD-001 |
-| V5-RUST-PROD-003 | primitive-upgrade | V5 | done | Scheduler + Queue Worker Rust Migration (High-Contention Paths) | V5-RUST-PROD-001, V5-RUST-PROD-002, V4-SCALE-003 |
-| V5-RUST-PROD-004 | primitive-upgrade | V5 | done | Memory Retrieval/Index Hot Path Rust Cutover | V5-RUST-PROD-001, V5-RUST-PROD-002, V3-RACE-065 |
-| V5-RUST-PROD-005 | extension | V5 | done | Transform/Scoring Pipeline Rust Offload (CPU-Bound Stages) | V5-RUST-PROD-001, V5-RUST-PROD-002 |
-| V5-RUST-PROD-006 | hardening | V5 | done | Zero-Copy Serialization/Data Movement Contract | V5-RUST-PROD-002, V5-RUST-PROD-004, V5-RUST-PROD-005 |
-| V5-RUST-PROD-007 | hardening | V5 | done | Rust Perf Regression CI Gate (Latency/Throughput/Cost Budgets) | V5-RUST-PROD-001, V5-RUST-PROD-003, V5-RUST-PROD-004, V5-RUST-PROD-005 |
-| V5-RUST-PROD-008 | scale-readiness | V5 | done | Canary Rollout + Auto-Rollback for Rust Lanes | V5-RUST-PROD-003, V5-RUST-PROD-004, V5-RUST-PROD-005, V4-SCALE-007 |
-| V5-RUST-PROD-009 | hardening | V5 | done | Rust Observability + SRE Runbook Parity Pack | V5-RUST-PROD-003, V5-RUST-PROD-004, V5-RUST-PROD-008, V4-SCALE-008 |
-| V5-RUST-PROD-010 | hardening | V5 | done | Rust Supply-Chain + Reproducible Build Governance | V5-RUST-PROD-002, V4-RUST-003 |
-| V5-RUST-PROD-011 | extension | V5 | done | Rust Workspace DX + Standards Program (Enterprise Team Workflow) | V5-RUST-PROD-002, V5-RUST-PROD-007, V5-RUST-PROD-010 |
-| V5-RUST-PROD-012 | scale-readiness | V5 | done | Rust-at-Scale Capacity + Unit Economics Validation | V5-RUST-PROD-008, V5-RUST-PROD-009, V5-RUST-PROD-010, V4-SCALE-010 |
-| V5-HOLD-001 | hardening | V5 | done | Unchanged-State Admission Gate | V4-SELF-001, V4-SCALE-003 |
-| V5-HOLD-002 | hardening | V5 | done | Confidence Routing Calibration + Canary Execute Band | V5-HOLD-001, V4-SCALE-007 |
-| V5-HOLD-003 | scale-readiness | V5 | done | Cap-Aware Deferred Queue Scheduler | V4-SCALE-003, V4-SCALE-007 |
-| V5-HOLD-004 | hardening | V5 | done | Routeability Preflight Lint (`not_executable` / `gate_manual`) | V5-HOLD-001, V4-SCALE-008 |
-| V5-HOLD-005 | hardening | V5 | done | Budget Burst Smoothing + Autopause Prevention | V5-HOLD-003, V4-SCALE-010 |
+| V4-AESTHETIC-001 | launch-polish | V4 | done | Alien Technology Aesthetic Layer (`alien_aesthetic=1`) | V4-ILLUSION-001, V4-SETTLE-011, V4-UX-002, V4-FORT-006 |
+| V4-AESTHETIC-002 | launch-polish | V4 | done | Selective Ethereal Language Layer | V4-AESTHETIC-001, V4-SETTLE-011, V4-FORT-006 |
+| V4-AUTO-010 | launch-polish | V4 | done | Autogenesis trust + reversibility UX layer | V4-UX-002, V3-007, V3-RACE-019 |
+| V4-BRAND-001 | launch-polish | V4 | done | Protheus Labs Org Identity Sweep | V4-FORT-007, V4-PKG-002 |
+| V4-BRAND-002 | hardening | V4 | done | Legacy Identity Purge Gate | V4-BRAND-001, V4-SUITE-012 |
+| V4-CLEAN-001 | hygiene | V4 | done | Habits path migration prep (abstraction + compatibility) |  |
+| V4-CLEAN-002 | hygiene | V4 | done | Helix codex surface hardening without runtime break | V4-CLEAN-001 |
+| V4-CLEAN-003 | security | V4 | done | Secret broker backend uplift (keychain/age additive) | V4-CLEAN-001 |
+| V4-CLEAN-004 | hygiene | V4 | done | Root scaffolding rationalization with contract-first moves | V4-CLEAN-001, V4-CLEAN-003 |
+| V4-CLEAN-005 | governance | V4 | done | Public repo presentation pass (non-destructive) | V4-CLEAN-002, V4-CLEAN-004 |
+| V4-DOC-ORG-001 | launch-polish | V4 | done | Org-Level README + Onboarding Narrative Refresh | V4-BRAND-001, V4-FORT-007, V4-SUITE-012 |
+| V4-ERR-012 | launch-polish | V4 | done | World-class error handling + guided recovery UX | V4-UX-002, V4-UX-003 |
 | V4-ETH-001 | primitive-upgrade | V4 | done | Dynamic Blob Morphing | V4-SETTLE-006, V4-SETTLE-007, V4-SETTLE-010 |
 | V4-ETH-002 | primitive-upgrade | V4 | done | Flux-State Memory Substrate | V3-RACE-065, V4-SCI-008, V4-SELF-001 |
 | V4-ETH-003 | extension | V4 | done | Shadow Self + Instant Reconfiguration | V4-SETTLE-006, V4-SETTLE-008, V4-SETTLE-010 |
 | V4-ETH-004 | extension | V4 | done | Probabilistic Execution Weave | V4-ETH-002, V4-SCI-008, V4-SCALE-007 |
 | V4-ETH-005 | launch-polish | V4 | done | Idle Dissolution + On-Demand Coalescence | V4-ETH-001, V4-SETTLE-002, V4-SETTLE-008 |
-| V4-SEC-014 | hardening | V4 | done | Covenant Enforcement Across Flux/Morph/Shadow Operations | V4-ETH-001, V4-ETH-002, V4-ETH-003, V4-FORT-006 |
-| V4-SEC-015 | hardening | V4 | done | Tamper Self-Revocation + Vault Re-Coalesce | V4-ETH-001, V4-SETTLE-002, V4-SCALE-009 |
-| V4-SEC-016 | launch-polish | V4 | done | Live Security Mirror Panel in `protheus-top` | V4-SEC-014, V4-SEC-015, V4-OBS-011 |
+| V4-FORT-001 | launch-polish | V4 | done | UI Surface Maturity Pack (Design System + View Contracts) | V4-UX-002 |
+| V4-FORT-002 | launch-polish | V4 | done | Enterprise Onboarding Pack (Operator/Engineer/Contributor Paths) | V4-UX-001, V4-UX-003 |
+| V4-FORT-003 | governance | V4 | done | Documentation Program Hardening (Ownership + Cadence + Decision Trails) | V3-RACE-127, V4-UX-003 |
+| V4-FORT-004 | governance | V4 | done | History Cleanliness Program (Changelog + Release Discipline + Commit Hygiene) | V4-UX-003, V1H-002 |
+| V4-FORT-005 | launch-polish | V4 | done | Public Collaboration Surface Pack (Issue/PR Templates + Triage Contracts) | V4-UX-003, V4-FORT-002 |
+| V4-FORT-006 | hardening | V4 | done | Empty Fort Integrity Guard (No Fabricated Claims) | V4-FORT-003, V4-FORT-004, V4-FORT-005 |
+| V4-FORT-007 | launch-polish | V4 | done | Polish/Perception Program (Org Code Format + Repo Professionalism Standard) | V4-FORT-001, V4-FORT-003, V4-FORT-004, V4-FORT-005, V4-FORT-006 |
+| V4-ILLUSION-001 | launch-polish | V4 | done | Optional Subtle Reinforcement Layer (`--illusion-mode`) | V4-FORT-006, V4-FORT-007, V4-SETTLE-005 |
+| V4-LENS-006 | launch-polish | V4 | done | Optional Hidden Lens Mode + Selective Exposure | V4-AESTHETIC-002, V4-ILLUSION-001 |
+| V4-MIGR-001 | migration | V4 | done | Core Migration Bridge + Workspace Port Command | V4-FORT-006, V4-SELF-001 |
+| V4-MIGR-002 | migration | V4 | done | Community Repo Graduation Pack (Banner + Redirect + Pinned Issue) | V4-MIGR-001, V4-FORT-005, V4-FORT-006 |
+| V4-MIGR-003 | interoperability | V4 | done | Universal Importers (OpenFang/CrewAI/AutoGen/LangGraph/Common Dumps) | V4-MIGR-001, V3-RACE-127 |
+| V4-MIGR-004 | migration | V4 | done | Self-Healing Migration Daemon | V4-MIGR-001, V4-SELF-001 |
+| V4-MIGR-005 | launch-polish | V4 | done | Post-Migration Verification + Premium Completion Report | V4-MIGR-001, V4-MIGR-003, V4-MIGR-004 |
+| V4-OBS-011 | launch-polish | V4 | done | Advanced `protheus-top` observability dashboard polish | V4-UX-002, V3-RACE-227, V4-SCI-008 |
 | V4-PKG-001 | extension | V4 | done | FluxLattice Standalone Crate + CLI Surface | V4-SETTLE-006, V4-SETTLE-007, V4-RUST-003 |
 | V4-PKG-002 | launch-polish | V4 | done | Internal Tool Framing Pack (`README` + `CHANGELOG` + `internal-ci`) | V4-PKG-001, V4-FORT-007, V4-AESTHETIC-002 |
 | V4-PKG-003 | extension | V4 | done | FluxLattice Migration & Adoption Bridge (`protheusctl migrate`) | V4-PKG-001, V4-SCALE-007, V4-SETTLE-002 |
-| V4-LENS-006 | launch-polish | V4 | done | Optional Hidden Lens Mode + Selective Exposure | V4-AESTHETIC-002, V4-ILLUSION-001 |
 | V4-PKG-004 | launch-polish | V4 | done | LensMap Standalone Internal Tool Repository | V4-LENS-006, V4-PKG-003, V4-FORT-007 |
 | V4-PKG-005 | extension | V4 | done | LensMap Boilerplate Simplification Suite | V4-PKG-004, V4-LENS-006 |
 | V4-PKG-006 | launch-polish | V4 | done | LensMap Internal Narrative + Release Polish | V4-PKG-004, V4-PKG-005, V4-AESTHETIC-002 |
 | V4-PKG-007 | extension | V4 | done | LensMap Adoption Bridge (Import + Sync + Toolchain Fit) | V4-PKG-004, V4-PKG-005, V4-PKG-003 |
+| V4-REL-001 | extension | V4 | done | Release Provenance Pipeline (Signed Tags + Changelog Evidence) | V4-TRUST-001, V4-PKG-002, V4-OBS-011 |
+| V4-ROLL-001 | scale-readiness | V4 | done | First-Wave Tool Rollout Sequencer (`graph/mem/telemetry/vault`) | V4-SUITE-001, V4-SUITE-002, V4-SUITE-003, V4-SUITE-004, V4-SUITE-012 |
+| V4-RUST-001 | status-reconciliation | V4 | done | Authoritative Rust Microkernel Cutover Acceleration |  |
+| V4-RUST-002 | scientific | V4 | done | Scientific Stack Rust Orchestration + R Bridge Hardening | V4-SCI-001, V4-SCI-002, V4-SCI-004, V3-RACE-361, V4-RUST-001 |
+| V4-RUST-003 | status-reconciliation | V4 | done | Cargo Workspace Professionalization + Rust CI Quality Signal |  |
+| V4-RUST-004 | extension | V4 | done | Habits/Vault/Adaptive Core Rust Migration Wave (Phased) | V4-RUST-001, V4-RUST-003, V3-RACE-011, V3-RACE-163 |
+| V4-SCALE-001 | scale-readiness | V4 | done | Load Model + SLO Contract (1k -> 10k -> 100k -> 1M) | V4-RUST-001, V3-RACE-221, V3-RACE-309 |
+| V4-SCALE-002 | scale-readiness | V4 | done | Stateless App-Tier + Horizontal Autoscaling Contract | V4-SCALE-001, V3-RACE-202, V3-RACE-034 |
+| V4-SCALE-003 | scale-readiness | V4 | done | Durable Async Pipeline (Queue/Retry/Idempotency/Backpressure) | V4-SCALE-001, V3-RACE-078, V3-RACE-044 |
+| V4-SCALE-004 | scale-readiness | V4 | done | Data Plane Scale Program (Partitioning + Read/Write Split + Online Migration) | V4-SCALE-001, V3-RACE-118, V3-RACE-044 |
+| V4-SCALE-005 | scale-readiness | V4 | done | Caching + Edge Delivery Contract (CDN + Hot-Key + Invalidation) | V4-SCALE-001, V3-RACE-174, V3-RACE-127 |
+| V4-SCALE-006 | scale-readiness | V4 | done | Multi-Region Resilience + Disaster Recovery Drill Program | V4-SCALE-001, V3-RACE-057, V2-019, V4-002 |
+| V4-SCALE-007 | scale-readiness | V4 | done | Release Safety at Scale (Canary + Feature Flags + Schema Compatibility) | V4-SCALE-001, V1H-002, V3-RACE-114 |
+| V4-SCALE-008 | scale-readiness | V4 | done | Observability + SRE Operations Maturity Pack | V4-SCALE-001, V1H-003, V3-RACE-012 |
+| V4-SCALE-009 | scale-readiness | V4 | done | Abuse/Security Hardening at Scale (Rate-Limit + Tenant Isolation + Auth) | V4-SCALE-001, V1H-004, V3-RACE-051 |
+| V4-SCALE-010 | scale-readiness | V4 | done | Capacity + Unit Economics Governance (p95/p99 + Cost per User) | V4-SCALE-001, BL-038, V3-RACE-221 |
+| V4-SCI-001 | scientific | V4 | done | Scientific method core primitive |  |
+| V4-SCI-002 | scientific | V4 | done | HypothesisForge background trend + hypothesis engine | V4-SCI-001, V3-RACE-080, V3-RACE-083 |
+| V4-SCI-003 | scientific | V4 | done | Reasoning mirror lane for Phase-1 UI | V4-SCI-001 |
+| V4-SCI-004 | scientific | V4 | done | Scientific mode integration + launch-safe feature flag | V4-SCI-001, V4-SCI-002, V4-SCI-003, V3-018, V3-019 |
+| V4-SCI-005 | scientific | V4 | done | Autonomous long-horizon experiment scheduler | V4-SCI-002, V4-SCI-004 |
+| V4-SCI-006 | scientific | V4 | done | Meta-science + active learning loop | V4-SCI-001, V4-SCI-002, V4-SCI-005 |
+| V4-SCI-007 | scientific | V4 | done | Advanced statistical extensions for scientific engine | V4-SCI-001, V4-SCI-004, V3-RACE-361 |
+| V4-SCI-008 | scientific | V4 | done | Enhanced reasoning mirror for Phase-1 UI | V4-SCI-003, V4-SCI-005, V4-SCI-006, V4-SCI-007 |
+| V4-SEC-014 | hardening | V4 | done | Covenant Enforcement Across Flux/Morph/Shadow Operations | V4-ETH-001, V4-ETH-002, V4-ETH-003, V4-FORT-006 |
+| V4-SEC-015 | hardening | V4 | done | Tamper Self-Revocation + Vault Re-Coalesce | V4-ETH-001, V4-SETTLE-002, V4-SCALE-009 |
+| V4-SEC-016 | launch-polish | V4 | done | Live Security Mirror Panel in `protheus-top` | V4-SEC-014, V4-SEC-015, V4-OBS-011 |
+| V4-SELF-001 | hardening | V4 | done | Internal Illusion & Integrity Auditor | V4-FORT-006, V4-FORT-007 |
+| V4-SETTLE-001 | primitive-upgrade | V4 | done | Core Settling Engine (Compile + Memory-Map + Re-exec) | V4-RUST-001, V4-SCI-004, V3-RACE-044 |
+| V4-SETTLE-002 | hardening | V4 | done | Signed Snapshot Vault + Revert/Edit-Core Round Trip | V4-SETTLE-001, V3-RACE-163, V4-FORT-006 |
+| V4-SETTLE-003 | extension | V4 | done | Target Abstraction for Binary + Ternary/Exotic Compile Flags | V4-SETTLE-001, V4-RUST-003 |
+| V4-SETTLE-004 | hardening | V4 | done | Promotion-Coupled Re-Settlement Policy | V4-SETTLE-001, V3-007, V4-SELF-001 |
+| V4-SETTLE-005 | launch-polish | V4 | done | Settled-State Operator Surface in `protheus-top` | V4-SETTLE-001, V4-OBS-011 |
+| V4-SETTLE-006 | primitive-upgrade | V4 | done | Modular System-Wide Settling + Rust BlobLoader | V4-SETTLE-001, V4-RUST-001, V3-RACE-044 |
+| V4-SETTLE-007 | hardening | V4 | done | Per-Module Edit + Re-Settle Workflow (`protheusctl edit <module>`) | V4-SETTLE-002, V4-SETTLE-006, V3-RACE-163 |
+| V4-SETTLE-008 | launch-polish | V4 | done | Multi-Module Settle Status Dashboard (`protheus-top`) | V4-SETTLE-005, V4-SETTLE-006, V4-SETTLE-007 |
+| V4-SETTLE-009 | extension | V4 | done | Pluggable Ternary + Future Architecture Module Settle Support | V4-SETTLE-003, V4-SETTLE-006, V4-SETTLE-011 |
+| V4-SETTLE-010 | hardening | V4 | done | Autogenesis/Promotion-Coupled Differential Module Re-Settlement | V4-SETTLE-004, V4-SETTLE-006, V4-SETTLE-007, V4-SELF-001 |
+| V4-SETTLE-011 | extension | V4 | done | Preferred Advanced Substrate Detection + Graceful Binary Fallback | V4-SETTLE-001, V4-SETTLE-003, V4-SETTLE-005 |
 | V4-SUITE-001 | extension | V4 | done | `protheus-graph` Deterministic Workflow Engine | V4-SCALE-003, V4-SEC-014, V4-PKG-003 |
 | V4-SUITE-002 | extension | V4 | done | `protheus-mem` Long-Memory CLI Surface | V3-RACE-023, V4-SCI-008, V4-PKG-003 |
 | V4-SUITE-003 | launch-polish | V4 | done | `protheus-telemetry` Trace + Sovereignty Export CLI | V4-OBS-011, V4-SCALE-008, V4-PKG-003 |
@@ -994,12 +955,15 @@ Generated: 2026-03-06T16:58:27.669Z
 | V4-SUITE-010 | launch-polish | V4 | done | `protheus-soul` Public Export Mode | V4-ILLUSION-001, V4-AESTHETIC-002, V4-PKG-003 |
 | V4-SUITE-011 | launch-polish | V4 | done | `protheus-pinnacle` CLI Polish + Operability Pack | V4-OBS-011, V4-PKG-003, V4-SCALE-008 |
 | V4-SUITE-012 | hardening | V4 | done | Suite Governance Pack (Naming, Contracts, npm Hooks, CI Gates) | V4-SUITE-001, V4-SUITE-011, V4-PKG-002 |
-| V4-BRAND-001 | launch-polish | V4 | done | Protheus Labs Org Identity Sweep | V4-FORT-007, V4-PKG-002 |
-| V4-BRAND-002 | hardening | V4 | done | Legacy Identity Purge Gate | V4-BRAND-001, V4-SUITE-012 |
 | V4-TRUST-001 | hardening | V4 | done | Git Provenance Integrity Guardrail (No History Rewrite on Protected Branches) | V4-SUITE-012, V4-SEC-014 |
-| V4-REL-001 | extension | V4 | done | Release Provenance Pipeline (Signed Tags + Changelog Evidence) | V4-TRUST-001, V4-PKG-002, V4-OBS-011 |
-| V4-ROLL-001 | scale-readiness | V4 | done | First-Wave Tool Rollout Sequencer (`graph/mem/telemetry/vault`) | V4-SUITE-001, V4-SUITE-002, V4-SUITE-003, V4-SUITE-004, V4-SUITE-012 |
-| V4-DOC-ORG-001 | launch-polish | V4 | done | Org-Level README + Onboarding Narrative Refresh | V4-BRAND-001, V4-FORT-007, V4-SUITE-012 |
+| V4-UX-001 | launch-polish | V4 | done | World-class first-run onboarding wizard | V4-SCI-004 |
+| V4-UX-002 | launch-polish | V4 | done | Phase-1 traditional UI polish + consistency pass | V4-UX-001 |
+| V4-UX-003 | launch-polish | V4 | done | Public docs + developer experience overhaul | V4-UX-001, V3-RACE-127 |
+| V5-HOLD-001 | hardening | V5 | done | Unchanged-State Admission Gate | V4-SELF-001, V4-SCALE-003 |
+| V5-HOLD-002 | hardening | V5 | done | Confidence Routing Calibration + Canary Execute Band | V5-HOLD-001, V4-SCALE-007 |
+| V5-HOLD-003 | scale-readiness | V5 | done | Cap-Aware Deferred Queue Scheduler | V4-SCALE-003, V4-SCALE-007 |
+| V5-HOLD-004 | hardening | V5 | done | Routeability Preflight Lint (`not_executable` / `gate_manual`) | V5-HOLD-001, V4-SCALE-008 |
+| V5-HOLD-005 | hardening | V5 | done | Budget Burst Smoothing + Autopause Prevention | V5-HOLD-003, V4-SCALE-010 |
 | V5-RUST-HYB-001 | scale-readiness | V5 | done | 15-25% Rust Share Control Plan | V5-RUST-PROD-001, V5-RUST-PROD-011 |
 | V5-RUST-HYB-002 | primitive-upgrade | V5 | done | Memory Lane Rust Completion (Scheduler + Compression + SQLite Hot Paths) | V5-RUST-HYB-001, V5-RUST-PROD-004, V5-RUST-PROD-006 |
 | V5-RUST-HYB-003 | primitive-upgrade | V5 | done | Execution Runtime Rust Cutover (Deterministic Receipts + Replay Core) | V5-RUST-HYB-001, V5-RUST-PROD-003, V5-RUST-PROD-008 |
@@ -1010,6 +974,67 @@ Generated: 2026-03-06T16:58:27.669Z
 | V5-RUST-HYB-008 | extension | V5 | done | Observability Telemetry Rust Emitter Core | V5-RUST-HYB-001, V5-RUST-PROD-009, V4-SUITE-003 |
 | V5-RUST-HYB-009 | extension | V5 | done | WASM Adapter Rust Bridge Expansion | V5-RUST-HYB-001, V5-RUST-PROD-002, V5-RUST-PROD-011 |
 | V5-RUST-HYB-010 | scale-readiness | V5 | done | Hybrid Envelope Validation + Guardrail Gate | V5-RUST-HYB-002, V5-RUST-HYB-003, V5-RUST-HYB-004, V5-RUST-HYB-005, V5-RUST-HYB-006, V5-RUST-HYB-007, V5-RUST-HYB-008, V5-RUST-HYB-009, V5-RUST-PROD-012 |
+| V5-RUST-PROD-001 | scale-readiness | V5 | done | Rust Hotspot Baseline + ROI Prioritization Contract | V4-SCALE-001, V4-RUST-001 |
+| V5-RUST-PROD-002 | hardening | V5 | done | TS/Rust Boundary Contract + ABI/Schema Stability Gate | V5-RUST-PROD-001 |
+| V5-RUST-PROD-003 | primitive-upgrade | V5 | done | Scheduler + Queue Worker Rust Migration (High-Contention Paths) | V5-RUST-PROD-001, V5-RUST-PROD-002, V4-SCALE-003 |
+| V5-RUST-PROD-004 | primitive-upgrade | V5 | done | Memory Retrieval/Index Hot Path Rust Cutover | V5-RUST-PROD-001, V5-RUST-PROD-002, V3-RACE-065 |
+| V5-RUST-PROD-005 | extension | V5 | done | Transform/Scoring Pipeline Rust Offload (CPU-Bound Stages) | V5-RUST-PROD-001, V5-RUST-PROD-002 |
+| V5-RUST-PROD-006 | hardening | V5 | done | Zero-Copy Serialization/Data Movement Contract | V5-RUST-PROD-002, V5-RUST-PROD-004, V5-RUST-PROD-005 |
+| V5-RUST-PROD-007 | hardening | V5 | done | Rust Perf Regression CI Gate (Latency/Throughput/Cost Budgets) | V5-RUST-PROD-001, V5-RUST-PROD-003, V5-RUST-PROD-004, V5-RUST-PROD-005 |
+| V5-RUST-PROD-008 | scale-readiness | V5 | done | Canary Rollout + Auto-Rollback for Rust Lanes | V5-RUST-PROD-003, V5-RUST-PROD-004, V5-RUST-PROD-005, V4-SCALE-007 |
+| V5-RUST-PROD-009 | hardening | V5 | done | Rust Observability + SRE Runbook Parity Pack | V5-RUST-PROD-003, V5-RUST-PROD-004, V5-RUST-PROD-008, V4-SCALE-008 |
+| V5-RUST-PROD-010 | hardening | V5 | done | Rust Supply-Chain + Reproducible Build Governance | V5-RUST-PROD-002, V4-RUST-003 |
+| V5-RUST-PROD-011 | extension | V5 | done | Rust Workspace DX + Standards Program (Enterprise Team Workflow) | V5-RUST-PROD-002, V5-RUST-PROD-007, V5-RUST-PROD-010 |
+| V5-RUST-PROD-012 | scale-readiness | V5 | done | Rust-at-Scale Capacity + Unit Economics Validation | V5-RUST-PROD-008, V5-RUST-PROD-009, V5-RUST-PROD-010, V4-SCALE-010 |
+| V6-ARCH-001 | backlog | V6 | done | Layered kernel shedding feature topology (`layer0` -> `layer3`) |  |
+| V6-ARCH-002 | backlog | V6 | done | Layered profile CI/build verification matrix |  |
+| V6-COMP-004 | backlog | V6 | done | Security-layer inventory with evidence links |  |
+| V6-CONDUIT-001 | primitive-upgrade | V6 | done | Conduit Core Scaffold + Typed Message Schema | V6-RUST50-007 |
+| V6-CONDUIT-002 | hardening | V6 | done | Constitution and Policy Gate Binding for Conduit | V6-CONDUIT-001 |
+| V6-CONDUIT-003 | extension | V6 | done | Conduit Feature Migration: Agent Lifecycle Path | V6-CONDUIT-001, V6-CONDUIT-002 |
+| V6-CONDUIT-004 | scale-readiness | V6 | done | Substrate-Swap and Performance Certification Gate | V6-CONDUIT-003 |
+| V6-CONDUIT-005 | hardening | V6 | done | Message Signing for Every Crossing | V6-CONDUIT-002 |
+| V6-CONDUIT-006 | hardening | V6 | done | Capability Token Enforcement | V6-CONDUIT-002, V6-CONDUIT-005 |
+| V6-CONDUIT-007 | hardening | V6 | done | Conduit Rate Limiting + Backpressure | V6-CONDUIT-002 |
+| V6-CONDUIT-008 | governance | V6 | done | Conduit Regression Rebuild Ledger | V6-CONDUIT-001, V6-CONDUIT-007 |
+| V6-EDGE-001 | backlog | V6 | done | Conduit edge provider adapter (`edge_inference`/`edge_status`) |  |
+| V6-EDGE-002 | backlog | V6 | done | Resource-tier backend auto-selection for constrained hardware |  |
+| V6-EDGE-003 | backlog | V6 | done | Edge backend feature-gated build profile integration |  |
+| V6-F100-016 | backlog | V6 | done | Cron delivery announce/main hardening |  |
+| V6-F100-017 | backlog | V6 | done | Rust status dashboard SLO metrics expansion |  |
+| V6-F100-018 | backlog | V6 | done | Model recovery fallback policy for degraded families |  |
+| V6-F100-019 | backlog | V6 | done | Release-build path hardening for conduit launchers |  |
+| V6-F100-020 | backlog | V6 | done | Secret rotation weekly attestation cadence |  |
+| V6-F100-021 | backlog | V6 | done | Memory continuity index rebuild run |  |
+| V6-F100-026 | backlog | V6 | done | Optional pip installation wrapper (thin Python CLI) |  |
+| V6-F100-027 | backlog | V6 | done | Observability metrics hardening (p99 + escalation + cost attribution) |  |
+| V6-F100-028 | backlog | V6 | done | Progressive rollout ring evaluator (Rust-authoritative) |  |
+| V6-F100-029 | backlog | V6 | done | Golden dataset + property-style router regression pack |  |
+| V6-F100-030 | backlog | V6 | done | Deterministic router offline fallback plan output |  |
+| V6-F100-031 | backlog | V6 | done | Loop/persona A/B trial evaluator with promotion receipts |  |
+| V6-F100-032 | backlog | V6 | done | OSS legal/governance baseline completion |  |
+| V6-F100-033 | backlog | V6 | done | Release/security automation baseline uplift |  |
+| V6-F100-037 | backlog | V6 | done | README governance links + repo hygiene ownership fences |  |
+| V6-F100-038 | backlog | V6 | done | Backlog canonical rename to SRS with compatibility alias |  |
+| V6-F100-039 | backlog | V6 | done | F100 baseline reconciliation gate with deterministic receipts |  |
+| V6-F100-040 | backlog | V6 | done | Enterprise deployment packaging baseline (Helm + Terraform) |  |
+| V6-GAP-001 | launch-polish | V6 | done | One-Line Installer Parity (`curl ... | sh` + PowerShell) | V6-CONDUIT-003 |
+| V6-GAP-002 | hardening | V6 | done | Coverage Uplift + Badge Gate | V6-GAP-001 |
+| V6-GAP-003 | launch-polish | V6 | done | Architecture + Quickstart Story Refresh | V6-GAP-001 |
+| V6-GAP-004 | launch-polish | V6 | done | Community Starter Issue Pack + Seeder | V6-GAP-003 |
+| V6-GAP-005 | launch-polish | V6 | done | InfRing Launch Announcement Template Pack | V6-GAP-003 |
+| V6-PERS-SEAM-001 | extension | V6 | done | Workflow Trigger Commands + Persona Dashboard | V3-RACE-197, V4-OPS-014 |
+| V6-PERS-SEAM-002 | hardening | V6 | done | Pre-Commit Persona Safety Lens Gate | V3-FCH-002, V3-RACE-060 |
+| V6-PERS-SEAM-003 | extension | V6 | done | Inversion Persona Feed Auto-Push (Policy-Gated) | V4-SELF-001, V6-PERS-SEAM-001 |
+| V6-PERS-SEAM-004 | launch-polish | V6 | done | Trigger Playbook + Operator Docs Wiring | V6-PERS-SEAM-001 |
+| V6-PERS-SEAM-005 | extension | V6 | done | Multi-Persona Lens Query + Deterministic Arbitration + Surprise/Recall Signal | V6-PERS-SEAM-001, V6-PERS-SEAM-004 |
+| V6-PRIM-004 | primitive-upgrade | V6 | done | IPC Primitive Rust Completion | REQ-08-001 |
+| V6-PRIM-005 | primitive-upgrade | V6 | done | Storage Primitive Rust Completion | REQ-08-001 |
+| V6-PRIM-007 | primitive-upgrade | V6 | done | Update Primitive Rust Completion | REQ-08-001 |
+| V6-RUNTIME-001 | backlog | V6 | done | Strict schema enforcement for persona/lens outputs |  |
+| V6-RUNTIME-002 | backlog | V6 | done | Per-shadow budget governance layer |  |
+| V6-RUNTIME-003 | backlog | V6 | done | Offline-mode degraded-path hardening |  |
+| V6-RUNTIME-004 | backlog | V6 | done | Hardware-aware local routing hardening |  |
 | V6-RUST50-001 | primitive-upgrade | V6 | done | Memory 100 Percent Rust Core + WASM Mobile Bindings | V5-RUST-HYB-002, V5-RUST-PROD-004, V5-RUST-PROD-006 |
 | V6-RUST50-002 | primitive-upgrade | V6 | done | Execution Deterministic Runtime Rust Cutover + Replay Proofs | V5-RUST-HYB-003, V5-RUST-PROD-003, V5-RUST-PROD-008 |
 | V6-RUST50-003 | primitive-upgrade | V6 | done | Pinnacle CRDT Rust Engine Phone-First | V5-RUST-HYB-005, V5-RUST-PROD-004, V5-RUST-PROD-009 |
@@ -1020,28 +1045,9 @@ Generated: 2026-03-06T16:58:27.669Z
 | V6-RUST50-CONF-001 | primitive-upgrade | V6 | done | Execution Crate Public-Language-Bar Rust Cutover (No Weighted Tricks) | V6-RUST50-002, V6-RUST50-007 |
 | V6-RUST50-CONF-002 | hardening | V6 | done | Sprint-Mode Enforcer + Batch Audit Contract | V6-RUST50-CONF-001, V6-RUST50-007 |
 | V6-RUST50-CONF-003 | primitive-upgrade | V6 | done | Sprint 1 Visible Rust Migration Batch (Execution/Pinnacle/Vault/Red Legion) | V6-RUST50-CONF-002, V6-RUST50-CONF-001, V6-RUST50-003, V6-RUST50-004, V6-RUST50-005, V6-RUST50-007 |
-| V6-PERS-SEAM-001 | extension | V6 | done | Workflow Trigger Commands + Persona Dashboard | V3-RACE-197, V4-OPS-014 |
-| V6-PERS-SEAM-002 | hardening | V6 | done | Pre-Commit Persona Safety Lens Gate | V3-FCH-002, V3-RACE-060 |
-| V6-PERS-SEAM-003 | extension | V6 | done | Inversion Persona Feed Auto-Push (Policy-Gated) | V4-SELF-001, V6-PERS-SEAM-001 |
-| V6-PERS-SEAM-004 | launch-polish | V6 | done | Trigger Playbook + Operator Docs Wiring | V6-PERS-SEAM-001 |
-| V6-PERS-SEAM-005 | extension | V6 | done | Multi-Persona Lens Query + Deterministic Arbitration + Surprise/Recall Signal | V6-PERS-SEAM-001, V6-PERS-SEAM-004 |
-| V6-CONDUIT-001 | primitive-upgrade | V6 | done | Conduit Core Scaffold + Typed Message Schema | V6-RUST50-007 |
-| V6-CONDUIT-002 | hardening | V6 | done | Constitution and Policy Gate Binding for Conduit | V6-CONDUIT-001 |
-| V6-CONDUIT-003 | extension | V6 | done | Conduit Feature Migration: Agent Lifecycle Path | V6-CONDUIT-001, V6-CONDUIT-002 |
-| V6-CONDUIT-004 | scale-readiness | V6 | done | Substrate-Swap and Performance Certification Gate | V6-CONDUIT-003 |
-| V6-CONDUIT-005 | hardening | V6 | done | Message Signing for Every Crossing | V6-CONDUIT-002 |
-| V6-CONDUIT-006 | hardening | V6 | done | Capability Token Enforcement | V6-CONDUIT-002, V6-CONDUIT-005 |
-| V6-CONDUIT-007 | hardening | V6 | done | Conduit Rate Limiting + Backpressure | V6-CONDUIT-002 |
-| V6-CONDUIT-008 | governance | V6 | done | Conduit Regression Rebuild Ledger | V6-CONDUIT-001, V6-CONDUIT-007 |
+| V6-SBOX-001 | backlog | V6 | done | Secure sandbox execution plane |  |
 | V6-SEC-002 | governance | V6 | done | Public Security Posture Page |  |
 | V6-SEC-003 | hardening | V6 | done | Dependabot + CodeQL Baseline |  |
 | V6-SEC-006 | governance | V6 | done | CVE-Ready Disclosure + Bug Bounty Policy |  |
-| V6-PRIM-004 | primitive-upgrade | V6 | done | IPC Primitive Rust Completion | REQ-08-001 |
-| V6-PRIM-005 | primitive-upgrade | V6 | done | Storage Primitive Rust Completion | REQ-08-001 |
-| V6-PRIM-007 | primitive-upgrade | V6 | done | Update Primitive Rust Completion | REQ-08-001 |
-| V6-GAP-001 | launch-polish | V6 | done | One-Line Installer Parity (`curl ... | sh` + PowerShell) | V6-CONDUIT-003 |
-| V6-GAP-002 | hardening | V6 | done | Coverage Uplift + Badge Gate | V6-GAP-001 |
-| V6-GAP-003 | launch-polish | V6 | done | Architecture + Quickstart Story Refresh | V6-GAP-001 |
-| V6-GAP-004 | launch-polish | V6 | done | Community Starter Issue Pack + Seeder | V6-GAP-003 |
-| V6-GAP-005 | launch-polish | V6 | done | InfRing Launch Announcement Template Pack | V6-GAP-003 |
+| V6-TOOLS-002 | backlog | V6 | done | Sandboxed tool execution for external actions |  |
 

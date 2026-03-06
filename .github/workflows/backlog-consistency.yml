@@ -1,0 +1,33 @@
+name: Backlog Consistency
+
+on:
+  push:
+    paths:
+      - "SRS.md"
+      - "config/backlog_registry.json"
+      - "config/backlog_registry_policy.json"
+      - "docs/backlog_views/**"
+      - "crates/ops/src/backlog_registry.rs"
+      - ".github/workflows/backlog-consistency.yml"
+  pull_request:
+    paths:
+      - "SRS.md"
+      - "config/backlog_registry.json"
+      - "config/backlog_registry_policy.json"
+      - "docs/backlog_views/**"
+      - "crates/ops/src/backlog_registry.rs"
+      - ".github/workflows/backlog-consistency.yml"
+
+jobs:
+  backlog-consistency:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Strict Backlog Consistency Check
+        run: cargo run --quiet --manifest-path crates/ops/Cargo.toml --bin protheus-ops -- backlog-registry check --strict=1
