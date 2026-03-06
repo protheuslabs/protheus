@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-06T08:26:26Z",
-  "source_hash": "3573bf42ba412805ff0a4732",
-  "row_count": 909,
-  "active_count": 8,
-  "archive_count": 901,
+  "generated_at": "2026-03-06T09:14:06Z",
+  "source_hash": "d6db6a870aadd9129217d5d5",
+  "row_count": 986,
+  "active_count": 84,
+  "archive_count": 902,
   "rows": [
     {
       "id": "BL-001",
@@ -11218,6 +11218,1000 @@
       "acceptance": "Rationalize top-level experimental folders into explicit research/archive zones and update root-surface contracts and docs accordingly.",
       "dependencies": [
         "V6-F100-032"
+      ]
+    },
+    {
+      "id": "V6-F100-037",
+      "class": "f100-hardening",
+      "wave": "V6",
+      "status": "done",
+      "title": "README governance links + repo hygiene ownership fences",
+      "problem": "Fortune-100 readiness checklist required governance discoverability and explicit ownership boundaries for non-production root zones.",
+      "acceptance": "Added governance template links in README, added npm/docker badges, and extended .github/CODEOWNERS coverage for /drafts, /notes, and /experiments.",
+      "dependencies": [
+        "V6-F100-032"
+      ]
+    },
+    {
+      "id": "V6-ARCH-001",
+      "class": "architecture-portability",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Layered kernel shedding feature topology (layer0 -> layer3)",
+      "problem": "Single-codebase portability requires compile-time layer shedding instead of proliferating runtime compatibility modes.",
+      "acceptance": "Land REQ-10 feature graph in Cargo/workspace and module cfg-gating for core/resource/conduit/observability layers with documented build commands.",
+      "dependencies": [
+        "REQ-10"
+      ]
+    },
+    {
+      "id": "V6-ARCH-002",
+      "class": "architecture-portability",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Layered profile CI/build verification matrix",
+      "problem": "Sheddable architecture is not reliable until minimal/default profiles are continuously verified.",
+      "acceptance": "Add CI checks for layer0, layer2, and default profile builds/tests; require green gates before merge.",
+      "dependencies": [
+        "V6-ARCH-001"
+      ]
+    },
+    {
+      "id": "V6-EDGE-001",
+      "class": "edge-inference-portability",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Conduit edge provider adapter (edge_inference/edge_status)",
+      "problem": "Extreme legacy targets need an optional low-resource inference backend without bypassing Rust governance.",
+      "acceptance": "Implement REQ-11-001 adapter surface with typed message contracts and deterministic receipts for each edge invocation.",
+      "dependencies": [
+        "REQ-11"
+      ]
+    },
+    {
+      "id": "V6-EDGE-002",
+      "class": "edge-inference-portability",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Resource-tier backend auto-selection for constrained hardware",
+      "problem": "Low-resource deployments need deterministic backend routing without adding runtime compatibility-mode sprawl.",
+      "acceptance": "Implement REQ-11-003 detection + routing in resource layer with explicit override path and audited selection receipts.",
+      "dependencies": [
+        "V6-EDGE-001"
+      ]
+    },
+    {
+      "id": "V6-EDGE-003",
+      "class": "edge-inference-portability",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Edge backend feature-gated build profile integration",
+      "problem": "Optional edge backend must remain compile-time controllable and deterministic when disabled.",
+      "acceptance": "Implement REQ-11-004 feature flags/build matrix with edge-on and edge-off profile checks.",
+      "dependencies": [
+        "V6-EDGE-001",
+        "V6-ARCH-001"
+      ]
+    },
+    {
+      "id": "V6-EDGE-004",
+      "class": "edge-inference-portability",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Edge lifecycle validation + substrate-swap proof",
+      "problem": "Fallback backend is unsafe without lifecycle/failure validation and no-TS substrate checks.",
+      "acceptance": "Implement REQ-11-005 integration tests for status/invoke/failure/fallback and verify substrate-swap behavior with invariants green.",
+      "dependencies": [
+        "V6-EDGE-001",
+        "V6-EDGE-002",
+        "V6-EDGE-003"
+      ]
+    },
+    {
+      "id": "V6-EDGE-005",
+      "class": "edge-inference-portability",
+      "wave": "V6",
+      "status": "blocked",
+      "title": "Third-party license and source-ingest decision for edge backend",
+      "problem": "External C engine ingestion requires explicit legal/source governance decision before vendoring/submodule import.",
+      "acceptance": "Complete legal review + approved ingest strategy (submodule vs vendored) and record decision in security/legal docs before code import.",
+      "dependencies": [
+        "V6-F100-032"
+      ]
+    },
+    {
+      "id": "V6-SWARM-001",
+      "class": "swarm-engine",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Swarm router primitive crate",
+      "problem": "Coordinator routing needs a typed bus contract to reduce manual handoff errors and enable deterministic orchestration scaling.",
+      "acceptance": "Implement REQ-12-001 crate with typed envelope (id/reply_to/route/payload/priority/status) and baseline unit tests.",
+      "dependencies": [
+        "REQ-12"
+      ]
+    },
+    {
+      "id": "V6-SWARM-002",
+      "class": "swarm-engine",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Auto-ID + in-flight lifecycle tracker",
+      "problem": "Manual IDs and weak run-state tracking increase coordination mistakes under parallel execution pressure.",
+      "acceptance": "Implement REQ-12-002 and REQ-12-003 with collision-safe ID generation and lifecycle state map (pending/in_progress/complete/failed).",
+      "dependencies": [
+        "V6-SWARM-001"
+      ]
+    },
+    {
+      "id": "V6-SWARM-003",
+      "class": "swarm-engine",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Self-healing reroute policy for failed tasks",
+      "problem": "Swarm resiliency requires deterministic retry/reassign behavior rather than manual intervention loops.",
+      "acceptance": "Implement REQ-12-004 with policy-backed reroute/retry outcomes and receipt logging.",
+      "dependencies": [
+        "V6-SWARM-002"
+      ]
+    },
+    {
+      "id": "V6-SWARM-004",
+      "class": "swarm-engine",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Queue-pressure auto-scaling planner",
+      "problem": "Parallel throughput is capped when worker scaling remains manual during backlog spikes.",
+      "acceptance": "Implement REQ-12-005 with queue-pressure scaling recommendations and reversible actions.",
+      "dependencies": [
+        "V6-SWARM-002"
+      ]
+    },
+    {
+      "id": "V6-SWARM-005",
+      "class": "swarm-engine",
+      "wave": "V6",
+      "status": "queued",
+      "title": "File-backed queue contract + priority ordering",
+      "problem": "Reliable worker handoff and scheduling need schema-backed queue artifacts and deterministic priority sorting.",
+      "acceptance": "Implement REQ-12-006 and REQ-12-007 with schema versioning and deterministic tie-break ordering.",
+      "dependencies": [
+        "V6-SWARM-001"
+      ]
+    },
+    {
+      "id": "V6-SWARM-006",
+      "class": "swarm-engine",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Swarm observability and self-upgrade protocol",
+      "problem": "Router operations need auditable traces and safe upgrade/rollback controls to avoid orchestration drift.",
+      "acceptance": "Implement REQ-12-008 and REQ-12-009 with swarm routing receipts, metrics surface, and atomic upgrade rollback path.",
+      "dependencies": [
+        "V6-SWARM-003",
+        "V6-SWARM-005"
+      ]
+    },
+    {
+      "id": "V6-COMP-001",
+      "class": "competitive-parity",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Competitive benchmark matrix with reproducible receipts",
+      "problem": "Comparative claims need timestamped, reproducible measurements instead of static marketing snapshots.",
+      "acceptance": "Implement REQ-13-002 benchmark harness under benchmarks/ (cold-start, idle-memory, install-size, evidence-verify latency) with artifact receipts and published methodology.",
+      "dependencies": [
+        "REQ-13"
+      ]
+    },
+    {
+      "id": "V6-COMP-002",
+      "class": "competitive-parity",
+      "wave": "V6",
+      "status": "queued",
+      "title": "protheus migrate --from openfang importer lane",
+      "problem": "Lowering migration friction from competitor ecosystems improves adoption while preserving governance contracts.",
+      "acceptance": "Implement REQ-13-003 fail-closed importer command with schema validation, conversion receipts, and rollback docs.",
+      "dependencies": [
+        "REQ-13",
+        "V6-COMP-001"
+      ]
+    },
+    {
+      "id": "V6-COMP-003",
+      "class": "competitive-parity",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Evidence-first audit dashboard drilldown",
+      "problem": "Enterprise buyers need fast, explicit claim->evidence->receipt traversal for trust and incident response.",
+      "acceptance": "Implement REQ-13-004 dashboard surface with exportable receipt drilldowns and deterministic links to policy/test artifacts.",
+      "dependencies": [
+        "REQ-13"
+      ]
+    },
+    {
+      "id": "V6-COMP-004",
+      "class": "competitive-parity",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Security-layer inventory with evidence links",
+      "problem": "Security-layer claims must be fully traceable to enforceable code/policy and test evidence.",
+      "acceptance": "Implement REQ-13-005 inventory document plus generated references to runtime checks and tests for each layer.",
+      "dependencies": [
+        "REQ-13"
+      ]
+    },
+    {
+      "id": "V6-COMP-005",
+      "class": "competitive-parity",
+      "wave": "V6",
+      "status": "blocked",
+      "title": "Public multi-release cadence target (9+ tags)",
+      "problem": "Cadence parity requires maintainers to execute remote tagging/publishing repeatedly over time.",
+      "acceptance": "Publish at least 9 semantic releases with signed notes and artifact checks; blocked on maintainer release authority and calendar execution.",
+      "dependencies": [
+        "V6-F100-034"
+      ]
+    },
+    {
+      "id": "V6-RUNTIME-001",
+      "class": "runtime-hardening",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Strict schema enforcement for persona/lens outputs",
+      "problem": "Structured output support exists but still needs strict fail-closed validation coverage across all persona/lens paths.",
+      "acceptance": "Implement REQ-14-001 strict output contracts with deterministic reject receipts on schema violations.",
+      "dependencies": [
+        "REQ-14"
+      ]
+    },
+    {
+      "id": "V6-RUNTIME-002",
+      "class": "runtime-hardening",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Per-shadow budget governance layer",
+      "problem": "Global budgets exist, but fairness and isolation require shadow-level token/compute quota enforcement.",
+      "acceptance": "Implement REQ-14-002 per-shadow budget policy plus runtime enforcement plus receipt telemetry.",
+      "dependencies": [
+        "REQ-14",
+        "BL-023"
+      ]
+    },
+    {
+      "id": "V6-RUNTIME-003",
+      "class": "runtime-hardening",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Offline-mode degraded-path hardening",
+      "problem": "Offline operation is partially available but inconsistent across research/assimilation workflows.",
+      "acceptance": "Implement REQ-14-003 deterministic offline detection, local-only fallback, and operator-visible degraded mode messaging.",
+      "dependencies": [
+        "REQ-14"
+      ]
+    },
+    {
+      "id": "V6-RUNTIME-004",
+      "class": "runtime-hardening",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Hardware-aware local routing hardening",
+      "problem": "Hardware-aware and local-first routing foundations exist but need explicit runtime policy hardening and receipt transparency.",
+      "acceptance": "Implement REQ-14-004 hardware-profile-aware routing decisions for micro/deep tasks with fallback reasoning in receipts.",
+      "dependencies": [
+        "REQ-14",
+        "V6-RUNTIME-003"
+      ]
+    },
+    {
+      "id": "V6-SBOX-001",
+      "class": "sandbox-subagent-assimilation",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Secure sandbox execution plane",
+      "problem": "Multi-agent task/file execution needs isolated runtime boundaries and explicit capability control.",
+      "acceptance": "Implement REQ-15-001 sandbox contract with bounded filesystem/workdirs, policy gating, and deterministic receipts.",
+      "dependencies": [
+        "REQ-15"
+      ]
+    },
+    {
+      "id": "V6-SBOX-002",
+      "class": "sandbox-subagent-assimilation",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Dynamic scoped sub-agent spawning",
+      "problem": "Role spawning exists, but project-grade sub-agent lifecycle/termination/reporting needs a formal contract.",
+      "acceptance": "Implement REQ-15-002 scoped sub-agent spawn/terminate/report workflow with deterministic aggregation receipts.",
+      "dependencies": [
+        "REQ-15",
+        "V6-SBOX-001"
+      ]
+    },
+    {
+      "id": "V6-SBOX-003",
+      "class": "sandbox-subagent-assimilation",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Persistent sandbox state bridge",
+      "problem": "Long-running sandbox tasks need durable plan/progress continuity tied to memory lane governance.",
+      "acceptance": "Implement REQ-15-003 persistent workspace snapshots plus reversible memory bridge with audit receipts.",
+      "dependencies": [
+        "REQ-15",
+        "V6-SBOX-001"
+      ]
+    },
+    {
+      "id": "V6-SBOX-004",
+      "class": "sandbox-subagent-assimilation",
+      "wave": "V6",
+      "status": "queued",
+      "title": "On-demand skill/tool loader for sandbox workloads",
+      "problem": "Skill ecosystem exists, but sandbox workloads need explicit policy-gated on-demand tool/skill activation.",
+      "acceptance": "Implement REQ-15-004 on-demand skill/tool loading with capability boundaries and receipt logs.",
+      "dependencies": [
+        "REQ-15",
+        "V6-SBOX-001"
+      ]
+    },
+    {
+      "id": "V6-SBOX-005",
+      "class": "sandbox-subagent-assimilation",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Context compression controls for long-running sandbox tasks",
+      "problem": "Long task context growth can cause drift/cost spikes without deterministic compression governance.",
+      "acceptance": "Implement REQ-15-005 staged context loading plus token ceiling controls with inspectable compression receipts.",
+      "dependencies": [
+        "REQ-15",
+        "V6-SBOX-002"
+      ]
+    },
+    {
+      "id": "V6-SBOX-006",
+      "class": "sandbox-subagent-assimilation",
+      "wave": "V6",
+      "status": "blocked",
+      "title": "Sandbox runtime substrate decision (container vs lightweight jail)",
+      "problem": "Full sandbox rollout depends on approved runtime substrate across target environments and security policy.",
+      "acceptance": "Approve sandbox substrate strategy and publish policy contract before full implementation rollout.",
+      "dependencies": [
+        "V6-F100-023"
+      ]
+    },
+    {
+      "id": "V6-BROWSER-001",
+      "class": "native-browser-assimilation",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Native browser daemon binary path",
+      "problem": "Browser control efficiency can improve significantly with a persistent native Rust daemon path.",
+      "acceptance": "Implement REQ-16-001 native daemon lifecycle with status receipts and reusable process model.",
+      "dependencies": [
+        "REQ-16"
+      ]
+    },
+    {
+      "id": "V6-BROWSER-002",
+      "class": "native-browser-assimilation",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Direct CDP native control primitives",
+      "problem": "Direct CDP path removes abstraction overhead and improves deterministic browser control under native mode.",
+      "acceptance": "Implement REQ-16-002 direct CDP operation support for navigate/click/type/evaluate/snapshot with typed failures.",
+      "dependencies": [
+        "REQ-16",
+        "V6-BROWSER-001"
+      ]
+    },
+    {
+      "id": "V6-BROWSER-003",
+      "class": "native-browser-assimilation",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Encrypted profile/session persistence for browser native mode",
+      "problem": "Persistent browser state is required for long-running agent workflows and continuity.",
+      "acceptance": "Implement REQ-16-003 encrypted profile/session save/restore path with fail-closed restore diagnostics.",
+      "dependencies": [
+        "REQ-16",
+        "V6-BROWSER-001"
+      ]
+    },
+    {
+      "id": "V6-BROWSER-004",
+      "class": "native-browser-assimilation",
+      "wave": "V6",
+      "status": "queued",
+      "title": "AI snapshot refs + annotation lane",
+      "problem": "Browser automation quality improves with stable element refs and visual alignment artifacts.",
+      "acceptance": "Implement REQ-16-004 deterministic snapshot refs plus annotated screenshot output with receipt linkage.",
+      "dependencies": [
+        "REQ-16",
+        "V6-BROWSER-002"
+      ]
+    },
+    {
+      "id": "V6-BROWSER-005",
+      "class": "native-browser-assimilation",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Native browser policy gates and CLI integration",
+      "problem": "Native browser mode must be sovereignty-safe and operable through existing CLI/shadow controls.",
+      "acceptance": "Implement REQ-16-005 and REQ-16-006 with domain/action policy enforcement and protheus browser --native integration.",
+      "dependencies": [
+        "REQ-16",
+        "V6-BROWSER-002",
+        "V6-BROWSER-003"
+      ]
+    },
+    {
+      "id": "V6-TOOLS-001",
+      "class": "tool-context-messaging-assimilation",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Dynamic tool-context management plane",
+      "problem": "External tool reliability and precision improve with explicit context routing and deterministic tool selection.",
+      "acceptance": "Implement REQ-17-001 with context normalization, tool selection receipts, and policy-scoped invocation.",
+      "dependencies": [
+        "REQ-17"
+      ]
+    },
+    {
+      "id": "V6-TOOLS-002",
+      "class": "tool-context-messaging-assimilation",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Sandboxed tool execution for external actions",
+      "problem": "Tool integrations require bounded execution to minimize blast radius under autonomy.",
+      "acceptance": "Implement REQ-17-002 sandboxed execution profile with fail-closed deny paths and audit receipts.",
+      "dependencies": [
+        "REQ-17",
+        "V6-TOOLS-001"
+      ]
+    },
+    {
+      "id": "V6-TOOLS-003",
+      "class": "tool-context-messaging-assimilation",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Low-power messaging notification lane",
+      "problem": "Heartbeat and breaker workflows need an operator-facing notification surface for timely intervention.",
+      "acceptance": "Implement REQ-17-003 governed notification channel integration with retry/escalation policy.",
+      "dependencies": [
+        "REQ-17"
+      ]
+    },
+    {
+      "id": "V6-TOOLS-004",
+      "class": "tool-context-messaging-assimilation",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Shadow/persona bridge for tools and notifications",
+      "problem": "Orchestration should invoke tools/notifications through one governed path instead of ad hoc integrations.",
+      "acceptance": "Implement REQ-17-004 end-to-end shadow/persona bridge with escalation and tests.",
+      "dependencies": [
+        "REQ-17",
+        "V6-TOOLS-001",
+        "V6-TOOLS-003"
+      ]
+    },
+    {
+      "id": "V6-TOOLS-005",
+      "class": "tool-context-messaging-assimilation",
+      "wave": "V6",
+      "status": "blocked",
+      "title": "Optional reactions/worktree event automation track",
+      "problem": "Event-driven auto-reactions and isolated worktree operations need explicit policy approval before rollout.",
+      "acceptance": "Gate REQ-17-005 behind an approved enable policy and define rollback contract before activation.",
+      "dependencies": [
+        "REQ-17",
+        "V6-SWARM-005"
+      ]
+    },
+    {
+      "id": "V6-PAY-001",
+      "class": "stateless-payment-protocol",
+      "wave": "V6",
+      "status": "queued",
+      "title": "HTTP 402 challenge middleware for stateless payment gating",
+      "problem": "Current payment rails do not expose stateless route-level payment challenge semantics for sovereign micro-access control.",
+      "acceptance": "Implement REQ-18-001 middleware with nonce-bound challenge metadata and per-route policy configuration.",
+      "dependencies": [
+        "REQ-18"
+      ]
+    },
+    {
+      "id": "V6-PAY-002",
+      "class": "stateless-payment-protocol",
+      "wave": "V6",
+      "status": "queued",
+      "title": "XMR402 proof verification path",
+      "problem": "Monero-style tx proof authorization path is missing from current payment infrastructure.",
+      "acceptance": "Implement REQ-18-002 verification flow with receipt-backed allow/deny outcomes.",
+      "dependencies": [
+        "REQ-18",
+        "V6-PAY-001"
+      ]
+    },
+    {
+      "id": "V6-PAY-003",
+      "class": "stateless-payment-protocol",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Replay and double-spend mitigation guardrails",
+      "problem": "Stateless payment challenges require strict replay prevention and spend-safety policy controls.",
+      "acceptance": "Implement REQ-18-003 nonce replay blocking plus double-spend mitigation checks with policy receipts.",
+      "dependencies": [
+        "REQ-18",
+        "V6-PAY-002"
+      ]
+    },
+    {
+      "id": "V6-PAY-004",
+      "class": "stateless-payment-protocol",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Governed autonomous payment initiation for shadows",
+      "problem": "Shadows need payment autonomy under covenant limits to unlock sovereign pay-per-resource workflows.",
+      "acceptance": "Implement REQ-18-004 approval-gated payment initiation path with spend limits and escalation policies.",
+      "dependencies": [
+        "REQ-18",
+        "V6-PAY-002"
+      ]
+    },
+    {
+      "id": "V6-PAY-005",
+      "class": "stateless-payment-protocol",
+      "wave": "V6",
+      "status": "queued",
+      "title": "RPC/config/subaddress integration contract",
+      "problem": "Protocol viability depends on deterministic RPC and wallet config plus address strategy management.",
+      "acceptance": "Implement REQ-18-005 config surfaces (RPC endpoint, address strategy, nonce secret policy) with diagnostics.",
+      "dependencies": [
+        "REQ-18",
+        "V6-PAY-001"
+      ]
+    },
+    {
+      "id": "V6-PAY-006",
+      "class": "stateless-payment-protocol",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Wallet deep-link + operator payment UX lane",
+      "problem": "Adoption improves with deterministic wallet handoff UX for manual or semi-automatic payment flows.",
+      "acceptance": "Implement REQ-18-006 optional deep-link metadata emission and stateful payment UX transitions.",
+      "dependencies": [
+        "REQ-18",
+        "V6-PAY-005"
+      ]
+    },
+    {
+      "id": "V6-PAY-007",
+      "class": "stateless-payment-protocol",
+      "wave": "V6",
+      "status": "blocked",
+      "title": "Monero network/compliance profile decision for production rollout",
+      "problem": "Production payment rollout requires explicit legal/compliance and operational policy approval for Monero usage.",
+      "acceptance": "Publish approved Monero usage policy and rollout profile before enabling production payment lanes.",
+      "dependencies": [
+        "V6-F100-023"
+      ]
+    },
+    {
+      "id": "V6-ADAPT-001",
+      "class": "realtime-ondevice-adaptation",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Interaction-triggered real-time adaptation loop",
+      "problem": "Existing fine-tune lanes focus on training workflows, not continuous runtime adaptation triggered by live interactions.",
+      "acceptance": "Implement REQ-19-001 interaction and heartbeat-triggered adaptation cycles with bounded cadence and receipts.",
+      "dependencies": [
+        "REQ-19"
+      ]
+    },
+    {
+      "id": "V6-ADAPT-002",
+      "class": "realtime-ondevice-adaptation",
+      "wave": "V6",
+      "status": "queued",
+      "title": "On-device low-power adaptation runtime profile",
+      "problem": "Runtime adaptation needs explicit local-only low-power execution profile for always-on devices.",
+      "acceptance": "Implement REQ-19-002 on-device adaptation with throttling profile and hardware-aware receipt metadata.",
+      "dependencies": [
+        "REQ-19",
+        "V6-ADAPT-001"
+      ]
+    },
+    {
+      "id": "V6-ADAPT-003",
+      "class": "realtime-ondevice-adaptation",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Persistent adaptation continuity contract (never forgets)",
+      "problem": "Persistent adaptation deltas must survive restart and validate before reuse to support continuity claims.",
+      "acceptance": "Implement REQ-19-003 persisted adaptation state plus reboot recovery integrity checks.",
+      "dependencies": [
+        "REQ-19",
+        "V6-ADAPT-001"
+      ]
+    },
+    {
+      "id": "V6-ADAPT-004",
+      "class": "realtime-ondevice-adaptation",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Covenant/drift fail-closed adaptation gates",
+      "problem": "Real-time adaptation requires strict safety bounds to prevent governance drift during incremental updates.",
+      "acceptance": "Implement REQ-19-004 fail-closed covenant and drift gates for adaptation updates with reversible blocks and receipts.",
+      "dependencies": [
+        "REQ-19",
+        "V6-ADAPT-003"
+      ]
+    },
+    {
+      "id": "V6-ADAPT-005",
+      "class": "realtime-ondevice-adaptation",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Persona/shadow review bridge for high-impact adaptation",
+      "problem": "High-impact adaptation changes should pass through human-legible governance reviews before promotion.",
+      "acceptance": "Implement REQ-19-005 review queue and approval receipts integrated with persona and shadow orchestration.",
+      "dependencies": [
+        "REQ-19",
+        "V6-ADAPT-004"
+      ]
+    },
+    {
+      "id": "V6-ADAPT-006",
+      "class": "realtime-ondevice-adaptation",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Apple-silicon adaptation profile + portable fallback",
+      "problem": "Apple-silicon optimization is a high-ROI target but requires deterministic fallback for wider hardware coverage.",
+      "acceptance": "Implement REQ-19-006 optimized Apple profile with policy-driven ARM/x86 fallback selection.",
+      "dependencies": [
+        "REQ-19",
+        "V6-ADAPT-002"
+      ]
+    },
+    {
+      "id": "V6-BROWSER-006",
+      "class": "sovereign-browser-control-parity",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Zero-config browser daemon bootstrap lane",
+      "problem": "Browser automation adoption improves when startup is deterministic and near zero-config for operators.",
+      "acceptance": "Implement REQ-20-001 zero-config bootstrap plus health and status receipts with fail-closed dependency checks.",
+      "dependencies": [
+        "REQ-20",
+        "V6-BROWSER-001"
+      ]
+    },
+    {
+      "id": "V6-BROWSER-007",
+      "class": "sovereign-browser-control-parity",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Token-efficient text snapshot plus diff endpoint lane",
+      "problem": "Browser intelligence costs stay bounded when agents consume text and diff snapshots instead of full visual payloads.",
+      "acceptance": "Implement REQ-20-002 AI-optimized text and diff endpoints with deterministic refs and receipt linkage.",
+      "dependencies": [
+        "REQ-20",
+        "V6-BROWSER-004"
+      ]
+    },
+    {
+      "id": "V6-BROWSER-008",
+      "class": "sovereign-browser-control-parity",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Multi-instance orchestration plus real-time dashboard lane",
+      "problem": "Scaled web-capable shadows need bounded multi-instance control and immediate operator visibility.",
+      "acceptance": "Implement REQ-20-003 multi-instance lifecycle controls, policy caps, and dashboard metrics with receipts.",
+      "dependencies": [
+        "REQ-20",
+        "V6-BROWSER-001"
+      ]
+    },
+    {
+      "id": "V6-BROWSER-009",
+      "class": "sovereign-browser-control-parity",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Stealth plus headed handoff control lane",
+      "problem": "Real-world browser workflows need anti-bot resilience and safe human-assisted checkpoints such as 2FA.",
+      "acceptance": "Implement REQ-20-004 stealth profile and headed handoff transitions under explicit allow and deny policy receipts.",
+      "dependencies": [
+        "REQ-20",
+        "V6-BROWSER-005"
+      ]
+    },
+    {
+      "id": "V6-BROWSER-010",
+      "class": "sovereign-browser-control-parity",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Blob-backed encrypted session continuity lane",
+      "problem": "Session persistence should be morphable and portable while remaining tamper-evident and fail-closed.",
+      "acceptance": "Implement REQ-20-005 encrypted blob-backed continuity with restore and morph integrity checks.",
+      "dependencies": [
+        "REQ-20",
+        "V6-BROWSER-003"
+      ]
+    },
+    {
+      "id": "V6-BROWSER-011",
+      "class": "sovereign-browser-control-parity",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Multi-browser fallback profile lane",
+      "problem": "Browser coverage and resilience improve when Chrome-first control has policy-driven fallback providers.",
+      "acceptance": "Implement REQ-20-006 Firefox and Edge fallback profile contract with typed unsupported-provider failures.",
+      "dependencies": [
+        "REQ-20",
+        "V6-BROWSER-002"
+      ]
+    },
+    {
+      "id": "V6-BROWSER-012",
+      "class": "sovereign-browser-control-parity",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Shadow and persona browser governance plus drift breaker lane",
+      "problem": "Web-capable autonomy must remain sovereign with drift controls and review escalation on risky actions.",
+      "acceptance": "Implement REQ-20-007 shadow and persona bridge, drift telemetry thresholds, breaker hooks, and escalation receipts.",
+      "dependencies": [
+        "REQ-20",
+        "V6-BROWSER-005",
+        "V6-RUNTIME-001"
+      ]
+    },
+    {
+      "id": "V6-BROWSER-013",
+      "class": "browser-parity-conformance",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Browser API conformance harness lane",
+      "problem": "Pinch-class parity needs deterministic endpoint conformance checks, not one-off manual demos.",
+      "acceptance": "Implement REQ-21-001 core endpoint conformance suite with replayable pass and fail receipts.",
+      "dependencies": [
+        "REQ-21",
+        "V6-BROWSER-006",
+        "V6-BROWSER-007"
+      ]
+    },
+    {
+      "id": "V6-BROWSER-014",
+      "class": "browser-parity-conformance",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Snapshot and diff token-efficiency SLO gate lane",
+      "problem": "Browser agent cost control requires hard efficiency ceilings on text and diff payloads.",
+      "acceptance": "Implement REQ-21-002 token-budget SLO gates with fail-closed thresholds and benchmark receipts.",
+      "dependencies": [
+        "REQ-21",
+        "V6-BROWSER-007"
+      ]
+    },
+    {
+      "id": "V6-BROWSER-015",
+      "class": "browser-parity-conformance",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Zero-config startup and footprint verification lane",
+      "problem": "Operational parity needs measurable startup, memory, and size budgets across release artifacts.",
+      "acceptance": "Implement REQ-21-003 startup latency, RSS, and binary footprint verification with regression deltas.",
+      "dependencies": [
+        "REQ-21",
+        "V6-BROWSER-006"
+      ]
+    },
+    {
+      "id": "V6-BROWSER-016",
+      "class": "browser-parity-conformance",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Cross-language HTTP integration contract lane",
+      "problem": "Browser control should remain framework and language-agnostic for broad agent ecosystem adoption.",
+      "acceptance": "Implement REQ-21-004 curl-first fixtures and non-TS integration tests preserving receipt and policy metadata.",
+      "dependencies": [
+        "REQ-21",
+        "V6-BROWSER-006"
+      ]
+    },
+    {
+      "id": "V6-BROWSER-017",
+      "class": "browser-parity-conformance",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Comparative browser benchmark publication lane",
+      "problem": "Competitive claims require reproducible parity benchmarks tied to receipts and release evidence.",
+      "acceptance": "Implement REQ-21-005 measured benchmark matrix publication with dashboard and release integration.",
+      "dependencies": [
+        "REQ-21",
+        "V6-COMP-001",
+        "V6-BROWSER-013",
+        "V6-BROWSER-014",
+        "V6-BROWSER-015"
+      ]
+    },
+    {
+      "id": "V6-SHADOW-001",
+      "class": "shadow-conclave-routing",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Structured shadow conclave runtime lane",
+      "problem": "Multi-persona synthesis currently lacks a formal conclave execution contract with deterministic outputs.",
+      "acceptance": "Implement REQ-22-001 scheduled and ad-hoc conclave flow with participant-scoped position, counterpoint, and synthesis receipts.",
+      "dependencies": [
+        "REQ-22",
+        "BL-048"
+      ]
+    },
+    {
+      "id": "V6-SHADOW-002",
+      "class": "shadow-conclave-routing",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Asynchronous conclave workspace lane",
+      "problem": "Long-running persona deliberation needs durable, replayable transcripts beyond one-shot runs.",
+      "acceptance": "Implement REQ-22-002 deterministic conclave workspace and transcript contract with regeneration safety.",
+      "dependencies": [
+        "REQ-22",
+        "V6-SHADOW-001"
+      ]
+    },
+    {
+      "id": "V6-SHADOW-003",
+      "class": "shadow-conclave-routing",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Eyes signal classifier and routing map lane",
+      "problem": "External-eye signals are not yet auto-classified and routed to the most relevant shadows.",
+      "acceptance": "Implement REQ-22-003 governed classifier and route map with confidence and reason receipts.",
+      "dependencies": [
+        "REQ-22",
+        "BL-018"
+      ]
+    },
+    {
+      "id": "V6-SHADOW-004",
+      "class": "shadow-conclave-routing",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Shadow dispatch and notification reliability lane",
+      "problem": "Routed signals need guaranteed delivery semantics with retries and deterministic escalation.",
+      "acceptance": "Implement REQ-22-004 ack, retry, and idempotent dispatch bus with operator escalation path.",
+      "dependencies": [
+        "REQ-22",
+        "V6-SHADOW-003",
+        "V6-SWARM-005"
+      ]
+    },
+    {
+      "id": "V6-SHADOW-005",
+      "class": "shadow-conclave-routing",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Autonomous shadow proposal bridge lane",
+      "problem": "Auto-routed shadows need a governed path to convert signals into reviewable proposals.",
+      "acceptance": "Implement REQ-22-005 shadow-consumption to proposal to Core-5 review bridge with source traceability.",
+      "dependencies": [
+        "REQ-22",
+        "V6-SHADOW-004",
+        "V6-SHADOW-001"
+      ]
+    },
+    {
+      "id": "V6-SHADOW-006",
+      "class": "shadow-conclave-routing",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Runtime health-gated routing and conclave lane",
+      "problem": "Routing and conclave automation can become unsafe under degraded runtime or spine readiness states.",
+      "acceptance": "Implement REQ-22-006 readiness gates with fail-closed or manual fallback and status receipts.",
+      "dependencies": [
+        "REQ-22",
+        "V6-SHADOW-003",
+        "V6-RUNTIME-003"
+      ]
+    },
+    {
+      "id": "V6-FLUX-001",
+      "class": "flux-lattice-hardening",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Flux conformance matrix and traceability lane",
+      "problem": "Flux-Lattice claims need explicit invariant-to-test and receipt mapping for auditable completeness.",
+      "acceptance": "Implement REQ-23-001 conformance matrix with positive and deny-path coverage and artifact links.",
+      "dependencies": [
+        "REQ-23",
+        "V4-SETTLE-006",
+        "V4-ETH-001"
+      ]
+    },
+    {
+      "id": "V6-FLUX-002",
+      "class": "flux-lattice-hardening",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Ontological integrity operation gate lane",
+      "problem": "Flux operations must fail closed when receipt chain or covenant validity is broken.",
+      "acceptance": "Implement REQ-23-002 operation-boundary integrity gate with deterministic dissolve and recovery receipts.",
+      "dependencies": [
+        "REQ-23",
+        "V4-SEC-014",
+        "V4-SEC-015",
+        "V4-SETTLE-006"
+      ]
+    },
+    {
+      "id": "V6-FLUX-003",
+      "class": "flux-lattice-hardening",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Coherence preference runtime verifier lane",
+      "problem": "Probabilistic pathing requires measurable coherence scoring and deterministic fallback guarantees.",
+      "acceptance": "Implement REQ-23-003 coherence-scored selection telemetry with replay-verified fallback behavior.",
+      "dependencies": [
+        "REQ-23",
+        "V4-ETH-004"
+      ]
+    },
+    {
+      "id": "V6-FLUX-004",
+      "class": "flux-lattice-hardening",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Structural fluidity stress harness lane",
+      "problem": "Dissolve, morph, and recoalesce behavior must be proven stable under realistic runtime pressure.",
+      "acceptance": "Implement REQ-23-004 stress and load suite with rollback safety, recovery latency, and failure-rate metrics.",
+      "dependencies": [
+        "REQ-23",
+        "V4-ETH-001",
+        "V4-ETH-005",
+        "V4-SETTLE-007"
+      ]
+    },
+    {
+      "id": "V6-FLUX-005",
+      "class": "flux-lattice-hardening",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Substrate probe evidence lane",
+      "problem": "Substrate ambition requires deterministic probe order proof and fallback receipts in every settle cycle.",
+      "acceptance": "Implement REQ-23-005 strict ternary to qubit to binary probe receipts and pluggable adapter tests.",
+      "dependencies": [
+        "REQ-23",
+        "V4-SETTLE-011"
+      ]
+    },
+    {
+      "id": "V6-FLUX-006",
+      "class": "flux-lattice-hardening",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Flux readiness operator status lane",
+      "problem": "Operators need one authoritative surface for Flux readiness, integrity state, and recovery posture.",
+      "acceptance": "Implement REQ-23-006 status contract exposing substrate, blob integrity, and last recovery linkage.",
+      "dependencies": [
+        "REQ-23",
+        "V4-SETTLE-008",
+        "V6-FLUX-001",
+        "V6-FLUX-002"
+      ]
+    },
+    {
+      "id": "V6-FLUX-007",
+      "class": "flux-lattice-hardening",
+      "wave": "V6",
+      "status": "blocked",
+      "title": "Advanced substrate live validation lane",
+      "problem": "Production-grade ternary or qubit validation cannot be closed without hardware or provider access evidence.",
+      "acceptance": "Execute live advanced-substrate validation runs and publish signed evidence bundle once target hardware or provider access is available.",
+      "dependencies": [
+        "REQ-23",
+        "V6-FLUX-005"
       ]
     }
   ]
