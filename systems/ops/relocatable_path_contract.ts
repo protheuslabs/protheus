@@ -83,7 +83,12 @@ function walk(absPath: string, exts: string[], out: string[]) {
   }
   const entries = fs.readdirSync(absPath, { withFileTypes: true });
   for (const row of entries) {
-    if (row.name === 'node_modules' || row.name === 'dist') continue;
+    if (
+      row.name === 'node_modules'
+      || row.name === 'dist'
+      || row.name === 'target'
+      || row.name === '.git'
+    ) continue;
     walk(path.join(absPath, row.name), exts, out);
   }
 }

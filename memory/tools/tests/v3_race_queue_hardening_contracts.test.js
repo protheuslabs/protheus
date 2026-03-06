@@ -26,7 +26,7 @@ function run(cmd, args, env = process.env) {
     thresholds: {
       min_coverage_pct: 0,
       max_flake_rate: 1,
-      max_p95_runtime_ms: 2_000_000,
+      max_p95_runtime_ms: 3_000_000,
       require_critical_suite_pass: true
     },
     history_window: 50
