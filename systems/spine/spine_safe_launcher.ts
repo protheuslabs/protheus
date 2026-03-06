@@ -3,7 +3,7 @@
 
 /**
  * Runtime lane for SYSTEMS-SPINE-SPINE-SAFE-LAUNCHER.
- * Native execution delegated to Rust legacy-retired-lane runtime.
+ * Native execution delegated through conduit to Rust kernel runtime.
  */
 
 const fs = require('fs');
@@ -22,15 +22,34 @@ function findRepoRoot(startDir) {
 }
 
 const ROOT = findRepoRoot(__dirname);
-const { createLaneModule } = require(path.join(ROOT, 'lib', 'legacy_retired_lane_bridge.js'));
+const { createConduitLaneModule } = require(path.join(ROOT, 'lib', 'direct_conduit_lane_bridge.js'));
 
-const lane = createLaneModule('SYSTEMS-SPINE-SPINE-SAFE-LAUNCHER', ROOT);
+const lane = createConduitLaneModule('SYSTEMS-SPINE-SPINE-SAFE-LAUNCHER', ROOT);
 const { LANE_ID, buildLaneReceipt, verifyLaneReceipt } = lane;
 
 module.exports = lane;
 
 if (require.main === module) {
-  console.log(JSON.stringify(buildLaneReceipt(), null, 2));
+  buildLaneReceipt()
+    .then((row) => {
+      console.log(JSON.stringify(row, null, 2));
+      process.exit(row && row.ok === true ? 0 : 1);
+    })
+    .catch((err) => {
+      console.error(
+        JSON.stringify(
+          {
+            ok: false,
+            type: 'conduit_lane_bridge_error',
+            lane_id: LANE_ID,
+            error: String(err && err.message ? err.message : err),
+          },
+          null,
+          2,
+        ),
+      );
+      process.exit(1);
+    });
 }
 
 export {};
