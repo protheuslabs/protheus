@@ -12,6 +12,7 @@ fn usage() {
     println!("  protheus-ops runtime-efficiency-floor status [--policy=<path>]");
     println!("  protheus-ops model-router <args>");
     println!("  protheus-ops contract-check <args>");
+    println!("  protheus-ops enterprise-hardening <run|status> [--strict=1|0] [--policy=<path>]");
     println!("  protheus-ops strategy-mode-governor <args>");
     println!("  protheus-ops status [--dashboard]");
     println!("  protheus-ops backlog-runtime-anchor <build|verify> --lane-id=<V3-RACE-XXX>");
@@ -143,6 +144,11 @@ fn main() {
         "contract-check" => {
             let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
             let exit = protheus_ops_core::contract_check::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "enterprise-hardening" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::enterprise_hardening::run(&cwd, &rest);
             std::process::exit(exit);
         }
         "strategy-mode-governor" => {

@@ -21,6 +21,7 @@ From workflow `Required Checks`:
 - `integrity_kernel_check`
 - `schema_contract_check`
 - `adaptive_layer_guard_strict`
+- `enterprise_hardening_gate`
 - `ci_suite`
 
 ## Code Owner Enforcement

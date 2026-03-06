@@ -209,6 +209,17 @@ jobs:
       - name: security_threat_pack
         run: node memory/tools/tests/security_threat_pack.test.js
 
+  enterprise_hardening_gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: enterprise_hardening_gate
+        run: cargo run --quiet --manifest-path crates/ops/Cargo.toml --bin protheus-ops -- enterprise-hardening run --strict=1
+
   ci_suite:
     runs-on: ubuntu-latest
     timeout-minutes: 25
