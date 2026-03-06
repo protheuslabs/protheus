@@ -79,6 +79,20 @@ pub const RUST_EVENT_TYPES: [&str; 3] = [
     "system_feedback",
 ];
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum EdgeBridgeMessage {
+    EdgeInference {
+        prompt: String,
+        max_tokens: Option<u32>,
+    },
+    EdgeStatus {
+        probe: Option<String>,
+    },
+}
+
+pub const EDGE_BRIDGE_MESSAGE_TYPES: [&str; 2] = ["edge_inference", "edge_status"];
+
 fn default_bridge_message_budget_max() -> usize {
     MAX_CONDUIT_MESSAGE_TYPES
 }
@@ -601,26 +615,51 @@ pub struct KernelLaneCommandHandler;
 impl CommandHandler for KernelLaneCommandHandler {
     fn handle(&mut self, command: &TsCommand) -> RustEvent {
         match command {
-            TsCommand::StartAgent { agent_id } if agent_id.starts_with("lane:") => {
-                let lane_receipt = build_legacy_lane_receipt(
-                    agent_id
-                        .strip_prefix("lane:")
-                        .unwrap_or_default(),
-                );
-                let status = if lane_receipt
-                    .get("ok")
-                    .and_then(Value::as_bool)
-                    .unwrap_or(false)
-                {
-                    "legacy_lane_receipt"
-                } else {
-                    "legacy_lane_error"
-                };
-                RustEvent::SystemFeedback {
-                    status: status.to_string(),
-                    detail: serde_json::json!({ "lane_receipt": lane_receipt }),
-                    violation_reason: None,
+            TsCommand::StartAgent { agent_id } => {
+                match decode_edge_bridge_message(agent_id) {
+                    Ok(Some(message)) => return execute_edge_bridge_message(message),
+                    Ok(None) => {
+                        if agent_id.starts_with("lane:") {
+                            let lane_receipt = build_legacy_lane_receipt(
+                                agent_id
+                                    .strip_prefix("lane:")
+                                    .unwrap_or_default(),
+                            );
+                            let status = if lane_receipt
+                                .get("ok")
+                                .and_then(Value::as_bool)
+                                .unwrap_or(false)
+                            {
+                                "legacy_lane_receipt"
+                            } else {
+                                "legacy_lane_error"
+                            };
+                            return RustEvent::SystemFeedback {
+                                status: status.to_string(),
+                                detail: serde_json::json!({ "lane_receipt": lane_receipt }),
+                                violation_reason: None,
+                            };
+                        }
+                    }
+                    Err(reason) => {
+                        let detail = serde_json::json!({
+                            "ok": false,
+                            "type": "edge_bridge_error",
+                            "reason": reason,
+                            "receipt_hash": deterministic_receipt_hash(&serde_json::json!({
+                                "type": "edge_bridge_error",
+                                "reason": reason
+                            }))
+                        });
+                        return RustEvent::SystemFeedback {
+                            status: "edge_bridge_error".to_string(),
+                            detail,
+                            violation_reason: Some("edge_bridge_parse_failed".to_string()),
+                        };
+                    }
                 }
+                let mut fallback = EchoCommandHandler;
+                fallback.handle(command)
             }
             _ => {
                 let mut fallback = EchoCommandHandler;
@@ -672,6 +711,119 @@ fn build_legacy_lane_error(raw_lane_id: &str, reason: &str) -> Value {
     });
     out["receipt_hash"] = Value::String(deterministic_receipt_hash(&out));
     out
+}
+
+fn decode_edge_bridge_message(agent_id: &str) -> Result<Option<EdgeBridgeMessage>, String> {
+    let trimmed = agent_id.trim();
+    if trimmed.eq_ignore_ascii_case("edge_status") {
+        return Ok(Some(EdgeBridgeMessage::EdgeStatus { probe: None }));
+    }
+    if let Some(prompt) = trimmed.strip_prefix("edge_inference:") {
+        return Ok(Some(EdgeBridgeMessage::EdgeInference {
+            prompt: prompt.to_string(),
+            max_tokens: Some(64),
+        }));
+    }
+    if let Some(raw_json) = trimmed.strip_prefix("edge_json:") {
+        let parsed = serde_json::from_str::<EdgeBridgeMessage>(raw_json)
+            .map_err(|err| format!("edge_bridge_json_invalid:{err}"))?;
+        return Ok(Some(parsed));
+    }
+    Ok(None)
+}
+
+fn execute_edge_bridge_message(message: EdgeBridgeMessage) -> RustEvent {
+    match message {
+        EdgeBridgeMessage::EdgeStatus { probe } => {
+            let detail = serde_json::json!({
+                "ok": true,
+                "type": "edge_status",
+                "probe": probe,
+                "backend": edge_backend_label(),
+                "available": cfg!(feature = "edge"),
+                "compile_time_feature_edge": cfg!(feature = "edge")
+            });
+            let mut out = detail;
+            out["receipt_hash"] = Value::String(deterministic_receipt_hash(&out));
+            RustEvent::SystemFeedback {
+                status: "edge_status".to_string(),
+                detail: out,
+                violation_reason: None,
+            }
+        }
+        EdgeBridgeMessage::EdgeInference { prompt, max_tokens } => {
+            if !cfg!(feature = "edge") {
+                let detail = serde_json::json!({
+                    "ok": false,
+                    "type": "edge_inference",
+                    "backend": edge_backend_label(),
+                    "reason": "edge_feature_disabled",
+                    "compile_time_feature_edge": false,
+                });
+                let mut out = detail;
+                out["receipt_hash"] = Value::String(deterministic_receipt_hash(&out));
+                return RustEvent::SystemFeedback {
+                    status: "edge_backend_unavailable".to_string(),
+                    detail: out,
+                    violation_reason: Some("edge_feature_disabled".to_string()),
+                };
+            }
+            let normalized = normalize_edge_prompt(&prompt);
+            let token_cap = max_tokens.unwrap_or(64).clamp(1, 256) as usize;
+            let output_text = summarize_for_edge_backend(&normalized, token_cap);
+            let output_tokens = output_text.split_whitespace().count() as u32;
+            let mut detail = serde_json::json!({
+                "ok": true,
+                "type": "edge_inference",
+                "backend": edge_backend_label(),
+                "input": {
+                    "prompt_hash": deterministic_hash(&normalized),
+                    "max_tokens": token_cap,
+                },
+                "output": {
+                    "text": output_text,
+                    "token_count": output_tokens,
+                    "truncated": normalized.split_whitespace().count() > token_cap
+                }
+            });
+            detail["receipt_hash"] = Value::String(deterministic_receipt_hash(&detail));
+            RustEvent::SystemFeedback {
+                status: "edge_inference".to_string(),
+                detail,
+                violation_reason: None,
+            }
+        }
+    }
+}
+
+fn edge_backend_label() -> &'static str {
+    if cfg!(feature = "edge") {
+        "picolm_static_stub"
+    } else {
+        "edge_feature_disabled"
+    }
+}
+
+fn normalize_edge_prompt(prompt: &str) -> String {
+    let normalized = prompt
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ");
+    if normalized.is_empty() {
+        "(empty_prompt)".to_string()
+    } else {
+        normalized
+    }
+}
+
+fn summarize_for_edge_backend(prompt: &str, token_cap: usize) -> String {
+    let tokens = prompt.split_whitespace().collect::<Vec<_>>();
+    if tokens.len() <= token_cap {
+        return tokens.join(" ");
+    }
+    let mut clipped = tokens.into_iter().take(token_cap).collect::<Vec<_>>().join(" ");
+    clipped.push_str(" …");
+    clipped
 }
 
 fn clean_lane_id(raw: &str) -> String {
@@ -998,6 +1150,7 @@ mod tests {
     };
     use super::{CommandEnvelope, TsCommand};
     use conduit_security::{CapabilityTokenAuthority, MessageSigner, RateLimitPolicy, RateLimiter};
+    use serde_json::Value;
     use std::fs;
     use std::io::{BufReader, Cursor};
     use std::path::PathBuf;
@@ -1261,6 +1414,73 @@ mod tests {
                     Some("SYSTEMS-ASSIMILATION-ASSIMILATION-CONTROLLER")
                 );
                 assert!(lane_receipt.contains_key("receipt_hash"));
+            }
+            _ => panic!("expected system_feedback event"),
+        }
+    }
+
+    #[test]
+    fn kernel_lane_handler_returns_edge_status_payload() {
+        let policy = test_policy();
+        let gate = RegistryPolicyGate::new(policy.clone());
+        let mut security = test_security(&policy);
+        let command = signed_envelope(
+            &policy,
+            TsCommand::StartAgent {
+                agent_id: "edge_status".to_string(),
+            },
+        );
+
+        let mut handler = KernelLaneCommandHandler;
+        let response = process_command(&command, &gate, &mut security, &mut handler);
+        assert!(response.validation.ok);
+
+        match response.event {
+            RustEvent::SystemFeedback { status, detail, .. } => {
+                assert_eq!(status, "edge_status");
+                assert_eq!(detail.get("type").and_then(Value::as_str), Some("edge_status"));
+                assert!(detail.get("receipt_hash").and_then(Value::as_str).is_some());
+            }
+            _ => panic!("expected system_feedback event"),
+        }
+    }
+
+    #[test]
+    fn kernel_lane_handler_accepts_edge_json_inference_contract() {
+        let policy = test_policy();
+        let gate = RegistryPolicyGate::new(policy.clone());
+        let mut security = test_security(&policy);
+        let command = signed_envelope(
+            &policy,
+            TsCommand::StartAgent {
+                agent_id: "edge_json:{\"type\":\"edge_inference\",\"prompt\":\"hello tiny edge world\",\"max_tokens\":3}".to_string(),
+            },
+        );
+
+        let mut handler = KernelLaneCommandHandler;
+        let response = process_command(&command, &gate, &mut security, &mut handler);
+        assert!(response.validation.ok);
+
+        match response.event {
+            RustEvent::SystemFeedback { status, detail, .. } => {
+                if cfg!(feature = "edge") {
+                    assert_eq!(status, "edge_inference");
+                    assert_eq!(
+                        detail
+                            .get("output")
+                            .and_then(Value::as_object)
+                            .and_then(|o| o.get("token_count"))
+                            .and_then(Value::as_u64),
+                        Some(3)
+                    );
+                } else {
+                    assert_eq!(status, "edge_backend_unavailable");
+                    assert_eq!(
+                        detail.get("reason").and_then(Value::as_str),
+                        Some("edge_feature_disabled")
+                    );
+                }
+                assert!(detail.get("receipt_hash").and_then(Value::as_str).is_some());
             }
             _ => panic!("expected system_feedback event"),
         }

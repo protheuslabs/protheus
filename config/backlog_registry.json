@@ -1,11 +1,11 @@
 {
   "schema_id": "backlog_registry_v1",
   "schema_version": "1.0",
-  "generated_at": "2026-03-06T16:27:26.230Z",
-  "source_hash": "6dcc90bea6ea7eb5b6b3a821",
+  "generated_at": "2026-03-06T16:36:56.320Z",
+  "source_hash": "0e661d306ef1fcb287c2472d",
   "row_count": 1132,
-  "active_count": 99,
-  "archive_count": 1033,
+  "active_count": 98,
+  "archive_count": 1034,
   "rows": [
     {
       "id": "V6-F100-016",
@@ -261,10 +261,10 @@
       "id": "V6-EDGE-001",
       "class": "backlog",
       "wave": "V6",
-      "status": "queued",
+      "status": "done",
       "title": "Conduit edge provider adapter (`edge_inference`/`edge_status`)",
       "problem": "Extreme legacy targets need an optional low-resource inference backend without bypassing Rust governance.",
-      "acceptance": "Implement `REQ-11-001` adapter surface with typed message contracts and deterministic receipts for each edge invocation.",
+      "acceptance": "Implemented `REQ-11-001` in `crates/conduit` with typed `EdgeBridgeMessage` contracts (`edge_inference`, `edge_status`), conduit-validated execution over `start_agent`, deterministic edge receipts, and regression tests proving status/inference behavior.",
       "dependencies": []
     },
     {

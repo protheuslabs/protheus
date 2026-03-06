@@ -1,6 +1,6 @@
 # Backlog Archive View
 
-Generated: 2026-03-06T16:27:26.230Z
+Generated: 2026-03-06T16:36:56.320Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
@@ -22,6 +22,7 @@ Generated: 2026-03-06T16:27:26.230Z
 | V6-F100-038 | backlog | V6 | done | Backlog canonical rename to SRS with compatibility alias |  |
 | V6-ARCH-001 | backlog | V6 | done | Layered kernel shedding feature topology (`layer0` -> `layer3`) |  |
 | V6-ARCH-002 | backlog | V6 | done | Layered profile CI/build verification matrix |  |
+| V6-EDGE-001 | backlog | V6 | done | Conduit edge provider adapter (`edge_inference`/`edge_status`) |  |
 | V6-COMP-004 | backlog | V6 | done | Security-layer inventory with evidence links |  |
 | V6-RUNTIME-001 | backlog | V6 | done | Strict schema enforcement for persona/lens outputs |  |
 | V6-RUNTIME-002 | backlog | V6 | done | Per-shadow budget governance layer |  |

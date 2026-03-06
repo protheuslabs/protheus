@@ -1,6 +1,6 @@
 # Backlog Active View
 
-Generated: 2026-03-06T16:27:26.230Z
+Generated: 2026-03-06T16:36:56.320Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
@@ -11,7 +11,6 @@ Generated: 2026-03-06T16:27:26.230Z
 | V6-F100-034 | backlog | V6 | blocked | First public semantic release + npm publish |  |
 | V6-F100-035 | backlog | V6 | queued | SPDX header sweep across source tree |  |
 | V6-F100-036 | backlog | V6 | queued | Root experimental folder rationalization |  |
-| V6-EDGE-001 | backlog | V6 | queued | Conduit edge provider adapter (`edge_inference`/`edge_status`) |  |
 | V6-EDGE-002 | backlog | V6 | queued | Resource-tier backend auto-selection for constrained hardware |  |
 | V6-EDGE-003 | backlog | V6 | queued | Edge backend feature-gated build profile integration |  |
 | V6-EDGE-004 | backlog | V6 | queued | Edge lifecycle validation + substrate-swap proof |  |

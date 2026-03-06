@@ -1,7 +1,8 @@
 # REQ-11: Low-Resource Edge Inference Engine Assimilation
 
-Version: 1.0  
+Version: 1.1  
 Date: 2026-03-06
+Repo Reference: https://github.com/RightNow-AI/picolm
 
 ## Objective
 
@@ -27,6 +28,7 @@ Out of scope:
   - Add edge provider surface under conduit provider namespace.
   - Typed message contracts include `edge_inference` and `edge_status`.
   - Every edge request produces deterministic receipt metadata.
+  - Preserve core 10-command contract by using typed edge messages over `start_agent` transport (`edge_status`, `edge_inference:*`, or `edge_json:{...}`).
 
 2. `REQ-11-002` Rust-authoritative governance path
 - Acceptance:
@@ -61,3 +63,20 @@ Out of scope:
 
 - Treat this backend as specialized fallback for constrained environments, not primary inference path.
 - Keep all trust-critical behavior in Rust TCB and maintain conduit as sole bridge.
+
+## Phase-1 Implementation (2026-03-06)
+
+- Implemented in `crates/conduit`:
+  - Typed edge messages: `EdgeBridgeMessage::{edge_inference, edge_status}`.
+  - Kernel lane handler integration: parses typed edge transport over `start_agent`.
+  - Deterministic receipt hash attached to every edge status/inference response.
+  - Compile-time feature gate: `conduit` crate feature `edge` (default off).
+  - Fail-closed behavior when `edge` feature is disabled.
+- Added tests:
+  - `kernel_lane_handler_returns_edge_status_payload`
+  - `kernel_lane_handler_accepts_edge_json_inference_contract`
+
+## Next Batch (Phase-2)
+
+- Resource primitive hardware-profile selector for edge fallback routing (`REQ-11-003`).
+- Edge-on/edge-off build matrix proof (`REQ-11-004`).
