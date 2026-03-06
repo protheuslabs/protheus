@@ -467,6 +467,47 @@ fn step(
     }
 }
 
+fn append_self_documentation_closeout(
+    root: &Path,
+    ledger: &mut LedgerWriter,
+    mode: &str,
+    date: &str,
+) {
+    if mode != "daily" {
+        return;
+    }
+
+    let args = vec![
+        "systems/autonomy/self_documentation_closeout.js".to_string(),
+        "run".to_string(),
+        date.to_string(),
+        "--approve=1".to_string(),
+    ];
+    let res = run_node_json(root, &args);
+    ledger.append(json!({
+        "type": "spine_step",
+        "mode": mode,
+        "date": date,
+        "step": "self_documentation_closeout",
+        "ok": res.ok,
+        "code": res.code,
+        "non_blocking": true,
+        "payload": res.payload,
+        "reason": if res.ok { Value::Null } else { Value::String(clean_reason(&res.stderr, &res.stdout)) }
+    }));
+}
+
+fn emit_terminal_with_closeout(
+    root: &Path,
+    ledger: &mut LedgerWriter,
+    context: &TerminalReceiptContext<'_>,
+    ok: bool,
+    failure_reason: Option<&str>,
+) -> i32 {
+    append_self_documentation_closeout(root, ledger, &context.cli.mode, &context.cli.date);
+    emit_terminal_receipt(ledger, context, ok, failure_reason)
+}
+
 fn clean_reason(stderr: &str, stdout: &str) -> String {
     let merged = format!("{} {}", stderr, stdout)
         .split_whitespace()
@@ -505,6 +546,7 @@ fn execute_native(root: &Path, cli: &CliArgs) -> i32 {
         "systems/actuation/bridge_from_proposals.js",
         "systems/sensory/cross_signal_engine.js",
         "systems/autonomy/autonomy_controller.js",
+        "systems/autonomy/self_documentation_closeout.js",
     ];
 
     let (constitution_ok, constitution_hash, expected_hash) = constitution_hash(root);
@@ -523,7 +565,8 @@ fn execute_native(root: &Path, cli: &CliArgs) -> i32 {
     }));
 
     if !constitution_ok {
-        return emit_terminal_receipt(
+        return emit_terminal_with_closeout(
+            root,
             &mut ledger,
             &TerminalReceiptContext {
                 run_id: &run_id,
@@ -548,7 +591,8 @@ fn execute_native(root: &Path, cli: &CliArgs) -> i32 {
         "reason": if guard_res.ok { Value::Null } else { Value::String(clean_reason(&guard_res.stderr, &guard_res.stdout)) }
     }));
     if !guard_res.ok {
-        return emit_terminal_receipt(
+        return emit_terminal_with_closeout(
+            root,
             &mut ledger,
             &TerminalReceiptContext {
                 run_id: &run_id,
@@ -578,7 +622,8 @@ fn execute_native(root: &Path, cli: &CliArgs) -> i32 {
         &cli.mode,
         &cli.date,
     ) {
-        return emit_terminal_receipt(
+        return emit_terminal_with_closeout(
+            root,
             &mut ledger,
             &TerminalReceiptContext {
                 run_id: &run_id,
@@ -611,7 +656,8 @@ fn execute_native(root: &Path, cli: &CliArgs) -> i32 {
             ),
         ] {
             if let Err(reason) = step(root, name, args, &mut ledger, &cli.mode, &cli.date) {
-                return emit_terminal_receipt(
+                return emit_terminal_with_closeout(
+                    root,
                     &mut ledger,
                     &TerminalReceiptContext {
                         run_id: &run_id,
@@ -679,7 +725,8 @@ fn execute_native(root: &Path, cli: &CliArgs) -> i32 {
         ),
     ] {
         if let Err(reason) = step(root, name, args, &mut ledger, &cli.mode, &cli.date) {
-            return emit_terminal_receipt(
+            return emit_terminal_with_closeout(
+                root,
                 &mut ledger,
                 &TerminalReceiptContext {
                     run_id: &run_id,
@@ -809,7 +856,8 @@ fn execute_native(root: &Path, cli: &CliArgs) -> i32 {
             ),
         ] {
             if let Err(reason) = step(root, name, args, &mut ledger, &cli.mode, &cli.date) {
-                return emit_terminal_receipt(
+                return emit_terminal_with_closeout(
+                    root,
                     &mut ledger,
                     &TerminalReceiptContext {
                         run_id: &run_id,
@@ -826,7 +874,8 @@ fn execute_native(root: &Path, cli: &CliArgs) -> i32 {
         }
     }
 
-    emit_terminal_receipt(
+    emit_terminal_with_closeout(
+        root,
         &mut ledger,
         &TerminalReceiptContext {
             run_id: &run_id,
