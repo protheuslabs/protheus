@@ -34,6 +34,9 @@ Completion requires all of the following:
 - Report `.rs` vs `.ts` lines from tracked files.
 - Treat the 50% Rust target as repository-wide source composition, not core-only subsets.
 - Do not inflate Rust percentage with stubs/scaffolding.
+- Before adding any **new file** (`git add` path that did not previously exist), run a projected Rust composition check.
+- If the projected repository Rust percentage would drop below **70.0%**, the change is blocked.
+- Block message format: `BLOCKED — projected Rust % would fall below 70.0 after adding new files`.
 - Do not migrate `adaptive/**` into Rust unless the path is under `systems/adaptive/**`.
 - Keep user-flex surfaces (`habits`, `reflexes`, `eyes` user-specific paths) non-Rust by default unless explicitly approved.
 
