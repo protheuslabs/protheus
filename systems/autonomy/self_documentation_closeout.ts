@@ -26,6 +26,9 @@ const ROOT = process.env.AUTONOMY_SELF_DOC_ROOT
 const MEMORY_MD_PATH = process.env.AUTONOMY_SELF_DOC_MEMORY_PATH
   ? path.resolve(process.env.AUTONOMY_SELF_DOC_MEMORY_PATH)
   : path.join(ROOT, 'MEMORY.md');
+const SESSION_SUMMARY_PATH = process.env.AUTONOMY_SELF_DOC_SESSION_SUMMARY_PATH
+  ? path.resolve(process.env.AUTONOMY_SELF_DOC_SESSION_SUMMARY_PATH)
+  : path.join(ROOT, 'state', 'session_summary.md');
 const OUTPUT_DIR = process.env.AUTONOMY_SELF_DOC_OUTPUT_DIR
   ? path.resolve(process.env.AUTONOMY_SELF_DOC_OUTPUT_DIR)
   : path.join(ROOT, 'state', 'autonomy', 'self_documentation');
@@ -493,6 +496,84 @@ function outputFilePath(dateStr) {
   return path.join(OUTPUT_DIR, `${dateStr}.json`);
 }
 
+function defaultSessionSummaryTemplate() {
+  return [
+    '# Session Summary (state/session_summary.md)',
+    '',
+    'Auto-generated closeout snapshots for continuity across sessions.',
+    '',
+    '---',
+    ''
+  ].join('\n');
+}
+
+function buildSessionSummarySection(dateStr, snapshot, significance, line) {
+  const daily = snapshot && snapshot.daily ? snapshot.daily : {};
+  const autonomy = snapshot && snapshot.autonomy ? snapshot.autonomy : {};
+  const lane = snapshot && snapshot.suggestion_lane ? snapshot.suggestion_lane : {};
+  const sim = snapshot && snapshot.simulation ? snapshot.simulation : {};
+  const integrity = snapshot && snapshot.integrity ? snapshot.integrity : {};
+  const reasons = Array.isArray(significance && significance.reasons) ? significance.reasons.filter(Boolean) : [];
+  const flagText = reasons.length > 0 ? reasons.join(', ') : 'none';
+
+  return [
+    `## ${dateStr} Session`,
+    '',
+    '**Closeout Snapshot:**',
+    `- Drift Rate: ${percent(sim.drift_rate)}`,
+    `- Yield Rate: ${percent(sim.yield_rate)}`,
+    `- Executed Runs: ${safeNumber(autonomy.executed_count, 0)}`,
+    `- Policy Holds: ${safeNumber(autonomy.policy_holds, 0)}`,
+    `- Audits: ${safeNumber(autonomy.audit_count, 0)}`,
+    `- Suggestions Merged: ${safeNumber(lane.merged_count, 0)}`,
+    `- Integrity Violations: ${safeNumber(integrity.violations_today, 0)}`,
+    `- Artifacts Captured: ${safeNumber(daily.artifact_count, 0)}`,
+    '',
+    '**Signal Flags:**',
+    `- Significant: ${significance && significance.significant ? 'yes' : 'no'}`,
+    `- Score: ${safeNumber(significance && significance.score, 0).toFixed(3)}`,
+    `- Threshold: ${safeNumber(significance && significance.threshold, 0).toFixed(3)}`,
+    `- Reasons: ${flagText}`,
+    '',
+    '**Deterministic Summary:**',
+    line,
+    ''
+  ].join('\n');
+}
+
+function upsertSessionSummarySection(summaryText, dateStr, section) {
+  const header = `## ${dateStr} Session`;
+  const normalizedSection = String(section || '').replace(/\r\n/g, '\n').trim();
+  const base = String(summaryText || '').replace(/\r\n/g, '\n').trimEnd();
+  const text = base.length > 0 ? base : defaultSessionSummaryTemplate().trimEnd();
+  const lines = text.split('\n');
+
+  let start = -1;
+  for (let i = 0; i < lines.length; i += 1) {
+    if (String(lines[i] || '').trim() === header) {
+      start = i;
+      break;
+    }
+  }
+
+  const sectionLines = normalizedSection.split('\n');
+  if (start >= 0) {
+    let end = lines.length;
+    for (let i = start + 1; i < lines.length; i += 1) {
+      if (String(lines[i] || '').startsWith('## ')) {
+        end = i;
+        break;
+      }
+    }
+    lines.splice(start, end - start, ...sectionLines);
+    const joined = lines.join('\n').trimEnd();
+    return `${joined}\n`;
+  }
+
+  const joined = `${text}\n\n${normalizedSection}\n`;
+  return joined;
+}
+
 function cmdRun(dateStr, opts) {
   const requireApproval = opts && Object.prototype.hasOwnProperty.call(opts, 'requireApproval')
     ? !!opts.requireApproval
@@ -521,6 +602,8 @@ function cmdRun(dateStr, opts) {
   const line = summaryLine(dateStr, snapshot, significance);
   const requiresReview = requireApproval && significance.significant && !approved;
   let applied = false;
+  let sessionSummaryUpdated = false;
+  let sessionSummaryError = '';
 
   if (!requiresReview) {
     const current = readText(MEMORY_MD_PATH, '# MEMORY.md\n');
@@ -528,6 +611,17 @@ function cmdRun(dateStr, opts) {
     fs.mkdirSync(path.dirname(MEMORY_MD_PATH), { recursive: true });
     fs.writeFileSync(MEMORY_MD_PATH, next, 'utf8');
     applied = true;
+  }
+
+  try {
+    const currentSessionSummary = readText(SESSION_SUMMARY_PATH, defaultSessionSummaryTemplate());
+    const sessionSection = buildSessionSummarySection(dateStr, snapshot, significance, line);
+    const nextSessionSummary = upsertSessionSummarySection(currentSessionSummary, dateStr, sessionSection);
+    fs.mkdirSync(path.dirname(SESSION_SUMMARY_PATH), { recursive: true });
+    fs.writeFileSync(SESSION_SUMMARY_PATH, nextSessionSummary, 'utf8');
+    sessionSummaryUpdated = true;
+  } catch (error: any) {
+    sessionSummaryError = String(error && error.message ? error.message : error || 'write_failed');
   }
 
   const payload = {
@@ -545,6 +639,9 @@ function cmdRun(dateStr, opts) {
     significance_reasons: significance.reasons,
     summary_line: line,
     memory_path: path.relative(ROOT, MEMORY_MD_PATH).replace(/\\/g, '/'),
+    session_summary_path: path.relative(ROOT, SESSION_SUMMARY_PATH).replace(/\\/g, '/'),
+    session_summary_updated: sessionSummaryUpdated,
+    session_summary_error: sessionSummaryError || null,
     output_path: path.relative(ROOT, outputFilePath(dateStr)).replace(/\\/g, '/'),
     snapshot
   };
