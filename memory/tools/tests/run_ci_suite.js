@@ -16,6 +16,10 @@ const CI_STREAK_STATE_PATH = path.join(ROOT, 'state', 'ops', 'ci_baseline_streak
 const DEFAULT_STEP_TIMEOUT_MS = Math.max(30_000, Number(process.env.CI_STEP_TIMEOUT_MS || (12 * 60 * 1000)));
 const DEFAULT_TEST_TIMEOUT_MS = Math.max(15_000, Number(process.env.CI_TEST_TIMEOUT_MS || (5 * 60 * 1000)));
 const DEFAULT_TOTAL_TIMEOUT_MS = Math.max(DEFAULT_STEP_TIMEOUT_MS, Number(process.env.CI_TOTAL_TIMEOUT_MS || (45 * 60 * 1000)));
+const TEST_TIMEOUT_OVERRIDES_MS = {
+  // This suite runs many real subprocess scenarios and regularly exceeds 5m.
+  'inversion_controller.test.js': Math.max(DEFAULT_TEST_TIMEOUT_MS, 10 * 60 * 1000)
+};
 
 const DEFAULT_EXCLUDES = new Set([
   'enforcement.smoke.test.js',
@@ -203,7 +207,8 @@ function main() {
     ensureTotalBudget(ciStartedAtMs, `tests:${file}`);
     const rel = path.join('memory', 'tools', 'tests', file);
     console.log(`-> ${rel}`);
-    const res = runNode([rel], { timeoutMs: DEFAULT_TEST_TIMEOUT_MS });
+    const timeoutMs = Number(TEST_TIMEOUT_OVERRIDES_MS[file] || DEFAULT_TEST_TIMEOUT_MS);
+    const res = runNode([rel], { timeoutMs });
     if (res.ok) {
       passed += 1;
       continue;
