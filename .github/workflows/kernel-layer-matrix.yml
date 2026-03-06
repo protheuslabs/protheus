@@ -1,0 +1,45 @@
+name: Kernel Layer Matrix
+
+on:
+  pull_request:
+    paths:
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "crates/**"
+      - ".github/workflows/kernel-layer-matrix.yml"
+  push:
+    branches:
+      - main
+      - rust50
+    paths:
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "crates/**"
+      - ".github/workflows/kernel-layer-matrix.yml"
+
+jobs:
+  layer-matrix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        profile:
+          - name: layer0
+            args: "--no-default-features --features layer0"
+          - name: layer2
+            args: "--no-default-features --features layer2"
+          - name: layer3-default
+            args: ""
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Test kernel layer profile
+        run: cargo test -p kernel_layers ${{ matrix.profile.args }}

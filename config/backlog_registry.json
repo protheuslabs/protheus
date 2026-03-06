@@ -11248,10 +11248,10 @@
       "id": "V6-ARCH-002",
       "class": "architecture-portability",
       "wave": "V6",
-      "status": "queued",
+      "status": "done",
       "title": "Layered profile CI/build verification matrix",
       "problem": "Sheddable architecture is not reliable until minimal/default profiles are continuously verified.",
-      "acceptance": "Add CI checks for layer0, layer2, and default profile builds/tests; require green gates before merge.",
+      "acceptance": "Add CI checks for layer0, layer2, and default profile builds/tests; require green gates before merge. Delivered via .github/workflows/kernel-layer-matrix.yml and local matrix verification.",
       "dependencies": [
         "V6-ARCH-001"
       ]
