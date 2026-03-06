@@ -37,6 +37,14 @@ fn usage() {
     println!("  protheus-ops personas-cli <command> [flags]");
     println!("  protheus-ops assimilation-controller <command> [flags]");
     println!("  protheus-ops sensory-eyes-intake <command> [flags]");
+    println!("  protheus-ops execution-yield-recovery <command> [flags]");
+    println!("  protheus-ops protheus-control-plane <command> [flags]");
+    println!("  protheus-ops rust50-migration-program <command> [flags]");
+    println!("  protheus-ops venom-containment-layer <command> [flags]");
+    println!("  protheus-ops dynamic-burn-budget-oracle <command> [flags]");
+    println!("  protheus-ops backlog-registry <command> [flags]");
+    println!("  protheus-ops rust-enterprise-productivity-program <command> [flags]");
+    println!("  protheus-ops backlog-github-sync <command> [flags]");
     println!("  protheus-ops workflow-executor <command> [flags]");
     println!("  protheus-ops fluxlattice-program <list|run|run-all|status> [flags]");
     println!("  protheus-ops perception-polish-program <list|run|run-all|status> [flags]");
@@ -278,6 +286,46 @@ fn main() {
         "sensory-eyes-intake" => {
             let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
             let exit = protheus_ops_core::sensory_eyes_intake::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "execution-yield-recovery" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::execution_yield_recovery::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "protheus-control-plane" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::protheus_control_plane::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "rust50-migration-program" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::rust50_migration_program::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "venom-containment-layer" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::venom_containment_layer::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "dynamic-burn-budget-oracle" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::dynamic_burn_budget_oracle::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "backlog-registry" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::backlog_registry::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "rust-enterprise-productivity-program" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::rust_enterprise_productivity_program::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "backlog-github-sync" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::backlog_github_sync::run(&cwd, &rest);
             std::process::exit(exit);
         }
         "workflow-executor" => {

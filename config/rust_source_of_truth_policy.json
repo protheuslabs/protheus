@@ -52,6 +52,70 @@
           "rust_lane_bridge",
           "state-kernel"
         ]
+      },
+      {
+        "path": "systems/ops/execution_yield_recovery.ts",
+        "required_tokens": [
+          "createOpsLaneBridge",
+          "rust_lane_bridge",
+          "execution-yield-recovery"
+        ]
+      },
+      {
+        "path": "systems/ops/protheus_control_plane.ts",
+        "required_tokens": [
+          "createOpsLaneBridge",
+          "rust_lane_bridge",
+          "protheus-control-plane"
+        ]
+      },
+      {
+        "path": "systems/ops/rust50_migration_program.ts",
+        "required_tokens": [
+          "createOpsLaneBridge",
+          "rust_lane_bridge",
+          "rust50-migration-program"
+        ]
+      },
+      {
+        "path": "systems/security/venom_containment_layer.ts",
+        "required_tokens": [
+          "createOpsLaneBridge",
+          "rust_lane_bridge",
+          "venom-containment-layer"
+        ]
+      },
+      {
+        "path": "systems/ops/dynamic_burn_budget_oracle.ts",
+        "required_tokens": [
+          "createOpsLaneBridge",
+          "rust_lane_bridge",
+          "dynamic-burn-budget-oracle"
+        ]
+      },
+      {
+        "path": "systems/ops/backlog_registry.ts",
+        "required_tokens": [
+          "createOpsLaneBridge",
+          "rust_lane_bridge",
+          "backlog-registry"
+        ]
+      },
+      {
+        "path": "systems/ops/rust_enterprise_productivity_program.ts",
+        "required_tokens": [
+          "createOpsLaneBridge",
+          "rust_lane_bridge",
+          "rust-enterprise-productivity-program"
+        ]
+      },
+      {
+        "path": "systems/ops/backlog_github_sync.ts",
+        "required_tokens": [
+          "createOpsLaneBridge",
+          "rust_lane_bridge",
+          "backlog-github-sync"
+        ]
       }
     ]
   },

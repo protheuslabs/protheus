@@ -1,36 +1,16 @@
 #!/usr/bin/env node
 'use strict';
+export {};
 
-/**
- * Runtime lane for SYSTEMS-SECURITY-VENOM-CONTAINMENT-LAYER.
- * Native execution delegated to Rust legacy-retired-lane runtime.
- */
+const { createOpsLaneBridge } = require('../../lib/rust_lane_bridge');
 
-const fs = require('fs');
-const path = require('path');
-
-function findRepoRoot(startDir) {
-  let dir = path.resolve(startDir || process.cwd());
-  while (true) {
-    if (fs.existsSync(path.join(dir, 'Cargo.toml')) && fs.existsSync(path.join(dir, 'crates', 'ops', 'Cargo.toml'))) {
-      return dir;
-    }
-    const parent = path.dirname(dir);
-    if (parent === dir) return process.cwd();
-    dir = parent;
-  }
-}
-
-const ROOT = findRepoRoot(__dirname);
-const { createLaneModule } = require(path.join(ROOT, 'lib', 'legacy_retired_lane_bridge.js'));
-
-const lane = createLaneModule('SYSTEMS-SECURITY-VENOM-CONTAINMENT-LAYER', ROOT);
-const { LANE_ID, buildLaneReceipt, verifyLaneReceipt } = lane;
-
-module.exports = lane;
+const bridge = createOpsLaneBridge(__dirname, 'venom_containment_layer', 'venom-containment-layer');
 
 if (require.main === module) {
-  console.log(JSON.stringify(buildLaneReceipt(), null, 2));
+  bridge.runCli(process.argv.slice(2));
 }
 
-export {};
+module.exports = {
+  lane: bridge.lane,
+  run: bridge.run
+};

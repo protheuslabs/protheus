@@ -81,6 +81,25 @@ For each candidate lane:
 4. Enforce through contract-check token gates.
 5. Emit deterministic receipt on every crossing.
 
+## Top 8 Ops/Security lanes migrated in this batch
+
+Highest-impact files from `systems/ops` + `systems/security` by tracked TS line count:
+
+1. `systems/ops/execution_yield_recovery.ts` (1437) -> `protheus-ops execution-yield-recovery`
+2. `systems/ops/protheus_control_plane.ts` (1257) -> `protheus-ops protheus-control-plane`
+3. `systems/ops/rust50_migration_program.ts` (1214) -> `protheus-ops rust50-migration-program`
+4. `systems/security/venom_containment_layer.ts` (1197) -> `protheus-ops venom-containment-layer`
+5. `systems/ops/dynamic_burn_budget_oracle.ts` (1104) -> `protheus-ops dynamic-burn-budget-oracle`
+6. `systems/ops/backlog_registry.ts` (1026) -> `protheus-ops backlog-registry`
+7. `systems/ops/rust_enterprise_productivity_program.ts` (1021) -> `protheus-ops rust-enterprise-productivity-program`
+8. `systems/ops/backlog_github_sync.ts` (998) -> `protheus-ops backlog-github-sync`
+
+Migration shape:
+
+- TS/JS files are now thin wrappers through `lib/rust_lane_bridge.js`.
+- Runtime authority is in `crates/ops` rust domains.
+- Each crossing emits deterministic claim-evidence receipts.
+
 ## Regeneration command
 
 To refresh the ranked TS list:

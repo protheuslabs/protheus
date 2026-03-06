@@ -62,3 +62,17 @@ TS surface-only allowlist:
 1. Port remaining non-wrapper TS logic in `security/sensory/assimilation/memory/autonomy` to Rust modules with behavior parity tests.
 2. Retire legacy TS control-flow implementations after parity gates are green.
 3. Extend policy/audit tooling to fail CI when new non-surface TS control logic appears under TCB prefixes.
+
+## Phase-2 Deliverables (top-8 ops/security lanes)
+
+- Added Rust domains in `crates/ops`:
+  - `execution_yield_recovery`
+  - `protheus_control_plane`
+  - `rust50_migration_program`
+  - `venom_containment_layer`
+  - `dynamic_burn_budget_oracle`
+  - `backlog_registry`
+  - `rust_enterprise_productivity_program`
+  - `backlog_github_sync`
+- Updated both TS and JS lane entrypoints for these domains to thin wrappers through `lib/rust_lane_bridge.js`.
+- Added CLI domains in `crates/ops/src/main.rs` and module exports in `crates/ops/src/lib.rs`.
