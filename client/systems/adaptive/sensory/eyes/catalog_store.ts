@@ -16,7 +16,26 @@ const DEFAULT_ABS_PATH = path.join(ADAPTIVE_ROOT, DEFAULT_REL_PATH);
 function defaultCatalog() {
   return {
     version: '1.0',
-    eyes: [],
+    eyes: [
+      {
+        id: 'conversation_eye',
+        name: 'Conversation Eye',
+        status: 'active',
+        cadence_hours: 1,
+        allowed_domains: ['local.workspace'],
+        budgets: {
+          max_items: 6,
+          max_seconds: 8,
+          max_bytes: 65536,
+          max_requests: 1,
+          max_rows: 96
+        },
+        parser_type: 'conversation_eye',
+        topics: ['conversation', 'decision', 'insight', 'directive', 't1'],
+        error_rate: 0,
+        score_ema: 50
+      }
+    ],
     global_limits: {
       max_concurrent_runs: 3,
       global_max_requests_per_day: 50,

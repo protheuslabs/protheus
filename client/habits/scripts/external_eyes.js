@@ -137,6 +137,7 @@ const PARSER_DOMAIN_DEFAULTS = Object.freeze({
   hn_rss: ['news.ycombinator.com', 'hnrss.org'],
   moltbook_hot: ['www.moltbook.com', 'api.moltbook.com'],
   local_state_digest: ['local.workspace'],
+  conversation_eye: ['local.workspace'],
   ollama_search: ['ollama.com', 'www.ollama.com'],
   bird_x: ['x.com', 'twitter.com'],
   stock_market: ['finance.yahoo.com', 'query1.finance.yahoo.com'],

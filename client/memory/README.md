@@ -3,6 +3,10 @@
 This directory is the versioned memory knowledge surface for Protheus.
 Runtime/user-instance memory belongs under `client/local/memory` (ignored).
 
+Conversation synthesis runtime output is emitted to:
+- `client/local/state/memory/conversation_eye/nodes.jsonl`
+- `client/local/state/memory/conversation_eye/index.json`
+
 ## Moltbook Credentials Persistence
 
 To ensure context-free continuity for Moltbook:

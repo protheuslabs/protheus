@@ -13,6 +13,7 @@ const {
   ensureDir,
   emit
 } = require('../../lib/queued_backlog_runtime');
+const { ensureConversationEye, statusConversationEye } = require('../sensory/conversation_eye_bootstrap');
 
 type AnyObj = Record<string, any>;
 
@@ -119,6 +120,15 @@ function rel(absPath: string) {
 
 function cmdInit() {
   ensureLayout();
+  let conversationEye: AnyObj = { ok: false, error: 'bootstrap_not_run' };
+  try {
+    conversationEye = ensureConversationEye(true);
+  } catch (err: any) {
+    conversationEye = {
+      ok: false,
+      error: cleanText(err && err.message ? err.message : err, 220) || 'conversation_eye_bootstrap_failed'
+    };
+  }
   return {
     ok: true,
     type: 'local_runtime_partitioner',
@@ -127,12 +137,22 @@ function cmdInit() {
     roots: {
       client_local_root: rel(CLIENT_LOCAL_ROOT),
       core_local_root: rel(CORE_LOCAL_ROOT)
-    }
+    },
+    conversation_eye: conversationEye
   };
 }
 
 function cmdStatus() {
   ensureLayout();
+  let conversationEye: AnyObj = { ok: false, error: 'status_unavailable' };
+  try {
+    conversationEye = statusConversationEye();
+  } catch (err: any) {
+    conversationEye = {
+      ok: false,
+      error: cleanText(err && err.message ? err.message : err, 220) || 'conversation_eye_status_failed'
+    };
+  }
   return {
     ok: true,
     type: 'local_runtime_partitioner',
@@ -145,7 +165,8 @@ function cmdStatus() {
     summary: {
       client: walkSummary(CLIENT_LOCAL_ROOT),
       core: walkSummary(CORE_LOCAL_ROOT)
-    }
+    },
+    conversation_eye: conversationEye
   };
 }
 

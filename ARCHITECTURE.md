@@ -48,6 +48,21 @@ Additional split rules:
   - TS: `client/lib/runtime_path_registry.ts`
   - Rust (conduit): `core/layer2/conduit/src/runtime_paths.rs`
 
+## Conversation Eye (Default)
+
+`conversation_eye` is a default cognition-plane sensory collector:
+
+- Collector source: `client/adaptive/sensory/eyes/collectors/conversation_eye.ts`
+- Synthesizer: `client/systems/sensory/conversation_eye_synthesizer.ts`
+- Bootstrap/auto-provision: `client/systems/sensory/conversation_eye_bootstrap.ts`
+
+Provisioning contract:
+
+- Every `local:init` run auto-ensures `conversation_eye` exists in the eyes catalog.
+- Runtime synthesis output is written to `client/local/state/memory/conversation_eye/nodes.jsonl`.
+- Synthesized nodes are tagged with the conversation taxonomy:
+  `conversation`, `decision`, `insight`, `directive`, `t1`.
+
 ## Why Root Is Clean
 
 Repository root is intentionally reduced to:

@@ -23,6 +23,22 @@
   - Validation:
     - `npm run -s ops:source-runtime:check`
 
+- [x] `V6-CONVERSATION-EYE-001` Implement Conversation Eye synthesis lane and make it default-on for every instance.
+  - Layer target: client cognition plane (`client/adaptive/sensory/eyes/*` + `client/systems/sensory/*`), runtime memory sink in `client/local/state/memory/conversation_eye/*`.
+  - Delivered:
+    - Added collector: `client/adaptive/sensory/eyes/collectors/conversation_eye.ts`.
+    - Added synthesizer: `client/systems/sensory/conversation_eye_synthesizer.ts`.
+    - Added bootstrap lane + wrapper: `client/systems/sensory/conversation_eye_bootstrap.{ts,js}`.
+    - `local_runtime_partitioner init/status` now ensures/reports conversation-eye installation.
+    - Migration bootstrap now auto-enables the lane (`client/tools/migrate_to_planes_runtime.sh`).
+    - Default eyes catalog now includes `conversation_eye` (`catalog_store.ts` + catalog seed).
+    - Added tests:
+      - `client/memory/tools/tests/conversation_eye_bootstrap.test.js`
+      - `client/memory/tools/tests/conversation_eye_collector.test.js`
+  - Validation:
+    - `npm run -s test:ops:conversation-eye-bootstrap`
+    - `npm run -s test:ops:conversation-eye-collector`
+
 - [ ] `V6-ROOT-INTERNAL-003` Decide and execute final placement policy for root personal/internal markdown artifacts.
   - Layer target: `client/local/internal/*` (or explicit archived docs path if governance files stay tracked).
   - Current gap:

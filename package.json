@@ -1282,6 +1282,8 @@
     "ops:migrate:cleanup:plan": "node client/systems/ops/migrate_cleanup.js plan",
     "ops:migrate:cleanup:status": "node client/systems/ops/migrate_cleanup.js status",
     "test:ops:local-runtime-partitioner": "node client/memory/tools/tests/local_runtime_partitioner.test.js",
+    "test:ops:conversation-eye-bootstrap": "node client/memory/tools/tests/conversation_eye_bootstrap.test.js",
+    "test:ops:conversation-eye-collector": "node client/memory/tools/tests/conversation_eye_collector.test.js",
     "test:ops:migrate-to-planes": "node client/memory/tools/tests/migrate_to_planes.test.js",
     "ops:source-runtime:check": "node client/systems/ops/source_runtime_classifier_contract.js check --strict=1",
     "test:ops:source-runtime-classifier": "node client/memory/tools/tests/source_runtime_classifier_contract.test.js"
