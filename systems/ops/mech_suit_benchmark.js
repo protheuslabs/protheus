@@ -93,6 +93,11 @@ function reduction(baseline, ambient) {
   return Number((((base - next) / base) * 100).toFixed(2));
 }
 
+function reductionOrNull(baseline, ambient, hostFaultDetected) {
+  if (hostFaultDetected) return null;
+  return reduction(baseline, ambient);
+}
+
 function writePolicy(tempRoot) {
   const policyPath = path.join(tempRoot, 'mech_suit_mode_policy.json');
   const policy = {
@@ -499,8 +504,8 @@ function runBenchmark() {
         timed_out_cases: hostFaultCases
       },
       summary: {
-        token_burn_reduction_pct: reduction(baselineTokens, ambientTokens),
-        chars_reduction_pct: reduction(baselineChars, ambientChars),
+        token_burn_reduction_pct: reductionOrNull(baselineTokens, ambientTokens, hostFaultCases.length > 0),
+        chars_reduction_pct: reductionOrNull(baselineChars, ambientChars, hostFaultCases.length > 0),
         persona_ambient_mode_active: !!(personas.ambient_status_payload && personas.ambient_status_payload.ambient_mode_active === true),
         persona_delta_applied: !!(personas.apply_payload && personas.apply_payload.delta_applied === true),
         dopamine_threshold_only: !!(dopamine.safe_eval_payload && dopamine.safe_eval_payload.surfaced === false)

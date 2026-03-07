@@ -16,6 +16,7 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const { runSpineCommand } = require('../../lib/spine_conduit_bridge');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const RUNS_DIR = path.join(ROOT, 'state', 'spine', 'runs');
@@ -39,6 +40,7 @@ function todayStr() { return new Date().toISOString().slice(0, 10); }
 function usage() {
   console.log('Usage:');
   console.log('  node systems/spine/heartbeat_trigger.js run [--mode=eyes|daily] [--min-hours=N] [--max-eyes=N]');
+  console.log('  node systems/spine/heartbeat_trigger.js status');
   console.log('  node systems/spine/heartbeat_trigger.js --help');
 }
 
@@ -46,6 +48,17 @@ function parseArg(name, fallback = null) {
   const pref = `--${name}=`;
   const a = process.argv.find(x => x.startsWith(pref));
   return a ? a.slice(pref.length) : fallback;
+}
+
+function parseJson(text) {
+  const raw = String(text || '').trim();
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch {}
+  const lines = raw.split('\n').map((line) => line.trim()).filter(Boolean);
+  for (let i = lines.length - 1; i >= 0; i -= 1) {
+    try { return JSON.parse(lines[i]); } catch {}
+  }
+  return null;
 }
 
 function readJsonl(filePath) {
@@ -132,16 +145,48 @@ function runIdleDreamCycle(dateStr) {
   };
 }
 
-function cmdRun() {
+function fallbackHeartbeatHours() {
+  return Math.max(1, Number(parseArg('min-hours', process.env.SPINE_HEARTBEAT_MIN_HOURS || 4)) || 4);
+}
+
+async function runSpineStatus(mode, dateStr) {
+  const args = ['status'];
+  if (mode) args.push(`--mode=${mode}`);
+  if (dateStr) args.push(`--date=${dateStr}`);
+  const out = await runSpineCommand(args, { cwdHint: ROOT });
+  return {
+    ok: out.ok,
+    status: Number.isFinite(out.status) ? Number(out.status) : 1,
+    stdout: out.payload ? JSON.stringify(out.payload) : String(out.stdout || ''),
+    stderr: String(out.stderr || ''),
+    payload: out.payload && typeof out.payload === 'object' ? out.payload : parseJson(String(out.stdout || ''))
+  };
+}
+
+async function cmdStatus() {
+  const mode = parseArg('mode', '');
+  const date = parseArg('date', '');
+  const r = await runSpineStatus(mode, date);
+  if (r.stdout) process.stdout.write(String(r.stdout));
+  if (r.stderr) process.stderr.write(String(r.stderr));
+  if (r.status !== 0) {
+    process.exit(r.status);
+  }
+}
+
+async function cmdRun() {
   const mode = String(parseArg('mode', 'daily') || 'daily');
   if (mode !== 'daily' && mode !== 'eyes') {
     process.stdout.write(JSON.stringify({ ok: false, error: 'invalid --mode (daily|eyes)' }) + '\n');
     process.exit(2);
   }
 
-  const minHours = Number(parseArg('min-hours', process.env.SPINE_HEARTBEAT_MIN_HOURS || 4));
-  const maxEyes = parseArg('max-eyes', '');
   const dateStr = todayStr();
+  const rustStatus = await runSpineStatus(mode, dateStr);
+  const minHours = rustStatus.ok && rustStatus.payload && Number(rustStatus.payload.heartbeat_hours || 0) > 0
+    ? Number(rustStatus.payload.heartbeat_hours)
+    : fallbackHeartbeatHours();
+  const maxEyes = parseArg('max-eyes', '');
   const last = lastSpineRunStarted(mode, dateStr);
   const nowMs = Date.now();
   const lastMs = last ? new Date(String(last.ts || '')).getTime() : 0;
@@ -180,6 +225,9 @@ function cmdRun() {
   }
 
   let r = runSpine(mode, dateStr, maxEyes, {
+    env: {
+      SPINE_RUN_CONTEXT: 'heartbeat'
+    },
     timeout_ms: SPINE_HEARTBEAT_RUN_TIMEOUT_MS
   });
   let retry = null;
@@ -187,6 +235,7 @@ function cmdRun() {
     retry = runSpine(mode, dateStr, maxEyes, {
       timeout_ms: SPINE_HEARTBEAT_RETRY_TIMEOUT_MS,
       env: {
+        SPINE_RUN_CONTEXT: 'heartbeat',
         IDLE_DREAM_CYCLE_ENABLED: '0'
       }
     });
@@ -217,16 +266,20 @@ function cmdRun() {
   if (!r.ok) process.exit(r.code || 1);
 }
 
-function main() {
+async function main() {
   const cmd = process.argv[2] || '';
   if (!cmd || cmd === '--help' || cmd === '-h' || cmd === 'help') {
     usage();
     process.exit(0);
   }
+  if (cmd === 'status') return cmdStatus();
   if (cmd === 'run') return cmdRun();
   usage();
   process.exit(2);
 }
 
-main();
+main().catch((err: any) => {
+  process.stderr.write(`spine_heartbeat_trigger_error:${String(err && err.message ? err.message : err)}\n`);
+  process.exit(1);
+});
 export {};

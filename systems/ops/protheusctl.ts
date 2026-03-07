@@ -67,6 +67,8 @@ function usage() {
   console.log('  protheus lens checkin [--persona=jay_haslam] [--heartbeat=HEARTBEAT.md] [--emotion=on|off] [--dry-run=1]');
   console.log('  protheus lens feed <persona> "<snippet>" [--source=master_llm] [--tags=tag1,tag2] [--dry-run=1]');
   console.log('  protheus persona feed <persona> "<snippet>" [--source=master_llm] [--tags=tag1,tag2] [--dry-run=1]');
+  console.log('  protheus persona ambient apply --persona=<id> --stance-json=<json>|--stance-json-base64=<base64>');
+  console.log('  protheus persona ambient status [--persona=<id>]');
   console.log('  protheusctl spine status [--mode=daily|eyes] [--date=YYYY-MM-DD]');
   console.log('  protheusctl spine run [daily|eyes] [YYYY-MM-DD] [--max-eyes=N] [--apply-reseal=1]');
   console.log('  protheusctl hold admit|rehydrate|simulate|status');
@@ -322,7 +324,9 @@ function main() {
   }
 
   if (cmd === 'status') {
-    const script = path.join(__dirname, 'protheus_control_plane.js');
+    // Use live daemon-aware status so cockpit context and ambient runtime liveness
+    // are surfaced instead of static lane receipts.
+    const script = path.join(__dirname, 'protheusd.js');
     const result = runScriptCapture(script, ['status', ...rest]);
     const flags = perceptionLayer.loadPerceptionFlags();
     const settledPanel = perceptionLayer.loadSettledPanel();
@@ -515,6 +519,13 @@ function main() {
   }
 
   if (cmd === 'persona') {
+    const sub = String(rest[0] || '').trim().toLowerCase();
+    if (sub === 'ambient') {
+      const ambientScript = path.join(__dirname, '..', 'personas', 'ambient_stance.js');
+      const routed = rest.length > 1 ? rest.slice(1) : ['status'];
+      runScript(ambientScript, routed, { forwardStdin: false });
+      return;
+    }
     const personaScript = path.join(__dirname, '..', 'personas', 'cli.js');
     const routed = rest.length ? rest : ['--help'];
     runScript(personaScript, routed, { forwardStdin: true });

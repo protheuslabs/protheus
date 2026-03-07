@@ -9,7 +9,6 @@ const { spawnSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..', '..', '..');
 const SAFE_LAUNCHER = path.join(ROOT, 'systems', 'spine', 'spine_safe_launcher.js');
-const PROTHEUSCTL = path.join(ROOT, 'systems', 'ops', 'protheusctl.js');
 
 function runNode(script, args, extraEnv = {}) {
   const out = spawnSync(process.execPath, [script, ...args], {
@@ -68,8 +67,35 @@ process.exit(1);
   return tempRoot;
 }
 
+function setupResealCleanWorkspace() {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'spine-safe-launcher-clean-'));
+  const securityDir = path.join(tempRoot, 'systems', 'security');
+  fs.mkdirSync(securityDir, { recursive: true });
+  const stub = `#!/usr/bin/env node
+'use strict';
+const cmd = String(process.argv[2] || 'status');
+if (cmd === 'status') {
+  process.stdout.write(JSON.stringify({
+    ok: true,
+    reseal_required: false,
+    check: { violation_counts: { unsealed_file: 0 } }
+  }) + '\\n');
+  process.exit(0);
+}
+if (cmd === 'run') {
+  process.stdout.write(JSON.stringify({ ok: true, reseal_required: false, applied: false }) + '\\n');
+  process.exit(0);
+}
+process.stdout.write(JSON.stringify({ ok: false, error: 'unsupported_command' }) + '\\n');
+process.exit(1);
+`;
+  fs.writeFileSync(path.join(securityDir, 'integrity_reseal_assistant.js'), stub, 'utf8');
+  return tempRoot;
+}
+
 try {
-  let out = runNode(SAFE_LAUNCHER, ['status'], { AUTONOMY_ENABLED: '1' });
+  const cleanRoot = setupResealCleanWorkspace();
+  let out = runNode(SAFE_LAUNCHER, ['status'], { AUTONOMY_ENABLED: '1', OPENCLAW_WORKSPACE: cleanRoot });
   assert.strictEqual(out.status, 0, out.stderr || out.stdout);
   let payload = parseJson(out.stdout);
   assert.ok(payload && payload.ok === true, 'status should return ok payload');
@@ -89,11 +115,15 @@ try {
   assert.ok(payload && payload.ok === true, 'apply reseal status should pass');
   assert.strictEqual(payload.reseal_applied, true, 'status payload should report reseal_applied=true when auto-apply is enabled');
 
-  out = runNode(PROTHEUSCTL, ['spine', 'status'], { AUTONOMY_ENABLED: '1' });
-  assert.strictEqual(out.status, 0, out.stderr || out.stdout);
+  out = runNode(SAFE_LAUNCHER, ['run', 'eyes', '2026-03-06'], {
+    MECH_SUIT_MODE_FORCE: '1',
+    OPENCLAW_WORKSPACE: cleanRoot
+  });
+  assert.notStrictEqual(out.status, 0, 'manual spine run should be blocked when mech suit mode is active');
   payload = parseJson(out.stdout);
-  assert.ok(payload && payload.type === 'spine_safe_launcher', 'protheusctl spine should route to safe launcher');
+  assert.ok(payload && payload.reason === 'manual_trigger_blocked_mech_suit_mode', 'manual run should fail closed behind heartbeat-only entry');
 
+  fs.rmSync(cleanRoot, { recursive: true, force: true });
   fs.rmSync(resealRoot, { recursive: true, force: true });
   console.log('spine_safe_launcher.test.js: OK');
 } catch (err) {
