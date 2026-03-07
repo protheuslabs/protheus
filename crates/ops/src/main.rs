@@ -39,6 +39,10 @@ fn usage() {
     println!("  protheus-ops autotest-doctor <command> [flags]");
     println!("  protheus-ops autonomy-proposal-enricher <command> [flags]");
     println!("  protheus-ops spine <mode> [date] [flags]");
+    println!("  protheus-ops attention-queue <enqueue|status> [flags]");
+    println!("  protheus-ops memory-ambient <run|status> [flags]");
+    println!("  protheus-ops persona-ambient <apply|status> [flags]");
+    println!("  protheus-ops dopamine-ambient <closeout|status|evaluate> [flags]");
     println!("  protheus-ops persona-schema-contract <validate|status> [--strict=1|0] [--schema-mode=<id>] [--payload=<json>|--input=<path>]");
     println!("  protheus-ops protheusctl <command> [flags]");
     println!("  protheus-ops personas-cli <command> [flags]");
@@ -298,6 +302,26 @@ fn main() {
         "spine" => {
             let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
             let exit = protheus_ops_core::spine::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "attention-queue" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::attention_queue::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "memory-ambient" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::memory_ambient::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "persona-ambient" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::persona_ambient::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "dopamine-ambient" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::dopamine_ambient::run(&cwd, &rest);
             std::process::exit(exit);
         }
         "persona-schema-contract" => {

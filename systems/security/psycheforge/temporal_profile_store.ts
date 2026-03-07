@@ -3,6 +3,7 @@
 export {};
 
 const { spawnSync } = require('child_process');
+const memorySurface = require('../../memory/index.js');
 const {
   ROOT,
   nowIso,
@@ -47,6 +48,36 @@ function saveState(policy: Record<string, any>, state: Record<string, any>) {
 function runRustHotStateSet(policy: Record<string, any>, key: string, profile: Record<string, any>) {
   const rustCfg = policy && policy.rust_memory && typeof policy.rust_memory === 'object' ? policy.rust_memory : {};
   if (rustCfg.enabled !== true) return { ok: false, skipped: true, reason: 'rust_memory_disabled' };
+  const transport = cleanText(rustCfg.transport || 'memory_surface_ambient', 80) || 'memory_surface_ambient';
+
+  if (transport !== 'legacy_cli') {
+    const surface = memorySurface && typeof memorySurface.runMemoryCli === 'function'
+      ? memorySurface.runMemoryCli('set-hot-state', [
+          `--root=${cleanText(rustCfg.root || '.', 260) || '.'}`,
+          `--key=${key}`,
+          `--value_json=${JSON.stringify(profile)}`
+        ], 45_000, {
+          run_context: 'psycheforge_temporal_profile_store',
+          ambient_mode: true
+        })
+      : null;
+    const payload = surface && surface.payload && typeof surface.payload === 'object'
+      ? surface.payload
+      : null;
+    const ok = Boolean(surface && surface.ok === true && payload && payload.ok === true);
+    if (ok || rustCfg.allow_legacy_cli_fallback !== true) {
+      return {
+        ok,
+        skipped: false,
+        mode: 'memory_surface_ambient',
+        status: Number.isFinite(Number(surface && surface.status)) ? Number(surface && surface.status) : (ok ? 0 : 1),
+        payload,
+        stderr: cleanText(surface && (surface.error || surface.stderr) || '', 280),
+        engine: cleanText(surface && surface.engine || '', 120) || 'memory_surface_ambient'
+      };
+    }
+  }
+
   const commandBase = Array.isArray(rustCfg.command_base) ? rustCfg.command_base.slice(0) : [];
   if (commandBase.length < 1) return { ok: false, skipped: true, reason: 'rust_command_base_missing' };
 
@@ -70,6 +101,7 @@ function runRustHotStateSet(policy: Record<string, any>, key: string, profile: R
   return {
     ok,
     skipped: false,
+    mode: 'legacy_cli_compat',
     status: Number.isFinite(proc.status) ? Number(proc.status) : 1,
     payload: payload && typeof payload === 'object' ? payload : null,
     stderr: cleanText(proc.stderr || '', 280)

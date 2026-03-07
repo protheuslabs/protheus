@@ -175,6 +175,8 @@ function defaultPolicy() {
     ],
     rust_memory: {
       enabled: true,
+      transport: 'memory_surface_ambient',
+      allow_legacy_cli_fallback: false,
       command_base: [
         'cargo',
         'run',
@@ -229,6 +231,11 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
     behavior_classes: normalizeList(raw.behavior_classes || base.behavior_classes, 80),
     rust_memory: {
       enabled: rustMemory.enabled !== false,
+      transport: normalizeToken(rustMemory.transport || base.rust_memory.transport, 80) || base.rust_memory.transport,
+      allow_legacy_cli_fallback: toBool(
+        rustMemory.allow_legacy_cli_fallback,
+        base.rust_memory.allow_legacy_cli_fallback
+      ),
       command_base: normalizeList(rustMemory.command_base || base.rust_memory.command_base, 260),
       root: cleanText(rustMemory.root || base.rust_memory.root, 200) || '.',
       db_path: cleanText(rustMemory.db_path || base.rust_memory.db_path, 400),
