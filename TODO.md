@@ -9,3 +9,15 @@
     - Rust core owns cadence/resource/continuity policy and receipts.
     - Client runtime adaptation code is compatibility-only (no policy authority).
     - All client↔core communication for adaptation flows only through conduit + scrambler.
+
+- [ ] `LOCAL-PARTITION-001` Migrate mutable runtime paths into unified local partitions.
+  - Partition standard:
+    - `client/local/` for user/device/instance client runtime artifacts.
+    - `core/local/` for node-local core runtime artifacts.
+  - Scope:
+    - Migrate generated state/logs/secrets/private-lens/runtime adaptive outputs from legacy paths.
+    - Keep source/test/docs artifacts in their canonical source directories.
+  - Completion criteria:
+    - Runtime writes default to `client/local/*` and `core/local/*`.
+    - Legacy path reads remain as compatibility fallback during transition.
+    - Reset command can wipe local partitions without touching source code.

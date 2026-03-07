@@ -1260,7 +1260,11 @@
     "lane:v6-adapt-002:run": "node client/systems/adaptive/realtime_adaptation_loop.js cycle --trigger=heartbeat --profile=low_power --heartbeat-id=lane_v6_adapt_002 --cpu-ms=90 --tokens=150 --memory-mb=180 --apply=1",
     "test:lane:v6-adapt-002": "node client/memory/tools/tests/realtime_adaptation_low_power_profile.test.js",
     "lane:v6-adapt-003:run": "node client/systems/adaptive/realtime_adaptation_loop.js cycle --trigger=interaction --interaction-id=lane_v6_adapt_003 --cpu-ms=90 --tokens=140 --memory-mb=160 --apply=1 && node client/systems/adaptive/realtime_adaptation_loop.js verify-continuity",
-    "test:lane:v6-adapt-003": "node client/memory/tools/tests/realtime_adaptation_continuity.test.js"
+    "test:lane:v6-adapt-003": "node client/memory/tools/tests/realtime_adaptation_continuity.test.js",
+    "local:init": "node client/systems/ops/local_runtime_partitioner.js init",
+    "local:status": "node client/systems/ops/local_runtime_partitioner.js status",
+    "local:reset": "node client/systems/ops/local_runtime_partitioner.js reset --confirm=RESET_LOCAL",
+    "test:ops:local-runtime-partitioner": "node client/memory/tools/tests/local_runtime_partitioner.test.js"
   },
   "bin": {
     "protheus": "./client/bin/protheus",

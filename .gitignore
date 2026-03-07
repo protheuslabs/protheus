@@ -177,6 +177,16 @@ pqts/
 !personas/organization/projects/
 !personas/organization/projects/**
 
+# Unified local runtime partitions (instance-specific)
+client/local/**
+!client/local/.gitignore
+!client/local/README.md
+!client/local/**/.gitkeep
+core/local/**
+!core/local/.gitignore
+!core/local/README.md
+!core/local/**/.gitkeep
+
 # Instance-specific sensory collectors (local only)
 client/adaptive/sensory/eyes/collectors/abstractapi_enrich.js
 client/adaptive/sensory/eyes/collectors/coingecko_global.js
