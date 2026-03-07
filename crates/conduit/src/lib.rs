@@ -10,6 +10,8 @@ use std::collections::BTreeMap;
 use std::fmt;
 use std::fs;
 use std::io::{self, BufRead, Write};
+use std::path::PathBuf;
+use std::process::Command;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub const CONDUIT_SCHEMA_ID: &str = "protheus_conduit";
@@ -90,9 +92,33 @@ pub enum EdgeBridgeMessage {
     EdgeStatus {
         probe: Option<String>,
     },
+    SpineCommand {
+        args: Vec<String>,
+        run_context: Option<String>,
+    },
+    AttentionCommand {
+        args: Vec<String>,
+    },
+    PersonaAmbientCommand {
+        args: Vec<String>,
+    },
+    DopamineAmbientCommand {
+        args: Vec<String>,
+    },
+    MemoryAmbientCommand {
+        args: Vec<String>,
+    },
 }
 
-pub const EDGE_BRIDGE_MESSAGE_TYPES: [&str; 2] = ["edge_inference", "edge_status"];
+pub const EDGE_BRIDGE_MESSAGE_TYPES: [&str; 7] = [
+    "edge_inference",
+    "edge_status",
+    "spine_command",
+    "attention_command",
+    "persona_ambient_command",
+    "dopamine_ambient_command",
+    "memory_ambient_command",
+];
 
 fn default_bridge_message_budget_max() -> usize {
     MAX_CONDUIT_MESSAGE_TYPES
@@ -591,11 +617,18 @@ impl CommandHandler for EchoCommandHandler {
             TsCommand::QueryReceiptChain { .. } => RustEvent::ReceiptAdded {
                 receipt_hash: "query_receipt_chain_ack".to_string(),
             },
-            TsCommand::ListActiveAgents | TsCommand::GetSystemStatus => RustEvent::SystemFeedback {
-                status: "ok".to_string(),
-                detail: serde_json::json!({"mode":"hosted"}),
-                violation_reason: None,
-            },
+            TsCommand::ListActiveAgents | TsCommand::GetSystemStatus => {
+                let root = repo_root_from_current_dir();
+                let cockpit_context = load_cockpit_summary(&root);
+                RustEvent::SystemFeedback {
+                    status: "ok".to_string(),
+                    detail: serde_json::json!({
+                        "mode":"hosted",
+                        "cockpit_context": cockpit_context
+                    }),
+                    violation_reason: None,
+                }
+            }
             TsCommand::ApplyPolicyUpdate { .. } => RustEvent::SystemFeedback {
                 status: "policy_update_accepted".to_string(),
                 detail: serde_json::json!({"source":"conduit"}),
@@ -794,7 +827,441 @@ fn execute_edge_bridge_message(message: EdgeBridgeMessage) -> RustEvent {
                 violation_reason: None,
             }
         }
+        EdgeBridgeMessage::SpineCommand { args, run_context } => {
+            let detail = execute_spine_bridge_command(&args, run_context.as_deref());
+            let status = if detail
+                .get("exit_code")
+                .and_then(Value::as_i64)
+                .unwrap_or(1)
+                == 0
+            {
+                detail
+                    .get("type")
+                    .and_then(Value::as_str)
+                    .unwrap_or("spine_bridge_ok")
+                    .to_string()
+            } else {
+                detail
+                    .get("type")
+                    .and_then(Value::as_str)
+                    .unwrap_or("spine_bridge_error")
+                    .to_string()
+            };
+            let violation_reason = if detail
+                .get("ok")
+                .and_then(Value::as_bool)
+                .unwrap_or(false)
+            {
+                None
+            } else {
+                detail
+                    .get("reason")
+                    .and_then(Value::as_str)
+                    .map(|s| s.to_string())
+                    .or_else(|| Some("spine_bridge_failed".to_string()))
+            };
+            RustEvent::SystemFeedback {
+                status,
+                detail,
+                violation_reason,
+            }
+        }
+        EdgeBridgeMessage::AttentionCommand { args } => {
+            let detail = execute_attention_bridge_command(&args);
+            let status = if detail
+                .get("exit_code")
+                .and_then(Value::as_i64)
+                .unwrap_or(1)
+                == 0
+            {
+                detail
+                    .get("type")
+                    .and_then(Value::as_str)
+                    .unwrap_or("attention_bridge_ok")
+                    .to_string()
+            } else {
+                detail
+                    .get("type")
+                    .and_then(Value::as_str)
+                    .unwrap_or("attention_bridge_error")
+                    .to_string()
+            };
+            let violation_reason = if detail
+                .get("ok")
+                .and_then(Value::as_bool)
+                .unwrap_or(false)
+            {
+                None
+            } else {
+                detail
+                    .get("reason")
+                    .and_then(Value::as_str)
+                    .map(|s| s.to_string())
+                    .or_else(|| Some("attention_bridge_failed".to_string()))
+            };
+            RustEvent::SystemFeedback {
+                status,
+                detail,
+                violation_reason,
+            }
+        }
+        EdgeBridgeMessage::PersonaAmbientCommand { args } => {
+            let detail = execute_persona_ambient_bridge_command(&args);
+            let status = if detail
+                .get("exit_code")
+                .and_then(Value::as_i64)
+                .unwrap_or(1)
+                == 0
+            {
+                detail
+                    .get("type")
+                    .and_then(Value::as_str)
+                    .unwrap_or("persona_ambient_bridge_ok")
+                    .to_string()
+            } else {
+                detail
+                    .get("type")
+                    .and_then(Value::as_str)
+                    .unwrap_or("persona_ambient_bridge_error")
+                    .to_string()
+            };
+            let violation_reason = if detail
+                .get("ok")
+                .and_then(Value::as_bool)
+                .unwrap_or(false)
+            {
+                None
+            } else {
+                detail
+                    .get("reason")
+                    .and_then(Value::as_str)
+                    .map(|s| s.to_string())
+                    .or_else(|| Some("persona_ambient_bridge_failed".to_string()))
+            };
+            RustEvent::SystemFeedback {
+                status,
+                detail,
+                violation_reason,
+            }
+        }
+        EdgeBridgeMessage::DopamineAmbientCommand { args } => {
+            let detail = execute_dopamine_ambient_bridge_command(&args);
+            let status = if detail
+                .get("exit_code")
+                .and_then(Value::as_i64)
+                .unwrap_or(1)
+                == 0
+            {
+                detail
+                    .get("type")
+                    .and_then(Value::as_str)
+                    .unwrap_or("dopamine_ambient_bridge_ok")
+                    .to_string()
+            } else {
+                detail
+                    .get("type")
+                    .and_then(Value::as_str)
+                    .unwrap_or("dopamine_ambient_bridge_error")
+                    .to_string()
+            };
+            let violation_reason = if detail
+                .get("ok")
+                .and_then(Value::as_bool)
+                .unwrap_or(false)
+            {
+                None
+            } else {
+                detail
+                    .get("reason")
+                    .and_then(Value::as_str)
+                    .map(|s| s.to_string())
+                    .or_else(|| Some("dopamine_ambient_bridge_failed".to_string()))
+            };
+            RustEvent::SystemFeedback {
+                status,
+                detail,
+                violation_reason,
+            }
+        }
+        EdgeBridgeMessage::MemoryAmbientCommand { args } => {
+            let detail = execute_memory_ambient_bridge_command(&args);
+            let status = if detail
+                .get("exit_code")
+                .and_then(Value::as_i64)
+                .unwrap_or(1)
+                == 0
+            {
+                detail
+                    .get("type")
+                    .and_then(Value::as_str)
+                    .unwrap_or("memory_ambient_bridge_ok")
+                    .to_string()
+            } else {
+                detail
+                    .get("type")
+                    .and_then(Value::as_str)
+                    .unwrap_or("memory_ambient_bridge_error")
+                    .to_string()
+            };
+            let violation_reason = if detail
+                .get("ok")
+                .and_then(Value::as_bool)
+                .unwrap_or(false)
+            {
+                None
+            } else {
+                detail
+                    .get("reason")
+                    .and_then(Value::as_str)
+                    .map(|s| s.to_string())
+                    .or_else(|| Some("memory_ambient_bridge_failed".to_string()))
+            };
+            RustEvent::SystemFeedback {
+                status,
+                detail,
+                violation_reason,
+            }
+        }
     }
+}
+
+fn parse_json_payload(stdout: &str) -> Option<Value> {
+    let raw = stdout.trim();
+    if raw.is_empty() {
+        return None;
+    }
+    if let Ok(payload) = serde_json::from_str::<Value>(raw) {
+        return Some(payload);
+    }
+    for line in raw.lines().rev() {
+        let trimmed = line.trim();
+        if !trimmed.starts_with('{') {
+            continue;
+        }
+        if let Ok(payload) = serde_json::from_str::<Value>(trimmed) {
+            return Some(payload);
+        }
+    }
+    None
+}
+
+fn resolve_cockpit_latest_path(root: &PathBuf) -> PathBuf {
+    let explicit = std::env::var("COCKPIT_INBOX_LATEST_PATH")
+        .ok()
+        .map(|v| v.trim().to_string())
+        .filter(|v| !v.is_empty());
+    if let Some(path) = explicit {
+        let candidate = PathBuf::from(path);
+        if candidate.is_absolute() {
+            return candidate;
+        }
+        return root.join(candidate);
+    }
+    root.join("state").join("cockpit").join("inbox").join("latest.json")
+}
+
+fn load_cockpit_summary(root: &PathBuf) -> Value {
+    let latest_path = resolve_cockpit_latest_path(root);
+    let raw = match fs::read_to_string(&latest_path) {
+        Ok(v) => v,
+        Err(_) => {
+            return serde_json::json!({
+                "available": false,
+                "path": latest_path.to_string_lossy().to_string()
+            });
+        }
+    };
+    let parsed = serde_json::from_str::<Value>(&raw).ok();
+    let Some(value) = parsed else {
+        return serde_json::json!({
+            "available": false,
+            "path": latest_path.to_string_lossy().to_string(),
+            "reason": "cockpit_latest_invalid_json"
+        });
+    };
+    let payload = value.as_object();
+    let Some(obj) = payload else {
+        return serde_json::json!({
+            "available": false,
+            "path": latest_path.to_string_lossy().to_string(),
+            "reason": "cockpit_latest_not_object"
+        });
+    };
+    serde_json::json!({
+        "available": true,
+        "path": latest_path.to_string_lossy().to_string(),
+        "ts": obj.get("ts").cloned().unwrap_or(Value::Null),
+        "sequence": obj.get("sequence").cloned().unwrap_or(Value::Null),
+        "consumer_id": obj.get("consumer_id").cloned().unwrap_or(Value::Null),
+        "attention_batch_count": value.pointer("/attention/batch_count").cloned().unwrap_or(Value::Null),
+        "attention_queue_depth": value.pointer("/attention/queue_depth").cloned().unwrap_or(Value::Null),
+        "receipt_hash": obj.get("receipt_hash").cloned().unwrap_or(Value::Null)
+    })
+}
+
+fn repo_root_from_current_dir() -> PathBuf {
+    std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
+}
+
+fn resolve_protheus_ops_command(root: &PathBuf, domain: &str) -> (String, Vec<String>) {
+    let explicit = std::env::var("PROTHEUS_OPS_BIN").ok();
+    if let Some(bin) = explicit {
+        let trimmed = bin.trim();
+        if !trimmed.is_empty() {
+            return (trimmed.to_string(), vec![domain.to_string()]);
+        }
+    }
+
+    let release = root.join("target").join("release").join("protheus-ops");
+    if release.exists() {
+        return (
+            release.to_string_lossy().to_string(),
+            vec![domain.to_string()],
+        );
+    }
+    let debug = root.join("target").join("debug").join("protheus-ops");
+    if debug.exists() {
+        return (
+            debug.to_string_lossy().to_string(),
+            vec![domain.to_string()],
+        );
+    }
+
+    (
+        "cargo".to_string(),
+        vec![
+            "run".to_string(),
+            "--quiet".to_string(),
+            "--manifest-path".to_string(),
+            "crates/ops/Cargo.toml".to_string(),
+            "--bin".to_string(),
+            "protheus-ops".to_string(),
+            "--".to_string(),
+            domain.to_string(),
+        ],
+    )
+}
+
+fn execute_ops_bridge_command(
+    domain: &str,
+    args: &[String],
+    run_context: Option<&str>,
+) -> Value {
+    let root = repo_root_from_current_dir();
+    let (command, mut command_args) = resolve_protheus_ops_command(&root, domain);
+    command_args.extend(args.iter().cloned());
+
+    let mut cmd = Command::new(&command);
+    cmd.args(&command_args)
+        .current_dir(&root)
+        .env(
+            "PROTHEUS_NODE_BINARY",
+            std::env::var("PROTHEUS_NODE_BINARY").unwrap_or_else(|_| "node".to_string()),
+        );
+    if let Some(context) = run_context {
+        let trimmed = context.trim();
+        if !trimmed.is_empty() {
+            cmd.env("SPINE_RUN_CONTEXT", trimmed);
+        }
+    }
+
+    match cmd.output() {
+        Ok(out) => {
+            let stdout = String::from_utf8_lossy(&out.stdout).to_string();
+            let stderr = String::from_utf8_lossy(&out.stderr).to_string();
+            let exit_code = out.status.code().unwrap_or(1);
+            let spine_receipt = parse_json_payload(&stdout);
+            let mut detail = serde_json::json!({
+                "ok": exit_code == 0,
+                "type": if exit_code == 0 {
+                    format!("{domain}_bridge_ok")
+                } else {
+                    format!("{domain}_bridge_error")
+                },
+                "exit_code": exit_code,
+                "command": command,
+                "args": command_args,
+                "run_context": run_context,
+                "stdout": stdout,
+                "stderr": stderr,
+                "routed_via": "conduit",
+                "domain": domain
+            });
+            if let Some(receipt) = spine_receipt {
+                detail["domain_receipt"] = receipt.clone();
+                if let Some(kind) = receipt.get("type").and_then(Value::as_str) {
+                    detail["type"] = Value::String(kind.to_string());
+                }
+                if let Some(ok) = receipt.get("ok").and_then(Value::as_bool) {
+                    detail["ok"] = Value::Bool(ok && exit_code == 0);
+                }
+                if let Some(reason) = receipt.get("reason").and_then(Value::as_str) {
+                    detail["reason"] = Value::String(reason.to_string());
+                } else if let Some(reason) = receipt.get("failure_reason").and_then(Value::as_str) {
+                    detail["reason"] = Value::String(reason.to_string());
+                }
+            }
+            detail["receipt_hash"] = Value::String(deterministic_receipt_hash(&detail));
+            detail
+        }
+        Err(err) => {
+            let mut detail = serde_json::json!({
+                "ok": false,
+                "type": format!("{domain}_bridge_spawn_error"),
+                "exit_code": 1,
+                "reason": format!("{domain}_bridge_spawn_failed:{err}"),
+                "command": command,
+                "args": command_args,
+                "run_context": run_context,
+                "stdout": "",
+                "stderr": "",
+                "routed_via": "conduit",
+                "domain": domain
+            });
+            detail["receipt_hash"] = Value::String(deterministic_receipt_hash(&detail));
+            detail
+        }
+    }
+}
+
+fn execute_spine_bridge_command(args: &[String], run_context: Option<&str>) -> Value {
+    let mut detail = execute_ops_bridge_command("spine", args, run_context);
+    if let Some(receipt) = detail.get("domain_receipt").cloned() {
+        detail["spine_receipt"] = receipt;
+    }
+    detail
+}
+
+fn execute_attention_bridge_command(args: &[String]) -> Value {
+    let mut detail = execute_ops_bridge_command("attention-queue", args, None);
+    if let Some(receipt) = detail.get("domain_receipt").cloned() {
+        detail["attention_receipt"] = receipt;
+    }
+    detail
+}
+
+fn execute_persona_ambient_bridge_command(args: &[String]) -> Value {
+    let mut detail = execute_ops_bridge_command("persona-ambient", args, None);
+    if let Some(receipt) = detail.get("domain_receipt").cloned() {
+        detail["persona_ambient_receipt"] = receipt;
+    }
+    detail
+}
+
+fn execute_dopamine_ambient_bridge_command(args: &[String]) -> Value {
+    let mut detail = execute_ops_bridge_command("dopamine-ambient", args, None);
+    if let Some(receipt) = detail.get("domain_receipt").cloned() {
+        detail["dopamine_ambient_receipt"] = receipt;
+    }
+    detail
+}
+
+fn execute_memory_ambient_bridge_command(args: &[String]) -> Value {
+    let mut detail = execute_ops_bridge_command("memory-ambient", args, None);
+    if let Some(receipt) = detail.get("domain_receipt").cloned() {
+        detail["memory_ambient_receipt"] = receipt;
+    }
+    detail
 }
 
 fn edge_backend_label() -> &'static str {

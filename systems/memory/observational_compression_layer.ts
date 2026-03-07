@@ -8,9 +8,8 @@ export {};
  */
 
 const path = require('path');
-const { spawnSync } = require('child_process');
-const fs = require('fs');
 const crypto = require('crypto');
+const memorySurface = require('./index.js');
 const {
   ROOT,
   nowIso,
@@ -46,9 +45,9 @@ function policy() {
       default_tier: 2,
       require_explicit_approval_tier: 3
     },
-    rust_manifest: 'crates/memory/Cargo.toml',
-    rust_bin: 'memory-cli',
-    rust_bin_path: 'target/release/memory-cli',
+    memory_transport: 'conduit_memory_surface',
+    compat_rust_bin: 'memory-cli',
+    compat_rust_bin_path: 'target/release/memory-cli',
     paths: {
       memory_dir: 'memory/observations',
       adaptive_index_path: 'adaptive/observations/index.json',
@@ -72,9 +71,12 @@ function policy() {
         base.risk.require_explicit_approval_tier
       )
     },
-    rust_manifest: resolvePath(raw.rust_manifest || base.rust_manifest, base.rust_manifest),
-    rust_bin: cleanText(raw.rust_bin || base.rust_bin, 120) || base.rust_bin,
-    rust_bin_path: resolvePath(raw.rust_bin_path || base.rust_bin_path, base.rust_bin_path),
+    memory_transport: cleanText(raw.memory_transport || base.memory_transport, 120) || base.memory_transport,
+    compat_rust_bin: cleanText(raw.compat_rust_bin || raw.rust_bin || base.compat_rust_bin, 120) || base.compat_rust_bin,
+    compat_rust_bin_path: resolvePath(
+      raw.compat_rust_bin_path || raw.rust_bin_path || base.compat_rust_bin_path,
+      base.compat_rust_bin_path
+    ),
     paths: {
       memory_dir: resolvePath(paths.memory_dir, base.paths.memory_dir),
       adaptive_index_path: resolvePath(paths.adaptive_index_path, base.paths.adaptive_index_path),
@@ -118,34 +120,22 @@ function runRust(args: string[], p: any, timeoutMs = 180000) {
     state_root: path.join(ROOT, 'state')
   });
 
-  const possibleBins = [
-    cleanText(process.env.PROTHEUS_MEMORY_CORE_BIN || '', 520),
-    cleanText(process.env.PROTHEUS_MEMORY_RUST_BIN || '', 520),
-    cleanText(p && p.rust_bin_path || '', 520)
-  ].filter(Boolean);
-  let selectedBin = '';
-  for (const bin of possibleBins) {
-    if (fs.existsSync(bin)) {
-      selectedBin = bin;
-      break;
-    }
-  }
-  const command = selectedBin
-    ? [selectedBin, ...args]
-    : ['cargo', 'run', '--quiet', '--manifest-path', 'crates/memory/Cargo.toml', '--bin', 'memory-cli', '--', ...args];
-  const out = spawnSync(command[0], command.slice(1), {
-    cwd: ROOT,
-    encoding: 'utf8',
-    timeout: Math.max(1000, timeoutMs)
+  const cmd = cleanText(args[0], 64) || 'help';
+  const rest = Array.isArray(args) ? args.slice(1) : [];
+  const out = memorySurface.runMemoryCli(cmd, rest, timeoutMs, {
+    run_context: 'observational_compression',
+    ambient_mode: true
   });
-  const status = Number.isFinite(Number(out.status)) ? Number(out.status) : 1;
+  const status = Number.isFinite(Number(out && out.status)) ? Number(out.status) : (out && out.ok ? 0 : 1);
   return {
-    ok: status === 0,
+    ok: status === 0 && out && out.ok === true,
     status,
     duration_ms: Math.max(0, Date.now() - started),
-    payload: parseJson(String(out.stdout || '')),
-    stderr: cleanText(out.stderr || '', 500),
-    transport: selectedBin ? 'native_release_bin' : 'cargo_run'
+    payload: out && out.payload && typeof out.payload === 'object'
+      ? out.payload
+      : parseJson(String(out && out.stdout || '')),
+    stderr: cleanText(out && out.stderr || '', 500),
+    transport: cleanText(out && out.engine || '', 120) || 'memory_surface'
   };
 }
 
