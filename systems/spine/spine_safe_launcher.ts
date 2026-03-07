@@ -27,6 +27,7 @@ export {};
 const path = require('path');
 const fs = require('fs');
 const { spawnSync } = require('child_process');
+const { runSpineCommand } = require('../../lib/spine_conduit_bridge');
 
 function repoRoot() {
   if (process.env.OPENCLAW_WORKSPACE) return path.resolve(process.env.OPENCLAW_WORKSPACE);
@@ -34,6 +35,7 @@ function repoRoot() {
 }
 
 const ROOT = repoRoot();
+const CODE_ROOT = path.resolve(__dirname, '..', '..');
 
 const RISKY_ENV_TOGGLE_RULES = [
   { key: 'AUTONOMY_ENABLED', mode: 'truthy' },
@@ -159,10 +161,14 @@ function parseJsonLines(stdout: string) {
   return null;
 }
 
-function runNodeJson(scriptRelPath: string, scriptArgs: string[]) {
-  const r = spawnSync('node', [scriptRelPath, ...scriptArgs], {
+function runNodeJson(scriptRelPath: string, scriptArgs: string[], extraEnv: Record<string, string | undefined> = {}) {
+  const r = spawnSync(process.execPath, [scriptRelPath, ...scriptArgs], {
     cwd: ROOT,
-    encoding: 'utf8'
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      ...extraEnv
+    }
   });
   return {
     ok: r.status === 0,
@@ -316,18 +322,49 @@ function runIntegrityPrecheck(args: Record<string, any>) {
   };
 }
 
-function runSpine(plan: { mode: string, date: string, maxEyes: string }, env: Record<string, string | undefined>) {
-  const args = ['systems/spine/spine.js', plan.mode, plan.date];
+async function runSpine(plan: { mode: string, date: string, maxEyes: string }, env: Record<string, string | undefined>) {
+  const args = ['run', plan.mode, plan.date];
   if (cleanText(plan.maxEyes, 20)) args.push(`--max-eyes=${plan.maxEyes}`);
-  const r = spawnSync('node', args, {
-    cwd: ROOT,
-    stdio: 'inherit',
-    env
+  const out = await runSpineCommand(args, {
+    cwdHint: CODE_ROOT,
+    runContext: env && env.SPINE_RUN_CONTEXT ? env.SPINE_RUN_CONTEXT : null
   });
-  return Number.isFinite(r.status) ? Number(r.status) : 1;
+  if (out.payload && out.status !== 0) {
+    process.stdout.write(`${JSON.stringify(out.payload)}\n`);
+  }
+  return Number.isFinite(out.status) ? Number(out.status) : 1;
 }
 
-function main() {
+async function runSpineStatus(plan: { mode: string, date: string }, env: Record<string, string | undefined>) {
+  return runSpineCommand(
+    ['status', `--mode=${plan.mode}`, `--date=${plan.date}`],
+    {
+      cwdHint: CODE_ROOT,
+      runContext: env && env.SPINE_RUN_CONTEXT ? env.SPINE_RUN_CONTEXT : null
+    }
+  );
+}
+
+function spineStatusUnavailablePayload(plan: { command: string, mode: string, date: string }, runContext: string, rustStatus: any) {
+  return {
+    ok: false,
+    blocked: true,
+    type: 'spine_safe_launcher',
+    ts: nowIso(),
+    compatibility_shell: true,
+    authority: 'rust_spine',
+    command: plan.command,
+    mode: plan.mode,
+    date: plan.date,
+    run_context: runContext,
+    reason: 'spine_status_unavailable',
+    rust_status_code: Number(rustStatus && rustStatus.status || 1),
+    rust_status_stderr: cleanText(rustStatus && rustStatus.stderr, 500),
+    rust_status_stdout: cleanText(rustStatus && rustStatus.stdout, 500)
+  };
+}
+
+async function main() {
   const args = parseArgs(process.argv.slice(2));
   const cmd = normalizeToken(args._[0] || 'run', 32) || 'run';
   if (cmd === 'help' || cmd === '--help' || cmd === '-h' || args.help) {
@@ -338,6 +375,7 @@ function main() {
   const plan = resolveRunPlan(args);
   const allowRiskyEnv = toBool(args['allow-risky-env'], false);
   const { childEnv, active, neutralized } = sanitizeEnvForSpine(process.env as any, allowRiskyEnv);
+  const runContext = cleanText(process.env.SPINE_RUN_CONTEXT || args['run-context'] || '', 40) || 'manual';
   const precheck = runIntegrityPrecheck(args);
   if (!precheck.ok) {
     process.stdout.write(`${JSON.stringify({
@@ -345,6 +383,8 @@ function main() {
       blocked: true,
       type: 'spine_safe_launcher',
       ts: nowIso(),
+      compatibility_shell: true,
+      authority: 'rust_spine',
       command: plan.command,
       mode: plan.mode,
       date: plan.date,
@@ -358,32 +398,73 @@ function main() {
     process.exit(2);
   }
 
-  const statusPayload = {
+  const statusEnv = {
+    ...childEnv,
+    SPINE_RUN_CONTEXT: runContext
+  };
+
+  if (plan.command === 'status') {
+    const rustStatus = await runSpineStatus(plan, statusEnv);
+    const spineStatus = rustStatus && rustStatus.payload && typeof rustStatus.payload === 'object'
+      ? rustStatus.payload
+      : null;
+    if (!rustStatus.ok || !spineStatus) {
+      process.stdout.write(`${JSON.stringify(spineStatusUnavailablePayload(plan, runContext, rustStatus))}\n`);
+      process.exit(rustStatus.status || 1);
+    }
+    const statusPayload = {
+      ok: true,
+      type: 'spine_safe_launcher',
+      ts: nowIso(),
+      compatibility_shell: true,
+      authority: 'rust_spine',
+      command: plan.command,
+      mode: plan.mode,
+      date: plan.date,
+      ambient_mode_active: spineStatus.ambient_mode_active === true,
+      heartbeat_hours: Number(spineStatus.heartbeat_hours || 0) || null,
+      manual_triggers_allowed: spineStatus.manual_triggers_allowed === true,
+      quiet_non_critical: spineStatus.quiet_non_critical === true,
+      silent_subprocess_output: spineStatus.silent_subprocess_output === true,
+      reseal_required: precheck.reseal_required === true,
+      reseal_applied: precheck.applied === true,
+      allow_risky_env: allowRiskyEnv,
+      run_context: runContext,
+      active_risky_toggles: active,
+      neutralized_risky_toggles: neutralized,
+      spine_status: spineStatus
+    };
+    process.stdout.write(`${JSON.stringify(statusPayload, null, 2)}\n`);
+    process.exit(0);
+  }
+
+  const preflightPayload = {
     ok: true,
     type: 'spine_safe_launcher',
     ts: nowIso(),
+    compatibility_shell: true,
+    authority: 'rust_spine',
     command: plan.command,
     mode: plan.mode,
     date: plan.date,
     reseal_required: precheck.reseal_required === true,
     reseal_applied: precheck.applied === true,
     allow_risky_env: allowRiskyEnv,
+    run_context: runContext,
     active_risky_toggles: active,
     neutralized_risky_toggles: neutralized
   };
-
-  if (plan.command === 'status') {
-    process.stdout.write(`${JSON.stringify(statusPayload, null, 2)}\n`);
-    process.exit(0);
-  }
-
-  process.stdout.write(`${JSON.stringify(statusPayload)}\n`);
-  const code = runSpine(plan, childEnv);
+  process.stdout.write(`${JSON.stringify(preflightPayload)}\n`);
+  const code = await runSpine(plan, statusEnv);
   process.exit(code);
 }
 
 if (require.main === module) {
-  main();
+  main().catch((err: any) => {
+    const reason = cleanText(err && err.message ? err.message : err, 500) || 'spine_safe_launcher_unhandled_error';
+    process.stderr.write(`spine_safe_launcher_error:${reason}\n`);
+    process.exit(1);
+  });
 }
 
 module.exports = {

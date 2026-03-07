@@ -358,11 +358,13 @@ fn maybe_run_cli_suggestion_engine(root: &Path, cmd: &str, rest: &[String]) {
             | "setup"
             | "completion"
             | "repl"
+            | "status"
     ) {
         return;
     }
     let suggestion_script = root.join("systems/tools/cli_suggestion_engine.js");
-    if !suggestion_script.exists() {
+    let suggestion_ts = root.join("systems/tools/cli_suggestion_engine.ts");
+    if !suggestion_script.exists() || !suggestion_ts.exists() {
         return;
     }
     let request_json = serde_json::to_string(&json!({
@@ -680,11 +682,24 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                 .collect(),
             forward_stdin: false,
         },
-        "status" => Route {
-            script_rel: "systems/ops/protheus_status_dashboard.js".to_string(),
-            args: rest,
-            forward_stdin: false,
-        },
+        "status" => {
+            let use_dashboard = rest
+                .iter()
+                .any(|arg| arg == "--dashboard" || arg == "dashboard");
+            if use_dashboard {
+                Route {
+                    script_rel: "systems/ops/protheus_status_dashboard.js".to_string(),
+                    args: rest,
+                    forward_stdin: false,
+                }
+            } else {
+                Route {
+                    script_rel: "systems/ops/protheusd.js".to_string(),
+                    args: std::iter::once("status".to_string()).chain(rest).collect(),
+                    forward_stdin: false,
+                }
+            }
+        }
         "debug" => Route {
             script_rel: "systems/ops/protheus_debug_diagnostics.js".to_string(),
             args: rest,
@@ -958,15 +973,33 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
             },
             forward_stdin: true,
         },
-        "persona" => Route {
-            script_rel: "systems/personas/cli.js".to_string(),
-            args: if rest.is_empty() {
-                vec!["--help".to_string()]
+        "persona" => {
+            let sub = rest
+                .first()
+                .map(|v| v.trim().to_ascii_lowercase())
+                .unwrap_or_default();
+            if sub == "ambient" {
+                Route {
+                    script_rel: "systems/personas/ambient_stance.js".to_string(),
+                    args: if rest.len() > 1 {
+                        rest.into_iter().skip(1).collect()
+                    } else {
+                        vec!["status".to_string()]
+                    },
+                    forward_stdin: false,
+                }
             } else {
-                rest
-            },
-            forward_stdin: true,
-        },
+                Route {
+                    script_rel: "systems/personas/cli.js".to_string(),
+                    args: if rest.is_empty() {
+                        vec!["--help".to_string()]
+                    } else {
+                        rest
+                    },
+                    forward_stdin: true,
+                }
+            }
+        }
         "assimilate" => Route {
             script_rel: "systems/tools/assimilate.js".to_string(),
             args: if rest.is_empty() {

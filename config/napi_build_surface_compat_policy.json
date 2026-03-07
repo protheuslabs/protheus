@@ -5,7 +5,7 @@
   "strict_build_requires_cargo": false,
   "commands": {
     "rust_build": ["cargo", "build", "--manifest-path", "crates/memory/Cargo.toml", "--release"],
-    "rust_probe": ["cargo", "run", "--quiet", "--manifest-path", "crates/memory/Cargo.toml", "--bin", "memory-cli", "--", "probe", "--root=."]
+    "rust_probe": ["cargo", "run", "--quiet", "--manifest-path", "crates/ops/Cargo.toml", "--bin", "protheus-ops", "--", "memory-ambient", "status", "--json"]
   },
   "matrix": {
     "profiles": [
@@ -24,7 +24,7 @@
       {
         "id": "cli_compat",
         "role": "legacy_compat",
-        "description": "Direct Rust CLI path for compatibility and diagnostics.",
+        "description": "Direct Rust memory-cli path for compatibility and diagnostics only.",
         "run_command": "cargo run --manifest-path crates/memory/Cargo.toml --bin memory-cli -- query-index --q probe --root=."
       }
     ]

@@ -36,10 +36,19 @@ const { resolveCatalogPath, ensureCatalog, setCatalog } = require('../../lib/eye
 const { loadActiveDirectives } = require('../../lib/directive_resolver.js');
 const { loadActiveStrategy, strategyCampaigns } = require('../../lib/strategy_resolver.js');
 const { emitPainSignal } = require('../../systems/autonomy/pain_signal.js');
+const {
+  appendAttentionQueueEvent,
+  emitAmbientConsole,
+  loadMechSuitModePolicy,
+  updateMechSuitStatus
+} = require('../../lib/mech_suit_mode');
 
 // Paths
 const WORKSPACE_DIR = path.join(__dirname, '..', '..');
 const CONFIG_PATH = resolveCatalogPath(WORKSPACE_DIR);
+let EYES_AMBIENT_CONSOLE_INSTALLED = false;
+let EYES_AMBIENT_RESTORE = null;
+let EYES_PENDING_ATTENTION_WRITES = [];
 
 // Allow overrides (tests / multi-workspace)
 const STATE_DIR = process.env.EYES_STATE_DIR
@@ -3066,6 +3075,58 @@ function appendRawLog(dateStr, event) {
   const logPath = path.join(RAW_DIR, `${dateStr}.jsonl`);
   const line = JSON.stringify(event) + '\n';
   fs.appendFileSync(logPath, line, 'utf8');
+  const writePromise = Promise.resolve(appendAttentionQueueEvent({
+    ...event,
+    date: dateStr
+  }, {
+    root: WORKSPACE_DIR
+  })).catch(() => null);
+  EYES_PENDING_ATTENTION_WRITES.push(writePromise);
+}
+
+async function flushAttentionQueueWrites() {
+  if (!Array.isArray(EYES_PENDING_ATTENTION_WRITES) || EYES_PENDING_ATTENTION_WRITES.length === 0) {
+    return { pending: 0, failed: 0 };
+  }
+  const pending = EYES_PENDING_ATTENTION_WRITES.slice();
+  EYES_PENDING_ATTENTION_WRITES = [];
+  const settled = await Promise.allSettled(pending);
+  const failed = settled.filter((row) => row && row.status === 'rejected').length;
+  return { pending: settled.length, failed };
+}
+
+function installEyesAmbientConsoleFilter(policy) {
+  if (!policy || policy.enabled !== true || !(policy.eyes && policy.eyes.quiet_non_critical === true)) {
+    return () => {};
+  }
+  if (EYES_AMBIENT_CONSOLE_INSTALLED && typeof EYES_AMBIENT_RESTORE === 'function') {
+    return EYES_AMBIENT_RESTORE;
+  }
+  const previous = {
+    log: console.log,
+    warn: console.warn,
+    error: console.error
+  };
+  const forward = (method, values) => {
+    const joined = values.map((row) => {
+      if (typeof row === 'string') return row;
+      try { return JSON.stringify(row); } catch { return String(row); }
+    }).join(' ').trim();
+    if (!joined) return;
+    emitAmbientConsole(joined, method, policy);
+  };
+  console.log = (...values) => forward('log', values);
+  console.warn = (...values) => forward('log', values);
+  console.error = (...values) => forward('error', values);
+  EYES_AMBIENT_CONSOLE_INSTALLED = true;
+  EYES_AMBIENT_RESTORE = () => {
+    console.log = previous.log;
+    console.warn = previous.warn;
+    console.error = previous.error;
+    EYES_AMBIENT_CONSOLE_INSTALLED = false;
+    EYES_AMBIENT_RESTORE = null;
+  };
+  return EYES_AMBIENT_RESTORE;
 }
 
 function appendSensoryQueueEvent(event) {
@@ -3313,6 +3374,16 @@ async function preflight(opts = {}) {
 // RUN: Execute eligible eyes based on cadence and status
 async function run(opts = {}) {
   ensureDirs();
+  const mechSuitPolicy = loadMechSuitModePolicy({ root: WORKSPACE_DIR });
+  const restoreAmbientConsole = installEyesAmbientConsoleFilter(mechSuitPolicy);
+  updateMechSuitStatus('eyes', {
+    ambient: mechSuitPolicy.enabled === true,
+    push_attention_queue: !!(mechSuitPolicy.eyes && mechSuitPolicy.eyes.push_attention_queue),
+    quiet_non_critical: !!(mechSuitPolicy.eyes && mechSuitPolicy.eyes.quiet_non_critical),
+    attention_queue_path: mechSuitPolicy.eyes ? mechSuitPolicy.eyes.attention_queue_path : null,
+    last_result: 'run_started'
+  }, { policy: mechSuitPolicy });
+  try {
   
   const config = loadConfig();
   const registry = loadRegistry();
@@ -4223,7 +4294,7 @@ async function run(opts = {}) {
   }
   console.log('═══════════════════════════════════════════════════════════');
   
-  return {
+  const result = {
     ran: eyesRun.length,
     eyes: eyesRun,
     self_heal: selfHealStats,
@@ -4235,6 +4306,21 @@ async function run(opts = {}) {
       fail_open: linkageGateFailOpen
     }
   };
+  await flushAttentionQueueWrites();
+  updateMechSuitStatus('eyes', {
+    ambient: mechSuitPolicy.enabled === true,
+    push_attention_queue: !!(mechSuitPolicy.eyes && mechSuitPolicy.eyes.push_attention_queue),
+    quiet_non_critical: !!(mechSuitPolicy.eyes && mechSuitPolicy.eyes.quiet_non_critical),
+    attention_queue_path: mechSuitPolicy.eyes ? mechSuitPolicy.eyes.attention_queue_path : null,
+    last_result: 'run_complete',
+    last_run_ts: new Date().toISOString(),
+    last_ran: Number(result.ran || 0),
+    last_signal_count: Array.isArray(result.eyes) ? result.eyes.reduce((sum, row) => sum + Number(row && row.real_items || 0), 0) : 0
+  }, { policy: mechSuitPolicy });
+  return result;
+  } finally {
+    restoreAmbientConsole();
+  }
 }
 
 function pickCanaryEye(config, registry) {
@@ -5104,55 +5190,59 @@ async function main() {
     return;
   }
   
-  switch (cmd) {
-    case 'run':
-      await run(opts);
-      break;
-    case 'preflight': {
-      const rep = await preflight(opts);
-      if (opts.strict && rep && rep.ok !== true) process.exit(2);
-      break;
-    }
-    case 'canary':
-      await canary(opts);
-      break;
-    case 'canary-signal':
-      await canarySignal(opts);
-      break;
-    case 'slo': {
-      const res = signalSlo(positional[0] || null);
-      if (!res.ok) process.exit(2);
-      break;
-    }
-    case 'score':
-      score(positional[0] || null);
-      break;
-    case 'evolve':
-      evolve(positional[0] || null);
-      break;
-    case 'list':
-    case 'status':
-      list();
-      break;
-    case 'temporal':
-      temporal(positional[0] || null);
-      break;
-    case 'doctor':
-      doctor();
-      break;
-    case 'reconcile':
-      reconcile();
-      break;
-    case 'propose':
-      if (positional.length < 2) {
-        console.error('Usage: propose "<name>" "<domain>" ["<notes>"]');
-        process.exit(1);
+  try {
+    switch (cmd) {
+      case 'run':
+        await run(opts);
+        break;
+      case 'preflight': {
+        const rep = await preflight(opts);
+        if (opts.strict && rep && rep.ok !== true) process.exit(2);
+        break;
       }
-      propose(positional[0], positional[1], positional[2] || '', opts);
-      break;
-    default:
-      console.error(`Unknown command: ${cmd}`);
-      process.exit(1);
+      case 'canary':
+        await canary(opts);
+        break;
+      case 'canary-signal':
+        await canarySignal(opts);
+        break;
+      case 'slo': {
+        const res = signalSlo(positional[0] || null);
+        if (!res.ok) process.exit(2);
+        break;
+      }
+      case 'score':
+        score(positional[0] || null);
+        break;
+      case 'evolve':
+        evolve(positional[0] || null);
+        break;
+      case 'list':
+      case 'status':
+        list();
+        break;
+      case 'temporal':
+        temporal(positional[0] || null);
+        break;
+      case 'doctor':
+        doctor();
+        break;
+      case 'reconcile':
+        reconcile();
+        break;
+      case 'propose':
+        if (positional.length < 2) {
+          console.error('Usage: propose "<name>" "<domain>" ["<notes>"]');
+          process.exit(1);
+        }
+        propose(positional[0], positional[1], positional[2] || '', opts);
+        break;
+      default:
+        console.error(`Unknown command: ${cmd}`);
+        process.exit(1);
+    }
+  } finally {
+    await flushAttentionQueueWrites();
   }
 }
 
@@ -5190,5 +5280,8 @@ module.exports = {
 
 // Run if called directly
 if (require.main === module) {
-  main();
+  main().catch((err) => {
+    console.error(`external_eyes fatal: ${String(err && err.message ? err.message : err)}`);
+    process.exit(1);
+  });
 }
