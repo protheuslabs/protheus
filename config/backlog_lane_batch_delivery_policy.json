@@ -1536,6 +1536,36 @@
       "verify_signals_required": true,
       "rollback_signals_required": true,
       "notes": "targeted_hybrid_rust_migration_doc_intake_2026_03_03"
+    },
+    "V6-F100-046": {
+      "require_dependency_closed": false,
+      "verify_signals_required": false,
+      "rollback_signals_required": false,
+      "notes": "f100_a_grade_closure_scaffold_2026_03_06"
+    },
+    "V6-F100-047": {
+      "require_dependency_closed": false,
+      "verify_signals_required": false,
+      "rollback_signals_required": false,
+      "notes": "f100_a_grade_closure_scaffold_2026_03_06"
+    },
+    "V6-F100-048": {
+      "require_dependency_closed": false,
+      "verify_signals_required": false,
+      "rollback_signals_required": false,
+      "notes": "f100_a_grade_closure_scaffold_2026_03_06"
+    },
+    "V6-F100-049": {
+      "require_dependency_closed": false,
+      "verify_signals_required": false,
+      "rollback_signals_required": false,
+      "notes": "f100_a_grade_closure_scaffold_2026_03_06"
+    },
+    "V6-F100-050": {
+      "require_dependency_closed": false,
+      "verify_signals_required": false,
+      "rollback_signals_required": false,
+      "notes": "f100_a_grade_closure_scaffold_2026_03_06"
     }
   },
   "outputs": {

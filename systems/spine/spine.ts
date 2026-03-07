@@ -1,8 +1,12 @@
 #!/usr/bin/env node
 /**
- * systems/spine/spine.js — orchestration spine (plumbing only)
+ * systems/spine/spine.ts — legacy TypeScript compatibility spine
  *
- * Spine responsibilities:
+ * Runtime authority has moved to the Rust spine lane through a shared
+ * conduit bridge. This file is compatibility-only and intended for
+ * explicit dev-mode use.
+ *
+ * Legacy spine responsibilities:
  * - Sequence layers in a deterministic order
  * - Call systems/security/guard.js as the choke point
  * - Emit one run record (ledger) — not policy, not scoring
@@ -12,9 +16,9 @@
  * - Not the place for scoring logic
  * - Not the place for LLM prompting
  *
- * Usage:
- *   node systems/spine/spine.js eyes [YYYY-MM-DD] [--max-eyes=N]
- *   node systems/spine/spine.js daily [YYYY-MM-DD] [--max-eyes=N]
+ * Compatibility use:
+ *   PROTHEUS_SPINE_TS_COMPAT=1 node <ts-bootstrap> systems/spine/spine.ts eyes [YYYY-MM-DD] [--max-eyes=N]
+ *   PROTHEUS_SPINE_TS_COMPAT=1 node <ts-bootstrap> systems/spine/spine.ts daily [YYYY-MM-DD] [--max-eyes=N]
  *
  * Env:
  *   CLEARANCE=1|2|3|4 (default: 3 here, because spine is infra)
@@ -26,9 +30,15 @@ const path = require("path");
 const fs = require("fs");
 const os = require("os");
 const crypto = require("crypto");
+const { runSpineCommandCli } = require("../../lib/spine_conduit_bridge");
 const { isEmergencyStopEngaged } = require("../../lib/emergency_stop");
 const { stampGuardEnv } = require("../../lib/request_envelope");
 const { compactCommandOutput } = require("../../lib/command_output_compactor");
+const {
+  emitAmbientConsole,
+  loadMechSuitModePolicy,
+  updateMechSuitStatus
+} = require("../../lib/mech_suit_mode");
 const {
   setSystemBudgetAutopause,
   clearSystemBudgetAutopause,
@@ -48,6 +58,32 @@ let SPINE_LAST_LEDGER_TYPE: string | null = null;
 let SPINE_LAST_FAILURE_REASON: string | null = null;
 let SPINE_TERMINAL_EMITTED = false;
 let SPINE_EXIT_HOOK_INSTALLED = false;
+let SPINE_AMBIENT_CONSOLE_INSTALLED = false;
+const SPINE_CONSOLE_BASE = {
+  log: console.log.bind(console),
+  warn: console.warn.bind(console),
+  error: console.error.bind(console)
+};
+const SPINE_MECH_SUIT_POLICY = loadMechSuitModePolicy({ root: path.resolve(__dirname, "..", "..") });
+
+function spineTsCompatEnabled() {
+  return String(process.env.PROTHEUS_SPINE_TS_COMPAT || "0").trim() === "1";
+}
+
+function emitCompatOnlyReceiptAndExit() {
+  const payload = {
+    ok: false,
+    blocked: true,
+    type: "spine_ts_compat_only",
+    ts: nowIso(),
+    reason: "rust_spine_authoritative_use_systems_spine_spine_js",
+    compatibility_only: true,
+    authority: "rust_spine",
+    required_env: "PROTHEUS_SPINE_TS_COMPAT=1"
+  };
+  process.stdout.write(`${JSON.stringify(payload)}\n`);
+  process.exit(2);
+}
 
 function arg(name) {
   const pref = `--${name}=`;
@@ -61,7 +97,20 @@ function todayOr(dateStr) {
 }
 
 function run(cmd, args, opts = {}) {
-  const r = spawnSync(cmd, args, { stdio: "inherit", ...opts });
+  const ambientQuiet = SPINE_MECH_SUIT_POLICY.enabled === true
+    && SPINE_MECH_SUIT_POLICY.spine
+    && SPINE_MECH_SUIT_POLICY.spine.quiet_non_critical === true
+    && SPINE_MECH_SUIT_POLICY.spine.silent_subprocess_output === true;
+  const runOpts = ambientQuiet
+    ? { encoding: "utf8", ...opts }
+    : { stdio: "inherit", ...opts };
+  const r = spawnSync(cmd, args, runOpts);
+  if (ambientQuiet) {
+    const stdout = String(r.stdout || "").trim();
+    const stderr = String(r.stderr || "").trim();
+    if (stdout) emitAmbientConsole(stdout, "log", SPINE_MECH_SUIT_POLICY);
+    if (stderr) emitAmbientConsole(stderr, "error", SPINE_MECH_SUIT_POLICY);
+  }
   if (r.status !== 0) {
     const tool = path.basename(String(args && args[0] || cmd || "command"));
     SPINE_LAST_FAILURE_REASON = `subprocess_failed:${tool}:exit_${Number(r.status || 1)}`;
@@ -121,6 +170,71 @@ function nowIso() {
 
 function repoRoot() {
   return path.resolve(__dirname, "..", "..");
+}
+
+function spineAmbientActive() {
+  return SPINE_MECH_SUIT_POLICY.enabled === true
+    && !!(SPINE_MECH_SUIT_POLICY.spine && SPINE_MECH_SUIT_POLICY.spine.quiet_non_critical);
+}
+
+function installSpineAmbientConsoleFilter(dateStr, mode) {
+  if (!spineAmbientActive() || SPINE_AMBIENT_CONSOLE_INSTALLED) return;
+  SPINE_AMBIENT_CONSOLE_INSTALLED = true;
+  const forward = (method, values) => {
+    const joined = values.map((row) => {
+      if (typeof row === "string") return row;
+      try { return JSON.stringify(row); } catch { return String(row); }
+    }).join(" ").trim();
+    if (!joined) return;
+    const emitted = emitAmbientConsole(joined, method, SPINE_MECH_SUIT_POLICY);
+    if (!emitted) return;
+    updateMechSuitStatus("spine", {
+      ambient: true,
+      heartbeat_hours: Math.max(1, Number(SPINE_MECH_SUIT_POLICY.spine && SPINE_MECH_SUIT_POLICY.spine.heartbeat_hours || 4) || 4),
+      manual_triggers_allowed: !!(SPINE_MECH_SUIT_POLICY.spine && SPINE_MECH_SUIT_POLICY.spine.manual_triggers_allowed),
+      quiet_non_critical: true,
+      silent_subprocess_output: !!(SPINE_MECH_SUIT_POLICY.spine && SPINE_MECH_SUIT_POLICY.spine.silent_subprocess_output),
+      last_emitted_severity: "critical",
+      last_mode: mode,
+      last_date: dateStr
+    }, { policy: SPINE_MECH_SUIT_POLICY });
+  };
+  console.log = (...values) => forward("log", values);
+  console.warn = (...values) => forward("log", values);
+  console.error = (...values) => forward("error", values);
+}
+
+function maybeRunSpineBenchmarkNoop(mode, dateStr) {
+  if (String(process.env.SPINE_BENCHMARK_NOOP || "0") !== "1") return false;
+  const now = nowIso();
+  console.log(` spine_benchmark_noop mode=${mode} phase=preflight receipts=warm`);
+  console.log(" routing_local_preflight eligible=4/4 degraded=0");
+  console.log(" collector_health healthy=4/4 unhealthy=0");
+  console.log(" proposal_admission eligible=6/6 blocked=0");
+  console.log(" memory_dream themes=3 pointers=9");
+  console.log(" public_benchmark verdict=ok score=91");
+  console.error(" autonomy_health daily FAIL critical=1");
+  appendLedger(dateStr, {
+    ts: now,
+    type: "spine_benchmark_noop",
+    mode,
+    date: dateStr,
+    ambient_mode_active: spineAmbientActive(),
+    run_context: String(process.env.SPINE_RUN_CONTEXT || "manual").slice(0, 40),
+    benchmark_only: true
+  });
+  updateMechSuitStatus("spine", {
+    ambient: spineAmbientActive(),
+    heartbeat_hours: Math.max(1, Number(SPINE_MECH_SUIT_POLICY.spine && SPINE_MECH_SUIT_POLICY.spine.heartbeat_hours || 4) || 4),
+    manual_triggers_allowed: !!(SPINE_MECH_SUIT_POLICY.spine && SPINE_MECH_SUIT_POLICY.spine.manual_triggers_allowed),
+    quiet_non_critical: !!(SPINE_MECH_SUIT_POLICY.spine && SPINE_MECH_SUIT_POLICY.spine.quiet_non_critical),
+    silent_subprocess_output: !!(SPINE_MECH_SUIT_POLICY.spine && SPINE_MECH_SUIT_POLICY.spine.silent_subprocess_output),
+    last_result: "benchmark_noop",
+    last_mode: mode,
+    last_date: dateStr,
+    last_run_context: String(process.env.SPINE_RUN_CONTEXT || "manual").slice(0, 40)
+  }, { policy: SPINE_MECH_SUIT_POLICY });
+  return true;
 }
 
 function appendLedger(dateStr, evt) {
@@ -1172,7 +1286,14 @@ function shouldShortCircuitDaily(mode, dateStr) {
   };
 }
 
-function main() {
+async function main() {
+  if (!spineTsCompatEnabled()) {
+    emitCompatOnlyReceiptAndExit();
+  }
+  await runSpineCommandCli(process.argv.slice(2), {
+    cwdHint: path.resolve(__dirname, "..", ".."),
+    echoPayload: true
+  });
   const spineRunStartMs = Date.now();
   const mode = process.argv[2];
   const dateStr = todayOr(process.argv[3]);
@@ -1187,8 +1308,8 @@ function main() {
 
   if (!mode || (mode !== "eyes" && mode !== "daily")) {
     console.error("Usage:");
-    console.error("  node systems/spine/spine.js eyes [YYYY-MM-DD] [--max-eyes=N]");
-    console.error("  node systems/spine/spine.js daily [YYYY-MM-DD] [--max-eyes=N]");
+    console.error("  node systems/spine/spine.ts eyes [YYYY-MM-DD] [--max-eyes=N] (compat bridge)");
+    console.error("  node systems/spine/spine.ts daily [YYYY-MM-DD] [--max-eyes=N] (compat bridge)");
     process.exit(2);
   }
 
@@ -1203,6 +1324,10 @@ function main() {
   SPINE_LAST_FAILURE_REASON = null;
   SPINE_TERMINAL_EMITTED = false;
   installSpineExitHook();
+  installSpineAmbientConsoleFilter(dateStr, mode);
+  if (maybeRunSpineBenchmarkNoop(mode, dateStr)) {
+    return;
+  }
 
   const emergency = isEmergencyStopEngaged("spine");
   if (emergency.engaged) {
@@ -1220,7 +1345,7 @@ function main() {
 
   // Declare what we will touch (guarded)
   const invoked = [
-    "systems/spine/spine.js",
+    "systems/spine/spine.ts",
     "systems/security/guard.js",
     "systems/security/directive_gate.js",
     "systems/security/skill_install_enforcer.js",
@@ -6232,5 +6357,8 @@ function main() {
   console.log(` ✅ spine complete (${mode}) for ${dateStr}`);
 }
 
-main();
+main().catch((err) => {
+  process.stderr.write(`spine_ts_compat_error:${String(err && err.message ? err.message : err)}\n`);
+  process.exit(1);
+});
 export {};

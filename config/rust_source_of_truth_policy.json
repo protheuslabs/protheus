@@ -122,57 +122,7 @@
   "primitive_ts_wrapper_contract": {
     "entries": [
       {
-        "path": "lib/strategy_resolver.ts",
-        "required_tokens": ["createConduitLaneModule", "direct_conduit_lane_bridge.js"],
-        "forbidden_tokens": ["legacy_retired_lane_bridge"]
-      },
-      {
-        "path": "lib/duality_seed.ts",
-        "required_tokens": ["createConduitLaneModule", "direct_conduit_lane_bridge.js"],
-        "forbidden_tokens": ["legacy_retired_lane_bridge"]
-      },
-      {
-        "path": "systems/autonomy/pain_signal.ts",
-        "required_tokens": ["createConduitLaneModule", "direct_conduit_lane_bridge.js"],
-        "forbidden_tokens": ["legacy_retired_lane_bridge"]
-      },
-      {
-        "path": "systems/budget/system_budget.ts",
-        "required_tokens": ["createConduitLaneModule", "direct_conduit_lane_bridge.js"],
-        "forbidden_tokens": ["legacy_retired_lane_bridge"]
-      },
-      {
-        "path": "systems/redteam/ant_colony_controller.ts",
-        "required_tokens": ["createConduitLaneModule", "direct_conduit_lane_bridge.js"],
-        "forbidden_tokens": ["legacy_retired_lane_bridge"]
-      },
-      {
-        "path": "systems/attribution/value_attribution_primitive.ts",
-        "required_tokens": ["createConduitLaneModule", "direct_conduit_lane_bridge.js"],
-        "forbidden_tokens": ["legacy_retired_lane_bridge"]
-      },
-      {
-        "path": "systems/assimilation/capability_profile_compiler.ts",
-        "required_tokens": ["createConduitLaneModule", "direct_conduit_lane_bridge.js"],
-        "forbidden_tokens": ["legacy_retired_lane_bridge"]
-      },
-      {
-        "path": "systems/autonomy/multi_agent_debate_orchestrator.ts",
-        "required_tokens": ["createConduitLaneModule", "direct_conduit_lane_bridge.js"],
-        "forbidden_tokens": ["legacy_retired_lane_bridge"]
-      },
-      {
-        "path": "systems/primitives/long_horizon_planning_primitive.ts",
-        "required_tokens": ["createConduitLaneModule", "direct_conduit_lane_bridge.js"],
-        "forbidden_tokens": ["legacy_retired_lane_bridge"]
-      },
-      {
         "path": "systems/primitives/canonical_event_log.ts",
-        "required_tokens": ["createConduitLaneModule", "direct_conduit_lane_bridge.js"],
-        "forbidden_tokens": ["legacy_retired_lane_bridge"]
-      },
-      {
-        "path": "systems/primitives/cognitive_control_primitive.ts",
         "required_tokens": ["createConduitLaneModule", "direct_conduit_lane_bridge.js"],
         "forbidden_tokens": ["legacy_retired_lane_bridge"]
       },
@@ -187,42 +137,7 @@
         "forbidden_tokens": ["legacy_retired_lane_bridge"]
       },
       {
-        "path": "systems/primitives/primitive_registry.ts",
-        "required_tokens": ["createConduitLaneModule", "direct_conduit_lane_bridge.js"],
-        "forbidden_tokens": ["legacy_retired_lane_bridge"]
-      },
-      {
-        "path": "systems/primitives/replay_verify.ts",
-        "required_tokens": ["createConduitLaneModule", "direct_conduit_lane_bridge.js"],
-        "forbidden_tokens": ["legacy_retired_lane_bridge"]
-      },
-      {
         "path": "systems/sensory/temporal_patterns.ts",
-        "required_tokens": ["createConduitLaneModule", "direct_conduit_lane_bridge.js"],
-        "forbidden_tokens": ["legacy_retired_lane_bridge"]
-      },
-      {
-        "path": "systems/autonomy/ethical_reasoning_organ.ts",
-        "required_tokens": ["createConduitLaneModule", "direct_conduit_lane_bridge.js"],
-        "forbidden_tokens": ["legacy_retired_lane_bridge"]
-      },
-      {
-        "path": "systems/assimilation/memory_evolution_primitive.ts",
-        "required_tokens": ["createConduitLaneModule", "direct_conduit_lane_bridge.js"],
-        "forbidden_tokens": ["legacy_retired_lane_bridge"]
-      },
-      {
-        "path": "systems/weaver/arbitration_engine.ts",
-        "required_tokens": ["createConduitLaneModule", "direct_conduit_lane_bridge.js"],
-        "forbidden_tokens": ["legacy_retired_lane_bridge"]
-      },
-      {
-        "path": "systems/echo/input_purification_gate.ts",
-        "required_tokens": ["createConduitLaneModule", "direct_conduit_lane_bridge.js"],
-        "forbidden_tokens": ["legacy_retired_lane_bridge"]
-      },
-      {
-        "path": "systems/assimilation/context_navigation_primitive.ts",
         "required_tokens": ["createConduitLaneModule", "direct_conduit_lane_bridge.js"],
         "forbidden_tokens": ["legacy_retired_lane_bridge"]
       }

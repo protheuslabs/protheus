@@ -1,6 +1,6 @@
 # Backlog Active View
 
-Generated: 2026-03-06T19:03:30.018Z
+Generated: 2026-03-06T19:19:41.101Z
 
 | ID | Class | Wave | Status | Title | Dependencies |
 |---|---|---|---|---|---|
@@ -41,6 +41,36 @@ Generated: 2026-03-06T19:03:30.018Z
 | V6-F100-043 | backlog | V6 | blocked | External certification and attestation program (SOC2/ISO/FedRAMP/GDPR) |  |
 | V6-F100-044 | backlog | V6 | blocked | Commercial support/SLA contract lane (enterprise readiness) |  |
 | V6-F100-045 | backlog | V6 | blocked | Public compliance report publication lane |  |
+| V6-F100-046 | hardening | V6 | queued | Primitive conduit wrapper contract alignment | V6-PRIM-008 |
+| V6-F100-047 | hardening | V6 | queued | Unified local and CI release-truth hierarchy | V6-F100-046 |
+| V6-F100-048 | governance | V6 | queued | JS holdout classification and exception-governance closure | V6-F100-046 |
+| V6-F100-049 | hardening | V6 | queued | Release-truth scorecard synthesis gate | V6-F100-039, V6-F100-046, V6-F100-047, V6-F100-048 |
+| V6-F100-050 | governance | V6 | queued | Capability manifest schema and registry generator | V6-F100-049 |
+| V6-F100-051 | governance | V6 | queued | Generated capability inventory with owner and maturity metadata | V6-F100-050 |
+| V6-F100-052 | scale-readiness | V6 | queued | Runtime profile manifest matrix (`seed` through `embedded`) | V6-ARCH-001, V6-ARCH-002, V6-F100-050 |
+| V6-F100-053 | launch-polish | V6 | queued | Profile-aware install and operator support docs | V6-F100-051, V6-F100-052 |
+| V6-F100-054 | hardening | V6 | queued | Module archetype policy and enforcement gate | V6-PRIM-008, V6-F100-050 |
+| V6-F100-055 | governance | V6 | queued | Architecture ownership uplift to manifests and write scopes | V6-F100-050, V6-F100-054 |
+| V6-F100-056 | hardening | V6 | queued | Runtime output isolation from tracked source surfaces | V6-F100-054, V6-F100-055 |
+| V6-F100-057 | hardening | V6 | queued | Dist-first production bootstrap hardening | V6-F100-019, V6-F100-047 |
+| V6-F100-058 | scale-readiness | V6 | queued | Profile-aware smoke verification in required checks | V6-F100-052, V6-F100-057 |
+| V6-F100-059 | governance | V6 | queued | Subsystem CODEOWNERS expansion for release-critical surfaces | V6-F100-055 |
+| V6-F100-060 | hardening | V6 | queued | CI quality threshold ratchet after suite stabilization | V6-F100-047, V6-F100-048, V6-F100-049, V6-F100-058 |
+| V6-F100-061 | governance | V6 | queued | Generated supported-surface matrix artifact | V6-F100-050, V6-F100-051, V6-F100-052 |
+| V6-F100-062 | governance | V6 | queued | GA capability admission criteria gate | V6-F100-050, V6-F100-061 |
+| V6-F100-063 | scale-readiness | V6 | queued | Deterministic profile packaging contract | V6-F100-040, V6-F100-052, V6-F100-064 |
+| V6-F100-064 | hardening | V6 | queued | Production dist artifact presence gate | V6-F100-057 |
+| V6-F100-065 | launch-polish | V6 | queued | Published profile guarantee and exclusion matrix | V6-F100-052, V6-F100-061, V6-F100-062 |
+| V6-F100-066 | scale-readiness | V6 | queued | Deterministic install-path certification suite | V6-F100-053, V6-F100-063, V6-F100-064 |
+| V6-F100-067 | governance | V6 | queued | Support-tiered command registry classification | V6-F100-050, V6-F100-061 |
+| V6-F100-068 | governance | V6 | queued | Owner escalation depth metadata | V6-F100-059, V6-F100-061 |
+| V6-F100-069 | hardening | V6 | queued | Human-only action coverage validation | V6-F100-062, V6-F100-068 |
+| V6-F100-070 | scale-readiness | V6 | queued | Profile boot certification workflow | V6-F100-058, V6-F100-063, V6-F100-066 |
+| V6-F100-071 | governance | V6 | queued | Write-scope and runtime-authority ownership model | V6-F100-055, V6-F100-068 |
+| V6-F100-072 | hardening | V6 | queued | Generated artifact discipline gate | V6-F100-049, V6-F100-056 |
+| V6-F100-073 | launch-polish | V6 | queued | Changelog and release-note completeness gate | V6-F100-033, V6-F100-062 |
+| V6-F100-074 | scale-readiness | V6 | queued | Performance and footprint budget matrix by profile | V6-F100-052, V6-F100-058, V6-F100-063 |
+| V6-F100-075 | governance | V6 | queued | Quarterly enterprise readiness review pack generator | V6-F100-061, V6-F100-066, V6-F100-070, V6-F100-073, V6-F100-074 |
 | V6-FLUX-001 | backlog | V6 | queued | Flux conformance matrix and traceability lane |  |
 | V6-FLUX-002 | backlog | V6 | queued | Ontological integrity operation gate lane |  |
 | V6-FLUX-003 | backlog | V6 | queued | Coherence preference runtime verifier lane |  |

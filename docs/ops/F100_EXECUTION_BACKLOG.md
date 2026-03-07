@@ -103,6 +103,24 @@ This program is complete when all of the following are true:
 14. Replace broad ownership with subsystem ownership by expanding [.github/CODEOWNERS](/Users/jay/.openclaw/workspace/.github/CODEOWNERS) around `conduit`, `kernel`, `security`, `memory`, `autonomy`, `ops`, and packaging paths.
 15. Raise the CI quality bar in [config/ci_quality_scorecard_policy.json](/Users/jay/.openclaw/workspace/config/ci_quality_scorecard_policy.json) only after the suite is stable: first make flake and runtime budgets honest, then ratchet thresholds upward and tie them to release gating.
 
+## Second 15 Concrete Tasks To Reach `A`
+
+16. Add a generated `supported surface matrix` artifact that combines capability manifests, command registry metadata, and profile manifests into one operator truth. Store the generated artifact under `state/ops/` and publish a human-readable summary under `docs/ops/`.
+17. Introduce `ga admission criteria` for capabilities: required owner, profile declarations, rollback path, package inclusion, install validation, runbook, and a passing contract suite. Encode the policy under `config/` and gate it in CI under `systems/ops/`.
+18. Add a `profile packaging contract` that proves each supported profile produces a deterministic installable bundle. Wire checks against [deploy/helm/protheus/Chart.yaml](/Users/jay/.openclaw/workspace/deploy/helm/protheus/Chart.yaml), [deploy/terraform/protheus_helm/main.tf](/Users/jay/.openclaw/workspace/deploy/terraform/protheus_helm/main.tf), npm packaging, and direct binary install surfaces.
+19. Add dist artifact verification for `protheus`, `protheusctl`, `protheusd`, and `protheus-top` so [systems/ops/entrypoint_runtime_contract.ts](/Users/jay/.openclaw/workspace/systems/ops/entrypoint_runtime_contract.ts) fails if production profile targets are missing built artifacts instead of accepting source fallback alone.
+20. Create `profile support statements` in [docs/GETTING_STARTED.md](/Users/jay/.openclaw/workspace/docs/GETTING_STARTED.md) and [ARCHITECTURE.md](/Users/jay/.openclaw/workspace/ARCHITECTURE.md) that define what `seed`, `edge`, `desktop`, `cluster`, and `embedded` guarantee and explicitly exclude.
+21. Add deterministic install-path tests for macOS/Linux shell install, PowerShell install, npm wrapper install, and direct Cargo binary execution. These should validate the actual operator path, not just file presence.
+22. Split the command registry into `supported`, `internal`, `experimental`, and `compat` sections while keeping a single generated source of truth in [config/command_registry.json](/Users/jay/.openclaw/workspace/config/command_registry.json). This preserves breadth while making operator expectations explicit.
+23. Add `owner escalation depth` to command and capability metadata so every high-risk subsystem has primary, secondary, and release-owner coverage instead of one broad path owner in [.github/CODEOWNERS](/Users/jay/.openclaw/workspace/.github/CODEOWNERS).
+24. Add `human-only action coverage` validation that cross-checks high-risk commands and workflows against [docs/HUMAN_ONLY_ACTIONS.md](/Users/jay/.openclaw/workspace/docs/HUMAN_ONLY_ACTIONS.md), ensuring autonomous paths never silently bypass human-required boundaries.
+25. Add a `profile boot certification` workflow that boots each supported profile, runs minimal kernel checks, validates conduit if present, and emits a signed receipt. This is the right enterprise analog for “runs on anything, including a toaster.”
+26. Move from directory-based architecture ownership to `write-scope ownership` and `runtime authority ownership`. Expand [docs/ARCHITECTURE_OWNERSHIP.md](/Users/jay/.openclaw/workspace/docs/ARCHITECTURE_OWNERSHIP.md) so teams own contracts, mutation channels, and release surfaces, not just folders.
+27. Add a `generated artifact discipline` policy: docs like [docs/ops/F100_ENTERPRISE_BASELINE_STATUS.md](/Users/jay/.openclaw/workspace/docs/ops/F100_ENTERPRISE_BASELINE_STATUS.md) and command/security inventories must only change via explicit sync commands, never as incidental runtime side effects.
+28. Add release-note and changelog completeness gates that ensure every `ga` or `beta` capability change updates [CHANGELOG.md](/Users/jay/.openclaw/workspace/CHANGELOG.md) and links to the governing manifest, tests, and rollout profile.
+29. Add a `performance and footprint budget matrix` by profile. Fortune 100 quality for a portable substrate means you can answer memory, startup, and runtime cost questions for `layer0` through `layer3`, not just functional correctness.
+30. Add a quarterly `enterprise readiness review pack` generator that assembles release truth, ownership coverage, packaging status, security inventory, install-path evidence, and profile certifications into one consumable review bundle for leadership or customers.
+
 ## Sequencing Rules
 
 1. Do not start capability-manifest work until release truth is green.

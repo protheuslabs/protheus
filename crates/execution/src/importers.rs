@@ -132,7 +132,8 @@ fn parse_simple_yaml_text(text: &str) -> Value {
 }
 
 pub fn run_importer_generic_yaml_json(payload: &str) -> Result<String, String> {
-    let parsed = serde_json::from_str::<Value>(payload).unwrap_or_else(|_| Value::String(payload.to_string()));
+    let parsed = serde_json::from_str::<Value>(payload)
+        .unwrap_or_else(|_| Value::String(payload.to_string()));
     let normalized = if let Some(text) = parsed.as_str() {
         parse_simple_yaml_text(text)
     } else {
@@ -424,8 +425,10 @@ mod tests {
     #[test]
     fn importer_generic_yaml_string_payload_routes_to_generic_json_mapping() {
         let payload = "enabled: true\nretries: 3\n";
-        let out = run_importer_generic_yaml_json(&serde_json::to_string(payload).expect("serialize payload"))
-            .expect("importer_generic_yaml_json should return output");
+        let out = run_importer_generic_yaml_json(
+            &serde_json::to_string(payload).expect("serialize payload"),
+        )
+        .expect("importer_generic_yaml_json should return output");
         let parsed: Value = serde_json::from_str(&out).expect("valid json output");
         assert_eq!(parsed["ok"], true);
         assert_eq!(parsed["payload"]["source_item_count"], 2);
@@ -461,15 +464,21 @@ mod tests {
         assert_eq!(parsed["payload"]["source_item_count"], 4);
         assert_eq!(parsed["payload"]["mapped_item_count"], 4);
         assert_eq!(parsed["payload"]["entities"]["agents"][0]["id"], "planner");
-        assert_eq!(parsed["payload"]["entities"]["tasks"][0]["id"], "task_alpha");
-        assert_eq!(parsed["payload"]["entities"]["workflows"][0]["id"], "primaryflow");
+        assert_eq!(
+            parsed["payload"]["entities"]["tasks"][0]["id"],
+            "task_alpha"
+        );
+        assert_eq!(
+            parsed["payload"]["entities"]["workflows"][0]["id"],
+            "primaryflow"
+        );
         assert_eq!(parsed["payload"]["entities"]["tools"][0]["id"], "search");
     }
 
     #[test]
     fn importer_openfang_non_object_payload_is_empty() {
-        let out = run_importer_openfang_json("[]")
-            .expect("importer_openfang_json should return output");
+        let out =
+            run_importer_openfang_json("[]").expect("importer_openfang_json should return output");
         let parsed: Value = serde_json::from_str(&out).expect("valid json output");
         assert_eq!(parsed["ok"], true);
         assert_eq!(parsed["payload"]["source_item_count"], 0);
@@ -489,7 +498,10 @@ mod tests {
         assert_eq!(parsed["payload"]["source_item_count"], 3);
         assert_eq!(parsed["payload"]["mapped_item_count"], 3);
         assert_eq!(parsed["payload"]["entities"]["workflows"][0]["id"], "a");
-        assert_eq!(parsed["payload"]["entities"]["workflows"][0]["edges_out"], 1);
+        assert_eq!(
+            parsed["payload"]["entities"]["workflows"][0]["edges_out"],
+            1
+        );
         assert_eq!(parsed["payload"]["entities"]["records"][0]["id"], "edge_1");
     }
 

@@ -3,6 +3,7 @@ export {};
 
 const fs = require('fs');
 const path = require('path');
+const { spawnSync } = require('child_process');
 const { loadOutcomeFitnessPolicy } = require('./outcome_fitness');
 
 type AnyObj = Record<string, any>;
@@ -56,6 +57,90 @@ const VALUE_CURRENCY_KEYS = new Set([
   'time_savings',
   'learning'
 ]);
+const STRATEGY_HOTPATH_CACHE_MAX = 256;
+const STRATEGY_HOTPATH_CACHE = new Map();
+
+function parseJsonPayload(raw: unknown): AnyObj | null {
+  const text = String(raw == null ? '' : raw).trim();
+  if (!text) return null;
+  try {
+    const parsed = JSON.parse(text);
+    if (parsed && typeof parsed === 'object') return parsed;
+  } catch {}
+  const lines = text.split('\n').map((line) => line.trim()).filter(Boolean);
+  for (let i = lines.length - 1; i >= 0; i -= 1) {
+    try {
+      const parsed = JSON.parse(lines[i]);
+      if (parsed && typeof parsed === 'object') return parsed;
+    } catch {}
+  }
+  return null;
+}
+
+function executionBinaryCandidates() {
+  const explicit = asString(process.env.PROTHEUS_EXECUTION_RUST_BIN || '');
+  const out = [
+    explicit,
+    path.join(REPO_ROOT, 'target', 'release', 'execution_core'),
+    path.join(REPO_ROOT, 'target', 'debug', 'execution_core'),
+    path.join(REPO_ROOT, 'crates', 'execution', 'target', 'release', 'execution_core'),
+    path.join(REPO_ROOT, 'crates', 'execution', 'target', 'debug', 'execution_core')
+  ].filter(Boolean);
+  return Array.from(new Set(out));
+}
+
+function strategyResolverRustMode() {
+  const raw = asString(process.env.STRATEGY_RESOLVER_RUST_MODE || 'prefer').toLowerCase();
+  if (raw === 'off' || raw === 'fallback') return 'off';
+  if (raw === 'rust_only') return 'rust_only';
+  return 'prefer';
+}
+
+function runStrategyHotpathViaRust(op: string, payload: AnyObj = {}): AnyObj | null {
+  const mode = strategyResolverRustMode();
+  if (mode === 'off') return null;
+  let cacheKey = '';
+  try {
+    cacheKey = `${String(op || '')}:${JSON.stringify(payload || {})}`;
+  } catch {
+    cacheKey = '';
+  }
+  if (cacheKey && STRATEGY_HOTPATH_CACHE.has(cacheKey)) {
+    try {
+      return JSON.parse(JSON.stringify(STRATEGY_HOTPATH_CACHE.get(cacheKey)));
+    } catch {
+      return STRATEGY_HOTPATH_CACHE.get(cacheKey);
+    }
+  }
+  const request = Buffer.from(JSON.stringify({ op, ...(payload || {}) }), 'utf8').toString('base64');
+  for (const candidate of executionBinaryCandidates()) {
+    try {
+      if (!fs.existsSync(candidate)) continue;
+      const out = spawnSync(candidate, ['strategy-hotpath', `--payload-base64=${request}`], {
+        cwd: REPO_ROOT,
+        encoding: 'utf8',
+        maxBuffer: 10 * 1024 * 1024
+      });
+      const parsed = parseJsonPayload(out.stdout);
+      if (Number(out.status) === 0 && parsed && typeof parsed === 'object' && !parsed.error) {
+        if (cacheKey) {
+          STRATEGY_HOTPATH_CACHE.set(cacheKey, parsed);
+          if (STRATEGY_HOTPATH_CACHE.size > STRATEGY_HOTPATH_CACHE_MAX) {
+            const firstKey = STRATEGY_HOTPATH_CACHE.keys().next().value;
+            if (firstKey) STRATEGY_HOTPATH_CACHE.delete(firstKey);
+          }
+        }
+        return parsed;
+      }
+    } catch {
+      // continue
+    }
+  }
+  if (mode === 'rust_only') {
+    return {};
+  }
+  return null;
+}
 
 function asString(v) {
   return String(v == null ? '' : v).trim();
@@ -711,6 +796,8 @@ function applyThresholdOverrides(baseThresholds, strategy) {
 }
 
 function strategyExecutionMode(strategy, fallback = 'execute') {
+  const rustOut = runStrategyHotpathViaRust('strategy_execution_mode', { strategy, fallback });
+  if (rustOut && typeof rustOut.mode === 'string') return rustOut.mode;
   const modeRaw = strategy && strategy.execution_policy
     ? asString(strategy.execution_policy.mode).toLowerCase()
     : '';
@@ -725,6 +812,8 @@ function strategyExecutionMode(strategy, fallback = 'execute') {
 }
 
 function strategyGenerationMode(strategy, fallback = 'hyper-creative') {
+  const rustOut = runStrategyHotpathViaRust('strategy_generation_mode', { strategy, fallback });
+  if (rustOut && typeof rustOut.mode === 'string') return rustOut.mode;
   const modeRaw = strategy && strategy.generation_policy
     ? asString(strategy.generation_policy.mode).toLowerCase()
     : '';
@@ -734,6 +823,12 @@ function strategyGenerationMode(strategy, fallback = 'hyper-creative') {
 }
 
 function strategyCanaryDailyExecLimit(strategy, fallback = null) {
+  const rustOut = runStrategyHotpathViaRust('strategy_canary_daily_exec_limit', { strategy, fallback });
+  if (rustOut && Object.prototype.hasOwnProperty.call(rustOut, 'value')) {
+    if (rustOut.value == null || String(rustOut.value).trim() === '') return null;
+    const value = Number(rustOut.value);
+    if (Number.isFinite(value)) return Math.max(1, Math.min(20, Math.round(value)));
+  }
   const raw = strategy
     && strategy.execution_policy
     ? strategy.execution_policy.canary_daily_exec_limit
@@ -748,6 +843,10 @@ function strategyCanaryDailyExecLimit(strategy, fallback = null) {
 }
 
 function strategyBudgetCaps(strategy: AnyObj, defaults: AnyObj = {}): AnyObj {
+  const rustOut = runStrategyHotpathViaRust('strategy_budget_caps', { strategy, defaults });
+  if (rustOut && typeof rustOut === 'object' && !Array.isArray(rustOut)) {
+    return rustOut;
+  }
   const defaultRuns = Number(defaults.daily_runs_cap);
   const defaultTokens = Number(defaults.daily_token_cap);
   const defaultPerAction = Number(defaults.max_tokens_per_action);
@@ -829,6 +928,10 @@ function strategyBudgetCaps(strategy: AnyObj, defaults: AnyObj = {}): AnyObj {
 }
 
 function strategyExplorationPolicy(strategy: AnyObj, defaults: AnyObj = {}): AnyObj {
+  const rustOut = runStrategyHotpathViaRust('strategy_exploration_policy', { strategy, defaults });
+  if (rustOut && typeof rustOut === 'object' && !Array.isArray(rustOut)) {
+    return rustOut;
+  }
   const base = {
     fraction: Number.isFinite(Number(defaults.fraction)) ? Number(defaults.fraction) : 0.25,
     every_n: Number.isFinite(Number(defaults.every_n)) ? Number(defaults.every_n) : 3,
@@ -843,6 +946,16 @@ function strategyExplorationPolicy(strategy: AnyObj, defaults: AnyObj = {}): Any
 }
 
 function resolveStrategyRankingContext(strategy, context: AnyObj = {}) {
+  const rustOut = runStrategyHotpathViaRust('resolve_strategy_ranking_context', { strategy, context });
+  if (
+    rustOut
+    && typeof rustOut === 'object'
+    && !Array.isArray(rustOut)
+    && rustOut.weights
+    && typeof rustOut.weights === 'object'
+  ) {
+    return rustOut;
+  }
   const base = strategy && strategy.ranking_weights && typeof strategy.ranking_weights === 'object'
     ? strategy.ranking_weights
     : normalizeRankingWeights({}, []);
@@ -918,6 +1031,10 @@ function strategyCampaigns(strategy: AnyObj, activeOnly: boolean = false): AnyOb
 }
 
 function strategyAllowsProposalType(strategy, proposalType) {
+  const rustOut = runStrategyHotpathViaRust('strategy_allows_proposal_type', { strategy, proposal_type: proposalType });
+  if (rustOut && Object.prototype.hasOwnProperty.call(rustOut, 'allow')) {
+    return rustOut.allow === true;
+  }
   if (!strategy || !strategy.admission_policy) return true;
   const type = asString(proposalType).toLowerCase();
   const allowed = Array.isArray(strategy.admission_policy.allowed_types)
@@ -933,12 +1050,22 @@ function strategyAllowsProposalType(strategy, proposalType) {
 }
 
 function strategyPromotionPolicy(strategy, defaults = {}) {
+  const rustOut = runStrategyHotpathViaRust('strategy_promotion_policy', { strategy, defaults });
+  if (rustOut && typeof rustOut === 'object' && !Array.isArray(rustOut)) {
+    return rustOut;
+  }
   const base = normalizePromotionPolicy(defaults);
   if (!strategy || !strategy.promotion_policy || typeof strategy.promotion_policy !== 'object') return base;
   return normalizePromotionPolicy({ ...base, ...strategy.promotion_policy });
 }
 
 function strategyMaxRiskPerAction(strategy, fallback = null) {
+  const rustOut = runStrategyHotpathViaRust('strategy_max_risk_per_action', { strategy, fallback });
+  if (rustOut && Object.prototype.hasOwnProperty.call(rustOut, 'value')) {
+    if (rustOut.value == null || String(rustOut.value).trim() === '') return null;
+    const value = Number(rustOut.value);
+    if (Number.isFinite(value)) return Math.max(0, Math.min(100, Math.round(value)));
+  }
   const raw = strategy && strategy.risk_policy ? strategy.risk_policy.max_risk_per_action : null;
   if (raw != null && String(raw).trim() !== '') {
     const v = Number(raw);
@@ -950,6 +1077,12 @@ function strategyMaxRiskPerAction(strategy, fallback = null) {
 }
 
 function strategyDuplicateWindowHours(strategy, fallback = 24) {
+  const rustOut = runStrategyHotpathViaRust('strategy_duplicate_window_hours', { strategy, fallback });
+  if (rustOut && Object.prototype.hasOwnProperty.call(rustOut, 'value')) {
+    if (rustOut.value == null || String(rustOut.value).trim() === '') return 24;
+    const value = Number(rustOut.value);
+    if (Number.isFinite(value)) return Math.max(1, Math.min(168, Math.round(value)));
+  }
   const v = strategy
     && strategy.admission_policy
     ? Number(strategy.admission_policy.duplicate_window_hours)

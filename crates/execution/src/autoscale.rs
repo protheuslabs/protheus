@@ -11797,12 +11797,17 @@ pub fn compute_proposal_directive_text(
         js_like_string(json_path(proposal, &["type"]).unwrap_or(&serde_json::Value::Null)),
         js_like_string(json_path(proposal, &["summary"]).unwrap_or(&serde_json::Value::Null)),
         js_like_string(json_path(proposal, &["notes"]).unwrap_or(&serde_json::Value::Null)),
-        js_like_string(json_path(proposal, &["expected_impact"]).unwrap_or(&serde_json::Value::Null)),
+        js_like_string(
+            json_path(proposal, &["expected_impact"]).unwrap_or(&serde_json::Value::Null),
+        ),
         js_like_string(json_path(proposal, &["risk"]).unwrap_or(&serde_json::Value::Null)),
-        js_like_string(json_path(proposal, &["meta", "preview"]).unwrap_or(&serde_json::Value::Null)),
+        js_like_string(
+            json_path(proposal, &["meta", "preview"]).unwrap_or(&serde_json::Value::Null),
+        ),
         js_like_string(json_path(proposal, &["meta", "url"]).unwrap_or(&serde_json::Value::Null)),
         js_like_string(
-            json_path(proposal, &["meta", "normalized_objective"]).unwrap_or(&serde_json::Value::Null),
+            json_path(proposal, &["meta", "normalized_objective"])
+                .unwrap_or(&serde_json::Value::Null),
         ),
         js_like_string(
             json_path(proposal, &["meta", "normalized_expected_outcome"])
@@ -14389,12 +14394,9 @@ pub fn compute_non_yield_reason(input: &NonYieldReasonInput) -> NonYieldReasonOu
         return NonYieldReasonOutput { reason: explicit };
     }
 
-    let result = normalize_spaces(input.result.as_deref().unwrap_or(""))
-        .to_ascii_lowercase();
-    let outcome = normalize_spaces(input.outcome.as_deref().unwrap_or(""))
-        .to_ascii_lowercase();
-    let category = normalize_spaces(input.category.as_deref().unwrap_or(""))
-        .to_ascii_lowercase();
+    let result = normalize_spaces(input.result.as_deref().unwrap_or("")).to_ascii_lowercase();
+    let outcome = normalize_spaces(input.outcome.as_deref().unwrap_or("")).to_ascii_lowercase();
+    let category = normalize_spaces(input.category.as_deref().unwrap_or("")).to_ascii_lowercase();
 
     if category == "no_progress" && result == "executed" {
         return NonYieldReasonOutput {
@@ -14467,25 +14469,16 @@ pub fn compute_run_event_objective_id(
     input: &RunEventObjectiveIdInput,
 ) -> RunEventObjectiveIdOutput {
     let selected = if input.directive_pulse_present.unwrap_or(false) {
-        input
-            .directive_pulse_objective_id
-            .as_deref()
-            .unwrap_or("")
+        input.directive_pulse_objective_id.as_deref().unwrap_or("")
     } else if input.objective_id_present.unwrap_or(false) {
-        input
-            .objective_id
-            .as_deref()
-            .unwrap_or("")
+        input.objective_id.as_deref().unwrap_or("")
     } else if input.objective_binding_present.unwrap_or(false) {
         input
             .objective_binding_objective_id
             .as_deref()
             .unwrap_or("")
     } else if input.top_escalation_present.unwrap_or(false) {
-        input
-            .top_escalation_objective_id
-            .as_deref()
-            .unwrap_or("")
+        input.top_escalation_objective_id.as_deref().unwrap_or("")
     } else {
         ""
     };
@@ -14499,15 +14492,9 @@ pub fn compute_run_event_proposal_id(input: &RunEventProposalIdInput) -> RunEven
     let selected = if input.proposal_id_present.unwrap_or(false) {
         input.proposal_id.as_deref().unwrap_or("")
     } else if input.selected_proposal_id_present.unwrap_or(false) {
-        input
-            .selected_proposal_id
-            .as_deref()
-            .unwrap_or("")
+        input.selected_proposal_id.as_deref().unwrap_or("")
     } else if input.top_escalation_present.unwrap_or(false) {
-        input
-            .top_escalation_proposal_id
-            .as_deref()
-            .unwrap_or("")
+        input.top_escalation_proposal_id.as_deref().unwrap_or("")
     } else {
         ""
     };
@@ -14702,12 +14689,7 @@ fn policy_hold_reason_from_event_input(evt: &PolicyHoldPatternEventInput) -> Str
 }
 
 pub fn compute_policy_hold_pattern(input: &PolicyHoldPatternInput) -> PolicyHoldPatternOutput {
-    let objective_id = normalize_spaces(
-        input
-            .objective_id
-            .as_deref()
-            .unwrap_or(""),
-    );
+    let objective_id = normalize_spaces(input.objective_id.as_deref().unwrap_or(""));
     let window_hours = input.window_hours.unwrap_or(24.0).max(1.0);
     let repeat_threshold = input.repeat_threshold.unwrap_or(2.0).max(2.0);
     let now_ms = non_negative_number(input.now_ms).unwrap_or_else(|| {
@@ -27499,10 +27481,7 @@ mod tests {
     }
 
     fn extract_mode_literals(text: &str, call_name: &str) -> std::collections::BTreeSet<String> {
-        let pattern = format!(
-            r#"{}\s*\(\s*['"`]([^'"`]+)['"`]"#,
-            regex::escape(call_name)
-        );
+        let pattern = format!(r#"{}\s*\(\s*['"`]([^'"`]+)['"`]"#, regex::escape(call_name));
         let re = Regex::new(&pattern).expect("valid call regex");
         let static_mode_re =
             Regex::new(r"^[a-zA-Z0-9_-]+$").expect("valid static mode token regex");
@@ -27542,8 +27521,8 @@ mod tests {
     }
 
     fn extract_dispatch_modes(text: &str) -> std::collections::BTreeSet<String> {
-        let re =
-            Regex::new(r#"(?m)^\s*(?:if|else if) mode == "([^"]+)""#).expect("valid dispatch regex");
+        let re = Regex::new(r#"(?m)^\s*(?:if|else if) mode == "([^"]+)""#)
+            .expect("valid dispatch regex");
         let block_comment_re = Regex::new(r"(?s)/\*.*?\*/").expect("valid block comment regex");
         let line_comment_re = Regex::new(r"(?m)//.*$").expect("valid line comment regex");
         let without_block = block_comment_re.replace_all(text, "");
@@ -27774,12 +27753,12 @@ if mode == "alpha" {
             "expected runBacklogAutoscalePrimitive mode calls in controller TS sources"
         );
         let mapped = extract_bridge_modes(bridge, "runBacklogAutoscalePrimitive");
-        assert!(!mapped.is_empty(), "expected fieldByMode map in backlog_autoscale_rust_bridge.ts");
+        assert!(
+            !mapped.is_empty(),
+            "expected fieldByMode map in backlog_autoscale_rust_bridge.ts"
+        );
 
-        let missing = called
-            .difference(&mapped)
-            .cloned()
-            .collect::<Vec<_>>();
+        let missing = called.difference(&mapped).cloned().collect::<Vec<_>>();
         assert!(
             missing.is_empty(),
             "controller TS sources use autoscale modes missing from Rust bridge map: {:?}",
@@ -27814,10 +27793,7 @@ if mode == "alpha" {
             "expected runBacklogAutoscalePrimitive mode calls in controller TS sources"
         );
         let dispatched = extract_dispatch_modes(rust_src);
-        let missing = called
-            .difference(&dispatched)
-            .cloned()
-            .collect::<Vec<_>>();
+        let missing = called.difference(&dispatched).cloned().collect::<Vec<_>>();
         assert!(
             missing.is_empty(),
             "controller TS sources use autoscale modes not dispatched by Rust autoscale_json: {:?}",
@@ -27831,10 +27807,7 @@ if mode == "alpha" {
         let rust_src = include_str!("autoscale.rs");
         let mapped = extract_bridge_modes(bridge, "runBacklogAutoscalePrimitive");
         let dispatched = extract_dispatch_modes(rust_src);
-        let missing = mapped
-            .difference(&dispatched)
-            .cloned()
-            .collect::<Vec<_>>();
+        let missing = mapped.difference(&dispatched).cloned().collect::<Vec<_>>();
         assert!(
             missing.is_empty(),
             "backlog bridge maps modes not dispatched by Rust autoscale_json: {:?}",

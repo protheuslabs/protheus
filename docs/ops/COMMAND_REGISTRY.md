@@ -1,6 +1,6 @@
 # Command Registry
 
-Generated: 2026-03-05T04:02:38.454Z
+Generated: 2026-03-06T19:07:09.395Z
 
 ## Curated Operator Surface
 - `dev`
@@ -95,6 +95,10 @@ Generated: 2026-03-05T04:02:38.454Z
 | `continuity:vault:archive` | continuity | continuity | 2 | policy.groups |
 | `continuity:vault:restore` | continuity | continuity | 2 | policy.groups |
 | `continuity:vault:verify` | continuity | continuity | 2 | policy.groups |
+| `coverage:all` | platform | general | 2 | policy.default_metadata |
+| `coverage:merge` | platform | general | 2 | policy.default_metadata |
+| `coverage:rust` | platform | general | 2 | policy.default_metadata |
+| `coverage:ts` | platform | general | 2 | policy.default_metadata |
 | `creative:breakthrough:run` | platform | general | 2 | policy.default_metadata |
 | `cryonics:run` | memory | memory | 2 | policy.groups |
 | `cryonics:status` | memory | memory | 2 | policy.groups |
@@ -419,11 +423,6 @@ Generated: 2026-03-05T04:02:38.454Z
 | `lane:v3-race-333:run` | race | lane | 2 | registry.groups |
 | `lane:v3-race-334:run` | race | lane | 2 | registry.groups |
 | `lane:v3-race-335:run` | race | lane | 2 | registry.groups |
-| `lane:v3-race-336:run` | race | lane | 2 | registry.groups |
-| `lane:v3-race-337:run` | race | lane | 2 | registry.groups |
-| `lane:v3-race-338:run` | race | lane | 2 | registry.groups |
-| `lane:v3-race-339:run` | race | lane | 2 | registry.groups |
-| `lane:v3-race-340:run` | race | lane | 2 | registry.groups |
 
-Total commands: 1234
+Total commands: 1251
 Missing metadata: 0

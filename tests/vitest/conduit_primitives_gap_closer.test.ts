@@ -6,38 +6,68 @@ import { pathToFileURL } from 'node:url';
 import { describe, expect, test } from 'vitest';
 
 const ROOT = process.cwd();
+const RUST_SOURCE_OF_TRUTH_POLICY_PATH = path.join(ROOT, 'config', 'rust_source_of_truth_policy.json');
 
-const wrapperFiles = [
-  'lib/strategy_resolver.ts',
-  'lib/duality_seed.ts',
-  'systems/autonomy/pain_signal.ts',
-  'systems/budget/system_budget.ts',
-  'systems/redteam/ant_colony_controller.ts',
-  'systems/attribution/value_attribution_primitive.ts',
-  'systems/assimilation/capability_profile_compiler.ts',
-  'systems/autonomy/multi_agent_debate_orchestrator.ts',
-  'systems/primitives/long_horizon_planning_primitive.ts',
-  'systems/primitives/canonical_event_log.ts',
-  'systems/primitives/cognitive_control_primitive.ts',
-  'systems/primitives/policy_vm.ts',
-  'systems/primitives/primitive_catalog.ts',
-  'systems/primitives/primitive_registry.ts',
-  'systems/primitives/replay_verify.ts',
-  'systems/sensory/temporal_patterns.ts',
-  'systems/autonomy/ethical_reasoning_organ.ts',
-  'systems/assimilation/memory_evolution_primitive.ts',
-  'systems/weaver/arbitration_engine.ts',
-  'systems/echo/input_purification_gate.ts',
-  'systems/assimilation/context_navigation_primitive.ts',
-] as const;
+type WrapperEntry = {
+  path: string;
+  required_tokens: string[];
+  forbidden_tokens: string[];
+};
+
+function loadWrapperEntries(): WrapperEntry[] {
+  const policy = JSON.parse(fs.readFileSync(RUST_SOURCE_OF_TRUTH_POLICY_PATH, 'utf8'));
+  const entries = policy && policy.primitive_ts_wrapper_contract && Array.isArray(policy.primitive_ts_wrapper_contract.entries)
+    ? policy.primitive_ts_wrapper_contract.entries
+    : [];
+  return entries.filter((entry: any) => entry && typeof entry.path === 'string');
+}
+
+function walkWrapperCandidates(dirPath: string, out: string[]) {
+  if (!fs.existsSync(dirPath)) return;
+  for (const entry of fs.readdirSync(dirPath, { withFileTypes: true })) {
+    if (entry.name === 'node_modules' || entry.name === 'dist') continue;
+    const full = path.join(dirPath, entry.name);
+    if (entry.isDirectory()) {
+      walkWrapperCandidates(full, out);
+      continue;
+    }
+    if (!entry.isFile()) continue;
+    if (!full.endsWith('.ts') && !full.endsWith('.js')) continue;
+    const source = fs.readFileSync(full, 'utf8');
+    if (!source.includes('createConduitLaneModule')) continue;
+    const relative = path.relative(ROOT, full).replace(/\\/g, '/');
+    if (relative === 'lib/direct_conduit_lane_bridge.js') continue;
+    out.push(relative);
+  }
+}
+
+function discoverConduitWrapperFiles() {
+  const out: string[] = [];
+  walkWrapperCandidates(path.join(ROOT, 'lib'), out);
+  walkWrapperCandidates(path.join(ROOT, 'systems'), out);
+  return Array.from(new Set(out)).sort();
+}
+
+const wrapperEntries = loadWrapperEntries();
+const wrapperFiles = wrapperEntries.map((entry) => entry.path).sort();
+const discoveredWrapperFiles = discoverConduitWrapperFiles();
 
 describe('conduit primitive wrapper contract', () => {
+  test('policy wrapper set matches bridge wrapper sources', () => {
+    expect(wrapperFiles).toEqual(discoveredWrapperFiles);
+  });
+
   test.each(wrapperFiles)('wrapper contract enforced for %s', async (relativePath) => {
     const full = path.join(ROOT, relativePath);
     const source = fs.readFileSync(full, 'utf8');
-    expect(source.includes('createConduitLaneModule')).toBe(true);
-    expect(source.includes('direct_conduit_lane_bridge.js')).toBe(true);
-    expect(source.includes('legacy_retired_lane_bridge')).toBe(false);
+    const entry = wrapperEntries.find((row) => row.path === relativePath);
+    expect(entry).toBeTruthy();
+    for (const token of entry!.required_tokens || []) {
+      expect(source.includes(token)).toBe(true);
+    }
+    for (const token of entry!.forbidden_tokens || []) {
+      expect(source.includes(token)).toBe(false);
+    }
 
     const mod = await import(pathToFileURL(full).href);
     const lane = (mod && (mod.default || mod)) as any;

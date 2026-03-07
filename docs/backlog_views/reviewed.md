@@ -1,8 +1,8 @@
 # Backlog Reviewed View
 
-Generated: 2026-03-06T19:03:30.024Z
+Generated: 2026-03-06T19:19:41.105Z
 
-Summary: reviewed 1062/1364 | pass 1062 | warn 286 | fail 0 | blocked 16
+Summary: reviewed 1062/1394 | pass 1062 | warn 316 | fail 0 | blocked 16
 
 | ID | Status | Reviewed Status | Review Result | Reviewed | Title |
 |---|---|---|---|---|---|
@@ -1289,6 +1289,36 @@ Summary: reviewed 1062/1364 | pass 1062 | warn 286 | fail 0 | blocked 16
 | V6-F100-043 | blocked | blocked | blocked | no | External certification and attestation program (SOC2/ISO/FedRAMP/GDPR) |
 | V6-F100-044 | blocked | blocked | blocked | no | Commercial support/SLA contract lane (enterprise readiness) |
 | V6-F100-045 | blocked | blocked | blocked | no | Public compliance report publication lane |
+| V6-F100-046 | queued | queued | needs_implementation | no | Primitive conduit wrapper contract alignment |
+| V6-F100-047 | queued | queued | needs_implementation | no | Unified local and CI release-truth hierarchy |
+| V6-F100-048 | queued | queued | needs_implementation | no | JS holdout classification and exception-governance closure |
+| V6-F100-049 | queued | queued | needs_implementation | no | Release-truth scorecard synthesis gate |
+| V6-F100-050 | queued | queued | needs_implementation | no | Capability manifest schema and registry generator |
+| V6-F100-051 | queued | queued | needs_implementation | no | Generated capability inventory with owner and maturity metadata |
+| V6-F100-052 | queued | queued | needs_implementation | no | Runtime profile manifest matrix (`seed` through `embedded`) |
+| V6-F100-053 | queued | queued | needs_implementation | no | Profile-aware install and operator support docs |
+| V6-F100-054 | queued | queued | needs_implementation | no | Module archetype policy and enforcement gate |
+| V6-F100-055 | queued | queued | needs_implementation | no | Architecture ownership uplift to manifests and write scopes |
+| V6-F100-056 | queued | queued | needs_implementation | no | Runtime output isolation from tracked source surfaces |
+| V6-F100-057 | queued | queued | needs_implementation | no | Dist-first production bootstrap hardening |
+| V6-F100-058 | queued | queued | needs_implementation | no | Profile-aware smoke verification in required checks |
+| V6-F100-059 | queued | queued | needs_implementation | no | Subsystem CODEOWNERS expansion for release-critical surfaces |
+| V6-F100-060 | queued | queued | needs_implementation | no | CI quality threshold ratchet after suite stabilization |
+| V6-F100-061 | queued | queued | needs_implementation | no | Generated supported-surface matrix artifact |
+| V6-F100-062 | queued | queued | needs_implementation | no | GA capability admission criteria gate |
+| V6-F100-063 | queued | queued | needs_implementation | no | Deterministic profile packaging contract |
+| V6-F100-064 | queued | queued | needs_implementation | no | Production dist artifact presence gate |
+| V6-F100-065 | queued | queued | needs_implementation | no | Published profile guarantee and exclusion matrix |
+| V6-F100-066 | queued | queued | needs_implementation | no | Deterministic install-path certification suite |
+| V6-F100-067 | queued | queued | needs_implementation | no | Support-tiered command registry classification |
+| V6-F100-068 | queued | queued | needs_implementation | no | Owner escalation depth metadata |
+| V6-F100-069 | queued | queued | needs_implementation | no | Human-only action coverage validation |
+| V6-F100-070 | queued | queued | needs_implementation | no | Profile boot certification workflow |
+| V6-F100-071 | queued | queued | needs_implementation | no | Write-scope and runtime-authority ownership model |
+| V6-F100-072 | queued | queued | needs_implementation | no | Generated artifact discipline gate |
+| V6-F100-073 | queued | queued | needs_implementation | no | Changelog and release-note completeness gate |
+| V6-F100-074 | queued | queued | needs_implementation | no | Performance and footprint budget matrix by profile |
+| V6-F100-075 | queued | queued | needs_implementation | no | Quarterly enterprise readiness review pack generator |
 | V6-FLUX-001 | queued | queued | needs_implementation | no | Flux conformance matrix and traceability lane |
 | V6-FLUX-002 | queued | queued | needs_implementation | no | Ontological integrity operation gate lane |
 | V6-FLUX-003 | queued | queued | needs_implementation | no | Coherence preference runtime verifier lane |

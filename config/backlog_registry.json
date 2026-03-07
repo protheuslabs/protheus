@@ -481,8 +481,8 @@
       ]
     }
   ],
-  "generated_at": "2026-03-06T19:03:30.018Z",
-  "row_count": 1364,
+  "generated_at": "2026-03-06T19:19:41.101Z",
+  "row_count": 1394,
   "rows": [
     {
       "acceptance": "`systems/ops/state_backup.js` + `config/state_backup_policy.json`, optional daily spine hook (`STATE_BACKUP_ENABLED=1`), retention policy encoded",
@@ -15879,6 +15879,403 @@
       "problem": "Public certification claims require legal approval plus externally issued evidence artifacts.",
       "status": "blocked",
       "title": "Public compliance report publication lane",
+      "wave": "V6"
+    },
+    {
+      "acceptance": "`tests/vitest/conduit_primitives_gap_closer.test.ts`, `config/rust_source_of_truth_policy.json`, and `lib/direct_conduit_lane_bridge.js` agree on the same wrapper set and contract shape, with Vitest green.",
+      "class": "hardening",
+      "dependencies": [
+        "V6-PRIM-008"
+      ],
+      "id": "V6-F100-046",
+      "problem": "Release truth remains weak while wrapper policy, tests, and implementation disagree about which TS modules are true conduit wrappers.",
+      "status": "queued",
+      "title": "Primitive conduit wrapper contract alignment",
+      "wave": "V6"
+    },
+    {
+      "acceptance": "`package.json` scripts and `memory/tools/tests/run_ci_suite.js` define one documented hierarchy for local and CI validation, and `npm run test`, `npm run test:ci`, and `npm run test:vitest` all pass together.",
+      "class": "hardening",
+      "dependencies": [
+        "V6-F100-046"
+      ],
+      "id": "V6-F100-047",
+      "problem": "Operators cannot trust quality signals while `test`, `test:ci`, `test:vitest`, and the CI runner partially overlap and fail for different reasons.",
+      "status": "queued",
+      "title": "Unified local and CI release-truth hierarchy",
+      "wave": "V6"
+    },
+    {
+      "acceptance": "`systems/ops/js_holdout_audit.js run --strict=1` passes, `config/js_exception_registry.json` covers only justified exceptions with expiry/owner, and every remaining strict-root JS file is intentionally classified.",
+      "class": "governance",
+      "dependencies": [
+        "V6-F100-046"
+      ],
+      "id": "V6-F100-048",
+      "problem": "Residual JS entrypoints weaken Rust-first credibility unless every holdout is explicitly categorized as runtime bridge, compat, or migration debt.",
+      "status": "queued",
+      "title": "JS holdout classification and exception-governance closure",
+      "wave": "V6"
+    },
+    {
+      "acceptance": "A generated release-truth artifact summarizes CI quality, command registry, entrypoint contract, wrapper contract, and test status under `state/ops/` plus a human-readable doc under `docs/ops/`, with a strict gate for regressions.",
+      "class": "hardening",
+      "dependencies": [
+        "V6-F100-039",
+        "V6-F100-046",
+        "V6-F100-047",
+        "V6-F100-048"
+      ],
+      "id": "V6-F100-049",
+      "problem": "Enterprise review still requires reading scattered receipts rather than one generated truth for operator-grade readiness.",
+      "status": "queued",
+      "title": "Release-truth scorecard synthesis gate",
+      "wave": "V6"
+    },
+    {
+      "acceptance": "A capability manifest schema exists under `config/contracts/`, generator logic exists under `systems/ops/`, and the registry is generated rather than manually curated.",
+      "class": "governance",
+      "dependencies": [
+        "V6-F100-049"
+      ],
+      "id": "V6-F100-050",
+      "problem": "Breadth is acceptable only if every capability is declared from one canonical manifest instead of being inferred from scripts, docs, and folders.",
+      "status": "queued",
+      "title": "Capability manifest schema and registry generator",
+      "wave": "V6"
+    },
+    {
+      "acceptance": "`docs/ops/` contains a generated capability inventory listing `owner`, `maturity`, `layer_floor`, `profiles`, `risk_tier`, `state_writes`, and `tests` for top-level capability families.",
+      "class": "governance",
+      "dependencies": [
+        "V6-F100-050"
+      ],
+      "id": "V6-F100-051",
+      "problem": "Capability sprawl remains difficult to reason about without one generated inventory that exposes support boundaries and risk.",
+      "status": "queued",
+      "title": "Generated capability inventory with owner and maturity metadata",
+      "wave": "V6"
+    },
+    {
+      "acceptance": "Profile manifests define `seed`, `edge`, `desktop`, `cluster`, and `embedded`, map cleanly onto `crates/kernel_layers`, and generate a profile matrix artifact consumed by docs and CI.",
+      "class": "scale-readiness",
+      "dependencies": [
+        "V6-ARCH-001",
+        "V6-ARCH-002",
+        "V6-F100-050"
+      ],
+      "id": "V6-F100-052",
+      "problem": "“Runs on anything” is not enterprise-legible until supported profiles are explicit and mapped onto the layer topology.",
+      "status": "queued",
+      "title": "Runtime profile manifest matrix (`seed` through `embedded`)",
+      "wave": "V6"
+    },
+    {
+      "acceptance": "`ARCHITECTURE.md` and `docs/GETTING_STARTED.md` describe install paths, supported capabilities, and expected constraints for every supported runtime profile.",
+      "class": "launch-polish",
+      "dependencies": [
+        "V6-F100-051",
+        "V6-F100-052"
+      ],
+      "id": "V6-F100-053",
+      "problem": "Adoption remains fragile while operators cannot immediately tell which install path and support envelope applies to each runtime profile.",
+      "status": "queued",
+      "title": "Profile-aware install and operator support docs",
+      "wave": "V6"
+    },
+    {
+      "acceptance": "A policy and guard exist for `primitive`, `controller`, `store`, `adapter`, `wrapper`, `tool`, `compat`, and `registry` modules, initially covering `systems/primitives`, `systems/assimilation`, and `systems/autonomy`.",
+      "class": "hardening",
+      "dependencies": [
+        "V6-PRIM-008",
+        "V6-F100-050"
+      ],
+      "id": "V6-F100-054",
+      "problem": "Maintainability degrades as modules blur between primitive, controller, adapter, tool, and compat roles without machine-enforced boundaries.",
+      "status": "queued",
+      "title": "Module archetype policy and enforcement gate",
+      "wave": "V6"
+    },
+    {
+      "acceptance": "`docs/ARCHITECTURE_OWNERSHIP.md` expresses ownership in terms of archetypes, manifests, write scopes, and runtime authority instead of only path prefixes.",
+      "class": "governance",
+      "dependencies": [
+        "V6-F100-050",
+        "V6-F100-054"
+      ],
+      "id": "V6-F100-055",
+      "problem": "Directory ownership alone is insufficient when release surfaces, mutation channels, and runtime authority cross folder boundaries.",
+      "status": "queued",
+      "title": "Architecture ownership uplift to manifests and write scopes",
+      "wave": "V6"
+    },
+    {
+      "acceptance": "Runtime-emitted outputs are routed into `state/` or `STATE_ROOT/`, tracked source paths remain clean after normal operation, and a repo-cleanliness gate enforces the boundary.",
+      "class": "hardening",
+      "dependencies": [
+        "V6-F100-054",
+        "V6-F100-055"
+      ],
+      "id": "V6-F100-056",
+      "problem": "Enterprise confidence is undermined when normal operation can mutate tracked files under `adaptive/`, `config/`, or `docs/`.",
+      "status": "queued",
+      "title": "Runtime output isolation from tracked source surfaces",
+      "wave": "V6"
+    },
+    {
+      "acceptance": "`lib/ts_bootstrap.js` and entrypoint policy enforce dist-or-binary execution for production profiles, with source bootstrap retained only for explicit development or compat modes.",
+      "class": "hardening",
+      "dependencies": [
+        "V6-F100-019",
+        "V6-F100-047"
+      ],
+      "id": "V6-F100-057",
+      "problem": "Production posture remains ambiguous while source-bootstrap fallback is acceptable in the same paths that represent ship-ready profiles.",
+      "status": "queued",
+      "title": "Dist-first production bootstrap hardening",
+      "wave": "V6"
+    },
+    {
+      "acceptance": "`.github/workflows/required-checks.yml` includes green smoke coverage for `layer0`, `layer2`, `layer3`, and at least one dist-entrypoint production path.",
+      "class": "scale-readiness",
+      "dependencies": [
+        "V6-F100-052",
+        "V6-F100-057"
+      ],
+      "id": "V6-F100-058",
+      "problem": "Layer portability claims need recurring proof across minimal and rich profiles, not one-time local validation.",
+      "status": "queued",
+      "title": "Profile-aware smoke verification in required checks",
+      "wave": "V6"
+    },
+    {
+      "acceptance": "`.github/CODEOWNERS` assigns granular ownership for `conduit`, `kernel`, `security`, `memory`, `autonomy`, `ops`, packaging, and release surfaces with no critical paths left under catch-all ownership only.",
+      "class": "governance",
+      "dependencies": [
+        "V6-F100-055"
+      ],
+      "id": "V6-F100-059",
+      "problem": "Single broad owners are insufficient for enterprise continuity, review quality, and release confidence across kernel, security, and packaging paths.",
+      "status": "queued",
+      "title": "Subsystem CODEOWNERS expansion for release-critical surfaces",
+      "wave": "V6"
+    },
+    {
+      "acceptance": "`config/ci_quality_scorecard_policy.json` reflects realistic but strict flake/runtime thresholds, `ops:ci-quality:check` passes in steady state, and release gating consumes the ratcheted thresholds.",
+      "class": "hardening",
+      "dependencies": [
+        "V6-F100-047",
+        "V6-F100-048",
+        "V6-F100-049",
+        "V6-F100-058"
+      ],
+      "id": "V6-F100-060",
+      "problem": "Flake and runtime budgets cannot become trustworthy release gates until the suite is stabilized and then intentionally tightened.",
+      "status": "queued",
+      "title": "CI quality threshold ratchet after suite stabilization",
+      "wave": "V6"
+    },
+    {
+      "acceptance": "A generated supported-surface matrix under `state/ops/` and `docs/ops/` merges command registry, capability manifests, and profile manifests into one operator-facing truth.",
+      "class": "governance",
+      "dependencies": [
+        "V6-F100-050",
+        "V6-F100-051",
+        "V6-F100-052"
+      ],
+      "id": "V6-F100-061",
+      "problem": "Enterprise operators still lack one machine-generated view that combines commands, capabilities, profiles, maturity, and ownership into a support contract.",
+      "status": "queued",
+      "title": "Generated supported-surface matrix artifact",
+      "wave": "V6"
+    },
+    {
+      "acceptance": "A `ga` admission policy under `config/` blocks promotion unless a capability has declared owners, profiles, packaging inclusion, install validation, rollback path, runbook, and a passing contract suite.",
+      "class": "governance",
+      "dependencies": [
+        "V6-F100-050",
+        "V6-F100-061"
+      ],
+      "id": "V6-F100-062",
+      "problem": "Features should not be considered production-grade until they satisfy explicit support, packaging, rollback, and test requirements.",
+      "status": "queued",
+      "title": "GA capability admission criteria gate",
+      "wave": "V6"
+    },
+    {
+      "acceptance": "Packaging contracts validate supported bundles across Helm, Terraform, npm wrapper, and direct binary distribution, with deterministic receipts proving the bundle contents per profile.",
+      "class": "scale-readiness",
+      "dependencies": [
+        "V6-F100-040",
+        "V6-F100-052",
+        "V6-F100-064"
+      ],
+      "id": "V6-F100-063",
+      "problem": "A portable substrate needs profile-specific packaging proof across the actual distribution channels enterprises evaluate during procurement.",
+      "status": "queued",
+      "title": "Deterministic profile packaging contract",
+      "wave": "V6"
+    },
+    {
+      "acceptance": "`systems/ops/entrypoint_runtime_contract.js check --strict=1` fails production profiles when required dist artifacts are missing and passes only when release-target artifacts are present.",
+      "class": "hardening",
+      "dependencies": [
+        "V6-F100-057"
+      ],
+      "id": "V6-F100-064",
+      "problem": "Entry-point contracts remain too lenient while production profiles can pass without actual built dist artifacts.",
+      "status": "queued",
+      "title": "Production dist artifact presence gate",
+      "wave": "V6"
+    },
+    {
+      "acceptance": "Generated docs define the guarantee and exclusion matrix for `seed`, `edge`, `desktop`, `cluster`, and `embedded`, including which capabilities are `ga`, `beta`, `experimental`, or unsupported on each profile.",
+      "class": "launch-polish",
+      "dependencies": [
+        "V6-F100-052",
+        "V6-F100-061",
+        "V6-F100-062"
+      ],
+      "id": "V6-F100-065",
+      "problem": "“Supported profile” is still too vague until every runtime profile publishes explicit guarantees, exclusions, and support class.",
+      "status": "queued",
+      "title": "Published profile guarantee and exclusion matrix",
+      "wave": "V6"
+    },
+    {
+      "acceptance": "Automated certification covers macOS/Linux installer, PowerShell installer, npm wrapper install, and direct Rust binary execution, with receipts proving each path boots the expected control surface.",
+      "class": "scale-readiness",
+      "dependencies": [
+        "V6-F100-053",
+        "V6-F100-063",
+        "V6-F100-064"
+      ],
+      "id": "V6-F100-066",
+      "problem": "Install confidence is incomplete without proving the real operator paths across shell, PowerShell, npm, and Cargo execution.",
+      "status": "queued",
+      "title": "Deterministic install-path certification suite",
+      "wave": "V6"
+    },
+    {
+      "acceptance": "`config/command_registry.json` and generated docs classify every command into `supported`, `internal`, `experimental`, or `compat` without losing single-source generation.",
+      "class": "governance",
+      "dependencies": [
+        "V6-F100-050",
+        "V6-F100-061"
+      ],
+      "id": "V6-F100-067",
+      "problem": "The command surface remains too ambiguous while supported, internal, experimental, and compat commands all appear as one flat registry.",
+      "status": "queued",
+      "title": "Support-tiered command registry classification",
+      "wave": "V6"
+    },
+    {
+      "acceptance": "Command and capability metadata include escalation depth and release ownership for high-risk subsystems, and coverage can be reported automatically.",
+      "class": "governance",
+      "dependencies": [
+        "V6-F100-059",
+        "V6-F100-061"
+      ],
+      "id": "V6-F100-068",
+      "problem": "High-risk systems are not enterprise-ready until every critical surface has primary, secondary, and release-owner accountability instead of a single path owner.",
+      "status": "queued",
+      "title": "Owner escalation depth metadata",
+      "wave": "V6"
+    },
+    {
+      "acceptance": "A validation gate cross-checks high-risk commands and workflows against `docs/HUMAN_ONLY_ACTIONS.md` and fails when autonomous paths bypass required human intervention points.",
+      "class": "hardening",
+      "dependencies": [
+        "V6-F100-062",
+        "V6-F100-068"
+      ],
+      "id": "V6-F100-069",
+      "problem": "Governance documents do not yet guarantee that high-risk automated flows respect the human-only action boundaries in practice.",
+      "status": "queued",
+      "title": "Human-only action coverage validation",
+      "wave": "V6"
+    },
+    {
+      "acceptance": "A workflow boots every supported profile, runs minimal kernel and conduit checks as appropriate, and emits signed profile certification receipts.",
+      "class": "scale-readiness",
+      "dependencies": [
+        "V6-F100-058",
+        "V6-F100-063",
+        "V6-F100-066"
+      ],
+      "id": "V6-F100-070",
+      "problem": "“Runs on anything, including a toaster” needs recurring certification evidence at the profile boundary, not just architectural claims.",
+      "status": "queued",
+      "title": "Profile boot certification workflow",
+      "wave": "V6"
+    },
+    {
+      "acceptance": "Ownership docs and generated metadata define write-scope owners and runtime-authority owners for critical subsystems, and review policy consumes that model.",
+      "class": "governance",
+      "dependencies": [
+        "V6-F100-055",
+        "V6-F100-068"
+      ],
+      "id": "V6-F100-071",
+      "problem": "Enterprise governance remains shallow until ownership covers who may mutate data and who controls runtime authority, not just who reviews files.",
+      "status": "queued",
+      "title": "Write-scope and runtime-authority ownership model",
+      "wave": "V6"
+    },
+    {
+      "acceptance": "Generated artifacts under `docs/ops/` and related inventories change only through explicit sync commands, with a gate that blocks incidental mutation paths.",
+      "class": "hardening",
+      "dependencies": [
+        "V6-F100-049",
+        "V6-F100-056"
+      ],
+      "id": "V6-F100-072",
+      "problem": "Generated docs and inventories still risk drifting if they can change as incidental runtime side effects instead of explicit sync operations.",
+      "status": "queued",
+      "title": "Generated artifact discipline gate",
+      "wave": "V6"
+    },
+    {
+      "acceptance": "`CHANGELOG.md` and release-note generation are validated so every `ga` or `beta` capability change references its manifest, tests, rollout profile, and rollback path.",
+      "class": "launch-polish",
+      "dependencies": [
+        "V6-F100-033",
+        "V6-F100-062"
+      ],
+      "id": "V6-F100-073",
+      "problem": "Production-grade communication requires every shipped `ga` or `beta` change to point back to manifests, rollout plans, and verification evidence.",
+      "status": "queued",
+      "title": "Changelog and release-note completeness gate",
+      "wave": "V6"
+    },
+    {
+      "acceptance": "A generated budget matrix reports startup, memory, and runtime footprint for `layer0` through `layer3` and supported profiles, with strict guard thresholds for regressions.",
+      "class": "scale-readiness",
+      "dependencies": [
+        "V6-F100-052",
+        "V6-F100-058",
+        "V6-F100-063"
+      ],
+      "id": "V6-F100-074",
+      "problem": "Portable enterprise software must answer startup, memory, and runtime budget questions per profile instead of relying on generic performance claims.",
+      "status": "queued",
+      "title": "Performance and footprint budget matrix by profile",
+      "wave": "V6"
+    },
+    {
+      "acceptance": "A generated enterprise readiness pack assembles release truth, security inventory, ownership coverage, packaging status, install-path evidence, and profile certifications into one review bundle.",
+      "class": "governance",
+      "dependencies": [
+        "V6-F100-061",
+        "V6-F100-066",
+        "V6-F100-070",
+        "V6-F100-073",
+        "V6-F100-074"
+      ],
+      "id": "V6-F100-075",
+      "problem": "Executive and customer review still requires manual evidence gathering across security, packaging, release truth, and profile certification artifacts.",
+      "status": "queued",
+      "title": "Quarterly enterprise readiness review pack generator",
       "wave": "V6"
     },
     {
