@@ -28,25 +28,25 @@ const MEMORY_MD_PATH = process.env.AUTONOMY_SELF_DOC_MEMORY_PATH
   : path.join(ROOT, 'MEMORY.md');
 const SESSION_SUMMARY_PATH = process.env.AUTONOMY_SELF_DOC_SESSION_SUMMARY_PATH
   ? path.resolve(process.env.AUTONOMY_SELF_DOC_SESSION_SUMMARY_PATH)
-  : path.join(ROOT, 'state', 'session_summary.md');
+  : path.join(ROOT, 'local', 'state', 'session_summary.md');
 const OUTPUT_DIR = process.env.AUTONOMY_SELF_DOC_OUTPUT_DIR
   ? path.resolve(process.env.AUTONOMY_SELF_DOC_OUTPUT_DIR)
-  : path.join(ROOT, 'state', 'autonomy', 'self_documentation');
+  : path.join(ROOT, 'local', 'state', 'autonomy', 'self_documentation');
 const DAILY_LOGS_DIR = process.env.AUTONOMY_SELF_DOC_DAILY_LOGS_DIR
   ? path.resolve(process.env.AUTONOMY_SELF_DOC_DAILY_LOGS_DIR)
-  : path.join(ROOT, 'state', 'daily_logs');
+  : path.join(ROOT, 'local', 'state', 'daily_logs');
 const AUTONOMY_RUNS_DIR = process.env.AUTONOMY_SELF_DOC_AUTONOMY_RUNS_DIR
   ? path.resolve(process.env.AUTONOMY_SELF_DOC_AUTONOMY_RUNS_DIR)
-  : path.join(ROOT, 'state', 'autonomy', 'runs');
+  : path.join(ROOT, 'local', 'state', 'autonomy', 'runs');
 const SUGGESTION_LANE_DIR = process.env.AUTONOMY_SELF_DOC_SUGGESTION_LANE_DIR
   ? path.resolve(process.env.AUTONOMY_SELF_DOC_SUGGESTION_LANE_DIR)
-  : path.join(ROOT, 'state', 'autonomy', 'suggestion_lane');
+  : path.join(ROOT, 'local', 'state', 'autonomy', 'suggestion_lane');
 const SIMULATION_DIR = process.env.AUTONOMY_SELF_DOC_SIMULATION_DIR
   ? path.resolve(process.env.AUTONOMY_SELF_DOC_SIMULATION_DIR)
-  : path.join(ROOT, 'state', 'autonomy', 'simulations');
+  : path.join(ROOT, 'local', 'state', 'autonomy', 'simulations');
 const INTEGRITY_LOG_PATH = process.env.AUTONOMY_SELF_DOC_INTEGRITY_LOG_PATH
   ? path.resolve(process.env.AUTONOMY_SELF_DOC_INTEGRITY_LOG_PATH)
-  : path.join(ROOT, 'state', 'security', 'integrity_violations.jsonl');
+  : path.join(ROOT, 'local', 'state', 'security', 'integrity_violations.jsonl');
 
 const DEFAULT_REQUIRE_APPROVAL = String(process.env.AUTONOMY_SELF_DOC_REQUIRE_APPROVAL || '1') !== '0';
 const DEFAULT_SIGNIFICANT_THRESHOLD = clampNumber(
@@ -498,7 +498,7 @@ function outputFilePath(dateStr) {
 
 function defaultSessionSummaryTemplate() {
   return [
-    '# Session Summary (state/session_summary.md)',
+    '# Session Summary (local/state/session_summary.md)',
     '',
     'Auto-generated closeout snapshots for continuity across sessions.',
     '',

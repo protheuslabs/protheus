@@ -1,8 +1,8 @@
 {
   "schema_id": "formal_invariants_spec",
   "schema_version": "1.0",
-  "state_path": "state/security/formal_invariant_engine/latest.json",
-  "history_path": "state/security/formal_invariant_engine/history.jsonl",
+  "state_path": "client/local/state/security/formal_invariant_engine/latest.json",
+  "history_path": "client/local/state/security/formal_invariant_engine/history.jsonl",
   "invariants": [
     {
       "id": "t0_financial_gate_present",

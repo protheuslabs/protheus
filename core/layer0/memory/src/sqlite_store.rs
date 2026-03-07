@@ -28,7 +28,19 @@ pub fn default_db_path() -> std::path::PathBuf {
             return std::path::PathBuf::from(s);
         }
     }
-    std::path::PathBuf::from("state/client/memory/runtime_memory.sqlite")
+    if let Ok(core_root) = std::env::var("PROTHEUS_CORE_STATE_ROOT") {
+        let s = core_root.trim();
+        if !s.is_empty() {
+            return std::path::PathBuf::from(s).join("memory/runtime_memory.sqlite");
+        }
+    }
+    if let Ok(client_root) = std::env::var("PROTHEUS_CLIENT_STATE_ROOT") {
+        let s = client_root.trim();
+        if !s.is_empty() {
+            return std::path::PathBuf::from(s).join("memory/runtime_memory.sqlite");
+        }
+    }
+    std::path::PathBuf::from("core/local/state/memory/runtime_memory.sqlite")
 }
 
 #[cfg(not(target_arch = "wasm32"))]

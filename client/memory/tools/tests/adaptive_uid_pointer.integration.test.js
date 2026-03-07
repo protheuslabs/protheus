@@ -42,8 +42,8 @@ function run() {
   const intakePath = path.join(repoRoot, 'systems', 'sensory', 'eyes_intake.js');
   const catalogPath = path.join(repoRoot, 'adaptive', 'sensory', 'eyes', 'catalog.json');
   const registryPath = path.join(repoRoot, 'state', 'sensory', 'eyes', 'registry.json');
-  const pointersPath = path.join(repoRoot, 'state', 'memory', 'adaptive_pointers.jsonl');
-  const pointerIndexPath = path.join(repoRoot, 'state', 'memory', 'adaptive_pointer_index.json');
+  const pointersPath = path.join(repoRoot, 'client', 'local', 'state', 'memory', 'adaptive_pointers.jsonl');
+  const pointerIndexPath = path.join(repoRoot, 'client', 'local', 'state', 'memory', 'adaptive_pointer_index.json');
 
   const beforeCatalog = fs.existsSync(catalogPath) ? fs.readFileSync(catalogPath, 'utf8') : null;
   const beforeRegistry = fs.existsSync(registryPath) ? fs.readFileSync(registryPath, 'utf8') : null;
@@ -108,4 +108,3 @@ try {
   console.error(`adaptive_uid_pointer.integration.test.js: FAIL: ${err.message}`);
   process.exit(1);
 }
-

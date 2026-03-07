@@ -11,7 +11,7 @@ use std::io::IsTerminal;
 use std::path::Path;
 use std::process::{Command, Stdio};
 
-use crate::clean;
+use crate::{clean, client_state_root};
 
 #[derive(Debug, Clone)]
 pub struct Route {
@@ -151,7 +151,7 @@ fn security_request(root: &Path, script_rel: &str, args: &[String]) -> Value {
         "audit_receipt_nonce": clean(format!("nonce-{}-{}", &digest[..12], now_ms), 120),
         "zk_proof": clean(env::var("PROTHEUS_CTL_SECURITY_ZK_PROOF").unwrap_or_else(|_| "zk-protheusctl-dispatch".to_string()), 220),
         "ciphertext_digest": clean(format!("sha256:{}", &digest[..32]), 220),
-        "state_root": clean(env::var("PROTHEUS_SECURITY_STATE_ROOT").unwrap_or_else(|_| root.join("state").to_string_lossy().to_string()), 500)
+        "state_root": clean(client_state_root(root).to_string_lossy().to_string(), 500)
     })
 }
 

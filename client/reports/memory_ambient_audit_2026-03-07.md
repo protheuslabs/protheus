@@ -47,7 +47,7 @@
   - `amfid`: adhoc/unknown certificate chain validation failures for local binaries.
   - `syspolicyd`: repeated `Unable to initialize qtn_proc` and `dispatch_mig_server returned 268435459`.
   - `syspolicyd`: `MacOS error: -67062` and notarization daemon errors during provenance evaluation.
-- Last available benchmark artifact remains at `state/ops/mech_suit_benchmark/latest.json`.
+- Last available benchmark artifact remains at `client/local/state/ops/mech_suit_benchmark/latest.json`.
 
 ## Recommended next cleanup
 

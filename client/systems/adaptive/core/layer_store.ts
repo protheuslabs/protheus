@@ -8,9 +8,9 @@ const { stableUid, isAlnum } = require('../../../lib/uid.js');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..', '..');
 const ADAPTIVE_ROOT = path.join(REPO_ROOT, 'adaptive');
-const MUTATION_LOG_PATH = path.join(REPO_ROOT, 'state', 'security', 'adaptive_mutations.jsonl');
-const ADAPTIVE_POINTERS_PATH = path.join(REPO_ROOT, 'state', 'memory', 'adaptive_pointers.jsonl');
-const ADAPTIVE_POINTER_INDEX_PATH = path.join(REPO_ROOT, 'state', 'memory', 'adaptive_pointer_index.json');
+const MUTATION_LOG_PATH = path.join(REPO_ROOT, 'client', 'local', 'state', 'security', 'adaptive_mutations.jsonl');
+const ADAPTIVE_POINTERS_PATH = path.join(REPO_ROOT, 'client', 'local', 'state', 'memory', 'adaptive_pointers.jsonl');
+const ADAPTIVE_POINTER_INDEX_PATH = path.join(REPO_ROOT, 'client', 'local', 'state', 'memory', 'adaptive_pointer_index.json');
 const WRITE_LOCK_TIMEOUT_MS = Number(process.env.ADAPTIVE_WRITE_LOCK_TIMEOUT_MS || 8000);
 const WRITE_LOCK_RETRY_MS = Number(process.env.ADAPTIVE_WRITE_LOCK_RETRY_MS || 15);
 const WRITE_LOCK_STALE_MS = Number(process.env.ADAPTIVE_WRITE_LOCK_STALE_MS || 30000);

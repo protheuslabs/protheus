@@ -109,7 +109,21 @@ function appendJsonl(filePath: string, row: AnyObj) {
 function resolveWorkspacePath(raw: unknown) {
   const p = cleanText(raw, 320);
   if (!p) return null;
-  return path.isAbsolute(p) ? p : path.join(ROOT, p);
+  const rewrite = (input: string) => {
+    const norm = String(input || '').replace(/\\/g, '/').replace(/^\/+/, '');
+    if (!norm) return norm;
+    if (norm === 'state' || norm.startsWith('state/')) {
+      const suffix = norm === 'state' ? '' : norm.slice('state/'.length);
+      return path.join('client', 'local', 'state', suffix);
+    }
+    if (norm === 'client/state' || norm.startsWith('client/state/')) {
+      const suffix = norm === 'client/state' ? '' : norm.slice('client/state/'.length);
+      return path.join('client', 'local', 'state', suffix);
+    }
+    return norm;
+  };
+  if (path.isAbsolute(p)) return p;
+  return path.join(ROOT, rewrite(p));
 }
 
 function getPathValue(src: AnyObj, dotPathRaw: unknown) {
@@ -227,8 +241,8 @@ function loadSpec() {
   const base = {
     schema_id: 'formal_invariants_spec',
     schema_version: '1.0',
-    state_path: 'state/security/formal_invariant_engine/latest.json',
-    history_path: 'state/security/formal_invariant_engine/history.jsonl',
+    state_path: 'client/local/state/security/formal_invariant_engine/latest.json',
+    history_path: 'client/local/state/security/formal_invariant_engine/history.jsonl',
     invariants: []
   };
   const raw = readJson(SPEC_PATH, base);

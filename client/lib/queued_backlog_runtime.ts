@@ -45,6 +45,8 @@ function resolveWorkspaceRoot() {
 }
 
 const ROOT = resolveWorkspaceRoot();
+const CLIENT_ROOT = fs.existsSync(path.join(ROOT, 'client')) ? path.join(ROOT, 'client') : ROOT;
+const CORE_ROOT = fs.existsSync(path.join(ROOT, 'core')) ? path.join(ROOT, 'core') : path.join(ROOT, 'core');
 
 function nowIso() {
   const override = cleanText(process.env.PROTHEUS_NOW_ISO || '', 80);
@@ -171,13 +173,60 @@ function relPath(filePath: string) {
   return path.relative(ROOT, filePath).replace(/\\/g, '/');
 }
 
+function normalizeRelativePathToken(input: string) {
+  return String(input || '').replace(/\\/g, '/').replace(/^\.\/+/, '').replace(/^\/+/, '');
+}
+
+function rewriteLegacyRuntimeRelative(relPath: string) {
+  const rel = normalizeRelativePathToken(relPath);
+  if (!rel) return rel;
+  if (rel === 'state' || rel.startsWith('state/')) {
+    const suffix = rel === 'state' ? '' : rel.slice('state/'.length);
+    return normalizeRelativePathToken(path.join('client', 'local', 'state', suffix));
+  }
+  if (rel === 'client/state' || rel.startsWith('client/state/')) {
+    const suffix = rel === 'client/state' ? '' : rel.slice('client/state/'.length);
+    return normalizeRelativePathToken(path.join('client', 'local', 'state', suffix));
+  }
+  if (rel === 'core/state' || rel.startsWith('core/state/')) {
+    const suffix = rel === 'core/state' ? '' : rel.slice('core/state/'.length);
+    return normalizeRelativePathToken(path.join('core', 'local', 'state', suffix));
+  }
+  return rel;
+}
+
+function rewriteLegacyRuntimeAbsolute(absPath: string) {
+  const normalized = path.resolve(String(absPath || ''));
+  const workspaceState = path.resolve(ROOT, 'state');
+  const clientState = path.resolve(CLIENT_ROOT, 'state');
+  const coreState = path.resolve(CORE_ROOT, 'state');
+  if (normalized === workspaceState || normalized.startsWith(`${workspaceState}${path.sep}`)) {
+    const suffix = path.relative(workspaceState, normalized);
+    return path.resolve(CLIENT_ROOT, 'local', 'state', suffix);
+  }
+  if (normalized === clientState || normalized.startsWith(`${clientState}${path.sep}`)) {
+    const suffix = path.relative(clientState, normalized);
+    return path.resolve(CLIENT_ROOT, 'local', 'state', suffix);
+  }
+  if (normalized === coreState || normalized.startsWith(`${coreState}${path.sep}`)) {
+    const suffix = path.relative(coreState, normalized);
+    return path.resolve(CORE_ROOT, 'local', 'state', suffix);
+  }
+  return normalized;
+}
+
 function resolvePath(raw: unknown, fallbackRel: string) {
   const txt = cleanText(raw, 520);
   const expanded = txt
     .replace(/^\$OPENCLAW_WORKSPACE\b/, ROOT)
     .replace(/\$\{OPENCLAW_WORKSPACE\}/g, ROOT);
-  if (!expanded) return path.join(ROOT, fallbackRel);
-  return path.isAbsolute(expanded) ? expanded : path.join(ROOT, expanded);
+  if (!expanded) {
+    return path.join(ROOT, rewriteLegacyRuntimeRelative(fallbackRel));
+  }
+  if (path.isAbsolute(expanded)) {
+    return rewriteLegacyRuntimeAbsolute(expanded);
+  }
+  return path.join(ROOT, rewriteLegacyRuntimeRelative(expanded));
 }
 
 function parseIsoMs(v: unknown): number | null {

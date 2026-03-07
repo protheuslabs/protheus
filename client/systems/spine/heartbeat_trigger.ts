@@ -20,7 +20,7 @@ const { runSpineCommand } = require('../../lib/spine_conduit_bridge');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const TS_ENTRYPOINT = path.join(ROOT, 'lib', 'ts_entrypoint.js');
-const RUNS_DIR = path.join(ROOT, 'state', 'spine', 'runs');
+const RUNS_DIR = path.join(ROOT, 'local', 'state', 'spine', 'runs');
 const IDLE_DREAM_SKIP_TIMEOUT_MS = Math.max(5000, Math.min(
   15 * 60 * 1000,
   Number(process.env.SPINE_HEARTBEAT_IDLE_DREAM_TIMEOUT_MS || 120000) || 120000

@@ -30,12 +30,12 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const STATE_FILE = path.join(__dirname, '..', '..', 'state', 'dopamine_state.json');
-const DAILY_LOGS_DIR = path.join(__dirname, '..', '..', 'state', 'daily_logs');
+const STATE_FILE = path.join(__dirname, '..', '..', 'local', 'state', 'dopamine_state.json');
+const DAILY_LOGS_DIR = path.join(__dirname, '..', '..', 'local', 'state', 'daily_logs');
 const ACHIEVEMENTS_FILE = path.join(__dirname, '..', '..', 'config', 'achievements_v1.json');
 const DOPAMINE_POLICY_FILE = path.join(__dirname, '..', '..', 'config', 'dopamine_policy_v2.json');
-const DOPAMINE_PAIN_STATE_FILE = path.join(__dirname, '..', '..', 'state', 'dopamine_pain_state.json');
-const DOPAMINE_PAIN_EVENTS_FILE = path.join(__dirname, '..', '..', 'state', 'dopamine_pain_events.jsonl');
+const DOPAMINE_PAIN_STATE_FILE = path.join(__dirname, '..', '..', 'local', 'state', 'dopamine_pain_state.json');
+const DOPAMINE_PAIN_EVENTS_FILE = path.join(__dirname, '..', '..', 'local', 'state', 'dopamine_pain_events.jsonl');
 
 // High-leverage tags aligned with T1 directives
 const HIGH_LEVERAGE_TAGS = new Set([
@@ -89,7 +89,7 @@ function ensureDirs() {
   if (!fs.existsSync(DAILY_LOGS_DIR)) {
     fs.mkdirSync(DAILY_LOGS_DIR, { recursive: true });
   }
-  const stateDir = path.join(__dirname, '..', '..', 'state');
+  const stateDir = path.join(__dirname, '..', '..', 'local', 'state');
   if (!fs.existsSync(stateDir)) {
     fs.mkdirSync(stateDir, { recursive: true });
   }

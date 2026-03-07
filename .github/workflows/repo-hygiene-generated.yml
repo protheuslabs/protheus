@@ -16,3 +16,6 @@ jobs:
       - name: Verify generated artifacts are not staged
         run: |
           node client/systems/ops/repo_hygiene_generated_guard.js check --strict=1
+      - name: Verify runtime state compat links and tracked-state hygiene
+        run: |
+          node client/lib/ts_entrypoint.js client/systems/ops/runtime_state_surface_guard.ts check --strict=1

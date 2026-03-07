@@ -157,6 +157,32 @@ pub fn clean(v: impl ToString, max_len: usize) -> String {
     out
 }
 
+pub fn client_state_root(root: &Path) -> PathBuf {
+    if let Ok(v) = std::env::var("PROTHEUS_SECURITY_STATE_ROOT") {
+        let s = v.trim();
+        if !s.is_empty() {
+            return PathBuf::from(s);
+        }
+    }
+    if let Ok(v) = std::env::var("PROTHEUS_CLIENT_STATE_ROOT") {
+        let s = v.trim();
+        if !s.is_empty() {
+            return PathBuf::from(s);
+        }
+    }
+    root.join("client").join("local").join("state")
+}
+
+pub fn core_state_root(root: &Path) -> PathBuf {
+    if let Ok(v) = std::env::var("PROTHEUS_CORE_STATE_ROOT") {
+        let s = v.trim();
+        if !s.is_empty() {
+            return PathBuf::from(s);
+        }
+    }
+    root.join("core").join("local").join("state")
+}
+
 fn stable_json_string(value: &Value) -> String {
     match value {
         Value::Null => "null".to_string(),

@@ -15,7 +15,7 @@ Defines ownership intent for repository-root entries after the core/client split
 - `.private-lenses/`: local/private config surface.
 - `.clawhub/`: local workspace lock and helper metadata.
 - `dist/`: generated build output.
-- `state/`: compatibility runtime mirror (legacy). New writes should target `client/local/state` and `core/local/state`.
+- `state/`: compatibility symlink to `client/local/state` (legacy callers only).
 - `target/`: Rust build artifacts.
 - `tmp/`: scratch/runtime transient files.
 - `node_modules/`: npm dependency cache.

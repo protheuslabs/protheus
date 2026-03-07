@@ -128,8 +128,8 @@ function defaultPolicy() {
       'state/**/.gitkeep'
     ],
     outputs: {
-      latest_path: 'state/ops/repo_hygiene_generated_guard/latest.json',
-      history_path: 'state/ops/repo_hygiene_generated_guard/history.jsonl'
+      latest_path: 'local/state/ops/repo_hygiene_generated_guard/latest.json',
+      history_path: 'local/state/ops/repo_hygiene_generated_guard/history.jsonl'
     }
   };
 }

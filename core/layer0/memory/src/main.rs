@@ -288,8 +288,20 @@ fn run_daemon(host: &str, port: u16) {
 
 #[cfg(not(target_arch = "wasm32"))]
 fn verify_envelope_report() -> serde_json::Value {
-    let default_path = "state/client/memory/runtime_memory.sqlite";
-    let db_path = env::var("PROTHEUS_MEMORY_DB_PATH").unwrap_or_else(|_| default_path.to_string());
+    let default_path = std::env::var("PROTHEUS_CORE_STATE_ROOT")
+        .ok()
+        .map(|v| v.trim().to_string())
+        .filter(|v| !v.is_empty())
+        .map(|v| format!("{v}/memory/runtime_memory.sqlite"))
+        .or_else(|| {
+            std::env::var("PROTHEUS_CLIENT_STATE_ROOT")
+                .ok()
+                .map(|v| v.trim().to_string())
+                .filter(|v| !v.is_empty())
+                .map(|v| format!("{v}/memory/runtime_memory.sqlite"))
+        })
+        .unwrap_or_else(|| "core/local/state/memory/runtime_memory.sqlite".to_string());
+    let db_path = env::var("PROTHEUS_MEMORY_DB_PATH").unwrap_or(default_path);
     let _ = recall_json("", 1);
     match Connection::open(&db_path) {
         Ok(conn) => {

@@ -29,8 +29,8 @@ node client/systems/security/formal_invariant_engine.js status
 
 ## Outputs
 
-- Latest result: `state/security/formal_invariant_engine/latest.json`
-- History: `state/security/formal_invariant_engine/history.jsonl`
+- Latest result: `client/local/state/security/formal_invariant_engine/latest.json`
+- History: `client/local/state/security/formal_invariant_engine/history.jsonl`
 
 ## CI Wiring
 

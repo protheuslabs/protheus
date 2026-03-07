@@ -24,9 +24,9 @@ const ROOT = process.env.JS_HOLDOUT_ROOT
 const DEFAULT_REGISTRY_PATH = process.env.JS_EXCEPTION_REGISTRY_PATH
   ? path.resolve(process.env.JS_EXCEPTION_REGISTRY_PATH)
   : path.join(ROOT, 'config', 'js_exception_registry.json');
-const DEFAULT_STATE_PATH = path.join(ROOT, 'state', 'ops', 'js_holdout_audit', 'latest.json');
-const DEFAULT_WAVE_STATE_PATH = path.join(ROOT, 'state', 'ops', 'js_holdout_audit', 'wave_latest.json');
-const DEFAULT_EXCEPTION_SNAPSHOT_PATH = path.join(ROOT, 'state', 'ops', 'js_holdout_audit', 'exception_registry_snapshot.json');
+const DEFAULT_STATE_PATH = path.join(ROOT, 'local', 'state', 'ops', 'js_holdout_audit', 'latest.json');
+const DEFAULT_WAVE_STATE_PATH = path.join(ROOT, 'local', 'state', 'ops', 'js_holdout_audit', 'wave_latest.json');
+const DEFAULT_EXCEPTION_SNAPSHOT_PATH = path.join(ROOT, 'local', 'state', 'ops', 'js_holdout_audit', 'exception_registry_snapshot.json');
 
 function nowIso() {
   return new Date().toISOString();

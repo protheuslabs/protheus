@@ -24,13 +24,13 @@ if [ "$NOISY_FILES" -eq "$CHANGED_COUNT" ] && [ "$CHANGED_COUNT" -gt 3 ]; then
     exit 0
 fi
 
-# Recursion guard: Skip if commit is in state/ directory (feedback loop prevention)
-if echo "$REPO_ROOT" | grep -q "/Users/jay/.openclaw/workspace/state/"; then
+# Recursion guard: Skip if commit is in local runtime state directory (feedback loop prevention)
+if echo "$REPO_ROOT" | grep -q "/Users/jay/.openclaw/workspace/client/local/state/"; then
     exit 0
 fi
 
-# Also skip if any changed file is in state/ directory
-if echo "$CHANGED_FILES" | grep -q "state/"; then
+# Also skip if any changed file is in local runtime state directory
+if echo "$CHANGED_FILES" | grep -q "local/state/"; then
     exit 0
 fi
 
@@ -59,7 +59,7 @@ const path = require('path');
 
 const payload = $PAYLOAD;
 const today = new Date().toISOString().slice(0, 10);
-const logPath = path.join('state', 'daily_logs', today + '.json');
+const logPath = path.join('client', 'local', 'state', 'daily_logs', today + '.json');
 
 // Load or create daily log
 let dayLog;

@@ -39,6 +39,9 @@ client/habits/scripts/*.bak.*
 #
 # Canonical rule: runtime state is local only; do not track per-instance state.
 state/**
+!state
+client/state/**
+!client/state
 
 # Adaptive sensory runtime catalogs (high-churn generated stores)
 client/adaptive/sensory/eyes/catalog.json

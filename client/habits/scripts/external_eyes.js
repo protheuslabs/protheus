@@ -53,7 +53,7 @@ let EYES_PENDING_ATTENTION_WRITES = [];
 // Allow overrides (tests / multi-workspace)
 const STATE_DIR = process.env.EYES_STATE_DIR
   ? path.resolve(process.env.EYES_STATE_DIR)
-  : path.join(WORKSPACE_DIR, 'state', 'sensory', 'eyes');
+  : path.join(WORKSPACE_DIR, 'local', 'state', 'sensory', 'eyes');
 
 const RAW_DIR = path.join(STATE_DIR, 'raw');
 const METRICS_DIR = path.join(STATE_DIR, 'metrics');
@@ -65,18 +65,18 @@ const ADAPTIVE_COLLECTOR_DIR = path.join(WORKSPACE_DIR, 'adaptive', 'sensory', '
 // Sensory proposals (from eyes_insight.js)
 const SENSORY_PROPOSALS_DIR = process.env.EYES_SENSORY_PROPOSALS_DIR
   ? path.resolve(process.env.EYES_SENSORY_PROPOSALS_DIR)
-  : path.join(WORKSPACE_DIR, 'state', 'sensory', 'proposals');
+  : path.join(WORKSPACE_DIR, 'local', 'state', 'sensory', 'proposals');
 
 // Proposal queue decisions (outcomes live here)
 const QUEUE_DIR = process.env.EYES_QUEUE_DIR
   ? path.resolve(process.env.EYES_QUEUE_DIR)
-  : path.join(WORKSPACE_DIR, 'state', 'queue');
+  : path.join(WORKSPACE_DIR, 'local', 'state', 'queue');
 const DECISIONS_DIR = path.join(QUEUE_DIR, 'decisions');
 const SENSORY_ROOT_DIR = path.dirname(STATE_DIR);
 const ANOMALIES_DIR = path.join(SENSORY_ROOT_DIR, 'anomalies');
 const SENSORY_QUEUE_LOG_PATH = process.env.EYES_SENSORY_QUEUE_LOG_PATH
   ? path.resolve(process.env.EYES_SENSORY_QUEUE_LOG_PATH)
-  : path.join(WORKSPACE_DIR, 'state', 'sensory', 'queue_log.jsonl');
+  : path.join(WORKSPACE_DIR, 'local', 'state', 'sensory', 'queue_log.jsonl');
 const SLO_STATE_PATH = process.env.EYES_SLO_STATE_PATH
   ? path.resolve(process.env.EYES_SLO_STATE_PATH)
   : path.join(STATE_DIR, 'slo_state.json');

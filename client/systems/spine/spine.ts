@@ -240,9 +240,9 @@ function maybeRunSpineBenchmarkNoop(mode, dateStr) {
 function appendLedger(dateStr, evt) {
   try {
     const root = repoRoot();
-    const dir = path.join(root, "state", "spine", "runs");
+    const dir = path.join(root, "local", "state", "spine", "runs");
     const file = path.join(dir, `${dateStr}.jsonl`);
-    const latestPath = path.join(root, "state", "spine", "runs", "latest.json");
+    const latestPath = path.join(root, "local", "state", "spine", "runs", "latest.json");
     fs.mkdirSync(dir, { recursive: true });
     fs.appendFileSync(file, JSON.stringify(evt) + "\n");
     SPINE_LAST_LEDGER_TYPE = evt && evt.type ? String(evt.type) : SPINE_LAST_LEDGER_TYPE;
@@ -332,7 +332,7 @@ function installSpineExitHook() {
 
 const SYSTEM_HEALTH_EVENTS_PATH = process.env.SYSTEM_HEALTH_EVENTS_PATH
   ? path.resolve(process.env.SYSTEM_HEALTH_EVENTS_PATH)
-  : path.join(repoRoot(), "state", "ops", "system_health", "events.jsonl");
+  : path.join(repoRoot(), "local", "state", "ops", "system_health", "events.jsonl");
 
 function appendSystemHealthEvent(evt) {
   try {
@@ -376,11 +376,11 @@ function readJson(filePath, fallback) {
 }
 
 function spineRunsLedgerPath(dateStr) {
-  return path.join(repoRoot(), "state", "spine", "runs", `${String(dateStr || "").slice(0, 10)}.jsonl`);
+  return path.join(repoRoot(), "local", "state", "spine", "runs", `${String(dateStr || "").slice(0, 10)}.jsonl`);
 }
 
 function spineTernaryBeliefSnapshotPath(dateStr, mode) {
-  const dir = path.join(repoRoot(), "state", "spine", "ternary_belief");
+  const dir = path.join(repoRoot(), "local", "state", "spine", "ternary_belief");
   fs.mkdirSync(dir, { recursive: true });
   return path.join(dir, `${String(dateStr || "").slice(0, 10)}_${String(mode || "unknown")}.json`);
 }
@@ -638,7 +638,7 @@ function maybeEmitSpineTritAnomaly(
 }
 
 function proposalTypeMapForDate(dateStr) {
-  const fp = path.join(repoRoot(), "state", "sensory", "proposals", `${String(dateStr || "").slice(0, 10)}.json`);
+  const fp = path.join(repoRoot(), "local", "state", "sensory", "proposals", `${String(dateStr || "").slice(0, 10)}.json`);
   const raw = readJson(fp, []);
   const list = Array.isArray(raw)
     ? raw
@@ -657,8 +657,8 @@ function proposalTypeMapForDate(dateStr) {
 
 function modelCatalogPendingCount() {
   const root = repoRoot();
-  const auditPath = path.join(root, "state", "routing", "model_catalog_audit.jsonl");
-  const handoffsDir = path.join(root, "state", "routing", "model_catalog_handoffs");
+  const auditPath = path.join(root, "local", "state", "routing", "model_catalog_audit.jsonl");
+  const handoffsDir = path.join(root, "local", "state", "routing", "model_catalog_handoffs");
   const audits = readJsonl(auditPath);
   const closed = new Set(
     audits
@@ -687,7 +687,7 @@ function previousDateStr(dateStr) {
 }
 
 function budgetEventsPath() {
-  return path.join(repoRoot(), "state", "autonomy", "budget_events.jsonl");
+  return path.join(repoRoot(), "local", "state", "autonomy", "budget_events.jsonl");
 }
 
 function topModuleFromBudgetEvents(dateStr) {
@@ -788,7 +788,7 @@ function budgetHealthSummary(dateStr) {
 }
 
 function budgetGuardStatePath() {
-  return path.join(repoRoot(), "state", "spine", "budget_guard_state.json");
+  return path.join(repoRoot(), "local", "state", "spine", "budget_guard_state.json");
 }
 
 function readBudgetGuardState() {
@@ -843,7 +843,7 @@ function writeBudgetGuardState(state) {
 }
 
 function budgetGuardSuggestionPath(dateStr) {
-  const dir = path.join(repoRoot(), "state", "autonomy", "budget_guard_suggestions");
+  const dir = path.join(repoRoot(), "local", "state", "autonomy", "budget_guard_suggestions");
   fs.mkdirSync(dir, { recursive: true });
   return path.join(dir, `${dateStr}.json`);
 }
@@ -1166,7 +1166,7 @@ function collectorPreflightSummary() {
 }
 
 function realExternalItemsToday(dateStr) {
-  const fp = path.join(repoRoot(), "state", "sensory", "eyes", "raw", `${dateStr}.jsonl`);
+  const fp = path.join(repoRoot(), "local", "state", "sensory", "eyes", "raw", `${dateStr}.jsonl`);
   const events = readJsonl(fp);
   return events
     .filter(e => e && e.type === "external_item")
@@ -1175,7 +1175,7 @@ function realExternalItemsToday(dateStr) {
 }
 
 function routingHealthStatePath() {
-  return path.join(repoRoot(), "state", "spine", "router_health.json");
+  return path.join(repoRoot(), "local", "state", "spine", "router_health.json");
 }
 
 function readRoutingHealthState() {
@@ -1195,7 +1195,7 @@ function writeRoutingHealthState(obj) {
 }
 
 function spineShortCircuitStatePath() {
-  return path.join(repoRoot(), "state", "spine", "short_circuit_state.json");
+  return path.join(repoRoot(), "local", "state", "spine", "short_circuit_state.json");
 }
 
 function readSpineShortCircuitState() {
@@ -1234,11 +1234,11 @@ function hashFileOrMissing(fp) {
 function spineStateFingerprint(mode, dateStr) {
   const root = repoRoot();
   const tracked = [
-    path.join(root, "state", "sensory", "eyes", "raw", `${dateStr}.jsonl`),
-    path.join(root, "state", "sensory", "eyes", "metrics", `${dateStr}.json`),
-    path.join(root, "state", "sensory", "proposals", `${dateStr}.json`),
-    path.join(root, "state", "queue", "decisions", `${dateStr}.jsonl`),
-    path.join(root, "state", "autonomy", "cooldowns.json")
+    path.join(root, "local", "state", "sensory", "eyes", "raw", `${dateStr}.jsonl`),
+    path.join(root, "local", "state", "sensory", "eyes", "metrics", `${dateStr}.json`),
+    path.join(root, "local", "state", "sensory", "proposals", `${dateStr}.json`),
+    path.join(root, "local", "state", "queue", "decisions", `${dateStr}.jsonl`),
+    path.join(root, "local", "state", "autonomy", "cooldowns.json")
   ];
   const payload = {
     mode: String(mode || ""),
