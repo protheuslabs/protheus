@@ -10,7 +10,7 @@ const {
   ensureJson,
   setJson,
   mutateJson
-} = require('../core/layer_store.js');
+} = require('../core/layer_store.ts');
 
 const DEFAULT_REL_PATH = 'strategy/registry.json';
 const DEFAULT_ABS_PATH = path.join(ADAPTIVE_ROOT, DEFAULT_REL_PATH);

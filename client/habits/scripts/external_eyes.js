@@ -30,12 +30,12 @@ const {
   maybeRefreshFocusTriggers,
   evaluateFocusForEye
 } = require('../../systems/sensory/focus_controller.js');
-const { loadSystemBudgetState } = require('../../systems/budget/system_budget.js');
-const { analyzeTemporalPatterns } = require('../../systems/sensory/temporal_patterns.js');
-const { resolveCatalogPath, ensureCatalog, setCatalog } = require('../../lib/eyes_catalog.js');
-const { loadActiveDirectives } = require('../../lib/directive_resolver.js');
-const { loadActiveStrategy, strategyCampaigns } = require('../../lib/strategy_resolver.js');
-const { emitPainSignal } = require('../../systems/autonomy/pain_signal.js');
+const { loadSystemBudgetState } = require('../../systems/budget/system_budget');
+const { analyzeTemporalPatterns } = require('../../systems/sensory/temporal_patterns');
+const { resolveCatalogPath, ensureCatalog, setCatalog } = require('../../lib/eyes_catalog');
+const { loadActiveDirectives } = require('../../lib/directive_resolver');
+const { loadActiveStrategy, strategyCampaigns } = require('../../lib/strategy_resolver');
+const { emitPainSignal } = require('../../systems/autonomy/pain_signal');
 const {
   appendAttentionQueueEvent,
   emitAmbientConsole,

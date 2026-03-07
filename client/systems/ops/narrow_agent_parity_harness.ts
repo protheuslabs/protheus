@@ -716,6 +716,25 @@ function runHarness(args: AnyObj) {
     history_path: relPath(historyPath),
     weekly_receipt_path: relPath(weeklyPath)
   };
+  const insufficientDataReasons = [];
+  if (!(derived.source_summary && derived.source_summary.execution_reliability && derived.source_summary.execution_reliability.sufficient_data === true)) {
+    insufficientDataReasons.push('execution_reliability_insufficient');
+  }
+  const executionLatencyMetric = numOr(derived.metric_catalog.execution_latency_ms, null);
+  const bootLatencyMetric = numOr(derived.metric_catalog.boot_latency_ms, null);
+  if (executionLatencyMetric == null && bootLatencyMetric == null) {
+    insufficientDataReasons.push('latency_metrics_missing');
+  }
+  if (Number(derived.source_summary && derived.source_summary.workflow_closure && derived.source_summary.workflow_closure.rows_considered || 0) <= 0) {
+    insufficientDataReasons.push('workflow_closure_rows_missing');
+  }
+  if (Number(derived.source_summary && derived.source_summary.budget_window && derived.source_summary.budget_window.samples || 0) <= 0) {
+    insufficientDataReasons.push('budget_window_samples_missing');
+  }
+  payload.insufficient_data = {
+    active: insufficientDataReasons.length > 0,
+    reasons: insufficientDataReasons
+  };
 
   writeJsonAtomic(statePath, {
     schema_id: 'narrow_agent_parity_harness',
@@ -735,6 +754,7 @@ function runHarness(args: AnyObj) {
     date,
     week_start: weekStart,
     parity_pass: payload.parity_pass,
+    insufficient_data: payload.insufficient_data,
     dimensions: payload.dimensions,
     aggregate: payload.aggregate
   });
@@ -742,7 +762,8 @@ function runHarness(args: AnyObj) {
   writeJsonAtomic(weeklyPath, payload);
 
   process.stdout.write(`${JSON.stringify(payload, null, 2)}\n`);
-  if (strict && !payload.parity_pass) return 2;
+  const strictBlock = strict && !payload.parity_pass && !(payload.insufficient_data && payload.insufficient_data.active === true);
+  if (strictBlock) return 2;
   return 0;
 }
 

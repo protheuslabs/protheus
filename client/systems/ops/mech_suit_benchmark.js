@@ -244,11 +244,11 @@ function benchmarkSpine(policyPath) {
   const commonEnv = {
     MECH_SUIT_MODE_POLICY_PATH: policyPath
   };
-  const baseline = runNode(SPINE, ['status'], {
+  const baseline = runNode(SPINE, ['status', '--apply-reseal=1'], {
     ...commonEnv,
     MECH_SUIT_MODE_FORCE: '0'
   });
-  const ambient = runNode(SPINE, ['status'], {
+  const ambient = runNode(SPINE, ['status', '--apply-reseal=1'], {
     ...commonEnv,
     MECH_SUIT_MODE_FORCE: '1'
   });

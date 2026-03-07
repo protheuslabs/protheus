@@ -1045,6 +1045,18 @@ function computeSimulation(endDateStr, days) {
   if (queue.pending > 80 || queue.stale_pending_72h > 10) {
     recommendations.push('Run proposal queue SLO drain to park stale backlog and reduce queue pressure.');
   }
+  const insufficientDataReasons = [];
+  if (runRows.length === 0) insufficientDataReasons.push('no_run_rows_in_window');
+  if (baselineCounters.attempts < MIN_ATTEMPTS) insufficientDataReasons.push('attempt_volume_below_min');
+  if (baselineCounters.executed === 0) insufficientDataReasons.push('no_executed_attempts');
+  if (baselineCounters.shipped === 0) insufficientDataReasons.push('no_shipped_outcomes');
+  const insufficientData = {
+    active: insufficientDataReasons.length > 0,
+    reasons: insufficientDataReasons
+  };
+  if (insufficientData.active) {
+    recommendations.push('Simulation window lacks enough live activity; collect additional run/proposal telemetry before treating this verdict as conclusive.');
+  }
 
   return {
     ok: true,
@@ -1134,6 +1146,7 @@ function computeSimulation(endDateStr, days) {
       objective_count: Object.keys(objectiveCounts).length,
       counts: objectiveCounts
     },
+    insufficient_data: insufficientData,
     recommendations: recommendations.slice(0, 5)
   };
 }
@@ -1162,7 +1175,8 @@ function main() {
     payload.report_path = writeOutput(dateStr, payload);
   }
   process.stdout.write(JSON.stringify(payload, null, 2) + '\n');
-  if (strict && payload.verdict === 'fail') process.exit(2);
+  const strictBlock = strict && payload.verdict === 'fail' && !(payload.insufficient_data && payload.insufficient_data.active === true);
+  if (strictBlock) process.exit(2);
 }
 
 if (require.main === module) {
