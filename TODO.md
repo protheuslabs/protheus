@@ -22,6 +22,12 @@
     - Raised conduit stdio/bridge default timeout budgets (20s -> 120s+) across bridge callsites.
     - Added bridge-side child timeout/kill path in Rust conduit ops bridge to avoid indefinite child hangs.
     - Heartbeat and daemon spine calls now pass explicit timeout budgets for run/status lanes.
+    - Added shared conduit runtime fault gate in `client/lib/spine_conduit_bridge.ts`:
+      - records timeout-like failures,
+      - activates backoff gate (`conduit_runtime_gate_active_until:*`),
+      - fails fast on subsequent calls to stop death-loop timeouts.
+    - Heartbeat/status surfaces now treat active gate as controlled degraded mode (`skipped_runtime_gate_active`) instead of hard failing every schedule tick.
+    - `protheusd status` now exposes `conduit_runtime_gate` diagnostics and pauses cockpit watcher restart thrash with gate-aware backoff.
   - Completion criteria:
     - `conduit_daemon` responds to `start_agent` within timeout budget.
     - `ops:mech-suit:benchmark` completes without preflight host fault.

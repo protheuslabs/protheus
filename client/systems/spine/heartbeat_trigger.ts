@@ -62,6 +62,19 @@ function parseJson(text) {
   return null;
 }
 
+function parseGateUntil(reason) {
+  const raw = String(reason || '').trim();
+  const marker = 'conduit_runtime_gate_active_until:';
+  if (!raw.startsWith(marker)) return null;
+  const iso = raw.slice(marker.length).trim();
+  const ms = Date.parse(iso);
+  if (!Number.isFinite(ms)) return null;
+  return {
+    until_iso: new Date(ms).toISOString(),
+    remaining_ms: Math.max(0, ms - Date.now())
+  };
+}
+
 function resolveScriptInvocation(scriptRelPath: string) {
   const scriptAbs = path.join(ROOT, scriptRelPath);
   if (fs.existsSync(scriptAbs)) {
@@ -201,6 +214,20 @@ async function cmdStatus() {
   const date = parseArg('date', '');
   const runContext = String(process.env.SPINE_RUN_CONTEXT || '').trim() || 'manual';
   const r = await runSpineStatus(mode, date, runContext);
+  if (r && r.payload && r.payload.gate_active === true) {
+    const gate = parseGateUntil(r.payload.reason || r.stderr || '');
+    process.stdout.write(JSON.stringify({
+      ok: true,
+      type: 'spine_heartbeat_status',
+      result: 'runtime_gate_active',
+      gate_active: true,
+      gate_reason: String(r.payload.reason || '').slice(0, 240),
+      gate_until: gate ? gate.until_iso : null,
+      gate_remaining_ms: gate ? gate.remaining_ms : Number(r.payload.gate_remaining_ms || 0) || null,
+      ts: nowIso()
+    }) + '\n');
+    process.exit(0);
+  }
   if (r.stdout) process.stdout.write(String(r.stdout));
   if (r.stderr) process.stderr.write(String(r.stderr));
   if (r.status !== 0) {
@@ -217,6 +244,21 @@ async function cmdRun() {
 
   const dateStr = todayStr();
   const rustStatus = await runSpineStatus(mode, dateStr, 'heartbeat');
+  if (rustStatus && rustStatus.payload && rustStatus.payload.gate_active === true) {
+    const gate = parseGateUntil(rustStatus.payload.reason || rustStatus.stderr || '');
+    process.stdout.write(JSON.stringify({
+      ok: true,
+      result: 'skipped_runtime_gate_active',
+      mode,
+      date: dateStr,
+      gate_active: true,
+      gate_reason: String(rustStatus.payload.reason || '').slice(0, 240),
+      gate_until: gate ? gate.until_iso : null,
+      gate_remaining_ms: gate ? gate.remaining_ms : Number(rustStatus.payload.gate_remaining_ms || 0) || null,
+      ts: nowIso()
+    }) + '\n');
+    return;
+  }
   const minHours = rustStatus.ok && rustStatus.payload && Number(rustStatus.payload.heartbeat_hours || 0) > 0
     ? Number(rustStatus.payload.heartbeat_hours)
     : fallbackHeartbeatHours();

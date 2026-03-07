@@ -120,6 +120,39 @@ function defaultControlPlanePaths(root: string) {
   };
 }
 
+function readConduitRuntimeGate(root: string) {
+  const gatePath = path.join(root, 'local', 'state', 'conduit', 'runtime_gate.json');
+  const payload = readJson(gatePath, null);
+  if (!payload || typeof payload !== 'object') {
+    return {
+      available: false,
+      path: gatePath,
+      gate_active: false
+    };
+  }
+  return {
+    available: true,
+    path: gatePath,
+    gate_active: payload.gate_active === true,
+    blocked_until: cleanText(payload.blocked_until || '', 64) || null,
+    blocked_until_ms: Number.isFinite(Number(payload.blocked_until_ms))
+      ? Number(payload.blocked_until_ms)
+      : null,
+    remaining_ms: Number.isFinite(Number(payload.blocked_until_ms))
+      ? Math.max(0, Number(payload.blocked_until_ms) - Date.now())
+      : 0,
+    consecutive_failures: Number.isFinite(Number(payload.consecutive_failures))
+      ? Number(payload.consecutive_failures)
+      : 0,
+    threshold: Number.isFinite(Number(payload.threshold))
+      ? Number(payload.threshold)
+      : null,
+    last_error: cleanText(payload.last_error || '', 260) || null,
+    last_failure_at: cleanText(payload.last_failure_at || '', 64) || null,
+    updated_at: cleanText(payload.updated_at || '', 64) || null
+  };
+}
+
 function loadMechPolicy(policyPath: string) {
   const raw = readJson(policyPath, {});
   const spine = raw && raw.spine && typeof raw.spine === 'object' ? raw.spine : {};
@@ -403,6 +436,16 @@ async function runAmbientLoop(argv: string[]) {
   let heartbeatInFlight = false;
   let watchProc: any = null;
 
+  const watcherRestartDelayMs = (restarts: number) => {
+    const gate = readConduitRuntimeGate(runtime.root);
+    if (gate && gate.gate_active === true) {
+      const remaining = Number(gate.remaining_ms || 0);
+      return Math.max(5000, Math.min(5 * 60 * 1000, Number.isFinite(remaining) ? remaining : 60000));
+    }
+    const safeRestarts = Math.max(0, Number(restarts || 0));
+    return Math.min(5 * 60 * 1000, Math.max(1000, 1000 * Math.pow(2, Math.min(8, safeRestarts))));
+  };
+
   const launchWatcher = () => {
     const script = path.join(runtime.root, 'systems', 'ops', 'cockpit_harness.js');
     const args = [
@@ -442,11 +485,13 @@ async function runAmbientLoop(argv: string[]) {
       };
       persistDaemonState(runtime, row);
       if (!shuttingDown) {
+        const restarts = Number(row.cockpit_watch && row.cockpit_watch.restarts || 0);
+        const delayMs = watcherRestartDelayMs(restarts);
         setTimeout(() => {
           if (!shuttingDown) {
             watchProc = launchWatcher();
           }
-        }, 1000);
+        }, delayMs);
       }
     });
     return child;
@@ -618,10 +663,13 @@ function statusReceipt(runtime: any, state: any) {
   const dopamineLatest = readJson(runtime.mechPolicy.dopamineLatestPath, null);
   const cockpitLatest = readJson(runtime.cockpitLatestPath, null);
   const cockpitState = readJson(runtime.cockpitStatePath, null);
+  const conduitRuntimeGate = readConduitRuntimeGate(runtime.root);
   const heartbeatHealthy = daemon.last_heartbeat_code === 0;
   const ambientConfigured = !!(mechLatest && mechLatest.active === true);
   const ambientHealthy = ambientConfigured && running && heartbeatHealthy;
-  const degradedReason = !ambientConfigured
+  const degradedReason = conduitRuntimeGate.gate_active === true
+    ? 'conduit_runtime_gate_active'
+    : !ambientConfigured
     ? 'ambient_policy_inactive'
     : !running
       ? 'daemon_stopped'
@@ -644,6 +692,7 @@ function statusReceipt(runtime: any, state: any) {
       manual_triggers_allowed: runtime.mechPolicy.manualTriggersAllowed,
       heartbeat_hours: runtime.mechPolicy.heartbeatHours
     },
+    conduit_runtime_gate: conduitRuntimeGate,
     cockpit: {
       available: !!cockpitLatest,
       path: runtime.cockpitLatestPath,

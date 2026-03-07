@@ -398,6 +398,33 @@ function spineStatusUnavailablePayload(plan: { command: string, mode: string, da
   };
 }
 
+function runtimeGateStatusPayload(plan: { command: string, mode: string, date: string }, runContext: string, rustStatus: any) {
+  const reason = cleanText(
+    rustStatus && rustStatus.payload && rustStatus.payload.reason
+      ? rustStatus.payload.reason
+      : rustStatus && rustStatus.stderr
+        ? rustStatus.stderr
+        : 'conduit_runtime_gate_active',
+    240
+  );
+  return {
+    ok: true,
+    blocked: true,
+    type: 'spine_safe_launcher',
+    ts: nowIso(),
+    compatibility_shell: true,
+    authority: 'rust_spine',
+    command: plan.command,
+    mode: plan.mode,
+    date: plan.date,
+    run_context: runContext,
+    degraded: true,
+    degraded_reason: 'conduit_runtime_gate_active',
+    gate_active: true,
+    gate_reason: reason
+  };
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const cmd = normalizeToken(args._[0] || 'run', 32) || 'run';
@@ -443,6 +470,10 @@ async function main() {
       ? rustStatus.payload
       : null;
     if (!rustStatus.ok || !spineStatus) {
+      if (rustStatus && rustStatus.payload && rustStatus.payload.gate_active === true) {
+        process.stdout.write(`${JSON.stringify(runtimeGateStatusPayload(plan, runContext, rustStatus))}\n`);
+        process.exit(0);
+      }
       process.stdout.write(`${JSON.stringify(spineStatusUnavailablePayload(plan, runContext, rustStatus))}\n`);
       process.exit(rustStatus.status || 1);
     }

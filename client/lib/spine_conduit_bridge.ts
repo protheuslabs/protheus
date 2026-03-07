@@ -4,6 +4,9 @@ const fs = require('fs');
 const path = require('path');
 const Module = require('module');
 
+const DEFAULT_CONDUIT_GATE_BASE_MS = 30 * 60 * 1000;
+const DEFAULT_CONDUIT_GATE_MAX_MS = 6 * 60 * 60 * 1000;
+
 function findRepoRoot(startDir) {
   let dir = path.resolve(startDir || process.cwd());
   while (true) {
@@ -63,6 +66,143 @@ function loadConduitClient(root) {
     }
   }
   throw new Error('conduit_client_missing');
+}
+
+function runtimeGatePath(root) {
+  return path.join(root, 'client', 'local', 'state', 'conduit', 'runtime_gate.json');
+}
+
+function readRuntimeGate(root) {
+  const fp = runtimeGatePath(root);
+  if (!fs.existsSync(fp)) return null;
+  try {
+    const parsed = JSON.parse(fs.readFileSync(fp, 'utf8'));
+    if (!parsed || typeof parsed !== 'object') return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function writeRuntimeGate(root, payload) {
+  const fp = runtimeGatePath(root);
+  fs.mkdirSync(path.dirname(fp), { recursive: true });
+  fs.writeFileSync(fp, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+}
+
+function parsePositiveInt(value, fallback) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) return fallback;
+  return Math.floor(n);
+}
+
+function runtimeGateThreshold() {
+  return Math.max(
+    1,
+    parsePositiveInt(process.env.PROTHEUS_CONDUIT_RUNTIME_GATE_THRESHOLD, 1)
+  );
+}
+
+function runtimeGateBaseMs() {
+  return Math.max(
+    5000,
+    parsePositiveInt(process.env.PROTHEUS_CONDUIT_RUNTIME_GATE_BASE_MS, DEFAULT_CONDUIT_GATE_BASE_MS)
+  );
+}
+
+function runtimeGateMaxMs() {
+  return Math.max(
+    runtimeGateBaseMs(),
+    parsePositiveInt(process.env.PROTHEUS_CONDUIT_RUNTIME_GATE_MAX_MS, DEFAULT_CONDUIT_GATE_MAX_MS)
+  );
+}
+
+function runtimeGateForceProbe() {
+  return String(process.env.PROTHEUS_CONDUIT_FORCE_PROBE || '0').trim() === '1';
+}
+
+function runtimeGateDisabled() {
+  return String(process.env.PROTHEUS_CONDUIT_RUNTIME_GATE_DISABLED || '0').trim() === '1';
+}
+
+function computeGateBackoffMs(consecutiveFailures) {
+  const base = runtimeGateBaseMs();
+  const max = runtimeGateMaxMs();
+  if (consecutiveFailures <= 1) return base;
+  const scaled = base * Math.pow(2, Math.min(8, Math.max(0, consecutiveFailures - 1)));
+  return Math.min(max, Math.floor(scaled));
+}
+
+function timeoutLikeError(text) {
+  const normalized = String(text || '').toLowerCase();
+  return normalized.includes('conduit_stdio_timeout:')
+    || normalized.includes('conduit_bridge_timeout:')
+    || normalized.includes('_bridge_timeout:')
+    || normalized.includes('bridge_wait_failed')
+    || normalized.includes('conduit_stdio_exit:')
+    || normalized.includes('conduit_stdio_error:');
+}
+
+function buildGateActiveError(root) {
+  if (runtimeGateDisabled() || runtimeGateForceProbe()) return null;
+  const gate = readRuntimeGate(root);
+  if (!gate || typeof gate !== 'object') return null;
+  const blockedUntilMs = Number(gate.blocked_until_ms || 0);
+  if (!Number.isFinite(blockedUntilMs) || blockedUntilMs <= Date.now()) return null;
+  const blockedUntilIso = new Date(blockedUntilMs).toISOString();
+  const remainingMs = Math.max(0, blockedUntilMs - Date.now());
+  const reason = `conduit_runtime_gate_active_until:${blockedUntilIso}`;
+  return {
+    reason,
+    remainingMs,
+    gate
+  };
+}
+
+function clearRuntimeGateIfSet(root) {
+  if (runtimeGateDisabled()) return;
+  const existing = readRuntimeGate(root);
+  if (!existing || !existing.consecutive_failures) return;
+  writeRuntimeGate(root, {
+    schema_version: '1.0',
+    updated_at: new Date().toISOString(),
+    last_error: null,
+    last_failure_at: null,
+    consecutive_failures: 0,
+    blocked_until_ms: 0,
+    blocked_until: null,
+    gate_active: false
+  });
+}
+
+function recordRuntimeGateFailure(root, errorText) {
+  if (runtimeGateDisabled()) return;
+  if (!timeoutLikeError(errorText)) return;
+
+  const now = Date.now();
+  const existing = readRuntimeGate(root) || {};
+  const previousFailures = Number(existing.consecutive_failures || 0);
+  const consecutiveFailures = Number.isFinite(previousFailures) && previousFailures > 0
+    ? previousFailures + 1
+    : 1;
+  const threshold = runtimeGateThreshold();
+  const shouldActivate = consecutiveFailures >= threshold;
+  const backoffMs = shouldActivate ? computeGateBackoffMs(consecutiveFailures) : 0;
+  const blockedUntilMs = shouldActivate ? now + backoffMs : 0;
+
+  writeRuntimeGate(root, {
+    schema_version: '1.0',
+    updated_at: new Date(now).toISOString(),
+    last_error: String(errorText || '').slice(0, 500),
+    last_failure_at: new Date(now).toISOString(),
+    consecutive_failures: consecutiveFailures,
+    blocked_until_ms: blockedUntilMs,
+    blocked_until: blockedUntilMs > 0 ? new Date(blockedUntilMs).toISOString() : null,
+    gate_active: shouldActivate,
+    threshold,
+    base_backoff_ms: runtimeGateBaseMs(),
+    max_backoff_ms: runtimeGateMaxMs()
+  });
 }
 
 function daemonCommand(root) {
@@ -138,6 +278,27 @@ function buildOpsDomainAgentId(domain, commandArgs, opts = {}) {
 
 async function runConduitAgent(agentId, requestPrefix, receiptKey, errorType, opts = {}) {
   const root = findRepoRoot(opts.cwdHint || process.cwd());
+  const gateState = buildGateActiveError(root);
+  if (gateState) {
+    return {
+      ok: false,
+      status: 1,
+      payload: {
+        ok: false,
+        type: errorType,
+        reason: gateState.reason,
+        timed_out: true,
+        gate_active: true,
+        gate_remaining_ms: gateState.remainingMs,
+        routed_via: 'conduit'
+      },
+      detail: null,
+      response: null,
+      routed_via: 'conduit',
+      stdout: '',
+      stderr: gateState.reason
+    };
+  }
   const { ConduitClient } = loadConduitClient(root);
   const command = daemonCommand(root);
   const client = ConduitClient.overStdio(command, daemonArgs(command), root);
@@ -176,6 +337,14 @@ async function runConduitAgent(agentId, requestPrefix, receiptKey, errorType, op
     const status = Number.isFinite(Number(detail && detail.exit_code))
       ? Number(detail.exit_code)
       : (payload && payload.ok === true && response && response.validation && response.validation.ok === true ? 0 : 1);
+    const detailReason = detail && typeof detail.reason === 'string'
+      ? detail.reason
+      : (payload && typeof payload.reason === 'string' ? payload.reason : '');
+    if (status === 0) {
+      clearRuntimeGateIfSet(root);
+    } else if (timeoutLikeError(detailReason)) {
+      recordRuntimeGateFailure(root, detailReason);
+    }
     return {
       ok: response && response.validation && response.validation.ok === true && status === 0,
       status,
@@ -188,6 +357,7 @@ async function runConduitAgent(agentId, requestPrefix, receiptKey, errorType, op
     };
   } catch (err) {
     const error = String(err && err.message ? err.message : err);
+    recordRuntimeGateFailure(root, error);
     return {
       ok: false,
       status: 1,
