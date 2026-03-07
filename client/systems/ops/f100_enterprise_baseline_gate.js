@@ -5,10 +5,28 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
-const ROOT = path.resolve(__dirname, '..', '..');
-const DEFAULT_CONTRACT_PATH = path.join(ROOT, 'config', 'f100_enterprise_baseline_contract.json');
-const DEFAULT_DOC_PATH = path.join(ROOT, 'docs', 'ops', 'F100_ENTERPRISE_BASELINE_STATUS.md');
-const DEFAULT_STATE_PATH = path.join(ROOT, 'state', 'ops', 'f100_enterprise_baseline_gate', 'latest.json');
+function findRepoRoot(startDir) {
+  let dir = path.resolve(startDir || process.cwd());
+  while (true) {
+    const cargo = path.join(dir, 'Cargo.toml');
+    const layer0 = path.join(dir, 'core', 'layer0', 'ops', 'Cargo.toml');
+    const legacy = path.join(dir, 'crates', 'ops', 'Cargo.toml');
+    if (fs.existsSync(cargo) && (fs.existsSync(layer0) || fs.existsSync(legacy))) {
+      return dir;
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) {
+      return path.resolve(startDir || process.cwd());
+    }
+    dir = parent;
+  }
+}
+
+const CLIENT_ROOT = path.resolve(__dirname, '..', '..');
+const ROOT = findRepoRoot(CLIENT_ROOT);
+const DEFAULT_CONTRACT_PATH = path.join(CLIENT_ROOT, 'config', 'f100_enterprise_baseline_contract.json');
+const DEFAULT_DOC_PATH = path.join(CLIENT_ROOT, 'docs', 'ops', 'F100_ENTERPRISE_BASELINE_STATUS.md');
+const DEFAULT_STATE_PATH = path.join(CLIENT_ROOT, 'state', 'ops', 'f100_enterprise_baseline_gate', 'latest.json');
 
 function parseArgs(argv) {
   const args = {
